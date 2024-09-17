@@ -14,9 +14,6 @@
 #include "runtime-light/stdlib/rpc/rpc-api.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 
-// TODO: get rid of it here
-#define CHECK_EXCEPTION(action)
-
 void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &gen$ht, tl_fetch_wrapper_ptr gen$t_ReqResult_fetch);
 
 int32_t tl_parse_save_pos();

@@ -2,10 +2,10 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/stdlib/regex/regex-functions.h"
+#include "runtime-light/stdlib/string/string-context.h"
 
 #include "runtime-light/component/component.h"
 
-RegexComponentState &RegexComponentState::get() noexcept {
-  return get_component_context()->regex_component_context;
+StringComponentContext &StringComponentContext::get() noexcept {
+  return get_component_context()->string_component_context;
 }

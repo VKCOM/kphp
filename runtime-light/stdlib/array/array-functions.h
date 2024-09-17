@@ -536,3 +536,18 @@ auto f$array_column(const Optional<T> &a, const mixed &column_key,
                     const mixed &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
   php_critical_error("call to unsupported function");
 }
+
+template<class T>
+mixed f$array_key_first(const array<T> &a) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
+mixed f$array_key_last(const array<T> &a) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T, class T1>
+std::tuple<typename array<T>::key_type, T> f$array_find(const array<T> &a,  const T1 &callback) {
+  php_critical_error("call to unsupported function");
+}

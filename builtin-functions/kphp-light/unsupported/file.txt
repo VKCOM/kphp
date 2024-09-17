@@ -45,7 +45,7 @@ function unlink ($name ::: string) ::: bool;
 
 
  /** @kphp-extern-func-info generate-stub */
-function fgetcsv ($stream, $length = 0, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: mixed[] | false;
+function fgetcsv ($stream ::: mixed, $length ::: int = 0, $delimiter ::: string = ",", $enclosure ::: string = "\"", $escape ::: string = "\\") ::: mixed[] | false;
 
 define('STDIN', 'php://stdin');
 define('STDOUT', 'php://stdout');
@@ -59,29 +59,35 @@ define('SEEK_CUR', 2);
  /** @kphp-extern-func-info generate-stub */
 function fopen ($filename ::: string, $mode ::: string) ::: mixed;
  /** @kphp-extern-func-info generate-stub */
-function fwrite ($stream, $text ::: string) ::: int | false;
+function fwrite ($stream ::: mixed, $text ::: string) ::: int | false;
  /** @kphp-extern-func-info generate-stub */
-function fseek ($stream, $offset ::: int, $whence ::: int = SEEK_SET) ::: int;
+function fseek ($stream ::: mixed, $offset ::: int, $whence ::: int = SEEK_SET) ::: int;
  /** @kphp-extern-func-info generate-stub */
-function rewind ($stream) ::: bool;
+function rewind ($stream ::: mixed) ::: bool;
  /** @kphp-extern-func-info generate-stub */
-function ftell ($stream) ::: int | false;
+function ftell ($stream ::: mixed) ::: int | false;
  /** @kphp-extern-func-info generate-stub */
-function fread ($stream, $length ::: int) ::: string | false;
+function fread ($stream ::: mixed, $length ::: int) ::: string | false;
  /** @kphp-extern-func-info generate-stub */
-function fgetc ($stream) ::: string | false;
+function fgetc ($stream ::: mixed) ::: string | false;
  /** @kphp-extern-func-info generate-stub */
-function fpassthru ($stream) ::: int | false;
+function fpassthru ($stream ::: mixed) ::: int | false;
  /** @kphp-extern-func-info generate-stub */
-function fgets ($stream, $length ::: int = -1) ::: string | false;
+function fgets ($stream ::: mixed, $length ::: int = -1) ::: string | false;
  /** @kphp-extern-func-info generate-stub */
-function fflush ($stream) ::: bool;
+function fflush ($stream ::: mixed) ::: bool;
  /** @kphp-extern-func-info generate-stub */
-function feof ($stream) ::: bool;
+function feof ($stream ::: mixed) ::: bool;
  /** @kphp-extern-func-info generate-stub */
-function fclose ($stream) ::: bool;
+function fclose ($stream ::: mixed) ::: bool;
 
+define('STREAM_CLIENT_CONNECT', 1);
+define('DEFAULT_SOCKET_TIMEOUT', 60);
 
+/** @kphp-extern-func-info generate-stub */
+function stream_context_create ($options ::: mixed = array()) ::: mixed;
+
+function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO, &$error_description ::: mixed = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context ::: mixed = null) ::: mixed;
 
 function fprintf ($stream, $format ::: string, ...$args) ::: int;
 function fputcsv ($stream, $fields ::: array, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: int | false;

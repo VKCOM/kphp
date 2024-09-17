@@ -65,4 +65,8 @@ function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed
  /** @kphp-extern-func-info generate-stub */
 function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
 
-
+/** @kphp-generate-stub-class */
+final class RpcConnection {
+    /** @kphp-extern-func-info generate-stub */
+    private function __construct();
+}
