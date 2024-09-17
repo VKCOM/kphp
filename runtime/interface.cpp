@@ -2301,8 +2301,6 @@ static void reset_global_interface_vars(PhpScriptBuiltInSuperGlobals &supergloba
 }
 
 static void init_interface_lib() {
-  headers_sent = false;
-
   shutdown_functions_count = 0;
   shutdown_functions_status_value = shutdown_functions_status::not_executed;
   finished = false;
