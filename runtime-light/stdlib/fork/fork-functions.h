@@ -42,7 +42,7 @@ requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>
 }
 
 template<typename T>
-requires(is_optional<T>::value || std::same_as<T, mixed>) task_t<T> f$wait(Optional<int64_t> fork_id_opt, double timeout = -1.0) noexcept {
+requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(Optional<int64_t> fork_id_opt, double timeout = -1.0) noexcept {
   co_return co_await f$wait<T>(fork_id_opt.has_value() ? fork_id_opt.val() : INVALID_FORK_ID, timeout);
 }
 

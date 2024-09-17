@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include <cstdint>
 
 struct CurlComponentContext {
   int64_t curl_multi_info_read_msgs_in_queue_stub{};

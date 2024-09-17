@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include <cstdint>
 
 struct RegexComponentContext {
   int64_t preg_replace_count_dummy{};

@@ -6,11 +6,6 @@
 
 #include "runtime-core/runtime-core.h"
 
-template<class T>
-Optional<int64_t> f$strpos(const string &, const Optional<T> &, int64_t = 0) {
-  php_critical_error("call to unsupported function");
-}
-
 // str_concat_arg generalizes both tmp_string and string arguments;
 // it can be constructed from both of them, so concat functions can operate
 // on both tmp_string and string types

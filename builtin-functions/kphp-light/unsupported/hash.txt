@@ -53,6 +53,7 @@ final class DeflateContext {
     private function __construct() ::: DeflateContext;
 }
 
+// todo: deflate_init php signature has type array instead mixed
 /** @kphp-extern-func-info generate-stub */
 function deflate_init(int $encoding, mixed $options = []) ::: ?DeflateContext;
 /** @kphp-extern-func-info generate-stub */
