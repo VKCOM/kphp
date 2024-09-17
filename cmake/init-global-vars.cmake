@@ -71,10 +71,6 @@ set_property(SOURCE ${COMMON_DIR}/version-string.cpp
              PROPERTY COMPILE_DEFINITIONS
              COMMIT="${GIT_COMMIT} ${VERSION_SUFFIX}" BUILD_TIMESTAMP=${BUILD_TIMESTAMP})
 
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(CMAKE_INSTALL_PREFIX "/." CACHE PATH "install prefix" FORCE)
-endif()
-
 set(VK_INSTALL_DIR /usr/share/vkontakte)
 set(INSTALL_KPHP_SOURCE ${VK_INSTALL_DIR}/kphp_source)
 
