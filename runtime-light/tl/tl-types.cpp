@@ -16,6 +16,12 @@ namespace {
 // magic + flags + job_id + minimum string size length
 constexpr auto K2_JOB_WORKER_RESPONSE_MIN_SIZE = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(int64_t) + tl::SMALL_STRING_SIZE_LEN;
 
+enum CertInfoItem : uint32_t {
+  LONG_MAGIC = 0x533f'f89f,
+  STR_MAGIC = 0xc427'feef,
+  DICT_MAGIC = 0x1ea8'a774
+};
+
 } // namespace
 
 namespace tl {

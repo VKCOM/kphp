@@ -26,12 +26,6 @@ struct K2JobWorkerResponse final {
 
 // ===== CRYPTO =====
 
-enum CertInfoItem : uint32_t {
-  LONG_MAGIC = 0x533f'f89f,
-  STR_MAGIC = 0xc427'feef,
-  DICT_MAGIC = 0x1ea8'a774
-};
-
 // Actually it's "Maybe (Dictionary CertInfoItem)"
 // But I now want to have this logic separately
 struct GetPemCertInfoResponse {
