@@ -11,7 +11,9 @@
 
 namespace tl {
 
-inline constexpr uint32_t K2_JOB_WORKER_RESPONSE_MAGIC = 0x3afb3a08;
+// ===== JOB WORKERS =====
+
+inline constexpr uint32_t K2_JOB_WORKER_RESPONSE_MAGIC = 0x3afb'3a08;
 
 struct K2JobWorkerResponse final {
   int64_t job_id{};
@@ -20,6 +22,16 @@ struct K2JobWorkerResponse final {
   bool fetch(TLBuffer &tlb) noexcept;
 
   void store(TLBuffer &tlb) const noexcept;
+};
+
+// ===== CRYPTO =====
+
+// Actually it's "Maybe (Dictionary CertInfoItem)"
+// But I now want to have this logic separately
+struct GetPemCertInfoResponse {
+  array<mixed> data;
+
+  bool fetch(TLBuffer &tlb) noexcept;
 };
 
 } // namespace tl

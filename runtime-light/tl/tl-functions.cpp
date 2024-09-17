@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <string_view>
 
+#include "common/tl/constants/common.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace {
@@ -43,6 +44,17 @@ void K2InvokeJobWorker::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<int64_t>(job_id);
   tlb.store_trivial<uint64_t>(timeout_ns);
   tlb.store_string({body.c_str(), body.size()});
+}
+
+void GetCryptosecurePseudorandomBytes::store(TLBuffer &tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(GET_CRYPTOSECURE_PSEUDORANDOM_BYTES_MAGIC);
+  tlb.store_trivial<int32_t>(size);
+}
+
+void GetPemCertInfo::store(TLBuffer &tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(GET_PEM_CERT_INFO_MAGIC);
+  tlb.store_trivial<uint32_t>(is_short ? TL_BOOL_TRUE : TL_BOOL_FALSE);
+  tlb.store_string(std::string_view{bytes.c_str(), bytes.size()});
 }
 
 } // namespace tl
