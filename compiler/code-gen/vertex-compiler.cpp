@@ -8,7 +8,6 @@
 #include <unordered_map>
 
 #include "common/wrappers/field_getter.h"
-
 #include "common/wrappers/likely.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
@@ -17,17 +16,18 @@
 #include "compiler/code-gen/files/tracing-autogen.h"
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/raw-data.h"
+#include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
-#include "compiler/type-hint.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
-#include "compiler/vertex.h"
+#include "compiler/type-hint.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 namespace {
 
@@ -1991,7 +1991,12 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
    * Will be transformed to:
    *   array_map([captured1 = $extern] (auto &&... args) {
    *       return lambda$xxx(captured1, std::forward<decltype(args)>(args)...);
-   *   }), const_array);
+   *   }, const_array);
+   * or in K2 mode:
+   *   co_await array_map([captured1 = $extern] (auto &&... args) (-> task_t<lambda's return type>)? {
+   *       (return lambda$xxx(captured1, std::forward<decltype(args)>(args)...);
+   *       | co_return(co_await lambda$xxx(captured1, std::forward<decltype(args)>(args)...));)
+   *   }, const_array);
    * Where the body calls a lambda function:
    *    int lambda$xxx(int $extern, int $x) { return $xx + $extern; }
    * Captured vars are not always op_var. For example, [captured1 = check_not_false($extern).val()] after smart casts.
@@ -2003,13 +2008,19 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
     W << "captured" << (++idx) << " = " << cpp_captured;
   }) << "]";
 
-  FunctionSignatureGenerator(W) << "(auto &&... args) " << BEGIN;
+  const bool k2_async_callback = G->is_output_mode_k2() && root->func_id->is_interruptible;
 
-  W << "return " << FunctionName(root->func_id) << "(";
+  FunctionSignatureGenerator(W) << "(auto &&... args) ";
+  if (k2_async_callback) { // add explicit return type to make this lambda async
+    W << "-> task_t<" << TypeName(tinf::get_type(root->func_id, -1)) << "> ";
+  }
+  W << BEGIN;
+
+  W << (k2_async_callback ? "co_return(co_await " : "return ") << FunctionName(root->func_id) << "(";
   for (int idx = 1; idx <= root->size(); ++idx) {
     W << "captured" << idx << ", ";
   }
-  W << "std::forward<decltype(args)>(args)...);";
+  W << "std::forward<decltype(args)>(args)...)" << (k2_async_callback ? ")" : "") << ";";
 
   W << NL << END;
   W << UnlockComments{};

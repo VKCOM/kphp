@@ -8,6 +8,7 @@
 #include <concepts>
 #include <coroutine>
 #include <optional>
+#include <type_traits>
 #include <utility>
 
 #include "common/containers/final_action.h"
@@ -238,3 +239,33 @@ struct task_t : public task_base_t {
     return task_t<U>{std::coroutine_handle<>::from_address(std::exchange(handle_address, nullptr))};
   }
 };
+
+// === Type traits ================================================================================
+
+template<typename F, typename... Args>
+requires std::invocable<F, Args...> inline constexpr bool is_async_function_v = requires {
+  {static_cast<task_t<void>>(std::declval<std::invoke_result_t<F, Args...>>())};
+};
+
+// ================================================================================================
+
+template<typename F, typename... Args>
+requires std::invocable<F, Args...> class async_function_unwrapped_return_type {
+  using return_type = std::invoke_result_t<F, Args...>;
+
+  template<typename U>
+  struct task_inner {
+    using type = U;
+  };
+
+  template<typename U>
+  struct task_inner<task_t<U>> {
+    using type = U;
+  };
+
+public:
+  using type = task_inner<return_type>::type;
+};
+
+template<typename F, typename... Args>
+requires std::invocable<F, Args...> using async_function_unwrapped_return_type_t = async_function_unwrapped_return_type<F, Args...>::type;

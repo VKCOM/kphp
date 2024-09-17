@@ -1,0 +1,4 @@
+<?php
+
+/** @kphp-extern-func-info interruptible */
+function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];

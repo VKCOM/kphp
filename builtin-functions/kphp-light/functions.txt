@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/array.txt';
 require_once __DIR__ . '/job-workers.txt';
 
 define('TODO', -1);
