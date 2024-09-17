@@ -65,6 +65,11 @@ array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept {
   php_critical_error("call to unsupported function");
 }
 
+/**
+ * Currently, array_map is always considered async. Despite we rely on symmetric transfer optimization,
+ * we need to be careful with such functions. We may want to split such functions into sync and async
+ * versions in case we face with performance problems.
+ */
 template<class A, std::invocable<A> F, class R = async_function_unwrapped_return_type_t<F, A>>
 task_t<array<R>> f$array_map(F f, array<A> arr) noexcept {
   array<R> result{arr.size()};
