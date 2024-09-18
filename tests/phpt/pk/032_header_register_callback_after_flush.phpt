@@ -3,7 +3,7 @@
 
 echo "Zero ";
 header_register_callback(function () {
-	echo "Unreachable ";
+    echo "Unreachable ";
 });
 
 flush();

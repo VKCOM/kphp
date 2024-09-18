@@ -3,6 +3,6 @@
 
 echo "Zero ";
 header_register_callback(function () {
-	throw new Exception('Exception');
+    throw new Exception('Exception');
 });
 echo "One ";

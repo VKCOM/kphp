@@ -3,7 +3,7 @@
 
 echo "Zero ";
 header_register_callback(function () {
-	echo "Two ";
+    echo "Two ";
     flush();
     echo "Three ";
 });
