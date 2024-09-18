@@ -21,9 +21,9 @@ mixed mc_get_value(const char *result_str, int32_t result_str_len, int64_t flags
 
 bool mc_is_immediate_query(const string &key);
 
-constexpr inline auto MEMCACHE_SERIALIZED = static_cast<int64_t>(1U << 0U);
-constexpr inline auto MEMCACHE_COMPRESSED = static_cast<int64_t>(1U << 1U);
-constexpr inline auto MEMCACHE_JSON_SERIALZIED = static_cast<int64_t>(1U << 4U);
+constexpr inline int64_t MEMCACHE_SERIALIZED = 1U << 0U;
+constexpr inline int64_t MEMCACHE_COMPRESSED = 1U << 1U;
+constexpr inline int64_t MEMCACHE_JSON_SERIALZIED = 1U << 4U;
 
 struct C$Memcache : public abstract_refcountable_php_interface {
 public:
