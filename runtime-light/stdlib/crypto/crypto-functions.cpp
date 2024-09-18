@@ -10,6 +10,12 @@
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 
+namespace {
+
+const string CRYPTO_COMPONENT = string("crypto");
+
+} // namespace
+
 task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
   if (length <= 0 || length > string::max_size()) {
     co_return false;
@@ -25,7 +31,7 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
   string request_buf;
   request_buf.append(buffer.data(), buffer.size());
 
-  auto query = f$component_client_send_request(string("crypto"), string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(CRYPTO_COMPONENT, string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -49,7 +55,7 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
   string request_buf;
   request_buf.append(buffer.data(), buffer.size());
 
-  auto query = f$component_client_send_request(string("crypto"), request_buf);
+  auto query = f$component_client_send_request(CRYPTO_COMPONENT, request_buf);
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -69,7 +75,7 @@ task_t<bool> f$openssl_sign(const string &data, string &signature, const string 
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string("crypto"), string(buffer.data(), buffer.size()));
+  auto query = f$component_client_send_request(CRYPTO_COMPONENT, string(buffer.data(), buffer.size()));
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -92,7 +98,7 @@ task_t<int64_t> f$openssl_verify(const string &data, const string &signature, co
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string("crypto"), string(buffer.data(), buffer.size()));
+  auto query = f$component_client_send_request(CRYPTO_COMPONENT, string(buffer.data(), buffer.size()));
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
