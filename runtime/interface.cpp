@@ -206,8 +206,8 @@ static string http_status_line;
 static char headers_storage[sizeof(array<string>)];
 static array<string> *headers = reinterpret_cast <array<string> *> (headers_storage);
 static long long header_last_query_num = -1;
-bool headers_sent = false;
-headers_custom_handler_function_type headers_custom_handler_function;
+static bool headers_sent = false;
+static headers_custom_handler_function_type headers_custom_handler_function;
 
 static bool check_status_line_int(const char *str, int str_len, int *pos) {
   if (*pos != str_len && str[*pos] == '0') {
