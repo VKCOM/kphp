@@ -98,7 +98,6 @@ task_t<int64_t> f$openssl_verify(const string &data, const string &signature, co
   buffer.clean();
   buffer.store_bytes(resp_from_platform.c_str(), resp_from_platform.size());
 
-  
   // For now returns only 1 or 0, -1 is never returned
   // Because it's currently impossible to distiguish error from negative verification
   std::optional<uint32_t> magic = buffer.fetch_trivial<uint32_t>();
