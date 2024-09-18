@@ -6,6 +6,7 @@ prepend(
   curl/curl-context.cpp
   exit/exit-functions.cpp
   fork/fork-context.cpp
+  hash/hash-functions.cpp
   job-worker/job-worker-api.cpp
   job-worker/job-worker-context.cpp
   output/output-buffer.cpp

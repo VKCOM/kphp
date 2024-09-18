@@ -1,5 +1,14 @@
 <?php
 
+// ===== SUPPORTED =====
+
+/** @kphp-extern-func-info */
+function base64_decode ($str ::: string, $strict ::: bool = false) ::: string | false;
+/** @kphp-extern-func-info */
+function base64_encode ($str ::: string) ::: string;
+
+// ===== UNSUPPORTED =====
+
 /** @kphp-extern-func-info generate-stub */
 function gzencode ($str ::: string, $level ::: int = -1) ::: string;
 /** @kphp-extern-func-info generate-stub */
@@ -58,7 +67,4 @@ final class DeflateContext {
 function deflate_init(int $encoding, mixed $options = []) ::: ?DeflateContext;
 /** @kphp-extern-func-info generate-stub */
 function deflate_add(DeflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH) ::: string | false;
-/** @kphp-extern-func-info generate-stub */
-function base64_decode ($str ::: string, $strict ::: bool = false) ::: string | false;
-/** @kphp-extern-func-info generate-stub */
-function base64_encode ($str ::: string) ::: string;
+

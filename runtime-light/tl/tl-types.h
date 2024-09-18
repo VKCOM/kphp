@@ -34,4 +34,17 @@ struct GetPemCertInfoResponse {
   bool fetch(TLBuffer &tlb) noexcept;
 };
 
+enum DigestAlgorithm : uint32_t {
+  DSS1 = 0xf572'd6b6,
+  SHA1 = 0x215f'b97d,
+  SHA224 = 0x8bce'55e9,
+  SHA256 = 0x6c97'7f8c,
+  SHA384 = 0xf54c'2608,
+  SHA512 = 0x225d'f2b6,
+  RMD160 = 0x1887'e6b4,
+  MD5 = 0x257d'df13,
+  MD4 = 0x317f'e3d1,
+  MD2 = 0x5aca'6998,
+};
+
 } // namespace tl

@@ -57,4 +57,19 @@ void GetPemCertInfo::store(TLBuffer &tlb) const noexcept {
   tlb.store_string(std::string_view{bytes.c_str(), bytes.size()});
 }
 
+void DigestSign::store(TLBuffer &tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(DIGEST_SIGN_MAGIC);
+  tlb.store_string(std::string_view{data.c_str(), data.size()});
+  tlb.store_string(std::string_view{private_key.c_str(), private_key.size()});
+  tlb.store_trivial<uint32_t>(algorithm);
+}
+
+void DigestVerify::store(TLBuffer &tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(DIGEST_VERIFY_MAGIC);
+  tlb.store_string(std::string_view{data.c_str(), data.size()});
+  tlb.store_string(std::string_view{public_key.c_str(), public_key.size()});
+  tlb.store_trivial<uint32_t>(algorithm);
+  tlb.store_string(std::string_view{signature.c_str(), signature.size()});
+}
+
 } // namespace tl
