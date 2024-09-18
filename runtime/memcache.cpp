@@ -4,8 +4,10 @@
 
 #include "runtime/memcache.h"
 
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime/array_functions.h"
-#include "runtime/math_functions.h"
+#include "runtime/json-functions.h"
+#include "runtime/net_events.h"
 #include "runtime/serialize-functions.h"
 #include "runtime/zlib.h"
 #include "server/php-queries.h"
@@ -154,14 +156,17 @@ mixed mc_get_value(const char *result_str, int32_t result_str_len, int64_t flags
   mixed result;
   if (flags & MEMCACHE_COMPRESSED) {
     flags ^= MEMCACHE_COMPRESSED;
-    string::size_type uncompressed_len;
-    result_str = gzuncompress_raw({result_str, static_cast<size_t>(result_str_len)}, &uncompressed_len);
+    string::size_type uncompressed_len = 0;
+    result_str = gzuncompress_raw({result_str, static_cast<string::size_type>(result_str_len)}, &uncompressed_len);
     result_str_len = uncompressed_len;
   }
 
   if (flags & MEMCACHE_SERIALIZED) {
     flags ^= MEMCACHE_SERIALIZED;
     result = unserialize_raw(result_str, result_str_len);
+  } else if (flags & MEMCACHE_JSON_SERIALZIED) {
+    flags ^= MEMCACHE_JSON_SERIALZIED;
+    result = json_decode({result_str, static_cast<string::size_type>(result_str_len)}).first;
   } else {
     result = string(result_str, result_str_len);
   }
