@@ -98,7 +98,11 @@ function tan ($v ::: float) ::: float;
  * @kphp-pure-function
  */
 function pi() ::: float;
-
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function rad2deg ($v ::: float) ::: float;
 
 /** @kphp-extern-func-info generate-stub */
 function lcg_value() ::: float;
