@@ -14,3 +14,7 @@ function set_json_log_demangle_stacktrace(bool $enable) ::: void;
 
 /** @kphp-extern-func-info generate-stub */
 function set_migration_php8_warning ($mask ::: int) ::: void;
+
+/** @kphp-extern-func-info generate-stub */
+function set_use_updated_gmmktime(bool $enable) ::: void;
+
