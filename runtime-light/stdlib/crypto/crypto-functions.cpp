@@ -10,6 +10,12 @@
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 
+namespace {
+
+const string CRYPTO_COMPONENT = string("crypto");
+
+} // namespace
+
 task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
   if (length <= 0 || length > string::max_size()) {
     co_return false;
@@ -25,7 +31,7 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
   string request_buf;
   request_buf.append(buffer.data(), buffer.size());
 
-  auto query = f$component_client_send_request(string("crypto"), string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(CRYPTO_COMPONENT, string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -49,7 +55,7 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
   string request_buf;
   request_buf.append(buffer.data(), buffer.size());
 
-  auto query = f$component_client_send_request(string("crypto"), request_buf);
+  auto query = f$component_client_send_request(CRYPTO_COMPONENT, request_buf);
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -61,4 +67,49 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
   }
 
   co_return response.data;
+}
+
+task_t<bool> f$openssl_sign(const string &data, string &signature, const string &private_key, int64_t algo) noexcept {
+  tl::DigestSign request{.data = data, .private_key = private_key, .algorithm = static_cast<tl::DigestAlgorithm>(algo)};
+
+  tl::TLBuffer buffer;
+  request.store(buffer);
+
+  auto query = f$component_client_send_request(CRYPTO_COMPONENT, string(buffer.data(), buffer.size()));
+  string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
+
+  buffer.clean();
+  buffer.store_bytes(resp_from_platform.c_str(), resp_from_platform.size());
+
+  std::optional<uint32_t> magic = buffer.fetch_trivial<uint32_t>();
+  if (!magic.has_value() || *magic != TL_MAYBE_TRUE) {
+    co_return false;
+  }
+
+  std::string_view str_view = buffer.fetch_string();
+  signature = string(str_view.data(), str_view.size());
+
+  co_return true;
+}
+
+task_t<int64_t> f$openssl_verify(const string &data, const string &signature, const string &pub_key, int64_t algo) noexcept {
+  tl::DigestVerify request{.data = data, .public_key = pub_key, .algorithm = static_cast<tl::DigestAlgorithm>(algo), .signature = signature};
+
+  tl::TLBuffer buffer;
+  request.store(buffer);
+
+  auto query = f$component_client_send_request(CRYPTO_COMPONENT, string(buffer.data(), buffer.size()));
+  string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
+
+  buffer.clean();
+  buffer.store_bytes(resp_from_platform.c_str(), resp_from_platform.size());
+
+  // For now returns only 1 or 0, -1 is never returned
+  // Because it's currently impossible to distiguish error from negative verification
+  std::optional<uint32_t> magic = buffer.fetch_trivial<uint32_t>();
+  if (!magic.has_value() || *magic != TL_BOOL_TRUE) {
+    co_return 0;
+  }
+
+  co_return 1;
 }

@@ -1,5 +1,25 @@
 <?php
 
+// ===== SUPPORTED =====
+
+define('OPENSSL_ALGO_SHA1'  ,  0x215fb97d);
+define('OPENSSL_ALGO_MD5'   ,  0x257ddf13);
+define('OPENSSL_ALGO_MD4'   ,  0x317fe3d1);
+define('OPENSSL_ALGO_MD2'   ,  0x5aca6998);
+define('OPENSSL_ALGO_DSS1'  ,  0xf572d6b6);
+define('OPENSSL_ALGO_SHA224',  0x8bce55e9);
+define('OPENSSL_ALGO_SHA256',  0x6c977f8c);
+define('OPENSSL_ALGO_SHA384',  0xf54c2608);
+define('OPENSSL_ALGO_SHA512',  0x225df2b6);
+define('OPENSSL_ALGO_RMD160',  0x1887e6b4);
+
+
+/** @kphp-extern-func-info interruptible */
+function openssl_sign ($data ::: string, &$signature ::: string, $priv_key_id ::: string, $signature_alg ::: int = 1) ::: bool;
+/** @kphp-extern-func-info interruptible */
+function openssl_verify ($data ::: string, $signature ::: string, $pub_key_id ::: string, $signature_alg ::: int = 1) ::: int;
+
+// ===== UNSUPPORTED =====
 
 define('X509_PURPOSE_SSL_CLIENT'    ,     1);
 define('X509_PURPOSE_SSL_SERVER'    ,     2);
@@ -10,17 +30,6 @@ define('X509_PURPOSE_CRL_SIGN'      ,     6);
 define('X509_PURPOSE_ANY'           ,     7);
 define('X509_PURPOSE_OCSP_HELPER'   ,     8);
 define('X509_PURPOSE_TIMESTAMP_SIGN',     9);
-
-define('OPENSSL_ALGO_SHA1'  ,  1);
-define('OPENSSL_ALGO_MD5'   ,  2);
-define('OPENSSL_ALGO_MD4'   ,  3);
-define('OPENSSL_ALGO_MD2'   ,  4);
-define('OPENSSL_ALGO_DSS1'  ,  5);
-define('OPENSSL_ALGO_SHA224',  6);
-define('OPENSSL_ALGO_SHA256',  7);
-define('OPENSSL_ALGO_SHA384',  8);
-define('OPENSSL_ALGO_SHA512',  9);
-define('OPENSSL_ALGO_RMD160', 10);
 
 define('OPENSSL_RAW_DATA', 1);
 define('OPENSSL_ZERO_PADDING', 2);
@@ -45,8 +54,5 @@ function openssl_pkey_get_private ($key ::: string, $passphrase ::: string = '')
 /** @kphp-extern-func-info generate-stub */
 function openssl_pkey_get_public ($key ::: string) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
-function openssl_sign ($data ::: string, &$signature ::: string, $priv_key_id ::: string, $signature_alg ::: int = 1) ::: bool;
-/** @kphp-extern-func-info generate-stub */
-function openssl_verify ($data ::: string, $signature ::: string, $pub_key_id ::: string, $signature_alg ::: int = 1) ::: int;
-/** @kphp-extern-func-info generate-stub */
 function openssl_x509_verify ($x509cert ::: string, $public_key ::: string) ::: int;
+
