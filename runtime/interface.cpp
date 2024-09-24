@@ -564,7 +564,11 @@ static int ob_merge_buffers() {
 
 void f$flush() {
   php_assert(ob_cur_buffer >= 0 && php_worker.has_value());
-
+  // Run custom headers handler before body processing
+  if (headers_custom_handler_function && !headers_sent && query_type == QUERY_TYPE_HTTP) {
+    headers_sent = true;
+    headers_custom_handler_function();
+  }
   string_buffer const * http_body = compress_http_query_body(&oub[ob_system_level]);
   string_buffer const * http_headers = nullptr;
   if (!php_worker->flushed_http_connection) {
