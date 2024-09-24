@@ -14,11 +14,11 @@ function assert($flag) {
 }
 
 interface I {
-    public function work();
+    public function work(string $output);
 }
 
 class ResumableWorker implements I {
-    public function work() {
+    public function work(string $output) {
         $job = function() {
                 sched_yield_sleep(2);
                 return true;
@@ -31,7 +31,7 @@ class ResumableWorker implements I {
         foreach ($responses as $resp) {
             assert($resp);
         }
-        fwrite(STDERR, "test_ignore_user_abort/finish_resumable_work_" . $_GET["level"] . "\n");
+        fwrite(STDERR, $output);
     }
 }
 
@@ -42,13 +42,13 @@ class RpcWorker implements I {
         $this->port = $port;
     }
 
-    public function work() {
+    public function work(string $output) {
         $conn = new_rpc_connection('localhost', $this->port, 0, 5);
         $req_id = rpc_tl_query_one($conn, ["_" => "engine.sleep",
                                                     "time_ms" => 120]);
         $resp = rpc_tl_query_result_one($req_id);
         assert($resp['result']);
-        fwrite(STDERR, "test_ignore_user_abort/finish_rpc_work_" . $_GET["level"] . "\n");
+        fwrite(STDERR, $output);
    }
 }
 
@@ -129,14 +129,26 @@ if (isset($_SERVER["JOB_ID"])) {
         });
         echo "One ";
         return;
-     case 'flush_and_header_register_callback_callback_after_flush':
-        echo "Zero ";
+     case 'flush_and_header_register_callback_invoked_after_flush':
         header_register_callback(function () {
-        	echo "Unreachable ";
+            echo "One ";
         });
+        echo "Zero ";
         flush();
         sleep(2);
-        echo "One ";
+        echo "Two ";
+        return;
+     case 'flush_and_header_register_callback_no_double_invoked_after_flush':
+        header_register_callback(function () {
+            echo "One ";
+        });
+        echo "Zero ";
+        flush();
+        sleep(2);
+        echo "Two ";
+        flush();
+        sleep(2);
+        echo "Three ";
         return;
     }
 
@@ -170,37 +182,40 @@ if (isset($_SERVER["JOB_ID"])) {
     register_shutdown_function('shutdown_function');
     /** @var I */
     $worker = null;
+    $msg = "";
     switch($_GET["type"]) {
      case "rpc":
         $worker = new RpcWorker(intval($_GET["port"]));
+        $msg = "test_ignore_user_abort/finish_rpc_work_" . $_GET["level"] . "\n";
         break;
      case "resumable":
         $worker = new ResumableWorker;
+        $msg = "test_ignore_user_abort/finish_resumable_work_" . $_GET["level"] . "\n";
         break;
      default:
         echo "ERROR"; return;
     }
     switch($_GET["level"]) {
      case "no_ignore":
-        $worker->work();
+        $worker->work($msg);
         break;
      case "ignore":
         ignore_user_abort(true);
-        $worker->work();
+        $worker->work($msg);
         fwrite(STDERR, "test_ignore_user_abort/finish_ignore_" . $_GET["type"] . "\n");
         ignore_user_abort(false);
         break;
      case "multi_ignore":
         ignore_user_abort(true);
-        $worker->work();
-        $worker->work();
+        $worker->work($msg);
+        $worker->work($msg);
         fwrite(STDERR, "test_ignore_user_abort/finish_multi_ignore_" . $_GET["type"] . "\n");
         ignore_user_abort(false);
         break;
      case "nested_ignore":
         ignore_user_abort(true);
         ignore_user_abort(true);
-        $worker->work();
+        $worker->work($msg);
         ignore_user_abort(false);
         fwrite(STDERR, "test_ignore_user_abort/finish_nested_ignore_" . $_GET["type"] . "\n");
         ignore_user_abort(false);
@@ -236,9 +251,29 @@ if (isset($_SERVER["JOB_ID"])) {
 } else if ($_SERVER["PHP_SELF"] === "/pid") {
     echo "pid=" . posix_getpid();
 } else if ($_SERVER["PHP_SELF"] === "/test_script_errors") {
-  critical_error("Test error");
+    critical_error("Test error");
 } else if ($_SERVER["PHP_SELF"] === "/test_oom_handler") {
-  require_once "test_oom_handler.php";
+    require_once "test_oom_handler.php";
+} else if ($_SERVER["PHP_SELF"] === "/test_header_register_callback") {
+    header_register_callback(function () {
+        global $_GET;
+        switch($_GET["act_in_callback"]) {
+         case "rpc":
+            $msg = "test_header_register_callback/rpc_in_callback\n";
+            (new RpcWorker(intval($_GET["port"])))->work($msg);
+            break;
+         case "resumable":
+            $msg = "test_header_register_callback/resumable_in_callback\n";
+            (new ResumableWorker())->work($msg);
+            break;
+         case "exit":
+            $msg = "test_header_register_callback/exit_in_callback";
+            exit($msg);
+         default:
+            echo "ERROR";
+            return;
+        }
+    });
 } else {
     if ($_GET["hints"] === "yes") {
         send_http_103_early_hints(["Content-Type: text/plain or application/json", "Link: </script.js>; rel=preload; as=script"]);
