@@ -1,5 +1,5 @@
 @kphp_should_fail k2_skip
-/register_shutdown_function should not throw exceptions/
+/header_register_callback should not throw exceptions/
 <?php
 
 function may_throw(bool $cond) {
@@ -8,6 +8,6 @@ function may_throw(bool $cond) {
   }
 }
 
-register_shutdown_function(function () {
+header_register_callback(function () {
   may_throw(false);
 });

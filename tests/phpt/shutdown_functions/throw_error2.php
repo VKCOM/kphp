@@ -1,5 +1,5 @@
 @kphp_should_fail k2_skip
-/register_shutdown_callback should not throw exceptions/
+/register_shutdown_function should not throw exceptions/
 <?php
 
 register_shutdown_function(function () {

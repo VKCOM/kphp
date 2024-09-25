@@ -319,20 +319,31 @@ static void check_kphp_tracing_func_enter_branch_call(FunctionPtr current_functi
              "kphp_tracing_func_enter_branch() is available only inside functions with @kphp-tracing aggregate");
 }
 
+void raise_error_if_throwable(const std::string &where, const VertexAdaptor<op_callback_of_builtin> &callback) {
+  std::vector<std::string> throws;
+  for (const auto &e : callback->func_id->exceptions_thrown) {
+    throws.emplace_back(e->name);
+  }
+  kphp_error(false, fmt_format("{} should not throw exceptions\n"
+                               "But it throws {}\n"
+                               "Throw chain: {}",
+                               where.c_str(), vk::join(throws, ", "), callback->func_id->get_throws_call_chain()));
+}
+
 void check_register_shutdown_functions(VertexAdaptor<op_func_call> call) {
   auto callback = call->args()[0].as<op_callback_of_builtin>();
   if (!callback->func_id->can_throw()) {
     return;
   }
-  std::vector<std::string> throws;
-  for (const auto &e : callback->func_id->exceptions_thrown) {
-    throws.emplace_back(e->name);
+  raise_error_if_throwable(call->func_id->name, callback);
+}
+
+void check_header_register_callback(VertexAdaptor<op_func_call> call) {
+  auto callback = call->args()[0].as<op_callback_of_builtin>();
+  if (!callback->func_id->can_throw()) {
+    return;
   }
-  kphp_error(false,
-             fmt_format("register_shutdown_callback should not throw exceptions\n"
-                        "But it may throw {}\n"
-                        "Throw chain: {}",
-                        vk::join(throws, ", "), callback->func_id->get_throws_call_chain()));
+  raise_error_if_throwable(call->func_id->name, callback);
 }
 
 void mark_global_vars_for_memory_stats(const std::vector<VarPtr> &vars_list) {
@@ -871,6 +882,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       kphp_error(arg_type->can_store_null(), fmt_format("is_null() will be always false for {}", arg_type->as_human_readable()));
     } else if (function_name == "register_shutdown_function") {
       check_register_shutdown_functions(call);
+    } else if (function_name == "header_register_callback") {
+      check_header_register_callback(call);
     } else if (function_name == "to_mixed") {
       check_to_mixed_call(call);
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {

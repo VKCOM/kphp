@@ -262,10 +262,6 @@ if (isset($_SERVER["JOB_ID"])) {
             $msg = "test_header_register_callback/rpc_in_callback\n";
             (new RpcWorker(intval($_GET["port"])))->work($msg);
             break;
-         case "resumable":
-            $msg = "test_header_register_callback/resumable_in_callback\n";
-            (new ResumableWorker())->work($msg);
-            break;
          case "exit":
             $msg = "test_header_register_callback/exit_in_callback";
             exit($msg);
