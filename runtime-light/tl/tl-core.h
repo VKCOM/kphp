@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <optional>
 #include <string_view>
@@ -26,7 +27,7 @@ inline constexpr uint64_t MEDIUM_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 2
 inline constexpr uint8_t LARGE_STRING_MAGIC = 0xff;
 inline constexpr uint8_t MEDIUM_STRING_MAGIC = 0xfe;
 
-class TLBuffer : private vk::not_copyable {
+class TLBuffer final : private vk::not_copyable {
   string_buffer m_buffer;
   size_t m_pos{0};
   size_t m_remaining{0};
@@ -57,7 +58,7 @@ public:
   }
 
   void reset(size_t pos) noexcept {
-    php_assert(pos >= 0 && pos <= size());
+    php_assert(pos <= size());
     m_pos = pos;
     m_remaining = size() - m_pos;
   }
@@ -95,6 +96,12 @@ public:
   }
 
   std::string_view fetch_string() noexcept;
+};
+
+template<typename T>
+concept tl_serializable = std::default_initializable<T> && requires(T t, TLBuffer tlb) {
+  { t.store(tlb) } noexcept -> std::same_as<void>;
+  { t.fetch(tlb) } noexcept -> std::convertible_to<bool>;
 };
 
 } // namespace tl
