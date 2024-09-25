@@ -4,6 +4,7 @@
 
 #include "runtime-light/tl/tl-functions.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 
@@ -12,9 +13,6 @@
 
 namespace {
 
-// magic + flags + image_id + job_id + minimum string size length
-constexpr auto K2_INVOKE_JW_MIN_SIZE = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(uint64_t) + sizeof(int64_t) + sizeof(uint64_t) + tl::SMALL_STRING_SIZE_LEN;
-
 constexpr auto K2_JOB_WORKER_IGNORE_ANSWER_FLAG = static_cast<uint32_t>(1U << 0U);
 
 } // namespace
@@ -22,17 +20,24 @@ constexpr auto K2_JOB_WORKER_IGNORE_ANSWER_FLAG = static_cast<uint32_t>(1U << 0U
 namespace tl {
 
 bool K2InvokeJobWorker::fetch(TLBuffer &tlb) noexcept {
-  if (tlb.size() < K2_INVOKE_JW_MIN_SIZE || *tlb.fetch_trivial<uint32_t>() != K2_INVOKE_JOB_WORKER_MAGIC) {
+  if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != K2_INVOKE_JOB_WORKER_MAGIC) {
     return false;
   }
 
-  const auto flags{*tlb.fetch_trivial<uint32_t>()};
-  ignore_answer = static_cast<bool>(flags & K2_JOB_WORKER_IGNORE_ANSWER_FLAG);
-  image_id = *tlb.fetch_trivial<uint64_t>();
-  job_id = *tlb.fetch_trivial<int64_t>();
-  timeout_ns = *tlb.fetch_trivial<uint64_t>();
-  const std::string_view body_view{tlb.fetch_string()};
-  body = string{body_view.data(), static_cast<string::size_type>(body_view.size())};
+  const auto opt_flags{tlb.fetch_trivial<uint32_t>()};
+  const auto opt_image_id{tlb.fetch_trivial<uint64_t>()};
+  const auto opt_job_id{tlb.fetch_trivial<int64_t>()};
+  const auto opt_timeout_ns{tlb.fetch_trivial<uint64_t>()};
+  if (!(opt_flags.has_value() && opt_image_id.has_value() && opt_job_id.has_value() && opt_timeout_ns.has_value())) {
+    return false;
+  }
+  const auto body_view{tlb.fetch_string()};
+
+  ignore_answer = static_cast<bool>(*opt_flags & K2_JOB_WORKER_IGNORE_ANSWER_FLAG);
+  image_id = *opt_image_id;
+  job_id = *opt_job_id;
+  timeout_ns = *opt_timeout_ns;
+  body = {body_view.data(), static_cast<string::size_type>(body_view.size())};
   return true;
 }
 
@@ -70,6 +75,16 @@ void DigestVerify::store(TLBuffer &tlb) const noexcept {
   tlb.store_string(std::string_view{public_key.c_str(), public_key.size()});
   tlb.store_trivial<uint32_t>(algorithm);
   tlb.store_string(std::string_view{signature.c_str(), signature.size()});
+}
+
+void ConfdataGet::store(TLBuffer &tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(CONFDATA_GET_MAGIC);
+  tlb.store_string({key.c_str(), static_cast<size_t>(key.size())});
+}
+
+void ConfdataGetWildcard::store(TLBuffer &tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(CONFDATA_GET_WILDCARD_MAGIC);
+  tlb.store_string({wildcard.c_str(), static_cast<size_t>(wildcard.size())});
 }
 
 } // namespace tl
