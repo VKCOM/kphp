@@ -5,6 +5,7 @@
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {
+
 void TLBuffer::store_string(std::string_view str) noexcept {
   const char *str_buf{str.data()};
   size_t str_len{str.size()};
@@ -94,4 +95,5 @@ std::string_view TLBuffer::fetch_string() noexcept {
   adjust(total_len_with_padding - size_len);
   return response;
 }
+
 } // namespace tl

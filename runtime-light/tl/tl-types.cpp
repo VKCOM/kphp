@@ -4,6 +4,7 @@
 
 #include "runtime-light/tl/tl-types.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 #include <tuple>
@@ -13,27 +14,28 @@
 
 namespace {
 
-// magic + flags + job_id + minimum string size length
-constexpr auto K2_JOB_WORKER_RESPONSE_MIN_SIZE = sizeof(uint32_t) + sizeof(uint32_t) + sizeof(int64_t) + tl::SMALL_STRING_SIZE_LEN;
+enum CertInfoItem : uint32_t { LONG_MAGIC = 0x533f'f89f, STR_MAGIC = 0xc427'feef, DICT_MAGIC = 0x1ea8'a774 };
 
-enum CertInfoItem : uint32_t {
-  LONG_MAGIC = 0x533f'f89f,
-  STR_MAGIC = 0xc427'feef,
-  DICT_MAGIC = 0x1ea8'a774
-};
+constexpr uint32_t K2_JOB_WORKER_RESPONSE_MAGIC = 0x3afb'3a08;
+constexpr uint32_t CONFDATA_VALUE_MAGIC = 0x3eaa'910b;
 
 } // namespace
 
 namespace tl {
 
 bool K2JobWorkerResponse::fetch(TLBuffer &tlb) noexcept {
-  if (tlb.size() < K2_JOB_WORKER_RESPONSE_MIN_SIZE || *tlb.fetch_trivial<uint32_t>() != K2_JOB_WORKER_RESPONSE_MAGIC) {
+  if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != K2_JOB_WORKER_RESPONSE_MAGIC) {
     return false;
   }
 
   std::ignore = tlb.fetch_trivial<uint32_t>(); // ignore flags
-  job_id = *tlb.fetch_trivial<int64_t>();
-  const std::string_view body_view{tlb.fetch_string()};
+  const auto opt_job_id{tlb.fetch_trivial<int64_t>()};
+  if (!opt_job_id.has_value()) {
+    return false;
+  }
+  const auto body_view{tlb.fetch_string()};
+
+  job_id = *opt_job_id;
   body = string{body_view.data(), static_cast<string::size_type>(body_view.size())};
   return true;
 }
@@ -127,6 +129,23 @@ bool GetPemCertInfoResponse::fetch(TLBuffer &tlb) noexcept {
   }
 
   data = std::move(response);
+  return true;
+}
+
+bool ConfdataValue::fetch(TLBuffer &tlb) noexcept {
+  if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != CONFDATA_VALUE_MAGIC) {
+    return false;
+  }
+  const auto value_view{tlb.fetch_string()};
+  Bool is_php_serialized_{};
+  Bool is_json_serialized_{};
+  if (!(is_php_serialized_.fetch(tlb) && is_json_serialized_.fetch(tlb))) {
+    return false;
+  }
+
+  value = {value_view.data(), static_cast<string::size_type>(value_view.size())};
+  is_php_serialized = is_php_serialized_.value;
+  is_json_serialized = is_json_serialized_.value;
   return true;
 }
 

@@ -36,7 +36,6 @@ inline constexpr uint32_t GET_PEM_CERT_INFO_MAGIC = 0xa50c'fd6c;
 inline constexpr uint32_t DIGEST_SIGN_MAGIC = 0xd345'f658;
 inline constexpr uint32_t DIGEST_VERIFY_MAGIC = 0x5760'bd0e;
 
-
 struct GetCryptosecurePseudorandomBytes final {
   int32_t size{};
 
@@ -63,6 +62,23 @@ struct DigestVerify final {
   string public_key;
   DigestAlgorithm algorithm;
   string signature;
+
+  void store(TLBuffer &tlb) const noexcept;
+};
+
+// ===== CONFDATA =====
+
+inline constexpr uint32_t CONFDATA_GET_MAGIC = 0xf0eb'cd89;
+inline constexpr uint32_t CONFDATA_GET_WILDCARD_MAGIC = 0x5759'bd9e;
+
+struct ConfdataGet final {
+  string key;
+
+  void store(TLBuffer &tlb) const noexcept;
+};
+
+struct ConfdataGetWildcard final {
+  string wildcard;
 
   void store(TLBuffer &tlb) const noexcept;
 };
