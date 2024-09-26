@@ -276,8 +276,6 @@ struct ConfdataValue final {
   bool is_json_serialized{};
 
   bool fetch(TLBuffer &tlb) noexcept;
-
-  void store(TLBuffer &tlb) const noexcept;
 };
 
 } // namespace tl

@@ -149,11 +149,4 @@ bool ConfdataValue::fetch(TLBuffer &tlb) noexcept {
   return true;
 }
 
-void ConfdataValue::store(TLBuffer &tlb) const noexcept {
-  tlb.store_trivial<uint32_t>(CONFDATA_VALUE_MAGIC);
-  tlb.store_string({value.c_str(), static_cast<size_t>(value.size())});
-  Bool{.value = is_php_serialized}.store(tlb);
-  Bool{.value = is_json_serialized}.store(tlb);
-}
-
 } // namespace tl
