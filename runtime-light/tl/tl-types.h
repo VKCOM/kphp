@@ -34,11 +34,11 @@ struct Bool final {
   }
 };
 
-template<tl_serializable T>
+template<typename T>
 struct Maybe final {
   std::optional<T> opt_value{};
 
-  bool fetch(TLBuffer &tlb) noexcept {
+  bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
     const auto magic{tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO)};
     if (magic == TL_MAYBE_TRUE) {
       opt_value.emplace();
@@ -50,7 +50,7 @@ struct Maybe final {
     return false;
   }
 
-  void store(TLBuffer &tlb) const noexcept {
+  void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
     if (opt_value.has_value()) {
       tlb.store_trivial<uint32_t>(TL_MAYBE_TRUE);
       (*opt_value).store(tlb);
@@ -60,7 +60,7 @@ struct Maybe final {
   }
 };
 
-template<tl_serializable T>
+template<typename T>
 struct vector final {
   using vector_t = memory_resource::stl::vector<T, memory_resource::unsynchronized_pool_resource>;
   vector_t data{typename vector_t::allocator_type(RuntimeAllocator::current().memory_resource)};
@@ -91,7 +91,7 @@ struct vector final {
     return data.size();
   }
 
-  bool fetch(TLBuffer &tlb) noexcept {
+  bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
     int64_t size{};
     if (const auto opt_size{tlb.fetch_trivial<uint32_t>()}; opt_size.has_value()) {
       size = *opt_size;
@@ -112,13 +112,13 @@ struct vector final {
     return true;
   }
 
-  void store(TLBuffer &tlb) const noexcept {
+  void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
     tlb.store_trivial<uint32_t>(static_cast<uint32_t>(data.size()));
     std::for_each(data.cbegin(), data.cend(), [&tlb](auto &&elem) { std::forward<decltype(elem)>(elem).store(tlb); });
   }
 };
 
-template<tl_serializable T>
+template<typename T>
 struct Vector final {
   vector<T> data{};
 
@@ -148,37 +148,37 @@ struct Vector final {
     return data.size();
   }
 
-  bool fetch(TLBuffer &tlb) noexcept {
+  bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
     if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != TL_VECTOR) {
       return false;
     }
     return data.fetch(tlb);
   }
 
-  void store(TLBuffer &tlb) const noexcept {
+  void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
     tlb.store_trivial<uint32_t>(TL_VECTOR);
     data.store(tlb);
   }
 };
 
-template<tl_serializable T>
+template<typename T>
 struct dictionaryField final {
   string key;
   T value{};
 
-  bool fetch(TLBuffer &tlb) noexcept {
+  bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
     const auto key_view{tlb.fetch_string()};
     key = {key_view.data(), static_cast<string::size_type>(key_view.size())};
     return !value.fetch(tlb);
   }
 
-  void store(TLBuffer &tlb) const noexcept {
+  void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
     tlb.store_string({key.c_str(), static_cast<size_t>(key.size())});
     value.store(tlb);
   }
 };
 
-template<tl_serializable T>
+template<typename T>
 struct dictionary final {
   vector<dictionaryField<T>> data{};
 
@@ -208,27 +208,27 @@ struct dictionary final {
     return data.size();
   }
 
-  bool fetch(TLBuffer &tlb) noexcept {
+  bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
     return data.fetch(tlb);
   }
 
-  void store(TLBuffer &tlb) const noexcept {
+  void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
     data.store(tlb);
   }
 };
 
-template<tl_serializable T>
+template<typename T>
 struct Dictionary final {
   dictionary<T> data{};
 
-  bool fetch(TLBuffer &tlb) noexcept {
+  bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
     if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != TL_DICTIONARY) {
       return false;
     }
     return data.fetch(tlb);
   }
 
-  void store(TLBuffer &tlb) const noexcept {
+  void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
     tlb.store_trivial<uint32_t>(TL_DICTIONARY);
     data.store(tlb);
   }
