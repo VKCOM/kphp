@@ -8,6 +8,7 @@
 #include <csetjmp>
 #include <cstddef>
 #include <cstdint>
+#include <string_view>
 
 #include "runtime-core/memory-resource/resource_allocator.h"
 #include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
@@ -85,7 +86,12 @@ struct ComponentState {
     return standard_stream_;
   }
   uint64_t take_incoming_stream() noexcept;
-  uint64_t open_stream(const string &) noexcept;
+
+  uint64_t open_stream(std::string_view) noexcept;
+  uint64_t open_stream(const string &component_name) noexcept {
+    return open_stream(std::string_view{component_name.c_str(), static_cast<size_t>(component_name.size())});
+  }
+
   uint64_t set_timer(std::chrono::nanoseconds) noexcept;
   void release_stream(uint64_t) noexcept;
   void release_all_streams() noexcept;
