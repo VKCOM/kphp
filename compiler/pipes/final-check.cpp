@@ -320,6 +320,9 @@ static void check_kphp_tracing_func_enter_branch_call(FunctionPtr current_functi
 }
 
 void raise_error_if_throwable(const std::string &where, const VertexAdaptor<op_callback_of_builtin> &callback) {
+  if (!callback->func_id->can_throw()) {
+    return;
+  }
   std::vector<std::string> throws;
   for (const auto &e : callback->func_id->exceptions_thrown) {
     throws.emplace_back(e->name);
@@ -332,17 +335,11 @@ void raise_error_if_throwable(const std::string &where, const VertexAdaptor<op_c
 
 void check_register_shutdown_functions(VertexAdaptor<op_func_call> call) {
   auto callback = call->args()[0].as<op_callback_of_builtin>();
-  if (!callback->func_id->can_throw()) {
-    return;
-  }
   raise_error_if_throwable(call->func_id->name, callback);
 }
 
 void check_header_register_callback(VertexAdaptor<op_func_call> call) {
   auto callback = call->args()[0].as<op_callback_of_builtin>();
-  if (!callback->func_id->can_throw()) {
-    return;
-  }
   raise_error_if_throwable(call->func_id->name, callback);
 }
 
