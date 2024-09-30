@@ -221,6 +221,32 @@ template<typename T>
 struct Dictionary final {
   dictionary<T> data{};
 
+  using iterator = dictionary<T>::iterator;
+  using const_iterator = dictionary<T>::const_iterator;
+
+  iterator begin() noexcept {
+    return data.begin();
+  }
+  iterator end() noexcept {
+    return data.end();
+  }
+  const_iterator begin() const noexcept {
+    return data.begin();
+  }
+  const_iterator end() const noexcept {
+    return data.end();
+  }
+  const_iterator cbegin() const noexcept {
+    return data.cbegin();
+  }
+  const_iterator cend() const noexcept {
+    return data.cend();
+  }
+
+  size_t size() const noexcept {
+    return data.size();
+  }
+
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
     if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != TL_DICTIONARY) {
       return false;
