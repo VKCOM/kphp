@@ -13,9 +13,9 @@ KphpCoreContext &KphpCoreContext::current() noexcept {
 
 void KphpCoreContext::init() {
   if (static_buffer_length_limit < 0) {
-    init_string_buffer_lib(16, (1 << 24));
+    init_string_buffer_lib(0, (1 << 24));
   } else {
-    init_string_buffer_lib(16, static_buffer_length_limit);
+    init_string_buffer_lib(0, static_buffer_length_limit);
   }
 }
 
