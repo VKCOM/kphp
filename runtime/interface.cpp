@@ -582,6 +582,11 @@ void f$flush() {
 }
 
 void f$fastcgi_finish_request(int64_t exit_code) {
+  // Run custom headers handler before body processing
+  if (headers_custom_handler_function && !headers_sent && query_type == QUERY_TYPE_HTTP) {
+    headers_sent = true;
+    headers_custom_handler_function();
+  }
   int ob_total_buffer = ob_merge_buffers();
   if (php_worker.has_value() && php_worker->flushed_http_connection) {
     string const raw_response = oub[ob_total_buffer].str();
@@ -607,20 +612,6 @@ void f$fastcgi_finish_request(int64_t exit_code) {
       break;
     }
     case QUERY_TYPE_HTTP: {
-      // Run custom headers handler before body processing
-      if (headers_custom_handler_function && !headers_sent) {
-        headers_sent = true;
-        headers_custom_handler_function();
-        // In `headers_custom_handler_function` might be happened `f$flush` invocation
-        // First of all, we have to accumulate response data from buffers
-        ob_total_buffer = ob_merge_buffers();
-        // If a flushing is happened, send response without headers
-        if (php_worker.has_value() && php_worker->flushed_http_connection) {
-          string const raw_response = oub[ob_total_buffer].str();
-          http_set_result(nullptr, 0, raw_response.c_str(), raw_response.size(), static_cast<int32_t>(exit_code));
-          php_assert (0);
-        }
-      }
       const string_buffer *compressed = compress_http_query_body(&oub[ob_total_buffer]);
       if (!is_head_query) {
         set_content_length_header(compressed->size());
