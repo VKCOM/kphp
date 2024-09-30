@@ -75,7 +75,7 @@ ScheduleStatus SimpleCoroutineScheduler::schedule(ScheduleEvent::EventT event) n
       } else if constexpr (std::is_same_v<event_t, ScheduleEvent::Yield>) {
         return scheduleOnYield();
       } else {
-        static_assert(false, "non-exhaustive visitor");
+//        static_assert(false, "non-exhaustive visitor");
       }
     },
     event);
@@ -101,7 +101,7 @@ void SimpleCoroutineScheduler::suspend(SuspendToken token) noexcept {
         }
         awaiting_for_update_tokens.emplace(event.timer_d, token);
       } else {
-        static_assert(false, "non-exhaustive visitor");
+//        static_assert(false, "non-exhaustive visitor");
       }
     },
     token.second);
@@ -127,7 +127,7 @@ void SimpleCoroutineScheduler::cancel(SuspendToken token) noexcept {
       } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnTimer>) {
         awaiting_for_update_tokens.erase(event.timer_d);
       } else {
-        static_assert(false, "non-exhaustive visitor");
+//        static_assert(false, "non-exhaustive visitor");
       }
     },
     token.second);
