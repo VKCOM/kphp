@@ -183,6 +183,7 @@ void PhpScript::init(script_t *script, php_query_data_t *data_to_set) noexcept {
 
   script_time = 0;
   net_time = 0;
+  script_max_running_interval = 0;
   script_init_rusage = get_rusage_info();
 
   queries_cnt = 0;
@@ -281,7 +282,9 @@ void PhpScript::update_net_time() noexcept {
 
 void PhpScript::update_script_time() noexcept {
   double new_cur_timestamp = dl_time();
-  script_time += new_cur_timestamp - cur_timestamp;
+  double delta = new_cur_timestamp - cur_timestamp;
+  script_time += delta;
+  script_max_running_interval = std::fmax(script_max_running_interval, delta);
   cur_timestamp = new_cur_timestamp;
 }
 
@@ -320,7 +323,7 @@ void PhpScript::finish() noexcept {
   }
   process_rusage_t script_rusage = get_script_rusage();
 
-  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_init_time_sec, connection_process_time_sec,
+  vk::singleton<ServerStats>::get().add_request_stats(script_time, net_time, script_max_running_interval, script_init_time_sec, connection_process_time_sec,
                                                       queries_cnt, long_queries_cnt, script_mem_stats, vk::singleton<CurlMemoryUsage>::get().total_allocated, script_rusage, error_type);
   if (save_state == run_state_t::error) {
     assert (error_message != nullptr);
