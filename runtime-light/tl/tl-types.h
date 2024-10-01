@@ -169,7 +169,7 @@ struct dictionaryField final {
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
     const auto key_view{tlb.fetch_string()};
     key = {key_view.data(), static_cast<string::size_type>(key_view.size())};
-    return !value.fetch(tlb);
+    return value.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
