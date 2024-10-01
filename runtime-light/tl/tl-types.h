@@ -296,7 +296,7 @@ enum DigestAlgorithm : uint32_t {
 
 // ===== CONFDATA =====
 
-struct ConfdataValue final {
+struct confdataValue final {
   string value;
   bool is_php_serialized{};
   bool is_json_serialized{};
