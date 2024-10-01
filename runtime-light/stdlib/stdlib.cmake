@@ -2,6 +2,7 @@ prepend(
   RUNTIME_STDLIB_SRC
   stdlib/
   component/component-api.cpp
+  confdata/confdata-functions.cpp
   crypto/crypto-functions.cpp
   curl/curl-context.cpp
   exit/exit-functions.cpp

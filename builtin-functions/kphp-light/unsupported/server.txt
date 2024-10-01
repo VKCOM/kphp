@@ -99,13 +99,6 @@ function debug_backtrace() ::: string[][];
 function estimate_memory_usage($value ::: any) ::: int;
 
 /** @kphp-extern-func-info generate-stub */
-function is_confdata_loaded() ::: bool;
-/** @kphp-extern-func-info generate-stub */
-function confdata_get_value($key ::: string) ::: mixed;
-/** @kphp-extern-func-info generate-stub */
-function confdata_get_values_by_predefined_wildcard($wildcard ::: string) ::: mixed[];
-
-/** @kphp-extern-func-info generate-stub */
 function header ($str ::: string, $replace ::: bool = true, $http_response_code ::: int = 0) ::: void;
 /** @kphp-extern-func-info generate-stub */
 function headers_list () ::: string[];
