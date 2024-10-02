@@ -23,7 +23,8 @@
 
 namespace {
 
-constexpr const char *CONFDATA_COMPONENT_NAME = "confdata"; // TODO: it may actually have an alias specified in linking config
+constexpr auto *CONFDATA_COMPONENT_NAME = "confdata"; // TODO: it may actually have an alias specified in linking config
+constexpr auto CONFDATA_COMPONENT_NAME_LENGTH = std::char_traits<char>::length(CONFDATA_COMPONENT_NAME);
 
 mixed extract_confdata_value(tl::confdataValue &&confdata_value) noexcept {
   if (confdata_value.is_php_serialized && confdata_value.is_json_serialized) { // check that we don't have both flags set
@@ -53,9 +54,10 @@ bool f$is_confdata_loaded() noexcept {
 task_t<mixed> f$confdata_get_value(string key) noexcept {
   tl::TLBuffer tlb{};
   tl::ConfdataGet{.key = std::move(key)}.store(tlb);
-  const auto response{co_await f$component_client_fetch_response(
-    co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME, static_cast<string::size_type>(std::char_traits<char>::length(CONFDATA_COMPONENT_NAME))},
-                                             {tlb.data(), static_cast<string::size_type>(tlb.size())}))};
+
+  auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME, static_cast<string::size_type>(CONFDATA_COMPONENT_NAME_LENGTH)},
+                                                      {tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  const auto response{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
   tlb.store_bytes(response.c_str(), static_cast<size_t>(response.size()));
@@ -74,9 +76,10 @@ task_t<mixed> f$confdata_get_value(string key) noexcept {
 task_t<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
   tl::TLBuffer tlb{};
   tl::ConfdataGetWildcard{.wildcard = std::move(wildcard)}.store(tlb);
-  const auto response{co_await f$component_client_fetch_response(
-    co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME, static_cast<string::size_type>(std::char_traits<char>::length(CONFDATA_COMPONENT_NAME))},
-                                             {tlb.data(), static_cast<string::size_type>(tlb.size())}))};
+
+  auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME, static_cast<string::size_type>(CONFDATA_COMPONENT_NAME_LENGTH)},
+                                                      {tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  const auto response{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
   tlb.store_bytes(response.c_str(), static_cast<size_t>(response.size()));
