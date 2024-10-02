@@ -38,10 +38,8 @@ function kphp_job_worker_start_no_reply(string $request, float $timeout): bool;
 function kphp_job_worker_start_multi(string[] $request, float $timeout): (future<string> | false)[];
 
 /**
-/** @kphp-extern-func-info interruptible */
 function kphp_job_worker_fetch_request(): string;
 
-/** @kphp-extern-func-info interruptible */
 function kphp_job_worker_store_response(string $response): int;
 */
 
