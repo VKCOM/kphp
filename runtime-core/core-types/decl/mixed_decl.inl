@@ -26,7 +26,7 @@ struct is_type_acceptable_for_mixed<class_instance<T>> : std::is_base_of<may_be_
 
 class mixed {
 public:
-  enum class type {
+  enum type {
     NUL,
     BOOLEAN,
     INTEGER,
@@ -194,11 +194,11 @@ public:
   void convert_to_float();
   void convert_to_string();
 
-  const bool &as_bool(const char *function) const;
-  const int64_t &as_int(const char *function) const;
-  const double &as_float(const char *function) const;
-  const string &as_string(const char *function) const;
-  const array<mixed> &as_array(const char *function) const;
+  inline const bool &as_bool(const char *function) const;
+  inline const int64_t &as_int(const char *function) const;
+  inline const double &as_float(const char *function) const;
+  inline const string &as_string(const char *function) const;
+  inline const array<mixed> &as_array(const char *function) const;
 
   bool &as_bool(const char *function);
   int64_t &as_int(const char *function);
