@@ -46,7 +46,8 @@ mixed extract_confdata_value(tl::confdataValue &&confdata_value) noexcept {
 bool f$is_confdata_loaded() noexcept {
   auto &component_ctx{*get_component_context()};
   if (const auto stream_d{component_ctx.open_stream(std::string_view{CONFDATA_COMPONENT_NAME})}; stream_d != INVALID_PLATFORM_DESCRIPTOR) {
-    return (component_ctx.release_stream(stream_d), true);
+    component_ctx.release_stream(stream_d);
+    return true;
   }
   return false;
 }
