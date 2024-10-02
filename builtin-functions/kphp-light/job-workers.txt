@@ -28,20 +28,26 @@ class KphpJobWorkerResponseError implements KphpJobWorkerResponse {
   public function getErrorCode() ::: int; // returns one of listed above error codes
 }
 
-/** @kphp-extern-func-info interruptible */
+/**
 function kphp_job_worker_start(string $request, float $timeout): future<string> | false;
 
-/** @kphp-extern-func-info interruptible */
 function kphp_job_worker_start_no_reply(string $request, float $timeout): bool;
 
-/** @kphp-extern-func-info interruptible */
 function kphp_job_worker_start_multi(string[] $request, float $timeout): (future<string> | false)[];
 
-/**
 function kphp_job_worker_fetch_request(): string;
 
 function kphp_job_worker_store_response(string $response): int;
 */
+
+/** @kphp-extern-func-info generate-stub */
+function kphp_job_worker_start(KphpJobWorkerRequest $request, float $timeout): future<KphpJobWorkerResponse> | false;
+
+/** @kphp-extern-func-info generate-stub */
+function kphp_job_worker_start_no_reply(KphpJobWorkerRequest $request, float $timeout): bool;
+
+/** @kphp-extern-func-info generate-stub */
+function kphp_job_worker_start_multi(KphpJobWorkerRequest[] $request, float $timeout): (future<KphpJobWorkerResponse> | false)[];
 
 /** @kphp-extern-func-info generate-stub */
 function kphp_job_worker_fetch_request() ::: KphpJobWorkerRequest;
