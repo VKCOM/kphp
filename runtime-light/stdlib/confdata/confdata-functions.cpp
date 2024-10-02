@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <string>
 #include <string_view>
 #include <utility>
 
@@ -53,7 +54,7 @@ task_t<mixed> f$confdata_get_value(string key) noexcept {
   tl::TLBuffer tlb{};
   tl::ConfdataGet{.key = std::move(key)}.store(tlb);
   const auto response{co_await f$component_client_fetch_response(
-    co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME, static_cast<string::size_type>(std::string_view{CONFDATA_COMPONENT_NAME}.size())},
+    co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME, static_cast<string::size_type>(std::char_traits<char>::length(CONFDATA_COMPONENT_NAME))},
                                              {tlb.data(), static_cast<string::size_type>(tlb.size())}))};
 
   tlb.clean();
@@ -74,7 +75,7 @@ task_t<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noex
   tl::TLBuffer tlb{};
   tl::ConfdataGetWildcard{.wildcard = std::move(wildcard)}.store(tlb);
   const auto response{co_await f$component_client_fetch_response(
-    co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME, static_cast<string::size_type>(std::string_view{CONFDATA_COMPONENT_NAME}.size())},
+    co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME, static_cast<string::size_type>(std::char_traits<char>::length(CONFDATA_COMPONENT_NAME))},
                                              {tlb.data(), static_cast<string::size_type>(tlb.size())}))};
 
   tlb.clean();
