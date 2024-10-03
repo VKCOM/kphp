@@ -100,7 +100,7 @@ void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
   }
 }
 
-void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, script_error_t error,
+void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, uint64_t script_max_running_interval_ns,  script_error_t error,
                                           const memory_resource::MemoryStats &script_memory_stats, uint64_t script_queries, uint64_t long_script_queries,
                                           uint64_t script_user_time_ns, uint64_t script_system_time_ns,
                                           uint64_t script_init_time, uint64_t http_connection_process_time,
@@ -110,6 +110,7 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
 
   client.metric("kphp_request_time").tag("script").tag(worker_type).tag(status).write_value(script_time_ns);
   client.metric("kphp_request_time").tag("net").tag(worker_type).tag(status).write_value(net_time_ns);
+  client.metric("kphp_request_script_time_max_running_interval").tag(worker_type).tag(status).write_value(script_max_running_interval_ns);
   client.metric("kphp_request_cpu_time").tag("user").tag(worker_type).tag(status).write_value(script_user_time_ns);
   client.metric("kphp_request_cpu_time").tag("system").tag(worker_type).tag(status).write_value(script_system_time_ns);
   client.metric("kphp_request_init_time").tag(worker_type).tag(status).write_value(script_init_time);

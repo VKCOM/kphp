@@ -88,6 +88,7 @@ class PhpScript {
   double net_time{0};
   double script_time{0};
   double last_net_time_delta{0};
+  double script_max_running_interval{0};
   int queries_cnt{0};
   int long_queries_cnt{0};
 
