@@ -7,6 +7,7 @@
 
 #include "runtime-core/include.h"
 #include "runtime-core/runtime-core.h"
+#include "runtime-light/coroutine/task.h"
 
 namespace impl_ {
 
@@ -17,13 +18,32 @@ auto perform_fallback_impl(FallbackType &&lambda_fallback,
 }
 
 template<class ReturnType, class FallbackType>
+requires(is_async_function_v<FallbackType>)
+task_t<ReturnType> perform_fallback_impl(FallbackType &&lambda_fallback,
+                           std::enable_if_t<bool(sizeof((std::declval<FallbackType>()(), 0)))> *) noexcept {
+  co_return ReturnType(co_await lambda_fallback());
+}
+
+template<class ReturnType, class FallbackType>
 ReturnType perform_fallback_impl(FallbackType &&value_fallback, ...) noexcept {
   return ReturnType(std::forward<FallbackType>(value_fallback));
 }
 
 template<class ReturnType, class FallbackType>
+requires(is_async_function_v<FallbackType>)
+task_t<ReturnType> perform_fallback_impl(FallbackType &&value_fallback) noexcept {
+  co_return ReturnType(std::forward<FallbackType>(value_fallback));
+}
+
+template<class ReturnType, class FallbackType>
 ReturnType perform_fallback(FallbackType &&value_fallback) noexcept {
   return perform_fallback_impl<ReturnType>(std::forward<FallbackType>(value_fallback), nullptr);
+}
+
+template<class ReturnType, class FallbackType>
+requires(is_async_function_v<FallbackType>)
+task_t<ReturnType> perform_fallback(FallbackType &&value_fallback) noexcept {
+  co_return co_await perform_fallback_impl<ReturnType>(std::forward<FallbackType>(value_fallback), nullptr);
 }
 
 } // namespace impl_
@@ -75,6 +95,12 @@ public:
   template<class FallbackType>
   ResultType finalize(FallbackType &&fallback) noexcept {
     return result_ ? std::move(*result_) : impl_::perform_fallback<ResultType>(std::forward<FallbackType>(fallback));
+  }
+
+  template<class FallbackType>
+  requires(is_async_function_v<FallbackType>)
+  task_t<ResultType> finalize(FallbackType &&fallback) noexcept {
+    co_return result_ ? std::move(*result_) : co_await impl_::perform_fallback<ResultType>(std::forward<FallbackType>(fallback));
   }
 
   ~NullCoalesce() noexcept {
