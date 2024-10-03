@@ -1,5 +1,5 @@
 @kphp_should_fail k2_skip
-/register_shutdown_function should not throw exceptions/
+/header_register_callback should not throw exceptions/
 <?php
 
 /** @kphp-required */
@@ -7,4 +7,4 @@ function throwing_func() {
   throw new Exception('BAD');
 }
 
-register_shutdown_function('throwing_func');
+header_register_callback('throwing_func');

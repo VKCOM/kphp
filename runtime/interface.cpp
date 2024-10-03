@@ -206,6 +206,8 @@ static string http_status_line;
 static char headers_storage[sizeof(array<string>)];
 static array<string> *headers = reinterpret_cast <array<string> *> (headers_storage);
 static long long header_last_query_num = -1;
+static bool headers_sent = false;
+static headers_custom_handler_function_type headers_custom_handler_function;
 
 static bool check_status_line_int(const char *str, int str_len, int *pos) {
   if (*pos != str_len && str[*pos] == '0') {
@@ -562,7 +564,11 @@ static int ob_merge_buffers() {
 
 void f$flush() {
   php_assert(ob_cur_buffer >= 0 && php_worker.has_value());
-
+  // Run custom headers handler before body processing
+  if (headers_custom_handler_function && !headers_sent && query_type == QUERY_TYPE_HTTP) {
+    headers_sent = true;
+    headers_custom_handler_function();
+  }
   string_buffer const * http_body = compress_http_query_body(&oub[ob_system_level]);
   string_buffer const * http_headers = nullptr;
   if (!php_worker->flushed_http_connection) {
@@ -576,7 +582,12 @@ void f$flush() {
 }
 
 void f$fastcgi_finish_request(int64_t exit_code) {
-  int const ob_total_buffer = ob_merge_buffers();
+  // Run custom headers handler before body processing
+  if (headers_custom_handler_function && !headers_sent && query_type == QUERY_TYPE_HTTP) {
+    headers_sent = true;
+    headers_custom_handler_function();
+  }
+  int ob_total_buffer = ob_merge_buffers();
   if (php_worker.has_value() && php_worker->flushed_http_connection) {
     string const raw_response = oub[ob_total_buffer].str();
     http_set_result(nullptr, 0, raw_response.c_str(), raw_response.size(), static_cast<int32_t>(exit_code));
@@ -688,6 +699,14 @@ void register_shutdown_function_impl(shutdown_function_type &&f) {
   dl::CriticalSectionGuard critical_section;
   // I really need this, because this memory can contain random trash, if previouse script failed
   new(&shutdown_functions[shutdown_functions_count++]) shutdown_function_type{std::move(f)};
+}
+
+void register_header_handler_impl(headers_custom_handler_function_type &&f) {
+  dl::CriticalSectionGuard critical_section;
+  // Move assignment leads to lhs object invalidation and fires memory releasing mechanism
+  // But memory is already released by destructor after previous run
+  // Therefore we need to use placement new
+  new(&headers_custom_handler_function) headers_custom_handler_function_type{std::move(f)};
 }
 
 void finish(int64_t exit_code, bool from_exit) {
@@ -2344,9 +2363,17 @@ static void free_shutdown_functions() {
   shutdown_functions_count = 0;
 }
 
+static void free_header_handler_function() {
+  headers_custom_handler_function.~headers_custom_handler_function_type();
+  new(&headers_custom_handler_function) headers_custom_handler_function_type{};
+  headers_sent = false;
+}
+
+
 static void free_interface_lib() {
   dl::enter_critical_section();//OK
   free_shutdown_functions();
+  free_header_handler_function();
   if (dl::query_num == uploaded_files_last_query_num) {
     const array<bool> *const_uploaded_files = uploaded_files;
     for (auto p = const_uploaded_files->begin(); p != const_uploaded_files->end(); ++p) {

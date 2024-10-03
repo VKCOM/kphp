@@ -406,6 +406,7 @@ ext/standard/tests/general_functions/ob_get_flush_error.phpt
 ext/standard/tests/general_functions/ob_get_length_basic.phpt
 ext/standard/tests/general_functions/php_uname_basic.phpt
 ext/standard/tests/general_functions/php_uname_error.phpt
+ext/standard/tests/general_functions/bug71891.phpt
 ext/standard/tests/math/abs_basic.phpt
 ext/standard/tests/math/acos_variation.phpt
 ext/standard/tests/math/atan_variation.phpt
@@ -747,6 +748,7 @@ tests/basic/rfc1867_missing_boundary.phpt
 tests/basic/rfc1867_missing_boundary_2.phpt
 tests/basic/rfc1867_post_max_filesize.phpt
 tests/basic/rfc1867_post_max_size.phpt
+tests/basic/header_register_callback.phpt
 tests/classes/constants_basic_005.phpt
 tests/classes/constants_error_002.phpt
 tests/classes/constants_scope_001.phpt

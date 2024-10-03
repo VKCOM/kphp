@@ -62,3 +62,46 @@ class TestFlush(KphpServerAutoTestCase):
             second_chunk = s.recv(4096)
             self.kphp_server.assert_log(['Exception'], timeout=5)
             self.assertEqual(second_chunk, b'')
+    def test_flush_and_header_register_callback_flush_inside_callback(self):
+        request = b"GET /test_script_flush?type=flush_and_header_register_callback_flush_inside_callback HTTP/1.1\r\nHost:localhost\r\n\r\n"
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect(('127.0.0.1', self.kphp_server.http_port))
+            s.send(request)
+            first_chunk = RawResponse(s.recv(200))
+            self.assertEqual(first_chunk.status_code, 200)
+            self.assertEqual(first_chunk.content, b'Zero One Two ')
+
+            s.settimeout(None)
+            second_chunk = s.recv(4096)
+            self.assertEqual(second_chunk, b'Three ')
+
+    def test_flush_and_header_register_callback_invoked_after_flush(self):
+        request = b"GET /test_script_flush?type=flush_and_header_register_callback_invoked_after_flush HTTP/1.1\r\nHost:localhost\r\n\r\n"
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect(('127.0.0.1', self.kphp_server.http_port))
+            s.send(request)
+            first_chunk = RawResponse(s.recv(200))
+            self.assertEqual(first_chunk.status_code, 200)
+            self.assertEqual(first_chunk.content, b'Zero One ')
+
+            s.settimeout(None)
+            second_chunk = s.recv(4096)
+            self.assertEqual(second_chunk, b'Two ')
+
+    def test_flush_and_header_register_callback_no_double_invoked_after_flush(self):
+        request = b"GET /test_script_flush?type=flush_and_header_register_callback_no_double_invoked_after_flush HTTP/1.1\r\nHost:localhost\r\n\r\n"
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect(('127.0.0.1', self.kphp_server.http_port))
+            s.send(request)
+            first_chunk = RawResponse(s.recv(200))
+            self.assertEqual(first_chunk.status_code, 200)
+            self.assertEqual(first_chunk.content, b'Zero One ')
+
+            s.settimeout(None)
+            second_chunk = s.recv(4096)
+            self.assertEqual(second_chunk, b'Two ')
+
+            s.settimeout(None)
+            second_chunk = s.recv(4096)
+            self.assertEqual(second_chunk, b'Three ')
+
