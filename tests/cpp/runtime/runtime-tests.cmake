@@ -21,7 +21,8 @@ prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
         memory_resource/unsynchronized_pool_resource-test.cpp
         string-list-test.cpp
         string-test.cpp
-        zstd-test.cpp)
+        zstd-test.cpp
+        sessions-test.cpp)
 
 allow_deprecated_declarations_for_apple(${BASE_DIR}/tests/cpp/runtime/inter-process-mutex-test.cpp)
 vk_add_unittest(runtime "${RUNTIME_LIBS};${RUNTIME_LINK_TEST_LIBS}" ${RUNTIME_TESTS_SOURCES})
