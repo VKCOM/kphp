@@ -24,6 +24,7 @@
 #include "runtime-light/stdlib/regex/regex-context.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
 #include "runtime-light/stdlib/string/string-context.h"
+#include "runtime-light/stdlib/system/system-context.h"
 
 constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
 
@@ -107,6 +108,7 @@ struct ComponentState {
   RegexComponentContext regex_component_context;
   CurlComponentContext curl_component_context;
   StringComponentContext string_component_context;
+  SystemComponentContext system_component_context;
   FileStreamComponentContext file_stream_component_context;
 
 private:
