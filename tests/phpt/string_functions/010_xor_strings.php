@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 function xor_impl(string $s1, string $s2) {
