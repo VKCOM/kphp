@@ -18,6 +18,7 @@
 #include "runtime-light/header.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/stdlib/curl/curl-context.h"
+#include "runtime-light/stdlib/crypto/crypto-context.h"
 #include "runtime-light/stdlib/file/file-stream-context.h"
 #include "runtime-light/stdlib/fork/fork-context.h"
 #include "runtime-light/stdlib/job-worker/job-worker-context.h"
@@ -113,6 +114,7 @@ struct ComponentState {
 
   RegexComponentContext regex_component_context;
   CurlComponentContext curl_component_context;
+  CryptoComponentContext crypto_component_context;
   StringComponentContext string_component_context;
   SystemComponentContext system_component_context;
   FileStreamComponentContext file_stream_component_context;

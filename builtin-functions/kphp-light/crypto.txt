@@ -66,7 +66,7 @@ function openssl_pkcs7_sign($infile ::: string, $outfile ::: string,
 function openssl_get_cipher_methods($aliases ::: bool = false) ::: string[];
 /** @kphp-extern-func-info generate-stub */
 function openssl_cipher_iv_length($method ::: string) ::: int | false;
-/** @kphp-extern-func-info generate-stub */
+
 function openssl_encrypt($data ::: string, $method ::: string, $key ::: string,  $options ::: int = 0, $iv ::: string  = '',
                          string &$tag = TODO, $aad ::: string = '', $tag_length ::: int = 16) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
