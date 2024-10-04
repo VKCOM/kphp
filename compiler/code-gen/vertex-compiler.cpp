@@ -456,14 +456,12 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
   if (rhs->throw_flag) {
     W << "TRY_CALL_ " << MacroBegin{} << TypeName{type} << ", ";
   }
-  bool is_lhs_interruptible_call = G->is_output_mode_k2() &&
-    lhs->type() == op_func_call &&
-    lhs.try_as<op_func_call>()->func_id->is_interruptible;
-  bool is_rhs_interruptible_call = G->is_output_mode_k2() &&
-    rhs->type() == op_func_call &&
-    rhs.try_as<op_func_call>()->func_id->is_interruptible;
 
-  if (is_rhs_interruptible_call) {
+  bool interruptible_call = G->is_output_mode_k2() &&
+    !vk::any_of_equal(rhs->type(), op_var, op_int_const, op_float_const, op_false, op_null) &&
+    W.get_context().parent_func->is_interruptible;
+
+  if (interruptible_call) {
     W << "co_await ";
   }
 
@@ -492,10 +490,10 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     ++context.inside_null_coalesce_fallback;
     FunctionSignatureGenerator(W) << "[&] ()";
     W << " -> "
-    << (is_rhs_interruptible_call ? "task_t<" : "")
+    << (interruptible_call ? "task_t<" : "")
     << TypeName{tinf::get_type(rhs)}
-    << (is_rhs_interruptible_call ? "> " : " ") << BEGIN
-      << (is_rhs_interruptible_call ? "co_return " : " return ") << rhs << ";" << NL
+    << (interruptible_call ? "> ": " ") << BEGIN
+      << (interruptible_call ? "co_return ": " ") << rhs << ";" << NL
       << END;
     context.catch_labels.pop_back();
     kphp_assert(context.inside_null_coalesce_fallback > 0);
