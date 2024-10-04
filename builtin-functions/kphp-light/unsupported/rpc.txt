@@ -71,3 +71,12 @@ final class RpcConnection {
     /** @kphp-extern-func-info generate-stub */
     private function __construct();
 }
+
+/** @kphp-extern-func-info interruptible */
+function rpc_tl_query (\RpcConnection $rpc_conn, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
+
+/** @kphp-extern-func-info interruptible generate-stub */
+function typed_rpc_tl_query (\RpcConnection $connection, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
+
+/** @kphp-extern-func-info interruptible generate-stub */
+function typed_rpc_tl_query_result(int[] $query_ids) ::: @tl\RpcResponse[];
