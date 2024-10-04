@@ -6,8 +6,11 @@
 
 #include <cstdint>
 
+#include "runtime-core/runtime-core.h"
+
 struct SystemComponentContext {
   int64_t result_code_dummy{};
+  Optional<int64_t> rest_index_dummy{};
 
   static SystemComponentContext &get() noexcept;
 };
