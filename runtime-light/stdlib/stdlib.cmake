@@ -3,6 +3,7 @@ prepend(
   stdlib/
   component/component-api.cpp
   crypto/crypto-functions.cpp
+  crypto/crypto-context.cpp
   curl/curl-context.cpp
   exit/exit-functions.cpp
   fork/fork-context.cpp
