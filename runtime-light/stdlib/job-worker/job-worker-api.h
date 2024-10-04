@@ -21,7 +21,7 @@ task_t<array<Optional<int64_t>>> f$kphp_job_worker_start_multi(array<string> req
 
 // === Server =====================================================================================
 
-task_t<string> f$kphp_job_worker_fetch_request() noexcept;
+// task_t<string> f$kphp_job_worker_fetch_request() noexcept;
 
 task_t<int64_t> f$kphp_job_worker_store_response(string response) noexcept;
 
