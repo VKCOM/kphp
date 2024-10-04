@@ -22,4 +22,5 @@ prepend(
   rpc/rpc-tl-request.cpp
   string/concat.cpp
   string/string-context.cpp
+  system/system-context.cpp
   file/file-stream-context.cpp)

@@ -49,7 +49,6 @@ function sleep ($seconds ::: int) ::: void;
 /** @kphp-extern-func-info generate-stub */
 function usleep ($micro_seconds ::: int) ::: void;
 
-/** @kphp-extern-func-info generate-stub */
 function system($command ::: string, int &$result_code = 0): int;
 
 /** @kphp-extern-func-info generate-stub */
