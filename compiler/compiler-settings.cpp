@@ -289,8 +289,8 @@ void CompilerSettings::init() {
 
   remove_extra_spaces(extra_cxx_flags.value_);
   std::stringstream ss;
-  //todo return -Wall
-  ss << extra_cxx_flags.get()
+  ss << "-Wall "
+     << extra_cxx_flags.get()
      << " -iquote" << kphp_src_path.get()
      << " -iquote " << kphp_src_path.get()
      << "objs/generated/auto/runtime"
