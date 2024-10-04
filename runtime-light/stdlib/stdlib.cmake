@@ -4,6 +4,7 @@ prepend(
   component/component-api.cpp
   confdata/confdata-functions.cpp
   crypto/crypto-functions.cpp
+  crypto/crypto-context.cpp
   curl/curl-context.cpp
   exit/exit-functions.cpp
   fork/fork-context.cpp
