@@ -120,7 +120,7 @@ jobs:
       run: docker rm -f kphp-build-container-${{matrix.os}}
 
   build-macos:
-    runs-on: ${{matrix.os}}-12
+    runs-on: ${{matrix.os}}-14
     strategy:
       matrix:
         include:
