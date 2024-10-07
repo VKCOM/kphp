@@ -100,6 +100,11 @@ f$typed_rpc_tl_query_result(array<query_id_t> query_ids) noexcept {
 }
 
 template<class T>
+task_t<array<array<mixed>>> f$rpc_tl_query_result(const array<T> &query_ids) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
 array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<T> &) {
   php_critical_error("call to unsupported function");
 }
