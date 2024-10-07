@@ -10,7 +10,7 @@ env:
 
 jobs:
   build-macos:
-    runs-on: ${{matrix.os}}-12
+    runs-on: ${{matrix.os}}-latest
     strategy:
       matrix:
         include:
