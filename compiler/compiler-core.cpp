@@ -139,7 +139,6 @@ void CompilerCore::register_settings(CompilerSettings *settings) {
   } else {
     output_mode = OutputMode::server;
   }
-  kphp_notice(fmt_format("output mode is {}", (int)output_mode));
 }
 
 const CompilerSettings &CompilerCore::settings() const {
