@@ -88,6 +88,14 @@ inline bool f$wait_concurrently (int64_t fork_id) {
   php_critical_error("call to unsupported function");
 }
 
+inline bool f$wait_concurrently(Optional<int64_t> resumable_id) {
+  php_critical_error("call to unsupported function");
+}
+
+inline bool f$wait_concurrently(const mixed &resumable_id) {
+  php_critical_error("call to unsupported function");
+}
+
 template<typename T>
 T f$wait_multi(const array<Optional<int64_t>> &resumable_ids) {
   php_critical_error("call to unsupported function");

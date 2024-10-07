@@ -13,7 +13,6 @@ require_once __DIR__ . '/unsupported/math.txt';
 require_once __DIR__ . '/unsupported/memcache.txt';
 require_once __DIR__ . '/unsupported/misc.txt';
 require_once __DIR__ . '/unsupported/regex.txt';
-require_once __DIR__ . '/unsupported/rpc.txt';
 require_once __DIR__ . '/unsupported/serialize.txt';
 require_once __DIR__ . '/unsupported/server.txt';
 require_once __DIR__ . '/unsupported/spl.txt';

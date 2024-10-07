@@ -833,7 +833,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       W << root->args()[0];
       return;
     }
-    if (root->str_val == "kphp_tracing_func_enter_branch") {
+    if (root->str_val == "kphp_tracing_func_enter_branch" && !G->is_output_mode_k2()) {
       // we are inside a function marked with @kphp-tracing
       W << "_tr_f.enter_branch(" << root->args()[0] << ")";
       return;

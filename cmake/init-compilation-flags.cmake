@@ -103,7 +103,7 @@ elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
     add_compile_options(-march=armv8.2-a+crypto)
 endif()
 
-add_compile_options(-Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare
+add_compile_options(-Werror -Wall -Wextra -Wunused-function -Wfloat-conversion -Wno-sign-compare
                     -Wuninitialized -Wno-redundant-move -Wno-missing-field-initializers)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES Clang AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "18")
@@ -128,20 +128,20 @@ add_definitions(-D_GNU_SOURCE)
 add_compile_options(-fdebug-prefix-map="${CMAKE_BINARY_DIR}=${CMAKE_SOURCE_DIR}")
 
 # Light runtime uses C++20 coroutines heavily, so they are required
-#if(COMPILE_RUNTIME_LIGHT)
-#    get_directory_property(TRY_COMPILE_COMPILE_OPTIONS COMPILE_OPTIONS)
-#    string (REPLACE ";" " " TRY_COMPILE_COMPILE_OPTIONS "${TRY_COMPILE_COMPILE_OPTIONS}")
-#    file(WRITE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
-#            "#include<coroutine>\n"
-#            "int main() {}\n")
-#    try_compile(
-#            HAS_COROUTINE
-#            "${PROJECT_BINARY_DIR}/tmp"
-#            "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
-#            COMPILE_DEFINITIONS "${TRY_COMPILE_COMPILE_OPTIONS}"
-#    )
-#    if(NOT HAS_COROUTINE)
-#        message(FATAL_ERROR "Compiler or libstdc++ does not support coroutines")
-#    endif()
-#    file(REMOVE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp")
-#endif()
+if(COMPILE_RUNTIME_LIGHT)
+    get_directory_property(TRY_COMPILE_COMPILE_OPTIONS COMPILE_OPTIONS)
+    string (REPLACE ";" " " TRY_COMPILE_COMPILE_OPTIONS "${TRY_COMPILE_COMPILE_OPTIONS}")
+    file(WRITE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
+            "#include<coroutine>\n"
+            "int main() {}\n")
+    try_compile(
+            HAS_COROUTINE
+            "${PROJECT_BINARY_DIR}/tmp"
+            "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp"
+            COMPILE_DEFINITIONS "${TRY_COMPILE_COMPILE_OPTIONS}"
+    )
+    if(NOT HAS_COROUTINE)
+        message(FATAL_ERROR "Compiler or libstdc++ does not support coroutines")
+    endif()
+    file(REMOVE "${PROJECT_BINARY_DIR}/check_coroutine_include.cpp")
+endif()

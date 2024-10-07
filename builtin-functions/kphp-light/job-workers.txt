@@ -28,17 +28,22 @@ class KphpJobWorkerResponseError implements KphpJobWorkerResponse {
   public function getErrorCode() ::: int; // returns one of listed above error codes
 }
 
-/**
-function kphp_job_worker_start(string $request, float $timeout): future<string> | false;
+/** @kphp-extern-func-info interruptible */
+function k2_job_worker_start(string $request, float $timeout): future<string> | false;
+/** @kphp-extern-func-info interruptible */
+function k2_job_worker_start_no_reply(string $request, float $timeout): bool;
+/** @kphp-extern-func-info interruptible */
+function k2_job_worker_start_multi(string[] $request, float $timeout): (future<string> | false)[];
+/** @kphp-extern-func-info interruptible */
+function k2_job_worker_fetch_request(): string;
+/** @kphp-extern-func-info interruptible */
+function k2_job_worker_store_response(string $response): int;
 
-function kphp_job_worker_start_no_reply(string $request, float $timeout): bool;
+function is_kphp_job_workers_enabled(): bool;
 
-function kphp_job_worker_start_multi(string[] $request, float $timeout): (future<string> | false)[];
+function get_job_workers_number(): int;
 
-function kphp_job_worker_fetch_request(): string;
-
-function kphp_job_worker_store_response(string $response): int;
-*/
+// === Job Worker Old API =================================================================================
 
 /** @kphp-extern-func-info generate-stub */
 function kphp_job_worker_start(KphpJobWorkerRequest $request, float $timeout): future<KphpJobWorkerResponse> | false;
@@ -54,8 +59,3 @@ function kphp_job_worker_fetch_request() ::: KphpJobWorkerRequest;
 // returns 0 on success, < 0 - on errors. All possible error codes are constants like KphpJobWorkerResponseError::JOB_STORE_RESPONSE_*
 /** @kphp-extern-func-info generate-stub */
 function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: int;
-
-function is_kphp_job_workers_enabled(): bool;
-
-function get_job_workers_number(): int;
-

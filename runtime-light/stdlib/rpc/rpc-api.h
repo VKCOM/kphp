@@ -59,11 +59,11 @@ string f$fetch_string() noexcept;
 
 // === Rpc Query ==================================================================================
 
-// task_t<array<int64_t>> f$rpc_tl_query(string actor, array<mixed> tl_objects, double timeout = -1.0, bool ignore_answer = false,
-//                                       class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {}, bool need_responses_extra_info = false) noexcept;
+ task_t<array<int64_t>> f$k2_kphp_rpc_tl_query(string actor, array<mixed> tl_objects, double timeout = -1.0, bool ignore_answer = false,
+                                       class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {}, bool need_responses_extra_info = false) noexcept;
 
 template<std::derived_from<C$VK$TL$RpcFunction> rpc_function_t, std::same_as<KphpRpcRequest> rpc_request_t = KphpRpcRequest>
-task_t<array<int64_t>> f$typed_rpc_tl_query(string actor, array<class_instance<rpc_function_t>> query_functions, double timeout = -1.0,
+task_t<array<int64_t>> f$k2_kphp_typed_rpc_tl_query(string actor, array<class_instance<rpc_function_t>> query_functions, double timeout = -1.0,
                                             bool ignore_answer = false, class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {},
                                             bool need_responses_extra_info = false) noexcept {
   if (ignore_answer && need_responses_extra_info) {
@@ -87,11 +87,11 @@ task_t<array<int64_t>> f$typed_rpc_tl_query(string actor, array<class_instance<r
   co_return query_ids;
 }
 
-task_t<array<array<mixed>>> f$rpc_tl_query_result(array<int64_t> query_ids) noexcept;
+task_t<array<array<mixed>>> f$k2_kphp_rpc_tl_query_result(array<int64_t> query_ids) noexcept;
 
 template<std::same_as<int64_t> query_id_t = int64_t, std::same_as<RpcResponseErrorFactory> error_factory_t = RpcResponseErrorFactory>
 requires std::default_initializable<error_factory_t> task_t<array<class_instance<C$VK$TL$RpcResponse>>>
-f$typed_rpc_tl_query_result(array<query_id_t> query_ids) noexcept {
+f$k2_kphp_typed_rpc_tl_query_result(array<query_id_t> query_ids) noexcept {
   array<class_instance<C$VK$TL$RpcResponse>> res{query_ids.size()};
   for (const auto &it : query_ids) {
     res.set_value(it.get_key(), co_await rpc_impl_::typed_rpc_tl_query_result_one_impl(it.get_value(), error_factory_t{}));
@@ -100,12 +100,17 @@ f$typed_rpc_tl_query_result(array<query_id_t> query_ids) noexcept {
 }
 
 template<class T>
+task_t<array<array<mixed>>> f$rpc_tl_query_result(const array<T> &) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
 array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<T> &) {
   php_critical_error("call to unsupported function");
 }
 
-inline task_t<array<int64_t>> f$rpc_tl_query(const class_instance<C$RpcConnection> &c, const array<mixed> &tl_objects, double timeout = -1.0, bool ignore_answer = false,
-                              class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {}, bool need_responses_extra_info = false) {
+inline task_t<array<int64_t>> f$rpc_tl_query(const class_instance<C$RpcConnection> &, const array<mixed> &, double = -1.0, bool = false,
+                              class_instance<C$KphpRpcRequestsExtraInfo> = {}, bool = false) {
   php_critical_error("call to unsupported function");
 }
 

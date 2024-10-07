@@ -1029,8 +1029,7 @@ void ClassDeclaration::compile_back_includes(CodeGenerator &W, IncludesCollector
 
 void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenerator &W, bool compile_declaration_only) const {
   if (G->is_output_mode_k2()) {
-    // The current version of runtime-light does not support shared memory piece
-    return;
+    return; // The current version of runtime-light does not shared memory pieces
   }
   auto request_interface = G->get_class("KphpJobWorkerRequest");
   if (!request_interface) {   // when functions.txt deleted while development

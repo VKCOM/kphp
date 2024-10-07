@@ -14,8 +14,8 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
 task_t<bool> f$openssl_sign(const string &data, string &signature, const string &private_key, int64_t algo=tl::DigestAlgorithm::SHA1) noexcept;
 task_t<int64_t> f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, int64_t algo=tl::DigestAlgorithm::SHA1) noexcept;
 
-inline Optional<string> f$openssl_encrypt(const string &data, const string &method,
-                                   const string &key, int64_t options = 0, const string &iv = string{},
-                                   string &tag = CryptoComponentContext::get().default_tag_dummy, const string &aad = string{}, int64_t tag_length = 16) {
+inline Optional<string> f$openssl_encrypt(const string &data __attribute__((unused)), const string &method __attribute__((unused)),
+                                   const string &key __attribute__((unused)), int64_t options __attribute__((unused)) = 0, const string &iv __attribute__((unused)) = string{},
+                                   string &tag __attribute__((unused)) = CryptoComponentContext::get().default_tag_dummy, const string &aad __attribute__((unused)) = string{}, int64_t tag_length __attribute__((unused)) = 16) {
   php_critical_error("call to unsupported function");
 }
