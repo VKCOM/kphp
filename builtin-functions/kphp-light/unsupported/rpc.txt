@@ -2,7 +2,7 @@
 
 function rpc_parse ($data) ::: bool;
 
-/** @kphp-extern-func-info generate-stub */
+
 function rpc_clean() ::: bool;
 /** @kphp-extern-func-info generate-stub */
 function rpc_queue_create ($request_ids ::: mixed = TODO) ::: int;
