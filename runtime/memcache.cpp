@@ -164,8 +164,8 @@ mixed mc_get_value(const char *result_str, int32_t result_str_len, int64_t flags
   if (flags & MEMCACHE_SERIALIZED) {
     flags ^= MEMCACHE_SERIALIZED;
     result = unserialize_raw(result_str, result_str_len);
-  } else if (flags & MEMCACHE_JSON_SERIALZIED) {
-    flags ^= MEMCACHE_JSON_SERIALZIED;
+  } else if (flags & MEMCACHE_JSON_SERIALIZED) {
+    flags ^= MEMCACHE_JSON_SERIALIZED;
     result = json_decode({result_str, static_cast<string::size_type>(result_str_len)}).first;
   } else {
     result = string(result_str, result_str_len);
