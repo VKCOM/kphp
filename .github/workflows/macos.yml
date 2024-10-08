@@ -10,7 +10,7 @@ env:
 
 jobs:
   build-macos:
-    runs-on: ${{matrix.os}}-12
+    runs-on: ${{matrix.os}}-14
     strategy:
       matrix:
         include:
@@ -33,9 +33,9 @@ jobs:
       run: |
         brew tap shivammathur/php
         brew update
-        brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
+        brew install python@3.12 re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
         brew link --overwrite --force shivammathur/php/php@7.4
-        /usr/local/Frameworks/Python.framework/Versions/3.12/bin/python3.12 -m pip install --upgrade pip --break-system-packages && /usr/local/Frameworks/Python.framework/Versions/3.12/bin/pip3 install --break-system-packages jsonschema
+        /opt/homebrew/opt/python@3.12/libexec/bin/python -m pip install --upgrade pip --break-system-packages && /opt/homebrew/opt/python@3.12/libexec/bin/pip install --break-system-packages jsonschema
       
     - name: Run cmake
       run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build

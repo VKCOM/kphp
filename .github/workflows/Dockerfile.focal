@@ -7,7 +7,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget pkg-config software-properties-common && \
     wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public && \
     echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp focal main" >> /etc/apt/sources.list && \
-    echo "deb http://apt.postgresql.org/pub/repos/apt focal-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+    echo "deb https://apt-archive.postgresql.org/pub/repos/apt focal-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list && \
     wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
@@ -17,7 +17,7 @@ RUN apt-get update && \
     python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
     apt-get install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
       libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
-      postgresql postgresql-server-dev-all libnuma-dev composer unzip && \
+      libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* libnuma-dev composer unzip && \
     rm -rf /var/lib/apt/lists/*
 
 ENV ASAN_OPTIONS=detect_leaks=0
