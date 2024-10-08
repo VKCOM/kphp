@@ -26,7 +26,7 @@ struct is_type_acceptable_for_mixed<class_instance<T>> : std::is_base_of<may_be_
 
 class mixed {
 public:
-  enum type {
+  enum class type {
     NUL,
     BOOLEAN,
     INTEGER,
