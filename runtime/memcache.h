@@ -4,17 +4,13 @@
 
 #pragma once
 
-#include <utility>
+#include <cstdint>
 
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
 #include "runtime-core/runtime-core.h"
 #include "runtime/dummy-visitor-methods.h"
-#include "runtime/exception.h"
 #include "runtime/memory_usage.h"
-#include "runtime/net_events.h"
-#include "runtime/resumable.h"
-#include "runtime/rpc.h"
 
 void init_memcache_lib();
 void free_memcache_lib();
@@ -25,9 +21,9 @@ mixed mc_get_value(const char *result_str, int32_t result_str_len, int64_t flags
 
 bool mc_is_immediate_query(const string &key);
 
-
-constexpr int64_t MEMCACHE_SERIALIZED = 1;
-constexpr int64_t MEMCACHE_COMPRESSED = 2;
+inline constexpr int64_t MEMCACHE_SERIALIZED = 1U << 0U;
+inline constexpr int64_t MEMCACHE_COMPRESSED = 1U << 1U;
+inline constexpr int64_t MEMCACHE_JSON_SERIALIZED = 1U << 4U;
 
 struct C$Memcache : public abstract_refcountable_php_interface {
 public:
