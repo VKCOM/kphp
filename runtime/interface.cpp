@@ -714,6 +714,7 @@ void finish(int64_t exit_code, bool from_exit) {
   if (!finished) {
     finished = true;
     forcibly_stop_profiler();
+    tvkprintf(php_runner, 1, "PhpScript execute shutdown functions from script\n");
     run_shutdown_functions_from_script(from_exit ? ShutdownType::exit : ShutdownType::normal);
   }
 

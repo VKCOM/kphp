@@ -23,6 +23,7 @@ public:
 
   std::atomic<uint32_t> job_worker_skip_job_due_another_is_running{0};
   std::atomic<size_t> job_worker_skip_job_due_steal{0};
+  std::atomic<uint32_t> job_worker_skip_job_due_timeout_expired{0};
 
   std::atomic<size_t> jobs_sent{0};
   std::atomic<size_t> jobs_replied{0};

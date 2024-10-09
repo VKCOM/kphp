@@ -129,7 +129,8 @@ void f$usleep(int64_t micro_seconds) {
 
     time_left -= static_cast<int64_t>((microtime_monotonic() - start_time) * 1000000);
   } else {
-    time_left = 1;
+    raise(SIGALRM);
+    return;
   }
 
   if (time_left <= 1) {

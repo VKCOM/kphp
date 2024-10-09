@@ -1058,6 +1058,7 @@ void check_script_timeout() {
 }
 
 void reset_script_timeout() {
+  php_worker->finish_time = get_utime_monotonic() + script_timeout;
   PhpScript::current_script->reset_script_timeout();
 }
 

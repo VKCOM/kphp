@@ -29,12 +29,7 @@
 std::optional<PhpWorker> php_worker;
 
 std::optional<double> PhpWorker::enter_lifecycle() noexcept {
-  if (finish_time < precise_now + 0.01) {
-    terminate(0, script_error_t::timeout, "timeout");
-  }
-  on_wakeup();
-
-  tvkprintf(php_runner, 3, "PHP-worker enter lifecycle [php-script state = %d, conn status = %d] lifecycle [req_id = %016llx]\n",
+  tvkprintf(php_runner, 3, "PHP-worker enter lifecycle [php-script state = %d, conn status = %d] [req_id = %016llx]\n",
             php_script.has_value() ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
   paused = false;
   do {
@@ -55,7 +50,6 @@ std::optional<double> PhpWorker::enter_lifecycle() noexcept {
         break;
 
       case phpq_free_script:
-        get_utime_monotonic();
         tvkprintf(php_runner, 1, "PHP-worker free PHP-script [query worked = %.5lf] [query waited for start = %.5lf] [req_id = %016llx]\n", precise_now - start_time, start_time - init_time, req_id);
         state_free_script();
         break;
@@ -68,10 +62,11 @@ std::optional<double> PhpWorker::enter_lifecycle() noexcept {
     get_utime_monotonic();
   } while (!paused);
 
-  tvkprintf(php_runner, 3, "PHP-worker [php-script state = %d, conn status = %d] return in net reactor [req_id = %016llx]\n",
-            php_script.has_value() ? static_cast<int>(php_script->state) : -1, conn->status, req_id);
+  double timeout = get_timeout();
+  tvkprintf(php_runner, 3, "PHP-worker [php-script state = %d, conn status = %d] return in net reactor for %f seconds [req_id = %016llx]\n",
+            php_script.has_value() ? static_cast<int>(php_script->state) : -1, conn->status, timeout, req_id);
   assert(conn->status == conn_wait_net);
-  return get_timeout();
+  return timeout;
 }
 
 void PhpWorker::terminate(int flag, script_error_t terminate_reason_, const char *error_message_) noexcept {
@@ -84,15 +79,28 @@ void PhpWorker::terminate(int flag, script_error_t terminate_reason_, const char
   }
 }
 
-void PhpWorker::on_wakeup() noexcept {
-  if (waiting) {
-    if (wakeup_flag || (wakeup_time != 0 && wakeup_time <= precise_now)) {
-      waiting = 0;
-      wakeup_time = 0;
-      //      php_script_query_answered (php_script);
+std::optional<double> PhpWorker::on_wakeup() noexcept {
+  tvkprintf(php_runner, 2, "PHP-worker wakeup [req_id = %016llx]\n", req_id);
+  if (vk::any_of_equal(state, phpq_try_start, phpq_init_script) && finish_time < get_utime_monotonic() + 0.01) {
+    terminate(0, script_error_t::timeout, "early timeout");
+  }
+  stop_wait_if_wakeup();
+  return enter_lifecycle();
+}
+
+std::optional<double> PhpWorker::on_alarm() noexcept {
+  tvkprintf(php_runner, 2, "PHP-worker alarm while script timeout %s [req_id = %016llx]\n", PhpScript::time_limit_exceeded ? "true": "false", req_id);
+  get_utime_monotonic();
+  if (PhpScript::time_limit_exceeded) {
+    wakeup_flag = true;
+    if (php_script.has_value() && vk::any_of_equal(php_script->state, run_state_t::query_running, run_state_t::query)) {
+      // restore php_script state to run shutdown functions if
+      // script timeout has been triggered PhpScript::time_limit_exceeded is true
+      php_script->state = run_state_t::ready;
     }
   }
-  wakeup_flag = 0;
+  stop_wait_if_wakeup();
+  return enter_lifecycle();
 }
 
 void PhpWorker::state_try_start() noexcept {
@@ -127,7 +135,7 @@ void PhpWorker::state_try_start() noexcept {
 }
 
 void PhpWorker::state_init_script() noexcept {
-  double timeout = finish_time - precise_now - 0.01;
+  double timeout = finish_time - precise_now;
   if (terminate_flag) {
     state = phpq_finish;
     return;
@@ -145,8 +153,7 @@ void PhpWorker::state_init_script() noexcept {
     create_new_connections(&Targets[sql_target_id]);
   }
 
-  get_utime_monotonic();
-  start_time = precise_now;
+  start_time = get_utime_monotonic();
   vk::singleton<ServerStats>::get().set_running_worker_status();
 
   // init memory allocator for queries
@@ -211,7 +218,6 @@ void php_worker_run_net_queue(PhpWorker *worker __attribute__((unused))) {
 }
 
 void PhpWorker::state_run() noexcept {
-  tvkprintf(php_runner, 3, "execute PHP-worker [req_id = %016llx]\n", req_id);
   int f = 1;
   while (f) {
     if (terminate_flag) {
@@ -233,7 +239,7 @@ void PhpWorker::state_run() noexcept {
         }
         tvkprintf(php_runner, 3, "PHP-worker before swap context [req_id = %016llx]\n", req_id);
         php_script->iterate();
-        tvkprintf(php_runner, 3, "PHP-worker after swap context [req_id = %016llx]\n", req_id);;
+        tvkprintf(php_runner, 3, "PHP-worker after swap context [req_id = %016llx]\n", req_id);
         if (!vk::any_of_equal(php_script->state, run_state_t::finished, run_state_t::error)) {
           // We don't need to check net events when the script is going to finish.
           // Otherwise we can fetch some net events related to this script that will be processed after the script termination.
@@ -321,7 +327,7 @@ void PhpWorker::wait(int timeout_ms) noexcept {
   if (waiting) { // first timeout is used!!
     return;
   }
-  waiting = 1;
+  waiting = true;
   if (timeout_ms == 0) {
     int new_net_events_cnt = epoll_fetch_events(0);
     // TODO: maybe we have to wait for timers too
@@ -331,11 +337,11 @@ void PhpWorker::wait(int timeout_ms) noexcept {
       return;
     } else {
       assert(new_net_events_cnt == 0);
-      waiting = 0;
+      waiting = false;
     }
   } else {
     if (!net_events_empty()) {
-      waiting = 0;
+      waiting = false;
     } else {
       tvkprintf(php_runner, 3, "PHP-worker paused for blocking net activity [req_id = %016llx] [timeout = %.3lf]\n", req_id, timeout_ms * 0.001);
       wakeup_time = get_utime_monotonic() + timeout_ms * 0.001;
@@ -350,11 +356,21 @@ void PhpWorker::answer_query(void *ans) noexcept {
   php_script->query_answered();
 }
 
+void PhpWorker::stop_wait_if_wakeup() noexcept {
+  if (waiting) {
+    if (wakeup_flag || (wakeup_time != 0 && wakeup_time <= precise_now)) {
+      waiting = false;
+      wakeup_time = 0;
+    }
+  }
+  wakeup_flag = false;
+}
+
 void PhpWorker::wakeup() noexcept {
   if (!wakeup_flag) {
     assert(conn != nullptr);
     put_event_into_heap_tail(conn->ev, 1);
-    wakeup_flag = 1;
+    wakeup_flag = true;
   }
 }
 
@@ -452,8 +468,8 @@ PhpWorker::PhpWorker(php_worker_mode_t mode_, connection *c, php_query_data_t qu
   , terminate_flag(false)
   , terminate_reason(script_error_t::unclassified_error)
   , error_message("no error")
-  , waiting(0)
-  , wakeup_flag(0)
+  , waiting(false)
+  , wakeup_flag(false)
   , wakeup_time(0)
   , init_time(precise_now)
   , finish_time(precise_now + timeout)

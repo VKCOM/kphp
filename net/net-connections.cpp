@@ -916,6 +916,9 @@ int conn_timer_wakeup_gateway(event_timer_t *et) {
   struct connection *c = container_of(et, struct connection, timer);
   tvkprintf(net_connections, 3, "ALARM: awakening connection %d at %p, status=%d, pending=%d\n", c->fd, c, c->status, c->pending_queries);
   c->flags |= C_ALARM;
+  if (c->status == conn_wait_net || c->status == conn_wait_aio) {
+    c->status = conn_wait_timeout;
+  }
   put_event_into_heap(c->ev);
   return 0;
 }

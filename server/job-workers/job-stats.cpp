@@ -36,6 +36,7 @@ void JobStats::write_stats_to(stats_t *stats) const noexcept {
 
   stats->add_gauge_stat(job_worker_skip_job_due_another_is_running, prefix, "jobs.skip.another_is_running");
   stats->add_gauge_stat(job_worker_skip_job_due_steal, prefix, "jobs.skip.steal");
+  stats->add_gauge_stat(job_worker_skip_job_due_timeout_expired, prefix, "jobs.skip.timeout_expired");
 
   stats->add_gauge_stat(job_queue_size, prefix, "jobs.queue_size");
   stats->add_gauge_stat(jobs_sent, prefix, "jobs.sent");

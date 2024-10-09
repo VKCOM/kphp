@@ -69,8 +69,27 @@ int jobs_server_php_wakeup(connection *c) {
 
   auto *worker = reinterpret_cast<JobCustomData *>(c->custom_data)->worker;
   assert(worker);
-  std::optional<double> timeout = worker->enter_lifecycle();
+  std::optional<double> timeout = worker->on_wakeup();
 
+  if (!timeout.has_value()) {
+    php_worker.reset();
+    jobs_server_at_query_end(c);
+  } else {
+    assert(c->pending_queries >= 0 && c->status == conn_wait_net);
+    assert(*timeout > 0);
+    set_connection_timeout(c, *timeout);
+  }
+  return 0;
+}
+
+int jobs_server_php_alarm(connection *c) {
+  assert(c->status == conn_wait_timeout);
+  c->status = conn_expect_query;
+
+  auto *worker = reinterpret_cast<JobCustomData *>(c->custom_data)->worker;
+  assert(worker);
+
+  std::optional<double> timeout = worker->on_alarm();
   if (!timeout.has_value()) {
     php_worker.reset();
     jobs_server_at_query_end(c);
@@ -93,7 +112,7 @@ conn_type_t php_jobs_server = [] {
   res.reader = jobs_server_reader;
   res.parse_execute = jobs_server_parse_execute;
   res.wakeup = jobs_server_php_wakeup;
-  res.alarm = jobs_server_php_wakeup;
+  res.alarm = jobs_server_php_alarm;
 
   res.accept = server_failed;
   res.init_accepted = server_failed;
@@ -147,23 +166,31 @@ int JobWorkerServer::job_parse_execute(connection *c) noexcept {
     return -1;
   }
 
-  job_fd_rearmer.disable();
-
   auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
   --memory_manager.get_stats().job_queue_size;
   memory_manager.attach_shared_message_to_this_proc(job);
   if (job->common_job) {
     memory_manager.attach_shared_message_to_this_proc(job->common_job);
   }
-  running_job = job;
-  reply_was_sent = false;
-  job_stat = {};
 
   auto now = std::chrono::system_clock::now();
   double now_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
 
   double job_wait_time = now_time - job->job_start_time;
   double left_job_time = job->job_deadline_time() - now_time;
+
+  if (left_job_time < 0) {
+    tvkprintf(job_workers, 3, "Get new job with expired timeout\n");
+    ++vk::singleton<SharedMemoryManager>::get().get_stats().job_worker_skip_job_due_timeout_expired;
+    clear_shared_job_messages();
+    return 0;
+  }
+
+  job_fd_rearmer.disable();
+
+  running_job = job;
+  reply_was_sent = false;
+  job_stat = {};
 
   tvkprintf(job_workers, 2, "got new job: <job_result_fd_idx, job_id> = <%d, %d>, left_job_time = %f, job_wait_time = %f, job_memory_ptr = %p\n",
             job->job_result_fd_idx, job->job_id, left_job_time, job_wait_time, job);
@@ -175,7 +202,7 @@ int JobWorkerServer::job_parse_execute(connection *c) noexcept {
 
   php_query_data_t job_data =  job_query_data{job, [](JobSharedMessage *job_response) {
                                                return vk::singleton<JobWorkerServer>::get().send_job_reply(job_response);}};
-  php_worker.emplace(job_worker, c, std::move(job_data), job->job_id, left_job_time);
+  php_worker.emplace(PhpWorker{job_worker, c, std::move(job_data), job->job_id, left_job_time});
   reinterpret_cast<JobCustomData *>(c->custom_data)->worker = &php_worker.value();
 
   set_connection_timeout(c, left_job_time);

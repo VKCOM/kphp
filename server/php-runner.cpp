@@ -85,6 +85,7 @@ void PhpScript::try_run_shutdown_functions_on_timeout() noexcept {
 
   if (get_shutdown_functions_count() != 0 && get_shutdown_functions_status() == shutdown_functions_status::not_executed) {
     // set up state to running to execute shutdown functions
+    tvkprintf(php_runner, 1, "PhpScript execute shutdown functions from timeout\n");
     state = run_state_t::running;
     run_shutdown_functions_from_timeout();
   }
