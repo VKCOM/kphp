@@ -10,7 +10,7 @@ function(install_vkext PHP_VERSION)
 
     install(FILES ${OBJS_DIR}/vkext/modules${PHP_VERSION}/vkext.so
             COMPONENT ${COMPONENT_NAME}
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/${VKEXT_LIB_DESTINATION})
+            DESTINATION ${VKEXT_LIB_DESTINATION})
 
     install(FILES ${VKEXT_DIR}/vkext.ini
             COMPONENT ${COMPONENT_NAME}
