@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/array.txt';
+require_once __DIR__ . '/confdata.txt';
 require_once __DIR__ . '/crypto.txt';
 require_once __DIR__ . '/hash.txt';
 require_once __DIR__ . '/job-workers.txt';

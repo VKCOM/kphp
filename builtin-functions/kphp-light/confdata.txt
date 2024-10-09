@@ -1,0 +1,12 @@
+<?
+
+function is_confdata_loaded(): bool;
+
+/** @kphp-extern-func-info interruptible */
+function confdata_get_value($key ::: string): mixed;
+
+/** @kphp-extern-func-info interruptible */
+function confdata_get_values_by_any_wildcard($wildcard ::: string): mixed[];
+
+/** @kphp-extern-func-info interruptible */
+function confdata_get_values_by_predefined_wildcard($wildcard ::: string): mixed[];

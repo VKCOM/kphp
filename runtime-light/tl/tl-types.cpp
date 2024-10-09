@@ -17,7 +17,6 @@ namespace {
 enum CertInfoItem : uint32_t { LONG_MAGIC = 0x533f'f89f, STR_MAGIC = 0xc427'feef, DICT_MAGIC = 0x1ea8'a774 };
 
 constexpr uint32_t K2_JOB_WORKER_RESPONSE_MAGIC = 0x3afb'3a08;
-constexpr uint32_t CONFDATA_VALUE_MAGIC = 0x3eaa'910b;
 
 } // namespace
 
@@ -132,10 +131,7 @@ bool GetPemCertInfoResponse::fetch(TLBuffer &tlb) noexcept {
   return true;
 }
 
-bool ConfdataValue::fetch(TLBuffer &tlb) noexcept {
-  if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != CONFDATA_VALUE_MAGIC) {
-    return false;
-  }
+bool confdataValue::fetch(TLBuffer &tlb) noexcept {
   const auto value_view{tlb.fetch_string()};
   Bool is_php_serialized_{};
   Bool is_json_serialized_{};

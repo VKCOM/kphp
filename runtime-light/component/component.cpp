@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
+#include <string_view>
 #include <utility>
 
 #include "runtime-core/utils/kphp-assert-core.h"
@@ -149,15 +150,15 @@ uint64_t ComponentState::take_incoming_stream() noexcept {
   return stream_d;
 }
 
-uint64_t ComponentState::open_stream(const string &component_name) noexcept {
+uint64_t ComponentState::open_stream(std::string_view component_name_view) noexcept {
   uint64_t stream_d{};
-  if (const auto open_stream_res{get_platform_context()->open(component_name.size(), component_name.c_str(), std::addressof(stream_d))};
+  if (const auto open_stream_res{get_platform_context()->open(component_name_view.size(), component_name_view.data(), std::addressof(stream_d))};
       open_stream_res != OpenStreamResult::OpenStreamOk) {
-    php_warning("can't open stream to %s", component_name.c_str());
+    php_warning("can't open stream to %s", component_name_view.data());
     return INVALID_PLATFORM_DESCRIPTOR;
   }
   opened_streams_.insert(stream_d);
-  php_debug("opened a stream %" PRIu64 " to %s", stream_d, component_name.c_str());
+  php_debug("opened a stream %" PRIu64 " to %s", stream_d, component_name_view.data());
   return stream_d;
 }
 
