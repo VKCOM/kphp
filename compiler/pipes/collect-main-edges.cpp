@@ -392,7 +392,7 @@ void CollectMainEdgesPass::on_foreach(VertexAdaptor<op_foreach> foreach_op) {
   }
   create_set(as_lvalue(x->var_id), params);
   if (key) {
-    create_type_assign(as_lvalue(key->var_id), TypeData::get_type(tp_mixed));
+    create_type_assign(as_lvalue(key->var_id), TypeData::get_foreach_key_type());
   }
 }
 

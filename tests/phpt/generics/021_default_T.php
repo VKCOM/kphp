@@ -154,8 +154,12 @@ var_dump($ints);
 
 /** @var mixed[] */
 $mixeds = pushInOne([1,2,3], ['1','2','3']);
-$mixeds = pushInOne([1,2,3], ['1','2','3'], [true], [null]);
+$mixeds = pushInOne([1,2,3], ['1','2','3'], [true], [1]);
 var_dump($mixeds);
+$mixeds2 = pushInOne([1,2,3], ['1','2','3'], [true], [false]);
+var_dump($mixeds2);
+$mixeds3 = pushInOne([1,2,3], ['1','2','3'], [true], ['str']);
+var_dump($mixeds3);
 
 $as = pushInOne([new A]);
 $as = pushInOne([new A], [new A]);
