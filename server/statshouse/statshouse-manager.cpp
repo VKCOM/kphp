@@ -346,7 +346,7 @@ void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::sta
                           constexpr auto MAX_INT_STRING_LENGTH = 254;
                           std::array<char, MAX_INT_STRING_LENGTH> buf{};
                           const auto chars{std::to_chars(buf.data(), buf.data() + buf.size(), rpc_query_stat.actor_or_port)};
-                          client.metric("kphp_slow_rpc_query")
+                          client.metric("kphp_slow_rpc_response")
                             .tag(rpc_query_stat.tl_function_name != nullptr ? rpc_query_stat.tl_function_name : "unknown")
                             .tag({buf.data(), static_cast<size_t>(chars.ptr - buf.data())})
                             .tag(rpc_query_stat.is_error ? "error" : "success")
