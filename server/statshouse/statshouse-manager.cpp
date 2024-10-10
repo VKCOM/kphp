@@ -341,7 +341,7 @@ void StatsHouseManager::add_confdata_master_stats(const ConfdataStats &confdata_
 }
 
 void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::stats_t &stats) noexcept {
-  std::visit(overloaded{[this](const slow_net_event_stats::slow_rpc_query_stats &rpc_query_stat) noexcept {
+  std::visit(overloaded{[this](const slow_net_event_stats::slow_rpc_response_stats &rpc_query_stat) noexcept {
                           // FIXME: it's enough to have it equal 10, but due to bug in GCC we are forced to use a length > 253
                           constexpr auto MAX_INT_STRING_LENGTH = 254;
                           std::array<char, MAX_INT_STRING_LENGTH> buf{};

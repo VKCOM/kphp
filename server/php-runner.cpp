@@ -58,12 +58,12 @@ void send_slow_net_event_stats(const net_event_t &event, double time_sec) noexce
                [&event, time_sec](const net_events_data::rpc_answer &) noexcept {
                  const auto *rpc_req = get_rpc_request(event.slot_id);
                  StatsHouseManager::get().add_slow_net_event_stats(
-                   slow_net_event_stats::slow_rpc_query_stats{tl_magic_convert_to_name(rpc_req->function_magic), rpc_req->actor_or_port, time_sec, false});
+                   slow_net_event_stats::slow_rpc_response_stats{tl_magic_convert_to_name(rpc_req->function_magic), rpc_req->actor_or_port, time_sec, false});
                },
                [&event, time_sec](const net_events_data::rpc_error &) noexcept {
                  const auto *rpc_req = get_rpc_request(event.slot_id);
                  StatsHouseManager::get().add_slow_net_event_stats(
-                   slow_net_event_stats::slow_rpc_query_stats{tl_magic_convert_to_name(rpc_req->function_magic), rpc_req->actor_or_port, time_sec, true});
+                   slow_net_event_stats::slow_rpc_response_stats{tl_magic_convert_to_name(rpc_req->function_magic), rpc_req->actor_or_port, time_sec, true});
                },
                [time_sec](const net_events_data::job_worker_answer &jw_answer) noexcept {
                  if (jw_answer.job_result != nullptr) {

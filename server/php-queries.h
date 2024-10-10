@@ -79,7 +79,7 @@ struct net_query_t {
 
 namespace slow_net_event_stats {
 
-struct slow_rpc_query_stats {
+struct slow_rpc_response_stats {
   const char *tl_function_name{nullptr};
   int32_t actor_or_port{};
   double response_time{};
@@ -91,7 +91,7 @@ struct slow_job_worker_response_stats {
   double response_time{};
 };
 
-using stats_t = std::variant<slow_rpc_query_stats, slow_job_worker_response_stats>;
+using stats_t = std::variant<slow_rpc_response_stats, slow_job_worker_response_stats>;
 
 }; // namespace slow_net_event_stats
 
