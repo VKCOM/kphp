@@ -13,6 +13,7 @@
 #include "server/job-workers/job-stats.h"
 #include "server/php-queries.h"
 #include "server/statshouse/statshouse-client.h"
+#include "server/workers-control.h"
 #include "server/workers-stats.h"
 
 using normalization_function = std::function<string(const string &)>;

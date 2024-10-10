@@ -4,7 +4,6 @@
 
 #include "server/php-runner.h"
 
-#include "runtime/tl/tl_magics_decoding.h"
 #include <cassert>
 #include <cerrno>
 #include <cstdlib>
@@ -17,6 +16,7 @@
 #include "common/fast-backtrace.h"
 #include "common/kernel-version.h"
 #include "common/kprintf.h"
+#include "common/precise-time.h"
 #include "common/wrappers/memory-utils.h"
 #include "common/wrappers/overloaded.h"
 #include "runtime/allocator.h"
@@ -30,6 +30,7 @@
 #include "runtime/php_assert.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
+#include "runtime/tl/tl_magics_decoding.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
@@ -67,7 +68,7 @@ void send_slow_net_event_stats(const net_event_t &event, double time_sec) noexce
                [time_sec](const net_events_data::job_worker_answer &jw_answer) noexcept {
                  if (jw_answer.job_result != nullptr) {
                    StatsHouseManager::get().add_slow_net_event_stats(
-                     slow_net_event_stats::slow_job_worker_response_stats{jw_answer.job_result->response->get_class(), time_sec});
+                     slow_net_event_stats::slow_job_worker_response_stats{jw_answer.job_result->response.get_class(), time_sec});
                  }
                },
                [](const database_drivers::Response *) {},
