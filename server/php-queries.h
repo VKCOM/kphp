@@ -77,6 +77,24 @@ struct net_query_t {
   std::variant<net_queries_data::rpc_send, database_drivers::Request *, std::reference_wrapper<const curl_async::CurlRequest>> data;
 };
 
+namespace slow_net_event_stats {
+
+struct slow_rpc_query_stats {
+  const char *tl_function_name{nullptr};
+  int32_t actor_or_port{};
+  double response_time{};
+  bool is_error{};
+};
+
+struct slow_job_worker_response_stats {
+  const char *class_name{nullptr};
+  double response_time{};
+};
+
+using stats_t = std::variant<slow_rpc_query_stats, slow_job_worker_response_stats>;
+
+}; // namespace slow_net_event_stats
+
 #pragma pack(push, 4)
 
 /***

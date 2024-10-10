@@ -4,38 +4,39 @@
 
 #include "server/php-runner.h"
 
-#include <array>
+#include "runtime/tl/tl_magics_decoding.h"
 #include <cassert>
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
-#include <exception>
-#include <utility>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <variant>
 
 #include "common/fast-backtrace.h"
 #include "common/kernel-version.h"
 #include "common/kprintf.h"
 #include "common/wrappers/memory-utils.h"
-#include "net/net-connections.h"
-
+#include "common/wrappers/overloaded.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "runtime/curl.h"
 #include "runtime/exception.h"
 #include "runtime/interface.h"
+#include "runtime/job-workers/processing-jobs.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/oom_handler.h"
-#include "runtime/profiler.h"
 #include "runtime/php_assert.h"
+#include "runtime/profiler.h"
+#include "runtime/rpc.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/php-queries.h"
 #include "server/server-log.h"
 #include "server/server-stats.h"
 #include "server/signal-handlers.h"
+#include "server/statshouse/statshouse-manager.h"
 
 DEFINE_VERBOSITY(php_runner);
 
@@ -50,6 +51,32 @@ namespace {
 
 [[maybe_unused]] const void *main_thread_stack = nullptr;
 [[maybe_unused]] size_t main_thread_stacksize = 0;
+
+void send_slow_net_event_stats(const net_event_t &event, double time_sec) noexcept {
+  std::visit(overloaded{
+               [&event, time_sec](const net_events_data::rpc_answer &) noexcept {
+                 const auto *rpc_req = get_rpc_request(event.slot_id);
+                 StatsHouseManager::get().add_slow_net_event_stats(
+                   slow_net_event_stats::slow_rpc_query_stats{tl_magic_convert_to_name(rpc_req->function_magic), rpc_req->actor_or_port, time_sec, false});
+               },
+               [&event, time_sec](const net_events_data::rpc_error &) noexcept {
+                 const auto *rpc_req = get_rpc_request(event.slot_id);
+                 StatsHouseManager::get().add_slow_net_event_stats(
+                   slow_net_event_stats::slow_rpc_query_stats{tl_magic_convert_to_name(rpc_req->function_magic), rpc_req->actor_or_port, time_sec, true});
+               },
+               [time_sec](const net_events_data::job_worker_answer &jw_answer) noexcept {
+                 if (jw_answer.job_result != nullptr) {
+                   StatsHouseManager::get().add_slow_net_event_stats(
+                     slow_net_event_stats::slow_job_worker_response_stats{jw_answer.job_result->response->get_class(), time_sec});
+                 }
+               },
+               [](const database_drivers::Response *) {},
+               [](const curl_async::CurlResponse *) {},
+
+             },
+             event.data);
+}
+
 } // namespace
 
 void PhpScript::error(const char *error_message, script_error_t error_type) noexcept {
@@ -271,6 +298,7 @@ void PhpScript::update_net_time() noexcept {
     ++long_queries_cnt;
     kprintf("LONG query: %lf\n", net_add);
     if (const net_event_t *event = get_last_net_event()) {
+      send_slow_net_event_stats(*event, net_add);
       kprintf("Awakening net event: %s\n", event->get_description());
     }
   }

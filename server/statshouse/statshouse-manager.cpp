@@ -4,15 +4,21 @@
 
 #include "server/statshouse/statshouse-manager.h"
 
+#include <array>
+#include <charconv>
 #include <chrono>
+#include <cstddef>
 #include <string>
+#include <variant>
 
 #include "common/precise-time.h"
 #include "common/resolver.h"
+#include "common/wrappers/overloaded.h"
 #include "runtime/instance-cache.h"
-#include "server/job-workers/shared-memory-manager.h"
 #include "server/confdata-stats.h"
+#include "server/job-workers/shared-memory-manager.h"
 #include "server/json-logger.h"
+#include "server/php-queries.h"
 #include "server/php-runner.h"
 #include "server/server-config.h"
 #include "server/server-stats.h"
@@ -332,4 +338,23 @@ void StatsHouseManager::add_confdata_master_stats(const ConfdataStats &confdata_
       client.metric("kphp_confdata_sections_by_count").tag(section_name->c_str()).write_value(size);
     }
   }
+}
+
+void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::stats_t &stats) noexcept {
+  std::visit(overloaded{[this](const slow_net_event_stats::slow_rpc_query_stats &rpc_query_stat) noexcept {
+                          constexpr auto MAX_INT_STRING_LENGTH = 10;
+                          std::array<char, MAX_INT_STRING_LENGTH> buf{};
+                          const auto chars{std::to_chars(buf.data(), buf.data() + buf.size(), rpc_query_stat.actor_or_port)};
+                          client.metric("kphp_slow_rpc_query")
+                            .tag(rpc_query_stat.tl_function_name != nullptr ? rpc_query_stat.tl_function_name : "unknown")
+                            .tag({buf.data(), static_cast<size_t>(chars.ptr - buf.data())})
+                            .tag(rpc_query_stat.is_error ? "error" : "success")
+                            .write_value(rpc_query_stat.response_time);
+                        },
+                        [this](const slow_net_event_stats::slow_job_worker_response_stats &jw_response_stat) noexcept {
+                          client.metric("kphp_slow_job_worker_response")
+                            .tag(jw_response_stat.class_name != nullptr ? jw_response_stat.class_name : "unknown")
+                            .write_value(jw_response_stat.response_time);
+                        }},
+             stats);
 }
