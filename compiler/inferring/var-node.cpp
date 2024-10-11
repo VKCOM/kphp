@@ -35,6 +35,7 @@ void VarNodeRecalc::do_recalc() {
   }
   // at first, we just calculate new_type_ without any checks
   for (const tinf::Edge *e : node->get_edges_from_this()) {
+    printf("via edge %p -> %p\n", e->from, e->to);
     set_lca_at(e->from_at, as_rvalue(e->to));
     inferer_->add_node(e->to);
   }
