@@ -439,6 +439,13 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   TypeData *lhs = this;
 
   PrimitiveType new_ptype = type_lca(lhs->ptype(), rhs->ptype());
+  if (lhs->ptype_ == tp_array && rhs->ptype_ == tp_Class) {
+    puts("xxxxxxxxxxxxxxxxxxxxxxxxxxx HIT IT xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
+    printf("new type = %s\n", ptype_name(new_ptype));
+  }
+  if (rhs->ptype_ == tp_array && lhs->ptype_ == tp_Class) {
+    puts("yyyyyyyyyyyyyyyyyyyyyyyyyyy HIT IT yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
+  }
   if (new_ptype == tp_mixed) {
     if (lhs->ptype() == tp_array && lhs->lookup_at_any_key()) {
       lhs->set_lca_at(MultiKey::any_key(1), TypeData::get_type(tp_mixed));
@@ -553,6 +560,8 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
 
   cur->set_lca(rhs, save_or_false, save_or_null, ffi_flags);
   if (cur->error_flag()) {  // proxy tp_Error from keys to the type itself
+    puts("------------ GONNA ERROR ---------------");
+    printf("%s -- %s\n", rhs->_debug_string().c_str(), cur->_debug_string().c_str());
     this->set_ptype(tp_Error);
   }
 }
