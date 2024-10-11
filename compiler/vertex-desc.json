@@ -1727,7 +1727,7 @@
     }
   },
   {
-    "comment": "array()[key()]; or array()[]",
+    "comment": "array()[key()]; or array()[] or Obj()[key()]; or Obj()[]",
     "sons": {
       "array": 0,
       "key": {
@@ -1774,6 +1774,22 @@
       "cnst": "cnst_error",
       "type": "common_op",
       "str": "set_value"
+    }
+  },
+  {
+    "comment": "lowered form of Obj()[key()] = value()",
+    "sons": {
+      "obj": 0,
+      "key": 1,
+      "value": 2
+    },
+    "name": "op_offset_set",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_error",
+      "cnst": "cnst_error",
+      "type": "common_op",
+      "str": "offset_set"
     }
   },
   {

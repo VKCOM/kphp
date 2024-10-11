@@ -604,6 +604,13 @@ void FinalCheckPass::on_start() {
 }
 
 VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
+  if (current_function->name == "test") {
+    if (auto as_op_func = vertex.try_as<op_function>()) {
+      // op_index
+      printf("\n====== test in FinalCheckPass ======\n");
+      as_op_func.debugPrint();
+    }
+  }
   if (vertex->type() == op_func_name) {
     kphp_error (0, fmt_format("Unexpected {} (maybe, it should be a define?)", vertex->get_string()));
   }
@@ -1027,7 +1034,8 @@ void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {
       } else if (tinf::get_type(var)->get_real_ptype() == tp_shape) {
         kphp_error(0, fmt_format("Accessing unexisting element of shape ${}", var->name));
       } else {
-        kphp_error(0, fmt_format("${} is {}, can not get element", var->name, tinf::get_type(var)->as_human_readable()));
+        // TODO fix smth here
+        // kphp_error(0, fmt_format("${} is {}, can not get element", var->name, tinf::get_type(var)->as_human_readable()));
       }
 
     } else {                                // multidimentional array[*]...[*] access

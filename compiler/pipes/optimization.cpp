@@ -4,6 +4,9 @@
 
 #include "compiler/pipes/optimization.h"
 
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
 #include <sstream>
 
 #include "common/algorithms/hashes.h"
@@ -93,6 +96,7 @@ void explicit_cast_array_type(VertexPtr &type_acceptor, const TypeData *required
 } // namespace
 
 VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op) {
+  // TODO embed here
   if (set_op->lhs()->type() != op_index) {
     return set_op;
   }
@@ -177,6 +181,28 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
       kphp_error (0, "Cannot use [] for reading");
     }
   }
+
+  auto &lhs = index->array();
+  const auto *tpe = lhs->tinf_node.get_type();
+  if (tpe->get_real_ptype() == tp_Class) {
+    puts("OUR CASE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    // index.debugPrint();
+
+    auto klass = tpe->class_type();
+    kphp_assert_msg(klass, "bad klass");
+
+    const auto *method = klass->get_instance_method("offsetGet");
+
+    // TODO assume here that key is present
+    auto new_call = VertexAdaptor<op_func_call>::create(lhs, index->key()).set_location(lhs);
+    new_call->str_val = method->global_name();
+    new_call->func_id = method->function;
+    new_call->extra_type = op_ex_func_call_arrow; // Is that right?
+    new_call->auto_inserted = true;
+
+    return new_call;
+  }
+
   return index;
 }
 VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {

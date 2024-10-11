@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/gen-tree-postprocess.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/lib-data.h"
@@ -155,6 +156,13 @@ GenTreePostprocessPass::builtin_fun GenTreePostprocessPass::get_builtin_function
 }
 
 VertexPtr GenTreePostprocessPass::on_enter_vertex(VertexPtr root) {
+  if (current_function->name == "test") {
+    if (auto as_op_func = root.try_as<op_function>()) {
+      // op_index
+      printf("\n====== test in GenTreePostprocessPass ======\n");
+      as_op_func.debugPrint();
+    }
+  }
   stage::set_line(root->location.line);
   if (auto set_op = root.try_as<op_set>()) {
     // list(...) = ... or short syntax (PHP 7) [...] = ...
