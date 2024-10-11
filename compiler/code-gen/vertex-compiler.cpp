@@ -4,6 +4,12 @@
 
 #include "compiler/code-gen/vertex-compiler.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/code-gen/code-generator.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
+#include <cstdio>
 #include <iterator>
 #include <unordered_map>
 
@@ -1808,6 +1814,34 @@ void compile_index_of_string(VertexAdaptor<op_index> root, CodeGenerator &W) {
   W << root->array() << ".get_value(" << root->key() << ")";
 }
 
+void compile_index_of_object(VertexAdaptor<op_index> root, CodeGenerator &W) {
+  // For now, it never calls because in optimization pass op_index -> op_func_call "f$className$$offsetGet"
+  // It should be not only the var, but function call, too
+  auto as_var = root->array().try_as<op_var>();
+  auto var_id = as_var->var_id;
+  kphp_assert_msg(var_id, "Var is not var sadly");
+
+  printf("var name = %s\n", var_id->name.c_str());
+
+  const auto *tpe = as_var->tinf_node.get_type();
+  kphp_assert_msg(tpe, "cannot get tinf node");
+
+  printf("type = %s\n", tpe->as_human_readable().c_str());
+
+  auto klass = tpe->class_type();
+  kphp_assert_msg(klass, "Klass badly does not exist");
+
+  // klass->debugPrint();
+
+  const auto *method = klass->get_instance_method("offsetGet");
+
+  kphp_assert_msg(method, "no method \"offsetGet\"");
+
+  std::string method_name = "f$" + method->global_name();
+  W << method_name << "(" << as_var << ",";
+  W << root->key() << ")"; // check has_key and pass null or smth like that
+}
+
 void compile_instance_prop(VertexAdaptor<op_instance_prop> root, CodeGenerator &W) {
   switch (root->access_type) {
     case InstancePropAccessType::Default:
@@ -1848,6 +1882,10 @@ void compile_instance_prop(VertexAdaptor<op_instance_prop> root, CodeGenerator &
 
 void compile_index(VertexAdaptor<op_index> root, CodeGenerator &W) {
   PrimitiveType array_ptype = root->array()->tinf_node.get_type()->ptype();
+  printf("COMPILING INDEX!!!!!!\n");
+  printf("root = ");
+  // root.debugPrint();
+  printf("type = %d\n", (int)array_ptype);
 
   switch (array_ptype) {
     case tp_string:
@@ -1858,6 +1896,9 @@ void compile_index(VertexAdaptor<op_index> root, CodeGenerator &W) {
       break;
     case tp_shape:
       W << ShapeGetIndex(root->array(), root->key());
+      break;
+    case tp_Class:
+      compile_index_of_object(root, W);
       break;
     default:
       compile_index_of_array(root, W);

@@ -30,6 +30,7 @@
  */
 #include "compiler/class-assumptions.h"
 
+#include "compiler/inferring/primitive-type.h"
 #include <thread>
 
 #include "compiler/data/class-data.h"
@@ -81,9 +82,11 @@ Assumption Assumption::get_subkey_by_index(VertexPtr index_key) const {
   const TypeHint *type_hint = assumption_unwrap_optional(assum_hint);
 
   if (type_hint == nullptr) {
+    printf("asuumption by index nullptr\n");
     return {};
   }
   if (const auto *as_array = type_hint->try_as<TypeHintArray>()) {
+    printf("assumption array\n");
     return Assumption(as_array->inner);
   }
   if (const auto *as_tuple = type_hint->try_as<TypeHintTuple>()) {
@@ -101,6 +104,12 @@ Assumption Assumption::get_subkey_by_index(VertexPtr index_key) const {
         return Assumption(at_index);
       }
     }
+  }
+  if (const auto *as_instance = type_hint->try_as<TypeHintInstance>()) {
+    printf("$$$$$$$$$ A S   I N S T A N C E $$$$$$$$$$");
+    // TODO when execution goes here????
+    // TODO resolve here and somehow check (here or later) that class implements ArrayAccess 
+    return Assumption(TypeHintPrimitive::create(PrimitiveType::tp_mixed));
   }
   return {};
 }
@@ -324,10 +333,11 @@ public:
     , var_name(var_name) {}
 
   void on_start() override {
-//    printf("start assumptions for %s() $%s\n", current_function->as_human_readable().c_str(), std::string(var_name).c_str());
+    printf("start assumptions for %s() $%s\n", current_function->as_human_readable().c_str(), std::string(var_name).c_str());
   }
 
   VertexPtr on_enter_vertex(VertexPtr root) override {
+    puts("HERE88888888888!");
     if (stopped) {
       return root;
     }
@@ -751,6 +761,7 @@ Assumption assume_class_of_expr(FunctionPtr f, VertexPtr root, VertexPtr stop_at
     case op_ffi_array_get:
       return Assumption(root.as<op_ffi_array_get>()->c_elem_type);
     case op_index: {
+      puts("OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO");
       auto index = root.as<op_index>();
       if (index->has_key()) {
         return assume_class_of_expr(f, index->array(), stop_at).get_subkey_by_index(index->key());
@@ -779,6 +790,9 @@ Assumption assume_class_of_expr(FunctionPtr f, VertexPtr root, VertexPtr stop_at
     case op_move:
       return assume_class_of_expr(f, root.as<op_move>()->expr(), stop_at);
     case op_set:
+      printf("On op_set assume:\n");
+      // root.debugPrint();
+      // puts("---------");
       return assume_class_of_expr(f, root.as<op_set>()->rhs(), stop_at);
     case op_define_val:
       return assume_class_of_expr(f, root.as<op_define_val>()->value(), stop_at);

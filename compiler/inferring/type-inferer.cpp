@@ -25,16 +25,21 @@ void TypeInferer::recalc_node(Node *node) {
 }
 
 void TypeInferer::add_node(Node *node) {
-  //fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
+  
   if (!node->was_recalc_started_at_least_once()) {
     recalc_node(node);
+  }
+  if (node) {
+    // fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
   }
 }
 
 void TypeInferer::add_edge(const Edge *edge) {
-  //fprintf (stderr, "add_edge %d [%p %s] -> [%p %s]\n", get_thread_id(), edge->from, edge->from->get_description().c_str(), edge->to, edge->to->get_description().c_str());
   edge->from->register_edge_from_this(edge);
   edge->to->register_edge_to_this(edge);
+  if (edge) {
+    // fprintf (stderr, "add_edge %d [%p] -> [%p]\n", get_thread_id(), edge->from, edge->to);
+  }
 }
 
 void TypeInferer::add_restriction(RestrictionBase *restriction) {

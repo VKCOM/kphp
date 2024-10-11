@@ -4,6 +4,7 @@
 
 #include "compiler/inferring/type-data.h"
 
+#include "compiler/inferring/primitive-type.h"
 #include <string>
 #include <vector>
 
@@ -350,6 +351,26 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
   }
   if (ptype() == tp_string) {
     return get_type(tp_string);
+  }
+  if (ptype() == tp_Class) {
+    // TODO any race conditions?
+    puts("Wanna inference type for const_read_at");
+    if (!class_type_.empty()) {
+      puts("class types are not empty!");
+      auto klass = class_type(); // Here is the place to think about inheritance stuff
+      // TODO better check here
+      // What is first: checking interface methods compatibility or type inference? Looks like there is no happens-before relation
+      const bool impl_aa =
+        std::find_if(klass->implements.begin(), klass->implements.end(), [](ClassPtr x) { return x->name == "ArrayAccess"; }) != klass->implements.end();
+
+      printf("implementing ArrayAccess: %s\n", (impl_aa ? "yes" : "no"));
+      if (impl_aa) {
+        return get_type(tp_mixed);
+      }
+
+    } else {
+      puts("class types is empty! =(");
+    }
   }
   if (!structured()) {
     return get_type(tp_any);
