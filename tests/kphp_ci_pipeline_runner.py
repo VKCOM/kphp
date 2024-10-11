@@ -170,8 +170,16 @@ def parse_args():
         type=str,
         dest="cxx_name",
         default="g++",
-        choices=["g++", "clang++", "clang++-16"],
+        choices=["g++", "clang++", "clang++-16", "clang++-18", "clang++-19"],
         help="specify cxx for compiling kphp and running tests"
+    )
+
+    parser.add_argument(
+        "--k2-bin",
+        metavar="PATH",
+        type=str,
+        dest="k2_bin",
+        help="specify path to K2 platform binary",
     )
 
     parser.add_argument(
@@ -222,6 +230,7 @@ if __name__ == "__main__":
 
     args = parse_args()
     runner = TestRunner("KPHP tests", args.no_report)
+    is_k2_mode = args.steps and ("k2-make-kphp" in args.steps or "k2-kphp-tests" in args.steps)
 
     use_nocc_option = "--use-nocc" if args.use_nocc else ""
     n_cpu = multiprocessing.cpu_count()
@@ -236,9 +245,10 @@ if __name__ == "__main__":
         env_vars.append("UBSAN_OPTIONS=print_stacktrace=1:allow_addr2line=1")
     if args.use_nocc:
         cmake_options.append("-DCMAKE_CXX_COMPILER_LAUNCHER={}".format(nocc_env("NOCC_EXECUTABLE", "nocc")))
-    cmake_options.append("-DPDO_DRIVER_MYSQL=ON")
-    cmake_options.append("-DPDO_DRIVER_PGSQL=ON")
-    cmake_options.append("-DPDO_LIBS_STATIC_LINKING=ON")
+    if not is_k2_mode:
+        cmake_options.append("-DPDO_DRIVER_MYSQL=ON")
+        cmake_options.append("-DPDO_DRIVER_PGSQL=ON")
+        cmake_options.append("-DPDO_LIBS_STATIC_LINKING=ON")
     kphp_polyfills_repo = args.kphp_polyfills_repo
     if kphp_polyfills_repo == "":
         print(red("empty --kphp-polyfills-repo argument"), flush=True)
@@ -268,6 +278,24 @@ if __name__ == "__main__":
     )
 
     runner.add_test_group(
+        name="k2-make-kphp",
+        description="make kphp and k2-kphp runtime",
+        cmd="rm -rf {kphp_repo_root}/build && "
+            "mkdir {kphp_repo_root}/build && "
+            "cmake "
+            "-S {kphp_repo_root} -B {kphp_repo_root}/build "
+            "-DCMAKE_CXX_COMPILER={cxx_name} -DCOMPILE_RUNTIME_LIGHT=ON {cmake_options} && "
+            "{env_vars} make -C {kphp_repo_root}/build -j{jobs} all test".format(
+                jobs=n_cpu,
+                kphp_repo_root=kphp_repo_root,
+                cxx_name=args.cxx_name,
+                cmake_options=cmake_options,
+                env_vars=env_vars,
+            ),
+        skip=args.steps and "k2-make-kphp" not in args.steps,
+    )
+
+    runner.add_test_group(
         name="kphp-tests",
         description="run kphp tests with cxx={}".format(args.cxx_name),
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
@@ -280,6 +308,21 @@ if __name__ == "__main__":
         ),
         skip=args.steps and "kphp-tests" not in args.steps
     )
+
+    if args.k2_bin:
+        runner.add_test_group(
+            name="k2-kphp-tests",
+            description="run k2-kphp tests with cxx={}".format(args.cxx_name),
+            cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+                "{kphp_runner} -j{jobs} --cxx-name {cxx_name} --k2-bin {k2_bin}".format(
+                jobs=n_cpu,
+                kphp_polyfills_repo=kphp_polyfills_repo,
+                kphp_runner=kphp_test_runner,
+                cxx_name=args.cxx_name,
+                k2_bin=args.k2_bin,
+            ),
+            skip=not args.k2_bin or args.steps and "k2-kphp-tests" not in args.steps,
+        )
 
     if args.zend_repo:
         runner.add_test_group(
