@@ -79,14 +79,14 @@ struct net_query_t {
 
 namespace slow_net_event_stats {
 
-struct slow_rpc_response_stats {
+struct slow_rpc_response_stats final {
   const char *tl_function_name{nullptr};
   int32_t actor_or_port{};
   double response_time{};
   bool is_error{};
 };
 
-struct slow_job_worker_response_stats {
+struct slow_job_worker_response_stats final {
   const char *class_name{nullptr};
   double response_time{};
 };
