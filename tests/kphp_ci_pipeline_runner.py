@@ -320,7 +320,7 @@ if __name__ == "__main__":
             cxx_name=args.cxx_name,
             k2_bin=args.k2_bin,
         ),
-        skip=not args.k2_bin or args.steps and "k2-kphp-tests" not in args.steps,
+        skip=not args.k2_bin or (args.steps and "k2-kphp-tests" not in args.steps),
     )
 
     if args.zend_repo:
