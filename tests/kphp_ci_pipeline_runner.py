@@ -309,20 +309,19 @@ if __name__ == "__main__":
         skip=args.steps and "kphp-tests" not in args.steps
     )
 
-    if args.k2_bin:
-        runner.add_test_group(
-            name="k2-kphp-tests",
-            description="run k2-kphp tests with cxx={}".format(args.cxx_name),
-            cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
-                "{kphp_runner} -j{jobs} --cxx-name {cxx_name} --k2-bin {k2_bin}".format(
-                jobs=n_cpu,
-                kphp_polyfills_repo=kphp_polyfills_repo,
-                kphp_runner=kphp_test_runner,
-                cxx_name=args.cxx_name,
-                k2_bin=args.k2_bin,
-            ),
-            skip=not args.k2_bin or args.steps and "k2-kphp-tests" not in args.steps,
-        )
+    runner.add_test_group(
+        name="k2-kphp-tests",
+        description="run k2-kphp tests with cxx={}".format(args.cxx_name),
+        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+            "{kphp_runner} -j{jobs} --cxx-name {cxx_name} --k2-bin {k2_bin}".format(
+            jobs=n_cpu,
+            kphp_polyfills_repo=kphp_polyfills_repo,
+            kphp_runner=kphp_test_runner,
+            cxx_name=args.cxx_name,
+            k2_bin=args.k2_bin,
+        ),
+        skip=not args.k2_bin or args.steps and "k2-kphp-tests" not in args.steps,
+    )
 
     if args.zend_repo:
         runner.add_test_group(
