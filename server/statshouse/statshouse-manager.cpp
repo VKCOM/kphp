@@ -134,6 +134,9 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_memory_script_usage").tag("used").tag(worker_type).write_value(script_memory_stats.memory_used);
   client.metric("kphp_memory_script_usage").tag("real_used").tag(worker_type).write_value(script_memory_stats.real_memory_used);
 
+  client.metric("kphp_by_host_memory_script_usage", true).tag("used").tag(worker_type).write_value(script_memory_stats.memory_used);
+  client.metric("kphp_by_host_memory_script_usage", true).tag("real_used").tag(worker_type).write_value(script_memory_stats.real_memory_used);
+
   client.metric("kphp_memory_script_allocated_total").tag(worker_type).write_value(script_memory_stats.total_memory_allocated);
   client.metric("kphp_memory_script_allocations_count").tag(worker_type).write_value(script_memory_stats.total_allocations);
 
@@ -183,6 +186,7 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
                                                 long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail) {
   if (engine_tag) {
     client.metric("kphp_version").tag(std::to_string(engine_tag_number)).write_count(1);
+    client.metric("kphp_by_host_version", true).tag(std::to_string(engine_tag_number)).write_count(1);
   }
 
   client.metric("kphp_uptime").write_value(get_uptime());
