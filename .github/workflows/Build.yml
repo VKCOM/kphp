@@ -23,23 +23,39 @@ jobs:
             cpp: 17
             asan: off
             ubsan: off
+            light_runtime: off
           - os: focal
             compiler: clang++
             cpp: 17
             asan: off
             ubsan: on
+            light_runtime: off
           - os: focal
             compiler: g++-10
             cpp: 20
             asan: on
             ubsan: off
+            light_runtime: off
           - os: jammy
             compiler: g++
             cpp: 20
             asan: on
             ubsan: off
-
-    name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
+            light_runtime: off
+          - os: focal
+            compiler: g++-11
+            cpp: 20
+            asan: off
+            ubsan: off
+            light_runtime: on
+          - os: focal
+            compiler: clang++-18
+            cpp: 20
+            asan: off
+            ubsan: off
+            light_runtime: on
+            
+    name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}/light_runtime=${{matrix.light_runtime}}"
 
     steps:
     - uses: actions/checkout@v3
@@ -54,8 +70,8 @@ jobs:
       uses: actions/cache@v3
       id: docker-image-cache
       with:
-        path: kphp-build-env-${{matrix.os}}.tar
-        key: docker-image-cache-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*', 'tests/python/requirements.txt') }}
+        path: /tmp/docker-save-${{matrix.os}}
+        key: docker-save-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*', 'tests/python/requirements.txt') }}
 
     - name: Build and save docker image
       if: steps.docker-image-cache.outputs.cache-hit != 'true'
@@ -68,7 +84,7 @@ jobs:
         
     - name: Load docker image from cache
       if: steps.docker-image-cache.outputs.cache-hit == 'true'
-      run: docker load --input kphp-build-env-${{matrix.os}}.tar
+      run: docker load --input /tmp/docker-save-${{matrix.os}}/kphp-build-env-${{matrix.os}}.tar
 
     - name: Start docker container
       run: |
@@ -79,41 +95,53 @@ jobs:
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
               "git config --global --add safe.directory ${{env.kphp_root_dir}}"
 
+    - name: Check formatting in light runtime folder
+      if: ${{ matrix.os == 'focal'  && matrix.light_runtime == 'on' }}
+      run:  docker exec kphp-build-container-${{matrix.os}} bash -c
+              "find ${{env.kphp_root_dir}}/runtime-light/ -iname '*.h' -o -iname '*.cpp' | xargs clang-format-18 --dry-run -Werror"
+    
     - name: Build all
       run: docker exec kphp-build-container-${{matrix.os}} bash -c 
-              "cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DADDRESS_SANITIZER=${{matrix.asan}} -DUNDEFINED_SANITIZER=${{matrix.ubsan}} -DPDO_DRIVER_MYSQL=ON -DPDO_DRIVER_PGSQL=ON -DPDO_LIBS_STATIC_LINKING=ON -S ${{env.kphp_root_dir}} -B ${{env.kphp_build_dir}} && make -C ${{env.kphp_build_dir}} -j$(nproc) all"
+              "cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DCOMPILE_RUNTIME_LIGHT=${{matrix.light_runtime}} -DADDRESS_SANITIZER=${{matrix.asan}} -DUNDEFINED_SANITIZER=${{matrix.ubsan}} -DPDO_DRIVER_MYSQL=ON -DPDO_DRIVER_PGSQL=ON -DPDO_LIBS_STATIC_LINKING=ON -S ${{env.kphp_root_dir}} -B ${{env.kphp_build_dir}} && make -C ${{env.kphp_build_dir}} -j$(nproc) all"
 
     - name: Run unit tests
       run: docker exec kphp-build-container-${{matrix.os}} bash -c 
               "make -C ${{env.kphp_build_dir}} -j$(nproc) test"
 
     - name: Compile dummy PHP script
+      if: matrix.light_runtime == 'off'
       run: docker exec kphp-build-container-${{matrix.os}} bash -c 
               "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o --user kitten"
+
+    - name: Compile dummy PHP script
+      if: matrix.light_runtime == 'on'
+      run: docker exec kphp-build-container-${{matrix.os}} bash -c 
+              "cd ${{env.kphp_build_dir}} && echo "${{matrix.light_runtime}}" && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --mode k2-component --cxx ${{matrix.compiler}} demo.php"
 
     - name: Polyfills composer install
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
               "composer install -d ${{env.kphp_polyfills_dir}}"
 
     - name: Run python tests
+      if: matrix.light_runtime == 'off'
       id: python_tests
       continue-on-error: true
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
               "chown -R kitten /home && su kitten -c 'GITHUB_ACTIONS=1 KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3.7 -m pytest --tb=native -n$(nproc) ${{env.kphp_root_dir}}/tests/python/'"
 
     - name: Prepare python tests artifacts
-      if: steps.python_tests.outcome == 'failure'
+      if: ${{ (steps.python_tests.outcome == 'failure') && matrix.light_runtime == 'off' }}
       run: docker cp kphp-build-container-${{matrix.os}}:${{env.kphp_root_dir}}/tests/python/_tmp/ ${{runner.temp}} &&
            rm -rf ${{runner.temp}}/_tmp/*/working_dir
 
     - name: Upload python tests artifacts
       uses: actions/upload-artifact@v3
-      if: steps.python_tests.outcome == 'failure'
+      if: ${{ (steps.python_tests.outcome == 'failure') && matrix.light_runtime == 'off' }}
       with:
         path: ${{runner.temp}}/_tmp/
 
     - name: Fail pipeline if python tests failed
-      if: steps.python_tests.outcome == 'failure'
+      if: ${{ (steps.python_tests.outcome == 'failure') && matrix.light_runtime == 'off' }}
       run: exit 1
 
     - name: Remove docker container

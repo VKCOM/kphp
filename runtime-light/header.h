@@ -286,6 +286,7 @@ enum PollStatus vk_k2_poll(const struct ImageState *image_state, const struct Pl
  * for now, returning nullptr will indicate error
  */
 struct ComponentState *vk_k2_create_component_state(const struct ImageState *image_state, const struct PlatformCtx *pt_ctx);
+
 struct ImageState *vk_k2_create_image_state(const struct PlatformCtx *pt_ctx);
 
 const struct ImageInfo *vk_k2_describe();

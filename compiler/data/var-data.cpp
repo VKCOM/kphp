@@ -35,7 +35,8 @@ const ClassMemberInstanceField *VarData::as_class_instance_field() const {
 bool VarData::does_name_eq_any_language_superglobal(const std::string &name) {
   // these vars are 'superglobals' in PHP language: they are available in all scopes
   static const std::unordered_set<std::string> superglobal_names = {
-    "_SERVER", "_GET", "_POST", "_ENV", "_FILES", "_COOKIE", "_REQUEST",
+    "_SERVER", "_GET", "_POST", "_ENV", "_FILES", "_COOKIE", "_REQUEST", 
+    "_SESSION", "_KPHPSESSARR"
   };
   return superglobal_names.find(name) != superglobal_names.end();
 }
@@ -44,7 +45,7 @@ bool VarData::does_name_eq_any_builtin_runtime(const std::string &name) {
   // these vars are runtime built-ins, see PhpScriptBuiltInSuperGlobals
   static const std::unordered_set<std::string> runtime_names = {
     "_SERVER", "_GET", "_POST", "_ENV", "_FILES", "_COOKIE", "_REQUEST",
-    "argc", "argv", "d$PHP_SAPI"
+    "_SESSION", "_KPHPSESSARR", "argc", "argv", "d$PHP_SAPI"
   };
   return runtime_names.find(name) != runtime_names.end();
 }
