@@ -11,6 +11,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-core/memory-resource/memory_resource.h"
 #include "server/job-workers/job-stats.h"
+#include "server/php-queries.h"
 #include "server/statshouse/statshouse-client.h"
 #include "server/workers-control.h"
 #include "server/workers-stats.h"
@@ -87,6 +88,8 @@ public:
   void add_extended_instance_cache_stats(std::string_view type, std::string_view status, const string &key, uint64_t size = 0);
 
   void add_confdata_master_stats(const ConfdataStats &confdata_stats);
+
+  void add_slow_net_event_stats(const slow_net_event_stats::stats_t &stats) noexcept;
 
 private:
   StatsHouseClient client;
