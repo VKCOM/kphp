@@ -141,6 +141,9 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
   client.metric("kphp_memory_script_usage").tag("used").tag(worker_type).write_value(script_memory_stats.memory_used);
   client.metric("kphp_memory_script_usage").tag("real_used").tag(worker_type).write_value(script_memory_stats.real_memory_used);
 
+  client.metric("kphp_by_host_memory_script_usage", true).tag("used").tag(worker_type).write_value(script_memory_stats.memory_used);
+  client.metric("kphp_by_host_memory_script_usage", true).tag("real_used").tag(worker_type).write_value(script_memory_stats.real_memory_used);
+
   client.metric("kphp_memory_script_allocated_total").tag(worker_type).write_value(script_memory_stats.total_memory_allocated);
   client.metric("kphp_memory_script_allocations_count").tag(worker_type).write_value(script_memory_stats.total_allocations);
 
@@ -190,6 +193,7 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
                                                 long long int instance_cache_memory_swaps_ok, long long int instance_cache_memory_swaps_fail) {
   if (engine_tag) {
     client.metric("kphp_version").tag(std::to_string(engine_tag_number)).write_count(1);
+    client.metric("kphp_by_host_version", true).tag(std::to_string(engine_tag_number)).write_count(1);
   }
 
   client.metric("kphp_uptime").write_value(get_uptime());
@@ -199,9 +203,16 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
   client.metric("kphp_workers_general_processes").tag("working_but_waiting").write_value(general_worker_group.waiting_workers);
   client.metric("kphp_workers_general_processes").tag("ready_for_accept").write_value(general_worker_group.ready_for_accept_workers);
 
+  client.metric("kphp_by_host_workers_general_processes", true).tag("working").write_value(general_worker_group.running_workers);
+  client.metric("kphp_by_host_workers_general_processes", true).tag("working_but_waiting").write_value(general_worker_group.waiting_workers);
+  client.metric("kphp_by_host_workers_general_processes", true).tag("ready_for_accept").write_value(general_worker_group.ready_for_accept_workers);
+
   const auto job_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::job_worker);
   client.metric("kphp_workers_job_processes").tag("working").write_value(job_worker_group.running_workers);
   client.metric("kphp_workers_job_processes").tag("working_but_waiting").write_value(job_worker_group.waiting_workers);
+
+  client.metric("kphp_by_host_workers_job_processes", true).tag("working").write_value(job_worker_group.running_workers);
+  client.metric("kphp_by_host_workers_job_processes", true).tag("working_but_waiting").write_value(job_worker_group.waiting_workers);
 
   client.metric("kphp_server_workers").tag("started").write_value(workers_stats.tot_workers_started);
   client.metric("kphp_server_workers").tag("dead").write_value(workers_stats.tot_workers_dead);
