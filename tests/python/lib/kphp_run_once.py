@@ -135,13 +135,9 @@ class KphpRunOnce(KphpBuilder):
     def run_with_kphp_and_k2(self, runs_cnt=1, args=[]):
         self._clear_working_dir(self._kphp_runtime_tmp_dir)
 
-        k2_runtime_bin = self.k2_bin
+        k2_node_bin = self.k2_bin
 
-        cmd = [k2_runtime_bin, "--image", os.path.join(self._kphp_build_tmp_dir, "component.so"), "--runs-count={}".format(runs_cnt), "--crypto"] + args
-
-        if not os.getuid():
-            cmd += ["-u", "root", "-g", "root"]
-
+        cmd = [k2_node_bin, "run-once", "--image", os.path.join(self._kphp_build_tmp_dir, "component.so"), "--runs-count={}".format(runs_cnt), "--crypto"] + args
         env = {"RUST_LOG": "Warn"}
 
         k2_runtime_proc = subprocess.Popen(cmd,

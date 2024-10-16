@@ -8,7 +8,7 @@ import subprocess
 import sys
 from enum import Enum
 
-from python.lib.colors import red, green, yellow, cyan
+from python.lib.colors import cyan, green, red, yellow
 from python.lib.nocc_for_kphp_tester import nocc_env
 
 
@@ -46,14 +46,18 @@ class TestGroup:
             print(red(">" * curses.tigetnum("cols")), flush=True)
         else:
             self.status = TestStatus.PASSED
-            print(green("{} successfully finished!".format(self.description)), flush=True)
+            print(
+                green("{} successfully finished!".format(self.description)), flush=True
+            )
             print(green(">" * curses.tigetnum("cols")), flush=True)
 
         return not test_retcode
 
     def print_report(self):
-        print("\t[{}] {} - {}".format(
-            self.name, self.description, self.status.value), flush=True)
+        print(
+            "\t[{}] {} - {}".format(self.name, self.description, self.status.value),
+            flush=True,
+        )
         if self.status != TestStatus.PASSED:
             self.print_full_test_cmd()
 
@@ -103,29 +107,31 @@ class TestRunner:
 
 def make_relpath(file_dir, file_path):
     rel_path = os.path.relpath(os.path.join(file_dir, file_path), os.getcwd())
-    if rel_path[0] != '/':
+    if rel_path[0] != "/":
         rel_path = os.path.join(os.path.curdir, rel_path)
     return rel_path
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
 
     parser.add_argument(
         "--no-report",
-        action='store_true',
+        action="store_true",
         dest="no_report",
         default=False,
-        help="no not show full report"
+        help="no not show full report",
     )
 
     parser.add_argument(
         "-s",
         "--show-stages",
-        action='store_true',
+        action="store_true",
         dest="show_stages",
         default=False,
-        help="show testing stages"
+        help="show testing stages",
     )
 
     parser.add_argument(
@@ -134,7 +140,7 @@ def parse_args():
         type=str,
         dest="zend_repo",
         default="",
-        help="specify path to zend php-src repository dir"
+        help="specify path to zend php-src repository dir",
     )
 
     parser.add_argument(
@@ -143,7 +149,7 @@ def parse_args():
         type=str,
         dest="engine_repo",
         default="",
-        help="Any nonempty value of this option will identify that integration tests are enabled."  # TODO: rename it
+        help="Any nonempty value of this option will identify that integration tests are enabled.",  # TODO: rename it
     )
 
     parser.add_argument(
@@ -152,16 +158,16 @@ def parse_args():
         type=str,
         dest="kphp_tests_repo",
         default="",
-        help="specify path to kphp tests repository dir"
+        help="specify path to kphp tests repository dir",
     )
 
     parser.add_argument(
-        '--kphp-polyfills-repo',
+        "--kphp-polyfills-repo",
         metavar="DIR",
         type=str,
         dest="kphp_polyfills_repo",
         default=os.environ.get("KPHP_TESTS_POLYFILLS_REPO", ""),
-        help="specify path to cloned kphp-polyfills repository dir"
+        help="specify path to cloned kphp-polyfills repository dir",
     )
 
     parser.add_argument(
@@ -170,40 +176,49 @@ def parse_args():
         type=str,
         dest="cxx_name",
         default="g++",
-        choices=["g++", "clang++", "clang++-16"],
-        help="specify cxx for compiling kphp and running tests"
+        choices=["g++", "clang++", "clang++-16", "clang++-18", "clang++-19"],
+        help="specify cxx for compiling kphp and running tests",
+    )
+
+    parser.add_argument(
+        "--k2-bin",
+        metavar="PATH",
+        type=str,
+        dest="k2_bin",
+        help="specify path to K2 platform binary",
     )
 
     parser.add_argument(
         "--use-asan",
-        action='store_true',
+        action="store_true",
         dest="use_asan",
         default=False,
-        help="enable address sanitizer for tests"
+        help="enable address sanitizer for tests",
     )
 
     parser.add_argument(
         "--use-ubsan",
-        action='store_true',
+        action="store_true",
         dest="use_ubsan",
         default=False,
-        help="enable undefined behaviour sanitizer for tests"
+        help="enable undefined behaviour sanitizer for tests",
     )
 
     parser.add_argument(
         "--use-nocc",
-        action='store_true',
+        action="store_true",
         dest="use_nocc",
         default=False,
-        help="use nocc for compiling kphp and running phpt"
+        help="use nocc for compiling kphp and running phpt",
     )
 
     parser.add_argument(
-        'steps',
-        metavar='STEPS',
+        "steps",
+        metavar="STEPS",
         type=str,
-        nargs='*',
-        help='testing steps for ci pipeline')
+        nargs="*",
+        help="testing steps for ci pipeline",
+    )
 
     return parser.parse_args()
 
@@ -222,6 +237,9 @@ if __name__ == "__main__":
 
     args = parse_args()
     runner = TestRunner("KPHP tests", args.no_report)
+    is_k2_mode = args.steps and (
+        "k2-make-kphp" in args.steps or "k2-kphp-tests" in args.steps
+    )
 
     use_nocc_option = "--use-nocc" if args.use_nocc else ""
     n_cpu = multiprocessing.cpu_count()
@@ -235,10 +253,15 @@ if __name__ == "__main__":
         cmake_options.append("-DUNDEFINED_SANITIZER=ON")
         env_vars.append("UBSAN_OPTIONS=print_stacktrace=1:allow_addr2line=1")
     if args.use_nocc:
-        cmake_options.append("-DCMAKE_CXX_COMPILER_LAUNCHER={}".format(nocc_env("NOCC_EXECUTABLE", "nocc")))
-    cmake_options.append("-DPDO_DRIVER_MYSQL=ON")
-    cmake_options.append("-DPDO_DRIVER_PGSQL=ON")
-    cmake_options.append("-DPDO_LIBS_STATIC_LINKING=ON")
+        cmake_options.append(
+            "-DCMAKE_CXX_COMPILER_LAUNCHER={}".format(
+                nocc_env("NOCC_EXECUTABLE", "nocc")
+            )
+        )
+    if not is_k2_mode:
+        cmake_options.append("-DPDO_DRIVER_MYSQL=ON")
+        cmake_options.append("-DPDO_DRIVER_PGSQL=ON")
+        cmake_options.append("-DPDO_LIBS_STATIC_LINKING=ON")
     kphp_polyfills_repo = args.kphp_polyfills_repo
     if kphp_polyfills_repo == "":
         print(red("empty --kphp-polyfills-repo argument"), flush=True)
@@ -251,34 +274,66 @@ if __name__ == "__main__":
         name="make-kphp",
         description="make kphp and runtime",
         cmd="rm -rf {kphp_repo_root}/build && "
-            "mkdir {kphp_repo_root}/build && "
-            "cmake "
-            "-S {kphp_repo_root} -B {kphp_repo_root}/build "
-            "-DCMAKE_CXX_COMPILER={cxx_name} {cmake_options} && "
-            "{env_vars} make -C {kphp_repo_root}/build -j{jobs} all test && "
-            "{env_vars} make -C {kphp_repo_root}/build vkext7.4 && "
-            "cd {kphp_repo_root}/build && cpack".format(
-                jobs=n_cpu * 4 if args.use_nocc else n_cpu,
-                kphp_repo_root=kphp_repo_root,
-                cxx_name=args.cxx_name,
-                cmake_options=cmake_options,
-                env_vars=env_vars,
-            ),
-        skip=args.steps and "make-kphp" not in args.steps
+        "mkdir {kphp_repo_root}/build && "
+        "cmake "
+        "-S {kphp_repo_root} -B {kphp_repo_root}/build "
+        "-DCMAKE_CXX_COMPILER={cxx_name} {cmake_options} && "
+        "{env_vars} make -C {kphp_repo_root}/build -j{jobs} all test && "
+        "{env_vars} make -C {kphp_repo_root}/build vkext7.4 && "
+        "cd {kphp_repo_root}/build && cpack".format(
+            jobs=n_cpu * 4 if args.use_nocc else n_cpu,
+            kphp_repo_root=kphp_repo_root,
+            cxx_name=args.cxx_name,
+            cmake_options=cmake_options,
+            env_vars=env_vars,
+        ),
+        skip=args.steps and "make-kphp" not in args.steps,
+    )
+
+    runner.add_test_group(
+        name="k2-make-kphp",
+        description="make kphp and k2-kphp runtime",
+        cmd="rm -rf {kphp_repo_root}/build && "
+        "mkdir {kphp_repo_root}/build && "
+        "cmake "
+        "-S {kphp_repo_root} -B {kphp_repo_root}/build "
+        "-DCMAKE_CXX_COMPILER={cxx_name} -DCOMPILE_RUNTIME_LIGHT=ON {cmake_options} && "
+        "{env_vars} make -C {kphp_repo_root}/build -j{jobs} all test".format(
+            jobs=n_cpu,
+            kphp_repo_root=kphp_repo_root,
+            cxx_name=args.cxx_name,
+            cmake_options=cmake_options,
+            env_vars=env_vars,
+        ),
+        skip=args.steps and "k2-make-kphp" not in args.steps,
     )
 
     runner.add_test_group(
         name="kphp-tests",
         description="run kphp tests with cxx={}".format(args.cxx_name),
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
-            "{kphp_runner} -j{jobs} --cxx-name {cxx_name} {use_nocc_option}".format(
+        "{kphp_runner} -j{jobs} --cxx-name {cxx_name} {use_nocc_option}".format(
             jobs=n_cpu,
             kphp_polyfills_repo=kphp_polyfills_repo,
             kphp_runner=kphp_test_runner,
             cxx_name=args.cxx_name,
             use_nocc_option=use_nocc_option,
         ),
-        skip=args.steps and "kphp-tests" not in args.steps
+        skip=args.steps and "kphp-tests" not in args.steps,
+    )
+
+    runner.add_test_group(
+        name="k2-kphp-tests",
+        description="run k2-kphp tests with cxx={}".format(args.cxx_name),
+        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+        "{kphp_runner} -j{jobs} --cxx-name {cxx_name} --k2-bin {k2_bin}".format(
+            jobs=n_cpu,
+            kphp_polyfills_repo=kphp_polyfills_repo,
+            kphp_runner=kphp_test_runner,
+            cxx_name=args.cxx_name,
+            k2_bin=args.k2_bin,
+        ),
+        skip=not args.k2_bin or (args.steps and "k2-kphp-tests" not in args.steps),
     )
 
     if args.zend_repo:
@@ -293,7 +348,7 @@ if __name__ == "__main__":
                 cxx_name=args.cxx_name,
                 use_nocc_option=use_nocc_option,
             ),
-            skip=args.steps and "zend-tests" not in args.steps
+            skip=args.steps and "zend-tests" not in args.steps,
         )
 
     tl2php_bin = os.path.join(kphp_repo_root, "objs/bin/tl2php")
@@ -301,23 +356,25 @@ if __name__ == "__main__":
     tl_tests_dir = make_relpath(runner_dir, "TL-tests")
     runner.add_test_group(
         name="tl2php",
-        description="gen php classes with tests from tl schema in {} mode".format("gcc"),
+        description="gen php classes with tests from tl schema in {} mode".format(
+            "gcc"
+        ),
         cmd="{env_vars} {tl2php} -i -t -f -d {tl_tests_dir} {combined_tlo}".format(
             env_vars=env_vars,
             tl2php=tl2php_bin,
             tl_tests_dir=tl_tests_dir,
-            combined_tlo=combined_tlo
+            combined_tlo=combined_tlo,
         ),
-        skip=args.steps and "tl2php" not in args.steps
+        skip=args.steps and "tl2php" not in args.steps,
     )
 
     runner.add_test_group(
         name="typed-tl-tests",
         description="run typed tl tests with cxx={}".format(args.cxx_name),
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
-            "KPHP_TL_SCHEMA={combined_tlo} "
-            "KPHP_GEN_TL_INTERNALS=1 "
-            "{kphp_runner} -j{jobs} -d {tl_tests_dir} --cxx-name {cxx_name} {use_nocc_option}".format(
+        "KPHP_TL_SCHEMA={combined_tlo} "
+        "KPHP_GEN_TL_INTERNALS=1 "
+        "{kphp_runner} -j{jobs} -d {tl_tests_dir} --cxx-name {cxx_name} {use_nocc_option}".format(
             jobs=n_cpu,
             kphp_polyfills_repo=kphp_polyfills_repo,
             combined_tlo=os.path.abspath(combined_tlo),
@@ -326,7 +383,7 @@ if __name__ == "__main__":
             cxx_name=args.cxx_name,
             use_nocc_option=use_nocc_option,
         ),
-        skip=args.steps and "typed-tl-tests" not in args.steps
+        skip=args.steps and "typed-tl-tests" not in args.steps,
     )
 
     runner.add_test_group(
@@ -336,11 +393,13 @@ if __name__ == "__main__":
             kphp_polyfills_repo=kphp_polyfills_repo,
             jobs=n_cpu,
             functional_tests_dir=functional_tests_dir,
-            base_tempdir=os.path.expanduser('~/_tmp')   # Workaround to make unix socket paths needed by pytest-mysql have length < 108 symbols
-                                                        # 108 is Linux limit for some reason, see https://blog.8-p.info/en/2020/06/11/unix-domain-socket-length/
+            base_tempdir=os.path.expanduser(
+                "~/_tmp"
+            ),  # Workaround to make unix socket paths needed by pytest-mysql have length < 108 symbols
+            # 108 is Linux limit for some reason, see https://blog.8-p.info/en/2020/06/11/unix-domain-socket-length/
             # nocc will be automatically used if NOCC_SERVERS_FILENAME is set
         ),
-        skip=args.steps and "functional-tests" not in args.steps
+        skip=args.steps and "functional-tests" not in args.steps,
     )
 
     if args.engine_repo and args.kphp_tests_repo:
@@ -348,20 +407,22 @@ if __name__ == "__main__":
             name="integration-tests",
             description="run kphp integration tests with cxx={}".format("gcc"),
             cmd="PYTHONPATH={lib_dir} "
-                "KPHP_TESTS_KPHP_REPO={kphp_repo_root} "
-                "KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
-                "KPHP_TESTS_INTERGRATION_TESTS_ENABLED=1 "
-                "python3 -m pytest --tb=native -n{jobs} -k '{exclude_pattern}' {tests_dir}".format(
+            "KPHP_TESTS_KPHP_REPO={kphp_repo_root} "
+            "KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+            "KPHP_TESTS_INTERGRATION_TESTS_ENABLED=1 "
+            "python3 -m pytest --tb=native -n{jobs} -k '{exclude_pattern}' {tests_dir}".format(
                 jobs=n_cpu,
                 lib_dir=os.path.join(runner_dir, "python"),
                 engine_repo=args.engine_repo,
                 kphp_repo_root=kphp_repo_root,
                 kphp_polyfills_repo=kphp_polyfills_repo,
-                exclude_pattern="not test_load_and_kill_worker" if args.use_asan else "",   # TODO: ASAN behaves very strange on this test that makes it flaky
+                exclude_pattern=(
+                    "not test_load_and_kill_worker" if args.use_asan else ""
+                ),  # TODO: ASAN behaves very strange on this test that makes it flaky
                 tests_dir=os.path.join(args.kphp_tests_repo, "python/tests"),
                 # nocc will be automatically used if NOCC_SERVERS_FILENAME is set
             ),
-            skip=args.steps and "integration-tests" not in args.steps
+            skip=args.steps and "integration-tests" not in args.steps,
         )
 
     runner.setup(args)
