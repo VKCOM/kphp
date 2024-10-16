@@ -30,7 +30,7 @@ void TypeInferer::add_node(Node *node) {
     recalc_node(node);
   }
   if (node) {
-    fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
+    // fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
   }
 }
 
@@ -38,7 +38,8 @@ void TypeInferer::add_edge(const Edge *edge) {
   if (edge) {
     auto lhs_type = edge->from->get_type()->as_human_readable();
     auto rhs_type = edge->to->get_type()->as_human_readable();
-    fprintf(stderr, "add_edge %d [%p %s] -> [%p %s]\n", get_thread_id(), edge->from, lhs_type.c_str(), edge->to, rhs_type.c_str());
+    // std::string via = edge->from_at ? edge->from_at->to_string().c_str() : "<nil>";
+    // fprintf(stderr, "add_edge %d [%p %s] -> [%p %s] from at %s\n", get_thread_id(), edge->from, lhs_type.c_str(), edge->to, rhs_type.c_str(), via.c_str());
   }
   edge->from->register_edge_from_this(edge);
   edge->to->register_edge_to_this(edge);

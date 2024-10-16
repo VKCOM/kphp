@@ -8,6 +8,7 @@
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/node-recalc.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/restriction-match-phpdoc.h"
 #include "compiler/vertex.h"
 
@@ -35,8 +36,12 @@ void VarNodeRecalc::do_recalc() {
   }
   // at first, we just calculate new_type_ without any checks
   for (const tinf::Edge *e : node->get_edges_from_this()) {
-    printf("via edge %p -> %p\n", e->from, e->to);
-    set_lca_at(e->from_at, as_rvalue(e->to));
+    std::string via = e->from_at ? e->from_at->to_string().c_str() : "<nil>";
+    // printf("via edge %p -> %p (at %s)\n", e->from, e->to, via.c_str());
+    if (node->var_ && node->var_->name == "abobus") {
+      puts("HERE!");
+    }
+    set_lca_at(e->from_at, as_rvalue(e->to)); // go deep dive here
     inferer_->add_node(e->to);
   }
 
