@@ -13,17 +13,17 @@
 
 // === Client =====================================================================================
 
-task_t<Optional<int64_t>> f$kphp_job_worker_start(string request, double timeout) noexcept;
+task_t<Optional<int64_t>> f$k2_job_worker_start(string request, double timeout) noexcept;
 
-task_t<bool> f$kphp_job_worker_start_no_reply(string request, double timeout) noexcept;
+task_t<bool> f$k2_job_worker_start_no_reply(string request, double timeout) noexcept;
 
-task_t<array<Optional<int64_t>>> f$kphp_job_worker_start_multi(array<string> requests, double timeout) noexcept;
+task_t<array<Optional<int64_t>>> f$k2_job_worker_start_multi(array<string> requests, double timeout) noexcept;
 
 // === Server =====================================================================================
 
-task_t<string> f$kphp_job_worker_fetch_request() noexcept;
+task_t<string> f$k2_job_worker_fetch_request() noexcept;
 
-task_t<int64_t> f$kphp_job_worker_store_response(string response) noexcept;
+task_t<int64_t> f$k2_job_worker_store_response(string response) noexcept;
 
 // === Misc =======================================================================================
 

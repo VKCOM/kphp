@@ -1,11 +1,9 @@
 <?php
 
-/** @kphp-extern-func-info generate-stub */
 function wait_concurrently ($id ::: future<any>) ::: bool;
 
-/** @kphp-extern-func-info can_throw generate-stub cpp_template_call */
+/** @kphp-extern-func-info can_throw cpp_template_call */
 function wait_multi (future<any>[] $resumables) ::: (^1[*][*] | null)[];
-
 
 function wait_queue_create (array< future<any> | false > $request_ids = []) ::: future_queue<^1[*][*]>;
 
