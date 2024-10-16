@@ -82,6 +82,15 @@ public:
 
   void store_string(std::string_view s) noexcept;
 
+  std::string_view fetch_bytes(size_t len) noexcept {
+    if (len > remaining()) {
+      return {};
+    }
+    std::string_view bytes_view{data() + pos(), len};
+    adjust(len);
+    return bytes_view;
+  }
+
   template<standard_layout T>
   std::optional<T> fetch_trivial() noexcept {
     if (m_remaining < sizeof(T)) {
