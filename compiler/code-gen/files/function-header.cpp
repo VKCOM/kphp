@@ -50,6 +50,12 @@ void FunctionH::compile(CodeGenerator &W) const {
 
     W << CloseNamespace();
     includes.start_next_block();
+
+    bool correct = function->name.find("test") != std::string::npos;
+    if (correct) {
+      puts("YYYYYYYY");
+    }
+
     includes.add_function_body_depends(function);
     W << includes;
     W << OpenNamespace();

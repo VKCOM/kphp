@@ -39,7 +39,7 @@ void VarNodeRecalc::do_recalc() {
     std::string via = e->from_at ? e->from_at->to_string().c_str() : "<nil>";
     // printf("via edge %p -> %p (at %s)\n", e->from, e->to, via.c_str());
     if (node->var_ && node->var_->name == "abobus") {
-      puts("HERE!");
+      // puts("HERE!");
     }
     set_lca_at(e->from_at, as_rvalue(e->to)); // go deep dive here
     inferer_->add_node(e->to);

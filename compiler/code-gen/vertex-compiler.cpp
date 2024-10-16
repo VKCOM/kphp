@@ -1815,7 +1815,7 @@ void compile_index_of_string(VertexAdaptor<op_index> root, CodeGenerator &W) {
 }
 
 void compile_index_of_object(VertexAdaptor<op_index> root, CodeGenerator &W) {
-  // For now, it never calls because in optimization pass op_index -> op_func_call "f$className$$offsetGet"
+  // It calls when root node is argument of var_dump func
   // It should be not only the var, but function call, too
   auto as_var = root->array().try_as<op_var>();
   auto var_id = as_var->var_id;
@@ -1826,16 +1826,21 @@ void compile_index_of_object(VertexAdaptor<op_index> root, CodeGenerator &W) {
   const auto *tpe = as_var->tinf_node.get_type();
   kphp_assert_msg(tpe, "cannot get tinf node");
 
-  printf("type = %s\n", tpe->as_human_readable().c_str());
+  // printf("type = %s\n", tpe->as_human_readable().c_str());
 
   auto klass = tpe->class_type();
   kphp_assert_msg(klass, "Klass badly does not exist");
 
-  // klass->debugPrint();
 
+
+  puts("WTFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
   const auto *method = klass->get_instance_method("offsetGet");
+  
 
   kphp_assert_msg(method, "no method \"offsetGet\"");
+
+  // TODO check how is it synchronized with inlude collector 
+  W.get_context().parent_func->dep.push_back(method->function);
 
   std::string method_name = "f$" + method->global_name();
   W << method_name << "(" << as_var << ",";
@@ -2437,6 +2442,13 @@ void compile_vertex(VertexPtr root, CodeGenerator &W) {
   OperationType tp = OpInfo::type(root->type());
 
   W << UpdateLocation(root->location);
+
+  if (auto as_func = root.try_as<op_function>()) {
+    if (as_func->func_id && as_func->func_id->name.find("test") != std::string::npos) {
+      puts("-----------------------------------------------------------");
+      as_func.debugPrint();
+    }
+  }
 
   bool close_par = root->val_ref_flag == val_r || root->val_ref_flag == val_l;
 
