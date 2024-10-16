@@ -61,7 +61,7 @@ task_t<mixed> f$confdata_get_value(string key) noexcept {
   const auto response{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
-  tlb.store_bytes(response.c_str(), static_cast<size_t>(response.size()));
+  tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
   tl::Maybe<tl::confdataValue> maybe_confdata_value{};
   if (!maybe_confdata_value.fetch(tlb)) {
     php_warning("couldn't fetch response");
@@ -83,7 +83,7 @@ task_t<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noex
   const auto response{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
-  tlb.store_bytes(response.c_str(), static_cast<size_t>(response.size()));
+  tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
   tl::Dictionary<tl::confdataValue> dict_confdata_value{};
   if (!dict_confdata_value.fetch(tlb)) {
     php_warning("couldn't fetch response");

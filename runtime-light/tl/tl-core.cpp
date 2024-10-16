@@ -25,14 +25,14 @@ void TLBuffer::store_string(std::string_view str) noexcept {
     str_len = 0;
     store_trivial<uint8_t>(str_len);
   }
-  store_bytes(str_buf, str_len);
+  store_bytes({str_buf, str_len});
 
   const auto total_len{size_len + str_len};
   const auto total_len_with_padding{(total_len + 3) & ~static_cast<string::size_type>(3)};
   const auto padding{total_len_with_padding - total_len};
 
   std::array padding_array{'\0', '\0', '\0', '\0'};
-  store_bytes(padding_array.data(), padding);
+  store_bytes({padding_array.data(), padding});
 }
 
 std::string_view TLBuffer::fetch_string() noexcept {

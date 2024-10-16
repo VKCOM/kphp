@@ -249,7 +249,7 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
     co_return make_fetch_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
   }
   rpc_ctx.rpc_buffer.clean();
-  rpc_ctx.rpc_buffer.store_bytes(data.c_str(), data.size());
+  rpc_ctx.rpc_buffer.store_bytes({data.c_str(), static_cast<size_t>(data.size())});
   co_return fetch_function_untyped(rpc_query);
 }
 
@@ -296,7 +296,7 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
     co_return error_factory.make_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
   }
   rpc_ctx.rpc_buffer.clean();
-  rpc_ctx.rpc_buffer.store_bytes(data.c_str(), data.size());
+  rpc_ctx.rpc_buffer.store_bytes({data.c_str(), static_cast<size_t>(data.size())});
   co_return fetch_function_typed(rpc_query, error_factory);
 }
 
@@ -404,7 +404,7 @@ bool is_int32_overflow(int64_t v) noexcept {
 }
 
 void store_raw_vector_double(const array<double> &vector) noexcept { // TODO: didn't we forget vector's length?
-  RpcComponentContext::get().rpc_buffer.store_bytes(reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count());
+  RpcComponentContext::get().rpc_buffer.store_bytes({reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count()});
 }
 
 void fetch_raw_vector_double(array<double> &vector, int64_t num_elems) noexcept {

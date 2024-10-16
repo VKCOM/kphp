@@ -69,9 +69,9 @@ public:
     m_remaining -= len;
   }
 
-  void store_bytes(const char *src, size_t len) noexcept {
-    m_buffer.append(src, len);
-    m_remaining += len;
+  void store_bytes(std::string_view bytes_view) noexcept {
+    m_buffer.append(bytes_view.data(), bytes_view.size());
+    m_remaining += bytes_view.size();
   }
 
   std::string_view fetch_bytes(size_t len) noexcept {
@@ -90,7 +90,7 @@ public:
   template<standard_layout T, standard_layout U>
   requires std::convertible_to<U, T> void store_trivial(const U &t) noexcept {
     // Here we rely on that endianness of architecture is Little Endian
-    store_bytes(reinterpret_cast<const char *>(std::addressof(t)), sizeof(T));
+    store_bytes({reinterpret_cast<const char *>(std::addressof(t)), sizeof(T)});
   }
 
   template<standard_layout T>

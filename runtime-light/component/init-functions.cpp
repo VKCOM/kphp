@@ -44,7 +44,7 @@ task_t<uint64_t> init_kphp_server_component() noexcept {
   const auto [buffer, size]{co_await read_all_from_stream(stream_d)};
   php_assert(size >= sizeof(uint32_t)); // check that we can fetch at least magic
   tl::TLBuffer tlb{};
-  tlb.store_bytes(buffer, static_cast<size_t>(size));
+  tlb.store_bytes({buffer, static_cast<size_t>(size)});
   get_platform_context()->allocator.free(buffer);
 
   switch (const auto magic{*reinterpret_cast<const uint32_t *>(tlb.data())}) { // lookup magic

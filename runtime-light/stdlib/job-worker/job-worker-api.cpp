@@ -68,7 +68,7 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
     const string response{(co_await wait_with_timeout_t{task_t<string>::awaiter_t{std::addressof(fetch_task)}, timeout}).value_or(string{})};
 
     tl::TLBuffer tlb{};
-    tlb.store_bytes(response.c_str(), static_cast<size_t>(response.size()));
+    tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
     tl::K2JobWorkerResponse jw_response{};
     if (!jw_response.fetch(tlb)) {
       co_return string{};
