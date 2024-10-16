@@ -87,11 +87,11 @@ std::string_view TLBuffer::fetch_string() noexcept {
     }
   }
   const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
-  if (m_remaining < total_len_with_padding - size_len) {
+  if (remaining() < total_len_with_padding - size_len) {
     return {}; // TODO: error handling
   }
 
-  std::string_view response{data() + m_pos, static_cast<size_t>(string_len)};
+  std::string_view response{data() + pos(), static_cast<size_t>(string_len)};
   adjust(total_len_with_padding - size_len);
   return response;
 }
