@@ -337,7 +337,6 @@ public:
   }
 
   VertexPtr on_enter_vertex(VertexPtr root) override {
-    puts("HERE88888888888!");
     if (stopped) {
       return root;
     }

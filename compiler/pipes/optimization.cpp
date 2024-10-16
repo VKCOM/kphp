@@ -129,25 +129,17 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
     }
   } else {
     PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
-    puts("HERE1");
     if (a_ptype == tp_Class) {
-      puts("HERE2");
-
       auto klass = tinf::get_type(a)->class_type();
       kphp_assert_msg(klass, "bad klass");
-
-      puts("HERE3");
 
       const auto *method = klass->get_instance_method("offsetSet");
 
       kphp_assert_msg(klass, "bad method");
 
-      puts("HERE4");
-
 
       // TODO assume here that key is present
       auto new_call = VertexAdaptor<op_func_call>::create(a, b, c).set_location(set_op->get_location());
-      puts("HERE5");
       
       new_call->str_val = method->global_name();
       new_call->func_id = method->function;
@@ -156,6 +148,8 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
       new_call->rl_type = set_op->rl_type;
       
       result = new_call;
+      // As I see it's reduntant, but I do not understand why
+      current_function->dep.emplace_back(method->function);
 
       return result;
     } else {
@@ -208,6 +202,10 @@ VertexPtr OptimizationPass::optimize_postfix_dec(VertexPtr root) {
   return root;
 }
 VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
+  if (current_function->name.find("test") != std::string::npos) {
+    puts("In optimize index in test func");
+    index.debugPrint();
+  }
   if (!index->has_key()) {
     if (index->rl_type == val_l) {
       kphp_error (0, "Unsupported []");
@@ -234,6 +232,9 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
     new_call->extra_type = op_ex_func_call_arrow; // Is that right?
     new_call->auto_inserted = true;
     new_call->rl_type = index->rl_type;
+
+    printf("CURRRRRRRRRRRRRRRRR = %s\n", current_function->name.c_str());
+    current_function->dep.emplace_back(method->function);
 
     return new_call;
   }

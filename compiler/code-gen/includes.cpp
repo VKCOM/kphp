@@ -10,10 +10,14 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
+#include <string>
 
 ExternInclude::ExternInclude(vk::string_view file_name) :
   file_name(file_name) {
   kphp_assert(!file_name.empty());
+  if (file_name.find("offsetGet") != std::string::npos) {
+    puts("Gotit");
+  }
 }
 
 void ExternInclude::compile(CodeGenerator &W) const {
@@ -58,6 +62,10 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
       lib_headers_.emplace(to_include->header_full_name, std::move(relative_path));
     } else if (!to_include->is_extern() || to_include->need_generated_stub) {
       kphp_assert(!to_include->header_full_name.empty());
+      auto file_name = to_include->name;
+      if (file_name.find("offsetGet") != std::string::npos) {
+        puts("Gotit x2");
+      }
       internal_headers_.emplace(to_include->header_full_name);
     }
   }
@@ -130,6 +138,12 @@ void IncludesCollector::add_all_class_types(const TypeData &tinf_type) {
 }
 
 void IncludesCollector::add_raw_filename_include(const std::string &file_name) {
+  if (file_name.find("bar_baz") != std::string::npos) {
+    puts("YEAH!");
+  }
+  if (file_name.find("offsetGet") != std::string::npos) {
+    puts("DONE!!!!");
+  }
   internal_headers_.emplace(file_name);
 }
 
@@ -141,6 +155,7 @@ void IncludesCollector::add_vertex_depends(VertexPtr v) {
     add_vertex_depends(child);
   }
   if (auto as_func_call = v.try_as<op_func_call>()) {
+    printf("func name = %s\n", as_func_call->func_id ? as_func_call->func_id->name.c_str() : "<unknown FuncID>");
     if (as_func_call->func_id) {
       const auto &header_full_name = as_func_call->func_id->header_full_name;
       if (!header_full_name.empty()) {
