@@ -408,6 +408,7 @@ const TypeData *TypeData::const_read_at(const MultiKey &multi_key) const {
 }
 
 void TypeData::make_structured() {
+  // TODO fix here for writing into objects that implements ArrayAccess
   // 'lvalue $s[idx]' makes $s array-typed: strings and tuples keep their types only for read-only operations
   if (ptype() < tp_array) {
     PrimitiveType new_ptype = type_lca(ptype(), tp_array);
@@ -440,11 +441,13 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
 
   PrimitiveType new_ptype = type_lca(lhs->ptype(), rhs->ptype());
   if (lhs->ptype_ == tp_array && rhs->ptype_ == tp_Class) {
-    puts("xxxxxxxxxxxxxxxxxxxxxxxxxxx HIT IT xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    printf("new type = %s\n", ptype_name(new_ptype));
-  }
-  if (rhs->ptype_ == tp_array && lhs->ptype_ == tp_Class) {
-    puts("yyyyyyyyyyyyyyyyyyyyyyyyyyy HIT IT yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy");
+    puts("HITIT FIRST");
+    if (lhs->get_write_flag()) {
+      // It means that lhs(==this) is something like that "$a[.] = "
+      new_ptype = tp_Class; // for array access
+      puts("HITIT SECOND");
+      printf("new type = %s\n", ptype_name(new_ptype));
+    }
   }
   if (new_ptype == tp_mixed) {
     if (lhs->ptype() == tp_array && lhs->lookup_at_any_key()) {
@@ -542,7 +545,7 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
   
   for (const Key &key : multi_key) {
     auto *prev = cur;
-    cur = cur->write_at(key);
+    cur = cur->write_at(key); // HERE
     // handle writing to a subkey of mixed (when cur is not structured)
     if (cur == nullptr) {
       if (prev->ptype() == tp_mixed) {
@@ -556,6 +559,10 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
       }
       return;
     }
+  }
+
+  if (cur->get_write_flag()) {
+    this->set_write_flag();
   }
 
   cur->set_lca(rhs, save_or_false, save_or_null, ffi_flags);

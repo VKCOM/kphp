@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/optimization.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/inferring/primitive-type.h"
 #include "compiler/kphp_assert.h"
 #include "compiler/operation.h"
@@ -127,7 +128,40 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
       result = VertexAdaptor<op_push_back_return>::create(a, c);
     }
   } else {
-    result = VertexAdaptor<op_set_value>::create(a, b, c);
+    PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
+    puts("HERE1");
+    if (a_ptype == tp_Class) {
+      puts("HERE2");
+
+      auto klass = tinf::get_type(a)->class_type();
+      kphp_assert_msg(klass, "bad klass");
+
+      puts("HERE3");
+
+      const auto *method = klass->get_instance_method("offsetSet");
+
+      kphp_assert_msg(klass, "bad method");
+
+      puts("HERE4");
+
+
+      // TODO assume here that key is present
+      auto new_call = VertexAdaptor<op_func_call>::create(a, b, c).set_location(set_op->get_location());
+      puts("HERE5");
+      
+      new_call->str_val = method->global_name();
+      new_call->func_id = method->function;
+      new_call->extra_type = op_ex_func_call_arrow; // Is that right?
+      new_call->auto_inserted = true;
+      new_call->rl_type = set_op->rl_type;
+      
+      result = new_call;
+
+      return result;
+    } else {
+      result = VertexAdaptor<op_set_value>::create(a, b, c);
+    }
+
   }
   result->location = set_op->get_location();
   result->extra_type = op_ex_internal_func;
@@ -199,6 +233,7 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
     new_call->func_id = method->function;
     new_call->extra_type = op_ex_func_call_arrow; // Is that right?
     new_call->auto_inserted = true;
+    new_call->rl_type = index->rl_type;
 
     return new_call;
   }

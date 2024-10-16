@@ -33,7 +33,7 @@ void NodeRecalc::on_new_type_became_tpError(const TypeData *because_of_type, con
 
   } else if ((mix_class || mix_class2) && !vk::any_of_equal(ptype_before_error, tp_tuple, tp_shape)) {
     const auto class_name = TermStringFormat::paint_green(mix_class ? mix_class->name : mix_class2->name);
-    kphp_error(0, fmt_format("Type Error: mix class {} with non-class: {} and {}\n", class_name, desc1, desc2));
+    kphp_error(0, fmt_format("Type Error: mix class {} with non-class: {} [{}] and {} [{}]\n", class_name, desc1, (void*)node_, desc2, (void*)because_of_rvalue.node));
 
   } else if (ptype_before_error == tp_tuple && because_of_type->ptype() == tp_tuple) {
     kphp_error(0, fmt_format("Type Error: inconsistent tuples {} and {}\n", desc1, desc2));
