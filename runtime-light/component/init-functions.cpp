@@ -47,7 +47,7 @@ task_t<uint64_t> init_kphp_server_component() noexcept {
   tlb.store_bytes({buffer, static_cast<size_t>(size)});
   get_platform_context()->allocator.free(buffer);
 
-  switch (const auto magic{*reinterpret_cast<const uint32_t *>(tlb.data())}) { // lookup magic
+  switch (const auto magic{*tlb.lookup_trivial<uint32_t>()}) { // lookup magic
     case tl::K2_INVOKE_HTTP_MAGIC: {
       process_k2_invoke_http(tlb);
       break;

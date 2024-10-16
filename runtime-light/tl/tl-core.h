@@ -104,6 +104,14 @@ public:
     adjust(sizeof(T));
     return t;
   }
+
+  template<standard_layout T>
+  std::optional<T> lookup_trivial() const noexcept {
+    if (remaining() < sizeof(T)) {
+      return std::nullopt;
+    }
+    return *reinterpret_cast<const T *>(data() + pos());
+  }
 };
 
 template<typename T>
