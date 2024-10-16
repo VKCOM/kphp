@@ -87,4 +87,41 @@ void ConfdataGetWildcard::store(TLBuffer &tlb) const noexcept {
   tlb.store_string({wildcard.c_str(), static_cast<size_t>(wildcard.size())});
 }
 
+// ===== HTTP =====
+
+bool K2InvokeHttp::fetch(TLBuffer &tlb) noexcept {
+  if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != K2_INVOKE_HTTP_MAGIC) {
+    return false;
+  }
+  const auto opt_flags{tlb.fetch_trivial<uint32_t>()};
+  if (!opt_flags.has_value() || !http_version.fetch(tlb)) {
+    return false;
+  }
+
+  const auto flags{*opt_flags};
+  const auto method_view{tlb.fetch_string()};
+  method = {method_view.data(), static_cast<string::size_type>(method_view.size())};
+  if (static_cast<bool>(flags & SCHEME_FLAG)) {
+    const auto scheme_view{tlb.fetch_string()};
+    opt_scheme.emplace(scheme_view.data(), static_cast<string::size_type>(scheme_view.size()));
+  }
+  if (static_cast<bool>(flags & HOST_FLAG)) {
+    const auto host_view{tlb.fetch_string()};
+    opt_host.emplace(host_view.data(), static_cast<string::size_type>(host_view.size()));
+  }
+  const auto path_view{tlb.fetch_string()};
+  path = {path_view.data(), static_cast<string::size_type>(path_view.size())};
+  if (static_cast<bool>(flags & QUERY_FLAG)) {
+    const auto query_view{tlb.fetch_string()};
+    opt_query.emplace(query_view.data(), static_cast<string::size_type>(query_view.size()));
+  }
+  if (!headers.fetch(tlb)) {
+    return false;
+  }
+  const auto body_view{tlb.fetch_bytes(tlb.remaining())};
+  body = {body_view.data(), static_cast<string::size_type>(body_view.size())};
+
+  return true;
+}
+
 } // namespace tl

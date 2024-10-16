@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/tl/tl-core.h"
@@ -81,6 +82,28 @@ struct ConfdataGetWildcard final {
   string wildcard;
 
   void store(TLBuffer &tlb) const noexcept;
+};
+
+// ===== HTTP =====
+
+inline constexpr uint32_t K2_INVOKE_HTTP_MAGIC = 0xd909'efe8;
+
+class K2InvokeHttp final {
+  static constexpr auto SCHEME_FLAG = static_cast<uint32_t>(1U << 0U);
+  static constexpr auto HOST_FLAG = static_cast<uint32_t>(1U << 1U);
+  static constexpr auto QUERY_FLAG = static_cast<uint32_t>(1U << 2U);
+
+public:
+  HttpVersion http_version{};
+  string method;
+  std::optional<string> opt_scheme;
+  std::optional<string> opt_host;
+  string path;
+  std::optional<string> opt_query;
+  dictionary<httpHeaderValue> headers{};
+  string body;
+
+  bool fetch(TLBuffer &tlb) noexcept;
 };
 
 } // namespace tl
