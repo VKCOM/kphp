@@ -35,7 +35,12 @@ void process_k2_invoke_job_worker(tl::TLBuffer &tlb) noexcept {
   get_component_context()->php_script_mutable_globals_singleton.get_superglobals().v$_SERVER.set_value(string{"JOB_ID"}, invoke_jw.job_id);
 }
 
-void process_k2_invoke_http([[maybe_unused]] tl::TLBuffer &tlb) noexcept {}
+void process_k2_invoke_http(tl::TLBuffer &tlb) noexcept {
+  tl::K2InvokeHttp invoke_http{};
+  if (!invoke_http.fetch(tlb)) {
+    php_error("erroneous http request");
+  }
+}
 
 } // namespace
 
