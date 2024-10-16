@@ -6,18 +6,15 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 
 #include "common/tl/constants/common.h"
 #include "runtime-light/tl/tl-core.h"
 
-namespace {
-
-constexpr auto K2_JOB_WORKER_IGNORE_ANSWER_FLAG = static_cast<uint32_t>(1U << 0U);
-
-} // namespace
-
 namespace tl {
+
+// ===== JOB WORKERS =====
 
 bool K2InvokeJobWorker::fetch(TLBuffer &tlb) noexcept {
   if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != K2_INVOKE_JOB_WORKER_MAGIC) {
@@ -33,7 +30,7 @@ bool K2InvokeJobWorker::fetch(TLBuffer &tlb) noexcept {
   }
   const auto body_view{tlb.fetch_string()};
 
-  ignore_answer = static_cast<bool>(*opt_flags & K2_JOB_WORKER_IGNORE_ANSWER_FLAG);
+  ignore_answer = static_cast<bool>(*opt_flags & IGNORE_ANSWER_FLAG);
   image_id = *opt_image_id;
   job_id = *opt_job_id;
   timeout_ns = *opt_timeout_ns;
@@ -42,7 +39,7 @@ bool K2InvokeJobWorker::fetch(TLBuffer &tlb) noexcept {
 }
 
 void K2InvokeJobWorker::store(TLBuffer &tlb) const noexcept {
-  const uint32_t flags{ignore_answer ? K2_JOB_WORKER_IGNORE_ANSWER_FLAG : 0x0};
+  const uint32_t flags{ignore_answer ? IGNORE_ANSWER_FLAG : 0x0};
   tlb.store_trivial<uint32_t>(K2_INVOKE_JOB_WORKER_MAGIC);
   tlb.store_trivial<uint32_t>(flags);
   tlb.store_trivial<uint64_t>(image_id);
@@ -50,6 +47,8 @@ void K2InvokeJobWorker::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint64_t>(timeout_ns);
   tlb.store_string({body.c_str(), body.size()});
 }
+
+// ===== CRYPTO =====
 
 void GetCryptosecurePseudorandomBytes::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(GET_CRYPTOSECURE_PSEUDORANDOM_BYTES_MAGIC);
@@ -76,6 +75,8 @@ void DigestVerify::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(algorithm);
   tlb.store_string(std::string_view{signature.c_str(), signature.size()});
 }
+
+// ===== CONFDATA =====
 
 void ConfdataGet::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CONFDATA_GET_MAGIC);
