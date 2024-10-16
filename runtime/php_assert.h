@@ -20,7 +20,6 @@ extern long long engine_tag_number;
 
 extern const char *engine_pid;
 
-extern int php_disable_warnings;
 extern int php_warning_level;
 extern int php_warning_minimum_level;
 

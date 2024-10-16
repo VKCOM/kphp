@@ -36,7 +36,6 @@ long long engine_tag_number = 0;
 
 const char *engine_pid = "] ";
 
-int php_disable_warnings = 0;
 int php_warning_level = 2;
 int php_warning_minimum_level = 0;
 
@@ -93,7 +92,7 @@ static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, bo
 }
 
 static void php_warning_impl(bool out_of_memory, int error_type, char const *message, va_list args) {
-  if (php_warning_level == 0 || php_disable_warnings) {
+  if (php_warning_level == 0 || KphpCoreContext::current().php_disable_warnings) {
     return;
   }
 
