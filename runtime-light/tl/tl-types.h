@@ -364,6 +364,42 @@ struct HttpVersion final {
   }
 };
 
+class httpUri final {
+  static constexpr auto SCHEME_FLAG = static_cast<uint32_t>(1U << 0U);
+  static constexpr auto HOST_FLAG = static_cast<uint32_t>(1U << 1U);
+  static constexpr auto QUERY_FLAG = static_cast<uint32_t>(1U << 2U);
+
+public:
+  std::optional<string> opt_scheme;
+  std::optional<string> opt_host;
+  string path;
+  std::optional<string> opt_query;
+
+  bool fetch(TLBuffer &tlb) noexcept {
+    const auto opt_flags{tlb.fetch_trivial<uint32_t>()};
+    if (!opt_flags.has_value()) {
+      return false;
+    }
+
+    const auto flags{*opt_flags};
+    if (static_cast<bool>(flags & SCHEME_FLAG)) {
+      const auto scheme_view{tlb.fetch_string()};
+      opt_scheme.emplace(scheme_view.data(), static_cast<string::size_type>(scheme_view.size()));
+    }
+    if (static_cast<bool>(flags & HOST_FLAG)) {
+      const auto host_view{tlb.fetch_string()};
+      opt_scheme.emplace(host_view.data(), static_cast<string::size_type>(host_view.size()));
+    }
+    const auto path_view{tlb.fetch_string()};
+    path = {path_view.data(), static_cast<string::size_type>(path_view.size())};
+    if (static_cast<bool>(flags & QUERY_FLAG)) {
+      const auto query_view{tlb.fetch_string()};
+      opt_scheme.emplace(query_view.data(), static_cast<string::size_type>(query_view.size()));
+    }
+    return true;
+  }
+};
+
 struct httpHeaderValue final {
   Bool is_sensitive{};
   string value;
@@ -378,6 +414,30 @@ struct httpHeaderValue final {
   void store(TLBuffer &tlb) const noexcept {
     is_sensitive.store(tlb);
     tlb.store_string({value.c_str(), static_cast<size_t>(value.size())});
+  }
+};
+
+struct httpConnection final {
+  string server_addr;
+  uint32_t server_port{};
+  string remote_addr;
+  uint32_t remote_port{};
+
+  bool fetch(TLBuffer &tlb) noexcept {
+    const auto server_addr_view{tlb.fetch_string()};
+    server_addr = {server_addr_view.data(), static_cast<string::size_type>(server_addr_view.size())};
+    const auto opt_server_port{tlb.fetch_trivial<uint32_t>()};
+    const auto remote_addr_view{tlb.fetch_string()};
+    remote_addr = {remote_addr_view.data(), static_cast<string::size_type>(remote_addr_view.size())};
+    const auto opt_remote_port{tlb.fetch_trivial<uint32_t>()};
+
+    if (!opt_server_port.has_value() || !opt_remote_port.has_value()) {
+      return false;
+    }
+
+    server_port = *opt_server_port;
+    remote_port = *opt_remote_port;
+    return true;
   }
 };
 

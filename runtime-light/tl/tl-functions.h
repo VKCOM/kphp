@@ -96,12 +96,10 @@ class K2InvokeHttp final {
   static constexpr auto QUERY_FLAG = static_cast<uint32_t>(1U << 2U);
 
 public:
-  HttpVersion http_version{};
+  httpConnection connection{};
+  HttpVersion version{};
   string method;
-  std::optional<string> opt_scheme;
-  std::optional<string> opt_host;
-  string path;
-  std::optional<string> opt_query;
+  httpUri uri{};
   dictionary<httpHeaderValue> headers{};
   string body;
 
