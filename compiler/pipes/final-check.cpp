@@ -604,13 +604,6 @@ void FinalCheckPass::on_start() {
 }
 
 VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
-  if (current_function->name == "test") {
-    if (auto as_op_func = vertex.try_as<op_function>()) {
-      // op_index
-      printf("\n====== test in FinalCheckPass ======\n");
-      as_op_func.debugPrint();
-    }
-  }
   if (vertex->type() == op_func_name) {
     kphp_error (0, fmt_format("Unexpected {} (maybe, it should be a define?)", vertex->get_string()));
   }
