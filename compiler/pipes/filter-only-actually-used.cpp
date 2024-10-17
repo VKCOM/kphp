@@ -317,10 +317,6 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   for (int id = 0; id < all.size(); ++id) {
     kphp_assert(get_index(all[id].first) == -1);
     set_index(all[id].first, id);
-    auto &func_data = all[id].first;
-    if (func_data->name.find("offsetGet") != std::string::npos) {
-      printf("In all func: %s (local name = %s)\n", func_data->name.c_str(), func_data->local_name().data());
-    }
   }
 
   // uncomment this to debug "invalid index of IdMap: -1"
@@ -366,10 +362,6 @@ void FilterOnlyActuallyUsedFunctionsF::on_finish(DataStream<FunctionPtr> &os) {
   // this should be the last step
   for (const auto &f : used_functions) {
     if (f) {
-      const auto &func_data = f;
-      if (func_data->name.find("offsetGet") != std::string::npos) {
-        printf("In used func: %s\n", func_data->name.c_str());
-      }
       os << f;
     }
   }

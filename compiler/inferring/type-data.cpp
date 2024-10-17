@@ -5,6 +5,7 @@
 #include "compiler/inferring/type-data.h"
 
 #include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
 #include <string>
 #include <vector>
 
@@ -354,22 +355,19 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
   }
   if (ptype() == tp_Class) {
     // TODO any race conditions?
-    puts("Wanna inference type for const_read_at");
     if (!class_type_.empty()) {
-      puts("class types are not empty!");
       auto klass = class_type(); // Here is the place to think about inheritance stuff
       // TODO better check here
       // What is first: checking interface methods compatibility or type inference? Looks like there is no happens-before relation
       const bool impl_aa =
         std::find_if(klass->implements.begin(), klass->implements.end(), [](ClassPtr x) { return x->name == "ArrayAccess"; }) != klass->implements.end();
 
-      printf("implementing ArrayAccess: %s\n", (impl_aa ? "yes" : "no"));
       if (impl_aa) {
         return get_type(tp_mixed);
       }
-
+      kphp_fail_msg("Read at class that does not implements ArrayAccess");
     } else {
-      puts("class types is empty! =(");
+      kphp_fail_msg("class types is empty! =(");
     }
   }
   if (!structured()) {
@@ -441,12 +439,9 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
 
   PrimitiveType new_ptype = type_lca(lhs->ptype(), rhs->ptype());
   if (lhs->ptype_ == tp_array && rhs->ptype_ == tp_Class) {
-    puts("HITIT FIRST");
     if (lhs->get_write_flag()) {
       // It means that lhs(==this) is something like that "$a[.] = "
       new_ptype = tp_Class; // for array access
-      puts("HITIT SECOND");
-      printf("new type = %s\n", ptype_name(new_ptype));
     }
   }
   if (new_ptype == tp_mixed) {
@@ -567,8 +562,6 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
 
   cur->set_lca(rhs, save_or_false, save_or_null, ffi_flags);
   if (cur->error_flag()) {  // proxy tp_Error from keys to the type itself
-    puts("------------ GONNA ERROR ---------------");
-    printf("%s -- %s\n", rhs->_debug_string().c_str(), cur->_debug_string().c_str());
     this->set_ptype(tp_Error);
   }
 }

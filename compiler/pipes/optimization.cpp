@@ -202,12 +202,6 @@ VertexPtr OptimizationPass::optimize_postfix_dec(VertexPtr root) {
   return root;
 }
 VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
-  if (current_function->name.find("test") != std::string::npos) {
-    // printf("Node addr in optimization: %p (%s)\n", &index->array()->tinf_node, index->array()->tinf_node.get_description().c_str());
-    
-    puts("In optimize index in test func");
-    index.debugPrint();
-  }
   if (!index->has_key()) {
     if (index->rl_type == val_l) {
       kphp_error (0, "Unsupported []");
@@ -219,13 +213,11 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
   auto &lhs = index->array();
   const auto *tpe = tinf::get_type(index->array()); // funny
   if (tpe->get_real_ptype() == tp_Class) {
-    puts("OUR CASE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    // index.debugPrint();
-
     auto klass = tpe->class_type();
     kphp_assert_msg(klass, "bad klass");
 
     const auto *method = klass->get_instance_method("offsetGet");
+    kphp_assert_msg(klass, "bad method");
 
     // TODO assume here that key is present
     auto new_call = VertexAdaptor<op_func_call>::create(lhs, index->key()).set_location(lhs);
@@ -235,7 +227,6 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
     new_call->auto_inserted = true;
     new_call->rl_type = index->rl_type;
 
-    printf("CURRRRRRRRRRRRRRRRR = %s\n", current_function->name.c_str());
     current_function->dep.emplace_back(method->function);
 
     return new_call;

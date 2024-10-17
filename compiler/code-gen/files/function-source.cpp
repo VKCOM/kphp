@@ -12,7 +12,6 @@
 #include "compiler/code-gen/naming.h"
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/stage.h"
-#include <string>
 
 FunctionCpp::FunctionCpp(FunctionPtr function) :
   function(function) {
@@ -37,16 +36,8 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   stage::set_function(function);
   function->name_gen_map = {};  // make codegeneration of this function idempotent
 
-  std::string name = function->name;
-  bool good = name.find("test") != std::string::npos;
-  if (good) {
-
-    puts("YYYYYYYY");
-  }
-
   IncludesCollector includes;
-  includes.add_function_body_depends(function); // here
-
+  includes.add_function_body_depends(function);
   W << includes;
 
   W << OpenNamespace();
@@ -58,15 +49,6 @@ void FunctionCpp::compile(CodeGenerator &W) const {
   W << UnlockComments();
   W << function->root << NL;
   W << LockComments();
-
-  if (good) {
-    static int here = 0;
-    here++;
-    printf("Attempt #%d\n", here);
-    // TODO
-    // understand why each var dump argument don't do anything during type infer
-    // Or why type info is present during code gen, but isn\t during optimization pass
-  }
 
   W << CloseNamespace();
   W << CloseFile();
