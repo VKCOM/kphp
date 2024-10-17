@@ -4,6 +4,8 @@
 
 #include "compiler/inferring/type-data.h"
 
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
 #include <string>
 #include <vector>
 
@@ -351,6 +353,23 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
   if (ptype() == tp_string) {
     return get_type(tp_string);
   }
+  if (ptype() == tp_Class) {
+    // TODO any race conditions?
+    if (!class_type_.empty()) {
+      auto klass = class_type(); // Here is the place to think about inheritance stuff
+      // TODO better check here
+      // What is first: checking interface methods compatibility or type inference? Looks like there is no happens-before relation
+      const bool impl_aa =
+        std::find_if(klass->implements.begin(), klass->implements.end(), [](ClassPtr x) { return x->name == "ArrayAccess"; }) != klass->implements.end();
+
+      if (impl_aa) {
+        return get_type(tp_mixed);
+      }
+      kphp_fail_msg("Read at class that does not implements ArrayAccess");
+    } else {
+      kphp_fail_msg("class types is empty! =(");
+    }
+  }
   if (!structured()) {
     return get_type(tp_any);
   }
@@ -387,6 +406,7 @@ const TypeData *TypeData::const_read_at(const MultiKey &multi_key) const {
 }
 
 void TypeData::make_structured() {
+  // TODO fix here for writing into objects that implements ArrayAccess
   // 'lvalue $s[idx]' makes $s array-typed: strings and tuples keep their types only for read-only operations
   if (ptype() < tp_array) {
     PrimitiveType new_ptype = type_lca(ptype(), tp_array);
@@ -418,6 +438,12 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   TypeData *lhs = this;
 
   PrimitiveType new_ptype = type_lca(lhs->ptype(), rhs->ptype());
+  if (lhs->ptype_ == tp_array && rhs->ptype_ == tp_Class) {
+    if (lhs->get_write_flag()) {
+      // It means that lhs(==this) is something like that "$a[.] = "
+      new_ptype = tp_Class; // for array access
+    }
+  }
   if (new_ptype == tp_mixed) {
     if (lhs->ptype() == tp_array && lhs->lookup_at_any_key()) {
       lhs->set_lca_at(MultiKey::any_key(1), TypeData::get_type(tp_mixed));
@@ -514,7 +540,7 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
   
   for (const Key &key : multi_key) {
     auto *prev = cur;
-    cur = cur->write_at(key);
+    cur = cur->write_at(key); // HERE
     // handle writing to a subkey of mixed (when cur is not structured)
     if (cur == nullptr) {
       if (prev->ptype() == tp_mixed) {
@@ -528,6 +554,10 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
       }
       return;
     }
+  }
+
+  if (cur->get_write_flag()) {
+    this->set_write_flag();
   }
 
   cur->set_lca(rhs, save_or_false, save_or_null, ffi_flags);

@@ -1027,7 +1027,8 @@ void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {
       } else if (tinf::get_type(var)->get_real_ptype() == tp_shape) {
         kphp_error(0, fmt_format("Accessing unexisting element of shape ${}", var->name));
       } else {
-        kphp_error(0, fmt_format("${} is {}, can not get element", var->name, tinf::get_type(var)->as_human_readable()));
+        // TODO fix smth here
+        // kphp_error(0, fmt_format("${} is {}, can not get element", var->name, tinf::get_type(var)->as_human_readable()));
       }
 
     } else {                                // multidimentional array[*]...[*] access
