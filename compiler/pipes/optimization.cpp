@@ -203,6 +203,8 @@ VertexPtr OptimizationPass::optimize_postfix_dec(VertexPtr root) {
 }
 VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
   if (current_function->name.find("test") != std::string::npos) {
+    // printf("Node addr in optimization: %p (%s)\n", &index->array()->tinf_node, index->array()->tinf_node.get_description().c_str());
+    
     puts("In optimize index in test func");
     index.debugPrint();
   }
@@ -215,7 +217,7 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
   }
 
   auto &lhs = index->array();
-  const auto *tpe = lhs->tinf_node.get_type();
+  const auto *tpe = tinf::get_type(index->array()); // funny
   if (tpe->get_real_ptype() == tp_Class) {
     puts("OUR CASE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     // index.debugPrint();
