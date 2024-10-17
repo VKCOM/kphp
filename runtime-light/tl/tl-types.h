@@ -264,7 +264,10 @@ struct Dictionary final {
 
 // ===== JOB WORKERS =====
 
-struct K2JobWorkerResponse final {
+class K2JobWorkerResponse final {
+  static constexpr uint32_t MAGIC = 0x3afb'3a08;
+
+public:
   int64_t job_id{};
   string body;
 
@@ -277,7 +280,10 @@ struct K2JobWorkerResponse final {
 
 // Actually it's "Maybe (Dictionary CertInfoItem)"
 // But I now want to have this logic separately
-struct GetPemCertInfoResponse final {
+class GetPemCertInfoResponse final {
+  enum CertInfoItem : uint32_t { LONG_MAGIC = 0x533f'f89f, STR_MAGIC = 0xc427'feef, DICT_MAGIC = 0x1ea8'a774 };
+
+public:
   array<mixed> data;
 
   bool fetch(TLBuffer &tlb) noexcept;

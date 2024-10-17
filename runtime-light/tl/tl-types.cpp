@@ -12,18 +12,10 @@
 #include "common/tl/constants/common.h"
 #include "runtime-light/tl/tl-core.h"
 
-namespace {
-
-enum CertInfoItem : uint32_t { LONG_MAGIC = 0x533f'f89f, STR_MAGIC = 0xc427'feef, DICT_MAGIC = 0x1ea8'a774 };
-
-constexpr uint32_t K2_JOB_WORKER_RESPONSE_MAGIC = 0x3afb'3a08;
-
-} // namespace
-
 namespace tl {
 
 bool K2JobWorkerResponse::fetch(TLBuffer &tlb) noexcept {
-  if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != K2_JOB_WORKER_RESPONSE_MAGIC) {
+  if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != MAGIC) {
     return false;
   }
 
@@ -40,7 +32,7 @@ bool K2JobWorkerResponse::fetch(TLBuffer &tlb) noexcept {
 }
 
 void K2JobWorkerResponse::store(TLBuffer &tlb) const noexcept {
-  tlb.store_trivial<uint32_t>(K2_JOB_WORKER_RESPONSE_MAGIC);
+  tlb.store_trivial<uint32_t>(MAGIC);
   tlb.store_trivial<uint32_t>(0x0); // flags
   tlb.store_trivial<int64_t>(job_id);
   tlb.store_string({body.c_str(), body.size()});
