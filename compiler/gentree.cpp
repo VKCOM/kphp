@@ -1722,6 +1722,7 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   cur_class->phpdoc = phpdoc;
   cur_class->is_immutable = phpdoc && phpdoc->has_tag(PhpDocType::kphp_immutable_class);
   cur_class->need_generated_stub = phpdoc && phpdoc->has_tag(PhpDocType::kphp_generated_stub_class);
+  cur_class->internal_interface = phpdoc && phpdoc->has_tag(PhpDocType::kphp_internal_interface);
   cur_class->location_line_num = line_num;
 
   bool registered = G->register_class(cur_class);
