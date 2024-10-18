@@ -493,7 +493,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     << (interruptible_call ? "task_t<" : "")
     << TypeName{tinf::get_type(rhs)}
     << (interruptible_call ? "> ": " ") << BEGIN
-      << (interruptible_call ? "co_return ": " ") << rhs << "return;" << NL
+      << (interruptible_call ? "co_return ": "return ") << rhs << ";" << NL
       << END;
     context.catch_labels.pop_back();
     kphp_assert(context.inside_null_coalesce_fallback > 0);
