@@ -237,6 +237,9 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
   // we skip them to avoid false positives
   if (derived_method->is_required && !derived_method->is_invoke_method()) {
     std::string error_info;
+    if (derived_method->as_human_readable() == "ResetPasswordBase::handleResponse") {
+      kphp_notice(fmt_format("{} is required", derived_method->as_human_readable()));
+    }
     if (!check_php_signatures_variance(interface_function, derived_method, error_info)) {
       stage::set_location(derived_method->root->location);
       kphp_error(false, fmt_format("Declaration of {}() must be compatible with {}()\n{}",
