@@ -233,6 +233,9 @@ bool check_that_signatures_are_same(FunctionPtr interface_function, ClassPtr con
     return false;
   }
 
+  if (derived_method->as_human_readable() == "ResetPasswordBase::handleResponse") {
+    kphp_notice(fmt_format("process {} with cond {}, {}", derived_method->as_human_readable(), derived_method->is_required, !derived_method->is_invoke_method()));
+  }
   // non-required methods may not have enough types information to be checked here;
   // we skip them to avoid false positives
   if (derived_method->is_required && !derived_method->is_invoke_method()) {
