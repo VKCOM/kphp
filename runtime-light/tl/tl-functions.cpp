@@ -94,7 +94,7 @@ bool K2InvokeHttp::fetch(TLBuffer &tlb) noexcept {
   if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != K2_INVOKE_HTTP_MAGIC) {
     return false;
   }
-  if (/* flags */ tlb.fetch_trivial<uint32_t>().has_value() || !connection.fetch(tlb) || !version.fetch(tlb)) {
+  if (/* flags */ !tlb.fetch_trivial<uint32_t>().has_value() || !connection.fetch(tlb) || !version.fetch(tlb)) {
     return false;
   }
 
