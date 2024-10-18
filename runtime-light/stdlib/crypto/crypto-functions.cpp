@@ -4,6 +4,8 @@
 
 #include "runtime-light/stdlib/crypto/crypto-functions.h"
 
+#include <cstddef>
+
 #include "common/tl/constants/common.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/tl/tl-core.h"
@@ -35,7 +37,7 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
   string resp = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
-  buffer.store_bytes(resp.c_str(), resp.size());
+  buffer.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
 
   // Maybe better to do this in some structure, but there's not much work to do with TL here
   std::optional<uint32_t> magic = buffer.fetch_trivial<uint32_t>();
@@ -59,7 +61,7 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
-  buffer.store_bytes(resp_from_platform.c_str(), resp_from_platform.size());
+  buffer.store_bytes({resp_from_platform.c_str(), static_cast<size_t>(resp_from_platform.size())});
 
   tl::GetPemCertInfoResponse response;
   if (!response.fetch(buffer)) {
@@ -79,7 +81,7 @@ task_t<bool> f$openssl_sign(const string &data, string &signature, const string 
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
-  buffer.store_bytes(resp_from_platform.c_str(), resp_from_platform.size());
+  buffer.store_bytes({resp_from_platform.c_str(), static_cast<size_t>(resp_from_platform.size())});
 
   std::optional<uint32_t> magic = buffer.fetch_trivial<uint32_t>();
   if (!magic.has_value() || *magic != TL_MAYBE_TRUE) {
@@ -102,7 +104,7 @@ task_t<int64_t> f$openssl_verify(const string &data, const string &signature, co
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
-  buffer.store_bytes(resp_from_platform.c_str(), resp_from_platform.size());
+  buffer.store_bytes({resp_from_platform.c_str(), static_cast<size_t>(resp_from_platform.size())});
 
   // For now returns only 1 or 0, -1 is never returned
   // Because it's currently impossible to distiguish error from negative verification
