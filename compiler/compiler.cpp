@@ -259,6 +259,7 @@ bool compiler_execute(CompilerSettings *settings) {
     // generics are also stopped by the SyncPipe above, they are instantiated on demand and passed here, see <1> output
     // do NOT insert any pipe before, see DeduceImplicitTypesAndCastsPass::check_function()
     >> PassC<DeduceImplicitTypesAndCastsPass>{}
+    >> PassC<CollectBuiltinsPass>{}
     >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<0>{}
     >> PipeC<EarlyOptimizationF>{}
     >> SyncC<GenerateVirtualMethodsF>{}
@@ -287,7 +288,6 @@ bool compiler_execute(CompilerSettings *settings) {
     >> SyncC<CheckRestrictionsF>{}
     >> PipeC<CFGEndF>{}
     >> PassC<CheckClassesPass>{}
-    >> PassC<CollectBuiltinsPass>{}
     >> PassC<CheckConversionsPass>{}
     >> PassC<OptimizationPass>{}
     >> PassC<ArrayAccessTransformPass>{}
