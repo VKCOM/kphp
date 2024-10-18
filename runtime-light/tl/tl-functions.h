@@ -5,7 +5,6 @@
 #pragma once
 
 #include <cstdint>
-#include <optional>
 
 #include "runtime-core/runtime-core.h"
 #include "runtime-light/tl/tl-core.h"
