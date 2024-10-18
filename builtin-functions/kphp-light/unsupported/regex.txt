@@ -26,7 +26,7 @@ function preg_replace_callback ($regex ::: regexp, callable(string[] $x):string 
 function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
 /** @kphp-extern-func-info generate-stub */
 function preg_last_error() ::: int;
-/** @kphp-extern-func-info generate-stub */
+
 function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
 
 
