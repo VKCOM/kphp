@@ -388,13 +388,13 @@ public:
     }
     if (static_cast<bool>(flags & HOST_FLAG)) {
       const auto host_view{tlb.fetch_string()};
-      opt_scheme.emplace(host_view.data(), static_cast<string::size_type>(host_view.size()));
+      opt_host.emplace(host_view.data(), static_cast<string::size_type>(host_view.size()));
     }
     const auto path_view{tlb.fetch_string()};
     path = {path_view.data(), static_cast<string::size_type>(path_view.size())};
     if (static_cast<bool>(flags & QUERY_FLAG)) {
       const auto query_view{tlb.fetch_string()};
-      opt_scheme.emplace(query_view.data(), static_cast<string::size_type>(query_view.size()));
+      opt_query.emplace(query_view.data(), static_cast<string::size_type>(query_view.size()));
     }
     return true;
   }
