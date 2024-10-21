@@ -1,5 +1,8 @@
 <?php
 
+
+define('FILE_APPEND', 1);
+
 /** @kphp-extern-func-info generate-stub */
 function basename ($name ::: string, $suffix ::: string = '') ::: string;
 /** @kphp-extern-func-info generate-stub */

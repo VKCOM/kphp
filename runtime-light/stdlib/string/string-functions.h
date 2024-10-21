@@ -8,11 +8,6 @@
 
 #include "runtime-light/stdlib/string/string-context.h"
 
-template<class T>
-Optional<int64_t> f$strpos(const string &, const Optional<T> &, int64_t = 0) {
-  php_critical_error("call to unsupported function");
-}
-
 inline int64_t f$strlen(const string &s) noexcept {
   return s.size();
 }
@@ -104,5 +99,14 @@ inline mixed f$str_ireplace(const mixed &, const mixed &, const mixed &, int64_t
 }
 
 inline int64_t f$similar_text(const string &, const string &, double & = StringComponentContext::get().default_similar_text_percent_stub) {
+  php_critical_error("call to unsupported function");
+}
+template<class T>
+string f$strtr(const string &, const array<T> &) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
+Optional<int64_t> f$strpos(const string &, const Optional<T> &, int64_t = 0) {
   php_critical_error("call to unsupported function");
 }
