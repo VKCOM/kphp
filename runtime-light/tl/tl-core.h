@@ -69,33 +69,49 @@ public:
     m_remaining -= len;
   }
 
-  void store_bytes(const char *src, size_t len) noexcept {
-    m_buffer.append(src, len);
-    m_remaining += len;
+  void store_bytes(std::string_view bytes_view) noexcept {
+    m_buffer.append(bytes_view.data(), bytes_view.size());
+    m_remaining += bytes_view.size();
   }
 
-  template<standard_layout T, standard_layout U>
-  requires std::convertible_to<U, T> void store_trivial(const U &t) noexcept {
-    // Here we rely on that endianness of architecture is Little Endian
-    store_bytes(reinterpret_cast<const char *>(std::addressof(t)), sizeof(T));
+  std::string_view fetch_bytes(size_t len) noexcept {
+    if (len > remaining()) {
+      return {};
+    }
+    std::string_view bytes_view{data() + pos(), len};
+    adjust(len);
+    return bytes_view;
   }
 
   void store_string(std::string_view s) noexcept;
 
+  std::string_view fetch_string() noexcept;
+
+  template<standard_layout T, standard_layout U>
+  requires std::convertible_to<U, T> void store_trivial(const U &t) noexcept {
+    // Here we rely on that endianness of architecture is Little Endian
+    store_bytes({reinterpret_cast<const char *>(std::addressof(t)), sizeof(T)});
+  }
+
   template<standard_layout T>
   std::optional<T> fetch_trivial() noexcept {
-    if (m_remaining < sizeof(T)) {
+    if (remaining() < sizeof(T)) {
       return std::nullopt;
     }
 
     // Here we rely on that endianness of architecture is Little Endian
-    const auto t{*reinterpret_cast<const T *>(m_buffer.c_str() + m_pos)};
-    m_pos += sizeof(T);
-    m_remaining -= sizeof(T);
+    const auto t{*reinterpret_cast<const T *>(data() + pos())};
+    adjust(sizeof(T));
     return t;
   }
 
-  std::string_view fetch_string() noexcept;
+  template<standard_layout T>
+  std::optional<T> lookup_trivial() const noexcept {
+    if (remaining() < sizeof(T)) {
+      return std::nullopt;
+    }
+    return *reinterpret_cast<const T *>(data() + pos());
+  }
 };
 
 template<typename T>
