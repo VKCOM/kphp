@@ -7,16 +7,19 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <string_view>
 #include <utility>
 
+#include "runtime-core/runtime-core.h"
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/init-functions.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
+#include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/header.h"
 #include "runtime-light/scheduler/scheduler.h"
-#include "runtime-light/stdlib/job-worker/job-worker-context.h"
+#include "runtime-light/server/job-worker/job-worker-server-context.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/utils/context.h"
 
@@ -48,8 +51,30 @@ void ComponentState::init_script_execution() noexcept {
 template<ComponentKind kind>
 task_t<void> ComponentState::run_component_prologue() noexcept {
   static_assert(kind != ComponentKind::Invalid);
-
   component_kind_ = kind;
+
+  // common initialization
+  auto &superglobals{php_script_mutable_globals_singleton.get_superglobals()};
+  superglobals.v$argc = static_cast<int64_t>(0); // TODO
+  superglobals.v$argv = array<mixed>{};          // TODO
+  {
+    const auto &platform_ctx{*get_platform_context()};
+
+    SystemTime sys_time{};
+    platform_ctx.get_system_time(std::addressof(sys_time));
+    const auto time_mcs{std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::nanoseconds{sys_time.since_epoch_ns}).count()};
+
+    using namespace PhpServerSuperGlobalIndices;
+    superglobals.v$_SERVER.set_value(string{ARGC, std::char_traits<char>::length(ARGC)}, superglobals.v$argc);
+    superglobals.v$_SERVER.set_value(string{ARGV, std::char_traits<char>::length(ARGV)}, superglobals.v$argv);
+    superglobals.v$_SERVER.set_value(string{PHP_SELF, std::char_traits<char>::length(PHP_SELF)}, string{}); // TODO: script name
+    superglobals.v$_SERVER.set_value(string{SCRIPT_NAME, std::char_traits<char>::length(SCRIPT_NAME)}, string{});
+    superglobals.v$_SERVER.set_value(string{REQUEST_TIME, std::char_traits<char>::length(REQUEST_TIME)}, static_cast<int64_t>(sys_time.since_epoch_ns));
+    superglobals.v$_SERVER.set_value(string{REQUEST_TIME_FLOAT, std::char_traits<char>::length(REQUEST_TIME_FLOAT)}, static_cast<double>(time_mcs));
+  }
+  // TODO sapi, env
+
+  // specific initialization
   if constexpr (kind == ComponentKind::CLI) {
     standard_stream_ = co_await init_kphp_cli_component();
   } else if constexpr (kind == ComponentKind::Server) {
@@ -67,7 +92,7 @@ task_t<void> ComponentState::run_component_epilogue() noexcept {
     co_return;
   }
   // do not flush output buffers if we are in job worker
-  if (JobWorkerServerComponentContext::get().kind != JobWorkerServerComponentContext::Kind::Invalid) {
+  if (job_worker_server_component_context.kind != JobWorkerServerComponentContext::Kind::Invalid) {
     co_return;
   }
   if (standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {

@@ -8,7 +8,40 @@
 #include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-core/runtime-core.h"
 
+namespace PhpServerSuperGlobalIndices {
+
+inline constexpr auto *ARGC = "argc";
+inline constexpr auto *ARGV = "argv";
+
+inline constexpr auto *PHP_SELF = "PHP_SELF";
+inline constexpr auto *SCRIPT_URL = "SCRIPT_URL";
+inline constexpr auto *SCRIPT_URI = "SCRIPT_URI";
+inline constexpr auto *SCRIPT_NAME = "SCRIPT_NAME";
+
+inline constexpr auto *REQUEST_URI = "REQUEST_URI";
+inline constexpr auto *REQUEST_TIME = "REQUEST_TIME";
+inline constexpr auto *REQUEST_METHOD = "REQUEST_METHOD";
+inline constexpr auto *REQUEST_TIME_FLOAT = "REQUEST_TIME_FLOAT";
+
+inline constexpr auto *JOB_ID = "JOB_ID";
+
+inline constexpr auto *SERVER_NAME = "SERVER_NAME";
+inline constexpr auto *SERVER_ADDR = "SERVER_ADDR";
+inline constexpr auto *SERVER_PORT = "SERVER_PORT";
+inline constexpr auto *SERVER_PROTOCOL = "SERVER_PROTOCOL";
+inline constexpr auto *SERVER_SOFTWARE = "SERVER_SOFTWARE";
+inline constexpr auto *SERVER_SIGNATURE = "SERVER_SIGNATURE";
+
+inline constexpr auto *REMOTE_ADDR = "REMOTE_ADDR";
+inline constexpr auto *REMOTE_PORT = "REMOTE_PORT";
+
+inline constexpr auto *QUERY_STRING = "QUERY_STRING";
+inline constexpr auto *GATEWAY_INTERFACE = "GATEWAY_INTERFACE";
+
+}; // namespace PhpServerSuperGlobalIndices
+
 struct PhpScriptBuiltInSuperGlobals {
+
   // variables below are PHP language superglobals
   mixed v$_SERVER;
   mixed v$_GET;
