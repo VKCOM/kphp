@@ -103,6 +103,10 @@ void *RuntimeAllocator::realloc_script_memory(void *mem, size_t new_size, size_t
 
 void RuntimeAllocator::free_script_memory(void *mem, size_t size) noexcept {
   php_assert(size);
+  if (unlikely(!is_script_allocator_available())) {
+    free_global_memory(mem, size);
+    return;
+  }
 
   ComponentState &rt_ctx = *get_component_context();
   rt_ctx.runtime_allocator.memory_resource.deallocate(mem, size);
