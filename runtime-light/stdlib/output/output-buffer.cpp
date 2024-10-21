@@ -60,7 +60,7 @@ Optional<string> f$ob_get_clean() noexcept {
   return httpResponse.output_buffers[httpResponse.current_buffer].str();
 }
 
-string f$ob_get_content() {
+string f$ob_get_contents() noexcept {
   Response &httpResponse{get_component_context()->response};
   return httpResponse.output_buffers[httpResponse.current_buffer].str();
 }
