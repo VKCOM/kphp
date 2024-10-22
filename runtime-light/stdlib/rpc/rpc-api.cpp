@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string_view>
 #include <utility>
 
 #include "common/algorithms/find.h"
@@ -404,7 +405,8 @@ bool is_int32_overflow(int64_t v) noexcept {
 }
 
 void store_raw_vector_double(const array<double> &vector) noexcept { // TODO: didn't we forget vector's length?
-  RpcComponentContext::get().rpc_buffer.store_bytes({reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count()});
+  const std::string_view vector_view{reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count()};
+  RpcComponentContext::get().rpc_buffer.store_bytes(vector_view);
 }
 
 void fetch_raw_vector_double(array<double> &vector, int64_t num_elems) noexcept {
