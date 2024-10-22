@@ -11,11 +11,13 @@ class LoggingLikeArray implements \ArrayAccess {
      * @param $value  mixed The value to set
      */
     public function offsetSet($offset, $value) {
-        echo "offsetSet\n";
+        echo "offsetSet ";
 
         if (is_null($offset)) {
+            echo "append\n";
             $this->data[] = $value;
         } else {
+            echo "by index\n";
             $this->data[$offset] = $value;
         }
     }
