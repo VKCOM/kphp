@@ -5,6 +5,7 @@
 #include "compiler/pipes/optimization.h"
 
 #include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/kphp_assert.h"
@@ -120,6 +121,31 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
     // '$s[] = ...' is forbidden for non-array types;
     // for arrays it's converted to push_back
     PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
+
+    if (a_ptype == tp_Class) {
+      auto klass = tinf::get_type(a)->class_type();
+      kphp_assert_msg(klass, "bad klass");
+
+      // TODO doesn't it have the problem with that some parent classes are not linked in chain yet?
+      const auto *method = klass->get_instance_method("offsetSet");
+
+      kphp_assert_msg(method, fmt::format("Class {} does not implement offsetSet", klass->name).c_str());
+
+
+      // TODO assume here that key is present
+      auto new_call = VertexAdaptor<op_func_call>::create(a, VertexAdaptor<op_null>::create(), c).set_location(set_op->get_location());
+      
+      new_call->str_val = method->global_name();
+      new_call->func_id = method->function;
+      new_call->extra_type = op_ex_func_call_arrow; // Is that right?
+      new_call->auto_inserted = true;
+      new_call->rl_type = set_op->rl_type;
+      
+      result = new_call;
+      return result;
+    }
+
+
     kphp_error (a_ptype == tp_array || a_ptype == tp_mixed,
                 fmt_format("Can not use [] for {}", type_out(tinf::get_type(a))));
 
