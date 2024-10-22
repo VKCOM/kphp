@@ -457,9 +457,15 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     W << "TRY_CALL_ " << MacroBegin{} << TypeName{type} << ", ";
   }
 
+  /* TODO:K2
+   * In current implementation all non-trivial finialize block marked as cpp coroutine.
+   * This leads to redundant coroutines, but eliminates the need to traverse the rhs subtree
+   * to find whether it actually contains interruptible call. It can be fixed in the future
+   * to reduce count of cpp coroutines.
+   */
   bool interruptible_call = G->is_output_mode_k2() &&
-    !vk::any_of_equal(rhs->type(), op_var, op_int_const, op_float_const, op_false, op_null) &&
-    W.get_context().parent_func->is_interruptible;
+                            !vk::any_of_equal(rhs->type(), op_var, op_int_const, op_float_const, op_false, op_null) &&
+                            W.get_context().parent_func->is_interruptible;
 
   if (interruptible_call) {
     W << "co_await ";
@@ -488,6 +494,10 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     auto &context = W.get_context();
     context.catch_labels.emplace_back();
     ++context.inside_null_coalesce_fallback;
+    /* TODO:K2
+     * It is not correctly to catch context by & in cpp coroutine case in general.
+     * But simple solution with catching by = isn't working
+     */
     FunctionSignatureGenerator(W) << "[&] ()";
     W << " -> "
     << (interruptible_call ? "task_t<" : "")
