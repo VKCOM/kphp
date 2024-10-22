@@ -13,10 +13,6 @@ Optional<int64_t> f$strpos(const string &, const Optional<T> &, int64_t = 0) {
   php_critical_error("call to unsupported function");
 }
 
-inline int64_t f$strlen(const string &s) noexcept {
-  return s.size();
-}
-
 inline tmp_string f$_tmp_substr(const string &, int64_t, int64_t = std::numeric_limits<int64_t>::max()) {
   php_critical_error("call to unsupported function");
 }

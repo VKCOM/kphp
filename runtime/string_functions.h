@@ -115,8 +115,6 @@ inline Optional<string> f$stristr(const string &haystack, const mixed &needle, b
 
 Optional<string> f$strrchr(const string &haystack, const string &needle);
 
-inline int64_t f$strlen(const string &s);
-
 int64_t f$strncmp(const string &lhs, const string &rhs, int64_t len);
 
 int64_t f$strnatcmp(const string &lhs, const string &rhs);
@@ -321,10 +319,6 @@ string f$number_format(double number, int64_t decimals, const mixed &dec_point, 
 
 string f$number_format(double number, int64_t decimals, const mixed &dec_point, const mixed &thousands_sep) {
   return f$number_format(number, decimals, dec_point.is_null() ? DOT : dec_point.to_string(), thousands_sep.is_null() ? COLON : thousands_sep.to_string());
-}
-
-int64_t f$strlen(const string &s) {
-  return s.size();
 }
 
 Optional<int64_t> f$stripos(const string &haystack, const mixed &needle, int64_t offset) {
