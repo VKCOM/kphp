@@ -1692,3 +1692,12 @@ interface ArrayAccess {
   public function offsetSet(mixed $offset, mixed $value);
   public function offsetUnset(mixed $offset);
 }
+
+if (0) {
+  /** @var ArrayAccess */
+  $x = null;
+  $x->offsetExists(0);
+  $x->offsetGet(0);
+  $x->offsetSet(0, 0);
+  $x->offsetUnset(0);
+}

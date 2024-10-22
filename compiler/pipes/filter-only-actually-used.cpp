@@ -294,8 +294,13 @@ void remove_unused_class_methods(const std::vector<FunctionAndEdges> &all, const
           return get_index(m.function) == -1 || !used_functions[m.function];
         });
       fun->class_id->members.remove_if(
-        [&used_functions](const ClassMemberInstanceMethod &m) {
-          return get_index(m.function) == -1 || !used_functions[m.function];
+        [&used_functions, class_id=fun->class_id](const ClassMemberInstanceMethod &m) {
+          bool cond = get_index(m.function) == -1 || !used_functions[m.function];
+          const std::string& name = m.global_name();
+          if (cond && name.find("offsetGet") != std::string::npos) {
+            printf("removing %s\n",name.c_str());
+          }
+          return !class_id->internal_interface && cond;
         });
     }
   }

@@ -11,6 +11,7 @@
 #include "compiler/inferring/restriction-match-phpdoc.h"
 #include "compiler/vertex.h"
 
+// Check in add_node that adding f$ArrayAccess$offsetGet
 class VarNodeRecalc : public NodeRecalc {
   static void on_restricted_type_mismatch(const tinf::Edge *edge, const TypeData *type_restriction);
 
