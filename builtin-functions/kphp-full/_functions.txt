@@ -1693,6 +1693,7 @@ interface ArrayAccess {
   public function offsetUnset(mixed $offset);
 }
 
+// TODO get rid of it
 if (0) {
   /** @var ArrayAccess */
   $x = null;

@@ -362,7 +362,12 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
       const bool impl_aa =
         std::find_if(klass->implements.begin(), klass->implements.end(), [](ClassPtr x) { return x->name == "ArrayAccess"; }) != klass->implements.end();
 
-      if (impl_aa) {
+      // Why offsetSet for ArrayAccess is going through here
+      // Can I just always return tp_mixed?
+      // And in some later pass (FinalCheckPass, for example) check that access via [.] is enabled only for arrays and classes that implements ArrayAccess (by chain) 
+      if (
+        true || 
+                  impl_aa || klass->name.find("ArrayAccess") != std::string::npos) {
         return get_type(tp_mixed);
       }
       kphp_fail_msg("Read at class that does not implements ArrayAccess");

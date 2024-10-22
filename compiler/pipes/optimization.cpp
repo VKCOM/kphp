@@ -134,9 +134,10 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
       auto klass = tinf::get_type(a)->class_type();
       kphp_assert_msg(klass, "bad klass");
 
+      // TODO doesn't it have the problem with that some parent classes are not linked in chain yet?
       const auto *method = klass->get_instance_method("offsetSet");
 
-      kphp_assert_msg(klass, "bad method");
+      kphp_assert_msg(method, fmt::format("Class {} does not implement offsetSet", klass->name).c_str());
 
 
       // TODO assume here that key is present
