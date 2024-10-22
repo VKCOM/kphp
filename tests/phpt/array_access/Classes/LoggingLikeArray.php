@@ -7,8 +7,8 @@ class LoggingLikeArray implements \ArrayAccess {
     protected $data = [];
 
     /**
-     * @param $offset mixed The offset to assign the value to
-     * @param $value  mixed The value to set
+     * @param $offset mixed
+     * @param $value  mixed
      */
     public function offsetSet($offset, $value) {
         echo "offsetSet ";
@@ -52,5 +52,12 @@ class LoggingLikeArray implements \ArrayAccess {
         echo "offsetGet\n";
 
         return $this->offsetExists($offset) ? $this->data[$offset] : null;
+    }
+
+    /**
+     * @return mixed[]
+     */
+    public function keys() {
+        return array_keys($this->data);
     }
 }

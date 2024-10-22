@@ -7,8 +7,8 @@ class LikeArray implements \ArrayAccess {
     protected $data = [];
 
     /**
-     * @param $offset mixed The offset to assign the value to
-     * @param $value  mixed The value to set
+     * @param $offset mixed
+     * @param $value  mixed
      */
     public function offsetSet($offset, $value) {
         if (is_null($offset)) {
