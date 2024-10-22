@@ -95,7 +95,6 @@ std::vector<Task *> TypeInferer::get_tasks() {
   return res;
 }
 
-[[clang::optnone]]
 void TypeInferer::do_run_queue() {
   NodeQueue &q = Q.get();
 

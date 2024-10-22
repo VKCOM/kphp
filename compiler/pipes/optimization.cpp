@@ -150,9 +150,6 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
       new_call->rl_type = set_op->rl_type;
       
       result = new_call;
-      // As I see it's reduntant, but I do not understand why
-      current_function->dep.emplace_back(method->function);
-
       return result;
     } else {
       result = VertexAdaptor<op_set_value>::create(a, b, c);
@@ -203,7 +200,6 @@ VertexPtr OptimizationPass::optimize_postfix_dec(VertexPtr root) {
   }
   return root;
 }
-[[clang::optnone]]
 VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
   if (!index->has_key()) {
     if (index->rl_type == val_l) {
