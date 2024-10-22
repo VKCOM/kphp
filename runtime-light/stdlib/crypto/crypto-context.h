@@ -6,8 +6,8 @@
 
 #include "runtime-core/runtime-core.h"
 
-struct CryptoComponentContext {
-  string default_tag_dummy{};
+struct CryptoComponentContext final : vk::not_copyable {
+  string default_tag_dummy;
 
   static CryptoComponentContext &get() noexcept;
 };

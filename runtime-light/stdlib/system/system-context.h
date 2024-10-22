@@ -8,9 +8,9 @@
 
 #include "runtime-core/runtime-core.h"
 
-struct SystemComponentContext {
+struct SystemComponentContext final : vk::not_copyable {
   int64_t result_code_dummy{};
-  Optional<int64_t> rest_index_dummy{};
+  Optional<int64_t> rest_index_dummy;
 
   static SystemComponentContext &get() noexcept;
 };
