@@ -43,4 +43,11 @@ class LikeArray implements \ArrayAccess {
     public function offsetGet($offset) {
         return $this->offsetExists($offset) ? $this->data[$offset] : null;
     }
+
+    /**
+     * @return mixed[]
+     */
+    public function keys() {
+        return array_keys($this->data);
+    }
 }

@@ -7,13 +7,12 @@ function test() {
     $obj = new Classes\LoggingLikeArray();
 
     foreach ($arr as $k => $v) {
-        $arr[$k] = $v;
+        $obj[$k] = $v;
     }
 
     foreach ($arr as $k => $v) {
-        var_dump("Expect: $v\n");
         $v2 = $obj[$k];
-        var_dump("Got: $v2\n");
+        assert_true($v == $v2);
     }
 }
 
