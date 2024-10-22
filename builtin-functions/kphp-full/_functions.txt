@@ -1696,9 +1696,9 @@ interface ArrayAccess {
 // TODO get rid of it
 if (0) {
   /** @var ArrayAccess */
-  $x = null;
-  $x->offsetExists(0);
-  $x->offsetGet(0);
-  $x->offsetSet(0, 0);
-  $x->offsetUnset(0);
+  $_should_be_unique_var_name_123 = null;
+  $_should_be_unique_var_name_123->offsetExists(0);
+  $_should_be_unique_var_name_123->offsetGet(0);
+  $_should_be_unique_var_name_123->offsetSet(0, 0);
+  $_should_be_unique_var_name_123->offsetUnset(0);
 }
