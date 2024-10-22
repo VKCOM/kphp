@@ -2,7 +2,7 @@
 
 namespace Classes;
 
-class LikeArray implements \ArrayAccess {
+class LoggingLikeArray implements \ArrayAccess {
     /**  @var mixed[] */
     protected $data = [];
 
@@ -11,6 +11,8 @@ class LikeArray implements \ArrayAccess {
      * @param $value  mixed The value to set
      */
     public function offsetSet($offset, $value) {
+        echo "offsetSet\n";
+
         if (is_null($offset)) {
             $this->data[] = $value;
         } else {
@@ -23,6 +25,8 @@ class LikeArray implements \ArrayAccess {
      * @return bool
      */
     public function offsetExists($offset) {
+        echo "offsetExists\n";
+
         return isset($this->data[$offset]);
     }
 
@@ -31,6 +35,8 @@ class LikeArray implements \ArrayAccess {
      * @return void
      */
     public function offsetUnset($offset) {
+        echo "offsetUnset\n";
+
         if ($this->offsetExists($offset)) {
             unset($this->data[$offset]);
         }
@@ -41,6 +47,8 @@ class LikeArray implements \ArrayAccess {
      * @return mixed
      */
     public function offsetGet($offset) {
+        echo "offsetGet\n";
+
         return $this->offsetExists($offset) ? $this->data[$offset] : null;
     }
 }
