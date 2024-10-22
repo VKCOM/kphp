@@ -6,6 +6,7 @@
 
 #include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/inferring/primitive-type.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/kphp_assert.h"
 #include "compiler/operation.h"
 #include <sstream>
@@ -201,6 +202,7 @@ VertexPtr OptimizationPass::optimize_postfix_dec(VertexPtr root) {
   }
   return root;
 }
+[[clang::optnone]]
 VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
   if (!index->has_key()) {
     if (index->rl_type == val_l) {
@@ -217,8 +219,9 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
     kphp_assert_msg(klass, "bad klass");
 
     const auto *method = klass->get_instance_method("offsetGet");
-    kphp_assert_msg(klass, "bad method");
-
+    if (!method) {
+      kphp_assert_msg(method, "bad method");
+    }
     // TODO assume here that key is present
     auto new_call = VertexAdaptor<op_func_call>::create(lhs, index->key()).set_location(lhs);
     new_call->str_val = method->global_name();
@@ -228,6 +231,13 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
     new_call->rl_type = index->rl_type;
 
     current_function->dep.emplace_back(method->function);
+
+    // For interfaces, I should construct type node here?
+    auto &node = new_call->tinf_node;
+    auto * tdata = new TypeData(*method->function->tinf_node.get_type());
+    auto xxx = method->function->tinf_node;
+    node.set_type(tdata);
+    tinf::get_type(new_call); // why OK for LikeArray, but bad for array access
 
     return new_call;
   }
@@ -376,6 +386,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   }
 
   if (root->rl_type != val_none/* && root->rl_type != val_error*/) {
+    // wtf?
     tinf::get_type(root);
   }
   return root;
