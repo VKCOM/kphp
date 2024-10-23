@@ -70,6 +70,8 @@ file(
 add_library(php_lib_version_j OBJECT
             ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp)
 target_compile_options(php_lib_version_j PRIVATE -I. -E)
+target_compile_options(php_lib_version_j PUBLIC -stdlib=libc++)
+target_link_options(php_lib_version_j PUBLIC -stdlib=libc++ -static-libstdc++)
 add_dependencies(php_lib_version_j kphp-light-runtime)
 
 add_custom_command(

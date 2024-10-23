@@ -75,6 +75,10 @@ void TracingAutogen::codegen_runtime_func_guard_declaration(CodeGenerator &W, Fu
 }
 
 void TracingAutogen::codegen_runtime_func_guard_start(CodeGenerator &W, FunctionPtr f) {
+  if (G->is_output_mode_k2()) {
+    // The current version of runtime-light does not support tracing
+    return;
+  }
   if (!f->kphp_tracing->is_aggregate()) {
     std::string title = replace_characters(f->kphp_tracing->span_title, '\\', '/');
     W << "_tr_f.start(\"" << title << "\"," << title.size() << "," << f->kphp_tracing->level << ");" << NL;

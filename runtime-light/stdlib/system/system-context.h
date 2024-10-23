@@ -8,9 +8,11 @@
 
 #include "runtime-core/runtime-core.h"
 
-struct FileStreamComponentContext {
-  mixed error_number_dummy;
-  mixed error_description_dummy;
+struct SystemComponentContext final : vk::not_copyable {
+  int64_t result_code_dummy{};
+  Optional<int64_t> rest_index_dummy;
 
-  static FileStreamComponentContext &get() noexcept;
+  static SystemComponentContext &get() noexcept;
 };
+
+
