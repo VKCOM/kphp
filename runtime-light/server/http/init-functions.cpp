@@ -14,6 +14,7 @@
 #include <utility>
 
 #include "runtime-core/runtime-core.h"
+#include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/http/http-server-context.h"
@@ -98,7 +99,7 @@ void process_headers(tl::dictionary<tl::httpHeaderValue> &&headers, PhpScriptBui
     } else if (std::strcmp(header_name.c_str(), HEADER_HOST) == 0) {
       server.set_value(string{SERVER_NAME, std::char_traits<char>::length(SERVER_NAME)}, header.value);
     } else if (std::strcmp(header_name.c_str(), HEADER_AUTHORIZATION) == 0) {
-      // TODO parse authorization
+      php_warning("authorization not implemented"); // TODO parse authorization
     }
     // add header entries
     string key{};
@@ -154,6 +155,7 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
 
   if (invoke_http.uri.opt_query.has_value()) {
     // TODO v_GET
+    php_warning("v_GET not implemented");
     server.set_value(string{QUERY_STRING, std::char_traits<char>::length(QUERY_STRING)}, *invoke_http.uri.opt_query);
 
     string uri_string{};
@@ -168,11 +170,12 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
 
   process_headers(std::move(invoke_http.headers), superglobals);
   // TODO connection_kind, CONTENT_TYPE, is_head_query, _REQUEST, v_POST
+  php_warning("conncetion kind, content type, post and head methods, _REQUEST superglobal are not supported yet");
 
   string real_scheme_header{HTTP_X_REAL_SCHEME, std::char_traits<char>::length(HTTP_X_REAL_SCHEME)};
   string real_host_header{HTTP_X_REAL_HOST, std::char_traits<char>::length(HTTP_X_REAL_HOST)};
   string real_request_header{HTTP_X_REAL_REQUEST, std::char_traits<char>::length(HTTP_X_REAL_REQUEST)};
-  if (server.isset(real_scheme_header) || server.isset(real_host_header) || server.isset(real_request_header)) {
+  if (server.isset(real_scheme_header) && server.isset(real_host_header) && server.isset(real_request_header)) {
     string real_scheme{server.get_value(real_request_header).to_string()};
     string real_host{server.get_value(real_host_header).to_string()};
     string real_request{server.get_value(real_request_header).to_string()};
