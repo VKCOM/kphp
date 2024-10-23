@@ -55,7 +55,7 @@ void default_sigalrm_handler(int signum) {
       if (is_json_log_on_timeout_enabled) {
         vk::singleton<JsonLogger>::get().write_log_with_backtrace("Maximum execution time exceeded", E_ERROR);
       }
-      perform_error_if_running("timeout exit\n", script_error_t::timeout);
+      perform_error_if_running("timeout exit\n", script_error_t::timeout, signum);
     }
   }
 }
@@ -88,13 +88,13 @@ void sigalrm_handler(int signum) {
         setitimer(ITIMER_REAL, &timer, nullptr);
       } else {
         // if there's no shutdown functions terminate script now
-        perform_error_if_running("soft timeout exit\n", script_error_t::timeout);
+        perform_error_if_running("soft timeout exit\n", script_error_t::timeout, signum);
       }
     } else {
       kwrite_str(2, "hard timeout expired\n");
       // [3] code in script context and this is the second timeout
       // time to start shutdown functions has expired, emergency shutdown
-      perform_error_if_running("hard timeout exit\n", script_error_t::timeout);
+      perform_error_if_running("hard timeout exit\n", script_error_t::timeout, signum);
     }
   }
 }
@@ -104,7 +104,7 @@ void sigusr2_handler(int signum) {
   if (check_signal_critical_section(signum, "SIGUSR2")) {
     PhpScript::memory_limit_exceeded = true;
     if (PhpScript::in_script_context) {
-      perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
+      perform_error_if_running("memory limit exit\n", script_error_t::memory_limit, signum);
     }
   }
 }
@@ -112,14 +112,14 @@ void sigusr2_handler(int signum) {
 void php_assert_handler(int signum) {
   kwrite_str(2, "in php_assert_handler (SIGRTMIN+1 signal)\n");
   if (check_signal_critical_section(signum, "SIGRTMIN+1")) {
-    perform_error_if_running("php assert error\n", script_error_t::php_assert);
+    perform_error_if_running("php assert error\n", script_error_t::php_assert,signum);
   }
 }
 
 void stack_overflow_handler(int signum) {
   kwrite_str(2, "in stack_overflow_handler (SIGRTMIN+2 signal)\n");
   if (check_signal_critical_section(signum, "SIGRTMIN+2")) {
-    perform_error_if_running("stack overflow error\n", script_error_t::stack_overflow);
+    perform_error_if_running("stack overflow error\n", script_error_t::stack_overflow, signum);
   }
 }
 
@@ -187,7 +187,7 @@ void sigsegv_handler(int signum, siginfo_t *info, void *ucontext) {
       kwrite_str(2, "In critical section: calling _exit (124)\n");
       _exit(124);
     } else {
-      PhpScript::error("sigsegv(stack overflow)", script_error_t::stack_overflow);
+      PhpScript::error("sigsegv(stack overflow)", script_error_t::stack_overflow, signum);
     }
   } else {
     const char *msg = signum == SIGBUS ? "SIGBUS terminating program" : "SIGSEGV terminating program";
@@ -227,10 +227,10 @@ void sigabrt_handler(int, siginfo_t *info, void *) {
 
 
 //mark no return
-void perform_error_if_running(const char *msg, script_error_t error_type) {
+void perform_error_if_running(const char *msg, script_error_t error_type, const std::optional<int> &triggered_by_signal) {
   if (PhpScript::in_script_context) {
     kwrite_str(2, msg);
-    PhpScript::error(msg, error_type);
+    PhpScript::error(msg, error_type, triggered_by_signal);
     assert ("unreachable point" && 0);
   }
 }
