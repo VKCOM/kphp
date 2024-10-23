@@ -130,7 +130,7 @@ public:
   script_result *res{nullptr};
 
   static void script_context_entrypoint() noexcept;
-  static void error(const char *error_message, script_error_t error_type) noexcept;
+  static void error(const char *error_message, script_error_t error_type, const std::optional<int> &triggered_by_signal) noexcept;
 
   PhpScript(size_t mem_size, double oom_handling_memory_ratio, size_t stack_size) noexcept;
   ~PhpScript() noexcept;

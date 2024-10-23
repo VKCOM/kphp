@@ -12,6 +12,7 @@
 
 #include "common/kprintf.h"
 #include "common/ucontext/ucontext-portable.h"
+#include <ucontext.h>
 
 struct crash_dump_buffer {
   char scratchpad[1024];

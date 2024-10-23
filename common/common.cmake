@@ -37,7 +37,14 @@ prepend(COMMON_TL_METHODS_SOURCES ${COMMON_DIR}/tl/methods/
 
 if (NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     prepend(COMMON_UCONTEXT_SOURCES ${COMMON_DIR}/ucontext/
-            ucontext-arm.cpp)
+            darwin/aarch64/context.cpp)
+else()
+    prepend(COMMON_UCONTEXT_SOURCES ${COMMON_DIR}/ucontext/
+            linux/x86_64/startcontext.S
+            linux/x86_64/getcontext.S
+            linux/x86_64/setcontext.S
+            linux/x86_64/swapcontext.S
+            linux/x86_64/makecontext.cpp)
 endif()
 
 set(COMMON_ALL_SOURCES

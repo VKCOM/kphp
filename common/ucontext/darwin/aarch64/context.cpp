@@ -3,11 +3,10 @@
 // Copyright (c) 2023 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "common/ucontext/ucontext-arm.h"
+#include "context.h"
 
 #include <cstdarg>
 #include <cstdint>
-#include <cstdio>
 #include <cstdlib>
 
 enum { SP_OFFSET = 432, PC_OFFSET = 440, PSTATE_OFFSET = 448, FPSIMD_CONTEXT_OFFSET = 464 };
@@ -31,6 +30,8 @@ static_assert(offsetof(libucontext_ucontext, uc_mcontext.sp) == SP_OFFSET, "SP_O
 static_assert(offsetof(libucontext_ucontext, uc_mcontext.pc) == PC_OFFSET, "PC_OFFSET is invalid");
 static_assert(offsetof(libucontext_ucontext, uc_mcontext.pstate) == PSTATE_OFFSET, "PSTATE_OFFSET is invalid");
 
+extern "C" int setcontext_portable(const libucontext_ucontext *);
+
 __attribute__((visibility("hidden"))) void libucontext_trampoline() {
   libucontext_ucontext *uc_link = nullptr;
 
@@ -40,10 +41,10 @@ __attribute__((visibility("hidden"))) void libucontext_trampoline() {
     exit(0);
   }
 
-  libucontext_setcontext(uc_link);
+  setcontext_portable(uc_link);
 }
 
-void libucontext_makecontext(libucontext_ucontext *ucp, void (*func)(), int argc, ...) {
+extern "C" void makecontext_portable(libucontext_ucontext *ucp, void (*func)(), int argc, ...) {
   unsigned long *sp;
   unsigned long *regp;
   va_list va;
@@ -73,9 +74,9 @@ void libucontext_makecontext(libucontext_ucontext *ucp, void (*func)(), int argc
   va_end(va);
 }
 
-asm(".global " NAME(libucontext_getcontext) ";\n"
+asm(".global " NAME(getcontext_portable) ";\n"
     ".align  2;\n"
-    NAME(libucontext_getcontext) ":\n"
+    NAME(getcontext_portable) ":\n"
     "str	xzr, [x0, #((184) + ((0) * (8)))]\n"       // #REG_OFFSET(0)
     /* save GPRs */
     "stp	x0, x1,   [x0, #((184) + ((0) * (8)))]\n"  // REG_OFFSET(0)
@@ -109,9 +110,9 @@ asm(".global " NAME(libucontext_getcontext) ";\n"
     "mov	x0, #0\n"
     "ret\n");
 
-asm(".global " NAME(libucontext_setcontext) ";\n"
+asm(".global " NAME(setcontext_portable) ";\n"
     ".align  2;\n"
-    NAME(libucontext_setcontext) ":\n"
+    NAME(setcontext_portable) ":\n"
     /* restore GPRs */
     "ldp	x18, x19, [x0, #((184) + ((18) * (8)))]\n" // REG_OFFSET(18)
     "ldp	x20, x21, [x0, #((184) + ((20) * (8)))]\n" // REG_OFFSET(20)
@@ -138,9 +139,9 @@ asm(".global " NAME(libucontext_setcontext) ";\n"
     /* jump to new PC */
     "br	x16\n");
 
-asm(".global " NAME(libucontext_swapcontext) ";\n"
+asm(".global " NAME(swapcontext_portable) ";\n"
     ".align  2;\n"
-    NAME(libucontext_swapcontext) ":\n"
+    NAME(swapcontext_portable) ":\n"
     "str	xzr, [x0, #((184) + ((0) * (8)))]\n"       // REG_OFFSET(0)
 	  /* save GPRs */
 	  "stp	x2, x3,   [x0, #((184) + ((2) * (8)))]\n"  // REG_OFFSET(2)
@@ -175,7 +176,7 @@ asm(".global " NAME(libucontext_swapcontext) ";\n"
     "mov	x28, x30\n"
     /* move x1 to x0 and call setcontext */
     "mov	x0, x1\n"
-    "bl " NAME(libucontext_setcontext) "\n"
+    "bl " NAME(setcontext_portable) "\n"
 	  /* hmm, we came back here try to return */
 	  "mov	x30, x28\n"
     "ret\n");

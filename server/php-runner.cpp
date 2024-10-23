@@ -4,6 +4,7 @@
 
 #include "server/php-runner.h"
 
+#include "common/ucontext/ucontext-portable.h"
 #include <cassert>
 #include <cerrno>
 #include <cstdlib>
@@ -81,13 +82,24 @@ void send_slow_net_event_stats(const net_event_t &event, double time_sec) noexce
 
 } // namespace
 
-void PhpScript::error(const char *error_message, script_error_t error_type) noexcept {
+void PhpScript::error(const char *error_message, script_error_t error_type, [[maybe_unused]] const std::optional<int> &triggered_by_signal) noexcept {
   assert (in_script_context == true);
   in_script_context = false;
   current_script->state = run_state_t::error;
   current_script->error_message = error_message;
   current_script->error_type = error_type;
-  stack_end = reinterpret_cast<char *>(exit_context.uc_stack.ss_sp) + exit_context.uc_stack.ss_size;
+  stack_end = reinterpret_cast<char *>(get_context_stack_ptr_portable(exit_context)) + get_context_stack_size_portable(exit_context);
+
+#if defined(__linux__) && defined(__x86_64__)
+  // The error may be produced in process of signal handling. The default behavior on Linux-based platforms
+  // consider to block a signal during handler execution and unblock after handler ending.
+  // For x86_64 arch we have context replacement implementation where the signals manipulations is omitted by design,
+  // e.g. we do not save signals state in context replacement.
+  // Therefore, we need manual control for signal state, especially, we have to unblock blocked signals at logical end of handler.
+  if (triggered_by_signal.has_value()) {
+    dl_unblock_signal(triggered_by_signal.value());
+  }
+#endif
 #if ASAN_ENABLED
   __sanitizer_start_switch_fiber(nullptr, main_thread_stack, main_thread_stacksize);
 #endif
@@ -104,7 +116,7 @@ void PhpScript::try_run_shutdown_functions_on_timeout() noexcept {
     return;
   }
   if (vk::singleton<OomHandler>::get().is_running()) {
-    perform_error_if_running("timeout exit in OOM handler\n", script_error_t::timeout);
+    perform_error_if_running("timeout exit in OOM handler\n", script_error_t::timeout, /* no triggered by signal */std::nullopt);
     return;
   }
 
@@ -117,14 +129,14 @@ void PhpScript::try_run_shutdown_functions_on_timeout() noexcept {
     state = run_state_t::running;
     run_shutdown_functions_from_timeout();
   }
-  perform_error_if_running("timeout exit\n", script_error_t::timeout);
+  perform_error_if_running("timeout exit\n", script_error_t::timeout, /* no triggered by signal */ std::nullopt);
 }
 
 void PhpScript::check_net_context_errors() noexcept {
   php_assert(PhpScript::in_script_context);
   if (memory_limit_exceeded) {
     vk::singleton<OomHandler>::get().invoke();
-    perform_error_if_running("memory limit exit\n", script_error_t::memory_limit);
+    perform_error_if_running("memory limit exit\n", script_error_t::memory_limit, /* no triggered by signal */std::nullopt);
   }
   try_run_shutdown_functions_on_timeout();
 }
@@ -198,9 +210,9 @@ void PhpScript::init(script_t *script, php_query_data_t *data_to_set) noexcept {
   assert_state(run_state_t::before_init);
 
   getcontext_portable(&run_context);
-  run_context.uc_stack.ss_sp = script_stack.get_stack_ptr();
-  run_context.uc_stack.ss_size = script_stack.get_stack_size();
-  run_context.uc_link = nullptr;
+  set_context_stack_ptr_portable(run_context, script_stack.get_stack_ptr());
+  set_context_stack_size_portable(run_context, script_stack.get_stack_size());
+  set_context_link_portable(run_context, nullptr);
   makecontext_portable(&run_context, &script_context_entrypoint, 0);
 
   run_main = script;
@@ -226,7 +238,7 @@ void PhpScript::init(script_t *script, php_query_data_t *data_to_set) noexcept {
 }
 
 int PhpScript::swapcontext_helper(ucontext_t_portable *oucp, const ucontext_t_portable *ucp) {
-  stack_end = reinterpret_cast<char *>(ucp->uc_stack.ss_sp) + ucp->uc_stack.ss_size;
+  stack_end = reinterpret_cast<char *>(get_context_stack_ptr_portable(*ucp)) + get_context_stack_size_portable(*ucp);
   return swapcontext_portable(oucp, ucp);
 }
 
@@ -251,7 +263,7 @@ void PhpScript::pause() noexcept {
 
 void PhpScript::resume() noexcept {
 #if ASAN_ENABLED
-  __sanitizer_start_switch_fiber(nullptr, run_context.uc_stack.ss_sp, run_context.uc_stack.ss_size);
+  __sanitizer_start_switch_fiber(nullptr, get_context_stack_ptr_portable(run_context), get_context_stack_size_portable(run_context));
 #endif
   assert(swapcontext_helper(&exit_context, &run_context) == 0);
 #if ASAN_ENABLED
@@ -478,7 +490,7 @@ void PhpScript::run() noexcept {
       php_assert(CurException.is_null());
       CurException = saved_exception;
     }
-    error(php_uncaught_exception_error(CurException), script_error_t::exception);
+    error(php_uncaught_exception_error(CurException), script_error_t::exception, /* no triggered by signal */ std::nullopt);
   }
 }
 

@@ -9,6 +9,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
+#include <optional>
 #include <type_traits>
 
 #include "common/precise-time.h"
@@ -1012,7 +1013,7 @@ php_net_query_packet_answer_t *php_net_query_get(int connection_id, const char *
 }
 
 void script_error() {
-  PhpScript::error("script_error called", script_error_t::unclassified_error);
+  PhpScript::error("script_error called", script_error_t::unclassified_error, /* no triggered by signal */ std::nullopt);
 }
 
 void http_set_result(const char *headers, int headers_len, const char *body, int body_len, int exit_code) {

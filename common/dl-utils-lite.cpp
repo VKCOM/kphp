@@ -178,6 +178,14 @@ void dl_allow_all_signals () {
   dl_passert (err != -1, "failed to allow all signals");
 }
 
+void dl_unblock_signal (int sig) {
+  sigset_t mask;
+  sigemptyset(&mask);
+  sigaddset(&mask, sig);
+  int err = sigprocmask(SIG_UNBLOCK, &mask, nullptr);
+  dl_passert (err != -1, "failed to unblock signal");
+}
+
 static void runtime_handler (const int sig, siginfo_t *info __attribute__((unused)), void *ucontext) {
   fprintf (stderr, "%s caught, terminating program\n", strsignal(sig));
   crash_dump_write(static_cast<ucontext_t *>(ucontext));
