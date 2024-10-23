@@ -67,7 +67,7 @@ void Scheduler::execute() {
   }
 
   while (true) {
-    if (tasks_before_sync_node > 0) {
+    if (tasks_before_sync_node.load(std::memory_order_acquire) > 0) {
       usleep(250);
       continue;
     }
@@ -101,7 +101,7 @@ bool Scheduler::thread_process_node(Node *node) {
   }
   task->execute();
   delete task;
-  __sync_fetch_and_sub(&tasks_before_sync_node, 1);
+  tasks_before_sync_node.fetch_sub(1, std::memory_order_release);
   return true;
 }
 
