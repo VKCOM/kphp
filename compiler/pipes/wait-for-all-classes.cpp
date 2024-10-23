@@ -11,6 +11,9 @@
 #include "compiler/data/src-file.h"
 #include "compiler/data/modulite-data.h"
 
+
+// Very important!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 /*
  * This is a sync point. When `on_finish()` is called (once, in a single thread), then
  * all php files have been parsed, all classes have been loaded.
