@@ -29,7 +29,7 @@ function(install_vkext PHP_VERSION)
     set(CPACK_DEBIAN_${COMPONENT_NAME}_PACKAGE_NAME "${PHP}-vkext" PARENT_SCOPE)
 
     set(CONFFILES_FILE "${CMAKE_CURRENT_BINARY_DIR}/conffiles${PHP_VERSION}/conffiles")
-    file(WRITE "${CONFFILES_FILE}" "${CMAKE_INSTALL_PREFIX}/etc/php/${PHP_VERSION}/mods-available/vkext.ini\n")
+    file(WRITE "${CONFFILES_FILE}" "/etc/php/${PHP_VERSION}/mods-available/vkext.ini\n")
     set(CPACK_DEBIAN_${COMPONENT_NAME}_PACKAGE_CONTROL_EXTRA "${CONFFILES_FILE}" PARENT_SCOPE)
 endfunction()
 
