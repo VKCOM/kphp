@@ -9,7 +9,7 @@ prepend(
   fork/fork-context.cpp
   hash/hash-functions.cpp
   job-worker/job-worker-api.cpp
-  job-worker/job-worker-context.cpp
+  job-worker/job-worker-client-context.cpp
   output/output-buffer.cpp
   output/print-functions.cpp
   regex/regex-context.cpp

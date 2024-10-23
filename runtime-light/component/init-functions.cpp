@@ -6,13 +6,13 @@
 
 #include <cstdint>
 
-#include "runtime-core/runtime-core.h"
 #include "runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/header.h"
-#include "runtime-light/stdlib/job-worker/job-worker-context.h"
+#include "runtime-light/server/init-functions.h"
+#include "runtime-light/server/job-worker/job-worker-server-context.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -20,26 +20,21 @@
 
 namespace {
 
+void process_k2_invoke_http(tl::TLBuffer &tlb) noexcept {
+  tl::K2InvokeHttp invoke_http{};
+  if (!invoke_http.fetch(tlb)) {
+    php_error("erroneous http request");
+  }
+  init_server(ServerQuery{std::move(invoke_http)});
+}
+
 void process_k2_invoke_job_worker(tl::TLBuffer &tlb) noexcept {
   tl::K2InvokeJobWorker invoke_jw{};
   if (!invoke_jw.fetch(tlb)) {
     php_error("erroneous job worker request");
   }
   php_assert(invoke_jw.image_id == vk_k2_describe()->build_timestamp); // ensure that we got the request from ourselves
-
-  auto &jw_server_ctx{JobWorkerServerComponentContext::get()};
-  jw_server_ctx.kind = invoke_jw.ignore_answer ? JobWorkerServerComponentContext::Kind::NoReply : JobWorkerServerComponentContext::Kind::Regular;
-  jw_server_ctx.state = JobWorkerServerComponentContext::State::Working;
-  jw_server_ctx.job_id = invoke_jw.job_id;
-  jw_server_ctx.body = std::move(invoke_jw.body);
-  get_component_context()->php_script_mutable_globals_singleton.get_superglobals().v$_SERVER.set_value(string{"JOB_ID"}, invoke_jw.job_id);
-}
-
-void process_k2_invoke_http(tl::TLBuffer &tlb) noexcept {
-  tl::K2InvokeHttp invoke_http{};
-  if (!invoke_http.fetch(tlb)) {
-    php_error("erroneous http request");
-  }
+  init_server(ServerQuery{std::move(invoke_jw)});
 }
 
 } // namespace
