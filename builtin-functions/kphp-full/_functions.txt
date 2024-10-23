@@ -124,6 +124,8 @@ global $_COOKIE;
 global $_REQUEST;
 /** @var mixed $_ENV */
 global $_ENV;
+/** @var mixed $_SESSION */
+global $_SESSION;
 /** @var mixed $argc */
 global $argc;
 /** @var mixed $argv */
@@ -775,6 +777,21 @@ function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int =
 function mb_strtolower ($str ::: string, $encoding ::: string = "cp1251") ::: string;
 function mb_strtoupper ($str ::: string, $encoding ::: string = "cp1251") ::: string;
 function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = PHP_INT_MAX, $encoding ::: string = "cp1251") ::: string;
+
+function session_start($options ::: mixed = array()) ::: bool;
+function session_abort() ::: bool;
+function session_commit() ::: bool;
+function session_write_close() ::: bool;
+function session_gc() ::: bool;
+function session_status() ::: int;
+function session_id($id ::: ?string = null) ::: string | false;
+function session_encode() ::: string | false;
+function session_decode($data ::: string) ::: bool;
+function session_get_cookie_params() ::: array;
+function session_reset() ::: bool;
+function session_save_path($path ::: ?string = null) ::: string | false;
+function session_unset() ::: bool;
+// function session_destroy() ::: bool;
 
 define('PHP_ROUND_HALF_UP', 123423141);
 define('PHP_ROUND_HALF_DOWN', 123423144);

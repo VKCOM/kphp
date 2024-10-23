@@ -17,6 +17,8 @@ struct PhpScriptBuiltInSuperGlobals {
   mixed v$_FILES;
   mixed v$_COOKIE;
   mixed v$_REQUEST;
+  mixed v$_SESSION;
+  mixed v$_KPHPSESSARR;
 
   // variables below are not superglobals of the PHP language, but since they are set by runtime,
   // the compiler is also aware about them
