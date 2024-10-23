@@ -9,7 +9,7 @@
 #include <memory>
 #include <utility>
 
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/header.h"

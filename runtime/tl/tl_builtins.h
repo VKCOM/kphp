@@ -8,7 +8,7 @@
 #include <memory>
 
 #include "common/tl/constants/common.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 #include "runtime/rpc.h"
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_tl_query.h"

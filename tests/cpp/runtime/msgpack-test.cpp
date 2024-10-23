@@ -1,4 +1,4 @@
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 #include "runtime/msgpack-serialization.h"
 #include <array>
 #include <gtest/gtest.h>

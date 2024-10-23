@@ -8,7 +8,7 @@
 
 #include "common/wrappers/string_view.h"
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 #include "runtime/critical_section.h"
 #include "runtime/php-script-globals.h"
 #include "server/php-query-data.h"

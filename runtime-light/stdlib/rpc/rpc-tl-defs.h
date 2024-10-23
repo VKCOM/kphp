@@ -6,8 +6,8 @@
 
 #include <memory>
 
-#include "runtime-core/runtime-core.h"
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-func-base.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 

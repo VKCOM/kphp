@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/runtime-core/utils/kphp-assert-core.h"
 
 template<typename T>
 int64_t f$estimate_memory_usage(const T &) {

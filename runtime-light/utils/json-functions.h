@@ -7,7 +7,7 @@
 #include <array>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 
 
 constexpr int64_t JSON_UNESCAPED_UNICODE = 1;

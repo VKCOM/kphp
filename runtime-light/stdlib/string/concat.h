@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 
 // str_concat_arg generalizes both tmp_string and string arguments;
 // it can be constructed from both of them, so concat functions can operate

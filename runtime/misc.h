@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 
 string f$uniqid(const string &prefix = string(), bool more_entropy = false);
 

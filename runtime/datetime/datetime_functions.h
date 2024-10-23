@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 
 bool f$checkdate(int64_t month, int64_t day, int64_t year);
 

@@ -42,7 +42,8 @@ include(${COMMON_DIR}/common.cmake)
 include(${COMMON_DIR}/tl/tl.cmake)
 include(${COMMON_DIR}/unicode/unicode.cmake)
 
-include(${BASE_DIR}/runtime-core/runtime-core.cmake)
+include(${RUNTIME_COMMON_DIR}/runtime-common.cmake)
+
 if(COMPILE_RUNTIME_LIGHT)
     include(${BASE_DIR}/runtime-light/runtime-light.cmake)
     file(GLOB EXCLUDE_FILES "runtime/*")
@@ -51,6 +52,7 @@ else()
     include(${BASE_DIR}/server/server.cmake)
     file(GLOB EXCLUDE_FILES "runtime-light/*")
 endif()
+
 include(${BASE_DIR}/compiler/compiler.cmake)
 include(${BASE_DIR}/tests/tests.cmake)
 
@@ -85,7 +87,7 @@ endif ()
 
 install(DIRECTORY ${COMMON_DIR}
                   ${BASE_DIR}/runtime
-                  ${BASE_DIR}/runtime-core
+		  ${RUNTIME_COOMON_DIR}
                   ${BASE_DIR}/server
                   ${BASE_DIR}/third-party
         COMPONENT KPHP

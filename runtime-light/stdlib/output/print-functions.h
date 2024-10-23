@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/utils/context.h"
 

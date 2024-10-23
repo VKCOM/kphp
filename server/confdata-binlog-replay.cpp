@@ -27,10 +27,10 @@
 #include "common/wrappers/string_view.h"
 #include "common/kfs/kfs.h"
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 #include "runtime/allocator.h"
 #include "runtime/confdata-global-manager.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 #include "server/confdata-binlog-events.h"
 #include "server/confdata-stats.h"
 #include "server/server-log.h"

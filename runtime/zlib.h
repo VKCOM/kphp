@@ -8,8 +8,8 @@
 
 #include "common/wrappers/string_view.h"
 
-#include "runtime-core/class-instance/refcountable-php-classes.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 #include "runtime/dummy-visitor-methods.h"
 
 constexpr int64_t ZLIB_ENCODING_RAW = -0x0f;

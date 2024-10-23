@@ -6,7 +6,7 @@
 
 #include <climits>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 #include "runtime/string_functions.h"
 
 bool mb_UTF8_check(const char *s);

@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 
 struct Response {
   static constexpr int32_t ob_max_buffers{50};

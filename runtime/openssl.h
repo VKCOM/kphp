@@ -6,7 +6,7 @@
 
 #include <openssl/pkcs7.h>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 
 enum openssl_algo {
   OPENSSL_ALGO_SHA1 = 1,

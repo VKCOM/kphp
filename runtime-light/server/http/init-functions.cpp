@@ -13,8 +13,8 @@
 #include <string>
 #include <utility>
 
-#include "runtime-core/runtime-core.h"
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/http/http-server-context.h"

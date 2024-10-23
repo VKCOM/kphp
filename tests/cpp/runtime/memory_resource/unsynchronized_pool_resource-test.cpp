@@ -1,7 +1,7 @@
 #include <array>
 #include <gtest/gtest.h>
 
-#include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
+#include "runtime-common/runtime-core/memory-resource/unsynchronized_pool_resource.h"
 
 TEST(unsynchronized_pool_resource_test, uninited_state) {
   memory_resource::unsynchronized_pool_resource resource;

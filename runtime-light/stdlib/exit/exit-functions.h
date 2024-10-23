@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 
 task_t<void> shutdown_script() noexcept;

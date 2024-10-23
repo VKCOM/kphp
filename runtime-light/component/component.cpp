@@ -11,8 +11,8 @@
 #include <string_view>
 #include <utility>
 
-#include "runtime-core/runtime-core.h"
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/component/init-functions.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/core/globals/php-script-globals.h"

@@ -13,7 +13,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/runtime-core/utils/kphp-assert-core.h"
 #include "runtime-light/header.h"
 #include "runtime-light/utils/context.h"
 #include "runtime-light/utils/logs.h"

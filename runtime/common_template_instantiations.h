@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 
 // Use explicit template instantiation to make result binary smaller and force common instantiations to be compiled with -O3
 // see https://en.cppreference.com/w/cpp/language/class_template

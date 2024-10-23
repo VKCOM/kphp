@@ -10,8 +10,8 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "runtime-core/runtime-core.h"
-#include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
+#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 

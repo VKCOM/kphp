@@ -5,7 +5,7 @@
 #include <new>
 #include <sys/mman.h>
 
-#include "runtime-core/memory-resource/extra-memory-pool.h"
+#include "runtime-common/runtime-core/memory-resource/extra-memory-pool.h"
 
 #include "server/job-workers/job-stats.h"
 

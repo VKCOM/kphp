@@ -5,7 +5,7 @@
 #pragma once
 
 #include "common/kprintf.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 

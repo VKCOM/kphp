@@ -8,8 +8,8 @@
 #include <string_view>
 #include <utility>
 
-#include "runtime-core/class-instance/refcountable-php-classes.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/utils/context.h"

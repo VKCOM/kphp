@@ -7,8 +7,8 @@
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
 
-#include "runtime-core/class-instance/refcountable-php-classes.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/runtime-core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/runtime-core/runtime-core.h"
 #include "runtime/dummy-visitor-methods.h"
 
 // C$ArrayIterator implements SPL ArrayIterator class.

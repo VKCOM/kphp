@@ -8,7 +8,7 @@
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
 
-#include "runtime-core/memory-resource/extra-memory-pool.h"
+#include "runtime-common/runtime-core/memory-resource/extra-memory-pool.h"
 #include "runtime/critical_section.h"
 #include "server/job-workers/job-stats.h"
 #include "server/job-workers/job-workers-context.h"
