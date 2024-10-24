@@ -6,8 +6,8 @@
 
 #include <functional>
 
-#include "runtime-core/class-instance/refcountable-php-classes.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime/critical_section.h"
 #include "runtime/dummy-visitor-methods.h"
 

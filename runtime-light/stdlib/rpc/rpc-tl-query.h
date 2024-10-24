@@ -7,8 +7,8 @@
 #include <cstdint>
 #include <memory>
 
-#include "runtime-core/class-instance/refcountable-php-classes.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"
 
 struct RpcTlQuery : refcountable_php_classes<RpcTlQuery> {

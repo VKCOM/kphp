@@ -7,7 +7,7 @@
 
 #include <stdexcept>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime/msgpack/adaptor_base.h"
 #include "runtime/msgpack/check_instance_depth.h"
 #include "runtime/msgpack/object.h"

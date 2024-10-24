@@ -12,9 +12,9 @@
 #include <utility>
 #include <variant>
 
-#include "runtime-core/memory-resource/resource_allocator.h"
-#include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
-#include "runtime-core/utils/hash.h"
+#include "runtime-common/core/memory-resource/resource_allocator.h"
+#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
+#include "runtime-common/core/utils/hash.h"
 #include "runtime-light/utils/concepts.h"
 
 /**

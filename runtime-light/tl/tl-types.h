@@ -12,10 +12,10 @@
 #include <type_traits>
 
 #include "common/tl/constants/common.h"
-#include "runtime-core/allocator/runtime-allocator.h"
-#include "runtime-core/memory-resource/resource_allocator.h"
-#include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
+#include "runtime-common/core/memory-resource/resource_allocator.h"
+#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {

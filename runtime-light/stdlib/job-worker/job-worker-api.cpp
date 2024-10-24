@@ -10,8 +10,8 @@
 #include <cstdint>
 #include <utility>
 
-#include "runtime-core/runtime-core.h"
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"

@@ -5,7 +5,7 @@
 
 #include "runtime/msgpack/packer.h"
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime/msgpack/sysdep.h"
 
 namespace vk::msgpack {

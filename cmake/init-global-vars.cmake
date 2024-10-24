@@ -7,7 +7,7 @@ set(BIN_DIR ${OBJS_DIR}/bin)
 set(GENERATED_DIR "${OBJS_DIR}/generated")
 set(AUTO_DIR "${GENERATED_DIR}/auto")
 set(RUNTIME_LIGHT_DIR "${BASE_DIR}/runtime-light")
-set(RUNTIME_CORE_DIR "${BASE_DIR}/runtime-core")
+set(RUNTIME_COMMON_DIR "${BASE_DIR}/runtime-common")
 
 if(APPLE)
     set(CURL_LIB curl)

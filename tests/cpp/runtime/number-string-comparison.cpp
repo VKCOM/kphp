@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 template <typename T>
 struct TestCaseComparison {

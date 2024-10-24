@@ -154,7 +154,7 @@ target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} /opt/curl7600/include
 add_dependencies(kphp_runtime kphp-timelib)
 
 prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 zstd h3) # todo: linking between static libs is no-op, is this redundant? do we need to add mysqlclient here?
-set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::runtime-core vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} OpenSSL::Crypto m z pthread)
+set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::runtime-common vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} OpenSSL::Crypto m z pthread)
 vk_add_library(kphp-full-runtime STATIC)
 target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
 set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})
@@ -177,7 +177,7 @@ file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
 file(GLOB_RECURSE KPHP_RUNTIME_CORE_ALL_HEADERS
      RELATIVE ${BASE_DIR}
      CONFIGURE_DEPENDS
-     "${BASE_DIR}/runtime-core/*.h")
+     "${BASE_DIR}/runtime-common/*.h")
 list(APPEND KPHP_RUNTIME_ALL_HEADERS ${KPHP_RUNTIME_CORE_ALL_HEADERS})
 list(TRANSFORM KPHP_RUNTIME_ALL_HEADERS REPLACE "^(.+)$" [[#include "\1"]])
 list(JOIN KPHP_RUNTIME_ALL_HEADERS "\n" MERGED_RUNTIME_HEADERS)

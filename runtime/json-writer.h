@@ -5,7 +5,7 @@
 #pragma once
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 #include <string_view>
 

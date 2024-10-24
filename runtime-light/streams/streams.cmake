@@ -1,1 +1,1 @@
-prepend(RUNTIME_STREAMS_SRC streams/ streams.cpp)
+prepend(RUNTIME_LIGHT_STREAMS_SRC streams/ streams.cpp)

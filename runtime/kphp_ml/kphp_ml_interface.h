@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 Optional<array<double>> f$kml_xgboost_predict_matrix(const string &model_name, const array<array<double>> &features_map_matrix);
 

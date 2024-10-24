@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime/datetime/timelib_wrapper.h"
 #include "runtime/dummy-visitor-methods.h"
 

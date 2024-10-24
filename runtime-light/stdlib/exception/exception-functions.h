@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 #define THROW_EXCEPTION(e) {php_critical_error("Exceptions unsupported");}
 

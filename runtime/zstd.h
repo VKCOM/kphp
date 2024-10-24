@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 constexpr int DEFAULT_COMPRESS_LEVEL = 3;
 

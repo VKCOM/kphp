@@ -1,1 +1,1 @@
-prepend(RUNTIME_SCHEDULER_SRC scheduler/ scheduler.cpp)
+prepend(RUNTIME_LIGHT_SCHEDULER_SRC scheduler/ scheduler.cpp)

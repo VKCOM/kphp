@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "runtime-core/allocator/script-allocator-managed.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/allocator/script-allocator-managed.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 
 struct tl_func_base : ScriptAllocatorManaged {

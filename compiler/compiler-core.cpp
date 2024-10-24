@@ -647,7 +647,7 @@ const Index &CompilerCore::get_runtime_index() {
 }
 
 const Index &CompilerCore::get_runtime_core_index() {
-  return runtime_core_sources_index;
+  return runtime_common_sources_index;
 }
 
 const Index &CompilerCore::get_common_index() {
@@ -668,9 +668,9 @@ void CompilerCore::init_dest_dir() {
   cpp_dir = cpp_index.get_dir();
 }
 
-static std::vector<std::string> get_runtime_core_sources() {
+static std::vector<std::string> get_runtime_common_sources() {
 #ifdef RUNTIME_LIGHT
-  return split(RUNTIME_CORE_SOURCES, ';');
+  return split(RUNTIME_COMMON_SOURCES, ';');
 #else
   return {};
 #endif
@@ -693,16 +693,15 @@ static std::vector<std::string> get_common_sources() {
 }
 
 void CompilerCore::init_runtime_and_common_srcs_dir() {
-  runtime_core_sources_dir = settings().runtime_and_common_src.get() + "runtime-core/";
-  runtime_core_sources_index.sync_with_dir(runtime_core_sources_dir);
-  runtime_core_sources_dir = runtime_core_sources_index.get_dir();
-  runtime_core_sources_index.filter_with_whitelist(get_runtime_core_sources());
+  runtime_common_sources_dir = settings().runtime_and_common_src.get() + "runtime-common/";
+  runtime_common_sources_index.sync_with_dir(runtime_common_sources_dir);
+  runtime_common_sources_dir = runtime_common_sources_index.get_dir();
+  runtime_common_sources_index.filter_with_whitelist(get_runtime_common_sources());
 
   runtime_sources_dir = settings().runtime_and_common_src.get() + "runtime-light/";
   runtime_sources_index.sync_with_dir(runtime_sources_dir);
   runtime_sources_dir = runtime_sources_index.get_dir(); // As in init_dest_dir, IDK what is it for
   runtime_sources_index.filter_with_whitelist(get_runtime_sources());
-
 
   common_sources_dir = settings().runtime_and_common_src.get() + "common/";
   common_sources_index.sync_with_dir(common_sources_dir);

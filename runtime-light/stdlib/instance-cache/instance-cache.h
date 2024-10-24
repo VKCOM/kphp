@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 template<typename ClassInstanceType>
 bool f$instance_cache_store(const string &key, const ClassInstanceType &instance, int64_t ttl = 0) {

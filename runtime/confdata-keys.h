@@ -15,7 +15,7 @@
 #include "common/wrappers/iterator_range.h"
 #include "common/wrappers/string_view.h"
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 enum class ConfdataFirstKeyType {
   simple_key,

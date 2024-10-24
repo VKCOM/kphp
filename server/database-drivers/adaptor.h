@@ -9,7 +9,7 @@
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 #include "net/net-events.h"
 #include "runtime/critical_section.h"
 #include "runtime/signal_safe_hashtable.h"

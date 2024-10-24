@@ -7,7 +7,7 @@
 #include <cstdint>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/job-worker/job-worker.h"
 
 struct JobWorkerServerComponentContext final : private vk::not_copyable {

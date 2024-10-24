@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime/job-workers/job-interface.h"
 
 struct job_query_data;

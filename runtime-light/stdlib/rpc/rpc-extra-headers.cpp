@@ -8,7 +8,7 @@
 
 #include "common/algorithms/find.h"
 #include "common/tl/constants/common.h"
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 
 namespace {
 

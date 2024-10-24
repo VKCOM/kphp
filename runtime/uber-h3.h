@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 int64_t f$UberH3$$geoToH3(double latitude, double longitude, int64_t resolution) noexcept;
 std::tuple<double, double> f$UberH3$$h3ToGeo(int64_t h3_index) noexcept;

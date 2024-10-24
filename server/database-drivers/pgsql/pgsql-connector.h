@@ -3,7 +3,7 @@
 #include <memory>
 #include <postgresql/libpq-fe.h>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 #include "server/database-drivers/connector.h"
 #include "server/database-drivers/pgsql/pgsql.h"
 #include "server/database-drivers/pgsql/pgsql-storage.h"

@@ -4,7 +4,7 @@
 
 #include <csetjmp>
 
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/header.h"
 #include "runtime-light/utils/context.h"

@@ -10,8 +10,8 @@
 #include <string_view>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-core/runtime-core.h"
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/utils/concepts.h"
 
 namespace tl {

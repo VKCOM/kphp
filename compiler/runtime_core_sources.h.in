@@ -1,3 +1,0 @@
-#pragma once
-
-#define RUNTIME_CORE_SOURCES "${RUNTIME_CORE_SOURCES_FOR_COMP}"

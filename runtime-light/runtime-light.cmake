@@ -10,18 +10,17 @@ include(${RUNTIME_LIGHT_DIR}/component/component.cmake)
 include(${RUNTIME_LIGHT_DIR}/memory-resource-impl/memory-resource-impl.cmake)
 
 set(RUNTIME_LIGHT_SRC
-    ${RUNTIME_CORE_SRC}
-    ${RUNTIME_STDLIB_SRC}
-    ${RUNTIME_SCHEDULER_SRC}
-    ${RUNTIME_SERVER_SRC}
-    ${RUNTIME_ALLOCATOR_SRC}
-    ${RUNTIME_COROUTINE_SRC}
-    ${RUNTIME_COMPONENT_SRC}
-    ${RUNTIME_STREAMS_SRC}
-    ${RUNTIME_TL_SRC}
-    ${RUNTIME_UTILS_SRC}
-    ${RUNTIME_LANGUAGE_SRC}
-    ${RUNTIME_MEMORY_RESOURCE_IMPL_SRC}
+    ${RUNTIME_LIGHT_CORE_SRC}
+    ${RUNTIME_LIGHT_STDLIB_SRC}
+    ${RUNTIME_LIGHT_SCHEDULER_SRC}
+    ${RUNTIME_LIGHT_SERVER_SRC}
+    ${RUNTIME_LIGHT_ALLOCATOR_SRC}
+    ${RUNTIME_LIGHT_COROUTINE_SRC}
+    ${RUNTIME_LIGHT_COMPONENT_SRC}
+    ${RUNTIME_LIGHT_STREAMS_SRC}
+    ${RUNTIME_LIGHT_TL_SRC}
+    ${RUNTIME_LIGHT_UTILS_SRC}
+    ${RUNTIME_LIGHT_MEMORY_RESOURCE_IMPL_SRC}
     runtime-light.cpp)
 
 set(RUNTIME_SOURCES_FOR_COMP "${RUNTIME_LIGHT_SRC}")
@@ -40,7 +39,8 @@ target_compile_options(runtime-light PUBLIC -fPIC)
 
 vk_add_library(kphp-light-runtime STATIC)
 target_link_libraries(
-  kphp-light-runtime PUBLIC vk::light_common vk::runtime-light vk::runtime-core)
+  kphp-light-runtime PUBLIC vk::light_common vk::runtime-light
+                            vk::runtime-common)
 set_target_properties(kphp-light-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
                                                     ${OBJS_DIR})
 

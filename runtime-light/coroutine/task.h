@@ -12,7 +12,7 @@
 #include <utility>
 
 #include "common/containers/final_action.h"
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/utils/context.h"
 
 #if __clang_major__ > 7

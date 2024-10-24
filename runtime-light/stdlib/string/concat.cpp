@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/string/concat.h"
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 string str_concat(const string &s1, const string &s2) {
   // for 2 argument concatenation it's not so uncommon to have at least one empty string argument;

@@ -7,8 +7,8 @@
 #include <cstdint>
 #include <utility>
 
-#include "runtime-core/memory-resource/unsynchronized_pool_resource.h"
-#include "runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/utils/concepts.h"
 

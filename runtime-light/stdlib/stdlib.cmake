@@ -1,5 +1,5 @@
 prepend(
-  RUNTIME_STDLIB_SRC
+  RUNTIME_LIGHT_STDLIB_SRC
   stdlib/
   component/component-api.cpp
   confdata/confdata-functions.cpp
