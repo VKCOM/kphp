@@ -6,6 +6,7 @@
 
 #include <string>
 
+// The order is important!
 enum PrimitiveType {
   tp_any,
   tp_Null,

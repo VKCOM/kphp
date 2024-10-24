@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/filter-only-actually-used.h"
 
+#include "common/algorithms/find.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
@@ -239,13 +240,27 @@ IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndE
 
   for (const auto &f_and_e : all) {
     FunctionPtr fun = f_and_e.first;
+
+    const bool is_array_access_fun = [&]() {
+      if (!fun->modifiers.is_instance()) {
+        return false;
+      }
+      ClassPtr klass = fun->class_id;
+      const bool impl_aa =
+        std::find_if(klass->implements.begin(), klass->implements.end(), [](ClassPtr x) { return x->name == "ArrayAccess"; }) != klass->implements.end();
+
+      return impl_aa && vk::any_of_equal(fun->local_name(), "offsetGet", "offsetSet", "offsetExists", "offsetUnset");
+    }();
+
+    // TODO think about more accurate check
     const bool should_be_used_apriori =
       fun->is_main_function() ||
       fun->type == FunctionData::func_class_holder || // classes should be carried along the pipeline
       (fun->is_extern() && vk::any_of_equal(fun->name, "wait", "make_clone")) ||
       fun->kphp_lib_export ||
       (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_TO_STRING) ||
-      (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_WAKEUP);
+      (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_WAKEUP) || 
+      is_array_access_fun;
     if (should_be_used_apriori && !used_functions[fun]) {
       calc_actually_used_dfs(fun, used_functions, call_graph);
     }
@@ -279,8 +294,13 @@ void remove_unused_class_methods(const std::vector<FunctionAndEdges> &all, const
           return get_index(m.function) == -1 || !used_functions[m.function];
         });
       fun->class_id->members.remove_if(
-        [&used_functions](const ClassMemberInstanceMethod &m) {
-          return get_index(m.function) == -1 || !used_functions[m.function];
+        [&used_functions, class_id=fun->class_id](const ClassMemberInstanceMethod &m) {
+          bool cond = get_index(m.function) == -1 || !used_functions[m.function];
+          const std::string& name = m.global_name();
+          if (cond && name.find("offsetGet") != std::string::npos) {
+            printf("removing %s\n",name.c_str());
+          }
+          return !class_id->internal_interface && cond;
         });
     }
   }

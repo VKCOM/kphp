@@ -4,6 +4,12 @@
 
 #include "compiler/pipes/optimization.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
 #include <sstream>
 
 #include "common/algorithms/hashes.h"
@@ -93,6 +99,7 @@ void explicit_cast_array_type(VertexPtr &type_acceptor, const TypeData *required
 } // namespace
 
 VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op) {
+  // TODO embed here
   if (set_op->lhs()->type() != op_index) {
     return set_op;
   }
@@ -114,6 +121,31 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
     // '$s[] = ...' is forbidden for non-array types;
     // for arrays it's converted to push_back
     PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
+
+    if (a_ptype == tp_Class) {
+      auto klass = tinf::get_type(a)->class_type();
+      kphp_assert_msg(klass, "bad klass");
+
+      // TODO doesn't it have the problem with that some parent classes are not linked in chain yet?
+      const auto *method = klass->get_instance_method("offsetSet");
+
+      kphp_assert_msg(method, fmt::format("Class {} does not implement offsetSet", klass->name).c_str());
+
+
+      // TODO assume here that key is present
+      auto new_call = VertexAdaptor<op_func_call>::create(a, VertexAdaptor<op_null>::create(), c).set_location(set_op->get_location());
+      
+      new_call->str_val = method->global_name();
+      new_call->func_id = method->function;
+      new_call->extra_type = op_ex_func_call_arrow; // Is that right?
+      new_call->auto_inserted = true;
+      new_call->rl_type = set_op->rl_type;
+      
+      result = new_call;
+      return result;
+    }
+
+
     kphp_error (a_ptype == tp_array || a_ptype == tp_mixed,
                 fmt_format("Can not use [] for {}", type_out(tinf::get_type(a))));
 
@@ -123,7 +155,32 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
       result = VertexAdaptor<op_push_back_return>::create(a, c);
     }
   } else {
-    result = VertexAdaptor<op_set_value>::create(a, b, c);
+    PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
+    if (a_ptype == tp_Class) {
+      auto klass = tinf::get_type(a)->class_type();
+      kphp_assert_msg(klass, "bad klass");
+
+      // TODO doesn't it have the problem with that some parent classes are not linked in chain yet?
+      const auto *method = klass->get_instance_method("offsetSet");
+
+      kphp_assert_msg(method, fmt::format("Class {} does not implement offsetSet", klass->name).c_str());
+
+
+      // TODO assume here that key is present
+      auto new_call = VertexAdaptor<op_func_call>::create(a, b, c).set_location(set_op->get_location());
+      
+      new_call->str_val = method->global_name();
+      new_call->func_id = method->function;
+      new_call->extra_type = op_ex_func_call_arrow; // Is that right?
+      new_call->auto_inserted = true;
+      new_call->rl_type = set_op->rl_type;
+      
+      result = new_call;
+      return result;
+    } else {
+      result = VertexAdaptor<op_set_value>::create(a, b, c);
+    }
+
   }
   result->location = set_op->get_location();
   result->extra_type = op_ex_internal_func;
@@ -177,6 +234,37 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
       kphp_error (0, "Cannot use [] for reading");
     }
   }
+
+  auto &lhs = index->array();
+  const auto *tpe = tinf::get_type(index->array()); // funny
+  if (tpe->get_real_ptype() == tp_Class) {
+    auto klass = tpe->class_type();
+    kphp_assert_msg(klass, "bad klass");
+
+    const auto *method = klass->get_instance_method("offsetGet");
+    if (!method) {
+      kphp_assert_msg(method, "bad method");
+    }
+    // TODO assume here that key is present
+    auto new_call = VertexAdaptor<op_func_call>::create(lhs, index->key()).set_location(lhs);
+    new_call->str_val = method->global_name();
+    new_call->func_id = method->function;
+    new_call->extra_type = op_ex_func_call_arrow; // Is that right?
+    new_call->auto_inserted = true;
+    new_call->rl_type = index->rl_type;
+
+    current_function->dep.emplace_back(method->function);
+
+    // For interfaces, I should construct type node here?
+    auto &node = new_call->tinf_node;
+    auto * tdata = new TypeData(*method->function->tinf_node.get_type());
+    auto xxx = method->function->tinf_node;
+    node.set_type(tdata);
+    tinf::get_type(new_call); // why OK for LikeArray, but bad for array access
+
+    return new_call;
+  }
+
   return index;
 }
 VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
@@ -321,6 +409,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   }
 
   if (root->rl_type != val_none/* && root->rl_type != val_error*/) {
+    // wtf?
     tinf::get_type(root);
   }
   return root;
