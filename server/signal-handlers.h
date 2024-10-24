@@ -5,7 +5,7 @@
 #include "server/php-runner.h"
 #include "server/workers-control.h"
 
-void perform_error_if_running(const char *msg, script_error_t error_type);
+void perform_error_if_running(const char *msg, script_error_t error_type, const std::optional<int> &triggered_by_signal);
 
 void init_handlers();
 void worker_global_init_handlers(WorkerType worker_type);

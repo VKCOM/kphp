@@ -23,6 +23,7 @@ void dl_signal (int sig, void (*handler) (int));
 void dl_restore_signal_mask ();
 void dl_block_all_signals ();
 void dl_allow_all_signals ();
+void dl_unblock_signal (int sig);
 
 void dl_print_backtrace(void **trace, int trace_size);
 void dl_print_backtrace();
