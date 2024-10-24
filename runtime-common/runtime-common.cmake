@@ -1,6 +1,6 @@
-include(${RUNTIME_COMMON_DIR}/runtime-core/runtime-core.cmake)
+include(${RUNTIME_COMMON_DIR}/core/core.cmake)
 
-set(RUNTIME_COMMON_SRC "${RUNTIME_CORE_SRC}")
+set(RUNTIME_COMMON_SRC "${CORE_SRC}")
 
 if(COMPILE_RUNTIME_LIGHT)
   set(RUNTIME_COMMON_SOURCES_FOR_COMP "${RUNTIME_COMMON_SRC}")

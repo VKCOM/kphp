@@ -6,8 +6,8 @@
 
 #include <utility>
 
-#include "runtime-common/runtime-core/runtime-core.h"
-#include "runtime-common/runtime-core/utils/small-object-storage.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/small-object-storage.h"
 #include "runtime/exception.h"
 
 extern const char *last_wait_error;

@@ -10,8 +10,8 @@
 #include <string_view>
 #include <utility>
 
-#include "runtime-common/runtime-core/runtime-core.h"
-#include "runtime-common/runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/component-api.h"

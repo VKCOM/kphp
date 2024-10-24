@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 struct StringComponentContext {
   int64_t str_replace_count_dummy{};

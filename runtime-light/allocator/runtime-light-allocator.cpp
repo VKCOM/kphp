@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <cstring>
 
-#include "runtime-common/runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 
 namespace {

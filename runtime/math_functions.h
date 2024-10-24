@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 int64_t f$bindec(const string &number) noexcept;
 

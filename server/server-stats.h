@@ -12,7 +12,7 @@
 #include "common/smart_ptrs/singleton.h"
 #include "common/stats/provider.h"
 
-#include "runtime-common/runtime-core/memory-resource/memory_resource.h"
+#include "runtime-common/core/memory-resource/memory_resource.h"
 #include "server/php-runner.h"
 #include "server/workers-control.h"
 

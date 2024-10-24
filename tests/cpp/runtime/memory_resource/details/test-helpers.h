@@ -2,8 +2,8 @@
 
 #include "common/wrappers/to_array.h"
 
-#include "runtime-common/runtime-core/memory-resource/details/memory_chunk_list.h"
-#include "runtime-common/runtime-core/memory-resource/memory_resource.h"
+#include "runtime-common/core/memory-resource/details/memory_chunk_list.h"
+#include "runtime-common/core/memory-resource/memory_resource.h"
 
 template<size_t N>
 inline auto make_offsets(const std::array<size_t, N> &sizes) {

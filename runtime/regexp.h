@@ -8,7 +8,7 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/mbstring.h"

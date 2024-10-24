@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 TEST(array_test, find_no_mutate_in_empy_array) {
   array<int> arr;

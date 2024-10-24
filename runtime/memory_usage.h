@@ -13,7 +13,7 @@
 
 #include "common/mixin/not_copyable.h"
 #include "common/type_traits/list_of_types.h"
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime/allocator.h"
 
 template<class T>

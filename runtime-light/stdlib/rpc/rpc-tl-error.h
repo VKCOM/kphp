@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 
 struct TlRpcError {

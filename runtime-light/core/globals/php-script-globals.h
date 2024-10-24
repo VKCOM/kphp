@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "runtime-common/runtime-core/memory-resource/resource_allocator.h"
-#include "runtime-common/runtime-core/memory-resource/unsynchronized_pool_resource.h"
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/memory-resource/resource_allocator.h"
+#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
+#include "runtime-common/core/runtime-core.h"
 
 namespace PhpServerSuperGlobalIndices {
 

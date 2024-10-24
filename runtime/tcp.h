@@ -1,6 +1,6 @@
 #pragma once
 
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 void global_init_tcp_lib();
 

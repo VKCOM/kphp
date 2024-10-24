@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 string f$base64_encode(const string &s);
 Optional<string> f$base64_decode(const string &s, bool strict);

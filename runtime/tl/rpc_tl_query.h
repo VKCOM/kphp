@@ -6,8 +6,8 @@
 
 #include <memory>
 
-#include "runtime-common/runtime-core/class-instance/refcountable-php-classes.h"
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/core/runtime-core.h"
 
 class RpcRequestResult;
 

@@ -3,7 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime/rpc_extra_info.h"
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_request.h"

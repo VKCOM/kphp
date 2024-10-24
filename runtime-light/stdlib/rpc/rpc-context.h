@@ -8,8 +8,8 @@
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-common/runtime-core/memory-resource/resource_allocator.h"
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/memory-resource/resource_allocator.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"

@@ -10,9 +10,9 @@
 #include <cstdint>
 #include <string_view>
 
-#include "runtime-common/runtime-core/memory-resource/resource_allocator.h"
-#include "runtime-common/runtime-core/memory-resource/unsynchronized_pool_resource.h"
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/memory-resource/resource_allocator.h"
+#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/header.h"

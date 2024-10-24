@@ -9,8 +9,8 @@
 
 #include "common/php-functions.h"
 #include "common/tl/constants/common.h"
-#include "runtime-common/runtime-core/runtime-core.h"
-#include "runtime-common/runtime-core/utils/kphp-assert-core.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/rpc/rpc-api.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 

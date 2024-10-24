@@ -3,7 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
-#include "runtime-common/runtime-core/memory-resource/unsynchronized_pool_resource.h"
+#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime/memory_resource_impl/heap_resource.h"
 
 namespace memory_resource {

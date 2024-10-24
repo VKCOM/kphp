@@ -6,8 +6,8 @@
 
 #include <memory>
 
-#include "runtime-common/runtime-core/allocator/script-allocator-managed.h"
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/allocator/script-allocator-managed.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-func-base.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-common/runtime-core/memory-resource/memory_resource.h"
+#include "runtime-common/core/memory-resource/memory_resource.h"
 
 namespace memory_resource {
 

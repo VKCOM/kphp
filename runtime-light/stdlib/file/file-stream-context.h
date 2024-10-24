@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 struct FileStreamComponentContext {
   mixed error_number_dummy;

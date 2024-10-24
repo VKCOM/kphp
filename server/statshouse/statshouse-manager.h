@@ -9,7 +9,7 @@
 
 #include "common/dl-utils-lite.h"
 #include "common/mixin/not_copyable.h"
-#include "runtime-common/runtime-core/memory-resource/memory_resource.h"
+#include "runtime-common/core/memory-resource/memory_resource.h"
 #include "server/job-workers/job-stats.h"
 #include "server/php-queries.h"
 #include "server/statshouse/statshouse-client.h"

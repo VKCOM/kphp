@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime/string_functions.h"
 
 TEST(string_test, test_empty) {

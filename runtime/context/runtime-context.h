@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-common/runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 #include "common/smart_ptrs/singleton.h"
 

@@ -13,8 +13,8 @@
 #include "common/kprintf.h"
 #include "common/wrappers/memory-utils.h"
 
-#include "runtime-common/runtime-core/class-instance/refcountable-php-classes.h"
-#include "runtime-common/runtime-core/memory-resource/resource_allocator.h"
+#include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/core/memory-resource/resource_allocator.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "runtime/inter-process-mutex.h"
