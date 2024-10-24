@@ -5,6 +5,37 @@
 #include "common/wrappers/likely.h"
 #include "runtime-common/core/runtime-core.h"
 
+// TODO must check that in runtime nothing will get wrong
+struct C$ArrayAccess : public may_be_mixed_base {
+  virtual int get_hash() const noexcept = 0;
+
+  C$ArrayAccess() __attribute__((always_inline)) = default;
+  ~C$ArrayAccess() __attribute__((always_inline)) = default;
+};
+
+extern bool f$ArrayAccess$$offsetExists(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset) noexcept;
+__attribute__((weak)) bool f$ArrayAccess$$offsetExists(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
+  php_error("using stub of offsetExists");
+  return {};
+}
+
+extern mixed f$ArrayAccess$$offsetGet(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset) noexcept;
+__attribute__((weak)) mixed f$ArrayAccess$$offsetGet(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
+  php_error("using stub of offsetGet");
+  return {};
+}
+
+extern void f$ArrayAccess$$offsetSet(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset, mixed const &v$value) noexcept;
+__attribute__((weak)) void f$ArrayAccess$$offsetSet(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/,
+                                                    mixed const & /*v$value*/) noexcept {
+  php_error("using stub of offsetSet");
+}
+
+extern void f$ArrayAccess$$offsetUnset(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset) noexcept;
+__attribute__((weak)) void f$ArrayAccess$$offsetUnset(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
+  php_error("using stub of offsetUnset");
+}
+
 void mixed::copy_from(const mixed &other) {
   switch (other.get_type()) {
     case type::STRING:
@@ -1100,14 +1131,21 @@ int64_t mixed::compare(const mixed &rhs) const {
 mixed &mixed::operator[](int64_t int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
-      php_warning("Writing to string by offset is't supported");
+      php_warning("Writing to string by offset isn't supported");
       return empty_value<mixed>();
     }
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
-    } else {
+    } 
+    else if (get_type() == type::OBJECT) {
+      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+      puts("CASTED OK!!!");
+      return empty_value<mixed>();
+    }
+    else {
+      php_warning("type = %d\n", (int)get_type());
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string_without_warning(*this).c_str(), get_type_or_class_name(), int_key);
       return empty_value<mixed>();
     }
@@ -1203,6 +1241,15 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
       return;
     }
 
+    // TODO don't forget to use f$is_a !!!
+    // It'll look like an instance cast
+    if (get_type() == type::OBJECT) {
+      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+      puts("CASTED OK!!!");
+      f$ArrayAccess$$offsetSet(xxx, int_key, v);
+      return;
+    }
+
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
@@ -1239,6 +1286,14 @@ void mixed::set_value(const string &string_key, const mixed &v) {
       return;
     }
 
+    // TODO don't forget to use f$is_a !!!
+    // It'll look like an instance cast
+    if (get_type() == type::OBJECT) {
+      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+      puts("CASTED OK!!!");
+      f$ArrayAccess$$offsetSet(xxx, string_key, v);
+      return;
+    }
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
@@ -1305,6 +1360,13 @@ const mixed mixed::get_value(int64_t int_key) const {
       return string(1, as_string()[static_cast<string::size_type>(int_key)]);
     }
 
+    // TODO check with f$is_a
+    if (get_type() == type::OBJECT) {
+      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+      puts("CASTED OK!!!");
+      return f$ArrayAccess$$offsetGet(xxx, int_key);
+    }
+
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string_without_warning(*this).c_str(), get_type_or_class_name(), int_key);
     }
@@ -1326,6 +1388,13 @@ const mixed mixed::get_value(const string &string_key) const {
         return string();
       }
       return string(1, as_string()[static_cast<string::size_type>(int_val)]);
+    }
+
+    // TODO check with f$is_a
+    if (get_type() == type::OBJECT) {
+      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+      puts("CASTED OK!!!");
+      return f$ArrayAccess$$offsetGet(xxx, string_key);
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {

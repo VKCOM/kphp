@@ -119,6 +119,7 @@ void CheckModificationsOfConstVars::check_modifications(VertexPtr v, bool write_
                                   TermStringFormat::paint(std::string(std::next(const_var->name.begin(), std::strlen(constant_prefix)), const_var->name.end()),
                                                           TermStringFormat::red)));
           } else {
+            // TODO fix this error when using setting [.] with smart cast
             kphp_error(modification_allowed, fmt_format("Modification of const variable: {}", TermStringFormat::paint(const_var->name, TermStringFormat::red)));
           }
         }
