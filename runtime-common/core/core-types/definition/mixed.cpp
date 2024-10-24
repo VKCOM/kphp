@@ -4,6 +4,7 @@
 
 #include "common/wrappers/likely.h"
 #include "runtime-common/core/runtime-core.h"
+#include <cassert>
 
 // TODO must check that in runtime nothing will get wrong
 struct C$ArrayAccess : public may_be_mixed_base {
@@ -13,27 +14,29 @@ struct C$ArrayAccess : public may_be_mixed_base {
   ~C$ArrayAccess() __attribute__((always_inline)) = default;
 };
 
+
+// TODO in tests uses stubs =(
 extern bool f$ArrayAccess$$offsetExists(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset) noexcept;
 __attribute__((weak)) bool f$ArrayAccess$$offsetExists(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
-  php_error("using stub of offsetExists");
+  assert(0 && "using stub of offsetExists");
   return {};
 }
 
 extern mixed f$ArrayAccess$$offsetGet(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset) noexcept;
 __attribute__((weak)) mixed f$ArrayAccess$$offsetGet(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
-  php_error("using stub of offsetGet");
+  assert(0 && "using stub of offsetGet");
   return {};
 }
 
 extern void f$ArrayAccess$$offsetSet(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset, mixed const &v$value) noexcept;
 __attribute__((weak)) void f$ArrayAccess$$offsetSet(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/,
                                                     mixed const & /*v$value*/) noexcept {
-  php_error("using stub of offsetSet");
+  assert(0 && "using stub of offsetSet");
 }
 
 extern void f$ArrayAccess$$offsetUnset(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset) noexcept;
 __attribute__((weak)) void f$ArrayAccess$$offsetUnset(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
-  php_error("using stub of offsetUnset");
+  assert(0 && "using stub of offsetUnset");
 }
 
 void mixed::copy_from(const mixed &other) {
@@ -1141,7 +1144,6 @@ mixed &mixed::operator[](int64_t int_key) {
     } 
     else if (get_type() == type::OBJECT) {
       auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      puts("CASTED OK!!!");
       return empty_value<mixed>();
     }
     else {
@@ -1245,7 +1247,6 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
     // It'll look like an instance cast
     if (get_type() == type::OBJECT) {
       auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      puts("CASTED OK!!!");
       f$ArrayAccess$$offsetSet(xxx, int_key, v);
       return;
     }
@@ -1290,7 +1291,6 @@ void mixed::set_value(const string &string_key, const mixed &v) {
     // It'll look like an instance cast
     if (get_type() == type::OBJECT) {
       auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      puts("CASTED OK!!!");
       f$ArrayAccess$$offsetSet(xxx, string_key, v);
       return;
     }
@@ -1363,7 +1363,6 @@ const mixed mixed::get_value(int64_t int_key) const {
     // TODO check with f$is_a
     if (get_type() == type::OBJECT) {
       auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      puts("CASTED OK!!!");
       return f$ArrayAccess$$offsetGet(xxx, int_key);
     }
 
@@ -1392,8 +1391,8 @@ const mixed mixed::get_value(const string &string_key) const {
 
     // TODO check with f$is_a
     if (get_type() == type::OBJECT) {
+      printf("Get [\"%s\"]\n", string_key.c_str());
       auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      puts("CASTED OK!!!");
       return f$ArrayAccess$$offsetGet(xxx, string_key);
     }
 
