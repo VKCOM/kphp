@@ -20,6 +20,7 @@
 #include "runtime-light/server/http/http-server-context.h"
 #include "runtime-light/server/job-worker/job-worker-server-context.h"
 #include "runtime-light/stdlib/curl/curl-context.h"
+#include "runtime-light/stdlib/crypto/crypto-context.h"
 #include "runtime-light/stdlib/file/file-stream-context.h"
 #include "runtime-light/stdlib/fork/fork-context.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-context.h"
@@ -27,6 +28,7 @@
 #include "runtime-light/stdlib/regex/regex-context.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
 #include "runtime-light/stdlib/string/string-context.h"
+#include "runtime-light/stdlib/system/system-context.h"
 
 constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
 
@@ -115,7 +117,9 @@ struct ComponentState {
 
   RegexComponentContext regex_component_context;
   CurlComponentContext curl_component_context;
+  CryptoComponentContext crypto_component_context;
   StringComponentContext string_component_context;
+  SystemComponentContext system_component_context;
   FileStreamComponentContext file_stream_component_context;
 
 private:

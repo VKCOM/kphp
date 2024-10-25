@@ -551,3 +551,8 @@ template<class T, class T1>
 std::tuple<typename array<T>::key_type, T> f$array_find(const array<T> &a,  const T1 &callback) {
   php_critical_error("call to unsupported function");
 }
+
+template<class T>
+T f$vk_dot_product(const array<T> &a, const array<T> &b) {
+  php_critical_error("call to unsupported function");
+}

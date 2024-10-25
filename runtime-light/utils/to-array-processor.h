@@ -8,7 +8,7 @@
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"
-#include "runtime-common/core/core-types/definition/null_coalesce.h"
+#include "runtime-light/utils/null_coalesce.h"
 
 class ShapeKeyDemangle : vk::not_copyable {
 public:

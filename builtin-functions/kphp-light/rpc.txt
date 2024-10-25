@@ -1,0 +1,137 @@
+<?php
+
+// === Rpc ========================================================================================
+
+/** @kphp-tl-class */
+interface RpcFunction {
+  public function getTLFunctionName() : string;
+}
+
+/** @kphp-tl-class */
+interface RpcFunctionReturnResult {}
+
+// type ReqResult <=> RpcResponse
+/** @kphp-tl-class */
+interface RpcResponse {
+  public function getResult() : @tl\RpcFunctionReturnResult;
+  public function getHeader() : @tl\_common\Types\rpcResponseHeader;
+  public function getError() : @tl\_common\Types\rpcResponseError;
+  public function isError() : bool;
+}
+
+/**
+ * 'KphpRpcRequestsExtraInfo' is a builtin KPHP class. It may accumulate extra information
+ * about RPC requests sent in both typed and untyped versions of rpc_tl_query builtins.
+ */
+final class KphpRpcRequestsExtraInfo {
+    /**
+    * 'get' returns an array of extra information (request size) about sent RPC requests.
+    *
+    * @return tuple(int)[]
+    */
+    public function get ();
+}
+
+/** @kphp-extern-func-info interruptible */
+function rpc_send_request($actor ::: string, $arr ::: array, $timeout ::: float, $ignore_answer ::: bool, \KphpRpcRequestsExtraInfo $requests_extra_info, $need_responses_extra_info ::: bool) ::: int[];
+
+/** @kphp-extern-func-info interruptible */
+function rpc_send_typed_query_request($actor ::: string, @tl\RpcFunction[] $query_functions, $timeout ::: float, $ignore_answer ::: bool, \KphpRpcRequestsExtraInfo $requests_extra_info, $need_responses_extra_info ::: bool) ::: int[];
+
+/** @kphp-extern-func-info interruptible */
+function rpc_fetch_response($query_ids ::: array) ::: mixed[][];
+
+/** @kphp-extern-func-info interruptible */
+function rpc_fetch_typed_response(int[] $query_ids) ::: @tl\RpcResponse[];
+
+/** @kphp-extern-func-info can_throw */
+function fetch_int () ::: int;
+
+/** @kphp-extern-func-info can_throw */
+function fetch_long () ::: int;
+
+/** @kphp-extern-func-info can_throw */
+function fetch_double () ::: float;
+
+/** @kphp-extern-func-info can_throw */
+function fetch_string () ::: string;
+
+
+// === Rpc Old API =================================================================================
+
+/** @kphp-extern-func-info interruptible */
+function rpc_tl_query (\RpcConnection $rpc_conn, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
+
+/** @kphp-extern-func-info interruptible */
+function rpc_tl_query_result ($query_ids ::: array) ::: mixed[][];
+
+/** @kphp-extern-func-info interruptible generate-stub */
+function typed_rpc_tl_query (\RpcConnection $connection, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
+
+/** @kphp-extern-func-info interruptible generate-stub tl_common_h_dep */
+function typed_rpc_tl_query_result (int[] $query_ids) ::: @tl\RpcResponse[];
+
+// === Unsupported API =================================================================================
+
+function rpc_parse ($data) ::: bool;
+
+function rpc_clean() ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function rpc_queue_create ($request_ids ::: mixed = TODO) ::: int;
+/** @kphp-extern-func-info generate-stub */
+function rpc_queue_empty ($queue_id ::: int) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int | false;
+/** @kphp-extern-func-info generate-stub */
+function rpc_tl_pending_queries_count () ::: int;
+
+function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
+
+/** @kphp-extern-func-info generate-stub */
+function store_error ($error_code ::: int, $error_text ::: string) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function store_int ($v ::: int) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function store_long ($v ::: int) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function store_string ($v ::: string) ::: bool;
+/** @kphp-extern-func-info generate-stub */
+function store_finish() ::: bool;
+
+/** @kphp-extern-func-info generate-stub */
+function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool) ::: bool;
+
+/** @kphp-extern-func-info generate-stub */
+function rpc_tl_query_one (\RpcConnection $rpc_conn, $arr ::: mixed, $timeout ::: float = -1.0) ::: int;
+
+/** @kphp-extern-func-info can_throw generate-stub */
+function rpc_server_fetch_request() ::: @tl\RpcFunction;
+/** @kphp-extern-func-info can_throw generate-stub */
+function rpc_server_store_response(@tl\RpcFunctionReturnResult $response) ::: void;
+
+
+/** @kphp-extern-func-info tl_common_h_dep generate-stub */
+function typed_rpc_tl_query_result_synchronously (int[] $query_ids) ::: @tl\RpcResponse[];
+
+
+/** @kphp-extern-func-info generate-stub can_throw */
+function fetch_lookup_int () ::: int;
+
+/** @kphp-extern-func-info generate-stub */
+function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
+
+
+/**
+ * 'extract_kphp_rpc_response_extra_info' function takes request ID and returns:
+ * 1. 'null' in case there is no extra information about the request;
+ * 2. 'tuple(response size, response time)' in case we got a response associated with
+ *    the request ID.
+ */
+ /** @kphp-extern-func-info generate-stub */
+function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
+
+/** @kphp-generate-stub-class */
+final class RpcConnection {
+    /** @kphp-extern-func-info generate-stub */
+    private function __construct();
+}

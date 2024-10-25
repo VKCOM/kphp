@@ -237,6 +237,15 @@ define("CURLM_BAD_SOCKET", 5);
 define("CURLM_UNKNOWN_OPTION", 6);
 define("CURLM_ADDED_ALREADY", 7);
 
+define('UPLOAD_ERR_OK', 0);
+define('UPLOAD_ERR_INI_SIZE', 1);
+define('UPLOAD_ERR_FORM_SIZE', 2);
+define('UPLOAD_ERR_PARTIAL', 3);
+define('UPLOAD_ERR_NO_FILE', 4);
+define('UPLOAD_ERR_NO_TMP_DIR', 6);
+define('UPLOAD_ERR_CANT_WRITE', 7);
+define('UPLOAD_ERR_EXTENSION', 8);
+
 /** @kphp-extern-func-info generate-stub */
 function curl_init ($url ::: string = "") ::: int;
 /** @kphp-extern-func-info generate-stub */

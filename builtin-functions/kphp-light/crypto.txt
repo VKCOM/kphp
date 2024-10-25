@@ -56,3 +56,19 @@ function openssl_pkey_get_public ($key ::: string) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
 function openssl_x509_verify ($x509cert ::: string, $public_key ::: string) ::: int;
 
+
+/** @kphp-extern-func-info generate-stub */
+function openssl_pkcs7_sign($infile ::: string, $outfile ::: string,
+                            $sign_cert ::: string, $priv_key ::: string,
+                            string[] $headers, $flags ::: int = PKCS7_DETACHED, $extra_certs ::: string = "") ::: bool;
+
+/** @kphp-extern-func-info generate-stub */
+function openssl_get_cipher_methods($aliases ::: bool = false) ::: string[];
+/** @kphp-extern-func-info generate-stub */
+function openssl_cipher_iv_length($method ::: string) ::: int | false;
+
+function openssl_encrypt($data ::: string, $method ::: string, $key ::: string,  $options ::: int = 0, $iv ::: string  = '',
+                         string &$tag = TODO, $aad ::: string = '', $tag_length ::: int = 16) ::: string | false;
+/** @kphp-extern-func-info generate-stub */
+function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '',
+                        $tag ::: string = '', $aad ::: string = '') ::: string | false;

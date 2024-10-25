@@ -456,6 +456,21 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
   if (rhs->throw_flag) {
     W << "TRY_CALL_ " << MacroBegin{} << TypeName{type} << ", ";
   }
+
+  /* TODO:K2
+   * In current implementation all non-trivial finialize block marked as cpp coroutine.
+   * This leads to redundant coroutines, but eliminates the need to traverse the rhs subtree
+   * to find whether it actually contains interruptible call. It can be fixed in the future
+   * to reduce count of cpp coroutines.
+   */
+  bool interruptible_call = G->is_output_mode_k2() &&
+                            !vk::any_of_equal(rhs->type(), op_var, op_int_const, op_float_const, op_false, op_null) &&
+                            W.get_context().parent_func->is_interruptible;
+
+  if (interruptible_call) {
+    W << "co_await ";
+  }
+
   W << "NullCoalesce< " << TypeName{type} << " >(";
   const auto index = lhs.try_as<op_index>();
   const auto array_ptype = index ? tinf::get_type(index->array())->get_real_ptype() : tp_any;
@@ -479,9 +494,16 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     auto &context = W.get_context();
     context.catch_labels.emplace_back();
     ++context.inside_null_coalesce_fallback;
+    /* TODO:K2
+     * It is not correctly to catch context by & in cpp coroutine case in general.
+     * But simple solution with catching by = isn't working
+     */
     FunctionSignatureGenerator(W) << "[&] ()";
-    W << " -> " << TypeName{tinf::get_type(rhs)} << " " << BEGIN
-      << " return " << rhs << ";" << NL
+    W << " -> "
+    << (interruptible_call ? "task_t<" : "")
+    << TypeName{tinf::get_type(rhs)}
+    << (interruptible_call ? "> ": " ") << BEGIN
+      << (interruptible_call ? "co_return ": "return ") << rhs << ";" << NL
       << END;
     context.catch_labels.pop_back();
     kphp_assert(context.inside_null_coalesce_fallback > 0);
@@ -821,7 +843,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       W << root->args()[0];
       return;
     }
-    if (root->str_val == "kphp_tracing_func_enter_branch") {
+    if (root->str_val == "kphp_tracing_func_enter_branch" && !G->is_output_mode_k2()) {
       // we are inside a function marked with @kphp-tracing
       W << "_tr_f.enter_branch(" << root->args()[0] << ")";
       return;

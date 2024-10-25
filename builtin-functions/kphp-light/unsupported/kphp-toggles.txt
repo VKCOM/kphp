@@ -1,7 +1,7 @@
 <?php
 
 /** @kphp-extern-func-info generate-stub */
-function kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle();
+function kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() ::: void;
 
 /** @kphp-extern-func-info generate-stub */
 function set_detect_incorrect_encoding_names_warning(bool $show) ::: void;
@@ -14,3 +14,7 @@ function set_json_log_demangle_stacktrace(bool $enable) ::: void;
 
 /** @kphp-extern-func-info generate-stub */
 function set_migration_php8_warning ($mask ::: int) ::: void;
+
+/** @kphp-extern-func-info generate-stub */
+function set_use_updated_gmmktime(bool $enable) ::: void;
+

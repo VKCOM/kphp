@@ -6,6 +6,30 @@
 
 #include "runtime-common/core/runtime-core.h"
 
+inline mixed f$abs(const mixed &v) {
+  php_critical_error("call to unsupported function");
+}
+
+inline int64_t f$abs(int64_t v) {
+  php_critical_error("call to unsupported function");
+}
+
+inline double f$abs(double v) {
+  php_critical_error("call to unsupported function");
+}
+
+inline int64_t f$abs(const Optional<int64_t> &v) {
+  php_critical_error("call to unsupported function");
+}
+
+inline int64_t f$abs(const Optional<bool> &v) {
+  php_critical_error("call to unsupported function");
+}
+
+inline double f$abs(const Optional<double> &v) {
+  php_critical_error("call to unsupported function");
+}
+
 template<class T>
 T f$min(const array<T> &a) {
   php_critical_error("call to unsupported function");

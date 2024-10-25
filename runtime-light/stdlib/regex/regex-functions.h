@@ -172,3 +172,14 @@ inline Optional<int64_t> f$preg_match_all(const mixed &, const string &, mixed &
   php_critical_error("call to unsupported function");
 }
 
+inline Optional<array<mixed>> f$preg_split(const regexp &, const string &, int64_t = -1, int64_t = 0) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<array<mixed>> f$preg_split(const string &, const string &, int64_t = -1, int64_t = 0) {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<array<mixed>> f$preg_split(const mixed &, const string &, int64_t = -1, int64_t = 0) {
+  php_critical_error("call to unsupported function");
+}
