@@ -10,12 +10,19 @@
 #include "compiler/make/target.h"
 
 class Objs2ObjTarget : public Target {
+bool force_obj;
+
 public:
+  explicit Objs2ObjTarget(bool force_obj_) : force_obj(force_obj_) {}
+  
   std::string get_cmd() final {
     std::stringstream ss;
     ss << settings->cxx.get() <<
        " " << settings->cxx_toolchain_option.get() <<
-       " " << settings->incremental_linker_flags.get() <<
+       " " << 
+      //  settings->incremental_linker_flags.get() <<
+      (force_obj ? "-r -nostdlib" : settings->incremental_linker_flags.get())
+       << 
        " -o " << target() <<
        " " << dep_list();
     return ss.str();

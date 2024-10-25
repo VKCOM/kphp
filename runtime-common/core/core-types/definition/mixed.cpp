@@ -16,25 +16,27 @@ struct C$ArrayAccess : public may_be_mixed_base {
 
 
 // TODO in tests uses stubs =(
-extern bool f$ArrayAccess$$offsetExists(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset) noexcept;
+// bool f$ArrayAccess$$offsetExists(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset) noexcept;
+// mixed f$ArrayAccess$$offsetGet(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset) noexcept;
+// void f$ArrayAccess$$offsetSet(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset, mixed const &v$value) noexcept;
+// void f$ArrayAccess$$offsetUnset(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset) noexcept;
+
+
 __attribute__((weak)) bool f$ArrayAccess$$offsetExists(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
   assert(0 && "using stub of offsetExists");
   return {};
 }
 
-extern mixed f$ArrayAccess$$offsetGet(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset) noexcept;
 __attribute__((weak)) mixed f$ArrayAccess$$offsetGet(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
   assert(0 && "using stub of offsetGet");
   return {};
 }
 
-extern void f$ArrayAccess$$offsetSet(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset, mixed const &v$value) noexcept;
 __attribute__((weak)) void f$ArrayAccess$$offsetSet(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/,
                                                     mixed const & /*v$value*/) noexcept {
   assert(0 && "using stub of offsetSet");
 }
 
-extern void f$ArrayAccess$$offsetUnset(class_instance<C$ArrayAccess> const &v$this, mixed const &v$offset) noexcept;
 __attribute__((weak)) void f$ArrayAccess$$offsetUnset(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
   assert(0 && "using stub of offsetUnset");
 }
@@ -1391,7 +1393,7 @@ const mixed mixed::get_value(const string &string_key) const {
 
     // TODO check with f$is_a
     if (get_type() == type::OBJECT) {
-      printf("Get [\"%s\"]\n", string_key.c_str());
+      // printf("Get [\"%s\"]\n", string_key.c_str());
       auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
       return f$ArrayAccess$$offsetGet(xxx, string_key);
     }

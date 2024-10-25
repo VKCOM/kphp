@@ -214,6 +214,10 @@ std::string CodeGenF::calc_subdir_for_function(FunctionPtr func) {
     return "o_l";
   }
 
+  if (func->name.find("ArrayAccess") != std::string::npos) {
+    return "internal_interfaces";
+  }
+
   int bucket = vk::std_hash(func->file_id->short_file_name) % 100;
   return "o_" + std::to_string(bucket);
 }

@@ -96,8 +96,8 @@ public:
     return create_target(new H2PchTarget(), to_targets(header_h), pch);
   }
 
-  Target *create_objs2obj_target(std::vector<File *> objs, File *obj) {
-    return create_target(new Objs2ObjTarget(), to_targets(std::move(objs)), obj);
+  Target *create_objs2obj_target(std::vector<File *> objs, File *obj, bool force_obj = false) {
+    return create_target(new Objs2ObjTarget(force_obj), to_targets(std::move(objs)), obj);
   }
 
   Target *create_objs2bin_target(std::vector<File *> objs, File *bin) {
@@ -395,10 +395,16 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
     for (File *f : deps) {
       vk::hash_combine(hash, vk::std_hash(f->name));
     }
+    
+    bool force_obj = name_and_files.first == "internal_interfaces";
+    
     auto intermediate_file_name = fmt_format("{}_{:x}.{}", name_and_files.first, hash,
-                                             G->settings().dynamic_incremental_linkage.get() ? "so" : "o");
+                                             G->settings().dynamic_incremental_linkage.get() && (!force_obj) ? "so" : "o");
     File *obj_file = obj_dir.insert_file(std::move(intermediate_file_name));
-    make->create_objs2obj_target(std::move(deps), obj_file);
+
+    
+
+    make->create_objs2obj_target(std::move(deps), obj_file, force_obj);
     objs.push_back(obj_file);
   }
   fmt_fprintf(stderr, "objs cnt = {}\n", objs.size());
