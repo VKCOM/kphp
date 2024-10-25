@@ -9,7 +9,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 
-namespace {
+namespace null_coalesce_impl_ {
 
 template<class ReturnType, class FallbackType>
 auto perform_fallback_impl(FallbackType &&lambda_fallback,
