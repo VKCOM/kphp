@@ -33,16 +33,16 @@ final class KphpRpcRequestsExtraInfo {
 }
 
 /** @kphp-extern-func-info interruptible */
-function k2_kphp_rpc_tl_query($actor ::: string, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
+function rpc_send_request($actor ::: string, $arr ::: array, $timeout ::: float, $ignore_answer ::: bool, \KphpRpcRequestsExtraInfo $requests_extra_info, $need_responses_extra_info ::: bool) ::: int[];
 
 /** @kphp-extern-func-info interruptible */
-function k2_kphp_typed_rpc_tl_query($actor ::: string, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
+function rpc_send_typed_query_request($actor ::: string, @tl\RpcFunction[] $query_functions, $timeout ::: float, $ignore_answer ::: bool, \KphpRpcRequestsExtraInfo $requests_extra_info, $need_responses_extra_info ::: bool) ::: int[];
 
 /** @kphp-extern-func-info interruptible */
-function k2_kphp_rpc_tl_query_result($query_ids ::: array) ::: mixed[][];
+function rpc_fetch_response($query_ids ::: array) ::: mixed[][];
 
 /** @kphp-extern-func-info interruptible */
-function k2_kphp_typed_rpc_tl_query_result(int[] $query_ids) ::: @tl\RpcResponse[];
+function rpc_fetch_typed_response(int[] $query_ids) ::: @tl\RpcResponse[];
 
 /** @kphp-extern-func-info can_throw */
 function fetch_int () ::: int;

@@ -29,15 +29,15 @@ class KphpJobWorkerResponseError implements KphpJobWorkerResponse {
 }
 
 /** @kphp-extern-func-info interruptible */
-function k2_job_worker_start(string $request, float $timeout): future<string> | false;
+function job_worker_send_request(string $request, float $timeout): future<string> | false;
 /** @kphp-extern-func-info interruptible */
-function k2_job_worker_start_no_reply(string $request, float $timeout): bool;
+function job_worker_send_noreply_request(string $request, float $timeout): bool;
 /** @kphp-extern-func-info interruptible */
-function k2_job_worker_start_multi(string[] $request, float $timeout): (future<string> | false)[];
+function job_worker_send_multi_request(string[] $request, float $timeout): (future<string> | false)[];
 /** @kphp-extern-func-info interruptible */
-function k2_job_worker_fetch_request(): string;
+function job_worker_fetch_response(): string;
 /** @kphp-extern-func-info interruptible */
-function k2_job_worker_store_response(string $response): int;
+function job_worker_store_response(string $response): int;
 
 function is_kphp_job_workers_enabled(): bool;
 
