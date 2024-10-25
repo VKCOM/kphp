@@ -94,13 +94,13 @@ public:
 
   template<class FallbackType>
   ResultType finalize(FallbackType &&fallback) noexcept {
-    return result_ ? std::move(*result_) : perform_fallback<ResultType>(std::forward<FallbackType>(fallback));
+    return result_ ? std::move(*result_) : null_coalesce_impl_::perform_fallback<ResultType>(std::forward<FallbackType>(fallback));
   }
 
   template<class FallbackType>
   requires(is_async_function_v<FallbackType>)
   task_t<ResultType> finalize(FallbackType &&fallback) noexcept {
-    co_return result_ ? std::move(*result_) : co_await perform_fallback<ResultType>(std::forward<FallbackType>(fallback));
+    co_return result_ ? std::move(*result_) : co_await null_coalesce_impl_::perform_fallback<ResultType>(std::forward<FallbackType>(fallback));
   }
 
   ~NullCoalesce() noexcept {
