@@ -19,17 +19,19 @@ void ShapeKeys::compile(CodeGenerator &W) const {
   W << ExternInclude{G->settings().runtime_headers.get()};
 
   FunctionSignatureGenerator{W} << "void " << get_function_name() << "()" << BEGIN;
-  W << "std::unordered_map<std::int64_t, std::string_view> shape_keys_storage{" << NL;
+  // skip it in K2 mode for now
+  if (!G->is_output_mode_k2()) {
+    W << "std::unordered_map<std::int64_t, std::string_view> shape_keys_storage{" << NL;
 
-  for (const auto &[hash, key] : shape_keys_storage_) {
-    W << Indent{2} << "{" << hash << ", \"" << key.data() << "\"}," << NL << Indent{-2};
+    for (const auto &[hash, key] : shape_keys_storage_) {
+      W << Indent{2} << "{" << hash << ", \"" << key.data() << "\"}," << NL << Indent{-2};
+    }
+
+    W << "};" << NL << NL;
+
+    W << "vk::singleton<ShapeKeyDemangle>::get().init(std::move(shape_keys_storage));" << NL;
   }
 
-  W << "};" << NL << NL;
-
-  W << "vk::singleton<ShapeKeyDemangle>::get().init(std::move(shape_keys_storage));" << NL;
-
   W << END << NL << NL;
-
   W << CloseFile{};
 }
