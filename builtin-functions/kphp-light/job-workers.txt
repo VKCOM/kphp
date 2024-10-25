@@ -35,7 +35,7 @@ function job_worker_send_noreply_request(string $request, float $timeout): bool;
 /** @kphp-extern-func-info interruptible */
 function job_worker_send_multi_request(string[] $request, float $timeout): (future<string> | false)[];
 /** @kphp-extern-func-info interruptible */
-function job_worker_fetch_response(): string;
+function job_worker_fetch_request(): string;
 /** @kphp-extern-func-info interruptible */
 function job_worker_store_response(string $response): int;
 
