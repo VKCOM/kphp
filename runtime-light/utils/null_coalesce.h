@@ -5,14 +5,9 @@
 #pragma once
 #include <type_traits>
 
-<<<<<<<< HEAD:runtime-common/core/core-types/definition/null_coalesce.h
 #include "runtime-common/core/include.h"
 #include "runtime-common/core/runtime-core.h"
-========
-#include "runtime-core/include.h"
-#include "runtime-core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
->>>>>>>> e1408657 (fix null_coalesce):runtime-light/utils/null_coalesce.h
 
 namespace {
 

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 template <typename F>
 void f$kphp_tracing_register_on_finish(F &&cb_should_be_flushed) {

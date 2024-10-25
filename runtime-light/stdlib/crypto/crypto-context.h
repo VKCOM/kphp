@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 struct CryptoComponentContext final : vk::not_copyable {
   string default_tag_dummy;

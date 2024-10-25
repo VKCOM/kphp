@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/runtime-core.h"
 
 struct SystemComponentContext final : vk::not_copyable {
   int64_t result_code_dummy{};
