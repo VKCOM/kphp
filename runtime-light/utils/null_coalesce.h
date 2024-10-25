@@ -14,7 +14,7 @@
 #include "runtime-light/coroutine/task.h"
 >>>>>>>> e1408657 (fix null_coalesce):runtime-light/utils/null_coalesce.h
 
-namespace impl_ {
+namespace {
 
 template<class ReturnType, class FallbackType>
 auto perform_fallback_impl(FallbackType &&lambda_fallback,
@@ -51,7 +51,7 @@ task_t<ReturnType> perform_fallback(FallbackType &&value_fallback) noexcept {
   co_return co_await perform_fallback_impl<ReturnType>(std::forward<FallbackType>(value_fallback), nullptr);
 }
 
-} // namespace impl_
+}
 
 template<typename ResultType>
 struct NullCoalesce {
@@ -99,13 +99,13 @@ public:
 
   template<class FallbackType>
   ResultType finalize(FallbackType &&fallback) noexcept {
-    return result_ ? std::move(*result_) : impl_::perform_fallback<ResultType>(std::forward<FallbackType>(fallback));
+    return result_ ? std::move(*result_) : perform_fallback<ResultType>(std::forward<FallbackType>(fallback));
   }
 
   template<class FallbackType>
   requires(is_async_function_v<FallbackType>)
   task_t<ResultType> finalize(FallbackType &&fallback) noexcept {
-    co_return result_ ? std::move(*result_) : co_await impl_::perform_fallback<ResultType>(std::forward<FallbackType>(fallback));
+    co_return result_ ? std::move(*result_) : co_await perform_fallback<ResultType>(std::forward<FallbackType>(fallback));
   }
 
   ~NullCoalesce() noexcept {
