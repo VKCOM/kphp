@@ -5,8 +5,8 @@
 #pragma once
 #include <type_traits>
 
-#include "runtime-core/include.h"
-#include "runtime-core/runtime-core.h"
+#include "runtime-common/core/include.h"
+#include "runtime-common/core/runtime-core.h"
 
 namespace impl_ {
 
