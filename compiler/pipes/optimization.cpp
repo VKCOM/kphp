@@ -163,7 +163,10 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
       // TODO doesn't it have the problem with that some parent classes are not linked in chain yet?
       const auto *method = klass->get_instance_method("offsetSet");
 
-      kphp_assert_msg(method, fmt::format("Class {} does not implement offsetSet", klass->name).c_str());
+      if (!method) {
+        kphp_error(method, fmt_format("Class {} does not implement offsetSet", klass->name).c_str());
+        return a;
+      }
 
 
       // TODO assume here that key is present
@@ -243,7 +246,8 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
 
     const auto *method = klass->get_instance_method("offsetGet");
     if (!method) {
-      kphp_assert_msg(method, "bad method");
+      kphp_error(method, fmt_format("Class {} does not implement offsetSet", klass->name).c_str());
+      return index;
     }
     // TODO assume here that key is present
     auto new_call = VertexAdaptor<op_func_call>::create(lhs, index->key()).set_location(lhs);

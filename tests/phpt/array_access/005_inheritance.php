@@ -29,7 +29,6 @@ function test() {
     $obj[] = 123;
     $obj[] = "abcd";
     $obj[123] = ["string", 0.125, [1, 2, 3]];
-    $obj[] = $obj[123];
 
     foreach ($obj->keys() as $key) {
         var_dump($obj[$key]);
@@ -37,8 +36,9 @@ function test() {
 
     if ($obj instanceof Classes\LoggingLikeArray) {
         // TODO operator[] does not work here
-        $obj->offsetSet(null, $obj[124]);
-        var_dump($obj[124]);
+        // TODO it's ub warning for arrays
+        $obj->offsetSet(null, $obj[123]);
+        var_dump($obj[123]);
     } else {
         die_if_failure(false, "false negative instanceof Classes\LoggingLikeArray");
     }
