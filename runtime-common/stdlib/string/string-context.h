@@ -13,17 +13,17 @@
 
 namespace string_context_impl_ {
 
-inline constexpr auto *COLON = ",";
-inline constexpr auto *CP1251 = "cp1251";
-inline constexpr auto *DOT = ".";
-inline constexpr auto *COMMA = ",";
-inline constexpr auto *BACKSLASH = "\\";
-inline constexpr auto *QUOTE = "\"";
-inline constexpr auto *NEW_LINE = "\n";
-inline constexpr auto *SPACE = " ";
-inline constexpr auto *WHAT = " \n\r\t\v\0";
-inline constexpr auto *ONE = "1";
-inline constexpr auto *PERCENT = "%";
+inline constexpr auto *COLON_ = ",";
+inline constexpr auto *CP1251_ = "cp1251";
+inline constexpr auto *DOT_ = ".";
+inline constexpr auto *COMMA_ = ",";
+inline constexpr auto *BACKSLASH_ = "\\";
+inline constexpr auto *QUOTE_ = "\"";
+inline constexpr auto *NEWLINE_ = "\n";
+inline constexpr auto *SPACE_ = " ";
+inline constexpr auto *WHAT_ = " \n\r\t\v\0";
+inline constexpr auto *ONE_ = "1";
+inline constexpr auto *PERCENT_ = "%";
 
 }; // namespace string_context_impl_
 
@@ -45,18 +45,19 @@ public:
 };
 
 struct StringLibConstants final : vk::not_copyable {
-  const string COLON{string_context_impl_::COLON, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::COLON))};
-  const string CP1251{string_context_impl_::CP1251, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::CP1251))};
-  const string DOT{string_context_impl_::DOT, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::DOT))};
-  const string COMMA{string_context_impl_::COMMA, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::COMMA))};
-  const string BACKSLASH{string_context_impl_::BACKSLASH, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::BACKSLASH))};
-  const string QUOTE{string_context_impl_::QUOTE, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::QUOTE))};
-  const string NEW_LINE{string_context_impl_::NEW_LINE, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::NEW_LINE))};
-  const string SPACE{string_context_impl_::SPACE, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::SPACE))};
+  const string COLON_STR{string_context_impl_::COLON_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::COLON_))};
+  const string CP1251_STR{string_context_impl_::CP1251_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::CP1251_))};
+  const string DOT_STR{string_context_impl_::DOT_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::DOT_))};
+  const string COMMA_STR{string_context_impl_::COMMA_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::COMMA_))};
+  const string BACKSLASH_STR{string_context_impl_::BACKSLASH_,
+                             static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::BACKSLASH_))};
+  const string QUOTE_STR{string_context_impl_::QUOTE_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::QUOTE_))};
+  const string NEWLINE_STR{string_context_impl_::NEWLINE_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::NEWLINE_))};
+  const string SPACE_STR{string_context_impl_::SPACE_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::SPACE_))};
   // +1 here to since char_traits<char>::length doesn't count '\0' at the end
-  const string WHAT{string_context_impl_::WHAT, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::WHAT)) + 1};
-  const string ONE{string_context_impl_::ONE, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::ONE))};
-  const string PERCENT{string_context_impl_::PERCENT, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::PERCENT))};
+  const string WHAT_STR{string_context_impl_::WHAT_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::WHAT_)) + 1};
+  const string ONE_STR{string_context_impl_::ONE_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::ONE_))};
+  const string PERCENT_STR{string_context_impl_::PERCENT_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::PERCENT_))};
 
   const char lhex_digits[17] = "0123456789abcdef";
   const char uhex_digits[17] = "0123456789ABCDEF";

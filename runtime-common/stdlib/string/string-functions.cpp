@@ -1018,7 +1018,7 @@ string f$sprintf(const string &format, const array<mixed> &a) noexcept {
 
     string piece;
     if (format[i] == '%') {
-      piece = StringLibConstants::get().PERCENT;
+      piece = StringLibConstants::get().PERCENT_STR;
     } else {
       if (arg_num == -2) {
         arg_num = cur_arg++;
@@ -2547,7 +2547,7 @@ Optional<array<mixed>> f$unpack(const string &pattern, const string &data) noexc
         }
 
         if (key_prefix.empty()) {
-          key_prefix = StringLibConstants::get().ONE;
+          key_prefix = StringLibConstants::get().ONE_STR;
         }
 
         result.set_value(key_prefix, string(data.c_str() + data_pos, cnt));
@@ -2586,7 +2586,7 @@ Optional<array<mixed>> f$unpack(const string &pattern, const string &data) noexc
         php_assert(cnt == 0 || cnt == -1);
 
         if (key_prefix.empty()) {
-          key_prefix = StringLibConstants::get().ONE;
+          key_prefix = StringLibConstants::get().ONE_STR;
         }
 
         result.set_value(key_prefix, value);
@@ -2597,7 +2597,7 @@ Optional<array<mixed>> f$unpack(const string &pattern, const string &data) noexc
 
       default: {
         if (key_prefix.empty() && cnt == -1) {
-          key_prefix = StringLibConstants::get().ONE;
+          key_prefix = StringLibConstants::get().ONE_STR;
         }
         int counter = 1;
         do {

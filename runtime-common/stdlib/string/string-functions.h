@@ -13,7 +13,7 @@ string f$addslashes(const string &str) noexcept;
 
 string f$bin2hex(const string &str) noexcept;
 
-string f$chop(const string &s, const string &what = StringLibConstants::get().WHAT) noexcept;
+string f$chop(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
 
 string f$chr(int64_t v) noexcept;
 
@@ -26,7 +26,7 @@ string f$hex2bin(const string &str) noexcept;
 string f$htmlentities(const string &str) noexcept;
 
 string f$html_entity_decode(const string &str, int64_t flags = StringLibConstants::ENT_COMPAT | StringLibConstants::ENT_HTML401,
-                            const string &encoding = StringLibConstants::get().CP1251) noexcept;
+                            const string &encoding = StringLibConstants::get().CP1251_STR) noexcept;
 
 string f$htmlspecialchars(const string &str, int64_t flags = StringLibConstants::ENT_COMPAT | StringLibConstants::ENT_HTML401) noexcept;
 
@@ -36,7 +36,7 @@ string f$lcfirst(const string &str) noexcept;
 
 int64_t f$levenshtein(const string &str1, const string &str2) noexcept;
 
-string f$ltrim(const string &s, const string &what = StringLibConstants::get().WHAT) noexcept;
+string f$ltrim(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
 
 string f$mysql_escape_string(const string &str) noexcept;
 
@@ -50,7 +50,7 @@ string f$pack(const string &pattern, const array<mixed> &a) noexcept;
 
 string f$prepare_search_query(const string &query) noexcept;
 
-string f$rtrim(const string &s, const string &what = StringLibConstants::get().WHAT) noexcept;
+string f$rtrim(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
 
 Optional<string> f$setlocale(int64_t category, const string &locale) noexcept;
 
@@ -110,7 +110,7 @@ string f$strtr(const string &subject, const string &from, const string &to) noex
 
 // inline string f$strtr(const string &subject, const mixed &replace_pairs);
 
-string f$str_pad(const string &input, int64_t len, const string &pad_str = StringLibConstants::get().SPACE,
+string f$str_pad(const string &input, int64_t len, const string &pad_str = StringLibConstants::get().SPACE_STR,
                  int64_t pad_type = StringLibConstants::STR_PAD_RIGHT) noexcept;
 
 string f$str_repeat(const string &s, int64_t multiplier) noexcept;
@@ -209,13 +209,13 @@ bool f$str_starts_with(const string &haystack, const string &needle) noexcept;
 
 bool f$str_ends_with(const string &haystack, const string &needle) noexcept;
 
-tmp_string f$_tmp_trim(tmp_string s, const string &what = StringLibConstants::get().WHAT) noexcept;
+tmp_string f$_tmp_trim(tmp_string s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
 
-tmp_string f$_tmp_trim(const string &s, const string &what = StringLibConstants::get().WHAT) noexcept;
+tmp_string f$_tmp_trim(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
 
-string f$trim(tmp_string s, const string &what = StringLibConstants::get().WHAT) noexcept;
+string f$trim(tmp_string s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
 
-string f$trim(const string &s, const string &what = StringLibConstants::get().WHAT) noexcept;
+string f$trim(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
 
 string f$ucfirst(const string &str) noexcept;
 
@@ -225,7 +225,7 @@ Optional<array<mixed>> f$unpack(const string &pattern, const string &data) noexc
 
 string f$vsprintf(const string &format, const array<mixed> &args) noexcept;
 
-string f$wordwrap(const string &str, int64_t width = 75, const string &brk = StringLibConstants::get().NEW_LINE, bool cut = false) noexcept;
+string f$wordwrap(const string &str, int64_t width = 75, const string &brk = StringLibConstants::get().NEWLINE_STR, bool cut = false) noexcept;
 
 /*
  *
@@ -261,28 +261,28 @@ inline uint8_t hex_to_int(char c) noexcept {
 }
 
 inline string f$number_format(double number, int64_t decimals) noexcept {
-  return f$number_format(number, decimals, StringLibConstants::get().DOT, StringLibConstants::get().COLON);
+  return f$number_format(number, decimals, StringLibConstants::get().DOT_STR, StringLibConstants::get().COLON_STR);
 }
 
 inline string f$number_format(double number, int64_t decimals, const string &dec_point) noexcept {
-  return f$number_format(number, decimals, dec_point, StringLibConstants::get().COLON);
+  return f$number_format(number, decimals, dec_point, StringLibConstants::get().COLON_STR);
 }
 
 inline string f$number_format(double number, int64_t decimals, const mixed &dec_point) noexcept {
-  return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT : dec_point.to_string(), StringLibConstants::get().COLON);
+  return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT_STR : dec_point.to_string(), StringLibConstants::get().COLON_STR);
 }
 
 inline string f$number_format(double number, int64_t decimals, const string &dec_point, const mixed &thousands_sep) noexcept {
-  return f$number_format(number, decimals, dec_point, thousands_sep.is_null() ? StringLibConstants::get().COLON : thousands_sep.to_string());
+  return f$number_format(number, decimals, dec_point, thousands_sep.is_null() ? StringLibConstants::get().COLON_STR : thousands_sep.to_string());
 }
 
 inline string f$number_format(double number, int64_t decimals, const mixed &dec_point, const string &thousands_sep) noexcept {
-  return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT : dec_point.to_string(), thousands_sep);
+  return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT_STR : dec_point.to_string(), thousands_sep);
 }
 
 inline string f$number_format(double number, int64_t decimals, const mixed &dec_point, const mixed &thousands_sep) noexcept {
-  return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT : dec_point.to_string(),
-                         thousands_sep.is_null() ? StringLibConstants::get().COLON : thousands_sep.to_string());
+  return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT_STR : dec_point.to_string(),
+                         thousands_sep.is_null() ? StringLibConstants::get().COLON_STR : thousands_sep.to_string());
 }
 
 inline int64_t f$strlen(const string &s) noexcept {

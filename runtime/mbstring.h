@@ -12,22 +12,22 @@
 
 bool mb_UTF8_check(const char *s);
 
-bool f$mb_check_encoding(const string &str, const string &encoding = StringLibConstants::get().CP1251);
+bool f$mb_check_encoding(const string &str, const string &encoding = StringLibConstants::get().CP1251_STR);
 
-int64_t f$mb_strlen(const string &str, const string &encoding = StringLibConstants::get().CP1251);
+int64_t f$mb_strlen(const string &str, const string &encoding = StringLibConstants::get().CP1251_STR);
 
-string f$mb_strtolower(const string &str, const string &encoding = StringLibConstants::get().CP1251);
+string f$mb_strtolower(const string &str, const string &encoding = StringLibConstants::get().CP1251_STR);
 
-string f$mb_strtoupper(const string &str, const string &encoding = StringLibConstants::get().CP1251);
+string f$mb_strtoupper(const string &str, const string &encoding = StringLibConstants::get().CP1251_STR);
 
 Optional<int64_t> f$mb_strpos(const string &haystack, const string &needle, int64_t offset = 0,
-                              const string &encoding = StringLibConstants::get().CP1251) noexcept;
+                              const string &encoding = StringLibConstants::get().CP1251_STR) noexcept;
 
 Optional<int64_t> f$mb_stripos(const string &haystack, const string &needle, int64_t offset = 0,
-                               const string &encoding = StringLibConstants::get().CP1251) noexcept;
+                               const string &encoding = StringLibConstants::get().CP1251_STR) noexcept;
 
 string f$mb_substr(const string &str, int64_t start, const mixed &length = std::numeric_limits<int64_t>::max(),
-                   const string &encoding = StringLibConstants::get().CP1251);
+                   const string &encoding = StringLibConstants::get().CP1251_STR);
 
 void f$set_detect_incorrect_encoding_names_warning(bool show);
 
