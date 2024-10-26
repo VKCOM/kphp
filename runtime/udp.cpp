@@ -9,13 +9,12 @@
 #include <sys/socket.h>
 
 #include "common/resolver.h"
-
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/datetime_functions.h"
 #include "runtime/net_events.h"
 #include "runtime/streams.h"
-#include "runtime/string_functions.h"
 #include "runtime/url.h"
 
 int DEFAULT_SOCKET_TIMEOUT = 60;

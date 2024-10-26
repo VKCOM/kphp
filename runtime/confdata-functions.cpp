@@ -5,9 +5,8 @@
 #include "runtime/confdata-functions.h"
 
 #include "common/algorithms/contains.h"
-
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/confdata-global-manager.h"
-#include "runtime/string_functions.h"
 
 namespace {
 

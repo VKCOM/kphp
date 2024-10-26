@@ -9,12 +9,10 @@
 #include <unistd.h>
 #include <vector>
 
-#include "runtime/critical_section.h"
+#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime/allocator.h"
+#include "runtime/critical_section.h"
 #include "server/json-logger.h"
-
-
-extern const char lhex_digits[17];
 
 namespace kphp_tracing {
 
@@ -245,8 +243,8 @@ void tracing_binary_buffer::output_to_json_log(const char *json_without_binlog) 
 
   for (const auto &it : chunks_ordered) {
     for (const unsigned char *p = reinterpret_cast<const unsigned char *>(it->buf), *end = p + it->size_bytes; p != end; ++p) {
-      buffer[buffer_i++] = lhex_digits[(*p & 0xF0) >> 4];
-      buffer[buffer_i++] = lhex_digits[(*p & 0x0F)];
+      buffer[buffer_i++] = StringLibConstants::get().lhex_digits[(*p & 0xF0) >> 4];
+      buffer[buffer_i++] = StringLibConstants::get().lhex_digits[(*p & 0x0F)];
     }
   }
 

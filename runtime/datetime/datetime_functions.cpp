@@ -4,16 +4,15 @@
 
 #include "runtime/datetime/datetime_functions.h"
 
+#include <chrono>
 #include <clocale>
 #include <ctime>
 #include <sys/time.h>
-#include <chrono>
 
+#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/timelib_wrapper.h"
-#include "runtime/string_functions.h"
-#include "server/server-log.h"
 
 extern long timezone;
 
@@ -575,11 +574,11 @@ string f$strftime(const string &format, int64_t timestamp) {
   time_t timestamp_t = timestamp;
   localtime_r(&timestamp_t, &t);
 
-  if (!strftime(php_buf, PHP_BUF_LEN, format.c_str(), &t)) {
+  if (!strftime(StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, format.c_str(), &t)) {
     return {};
   }
 
-  return string(php_buf);
+  return string(StringLibContext::get().static_buf.data());
 }
 
 Optional<int64_t> f$strtotime(const string &time_str, int64_t timestamp) {

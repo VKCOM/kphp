@@ -5,7 +5,8 @@
 #include "runtime/url.h"
 
 #include "common/macos-ports.h"
-
+#include "runtime-common/stdlib/string/string-context.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/array_functions.h"
 #include "runtime/regexp.h"
 
@@ -490,8 +491,8 @@ string f$rawurlencode(const string &s) {
       kphp_runtime_context.static_SB.append_char(s[i]);
     } else {
       kphp_runtime_context.static_SB.append_char('%');
-      kphp_runtime_context.static_SB.append_char(uhex_digits[(s[i] >> 4) & 15]);
-      kphp_runtime_context.static_SB.append_char(uhex_digits[s[i] & 15]);
+      kphp_runtime_context.static_SB.append_char(StringLibConstants::get().uhex_digits[(s[i] >> 4) & 15]);
+      kphp_runtime_context.static_SB.append_char(StringLibConstants::get().uhex_digits[s[i] & 15]);
     }
   }
   return kphp_runtime_context.static_SB.str();
@@ -528,8 +529,8 @@ string f$urlencode(const string &s) {
       kphp_runtime_context.static_SB.append_char('+');
     } else {
       kphp_runtime_context.static_SB.append_char('%');
-      kphp_runtime_context.static_SB.append_char(uhex_digits[(s[i] >> 4) & 15]);
-      kphp_runtime_context.static_SB.append_char(uhex_digits[s[i] & 15]);
+      kphp_runtime_context.static_SB.append_char(StringLibConstants::get().uhex_digits[(s[i] >> 4) & 15]);
+      kphp_runtime_context.static_SB.append_char(StringLibConstants::get().uhex_digits[s[i] & 15]);
     }
   }
   return kphp_runtime_context.static_SB.str();

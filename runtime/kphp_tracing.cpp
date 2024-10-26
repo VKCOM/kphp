@@ -3,16 +3,16 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime/kphp_tracing.h"
-#include "runtime/kphp_tracing_binlog.h"
 
 #include <chrono>
 
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/critical_section.h"
-#include "runtime/job-workers/job-interface.h"
 #include "runtime/interface.h"
+#include "runtime/job-workers/job-interface.h"
+#include "runtime/kphp_tracing_binlog.h"
 #include "runtime/math_functions.h"
 #include "runtime/resumable.h"
-#include "runtime/string_functions.h"
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/tl_magics_decoding.h"
 

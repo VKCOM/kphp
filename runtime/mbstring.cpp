@@ -1,11 +1,12 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime/mbstring.h"
 
 #include "common/unicode/unicode-utils.h"
 #include "common/unicode/utf8-utils.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 
 static bool is_detect_incorrect_encoding_names_warning{false};
 
@@ -18,7 +19,7 @@ void free_detect_incorrect_encoding_names() {
 }
 
 static int mb_detect_encoding_new(const string &encoding) {
-  const auto encoding_name = f$strtolower(encoding).c_str();
+  const auto *encoding_name = f$strtolower(encoding).c_str();
 
   if (!strcmp(encoding_name, "cp1251") || !strcmp(encoding_name, "cp-1251") || !strcmp(encoding_name, "windows-1251")) {
     return 1251;

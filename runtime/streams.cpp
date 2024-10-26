@@ -8,8 +8,9 @@
 #include <cstring>
 #include <sys/select.h>
 
-#include "runtime/array_functions.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/allocator.h"
+#include "runtime/array_functions.h"
 #include "runtime/critical_section.h"
 
 static string::size_type max_wrapper_name_size = 0;

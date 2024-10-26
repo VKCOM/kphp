@@ -5,9 +5,7 @@
 #include "runtime/json-functions.h"
 
 #include "common/algorithms/find.h"
-
-#include "runtime/exception.h"
-#include "runtime/string_functions.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 
 // note: json-functions.cpp is used for non-typed json implementation: for json_encode() and json_decode()
 // for classes, e.g. `JsonEncoder::encode(new A)`, see json-writer.cpp and from/to visitors

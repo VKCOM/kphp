@@ -7,14 +7,13 @@
 #include <zstd.h>
 
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
-
-#include "runtime/string_functions.h"
+#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime/allocator.h"
 #include "runtime/zstd.h"
 
 namespace {
 
-static_assert(2 * ZSTD_BLOCKSIZE_MAX < PHP_BUF_LEN, "double block size is expected to be less then buffer size");
+static_assert(2 * ZSTD_BLOCKSIZE_MAX < StringLibContext::STATIC_BUFFER_LENGTH, "double block size is expected to be less then buffer size");
 
 ZSTD_customMem make_custom_alloc() noexcept {
   return ZSTD_customMem{
@@ -49,8 +48,8 @@ Optional<string> zstd_compress_impl(const string &data, int64_t level = DEFAULT_
     return false;
   }
 
-  php_assert(ZSTD_CStreamOutSize() <= PHP_BUF_LEN);
-  ZSTD_outBuffer out{php_buf, PHP_BUF_LEN, 0};
+  php_assert(ZSTD_CStreamOutSize() <= StringLibContext::STATIC_BUFFER_LENGTH);
+  ZSTD_outBuffer out{StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, 0};
   ZSTD_inBuffer in{data.c_str(), data.size(), 0};
 
   string encoded_string;
@@ -104,9 +103,9 @@ Optional<string> zstd_uncompress_impl(const string &data, const string &dict = s
     return false;
   }
 
-  php_assert(ZSTD_DStreamOutSize() <= PHP_BUF_LEN);
+  php_assert(ZSTD_DStreamOutSize() <= StringLibContext::STATIC_BUFFER_LENGTH);
   ZSTD_inBuffer in{data.c_str(), data.size(), 0};
-  ZSTD_outBuffer out{php_buf, PHP_BUF_LEN, 0};
+  ZSTD_outBuffer out{StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, 0};
 
   string decoded_string;
   while (in.pos < in.size) {

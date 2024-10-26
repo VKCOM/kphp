@@ -16,7 +16,7 @@
 #include "runtime-common/core/core-types/decl/optional.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 
-#define COMMA ,
+// #define COMMA ,
 
 
 template<class T>

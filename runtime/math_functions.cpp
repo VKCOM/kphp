@@ -2,6 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "runtime/math_functions.h"
+
 #include <chrono>
 #include <random>
 #include <cstring>
@@ -15,10 +17,10 @@
 #endif
 
 #include "common/cycleclock.h"
-#include "runtime/math_functions.h"
-#include "runtime/exception.h"
+#include "runtime-common/stdlib/string/string-context.h"
+#include "runtime-common/stdlib/string/string-functions.h"
+#include "runtime/allocator.h"
 #include "runtime/critical_section.h"
-#include "runtime/string_functions.h"
 #include "server/php-engine-vars.h"
 
 namespace {
@@ -83,7 +85,7 @@ string f$dechex(int64_t number) noexcept {
   int i = 16;
 
   do {
-    s[--i] = lhex_digits[v & 15];
+    s[--i] = StringLibConstants::get().lhex_digits[v & 15];
     v >>= 4;
   } while (v > 0);
 

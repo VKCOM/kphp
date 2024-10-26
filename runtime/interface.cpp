@@ -21,6 +21,8 @@
 #include "common/wrappers/overloaded.h"
 
 #include "net/net-connections.h"
+#include "runtime-common/stdlib/string/string-context.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
 #include "runtime/confdata-functions.h"
@@ -51,7 +53,6 @@
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
 #include "runtime/streams.h"
-#include "runtime/string_functions.h"
 #include "runtime/tcp.h"
 #include "runtime/thread-pool.h"
 #include "runtime/typed_rpc.h"
@@ -958,7 +959,7 @@ public:
     buf_pos(0),
     boundary(boundary) {
     if (post == nullptr) {
-      buf = php_buf;
+      buf = StringLibContext::get().static_buf.data();
       buf_len = 0;
     } else {
       buf = (char *)post;
@@ -989,9 +990,10 @@ public:
         buf_pos += to_erase;
         i -= to_erase;
 
-        buf_len = to_leave + http_load_long_query(buf + to_leave, min(to_leave, left), min(PHP_BUF_LEN - to_leave, left));
+        buf_len =
+          to_leave + http_load_long_query(buf + to_leave, min(to_leave, left), min(static_cast<int>(StringLibContext::STATIC_BUFFER_LENGTH) - to_leave, left));
       } else {
-        buf_len = http_load_long_query(buf, min(2 * chunk_size, left), min(PHP_BUF_LEN, left));
+        buf_len = http_load_long_query(buf, min(2 * chunk_size, left), min(static_cast<int>(StringLibContext::STATIC_BUFFER_LENGTH), left));
       }
     }
 
@@ -1161,7 +1163,9 @@ public:
         buf_pos += to_erase;
         pos += to_write;
 
-        buf_len = to_leave + http_load_long_query(buf + to_leave, min(PHP_BUF_LEN - to_leave, left), min(PHP_BUF_LEN - to_leave, left));
+        buf_len = to_leave
+                  + http_load_long_query(buf + to_leave, min(static_cast<int>(StringLibContext::STATIC_BUFFER_LENGTH) - to_leave, left),
+                                         min(static_cast<int>(StringLibContext::STATIC_BUFFER_LENGTH) - to_leave, left));
       }
 
       php_assert (s != nullptr);
@@ -1724,8 +1728,8 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
     if (!is_parsed) {
       int loaded = 0;
       while (loaded < http_data.post_len) {
-        int to_load = min(PHP_BUF_LEN, http_data.post_len - loaded);
-        http_load_long_query(php_buf, to_load, to_load);
+        int to_load = min(static_cast<int>(StringLibContext::STATIC_BUFFER_LENGTH), http_data.post_len - loaded);
+        http_load_long_query(StringLibContext::get().static_buf.data(), to_load, to_load);
         loaded += to_load;
       }
     }
