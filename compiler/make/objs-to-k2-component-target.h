@@ -6,6 +6,7 @@
 
 #include <sstream>
 
+#include "compiler/compiler-core.h"
 #include "compiler/compiler-settings.h"
 #include "compiler/make/target.h"
 
@@ -29,7 +30,8 @@ class Objs2K2ComponentTarget : public Target {
 public:
   std::string get_cmd() final {
     std::stringstream ss;
-    ss << settings->cxx.get() << " -static-libgcc -stdlib=libc++ -static-libstdc++ -shared -o " << target() << " ";
+    ss << settings->cxx.get() << " -Wl,--wrap,malloc -Wl,--wrap,free, -Wl,--wrap,calloc -Wl,--wrap,realloc "
+       << " -static-libgcc -stdlib=libc++ -static-libstdc++ -shared -o " << target() << " ";
 
     for (size_t i = 0; i + 1 < deps.size(); ++i) {
       ss << deps[i]->get_name() << " ";
