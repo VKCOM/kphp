@@ -630,7 +630,7 @@ string f$nl2br(const string &str, bool is_xhtml) noexcept {
 }
 
 string f$number_format(double number, int64_t decimals, const string &dec_point, const string &thousands_sep) noexcept {
-  char *result_begin = StringLibContext::get().static_buf.data() + StringLibContext::get().static_buf.size();
+  char *result_begin = StringLibContext::get().static_buf.data() + StringLibContext::STATIC_BUFFER_LENGTH;
 
   if (decimals < 0 || decimals > 100) {
     php_warning("Wrong parameter decimals (%" PRIi64 ") in function number_format", decimals);
@@ -695,7 +695,7 @@ string f$number_format(double number, int64_t decimals, const string &dec_point,
   }
 
   if (result_begin <= StringLibContext::get().static_buf.data()) {
-    php_critical_error("maximum length of result (%zu) exceeded", StringLibContext::STATIC_BUFFER_LENGTH);
+    php_critical_error("maximum length of result (%d) exceeded", StringLibContext::STATIC_BUFFER_LENGTH);
     return {};
   }
 

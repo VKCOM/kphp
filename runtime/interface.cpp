@@ -991,9 +991,9 @@ public:
         i -= to_erase;
 
         buf_len =
-          to_leave + http_load_long_query(buf + to_leave, min(to_leave, left), min(static_cast<int>(StringLibContext::STATIC_BUFFER_LENGTH) - to_leave, left));
+          to_leave + http_load_long_query(buf + to_leave, min(to_leave, left), min(StringLibContext::STATIC_BUFFER_LENGTH - to_leave, left));
       } else {
-        buf_len = http_load_long_query(buf, min(2 * chunk_size, left), min(static_cast<int>(StringLibContext::STATIC_BUFFER_LENGTH), left));
+        buf_len = http_load_long_query(buf, min(2 * chunk_size, left), min(StringLibContext::STATIC_BUFFER_LENGTH, left));
       }
     }
 
@@ -1164,8 +1164,8 @@ public:
         pos += to_write;
 
         buf_len = to_leave
-                  + http_load_long_query(buf + to_leave, min(static_cast<int>(StringLibContext::STATIC_BUFFER_LENGTH) - to_leave, left),
-                                         min(static_cast<int>(StringLibContext::STATIC_BUFFER_LENGTH) - to_leave, left));
+                  + http_load_long_query(buf + to_leave, min(StringLibContext::STATIC_BUFFER_LENGTH - to_leave, left),
+                                         min(StringLibContext::STATIC_BUFFER_LENGTH - to_leave, left));
       }
 
       php_assert (s != nullptr);
@@ -1728,7 +1728,7 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
     if (!is_parsed) {
       int loaded = 0;
       while (loaded < http_data.post_len) {
-        int to_load = min(static_cast<int>(StringLibContext::STATIC_BUFFER_LENGTH), http_data.post_len - loaded);
+        int to_load = min(StringLibContext::STATIC_BUFFER_LENGTH, http_data.post_len - loaded);
         http_load_long_query(StringLibContext::get().static_buf.data(), to_load, to_load);
         loaded += to_load;
       }

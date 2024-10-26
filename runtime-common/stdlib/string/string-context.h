@@ -5,7 +5,6 @@
 #pragma once
 
 #include <array>
-#include <cstddef>
 #include <cstdint>
 #include <string>
 
@@ -28,11 +27,13 @@ inline constexpr auto *PERCENT = "%";
 
 }; // namespace string_context_impl_
 
-struct StringLibContext final : vk::not_copyable {
-  static constexpr auto STATIC_BUFFER_LENGTH = static_cast<size_t>(1U << 23U);
-  static constexpr auto MASK_BUFFER_LENGTH = 256;
+class StringLibContext final : vk::not_copyable {
+  static constexpr int32_t MASK_BUFFER_LENGTH = 256;
 
-  std::array<char, STATIC_BUFFER_LENGTH> static_buf{};
+public:
+  static constexpr int32_t STATIC_BUFFER_LENGTH = 1U << 23U;
+
+  std::array<char, STATIC_BUFFER_LENGTH + 1> static_buf{};
   std::array<char, MASK_BUFFER_LENGTH> mask_buffer{};
   string_buffer buf;
   string_buffer buf_spare;
@@ -52,7 +53,8 @@ struct StringLibConstants final : vk::not_copyable {
   const string QUOTE{string_context_impl_::QUOTE, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::QUOTE))};
   const string NEW_LINE{string_context_impl_::NEW_LINE, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::NEW_LINE))};
   const string SPACE{string_context_impl_::SPACE, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::SPACE))};
-  const string WHAT{string_context_impl_::WHAT, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::WHAT))};
+  // +1 here to since char_traits<char>::length doesn't count '\0' at the end
+  const string WHAT{string_context_impl_::WHAT, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::WHAT)) + 1};
   const string ONE{string_context_impl_::ONE, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::ONE))};
   const string PERCENT{string_context_impl_::PERCENT, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::PERCENT))};
 
@@ -68,5 +70,5 @@ struct StringLibConstants final : vk::not_copyable {
   static constexpr int64_t STR_PAD_RIGHT = 1;
   static constexpr int64_t STR_PAD_BOTH = 2;
 
-  static StringLibConstants &get() noexcept;
+  static const StringLibConstants &get() noexcept;
 };

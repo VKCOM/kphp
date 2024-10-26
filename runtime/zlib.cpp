@@ -276,7 +276,7 @@ static string::size_type zlib_decode_raw(vk::string_view s, int encoding) {
     inflateEnd(&strm);
     dl::leave_critical_section();
 
-    php_warning("size of unpacked data is greater then %zu. Can't decode.", StringLibContext::STATIC_BUFFER_LENGTH);
+    php_warning("size of unpacked data is greater then %d. Can't decode.", StringLibContext::STATIC_BUFFER_LENGTH);
     return -1;
   }
 

@@ -4,12 +4,14 @@
 
 #include "runtime-common/stdlib/string/string-context.h"
 
+static StringLibContext string_lib_context;
+
 StringLibContext &StringLibContext::get() noexcept {
-  static StringLibContext string_lib_context;
   return string_lib_context;
 }
 
-StringLibConstants &StringLibConstants::get() noexcept {
-  static StringLibConstants string_lib_constants;
+const static StringLibConstants string_lib_constants;
+
+const StringLibConstants &StringLibConstants::get() noexcept {
   return string_lib_constants;
 }
