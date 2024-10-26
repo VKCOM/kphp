@@ -92,6 +92,19 @@ Optional<string> f$strpbrk(const string &haystack, const string &char_list) noex
 
 Optional<int64_t> f$strpos(const string &haystack, const string &needle, int64_t offset = 0) noexcept;
 
+inline Optional<int64_t> f$strpos(const string &haystack, const mixed &needle, int64_t offset = 0) noexcept {
+  if (needle.is_string()) {
+    return f$strpos(haystack, needle.to_string(), offset);
+  } else {
+    return f$strpos(haystack, string(1, static_cast<char>(needle.to_int())), offset);
+  }
+}
+
+template<class T>
+Optional<int64_t> f$strpos(const string &haystack, const Optional<T> &needle, int64_t offset = 0) noexcept {
+  return f$strpos(haystack, needle.val(), offset);
+}
+
 Optional<int64_t> f$strrpos(const string &haystack, const string &needle, int64_t offset = 0) noexcept;
 
 Optional<int64_t> f$strripos(const string &haystack, const string &needle, int64_t offset = 0) noexcept;
@@ -260,7 +273,7 @@ inline uint8_t hex_to_int(char c) noexcept {
   return hex_int_map[static_cast<uint8_t>(c)];
 }
 
-inline string f$number_format(double number, int64_t decimals) noexcept {
+inline string f$number_format(double number, int64_t decimals = 0) noexcept {
   return f$number_format(number, decimals, StringLibConstants::get().DOT_STR, StringLibConstants::get().COLON_STR);
 }
 
@@ -269,7 +282,8 @@ inline string f$number_format(double number, int64_t decimals, const string &dec
 }
 
 inline string f$number_format(double number, int64_t decimals, const mixed &dec_point) noexcept {
-  return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT_STR : dec_point.to_string(), StringLibConstants::get().COLON_STR);
+  return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT_STR : dec_point.to_string(),
+                         StringLibConstants::get().COLON_STR);
 }
 
 inline string f$number_format(double number, int64_t decimals, const string &dec_point, const mixed &thousands_sep) noexcept {
@@ -297,7 +311,7 @@ inline Optional<int64_t> f$stripos(const string &haystack, const mixed &needle, 
   }
 }
 
-inline Optional<string> f$stristr(const string &haystack, const mixed &needle, bool before_needle) noexcept {
+inline Optional<string> f$stristr(const string &haystack, const mixed &needle, bool before_needle = false) noexcept {
   if (needle.is_string()) {
     return f$stristr(haystack, needle.to_string(), before_needle);
   } else {
@@ -305,20 +319,7 @@ inline Optional<string> f$stristr(const string &haystack, const mixed &needle, b
   }
 }
 
-template<class T>
-Optional<int64_t> f$strpos(const string &haystack, const Optional<T> &needle, int64_t offset) noexcept {
-  return f$strpos(haystack, needle.val(), offset);
-}
-
-inline Optional<int64_t> f$strpos(const string &haystack, const mixed &needle, int64_t offset) noexcept {
-  if (needle.is_string()) {
-    return f$strpos(haystack, needle.to_string(), offset);
-  } else {
-    return f$strpos(haystack, string(1, static_cast<char>(needle.to_int())), offset);
-  }
-}
-
-inline Optional<int64_t> f$strrpos(const string &haystack, const mixed &needle, int64_t offset) noexcept {
+inline Optional<int64_t> f$strrpos(const string &haystack, const mixed &needle, int64_t offset = 0) noexcept {
   if (needle.is_string()) {
     return f$strrpos(haystack, needle.to_string(), offset);
   } else {
