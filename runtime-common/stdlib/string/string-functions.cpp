@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <sys/types.h>
 
+#include "common/macos-ports.h"
 #include "common/unicode/unicode-utils.h"
 #include "common/wrappers/string_view.h"
 #include "runtime-common/stdlib/string/string-context.h"
