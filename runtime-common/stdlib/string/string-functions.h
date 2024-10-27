@@ -428,7 +428,7 @@ inline Optional<int64_t> f$strripos(const string &haystack, const mixed &needle,
   }
 }
 
-inline Optional<string> f$strstr(const string &haystack, const mixed &needle, bool before_needle) noexcept {
+inline Optional<string> f$strstr(const string &haystack, const mixed &needle, bool before_needle = false) noexcept {
   if (needle.is_string()) {
     return f$strstr(haystack, needle.to_string(), before_needle);
   } else {
