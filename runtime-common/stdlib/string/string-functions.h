@@ -4,24 +4,43 @@
 
 #pragma once
 
+#include <cstdint>
+#include <cstring>
+#include <limits>
+
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/string/string-context.h"
 
 string f$addcslashes(const string &str, const string &what) noexcept;
 
 string f$addslashes(const string &str) noexcept;
 
-string f$bin2hex(const string &str) noexcept;
+string f$hex2bin(const string &str) noexcept;
 
-string f$chop(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
+inline string f$bin2hex(const string &str) noexcept {
+  int len = str.size();
+  string result(2 * len, false);
 
-string f$chr(int64_t v) noexcept;
+  for (int i = 0; i < len; i++) {
+    result[2 * i] = StringLibConstants::get().lhex_digits[(str[i] >> 4) & 15];
+    result[2 * i + 1] = StringLibConstants::get().lhex_digits[str[i] & 15];
+  }
+
+  return result;
+}
 
 string f$convert_cyr_string(const string &str, const string &from_s, const string &to_s) noexcept;
 
-mixed f$count_chars(const string &str, int64_t mode = 0) noexcept;
+inline string f$chr(int64_t v) noexcept {
+  return {1, static_cast<char>(v)};
+}
 
-string f$hex2bin(const string &str) noexcept;
+inline int64_t f$ord(const string &s) noexcept {
+  return static_cast<unsigned char>(s[0]);
+}
+
+mixed f$count_chars(const string &str, int64_t mode = 0) noexcept;
 
 string f$htmlentities(const string &str) noexcept;
 
@@ -32,7 +51,18 @@ string f$htmlspecialchars(const string &str, int64_t flags = StringLibConstants:
 
 string f$htmlspecialchars_decode(const string &str, int64_t flags = StringLibConstants::ENT_COMPAT | StringLibConstants::ENT_HTML401) noexcept;
 
-string f$lcfirst(const string &str) noexcept;
+inline string f$lcfirst(const string &str) noexcept {
+  int n = str.size();
+  if (n == 0) {
+    return str;
+  }
+
+  string res(n, false);
+  res[0] = static_cast<char>(tolower(str[0]));
+  memcpy(&res[1], &str[1], n - 1);
+
+  return res;
+}
 
 int64_t f$levenshtein(const string &str1, const string &str2) noexcept;
 
@@ -44,15 +74,15 @@ string f$nl2br(const string &str, bool is_xhtml = true) noexcept;
 
 string f$number_format(double number, int64_t decimals, const string &dec_point, const string &thousands_sep) noexcept;
 
-int64_t f$ord(const string &s) noexcept;
-
 string f$pack(const string &pattern, const array<mixed> &a) noexcept;
 
 string f$prepare_search_query(const string &query) noexcept;
 
 string f$rtrim(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
 
-Optional<string> f$setlocale(int64_t category, const string &locale) noexcept;
+inline string f$chop(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept {
+  return f$rtrim(s, what);
+}
 
 string f$sprintf(const string &format, const array<mixed> &a) noexcept;
 
@@ -60,35 +90,72 @@ string f$stripcslashes(const string &str) noexcept;
 
 string f$stripslashes(const string &str) noexcept;
 
-int64_t f$strcasecmp(const string &lhs, const string &rhs) noexcept;
+inline int64_t f$strcasecmp(const string &lhs, const string &rhs) noexcept {
+  int n = min(lhs.size(), rhs.size());
+  for (int i = 0; i < n; i++) {
+    if (tolower(lhs[i]) != tolower(rhs[i])) {
+      return tolower(lhs[i]) - tolower(rhs[i]);
+    }
+  }
+  // TODO: for PHP8.2, use <=> operator instead:
+  //   return spaceship(static_cast<int64_t>(lhs.size()), static_cast<int64_t>(rhs.size()));
+  return static_cast<int64_t>(lhs.size()) - static_cast<int64_t>(rhs.size());
+}
 
-int64_t f$strcmp(const string &lhs, const string &rhs) noexcept;
+inline int64_t f$strcmp(const string &lhs, const string &rhs) noexcept {
+  return lhs.compare(rhs);
+}
 
-string f$strip_tags(const string &str, const array<Unknown> &allow) noexcept;
+string f$strip_tags(const string &str, const string &allow = string{});
+
+inline string f$strip_tags(const string &str, const array<Unknown> &allow_list) noexcept {
+  php_assert(allow_list.empty());
+  return f$strip_tags(str, string());
+}
 
 string f$strip_tags(const string &str, const mixed &allow);
 
 string f$strip_tags(const string &str, const array<string> &allow_list);
 
-string f$strip_tags(const string &str, const string &allow = string{});
-
 Optional<int64_t> f$stripos(const string &haystack, const string &needle, int64_t offset = 0) noexcept;
 
-inline Optional<int64_t> f$stripos(const string &haystack, const mixed &needle, int64_t offset = 0) noexcept;
+inline Optional<int64_t> f$stripos(const string &haystack, const mixed &needle, int64_t offset = 0) noexcept {
+  if (needle.is_string()) {
+    return f$stripos(haystack, needle.to_string(), offset);
+  } else {
+    return f$stripos(haystack, string(1, static_cast<char>(needle.to_int())), offset);
+  }
+}
 
 Optional<string> f$stristr(const string &haystack, const string &needle, bool before_needle = false) noexcept;
 
 Optional<string> f$strrchr(const string &haystack, const string &needle) noexcept;
 
-int64_t f$strncmp(const string &lhs, const string &rhs, int64_t len) noexcept;
+inline int64_t f$strncmp(const string &lhs, const string &rhs, int64_t len) noexcept {
+  if (len < 0) {
+    return 0;
+  }
+  return std::memcmp(lhs.c_str(), rhs.c_str(), min(int64_t{min(lhs.size(), rhs.size())} + 1, len));
+}
 
 int64_t f$strnatcmp(const string &lhs, const string &rhs) noexcept;
 
-int64_t f$strspn(const string &hayshack, const string &char_list, int64_t offset = 0) noexcept;
+inline int64_t f$strspn(const string &hayshack, const string &char_list, int64_t offset = 0) noexcept {
+  return std::strspn(hayshack.c_str() + hayshack.get_correct_offset_clamped(offset), char_list.c_str());
+}
 
-int64_t f$strcspn(const string &hayshack, const string &char_list, int64_t offset = 0) noexcept;
+inline int64_t f$strcspn(const string &hayshack, const string &char_list, int64_t offset = 0) noexcept {
+  return std::strcspn(hayshack.c_str() + hayshack.get_correct_offset_clamped(offset), char_list.c_str());
+}
 
-Optional<string> f$strpbrk(const string &haystack, const string &char_list) noexcept;
+inline Optional<string> f$strpbrk(const string &haystack, const string &char_list) noexcept {
+  const char *pos = std::strpbrk(haystack.c_str(), char_list.c_str());
+  if (pos == nullptr) {
+    return false;
+  }
+
+  return string(pos, static_cast<string::size_type>(haystack.size() - (pos - haystack.c_str())));
+}
 
 Optional<int64_t> f$strpos(const string &haystack, const string &needle, int64_t offset = 0) noexcept;
 
@@ -109,7 +176,16 @@ Optional<int64_t> f$strrpos(const string &haystack, const string &needle, int64_
 
 Optional<int64_t> f$strripos(const string &haystack, const string &needle, int64_t offset = 0) noexcept;
 
-string f$strrev(const string &str) noexcept;
+inline string f$strrev(const string &str) noexcept {
+  int n = str.size();
+
+  string res(n, false);
+  for (int i = 0; i < n; i++) {
+    res[n - i - 1] = str[i];
+  }
+
+  return res;
+}
 
 Optional<string> f$strstr(const string &haystack, const string &needle, bool before_needle = false) noexcept;
 
@@ -118,10 +194,6 @@ string f$strtolower(const string &str) noexcept;
 string f$strtoupper(const string &str) noexcept;
 
 string f$strtr(const string &subject, const string &from, const string &to) noexcept;
-
-// inline string f$strtr(const string &subject, const mixed &from, const mixed &to);
-
-// inline string f$strtr(const string &subject, const mixed &replace_pairs);
 
 string f$str_pad(const string &input, int64_t len, const string &pad_str = StringLibConstants::get().SPACE_STR,
                  int64_t pad_type = StringLibConstants::STR_PAD_RIGHT) noexcept;
@@ -203,13 +275,33 @@ mixed f$str_ireplace(const mixed &search, const mixed &replace, const mixed &sub
 
 array<string> f$str_split(const string &str, int64_t split_length = 1) noexcept;
 
-Optional<string> f$substr(const string &str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept;
+inline Optional<string> f$substr(const string &str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept {
+  if (!wrap_substr_args(str.size(), start, length)) {
+    return false;
+  }
+  return str.substr(static_cast<string::size_type>(start), static_cast<string::size_type>(length));
+}
 
-Optional<string> f$substr(tmp_string, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept;
+inline Optional<string> f$substr(tmp_string str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept {
+  if (!wrap_substr_args(str.size, start, length)) {
+    return false;
+  }
+  return string(str.data + start, length);
+}
 
-tmp_string f$_tmp_substr(const string &str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept;
+inline tmp_string f$_tmp_substr(const string &str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept {
+  if (!wrap_substr_args(str.size(), start, length)) {
+    return {};
+  }
+  return {str.c_str() + start, static_cast<string::size_type>(length)};
+}
 
-tmp_string f$_tmp_substr(tmp_string str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept;
+inline tmp_string f$_tmp_substr(tmp_string str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept {
+  if (!wrap_substr_args(str.size, start, length)) {
+    return {};
+  }
+  return {str.data + start, static_cast<string::size_type>(length)};
+}
 
 int64_t f$substr_count(const string &haystack, const string &needle, int64_t offset = 0, int64_t length = std::numeric_limits<int64_t>::max()) noexcept;
 
@@ -218,9 +310,13 @@ string f$substr_replace(const string &str, const string &replacement, int64_t st
 Optional<int64_t> f$substr_compare(const string &main_str, const string &str, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(),
                                    bool case_insensitivity = false) noexcept;
 
-bool f$str_starts_with(const string &haystack, const string &needle) noexcept;
+inline bool f$str_starts_with(const string &haystack, const string &needle) noexcept {
+  return haystack.starts_with(needle);
+}
 
-bool f$str_ends_with(const string &haystack, const string &needle) noexcept;
+inline bool f$str_ends_with(const string &haystack, const string &needle) noexcept {
+  return haystack.ends_with(needle);
+}
 
 tmp_string f$_tmp_trim(tmp_string s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
 
@@ -230,23 +326,30 @@ string f$trim(tmp_string s, const string &what = StringLibConstants::get().WHAT_
 
 string f$trim(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
 
-string f$ucfirst(const string &str) noexcept;
+inline string f$ucfirst(const string &str) noexcept {
+  int n = str.size();
+  if (n == 0) {
+    return str;
+  }
+
+  string res(n, false);
+  res[0] = static_cast<char>(toupper(str[0]));
+  memcpy(&res[1], &str[1], n - 1);
+
+  return res;
+}
 
 string f$ucwords(const string &str) noexcept;
 
 Optional<array<mixed>> f$unpack(const string &pattern, const string &data) noexcept;
 
-string f$vsprintf(const string &format, const array<mixed> &args) noexcept;
+inline string f$vsprintf(const string &format, const array<mixed> &args) noexcept {
+  return f$sprintf(format, args);
+}
 
 string f$wordwrap(const string &str, int64_t width = 75, const string &brk = StringLibConstants::get().NEWLINE_STR, bool cut = false) noexcept;
 
-/*
- *
- *     IMPLEMENTATION
- *
- */
-
-namespace impl_ {
+namespace hex2char_impl_ {
 
 struct Hex2CharMapMaker {
 private:
@@ -266,10 +369,10 @@ public:
   }
 };
 
-} // namespace impl_
+}; // namespace hex2char_impl_
 
 inline uint8_t hex_to_int(char c) noexcept {
-  static constexpr auto hex_int_map = impl_::Hex2CharMapMaker::make(std::make_index_sequence<256>());
+  static constexpr auto hex_int_map = hex2char_impl_::Hex2CharMapMaker::make(std::make_index_sequence<256>());
   return hex_int_map[static_cast<uint8_t>(c)];
 }
 
@@ -301,14 +404,6 @@ inline string f$number_format(double number, int64_t decimals, const mixed &dec_
 
 inline int64_t f$strlen(const string &s) noexcept {
   return s.size();
-}
-
-inline Optional<int64_t> f$stripos(const string &haystack, const mixed &needle, int64_t offset) noexcept {
-  if (needle.is_string()) {
-    return f$stripos(haystack, needle.to_string(), offset);
-  } else {
-    return f$stripos(haystack, string(1, static_cast<char>(needle.to_int())), offset);
-  }
 }
 
 inline Optional<string> f$stristr(const string &haystack, const mixed &needle, bool before_needle = false) noexcept {

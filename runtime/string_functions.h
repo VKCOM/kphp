@@ -13,6 +13,8 @@ int64_t f$printf(const string &format, const array<mixed> &a) noexcept;
 
 int64_t f$vprintf(const string &format, const array<mixed> &args) noexcept;
 
+Optional<string> f$setlocale(int64_t category, const string &locale) noexcept;
+
 Optional<array<mixed>> f$str_getcsv(const string &s, const string &delimiter = StringLibConstants::get().COMMA_STR,
                                     const string &enclosure = StringLibConstants::get().QUOTE_STR,
                                     const string &escape = StringLibConstants::get().BACKSLASH_STR) noexcept;

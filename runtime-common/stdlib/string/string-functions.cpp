@@ -105,26 +105,6 @@ string f$addslashes(const string &str) noexcept {
   return kphp_runtime_context.static_SB.str();
 }
 
-string f$bin2hex(const string &str) noexcept {
-  int len = str.size();
-  string result(2 * len, false);
-
-  for (int i = 0; i < len; i++) {
-    result[2 * i] = StringLibConstants::get().lhex_digits[(str[i] >> 4) & 15];
-    result[2 * i + 1] = StringLibConstants::get().lhex_digits[str[i] & 15];
-  }
-
-  return result;
-}
-
-string f$chop(const string &s, const string &what) noexcept {
-  return f$rtrim(s, what);
-}
-
-string f$chr(int64_t v) noexcept {
-  return {1, static_cast<char>(v)};
-}
-
 constexpr unsigned char win_to_koi[] = {0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,
                                         24,  25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
                                         48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,
@@ -519,19 +499,6 @@ string f$htmlspecialchars_decode(const string &str, int64_t flags) noexcept {
   return res;
 }
 
-string f$lcfirst(const string &str) noexcept {
-  int n = str.size();
-  if (n == 0) {
-    return str;
-  }
-
-  string res(n, false);
-  res[0] = static_cast<char>(tolower(str[0]));
-  memcpy(&res[1], &str[1], n - 1);
-
-  return res;
-}
-
 int64_t f$levenshtein(const string &str1, const string &str2) noexcept {
   string::size_type len1 = str1.size();
   string::size_type len2 = str2.size();
@@ -571,21 +538,6 @@ int64_t f$levenshtein(const string &str1, const string &str2) noexcept {
     }
   }
   return dp[len1 & 1][len2];
-}
-
-string f$ltrim(const string &s, const string &what) noexcept {
-  const char *mask = get_mask(what);
-
-  int len = static_cast<int>(s.size());
-  if (len == 0 || !mask[static_cast<unsigned char>(s[0])]) {
-    return s;
-  }
-
-  int l = 1;
-  while (l < len && mask[static_cast<unsigned char>(s[l])]) {
-    l++;
-  }
-  return {s.c_str() + l, static_cast<string::size_type>(len - l)};
 }
 
 string f$mysql_escape_string(const string &str) noexcept {
@@ -700,10 +652,6 @@ string f$number_format(double number, int64_t decimals, const string &dec_point,
   }
 
   return {result_begin, static_cast<string::size_type>(StringLibContext::get().static_buf.data() + StringLibContext::STATIC_BUFFER_LENGTH - result_begin)};
-}
-
-int64_t f$ord(const string &s) noexcept {
-  return static_cast<unsigned char>(s[0]);
 }
 
 static uint64_t float64_bits(double f) {
@@ -923,6 +871,21 @@ string f$prepare_search_query(const string &query) noexcept {
   return string(s);
 }
 
+string f$ltrim(const string &s, const string &what) noexcept {
+  const char *mask = get_mask(what);
+
+  int len = static_cast<int>(s.size());
+  if (len == 0 || !mask[static_cast<unsigned char>(s[0])]) {
+    return s;
+  }
+
+  int l = 1;
+  while (l < len && mask[static_cast<unsigned char>(s[l])]) {
+    l++;
+  }
+  return {s.c_str() + l, static_cast<string::size_type>(len - l)};
+}
+
 string f$rtrim(const string &s, const string &what) noexcept {
   const char *mask = get_mask(what);
 
@@ -936,18 +899,6 @@ string f$rtrim(const string &s, const string &what) noexcept {
   }
 
   return {s.c_str(), static_cast<string::size_type>(len)};
-}
-
-Optional<string> f$setlocale(int64_t category, const string &locale) noexcept {
-  const char *loc = locale.c_str();
-  if (locale[0] == '0' && locale.size() == 1) {
-    loc = nullptr;
-  }
-  char *res = setlocale(static_cast<int32_t>(category), loc);
-  if (res == nullptr) {
-    return false;
-  }
-  return string(res);
 }
 
 string f$sprintf(const string &format, const array<mixed> &a) noexcept {
@@ -1287,22 +1238,6 @@ string f$stripslashes(const string &str) noexcept {
   return result;
 }
 
-int64_t f$strcasecmp(const string &lhs, const string &rhs) noexcept {
-  int n = min(lhs.size(), rhs.size());
-  for (int i = 0; i < n; i++) {
-    if (tolower(lhs[i]) != tolower(rhs[i])) {
-      return tolower(lhs[i]) - tolower(rhs[i]);
-    }
-  }
-  // TODO: for PHP8.2, use <=> operator instead:
-  //   return spaceship(static_cast<int64_t>(lhs.size()), static_cast<int64_t>(rhs.size()));
-  return static_cast<int64_t>(lhs.size()) - static_cast<int64_t>(rhs.size());
-}
-
-int64_t f$strcmp(const string &lhs, const string &rhs) noexcept {
-  return lhs.compare(rhs);
-}
-
 Optional<int64_t> f$stripos(const string &haystack, const string &needle, int64_t offset) noexcept {
   if (offset < 0) {
     php_warning("Wrong offset = %" PRIi64 " in function stripos", offset);
@@ -1567,20 +1502,15 @@ string strip_tags_string(const array<T> &list) {
   return allow_str;
 }
 
-string f$strip_tags(const string &str, const array<Unknown> &allow_list) noexcept {
-  php_assert(allow_list.empty());
-  return f$strip_tags(str, string());
-}
-
-string f$strip_tags(const string &str, const array<string> &allow_list) {
-  return f$strip_tags(str, strip_tags_string(allow_list));
-}
-
 string f$strip_tags(const string &str, const mixed &allow) {
   if (!allow.is_array()) {
     return f$strip_tags(str, allow.to_string());
   }
   auto allow_list = allow.to_array();
+  return f$strip_tags(str, strip_tags_string(allow_list));
+}
+
+string f$strip_tags(const string &str, const array<string> &allow_list) {
   return f$strip_tags(str, strip_tags_string(allow_list));
 }
 
@@ -1617,13 +1547,6 @@ Optional<string> f$strrchr(const string &haystack, const string &needle) noexcep
     }
   }
   return false;
-}
-
-int64_t f$strncmp(const string &lhs, const string &rhs, int64_t len) noexcept {
-  if (len < 0) {
-    return 0;
-  }
-  return memcmp(lhs.c_str(), rhs.c_str(), min(int64_t{min(lhs.size(), rhs.size())} + 1, len));
 }
 
 /*
@@ -1794,23 +1717,6 @@ int64_t f$strnatcmp(const string &lhs, const string &rhs) noexcept {
   return strnatcmp_ex(lhs.c_str(), lhs.size(), rhs.c_str(), rhs.size(), 0);
 }
 
-int64_t f$strspn(const string &hayshack, const string &char_list, int64_t offset) noexcept {
-  return strspn(hayshack.c_str() + hayshack.get_correct_offset_clamped(offset), char_list.c_str());
-}
-
-int64_t f$strcspn(const string &hayshack, const string &char_list, int64_t offset) noexcept {
-  return strcspn(hayshack.c_str() + hayshack.get_correct_offset_clamped(offset), char_list.c_str());
-}
-
-Optional<string> f$strpbrk(const string &haystack, const string &char_list) noexcept {
-  const char *pos = strpbrk(haystack.c_str(), char_list.c_str());
-  if (pos == nullptr) {
-    return false;
-  }
-
-  return string(pos, static_cast<string::size_type>(haystack.size() - (pos - haystack.c_str())));
-}
-
 Optional<int64_t> f$strpos(const string &haystack, const string &needle, int64_t offset) noexcept {
   if (offset < 0) {
     php_warning("Wrong offset = %" PRIi64 " in function strpos", offset);
@@ -1897,17 +1803,6 @@ Optional<int64_t> f$strripos(const string &haystack, const string &needle, int64
     s = t;
   }
   return s - haystack.c_str();
-}
-
-string f$strrev(const string &str) noexcept {
-  int n = str.size();
-
-  string res(n, false);
-  for (int i = 0; i < n; i++) {
-    res[n - i - 1] = str[i];
-  }
-
-  return res;
 }
 
 Optional<string> f$strstr(const string &haystack, const string &needle, bool before_needle) noexcept {
@@ -2290,34 +2185,6 @@ array<string> f$str_split(const string &str, int64_t split_length) noexcept {
   return result;
 }
 
-Optional<string> f$substr(const string &str, int64_t start, int64_t length) noexcept {
-  if (!wrap_substr_args(str.size(), start, length)) {
-    return false;
-  }
-  return str.substr(static_cast<string::size_type>(start), static_cast<string::size_type>(length));
-}
-
-Optional<string> f$substr(tmp_string str, int64_t start, int64_t length) noexcept {
-  if (!wrap_substr_args(str.size, start, length)) {
-    return false;
-  }
-  return string(str.data + start, length);
-}
-
-tmp_string f$_tmp_substr(const string &str, int64_t start, int64_t length) noexcept {
-  if (!wrap_substr_args(str.size(), start, length)) {
-    return {};
-  }
-  return {str.c_str() + start, static_cast<string::size_type>(length)};
-}
-
-tmp_string f$_tmp_substr(tmp_string str, int64_t start, int64_t length) noexcept {
-  if (!wrap_substr_args(str.size, start, length)) {
-    return {};
-  }
-  return {str.data + start, static_cast<string::size_type>(length)};
-}
-
 int64_t f$substr_count(const string &haystack, const string &needle, int64_t offset, int64_t length) noexcept {
   offset = haystack.get_correct_offset(offset);
   if (offset >= haystack.size()) {
@@ -2397,14 +2264,6 @@ Optional<int64_t> f$substr_compare(const string &main_str, const string &str, in
   }
 }
 
-bool f$str_starts_with(const string &haystack, const string &needle) noexcept {
-  return haystack.starts_with(needle);
-}
-
-bool f$str_ends_with(const string &haystack, const string &needle) noexcept {
-  return haystack.ends_with(needle);
-}
-
 tmp_string trim_impl(const char *s, string::size_type s_len, const string &what) {
   const char *mask = get_mask(what);
 
@@ -2446,19 +2305,6 @@ string f$trim(const string &s, const string &what) noexcept {
     return s;
   }
   return materialize_tmp_string(result);
-}
-
-string f$ucfirst(const string &str) noexcept {
-  int n = str.size();
-  if (n == 0) {
-    return str;
-  }
-
-  string res(n, false);
-  res[0] = static_cast<char>(toupper(str[0]));
-  memcpy(&res[1], &str[1], n - 1);
-
-  return res;
 }
 
 string f$ucwords(const string &str) noexcept {
@@ -2754,10 +2600,6 @@ Optional<array<mixed>> f$unpack(const string &pattern, const string &data) noexc
     }
   }
   return result;
-}
-
-string f$vsprintf(const string &format, const array<mixed> &args) noexcept {
-  return f$sprintf(format, args);
 }
 
 string f$wordwrap(const string &str, int64_t width, const string &brk, bool cut) noexcept {

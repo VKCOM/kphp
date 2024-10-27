@@ -17,6 +17,18 @@ int64_t f$vprintf(const string &format, const array<mixed> &args) noexcept {
   return f$printf(format, args);
 }
 
+Optional<string> f$setlocale(int64_t category, const string &locale) noexcept {
+  const char *loc = locale.c_str();
+  if (locale[0] == '0' && locale.size() == 1) {
+    loc = nullptr;
+  }
+  char *res = setlocale(static_cast<int32_t>(category), loc);
+  if (res == nullptr) {
+    return false;
+  }
+  return string(res);
+}
+
 // Based on `getcsv` from `streams`
 Optional<array<mixed>> f$str_getcsv(const string &str, const string &delimiter, const string &enclosure, const string &escape) noexcept {
   char delimiter_char = ',';
