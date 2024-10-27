@@ -102,9 +102,7 @@ inline int64_t f$strcasecmp(const string &lhs, const string &rhs) noexcept {
   return static_cast<int64_t>(lhs.size()) - static_cast<int64_t>(rhs.size());
 }
 
-inline int64_t f$strcmp(const string &lhs, const string &rhs) noexcept {
-  return lhs.compare(rhs);
-}
+int64_t f$strcmp(const string &lhs, const string &rhs) noexcept;
 
 string f$strip_tags(const string &str, const string &allow = string{});
 

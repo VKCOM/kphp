@@ -1713,6 +1713,10 @@ static int64_t strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b
   }
 }
 
+int64_t f$strcmp(const string &lhs, const string &rhs) noexcept {
+  return lhs.compare(rhs);
+}
+
 int64_t f$strnatcmp(const string &lhs, const string &rhs) noexcept {
   return strnatcmp_ex(lhs.c_str(), lhs.size(), rhs.c_str(), rhs.size(), 0);
 }
