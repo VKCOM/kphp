@@ -54,8 +54,8 @@
 #define SAFE_SET_VALUE(a, b, b_type, c, c_type) ({b_type b_tmp___ = b; c_type c_tmp___ = c; (a).set_value (b_tmp___, c_tmp___);})
 #define SAFE_PUSH_BACK(a, b, b_type) ({b_type b_tmp___ = b; a.push_back (b_tmp___);})
 #define SAFE_PUSH_BACK_RETURN(a, b, b_type) ({b_type b_tmp___ = b; a.push_back_return (b_tmp___);})
-#define NOERR(a, a_type) ({KphpCoreContext::current().php_disable_warnings++; a_type a_tmp___ = a; KphpCoreContext::current().php_disable_warnings--; a_tmp___;})
-#define NOERR_VOID(a) ({KphpCoreContext::current().php_disable_warnings++; a; KphpCoreContext::current().php_disable_warnings--;})
+#define NOERR(a, a_type) ({RuntimeContext::get().php_disable_warnings++; a_type a_tmp___ = a; RuntimeContext::get().php_disable_warnings--; a_tmp___;})
+#define NOERR_VOID(a) ({RuntimeContext::get().php_disable_warnings++; a; RuntimeContext::get().php_disable_warnings--;})
 
 #define f$likely likely
 #define f$unlikely unlikely
