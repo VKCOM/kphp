@@ -491,7 +491,7 @@ inline mixed f$error_get_last();
 
 inline void f$warning(const string &message);
 
-inline void f$critical_error(const string &message) {
+[[noreturn]] inline void f$critical_error(const string &message) {
   php_critical_error("%s", message.c_str());
 }
 
