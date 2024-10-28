@@ -54,6 +54,9 @@ TEST(ucontext_portable, swapcontext) {
   ASSERT_EQ(finished, 1);
 }
 
+/*
+  Imitation of `do { i++; } while (i < 10)`
+*/
 volatile int context_set_cnt {0};
 TEST(ucontext_portable, get_and_setcontext) {
   getcontext_portable(&ctx3);

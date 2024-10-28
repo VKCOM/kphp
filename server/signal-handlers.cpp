@@ -112,7 +112,7 @@ void sigusr2_handler(int signum) {
 void php_assert_handler(int signum) {
   kwrite_str(2, "in php_assert_handler (SIGRTMIN+1 signal)\n");
   if (check_signal_critical_section(signum, "SIGRTMIN+1")) {
-    perform_error_if_running("php assert error\n", script_error_t::php_assert,signum);
+    perform_error_if_running("php assert error\n", script_error_t::php_assert, signum);
   }
 }
 
