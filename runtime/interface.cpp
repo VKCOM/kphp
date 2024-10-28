@@ -2305,7 +2305,7 @@ static void init_interface_lib() {
   finished = false;
 
   php_warning_level = std::max(2, php_warning_minimum_level);
-  KphpCoreContext::current().php_disable_warnings = 0;
+  RuntimeContext::get().php_disable_warnings = 0;
   is_json_log_on_timeout_enabled = true;
   is_demangled_stacktrace_logs_enabled = false;
   ignore_level = 0;

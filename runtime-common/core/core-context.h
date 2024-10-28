@@ -5,27 +5,25 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
+
+#include "common/mixin/not_copyable.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from runtime-core.h"
+#error "this file must be included only from runtime-core.h"
 #endif
 
+struct RuntimeContext final : vk::not_copyable {
+  int32_t show_migration_php8_warning{};
+  int32_t php_disable_warnings{};
+  uint32_t empty_obj_count{};
 
-struct KphpCoreContext {
-  /**
-   * KphpCoreContext is used in
-   * @see init_php_scripts_once_in_master for runtime or
-   * @see vk_k2_create_image_state for runtime light
-   *
-   * before the init() function is called, so its default parameters should be as follows
-   **/
-  static KphpCoreContext& current() noexcept;
+  string_buffer_lib_context sb_lib_context{};
+  string_buffer static_SB{};
+  string_buffer static_SB_spare{};
 
-  void init();
+  void init(void *mem, size_t script_mem_size, size_t oom_handling_mem_size);
   void free();
 
-  int show_migration_php8_warning = 0;
-  int php_disable_warnings = 0;
-  uint32_t empty_obj_count = 0;
-  string_buffer_lib_context sb_lib_context;
+  static RuntimeContext &get() noexcept;
 };

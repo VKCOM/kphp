@@ -96,7 +96,7 @@ inline bool eq2_number_string_as_php8(T lhs, const string &rhs) {
 
 inline bool eq2(int64_t lhs, const string &rhs) {
   const auto php7_result = eq2(lhs, rhs.to_float());
-  if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
+  if (RuntimeContext::get().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
     const auto php8_result = eq2_number_string_as_php8(lhs, rhs);
     if (php7_result == php8_result) {
       return php7_result;
@@ -117,7 +117,7 @@ inline bool eq2(const string &lhs, int64_t rhs) {
 
 inline bool eq2(double lhs, const string &rhs) {
   const auto php7_result = lhs == rhs.to_float();
-  if (KphpCoreContext::current().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
+  if (RuntimeContext::get().show_migration_php8_warning & MIGRATION_PHP8_STRING_COMPARISON_FLAG) {
     const auto php8_result = eq2_number_string_as_php8(lhs, rhs);
     if (php7_result == php8_result) {
       return php7_result;

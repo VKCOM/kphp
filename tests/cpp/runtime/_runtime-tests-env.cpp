@@ -32,7 +32,7 @@ public:
     global_init_script_allocator();
 
     init_runtime_environment(null_query_data{}, PhpScriptMutableGlobals::current().get_superglobals(), script_memory, script_memory_size);
-    KphpCoreContext::current().php_disable_warnings = true;
+    RuntimeContext::get().php_disable_warnings = true;
     php_warning_level = 0;
   }
 
