@@ -2454,7 +2454,8 @@ void global_init_script_allocator() {
 }
 
 void init_runtime_environment(const php_query_data_t &data, PhpScriptBuiltInSuperGlobals &superglobals, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
-  kphp_runtime_context.init(mem, script_mem_size, oom_handling_mem_size);
+  runtime_allocator.init(mem, script_mem_size, oom_handling_mem_size);
+  kphp_runtime_context.init();
   reset_global_interface_vars(superglobals);
   init_runtime_libs();
   init_superglobals(data, superglobals);
@@ -2465,6 +2466,7 @@ void free_runtime_environment(PhpScriptBuiltInSuperGlobals &superglobals) {
   free_runtime_libs();
   reset_global_interface_vars(superglobals);
   kphp_runtime_context.free();
+  runtime_allocator.free();
 }
 
 void worker_global_init(WorkerType worker_type) noexcept {

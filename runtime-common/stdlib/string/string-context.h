@@ -35,8 +35,6 @@ public:
 
   std::array<char, STATIC_BUFFER_LENGTH + 1> static_buf{};
   std::array<char, MASK_BUFFER_LENGTH> mask_buffer{};
-  string_buffer buf;
-  string_buffer buf_spare;
 
   int64_t str_replace_count_dummy{};
   double default_similar_text_percent_stub{};

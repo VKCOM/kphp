@@ -19,8 +19,8 @@
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/server/http/http-server-context.h"
 #include "runtime-light/server/job-worker/job-worker-server-context.h"
-#include "runtime-light/stdlib/curl/curl-context.h"
 #include "runtime-light/stdlib/crypto/crypto-context.h"
+#include "runtime-light/stdlib/curl/curl-context.h"
 #include "runtime-light/stdlib/file/file-stream-context.h"
 #include "runtime-light/stdlib/fork/fork-context.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-context.h"
@@ -109,7 +109,7 @@ struct ComponentState {
   Response response;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
-  KphpCoreContext kphp_core_context;
+  RuntimeContext runtime_component_context;
   RpcComponentContext rpc_component_context;
   HttpServerComponentContext http_server_component_context{};
   JobWorkerClientComponentContext job_worker_client_component_context{};

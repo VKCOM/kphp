@@ -22,8 +22,8 @@ struct RuntimeContext final : vk::not_copyable {
   string_buffer static_SB{};
   string_buffer static_SB_spare{};
 
-  void init(void *mem, size_t script_mem_size, size_t oom_handling_mem_size);
-  void free();
+  void init() noexcept;
+  void free() noexcept;
 
   static RuntimeContext &get() noexcept;
 };
