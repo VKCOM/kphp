@@ -13,7 +13,7 @@ void RuntimeAllocator::free() {
   dl::free_script_allocator();
 }
 
-RuntimeAllocator &RuntimeAllocator::current() noexcept {
+RuntimeAllocator &RuntimeAllocator::get() noexcept {
   return runtime_allocator;
 }
 

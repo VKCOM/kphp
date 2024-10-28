@@ -18,7 +18,7 @@ bool is_script_allocator_available() {
 
 void request_extra_memory(size_t requested_size) {
   const size_t extra_mem_size = std::max(MIN_EXTRA_MEM_SIZE, requested_size);
-  auto &rt_alloc = RuntimeAllocator::current();
+  auto &rt_alloc = RuntimeAllocator::get();
   auto *extra_mem = rt_alloc.alloc_global_memory(extra_mem_size);
   rt_alloc.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
 }
@@ -31,7 +31,7 @@ RuntimeAllocator::RuntimeAllocator(size_t script_mem_size, size_t oom_handling_m
   memory_resource.init(buffer, script_mem_size, oom_handling_mem_size);
 }
 
-RuntimeAllocator &RuntimeAllocator::current() noexcept {
+RuntimeAllocator &RuntimeAllocator::get() noexcept {
   return get_component_context()->runtime_allocator;
 }
 

@@ -57,7 +57,7 @@ string::size_type string::string_inner::new_capacity(size_type requested_capacit
 string::string_inner *string::string_inner::create(size_type requested_capacity, size_type old_capacity) {
   size_type capacity = new_capacity(requested_capacity, old_capacity);
   size_type new_size = (size_type)(sizeof(string_inner) + (capacity + 1));
-  string_inner *p = (string_inner *)RuntimeAllocator::current().alloc_script_memory(new_size);
+  string_inner *p = (string_inner *)RuntimeAllocator::get().alloc_script_memory(new_size);
   p->capacity = capacity;
   return p;
 }
@@ -67,7 +67,7 @@ char *string::string_inner::reserve(size_type requested_capacity) {
   size_type old_size = (size_type)(sizeof(string_inner) + (capacity + 1));
   size_type new_size = (size_type)(sizeof(string_inner) + (new_cap + 1));
 
-  string_inner *p = (string_inner *)RuntimeAllocator::current().realloc_script_memory((void *)this, new_size, old_size);
+  string_inner *p = (string_inner *)RuntimeAllocator::get().realloc_script_memory((void *)this, new_size, old_size);
   p->capacity = new_cap;
   return p->ref_data();
 }
@@ -83,7 +83,7 @@ void string::string_inner::dispose() {
 }
 
 void string::string_inner::destroy() {
-  RuntimeAllocator::current().free_script_memory(this, get_memory_usage());
+  RuntimeAllocator::get().free_script_memory(this, get_memory_usage());
 }
 
 inline string::size_type string::string_inner::get_memory_usage() const {
