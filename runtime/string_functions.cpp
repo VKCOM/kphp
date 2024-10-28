@@ -3,6 +3,8 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime/string_functions.h"
+
+#include "common/unicode/unicode-utils.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/interface.h"
 #include "runtime/streams.h"
@@ -27,6 +29,14 @@ Optional<string> f$setlocale(int64_t category, const string &locale) noexcept {
     return false;
   }
   return string(res);
+}
+
+string f$prepare_search_query(const string &query) noexcept {
+  const char *s = clean_str(query.c_str());
+  if (s == nullptr) {
+    s = "";
+  }
+  return string(s);
 }
 
 // Based on `getcsv` from `streams`

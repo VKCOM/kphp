@@ -15,6 +15,8 @@ int64_t f$vprintf(const string &format, const array<mixed> &args) noexcept;
 
 Optional<string> f$setlocale(int64_t category, const string &locale) noexcept;
 
+string f$prepare_search_query(const string &query) noexcept;
+
 Optional<array<mixed>> f$str_getcsv(const string &s, const string &delimiter = StringLibConstants::get().COMMA_STR,
                                     const string &enclosure = StringLibConstants::get().QUOTE_STR,
                                     const string &escape = StringLibConstants::get().BACKSLASH_STR) noexcept;

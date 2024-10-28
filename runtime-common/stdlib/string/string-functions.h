@@ -76,8 +76,6 @@ string f$number_format(double number, int64_t decimals, const string &dec_point,
 
 string f$pack(const string &pattern, const array<mixed> &a) noexcept;
 
-string f$prepare_search_query(const string &query) noexcept;
-
 string f$rtrim(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
 
 inline string f$chop(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept {

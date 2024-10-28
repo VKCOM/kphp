@@ -870,14 +870,6 @@ string f$pack(const string &pattern, const array<mixed> &a) noexcept {
   return static_SB.str();
 }
 
-string f$prepare_search_query(const string &query) noexcept {
-  const char *s = clean_str(query.c_str());
-  if (s == nullptr) {
-    s = "";
-  }
-  return string(s);
-}
-
 string f$ltrim(const string &s, const string &what) noexcept {
   const char *mask = get_mask(what);
 
