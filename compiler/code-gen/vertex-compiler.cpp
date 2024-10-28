@@ -898,6 +898,9 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       }
     }
 
+    if (func->is_extern()) {
+      W << "(fprintf(stdout, \"call builtin %s\\n\", \"" << func->name << "\"), ";
+    }
 
     if (mode == func_call_mode::fork_call) {
       if (func->is_interruptible) {
@@ -933,6 +936,9 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
 
   W << JoinValues(args, ", ");
   W << ")";
+  if (func->is_extern()) {
+    W << ")";
+  }
   if (func->is_interruptible) {
     if (mode == func_call_mode::fork_call) {
       W << "})";
