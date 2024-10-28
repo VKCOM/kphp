@@ -1,6 +1,11 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
 #include <cstddef>
 #include <cstdint>
-#include "defs.h"
+
+#include "common/ucontext/linux/x86_64/defs.h"
 
 #pragma once
 

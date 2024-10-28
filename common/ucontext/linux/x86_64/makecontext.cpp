@@ -1,6 +1,11 @@
-#include "context.h"
-#include <stdarg.h>
-#include <stdint.h>
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+#include <cstdarg>
+#include <cstdint>
+
+#include "common/ucontext/linux/x86_64/context.h"
 
 /* This implementation can handle any ARGC value but only
    normal integer parameters.

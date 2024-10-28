@@ -1,9 +1,9 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2021 LLC «V Kontakte»
+// Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 #pragma once
 
-#include <assert.h>
+#include <cassert>
 
 #ifdef __x86_64__
 # ifdef __linux__
@@ -14,7 +14,7 @@
  * IMPORTANT! USER HAVE TO MANUALLY CONTROL SIGNALS STATE!
  *
  */
-#   include "linux/x86_64/context.h"
+#   include "common/ucontext/linux/x86_64/context.h"
     using ucontext_t_portable = kcontext_t;
 
     extern "C" {
@@ -25,7 +25,7 @@
     }
 
 # elif __APPLE__
-#   include "darwin/x86_64/context.h"
+#   include "common/ucontext/darwin/x86_64/context.h"
     using ucontext_t_portable = ucontext_t;
 
 #   define getcontext_portable getcontext
@@ -40,7 +40,7 @@
 #elif defined(__aarch64__) || defined(__arm64__)
 
 # ifdef __linux__
-#   include "linux/aarch64/context.h"
+#   include "common/ucontext/linux/aarch64/context.h"
     using ucontext_t_portable = ucontext_t;
 
 #   define getcontext_portable getcontext
@@ -50,7 +50,7 @@
 
 # elif __APPLE__
 // For M1, we can't use native makecontext() and others: they compile, but hang up when called
-#   include "darwin/aarch64/context.h"
+#   include "common/ucontext/darwin/aarch64/context.h"
     using ucontext_t_portable = libucontext_ucontext;
 
     extern "C" {

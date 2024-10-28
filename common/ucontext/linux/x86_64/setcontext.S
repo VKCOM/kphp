@@ -1,4 +1,8 @@
-#include "defs.h"
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+#include "common/ucontext/linux/x86_64/defs.h"
 
 /*
  * int setcontext_portable(kcontext_t *kcp)
@@ -45,4 +49,3 @@ ENTRY(setcontext_portable)
     xorl  %eax, %eax
     ret
 END(setcontext_portable)
-
