@@ -33,7 +33,7 @@
 #include "runtime-common/core/core-types/decl/string_buffer_decl.inl"
 
 #include "runtime-common/core/allocator/runtime-allocator.h"
-#include "runtime-common/core/runtime-core-context.h"
+#include "runtime-common/core/core-context.h"
 
 #include "runtime-common/core/core-types/definition/string.inl"
 #include "runtime-common/core/core-types/definition/array.inl"
