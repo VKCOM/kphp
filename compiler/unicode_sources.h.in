@@ -1,0 +1,3 @@
+#pragma once
+
+#define UNICODE_SOURCES "${UNICODE_SOURCES_FOR_COMP}"

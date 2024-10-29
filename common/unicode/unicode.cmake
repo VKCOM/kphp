@@ -31,8 +31,21 @@ add_custom_command(
         DEPENDS ${UNICODE_DATA_LIST}
         COMMENT "unicode-utils-auto.h generation")
 
-vk_add_library(unicode OBJECT
-               ${UNICODE_DIR}/unicode-utils.cpp
-               ${UNICODE_DIR}/utf8-utils.cpp
-               ${AUTO_DIR}/common/unicode-utils-auto.h)
+set(UNICODE_SOURCES unicode-utils.cpp utf8-utils.cpp)
 
+if (COMPILE_RUNTIME_LIGHT)
+	set(UNICODE_SOURCES_FOR_COMP "${UNICODE_SOURCES}")
+	configure_file(${BASE_DIR}/compiler/unicode_sources.h.in ${AUTO_DIR}/compiler/unicode_sources.h)
+endif()
+
+prepend(UNICODE_SOURCES ${UNICODE_DIR}/ ${UNICODE_SOURCES})
+
+if (COMPILE_RUNTIME_LIGHT)
+	vk_add_library(light_unicode OBJECT ${UNICODE_SOURCES} ${AUTO_DIR}/common/unicode-utils-auto.h)
+	set_property(TARGET light_unicode PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+	target_compile_options(light_unicode PUBLIC -stdlib=libc++)
+	target_link_options(light_unicode PUBLIC -stdlib=libc++ -static-libstdc++)
+endif()
+
+vk_add_library(unicode OBJECT ${UNICODE_SOURCES} ${AUTO_DIR}/common/unicode-utils-auto.h)

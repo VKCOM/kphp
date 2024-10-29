@@ -93,7 +93,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         kphp_tracing_binlog.cpp
         mail.cpp
         math_functions.cpp
-        mbstring.cpp
         memcache.cpp
         memory_usage.cpp
         misc.cpp

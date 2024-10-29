@@ -16,18 +16,19 @@
 #include "common/wrappers/pathname.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data/lib-data.h"
 #include "compiler/data/ffi-data.h"
+#include "compiler/data/lib-data.h"
+#include "compiler/index.h"
 #include "compiler/make/cpp-to-obj-target.h"
-#include "compiler/make/runtime-src-to-obj-target.h"
 #include "compiler/make/file-target.h"
 #include "compiler/make/h-to-pch-target.h"
 #include "compiler/make/hardlink-or-copy.h"
 #include "compiler/make/make-runner.h"
 #include "compiler/make/objs-to-bin-target.h"
-#include "compiler/make/objs-to-obj-target.h"
 #include "compiler/make/objs-to-k2-component-target.h"
+#include "compiler/make/objs-to-obj-target.h"
 #include "compiler/make/objs-to-static-lib-target.h"
+#include "compiler/make/runtime-src-to-obj-target.h"
 #include "compiler/runtime_build_info.h"
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
@@ -459,11 +460,12 @@ static std::vector<File *> build_runtime_and_common_from_sources(const std::stri
   const Index &runtime_core_dir = G->get_runtime_core_index();
   const Index &runtime_dir = G->get_runtime_index();
   const Index &common_dir = G->get_common_index();
+  const Index &unicode_index = G->get_unicode_index();
 
   std::vector<File*> objs;
   objs.reserve(runtime_dir.get_files_count() + common_dir.get_files_count());
 
-  for (const auto *dir : std::vector<const Index*>{&runtime_core_dir, &runtime_dir, &common_dir}) {
+  for (const auto *dir : std::vector<const Index*>{&runtime_core_dir, &runtime_dir, &common_dir, &unicode_index}) {
     for (File *cpp_file : dir->get_files()) {
       File *obj_file = obj_dir.insert_file(static_cast<std::string>(cpp_file->name_without_ext) + ".o");
       make.create_cpp_target(cpp_file);
