@@ -5,6 +5,7 @@
 #pragma once
 
 #include <functional>
+#include <set>
 
 #include "common/wrappers/string_view.h"
 
@@ -19,6 +20,7 @@
 extern string_buffer *coub;//TODO static
 using shutdown_function_type = std::function<void()>;
 using headers_custom_handler_function_type = std::function<void()>;
+extern std::set<std::string> called_builtins;
 
 enum class shutdown_functions_status {
   not_executed,

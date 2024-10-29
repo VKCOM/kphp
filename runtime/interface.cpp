@@ -102,6 +102,8 @@ bool is_demangled_stacktrace_logs_enabled = false;
 
 static int ignore_level = 0;
 
+std::set<std::string> called_builtins;
+
 mixed runtime_config;
 
 mixed f$kphp_get_runtime_config() {
@@ -2429,6 +2431,7 @@ void init_runtime_environment(const php_query_data_t &data, PhpScriptBuiltInSupe
   reset_global_interface_vars(superglobals);
   init_runtime_libs();
   init_superglobals(data, superglobals);
+  called_builtins.clear();
 }
 
 void free_runtime_environment(PhpScriptBuiltInSuperGlobals &superglobals) {
@@ -2437,6 +2440,9 @@ void free_runtime_environment(PhpScriptBuiltInSuperGlobals &superglobals) {
   reset_global_interface_vars(superglobals);
   kphp_runtime_context.free();
   runtime_allocator.free();
+  for (auto name : called_builtins) {
+    kprintf("call builtin %s\n", name.c_str());
+  }
 }
 
 void worker_global_init(WorkerType worker_type) noexcept {
