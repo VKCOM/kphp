@@ -899,7 +899,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     }
 
     if (func->is_extern()) {
-      W << "(printf(\"call builtin "<< func->name << "\\n\"), ";
+      W << "(kprintf(\"call builtin "<< func->name << "\\n\"), ";
     }
 
     if (mode == func_call_mode::fork_call) {
