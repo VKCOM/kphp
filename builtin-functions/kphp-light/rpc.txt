@@ -83,6 +83,8 @@ function rpc_queue_empty ($queue_id ::: int) ::: bool;
 /** @kphp-extern-func-info generate-stub */
 function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int | false;
 /** @kphp-extern-func-info generate-stub */
+function rpc_queue_push ($queue_id ::: int, $request_ids ::: mixed) ::: int;
+/** @kphp-extern-func-info generate-stub */
 function rpc_tl_pending_queries_count () ::: int;
 
 function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
@@ -112,6 +114,9 @@ function rpc_server_store_response(@tl\RpcFunctionReturnResult $response) ::: vo
 
 /** @kphp-extern-func-info tl_common_h_dep generate-stub */
 function typed_rpc_tl_query_result_synchronously (int[] $query_ids) ::: @tl\RpcResponse[];
+
+/** @kphp-extern-func-info tl_common_h_dep generate-stub */
+function typed_rpc_tl_query_result_one (int $query_id) ::: @tl\RpcResponse;
 
 
 /** @kphp-extern-func-info generate-stub can_throw */
