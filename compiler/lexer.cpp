@@ -18,6 +18,7 @@
 
 #include "compiler/stage.h"
 #include "compiler/threading/thread-id.h"
+#include "compiler/compiler-core.h"
 
 /***
   LexerData
@@ -1018,7 +1019,8 @@ bool TokenLexerComment::parse(LexerData *lexer_data) const {
 }
 
 bool TokenLexerIfndefComment::parse(LexerData *lexer_data) const {
-  kphp_assert(lexer_data->get_code_view().starts_with("#ifndef KPHP"));
+  kphp_assert(lexer_data->get_code_view().starts_with("#ifndef KPHP")
+              || (lexer_data->get_code_view().starts_with("#ifndef K2") && G->is_output_mode_k2()));
 
   auto endif_pos = lexer_data->get_code_view().find("#endif");
   if (endif_pos == vk::string_view::npos) {
@@ -1126,6 +1128,9 @@ void TokenLexerPHP::init() {
 
   h->add_rule("/*|//|#", &vk::singleton<TokenLexerComment>::get());
   h->add_simple_rule("#ifndef KPHP", &vk::singleton<TokenLexerIfndefComment>::get());
+  if (G->is_output_mode_k2()) {
+    h->add_simple_rule("#ifndef K2", &vk::singleton<TokenLexerIfndefComment>::get());
+  }
   h->add_simple_rule("\'", &vk::singleton<TokenLexerSimpleString>::get());
   h->add_simple_rule("\"", &vk::singleton<TokenLexerString>::get());
   h->add_simple_rule("<<<", &vk::singleton<TokenLexerHeredocString>::get());
