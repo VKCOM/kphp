@@ -183,7 +183,6 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
     } else {
       result = VertexAdaptor<op_set_value>::create(a, b, c);
     }
-
   }
   result->location = set_op->get_location();
   result->extra_type = op_ex_internal_func;
@@ -256,15 +255,19 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
     new_call->extra_type = op_ex_func_call_arrow; // Is that right?
     new_call->auto_inserted = true;
     new_call->rl_type = index->rl_type;
+    new_call.set_location(index);
 
-    current_function->dep.emplace_back(method->function);
+    // TODO maybe I'll have to uncomment code below during
+    // getting rid of if(0) trash in _functions.txt 
+
+    // current_function->dep.emplace_back(method->function);
 
     // For interfaces, I should construct type node here?
-    auto &node = new_call->tinf_node;
-    auto * tdata = new TypeData(*method->function->tinf_node.get_type());
-    auto xxx = method->function->tinf_node;
-    node.set_type(tdata);
-    tinf::get_type(new_call); // why OK for LikeArray, but bad for array access
+    // auto &node = new_call->tinf_node;
+    // auto * tdata = new TypeData(*method->function->tinf_node.get_type());
+    // auto xxx = method->function->tinf_node;
+    // node.set_type(tdata);
+    // tinf::get_type(new_call); // why OK for LikeArray, but bad for array access
 
     return new_call;
   }

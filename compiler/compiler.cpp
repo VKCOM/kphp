@@ -64,6 +64,7 @@
 #include "compiler/pipes/file-to-tokens.h"
 #include "compiler/pipes/filter-only-actually-used.h"
 #include "compiler/pipes/final-check.h"
+#include "compiler/pipes/fix-chaining-assignment-for-array-access.h"
 #include "compiler/pipes/fix-returns.h"
 #include "compiler/pipes/gen-tree-postprocess.h"
 #include "compiler/pipes/generate-virtual-methods.h"
@@ -287,6 +288,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PassC<CheckClassesPass>{}
     >> PassC<CheckConversionsPass>{}
     >> PassC<OptimizationPass>{}
+    >> PassC<FixChainingAssignmentForArrayAccessPass>{}
     >> PassC<FixReturnsPass>{}
     >> PassC<CalcValRefPass>{}
     >> PassC<CalcFuncDepPass>{}

@@ -570,6 +570,28 @@
     }
   },
   {
+    "comment": "node for array access hack",
+    "name": "op_set_with_ret",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "seq_with_ret"
+    },
+    "sons": {
+      "offset": 0,
+      "value": 1,
+      "obj": 2
+    },
+    "extra_fields": {
+      "set_method": {
+        "type": "FunctionPtr",
+        "default": "{}"
+      }
+    }
+  },
+  {
     "comment": "holds op_function params in params()",
     "name": "op_func_param_list",
     "base_name": "meta_op_varg",

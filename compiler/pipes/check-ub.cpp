@@ -206,6 +206,9 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
     stage::set_location(save_location);
 
     if (res > 0) {
+      // TODO
+      // Find out how fix ub pass works
+      // and get rid of useless warning
       bool supported = vk::any_of_equal(v->type(), op_set, op_set_value, op_push_back, op_push_back_return, op_array, op_index)
                        || OpInfo::rl(v->type()) == rl_set;
       if (supported) {

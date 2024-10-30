@@ -2385,6 +2385,24 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       W << TypeName(tp) << alloc_function;
       break;
     }
+    case op_set_with_ret: {
+      auto xxx = root.try_as<op_set_with_ret>();
+      /*
+      {
+        mixed idx = index;
+        mixed val = value;
+        func(obj, idx, val);
+        val;
+      }
+      */
+      W << "SAFE_SET_OP_ARR_ACC(";
+      W << xxx->obj() << ", ";
+      W << xxx->offset() << ", ";
+      W << xxx->value() << ", ";
+      W << "f$" << xxx->set_method->name;
+      W << ")";
+      break;
+    }
     default:
       kphp_fail();
       break;

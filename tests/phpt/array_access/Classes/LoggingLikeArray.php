@@ -6,6 +6,11 @@ class LoggingLikeArray implements \ArrayAccess {
     /**  @var mixed[] */
     protected $data = [];
 
+    /** @param $data_ mixed[] */
+    public function __construct($data_=[]) {
+        $this->data = $data_;
+    }
+
     /**
      * @param $offset mixed
      * @param $value  mixed

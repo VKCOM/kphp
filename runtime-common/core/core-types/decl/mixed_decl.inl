@@ -90,8 +90,9 @@ public:
   mixed &append(const string &v);
   mixed &append(tmp_string v);
 
-  // `operator[]` is only used inside runtime (runtime/interface.cpp, for example)
-  // and isn't used in codegen,`set_value()` / `get_value()` fulfil this purpose
+  // `operator[]` is used in runtime directly and
+  // during indirect assignment with macros
+  // For example, $x[0] = $x[1] = f();
   mixed &operator[](int64_t int_key);
   mixed &operator[](int32_t key) { return (*this)[int64_t{key}]; }
   mixed &operator[](const string &string_key);
