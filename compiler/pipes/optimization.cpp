@@ -126,25 +126,28 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
       auto klass = tinf::get_type(a)->class_type();
       kphp_assert_msg(klass, "bad klass");
 
-      // TODO doesn't it have the problem with that some parent classes are not linked in chain yet?
       const auto *method = klass->get_instance_method("offsetSet");
 
       kphp_assert_msg(method, fmt::format("Class {} does not implement offsetSet", klass->name).c_str());
+      if (set_op->rl_type == val_none) {
+        auto new_call = VertexAdaptor<op_func_call>::create(a, VertexAdaptor<op_null>::create(), c).set_location(set_op->get_location());
 
+        new_call->str_val = method->global_name();
+        new_call->func_id = method->function;
+        new_call->extra_type = op_ex_func_call_arrow; // Is that right?
+        new_call->auto_inserted = true;
+        new_call->rl_type = set_op->rl_type;
 
-      // TODO assume here that key is present
-      auto new_call = VertexAdaptor<op_func_call>::create(a, VertexAdaptor<op_null>::create(), c).set_location(set_op->get_location());
-      
-      new_call->str_val = method->global_name();
-      new_call->func_id = method->function;
-      new_call->extra_type = op_ex_func_call_arrow; // Is that right?
-      new_call->auto_inserted = true;
-      new_call->rl_type = set_op->rl_type;
-      
-      result = new_call;
+        result = new_call;
+      } else {
+        auto z = VertexAdaptor<op_set_with_ret>::create(VertexAdaptor<op_null>::create(), c, a);
+        z->set_method = method->function;
+        z.set_location(set_op);
+        result = z;
+      }
+
       return result;
     }
-
 
     kphp_error (a_ptype == tp_array || a_ptype == tp_mixed,
                 fmt_format("Can not use [] for {}", type_out(tinf::get_type(a))));
