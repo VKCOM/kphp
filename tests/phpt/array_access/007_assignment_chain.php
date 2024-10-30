@@ -22,12 +22,6 @@ function test_common() {
     foreach ($keys as $key) {
         var_dump($obj[$key]);
     }
-
-    // $obj[3] = $obj[42] = $arr[4] = $arr["kek"] = $obj["lol"] = $obj["arbidol"] = to_mixed(new K());
-
-    // if ($obj[3] instanceof K) {
-    //     $obj[3]
-    // }
 }
 
 function test_common_obj_as_mixed() {
@@ -47,15 +41,26 @@ function test_common_obj_as_mixed() {
     } else {
         die_if_failure(false, "Incorrect cast");
     }
-    
+}
 
+function test_common_as_aa() {
+    $arr = [1, 2, "asd"];
 
+    /** @var \ArrayAccess */
+    $obj = new Classes\LoggingLikeArray([1, 2, 3, "kek" => "lol"]);
 
-    // $obj[3] = $obj[42] = $arr[4] = $arr["kek"] = $obj["lol"] = $obj["arbidol"] = to_mixed(new K());
+    $obj[0] = $obj[1] = "str1";
+    $obj[4] = $obj[42] = $obj[111] = "";
+    $obj[3] = $obj[42] = $arr[4] = $arr["kek"] = $obj["lol"] = $obj["arbidol"] = ["", 0.1, 1, null];
 
-    // if ($obj[3] instanceof K) {
-    //     $obj[3]
-    // }
+    if ($obj instanceof Classes\LoggingLikeArray) {
+        $keys = $obj->keys();
+        foreach ($keys as $key) {
+            var_dump($obj[$key]);
+        }
+    } else {
+        die_if_failure(false, "Incorrect cast");
+    }
 }
 
 function test_set_obj_as_mixed() {
@@ -76,6 +81,7 @@ function test_set_obj_as_mixed() {
 }
 
 test_common();
+test_common_as_aa();
 test_set_obj_as_mixed();
 
 // TODO
