@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/inline-simple-functions.h"
 
+#include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
@@ -106,6 +107,17 @@ bool InlineSimpleFunctions::check_function(FunctionPtr function) const {
          (!function->modifiers.is_instance() || function->local_name() != "__wakeup") &&
          !function->kphp_lib_export;
 }
+
+
+void InlineSimpleFunctions::on_start() {
+  if (auto klass = current_function->class_id) {
+    if (klass->internal_interface) {
+      inline_is_possible_ = false;
+    }
+  }
+  return FunctionPassBase::on_start();
+}
+
 
 void InlineSimpleFunctions::on_finish() {
   if (inline_is_possible_) {

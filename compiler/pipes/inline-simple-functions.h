@@ -21,5 +21,6 @@ public:
   VertexPtr on_exit_vertex(VertexPtr root) final;
   bool user_recursion(VertexPtr) final;
   bool check_function(FunctionPtr function) const final;
+  void on_start() final;
   void on_finish() final;
 };
