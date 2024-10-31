@@ -196,6 +196,9 @@ bool compiler_execute(CompilerSettings *settings) {
 
   //TODO: call it with pthread_once on need
   lexer_init();
+  if (G->is_output_mode_k2()) {
+    k2_lexer_init();
+  }
   OpInfo::init_static();
   MultiKey::init_static();
   TypeData::init_static();
