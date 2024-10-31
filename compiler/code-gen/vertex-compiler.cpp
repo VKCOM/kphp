@@ -9,6 +9,7 @@
 
 #include "common/wrappers/field_getter.h"
 #include "common/wrappers/likely.h"
+#include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
@@ -23,6 +24,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
@@ -530,6 +532,7 @@ void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W
 }
 
 bool try_compile_append_inplace(VertexAdaptor<op_set_dot> root, CodeGenerator &W);
+bool try_compile_set_by_index_of_mixed(VertexPtr root, CodeGenerator &W);
 
 void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   const auto &root_type_str = OpInfo::str(root->type());
@@ -592,6 +595,10 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
       W << str_repr_it->second << " (" << lhs << ", " << rhs << ")";
       return;
     }
+  }
+
+  if (try_compile_set_by_index_of_mixed(root, W)) {
+    return;
   }
 
   W << Operand{lhs, root->type(), true} <<
@@ -2062,6 +2069,33 @@ void compile_defined(VertexPtr root __attribute__((unused)), CodeGenerator &W __
   //TODO: it is not CodeGen part
 }
 
+bool try_compile_set_by_index_of_mixed(VertexPtr root, CodeGenerator &W) {
+  if (auto set = root.try_as<op_set>()) {
+    auto lhs = set->lhs();
+    auto rhs = set->rhs();
+    if (auto index = lhs.try_as<op_index>()) {
+      if (tinf::get_type(index->array())->get_real_ptype() == tp_mixed) {
+        if (set->extra_type == op_ex_safe_version) {
+          W << "SAFE_SET_MIXED_BY_INDEX(";
+          W << index->array() << ", ";
+          W << index->key() << ", ";
+
+          TmpExpr tmp_rhs(rhs);
+          W << tmp_rhs << ", ";
+          W << TypeName(tmp_rhs.get_type()) << ")";
+        } else {
+          W << "SET_MIXED_BY_INDEX(";
+          W << index->array() << ", ";
+          W << index->key() << ", ";
+          W << rhs << ")";
+        }
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void compile_safe_version(VertexPtr root, CodeGenerator &W) {
   if (auto set_value = root.try_as<op_set_value>()) {
     TmpExpr key{set_value->key()};
@@ -2074,6 +2108,9 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
       TypeName(value.get_type()) <<
       MacroEnd{};
   } else if (OpInfo::rl(root->type()) == rl_set) {
+    if (try_compile_set_by_index_of_mixed(root, W)) {
+      return;
+    }
     auto op = root.as<meta_op_binary>();
     if (OpInfo::type(root->type()) == binary_func_op) {
       W << "SAFE_SET_FUNC_OP " << MacroBegin{};
@@ -2395,7 +2432,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
         val;
       }
       */
-      W << "SAFE_SET_OP_ARR_ACC(";
+      W << "SET_ARR_ACC_BY_INDEX(";
       W << xxx->obj() << ", ";
       W << xxx->offset() << ", ";
       W << xxx->value() << ", ";

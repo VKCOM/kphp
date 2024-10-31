@@ -1211,6 +1211,17 @@ mixed &mixed::operator[](const array<mixed>::iterator &it) {
 }
 
 
+mixed mixed::set_by_index_return(const mixed &key, const mixed &val) {
+  if (get_type() == type::OBJECT) {
+    // TODO check with f$is_a
+    // TODO may be more efficient way?
+    set_value(key, val);
+    return val;
+  }
+
+  return (*this)[key] = val;
+}
+
 void mixed::set_value(int64_t int_key, const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
@@ -1447,10 +1458,15 @@ const mixed mixed::get_value(const array<mixed>::iterator &it) const {
   return as_array().get_value(it);
 }
 
-
+// TODO USE f$is_a before every `from_mixed()` !!!
 void mixed::push_back(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
-    if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
+    if (get_type() == type::OBJECT) {
+      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+      f$ArrayAccess$$offsetSet(xxx, Optional<bool>{}, v);
+      return;
+    }
+    else if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else {
@@ -1464,7 +1480,12 @@ void mixed::push_back(const mixed &v) {
 
 const mixed mixed::push_back_return(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
-    if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
+    if (get_type() == type::OBJECT) {
+      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+      f$ArrayAccess$$offsetSet(xxx, Optional<bool>{}, v);
+      return v;
+    }
+    else if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else {

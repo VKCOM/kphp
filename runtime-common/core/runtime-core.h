@@ -48,9 +48,9 @@
 #define FFI_CALL(call) ({ dl::CriticalSectionGuard critical_section___; (call); })
 #define FFI_INVOKE_CALLBACK(call) ({ dl::NonCriticalSectionGuard non_critical_section___; (call); })
 
-// In case of object, it would be `{offsetSet(ptr, key, val); val;}`
-#define SAFE_SET_OP_MIXED(m, idx, idx_type, val, val_type) ({idx_type idx_tmp___ = idx; val_type val_tmp___ = val; m.set_on_and_get(idx_tmp__, val_tmp___);})
-#define SAFE_SET_OP_ARR_ACC(obj, idx, val, method) ({mixed idx_tmp___ = idx; mixed val_tmp___ = val; method(obj, idx_tmp___, val_tmp___); val_tmp___;})
+#define SET_MIXED_BY_INDEX(mix, idx, val) mix.set_by_index_return(idx, val)
+#define SAFE_SET_MIXED_BY_INDEX(mix, idx, val, val_type)  ({ val_type val_tmp___ = val; mix.set_by_index_return(idx, std::move(val_tmp___)); })
+#define SET_ARR_ACC_BY_INDEX(obj, idx, val, method) ({mixed val_tmp___ = val; method(obj, idx, val_tmp___); val_tmp___;}) // it's always safe
 
 #define SAFE_SET_OP(a, op, b, b_type) ({b_type b_tmp___ = b; a op std::move(b_tmp___);})
 #define SAFE_SET_FUNC_OP(a, func, b, b_type) ({b_type b_tmp___ = b; func (a, b_tmp___);})

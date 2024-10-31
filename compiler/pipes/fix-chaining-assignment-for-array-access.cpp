@@ -11,16 +11,9 @@
 #include "compiler/inferring/public.h"
 #include <cassert>
 
-
-// TODO maybe on_enter? 
-VertexPtr FixChainingAssignmentForArrayAccessPass::on_exit_vertex(VertexPtr root) {
-  if (root->type() != op_set) {
-    return root;
-  }
-
-  auto set = root.as<op_set>();
+static VertexPtr on_set(VertexAdaptor<op_set> set) {
   if (set->lhs()->type() != op_func_call) {
-    return root;
+    return set;
   }
 
   auto func_call = set->lhs().try_as<op_func_call>();
@@ -38,11 +31,10 @@ VertexPtr FixChainingAssignmentForArrayAccessPass::on_exit_vertex(VertexPtr root
 
       if (!method) {
         kphp_error(method, fmt_format("Class {} does not implement offsetSet", klass->name).c_str());
-        return root;
+        return set;
       }
 
       auto sub_val = set->rhs();
-
 
       auto key = func_call->args()[1];
 
@@ -52,7 +44,15 @@ VertexPtr FixChainingAssignmentForArrayAccessPass::on_exit_vertex(VertexPtr root
       return zzz;
     }
   }
+  return set;
+}
 
+// TODO maybe on_enter? Think about it
+// on_exit now generates x2 warnings, but may be the only correct way (may be not xD)
+VertexPtr FixChainingAssignmentForArrayAccessPass::on_exit_vertex(VertexPtr root) {
+  if (auto set = root.try_as<op_set>()) {
+    return on_set(set);
+  }
 
   return root;
 }

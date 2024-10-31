@@ -112,6 +112,8 @@ public:
   void set_value(const array<mixed>::const_iterator &it);
   void set_value(const array<mixed>::iterator &it);
 
+  mixed set_by_index_return(const mixed &key, const mixed &val);
+
   const mixed get_value(int64_t int_key) const;
   const mixed get_value(int32_t key) const { return get_value(int64_t{key}); }
   const mixed get_value(const string &string_key) const;

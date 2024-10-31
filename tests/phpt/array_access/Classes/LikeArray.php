@@ -2,12 +2,12 @@
 
 namespace Classes;
 
-class LikeArray implements \ArrayAccess {
+class LikeArray implements KeysableArrayAccess {
     /**  @var mixed[] */
     protected $data = [];
 
     /** @param $data_ mixed[] */
-    public function __construct($data_=[]) {
+    public function __construct($data_ = []) {
         $this->data = $data_;
     }
 
