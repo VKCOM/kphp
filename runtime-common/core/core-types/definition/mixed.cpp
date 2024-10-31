@@ -6,7 +6,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include <cassert>
 
-// TODO must check that in runtime nothing will get wrong
+// TODO must check that in runtime nothing will get wrong or store it some runtime header file
 struct C$ArrayAccess : public may_be_mixed_base {
   virtual int get_hash() const noexcept = 0;
 

@@ -1692,14 +1692,3 @@ interface ArrayAccess {
   public function offsetSet(mixed $offset, mixed $value);
   public function offsetUnset(mixed $offset);
 }
-
-// TODO get rid of it
-if (0) {
-  /** @var ArrayAccess */
-  $_should_be_unique_var_name_123 = null;
-  $_should_be_unique_var_name_456 = to_mixed($_should_be_unique_var_name_123);
-  $_should_be_unique_var_name_123->offsetExists(0);
-  $_should_be_unique_var_name_123->offsetGet(0);
-  $_should_be_unique_var_name_123->offsetSet(0, 0);
-  $_should_be_unique_var_name_123->offsetUnset(0);
-}
