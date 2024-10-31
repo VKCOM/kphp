@@ -9,6 +9,7 @@
 #include "runtime/pdo/pdo_statement.h"
 #include "runtime/php_assert.h"
 #include "runtime/tl/rpc_response.h"
+#include "runtime-common/core/array_access.h"
 #include "server/php-engine-vars.h"
 #include "server/workers-control.h"
 
@@ -81,4 +82,23 @@ const char *get_php_scripts_version() noexcept {
 char **get_runtime_options(int *) noexcept {
   assert(0 && "this code shouldn't be executed and only for linkage test");
   return nullptr;
+}
+
+
+bool f$ArrayAccess$$offsetExists(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
+  assert(0 && "this code shouldn't be executed and only for linkage test");
+  return {};
+}
+
+mixed f$ArrayAccess$$offsetGet(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
+  assert(0 && "this code shouldn't be executed and only for linkage test");
+  return {};
+}
+
+void f$ArrayAccess$$offsetSet(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/, mixed const & /*v$value*/) noexcept {
+  assert(0 && "this code shouldn't be executed and only for linkage test");
+}
+
+void f$ArrayAccess$$offsetUnset(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
+  assert(0 && "this code shouldn't be executed and only for linkage test");
 }

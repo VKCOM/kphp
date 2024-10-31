@@ -6,33 +6,6 @@
 #include "runtime-common/core/runtime-core.h"
 #include <cassert>
 
-// TODO must check that in runtime nothing will get wrong or store it some runtime header file
-struct C$ArrayAccess : public may_be_mixed_base {
-  virtual int get_hash() const noexcept = 0;
-
-  C$ArrayAccess() __attribute__((always_inline)) = default;
-  ~C$ArrayAccess() __attribute__((always_inline)) = default;
-};
-
-__attribute__((weak)) bool f$ArrayAccess$$offsetExists(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
-  assert(0 && "using stub of offsetExists");
-  return {};
-}
-
-__attribute__((weak)) mixed f$ArrayAccess$$offsetGet(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
-  assert(0 && "using stub of offsetGet");
-  return {};
-}
-
-__attribute__((weak)) void f$ArrayAccess$$offsetSet(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/,
-                                                    mixed const & /*v$value*/) noexcept {
-  assert(0 && "using stub of offsetSet");
-}
-
-__attribute__((weak)) void f$ArrayAccess$$offsetUnset(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept {
-  assert(0 && "using stub of offsetUnset");
-}
-
 void mixed::copy_from(const mixed &other) {
   switch (other.get_type()) {
     case type::STRING:
