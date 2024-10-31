@@ -7,6 +7,7 @@
 #include "common/containers/final_action.h"
 #include "common/rpc-error-codes.h"
 
+#include "runtime-common/stdlib/tracing/tracing-context.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
@@ -160,7 +161,7 @@ typed_rpc_tl_query_impl(const class_instance<C$RpcConnection> &connection, const
   if (query_id <= 0) {
     return 0;
   }
-  if (unlikely(kphp_tracing::cur_trace_level >= 2)) {
+  if (unlikely(kphp_tracing::TracingContext::get().cur_trace_level >= 2)) {
     kphp_tracing::on_rpc_query_provide_details_after_send(req.get_tl_function(), {});
   }
   if (flush) {

@@ -7,6 +7,7 @@
 #include <cstdlib>
 
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
+#include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/kphp_tracing.h"
 
 namespace {

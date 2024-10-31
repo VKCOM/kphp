@@ -6,9 +6,11 @@
 
 #include "common/kprintf.h"
 
+#include "runtime-common/stdlib/tracing/tracing-context.h"
+#include "runtime-common/stdlib/tracing/tracing-functions.h"
+#include "runtime/kphp_tracing.h"
 #include "runtime/net_events.h"
 #include "server/php-queries.h"
-#include "runtime/kphp_tracing.h"
 
 DEFINE_VERBOSITY(resumable);
 
@@ -510,7 +512,7 @@ int64_t fork_resumable(Resumable *resumable) noexcept {
 
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_fork_start(id);
-    if (unlikely(kphp_tracing::cur_trace_level >= 2)) {
+    if (unlikely(kphp_tracing::TracingContext::get().cur_trace_level >= 2)) {
       kphp_tracing::on_fork_provide_name(id, string{typeid(*resumable).name()});
     }
   }
