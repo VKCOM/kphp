@@ -4,13 +4,7 @@
 
 #pragma once
 
-#include <cstdint>
+#include "runtime-common/stdlib/string/string-context.h"
 
-#include "runtime-common/core/runtime-core.h"
-
-struct StringComponentContext {
-  int64_t str_replace_count_dummy{};
-  double default_similar_text_percent_stub{};
-
-  static StringComponentContext &get() noexcept;
-};
+using StringComponentContext = StringLibContext;
+using StringImageState = StringLibConstants;

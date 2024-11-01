@@ -5,7 +5,13 @@
 #include "runtime-light/stdlib/string/string-context.h"
 
 #include "runtime-light/component/component.h"
+#include "runtime-light/component/image.h"
+#include "runtime-light/utils/context.h"
 
 StringComponentContext &StringComponentContext::get() noexcept {
   return get_component_context()->string_component_context;
+}
+
+const StringImageState &StringImageState::get() noexcept {
+  return get_image_state()->string_image_state;
 }

@@ -21,7 +21,6 @@ prepend(
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp
   rpc/rpc-tl-request.cpp
-  string/concat.cpp
   string/string-context.cpp
   system/system-context.cpp
   file/file-stream-context.cpp)

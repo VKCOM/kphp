@@ -31,7 +31,7 @@ union small_object_storage {
 
   template<typename T, typename... Args>
     std::enable_if_t < limit<sizeof(T), T *> emplace(Args &&...args) noexcept {
-    storage_ptr = RuntimeAllocator::current().alloc_script_memory(sizeof(T));
+    storage_ptr = RuntimeAllocator::get().alloc_script_memory(sizeof(T));
     return new (storage_ptr) T(std::forward<Args>(args)...);
   }
   template<typename T>
@@ -42,6 +42,6 @@ union small_object_storage {
     std::enable_if_t < limit<sizeof(T)> destroy() noexcept {
     T *mem = get<T>();
     mem->~T();
-    RuntimeAllocator::current().free_script_memory(mem, sizeof(T));
+    RuntimeAllocator::get().free_script_memory(mem, sizeof(T));
   }
 };

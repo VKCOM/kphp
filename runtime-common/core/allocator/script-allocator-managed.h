@@ -11,7 +11,7 @@
 class ScriptAllocatorManaged {
 public:
   static void *operator new(size_t size) noexcept {
-    return RuntimeAllocator::current().alloc_script_memory(size);
+    return RuntimeAllocator::get().alloc_script_memory(size);
   }
 
   static void *operator new(size_t, void *ptr) noexcept {
@@ -19,7 +19,7 @@ public:
   }
 
   static void operator delete(void *ptr, size_t size) noexcept {
-    RuntimeAllocator::current().free_script_memory(ptr, size);
+    RuntimeAllocator::get().free_script_memory(ptr, size);
   }
 
   static void *operator new[](size_t count) = delete;

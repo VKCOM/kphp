@@ -21,6 +21,8 @@
 #include "common/wrappers/overloaded.h"
 
 #include "net/net-connections.h"
+#include "runtime-common/stdlib/string/string-context.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
 #include "runtime/confdata-functions.h"
@@ -51,7 +53,6 @@
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
 #include "runtime/streams.h"
-#include "runtime/string_functions.h"
 #include "runtime/tcp.h"
 #include "runtime/thread-pool.h"
 #include "runtime/typed_rpc.h"
@@ -958,7 +959,7 @@ public:
     buf_pos(0),
     boundary(boundary) {
     if (post == nullptr) {
-      buf = php_buf;
+      buf = StringLibContext::get().static_buf.data();
       buf_len = 0;
     } else {
       buf = (char *)post;
@@ -989,9 +990,10 @@ public:
         buf_pos += to_erase;
         i -= to_erase;
 
-        buf_len = to_leave + http_load_long_query(buf + to_leave, min(to_leave, left), min(PHP_BUF_LEN - to_leave, left));
+        buf_len =
+          to_leave + http_load_long_query(buf + to_leave, min(to_leave, left), min(StringLibContext::STATIC_BUFFER_LENGTH - to_leave, left));
       } else {
-        buf_len = http_load_long_query(buf, min(2 * chunk_size, left), min(PHP_BUF_LEN, left));
+        buf_len = http_load_long_query(buf, min(2 * chunk_size, left), min(StringLibContext::STATIC_BUFFER_LENGTH, left));
       }
     }
 
@@ -1161,7 +1163,9 @@ public:
         buf_pos += to_erase;
         pos += to_write;
 
-        buf_len = to_leave + http_load_long_query(buf + to_leave, min(PHP_BUF_LEN - to_leave, left), min(PHP_BUF_LEN - to_leave, left));
+        buf_len = to_leave
+                  + http_load_long_query(buf + to_leave, min(StringLibContext::STATIC_BUFFER_LENGTH - to_leave, left),
+                                         min(StringLibContext::STATIC_BUFFER_LENGTH - to_leave, left));
       }
 
       php_assert (s != nullptr);
@@ -1724,8 +1728,8 @@ static void init_superglobals_impl(const http_query_data &http_data, const rpc_q
     if (!is_parsed) {
       int loaded = 0;
       while (loaded < http_data.post_len) {
-        int to_load = min(PHP_BUF_LEN, http_data.post_len - loaded);
-        http_load_long_query(php_buf, to_load, to_load);
+        int to_load = min(StringLibContext::STATIC_BUFFER_LENGTH, http_data.post_len - loaded);
+        http_load_long_query(StringLibContext::get().static_buf.data(), to_load, to_load);
         loaded += to_load;
       }
     }
@@ -2301,7 +2305,7 @@ static void init_interface_lib() {
   finished = false;
 
   php_warning_level = std::max(2, php_warning_minimum_level);
-  KphpCoreContext::current().php_disable_warnings = 0;
+  RuntimeContext::get().php_disable_warnings = 0;
   is_json_log_on_timeout_enabled = true;
   is_demangled_stacktrace_logs_enabled = false;
   ignore_level = 0;
@@ -2450,7 +2454,8 @@ void global_init_script_allocator() {
 }
 
 void init_runtime_environment(const php_query_data_t &data, PhpScriptBuiltInSuperGlobals &superglobals, void *mem, size_t script_mem_size, size_t oom_handling_mem_size) {
-  kphp_runtime_context.init(mem, script_mem_size, oom_handling_mem_size);
+  runtime_allocator.init(mem, script_mem_size, oom_handling_mem_size);
+  kphp_runtime_context.init();
   reset_global_interface_vars(superglobals);
   init_runtime_libs();
   init_superglobals(data, superglobals);
@@ -2461,6 +2466,7 @@ void free_runtime_environment(PhpScriptBuiltInSuperGlobals &superglobals) {
   free_runtime_libs();
   reset_global_interface_vars(superglobals);
   kphp_runtime_context.free();
+  runtime_allocator.free();
 }
 
 void worker_global_init(WorkerType worker_type) noexcept {

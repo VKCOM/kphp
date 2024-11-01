@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime/array_functions.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 
 template<class FN>
 void walk_parts(const char *d, int64_t d_len, const string &str, int64_t limit, FN handle_part) {

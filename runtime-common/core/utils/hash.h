@@ -5,6 +5,8 @@
 #include <cstddef>
 #include <functional>
 
+#pragma once
+
 // from boost
 // see https://www.boost.org/doc/libs/1_55_0/doc/html/hash/reference.html#boost.hash_combine
 template<typename T>

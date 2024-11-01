@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime/string_functions.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 
 TEST(string_test, test_empty) {
   string empty_str;

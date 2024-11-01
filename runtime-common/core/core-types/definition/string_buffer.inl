@@ -7,7 +7,7 @@
 #endif
 
 inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
-  string_buffer_lib_context &sb_context = KphpCoreContext::current().sb_lib_context;
+  string_buffer_lib_context &sb_context = RuntimeContext::get().sb_lib_context;
   if (new_buffer_len < sb_context.MIN_BUFFER_LEN) {
     new_buffer_len = sb_context.MIN_BUFFER_LEN;
   }
@@ -26,7 +26,7 @@ inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
   }
 
   string::size_type current_len = size();
-  if(void *new_mem = RuntimeAllocator::current().realloc_global_memory(buffer_begin, new_buffer_len, buffer_len)) {
+  if(void *new_mem = RuntimeAllocator::get().realloc_global_memory(buffer_begin, new_buffer_len, buffer_len)) {
     buffer_begin = static_cast<char *>(new_mem);
     buffer_len = new_buffer_len;
     buffer_end = buffer_begin + current_len;
@@ -35,7 +35,7 @@ inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {
 
 inline void string_buffer::reserve_at_least(string::size_type need) noexcept {
   string::size_type new_buffer_len = need + size();
-  while (unlikely (buffer_len < new_buffer_len && KphpCoreContext::current().sb_lib_context.error_flag != STRING_BUFFER_ERROR_FLAG_FAILED)) {
+  while (unlikely (buffer_len < new_buffer_len && RuntimeContext::get().sb_lib_context.error_flag != STRING_BUFFER_ERROR_FLAG_FAILED)) {
     resize(((new_buffer_len * 2 + 1 + 64) | 4095) - 64);
   }
 }
@@ -72,7 +72,7 @@ string_buffer &operator<<(string_buffer &sb, const string &s) {
   string::size_type l = s.size();
   sb.reserve_at_least(l);
 
-  if (unlikely (KphpCoreContext::current().sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
+  if (unlikely (RuntimeContext::get().sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
     return sb;
   }
 
@@ -142,7 +142,7 @@ bool string_buffer::set_pos(int64_t pos) {
 string_buffer &string_buffer::append(const char *str, size_t len) noexcept {
   reserve_at_least(static_cast<string::size_type>(len));
 
-  if (unlikely (KphpCoreContext::current().sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
+  if (unlikely (RuntimeContext::get().sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED)) {
     return *this;
   }
   memcpy(buffer_end, str, len);
@@ -170,7 +170,7 @@ void string_buffer::reserve(int len) {
 }
 
 inline void init_string_buffer_lib(string::size_type min_length, string::size_type max_length) {
-  string_buffer_lib_context &sb_context = KphpCoreContext::current().sb_lib_context;
+  string_buffer_lib_context &sb_context = RuntimeContext::get().sb_lib_context;
   if (min_length > 0) {
     sb_context.MIN_BUFFER_LEN = min_length;
   }

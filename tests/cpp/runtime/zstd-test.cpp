@@ -2,12 +2,12 @@
 
 #include <zstd.h>
 
-#include "runtime/string_functions.h"
+#include "runtime-common/stdlib/string/string-context.h"
 
 TEST(zstd_test, test_bounds) {
-  ASSERT_LE(ZSTD_CStreamOutSize(), PHP_BUF_LEN);
-  ASSERT_LE(ZSTD_CStreamInSize(), PHP_BUF_LEN);
+  ASSERT_LE(ZSTD_CStreamOutSize(), StringLibContext::STATIC_BUFFER_LENGTH);
+  ASSERT_LE(ZSTD_CStreamInSize(), StringLibContext::STATIC_BUFFER_LENGTH);
 
-  ASSERT_LE(ZSTD_DStreamOutSize(), PHP_BUF_LEN);
-  ASSERT_LE(ZSTD_DStreamInSize(), PHP_BUF_LEN);
+  ASSERT_LE(ZSTD_DStreamOutSize(), StringLibContext::STATIC_BUFFER_LENGTH);
+  ASSERT_LE(ZSTD_DStreamInSize(), StringLibContext::STATIC_BUFFER_LENGTH);
 }

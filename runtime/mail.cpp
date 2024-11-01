@@ -7,9 +7,9 @@
 
 #include <cstdio>
 
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
-#include "runtime/string_functions.h"
 
 static bool check_header(const string &str) {
   int str_len = (int)str.size();

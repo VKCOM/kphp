@@ -27,9 +27,10 @@
 #include "common/wrappers/openssl.h"
 #include "common/wrappers/string_view.h"
 #include "common/wrappers/to_array.h"
-
-#include "runtime/array_functions.h"
+#include "runtime-common/stdlib/string/string-context.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/allocator.h"
+#include "runtime/array_functions.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/datetime_functions.h"
 #include "runtime/files.h"
@@ -50,8 +51,8 @@ private:
 
     if (!raw_output) {
       for (int64_t i = hash_len - 1; i >= 0; i--) {
-        res[2 * i + 1] = lhex_digits[res[i] & 15];
-        res[2 * i] = lhex_digits[(res[i] >> 4) & 15];
+        res[2 * i + 1] = StringLibConstants::get().lhex_digits[res[i] & 15];
+        res[2 * i] = StringLibConstants::get().lhex_digits[(res[i] >> 4) & 15];
       }
     }
     return res;
@@ -168,15 +169,15 @@ Optional<string> f$md5_file(const string &file_name, bool raw_output) {
 
   size_t size = stat_buf.st_size;
   while (size > 0) {
-    size_t len = min(size, (size_t)PHP_BUF_LEN);
-    if (read_safe(read_fd, php_buf, len, file_name) < (ssize_t)len) {
+    size_t len = min(size, (size_t)StringLibContext::STATIC_BUFFER_LENGTH);
+    if (read_safe(read_fd, StringLibContext::get().static_buf.data(), len, file_name) < (ssize_t)len) {
       break;
     }
-    php_assert (MD5_Update(&c, static_cast <const void *> (php_buf), (unsigned long)len) == 1);
+    php_assert (MD5_Update(&c, static_cast <const void *> (StringLibContext::get().static_buf.data()), (unsigned long)len) == 1);
     size -= len;
   }
   close(read_fd);
-  php_assert (MD5_Final(reinterpret_cast <unsigned char *> (php_buf), &c) == 1);
+  php_assert (MD5_Final(reinterpret_cast <unsigned char *> (StringLibContext::get().static_buf.data()), &c) == 1);
   critical_section.leave_critical_section();
 
   if (size > 0) {
@@ -187,12 +188,12 @@ Optional<string> f$md5_file(const string &file_name, bool raw_output) {
   if (!raw_output) {
     string res(32, false);
     for (int i = 15; i >= 0; i--) {
-      res[2 * i + 1] = lhex_digits[php_buf[i] & 15];
-      res[2 * i] = lhex_digits[(php_buf[i] >> 4) & 15];
+      res[2 * i + 1] = StringLibConstants::get().lhex_digits[StringLibContext::get().static_buf.data()[i] & 15];
+      res[2 * i] = StringLibConstants::get().lhex_digits[(StringLibContext::get().static_buf.data()[i] >> 4) & 15];
     }
     return res;
   } else {
-    return string(php_buf, 16);
+    return string(StringLibContext::get().static_buf.data(), 16);
   }
 }
 
@@ -222,11 +223,11 @@ int64_t f$crc32_file(const string &file_name) {
   uint32_t res = std::numeric_limits<uint32_t>::max();
   size_t size = stat_buf.st_size;
   while (size > 0) {
-    size_t len = min(size, (size_t)PHP_BUF_LEN);
-    if (read_safe(read_fd, php_buf, len, file_name) < (ssize_t)len) {
+    size_t len = min(size, (size_t)StringLibContext::STATIC_BUFFER_LENGTH);
+    if (read_safe(read_fd, StringLibContext::get().static_buf.data(), len, file_name) < (ssize_t)len) {
       break;
     }
-    res = crc32_partial(php_buf, (int)len, res);
+    res = crc32_partial(StringLibContext::get().static_buf.data(), (int)len, res);
     size -= len;
   }
   close(read_fd);
@@ -373,11 +374,11 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
   }
 
   int key_size = EVP_PKEY_size(pkey);
-  php_assert (PHP_BUF_LEN >= key_size);
+  php_assert (StringLibContext::STATIC_BUFFER_LENGTH >= key_size);
 
   RSA_ptr rsa{EVP_PKEY_get1_RSA(pkey)};
   if (RSA_public_encrypt(static_cast<int>(data.size()), reinterpret_cast<const unsigned char *>(data.c_str()),
-                         reinterpret_cast<unsigned char *>(php_buf), rsa.get(), RSA_PKCS1_PADDING) != key_size) {
+                         reinterpret_cast<unsigned char *>(StringLibContext::get().static_buf.data()), rsa.get(), RSA_PKCS1_PADDING) != key_size) {
     if (!from_cache) {
       EVP_PKEY_free(pkey);
     }
@@ -389,7 +390,7 @@ bool f$openssl_public_encrypt(const string &data, string &result, const string &
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
-  result = string(php_buf, key_size);
+  result = string(StringLibContext::get().static_buf.data(), key_size);
   return true;
 }
 
@@ -423,11 +424,11 @@ bool f$openssl_private_decrypt(const string &data, string &result, const string 
   }
 
   int key_size = EVP_PKEY_size(pkey);
-  php_assert (PHP_BUF_LEN >= key_size);
+  php_assert (StringLibContext::STATIC_BUFFER_LENGTH >= key_size);
 
   RSA_ptr rsa{EVP_PKEY_get1_RSA(pkey)};
   int len = RSA_private_decrypt(static_cast<int>(data.size()), reinterpret_cast<const unsigned char *>(data.c_str()),
-                                reinterpret_cast<unsigned char *>(php_buf), rsa.get(), RSA_PKCS1_PADDING);
+                                reinterpret_cast<unsigned char *>(StringLibContext::get().static_buf.data()), rsa.get(), RSA_PKCS1_PADDING);
   if (!from_cache) {
     EVP_PKEY_free(pkey);
   }
@@ -437,7 +438,7 @@ bool f$openssl_private_decrypt(const string &data, string &result, const string 
     return false;
   }
 
-  result.assign(php_buf, len);
+  result.assign(StringLibContext::get().static_buf.data(), len);
   return true;
 }
 

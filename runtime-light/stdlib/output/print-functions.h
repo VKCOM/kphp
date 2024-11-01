@@ -81,11 +81,3 @@ inline Optional<int64_t> f$fputcsv(const mixed &, const array<mixed> &, string =
 inline int64_t f$printf(const string &, const array<mixed> &) {
   php_critical_error("call to unsupported function");
 }
-
-inline string f$sprintf(const string &, const array<mixed> &) {
-  php_critical_error("call to unsupported function");
-}
-
-inline string f$vsprintf(const string &, const array<mixed> &) {
-  php_critical_error("call to unsupported function");
-}

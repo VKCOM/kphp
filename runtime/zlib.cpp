@@ -4,19 +4,19 @@
 
 #include "runtime/zlib.h"
 
+#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
-#include "runtime/string_functions.h"
 
 namespace {
 voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) {
   int *buf_pos = (int *)opaque;
-  php_assert (items != 0 && (PHP_BUF_LEN - *buf_pos) / items >= size);
+  php_assert (items != 0 && (StringLibContext::STATIC_BUFFER_LENGTH - *buf_pos) / items >= size);
 
   int pos = *buf_pos;
   *buf_pos += items * size;
-  php_assert (*buf_pos <= PHP_BUF_LEN);
-  return php_buf + pos;
+  php_assert (*buf_pos <= StringLibContext::STATIC_BUFFER_LENGTH);
+  return StringLibContext::get().static_buf.data() + pos;
 }
 
 void zlib_static_free(voidpf opaque __attribute__((unused)), voidpf address __attribute__((unused))) {}
@@ -248,8 +248,8 @@ static string::size_type zlib_decode_raw(vk::string_view s, int encoding) {
   strm.opaque = Z_NULL;
   strm.avail_in = s.size();
   strm.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(s.data()));
-  strm.avail_out = PHP_BUF_LEN;
-  strm.next_out = reinterpret_cast<Bytef *>(php_buf);
+  strm.avail_out = StringLibContext::STATIC_BUFFER_LENGTH;
+  strm.next_out = reinterpret_cast<Bytef *>(StringLibContext::get().static_buf.data());
 
   int ret = inflateInit2(&strm, encoding);
   if (ret != Z_OK) {
@@ -270,13 +270,13 @@ static string::size_type zlib_decode_raw(vk::string_view s, int encoding) {
       return -1;
   }
 
-  int res_len = PHP_BUF_LEN - strm.avail_out;
+  int res_len = StringLibContext::STATIC_BUFFER_LENGTH - strm.avail_out;
 
   if (strm.avail_out == 0 && ret != Z_STREAM_END) {
     inflateEnd(&strm);
     dl::leave_critical_section();
 
-    php_warning("size of unpacked data is greater then %d. Can't decode.", PHP_BUF_LEN);
+    php_warning("size of unpacked data is greater then %d. Can't decode.", StringLibContext::STATIC_BUFFER_LENGTH);
     return -1;
   }
 
@@ -292,7 +292,7 @@ const char *gzuncompress_raw(vk::string_view s, string::size_type *result_len) {
     return "";
   }
   *result_len = len;
-  return php_buf;
+  return StringLibContext::get().static_buf.data();
 }
 
 string zlib_decode(const string &s, int encoding) {
@@ -300,7 +300,7 @@ string zlib_decode(const string &s, int encoding) {
   if (len == -1u) {
     return {};
   }
-  return {php_buf, static_cast<string::size_type>(len)};
+  return {StringLibContext::get().static_buf.data(), static_cast<string::size_type>(len)};
 }
 
 string f$gzdecode(const string &s) {

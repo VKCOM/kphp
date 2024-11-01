@@ -3,14 +3,15 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/core/utils/migration-php8.h"
+
 #include "runtime-common/core/runtime-core.h"
 
 void f$set_migration_php8_warning(int mask) {
-  KphpCoreContext::current().show_migration_php8_warning = mask;
+  RuntimeContext::get().show_migration_php8_warning = mask;
 }
 
 static void reset_migration_php8_global_vars() {
-  KphpCoreContext::current().show_migration_php8_warning = 0;
+  RuntimeContext::get().show_migration_php8_warning = 0;
 }
 
 void free_migration_php8() {

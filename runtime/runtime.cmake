@@ -66,7 +66,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_PDO_PGSQL_SOURCES}
         allocator.cpp
         context/runtime-core-allocator.cpp
-        context/runtime-core-context.cpp
         context/runtime-context.cpp
         array_functions.cpp
         bcmath.cpp
@@ -114,6 +113,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         storage.cpp
         streams.cpp
         string_functions.cpp
+	string-context.cpp
         tl/rpc_req_error.cpp
         tl/rpc_tl_query.cpp
         tl/rpc_response.cpp
@@ -174,11 +174,11 @@ file(GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
      RELATIVE ${BASE_DIR}
      CONFIGURE_DEPENDS
      "${BASE_DIR}/runtime/*.h")
-file(GLOB_RECURSE KPHP_RUNTIME_CORE_ALL_HEADERS
+file(GLOB_RECURSE KPHP_RUNTIME_COMMON_ALL_HEADERS
      RELATIVE ${BASE_DIR}
      CONFIGURE_DEPENDS
      "${BASE_DIR}/runtime-common/*.h")
-list(APPEND KPHP_RUNTIME_ALL_HEADERS ${KPHP_RUNTIME_CORE_ALL_HEADERS})
+list(APPEND KPHP_RUNTIME_ALL_HEADERS ${KPHP_RUNTIME_COMMON_ALL_HEADERS})
 list(TRANSFORM KPHP_RUNTIME_ALL_HEADERS REPLACE "^(.+)$" [[#include "\1"]])
 list(JOIN KPHP_RUNTIME_ALL_HEADERS "\n" MERGED_RUNTIME_HEADERS)
 file(WRITE ${AUTO_DIR}/runtime/runtime-headers.h "\

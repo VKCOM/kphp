@@ -2,7 +2,6 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-common/core/runtime-core.h"
 #include "runtime/allocator.h"
 #include "runtime/context/runtime-context.h"
 
@@ -14,7 +13,7 @@ void RuntimeAllocator::free() {
   dl::free_script_allocator();
 }
 
-RuntimeAllocator &RuntimeAllocator::current() noexcept {
+RuntimeAllocator &RuntimeAllocator::get() noexcept {
   return runtime_allocator;
 }
 
