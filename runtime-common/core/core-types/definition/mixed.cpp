@@ -1472,6 +1472,11 @@ const mixed mixed::push_back_return(const mixed &v) {
 
 bool mixed::isset(int64_t int_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::OBJECT) {
+      // TODO think about numeric-like string
+      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+      return f$ArrayAccess$$offsetExists(xxx, int_key);
+    }
     if (get_type() == type::STRING) {
       int_key = as_string().get_correct_index(int_key);
       return as_string().isset(int_key);
@@ -1516,6 +1521,13 @@ bool mixed::isset(double double_key) const {
 
 void mixed::unset(int64_t int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
+    // TODO f$is_a
+    if (get_type() == type::OBJECT) {
+      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+      f$ArrayAccess$$offsetUnset(xxx, int_key);
+      return;
+    }
+
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_or_class_name());
     }
@@ -1528,6 +1540,12 @@ void mixed::unset(int64_t int_key) {
 
 void mixed::unset(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::OBJECT) {
+      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+      f$ArrayAccess$$offsetUnset(xxx, v);
+      return;
+    }
+
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_or_class_name());
     }

@@ -93,6 +93,12 @@ int64_t spaceship(const T1 &lhs, const T2 &rhs);
 template <class ...MaybeHash>
 bool mixed::isset(const string &string_key, MaybeHash ...maybe_hash) const {
   if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::OBJECT) {
+      // TODO think about numeric-like string
+      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+      return f$ArrayAccess$$offsetExists(xxx, string_key);
+    }
+
     int64_t int_key{std::numeric_limits<int64_t>::max()};
     if (get_type() == type::STRING) {
       if (!string_key.try_to_int(&int_key)) {
@@ -110,6 +116,12 @@ bool mixed::isset(const string &string_key, MaybeHash ...maybe_hash) const {
 template <class ...MaybeHash>
 void mixed::unset(const string &string_key, MaybeHash ...maybe_hash) {
   if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::OBJECT) {
+      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+      f$ArrayAccess$$offsetUnset(xxx, string_key);
+      return;
+    }
+
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_or_class_name());
     }
