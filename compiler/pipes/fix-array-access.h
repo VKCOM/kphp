@@ -6,10 +6,10 @@
 
 #include "compiler/function-pass.h"
 
-class FixChainingAssignmentForArrayAccessPass final : public FunctionPassBase {
+class FixArrayAccessPass final : public FunctionPassBase {
 public:
   std::string get_description() override {
-    return "Fix chaining assignment for ArrayAccess";
+    return "Fix functions related to ArrayAccess";
   }
 
   VertexPtr on_exit_vertex(VertexPtr root) final;
