@@ -7,17 +7,17 @@
 
 #pragma once
 
-#include <string.h>
-
 #ifdef __cplusplus
 #include <atomic>
 #include <cstdint>
+#include <cstring>
 #else
 #include <stdatomic.h>
 #include <stdint.h>
+#include <string.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 7
+#define K2_PLATFORM_HEADER_H_VERSION 8
 
 // Always check that enum value is a valid value!
 
@@ -42,6 +42,7 @@ struct StreamStatus {
   enum IOStatus read_status;
   enum IOStatus write_status;
   int32_t please_shutdown_write;
+  int32_t libc_errno;
 };
 
 enum GetStatusResult {
@@ -92,6 +93,7 @@ typedef std::atomic_uint32_t atomic_uint32_t;
 typedef _Atomic(uint32_t) atomic_uint32_t;
 #endif
 
+// DEPRECATED:
 struct PlatformCtx {
   atomic_uint32_t please_yield;
   atomic_uint32_t please_graceful_shutdown;
@@ -278,7 +280,10 @@ struct ImageInfo {
   uint8_t is_oneshot;
 };
 
+///
+// Symbols provided by component image
 // Every image should provide these symbols
+///
 enum PollStatus vk_k2_poll(const struct ImageState *image_state, const struct PlatformCtx *pt_ctx, struct ComponentState *component_ctx);
 
 /*
@@ -289,6 +294,88 @@ struct ComponentState *vk_k2_create_component_state(const struct ImageState *ima
 struct ImageState *vk_k2_create_image_state(const struct PlatformCtx *pt_ctx);
 
 const struct ImageInfo *vk_k2_describe();
+
+struct ControlFlags {
+  atomic_uint32_t please_yield;
+  atomic_uint32_t please_graceful_shutdown;
+};
+
+/*
+ *
+ * Symbols provided by k2-node and resolved by linker during dlopen.
+ * Every image can use these symbols.
+ *
+ * Semantically analogs for `PlatformCtx` methods sometimes with small
+ * differences. Preferable way to communication with k2-node.
+ *
+ */
+const struct ControlFlags *k2_control_flags();
+const struct ImageState *k2_image_state();
+struct ComponentState *k2_component_state();
+
+void *k2_alloc(size_t size, size_t align);
+void *k2_realloc(void *ptr, size_t new_size);
+void *k2_realloc_checked(void *ptr, size_t old_size, size_t align, size_t new_size);
+void k2_free(void *ptr);
+void k2_free_checked(void *ptr, size_t size, size_t align);
+
+void k2_exit(int32_t exit_code);
+
+// Difference with PlatformCtx:
+// This function return `libc errno` (`0` on success)
+//
+// Some examples:
+// `EINVAL` => `name` has invalid format (empty, non ascii, too long, etc..)
+// `ECONNREFUSED` => no component with such name found
+// `ENOMEM` => our compoonent has no enough memory for stream
+// `EACCES` => permission denied
+//
+int32_t k2_open(uint64_t *d, size_t name_len, const char *name);
+
+// Difference with PlatformCtx:
+// This function does not return status.
+// But it will set `s->libc_errno` to corresponding errors:
+// `EBADF` => d is not valid(never was valid or used after free)
+// `EBADR` => d is valid descriptor, but not a stream (probably, timer)
+//
+void k2_stream_status(uint64_t d, struct StreamStatus *s);
+
+size_t k2_write(uint64_t d, size_t data_len, const void *data);
+size_t k2_read(uint64_t d, size_t buf_len, void *buf);
+
+void k2_please_shutdown(uint64_t d);
+void k2_shutdown_write(uint64_t d);
+
+void k2_instant(struct TimePoint *time_point);
+
+// Difference with PlatformCtx:
+// This function return `libc errno` (`0` on success)
+//
+// Probably this function newer fails.
+// Looks like `ENOMEM` is only reasonable error.
+// I think component prefer abortion in this case.
+//
+int32_t k2_new_timer(uint64_t *d, uint64_t duration_ns);
+
+// Difference with PlatformCtx:
+// This function return `libc errno` (`0` on success)
+//
+// `EBADF` => d is not valid(never was valid or used after free)
+// `EBADR` => d is valid descriptor, but not a timer (probably stream)
+//
+int32_t k2_timer_deadline(uint64_t d, struct TimePoint *deadline);
+
+void k2_free_descriptor(uint64_t d);
+
+uint8_t k2_take_update(uint64_t *d);
+
+void k2_log(size_t level, size_t len, const char *str);
+size_t k2_log_level_enabled();
+
+void k2_os_rnd(size_t len, void *bytes);
+
+void k2_system_time(struct SystemTime *system_time);
+
 #ifdef __cplusplus
 }
 #endif
