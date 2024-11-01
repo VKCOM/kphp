@@ -14,6 +14,7 @@
 #include <getopt.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <unordered_set>
 
 #include "common/algorithms/string-algorithms.h"
 #include "common/macos-ports.h"
@@ -102,7 +103,7 @@ bool is_demangled_stacktrace_logs_enabled = false;
 
 static int ignore_level = 0;
 
-std::set<std::string> called_builtins;
+std::unordered_set<std::string> called_builtins;
 
 mixed runtime_config;
 
@@ -2443,6 +2444,7 @@ void free_runtime_environment(PhpScriptBuiltInSuperGlobals &superglobals) {
   for (auto name : called_builtins) {
     kprintf("call builtin %s\n", name.c_str());
   }
+  called_builtins.clear();
 }
 
 void worker_global_init(WorkerType worker_type) noexcept {
