@@ -90,7 +90,7 @@ void PhpScript::error(const char *error_message, script_error_t error_type, [[ma
   current_script->error_type = error_type;
   stack_end = reinterpret_cast<char *>(get_context_stack_ptr_portable(exit_context)) + get_context_stack_size_portable(exit_context);
 
-#if defined(__linux__) && defined(__x86_64__)
+#if defined(__linux__) && defined(__x86_64__) || defined(__APPLE__) && (__aarch64__)
   // The PhpScript::error may be produced in process of signal handling. The default behavior on Linux-based platforms
   // consider to block a signal during handler execution and unblock after handler ending.
   // For x86_64 arch we have context replacement implementation where the signals manipulations is omitted by design,
