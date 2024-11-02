@@ -12,13 +12,14 @@
 
 #include "compiler/const-manipulations.h"
 #include "compiler/data/composer-json-data.h"
-#include "compiler/data/ffi-data.h"
 #include "compiler/data/define-data.h"
+#include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/lib-data.h"
 #include "compiler/data/modulite-data.h"
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
+#include "compiler/index.h"
 #include "compiler/name-gen.h"
 #include "compiler/runtime_build_info.h"
 
@@ -654,6 +655,10 @@ const Index &CompilerCore::get_common_index() {
   return common_sources_index;
 }
 
+const Index &CompilerCore::get_unicode_index() {
+  return unicode_sources_index;
+}
+
 File *CompilerCore::get_file_info(std::string &&file_name) {
   return cpp_index.insert_file(std::move(file_name));
 }
@@ -692,6 +697,14 @@ static std::vector<std::string> get_common_sources() {
 #endif
 }
 
+static std::vector<std::string> get_unicode_sources() {
+#ifdef RUNTIME_LIGHT
+  return split(UNICODE_SOURCES, ';');
+#else
+  return {};
+#endif
+}
+
 void CompilerCore::init_runtime_and_common_srcs_dir() {
   runtime_common_sources_dir = settings().runtime_and_common_src.get() + "runtime-common/";
   runtime_common_sources_index.sync_with_dir(runtime_common_sources_dir);
@@ -707,6 +720,11 @@ void CompilerCore::init_runtime_and_common_srcs_dir() {
   common_sources_index.sync_with_dir(common_sources_dir);
   common_sources_dir = common_sources_index.get_dir(); // As in init_dest_dir, IDK what is it for
   common_sources_index.filter_with_whitelist(get_common_sources());
+
+  unicode_sources_dir = settings().runtime_and_common_src.get() + "common/unicode/";
+  unicode_sources_index.sync_with_dir(unicode_sources_dir);
+  unicode_sources_dir = unicode_sources_index.get_dir(); // As in init_dest_dir, IDK what is it for
+  unicode_sources_index.filter_with_whitelist(get_unicode_sources());
 }
 
 bool CompilerCore::try_require_file(SrcFilePtr file) {

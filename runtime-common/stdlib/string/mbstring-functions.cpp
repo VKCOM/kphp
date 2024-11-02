@@ -2,23 +2,14 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/mbstring.h"
+#include "runtime-common/stdlib/string/mbstring-functions.h"
 
 #include "common/unicode/unicode-utils.h"
 #include "common/unicode/utf8-utils.h"
+#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 
-static bool is_detect_incorrect_encoding_names_warning{false};
-
-void f$set_detect_incorrect_encoding_names_warning(bool show) {
-  is_detect_incorrect_encoding_names_warning = show;
-}
-
-void free_detect_incorrect_encoding_names() {
-  is_detect_incorrect_encoding_names_warning = false;
-}
-
-static int mb_detect_encoding_new(const string &encoding) {
+int mb_detect_encoding_new(const string &encoding) noexcept {
   const auto *encoding_name = f$strtolower(encoding).c_str();
 
   if (!strcmp(encoding_name, "cp1251") || !strcmp(encoding_name, "cp-1251") || !strcmp(encoding_name, "windows-1251")) {
@@ -32,43 +23,44 @@ static int mb_detect_encoding_new(const string &encoding) {
   return -1;
 }
 
-static int mb_detect_encoding(const string &encoding) {
+int mb_detect_encoding(const string &encoding) noexcept {
   const int result_new = mb_detect_encoding_new(encoding);
+  const auto detect_incorrect_encoding_names = StringLibContext::get().detect_incorrect_encoding_names;
 
   if (strstr(encoding.c_str(), "1251")) {
-    if (is_detect_incorrect_encoding_names_warning && 1251 != result_new) {
+    if (detect_incorrect_encoding_names && 1251 != result_new) {
       php_warning("mb_detect_encoding returns 1251, but new will return %d, encoding %s", result_new, encoding.c_str());
     }
     return 1251;
   }
   if (strstr(encoding.c_str(), "-8")) {
-    if (is_detect_incorrect_encoding_names_warning && 8 != result_new) {
+    if (detect_incorrect_encoding_names && 8 != result_new) {
       php_warning("mb_detect_encoding returns 8, but new will return %d, encoding %s", result_new, encoding.c_str());
     }
     return 8;
   }
 
-  if (is_detect_incorrect_encoding_names_warning && -1 != result_new) {
+  if (detect_incorrect_encoding_names && -1 != result_new) {
     php_warning("mb_detect_encoding returns -1, but new will return %d, encoding %s", result_new, encoding.c_str());
   }
   return -1;
 }
 
-static int64_t mb_UTF8_strlen(const char *s) {
+int64_t mb_UTF8_strlen(const char *s) {
   int64_t res = 0;
   for (int64_t i = 0; s[i]; i++) {
-    if ((((unsigned char)s[i]) & 0xc0) != 0x80) {
+    if (((static_cast<unsigned char>(s[i])) & 0xc0) != 0x80) {
       res++;
     }
   }
   return res;
 }
 
-static int64_t mb_UTF8_advance(const char *s, int64_t cnt) {
-  php_assert (cnt >= 0);
-  int64_t i;
+int64_t mb_UTF8_advance(const char *s, int64_t cnt) {
+  php_assert(cnt >= 0);
+  int64_t i = 0;
   for (i = 0; s[i] && cnt >= 0; i++) {
-    if ((((unsigned char)s[i]) & 0xc0) != 0x80) {
+    if (((static_cast<unsigned char>(s[i])) & 0xc0) != 0x80) {
       cnt--;
     }
   }
@@ -78,20 +70,23 @@ static int64_t mb_UTF8_advance(const char *s, int64_t cnt) {
   return i;
 }
 
-static int64_t mb_UTF8_get_offset(const char *s, int64_t pos) {
+int64_t mb_UTF8_get_offset(const char *s, int64_t pos) {
   int64_t res = 0;
   for (int64_t i = 0; i < pos && s[i]; i++) {
-    if ((((unsigned char)s[i]) & 0xc0) != 0x80) {
+    if (((static_cast<unsigned char>(s[i])) & 0xc0) != 0x80) {
       res++;
     }
   }
   return res;
 }
 
-bool mb_UTF8_check(const char *s) {
+bool mb_UTF8_check(const char *s) noexcept {
   do {
-#define CHECK(condition) if (!(condition)) {return false;}
-    unsigned int a = (unsigned char)(*s++);
+#define CHECK(condition)                                                                                                                                       \
+  if (!(condition)) {                                                                                                                                          \
+    return false;                                                                                                                                              \
+  }
+    unsigned int a = static_cast<unsigned char>(*s++);
     if ((a & 0x80) == 0) {
       if (a == 0) {
         return true;
@@ -99,28 +94,28 @@ bool mb_UTF8_check(const char *s) {
       continue;
     }
 
-    CHECK ((a & 0x40) != 0);
+    CHECK((a & 0x40) != 0);
 
-    unsigned int b = (unsigned char)(*s++);
+    unsigned int b = static_cast<unsigned char>(*s++);
     CHECK((b & 0xc0) == 0x80);
     if ((a & 0x20) == 0) {
       CHECK((a & 0x1e) > 0);
       continue;
     }
 
-    unsigned int c = (unsigned char)(*s++);
+    unsigned int c = static_cast<unsigned char>(*s++);
     CHECK((c & 0xc0) == 0x80);
     if ((a & 0x10) == 0) {
       int x = (((a & 0x0f) << 6) | (b & 0x20));
-      CHECK(x != 0 && x != 0x360);//surrogates
+      CHECK(x != 0 && x != 0x360); // surrogates
       continue;
     }
 
-    unsigned int d = (unsigned char)(*s++);
+    unsigned int d = static_cast<unsigned char>(*s++);
     CHECK((d & 0xc0) == 0x80);
     if ((a & 0x08) == 0) {
       int t = (((a & 0x07) << 6) | (b & 0x30));
-      CHECK(0 < t && t < 0x110);//end of unicode
+      CHECK(0 < t && t < 0x110); // end of unicode
       continue;
     }
 
@@ -128,13 +123,13 @@ bool mb_UTF8_check(const char *s) {
 #undef CHECK
   } while (true);
 
-  php_assert (0);
+  php_assert(0);
 }
 
-bool f$mb_check_encoding(const string &str, const string &encoding) {
+bool f$mb_check_encoding(const string &str, const string &encoding) noexcept {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
-    php_critical_error ("encoding \"%s\" doesn't supported in mb_check_encoding", encoding.c_str());
+    php_critical_error("encoding \"%s\" doesn't supported in mb_check_encoding", encoding.c_str());
     return !str.empty();
   }
 
@@ -145,11 +140,10 @@ bool f$mb_check_encoding(const string &str, const string &encoding) {
   return mb_UTF8_check(str.c_str());
 }
 
-
-int64_t f$mb_strlen(const string &str, const string &encoding) {
+int64_t f$mb_strlen(const string &str, const string &encoding) noexcept {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
-    php_critical_error ("encoding \"%s\" doesn't supported in mb_strlen", encoding.c_str());
+    php_critical_error("encoding \"%s\" doesn't supported in mb_strlen", encoding.c_str());
     return str.size();
   }
 
@@ -160,11 +154,10 @@ int64_t f$mb_strlen(const string &str, const string &encoding) {
   return mb_UTF8_strlen(str.c_str());
 }
 
-
-string f$mb_strtolower(const string &str, const string &encoding) {
+string f$mb_strtolower(const string &str, const string &encoding) noexcept {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
-    php_critical_error ("encoding \"%s\" doesn't supported in mb_strtolower", encoding.c_str());
+    php_critical_error("encoding \"%s\" doesn't supported in mb_strtolower", encoding.c_str());
     return str;
   }
 
@@ -172,26 +165,26 @@ string f$mb_strtolower(const string &str, const string &encoding) {
   if (encoding_num == 1251) {
     string res(len, false);
     for (int i = 0; i < len; i++) {
-      switch ((unsigned char)str[i]) {
+      switch (static_cast<unsigned char>(str[i])) {
         case 'A' ... 'Z':
-          res[i] = (char)(str[i] + 'a' - 'A');
+          res[i] = static_cast<char>(str[i] + 'a' - 'A');
           break;
         case 0xC0 ... 0xDF:
-          res[i] = (char)(str[i] + 32);
+          res[i] = static_cast<char>(str[i] + 32);
           break;
         case 0x81:
-          res[i] = (char)0x83;
+          res[i] = static_cast<char>(0x83);
           break;
         case 0xA3:
-          res[i] = (char)0xBC;
+          res[i] = static_cast<char>(0xBC);
           break;
         case 0xA5:
-          res[i] = (char)0xB4;
+          res[i] = static_cast<char>(0xB4);
           break;
         case 0xA1:
         case 0xB2:
         case 0xBD:
-          res[i] = (char)(str[i] + 1);
+          res[i] = static_cast<char>(str[i] + 1);
           break;
         case 0x80:
         case 0x8A:
@@ -199,7 +192,7 @@ string f$mb_strtolower(const string &str, const string &encoding) {
         case 0xA8:
         case 0xAA:
         case 0xAF:
-          res[i] = (char)(str[i] + 16);
+          res[i] = static_cast<char>(str[i] + 16);
           break;
         default:
           res[i] = str[i];
@@ -211,8 +204,8 @@ string f$mb_strtolower(const string &str, const string &encoding) {
     string res(len * 3, false);
     const char *s = str.c_str();
     int res_len = 0;
-    int p;
-    int ch;
+    int p = 0;
+    int ch = 0;
     while ((p = get_char_utf8(&ch, s)) > 0) {
       s += p;
       res_len += put_char_utf8(unicode_tolower(ch), &res[res_len]);
@@ -226,10 +219,10 @@ string f$mb_strtolower(const string &str, const string &encoding) {
   }
 }
 
-string f$mb_strtoupper(const string &str, const string &encoding) {
+string f$mb_strtoupper(const string &str, const string &encoding) noexcept {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
-    php_critical_error ("encoding \"%s\" doesn't supported in mb_strtoupper", encoding.c_str());
+    php_critical_error("encoding \"%s\" doesn't supported in mb_strtoupper", encoding.c_str());
     return str;
   }
 
@@ -237,26 +230,26 @@ string f$mb_strtoupper(const string &str, const string &encoding) {
   if (encoding_num == 1251) {
     string res(len, false);
     for (int i = 0; i < len; i++) {
-      switch ((unsigned char)str[i]) {
+      switch (static_cast<unsigned char>(str[i])) {
         case 'a' ... 'z':
-          res[i] = (char)(str[i] + 'A' - 'a');
+          res[i] = static_cast<char>(str[i] + 'A' - 'a');
           break;
         case 0xE0 ... 0xFF:
-          res[i] = (char)(str[i] - 32);
+          res[i] = static_cast<char>(str[i] - 32);
           break;
         case 0x83:
-          res[i] = (char)(0x81);
+          res[i] = static_cast<char>(0x81);
           break;
         case 0xBC:
-          res[i] = (char)(0xA3);
+          res[i] = static_cast<char>(0xA3);
           break;
         case 0xB4:
-          res[i] = (char)(0xA5);
+          res[i] = static_cast<char>(0xA5);
           break;
         case 0xA2:
         case 0xB3:
         case 0xBE:
-          res[i] = (char)(str[i] - 1);
+          res[i] = static_cast<char>(str[i] - 1);
           break;
         case 0x98:
         case 0xA0:
@@ -269,7 +262,7 @@ string f$mb_strtoupper(const string &str, const string &encoding) {
         case 0xB8:
         case 0xBA:
         case 0xBF:
-          res[i] = (char)(str[i] - 16);
+          res[i] = static_cast<char>(str[i] - 16);
           break;
         default:
           res[i] = str[i];
@@ -281,8 +274,8 @@ string f$mb_strtoupper(const string &str, const string &encoding) {
     string res(len * 3, false);
     const char *s = str.c_str();
     int res_len = 0;
-    int p;
-    int ch;
+    int p = 0;
+    int ch = 0;
     while ((p = get_char_utf8(&ch, s)) > 0) {
       s += p;
       res_len += put_char_utf8(unicode_toupper(ch), &res[res_len]);
@@ -310,7 +303,7 @@ int check_strpos_agrs(const char *func_name, const string &needle, int64_t offse
 
   const int encoding_num = mb_detect_encoding(encoding);
   if (unlikely(encoding_num < 0)) {
-    php_critical_error ("encoding \"%s\" doesn't supported in %s()", encoding.c_str(), func_name);
+    php_critical_error("encoding \"%s\" doesn't supported in %s()", encoding.c_str(), func_name);
     return 0;
   }
   return encoding_num;
@@ -345,14 +338,14 @@ Optional<int64_t> f$mb_stripos(const string &haystack, const string &needle, int
   return false;
 }
 
-string f$mb_substr(const string &str, int64_t start, const mixed &length_var, const string &encoding) {
+string f$mb_substr(const string &str, int64_t start, const mixed &length_var, const string &encoding) noexcept {
   int encoding_num = mb_detect_encoding(encoding);
   if (encoding_num < 0) {
-    php_critical_error ("encoding \"%s\" doesn't supported in mb_substr", encoding.c_str());
+    php_critical_error("encoding \"%s\" doesn't supported in mb_substr", encoding.c_str());
     return str;
   }
 
-  int64_t length;
+  int64_t length = 0;
   if (length_var.is_null()) {
     length = std::numeric_limits<int64_t>::max();
   } else {

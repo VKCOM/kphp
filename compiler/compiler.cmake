@@ -6,6 +6,7 @@ set(KEYWORDS_GPERF ${KPHP_COMPILER_DIR}/keywords.gperf)
 if (COMPILE_RUNTIME_LIGHT)
     prepend(RUNTIME_BUILD_INFO ${KPHP_COMPILER_AUTO_DIR}/
         common_sources.h
+	unicode_sources.h
         runtime_sources.h
         runtime_common_sources.h
         runtime_compile_flags.h)

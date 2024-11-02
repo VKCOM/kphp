@@ -40,6 +40,7 @@ private:
   Index runtime_common_sources_index;
   Index runtime_sources_index;
   Index common_sources_index;
+  Index unicode_sources_index;
   TSHashTable<SrcFilePtr> file_ht;
   TSHashTable<SrcDirPtr> dirs_ht;
   TSHashTable<FunctionPtr> functions_ht;
@@ -71,6 +72,7 @@ public:
   std::string runtime_common_sources_dir;
   std::string runtime_sources_dir;
   std::string common_sources_dir;
+  std::string unicode_sources_dir;
 
   CompilerCore();
   void start();
@@ -144,6 +146,7 @@ public:
   const Index &get_runtime_core_index();
   const Index &get_runtime_index();
   const Index &get_common_index();
+  const Index &get_unicode_index();
   File *get_file_info(std::string &&file_name);
   void del_extra_files();
   void init_dest_dir();

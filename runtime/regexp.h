@@ -11,7 +11,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/kphp_tracing.h"
-#include "runtime/mbstring.h"
+#include "runtime-common/stdlib/string/mbstring-functions.h"
 
 namespace re2 {
 class RE2;

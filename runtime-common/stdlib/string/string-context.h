@@ -39,6 +39,9 @@ public:
   int64_t str_replace_count_dummy{};
   double default_similar_text_percent_stub{};
 
+  // mb_string context
+  bool detect_incorrect_encoding_names{};
+
   static StringLibContext &get() noexcept;
 };
 

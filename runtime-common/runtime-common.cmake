@@ -13,5 +13,5 @@ prepend(RUNTIME_COMMON_SRC ${RUNTIME_COMMON_DIR}/ "${RUNTIME_COMMON_SRC}")
 vk_add_library(runtime-common OBJECT ${RUNTIME_COMMON_SRC})
 
 if(COMPILE_RUNTIME_LIGHT)
-  target_compile_options(runtime-common PUBLIC -fPIC)
+  target_compile_options(runtime-common PUBLIC -stdlib=libc++ -fPIC)
 endif()
