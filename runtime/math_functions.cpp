@@ -358,16 +358,6 @@ string f$base_convert(const string &number, int64_t frombase, int64_t tobase) {
   return result;
 }
 
-double f$round(double v, int64_t precision) {
-  if (std::abs(precision) > 100) {
-    php_warning("Wrong parameter precision (%" PRIi64 ") in function round", precision);
-    return v;
-  }
-
-  double mul = pow(10.0, (double)precision);
-  return round(v * mul) / mul;
-}
-
 void init_math_functions() noexcept {
   MTRandGenerator::get().lazy_init();
 }

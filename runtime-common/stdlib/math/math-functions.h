@@ -6,6 +6,42 @@
 
 #include "runtime-common/core/runtime-core.h"
 
+inline double f$ceil(double v);
+
+inline double f$cos(double v);
+
+inline double f$deg2rad(double v);
+
+inline double f$floor(double v);
+
+inline double f$log(double v);
+
+inline double f$log(double v, double base);
+
+template<class T>
+inline T f$min(const array<T> &a);
+
+template<class T>
+inline T f$max(const array<T> &a);
+
+template<class T>
+inline T f$min(const T &arg1);
+
+template<class T, class... Args>
+inline T f$min(const T &arg1, const T &arg2, Args&&... args);
+
+template<class T>
+inline T f$max(const T &arg1);
+
+template<class T, class... Args>
+inline T f$max(const T &arg1, const T &arg2, Args&&... args);
+
+inline double f$pi();
+
+inline double f$round(double v, int64_t precision = 0);
+
+inline double f$sqrt(double v);
+
 mixed f$abs(const mixed &v);
 int64_t f$abs(int64_t v);
 double f$abs(double v);
@@ -101,7 +137,7 @@ inline double f$pi() {
   return M_PI;
 }
 
-inline double f$round(double v, int64_t precision = 0) {
+inline double f$round(double v, int64_t precision) {
   if (std::abs(precision) > 100) {
     php_warning("Wrong parameter precision (%" PRIi64 ") in function round", precision);
     return v;

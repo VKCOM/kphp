@@ -2,9 +2,9 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/stdlib/math/math-functions.h"
+#include "runtime-common/stdlib/math/math-functions.h"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 mixed f$abs(const mixed &v) {
   mixed num = v.to_numeric();

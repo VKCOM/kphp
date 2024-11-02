@@ -11,7 +11,6 @@ prepend(
   hash/hash-functions.cpp
   job-worker/job-worker-api.cpp
   job-worker/job-worker-client-context.cpp
-  math/math-functions.cpp
   output/output-buffer.cpp
   output/print-functions.cpp
   regex/regex-context.cpp
