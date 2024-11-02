@@ -87,7 +87,7 @@ endif ()
 
 install(DIRECTORY ${COMMON_DIR}
                   ${BASE_DIR}/runtime
-		  ${RUNTIME_COOMON_DIR}
+		  ${RUNTIME_COMMON_DIR}
                   ${BASE_DIR}/server
                   ${BASE_DIR}/third-party
         COMPONENT KPHP
