@@ -5,40 +5,19 @@ define('ENT_COMPAT', 0);
 define('ENT_QUOTES', 1);
 define('ENT_NOQUOTES', 2);
 
-/** @kphp-extern-func-info generate-stub */
-function addcslashes ($str ::: string, $what ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function addslashes ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function chr ($v ::: int) ::: string;
+
+
 /** @kphp-extern-func-info generate-stub */
 function bindec ($number ::: string) ::: int;
-/** @kphp-extern-func-info generate-stub */
-function bin2hex ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function count_chars ($str ::: string, $mode ::: int = 0) ::: mixed;
+
+
 /** @kphp-extern-func-info generate-stub */
 function decbin ($number ::: int) ::: string;
 /** @kphp-extern-func-info generate-stub */
 function dechex ($number ::: int) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function hex2bin ($str ::: string) ::: string;
+
 /** @kphp-extern-func-info generate-stub */
 function hexdec ($number ::: string) ::: int;
-/** @kphp-extern-func-info generate-stub */
-function htmlentities ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function html_entity_decode ($str ::: string, $flags ::: int = ENT_COMPAT, $encoding ::: string = "cp1251") ::: string;
-/** @kphp-extern-func-info generate-stub */
-function htmlspecialchars ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function htmlspecialchars_decode ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function nl2br ($str ::: string, $is_xhtml ::: bool = true) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function number_format ($number ::: float, $decimals ::: int = 0, $dec_point ::: string = '.', $thousands_sep ::: string = ',') ::: string;
-/** @kphp-extern-func-info generate-stub */
-function ord ($c ::: string) ::: int;
 
 
 /** @kphp-extern-func-info generate-stub */

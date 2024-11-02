@@ -45,17 +45,17 @@ function get_job_workers_number(): int;
 
 // === Job Worker Old API =================================================================================
 
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info interruptible generate-stub */
 function kphp_job_worker_start(KphpJobWorkerRequest $request, float $timeout): future<KphpJobWorkerResponse> | false;
 
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info interruptible generate-stub */
 function kphp_job_worker_start_no_reply(KphpJobWorkerRequest $request, float $timeout): bool;
 
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info interruptible generate-stub */
 function kphp_job_worker_start_multi(KphpJobWorkerRequest[] $request, float $timeout): (future<KphpJobWorkerResponse> | false)[];
 
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info interruptible generate-stub */
 function kphp_job_worker_fetch_request() ::: KphpJobWorkerRequest;
 // returns 0 on success, < 0 - on errors. All possible error codes are constants like KphpJobWorkerResponseError::JOB_STORE_RESPONSE_*
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info interruptible generate-stub */
 function kphp_job_worker_store_response(KphpJobWorkerResponse $response) ::: int;
