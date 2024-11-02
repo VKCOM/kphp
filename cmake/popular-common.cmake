@@ -41,12 +41,12 @@ if(APPLE)
     list(APPEND POPULAR_COMMON_SOURCES ${COMMON_DIR}/macos-ports.cpp)
 endif()
 
-vk_add_library(light_common OBJECT ${LIGHT_COMMON_SOURCES})
-set_property(TARGET light_common PROPERTY POSITION_INDEPENDENT_CODE ON)
+vk_add_library(light-common OBJECT ${LIGHT_COMMON_SOURCES})
+set_property(TARGET light-common PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 if (COMPILE_RUNTIME_LIGHT)
-    target_compile_options(light_common PUBLIC -stdlib=libc++)
-    target_link_options(light_common PUBLIC -stdlib=libc++ -static-libstdc++)
+    target_compile_options(light-common PUBLIC -stdlib=libc++ -fPIC)
+    target_link_options(light-common PUBLIC -stdlib=libc++)
 endif()
 
 vk_add_library(popular_common OBJECT ${POPULAR_COMMON_SOURCES} ${LIGHT_COMMON_SOURCES})

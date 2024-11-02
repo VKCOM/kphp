@@ -41,11 +41,11 @@ endif()
 prepend(UNICODE_SOURCES ${UNICODE_DIR}/ ${UNICODE_SOURCES})
 
 if (COMPILE_RUNTIME_LIGHT)
-	vk_add_library(light_unicode OBJECT ${UNICODE_SOURCES} ${AUTO_DIR}/common/unicode-utils-auto.h)
-	set_property(TARGET light_unicode PROPERTY POSITION_INDEPENDENT_CODE ON)
+	vk_add_library(light-unicode OBJECT ${UNICODE_SOURCES} ${AUTO_DIR}/common/unicode-utils-auto.h)
+	set_property(TARGET light-unicode PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-	target_compile_options(light_unicode PUBLIC -stdlib=libc++)
-	target_link_options(light_unicode PUBLIC -stdlib=libc++ -static-libstdc++)
+	target_compile_options(light-unicode PUBLIC -stdlib=libc++ -fPIC)
+	target_link_options(light-unicode PUBLIC -stdlib=libc++)
 endif()
 
 vk_add_library(unicode OBJECT ${UNICODE_SOURCES} ${AUTO_DIR}/common/unicode-utils-auto.h)
