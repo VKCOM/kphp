@@ -640,7 +640,7 @@ class_instance<C$KphpDiv> f$kphp_tracing_init(const string &root_span_title) {
 }
 
 void f$kphp_tracing_set_level(int64_t trace_level) {
-  auto cur_trace_level = kphp_tracing::TracingContext::get().cur_trace_level;
+  auto &cur_trace_level = kphp_tracing::TracingContext::get().cur_trace_level;
   if (cur_trace_level == -1 || cur_trace_level == trace_level || trace_level < 0 || trace_level > 2) {
     return;
   }
