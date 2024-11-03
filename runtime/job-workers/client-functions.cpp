@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 
+#include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/critical_section.h"
 #include "runtime/instance-copy-processor.h"
 #include "runtime/job-workers/job-interface.h"

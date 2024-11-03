@@ -12,6 +12,8 @@
 #include "common/rpc-headers.h"
 #include "common/tl/constants/common.h"
 
+#include "runtime-common/stdlib/tracing/tracing-context.h"
+#include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
@@ -1192,7 +1194,7 @@ int64_t rpc_tl_query_impl(const class_instance<C$RpcConnection> &c, const mixed 
     return 0;
   }
 
-  if (unlikely(kphp_tracing::cur_trace_level >= 2)) {
+  if (unlikely(kphp_tracing::TracingContext::get().cur_trace_level >= 2)) {
     kphp_tracing::on_rpc_query_provide_details_after_send({}, tl_object);
   }
 

@@ -4,9 +4,10 @@
 
 #include "runtime/job-workers/processing-jobs.h"
 
-#include "runtime/net_events.h"
-#include "runtime/kphp_tracing.h"
+#include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/instance-copy-processor.h"
+#include "runtime/kphp_tracing.h"
+#include "runtime/net_events.h"
 
 #include "server/job-workers/job-message.h"
 #include "server/job-workers/shared-memory-manager.h"

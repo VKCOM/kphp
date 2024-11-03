@@ -20,6 +20,7 @@
 #include "common/fast-backtrace.h"
 #include "common/wrappers/pathname.h"
 
+#include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
 #include "runtime/kphp-backtrace.h"

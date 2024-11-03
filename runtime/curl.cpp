@@ -10,6 +10,7 @@
 #include <curl/easy.h>
 #include <curl/multi.h>
 
+#include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"

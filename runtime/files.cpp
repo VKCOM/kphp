@@ -16,6 +16,7 @@
 #include "common/kernel-version.h"
 #include "common/macos-ports.h"
 #include "common/wrappers/mkdir_recursive.h"
+#include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime-common/stdlib/string/string-context.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"

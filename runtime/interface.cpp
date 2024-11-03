@@ -23,6 +23,7 @@
 #include "net/net-connections.h"
 #include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/string/string-functions.h"
+#include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/array_functions.h"
 #include "runtime/bcmath.h"
 #include "runtime/confdata-functions.h"

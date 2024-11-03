@@ -11,6 +11,7 @@
 #endif
 #include "common/unicode/utf8-utils.h"
 
+#include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "server/php-engine-vars.h"
 #include "server/php-runner.h"

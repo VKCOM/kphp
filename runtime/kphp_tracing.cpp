@@ -7,6 +7,8 @@
 #include <chrono>
 
 #include "runtime-common/stdlib/string/string-functions.h"
+#include "runtime-common/stdlib/tracing/tracing-context.h"
+#include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
 #include "runtime/job-workers/job-interface.h"
@@ -99,7 +101,6 @@ constexpr int SPECIAL_ENUM_TL_MAGICS = 65001;
 static bool worker_process_has_sent_enums = false;
 
 tracing_binary_buffer cur_binlog;
-int cur_trace_level;
 static int cur_last_span_id;
 static double cur_start_timestamp;
 static tracing_binary_buffer flush_strings_binlog;
@@ -109,12 +110,18 @@ static on_trace_enums_callback_t cur_on_enums_callback;
 static on_rpc_provide_details_typed_t cur_on_rpc_details_typed_callback;
 static on_rpc_provide_details_untyped_t cur_on_rpc_details_untyped_callback;
 
+static TracingContext tracing_ctx{};
+
+TracingContext &TracingContext::get() noexcept {
+  return tracing_ctx;
+}
+
 int generate_uniq_id() {
   return f$mt_rand();
 }
 
 void init_tracing_lib() {
-  cur_trace_level = -1;
+  TracingContext::get().cur_trace_level = -1;
   cur_last_span_id = 0;
   cur_start_timestamp = 0.0;
   flush_strings_binlog.set_use_heap_memory();
@@ -183,7 +190,7 @@ static inline int calc_coroutine_id(int64_t fork_id) noexcept {
 
 [[gnu::always_inline]] static inline void provide_mem_info() {
   BinlogWriter::provideMemUsed(dl::get_script_memory_stats().memory_used);
-  if (unlikely(kphp_tracing::cur_trace_level >= 2)) {
+  if (unlikely(kphp_tracing::TracingContext::get().cur_trace_level >= 2)) {
     provide_advanced_mem_details();
   }
 }
@@ -357,7 +364,7 @@ void on_php_script_finish_ok(double net_time, double script_time) {
   double now_timestamp = calc_now_timestamp();
 
   bool trace_needs_flush = false;
-  if (!cur_trace.is_null() && cur_on_finish_callback && cur_trace_level >= 1) {
+  if (!cur_trace.is_null() && cur_on_finish_callback && TracingContext::get().cur_trace_level >= 1) {
     cur_trace->end_timestamp = now_timestamp;
     trace_needs_flush = cur_on_finish_callback(now_timestamp);
   }
@@ -412,7 +419,7 @@ void on_php_script_finish_ok(double net_time, double script_time) {
     cur_trace->to_json(json_buf, 1024);
     cur_binlog.output_to_json_log(json_buf);
 
-  } else if (cur_trace_level != -1) {
+  } else if (TracingContext::get().cur_trace_level != -1) {
     // trace is dropped, but if it added new strings to binlog table, save that strings
     // see kphp_tracing_binlog.cpp
     dl::CriticalSectionGuard lock;
@@ -425,7 +432,7 @@ void on_php_script_finish_ok(double net_time, double script_time) {
 // so, the trace is dropped, do the same as above
 // todo think about OOM, we want to flush traces on soft OOM
 void on_php_script_finish_terminated() {
-  if (cur_trace_level != -1) {
+  if (TracingContext::get().cur_trace_level != -1) {
     dl::CriticalSectionGuard lock;
     flush_strings_binlog.append_current_php_script_strings();
   }
@@ -616,7 +623,7 @@ class_instance<C$KphpDiv> f$kphp_tracing_init(const string &root_span_title) {
   }
 
   kphp_tracing::cur_start_timestamp = now_timestamp;
-  kphp_tracing::cur_trace_level = 1;
+  kphp_tracing::TracingContext::get().cur_trace_level = 1;
   kphp_tracing::cur_last_span_id = kphp_tracing::SPECIAL_SPAN_ID_ROOT;
 
   cur_trace.alloc();
@@ -633,16 +640,17 @@ class_instance<C$KphpDiv> f$kphp_tracing_init(const string &root_span_title) {
 }
 
 void f$kphp_tracing_set_level(int64_t trace_level) {
-  if (kphp_tracing::cur_trace_level == -1 || kphp_tracing::cur_trace_level == trace_level || trace_level < 0 || trace_level > 2) {
+  auto &cur_trace_level = kphp_tracing::TracingContext::get().cur_trace_level;
+  if (cur_trace_level == -1 || cur_trace_level == trace_level || trace_level < 0 || trace_level > 2) {
     return;
   }
 
-  kphp_tracing::cur_trace_level = trace_level; // 0 may be used to disable tracing in the middle
+  cur_trace_level = trace_level; // 0 may be used to disable tracing in the middle
   BinlogWriter::onSpanAddedAttributeInt32(kphp_tracing::SPECIAL_SPAN_ID_ROOT, string("trace_level", 11), trace_level);
 }
 
 int64_t f$kphp_tracing_get_level() {
-  return kphp_tracing::cur_trace_level;
+  return kphp_tracing::TracingContext::get().cur_trace_level;
 }
 
 void kphp_tracing_register_on_finish_impl(kphp_tracing::on_trace_finish_callback_t &&cb_should_be_flushed) {
@@ -661,7 +669,7 @@ void kphp_tracing_register_rpc_details_provider_impl(kphp_tracing::on_rpc_provid
 class_instance<C$KphpSpan> f$kphp_tracing_start_span(const string &title, const string &short_desc, double start_timestamp) {
   class_instance<C$KphpSpan> span;
   span.alloc(++kphp_tracing::cur_last_span_id);
-  if (kphp_tracing::cur_trace_level >= 1) {
+  if (kphp_tracing::TracingContext::get().cur_trace_level >= 1) {
     kphp_tracing::provide_mem_info();
     if (short_desc.empty()) {
       BinlogWriter::onSpanCreatedTitleOnly(span->span_id, title, calc_time_offset(start_timestamp));
@@ -722,18 +730,18 @@ void KphpTracingFuncCallGuard::on_finished() const {
   BinlogWriter::onFuncCallFinished(span_id, calc_time_offset(now_timestamp));
 }
 
-void KphpTracingAggregateGuard::on_started(int call_mask) {
+void KphpTracingAggregateGuard::on_started(int call_mask) noexcept {
   func_call_mask = call_mask;
   double now_timestamp = calc_now_timestamp();
   BinlogWriter::onFuncAggregateStarted(func_call_mask, calc_time_offset(now_timestamp));
 }
 
-void KphpTracingAggregateGuard::on_enter_branch(int branch_num) const {
+void KphpTracingAggregateGuard::on_enter_branch(int branch_num) const noexcept {
   int mask = (func_call_mask & 0xFFFF) | (branch_num << static_cast<int>(kphp_tracing::BuiltinFuncID::_shift_for_branch));
   BinlogWriter::onFuncAggregateBranch(mask);
 }
 
-void KphpTracingAggregateGuard::on_finished() const {
+void KphpTracingAggregateGuard::on_finished() const noexcept {
   double now_timestamp = calc_now_timestamp();
   BinlogWriter::onFuncAggregateFinished(func_call_mask, calc_time_offset(now_timestamp));
 }
