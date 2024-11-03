@@ -13,7 +13,6 @@ prepend(
   job-worker/job-worker-client-context.cpp
   output/output-buffer.cpp
   output/print-functions.cpp
-  regex/regex-context.cpp
   rpc/rpc-api.cpp
   rpc/rpc-context.cpp
   rpc/rpc-extra-headers.cpp

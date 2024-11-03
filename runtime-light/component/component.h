@@ -25,7 +25,6 @@
 #include "runtime-light/stdlib/fork/fork-context.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-context.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
-#include "runtime-light/stdlib/regex/regex-context.h"
 #include "runtime-light/stdlib/rpc/rpc-context.h"
 #include "runtime-light/stdlib/string/string-context.h"
 #include "runtime-light/stdlib/system/system-context.h"
@@ -115,7 +114,6 @@ struct ComponentState {
   JobWorkerClientComponentContext job_worker_client_component_context{};
   JobWorkerServerComponentContext job_worker_server_component_context{};
 
-  RegexComponentContext regex_component_context;
   CurlComponentContext curl_component_context;
   CryptoComponentContext crypto_component_context;
   StringComponentContext string_component_context;
