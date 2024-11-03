@@ -21,6 +21,7 @@
 #include "common/wrappers/overloaded.h"
 
 #include "net/net-connections.h"
+#include "runtime-common/stdlib/string/regexp.h"
 #include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-common/stdlib/tracing/tracing-functions.h"
@@ -50,7 +51,6 @@
 #include "runtime/openssl.h"
 #include "runtime/pdo/pdo.h"
 #include "runtime/profiler.h"
-#include "runtime/regexp.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc.h"
 #include "runtime/streams.h"
