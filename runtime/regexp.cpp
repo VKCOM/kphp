@@ -2,7 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-common/stdlib/string/regexp.h"
+#include "runtime-common/stdlib/string/regexp-functions.h"
 
 #include <cstddef>
 #include <re2/re2.h>

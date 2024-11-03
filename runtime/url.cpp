@@ -5,7 +5,7 @@
 #include "runtime/url.h"
 
 #include "common/macos-ports.h"
-#include "runtime-common/stdlib/string/regexp.h"
+#include "runtime-common/stdlib/string/regexp-functions.h"
 #include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/array_functions.h"
