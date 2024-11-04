@@ -105,6 +105,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         php-script-globals.cpp
         profiler.cpp
         regexp.cpp
+	regexp-context.cpp
         resumable.cpp
         rpc.cpp
         rpc_extra_info.cpp

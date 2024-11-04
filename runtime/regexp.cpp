@@ -1,22 +1,25 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/stdlib/string/regexp-functions.h"
 
 #include <cstddef>
+#include <tuple>
+
+#include <pcre.h>
 #include <re2/re2.h>
 #if ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
 #endif
-#include "common/unicode/utf8-utils.h"
 
+#include "common/unicode/utf8-utils.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/string/regexp-context.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "server/php-engine-vars.h"
 #include "server/php-runner.h"
-
-int64_t preg_replace_count_dummy;
 
 // TODO: remove when/if we migrate to pcre2
 #ifndef PCRE2_ERROR_BADOFFSET
@@ -25,14 +28,6 @@ int64_t preg_replace_count_dummy;
 #ifndef PCRE2_UNSET
 #  define PCRE2_UNSET -1
 #endif
-
-static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];
-// refactor me please :(
-// for i-th match(capturing group)
-// submatch[2 * i]     - start position of match
-// submatch[2 * i + 1] - end position of match
-int32_t regexp::submatch[3 * MAX_SUBPATTERNS];
-pcre_extra regexp::extra;
 
 static_assert(sizeof(regexp) == SIZEOF_REGEXP, "sizeof(regexp) at runtime doesn't match compile-time");
 
@@ -48,7 +43,7 @@ void regexp::pattern_compilation_warning(const char *function, const char *file,
   va_list args;
   va_start (args, message);
   char buf[1024];
-  vsnprintf(buf, sizeof(buf), message, args);
+  std::ignore = vsnprintf(buf, sizeof(buf), message, args);
   va_end (args);
 
   if (function || file) {
@@ -315,7 +310,7 @@ bool regexp::is_valid_RE2_regexp(const char *regexp_string, int64_t regexp_len, 
 
 void regexp::init(const string &regexp_string, const char *function, const char *file) {
   static char regexp_cache_storage[sizeof(array<regexp *>)];
-  static array<regexp *> *regexp_cache = (array<regexp *> *)regexp_cache_storage;
+  static auto *regexp_cache = reinterpret_cast<array<regexp *> *>(regexp_cache_storage);
   static long long regexp_last_query_num = -1;
 
   use_heap_memory = !(php_script.has_value() && php_script->is_running());
@@ -347,7 +342,7 @@ void regexp::init(const string &regexp_string, const char *function, const char 
   init(regexp_string.c_str(), regexp_string.size(), function, file);
 
   if (!use_heap_memory) {
-    regexp *re = static_cast <regexp *> (dl::allocate(sizeof(regexp)));
+    auto *re = static_cast <regexp *> (dl::allocate(sizeof(regexp)));
     new(re) regexp();
 
     re->subpatterns_count = subpatterns_count;
@@ -370,7 +365,8 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
     return;
   }
 
-  char start_delimiter = regexp_string[0], end_delimiter;
+  char start_delimiter = regexp_string[0];
+  char end_delimiter = 0;
   switch (start_delimiter) {
     case '(':
       end_delimiter = ')';
@@ -413,7 +409,8 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
     return;
   }
 
-  kphp_runtime_context.static_SB.clean().append(regexp_string + 1, static_cast<size_t>(regexp_end - 1));
+  auto &runtime_ctx = RuntimeContext::get();
+  runtime_ctx.static_SB.clean().append(regexp_string + 1, static_cast<size_t>(regexp_end - 1));
 
   use_heap_memory = !(php_script.has_value() && php_script->is_running());
 
@@ -479,22 +476,22 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
     }
   }
 
-  can_use_RE2 = can_use_RE2 && is_valid_RE2_regexp(kphp_runtime_context.static_SB.c_str(), kphp_runtime_context.static_SB.size(), is_utf8, function, file);
+  can_use_RE2 = can_use_RE2 && is_valid_RE2_regexp(runtime_ctx.static_SB.c_str(), runtime_ctx.static_SB.size(), is_utf8, function, file);
 
-  if (is_utf8 && !mb_UTF8_check(kphp_runtime_context.static_SB.c_str())) {
-    pattern_compilation_warning(function, file, "Regexp \"%s\" contains not UTF-8 symbols", kphp_runtime_context.static_SB.c_str());
+  if (is_utf8 && !mb_UTF8_check(runtime_ctx.static_SB.c_str())) {
+    pattern_compilation_warning(function, file, "Regexp \"%s\" contains not UTF-8 symbols", runtime_ctx.static_SB.c_str());
     clean();
     return;
   }
 
   bool need_pcre = false;
   if (can_use_RE2) {
-    RE2_regexp = new RE2(re2::StringPiece(kphp_runtime_context.static_SB.c_str(), kphp_runtime_context.static_SB.size()), RE2_options);
+    RE2_regexp = new RE2(re2::StringPiece(runtime_ctx.static_SB.c_str(), runtime_ctx.static_SB.size()), RE2_options);
 #if ASAN_ENABLED
     __lsan_ignore_object(RE2_regexp);
 #endif
     if (!RE2_regexp->ok()) {
-      pattern_compilation_warning(function, file, "RE2 compilation of regexp \"%s\" failed. Error %d at %s", kphp_runtime_context.static_SB.c_str(), RE2_regexp->error_code(), RE2_regexp->error().c_str());
+      pattern_compilation_warning(function, file, "RE2 compilation of regexp \"%s\" failed. Error %d at %s", runtime_ctx.static_SB.c_str(), RE2_regexp->error_code(), RE2_regexp->error().c_str());
 
       delete RE2_regexp;
       RE2_regexp = nullptr;
@@ -512,9 +509,9 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
   }
 
   if (RE2_regexp == nullptr || need_pcre) {
-    const char *error;
+    const char *error = nullptr;
     int32_t erroffset = 0;
-    pcre_regexp = pcre_compile(kphp_runtime_context.static_SB.c_str(), pcre_options, &error, &erroffset, nullptr);
+    pcre_regexp = pcre_compile(runtime_ctx.static_SB.c_str(), pcre_options, &error, &erroffset, nullptr);
 #if ASAN_ENABLED
     __lsan_ignore_object(pcre_regexp);
 #endif
@@ -545,11 +542,11 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
         int32_t name_entry_size = 0;
         php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size) == 0);
 
-        char *name_table;
+        char *name_table = nullptr;
         php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMETABLE, &name_table) == 0);
 
         for (int64_t i = 0; i < named_subpatterns_count; i++) {
-          int64_t name_id = (((unsigned char)name_table[0]) << 8) + (unsigned char)name_table[1];
+          int64_t name_id = ((static_cast<unsigned char>(name_table[0])) << 8) + static_cast<unsigned char>(name_table[1]);
           string name(name_table + 2);
 
           if (use_heap_memory) {
@@ -568,8 +565,8 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
   }
   subpatterns_count++;
 
-  if (subpatterns_count > MAX_SUBPATTERNS) {
-    pattern_compilation_warning(function, file, "Maximum number of subpatterns %d exceeded, %d subpatterns found", MAX_SUBPATTERNS, subpatterns_count);
+  if (subpatterns_count > RegexpContext::MAX_SUBPATTERNS) {
+    pattern_compilation_warning(function, file, "Maximum number of subpatterns %zu exceeded, %d subpatterns found", RegexpContext::MAX_SUBPATTERNS, subpatterns_count);
     subpatterns_count = 0;
 
     delete RE2_regexp;
@@ -614,17 +611,18 @@ regexp::~regexp() {
   }
 }
 
-
-int64_t regexp::pcre_last_error;
-
 int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) const {
+  auto &regexp_ctx = RegexpContext::get();
+  auto &submatch = regexp_ctx.submatch;
+  auto &RE2_submatch = regexp_ctx.RE2_submatch;
+
   if (RE2_regexp && !second_try) {
     {
       dl::CriticalSectionGuard critical_section;
       auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
 
       re2::StringPiece text(subject.c_str(), subject.size());
-      bool matched = RE2_regexp->Match(text, static_cast<int32_t>(offset), subject.size(), RE2::UNANCHORED, RE2_submatch, subpatterns_count);
+      bool matched = RE2_regexp->Match(text, static_cast<int32_t>(offset), subject.size(), RE2::UNANCHORED, RE2_submatch.data(), subpatterns_count);
       if (!matched) {
         return 0;
       }
@@ -650,8 +648,8 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
 
   int32_t options = second_try ? PCRE_NO_UTF8_CHECK | PCRE_NOTEMPTY_ATSTART : PCRE_NO_UTF8_CHECK;
   dl::enter_critical_section();//OK
-  int64_t count = pcre_exec(pcre_regexp, &extra, subject.c_str(), subject.size(),
-                            static_cast<int32_t>(offset), options, submatch, 3 * subpatterns_count);
+  int64_t count = pcre_exec(pcre_regexp, &regexp_ctx.extra, subject.c_str(), subject.size(),
+                            static_cast<int32_t>(offset), options, submatch.data(), 3 * subpatterns_count);
   dl::leave_critical_section();
 
   php_assert (count != 0);
@@ -659,7 +657,7 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
     return 0;
   }
   if (count < 0) {
-    pcre_last_error = count;
+    regexp_ctx.pcre_last_error = count;
     return 0;
   }
 
@@ -668,6 +666,9 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
 
 
 Optional<int64_t> regexp::match(const string &subject, bool all_matches) const {
+  auto &regexp_ctx = RegexpContext::get();
+  auto &submatch = regexp_ctx.submatch;
+  auto &pcre_last_error = regexp_ctx.pcre_last_error;
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -715,6 +716,9 @@ Optional<int64_t> regexp::match(const string &subject, bool all_matches) const {
 }
 
 Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_matches, int64_t offset) const {
+  auto &regexp_ctx = RegexpContext::get();
+  auto &submatch = regexp_ctx.submatch;
+  auto &pcre_last_error = regexp_ctx.pcre_last_error;
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -814,6 +818,9 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_
 }
 
 Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t flags, bool all_matches, int64_t offset) const {
+  auto &regexp_ctx = RegexpContext::get();
+  auto &submatch = regexp_ctx.submatch;
+  auto &pcre_last_error = regexp_ctx.pcre_last_error;
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -960,6 +967,9 @@ Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t f
 }
 
 Optional<array<mixed>> regexp::split(const string &subject, int64_t limit, int64_t flags) const {
+  auto &regexp_ctx = RegexpContext::get();
+  auto &submatch = regexp_ctx.submatch;
+  auto &pcre_last_error = regexp_ctx.pcre_last_error;
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -1055,7 +1065,7 @@ Optional<array<mixed>> regexp::split(const string &subject, int64_t limit, int64
 }
 
 int64_t regexp::last_error() {
-  switch (pcre_last_error) {
+  switch (RegexpContext::get().pcre_last_error) {
     case PHP_PCRE_NO_ERROR:
       return PHP_PCRE_NO_ERROR;
     case PCRE_ERROR_MATCHLIMIT:
@@ -1078,7 +1088,8 @@ int64_t regexp::last_error() {
 string f$preg_quote(const string &str, const string &delimiter) {
   const string::size_type len = str.size();
 
-  kphp_runtime_context.static_SB.clean().reserve(4 * len);
+  auto &runtime_ctx = RuntimeContext::get();
+  runtime_ctx.static_SB.clean().reserve(4 * len);
 
   for (string::size_type i = 0; i < len; i++) {
     switch (str[i]) {
@@ -1103,28 +1114,29 @@ string f$preg_quote(const string &str, const string &delimiter) {
       case ':':
       case '-':
       case '#':
-        kphp_runtime_context.static_SB.append_char('\\');
-        kphp_runtime_context.static_SB.append_char(str[i]);
+        runtime_ctx.static_SB.append_char('\\');
+        runtime_ctx.static_SB.append_char(str[i]);
         break;
       case '\0':
-        kphp_runtime_context.static_SB.append_char('\\');
-        kphp_runtime_context.static_SB.append_char('0');
-        kphp_runtime_context.static_SB.append_char('0');
-        kphp_runtime_context.static_SB.append_char('0');
+        runtime_ctx.static_SB.append_char('\\');
+        runtime_ctx.static_SB.append_char('0');
+        runtime_ctx.static_SB.append_char('0');
+        runtime_ctx.static_SB.append_char('0');
         break;
       default:
         if (!delimiter.empty() && str[i] == delimiter[0]) {
-          kphp_runtime_context.static_SB.append_char('\\');
+          runtime_ctx.static_SB.append_char('\\');
         }
-        kphp_runtime_context.static_SB.append_char(str[i]);
+        runtime_ctx.static_SB.append_char(str[i]);
         break;
     }
   }
 
-  return kphp_runtime_context.static_SB.str();
+  return runtime_ctx.static_SB.str();
 }
 
 void regexp::global_init() {
+  auto &extra = RegexpContext::get().extra;
   extra.flags = PCRE_EXTRA_MATCH_LIMIT | PCRE_EXTRA_MATCH_LIMIT_RECURSION;
   extra.match_limit = PCRE_BACKTRACK_LIMIT;
   extra.match_limit_recursion = PCRE_RECURSION_LIMIT;
