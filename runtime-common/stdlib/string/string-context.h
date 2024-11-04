@@ -27,7 +27,7 @@ inline constexpr auto *PERCENT_ = "%";
 
 }; // namespace string_context_impl_
 
-class StringLibContext final : vk::not_copyable {
+class StringLibContext final : private vk::not_copyable {
   static constexpr int32_t MASK_BUFFER_LENGTH = 256;
 
 public:
@@ -45,7 +45,7 @@ public:
   static StringLibContext &get() noexcept;
 };
 
-struct StringLibConstants final : vk::not_copyable {
+struct StringLibConstants final : private vk::not_copyable {
   const string COLON_STR{string_context_impl_::COLON_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::COLON_))};
   const string CP1251_STR{string_context_impl_::CP1251_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::CP1251_))};
   const string DOT_STR{string_context_impl_::DOT_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::DOT_))};

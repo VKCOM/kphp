@@ -14,12 +14,19 @@
 #endif
 
 #include "common/unicode/utf8-utils.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/regexp-context.h"
+
+#ifdef K2_MODE
+#include "runtime-light/stdlib/string/regexp-context.h"
+#include "runtime-light/utils/context.h"
+#else
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "server/php-engine-vars.h"
 #include "server/php-runner.h"
+#endif
 
 // TODO: remove when/if we migrate to pcre2
 #ifndef PCRE2_ERROR_BADOFFSET
@@ -309,21 +316,25 @@ bool regexp::is_valid_RE2_regexp(const char *regexp_string, int64_t regexp_len, 
 }
 
 void regexp::init(const string &regexp_string, const char *function, const char *file) {
-  static char regexp_cache_storage[sizeof(array<regexp *>)];
-  static auto *regexp_cache = reinterpret_cast<array<regexp *> *>(regexp_cache_storage);
-  static long long regexp_last_query_num = -1;
+  auto &regexp_ctx = RegexpContext::get();
 
+#ifdef K2_MODE
+  use_heap_memory = get_component_context() == nullptr;
+#else
   use_heap_memory = !(php_script.has_value() && php_script->is_running());
+#endif
 
   if (!use_heap_memory) {
-    if (dl::query_num != regexp_last_query_num) {
-      new(regexp_cache_storage) array<regexp *>();
-      regexp_last_query_num = dl::query_num;
+#ifndef K2_MODE
+    if (dl::query_num != regexp_ctx.regexp_last_query_num) {
+      regexp_ctx.regexp_last_query_num = dl::query_num;
+      new (regexp_ctx.regexp_cache_storage.data()) array<regexp *>();
     }
+#endif
 
-    regexp *re = regexp_cache->get_value(regexp_string);
+    regexp *re = regexp_ctx.regexp_cache->get_value(regexp_string);
     if (re != nullptr) {
-      php_assert (!re->use_heap_memory);
+      php_assert(!re->use_heap_memory);
 
       subpatterns_count = re->subpatterns_count;
       named_subpatterns_count = re->named_subpatterns_count;
@@ -342,8 +353,8 @@ void regexp::init(const string &regexp_string, const char *function, const char 
   init(regexp_string.c_str(), regexp_string.size(), function, file);
 
   if (!use_heap_memory) {
-    auto *re = static_cast <regexp *> (dl::allocate(sizeof(regexp)));
-    new(re) regexp();
+    auto *re = static_cast<regexp *>(RuntimeAllocator::get().alloc_script_memory(sizeof(regexp)));
+    new (re) regexp();
 
     re->subpatterns_count = subpatterns_count;
     re->named_subpatterns_count = named_subpatterns_count;
@@ -355,7 +366,7 @@ void regexp::init(const string &regexp_string, const char *function, const char 
     re->pcre_regexp = pcre_regexp;
     re->RE2_regexp = RE2_regexp;
 
-    regexp_cache->set_value(regexp_string, re);
+    regexp_ctx.regexp_cache->set_value(regexp_string, re);
   }
 }
 
@@ -409,12 +420,19 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
     return;
   }
 
-  auto &runtime_ctx = RuntimeContext::get();
-  runtime_ctx.static_SB.clean().append(regexp_string + 1, static_cast<size_t>(regexp_end - 1));
+#ifdef K2_MODE
+  auto &static_SB = RegexpImageState::get_mutable().regexp_sb;
+#else
+  auto &static_SB = RuntimeContext::get().static_SB;
+#endif
+  static_SB.clean().append(regexp_string + 1, static_cast<size_t>(regexp_end - 1));
 
+#ifdef K2_MODE
+  use_heap_memory = get_component_context() == nullptr;
+#else
   use_heap_memory = !(php_script.has_value() && php_script->is_running());
-
   auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
+#endif
 
   is_utf8 = false;
   int32_t pcre_options = 0;
@@ -476,22 +494,22 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
     }
   }
 
-  can_use_RE2 = can_use_RE2 && is_valid_RE2_regexp(runtime_ctx.static_SB.c_str(), runtime_ctx.static_SB.size(), is_utf8, function, file);
+  can_use_RE2 = can_use_RE2 && is_valid_RE2_regexp(static_SB.c_str(), static_SB.size(), is_utf8, function, file);
 
-  if (is_utf8 && !mb_UTF8_check(runtime_ctx.static_SB.c_str())) {
-    pattern_compilation_warning(function, file, "Regexp \"%s\" contains not UTF-8 symbols", runtime_ctx.static_SB.c_str());
+  if (is_utf8 && !mb_UTF8_check(static_SB.c_str())) {
+    pattern_compilation_warning(function, file, "Regexp \"%s\" contains not UTF-8 symbols", static_SB.c_str());
     clean();
     return;
   }
 
   bool need_pcre = false;
   if (can_use_RE2) {
-    RE2_regexp = new RE2(re2::StringPiece(runtime_ctx.static_SB.c_str(), runtime_ctx.static_SB.size()), RE2_options);
+    RE2_regexp = new RE2(re2::StringPiece(static_SB.c_str(), static_SB.size()), RE2_options);
 #if ASAN_ENABLED
     __lsan_ignore_object(RE2_regexp);
 #endif
     if (!RE2_regexp->ok()) {
-      pattern_compilation_warning(function, file, "RE2 compilation of regexp \"%s\" failed. Error %d at %s", runtime_ctx.static_SB.c_str(), RE2_regexp->error_code(), RE2_regexp->error().c_str());
+      pattern_compilation_warning(function, file, "RE2 compilation of regexp \"%s\" failed. Error %d at %s", static_SB.c_str(), RE2_regexp->error_code(), RE2_regexp->error().c_str());
 
       delete RE2_regexp;
       RE2_regexp = nullptr;
@@ -511,7 +529,7 @@ void regexp::init(const char *regexp_string, int64_t regexp_len, const char *fun
   if (RE2_regexp == nullptr || need_pcre) {
     const char *error = nullptr;
     int32_t erroffset = 0;
-    pcre_regexp = pcre_compile(runtime_ctx.static_SB.c_str(), pcre_options, &error, &erroffset, nullptr);
+    pcre_regexp = pcre_compile(static_SB.c_str(), pcre_options, &error, &erroffset, nullptr);
 #if ASAN_ENABLED
     __lsan_ignore_object(pcre_regexp);
 #endif
@@ -585,12 +603,19 @@ void regexp::clean() {
     return;
   }
 
+#ifndef K2_MODE
   php_assert(!dl::is_malloc_replaced());
+#endif
 
   subpatterns_count = 0;
   named_subpatterns_count = 0;
   is_utf8 = false;
+
+#ifdef K2_MODE
+  use_heap_memory = get_component_context() == nullptr;
+#else
   use_heap_memory = !(php_script.has_value() && php_script->is_running());
+#endif
 
   if (pcre_regexp != nullptr) {
     pcre_free(pcre_regexp);
@@ -618,8 +643,10 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
 
   if (RE2_regexp && !second_try) {
     {
+#ifndef K2_MODE
       dl::CriticalSectionGuard critical_section;
       auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
+#endif
 
       re2::StringPiece text(subject.c_str(), subject.size());
       bool matched = RE2_regexp->Match(text, static_cast<int32_t>(offset), subject.size(), RE2::UNANCHORED, RE2_submatch.data(), subpatterns_count);
@@ -647,10 +674,17 @@ int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) con
   php_assert (pcre_regexp);
 
   int32_t options = second_try ? PCRE_NO_UTF8_CHECK | PCRE_NOTEMPTY_ATSTART : PCRE_NO_UTF8_CHECK;
+
+#ifndef K2_MODE
   dl::enter_critical_section();//OK
+#endif
+
   int64_t count = pcre_exec(pcre_regexp, &regexp_ctx.extra, subject.c_str(), subject.size(),
                             static_cast<int32_t>(offset), options, submatch.data(), 3 * subpatterns_count);
+
+#ifndef K2_MODE
   dl::leave_critical_section();
+#endif
 
   php_assert (count != 0);
   if (count == PCRE_ERROR_NOMATCH) {
