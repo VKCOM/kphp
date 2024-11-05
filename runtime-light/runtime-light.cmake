@@ -37,6 +37,12 @@ target_compile_options(runtime-light PUBLIC -stdlib=libc++ -iquote
                                             ${GENERATED_DIR} -fPIC -O3)
 target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
 
+if(APPLE)
+  target_link_options(runtime-light PUBLIC -undefined dynamic_lookup)
+else()
+  target_link_options(runtime-light PUBLIC --allow-shlib-undefined)
+endif()
+
 vk_add_library(kphp-light-runtime STATIC)
 target_link_libraries(
   kphp-light-runtime PUBLIC vk::light-common vk::light-unicode
