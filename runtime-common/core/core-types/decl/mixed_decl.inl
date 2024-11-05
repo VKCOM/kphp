@@ -228,6 +228,8 @@ public:
   const char *get_type_or_class_name() const;
 
   bool empty() const;
+  // todo with non mixed key
+  bool empty_on(const mixed &key);
   int64_t count() const;
   int64_t compare(const mixed &rhs) const;
 

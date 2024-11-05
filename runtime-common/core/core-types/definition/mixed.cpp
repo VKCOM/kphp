@@ -1020,6 +1020,15 @@ const string mixed::get_type_str() const {
   return string(get_type_c_str());
 }
 
+bool mixed::empty_on(const mixed &key) {
+  if (type_ == type::OBJECT) {
+    // todo f$is_a
+    auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
+    return !f$ArrayAccess$$offsetExists(xxx, key) || f$ArrayAccess$$offsetGet(xxx, key).empty();
+  };
+
+  return get_value(key).empty();
+}
 
 bool mixed::empty() const {
   return !to_bool();

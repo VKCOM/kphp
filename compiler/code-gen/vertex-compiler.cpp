@@ -857,6 +857,16 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     }
   }
 
+  if (root->func_id->is_extern() && root->str_val == "empty") {
+    if (auto index = root->args()[0].try_as<op_index>()) {
+      if (tinf::get_type(index->array())->get_real_ptype() == tp_mixed) {
+        W << "(" << index->array() << ")";
+        W << ".empty_on(" << index->key() << ")";
+        return;
+      }
+    }
+  }
+
   if (FFIRoot::is_ffi_scope_call(root)) {
     compile_ffi_func_call(root, W);
     return;
