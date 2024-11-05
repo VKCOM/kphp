@@ -229,7 +229,7 @@ public:
 
   bool empty() const;
   // todo with non mixed key
-  bool empty_on(const mixed &key);
+  bool empty_on(const mixed &key) const;
   int64_t count() const;
   int64_t compare(const mixed &rhs) const;
 

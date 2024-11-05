@@ -1020,7 +1020,7 @@ const string mixed::get_type_str() const {
   return string(get_type_c_str());
 }
 
-bool mixed::empty_on(const mixed &key) {
+bool mixed::empty_on(const mixed &key) const {
   if (type_ == type::OBJECT) {
     // todo f$is_a
     auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
