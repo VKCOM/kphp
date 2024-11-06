@@ -128,7 +128,7 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
 
       const auto *method = klass->get_instance_method("offsetSet");
 
-      kphp_assert_msg(method, fmt::format("Class {} does not implement offsetSet", klass->name).c_str());
+      kphp_assert_msg(method, fmt::format("Class {} does not implement \\ArrayAccess", klass->name).c_str());
       if (set_op->rl_type == val_none) {
         a->rl_type = val_r;
         auto new_call = VertexAdaptor<op_func_call>::create(a, VertexAdaptor<op_null>::create(), c).set_location(set_op->get_location());
@@ -168,7 +168,7 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
       const auto *method = klass->get_instance_method("offsetSet");
 
       if (!method) {
-        kphp_error(method, fmt_format("Class {} does not implement offsetSet", klass->name).c_str());
+        kphp_error(method, fmt_format("Class {} does not implement \\ArrayAccess", klass->name).c_str());
         return a;
       }
 
@@ -249,7 +249,7 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
 
     const auto *method = klass->get_instance_method("offsetGet");
     if (!method) {
-      kphp_error(method, fmt_format("Class {} does not implement offsetSet", klass->name).c_str());
+      kphp_error(method, fmt_format("Class {} does not implement \\ArrayAccess", klass->name).c_str());
       return index;
     }
     // TODO assume here that key is present

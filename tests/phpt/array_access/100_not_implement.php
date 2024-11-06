@@ -1,5 +1,5 @@
 @kphp_should_fail
-/Class Sample does not implement offsetSet/
+/Class Sample does not implement \\ArrayAccess/
 <?php 
 class Sample {
 

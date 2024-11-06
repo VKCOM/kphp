@@ -32,7 +32,7 @@ static VertexPtr on_set(VertexAdaptor<op_set> set) {
       const auto *method = klass->get_instance_method("offsetSet");
 
       if (!method) {
-        kphp_error(method, fmt_format("Class {} does not implement offsetSet", klass->name).c_str());
+        kphp_error(method, fmt_format("Class {} does not implement \\ArrayAccesst", klass->name).c_str());
         return set;
       }
 

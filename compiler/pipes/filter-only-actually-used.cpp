@@ -250,7 +250,7 @@ IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndE
       assert(aa && "Cannot find ArrayAccess");
 
       ClassPtr klass = fun->class_id;
-      bool impl_aa = aa->is_parent_of(klass);
+      const bool impl_aa = aa->is_parent_of(klass);
       return impl_aa && vk::any_of_equal(fun->local_name(), "offsetGet", "offsetSet", "offsetExists", "offsetUnset");
     }();
 

@@ -356,21 +356,18 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
   if (ptype() == tp_Class) {
     // TODO any race conditions?
     if (!class_type_.empty()) {
-      auto klass = class_type(); // Here is the place to think about inheritance stuff
-      // TODO better check here
-      // What is first: checking interface methods compatibility or type inference? Looks like there is no happens-before relation
-      const bool impl_aa =
-        std::find_if(klass->implements.begin(), klass->implements.end(), [](ClassPtr x) { return x->name == "ArrayAccess"; }) != klass->implements.end();
+      auto klass = class_type();
+
+      ClassPtr aa = G->get_class("ArrayAccess");
+      assert(aa && "Cannot find ArrayAccess");
 
       // Why offsetSet for ArrayAccess is going through here
-      // Can I just always return tp_mixed?
-      // And in some later pass (FinalCheckPass, for example) check that access via [.] is enabled only for arrays and classes that implements ArrayAccess (by chain) 
-      if (
-        true || 
-                  impl_aa || klass->name.find("ArrayAccess") != std::string::npos) {
+      // And in some later pass (FinalCheckPass, for example) check that access via [.] is enabled only for arrays and classes that implements ArrayAccess (by
+      // chain)
+      if (aa->is_parent_of(klass)) {
         return get_type(tp_mixed);
       }
-      kphp_fail_msg("Read at class that does not implements ArrayAccess");
+      kphp_error(false, fmt_format("Class {} that does not implement \\ArrayAccess", klass->name));
     } else {
       kphp_fail_msg("class types is empty! =(");
     }
