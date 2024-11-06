@@ -92,7 +92,7 @@ task_t<void> InstanceState::run_instance_epilogue() noexcept {
     co_return;
   }
   // do not flush output buffers if we are in job worker
-  if (job_worker_server_instance_state.kind != JobWorkerServerComponentContext::Kind::Invalid) {
+  if (job_worker_server_instance_state.kind != JobWorkerServerInstanceState::Kind::Invalid) {
     co_return;
   }
   if (standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {

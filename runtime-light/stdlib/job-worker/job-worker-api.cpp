@@ -44,7 +44,7 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
     co_return INVALID_FORK_ID;
   }
 
-  auto &jw_client_ctx{JobWorkerClientComponentContext::get()};
+  auto &jw_client_ctx{JobWorkerClientInstanceState::get()};
   // normalize timeout
   const auto timeout_ns{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(std::clamp(timeout, MIN_TIMEOUT_S, MAX_TIMEOUT_S)))};
   // prepare JW component request
@@ -111,7 +111,7 @@ task_t<string> f$job_worker_fetch_request() noexcept {
     co_return string{};
   }
 
-  auto &jw_server_ctx{JobWorkerServerComponentContext::get()};
+  auto &jw_server_ctx{JobWorkerServerInstanceState::get()};
   if (jw_server_ctx.job_id == JOB_WORKER_INVALID_JOB_ID || jw_server_ctx.body.empty()) {
     php_warning("couldn't fetch job worker request");
     co_return string{};
@@ -121,14 +121,14 @@ task_t<string> f$job_worker_fetch_request() noexcept {
 
 task_t<int64_t> f$job_worker_store_response(string response) noexcept {
   auto &component_ctx{*get_component_context()};
-  auto &jw_server_ctx{JobWorkerServerComponentContext::get()};
+  auto &jw_server_ctx{JobWorkerServerInstanceState::get()};
   if (!f$is_kphp_job_workers_enabled()) { // workers are enabled
     php_warning("couldn't store job worker response: job workers are disabled");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (jw_server_ctx.kind != JobWorkerServerComponentContext::Kind::Regular) { // we're in regular worker
+  } else if (jw_server_ctx.kind != JobWorkerServerInstanceState::Kind::Regular) { // we're in regular worker
     php_warning("couldn't store job worker response: we are either in no reply job worker or not in a job worker at all");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (jw_server_ctx.state == JobWorkerServerComponentContext::State::Replied) { // it's the first attempt to reply
+  } else if (jw_server_ctx.state == JobWorkerServerInstanceState::State::Replied) { // it's the first attempt to reply
     php_warning("couldn't store job worker response: multiple stores are forbidden");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
   } else if (component_ctx.standard_stream() == INVALID_PLATFORM_DESCRIPTOR) { // we have a stream to write into
@@ -146,6 +146,6 @@ task_t<int64_t> f$job_worker_store_response(string response) noexcept {
     php_warning("couldn't store job worker response");
     co_return static_cast<int64_t>(JobWorkerError::store_response_cant_send_error);
   }
-  jw_server_ctx.state = JobWorkerServerComponentContext::State::Replied;
+  jw_server_ctx.state = JobWorkerServerInstanceState::State::Replied;
   co_return 0;
 }

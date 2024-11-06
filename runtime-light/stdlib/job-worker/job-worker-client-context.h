@@ -9,8 +9,8 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-light/stdlib/job-worker/job-worker.h"
 
-struct JobWorkerClientComponentContext final : private vk::not_copyable {
+struct JobWorkerClientInstanceState final : private vk::not_copyable {
   int64_t current_job_id{JOB_WORKER_VALID_JOB_ID_RANGE_START};
 
-  static JobWorkerClientComponentContext &get() noexcept;
+  static JobWorkerClientInstanceState &get() noexcept;
 };

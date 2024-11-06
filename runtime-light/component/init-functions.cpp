@@ -55,7 +55,7 @@ task_t<uint64_t> init_kphp_server_component() noexcept {
     case tl::K2_INVOKE_JOB_WORKER_MAGIC: {
       process_k2_invoke_job_worker(tlb);
       // release standard stream in case of a no reply job worker since we don't need that stream anymore
-      if (JobWorkerServerComponentContext::get().kind == JobWorkerServerComponentContext::Kind::NoReply) {
+      if (JobWorkerServerInstanceState::get().kind == JobWorkerServerInstanceState::Kind::NoReply) {
         get_component_context()->release_stream(stream_d);
         stream_d = INVALID_PLATFORM_DESCRIPTOR;
       }
