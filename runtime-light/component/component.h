@@ -103,7 +103,7 @@ struct InstanceState {
   RuntimeAllocator runtime_allocator;
 
   CoroutineScheduler scheduler;
-  ForkComponentContext fork_instance_state;
+  ForkInstanceState fork_instance_state;
   PollStatus poll_status{PollStatus::PollReschedule};
 
   Response response;

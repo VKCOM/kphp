@@ -47,11 +47,11 @@ namespace awaitable_impl_ {
 enum class State : uint8_t { Init, Suspend, Ready, End };
 
 class fork_id_watcher_t {
-  int64_t fork_id{ForkComponentContext::get().running_fork_id};
+  int64_t fork_id{ForkInstanceState::get().running_fork_id};
 
 protected:
   void await_resume() const noexcept {
-    ForkComponentContext::get().running_fork_id = fork_id;
+    ForkInstanceState::get().running_fork_id = fork_id;
   }
 };
 
@@ -293,7 +293,7 @@ public:
   explicit start_fork_t(task_t<void> task_, execution exec_policy_) noexcept
     : exec_policy(exec_policy_)
     , fork_coro(task_.get_handle())
-    , fork_id(ForkComponentContext::get().push_fork(std::move(task_))) {}
+    , fork_id(ForkInstanceState::get().push_fork(std::move(task_))) {}
 
   start_fork_t(start_fork_t &&other) noexcept
     : exec_policy(other.exec_policy)
@@ -319,7 +319,7 @@ public:
       case execution::fork: {
         suspend_token.first = current_coro;
         continuation = fork_coro;
-        ForkComponentContext::get().running_fork_id = fork_id;
+        ForkInstanceState::get().running_fork_id = fork_id;
         break;
       }
       case execution::self: {
@@ -357,7 +357,7 @@ class wait_fork_t : awaitable_impl_::fork_id_watcher_t {
 public:
   explicit wait_fork_t(int64_t fork_id_) noexcept
     : fork_id(fork_id_)
-    , fork_task(static_cast<task_t<T>>(ForkComponentContext::get().pop_fork(fork_id)))
+    , fork_task(static_cast<task_t<T>>(ForkInstanceState::get().pop_fork(fork_id)))
     , fork_awaiter(std::addressof(fork_task)) {}
 
   wait_fork_t(wait_fork_t &&other) noexcept

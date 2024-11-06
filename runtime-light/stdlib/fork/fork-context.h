@@ -14,7 +14,7 @@
 
 inline constexpr int64_t INVALID_FORK_ID = -1;
 
-class ForkComponentContext {
+class ForkInstanceState {
   template<hashable Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
 
@@ -44,10 +44,10 @@ class ForkComponentContext {
 public:
   int64_t running_fork_id{FORK_ID_INIT};
 
-  explicit ForkComponentContext(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
+  explicit ForkInstanceState(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
     : forks(unordered_map<int64_t, task_t<void>>::allocator_type{memory_resource}) {}
 
-  static ForkComponentContext &get() noexcept;
+  static ForkInstanceState &get() noexcept;
 
   bool contains(int64_t fork_id) const noexcept {
     return forks.contains(fork_id);
