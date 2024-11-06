@@ -883,7 +883,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_header_register_callback(call);
     } else if (function_name == "to_mixed") {
       check_to_mixed_call(call);
-    } else if (vk::string_view{function_name}.starts_with("rpc_tl_query")) {
+    } else if (vk::string_view{function_name}.starts_with("rpc_tl_query") || vk::string_view{function_name}.starts_with("rpc_send_request")) {
       G->set_untyped_rpc_tl_used();
     } else if (vk::string_view{function_name}.starts_with("FFI$$")) {
       check_ffi_call(call);

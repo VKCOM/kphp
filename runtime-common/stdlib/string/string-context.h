@@ -9,6 +9,7 @@
 #include <string>
 
 #include "common/mixin/not_copyable.h"
+#include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
 
 namespace string_context_impl_ {
@@ -46,19 +47,18 @@ public:
 };
 
 struct StringLibConstants final : vk::not_copyable {
-  const string COLON_STR{string_context_impl_::COLON_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::COLON_))};
-  const string CP1251_STR{string_context_impl_::CP1251_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::CP1251_))};
-  const string DOT_STR{string_context_impl_::DOT_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::DOT_))};
-  const string COMMA_STR{string_context_impl_::COMMA_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::COMMA_))};
-  const string BACKSLASH_STR{string_context_impl_::BACKSLASH_,
-                             static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::BACKSLASH_))};
-  const string QUOTE_STR{string_context_impl_::QUOTE_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::QUOTE_))};
-  const string NEWLINE_STR{string_context_impl_::NEWLINE_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::NEWLINE_))};
-  const string SPACE_STR{string_context_impl_::SPACE_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::SPACE_))};
+  string COLON_STR{string_context_impl_::COLON_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::COLON_))};
+  string CP1251_STR{string_context_impl_::CP1251_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::CP1251_))};
+  string DOT_STR{string_context_impl_::DOT_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::DOT_))};
+  string COMMA_STR{string_context_impl_::COMMA_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::COMMA_))};
+  string BACKSLASH_STR{string_context_impl_::BACKSLASH_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::BACKSLASH_))};
+  string QUOTE_STR{string_context_impl_::QUOTE_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::QUOTE_))};
+  string NEWLINE_STR{string_context_impl_::NEWLINE_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::NEWLINE_))};
+  string SPACE_STR{string_context_impl_::SPACE_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::SPACE_))};
   // +1 here to since char_traits<char>::length doesn't count '\0' at the end
-  const string WHAT_STR{string_context_impl_::WHAT_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::WHAT_)) + 1};
-  const string ONE_STR{string_context_impl_::ONE_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::ONE_))};
-  const string PERCENT_STR{string_context_impl_::PERCENT_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::PERCENT_))};
+  string WHAT_STR{string_context_impl_::WHAT_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::WHAT_)) + 1};
+  string ONE_STR{string_context_impl_::ONE_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::ONE_))};
+  string PERCENT_STR{string_context_impl_::PERCENT_, static_cast<string::size_type>(std::char_traits<char>::length(string_context_impl_::PERCENT_))};
 
   const char lhex_digits[17] = "0123456789abcdef";
   const char uhex_digits[17] = "0123456789ABCDEF";
@@ -71,6 +71,20 @@ struct StringLibConstants final : vk::not_copyable {
   static constexpr int64_t STR_PAD_LEFT = 0;
   static constexpr int64_t STR_PAD_RIGHT = 1;
   static constexpr int64_t STR_PAD_BOTH = 2;
+
+  StringLibConstants() noexcept {
+    COLON_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    CP1251_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    DOT_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    COMMA_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    BACKSLASH_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    QUOTE_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    NEWLINE_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    SPACE_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    WHAT_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    ONE_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    PERCENT_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+  }
 
   static const StringLibConstants &get() noexcept;
 };

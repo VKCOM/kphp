@@ -4,9 +4,12 @@
 
 #include "runtime-light/tl/tl-builtins.h"
 
+#include "common/php-functions.h"
+
 void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &gen$ht, tl_fetch_wrapper_ptr gen$t_ReqResult_fetch) {
   auto &rpc_mutable_image_state{RpcImageState::get_mutable()};
   rpc_mutable_image_state.tl_storers_ht = gen$ht;
+  rpc_mutable_image_state.tl_storers_ht.set_reference_counter_to(ExtraRefCnt::for_global_const);
   rpc_mutable_image_state.tl_fetch_wrapper = gen$t_ReqResult_fetch;
 }
 
