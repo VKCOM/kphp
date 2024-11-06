@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <string_view>
 
+#include "common/mixin/not_copyable.h"
 #include "runtime-common/core/memory-resource/resource_allocator.h"
 #include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/runtime-core.h"
@@ -45,7 +46,7 @@ static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
  */
 enum class ImageKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
 
-struct InstanceState {
+struct InstanceState final : vk::not_copyable {
   template<typename T>
   using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
 
