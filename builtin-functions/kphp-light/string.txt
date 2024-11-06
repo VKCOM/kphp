@@ -9,70 +9,91 @@ define('PHP_URL_PATH', 5);
 define('PHP_URL_QUERY', 6);
 define('PHP_URL_FRAGMENT', 7);
 
+
+function addcslashes ($str ::: string, $what ::: string) ::: string;
+function addslashes ($str ::: string) ::: string;
+
+function chr ($v ::: int) ::: string;
+
+function bin2hex ($str ::: string) ::: string;
+function hex2bin ($str ::: string) ::: string;
+
+function count_chars ($str ::: string, $mode ::: int = 0) ::: mixed;
+
+
+function htmlentities ($str ::: string) ::: string;
+function html_entity_decode ($str ::: string, $flags ::: int = ENT_COMPAT, $encoding ::: string = "cp1251") ::: string;
+function htmlspecialchars ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
+function htmlspecialchars_decode ($str ::: string, $flags ::: int = ENT_COMPAT) ::: string;
+
+
+function nl2br ($str ::: string, $is_xhtml ::: bool = true) ::: string;
+function number_format ($number ::: float, $decimals ::: int = 0, $dec_point ::: string = '.', $thousands_sep ::: string = ',') ::: string;
+function ord ($c ::: string) ::: int;
+
 /** @kphp-extern-func-info generate-stub */
 function parse_str ($str ::: string, &$arr ::: mixed) ::: void; // TODO: why no ::: array? // TODO because it is an output parameter, input can have any type and it's ok.
 /** @kphp-extern-func-info generate-stub */
 function parse_url ($str ::: string, $component ::: int = -1) ::: mixed;
-/** @kphp-extern-func-info generate-stub */
+
 function strcasecmp ($str1 ::: string, $str2 ::: string) ::: int;
-/** @kphp-extern-func-info generate-stub */
+
 function strcmp ($str1 ::: string, $str2 ::: string) ::: int;
-/** @kphp-extern-func-info generate-stub */
+
 function stripslashes ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function strip_tags ($str ::: string, $allow ::: string|string[] = "") ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function strnatcmp ($str1 ::: string, $str2 ::: string) ::: int;
-/** @kphp-extern-func-info generate-stub */
+
 function strncmp ($str1 ::: string, $str2 ::: string, $len ::: int) ::: int;
 
-/** @kphp-extern-func-info generate-stub */
 function str_starts_with ($haystack ::: string, $needle ::: string) ::: bool;
-/** @kphp-extern-func-info generate-stub */
+
 function str_ends_with ($haystack ::: string, $needle ::: string) ::: bool;
 
-/** @kphp-extern-func-info generate-stub */
 function strtr ($subject ::: string, $replace_pairs ::: mixed, $third ::: mixed = TODO) ::: string;//TODO
 
 function str_replace ($search, $replace, $subject, &$count ::: int = TODO) ::: ^3 | string;
 
 function str_ireplace ($search, $replace, $subject, &$count ::: int = TODO) ::: ^3 | string;
-/** @kphp-extern-func-info generate-stub */
-function str_split ($str ::: string, $split_length ::: int = 1) ::: string[];
-/** @kphp-extern-func-info generate-stub */
-function strpos ($haystack ::: string, $needle ::: mixed, $offset ::: int = 0) ::: int | false;
-/** @kphp-extern-func-info generate-stub */
-function stripos ($haystack ::: string, $needle ::: mixed, $offset ::: int = 0) ::: int | false;
-/** @kphp-extern-func-info generate-stub */
-function strrpos ($haystack ::: string, $needle ::: mixed, $offset ::: int = 0) ::: int | false;
-/** @kphp-extern-func-info generate-stub */
-function strripos ($haystack ::: string, $needle ::: mixed, $offset ::: int = 0) ::: int | false;
-/** @kphp-extern-func-info generate-stub */
-function strstr ($haystack ::: string, $needle ::: mixed, $before_needle ::: bool = false) ::: string | false;
-/** @kphp-extern-func-info generate-stub */
-function stristr ($haystack ::: string, $needle ::: mixed, $before_needle ::: bool = false) ::: string | false;
-/** @kphp-extern-func-info generate-stub */
-function strrchr ($haystack ::: string, $needle ::: mixed) ::: string | false;
-/** @kphp-extern-func-info generate-stub */
-function strrev ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function strtolower ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function strtoupper ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n', $cut ::: bool = false) ::: string;
 
+function str_split ($str ::: string, $split_length ::: int = 1) ::: string[];
+
+function strpos ($haystack ::: string, $needle ::: mixed, $offset ::: int = 0) ::: int | false;
+
+function stripos ($haystack ::: string, $needle ::: mixed, $offset ::: int = 0) ::: int | false;
+
+function strrpos ($haystack ::: string, $needle ::: mixed, $offset ::: int = 0) ::: int | false;
+
+function strripos ($haystack ::: string, $needle ::: mixed, $offset ::: int = 0) ::: int | false;
+
+function strstr ($haystack ::: string, $needle ::: mixed, $before_needle ::: bool = false) ::: string | false;
+
+function stristr ($haystack ::: string, $needle ::: mixed, $before_needle ::: bool = false) ::: string | false;
+
+function strrchr ($haystack ::: string, $needle ::: mixed) ::: string | false;
+
+function strrev ($str ::: string) ::: string;
+
+function strtolower ($str ::: string) ::: string;
+
+function strtoupper ($str ::: string) ::: string;
+
+function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n', $cut ::: bool = false) ::: string;
+/** @kphp-extern-func-info generate-stub */
+function str_getcsv($str ::: string, string $delimiter ::: string = ",", string $enclosure ::: string = "\"", string $escape ::: string = "\\") ::: mixed[] | false;
 
 
 /**
  * @kphp-internal-param-readonly $str
  */
 function substr ($str ::: string, $start ::: int, $length ::: int = PHP_INT_MAX) ::: string | false;
-/** @kphp-extern-func-info generate-stub */
+
 function substr_count ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $length ::: int = PHP_INT_MAX) ::: int;
-/** @kphp-extern-func-info generate-stub */
+
 function substr_replace (string $str, string $replacement, $start ::: int, $length ::: int = PHP_INT_MAX) ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function substr_compare ($main_str ::: string, $str ::: string, $offset ::: int, $length ::: int = PHP_INT_MAX, $case_insensitivity ::: bool = false) ::: int | false;
 
 
@@ -80,9 +101,8 @@ define('STR_PAD_LEFT', 0);
 define('STR_PAD_RIGHT', 1);
 define('STR_PAD_BOTH', 2);
 
-/** @kphp-extern-func-info generate-stub */
 function str_pad ($input ::: string, $len ::: int, $pad_str ::: string = " ", $pad_type ::: int = STR_PAD_RIGHT) ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function str_repeat ($s ::: string, $multiplier ::: int) ::: string;
 
 
@@ -90,37 +110,27 @@ function str_repeat ($s ::: string, $multiplier ::: int) ::: string;
  * @kphp-internal-param-readonly $s
  */
 function trim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function ltrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function rtrim ($s ::: string, $what ::: string = " \n\r\t\v\0") ::: string;
 
 
 function similar_text ($first ::: string, $second ::: string, float &$percent = TODO) ::: int;
 
-
-/** @kphp-extern-func-info generate-stub */
 function mb_check_encoding ($str ::: string, $encoding ::: string = "cp1251") ::: bool;
-/** @kphp-extern-func-info generate-stub */
 function mb_strlen ($str ::: string, $encoding ::: string = "cp1251") ::: int;
-/** @kphp-extern-func-info generate-stub */
 function mb_strpos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "cp1251") ::: int | false;
-/** @kphp-extern-func-info generate-stub */
 function mb_stripos ($haystack ::: string, $needle ::: string, $offset ::: int = 0, $encoding ::: string = "cp1251") ::: int | false;
-/** @kphp-extern-func-info generate-stub */
 function mb_strtolower ($str ::: string, $encoding ::: string = "cp1251") ::: string;
-/** @kphp-extern-func-info generate-stub */
 function mb_strtoupper ($str ::: string, $encoding ::: string = "cp1251") ::: string;
-/** @kphp-extern-func-info generate-stub */
 function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = PHP_INT_MAX, $encoding ::: string = "cp1251") ::: string;
 
-/** @kphp-extern-func-info generate-stub */
-function lcfirst ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function ucfirst ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function ucwords ($str ::: string) ::: string;
 
+
+function lcfirst ($str ::: string) ::: string;
+function ucfirst ($str ::: string) ::: string;
+function ucwords ($str ::: string) ::: string;
 
 
 /**

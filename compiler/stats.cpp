@@ -44,6 +44,9 @@ void Stats::on_function_processed(FunctionPtr function) {
   if (function->is_resumable) {
     ++total_resumable_functions_;
   }
+  if (function->is_interruptible) {
+    ++total_interruptible_functions_;
+  }
   if (function->is_inline) {
     ++total_inline_functions_;
   }
@@ -78,6 +81,7 @@ void Stats::write_to(std::ostream &out, bool with_indent) const {
   out << indent << "functions.total_inline: " << total_inline_functions_ << std::endl;
   out << indent << "functions.total_throwing: " << total_throwing_functions_ << std::endl;
   out << indent << "functions.total_resumable: " << total_resumable_functions_ << std::endl;
+  out << indent << "functions.total_interruptible: " << total_interruptible_functions_ << std::endl;
   out << block_sep;
   out << indent << "memory.rss: " << memory_rss_ * 1024 << std::endl;
   out << indent << "memory.rss_peak: " << memory_rss_peak_ * 1024 << std::endl;

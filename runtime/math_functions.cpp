@@ -267,35 +267,6 @@ Optional<string> f$random_bytes(int64_t length) noexcept {
   return str;
 }
 
-mixed f$abs(const mixed &v) {
-  mixed num = v.to_numeric();
-  if (num.is_int()) {
-    return std::abs(num.to_int());
-  }
-  return fabs(num.to_float());
-}
-
-int64_t f$abs(int64_t v) {
-  return std::abs(v);
-}
-
-double f$abs(double v) {
-  return std::abs(v);
-}
-
-int64_t f$abs(const Optional<int64_t> &v) {
-  return f$abs(val(v));
-}
-
-int64_t f$abs(const Optional<bool> &v) {
-  return f$abs(static_cast<int64_t>(val(v)));
-}
-
-double f$abs(const Optional<double> &v) {
-  return f$abs(val(v));
-}
-
-
 
 string f$base_convert(const string &number, int64_t frombase, int64_t tobase) {
   if (frombase < 2 || frombase > 36) {
@@ -356,16 +327,6 @@ string f$base_convert(const string &number, int64_t frombase, int64_t tobase) {
   }
 
   return result;
-}
-
-double f$round(double v, int64_t precision) {
-  if (std::abs(precision) > 100) {
-    php_warning("Wrong parameter precision (%" PRIi64 ") in function round", precision);
-    return v;
-  }
-
-  double mul = pow(10.0, (double)precision);
-  return round(v * mul) / mul;
 }
 
 void init_math_functions() noexcept {

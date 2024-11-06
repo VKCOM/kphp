@@ -200,5 +200,6 @@ struct TokenLexerGlobal final : TokenLexer {
 };
 
 void lexer_init();
+void k2_lexer_init();
 std::vector<Token> php_text_to_tokens(vk::string_view text);
 std::vector<Token> phpdoc_to_tokens(vk::string_view text);

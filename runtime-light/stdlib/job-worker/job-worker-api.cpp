@@ -84,17 +84,17 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
 
 // ================================================================================================
 
-task_t<Optional<int64_t>> f$k2_job_worker_start(string request, double timeout) noexcept {
+task_t<Optional<int64_t>> f$job_worker_send_request(string request, double timeout) noexcept {
   const auto fork_id{co_await kphp_job_worker_start_impl(std::move(request), timeout, false)};
   co_return fork_id != INVALID_FORK_ID ? fork_id : false;
 }
 
-task_t<bool> f$k2_job_worker_start_no_reply(string request, double timeout) noexcept {
+task_t<bool> f$job_worker_send_noreply_request(string request, double timeout) noexcept {
   const auto fork_id{co_await kphp_job_worker_start_impl(std::move(request), timeout, true)};
   co_return fork_id != INVALID_FORK_ID;
 }
 
-task_t<array<Optional<int64_t>>> f$k2_job_worker_start_multi(array<string> requests, double timeout) noexcept {
+task_t<array<Optional<int64_t>>> f$job_worker_send_multi_request(array<string> requests, double timeout) noexcept {
   array<Optional<int64_t>> fork_ids{requests.size()};
   for (const auto &it : requests) {
     const auto fork_id{co_await kphp_job_worker_start_impl(it.get_value(), timeout, false)};
@@ -105,7 +105,7 @@ task_t<array<Optional<int64_t>>> f$k2_job_worker_start_multi(array<string> reque
 
 // ================================================================================================
 
-task_t<string> f$k2_job_worker_fetch_request() noexcept {
+task_t<string> f$job_worker_fetch_request() noexcept {
   if (!f$is_kphp_job_workers_enabled()) {
     php_warning("couldn't fetch job worker request: job workers are disabled");
     co_return string{};
@@ -119,7 +119,7 @@ task_t<string> f$k2_job_worker_fetch_request() noexcept {
   co_return std::exchange(jw_server_ctx.body, string{});
 }
 
-task_t<int64_t> f$k2_job_worker_store_response(string response) noexcept {
+task_t<int64_t> f$job_worker_store_response(string response) noexcept {
   auto &component_ctx{*get_component_context()};
   auto &jw_server_ctx{JobWorkerServerComponentContext::get()};
   if (!f$is_kphp_job_workers_enabled()) { // workers are enabled

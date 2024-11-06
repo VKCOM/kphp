@@ -38,17 +38,14 @@ function atan ($v ::: float) ::: float;
  */
 function atan2 ($y ::: float, $x ::: float) ::: float;
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-pure-function
  */
 function ceil ($v ::: float) ::: float;
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-pure-function
  */
 function cos ($v ::: float) ::: float;
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-pure-function
  */
 function deg2rad ($v ::: float) ::: float;
@@ -58,7 +55,6 @@ function deg2rad ($v ::: float) ::: float;
  */
 function exp ($v ::: float) ::: float;
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-pure-function
  */
 function floor ($v ::: float) ::: float;
@@ -68,12 +64,10 @@ function floor ($v ::: float) ::: float;
  */
 function fmod ($x ::: float, $y ::: float) ::: float;
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-pure-function
  */
 function log ($v ::: float, $base ::: float = 2.7182818284590452353602874713527) ::: float;
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-pure-function
  */
 function round ($v ::: float, $precision ::: int = 0) ::: float;
@@ -83,7 +77,6 @@ function round ($v ::: float, $precision ::: int = 0) ::: float;
  */
 function sin ($v ::: float) ::: float;
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-pure-function
  */
 function sqrt ($v ::: float) ::: float;
@@ -93,7 +86,6 @@ function sqrt ($v ::: float) ::: float;
  */
 function tan ($v ::: float) ::: float;
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-pure-function
  */
 function pi() ::: float;
@@ -166,4 +158,6 @@ function is_infinite ($v ::: float) ::: bool;
 function is_nan ($v ::: float) ::: bool;
 /** @kphp-extern-func-info generate-stub */
 function random_int($l ::: int, $r ::: int) ::: int | false;
+/** @kphp-extern-func-info generate-stub */
+function random_bytes($length ::: int) ::: string | false;
 
