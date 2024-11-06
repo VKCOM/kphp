@@ -190,7 +190,7 @@ void fix_ub_dfs(VertexPtr v, UBMergeData *data, VertexPtr parent = VertexPtr()) 
     Location save_location = stage::get_location();
 
     int res = 0;
-    bool do_not_check = vk::any_of_equal(v->type(), op_ternary, op_log_or, op_log_and, op_log_or_let, op_log_and_let, op_unset);
+    bool do_not_check = vk::any_of_equal(v->type(), op_ternary, op_log_or, op_log_and, op_log_or_let, op_log_and_let, op_unset, op_set_with_ret);
 
     for (auto i : *v) {
       UBMergeData node_data;

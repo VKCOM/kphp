@@ -130,6 +130,7 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
 
       kphp_assert_msg(method, fmt::format("Class {} does not implement offsetSet", klass->name).c_str());
       if (set_op->rl_type == val_none) {
+        a->rl_type = val_r;
         auto new_call = VertexAdaptor<op_func_call>::create(a, VertexAdaptor<op_null>::create(), c).set_location(set_op->get_location());
 
         new_call->str_val = method->global_name();
@@ -140,6 +141,7 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
 
         result = new_call;
       } else {
+        a->rl_type = val_r;
         auto z = VertexAdaptor<op_set_with_ret>::create(VertexAdaptor<op_null>::create(), c, a);
         z->set_method = method->function;
         z.set_location(set_op);
@@ -163,7 +165,6 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
       auto klass = tinf::get_type(a)->class_type();
       kphp_assert_msg(klass, "bad klass");
 
-      // TODO doesn't it have the problem with that some parent classes are not linked in chain yet?
       const auto *method = klass->get_instance_method("offsetSet");
 
       if (!method) {
@@ -172,7 +173,7 @@ VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op)
       }
 
 
-      // TODO assume here that key is present
+      a->rl_type = val_r;
       auto new_call = VertexAdaptor<op_func_call>::create(a, b, c).set_location(set_op->get_location());
       
       new_call->str_val = method->global_name();

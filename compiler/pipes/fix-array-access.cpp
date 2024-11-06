@@ -10,6 +10,7 @@
 #include "compiler/data/vertex-adaptor.h"
 #include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
+#include "compiler/operation.h"
 #include <cassert>
 
 static VertexPtr on_set(VertexAdaptor<op_set> set) {
@@ -39,6 +40,7 @@ static VertexPtr on_set(VertexAdaptor<op_set> set) {
 
       auto key = func_call->args()[1];
 
+      obj_arg.set_rl_type(val_r);
       auto zzz = VertexAdaptor<op_set_with_ret>::create(key, sub_val, obj_arg);
       zzz->set_method = method->function;
 
