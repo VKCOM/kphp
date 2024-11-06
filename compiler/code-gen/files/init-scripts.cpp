@@ -115,10 +115,10 @@ struct RunInterruptedFunction {
   void compile(CodeGenerator &W) const {
     std::string await_prefix = function->is_interruptible ? "co_await " : "";
     std::string image_kind = G->is_output_mode_k2_cli()         ? "ImageKind::CLI"
-                                 : G->is_output_mode_k2_server()    ? "ImageKind::Server"
-                                 : G->is_output_mode_k2_oneshot()   ? "ImageKind::Oneshot"
-                                 : G->is_output_mode_k2_multishot() ? "ImageKind::Multishot"
-                                                                    : "ImageKind::Invalid";
+                             : G->is_output_mode_k2_server()    ? "ImageKind::Server"
+                             : G->is_output_mode_k2_oneshot()   ? "ImageKind::Oneshot"
+                             : G->is_output_mode_k2_multishot() ? "ImageKind::Multishot"
+                                                                : "ImageKind::Invalid";
 
     std::string script_start = "co_await InstanceState::get().run_instance_prologue<" + image_kind + ">();";
     std::string script_finish = "co_await InstanceState::get().run_instance_epilogue();";
