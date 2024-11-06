@@ -28,13 +28,13 @@ template<class T>
 inline T f$min(const T &arg1) noexcept;
 
 template<class T, class... Args>
-inline T f$min(const T &arg1, const T &arg2, Args&&... args) noexcept;
+inline T f$min(const T &arg1, const T &arg2, Args &&...args) noexcept;
 
 template<class T>
 inline T f$max(const T &arg1) noexcept;
 
 template<class T, class... Args>
-inline T f$max(const T &arg1, const T &arg2, Args&&... args) noexcept;
+inline T f$max(const T &arg1, const T &arg2, Args &&...args) noexcept;
 
 inline double f$pi() noexcept;
 
@@ -118,8 +118,8 @@ T f$min(const T &arg1) noexcept {
   return arg1;
 }
 
-template<class T, class ...Args>
-T f$min(const T &arg1, const T &arg2, Args&& ...args) noexcept {
+template<class T, class... Args>
+T f$min(const T &arg1, const T &arg2, Args &&...args) noexcept {
   return f$min<T>(lt(arg1, arg2) ? arg1 : arg2, std::forward<Args>(args)...);
 }
 
@@ -128,8 +128,8 @@ T f$max(const T &arg1) noexcept {
   return arg1;
 }
 
-template<class T, class ...Args>
-T f$max(const T &arg1, const T &arg2, Args&& ...args) noexcept {
+template<class T, class... Args>
+T f$max(const T &arg1, const T &arg2, Args &&...args) noexcept {
   return f$max<T>(lt(arg2, arg1) ? arg1 : arg2, std::forward<Args>(args)...);
 }
 

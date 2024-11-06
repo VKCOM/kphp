@@ -33,5 +33,3 @@ int64_t f$abs(const Optional<bool> &v) noexcept {
 double f$abs(const Optional<double> &v) noexcept {
   return f$abs(val(v));
 }
-
-
