@@ -28,7 +28,7 @@ task_t<int64_t> f$job_worker_store_response(string response) noexcept;
 // === Misc =======================================================================================
 
 inline bool f$is_kphp_job_workers_enabled() noexcept {
-  return get_component_context()->component_kind() == ComponentKind::Server;
+  return get_component_context()->image_kind() == ImageKind::Server;
 }
 
 inline int64_t f$get_job_workers_number() noexcept {

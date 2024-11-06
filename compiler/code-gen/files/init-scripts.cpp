@@ -109,15 +109,16 @@ void StaticInit::compile(CodeGenerator &W) const {
 
 struct RunInterruptedFunction {
   FunctionPtr function;
-  RunInterruptedFunction(FunctionPtr function) : function(function) {}
+  RunInterruptedFunction(FunctionPtr function)
+    : function(function) {}
 
   void compile(CodeGenerator &W) const {
     std::string await_prefix = function->is_interruptible ? "co_await " : "";
-    std::string component_kind = G->is_output_mode_k2_cli()         ? "ComponentKind::CLI"
-                                 : G->is_output_mode_k2_server()    ? "ComponentKind::Server"
-                                 : G->is_output_mode_k2_oneshot()   ? "ComponentKind::Oneshot"
-                                 : G->is_output_mode_k2_multishot() ? "ComponentKind::Multishot"
-                                                                    : "ComponentKind::Invalid";
+    std::string component_kind = G->is_output_mode_k2_cli()         ? "ImageKind::CLI"
+                                 : G->is_output_mode_k2_server()    ? "ImageKind::Server"
+                                 : G->is_output_mode_k2_oneshot()   ? "ImageKind::Oneshot"
+                                 : G->is_output_mode_k2_multishot() ? "ImageKind::Multishot"
+                                                                    : "ImageKind::Invalid";
 
     std::string script_start = "co_await get_component_context()->run_component_prologue<" + component_kind + ">();";
     std::string script_finish = "co_await get_component_context()->run_component_epilogue();";

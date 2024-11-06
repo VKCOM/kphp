@@ -48,10 +48,10 @@ void ComponentState::init_script_execution() noexcept {
   scheduler.suspend(std::make_pair(main_task_.get_handle(), WaitEvent::Rechedule{}));
 }
 
-template<ComponentKind kind>
+template<ImageKind kind>
 task_t<void> ComponentState::run_component_prologue() noexcept {
-  static_assert(kind != ComponentKind::Invalid);
-  component_kind_ = kind;
+  static_assert(kind != ImageKind::Invalid);
+  image_kind_ = kind;
 
   // common initialization
   auto &superglobals{php_script_mutable_globals_singleton.get_superglobals()};
@@ -75,20 +75,20 @@ task_t<void> ComponentState::run_component_prologue() noexcept {
   // TODO sapi, env
 
   // specific initialization
-  if constexpr (kind == ComponentKind::CLI) {
+  if constexpr (kind == ImageKind::CLI) {
     standard_stream_ = co_await init_kphp_cli_component();
-  } else if constexpr (kind == ComponentKind::Server) {
+  } else if constexpr (kind == ImageKind::Server) {
     standard_stream_ = co_await init_kphp_server_component();
   }
 }
 
-template task_t<void> ComponentState::run_component_prologue<ComponentKind::CLI>();
-template task_t<void> ComponentState::run_component_prologue<ComponentKind::Server>();
-template task_t<void> ComponentState::run_component_prologue<ComponentKind::Oneshot>();
-template task_t<void> ComponentState::run_component_prologue<ComponentKind::Multishot>();
+template task_t<void> ComponentState::run_component_prologue<ImageKind::CLI>();
+template task_t<void> ComponentState::run_component_prologue<ImageKind::Server>();
+template task_t<void> ComponentState::run_component_prologue<ImageKind::Oneshot>();
+template task_t<void> ComponentState::run_component_prologue<ImageKind::Multishot>();
 
 task_t<void> ComponentState::run_component_epilogue() noexcept {
-  if (component_kind_ == ComponentKind::Oneshot || component_kind_ == ComponentKind::Multishot) {
+  if (image_kind_ == ImageKind::Oneshot || image_kind_ == ImageKind::Multishot) {
     co_return;
   }
   // do not flush output buffers if we are in job worker

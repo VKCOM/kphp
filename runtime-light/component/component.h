@@ -37,13 +37,13 @@ using CoroutineScheduler = SimpleCoroutineScheduler;
 static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
 
 /**
- * Supported kinds of KPHP components:
+ * Supported kinds of KPHP images:
  * 1. CLI — works the same way as regular PHP script does
  * 2. Server — automatically accepts a stream and expects it to contain either http or job worker request
  * 3. Oneshot — can only accept one incoming stream
  * 4. Multishot — can accept any number of incoming streams
  */
-enum class ComponentKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
+enum class ImageKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
 
 struct ComponentState {
   template<typename T>
@@ -66,13 +66,13 @@ struct ComponentState {
 
   void init_script_execution() noexcept;
 
-  template<ComponentKind>
+  template<ImageKind>
   task_t<void> run_component_prologue() noexcept;
 
   task_t<void> run_component_epilogue() noexcept;
 
-  ComponentKind component_kind() const noexcept {
-    return component_kind_;
+  ImageKind image_kind() const noexcept {
+    return image_kind_;
   }
 
   void process_platform_updates() noexcept;
@@ -125,7 +125,7 @@ struct ComponentState {
 private:
   task_t<void> main_task_;
 
-  ComponentKind component_kind_{ComponentKind::Invalid};
+  ImageKind image_kind_{ImageKind::Invalid};
   uint64_t standard_stream_{INVALID_PLATFORM_DESCRIPTOR};
   deque<uint64_t> incoming_streams_;
   unordered_set<uint64_t> opened_streams_;
