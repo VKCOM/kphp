@@ -19,9 +19,9 @@
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/component-api.h"
-#include "runtime-light/stdlib/rpc/rpc-context.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
+#include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace rpc_impl_ {
@@ -359,7 +359,7 @@ string f$fetch_string() noexcept {
 // === Rpc Query ==================================================================================
 
 task_t<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> tl_objects, double timeout, bool ignore_answer,
-                                      class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info, bool need_responses_extra_info) noexcept {
+                                           class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info, bool need_responses_extra_info) noexcept {
   if (ignore_answer && need_responses_extra_info) {
     php_warning("Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
   }

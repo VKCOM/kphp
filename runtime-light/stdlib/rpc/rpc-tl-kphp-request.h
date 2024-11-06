@@ -7,7 +7,7 @@
 #include <cstdint>
 
 #include "runtime-light/allocator/allocator.h"
-#include "runtime-light/stdlib/rpc/rpc-context.h"
+#include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"
 

@@ -16,7 +16,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/core/globals/php-script-globals.h"
-#include "runtime-light/server/http/http-server-context.h"
+#include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"

@@ -5,7 +5,7 @@
 #pragma once
 
 #include "runtime-light/core/globals/php-script-globals.h"
-#include "runtime-light/server/job-worker/job-worker-server-context.h"
+#include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/tl/tl-functions.h"
 

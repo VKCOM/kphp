@@ -7,7 +7,7 @@
 #include <array>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/stdlib/rpc/rpc-context.h"
+#include "runtime-light/stdlib/rpc/rpc-state.h"
 
 void CurrentTlQuery::reset() noexcept {
   current_tl_function_name = string{};

@@ -6,8 +6,8 @@
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/rpc/rpc-context.h"
-#include "runtime-light/stdlib/string/string-context.h"
+#include "runtime-light/stdlib/rpc/rpc-state.h"
+#include "runtime-light/stdlib/string/string-state.h"
 
 struct ImageState final : private vk::not_copyable {
   char *c_linear_mem;

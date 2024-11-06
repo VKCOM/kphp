@@ -6,7 +6,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/stdlib/crypto/crypto-context.h"
+#include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/tl/tl-types.h"
 
 task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept;

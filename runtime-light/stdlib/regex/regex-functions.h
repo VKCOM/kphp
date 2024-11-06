@@ -5,7 +5,7 @@
 #pragma once
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/regex/regex-context.h"
+#include "runtime-light/stdlib/regex/regex-state.h"
 
 class regexp final : private vk::not_copyable {
 public:

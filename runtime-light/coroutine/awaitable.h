@@ -17,7 +17,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/state/instance-state.h"
-#include "runtime-light/stdlib/fork/fork-context.h"
+#include "runtime-light/stdlib/fork/fork-state.h"
 
 template<class T>
 concept Awaitable = requires(T awaitable, std::coroutine_handle<> coro) {

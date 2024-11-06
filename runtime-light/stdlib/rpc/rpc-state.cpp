@@ -2,7 +2,7 @@
 //  Copyright (c) 2024 LLC «V Kontakte»
 //  Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/stdlib/rpc/rpc-context.h"
+#include "runtime-light/stdlib/rpc/rpc-state.h"
 
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"

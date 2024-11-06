@@ -2,7 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/server/job-worker/job-worker-server-context.h"
+#include "runtime-light/server/job-worker/job-worker-server-state.h"
 
 #include "runtime-light/state/instance-state.h"
 

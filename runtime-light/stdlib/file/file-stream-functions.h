@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include "runtime-light/stdlib/file/file-stream-context.h"
+#include "runtime-light/stdlib/file/file-stream-state.h"
 
 inline mixed f$stream_socket_client(const string &, mixed & = FileStreamInstanceState::get().error_number_dummy,
                                     mixed & = FileStreamInstanceState::get().error_description_dummy, double = -1, int64_t = 1, const mixed & = mixed()) {

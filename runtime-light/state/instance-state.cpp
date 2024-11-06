@@ -18,7 +18,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
-#include "runtime-light/server/job-worker/job-worker-server-context.h"
+#include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/state/init-functions.h"
 #include "runtime-light/streams/streams.h"
 

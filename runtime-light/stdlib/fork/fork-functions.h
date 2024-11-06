@@ -13,7 +13,7 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/stdlib/fork/fork-context.h"
+#include "runtime-light/stdlib/fork/fork-state.h"
 
 namespace fork_api_impl_ {
 
@@ -42,7 +42,8 @@ requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>
 }
 
 template<typename T>
-requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(Optional<int64_t> fork_id_opt, double timeout = -1.0) noexcept {
+requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(Optional<int64_t> fork_id_opt,
+                                                                                                          double timeout = -1.0) noexcept {
   co_return co_await f$wait<T>(fork_id_opt.has_value() ? fork_id_opt.val() : INVALID_FORK_ID, timeout);
 }
 
@@ -84,7 +85,7 @@ inline Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1
   php_critical_error("call to unsupported function");
 }
 
-inline bool f$wait_concurrently (int64_t fork_id) {
+inline bool f$wait_concurrently(int64_t fork_id) {
   php_critical_error("call to unsupported function");
 }
 

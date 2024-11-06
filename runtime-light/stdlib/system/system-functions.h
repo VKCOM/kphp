@@ -5,7 +5,7 @@
 #pragma once
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/stdlib/system/system-context.h"
+#include "runtime-light/stdlib/system/system-state.h"
 
 template<typename T>
 int64_t f$estimate_memory_usage(const T &) {
@@ -36,6 +36,7 @@ inline int64_t f$system(const string &command, int64_t &result_code = SystemInst
   php_critical_error("call to unsupported function");
 }
 
-inline Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = {}, Optional<int64_t> &rest_index = SystemInstanceState::get().rest_index_dummy) {
+inline Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = {},
+                                       Optional<int64_t> &rest_index = SystemInstanceState::get().rest_index_dummy) {
   php_critical_error("call to unsupported function");
 }

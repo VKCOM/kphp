@@ -6,7 +6,7 @@
 
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
-#include "runtime-light/stdlib/rpc/rpc-context.h"
+#include "runtime-light/stdlib/rpc/rpc-state.h"
 
 const char *C$KphpRpcRequestsExtraInfo::get_class() const noexcept {
   return R"(KphpRpcRequestsExtraInfo)";
