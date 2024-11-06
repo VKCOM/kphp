@@ -30,7 +30,7 @@
 #include "runtime-light/stdlib/string/string-context.h"
 #include "runtime-light/stdlib/system/system-context.h"
 
-constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
+inline constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
 
 // Coroutine scheduler type. Change it here if you want to use another scheduler
 using CoroutineScheduler = SimpleCoroutineScheduler;
