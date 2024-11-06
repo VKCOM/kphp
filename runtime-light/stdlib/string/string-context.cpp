@@ -8,7 +8,7 @@
 #include "runtime-light/component/image.h"
 #include "runtime-light/utils/context.h"
 
-StringComponentContext &StringComponentContext::get() noexcept {
+StringInstanceState &StringInstanceState::get() noexcept {
   return get_component_context()->string_instance_state;
 }
 

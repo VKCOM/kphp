@@ -115,12 +115,12 @@ struct InstanceState {
   JobWorkerClientInstanceState job_worker_client_instance_state{};
   JobWorkerServerInstanceState job_worker_server_instance_state{};
 
-  RegexComponentContext regex_instance_state{};
-  CurlComponentContext curl_instance_state{};
-  CryptoComponentContext crypto_instance_state{};
-  StringComponentContext string_instance_state{};
-  SystemComponentContext system_instance_state{};
-  FileStreamComponentContext file_stream_instance_state{};
+  RegexInstanceState regex_instance_state{};
+  CurlInstanceState curl_instance_state{};
+  CryptoInstanceState crypto_instance_state{};
+  StringInstanceState string_instance_state{};
+  SystemInstanceState system_instance_state{};
+  FileStreamInstanceState file_stream_instance_state{};
 
 private:
   task_t<void> main_task_;

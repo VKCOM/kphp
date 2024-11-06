@@ -6,9 +6,9 @@
 
 #include "runtime-common/core/runtime-core.h"
 
-struct FileStreamComponentContext {
+struct FileStreamInstanceState {
   mixed error_number_dummy;
   mixed error_description_dummy;
 
-  static FileStreamComponentContext &get() noexcept;
+  static FileStreamInstanceState &get() noexcept;
 };

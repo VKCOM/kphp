@@ -32,10 +32,10 @@ void f$kphp_extended_instance_cache_metrics_init(F &&callback) {
   php_critical_error("call to unsupported function");
 }
 
-inline int64_t f$system(const string &command, int64_t &result_code = SystemComponentContext::get().result_code_dummy) {
+inline int64_t f$system(const string &command, int64_t &result_code = SystemInstanceState::get().result_code_dummy) {
   php_critical_error("call to unsupported function");
 }
 
-inline Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = {}, Optional<int64_t> &rest_index = SystemComponentContext::get().rest_index_dummy) {
+inline Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = {}, Optional<int64_t> &rest_index = SystemInstanceState::get().rest_index_dummy) {
   php_critical_error("call to unsupported function");
 }

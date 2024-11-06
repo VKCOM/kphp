@@ -6,5 +6,5 @@
 
 #include "runtime-common/stdlib/string/string-context.h"
 
-using StringComponentContext = StringLibContext;
+using StringInstanceState = StringLibContext;
 using StringImageState = StringLibConstants;

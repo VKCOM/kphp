@@ -6,8 +6,8 @@
 
 #include "runtime-common/core/runtime-core.h"
 
-struct CryptoComponentContext final : private vk::not_copyable {
+struct CryptoInstanceState final : private vk::not_copyable {
   string default_tag_dummy;
 
-  static CryptoComponentContext &get() noexcept;
+  static CryptoInstanceState &get() noexcept;
 };

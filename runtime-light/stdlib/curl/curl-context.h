@@ -6,8 +6,8 @@
 
 #include <cstdint>
 
-struct CurlComponentContext {
+struct CurlInstanceState {
   int64_t curl_multi_info_read_msgs_in_queue_stub{};
 
-  static CurlComponentContext &get() noexcept;
+  static CurlInstanceState &get() noexcept;
 };

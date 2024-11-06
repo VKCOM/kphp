@@ -6,6 +6,6 @@
 
 #include "runtime-light/component/component.h"
 
-SystemComponentContext &SystemComponentContext::get() noexcept {
+SystemInstanceState &SystemInstanceState::get() noexcept {
   return get_component_context()->system_instance_state;
 }

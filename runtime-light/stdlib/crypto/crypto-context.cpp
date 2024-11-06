@@ -6,6 +6,6 @@
 
 #include "runtime-light/component/component.h"
 
-CryptoComponentContext &CryptoComponentContext::get() noexcept {
+CryptoInstanceState &CryptoInstanceState::get() noexcept {
   return get_component_context()->crypto_instance_state;
 }

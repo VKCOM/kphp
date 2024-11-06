@@ -6,6 +6,6 @@
 
 #include "runtime-light/component/component.h"
 
-RegexComponentContext &RegexComponentContext::get() noexcept {
+RegexInstanceState &RegexInstanceState::get() noexcept {
   return get_component_context()->regex_instance_state;
 }

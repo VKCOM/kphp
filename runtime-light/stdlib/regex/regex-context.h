@@ -6,8 +6,8 @@
 
 #include <cstdint>
 
-struct RegexComponentContext {
+struct RegexInstanceState {
   int64_t preg_replace_count_dummy{};
 
-  static RegexComponentContext &get() noexcept;
+  static RegexInstanceState &get() noexcept;
 };
