@@ -110,7 +110,7 @@ struct InstanceState {
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
   RuntimeContext runtime_context;
-  RpcComponentContext rpc_instance_state;
+  RpcInstanceState rpc_instance_state;
   HttpServerComponentContext http_server_instance_state{};
   JobWorkerClientComponentContext job_worker_client_instance_state{};
   JobWorkerServerComponentContext job_worker_server_instance_state{};

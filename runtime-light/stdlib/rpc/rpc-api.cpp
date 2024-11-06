@@ -98,7 +98,7 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
 }
 
 task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
-  auto &rpc_ctx{RpcComponentContext::get()};
+  auto &rpc_ctx{RpcInstanceState::get()};
   // prepare RPC request
   string request_buf{};
   size_t request_size{rpc_ctx.rpc_buffer.size()};
@@ -138,7 +138,7 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
     const auto response{(co_await wait_with_timeout_t{task_t<string>::awaiter_t{std::addressof(fetch_task)}, timeout}).value_or(string{})};
     // update response extra info if needed
     if (collect_responses_extra_info) {
-      auto &extra_info_map{RpcComponentContext::get().rpc_responses_extra_info};
+      auto &extra_info_map{RpcInstanceState::get().rpc_responses_extra_info};
       if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) {
         const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
         it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
@@ -160,7 +160,7 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
 }
 
 task_t<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, double timeout, bool collect_resp_extra_info, bool ignore_answer) noexcept {
-  auto &rpc_ctx{RpcComponentContext::get()};
+  auto &rpc_ctx{RpcInstanceState::get()};
 
   if (!tl_object.is_array()) {
     rpc_ctx.current_query.raise_storing_error("not an array passed to function rpc_tl_query");
@@ -182,7 +182,7 @@ task_t<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, double
 
 task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest &rpc_request, double timeout, bool collect_responses_extra_info,
                                                  bool ignore_answer) noexcept {
-  auto &rpc_ctx{RpcComponentContext::get()};
+  auto &rpc_ctx{RpcInstanceState::get()};
 
   if (rpc_request.empty()) {
     rpc_ctx.current_query.raise_storing_error("query function is null");
@@ -212,7 +212,7 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
     co_return make_fetch_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
   }
 
-  auto &rpc_ctx{RpcComponentContext::get()};
+  auto &rpc_ctx{RpcInstanceState::get()};
   class_instance<RpcTlQuery> rpc_query{};
   int64_t response_waiter_fork_id{INVALID_FORK_ID};
 
@@ -259,7 +259,7 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
     co_return error_factory.make_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
   }
 
-  auto &rpc_ctx{RpcComponentContext::get()};
+  auto &rpc_ctx{RpcInstanceState::get()};
   class_instance<RpcTlQuery> rpc_query{};
   int64_t response_waiter_fork_id{INVALID_FORK_ID};
 
@@ -309,50 +309,50 @@ bool f$store_int(int64_t v) noexcept {
   if (unlikely(is_int32_overflow(v))) {
     php_warning("Got int32 overflow on storing '%" PRIi64 "', the value will be casted to '%d'", v, static_cast<int32_t>(v));
   }
-  RpcComponentContext::get().rpc_buffer.store_trivial<int32_t>(v);
+  RpcInstanceState::get().rpc_buffer.store_trivial<int32_t>(v);
   return true;
 }
 
 bool f$store_long(int64_t v) noexcept {
-  RpcComponentContext::get().rpc_buffer.store_trivial<int64_t>(v);
+  RpcInstanceState::get().rpc_buffer.store_trivial<int64_t>(v);
   return true;
 }
 
 bool f$store_float(double v) noexcept {
-  RpcComponentContext::get().rpc_buffer.store_trivial<float>(v);
+  RpcInstanceState::get().rpc_buffer.store_trivial<float>(v);
   return true;
 }
 
 bool f$store_double(double v) noexcept {
-  RpcComponentContext::get().rpc_buffer.store_trivial<double>(v);
+  RpcInstanceState::get().rpc_buffer.store_trivial<double>(v);
   return true;
 }
 
 bool f$store_string(const string &v) noexcept {
-  RpcComponentContext::get().rpc_buffer.store_string(std::string_view{v.c_str(), v.size()});
+  RpcInstanceState::get().rpc_buffer.store_string(std::string_view{v.c_str(), v.size()});
   return true;
 }
 
 // === Rpc Fetch ==================================================================================
 
 int64_t f$fetch_int() noexcept {
-  return static_cast<int64_t>(RpcComponentContext::get().rpc_buffer.fetch_trivial<int32_t>().value_or(0));
+  return static_cast<int64_t>(RpcInstanceState::get().rpc_buffer.fetch_trivial<int32_t>().value_or(0));
 }
 
 int64_t f$fetch_long() noexcept {
-  return RpcComponentContext::get().rpc_buffer.fetch_trivial<int64_t>().value_or(0);
+  return RpcInstanceState::get().rpc_buffer.fetch_trivial<int64_t>().value_or(0);
 }
 
 double f$fetch_double() noexcept {
-  return RpcComponentContext::get().rpc_buffer.fetch_trivial<double>().value_or(0.0);
+  return RpcInstanceState::get().rpc_buffer.fetch_trivial<double>().value_or(0.0);
 }
 
 double f$fetch_float() noexcept {
-  return static_cast<double>(RpcComponentContext::get().rpc_buffer.fetch_trivial<float>().value_or(0));
+  return static_cast<double>(RpcInstanceState::get().rpc_buffer.fetch_trivial<float>().value_or(0));
 }
 
 string f$fetch_string() noexcept {
-  const std::string_view str{RpcComponentContext::get().rpc_buffer.fetch_string()};
+  const std::string_view str{RpcInstanceState::get().rpc_buffer.fetch_string()};
   return {str.data(), static_cast<string::size_type>(str.length())};
 }
 
@@ -391,7 +391,7 @@ task_t<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noex
 // === Rpc Misc ==================================================================================
 
 void f$rpc_clean() noexcept {
-  RpcComponentContext::get().rpc_buffer.clean();
+  RpcInstanceState::get().rpc_buffer.clean();
 }
 
 // === Misc =======================================================================================
@@ -406,11 +406,11 @@ bool is_int32_overflow(int64_t v) noexcept {
 
 void store_raw_vector_double(const array<double> &vector) noexcept { // TODO: didn't we forget vector's length?
   const std::string_view vector_view{reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count()};
-  RpcComponentContext::get().rpc_buffer.store_bytes(vector_view);
+  RpcInstanceState::get().rpc_buffer.store_bytes(vector_view);
 }
 
 void fetch_raw_vector_double(array<double> &vector, int64_t num_elems) noexcept {
-  auto &rpc_buf{RpcComponentContext::get().rpc_buffer};
+  auto &rpc_buf{RpcInstanceState::get().rpc_buffer};
   const auto len_bytes{sizeof(double) * num_elems};
   if (rpc_buf.remaining() < len_bytes) {
     return; // TODO: error handling

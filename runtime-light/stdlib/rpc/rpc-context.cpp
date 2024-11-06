@@ -8,7 +8,7 @@
 #include "runtime-light/component/image.h"
 #include "runtime-light/utils/context.h"
 
-RpcComponentContext &RpcComponentContext::get() noexcept {
+RpcInstanceState &RpcInstanceState::get() noexcept {
   return get_component_context()->rpc_instance_state;
 }
 

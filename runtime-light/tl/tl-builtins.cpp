@@ -14,11 +14,11 @@ void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr> &gen$ht, t
 }
 
 int32_t tl_parse_save_pos() {
-  return static_cast<int32_t>(RpcComponentContext::get().rpc_buffer.pos());
+  return static_cast<int32_t>(RpcInstanceState::get().rpc_buffer.pos());
 }
 
 bool tl_parse_restore_pos(int32_t pos) {
-  auto &rpc_buf{RpcComponentContext::get().rpc_buffer};
+  auto &rpc_buf{RpcInstanceState::get().rpc_buffer};
   if (pos < 0 || pos > rpc_buf.pos()) {
     return false;
   }
