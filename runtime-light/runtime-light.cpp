@@ -26,25 +26,25 @@ ImageState *vk_k2_create_image_state(const struct PlatformCtx *pt_ctx) {
   return mutable_image_state;
 }
 
-ComponentState *vk_k2_create_component_state(const struct ImageState *image_state, const struct PlatformCtx *pt_ctx) {
+InstanceState *vk_k2_create_component_state(const struct ImageState *image_state, const struct PlatformCtx *pt_ctx) {
   // Note that in vk_k2_create_component_state available only allocator and logs from pt_ctx
   imageState = image_state;
   platformCtx = pt_ctx;
   php_debug("create component state on \"%s\"", vk_k2_describe()->image_name);
-  char *buffer = static_cast<char *>(platformCtx->allocator.alloc(sizeof(ComponentState)));
+  char *buffer = static_cast<char *>(platformCtx->allocator.alloc(sizeof(InstanceState)));
   if (buffer == nullptr) {
     php_warning("cannot allocate enough memory for ComponentState");
     return nullptr;
   }
-  componentState = new (buffer) ComponentState();
+  componentState = new (buffer) InstanceState();
   componentState->init_script_execution();
-  ComponentState *component_state = componentState;
+  InstanceState *component_state = componentState;
   php_debug("finish component state creation on \"%s\"", vk_k2_describe()->image_name);
   reset_thread_locals();
   return component_state;
 }
 
-PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, ComponentState *component_ctx) {
+PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, InstanceState *component_ctx) {
   imageState = image_state;
   platformCtx = pt_ctx;
   componentState = component_ctx;

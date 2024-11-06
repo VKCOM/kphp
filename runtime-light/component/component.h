@@ -45,14 +45,14 @@ static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
  */
 enum class ImageKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
 
-struct ComponentState {
+struct InstanceState {
   template<typename T>
   using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
 
   template<typename T>
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
 
-  ComponentState() noexcept
+  InstanceState() noexcept
     : runtime_allocator(INIT_RUNTIME_ALLOCATOR_SIZE, 0)
     , scheduler(runtime_allocator.memory_resource)
     , fork_component_context(runtime_allocator.memory_resource)
@@ -62,14 +62,14 @@ struct ComponentState {
     , opened_streams_(unordered_set<uint64_t>::allocator_type{runtime_allocator.memory_resource})
     , pending_updates_(unordered_set<uint64_t>::allocator_type{runtime_allocator.memory_resource}) {}
 
-  ~ComponentState() = default;
+  ~InstanceState() = default;
 
   void init_script_execution() noexcept;
 
   template<ImageKind>
-  task_t<void> run_component_prologue() noexcept;
+  task_t<void> run_instance_prologue() noexcept;
 
-  task_t<void> run_component_epilogue() noexcept;
+  task_t<void> run_instance_epilogue() noexcept;
 
   ImageKind image_kind() const noexcept {
     return image_kind_;

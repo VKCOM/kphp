@@ -23,7 +23,7 @@ task_t<void> f$exit(const mixed &v) noexcept { // TODO: make it synchronous
     exit_code = 1;
   }
   auto &component_ctx{*get_component_context()};
-  co_await component_ctx.run_component_epilogue();
+  co_await component_ctx.run_instance_epilogue();
   component_ctx.poll_status =
     component_ctx.poll_status != PollStatus::PollFinishedError && exit_code == 0 ? PollStatus::PollFinishedOk : PollStatus::PollFinishedError;
   component_ctx.release_all_streams();

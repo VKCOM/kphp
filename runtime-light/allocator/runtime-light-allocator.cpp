@@ -58,7 +58,7 @@ void *RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
     return alloc_global_memory(size);
   }
 
-  ComponentState &rt_ctx = *get_component_context();
+  InstanceState &rt_ctx = *get_component_context();
 
   void *ptr = rt_ctx.runtime_allocator.memory_resource.allocate(size);
   if (ptr == nullptr) {
@@ -75,7 +75,7 @@ void *RuntimeAllocator::alloc0_script_memory(size_t size) noexcept {
     return alloc0_global_memory(size);
   }
 
-  ComponentState &rt_ctx = *get_component_context();
+  InstanceState &rt_ctx = *get_component_context();
   void *ptr = rt_ctx.runtime_allocator.memory_resource.allocate0(size);
   if (ptr == nullptr) {
     request_extra_memory(size);
@@ -91,7 +91,7 @@ void *RuntimeAllocator::realloc_script_memory(void *mem, size_t new_size, size_t
     return realloc_global_memory(mem, new_size, old_size);
   }
 
-  ComponentState &rt_ctx = *get_component_context();
+  InstanceState &rt_ctx = *get_component_context();
   void *ptr = rt_ctx.runtime_allocator.memory_resource.reallocate(mem, new_size, old_size);
   if (ptr == nullptr) {
     request_extra_memory(new_size * 2);
@@ -108,7 +108,7 @@ void RuntimeAllocator::free_script_memory(void *mem, size_t size) noexcept {
     return;
   }
 
-  ComponentState &rt_ctx = *get_component_context();
+  InstanceState &rt_ctx = *get_component_context();
   rt_ctx.runtime_allocator.memory_resource.deallocate(mem, size);
 }
 

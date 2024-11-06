@@ -246,7 +246,7 @@ struct PlatformCtx {
   void (*os_rnd)(size_t len, void *bytes);
 };
 
-struct ComponentState;
+struct InstanceState;
 
 /*
  * Image state created once on library load.
@@ -284,13 +284,13 @@ struct ImageInfo {
 // Symbols provided by component image
 // Every image should provide these symbols
 ///
-enum PollStatus vk_k2_poll(const struct ImageState *image_state, const struct PlatformCtx *pt_ctx, struct ComponentState *component_ctx);
+enum PollStatus vk_k2_poll(const struct ImageState *image_state, const struct PlatformCtx *pt_ctx, struct InstanceState *component_ctx);
 
 /*
  * platform_ctx without IO stuff (nullptr instead io-functions)
  * for now, returning nullptr will indicate error
  */
-struct ComponentState *vk_k2_create_component_state(const struct ImageState *image_state, const struct PlatformCtx *pt_ctx);
+struct InstanceState *vk_k2_create_component_state(const struct ImageState *image_state, const struct PlatformCtx *pt_ctx);
 struct ImageState *vk_k2_create_image_state(const struct PlatformCtx *pt_ctx);
 
 const struct ImageInfo *vk_k2_describe();
@@ -311,7 +311,7 @@ struct ControlFlags {
  */
 const struct ControlFlags *k2_control_flags();
 const struct ImageState *k2_image_state();
-struct ComponentState *k2_component_state();
+struct InstanceState *k2_component_state();
 
 void *k2_alloc(size_t size, size_t align);
 void *k2_realloc(void *ptr, size_t new_size);

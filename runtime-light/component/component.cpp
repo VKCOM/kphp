@@ -42,14 +42,14 @@ int32_t merge_output_buffers() noexcept {
 
 } // namespace
 
-void ComponentState::init_script_execution() noexcept {
+void InstanceState::init_script_execution() noexcept {
   runtime_component_context.init();
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, main_task_);
   scheduler.suspend(std::make_pair(main_task_.get_handle(), WaitEvent::Rechedule{}));
 }
 
 template<ImageKind kind>
-task_t<void> ComponentState::run_component_prologue() noexcept {
+task_t<void> InstanceState::run_instance_prologue() noexcept {
   static_assert(kind != ImageKind::Invalid);
   image_kind_ = kind;
 
@@ -82,12 +82,12 @@ task_t<void> ComponentState::run_component_prologue() noexcept {
   }
 }
 
-template task_t<void> ComponentState::run_component_prologue<ImageKind::CLI>();
-template task_t<void> ComponentState::run_component_prologue<ImageKind::Server>();
-template task_t<void> ComponentState::run_component_prologue<ImageKind::Oneshot>();
-template task_t<void> ComponentState::run_component_prologue<ImageKind::Multishot>();
+template task_t<void> InstanceState::run_instance_prologue<ImageKind::CLI>();
+template task_t<void> InstanceState::run_instance_prologue<ImageKind::Server>();
+template task_t<void> InstanceState::run_instance_prologue<ImageKind::Oneshot>();
+template task_t<void> InstanceState::run_instance_prologue<ImageKind::Multishot>();
 
-task_t<void> ComponentState::run_component_epilogue() noexcept {
+task_t<void> InstanceState::run_instance_epilogue() noexcept {
   if (image_kind_ == ImageKind::Oneshot || image_kind_ == ImageKind::Multishot) {
     co_return;
   }
@@ -106,7 +106,7 @@ task_t<void> ComponentState::run_component_epilogue() noexcept {
   }
 }
 
-void ComponentState::process_platform_updates() noexcept {
+void InstanceState::process_platform_updates() noexcept {
   const auto &platform_ctx{*get_platform_context()};
 
   for (;;) {
@@ -164,7 +164,7 @@ void ComponentState::process_platform_updates() noexcept {
   poll_status = PollStatus::PollFinishedError;
 }
 
-uint64_t ComponentState::take_incoming_stream() noexcept {
+uint64_t InstanceState::take_incoming_stream() noexcept {
   if (incoming_streams_.empty()) {
     php_warning("can't take incoming stream cause we don't have them");
     return INVALID_PLATFORM_DESCRIPTOR;
@@ -175,7 +175,7 @@ uint64_t ComponentState::take_incoming_stream() noexcept {
   return stream_d;
 }
 
-uint64_t ComponentState::open_stream(std::string_view component_name_view) noexcept {
+uint64_t InstanceState::open_stream(std::string_view component_name_view) noexcept {
   uint64_t stream_d{};
   if (const auto open_stream_res{get_platform_context()->open(component_name_view.size(), component_name_view.data(), std::addressof(stream_d))};
       open_stream_res != OpenStreamResult::OpenStreamOk) {
@@ -187,7 +187,7 @@ uint64_t ComponentState::open_stream(std::string_view component_name_view) noexc
   return stream_d;
 }
 
-uint64_t ComponentState::set_timer(std::chrono::nanoseconds duration) noexcept {
+uint64_t InstanceState::set_timer(std::chrono::nanoseconds duration) noexcept {
   uint64_t timer_d{};
   if (const auto set_timer_res{get_platform_context()->set_timer(std::addressof(timer_d), static_cast<uint64_t>(duration.count()))};
       set_timer_res != SetTimerResult::SetTimerOk) {
@@ -199,7 +199,7 @@ uint64_t ComponentState::set_timer(std::chrono::nanoseconds duration) noexcept {
   return timer_d;
 }
 
-void ComponentState::release_stream(uint64_t stream_d) noexcept {
+void InstanceState::release_stream(uint64_t stream_d) noexcept {
   if (stream_d == standard_stream_) {
     standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
   }
@@ -209,7 +209,7 @@ void ComponentState::release_stream(uint64_t stream_d) noexcept {
   php_debug("released a stream %" PRIu64, stream_d);
 }
 
-void ComponentState::release_all_streams() noexcept {
+void InstanceState::release_all_streams() noexcept {
   const auto &platform_ctx{*get_platform_context()};
   standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
   for (const auto stream_d : opened_streams_) {

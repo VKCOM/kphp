@@ -9,13 +9,13 @@
 extern thread_local ImageState *mutableImageState;
 extern const thread_local ImageState *imageState;
 extern const thread_local PlatformCtx *platformCtx;
-extern thread_local ComponentState *componentState;
+extern thread_local InstanceState *componentState;
 
 inline const PlatformCtx *get_platform_context() {
   return platformCtx;
 }
 
-inline ComponentState *get_component_context() {
+inline InstanceState *get_component_context() {
   return componentState;
 }
 

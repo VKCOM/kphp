@@ -7,7 +7,7 @@
 thread_local ImageState *mutableImageState;
 const thread_local ImageState *imageState;
 const thread_local PlatformCtx *platformCtx;
-thread_local ComponentState *componentState;
+thread_local InstanceState *componentState;
 
 void reset_thread_locals() {
   mutableImageState = nullptr;
