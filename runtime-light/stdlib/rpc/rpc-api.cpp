@@ -358,7 +358,7 @@ string f$fetch_string() noexcept {
 
 // === Rpc Query ==================================================================================
 
-task_t<array<int64_t>> f$rpc_send_request(string actor, array<mixed> tl_objects, double timeout, bool ignore_answer,
+task_t<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> tl_objects, double timeout, bool ignore_answer,
                                       class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info, bool need_responses_extra_info) noexcept {
   if (ignore_answer && need_responses_extra_info) {
     php_warning("Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
@@ -380,7 +380,7 @@ task_t<array<int64_t>> f$rpc_send_request(string actor, array<mixed> tl_objects,
   co_return query_ids;
 }
 
-task_t<array<array<mixed>>> f$rpc_fetch_response(array<int64_t> query_ids) noexcept {
+task_t<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noexcept {
   array<array<mixed>> res{query_ids.size()};
   for (const auto &it : query_ids) {
     res.set_value(it.get_key(), co_await rpc_impl_::rpc_tl_query_result_one_impl(it.get_value()));
