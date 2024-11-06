@@ -267,7 +267,7 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<CheckAbstractFunctionDefaults>{}
     >> PipeC<CalcEmptyFunctions>{}
     >> PassC<CalcActualCallsEdgesPass>{}
-    >> SyncC<FilterOnlyActuallyUsedFunctionsF>{} // removes unused func calls
+    >> SyncC<FilterOnlyActuallyUsedFunctionsF>{}
     >> PassC<RemoveEmptyFunctionCallsPass>{}
     >> PassC<PreprocessBreakPass>{}
     >> PassC<ConvertSprintfCallsPass>{}
@@ -281,9 +281,9 @@ bool compiler_execute(CompilerSettings *settings) {
     >> PipeC<CFGBeginF>{}
     >> SyncC<CFGBeginSync>{}
     >> PassC<CloneStrangeConstParams>{}
-    >> PassC<CollectMainEdgesPass>{} // collects edges for type inference
+    >> PassC<CollectMainEdgesPass>{}
     >> SyncC<TypeInfererF>{}
-    >> SyncC<CheckRestrictionsF>{} // type inferer finishes here
+    >> SyncC<CheckRestrictionsF>{}
     >> PipeC<CFGEndF>{}
     >> PassC<CheckClassesPass>{}
     >> PassC<CheckConversionsPass>{}

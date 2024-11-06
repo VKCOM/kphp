@@ -1,12 +1,11 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
 
-#include <string>
-
-// The order is important!
+// Order is important. These values are compared with operator< 
+// in some passes (in type inferring, for example)
 enum PrimitiveType {
   tp_any,
   tp_Null,

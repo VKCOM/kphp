@@ -43,7 +43,7 @@ inline void CheckClassesPass::analyze_class(ClassPtr klass) {
   if (klass->does_need_codegen()) {
     check_instance_fields_inited(klass);
   }
-  if (klass->can_be_php_autoloaded && !klass->is_builtin() && !klass->need_generated_stub && !klass->internal_interface) { // TODO think about it later
+  if (klass->can_be_php_autoloaded && !klass->is_builtin() && !klass->need_generated_stub) {
     kphp_error(klass->file_id->main_function->body_seq == FunctionData::body_value::empty,
                fmt_format("class {} can be autoloaded, but its file contains some logic (maybe, require_once files with global vars?)\n",
                           klass->as_human_readable()));

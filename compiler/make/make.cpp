@@ -395,13 +395,9 @@ static std::vector<File *> create_obj_files(MakeSetup *make, Index &obj_dir, con
     for (File *f : deps) {
       vk::hash_combine(hash, vk::std_hash(f->name));
     }
-    
-    
     auto intermediate_file_name = fmt_format("{}_{:x}.{}", name_and_files.first, hash,
                                              G->settings().dynamic_incremental_linkage.get() ? "so" : "o");
     File *obj_file = obj_dir.insert_file(std::move(intermediate_file_name));
-
-
     make->create_objs2obj_target(std::move(deps), obj_file);
     objs.push_back(obj_file);
   }
@@ -448,7 +444,7 @@ static std::string get_light_runtime_compiler_options() {
   for (vk::string_view option : options) {
     for (vk::string_view prohibit_substr : black_list_substrings) {
       if (vk::contains(option, prohibit_substr)) continue;
-      s << option << " ";
+      s   tion << " ";
     }
   }
   s << "-std=c++20 ";

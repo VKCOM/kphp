@@ -361,9 +361,6 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
       ClassPtr aa = G->get_class("ArrayAccess");
       assert(aa && "Cannot find ArrayAccess");
 
-      // Why offsetSet for ArrayAccess is going through here
-      // And in some later pass (FinalCheckPass, for example) check that access via [.] is enabled only for arrays and classes that implements ArrayAccess (by
-      // chain)
       if (aa->is_parent_of(klass)) {
         return get_type(tp_mixed);
       }
@@ -408,7 +405,6 @@ const TypeData *TypeData::const_read_at(const MultiKey &multi_key) const {
 }
 
 void TypeData::make_structured() {
-  // TODO fix here for writing into objects that implements ArrayAccess
   // 'lvalue $s[idx]' makes $s array-typed: strings and tuples keep their types only for read-only operations
   if (ptype() < tp_array) {
     PrimitiveType new_ptype = type_lca(ptype(), tp_array);
@@ -542,7 +538,7 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
   
   for (const Key &key : multi_key) {
     auto *prev = cur;
-    cur = cur->write_at(key); // HERE
+    cur = cur->write_at(key);
     // handle writing to a subkey of mixed (when cur is not structured)
     if (cur == nullptr) {
       if (prev->ptype() == tp_mixed) {

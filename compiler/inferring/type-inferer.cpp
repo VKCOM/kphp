@@ -25,10 +25,10 @@ void TypeInferer::recalc_node(Node *node) {
 }
 
 void TypeInferer::add_node(Node *node) {
+  // fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
   if (!node->was_recalc_started_at_least_once()) {
     recalc_node(node);
   }
-  // fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
 }
 
 void TypeInferer::add_edge(const Edge *edge) {
@@ -98,8 +98,7 @@ std::vector<Task *> TypeInferer::get_tasks() {
 void TypeInferer::do_run_queue() {
   NodeQueue &q = Q.get();
 
-  // in bad case first node add new VarNode into the Q queue
-  while (!q.empty()) { // when add here 2 nodes (when bad case)
+  while (!q.empty()) {
     Node *node = q.front();
 
     node->start_recalc();

@@ -1803,8 +1803,7 @@ bool try_compile_append_inplace(VertexAdaptor<op_set_dot> root, CodeGenerator &W
   return false;
 }
 
-// This also compiles index of mixed
-void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W) {
+void compile_index_of_array_or_mixed(VertexAdaptor<op_index> root, CodeGenerator &W) {
   bool used_as_rval = root->rl_type != val_l;
   if (!used_as_rval) {
     kphp_assert(root->has_key());
@@ -1878,7 +1877,7 @@ void compile_index(VertexAdaptor<op_index> root, CodeGenerator &W) {
       W << ShapeGetIndex(root->array(), root->key());
       break;
     default:
-      compile_index_of_array(root, W);
+      compile_index_of_array_or_mixed(root, W);
   }
 }
 

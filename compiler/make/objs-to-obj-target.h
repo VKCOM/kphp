@@ -15,8 +15,7 @@ public:
     std::stringstream ss;
     ss << settings->cxx.get() <<
        " " << settings->cxx_toolchain_option.get() <<
-       " " << 
-       settings->incremental_linker_flags.get() <<
+       " " << settings->incremental_linker_flags.get() <<
        " -o " << target() <<
        " " << dep_list();
     return ss.str();

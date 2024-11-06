@@ -5,7 +5,9 @@
 #pragma once
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 
-// TODO may be add guard to force include only from runtime-core.h?
+#ifndef INCLUDED_FROM_KPHP_CORE
+  #error "this file must be included only from runtime-core.h"
+#endif
 
 struct C$ArrayAccess : public may_be_mixed_base {
   virtual int get_hash() const noexcept = 0;
