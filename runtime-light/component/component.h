@@ -111,7 +111,7 @@ struct InstanceState {
 
   RuntimeContext runtime_context;
   RpcInstanceState rpc_instance_state;
-  HttpServerComponentContext http_server_instance_state{};
+  HttpServerInstanceState http_server_instance_state{};
   JobWorkerClientComponentContext job_worker_client_instance_state{};
   JobWorkerServerComponentContext job_worker_server_instance_state{};
 
