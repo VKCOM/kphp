@@ -4,10 +4,12 @@
 
 #pragma once
 
-#include "runtime-light/header.h"
+#include <cstddef>
 
-#define Error 1
-#define Warn 2
-#define Info 3
-#define Debug 4
-#define Trace 5
+enum LogLevel : size_t {
+  Error = 1,
+  Warn = 2,
+  Info = 3,
+  Debug = 4,
+  Trace = 5,
+};

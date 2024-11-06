@@ -6,12 +6,11 @@
 
 #include "runtime-light/component/component.h"
 #include "runtime-light/component/image.h"
-#include "runtime-light/utils/context.h"
 
 StringInstanceState &StringInstanceState::get() noexcept {
-  return get_component_context()->string_instance_state;
+  return InstanceState::get().string_instance_state;
 }
 
 const StringImageState &StringImageState::get() noexcept {
-  return get_image_state()->string_image_state;
+  return ImageState::get().string_image_state;
 }

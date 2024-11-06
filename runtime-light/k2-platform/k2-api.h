@@ -19,6 +19,8 @@ inline constexpr size_t DEFAULT_MEMORY_ALIGN = 16;
 
 } // namespace k2_impl_
 
+inline constexpr int32_t errno_ok = 0;
+
 using IOStatus = IOStatus;
 
 using StreamStatus = StreamStatus;
@@ -45,9 +47,9 @@ inline const ImageState *image_state() noexcept {
   return k2_image_state();
 }
 
-inline const ComponentState *component_state() noexcept {
-  return k2_component_state();
-}
+// inline const ComponentState *component_state() noexcept {
+//   return k2_component_state();
+// }
 
 inline InstanceState *instance_state() noexcept {
   return k2_instance_state();
@@ -77,7 +79,7 @@ inline void free_checked(void *ptr, size_t size, size_t align) noexcept {
   k2_free_checked(ptr, size, align);
 }
 
-inline void exit(int32_t exit_code) noexcept {
+[[noreturn]] inline void exit(int32_t exit_code) noexcept {
   k2_exit(exit_code);
 }
 

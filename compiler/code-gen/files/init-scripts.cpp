@@ -120,8 +120,8 @@ struct RunInterruptedFunction {
                                  : G->is_output_mode_k2_multishot() ? "ImageKind::Multishot"
                                                                     : "ImageKind::Invalid";
 
-    std::string script_start = "co_await get_component_context()->run_instance_prologue<" + image_kind + ">();";
-    std::string script_finish = "co_await get_component_context()->run_instance_epilogue();";
+    std::string script_start = "co_await InstanceState::get().run_instance_prologue<" + image_kind + ">();";
+    std::string script_finish = "co_await InstanceState::get().run_instance_epilogue();";
     FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN << script_start << NL << await_prefix
                                   << FunctionName(function) << "();" << NL << script_finish << NL << "co_return;" << END;
     W << NL;
@@ -286,7 +286,7 @@ void ComponentInfoFile::compile(CodeGenerator &W) const {
   auto now = std::chrono::system_clock::now();
   W << OpenFile("image_info.cpp");
   W << ExternInclude(G->settings().runtime_headers.get());
-  W << "const ImageInfo *vk_k2_describe() " << BEGIN << "static ImageInfo imageInfo {\"" << G->settings().k2_component_name.get() << "\"" << ","
+  W << "const ImageInfo *k2_describe() " << BEGIN << "static ImageInfo imageInfo {\"" << G->settings().k2_component_name.get() << "\"" << ","
     << std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count() << ","
     << "K2_PLATFORM_HEADER_H_VERSION, "
     << "{}," // todo:k2 add commit hash

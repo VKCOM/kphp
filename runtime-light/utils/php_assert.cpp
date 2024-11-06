@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <csignal>
@@ -14,8 +14,7 @@
 #include <unistd.h>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/header.h"
-#include "runtime-light/utils/context.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/utils/logs.h"
 
 static void php_warning_impl(bool out_of_memory, int error_type, char const *message, va_list args) {
@@ -24,7 +23,7 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
   char buf[BUF_SIZE];
 
   int size = vsnprintf(buf, BUF_SIZE, message, args);
-  get_platform_context()->log(error_type, size, buf);
+  k2::log(error_type, size, buf);
   if (error_type == Error) {
     critical_error_handler();
   }
@@ -61,5 +60,5 @@ void php_error(char const *message, ...) {
 void php_assert__(const char *msg, const char *file, int line) {
   php_error("Assertion \"%s\" failed in file %s on line %d", msg, file, line);
   critical_error_handler();
-  _exit(1);
+  k2::exit(1);
 }

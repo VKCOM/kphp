@@ -16,10 +16,8 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/header.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/stdlib/fork/fork-context.h"
-#include "runtime-light/utils/context.h"
 
 template<class T>
 concept Awaitable = requires(T awaitable, std::coroutine_handle<> coro) {
@@ -84,7 +82,7 @@ public:
 
   bool await_ready() noexcept {
     php_assert(state == awaitable_impl_::State::Init);
-    state = get_component_context()->stream_updated(stream_d) ? awaitable_impl_::State::Ready : awaitable_impl_::State::Init;
+    state = InstanceState::get().stream_updated(stream_d) ? awaitable_impl_::State::Ready : awaitable_impl_::State::Init;
     return state == awaitable_impl_::State::Ready;
   }
 
@@ -134,7 +132,7 @@ public:
 
   bool await_ready() noexcept {
     php_assert(state == awaitable_impl_::State::Init);
-    state = !get_component_context()->incoming_streams().empty() ? awaitable_impl_::State::Ready : awaitable_impl_::State::Init;
+    state = !InstanceState::get().incoming_streams().empty() ? awaitable_impl_::State::Ready : awaitable_impl_::State::Init;
     return state == awaitable_impl_::State::Ready;
   }
 
@@ -147,7 +145,7 @@ public:
   uint64_t await_resume() noexcept {
     state = awaitable_impl_::State::End;
     fork_id_watcher_t::await_resume();
-    const auto incoming_stream_d{get_component_context()->take_incoming_stream()};
+    const auto incoming_stream_d{InstanceState::get().take_incoming_stream()};
     php_assert(incoming_stream_d != INVALID_PLATFORM_DESCRIPTOR);
     return incoming_stream_d;
   }
@@ -238,7 +236,7 @@ public:
       cancel();
     }
     if (timer_d != INVALID_PLATFORM_DESCRIPTOR) {
-      get_component_context()->release_stream(timer_d);
+      InstanceState::get().release_stream(timer_d);
     }
   }
 
@@ -249,7 +247,7 @@ public:
 
   void await_suspend(std::coroutine_handle<> coro) noexcept {
     state = awaitable_impl_::State::Suspend;
-    timer_d = get_component_context()->set_timer(duration);
+    timer_d = InstanceState::get().set_timer(duration);
     if (timer_d != INVALID_PLATFORM_DESCRIPTOR) {
       suspend_token = std::make_pair(coro, WaitEvent::UpdateOnTimer{.timer_d = timer_d});
     }

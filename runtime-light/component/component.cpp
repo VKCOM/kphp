@@ -17,17 +17,16 @@
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/header.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/server/job-worker/job-worker-server-context.h"
 #include "runtime-light/streams/streams.h"
-#include "runtime-light/utils/context.h"
 
 namespace {
 
 int32_t merge_output_buffers() noexcept {
-  auto &component_ctx{*get_component_context()};
-  Response &response{component_ctx.response};
+  auto &instance_st{InstanceState::get()};
+  Response &response{instance_st.response};
   php_assert(response.current_buffer >= 0);
 
   int32_t ob_first_not_empty{};
@@ -58,10 +57,9 @@ task_t<void> InstanceState::run_instance_prologue() noexcept {
   superglobals.v$argc = static_cast<int64_t>(0); // TODO
   superglobals.v$argv = array<mixed>{};          // TODO
   {
-    const auto &platform_ctx{*get_platform_context()};
 
     SystemTime sys_time{};
-    platform_ctx.get_system_time(std::addressof(sys_time));
+    k2::system_time(std::addressof(sys_time));
     const auto time_mcs{std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::nanoseconds{sys_time.since_epoch_ns}).count()};
 
     using namespace PhpServerSuperGlobalIndices;
@@ -107,11 +105,9 @@ task_t<void> InstanceState::run_instance_epilogue() noexcept {
 }
 
 void InstanceState::process_platform_updates() noexcept {
-  const auto &platform_ctx{*get_platform_context()};
-
   for (;;) {
     // check if platform asked for yield
-    if (static_cast<bool>(platform_ctx.please_yield.load())) { // tell the scheduler that we are about to yield
+    if (static_cast<bool>(k2::control_flags()->please_yield.load())) { // tell the scheduler that we are about to yield
       php_debug("platform asked for yield");
       const auto schedule_status{scheduler.schedule(ScheduleEvent::Yield{})};
       poll_status = schedule_status == ScheduleStatus::Error ? PollStatus::PollFinishedError : PollStatus::PollReschedule;
@@ -119,7 +115,7 @@ void InstanceState::process_platform_updates() noexcept {
     }
 
     // try taking update from the platform
-    if (uint64_t stream_d{}; static_cast<bool>(platform_ctx.take_update(std::addressof(stream_d)))) {
+    if (uint64_t stream_d{}; static_cast<bool>(k2::take_update(std::addressof(stream_d)))) {
       if (opened_streams_.contains(stream_d)) { // update on opened stream
         php_debug("took update on stream %" PRIu64, stream_d);
         switch (scheduler.schedule(ScheduleEvent::UpdateOnStream{.stream_d = stream_d})) {
@@ -177,8 +173,7 @@ uint64_t InstanceState::take_incoming_stream() noexcept {
 
 uint64_t InstanceState::open_stream(std::string_view component_name_view) noexcept {
   uint64_t stream_d{};
-  if (const auto open_stream_res{get_platform_context()->open(component_name_view.size(), component_name_view.data(), std::addressof(stream_d))};
-      open_stream_res != OpenStreamResult::OpenStreamOk) {
+  if (const auto open_stream_res{k2::open(std::addressof(stream_d), component_name_view.size(), component_name_view.data())}; open_stream_res != k2::errno_ok) {
     php_warning("can't open stream to %s", component_name_view.data());
     return INVALID_PLATFORM_DESCRIPTOR;
   }
@@ -189,8 +184,7 @@ uint64_t InstanceState::open_stream(std::string_view component_name_view) noexce
 
 uint64_t InstanceState::set_timer(std::chrono::nanoseconds duration) noexcept {
   uint64_t timer_d{};
-  if (const auto set_timer_res{get_platform_context()->set_timer(std::addressof(timer_d), static_cast<uint64_t>(duration.count()))};
-      set_timer_res != SetTimerResult::SetTimerOk) {
+  if (const auto set_timer_res{k2::new_timer(std::addressof(timer_d), static_cast<uint64_t>(duration.count()))}; set_timer_res != k2::errno_ok) {
     php_warning("can't set timer for %.9f sec", std::chrono::duration<double>(duration).count());
     return INVALID_PLATFORM_DESCRIPTOR;
   }
@@ -205,15 +199,14 @@ void InstanceState::release_stream(uint64_t stream_d) noexcept {
   }
   opened_streams_.erase(stream_d);
   pending_updates_.erase(stream_d); // also erase pending updates if exists
-  get_platform_context()->free_descriptor(stream_d);
+  k2::free_descriptor(stream_d);
   php_debug("released a stream %" PRIu64, stream_d);
 }
 
 void InstanceState::release_all_streams() noexcept {
-  const auto &platform_ctx{*get_platform_context()};
   standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
   for (const auto stream_d : opened_streams_) {
-    platform_ctx.free_descriptor(stream_d);
+    k2::free_descriptor(stream_d);
     php_debug("released a stream %" PRIu64, stream_d);
   }
   opened_streams_.clear();

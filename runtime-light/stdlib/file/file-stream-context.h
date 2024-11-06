@@ -4,9 +4,10 @@
 
 #pragma once
 
+#include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
 
-struct FileStreamInstanceState {
+struct FileStreamInstanceState final : private vk::not_copyable {
   mixed error_number_dummy;
   mixed error_description_dummy;
 

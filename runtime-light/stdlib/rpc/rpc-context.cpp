@@ -6,16 +6,15 @@
 
 #include "runtime-light/component/component.h"
 #include "runtime-light/component/image.h"
-#include "runtime-light/utils/context.h"
 
 RpcInstanceState &RpcInstanceState::get() noexcept {
-  return get_component_context()->rpc_instance_state;
+  return InstanceState::get().rpc_instance_state;
 }
 
 const RpcImageState &RpcImageState::get() noexcept {
-  return get_image_state()->rpc_image_state;
+  return ImageState::get().rpc_image_state;
 }
 
 RpcImageState &RpcImageState::get_mutable() noexcept {
-  return get_mutable_image_state()->rpc_image_state;
+  return ImageState::get_mutable().rpc_image_state;
 }

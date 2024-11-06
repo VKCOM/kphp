@@ -7,13 +7,14 @@
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/component/component.h"
+#include "runtime-light/k2-platform/k2-api.h"
 
 namespace {
 // TODO: make it depend on max chunk size, e.g. MIN_EXTRA_MEM_SIZE = f(MAX_CHUNK_SIZE);
 constexpr auto MIN_EXTRA_MEM_SIZE = static_cast<size_t>(32U * 1024U); // extra mem size should be greater than max chunk block size
 
 bool is_script_allocator_available() {
-  return get_component_context() != nullptr;
+  return k2::instance_state() != nullptr;
 }
 
 void request_extra_memory(size_t requested_size) {
@@ -32,7 +33,7 @@ RuntimeAllocator::RuntimeAllocator(size_t script_mem_size, size_t oom_handling_m
 }
 
 RuntimeAllocator &RuntimeAllocator::get() noexcept {
-  return get_component_context()->runtime_allocator;
+  return InstanceState::get().runtime_allocator;
 }
 
 void RuntimeAllocator::init(void *buffer, size_t script_mem_size, size_t oom_handling_mem_size) {
@@ -41,15 +42,13 @@ void RuntimeAllocator::init(void *buffer, size_t script_mem_size, size_t oom_han
 }
 
 void RuntimeAllocator::free() {
-  const Allocator &pt_ctx = get_platform_context()->allocator;
-
   auto *extra_memory = memory_resource.get_extra_memory_head();
   while (extra_memory->get_pool_payload_size() != 0) {
     auto *releasing_extra_memory = extra_memory;
     extra_memory = extra_memory->next_in_chain;
-    pt_ctx.free(releasing_extra_memory);
+    k2::free(releasing_extra_memory);
   }
-  pt_ctx.free(memory_resource.memory_begin());
+  k2::free(memory_resource.memory_begin());
 }
 
 void *RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
@@ -58,12 +57,12 @@ void *RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
     return alloc_global_memory(size);
   }
 
-  InstanceState &rt_ctx = *get_component_context();
+  auto &instance_st = InstanceState::get();
 
-  void *ptr = rt_ctx.runtime_allocator.memory_resource.allocate(size);
+  void *ptr = instance_st.runtime_allocator.memory_resource.allocate(size);
   if (ptr == nullptr) {
     request_extra_memory(size);
-    ptr = rt_ctx.runtime_allocator.memory_resource.allocate(size);
+    ptr = instance_st.runtime_allocator.memory_resource.allocate(size);
     php_assert(ptr != nullptr);
   }
   return ptr;
@@ -75,11 +74,11 @@ void *RuntimeAllocator::alloc0_script_memory(size_t size) noexcept {
     return alloc0_global_memory(size);
   }
 
-  InstanceState &rt_ctx = *get_component_context();
-  void *ptr = rt_ctx.runtime_allocator.memory_resource.allocate0(size);
+  auto &instance_st = InstanceState::get();
+  void *ptr = instance_st.runtime_allocator.memory_resource.allocate0(size);
   if (ptr == nullptr) {
     request_extra_memory(size);
-    ptr = rt_ctx.runtime_allocator.memory_resource.allocate0(size);
+    ptr = instance_st.runtime_allocator.memory_resource.allocate0(size);
     php_assert(ptr != nullptr);
   }
   return ptr;
@@ -91,11 +90,11 @@ void *RuntimeAllocator::realloc_script_memory(void *mem, size_t new_size, size_t
     return realloc_global_memory(mem, new_size, old_size);
   }
 
-  InstanceState &rt_ctx = *get_component_context();
-  void *ptr = rt_ctx.runtime_allocator.memory_resource.reallocate(mem, new_size, old_size);
+  auto &instance_st = InstanceState::get();
+  void *ptr = instance_st.runtime_allocator.memory_resource.reallocate(mem, new_size, old_size);
   if (ptr == nullptr) {
     request_extra_memory(new_size * 2);
-    ptr = rt_ctx.runtime_allocator.memory_resource.reallocate(mem, new_size, old_size);
+    ptr = instance_st.runtime_allocator.memory_resource.reallocate(mem, new_size, old_size);
     php_assert(ptr != nullptr);
   }
   return ptr;
@@ -108,12 +107,12 @@ void RuntimeAllocator::free_script_memory(void *mem, size_t size) noexcept {
     return;
   }
 
-  InstanceState &rt_ctx = *get_component_context();
-  rt_ctx.runtime_allocator.memory_resource.deallocate(mem, size);
+  auto &instance_st = InstanceState::get();
+  instance_st.runtime_allocator.memory_resource.deallocate(mem, size);
 }
 
 void *RuntimeAllocator::alloc_global_memory(size_t size) noexcept {
-  void *ptr = get_platform_context()->allocator.alloc(size);
+  void *ptr = k2::alloc(size);
   if (unlikely(ptr == nullptr)) {
     critical_error_handler();
   }
@@ -121,7 +120,7 @@ void *RuntimeAllocator::alloc_global_memory(size_t size) noexcept {
 }
 
 void *RuntimeAllocator::alloc0_global_memory(size_t size) noexcept {
-  void *ptr = get_platform_context()->allocator.alloc(size);
+  void *ptr = k2::alloc(size);
   if (unlikely(ptr == nullptr)) {
     critical_error_handler();
   }
@@ -129,14 +128,14 @@ void *RuntimeAllocator::alloc0_global_memory(size_t size) noexcept {
   return ptr;
 }
 
-void *RuntimeAllocator::realloc_global_memory(void *mem, size_t new_size, size_t) noexcept {
-  void *ptr = get_platform_context()->allocator.realloc(mem, new_size);
+void *RuntimeAllocator::realloc_global_memory(void *mem, size_t new_size, size_t /*unused*/) noexcept {
+  void *ptr = k2::realloc(mem, new_size);
   if (unlikely(ptr == nullptr)) {
     critical_error_handler();
   }
   return ptr;
 }
 
-void RuntimeAllocator::free_global_memory(void *mem, size_t) noexcept {
-  get_platform_context()->allocator.free(mem);
+void RuntimeAllocator::free_global_memory(void *mem, size_t /*unused*/) noexcept {
+  k2::free(mem);
 }

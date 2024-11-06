@@ -1,15 +1,11 @@
-// Compiler for PHP (aka KPHP)
-// Copyright (c) 2024 LLC «V Kontakte»
-// Distributed under the GPL v3 License, see LICENSE.notice.txt
-
 #ifndef K2_PLATFORM_HEADER_H
 #define K2_PLATFORM_HEADER_H
 
+#pragma once
+
 #ifndef K2_API_HEADER_H
 #error "should not be directly included"
-#endif // !K2_API_HEADER
-
-#pragma once
+#endif // K2_API_HEADER_H
 
 #include <sys/socket.h>
 
@@ -23,7 +19,7 @@
 #include <string.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 10
+#define K2_PLATFORM_HEADER_H_VERSION 11
 
 // Always check that enum value is a valid value!
 
@@ -106,8 +102,11 @@ enum PollStatus k2_poll();
 
 // Symbols provided by .so.
 struct ImageState *k2_create_image();
+void k2_init_image();
 struct ComponentState *k2_create_component();
+void k2_init_component();
 struct InstanceState *k2_create_instance();
+void k2_init_instance();
 
 const struct ImageInfo *k2_describe();
 
@@ -125,9 +124,9 @@ struct ControlFlags {
  * differences. Preferable way to communication with k2-node.
  *
  */
-const struct ControlFlags *k2_control_flags();
-const struct ImageState *k2_image_state();
-const struct ComponentState *k2_component_state();
+struct ControlFlags *k2_control_flags();
+struct ImageState *k2_image_state();
+struct ComponentState *k2_component_state();
 struct InstanceState *k2_instance_state();
 
 /**
@@ -148,7 +147,7 @@ void k2_free_checked(void *ptr, size_t size, size_t align);
  * `exit_code` == 0 => FinishedOk,
  * `exit_code` != 0 => FinishedError,
  */
-void k2_exit(int32_t exit_code);
+[[noreturn]] void k2_exit(int32_t exit_code);
 
 /**
  * @return return `0` on success. libc-like `errno` otherwise

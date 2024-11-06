@@ -20,7 +20,6 @@
 #include "runtime-light/server/http/http-server-context.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
-#include "runtime-light/utils/context.h"
 
 namespace {
 
@@ -117,7 +116,7 @@ void process_headers(tl::dictionary<tl::httpHeaderValue> &&headers, PhpScriptBui
 } // namespace
 
 void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
-  auto &superglobals{get_component_context()->php_script_mutable_globals_singleton.get_superglobals()};
+  auto &superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
   auto &server{superglobals.v$_SERVER};
 
   HttpMethod http_method{HttpMethod::OTHER};

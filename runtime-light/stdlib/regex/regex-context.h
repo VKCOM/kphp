@@ -6,7 +6,9 @@
 
 #include <cstdint>
 
-struct RegexInstanceState {
+#include "common/mixin/not_copyable.h"
+
+struct RegexInstanceState final : private vk::not_copyable {
   int64_t preg_replace_count_dummy{};
 
   static RegexInstanceState &get() noexcept;

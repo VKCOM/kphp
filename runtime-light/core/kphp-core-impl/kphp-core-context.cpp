@@ -4,13 +4,12 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/component/component.h"
-#include "runtime-light/utils/context.h"
 
 constexpr string_size_type initial_minimum_string_buffer_length = 1024;
 constexpr string_size_type initial_maximum_string_buffer_length = (1 << 24);
 
 RuntimeContext &RuntimeContext::get() noexcept {
-  return get_component_context()->runtime_context;
+  return InstanceState::get().runtime_context;
 }
 
 void RuntimeContext::init() noexcept {

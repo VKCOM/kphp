@@ -5,8 +5,7 @@
 #include "runtime-light/stdlib/curl/curl-context.h"
 
 #include "runtime-light/component/component.h"
-#include "runtime-light/utils/context.h"
 
 CurlInstanceState &CurlInstanceState::get() noexcept {
-  return get_component_context()->curl_instance_state;
+  return InstanceState::get().curl_instance_state;
 }

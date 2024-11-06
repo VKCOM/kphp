@@ -47,7 +47,7 @@ static int base64_encode(const unsigned char *const input, int ilen, char *outpu
   return 0;
 }
 
-string f$base64_encode(const string &s) {
+string f$base64_encode(const string &s) noexcept {
   int result_len = (s.size() + 2) / 3 * 4;
   string res(result_len, false);
   result_len = base64_encode(reinterpret_cast<const unsigned char *>(s.c_str()), static_cast<int>(s.size()), res.buffer(), result_len + 1);
@@ -73,7 +73,7 @@ static constexpr short base64_reverse_table[256] = {-2, -2, -2, -2, -2, -2, -2, 
 /* Function f$base64_decode ported from https://github.com/php/php-src/blob/master/ext/standard/base64.c#L130
  * "This product includes PHP software, freely available from <http://www.php.net/software/>".
  */
-Optional<string> f$base64_decode(const string &s, bool strict) {
+Optional<string> f$base64_decode(const string &s, bool strict) noexcept {
   /* run through the whole string, converting as we go */
   string::size_type result_len = (s.size() + 3) / 4 * 3;
   string result(result_len, false);

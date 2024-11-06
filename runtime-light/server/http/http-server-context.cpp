@@ -5,8 +5,7 @@
 #include "runtime-light/server/http/http-server-context.h"
 
 #include "runtime-light/component/component.h"
-#include "runtime-light/utils/context.h"
 
 HttpServerInstanceState &HttpServerInstanceState::get() noexcept {
-  return get_component_context()->http_server_instance_state;
+  return InstanceState::get().http_server_instance_state;
 }

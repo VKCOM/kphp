@@ -10,13 +10,12 @@
 #include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/header.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/init-functions.h"
 #include "runtime-light/server/job-worker/job-worker-server-context.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
-#include "runtime-light/utils/context.h"
 
 namespace {
 
@@ -33,7 +32,7 @@ void process_k2_invoke_job_worker(tl::TLBuffer &tlb) noexcept {
   if (!invoke_jw.fetch(tlb)) {
     php_error("erroneous job worker request");
   }
-  php_assert(invoke_jw.image_id == vk_k2_describe()->build_timestamp); // ensure that we got the request from ourselves
+  php_assert(invoke_jw.image_id == k2::describe()->build_timestamp); // ensure that we got the request from ourselves
   init_server(ServerQuery{std::move(invoke_jw)});
 }
 
@@ -45,7 +44,7 @@ task_t<uint64_t> init_kphp_server_component() noexcept {
   php_assert(size >= sizeof(uint32_t)); // check that we can fetch at least magic
   tl::TLBuffer tlb{};
   tlb.store_bytes({buffer, static_cast<size_t>(size)});
-  get_platform_context()->allocator.free(buffer);
+  k2::free(buffer);
 
   switch (const auto magic{*tlb.lookup_trivial<uint32_t>()}) { // lookup magic
     case tl::K2_INVOKE_HTTP_MAGIC: {
@@ -56,7 +55,7 @@ task_t<uint64_t> init_kphp_server_component() noexcept {
       process_k2_invoke_job_worker(tlb);
       // release standard stream in case of a no reply job worker since we don't need that stream anymore
       if (JobWorkerServerInstanceState::get().kind == JobWorkerServerInstanceState::Kind::NoReply) {
-        get_component_context()->release_stream(stream_d);
+        InstanceState::get().release_stream(stream_d);
         stream_d = INVALID_PLATFORM_DESCRIPTOR;
       }
       break;

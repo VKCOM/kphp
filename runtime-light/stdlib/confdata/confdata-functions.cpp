@@ -18,7 +18,6 @@
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
-#include "runtime-light/utils/context.h"
 #include "runtime-light/utils/json-functions.h"
 
 namespace {
@@ -44,9 +43,9 @@ mixed extract_confdata_value(tl::confdataValue &&confdata_value) noexcept {
 
 // TODO: the performance of this implementation can be enhanced. rework it when the platform has specific API for that
 bool f$is_confdata_loaded() noexcept {
-  auto &component_ctx{*get_component_context()};
-  if (const auto stream_d{component_ctx.open_stream(std::string_view{CONFDATA_COMPONENT_NAME})}; stream_d != INVALID_PLATFORM_DESCRIPTOR) {
-    component_ctx.release_stream(stream_d);
+  auto &instance_st{InstanceState::get()};
+  if (const auto stream_d{instance_st.open_stream(std::string_view{CONFDATA_COMPONENT_NAME})}; stream_d != INVALID_PLATFORM_DESCRIPTOR) {
+    instance_st.release_stream(stream_d);
     return true;
   }
   return false;

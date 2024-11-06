@@ -5,7 +5,6 @@
 #pragma once
 
 #include <chrono>
-#include <csetjmp>
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
@@ -16,7 +15,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/header.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/server/http/http-server-context.h"
 #include "runtime-light/server/job-worker/job-worker-server-context.h"
@@ -65,6 +64,10 @@ struct InstanceState final : vk::not_copyable {
 
   ~InstanceState() = default;
 
+  static InstanceState &get() noexcept {
+    return *k2::instance_state();
+  }
+
   void init_script_execution() noexcept;
 
   template<ImageKind>
@@ -105,7 +108,7 @@ struct InstanceState final : vk::not_copyable {
 
   CoroutineScheduler scheduler;
   ForkInstanceState fork_instance_state;
-  PollStatus poll_status{PollStatus::PollReschedule};
+  k2::PollStatus poll_status{k2::PollStatus::PollReschedule};
 
   Response response;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;

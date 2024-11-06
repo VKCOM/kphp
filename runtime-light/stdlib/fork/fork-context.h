@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <utility>
 
+#include "common/mixin/not_copyable.h"
 #include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/task.h"
@@ -14,7 +15,7 @@
 
 inline constexpr int64_t INVALID_FORK_ID = -1;
 
-class ForkInstanceState {
+class ForkInstanceState final : private vk::not_copyable {
   template<hashable Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
 

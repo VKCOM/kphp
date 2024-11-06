@@ -9,6 +9,7 @@
 #include "runtime-common/core/runtime-core.h"
 
 template<class T>
-string f$http_build_query(const array<T> &a, const string &numeric_prefix = {}, const string &arg_separator = string(), int64_t enc_type = 1) {
+string f$http_build_query(const array<T> & /*a*/, const string & /*numeric_prefix*/ = {}, const string & /*arg_separator*/ = string(),
+                          int64_t /*enc_type*/ = 1) {
   php_critical_error("call to unsupported function");
 }

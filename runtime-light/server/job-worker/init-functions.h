@@ -8,7 +8,6 @@
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/job-worker/job-worker-server-context.h"
 #include "runtime-light/tl/tl-functions.h"
-#include "runtime-light/utils/context.h"
 
 inline void init_job_server(tl::K2InvokeJobWorker &&invoke_jw) noexcept {
   auto &jw_server_ctx{JobWorkerServerInstanceState::get()};
@@ -19,7 +18,7 @@ inline void init_job_server(tl::K2InvokeJobWorker &&invoke_jw) noexcept {
 
   {
     using namespace PhpServerSuperGlobalIndices;
-    auto &server{get_component_context()->php_script_mutable_globals_singleton.get_superglobals().v$_SERVER};
+    auto &server{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals().v$_SERVER};
     server.set_value(string{JOB_ID, std::char_traits<char>::length(JOB_ID)}, invoke_jw.job_id);
   }
 }
