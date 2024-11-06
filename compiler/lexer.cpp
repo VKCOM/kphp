@@ -18,7 +18,6 @@
 
 #include "compiler/stage.h"
 #include "compiler/threading/thread-id.h"
-#include "compiler/compiler-core.h"
 
 /***
   LexerData
