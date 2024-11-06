@@ -2,7 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 
 #include <chrono>
 #include <cstdint>
@@ -13,13 +13,13 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/component/init-functions.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/server/job-worker/job-worker-server-context.h"
+#include "runtime-light/state/init-functions.h"
 #include "runtime-light/streams/streams.h"
 
 namespace {

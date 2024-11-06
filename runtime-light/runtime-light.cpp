@@ -3,10 +3,10 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/component/component.h"
-#include "runtime-light/component/image.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/state/image-state.h"
+#include "runtime-light/state/instance-state.h"
 
 ImageState *k2_create_image() {
   // Note that in k2_create_image most of K2 functionality is not yet available

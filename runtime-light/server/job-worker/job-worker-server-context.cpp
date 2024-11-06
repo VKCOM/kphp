@@ -4,7 +4,7 @@
 
 #include "runtime-light/server/job-worker/job-worker-server-context.h"
 
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 
 JobWorkerServerInstanceState &JobWorkerServerInstanceState::get() noexcept {
   return InstanceState::get().job_worker_server_instance_state;

@@ -5,8 +5,8 @@
 #include <string>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/component/component.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/state/instance-state.h"
 #include "runtime-light/utils/logs.h"
 
 void critical_error_handler() {

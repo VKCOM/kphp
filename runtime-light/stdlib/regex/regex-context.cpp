@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/regex/regex-functions.h"
 
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 
 RegexInstanceState &RegexInstanceState::get() noexcept {
   return InstanceState::get().regex_instance_state;

@@ -9,7 +9,7 @@
 #include <utility>
 #include <variant>
 
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 #include "runtime-light/server/http/init-functions.h"
 #include "runtime-light/server/job-worker/init-functions.h"
 #include "runtime-light/tl/tl-functions.h"

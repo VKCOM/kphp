@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/file/file-stream-context.h"
 
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 
 FileStreamInstanceState &FileStreamInstanceState::get() noexcept {
   return InstanceState::get().file_stream_instance_state;

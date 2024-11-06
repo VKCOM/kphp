@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/system/system-context.h"
 
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 
 SystemInstanceState &SystemInstanceState::get() noexcept {
   return InstanceState::get().system_instance_state;

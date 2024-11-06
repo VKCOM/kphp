@@ -7,7 +7,7 @@
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 
 // === print ======================================================================================
 

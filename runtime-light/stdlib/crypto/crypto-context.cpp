@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/crypto/crypto-context.h"
 
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 
 CryptoInstanceState &CryptoInstanceState::get() noexcept {
   return InstanceState::get().crypto_instance_state;

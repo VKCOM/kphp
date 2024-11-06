@@ -6,7 +6,7 @@
 
 #include <cstdint>
 
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/output/print-functions.h"
 
 static constexpr int32_t system_level_buffer = 0;

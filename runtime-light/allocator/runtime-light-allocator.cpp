@@ -6,8 +6,8 @@
 #include <cstring>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/component/component.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/state/instance-state.h"
 
 namespace {
 // TODO: make it depend on max chunk size, e.g. MIN_EXTRA_MEM_SIZE = f(MAX_CHUNK_SIZE);

@@ -14,9 +14,9 @@
 #include <utility>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/scheduler/scheduler.h"
+#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/fork/fork-context.h"
 
 template<class T>

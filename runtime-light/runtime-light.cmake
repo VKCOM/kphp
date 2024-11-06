@@ -6,7 +6,7 @@ include(${RUNTIME_LIGHT_DIR}/stdlib/stdlib.cmake)
 include(${RUNTIME_LIGHT_DIR}/streams/streams.cmake)
 include(${RUNTIME_LIGHT_DIR}/tl/tl.cmake)
 include(${RUNTIME_LIGHT_DIR}/utils/utils.cmake)
-include(${RUNTIME_LIGHT_DIR}/component/component.cmake)
+include(${RUNTIME_LIGHT_DIR}/state/state.cmake)
 include(${RUNTIME_LIGHT_DIR}/memory-resource-impl/memory-resource-impl.cmake)
 
 set(RUNTIME_LIGHT_SRC
@@ -16,7 +16,7 @@ set(RUNTIME_LIGHT_SRC
     ${RUNTIME_LIGHT_SERVER_SRC}
     ${RUNTIME_LIGHT_ALLOCATOR_SRC}
     ${RUNTIME_LIGHT_COROUTINE_SRC}
-    ${RUNTIME_LIGHT_COMPONENT_SRC}
+    ${RUNTIME_LIGHT_STATE_SRC}
     ${RUNTIME_LIGHT_STREAMS_SRC}
     ${RUNTIME_LIGHT_TL_SRC}
     ${RUNTIME_LIGHT_UTILS_SRC}

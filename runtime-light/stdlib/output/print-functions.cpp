@@ -8,7 +8,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
 
 namespace {

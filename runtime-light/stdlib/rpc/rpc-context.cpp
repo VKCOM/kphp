@@ -4,8 +4,8 @@
 
 #include "runtime-light/stdlib/rpc/rpc-context.h"
 
-#include "runtime-light/component/component.h"
-#include "runtime-light/component/image.h"
+#include "runtime-light/state/image-state.h"
+#include "runtime-light/state/instance-state.h"
 
 RpcInstanceState &RpcInstanceState::get() noexcept {
   return InstanceState::get().rpc_instance_state;
