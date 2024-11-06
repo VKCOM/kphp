@@ -9,7 +9,7 @@
 #include "runtime-light/utils/context.h"
 
 StringComponentContext &StringComponentContext::get() noexcept {
-  return get_component_context()->string_component_context;
+  return get_component_context()->string_instance_state;
 }
 
 const StringImageState &StringImageState::get() noexcept {

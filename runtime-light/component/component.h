@@ -55,9 +55,9 @@ struct InstanceState {
   InstanceState() noexcept
     : runtime_allocator(INIT_RUNTIME_ALLOCATOR_SIZE, 0)
     , scheduler(runtime_allocator.memory_resource)
-    , fork_component_context(runtime_allocator.memory_resource)
+    , fork_instance_state(runtime_allocator.memory_resource)
     , php_script_mutable_globals_singleton(runtime_allocator.memory_resource)
-    , rpc_component_context(runtime_allocator.memory_resource)
+    , rpc_instance_state(runtime_allocator.memory_resource)
     , incoming_streams_(deque<uint64_t>::allocator_type{runtime_allocator.memory_resource})
     , opened_streams_(unordered_set<uint64_t>::allocator_type{runtime_allocator.memory_resource})
     , pending_updates_(unordered_set<uint64_t>::allocator_type{runtime_allocator.memory_resource}) {}
@@ -103,24 +103,24 @@ struct InstanceState {
   RuntimeAllocator runtime_allocator;
 
   CoroutineScheduler scheduler;
-  ForkComponentContext fork_component_context;
+  ForkComponentContext fork_instance_state;
   PollStatus poll_status{PollStatus::PollReschedule};
 
   Response response;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
-  RuntimeContext runtime_component_context;
-  RpcComponentContext rpc_component_context;
-  HttpServerComponentContext http_server_component_context{};
-  JobWorkerClientComponentContext job_worker_client_component_context{};
-  JobWorkerServerComponentContext job_worker_server_component_context{};
+  RuntimeContext runtime_context;
+  RpcComponentContext rpc_instance_state;
+  HttpServerComponentContext http_server_instance_state{};
+  JobWorkerClientComponentContext job_worker_client_instance_state{};
+  JobWorkerServerComponentContext job_worker_server_instance_state{};
 
-  RegexComponentContext regex_component_context;
-  CurlComponentContext curl_component_context;
-  CryptoComponentContext crypto_component_context;
-  StringComponentContext string_component_context;
-  SystemComponentContext system_component_context;
-  FileStreamComponentContext file_stream_component_context;
+  RegexComponentContext regex_instance_state{};
+  CurlComponentContext curl_instance_state{};
+  CryptoComponentContext crypto_instance_state{};
+  StringComponentContext string_instance_state{};
+  SystemComponentContext system_instance_state{};
+  FileStreamComponentContext file_stream_instance_state{};
 
 private:
   task_t<void> main_task_;

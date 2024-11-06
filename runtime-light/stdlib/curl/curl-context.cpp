@@ -8,5 +8,5 @@
 #include "runtime-light/utils/context.h"
 
 CurlComponentContext &CurlComponentContext::get() noexcept {
-  return get_component_context()->curl_component_context;
+  return get_component_context()->curl_instance_state;
 }

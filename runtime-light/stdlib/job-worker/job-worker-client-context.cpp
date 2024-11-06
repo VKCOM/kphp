@@ -8,5 +8,5 @@
 #include "runtime-light/utils/context.h"
 
 JobWorkerClientComponentContext &JobWorkerClientComponentContext::get() noexcept {
-  return get_component_context()->job_worker_client_component_context;
+  return get_component_context()->job_worker_client_instance_state;
 }

@@ -8,5 +8,5 @@
 #include "runtime-light/utils/context.h"
 
 HttpServerComponentContext &HttpServerComponentContext::get() noexcept {
-  return get_component_context()->http_server_component_context;
+  return get_component_context()->http_server_instance_state;
 }

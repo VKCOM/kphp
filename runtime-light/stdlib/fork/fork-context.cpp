@@ -8,5 +8,5 @@
 #include "runtime-light/utils/context.h"
 
 ForkComponentContext &ForkComponentContext::get() noexcept {
-  return get_component_context()->fork_component_context;
+  return get_component_context()->fork_instance_state;
 }

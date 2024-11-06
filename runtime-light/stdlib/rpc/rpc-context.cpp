@@ -9,7 +9,7 @@
 #include "runtime-light/utils/context.h"
 
 RpcComponentContext &RpcComponentContext::get() noexcept {
-  return get_component_context()->rpc_component_context;
+  return get_component_context()->rpc_instance_state;
 }
 
 const RpcImageState &RpcImageState::get() noexcept {

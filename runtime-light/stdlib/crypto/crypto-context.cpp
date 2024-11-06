@@ -7,5 +7,5 @@
 #include "runtime-light/component/component.h"
 
 CryptoComponentContext &CryptoComponentContext::get() noexcept {
-  return get_component_context()->crypto_component_context;
+  return get_component_context()->crypto_instance_state;
 }

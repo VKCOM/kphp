@@ -43,7 +43,7 @@ int32_t merge_output_buffers() noexcept {
 } // namespace
 
 void InstanceState::init_script_execution() noexcept {
-  runtime_component_context.init();
+  runtime_context.init();
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, main_task_);
   scheduler.suspend(std::make_pair(main_task_.get_handle(), WaitEvent::Rechedule{}));
 }
@@ -92,7 +92,7 @@ task_t<void> InstanceState::run_instance_epilogue() noexcept {
     co_return;
   }
   // do not flush output buffers if we are in job worker
-  if (job_worker_server_component_context.kind != JobWorkerServerComponentContext::Kind::Invalid) {
+  if (job_worker_server_instance_state.kind != JobWorkerServerComponentContext::Kind::Invalid) {
     co_return;
   }
   if (standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {
