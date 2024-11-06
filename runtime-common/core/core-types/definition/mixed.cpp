@@ -1118,12 +1118,7 @@ mixed &mixed::operator[](int64_t int_key) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } 
-    else if (get_type() == type::OBJECT) {
-      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      return empty_value<mixed>();
-    }
     else {
-      php_warning("type = %d\n", (int)get_type());
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string_without_warning(*this).c_str(), get_type_or_class_name(), int_key);
       return empty_value<mixed>();
     }
@@ -1378,7 +1373,6 @@ const mixed mixed::get_value(const string &string_key) const {
 
     // TODO check with f$is_a
     if (get_type() == type::OBJECT) {
-      // printf("Get [\"%s\"]\n", string_key.c_str());
       auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
       return f$ArrayAccess$$offsetGet(xxx, string_key);
     }
