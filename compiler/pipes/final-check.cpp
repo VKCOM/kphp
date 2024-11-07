@@ -1006,9 +1006,6 @@ void FinalCheckPass::on_function() {
 }
 
 void FinalCheckPass::raise_error_using_Unknown_type(VertexPtr v) {
-  // TODO I think I should add some checks here
-  // In this pass, at least
-
   std::string index_depth;
   while (auto v_index = v.try_as<op_index>()) {
     v = v_index->array();

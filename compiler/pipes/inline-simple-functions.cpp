@@ -108,7 +108,6 @@ bool InlineSimpleFunctions::check_function(FunctionPtr function) const {
          !function->kphp_lib_export;
 }
 
-
 void InlineSimpleFunctions::on_start() {
   if (auto klass = current_function->class_id) {
     if (klass->internal_interface) {
@@ -117,7 +116,6 @@ void InlineSimpleFunctions::on_start() {
   }
   return FunctionPassBase::on_start();
 }
-
 
 void InlineSimpleFunctions::on_finish() {
   if (inline_is_possible_) {
