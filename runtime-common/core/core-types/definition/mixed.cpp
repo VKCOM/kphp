@@ -1027,6 +1027,8 @@ const string mixed::get_type_str() const {
 // TODO
 // Should we warn more precisely: "Class XXX does not implement \\ArrayAccess" or just
 // "Cannot use XXX as array, index = YYY" will be OK?
+// Note on usage: should check `if (type_ == type::OBJECT)` or not?
+// On the one hand, it's redundant. On the other hand, it's fast check
 std::pair<class_instance<C$ArrayAccess>, bool> try_as_array_access(const mixed &m) noexcept {
   using T = class_instance<C$ArrayAccess>;
   
@@ -1040,14 +1042,40 @@ std::pair<class_instance<C$ArrayAccess>, bool> try_as_array_access(const mixed &
 }
 
 bool mixed::empty_on(const mixed &key) const {
-  // 1) `if (type_ == type::OBJECT)` is semantically redundant
-  // 2) it may be ok becuase of fast check
   if (type_ == type::OBJECT) {
     if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
       return !f$ArrayAccess$$offsetExists(as_aa, key) || f$ArrayAccess$$offsetGet(as_aa, key).empty();
     }
   }
 
+  return get_value(key).empty();
+}
+
+bool mixed::empty_on(const string &key) const {
+  if (type_ == type::OBJECT) {
+    if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+      return !f$ArrayAccess$$offsetExists(as_aa, key) || f$ArrayAccess$$offsetGet(as_aa, key).empty();
+    }
+  }
+
+  return get_value(key).empty();
+}
+
+bool mixed::empty_on(const string &key, int64_t precomputed_hash) const {
+  if (type_ == type::OBJECT) {
+    if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+      return !f$ArrayAccess$$offsetExists(as_aa, key) || f$ArrayAccess$$offsetGet(as_aa, key).empty();
+    }
+  }
+
+  return get_value(key, precomputed_hash).empty();
+}
+
+bool mixed::empty_on(const array<mixed>::iterator &key) const {
+  return get_value(key).empty();
+}
+
+bool mixed::empty_on(const array<mixed>::const_iterator &key) const {
   return get_value(key).empty();
 }
 

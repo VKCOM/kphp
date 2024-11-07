@@ -238,9 +238,16 @@ public:
   const char *get_type_c_str() const;
   const char *get_type_or_class_name() const;
 
-  bool empty() const;
-  // todo with non mixed key
+
+  template<typename T>
+  inline bool empty_on(T key) const;
   bool empty_on(const mixed &key) const;
+  bool empty_on(const string &key) const;
+  bool empty_on(const string &key, int64_t precomputed_hash) const;
+  bool empty_on(const array<mixed>::iterator &key) const;
+  bool empty_on(const array<mixed>::const_iterator &key) const;
+
+  bool empty() const;
   int64_t count() const;
   int64_t compare(const mixed &rhs) const;
 

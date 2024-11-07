@@ -308,3 +308,13 @@ inline mixed mixed::set_value_return(T key, const mixed &val) {
   }
   return (*this)[key] = val;
 }
+
+template<typename T>
+inline bool mixed::empty_on(T key) const {
+  if (type_ == type::OBJECT) {
+    if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+      return !f$ArrayAccess$$offsetExists(as_aa, key) || f$ArrayAccess$$offsetGet(as_aa, key).empty();
+    }
+  }
+  return get_value(key).empty();
+}
