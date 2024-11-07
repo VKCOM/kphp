@@ -49,8 +49,8 @@
 #define FFI_CALL(call) ({ dl::CriticalSectionGuard critical_section___; (call); })
 #define FFI_INVOKE_CALLBACK(call) ({ dl::NonCriticalSectionGuard non_critical_section___; (call); })
 
-#define SET_MIXED_BY_INDEX(mix, idx, val) mix.set_by_index_return(idx, val)
-#define SAFE_SET_MIXED_BY_INDEX(mix, idx, val, val_type)  ({ val_type val_tmp___ = val; mix.set_by_index_return(idx, std::move(val_tmp___)); })
+#define SET_MIXED_BY_INDEX(mix, idx, val) mix.set_value_return(idx, val)
+#define SAFE_SET_MIXED_BY_INDEX(mix, idx, val, val_type)  ({ val_type val_tmp___ = val; mix.set_value_return(idx, std::move(val_tmp___)); })
 #define SET_ARR_ACC_BY_INDEX(obj, idx, val, method) ({mixed val_tmp___ = val; method(obj, idx, val_tmp___); val_tmp___;}) // it's always safe
 
 #define SAFE_SET_OP(a, op, b, b_type) ({b_type b_tmp___ = b; a op std::move(b_tmp___);})

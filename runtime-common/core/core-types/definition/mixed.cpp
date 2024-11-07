@@ -4,7 +4,33 @@
 
 #include "common/wrappers/likely.h"
 #include "runtime-common/core/runtime-core.h"
-#include <cassert>
+
+namespace {
+
+string to_string_without_warning(const mixed &m) {
+  switch (m.get_type()) {
+    case mixed::type::NUL:
+      return string();
+    case mixed::type::BOOLEAN:
+      return (m.as_bool() ? string("1", 1) : string());
+    case mixed::type::INTEGER:
+      return string(m.as_int());
+    case mixed::type::FLOAT:
+      return string(m.as_double());
+    case mixed::type::STRING:
+      return m.as_string();
+    case mixed::type::ARRAY:
+      return string("Array", 5);
+    case mixed::type::OBJECT: {
+      const char *s = m.get_type_or_class_name();
+      return string(s, strlen(s));
+    }
+    default:
+      __builtin_unreachable();
+  }
+}
+
+} // namespace
 
 void mixed::copy_from(const mixed &other) {
   switch (other.get_type()) {
@@ -531,28 +557,6 @@ double mixed::to_float() const {
   }
 }
 
-static string to_string_without_warning(const mixed &m) {
-  switch (m.get_type()) {
-    case mixed::type::NUL:
-      return string();
-    case mixed::type::BOOLEAN:
-      return (m.as_bool() ? string("1", 1) : string());
-    case mixed::type::INTEGER:
-      return string(m.as_int());
-    case mixed::type::FLOAT:
-      return string(m.as_double());
-    case mixed::type::STRING:
-      return m.as_string();
-    case mixed::type::ARRAY:
-      return string("Array", 5);
-    case mixed::type::OBJECT: {
-      const char *s = m.get_type_or_class_name();
-      return string(s, strlen(s));
-    }
-    default:
-      __builtin_unreachable();
-  }
-}
 
 const string mixed::to_string() const {
   switch (get_type()) {
@@ -1020,12 +1024,29 @@ const string mixed::get_type_str() const {
   return string(get_type_c_str());
 }
 
+// TODO
+// Should we warn more precisely: "Class XXX does not implement \\ArrayAccess" or just
+// "Cannot use XXX as array, index = YYY" will be OK?
+std::pair<class_instance<C$ArrayAccess>, bool> try_as_array_access(const mixed &m) noexcept {
+  using T = class_instance<C$ArrayAccess>;
+  
+  // For now, it does dynamic cast twice
+  // We can get rid of one of them
+  if (likely(m.is_a<C$ArrayAccess>())) {
+    return {from_mixed<T>(m, string()), true};
+  }
+
+  return {T{}, false};
+}
+
 bool mixed::empty_on(const mixed &key) const {
+  // 1) `if (type_ == type::OBJECT)` is semantically redundant
+  // 2) it may be ok becuase of fast check
   if (type_ == type::OBJECT) {
-    // todo f$is_a
-    auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-    return !f$ArrayAccess$$offsetExists(xxx, key) || f$ArrayAccess$$offsetGet(xxx, key).empty();
-  };
+    if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+      return !f$ArrayAccess$$offsetExists(as_aa, key) || f$ArrayAccess$$offsetGet(as_aa, key).empty();
+    }
+  }
 
   return get_value(key).empty();
 }
@@ -1104,9 +1125,6 @@ int64_t mixed::compare(const mixed &rhs) const {
   return three_way_comparison(to_float(), rhs.to_float());
 }
 
-
-
-
 mixed &mixed::operator[](int64_t int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
@@ -1117,8 +1135,7 @@ mixed &mixed::operator[](int64_t int_key) {
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
-    } 
-    else {
+    } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string_without_warning(*this).c_str(), get_type_or_class_name(), int_key);
       return empty_value<mixed>();
     }
@@ -1187,15 +1204,27 @@ mixed &mixed::operator[](const array<mixed>::iterator &it) {
   return as_array()[it];
 }
 
-
-mixed mixed::set_by_index_return(const mixed &key, const mixed &val) {
+mixed mixed::set_value_return(const mixed &key, const mixed &val) {
   if (get_type() == type::OBJECT) {
-    // TODO check with f$is_a
-    // TODO may be more efficient way?
     set_value(key, val);
     return val;
   }
+  return (*this)[key] = val;
+}
 
+mixed mixed::set_value_return(const string &key, const mixed &val) {
+  if (get_type() == type::OBJECT) {
+    set_value(key, val);
+    return val;
+  }
+  return (*this)[key] = val;
+}
+
+mixed mixed::set_value_return(const array<mixed>::iterator &key, const mixed &val) {
+  return (*this)[key] = val;
+}
+
+mixed mixed::set_value_return(const array<mixed>::const_iterator &key, const mixed &val) {
   return (*this)[key] = val;
 }
 
@@ -1225,12 +1254,11 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
       return;
     }
 
-    // TODO don't forget to use f$is_a !!!
-    // It'll look like an instance cast
     if (get_type() == type::OBJECT) {
-      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      f$ArrayAccess$$offsetSet(xxx, int_key, v);
-      return;
+      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+        f$ArrayAccess$$offsetSet(as_aa, int_key, v);
+        return;
+      }
     }
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
@@ -1269,12 +1297,11 @@ void mixed::set_value(const string &string_key, const mixed &v) {
       return;
     }
 
-    // TODO don't forget to use f$is_a !!!
-    // It'll look like an instance cast
     if (get_type() == type::OBJECT) {
-      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      f$ArrayAccess$$offsetSet(xxx, string_key, v);
-      return;
+      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+        f$ArrayAccess$$offsetSet(as_aa, string_key, v);
+        return;
+      }
     }
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
@@ -1342,10 +1369,10 @@ const mixed mixed::get_value(int64_t int_key) const {
       return string(1, as_string()[static_cast<string::size_type>(int_key)]);
     }
 
-    // TODO check with f$is_a
     if (get_type() == type::OBJECT) {
-      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      return f$ArrayAccess$$offsetGet(xxx, int_key);
+      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+        return f$ArrayAccess$$offsetGet(as_aa, int_key);
+      }
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1371,10 +1398,10 @@ const mixed mixed::get_value(const string &string_key) const {
       return string(1, as_string()[static_cast<string::size_type>(int_val)]);
     }
 
-    // TODO check with f$is_a
     if (get_type() == type::OBJECT) {
-      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      return f$ArrayAccess$$offsetGet(xxx, string_key);
+      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+        return f$ArrayAccess$$offsetGet(as_aa, string_key);
+      }
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1434,15 +1461,14 @@ const mixed mixed::get_value(const array<mixed>::iterator &it) const {
   return as_array().get_value(it);
 }
 
-// TODO USE f$is_a before every `from_mixed()` !!!
 void mixed::push_back(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::OBJECT) {
-      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      f$ArrayAccess$$offsetSet(xxx, Optional<bool>{}, v);
-      return;
-    }
-    else if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
+      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+        f$ArrayAccess$$offsetSet(as_aa, Optional<bool>{}, v);
+        return;
+      }
+    } else if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else {
@@ -1457,11 +1483,11 @@ void mixed::push_back(const mixed &v) {
 const mixed mixed::push_back_return(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::OBJECT) {
-      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      f$ArrayAccess$$offsetSet(xxx, Optional<bool>{}, v);
-      return v;
-    }
-    else if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
+      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+        f$ArrayAccess$$offsetSet(as_aa, Optional<bool>{}, v);
+        return v;
+      }
+    } else if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else {
@@ -1476,9 +1502,9 @@ const mixed mixed::push_back_return(const mixed &v) {
 bool mixed::isset(int64_t int_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::OBJECT) {
-      // TODO think about numeric-like string
-      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      return f$ArrayAccess$$offsetExists(xxx, int_key);
+      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+        return f$ArrayAccess$$offsetExists(as_aa, int_key);
+      }
     }
     if (get_type() == type::STRING) {
       int_key = as_string().get_correct_index(int_key);
@@ -1524,11 +1550,11 @@ bool mixed::isset(double double_key) const {
 
 void mixed::unset(int64_t int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
-    // TODO f$is_a
     if (get_type() == type::OBJECT) {
-      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      f$ArrayAccess$$offsetUnset(xxx, int_key);
-      return;
+      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+        f$ArrayAccess$$offsetUnset(as_aa, int_key);
+        return;
+      }
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1544,8 +1570,9 @@ void mixed::unset(int64_t int_key) {
 void mixed::unset(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::OBJECT) {
-      auto xxx = from_mixed<class_instance<C$ArrayAccess>>(*this, string());
-      f$ArrayAccess$$offsetUnset(xxx, v);
+      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
+        f$ArrayAccess$$offsetUnset(as_aa, v);
+      }
       return;
     }
 

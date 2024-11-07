@@ -99,6 +99,21 @@ public:
   mixed &operator[](const array<mixed>::const_iterator &it);
   mixed &operator[](const array<mixed>::iterator &it);
 
+  /*
+   * The `set_value_return()` method is used in assignment chains like `$mix[0] = $mix[1] = foo();`.
+   * Normally, this could be transpiled to `v$mix[0] = v$mix[1] = f$foo()`. However, when `$mix` is an object
+   * implementing ArrayAccess, this doesn't work because `offsetGet()` returns by value, not by reference.
+   * This is why `mixed &operator[]` cannot be expressed using `offsetGet()`.
+   * Since returning by reference is not supported, we call `offsetSet($offset, $value)` and return `$value`.
+   */
+
+  template<typename T>
+  inline mixed set_value_return(T key, const mixed &val);
+  mixed set_value_return(const mixed &key, const mixed &val);
+  mixed set_value_return(const string &key, const mixed &val);
+  mixed set_value_return(const array<mixed>::iterator &key, const mixed &val);
+  mixed set_value_return(const array<mixed>::const_iterator &key, const mixed &val);
+
   void set_value(int64_t int_key, const mixed &v);
   void set_value(int32_t key, const mixed &value) { set_value(int64_t{key}, value); }
   void set_value(const string &string_key, const mixed &v);
@@ -109,7 +124,6 @@ public:
   void set_value(const array<mixed>::const_iterator &it);
   void set_value(const array<mixed>::iterator &it);
 
-  mixed set_by_index_return(const mixed &key, const mixed &val);
 
   const mixed get_value(int64_t int_key) const;
   const mixed get_value(int32_t key) const { return get_value(int64_t{key}); }
@@ -307,3 +321,4 @@ template<class InputClass>
 mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept;
 template<class ResultClass>
 ResultClass from_mixed(const mixed &m, const string &) noexcept;
+std::pair<class_instance<C$ArrayAccess>, bool> try_as_array_access(const mixed &) noexcept;
