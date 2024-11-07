@@ -6,6 +6,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <utility>
 
 #define K2_API_HEADER_H
 #include "runtime-light/k2-platform/k2-header.h"

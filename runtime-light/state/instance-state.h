@@ -53,14 +53,14 @@ struct InstanceState final : vk::not_copyable {
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
 
   InstanceState() noexcept
-    : runtime_allocator(INIT_RUNTIME_ALLOCATOR_SIZE, 0)
-    , scheduler(runtime_allocator.memory_resource)
-    , fork_instance_state(runtime_allocator.memory_resource)
-    , php_script_mutable_globals_singleton(runtime_allocator.memory_resource)
-    , rpc_instance_state(runtime_allocator.memory_resource)
-    , incoming_streams_(deque<uint64_t>::allocator_type{runtime_allocator.memory_resource})
-    , opened_streams_(unordered_set<uint64_t>::allocator_type{runtime_allocator.memory_resource})
-    , pending_updates_(unordered_set<uint64_t>::allocator_type{runtime_allocator.memory_resource}) {}
+    : allocator(INIT_INSTANCE_ALLOCATOR_SIZE, 0)
+    , scheduler(allocator.memory_resource)
+    , fork_instance_state(allocator.memory_resource)
+    , php_script_mutable_globals_singleton(allocator.memory_resource)
+    , rpc_instance_state(allocator.memory_resource)
+    , incoming_streams_(deque<uint64_t>::allocator_type{allocator.memory_resource})
+    , opened_streams_(unordered_set<uint64_t>::allocator_type{allocator.memory_resource})
+    , pending_updates_(unordered_set<uint64_t>::allocator_type{allocator.memory_resource}) {}
 
   ~InstanceState() = default;
 
@@ -104,7 +104,7 @@ struct InstanceState final : vk::not_copyable {
   void release_stream(uint64_t) noexcept;
   void release_all_streams() noexcept;
 
-  RuntimeAllocator runtime_allocator;
+  RuntimeAllocator allocator;
 
   CoroutineScheduler scheduler;
   ForkInstanceState fork_instance_state;
@@ -135,5 +135,5 @@ private:
   unordered_set<uint64_t> opened_streams_;
   unordered_set<uint64_t> pending_updates_;
 
-  static constexpr auto INIT_RUNTIME_ALLOCATOR_SIZE = static_cast<size_t>(512U * 1024U); // 512KB
+  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(512U * 1024U); // 512KB
 };
