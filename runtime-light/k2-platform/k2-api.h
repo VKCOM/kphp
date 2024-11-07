@@ -62,7 +62,7 @@ inline void *alloc_align(size_t size, size_t align) noexcept {
 }
 
 inline void *alloc(size_t size) noexcept {
-  return alloc_align(size, k2_impl_::DEFAULT_MEMORY_ALIGN);
+  return k2::alloc_align(size, k2_impl_::DEFAULT_MEMORY_ALIGN);
 }
 
 inline void *realloc(void *ptr, size_t new_size) noexcept {
@@ -143,6 +143,26 @@ inline void os_rnd(size_t len, void *bytes) noexcept {
 
 inline void system_time(SystemTime *system_time) noexcept {
   k2_system_time(system_time);
+}
+
+inline uint32_t args_count() noexcept {
+  return k2_args_count();
+}
+
+inline auto arg_fetch(uint32_t arg_num) noexcept {
+  const auto key_len{k2_args_key_len(arg_num)};
+  const auto value_len{k2_args_value_len(arg_num)};
+
+  // +1 since we get non-null-terminated strings from platform and we want to null-terminate them on our side
+  auto *key_buffer{static_cast<char *>(k2::alloc(key_len + 1))};
+  auto *value_buffer{static_cast<char *>(k2::alloc(value_len + 1))};
+  k2_args_fetch(arg_num, key_buffer, value_buffer);
+  // null-terminate
+  key_buffer[key_len] = '\0';
+  value_buffer[value_len] = '\0';
+
+  return std::make_pair(std::unique_ptr<char, decltype(std::addressof(k2::free))>{key_buffer, std::addressof(k2::free)},
+                        std::unique_ptr<char, decltype(std::addressof(k2::free))>{value_buffer, std::addressof(k2::free)});
 }
 
 } // namespace k2
