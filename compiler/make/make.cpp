@@ -444,7 +444,7 @@ static std::string get_light_runtime_compiler_options() {
   for (vk::string_view option : options) {
     for (vk::string_view prohibit_substr : black_list_substrings) {
       if (vk::contains(option, prohibit_substr)) continue;
-      s   tion << " ";
+      s << option << " ";
     }
   }
   s << "-std=c++20 ";
