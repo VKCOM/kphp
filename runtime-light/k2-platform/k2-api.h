@@ -49,9 +49,9 @@ inline const ImageState *image_state() noexcept {
   return k2_image_state();
 }
 
-// inline const ComponentState *component_state() noexcept {
-//   return k2_component_state();
-// }
+inline const ComponentState *component_state() noexcept {
+  return k2_component_state();
+}
 
 inline InstanceState *instance_state() noexcept {
   return k2_instance_state();
