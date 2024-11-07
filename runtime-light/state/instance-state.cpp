@@ -7,7 +7,6 @@
 #include <chrono>
 #include <cstdint>
 #include <memory>
-#include <string>
 #include <string_view>
 #include <utility>
 
@@ -63,12 +62,12 @@ task_t<void> InstanceState::run_instance_prologue() noexcept {
     const auto time_mcs{std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::nanoseconds{sys_time.since_epoch_ns}).count()};
 
     using namespace PhpServerSuperGlobalIndices;
-    superglobals.v$_SERVER.set_value(string{ARGC, std::char_traits<char>::length(ARGC)}, superglobals.v$argc);
-    superglobals.v$_SERVER.set_value(string{ARGV, std::char_traits<char>::length(ARGV)}, superglobals.v$argv);
-    superglobals.v$_SERVER.set_value(string{PHP_SELF, std::char_traits<char>::length(PHP_SELF)}, string{}); // TODO: script name
-    superglobals.v$_SERVER.set_value(string{SCRIPT_NAME, std::char_traits<char>::length(SCRIPT_NAME)}, string{});
-    superglobals.v$_SERVER.set_value(string{REQUEST_TIME, std::char_traits<char>::length(REQUEST_TIME)}, static_cast<int64_t>(sys_time.since_epoch_ns));
-    superglobals.v$_SERVER.set_value(string{REQUEST_TIME_FLOAT, std::char_traits<char>::length(REQUEST_TIME_FLOAT)}, static_cast<double>(time_mcs));
+    superglobals.v$_SERVER.set_value(string{ARGC.data(), ARGC.size()}, superglobals.v$argc);
+    superglobals.v$_SERVER.set_value(string{ARGV.data(), ARGV.size()}, superglobals.v$argv);
+    superglobals.v$_SERVER.set_value(string{PHP_SELF.data(), PHP_SELF.size()}, string{}); // TODO: script name
+    superglobals.v$_SERVER.set_value(string{SCRIPT_NAME.data(), SCRIPT_NAME.size()}, string{});
+    superglobals.v$_SERVER.set_value(string{REQUEST_TIME.data(), REQUEST_TIME.size()}, static_cast<int64_t>(sys_time.since_epoch_ns));
+    superglobals.v$_SERVER.set_value(string{REQUEST_TIME_FLOAT.data(), REQUEST_TIME_FLOAT.size()}, static_cast<double>(time_mcs));
   }
   // TODO sapi, env
 
