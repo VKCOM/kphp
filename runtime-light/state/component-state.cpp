@@ -32,7 +32,8 @@ void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view v
 
 void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexcept {
   // FIXME: actually no need to allocate string here
-  if (auto [config, ok]{json_decode(string{value_view.data(), static_cast<string::size_type>(value_view.size())})}; ok) [[likely]] {
+  auto [config, ok]{json_decode(string{value_view.data(), static_cast<string::size_type>(value_view.size())})};
+  if (ok) [[likely]] {
     runtime_config = std::move(config);
   } else {
     php_warning("runtime config is not a JSON");
