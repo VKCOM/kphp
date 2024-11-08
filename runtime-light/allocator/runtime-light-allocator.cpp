@@ -2,6 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 
@@ -14,9 +15,10 @@
 namespace {
 // TODO: make it depend on max chunk size, e.g. MIN_EXTRA_MEM_SIZE = f(MAX_CHUNK_SIZE);
 constexpr auto MIN_EXTRA_MEM_SIZE = static_cast<size_t>(32U * 1024U); // extra mem size should be greater than max chunk block size
+constexpr auto EXTRA_MEMORY_MULTIPLIER = 2;
 
 void request_extra_memory(size_t requested_size) {
-  const size_t extra_mem_size{std::max(MIN_EXTRA_MEM_SIZE, requested_size)};
+  const size_t extra_mem_size{std::max(MIN_EXTRA_MEM_SIZE, EXTRA_MEMORY_MULTIPLIER * requested_size)};
   auto &allocator{RuntimeAllocator::get()};
   auto *extra_mem{allocator.alloc_global_memory(extra_mem_size)};
   allocator.memory_resource.add_extra_memory(new (extra_mem) memory_resource::extra_memory_pool{extra_mem_size});
