@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <string>
 #include <string_view>
 #include <utility>
 
@@ -22,8 +21,7 @@
 
 namespace {
 
-constexpr auto *CONFDATA_COMPONENT_NAME = "confdata"; // TODO: it may actually have an alias specified in linking config
-constexpr auto CONFDATA_COMPONENT_NAME_LENGTH = std::char_traits<char>::length(CONFDATA_COMPONENT_NAME);
+constexpr std::string_view CONFDATA_COMPONENT_NAME = "confdata"; // TODO: it may actually have an alias specified in linking config
 
 mixed extract_confdata_value(tl::confdataValue &&confdata_value) noexcept {
   if (confdata_value.is_php_serialized && confdata_value.is_json_serialized) { // check that we don't have both flags set
@@ -44,7 +42,7 @@ mixed extract_confdata_value(tl::confdataValue &&confdata_value) noexcept {
 // TODO: the performance of this implementation can be enhanced. rework it when the platform has specific API for that
 bool f$is_confdata_loaded() noexcept {
   auto &instance_st{InstanceState::get()};
-  if (const auto stream_d{instance_st.open_stream(std::string_view{CONFDATA_COMPONENT_NAME})}; stream_d != INVALID_PLATFORM_DESCRIPTOR) {
+  if (const auto stream_d{instance_st.open_stream(CONFDATA_COMPONENT_NAME)}; stream_d != INVALID_PLATFORM_DESCRIPTOR) {
     instance_st.release_stream(stream_d);
     return true;
   }
@@ -55,7 +53,7 @@ task_t<mixed> f$confdata_get_value(string key) noexcept {
   tl::TLBuffer tlb{};
   tl::ConfdataGet{.key = std::move(key)}.store(tlb);
 
-  auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME, static_cast<string::size_type>(CONFDATA_COMPONENT_NAME_LENGTH)},
+  auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME.data(), static_cast<string::size_type>(CONFDATA_COMPONENT_NAME.size())},
                                                       {tlb.data(), static_cast<string::size_type>(tlb.size())})};
   const auto response{co_await f$component_client_fetch_response(std::move(query))};
 
@@ -77,7 +75,7 @@ task_t<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noex
   tl::TLBuffer tlb{};
   tl::ConfdataGetWildcard{.wildcard = std::move(wildcard)}.store(tlb);
 
-  auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME, static_cast<string::size_type>(CONFDATA_COMPONENT_NAME_LENGTH)},
+  auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME.data(), static_cast<string::size_type>(CONFDATA_COMPONENT_NAME.size())},
                                                       {tlb.data(), static_cast<string::size_type>(tlb.size())})};
   const auto response{co_await f$component_client_fetch_response(std::move(query))};
 

@@ -15,13 +15,13 @@
 #include "runtime-light/utils/json-functions.h"
 
 void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view value_view) noexcept {
-  if (key_view.size() <= INI_ARG_PREFIX_VIEW.size()) [[unlikely]] {
+  if (key_view.size() <= INI_ARG_PREFIX.size()) [[unlikely]] {
     php_warning("wrong ini argument format %s", key_view.data());
     return;
   }
   const auto *key_ptr{key_view.data()};
-  std::advance(key_ptr, INI_ARG_PREFIX_VIEW.size());
-  string key_str{key_ptr, static_cast<string::size_type>(key_view.size() - INI_ARG_PREFIX_VIEW.size())};
+  std::advance(key_ptr, INI_ARG_PREFIX.size());
+  string key_str{key_ptr, static_cast<string::size_type>(key_view.size() - INI_ARG_PREFIX.size())};
   key_str.set_reference_counter_to(ExtraRefCnt::for_global_const);
 
   string value_str{value_view.data(), static_cast<string::size_type>(value_view.size())};
@@ -46,9 +46,9 @@ void ComponentState::parse_args() noexcept {
     const std::string_view key_view{arg_key.get(), std::strlen(arg_key.get())};
     const std::string_view value_view{arg_value.get(), std::strlen(arg_value.get())};
 
-    if (key_view.starts_with(INI_ARG_PREFIX_VIEW)) {
+    if (key_view.starts_with(INI_ARG_PREFIX)) {
       parse_ini_arg(key_view, value_view);
-    } else if (key_view == RUNTIME_CONFIG_ARG_VIEW) {
+    } else if (key_view == RUNTIME_CONFIG_ARG) {
       parse_runtime_config_arg(value_view);
     } else {
       php_warning("unknown argument: %s", key_view.data());

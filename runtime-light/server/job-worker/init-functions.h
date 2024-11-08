@@ -19,6 +19,6 @@ inline void init_job_server(tl::K2InvokeJobWorker &&invoke_jw) noexcept {
   {
     using namespace PhpServerSuperGlobalIndices;
     auto &server{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals().v$_SERVER};
-    server.set_value(string{JOB_ID, std::char_traits<char>::length(JOB_ID)}, invoke_jw.job_id);
+    server.set_value(string{JOB_ID.data(), JOB_ID.size()}, invoke_jw.job_id);
   }
 }

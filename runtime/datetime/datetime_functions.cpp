@@ -4,6 +4,7 @@
 
 #include "runtime/datetime/datetime_functions.h"
 
+#include <cerrno>
 #include <chrono>
 #include <clocale>
 #include <ctime>
