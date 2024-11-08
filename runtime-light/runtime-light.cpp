@@ -5,6 +5,7 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/state/component-state.h"
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
 
@@ -28,10 +29,22 @@ void k2_init_image() {
 }
 
 ComponentState *k2_create_component() {
-  return nullptr;
+  // Note that in k2_create_component most of K2 functionality is not yet available
+  php_debug("create component state of \"%s\"", k2::describe()->image_name);
+  auto *component_state_ptr{static_cast<ComponentState *>(k2::alloc(sizeof(ComponentState)))};
+  if (component_state_ptr == nullptr) {
+    php_warning("can't allocate enough memory for ImageState");
+    return nullptr;
+  }
+  php_debug("finish image state creation of \"%s\"", k2::describe()->image_name);
+  return component_state_ptr;
 }
 
-void k2_init_component() {}
+void k2_init_component() {
+  php_debug("start component state init");
+  new (const_cast<ComponentState *>(k2::component_state())) ComponentState{};
+  php_debug("end component state init");
+}
 
 InstanceState *k2_create_instance() {
   // Note that in k2_create_instance most of K2 functionality is not yet available
