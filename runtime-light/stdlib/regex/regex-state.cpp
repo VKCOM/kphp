@@ -4,8 +4,8 @@
 
 #include "runtime-light/stdlib/regex/regex-functions.h"
 
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 
-RegexComponentContext &RegexComponentContext::get() noexcept {
-  return get_component_context()->regex_component_context;
+RegexInstanceState &RegexInstanceState::get() noexcept {
+  return InstanceState::get().regex_instance_state;
 }

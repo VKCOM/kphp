@@ -5,8 +5,6 @@
 #include "runtime-light/utils/json-functions.h"
 
 #include "common/algorithms/find.h"
-#include "runtime-light/component/component.h"
-//
 //#include "runtime/string_functions.h"
 
 // note: json-functions.cpp is used for non-typed json implementation: for json_encode() and json_decode()

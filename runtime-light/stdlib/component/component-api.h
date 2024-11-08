@@ -10,9 +10,8 @@
 
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/utils/context.h"
+#include "runtime-light/state/instance-state.h"
 
 // === ComponentQuery =============================================================================
 
@@ -37,9 +36,9 @@ struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery
   }
 
   ~C$ComponentQuery() {
-    auto &component_ctx{*get_component_context()};
-    if (component_ctx.opened_streams().contains(stream_d)) {
-      component_ctx.release_stream(stream_d);
+    auto &instance_st{InstanceState::get()};
+    if (instance_st.opened_streams().contains(stream_d)) {
+      instance_st.release_stream(stream_d);
     }
   }
 };

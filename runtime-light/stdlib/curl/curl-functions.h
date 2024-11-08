@@ -7,9 +7,9 @@
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/curl/curl-context.h"
+#include "runtime-light/stdlib/curl/curl-state.h"
 
-inline Optional<array<int64_t>> f$curl_multi_info_read(int64_t, int64_t & = CurlComponentContext::get().curl_multi_info_read_msgs_in_queue_stub) {
+inline Optional<array<int64_t>> f$curl_multi_info_read(int64_t, int64_t & = CurlInstanceState::get().curl_multi_info_read_msgs_in_queue_stub) {
   php_critical_error("call to unsupported function : curl_multi_info_read");
 }
 

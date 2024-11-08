@@ -7,13 +7,12 @@
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/component/component.h"
-#include "runtime-light/utils/context.h"
+#include "runtime-light/state/instance-state.h"
 
 // === print ======================================================================================
 
 inline void print(const char *s, size_t len) noexcept {
-  Response &response{get_component_context()->response};
+  Response &response{InstanceState::get().response};
   response.output_buffers[response.current_buffer].append(s, len);
 }
 

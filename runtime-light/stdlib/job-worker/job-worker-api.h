@@ -7,9 +7,8 @@
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/utils/context.h"
+#include "runtime-light/state/instance-state.h"
 
 // === Client =====================================================================================
 
@@ -28,7 +27,7 @@ task_t<int64_t> f$job_worker_store_response(string response) noexcept;
 // === Misc =======================================================================================
 
 inline bool f$is_kphp_job_workers_enabled() noexcept {
-  return get_component_context()->component_kind() == ComponentKind::Server;
+  return InstanceState::get().image_kind() == ImageKind::Server;
 }
 
 inline int64_t f$get_job_workers_number() noexcept {

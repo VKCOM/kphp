@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <csignal>
@@ -14,8 +14,7 @@
 #include <unistd.h>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/header.h"
-#include "runtime-light/utils/context.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/utils/logs.h"
 
 static void php_warning_impl(bool out_of_memory, int error_type, char const *message, va_list args) {
@@ -24,8 +23,8 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
   char buf[BUF_SIZE];
 
   int size = vsnprintf(buf, BUF_SIZE, message, args);
-  get_platform_context()->log(error_type, size, buf);
-  if (error_type == Error) {
+  k2::log(error_type, size, buf);
+  if (error_type == static_cast<std::underlying_type_t<LogLevel>>(LogLevel::Error)) {
     critical_error_handler();
   }
 }
@@ -33,33 +32,33 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
 void php_debug(char const *message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(false, Debug, message, args);
+  php_warning_impl(false, static_cast<std::underlying_type_t<LogLevel>>(LogLevel::Debug), message, args);
   va_end(args);
 }
 
 void php_notice(char const *message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(false, Info, message, args);
+  php_warning_impl(false, static_cast<std::underlying_type_t<LogLevel>>(LogLevel::Info), message, args);
   va_end(args);
 }
 
 void php_warning(char const *message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(false, Warn, message, args);
+  php_warning_impl(false, static_cast<std::underlying_type_t<LogLevel>>(LogLevel::Warn), message, args);
   va_end(args);
 }
 
 void php_error(char const *message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(false, Error, message, args);
+  php_warning_impl(false, static_cast<std::underlying_type_t<LogLevel>>(LogLevel::Error), message, args);
   va_end(args);
 }
 
 void php_assert__(const char *msg, const char *file, int line) {
   php_error("Assertion \"%s\" failed in file %s on line %d", msg, file, line);
   critical_error_handler();
-  _exit(1);
+  k2::exit(1);
 }

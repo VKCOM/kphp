@@ -3,56 +3,60 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/component/component.h"
-#include "runtime-light/component/image.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
-#include "runtime-light/utils/context.h"
+#include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/state/image-state.h"
+#include "runtime-light/state/instance-state.h"
 
-ImageState *vk_k2_create_image_state(const struct PlatformCtx *pt_ctx) {
-  // Note that in vk_k2_create_image_state available only allocator and logs from pt_ctx
-  platformCtx = pt_ctx;
-  php_debug("create image state on \"%s\"", vk_k2_describe()->image_name);
-  char *buffer = static_cast<char *>(platformCtx->allocator.alloc(sizeof(ImageState)));
-  if (buffer == nullptr) {
-    php_warning("cannot allocate enough memory for ImageState");
+ImageState *k2_create_image() {
+  // Note that in k2_create_image most of K2 functionality is not yet available
+  php_debug("create image state of \"%s\"", k2::describe()->image_name);
+  auto *image_state_ptr{static_cast<ImageState *>(k2::alloc(sizeof(ImageState)))};
+  if (image_state_ptr == nullptr) {
+    php_warning("can't allocate enough memory for ImageState");
     return nullptr;
   }
-  mutableImageState = new (buffer) ImageState();
-  imageState = mutableImageState;
-  init_php_scripts_once_in_master();
-  ImageState *mutable_image_state = mutableImageState;
-  php_debug("finish image state creation on \"%s\"", vk_k2_describe()->image_name);
-  reset_thread_locals();
-  return mutable_image_state;
+  php_debug("finish image state creation of \"%s\"", k2::describe()->image_name);
+  return image_state_ptr;
 }
 
-ComponentState *vk_k2_create_component_state(const struct ImageState *image_state, const struct PlatformCtx *pt_ctx) {
-  // Note that in vk_k2_create_component_state available only allocator and logs from pt_ctx
-  imageState = image_state;
-  platformCtx = pt_ctx;
-  php_debug("create component state on \"%s\"", vk_k2_describe()->image_name);
-  char *buffer = static_cast<char *>(platformCtx->allocator.alloc(sizeof(ComponentState)));
-  if (buffer == nullptr) {
+void k2_init_image() {
+  php_debug("start image state init");
+  new (const_cast<ImageState *>(k2::image_state())) ImageState{};
+  init_php_scripts_once_in_master();
+  php_debug("end image state init");
+}
+
+ComponentState *k2_create_component() {
+  return nullptr;
+}
+
+void k2_init_component() {}
+
+InstanceState *k2_create_instance() {
+  // Note that in k2_create_instance most of K2 functionality is not yet available
+  php_debug("create instance state of \"%s\"", k2::describe()->image_name);
+  auto *instance_state_ptr{static_cast<InstanceState *>(k2::alloc(sizeof(InstanceState)))};
+  if (instance_state_ptr == nullptr) {
     php_warning("cannot allocate enough memory for ComponentState");
     return nullptr;
   }
-  componentState = new (buffer) ComponentState();
-  componentState->init_script_execution();
-  ComponentState *component_state = componentState;
-  php_debug("finish component state creation on \"%s\"", vk_k2_describe()->image_name);
-  reset_thread_locals();
-  return component_state;
+  php_debug("finish component state creation of \"%s\"", k2::describe()->image_name);
+  return instance_state_ptr;
 }
 
-PollStatus vk_k2_poll(const ImageState *image_state, const PlatformCtx *pt_ctx, ComponentState *component_ctx) {
-  imageState = image_state;
-  platformCtx = pt_ctx;
-  componentState = component_ctx;
+void k2_init_instance() {
+  php_debug("start instance state init");
+  new (k2::instance_state()) InstanceState{};
+  k2::instance_state()->init_script_execution();
+  php_debug("end instance state init");
+}
 
-  php_debug("vk_k2_poll started...");
-  componentState->process_platform_updates();
-  const auto poll_status = componentState->poll_status;
-  php_debug("vk_k2_poll finished with status: %d", poll_status);
-  reset_thread_locals();
+k2::PollStatus k2_poll() {
+  php_debug("k2_poll started...");
+  auto &instance_state{InstanceState::get()};
+  instance_state.process_platform_updates();
+  const auto poll_status{instance_state.poll_status};
+  php_debug("k2_poll finished with status: %d", poll_status);
   return poll_status;
 }

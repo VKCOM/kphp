@@ -4,11 +4,10 @@
 
 #include "php-script-globals.h"
 
-#include "runtime-light/component/component.h"
-#include "runtime-light/utils/context.h"
+#include "runtime-light/state/instance-state.h"
 
 PhpScriptMutableGlobals &PhpScriptMutableGlobals::current() noexcept {
-  return get_component_context()->php_script_mutable_globals_singleton;
+  return InstanceState::get().php_script_mutable_globals_singleton;
 }
 
 void PhpScriptMutableGlobals::once_alloc_linear_mem(unsigned int n_bytes) {

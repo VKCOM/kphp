@@ -8,9 +8,8 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
-#include "runtime-light/utils/context.h"
 
 namespace {
 
@@ -20,7 +19,7 @@ void do_print_r(const mixed &v, int32_t depth) noexcept {
     return;
   }
 
-  Response &httpResponse{get_component_context()->response};
+  Response &httpResponse{InstanceState::get().response};
   string_buffer &coub{httpResponse.output_buffers[httpResponse.current_buffer]};
   switch (v.get_type()) {
     case mixed::type::NUL:
@@ -71,7 +70,7 @@ void do_var_dump(const mixed &v, int32_t depth) noexcept {
   }
 
   string shift(depth * 2, ' ');
-  Response &httpResponse{get_component_context()->response};
+  Response &httpResponse{InstanceState::get().response};
   string_buffer &coub{httpResponse.output_buffers[httpResponse.current_buffer]};
   switch (v.get_type()) {
     case mixed::type::NUL:
@@ -119,7 +118,7 @@ void do_var_dump(const mixed &v, int32_t depth) noexcept {
 }
 
 void var_export_escaped_string(const string &s) noexcept {
-  Response &httpResponse{get_component_context()->response};
+  Response &httpResponse{InstanceState::get().response};
   string_buffer &coub{httpResponse.output_buffers[httpResponse.current_buffer]};
   for (string::size_type i = 0; i < s.size(); i++) {
     switch (s[i]) {
@@ -143,7 +142,7 @@ void do_var_export(const mixed &v, int32_t depth, char endc = 0) noexcept {
   }
 
   string shift(depth * 2, ' ');
-  Response &httpResponse{get_component_context()->response};
+  Response &httpResponse{InstanceState::get().response};
   string_buffer &coub{httpResponse.output_buffers[httpResponse.current_buffer]};
   switch (v.get_type()) {
     case mixed::type::NUL:

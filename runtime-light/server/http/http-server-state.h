@@ -8,11 +8,11 @@
 
 #include "common/mixin/not_copyable.h"
 
-struct HttpServerComponentContext final : private vk::not_copyable {
+struct HttpServerInstanceState final : private vk::not_copyable {
   static constexpr auto ENCODING_GZIP = static_cast<uint32_t>(1U << 0U);
   static constexpr auto ENCODING_DEFLATE = static_cast<uint32_t>(1U << 1U);
 
   uint32_t encoding{};
 
-  static HttpServerComponentContext &get() noexcept;
+  static HttpServerInstanceState &get() noexcept;
 };

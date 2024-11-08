@@ -15,12 +15,11 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/component/component.h"
 #include "runtime-light/core/globals/php-script-globals.h"
-#include "runtime-light/server/http/http-server-context.h"
+#include "runtime-light/server/http/http-server-state.h"
+#include "runtime-light/state/instance-state.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
-#include "runtime-light/utils/context.h"
 
 namespace {
 
@@ -82,17 +81,17 @@ void process_cookie_header(const string &header, PhpScriptBuiltInSuperGlobals &s
 
 void process_headers(tl::dictionary<tl::httpHeaderValue> &&headers, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
   auto &server{superglobals.v$_SERVER};
-  auto &http_server_ctx{HttpServerComponentContext::get()};
+  auto &http_server_ctx{HttpServerInstanceState::get()};
   using namespace PhpServerSuperGlobalIndices;
 
   // platform provides headers that are already in lowercase
   for (auto &[header_name, header] : headers) {
     if (std::strcmp(header_name.c_str(), HEADER_ACCEPT_ENCODING) == 0) {
       if (std::strstr(header.value.c_str(), ENCODING_GZIP) != nullptr) {
-        http_server_ctx.encoding |= HttpServerComponentContext::ENCODING_GZIP;
+        http_server_ctx.encoding |= HttpServerInstanceState::ENCODING_GZIP;
       }
       if (std::strstr(header.value.c_str(), ENCODING_DEFLATE) != nullptr) {
-        http_server_ctx.encoding |= HttpServerComponentContext::ENCODING_DEFLATE;
+        http_server_ctx.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
       }
     } else if (std::strcmp(header_name.c_str(), HEADER_COOKIE) == 0) {
       process_cookie_header(header.value, superglobals);
@@ -117,7 +116,7 @@ void process_headers(tl::dictionary<tl::httpHeaderValue> &&headers, PhpScriptBui
 } // namespace
 
 void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
-  auto &superglobals{get_component_context()->php_script_mutable_globals_singleton.get_superglobals()};
+  auto &superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
   auto &server{superglobals.v$_SERVER};
 
   HttpMethod http_method{HttpMethod::OTHER};

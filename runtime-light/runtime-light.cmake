@@ -6,7 +6,7 @@ include(${RUNTIME_LIGHT_DIR}/stdlib/stdlib.cmake)
 include(${RUNTIME_LIGHT_DIR}/streams/streams.cmake)
 include(${RUNTIME_LIGHT_DIR}/tl/tl.cmake)
 include(${RUNTIME_LIGHT_DIR}/utils/utils.cmake)
-include(${RUNTIME_LIGHT_DIR}/component/component.cmake)
+include(${RUNTIME_LIGHT_DIR}/state/state.cmake)
 include(${RUNTIME_LIGHT_DIR}/memory-resource-impl/memory-resource-impl.cmake)
 
 set(RUNTIME_LIGHT_SRC
@@ -16,7 +16,7 @@ set(RUNTIME_LIGHT_SRC
     ${RUNTIME_LIGHT_SERVER_SRC}
     ${RUNTIME_LIGHT_ALLOCATOR_SRC}
     ${RUNTIME_LIGHT_COROUTINE_SRC}
-    ${RUNTIME_LIGHT_COMPONENT_SRC}
+    ${RUNTIME_LIGHT_STATE_SRC}
     ${RUNTIME_LIGHT_STREAMS_SRC}
     ${RUNTIME_LIGHT_TL_SRC}
     ${RUNTIME_LIGHT_UTILS_SRC}
@@ -36,6 +36,12 @@ set_target_properties(runtime-light PROPERTIES LIBRARY_OUTPUT_DIRECTORY
 target_compile_options(runtime-light PUBLIC -stdlib=libc++ -iquote
                                             ${GENERATED_DIR} -fPIC -O3)
 target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
+
+if(APPLE)
+  target_link_options(runtime-light PUBLIC -undefined dynamic_lookup)
+else()
+  target_link_options(runtime-light PUBLIC --allow-shlib-undefined)
+endif()
 
 vk_add_library(kphp-light-runtime STATIC)
 target_link_libraries(

@@ -2,7 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 
 #include <chrono>
 #include <cstdint>
@@ -13,21 +13,20 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/component/init-functions.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/header.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
-#include "runtime-light/server/job-worker/job-worker-server-context.h"
+#include "runtime-light/server/job-worker/job-worker-server-state.h"
+#include "runtime-light/state/init-functions.h"
 #include "runtime-light/streams/streams.h"
-#include "runtime-light/utils/context.h"
 
 namespace {
 
 int32_t merge_output_buffers() noexcept {
-  auto &component_ctx{*get_component_context()};
-  Response &response{component_ctx.response};
+  auto &instance_st{InstanceState::get()};
+  Response &response{instance_st.response};
   php_assert(response.current_buffer >= 0);
 
   int32_t ob_first_not_empty{};
@@ -42,26 +41,25 @@ int32_t merge_output_buffers() noexcept {
 
 } // namespace
 
-void ComponentState::init_script_execution() noexcept {
-  runtime_component_context.init();
+void InstanceState::init_script_execution() noexcept {
+  runtime_context.init();
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, main_task_);
   scheduler.suspend(std::make_pair(main_task_.get_handle(), WaitEvent::Rechedule{}));
 }
 
-template<ComponentKind kind>
-task_t<void> ComponentState::run_component_prologue() noexcept {
-  static_assert(kind != ComponentKind::Invalid);
-  component_kind_ = kind;
+template<ImageKind kind>
+task_t<void> InstanceState::run_instance_prologue() noexcept {
+  static_assert(kind != ImageKind::Invalid);
+  image_kind_ = kind;
 
   // common initialization
   auto &superglobals{php_script_mutable_globals_singleton.get_superglobals()};
   superglobals.v$argc = static_cast<int64_t>(0); // TODO
   superglobals.v$argv = array<mixed>{};          // TODO
   {
-    const auto &platform_ctx{*get_platform_context()};
 
     SystemTime sys_time{};
-    platform_ctx.get_system_time(std::addressof(sys_time));
+    k2::system_time(std::addressof(sys_time));
     const auto time_mcs{std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::nanoseconds{sys_time.since_epoch_ns}).count()};
 
     using namespace PhpServerSuperGlobalIndices;
@@ -75,24 +73,24 @@ task_t<void> ComponentState::run_component_prologue() noexcept {
   // TODO sapi, env
 
   // specific initialization
-  if constexpr (kind == ComponentKind::CLI) {
+  if constexpr (kind == ImageKind::CLI) {
     standard_stream_ = co_await init_kphp_cli_component();
-  } else if constexpr (kind == ComponentKind::Server) {
+  } else if constexpr (kind == ImageKind::Server) {
     standard_stream_ = co_await init_kphp_server_component();
   }
 }
 
-template task_t<void> ComponentState::run_component_prologue<ComponentKind::CLI>();
-template task_t<void> ComponentState::run_component_prologue<ComponentKind::Server>();
-template task_t<void> ComponentState::run_component_prologue<ComponentKind::Oneshot>();
-template task_t<void> ComponentState::run_component_prologue<ComponentKind::Multishot>();
+template task_t<void> InstanceState::run_instance_prologue<ImageKind::CLI>();
+template task_t<void> InstanceState::run_instance_prologue<ImageKind::Server>();
+template task_t<void> InstanceState::run_instance_prologue<ImageKind::Oneshot>();
+template task_t<void> InstanceState::run_instance_prologue<ImageKind::Multishot>();
 
-task_t<void> ComponentState::run_component_epilogue() noexcept {
-  if (component_kind_ == ComponentKind::Oneshot || component_kind_ == ComponentKind::Multishot) {
+task_t<void> InstanceState::run_instance_epilogue() noexcept {
+  if (image_kind_ == ImageKind::Oneshot || image_kind_ == ImageKind::Multishot) {
     co_return;
   }
   // do not flush output buffers if we are in job worker
-  if (job_worker_server_component_context.kind != JobWorkerServerComponentContext::Kind::Invalid) {
+  if (job_worker_server_instance_state.kind != JobWorkerServerInstanceState::Kind::Invalid) {
     co_return;
   }
   if (standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {
@@ -106,12 +104,10 @@ task_t<void> ComponentState::run_component_epilogue() noexcept {
   }
 }
 
-void ComponentState::process_platform_updates() noexcept {
-  const auto &platform_ctx{*get_platform_context()};
-
+void InstanceState::process_platform_updates() noexcept {
   for (;;) {
     // check if platform asked for yield
-    if (static_cast<bool>(platform_ctx.please_yield.load())) { // tell the scheduler that we are about to yield
+    if (static_cast<bool>(k2::control_flags()->please_yield.load())) { // tell the scheduler that we are about to yield
       php_debug("platform asked for yield");
       const auto schedule_status{scheduler.schedule(ScheduleEvent::Yield{})};
       poll_status = schedule_status == ScheduleStatus::Error ? PollStatus::PollFinishedError : PollStatus::PollReschedule;
@@ -119,7 +115,7 @@ void ComponentState::process_platform_updates() noexcept {
     }
 
     // try taking update from the platform
-    if (uint64_t stream_d{}; static_cast<bool>(platform_ctx.take_update(std::addressof(stream_d)))) {
+    if (uint64_t stream_d{}; static_cast<bool>(k2::take_update(std::addressof(stream_d)))) {
       if (opened_streams_.contains(stream_d)) { // update on opened stream
         php_debug("took update on stream %" PRIu64, stream_d);
         switch (scheduler.schedule(ScheduleEvent::UpdateOnStream{.stream_d = stream_d})) {
@@ -164,7 +160,7 @@ void ComponentState::process_platform_updates() noexcept {
   poll_status = PollStatus::PollFinishedError;
 }
 
-uint64_t ComponentState::take_incoming_stream() noexcept {
+uint64_t InstanceState::take_incoming_stream() noexcept {
   if (incoming_streams_.empty()) {
     php_warning("can't take incoming stream cause we don't have them");
     return INVALID_PLATFORM_DESCRIPTOR;
@@ -175,10 +171,9 @@ uint64_t ComponentState::take_incoming_stream() noexcept {
   return stream_d;
 }
 
-uint64_t ComponentState::open_stream(std::string_view component_name_view) noexcept {
+uint64_t InstanceState::open_stream(std::string_view component_name_view) noexcept {
   uint64_t stream_d{};
-  if (const auto open_stream_res{get_platform_context()->open(component_name_view.size(), component_name_view.data(), std::addressof(stream_d))};
-      open_stream_res != OpenStreamResult::OpenStreamOk) {
+  if (const auto open_stream_res{k2::open(std::addressof(stream_d), component_name_view.size(), component_name_view.data())}; open_stream_res != k2::errno_ok) {
     php_warning("can't open stream to %s", component_name_view.data());
     return INVALID_PLATFORM_DESCRIPTOR;
   }
@@ -187,10 +182,9 @@ uint64_t ComponentState::open_stream(std::string_view component_name_view) noexc
   return stream_d;
 }
 
-uint64_t ComponentState::set_timer(std::chrono::nanoseconds duration) noexcept {
+uint64_t InstanceState::set_timer(std::chrono::nanoseconds duration) noexcept {
   uint64_t timer_d{};
-  if (const auto set_timer_res{get_platform_context()->set_timer(std::addressof(timer_d), static_cast<uint64_t>(duration.count()))};
-      set_timer_res != SetTimerResult::SetTimerOk) {
+  if (const auto set_timer_res{k2::new_timer(std::addressof(timer_d), static_cast<uint64_t>(duration.count()))}; set_timer_res != k2::errno_ok) {
     php_warning("can't set timer for %.9f sec", std::chrono::duration<double>(duration).count());
     return INVALID_PLATFORM_DESCRIPTOR;
   }
@@ -199,21 +193,20 @@ uint64_t ComponentState::set_timer(std::chrono::nanoseconds duration) noexcept {
   return timer_d;
 }
 
-void ComponentState::release_stream(uint64_t stream_d) noexcept {
+void InstanceState::release_stream(uint64_t stream_d) noexcept {
   if (stream_d == standard_stream_) {
     standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
   }
   opened_streams_.erase(stream_d);
   pending_updates_.erase(stream_d); // also erase pending updates if exists
-  get_platform_context()->free_descriptor(stream_d);
+  k2::free_descriptor(stream_d);
   php_debug("released a stream %" PRIu64, stream_d);
 }
 
-void ComponentState::release_all_streams() noexcept {
-  const auto &platform_ctx{*get_platform_context()};
+void InstanceState::release_all_streams() noexcept {
   standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
   for (const auto stream_d : opened_streams_) {
-    platform_ctx.free_descriptor(stream_d);
+    k2::free_descriptor(stream_d);
     php_debug("released a stream %" PRIu64, stream_d);
   }
   opened_streams_.clear();

@@ -15,7 +15,7 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/tl/tl-core.h"
 
-struct RpcComponentContext final : private vk::not_copyable {
+struct RpcInstanceState final : private vk::not_copyable {
   template<typename Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
 
@@ -26,14 +26,14 @@ struct RpcComponentContext final : private vk::not_copyable {
   unordered_map<int64_t, class_instance<RpcTlQuery>> response_fetcher_instances;
   unordered_map<int64_t, std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>> rpc_responses_extra_info;
 
-  explicit RpcComponentContext(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
+  explicit RpcInstanceState(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
     : current_query()
     , response_waiter_forks(unordered_map<int64_t, int64_t>::allocator_type{memory_resource})
     , response_fetcher_instances(unordered_map<int64_t, class_instance<RpcTlQuery>>::allocator_type{memory_resource})
     , rpc_responses_extra_info(
         unordered_map<int64_t, std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>>::allocator_type{memory_resource}) {}
 
-  static RpcComponentContext &get() noexcept;
+  static RpcInstanceState &get() noexcept;
 };
 
 // ================================================================================================

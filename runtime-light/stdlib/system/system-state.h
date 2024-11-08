@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "runtime-common/core/runtime-core.h"
 
-struct FileStreamComponentContext {
-  mixed error_number_dummy;
-  mixed error_description_dummy;
+struct SystemInstanceState final : private vk::not_copyable {
+  int64_t result_code_dummy{};
+  Optional<int64_t> rest_index_dummy;
 
-  static FileStreamComponentContext &get() noexcept;
+  static SystemInstanceState &get() noexcept;
 };

@@ -6,8 +6,10 @@
 
 #include <cstdint>
 
-struct RegexComponentContext {
+#include "common/mixin/not_copyable.h"
+
+struct RegexInstanceState final : private vk::not_copyable {
   int64_t preg_replace_count_dummy{};
 
-  static RegexComponentContext &get() noexcept;
+  static RegexInstanceState &get() noexcept;
 };

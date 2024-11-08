@@ -11,13 +11,12 @@
 #include <utility>
 #include <variant>
 
-#include "runtime-light/component/component.h"
-#include "runtime-light/utils/context.h"
+#include "runtime-light/state/instance-state.h"
 
 // === SimpleCoroutineScheduler ===================================================================
 
 SimpleCoroutineScheduler &SimpleCoroutineScheduler::get() noexcept {
-  return get_component_context()->scheduler;
+  return InstanceState::get().scheduler;
 }
 
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnNoEvent() noexcept {

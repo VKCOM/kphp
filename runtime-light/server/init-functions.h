@@ -9,11 +9,10 @@
 #include <utility>
 #include <variant>
 
-#include "runtime-light/component/component.h"
+#include "runtime-light/state/instance-state.h"
 #include "runtime-light/server/http/init-functions.h"
 #include "runtime-light/server/job-worker/init-functions.h"
 #include "runtime-light/tl/tl-functions.h"
-#include "runtime-light/utils/context.h"
 
 using ServerQuery = std::variant<tl::K2InvokeHttp, tl::K2InvokeJobWorker>;
 
@@ -24,7 +23,7 @@ inline void init_server(ServerQuery &&query) noexcept {
   // common initialization
   {
     using namespace PhpServerSuperGlobalIndices;
-    auto &server{get_component_context()->php_script_mutable_globals_singleton.get_superglobals().v$_SERVER};
+    auto &server{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals().v$_SERVER};
     server.set_value(string{SERVER_SOFTWARE, std::char_traits<char>::length(SERVER_SOFTWARE)},
                      string{SERVER_SOFTWARE_VALUE, std::char_traits<char>::length(SERVER_SOFTWARE_VALUE)});
     server.set_value(string{SERVER_SIGNATURE, std::char_traits<char>::length(SERVER_SIGNATURE)},

@@ -7,7 +7,7 @@
 #include <cstdint>
 
 #include "runtime-light/allocator/allocator.h"
-#include "runtime-light/stdlib/rpc/rpc-context.h"
+#include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"
 
@@ -40,7 +40,7 @@ public:
 
   std::unique_ptr<RpcRequestResult> store_request() const final {
     //    php_assert(CurException.is_null());
-    auto &rpc_ctx{RpcComponentContext::get()};
+    auto &rpc_ctx{RpcInstanceState::get()};
     rpc_ctx.current_query.set_current_tl_function(tl_function_name());
     std::unique_ptr<tl_func_base> stored_fetcher = storing_function.get()->store();
     rpc_ctx.current_query.reset();

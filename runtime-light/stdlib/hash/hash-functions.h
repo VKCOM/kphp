@@ -6,5 +6,6 @@
 
 #include "runtime-common/core/runtime-core.h"
 
-string f$base64_encode(const string &s);
-Optional<string> f$base64_decode(const string &s, bool strict = false);
+string f$base64_encode(const string &s) noexcept;
+
+Optional<string> f$base64_decode(const string &s, bool strict = false) noexcept;

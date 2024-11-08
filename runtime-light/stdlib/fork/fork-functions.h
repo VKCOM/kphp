@@ -13,7 +13,7 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/stdlib/fork/fork-context.h"
+#include "runtime-light/stdlib/fork/fork-state.h"
 
 namespace fork_api_impl_ {
 
@@ -28,7 +28,7 @@ inline constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chron
 
 template<typename T>
 requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
-  auto &fork_ctx{ForkComponentContext::get()};
+  auto &fork_ctx{ForkInstanceState::get()};
   if (!fork_ctx.contains(fork_id)) {
     php_warning("can't find fork %" PRId64, fork_id);
     co_return T{};
@@ -42,7 +42,8 @@ requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>
 }
 
 template<typename T>
-requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(Optional<int64_t> fork_id_opt, double timeout = -1.0) noexcept {
+requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(Optional<int64_t> fork_id_opt,
+                                                                                                          double timeout = -1.0) noexcept {
   co_return co_await f$wait<T>(fork_id_opt.has_value() ? fork_id_opt.val() : INVALID_FORK_ID, timeout);
 }
 
@@ -61,7 +62,7 @@ inline task_t<void> f$sched_yield_sleep(double duration) noexcept {
 // === Non-blocking API ============================================================================
 
 inline int64_t f$get_running_fork_id() noexcept {
-  return ForkComponentContext::get().running_fork_id;
+  return ForkInstanceState::get().running_fork_id;
 }
 
 inline int64_t f$wait_queue_create() {
@@ -84,7 +85,7 @@ inline Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1
   php_critical_error("call to unsupported function");
 }
 
-inline bool f$wait_concurrently (int64_t fork_id) {
+inline bool f$wait_concurrently(int64_t fork_id) {
   php_critical_error("call to unsupported function");
 }
 

@@ -4,23 +4,23 @@ prepend(
   component/component-api.cpp
   confdata/confdata-functions.cpp
   crypto/crypto-functions.cpp
-  crypto/crypto-context.cpp
-  curl/curl-context.cpp
+  crypto/crypto-state.cpp
+  curl/curl-state.cpp
   exit/exit-functions.cpp
-  fork/fork-context.cpp
+  fork/fork-state.cpp
   hash/hash-functions.cpp
   job-worker/job-worker-api.cpp
-  job-worker/job-worker-client-context.cpp
+  job-worker/job-worker-client-state.cpp
   output/output-buffer.cpp
   output/print-functions.cpp
-  regex/regex-context.cpp
+  regex/regex-state.cpp
   rpc/rpc-api.cpp
-  rpc/rpc-context.cpp
+  rpc/rpc-state.cpp
   rpc/rpc-extra-headers.cpp
   rpc/rpc-extra-info.cpp
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp
   rpc/rpc-tl-request.cpp
-  string/string-context.cpp
-  system/system-context.cpp
-  file/file-stream-context.cpp)
+  string/string-state.cpp
+  system/system-state.cpp
+  file/file-stream-state.cpp)

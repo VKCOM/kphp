@@ -13,7 +13,7 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/utils/context.h"
+#include "runtime-light/k2-platform/k2-api.h"
 
 #if __clang_major__ > 7
 #define CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
@@ -122,13 +122,13 @@ struct task_t : public task_base_t {
     void *operator new(std::size_t n, [[maybe_unused]] Args &&...args) noexcept {
       // todo:k2 think about args in new
       // todo:k2 make coroutine allocator
-      void *buffer = get_platform_context()->allocator.alloc(n);
+      void *buffer = k2::alloc(n);
       return buffer;
     }
 
     void operator delete(void *ptr, size_t n) noexcept {
       (void)n;
-      get_platform_context()->allocator.free(ptr);
+      k2::free(ptr);
     }
   };
 

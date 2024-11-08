@@ -12,20 +12,19 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/component/component.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/header.h"
-#include "runtime-light/server/job-worker/job-worker-server-context.h"
+#include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/server/job-worker/job-worker-server-state.h"
+#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
-#include "runtime-light/stdlib/fork/fork-context.h"
-#include "runtime-light/stdlib/job-worker/job-worker-client-context.h"
+#include "runtime-light/stdlib/fork/fork-state.h"
+#include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
-#include "runtime-light/utils/context.h"
 
 namespace {
 
@@ -44,13 +43,13 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
     co_return INVALID_FORK_ID;
   }
 
-  auto &jw_client_ctx{JobWorkerClientComponentContext::get()};
+  auto &jw_client_st{JobWorkerClientInstanceState::get()};
   // normalize timeout
   const auto timeout_ns{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(std::clamp(timeout, MIN_TIMEOUT_S, MAX_TIMEOUT_S)))};
   // prepare JW component request
   tl::TLBuffer tlb{};
-  const tl::K2InvokeJobWorker invoke_jw{.image_id = vk_k2_describe()->build_timestamp,
-                                        .job_id = jw_client_ctx.current_job_id++,
+  const tl::K2InvokeJobWorker invoke_jw{.image_id = k2::describe()->build_timestamp,
+                                        .job_id = jw_client_st.current_job_id++,
                                         .ignore_answer = ignore_answer,
                                         .timeout_ns = static_cast<uint64_t>(timeout_ns.count()),
                                         .body = std::move(request)};
@@ -111,27 +110,27 @@ task_t<string> f$job_worker_fetch_request() noexcept {
     co_return string{};
   }
 
-  auto &jw_server_ctx{JobWorkerServerComponentContext::get()};
-  if (jw_server_ctx.job_id == JOB_WORKER_INVALID_JOB_ID || jw_server_ctx.body.empty()) {
+  auto &jw_server_st{JobWorkerServerInstanceState::get()};
+  if (jw_server_st.job_id == JOB_WORKER_INVALID_JOB_ID || jw_server_st.body.empty()) {
     php_warning("couldn't fetch job worker request");
     co_return string{};
   }
-  co_return std::exchange(jw_server_ctx.body, string{});
+  co_return std::exchange(jw_server_st.body, string{});
 }
 
 task_t<int64_t> f$job_worker_store_response(string response) noexcept {
-  auto &component_ctx{*get_component_context()};
-  auto &jw_server_ctx{JobWorkerServerComponentContext::get()};
+  auto &instance_st{InstanceState::get()};
+  auto &jw_server_st{JobWorkerServerInstanceState::get()};
   if (!f$is_kphp_job_workers_enabled()) { // workers are enabled
     php_warning("couldn't store job worker response: job workers are disabled");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (jw_server_ctx.kind != JobWorkerServerComponentContext::Kind::Regular) { // we're in regular worker
+  } else if (jw_server_st.kind != JobWorkerServerInstanceState::Kind::Regular) { // we're in regular worker
     php_warning("couldn't store job worker response: we are either in no reply job worker or not in a job worker at all");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (jw_server_ctx.state == JobWorkerServerComponentContext::State::Replied) { // it's the first attempt to reply
+  } else if (jw_server_st.state == JobWorkerServerInstanceState::State::Replied) { // it's the first attempt to reply
     php_warning("couldn't store job worker response: multiple stores are forbidden");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (component_ctx.standard_stream() == INVALID_PLATFORM_DESCRIPTOR) { // we have a stream to write into
+  } else if (instance_st.standard_stream() == INVALID_PLATFORM_DESCRIPTOR) { // we have a stream to write into
     php_warning("couldn't store job worker response: no standard stream");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
   } else if (response.empty()) { // we have a response to reply
@@ -140,12 +139,12 @@ task_t<int64_t> f$job_worker_store_response(string response) noexcept {
   }
 
   tl::TLBuffer tlb{};
-  tl::K2JobWorkerResponse jw_response{.job_id = jw_server_ctx.job_id, .body = std::move(response)};
+  tl::K2JobWorkerResponse jw_response{.job_id = jw_server_st.job_id, .body = std::move(response)};
   jw_response.store(tlb);
-  if ((co_await write_all_to_stream(component_ctx.standard_stream(), tlb.data(), tlb.size())) != tlb.size()) {
+  if ((co_await write_all_to_stream(instance_st.standard_stream(), tlb.data(), tlb.size())) != tlb.size()) {
     php_warning("couldn't store job worker response");
     co_return static_cast<int64_t>(JobWorkerError::store_response_cant_send_error);
   }
-  jw_server_ctx.state = JobWorkerServerComponentContext::State::Replied;
+  jw_server_st.state = JobWorkerServerInstanceState::State::Replied;
   co_return 0;
 }
