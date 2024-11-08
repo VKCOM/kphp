@@ -19,10 +19,10 @@ struct OpenFile {
   bool compile_with_debug_info_flag;
   bool compile_with_crc;
   OpenFile(const std::string &file_name, const std::string &subdir = "",
-           bool compile_with_debug_info_flag = true, bool compile_with_crc = true) :
+           [[maybe_unused]] bool compile_with_debug_info_flag = true, bool compile_with_crc = true) :
     file_name(file_name),
     subdir(subdir),
-    compile_with_debug_info_flag(compile_with_debug_info_flag),
+    compile_with_debug_info_flag(true),
     compile_with_crc(compile_with_crc) {
   }
 

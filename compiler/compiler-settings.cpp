@@ -424,7 +424,12 @@ void CompilerSettings::init() {
   generated_runtime_path.value_ = kphp_src_path.get() + "objs/generated/auto/runtime/";
 
   cxx_flags_default.init(runtime_sha256.value_, cxx.get(), cxx_default_flags, dest_cpp_dir.get(), !no_pch.get());
-  cxx_default_flags.append(" ").append(extra_cxx_debug_level.get());
+  if (extra_cxx_debug_level.get() == "-g1") {
+    cxx_default_flags.append(" ").append("-g3");
+  }
+  else {
+    cxx_default_flags.append(" ").append(extra_cxx_debug_level.get());
+  }
   cxx_flags_with_debug.init(runtime_sha256.value_, cxx.get(), cxx_default_flags, dest_cpp_dir.get(), !no_pch.get());
 
   tl_namespace_prefix.value_ = "VK\\TL\\";
