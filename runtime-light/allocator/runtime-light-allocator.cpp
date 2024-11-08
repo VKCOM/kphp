@@ -99,7 +99,7 @@ void RuntimeAllocator::free_script_memory(void *mem, size_t size) noexcept {
 
 void *RuntimeAllocator::alloc_global_memory(size_t size) noexcept {
   void *mem{k2::alloc(size)};
-  if (unlikely(mem == nullptr)) [[unlikely]] {
+  if (mem == nullptr) [[unlikely]] {
     critical_error_handler();
   }
   return mem;
@@ -107,7 +107,7 @@ void *RuntimeAllocator::alloc_global_memory(size_t size) noexcept {
 
 void *RuntimeAllocator::alloc0_global_memory(size_t size) noexcept {
   void *mem{k2::alloc(size)};
-  if (unlikely(mem == nullptr)) [[unlikely]] {
+  if (mem == nullptr) [[unlikely]] {
     critical_error_handler();
   }
   std::memset(mem, 0, size);
@@ -116,7 +116,7 @@ void *RuntimeAllocator::alloc0_global_memory(size_t size) noexcept {
 
 void *RuntimeAllocator::realloc_global_memory(void *old_mem, size_t new_size, size_t /*unused*/) noexcept {
   void *mem{k2::realloc(old_mem, new_size)};
-  if (unlikely(mem == nullptr)) [[unlikely]] {
+  if (mem == nullptr) [[unlikely]] {
     critical_error_handler();
   }
   return mem;
