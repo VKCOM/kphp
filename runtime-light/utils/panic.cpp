@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <string_view>
+#include <type_traits>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -11,7 +12,7 @@
 
 void critical_error_handler() {
   constexpr std::string_view message = "script panic";
-  k2::log(LogLevel::Debug, message.size(), message.data());
+  k2::log(static_cast<std::underlying_type_t<LogLevel>>(LogLevel::Debug), message.size(), message.data());
 
   if (k2::instance_state() != nullptr) {
     InstanceState::get().poll_status = k2::PollStatus::PollFinishedError;

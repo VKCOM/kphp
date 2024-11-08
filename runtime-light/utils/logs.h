@@ -6,7 +6,7 @@
 
 #include <cstddef>
 
-enum LogLevel : size_t {
+enum class LogLevel : size_t {
   Error = 1,
   Warn = 2,
   Info = 3,
