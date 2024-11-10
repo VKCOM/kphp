@@ -36,7 +36,7 @@ struct ComponentState final : private vk::not_copyable {
   }
 
 private:
-  static constexpr std::string_view INI_ARG_PREFIX = "D ";
+  static constexpr std::string_view INI_ARG_PREFIX = "ini ";
   static constexpr std::string_view RUNTIME_CONFIG_ARG = "runtime-config";
   static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(512U * 1024U); // 512KB
 
