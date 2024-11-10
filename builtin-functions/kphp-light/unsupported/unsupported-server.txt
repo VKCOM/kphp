@@ -16,8 +16,6 @@ function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_
 
 
 /** @kphp-extern-func-info generate-stub */
-function ini_get ($s ::: string) ::: string | false;
-/** @kphp-extern-func-info generate-stub */
 function ini_set ($s ::: string, $v ::: string) ::: bool;
 
 
