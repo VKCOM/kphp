@@ -29,9 +29,9 @@ void request_extra_memory(size_t requested_size) {
 RuntimeAllocator &RuntimeAllocator::get() noexcept {
   if (k2::instance_state() != nullptr) [[likely]] {
     return InstanceState::get().allocator;
-  } else if (k2::component_state() != nullptr) [[likely]] {
+  } else if (k2::component_state() != nullptr) {
     return ComponentState::get_mutable().allocator;
-  } else if (k2::image_state() != nullptr) [[unlikely]] {
+  } else if (k2::image_state() != nullptr) {
     return ImageState::get_mutable().allocator;
   } else {
     php_critical_error("can't find available allocator");
