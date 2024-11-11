@@ -9,10 +9,6 @@ function gzencode ($str ::: string, $level ::: int = -1) ::: string;
 /** @kphp-extern-func-info generate-stub */
 function gzdecode ($str ::: string) ::: string;
 /** @kphp-extern-func-info generate-stub */
-function gzcompress ($str ::: string, $level ::: int = -1) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function gzuncompress ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
 function gzdeflate ($str ::: string, $level ::: int = -1) ::: string;
 /** @kphp-extern-func-info generate-stub */
 function gzinflate ($str ::: string) ::: string;
