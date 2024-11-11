@@ -861,7 +861,11 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     if (auto index = root->args()[0].try_as<op_index>()) {
       if (tinf::get_type(index->array())->get_real_ptype() == tp_mixed) {
         W << "(" << index->array() << ")";
-        W << ".empty_on(" << index->key() << ")"; // TODO implement optimization with precomputed hash (can_use_precomputed_hash_indexing_array)
+        W << ".empty_on(" << index->key();
+        if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
+          W << ", " << precomputed_hash << "_i64";
+        }
+        W << ")";
         return;
       }
     }
@@ -2433,14 +2437,6 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     }
     case op_set_with_ret: {
       auto xxx = root.try_as<op_set_with_ret>();
-      /*
-      {
-        mixed idx = index;
-        mixed val = value;
-        func(obj, idx, val);
-        val;
-      }
-      */
       W << "SET_ARR_ACC_BY_INDEX(";
       W << xxx->obj() << ", ";
       W << xxx->offset() << ", ";

@@ -35,8 +35,6 @@ function test() {
     }
 
     if ($obj instanceof Classes\LoggingLikeArray) {
-        // TODO operator[] does not work here
-        // TODO it's ub warning for arrays
         $obj->offsetSet(null, $obj[123]);
         var_dump($obj[123]);
     } else {
