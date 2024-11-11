@@ -361,7 +361,7 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
       if (aa->is_parent_of(klass)) {
         return get_type(tp_mixed);
       }
-      kphp_error(false, fmt_format("Class {} that does not implement \\ArrayAccess", klass->name));
+      kphp_error(false, fmt_format("Class {} does not implement \\ArrayAccess", klass->name));
     }
   }
   if (!structured()) {
