@@ -8,20 +8,17 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/vertex-adaptor.h"
 
-#include <cassert>
-
 static VertexPtr on_unset(VertexAdaptor<op_unset> unset) {
   if (auto func_call = unset->expr().try_as<op_func_call>()) {
     if (!func_call->auto_inserted) {
       return unset;
     }
-    if (vk::contains(func_call->func_id->name, "offsetGet")) {
+    if (func_call->func_id && vk::contains(func_call->func_id->name, "offsetGet")) {
       auto klass = func_call->func_id->class_id;
-      // TODO assume here that all is good
-      assert(klass && "bad klass for unset");
+      kphp_assert_msg(klass, "Internal error: cannot get type of object for [] access");
 
       const auto *unset_method = klass->get_instance_method("offsetUnset");
-      assert(unset_method && "bad method for unset");
+      kphp_error(unset_method, fmt_format("Class {} does not implement \\ArrayAccess", klass->name).c_str());
 
       func_call->str_val = unset_method->global_name();
       func_call->func_id = unset_method->function;
@@ -39,11 +36,10 @@ static VertexPtr on_isset(VertexAdaptor<op_isset> isset) {
     }
     if (vk::contains(func_call->func_id->name, "offsetGet")) {
       auto klass = func_call->func_id->class_id;
-      // TODO assume here that all is good
-      assert(klass && "bad klass for isset");
+      kphp_assert_msg(klass, "Internal error: cannot get type of object for [] access");
 
       const auto *isset_method = klass->get_instance_method("offsetExists");
-      assert(isset_method && "bad method for isset");
+      kphp_error(isset_method, fmt_format("Class {} does not implement \\ArrayAccess", klass->name).c_str());
 
       func_call->str_val = isset_method->global_name();
       func_call->func_id = isset_method->function;
@@ -54,7 +50,6 @@ static VertexPtr on_isset(VertexAdaptor<op_isset> isset) {
   return isset;
 }
 
-// important that *must not* be used with on_enter_vertex because of infinite recursion
 static VertexPtr on_empty(VertexAdaptor<op_func_call> empty_call) {
   if (auto offset_get_call = empty_call->args()[0].try_as<op_func_call>()) {
     if (!offset_get_call->auto_inserted) {
@@ -62,29 +57,35 @@ static VertexPtr on_empty(VertexAdaptor<op_func_call> empty_call) {
     }
     if (offset_get_call->func_id && vk::contains(offset_get_call->func_id->name, "offsetGet")) {
       auto klass = offset_get_call->func_id->class_id;
-      // TODO assume here that all is good
-      assert(klass && "bad klass for isset");
+      kphp_assert_msg(klass, "Internal error: cannot get type of object for [] access");
 
       const auto *isset_method = klass->get_instance_method("offsetExists");
-      assert(isset_method && "bad method for isset");
+      kphp_error(isset_method, fmt_format("Class {} does not implement \\ArrayAccess", klass->name).c_str());
 
       auto exists_call = offset_get_call.clone();
-
       exists_call->str_val = isset_method->global_name();
       exists_call->func_id = isset_method->function;
-      /*
-      for empty smth like:
-      op_log_or
-        op_log_not
-          op_func_call f$ClassName$exists
-            ...
-        op_func_call empty
-          op_func_call f$ClassName$get
-            ...
-      */
 
-      // TODO fix locations
+      /*
+       * For empty($obj[42]) we have following tranfsormation:
+       *
+       * op_func_call empty
+       *   op_func_call f$ClassName$offsetGet
+       *     ...
+       *
+       *  --->
+       *
+       * op_log_or
+       *   op_log_not
+       *     op_func_call f$ClassName$offsetExists
+       *       ...
+       *   op_func_call empty // the original node
+       *     op_func_call f$ClassName$offsetGet
+       *       ...
+       */
+
       auto as_or = VertexAdaptor<op_log_or>::create(VertexAdaptor<op_log_not>::create(exists_call), empty_call);
+      as_or.set_location_recursively(empty_call);
 
       return as_or;
     }

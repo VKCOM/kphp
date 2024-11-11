@@ -12,5 +12,7 @@ public:
     return "Fix functions related to ArrayAccess";
   }
 
+  // `on_enter_vertex()` cannot be used because
+  // `empty($obj[42])` node becomes a subnode itself in a transformation result
   VertexPtr on_exit_vertex(VertexPtr root) final;
 };
