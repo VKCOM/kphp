@@ -34,7 +34,7 @@ voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) noexcept {
   return mem;
 }
 
-void zlib_static_free(voidpf /*unused*/, voidpf /*unused*/) noexcept {}
+void zlib_static_free([[maybe_unused]] voidpf opaque, [[maybe_unused]] voidpf address) noexcept {}
 
 // FIXME: we can use script allocator instead of k2:: routines
 voidpf zlib_dynamic_alloc(voidpf /*opaque*/, uInt items, uInt size) noexcept {
@@ -47,7 +47,7 @@ voidpf zlib_dynamic_alloc(voidpf /*opaque*/, uInt items, uInt size) noexcept {
   return mem;
 }
 
-void zlib_dynamic_free(voidpf /*opaque*/, voidpf address) noexcept {
+void zlib_dynamic_free([[maybe_unused]] voidpf opaque, voidpf address) noexcept {
   k2::free(address);
 }
 
