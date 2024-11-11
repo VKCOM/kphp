@@ -15,15 +15,13 @@ class TestRequestLimits(KphpServerAutoTestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["REQUEST_URI"], uri)
 
-        resp = self.kphp_server.http_get(uri="/{}".format("a" * 200))
-        self.assertEqual(resp.status_code, 418)
-
         uri = "/test_limits?" + self._get_rand_str(15000)
         resp = self.kphp_server.http_get(uri)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["REQUEST_URI"], uri)
 
-        resp = self.kphp_server.http_get(uri="/{}".format("a" * 17000))
+        # Base on MAX_HTTP_HEADER_QUERY_WORD_SIZE 16 * 1024
+        resp = self.kphp_server.http_get(uri="/{}".format(("a" * (16 * 1024))))
         self.assertEqual(resp.status_code, 414)
 
         resp = self.kphp_server.http_get(uri="/a?{}".format("a" * 17000))

@@ -599,11 +599,6 @@ int hts_func_execute(connection *c, int op) {
     qGetLen = 0;
   }
 
-  // TODO drop it?
-  if (qUriLen >= 200) {
-    return -418;
-  }
-
   vkprintf (1, "start response processing on fd %d\n", c->fd);
 
   const char *query_type_str = nullptr;
