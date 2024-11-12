@@ -103,7 +103,7 @@ void process_cookie_header(const string &header, PhpScriptBuiltInSuperGlobals &s
 
 void process_headers(tl::dictionary<tl::httpHeaderValue> &&headers, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
   auto &server{superglobals.v$_SERVER};
-  auto &http_server_ctx{HttpServerInstanceState::get()};
+  auto &http_server_instance_st{HttpServerInstanceState::get()};
   using namespace PhpServerSuperGlobalIndices;
 
   // platform provides headers that are already in lowercase
@@ -113,10 +113,10 @@ void process_headers(tl::dictionary<tl::httpHeaderValue> &&headers, PhpScriptBui
 
     if (header_name_view == HEADER_ACCEPT_ENCODING) {
       if (header_view.find(ENCODING_GZIP) != std::string_view::npos) {
-        http_server_ctx.encoding |= HttpServerInstanceState::ENCODING_GZIP;
+        http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_GZIP;
       }
       if (header_view.find(ENCODING_DEFLATE) != std::string_view::npos) {
-        http_server_ctx.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
+        http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
       }
     } else if (header_name_view == HEADER_COOKIE) {
       process_cookie_header(header.value, superglobals);
