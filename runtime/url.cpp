@@ -5,10 +5,9 @@
 #include "runtime/url.h"
 
 #include "common/macos-ports.h"
-#include "runtime-common/stdlib/string/string-context.h"
+#include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/array_functions.h"
-#include "runtime/regexp.h"
 
 string AMPERSAND("&", 1);
 
@@ -452,86 +451,4 @@ mixed f$parse_url(const string &s, int64_t component) {
   }
 
   return url_as_array;
-}
-
-string f$rawurldecode(const string &s) {
-  kphp_runtime_context.static_SB.clean().reserve(s.size());
-  for (int i = 0; i < (int)s.size(); i++) {
-    if (s[i] == '%') {
-      int num_high = hex_to_int(s[i + 1]);
-      if (num_high < 16) {
-        int num_low = hex_to_int(s[i + 2]);
-        if (num_low < 16) {
-          kphp_runtime_context.static_SB.append_char(static_cast<char>((num_high << 4) + num_low));
-          i += 2;
-          continue;
-        }
-      }
-    }
-    kphp_runtime_context.static_SB.append_char(s[i]);
-  }
-  return kphp_runtime_context.static_SB.str();
-}
-
-
-static const char *good_url_symbols =
-  "00000000000000000000000000000000"
-  "00000000000001101111111111000000"
-  "01111111111111111111111111100001"
-  "01111111111111111111111111100000"
-  "00000000000000000000000000000000"
-  "00000000000000000000000000000000"
-  "00000000000000000000000000000000"
-  "00000000000000000000000000000000";//[0-9a-zA-Z-_.]
-
-string f$rawurlencode(const string &s) {
-  kphp_runtime_context.static_SB.clean().reserve(3 * s.size());
-  for (int i = 0; i < (int)s.size(); i++) {
-    if (good_url_symbols[(unsigned char)s[i]] == '1') {
-      kphp_runtime_context.static_SB.append_char(s[i]);
-    } else {
-      kphp_runtime_context.static_SB.append_char('%');
-      kphp_runtime_context.static_SB.append_char(StringLibConstants::get().uhex_digits[(s[i] >> 4) & 15]);
-      kphp_runtime_context.static_SB.append_char(StringLibConstants::get().uhex_digits[s[i] & 15]);
-    }
-  }
-  return kphp_runtime_context.static_SB.str();
-}
-
-string f$urldecode(const string &s) {
-  kphp_runtime_context.static_SB.clean().reserve(s.size());
-  for (int i = 0; i < (int)s.size(); i++) {
-    if (s[i] == '%') {
-      int num_high = hex_to_int(s[i + 1]);
-      if (num_high < 16) {
-        int num_low = hex_to_int(s[i + 2]);
-        if (num_low < 16) {
-          kphp_runtime_context.static_SB.append_char(static_cast<char>((num_high << 4) + num_low));
-          i += 2;
-          continue;
-        }
-      }
-    } else if (s[i] == '+') {
-      kphp_runtime_context.static_SB.append_char(' ');
-      continue;
-    }
-    kphp_runtime_context.static_SB.append_char(s[i]);
-  }
-  return kphp_runtime_context.static_SB.str();
-}
-
-string f$urlencode(const string &s) {
-  kphp_runtime_context.static_SB.clean().reserve(3 * s.size());
-  for (int i = 0; i < (int)s.size(); i++) {
-    if (good_url_symbols[(unsigned char)s[i]] == '1') {
-      kphp_runtime_context.static_SB.append_char(s[i]);
-    } else if (s[i] == ' ') {
-      kphp_runtime_context.static_SB.append_char('+');
-    } else {
-      kphp_runtime_context.static_SB.append_char('%');
-      kphp_runtime_context.static_SB.append_char(StringLibConstants::get().uhex_digits[(s[i] >> 4) & 15]);
-      kphp_runtime_context.static_SB.append_char(StringLibConstants::get().uhex_digits[s[i] & 15]);
-    }
-  }
-  return kphp_runtime_context.static_SB.str();
 }
