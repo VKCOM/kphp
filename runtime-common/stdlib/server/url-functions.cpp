@@ -9,6 +9,7 @@
 #include <cstring>
 #include <string_view>
 
+#include "common/macos-ports.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/string/string-functions.h"
