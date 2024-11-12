@@ -315,6 +315,14 @@ struct confdataValue final {
 // ===== HTTP =====
 
 struct HttpVersion final {
+private:
+  static constexpr std::string_view V09_SV = "0.9";
+  static constexpr std::string_view V10_SV = "1.0";
+  static constexpr std::string_view V11_SV = "1.1";
+  static constexpr std::string_view V2_SV = "2";
+  static constexpr std::string_view V3_SV = "3";
+
+public:
   enum class Version : uint32_t {
     Invalid = TL_ZERO,
     V09 = 0x9e15'd325,
@@ -325,6 +333,23 @@ struct HttpVersion final {
   };
 
   Version version{Version::Invalid};
+
+  constexpr std::string_view string_view() const noexcept {
+    switch (version) {
+      case Version::V09:
+        return V09_SV;
+      case Version::V10:
+        return V10_SV;
+      case Version::V11:
+        return V11_SV;
+      case Version::V2:
+        return V2_SV;
+      case Version::V3:
+        return V3_SV;
+      default:
+        return {};
+    }
+  }
 
   bool fetch(TLBuffer &tlb) noexcept {
     using version_utype = std::underlying_type_t<Version>;
