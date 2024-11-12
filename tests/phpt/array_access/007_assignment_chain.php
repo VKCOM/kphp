@@ -16,7 +16,7 @@ function test_common() {
 
     $obj[0] = $obj[1] = "str1";
     $obj[4] = $obj[42] = $obj[111] = "";
-    $obj[3] = $obj[42] = $arr[4] = $arr["kek"] = $obj[] = $obj["arbidol"] = ["", 0.1, 1, null];
+    $obj[3] = $obj[42] = $arr[4] = $arr["kek"] = $obj[] = $obj[3] = $obj["arbidol"] = ["", 0.1, 1, null];
 
     $keys = $obj->keys();
     foreach ($keys as $key) {
@@ -32,7 +32,7 @@ function test_common_as_aa() {
 
     $obj[0] = $obj[1] = "str1";
     $obj[4] = $obj[42] = $obj[111] = "";
-    $obj[3] = $obj[42] = $arr[4] = $arr["kek"] = $obj[] = $obj["arbidol"] = ["", 0.1, 1, null];
+    $obj[3] = $obj[42] = $arr[4] = $arr["kek"] = $obj[] = $obj[3] = $obj["arbidol"] = ["", 0.1, 1, null];
 
     if ($obj instanceof Classes\LoggingLikeArray) {
         $keys = $obj->keys();
@@ -52,7 +52,7 @@ function test_common_obj_as_mixed() {
     $obj[0] = $obj[1] = "str1";
     $obj[4] = $obj[42] = $obj[111] = "";
     $obj[3] = $obj[42] = $arr[4] = $arr["kek"] = $obj[123456] = $obj["arbidol"] = ["", 0.1, 1, null];
-    $obj[3] = $obj[42] = $arr[] = $arr["kek"] = $obj[] = $obj["arbidol"] = ["", 0.1, 1, null];
+    $obj[3] = $obj[42] = $arr[4] = $arr["kek"] = $obj[] = $obj[3] = $obj["arbidol"] = ["", 0.1, 1, null];
 
     if ($obj instanceof Classes\LoggingLikeArray) {
         $keys = $obj->keys();

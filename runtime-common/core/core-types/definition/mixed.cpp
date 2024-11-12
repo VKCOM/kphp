@@ -1024,11 +1024,6 @@ const string mixed::get_type_str() const {
   return string(get_type_c_str());
 }
 
-// TODO
-// Should we warn more precisely: "Class XXX does not implement \\ArrayAccess" or just
-// "Cannot use XXX as array, index = YYY" will be OK?
-// Note on usage: should check `if (type_ == type::OBJECT)` or not?
-// On the one hand, it's redundant. On the other hand, it's fast check
 std::pair<class_instance<C$ArrayAccess>, bool> try_as_array_access(const mixed &m) noexcept {
   using T = class_instance<C$ArrayAccess>;
   
@@ -1163,6 +1158,9 @@ mixed &mixed::operator[](int64_t int_key) {
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
+    } else if (get_type() == type::OBJECT) {
+      php_notice("Indirect modification of overloaded element of %s has no effect", get_type_or_class_name());
+      return empty_value<mixed>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string_without_warning(*this).c_str(), get_type_or_class_name(), int_key);
       return empty_value<mixed>();
@@ -1181,6 +1179,9 @@ mixed &mixed::operator[](const string &string_key) {
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
+    } else if (get_type() == type::OBJECT) {
+      php_notice("Indirect modification of overloaded element of %s has no effect", get_type_or_class_name());
+      return empty_value<mixed>();
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string_without_warning(*this).c_str(), get_type_or_class_name(), string_key.c_str());
       return empty_value<mixed>();
@@ -1285,8 +1286,10 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
     if (get_type() == type::OBJECT) {
       if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
         f$ArrayAccess$$offsetSet(as_aa, int_key, v);
-        return;
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be accessed, index = %" PRIi64, get_type_or_class_name(), int_key);
       }
+      return;
     }
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
@@ -1328,8 +1331,10 @@ void mixed::set_value(const string &string_key, const mixed &v) {
     if (get_type() == type::OBJECT) {
       if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
         f$ArrayAccess$$offsetSet(as_aa, string_key, v);
-        return;
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be accessed, index = %s", get_type_or_class_name(), string_key.c_str());
       }
+      return;
     }
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
@@ -1400,6 +1405,9 @@ const mixed mixed::get_value(int64_t int_key) const {
     if (get_type() == type::OBJECT) {
       if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
         return f$ArrayAccess$$offsetGet(as_aa, int_key);
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be accessed, index = %" PRIi64, get_type_or_class_name(), int_key);
+        return mixed();
       }
     }
 
@@ -1429,6 +1437,9 @@ const mixed mixed::get_value(const string &string_key) const {
     if (get_type() == type::OBJECT) {
       if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
         return f$ArrayAccess$$offsetGet(as_aa, string_key);
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be accessed, index = %s", get_type_or_class_name(), string_key.c_str());
+        return mixed();
       }
     }
 
@@ -1532,6 +1543,9 @@ bool mixed::isset(int64_t int_key) const {
     if (get_type() == type::OBJECT) {
       if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
         return f$ArrayAccess$$offsetExists(as_aa, int_key);
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be used in isset", get_type_or_class_name());
+        return false;
       }
     }
     if (get_type() == type::STRING) {
@@ -1581,8 +1595,10 @@ void mixed::unset(int64_t int_key) {
     if (get_type() == type::OBJECT) {
       if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
         f$ArrayAccess$$offsetUnset(as_aa, int_key);
-        return;
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be used in unset", get_type_or_class_name());
       }
+      return;
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1600,6 +1616,8 @@ void mixed::unset(const mixed &v) {
     if (get_type() == type::OBJECT) {
       if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
         f$ArrayAccess$$offsetUnset(as_aa, v);
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be used in unset", get_type_or_class_name());
       }
       return;
     }
