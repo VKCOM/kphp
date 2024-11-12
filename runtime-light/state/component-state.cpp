@@ -19,9 +19,7 @@ void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view v
     php_warning("wrong ini argument format %s", key_view.data());
     return;
   }
-  const auto *key_ptr{key_view.data()};
-  std::advance(key_ptr, INI_ARG_PREFIX.size());
-  string key_str{key_ptr, static_cast<string::size_type>(key_view.size() - INI_ARG_PREFIX.size())};
+  string key_str{std::next(key_view.data(), INI_ARG_PREFIX.size()), static_cast<string::size_type>(key_view.size() - INI_ARG_PREFIX.size())};
   key_str.set_reference_counter_to(ExtraRefCnt::for_global_const);
 
   string value_str{value_view.data(), static_cast<string::size_type>(value_view.size())};
