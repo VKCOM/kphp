@@ -86,7 +86,7 @@ string f$urldecode(const string &s) noexcept {
   for (string::size_type i = 0; i < s.size(); ++i) {
     if (s[i] == '%') {
       if (const uint32_t num_high{hex_to_int(s[i + 1])}; num_high < 16) {
-        if (const uint32_t num_low{hex_to_int(i + 2)}; num_low < 16) {
+        if (const uint32_t num_low{hex_to_int(s[i + 2])}; num_low < 16) {
           runtime_ctx.static_SB.append_char(static_cast<char>((num_high << 4) + num_low));
           i += 2;
           continue;
