@@ -8,10 +8,13 @@
 #include <cstring>
 #include <sys/select.h>
 
+#include "common/kprintf.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/allocator.h"
 #include "runtime/array_functions.h"
 #include "runtime/critical_section.h"
+
+DEFINE_VERBOSITY(streams);
 
 static string::size_type max_wrapper_name_size = 0;
 
@@ -43,10 +46,12 @@ static const stream_functions *get_stream_functions(const string &name) {
   return wrappers.get_value(name);
 }
 
-static const stream_functions *get_stream_functions_from_url(const string &url) {
+static const stream_functions *get_stream_functions_from_url(const string &url, const char *invoker_name) {
   if (url.empty()) {
     return nullptr;
   }
+
+  tvkprintf(streams, 2, "PHP streams: %s is processing stream %.200s\n", invoker_name, url.c_str());
 
   void *res = memmem(static_cast<const void *> (url.c_str()), url.size(),
                      static_cast<const void *> ("://"), 3);
@@ -142,7 +147,7 @@ mixed f$stream_socket_client(const string &url, mixed &error_number, mixed &erro
     return false;
   }
 
-  const stream_functions *functions = get_stream_functions_from_url(url);
+  const stream_functions *functions = get_stream_functions_from_url(url, "stream_socket_client");
   if (functions == nullptr) {
     php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
     error_number = -1002;
@@ -167,7 +172,7 @@ mixed f$stream_socket_client(const string &url, mixed &error_number, mixed &erro
 bool f$stream_set_blocking(const Stream &stream, bool mode) {
   const string &url = stream.to_string();
 
-  const stream_functions *functions = get_stream_functions_from_url(url);
+  const stream_functions *functions = get_stream_functions_from_url(url, "stream_set_blocking");
   if (functions == nullptr) {
     php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
     return false;
@@ -183,7 +188,7 @@ bool f$stream_set_blocking(const Stream &stream, bool mode) {
 int64_t f$stream_set_write_buffer(const Stream &stream, int64_t size) {
   const string &url = stream.to_string();
 
-  const stream_functions *functions = get_stream_functions_from_url(url);
+  const stream_functions *functions = get_stream_functions_from_url(url, "stream_set_write_buffer");
   if (functions == nullptr) {
     php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
     return -1;
@@ -199,7 +204,7 @@ int64_t f$stream_set_write_buffer(const Stream &stream, int64_t size) {
 int64_t f$stream_set_read_buffer(const Stream &stream, int64_t size) {
   const string &url = stream.to_string();
 
-  const stream_functions *functions = get_stream_functions_from_url(url);
+  const stream_functions *functions = get_stream_functions_from_url(url, "stream_set_read_buffer");
   if (functions == nullptr) {
     php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
     return -1;
@@ -230,7 +235,7 @@ static void stream_array_to_fd_set(const mixed &streams_var, fd_set *fds, int32_
     const Stream &stream = p.get_value();
     const string &url = stream.to_string();
 
-    const stream_functions *functions = get_stream_functions_from_url(url);
+    const stream_functions *functions = get_stream_functions_from_url(url, "stream_select");
     if (functions == nullptr) {
       php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
       continue;
@@ -268,7 +273,7 @@ static void stream_array_from_fd_set(mixed &streams_var, fd_set *fds) {
     const Stream &stream = p.get_value();
     const string &url = stream.to_string();
 
-    const stream_functions *functions = get_stream_functions_from_url(url);
+    const stream_functions *functions = get_stream_functions_from_url(url, "stream_select");
     if (functions == nullptr) {
       continue;
     }
@@ -341,7 +346,7 @@ Optional<int64_t> f$stream_select(mixed &read, mixed &write, mixed &except, cons
 #define STREAM_FUNCTION_BODY(function_name, error_result)                                             \
   const string &url = stream.to_string();                                                             \
                                                                                                       \
-  const stream_functions *functions = get_stream_functions_from_url (url);                            \
+  const stream_functions *functions = get_stream_functions_from_url (url, #function_name);            \
   if (functions == nullptr) {                                                                            \
     php_warning ("Can't find appropriate wrapper for \"%s\"", url.c_str());                           \
     return error_result;                                                                              \
