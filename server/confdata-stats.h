@@ -17,6 +17,7 @@ struct ConfdataStats : private vk::not_copyable {
 
   std::chrono::nanoseconds initial_loading_time{std::chrono::nanoseconds::zero()};
   std::chrono::nanoseconds total_updating_time{std::chrono::nanoseconds::zero()};
+  std::chrono::nanoseconds time_since_last_update{std::chrono::nanoseconds::zero()};
   std::chrono::steady_clock::time_point last_update_time_point{std::chrono::nanoseconds::zero()};
 
   size_t total_updates{0};
@@ -35,6 +36,8 @@ struct ConfdataStats : private vk::not_copyable {
   size_t predefined_wildcards{0};
   size_t predefined_wildcard_elements{0};
   size_t elements_with_delay{0};
+
+  size_t total_rb_tree_size{0};
 
   struct EventCounters {
     struct Event {
