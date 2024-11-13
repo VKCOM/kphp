@@ -643,6 +643,12 @@
     "props": {
       "rl": "rl_op",
       "str": "isset"
+    },
+    "extra_fields": {
+      "was_eq3": {
+        "type": "bool",
+        "default": "false"
+      }
     }
   },
   {

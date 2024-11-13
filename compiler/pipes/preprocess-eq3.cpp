@@ -42,6 +42,7 @@ inline VertexPtr PreprocessEq3Pass::convert_eq3_null_to_isset(VertexPtr eq_op, V
     }
 
     auto isset = VertexAdaptor<op_isset>::create(not_null).set_location(not_null->location);
+    isset->was_eq3 = true;
     return VertexAdaptor<op_log_not>::create(isset);
   }
 

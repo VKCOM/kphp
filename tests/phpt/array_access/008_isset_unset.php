@@ -2,6 +2,7 @@
 <?php
 require_once 'kphp_tester_include.php';
 
+// TODO implement multi-dimensional isset, empty
 function test_obj() {
     $obj = new Classes\LoggingLikeArray(["zero", "one", "two", "str_key" => 42]);
 
@@ -19,6 +20,24 @@ function test_obj() {
 
     $obj[0] = "new";
     var_dump(isset($obj[0]));
+
+    $obj[100500] = null;
+    var_dump(isset($obj[100500]));
+    var_dump($obj[100500] == null);
+    var_dump($obj[100500] != null);
+    var_dump($obj[100500] === null);
+    var_dump($obj[100500] !== null);
+
+    $obj[100500] = [1, 2, null];
+    unset($obj[100500][1]);
+    for ($i = 0; $i < 3; $i++) {
+        // var_dump(isset($obj[100500][$i]));
+        // var_dump(!isset($obj[100500][$i]));
+        var_dump($obj[100500][$i] == null);
+        var_dump($obj[100500][$i] != null);
+        var_dump($obj[100500][$i] === null);
+        var_dump($obj[100500][$i] !== null);
+    }
 }
 
 function test_mixed_in_obj() {
@@ -40,6 +59,24 @@ function test_mixed_in_obj() {
 
     $obj[0] = "new";
     var_dump(isset($obj[0]));
+
+    $obj[100500] = null;
+    var_dump(isset($obj[100500]));
+    var_dump($obj[100500] == null);
+    var_dump($obj[100500] != null);
+    var_dump($obj[100500] === null);
+    var_dump($obj[100500] !== null);
+
+    $obj[100500] = [1, 2, null];
+    unset($obj[100500][1]);
+    for ($i = 0; $i < 3; $i++) {
+        // var_dump(isset($obj[100500][$i]));
+        // var_dump(!isset($obj[100500][$i]));
+        var_dump($obj[100500][$i] == null);
+        var_dump($obj[100500][$i] != null);
+        var_dump($obj[100500][$i] === null);
+        var_dump($obj[100500][$i] !== null);
+    }
 }
 
 test_obj();

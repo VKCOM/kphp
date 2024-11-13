@@ -4,9 +4,13 @@
 
 #include "compiler/pipes/fix-array-access.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/compiler-core.h"
 #include "common/algorithms/contains.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/inferring/public.h"
 
 static VertexPtr on_unset(VertexAdaptor<op_unset> unset) {
   if (auto func_call = unset->expr().try_as<op_func_call>()) {
@@ -30,6 +34,16 @@ static VertexPtr on_unset(VertexAdaptor<op_unset> unset) {
 }
 
 static VertexPtr on_isset(VertexAdaptor<op_isset> isset) {
+  if (isset->was_eq3) {
+    return isset;
+  }
+
+  // todo 
+  // recursively search for op_fun_call offsetGet
+  // and change on 
+  // 1) offsetExists on higher level
+  // 2) offsetExists + offsetGet on intermediate levels
+  // but what to do with mixed...
   if (auto func_call = isset->expr().try_as<op_func_call>()) {
     if (!func_call->auto_inserted) {
       return isset;
@@ -94,6 +108,25 @@ static VertexPtr on_empty(VertexAdaptor<op_func_call> empty_call) {
   return empty_call;
 }
 
+static VertexPtr on_log_not(VertexAdaptor<op_log_not> log_not_op) {
+  auto inner = log_not_op->front();
+  if (auto isset = inner.try_as<op_isset>(); isset && isset->was_eq3) {
+    VertexPtr v = isset->front();
+    bool has_index = v->type() == op_index;
+    while (v->type() == op_index) {
+      v = v.as<op_index>()->array();
+    }
+
+    if (has_index) {
+      const auto *tpe = tinf::get_type(v);
+      if (tpe->ptype() == tp_mixed || (tpe->ptype() == tp_Class && G->get_class("ArrayAccess")->is_parent_of(tpe->class_type()))) {
+        return VertexAdaptor<op_eq3>::create(isset->front(), VertexAdaptor<op_null>::create());
+      }
+    }
+  }
+  return log_not_op;
+}
+
 VertexPtr FixArrayAccessPass::on_exit_vertex(VertexPtr root) {
   if (auto unset = root.try_as<op_unset>()) {
     return on_unset(unset);
@@ -105,6 +138,9 @@ VertexPtr FixArrayAccessPass::on_exit_vertex(VertexPtr root) {
     if (func_call->func_id->is_extern() && func_call->func_id->name == "empty") {
       return on_empty(func_call);
     }
+  }
+  if (auto log_not = root.try_as<op_log_not>()) {
+    return on_log_not(log_not);
   }
 
   return root;
