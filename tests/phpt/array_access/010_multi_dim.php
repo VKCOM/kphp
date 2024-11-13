@@ -21,6 +21,11 @@ function test_straightforward() {
         as_mix_obj([[111, 222, 333], [444, 555, 666], as_mix_obj(["s1", "s2", 0.42])]),
         [[888, 999, 1010], [0.5, 0.25, 0.125], ["str", 0, 0]]
     ];
+    $z = new Classes\LoggingLikeArray([
+        [as_mix_obj([1, 2, 3]), [4, 5, 6], [7, 8, 9]],
+        as_mix_obj([[111, 222, 333], [444, 555, 666], as_mix_obj(["s1", "s2", 0.42])]),
+        [[888, 999, 1010], [0.5, 0.25, 0.125], ["str", 0, 0]]
+    ]);
 
     for ($i = 0; $i < 3; $i++) {
         for ($j = 0; $j < 3; $j++) {
@@ -28,14 +33,16 @@ function test_straightforward() {
                 if (($i + 3 * $j + 3 * 3 * $k) % 5 == 0) {
                     unset($x[$i][$j][$k]);
                     unset($y[$i][$j][$k]);
+                    unset($z[$i][$j][$k]);
                 } else {
                     $key = "new_key_" . strval($i) . "_" . strval($j) . "_" . strval($j);
                     $x[$i][$j][$k] = $key;
                     $y[$i][$j][$k] = $key;
+                    $z[$i][$j][$k] = $key;
                 }
-
                 var_dump($x[$i][$j][$k]);
                 var_dump($y[$i][$j][$k]);
+                var_dump($z[$i][$j][$k]);
             }
         }
     }
