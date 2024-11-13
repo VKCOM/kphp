@@ -61,6 +61,12 @@ static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_si
 
 #define LITERAL_WITH_LENGTH(literal) literal, sizeof(literal) - 1
 
+// IMPORTANT!
+// Do not confuse `ucontext_t` and `ucontext_t_portable`!
+// On some platforms (e.g. linux x86_64 or darwin aarch64) `ucontext_t` and `ucontext_t_portable` has different semantics and layouts.
+// Keep in mind that:
+//  * `ucontext_t_portable` -- using for more efficient user context manipulations (e.g. `swapcontext`, `getcontext`, `setcontext`, etc)
+//  * `ucontext_t` -- using in signal handlers for machine state extracting in debug purposes.
 static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, void *ucontext) {
 #ifdef __x86_64__
 #ifdef __APPLE__

@@ -4,7 +4,6 @@
 
 #include "server/php-runner.h"
 
-#include "common/ucontext/ucontext-portable.h"
 #include <cassert>
 #include <cerrno>
 #include <cstdlib>
@@ -20,6 +19,7 @@
 #include "common/precise-time.h"
 #include "common/wrappers/memory-utils.h"
 #include "common/wrappers/overloaded.h"
+#include "common/ucontext/ucontext-portable.h"
 #include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
