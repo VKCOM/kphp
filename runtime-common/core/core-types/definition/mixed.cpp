@@ -234,7 +234,7 @@ mixed &mixed::operator/=(const mixed &other) {
 
 mixed &mixed::operator%=(const mixed &other) {
   int64_t div = other.to_int();
-  if (unlikely(div == 0)) {
+  if (div == 0) {
     php_warning("Modulo by zero");
     *this = false;
     return *this;
@@ -278,10 +278,6 @@ mixed &mixed::operator>>=(const mixed &other) {
 
 
 mixed &mixed::operator++() {
-  if (likely (get_type() == type::INTEGER)) {
-    ++as_int();
-    return *this;
-  }
   switch (get_type()) {
     case type::NUL:
       type_ = type::INTEGER;
@@ -289,6 +285,9 @@ mixed &mixed::operator++() {
       return *this;
     case type::BOOLEAN:
       php_warning("Can't apply operator ++ to boolean");
+      return *this;
+    case type::INTEGER:
+      ++as_int();
       return *this;
     case type::FLOAT:
       as_double() += 1;
@@ -308,11 +307,6 @@ mixed &mixed::operator++() {
 }
 
 const mixed mixed::operator++(int) {
-  if (likely(get_type() == type::INTEGER)) {
-    mixed res(as_int());
-    ++as_int();
-    return res;
-  }
   switch (get_type()) {
     case type::NUL:
       type_ = type::INTEGER;
@@ -840,6 +834,56 @@ void mixed::convert_to_string() {
   }
 }
 
+const bool &mixed::as_bool(const char *function) const {
+  switch (get_type()) {
+    case type::BOOLEAN:
+      return as_bool();
+    default:
+      php_warning("%s() expects parameter to be boolean, %s is given", function, get_type_or_class_name());
+      return empty_value<bool>();
+  }
+}
+
+const int64_t &mixed::as_int(const char *function) const {
+  switch (get_type()) {
+    case type::INTEGER:
+      return as_int();
+    default:
+      php_warning("%s() expects parameter to be int, %s is given", function, get_type_or_class_name());
+      return empty_value<int64_t>();
+  }
+}
+
+const double &mixed::as_float(const char *function) const {
+  switch (get_type()) {
+    case type::FLOAT:
+      return as_double();
+    default:
+      php_warning("%s() expects parameter to be float, %s is given", function, get_type_or_class_name());
+      return empty_value<double>();
+  }
+}
+
+const string &mixed::as_string(const char *function) const {
+  switch (get_type()) {
+    case type::STRING:
+      return as_string();
+    default:
+      php_warning("%s() expects parameter to be string, %s is given", function, get_type_or_class_name());
+      return empty_value<string>();
+  }
+}
+
+const array<mixed> &mixed::as_array(const char *function) const {
+  switch (get_type()) {
+    case type::ARRAY:
+      return as_array();
+    default:
+      php_warning("%s() expects parameter to be array, %s is given", function, get_type_or_class_name());
+      return empty_value<array<mixed>>();
+  }
+}
+
 
 bool &mixed::as_bool(const char *function) {
   switch (get_type()) {
@@ -1091,7 +1135,7 @@ mixed &mixed::operator[](const string &string_key) {
 }
 
 mixed &mixed::operator[](tmp_string string_key) {
-  if (likely(get_type() == type::ARRAY)) {
+  if (get_type() == type::ARRAY) {
     return as_array()[string_key];
   }
   return (*this)[materialize_tmp_string(string_key)];

@@ -71,7 +71,7 @@ private:
   inline string_inner *inner() const;
 
   inline bool disjunct(const char *s) const;
-  void set_size(size_type new_size);
+  inline void set_size(size_type new_size);
 
   inline static char *create(const char *beg, const char *end);
   // IMPORTANT: this function may return read-only strings for n == 0 and n == 1.
@@ -105,7 +105,7 @@ public:
   inline string(size_type n, bool b);
   inline explicit string(int64_t i);
   inline explicit string(int32_t i): string(static_cast<int64_t>(i)) {}
-  explicit string(double f);
+  inline explicit string(double f);
 
   ~string() noexcept;
 

@@ -152,47 +152,6 @@ inline bool mixed::is_object() const {
   return get_type() == type::OBJECT;
 }
 
-
-inline const bool &mixed::as_bool(const char *function) const {
-  if (likely(get_type() == type::BOOLEAN)) {
-    return as_bool();
-  }
-  php_warning("%s() expects parameter to be boolean, %s is given", function, get_type_or_class_name());
-  return empty_value<bool>();
-}
-
-inline const int64_t &mixed::as_int(const char *function) const {
-  if (likely(get_type() == type::INTEGER)) {
-    return as_int();
-  }
-  php_warning("%s() expects parameter to be int, %s is given", function, get_type_or_class_name());
-  return empty_value<int64_t>();
-}
-
-inline const double &mixed::as_float(const char *function) const {
-  if (likely(get_type() == type::FLOAT)) {
-    return as_double();
-  }
-  php_warning("%s() expects parameter to be float, %s is given", function, get_type_or_class_name());
-  return empty_value<double>();
-}
-
-inline const string &mixed::as_string(const char *function) const {
-  if (likely(get_type() == type::STRING)) {
-    return as_string();
-  }
-  php_warning("%s() expects parameter to be string, %s is given", function, get_type_or_class_name());
-  return empty_value<string>();
-}
-
-inline const array<mixed> &mixed::as_array(const char *function) const {
-  if (likely(get_type() == type::ARRAY)) {
-    return as_array();
-  } 
-  php_warning("%s() expects parameter to be array, %s is given", function, get_type_or_class_name());
-  return empty_value<array<mixed>>();
-}
-
 inline void mixed::swap(mixed &other) {
   ::swap(type_, other.type_);
   ::swap(as_double(), other.as_double());
