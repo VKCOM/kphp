@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+#include "common/php-functions.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
@@ -14,6 +15,8 @@ struct C$ArrayAccess : public may_be_mixed_base {
 
   C$ArrayAccess() __attribute__((always_inline)) = default;
   ~C$ArrayAccess() override __attribute__((always_inline)) = default;
+
+  alignas(uint64_t) unsigned char slot_[SIZEOF_MIXED] = {};
 };
 
 
