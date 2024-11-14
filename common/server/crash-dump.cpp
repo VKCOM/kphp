@@ -50,7 +50,7 @@ static inline void crash_dump_write_uint64(uint64_t value, crash_dump_buffer_t *
   crash_dump_write_uint32(static_cast<uint32_t>(value & 0xFFFFFFFF), buffer);
 }
 
-static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_size, uint64_t reg_value, crash_dump_buffer_t *buffer) {
+[[maybe_unused]] static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_size, uint64_t reg_value, crash_dump_buffer_t *buffer) {
   assert(reg_name_size +buffer->position <= sizeof(buffer->scratchpad));
   memcpy(&buffer->scratchpad[buffer->position], reg_name, reg_name_size);
   buffer->position += reg_name_size;
@@ -67,7 +67,7 @@ static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_si
 // Keep in mind that:
 //  * `ucontext_t_portable` -- using for more efficient user context manipulations (e.g. `swapcontext`, `getcontext`, `setcontext`, etc)
 //  * `ucontext_t` -- using in signal handlers for machine state extracting in debug purposes.
-static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, void *ucontext) {
+static inline void crash_dump_prepare_registers([[maybe_unused]] crash_dump_buffer_t *buffer, [[maybe_unused]] void *ucontext) {
 #ifdef __x86_64__
 #ifdef __APPLE__
   const auto *uc = static_cast<ucontext_t *>(ucontext);
@@ -119,46 +119,7 @@ static inline void crash_dump_prepare_registers(crash_dump_buffer_t *buffer, voi
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext.gregs[REG_R15], buffer);
 #endif
 #elif defined(__arm64__) || defined (__aarch64__)
-  const auto *uc = static_cast<ucontext_t_portable *>(ucontext);
-
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("SP=0x"), uc->uc_mcontext.sp, buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("PC=0x"), uc->uc_mcontext.pc, buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("FP=0x"), uc->uc_mcontext.fp, buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("LR=0x"), uc->uc_mcontext.lr, buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("PSTATE=0x"), uc->uc_mcontext.pstate, buffer);
-
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X0=0x"), uc->uc_mcontext.regs[0], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X1=0x"), uc->uc_mcontext.regs[1], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X2=0x"), uc->uc_mcontext.regs[2], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X3=0x"), uc->uc_mcontext.regs[3], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X4=0x"), uc->uc_mcontext.regs[4], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X5=0x"), uc->uc_mcontext.regs[5], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X6=0x"), uc->uc_mcontext.regs[6], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X7=0x"), uc->uc_mcontext.regs[7], buffer);
-
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X8=0x"), uc->uc_mcontext.regs[8], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X9=0x"), uc->uc_mcontext.regs[9], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X10=0x"), uc->uc_mcontext.regs[10], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X11=0x"), uc->uc_mcontext.regs[11], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X12=0x"), uc->uc_mcontext.regs[12], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X13=0x"), uc->uc_mcontext.regs[13], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X14=0x"), uc->uc_mcontext.regs[14], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X15=0x"), uc->uc_mcontext.regs[15], buffer);
-
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X16=0x"), uc->uc_mcontext.regs[16], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X17=0x"), uc->uc_mcontext.regs[17], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X18=0x"), uc->uc_mcontext.regs[18], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X19=0x"), uc->uc_mcontext.regs[19], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X20=0x"), uc->uc_mcontext.regs[20], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X21=0x"), uc->uc_mcontext.regs[21], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X22=0x"), uc->uc_mcontext.regs[22], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X23=0x"), uc->uc_mcontext.regs[23], buffer);
-
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X24=0x"), uc->uc_mcontext.regs[24], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X25=0x"), uc->uc_mcontext.regs[25], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X26=0x"), uc->uc_mcontext.regs[26], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X27=0x"), uc->uc_mcontext.regs[27], buffer);
-  crash_dump_write_reg(LITERAL_WITH_LENGTH("X28=0x"), uc->uc_mcontext.regs[28], buffer);
+  // TODO: need to examine `ucontext_t` layout from glibc for aarch64/linux and aarch64/darwin
 #else
 #error "Unsupported arch"
 #endif
