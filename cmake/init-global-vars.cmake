@@ -2,6 +2,7 @@ include_guard(GLOBAL)
 
 set(BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 set(COMMON_DIR "${BASE_DIR}/common")
+set(THIRD_PARTY_DIR "${BASE_DIR}/third-party")
 set(OBJS_DIR ${BASE_DIR}/objs)
 set(BIN_DIR ${OBJS_DIR}/bin)
 set(GENERATED_DIR "${OBJS_DIR}/generated")

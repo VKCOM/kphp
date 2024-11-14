@@ -10,13 +10,13 @@
 #include <iterator>
 #include <memory>
 #include <span>
-#include <zconf.h>
-#include <zlib.h>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/string/string-state.h"
+
+#include "third-party/zlib/zconf.h"
+#include "third-party/zlib/zlib.h"
 
 namespace {
 
@@ -28,28 +28,12 @@ voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) noexcept {
     return Z_NULL;
   }
 
-  auto *mem{StringInstanceState::get().static_buf.data()};
-  std::advance(mem, *buf_pos_ptr);
+  auto *mem{std::next(StringInstanceState::get().static_buf.data(), *buf_pos_ptr)};
   *buf_pos_ptr += required_mem;
   return mem;
 }
 
 void zlib_static_free([[maybe_unused]] voidpf opaque, [[maybe_unused]] voidpf address) noexcept {}
-
-// FIXME: we can use script allocator instead of k2:: routines
-voidpf zlib_dynamic_alloc(voidpf /*opaque*/, uInt items, uInt size) noexcept {
-  auto required_mem{static_cast<size_t>(items) * size};
-  auto *mem{k2::alloc(required_mem)};
-  if (mem == nullptr) [[unlikely]] {
-    php_warning("zlib dynamic alloc: can't allocate %zu bytes", required_mem);
-    return Z_NULL;
-  }
-  return mem;
-}
-
-void zlib_dynamic_free([[maybe_unused]] voidpf opaque, voidpf address) noexcept {
-  k2::free(address);
-}
 
 } // namespace
 
@@ -98,9 +82,10 @@ Optional<string> zlib_encode(std::span<const char> data, int64_t level, int64_t 
 
 Optional<string> zlib_decode(std::span<const char> data, int64_t encoding) noexcept {
   z_stream zstrm{};
-  zstrm.zalloc = zlib_dynamic_alloc;
-  zstrm.zfree = zlib_dynamic_free;
-  zstrm.opaque = nullptr;
+  size_t buf_pos{};
+  zstrm.zalloc = zlib_static_alloc;
+  zstrm.zfree = zlib_static_free;
+  zstrm.opaque = std::addressof(buf_pos);
   zstrm.avail_in = data.size();
   zstrm.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(data.data()));
 
@@ -109,9 +94,10 @@ Optional<string> zlib_decode(std::span<const char> data, int64_t encoding) noexc
     return false;
   }
 
-  auto &string_st{StringInstanceState::get()};
+  auto &runtime_ctx{RuntimeContext::get()};
+  runtime_ctx.static_SB.clean().reserve(StringInstanceState::STATIC_BUFFER_LENGTH);
   zstrm.avail_out = StringInstanceState::STATIC_BUFFER_LENGTH;
-  zstrm.next_out = reinterpret_cast<Bytef *>(string_st.static_buf.data());
+  zstrm.next_out = reinterpret_cast<Bytef *>(runtime_ctx.static_SB.buffer());
   const auto inflate_res{inflate(std::addressof(zstrm), Z_NO_FLUSH)};
   inflateEnd(std::addressof(zstrm));
 
@@ -120,7 +106,7 @@ Optional<string> zlib_decode(std::span<const char> data, int64_t encoding) noexc
     return false;
   }
 
-  return string{string_st.static_buf.data(), StringInstanceState::STATIC_BUFFER_LENGTH - zstrm.avail_out};
+  return string{runtime_ctx.static_SB.buffer(), StringInstanceState::STATIC_BUFFER_LENGTH - zstrm.avail_out};
 }
 
 } // namespace zlib_impl_
