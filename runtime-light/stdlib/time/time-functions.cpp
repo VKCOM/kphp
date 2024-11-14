@@ -305,7 +305,6 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) {
   return SB.str();
 }
 
-
 inline int32_t fix_year(int64_t year) {
   if (year <= 100u) {
     if (year <= 69) {
