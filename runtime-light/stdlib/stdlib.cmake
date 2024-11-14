@@ -23,4 +23,5 @@ prepend(
   string/string-state.cpp
   system/system-state.cpp
   file/file-stream-state.cpp
+  time/time-functions.cpp
   zlib/zlib-functions.cpp)

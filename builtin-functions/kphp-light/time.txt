@@ -1,5 +1,20 @@
 <?php
 
+// ===== SUPPORTED =====
+
+function mktime (int $hour, ?int $minute = null, ?int $second = null,
+                     ?int $month = null, ?int $day = null, ?int $year = null) ::: int;
+
+function date ($format ::: string, $timestamp ::: ?int = null) ::: string;
+
+function date_default_timezone_set ($s ::: string) ::: bool;
+
+function gmdate ($format ::: string, $timestamp ::: ?int = null) ::: string;
+
+function time() ::: int;
+
+// ===== UNSUPPORTED =====
+
 /** @kphp-generate-stub-class */
 class DateInterval {
   /** @kphp-extern-func-info can_throw generate-stub */
@@ -145,21 +160,14 @@ define('DATE_RSS', "D, d M Y H:i:s O");
 define('DATE_W3C', "Y-m-d\TH:i:sP");
 
 /** @kphp-extern-func-info generate-stub */
-function date ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function date_default_timezone_set ($s ::: string) ::: bool;
-/** @kphp-extern-func-info generate-stub */
 function date_default_timezone_get() ::: string;
 /** @kphp-extern-func-info generate-stub */
 function getdate ($timestamp ::: int = PHP_INT_MIN) ::: mixed[];
 /** @kphp-extern-func-info generate-stub */
-function gmdate ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
-/** @kphp-extern-func-info generate-stub */
 function gmmktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int = PHP_INT_MIN, $month ::: int = PHP_INT_MIN, $day ::: int = PHP_INT_MIN, $year ::: int = PHP_INT_MIN) ::: int;
 /** @kphp-extern-func-info generate-stub */
 function hrtime (bool $as_number = false): mixed; // int[]|int
-/** @kphp-extern-func-info generate-stub */
-function mktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int = PHP_INT_MIN, $month ::: int = PHP_INT_MIN, $day ::: int = PHP_INT_MIN, $year ::: int = PHP_INT_MIN) ::: int;
+
 /** @kphp-extern-func-info generate-stub */
 function localtime ($timestamp ::: int = PHP_INT_MIN, $is_associative ::: bool = false) ::: mixed[];
 /** @kphp-extern-func-info generate-stub */
@@ -168,8 +176,6 @@ function microtime ($get_as_float ::: bool = false) ::: mixed;
 function strftime ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
 /** @kphp-extern-func-info generate-stub */
 function strtotime ($time ::: string, $timestamp ::: int = PHP_INT_MIN) ::: int | false;
-/** @kphp-extern-func-info generate-stub */
-function time() ::: int;
 
 
 /** @kphp-extern-func-info generate-stub */
