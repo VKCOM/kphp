@@ -337,6 +337,16 @@ void StatsHouseManager::add_confdata_master_stats(const ConfdataStats &confdata_
   client.metric("kphp_confdata_memory").tag("used").write_value(memory_stats.memory_used);
   client.metric("kphp_confdata_memory").tag("real_used").write_value(memory_stats.real_memory_used);
 
+  client.metric("kphp_confdata_tree_nodes").tag("no_dots").write_value(confdata_stats.simple_key_elements);
+  client.metric("kphp_confdata_tree_nodes").tag("one_dot").write_value(confdata_stats.one_dot_wildcards);
+  client.metric("kphp_confdata_tree_nodes").tag("two_dots").write_value(confdata_stats.two_dots_wildcards);
+  client.metric("kphp_confdata_tree_nodes").tag("predefined_wildcard").write_value(confdata_stats.predefined_wildcards);
+  client.metric("kphp_confdata_tree_nodes").tag("total").write_value(confdata_stats.total_rb_tree_size);
+
+  if (confdata_stats.time_since_last_update > std::chrono::nanoseconds::zero()) {
+    client.metric("kphp_confdata_time_since_last_update").write_value(confdata_stats.time_since_last_update.count());
+  }
+
   const auto &events = confdata_stats.event_counters;
   client.metric("kphp_confdata_events").tag("set").write_value(events.set_events.total + events.set_forever_events.total);
   client.metric("kphp_confdata_events").tag("set_blacklisted").write_value(events.set_events.blacklisted + events.set_forever_events.blacklisted);

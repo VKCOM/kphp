@@ -39,6 +39,8 @@ void ConfdataStats::on_update(const confdata_sample_storage &new_confdata,
   predefined_wildcard_elements = 0;
   heaviest_sections_by_count.clear();
 
+  total_rb_tree_size = new_confdata.size();
+
   for (const auto &section: new_confdata) {
     const vk::string_view first_key{section.first.c_str(), section.first.size()};
     switch (confdata_predefined_wildcards.detect_first_key_type(first_key)) {
@@ -75,6 +77,9 @@ void ConfdataStats::on_update(const confdata_sample_storage &new_confdata,
     }
   }
 
+  if (last_update_time_point.time_since_epoch() > std::chrono::nanoseconds::zero()) {
+    time_since_last_update = std::chrono::steady_clock::now() - last_update_time_point;
+  }
   last_update_time_point = std::chrono::steady_clock::now();
 }
 
