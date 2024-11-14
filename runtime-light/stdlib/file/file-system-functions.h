@@ -28,8 +28,8 @@ inline string f$basename(const string &path, const string &suffix = {}) noexcept
   while (!path_view.empty() && path_view.back() == file_system_impl_::SEPARATOR) {
     path_view.remove_suffix(1);
   }
-  const auto last_slash_pos{path_view.find_last_of(file_system_impl_::SEPARATOR)};
-  std::string_view filename_view{last_slash_pos == std::string_view::npos ? path_view : path_view.substr(last_slash_pos + 1)};
+  const auto last_separator_pos{path_view.find_last_of(file_system_impl_::SEPARATOR)};
+  std::string_view filename_view{last_separator_pos == std::string_view::npos ? path_view : path_view.substr(last_separator_pos + 1)};
 
   if (!suffix_view.empty() && filename_view.size() >= suffix_view.size() && filename_view.ends_with(suffix_view)) {
     filename_view.remove_suffix(suffix_view.size());
