@@ -45,6 +45,7 @@ public:
     } else {
       ss << deps.back()->get_name() << " ";
     }
+    ss << " /home/al-polyakov/workspace/kphp/objs/libz.a ";
     return ss.str();
   }
 };
