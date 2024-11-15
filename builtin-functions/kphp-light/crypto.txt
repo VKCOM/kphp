@@ -19,6 +19,12 @@ function openssl_sign ($data ::: string, &$signature ::: string, $priv_key_id ::
 /** @kphp-extern-func-info interruptible */
 function openssl_verify ($data ::: string, $signature ::: string, $pub_key_id ::: string, $signature_alg ::: int = 1) ::: int;
 
+/** @kphp-extern-func-info interruptible */
+function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
+
+/** @kphp-extern-func-info interruptible */
+function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: mixed[] | false;
+
 // ===== UNSUPPORTED =====
 
 define('X509_PURPOSE_SSL_CLIENT'    ,     1);
