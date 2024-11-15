@@ -1,22 +1,24 @@
 <?php
 
 
-
-function _exception_set_location($e, string $filename, int $line): ^1;
+// ===== SUPPORTED =====
 
 // microtime(false) specialization
-/** @kphp-extern-func-info generate-stub */
 function _microtime_string(): string;
 // microtime(true) specialization
-/** @kphp-extern-func-info generate-stub */
 function _microtime_float(): float;
 
 // hrtime(true) specialization
-/** @kphp-extern-func-info generate-stub */
 function _hrtime_int(): int;
+
+// ===== UNSUPPORTED =====
+
 // hrtime(false) specialization
 /** @kphp-extern-func-info generate-stub */
 function _hrtime_array(): int[];
+
+
+function _exception_set_location($e, string $filename, int $line): ^1;
 
 // `new $c(...)` => `_by_name_construct($c, ...)`
 function _by_name_construct(string $class_name, ...$args) ::: instance<^1>;
