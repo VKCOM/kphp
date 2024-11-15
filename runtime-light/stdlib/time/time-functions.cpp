@@ -23,14 +23,9 @@ constexpr std::array<std::string_view, 7> PHP_TIMELIB_DAY_SHORT_NAMES = {"Sun", 
 constexpr std::array<std::string_view, 4> suffix = {"st", "nd", "rd", "th"};
 
 void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) noexcept {
-  int y_leap = 0;
-  int prev_y_leap = 0;
-  int jan1weekday = 0;
-
-  y_leap = std::chrono::year(y).is_leap();
-  prev_y_leap = std::chrono::year(y - 1).is_leap();
-
-  jan1weekday = (weekday - (doy % 7) + 7) % 7;
+  int y_leap = std::chrono::year(y).is_leap();
+  int prev_y_leap = std::chrono::year(y - 1).is_leap();
+  int jan1weekday = (weekday - (doy % 7) + 7) % 7;
 
   if (weekday == 0) {
     weekday = 7;
@@ -61,8 +56,7 @@ void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) noexcept {
   }
   /* Find if Y M D falls in YearNumber Y, WeekNumber 1 through 53 */
   if (iy == y) {
-    int j;
-    j = doy + (7 - weekday) + jan1weekday;
+    int j = doy + (7 - weekday) + jan1weekday;
     iw = j / 7;
     if (jan1weekday > 4) {
       iw -= 1;
@@ -149,8 +143,8 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
         SB << month;
         break;
       case 't':
-        namespace chrono = std::chrono;
-        SB << static_cast<unsigned>(chrono::year_month_day_last(chrono::year(year), chrono::month_day_last{chrono::month(month) / chrono::last}).day());
+        SB << static_cast<unsigned>(std::chrono::year_month_day_last(
+                                      std::chrono::year(year),std::chrono::month_day_last{std::chrono::month(month) / std::chrono::last}).day());
         break;
       case 'L':
         SB << static_cast<int>(std::chrono::year(year).is_leap());
