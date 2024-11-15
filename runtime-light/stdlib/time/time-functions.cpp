@@ -7,7 +7,6 @@
 #include <array>
 #include <chrono>
 #include <climits>
-#include <cstdio>
 #include <ctime>
 #include <string_view>
 
@@ -83,12 +82,12 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
   int second = t.tm_sec;
   int day_of_week = t.tm_wday;
   int day_of_year = t.tm_yday;
-  int64_t internet_time;
-  int iso_week;
-  int iso_year;
+  int64_t internet_time = 0;
+  int iso_week = 0;
+  int iso_year = 0;
 
   SB.clean();
-  for (int i = 0; i < (int)format.size(); i++) {
+  for (int i = 0; i < static_cast<int>(format.size()); i++) {
     switch (format[i]) {
       case 'd':
         SB << static_cast<char>(day / 10 + '0') << static_cast<char>(day % 10 + '0');
@@ -135,7 +134,7 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
         break;
       case 'W':
         iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
-        SB << (char)('0' + iso_week / 10) << static_cast<char>('0' + iso_week % 10);
+        SB << static_cast<char>('0' + iso_week / 10) << static_cast<char>('0' + iso_week % 10);
         break;
       case 'F':
         SB << PHP_TIMELIB_MON_FULL_NAMES[month - 1].data();
@@ -300,7 +299,7 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
   return SB.str();
 }
 
-int32_t fix_year(int64_t year) noexcept {
+int64_t fix_year(int64_t year) noexcept {
   if (year <= 100U) {
     if (year <= 69) {
       year += 2000;
@@ -334,7 +333,7 @@ string f$gmdate(const string &format, Optional<int64_t> timestamp) noexcept {
   namespace chrono = std::chrono;
 
   int64_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
-  struct tm tm;
+  struct tm tm{};
   gmtime_r(&now, &tm);
   return date(format, tm, now, false);
 }
@@ -343,7 +342,7 @@ string f$date(const string &format, Optional<int64_t> timestamp) noexcept {
   namespace chrono = std::chrono;
 
   int64_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
-  struct tm tm;
+  struct tm tm{};
   localtime_r(&now, &tm);
   return date(format, tm, now, true);
 }
