@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 $all = '\d:d \D:D \j:j \l:l \N:N \S:S \w:w \z:z \W:W \F:F \m:m \M:M \n:n \t:t \L:L \o:o \Y:Y \y:y \a:a \A:A \B:B \g:g \G:G \h:h \H:H \i:i \s:s \u:u \e:e \I:I \O:O \P:P \T:T \Z:Z \c:c \r:r \U:U';
 
