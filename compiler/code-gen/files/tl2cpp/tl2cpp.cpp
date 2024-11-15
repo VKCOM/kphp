@@ -170,7 +170,7 @@ void write_tl_query_handlers(CodeGenerator &W) {
   }
   write_rpc_server_functions(W);
   // Const string literals that were extracted from the scheme
-  W << OpenFile("tl_const_vars.h", "tl");
+  W << OpenFile("tl_const_vars.h", "tl", false);
   W << "#pragma once" << NL;
   W << ExternInclude(G->settings().runtime_headers.get());
   std::for_each(tl_const_vars.begin(), tl_const_vars.end(), [&W](const std::string &s) {

@@ -13,7 +13,7 @@ std::unordered_map<std::string, Module> modules;
 std::set<std::string> modules_with_functions;
 
 void Module::compile_tl_h_file(CodeGenerator &W) const {
-  W << OpenFile(name + ".h", "tl");
+  W << OpenFile(name + ".h", "tl", false);
   W << "#pragma once" << NL;
   W << ExternInclude("tl/tl_const_vars.h");
   W << h_includes;
