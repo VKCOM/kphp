@@ -8,7 +8,7 @@ if(COMPILE_RUNTIME_LIGHT)
        ${THIRD_PARTY_DIR}/zlib/zconf.h)
   target_compile_options(zlibstatic PUBLIC ${ZLIB_COMPILE_FLAGS})
   # Set output directories for zlib targets
+  set(ZLIB_LIB_DIR "${OBJS_DIR}/lib")
   set_target_properties(zlibstatic PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
-                                              "${OBJS_DIR}")
-  set(ZLIB_LIB_DIR "${OBJS_DIR}")
+                                              ${ZLIB_LIB_DIR})
 endif()

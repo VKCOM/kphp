@@ -204,3 +204,6 @@ add_custom_command(OUTPUT ${OBJS_DIR}/php_lib_version.sha256
         DEPENDS php_lib_version_j $<TARGET_OBJECTS:php_lib_version_j>
         COMMENT "php_lib_version.sha256 generation")
 
+# this is to create a dummy file so the compiler can find it and include
+configure_file(${BASE_DIR}/compiler/runtime_link_libs.h.in
+               ${AUTO_DIR}/compiler/runtime_link_libs.h)
