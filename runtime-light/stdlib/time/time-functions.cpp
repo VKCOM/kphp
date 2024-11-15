@@ -46,8 +46,7 @@ void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) noexcept {
   }
   /* Find if Y M D falls in YearNumber Y+1, WeekNumber 1 */
   if (iy == y) {
-    int i;
-    i = y_leap ? 366 : 365;
+    int i = y_leap ? 366 : 365;
     if ((i - (doy - y_leap + 1)) < (4 - weekday)) {
       iy = y + 1;
       iw = 1;
