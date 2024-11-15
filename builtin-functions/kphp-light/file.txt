@@ -3,8 +3,12 @@
 
 define('FILE_APPEND', 1);
 
-/** @kphp-extern-func-info generate-stub */
-function basename ($name ::: string, $suffix ::: string = '') ::: string;
+// === SUPPORTED ===
+
+function basename ($name ::: string, $suffix ::: string = ''): string;
+
+// === UNSUPPORTED ===
+
 /** @kphp-extern-func-info generate-stub */
 function chmod ($name ::: string, $mode ::: int) ::: bool;
 /** @kphp-extern-func-info generate-stub */

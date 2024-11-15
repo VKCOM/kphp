@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <cmath>
+#include <cstdlib>
+
 #include "runtime-common/core/runtime-core.h"
 
 inline double f$ceil(double v) noexcept;
@@ -42,12 +45,33 @@ inline double f$round(double v, int64_t precision = 0) noexcept;
 
 inline double f$sqrt(double v) noexcept;
 
-mixed f$abs(const mixed &v) noexcept;
-int64_t f$abs(int64_t v) noexcept;
-double f$abs(double v) noexcept;
-int64_t f$abs(const Optional<int64_t> &v) noexcept;
-int64_t f$abs(const Optional<bool> &v) noexcept;
-double f$abs(const Optional<double> &v) noexcept;
+inline mixed f$abs(const mixed &v) noexcept {
+  mixed num = v.to_numeric();
+  if (num.is_int()) {
+    return std::abs(num.to_int());
+  }
+  return std::fabs(num.to_float());
+}
+
+inline int64_t f$abs(int64_t v) noexcept {
+  return std::abs(v);
+}
+
+inline double f$abs(double v) noexcept {
+  return std::abs(v);
+}
+
+inline int64_t f$abs(const Optional<int64_t> &v) noexcept {
+  return f$abs(val(v));
+}
+
+inline int64_t f$abs(const Optional<bool> &v) noexcept {
+  return f$abs(static_cast<int64_t>(val(v)));
+}
+
+inline double f$abs(const Optional<double> &v) noexcept {
+  return f$abs(val(v));
+}
 
 inline double f$ceil(double v) noexcept {
   return ceil(v);
@@ -143,7 +167,7 @@ inline double f$round(double v, int64_t precision) noexcept {
     return v;
   }
 
-  double mul = pow(10.0, (double)precision);
+  double mul = pow(10.0, static_cast<double>(precision));
   return round(v * mul) / mul;
 }
 
