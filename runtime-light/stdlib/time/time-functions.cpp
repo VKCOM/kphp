@@ -24,7 +24,7 @@ constexpr std::array<std::string_view, 7> PHP_TIMELIB_DAY_SHORT_NAMES = {"Sun", 
 
 constexpr std::array<std::string_view, 4> suffix = {"st", "nd", "rd", "th"};
 
-void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) {
+void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) noexcept {
   int y_leap, prev_y_leap, jan1weekday;
 
   y_leap = std::chrono::year(y).is_leap();
@@ -70,7 +70,7 @@ void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) {
   }
 }
 
-string date(const string &format, const tm &t, int64_t timestamp, bool local) {
+string date(const string &format, const tm &t, int64_t timestamp, bool local) noexcept {
   string_buffer &SB{RuntimeContext::get().static_SB};
 
   int year = t.tm_year + 1900;
@@ -305,7 +305,7 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) {
   return SB.str();
 }
 
-inline int32_t fix_year(int64_t year) {
+int32_t fix_year(int64_t year) noexcept {
   if (year <= 100u) {
     if (year <= 69) {
       year += 2000;
