@@ -308,24 +308,24 @@ int64_t fix_year(int64_t year) noexcept {
 int64_t f$mktime(int64_t hour, Optional<int64_t> minute, Optional<int64_t> second, Optional<int64_t> month, Optional<int64_t> day,
                  Optional<int64_t> year) noexcept {
   namespace chrono = std::chrono;
-  auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
+  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
   chrono::year_month_day current_date{chrono::sys_days{duration_cast<chrono::days>(time_since_epoch)}};
 
-  auto hours{chrono::hours(hour)};
-  auto minutes{chrono::minutes(minute.has_value() ? minute.val() : duration_cast<chrono::minutes>(time_since_epoch).count() % 60)};
-  auto seconds{chrono::seconds(second.has_value() ? second.val() : duration_cast<chrono::seconds>(time_since_epoch).count() % 60)};
-  auto months{chrono::months(month.has_value() ? month.val() : static_cast<unsigned>(current_date.month()))};
-  auto days{chrono::days(day.has_value() ? day.val() : static_cast<unsigned>(current_date.day()))};
-  auto years{chrono::years(year.has_value() ? fix_year(year.val()) : static_cast<int>(current_date.year()) - 1970)};
+  const auto hours{chrono::hours(hour)};
+  const auto minutes{chrono::minutes(minute.has_value() ? minute.val() : duration_cast<chrono::minutes>(time_since_epoch).count() % 60)};
+  const auto seconds{chrono::seconds(second.has_value() ? second.val() : duration_cast<chrono::seconds>(time_since_epoch).count() % 60)};
+  const auto months{chrono::months(month.has_value() ? month.val() : static_cast<unsigned>(current_date.month()))};
+  const auto days{chrono::days(day.has_value() ? day.val() : static_cast<unsigned>(current_date.day()))};
+  const auto years{chrono::years(year.has_value() ? fix_year(year.val()) : static_cast<int>(current_date.year()) - 1970)};
 
-  auto result = hours + minutes + seconds + months + days + years;
+  const auto result {hours + minutes + seconds + months + days + years};
   return duration_cast<chrono::seconds>(result).count();
 }
 
 string f$gmdate(const string &format, Optional<int64_t> timestamp) noexcept {
   namespace chrono = std::chrono;
 
-  int64_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
+  const int64_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
   struct tm tm{};
   gmtime_r(&now, &tm);
   return date(format, tm, now, false);
@@ -334,14 +334,14 @@ string f$gmdate(const string &format, Optional<int64_t> timestamp) noexcept {
 string f$date(const string &format, Optional<int64_t> timestamp) noexcept {
   namespace chrono = std::chrono;
 
-  int64_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
+  const int64_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
   struct tm tm{};
   localtime_r(&now, &tm);
   return date(format, tm, now, true);
 }
 
 bool f$date_default_timezone_set(const string &s) noexcept {
-  std::string_view timezone_view{s.c_str(), s.size()};
+  const std::string_view timezone_view{s.c_str(), s.size()};
   if (timezone_view != PHP_TIMELIB_TZ_GMT3 && timezone_view != PHP_TIMELIB_TZ_MOSCOW) {
     php_warning("unsupported default timezone \"%s\"", s.c_str());
     return false;
