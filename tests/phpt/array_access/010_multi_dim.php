@@ -43,6 +43,14 @@ function test_straightforward() {
                 var_dump($x[$i][$j][$k]);
                 var_dump($y[$i][$j][$k]);
                 var_dump($z[$i][$j][$k]);
+
+                var_dump(isset($x[$i][$j][$k]));
+                var_dump(isset($y[$i][$j][$k]));
+                var_dump(isset($z[$i][$j][$k]));
+
+                var_dump(empty($x[$i][$j][$k]));
+                var_dump(empty($y[$i][$j][$k]));
+                var_dump(empty($z[$i][$j][$k]));
             }
         }
     }

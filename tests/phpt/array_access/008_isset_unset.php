@@ -31,8 +31,8 @@ function test_obj() {
     $obj[100500] = [1, 2, null];
     unset($obj[100500][1]);
     for ($i = 0; $i < 3; $i++) {
-        // var_dump(isset($obj[100500][$i]));
-        // var_dump(!isset($obj[100500][$i]));
+        var_dump(isset($obj[100500][$i]));
+        var_dump(!isset($obj[100500][$i]));
         var_dump($obj[100500][$i] == null);
         var_dump($obj[100500][$i] != null);
         var_dump($obj[100500][$i] === null);
@@ -70,8 +70,9 @@ function test_mixed_in_obj() {
     $obj[100500] = [1, 2, null];
     unset($obj[100500][1]);
     for ($i = 0; $i < 3; $i++) {
-        // var_dump(isset($obj[100500][$i]));
-        // var_dump(!isset($obj[100500][$i]));
+        // TODO test isset(foo()[][]) and ($x->y->z[][][][])
+        var_dump(isset($obj[100500][$i]));
+        var_dump(!isset($obj[100500][$i]));
         var_dump($obj[100500][$i] == null);
         var_dump($obj[100500][$i] != null);
         var_dump($obj[100500][$i] === null);

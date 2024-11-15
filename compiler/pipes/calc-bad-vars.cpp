@@ -91,6 +91,7 @@ public:
   }
 };
 
+// todo fix here in case of not just func_call, but macros things here
 struct FuncCallGraph {
   int n;
   std::vector<FunctionPtr> functions;

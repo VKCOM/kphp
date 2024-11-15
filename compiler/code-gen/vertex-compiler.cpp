@@ -4,6 +4,7 @@
 
 #include "compiler/code-gen/vertex-compiler.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include <iterator>
 #include <unordered_map>
 
@@ -1813,7 +1814,13 @@ void compile_index_of_array_or_mixed(VertexAdaptor<op_index> root, CodeGenerator
     kphp_assert(root->has_key());
     W << root->array() << "[" << root->key() << "]";
   } else {
-    W << root->array() << ".get_value (" << root->key();
+    if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_isset) {
+      W << root->array() << ".get_value_with_isset (" << root->key();
+    } else if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_empty) {
+      W << root->array() << ".get_value_with_empty (" << root->key();
+    } else {
+      W << root->array() << ".get_value (" << root->key();
+    }
     // if it's a const string key access like $a['somekey'],
     // compute the 'somekey' string hash during the compile time and call array<T>::get_value(string, precomputed_hash)
     if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(root->key())) {
@@ -2443,6 +2450,21 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       W << xxx->value() << ", ";
       W << "f$" << xxx->set_method->name;
       W << ")";
+      break;
+    }
+    case op_check_and_get: {
+      auto xxx = root.as<op_check_and_get>();
+
+      if (xxx->is_empty) {
+        W << "EMPTY_AND_ACCESS(";
+      } else {
+        W << "CHECK_AND_ACCESS(";
+      }
+      
+      W << xxx->obj() << ", ";
+      W << xxx->offset() << ", ";
+      W << "f$" << xxx->check_method->name << ", ";
+      W << "f$" << xxx->get_method->name << ")";
       break;
     }
     default:

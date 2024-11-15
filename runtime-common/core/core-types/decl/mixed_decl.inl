@@ -124,7 +124,6 @@ public:
   void set_value(const array<mixed>::const_iterator &it);
   void set_value(const array<mixed>::iterator &it);
 
-
   const mixed get_value(int64_t int_key) const;
   const mixed get_value(int32_t key) const { return get_value(int64_t{key}); }
   const mixed get_value(const string &string_key) const;
@@ -134,6 +133,22 @@ public:
   const mixed get_value(double double_key) const;
   const mixed get_value(const array<mixed>::const_iterator &it) const;
   const mixed get_value(const array<mixed>::iterator &it) const;
+
+  template<typename ...Args>
+  const mixed get_value_with_isset(Args &&...args) const {
+    if (isset(std::forward<Args>(args)...)) {
+      return get_value(std::forward<Args>(args)...);
+    }
+    return mixed();
+  }
+
+  template<typename ...Args>
+  const mixed get_value_with_empty(Args &&...args) const {
+    if (empty(std::forward<Args>(args)...)) {
+      return get_value(std::forward<Args>(args)...);
+    }
+    return mixed();
+  }
 
   void push_back(const mixed &v);
   const mixed push_back_return(const mixed &v);

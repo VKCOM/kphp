@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/calc-func-dep.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
@@ -114,6 +115,15 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     }
   } else if (auto fork = vertex.try_as<op_fork>()) {
     data.forks.emplace_front(fork->func_call()->func_id);
+  } else if (auto set_with_ret = vertex.try_as<op_set_with_ret>()) {
+    data.dep.push_back(set_with_ret->set_method);
+    calls.push_back(set_with_ret->set_method);
+  } else if (auto check_and_get = vertex.try_as<op_check_and_get>()) {
+    data.dep.push_back(check_and_get->check_method);
+    calls.push_back(check_and_get->check_method);
+
+    data.dep.push_back(check_and_get->get_method);
+    calls.push_back(check_and_get->get_method);
   }
 
   return vertex;

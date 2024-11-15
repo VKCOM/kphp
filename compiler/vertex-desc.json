@@ -570,14 +570,14 @@
     }
   },
   {
-    "comment": "node for array access hack",
+    "comment": "node for array access hack with multiple assignment",
     "name": "op_set_with_ret",
     "base_name": "meta_op_base",
     "props": {
       "rl": "rl_func",
       "cnst": "cnst_nonconst_func",
       "type": "common_op",
-      "str": "seq_with_ret"
+      "str": "set_with_ret"
     },
     "sons": {
       "offset": 0,
@@ -588,6 +588,35 @@
       "set_method": {
         "type": "FunctionPtr",
         "default": "{}"
+      }
+    }
+  },
+  {
+    "comment": "node for array access hack with check and get",
+    "name": "op_check_and_get",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "check_and_get"
+    },
+    "sons": {
+      "offset": 0,
+      "obj": 1
+    },
+    "extra_fields": {
+      "check_method": {
+        "type": "FunctionPtr",
+        "default": "{}"
+      },
+      "get_method": {
+        "type": "FunctionPtr",
+        "default": "{}"
+      },
+      "is_empty": {
+        "type": "bool",
+        "default": "false"
       }
     }
   },
@@ -1770,8 +1799,19 @@
       "cnst": "cnst_const_func",
       "type": "common_op",
       "str": "$...[.]"
+    },
+    "extra_fields": {
+      "inside_isset": {
+        "type": "bool",
+        "default": "false"
+      },
+      "inside_empty": {
+        "type": "bool",
+        "default": "false"
+      }
     }
   },
+
   {
     "comment": "optimized form of array()[] = value()",
     "name": "op_push_back",
