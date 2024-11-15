@@ -55,3 +55,20 @@ function(check_compiler_version compiler_name compiler_version)
                 "you run at ${CMAKE_CXX_COMPILER_VERSION}!")
     endif()
 endfunction(check_compiler_version)
+
+# Function to initialize and update Git submodules
+function(update_git_submodules)
+        message(STATUS "Updating Git submodules...")
+
+        # Update submodules
+        execute_process(
+            COMMAND git submodule update --init --recursive
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            RESULT_VARIABLE update_result
+            ERROR_QUIET
+        )
+
+        if(NOT update_result EQUAL 0)
+            message(FATAL_ERROR "Failed to update Git submodules.")
+        endif()
+endfunction()
