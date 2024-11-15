@@ -6,11 +6,10 @@
 
 #include <array>
 #include <chrono>
+#include <climits>
 #include <cstdio>
 #include <ctime>
 #include <string_view>
-
-#include "runtime-common/core/runtime-core.h"
 
 namespace {
 constexpr std::string_view PHP_TIMELIB_TZ_MOSCOW = "Europe/Moscow";
@@ -25,7 +24,9 @@ constexpr std::array<std::string_view, 7> PHP_TIMELIB_DAY_SHORT_NAMES = {"Sun", 
 constexpr std::array<std::string_view, 4> suffix = {"st", "nd", "rd", "th"};
 
 void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) noexcept {
-  int y_leap, prev_y_leap, jan1weekday;
+  int y_leap = 0;
+  int prev_y_leap = 0;
+  int jan1weekday = 0;
 
   y_leap = std::chrono::year(y).is_leap();
   prev_y_leap = std::chrono::year(y - 1).is_leap();
@@ -83,14 +84,14 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
   int day_of_week = t.tm_wday;
   int day_of_year = t.tm_yday;
   int64_t internet_time;
-  int iso_week, iso_year;
+  int iso_week;
+  int iso_year;
 
   SB.clean();
   for (int i = 0; i < (int)format.size(); i++) {
     switch (format[i]) {
       case 'd':
-        SB << (char)(day / 10 + '0');
-        SB << (char)(day % 10 + '0');
+        SB << static_cast<char>(day / 10 + '0') << static_cast<char>(day % 10 + '0');
         break;
       case 'D':
         SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week].data();
@@ -102,7 +103,7 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
         SB << PHP_TIMELIB_DAY_FULL_NAMES[day_of_week].data();
         break;
       case 'N':
-        SB << (day_of_week == 0 ? '7' : (char)(day_of_week + '0'));
+        SB << (day_of_week == 0 ? '7' : static_cast<char>(day_of_week + '0'));
         break;
       case 'S': {
         int c = INT_MAX;
@@ -127,22 +128,20 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
         break;
       }
       case 'w':
-        SB << (char)(day_of_week + '0');
+        SB << static_cast<char>(day_of_week + '0');
         break;
       case 'z':
         SB << day_of_year;
         break;
       case 'W':
         iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
-        SB << (char)('0' + iso_week / 10);
-        SB << (char)('0' + iso_week % 10);
+        SB << (char)('0' + iso_week / 10) << static_cast<char>('0' + iso_week % 10);
         break;
       case 'F':
         SB << PHP_TIMELIB_MON_FULL_NAMES[month - 1].data();
         break;
       case 'm':
-        SB << (char)(month / 10 + '0');
-        SB << (char)(month % 10 + '0');
+        SB << static_cast<char>(month / 10 + '0') << static_cast<char>(month % 10 + '0');
         break;
       case 'M':
         SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1].data();
@@ -155,7 +154,7 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
         SB << static_cast<unsigned>(year_month_day_last(std::chrono::year(year), month_day_last{std::chrono::month(month) / std::chrono::last}).day());
         break;
       case 'L':
-        SB << (int)std::chrono::year(year).is_leap();
+        SB << static_cast<int>(std::chrono::year(year).is_leap());
         break;
       case 'o':
         iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
@@ -165,8 +164,7 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
         SB << year;
         break;
       case 'y':
-        SB << (char)(year / 10 % 10 + '0');
-        SB << (char)(year % 10 + '0');
+        SB << static_cast<char>(year / 10 % 10 + '0') << static_cast<char>(year % 10 + '0');
         break;
       case 'a':
         SB << (hour < 12 ? "am" : "pm");
@@ -176,9 +174,7 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
         break;
       case 'B':
         internet_time = (timestamp + 3600) % 86400 * 1000 / 86400;
-        SB << (char)(internet_time / 100 + '0');
-        SB << (char)((internet_time / 10) % 10 + '0');
-        SB << (char)(internet_time % 10 + '0');
+        SB << static_cast<char>(internet_time / 100 + '0') << static_cast<char>((internet_time / 10) % 10 + '0') << static_cast<char>(internet_time % 10 + '0');
         break;
       case 'g':
         SB << hour12;
@@ -187,20 +183,19 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
         SB << hour;
         break;
       case 'h':
-        SB << (char)(hour12 / 10 + '0');
-        SB << (char)(hour12 % 10 + '0');
+        SB << static_cast<char>(hour12 / 10 + '0') << static_cast<char>(hour12 % 10 + '0');
         break;
       case 'H':
-        SB << (char)(hour / 10 + '0');
-        SB << (char)(hour % 10 + '0');
+        SB << static_cast<char>(hour / 10 + '0');
+        SB << static_cast<char>(hour % 10 + '0');
         break;
       case 'i':
-        SB << (char)(minute / 10 + '0');
-        SB << (char)(minute % 10 + '0');
+        SB << static_cast<char>(minute / 10 + '0');
+        SB << static_cast<char>(minute % 10 + '0');
         break;
       case 's':
-        SB << (char)(second / 10 + '0');
-        SB << (char)(second % 10 + '0');
+        SB << static_cast<char>(second / 10 + '0');
+        SB << static_cast<char>(second % 10 + '0');
         break;
       case 'u':
         SB << "000000";
@@ -213,7 +208,7 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
         }
         break;
       case 'I':
-        SB << (int)(t.tm_isdst > 0);
+        SB << static_cast<int>(t.tm_isdst > 0);
         break;
       case 'O':
         if (local) {
@@ -246,20 +241,20 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
       case 'c':
         SB << year;
         SB << '-';
-        SB << (char)(month / 10 + '0');
-        SB << (char)(month % 10 + '0');
+        SB << static_cast<char>(month / 10 + '0');
+        SB << static_cast<char>(month % 10 + '0');
         SB << '-';
-        SB << (char)(day / 10 + '0');
-        SB << (char)(day % 10 + '0');
+        SB << static_cast<char>(day / 10 + '0');
+        SB << static_cast<char>(day % 10 + '0');
         SB << "T";
-        SB << (char)(hour / 10 + '0');
-        SB << (char)(hour % 10 + '0');
+        SB << static_cast<char>(hour / 10 + '0');
+        SB << static_cast<char>(hour % 10 + '0');
         SB << ':';
-        SB << (char)(minute / 10 + '0');
-        SB << (char)(minute % 10 + '0');
+        SB << static_cast<char>(minute / 10 + '0');
+        SB << static_cast<char>(minute % 10 + '0');
         SB << ':';
-        SB << (char)(second / 10 + '0');
-        SB << (char)(second % 10 + '0');
+        SB << static_cast<char>(second / 10 + '0');
+        SB << static_cast<char>(second % 10 + '0');
         if (local) {
           SB << "+03:00";
         } else {
@@ -269,21 +264,21 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
       case 'r':
         SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week].data();
         SB << ", ";
-        SB << (char)(day / 10 + '0');
-        SB << (char)(day % 10 + '0');
+        SB << static_cast<char>(day / 10 + '0');
+        SB << static_cast<char>(day % 10 + '0');
         SB << ' ';
         SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1].data();
         SB << ' ';
         SB << year;
         SB << ' ';
-        SB << (char)(hour / 10 + '0');
-        SB << (char)(hour % 10 + '0');
+        SB << static_cast<char>(hour / 10 + '0');
+        SB << static_cast<char>(hour % 10 + '0');
         SB << ':';
-        SB << (char)(minute / 10 + '0');
-        SB << (char)(minute % 10 + '0');
+        SB << static_cast<char>(minute / 10 + '0');
+        SB << static_cast<char>(minute % 10 + '0');
         SB << ':';
-        SB << (char)(second / 10 + '0');
-        SB << (char)(second % 10 + '0');
+        SB << static_cast<char>(second / 10 + '0');
+        SB << static_cast<char>(second % 10 + '0');
         if (local) {
           SB << " +0300";
         } else {
@@ -306,7 +301,7 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
 }
 
 int32_t fix_year(int64_t year) noexcept {
-  if (year <= 100u) {
+  if (year <= 100U) {
     if (year <= 69) {
       year += 2000;
     } else {
@@ -331,10 +326,8 @@ int64_t f$_hrtime_int() noexcept {
 
 array<int64_t> f$_hrtime_array() noexcept {
   auto since_epoch = std::chrono::steady_clock::now().time_since_epoch();
-  return array<int64_t>::create(
-    std::chrono::duration_cast<std::chrono::seconds>(since_epoch).count(),
-    std::chrono::nanoseconds{since_epoch % std::chrono::seconds{1}}.count()
-  );
+  return array<int64_t>::create(std::chrono::duration_cast<std::chrono::seconds>(since_epoch).count(),
+                                std::chrono::nanoseconds{since_epoch % std::chrono::seconds{1}}.count());
 }
 
 mixed f$microtime(bool get_as_float) noexcept {
