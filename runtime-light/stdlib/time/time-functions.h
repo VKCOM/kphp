@@ -16,9 +16,10 @@ inline int64_t f$_hrtime_int() noexcept {
 }
 
 inline array<int64_t> f$_hrtime_array() noexcept {
-  using namespace std::chrono;
-  auto since_epoch = steady_clock::now().time_since_epoch();
-  return array<int64_t>::create(duration_cast<seconds>(since_epoch).count(), nanoseconds{since_epoch % seconds{1}}.count());
+  namespace chrono = std::chrono;
+  auto since_epoch = chrono::steady_clock::now().time_since_epoch();
+  return array<int64_t>::create(duration_cast<chrono::seconds>(since_epoch).count(),
+                                chrono::nanoseconds{since_epoch % chrono::seconds{1}}.count());
 }
 
 inline mixed f$hrtime(bool as_number = false) noexcept {
@@ -29,10 +30,10 @@ inline mixed f$hrtime(bool as_number = false) noexcept {
 }
 
 inline string f$_microtime_string() noexcept {
-  using namespace std::chrono;
-  auto time_since_epoch{high_resolution_clock::now().time_since_epoch()};
-  auto seconds{duration_cast<std::chrono::seconds>(time_since_epoch).count()};
-  auto nanoseconds{duration_cast<std::chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000};
+  namespace chrono = std::chrono;
+  auto time_since_epoch{chrono::high_resolution_clock::now().time_since_epoch()};
+  auto seconds{duration_cast<chrono::seconds>(time_since_epoch).count()};
+  auto nanoseconds{duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000};
 
   constexpr size_t default_buffer_size = 60;
   char buf[default_buffer_size];
@@ -41,10 +42,10 @@ inline string f$_microtime_string() noexcept {
 }
 
 inline double f$_microtime_float() noexcept {
-  using namespace std::chrono;
-  auto time_since_epoch{std::chrono::high_resolution_clock::now().time_since_epoch()};
+  namespace chrono = std::chrono;
+  auto time_since_epoch{chrono::high_resolution_clock::now().time_since_epoch()};
   double microtime =
-    duration_cast<std::chrono::seconds>(time_since_epoch).count() + (duration_cast<std::chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000) * 1e-9;
+    duration_cast<chrono::seconds>(time_since_epoch).count() + (duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000) * 1e-9;
   return microtime;
 }
 
@@ -57,9 +58,9 @@ inline mixed f$microtime(bool get_as_float = false) noexcept {
 }
 
 inline int64_t f$time() noexcept {
-  using namespace std::chrono;
-  auto now{system_clock::now().time_since_epoch()};
-  return duration_cast<std::chrono::seconds>(now).count();
+  namespace chrono = std::chrono;
+  auto now{chrono::system_clock::now().time_since_epoch()};
+  return duration_cast<chrono::seconds>(now).count();
 }
 
 int64_t f$mktime(int64_t hour, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {}, Optional<int64_t> day = {},

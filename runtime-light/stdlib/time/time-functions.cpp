@@ -150,8 +150,8 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
         SB << month;
         break;
       case 't':
-        using namespace std::chrono;
-        SB << static_cast<unsigned>(year_month_day_last(std::chrono::year(year), month_day_last{std::chrono::month(month) / std::chrono::last}).day());
+        namespace chrono = std::chrono;
+        SB << static_cast<unsigned>(chrono::year_month_day_last(chrono::year(year), chrono::month_day_last{chrono::month(month) / chrono::last}).day());
         break;
       case 'L':
         SB << static_cast<int>(std::chrono::year(year).is_leap());
@@ -315,34 +315,34 @@ int32_t fix_year(int64_t year) noexcept {
 
 int64_t f$mktime(int64_t hour, Optional<int64_t> minute, Optional<int64_t> second, Optional<int64_t> month, Optional<int64_t> day,
                  Optional<int64_t> year) noexcept {
-  using namespace std::chrono;
-  auto time_since_epoch{system_clock::now().time_since_epoch()};
-  year_month_day current_date{sys_days{duration_cast<std::chrono::days>(time_since_epoch)}};
+  namespace chrono = std::chrono;
+  auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
+  chrono::year_month_day current_date{chrono::sys_days{duration_cast<chrono::days>(time_since_epoch)}};
 
-  auto hours{std::chrono::hours(hour)};
-  auto minutes{std::chrono::minutes(minute.has_value() ? minute.val() : duration_cast<std::chrono::minutes>(time_since_epoch).count() % 60)};
-  auto seconds{std::chrono::seconds(second.has_value() ? second.val() : duration_cast<std::chrono::seconds>(time_since_epoch).count() % 60)};
-  auto months{std::chrono::months(month.has_value() ? month.val() : static_cast<unsigned>(current_date.month()))};
-  auto days{std::chrono::days(day.has_value() ? day.val() : static_cast<unsigned>(current_date.day()))};
-  auto years{std::chrono::years(year.has_value() ? fix_year(year.val()) : static_cast<int>(current_date.year()) - 1970)};
+  auto hours{chrono::hours(hour)};
+  auto minutes{chrono::minutes(minute.has_value() ? minute.val() : duration_cast<chrono::minutes>(time_since_epoch).count() % 60)};
+  auto seconds{chrono::seconds(second.has_value() ? second.val() : duration_cast<chrono::seconds>(time_since_epoch).count() % 60)};
+  auto months{chrono::months(month.has_value() ? month.val() : static_cast<unsigned>(current_date.month()))};
+  auto days{chrono::days(day.has_value() ? day.val() : static_cast<unsigned>(current_date.day()))};
+  auto years{chrono::years(year.has_value() ? fix_year(year.val()) : static_cast<int>(current_date.year()) - 1970)};
 
   auto result = hours + minutes + seconds + months + days + years;
-  return duration_cast<std::chrono::seconds>(result).count();
+  return duration_cast<chrono::seconds>(result).count();
 }
 
 string f$gmdate(const string &format, Optional<int64_t> timestamp) noexcept {
-  using namespace std::chrono;
+  namespace chrono = std::chrono;
 
-  int64_t now{timestamp.has_value() ? timestamp.val() : duration_cast<std::chrono::seconds>(system_clock::now().time_since_epoch()).count()};
+  int64_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
   struct tm tm;
   gmtime_r(&now, &tm);
   return date(format, tm, now, false);
 }
 
 string f$date(const string &format, Optional<int64_t> timestamp) noexcept {
-  using namespace std::chrono;
+  namespace chrono = std::chrono;
 
-  int64_t now{timestamp.has_value() ? timestamp.val() : duration_cast<std::chrono::seconds>(system_clock::now().time_since_epoch()).count()};
+  int64_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
   struct tm tm;
   localtime_r(&now, &tm);
   return date(format, tm, now, true);
