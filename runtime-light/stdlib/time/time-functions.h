@@ -18,8 +18,7 @@ inline int64_t f$_hrtime_int() noexcept {
 inline array<int64_t> f$_hrtime_array() noexcept {
   namespace chrono = std::chrono;
   const auto since_epoch = chrono::steady_clock::now().time_since_epoch();
-  return array<int64_t>::create(duration_cast<chrono::seconds>(since_epoch).count(),
-                                chrono::nanoseconds{since_epoch % chrono::seconds{1}}.count());
+  return array<int64_t>::create(duration_cast<chrono::seconds>(since_epoch).count(), chrono::nanoseconds{since_epoch % chrono::seconds{1}}.count());
 }
 
 inline mixed f$hrtime(bool as_number = false) noexcept {
