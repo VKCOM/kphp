@@ -13,6 +13,10 @@ function gmdate ($format ::: string, $timestamp ::: ?int = null) ::: string;
 
 function time() ::: int;
 
+function microtime ($get_as_float ::: bool = false) ::: mixed;
+
+function hrtime (bool $as_number = false): mixed; // int[]|int
+
 // ===== UNSUPPORTED =====
 
 /** @kphp-generate-stub-class */
@@ -165,13 +169,9 @@ function date_default_timezone_get() ::: string;
 function getdate ($timestamp ::: int = PHP_INT_MIN) ::: mixed[];
 /** @kphp-extern-func-info generate-stub */
 function gmmktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int = PHP_INT_MIN, $month ::: int = PHP_INT_MIN, $day ::: int = PHP_INT_MIN, $year ::: int = PHP_INT_MIN) ::: int;
-/** @kphp-extern-func-info generate-stub */
-function hrtime (bool $as_number = false): mixed; // int[]|int
 
 /** @kphp-extern-func-info generate-stub */
 function localtime ($timestamp ::: int = PHP_INT_MIN, $is_associative ::: bool = false) ::: mixed[];
-/** @kphp-extern-func-info generate-stub */
-function microtime ($get_as_float ::: bool = false) ::: mixed;
 /** @kphp-extern-func-info generate-stub */
 function strftime ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
 /** @kphp-extern-func-info generate-stub */

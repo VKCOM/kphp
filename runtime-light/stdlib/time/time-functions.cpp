@@ -318,8 +318,31 @@ inline int32_t fix_year(int64_t year) {
 
 } // namespace
 
+mixed f$hrtime(bool as_number) noexcept {
+  if (as_number) {
+    return f$_hrtime_int();
+  }
+  return f$_hrtime_array();
+}
+
 int64_t f$_hrtime_int() noexcept {
   return std::chrono::steady_clock::now().time_since_epoch().count();
+}
+
+array<int64_t> f$_hrtime_array() noexcept {
+  auto since_epoch = std::chrono::steady_clock::now().time_since_epoch();
+  return array<int64_t>::create(
+    std::chrono::duration_cast<std::chrono::seconds>(since_epoch).count(),
+    std::chrono::nanoseconds{since_epoch % std::chrono::seconds{1}}.count()
+  );
+}
+
+mixed f$microtime(bool get_as_float) noexcept {
+  if (get_as_float) {
+    return f$_microtime_float();
+  } else {
+    return f$_microtime_string();
+  }
 }
 
 string f$_microtime_string() noexcept {

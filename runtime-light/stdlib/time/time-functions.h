@@ -8,8 +8,11 @@
 
 #include "runtime-common/core/runtime-core.h"
 
+mixed f$hrtime(bool as_number = false) noexcept;
 int64_t f$_hrtime_int() noexcept;
+array<int64_t> f$_hrtime_array() noexcept;
 
+mixed f$microtime(bool get_as_float = false) noexcept;
 string f$_microtime_string() noexcept;
 double f$_microtime_float() noexcept;
 
