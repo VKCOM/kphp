@@ -1,6 +1,6 @@
 # prepare third-parties
 update_git_submodules()
-include(${BASE_DIR}/cmake/third-party.cmake)
+include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)
 
 # =================================================================================================
 include(${RUNTIME_LIGHT_DIR}/allocator/allocator.cmake)
