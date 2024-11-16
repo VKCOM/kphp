@@ -160,6 +160,9 @@ public:
   KphpOption<std::string> archive_creator;
   KphpOption<bool> dynamic_incremental_linkage;
 
+  KphpOption<double> debug_info_force_disable_prob;
+  KphpOption<size_t> debug_info_force_disable_prob_seed;
+
   KphpOption<uint64_t> profiler_level;
   KphpOption<bool> enable_global_vars_memory_stats;
   KphpOption<bool> enable_full_performance_analyze;
