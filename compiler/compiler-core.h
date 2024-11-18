@@ -59,6 +59,7 @@ private:
   ClassPtr memcache_class;
   TlClasses tl_classes;
   std::vector<std::string> kphp_runtime_opts;
+  std::vector<std::string> exclude_namespaces;
   bool is_untyped_rpc_tl_used{false};
   bool is_functions_txt_parsed{false};
   function_palette::Palette function_palette;
@@ -213,6 +214,14 @@ public:
 
   bool is_output_mode_k2() const {
     return is_output_mode_k2_cli() || is_output_mode_k2_server() || is_output_mode_k2_oneshot() || is_output_mode_k2_multishot();
+  }
+
+  void set_exclude_namespaces(std::vector<std::string> &&excludes) {
+    exclude_namespaces = std::move(excludes);
+  }
+
+  const std::vector<std::string> &get_exclude_namespaces() const {
+    return exclude_namespaces;
   }
 
   Stats stats;

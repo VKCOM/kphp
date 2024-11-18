@@ -50,6 +50,8 @@ void RegisterKphpConfiguration::handle_KphpConfiguration_class(ClassPtr klass) {
       handle_constant_function_palette(c);
     } else if (c.local_name() == runtime_options_name_) {
       handle_constant_runtime_options(c);
+    } else if (c.local_name() == exclude_namespaces_name_) {
+      handle_constant_function_exclude_namespaces(c);
     } else {
       kphp_error_return(0, fmt_format("Got unexpected {} constant '{}'",
                                       configuration_class_name_, c.local_name()));
@@ -147,6 +149,19 @@ void RegisterKphpConfiguration::handle_constant_runtime_options(const ClassMembe
                                configuration_class_name_, runtime_options_name_, *opt_key));
     }
   }
+}
+
+void RegisterKphpConfiguration::handle_constant_function_exclude_namespaces(const ClassMemberConstant &c) {
+  std::vector<std::string> cases;
+
+  const auto &arr = VertexUtil::get_actual_value(c.value).try_as<op_array>();
+  cases.reserve(arr->args().size());
+  for (const auto &opt : arr->args()) {
+    auto opt_str = VertexUtil::get_actual_value(opt).try_as<op_string>();
+    cases.emplace_back(std::move(opt_str->str_val));
+  }
+
+  G->set_exclude_namespaces(std::move(cases));
 }
 
 void RegisterKphpConfiguration::generic_register_simple_option(VertexPtr value, vk::string_view opt_key) const noexcept {
