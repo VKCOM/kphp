@@ -39,7 +39,7 @@ struct OpenFile {
     static constexpr size_t PROB_RANGE = 100000;
     size_t hash = std::hash<std::string>{}(file_name);
     size_t seed = 1;
-    if (auto seed_from_options = G->settings().debug_info_force_disable_prob_seed.get()) {
+    if (size_t seed_from_options = G->settings().debug_info_force_disable_prob_seed.get()) {
       seed = seed_from_options;
     }
 
