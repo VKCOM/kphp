@@ -171,6 +171,16 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--cc-name",
+        metavar="MODE",
+        type=str,
+        dest="cc_name",
+        default="gcc",
+        choices=["gcc", "clang", "clang-16", "clang-18", "clang-19"],
+        help="specify cc for compiling kphp",
+    )
+
+    parser.add_argument(
         "--cxx-name",
         metavar="MODE",
         type=str,
@@ -297,10 +307,11 @@ if __name__ == "__main__":
         "mkdir {kphp_repo_root}/build && "
         "cmake "
         "-S {kphp_repo_root} -B {kphp_repo_root}/build "
-        "-DCMAKE_CXX_COMPILER={cxx_name} -DCOMPILE_RUNTIME_LIGHT=ON {cmake_options} && "
+        "-DCMAKE_C_COMPILER={cc_name} -DCMAKE_CXX_COMPILER={cxx_name} -DCOMPILE_RUNTIME_LIGHT=ON {cmake_options} && "
         "{env_vars} make -C {kphp_repo_root}/build -j{jobs} all test".format(
             jobs=n_cpu,
             kphp_repo_root=kphp_repo_root,
+            cc_name=args.cc_name,
             cxx_name=args.cxx_name,
             cmake_options=cmake_options,
             env_vars=env_vars,
