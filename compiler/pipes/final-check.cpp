@@ -606,9 +606,6 @@ void FinalCheckPass::on_start() {
 }
 
 VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
-  if (vertex->type() == op_function && current_function->name == "test_eq") {
-    vertex.debugPrint();
-  }
   if (vertex->type() == op_func_name) {
     kphp_error (0, fmt_format("Unexpected {} (maybe, it should be a define?)", vertex->get_string()));
   }
@@ -730,10 +727,6 @@ VertexPtr FinalCheckPass::on_enter_vertex(VertexPtr vertex) {
     } else if (v->type() == op_index) {   // isset($arr[index]), unset($arr[index])
       const TypeData *arrayType = tinf::get_type(v.as<op_index>()->array());
       PrimitiveType ptype = arrayType->get_real_ptype();
-      bool cond = vk::any_of_equal(ptype, tp_tuple, tp_shape, tp_array, tp_mixed);
-      if (!cond) {
-        printf("BAD: %s\n", ptype_name(ptype));
-      }
       kphp_error(vk::any_of_equal(ptype, tp_tuple, tp_shape, tp_array, tp_mixed), "Can't use isset/unset by[idx] for not an array");
     }
   }
