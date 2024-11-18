@@ -1815,9 +1815,9 @@ void compile_index_of_array_or_mixed(VertexAdaptor<op_index> root, CodeGenerator
     W << root->array() << "[" << root->key() << "]";
   } else {
     if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_isset) {
-      W << root->array() << ".get_value_with_isset (" << root->key();
+      W << root->array() << ".get_value_if_isset (" << root->key();
     } else if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_empty) {
-      W << root->array() << ".get_value_with_empty (" << root->key();
+      W << root->array() << ".get_value_if_not_empty (" << root->key();
     } else {
       W << root->array() << ".get_value (" << root->key();
     }
@@ -2444,7 +2444,7 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     }
     case op_set_with_ret: {
       auto xxx = root.try_as<op_set_with_ret>();
-      W << "SET_ARR_ACC_BY_INDEX(";
+      W << "ARR_ACC_SET(";
       W << xxx->obj() << ", ";
       W << xxx->offset() << ", ";
       W << xxx->value() << ", ";
@@ -2456,9 +2456,9 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       auto xxx = root.as<op_check_and_get>();
 
       if (xxx->is_empty) {
-        W << "EMPTY_AND_ACCESS(";
+        W << "ARR_ACC_GET_IF_NOT_EMPTY(";
       } else {
-        W << "CHECK_AND_ACCESS(";
+        W << "ARR_ACC_GET_IF_ISSET(";
       }
       
       W << xxx->obj() << ", ";
