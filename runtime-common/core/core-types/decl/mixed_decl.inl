@@ -144,8 +144,11 @@ public:
 
   template<typename ...Args>
   const mixed get_value_with_empty(Args &&...args) const {
-    if (empty(std::forward<Args>(args)...)) {
-      return get_value(std::forward<Args>(args)...);
+    if (isset(std::forward<Args>(args)...)) {
+      mixed val = get_value(std::forward<Args>(args)...);
+      if (!val.empty()) {
+        return val;
+      }
     }
     return mixed();
   }

@@ -2,7 +2,6 @@
 <?php
 require_once 'kphp_tester_include.php';
 
-// TODO implement multi-dimensional isset, empty
 function test_obj() {
     $obj = new Classes\LoggingLikeArray(["zero", "one", "two", "str_key" => 42]);
 
