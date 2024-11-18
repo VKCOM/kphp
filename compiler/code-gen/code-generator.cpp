@@ -5,6 +5,7 @@
 #include "compiler/compiler-core.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/src-file.h"
+#include <iostream>
 
 
 void CodeGenerator::open_file_create_writer(bool compile_with_debug_info_flag, bool compile_with_crc, const std::string &file_name, const std::string &subdir) {
@@ -14,6 +15,14 @@ void CodeGenerator::open_file_create_writer(bool compile_with_debug_info_flag, b
     full_file_name += "/";
   }
   full_file_name += file_name;
+
+  const auto exclude_from_debug = G->get_exclude_namespaces();
+  for (const auto &exclude_symbol : exclude_from_debug) {
+    if (file_name.rfind(exclude_symbol, 0) != std::string::npos) {
+      std::cerr << "path: " << file_name << std::endl;
+      compile_with_debug_info_flag = false;
+    }
+  }
 
   // get a currently opened file from a cpp index saved at previous kphp launch — to compare hashes with it
   // (if it doesn't exist in index, its hashes will be -1; if !compile_with_crc, the same)

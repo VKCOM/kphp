@@ -27,10 +27,13 @@ class RegisterKphpConfiguration final : public SyncPipeF<FunctionPtr> {
   void parse_palette_ruleset(VertexAdaptor<op_array> arr, function_palette::Palette &palette);
   void parse_palette_rule(VertexAdaptor<op_double_arrow> pair, function_palette::Palette &palette, function_palette::PaletteRuleset &add_to);
 
+  void handle_constant_function_exclude_namespaces(const ClassMemberConstant &c);
+
   const vk::string_view configuration_class_name_{"KphpConfiguration"};
   const vk::string_view runtime_options_name_{"DEFAULT_RUNTIME_OPTIONS"};
   const vk::string_view function_color_palette_name_{"FUNCTION_PALETTE"};
-  
+  const vk::string_view exclude_namespaces_name_{"EXCLUDE_NAMESPACES"};
+
   const vk::string_view confdata_blacklist_key_{"--confdata-blacklist"};
   const vk::string_view confdata_predefined_wildcard_key_{"--confdata-predefined-wildcard"};
   const vk::string_view mysql_db_name_key_{"--mysql-db-name"};
