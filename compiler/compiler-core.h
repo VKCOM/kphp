@@ -217,10 +217,10 @@ public:
   }
 
   void set_exclude_namespaces(std::vector<std::string> &&excludes) {
-    exclude_namespaces = excludes;
+    exclude_namespaces = std::move(excludes);
   }
 
-  std::vector<std::string> get_exclude_namespaces() {
+  const std::vector<std::string> &get_exclude_namespaces() const {
     return exclude_namespaces;
   }
 

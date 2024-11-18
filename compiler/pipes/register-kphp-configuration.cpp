@@ -155,10 +155,10 @@ void RegisterKphpConfiguration::handle_constant_function_exclude_namespaces(cons
   std::vector<std::string> cases;
 
   const auto &arr = VertexUtil::get_actual_value(c.value).try_as<op_array>();
+  cases.reserve(arr->args().size());
   for (const auto &opt : arr->args()) {
     auto opt_str = VertexUtil::get_actual_value(opt).try_as<op_string>();
-
-    cases.push_back(std::move(opt_str->str_val));
+    cases.emplace_back(std::move(opt_str->str_val));
   }
 
   G->set_exclude_namespaces(std::move(cases));

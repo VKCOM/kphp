@@ -2,6 +2,7 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "common/algorithms/contains.h"
 #include "compiler/compiler-core.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/data/src-file.h"
@@ -16,7 +17,7 @@ void CodeGenerator::open_file_create_writer(bool compile_with_debug_info_flag, b
   }
   full_file_name += file_name;
 
-  const auto exclude_from_debug = G->get_exclude_namespaces();
+  const auto &exclude_from_debug = G->get_exclude_namespaces();
   for (const auto &exclude_symbol : exclude_from_debug) {
     if (file_name.rfind(exclude_symbol, 0) != std::string::npos) {
       std::cerr << "path: " << file_name << std::endl;
