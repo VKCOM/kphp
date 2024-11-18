@@ -4,9 +4,12 @@
 
 #pragma once
 
+#include <cstddef>
+#include <functional>
 #include <string>
 
 #include "compiler/code-gen/code-generator.h"
+#include "compiler/compiler-core.h"
 #include "compiler/stage.h"
 
 #define NL NewLine()
@@ -24,6 +27,23 @@ struct OpenFile {
     subdir(subdir),
     compile_with_debug_info_flag(compile_with_debug_info_flag),
     compile_with_crc(compile_with_crc) {
+    double debug_info_disable_prob = G->settings().debug_info_force_disable_prob.get();
+    if (compile_with_debug_info_flag && debug_info_disable_prob > 0) {
+      if (flip_coin(debug_info_disable_prob)) {
+        this->compile_with_debug_info_flag = false;
+      }
+    }
+  }
+
+  bool flip_coin(double prob) const {
+    static constexpr size_t PROB_RANGE = 100000;
+    size_t hash = std::hash<std::string>{}(file_name);
+    size_t seed = 1;
+    if (size_t seed_from_options = G->settings().debug_info_force_disable_prob_seed.get()) {
+      seed = seed_from_options;
+    }
+
+    return hash * seed % PROB_RANGE < prob * PROB_RANGE;
   }
 
   void compile(CodeGenerator &W) const {

@@ -55,6 +55,11 @@ void KphpOption<uint64_t>::dump_option(std::ostream &out) const noexcept {
 }
 
 template<>
+void KphpOption<double>::dump_option(std::ostream &out) const noexcept {
+  out << value_;
+}
+
+template<>
 void KphpOption<bool>::dump_option(std::ostream &out) const noexcept {
   out << (value_ ? "true" : "false");
 }
@@ -82,6 +87,19 @@ void KphpOption<uint64_t>::parse_arg_value() {
       value_ = std::stoul(raw_option_arg_);
     } catch (...) {
       throw_param_exception(fmt_format("unsigned integer is expected but {} found", raw_option_arg_));
+    }
+  }
+}
+
+template<>
+void KphpOption<double>::parse_arg_value() {
+  if (raw_option_arg_.empty()) {
+    value_ = 0.0;
+  } else {
+    try {
+      value_ = std::stod(raw_option_arg_);
+    } catch (...) {
+      throw_param_exception(fmt_format("double is expected but {} found", raw_option_arg_));
     }
   }
 }
@@ -304,7 +322,7 @@ void CompilerSettings::init() {
   if (!no_pch.get()) {
     ss << " -Winvalid-pch -fpch-preprocess";
   }
-  if (is_k2_mode ||  dynamic_incremental_linkage.get()) {
+  if (is_k2_mode || dynamic_incremental_linkage.get()) {
     ss << " -fPIC";
   }
   if (vk::contains(cxx.get(), "clang")) {
