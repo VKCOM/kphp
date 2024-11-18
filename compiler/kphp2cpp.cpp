@@ -270,7 +270,7 @@ int main(int argc, char *argv[]) {
              "extra-linker-flags", "KPHP_EXTRA_LDFLAGS", get_default_extra_ldflags());
   parser.add("C++ compiler debug level for building the output binary", settings->extra_cxx_debug_level,
              "debug-level", "KPHP_DEBUG_LEVEL");
-  parser.add("Probability to partially disable debug info for some random part of files",
+  parser.add("Probability of partially disabling debug info for some random part of files",
              settings->debug_info_force_disable_prob, "debug-info-force-disable-probability", "KPHP_DEBUG_INFO_FORCE_DISABLE_PROBABILITY");
   parser.add("Seed for random check from --debug-info-force-disable-probability option",
              settings->debug_info_force_disable_prob_seed, "debug-info-force-disable-probability-seed", "KPHP_DEBUG_INFO_FORCE_DISABLE_PROBABILITY_SEED");
