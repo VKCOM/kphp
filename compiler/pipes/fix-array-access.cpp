@@ -91,12 +91,12 @@ static void mark_all_indexes(VertexPtr inner, Mark mark) {
     mark_all_indexes(as_index->array(), mark);
   }
 
-  if (auto as_func_call = inner.try_as<op_func_call>(); as_func_call && as_func_call->func_id->class_id) {
+  if (auto as_func_call = inner.try_as<op_func_call>(); as_func_call && as_func_call->func_id->class_id && !as_func_call->args().empty()) {
     // if not method -> last -> not case for changing
     mark_all_indexes(as_func_call->args()[0], mark);
   }
 
-  if (auto as_instance_prop = inner.try_as<op_instance_prop>(); as_instance_prop) {
+  if (auto as_instance_prop = inner.try_as<op_instance_prop>(); as_instance_prop && !as_instance_prop->empty()) {
     mark_all_indexes(as_instance_prop->front(), mark);
   }
 }
@@ -122,7 +122,7 @@ static std::pair<VertexPtr, bool> fixup_isset(VertexPtr cur, VertexPtr prev, Fun
     resp |= son_res.second;
     as_index->array() = son_res.first;
   }
-  if (auto as_func_call = cur.try_as<op_func_call>(); as_func_call && as_func_call->func_id->class_id) {
+  if (auto as_func_call = cur.try_as<op_func_call>(); as_func_call && as_func_call->func_id->class_id && !as_func_call->args().empty()) {
     auto son_res = fixup_isset(as_func_call->args()[0], cur, current_function);
     resp |= son_res.second;
     as_func_call->args()[0] = son_res.first;
@@ -197,7 +197,7 @@ static std::pair<VertexPtr, bool> fixup_empty(VertexPtr cur, VertexPtr prev, Fun
     resp |= son_res.second;
     as_index->array() = son_res.first;
   }
-  if (auto as_func_call = cur.try_as<op_func_call>(); as_func_call && as_func_call->func_id->class_id) {
+  if (auto as_func_call = cur.try_as<op_func_call>(); as_func_call && as_func_call->func_id->class_id && !as_func_call->args().empty()) {
     auto son_res = fixup_empty(as_func_call->args()[0], cur, current_function);
     resp |= son_res.second;
     as_func_call->args()[0] = son_res.first;
