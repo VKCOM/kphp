@@ -1,3 +1,6 @@
+# prepare third-parties
+update_git_submodules()
+
 include(${RUNTIME_LIGHT_DIR}/allocator/allocator.cmake)
 include(${RUNTIME_LIGHT_DIR}/core/core.cmake)
 include(${RUNTIME_LIGHT_DIR}/scheduler/scheduler.cmake)
