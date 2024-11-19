@@ -6,11 +6,8 @@
 
 #include "runtime-common/core/runtime-core.h"
 
+#include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime/context/runtime-context.h"
-
-Optional<string> f$base64_decode(const string &s, bool strict = false);
-
-string f$base64_encode(const string &s);
 
 constexpr int64_t PHP_QUERY_RFC1738 = 1;
 constexpr int64_t PHP_QUERY_RFC3986 = 2;
@@ -23,16 +20,6 @@ string f$http_build_query(const array<T> &a, const string &numeric_prefix = {},
 void parse_str_set_value(mixed &arr, const string &key, const string &value);
 
 void f$parse_str(const string &str, mixed &arr);
-
-mixed f$parse_url(const string &s, int64_t component = -1);
-
-string f$rawurldecode(const string &s);
-
-string f$rawurlencode(const string &s);
-
-string f$urldecode(const string &s);
-
-string f$urlencode(const string &s);
 
 /*
  *

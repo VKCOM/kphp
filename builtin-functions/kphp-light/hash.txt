@@ -2,11 +2,6 @@
 
 // ===== SUPPORTED =====
 
-/** @kphp-extern-func-info */
-function base64_decode ($str ::: string, $strict ::: bool = false) ::: string | false;
-/** @kphp-extern-func-info */
-function base64_encode ($str ::: string) ::: string;
-
 // ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info generate-stub */

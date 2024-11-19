@@ -1,15 +1,5 @@
 <?php
 
-define('PHP_URL_SCHEME', 0);
-define('PHP_URL_HOST', 1);
-define('PHP_URL_PORT', 2);
-define('PHP_URL_USER', 3);
-define('PHP_URL_PASS', 4);
-define('PHP_URL_PATH', 5);
-define('PHP_URL_QUERY', 6);
-define('PHP_URL_FRAGMENT', 7);
-
-
 function addcslashes ($str ::: string, $what ::: string) ::: string;
 function addslashes ($str ::: string) ::: string;
 
@@ -33,8 +23,6 @@ function ord ($c ::: string) ::: int;
 
 /** @kphp-extern-func-info generate-stub */
 function parse_str ($str ::: string, &$arr ::: mixed) ::: void; // TODO: why no ::: array? // TODO because it is an output parameter, input can have any type and it's ok.
-/** @kphp-extern-func-info generate-stub */
-function parse_url ($str ::: string, $component ::: int = -1) ::: mixed;
 
 function strcasecmp ($str1 ::: string, $str2 ::: string) ::: int;
 
@@ -138,14 +126,6 @@ function ucwords ($str ::: string) ::: string;
  * @kphp-pure-function
  */
 function base_convert ($number ::: string, $frombase ::: int, $tobase ::: int) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function rawurldecode ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function rawurlencode ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function urldecode ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function urlencode ($str ::: string) ::: string;
 /** @kphp-extern-func-info generate-stub */
 function zstd_compress(string $data, int $level = 3) ::: string | false;
 /** @kphp-extern-func-info generate-stub */

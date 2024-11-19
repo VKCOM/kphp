@@ -3,3 +3,28 @@
 // === Args =======================================================================================
 
 function ini_get ($s ::: string): string | false;
+
+// === URL ========================================================================================
+
+define('PHP_URL_SCHEME', 0);
+define('PHP_URL_HOST', 1);
+define('PHP_URL_PORT', 2);
+define('PHP_URL_USER', 3);
+define('PHP_URL_PASS', 4);
+define('PHP_URL_PATH', 5);
+define('PHP_URL_QUERY', 6);
+define('PHP_URL_FRAGMENT', 7);
+
+function rawurldecode ($str ::: string): string;
+
+function rawurlencode ($str ::: string): string;
+
+function urldecode ($str ::: string): string;
+
+function urlencode ($str ::: string): string;
+
+function base64_decode ($str ::: string, $strict ::: bool = false): string | false;
+
+function base64_encode ($str ::: string): string;
+
+function parse_url ($str ::: string, $component ::: int = -1): mixed;

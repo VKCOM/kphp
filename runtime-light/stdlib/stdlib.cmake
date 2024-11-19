@@ -8,7 +8,6 @@ prepend(
   curl/curl-state.cpp
   exit/exit-functions.cpp
   fork/fork-state.cpp
-  hash/hash-functions.cpp
   job-worker/job-worker-api.cpp
   job-worker/job-worker-client-state.cpp
   output/output-buffer.cpp

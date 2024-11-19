@@ -27,7 +27,9 @@ enum class HttpConnectionKind : uint8_t { KeepAlive, Close };
 
 enum class HttpMethod : uint8_t { GET, POST, HEAD, OTHER };
 
+constexpr std::string_view HTTP = "HTTP";
 constexpr std::string_view HTTPS = "HTTPS";
+constexpr std::string_view HTTP_SCHEME = "http";
 constexpr std::string_view HTTPS_SCHEME = "https";
 constexpr std::string_view HTTP_HEADER_PREFIX = "HTTP_";
 constexpr std::string_view HTTP_X_REAL_HOST = "HTTP_X_REAL_HOST";
@@ -51,8 +53,28 @@ constexpr std::string_view ENCODING_DEFLATE = "deflate";
 
 [[maybe_unused]] constexpr std::string_view CONTENT_TYPE = "CONTENT_TYPE";
 
-string get_server_protocol([[maybe_unused]] tl::HttpVersion http_version, [[maybe_unused]] const std::optional<string> &opt_scheme) noexcept {
-  return string{"HTTP/1.1"}; // TODO
+string get_server_protocol(tl::HttpVersion http_version, const std::optional<string> &opt_scheme) noexcept {
+  std::string_view protocol_name{};
+  const auto protocol_version{http_version.string_view()};
+  if (opt_scheme.has_value()) {
+    const std::string_view scheme_view{(*opt_scheme).c_str(), (*opt_scheme).size()};
+    if (scheme_view == HTTP_SCHEME) {
+      protocol_name = HTTP;
+    } else if (scheme_view == HTTPS_SCHEME) {
+      protocol_name = HTTPS;
+    } else {
+      php_warning("unexpected http scheme: %s", scheme_view.data());
+      protocol_name = HTTP;
+    }
+  } else {
+    protocol_name = HTTP;
+  }
+  string protocol{};
+  protocol.reserve_at_least(protocol_name.size() + protocol_version.size() + 1); // +1 for '/'
+  protocol.append(protocol_name.data(), protocol_name.size());
+  protocol.append(1, '/');
+  protocol.append(protocol_version.data(), protocol_version.size());
+  return protocol;
 }
 
 void process_cookie_header(const string &header, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
@@ -81,7 +103,7 @@ void process_cookie_header(const string &header, PhpScriptBuiltInSuperGlobals &s
 
 void process_headers(tl::dictionary<tl::httpHeaderValue> &&headers, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
   auto &server{superglobals.v$_SERVER};
-  auto &http_server_ctx{HttpServerInstanceState::get()};
+  auto &http_server_instance_st{HttpServerInstanceState::get()};
   using namespace PhpServerSuperGlobalIndices;
 
   // platform provides headers that are already in lowercase
@@ -91,10 +113,10 @@ void process_headers(tl::dictionary<tl::httpHeaderValue> &&headers, PhpScriptBui
 
     if (header_name_view == HEADER_ACCEPT_ENCODING) {
       if (header_view.find(ENCODING_GZIP) != std::string_view::npos) {
-        http_server_ctx.encoding |= HttpServerInstanceState::ENCODING_GZIP;
+        http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_GZIP;
       }
       if (header_view.find(ENCODING_DEFLATE) != std::string_view::npos) {
-        http_server_ctx.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
+        http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
       }
     } else if (header_name_view == HEADER_COOKIE) {
       process_cookie_header(header.value, superglobals);
