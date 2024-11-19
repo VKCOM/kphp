@@ -22,4 +22,5 @@ prepend(
   rpc/rpc-tl-request.cpp
   string/string-state.cpp
   system/system-state.cpp
-  file/file-stream-state.cpp)
+  file/file-stream-state.cpp
+  zlib/zlib-functions.cpp)

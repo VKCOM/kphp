@@ -1,6 +1,8 @@
 # prepare third-parties
 update_git_submodules()
+include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)
 
+# =================================================================================================
 include(${RUNTIME_LIGHT_DIR}/allocator/allocator.cmake)
 include(${RUNTIME_LIGHT_DIR}/core/core.cmake)
 include(${RUNTIME_LIGHT_DIR}/scheduler/scheduler.cmake)
@@ -39,6 +41,9 @@ set_target_properties(runtime-light PROPERTIES LIBRARY_OUTPUT_DIRECTORY
 target_compile_options(runtime-light PUBLIC -stdlib=libc++ -iquote
                                             ${GENERATED_DIR} -fPIC -O3)
 target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
+# add statically linking libraries
+set_property(TARGET runtime-light PROPERTY RUNTIME_LINK_LIBS
+                                           "${ZLIB_LIB_DIR}/libz.a")
 
 if(APPLE)
   target_link_options(runtime-light PUBLIC -undefined dynamic_lookup)
@@ -111,3 +116,12 @@ list(JOIN RUNTIME_COMPILE_FLAGS "\;" RUNTIME_COMPILE_FLAGS)
 string(REPLACE "\"" "\\\"" RUNTIME_COMPILE_FLAGS ${RUNTIME_COMPILE_FLAGS})
 configure_file(${BASE_DIR}/compiler/runtime_compile_flags.h.in
                ${AUTO_DIR}/compiler/runtime_compile_flags.h)
+
+get_property(
+  RUNTIME_LINK_LIBS
+  TARGET runtime-light
+  PROPERTY RUNTIME_LINK_LIBS)
+list(JOIN RUNTIME_LINK_LIBS "\;" RUNTIME_LINK_LIBS)
+string(REPLACE "\"" "\\\"" RUNTIME_LINK_LIBS ${RUNTIME_LINK_LIBS})
+configure_file(${BASE_DIR}/compiler/runtime_link_libs.h.in
+               ${AUTO_DIR}/compiler/runtime_link_libs.h)

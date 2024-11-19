@@ -4,11 +4,16 @@
 
 #pragma once
 
+#include <algorithm>
 #include <sstream>
+#include <string>
+#include <vector>
 
+#include "auto/compiler/runtime_link_libs.h"
 #include "compiler/compiler-core.h"
 #include "compiler/compiler-settings.h"
 #include "compiler/make/target.h"
+#include "compiler/utils/string-utils.h"
 
 class Objs2K2ComponentTarget : public Target {
   static std::string load_all_symbols_pre() {
@@ -45,6 +50,9 @@ public:
     } else {
       ss << deps.back()->get_name() << " ";
     }
+    // add vendored statically linking libs
+    std::vector<std::string> libs = split(RUNTIME_LINK_LIBS);
+    std::for_each(libs.cbegin(), libs.cend(), [&ss](const auto &lib) noexcept { ss << lib << " "; });
     return ss.str();
   }
 };

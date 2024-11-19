@@ -1,0 +1,3 @@
+#pragma once
+
+#define RUNTIME_LINK_LIBS "${RUNTIME_LINK_LIBS}"
