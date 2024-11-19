@@ -11,6 +11,7 @@
 #include <memory>
 #include <span>
 
+#include "common/containers/final_action.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/string/string-state.h"
@@ -50,6 +51,9 @@ Optional<string> zlib_encode(std::span<const char> data, int64_t level, int64_t 
   }
 
   z_stream zstrm{};
+  // always clear zlib's state
+  const auto finalizer{vk::finally([&zstrm]() noexcept { deflateEnd(std::addressof(zstrm)); })};
+
   size_t buf_pos{};
   zstrm.zalloc = zlib_static_alloc;
   zstrm.zfree = zlib_static_free;
@@ -70,7 +74,6 @@ Optional<string> zlib_encode(std::span<const char> data, int64_t level, int64_t 
   zstrm.next_out = reinterpret_cast<Bytef *>(runtime_ctx.static_SB.buffer());
 
   const auto deflate_res{deflate(std::addressof(zstrm), Z_FINISH)};
-  deflateEnd(std::addressof(zstrm));
   if (deflate_res != Z_STREAM_END) [[unlikely]] {
     php_warning("can't encode data of length %zu due to zlib error %d", data.size(), deflate_res);
     return false;
@@ -82,6 +85,9 @@ Optional<string> zlib_encode(std::span<const char> data, int64_t level, int64_t 
 
 Optional<string> zlib_decode(std::span<const char> data, int64_t encoding) noexcept {
   z_stream zstrm{};
+  // always clear zlib's state
+  const auto finalizer{vk::finally([&zstrm]() noexcept { inflateEnd(std::addressof(zstrm)); })};
+
   size_t buf_pos{};
   zstrm.zalloc = zlib_static_alloc;
   zstrm.zfree = zlib_static_free;
@@ -99,7 +105,6 @@ Optional<string> zlib_decode(std::span<const char> data, int64_t encoding) noexc
   zstrm.avail_out = StringInstanceState::STATIC_BUFFER_LENGTH;
   zstrm.next_out = reinterpret_cast<Bytef *>(runtime_ctx.static_SB.buffer());
   const auto inflate_res{inflate(std::addressof(zstrm), Z_NO_FLUSH)};
-  inflateEnd(std::addressof(zstrm));
 
   if (inflate_res != Z_STREAM_END) [[unlikely]] {
     php_warning("can't decode data of length %zu due to zlib error %d", data.size(), inflate_res);
