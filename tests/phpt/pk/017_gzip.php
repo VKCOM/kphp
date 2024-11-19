@@ -1,8 +1,56 @@
 @ok
 <?php
 
-function testGzcompressAndGzuncompress() {
+function testGzcompressAndGzuncompress1() {
     $originalData = "This is a test string to be compressed and decompressed.";
+
+    // Compress the data
+    $compressedData = gzcompress($originalData);
+    if ($compressedData === false) {
+        echo "Compression failed.\n";
+        return;
+    }
+
+    // Decompress the data
+    $decompressedData = gzuncompress($compressedData);
+    if ($decompressedData === false) {
+        echo "Decompression failed.\n";
+        return;
+    }
+
+    if ($originalData === $decompressedData) {
+        echo "Test passed: Decompressed data matches the original.\n";
+    } else {
+        echo "Test failed: Decompressed data does not match the original.\n";
+    }
+}
+
+function testGzcompressAndGzuncompress2() {
+    $originalData = "XXXAAAAAAAAAAAAAAAAAAAAAAAA      dsadbhjasdvhasvd[[]]]]]]]]]] 0000111";
+
+    // Compress the data
+    $compressedData = gzcompress($originalData);
+    if ($compressedData === false) {
+        echo "Compression failed.\n";
+        return;
+    }
+
+    // Decompress the data
+    $decompressedData = gzuncompress($compressedData);
+    if ($decompressedData === false) {
+        echo "Decompression failed.\n";
+        return;
+    }
+
+    if ($originalData === $decompressedData) {
+        echo "Test passed: Decompressed data matches the original.\n";
+    } else {
+        echo "Test failed: Decompressed data does not match the original.\n";
+    }
+}
+
+function testGzcompressAndGzuncompress3() {
+    $originalData = "                   ";
 
     // Compress the data
     $compressedData = gzcompress($originalData);
@@ -62,6 +110,8 @@ function testGzcompressWithEmptyString() {
 //     }
 // }
 
-testGzcompressAndGzuncompress();
+testGzcompressAndGzuncompress1();
+testGzcompressAndGzuncompress2();
+testGzcompressAndGzuncompress3();
 testGzcompressWithEmptyString();
 // testGzuncompressWithInvalidData();
