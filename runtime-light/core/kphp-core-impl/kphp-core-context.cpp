@@ -16,4 +16,6 @@ void RuntimeContext::init() noexcept {
   init_string_buffer_lib(initial_minimum_string_buffer_length, initial_maximum_string_buffer_length);
 }
 
-void RuntimeContext::free() noexcept {}
+void RuntimeContext::free() noexcept {
+  array_access_context_.free();
+}

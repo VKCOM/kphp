@@ -1160,9 +1160,9 @@ mixed &mixed::operator[](int64_t int_key) {
       new(&as_array()) array<mixed>();
     } else if (get_type() == type::OBJECT) {
       if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        auto *mixed_slot = reinterpret_cast<mixed *>(&(as_aa.get()->slot_));
-        mixed_slot->~mixed();
-        return *new (mixed_slot) mixed(f$ArrayAccess$$offsetGet(as_aa, int_key));
+        mixed &tmp = RuntimeContext::get().array_access_context_.get_tmp_slot();
+        tmp = f$ArrayAccess$$offsetGet(as_aa, int_key);
+        return tmp;
       }
       php_notice("Indirect modification of overloaded element of %s has no effect", get_type_or_class_name());
       return empty_value<mixed>();
@@ -1186,9 +1186,9 @@ mixed &mixed::operator[](const string &string_key) {
       new(&as_array()) array<mixed>();
     } else if (get_type() == type::OBJECT) {
       if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        auto *mixed_slot = reinterpret_cast<mixed *>(&(as_aa.get()->slot_));
-        mixed_slot->~mixed();
-        return *new (mixed_slot) mixed(f$ArrayAccess$$offsetGet(as_aa, string_key));
+        mixed &tmp = RuntimeContext::get().array_access_context_.get_tmp_slot();
+        tmp = f$ArrayAccess$$offsetGet(as_aa, string_key);
+        return tmp;
       }
       php_notice("Indirect modification of overloaded element of %s has no effect", get_type_or_class_name());
       return empty_value<mixed>();

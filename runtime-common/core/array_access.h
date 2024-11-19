@@ -15,8 +15,6 @@ struct C$ArrayAccess : public may_be_mixed_base {
 
   C$ArrayAccess() __attribute__((always_inline)) = default;
   ~C$ArrayAccess() override __attribute__((always_inline)) = default;
-
-  alignas(uint64_t) unsigned char slot_[SIZEOF_MIXED] = {};
 };
 
 
