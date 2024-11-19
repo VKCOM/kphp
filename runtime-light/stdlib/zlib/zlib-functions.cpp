@@ -16,8 +16,8 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/string/string-state.h"
 
-#include "third-party/zlib/zconf.h"
-#include "third-party/zlib/zlib.h"
+#include "zlib/zconf.h"
+#include "zlib/zlib.h"
 
 namespace {
 

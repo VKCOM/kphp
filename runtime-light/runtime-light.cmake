@@ -1,5 +1,6 @@
 # prepare third-parties
 update_git_submodules()
+include(${THIRD_PARTY_DIR}/abseil-cpp-cmake/abseil-cpp.cmake)
 include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)
 
 # =================================================================================================
@@ -40,6 +41,8 @@ set_target_properties(runtime-light PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                                ${BASE_DIR}/objs)
 target_compile_options(runtime-light PUBLIC -stdlib=libc++ -iquote
                                             ${GENERATED_DIR} -fPIC -O3)
+target_compile_options(runtime-light PRIVATE -I${THIRD_PARTY_DIR}
+                                             -I${THIRD_PARTY_DIR}/abseil-cpp)
 target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
 # add statically linking libraries
 set_property(TARGET runtime-light PROPERTY RUNTIME_LINK_LIBS

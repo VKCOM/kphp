@@ -1,5 +1,5 @@
 if(COMPILE_RUNTIME_LIGHT)
-  set(ZLIB_BUILD_EXAMPLES OFF)
+  set(ZLIB_BUILD_EXAMPLES OFF BOOL "Disable ZLIB_BUILD_EXAMPLES")
   set(ZLIB_COMPILE_FLAGS "-O3" "-fPIC")
 
   add_subdirectory(${THIRD_PARTY_DIR}/zlib ${CMAKE_BINARY_DIR}/third-party/zlib)
