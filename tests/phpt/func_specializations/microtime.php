@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 function ensure_float(float $x) {}
