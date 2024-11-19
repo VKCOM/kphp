@@ -4,7 +4,6 @@
 
 #include "compiler/code-gen/vertex-compiler.h"
 
-#include "auto/compiler/vertex/vertex-types.h"
 #include <iterator>
 #include <unordered_map>
 
@@ -2442,29 +2441,29 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       W << TypeName(tp) << alloc_function;
       break;
     }
-    case op_set_with_ret: {
-      auto xxx = root.try_as<op_set_with_ret>();
-      W << "ARR_ACC_SET(";
-      W << xxx->obj() << ", ";
-      W << xxx->offset() << ", ";
-      W << xxx->value() << ", ";
-      W << "f$" << xxx->set_method->name;
+    case op_arr_acc_set_return: {
+      auto v = root.as<op_arr_acc_set_return>();
+      W << "ARR_ACC_SET_RETURN(";
+      W << v->obj() << ", ";
+      W << v->offset() << ", ";
+      W << v->value() << ", ";
+      W << "f$" << v->set_method->name;
       W << ")";
       break;
     }
-    case op_check_and_get: {
-      auto xxx = root.as<op_check_and_get>();
+    case op_arr_acc_check_and_get: {
+      auto v = root.as<op_arr_acc_check_and_get>();
 
-      if (xxx->is_empty) {
+      if (v->is_empty) {
         W << "ARR_ACC_GET_IF_NOT_EMPTY(";
       } else {
         W << "ARR_ACC_GET_IF_ISSET(";
       }
       
-      W << xxx->obj() << ", ";
-      W << xxx->offset() << ", ";
-      W << "f$" << xxx->check_method->name << ", ";
-      W << "f$" << xxx->get_method->name << ")";
+      W << v->obj() << ", ";
+      W << v->offset() << ", ";
+      W << "f$" << v->check_method->name << ", ";
+      W << "f$" << v->get_method->name << ")";
       break;
     }
     default:

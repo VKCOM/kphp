@@ -281,7 +281,7 @@ void remove_unused_class_methods(const std::vector<FunctionAndEdges> &all, const
           return get_index(m.function) == -1 || !used_functions[m.function];
         });
       fun->class_id->members.remove_if(
-        [&used_functions, class_id=fun->class_id](const ClassMemberInstanceMethod &m) {
+        [&used_functions](const ClassMemberInstanceMethod &m) {
           return get_index(m.function) == -1 || !used_functions[m.function];
         });
     }

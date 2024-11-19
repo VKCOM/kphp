@@ -123,7 +123,7 @@ VertexPtr transform_set_on_class(VertexPtr set_op, VertexPtr container, VertexPt
 
     result = new_call;
   } else {
-    auto set_with_ret_op = VertexAdaptor<op_set_with_ret>::create(key, value, container);
+    auto set_with_ret_op = VertexAdaptor<op_arr_acc_set_return>::create(key, value, container);
     set_with_ret_op->set_method = method->function;
     set_with_ret_op.set_location(set_op->get_location());
 

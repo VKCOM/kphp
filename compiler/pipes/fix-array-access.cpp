@@ -65,7 +65,7 @@ std::pair<VertexPtr, bool> fixup_check_function(VertexPtr cur, VertexPtr prev, F
       // The result of current index access is going to be read with another index access.
       // Codegen is corresponding macro
       auto offset = func_call->args()[1];
-      auto response = VertexAdaptor<op_check_and_get>::create(offset, func_call->args()[0]);
+      auto response = VertexAdaptor<op_arr_acc_check_and_get>::create(offset, func_call->args()[0]);
       response->get_method = func_call->func_id;
       response->check_method = isset_method->function;
       response.set_location(cur);

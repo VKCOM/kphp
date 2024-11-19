@@ -570,14 +570,14 @@
     }
   },
   {
-    "comment": "node for array access hack with multiple assignment",
-    "name": "op_set_with_ret",
+    "comment": "artificial op for array access hack with multiple assignment",
+    "name": "op_arr_acc_set_return",
     "base_name": "meta_op_base",
     "props": {
       "rl": "rl_func",
       "cnst": "cnst_nonconst_func",
       "type": "common_op",
-      "str": "set_with_ret"
+      "str": "array access set and return value"
     },
     "sons": {
       "offset": 0,
@@ -592,14 +592,14 @@
     }
   },
   {
-    "comment": "node for array access hack with check and get",
-    "name": "op_check_and_get",
+    "comment": "artificial op for array access get with preliminary check",
+    "name": "op_arr_acc_check_and_get",
     "base_name": "meta_op_base",
     "props": {
       "rl": "rl_func",
       "cnst": "cnst_nonconst_func",
       "type": "common_op",
-      "str": "check_and_get"
+      "str": "array access get with preliminary check"
     },
     "sons": {
       "offset": 0,

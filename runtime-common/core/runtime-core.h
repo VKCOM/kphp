@@ -52,7 +52,7 @@
 #define SET_MIXED_BY_INDEX(mix, idx, val) mix.set_value_return(idx, val)
 #define SAFE_SET_MIXED_BY_INDEX(mix, idx, val, val_type)  ({ val_type val_tmp___ = val; mix.set_value_return(idx, std::move(val_tmp___)); })
 
-#define ARR_ACC_SET(obj, idx, val, method) ({mixed val_tmp___ = val; method(obj, idx, val_tmp___); val_tmp___;}) // it's always safe
+#define ARR_ACC_SET_RETURN(obj, idx, val, method) ({mixed val_tmp___ = val; method(obj, idx, val_tmp___); val_tmp___;}) // it's always safe
 #define ARR_ACC_GET_IF_ISSET(obj, idx, check_method, get_method) ({mixed res_tmp___{}; mixed idx_tmp___ = idx; if (check_method(obj, idx_tmp___)) {res_tmp___ = get_method(obj, idx_tmp___);} res_tmp___;})
 #define ARR_ACC_GET_IF_NOT_EMPTY(obj, idx, check_method, get_method) ({mixed res_tmp___{}; mixed idx_tmp___ = idx; if (check_method(obj, idx_tmp___)) {mixed for_get_tmp___ = get_method(obj, idx_tmp___); if (!for_get_tmp___.empty()) { res_tmp___ = for_get_tmp___; } } res_tmp___; })
 

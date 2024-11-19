@@ -115,10 +115,10 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     }
   } else if (auto fork = vertex.try_as<op_fork>()) {
     data.forks.emplace_front(fork->func_call()->func_id);
-  } else if (auto set_with_ret = vertex.try_as<op_set_with_ret>()) {
+  } else if (auto set_with_ret = vertex.try_as<op_arr_acc_set_return>()) {
     data.dep.push_back(set_with_ret->set_method);
     calls.push_back(set_with_ret->set_method);
-  } else if (auto check_and_get = vertex.try_as<op_check_and_get>()) {
+  } else if (auto check_and_get = vertex.try_as<op_arr_acc_check_and_get>()) {
     data.dep.push_back(check_and_get->check_method);
     calls.push_back(check_and_get->check_method);
 

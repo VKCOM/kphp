@@ -5,7 +5,6 @@
 #include "compiler/pipes/final-check.h"
 
 
-#include "auto/compiler/vertex/vertex-types.h"
 #include "common/termformat/termformat.h"
 #include "common/algorithms/string-algorithms.h"
 #include "common/algorithms/contains.h"
