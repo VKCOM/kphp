@@ -1827,7 +1827,7 @@ string default_tag_stub;
 } // namespace impl_
 Optional<string> f$openssl_encrypt(const string &data, const string &method, const string &key, int64_t options,
                                    const string &iv, string &tag, const string &aad, int64_t tag_length) {
-  kprintf("encrypt algo %s", method.c_str());
+  kprintf("encrypt algo %s\n", method.c_str());
   string out_tag;
   if (&tag != &impl_::default_tag_stub) {
     out_tag.assign(static_cast<std::uint32_t>(tag_length), '\0');
@@ -1846,7 +1846,7 @@ Optional<string> f$openssl_encrypt(const string &data, const string &method, con
 
 Optional<string> f$openssl_decrypt(string data, const string &method, const string &key, int64_t options,
                                    const string &iv, string tag, const string &aad) {
-  kprintf("decrypt algo %s", method.c_str());
+  kprintf("decrypt algo %s\n", method.c_str());
   if (!(options & OPENSSL_RAW_DATA)) {
     Optional<string> decoding_data = f$base64_decode(data, true);
     if (!decoding_data.has_value()) {
