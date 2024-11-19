@@ -39,10 +39,15 @@ vk_add_library(runtime-light OBJECT ${RUNTIME_LIGHT_SRC})
 set_property(TARGET runtime-light PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(runtime-light PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                                ${BASE_DIR}/objs)
-target_compile_options(runtime-light PUBLIC -stdlib=libc++ -iquote
-                                            ${GENERATED_DIR} -fPIC -O3)
-target_compile_options(runtime-light PRIVATE -I${THIRD_PARTY_DIR}
-                                             -I${THIRD_PARTY_DIR}/abseil-cpp)
+target_compile_options(
+  runtime-light
+  PUBLIC -stdlib=libc++
+         -iquote
+         ${GENERATED_DIR}
+         -I${THIRD_PARTY_DIR}
+         -I${THIRD_PARTY_DIR}/abseil-cpp
+         -fPIC
+         -O3)
 target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
 # add statically linking libraries
 set_property(TARGET runtime-light PROPERTY RUNTIME_LINK_LIBS
