@@ -21,6 +21,8 @@
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 
+#include "absl/strings/match.h"
+
 namespace {
 
 enum class HttpConnectionKind : uint8_t { KeepAlive, Close };
@@ -112,10 +114,10 @@ void process_headers(tl::dictionary<tl::httpHeaderValue> &&headers, PhpScriptBui
     const std::string_view header_view{header.value.c_str(), header.value.size()};
 
     if (header_name_view == HEADER_ACCEPT_ENCODING) {
-      if (header_view.find(ENCODING_GZIP) != std::string_view::npos) {
+      if (absl::StrContains(header_view, ENCODING_GZIP)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_GZIP;
       }
-      if (header_view.find(ENCODING_DEFLATE) != std::string_view::npos) {
+      if (absl::StrContains(header_view, ENCODING_DEFLATE)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
       }
     } else if (header_name_view == HEADER_COOKIE) {
