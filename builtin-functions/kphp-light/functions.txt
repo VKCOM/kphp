@@ -169,3 +169,11 @@ function to_mixed(object $instance) ::: mixed;
 // === Unsupported =======================================================================================
 
 require_once __DIR__ . '/unsupported-functions.txt';
+
+/** @kphp-internal-interface */
+interface ArrayAccess {
+  public function offsetExists(mixed $offset): bool;
+  public function offsetGet(mixed $offset): mixed;
+  public function offsetSet(mixed $offset, mixed $value);
+  public function offsetUnset(mixed $offset);
+}

@@ -4,6 +4,8 @@
 
 #include "compiler/pipes/calc-bad-vars.h"
 
+#include "compiler/kphp_assert.h"
+#include <algorithm>
 #include <queue>
 #include <vector>
 
@@ -547,6 +549,11 @@ class CalcBadVars {
     for (const auto &func : call_graph.functions) {
       if (into_interruptible[func]) {
         func->is_interruptible = true;
+        if (unlikely(func->class_id && func->class_id->internal_interface)) {
+          std::string func_name = func->name;
+          std::replace(func_name.begin(), func_name.end(), '$', ':');
+          kphp_error(false, fmt_format("{} cannot be interruptible", func_name).c_str());
+        }
       }
     }
   }

@@ -1,4 +1,4 @@
-@kphp_runtime_should_warn
+@kphp_runtime_should_warn k2_skip
 /Class K doesn't implement \\ArrayAccess to be accessed, index = 0/
 /Class K doesn't implement \\ArrayAccess to be accessed, index = 1/
 /Class K doesn't implement \\ArrayAccess to be used in unset/
