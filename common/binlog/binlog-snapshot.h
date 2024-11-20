@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <vector>
@@ -19,6 +18,7 @@ constexpr auto COMMON_HEADER_HASH_SIZE = 2 * sizeof(int64_t);
 
 constexpr int32_t PMEMCACHED_OLD_INDEX_MAGIC = 0x53407fa0;
 constexpr int32_t PMEMCACHED_INDEX_RAM_MAGIC_G3 = 0x65049e9e;
+constexpr int32_t PMEMCACHED_INDEX_RAM_MAGIC_G4 = 0x5a5b81c3;
 constexpr int32_t BARSIC_SNAPSHOT_HEADER_MAGIC = 0x1d0d1b74;
 constexpr int32_t TL_ENGINE_SNAPSHOT_HEADER_MAGIC = 0x4bf8b614;
 constexpr int32_t PERSISTENT_CONFIG_V2_SNAPSHOT_BLOCK = 0x501096b7;

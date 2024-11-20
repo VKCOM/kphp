@@ -317,11 +317,11 @@ public:
 
       index_header idx_header{};
       kfs_read_file_assert(Snapshot, &idx_header, sizeof(index_header));
-      if (idx_header.magic != kphp::tl::PMEMCACHED_INDEX_RAM_MAGIC_G3) {
-        fprintf(stderr, kphp::tl::UNEXPECTED_TL_MAGIC_ERROR_FORMAT, idx_header.magic, kphp::tl::PMEMCACHED_INDEX_RAM_MAGIC_G3);
+      if (idx_header.magic != kphp::tl::PMEMCACHED_INDEX_RAM_MAGIC_G4 && idx_header.magic != kphp::tl::PMEMCACHED_INDEX_RAM_MAGIC_G3) {
+        fprintf(stderr, kphp::tl::UNEXPECTED_TL_MAGIC_ERROR_FORMAT, idx_header.magic, kphp::tl::PMEMCACHED_INDEX_RAM_MAGIC_G4);
         return -1;
       }
-      return process_confdata_snapshot_entries(idx_header);
+      return process_confdata_snapshot_entries(idx_header); // actually, xxhash is the next field
     }
 
     fprintf(stderr, "unexpected header magic: 0x%x\n", header_magic);
