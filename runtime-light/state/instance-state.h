@@ -25,7 +25,6 @@
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
-#include "runtime-light/stdlib/regex/regex-state.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
@@ -119,7 +118,6 @@ struct InstanceState final : vk::not_copyable {
   JobWorkerClientInstanceState job_worker_client_instance_state{};
   JobWorkerServerInstanceState job_worker_server_instance_state{};
 
-  RegexInstanceState regex_instance_state{};
   CurlInstanceState curl_instance_state{};
   CryptoInstanceState crypto_instance_state{};
   StringInstanceState string_instance_state{};
