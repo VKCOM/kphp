@@ -325,7 +325,7 @@ int64_t f$mktime(int64_t hour, Optional<int64_t> minute, Optional<int64_t> secon
 string f$gmdate(const string &format, Optional<int64_t> timestamp) noexcept {
   namespace chrono = std::chrono;
 
-  const int64_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
+  const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
   struct tm tm {};
   gmtime_r(&now, &tm);
   return date(format, tm, now, false);
@@ -334,7 +334,7 @@ string f$gmdate(const string &format, Optional<int64_t> timestamp) noexcept {
 string f$date(const string &format, Optional<int64_t> timestamp) noexcept {
   namespace chrono = std::chrono;
 
-  const int64_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
+  const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
   struct tm tm {};
   localtime_r(&now, &tm);
   return date(format, tm, now, true);
