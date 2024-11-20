@@ -262,6 +262,27 @@ struct Dictionary final {
   }
 };
 
+struct String {
+  string value;
+
+  bool fetch(TLBuffer &tlb) noexcept {
+    if (tlb.lookup_trivial<uint32_t>().value_or(TL_ZERO) != TL_STRING) {
+      return false;
+    }
+    tlb.fetch_trivial<uint32_t>();
+    auto string = tlb.fetch_string();
+    // TODO: check tlb.fetch_string() error
+
+    value.assign(string.begin(), string.size());
+    return true;
+  }
+
+  void store(TLBuffer &tlb) const noexcept {
+    tlb.store_trivial<uint32_t>(TL_STRING);
+    tlb.store_string(std::string_view{value.c_str(), value.size()});
+  }
+};
+
 // ===== JOB WORKERS =====
 
 class K2JobWorkerResponse final {
@@ -300,6 +321,15 @@ enum DigestAlgorithm : uint32_t {
   MD5 = 0x257d'df13,
   MD4 = 0x317f'e3d1,
   MD2 = 0x5aca'6998,
+};
+
+enum CipherAlgorithm : uint32_t {
+  AES128 = 0xe627'c460,
+  AES256 = 0x4c98'c1f9,
+};
+
+enum BlockPadding : uint32_t {
+  PKCS7 = 0x699e'c5de,
 };
 
 // ===== CONFDATA =====
