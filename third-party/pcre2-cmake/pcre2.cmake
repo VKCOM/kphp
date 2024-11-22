@@ -34,10 +34,15 @@ if(COMPILE_RUNTIME_LIGHT)
       OFF
       CACHE BOOL "Disable PCRE2 LIBREADLINE support")
 
-  # Set the output directory for static lib
+  # set the output directory for static lib
   set(PCRE2_LIB_DIR "${OBJS_DIR}/lib")
   set(SAVE_CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PCRE2_LIB_DIR})
+
+  # set cmake_install_prefix
+  set(PCRE2_INSTALL_DIR "${OBJS_DIR}")
+  set(SAVE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
+  set(CMAKE_INSTALL_PREFIX ${PCRE2_INSTALL_DIR})
 
   # save and set C flags
   set(SAVE_C_FLAGS "${CMAKE_C_FLAGS}")
@@ -48,6 +53,9 @@ if(COMPILE_RUNTIME_LIGHT)
 
   # restore C flags
   set(CMAKE_C_FLAGS ${SAVE_C_FLAGS})
+
+  # restore cmake_install prefix
+  set(CMAKE_INSTALL_PREFIX "${SAVE_INSTALL_PREFIX}")
 
   # restore CMAKE_ARCHIVE_OUTPUT_DIRECTORY
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${SAVE_CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")

@@ -1,5 +1,7 @@
 <?php
 
+// ===== SUPPORTED =====
+
 define('PREG_NO_ERROR', 0);
 define('PREG_INTERNAL_ERROR', 1);
 define('PREG_BACKTRACK_LIMIT_ERROR', 2);
@@ -13,17 +15,21 @@ define('PREG_OFFSET_CAPTURE', 4);
 define('PREG_SPLIT_NO_EMPTY', 8);
 define('PREG_SPLIT_DELIM_CAPTURE', 16);
 define('PREG_SPLIT_OFFSET_CAPTURE', 32);
+define('PREG_UNMATCHED_AS_NULL', 64);
 
+function preg_match ($regex ::: string, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;
 
-function preg_match ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
+// ===== UNSUPPORTED =====
 
 function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
 
 function preg_replace ($regex ::: regexp, $replace_val, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: ^3|string|null|false;
 
 function preg_replace_callback ($regex ::: regexp, callable(string[] $x):string $callback, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: ^3|string|null;
+
 /** @kphp-extern-func-info generate-stub */
 function preg_quote ($str ::: string, $delimiter ::: string = '') ::: string;
+
 /** @kphp-extern-func-info generate-stub */
 function preg_last_error() ::: int;
 

@@ -19,6 +19,8 @@ prepend(
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp
   rpc/rpc-tl-request.cpp
+  string/regex-functions.cpp
+  string/regex-state.cpp
   string/string-state.cpp
   system/system-state.cpp
   file/file-stream-state.cpp

@@ -26,6 +26,7 @@
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
+#include "runtime-light/stdlib/string/regex-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 
@@ -57,6 +58,7 @@ struct InstanceState final : vk::not_copyable {
     , fork_instance_state(allocator.memory_resource)
     , php_script_mutable_globals_singleton(allocator.memory_resource)
     , rpc_instance_state(allocator.memory_resource)
+    , regex_instance_state(allocator.memory_resource)
     , incoming_streams_(deque<uint64_t>::allocator_type{allocator.memory_resource})
     , opened_streams_(unordered_set<uint64_t>::allocator_type{allocator.memory_resource})
     , pending_updates_(unordered_set<uint64_t>::allocator_type{allocator.memory_resource}) {}
@@ -118,6 +120,7 @@ struct InstanceState final : vk::not_copyable {
   JobWorkerClientInstanceState job_worker_client_instance_state{};
   JobWorkerServerInstanceState job_worker_server_instance_state{};
 
+  RegexInstanceState regex_instance_state;
   CurlInstanceState curl_instance_state{};
   CryptoInstanceState crypto_instance_state{};
   StringInstanceState string_instance_state{};
