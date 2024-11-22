@@ -1607,6 +1607,9 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
     cur_function->root->cmd_ref() = VertexAdaptor<op_seq>::create();
   }
 
+  // think about this place later
+  auto resp = cur_function->root;
+
   // the function is ready, register it;
   // the constructor is registered later, after the entire class is parsed
   if (!cur_function->is_constructor()) {
@@ -1616,10 +1619,11 @@ VertexAdaptor<op_function> GenTree::get_function(bool is_lambda, const PhpDocCom
                         || cur_function->modifiers.is_instance()
                         || cur_function->is_lambda()
                         || kphp_required_flag;
-    G->register_and_require_function(cur_function, parsed_os, auto_require);
+    G->register_and_require_function(cur_function, parsed_os, auto_require); // here we pass function further
+    // Next passes with cur function may ends before this line
   }
 
-  return cur_function->root;
+  return resp;
 }
 
 bool GenTree::check_seq_end() {

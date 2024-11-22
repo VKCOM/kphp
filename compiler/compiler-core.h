@@ -8,6 +8,7 @@
 /*** Core ***/
 //Consists mostly of functions that require synchronization
 
+#include <atomic>
 #include <string>
 #include <vector>
 
@@ -61,7 +62,7 @@ private:
   std::vector<std::string> kphp_runtime_opts;
   std::vector<std::string> exclude_namespaces;
   bool is_untyped_rpc_tl_used{false};
-  bool is_functions_txt_parsed{false};
+  std::atomic_bool is_functions_txt_parsed{false};
   function_palette::Palette function_palette;
 
   inline bool try_require_file(SrcFilePtr file);
@@ -177,11 +178,11 @@ public:
   }
 
   void set_functions_txt_parsed() {
-    is_functions_txt_parsed = true;
+    is_functions_txt_parsed.store(true, std::memory_order_seq_cst);
   }
 
   bool get_functions_txt_parsed() const {
-    return is_functions_txt_parsed;
+    return is_functions_txt_parsed.load(std::memory_order_seq_cst);
   }
 
   bool is_output_mode_server() const {
