@@ -32,11 +32,18 @@ class Objs2K2ComponentTarget : public Target {
 #endif
   }
 
+  static std::string additional_flags() {
+#if defined(__APPLE__)
+    return " -Wl,-undefined,dynamic_lookup ";
+#else
+    return " -Wl,--wrap,malloc -Wl,--wrap,free, -Wl,--wrap,calloc -Wl,--wrap,realloc -static-libgcc ";
+#endif
+  }
+
 public:
   std::string get_cmd() final {
     std::stringstream ss;
-    ss << settings->cxx.get() << " -Wl,--wrap,malloc -Wl,--wrap,free, -Wl,--wrap,calloc -Wl,--wrap,realloc "
-       << " -static-libgcc -stdlib=libc++ -static-libstdc++ -shared -o " << target() << " ";
+    ss << settings->cxx.get() << additional_flags() << " -stdlib=libc++ -static-libstdc++ -shared -o " << target() << " ";
 
     for (size_t i = 0; i + 1 < deps.size(); ++i) {
       ss << deps[i]->get_name() << " ";
