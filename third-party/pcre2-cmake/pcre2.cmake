@@ -12,9 +12,15 @@ if(COMPILE_RUNTIME_LIGHT)
   set(PCRE2_BUILD_PCRE2_32
       OFF
       CACHE BOOL "Disable PCRE2-32")
-  set(PCRE2_SUPPORT_JIT
-      ON
-      CACHE BOOL "Enable PCRE2 JIT")
+  if(APPLE)
+    set(PCRE2_SUPPORT_JIT
+        OFF
+        CACHE BOOL "Disable PCRE2 JIT on Apple platforms")
+  else()
+    set(PCRE2_SUPPORT_JIT
+        ON
+        CACHE BOOL "Enable PCRE2 JIT")
+  endif()
   set(PCRE2_BUILD_PCRE2GREP
       OFF
       CACHE BOOL "Disable build of pcre2grep")
