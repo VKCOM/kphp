@@ -300,7 +300,7 @@ void set_matches(RegexInfo &regex_info, int64_t flags, mixed &matches) noexcept 
   array<mixed> output{array_size{static_cast<int64_t>(group_names.size() + named_groups_count), named_groups_count == 0}};
   for (auto i = 0; i < group_names.size(); ++i) {
     // skip unmatched groups at the end unless unmatched_as_null is set
-    if (i > last_matched_group && !unmatched_as_null) {
+    if (i > last_matched_group && !unmatched_as_null) [[unlikely]] {
       break;
     }
 
