@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 // Tests for the preg_match and preg_match_all function overloading with 2 args (without $matches).

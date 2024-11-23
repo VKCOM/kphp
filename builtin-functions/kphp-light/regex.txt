@@ -19,9 +19,9 @@ define('PREG_UNMATCHED_AS_NULL', 64);
 
 function preg_match ($regex ::: string, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;
 
-// ===== UNSUPPORTED =====
+function preg_match_all ($regex ::: string, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;
 
-function preg_match_all ($regex ::: regexp, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;//TODO
+// ===== UNSUPPORTED =====
 
 function preg_replace ($regex ::: regexp, $replace_val, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: ^3|string|null|false;
 

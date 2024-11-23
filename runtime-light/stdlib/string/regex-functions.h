@@ -16,6 +16,7 @@ inline constexpr int64_t PREG_RECURSION_LIMIT = 3;
 inline constexpr int64_t PREG_BAD_UTF8_ERROR = 4;
 inline constexpr int64_t PREG_BAD_UTF8_OFFSET_ERROR = 5;
 
+inline constexpr int64_t PREG_NO_FLAGS = 0;
 inline constexpr auto PREG_PATTERN_ORDER = static_cast<int64_t>(1U << 0U);
 inline constexpr auto PREG_SET_ORDER = static_cast<int64_t>(1U << 1U);
 inline constexpr auto PREG_OFFSET_CAPTURE = static_cast<int64_t>(1U << 2U);
@@ -26,11 +27,11 @@ inline constexpr auto PREG_UNMATCHED_AS_NULL = static_cast<int64_t>(1U << 6U);
 
 namespace regex_impl_ {} // namespace regex_impl_
 
-Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches, int64_t flags = 0,
-                               int64_t offset = 0) noexcept;
+Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
+                               int64_t flags = PREG_NO_FLAGS, int64_t offset = 0) noexcept;
 
-Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches, int64_t flags = 0,
-                                   int64_t offset = 0) noexcept;
+Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
+                                   int64_t flags = PREG_NO_FLAGS, int64_t offset = 0) noexcept;
 
 mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit = -1,
                      int64_t count = RegexInstanceState::get().default_preg_replace_count) noexcept;
