@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 
@@ -28,9 +29,12 @@ struct RegexInstanceState final : private vk::not_copyable {
   template<hashable Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
 
+  static constexpr size_t MAX_SUBPATTERNS_COUNT = 512;
+
   mixed default_matches;
   int64_t default_preg_replace_count;
   regex_pcre2_general_context_t regex_pcre2_general_context;
+  regex_pcre2_match_data_t regex_pcre2_match_data;
   unordered_map<std::string_view, regex_pcre2_code_t> regex_pcre2_code_cache;
 
   explicit RegexInstanceState(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept;

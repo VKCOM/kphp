@@ -43,7 +43,6 @@ struct RegexInfo final {
   size_t match_options{PCRE2_NO_UTF_CHECK};
   // matched regex info
   int32_t match_count{};
-  regex_pcre2_match_data_t match_data{nullptr, pcre2_match_data_free_8};
 };
 
 template<typename... Args>
@@ -240,13 +239,6 @@ bool match_regex(RegexInfo &regex_info, size_t offset) noexcept {
 
   const auto &regex_state{RegexInstanceState::get()};
 
-  regex_pcre2_match_data_t match_data{pcre2_match_data_create_from_pattern_8(regex_info.regex_code, regex_state.regex_pcre2_general_context.get()),
-                                      pcre2_match_data_free_8};
-  if (!match_data) [[unlikely]] {
-    php_warning("can't create pcre2_match_data");
-    return false;
-  }
-
   const regex_pcre2_match_context_t match_context{pcre2_match_context_create_8(regex_state.regex_pcre2_general_context.get()), pcre2_match_context_free_8};
   if (!match_context) [[unlikely]] {
     php_warning("can't create pcre2_match_context");
@@ -254,7 +246,7 @@ bool match_regex(RegexInfo &regex_info, size_t offset) noexcept {
   }
 
   int32_t match_count{pcre2_match_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), offset,
-                                    regex_info.match_options, match_data.get(), match_context.get())};
+                                    regex_info.match_options, regex_state.regex_pcre2_match_data.get(), match_context.get())};
   // From https://www.pcre.org/current/doc/html/pcre2_match.html
   // The return from pcre2_match() is one more than the highest numbered capturing pair that has been set
   // (for example, 1 if there are no captures), zero if the vector of offsets is too small, or a negative error code for no match and other errors.
@@ -263,7 +255,6 @@ bool match_regex(RegexInfo &regex_info, size_t offset) noexcept {
     return false;
   }
   regex_info.match_count = match_count != PCRE2_ERROR_NOMATCH ? match_count : 0;
-  regex_info.match_data = std::move(match_data);
   return true;
 }
 
@@ -307,14 +298,16 @@ regex_pcre2_group_names_vector_t get_group_names(const RegexInfo &regex_info) no
 
 // returns the ending offset of the entire match
 PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, mixed &matches, trailing_unmatch_policy_t last_unmatched_policy) noexcept {
-  if (regex_info.regex_code == nullptr || regex_info.match_count <= 0 || !regex_info.match_data) [[unlikely]] {
+  if (regex_info.regex_code == nullptr || regex_info.match_count <= 0) [[unlikely]] {
     return PCRE2_UNSET;
   }
+
+  const auto &regex_state{RegexInstanceState::get()};
 
   const auto offset_capture{static_cast<bool>(flags & PREG_OFFSET_CAPTURE)};
   const auto unmatched_as_null{static_cast<bool>(flags & PREG_UNMATCHED_AS_NULL)};
   // get the ouput vector from the match data
-  const auto *ovector{pcre2_get_ovector_pointer_8(regex_info.match_data.get())};
+  const auto *ovector{pcre2_get_ovector_pointer_8(regex_state.regex_pcre2_match_data.get())};
   // calculate last matched group
   int64_t last_matched_group{-1};
   for (auto i = 0; i < regex_info.match_count; ++i) {

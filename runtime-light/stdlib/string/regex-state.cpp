@@ -33,7 +33,8 @@ void regex_free(void *mem, [[maybe_unused]] void *memory_data) noexcept {
 RegexInstanceState::RegexInstanceState(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
   : default_preg_replace_count()
   , regex_pcre2_general_context(pcre2_general_context_create_8(regex_state_impl_::regex_malloc, regex_state_impl_::regex_free, nullptr),
-                                std::addressof(pcre2_general_context_free_8))
+                                pcre2_general_context_free_8)
+  , regex_pcre2_match_data(pcre2_match_data_create_8(3 * MAX_SUBPATTERNS_COUNT, regex_pcre2_general_context.get()), pcre2_match_data_free_8)
   , regex_pcre2_code_cache(decltype(regex_pcre2_code_cache)::allocator_type{memory_resource}) {
   if (!regex_pcre2_general_context) [[unlikely]] {
     php_error("can't create pcre2_general_context");
