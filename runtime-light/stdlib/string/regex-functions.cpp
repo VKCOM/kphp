@@ -4,12 +4,15 @@
 
 #include "runtime-light/stdlib/string/regex-functions.h"
 
+#include <algorithm>
 #include <array>
 #include <cinttypes>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 #include <memory>
+#include <optional>
 #include <string_view>
 #include <type_traits>
 
@@ -40,9 +43,12 @@ struct RegexInfo final {
   // compiled regex
   regex_pcre2_code_t regex_code{nullptr};
 
-  size_t match_options{PCRE2_NO_UTF_CHECK};
-  // matched regex info
   int32_t match_count{};
+  size_t match_options{PCRE2_NO_UTF_CHECK};
+
+  int64_t replace_count{};
+  std::string_view replacement;
+  std::optional<string> opt_replaced;
 };
 
 template<typename... Args>
@@ -233,7 +239,7 @@ bool compile_regex(RegexInfo &regex_info) noexcept {
 }
 
 bool match_regex(RegexInfo &regex_info, size_t offset) noexcept {
-  if (regex_info.regex_code == nullptr) {
+  if (regex_info.regex_code == nullptr) [[unlikely]] {
     return false;
   }
 
@@ -383,6 +389,81 @@ PCRE2_SIZE set_all_matches(const RegexInfo &regex_info, int64_t flags, mixed &al
   return offset;
 }
 
+bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
+  if (regex_info.regex_code == nullptr) [[unlikely]] {
+    return false;
+  }
+
+  const auto &regex_state{RegexInstanceState::get()};
+  auto &runtime_ctx{RuntimeContext::get()};
+
+  regex_info.replace_count = 0;
+  const PCRE2_SIZE buffer_length{std::max({static_cast<string::size_type>(regex_info.subject.size()),
+                                           static_cast<string::size_type>(RegexInstanceState::REPLACE_BUFFER_SIZE), runtime_ctx.static_SB.size()})};
+  runtime_ctx.static_SB.clean().reserve(buffer_length);
+  PCRE2_SIZE output_length{buffer_length};
+
+  const regex_pcre2_match_context_t match_context{pcre2_match_context_create_8(regex_state.regex_pcre2_general_context.get()), pcre2_match_context_free_8};
+  if (!match_context) [[unlikely]] {
+    php_warning("can't create pcre2_match_context");
+    return false;
+  }
+
+  // replace all occurences
+  if (limit == std::numeric_limits<uint64_t>::max()) [[likely]] {
+    regex_info.replace_count =
+      pcre2_substitute_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), 0, PCRE2_SUBSTITUTE_GLOBAL,
+                         nullptr, match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
+                         reinterpret_cast<PCRE2_UCHAR8 *>(runtime_ctx.static_SB.buffer()), std::addressof(output_length));
+
+    if (regex_info.replace_count < 0) [[unlikely]] {
+      php_warning("pcre2_substitute error %" PRIi64, regex_info.replace_count);
+      return false;
+    }
+  } else { // replace only 'limit' times
+    size_t match_offset{};
+    size_t substitute_offset{};
+    PCRE2_SIZE length_after_replace{buffer_length};
+    string str_after_replace{regex_info.subject.data(), static_cast<string::size_type>(regex_info.subject.size())};
+
+    for (; regex_info.replace_count < limit; ++regex_info.replace_count) {
+      if (!match_regex(regex_info, match_offset)) [[unlikely]] {
+        return false;
+      }
+      if (regex_info.match_count == 0) {
+        break;
+      }
+
+      const auto *ovector{pcre2_get_ovector_pointer_8(regex_state.regex_pcre2_match_data.get())};
+      const auto match_start{ovector[0]};
+      const auto match_end{ovector[1]};
+
+      length_after_replace = buffer_length;
+      if (auto replace_one{pcre2_substitute_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(str_after_replace.c_str()), str_after_replace.size(),
+                                              substitute_offset, 0, nullptr, match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()),
+                                              regex_info.replacement.size(), reinterpret_cast<PCRE2_UCHAR8 *>(runtime_ctx.static_SB.buffer()),
+                                              std::addressof(length_after_replace))};
+          replace_one != 1) [[unlikely]] {
+        php_warning("pcre2_substitute error %d", replace_one);
+        return false;
+      }
+
+      match_offset = match_end;
+      substitute_offset = match_offset + (regex_info.replacement.size() - (match_end - match_start));
+      str_after_replace = {runtime_ctx.static_SB.buffer(), static_cast<string::size_type>(length_after_replace)};
+    }
+
+    output_length = length_after_replace;
+  }
+
+  if (regex_info.replace_count > 0) {
+    runtime_ctx.static_SB.set_pos(buffer_length);
+    regex_info.opt_replaced.emplace(runtime_ctx.static_SB.str());
+  }
+
+  return true;
+}
+
 } // namespace
 
 Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mixed &matches, int64_t flags, int64_t offset) noexcept {
@@ -440,4 +521,24 @@ Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject,
   }
 
   return entire_match_count;
+}
+
+Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
+  if (limit < 0 && limit != regex_impl_::PREG_REPLACE_NOLIMIT) [[likely]] {
+    php_warning("invalid limit %" PRIi64 " in preg_replace", limit);
+    return {};
+  }
+
+  RegexInfo regex_info{.regex = {pattern.c_str(), pattern.size()},
+                       .subject = {subject.c_str(), subject.size()},
+                       .replacement = {replacement.c_str(), replacement.size()}};
+
+  bool success{parse_regex(regex_info)};
+  success &= compile_regex(regex_info);
+  success &= replace_regex(regex_info, limit == regex_impl_::PREG_REPLACE_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit));
+  if (!success) [[unlikely]] {
+    return {};
+  }
+  count = regex_info.replace_count;
+  return regex_info.opt_replaced.value_or(subject);
 }

@@ -30,6 +30,7 @@ struct RegexInstanceState final : private vk::not_copyable {
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
 
   static constexpr size_t MAX_SUBPATTERNS_COUNT = 512;
+  static constexpr auto REPLACE_BUFFER_SIZE = static_cast<size_t>(16U * 1024U);
 
   mixed default_matches;
   int64_t default_preg_replace_count;
