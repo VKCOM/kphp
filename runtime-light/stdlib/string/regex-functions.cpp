@@ -24,7 +24,7 @@ namespace {
 
 constexpr size_t ERROR_BUFFER_LENGTH = 256;
 
-enum class trailing_unmatch_policy_t : uint8_t { skip, include };
+enum class trailing_unmatch : uint8_t { skip, include };
 
 struct RegexInfo final {
   std::string_view regex;
@@ -297,7 +297,7 @@ regex_pcre2_group_names_vector_t get_group_names(const RegexInfo &regex_info) no
 }
 
 // returns the ending offset of the entire match
-PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, mixed &matches, trailing_unmatch_policy_t last_unmatched_policy) noexcept {
+PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, mixed &matches, trailing_unmatch last_unmatched_policy) noexcept {
   if (regex_info.regex_code == nullptr || regex_info.match_count <= 0) [[unlikely]] {
     return PCRE2_UNSET;
   }
@@ -325,7 +325,7 @@ PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, mixed &matche
   array<mixed> output{array_size{static_cast<int64_t>(group_names.size() + named_groups_count), named_groups_count == 0}};
   for (auto i = 0; i < group_names.size(); ++i) {
     // skip unmatched groups at the end unless unmatched_as_null is set
-    if (last_unmatched_policy == trailing_unmatch_policy_t::skip && i > last_matched_group && !unmatched_as_null) [[unlikely]] {
+    if (last_unmatched_policy == trailing_unmatch::skip && i > last_matched_group && !unmatched_as_null) [[unlikely]] {
       break;
     }
 
@@ -362,7 +362,7 @@ PCRE2_SIZE set_all_matches(const RegexInfo &regex_info, int64_t flags, mixed &al
   const auto pattern_order{!static_cast<bool>(flags & PREG_SET_ORDER)};
 
   mixed matches;
-  PCRE2_SIZE offset{set_matches(regex_info, flags, matches, pattern_order ? trailing_unmatch_policy_t::include : trailing_unmatch_policy_t::skip)};
+  PCRE2_SIZE offset{set_matches(regex_info, flags, matches, pattern_order ? trailing_unmatch::include : trailing_unmatch::skip)};
   if (offset == PCRE2_UNSET) [[unlikely]] {
     return offset;
   }
@@ -402,7 +402,7 @@ Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mix
     return false;
   }
 
-  set_matches(regex_info, flags, matches, trailing_unmatch_policy_t::skip);
+  set_matches(regex_info, flags, matches, trailing_unmatch::skip);
   return regex_info.match_count > 0 ? 1 : 0;
 }
 
