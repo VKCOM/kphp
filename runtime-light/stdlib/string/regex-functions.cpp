@@ -31,12 +31,13 @@ enum class trailing_unmatch : uint8_t { skip, include };
 
 struct RegexInfo final {
   std::string_view regex;
-  std::string_view subject;
   // non-null-terminated regex without delimiters and PCRE modifiers
   //
   // regex       ->  ~pattern~im\0
   // regex_body  ->   pattern
   std::string_view regex_body;
+
+  std::string_view subject;
 
   // PCRE compile options of the regex
   uint32_t compile_options{};
@@ -423,6 +424,7 @@ bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
   } else { // replace only 'limit' times
     size_t match_offset{};
     size_t substitute_offset{};
+    int64_t replacement_diff_acc{};
     PCRE2_SIZE length_after_replace{buffer_length};
     string str_after_replace{regex_info.subject.data(), static_cast<string::size_type>(regex_info.subject.size())};
 
@@ -449,7 +451,8 @@ bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
       }
 
       match_offset = match_end;
-      substitute_offset = match_offset + (regex_info.replacement.size() - (match_end - match_start));
+      replacement_diff_acc += regex_info.replacement.size() - (match_end - match_start);
+      substitute_offset = match_end + replacement_diff_acc;
       str_after_replace = {runtime_ctx.static_SB.buffer(), static_cast<string::size_type>(length_after_replace)};
     }
 
@@ -457,7 +460,7 @@ bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
   }
 
   if (regex_info.replace_count > 0) {
-    runtime_ctx.static_SB.set_pos(buffer_length);
+    runtime_ctx.static_SB.set_pos(output_length);
     regex_info.opt_replaced.emplace(runtime_ctx.static_SB.str());
   }
 
