@@ -16,6 +16,7 @@
 #include <string_view>
 #include <type_traits>
 
+#include "common/containers/final_action.h"
 #include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
@@ -41,6 +42,7 @@ struct RegexInfo final {
 
   // PCRE compile options of the regex
   uint32_t compile_options{};
+  uint32_t capture_count{};
   // compiled regex
   regex_pcre2_code_t regex_code{nullptr};
 
@@ -203,9 +205,12 @@ bool parse_regex(RegexInfo &regex_info) noexcept {
 }
 
 bool compile_regex(RegexInfo &regex_info) noexcept {
-  // 1. check compile time cache
-  // 2. check runtime cache
-  // 3. compile
+  const vk::final_action finalizer{[&regex_info]() {
+    if (regex_info.regex_code != nullptr) [[likely]] {
+      pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_CAPTURECOUNT, std::addressof(regex_info.capture_count));
+      ++regex_info.capture_count; // to also count entire match
+    }
+  }};
 
   auto &regex_state{RegexInstanceState::get()};
   // check runtime cache
@@ -274,12 +279,8 @@ regex_pcre2_group_names_vector_t get_group_names(const RegexInfo &regex_info) no
     return group_names;
   }
 
-  uint32_t capture_count{};
-  pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_CAPTURECOUNT, std::addressof(capture_count));
-  ++capture_count; // to also count the entire match
-
   // initialize an array of strings to hold group names
-  group_names.resize(capture_count);
+  group_names.resize(regex_info.capture_count);
 
   uint32_t name_count{};
   pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMECOUNT, std::addressof(name_count));
@@ -377,10 +378,6 @@ PCRE2_SIZE set_all_matches(const RegexInfo &regex_info, int64_t flags, mixed &al
   if (pattern_order) [[likely]] {
     for (auto &it : matches) {
       auto &group{all_matches[it.get_key()]};
-      if (f$is_null(group)) [[unlikely]] {
-        group = array<mixed>{};
-      }
-
       group.push_back(it.get_value());
     }
   } else {
@@ -503,10 +500,27 @@ Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject,
   success &= correct_offset(offset, regex_info.subject);
   success &= parse_regex(regex_info);
   success &= compile_regex(regex_info);
+
+  // pre-init matches in case of pattern order
+  if (success && !static_cast<bool>(flags & PREG_SET_ORDER)) [[likely]] {
+    const array<mixed> init_val{};
+    for (const auto *group_name : get_group_names(regex_info)) {
+      if (group_name != nullptr) {
+        matches.set_value(string{group_name}, init_val);
+      }
+      matches.push_back(init_val);
+    }
+  }
+
   while (offset <= subject.size() && (success &= match_regex(regex_info, offset))) {
+    if (regex_info.match_count < 0) [[unlikely]] {
+      php_warning("invalid match count %d", regex_info.match_count);
+      return false;
+    }
+
+    const auto next_offset{set_all_matches(regex_info, flags, matches)};
     if (regex_info.match_count > 0) {
       ++entire_match_count;
-      const auto next_offset{set_all_matches(regex_info, flags, matches)};
       if (next_offset == PCRE2_UNSET) [[unlikely]] {
         break;
       } else if (next_offset == offset) [[unlikely]] {
