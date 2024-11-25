@@ -5,10 +5,53 @@
 #pragma once
 
 #include <cassert>
+#include <sys/syscall.h>
 #include <unistd.h>
+#include <linux/futex.h>
 
-template<class T>
-bool try_lock(T);
+#include "common/wrappers/copyable-atomic.h"
+
+// This Mutex can is copyable, std::mutex is not
+class CustomMutex {
+ public:
+  void Lock() {
+    int old = kFree;
+    if (state_.compare_exchange_strong(old, kLockedNoWaiters)) {
+      return;
+    }
+    if (old != kLockedWithWaiters) {
+      // was at least one waiter
+      old = state_.exchange(kLockedWithWaiters);
+    }
+    while (old != kFree) {
+      syscall(SYS_futex, &state_, FUTEX_WAIT, kLockedWithWaiters, 0, 0, 0);
+      old = state_.exchange(kLockedWithWaiters);
+    }
+  }
+
+  void Unlock() {
+    if (state_.fetch_sub(1) == kLockedWithWaiters) {
+      state_.store(kFree);
+      syscall(SYS_futex, &state_, FUTEX_WAKE, 1, 0, 0, 0); // wake one
+    }
+  }
+
+  // https://en.cppreference.com/w/cpp/named_req/BasicLockable
+  void lock() {
+    Lock();
+  }
+
+  void unlock() {
+    Unlock();
+  }
+
+ private:
+  static constexpr int kFree = 0;
+  static constexpr int kLockedNoWaiters = 1;
+  static constexpr int kLockedWithWaiters = 2; // really "may be with waiters"
+  vk::copyable_atomic_integral<int> state_ = kFree;
+};
+
 
 template<class T>
 void lock(T locker) {
@@ -20,36 +63,27 @@ void unlock(T locker) {
   locker->unlock();
 }
 
-inline bool try_lock(volatile int *locker) {
-  return __sync_lock_test_and_set(locker, 1) == 0;
+inline void lock(CustomMutex &m) {
+  m.Lock();
 }
 
-inline void lock(volatile int *locker) {
-  while (!try_lock(locker)) {
-    usleep(250);
-  }
-}
-
-inline void unlock(volatile int *locker) {
-  assert(*locker == 1);
-  __sync_lock_release(locker);
+inline void unlock(CustomMutex &m) {
+  m.Unlock();
 }
 
 class Lockable {
 private:
-  volatile int x;
+  CustomMutex m;
 public:
-  Lockable() :
-    x(0) {}
-
+  Lockable() = default;
   virtual ~Lockable() = default;
 
   void lock() {
-    ::lock(&x);
+    ::lock(m);
   }
 
   void unlock() {
-    ::unlock(&x);
+    ::unlock(m);
   }
 };
 
