@@ -37,21 +37,28 @@ struct RegexInfo final {
   // regex       ->  ~pattern~im\0
   // regex_body  ->   pattern
   std::string_view regex_body;
-
   std::string_view subject;
+
+  // valid after call to compile_regex
 
   // PCRE compile options of the regex
   uint32_t compile_options{};
+  // number of groups including entire match
   uint32_t capture_count{};
   // compiled regex
   regex_pcre2_code_t regex_code{nullptr};
 
+  // valid after call to match_regex
+
   int32_t match_count{};
   size_t match_options{PCRE2_NO_UTF_CHECK};
 
+  // valid after call to replace_regex
+
   int64_t replace_count{};
   std::string_view replacement;
-  std::optional<string> opt_replaced;
+  // contains a string after replacements if replace_count > 0, nullopt otherwise
+  std::optional<string> opt_replace_result;
 };
 
 bool valid_preg_replace_mixed(const mixed &param) noexcept {
@@ -221,6 +228,8 @@ bool compile_regex(RegexInfo &regex_info) noexcept {
     if (regex_info.regex_code != nullptr) [[likely]] {
       pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_CAPTURECOUNT, std::addressof(regex_info.capture_count));
       ++regex_info.capture_count; // to also count entire match
+    } else {
+      regex_info.capture_count = 0;
     }
   }};
 
@@ -261,6 +270,7 @@ bool match_regex(RegexInfo &regex_info, size_t offset) noexcept {
     return false;
   }
 
+  regex_info.match_count = 0;
   const auto &regex_state{RegexInstanceState::get()};
 
   const regex_pcre2_match_context_t match_context{pcre2_match_context_create_8(regex_state.regex_pcre2_general_context.get()), pcre2_match_context_free_8};
@@ -380,6 +390,8 @@ PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, mixed &matche
 }
 
 // returns the ending offset of the entire match
+// *** importrant ***
+// in case of a pattern order all_matches must already contain all groups as empty arrays before the first call to set_all_matches
 PCRE2_SIZE set_all_matches(const RegexInfo &regex_info, int64_t flags, mixed &all_matches) noexcept {
   const auto pattern_order{!static_cast<bool>(flags & PREG_SET_ORDER)};
 
@@ -406,10 +418,10 @@ bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
     return false;
   }
 
+  regex_info.replace_count = 0;
   const auto &regex_state{RegexInstanceState::get()};
   auto &runtime_ctx{RuntimeContext::get()};
 
-  regex_info.replace_count = 0;
   const PCRE2_SIZE buffer_length{std::max({static_cast<string::size_type>(regex_info.subject.size()),
                                            static_cast<string::size_type>(RegexInstanceState::REPLACE_BUFFER_SIZE), runtime_ctx.static_SB.size()})};
   runtime_ctx.static_SB.clean().reserve(buffer_length);
@@ -474,7 +486,7 @@ bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
 
   if (regex_info.replace_count > 0) {
     runtime_ctx.static_SB.set_pos(output_length);
-    regex_info.opt_replaced.emplace(runtime_ctx.static_SB.str());
+    regex_info.opt_replace_result.emplace(runtime_ctx.static_SB.str());
   }
 
   return true;
@@ -504,8 +516,8 @@ Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mix
 }
 
 Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches, int64_t flags, int64_t offset) noexcept {
-  int64_t entire_match_count{};
   matches = array<mixed>{};
+  int64_t entire_match_count{};
   RegexInfo regex_info{.regex = {pattern.c_str(), pattern.size()}, .subject = {subject.c_str(), subject.size()}};
 
   bool success{valid_regex_flags(flags, PREG_NO_FLAGS, PREG_PATTERN_ORDER, PREG_SET_ORDER, PREG_OFFSET_CAPTURE, PREG_UNMATCHED_AS_NULL)};
@@ -529,11 +541,6 @@ Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject,
   }
 
   while (offset <= subject.size() && (success &= match_regex(regex_info, offset))) {
-    if (regex_info.match_count < 0) [[unlikely]] {
-      php_warning("invalid match count %d", regex_info.match_count);
-      return false;
-    }
-
     const auto next_offset{set_all_matches(regex_info, flags, matches)};
     if (regex_info.match_count > 0) {
       ++entire_match_count;
@@ -557,13 +564,14 @@ Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject,
 }
 
 Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
+  count = 0;
   if (limit < 0 && limit != PREG_REPLACE_NOLIMIT) [[likely]] {
     php_warning("invalid limit %" PRIi64 " in preg_replace", limit);
     return {};
   }
 
   string pcre2_replacement{replacement};
-  { // we need to replace PHP's back reference with PCRE2 ones
+  { // we need to replace PHP's back references with PCRE2 ones
     static constexpr std::string_view backreference_pattern = R"(/\\(\d)/)";
     static constexpr std::string_view backreference_replacement = "$$$1";
 
@@ -575,7 +583,7 @@ Optional<string> f$preg_replace(const string &pattern, const string &replacement
       php_warning("can't replace PHP back references with PCRE2 ones");
       return {};
     }
-    pcre2_replacement = regex_info.opt_replaced.has_value() ? *std::move(regex_info.opt_replaced) : replacement;
+    pcre2_replacement = regex_info.opt_replace_result.has_value() ? *std::move(regex_info.opt_replace_result) : replacement;
   }
 
   RegexInfo regex_info{.regex = {pattern.c_str(), pattern.size()},
@@ -589,10 +597,11 @@ Optional<string> f$preg_replace(const string &pattern, const string &replacement
     return {};
   }
   count = regex_info.replace_count;
-  return regex_info.opt_replaced.value_or(subject);
+  return regex_info.opt_replace_result.value_or(subject);
 }
 
 Optional<string> f$preg_replace(const mixed &pattern, const string &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
+  count = 0;
   if (!valid_preg_replace_mixed(pattern)) [[unlikely]] {
     return {};
   }
@@ -618,6 +627,7 @@ Optional<string> f$preg_replace(const mixed &pattern, const string &replacement,
 }
 
 Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
+  count = 0;
   if (!valid_preg_replace_mixed(pattern) || !valid_preg_replace_mixed(replacement)) [[unlikely]] {
     return {};
   }
@@ -656,6 +666,7 @@ Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, 
 }
 
 mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit, int64_t &count) noexcept {
+  count = 0;
   if (!valid_preg_replace_mixed(pattern) || !valid_preg_replace_mixed(replacement) || !valid_preg_replace_mixed(subject)) [[unlikely]] {
     return {};
   }
