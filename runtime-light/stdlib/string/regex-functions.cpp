@@ -54,6 +54,14 @@ struct RegexInfo final {
   std::optional<string> opt_replaced;
 };
 
+bool valid_preg_replace_mixed(const mixed &param) noexcept {
+  if (!param.is_array() && !param.is_string()) [[unlikely]] {
+    php_warning("invalid parameter: expected to be string or array");
+    return false;
+  }
+  return true;
+}
+
 template<typename... Args>
 requires((std::is_same_v<Args, int64_t> && ...) && sizeof...(Args) > 0) bool valid_regex_flags(int64_t flags, Args... supported_flags) noexcept {
   return (flags & ~(supported_flags | ...)) == PREG_NO_FLAGS;
@@ -98,6 +106,10 @@ bool parse_regex(RegexInfo &regex_info) noexcept {
     }
     case '{': {
       end_delim = '}';
+      break;
+    }
+    case '<': {
+      end_delim = '>';
       break;
     }
     case '>':
@@ -263,7 +275,9 @@ bool match_regex(RegexInfo &regex_info, size_t offset) noexcept {
   // The return from pcre2_match() is one more than the highest numbered capturing pair that has been set
   // (for example, 1 if there are no captures), zero if the vector of offsets is too small, or a negative error code for no match and other errors.
   if (match_count < 0 && match_count != PCRE2_ERROR_NOMATCH) [[unlikely]] {
-    php_warning("can't match pcre2 regex due to error %d", match_count);
+    std::array<char, ERROR_BUFFER_LENGTH> buffer{};
+    pcre2_get_error_message_8(match_count, reinterpret_cast<PCRE2_UCHAR8 *>(buffer.data()), buffer.size());
+    php_warning("can't match pcre2 regex due to error: %s", buffer.data());
     return false;
   }
   regex_info.match_count = match_count != PCRE2_ERROR_NOMATCH ? match_count : 0;
@@ -415,7 +429,9 @@ bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
                          reinterpret_cast<PCRE2_UCHAR8 *>(runtime_ctx.static_SB.buffer()), std::addressof(output_length));
 
     if (regex_info.replace_count < 0) [[unlikely]] {
-      php_warning("pcre2_substitute error %" PRIi64, regex_info.replace_count);
+      std::array<char, ERROR_BUFFER_LENGTH> buffer{};
+      pcre2_get_error_message_8(regex_info.replace_count, reinterpret_cast<PCRE2_UCHAR8 *>(buffer.data()), buffer.size());
+      php_warning("pcre2_substitute error %s", buffer.data());
       return false;
     }
   } else { // replace only 'limit' times
@@ -541,21 +557,126 @@ Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject,
 }
 
 Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
-  if (limit < 0 && limit != regex_impl_::PREG_REPLACE_NOLIMIT) [[likely]] {
+  if (limit < 0 && limit != PREG_REPLACE_NOLIMIT) [[likely]] {
     php_warning("invalid limit %" PRIi64 " in preg_replace", limit);
     return {};
   }
 
+  string pcre2_replacement{replacement};
+  { // we need to replace PHP's back reference with PCRE2 ones
+    static constexpr std::string_view backreference_pattern = R"(/\\(\d)/)";
+    static constexpr std::string_view backreference_replacement = "$$$1";
+
+    RegexInfo regex_info{.regex = backreference_pattern, .subject = {replacement.c_str(), replacement.size()}, .replacement = backreference_replacement};
+    bool success{parse_regex(regex_info)};
+    success &= compile_regex(regex_info);
+    success &= replace_regex(regex_info, std::numeric_limits<uint64_t>::max());
+    if (!success) [[unlikely]] {
+      php_warning("can't replace PHP back references with PCRE2 ones");
+      return {};
+    }
+    pcre2_replacement = regex_info.opt_replaced.has_value() ? *std::move(regex_info.opt_replaced) : replacement;
+  }
+
   RegexInfo regex_info{.regex = {pattern.c_str(), pattern.size()},
                        .subject = {subject.c_str(), subject.size()},
-                       .replacement = {replacement.c_str(), replacement.size()}};
+                       .replacement = {pcre2_replacement.c_str(), pcre2_replacement.size()}};
 
   bool success{parse_regex(regex_info)};
   success &= compile_regex(regex_info);
-  success &= replace_regex(regex_info, limit == regex_impl_::PREG_REPLACE_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit));
+  success &= replace_regex(regex_info, limit == PREG_REPLACE_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit));
   if (!success) [[unlikely]] {
     return {};
   }
   count = regex_info.replace_count;
   return regex_info.opt_replaced.value_or(subject);
+}
+
+Optional<string> f$preg_replace(const mixed &pattern, const string &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
+  if (!valid_preg_replace_mixed(pattern)) [[unlikely]] {
+    return {};
+  }
+
+  if (pattern.is_string()) {
+    return f$preg_replace(pattern.as_string(), replacement, subject, limit, count);
+  }
+
+  string result{subject};
+  const auto &pattern_arr{pattern.as_array()};
+  for (const auto &it : pattern_arr) {
+    int64_t replace_one_count{};
+    if (auto replace_result{f$preg_replace(it.get_value().to_string(), replacement, result, limit, replace_one_count)}; replace_result.has_value()) [[likely]] {
+      count += replace_one_count;
+      result = std::move(replace_result.val());
+    } else {
+      count = 0;
+      return {};
+    }
+  }
+
+  return result;
+}
+
+Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
+  if (!valid_preg_replace_mixed(pattern) || !valid_preg_replace_mixed(replacement)) [[unlikely]] {
+    return {};
+  }
+
+  if (replacement.is_string()) {
+    return f$preg_replace(pattern, replacement.as_string(), subject, limit, count);
+  }
+  if (pattern.is_string()) [[unlikely]] {
+    php_warning("parameter mismatch: replacement is an array while pattern is string");
+    return {};
+  }
+
+  string result{subject};
+  const auto &pattern_arr{pattern.as_array()};
+  const auto &replacement_arr{replacement.as_array()};
+  auto replacement_it{replacement_arr.cbegin()};
+  for (const auto &pattern_it : pattern_arr) {
+    string replacement_str{};
+    if (replacement_it != replacement_arr.cend()) {
+      replacement_str = replacement_it.get_value().to_string();
+      ++replacement_it;
+    }
+
+    int64_t replace_one_count{};
+    if (auto replace_result{f$preg_replace(pattern_it.get_value().to_string(), replacement_str, result, limit, replace_one_count)}; replace_result.has_value())
+      [[likely]] {
+      count += replace_one_count;
+      result = std::move(replace_result.val());
+    } else {
+      count = 0;
+      return {};
+    }
+  }
+
+  return result;
+}
+
+mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit, int64_t &count) noexcept {
+  if (!valid_preg_replace_mixed(pattern) || !valid_preg_replace_mixed(replacement) || !valid_preg_replace_mixed(subject)) [[unlikely]] {
+    return {};
+  }
+
+  if (subject.is_string()) {
+    return f$preg_replace(pattern, replacement, subject.as_string(), limit, count);
+  }
+
+  const auto &subject_arr{subject.as_array()};
+  array<mixed> result{subject_arr.size()};
+  for (const auto &it : subject_arr) {
+    int64_t replace_one_count{};
+    if (auto replace_result{f$preg_replace(pattern, replacement, it.get_value().to_string(), limit, replace_one_count)}; replace_result.has_value())
+      [[likely]] {
+      count += replace_one_count;
+      result.set_value(it.get_key(), std::move(replace_result.val()));
+    } else {
+      count = 0;
+      return {};
+    }
+  }
+
+  return std::move(result);
 }

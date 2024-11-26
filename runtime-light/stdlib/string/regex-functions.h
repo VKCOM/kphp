@@ -25,11 +25,7 @@ inline constexpr auto PREG_SPLIT_DELIM_CAPTURE = static_cast<int64_t>(1U << 4U);
 inline constexpr auto PREG_SPLIT_OFFSET_CAPTURE = static_cast<int64_t>(1U << 5U);
 inline constexpr auto PREG_UNMATCHED_AS_NULL = static_cast<int64_t>(1U << 6U);
 
-namespace regex_impl_ {
-
 inline constexpr int64_t PREG_REPLACE_NOLIMIT = -1;
-
-} // namespace regex_impl_
 
 Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
                                int64_t flags = PREG_NO_FLAGS, int64_t offset = 0) noexcept;
@@ -37,5 +33,14 @@ Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mix
 Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
                                    int64_t flags = PREG_NO_FLAGS, int64_t offset = 0) noexcept;
 
-Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit = regex_impl_::PREG_REPLACE_NOLIMIT,
+Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
                                 int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
+
+Optional<string> f$preg_replace(const mixed &pattern, const string &replacement, const string &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
+                                int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
+
+Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, const string &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
+                                int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
+
+mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
+                     int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
