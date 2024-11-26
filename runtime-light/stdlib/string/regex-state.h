@@ -23,8 +23,6 @@ void regex_free(void *mem, void *memory_data) noexcept;
 
 } // namespace regex_state_impl_
 
-using regex_pcre2_group_names_vector_t = memory_resource::stl::vector<const char *, memory_resource::unsynchronized_pool_resource>;
-
 struct RegexInstanceState final : private vk::not_copyable {
   template<hashable Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;

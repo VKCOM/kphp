@@ -30,6 +30,8 @@ constexpr size_t ERROR_BUFFER_LENGTH = 256;
 
 enum class trailing_unmatch : uint8_t { skip, include };
 
+using regex_pcre2_group_names_t = memory_resource::stl::vector<const char *, memory_resource::unsynchronized_pool_resource>;
+
 struct RegexInfo final {
   std::string_view regex;
   // non-null-terminated regex without delimiters and PCRE modifiers
@@ -48,6 +50,11 @@ struct RegexInfo final {
   // compiled regex
   regex_pcre2_code_t regex_code{nullptr};
 
+  // valid after call to collect_group_names
+
+  // vector of group names
+  regex_pcre2_group_names_t group_names;
+
   // valid after call to match_regex
 
   int32_t match_count{};
@@ -59,6 +66,15 @@ struct RegexInfo final {
   std::string_view replacement;
   // contains a string after replacements if replace_count > 0, nullopt otherwise
   std::optional<string> opt_replace_result;
+
+  RegexInfo() = delete;
+
+  RegexInfo(std::string_view regex_, std::string_view subject_, std::string_view replacement_,
+            memory_resource::unsynchronized_pool_resource &memory_resource_) noexcept
+    : regex(regex_)
+    , subject(subject_)
+    , group_names(regex_pcre2_group_names_t::allocator_type{memory_resource_})
+    , replacement(replacement_) {}
 };
 
 bool valid_preg_replace_mixed(const mixed &param) noexcept {
@@ -224,7 +240,7 @@ bool parse_regex(RegexInfo &regex_info) noexcept {
 }
 
 bool compile_regex(RegexInfo &regex_info) noexcept {
-  const vk::final_action finalizer{[&regex_info]() {
+  const vk::final_action finalizer{[&regex_info]() noexcept {
     if (regex_info.regex_code != nullptr) [[likely]] {
       pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_CAPTURECOUNT, std::addressof(regex_info.capture_count));
       ++regex_info.capture_count; // to also count entire match
@@ -265,6 +281,36 @@ bool compile_regex(RegexInfo &regex_info) noexcept {
   return true;
 }
 
+bool collect_group_names(RegexInfo &regex_info) noexcept {
+  if (regex_info.regex_code == nullptr) [[unlikely]] {
+    return false;
+  }
+
+  // initialize an array of strings to hold group names
+  regex_info.group_names.resize(regex_info.capture_count);
+
+  uint32_t name_count{};
+  pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMECOUNT, std::addressof(name_count));
+  if (name_count == 0) {
+    return true;
+  }
+
+  PCRE2_SPTR8 name_table{};
+  uint32_t name_entry_size{};
+  pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMETABLE, std::addressof(name_table));
+  pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMEENTRYSIZE, std::addressof(name_entry_size));
+
+  PCRE2_SPTR8 entry{name_table};
+  for (auto i = 0; i < name_count; ++i) {
+    const auto group_number{static_cast<uint16_t>((entry[0] << 8) | entry[1])};
+    PCRE2_SPTR8 group_name{std::next(entry, 2)};
+    regex_info.group_names[group_number] = reinterpret_cast<const char *>(group_name);
+    std::advance(entry, name_entry_size);
+  }
+
+  return true;
+}
+
 bool match_regex(RegexInfo &regex_info, size_t offset) noexcept {
   if (regex_info.regex_code == nullptr) [[unlikely]] {
     return false;
@@ -294,40 +340,6 @@ bool match_regex(RegexInfo &regex_info, size_t offset) noexcept {
   return true;
 }
 
-regex_pcre2_group_names_vector_t get_group_names(const RegexInfo &regex_info) noexcept {
-  using allocator_t = regex_pcre2_group_names_vector_t::allocator_type;
-  auto &memory_resource{RuntimeAllocator::get().memory_resource};
-  regex_pcre2_group_names_vector_t group_names{allocator_t{memory_resource}};
-
-  if (regex_info.regex_code == nullptr) [[unlikely]] {
-    return group_names;
-  }
-
-  // initialize an array of strings to hold group names
-  group_names.resize(regex_info.capture_count);
-
-  uint32_t name_count{};
-  pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMECOUNT, std::addressof(name_count));
-  if (name_count == 0) {
-    return group_names;
-  }
-
-  PCRE2_SPTR8 name_table{};
-  uint32_t name_entry_size{};
-  pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMETABLE, std::addressof(name_table));
-  pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMEENTRYSIZE, std::addressof(name_entry_size));
-
-  PCRE2_SPTR8 entry{name_table};
-  for (auto i = 0; i < name_count; ++i) {
-    const auto group_number{static_cast<uint16_t>((entry[0] << 8) | entry[1])};
-    PCRE2_SPTR8 group_name{std::next(entry, 2)};
-    group_names[group_number] = reinterpret_cast<const char *>(group_name);
-    std::advance(entry, name_entry_size);
-  }
-
-  return group_names;
-}
-
 // returns the ending offset of the entire match
 PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, mixed &matches, trailing_unmatch last_unmatched_policy) noexcept {
   if (regex_info.regex_code == nullptr || regex_info.match_count <= 0) [[unlikely]] {
@@ -350,12 +362,10 @@ PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, mixed &matche
   // retrieve the named groups count
   uint32_t named_groups_count{};
   pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMECOUNT, std::addressof(named_groups_count));
-  // get group names
-  const auto group_names{get_group_names(regex_info)};
 
   // reserve enough space for output
-  array<mixed> output{array_size{static_cast<int64_t>(group_names.size() + named_groups_count), named_groups_count == 0}};
-  for (auto i = 0; i < group_names.size(); ++i) {
+  array<mixed> output{array_size{static_cast<int64_t>(regex_info.group_names.size() + named_groups_count), named_groups_count == 0}};
+  for (auto i = 0; i < regex_info.group_names.size(); ++i) {
     // skip unmatched groups at the end unless unmatched_as_null is set
     if (last_unmatched_policy == trailing_unmatch::skip && i > last_matched_group && !unmatched_as_null) [[unlikely]] {
       break;
@@ -379,8 +389,8 @@ PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, mixed &matche
       output_val = std::move(match_val);
     }
 
-    if (group_names[i] != nullptr) {
-      output.set_value(string{group_names[i]}, output_val);
+    if (regex_info.group_names[i] != nullptr) {
+      output.set_value(string{regex_info.group_names[i]}, output_val);
     }
     output.push_back(output_val);
   }
@@ -496,7 +506,7 @@ bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
 
 Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mixed &matches, int64_t flags, int64_t offset) noexcept {
   matches = array<mixed>{};
-  RegexInfo regex_info{.regex = {pattern.c_str(), pattern.size()}, .subject = {subject.c_str(), subject.size()}};
+  RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}, RuntimeAllocator::get().memory_resource};
 
   bool success{valid_regex_flags(flags, PREG_NO_FLAGS, PREG_OFFSET_CAPTURE, PREG_UNMATCHED_AS_NULL)};
   if (!success) [[unlikely]] {
@@ -506,6 +516,7 @@ Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mix
   success &= correct_offset(offset, regex_info.subject);
   success &= parse_regex(regex_info);
   success &= compile_regex(regex_info);
+  success &= collect_group_names(regex_info);
   success &= match_regex(regex_info, offset);
   if (!success) [[unlikely]] {
     return false;
@@ -518,7 +529,7 @@ Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mix
 Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches, int64_t flags, int64_t offset) noexcept {
   matches = array<mixed>{};
   int64_t entire_match_count{};
-  RegexInfo regex_info{.regex = {pattern.c_str(), pattern.size()}, .subject = {subject.c_str(), subject.size()}};
+  RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}, RuntimeAllocator::get().memory_resource};
 
   bool success{valid_regex_flags(flags, PREG_NO_FLAGS, PREG_PATTERN_ORDER, PREG_SET_ORDER, PREG_OFFSET_CAPTURE, PREG_UNMATCHED_AS_NULL)};
   if (!success) [[unlikely]] {
@@ -528,11 +539,12 @@ Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject,
   success &= correct_offset(offset, regex_info.subject);
   success &= parse_regex(regex_info);
   success &= compile_regex(regex_info);
+  success &= collect_group_names(regex_info);
 
   // pre-init matches in case of pattern order
   if (success && !static_cast<bool>(flags & PREG_SET_ORDER)) [[likely]] {
     const array<mixed> init_val{};
-    for (const auto *group_name : get_group_names(regex_info)) {
+    for (const auto *group_name : regex_info.group_names) {
       if (group_name != nullptr) {
         matches.set_value(string{group_name}, init_val);
       }
@@ -570,12 +582,14 @@ Optional<string> f$preg_replace(const string &pattern, const string &replacement
     return {};
   }
 
+  auto &runtime_alloc{RuntimeAllocator::get()};
+
   string pcre2_replacement{replacement};
   { // we need to replace PHP's back references with PCRE2 ones
     static constexpr std::string_view backreference_pattern = R"(/\\(\d)/)";
     static constexpr std::string_view backreference_replacement = "$$$1";
 
-    RegexInfo regex_info{.regex = backreference_pattern, .subject = {replacement.c_str(), replacement.size()}, .replacement = backreference_replacement};
+    RegexInfo regex_info{backreference_pattern, {replacement.c_str(), replacement.size()}, backreference_replacement, runtime_alloc.memory_resource};
     bool success{parse_regex(regex_info)};
     success &= compile_regex(regex_info);
     success &= replace_regex(regex_info, std::numeric_limits<uint64_t>::max());
@@ -586,9 +600,10 @@ Optional<string> f$preg_replace(const string &pattern, const string &replacement
     pcre2_replacement = regex_info.opt_replace_result.has_value() ? *std::move(regex_info.opt_replace_result) : replacement;
   }
 
-  RegexInfo regex_info{.regex = {pattern.c_str(), pattern.size()},
-                       .subject = {subject.c_str(), subject.size()},
-                       .replacement = {pcre2_replacement.c_str(), pcre2_replacement.size()}};
+  RegexInfo regex_info{{pattern.c_str(), pattern.size()},
+                       {subject.c_str(), subject.size()},
+                       {pcre2_replacement.c_str(), pcre2_replacement.size()},
+                       runtime_alloc.memory_resource};
 
   bool success{parse_regex(regex_info)};
   success &= compile_regex(regex_info);
