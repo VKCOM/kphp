@@ -40,8 +40,7 @@ struct RegexInfo final {
   // regex_body  ->   pattern
   std::string_view regex_body;
   std::string_view subject;
-
-  // valid after call to compile_regex
+  std::string_view replacement;
 
   // PCRE compile options of the regex
   uint32_t compile_options{};
@@ -50,20 +49,13 @@ struct RegexInfo final {
   // compiled regex
   regex_pcre2_code_t regex_code{nullptr};
 
-  // valid after call to collect_group_names
-
   // vector of group names
   regex_pcre2_group_names_t group_names;
-
-  // valid after call to match_regex
 
   int32_t match_count{};
   size_t match_options{PCRE2_NO_UTF_CHECK};
 
-  // valid after call to replace_regex
-
   int64_t replace_count{};
-  std::string_view replacement;
   // contains a string after replacements if replace_count > 0, nullopt otherwise
   std::optional<string> opt_replace_result;
 
@@ -73,8 +65,8 @@ struct RegexInfo final {
             memory_resource::unsynchronized_pool_resource &memory_resource_) noexcept
     : regex(regex_)
     , subject(subject_)
-    , group_names(regex_pcre2_group_names_t::allocator_type{memory_resource_})
-    , replacement(replacement_) {}
+    , replacement(replacement_)
+    , group_names(regex_pcre2_group_names_t::allocator_type{memory_resource_}) {}
 };
 
 bool valid_preg_replace_mixed(const mixed &param) noexcept {
@@ -250,6 +242,10 @@ bool compile_regex(RegexInfo &regex_info) noexcept {
   }};
 
   auto &regex_state{RegexInstanceState::get()};
+  if (!regex_state.compile_context) [[unlikely]] {
+    return false;
+  }
+
   // check runtime cache
   if (const auto it{regex_state.regex_pcre2_code_cache.find(regex_info.regex)}; it != regex_state.regex_pcre2_code_cache.end()) {
     regex_info.regex_code = it->second;
@@ -258,15 +254,9 @@ bool compile_regex(RegexInfo &regex_info) noexcept {
   // compile pcre2_code
   int32_t error_number{};
   PCRE2_SIZE error_offset{};
-  const regex_pcre2_compile_context_t compile_context{pcre2_compile_context_create_8(regex_state.regex_pcre2_general_context.get()),
-                                                      pcre2_compile_context_free_8};
-  if (!compile_context) [[unlikely]] {
-    php_warning("can't create pcre2_compile_context");
-    return false;
-  }
-
   regex_pcre2_code_t regex_code{pcre2_compile_8(reinterpret_cast<PCRE2_SPTR8>(regex_info.regex_body.data()), regex_info.regex_body.size(),
-                                                regex_info.compile_options, std::addressof(error_number), std::addressof(error_offset), compile_context.get())};
+                                                regex_info.compile_options, std::addressof(error_number), std::addressof(error_offset),
+                                                regex_state.compile_context.get())};
   if (!regex_code) [[unlikely]] {
     std::array<char, ERROR_BUFFER_LENGTH> buffer{};
     pcre2_get_error_message_8(error_number, reinterpret_cast<PCRE2_UCHAR8 *>(buffer.data()), buffer.size());
@@ -312,21 +302,14 @@ bool collect_group_names(RegexInfo &regex_info) noexcept {
 }
 
 bool match_regex(RegexInfo &regex_info, size_t offset) noexcept {
-  if (regex_info.regex_code == nullptr) [[unlikely]] {
-    return false;
-  }
-
   regex_info.match_count = 0;
   const auto &regex_state{RegexInstanceState::get()};
-
-  const regex_pcre2_match_context_t match_context{pcre2_match_context_create_8(regex_state.regex_pcre2_general_context.get()), pcre2_match_context_free_8};
-  if (!match_context) [[unlikely]] {
-    php_warning("can't create pcre2_match_context");
+  if (regex_info.regex_code == nullptr || !regex_state.match_context) [[unlikely]] {
     return false;
   }
 
   int32_t match_count{pcre2_match_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), offset,
-                                    regex_info.match_options, regex_state.regex_pcre2_match_data.get(), match_context.get())};
+                                    regex_info.match_options, regex_state.regex_pcre2_match_data.get(), regex_state.match_context.get())};
   // From https://www.pcre.org/current/doc/html/pcre2_match.html
   // The return from pcre2_match() is one more than the highest numbered capturing pair that has been set
   // (for example, 1 if there are no captures), zero if the vector of offsets is too small, or a negative error code for no match and other errors.
@@ -424,30 +407,27 @@ PCRE2_SIZE set_all_matches(const RegexInfo &regex_info, int64_t flags, mixed &al
 }
 
 bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
+  regex_info.replace_count = 0;
   if (regex_info.regex_code == nullptr) [[unlikely]] {
     return false;
   }
 
-  regex_info.replace_count = 0;
   const auto &regex_state{RegexInstanceState::get()};
   auto &runtime_ctx{RuntimeContext::get()};
+  if (!regex_state.match_context) [[unlikely]] {
+    return false;
+  }
 
   const PCRE2_SIZE buffer_length{std::max({static_cast<string::size_type>(regex_info.subject.size()),
                                            static_cast<string::size_type>(RegexInstanceState::REPLACE_BUFFER_SIZE), runtime_ctx.static_SB.size()})};
   runtime_ctx.static_SB.clean().reserve(buffer_length);
   PCRE2_SIZE output_length{buffer_length};
 
-  const regex_pcre2_match_context_t match_context{pcre2_match_context_create_8(regex_state.regex_pcre2_general_context.get()), pcre2_match_context_free_8};
-  if (!match_context) [[unlikely]] {
-    php_warning("can't create pcre2_match_context");
-    return false;
-  }
-
   // replace all occurences
   if (limit == std::numeric_limits<uint64_t>::max()) [[likely]] {
     regex_info.replace_count =
       pcre2_substitute_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), 0, PCRE2_SUBSTITUTE_GLOBAL,
-                         nullptr, match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
+                         nullptr, regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
                          reinterpret_cast<PCRE2_UCHAR8 *>(runtime_ctx.static_SB.buffer()), std::addressof(output_length));
 
     if (regex_info.replace_count < 0) [[unlikely]] {
@@ -477,9 +457,9 @@ bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
 
       length_after_replace = buffer_length;
       if (auto replace_one{pcre2_substitute_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(str_after_replace.c_str()), str_after_replace.size(),
-                                              substitute_offset, 0, nullptr, match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()),
-                                              regex_info.replacement.size(), reinterpret_cast<PCRE2_UCHAR8 *>(runtime_ctx.static_SB.buffer()),
-                                              std::addressof(length_after_replace))};
+                                              substitute_offset, 0, nullptr, regex_state.match_context.get(),
+                                              reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
+                                              reinterpret_cast<PCRE2_UCHAR8 *>(runtime_ctx.static_SB.buffer()), std::addressof(length_after_replace))};
           replace_one != 1) [[unlikely]] {
         php_warning("pcre2_substitute error %d", replace_one);
         return false;

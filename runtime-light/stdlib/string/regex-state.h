@@ -15,14 +15,6 @@
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/utils/concepts.h"
 
-namespace regex_state_impl_ {
-
-void *regex_malloc(PCRE2_SIZE size, void *memory_data) noexcept;
-
-void regex_free(void *mem, void *memory_data) noexcept;
-
-} // namespace regex_state_impl_
-
 struct RegexInstanceState final : private vk::not_copyable {
   template<hashable Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
@@ -32,7 +24,9 @@ struct RegexInstanceState final : private vk::not_copyable {
 
   mixed default_matches;
   int64_t default_preg_replace_count;
-  regex_pcre2_general_context_t regex_pcre2_general_context;
+  const regex_pcre2_general_context_t regex_pcre2_general_context;
+  const regex_pcre2_compile_context_t compile_context;
+  const regex_pcre2_match_context_t match_context;
   regex_pcre2_match_data_t regex_pcre2_match_data;
   unordered_map<std::string_view, regex_pcre2_code_t> regex_pcre2_code_cache;
 
