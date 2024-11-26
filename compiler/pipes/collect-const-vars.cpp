@@ -10,6 +10,7 @@
 #include "compiler/const-manipulations.h"
 #include "compiler/compiler-core.h"
 #include "compiler/name-gen.h"
+#include <atomic>
 
 namespace {
 
@@ -218,10 +219,10 @@ int get_expr_dep_level(VertexPtr vertex) {
 }
 
 void set_var_dep_level(VarPtr var_id) {
-  if (!IsComposite::visit(var_id->init_val)) {
-    var_id->dependency_level = 0;
-  } else {
-    var_id->dependency_level = 1 + get_expr_dep_level(var_id->init_val);
+  if (IsComposite::visit(var_id->init_val)) {
+    int old = var_id->dependency_level.load(std::memory_order_relaxed);
+    int cur = 1 + get_expr_dep_level(var_id->init_val);
+    var_id->dependency_level.store(std::max(old, cur), std::memory_order_relaxed);
   }
 }
 

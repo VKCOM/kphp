@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "common/wrappers/copyable-atomic.h"
 #include <cstdint>
 #include <string>
 
@@ -46,13 +47,17 @@ public:
   bool is_read_only = true;
   bool is_foreach_reference = false;
   bool is_builtin_runtime = false;        // $_SERVER, $argv, etc., see PhpScriptBuiltInSuperGlobals in runtime
-  int dependency_level = 0;               // for constants only (c_str$, c_arr$, etc)
+  vk::copyable_atomic<int> dependency_level = 0;               // for constants only (c_str$, c_arr$, etc)
   int offset_in_linear_mem = -1;          // for globals only (offset in g_linear_mem)
   int batch_idx = -1;                     // for constants and globals, a number [0;N), see const-globals-batched-mem.h
 
   void set_uninited_flag(bool f);
   bool get_uninited_flag();
 
+  VarData(const VarData &) = default;
+  VarData(VarData &&) = default;
+  VarData &operator=(const VarData &) = default;
+  VarData &operator=(VarData &&) = default;
   explicit VarData(Type type);
 
   inline Type &type() { return type_; }

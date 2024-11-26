@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "compiler/threading/locks.h"
 #include <string>
 #include <string_view>
 #include <vector>
@@ -45,6 +46,7 @@ class TypeHint {
 
   // this field is calculated only once on need, see to_type_data()
   mutable const TypeData *cached_typedata_if_constexpr{nullptr};
+  mutable std::mutex mutex_for_cache;
 
 protected:
   enum flag_mask {

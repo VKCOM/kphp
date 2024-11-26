@@ -4,6 +4,8 @@
 
 #include "compiler/type-hint.h"
 
+#include "compiler/threading/locks.h"
+#include <atomic>
 #include <mutex>
 
 #include "common/php-functions.h"
@@ -42,8 +44,14 @@ public:
   }
 
   const TypeHint *get_existing() const __attribute__((flatten)) {
-    const auto *result = all_type_hints_ht.find(cur_hash);
-    return result ? *result : nullptr;
+    TSHashTable<const TypeHint *>::HTNode *node = all_type_hints_ht.at(cur_hash);
+    AutoLocker<Lockable *> locker(node);
+
+    if (node->hash.load(std::memory_order_relaxed) == 0) {
+      return nullptr;
+    }
+
+    return node->data;
   }
 
   const TypeHint *add_because_doesnt_exist(TypeHint *newly_created) const __attribute__((noinline)) {
@@ -54,7 +62,7 @@ public:
       newly_created->traverse([&newly_created](const TypeHint *child) {
         newly_created->flags |= child->flags; // parent's flags are merged child flags (which were already calculated up to here)
       });
-      node->data = newly_created;
+      node->data = newly_created; // write here
     } else {
       delete newly_created;
     }
@@ -73,7 +81,8 @@ TSHashTable<const TypeHint *> HasherOfTypeHintForOptimization::all_type_hints_ht
 
 const TypeData *TypeHint::to_type_data() const {
   kphp_assert(is_typedata_constexpr());
-
+  
+  std::lock_guard lock(mutex_for_cache);
   if (!cached_typedata_if_constexpr) {
     TypeData *dst = TypeData::get_type(tp_any)->clone();
     recalc_type_data_in_context_of_call(dst, {}); // call = {}, as constexpr recalculation will never access it

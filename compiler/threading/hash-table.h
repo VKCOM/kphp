@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <cassert>
 #include <vector>
 
@@ -13,7 +14,7 @@ template<class T, int N = 1000000>
 class TSHashTable {
 public:
   struct HTNode : Lockable {
-    unsigned long long hash;
+    std::atomic<unsigned long long> hash;
     T data;
 
     HTNode() :
@@ -24,7 +25,7 @@ public:
 
 private:
   HTNode *nodes;
-  int used_size;
+  std::atomic<int> used_size;
 public:
   TSHashTable() :
     nodes(new HTNode[N]),
@@ -34,14 +35,16 @@ public:
   HTNode *at(unsigned long long hash) {
     int i = (unsigned)hash % (unsigned)N;
     while (true) {
-      while (nodes[i].hash != 0 && nodes[i].hash != hash) {
+      while (nodes[i].hash.load(std::memory_order_acquire) != 0 && nodes[i].hash.load(std::memory_order_relaxed) != hash) {
         i++;
         if (i == N) {
           i = 0;
         }
       }
-      if (nodes[i].hash == 0 && !__sync_bool_compare_and_swap(&nodes[i].hash, 0, hash)) {
-        int id = __sync_fetch_and_add(&used_size, 1);
+      unsigned long long expected = 0;
+
+      if (nodes[i].hash.load(std::memory_order_acquire) == expected && !nodes[i].hash.compare_exchange_strong(expected, hash, std::memory_order_acq_rel)) {
+        int id = used_size.fetch_add(1, std::memory_order_relaxed);
         assert(id * 2 < N);
         continue;
       }
@@ -52,21 +55,21 @@ public:
 
   const T *find(unsigned long long hash) {
     int i = (unsigned)hash % (unsigned)N;
-    while (nodes[i].hash != 0 && nodes[i].hash != hash) {
+    while (nodes[i].hash.load(std::memory_order_acquire) != 0 && nodes[i].hash.load(std::memory_order_relaxed) != hash) {
       i++;
       if (i == N) {
         i = 0;
       }
     }
 
-    return nodes[i].hash == hash ? &nodes[i].data : nullptr;
+    return nodes[i].hash.load(std::memory_order_relaxed) == hash ? &nodes[i].data : nullptr;
   }
 
   std::vector<T> get_all() {
     std::vector<T> res;
     res.reserve(used_size);
     for (int i = 0; i < N; i++) {
-      if (nodes[i].hash != 0) {
+      if (nodes[i].hash.load(std::memory_order_acquire) != 0) {
         res.push_back(nodes[i].data);
       }
     }
@@ -77,7 +80,7 @@ public:
   std::vector<T> get_all_if(const CondF &callbackF) {
     std::vector<T> res;
     for (int i = 0; i < N; i++) {
-      if (nodes[i].hash != 0 && callbackF(nodes[i].data)) {
+      if (nodes[i].hash.load(std::memory_order_acquire) != 0 && callbackF(nodes[i].data)) {
         res.push_back(nodes[i].data);
       }
     }

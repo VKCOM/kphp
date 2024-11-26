@@ -490,11 +490,11 @@ VarPtr CompilerCore::create_var(const std::string &name, VarData::Type type) {
 VarPtr CompilerCore::get_global_var(const std::string &name, VertexPtr init_val) {
   auto *node = globals_ht.at(vk::std_hash(name));
 
-  if (!node->data) {
+  {
     AutoLocker<Lockable *> locker(node);
     if (!node->data) {
       node->data = create_var(name, VarData::var_global_t);
-      node->data->init_val = init_val;
+      node->data->init_val = init_val.clone();
       node->data->is_builtin_runtime = VarData::does_name_eq_any_builtin_runtime(name);
     }
   }
@@ -505,11 +505,11 @@ VarPtr CompilerCore::get_global_var(const std::string &name, VertexPtr init_val)
 VarPtr CompilerCore::get_constant_var(const std::string &name, VertexPtr init_val, bool *is_new_inserted) {
   auto *node = constants_ht.at(vk::std_hash(name));
   VarPtr new_var;
-  if (!node->data) {
+  { 
     AutoLocker<Lockable *> locker(node);
     if (!node->data) {
       new_var = create_var(name, VarData::var_const_t);
-      new_var->init_val = init_val;
+      new_var->init_val = init_val.clone();
       node->data = new_var;
     }
   }

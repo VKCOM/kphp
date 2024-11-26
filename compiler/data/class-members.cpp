@@ -60,7 +60,7 @@ inline ClassMemberStaticField::ClassMemberStaticField(ClassPtr klass, VertexAdap
   std::string global_var_name = replace_backslashes(klass->name) + "$$" + root->get_string();
   var = G->get_global_var(global_var_name, def_val);
   root->var_id = var;
-  var->init_val = def_val;
+  var->init_val = def_val.clone();
   var->class_id = klass;
 }
 
@@ -101,7 +101,7 @@ ClassMemberInstanceField::ClassMemberInstanceField(ClassPtr klass, VertexAdaptor
   std::string local_var_name = root->get_string();
   var = G->create_var(local_var_name, VarData::var_instance_t);
   root->var_id = var;
-  var->init_val = def_val;
+  var->init_val = def_val.clone();
   var->class_id = klass;
   var->marked_as_const = klass->is_immutable || (phpdoc && phpdoc->has_tag(PhpDocType::kphp_const));
 }

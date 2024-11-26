@@ -6,9 +6,10 @@
 
 #include "compiler/inferring/type-data.h"
 #include "compiler/stage.h"
+#include <atomic>
 
 std::string tinf::TypeNode::get_description() {
-  return "TypeNode at " + location_.as_human_readable() + " : " + type_->as_human_readable();
+  return "TypeNode at " + location_.as_human_readable() + " : " + type_.load(std::memory_order_relaxed)->as_human_readable();
 }
 
 const Location &tinf::TypeNode::get_location() const {
