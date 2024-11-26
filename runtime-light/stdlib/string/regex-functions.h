@@ -33,6 +33,9 @@ Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mix
 Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
                                    int64_t flags = PREG_NO_FLAGS, int64_t offset = 0) noexcept;
 
+// TODO: think about negative cases
+// There is some sort of undefined behavior for errorneous cases. We need to think do we really want to copy
+// PHP's strange behavior?
 Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
                                 int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
