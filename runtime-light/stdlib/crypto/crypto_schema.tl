@@ -33,6 +33,11 @@ digestAlgorithmMD5#257ddf13 = DigestAlgorithm;
 digestAlgorithmMD4#317fe3d1 = DigestAlgorithm;
 digestAlgorithmMD2#5aca6998 = DigestAlgorithm;
 
+cipherAlgorithmAes128#e627c460 = CipherAlgorithm;
+cipherAlgorithmAes256#4c98c1f9 = CipherAlgorithm;
+
+blockPaddingPkcs7#699ec5de = BlockPadding;
+
 ---functions---
 
 getCryptosecurePseudorandomBytes#2491b81d
@@ -56,3 +61,19 @@ digestVerify#5760bd0e
     algorithm   : DigestAlgorithm
     signature   : string
     = Bool;
+
+cbcDecrypt#7f2ee1e4
+   algorithm    : CipherAlgorithm
+   padding      : BlockPadding
+   passphrase   : string
+   iv           : string
+   data         : string
+   = String;
+
+cbcEncrypt#6d4ee36a
+   algorithm    : CipherAlgorithm
+   padding      : BlockPadding
+   passphrase   : string
+   iv           : string
+   data         : string
+   = String;

@@ -37,6 +37,8 @@ inline constexpr uint32_t GET_CRYPTOSECURE_PSEUDORANDOM_BYTES_MAGIC = 0x2491'b81
 inline constexpr uint32_t GET_PEM_CERT_INFO_MAGIC = 0xa50c'fd6c;
 inline constexpr uint32_t DIGEST_SIGN_MAGIC = 0xd345'f658;
 inline constexpr uint32_t DIGEST_VERIFY_MAGIC = 0x5760'bd0e;
+inline constexpr uint32_t CBC_DECRYPT_MAGIC = 0x7f2e'e1e4;
+inline constexpr uint32_t CBC_ENCRYPT_MAGIC = 0x6d4e'e36a;
 
 struct GetCryptosecurePseudorandomBytes final {
   int32_t size{};
@@ -64,6 +66,26 @@ struct DigestVerify final {
   string public_key;
   DigestAlgorithm algorithm;
   string signature;
+
+  void store(TLBuffer &tlb) const noexcept;
+};
+
+struct CbcDecrypt final {
+  CipherAlgorithm algorithm;
+  BlockPadding padding;
+  string passphrase;
+  string iv;
+  string data;
+
+  void store(TLBuffer &tlb) const noexcept;
+};
+
+struct CbcEncrypt final {
+  CipherAlgorithm algorithm;
+  BlockPadding padding;
+  string passphrase;
+  string iv;
+  string data;
 
   void store(TLBuffer &tlb) const noexcept;
 };

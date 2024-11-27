@@ -17,10 +17,12 @@ task_t<bool> f$openssl_sign(const string &data, string &signature, const string 
 
 task_t<int64_t> f$openssl_verify(const string &data, const string &signature, const string &pub_key_id, int64_t algo = tl::DigestAlgorithm::SHA1) noexcept;
 
-inline Optional<string> f$openssl_encrypt(const string &data __attribute__((unused)), const string &method __attribute__((unused)),
-                                          const string &key __attribute__((unused)), int64_t options __attribute__((unused)) = 0,
-                                          const string &iv __attribute__((unused)) = string{},
-                                          string &tag __attribute__((unused)) = CryptoInstanceState::get().default_tag_dummy,
-                                          const string &aad __attribute__((unused)) = string{}, int64_t tag_length __attribute__((unused)) = 16) noexcept {
-  php_critical_error("call to unsupported function");
-}
+array<string> f$openssl_get_cipher_methods(bool aliases = false) noexcept;
+
+Optional<int64_t> f$openssl_cipher_iv_length(const string &method) noexcept;
+
+task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &method, const string &key, int64_t options = 0, const string &iv = string{},
+                                           string &tag = CryptoInstanceState::get().default_tag_dummy, const string &aad = string{},
+                                           int64_t tag_length = 16) noexcept;
+task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, const string &key, int64_t options = 0, const string &iv = string{},
+                                           string tag = string{}, const string &aad = string{}) noexcept;

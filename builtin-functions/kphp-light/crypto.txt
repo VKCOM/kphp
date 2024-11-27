@@ -25,6 +25,22 @@ function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
 /** @kphp-extern-func-info interruptible */
 function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: mixed[] | false;
 
+define('OPENSSL_RAW_DATA', 1);
+define('OPENSSL_ZERO_PADDING', 2);
+define('OPENSSL_DONT_ZERO_PAD_KEY', 4);
+
+function openssl_get_cipher_methods($aliases ::: bool = false) ::: string[];
+
+function openssl_cipher_iv_length($method ::: string) ::: int | false;
+
+/** @kphp-extern-func-info interruptible */
+function openssl_encrypt($data ::: string, $method ::: string, $key ::: string,  $options ::: int = 0, $iv ::: string  = '',
+                         string &$tag = TODO, $aad ::: string = '', $tag_length ::: int = 16) ::: string | false;
+
+/** @kphp-extern-func-info interruptible */
+function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '',
+                        $tag ::: string = '', $aad ::: string = '') ::: string | false;
+
 // ===== UNSUPPORTED =====
 
 define('X509_PURPOSE_SSL_CLIENT'    ,     1);
@@ -36,10 +52,6 @@ define('X509_PURPOSE_CRL_SIGN'      ,     6);
 define('X509_PURPOSE_ANY'           ,     7);
 define('X509_PURPOSE_OCSP_HELPER'   ,     8);
 define('X509_PURPOSE_TIMESTAMP_SIGN',     9);
-
-define('OPENSSL_RAW_DATA', 1);
-define('OPENSSL_ZERO_PADDING', 2);
-define('OPENSSL_DONT_ZERO_PAD_KEY', 4);
 
 define('PKCS7_TEXT', 0x1);
 define('PKCS7_NOCERTS', 0x2);
@@ -68,13 +80,3 @@ function openssl_pkcs7_sign($infile ::: string, $outfile ::: string,
                             $sign_cert ::: string, $priv_key ::: string,
                             string[] $headers, $flags ::: int = PKCS7_DETACHED, $extra_certs ::: string = "") ::: bool;
 
-/** @kphp-extern-func-info generate-stub */
-function openssl_get_cipher_methods($aliases ::: bool = false) ::: string[];
-/** @kphp-extern-func-info generate-stub */
-function openssl_cipher_iv_length($method ::: string) ::: int | false;
-
-function openssl_encrypt($data ::: string, $method ::: string, $key ::: string,  $options ::: int = 0, $iv ::: string  = '',
-                         string &$tag = TODO, $aad ::: string = '', $tag_length ::: int = 16) ::: string | false;
-/** @kphp-extern-func-info generate-stub */
-function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '',
-                        $tag ::: string = '', $aad ::: string = '') ::: string | false;

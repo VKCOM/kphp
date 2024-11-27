@@ -76,6 +76,24 @@ void DigestVerify::store(TLBuffer &tlb) const noexcept {
   tlb.store_string(std::string_view{signature.c_str(), signature.size()});
 }
 
+void CbcDecrypt::store(TLBuffer &tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(CBC_DECRYPT_MAGIC);
+  tlb.store_trivial<uint32_t>(algorithm);
+  tlb.store_trivial<uint32_t>(padding);
+  tlb.store_string(std::string_view{passphrase.c_str(), passphrase.size()});
+  tlb.store_string(std::string_view{iv.c_str(), iv.size()});
+  tlb.store_string(std::string_view{data.c_str(), data.size()});
+}
+
+void CbcEncrypt::store(TLBuffer &tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(CBC_ENCRYPT_MAGIC);
+  tlb.store_trivial<uint32_t>(algorithm);
+  tlb.store_trivial<uint32_t>(padding);
+  tlb.store_string(std::string_view{passphrase.c_str(), passphrase.size()});
+  tlb.store_string(std::string_view{iv.c_str(), iv.size()});
+  tlb.store_string(std::string_view{data.c_str(), data.size()});
+}
+
 // ===== CONFDATA =====
 
 void ConfdataGet::store(TLBuffer &tlb) const noexcept {
