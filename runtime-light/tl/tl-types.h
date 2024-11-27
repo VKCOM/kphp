@@ -262,7 +262,7 @@ struct Dictionary final {
   }
 };
 
-struct String {
+struct String final {
   string value;
 
   bool fetch(TLBuffer &tlb) noexcept {
