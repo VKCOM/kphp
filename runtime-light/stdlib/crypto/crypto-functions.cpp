@@ -120,7 +120,7 @@ std::optional<tl::CipherAlgorithm> parse_algorithm(const string &method) noexcep
   using namespace std::string_view_literals;
   std::string_view method_sv{method.c_str(), method.size()};
 
-  auto ichar_equals = [](char a, char b) { return std::tolower(a) == std::tolower(b); };
+  const auto ichar_equals = [](char a, char b) { return std::tolower(a) == std::tolower(b); };
 
   if (std::ranges::equal(method_sv, AES_128_CBC, ichar_equals)) {
     return tl::CipherAlgorithm::AES128;
