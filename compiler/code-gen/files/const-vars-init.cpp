@@ -5,12 +5,12 @@
 #include "compiler/code-gen/files/const-vars-init.h"
 
 #include "common/algorithms/hashes.h"
-
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
 #include "compiler/code-gen/namespace.h"
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/code-gen/vertex-compiler.h"
+#include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/inferring/public.h"
@@ -23,7 +23,7 @@ struct InitConstVar {
     Location save_location = stage::get_location();
 
     VertexPtr init_val = var->init_val;
-    if (init_val->type() == op_conv_regexp) {
+    if (init_val->type() == op_conv_regexp && !G->is_output_mode_k2()) {
       const auto &location = init_val->get_location();
       kphp_assert(location.function && location.file);
       W << var->name << ".init (" << var->init_val << ", " << RawString(location.function->name) << ", "

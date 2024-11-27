@@ -27,6 +27,8 @@ inline constexpr auto PREG_UNMATCHED_AS_NULL = static_cast<int64_t>(1U << 6U);
 
 inline constexpr int64_t PREG_REPLACE_NOLIMIT = -1;
 
+using regexp = string;
+
 Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
                                int64_t flags = PREG_NO_FLAGS, int64_t offset = 0) noexcept;
 
