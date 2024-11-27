@@ -31,8 +31,6 @@ function hash_hmac ($algo ::: string, $data ::: string, $key ::: string, $raw_ou
 /** @kphp-extern-func-info generate-stub */
 function hash_equals(string $known_string, string $user_string) ::: bool;
 /** @kphp-extern-func-info generate-stub */
-function md5 ($s ::: string, $raw_output ::: bool = false) ::: string;
-/** @kphp-extern-func-info generate-stub */
 function md5_file ($s ::: string, $raw_output ::: bool = false) ::: string | false;
 /** @kphp-extern-func-info generate-stub */
 function sha1 ($s ::: string, $raw_output ::: bool = false) ::: string;
