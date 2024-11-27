@@ -36,13 +36,13 @@ endfunction()
 prepend(VKEXT_COMMON_SOURCES ${COMMON_DIR}/
         crc32.cpp
         crc32_${CMAKE_SYSTEM_PROCESSOR}.cpp
-        string-processing.cpp
         unicode/utf8-utils.cpp
         cpuid.cpp
         version-string.cpp
         rpc-headers.cpp)
 
 prepend(VKEXT_SOURCES ${VKEXT_DIR}/
+        string-processing.cpp
         vkext.cpp
         vkext-iconv.cpp
         vkext-flex.cpp
@@ -55,6 +55,11 @@ prepend(VKEXT_SOURCES ${VKEXT_DIR}/
         vkext-errors.cpp
         vkext-stats.cpp
         vkext-sp.cpp)
+
+if(COMPILER_CLANG)
+  set_source_files_properties(${VKEXT_DIR}/string-processing.cpp PROPERTIES COMPILE_FLAGS -Wno-invalid-source-encoding)
+endif()
+
 
 foreach(PHP_VERSION IN ITEMS "" "7.4" "8.0" "8.1" "8.2" "8.3")
     find_program(PHP_CONFIG_EXEC${PHP_VERSION} php-config${PHP_VERSION})

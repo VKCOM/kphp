@@ -13,5 +13,4 @@ require_once __DIR__ . '/unsupported/regex.txt';
 require_once __DIR__ . '/unsupported/serialize.txt';
 require_once __DIR__ . '/unsupported/spl.txt';
 require_once __DIR__ . '/unsupported/uberh3.txt';
-require_once __DIR__ . '/unsupported/vkext.txt';
 require_once __DIR__ . '/unsupported/unsupported-server.txt';

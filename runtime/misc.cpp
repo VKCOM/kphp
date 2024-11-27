@@ -19,7 +19,6 @@
 #include "runtime/json-functions.h"
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
-#include "runtime/vkext.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 
@@ -717,10 +716,6 @@ string f$var_export(const mixed &v, bool buffered) {
     f$ob_clean();
   }
   return {};
-}
-
-string f$cp1251(const string &utf8_string) {
-  return f$vk_utf8_to_win(utf8_string);
 }
 
 void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &extra_info, const string& env) {

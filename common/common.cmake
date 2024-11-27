@@ -17,7 +17,6 @@ prepend(COMMON_MAIN_SOURCES ${COMMON_DIR}/
         crypto/aes256-${CMAKE_SYSTEM_PROCESSOR}.cpp
 
         fast-backtrace.cpp
-        string-processing.cpp
         kphp-tasks-lease/lease-worker-mode.cpp)
 
 prepend(COMMON_KFS_SOURCES ${COMMON_DIR}/kfs/
@@ -53,9 +52,5 @@ set(COMMON_ALL_SOURCES
     ${COMMON_TL_METHODS_SOURCES}
     ${COMMON_TL_SOURCES}
     ${COMMON_UCONTEXT_SOURCES})
-
-if(COMPILER_CLANG)
-    set_source_files_properties(${COMMON_DIR}/string-processing.cpp PROPERTIES COMPILE_FLAGS -Wno-invalid-source-encoding)
-endif()
 
 vk_add_library(common_src OBJECT ${COMMON_ALL_SOURCES})
