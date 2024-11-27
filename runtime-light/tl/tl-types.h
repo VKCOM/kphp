@@ -266,10 +266,9 @@ struct String {
   string value;
 
   bool fetch(TLBuffer &tlb) noexcept {
-    if (tlb.lookup_trivial<uint32_t>().value_or(TL_ZERO) != TL_STRING) {
+    if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != TL_STRING) {
       return false;
     }
-    tlb.fetch_trivial<uint32_t>();
     auto string = tlb.fetch_string();
     // TODO: check tlb.fetch_string() error
 

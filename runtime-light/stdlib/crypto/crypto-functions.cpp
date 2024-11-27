@@ -111,34 +111,35 @@ task_t<int64_t> f$openssl_verify(const string &data, const string &signature, co
   co_return 1;
 }
 
-static bool ichar_equals(char a, char b) noexcept {
-  return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
-}
+namespace {
 
-static std::optional<tl::CipherAlgorithm> parse_algorithm(const string &method) noexcept {
+constexpr std::string_view AES_128_CBC = "aes-128-cbc";
+constexpr std::string_view AES_256_CBC = "aes-256-cbc";
+
+std::optional<tl::CipherAlgorithm> parse_algorithm(const string &method) noexcept {
   using namespace std::string_view_literals;
   std::string_view method_sv{method.c_str(), method.size()};
 
-  if (std::ranges::equal(method_sv, "aes-128-cbc"sv, ichar_equals)) {
+  auto ichar_equals = [](char a, char b) { return std::tolower(a) == std::tolower(b); };
+
+  if (std::ranges::equal(method_sv, AES_128_CBC, ichar_equals)) {
     return tl::CipherAlgorithm::AES128;
-  } else if (std::ranges::equal(method_sv, "aes-256-cbc"sv, ichar_equals)) {
+  } else if (std::ranges::equal(method_sv, AES_256_CBC, ichar_equals)) {
     return tl::CipherAlgorithm::AES256;
   }
   return {};
 }
-namespace {
+
 constexpr size_t AES_BLOCK_LEN = 16;
 constexpr size_t AES_128_KEY_LEN = 16;
 constexpr size_t AES_256_KEY_LEN = 32;
 
-} // namespace
-
-static int64_t algorithm_iv_len([[maybe_unused]] tl::CipherAlgorithm algorithm) noexcept {
+int64_t algorithm_iv_len([[maybe_unused]] tl::CipherAlgorithm algorithm) noexcept {
   /* since only aes-128/256-cbc supported for now */
   return AES_BLOCK_LEN;
 }
 
-static int64_t algorithm_key_len(tl::CipherAlgorithm algorithm) {
+int64_t algorithm_key_len(tl::CipherAlgorithm algorithm) noexcept {
   switch (algorithm) {
     case tl::CipherAlgorithm::AES128: {
       return AES_128_KEY_LEN;
@@ -153,23 +154,7 @@ static int64_t algorithm_key_len(tl::CipherAlgorithm algorithm) {
   }
 }
 
-array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept {
-  array<string> return_value{{std::make_pair(0, string("aes-128-cbc")), std::make_pair(1, string("aes-256-cbc"))}};
-  return return_value;
-}
-
-Optional<int64_t> f$openssl_cipher_iv_length(const string &method) noexcept {
-  auto algorithm = parse_algorithm(method);
-  if (!algorithm.has_value()) {
-    php_warning("Unknown cipher algorithm");
-    return false;
-  }
-  return algorithm_iv_len(*algorithm);
-}
-
-namespace {
 enum class cipher_opts : int64_t { OPENSSL_RAW_DATA = 1, OPENSSL_ZERO_PADDING = 2, OPENSSL_DONT_ZERO_PAD_KEY = 4 };
-} // namespace
 
 Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm algorithm, const string &source_key, const string &source_iv,
                                                          int64_t options) noexcept {
@@ -202,6 +187,23 @@ Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm alg
     return false;
   }
   return std::make_pair(key, iv);
+}
+
+} // namespace
+
+array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept {
+  array<string> return_value{
+    {std::make_pair(0, string{AES_128_CBC.data(), AES_128_CBC.size()}), std::make_pair(1, string{AES_256_CBC.data(), AES_256_CBC.size()})}};
+  return return_value;
+}
+
+Optional<int64_t> f$openssl_cipher_iv_length(const string &method) noexcept {
+  auto algorithm = parse_algorithm(method);
+  if (!algorithm.has_value()) {
+    php_warning("Unknown cipher algorithm");
+    return false;
+  }
+  return algorithm_iv_len(*algorithm);
 }
 
 task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &method, const string &source_key, int64_t options, const string &source_iv,
