@@ -1,5 +1,7 @@
-prepend(STDLIB_STRING stdlib/string/ string-functions.cpp
-        mbstring-functions.cpp)
+prepend(STDLIB_STRING stdlib/string/ json-functions.cpp
+                                     json-writer.cpp
+                                     mbstring-functions.cpp
+                                     string-functions.cpp)
 prepend(STDLIB_SERVER stdlib/server/ url-functions.cpp)
 prepend(STDLIB_VKEXT stdlib/vkext/ vkext.cpp vkext_stats.cpp string-processing.cpp)
 

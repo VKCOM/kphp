@@ -7,6 +7,7 @@ require_once __DIR__ . '/file.txt';
 require_once __DIR__ . '/hash.txt';
 require_once __DIR__ . '/job-workers.txt';
 require_once __DIR__ . '/rpc.txt';
+require_once __DIR__ . '/serialize.txt';
 require_once __DIR__ . '/string.txt';
 require_once __DIR__ . '/server.txt';
 require_once __DIR__ . '/kphp-toggles.txt';

@@ -59,8 +59,8 @@
 #include "net/net-tcp-rpc-client.h"
 #include "net/net-tcp-rpc-server.h"
 
+#include "runtime-common/stdlib/string/json-functions.h"
 #include "runtime/interface.h"
-#include "runtime/json-functions.h"
 #include "runtime/kphp_ml/kphp_ml_init.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"

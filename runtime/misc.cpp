@@ -11,12 +11,12 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "runtime-common/stdlib/string/json-functions.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/datetime_functions.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/interface.h"
-#include "runtime/json-functions.h"
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
 #include "server/json-logger.h"
