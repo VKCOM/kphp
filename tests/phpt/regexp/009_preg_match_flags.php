@@ -1,6 +1,8 @@
 @ok
 <?php
 
+// PREG_UNMATCHED_AS_NULL tests are commented out since KPHP doesn't support that flag
+
 function runPregMatchTests() {
     // Test 1: Simple match with no flags
     $pattern = '/foo/';

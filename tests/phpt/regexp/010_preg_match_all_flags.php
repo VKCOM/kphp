@@ -1,6 +1,8 @@
 @ok
 <?php
 
+// PREG_UNMATCHED_AS_NULL tests are commented out since KPHP doesn't support that flag
+
 function runPregMatchAllTests() {
     // Define test cases
     $testCases = [
