@@ -906,10 +906,6 @@ void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr kl
 }
 
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
-  if (G->is_output_mode_k2()) {
-    // The current version of runtime-light does not support visitors
-    return;
-  }
   bool need_generic_accept =
     klass->need_to_array_debug_visitor ||
     klass->need_instance_cache_visitors ||
@@ -949,10 +945,6 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
 }
 
 void ClassDeclaration::compile_msgpack_declarations(CodeGenerator &W, ClassPtr klass) {
-  if (G->is_output_mode_k2()) {
-    // The current version of runtime-light does not support visitors
-    return;
-  }
   if (!klass->is_serializable) {
     return;
   }
@@ -1068,10 +1060,6 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
 }
 
 void ClassMembersDefinition::compile(CodeGenerator &W) const {
-  if (G->is_output_mode_k2()) {
-    // The current version of runtime-light does not support visitors
-    return;
-  }
   bool need_generic_accept =
     klass->need_to_array_debug_visitor ||
     klass->need_instance_cache_visitors ||
