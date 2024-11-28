@@ -16,7 +16,7 @@
 inline string f$md5(const string &str, bool binary = false) noexcept {
   constexpr auto MD5_HASH_LEN = 16;
   string output{static_cast<string::size_type>(MD5_HASH_LEN * (binary ? 1 : 2)), false};
-  md5(reinterpret_cast<unsigned char *>(const_cast<char *>(str.c_str())), static_cast<int32_t>(str.size()), reinterpret_cast<unsigned char *>(output.buffer()));
+  md5(reinterpret_cast<const unsigned char *>(str.c_str()), static_cast<int32_t>(str.size()), reinterpret_cast<unsigned char *>(output.buffer()));
   if (!binary) {
     const auto &lhex_digits{StringImageState::get().lhex_digits};
     for (int64_t i = MD5_HASH_LEN - 1; i >= 0; --i) {
