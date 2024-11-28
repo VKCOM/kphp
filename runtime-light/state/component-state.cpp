@@ -11,8 +11,8 @@
 #include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-common/stdlib/string/json-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/utils/json-functions.h"
 
 void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view value_view) noexcept {
   if (key_view.size() <= INI_ARG_PREFIX.size()) [[unlikely]] {

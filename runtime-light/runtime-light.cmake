@@ -51,8 +51,8 @@ target_compile_options(
 target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
 # add statically linking libraries
 set_property(TARGET runtime-light PROPERTY RUNTIME_LINK_LIBS
-                                           "${ZLIB_LIB_DIR}/libz.a")
-
+                                           "${ZLIB_LIB_DIR}/libz.a"
+                                           "${OBJS_DIR}/flex/libvk-flex-data.a")
 if(APPLE)
   target_link_options(runtime-light PUBLIC -undefined dynamic_lookup)
 else()

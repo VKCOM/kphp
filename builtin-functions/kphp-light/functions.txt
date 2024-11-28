@@ -7,11 +7,13 @@ require_once __DIR__ . '/file.txt';
 require_once __DIR__ . '/hash.txt';
 require_once __DIR__ . '/job-workers.txt';
 require_once __DIR__ . '/rpc.txt';
+require_once __DIR__ . '/serialize.txt';
 require_once __DIR__ . '/string.txt';
 require_once __DIR__ . '/server.txt';
 require_once __DIR__ . '/kphp-toggles.txt';
 require_once __DIR__ . '/kphp_internal.txt';
 require_once __DIR__ . '/time.txt';
+require_once __DIR__ . '/vkext.txt';
 
 /** defined in runtime-core.h **/
 function likely ($x ::: bool) ::: bool;

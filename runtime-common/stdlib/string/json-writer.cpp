@@ -2,7 +2,7 @@
 // Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/json-writer.h"
+#include "runtime-common/stdlib/string/json-writer.h"
 
 #include "runtime/array_functions.h"
 #include "runtime/context/runtime-context.h"
@@ -57,18 +57,18 @@ static void escape_json_string(string_buffer &buffer, std::string_view s) noexce
 JsonWriter::JsonWriter(bool pretty_print, bool preserve_zero_fraction) noexcept
   : pretty_print_(pretty_print)
   , preserve_zero_fraction_(preserve_zero_fraction) {
-  kphp_runtime_context.static_SB.clean();
+  RuntimeContext::get().static_SB.clean();
 }
 
 JsonWriter::~JsonWriter() noexcept {
-  kphp_runtime_context.static_SB.clean();
+  RuntimeContext::get().static_SB.clean();
 }
 
 bool JsonWriter::write_bool(bool b) noexcept {
   if (!register_value()) {
     return false;
   }
-  b ? kphp_runtime_context.static_SB.append("true", 4) : kphp_runtime_context.static_SB.append("false", 5);
+  b ? RuntimeContext::get().static_SB.append("true", 4) : RuntimeContext::get().static_SB.append("false", 5);
   return true;
 }
 
@@ -76,7 +76,7 @@ bool JsonWriter::write_int(int64_t i) noexcept {
   if (!register_value()) {
     return false;
   }
-  kphp_runtime_context.static_SB << i;
+  RuntimeContext::get().static_SB << i;
   return true;
 }
 
@@ -88,13 +88,13 @@ bool JsonWriter::write_double(double d) noexcept {
     d = 0.0;
   }
   if (double_precision_) {
-    kphp_runtime_context.static_SB << f$round(d, double_precision_);
+    RuntimeContext::get().static_SB << f$round(d, double_precision_);
   } else {
-    kphp_runtime_context.static_SB << d;
+    RuntimeContext::get().static_SB << d;
   }
   if (preserve_zero_fraction_) {
     if (double dummy = 0.0; std::modf(d, &dummy) == 0.0) {
-      kphp_runtime_context.static_SB << ".0";
+      RuntimeContext::get().static_SB << ".0";
     }
   }
   return true;
@@ -104,10 +104,10 @@ bool JsonWriter::write_string(const string &s) noexcept {
   if (!register_value()) {
     return false;
   }
-  kphp_runtime_context.static_SB.reserve(2 * s.size() + 2);
-  kphp_runtime_context.static_SB.append_char('"');
-  escape_json_string(kphp_runtime_context.static_SB, {s.c_str(), s.size()});
-  kphp_runtime_context.static_SB.append_char('"');
+  RuntimeContext::get().static_SB.reserve(2 * s.size() + 2);
+  RuntimeContext::get().static_SB.append_char('"');
+  escape_json_string(RuntimeContext::get().static_SB, {s.c_str(), s.size()});
+  RuntimeContext::get().static_SB.append_char('"');
   return true;
 }
 
@@ -115,7 +115,7 @@ bool JsonWriter::write_raw_string(const string &s) noexcept {
   if (!register_value()) {
     return false;
   }
-  kphp_runtime_context.static_SB << s;
+  RuntimeContext::get().static_SB << s;
   return true;
 }
 
@@ -123,7 +123,7 @@ bool JsonWriter::write_null() noexcept {
   if (!register_value()) {
     return false;
   }
-  kphp_runtime_context.static_SB.append("null", 4);
+  RuntimeContext::get().static_SB.append("null", 4);
   return true;
 }
 
@@ -133,22 +133,22 @@ bool JsonWriter::write_key(std::string_view key, bool escape) noexcept {
     return false;
   }
   if (stack_.back().values_count) {
-    kphp_runtime_context.static_SB << ',';
+    RuntimeContext::get().static_SB << ',';
   }
   if (pretty_print_) {
-    kphp_runtime_context.static_SB << '\n';
+    RuntimeContext::get().static_SB << '\n';
     write_indent();
   }
-  kphp_runtime_context.static_SB << '"';
+  RuntimeContext::get().static_SB << '"';
   if (escape) {
-    escape_json_string(kphp_runtime_context.static_SB, key);
+    escape_json_string(RuntimeContext::get().static_SB, key);
   } else {
-    kphp_runtime_context.static_SB.append(key.data(), key.size());
+    RuntimeContext::get().static_SB.append(key.data(), key.size());
   }
-  kphp_runtime_context.static_SB << '"';
-  kphp_runtime_context.static_SB << ':';
+  RuntimeContext::get().static_SB << '"';
+  RuntimeContext::get().static_SB << ':';
   if (pretty_print_) {
-    kphp_runtime_context.static_SB << ' ';
+    RuntimeContext::get().static_SB << ' ';
   }
   return true;
 }
@@ -178,7 +178,7 @@ string JsonWriter::get_error() const noexcept {
 }
 
 string JsonWriter::get_final_json() const noexcept {
-  return kphp_runtime_context.static_SB.str();
+  return RuntimeContext::get().static_SB.str();
 }
 
 bool JsonWriter::new_level(bool is_array) noexcept {
@@ -187,7 +187,7 @@ bool JsonWriter::new_level(bool is_array) noexcept {
   }
   stack_.emplace_back(NestedLevel{.in_array = is_array});
 
-  kphp_runtime_context.static_SB << (is_array ? '[' : '{');
+  RuntimeContext::get().static_SB << (is_array ? '[' : '{');
   indent_ += 4;
   return true;
 }
@@ -209,11 +209,11 @@ bool JsonWriter::exit_level(bool is_array) noexcept {
 
   indent_ -= 4;
   if (pretty_print_ && cur_level.values_count) {
-    kphp_runtime_context.static_SB << '\n';
+    RuntimeContext::get().static_SB << '\n';
     write_indent();
   }
 
-  kphp_runtime_context.static_SB << (is_array ? ']' : '}');
+  RuntimeContext::get().static_SB << (is_array ? ']' : '}');
   return true;
 }
 
@@ -229,10 +229,10 @@ bool JsonWriter::register_value() noexcept {
   auto &top = stack_.back();
   if (top.in_array) {
     if (top.values_count) {
-      kphp_runtime_context.static_SB << ',';
+      RuntimeContext::get().static_SB << ',';
     }
     if (pretty_print_) {
-      kphp_runtime_context.static_SB << '\n';
+      RuntimeContext::get().static_SB << '\n';
       write_indent();
     }
   }
@@ -243,9 +243,9 @@ bool JsonWriter::register_value() noexcept {
 
 void JsonWriter::write_indent() const noexcept {
   if (indent_) {
-    kphp_runtime_context.static_SB.reserve(indent_);
+    RuntimeContext::get().static_SB.reserve(indent_);
     for (std::size_t i = 0; i < indent_; ++i) {
-      kphp_runtime_context.static_SB.append_char(' ');
+      RuntimeContext::get().static_SB.append_char(' ');
     }
   }
 }

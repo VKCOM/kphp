@@ -58,7 +58,7 @@ public:
       ss << deps.back()->get_name() << " ";
     }
     // add vendored statically linking libs
-    std::vector<std::string> libs = split(RUNTIME_LINK_LIBS);
+    std::vector<std::string> libs = split(RUNTIME_LINK_LIBS, ';');
     std::for_each(libs.cbegin(), libs.cend(), [&ss](const auto &lib) noexcept { ss << lib << " "; });
     return ss.str();
   }

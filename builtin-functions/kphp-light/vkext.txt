@@ -1,0 +1,33 @@
+<?php
+
+function vk_utf8_to_win ($text ::: string, $max_len ::: int = 0, $exit_on_error ::: bool = false) ::: string;
+function vk_win_to_utf8 ($text ::: string, $escape ::: bool = true) ::: string;
+function cp1251 ($utf8_string ::: string) ::: string;
+
+function vk_flex ($name ::: string, $case_name ::: string, $sex ::: int, $type ::: string, $lang_id ::: int = 0) ::: string;
+
+function vk_json_encode ($v ::: mixed) ::: string | false;
+/** @kphp-extern-func-info can_throw */
+function vk_json_encode_safe ($v ::: mixed) ::: string;
+
+function vk_whitespace_pack ($str ::: string, $html_opt ::: bool = false) ::: string;
+
+function vk_sp_simplify ($str ::: string) ::: string;
+function vk_sp_full_simplify ($str ::: string) ::: string;
+function vk_sp_deunicode ($str ::: string) ::: string;
+function vk_sp_to_lower ($str ::: string) ::: string;
+function vk_sp_to_upper ($str ::: string) ::: string;
+function vk_sp_to_sort ($str ::: string) ::: string;
+function vk_sp_remove_repeats ($str ::: string) ::: string;
+function vk_sp_to_cyrillic ($str ::: string) ::: string;
+function vk_sp_words_only ($str ::: string) ::: string;
+
+function vk_stats_hll_merge($str ::: mixed) ::: string | false;
+function vk_stats_hll_count($hll ::: string) ::: float | false;
+function vk_stats_hll_create($a ::: array = array(), $size ::: int = 256) ::: string | false;
+function vk_stats_hll_add($hll ::: string, $a ::: array) ::: string | false;
+function vk_stats_hll_pack($hll ::: string) ::: string | false;
+function vk_stats_hll_unpack($hll ::: string) ::: string | false;
+function vk_stats_hll_is_packed($hll ::: string) ::: bool;
+
+

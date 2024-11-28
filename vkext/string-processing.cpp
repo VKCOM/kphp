@@ -2,7 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "common/string-processing.h"
+#include "vkext/string-processing.h"
 
 #include <assert.h>
 #include <stdlib.h>
