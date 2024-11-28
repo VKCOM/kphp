@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include "runtime-common/stdlib/array/to-array-processor.h"
 #include "runtime/instance-copy-processor.h"
 #include "runtime/memory_usage.h"
-#include "runtime/to-array-processor.h"
 
 struct DummyVisitorMethods {
   // for f$estimate_memory_usage()

@@ -9,8 +9,8 @@
 
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/array/to-array-processor.h"
 #include "runtime/instance-copy-processor.h"
-#include "runtime/to-array-processor.h"
 
 class InstanceReferencesCountingVisitor;
 
