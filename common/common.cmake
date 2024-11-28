@@ -45,6 +45,11 @@ else()
             linux/x86_64/setcontext.S
             linux/x86_64/swapcontext.S
             linux/x86_64/makecontext.cpp)
+    # Unfortunately, not all assemblers supports 64-bit dwarf. The safest way -- disable debug info for asm files
+    set_source_files_properties(${COMMON_DIR}/ucontext/linux/x86_64/startcontext.S PROPERTIES COMPILE_FLAGS "-g0")
+    set_source_files_properties(${COMMON_DIR}/ucontext/linux/x86_64/getcontext.S PROPERTIES COMPILE_FLAGS "-g0")
+    set_source_files_properties(${COMMON_DIR}/ucontext/linux/x86_64/setcontext.S PROPERTIES COMPILE_FLAGS "-g0")
+    set_source_files_properties(${COMMON_DIR}/ucontext/linux/x86_64/swapcontext.S PROPERTIES COMPILE_FLAGS "-g0")
 endif()
 
 set(COMMON_ALL_SOURCES
