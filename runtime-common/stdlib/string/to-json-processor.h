@@ -5,8 +5,10 @@
 #pragma once
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime/json-processor-utils.h"
-#include "runtime/json-writer.h"
+#include "runtime-common/stdlib/string/json-functions.h"
+#include "runtime-common/stdlib/string/json-processor-utils.h"
+#include "runtime-common/stdlib/string/json-writer.h"
+#include "runtime-common/stdlib/string/string-context.h"
 
 template <class Tag>
 class ToJsonVisitor {
@@ -138,7 +140,7 @@ private:
 template<class Tag, class T, class U = Unknown>
 void to_json_impl(const class_instance<T> &klass, impl_::JsonWriter &writer, const array<U> &more, std::size_t depth = 0) noexcept {
   if (depth > 64) {
-    JsonEncoderError::msg.assign("allowed depth=64 of json object exceeded");
+    StringLibContext::get().last_json_processor_error.assign("allowed depth=64 of json object exceeded");
     return;
   }
 
@@ -178,13 +180,13 @@ string f$JsonEncoder$$to_json_impl(Tag /*tag*/, const class_instance<T> &klass, 
   if (unlikely(has_unsupported_option)) {
     php_warning("Wrong parameter flags = %" PRIi64 " in function JsonEncoder::encode", flags);
   }
-
-  JsonEncoderError::msg = {};
+  auto &error_msg = StringLibContext::get().last_json_processor_error;
+  error_msg = {};
 
   impl_::JsonWriter writer{(flags & JSON_PRETTY_PRINT) > 0, (flags & JSON_PRESERVE_ZERO_FRACTION) > 0};
   to_json_impl<Tag>(klass, writer, more);
 
-  if (!JsonEncoderError::msg.empty()) {
+  if (!error_msg.empty()) {
     return {};
   }
   if (!writer.is_complete()) {

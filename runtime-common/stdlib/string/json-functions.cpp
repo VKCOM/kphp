@@ -2,98 +2,98 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/json-functions.h"
+#include "runtime-common/stdlib/string/json-functions.h"
 
 #include "common/algorithms/find.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 
 // note: json-functions.cpp is used for non-typed json implementation: for json_encode() and json_decode()
 // for classes, e.g. `JsonEncoder::encode(new A)`, see json-writer.cpp and from/to visitors
 namespace {
 
-void json_append_one_char(unsigned int c) noexcept {
-  kphp_runtime_context.static_SB.append_char('\\');
-  kphp_runtime_context.static_SB.append_char('u');
-  kphp_runtime_context.static_SB.append_char("0123456789abcdef"[c >> 12]);
-  kphp_runtime_context.static_SB.append_char("0123456789abcdef"[(c >> 8) & 15]);
-  kphp_runtime_context.static_SB.append_char("0123456789abcdef"[(c >> 4) & 15]);
-  kphp_runtime_context.static_SB.append_char("0123456789abcdef"[c & 15]);
+void json_append_one_char(unsigned int c, string_buffer &sb) noexcept {
+  sb.append_char('\\');
+  sb.append_char('u');
+  sb.append_char("0123456789abcdef"[c >> 12]);
+  sb.append_char("0123456789abcdef"[(c >> 8) & 15]);
+  sb.append_char("0123456789abcdef"[(c >> 4) & 15]);
+  sb.append_char("0123456789abcdef"[c & 15]);
 }
 
-bool json_append_char(unsigned int c) noexcept {
+bool json_append_char(unsigned int c, string_buffer &sb) noexcept {
   if (c < 0x10000) {
     if (0xD7FF < c && c < 0xE000) {
       return false;
     }
-    json_append_one_char(c);
+    json_append_one_char(c, sb);
     return true;
   }
   if (c <= 0x10ffff) {
     c -= 0x10000;
-    json_append_one_char(0xD800 | (c >> 10));
-    json_append_one_char(0xDC00 | (c & 0x3FF));
+    json_append_one_char(0xD800 | (c >> 10), sb);
+    json_append_one_char(0xDC00 | (c & 0x3FF), sb);
     return true;
   }
   return false;
 }
 
-
-bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len, int64_t options) noexcept {
-  int begin_pos = kphp_runtime_context.static_SB.size();
+bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len, int64_t options, string_buffer &sb) noexcept {
+  int begin_pos = sb.size();
   if (options & JSON_UNESCAPED_UNICODE) {
-    kphp_runtime_context.static_SB.reserve(2 * len + 2);
+    sb.reserve(2 * len + 2);
   } else {
-    kphp_runtime_context.static_SB.reserve(6 * len + 2);
+    sb.reserve(6 * len + 2);
   }
-  kphp_runtime_context.static_SB.append_char('"');
+  sb.append_char('"');
 
-  auto fire_error = [json_path, begin_pos](int pos) {
+  auto fire_error = [json_path, begin_pos, &sb](int pos) {
     php_warning("%s: Not a valid utf-8 character at pos %d in function json_encode", json_path.to_string().c_str(), pos);
-    kphp_runtime_context.static_SB.set_pos(begin_pos);
-    kphp_runtime_context.static_SB.append("null", 4);
+    sb.set_pos(begin_pos);
+    sb.append("null", 4);
     return false;
   };
 
   for (int pos = 0; pos < len; pos++) {
     switch (s[pos]) {
       case '"':
-        kphp_runtime_context.static_SB.append_char('\\');
-        kphp_runtime_context.static_SB.append_char('"');
+        sb.append_char('\\');
+        sb.append_char('"');
         break;
       case '\\':
-        kphp_runtime_context.static_SB.append_char('\\');
-        kphp_runtime_context.static_SB.append_char('\\');
+        sb.append_char('\\');
+        sb.append_char('\\');
         break;
       case '/':
-        kphp_runtime_context.static_SB.append_char('\\');
-        kphp_runtime_context.static_SB.append_char('/');
+        sb.append_char('\\');
+        sb.append_char('/');
         break;
       case '\b':
-        kphp_runtime_context.static_SB.append_char('\\');
-        kphp_runtime_context.static_SB.append_char('b');
+        sb.append_char('\\');
+        sb.append_char('b');
         break;
       case '\f':
-        kphp_runtime_context.static_SB.append_char('\\');
-        kphp_runtime_context.static_SB.append_char('f');
+        sb.append_char('\\');
+        sb.append_char('f');
         break;
       case '\n':
-        kphp_runtime_context.static_SB.append_char('\\');
-        kphp_runtime_context.static_SB.append_char('n');
+        sb.append_char('\\');
+        sb.append_char('n');
         break;
       case '\r':
-        kphp_runtime_context.static_SB.append_char('\\');
-        kphp_runtime_context.static_SB.append_char('r');
+        sb.append_char('\\');
+        sb.append_char('r');
         break;
       case '\t':
-        kphp_runtime_context.static_SB.append_char('\\');
-        kphp_runtime_context.static_SB.append_char('t');
+        sb.append_char('\\');
+        sb.append_char('t');
         break;
       case 0 ... 7:
       case 11:
       case 14 ... 31:
-        json_append_one_char(s[pos]);
+        json_append_one_char(s[pos], sb);
         break;
-      case -128 ... -1: {
+      case -128 ... - 1: {
         const int a = s[pos];
         if ((a & 0x40) == 0) {
           return fire_error(pos);
@@ -108,9 +108,9 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
             return fire_error(pos);
           }
           if (options & JSON_UNESCAPED_UNICODE) {
-            kphp_runtime_context.static_SB.append_char(static_cast<char>(a));
-            kphp_runtime_context.static_SB.append_char(static_cast<char>(b));
-          } else if (!json_append_char(((a & 0x1f) << 6) | (b & 0x3f))) {
+            sb.append_char(static_cast<char>(a));
+            sb.append_char(static_cast<char>(b));
+          } else if (!json_append_char(((a & 0x1f) << 6) | (b & 0x3f), sb)) {
             return fire_error(pos);
           }
           break;
@@ -125,10 +125,10 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
             return fire_error(pos);
           }
           if (options & JSON_UNESCAPED_UNICODE) {
-            kphp_runtime_context.static_SB.append_char(static_cast<char>(a));
-            kphp_runtime_context.static_SB.append_char(static_cast<char>(b));
-            kphp_runtime_context.static_SB.append_char(static_cast<char>(c));
-          } else if (!json_append_char(((a & 0x0f) << 12) | ((b & 0x3f) << 6) | (c & 0x3f))) {
+            sb.append_char(static_cast<char>(a));
+            sb.append_char(static_cast<char>(b));
+            sb.append_char(static_cast<char>(c));
+          } else if (!json_append_char(((a & 0x0f) << 12) | ((b & 0x3f) << 6) | (c & 0x3f), sb)) {
             return fire_error(pos);
           }
           break;
@@ -143,11 +143,11 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
             return fire_error(pos);
           }
           if (options & JSON_UNESCAPED_UNICODE) {
-            kphp_runtime_context.static_SB.append_char(static_cast<char>(a));
-            kphp_runtime_context.static_SB.append_char(static_cast<char>(b));
-            kphp_runtime_context.static_SB.append_char(static_cast<char>(c));
-            kphp_runtime_context.static_SB.append_char(static_cast<char>(d));
-          } else if (!json_append_char(((a & 0x07) << 18) | ((b & 0x3f) << 12) | ((c & 0x3f) << 6) | (d & 0x3f))) {
+            sb.append_char(static_cast<char>(a));
+            sb.append_char(static_cast<char>(b));
+            sb.append_char(static_cast<char>(c));
+            sb.append_char(static_cast<char>(d));
+          } else if (!json_append_char(((a & 0x07) << 18) | ((b & 0x3f) << 12) | ((c & 0x3f) << 6) | (d & 0x3f), sb)) {
             return fire_error(pos);
           }
           break;
@@ -156,57 +156,60 @@ bool do_json_encode_string_php(const JsonPath &json_path, const char *s, int len
         return fire_error(pos);
       }
       default:
-        kphp_runtime_context.static_SB.append_char(s[pos]);
+        sb.append_char(s[pos]);
         break;
     }
   }
 
-  kphp_runtime_context.static_SB.append_char('"');
+  sb.append_char('"');
   return true;
 }
 
-bool do_json_encode_string_vkext(const char *s, int len) noexcept {
-  kphp_runtime_context.static_SB.reserve(2 * len + 2);
-  if (kphp_runtime_context.sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
+bool do_json_encode_string_vkext(const char *s, int len, string_buffer &sb) noexcept {
+  auto &ctx = RuntimeContext::get(); // dirty hack :(
+  sb.reserve(2 * len + 2);
+  if (ctx.sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
     return false;
   }
 
-  kphp_runtime_context.static_SB.append_char('"');
+  sb.append_char('"');
 
   for (int pos = 0; pos < len; pos++) {
     char c = s[pos];
-    if (unlikely (static_cast<unsigned int>(c) < 32u)) {
+    if (unlikely(static_cast<unsigned int>(c) < 32U)) {
       switch (c) {
         case '\b':
-          kphp_runtime_context.static_SB.append_char('\\');
-          kphp_runtime_context.static_SB.append_char('b');
+          sb.append_char('\\');
+          sb.append_char('b');
           break;
         case '\f':
-          kphp_runtime_context.static_SB.append_char('\\');
-          kphp_runtime_context.static_SB.append_char('f');
+          sb.append_char('\\');
+          sb.append_char('f');
           break;
         case '\n':
-          kphp_runtime_context.static_SB.append_char('\\');
-          kphp_runtime_context.static_SB.append_char('n');
+          sb.append_char('\\');
+          sb.append_char('n');
           break;
         case '\r':
-          kphp_runtime_context.static_SB.append_char('\\');
-          kphp_runtime_context.static_SB.append_char('r');
+          sb.append_char('\\');
+          sb.append_char('r');
           break;
         case '\t':
-          kphp_runtime_context.static_SB.append_char('\\');
-          kphp_runtime_context.static_SB.append_char('t');
+          sb.append_char('\\');
+          sb.append_char('t');
+          break;
+        default:
           break;
       }
     } else {
       if (c == '"' || c == '\\' || c == '/') {
-        kphp_runtime_context.static_SB.append_char('\\');
+        sb.append_char('\\');
       }
-      kphp_runtime_context.static_SB.append_char(c);
+      sb.append_char(c);
     }
   }
 
-  kphp_runtime_context.static_SB.append_char('"');
+  sb.append_char('"');
 
   return true;
 }
@@ -222,7 +225,7 @@ string JsonPath::to_string() const {
   }
   unsigned num_parts = std::clamp(depth, 0U, static_cast<unsigned>(arr.size()));
   string result;
-  result.reserve_at_least((num_parts+1) * 8);
+  result.reserve_at_least((num_parts + 1) * 8);
   result.push_back('/');
   for (unsigned i = 0; i < num_parts; i++) {
     const char *key = arr[i];
@@ -244,66 +247,62 @@ string JsonPath::to_string() const {
 
 namespace impl_ {
 
-JsonEncoder::JsonEncoder(int64_t options, bool simple_encode, const char *json_obj_magic_key) noexcept:
-  options_(options),
-  simple_encode_(simple_encode),
-  json_obj_magic_key_(json_obj_magic_key) {
-}
+JsonEncoder::JsonEncoder(int64_t options, bool simple_encode, const char *json_obj_magic_key) noexcept
+  : options_(options)
+  , simple_encode_(simple_encode)
+  , json_obj_magic_key_(json_obj_magic_key) {}
 
-bool JsonEncoder::encode(bool b) noexcept {
+bool JsonEncoder::encode(bool b, string_buffer &sb) noexcept {
   if (b) {
-    kphp_runtime_context.static_SB.append("true", 4);
+    sb.append("true", 4);
   } else {
-    kphp_runtime_context.static_SB.append("false", 5);
+    sb.append("false", 5);
   }
   return true;
 }
 
-bool JsonEncoder::encode_null() const noexcept {
-  kphp_runtime_context.static_SB.append("null", 4);
+bool JsonEncoder::encode_null(string_buffer &sb) const noexcept {
+  sb.append("null", 4);
   return true;
 }
 
-bool JsonEncoder::encode(int64_t i) noexcept {
-  kphp_runtime_context.static_SB << i;
+bool JsonEncoder::encode(int64_t i, string_buffer &sb) noexcept {
+  sb << i;
   return true;
 }
 
-bool JsonEncoder::encode(double d) noexcept {
+bool JsonEncoder::encode(double d, string_buffer &sb) noexcept {
   if (vk::any_of_equal(std::fpclassify(d), FP_INFINITE, FP_NAN)) {
     php_warning("%s: strange double %lf in function json_encode", json_path_.to_string().c_str(), d);
     if (options_ & JSON_PARTIAL_OUTPUT_ON_ERROR) {
-      kphp_runtime_context.static_SB.append("0", 1);
+      sb.append("0", 1);
     } else {
       return false;
     }
   } else {
-    kphp_runtime_context.static_SB << (simple_encode_ ? f$number_format(d, 6, string{"."}, string{}) : string{d});
+    sb << (simple_encode_ ? f$number_format(d, 6, string{"."}, string{}) : string{d});
   }
   return true;
 }
 
-bool JsonEncoder::encode(const string &s) noexcept {
-  return simple_encode_ ? do_json_encode_string_vkext(s.c_str(), s.size()) : do_json_encode_string_php(json_path_, s.c_str(), s.size(), options_);
+bool JsonEncoder::encode(const string &s, string_buffer &sb) noexcept {
+  return simple_encode_ ? do_json_encode_string_vkext(s.c_str(), s.size(), sb) : do_json_encode_string_php(json_path_, s.c_str(), s.size(), options_, sb);
 }
 
-bool JsonEncoder::encode(const mixed &v) noexcept {
+bool JsonEncoder::encode(const mixed &v, string_buffer &sb) noexcept {
   switch (v.get_type()) {
     case mixed::type::NUL:
-      return encode_null();
+      return encode_null(sb);
     case mixed::type::BOOLEAN:
-      return encode(v.as_bool());
+      return encode(v.as_bool(), sb);
     case mixed::type::INTEGER:
-      return encode(v.as_int());
+      return encode(v.as_int(), sb);
     case mixed::type::FLOAT:
-      return encode(v.as_double());
+      return encode(v.as_double(), sb);
     case mixed::type::STRING:
-      return encode(v.as_string());
+      return encode(v.as_string(), sb);
     case mixed::type::ARRAY:
-      return encode(v.as_array());
-    case mixed::type::OBJECT:
-      php_warning("Objects (%s) are not supported in JsonEncoder", v.get_type_or_class_name());
-      return false;
+      return encode(v.as_array(), sb);
     default:
       __builtin_unreachable();
   }
@@ -326,29 +325,22 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
   json_skip_blanks(s, i);
   switch (s[i]) {
     case 'n':
-      if (s[i + 1] == 'u' &&
-          s[i + 2] == 'l' &&
-          s[i + 3] == 'l') {
+      if (s[i + 1] == 'u' && s[i + 2] == 'l' && s[i + 3] == 'l') {
         i += 4;
         return true;
       }
       break;
     case 't':
-      if (s[i + 1] == 'r' &&
-          s[i + 2] == 'u' &&
-          s[i + 3] == 'e') {
+      if (s[i + 1] == 'r' && s[i + 2] == 'u' && s[i + 3] == 'e') {
         i += 4;
-        new(&v) mixed(true);
+        new (&v) mixed(true);
         return true;
       }
       break;
     case 'f':
-      if (s[i + 1] == 'a' &&
-          s[i + 2] == 'l' &&
-          s[i + 3] == 's' &&
-          s[i + 4] == 'e') {
+      if (s[i + 1] == 'a' && s[i + 2] == 'l' && s[i + 3] == 's' && s[i + 4] == 'e') {
         i += 5;
-        new(&v) mixed(false);
+        new (&v) mixed(false);
         return true;
       }
       break;
@@ -410,8 +402,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
                   }
 
                   if (0xD7FF < num && num < 0xE000) {
-                    if (s[i + 1] == '\\' && s[i + 2] == 'u' &&
-                        isxdigit(s[i + 3]) && isxdigit(s[i + 4]) && isxdigit(s[i + 5]) && isxdigit(s[i + 6])) {
+                    if (s[i + 1] == '\\' && s[i + 2] == 'u' && isxdigit(s[i + 3]) && isxdigit(s[i + 4]) && isxdigit(s[i + 5]) && isxdigit(s[i + 6])) {
                       i += 2;
                       int u = 0;
                       for (int t = 0; t < 4; t++) {
@@ -465,7 +456,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
         }
         value.shrink(l);
 
-        new(&v) mixed(value);
+        new (&v) mixed(value);
         i++;
         return true;
       }
@@ -492,7 +483,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
         i++;
       }
 
-      new(&v) mixed(res);
+      new (&v) mixed(res);
       return true;
     }
     case '{': {
@@ -529,7 +520,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
         res[string{json_obj_magic_key}] = true;
       }
 
-      new(&v) mixed(res);
+      new (&v) mixed(res);
       return true;
     }
     default: {
@@ -541,7 +532,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
         int64_t intval = 0;
         if (php_try_to_int(s + i, j - i, &intval)) {
           i = j;
-          new(&v) mixed(intval);
+          new (&v) mixed(intval);
           return true;
         }
 
@@ -549,7 +540,7 @@ bool do_json_decode(const char *s, int s_len, int &i, mixed &v, const char *json
         double floatval = strtod(s + i, &end_ptr);
         if (end_ptr == s + j) {
           i = j;
-          new(&v) mixed(floatval);
+          new (&v) mixed(floatval);
           return true;
         }
       }

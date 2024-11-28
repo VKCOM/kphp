@@ -11,12 +11,13 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "runtime-common/stdlib/string/json-functions.h"
+#include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/datetime_functions.h"
 #include "runtime/exception.h"
 #include "runtime/files.h"
 #include "runtime/interface.h"
-#include "runtime/json-functions.h"
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
 #include "runtime/vkext.h"
@@ -735,14 +736,14 @@ void f$kphp_set_context_on_error(const array<mixed> &tags, const array<mixed> &e
     return json_str;
   };
 
-  if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags)) {
+  if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags, kphp_runtime_context.static_SB)) {
     auto tags_json = get_json_string_from_SB_without_brackets();
     dl::CriticalSectionGuard critical_section;
     json_logger.set_tags(tags_json);
   }
   kphp_runtime_context.static_SB.clean();
 
-  if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info)) {
+  if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info, kphp_runtime_context.static_SB)) {
     auto extra_info_json = get_json_string_from_SB_without_brackets();
     dl::CriticalSectionGuard critical_section;
     json_logger.set_extra_info(extra_info_json);

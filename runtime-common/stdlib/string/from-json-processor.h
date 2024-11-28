@@ -4,11 +4,10 @@
 
 #pragma once
 
-#include <string_view>
-
 #include "runtime-common/core/runtime-core.h"
-#include "runtime/json-functions.h"
-#include "runtime/json-processor-utils.h"
+#include "runtime-common/stdlib/string/json-functions.h"
+#include "runtime-common/stdlib/string/json-processor-utils.h"
+#include "runtime-common/stdlib/string/string-context.h"
 
 template<class Tag>
 class FromJsonVisitor {
@@ -91,13 +90,13 @@ private:
   }
 
   void do_set(JsonRawString &value, const mixed &json) noexcept {
-    kphp_runtime_context.static_SB.clean();
-    if (!impl_::JsonEncoder{0, false, get_json_obj_magic_key()}.encode(json)) {
+    RuntimeContext::get().static_SB.clean();
+    if (!impl_::JsonEncoder{0, false, get_json_obj_magic_key()}.encode(json, RuntimeContext::get().static_SB)) {
       error_.append("failed to decode @kphp-json raw_string field ");
       error_.append(json_path_.to_string());
       return;
     }
-    value.str = kphp_runtime_context.static_SB.str();
+    value.str = RuntimeContext::get().static_SB.str();
   }
 
   template<class T>
@@ -169,14 +168,14 @@ class_instance<I> from_json_impl(const mixed &json, JsonPath &json_path) noexcep
     FromJsonVisitor<Tag> visitor{json, impl_::IsJsonFlattenClass<I>::value, json_path};
     instance.get()->accept(visitor);
     if (visitor.has_error()) {
-      JsonEncoderError::msg.append(visitor.get_error());
+      StringLibContext::get().last_json_processor_error.append(visitor.get_error());
       return {};
     }
   }
   if constexpr (impl_::HasClassWakeupMethod<I>::value) {
     instance.get()->wakeup(instance);
   }
-  return JsonEncoderError::msg.empty() ? instance : class_instance<I>{};
+  return StringLibContext::get().last_json_processor_error.empty() ? instance : class_instance<I>{};
 }
 
 template<class Tag>
@@ -196,18 +195,19 @@ void FromJsonVisitor<Tag>::do_set(class_instance<I> &klass, const mixed &json) n
 
 template<class ClassName, class Tag>
 ClassName f$JsonEncoder$$from_json_impl(Tag /*tag*/, const string &json_string, const string &/*class_mame*/) noexcept {
-  JsonEncoderError::msg = {};
+  auto &msg = StringLibContext::get().last_json_processor_error;
+  msg = {};
 
   auto [json, success] = json_decode(json_string, FromJsonVisitor<Tag>::get_json_obj_magic_key());
 
   if (!success) {
-    JsonEncoderError::msg.append(json_string.empty() ? "provided empty json string" : "failed to parse json string");
+    msg.append(json_string.empty() ? "provided empty json string" : "failed to parse json string");
     return {};
   }
   if constexpr (!impl_::IsJsonFlattenClass<typename ClassName::ClassType>::value) {
     if (!json.is_array() || json.as_array().is_vector()) {
-      JsonEncoderError::msg.append("root element of json string must be an object type, got ");
-      JsonEncoderError::msg.append(json.get_type_c_str());
+      msg.append("root element of json string must be an object type, got ");
+      msg.append(json.get_type_c_str());
       return {};
     }
   }
@@ -216,4 +216,6 @@ ClassName f$JsonEncoder$$from_json_impl(Tag /*tag*/, const string &json_string, 
   return from_json_impl<typename ClassName::ClassType, Tag>(json, json_path);
 }
 
-string f$JsonEncoder$$getLastError() noexcept;
+inline string f$JsonEncoder$$getLastError() noexcept {
+  return StringLibContext::get().last_json_processor_error;
+}
