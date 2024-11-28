@@ -20,6 +20,8 @@ struct RegexInstanceState final : private vk::not_copyable {
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
 
   static constexpr size_t MAX_SUBPATTERNS_COUNT = 512;
+  // match data size should be a multiple of 3 since it holds ovector triples (see pcre2 docs)
+  static constexpr size_t MATCH_DATA_SIZE = 3 * MAX_SUBPATTERNS_COUNT;
   static constexpr auto REPLACE_BUFFER_SIZE = static_cast<size_t>(16U * 1024U);
 
   mixed default_matches;
