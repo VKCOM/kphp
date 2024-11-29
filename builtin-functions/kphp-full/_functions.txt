@@ -1685,7 +1685,7 @@ function getenv(string $varname = '', bool $local_only = false): mixed;
 // builtin that allows to store objects inside a mixed
 function to_mixed(object $instance) ::: mixed;
 
-/** @kphp-internal-interface */
+/** @kphp-required */
 interface ArrayAccess {
   public function offsetExists(mixed $offset): bool;
   public function offsetGet(mixed $offset): mixed;

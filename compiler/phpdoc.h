@@ -36,7 +36,6 @@ enum class PhpDocType {
   kphp_immutable_class,
   kphp_tl_class,
   kphp_generated_stub_class,
-  kphp_internal_interface,
   kphp_const,
   kphp_noreturn,
   kphp_warn_unused_result,
