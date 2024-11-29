@@ -36,7 +36,7 @@ void md5_starts( md5_context *ctx );
  * \param input    buffer holding the  data
  * \param ilen     length of the input data
  */
-void md5_update( md5_context *ctx, unsigned char *input, int ilen );
+void md5_update( md5_context *ctx, const unsigned char *input, int ilen );
 
 /**
  * \brief          MD5 final digest
@@ -53,7 +53,7 @@ void md5_finish( md5_context *ctx, unsigned char output[16] );
  * \param ilen     length of the input data
  * \param output   MD5 checksum result
  */
-void md5( unsigned char *input, int ilen, unsigned char output[16] );
+void md5( const unsigned char *input, int ilen, unsigned char output[16] );
 
 
 /**

@@ -4,10 +4,28 @@
 
 #pragma once
 
+#include <cstdint>
+
+#include "common/md5.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/crypto/crypto-state.h"
+#include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/tl/tl-types.h"
+
+inline string f$md5(const string &str, bool binary = false) noexcept {
+  constexpr auto MD5_HASH_LEN = 16;
+  string output{static_cast<string::size_type>(MD5_HASH_LEN * (binary ? 1 : 2)), false};
+  md5(reinterpret_cast<const unsigned char *>(str.c_str()), static_cast<int32_t>(str.size()), reinterpret_cast<unsigned char *>(output.buffer()));
+  if (!binary) {
+    const auto &lhex_digits{StringImageState::get().lhex_digits};
+    for (int64_t i = MD5_HASH_LEN - 1; i >= 0; --i) {
+      output[2 * i + 1] = lhex_digits[output[i] & 0x0F];
+      output[2 * i] = lhex_digits[(output[i] >> 4) & 0x0F];
+    }
+  }
+  return output;
+}
 
 task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept;
 

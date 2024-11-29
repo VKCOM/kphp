@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 // Test that we don't break anything when returning one of the operands without explicit

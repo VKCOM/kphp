@@ -73,7 +73,7 @@ void md5_starts( md5_context *ctx )
     ctx->state[3] = 0x10325476;
 }
 
-static void md5_process( md5_context *ctx, unsigned char data[64] )
+static void md5_process( md5_context *ctx, const unsigned char data[64] )
 {
     unsigned long X[16], A, B, C, D;
 
@@ -199,7 +199,7 @@ static void md5_process( md5_context *ctx, unsigned char data[64] )
 /*
  * MD5 process buffer
  */
-void md5_update( md5_context *ctx, unsigned char *input, int ilen )
+void md5_update( md5_context *ctx, const unsigned char *input, int ilen )
 {
     int fill;
     unsigned long left;
@@ -279,7 +279,7 @@ void md5_finish( md5_context *ctx, unsigned char output[16] )
 /*
  * output = MD5( input buffer )
  */
-void md5( unsigned char *input, int ilen, unsigned char output[16] )
+void md5( const unsigned char *input, int ilen, unsigned char output[16] )
 {
     md5_context ctx;
 

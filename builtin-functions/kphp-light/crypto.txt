@@ -13,9 +13,14 @@ define('OPENSSL_ALGO_SHA384',  0xf54c2608);
 define('OPENSSL_ALGO_SHA512',  0x225df2b6);
 define('OPENSSL_ALGO_RMD160',  0x1887e6b4);
 
+define('OPENSSL_RAW_DATA', 1);
+define('OPENSSL_ZERO_PADDING', 2);
+define('OPENSSL_DONT_ZERO_PAD_KEY', 4);
+
 
 /** @kphp-extern-func-info interruptible */
 function openssl_sign ($data ::: string, &$signature ::: string, $priv_key_id ::: string, $signature_alg ::: int = 1) ::: bool;
+
 /** @kphp-extern-func-info interruptible */
 function openssl_verify ($data ::: string, $signature ::: string, $pub_key_id ::: string, $signature_alg ::: int = 1) ::: int;
 
@@ -24,10 +29,6 @@ function openssl_random_pseudo_bytes ($length ::: int) ::: string | false;
 
 /** @kphp-extern-func-info interruptible */
 function openssl_x509_parse ($x509cert ::: string, $shortnames ::: bool = true) ::: mixed[] | false;
-
-define('OPENSSL_RAW_DATA', 1);
-define('OPENSSL_ZERO_PADDING', 2);
-define('OPENSSL_DONT_ZERO_PAD_KEY', 4);
 
 function openssl_get_cipher_methods($aliases ::: bool = false) ::: string[];
 
@@ -40,6 +41,8 @@ function openssl_encrypt($data ::: string, $method ::: string, $key ::: string, 
 /** @kphp-extern-func-info interruptible */
 function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '',
                         $tag ::: string = '', $aad ::: string = '') ::: string | false;
+
+function md5 ($s ::: string, $raw_output ::: bool = false): string;
 
 // ===== UNSUPPORTED =====
 
