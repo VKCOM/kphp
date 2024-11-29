@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/fix-array-access.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/contains.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
@@ -18,7 +19,13 @@ namespace {
 enum class CheckFunction { ISSET, EMPTY };
 
 std::pair<VertexPtr, bool> fixup_check_function(VertexPtr cur, VertexPtr prev, FunctionPtr current_function, CheckFunction check_kind) {
-  if (cur->type() == op_isset) {
+  if (cur->type() == op_isset && check_kind == CheckFunction::ISSET) {
+    // aldready done
+    return {cur, false};
+  }
+
+  if (auto func_call = cur.try_as<op_func_call>();
+      func_call && func_call->func_id->is_extern() && func_call->func_id->name == "empty" && check_kind == CheckFunction::EMPTY) {
     // aldready done
     return {cur, false};
   }
@@ -76,7 +83,6 @@ std::pair<VertexPtr, bool> fixup_check_function(VertexPtr cur, VertexPtr prev, F
     }
 
     if (check_kind == CheckFunction::ISSET) {
-
       func_call->str_val = isset_method->global_name();
       func_call->func_id = isset_method->function;
       return {func_call, true};
