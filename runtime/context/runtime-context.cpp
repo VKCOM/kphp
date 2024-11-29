@@ -23,6 +23,5 @@ void RuntimeContext::init() noexcept {
 }
 
 void RuntimeContext::free() noexcept {
-  array_access_context_.free();
   free_migration_php8();
 }

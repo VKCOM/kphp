@@ -8,7 +8,6 @@
 #include <cstdint>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-common/core/array_access_context.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
 #error "this file must be included only from runtime-core.h"
@@ -18,7 +17,6 @@ struct RuntimeContext final : vk::not_copyable {
   int32_t show_migration_php8_warning{};
   int32_t php_disable_warnings{};
   uint32_t empty_obj_count{};
-  ArrayAccessContext array_access_context_;
 
   string_buffer_lib_context sb_lib_context{};
   string_buffer static_SB{};

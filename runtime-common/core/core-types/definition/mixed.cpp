@@ -1148,11 +1148,11 @@ int64_t mixed::compare(const mixed &rhs) const {
   return three_way_comparison(to_float(), rhs.to_float());
 }
 
-mixed &mixed::operator[](int64_t int_key) {
+Materialized<mixed> mixed::operator[](int64_t int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       php_warning("Writing to string by offset isn't supported");
-      return empty_value<mixed>();
+      return Materialized<mixed>::WithRef(empty_value<mixed>());
     }
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
@@ -1160,25 +1160,23 @@ mixed &mixed::operator[](int64_t int_key) {
       new(&as_array()) array<mixed>();
     } else if (get_type() == type::OBJECT) {
       if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        mixed &tmp = RuntimeContext::get().array_access_context_.get_tmp_slot();
-        tmp = f$ArrayAccess$$offsetGet(as_aa, int_key);
-        return tmp;
+        return Materialized<mixed>::WithValue(f$ArrayAccess$$offsetGet(as_aa, int_key));
       }
       php_notice("Indirect modification of overloaded element of %s has no effect", get_type_or_class_name());
-      return empty_value<mixed>();
+      return Materialized<mixed>::WithRef(empty_value<mixed>());
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string_without_warning(*this).c_str(), get_type_or_class_name(), int_key);
-      return empty_value<mixed>();
+      return Materialized<mixed>::WithRef(empty_value<mixed>());
     }
   }
-  return as_array()[int_key];
+  return Materialized<mixed>::WithRef(as_array()[int_key]);
 }
 
-mixed &mixed::operator[](const string &string_key) {
+Materialized<mixed> mixed::operator[](const string &string_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       php_warning("Writing to string by offset is't supported");
-      return empty_value<mixed>();
+      return Materialized<mixed>::WithRef(empty_value<mixed>());
     }
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
@@ -1186,29 +1184,27 @@ mixed &mixed::operator[](const string &string_key) {
       new(&as_array()) array<mixed>();
     } else if (get_type() == type::OBJECT) {
       if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        mixed &tmp = RuntimeContext::get().array_access_context_.get_tmp_slot();
-        tmp = f$ArrayAccess$$offsetGet(as_aa, string_key);
-        return tmp;
+        return Materialized<mixed>::WithValue(f$ArrayAccess$$offsetGet(as_aa, string_key));
       }
       php_notice("Indirect modification of overloaded element of %s has no effect", get_type_or_class_name());
-      return empty_value<mixed>();
+      return Materialized<mixed>::WithRef(empty_value<mixed>());
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string_without_warning(*this).c_str(), get_type_or_class_name(), string_key.c_str());
-      return empty_value<mixed>();
+      return Materialized<mixed>::WithRef(empty_value<mixed>());
     }
   }
 
-  return as_array()[string_key];
+  return Materialized<mixed>::WithRef(as_array()[string_key]);
 }
 
-mixed &mixed::operator[](tmp_string string_key) {
+Materialized<mixed> mixed::operator[](tmp_string string_key) {
   if (get_type() == type::ARRAY) {
-    return as_array()[string_key];
+    return Materialized<mixed>::WithRef(as_array()[string_key]);
   }
   return (*this)[materialize_tmp_string(string_key)];
 }
 
-mixed &mixed::operator[](const mixed &v) {
+Materialized<mixed> mixed::operator[](const mixed &v) {
   switch (v.get_type()) {
     case type::NUL:
       return (*this)[string()];
@@ -1231,16 +1227,16 @@ mixed &mixed::operator[](const mixed &v) {
   }
 }
 
-mixed &mixed::operator[](double double_key) {
+Materialized<mixed> mixed::operator[](double double_key) {
   return (*this)[static_cast<int64_t>(double_key)];
 }
 
-mixed &mixed::operator[](const array<mixed>::const_iterator &it) {
-  return as_array()[it];
+Materialized<mixed> mixed::operator[](const array<mixed>::const_iterator &it) {
+  return Materialized<mixed>::WithRef(as_array()[it]);
 }
 
-mixed &mixed::operator[](const array<mixed>::iterator &it) {
-  return as_array()[it];
+Materialized<mixed> mixed::operator[](const array<mixed>::iterator &it) {
+  return Materialized<mixed>::WithRef(as_array()[it]);
 }
 
 mixed mixed::set_value_return(const mixed &key, const mixed &val) {

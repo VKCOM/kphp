@@ -6,6 +6,8 @@
 
 #include "common/smart_ptrs/intrusive_ptr.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include <utility>
+#include <variant>
 
 
 #ifndef INCLUDED_FROM_KPHP_CORE
@@ -22,6 +24,52 @@ struct is_type_acceptable_for_mixed<array<T>> : is_constructible_or_unknown<mixe
 
 template<typename T>
 struct is_type_acceptable_for_mixed<class_instance<T>> : std::is_base_of<may_be_mixed_base, T> {
+};
+
+template<class Mix>
+class Materialized {
+  using MixRef = Mix &;
+  std::variant<Mix, Mix *> slot_;
+
+  Materialized(Mix *ptr)
+    : slot_{ptr} {}
+
+  Materialized(Mix &&value)
+    : slot_(std::move(value)) {}
+
+public:
+  static Materialized WithRef(Mix &ref) {
+    return Materialized(&ref);
+  }
+
+  static Materialized WithValue(Mix &&val) {
+    return Materialized(std::move(val));
+  }
+
+  template<class T>
+  Materialized operator[](T &&arg) && {
+    return this->operator MixRef()[std::forward<T>(arg)];
+  }
+
+  operator MixRef() {
+    if (likely(std::holds_alternative<Mix>(slot_))) {
+      return std::get<Mix>(slot_);
+    }
+    return *std::get<Mix *>(slot_);
+  }
+
+  // methods below are used in runtime sources
+  // in codegen Materizalied<Mix> is casted to mixed&
+
+  template<class T>
+  Materialized operator=(T &&arg) && {
+    return Materialized::WithRef(this->operator MixRef() = std::forward<T>(arg));
+  }
+
+  template<class T>
+  void push_back(T &&arg) && {
+    this->operator MixRef().push_back(std::forward<T>(arg));
+  }
 };
 
 class mixed {
@@ -90,14 +138,14 @@ public:
   mixed &append(const string &v);
   mixed &append(tmp_string v);
 
-  mixed &operator[](int64_t int_key);
-  mixed &operator[](int32_t key) { return (*this)[int64_t{key}]; }
-  mixed &operator[](const string &string_key);
-  mixed &operator[](tmp_string string_key);
-  mixed &operator[](const mixed &v);
-  mixed &operator[](double double_key);
-  mixed &operator[](const array<mixed>::const_iterator &it);
-  mixed &operator[](const array<mixed>::iterator &it);
+  Materialized<mixed> operator[](int64_t int_key);
+  Materialized<mixed> operator[](int32_t key) { return (*this)[int64_t{key}]; }
+  Materialized<mixed> operator[](const string &string_key);
+  Materialized<mixed> operator[](tmp_string string_key);
+  Materialized<mixed> operator[](const mixed &v);
+  Materialized<mixed> operator[](double double_key);
+  Materialized<mixed> operator[](const array<mixed>::const_iterator &it);
+  Materialized<mixed> operator[](const array<mixed>::iterator &it);
 
   /*
    * The `set_value_return()` method is used in assignment chains like `$mix[0] = $mix[1] = foo();`.
@@ -301,6 +349,7 @@ private:
   type type_{type::NUL};
   uint64_t storage_{0};
 };
+
 
 mixed operator+(const mixed &lhs, const mixed &rhs);
 mixed operator-(const mixed &lhs, const mixed &rhs);

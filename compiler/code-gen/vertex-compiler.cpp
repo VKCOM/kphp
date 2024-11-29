@@ -1811,7 +1811,11 @@ void compile_index_of_array_or_mixed(VertexAdaptor<op_index> root, CodeGenerator
   bool used_as_rval = root->rl_type != val_l;
   if (!used_as_rval) {
     kphp_assert(root->has_key());
-    W << root->array() << "[" << root->key() << "]";
+    if (tinf::get_type(root->array())->ptype() == tp_mixed) {
+      W << "static_cast<mixed&>(" << root->array() << "[" << root->key() << "])";
+    } else {
+      W << root->array() << "[" << root->key() << "]";
+    }
   } else {
     if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_isset) {
       W << root->array() << ".get_value_if_isset (" << root->key();
