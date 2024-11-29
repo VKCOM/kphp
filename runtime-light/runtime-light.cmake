@@ -1,6 +1,7 @@
 # prepare third-parties
 update_git_submodules()
 include(${THIRD_PARTY_DIR}/abseil-cpp-cmake/abseil-cpp.cmake)
+include(${THIRD_PARTY_DIR}/pcre2-cmake/pcre2.cmake)
 include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)
 
 # =================================================================================================
@@ -50,8 +51,10 @@ target_compile_options(
          -O3)
 target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
 # add statically linking libraries
-set_property(TARGET runtime-light PROPERTY RUNTIME_LINK_LIBS
-                                           "${ZLIB_LIB_DIR}/libz.a")
+set_property(
+  TARGET runtime-light
+  PROPERTY RUNTIME_LINK_LIBS
+           "${ZLIB_LIB_DIR}/libz.a ${PCRE2_LIB_DIR}/libpcre2-8.a")
 
 if(APPLE)
   target_link_options(runtime-light PUBLIC -undefined dynamic_lookup)

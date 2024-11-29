@@ -12,7 +12,6 @@ prepend(
   job-worker/job-worker-client-state.cpp
   output/output-buffer.cpp
   output/print-functions.cpp
-  regex/regex-state.cpp
   rpc/rpc-api.cpp
   rpc/rpc-state.cpp
   rpc/rpc-extra-headers.cpp
@@ -20,6 +19,8 @@ prepend(
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp
   rpc/rpc-tl-request.cpp
+  string/regex-functions.cpp
+  string/regex-state.cpp
   string/string-state.cpp
   system/system-state.cpp
   file/file-stream-state.cpp
