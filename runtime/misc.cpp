@@ -11,7 +11,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include "runtime-common/stdlib/string/json-functions.h"
+#include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/datetime_functions.h"

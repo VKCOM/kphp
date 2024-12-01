@@ -21,6 +21,7 @@
 #include "common/wrappers/overloaded.h"
 
 #include "net/net-connections.h"
+#include "runtime-common/stdlib/serialization/serialization-context.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/string/string-functions.h"
@@ -2431,7 +2432,7 @@ static void free_runtime_libs() {
   vk::singleton<curl_async::CurlAdaptor>::get().reset();
   vk::singleton<OomHandler>::get().reset();
   free_interface_lib();
-  hard_reset_var(StringLibContext::get().last_json_processor_error);
+  hard_reset_var(SerializationLibContext::get().last_json_processor_error);
 }
 
 void global_init_runtime_libs() {

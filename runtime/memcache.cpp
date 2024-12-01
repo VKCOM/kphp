@@ -5,7 +5,7 @@
 #include "runtime/memcache.h"
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-common/stdlib/string/json-functions.h"
+#include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime/array_functions.h"
 #include "runtime/net_events.h"
 #include "runtime/serialize-functions.h"

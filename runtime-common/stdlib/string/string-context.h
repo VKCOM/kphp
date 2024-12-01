@@ -45,9 +45,6 @@ public:
   // mb_string context
   bool detect_incorrect_encoding_names{};
 
-  // from-json-processor context
-  string last_json_processor_error;
-
   static StringLibContext &get() noexcept;
 };
 

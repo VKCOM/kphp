@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "runtime-common/stdlib/string/json-writer.h"
+#include "runtime-common/stdlib/serialization/json-writer.h"
 
 using namespace impl_;
 

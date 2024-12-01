@@ -5,19 +5,18 @@
 #pragma once
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/string/json-functions.h"
-#include "runtime-common/stdlib/string/json-processor-utils.h"
-#include "runtime-common/stdlib/string/json-writer.h"
-#include "runtime-common/stdlib/string/string-context.h"
+#include "runtime-common/stdlib/serialization/json-functions.h"
+#include "runtime-common/stdlib/serialization/json-processor-utils.h"
+#include "runtime-common/stdlib/serialization/json-writer.h"
+#include "runtime-common/stdlib/serialization/serialization-context.h"
 
-template <class Tag>
+template<class Tag>
 class ToJsonVisitor {
 public:
   explicit ToJsonVisitor(impl_::JsonWriter &writer, bool flatten_class, std::size_t depth) noexcept
     : writer_(writer)
     , flatten_class_(flatten_class)
-    , depth_(flatten_class ? depth : ++depth)
-  {}
+    , depth_(flatten_class ? depth : ++depth) {}
 
   template<class T>
   void operator()(const char *key, const T &value, bool array_as_hashmap = false) noexcept {
@@ -73,13 +72,13 @@ private:
 
   template<class T>
   void process_impl(const array<T> &array) noexcept {
-    //use array_as_hashmap_ only for top level of current array field, don't propagate it further
+    // use array_as_hashmap_ only for top level of current array field, don't propagate it further
     bool as_hashmap = std::exchange(array_as_hashmap_, false);
     (array.is_vector() || array.is_pseudo_vector()) && !as_hashmap ? process_vector(array) : process_map(array);
   }
 
   // support of array<Unknown> compilation
-  void process_impl(const Unknown &/*elem*/) noexcept {}
+  void process_impl(const Unknown & /*elem*/) noexcept {}
 
   void process_impl(const mixed &value) noexcept {
     switch (value.get_type()) {
@@ -140,7 +139,7 @@ private:
 template<class Tag, class T, class U = Unknown>
 void to_json_impl(const class_instance<T> &klass, impl_::JsonWriter &writer, const array<U> &more, std::size_t depth = 0) noexcept {
   if (depth > 64) {
-    StringLibContext::get().last_json_processor_error.assign("allowed depth=64 of json object exceeded");
+    SerializationLibContext::get().last_json_processor_error.assign("allowed depth=64 of json object exceeded");
     return;
   }
 
@@ -180,7 +179,7 @@ string f$JsonEncoder$$to_json_impl(Tag /*tag*/, const class_instance<T> &klass, 
   if (unlikely(has_unsupported_option)) {
     php_warning("Wrong parameter flags = %" PRIi64 " in function JsonEncoder::encode", flags);
   }
-  auto &error_msg = StringLibContext::get().last_json_processor_error;
+  auto &error_msg = SerializationLibContext::get().last_json_processor_error;
   error_msg = {};
 
   impl_::JsonWriter writer{(flags & JSON_PRETTY_PRINT) > 0, (flags & JSON_PRESERVE_ZERO_FRACTION) > 0};

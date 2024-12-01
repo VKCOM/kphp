@@ -5,7 +5,7 @@
 #pragma once
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/string/json-functions.h"
+#include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime/exception.h"
 
 template<class T>
