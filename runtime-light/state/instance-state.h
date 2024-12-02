@@ -108,6 +108,8 @@ struct InstanceState final : vk::not_copyable {
     return open_stream(std::string_view{component_name.c_str(), static_cast<size_t>(component_name.size())});
   }
 
+  std::pair<uint64_t, int32_t> connect_to(const string &host, bool reliable) noexcept;
+
   uint64_t set_timer(std::chrono::nanoseconds) noexcept;
   void release_stream(uint64_t) noexcept;
   void release_all_streams() noexcept;
