@@ -10,6 +10,7 @@ prepend(
   fork/fork-state.cpp
   job-worker/job-worker-api.cpp
   job-worker/job-worker-client-state.cpp
+  math/random-state.cpp
   output/output-buffer.cpp
   output/print-functions.cpp
   rpc/rpc-api.cpp

@@ -13,9 +13,32 @@ function _hrtime_int(): int;
 // hrtime(false) specialization
 function _hrtime_array(): int[];
 
+/**
+ * @kphp-internal-result-indexing
+ */
+function _explode_nth($delimiter ::: string, $str ::: string, int $index): string;
+
+/**
+ * @kphp-internal-result-indexing
+ */
+function _explode_1($delimiter ::: string, $str ::: string): string;
+
+/**
+ * @kphp-internal-result-array2tuple
+ */
+function _explode_tuple2($delimiter ::: string, $str ::: string, int $mask, $limit ::: int = 2+1): tuple(string, string);
+
+/**
+ * @kphp-internal-result-array2tuple
+ */
+function _explode_tuple3($delimiter ::: string, $str ::: string, int $mask, $limit ::: int = 3+1): tuple(string, string, string);
+
+/**
+ * @kphp-internal-result-array2tuple
+ */
+function _explode_tuple4($delimiter ::: string, $str ::: string, int $mask, $limit ::: int = 4+1): tuple(string, string, string, string);
 
 // ===== UNSUPPORTED =====
-
 
 function _exception_set_location($e, string $filename, int $line): ^1;
 
@@ -27,36 +50,6 @@ function _by_name_call_method(string $class_name, string $method_name, ...$args)
 function _by_name_get_const(string $class_name, string $constant);
 // `$c::$field` => `_by_name_get_field($c, 'field')`
 function _by_name_get_field(string $class_name, string $field);
-
-
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-internal-result-indexing
- */
-function _explode_nth($delimiter ::: string, $str ::: string, int $index): string;
-
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-internal-result-indexing
- */
-function _explode_1($delimiter ::: string, $str ::: string): string;
-
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-internal-result-array2tuple
- */
-function _explode_tuple2($delimiter ::: string, $str ::: string, int $mask, $limit ::: int = 2+1): tuple(string, string);
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-internal-result-array2tuple
- */
-function _explode_tuple3($delimiter ::: string, $str ::: string, int $mask, $limit ::: int = 3+1): tuple(string, string, string);
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-internal-result-array2tuple
- */
-function _explode_tuple4($delimiter ::: string, $str ::: string, int $mask, $limit ::: int = 4+1): tuple(string, string, string, string);
-
 
 /**
  * @kphp-internal-param-readonly $str
