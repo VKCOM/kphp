@@ -218,8 +218,8 @@ T f$array_merge(const T &a1, const T &a2) noexcept {
 }
 
 template<class T>
-T f$array_merge(const T &a1, const T &a2, const T &a3, const T &a4, const T &a5, const T &a6, const T &a7, const T &a8, const T &a9, const T &a10, const T &a11,
-                const T &a12) noexcept {
+T f$array_merge(const T &a1, const T &a2, const T &a3, const T &a4 = {}, const T &a5 = {}, const T &a6 = {}, const T &a7 = {}, const T &a8 = {},
+                const T &a9 = {}, const T &a10 = {}, const T &a11 = {}, const T &a12 = {}) noexcept {
   T result(a1.size() + a2.size() + a3.size() + a4.size() + a5.size() + a6.size() + a7.size() + a8.size() + a9.size() + a10.size() + a11.size() + a12.size());
   result.merge_with(a1);
   result.merge_with(a2);
