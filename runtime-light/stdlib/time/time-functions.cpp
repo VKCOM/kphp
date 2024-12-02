@@ -305,13 +305,13 @@ int64_t fix_year(int64_t year) noexcept {
 
 } // namespace
 
-int64_t f$mktime(int64_t hour, Optional<int64_t> minute, Optional<int64_t> second, Optional<int64_t> month, Optional<int64_t> day,
+int64_t f$mktime(Optional<int64_t> hour, Optional<int64_t> minute, Optional<int64_t> second, Optional<int64_t> month, Optional<int64_t> day,
                  Optional<int64_t> year) noexcept {
   namespace chrono = std::chrono;
   const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
   chrono::year_month_day current_date{chrono::sys_days{duration_cast<chrono::days>(time_since_epoch)}};
 
-  const auto hours{chrono::hours(hour)};
+  const auto hours{chrono::hours(hour.has_value() ? hour.val() : duration_cast<chrono::hours>(time_since_epoch).count() % 24)};
   const auto minutes{chrono::minutes(minute.has_value() ? minute.val() : duration_cast<chrono::minutes>(time_since_epoch).count() % 60)};
   const auto seconds{chrono::seconds(second.has_value() ? second.val() : duration_cast<chrono::seconds>(time_since_epoch).count() % 60)};
   const auto months{chrono::months(month.has_value() ? month.val() : static_cast<unsigned>(current_date.month()))};
