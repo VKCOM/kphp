@@ -5,9 +5,12 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
+#include <memory>
 #include <random>
 
 #include "runtime-common/stdlib/math/random-functions.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/math/random-state.h"
 
 inline int64_t f$mt_rand(int64_t l, int64_t r) noexcept {
@@ -21,9 +24,9 @@ inline int64_t f$mt_rand() noexcept {
   return f$mt_rand(0, f$mt_getrandmax());
 }
 
-inline void f$mt_srand(int64_t seed) noexcept {
+inline void f$mt_srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexcept {
   if (seed == std::numeric_limits<int64_t>::min()) {
-    seed = std::chrono::steady_clock::now().time_since_epoch().count();
+    k2::os_rnd(sizeof(seed), std::addressof(seed));
   }
   RandomInstanceState::get().mt_gen.seed(static_cast<std::mt19937_64::result_type>(seed));
 }

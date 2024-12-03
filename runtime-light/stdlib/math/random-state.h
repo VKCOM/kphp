@@ -16,7 +16,7 @@ struct RandomInstanceState final : private vk::not_copyable {
 
   RandomInstanceState() noexcept {
     uint64_t seed{};
-    k2_os_rnd(sizeof(seed), std::addressof(seed));
+    k2::os_rnd(sizeof(seed), std::addressof(seed));
     mt_gen = std::mt19937_64{seed};
   }
 
