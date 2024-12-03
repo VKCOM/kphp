@@ -6,9 +6,9 @@ define('ZLIB_ENCODING_RAW', -0x0f);
 define('ZLIB_ENCODING_DEFLATE', 0x0f);
 define('ZLIB_ENCODING_GZIP', 0x1f);
 
-function gzcompress ($str ::: string, $level ::: int = -1): string | false;
+function gzcompress ($str ::: string, $level ::: int = -1): string;
 
-function gzuncompress ($str ::: string): string | false;
+function gzuncompress ($str ::: string): string;
 
 // ===== UNSUPPORTED =====
 
