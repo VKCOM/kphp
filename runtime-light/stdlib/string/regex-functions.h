@@ -52,7 +52,7 @@ Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, 
 mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
                      int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
-mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const Optional<mixed> &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
+mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const Optional<string> &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
                      int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
