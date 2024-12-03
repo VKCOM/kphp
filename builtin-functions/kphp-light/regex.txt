@@ -21,7 +21,7 @@ function preg_match ($regex ::: string, $subject ::: string, &$matches ::: mixed
 
 function preg_match_all ($regex ::: string, $subject ::: string, &$matches ::: mixed = TODO, $flags ::: int = 0, $offset ::: int = 0) ::: int | false;
 
-function preg_replace ($regex ::: string | array, $replace_val ::: string | array, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: ^3 | string | false | null;
+function preg_replace ($regex ::: string | array, $replace_val ::: string | array, $subject ::: string | array, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: ^3 | string | null;
 
 // ===== UNSUPPORTED =====
 
