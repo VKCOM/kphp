@@ -35,6 +35,11 @@ Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mix
 Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
                                    int64_t flags = PREG_NO_FLAGS, int64_t offset = 0) noexcept;
 
+void foo() {
+  mixed m(Optional<string>);
+
+}
+
 /*
  * PHP's implementation of preg_replace doesn't replace some errors. For example, consider replacement containing
  * back reference $123. It cannot be found in the pattern, but PHP doesn't report it as error, it just treats such
@@ -52,12 +57,9 @@ Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, 
 mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
                      int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
-Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, const Optional<string> &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
-                                int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
-
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
-auto f$preg_replace_callback(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = -1, int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
-  return f$preg_replace_callback(regex, replace_val, subject.val(), limit, replace_count);
+inline auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = -1, int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
+  return f$preg_replace(regex, replace_val, subject.val(), limit, replace_count);
 }
 
 template<class T>
