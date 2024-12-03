@@ -9,7 +9,7 @@ function date ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
 
 function date_default_timezone_set ($s ::: string) ::: bool;
 
-function gmdate ($format ::: string, $timestamp ::: ?int = null) ::: string;
+function gmdate ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
 
 function time() ::: int;
 
