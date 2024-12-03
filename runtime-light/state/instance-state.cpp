@@ -93,7 +93,7 @@ task_t<void> InstanceState::run_instance_epilogue() noexcept {
     co_return;
   }
   if (standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {
-    poll_status = PollStatus::PollFinishedError;
+    poll_status = k2::PollStatus::PollFinishedError;
     co_return;
   }
 
@@ -109,7 +109,7 @@ void InstanceState::process_platform_updates() noexcept {
     if (static_cast<bool>(k2::control_flags()->please_yield.load())) { // tell the scheduler that we are about to yield
       php_debug("platform asked for yield");
       const auto schedule_status{scheduler.schedule(ScheduleEvent::Yield{})};
-      poll_status = schedule_status == ScheduleStatus::Error ? PollStatus::PollFinishedError : PollStatus::PollReschedule;
+      poll_status = schedule_status == ScheduleStatus::Error ? k2::PollStatus::PollFinishedError : k2::PollStatus::PollReschedule;
       return;
     }
 
@@ -126,7 +126,7 @@ void InstanceState::process_platform_updates() noexcept {
             break;
           }
           case ScheduleStatus::Error: { // something bad's happened, stop execution
-            poll_status = PollStatus::PollFinishedError;
+            poll_status = k2::PollStatus::PollFinishedError;
             return;
           }
         }
@@ -135,7 +135,7 @@ void InstanceState::process_platform_updates() noexcept {
         incoming_streams_.push_back(stream_d);
         opened_streams_.insert(stream_d);
         if (const auto schedule_status{scheduler.schedule(ScheduleEvent::IncomingStream{.stream_d = stream_d})}; schedule_status == ScheduleStatus::Error) {
-          poll_status = PollStatus::PollFinishedError;
+          poll_status = k2::PollStatus::PollFinishedError;
           return;
         }
       }
@@ -145,18 +145,18 @@ void InstanceState::process_platform_updates() noexcept {
           break;
         }
         case ScheduleStatus::Skipped: { // scheduler's done nothing, so it's either scheduled all coroutines or is waiting for events
-          poll_status = scheduler.done() ? PollStatus::PollFinishedOk : PollStatus::PollBlocked;
+          poll_status = scheduler.done() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollBlocked;
           return;
         }
         case ScheduleStatus::Error: { // something bad's happened, stop execution
-          poll_status = PollStatus::PollFinishedError;
+          poll_status = k2::PollStatus::PollFinishedError;
           return;
         }
       }
     }
   }
   // unreachable code
-  poll_status = PollStatus::PollFinishedError;
+  poll_status = k2::PollStatus::PollFinishedError;
 }
 
 uint64_t InstanceState::take_incoming_stream() noexcept {
