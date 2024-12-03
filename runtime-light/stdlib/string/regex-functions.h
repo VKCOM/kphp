@@ -61,14 +61,14 @@ auto f$preg_replace_callback(const T1 &regex, const T2 &replace_val, const T3 &s
 }
 
 template<class T>
-Optional<string> f$preg_replace_callback(const regexp &regex, const T &replace_val, const string &subject, int64_t limit = -1,
-                                         int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
+Optional<string> f$preg_replace_callback(const regexp &, const T &, const string &, int64_t  = -1,
+                                         int64_t & = RegexInstanceState::get().default_preg_replace_count) {
   php_critical_error("call to unsupported function");
 }
 
 template<class T>
-mixed f$preg_replace_callback(const regexp &regex, const T &replace_val, const mixed &subject, int64_t limit = -1,
-                              int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
+mixed f$preg_replace_callback(const regexp &, const T &, const mixed &, int64_t  = -1,
+                              int64_t & = RegexInstanceState::get().default_preg_replace_count) {
   php_critical_error("call to unsupported function");
 }
 
@@ -79,14 +79,14 @@ auto f$preg_replace_callback(const string &regex, const T &replace_val, const T2
 }
 
 template<class T>
-Optional<string> f$preg_replace_callback(const mixed &regex, const T &replace_val, const string &subject, int64_t limit = -1,
-                                         int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
+Optional<string> f$preg_replace_callback(const mixed &, const T &, const string &, int64_t  = -1,
+                                         int64_t & = RegexInstanceState::get().default_preg_replace_count) {
   php_critical_error("call to unsupported function");
 }
 
 template<class T>
-mixed f$preg_replace_callback(const mixed &regex, const T &replace_val, const mixed &subject, int64_t limit = -1,
-                              int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
+mixed f$preg_replace_callback(const mixed &, const T &, const mixed &, int64_t  = -1,
+                              int64_t & = RegexInstanceState::get().default_preg_replace_count) {
   php_critical_error("call to unsupported function");
 }
 
