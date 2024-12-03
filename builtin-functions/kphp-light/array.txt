@@ -1,4 +1,55 @@
 <?php
 
+define('SORT_REGULAR', 0);
+define('SORT_NUMERIC', 1);
+define('SORT_STRING', 2);
+
+function array_intersect_key ($a1 ::: array, $a2 ::: array) ::: ^1;
+
+function array_intersect ($a1 ::: array, $a2 ::: array) ::: ^1;
+
+/** @kphp-extern-func-info cpp_template_call */
+function array_merge ($a1 ::: array, $a2  ::: array = array(), $a3  ::: array = array(),
+            $a4 ::: array = array(), $a5  ::: array = array(), $a6  ::: array = array(),
+            $a7 ::: array = array(), $a8  ::: array = array(), $a9  ::: array = array(),
+           $a10 ::: array = array(), $a11 ::: array = array(), $a12 ::: array = array())
+                ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
+
+function array_merge_into (&$a ::: array, $another_array ::: array) ::: void;
+
+function array_shift (&$a ::: array) ::: ^1[*];
+
+function array_unshift (&$a ::: array, $val ::: any) ::: int;
+
+function array_key_exists ($v ::: any, $a ::: array) ::: bool;
+
+function array_search ($val ::: any, $a ::: array, $strict ::: bool = false) ::: mixed;
+
+function array_keys ($a ::: array) ::: mixed[];
+
+function array_keys_as_strings ($a ::: array) ::: string[];
+
+function array_keys_as_ints ($a ::: array) ::: int[];
+
+function array_values ($a ::: array) ::: ^1;
+
+function array_unique ($a ::: array, int $flags = SORT_STRING) ::: ^1;
+
+function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
+
+function array_reserve_vector (&$a ::: array, $size ::: int) ::: void;
+
+function array_reserve_map_int_keys (&$a ::: array, $size ::: int) ::: void;
+
+function array_reserve_map_string_keys (&$a ::: array, $size ::: int) ::: void;
+
+function array_reserve_from (&$a ::: array, $base ::: array) ::: void;
+
+function shuffle (&$a ::: array) ::: void;
+
+function implode ($s ::: string, $v ::: array) ::: string;
+
+function explode ($delimiter ::: string, $str ::: string, $limit ::: int = PHP_INT_MAX) ::: string[];
+
 /** @kphp-extern-func-info interruptible */
 function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];

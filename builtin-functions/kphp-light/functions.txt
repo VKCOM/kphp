@@ -11,6 +11,7 @@ require_once __DIR__ . '/string.txt';
 require_once __DIR__ . '/server.txt';
 require_once __DIR__ . '/kphp-toggles.txt';
 require_once __DIR__ . '/kphp_internal.txt';
+require_once __DIR__ . '/math.txt';
 require_once __DIR__ . '/time.txt';
 require_once __DIR__ . '/regex.txt';
 

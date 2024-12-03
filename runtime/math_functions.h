@@ -24,9 +24,6 @@ int64_t f$mt_rand(int64_t l, int64_t r) noexcept;
 
 int64_t f$mt_rand() noexcept;
 
-int64_t f$mt_getrandmax() noexcept;
-
-
 void f$srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexcept;
 
 int64_t f$rand(int64_t l, int64_t r) noexcept;

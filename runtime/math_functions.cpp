@@ -18,6 +18,7 @@
 
 #include "common/cycleclock.h"
 #include "runtime-common/stdlib/string/string-context.h"
+#include "runtime-common/stdlib/math/random-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
@@ -196,12 +197,6 @@ void f$mt_srand(int64_t seed) noexcept {
     seed = std::chrono::steady_clock::now().time_since_epoch().count();
   }
   MTRandGenerator::get().set_seed(seed);
-}
-
-int64_t f$mt_getrandmax() noexcept {
-  // PHP uses this value, but it doesn't forbid the users to pass
-  // a number that exceeds this limit into mt_rand()
-  return std::numeric_limits<int32_t>::max();
 }
 
 int64_t f$mt_rand() noexcept {

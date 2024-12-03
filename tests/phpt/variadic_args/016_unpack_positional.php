@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 function f(int $a, string $b, float $c = 0.0) {
