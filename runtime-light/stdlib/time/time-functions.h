@@ -42,7 +42,7 @@ inline string f$_microtime_string() noexcept {
 
 inline double f$_microtime_float() noexcept {
   namespace chrono = std::chrono;
-  const auto time_since_epoch{chrono::high_resolution_clock::now().time_since_epoch()};
+  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
   const double microtime =
     duration_cast<chrono::seconds>(time_since_epoch).count() + (duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000) * 1e-9;
   return microtime;
