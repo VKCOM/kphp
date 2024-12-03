@@ -62,8 +62,8 @@ inline int64_t f$time() noexcept {
   return duration_cast<chrono::seconds>(now).count();
 }
 
-int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {}, Optional<int64_t> day = {},
-                 Optional<int64_t> year = {}) noexcept;
+int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
+                 Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept;
 
 string f$gmdate(const string &format, Optional<int64_t> timestamp = {}) noexcept;
 
