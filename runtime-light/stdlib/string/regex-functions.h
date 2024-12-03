@@ -70,7 +70,7 @@ mixed f$preg_replace_callback(const regexp &, const T &, const mixed &, int64_t 
 template<class T, class T2>
 auto f$preg_replace_callback(const string &regex, const T &replace_val, const T2 &subject, int64_t limit = -1,
                              int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
-  return f$preg_replace_callback(regexp(regex), replace_val, subject, limit, replace_count);
+  return f$preg_replace_callback(mixed(regex), replace_val, subject, limit, replace_count);
 }
 
 template<class T>
