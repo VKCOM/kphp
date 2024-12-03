@@ -2,8 +2,8 @@
 
 // ===== SUPPORTED =====
 
-function mktime (?int $hour = null, ?int $minute = null, ?int $second = null,
-                     ?int $month = null, ?int $day = null, ?int $year = null) ::: int;
+function mktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int = PHP_INT_MIN,
+                $month ::: int = PHP_INT_MIN, $day ::: int = PHP_INT_MIN, $year ::: int = PHP_INT_MIN) ::: int;
 
 function date ($format ::: string, $timestamp ::: ?int = null) ::: string;
 
