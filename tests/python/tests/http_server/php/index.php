@@ -178,6 +178,18 @@ if (isset($_SERVER["JOB_ID"])) {
 
         break;
     }
+} else if ($_SERVER["PHP_SELF"] === "/test_streaming_zstd") {
+    header('Content-Encoding: zstd');
+
+    $ctx = zstd_stream_init();
+
+    $chunk_1 = "justo mea orcidignissim corrumpit iuvaret suscipit ocurreret donec turpis eget eros sonet habitasse vix reprimique litora porro nostra nec vidisse pretium facilis referrentur in fusce sententiae appareat quidam repudiandae doctus periculis hac quem suspendisse facilis habemus nibh nisi ex dignissim sociis cursus habitant habitant taciti auctor graeco no facilis persius erat venenatis mandamus graeci falli ipsum elit tation dico nam donec luctus alia vim mucius urna ceteros dicta ad eius postea sea atomorum tale eros comprehensam detracto scripserit non natoque ligula velit eleifend iaculis donec ridiculus ignota quaestio equidem appareat consequat eros percipit mei molestie appetere patrioque dicta mnesarchum<br />";
+    $chunk_1 = (string)zstd_stream_add($ctx, $chunk_1, false);
+    print $chunk_1;
+
+    $chunk_2 = "libris error cum mollis consectetur usu adversarium vulputate te tractatos gloriatur hinc massa an ponderum delenit persius partiendo elementum per nullam omnesque dolorum sodales lorem commodo magnis maecenas nobis consequat curabitur vidisse potenti eloquentiam risus pretium corrumpit postulant dictumst conclusionemque affert ceteros atqui mutat tantas splendide docendi dolor euismod placerat rhoncus sonet aliquid movet nonumes eius qui ei velit nisl mauris vocent doming maximus ignota definiebas has duo posuere repudiandae nobis ex prompta dicit conubia dolore sed neglegentur graeci ludus suscipiantur cetero suspendisse phasellus molestiae vitae labores ferri equidem autem corrumpit brute finibus tellus risus petentium partiendo epicuri aliquet hendrerit";
+    $chunk_2 = (string)zstd_stream_add($ctx, $chunk_2, true);
+    print $chunk_2;
 } else if ($_SERVER["PHP_SELF"] === "/test_ignore_user_abort") {
     register_shutdown_function('shutdown_function');
     /** @var I */

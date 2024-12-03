@@ -110,6 +110,10 @@ final class DeflateContext {
     private function __construct() ::: DeflateContext;
 }
 
+final class ZstdCtx {
+    private function __construct() ::: ZstdCtx;
+}
+
 /** @var mixed $_SERVER */
 global $_SERVER;
 /** @var mixed $_GET */
@@ -1453,6 +1457,8 @@ function is_kphp_job_workers_enabled() ::: bool;
 function get_job_workers_number() ::: int;
 
 // zstd api
+function zstd_stream_init(array $options = []) ::: ?ZstdCtx;
+function zstd_stream_add(ZstdCtx $context, string $data, bool $end) ::: string | false;
 function zstd_compress(string $data, int $level = 3) ::: string | false;
 function zstd_uncompress(string $data) ::: string | false;
 function zstd_compress_dict(string $data, string $dict) ::: string | false;
