@@ -7,8 +7,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
 
-class SerializationLibContext final : vk::not_copyable {
-public:
+struct SerializationLibContext final : private vk::not_copyable {
   string last_json_processor_error;
 
   static SerializationLibContext &get() noexcept;
