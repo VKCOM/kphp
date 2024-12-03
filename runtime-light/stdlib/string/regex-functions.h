@@ -52,14 +52,9 @@ Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, 
 mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
                      int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
-mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const Optional<string> &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
+Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, const Optional<string> &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
                      int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
-template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
-auto f$preg_replace_callback(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = -1,
-                             int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
-  return f$preg_replace_callback(regex, replace_val, subject.val(), limit, replace_count);
-}
 
 template<class T>
 Optional<string> f$preg_replace_callback(const regexp &, const T &, const string &, int64_t = -1,
