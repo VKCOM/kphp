@@ -52,39 +52,8 @@ Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, 
 mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
                      int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
-template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
-inline auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = -1, int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
-  php_critical_error("call to unsupported function");
-}
-
-
-inline Optional<string> f$preg_replace(const regexp &regex, const mixed &replace_val, const string &subject, int64_t limit = -1,
-                                       int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
-  php_critical_error("call to unsupported function");
-}
-
-inline mixed f$preg_replace(const regexp &regex, const string &replace_val, const mixed &subject, int64_t limit = -1,
-                            int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
-  php_critical_error("call to unsupported function");
-}
-
-inline mixed f$preg_replace(const regexp &regex, const mixed &replace_val, const mixed &subject, int64_t limit = -1,
-                            int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
-  php_critical_error("call to unsupported function");
-}
-
-template<class T1, class T2>
-inline auto f$preg_replace(const string &regex, const T1 &replace_val, const T2 &subject, int64_t limit = -1,
-                           int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
-  php_critical_error("call to unsupported function");
-}
-
-inline mixed f$preg_replace(const mixed &regex, const string &replace_val, const mixed &subject, int64_t limit = -1,
-                            int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) {
-  php_critical_error("call to unsupported function");
-}
-
-
+mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const Optional<mixed> &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
+                     int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
 auto f$preg_replace_callback(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = -1,
