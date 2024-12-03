@@ -85,6 +85,23 @@ std::tuple<string, string, string> f$_explode_tuple3(const string &delimiter, co
 
 std::tuple<string, string, string, string> f$_explode_tuple4(const string &delimiter, const string &str, int64_t mask, int64_t limit = 4 + 1) noexcept;
 
+template<class T>
+array<T> f$array_reverse(const array<T> &a, bool preserve_keys = false) noexcept {
+  array<T> result(a.size());
+
+  const auto first = a.begin();
+  for (auto it = a.end(); it != first;) {
+    --it;
+
+    if (!preserve_keys) {
+      result.push_back(it);
+    } else {
+      result.set_value(it);
+    }
+  }
+  return result;
+}
+
 template<class T, class T1>
 array<T> f$array_intersect(const array<T> &a1, const array<T1> &a2) noexcept {
   array<T> result(a1.size().min(a2.size()));
