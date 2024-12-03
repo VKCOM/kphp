@@ -79,9 +79,6 @@ template<class T, class T1, class T2>
 array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2, const array<T2> &a3);
 
 template<class T>
-array<T> f$array_reverse(const array<T> &a, bool preserve_keys = false);
-
-template<class T>
 typename array<T>::key_type f$array_rand(const array<T> &a);
 
 template<class T>
@@ -676,23 +673,6 @@ array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2) {
 template<class T, class T1, class T2>
 array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2, const array<T2> &a3) {
   return f$array_diff_assoc(f$array_diff_assoc(a1, a2), a3);
-}
-
-template<class T>
-array<T> f$array_reverse(const array<T> &a, bool preserve_keys) {
-  array<T> result(a.size());
-
-  const auto first = a.begin();
-  for (auto it = a.end(); it != first;) {
-    --it;
-
-    if (!preserve_keys) {
-      result.push_back(it);
-    } else {
-      result.set_value(it);
-    }
-  }
-  return result;
 }
 
 template<class T, class T1>
