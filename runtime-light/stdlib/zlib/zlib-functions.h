@@ -26,11 +26,14 @@ Optional<string> zlib_decode(std::span<const char> data, int64_t encoding) noexc
 
 } // namespace zlib_impl_
 
-inline Optional<string> f$gzcompress(const string &data, int64_t level = zlib_impl_::ZLIB_MIN_COMPRESSION_LEVEL) noexcept {
-  return zlib_impl_::zlib_encode({data.c_str(), static_cast<size_t>(data.size())},
-                                 level == zlib_impl_::ZLIB_MIN_COMPRESSION_LEVEL ? zlib_impl_::ZLIB_DEFAULT_COMPRESSION_LEVEL : level, ZLIB_ENCODING_DEFLATE);
+inline string f$gzcompress(const string &data, int64_t level = zlib_impl_::ZLIB_MIN_COMPRESSION_LEVEL) noexcept {
+  Optional<string> result{zlib_impl_::zlib_encode({data.c_str(), static_cast<size_t>(data.size())},
+                                                  level == zlib_impl_::ZLIB_MIN_COMPRESSION_LEVEL ? zlib_impl_::ZLIB_DEFAULT_COMPRESSION_LEVEL : level,
+                                                  ZLIB_ENCODING_DEFLATE)};
+  return result.has_value() ? result.val() : string{};
 }
 
-inline Optional<string> f$gzuncompress(const string &data) noexcept {
-  return zlib_impl_::zlib_decode({data.c_str(), static_cast<size_t>(data.size())}, ZLIB_ENCODING_DEFLATE);
+inline string f$gzuncompress(const string &data) noexcept {
+  Optional<string> result{zlib_impl_::zlib_decode({data.c_str(), static_cast<size_t>(data.size())}, ZLIB_ENCODING_DEFLATE)};
+  return result.has_value() ? result.val() : string{};
 }
