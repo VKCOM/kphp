@@ -6,6 +6,7 @@ require_once 'kphp_tester_include.php';
  *  @return mixed
  */
 function as_mix_obj($x) {
+    var_dump("as_mix_obj");
     return to_mixed(new Classes\LoggingLikeArray($x));
 }
 

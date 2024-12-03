@@ -5,6 +5,7 @@ require_once 'kphp_tester_include.php';
 
 /** @kphp-required */
 function generate_aa() {
+    var_dump("generate_a");
     $inner = new Classes\LoggingLikeArray([404]);
     $outter = new Classes\LoggingLikeArray([ to_mixed($inner) ]);
     return to_mixed($outter);

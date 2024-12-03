@@ -4,7 +4,6 @@
 
 #include "compiler/pipes/fix-array-access.h"
 
-#include "auto/compiler/vertex/vertex-types.h"
 #include "common/algorithms/contains.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
@@ -37,9 +36,9 @@ std::pair<VertexPtr, bool> fixup_check_function(VertexPtr cur, VertexPtr prev, F
     resp |= son_res.second;
     as_index->array() = son_res.first;
     if (check_kind == CheckFunction::ISSET) {
-      as_index->inside_isset = true;
+      as_index->inside_isset = prev->type() == op_index;
     } else {
-      as_index->inside_empty = true;
+      as_index->inside_empty = prev->type() == op_index;
     }
   }
   if (auto as_func_call = cur.try_as<op_func_call>(); as_func_call && as_func_call->func_id->class_id && !as_func_call->args().empty()) {

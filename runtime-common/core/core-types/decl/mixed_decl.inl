@@ -181,10 +181,6 @@ public:
   const mixed get_value(double double_key) const;
   const mixed get_value(const array<mixed>::const_iterator &it) const;
   const mixed get_value(const array<mixed>::iterator &it) const;
-  template<typename ...Args>
-  inline const mixed get_value_if_isset(Args &&...args) const;
-  template<typename ...Args>
-  inline const mixed get_value_if_not_empty(Args &&...args) const;
 
   void push_back(const mixed &v);
   const mixed push_back_return(const mixed &v);

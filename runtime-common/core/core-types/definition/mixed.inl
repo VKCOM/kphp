@@ -300,25 +300,6 @@ ResultClass from_mixed(const mixed &m, const string &) noexcept {
   }
 }
 
-template<typename... Args>
-inline const mixed mixed::get_value_if_isset(Args &&...args) const {
-  if (isset(std::forward<Args>(args)...)) {
-    return get_value(std::forward<Args>(args)...);
-  }
-  return mixed();
-}
-
-template<typename... Args>
-inline const mixed mixed::get_value_if_not_empty(Args &&...args) const {
-  if (isset(std::forward<Args>(args)...)) {
-    mixed val = get_value(std::forward<Args>(args)...);
-    if (!val.empty()) {
-      return val;
-    }
-  }
-  return mixed();
-}
-
 template<typename T>
 inline mixed mixed::set_value_return(T key, const mixed &val) {
   if (get_type() == type::OBJECT) {

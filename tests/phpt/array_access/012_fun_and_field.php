@@ -27,6 +27,7 @@ class B {
 
     /** @return A */
     public function get_a() {
+        var_dump("get_a");
         return $this->a;
     }
 }
@@ -37,6 +38,7 @@ class C {
 
     /** @return B */
     public function get_b() {
+        var_dump("get_b");
         return $this->b;
     }
 }
@@ -45,6 +47,7 @@ class C {
  *  @return mixed
  */
 function as_mix_obj($x) {
+    var_dump("as_mixed_obj");
     return to_mixed(new Classes\LoggingLikeArray($x));
 }
 
@@ -53,6 +56,7 @@ function as_mix_obj($x) {
  *  @return C
  */
 function create_c($b) {
+    var_dump("create_c");
     $c = new C;
     $c->b = $b;
 

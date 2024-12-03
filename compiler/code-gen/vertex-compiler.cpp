@@ -1818,9 +1818,9 @@ void compile_index_of_array_or_mixed(VertexAdaptor<op_index> root, CodeGenerator
     }
   } else {
     if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_isset) {
-      W << root->array() << ".get_value_if_isset (" << root->key();
+      W << "MIXED_GET_IF_ISSET(" << root->array() << ", " << root->key();
     } else if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_empty) {
-      W << root->array() << ".get_value_if_not_empty (" << root->key();
+      W << "MIXED_GET_IF_NOT_EMPTY(" << root->array() << ", " << root->key();
     } else {
       W << root->array() << ".get_value (" << root->key();
     }
