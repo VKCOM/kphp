@@ -1818,18 +1818,18 @@ void compile_index_of_array_or_mixed(VertexAdaptor<op_index> root, CodeGenerator
     }
   } else {
     if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_isset) {
-      W << "MIXED_GET_IF_ISSET(" << root->array() << ", " << root->key();
+      W << "MIXED_GET_IF_ISSET" << MacroBegin{} << root->array() << ", " << root->key() << MacroEnd{};
     } else if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_empty) {
-      W << "MIXED_GET_IF_NOT_EMPTY(" << root->array() << ", " << root->key();
+      W << "MIXED_GET_IF_NOT_EMPTY" << MacroBegin{} << root->array() << ", " << root->key() << MacroEnd{};
     } else {
       W << root->array() << ".get_value (" << root->key();
+      // if it's a const string key access like $a['somekey'],
+      // compute the 'somekey' string hash during the compile time and call array<T>::get_value(string, precomputed_hash)
+      if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(root->key())) {
+        W << ", " << precomputed_hash << "_i64";
+      }
+      W << ")";
     }
-    // if it's a const string key access like $a['somekey'],
-    // compute the 'somekey' string hash during the compile time and call array<T>::get_value(string, precomputed_hash)
-    if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(root->key())) {
-      W << ", " << precomputed_hash << "_i64";
-    }
-    W << ")";
   }
 }
 
@@ -2099,18 +2099,22 @@ bool try_compile_set_by_index_of_mixed(VertexPtr root, CodeGenerator &W) {
     if (auto index = lhs.try_as<op_index>()) {
       if (tinf::get_type(index->array())->get_real_ptype() == tp_mixed) {
         if (set->extra_type == op_ex_safe_version) {
-          W << "SAFE_SET_MIXED_BY_INDEX(";
+          W << "SAFE_SET_MIXED_BY_INDEX";
+          W << MacroBegin{};
           W << index->array() << ", ";
           W << index->key() << ", ";
 
           TmpExpr tmp_rhs(rhs);
           W << tmp_rhs << ", ";
-          W << TypeName(tmp_rhs.get_type()) << ")";
+          W << TypeName(tmp_rhs.get_type());
+          W << MacroEnd{};
         } else {
-          W << "SET_MIXED_BY_INDEX(";
+          W << "SET_MIXED_BY_INDEX";
+          W << MacroBegin{};
           W << index->array() << ", ";
           W << index->key() << ", ";
-          W << rhs << ")";
+          W << rhs;
+          W << MacroEnd{};
         }
         return true;
       }
@@ -2168,11 +2172,13 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
   } else if (auto index = root.try_as<op_index>()) {
     kphp_assert (index->has_key());
     TmpExpr key{index->key()};
-    W << "SAFE_INDEX " << MacroBegin{} <<
-      index->array() << ", " <<
-      key << ", " <<
-      TypeName(key.get_type()) <<
-      MacroEnd{};
+    std::string pre{};
+    std::string past{};
+    if (tinf::get_type(index->array())->ptype() == tp_mixed) {
+      pre = "static_cast<mixed&>(";
+      past = ")";
+    }
+    W << pre << "SAFE_INDEX " << MacroBegin{} << index->array() << ", " << key << ", " << TypeName(key.get_type()) << MacroEnd{} << past;
   } else {
     kphp_error (0, fmt_format("Safe version of [{}] is not supported", OpInfo::str(root->type())));
     kphp_fail();
@@ -2447,27 +2453,22 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
     }
     case op_arr_acc_set_return: {
       auto v = root.as<op_arr_acc_set_return>();
-      W << "ARR_ACC_SET_RETURN(";
-      W << v->obj() << ", ";
-      W << v->offset() << ", ";
-      W << v->value() << ", ";
-      W << "f$" << v->set_method->name;
-      W << ")";
+      W << "ARR_ACC_SET_RETURN" << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << v->value() << ", "
+        << "f$" << v->set_method->name << MacroEnd{};
       break;
     }
     case op_arr_acc_check_and_get: {
       auto v = root.as<op_arr_acc_check_and_get>();
 
       if (v->is_empty) {
-        W << "ARR_ACC_GET_IF_NOT_EMPTY(";
+        W << "ARR_ACC_GET_IF_NOT_EMPTY";
       } else {
-        W << "ARR_ACC_GET_IF_ISSET(";
+        W << "ARR_ACC_GET_IF_ISSET";
       }
-      
-      W << v->obj() << ", ";
-      W << v->offset() << ", ";
-      W << "f$" << v->check_method->name << ", ";
-      W << "f$" << v->get_method->name << ")";
+
+      W << MacroBegin{} << v->obj() << ", " << v->offset() << ", "
+        << "f$" << v->check_method->name << ", "
+        << "f$" << v->get_method->name << MacroEnd{};
       break;
     }
     default:
