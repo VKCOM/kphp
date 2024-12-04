@@ -4,6 +4,7 @@
 
 #include "common/wrappers/likely.h"
 #include "runtime-common/core/runtime-core.h"
+#include <optional>
 
 namespace {
 
@@ -1024,22 +1025,22 @@ const string mixed::get_type_str() const {
   return string(get_type_c_str());
 }
 
-std::pair<class_instance<C$ArrayAccess>, bool> try_as_array_access(const mixed &m) noexcept {
+std::optional<class_instance<C$ArrayAccess>> try_as_array_access(const mixed &m) noexcept {
   using T = class_instance<C$ArrayAccess>;
   
   // For now, it does dynamic cast twice
   // We can get rid of one of them
   if (likely(m.is_a<C$ArrayAccess>())) {
-    return {from_mixed<T>(m, string()), true};
+    return from_mixed<T>(m, string());
   }
 
-  return {T{}, false};
+  return std::nullopt;
 }
 
 bool mixed::empty_on(const mixed &key) const {
   if (type_ == type::OBJECT) {
-    if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-      return !f$ArrayAccess$$offsetExists(as_aa, key) || f$ArrayAccess$$offsetGet(as_aa, key).empty();
+    if (auto as_aa = try_as_array_access(*this)) {
+      return !f$ArrayAccess$$offsetExists(*as_aa, key) || f$ArrayAccess$$offsetGet(*as_aa, key).empty();
     }
   }
 
@@ -1048,8 +1049,8 @@ bool mixed::empty_on(const mixed &key) const {
 
 bool mixed::empty_on(const string &key) const {
   if (type_ == type::OBJECT) {
-    if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-      return !f$ArrayAccess$$offsetExists(as_aa, key) || f$ArrayAccess$$offsetGet(as_aa, key).empty();
+    if (auto as_aa = try_as_array_access(*this)) {
+      return !f$ArrayAccess$$offsetExists(*as_aa, key) || f$ArrayAccess$$offsetGet(*as_aa, key).empty();
     }
   }
 
@@ -1058,8 +1059,8 @@ bool mixed::empty_on(const string &key) const {
 
 bool mixed::empty_on(const string &key, int64_t precomputed_hash) const {
   if (type_ == type::OBJECT) {
-    if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-      return !f$ArrayAccess$$offsetExists(as_aa, key) || f$ArrayAccess$$offsetGet(as_aa, key).empty();
+    if (auto as_aa = try_as_array_access(*this)) {
+      return !f$ArrayAccess$$offsetExists(*as_aa, key) || f$ArrayAccess$$offsetGet(*as_aa, key).empty();
     }
   }
 
@@ -1159,8 +1160,8 @@ Materialized<mixed> mixed::operator[](int64_t int_key) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        return Materialized<mixed>::WithValue(f$ArrayAccess$$offsetGet(as_aa, int_key));
+      if (auto as_aa = try_as_array_access(*this)) {
+        return Materialized<mixed>::WithValue(f$ArrayAccess$$offsetGet(*as_aa, int_key));
       }
       php_notice("Indirect modification of overloaded element of %s has no effect", get_type_or_class_name());
       return Materialized<mixed>::WithRef(empty_value<mixed>());
@@ -1183,8 +1184,8 @@ Materialized<mixed> mixed::operator[](const string &string_key) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        return Materialized<mixed>::WithValue(f$ArrayAccess$$offsetGet(as_aa, string_key));
+      if (auto as_aa = try_as_array_access(*this)) {
+        return Materialized<mixed>::WithValue(f$ArrayAccess$$offsetGet(*as_aa, string_key));
       }
       php_notice("Indirect modification of overloaded element of %s has no effect", get_type_or_class_name());
       return Materialized<mixed>::WithRef(empty_value<mixed>());
@@ -1290,8 +1291,8 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
     }
 
     if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        f$ArrayAccess$$offsetSet(as_aa, int_key, v);
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetSet(*as_aa, int_key, v);
       } else {
         php_warning("Class %s doesn't implement \\ArrayAccess to be accessed, index = %" PRIi64, get_type_or_class_name(), int_key);
       }
@@ -1335,8 +1336,8 @@ void mixed::set_value(const string &string_key, const mixed &v) {
     }
 
     if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        f$ArrayAccess$$offsetSet(as_aa, string_key, v);
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetSet(*as_aa, string_key, v);
       } else {
         php_warning("Class %s doesn't implement \\ArrayAccess to be accessed, index = %s", get_type_or_class_name(), string_key.c_str());
       }
@@ -1409,8 +1410,8 @@ const mixed mixed::get_value(int64_t int_key) const {
     }
 
     if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        return f$ArrayAccess$$offsetGet(as_aa, int_key);
+      if (auto as_aa = try_as_array_access(*this)) {
+        return f$ArrayAccess$$offsetGet(*as_aa, int_key);
       } else {
         php_warning("Class %s doesn't implement \\ArrayAccess to be accessed, index = %" PRIi64, get_type_or_class_name(), int_key);
         return mixed();
@@ -1441,8 +1442,8 @@ const mixed mixed::get_value(const string &string_key) const {
     }
 
     if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        return f$ArrayAccess$$offsetGet(as_aa, string_key);
+      if (auto as_aa = try_as_array_access(*this)) {
+        return f$ArrayAccess$$offsetGet(*as_aa, string_key);
       } else {
         php_warning("Class %s doesn't implement \\ArrayAccess to be accessed, index = %s", get_type_or_class_name(), string_key.c_str());
         return mixed();
@@ -1509,8 +1510,8 @@ const mixed mixed::get_value(const array<mixed>::iterator &it) const {
 void mixed::push_back(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        f$ArrayAccess$$offsetSet(as_aa, Optional<bool>{}, v);
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetSet(*as_aa, Optional<bool>{}, v);
         return;
       }
     } else if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
@@ -1528,8 +1529,8 @@ void mixed::push_back(const mixed &v) {
 const mixed mixed::push_back_return(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        f$ArrayAccess$$offsetSet(as_aa, Optional<bool>{}, v);
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetSet(*as_aa, Optional<bool>{}, v);
         return v;
       }
     } else if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
@@ -1547,8 +1548,8 @@ const mixed mixed::push_back_return(const mixed &v) {
 bool mixed::isset(int64_t int_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        return f$ArrayAccess$$offsetExists(as_aa, int_key);
+      if (auto as_aa = try_as_array_access(*this)) {
+        return f$ArrayAccess$$offsetExists(*as_aa, int_key);
       } else {
         php_warning("Class %s doesn't implement \\ArrayAccess to be used in isset", get_type_or_class_name());
         return false;
@@ -1599,8 +1600,8 @@ bool mixed::isset(double double_key) const {
 void mixed::unset(int64_t int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        f$ArrayAccess$$offsetUnset(as_aa, int_key);
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetUnset(*as_aa, int_key);
       } else {
         php_warning("Class %s doesn't implement \\ArrayAccess to be used in unset", get_type_or_class_name());
       }
@@ -1620,8 +1621,8 @@ void mixed::unset(int64_t int_key) {
 void mixed::unset(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        f$ArrayAccess$$offsetUnset(as_aa, v);
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetUnset(*as_aa, v);
       } else {
         php_warning("Class %s doesn't implement \\ArrayAccess to be used in unset", get_type_or_class_name());
       }

@@ -94,8 +94,8 @@ template <class ...MaybeHash>
 bool mixed::isset(const string &string_key, MaybeHash ...maybe_hash) const {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        return f$ArrayAccess$$offsetExists(as_aa, string_key);
+      if (auto as_aa = try_as_array_access(*this)) {
+        return f$ArrayAccess$$offsetExists(*as_aa, string_key);
       }
     }
 
@@ -117,8 +117,8 @@ template <class ...MaybeHash>
 void mixed::unset(const string &string_key, MaybeHash ...maybe_hash) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::OBJECT) {
-      if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-        f$ArrayAccess$$offsetUnset(as_aa, string_key);
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetUnset(*as_aa, string_key);
         return;
       }
     }
@@ -301,7 +301,7 @@ ResultClass from_mixed(const mixed &m, const string &) noexcept {
 }
 
 template<typename T>
-inline mixed mixed::set_value_return(T key, const mixed &val) {
+mixed mixed::set_value_return(T key, const mixed &val) {
   if (get_type() == type::OBJECT) {
     set_value(key, val);
     return val;
@@ -310,10 +310,10 @@ inline mixed mixed::set_value_return(T key, const mixed &val) {
 }
 
 template<typename T>
-inline bool mixed::empty_on(T key) const {
+bool mixed::empty_on(T key) const {
   if (type_ == type::OBJECT) {
-    if (auto [as_aa, succ] = try_as_array_access(*this); succ) {
-      return !f$ArrayAccess$$offsetExists(as_aa, key) || f$ArrayAccess$$offsetGet(as_aa, key).empty();
+    if (auto as_aa = try_as_array_access(*this)) {
+      return !f$ArrayAccess$$offsetExists(*as_aa, key) || f$ArrayAccess$$offsetGet(*as_aa, key).empty();
     }
   }
   return get_value(key).empty();

@@ -25,6 +25,5 @@ struct RuntimeContext final : vk::not_copyable {
   void init() noexcept;
   void free() noexcept;
 
-
   static RuntimeContext &get() noexcept;
 };

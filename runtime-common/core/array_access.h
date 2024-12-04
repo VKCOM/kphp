@@ -3,7 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
-#include "common/php-functions.h"
+
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE

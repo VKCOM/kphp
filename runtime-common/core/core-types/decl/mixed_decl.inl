@@ -4,11 +4,12 @@
 
 #pragma once
 
-#include "common/smart_ptrs/intrusive_ptr.h"
-#include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include <optional>
 #include <utility>
 #include <variant>
 
+#include "common/smart_ptrs/intrusive_ptr.h"
+#include "runtime-common/core/class-instance/refcountable-php-classes.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"
@@ -27,22 +28,22 @@ struct is_type_acceptable_for_mixed<class_instance<T>> : std::is_base_of<may_be_
 };
 
 template<class Mix>
-class Materialized {
+class Materialized final {
   using MixRef = Mix &;
   std::variant<Mix, Mix *> slot_;
 
-  Materialized(Mix *ptr)
+  Materialized(Mix *ptr) noexcept
     : slot_{ptr} {}
 
-  Materialized(Mix &&value)
+  Materialized(Mix &&value) noexcept
     : slot_(std::move(value)) {}
 
 public:
-  static Materialized WithRef(Mix &ref) {
+  static Materialized WithRef(Mix &ref) noexcept {
     return Materialized(&ref);
   }
 
-  static Materialized WithValue(Mix &&val) {
+  static Materialized WithValue(Mix &&val) noexcept {
     return Materialized(std::move(val));
   }
 
@@ -51,7 +52,7 @@ public:
     return this->operator MixRef()[std::forward<T>(arg)];
   }
 
-  operator MixRef() {
+  operator MixRef() noexcept {
     if (likely(std::holds_alternative<Mix>(slot_))) {
       return std::get<Mix>(slot_);
     }
@@ -62,7 +63,7 @@ public:
   // in codegen Materizalied<Mix> is casted to mixed&
 
   template<class T>
-  Materialized operator=(T &&arg) && {
+  Materialized operator=(T &&arg) && noexcept {
     return Materialized::WithRef(this->operator MixRef() = std::forward<T>(arg));
   }
 
@@ -156,7 +157,7 @@ public:
    */
 
   template<typename T>
-  inline mixed set_value_return(T key, const mixed &val);
+  mixed set_value_return(T key, const mixed &val);
   mixed set_value_return(const mixed &key, const mixed &val);
   mixed set_value_return(const string &key, const mixed &val);
   mixed set_value_return(const array<mixed>::iterator &key, const mixed &val);
@@ -287,7 +288,7 @@ public:
 
 
   template<typename T>
-  inline bool empty_on(T key) const;
+  bool empty_on(T key) const;
   bool empty_on(const mixed &key) const;
   bool empty_on(const string &key) const;
   bool empty_on(const string &key, int64_t precomputed_hash) const;
@@ -376,4 +377,4 @@ template<class InputClass>
 mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept;
 template<class ResultClass>
 ResultClass from_mixed(const mixed &m, const string &) noexcept;
-std::pair<class_instance<C$ArrayAccess>, bool> try_as_array_access(const mixed &) noexcept;
+std::optional<class_instance<C$ArrayAccess>> try_as_array_access(const mixed &) noexcept;

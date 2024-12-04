@@ -9,6 +9,7 @@
 
 #include "common/wrappers/field_getter.h"
 #include "common/wrappers/likely.h"
+#include "common/wrappers/string_view.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
@@ -855,11 +856,8 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       W << "_tr_f.enter_branch(" << root->args()[0] << ")";
       return;
     }
-  }
-
-  if (root->func_id->is_extern() && root->str_val == "empty") {
-    if (auto index = root->args()[0].try_as<op_index>()) {
-      if (tinf::get_type(index->array())->get_real_ptype() == tp_mixed) {
+    if (root->str_val == "empty") {
+      if (auto index = root->args()[0].try_as<op_index>(); index && tinf::get_type(index->array())->get_real_ptype() == tp_mixed) {
         W << "(" << index->array() << ")";
         W << ".empty_on(" << index->key();
         if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
@@ -1811,11 +1809,13 @@ void compile_index_of_array_or_mixed(VertexAdaptor<op_index> root, CodeGenerator
   bool used_as_rval = root->rl_type != val_l;
   if (!used_as_rval) {
     kphp_assert(root->has_key());
+    vk::string_view pre{};
+    vk::string_view past{};
     if (tinf::get_type(root->array())->ptype() == tp_mixed) {
-      W << "static_cast<mixed&>(" << root->array() << "[" << root->key() << "])";
-    } else {
-      W << root->array() << "[" << root->key() << "]";
+      pre = "static_cast<mixed&>(";
+      past = ")";
     }
+    W << pre << root->array() << "[" << root->key() << "]" << past;
   } else {
     if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_isset) {
       W << "MIXED_GET_IF_ISSET" << MacroBegin{} << root->array() << ", " << root->key() << MacroEnd{};
@@ -2172,8 +2172,8 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
   } else if (auto index = root.try_as<op_index>()) {
     kphp_assert (index->has_key());
     TmpExpr key{index->key()};
-    std::string pre{};
-    std::string past{};
+    vk::string_view pre{};
+    vk::string_view past{};
     if (tinf::get_type(index->array())->ptype() == tp_mixed) {
       pre = "static_cast<mixed&>(";
       past = ")";
