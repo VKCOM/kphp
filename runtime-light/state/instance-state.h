@@ -27,6 +27,7 @@
 #include "runtime-light/stdlib/math/random-state.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
+#include "runtime-light/stdlib/serialization/serialization-state.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
@@ -117,6 +118,7 @@ struct InstanceState final : vk::not_copyable {
 
   RuntimeContext runtime_context;
   RpcInstanceState rpc_instance_state;
+  SerializationInstanceState serialization_instance_state;
   HttpServerInstanceState http_server_instance_state{};
   JobWorkerClientInstanceState job_worker_client_instance_state{};
   JobWorkerServerInstanceState job_worker_server_instance_state{};

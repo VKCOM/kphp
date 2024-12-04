@@ -4,11 +4,10 @@
 
 #pragma once
 
-#include <string_view>
-
 #include "runtime-common/core/runtime-core.h"
-#include "runtime/json-functions.h"
-#include "runtime/json-processor-utils.h"
+#include "runtime-common/stdlib/serialization/json-functions.h"
+#include "runtime-common/stdlib/serialization/json-processor-utils.h"
+#include "runtime-common/stdlib/serialization/serialization-context.h"
 
 template<class Tag>
 class FromJsonVisitor {
@@ -16,7 +15,7 @@ public:
   explicit FromJsonVisitor(const mixed &json, bool flatten_class, JsonPath &json_path) noexcept
     : json_(json)
     , flatten_class_(flatten_class)
-    , json_path_ (json_path) {}
+    , json_path_(json_path) {}
 
   template<class T>
   void operator()(const char *key, T &value, bool required = false) noexcept {
@@ -39,8 +38,12 @@ public:
     json_path_.leave();
   }
 
-  bool has_error() const noexcept { return !error_.empty(); }
-  const string &get_error() const noexcept { return error_; }
+  bool has_error() const noexcept {
+    return !error_.empty();
+  }
+  const string &get_error() const noexcept {
+    return error_;
+  }
 
   static const char *get_json_obj_magic_key() noexcept {
     return "__json_obj_magic";
@@ -48,14 +51,14 @@ public:
 
 private:
   [[gnu::noinline]] void on_input_type_mismatch(const mixed &json) noexcept {
-     error_.assign("unexpected type ");
-     if (json.is_array()) {
-       error_.append(json.as_array().is_vector() ? "array" : "object");
-     } else {
-       error_.append(json.get_type_str());
-     }
-     error_.append(" for key ");
-     error_.append(json_path_.to_string());
+    error_.assign("unexpected type ");
+    if (json.is_array()) {
+      error_.append(json.as_array().is_vector() ? "array" : "object");
+    } else {
+      error_.append(json.get_type_str());
+    }
+    error_.append(" for key ");
+    error_.append(json_path_.to_string());
   }
 
   void do_set(bool &value, const mixed &json) noexcept {
@@ -91,13 +94,13 @@ private:
   }
 
   void do_set(JsonRawString &value, const mixed &json) noexcept {
-    kphp_runtime_context.static_SB.clean();
-    if (!impl_::JsonEncoder{0, false, get_json_obj_magic_key()}.encode(json)) {
+    runtime_context_buffer.clean();
+    if (!impl_::JsonEncoder{0, false, get_json_obj_magic_key()}.encode(json, runtime_context_buffer)) {
       error_.append("failed to decode @kphp-json raw_string field ");
       error_.append(json_path_.to_string());
       return;
     }
-    value.str = kphp_runtime_context.static_SB.str();
+    value.str = runtime_context_buffer.str();
   }
 
   template<class T>
@@ -113,7 +116,7 @@ private:
   void do_set(class_instance<I> &klass, const mixed &json) noexcept;
 
   // just don't fail compilation with empty untyped arrays
-  void do_set(array<Unknown> &/*array*/, const mixed &/*json*/) noexcept {}
+  void do_set(array<Unknown> & /*array*/, const mixed & /*json*/) noexcept {}
 
   template<class T>
   void do_set_array(array<T> &array, const mixed &json) noexcept {
@@ -156,7 +159,9 @@ private:
   string error_;
   const mixed &json_;
   bool flatten_class_{false};
-  JsonPath& json_path_;
+  JsonPath &json_path_;
+
+  string_buffer &runtime_context_buffer{RuntimeContext::get().static_SB};
 };
 
 template<class I, class Tag>
@@ -169,14 +174,14 @@ class_instance<I> from_json_impl(const mixed &json, JsonPath &json_path) noexcep
     FromJsonVisitor<Tag> visitor{json, impl_::IsJsonFlattenClass<I>::value, json_path};
     instance.get()->accept(visitor);
     if (visitor.has_error()) {
-      JsonEncoderError::msg.append(visitor.get_error());
+      SerializationLibContext::get().last_json_processor_error.append(visitor.get_error());
       return {};
     }
   }
   if constexpr (impl_::HasClassWakeupMethod<I>::value) {
     instance.get()->wakeup(instance);
   }
-  return JsonEncoderError::msg.empty() ? instance : class_instance<I>{};
+  return SerializationLibContext::get().last_json_processor_error.empty() ? instance : class_instance<I>{};
 }
 
 template<class Tag>
@@ -195,19 +200,20 @@ void FromJsonVisitor<Tag>::do_set(class_instance<I> &klass, const mixed &json) n
 }
 
 template<class ClassName, class Tag>
-ClassName f$JsonEncoder$$from_json_impl(Tag /*tag*/, const string &json_string, const string &/*class_mame*/) noexcept {
-  JsonEncoderError::msg = {};
+ClassName f$JsonEncoder$$from_json_impl(Tag /*tag*/, const string &json_string, const string & /*class_mame*/) noexcept {
+  auto &msg = SerializationLibContext::get().last_json_processor_error;
+  msg = {};
 
   auto [json, success] = json_decode(json_string, FromJsonVisitor<Tag>::get_json_obj_magic_key());
 
   if (!success) {
-    JsonEncoderError::msg.append(json_string.empty() ? "provided empty json string" : "failed to parse json string");
+    msg.append(json_string.empty() ? "provided empty json string" : "failed to parse json string");
     return {};
   }
   if constexpr (!impl_::IsJsonFlattenClass<typename ClassName::ClassType>::value) {
     if (!json.is_array() || json.as_array().is_vector()) {
-      JsonEncoderError::msg.append("root element of json string must be an object type, got ");
-      JsonEncoderError::msg.append(json.get_type_c_str());
+      msg.append("root element of json string must be an object type, got ");
+      msg.append(json.get_type_c_str());
       return {};
     }
   }
@@ -216,4 +222,6 @@ ClassName f$JsonEncoder$$from_json_impl(Tag /*tag*/, const string &json_string, 
   return from_json_impl<typename ClassName::ClassType, Tag>(json, json_path);
 }
 
-string f$JsonEncoder$$getLastError() noexcept;
+inline string f$JsonEncoder$$getLastError() noexcept {
+  return SerializationLibContext::get().last_json_processor_error;
+}

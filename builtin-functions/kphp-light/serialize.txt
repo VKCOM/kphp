@@ -1,0 +1,58 @@
+<?php
+
+function json_encode ($v ::: mixed, $options ::: int = 0) ::: string | false;
+function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
+
+define('JSON_UNESCAPED_UNICODE', 1);
+define('JSON_FORCE_OBJECT', 16);
+define('JSON_PRETTY_PRINT', 128); // TODO: add actual support
+define('JSON_PARTIAL_OUTPUT_ON_ERROR', 512);
+define('JSON_PRESERVE_ZERO_FRACTION', 1024);
+
+class JsonEncoder {
+  const rename_policy = 'none';
+  const visibility_policy = 'all';
+  const skip_if_default = false;
+  const float_precision = 0;
+
+  private function __construct();
+
+  public static function encode(object $instance, int $flags = 0, array $more = []) : string;
+  public static function decode(string $json, string $class_name) : instance<^2>;
+  public static function getLastError() : string;
+
+  // JsonEncoderOrChild::encode(...) is actually replaced by JsonEncoder::to_json_impl('JsonEncoderOrChild', ...)
+  static function to_json_impl(string $encoder_tag, object $instance, int $flags = 0, array $more = []) ::: string;
+
+  // JsonEncoderOrChild::decode(...) is actually replaced by JsonEncoder::from_json_impl('JsonEncoderOrChild', ...)
+  /** @kphp-extern-func-info cpp_template_call */
+  static function from_json_impl(string $encoder_tag, string $json, string $class_name) ::: instance<^3>;
+}
+
+// ===== UNSUPPORTED =====
+
+/** @kphp-extern-func-info generate-stub */
+function serialize($v ::: mixed) ::: string;
+/**
+ * @kphp-extern-func-info generate-stub
+ * @kphp-pure-function
+ */
+function unserialize ($v ::: string) ::: mixed;
+
+/** @kphp-extern-func-info generate-stub */
+function msgpack_serialize($v ::: mixed) ::: string | null;
+/** @kphp-extern-func-info generate-stub */
+function msgpack_deserialize($v ::: string) ::: mixed;
+/** @kphp-extern-func-info can_throw generate-stub */
+function msgpack_serialize_safe($v ::: mixed) ::: string;
+/** @kphp-extern-func-info can_throw generate-stub */
+function msgpack_deserialize_safe($v ::: string) ::: mixed;
+
+function instance_serialize(object $instance) ::: string | null;
+/** @kphp-extern-func-info can_throw */
+function instance_serialize_safe(object $instance) ::: string;
+/** @kphp-extern-func-info cpp_template_call */
+function instance_deserialize($serialized ::: string, $to_type ::: string) ::: instance<^2>;
+/** @kphp-extern-func-info cpp_template_call can_throw */
+function instance_deserialize_safe($serialized ::: string, $to_type ::: string) ::: instance<^2>;
+

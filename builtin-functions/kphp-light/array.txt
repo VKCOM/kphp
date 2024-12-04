@@ -53,3 +53,6 @@ function explode ($delimiter ::: string, $str ::: string, $limit ::: int = PHP_I
 
 /** @kphp-extern-func-info interruptible */
 function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];
+
+function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
+function instance_to_array(object $instance, $with_class_names ::: bool = false) ::: mixed[];

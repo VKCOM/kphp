@@ -58,6 +58,8 @@ private:
   const bool preserve_zero_fraction_{false};
   bool has_root_{false};
   std::size_t indent_{0};
+
+  string_buffer &runtime_context_buffer{RuntimeContext::get().static_SB};
 };
 
 } // namespace impl_

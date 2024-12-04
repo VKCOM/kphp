@@ -7,6 +7,7 @@ require_once __DIR__ . '/file.txt';
 require_once __DIR__ . '/hash.txt';
 require_once __DIR__ . '/job-workers.txt';
 require_once __DIR__ . '/rpc.txt';
+require_once __DIR__ . '/serialize.txt';
 require_once __DIR__ . '/string.txt';
 require_once __DIR__ . '/server.txt';
 require_once __DIR__ . '/kphp-toggles.txt';
@@ -142,12 +143,6 @@ function component_server_fetch_request($query ::: ComponentQuery) ::: string;
 
 /** @kphp-extern-func-info interruptible */
 function component_server_send_response($query ::: ComponentQuery, $message ::: string) ::: void;
-
-// === Json =======================================================================================
-
-function json_encode ($v ::: mixed, $options ::: int = 0) ::: string | false;
-
-function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
 
 // === Misc =======================================================================================
 

@@ -81,13 +81,10 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         exception.cpp
         exec.cpp
         files.cpp
-        from-json-processor.cpp
         instance-cache.cpp
         instance-copy-processor.cpp
         inter-process-mutex.cpp
         interface.cpp
-        json-functions.cpp
-        json-writer.cpp
         kphp-backtrace.cpp
         kphp_tracing.cpp
         kphp_tracing_binlog.cpp
@@ -108,11 +105,12 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         resumable.cpp
         rpc.cpp
         rpc_extra_info.cpp
+        serialize-context.cpp
         serialize-functions.cpp
         storage.cpp
         streams.cpp
         string_functions.cpp
-	string-context.cpp
+        string-context.cpp
         tl/rpc_req_error.cpp
         tl/rpc_tl_query.cpp
         tl/rpc_response.cpp
