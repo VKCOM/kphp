@@ -8,10 +8,12 @@
 #include <cinttypes>
 #include <cstdint>
 #include <cstring>
+#include <limits>
 #include <string_view>
 
 #include "common/macos-ports.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 
@@ -278,6 +280,29 @@ just_path:
   return result;
 }
 
+void parse_str_set_array_value(mixed &arr, const char *left_br_pos, int key_len, const string &value) noexcept {
+  php_assert(*left_br_pos == '[');
+  const char *right_br_pos = static_cast<const char *>(memchr(left_br_pos + 1, ']', key_len - 1));
+  if (right_br_pos != nullptr) {
+    string next_key(left_br_pos + 1, static_cast<string::size_type>(right_br_pos - left_br_pos - 1));
+    if (!arr.is_array()) {
+      arr = array<mixed>();
+    }
+
+    if (next_key.empty()) {
+      next_key = string(arr.to_array().get_next_key());
+    }
+
+    if (right_br_pos[1] == '[') {
+      parse_str_set_array_value(arr[next_key], right_br_pos + 1, static_cast<int>(left_br_pos + key_len - (right_br_pos + 1)), value);
+    } else {
+      arr.set_value(next_key, value);
+    }
+  } else {
+    arr = value;
+  }
+}
+
 } // namespace
 
 string f$base64_encode(const string &s) noexcept {
@@ -470,4 +495,39 @@ mixed f$parse_url(const string &s, int64_t component) noexcept {
   }
 
   return url_as_array;
+}
+
+void parse_str_set_value(mixed &arr, const string &key, const string &value) noexcept {
+  const char *key_c = key.c_str();
+  const char *left_br_pos = static_cast<const char *>(std::memchr(key_c, '[', key.size()));
+  if (left_br_pos != nullptr) {
+    return parse_str_set_array_value(arr[string(key_c, static_cast<string::size_type>(left_br_pos - key_c))], left_br_pos,
+                                     static_cast<int>(key_c + key.size() - left_br_pos), value);
+  }
+
+  arr.set_value(key, value);
+}
+
+void f$parse_str(const string &str, mixed &arr) noexcept {
+  if (f$trim(str).empty()) {
+    arr = array<mixed>();
+    return;
+  }
+
+  arr = array<mixed>();
+
+  array<string> par = explode('&', str, std::numeric_limits<int32_t>::max());
+  int64_t len = par.count();
+  for (int64_t i = 0; i < len; i++) {
+    const char *cur = par.get_value(i).c_str();
+    const char *eq_pos = strchrnul(cur, '=');
+    string value;
+    if (*eq_pos) {
+      value = f$urldecode(string(eq_pos + 1));
+    }
+
+    string key(cur, static_cast<string::size_type>(eq_pos - cur));
+    key = f$urldecode(key);
+    parse_str_set_value(arr, key, value);
+  }
 }

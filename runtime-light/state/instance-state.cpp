@@ -53,17 +53,11 @@ task_t<void> InstanceState::run_instance_prologue() noexcept {
   image_kind_ = kind;
 
   // common initialization
-  auto &superglobals{php_script_mutable_globals_singleton.get_superglobals()};
-  superglobals.v$argc = static_cast<int64_t>(0); // TODO
-  superglobals.v$argv = array<mixed>{};          // TODO
   {
     const auto time_mcs{f$_microtime_float()};
 
+    auto &superglobals{php_script_mutable_globals_singleton.get_superglobals()};
     using namespace PhpServerSuperGlobalIndices;
-    superglobals.v$_SERVER.set_value(string{ARGC.data(), ARGC.size()}, superglobals.v$argc);
-    superglobals.v$_SERVER.set_value(string{ARGV.data(), ARGV.size()}, superglobals.v$argv);
-    superglobals.v$_SERVER.set_value(string{PHP_SELF.data(), PHP_SELF.size()}, string{}); // TODO: script name
-    superglobals.v$_SERVER.set_value(string{SCRIPT_NAME.data(), SCRIPT_NAME.size()}, string{});
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME.data(), REQUEST_TIME.size()}, static_cast<int64_t>(time_mcs));
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME_FLOAT.data(), REQUEST_TIME_FLOAT.size()}, static_cast<double>(time_mcs));
   }

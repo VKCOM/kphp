@@ -40,6 +40,12 @@ inline constexpr std::string_view REMOTE_PORT = "REMOTE_PORT";
 inline constexpr std::string_view QUERY_STRING = "QUERY_STRING";
 inline constexpr std::string_view GATEWAY_INTERFACE = "GATEWAY_INTERFACE";
 
+inline constexpr std::string_view CONTENT_TYPE = "CONTENT_TYPE";
+
+inline constexpr std::string_view AUTH_TYPE = "AUTH_TYPE";
+inline constexpr std::string_view PHP_AUTH_USER = "PHP_AUTH_USER";
+inline constexpr std::string_view PHP_AUTH_PW = "PHP_AUTH_PW";
+
 }; // namespace PhpServerSuperGlobalIndices
 
 struct PhpScriptBuiltInSuperGlobals {

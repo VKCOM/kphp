@@ -19,3 +19,7 @@ string f$urlencode(const string &s) noexcept;
 string f$urldecode(const string &s) noexcept;
 
 mixed f$parse_url(const string &s, int64_t component = -1) noexcept;
+
+void parse_str_set_value(mixed &arr, const string &key, const string &value) noexcept;
+
+void f$parse_str(const string &str, mixed &arr) noexcept;
