@@ -110,7 +110,7 @@ bool InlineSimpleFunctions::check_function(FunctionPtr function) const {
 
 void InlineSimpleFunctions::on_start() {
   if (auto klass = current_function->class_id) {
-    if (klass->is_required) {
+    if (klass->is_required_interface) {
       inline_is_possible_ = false;
     }
   }
