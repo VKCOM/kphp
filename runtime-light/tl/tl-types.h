@@ -510,4 +510,16 @@ struct httpResponse final {
   }
 };
 
+class HttpResponse final {
+  static constexpr uint32_t MAGIC = 0x8466'24dc;
+
+public:
+  httpResponse http_response{};
+
+  void store(TLBuffer &tlb) const noexcept {
+    tlb.store_trivial<uint32_t>(MAGIC);
+    http_response.store(tlb);
+  }
+};
+
 } // namespace tl

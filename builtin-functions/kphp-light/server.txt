@@ -28,3 +28,5 @@ function base64_decode ($str ::: string, $strict ::: bool = false): string | fal
 function base64_encode ($str ::: string): string;
 
 function parse_url ($str ::: string, $component ::: int = -1): mixed;
+
+function header ($str ::: string, $replace ::: bool = true, $http_response_code ::: int = 0) ::: void;

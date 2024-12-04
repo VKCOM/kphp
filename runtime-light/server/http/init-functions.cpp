@@ -22,6 +22,10 @@
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/state/instance-state.h"
+#include "runtime-light/stdlib/server/http-functions.h"
+#include "runtime-light/stdlib/time/time-functions.h"
+#include "runtime-light/streams/streams.h"
+#include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 
@@ -42,6 +46,7 @@ constexpr std::string_view SCHEME_SUFFIX = "://";
 constexpr std::string_view GATEWAY_INTERFACE_VALUE = "CGI/1.1";
 
 constexpr std::string_view HEADER_HOST = "host";
+constexpr std::string_view HEADER_DATE = "date";
 constexpr std::string_view HEADER_COOKIE = "cookie";
 constexpr std::string_view HEADER_CONNECTION = "connection";
 constexpr std::string_view HEADER_CONTENT_TYPE = "content-type";
@@ -53,6 +58,7 @@ constexpr std::string_view CONNECTION_CLOSE = "close";
 constexpr std::string_view CONNECTION_KEEP_ALIVE = "keep-alive";
 constexpr std::string_view ENCODING_GZIP = "gzip";
 constexpr std::string_view ENCODING_DEFLATE = "deflate";
+constexpr std::string_view CONTENT_TYPE_TEXT_WIN1251 = "text/html; charset=windows-1251";
 constexpr std::string_view CONTENT_TYPE_APP_FORM_URLENCODED = "application/x-www-form-urlencoded";
 constexpr std::string_view CONTENT_TYPE_MULTIPART_FORM_DATA = "multipart/form-data";
 
@@ -200,16 +206,17 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   auto &server{superglobals.v$_SERVER};
   auto &http_server_instance_st{HttpServerInstanceState::get()};
 
+  http_server_instance_st.http_version = invoke_http.version;
   { // determine HTTP method
     const std::string_view http_method{invoke_http.method.c_str(), invoke_http.method.size()};
     if (http_method == GET_METHOD) {
-      http_server_instance_st.method = HttpMethod::GET;
+      http_server_instance_st.http_method = HttpMethod::GET;
     } else if (http_method == POST_METHOD) {
-      http_server_instance_st.method = HttpMethod::POST;
+      http_server_instance_st.http_method = HttpMethod::POST;
     } else if (http_method == HEAD_METHOD) [[likely]] {
-      http_server_instance_st.method = HttpMethod::HEAD;
+      http_server_instance_st.http_method = HttpMethod::HEAD;
     } else {
-      http_server_instance_st.method = HttpMethod::OTHER;
+      http_server_instance_st.http_method = HttpMethod::OTHER;
     }
   }
 
@@ -267,16 +274,16 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
     server.set_value(string{SCRIPT_URI.data(), SCRIPT_URI.size()}, script_uri);
   }
 
-  if (http_server_instance_st.method == HttpMethod::GET) {
+  if (http_server_instance_st.http_method == HttpMethod::GET) {
     server.set_value(string{ARGC.data(), ARGC.size()}, static_cast<int64_t>(1));
     server.set_value(string{ARGV.data(), ARGV.size()}, invoke_http.uri.opt_query.value_or(string{}));
-  } else if (http_server_instance_st.method == HttpMethod::POST) {
+  } else if (http_server_instance_st.http_method == HttpMethod::POST) {
     if (content_type == CONTENT_TYPE_APP_FORM_URLENCODED) {
       f$parse_str(invoke_http.body, superglobals.v$_POST);
     } else if (content_type == CONTENT_TYPE_MULTIPART_FORM_DATA) {
       php_error("unsupported content-type: %s", CONTENT_TYPE_MULTIPART_FORM_DATA.data());
     } else {
-      http_server_instance_st.raw_post_data.emplace(std::move(invoke_http.body));
+      http_server_instance_st.opt_raw_post_data.emplace(std::move(invoke_http.body));
     }
 
     server.set_value(string{CONTENT_TYPE.data(), CONTENT_TYPE.size()}, string{content_type.data(), static_cast<string::size_type>(content_type.size())});
@@ -288,5 +295,60 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
     request += superglobals.v$_POST.to_array();
     request += superglobals.v$_COOKIE.to_array();
     superglobals.v$_REQUEST = std::move(request);
+  }
+}
+
+task_t<void> finalize_http_server(const string_buffer &output) noexcept {
+  auto &static_SB_spare{RuntimeContext::get().static_SB_spare};
+  auto &http_server_instance_st{HttpServerInstanceState::get()};
+
+  string body{output.str()};
+  // compress body if needed
+  // if (static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)) {
+  //   // TODO
+  // } else if (static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)) {
+  //   // TODO
+  // }
+  // add content-length header
+  static_SB_spare.clean() << HEADER_CONTENT_LENGTH.data() << ": " << body.size();
+  header({static_SB_spare.c_str(), static_SB_spare.size()}, true, HTTP_NO_STATUS);
+  // add content-type header
+  static_SB_spare.clean() << HEADER_CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
+  header({static_SB_spare.c_str(), static_SB_spare.size()}, true, HTTP_NO_STATUS);
+  // add date header
+  static constexpr std::string_view HTTP_DATE_FMT = R"(D, d M Y H:i:s \G\M\T)";
+  static_SB_spare.clean() << HEADER_DATE.data() << ": " << f$gmdate({HTTP_DATE_FMT.data(), static_cast<string::size_type>(HTTP_DATE_FMT.size())});
+  header({static_SB_spare.c_str(), static_SB_spare.size()}, true, HTTP_NO_STATUS);
+  { // add connection kind header
+    const auto connection_kind{http_server_instance_st.connection_kind == HttpConnectionKind::Close ? CONNECTION_CLOSE : CONNECTION_KEEP_ALIVE};
+    static_SB_spare.clean() << HEADER_CONNECTION.data() << ": " << connection_kind.data();
+  }
+
+  if (http_server_instance_st.http_method == HttpMethod::HEAD) {
+    body = {};
+  }
+
+  const auto status_code{http_server_instance_st.status_code == HTTP_NO_STATUS ? HTTP_OK : http_server_instance_st.status_code};
+  tl::httpResponse http_response{.version = http_server_instance_st.http_version,
+                                 .status_code = static_cast<int32_t>(status_code),
+                                 .headers = {},
+                                 .body = std::move(body)};
+  // fill headers
+  http_response.headers.data.data.reserve(http_server_instance_st.headers().size());
+  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.data.data),
+                 [](const auto &header_entry) noexcept {
+                   const auto &[name, value]{header_entry};
+                   string header_name{name.data(), static_cast<string::size_type>(name.size())};
+                   tl::httpHeaderValue header_value{.value = {value.data(), static_cast<string::size_type>(value.size())}};
+                   return tl::dictionaryField<tl::httpHeaderValue>{.key = std::move(header_name), .value = std::move(header_value)};
+                 });
+
+  tl::TLBuffer tlb{};
+  tl::HttpResponse{.http_response = std::move(http_response)}.store(tlb);
+
+  auto &instance_st{InstanceState::get()};
+  if ((co_await write_all_to_stream(instance_st.standard_stream(), tlb.data(), tlb.size())) != tlb.size()) [[unlikely]] {
+    instance_st.poll_status = k2::PollStatus::PollFinishedError;
+    php_warning("can't write component result to stream %" PRIu64, instance_st.standard_stream());
   }
 }

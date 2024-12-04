@@ -51,10 +51,13 @@ target_compile_options(
          -O3)
 target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
 # add statically linking libraries
+file(GLOB ABSEIL_LIBS "${ABSEIL_LIB_DIR}/libabsl_*.a")
+string(JOIN " " ABSEIL_LIBS ${ABSEIL_LIBS})
 set_property(
   TARGET runtime-light
   PROPERTY RUNTIME_LINK_LIBS
-           "${ZLIB_LIB_DIR}/libz.a ${PCRE2_LIB_DIR}/libpcre2-8.a")
+           "${ABSEIL_LIBS} ${ZLIB_LIB_DIR}/libz.a ${PCRE2_LIB_DIR}/libpcre2-8.a"
+)
 
 if(APPLE)
   target_link_options(runtime-light PUBLIC -undefined dynamic_lookup)

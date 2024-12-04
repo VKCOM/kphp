@@ -17,10 +17,8 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
-#include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/state/init-functions.h"
 #include "runtime-light/stdlib/time/time-functions.h"
-#include "runtime-light/streams/streams.h"
 
 namespace {
 
@@ -77,21 +75,21 @@ template task_t<void> InstanceState::run_instance_prologue<ImageKind::Oneshot>()
 template task_t<void> InstanceState::run_instance_prologue<ImageKind::Multishot>();
 
 task_t<void> InstanceState::run_instance_epilogue() noexcept {
-  if (image_kind_ == ImageKind::Oneshot || image_kind_ == ImageKind::Multishot) {
-    co_return;
-  }
-  // do not flush output buffers if we are in job worker
-  if (job_worker_server_instance_state.kind != JobWorkerServerInstanceState::Kind::Invalid) {
-    co_return;
-  }
-  if (standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {
-    poll_status = k2::PollStatus::PollFinishedError;
-    co_return;
-  }
-
-  const auto &buffer{response.output_buffers[merge_output_buffers()]};
-  if ((co_await write_all_to_stream(standard_stream(), buffer.buffer(), buffer.size())) != buffer.size()) {
-    php_warning("can't write component result to stream %" PRIu64, standard_stream());
+  switch (image_kind_) {
+    case ImageKind::Oneshot:
+    case ImageKind::Multishot:
+      co_return;
+    case ImageKind::CLI: {
+      const auto &buffer{response.output_buffers[merge_output_buffers()]};
+      co_return co_await finalize_kphp_cli_component(buffer);
+    }
+    case ImageKind::Server: {
+      const auto &buffer{response.output_buffers[merge_output_buffers()]};
+      co_return co_await finalize_kphp_server_component(buffer);
+    }
+    default: {
+      php_error("unexpected ImageKind");
+    }
   }
 }
 

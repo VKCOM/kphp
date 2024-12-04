@@ -59,7 +59,9 @@ public:
     }
     // add vendored statically linking libs
     std::vector<std::string> libs = split(RUNTIME_LINK_LIBS);
+    ss << " -Wl,--start-group ";
     std::for_each(libs.cbegin(), libs.cend(), [&ss](const auto &lib) noexcept { ss << lib << " "; });
+    ss << " -Wl,--end-group ";
     return ss.str();
   }
 };
