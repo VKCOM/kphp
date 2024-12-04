@@ -19,12 +19,14 @@ enum class HttpMethod : uint8_t { GET, POST, HEAD, OTHER };
 
 enum class HttpConnectionKind : uint8_t { KeepAlive, Close };
 
-inline constexpr uint64_t HTTP_NO_STATUS = 0;
-inline constexpr uint64_t HTTP_OK = 200;
-inline constexpr uint64_t HTTP_CREATED = 201;
-inline constexpr uint64_t HTTP_MULTIPLE_CHOICES = 300;
-inline constexpr uint64_t HTTP_FOUND = 302;
-inline constexpr uint64_t HTTP_BAD_REQUEST = 400;
+enum HttpStatus : uint16_t {
+  NO_STATUS = 0,
+  OK = 200,
+  CREATED = 201,
+  MULTIPLE_CHOICES = 300,
+  FOUND = 302,
+  BAD_REQUEST = 400,
+};
 
 struct HttpServerInstanceState final : private vk::not_copyable {
   using header_t = memory_resource::stl::string<memory_resource::unsynchronized_pool_resource>;
@@ -36,7 +38,7 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   std::optional<string> opt_raw_post_data;
 
   uint32_t encoding{};
-  uint64_t status_code{HTTP_NO_STATUS};
+  uint64_t status_code{HttpStatus::NO_STATUS};
   tl::HttpVersion http_version{};
   HttpMethod http_method{HttpMethod::OTHER};
   HttpConnectionKind connection_kind{HttpConnectionKind::Close};

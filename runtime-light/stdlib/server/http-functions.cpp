@@ -123,12 +123,12 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
   http_server_instance_st.add_header(name_view, value_view, replace);
 
   // Location: special case
-  if (http_location_header(header_view) && response_code == HTTP_NO_STATUS && http_server_instance_st.status_code != HTTP_CREATED
-      && (http_server_instance_st.status_code < HTTP_MULTIPLE_CHOICES || http_server_instance_st.status_code >= HTTP_BAD_REQUEST)) {
-    http_server_instance_st.status_code = HTTP_FOUND;
+  if (http_location_header(header_view) && response_code == HttpStatus::NO_STATUS && http_server_instance_st.status_code != HttpStatus::CREATED
+      && (http_server_instance_st.status_code < HttpStatus::MULTIPLE_CHOICES || http_server_instance_st.status_code >= HttpStatus::BAD_REQUEST)) {
+    http_server_instance_st.status_code = HttpStatus::FOUND;
   }
 
-  if (!header_view.empty() && response_code != HTTP_NO_STATUS) {
+  if (!header_view.empty() && response_code != HttpStatus::NO_STATUS) {
     http_server_instance_st.status_code = response_code;
   }
 }

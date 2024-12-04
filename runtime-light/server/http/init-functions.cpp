@@ -311,14 +311,14 @@ task_t<void> finalize_http_server(const string_buffer &output) noexcept {
   // }
   // add content-length header
   static_SB_spare.clean() << HEADER_CONTENT_LENGTH.data() << ": " << body.size();
-  header({static_SB_spare.c_str(), static_SB_spare.size()}, true, HTTP_NO_STATUS);
+  header({static_SB_spare.c_str(), static_SB_spare.size()}, true, HttpStatus::NO_STATUS);
   // add content-type header
   static_SB_spare.clean() << HEADER_CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
-  header({static_SB_spare.c_str(), static_SB_spare.size()}, true, HTTP_NO_STATUS);
+  header({static_SB_spare.c_str(), static_SB_spare.size()}, true, HttpStatus::NO_STATUS);
   // add date header
   static constexpr std::string_view HTTP_DATE_FMT = R"(D, d M Y H:i:s \G\M\T)";
   static_SB_spare.clean() << HEADER_DATE.data() << ": " << f$gmdate({HTTP_DATE_FMT.data(), static_cast<string::size_type>(HTTP_DATE_FMT.size())});
-  header({static_SB_spare.c_str(), static_SB_spare.size()}, true, HTTP_NO_STATUS);
+  header({static_SB_spare.c_str(), static_SB_spare.size()}, true, HttpStatus::NO_STATUS);
   { // add connection kind header
     const auto connection_kind{http_server_instance_st.connection_kind == HttpConnectionKind::Close ? CONNECTION_CLOSE : CONNECTION_KEEP_ALIVE};
     static_SB_spare.clean() << HEADER_CONNECTION.data() << ": " << connection_kind.data();
@@ -328,7 +328,7 @@ task_t<void> finalize_http_server(const string_buffer &output) noexcept {
     body = {};
   }
 
-  const auto status_code{http_server_instance_st.status_code == HTTP_NO_STATUS ? HTTP_OK : http_server_instance_st.status_code};
+  const auto status_code{http_server_instance_st.status_code == HttpStatus::NO_STATUS ? HttpStatus::OK : http_server_instance_st.status_code};
   tl::httpResponse http_response{.version = http_server_instance_st.http_version,
                                  .status_code = static_cast<int32_t>(status_code),
                                  .headers = {},

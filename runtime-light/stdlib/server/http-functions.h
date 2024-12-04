@@ -12,6 +12,6 @@
 
 void header(std::string_view header, bool replace, int64_t response_code) noexcept;
 
-inline void f$header(const string &str, bool replace = true, int64_t response_code = HTTP_NO_STATUS) noexcept {
+inline void f$header(const string &str, bool replace = true, int64_t response_code = HttpStatus::NO_STATUS) noexcept {
   header({str.c_str(), str.size()}, replace, response_code);
 }
