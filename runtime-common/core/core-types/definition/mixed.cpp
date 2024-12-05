@@ -2,6 +2,8 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "common/smart_ptrs/intrusive_ptr.h"
+#include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include <optional>
 
 #include "common/wrappers/likely.h"
@@ -1028,11 +1030,14 @@ const string mixed::get_type_str() const {
 
 std::optional<class_instance<C$ArrayAccess>> try_as_array_access(const mixed &m) noexcept {
   using T = class_instance<C$ArrayAccess>;
-  
-  // For now, it does dynamic cast twice
-  // We can get rid of one of them
-  if (likely(m.is_a<C$ArrayAccess>())) {
-    return from_mixed<T>(m, string());
+  if (!m.is_object()) {
+    return std::nullopt;
+  }
+
+  C$ArrayAccess* ptr = m.as_object_ptr<T>();
+
+  if (likely(ptr != nullptr)) {
+    return T::create_from_polymorphic(ptr);
   }
 
   return std::nullopt;
