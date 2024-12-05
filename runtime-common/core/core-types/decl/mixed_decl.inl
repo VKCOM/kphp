@@ -288,12 +288,12 @@ public:
 
 
   template<typename T>
-  bool empty_on(T key) const;
-  bool empty_on(const mixed &key) const;
-  bool empty_on(const string &key) const;
-  bool empty_on(const string &key, int64_t precomputed_hash) const;
-  bool empty_on(const array<mixed>::iterator &key) const;
-  bool empty_on(const array<mixed>::const_iterator &key) const;
+  bool empty_at(T key) const;
+  bool empty_at(const mixed &key) const;
+  bool empty_at(const string &key) const;
+  bool empty_at(const string &key, int64_t precomputed_hash) const;
+  bool empty_at(const array<mixed>::iterator &key) const;
+  bool empty_at(const array<mixed>::const_iterator &key) const;
 
   bool empty() const;
   int64_t count() const;

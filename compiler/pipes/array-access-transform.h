@@ -6,10 +6,10 @@
 
 #include "compiler/function-pass.h"
 
-class FixArrayAccessPass final : public FunctionPassBase {
+class ArrayAccessTransformPass final : public FunctionPassBase {
 public:
   std::string get_description() override {
-    return "Fix functions related to ArrayAccess";
+    return "Transformation related to ArrayAccess";
   }
 
   // `on_enter_vertex()` cannot be used because

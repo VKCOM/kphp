@@ -2,7 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "compiler/pipes/fix-array-access.h"
+#include "compiler/pipes/array-access-transform.h"
 
 #include "common/algorithms/contains.h"
 #include "compiler/compiler-core.h"
@@ -171,7 +171,7 @@ VertexPtr on_unset(VertexAdaptor<op_unset> unset) {
 
 } // namespace
 
-VertexPtr FixArrayAccessPass::on_exit_vertex(VertexPtr root) {
+VertexPtr ArrayAccessTransformPass::on_exit_vertex(VertexPtr root) {
   if (auto isset = root.try_as<op_isset>()) {
     return on_isset(isset, current_function);
   }

@@ -7,8 +7,8 @@
 #include "common/algorithms/find.h"
 #include "common/smart_ptrs/intrusive_ptr.h"
 
-#include "runtime-common/core/utils/migration-php8.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/core/utils/migration-php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"
@@ -310,7 +310,7 @@ mixed mixed::set_value_return(T key, const mixed &val) {
 }
 
 template<typename T>
-bool mixed::empty_on(T key) const {
+bool mixed::empty_at(T key) const {
   if (type_ == type::OBJECT) {
     if (auto as_aa = try_as_array_access(*this)) {
       return !f$ArrayAccess$$offsetExists(*as_aa, key) || f$ArrayAccess$$offsetGet(*as_aa, key).empty();

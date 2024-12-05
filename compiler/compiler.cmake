@@ -151,7 +151,7 @@ prepend(KPHP_COMPILER_PIPES_SOURCES pipes/
         file-to-tokens.cpp
         filter-only-actually-used.cpp
         final-check.cpp
-        fix-array-access.cpp
+        array-access-transform.cpp
         fix-returns.cpp
         gen-tree-postprocess.cpp
         generate-virtual-methods.cpp

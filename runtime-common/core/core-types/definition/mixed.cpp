@@ -2,9 +2,10 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <optional>
+
 #include "common/wrappers/likely.h"
 #include "runtime-common/core/runtime-core.h"
-#include <optional>
 
 namespace {
 
@@ -1037,7 +1038,7 @@ std::optional<class_instance<C$ArrayAccess>> try_as_array_access(const mixed &m)
   return std::nullopt;
 }
 
-bool mixed::empty_on(const mixed &key) const {
+bool mixed::empty_at(const mixed &key) const {
   if (type_ == type::OBJECT) {
     if (auto as_aa = try_as_array_access(*this)) {
       return !f$ArrayAccess$$offsetExists(*as_aa, key) || f$ArrayAccess$$offsetGet(*as_aa, key).empty();
@@ -1047,7 +1048,7 @@ bool mixed::empty_on(const mixed &key) const {
   return get_value(key).empty();
 }
 
-bool mixed::empty_on(const string &key) const {
+bool mixed::empty_at(const string &key) const {
   if (type_ == type::OBJECT) {
     if (auto as_aa = try_as_array_access(*this)) {
       return !f$ArrayAccess$$offsetExists(*as_aa, key) || f$ArrayAccess$$offsetGet(*as_aa, key).empty();
@@ -1057,7 +1058,7 @@ bool mixed::empty_on(const string &key) const {
   return get_value(key).empty();
 }
 
-bool mixed::empty_on(const string &key, int64_t precomputed_hash) const {
+bool mixed::empty_at(const string &key, int64_t precomputed_hash) const {
   if (type_ == type::OBJECT) {
     if (auto as_aa = try_as_array_access(*this)) {
       return !f$ArrayAccess$$offsetExists(*as_aa, key) || f$ArrayAccess$$offsetGet(*as_aa, key).empty();
@@ -1067,11 +1068,11 @@ bool mixed::empty_on(const string &key, int64_t precomputed_hash) const {
   return get_value(key, precomputed_hash).empty();
 }
 
-bool mixed::empty_on(const array<mixed>::iterator &key) const {
+bool mixed::empty_at(const array<mixed>::iterator &key) const {
   return get_value(key).empty();
 }
 
-bool mixed::empty_on(const array<mixed>::const_iterator &key) const {
+bool mixed::empty_at(const array<mixed>::const_iterator &key) const {
   return get_value(key).empty();
 }
 

@@ -859,7 +859,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     if (root->str_val == "empty") {
       if (auto index = root->args()[0].try_as<op_index>(); index && tinf::get_type(index->array())->get_real_ptype() == tp_mixed) {
         W << "(" << index->array() << ")";
-        W << ".empty_on(" << index->key();
+        W << ".empty_at(" << index->key();
         if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
           W << ", " << precomputed_hash << "_i64";
         }
@@ -1817,6 +1817,7 @@ void compile_index_of_array_or_mixed(VertexAdaptor<op_index> root, CodeGenerator
     }
     W << pre << root->array() << "[" << root->key() << "]" << past;
   } else {
+    // TODO support precomputed hashes with macros below
     if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_isset) {
       W << "MIXED_GET_IF_ISSET" << MacroBegin{} << root->array() << ", " << root->key() << MacroEnd{};
     } else if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_empty) {
