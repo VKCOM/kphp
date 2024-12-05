@@ -41,7 +41,7 @@ void process_k2_invoke_job_worker(tl::TLBuffer &tlb) noexcept {
 } // namespace
 
 task_t<uint64_t> init_kphp_cli_component() noexcept {
-  { // TODO
+  { // TODO superglobals init
     auto &superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
     using namespace PhpServerSuperGlobalIndices;
     superglobals.v$argc = static_cast<int64_t>(0);

@@ -57,11 +57,20 @@ public:
     } else {
       ss << deps.back()->get_name() << " ";
     }
+
+#if defined(__APPLE__)
+    std::string_view start_group{" -Wl,-all_load "};
+    std::string_view end_group;
+#else
+    std::string_view start_group{" -Wl,--start-group "};
+    std::string_view end_group{" -Wl,--end-group "};
+#endif
+
     // add vendored statically linking libs
     std::vector<std::string> libs = split(RUNTIME_LINK_LIBS);
-    ss << " -Wl,--start-group ";
+    ss << start_group;
     std::for_each(libs.cbegin(), libs.cend(), [&ss](const auto &lib) noexcept { ss << lib << " "; });
-    ss << " -Wl,--end-group ";
+    ss << end_group;
     return ss.str();
   }
 };

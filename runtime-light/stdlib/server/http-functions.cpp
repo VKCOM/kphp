@@ -124,8 +124,10 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
   http_server_instance_st.add_header(name_view, value_view, replace);
 
   // Location: special case
-  if (http_location_header(header_view) && response_code == HttpStatus::NO_STATUS && http_server_instance_st.status_code != HttpStatus::CREATED
-      && (http_server_instance_st.status_code < HttpStatus::MULTIPLE_CHOICES || http_server_instance_st.status_code >= HttpStatus::BAD_REQUEST)) {
+  const bool can_return_redirect{
+    response_code == HttpStatus::NO_STATUS && http_server_instance_st.status_code != HttpStatus::CREATED
+    && (http_server_instance_st.status_code < HttpStatus::MULTIPLE_CHOICES || http_server_instance_st.status_code >= HttpStatus::BAD_REQUEST)};
+  if (can_return_redirect && http_location_header(header_view)) {
     http_server_instance_st.status_code = HttpStatus::FOUND;
   }
 
