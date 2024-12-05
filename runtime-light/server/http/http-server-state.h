@@ -13,7 +13,6 @@
 #include "runtime-common/core/memory-resource/resource_allocator.h"
 #include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/tl/tl-types.h"
 
 enum class HttpMethod : uint8_t { GET, POST, HEAD, OTHER };
 
@@ -39,7 +38,6 @@ struct HttpServerInstanceState final : private vk::not_copyable {
 
   uint32_t encoding{};
   uint64_t status_code{HttpStatus::NO_STATUS};
-  tl::HttpVersion http_version{};
   HttpMethod http_method{HttpMethod::OTHER};
   HttpConnectionKind connection_kind{HttpConnectionKind::Close};
 

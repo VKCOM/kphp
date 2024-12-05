@@ -23,7 +23,6 @@
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/server/http-functions.h"
-#include "runtime-light/stdlib/time/time-functions.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -46,7 +45,6 @@ constexpr std::string_view SCHEME_SUFFIX = "://";
 constexpr std::string_view GATEWAY_INTERFACE_VALUE = "CGI/1.1";
 
 constexpr std::string_view HEADER_HOST = "host";
-constexpr std::string_view HEADER_DATE = "date";
 constexpr std::string_view HEADER_COOKIE = "cookie";
 constexpr std::string_view HEADER_CONNECTION = "connection";
 constexpr std::string_view HEADER_CONTENT_TYPE = "content-type";
@@ -160,10 +158,11 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
       }
     } else if (header_name_view == HEADER_CONNECTION) {
-      http_server_instance_st.connection_kind = HttpConnectionKind::Close;
-      if (header_view == CONNECTION_KEEP_ALIVE) {
+      if (header_view == CONNECTION_KEEP_ALIVE) [[likely]] {
         http_server_instance_st.connection_kind = HttpConnectionKind::KeepAlive;
-      } else if (header_view != CONNECTION_CLOSE) [[unlikely]] {
+      } else if (header_view == CONNECTION_CLOSE) [[likely]] {
+        http_server_instance_st.connection_kind = HttpConnectionKind::Close;
+      } else {
         php_error("unexpected connection header: %s", header_view.data());
       }
     } else if (header_name_view == HEADER_COOKIE) {
@@ -206,7 +205,6 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   auto &server{superglobals.v$_SERVER};
   auto &http_server_instance_st{HttpServerInstanceState::get()};
 
-  http_server_instance_st.http_version = invoke_http.version;
   { // determine HTTP method
     const std::string_view http_method{invoke_http.method.c_str(), invoke_http.method.size()};
     if (http_method == GET_METHOD) {
@@ -296,40 +294,27 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
     request += superglobals.v$_COOKIE.to_array();
     superglobals.v$_REQUEST = std::move(request);
   }
+
+  // ==================================
+  // prepare some response headers
+
+  // add content-type header
+  auto &static_SB{RuntimeContext::get().static_SB};
+  static_SB.clean() << HEADER_CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
+  header({static_SB.c_str(), static_SB.size()}, true, HttpStatus::NO_STATUS);
+  // add connection kind header
+  const auto connection_kind{http_server_instance_st.connection_kind == HttpConnectionKind::KeepAlive ? CONNECTION_KEEP_ALIVE : CONNECTION_CLOSE};
+  static_SB.clean() << HEADER_CONNECTION.data() << ": " << connection_kind.data();
 }
 
 task_t<void> finalize_http_server(const string_buffer &output) noexcept {
-  auto &static_SB_spare{RuntimeContext::get().static_SB_spare};
   auto &http_server_instance_st{HttpServerInstanceState::get()};
 
-  string body{output.str()};
-  // compress body if needed
-  // if (static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)) {
-  //   // TODO
-  // } else if (static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)) {
-  //   // TODO
-  // }
-  // add content-length header
-  static_SB_spare.clean() << HEADER_CONTENT_LENGTH.data() << ": " << body.size();
-  header({static_SB_spare.c_str(), static_SB_spare.size()}, true, HttpStatus::NO_STATUS);
-  // add content-type header
-  static_SB_spare.clean() << HEADER_CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
-  header({static_SB_spare.c_str(), static_SB_spare.size()}, true, HttpStatus::NO_STATUS);
-  // add date header
-  static constexpr std::string_view HTTP_DATE_FMT = R"(D, d M Y H:i:s \G\M\T)";
-  static_SB_spare.clean() << HEADER_DATE.data() << ": " << f$gmdate({HTTP_DATE_FMT.data(), static_cast<string::size_type>(HTTP_DATE_FMT.size())});
-  header({static_SB_spare.c_str(), static_SB_spare.size()}, true, HttpStatus::NO_STATUS);
-  { // add connection kind header
-    const auto connection_kind{http_server_instance_st.connection_kind == HttpConnectionKind::Close ? CONNECTION_CLOSE : CONNECTION_KEEP_ALIVE};
-    static_SB_spare.clean() << HEADER_CONNECTION.data() << ": " << connection_kind.data();
-  }
-
-  if (http_server_instance_st.http_method == HttpMethod::HEAD) {
-    body = {};
-  }
-
+  // TODO: compress body if needed
+  string body{http_server_instance_st.http_method != HttpMethod::HEAD ? output.str() : string{}};
   const auto status_code{http_server_instance_st.status_code == HttpStatus::NO_STATUS ? HttpStatus::OK : http_server_instance_st.status_code};
-  tl::httpResponse http_response{.version = http_server_instance_st.http_version,
+
+  tl::httpResponse http_response{.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11},
                                  .status_code = static_cast<int32_t>(status_code),
                                  .headers = {},
                                  .body = std::move(body)};
