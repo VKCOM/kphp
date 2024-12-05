@@ -9,6 +9,7 @@
 #include <cinttypes>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <ranges>
 #include <string_view>
 #include <utility>
@@ -35,12 +36,12 @@ bool http_location_header(std::string_view header) noexcept {
   return std::ranges::equal(lowercase_prefix, HTTP_LOCATION_HEADER_PREFIX);
 }
 
-std::pair<uint64_t, bool> valid_http_status_header(std::string_view header) noexcept {
+std::optional<uint64_t> valid_http_status_header(std::string_view header) noexcept {
   const auto header_size{header.size()};
   uint64_t http_response_code{};
 
   if (header_size < HTTP_STATUS_PREFIX.size()) [[unlikely]] {
-    return {0, false};
+    return {};
   }
   // skip digits
   size_t pos{HTTP_STATUS_PREFIX.size()};
@@ -48,41 +49,41 @@ std::pair<uint64_t, bool> valid_http_status_header(std::string_view header) noex
   }
   // expect '.'
   if (pos == header_size || header[pos++] != '.') [[unlikely]] {
-    return {0, false};
+    return {};
   }
   // skip digits
   for (; pos < header_size && std::isdigit(header[pos]); ++pos) {
   }
   // expect ' '
   if (pos == header_size || header[pos++] != ' ') [[unlikely]] {
-    return {0, false};
+    return {};
   }
   // expect 3 digits http code
   if (pos == header_size || !std::isdigit(header[pos])) [[unlikely]] {
-    return {0, false};
+    return {};
   }
   http_response_code = header[pos++] - '0';
   if (pos == header_size || !std::isdigit(header[pos])) [[unlikely]] {
-    return {0, false};
+    return {};
   }
   http_response_code *= 10;
   http_response_code += header[pos++] - '0';
   if (pos == header_size || !std::isdigit(header[pos])) [[unlikely]] {
-    return {0, false};
+    return {};
   }
   http_response_code *= 10;
   http_response_code += header[pos++] - '0';
   // expect ' '
   if (pos == header_size || header[pos++] != ' ') [[unlikely]] {
-    return {0, false};
+    return {};
   }
   // expect all remaining characters to be printable
   for (; pos < header_size; ++pos) {
     if (std::isprint(header[pos]) == 0) [[unlikely]] {
-      return {0, false};
+      return {};
     }
   }
-  return {http_response_code, true};
+  return http_response_code;
 }
 
 } // namespace
@@ -95,8 +96,8 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
   auto &http_server_instance_st{HttpServerInstanceState::get()};
   // HTTP status special case
   if (http_status_header(header_view)) {
-    if (const auto [status_code, ok]{valid_http_status_header(header_view)}; ok) [[likely]] {
-      http_server_instance_st.status_code = status_code;
+    if (const auto opt_status_code{valid_http_status_header(header_view)}; opt_status_code.has_value()) [[likely]] {
+      http_server_instance_st.status_code = *opt_status_code;
       return;
     } else {
       php_error("invalid HTTP status header: %s", header_view.data());
