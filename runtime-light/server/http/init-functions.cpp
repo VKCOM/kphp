@@ -15,6 +15,8 @@
 #include <system_error>
 #include <utility>
 
+#include "absl/strings/match.h"
+
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/array/array-functions.h"
@@ -27,8 +29,6 @@
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
-
-#include "absl/strings/match.h"
 
 namespace {
 
