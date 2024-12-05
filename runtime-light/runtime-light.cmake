@@ -51,7 +51,6 @@ target_compile_options(
          -O3)
 target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
 # add statically linking libraries
-file(GLOB ABSEIL_LIBS "${ABSEIL_LIB_DIR}/libabsl_*.a")
 string(JOIN " " ABSEIL_LIBS ${ABSEIL_LIBS})
 set_property(
   TARGET runtime-light
