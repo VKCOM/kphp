@@ -2,11 +2,11 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "common/smart_ptrs/intrusive_ptr.h"
-#include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include <optional>
 
+#include "common/smart_ptrs/intrusive_ptr.h"
 #include "common/wrappers/likely.h"
+#include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 
 namespace {
