@@ -159,9 +159,9 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
       }
     } else if (header_name_view == HEADER_CONNECTION) {
       if (header_view == CONNECTION_KEEP_ALIVE) [[likely]] {
-        http_server_instance_st.connection_kind = HttpConnectionKind::KeepAlive;
+        http_server_instance_st.connection_kind = HttpConnectionKind::KEEP_ALIVE;
       } else if (header_view == CONNECTION_CLOSE) [[likely]] {
-        http_server_instance_st.connection_kind = HttpConnectionKind::Close;
+        http_server_instance_st.connection_kind = HttpConnectionKind::CLOSE;
       } else {
         php_error("unexpected connection header: %s", header_view.data());
       }
@@ -303,7 +303,7 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   static_SB.clean() << HEADER_CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
   header({static_SB.c_str(), static_SB.size()}, true, HttpStatus::NO_STATUS);
   // add connection kind header
-  const auto connection_kind{http_server_instance_st.connection_kind == HttpConnectionKind::KeepAlive ? CONNECTION_KEEP_ALIVE : CONNECTION_CLOSE};
+  const auto connection_kind{http_server_instance_st.connection_kind == HttpConnectionKind::KEEP_ALIVE ? CONNECTION_KEEP_ALIVE : CONNECTION_CLOSE};
   static_SB.clean() << HEADER_CONNECTION.data() << ": " << connection_kind.data();
 }
 

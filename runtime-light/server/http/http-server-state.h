@@ -16,7 +16,7 @@
 
 enum class HttpMethod : uint8_t { GET, POST, HEAD, OTHER };
 
-enum class HttpConnectionKind : uint8_t { KeepAlive, Close };
+enum class HttpConnectionKind : uint8_t { KEEP_ALIVE, CLOSE };
 
 enum HttpStatus : uint16_t {
   NO_STATUS = 0,
@@ -39,7 +39,7 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   uint32_t encoding{};
   uint64_t status_code{HttpStatus::NO_STATUS};
   HttpMethod http_method{HttpMethod::OTHER};
-  HttpConnectionKind connection_kind{HttpConnectionKind::Close};
+  HttpConnectionKind connection_kind{HttpConnectionKind::CLOSE};
 
 private:
   memory_resource::unsynchronized_pool_resource &memory_resource_;
