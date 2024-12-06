@@ -313,6 +313,7 @@ void CompilerSettings::init() {
      << " -iquote " << kphp_src_path.get()
      << "objs/generated/auto/runtime"
      << " -fwrapv -Wno-parentheses -Wno-trigraphs"
+     << "-std=c++2b -fexperimental-library -stdlib=libc++"
      << " -fno-strict-aliasing -fno-omit-frame-pointer";
 #ifdef __x86_64__
   ss << " -march=sandybridge";
@@ -328,13 +329,6 @@ void CompilerSettings::init() {
   if (vk::contains(cxx.get(), "clang")) {
     ss << " -Wno-invalid-source-encoding";
   }
-  #if __cplusplus <= 201703L
-    ss << " -std=c++17";
-  #elif __cplusplus <= 202002L
-    ss << " -std=c++20";
-  #else
-    #error unsupported __cplusplus value
-  #endif
 
   if (is_k2_mode) {
     // for now k2-component must be compiled with clang and statically linked libc++
