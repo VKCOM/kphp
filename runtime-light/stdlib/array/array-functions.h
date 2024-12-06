@@ -54,7 +54,7 @@ void f$shuffle(array<T> &arr) noexcept {
 
 template<class T>
 task_t<array<T>> f$array_filter(const array<T> &a) noexcept {
-  co_return array_functions_impl_::array_filter_impl(a, [](const auto &it) { return f$boolval(it.get_value()); });
+  co_return co_await array_functions_impl_::array_filter_impl(a, [](const auto &it) { return f$boolval(it.get_value()); });
 }
 
 template<class T, class Callback>
