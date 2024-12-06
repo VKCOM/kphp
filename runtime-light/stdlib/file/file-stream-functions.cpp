@@ -8,8 +8,6 @@
 #include <utility>
 
 #include "runtime-light/state/instance-state.h"
-#include "runtime-light/stdlib/file/file-resource.h"
-#include "runtime-light/stdlib/file/file-stream-state.h"
 #include "runtime-light/stdlib/file/php-streams/php-streams.h"
 #include "runtime-light/stdlib/file/udp-streams/udp-streams.h"
 #include "runtime-light/streams/streams.h"
