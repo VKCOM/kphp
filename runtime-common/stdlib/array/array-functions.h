@@ -462,7 +462,7 @@ array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_va
   return result;
 }
 
-template<class T, class ReturnT>
+template<class T, class ReturnT = std::conditional_t<std::is_same<T, int64_t>{}, int64_t, double>>
 ReturnT f$array_sum(const array<T> &a) noexcept {
   static_assert(!std::is_same_v<T, int>, "int is forbidden");
 
