@@ -60,6 +60,7 @@ struct InstanceState final : vk::not_copyable {
     , fork_instance_state(allocator.memory_resource)
     , php_script_mutable_globals_singleton(allocator.memory_resource)
     , rpc_instance_state(allocator.memory_resource)
+    , http_server_instance_state(allocator.memory_resource)
     , regex_instance_state(allocator.memory_resource)
     , incoming_streams_(deque<uint64_t>::allocator_type{allocator.memory_resource})
     , opened_streams_(unordered_set<uint64_t>::allocator_type{allocator.memory_resource})
@@ -119,7 +120,7 @@ struct InstanceState final : vk::not_copyable {
   RuntimeContext runtime_context;
   RpcInstanceState rpc_instance_state;
   SerializationInstanceState serialization_instance_state;
-  HttpServerInstanceState http_server_instance_state{};
+  HttpServerInstanceState http_server_instance_state;
   JobWorkerClientInstanceState job_worker_client_instance_state{};
   JobWorkerServerInstanceState job_worker_server_instance_state{};
 

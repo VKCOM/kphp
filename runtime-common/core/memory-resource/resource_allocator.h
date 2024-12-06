@@ -7,6 +7,7 @@
 #include <functional>
 #include <map>
 #include <queue>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -82,6 +83,9 @@ using queue = std::queue<T, std::deque<T, resource_allocator<T, Resource>>>;
 
 template<class T, class Resource>
 using vector = std::vector<T, resource_allocator<T, Resource>>;
+
+template<class Resource>
+using string = std::basic_string<char, std::char_traits<char>, resource_allocator<char, Resource>>;
 } // namespace stl
 
 } // namespace memory_resource

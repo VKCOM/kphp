@@ -17,9 +17,8 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
-#include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/state/init-functions.h"
-#include "runtime-light/streams/streams.h"
+#include "runtime-light/stdlib/time/time-functions.h"
 
 namespace {
 
@@ -52,21 +51,12 @@ task_t<void> InstanceState::run_instance_prologue() noexcept {
   image_kind_ = kind;
 
   // common initialization
-  auto &superglobals{php_script_mutable_globals_singleton.get_superglobals()};
-  superglobals.v$argc = static_cast<int64_t>(0); // TODO
-  superglobals.v$argv = array<mixed>{};          // TODO
   {
+    const auto time_mcs{f$_microtime_float()};
 
-    SystemTime sys_time{};
-    k2::system_time(std::addressof(sys_time));
-    const auto time_mcs{std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::nanoseconds{sys_time.since_epoch_ns}).count()};
-
+    auto &superglobals{php_script_mutable_globals_singleton.get_superglobals()};
     using namespace PhpServerSuperGlobalIndices;
-    superglobals.v$_SERVER.set_value(string{ARGC.data(), ARGC.size()}, superglobals.v$argc);
-    superglobals.v$_SERVER.set_value(string{ARGV.data(), ARGV.size()}, superglobals.v$argv);
-    superglobals.v$_SERVER.set_value(string{PHP_SELF.data(), PHP_SELF.size()}, string{}); // TODO: script name
-    superglobals.v$_SERVER.set_value(string{SCRIPT_NAME.data(), SCRIPT_NAME.size()}, string{});
-    superglobals.v$_SERVER.set_value(string{REQUEST_TIME.data(), REQUEST_TIME.size()}, static_cast<int64_t>(sys_time.since_epoch_ns));
+    superglobals.v$_SERVER.set_value(string{REQUEST_TIME.data(), REQUEST_TIME.size()}, static_cast<int64_t>(time_mcs));
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME_FLOAT.data(), REQUEST_TIME_FLOAT.size()}, static_cast<double>(time_mcs));
   }
   // TODO sapi, env
@@ -85,21 +75,21 @@ template task_t<void> InstanceState::run_instance_prologue<ImageKind::Oneshot>()
 template task_t<void> InstanceState::run_instance_prologue<ImageKind::Multishot>();
 
 task_t<void> InstanceState::run_instance_epilogue() noexcept {
-  if (image_kind_ == ImageKind::Oneshot || image_kind_ == ImageKind::Multishot) {
-    co_return;
-  }
-  // do not flush output buffers if we are in job worker
-  if (job_worker_server_instance_state.kind != JobWorkerServerInstanceState::Kind::Invalid) {
-    co_return;
-  }
-  if (standard_stream() == INVALID_PLATFORM_DESCRIPTOR) {
-    poll_status = PollStatus::PollFinishedError;
-    co_return;
-  }
-
-  const auto &buffer{response.output_buffers[merge_output_buffers()]};
-  if ((co_await write_all_to_stream(standard_stream(), buffer.buffer(), buffer.size())) != buffer.size()) {
-    php_warning("can't write component result to stream %" PRIu64, standard_stream());
+  switch (image_kind_) {
+    case ImageKind::Oneshot:
+    case ImageKind::Multishot:
+      co_return;
+    case ImageKind::CLI: {
+      const auto &buffer{response.output_buffers[merge_output_buffers()]};
+      co_return co_await finalize_kphp_cli_component(buffer);
+    }
+    case ImageKind::Server: {
+      const auto &buffer{response.output_buffers[merge_output_buffers()]};
+      co_return co_await finalize_kphp_server_component(buffer);
+    }
+    default: {
+      php_error("unexpected ImageKind");
+    }
   }
 }
 
@@ -109,7 +99,7 @@ void InstanceState::process_platform_updates() noexcept {
     if (static_cast<bool>(k2::control_flags()->please_yield.load())) { // tell the scheduler that we are about to yield
       php_debug("platform asked for yield");
       const auto schedule_status{scheduler.schedule(ScheduleEvent::Yield{})};
-      poll_status = schedule_status == ScheduleStatus::Error ? PollStatus::PollFinishedError : PollStatus::PollReschedule;
+      poll_status = schedule_status == ScheduleStatus::Error ? k2::PollStatus::PollFinishedError : k2::PollStatus::PollReschedule;
       return;
     }
 
@@ -126,7 +116,7 @@ void InstanceState::process_platform_updates() noexcept {
             break;
           }
           case ScheduleStatus::Error: { // something bad's happened, stop execution
-            poll_status = PollStatus::PollFinishedError;
+            poll_status = k2::PollStatus::PollFinishedError;
             return;
           }
         }
@@ -135,7 +125,7 @@ void InstanceState::process_platform_updates() noexcept {
         incoming_streams_.push_back(stream_d);
         opened_streams_.insert(stream_d);
         if (const auto schedule_status{scheduler.schedule(ScheduleEvent::IncomingStream{.stream_d = stream_d})}; schedule_status == ScheduleStatus::Error) {
-          poll_status = PollStatus::PollFinishedError;
+          poll_status = k2::PollStatus::PollFinishedError;
           return;
         }
       }
@@ -145,18 +135,18 @@ void InstanceState::process_platform_updates() noexcept {
           break;
         }
         case ScheduleStatus::Skipped: { // scheduler's done nothing, so it's either scheduled all coroutines or is waiting for events
-          poll_status = scheduler.done() ? PollStatus::PollFinishedOk : PollStatus::PollBlocked;
+          poll_status = scheduler.done() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollBlocked;
           return;
         }
         case ScheduleStatus::Error: { // something bad's happened, stop execution
-          poll_status = PollStatus::PollFinishedError;
+          poll_status = k2::PollStatus::PollFinishedError;
           return;
         }
       }
     }
   }
   // unreachable code
-  poll_status = PollStatus::PollFinishedError;
+  poll_status = k2::PollStatus::PollFinishedError;
 }
 
 uint64_t InstanceState::take_incoming_stream() noexcept {

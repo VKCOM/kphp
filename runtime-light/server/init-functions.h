@@ -23,8 +23,8 @@ inline void init_server(ServerQuery &&query) noexcept {
 
   // common initialization
   {
-    using namespace PhpServerSuperGlobalIndices;
     auto &server{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals().v$_SERVER};
+    using namespace PhpServerSuperGlobalIndices;
     server.set_value(string{SERVER_SOFTWARE.data(), SERVER_SOFTWARE.size()}, string{SERVER_SOFTWARE_VALUE.data(), SERVER_SOFTWARE_VALUE.size()});
     server.set_value(string{SERVER_SIGNATURE.data(), SERVER_SIGNATURE.size()}, string{SERVER_SIGNATURE_VALUE.data(), SERVER_SIGNATURE_VALUE.size()});
   }

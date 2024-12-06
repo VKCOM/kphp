@@ -4,13 +4,15 @@
 
 #pragma once
 
-#include "runtime-light/coroutine/awaitable.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 
 // Returns a stream descriptor that is supposed to be a stream to stdout
-inline task_t<uint64_t> init_kphp_cli_component() noexcept {
-  co_return co_await wait_for_incoming_stream_t{};
-}
+task_t<uint64_t> init_kphp_cli_component() noexcept;
+
+task_t<void> finalize_kphp_cli_component(const string_buffer &output) noexcept;
 
 // Performs some initialization and returns a stream descriptor we need to write server response into
 task_t<uint64_t> init_kphp_server_component() noexcept;
+
+task_t<void> finalize_kphp_server_component(const string_buffer &output) noexcept;

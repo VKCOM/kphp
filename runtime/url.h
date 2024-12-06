@@ -17,10 +17,6 @@ template<class T>
 string f$http_build_query(const array<T> &a, const string &numeric_prefix = {},
                           const string &arg_separator = AMPERSAND, int64_t enc_type = PHP_QUERY_RFC1738);
 
-void parse_str_set_value(mixed &arr, const string &key, const string &value);
-
-void f$parse_str(const string &str, mixed &arr);
-
 /*
  *
  *     IMPLEMENTATION

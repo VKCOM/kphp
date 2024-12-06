@@ -13,10 +13,17 @@ if(COMPILE_RUNTIME_LIGHT)
 
   add_subdirectory(${THIRD_PARTY_DIR}/abseil-cpp
                    ${CMAKE_BINARY_DIR}/third-party/abseil-cpp)
-
+  # disable absl logging
+  add_compile_definitions(ABSL_MIN_LOG_LEVEL=4)
   # restore compiler flags
   set(CMAKE_CXX_FLAGS ${SAVE_CXX_FLAGS})
 
   # restore CMAKE_ARCHIVE_OUTPUT_DIRECTORY
   set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${SAVE_CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
+
+  # due to "efficiency-first" approach in abseil we need to manually specify all
+  # the static libraries we want to link against
+  set(ABSEIL_LIBS libabsl_base.a libabsl_strings.a
+                  libabsl_raw_logging_internal.a)
+  prepend(ABSEIL_LIBS ${ABSEIL_LIB_DIR}/ ${ABSEIL_LIBS})
 endif()

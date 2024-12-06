@@ -97,8 +97,6 @@ function debug_backtrace() ::: string[][];
 function estimate_memory_usage($value ::: any) ::: int;
 
 /** @kphp-extern-func-info generate-stub */
-function header ($str ::: string, $replace ::: bool = true, $http_response_code ::: int = 0) ::: void;
-/** @kphp-extern-func-info generate-stub */
 function headers_list () ::: string[];
 /** @kphp-extern-func-info generate-stub */
 function send_http_103_early_hints($headers ::: string[]) ::: void;
