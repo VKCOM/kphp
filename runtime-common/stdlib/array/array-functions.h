@@ -385,18 +385,12 @@ T f$array_last_value(const array<T> &a) noexcept {
 }
 
 template<class T>
-T f$array_replace(const T &base_array, const T &replacements) noexcept {
-  auto result = T::convert_from(base_array);
-  for (const auto &it : replacements) {
-    result.set_value(it);
-  }
-  return result;
-}
+T f$array_replace(const T &base_array, const T &replacements = T());
 
 template<class T>
-T f$array_replace(const T &base_array, const T &replacements_1, const T &replacements_2, const T &replacements_3, const T &replacements_4,
-                  const T &replacements_5, const T &replacements_6, const T &replacements_7, const T &replacements_8, const T &replacements_9,
-                  const T &replacements_10, const T &replacements_11) noexcept {
+T f$array_replace(const T &base_array, const T &replacements_1, const T &replacements_2, const T &replacements_3 = T(), const T &replacements_4 = T(),
+                  const T &replacements_5 = T(), const T &replacements_6 = T(), const T &replacements_7 = T(), const T &replacements_8 = T(),
+                  const T &replacements_9 = T(), const T &replacements_10 = T(), const T &replacements_11 = T()) noexcept {
   return f$array_replace(
     f$array_replace(
       f$array_replace(
