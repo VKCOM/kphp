@@ -51,6 +51,16 @@ ReturnT f$array_pad(const array<Unknown> &a, int64_t size, const DefaultValueT &
   php_critical_error("call to unsupported function");
 }
 
+template<class T>
+array<T> f$array_filter(const array<T> &a) noexcept {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T, class T1>
+array<T> f$array_filter(const array<T> &a, const T1 &callback) noexcept {
+  php_critical_error("call to unsupported function");
+}
+
 template<class T, class T1>
 array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept {
   php_critical_error("call to unsupported function");

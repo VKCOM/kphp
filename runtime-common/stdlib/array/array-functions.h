@@ -46,18 +46,6 @@ array<T> array_diff(const array<T> &a1, const array<T1> &a2, const Proj &project
   }
   return result;
 }
-
-template<class T, class F>
-array<T> array_filter(const array<T> &a, const F &pred) noexcept {
-  array<T> result(a.size());
-  for (const auto &it : a) {
-    if (pred(it)) {
-      result.set_value(it);
-    }
-  }
-  return result;
-}
-
 } // namespace array_functions_impl_
 
 template<class T>
@@ -362,16 +350,6 @@ inline array<int64_t> f$array_diff(const array<int64_t> &a1, const array<int64_t
 template<class T, class T1, class T2>
 array<T> f$array_diff(const array<T> &a1, const array<T1> &a2, const array<T2> &a3) noexcept {
   return f$array_diff(f$array_diff(a1, a2), a3);
-}
-
-template<class T>
-array<T> f$array_filter(const array<T> &a) noexcept {
-  return array_functions_impl_::array_filter(a, [](const auto &it) { return f$boolval(it.get_value()); });
-}
-
-template<class T, class T1>
-array<T> f$array_filter(const array<T> &a, const T1 &callback) noexcept {
-  return array_functions_impl_::array_filter(a, [&callback](const auto &it) { return f$boolval(callback(it.get_value())); });
 }
 
 template<class T>

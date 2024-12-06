@@ -370,6 +370,16 @@ array<T> array_filter_impl(const array<T> &a, const F &pred) noexcept {
   return result;
 }
 
+template<class T>
+array<T> f$array_filter(const array<T> &a) noexcept {
+  return array_filter_impl(a, [](const auto &it) { return f$boolval(it.get_value()); });
+}
+
+template<class T, class T1>
+array<T> f$array_filter(const array<T> &a, const T1 &callback) noexcept {
+  return array_filter_impl(a, [&callback](const auto &it) { return f$boolval(callback(it.get_value())); });
+}
+
 template<class T, class T1>
 array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept {
   return array_filter_impl(a, [&callback](const auto &it) { return f$boolval(callback(it.get_key())); });
