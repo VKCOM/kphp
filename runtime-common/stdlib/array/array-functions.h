@@ -415,7 +415,7 @@ T f$array_replace(const T &base_array, const T &replacements_1, const T &replace
 }
 
 template<class T>
-array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_var, bool preserve_keys) noexcept {
+array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_var = mixed(), bool preserve_keys = false) noexcept {
   auto size = a.count();
 
   int64_t length = 0;
@@ -461,7 +461,6 @@ array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_va
 
   return result;
 }
-
 
 template<class T>
 void f$asort(array<T> &a, int64_t flag = SORT_REGULAR) {
