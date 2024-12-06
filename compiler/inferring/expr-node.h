@@ -21,6 +21,11 @@ public:
     expr_(expr) {
   }
 
+ void copy_type_from(const TypeData *from) {
+    type_ = from;
+    recalc_state_ = recalc_st_waiting | recalc_bit_at_least_once;
+  }
+
   void recalc(TypeInferer *inferer);
 
   VertexPtr get_expr() const {

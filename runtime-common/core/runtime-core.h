@@ -26,6 +26,7 @@
 
 #define INCLUDED_FROM_KPHP_CORE
 
+#include "runtime-common/core/array_access.h"
 #include "runtime-common/core/core-types/decl/string_decl.inl"
 #include "runtime-common/core/core-types/decl/array_decl.inl"
 #include "runtime-common/core/class-instance/class-instance-decl.inl"
@@ -47,6 +48,15 @@
 
 #define FFI_CALL(call) ({ dl::CriticalSectionGuard critical_section___; (call); })
 #define FFI_INVOKE_CALLBACK(call) ({ dl::NonCriticalSectionGuard non_critical_section___; (call); })
+
+#define SET_MIXED_BY_INDEX(mix, idx, val) mix.set_value_return(idx, val)
+#define SAFE_SET_MIXED_BY_INDEX(mix, idx, val, val_type)  ({ val_type val_tmp___ = val; mix.set_value_return(idx, std::move(val_tmp___)); })
+#define MIXED_GET_IF_ISSET(mix, idx) ({mixed res_tmp___{}; mixed mix_tmp___ = mix; auto idx_tmp___ = idx; if (mix_tmp___.isset(idx_tmp___)) {res_tmp___ = mix_tmp___.get_value(idx_tmp___);} res_tmp___;})
+#define MIXED_GET_IF_NOT_EMPTY(mix, idx) ({mixed res_tmp___{}; mixed mix_tmp___ = mix; auto idx_tmp___ = idx; if (mix_tmp___.isset(idx_tmp___)) {mixed for_get_tmp___ = mix_tmp___.get_value(idx_tmp___); if (!for_get_tmp___.empty()) { res_tmp___ = for_get_tmp___; } } res_tmp___; })
+
+#define ARR_ACC_SET_RETURN(obj, idx, val, method) ({mixed val_tmp___ = val; method(obj, idx, val_tmp___); val_tmp___;}) // it's always safe
+#define ARR_ACC_GET_IF_ISSET(obj, idx, check_method, get_method) ({mixed res_tmp___{}; auto obj_tmp___ = obj; mixed idx_tmp___ = idx; if (check_method(obj_tmp___, idx_tmp___)) {res_tmp___ = get_method(obj_tmp___, idx_tmp___);} res_tmp___;})
+#define ARR_ACC_GET_IF_NOT_EMPTY(obj, idx, check_method, get_method) ({mixed res_tmp___{}; auto obj_tmp___ = obj; mixed idx_tmp___ = idx; if (check_method(obj_tmp___, idx_tmp___)) {mixed for_get_tmp___ = get_method(obj_tmp___, idx_tmp___); if (!for_get_tmp___.empty()) { res_tmp___ = for_get_tmp___; } } res_tmp___; })
 
 #define SAFE_SET_OP(a, op, b, b_type) ({b_type b_tmp___ = b; a op std::move(b_tmp___);})
 #define SAFE_SET_FUNC_OP(a, func, b, b_type) ({b_type b_tmp___ = b; func (a, b_tmp___);})

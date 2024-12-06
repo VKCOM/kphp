@@ -9,6 +9,8 @@
 
 #include "common/wrappers/field_getter.h"
 #include "common/wrappers/likely.h"
+#include "common/wrappers/string_view.h"
+#include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
 #include "compiler/code-gen/declarations.h"
@@ -23,6 +25,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
@@ -530,6 +533,7 @@ void compile_binary_func_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W
 }
 
 bool try_compile_append_inplace(VertexAdaptor<op_set_dot> root, CodeGenerator &W);
+bool try_compile_set_by_index_of_mixed(VertexPtr root, CodeGenerator &W);
 
 void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
   const auto &root_type_str = OpInfo::str(root->type());
@@ -592,6 +596,10 @@ void compile_binary_op(VertexAdaptor<meta_op_binary> root, CodeGenerator &W) {
       W << str_repr_it->second << " (" << lhs << ", " << rhs << ")";
       return;
     }
+  }
+
+  if (try_compile_set_by_index_of_mixed(root, W)) {
+    return;
   }
 
   W << Operand{lhs, root->type(), true} <<
@@ -847,6 +855,17 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       // we are inside a function marked with @kphp-tracing
       W << "_tr_f.enter_branch(" << root->args()[0] << ")";
       return;
+    }
+    if (root->str_val == "empty") {
+      if (auto index = root->args()[0].try_as<op_index>(); index && tinf::get_type(index->array())->get_real_ptype() == tp_mixed) {
+        W << "(" << index->array() << ")";
+        W << ".empty_at(" << index->key();
+        if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(index->key())) {
+          W << ", " << precomputed_hash << "_i64";
+        }
+        W << ")";
+        return;
+      }
     }
   }
 
@@ -1786,19 +1805,32 @@ bool try_compile_append_inplace(VertexAdaptor<op_set_dot> root, CodeGenerator &W
   return false;
 }
 
-void compile_index_of_array(VertexAdaptor<op_index> root, CodeGenerator &W) {
+void compile_index_of_array_or_mixed(VertexAdaptor<op_index> root, CodeGenerator &W) {
   bool used_as_rval = root->rl_type != val_l;
   if (!used_as_rval) {
     kphp_assert(root->has_key());
-    W << root->array() << "[" << root->key() << "]";
-  } else {
-    W << root->array() << ".get_value (" << root->key();
-    // if it's a const string key access like $a['somekey'],
-    // compute the 'somekey' string hash during the compile time and call array<T>::get_value(string, precomputed_hash)
-    if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(root->key())) {
-      W << ", " << precomputed_hash << "_i64";
+    vk::string_view pre{};
+    vk::string_view past{};
+    if (tinf::get_type(root->array())->ptype() == tp_mixed) {
+      pre = "static_cast<mixed&>(";
+      past = ")";
     }
-    W << ")";
+    W << pre << root->array() << "[" << root->key() << "]" << past;
+  } else {
+    // TODO support precomputed hashes with macros below
+    if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_isset) {
+      W << "MIXED_GET_IF_ISSET" << MacroBegin{} << root->array() << ", " << root->key() << MacroEnd{};
+    } else if (tinf::get_type(root->array())->ptype() == tp_mixed && root->inside_empty) {
+      W << "MIXED_GET_IF_NOT_EMPTY" << MacroBegin{} << root->array() << ", " << root->key() << MacroEnd{};
+    } else {
+      W << root->array() << ".get_value (" << root->key();
+      // if it's a const string key access like $a['somekey'],
+      // compute the 'somekey' string hash during the compile time and call array<T>::get_value(string, precomputed_hash)
+      if (auto precomputed_hash = can_use_precomputed_hash_indexing_array(root->key())) {
+        W << ", " << precomputed_hash << "_i64";
+      }
+      W << ")";
+    }
   }
 }
 
@@ -1860,7 +1892,7 @@ void compile_index(VertexAdaptor<op_index> root, CodeGenerator &W) {
       W << ShapeGetIndex(root->array(), root->key());
       break;
     default:
-      compile_index_of_array(root, W);
+      compile_index_of_array_or_mixed(root, W);
   }
 }
 
@@ -2061,6 +2093,37 @@ void compile_defined(VertexPtr root __attribute__((unused)), CodeGenerator &W __
   //TODO: it is not CodeGen part
 }
 
+bool try_compile_set_by_index_of_mixed(VertexPtr root, CodeGenerator &W) {
+  if (auto set = root.try_as<op_set>()) {
+    auto lhs = set->lhs();
+    auto rhs = set->rhs();
+    if (auto index = lhs.try_as<op_index>()) {
+      if (tinf::get_type(index->array())->get_real_ptype() == tp_mixed) {
+        if (set->extra_type == op_ex_safe_version) {
+          W << "SAFE_SET_MIXED_BY_INDEX";
+          W << MacroBegin{};
+          W << index->array() << ", ";
+          W << index->key() << ", ";
+
+          TmpExpr tmp_rhs(rhs);
+          W << tmp_rhs << ", ";
+          W << TypeName(tmp_rhs.get_type());
+          W << MacroEnd{};
+        } else {
+          W << "SET_MIXED_BY_INDEX";
+          W << MacroBegin{};
+          W << index->array() << ", ";
+          W << index->key() << ", ";
+          W << rhs;
+          W << MacroEnd{};
+        }
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void compile_safe_version(VertexPtr root, CodeGenerator &W) {
   if (auto set_value = root.try_as<op_set_value>()) {
     TmpExpr key{set_value->key()};
@@ -2073,6 +2136,9 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
       TypeName(value.get_type()) <<
       MacroEnd{};
   } else if (OpInfo::rl(root->type()) == rl_set) {
+    if (try_compile_set_by_index_of_mixed(root, W)) {
+      return;
+    }
     auto op = root.as<meta_op_binary>();
     if (OpInfo::type(root->type()) == binary_func_op) {
       W << "SAFE_SET_FUNC_OP " << MacroBegin{};
@@ -2107,11 +2173,13 @@ void compile_safe_version(VertexPtr root, CodeGenerator &W) {
   } else if (auto index = root.try_as<op_index>()) {
     kphp_assert (index->has_key());
     TmpExpr key{index->key()};
-    W << "SAFE_INDEX " << MacroBegin{} <<
-      index->array() << ", " <<
-      key << ", " <<
-      TypeName(key.get_type()) <<
-      MacroEnd{};
+    vk::string_view pre{};
+    vk::string_view past{};
+    if (tinf::get_type(index->array())->ptype() == tp_mixed) {
+      pre = "static_cast<mixed&>(";
+      past = ")";
+    }
+    W << pre << "SAFE_INDEX " << MacroBegin{} << index->array() << ", " << key << ", " << TypeName(key.get_type()) << MacroEnd{} << past;
   } else {
     kphp_error (0, fmt_format("Safe version of [{}] is not supported", OpInfo::str(root->type())));
     kphp_fail();
@@ -2382,6 +2450,26 @@ void compile_common_op(VertexPtr root, CodeGenerator &W) {
       kphp_assert(tp->ptype() == tp_Class);
       const auto *alloc_function = tp->class_type()->is_empty_class() ? "().empty_alloc()" : "().alloc()";
       W << TypeName(tp) << alloc_function;
+      break;
+    }
+    case op_arr_acc_set_return: {
+      auto v = root.as<op_arr_acc_set_return>();
+      W << "ARR_ACC_SET_RETURN" << MacroBegin{} << v->obj() << ", " << v->offset() << ", " << v->value() << ", "
+        << "f$" << v->set_method->name << MacroEnd{};
+      break;
+    }
+    case op_arr_acc_check_and_get: {
+      auto v = root.as<op_arr_acc_check_and_get>();
+
+      if (v->is_empty) {
+        W << "ARR_ACC_GET_IF_NOT_EMPTY";
+      } else {
+        W << "ARR_ACC_GET_IF_ISSET";
+      }
+
+      W << MacroBegin{} << v->obj() << ", " << v->offset() << ", "
+        << "f$" << v->check_method->name << ", "
+        << "f$" << v->get_method->name << MacroEnd{};
       break;
     }
     default:

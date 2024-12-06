@@ -1,26 +1,28 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/inferring/type-data.h"
+
 
 #include <string>
 #include <vector>
 
 #include "common/algorithms/compare.h"
 #include "common/algorithms/contains.h"
+#include "common/php-functions.h"
 #include "common/termformat/termformat.h"
 
-#include "common/php-functions.h"
-#include "compiler/compiler-core.h"
 #include "compiler/code-gen/common.h"
+#include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/ffi-data.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/pipes/collect-main-edges.h"
 #include "compiler/stage.h"
 #include "compiler/threading/hash-table.h"
 #include "compiler/utils/string-utils.h"
-
 
 static std::vector<const TypeData *> primitive_types;
 static std::vector<const TypeData *> array_types;
@@ -351,6 +353,17 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
   if (ptype() == tp_string) {
     return get_type(tp_string);
   }
+  if (ptype() == tp_Class) {
+    if (auto klass = class_type(); klass) {
+      ClassPtr aa = G->get_class("ArrayAccess");
+      kphp_assert_msg(aa, "Internal error: cannot find ArrayAccess interface");
+
+      if (aa->is_parent_of(klass)) {
+        return get_type(tp_mixed);
+      }
+      kphp_error(false, fmt_format("Class {} does not implement \\ArrayAccess", klass->name));
+    }
+  }
   if (!structured()) {
     return get_type(tp_any);
   }
@@ -418,6 +431,13 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   TypeData *lhs = this;
 
   PrimitiveType new_ptype = type_lca(lhs->ptype(), rhs->ptype());
+  if (lhs->ptype_ == tp_array && rhs->ptype_ == tp_Class) {
+    if (lhs->get_write_flag()) {
+      // `ArrayAccess::offsetSet()` case
+      // It means that lhs is something like that `$a[*] = foo()`
+      new_ptype = tp_Class;
+    }
+  }
   if (new_ptype == tp_mixed) {
     if (lhs->ptype() == tp_array && lhs->lookup_at_any_key()) {
       lhs->set_lca_at(MultiKey::any_key(1), TypeData::get_type(tp_mixed));
@@ -528,6 +548,13 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
       }
       return;
     }
+  }
+
+  if (cur->get_write_flag()) {
+    // Access using `multi_key` is storing, not loading
+    // So, we need to save this info in this node to correctly handle `ArrayAccess::offsetSet()`
+    // But `cur` is not always pointing to `this`, `write_at()` method in previous loop may reallocate node
+    this->set_write_flag();
   }
 
   cur->set_lca(rhs, save_or_false, save_or_null, ffi_flags);

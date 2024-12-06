@@ -4,9 +4,12 @@
 
 #pragma once
 
+#include <optional>
+#include <utility>
+#include <variant>
+
 #include "common/smart_ptrs/intrusive_ptr.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
-
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"
@@ -22,6 +25,52 @@ struct is_type_acceptable_for_mixed<array<T>> : is_constructible_or_unknown<mixe
 
 template<typename T>
 struct is_type_acceptable_for_mixed<class_instance<T>> : std::is_base_of<may_be_mixed_base, T> {
+};
+
+template<class Mix>
+class Materialized final {
+  using MixRef = Mix &;
+  std::variant<Mix, Mix *> slot_;
+
+  Materialized(Mix *ptr) noexcept
+    : slot_{ptr} {}
+
+  Materialized(Mix &&value) noexcept
+    : slot_(std::move(value)) {}
+
+public:
+  static Materialized WithRef(Mix &ref) noexcept {
+    return Materialized(&ref);
+  }
+
+  static Materialized WithValue(Mix &&val) noexcept {
+    return Materialized(std::move(val));
+  }
+
+  template<class T>
+  Materialized operator[](T &&arg) && {
+    return this->operator MixRef()[std::forward<T>(arg)];
+  }
+
+  operator MixRef() noexcept {
+    if (likely(std::holds_alternative<Mix>(slot_))) {
+      return std::get<Mix>(slot_);
+    }
+    return *std::get<Mix *>(slot_);
+  }
+
+  // methods below are used in runtime sources
+  // in codegen Materizalied<Mix> is casted to mixed&
+
+  template<class T>
+  Materialized operator=(T &&arg) && noexcept {
+    return Materialized::WithRef(this->operator MixRef() = std::forward<T>(arg));
+  }
+
+  template<class T>
+  void push_back(T &&arg) && {
+    this->operator MixRef().push_back(std::forward<T>(arg));
+  }
 };
 
 class mixed {
@@ -90,14 +139,29 @@ public:
   mixed &append(const string &v);
   mixed &append(tmp_string v);
 
-  mixed &operator[](int64_t int_key);
-  mixed &operator[](int32_t key) { return (*this)[int64_t{key}]; }
-  mixed &operator[](const string &string_key);
-  mixed &operator[](tmp_string string_key);
-  mixed &operator[](const mixed &v);
-  mixed &operator[](double double_key);
-  mixed &operator[](const array<mixed>::const_iterator &it);
-  mixed &operator[](const array<mixed>::iterator &it);
+  Materialized<mixed> operator[](int64_t int_key);
+  Materialized<mixed> operator[](int32_t key) { return (*this)[int64_t{key}]; }
+  Materialized<mixed> operator[](const string &string_key);
+  Materialized<mixed> operator[](tmp_string string_key);
+  Materialized<mixed> operator[](const mixed &v);
+  Materialized<mixed> operator[](double double_key);
+  Materialized<mixed> operator[](const array<mixed>::const_iterator &it);
+  Materialized<mixed> operator[](const array<mixed>::iterator &it);
+
+  /*
+   * The `set_value_return()` method is used in assignment chains like `$mix[0] = $mix[1] = foo();`.
+   * Normally, this could be transpiled to `v$mix[0] = v$mix[1] = f$foo()`. However, when `$mix` is an object
+   * implementing ArrayAccess, this doesn't work because `offsetGet()` returns by value, not by reference.
+   * This is why `mixed &operator[]` cannot be expressed using `offsetGet()`.
+   * Since returning by reference is not supported, we call `offsetSet($offset, $value)` and return `$value`.
+   */
+
+  template<typename T>
+  mixed set_value_return(T key, const mixed &val);
+  mixed set_value_return(const mixed &key, const mixed &val);
+  mixed set_value_return(const string &key, const mixed &val);
+  mixed set_value_return(const array<mixed>::iterator &key, const mixed &val);
+  mixed set_value_return(const array<mixed>::const_iterator &key, const mixed &val);
 
   void set_value(int64_t int_key, const mixed &v);
   void set_value(int32_t key, const mixed &value) { set_value(int64_t{key}, value); }
@@ -222,6 +286,15 @@ public:
   const char *get_type_c_str() const;
   const char *get_type_or_class_name() const;
 
+
+  template<typename T>
+  bool empty_at(T key) const;
+  bool empty_at(const mixed &key) const;
+  bool empty_at(const string &key) const;
+  bool empty_at(const string &key, int64_t precomputed_hash) const;
+  bool empty_at(const array<mixed>::iterator &key) const;
+  bool empty_at(const array<mixed>::const_iterator &key) const;
+
   bool empty() const;
   int64_t count() const;
   int64_t compare(const mixed &rhs) const;
@@ -274,6 +347,7 @@ private:
   uint64_t storage_{0};
 };
 
+
 mixed operator+(const mixed &lhs, const mixed &rhs);
 mixed operator-(const mixed &lhs, const mixed &rhs);
 mixed operator*(const mixed &lhs, const mixed &rhs);
@@ -303,3 +377,4 @@ template<class InputClass>
 mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept;
 template<class ResultClass>
 ResultClass from_mixed(const mixed &m, const string &) noexcept;
+std::optional<class_instance<C$ArrayAccess>> try_as_array_access(const mixed &) noexcept;

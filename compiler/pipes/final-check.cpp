@@ -14,6 +14,7 @@
 #include "compiler/data/kphp-tracing-tags.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
+#include "compiler/inferring/primitive-type.h"
 #include "compiler/vertex-util.h"
 #include "compiler/type-hint.h"
 #include "compiler/phpdoc.h"

@@ -7,8 +7,8 @@
 #include "common/algorithms/find.h"
 #include "common/smart_ptrs/intrusive_ptr.h"
 
-#include "runtime-common/core/utils/migration-php8.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/core/utils/migration-php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
   #error "this file must be included only from runtime-core.h"
@@ -93,6 +93,12 @@ int64_t spaceship(const T1 &lhs, const T2 &rhs);
 template <class ...MaybeHash>
 bool mixed::isset(const string &string_key, MaybeHash ...maybe_hash) const {
   if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        return f$ArrayAccess$$offsetExists(*as_aa, string_key);
+      }
+    }
+
     int64_t int_key{std::numeric_limits<int64_t>::max()};
     if (get_type() == type::STRING) {
       if (!string_key.try_to_int(&int_key)) {
@@ -110,6 +116,13 @@ bool mixed::isset(const string &string_key, MaybeHash ...maybe_hash) const {
 template <class ...MaybeHash>
 void mixed::unset(const string &string_key, MaybeHash ...maybe_hash) {
   if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetUnset(*as_aa, string_key);
+        return;
+      }
+    }
+
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_or_class_name());
     }
@@ -118,7 +131,6 @@ void mixed::unset(const string &string_key, MaybeHash ...maybe_hash) {
 
   as_array().unset(string_key, maybe_hash...);
 }
-
 
 inline mixed::type mixed::get_type() const {
   return type_;
@@ -286,4 +298,23 @@ ResultClass from_mixed(const mixed &m, const string &) noexcept {
   } else {
     return ResultClass::create_from_base_raw_ptr(dynamic_cast<abstract_refcountable_php_interface *>(m.as_object_ptr<ResultClass>()));
   }
+}
+
+template<typename T>
+mixed mixed::set_value_return(T key, const mixed &val) {
+  if (get_type() == type::OBJECT) {
+    set_value(key, val);
+    return val;
+  }
+  return (*this)[key] = val;
+}
+
+template<typename T>
+bool mixed::empty_at(T key) const {
+  if (type_ == type::OBJECT) {
+    if (auto as_aa = try_as_array_access(*this)) {
+      return !f$ArrayAccess$$offsetExists(*as_aa, key) || f$ArrayAccess$$offsetGet(*as_aa, key).empty();
+    }
+  }
+  return get_value(key).empty();
 }

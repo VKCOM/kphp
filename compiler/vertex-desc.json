@@ -570,6 +570,57 @@
     }
   },
   {
+    "comment": "artificial op for array access hack with multiple assignment",
+    "name": "op_arr_acc_set_return",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "array access set and return value"
+    },
+    "sons": {
+      "offset": 0,
+      "value": 1,
+      "obj": 2
+    },
+    "extra_fields": {
+      "set_method": {
+        "type": "FunctionPtr",
+        "default": "{}"
+      }
+    }
+  },
+  {
+    "comment": "artificial op for array access get with preliminary check",
+    "name": "op_arr_acc_check_and_get",
+    "base_name": "meta_op_base",
+    "props": {
+      "rl": "rl_func",
+      "cnst": "cnst_nonconst_func",
+      "type": "common_op",
+      "str": "array access get with preliminary check"
+    },
+    "sons": {
+      "offset": 0,
+      "obj": 1
+    },
+    "extra_fields": {
+      "check_method": {
+        "type": "FunctionPtr",
+        "default": "{}"
+      },
+      "get_method": {
+        "type": "FunctionPtr",
+        "default": "{}"
+      },
+      "is_empty": {
+        "type": "bool",
+        "default": "false"
+      }
+    }
+  },
+  {
     "comment": "holds op_function params in params()",
     "name": "op_func_param_list",
     "base_name": "meta_op_varg",
@@ -621,6 +672,12 @@
     "props": {
       "rl": "rl_op",
       "str": "isset"
+    },
+    "extra_fields": {
+      "was_eq3": {
+        "type": "bool",
+        "default": "false"
+      }
     }
   },
   {
@@ -1727,7 +1784,7 @@
     }
   },
   {
-    "comment": "array()[key()]; or array()[]",
+    "comment": "array()[key()]; or array()[] or Obj()[key()]; or Obj()[]",
     "sons": {
       "array": 0,
       "key": {
@@ -1742,8 +1799,19 @@
       "cnst": "cnst_const_func",
       "type": "common_op",
       "str": "$...[.]"
+    },
+    "extra_fields": {
+      "inside_isset": {
+        "type": "bool",
+        "default": "false"
+      },
+      "inside_empty": {
+        "type": "bool",
+        "default": "false"
+      }
     }
   },
+
   {
     "comment": "optimized form of array()[] = value()",
     "name": "op_push_back",

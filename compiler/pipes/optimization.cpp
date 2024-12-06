@@ -4,6 +4,12 @@
 
 #include "compiler/pipes/optimization.h"
 
+#include "auto/compiler/vertex/vertex-types.h"
+#include "compiler/data/vertex-adaptor.h"
+#include "compiler/inferring/primitive-type.h"
+#include "compiler/inferring/type-data.h"
+#include "compiler/kphp_assert.h"
+#include "compiler/operation.h"
 #include <sstream>
 
 #include "common/algorithms/hashes.h"
@@ -90,45 +96,83 @@ void explicit_cast_array_type(VertexPtr &type_acceptor, const TypeData *required
   }
 }
 
-} // namespace
-
-VertexPtr OptimizationPass::optimize_set_push_back(VertexAdaptor<op_set> set_op) {
-  if (set_op->lhs()->type() != op_index) {
-    return set_op;
+VertexPtr transform_set_on_class(VertexPtr set_op, VertexPtr container, VertexPtr key, VertexPtr value) {
+  if (!key) {
+    key = VertexAdaptor<op_null>::create();
   }
-  VertexAdaptor<op_index> index = set_op->lhs().as<op_index>();
+
+  // `container` will be passed as function argument
+  // in such cases rl_type is val_r
+  container->rl_type = val_r;
+
+  VertexPtr result;
+
+  auto klass = tinf::get_type(container)->class_type();
+  kphp_assert_msg(klass, "Internal error: cannot get type of object for write [] access");
+
+  const auto *method = klass->get_instance_method("offsetSet");
+  kphp_error(method, fmt::format("Class {} does not implement \\ArrayAccess", klass->name).c_str());
+
+  if (set_op->rl_type == val_none) {
+    auto new_call = VertexAdaptor<op_func_call>::create(container, key, value).set_location(set_op->get_location());
+    new_call->str_val = method->global_name();
+    new_call->func_id = method->function;
+    new_call->extra_type = op_ex_func_call_arrow;
+    new_call->auto_inserted = true;
+    new_call->rl_type = set_op->rl_type;
+
+    result = new_call;
+  } else {
+    auto set_with_ret_op = VertexAdaptor<op_arr_acc_set_return>::create(key, value, container);
+    set_with_ret_op->set_method = method->function;
+    set_with_ret_op.set_location(set_op->get_location());
+
+    result = set_with_ret_op;
+  }
+
+  return result;
+}
+
+VertexPtr optimize_set_push_back(VertexPtr set_op, VertexAdaptor<op_index> index, VertexPtr container, VertexPtr key, VertexPtr value, PrimitiveType container_ptype ) {
+  VertexPtr result;
   if (index->has_key() && set_op->rl_type != val_none) {
     return set_op;
   }
 
-  VertexPtr a, b, c;
-  a = index->array();
-  if (index->has_key()) {
-    b = index->key();
-  }
-  c = set_op->rhs();
-
-  VertexPtr result;
-
-  if (!b) {
-    // '$s[] = ...' is forbidden for non-array types;
-    // for arrays it's converted to push_back
-    PrimitiveType a_ptype = tinf::get_type(a)->get_real_ptype();
-    kphp_error (a_ptype == tp_array || a_ptype == tp_mixed,
-                fmt_format("Can not use [] for {}", type_out(tinf::get_type(a))));
+  if (!key) {
+    kphp_error (container_ptype == tp_array || container_ptype == tp_mixed,
+                fmt_format("Can not use [] for {}", type_out(tinf::get_type(container))));
 
     if (set_op->rl_type == val_none) {
-      result = VertexAdaptor<op_push_back>::create(a, c);
+      result = VertexAdaptor<op_push_back>::create(container, value);
     } else {
-      result = VertexAdaptor<op_push_back_return>::create(a, c);
+      result = VertexAdaptor<op_push_back_return>::create(container, value);
     }
   } else {
-    result = VertexAdaptor<op_set_value>::create(a, b, c);
+    result = VertexAdaptor<op_set_value>::create(container, key, value);
   }
   result->location = set_op->get_location();
   result->extra_type = op_ex_internal_func;
   result->rl_type = set_op->rl_type;
   return result;
+}
+
+} // namespace
+
+VertexPtr OptimizationPass::optimize_set_with_offset(VertexAdaptor<op_set> set_op) {
+  if (set_op->lhs()->type() != op_index) {
+    return set_op;
+  }
+  VertexAdaptor<op_index> index = set_op->lhs().as<op_index>();
+  VertexPtr container = index->array();
+  VertexPtr key = index->has_key() ? index->key() : VertexPtr{};
+  VertexPtr value = set_op->rhs();
+  
+  PrimitiveType container_ptype = tinf::get_type(container)->get_real_ptype();
+  if (container_ptype == tp_Class) {
+    return transform_set_on_class(set_op, container, key, value);
+  }
+  return optimize_set_push_back(set_op, index, container, key, value, container_ptype);
 }
 void OptimizationPass::collect_concat(VertexPtr root, std::vector<VertexPtr> *collected) {
   if (root->type() == op_string_build || root->type() == op_concat) {
@@ -177,6 +221,27 @@ VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
       kphp_error (0, "Cannot use [] for reading");
     }
   }
+
+  auto &lhs = index->array();
+  const auto *tpe = tinf::get_type(index->array()); // funny
+  if (tpe->get_real_ptype() == tp_Class) {
+    auto klass = tpe->class_type();
+    kphp_assert_msg(klass, "Internal error: cannot get type of object for read [] access");
+
+    const auto *method = klass->get_instance_method("offsetGet");
+    kphp_error(method, fmt_format("Class {} does not implement \\ArrayAccess", klass->name).c_str());
+
+    auto new_call = VertexAdaptor<op_func_call>::create(lhs, index->key()).set_location(lhs);
+    new_call->str_val = method->global_name();
+    new_call->func_id = method->function;
+    new_call->extra_type = op_ex_func_call_arrow;
+    new_call->auto_inserted = true;
+    new_call->rl_type = index->rl_type;
+    new_call.set_location(index);
+
+    return new_call;
+  }
+
   return index;
 }
 VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
@@ -271,7 +336,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
 
   if (auto set_vertex = root.try_as<op_set>()) {
     explicit_cast_array_type(set_vertex->rhs(), tinf::get_type(set_vertex->lhs()), &current_function->explicit_const_var_ids);
-    root = optimize_set_push_back(set_vertex);
+    root = optimize_set_with_offset(set_vertex);
   } else if (root->type() == op_string_build || root->type() == op_concat) {
     root = optimize_string_building(root);
   } else if (root->type() == op_postfix_inc) {
@@ -321,6 +386,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   }
 
   if (root->rl_type != val_none/* && root->rl_type != val_error*/) {
+    // wtf?
     tinf::get_type(root);
   }
   return root;

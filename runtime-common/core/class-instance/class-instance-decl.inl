@@ -141,6 +141,14 @@ public:
     return res;
   }
 
+  template<class S = T>
+  static std::enable_if_t<std::is_polymorphic<S>{}, class_instance> create_from_polymorphic(T *object) noexcept {
+    class_instance res;
+    php_assert(object);
+    res.o = vk::intrusive_ptr<T>{object};
+    return res;
+  }
+
   inline T *operator->() __attribute__ ((always_inline));
   inline T *operator->() const __attribute__ ((always_inline));
 

@@ -118,6 +118,7 @@ public:
   bool use_optional() const { return use_or_false() || use_or_null(); }
 
   void set_write_flag() { set_flag<write_flag_e>(); }
+  bool get_write_flag() { return get_flag<write_flag_e>(); }
 
   bool error_flag() const { return ptype_ == tp_Error; }
 

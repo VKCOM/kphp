@@ -2,8 +2,39 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <optional>
+
+#include "common/smart_ptrs/intrusive_ptr.h"
 #include "common/wrappers/likely.h"
+#include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
+
+namespace {
+
+string to_string_without_warning(const mixed &m) {
+  switch (m.get_type()) {
+    case mixed::type::NUL:
+      return string();
+    case mixed::type::BOOLEAN:
+      return (m.as_bool() ? string("1", 1) : string());
+    case mixed::type::INTEGER:
+      return string(m.as_int());
+    case mixed::type::FLOAT:
+      return string(m.as_double());
+    case mixed::type::STRING:
+      return m.as_string();
+    case mixed::type::ARRAY:
+      return string("Array", 5);
+    case mixed::type::OBJECT: {
+      const char *s = m.get_type_or_class_name();
+      return string(s, strlen(s));
+    }
+    default:
+      __builtin_unreachable();
+  }
+}
+
+} // namespace
 
 void mixed::copy_from(const mixed &other) {
   switch (other.get_type()) {
@@ -530,28 +561,6 @@ double mixed::to_float() const {
   }
 }
 
-static string to_string_without_warning(const mixed &m) {
-  switch (m.get_type()) {
-    case mixed::type::NUL:
-      return string();
-    case mixed::type::BOOLEAN:
-      return (m.as_bool() ? string("1", 1) : string());
-    case mixed::type::INTEGER:
-      return string(m.as_int());
-    case mixed::type::FLOAT:
-      return string(m.as_double());
-    case mixed::type::STRING:
-      return m.as_string();
-    case mixed::type::ARRAY:
-      return string("Array", 5);
-    case mixed::type::OBJECT: {
-      const char *s = m.get_type_or_class_name();
-      return string(s, strlen(s));
-    }
-    default:
-      __builtin_unreachable();
-  }
-}
 
 const string mixed::to_string() const {
   switch (get_type()) {
@@ -1019,6 +1028,58 @@ const string mixed::get_type_str() const {
   return string(get_type_c_str());
 }
 
+std::optional<class_instance<C$ArrayAccess>> try_as_array_access(const mixed &m) noexcept {
+  using T = class_instance<C$ArrayAccess>;
+  if (!m.is_object()) {
+    return std::nullopt;
+  }
+
+  C$ArrayAccess* ptr = m.as_object_ptr<T>();
+
+  if (likely(ptr != nullptr)) {
+    return T::create_from_polymorphic(ptr);
+  }
+
+  return std::nullopt;
+}
+
+bool mixed::empty_at(const mixed &key) const {
+  if (type_ == type::OBJECT) {
+    if (auto as_aa = try_as_array_access(*this)) {
+      return !f$ArrayAccess$$offsetExists(*as_aa, key) || f$ArrayAccess$$offsetGet(*as_aa, key).empty();
+    }
+  }
+
+  return get_value(key).empty();
+}
+
+bool mixed::empty_at(const string &key) const {
+  if (type_ == type::OBJECT) {
+    if (auto as_aa = try_as_array_access(*this)) {
+      return !f$ArrayAccess$$offsetExists(*as_aa, key) || f$ArrayAccess$$offsetGet(*as_aa, key).empty();
+    }
+  }
+
+  return get_value(key).empty();
+}
+
+bool mixed::empty_at(const string &key, int64_t precomputed_hash) const {
+  if (type_ == type::OBJECT) {
+    if (auto as_aa = try_as_array_access(*this)) {
+      return !f$ArrayAccess$$offsetExists(*as_aa, key) || f$ArrayAccess$$offsetGet(*as_aa, key).empty();
+    }
+  }
+
+  return get_value(key, precomputed_hash).empty();
+}
+
+bool mixed::empty_at(const array<mixed>::iterator &key) const {
+  return get_value(key).empty();
+}
+
+bool mixed::empty_at(const array<mixed>::const_iterator &key) const {
+  return get_value(key).empty();
+}
 
 bool mixed::empty() const {
   return !to_bool();
@@ -1094,54 +1155,63 @@ int64_t mixed::compare(const mixed &rhs) const {
   return three_way_comparison(to_float(), rhs.to_float());
 }
 
-
-
-
-mixed &mixed::operator[](int64_t int_key) {
+Materialized<mixed> mixed::operator[](int64_t int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
-      php_warning("Writing to string by offset is't supported");
-      return empty_value<mixed>();
+      php_warning("Writing to string by offset isn't supported");
+      return Materialized<mixed>::WithRef(empty_value<mixed>());
     }
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
+    } else if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        return Materialized<mixed>::WithValue(f$ArrayAccess$$offsetGet(*as_aa, int_key));
+      }
+      php_notice("Indirect modification of overloaded element of %s has no effect", get_type_or_class_name());
+      return Materialized<mixed>::WithRef(empty_value<mixed>());
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string_without_warning(*this).c_str(), get_type_or_class_name(), int_key);
-      return empty_value<mixed>();
+      return Materialized<mixed>::WithRef(empty_value<mixed>());
     }
   }
-  return as_array()[int_key];
+  return Materialized<mixed>::WithRef(as_array()[int_key]);
 }
 
-mixed &mixed::operator[](const string &string_key) {
+Materialized<mixed> mixed::operator[](const string &string_key) {
   if (unlikely (get_type() != type::ARRAY)) {
     if (get_type() == type::STRING) {
       php_warning("Writing to string by offset is't supported");
-      return empty_value<mixed>();
+      return Materialized<mixed>::WithRef(empty_value<mixed>());
     }
 
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
+    } else if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        return Materialized<mixed>::WithValue(f$ArrayAccess$$offsetGet(*as_aa, string_key));
+      }
+      php_notice("Indirect modification of overloaded element of %s has no effect", get_type_or_class_name());
+      return Materialized<mixed>::WithRef(empty_value<mixed>());
     } else {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %s", to_string_without_warning(*this).c_str(), get_type_or_class_name(), string_key.c_str());
-      return empty_value<mixed>();
+      return Materialized<mixed>::WithRef(empty_value<mixed>());
     }
   }
 
-  return as_array()[string_key];
+  return Materialized<mixed>::WithRef(as_array()[string_key]);
 }
 
-mixed &mixed::operator[](tmp_string string_key) {
+Materialized<mixed> mixed::operator[](tmp_string string_key) {
   if (get_type() == type::ARRAY) {
-    return as_array()[string_key];
+    return Materialized<mixed>::WithRef(as_array()[string_key]);
   }
   return (*this)[materialize_tmp_string(string_key)];
 }
 
-mixed &mixed::operator[](const mixed &v) {
+Materialized<mixed> mixed::operator[](const mixed &v) {
   switch (v.get_type()) {
     case type::NUL:
       return (*this)[string()];
@@ -1164,18 +1234,41 @@ mixed &mixed::operator[](const mixed &v) {
   }
 }
 
-mixed &mixed::operator[](double double_key) {
+Materialized<mixed> mixed::operator[](double double_key) {
   return (*this)[static_cast<int64_t>(double_key)];
 }
 
-mixed &mixed::operator[](const array<mixed>::const_iterator &it) {
-  return as_array()[it];
+Materialized<mixed> mixed::operator[](const array<mixed>::const_iterator &it) {
+  return Materialized<mixed>::WithRef(as_array()[it]);
 }
 
-mixed &mixed::operator[](const array<mixed>::iterator &it) {
-  return as_array()[it];
+Materialized<mixed> mixed::operator[](const array<mixed>::iterator &it) {
+  return Materialized<mixed>::WithRef(as_array()[it]);
 }
 
+mixed mixed::set_value_return(const mixed &key, const mixed &val) {
+  if (get_type() == type::OBJECT) {
+    set_value(key, val);
+    return val;
+  }
+  return (*this)[key] = val;
+}
+
+mixed mixed::set_value_return(const string &key, const mixed &val) {
+  if (get_type() == type::OBJECT) {
+    set_value(key, val);
+    return val;
+  }
+  return (*this)[key] = val;
+}
+
+mixed mixed::set_value_return(const array<mixed>::iterator &key, const mixed &val) {
+  return (*this)[key] = val;
+}
+
+mixed mixed::set_value_return(const array<mixed>::const_iterator &key, const mixed &val) {
+  return (*this)[key] = val;
+}
 
 void mixed::set_value(int64_t int_key, const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
@@ -1199,6 +1292,15 @@ void mixed::set_value(int64_t int_key, const mixed &v) {
         as_string()[static_cast<string::size_type>(int_key)] = c;
       } else {
         php_warning("%" PRIi64 " is illegal offset for string", int_key);
+      }
+      return;
+    }
+
+    if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetSet(*as_aa, int_key, v);
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be accessed, index = %" PRIi64, get_type_or_class_name(), int_key);
       }
       return;
     }
@@ -1239,6 +1341,14 @@ void mixed::set_value(const string &string_key, const mixed &v) {
       return;
     }
 
+    if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetSet(*as_aa, string_key, v);
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be accessed, index = %s", get_type_or_class_name(), string_key.c_str());
+      }
+      return;
+    }
     if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
@@ -1305,6 +1415,15 @@ const mixed mixed::get_value(int64_t int_key) const {
       return string(1, as_string()[static_cast<string::size_type>(int_key)]);
     }
 
+    if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        return f$ArrayAccess$$offsetGet(*as_aa, int_key);
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be accessed, index = %" PRIi64, get_type_or_class_name(), int_key);
+        return mixed();
+      }
+    }
+
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use a value \"%s\" of type %s as an array, index = %" PRIi64, to_string_without_warning(*this).c_str(), get_type_or_class_name(), int_key);
     }
@@ -1326,6 +1445,15 @@ const mixed mixed::get_value(const string &string_key) const {
         return string();
       }
       return string(1, as_string()[static_cast<string::size_type>(int_val)]);
+    }
+
+    if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        return f$ArrayAccess$$offsetGet(*as_aa, string_key);
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be accessed, index = %s", get_type_or_class_name(), string_key.c_str());
+        return mixed();
+      }
     }
 
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
@@ -1385,10 +1513,14 @@ const mixed mixed::get_value(const array<mixed>::iterator &it) const {
   return as_array().get_value(it);
 }
 
-
 void mixed::push_back(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
-    if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
+    if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetSet(*as_aa, Optional<bool>{}, v);
+        return;
+      }
+    } else if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else {
@@ -1402,7 +1534,12 @@ void mixed::push_back(const mixed &v) {
 
 const mixed mixed::push_back_return(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
-    if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
+    if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetSet(*as_aa, Optional<bool>{}, v);
+        return v;
+      }
+    } else if (get_type() == type::NUL || (get_type() == type::BOOLEAN && !as_bool())) {
       type_ = type::ARRAY;
       new(&as_array()) array<mixed>();
     } else {
@@ -1416,6 +1553,14 @@ const mixed mixed::push_back_return(const mixed &v) {
 
 bool mixed::isset(int64_t int_key) const {
   if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        return f$ArrayAccess$$offsetExists(*as_aa, int_key);
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be used in isset", get_type_or_class_name());
+        return false;
+      }
+    }
     if (get_type() == type::STRING) {
       int_key = as_string().get_correct_index(int_key);
       return as_string().isset(int_key);
@@ -1460,6 +1605,15 @@ bool mixed::isset(double double_key) const {
 
 void mixed::unset(int64_t int_key) {
   if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetUnset(*as_aa, int_key);
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be used in unset", get_type_or_class_name());
+      }
+      return;
+    }
+
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_or_class_name());
     }
@@ -1472,6 +1626,15 @@ void mixed::unset(int64_t int_key) {
 
 void mixed::unset(const mixed &v) {
   if (unlikely (get_type() != type::ARRAY)) {
+    if (get_type() == type::OBJECT) {
+      if (auto as_aa = try_as_array_access(*this)) {
+        f$ArrayAccess$$offsetUnset(*as_aa, v);
+      } else {
+        php_warning("Class %s doesn't implement \\ArrayAccess to be used in unset", get_type_or_class_name());
+      }
+      return;
+    }
+
     if (get_type() != type::NUL && (get_type() != type::BOOLEAN || as_bool())) {
       php_warning("Cannot use variable of type %s as array in unset", get_type_or_class_name());
     }

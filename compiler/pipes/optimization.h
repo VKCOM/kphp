@@ -9,7 +9,7 @@
 
 class OptimizationPass final : public FunctionPassBase {
 private:
-  VertexPtr optimize_set_push_back(VertexAdaptor<op_set> set_op);
+  VertexPtr optimize_set_with_offset(VertexAdaptor<op_set> set_op);
   void collect_concat(VertexPtr root, std::vector<VertexPtr> *collected);
   VertexPtr optimize_string_building(VertexPtr root);
   VertexPtr optimize_postfix_inc(VertexPtr root);

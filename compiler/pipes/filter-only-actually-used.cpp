@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/filter-only-actually-used.h"
 
+#include "common/algorithms/find.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
@@ -245,7 +246,8 @@ IdMap<FunctionPtr> calc_actually_used_having_call_edges(std::vector<FunctionAndE
       (fun->is_extern() && vk::any_of_equal(fun->name, "wait", "make_clone")) ||
       fun->kphp_lib_export ||
       (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_TO_STRING) ||
-      (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_WAKEUP);
+      (fun->modifiers.is_instance() && fun->local_name() == ClassData::NAME_OF_WAKEUP) || 
+      (fun->modifiers.is_instance() && fun->class_id->is_required_interface);
     if (should_be_used_apriori && !used_functions[fun]) {
       calc_actually_used_dfs(fun, used_functions, call_graph);
     }
