@@ -69,11 +69,6 @@ function unlink ($name ::: string) ::: bool;
  /** @kphp-extern-func-info generate-stub */
 function fgetcsv ($stream ::: mixed, $length ::: int = 0, $delimiter ::: string = ",", $enclosure ::: string = "\"", $escape ::: string = "\\") ::: mixed[] | false;
 
-define('STDIN', 'php://stdin');
-define('STDOUT', 'php://stdout');
-define('STDERR', 'php://stderr');
-
-
 define('SEEK_SET', 0);
 define('SEEK_END', 1);
 define('SEEK_CUR', 2);
