@@ -165,24 +165,24 @@ inline auto arg_fetch(uint32_t arg_num) noexcept {
                         std::unique_ptr<char, decltype(std::addressof(k2::free))>{value_buffer, std::addressof(k2::free)});
 }
 
-inline int32_t udp_connect(uint64_t *socket_d, const char *host, size_t host_len) {
+inline int32_t udp_connect(uint64_t *socket_d, const char *host, size_t host_len) noexcept {
   return k2_udp_connect(socket_d, host, host_len);
 }
 
-inline int32_t tcp_connect(uint64_t *socket_d, const char *host, size_t host_len) {
+inline int32_t tcp_connect(uint64_t *socket_d, const char *host, size_t host_len) noexcept {
   return k2_tcp_connect(socket_d, host, host_len);
 }
 
 
-inline int32_t lookup_host(const char *host, size_t host_len, struct SockAddr *result_buf, size_t *result_buf_len) {
+inline int32_t lookup_host(const char *host, size_t host_len, struct SockAddr *result_buf, size_t *result_buf_len) noexcept {
   return k2_lookup_host(host, host_len, result_buf, result_buf_len);
 }
 
-inline int32_t socket(uint64_t *socket_d, int32_t domain, int32_t type, int protocol) {
+inline int32_t socket(uint64_t *socket_d, int32_t domain, int32_t type, int protocol) noexcept {
   return k2_socket(socket_d, domain, type, protocol);
 }
 
-inline int32_t connect(uint64_t socket_d, const struct sockaddr_storage *addr, size_t addrlen) {
+inline int32_t connect(uint64_t socket_d, const struct sockaddr_storage *addr, size_t addrlen) noexcept {
   return k2_connect(socket_d, addr, addrlen);
 }
 
