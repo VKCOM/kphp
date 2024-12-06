@@ -69,6 +69,38 @@ task_t<array<T>> f$array_filter(const array<T> &a, const Callback &callback) noe
 }
 
 template<class T>
+typename array<T>::key_type f$array_rand(const array<T> &a) {
+  if (int64_t size = a.count()) {
+    return a.middle(f$mt_rand(0, size - 1)).get_key();
+  }
+  return {};
+}
+
+template<class T>
+mixed f$array_rand(const array<T> &a, int64_t num) {
+  if (num == 1) {
+    return f$array_rand(a);
+  }
+
+  int64_t size = a.count();
+
+  if (unlikely(num <= 0 || num > size)) {
+    php_warning("Second argument has to be between 1 and the number of elements in the array");
+    return {};
+  }
+
+  array<typename array<T>::key_type> result(array_size(num, true));
+  for (const auto &it : a) {
+    if (f$mt_rand(0, --size) < num) {
+      result.push_back(it.get_key());
+      --num;
+    }
+  }
+
+  return result;
+}
+
+template<class T>
 array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &) {
   php_critical_error("call to unsupported function");
 }
@@ -159,16 +191,6 @@ array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2) {
 
 template<class T, class T1, class T2>
 array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2, const array<T2> &a3) {
-  php_critical_error("call to unsupported function");
-}
-
-template<class T>
-typename array<T>::key_type f$array_rand(const array<T> &a) {
-  php_critical_error("call to unsupported function");
-}
-
-template<class T>
-mixed f$array_rand(const array<T> &a, int64_t num) {
   php_critical_error("call to unsupported function");
 }
 
