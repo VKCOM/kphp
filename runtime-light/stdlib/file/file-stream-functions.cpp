@@ -126,6 +126,17 @@ bool f$fclose(const resource &stream) noexcept {
     php_warning("try to fclose wrong resource %s", stream.to_string().c_str());
     return false;
   }
+  if (InstanceState::get().standard_stream() == stream_d) {
+    /*
+     * PHP support multiple opening/closing operations on standard IO streams.
+     * Because of this, execution of fclose on standard_stream which can be obtained by urls php://
+     * shouldn't close it in platform.
+     *
+     * TODO: maybe better way to not give standard_stream directly in open_php_stream,
+     *       but now it's done that way for ease of implementation
+     * */
+    return true;
+  }
   InstanceState::get().release_stream(stream_d);
   return true;
 }
