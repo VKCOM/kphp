@@ -19,7 +19,7 @@ std::pair<ResourceType, uint64_t> resolve_stream_resource_type(const string &str
     return {ResourceType::Unknown, 0};
   }
 
-  auto delimiter{stream.find_first_of(string(":"))};
+  const auto delimiter{stream.find_first_of(string(":"))};
   if (delimiter == string::npos) {
     return {ResourceType::Unknown, 0};
   }
@@ -106,7 +106,7 @@ task_t<Optional<string>> f$file_get_contents(const string &filename) {
   if (!stream.to_bool()) {
     co_return false;
   }
-  const auto [type, stream_d]{resolve_stream_resource_type(stream.to_string())};
+  const auto [_, stream_d]{resolve_stream_resource_type(stream.to_string())};
   const auto [buffer, size]{co_await read_all_from_stream(stream_d)};
   string result{buffer, static_cast<string::size_type>(size)};
   k2::free(buffer);
