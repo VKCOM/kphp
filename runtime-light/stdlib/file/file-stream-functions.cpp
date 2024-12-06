@@ -80,6 +80,10 @@ resource f$fopen(const string &filename, [[maybe_unused]] const string &mode, [[
 
 resource f$stream_socket_client(const string &address, mixed &error_number, [[maybe_unused]] mixed &error_description, [[maybe_unused]] double timeout,
                                 [[maybe_unused]] int64_t flags, [[maybe_unused]] const resource &context) {
+  /*
+   * TODO: Here should be waiting with timeout,
+   *       but it can't be expressed simple ways by awaitables since we blocked inside k2
+   * */
   const auto [type, url]{resolve_address_resource_type(address)};
   uint64_t stream_d{INVALID_PLATFORM_DESCRIPTOR};
   int32_t error_code{0};
@@ -130,7 +134,7 @@ bool f$fclose(const resource &stream) noexcept {
     /*
      * PHP support multiple opening/closing operations on standard IO streams.
      * Because of this, execution of fclose on standard_stream which can be obtained by urls php://
-     * shouldn't close it in platform.
+     * shouldn't close it in k2.
      *
      * TODO: maybe better way to not give standard_stream directly in open_php_stream,
      *       but now it's done that way for ease of implementation
