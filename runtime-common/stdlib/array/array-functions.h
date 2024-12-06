@@ -314,7 +314,7 @@ void f$array_reserve_from(array<T1> &a, const array<T2> &base) noexcept {
 }
 
 template<class T>
-array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preserve_keys) noexcept {
+array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preserve_keys = false) noexcept {
   if (unlikely(chunk_size <= 0)) {
     php_warning("Parameter chunk_size if function array_chunk must be positive");
     return array<array<T>>();
