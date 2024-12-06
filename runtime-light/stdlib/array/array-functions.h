@@ -20,7 +20,7 @@ task_t<array<T>> array_filter_impl(const array<T> &a, const F &pred) noexcept {
   array<T> result(a.size());
   for (const auto &it : a) {
     bool condition{false};
-    if constexpr (is_async_function_v<F, T>) {
+    if constexpr (is_async_function_v<F, typename array<T>::const_iterator>) {
       condition = co_await pred(it);
     } else {
       condition = pred(it);
@@ -32,7 +32,7 @@ task_t<array<T>> array_filter_impl(const array<T> &a, const F &pred) noexcept {
   co_return result;
 }
 
-}
+} // namespace array_functions_impl_
 
 template<class T>
 void f$shuffle(array<T> &arr) noexcept {
@@ -59,7 +59,13 @@ task_t<array<T>> f$array_filter(const array<T> &a) noexcept {
 
 template<class T, class Callback>
 task_t<array<T>> f$array_filter(const array<T> &a, const Callback &callback) noexcept {
-  co_return array_functions_impl_::array_filter_impl(a, [&callback](const auto &it) -> task_t<bool> { co_return f$boolval(co_await callback(it.get_value()));});
+  if constexpr (is_async_function_v<Callback, T>) {
+    co_return co_await array_functions_impl_::array_filter_impl(a, [&callback](const auto &it) -> task_t<bool> {
+      co_return f$boolval(co_await callback(it.get_value()));
+    });
+  } else {
+    co_return co_await array_functions_impl_::array_filter_impl(a, [&callback](const auto &it) { return f$boolval(callback(it.get_value())); });
+  }
 }
 
 template<class T>
@@ -201,7 +207,6 @@ void f$uksort(array<T> &a, const T1 &compare) {
   php_critical_error("call to unsupported function");
 }
 
-
 template<class T>
 mixed f$getKeyByPos(const array<T> &a, int64_t pos) {
   php_critical_error("call to unsupported function");
@@ -252,8 +257,8 @@ inline Optional<array<mixed>> f$array_column(const array<mixed> &a, const mixed 
 }
 
 template<class T>
-auto f$array_column(const Optional<T> &a, const mixed &column_key,
-                    const mixed &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
+auto f$array_column(const Optional<T> &a, const mixed &column_key, const mixed &index_key = {})
+  -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
   php_critical_error("call to unsupported function");
 }
 
