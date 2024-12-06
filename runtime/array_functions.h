@@ -13,12 +13,6 @@
 #include "runtime/math_functions.h"
 
 template<class T>
-array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preserve_keys = false);
-
-template<class T>
-array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_var = mixed(), bool preserve_keys = false);
-
-template<class T>
 array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &);
 
 template<class T, class T1 = T>
@@ -49,14 +43,6 @@ template<class T>
 T f$array_merge_spread(const T &a1, const T &a2, const T &a3, const T &a4 = T(), const T &a5 = T(), const T &a6 = T(), const T &a7 = T(), const T &a8 = T(),
                        const T &a9 = T(), const T &a10 = T(), const T &a11 = T(), const T &a12 = T());
 
-template<class T>
-T f$array_replace(const T &base_array, const T &replacements = T());
-
-template<class T>
-T f$array_replace(const T &base_array, const T &replacements_1, const T &replacements_2, const T &replacements_3 = T(), const T &replacements_4 = T(),
-                  const T &replacements_5 = T(), const T &replacements_6 = T(), const T &replacements_7 = T(), const T &replacements_8 = T(),
-                  const T &replacements_9 = T(), const T &replacements_10 = T(), const T &replacements_11 = T());
-
 template<class T, class T1>
 array<T> f$array_intersect_assoc(const array<T> &a1, const array<T1> &a2);
 
@@ -65,12 +51,6 @@ array<T> f$array_intersect_assoc(const array<T> &a1, const array<T1> &a2, const 
 
 template<class T, class T1>
 array<T> f$array_diff_key(const array<T> &a1, const array<T1> &a2);
-
-template<class T, class T1>
-array<T> f$array_diff(const array<T> &a1, const array<T1> &a2);
-
-template<class T, class T1, class T2>
-array<T> f$array_diff(const array<T> &a1, const array<T1> &a2, const array<T2> &a3);
 
 template<class T, class T1>
 array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2);
@@ -88,9 +68,6 @@ template<class T>
 array<int64_t> f$array_count_values(const array<T> &a);
 
 template<class T>
-array<typename array<T>::key_type> f$array_flip(const array<T> &a);
-
-template<class T>
 array<T> f$array_fill(int64_t start_index, int64_t num, const T &value);
 
 template<class T1, class T>
@@ -99,43 +76,23 @@ array<T> f$array_fill_keys(const array<T1> &keys, const T &value);
 template<class T1, class T>
 array<T> f$array_combine(const array<T1> &keys, const array<T> &values);
 
-array<mixed> f$range(const mixed &from, const mixed &to, int64_t step = 1);
-
 template<class T>
 void f$shuffle(array<T> &a);
 
-template<class T>
-void f$sort(array<T> &a, int64_t flag = SORT_REGULAR);
-
-template<class T>
-void f$rsort(array<T> &a, int64_t flag = SORT_REGULAR);
+template<class T, class T1>
+void f$usort(array<T> &a, const T1 &compare) {
+  return a.sort(compare, true);
+}
 
 template<class T, class T1>
-void f$usort(array<T> &a, const T1 &compare);
-
-template<class T>
-void f$asort(array<T> &a, int64_t flag = SORT_REGULAR);
-
-template<class T>
-void f$arsort(array<T> &a, int64_t flag = SORT_REGULAR);
+void f$uasort(array<T> &a, const T1 &compare) {
+  return a.sort(compare, false);
+}
 
 template<class T, class T1>
-void f$uasort(array<T> &a, const T1 &compare);
-
-template<class T>
-void f$ksort(array<T> &a, int64_t flag = SORT_REGULAR);
-
-template<class T>
-void f$krsort(array<T> &a, int64_t flag = SORT_REGULAR);
-
-template<class T, class T1>
-void f$uksort(array<T> &a, const T1 &compare);
-
-template<class T>
-void f$natsort(array<T> &a);
-
-template<class T, class ReturnT = std::conditional_t<std::is_same<T, int64_t>{}, int64_t, double>>
-ReturnT f$array_sum(const array<T> &a);
+void f$uksort(array<T> &a, const T1 &compare) {
+  return a.ksort(compare);
+}
 
 template<class T>
 mixed f$getKeyByPos(const array<T> &a, int64_t pos);
@@ -150,15 +107,6 @@ template<class T>
 mixed f$array_first_key(const array<T> &a);
 
 template<class T>
-T f$array_first_value(const array<T> &a);
-
-template<class T>
-mixed f$array_last_key(const array<T> &a);
-
-template<class T>
-T f$array_last_value(const array<T> &a);
-
-template<class T>
 inline void f$array_swap_int_keys(array<T> &a, int64_t idx1, int64_t idx2) noexcept;
 
 /*
@@ -166,90 +114,6 @@ inline void f$array_swap_int_keys(array<T> &a, int64_t idx1, int64_t idx2) noexc
  *     IMPLEMENTATION
  *
  */
-
-template<class T>
-array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preserve_keys) {
-  if (unlikely(chunk_size <= 0)) {
-    php_warning("Parameter chunk_size if function array_chunk must be positive");
-    return array<array<T>>();
-  }
-
-  array<array<T>> result(array_size(a.count() / chunk_size + 1, true));
-
-  array_size new_size = a.size().cut(chunk_size);
-  if (!preserve_keys) {
-    new_size.size = min(chunk_size, a.count());
-    new_size.is_vector = true;
-  }
-
-  array<T> res(new_size);
-  for (const auto &it : a) {
-    if (res.count() == chunk_size) {
-      result.emplace_back(std::move(res));
-      res = array<T>(new_size);
-    }
-
-    if (preserve_keys) {
-      res.set_value(it);
-    } else {
-      res.push_back(it.get_value());
-    }
-  }
-
-  if (res.count()) {
-    result.emplace_back(std::move(res));
-  }
-
-  return result;
-}
-
-template<class T>
-array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_var, bool preserve_keys) {
-  auto size = a.count();
-
-  int64_t length = 0;
-  if (length_var.is_null()) {
-    length = size;
-  } else {
-    length = length_var.to_int();
-  }
-
-  if (offset < 0) {
-    offset += size;
-
-    if (offset < 0) {
-      offset = 0;
-    }
-  } else if (offset > size) {
-    offset = size;
-  }
-
-  if (length < 0) {
-    length = size - offset + length;
-  }
-  if (length <= 0) {
-    return array<T>();
-  }
-  if (size - offset < length) {
-    length = size - offset;
-  }
-
-  array_size result_size = a.size().cut(length);
-  result_size.is_vector = (!preserve_keys && a.has_no_string_keys()) || (preserve_keys && offset == 0 && a.is_vector());
-
-  array<T> result(result_size);
-  auto it = a.middle(offset);
-  while (length-- > 0) {
-    if (preserve_keys) {
-      result.set_value(it);
-    } else {
-      result.push_back(it);
-    }
-    ++it;
-  }
-
-  return result;
-}
 
 template<class T>
 array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &) {
@@ -560,36 +424,6 @@ ReturnT f$array_merge_recursive(const Args &...args) {
   return result;
 }
 
-template<class T>
-T f$array_replace(const T &base_array, const T &replacements) {
-  auto result = T::convert_from(base_array);
-  for (const auto &it : replacements) {
-    result.set_value(it);
-  }
-  return result;
-}
-
-template<class T>
-T f$array_replace(const T &base_array, const T &replacements_1, const T &replacements_2, const T &replacements_3, const T &replacements_4,
-                  const T &replacements_5, const T &replacements_6, const T &replacements_7, const T &replacements_8, const T &replacements_9,
-                  const T &replacements_10, const T &replacements_11) {
-  return f$array_replace(
-    f$array_replace(
-      f$array_replace(
-        f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(base_array,
-                                                                                                                                        replacements_1),
-                                                                                                                        replacements_2),
-                                                                                                        replacements_3),
-                                                                                        replacements_4),
-                                                                        replacements_5),
-                                                        replacements_6),
-                                        replacements_7),
-                        replacements_8),
-        replacements_9),
-      replacements_10),
-    replacements_11);
-}
-
 template<class T, class T1>
 array<T> f$array_intersect_assoc(const array<T> &a1, const array<T1> &a2) {
   array<T> result(a1.size().min(a2.size()));
@@ -638,19 +472,6 @@ array<T> array_diff_impl(const array<T> &a1, const array<T1> &a2, const Proj &pr
     }
   }
   return result;
-}
-
-template<class T, class T1>
-array<T> f$array_diff(const array<T> &a1, const array<T1> &a2) {
-  return array_diff_impl(a1, a2, [](const auto &val) { return f$strval(val); });
-}
-
-template<>
-array<int64_t> f$array_diff(const array<int64_t> &a1, const array<int64_t> &a2);
-
-template<class T, class T1, class T2>
-array<T> f$array_diff(const array<T> &a1, const array<T1> &a2, const array<T2> &a3) {
-  return f$array_diff(f$array_diff(a1, a2), a3);
 }
 
 template<class T, class T1>
@@ -725,23 +546,6 @@ array<int64_t> f$array_count_values(const array<T> &a) {
   for (const auto &it : a) {
     ++result[f$strval(it.get_value())];
   }
-  return result;
-}
-
-template<class T>
-array<typename array<T>::key_type> f$array_flip(const array<T> &a) {
-  static_assert(!std::is_same<T, int>{}, "int is forbidden");
-  array<typename array<T>::key_type> result;
-
-  for (const auto &it : a) {
-    const auto &value = it.get_value();
-    if (vk::is_type_in_list<T, int64_t, string>{} || f$is_int(value) || f$is_string(value)) {
-      result.set_value(value, it.get_key());
-    } else {
-      php_warning("Unsupported type of array element \"%s\" in function array_flip", get_type_c_str(value));
-    }
-  }
-
   return result;
 }
 
@@ -829,184 +633,6 @@ void f$shuffle(array<T> &a) {
 }
 
 template<class T>
-struct sort_compare {
-  bool operator()(const T &h1, const T &h2) const {
-    return lt(h2, h1);
-  }
-};
-
-template<class T>
-struct sort_compare_numeric {
-  static_assert(!std::is_same<T, int>{}, "int is forbidden");
-
-  bool operator()(const T &h1, const T &h2) const {
-    return f$floatval(h1) > f$floatval(h2);
-  }
-};
-
-template<>
-struct sort_compare_numeric<int64_t> : std::greater<int64_t> {};
-
-template<class T>
-struct sort_compare_string {
-  bool operator()(const T &h1, const T &h2) const {
-    return f$strval(h1).compare(f$strval(h2)) > 0;
-  }
-};
-
-template<class T>
-struct sort_compare_natural {
-  bool operator()(const T &h1, const T &h2) const {
-    return f$strnatcmp(f$strval(h1), f$strval(h2)) > 0;
-  }
-};
-
-template<class T>
-void f$sort(array<T> &a, int64_t flag) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return a.sort(sort_compare<T>(), true);
-    case SORT_NUMERIC:
-      return a.sort(sort_compare_numeric<T>(), true);
-    case SORT_STRING:
-      return a.sort(sort_compare_string<T>(), true);
-    default:
-      php_warning("Unsupported sort_flag in function sort");
-  }
-}
-
-template<class T>
-struct rsort_compare {
-  bool operator()(const T &h1, const T &h2) const {
-    return lt(h1, h2);
-  }
-};
-
-template<class T>
-struct rsort_compare_numeric {
-  static_assert(!std::is_same<T, int>{}, "int is forbidden");
-
-  bool operator()(const T &h1, const T &h2) const {
-    return f$floatval(h1) < f$floatval(h2);
-  }
-};
-
-template<>
-struct rsort_compare_numeric<int64_t> : std::less<int64_t> {};
-
-template<class T>
-struct rsort_compare_string {
-  bool operator()(const T &h1, const T &h2) const {
-    return f$strval(h1).compare(f$strval(h2)) < 0;
-  }
-};
-
-template<class T>
-void f$rsort(array<T> &a, int64_t flag) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return a.sort(rsort_compare<T>(), true);
-    case SORT_NUMERIC:
-      return a.sort(rsort_compare_numeric<T>(), true);
-    case SORT_STRING:
-      return a.sort(rsort_compare_string<T>(), true);
-    default:
-      php_warning("Unsupported sort_flag in function rsort");
-  }
-}
-
-template<class T, class T1>
-void f$usort(array<T> &a, const T1 &compare) {
-  return a.sort(compare, true);
-}
-
-template<class T>
-void f$asort(array<T> &a, int64_t flag) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return a.sort(sort_compare<T>(), false);
-    case SORT_NUMERIC:
-      return a.sort(sort_compare_numeric<T>(), false);
-    case SORT_STRING:
-      return a.sort(sort_compare_string<T>(), false);
-    default:
-      php_warning("Unsupported sort_flag in function asort");
-  }
-}
-
-template<class T>
-void f$arsort(array<T> &a, int64_t flag) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return a.sort(rsort_compare<T>(), false);
-    case SORT_NUMERIC:
-      return a.sort(rsort_compare_numeric<T>(), false);
-    case SORT_STRING:
-      return a.sort(rsort_compare_string<T>(), false);
-    default:
-      php_warning("Unsupported sort_flag in function arsort");
-  }
-}
-
-template<class T, class T1>
-void f$uasort(array<T> &a, const T1 &compare) {
-  return a.sort(compare, false);
-}
-
-template<class T>
-void f$ksort(array<T> &a, int64_t flag) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return a.ksort(sort_compare<typename array<T>::key_type>());
-    case SORT_NUMERIC:
-      return a.ksort(sort_compare_numeric<typename array<T>::key_type>());
-    case SORT_STRING:
-      return a.ksort(sort_compare_string<typename array<T>::key_type>());
-    default:
-      php_warning("Unsupported sort_flag in function ksort");
-  }
-}
-
-template<class T>
-void f$krsort(array<T> &a, int64_t flag) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return a.ksort(rsort_compare<typename array<T>::key_type>());
-    case SORT_NUMERIC:
-      return a.ksort(rsort_compare_numeric<typename array<T>::key_type>());
-    case SORT_STRING:
-      return a.ksort(rsort_compare_string<typename array<T>::key_type>());
-    default:
-      php_warning("Unsupported sort_flag in function krsort");
-  }
-}
-
-template<class T, class T1>
-void f$uksort(array<T> &a, const T1 &compare) {
-  return a.ksort(compare);
-}
-
-template<class T>
-void f$natsort(array<T> &a) {
-  return a.sort(sort_compare_natural<typename array<T>::key_type>(), false);
-}
-
-template<class T, class ReturnT>
-ReturnT f$array_sum(const array<T> &a) {
-  static_assert(!std::is_same_v<T, int>, "int is forbidden");
-
-  ReturnT result = 0;
-  for (const auto &it : a) {
-    if constexpr (std::is_same_v<T, int64_t>) {
-      result += it.get_value();
-    } else {
-      result += f$floatval(it.get_value());
-    }
-  }
-  return result;
-}
-
-template<class T>
 mixed f$getKeyByPos(const array<T> &a, int64_t pos) {
   auto it = a.middle(pos);
   return it == a.end() ? mixed{} : it.get_key();
@@ -1038,23 +664,8 @@ mixed f$array_key_first(const array<T> &a) {
 }
 
 template<class T>
-T f$array_first_value(const array<T> &a) {
-  return a.empty() ? T() : a.begin().get_value(); // in PHP 'false' on empty, here T()
-}
-
-template<class T>
-mixed f$array_last_key(const array<T> &a) {
-  return a.empty() ? mixed() : (--a.end()).get_key();
-}
-
-template<class T>
 mixed f$array_key_last(const array<T> &a) {
   return f$array_last_key(a);
-}
-
-template<class T>
-T f$array_last_value(const array<T> &a) {
-  return a.empty() ? T() : (--a.end()).get_value(); // in PHP 'false' on empty, here T()
 }
 
 template<class T>

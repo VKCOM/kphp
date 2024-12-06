@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 function test_array_rand() {
   $array = [1, 2, 3];

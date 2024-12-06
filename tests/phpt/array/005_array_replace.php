@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 require_once 'kphp_tester_include.php';
 // based on https://github.com/php/php-src/blob/master/ext/standard/tests/array/array_replace.phpt
