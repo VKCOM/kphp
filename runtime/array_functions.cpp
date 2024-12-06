@@ -64,10 +64,5 @@ array<mixed> f$range(const mixed &from, const mixed &to, int64_t step) {
   return range_int(from.to_int(), to.to_int(), step);
 }
 
-template<>
-array<int64_t> f$array_diff(const array<int64_t> &a1, const array<int64_t> &a2) {
-  return array_diff_impl(a1, a2, [](int64_t val) { return val; });
-}
-
 static_assert(sizeof(array<Unknown>) == SIZEOF_ARRAY_ANY, "sizeof(array) at runtime doesn't match compile-time");
 

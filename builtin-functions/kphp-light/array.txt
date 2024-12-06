@@ -45,6 +45,38 @@ function array_reserve_map_string_keys (&$a ::: array, $size ::: int) ::: void;
 
 function array_reserve_from (&$a ::: array, $base ::: array) ::: void;
 
+function array_reverse ($a ::: array, $preserve_keys ::: bool = false) ::: ^1;
+
+function array_pop (&$a ::: array) ::: ^1[*];
+
+function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
+
+/** @kphp-extern-func-info cpp_template_call */
+function array_replace ($base_array ::: array,
+            $replacements_1 ::: array = array(), $replacements_2  ::: array = array(), $replacements_3  ::: array = array(),
+            $replacements_4 ::: array = array(), $replacements_5  ::: array = array(), $replacements_6  ::: array = array(),
+            $replacements_7 ::: array = array(), $replacements_8  ::: array = array(), $replacements_9  ::: array = array(),
+            $replacements_10 ::: array = array(), $replacements_11 ::: array = array())
+                ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
+
+function array_last_value ($a ::: array) ::: ^1[*];
+
+function array_last_key ($a ::: array) ::: mixed;
+
+function array_flip ($a ::: array) ::: mixed[];
+
+function array_first_value ($a ::: array) ::: ^1[*];
+
+function array_filter ($a ::: array, callable(^1[*] $x):bool $callback = TODO) ::: ^1;
+
+function array_diff ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
+
+function array_chunk ($a ::: array, $chunk_size ::: int, $preserve_keys ::: bool = false) ::: ^1[];
+
+function array_sum ($a ::: array) ::: float;//TODO
+
+function asort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
 function shuffle (&$a ::: array) ::: void;
 
 function implode ($s ::: string, $v ::: array) ::: string;
