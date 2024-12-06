@@ -85,7 +85,7 @@ resource f$stream_socket_client(const string &address, mixed &error_number, [[ma
   int32_t error_code{0};
   switch (type) {
     case ResourceType::UdpStream:
-      std::tie(stream_d, error_code) = InstanceState::get().connect_to(url, false);
+      std::tie(stream_d, error_code) = connect_to_host_by_udp(url);
       break;
     default:
       php_warning("Unable to connect to %s", address.c_str());
