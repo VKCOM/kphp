@@ -46,6 +46,67 @@ array<T> array_diff(const array<T> &a1, const array<T1> &a2, const Proj &project
   }
   return result;
 }
+
+template<class T>
+struct sort_compare {
+  bool operator()(const T &h1, const T &h2) const {
+    return lt(h2, h1);
+  }
+};
+
+template<class T>
+struct sort_compare_numeric {
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
+  bool operator()(const T &h1, const T &h2) const {
+    return f$floatval(h1) > f$floatval(h2);
+  }
+};
+
+template<>
+struct sort_compare_numeric<int64_t> : std::greater<int64_t> {};
+
+template<class T>
+struct sort_compare_string {
+  bool operator()(const T &h1, const T &h2) const {
+    return f$strval(h1).compare(f$strval(h2)) > 0;
+  }
+};
+
+template<class T>
+struct sort_compare_natural {
+  bool operator()(const T &h1, const T &h2) const {
+    return f$strnatcmp(f$strval(h1), f$strval(h2)) > 0;
+  }
+};
+
+
+template<class T>
+struct rsort_compare {
+  bool operator()(const T &h1, const T &h2) const {
+    return lt(h1, h2);
+  }
+};
+
+template<class T>
+struct rsort_compare_numeric {
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
+  bool operator()(const T &h1, const T &h2) const {
+    return f$floatval(h1) < f$floatval(h2);
+  }
+};
+
+template<>
+struct rsort_compare_numeric<int64_t> : std::less<int64_t> {};
+
+template<class T>
+struct rsort_compare_string {
+  bool operator()(const T &h1, const T &h2) const {
+    return f$strval(h1).compare(f$strval(h2)) < 0;
+  }
+};
+
 } // namespace array_functions_impl_
 
 template<class T>
@@ -571,4 +632,110 @@ bool f$array_is_list(const array<T> &a) noexcept {
   // is_pseudo_vector() doesn't cover is_vector() case,
   // so we need to call both of them to get the precise and PHP-compatible answer
   return a.is_vector() || a.is_pseudo_vector();
+}
+
+template<class T>
+void f$sort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.sort(array_functions_impl_::sort_compare<T>(), true);
+    case SORT_NUMERIC:
+      return a.sort(array_functions_impl_::sort_compare_numeric<T>(), true);
+    case SORT_STRING:
+      return a.sort(array_functions_impl_::sort_compare_string<T>(), true);
+    default:
+      php_warning("Unsupported sort_flag in function sort");
+  }
+}
+
+template<class T>
+void f$rsort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.sort(array_functions_impl_::rsort_compare<T>(), true);
+    case SORT_NUMERIC:
+      return a.sort(array_functions_impl_::rsort_compare_numeric<T>(), true);
+    case SORT_STRING:
+      return a.sort(array_functions_impl_::rsort_compare_string<T>(), true);
+    default:
+      php_warning("Unsupported sort_flag in function rsort");
+  }
+}
+
+template<class T, class T1>
+void f$usort(array<T> &a, const T1 &compare) {
+  return a.sort(compare, true);
+}
+
+template<class T>
+void f$arsort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.sort(array_functions_impl_::rsort_compare<T>(), false);
+    case SORT_NUMERIC:
+      return a.sort(array_functions_impl_::rsort_compare_numeric<T>(), false);
+    case SORT_STRING:
+      return a.sort(array_functions_impl_::rsort_compare_string<T>(), false);
+    default:
+      php_warning("Unsupported sort_flag in function arsort");
+  }
+}
+
+template<class T, class T1>
+void f$uasort(array<T> &a, const T1 &compare) {
+  return a.sort(compare, false);
+}
+
+template<class T>
+void f$ksort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.ksort(array_functions_impl_::sort_compare<typename array<T>::key_type>());
+    case SORT_NUMERIC:
+      return a.ksort(array_functions_impl_::sort_compare_numeric<typename array<T>::key_type>());
+    case SORT_STRING:
+      return a.ksort(array_functions_impl_::sort_compare_string<typename array<T>::key_type>());
+    default:
+      php_warning("Unsupported sort_flag in function ksort");
+  }
+}
+
+template<class T>
+void f$krsort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.ksort(array_functions_impl_::rsort_compare<typename array<T>::key_type>());
+    case SORT_NUMERIC:
+      return a.ksort(array_functions_impl_::rsort_compare_numeric<typename array<T>::key_type>());
+    case SORT_STRING:
+      return a.ksort(array_functions_impl_::rsort_compare_string<typename array<T>::key_type>());
+    default:
+      php_warning("Unsupported sort_flag in function krsort");
+  }
+}
+
+
+template<class T>
+void f$asort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.sort(array_functions_impl_::sort_compare<T>(), false);
+    case SORT_NUMERIC:
+      return a.sort(array_functions_impl_::sort_compare_numeric<T>(), false);
+    case SORT_STRING:
+      return a.sort(array_functions_impl_::sort_compare_string<T>(), false);
+    default:
+      php_warning("Unsupported sort_flag in function asort");
+  }
+}
+
+
+template<class T, class T1>
+void f$uksort(array<T> &a, const T1 &compare) {
+  return a.ksort(compare);
+}
+
+template<class T>
+void f$natsort(array<T> &a) {
+  return a.sort(array_functions_impl_::sort_compare_natural<typename array<T>::key_type>(), false);
 }
