@@ -462,20 +462,6 @@ array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_va
   return result;
 }
 
-template<class T>
-void f$asort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return a.sort(sort_compare<T>(), false);
-    case SORT_NUMERIC:
-      return a.sort(sort_compare_numeric<T>(), false);
-    case SORT_STRING:
-      return a.sort(sort_compare_string<T>(), false);
-    default:
-      php_warning("Unsupported sort_flag in function asort");
-  }
-}
-
 template<class T, class ReturnT>
 ReturnT f$array_sum(const array<T> &a) noexcept {
   static_assert(!std::is_same_v<T, int>, "int is forbidden");

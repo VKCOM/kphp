@@ -785,6 +785,22 @@ void f$krsort(array<T> &a, int64_t flag) {
   }
 }
 
+
+template<class T>
+void f$asort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.sort(sort_compare<T>(), false);
+    case SORT_NUMERIC:
+      return a.sort(sort_compare_numeric<T>(), false);
+    case SORT_STRING:
+      return a.sort(sort_compare_string<T>(), false);
+    default:
+      php_warning("Unsupported sort_flag in function asort");
+  }
+}
+
+
 template<class T, class T1>
 void f$uksort(array<T> &a, const T1 &compare) {
   return a.ksort(compare);
