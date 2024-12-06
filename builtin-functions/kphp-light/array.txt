@@ -35,6 +35,8 @@ function array_values ($a ::: array) ::: ^1;
 
 function array_unique ($a ::: array, int $flags = SORT_STRING) ::: ^1;
 
+function array_rand ($a ::: array, $num ::: int = 1) ::: mixed;
+
 function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
 
 function array_reserve_vector (&$a ::: array, $size ::: int) ::: void;
@@ -104,10 +106,4 @@ function natsort (&$a ::: array) ::: void;
 function rsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 
 function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
-
-function uasort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
-
-function uksort (&$a ::: array, callable(mixed $x, mixed $y):int $callback) ::: void;
-
-function usort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
 

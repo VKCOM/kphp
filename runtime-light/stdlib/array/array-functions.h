@@ -69,7 +69,7 @@ task_t<array<T>> f$array_filter(const array<T> &a, const Callback &callback) noe
 }
 
 template<class T>
-typename array<T>::key_type f$array_rand(const array<T> &a) {
+typename array<T>::key_type f$array_rand(const array<T> &a) noexcept {
   if (int64_t size = a.count()) {
     return a.middle(f$mt_rand(0, size - 1)).get_key();
   }
@@ -77,7 +77,7 @@ typename array<T>::key_type f$array_rand(const array<T> &a) {
 }
 
 template<class T>
-mixed f$array_rand(const array<T> &a, int64_t num) {
+mixed f$array_rand(const array<T> &a, int64_t num) noexcept {
   if (num == 1) {
     return f$array_rand(a);
   }
