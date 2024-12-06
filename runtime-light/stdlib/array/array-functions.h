@@ -13,6 +13,27 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/math/random-functions.h"
 
+namespace array_functions_impl_ {
+
+template<class T, class F>
+task_t<array<T>> array_filter_impl(const array<T> &a, const F &pred) noexcept {
+  array<T> result(a.size());
+  for (const auto &it : a) {
+    bool condition{false};
+    if constexpr (is_async_function_v<F, T>) {
+      condition = co_await pred(it);
+    } else {
+      condition = pred(it);
+    }
+    if (condition) {
+      result.set_value(it);
+    }
+  }
+  co_return result;
+}
+
+}
+
 template<class T>
 void f$shuffle(array<T> &arr) noexcept {
   const auto arr_size{arr.count()};
@@ -32,6 +53,16 @@ void f$shuffle(array<T> &arr) noexcept {
 }
 
 template<class T>
+task_t<array<T>> f$array_filter(const array<T> &a) noexcept {
+  co_return array_functions_impl_::array_filter_impl(a, [](const auto &it) { return f$boolval(it.get_value()); });
+}
+
+template<class T, class Callback>
+task_t<array<T>> f$array_filter(const array<T> &a, const Callback &callback) noexcept {
+  co_return array_functions_impl_::array_filter_impl(a, [&callback](const auto &it) -> task_t<bool> { co_return f$boolval(co_await callback(it.get_value()));});
+}
+
+template<class T>
 array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &) {
   php_critical_error("call to unsupported function");
 }
@@ -48,16 +79,6 @@ ReturnT f$array_pad(const array<InputArrayT> &a, int64_t size, const DefaultValu
 
 template<class ReturnT, class DefaultValueT>
 ReturnT f$array_pad(const array<Unknown> &a, int64_t size, const DefaultValueT &default_value) {
-  php_critical_error("call to unsupported function");
-}
-
-template<class T>
-array<T> f$array_filter(const array<T> &a) noexcept {
-  php_critical_error("call to unsupported function");
-}
-
-template<class T, class T1>
-array<T> f$array_filter(const array<T> &a, const T1 &callback) noexcept {
   php_critical_error("call to unsupported function");
 }
 

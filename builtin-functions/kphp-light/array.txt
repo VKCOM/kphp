@@ -67,6 +67,7 @@ function array_flip ($a ::: array) ::: mixed[];
 
 function array_first_value ($a ::: array) ::: ^1[*];
 
+/** @kphp-extern-func-info interruptible */
 function array_filter ($a ::: array, callable(^1[*] $x):bool $callback = TODO) ::: ^1;
 
 function array_diff ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
