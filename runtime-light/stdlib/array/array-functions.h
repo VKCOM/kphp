@@ -181,6 +181,11 @@ void f$usort(array<T> &a, const T1 &compare) {
 }
 
 template<class T>
+void f$asort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T>
 void f$arsort(array<T> &a, int64_t flag = SORT_REGULAR) {
   php_critical_error("call to unsupported function");
 }
