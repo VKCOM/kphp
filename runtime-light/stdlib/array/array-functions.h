@@ -165,6 +165,22 @@ array<T> f$array_combine(const array<T1> &keys, const array<T> &values) {
   php_critical_error("call to unsupported function");
 }
 
+template<class T, class T1>
+void f$usort(array<T> &a, const T1 &compare) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T, class T1>
+void f$uasort(array<T> &a, const T1 &compare) {
+  php_critical_error("call to unsupported function");
+}
+
+template<class T, class T1>
+void f$uksort(array<T> &a, const T1 &compare) {
+  php_critical_error("call to unsupported function");
+}
+
+
 template<class T>
 mixed f$getKeyByPos(const array<T> &a, int64_t pos) {
   php_critical_error("call to unsupported function");

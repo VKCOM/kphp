@@ -662,11 +662,6 @@ void f$rsort(array<T> &a, int64_t flag = SORT_REGULAR) {
   }
 }
 
-template<class T, class T1>
-void f$usort(array<T> &a, const T1 &compare) {
-  return a.sort(compare, true);
-}
-
 template<class T>
 void f$arsort(array<T> &a, int64_t flag = SORT_REGULAR) {
   switch (flag) {
@@ -679,11 +674,6 @@ void f$arsort(array<T> &a, int64_t flag = SORT_REGULAR) {
     default:
       php_warning("Unsupported sort_flag in function arsort");
   }
-}
-
-template<class T, class T1>
-void f$uasort(array<T> &a, const T1 &compare) {
-  return a.sort(compare, false);
 }
 
 template<class T>
@@ -727,12 +717,6 @@ void f$asort(array<T> &a, int64_t flag = SORT_REGULAR) {
     default:
       php_warning("Unsupported sort_flag in function asort");
   }
-}
-
-
-template<class T, class T1>
-void f$uksort(array<T> &a, const T1 &compare) {
-  return a.ksort(compare);
 }
 
 template<class T>

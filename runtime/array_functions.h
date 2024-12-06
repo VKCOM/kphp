@@ -79,6 +79,21 @@ array<T> f$array_combine(const array<T1> &keys, const array<T> &values);
 template<class T>
 void f$shuffle(array<T> &a);
 
+template<class T, class T1>
+void f$usort(array<T> &a, const T1 &compare) {
+  return a.sort(compare, true);
+}
+
+template<class T, class T1>
+void f$uasort(array<T> &a, const T1 &compare) {
+  return a.sort(compare, false);
+}
+
+template<class T, class T1>
+void f$uksort(array<T> &a, const T1 &compare) {
+  return a.ksort(compare);
+}
+
 template<class T>
 mixed f$getKeyByPos(const array<T> &a, int64_t pos);
 
