@@ -48,16 +48,6 @@ function array_reduce ($a ::: array, callable(^3 | ^2() $carry, ^1[*] $item):any
 function array_is_vector ($a ::: array) ::: bool;
 function array_is_list ($a ::: array) ::: bool;
 
-function arsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
-function ksort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
-function krsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
-function natsort (&$a ::: array) ::: void;
-function rsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
-function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
-function uasort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
-function uksort (&$a ::: array, callable(mixed $x, mixed $y):int $callback) ::: void;
-function usort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
-
 /** @kphp-extern-func-info cpp_template_call */
 function vk_dot_product ($a ::: array, $b ::: array) ::: ^1[*] | ^2[*];
 

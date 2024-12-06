@@ -75,8 +75,6 @@ function array_chunk ($a ::: array, $chunk_size ::: int, $preserve_keys ::: bool
 
 function array_sum ($a ::: array) ::: float;//TODO
 
-function asort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
-
 function shuffle (&$a ::: array) ::: void;
 
 function implode ($s ::: string, $v ::: array) ::: string;
@@ -88,3 +86,25 @@ function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];
 
 function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
 function instance_to_array(object $instance, $with_class_names ::: bool = false) ::: mixed[];
+
+
+function asort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+function arsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+function ksort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+function krsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+function natsort (&$a ::: array) ::: void;
+
+function rsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+function uasort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
+
+function uksort (&$a ::: array, callable(mixed $x, mixed $y):int $callback) ::: void;
+
+function usort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
+
