@@ -76,8 +76,6 @@ array<T> f$array_fill_keys(const array<T1> &keys, const T &value);
 template<class T1, class T>
 array<T> f$array_combine(const array<T1> &keys, const array<T> &values);
 
-array<mixed> f$range(const mixed &from, const mixed &to, int64_t step = 1);
-
 template<class T>
 void f$shuffle(array<T> &a);
 

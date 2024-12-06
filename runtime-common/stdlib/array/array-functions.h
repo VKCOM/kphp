@@ -739,3 +739,5 @@ template<class T>
 void f$natsort(array<T> &a) {
   return a.sort(array_functions_impl_::sort_compare_natural<typename array<T>::key_type>(), false);
 }
+
+array<mixed> f$range(const mixed &from, const mixed &to, int64_t step = 1);

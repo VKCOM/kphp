@@ -81,6 +81,8 @@ function implode ($s ::: string, $v ::: array) ::: string;
 
 function explode ($delimiter ::: string, $str ::: string, $limit ::: int = PHP_INT_MAX) ::: string[];
 
+function range ($from ::: mixed, $to ::: mixed, $step ::: int = 1) ::: mixed[];
+
 /** @kphp-extern-func-info interruptible */
 function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];
 
