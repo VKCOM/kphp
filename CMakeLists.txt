@@ -72,7 +72,7 @@ endif ()
 install(TARGETS kphp2cpp
         COMPONENT KPHP
         RUNTIME DESTINATION ${VK_INSTALL_DIR}/bin/)
-install_symlink(${VK_INSTALL_DIR}/bin/kphp2cpp bin/kphp KPHP)
+install_symlink(${VK_INSTALL_DIR}/bin/kphp2cpp ${CMAKE_INSTALL_PREFIX}/bin/kphp KPHP)
 
 if (COMPILE_RUNTIME_LIGHT)
     install(TARGETS kphp-light-runtime
