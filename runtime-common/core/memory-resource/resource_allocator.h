@@ -5,6 +5,7 @@
 #pragma once
 
 #include <functional>
+#include <list>
 #include <map>
 #include <queue>
 #include <string>
@@ -83,6 +84,9 @@ using queue = std::queue<T, std::deque<T, resource_allocator<T, Resource>>>;
 
 template<class T, class Resource>
 using vector = std::vector<T, resource_allocator<T, Resource>>;
+
+template<class T, class Resource>
+using list = std::list<T, resource_allocator<T, Resource>>;
 
 template<class Resource>
 using string = std::basic_string<char, std::char_traits<char>, resource_allocator<char, Resource>>;

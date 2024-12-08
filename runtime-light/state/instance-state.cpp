@@ -75,22 +75,37 @@ template task_t<void> InstanceState::run_instance_prologue<ImageKind::Oneshot>()
 template task_t<void> InstanceState::run_instance_prologue<ImageKind::Multishot>();
 
 task_t<void> InstanceState::run_instance_epilogue() noexcept {
+  if (std::exchange(shutdown_state_, shutdown_state::in_progress) == shutdown_state::not_started) [[likely]] {
+    for (auto &sf : shutdown_functions) {
+      co_await sf;
+    }
+  }
+
+  // to prevent performing the finalization twice
+  if (shutdown_state_ == shutdown_state::finished) [[unlikely]] {
+    co_return;
+  }
+
   switch (image_kind_) {
     case ImageKind::Oneshot:
     case ImageKind::Multishot:
-      co_return;
+      break;
     case ImageKind::CLI: {
       const auto &buffer{response.output_buffers[merge_output_buffers()]};
-      co_return co_await finalize_kphp_cli_component(buffer);
+      co_await finalize_kphp_cli_component(buffer);
+      break;
     }
     case ImageKind::Server: {
       const auto &buffer{response.output_buffers[merge_output_buffers()]};
-      co_return co_await finalize_kphp_server_component(buffer);
+      co_await finalize_kphp_server_component(buffer);
+      break;
     }
     default: {
       php_error("unexpected ImageKind");
     }
   }
+  release_all_streams();
+  shutdown_state_ = shutdown_state::finished;
 }
 
 void InstanceState::process_platform_updates() noexcept {

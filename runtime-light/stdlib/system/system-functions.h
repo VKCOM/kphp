@@ -13,11 +13,6 @@ int64_t f$estimate_memory_usage(const T &) {
 }
 
 template<typename F>
-void f$register_shutdown_function(F &&f) {
-  php_critical_error("call to unsupported function");
-}
-
-template<typename F>
 void f$register_kphp_on_warning_callback(F &&callback) {
   php_critical_error("call to unsupported function");
 }

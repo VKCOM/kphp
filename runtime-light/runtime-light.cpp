@@ -36,7 +36,7 @@ ComponentState *k2_create_component() {
     php_warning("can't allocate enough memory for ImageState");
     return nullptr;
   }
-  php_debug("finish image state creation of \"%s\"", k2::describe()->image_name);
+  php_debug("finish component state creation of \"%s\"", k2::describe()->image_name);
   return component_state_ptr;
 }
 
@@ -54,7 +54,7 @@ InstanceState *k2_create_instance() {
     php_warning("cannot allocate enough memory for ComponentState");
     return nullptr;
   }
-  php_debug("finish component state creation of \"%s\"", k2::describe()->image_name);
+  php_debug("finish instance state creation of \"%s\"", k2::describe()->image_name);
   return instance_state_ptr;
 }
 

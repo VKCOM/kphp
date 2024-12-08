@@ -23,9 +23,8 @@ task_t<void> f$exit(const mixed &v) noexcept { // TODO: make it synchronous
   } else {
     exit_code = 1;
   }
-  co_await instance_st.run_instance_epilogue();
   instance_st.poll_status =
     instance_st.poll_status != k2::PollStatus::PollFinishedError && exit_code == 0 ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollFinishedError;
-  instance_st.release_all_streams();
+  co_await instance_st.run_instance_epilogue();
   k2::exit(static_cast<int32_t>(exit_code));
 }

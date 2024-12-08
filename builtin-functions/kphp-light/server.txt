@@ -4,6 +4,10 @@
 
 function ini_get ($s ::: string): string | false;
 
+// === Handlers ===================================================================================
+
+function register_shutdown_function (callable():void $callback) ::: void;
+
 // === URL ========================================================================================
 
 define('PHP_URL_SCHEME', 0);

@@ -70,7 +70,6 @@ function posix_getpwuid($uid ::: int) ::: mixed[] | false;
 function kphp_extended_instance_cache_metrics_init(callable(string $key):string $normalization_function) ::: void;
 
 
-function register_shutdown_function (callable():void $function) ::: void;
 function register_kphp_on_warning_callback(callable(string $warning_message, string[] $stacktrace):void $stacktrace) ::: void;
 function register_kphp_on_oom_callback(callable():void $callback) ::: bool;
 
