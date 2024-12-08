@@ -396,8 +396,7 @@ PCRE2_SIZE set_all_matches(const RegexInfo &regex_info, int64_t flags, mixed &al
 
   if (pattern_order) [[likely]] {
     for (auto &it : matches) {
-      auto &group{all_matches[it.get_key()]};
-      group.push_back(it.get_value());
+      all_matches[it.get_key()].push_back(it.get_value());
     }
   } else {
     all_matches.push_back(matches);
