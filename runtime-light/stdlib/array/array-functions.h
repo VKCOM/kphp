@@ -6,6 +6,7 @@
 
 #include <concepts>
 #include <functional>
+#include <type_traits>
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
@@ -21,7 +22,7 @@ concept ConvertibleToBool = requires(T t) {
 };
 
 template<class T, class Pred>
-requires(std::invocable<Pred, typename array<T>::const_iterator> &&ConvertibleToBool<std::invoke_result<Pred, typename array<T>::const_iterator>>)
+requires(std::invocable<Pred, typename array<T>::const_iterator> &&ConvertibleToBool<std::invoke_result_t<Pred, typename array<T>::const_iterator>>)
   task_t<array<T>> array_filter_impl(const array<T> &a, Pred &&pred) noexcept {
   array<T> result{a.size()};
   for (const auto &it : a) {
