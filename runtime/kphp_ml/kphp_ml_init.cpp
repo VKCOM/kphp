@@ -48,8 +48,11 @@ static void load_kml_file(const std::string &path) {
 }
 
 static void traverse_kml_dir(const std::string &path) {
-  struct stat st{};
-  bool is_directory = stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+  struct stat st {};
+  if (stat(path.c_str(), &st) != 0) {
+    return;
+  }
+  const bool is_directory = S_ISDIR(st.st_mode);
   if (!is_directory && ends_with(path.c_str(), ".kml")) {
     load_kml_file(path);
     return;
