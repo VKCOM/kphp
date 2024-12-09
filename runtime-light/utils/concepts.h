@@ -15,3 +15,8 @@ template<typename T>
 concept hashable = requires(T a) {
   { std::hash<T>{}(a) } -> std::convertible_to<size_t>;
 };
+
+template<typename T>
+concept convertible_to_php_bool = requires(T t) {
+  { f$boolval(t) } -> std::convertible_to<bool>;
+};

@@ -13,17 +13,13 @@
 #include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/math/random-functions.h"
+#include "runtime-light/utils/concepts.h"
 
 namespace array_functions_impl_ {
 
-template<typename T>
-concept ConvertibleToBool = requires(T t) {
-  f$boolval(t);
-};
-
 template<class T, class Pred>
 requires(std::invocable<Pred, typename array<T>::const_iterator>
-           &&ConvertibleToBool<async_function_unwrapped_return_type_t<Pred, typename array<T>::const_iterator>>)
+           &&convertible_to_php_bool<async_function_unwrapped_return_type_t<Pred, typename array<T>::const_iterator>>)
   task_t<array<T>> array_filter_impl(const array<T> &a, Pred &&pred) noexcept {
   array<T> result{a.size()};
   for (const auto &it : a) {
