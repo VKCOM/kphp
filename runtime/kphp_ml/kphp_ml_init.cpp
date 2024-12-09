@@ -4,6 +4,7 @@
 
 #include "runtime/kphp_ml/kphp_ml_init.h"
 
+#include <cstring>
 #include <dirent.h>
 #include <exception>
 #include <string>
@@ -47,24 +48,28 @@ static void load_kml_file(const std::string &path) {
 }
 
 static void traverse_kml_dir(const std::string &path) {
-  if (ends_with(path.c_str(), ".kml")) {
+  struct stat st {};
+  if (stat(path.c_str(), &st) != 0) {
+    return;
+  }
+  const bool is_directory = S_ISDIR(st.st_mode);
+  if (!is_directory && ends_with(path.c_str(), ".kml")) {
     load_kml_file(path);
     return;
   }
 
-  static auto is_directory = [](const char *s) {
-    struct stat st;
-    return stat(s, &st) == 0 && S_ISDIR(st.st_mode);
-  };
-
-  if (is_directory(path.c_str())) {
-    DIR *dir = opendir(path.c_str());
-    struct dirent *iter;
-    while ((iter = readdir(dir))) {
-      if (strcmp(iter->d_name, ".") == 0 || strcmp(iter->d_name, "..") == 0) continue;
-      traverse_kml_dir(path + "/" + iter->d_name);
+  if (is_directory) {
+    if (std::unique_ptr<DIR, int (*)(DIR *)> dir{opendir(path.c_str()), closedir}) {
+      struct dirent *iter = nullptr;
+      while ((iter = readdir(dir.get()))) {
+        if (strcmp(iter->d_name, ".") == 0 || strcmp(iter->d_name, "..") == 0) {
+          continue;
+        }
+        traverse_kml_dir(path + "/" + iter->d_name);
+      }
+    } else {
+      kprintf("warning: cannot read %s (%s)\n", path.c_str(), std::strerror(errno));
     }
-    closedir(dir);
   }
 }
 
