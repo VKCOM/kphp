@@ -6,11 +6,9 @@
 
 #include <concepts>
 #include <functional>
-#include <type_traits>
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/math/random-functions.h"
 #include "runtime-light/utils/concepts.h"
@@ -65,10 +63,10 @@ template<class T, class Pred>
 requires(std::invocable<Pred, T>) task_t<array<T>> f$array_filter(const array<T> &a, Pred &&pred) noexcept {
   if constexpr (is_async_function_v<Pred, T>) {
     co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept -> task_t<bool> {
-      co_return co_await std::invoke(pred, it.get_value());
+      co_return co_await std::invoke(std::forward<Pred>(pred), it.get_value());
     });
   } else {
-    co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept { return std::invoke(pred, it.get_value()); });
+    co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept { return std::invoke(std::forward<Pred>(pred), it.get_value()); });
   }
 }
 
