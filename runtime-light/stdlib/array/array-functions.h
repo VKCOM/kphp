@@ -15,15 +15,15 @@
 
 namespace array_functions_impl_ {
 
-template<class T, class F>
-requires(std::is_invocable_v<F, T>) task_t<array<T>> array_filter_impl(const array<T> &a, const F &pred) noexcept {
+template<class T, class Callback>
+requires(std::is_invocable_v<Callback, T>) task_t<array<T>> array_filter_impl(const array<T> &a, Callback &&pred) noexcept {
   array<T> result{a.size()};
   for (const auto &it : a) {
     bool condition{false};
-    if constexpr (is_async_function_v<F, typename array<T>::const_iterator>) {
-      condition = co_await std::invoke(pred, it);
+    if constexpr (is_async_function_v<Callback, typename array<T>::const_iterator>) {
+      condition = co_await std::invoke(std::forward<Callback>(pred), it);
     } else {
-      condition = std::invoke(pred, it);
+      condition = std::invoke(std::forward<Callback>(pred), it);
     }
     if (condition) {
       result.set_value(it);
@@ -58,7 +58,7 @@ task_t<array<T>> f$array_filter(const array<T> &a) noexcept {
 }
 
 template<class T, class Callback>
-requires(std::is_invocable_v<Callback, T>) task_t<array<T>> f$array_filter(const array<T> &a, const Callback &callback) noexcept {
+requires(std::is_invocable_v<Callback, T>) task_t<array<T>> f$array_filter(const array<T> &a, Callback &&callback) noexcept {
   if constexpr (is_async_function_v<Callback, T>) {
     co_return co_await array_functions_impl_::array_filter_impl(a, [&callback](const auto &it) noexcept -> task_t<bool> {
       co_return f$boolval(co_await callback(it.get_value()));
