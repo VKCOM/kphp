@@ -23,7 +23,7 @@ concept ConvertibleToBool = requires(T t) {
 
 template<class T, class Pred>
 requires(std::invocable<Pred, typename array<T>::const_iterator>
-           &&ConvertibleToBool<async_function_unwrapped_return_type_t<std::invoke_result_t<Pred, typename array<T>::const_iterator>>>)
+           &&ConvertibleToBool<async_function_unwrapped_return_type_t<Pred, typename array<T>::const_iterator>>)
   task_t<array<T>> array_filter_impl(const array<T> &a, Pred &&pred) noexcept {
   array<T> result{a.size()};
   for (const auto &it : a) {
