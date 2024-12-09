@@ -26,6 +26,8 @@ function mt_getrandmax() ::: int;
 
 function mt_srand ($seed ::: int = PHP_INT_MIN) ::: void;
 
+function rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
+
 // === UNSUPPORTED ===
 
 /**
@@ -112,10 +114,6 @@ function levenshtein ($str1 ::: string, $str2 ::: string) ::: int;
 
 /** @kphp-extern-func-info generate-stub */
 function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
-
-/** @kphp-extern-func-info generate-stub */
-function rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
-
 
 /**
  * @kphp-extern-func-info cpp_template_call cpp_variadic_call
