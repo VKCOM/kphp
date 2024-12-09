@@ -16,7 +16,7 @@
 namespace array_functions_impl_ {
 
 template<class T, class Callback>
-requires(std::is_invocable_v<Callback, T>) task_t<array<T>> array_filter_impl(const array<T> &a, Callback &&pred) noexcept {
+requires(std::is_invocable_v<Callback, typename array<T>::const_iterator>) task_t<array<T>> array_filter_impl(const array<T> &a, Callback &&pred) noexcept {
   array<T> result{a.size()};
   for (const auto &it : a) {
     bool condition{false};
