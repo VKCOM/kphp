@@ -4,6 +4,9 @@ include(${THIRD_PARTY_DIR}/abseil-cpp-cmake/abseil-cpp.cmake)
 include(${THIRD_PARTY_DIR}/pcre2-cmake/pcre2.cmake)
 include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)
 
+set(THIRD_PARTY_INCLUDE -I${OBJS_DIR}/include -I${THIRD_PARTY_DIR}
+                        -I${THIRD_PARTY_DIR}/abseil-cpp)
+
 # =================================================================================================
 include(${RUNTIME_LIGHT_DIR}/allocator/allocator.cmake)
 include(${RUNTIME_LIGHT_DIR}/core/core.cmake)
@@ -41,14 +44,8 @@ set_property(TARGET runtime-light PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_target_properties(runtime-light PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                                ${BASE_DIR}/objs)
 target_compile_options(
-  runtime-light
-  PUBLIC -stdlib=libc++
-         -iquote
-         ${GENERATED_DIR}
-         -I${THIRD_PARTY_DIR}
-         -I${THIRD_PARTY_DIR}/abseil-cpp
-         -fPIC
-         -O3)
+  runtime-light PUBLIC -stdlib=libc++ -iquote ${GENERATED_DIR}
+                       ${THIRD_PARTY_INCLUDE} -fPIC -O3)
 target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
 # add statically linking libraries
 string(JOIN " " ABSEIL_LIBS ${ABSEIL_LIBS})
@@ -101,7 +98,7 @@ file(
 
 add_library(php_lib_version_j OBJECT
             ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp)
-target_compile_options(php_lib_version_j PRIVATE -I. -E)
+target_compile_options(php_lib_version_j PRIVATE -I. ${THIRD_PARTY_INCLUDE} -E)
 target_compile_options(php_lib_version_j PUBLIC -stdlib=libc++)
 target_link_options(php_lib_version_j PUBLIC -stdlib=libc++ -static-libstdc++)
 add_dependencies(php_lib_version_j kphp-light-runtime)

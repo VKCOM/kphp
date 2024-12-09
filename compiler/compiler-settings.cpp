@@ -339,6 +339,9 @@ void CompilerSettings::init() {
   if (is_k2_mode) {
     // for now k2-component must be compiled with clang and statically linked libc++
     ss << " -stdlib=libc++";
+    ss << " -I" << kphp_src_path.get() + "objs/include ";
+    ss << " -I" << kphp_src_path.get() + "third-party ";
+    ss << " -I" << kphp_src_path.get() + "third-party/abseil-cpp ";
   } else {
     // default value is false
     // when we build using full runtime, we should force to use runtime as static lib

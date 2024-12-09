@@ -54,6 +54,9 @@ struct InstanceState final : vk::not_copyable {
   template<typename T>
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
 
+  template<typename T>
+  using list = memory_resource::stl::list<T, memory_resource::unsynchronized_pool_resource>;
+
   InstanceState() noexcept
     : allocator(INIT_INSTANCE_ALLOCATOR_SIZE, 0)
     , scheduler(allocator.memory_resource)
@@ -62,9 +65,10 @@ struct InstanceState final : vk::not_copyable {
     , rpc_instance_state(allocator.memory_resource)
     , http_server_instance_state(allocator.memory_resource)
     , regex_instance_state(allocator.memory_resource)
-    , incoming_streams_(deque<uint64_t>::allocator_type{allocator.memory_resource})
-    , opened_streams_(unordered_set<uint64_t>::allocator_type{allocator.memory_resource})
-    , pending_updates_(unordered_set<uint64_t>::allocator_type{allocator.memory_resource}) {}
+    , shutdown_functions(decltype(shutdown_functions)::allocator_type{allocator.memory_resource})
+    , incoming_streams_(decltype(incoming_streams_)::allocator_type{allocator.memory_resource})
+    , opened_streams_(decltype(opened_streams_)::allocator_type{allocator.memory_resource})
+    , pending_updates_(decltype(pending_updates_)::allocator_type{allocator.memory_resource}) {}
 
   ~InstanceState() = default;
 
@@ -132,8 +136,13 @@ struct InstanceState final : vk::not_copyable {
   SystemInstanceState system_instance_state{};
   FileStreamInstanceState file_stream_instance_state{};
 
+  list<task_t<void>> shutdown_functions;
+
 private:
   task_t<void> main_task_;
+
+  enum class shutdown_state : uint8_t { not_started, in_progress, finished };
+  shutdown_state shutdown_state_{shutdown_state::not_started};
 
   ImageKind image_kind_{ImageKind::Invalid};
   uint64_t standard_stream_{INVALID_PLATFORM_DESCRIPTOR};

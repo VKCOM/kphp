@@ -57,6 +57,10 @@ if(COMPILE_RUNTIME_LIGHT)
   add_subdirectory(${THIRD_PARTY_DIR}/pcre2
                    ${CMAKE_BINARY_DIR}/third-party/pcre2)
 
+  # copy the generated pcre2.h from build directory
+  file(COPY ${CMAKE_BINARY_DIR}/third-party/pcre2/pcre2.h
+       DESTINATION ${OBJS_DIR}/include/pcre2)
+
   # restore C flags
   set(CMAKE_C_FLAGS ${SAVE_C_FLAGS})
 
