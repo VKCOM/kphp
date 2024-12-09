@@ -4,7 +4,8 @@ include(${THIRD_PARTY_DIR}/abseil-cpp-cmake/abseil-cpp.cmake)
 include(${THIRD_PARTY_DIR}/pcre2-cmake/pcre2.cmake)
 include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)
 
-set(THIRD_PARTY_INCLUDE -I${THIRD_PARTY_DIR} -I${THIRD_PARTY_DIR}/abseil-cpp)
+set(THIRD_PARTY_INCLUDE -I${OBJS_DIR}/include -I${THIRD_PARTY_DIR}
+                        -I${THIRD_PARTY_DIR}/abseil-cpp)
 
 # =================================================================================================
 include(${RUNTIME_LIGHT_DIR}/allocator/allocator.cmake)
