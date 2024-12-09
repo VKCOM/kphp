@@ -15,6 +15,11 @@
 
 namespace array_functions_impl_ {
 
+template<typename T>
+concept convertible_to_php_bool = requires(T t) {
+  { f$boolval(t) } -> std::convertible_to<bool>;
+};
+
 template<class T, class Pred>
 requires(std::invocable<Pred, typename array<T>::const_iterator>
            &&convertible_to_php_bool<async_function_unwrapped_return_type_t<Pred, typename array<T>::const_iterator>>)
