@@ -28,6 +28,10 @@ function mt_srand ($seed ::: int = PHP_INT_MIN) ::: void;
 
 function rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
 
+function dechex ($number ::: int) ::: string;
+
+function hexdec ($number ::: string): int;
+
 // === UNSUPPORTED ===
 
 /**
