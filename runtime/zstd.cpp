@@ -151,3 +151,62 @@ Optional<string> f$zstd_compress_dict(const string &data, const string &dict) no
 Optional<string> f$zstd_uncompress_dict(const string &data, const string &dict) noexcept {
   return zstd_uncompress_impl(data, dict);
 }
+
+class_instance<C$ZstdCtx> f$zstd_stream_init(const array<mixed> &options) noexcept {
+  ZSTD_CCtxPtr zctx{ZSTD_createCCtx_advanced(make_custom_alloc())};
+  if (!zctx) {
+    php_warning("zstd_compress: can not create context");
+    return {};
+  }
+
+  int lbound = ZSTD_minCLevel();
+  int ubound = ZSTD_maxCLevel();
+  int level = ZSTD_CLEVEL_DEFAULT;
+  for (const auto &option : options) {
+    if (!option.is_string_key()) {
+      php_warning("zstd_stream_init() : unsupported option");
+      return {};
+    }
+    if (option.get_string_key() == string("level")) {
+      mixed value = option.get_value();
+      if (value.is_int() && value.as_int() >= lbound && value.as_int() <= ubound) {
+        level = value.as_int();
+      } else {
+        php_warning("zstd_stream_init() : option %s should be number between %d..%d", option.get_string_key().c_str(), lbound, ubound);
+        return {};
+      }
+    }
+  }
+
+  size_t result = ZSTD_CCtx_setParameter(zctx.get(), ZSTD_c_compressionLevel, static_cast<int>(level));
+  if (ZSTD_isError(result)) {
+    php_warning("zstd_stream_init: can not init context: %s", ZSTD_getErrorName(result));
+    return {};
+  }
+
+  class_instance<C$ZstdCtx> ctx;
+  ctx.alloc();
+  ctx.get()->ctx = zctx.get();
+
+  return ctx;
+}
+
+Optional<string> f$zstd_stream_add(const class_instance<C$ZstdCtx> &ctx, const string &data, bool end) noexcept {
+  php_assert(ZSTD_CStreamOutSize() <= StringLibContext::STATIC_BUFFER_LENGTH);
+  ZSTD_outBuffer out{StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, 0};
+  ZSTD_inBuffer in{data.c_str(), data.size(), 0};
+
+  size_t result;
+  ZSTD_EndDirective mode = end ? ZSTD_e_end : ZSTD_e_flush;
+  string encoded_string;
+  do {
+    result = ZSTD_compressStream2(ctx->ctx, &out, &in, mode);
+    if (ZSTD_isError(result)) {
+      php_warning("zstd_compress: got zstd stream compression error: %s", ZSTD_getErrorName(result));
+      return false;
+    }
+    encoded_string.append(static_cast<char *>(out.dst), out.pos);
+    out.pos = 0;
+  } while (result);
+  return encoded_string;
+}
