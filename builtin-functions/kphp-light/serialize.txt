@@ -29,15 +29,14 @@ class JsonEncoder {
   static function from_json_impl(string $encoder_tag, string $json, string $class_name) ::: instance<^3>;
 }
 
-// ===== UNSUPPORTED =====
+function serialize($v ::: mixed): string;
 
-/** @kphp-extern-func-info generate-stub */
-function serialize($v ::: mixed) ::: string;
 /**
- * @kphp-extern-func-info generate-stub
  * @kphp-pure-function
  */
-function unserialize ($v ::: string) ::: mixed;
+function unserialize ($v ::: string): mixed;
+
+// ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info generate-stub */
 function msgpack_serialize($v ::: mixed) ::: string | null;

@@ -2,48 +2,53 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/serialize-functions.h"
+#include "runtime-common/stdlib/serialization/serialize-functions.h"
 
-#include "runtime/context/runtime-context.h"
+#include "runtime-common/core/runtime-core.h"
 
 void impl_::PhpSerializer::serialize(bool b) noexcept {
-  kphp_runtime_context.static_SB.reserve(4);
-  kphp_runtime_context.static_SB.append_char('b');
-  kphp_runtime_context.static_SB.append_char(':');
-  kphp_runtime_context.static_SB.append_char(static_cast<char>(b + '0'));
-  kphp_runtime_context.static_SB.append_char(';');
+  auto &static_SB{RuntimeContext::get().static_SB};
+  static_SB.reserve(4);
+  static_SB.append_char('b');
+  static_SB.append_char(':');
+  static_SB.append_char(static_cast<char>(b + '0'));
+  static_SB.append_char(';');
 }
 
 void impl_::PhpSerializer::serialize(int64_t i) noexcept {
-  kphp_runtime_context.static_SB.reserve(24);
-  kphp_runtime_context.static_SB.append_char('i');
-  kphp_runtime_context.static_SB.append_char(':');
-  kphp_runtime_context.static_SB << i;
-  kphp_runtime_context.static_SB.append_char(';');
+  auto &static_SB{RuntimeContext::get().static_SB};
+  static_SB.reserve(24);
+  static_SB.append_char('i');
+  static_SB.append_char(':');
+  static_SB << i;
+  static_SB.append_char(';');
 }
 
-void impl_::PhpSerializer::serialize(double f) noexcept {
-  kphp_runtime_context.static_SB.append("d:", 2);
-  kphp_runtime_context.static_SB << f << ';';
+void impl_::PhpSerializer::serialize(double d) noexcept {
+  auto &static_SB{RuntimeContext::get().static_SB};
+  static_SB.append("d:", 2);
+  static_SB << d << ';';
 }
 
 void impl_::PhpSerializer::serialize(const string &s) noexcept {
+  auto &static_SB{RuntimeContext::get().static_SB};
   string::size_type len = s.size();
-  kphp_runtime_context.static_SB.reserve(25 + len);
-  kphp_runtime_context.static_SB.append_char('s');
-  kphp_runtime_context.static_SB.append_char(':');
-  kphp_runtime_context.static_SB << len;
-  kphp_runtime_context.static_SB.append_char(':');
-  kphp_runtime_context.static_SB.append_char('"');
-  kphp_runtime_context.static_SB.append_unsafe(s.c_str(), len);
-  kphp_runtime_context.static_SB.append_char('"');
-  kphp_runtime_context.static_SB.append_char(';');
+  static_SB.reserve(25 + len);
+  static_SB.append_char('s');
+  static_SB.append_char(':');
+  static_SB << len;
+  static_SB.append_char(':');
+  static_SB.append_char('"');
+  static_SB.append_unsafe(s.c_str(), len);
+  static_SB.append_char('"');
+  static_SB.append_char(';');
 }
 
 void impl_::PhpSerializer::serialize_null() noexcept {
-  kphp_runtime_context.static_SB.reserve(2);
-  kphp_runtime_context.static_SB.append_char('N');
-  kphp_runtime_context.static_SB.append_char(';');
+  auto &static_SB{RuntimeContext::get().static_SB};
+  static_SB.reserve(2);
+  static_SB.append_char('N');
+  static_SB.append_char(';');
 }
 
 void impl_::PhpSerializer::serialize(const mixed &v) noexcept {
@@ -159,7 +164,7 @@ int do_unserialize(const char *s, int s_len, mixed &out_var_value) noexcept {
           s_len -= j + 4;
 
           array_size size(len, false);
-          if (s[0] == 'i') {//try to cheat
+          if (s[0] == 'i') { // try to cheat
             size = array_size(len, s[1] == ':' && s[2] == '0' && s[3] == ';');
           }
           array<mixed> res(size);

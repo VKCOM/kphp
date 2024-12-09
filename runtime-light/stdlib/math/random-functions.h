@@ -30,3 +30,11 @@ inline void f$mt_srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexc
   }
   RandomInstanceState::get().mt_gen.seed(static_cast<std::mt19937_64::result_type>(seed));
 }
+
+inline int64_t f$rand() noexcept {
+  return f$mt_rand();
+}
+
+inline int64_t f$rand(int64_t l, int64_t r) noexcept {
+  return f$mt_rand(l, r);
+}

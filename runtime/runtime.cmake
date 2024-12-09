@@ -106,7 +106,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         rpc.cpp
         rpc_extra_info.cpp
         serialize-context.cpp
-        serialize-functions.cpp
         storage.cpp
         streams.cpp
         string_functions.cpp
