@@ -13,12 +13,6 @@ function bindec ($number ::: string) ::: int;
 
 /** @kphp-extern-func-info generate-stub */
 function decbin ($number ::: int) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function dechex ($number ::: int) ::: string;
-
-/** @kphp-extern-func-info generate-stub */
-function hexdec ($number ::: string) ::: int;
-
 
 /** @kphp-extern-func-info generate-stub */
 function crc32 ($s ::: string) ::: int;

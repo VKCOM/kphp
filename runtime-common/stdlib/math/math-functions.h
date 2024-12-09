@@ -5,9 +5,22 @@
 #pragma once
 
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <limits>
 
 #include "runtime-common/core/runtime-core.h"
+
+namespace math_functions_impl_ {
+
+template<uint8_t M>
+uint64_t mult_and_add(uint64_t x, uint8_t y, bool &overflow) noexcept {
+  const uint64_t r = x * M + y;
+  overflow = overflow || r < x || r > static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+  return r;
+}
+
+} // namespace math_functions_impl_
 
 inline double f$ceil(double v) noexcept;
 
@@ -177,3 +190,7 @@ inline double f$sqrt(double v) noexcept {
   }
   return sqrt(v);
 }
+
+int64_t f$hexdec(const string &number) noexcept;
+
+string f$dechex(int64_t number) noexcept;

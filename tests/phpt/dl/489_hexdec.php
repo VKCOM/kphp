@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 var_dump(hexdec("See"));
 var_dump(hexdec("ee"));
