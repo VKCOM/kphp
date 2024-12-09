@@ -80,7 +80,6 @@ struct sort_compare_natural {
   }
 };
 
-
 template<class T>
 struct rsort_compare {
   bool operator()(const T &h1, const T &h2) const {
@@ -709,7 +708,6 @@ void f$krsort(array<T> &a, int64_t flag = SORT_REGULAR) {
       php_warning("Unsupported sort_flag in function krsort");
   }
 }
-
 
 template<class T>
 void f$asort(array<T> &a, int64_t flag = SORT_REGULAR) {

@@ -95,7 +95,7 @@ array<mixed> range_string(const string &from_s, const string &to_s, int64_t step
     return {};
   }
   if (step != 1) {
-    php_critical_error ("unsupported step = %" PRIi64 " in function range", step);
+    php_critical_error("unsupported step = %" PRIi64 " in function range", step);
   }
   const int64_t from = static_cast<unsigned char>(from_s[0]);
   const int64_t to = static_cast<unsigned char>(to_s[0]);

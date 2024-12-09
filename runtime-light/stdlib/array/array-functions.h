@@ -16,14 +16,14 @@
 namespace array_functions_impl_ {
 
 template<class T, class F>
-task_t<array<T>> array_filter_impl(const array<T> &a, const F &pred) noexcept {
-  array<T> result(a.size());
+requires(std::is_invocable_v<F, T>) task_t<array<T>> array_filter_impl(const array<T> &a, const F &pred) noexcept {
+  array<T> result{a.size()};
   for (const auto &it : a) {
     bool condition{false};
     if constexpr (is_async_function_v<F, typename array<T>::const_iterator>) {
-      condition = co_await pred(it);
+      condition = co_await std::invoke(pred, it);
     } else {
-      condition = pred(it);
+      condition = std::invoke(pred, it);
     }
     if (condition) {
       result.set_value(it);
@@ -54,23 +54,23 @@ void f$shuffle(array<T> &arr) noexcept {
 
 template<class T>
 task_t<array<T>> f$array_filter(const array<T> &a) noexcept {
-  co_return co_await array_functions_impl_::array_filter_impl(a, [](const auto &it) { return f$boolval(it.get_value()); });
+  co_return co_await array_functions_impl_::array_filter_impl(a, [](const auto &it) noexcept { return f$boolval(it.get_value()); });
 }
 
 template<class T, class Callback>
-task_t<array<T>> f$array_filter(const array<T> &a, const Callback &callback) noexcept {
+requires(std::is_invocable_v<Callback, T>) task_t<array<T>> f$array_filter(const array<T> &a, const Callback &callback) noexcept {
   if constexpr (is_async_function_v<Callback, T>) {
-    co_return co_await array_functions_impl_::array_filter_impl(a, [&callback](const auto &it) -> task_t<bool> {
+    co_return co_await array_functions_impl_::array_filter_impl(a, [&callback](const auto &it) noexcept -> task_t<bool> {
       co_return f$boolval(co_await callback(it.get_value()));
     });
   } else {
-    co_return co_await array_functions_impl_::array_filter_impl(a, [&callback](const auto &it) { return f$boolval(callback(it.get_value())); });
+    co_return co_await array_functions_impl_::array_filter_impl(a, [&callback](const auto &it) noexcept { return f$boolval(callback(it.get_value())); });
   }
 }
 
 template<class T>
 typename array<T>::key_type f$array_rand(const array<T> &a) noexcept {
-  if (int64_t size = a.count()) {
+  if (int64_t size{a.count()}) {
     return a.middle(f$mt_rand(0, size - 1)).get_key();
   }
   return {};
@@ -82,9 +82,9 @@ mixed f$array_rand(const array<T> &a, int64_t num) noexcept {
     return f$array_rand(a);
   }
 
-  int64_t size = a.count();
+  int64_t size{a.count()};
 
-  if (unlikely(num <= 0 || num > size)) {
+  if (num <= 0 || num > size) [[unlikely]] {
     php_warning("Second argument has to be between 1 and the number of elements in the array");
     return {};
   }
