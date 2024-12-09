@@ -29,6 +29,83 @@ auto transform_to_vector(const array<T> &a, const F &op) noexcept {
   return result;
 }
 
+template<class T, class T1, class Proj>
+array<T> array_diff(const array<T> &a1, const array<T1> &a2, const Proj &projector) noexcept {
+  array<T> result(a1.size());
+
+  array<int64_t> values{array_size{a2.count(), false}};
+
+  for (const auto &it : a2) {
+    values.set_value(projector(it.get_value()), 1);
+  }
+
+  for (const auto &it : a1) {
+    if (!values.has_key(projector(it.get_value()))) {
+      result.set_value(it);
+    }
+  }
+  return result;
+}
+
+template<class T>
+struct sort_compare {
+  bool operator()(const T &h1, const T &h2) const {
+    return lt(h2, h1);
+  }
+};
+
+template<class T>
+struct sort_compare_numeric {
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
+  bool operator()(const T &h1, const T &h2) const {
+    return f$floatval(h1) > f$floatval(h2);
+  }
+};
+
+template<>
+struct sort_compare_numeric<int64_t> : std::greater<int64_t> {};
+
+template<class T>
+struct sort_compare_string {
+  bool operator()(const T &h1, const T &h2) const {
+    return f$strval(h1).compare(f$strval(h2)) > 0;
+  }
+};
+
+template<class T>
+struct sort_compare_natural {
+  bool operator()(const T &h1, const T &h2) const {
+    return f$strnatcmp(f$strval(h1), f$strval(h2)) > 0;
+  }
+};
+
+template<class T>
+struct rsort_compare {
+  bool operator()(const T &h1, const T &h2) const {
+    return lt(h1, h2);
+  }
+};
+
+template<class T>
+struct rsort_compare_numeric {
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
+  bool operator()(const T &h1, const T &h2) const {
+    return f$floatval(h1) < f$floatval(h2);
+  }
+};
+
+template<>
+struct rsort_compare_numeric<int64_t> : std::less<int64_t> {};
+
+template<class T>
+struct rsort_compare_string {
+  bool operator()(const T &h1, const T &h2) const {
+    return f$strval(h1).compare(f$strval(h2)) < 0;
+  }
+};
+
 } // namespace array_functions_impl_
 
 template<class T>
@@ -284,6 +361,182 @@ void f$array_reserve_from(array<T1> &a, const array<T2> &base) noexcept {
   f$array_reserve(a, size_info.size, size_info.is_vector);
 }
 
+template<class T>
+array<array<T>> f$array_chunk(const array<T> &a, int64_t chunk_size, bool preserve_keys = false) noexcept {
+  if (unlikely(chunk_size <= 0)) {
+    php_warning("Parameter chunk_size if function array_chunk must be positive");
+    return array<array<T>>();
+  }
+
+  array<array<T>> result(array_size(a.count() / chunk_size + 1, true));
+
+  array_size new_size = a.size().cut(chunk_size);
+  if (!preserve_keys) {
+    new_size.size = min(chunk_size, a.count());
+    new_size.is_vector = true;
+  }
+
+  array<T> res(new_size);
+  for (const auto &it : a) {
+    if (res.count() == chunk_size) {
+      result.emplace_back(std::move(res));
+      res = array<T>(new_size);
+    }
+
+    if (preserve_keys) {
+      res.set_value(it);
+    } else {
+      res.push_back(it.get_value());
+    }
+  }
+
+  if (res.count()) {
+    result.emplace_back(std::move(res));
+  }
+
+  return result;
+}
+
+template<class T, class T1>
+array<T> f$array_diff(const array<T> &a1, const array<T1> &a2) noexcept {
+  return array_functions_impl_::array_diff(a1, a2, [](const auto &val) { return f$strval(val); });
+}
+
+template<>
+inline array<int64_t> f$array_diff(const array<int64_t> &a1, const array<int64_t> &a2) noexcept {
+  return array_functions_impl_::array_diff(a1, a2, [](int64_t val) { return val; });
+}
+
+template<class T, class T1, class T2>
+array<T> f$array_diff(const array<T> &a1, const array<T1> &a2, const array<T2> &a3) noexcept {
+  return f$array_diff(f$array_diff(a1, a2), a3);
+}
+
+template<class T>
+T f$array_first_value(const array<T> &a) noexcept {
+  return a.empty() ? T() : a.begin().get_value(); // in PHP 'false' on empty, here T()
+}
+
+template<class T>
+array<typename array<T>::key_type> f$array_flip(const array<T> &a) noexcept {
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+  array<typename array<T>::key_type> result;
+
+  for (const auto &it : a) {
+    const auto &value = it.get_value();
+    if (vk::is_type_in_list<T, int64_t, string>{} || f$is_int(value) || f$is_string(value)) {
+      result.set_value(value, it.get_key());
+    } else {
+      php_warning("Unsupported type of array element \"%s\" in function array_flip", get_type_c_str(value));
+    }
+  }
+
+  return result;
+}
+
+template<class T>
+mixed f$array_last_key(const array<T> &a) noexcept {
+  return a.empty() ? mixed() : (--a.end()).get_key();
+}
+
+template<class T>
+T f$array_last_value(const array<T> &a) noexcept {
+  return a.empty() ? T() : (--a.end()).get_value(); // in PHP 'false' on empty, here T()
+}
+
+template<class T>
+T f$array_replace(const T &base_array, const T &replacements = T()) noexcept {
+  auto result = T::convert_from(base_array);
+  for (const auto &it : replacements) {
+    result.set_value(it);
+  }
+  return result;
+}
+
+template<class T>
+T f$array_replace(const T &base_array, const T &replacements_1, const T &replacements_2, const T &replacements_3 = T(), const T &replacements_4 = T(),
+                  const T &replacements_5 = T(), const T &replacements_6 = T(), const T &replacements_7 = T(), const T &replacements_8 = T(),
+                  const T &replacements_9 = T(), const T &replacements_10 = T(), const T &replacements_11 = T()) noexcept {
+  return f$array_replace(
+    f$array_replace(
+      f$array_replace(
+        f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(f$array_replace(base_array,
+                                                                                                                                        replacements_1),
+                                                                                                                        replacements_2),
+                                                                                                        replacements_3),
+                                                                                        replacements_4),
+                                                                        replacements_5),
+                                                        replacements_6),
+                                        replacements_7),
+                        replacements_8),
+        replacements_9),
+      replacements_10),
+    replacements_11);
+}
+
+template<class T>
+array<T> f$array_slice(const array<T> &a, int64_t offset, const mixed &length_var = mixed(), bool preserve_keys = false) noexcept {
+  auto size = a.count();
+
+  int64_t length = 0;
+  if (length_var.is_null()) {
+    length = size;
+  } else {
+    length = length_var.to_int();
+  }
+
+  if (offset < 0) {
+    offset += size;
+
+    if (offset < 0) {
+      offset = 0;
+    }
+  } else if (offset > size) {
+    offset = size;
+  }
+
+  if (length < 0) {
+    length = size - offset + length;
+  }
+  if (length <= 0) {
+    return array<T>();
+  }
+  if (size - offset < length) {
+    length = size - offset;
+  }
+
+  array_size result_size = a.size().cut(length);
+  result_size.is_vector = (!preserve_keys && a.has_no_string_keys()) || (preserve_keys && offset == 0 && a.is_vector());
+
+  array<T> result(result_size);
+  auto it = a.middle(offset);
+  while (length-- > 0) {
+    if (preserve_keys) {
+      result.set_value(it);
+    } else {
+      result.push_back(it);
+    }
+    ++it;
+  }
+
+  return result;
+}
+
+template<class T, class ReturnT = std::conditional_t<std::is_same<T, int64_t>{}, int64_t, double>>
+ReturnT f$array_sum(const array<T> &a) noexcept {
+  static_assert(!std::is_same_v<T, int>, "int is forbidden");
+
+  ReturnT result = 0;
+  for (const auto &it : a) {
+    if constexpr (std::is_same_v<T, int64_t>) {
+      result += it.get_value();
+    } else {
+      result += f$floatval(it.get_value());
+    }
+  }
+  return result;
+}
+
 template<class T, class T1>
 typename array<T>::key_type f$array_search(const T1 &val, const array<T> &a, bool strict = false) noexcept {
   for (const auto &it : a) {
@@ -385,3 +638,94 @@ bool f$array_is_list(const array<T> &a) noexcept {
   // so we need to call both of them to get the precise and PHP-compatible answer
   return a.is_vector() || a.is_pseudo_vector();
 }
+
+template<class T>
+void f$sort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.sort(array_functions_impl_::sort_compare<T>(), true);
+    case SORT_NUMERIC:
+      return a.sort(array_functions_impl_::sort_compare_numeric<T>(), true);
+    case SORT_STRING:
+      return a.sort(array_functions_impl_::sort_compare_string<T>(), true);
+    default:
+      php_warning("Unsupported sort_flag in function sort");
+  }
+}
+
+template<class T>
+void f$rsort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.sort(array_functions_impl_::rsort_compare<T>(), true);
+    case SORT_NUMERIC:
+      return a.sort(array_functions_impl_::rsort_compare_numeric<T>(), true);
+    case SORT_STRING:
+      return a.sort(array_functions_impl_::rsort_compare_string<T>(), true);
+    default:
+      php_warning("Unsupported sort_flag in function rsort");
+  }
+}
+
+template<class T>
+void f$arsort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.sort(array_functions_impl_::rsort_compare<T>(), false);
+    case SORT_NUMERIC:
+      return a.sort(array_functions_impl_::rsort_compare_numeric<T>(), false);
+    case SORT_STRING:
+      return a.sort(array_functions_impl_::rsort_compare_string<T>(), false);
+    default:
+      php_warning("Unsupported sort_flag in function arsort");
+  }
+}
+
+template<class T>
+void f$ksort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.ksort(array_functions_impl_::sort_compare<typename array<T>::key_type>());
+    case SORT_NUMERIC:
+      return a.ksort(array_functions_impl_::sort_compare_numeric<typename array<T>::key_type>());
+    case SORT_STRING:
+      return a.ksort(array_functions_impl_::sort_compare_string<typename array<T>::key_type>());
+    default:
+      php_warning("Unsupported sort_flag in function ksort");
+  }
+}
+
+template<class T>
+void f$krsort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.ksort(array_functions_impl_::rsort_compare<typename array<T>::key_type>());
+    case SORT_NUMERIC:
+      return a.ksort(array_functions_impl_::rsort_compare_numeric<typename array<T>::key_type>());
+    case SORT_STRING:
+      return a.ksort(array_functions_impl_::rsort_compare_string<typename array<T>::key_type>());
+    default:
+      php_warning("Unsupported sort_flag in function krsort");
+  }
+}
+
+template<class T>
+void f$asort(array<T> &a, int64_t flag = SORT_REGULAR) {
+  switch (flag) {
+    case SORT_REGULAR:
+      return a.sort(array_functions_impl_::sort_compare<T>(), false);
+    case SORT_NUMERIC:
+      return a.sort(array_functions_impl_::sort_compare_numeric<T>(), false);
+    case SORT_STRING:
+      return a.sort(array_functions_impl_::sort_compare_string<T>(), false);
+    default:
+      php_warning("Unsupported sort_flag in function asort");
+  }
+}
+
+template<class T>
+void f$natsort(array<T> &a) {
+  return a.sort(array_functions_impl_::sort_compare_natural<typename array<T>::key_type>(), false);
+}
+
+array<mixed> f$range(const mixed &from, const mixed &to, int64_t step = 1);

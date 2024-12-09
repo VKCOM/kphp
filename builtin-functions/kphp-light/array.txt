@@ -35,6 +35,8 @@ function array_values ($a ::: array) ::: ^1;
 
 function array_unique ($a ::: array, int $flags = SORT_STRING) ::: ^1;
 
+function array_rand ($a ::: array, $num ::: int = 1) ::: mixed;
+
 function array_reserve (&$a ::: array, $int_size ::: int, $string_size ::: int, $make_vector_if_possible ::: bool) ::: void;
 
 function array_reserve_vector (&$a ::: array, $size ::: int) ::: void;
@@ -45,14 +47,63 @@ function array_reserve_map_string_keys (&$a ::: array, $size ::: int) ::: void;
 
 function array_reserve_from (&$a ::: array, $base ::: array) ::: void;
 
+function array_reverse ($a ::: array, $preserve_keys ::: bool = false) ::: ^1;
+
+function array_pop (&$a ::: array) ::: ^1[*];
+
+function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
+
+/** @kphp-extern-func-info cpp_template_call */
+function array_replace ($base_array ::: array,
+            $replacements_1 ::: array = array(), $replacements_2  ::: array = array(), $replacements_3  ::: array = array(),
+            $replacements_4 ::: array = array(), $replacements_5  ::: array = array(), $replacements_6  ::: array = array(),
+            $replacements_7 ::: array = array(), $replacements_8  ::: array = array(), $replacements_9  ::: array = array(),
+            $replacements_10 ::: array = array(), $replacements_11 ::: array = array())
+                ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
+
+function array_last_value ($a ::: array) ::: ^1[*];
+
+function array_last_key ($a ::: array) ::: mixed;
+
+function array_flip ($a ::: array) ::: mixed[];
+
+function array_first_value ($a ::: array) ::: ^1[*];
+
+/** @kphp-extern-func-info interruptible */
+function array_filter ($a ::: array, callable(^1[*] $x):bool $callback = TODO) ::: ^1;
+
+function array_diff ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
+
+function array_chunk ($a ::: array, $chunk_size ::: int, $preserve_keys ::: bool = false) ::: ^1[];
+
+function array_sum ($a ::: array) ::: float;//TODO
+
 function shuffle (&$a ::: array) ::: void;
 
 function implode ($s ::: string, $v ::: array) ::: string;
 
 function explode ($delimiter ::: string, $str ::: string, $limit ::: int = PHP_INT_MAX) ::: string[];
 
+function range ($from ::: mixed, $to ::: mixed, $step ::: int = 1) ::: mixed[];
+
 /** @kphp-extern-func-info interruptible */
 function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];
 
 function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
 function instance_to_array(object $instance, $with_class_names ::: bool = false) ::: mixed[];
+
+
+function asort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+function arsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+function ksort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+function krsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+function natsort (&$a ::: array) ::: void;
+
+function rsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
