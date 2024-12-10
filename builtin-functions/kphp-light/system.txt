@@ -1,0 +1,5 @@
+<?php
+
+function php_uname($mode ::: string = "a"): string;
+
+function posix_getpid(): int;

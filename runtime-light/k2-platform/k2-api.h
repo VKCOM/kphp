@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <sys/utsname.h>
 #include <utility>
 
 #define K2_API_HEADER_H
@@ -83,6 +84,14 @@ inline void free_checked(void *ptr, size_t size, size_t align) noexcept {
 
 [[noreturn]] inline void exit(int32_t exit_code) noexcept {
   k2_exit(exit_code);
+}
+
+inline uint32_t getpid() noexcept {
+  return k2_getpid();
+}
+
+inline int32_t uname(struct utsname *addr) noexcept {
+  return k2_uname(addr);
 }
 
 inline int32_t open(uint64_t *stream_d, size_t name_len, const char *name) noexcept {
