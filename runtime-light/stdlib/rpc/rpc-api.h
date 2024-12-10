@@ -103,13 +103,13 @@ f$rpc_fetch_typed_responses(array<query_id_t> query_ids) noexcept {
 template<std::same_as<int64_t> query_id_t = int64_t, std::same_as<RpcResponseErrorFactory> error_factory_t = RpcResponseErrorFactory>
 requires std::default_initializable<error_factory_t> task_t<array<class_instance<C$VK$TL$RpcResponse>>>
 f$rpc_fetch_typed_responses_synchronously(array<query_id_t> query_ids) noexcept {
-  co_return f$rpc_fetch_typed_responses(std::move(query_ids));
+  co_return co_await f$rpc_fetch_typed_responses(std::move(query_ids));
 }
 
 template<std::same_as<int64_t> query_id_t = int64_t, std::same_as<RpcResponseErrorFactory> error_factory_t = RpcResponseErrorFactory>
 requires std::default_initializable<error_factory_t> task_t<array<class_instance<C$VK$TL$RpcResponse>>>
 f$typed_rpc_tl_query_result_synchronously(array<query_id_t> query_ids) noexcept {
-  co_return f$rpc_fetch_typed_responses_synchronously(std::move(query_ids));
+  co_return co_await f$rpc_fetch_typed_responses_synchronously(std::move(query_ids));
 }
 
 template<class T>
