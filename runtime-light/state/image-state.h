@@ -5,9 +5,15 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <sys/utsname.h>
 
 #include "common/mixin/not_copyable.h"
+#include "common/php-functions.h"
 #include "runtime-common/core/allocator/runtime-allocator.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
@@ -16,11 +22,47 @@ struct ImageState final : private vk::not_copyable {
   RuntimeAllocator allocator;
 
   char *c_linear_mem{nullptr};
-  RpcImageState rpc_image_state{};
-  StringImageState string_image_state{};
+  uint32_t pid{};
+  string uname_info_s;
+  string uname_info_n;
+  string uname_info_r;
+  string uname_info_v;
+  string uname_info_m;
+  string uname_info_a;
+
+  RpcImageState rpc_image_state;
+  StringImageState string_image_state;
 
   ImageState() noexcept
-    : allocator(INIT_IMAGE_ALLOCATOR_SIZE, 0) {}
+    : allocator(INIT_IMAGE_ALLOCATOR_SIZE, 0)
+    , pid(k2::getpid()) {
+    utsname uname_info{};
+    if (const auto err{k2::uname(std::addressof(uname_info))}; err != k2::errno_ok) [[unlikely]] {
+      php_error("can't get uname, error '%d'", err);
+    }
+    uname_info_s = string{uname_info.sysname};
+    uname_info_s.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    uname_info_n = string{uname_info.nodename};
+    uname_info_n.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    uname_info_r = string{uname_info.release};
+    uname_info_r.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    uname_info_v = string{uname_info.version};
+    uname_info_v.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    uname_info_m = string{uname_info.machine};
+    uname_info_m.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    // +4 for whitespaces
+    uname_info_a.reserve_at_least(uname_info_s.size() + uname_info_n.size() + uname_info_r.size() + uname_info_v.size() + uname_info_m.size() + 4);
+    uname_info_a.append(uname_info_s);
+    uname_info_a.push_back(' ');
+    uname_info_a.append(uname_info_n);
+    uname_info_a.push_back(' ');
+    uname_info_a.append(uname_info_r);
+    uname_info_a.push_back(' ');
+    uname_info_a.append(uname_info_v);
+    uname_info_a.push_back(' ');
+    uname_info_a.append(uname_info_m);
+    uname_info_a.set_reference_counter_to(ExtraRefCnt::for_global_const);
+  }
 
   static const ImageState &get() noexcept {
     return *k2::image_state();

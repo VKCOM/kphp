@@ -11,6 +11,7 @@ require_once __DIR__ . '/rpc.txt';
 require_once __DIR__ . '/serialize.txt';
 require_once __DIR__ . '/string.txt';
 require_once __DIR__ . '/server.txt';
+require_once __DIR__ . '/system.txt';
 require_once __DIR__ . '/kphp-toggles.txt';
 require_once __DIR__ . '/kphp_internal.txt';
 require_once __DIR__ . '/math.txt';
