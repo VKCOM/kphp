@@ -8,6 +8,7 @@
 #endif // K2_API_HEADER_H
 
 #include <sys/socket.h>
+#include <sys/utsname.h>
 
 #ifdef __cplusplus
 #include <atomic>
@@ -148,6 +149,19 @@ void k2_free_checked(void *ptr, size_t size, size_t align);
  * `exit_code` != 0 => FinishedError,
  */
 [[noreturn]] void k2_exit(int32_t exit_code);
+
+/**
+ * 'k2_getpid' returns the process ID (PID) of the calling process.
+ */
+uint32_t k2_getpid();
+
+/**
+ * Semantically equivalent to libc's 'uname' function.
+ *
+ * Possible 'errno':
+ * 'EFAULT' => buf is not valid
+ */
+int32_t k2_uname(struct utsname *buf);
 
 /**
  * @return return `0` on success. libc-like `errno` otherwise
@@ -326,13 +340,13 @@ int32_t k2_connect(uint64_t socket_d, const struct sockaddr_storage *addr, size_
  * Perform sequentially `k2_lookup_host` -> `k2_socket` -> `k2_connect`
  * @return: `0` on success, `errno != 0` otherwise
  */
-int32_t k2_udp_connect(uint64_t *socket_d, const char *host, size_t host_len);
+int32_t k2_udp_connect(uint64_t *socket_d, const char *hostport, size_t hostport_len);
 
 /**
  * Perform sequentially `k2_lookup_host` -> `k2_socket` -> `k2_connect`
  * @return: `0` on success, `errno != 0` otherwise
  */
-int32_t k2_tcp_connect(uint64_t *socket_d, const char *host, size_t host_len);
+int32_t k2_tcp_connect(uint64_t *socket_d, const char *hostport, size_t hostport_len);
 
 struct SockAddr {
   uint16_t is_v6;
@@ -343,28 +357,28 @@ struct SockAddr {
 };
 
 /**
- * Optimistically tries to parse `host` as `ip` + `port`.
+ * Optimistically tries to parse `hostport` as `ip` + `port`.
  * Examples:
- * IpV4 `host` format: `"123.123.123.123:8080"`.
- * IpV6 `host` format: `"[2001:db8::1]:8080"`.
+ * IpV4 `hostport` format: `"123.123.123.123:8080"`.
+ * IpV6 `hostport` format: `"[2001:db8::1]:8080"`.
  *
  * Then performs a DNS resolution with `man 3 getaddrinfo` (implementation depends on the host machine settings).
  * Examples:
- * `host = "localhost:8080"`
- * `host = "vk.com:443"`
+ * `hostport = "localhost:8080"`
+ * `hostport = "vk.com:443"`
  *
  *
  * Although the function signature is synchronous DNS resolution may perform file reading and networking.
  * k2-node will attempt to do this work in the background, but the component execution and associated work will be suspended.
  * Thus, this is an expensive operation that should have an asynchronous signature, but it does not.
  *
- * @param `host` should be valid utf-8.
+ * @param `hostport` should be valid utf-8.
  * @return: `0` on success, `errno != 0` otherwise
  * on success:
  * `result_buf_len` is set to the number of resolved addresses. `0 <= result_buf_len <= min(result_buf_len, 128)`.
  * the first `result_buf_len` items of `result_buf` will be filled with resolved addresses
  */
-int32_t k2_lookup_host(const char *host, size_t host_len, struct SockAddr *result_buf, size_t *result_buf_len);
+int32_t k2_lookup_host(const char *hostport, size_t hostport_len, struct SockAddr *result_buf, size_t *result_buf_len);
 
 /**
  * Only available during `k2_create_component` call. Returns `0` in other context.
@@ -374,22 +388,22 @@ int32_t k2_lookup_host(const char *host, size_t host_len, struct SockAddr *resul
 uint32_t k2_args_count();
 
 /**
- * @param `arg_num` must satisfy `0 <= arg_num <= k2_args_count()`
+ * @param `arg_num` must satisfy `0 <= arg_num < k2_args_count()`
  * @return length of argument key with number `arg_num` in bytes
  */
 uint32_t k2_args_key_len(uint32_t arg_num);
 
 /**
- * @param `arg_num` must satisfy `0 <= arg_num <= k2_args_count()`
+ * @param `arg_num` must satisfy `0 <= arg_num < k2_args_count()`
  * @return length of argumen value with number `arg_num` in bytes
  */
 uint32_t k2_args_value_len(uint32_t arg_num);
 
 /**
  * Note: key and value are **not** null-terminated.
- * @param `arg_num` must satisfy `0 <= arg_num <= k2_args_count()`
- * @param `key` buffer where key will be written, buffer len must staisfy `0 <= len <= k2_args_key_len(arg_num)`
- * @param `value` buffer where value will be written, buffer len must staisfy `0 <= len <= k2_args_value_len(arg_num)`
+ * @param `arg_num` must satisfy `0 <= arg_num < k2_args_count()`
+ * @param `key` buffer where key will be written, buffer len must staisfy `len >= k2_args_key_len(arg_num)`
+ * @param `value` buffer where value will be written, buffer len must staisfy `len >= k2_args_value_len(arg_num)`
  */
 void k2_args_fetch(uint32_t arg_num, char *key, char *value);
 
