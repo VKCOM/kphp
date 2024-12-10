@@ -20,15 +20,15 @@ define('M_SQRT1_2', 0.70710678118654752440);
 define('M_LNPI', 1.14472988584940017414);
 define('M_EULER', 0.57721566490153286061);
 
-function mt_rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
+function mt_rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD): int;
 
-function mt_getrandmax() ::: int;
+function mt_getrandmax(): int;
 
-function mt_srand ($seed ::: int = PHP_INT_MIN) ::: void;
+function mt_srand ($seed ::: int = PHP_INT_MIN): void;
 
-function rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD) ::: int;
+function rand ($l ::: int = TODO_OVERLOAD, $r ::: int = TODO_OVERLOAD): int;
 
-function dechex ($number ::: int) ::: string;
+function dechex ($number ::: int): string;
 
 function hexdec ($number ::: string): int;
 
