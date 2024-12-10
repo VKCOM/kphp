@@ -106,6 +106,12 @@ f$rpc_fetch_typed_responses_synchronously(array<query_id_t> query_ids) noexcept 
   co_return f$rpc_fetch_typed_responses(std::move(query_ids));
 }
 
+template<std::same_as<int64_t> query_id_t = int64_t, std::same_as<RpcResponseErrorFactory> error_factory_t = RpcResponseErrorFactory>
+requires std::default_initializable<error_factory_t> task_t<array<class_instance<C$VK$TL$RpcResponse>>>
+f$typed_rpc_tl_query_result_synchronously(array<query_id_t> query_ids) noexcept {
+  co_return f$rpc_fetch_typed_responses_synchronously(std::move(query_ids));
+}
+
 template<class T>
 task_t<array<array<mixed>>> f$rpc_tl_query_result(const array<T> &) {
   php_critical_error("call to unsupported function");
