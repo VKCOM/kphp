@@ -19,19 +19,11 @@
 #include "common/cycleclock.h"
 #include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/math/random-functions.h"
-#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "server/php-engine-vars.h"
 
 namespace {
-  template<uint8_t M>
-  uint64_t mult_and_add(uint64_t x, uint8_t y, bool &overflow) noexcept {
-    const uint64_t r = x * M + y;
-    overflow = overflow || r < x || r > static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
-    return r;
-  }
-
   int64_t secure_rand_buf(char * const buf, int64_t length) noexcept {
 #if defined(__APPLE__)
     arc4random_buf(static_cast<void*>(buf), static_cast<size_t>(length));
@@ -49,7 +41,7 @@ int64_t f$bindec(const string &number) noexcept {
   for (string::size_type i = 0; i < number.size(); i++) {
     const char c = number[i];
     if (likely(vk::any_of_equal(c, '0', '1'))) {
-      v = mult_and_add<2>(v, static_cast<uint8_t>(c - '0'), overflow);
+      v = math_functions_impl_::mult_and_add<2>(v, static_cast<uint8_t>(c - '0'), overflow);
     } else {
       bad_str_param = true;
     }
@@ -77,43 +69,6 @@ string f$decbin(int64_t number) noexcept {
   } while (v > 0);
 
   return {s + i, static_cast<string::size_type>(65 - i)};
-}
-
-string f$dechex(int64_t number) noexcept {
-  auto v = static_cast<uint64_t>(number);
-
-  char s[17];
-  int i = 16;
-
-  do {
-    s[--i] = StringLibConstants::get().lhex_digits[v & 15];
-    v >>= 4;
-  } while (v > 0);
-
-  return {s + i, static_cast<string::size_type>(16 - i)};
-}
-
-int64_t f$hexdec(const string &number) noexcept {
-  uint64_t v = 0;
-  bool bad_str_param = number.empty();
-  bool overflow = false;
-  for (string::size_type i = 0; i < number.size(); i++) {
-    const uint8_t d = hex_to_int(number[i]);
-    if (unlikely(d == 16)) {
-      bad_str_param = true;
-    } else {
-      v = mult_and_add<16>(v, d, overflow);
-    }
-  }
-
-  if (unlikely(bad_str_param)) {
-    php_warning("Wrong parameter \"%s\" in function hexdec", number.c_str());
-  }
-  if (unlikely(overflow)) {
-    php_warning("Integer overflow on converting '%s' in function hexdec, "
-                "the result will be different from PHP", number.c_str());
-  }
-  return v;
 }
 
 double f$lcg_value() {

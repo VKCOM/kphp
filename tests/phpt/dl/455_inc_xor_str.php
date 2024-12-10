@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
   function inc_xor_str($a, $b) {
     $len = strlen($a);

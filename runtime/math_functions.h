@@ -11,12 +11,7 @@ int64_t f$bindec(const string &number) noexcept;
 
 string f$decbin(int64_t number) noexcept;
 
-string f$dechex(int64_t number) noexcept;
-
-int64_t f$hexdec(const string &number) noexcept;
-
 double f$lcg_value();
-
 
 void f$mt_srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexcept;
 

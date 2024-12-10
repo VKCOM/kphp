@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 function filesBinFromBase64($str) { // for storage-engine: secret packing
