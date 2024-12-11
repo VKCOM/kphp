@@ -47,6 +47,22 @@ static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
  */
 enum class ImageKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
 
+enum class StreamKind : uint8_t { Component, Tcp, Udp };
+
+struct InstanceState;
+
+struct StreamConnectionResult {
+  uint64_t stream_d{};
+  int32_t error_code{};
+
+  friend InstanceState;
+
+private:
+  StreamConnectionResult(uint64_t d, int32_t code) noexcept
+    : stream_d(d)
+    , error_code(code) {}
+};
+
 struct InstanceState final : vk::not_copyable {
   template<typename T>
   using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
@@ -103,30 +119,9 @@ struct InstanceState final : vk::not_copyable {
   }
   uint64_t take_incoming_stream() noexcept;
 
-  uint64_t open_stream(std::string_view) noexcept;
-  uint64_t open_stream(const string &component_name) noexcept {
-    return open_stream(std::string_view{component_name.c_str(), static_cast<size_t>(component_name.size())});
-  }
-
-  struct ConnectionResult {
-    uint64_t stream_d{INVALID_PLATFORM_DESCRIPTOR};
-    int32_t error_code{k2::errno_ok};
-  };
-
-  template<typename Connector>
-  requires(std::invocable<Connector, uint64_t *, const char *, size_t>
-             &&std::is_same_v<std::invoke_result_t<Connector, uint64_t *, const char *, size_t>, int32_t>) ConnectionResult
-  connect_to(const std::string_view &host, Connector &&connector) noexcept {
-    uint64_t stream_d{INVALID_PLATFORM_DESCRIPTOR};
-    const int32_t error_number{std::invoke(connector, std::addressof(stream_d), host.data(), host.size())};
-
-    if (error_number != k2::errno_ok) {
-      php_warning("Cannot connect to host %s, errno %d", host.data(), error_number);
-      return {INVALID_PLATFORM_DESCRIPTOR, error_number};
-    }
-    opened_streams_.insert(stream_d);
-    php_debug("connect to %s on stream %" PRIu64, host.data(), stream_d);
-    return {stream_d, error_number};
+  StreamConnectionResult open_stream(std::string_view, StreamKind kind) noexcept;
+  StreamConnectionResult open_stream(const string &component_name, StreamKind kind) noexcept {
+    return open_stream(std::string_view{component_name.c_str(), static_cast<size_t>(component_name.size())}, kind);
   }
 
   uint64_t set_timer(std::chrono::nanoseconds) noexcept;

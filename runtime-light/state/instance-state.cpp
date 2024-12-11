@@ -175,15 +175,27 @@ uint64_t InstanceState::take_incoming_stream() noexcept {
   return stream_d;
 }
 
-uint64_t InstanceState::open_stream(std::string_view component_name_view) noexcept {
+StreamConnectionResult InstanceState::open_stream(std::string_view component_name_view, StreamKind kind) noexcept {
   uint64_t stream_d{};
-  if (const auto open_stream_res{k2::open(std::addressof(stream_d), component_name_view.size(), component_name_view.data())}; open_stream_res != k2::errno_ok) {
+  int32_t error_code{};
+  switch (kind) {
+    case StreamKind::Component:
+      error_code = k2::open(std::addressof(stream_d), component_name_view.size(), component_name_view.data());
+      break;
+    case StreamKind::Tcp:
+      error_code = k2::tcp_connect(std::addressof(stream_d), component_name_view.data(), component_name_view.size());
+      break;
+    case StreamKind::Udp:
+      error_code = k2::udp_connect(std::addressof(stream_d), component_name_view.data(), component_name_view.size());
+      break;
+  }
+  if (error_code != k2::errno_ok) {
     php_warning("can't open stream to %s", component_name_view.data());
-    return INVALID_PLATFORM_DESCRIPTOR;
+    return {INVALID_PLATFORM_DESCRIPTOR, error_code};
   }
   opened_streams_.insert(stream_d);
   php_debug("opened a stream %" PRIu64 " to %s", stream_d, component_name_view.data());
-  return stream_d;
+  return {stream_d, error_code};
 }
 
 uint64_t InstanceState::set_timer(std::chrono::nanoseconds duration) noexcept {
