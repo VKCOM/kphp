@@ -14,9 +14,9 @@ namespace {
 
 ResourceKind resolve_kind(const std::string_view &scheme) noexcept {
   if (scheme.starts_with(resource_impl_::UDP_RESOURCE_PREFIX)) {
-    return ResourceKind::UdpResource;
+    return ResourceKind::Udp;
   } else if (scheme.starts_with(resource_impl_::PHP_STREAMS_PREFIX)) {
-    return ResourceKind::PhpResource;
+    return ResourceKind::Php;
   } else {
     return ResourceKind::Unknown;
   }
@@ -39,10 +39,10 @@ resource f$fopen(const string &filename, [[maybe_unused]] const string &mode, [[
   ResourceKind kind{resolve_kind(scheme)};
   class_instance<ResourceWrapper> wrapper;
   switch (kind) {
-    case ResourceKind::UdpResource:
+    case ResourceKind::Udp:
       wrapper = resource_impl_::open_udp_stream(scheme).first;
       break;
-    case ResourceKind::PhpResource:
+    case ResourceKind::Php:
       wrapper = resource_impl_::open_php_stream(scheme);
       break;
     default:
@@ -72,7 +72,7 @@ resource f$stream_socket_client(const string &address, mixed &error_number, [[ma
   class_instance<ResourceWrapper> wrapper;
   int32_t error_code{};
   switch (kind) {
-    case ResourceKind::UdpResource:
+    case ResourceKind::Udp:
       std::tie(wrapper, error_code) = resource_impl_::open_udp_stream(scheme);
       break;
     default:
@@ -93,7 +93,7 @@ task_t<Optional<int64_t>> f$fwrite(const resource &stream, const string &text) n
     co_return false;
   }
 
-  auto typed_resource = from_mixed<class_instance<ResourceWrapper>>(stream, string(""));
+  auto typed_resource = from_mixed<class_instance<ResourceWrapper>>(stream, {});
   if (typed_resource.is_null()) {
     php_warning("try to fwrite in wrong resource %s", stream.to_string().c_str());
     co_return false;
@@ -113,7 +113,7 @@ task_t<Optional<string>> f$file_get_contents(const string &stream) noexcept {
   ResourceKind kind{resolve_kind(scheme)};
   class_instance<ResourceWrapper> wrapper;
   switch (kind) {
-    case ResourceKind::PhpResource:
+    case ResourceKind::Php:
       wrapper = resource_impl_::open_php_stream(scheme);
       break;
     default:
@@ -134,7 +134,7 @@ bool f$fflush(const resource &stream) noexcept {
     return false;
   }
 
-  auto typed_resource = from_mixed<class_instance<ResourceWrapper>>(stream, string(""));
+  auto typed_resource = from_mixed<class_instance<ResourceWrapper>>(stream, {});
   if (typed_resource.is_null()) {
     php_warning("try to fwrite in wrong resource %s", stream.to_string().c_str());
     return false;
@@ -150,7 +150,7 @@ bool f$fclose(const resource &stream) noexcept {
     return false;
   }
 
-  auto typed_resource = from_mixed<class_instance<ResourceWrapper>>(stream, string(""));
+  auto typed_resource = from_mixed<class_instance<ResourceWrapper>>(stream, {});
   if (typed_resource.is_null()) {
     php_warning("try to fwrite in wrong resource %s", stream.to_string().c_str());
     return false;

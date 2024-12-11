@@ -13,9 +13,9 @@ struct FileStreamInstanceState final : private vk::not_copyable {
   mixed error_number_dummy;
   mixed error_description_dummy;
 
-  class_instance<resource_impl_::PhpResourceWrapper> stdin_wrapper;
-  class_instance<resource_impl_::PhpResourceWrapper> stdout_wrapper;
-  class_instance<resource_impl_::PhpResourceWrapper> stderr_wrapper;
+  class_instance<ResourceWrapper> stdin_wrapper;
+  class_instance<ResourceWrapper> stdout_wrapper;
+  class_instance<ResourceWrapper> stderr_wrapper;
 
   static FileStreamInstanceState &get() noexcept;
 };

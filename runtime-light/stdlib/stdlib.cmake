@@ -28,6 +28,7 @@ prepend(
   system/system-state.cpp
   file/php-streams/php-streams.cpp
   file/udp-streams/udp-streams.cpp
+  file/file-resource.cpp
   file/file-stream-functions.cpp
   file/file-stream-state.cpp
   time/time-functions.cpp
