@@ -56,7 +56,7 @@ resource f$fopen(const string &filename, [[maybe_unused]] const string &mode, [[
 }
 
 resource f$stream_socket_client(const string &address, mixed &error_number, [[maybe_unused]] mixed &error_description, [[maybe_unused]] double timeout,
-                                [[maybe_unused]] int64_t flags, [[maybe_unused]] const resource &context) {
+                                [[maybe_unused]] int64_t flags, [[maybe_unused]] const resource &context) noexcept {
   /*
    * TODO: Here should be waiting with timeout,
    *       but it can't be expressed simple ways by awaitables since we blocked inside k2
@@ -102,7 +102,7 @@ task_t<Optional<int64_t>> f$fwrite(const resource &stream, const string &text) n
   co_return co_await typed_resource.get()->write(text_view);
 }
 
-task_t<Optional<string>> f$file_get_contents(const string &stream) {
+task_t<Optional<string>> f$file_get_contents(const string &stream) noexcept {
   const std::string_view scheme{stream.c_str(), stream.size()};
   if (!is_scheme(scheme)) {
     php_warning("Work with local files unsupported");

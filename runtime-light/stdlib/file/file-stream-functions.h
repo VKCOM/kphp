@@ -18,7 +18,7 @@ resource f$fopen(const string &filename, const string &mode, bool use_include_pa
 
 resource f$stream_socket_client(const string &url, mixed &error_number = FileStreamInstanceState::get().error_number_dummy,
                                 mixed &error_description = FileStreamInstanceState::get().error_description_dummy, double timeout = DEFAULT_SOCKET_TIMEOUT,
-                                int64_t flags = STREAM_CLIENT_CONNECT, const resource &context = mixed());
+                                int64_t flags = STREAM_CLIENT_CONNECT, const resource &context = mixed()) noexcept;
 
 task_t<Optional<string>> f$file_get_contents(const string &stream) noexcept;
 
