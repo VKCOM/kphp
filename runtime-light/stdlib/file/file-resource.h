@@ -10,18 +10,29 @@
 using resource = mixed;
 
 enum class ResourceKind {
-  UdpResource,
-  PhpResource,
+  Udp,
+  Php,
   Unknown,
 };
 
 struct ResourceWrapper : public refcountable_polymorphic_php_classes<may_be_mixed_base> {
+  const ResourceKind kind;
   uint64_t stream_d{};
 
-  virtual task_t<int64_t> write(const std::string_view text) noexcept = 0 ;
-  virtual task_t<Optional<string>> get_contents() noexcept = 0;
-  virtual void flush() noexcept = 0;
-  virtual void close() noexcept = 0;
+  ResourceWrapper(ResourceKind k, uint64_t d)
+    : kind(k)
+    , stream_d(d) {}
 
-  virtual ~ResourceWrapper() {}
+  const char *get_class() const noexcept override {
+    return R"(ResourceWrapper)";
+  }
+
+  task_t<int64_t> write(const std::string_view text) const noexcept;
+  task_t<Optional<string>> get_contents() const noexcept;
+  void flush() noexcept;
+  void close() noexcept;
+
+  ~ResourceWrapper() {
+    close();
+  }
 };
