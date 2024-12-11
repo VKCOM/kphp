@@ -4,8 +4,6 @@
 
 #include "runtime-light/stdlib/file/php-streams/php-streams.h"
 
-#include <cstring>
-
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/file/php-streams/php-streams-context.h"
 #include "runtime-light/streams/streams.h"
