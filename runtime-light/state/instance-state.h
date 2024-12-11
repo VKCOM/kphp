@@ -109,15 +109,15 @@ struct InstanceState final : vk::not_copyable {
   }
 
   struct ConnectionResult {
-    uint64_t stream_d{};
-    int32_t error_code{};
+    uint64_t stream_d{INVALID_PLATFORM_DESCRIPTOR};
+    int32_t error_code{k2::errno_ok};
   };
 
   template<typename Connector>
   requires(std::invocable<Connector, uint64_t *, const char *, size_t>
              &&std::is_same_v<std::invoke_result_t<Connector, uint64_t *, const char *, size_t>, int32_t>) ConnectionResult
   connect_to(const std::string_view &host, Connector &&connector) noexcept {
-    uint64_t stream_d{0};
+    uint64_t stream_d{INVALID_PLATFORM_DESCRIPTOR};
     const int32_t error_number{std::invoke(connector, std::addressof(stream_d), host.data(), host.size())};
 
     if (error_number != k2::errno_ok) {
