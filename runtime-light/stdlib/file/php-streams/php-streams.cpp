@@ -20,14 +20,14 @@ constexpr std::string_view STDIN_NAME = "stdin";
 
 namespace resource_impl_ {
 
-task_t<int64_t> PhpResourceWrapper::write(const std::string_view text) {
+task_t<int64_t> PhpResourceWrapper::write(const std::string_view text) noexcept {
   if (stream_d == INVALID_PLATFORM_DESCRIPTOR) {
     co_return 0;
   }
   co_return co_await write_all_to_stream(stream_d, text.data(), text.size());
 }
 
-task_t<Optional<string>> PhpResourceWrapper::get_contents() {
+task_t<Optional<string>> PhpResourceWrapper::get_contents() noexcept {
   if (stream_d == INVALID_PLATFORM_DESCRIPTOR) {
     co_return false;
   }

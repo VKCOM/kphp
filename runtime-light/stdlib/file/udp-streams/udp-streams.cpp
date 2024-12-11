@@ -9,14 +9,14 @@
 
 namespace resource_impl_ {
 
-task_t<int64_t> UdpResourceWrapper::write(const std::string_view text) {
+task_t<int64_t> UdpResourceWrapper::write(const std::string_view text) noexcept {
   if (stream_d == INVALID_PLATFORM_DESCRIPTOR) {
     co_return 0;
   }
   co_return co_await write_all_to_stream(stream_d, text.data(), text.size());
 }
 
-void UdpResourceWrapper::close() {
+void UdpResourceWrapper::close() noexcept {
   InstanceState::get().release_stream(stream_d);
   stream_d = INVALID_PLATFORM_DESCRIPTOR;
 }
