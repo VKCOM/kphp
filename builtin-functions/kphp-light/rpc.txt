@@ -35,13 +35,13 @@ final class KphpRpcRequestsExtraInfo {
 /** @kphp-extern-func-info interruptible */
 function rpc_send_requests($actor ::: string, $arr ::: array, $timeout ::: float, $ignore_answer ::: bool, \KphpRpcRequestsExtraInfo $requests_extra_info, $need_responses_extra_info ::: bool) ::: int[];
 
-/** @kphp-extern-func-info interruptible */
+/** @kphp-extern-func-info tl_common_h_dep interruptible */
 function rpc_send_typed_query_requests($actor ::: string, @tl\RpcFunction[] $query_functions, $timeout ::: float, $ignore_answer ::: bool, \KphpRpcRequestsExtraInfo $requests_extra_info, $need_responses_extra_info ::: bool) ::: int[];
 
 /** @kphp-extern-func-info interruptible */
 function rpc_fetch_responses($query_ids ::: array) ::: mixed[][];
 
-/** @kphp-extern-func-info interruptible */
+/** @kphp-extern-func-info tl_common_h_dep interruptible */
 function rpc_fetch_typed_responses(int[] $query_ids) ::: @tl\RpcResponse[];
 
 /** @kphp-extern-func-info tl_common_h_dep interruptible */
