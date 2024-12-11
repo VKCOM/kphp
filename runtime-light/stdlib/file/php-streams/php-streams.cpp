@@ -5,7 +5,6 @@
 #include "runtime-light/stdlib/file/php-streams/php-streams.h"
 
 #include "runtime-light/state/instance-state.h"
-#include "runtime-light/stdlib/file/php-streams/php-streams-context.h"
 #include "runtime-light/streams/streams.h"
 
 namespace {
@@ -37,26 +36,26 @@ task_t<Optional<string>> PhpResourceWrapper::get_contents() noexcept {
 
 class_instance<PhpResourceWrapper> open_php_stream(const std::string_view scheme) noexcept {
   const std::string_view url{scheme.substr(PHP_STREAMS_PREFIX.size(), scheme.size() - PHP_STREAMS_PREFIX.size())};
-  auto &php_stream_state{PhpStreamInstanceState::get()};
+  auto &file_stream_state{FileStreamInstanceState::get()};
 
   if (url == STDERR_NAME) {
-    if (php_stream_state.stderr_wrapper.is_null()) {
-      php_stream_state.stderr_wrapper.alloc();
-      php_stream_state.stderr_wrapper.get()->stream_d = INVALID_PLATFORM_DESCRIPTOR;
+    if (file_stream_state.stderr_wrapper.is_null()) {
+      file_stream_state.stderr_wrapper.alloc();
+      file_stream_state.stderr_wrapper.get()->stream_d = INVALID_PLATFORM_DESCRIPTOR;
     }
-    return php_stream_state.stderr_wrapper;
+    return file_stream_state.stderr_wrapper;
   } else if (url == STDOUT_NAME) {
-    if (php_stream_state.stdout_wrapper.is_null()) {
-      php_stream_state.stdout_wrapper.alloc();
-      php_stream_state.stdout_wrapper.get()->stream_d = InstanceState::get().standard_stream();
+    if (file_stream_state.stdout_wrapper.is_null()) {
+      file_stream_state.stdout_wrapper.alloc();
+      file_stream_state.stdout_wrapper.get()->stream_d = InstanceState::get().standard_stream();
     }
-    return php_stream_state.stdout_wrapper;
+    return file_stream_state.stdout_wrapper;
   } else if (url == STDIN_NAME) {
-    if (php_stream_state.stdin_wrapper.is_null()) {
-      php_stream_state.stdin_wrapper.alloc();
-      php_stream_state.stdin_wrapper.get()->stream_d = InstanceState::get().standard_stream();
+    if (file_stream_state.stdin_wrapper.is_null()) {
+      file_stream_state.stdin_wrapper.alloc();
+      file_stream_state.stdin_wrapper.get()->stream_d = InstanceState::get().standard_stream();
     }
-    return php_stream_state.stdin_wrapper;
+    return file_stream_state.stdin_wrapper;
   } else {
     php_warning("Unknown name %s for php stream", url.data());
     return class_instance<PhpResourceWrapper>{};
