@@ -23,7 +23,8 @@ ResourceKind resolve_kind(const std::string_view &scheme) noexcept {
 }
 
 bool is_scheme(const std::string_view &filename) noexcept {
-  return filename.find("://") != std::string_view::npos;
+  std::string_view::size_type delimiter{filename.find("://")};
+  return delimiter != std::string_view::npos && delimiter > 0 && filename.find("://", delimiter + 3 /* +3 to skip founded :// */) == std::string_view::npos;
 }
 } // namespace
 
