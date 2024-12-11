@@ -22,4 +22,6 @@ struct ResourceWrapper : public refcountable_polymorphic_php_classes<may_be_mixe
   virtual task_t<Optional<string>> get_contents() = 0;
   virtual void flush() = 0;
   virtual void close() = 0;
+
+  virtual ~ResourceWrapper() = 0;
 };
