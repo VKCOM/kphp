@@ -35,3 +35,10 @@ inline Optional<array<mixed>> f$getopt(const string &options, array<string> long
                                        Optional<int64_t> &rest_index = SystemInstanceState::get().rest_index_dummy) {
   php_critical_error("call to unsupported function");
 }
+
+inline int64_t f$numa_get_bound_node() noexcept {
+  return -1;
+}
+
+inline void f$kphp_set_context_on_error([[maybe_unused]] const array<mixed> &tags, [[maybe_unused]] const array<mixed> &extra_info,
+                                        [[maybe_unused]] const string &env = {}) noexcept {}

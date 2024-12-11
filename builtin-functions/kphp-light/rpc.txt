@@ -35,14 +35,17 @@ final class KphpRpcRequestsExtraInfo {
 /** @kphp-extern-func-info interruptible */
 function rpc_send_requests($actor ::: string, $arr ::: array, $timeout ::: float, $ignore_answer ::: bool, \KphpRpcRequestsExtraInfo $requests_extra_info, $need_responses_extra_info ::: bool) ::: int[];
 
-/** @kphp-extern-func-info interruptible */
+/** @kphp-extern-func-info tl_common_h_dep interruptible */
 function rpc_send_typed_query_requests($actor ::: string, @tl\RpcFunction[] $query_functions, $timeout ::: float, $ignore_answer ::: bool, \KphpRpcRequestsExtraInfo $requests_extra_info, $need_responses_extra_info ::: bool) ::: int[];
 
 /** @kphp-extern-func-info interruptible */
 function rpc_fetch_responses($query_ids ::: array) ::: mixed[][];
 
-/** @kphp-extern-func-info interruptible */
+/** @kphp-extern-func-info tl_common_h_dep interruptible */
 function rpc_fetch_typed_responses(int[] $query_ids) ::: @tl\RpcResponse[];
+
+/** @kphp-extern-func-info tl_common_h_dep interruptible */
+function rpc_fetch_typed_responses_synchronously(int[] $query_ids) ::: @tl\RpcResponse[];
 
 /** @kphp-extern-func-info can_throw */
 function fetch_int () ::: int;
@@ -61,7 +64,6 @@ function store_long ($v ::: int) ::: bool;
 function store_string ($v ::: string) ::: bool;
 function store_double ($v ::: float) ::: bool;
 function store_float ($v ::: float) ::: bool;
-
 
 // === Rpc Old API =================================================================================
 
@@ -108,23 +110,21 @@ function rpc_tl_query_one (\RpcConnection $rpc_conn, $arr ::: mixed, $timeout ::
 
 /** @kphp-extern-func-info can_throw interruptible generate-stub */
 function rpc_server_fetch_request() ::: @tl\RpcFunction;
+
 /** @kphp-extern-func-info can_throw interruptible generate-stub */
 function rpc_server_store_response(@tl\RpcFunctionReturnResult $response) ::: void;
 
-
-/** @kphp-extern-func-info tl_common_h_dep interruptible generate-stub */
+/** @kphp-extern-func-info tl_common_h_dep interruptible */
 function typed_rpc_tl_query_result_synchronously (int[] $query_ids) ::: @tl\RpcResponse[];
 
 /** @kphp-extern-func-info tl_common_h_dep interruptible generate-stub */
 function typed_rpc_tl_query_result_one (int $query_id) ::: @tl\RpcResponse;
-
 
 /** @kphp-extern-func-info interruptible generate-stub can_throw */
 function fetch_lookup_int () ::: int;
 
 /** @kphp-extern-func-info interruptible generate-stub */
 function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
-
 
 /**
  * 'extract_kphp_rpc_response_extra_info' function takes request ID and returns:

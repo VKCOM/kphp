@@ -8,8 +8,6 @@ function get_engine_version() ::: string;
 function get_kphp_cluster_name(): string;
 /** @kphp-extern-func-info generate-stub */
 function get_webserver_stats() ::: tuple(int, int, int, int);
-/** @kphp-extern-func-info generate-stub */
-function numa_get_bound_node(): int;
 
 /** @kphp-extern-func-info generate-stub */
 function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
