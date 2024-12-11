@@ -41,15 +41,10 @@ struct ImageState final : private vk::not_copyable {
       php_error("can't get uname, error '%d'", err);
     }
     uname_info_s = string{uname_info.sysname};
-    uname_info_s.set_reference_counter_to(ExtraRefCnt::for_global_const);
     uname_info_n = string{uname_info.nodename};
-    uname_info_n.set_reference_counter_to(ExtraRefCnt::for_global_const);
     uname_info_r = string{uname_info.release};
-    uname_info_r.set_reference_counter_to(ExtraRefCnt::for_global_const);
     uname_info_v = string{uname_info.version};
-    uname_info_v.set_reference_counter_to(ExtraRefCnt::for_global_const);
     uname_info_m = string{uname_info.machine};
-    uname_info_m.set_reference_counter_to(ExtraRefCnt::for_global_const);
     // +4 for whitespaces
     uname_info_a.reserve_at_least(uname_info_s.size() + uname_info_n.size() + uname_info_r.size() + uname_info_v.size() + uname_info_m.size() + 4);
     uname_info_a.append(uname_info_s);
@@ -61,6 +56,12 @@ struct ImageState final : private vk::not_copyable {
     uname_info_a.append(uname_info_v);
     uname_info_a.push_back(' ');
     uname_info_a.append(uname_info_m);
+    // prevent race condition on reference counter
+    uname_info_s.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    uname_info_n.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    uname_info_r.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    uname_info_v.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    uname_info_m.set_reference_counter_to(ExtraRefCnt::for_global_const);
     uname_info_a.set_reference_counter_to(ExtraRefCnt::for_global_const);
   }
 
