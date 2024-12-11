@@ -108,7 +108,26 @@ struct InstanceState final : vk::not_copyable {
     return open_stream(std::string_view{component_name.c_str(), static_cast<size_t>(component_name.size())});
   }
 
-  std::pair<uint64_t, int32_t> connect_to(const string &host, bool reliable) noexcept;
+  struct ConnectionResult {
+    uint64_t stream_d{};
+    int32_t error_code{};
+  };
+
+  template<typename Connector>
+  requires(std::invocable<Connector, uint64_t *, const char *, size_t>
+             &&std::is_same_v<std::invoke_result_t<Connector, uint64_t *, const char *, size_t>, int32_t>) ConnectionResult
+  connect_to(const std::string_view &host, Connector &&connector) noexcept {
+    uint64_t stream_d{0};
+    const int32_t error_number{std::invoke(connector, std::addressof(stream_d), host.data(), host.size())};
+
+    if (error_number != k2::errno_ok) {
+      php_warning("Cannot connect to host %s, errno %d", host.data(), error_number);
+      return {INVALID_PLATFORM_DESCRIPTOR, error_number};
+    }
+    opened_streams_.insert(stream_d);
+    php_debug("connect to %s on stream %" PRIu64, host.data(), stream_d);
+    return {stream_d, error_number};
+  }
 
   uint64_t set_timer(std::chrono::nanoseconds) noexcept;
   void release_stream(uint64_t) noexcept;

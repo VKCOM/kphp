@@ -186,20 +186,6 @@ uint64_t InstanceState::open_stream(std::string_view component_name_view) noexce
   return stream_d;
 }
 
-std::pair<uint64_t, int32_t> InstanceState::connect_to(const string &host, bool reliable) noexcept {
-  uint64_t stream_d{0};
-  const int32_t error_number{reliable ? k2::tcp_connect(std::addressof(stream_d), host.c_str(), host.size())
-                                      : k2::udp_connect(std::addressof(stream_d), host.c_str(), host.size())};
-
-  if (error_number != 0) {
-    php_warning("Cannot connect to host %s, errno %d", host.c_str(), error_number);
-    return {INVALID_PLATFORM_DESCRIPTOR, error_number};
-  }
-  opened_streams_.insert(stream_d);
-  php_debug("connect to %s on stream %" PRIu64, host.c_str(), stream_d);
-  return {stream_d, error_number};
-}
-
 uint64_t InstanceState::set_timer(std::chrono::nanoseconds duration) noexcept {
   uint64_t timer_d{};
   if (const auto set_timer_res{k2::new_timer(std::addressof(timer_d), static_cast<uint64_t>(duration.count()))}; set_timer_res != k2::errno_ok) {

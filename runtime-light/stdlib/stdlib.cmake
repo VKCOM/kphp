@@ -27,6 +27,7 @@ prepend(
   string/string-state.cpp
   system/system-state.cpp
   file/php-streams/php-streams.cpp
+  file/php-streams/php-streams-context.cpp
   file/udp-streams/udp-streams.cpp
   file/file-stream-functions.cpp
   file/file-stream-state.cpp
