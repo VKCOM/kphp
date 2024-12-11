@@ -28,5 +28,5 @@ struct UdpResourceWrapper : public ResourceWrapper {
   }
 };
 
-std::pair<class_instance<UdpResourceWrapper>, int32_t> connect_to_host_by_udp(const std::string_view scheme) noexcept;
+std::pair<class_instance<UdpResourceWrapper>, int32_t> open_udp_stream(const std::string_view scheme) noexcept;
 } // namespace resource_impl_
