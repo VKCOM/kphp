@@ -40,7 +40,7 @@ resource f$fopen(const string &filename, [[maybe_unused]] const string &mode, [[
   class_instance<ResourceWrapper> wrapper;
   switch (kind) {
     case ResourceKind::UdpResource:
-      wrapper = resource_impl_::connect_to_host_by_udp(scheme).first;
+      wrapper = resource_impl_::open_udp_stream(scheme).first;
       break;
     case ResourceKind::PhpResource:
       wrapper = resource_impl_::open_php_stream(scheme);
@@ -70,10 +70,10 @@ resource f$stream_socket_client(const string &address, mixed &error_number, [[ma
 
   ResourceKind kind{resolve_kind(scheme)};
   class_instance<ResourceWrapper> wrapper;
-  int32_t error_code{k2::errno_ok};
+  int32_t error_code{};
   switch (kind) {
     case ResourceKind::UdpResource:
-      std::tie(wrapper, error_code) = resource_impl_::connect_to_host_by_udp(scheme);
+      std::tie(wrapper, error_code) = resource_impl_::open_udp_stream(scheme);
       break;
     default:
       php_warning("Cannot connect to %s", address.c_str());

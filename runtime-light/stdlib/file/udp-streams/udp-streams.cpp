@@ -21,7 +21,7 @@ void UdpResourceWrapper::close() noexcept {
   stream_d = INVALID_PLATFORM_DESCRIPTOR;
 }
 
-std::pair<class_instance<UdpResourceWrapper>, int32_t> connect_to_host_by_udp(const std::string_view scheme) noexcept {
+std::pair<class_instance<UdpResourceWrapper>, int32_t> open_udp_stream(const std::string_view scheme) noexcept {
   const std::string_view url{scheme.substr(UDP_RESOURCE_PREFIX.size(), scheme.size() - UDP_RESOURCE_PREFIX.size())};
   auto connection{InstanceState::get().open_stream(url, StreamKind::Udp)};
   class_instance<UdpResourceWrapper> wrapper;

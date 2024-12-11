@@ -23,5 +23,5 @@ struct ResourceWrapper : public refcountable_polymorphic_php_classes<may_be_mixe
   virtual void flush() noexcept = 0;
   virtual void close() noexcept = 0;
 
-  virtual ~ResourceWrapper() = 0;
+  virtual ~ResourceWrapper() {}
 };
