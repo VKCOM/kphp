@@ -41,3 +41,5 @@ install(TARGETS flex_data_shared flex_data_static
 set(CPACK_DEBIAN_FLEX_PACKAGE_BREAKS "engine-kphp-runtime (<< 20190917), php5-vkext (<< 20190917), php7-vkext (<< 20190917)")
 set(CPACK_DEBIAN_FLEX_PACKAGE_NAME "vk-flex-data")
 set(CPACK_DEBIAN_FLEX_DESCRIPTION "flex for declension")
+set(CPACK_DEBIAN_FLEX_PACKAGE_CONTROL_EXTRA "${BASE_DIR}/cmake/triggers")
+set(CPACK_DEBIAN_FLEX_PACKAGE_CONTROL_STRICT_PERMISSION TRUE)
