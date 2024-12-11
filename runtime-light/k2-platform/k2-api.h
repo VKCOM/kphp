@@ -178,7 +178,7 @@ inline int32_t lookup_host(const char *host, size_t host_len, struct SockAddr *r
   return k2_lookup_host(host, host_len, result_buf, result_buf_len);
 }
 
-inline int32_t socket(uint64_t *socket_d, int32_t domain, int32_t type, int protocol) noexcept {
+inline int32_t socket(uint64_t *socket_d, int32_t domain, int32_t type, int32_t protocol) noexcept {
   return k2_socket(socket_d, domain, type, protocol);
 }
 

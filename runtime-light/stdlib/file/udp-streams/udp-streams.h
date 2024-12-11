@@ -5,7 +5,28 @@
 #pragma once
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/file/file-resource.h"
 
-inline constexpr std::string_view UDP_STREAMS_PREFIX = "udp://";
+namespace resource_impl_ {
 
-std::pair<uint64_t, int32_t> connect_to_host_by_udp(const string &hostname) noexcept;
+inline constexpr std::string_view UDP_RESOURCE_PREFIX = "udp://";
+
+struct UdpResourceWrapper : public ResourceWrapper {
+  uint64_t stream_d{0};
+
+  const char *get_class() const noexcept override {
+    return R"(UdpResourceWrapper)";
+  }
+
+  virtual task_t<int64_t> write(const std::string_view text) override;
+  virtual task_t<Optional<string>> get_contents() override {co_return false;}
+  virtual void flush() override {}
+  virtual void close() override;
+
+  ~UdpResourceWrapper() {
+    close();
+  }
+};
+
+std::pair<class_instance<UdpResourceWrapper>, int32_t> connect_to_host_by_udp(const std::string_view scheme);
+} // namespace resource_impl_

@@ -5,11 +5,21 @@
 #pragma once
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/coroutine/task.h"
 
 using resource = mixed;
 
-enum class ResourceType {
-  UdpStream,
-  PhpStream,
+enum class ResourceKind {
+  UdpResource,
+  PhpResource,
   Unknown,
+};
+
+struct ResourceWrapper : public refcountable_polymorphic_php_classes<may_be_mixed_base> {
+  uint64_t stream_d{};
+
+  virtual task_t<int64_t> write(const std::string_view text) = 0;
+  virtual task_t<Optional<string>> get_contents() = 0;
+  virtual void flush() = 0;
+  virtual void close() = 0;
 };
