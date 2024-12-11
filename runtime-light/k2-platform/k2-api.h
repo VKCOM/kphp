@@ -165,4 +165,11 @@ inline auto arg_fetch(uint32_t arg_num) noexcept {
                         std::unique_ptr<char, decltype(std::addressof(k2::free))>{value_buffer, std::addressof(k2::free)});
 }
 
+inline int32_t udp_connect(uint64_t *socket_d, const char *host, size_t host_len) noexcept {
+  return k2_udp_connect(socket_d, host, host_len);
+}
+
+inline int32_t tcp_connect(uint64_t *socket_d, const char *host, size_t host_len) noexcept {
+  return k2_tcp_connect(socket_d, host, host_len);
+}
 } // namespace k2

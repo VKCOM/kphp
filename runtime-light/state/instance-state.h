@@ -47,6 +47,22 @@ static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
  */
 enum class ImageKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
 
+enum class StreamKind : uint8_t { Component, Tcp, Udp };
+
+struct InstanceState;
+
+struct StreamConnectionResult {
+  uint64_t stream_d{};
+  int32_t error_code{};
+
+  friend InstanceState;
+
+private:
+  StreamConnectionResult(uint64_t d, int32_t code) noexcept
+    : stream_d(d)
+    , error_code(code) {}
+};
+
 struct InstanceState final : vk::not_copyable {
   template<typename T>
   using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
@@ -103,9 +119,9 @@ struct InstanceState final : vk::not_copyable {
   }
   uint64_t take_incoming_stream() noexcept;
 
-  uint64_t open_stream(std::string_view) noexcept;
-  uint64_t open_stream(const string &component_name) noexcept {
-    return open_stream(std::string_view{component_name.c_str(), static_cast<size_t>(component_name.size())});
+  StreamConnectionResult open_stream(std::string_view, StreamKind kind) noexcept;
+  StreamConnectionResult open_stream(const string &component_name, StreamKind kind) noexcept {
+    return open_stream(std::string_view{component_name.c_str(), static_cast<size_t>(component_name.size())}, kind);
   }
 
   uint64_t set_timer(std::chrono::nanoseconds) noexcept;

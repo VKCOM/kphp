@@ -17,7 +17,7 @@
 // === component query client interface ===========================================================
 
 task_t<class_instance<C$ComponentQuery>> f$component_client_send_request(string name, string message) noexcept {
-  const auto stream_d{InstanceState::get().open_stream(name)};
+  const auto stream_d{InstanceState::get().open_stream(name, StreamKind::Component).stream_d};
   if (stream_d == INVALID_PLATFORM_DESCRIPTOR) {
     co_return class_instance<C$ComponentQuery>{};
   }
