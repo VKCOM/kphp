@@ -26,6 +26,7 @@ void ResourceWrapper::close() noexcept {
       /*
        * PHP support multiple opening/closing operations on standard IO streams.
        * */
+      stream_d = INVALID_PLATFORM_DESCRIPTOR;
       break;
     case ResourceKind::Udp:
       InstanceState::get().release_stream(stream_d);
