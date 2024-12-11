@@ -18,10 +18,10 @@ struct UdpResourceWrapper : public ResourceWrapper {
     return R"(UdpResourceWrapper)";
   }
 
-  virtual task_t<int64_t> write(const std::string_view text) override;
-  virtual task_t<Optional<string>> get_contents() override {co_return false;}
-  virtual void flush() override {}
-  virtual void close() override;
+  virtual task_t<int64_t> write(const std::string_view text) noexcept override;
+  virtual task_t<Optional<string>> get_contents() noexcept override {co_return false;}
+  virtual void flush() noexcept override {}
+  virtual void close() noexcept override;
 
   ~UdpResourceWrapper() {
     close();

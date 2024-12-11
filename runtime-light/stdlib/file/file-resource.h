@@ -18,10 +18,10 @@ enum class ResourceKind {
 struct ResourceWrapper : public refcountable_polymorphic_php_classes<may_be_mixed_base> {
   uint64_t stream_d{};
 
-  virtual task_t<int64_t> write(const std::string_view text) = 0;
-  virtual task_t<Optional<string>> get_contents() = 0;
-  virtual void flush() = 0;
-  virtual void close() = 0;
+  virtual task_t<int64_t> write(const std::string_view text) noexcept = 0 ;
+  virtual task_t<Optional<string>> get_contents() noexcept = 0;
+  virtual void flush() noexcept = 0;
+  virtual void close() noexcept = 0;
 
   virtual ~ResourceWrapper() = 0;
 };

@@ -18,10 +18,10 @@ struct PhpResourceWrapper : public ResourceWrapper {
     return R"(PhpResourceWrapper)";
   }
 
-  virtual task_t<int64_t> write(const std::string_view text) override;
-  virtual task_t<Optional<string>> get_contents() override;
-  virtual void flush() override {}
-  virtual void close() override {
+  virtual task_t<int64_t> write(const std::string_view text) noexcept override;
+  virtual task_t<Optional<string>> get_contents() noexcept override;
+  virtual void flush() noexcept override {}
+  virtual void close() noexcept override {
     /*
      * PHP support multiple opening/closing operations on standard IO streams.
      * */
