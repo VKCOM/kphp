@@ -28,10 +28,10 @@ function(install_symlink TARGET_PATH LINK COMPONENT_NAME)
     get_filename_component(LINK_FILE_NAME ${LINK} NAME)
 
     install(CODE "
-            file(MAKE_DIRECTORY \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LINK_DIR})
+            file(MAKE_DIRECTORY \$ENV{DESTDIR}${LINK_DIR})
             execute_process(
-                COMMAND \${CMAKE_COMMAND} -E create_symlink \${CMAKE_INSTALL_PREFIX}/${TARGET_PATH} ${LINK_FILE_NAME}
-                WORKING_DIRECTORY \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LINK_DIR}
+                COMMAND \${CMAKE_COMMAND} -E create_symlink ${TARGET_PATH} ${LINK_FILE_NAME}
+                WORKING_DIRECTORY \$ENV{DESTDIR}${LINK_DIR}
             )
         "
         COMPONENT ${COMPONENT_NAME})
