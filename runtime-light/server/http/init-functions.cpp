@@ -44,14 +44,7 @@ constexpr std::string_view HTTP_X_REAL_REQUEST = "HTTP_X_REAL_REQUEST";
 constexpr std::string_view SCHEME_SUFFIX = "://";
 constexpr std::string_view GATEWAY_INTERFACE_VALUE = "CGI/1.1";
 
-constexpr std::string_view HEADER_HOST = "host";
-constexpr std::string_view HEADER_COOKIE = "cookie";
-constexpr std::string_view HEADER_CONNECTION = "connection";
-constexpr std::string_view HEADER_CONTENT_TYPE = "content-type";
-constexpr std::string_view HEADER_CONTENT_LENGTH = "content-length";
-constexpr std::string_view HEADER_AUTHORIZATION = "authorization";
-constexpr std::string_view HEADER_ACCEPT_ENCODING = "accept-encoding";
-constexpr std::string_view AUTHORIZATION_BASIC = "Basic";
+constexpr std::string_view AUTHORIZATION_BASIC = "basic";
 constexpr std::string_view CONNECTION_CLOSE = "close";
 constexpr std::string_view CONNECTION_KEEP_ALIVE = "keep-alive";
 constexpr std::string_view ENCODING_GZIP = "gzip";
@@ -150,14 +143,14 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
     const std::string_view header_view{header.value.c_str(), header.value.size()};
 
     using namespace PhpServerSuperGlobalIndices;
-    if (header_name_view == HEADER_ACCEPT_ENCODING) {
+    if (header_name_view == HttpHeader::ACCEPT_ENCODING) {
       if (absl::StrContains(header_view, ENCODING_GZIP)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_GZIP;
       }
       if (absl::StrContains(header_view, ENCODING_DEFLATE)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
       }
-    } else if (header_name_view == HEADER_CONNECTION) {
+    } else if (header_name_view == HttpHeader::CONNECTION) {
       if (header_view == CONNECTION_KEEP_ALIVE) [[likely]] {
         http_server_instance_st.connection_kind = HttpConnectionKind::KEEP_ALIVE;
       } else if (header_view == CONNECTION_CLOSE) [[likely]] {
@@ -165,16 +158,16 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
       } else {
         php_error("unexpected connection header: %s", header_view.data());
       }
-    } else if (header_name_view == HEADER_COOKIE) {
+    } else if (header_name_view == HttpHeader::COOKIE) {
       process_cookie_header(header.value, superglobals);
-    } else if (header_name_view == HEADER_HOST) {
+    } else if (header_name_view == HttpHeader::HOST) {
       server.set_value(string{SERVER_NAME.data(), SERVER_NAME.size()}, header.value);
-    } else if (header_name_view == HEADER_AUTHORIZATION) {
+    } else if (header_name_view == HttpHeader::AUTHORIZATION) {
       process_authorization_header(header.value, superglobals);
-    } else if (header_name_view == HEADER_CONTENT_TYPE) {
+    } else if (header_name_view == HttpHeader::CONTENT_TYPE) {
       content_type = header_view;
       continue;
-    } else if (header_name_view == HEADER_CONTENT_LENGTH) {
+    } else if (header_name_view == HttpHeader::CONTENT_LENGTH) {
       int32_t content_length{};
       const auto [_, ec]{std::from_chars(header_view.data(), header_view.data() + header_view.size(), content_length)};
       if (ec != std::errc{} || content_length != invoke_http.body.size()) [[unlikely]] {
@@ -300,11 +293,11 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
 
   // add content-type header
   auto &static_SB{RuntimeContext::get().static_SB};
-  static_SB.clean() << HEADER_CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
+  static_SB.clean() << HttpHeader::CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
   header({static_SB.c_str(), static_SB.size()}, true, HttpStatus::NO_STATUS);
   // add connection kind header
   const auto connection_kind{http_server_instance_st.connection_kind == HttpConnectionKind::KEEP_ALIVE ? CONNECTION_KEEP_ALIVE : CONNECTION_CLOSE};
-  static_SB.clean() << HEADER_CONNECTION.data() << ": " << connection_kind.data();
+  static_SB.clean() << HttpHeader::CONNECTION.data() << ": " << connection_kind.data();
 }
 
 task_t<void> finalize_http_server(const string_buffer &output) noexcept {

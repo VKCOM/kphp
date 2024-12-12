@@ -27,7 +27,6 @@ namespace {
 constexpr std::string_view HTTP_DATE = R"(D, d M Y H:i:s \G\M\T)";
 constexpr std::string_view HTTP_STATUS_PREFIX = "http/";
 constexpr std::string_view HTTP_LOCATION_HEADER_PREFIX = "location:";
-constexpr std::string_view SET_COOKIE_HEADER = "set-cookie:";
 
 bool http_status_header(std::string_view header) noexcept {
   const auto lowercase_prefix{header | std::views::take(HTTP_STATUS_PREFIX.size()) | std::views::transform([](auto c) noexcept { return std::tolower(c); })};
@@ -144,7 +143,7 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire_or_o
                     bool http_only) noexcept {
   auto &static_SB_spare{RuntimeContext::get().static_SB_spare};
 
-  static_SB_spare.clean() << SET_COOKIE_HEADER.data() << ' ' << name << '=';
+  static_SB_spare.clean() << HttpHeader::SET_COOKIE.data() << ' ' << name << '=';
   if (value.empty()) {
     static_SB_spare << "DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT";
   } else {
