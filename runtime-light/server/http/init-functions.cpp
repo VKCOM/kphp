@@ -138,38 +138,38 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
 
   std::string_view content_type{CONTENT_TYPE_APP_FORM_URLENCODED};
   // platform provides headers that are already in lowercase
-  for (auto &[header_name, header] : invoke_http.headers) {
-    const std::string_view header_name_view{header_name.c_str(), header_name.size()};
-    const std::string_view header_view{header.value.c_str(), header.value.size()};
+  for (auto &[_, h_name, h_value] : invoke_http.headers) {
+    const std::string_view h_name_view{h_name.c_str(), h_name.size()};
+    const std::string_view h_value_view{h_value.c_str(), h_value.size()};
 
     using namespace PhpServerSuperGlobalIndices;
-    if (header_name_view == HttpHeader::ACCEPT_ENCODING) {
-      if (absl::StrContains(header_view, ENCODING_GZIP)) {
+    if (h_name_view == HttpHeader::ACCEPT_ENCODING) {
+      if (absl::StrContains(h_value_view, ENCODING_GZIP)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_GZIP;
       }
-      if (absl::StrContains(header_view, ENCODING_DEFLATE)) {
+      if (absl::StrContains(h_value_view, ENCODING_DEFLATE)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
       }
-    } else if (header_name_view == HttpHeader::CONNECTION) {
-      if (header_view == CONNECTION_KEEP_ALIVE) [[likely]] {
+    } else if (h_name_view == HttpHeader::CONNECTION) {
+      if (h_value_view == CONNECTION_KEEP_ALIVE) [[likely]] {
         http_server_instance_st.connection_kind = HttpConnectionKind::KEEP_ALIVE;
-      } else if (header_view == CONNECTION_CLOSE) [[likely]] {
+      } else if (h_value_view == CONNECTION_CLOSE) [[likely]] {
         http_server_instance_st.connection_kind = HttpConnectionKind::CLOSE;
       } else {
-        php_error("unexpected connection header: %s", header_view.data());
+        php_error("unexpected connection header: %s", h_value_view.data());
       }
-    } else if (header_name_view == HttpHeader::COOKIE) {
-      process_cookie_header(header.value, superglobals);
-    } else if (header_name_view == HttpHeader::HOST) {
-      server.set_value(string{SERVER_NAME.data(), SERVER_NAME.size()}, header.value);
-    } else if (header_name_view == HttpHeader::AUTHORIZATION) {
-      process_authorization_header(header.value, superglobals);
-    } else if (header_name_view == HttpHeader::CONTENT_TYPE) {
-      content_type = header_view;
+    } else if (h_name_view == HttpHeader::COOKIE) {
+      process_cookie_header(h_value, superglobals);
+    } else if (h_name_view == HttpHeader::HOST) {
+      server.set_value(string{SERVER_NAME.data(), SERVER_NAME.size()}, h_value);
+    } else if (h_name_view == HttpHeader::AUTHORIZATION) {
+      process_authorization_header(h_value, superglobals);
+    } else if (h_name_view == HttpHeader::CONTENT_TYPE) {
+      content_type = h_value_view;
       continue;
-    } else if (header_name_view == HttpHeader::CONTENT_LENGTH) {
+    } else if (h_name_view == HttpHeader::CONTENT_LENGTH) {
       int32_t content_length{};
-      const auto [_, ec]{std::from_chars(header_view.data(), header_view.data() + header_view.size(), content_length)};
+      const auto [_, ec]{std::from_chars(h_value_view.data(), h_value_view.data() + h_value_view.size(), content_length)};
       if (ec != std::errc{} || content_length != invoke_http.body.size()) [[unlikely]] {
         php_error("content-length expected to be %d, but it's %u", content_length, invoke_http.body.size());
       }
@@ -178,14 +178,14 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
 
     // add header entries
     string key{};
-    key.reserve_at_least(HTTP_HEADER_PREFIX.size() + header_name.size());
+    key.reserve_at_least(HTTP_HEADER_PREFIX.size() + h_name.size());
     key.append(HTTP_HEADER_PREFIX.data());
-    key.append(header_name_view.data(), header_name_view.size());
+    key.append(h_name_view.data(), h_name_view.size());
     // to uppercase inplace
     for (int64_t i = HTTP_HEADER_PREFIX.size(); i < key.size(); ++i) {
       key[i] = key[i] != '-' ? std::toupper(key[i]) : '_';
     }
-    server.set_value(key, std::move(header.value));
+    server.set_value(key, std::move(h_value));
   }
 
   return content_type;
@@ -312,13 +312,13 @@ task_t<void> finalize_http_server(const string_buffer &output) noexcept {
                                  .headers = {},
                                  .body = std::move(body)};
   // fill headers
-  http_response.headers.data.data.reserve(http_server_instance_st.headers().size());
-  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.data.data),
+  http_response.headers.data.reserve(http_server_instance_st.headers().size());
+  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.data),
                  [](const auto &header_entry) noexcept {
                    const auto &[name, value]{header_entry};
                    string header_name{name.data(), static_cast<string::size_type>(name.size())};
-                   tl::httpHeaderValue header_value{.value = {value.data(), static_cast<string::size_type>(value.size())}};
-                   return tl::dictionaryField<tl::httpHeaderValue>{.key = std::move(header_name), .value = std::move(header_value)};
+                   string header_value{value.data(), static_cast<string::size_type>(value.size())};
+                   return tl::httpHeaderEntry{.is_sensitive = {}, .name = std::move(header_name), .value = std::move(header_value)};
                  });
 
   tl::TLBuffer tlb{};
