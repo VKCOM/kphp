@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
+#include <utility>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/memory-resource/resource_allocator.h"
@@ -21,7 +22,7 @@
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
-#include "runtime-light/stdlib/file/file-stream-state.h"
+#include "runtime-light/stdlib/file/file-system-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
 #include "runtime-light/stdlib/math/random-state.h"
@@ -46,22 +47,6 @@ static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
  * 4. Multishot — can accept any number of incoming streams
  */
 enum class ImageKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
-
-enum class StreamKind : uint8_t { Component, Tcp, Udp };
-
-struct InstanceState;
-
-struct StreamConnectionResult {
-  uint64_t stream_d{};
-  int32_t error_code{};
-
-  friend InstanceState;
-
-private:
-  StreamConnectionResult(uint64_t d, int32_t code) noexcept
-    : stream_d(d)
-    , error_code(code) {}
-};
 
 struct InstanceState final : vk::not_copyable {
   template<typename T>
@@ -119,12 +104,9 @@ struct InstanceState final : vk::not_copyable {
   }
   uint64_t take_incoming_stream() noexcept;
 
-  StreamConnectionResult open_stream(std::string_view, StreamKind kind) noexcept;
-  StreamConnectionResult open_stream(const string &component_name, StreamKind kind) noexcept {
-    return open_stream(std::string_view{component_name.c_str(), static_cast<size_t>(component_name.size())}, kind);
-  }
+  std::pair<uint64_t, int32_t> open_stream(std::string_view, k2::StreamKind) noexcept;
+  std::pair<uint64_t, int32_t> set_timer(std::chrono::nanoseconds) noexcept;
 
-  uint64_t set_timer(std::chrono::nanoseconds) noexcept;
   void release_stream(uint64_t) noexcept;
   void release_all_streams() noexcept;
 
@@ -150,7 +132,7 @@ struct InstanceState final : vk::not_copyable {
   CryptoInstanceState crypto_instance_state{};
   StringInstanceState string_instance_state{};
   SystemInstanceState system_instance_state{};
-  FileStreamInstanceState file_stream_instance_state{};
+  FileSystemInstanceState file_system_instance_state{};
 
   list<task_t<void>> shutdown_functions;
 

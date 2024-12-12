@@ -10,11 +10,13 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
@@ -247,8 +249,9 @@ public:
 
   void await_suspend(std::coroutine_handle<> coro) noexcept {
     state = awaitable_impl_::State::Suspend;
-    timer_d = InstanceState::get().set_timer(duration);
-    if (timer_d != INVALID_PLATFORM_DESCRIPTOR) {
+    int32_t errc{};
+    std::tie(timer_d, errc) = InstanceState::get().set_timer(duration);
+    if (errc == k2::errno_ok) {
       suspend_token = std::make_pair(coro, WaitEvent::UpdateOnTimer{.timer_d = timer_d});
     }
     CoroutineScheduler::get().suspend(suspend_token);

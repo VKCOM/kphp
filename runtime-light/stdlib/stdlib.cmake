@@ -26,10 +26,8 @@ prepend(
   string/regex-state.cpp
   string/string-state.cpp
   system/system-state.cpp
-  file/php-streams/php-streams.cpp
-  file/udp-streams/udp-streams.cpp
-  file/file-resource.cpp
-  file/file-stream-functions.cpp
-  file/file-stream-state.cpp
+  file/file-system-functions.cpp
+  file/file-system-state.cpp
+  file/underlying-resource.cpp
   time/time-functions.cpp
   zlib/zlib-functions.cpp)

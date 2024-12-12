@@ -7,12 +7,17 @@
 #include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/coroutine/task.h"
+#include "runtime-light/stdlib/file/file-system-state.h"
 
 namespace file_system_impl_ {
 
 inline constexpr char SEPARATOR = '/';
 
 } // namespace file_system_impl_
+
+inline constexpr int64_t STREAM_CLIENT_CONNECT = 1;
+inline constexpr int64_t DEFAULT_SOCKET_TIMEOUT = 60;
 
 // *** ATTENTION ***
 // For some reason KPHP's implementation of basename works incorrectly for at least following cases:
@@ -37,3 +42,17 @@ inline string f$basename(const string &path, const string &suffix = {}) noexcept
 
   return {filename_view.data(), static_cast<string::size_type>(filename_view.size())};
 }
+
+resource f$fopen(const string &filename, const string &mode, bool use_include_path = false, const resource &context = {}) noexcept;
+
+task_t<Optional<int64_t>> f$fwrite(const resource &stream, const string &text) noexcept;
+
+bool f$fflush(const resource &stream) noexcept;
+
+bool f$fclose(const resource &stream) noexcept;
+
+resource f$stream_socket_client(const string &url, mixed &error_number = FileSystemInstanceState::get().error_number_dummy,
+                                mixed &error_description = FileSystemInstanceState::get().error_description_dummy, double timeout = DEFAULT_SOCKET_TIMEOUT,
+                                int64_t flags = STREAM_CLIENT_CONNECT, const resource &context = {}) noexcept;
+
+Optional<string> f$file_get_contents(const string &stream) noexcept;
