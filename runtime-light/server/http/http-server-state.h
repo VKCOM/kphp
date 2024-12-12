@@ -20,7 +20,7 @@ namespace HttpHeader {
 
 inline constexpr std::string_view HOST = "host";
 inline constexpr std::string_view COOKIE = "cookie";
-inline constexpr std::string_view SET_COOKIE = "set-cookie:";
+inline constexpr std::string_view SET_COOKIE = "set-cookie";
 inline constexpr std::string_view CONNECTION = "connection";
 inline constexpr std::string_view CONTENT_TYPE = "content-type";
 inline constexpr std::string_view CONTENT_LENGTH = "content-length";

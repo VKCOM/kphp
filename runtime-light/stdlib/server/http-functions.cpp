@@ -143,7 +143,7 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire_or_o
                     bool http_only) noexcept {
   auto &static_SB_spare{RuntimeContext::get().static_SB_spare};
 
-  static_SB_spare.clean() << HttpHeader::SET_COOKIE.data() << ' ' << name << '=';
+  static_SB_spare.clean() << HttpHeader::SET_COOKIE.data() << ": " << name << '=';
   if (value.empty()) {
     static_SB_spare << "DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT";
   } else {
