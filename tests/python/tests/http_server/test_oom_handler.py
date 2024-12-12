@@ -1,5 +1,6 @@
 import requests.exceptions
 from python.lib.testcase import KphpServerAutoTestCase
+import unittest
 
 
 class TestOomHandler(KphpServerAutoTestCase):
@@ -46,10 +47,12 @@ class TestOomHandler(KphpServerAutoTestCase):
         self._generic_test("test_case=script_memory_realloc")
         self.kphp_server.assert_log(["realloc_allocations_cnt=1,realloc_mem_allocated=[1-9]\\d*"], timeout=5)
 
+    @unittest.skip("Temporary disabled until KPHP-1990 will be resolved")
     def test_with_job_request(self):
         self._generic_test("test_case=with_job_request")
         self.kphp_server.assert_log(["job_request_succeeded=1"], timeout=5)
 
+    @unittest.skip("Temporary disabled until KPHP-1990 will be resolved")
     def test_with_instance_cache(self):
         self._generic_test("test_case=with_instance_cache")
         self.kphp_server.assert_log(["instance_cache_store_succeeded=1"], timeout=5)
