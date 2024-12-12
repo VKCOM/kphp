@@ -1,5 +1,11 @@
 <?php
 
+// === SUPPORTED ===
+
+function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env = "") ::: void;
+
+// === UNSUPPORTED ===
+
 /** @kphp-generate-stub-class */
 interface Throwable {
     public function getMessage () ::: string;
@@ -92,6 +98,3 @@ function error_get_last() ::: mixed;
 function error_reporting ($e ::: int = TODO) ::: int;
 /** @kphp-extern-func-info generate-stub */
 function kphp_backtrace($pretty ::: bool = true) ::: string[];
-/** @kphp-extern-func-info generate-stub */
-function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env = "") ::: void;
-
