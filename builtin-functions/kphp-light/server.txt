@@ -36,3 +36,7 @@ function parse_url ($str ::: string, $component ::: int = -1): mixed;
 function header ($str ::: string, $replace ::: bool = true, $http_response_code ::: int = 0): void;
 
 function numa_get_bound_node(): int;
+
+function setcookie ($name ::: string, $value ::: string, $expire_or_options ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false): void;
+
+function setrawcookie ($name ::: string, $value ::: string, $expire_or_options ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false): void;
