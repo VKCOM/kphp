@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
     - master
+  push:
 
 env:
   HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: true
