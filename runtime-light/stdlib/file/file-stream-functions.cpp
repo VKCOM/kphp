@@ -26,6 +26,33 @@ bool is_scheme(const std::string_view &filename) noexcept {
   std::string_view::size_type delimiter{filename.find("://")};
   return delimiter != std::string_view::npos && delimiter > 0 && filename.find("://", delimiter + 3 /* +3 to skip founded :// */) == std::string_view::npos;
 }
+
+bool is_php_constant_resource(const resource &stream) noexcept {
+  if (stream.is_string()) {
+    const std::string_view &stream_view{stream.as_string().c_str(), stream.as_string().size()};
+    return resolve_kind(stream_view) == ResourceKind::Php;
+  }
+  return false;
+}
+
+bool is_valid_resource(const resource &stream) noexcept {
+  /*
+   * KPHP should support constant resources STDIN, STDOUT, STDERR that defined as raw strings @see file.txt
+   * */
+  return is_php_constant_resource(stream) || stream.is_object();
+}
+
+class_instance<ResourceWrapper> get_typed_resource(const resource &stream) noexcept {
+  if (!is_valid_resource(stream)) {
+    return {};
+  }
+  if (is_php_constant_resource(stream)) {
+    return resource_impl_::open_php_stream(std::string_view{stream.as_string().c_str(), stream.as_string().size()});
+  } else {
+    return from_mixed<class_instance<ResourceWrapper>>(stream, {});
+  }
+}
+
 } // namespace
 
 resource f$fopen(const string &filename, [[maybe_unused]] const string &mode, [[maybe_unused]] bool use_include_path,
@@ -87,22 +114,6 @@ resource f$stream_socket_client(const string &address, mixed &error_number, [[ma
   return f$to_mixed(wrapper);
 }
 
-task_t<Optional<int64_t>> f$fwrite(const resource &stream, const string &text) noexcept {
-  if (!stream.is_object()) {
-    php_warning("Try access unknown resource value %s", stream.to_string().c_str());
-    co_return false;
-  }
-
-  auto typed_resource = from_mixed<class_instance<ResourceWrapper>>(stream, {});
-  if (typed_resource.is_null()) {
-    php_warning("try to fwrite in wrong resource %s", stream.to_string().c_str());
-    co_return false;
-  }
-
-  const std::string_view text_view{text.c_str(), text.size()};
-  co_return co_await typed_resource.get()->write(text_view);
-}
-
 task_t<Optional<string>> f$file_get_contents(const string &stream) noexcept {
   const std::string_view scheme{stream.c_str(), stream.size()};
   if (!is_scheme(scheme)) {
@@ -128,15 +139,21 @@ task_t<Optional<string>> f$file_get_contents(const string &stream) noexcept {
   co_return co_await wrapper.get()->get_contents();
 }
 
-bool f$fflush(const resource &stream) noexcept {
-  if (!stream.is_object()) {
-    php_warning("Try access unknown resource value %s", stream.to_string().c_str());
-    return false;
-  }
-
-  auto typed_resource = from_mixed<class_instance<ResourceWrapper>>(stream, {});
+task_t<Optional<int64_t>> f$fwrite(const resource &stream, const string &text) noexcept {
+  class_instance<ResourceWrapper> typed_resource{get_typed_resource(stream)};
   if (typed_resource.is_null()) {
     php_warning("try to fwrite in wrong resource %s", stream.to_string().c_str());
+    co_return false;
+  }
+
+  const std::string_view text_view{text.c_str(), text.size()};
+  co_return co_await typed_resource.get()->write(text_view);
+}
+
+bool f$fflush(const resource &stream) noexcept {
+  class_instance<ResourceWrapper> typed_resource{get_typed_resource(stream)};
+  if (typed_resource.is_null()) {
+    php_warning("try to fflush in wrong resource %s", stream.to_string().c_str());
     return false;
   }
 
@@ -145,14 +162,9 @@ bool f$fflush(const resource &stream) noexcept {
 }
 
 bool f$fclose(const resource &stream) noexcept {
-  if (!stream.is_object()) {
-    php_warning("Try access unknown resource value %s", stream.to_string().c_str());
-    return false;
-  }
-
-  auto typed_resource = from_mixed<class_instance<ResourceWrapper>>(stream, {});
+  class_instance<ResourceWrapper> typed_resource{get_typed_resource(stream)};
   if (typed_resource.is_null()) {
-    php_warning("try to fwrite in wrong resource %s", stream.to_string().c_str());
+    php_warning("try to fclose in wrong resource %s", stream.to_string().c_str());
     return false;
   }
 

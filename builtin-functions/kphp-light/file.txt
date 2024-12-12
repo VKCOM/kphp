@@ -4,10 +4,9 @@
 
 define('FILE_APPEND', 1);
 
-// Compiler will call function and save result in global
-define('STDIN', fopen('php://stdin', 'r'));
-define('STDOUT', fopen('php://stdout', 'w'));
-define('STDERR', fopen('php://stdout', 'w'));
+define('STDIN', 'php://stdin');
+define('STDOUT', 'php://stdout');
+define('STDERR', 'php://stderr');
 
 function basename ($name ::: string, $suffix ::: string = ''): string;
 
