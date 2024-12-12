@@ -28,6 +28,6 @@ prepend(
   system/system-state.cpp
   file/file-system-functions.cpp
   file/file-system-state.cpp
-  file/underlying-resource.cpp
+  file/resource.cpp
   time/time-functions.cpp
   zlib/zlib-functions.cpp)

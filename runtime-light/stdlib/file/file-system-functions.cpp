@@ -8,36 +8,42 @@
 #include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/file/underlying-resource.h"
+#include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/file/resource.h"
 
 resource f$fopen(const string &filename, [[maybe_unused]] const string &mode, [[maybe_unused]] bool use_include_path,
                  [[maybe_unused]] const resource &context) noexcept {
-  auto rsrc{underlying_resource_t{{filename.c_str(), filename.size()}}};
-  if (rsrc.kind == underlying_resource_t::kind_t::unknown) [[unlikely]] {
+  underlying_resource_t rsrc{{filename.c_str(), filename.size()}};
+  if (rsrc.last_errc != k2::errno_ok) [[unlikely]] {
     return {};
   }
 
   return f$to_mixed(make_instance<underlying_resource_t>(std::move(rsrc)));
 }
 
-resource f$stream_socket_client(const string &url, mixed &error_number, [[maybe_unused]] mixed &error_description, [[maybe_unused]] double timeout,
+resource f$stream_socket_client(const string &address, mixed &error_code, [[maybe_unused]] mixed &error_message, [[maybe_unused]] double timeout,
                                 [[maybe_unused]] int64_t flags, [[maybe_unused]] const resource &context) noexcept {
   /*
    * TODO: Here should be waiting with timeout,
    *       but it can't be expressed simple ways by awaitables since we blocked inside k2
    * */
-  auto rsrc{underlying_resource_t{{url.c_str(), url.size()}}};
-  if (rsrc.kind != underlying_resource_t::kind_t::udp) [[unlikely]] {
-    error_number = static_cast<int64_t>(rsrc.last_error);
-    return {};
+  const std::string_view address_view{address.c_str(), address.size()};
+  const auto address_kind{resource_impl_::uri_to_resource_kind(address_view)};
+  if (address_kind != resource_kind::UDP) [[unlikely]] {
+    return static_cast<int64_t>(k2::errno_einval);
   }
 
+  underlying_resource_t rsrc{address_view};
+  if (rsrc.last_errc != k2::errno_ok) [[unlikely]] {
+    error_code = static_cast<int64_t>(rsrc.last_errc);
+    return {};
+  }
   return f$to_mixed(make_instance<underlying_resource_t>(std::move(rsrc)));
 }
 
 Optional<string> f$file_get_contents(const string &stream) noexcept {
-  auto rsrc{underlying_resource_t{{stream.c_str(), stream.size()}}};
-  if (rsrc.kind == underlying_resource_t::kind_t::unknown) [[unlikely]] {
+  underlying_resource_t rsrc{{stream.c_str(), stream.size()}};
+  if (rsrc.last_errc != k2::errno_ok) [[unlikely]] {
     return false;
   }
   return rsrc.get_contents();

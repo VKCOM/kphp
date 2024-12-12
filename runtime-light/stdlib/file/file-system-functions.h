@@ -9,6 +9,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/file/file-system-state.h"
+#include "runtime-light/stdlib/file/resource.h"
 
 namespace file_system_impl_ {
 
@@ -51,8 +52,8 @@ bool f$fflush(const resource &stream) noexcept;
 
 bool f$fclose(const resource &stream) noexcept;
 
-resource f$stream_socket_client(const string &url, mixed &error_number = FileSystemInstanceState::get().error_number_dummy,
-                                mixed &error_description = FileSystemInstanceState::get().error_description_dummy, double timeout = DEFAULT_SOCKET_TIMEOUT,
+resource f$stream_socket_client(const string &address, mixed &error_code = FileSystemInstanceState::get().error_number_dummy,
+                                mixed &error_message = FileSystemInstanceState::get().error_description_dummy, double timeout = DEFAULT_SOCKET_TIMEOUT,
                                 int64_t flags = STREAM_CLIENT_CONNECT, const resource &context = {}) noexcept;
 
 Optional<string> f$file_get_contents(const string &stream) noexcept;
