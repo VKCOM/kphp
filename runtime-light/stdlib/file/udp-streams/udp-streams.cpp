@@ -13,7 +13,7 @@ std::pair<class_instance<ResourceWrapper>, int32_t> open_udp_stream(const std::s
   auto connection{InstanceState::get().open_stream(url, StreamKind::Udp)};
   class_instance<ResourceWrapper> wrapper;
   if (connection.stream_d != INVALID_PLATFORM_DESCRIPTOR) {
-    wrapper.alloc(ResourceKind::Udp, connection.stream_d);
+    wrapper.alloc(ResourceKind::Udp, string(url.data()), connection.stream_d);
   }
   return {wrapper, connection.error_code};
 }

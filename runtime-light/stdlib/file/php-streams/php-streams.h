@@ -11,5 +11,9 @@ namespace resource_impl_ {
 
 inline constexpr std::string_view PHP_STREAMS_PREFIX = "php://";
 
+inline constexpr std::string_view STDERR_NAME = "stderr";
+inline constexpr std::string_view STDOUT_NAME = "stdout";
+inline constexpr std::string_view STDIN_NAME = "stdin";
+
 class_instance<ResourceWrapper> open_php_stream(const std::string_view scheme) noexcept;
 } // namespace resource_impl_

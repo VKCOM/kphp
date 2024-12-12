@@ -20,7 +20,7 @@ resource f$stream_socket_client(const string &url, mixed &error_number = FileStr
                                 mixed &error_description = FileStreamInstanceState::get().error_description_dummy, double timeout = DEFAULT_SOCKET_TIMEOUT,
                                 int64_t flags = STREAM_CLIENT_CONNECT, const resource &context = mixed()) noexcept;
 
-task_t<Optional<string>> f$file_get_contents(const string &stream) noexcept;
+Optional<string> f$file_get_contents(const string &stream) noexcept;
 
 task_t<Optional<int64_t>> f$fwrite(const resource &stream, const string &text) noexcept;
 

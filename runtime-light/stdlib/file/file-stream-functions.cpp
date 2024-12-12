@@ -114,11 +114,11 @@ resource f$stream_socket_client(const string &address, mixed &error_number, [[ma
   return f$to_mixed(wrapper);
 }
 
-task_t<Optional<string>> f$file_get_contents(const string &stream) noexcept {
+Optional<string> f$file_get_contents(const string &stream) noexcept {
   const std::string_view scheme{stream.c_str(), stream.size()};
   if (!is_scheme(scheme)) {
     php_warning("Work with local files unsupported");
-    co_return false;
+    return false;
   }
 
   ResourceKind kind{resolve_kind(scheme)};
@@ -129,14 +129,14 @@ task_t<Optional<string>> f$file_get_contents(const string &stream) noexcept {
       break;
     default:
       php_warning("Cannot perform file_get_contents on stream %s", scheme.data());
-      co_return false;
+      return false;
   }
 
   if (wrapper.is_null()) {
-    co_return false;
+    return false;
   }
 
-  co_return co_await wrapper.get()->get_contents();
+  return wrapper.get()->get_contents();
 }
 
 task_t<Optional<int64_t>> f$fwrite(const resource &stream, const string &text) noexcept {

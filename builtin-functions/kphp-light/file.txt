@@ -21,7 +21,6 @@ function fwrite ($stream ::: mixed, $text ::: string) ::: int | false;
 function fflush ($stream ::: mixed) ::: bool;
 function fclose ($stream ::: mixed) ::: bool;
 
-/** @kphp-extern-func-info interruptible */
 function file_get_contents ($name ::: string) ::: string | false;
 
 // === UNSUPPORTED ===

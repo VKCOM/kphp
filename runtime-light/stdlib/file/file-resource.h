@@ -17,10 +17,12 @@ enum class ResourceKind {
 
 struct ResourceWrapper : public refcountable_polymorphic_php_classes<may_be_mixed_base> {
   const ResourceKind kind;
+  const string url;
   uint64_t stream_d{};
 
-  ResourceWrapper(ResourceKind k, uint64_t d)
+  ResourceWrapper(ResourceKind k, const string &u, uint64_t d)
     : kind(k)
+    , url(u)
     , stream_d(d) {}
 
   const char *get_class() const noexcept override {
@@ -28,7 +30,7 @@ struct ResourceWrapper : public refcountable_polymorphic_php_classes<may_be_mixe
   }
 
   task_t<int64_t> write(const std::string_view text) const noexcept;
-  task_t<Optional<string>> get_contents() const noexcept;
+  Optional<string> get_contents() const noexcept;
   void flush() noexcept;
   void close() noexcept;
 
