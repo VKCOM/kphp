@@ -59,8 +59,6 @@ function memory_get_static_usage() ::: int;
 function memory_get_detailed_stats() ::: int[];
 
 /** @kphp-extern-func-info generate-stub */
-function posix_getpid() ::: int;
-/** @kphp-extern-func-info generate-stub */
 function posix_getuid() ::: int;
 /** @kphp-extern-func-info generate-stub */
 function posix_getpwuid($uid ::: int) ::: mixed[] | false;
