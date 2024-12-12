@@ -11,7 +11,6 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/streams/streams.h"
 
 namespace resource_impl_ {
@@ -24,7 +23,7 @@ inline constexpr std::string_view UDP_SCHEME_PREFIX = "udp://";
 } // namespace resource_impl_
 
 class underlying_resource_t : public refcountable_polymorphic_php_classes<may_be_mixed_base> {
-  uint64_t stream_d_{INVALID_PLATFORM_DESCRIPTOR};
+  uint64_t stream_d_{k2::INVALID_PLATFORM_DESCRIPTOR};
 
 public:
   enum class kind_t : uint8_t {

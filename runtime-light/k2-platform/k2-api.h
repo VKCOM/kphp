@@ -25,6 +25,8 @@ inline constexpr size_t DEFAULT_MEMORY_ALIGN = 16;
 inline constexpr int32_t errno_ok = 0;
 inline constexpr int32_t errno_einval = EINVAL;
 
+inline constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
+
 enum class StreamKind : uint8_t { Component, UDP, TCP };
 
 using IOStatus = IOStatus;

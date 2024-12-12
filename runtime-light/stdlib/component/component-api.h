@@ -11,17 +11,18 @@
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/instance-state.h"
 
 // === ComponentQuery =============================================================================
 
 struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery> {
-  uint64_t stream_d{INVALID_PLATFORM_DESCRIPTOR};
+  uint64_t stream_d{k2::INVALID_PLATFORM_DESCRIPTOR};
 
   explicit constexpr C$ComponentQuery(uint64_t stream_d_) noexcept
     : stream_d(stream_d_) {}
   constexpr C$ComponentQuery(C$ComponentQuery &&other) noexcept
-    : stream_d(std::exchange(other.stream_d, INVALID_PLATFORM_DESCRIPTOR)) {};
+    : stream_d(std::exchange(other.stream_d, k2::INVALID_PLATFORM_DESCRIPTOR)) {};
 
   C$ComponentQuery(const C$ComponentQuery &) = delete;
   C$ComponentQuery &operator=(const C$ComponentQuery &) = delete;

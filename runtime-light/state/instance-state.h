@@ -33,8 +33,6 @@
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 
-inline constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
-
 // Coroutine scheduler type. Change it here if you want to use another scheduler
 using CoroutineScheduler = SimpleCoroutineScheduler;
 static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
@@ -143,7 +141,7 @@ private:
   shutdown_state shutdown_state_{shutdown_state::not_started};
 
   ImageKind image_kind_{ImageKind::Invalid};
-  uint64_t standard_stream_{INVALID_PLATFORM_DESCRIPTOR};
+  uint64_t standard_stream_{k2::INVALID_PLATFORM_DESCRIPTOR};
   deque<uint64_t> incoming_streams_;
   unordered_set<uint64_t> opened_streams_;
   unordered_set<uint64_t> pending_updates_;

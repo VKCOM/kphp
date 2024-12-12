@@ -11,6 +11,7 @@
 #include <utility>
 #include <variant>
 
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/instance-state.h"
 
 // === SimpleCoroutineScheduler ===================================================================
@@ -42,7 +43,7 @@ ScheduleStatus SimpleCoroutineScheduler::scheduleOnIncomingStream() noexcept {
 }
 
 ScheduleStatus SimpleCoroutineScheduler::scheduleOnStreamUpdate(uint64_t stream_d) noexcept {
-  if (stream_d == INVALID_PLATFORM_DESCRIPTOR) {
+  if (stream_d == k2::INVALID_PLATFORM_DESCRIPTOR) {
     return ScheduleStatus::Error;
   } else if (const auto it_token{awaiting_for_update_tokens.find(stream_d)}; it_token != awaiting_for_update_tokens.cend()) {
     const auto token{it_token->second};
@@ -90,12 +91,12 @@ void SimpleCoroutineScheduler::suspend(SuspendToken token) noexcept {
       } else if constexpr (std::is_same_v<event_t, WaitEvent::IncomingStream>) {
         awaiting_for_stream_tokens.push_back(token);
       } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnStream>) {
-        if (event.stream_d == INVALID_PLATFORM_DESCRIPTOR) {
+        if (event.stream_d == k2::INVALID_PLATFORM_DESCRIPTOR) {
           return;
         }
         awaiting_for_update_tokens.emplace(event.stream_d, token);
       } else if constexpr (std::is_same_v<event_t, WaitEvent::UpdateOnTimer>) {
-        if (event.timer_d == INVALID_PLATFORM_DESCRIPTOR) {
+        if (event.timer_d == k2::INVALID_PLATFORM_DESCRIPTOR) {
           return;
         }
         awaiting_for_update_tokens.emplace(event.timer_d, token);

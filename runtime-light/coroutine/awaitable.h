@@ -68,7 +68,7 @@ public:
     , suspend_token(std::noop_coroutine(), WaitEvent::UpdateOnStream{.stream_d = stream_d}) {}
 
   wait_for_update_t(wait_for_update_t &&other) noexcept
-    : stream_d(std::exchange(other.stream_d, INVALID_PLATFORM_DESCRIPTOR))
+    : stream_d(std::exchange(other.stream_d, k2::INVALID_PLATFORM_DESCRIPTOR))
     , suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
     , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
 
@@ -148,7 +148,7 @@ public:
     state = awaitable_impl_::State::End;
     fork_id_watcher_t::await_resume();
     const auto incoming_stream_d{InstanceState::get().take_incoming_stream()};
-    php_assert(incoming_stream_d != INVALID_PLATFORM_DESCRIPTOR);
+    php_assert(incoming_stream_d != k2::INVALID_PLATFORM_DESCRIPTOR);
     return incoming_stream_d;
   }
 
@@ -215,7 +215,7 @@ public:
 
 class wait_for_timer_t : awaitable_impl_::fork_id_watcher_t {
   std::chrono::nanoseconds duration;
-  uint64_t timer_d{INVALID_PLATFORM_DESCRIPTOR};
+  uint64_t timer_d{k2::INVALID_PLATFORM_DESCRIPTOR};
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
   awaitable_impl_::State state{awaitable_impl_::State::Init};
 
@@ -225,7 +225,7 @@ public:
 
   wait_for_timer_t(wait_for_timer_t &&other) noexcept
     : duration(std::exchange(other.duration, std::chrono::nanoseconds{0}))
-    , timer_d(std::exchange(other.timer_d, INVALID_PLATFORM_DESCRIPTOR))
+    , timer_d(std::exchange(other.timer_d, k2::INVALID_PLATFORM_DESCRIPTOR))
     , suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
     , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
 
@@ -237,7 +237,7 @@ public:
     if (state == awaitable_impl_::State::Suspend) {
       cancel();
     }
-    if (timer_d != INVALID_PLATFORM_DESCRIPTOR) {
+    if (timer_d != k2::INVALID_PLATFORM_DESCRIPTOR) {
       InstanceState::get().release_stream(timer_d);
     }
   }

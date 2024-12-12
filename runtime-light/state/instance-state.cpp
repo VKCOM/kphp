@@ -167,7 +167,7 @@ void InstanceState::process_platform_updates() noexcept {
 uint64_t InstanceState::take_incoming_stream() noexcept {
   if (incoming_streams_.empty()) {
     php_warning("can't take incoming stream cause we don't have them");
-    return INVALID_PLATFORM_DESCRIPTOR;
+    return k2::INVALID_PLATFORM_DESCRIPTOR;
   }
   const auto stream_d{incoming_streams_.front()};
   incoming_streams_.pop_front();
@@ -217,7 +217,7 @@ std::pair<uint64_t, int32_t> InstanceState::set_timer(std::chrono::nanoseconds d
 
 void InstanceState::release_stream(uint64_t stream_d) noexcept {
   if (stream_d == standard_stream_) {
-    standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
+    standard_stream_ = k2::INVALID_PLATFORM_DESCRIPTOR;
   }
   opened_streams_.erase(stream_d);
   pending_updates_.erase(stream_d); // also erase pending updates if exists
@@ -226,7 +226,7 @@ void InstanceState::release_stream(uint64_t stream_d) noexcept {
 }
 
 void InstanceState::release_all_streams() noexcept {
-  standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
+  standard_stream_ = k2::INVALID_PLATFORM_DESCRIPTOR;
   for (const auto stream_d : opened_streams_) {
     k2::free_descriptor(stream_d);
     php_debug("released a stream %" PRIu64, stream_d);
