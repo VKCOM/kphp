@@ -344,6 +344,10 @@ static void header(const char *str, int str_len, bool replace = true, int http_r
   }
 }
 
+bool f$headers_sent() {
+  return headers_sent;
+}
+
 void f$header(const string &str, bool replace, int64_t http_response_code) {
   header(str.c_str(), (int)str.size(), replace, static_cast<int32_t>(http_response_code));
 }
@@ -568,9 +572,11 @@ static int ob_merge_buffers() {
 void f$flush() {
   php_assert(ob_cur_buffer >= 0 && php_worker.has_value());
   // Run custom headers handler before body processing
-  if (headers_custom_handler_function && !headers_sent && query_type == QUERY_TYPE_HTTP) {
+  if (!headers_sent && query_type == QUERY_TYPE_HTTP) {
     headers_sent = true;
-    headers_custom_handler_function();
+    if (headers_custom_handler_function) {
+      headers_custom_handler_function();
+    }
   }
   string_buffer const * http_body = compress_http_query_body(&oub[ob_system_level]);
   string_buffer const * http_headers = nullptr;
@@ -586,9 +592,11 @@ void f$flush() {
 
 void f$fastcgi_finish_request(int64_t exit_code) {
   // Run custom headers handler before body processing
-  if (headers_custom_handler_function && !headers_sent && query_type == QUERY_TYPE_HTTP) {
+  if (!headers_sent && query_type == QUERY_TYPE_HTTP) {
     headers_sent = true;
-    headers_custom_handler_function();
+    if (headers_custom_handler_function) {
+      headers_custom_handler_function();
+    }
   }
   int ob_total_buffer = ob_merge_buffers();
   if (php_worker.has_value() && php_worker->flushed_http_connection) {
