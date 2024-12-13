@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cctype>
 #include <charconv>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <iterator>
@@ -25,6 +26,7 @@
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/server/http-functions.h"
+#include "runtime-light/stdlib/zlib/zlib-functions.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -303,10 +305,26 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
 task_t<void> finalize_http_server(const string_buffer &output) noexcept {
   auto &http_server_instance_st{HttpServerInstanceState::get()};
 
-  // TODO: compress body if needed
-  string body{http_server_instance_st.http_method != HttpMethod::HEAD ? output.str() : string{}};
-  const auto status_code{http_server_instance_st.status_code == HttpStatus::NO_STATUS ? HttpStatus::OK : http_server_instance_st.status_code};
+  string body{};
+  if (http_server_instance_st.http_method != HttpMethod::HEAD) {
+    body = output.str();
+    const bool gzip_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)};
+    const bool deflate_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};
+    // compress body if needed
+    if (gzip_encoded || deflate_encoded) {
+      auto encoded_body{zlib::zlib_encode({body.c_str(), static_cast<size_t>(body.size())}, zlib::DEFAULT_COMPRESSION_LEVEL,
+                                          gzip_encoded ? zlib::ENCODING_GZIP : zlib::ENCODING_DEFLATE)};
+      if (encoded_body.has_value()) [[likely]] {
+        body = std::move(encoded_body.val());
 
+        auto &static_SB{RuntimeContext::get().static_SB};
+        static_SB.clean() << HttpHeader::CONTENT_ENCODING.data() << ": " << (gzip_encoded ? ENCODING_GZIP.data() : ENCODING_DEFLATE.data());
+        header({static_SB.c_str(), static_SB.size()}, true, HttpStatus::NO_STATUS);
+      }
+    }
+  }
+
+  const auto status_code{http_server_instance_st.status_code == HttpStatus::NO_STATUS ? HttpStatus::OK : http_server_instance_st.status_code};
   tl::httpResponse http_response{.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11},
                                  .status_code = static_cast<int32_t>(status_code),
                                  .headers = {},
