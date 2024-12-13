@@ -11,7 +11,7 @@ function set_json_log_on_timeout_mode(bool $enabled) ::: void;
 /** @kphp-extern-func-info generate-stub */
 function set_json_log_demangle_stacktrace(bool $enable) ::: void;
 
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info */
 function set_migration_php8_warning ($mask ::: int) ::: void;
 
 /** @kphp-extern-func-info generate-stub */
