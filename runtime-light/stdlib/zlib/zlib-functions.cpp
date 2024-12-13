@@ -65,7 +65,7 @@ Optional<string> zlib_encode(std::span<const char> data, int64_t level, int64_t 
   }
 
   auto &runtime_ctx{RuntimeContext::get()};
-  auto out_size_upper_bound{static_cast<size_t>(compressBound(data.size()))};
+  auto out_size_upper_bound{static_cast<size_t>(deflateBound(std::addressof(zstrm), data.size()))};
   runtime_ctx.static_SB.clean().reserve(out_size_upper_bound);
 
   zstrm.avail_in = data.size();
