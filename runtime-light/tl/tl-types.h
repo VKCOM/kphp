@@ -454,19 +454,23 @@ public:
   }
 };
 
-struct httpHeaderValue final {
+struct httpHeaderEntry final {
   Bool is_sensitive{};
+  string name;
   string value;
 
   bool fetch(TLBuffer &tlb) noexcept {
     const auto ok{is_sensitive.fetch(tlb)};
+    const auto name_view{tlb.fetch_string()};
     const auto value_view{tlb.fetch_string()};
+    name = {name_view.data(), static_cast<string::size_type>(name_view.size())};
     value = {value_view.data(), static_cast<string::size_type>(value_view.size())};
     return ok;
   }
 
   void store(TLBuffer &tlb) const noexcept {
     is_sensitive.store(tlb);
+    tlb.store_string({name.c_str(), static_cast<size_t>(name.size())});
     tlb.store_string({value.c_str(), static_cast<size_t>(value.size())});
   }
 };
@@ -498,7 +502,7 @@ struct httpConnection final {
 struct httpResponse final {
   HttpVersion version{};
   int32_t status_code{};
-  dictionary<httpHeaderValue> headers{};
+  vector<httpHeaderEntry> headers{};
   string body;
 
   void store(TLBuffer &tlb) const noexcept {

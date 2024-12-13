@@ -17,11 +17,14 @@
 #include "absl/strings/ascii.h"
 #include "absl/strings/str_split.h"
 
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/server/http/http-server-state.h"
+#include "runtime-light/stdlib/time/time-functions.h"
 
 namespace {
 
+constexpr std::string_view HTTP_DATE = R"(D, d M Y H:i:s \G\M\T)";
 constexpr std::string_view HTTP_STATUS_PREFIX = "http/";
 constexpr std::string_view HTTP_LOCATION_HEADER_PREFIX = "location:";
 
@@ -134,4 +137,32 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
   if (!header_view.empty() && response_code != HttpStatus::NO_STATUS) {
     http_server_instance_st.status_code = response_code;
   }
+}
+
+void f$setrawcookie(const string &name, const string &value, int64_t expire_or_options, const string &path, const string &domain, bool secure,
+                    bool http_only) noexcept {
+  auto &static_SB_spare{RuntimeContext::get().static_SB_spare};
+
+  static_SB_spare.clean() << HttpHeader::SET_COOKIE.data() << ": " << name << '=';
+  if (value.empty()) {
+    static_SB_spare << "DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+  } else {
+    static_SB_spare << value;
+    if (expire_or_options != 0) {
+      static_SB_spare << "; expires=" << f$gmdate({HTTP_DATE.data(), HTTP_DATE.size()}, expire_or_options);
+    }
+  }
+  if (!path.empty()) {
+    static_SB_spare << "; path=" << path;
+  }
+  if (!domain.empty()) {
+    static_SB_spare << "; domain=" << domain;
+  }
+  if (secure) {
+    static_SB_spare << "; secure";
+  }
+  if (http_only) {
+    static_SB_spare << "; HttpOnly";
+  }
+  header({static_SB_spare.c_str(), static_SB_spare.size()}, false, HttpStatus::NO_STATUS);
 }

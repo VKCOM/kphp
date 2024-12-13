@@ -16,6 +16,19 @@
 
 enum class HttpMethod : uint8_t { GET, POST, HEAD, OTHER };
 
+namespace HttpHeader {
+
+inline constexpr std::string_view HOST = "host";
+inline constexpr std::string_view COOKIE = "cookie";
+inline constexpr std::string_view SET_COOKIE = "set-cookie";
+inline constexpr std::string_view CONNECTION = "connection";
+inline constexpr std::string_view CONTENT_TYPE = "content-type";
+inline constexpr std::string_view CONTENT_LENGTH = "content-length";
+inline constexpr std::string_view AUTHORIZATION = "authorization";
+inline constexpr std::string_view ACCEPT_ENCODING = "accept-encoding";
+
+} // namespace HttpHeader
+
 enum class HttpConnectionKind : uint8_t { KEEP_ALIVE, CLOSE };
 
 enum HttpStatus : uint16_t {

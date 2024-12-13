@@ -121,7 +121,7 @@ public:
   HttpVersion version{};
   string method;
   httpUri uri{};
-  dictionary<httpHeaderValue> headers{};
+  vector<httpHeaderEntry> headers{};
   string body;
 
   bool fetch(TLBuffer &tlb) noexcept;
