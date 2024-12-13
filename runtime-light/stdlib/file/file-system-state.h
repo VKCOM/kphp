@@ -7,9 +7,9 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
 
-struct FileStreamInstanceState final : private vk::not_copyable {
+struct FileSystemInstanceState final : private vk::not_copyable {
   mixed error_number_dummy;
   mixed error_description_dummy;
 
-  static FileStreamInstanceState &get() noexcept;
+  static FileSystemInstanceState &get() noexcept;
 };

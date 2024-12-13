@@ -26,6 +26,8 @@ prepend(
   string/regex-state.cpp
   string/string-state.cpp
   system/system-state.cpp
-  file/file-stream-state.cpp
+  file/file-system-functions.cpp
+  file/file-system-state.cpp
+  file/resource.cpp
   time/time-functions.cpp
   zlib/zlib-functions.cpp)

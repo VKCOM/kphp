@@ -13,6 +13,7 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/tl/tl-core.h"
@@ -42,7 +43,7 @@ mixed extract_confdata_value(tl::confdataValue &&confdata_value) noexcept {
 // TODO: the performance of this implementation can be enhanced. rework it when the platform has specific API for that
 bool f$is_confdata_loaded() noexcept {
   auto &instance_st{InstanceState::get()};
-  if (const auto stream_d{instance_st.open_stream(CONFDATA_COMPONENT_NAME)}; stream_d != INVALID_PLATFORM_DESCRIPTOR) {
+  if (const auto [stream_d, errc]{instance_st.open_stream(CONFDATA_COMPONENT_NAME, k2::StreamKind::Component)}; errc == k2::errno_ok) {
     instance_st.release_stream(stream_d);
     return true;
   }

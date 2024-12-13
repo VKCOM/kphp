@@ -80,7 +80,7 @@ task_t<uint64_t> init_kphp_server_component() noexcept {
       // release standard stream in case of a no reply job worker since we don't need that stream anymore
       if (JobWorkerServerInstanceState::get().kind == JobWorkerServerInstanceState::Kind::NoReply) {
         InstanceState::get().release_stream(stream_d);
-        stream_d = INVALID_PLATFORM_DESCRIPTOR;
+        stream_d = k2::INVALID_PLATFORM_DESCRIPTOR;
       }
       break;
     }

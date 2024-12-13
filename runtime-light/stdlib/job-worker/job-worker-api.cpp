@@ -130,7 +130,7 @@ task_t<int64_t> f$job_worker_store_response(string response) noexcept {
   } else if (jw_server_st.state == JobWorkerServerInstanceState::State::Replied) { // it's the first attempt to reply
     php_warning("couldn't store job worker response: multiple stores are forbidden");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (instance_st.standard_stream() == INVALID_PLATFORM_DESCRIPTOR) { // we have a stream to write into
+  } else if (instance_st.standard_stream() == k2::INVALID_PLATFORM_DESCRIPTOR) { // we have a stream to write into
     php_warning("couldn't store job worker response: no standard stream");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
   } else if (response.empty()) { // we have a response to reply

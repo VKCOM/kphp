@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
+#include <utility>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/memory-resource/resource_allocator.h"
@@ -21,7 +22,7 @@
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
-#include "runtime-light/stdlib/file/file-stream-state.h"
+#include "runtime-light/stdlib/file/file-system-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
 #include "runtime-light/stdlib/math/random-state.h"
@@ -31,8 +32,6 @@
 #include "runtime-light/stdlib/string/regex-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
-
-inline constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
 
 // Coroutine scheduler type. Change it here if you want to use another scheduler
 using CoroutineScheduler = SimpleCoroutineScheduler;
@@ -103,12 +102,9 @@ struct InstanceState final : vk::not_copyable {
   }
   uint64_t take_incoming_stream() noexcept;
 
-  uint64_t open_stream(std::string_view) noexcept;
-  uint64_t open_stream(const string &component_name) noexcept {
-    return open_stream(std::string_view{component_name.c_str(), static_cast<size_t>(component_name.size())});
-  }
+  std::pair<uint64_t, int32_t> open_stream(std::string_view, k2::StreamKind) noexcept;
+  std::pair<uint64_t, int32_t> set_timer(std::chrono::nanoseconds) noexcept;
 
-  uint64_t set_timer(std::chrono::nanoseconds) noexcept;
   void release_stream(uint64_t) noexcept;
   void release_all_streams() noexcept;
 
@@ -134,7 +130,7 @@ struct InstanceState final : vk::not_copyable {
   CryptoInstanceState crypto_instance_state{};
   StringInstanceState string_instance_state{};
   SystemInstanceState system_instance_state{};
-  FileStreamInstanceState file_stream_instance_state{};
+  FileSystemInstanceState file_system_instance_state{};
 
   list<task_t<void>> shutdown_functions;
 
@@ -145,7 +141,7 @@ private:
   shutdown_state shutdown_state_{shutdown_state::not_started};
 
   ImageKind image_kind_{ImageKind::Invalid};
-  uint64_t standard_stream_{INVALID_PLATFORM_DESCRIPTOR};
+  uint64_t standard_stream_{k2::INVALID_PLATFORM_DESCRIPTOR};
   deque<uint64_t> incoming_streams_;
   unordered_set<uint64_t> opened_streams_;
   unordered_set<uint64_t> pending_updates_;

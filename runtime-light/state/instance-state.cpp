@@ -167,7 +167,7 @@ void InstanceState::process_platform_updates() noexcept {
 uint64_t InstanceState::take_incoming_stream() noexcept {
   if (incoming_streams_.empty()) {
     php_warning("can't take incoming stream cause we don't have them");
-    return INVALID_PLATFORM_DESCRIPTOR;
+    return k2::INVALID_PLATFORM_DESCRIPTOR;
   }
   const auto stream_d{incoming_streams_.front()};
   incoming_streams_.pop_front();
@@ -175,31 +175,49 @@ uint64_t InstanceState::take_incoming_stream() noexcept {
   return stream_d;
 }
 
-uint64_t InstanceState::open_stream(std::string_view component_name_view) noexcept {
+std::pair<uint64_t, int32_t> InstanceState::open_stream(std::string_view component_name, k2::StreamKind stream_kind) noexcept {
   uint64_t stream_d{};
-  if (const auto open_stream_res{k2::open(std::addressof(stream_d), component_name_view.size(), component_name_view.data())}; open_stream_res != k2::errno_ok) {
-    php_warning("can't open stream to %s", component_name_view.data());
-    return INVALID_PLATFORM_DESCRIPTOR;
+  int32_t error_code{};
+  switch (stream_kind) {
+    case k2::StreamKind::Component:
+      error_code = k2::open(std::addressof(stream_d), component_name.size(), component_name.data());
+      break;
+    case k2::StreamKind::TCP:
+      error_code = k2::tcp_connect(std::addressof(stream_d), component_name.data(), component_name.size());
+      break;
+    case k2::StreamKind::UDP:
+      error_code = k2::udp_connect(std::addressof(stream_d), component_name.data(), component_name.size());
+      break;
+    default:
+      error_code = k2::errno_einval;
+      break;
   }
-  opened_streams_.insert(stream_d);
-  php_debug("opened a stream %" PRIu64 " to %s", stream_d, component_name_view.data());
-  return stream_d;
+
+  if (error_code == k2::errno_ok) [[likely]] {
+    opened_streams_.insert(stream_d);
+    php_debug("opened a stream %" PRIu64 " to %s", stream_d, component_name.data());
+  } else {
+    php_warning("can't open stream to %s", component_name.data());
+  }
+  return {stream_d, error_code};
 }
 
-uint64_t InstanceState::set_timer(std::chrono::nanoseconds duration) noexcept {
+std::pair<uint64_t, int32_t> InstanceState::set_timer(std::chrono::nanoseconds duration) noexcept {
   uint64_t timer_d{};
-  if (const auto set_timer_res{k2::new_timer(std::addressof(timer_d), static_cast<uint64_t>(duration.count()))}; set_timer_res != k2::errno_ok) {
+  int32_t error_code{k2::new_timer(std::addressof(timer_d), static_cast<uint64_t>(duration.count()))};
+
+  if (error_code == k2::errno_ok) [[likely]] {
+    opened_streams_.insert(timer_d);
+    php_debug("set timer %" PRIu64 " for %.9f sec", timer_d, std::chrono::duration<double>(duration).count());
+  } else {
     php_warning("can't set timer for %.9f sec", std::chrono::duration<double>(duration).count());
-    return INVALID_PLATFORM_DESCRIPTOR;
   }
-  opened_streams_.insert(timer_d);
-  php_debug("set timer %" PRIu64 " for %.9f sec", timer_d, std::chrono::duration<double>(duration).count());
-  return timer_d;
+  return {timer_d, error_code};
 }
 
 void InstanceState::release_stream(uint64_t stream_d) noexcept {
   if (stream_d == standard_stream_) {
-    standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
+    standard_stream_ = k2::INVALID_PLATFORM_DESCRIPTOR;
   }
   opened_streams_.erase(stream_d);
   pending_updates_.erase(stream_d); // also erase pending updates if exists
@@ -208,7 +226,7 @@ void InstanceState::release_stream(uint64_t stream_d) noexcept {
 }
 
 void InstanceState::release_all_streams() noexcept {
-  standard_stream_ = INVALID_PLATFORM_DESCRIPTOR;
+  standard_stream_ = k2::INVALID_PLATFORM_DESCRIPTOR;
   for (const auto stream_d : opened_streams_) {
     k2::free_descriptor(stream_d);
     php_debug("released a stream %" PRIu64, stream_d);

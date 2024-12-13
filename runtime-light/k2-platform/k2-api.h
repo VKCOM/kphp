@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cerrno>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -23,6 +24,11 @@ inline constexpr size_t DEFAULT_MEMORY_ALIGN = 16;
 } // namespace k2_impl_
 
 inline constexpr int32_t errno_ok = 0;
+inline constexpr int32_t errno_einval = EINVAL;
+
+inline constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
+
+enum class StreamKind : uint8_t { Component, UDP, TCP };
 
 using IOStatus = IOStatus;
 
@@ -170,8 +176,16 @@ inline auto arg_fetch(uint32_t arg_num) noexcept {
   key_buffer[key_len] = '\0';
   value_buffer[value_len] = '\0';
 
-  return std::make_pair(std::unique_ptr<char, decltype(std::addressof(k2::free))>{key_buffer, std::addressof(k2::free)},
-                        std::unique_ptr<char, decltype(std::addressof(k2::free))>{value_buffer, std::addressof(k2::free)});
+  return std::make_pair(std::unique_ptr<char, decltype(std::addressof(k2::free))>{key_buffer, k2::free},
+                        std::unique_ptr<char, decltype(std::addressof(k2::free))>{value_buffer, k2::free});
+}
+
+inline int32_t udp_connect(uint64_t *socket_d, const char *host, size_t host_len) noexcept {
+  return k2_udp_connect(socket_d, host, host_len);
+}
+
+inline int32_t tcp_connect(uint64_t *socket_d, const char *host, size_t host_len) noexcept {
+  return k2_tcp_connect(socket_d, host, host_len);
 }
 
 } // namespace k2
