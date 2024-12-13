@@ -585,6 +585,13 @@ class CalcBadVars {
     }
     for (const auto &func : call_graph.functions) {
       func->can_be_implicitly_interrupted_by_other_resumable = into_resumable[func];
+      if (unlikely(func->class_id && func->class_id->is_required_interface && into_resumable[func])) {
+        std::string func_name = func->name;
+        std::replace(func_name.begin(), func_name.end(), '$', ':');
+        std::vector<std::string> chain;
+        kphp_error(false, fmt_format("{} cannot call resumable inside({})", func_name, to_parents[func]->as_human_readable()).c_str());
+      }
+
       if (from_resumable[func] && into_resumable[func]) {
         func->is_resumable = true;
         func->fork_prev = from_parents[func];
