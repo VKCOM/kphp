@@ -150,7 +150,8 @@ class KphpBuilder:
         kphp_build_stderr, fake_stderr = self._wait_proc(kphp_compilation_proc, timeout=1200)
         if fake_stderr:
             kphp_build_stderr = (kphp_build_stderr or b'') + fake_stderr
-
+        print("\nLog:", kphp_build_stderr, "\n")
+        print("\nReturn code:", kphp_compilation_proc.returncode, "\n")
         self._kphp_build_sanitizer_log_artifact = self._move_sanitizer_logs_to_artifacts(
             sanitizer_glob_mask, kphp_compilation_proc, sanitizer_log_name)
         ignore_stderr = error_can_be_ignored(
