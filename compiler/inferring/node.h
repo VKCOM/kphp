@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "common/wrappers/copyable-atomic.h"
+#include <atomic>
 #include <string>
 #include <forward_list>
 
@@ -39,11 +41,11 @@ protected:
     recalc_bit_at_least_once = 16,
   };
 
-  const TypeData *type_{TypeData::get_type(tp_any)};
+  vk::copyable_atomic<const TypeData *> type_{TypeData::get_type(tp_any)};
 
   // this field is a finite-state automation for multithreading synchronization, see enum above
   // if should be placed here (after TypeData*) to make it join with the next int field in memory
-  int recalc_state_{recalc_st_waiting};
+  vk::copyable_atomic<int> recalc_state_{recalc_st_waiting};
 
 public:
 
@@ -54,11 +56,11 @@ public:
   std::string as_human_readable() const;
 
   bool was_recalc_started_at_least_once() const {
-    return recalc_state_ > recalc_st_waiting;
+    return recalc_state_.load() > recalc_st_waiting;
   }
 
   bool was_recalc_finished_at_least_once() const {
-    return recalc_state_ >= recalc_bit_at_least_once;
+    return recalc_state_.load() >= recalc_bit_at_least_once;
   }
 
   void register_edge_from_this(const tinf::Edge *edge);
@@ -77,11 +79,11 @@ public:
   bool try_finish_recalc();
 
   const TypeData *get_type() const {
-    return type_;
+    return type_.load(std::memory_order_relaxed);
   }
 
   void set_type(const TypeData *type) {
-    type_ = type;
+    type_.store(type, std::memory_order_relaxed);
   }
 
   virtual void recalc(TypeInferer *inferer) = 0;

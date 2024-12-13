@@ -11,6 +11,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/name-gen.h"
+#include "compiler/threading/locks.h"
 #include "compiler/threading/tls.h"
 #include "compiler/utils/string-utils.h"
 
@@ -31,7 +32,7 @@ const char *get_assert_level_desc(AssertLevelT assert_level) {
   }
 }
 
-volatile int ce_locker;
+CustomMutex ce_locker{};
 
 namespace {
 FILE *warning_file{nullptr};
@@ -44,7 +45,7 @@ void stage::set_warning_file(FILE *file) noexcept {
 void on_compilation_error(const char *description __attribute__((unused)), const char *file_name, int line_number,
                           const char *full_description, AssertLevelT assert_level) {
 
-  AutoLocker<volatile int *> locker(&ce_locker);
+  AutoLocker locker(ce_locker);
   FILE *file = stdout;
   if (assert_level == WRN_ASSERT_LEVEL && warning_file) {
     file = warning_file;

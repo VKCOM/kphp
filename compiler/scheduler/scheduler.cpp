@@ -4,6 +4,8 @@
 
 #include "compiler/scheduler/scheduler.h"
 
+#include "compiler/scheduler/scheduler-base.h"
+#include <atomic>
 #include <vector>
 
 #include "compiler/scheduler/task.h"
@@ -18,7 +20,7 @@ public:
   class Scheduler *scheduler;
 
   Node *node;
-  bool run_flag;
+  std::atomic_bool run_flag;
 };
 
 
@@ -59,7 +61,7 @@ void Scheduler::execute() {
   for (int i = 1; i <= threads_count; i++) {
     threads[i].thread_id = i;
     threads[i].scheduler = this;
-    threads[i].run_flag = true;
+    threads[i].run_flag.store(true, std::memory_order_relaxed);
     if (i <= (int)one_thread_nodes.size()) {
       threads[i].node = one_thread_nodes[i - 1];
     }
@@ -67,7 +69,7 @@ void Scheduler::execute() {
   }
 
   while (true) {
-    if (tasks_before_sync_node > 0) {
+    if (tasks_before_sync_node.load(std::memory_order_seq_cst) > 0) {
       usleep(250);
       continue;
     }
@@ -79,8 +81,7 @@ void Scheduler::execute() {
   }
 
   for (int i = 1; i <= threads_count; i++) {
-    threads[i].run_flag = false;
-    __sync_synchronize();
+    threads[i].run_flag.store(false, std::memory_order_seq_cst);
     pthread_join(threads[i].pthread_id, nullptr);
   }
 
@@ -101,7 +102,7 @@ bool Scheduler::thread_process_node(Node *node) {
   }
   task->execute();
   delete task;
-  __sync_fetch_and_sub(&tasks_before_sync_node, 1);
+  tasks_before_sync_node.fetch_sub(1, std::memory_order_seq_cst);
   return true;
 }
 
@@ -115,7 +116,7 @@ void Scheduler::thread_execute(ThreadContext *tls) {
     }
     return at_least_one_task_executed;
   };
-  while (tls->run_flag) {
+  while (tls->run_flag.load(std::memory_order_seq_cst)) {
     bool at_least_one_task_executed = false;
     if (tls->node != nullptr) {
       at_least_one_task_executed = process_node(tls->node);

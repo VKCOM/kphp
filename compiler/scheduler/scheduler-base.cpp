@@ -5,8 +5,9 @@
 #include "compiler/scheduler/scheduler-base.h"
 
 #include <cassert>
+#include <atomic>
 
-volatile int tasks_before_sync_node;
+std::atomic_int tasks_before_sync_node = 0;
 
 static SchedulerBase *scheduler;
 
