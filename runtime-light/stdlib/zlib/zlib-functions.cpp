@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <span>
 
 #include "zlib/zconf.h"
@@ -38,16 +39,16 @@ void zlib_static_free([[maybe_unused]] voidpf opaque, [[maybe_unused]] voidpf ad
 
 } // namespace
 
-namespace zlib_impl_ {
+namespace zlib {
 
-Optional<string> zlib_encode(std::span<const char> data, int64_t level, int64_t encoding) noexcept {
-  if (level < zlib_impl_::ZLIB_MIN_COMPRESSION_LEVEL || level > zlib_impl_::ZLIB_MAX_COMPRESSION_LEVEL) [[unlikely]] {
+std::optional<string> encode(std::span<const char> data, int64_t level, int64_t encoding) noexcept {
+  if (level < MIN_COMPRESSION_LEVEL || level > MAX_COMPRESSION_LEVEL) [[unlikely]] {
     php_warning("incorrect compression level: %" PRIi64, level);
-    return false;
+    return {};
   }
-  if (encoding != ZLIB_ENCODING_RAW && encoding != ZLIB_ENCODING_DEFLATE && encoding != ZLIB_ENCODING_GZIP) [[unlikely]] {
+  if (encoding != ENCODING_RAW && encoding != ENCODING_DEFLATE && encoding != ENCODING_GZIP) [[unlikely]] {
     php_warning("incorrect encoding: %" PRIi64, encoding);
-    return false;
+    return {};
   }
 
   z_stream zstrm{};
@@ -61,11 +62,11 @@ Optional<string> zlib_encode(std::span<const char> data, int64_t level, int64_t 
 
   if (deflateInit2(std::addressof(zstrm), level, Z_DEFLATED, encoding, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY) != Z_OK) [[unlikely]] {
     php_warning("can't initialize zlib encode for data of length %zu", data.size());
-    return false;
+    return {};
   }
 
   auto &runtime_ctx{RuntimeContext::get()};
-  auto out_size_upper_bound{static_cast<size_t>(compressBound(data.size()))};
+  auto out_size_upper_bound{static_cast<size_t>(deflateBound(std::addressof(zstrm), data.size()))};
   runtime_ctx.static_SB.clean().reserve(out_size_upper_bound);
 
   zstrm.avail_in = data.size();
@@ -76,14 +77,14 @@ Optional<string> zlib_encode(std::span<const char> data, int64_t level, int64_t 
   const auto deflate_res{deflate(std::addressof(zstrm), Z_FINISH)};
   if (deflate_res != Z_STREAM_END) [[unlikely]] {
     php_warning("can't encode data of length %zu due to zlib error %d", data.size(), deflate_res);
-    return false;
+    return {};
   }
 
   runtime_ctx.static_SB.set_pos(static_cast<int64_t>(zstrm.total_out));
   return runtime_ctx.static_SB.str();
 }
 
-Optional<string> zlib_decode(std::span<const char> data, int64_t encoding) noexcept {
+std::optional<string> decode(std::span<const char> data, int64_t encoding) noexcept {
   z_stream zstrm{};
   // always clear zlib's state
   const auto finalizer{vk::finally([&zstrm]() noexcept { inflateEnd(std::addressof(zstrm)); })};
@@ -97,7 +98,7 @@ Optional<string> zlib_decode(std::span<const char> data, int64_t encoding) noexc
 
   if (inflateInit2(std::addressof(zstrm), encoding) != Z_OK) [[unlikely]] {
     php_warning("can't initialize zlib decode for data of length %zu", data.size());
-    return false;
+    return {};
   }
 
   auto &runtime_ctx{RuntimeContext::get()};
@@ -108,10 +109,10 @@ Optional<string> zlib_decode(std::span<const char> data, int64_t encoding) noexc
 
   if (inflate_res != Z_STREAM_END) [[unlikely]] {
     php_warning("can't decode data of length %zu due to zlib error %d", data.size(), inflate_res);
-    return false;
+    return {};
   }
 
   return string{runtime_ctx.static_SB.buffer(), StringInstanceState::STATIC_BUFFER_LENGTH - zstrm.avail_out};
 }
 
-} // namespace zlib_impl_
+} // namespace zlib
