@@ -38,14 +38,14 @@ void zlib_static_free([[maybe_unused]] voidpf opaque, [[maybe_unused]] voidpf ad
 
 } // namespace
 
-namespace zlib_impl_ {
+namespace zlib {
 
 Optional<string> zlib_encode(std::span<const char> data, int64_t level, int64_t encoding) noexcept {
-  if (level < zlib_impl_::ZLIB_MIN_COMPRESSION_LEVEL || level > zlib_impl_::ZLIB_MAX_COMPRESSION_LEVEL) [[unlikely]] {
+  if (level < MIN_COMPRESSION_LEVEL || level > MAX_COMPRESSION_LEVEL) [[unlikely]] {
     php_warning("incorrect compression level: %" PRIi64, level);
     return false;
   }
-  if (encoding != ZLIB_ENCODING_RAW && encoding != ZLIB_ENCODING_DEFLATE && encoding != ZLIB_ENCODING_GZIP) [[unlikely]] {
+  if (encoding != ENCODING_RAW && encoding != ENCODING_DEFLATE && encoding != ENCODING_GZIP) [[unlikely]] {
     php_warning("incorrect encoding: %" PRIi64, encoding);
     return false;
   }
@@ -114,4 +114,4 @@ Optional<string> zlib_decode(std::span<const char> data, int64_t encoding) noexc
   return string{runtime_ctx.static_SB.buffer(), StringInstanceState::STATIC_BUFFER_LENGTH - zstrm.avail_out};
 }
 
-} // namespace zlib_impl_
+} // namespace zlib

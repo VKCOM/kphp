@@ -10,30 +10,29 @@
 
 #include "runtime-common/core/runtime-core.h"
 
-inline constexpr int64_t ZLIB_ENCODING_RAW = -0x0f;
-inline constexpr int64_t ZLIB_ENCODING_DEFLATE = 0x0f;
-inline constexpr int64_t ZLIB_ENCODING_GZIP = 0x1f;
+namespace zlib {
 
-namespace zlib_impl_ {
+inline constexpr int64_t ENCODING_RAW = -0x0f;
+inline constexpr int64_t ENCODING_DEFLATE = 0x0f;
+inline constexpr int64_t ENCODING_GZIP = 0x1f;
 
-inline constexpr int64_t ZLIB_MIN_COMPRESSION_LEVEL = -1;
-inline constexpr int64_t ZLIB_MAX_COMPRESSION_LEVEL = 9;
-inline constexpr int64_t ZLIB_DEFAULT_COMPRESSION_LEVEL = 6;
+inline constexpr int64_t MIN_COMPRESSION_LEVEL = -1;
+inline constexpr int64_t MAX_COMPRESSION_LEVEL = 9;
+inline constexpr int64_t DEFAULT_COMPRESSION_LEVEL = 6;
 
 Optional<string> zlib_encode(std::span<const char> data, int64_t level, int64_t encoding) noexcept;
 
 Optional<string> zlib_decode(std::span<const char> data, int64_t encoding) noexcept;
 
-} // namespace zlib_impl_
+} // namespace zlib
 
-inline string f$gzcompress(const string &data, int64_t level = zlib_impl_::ZLIB_MIN_COMPRESSION_LEVEL) noexcept {
-  Optional<string> result{zlib_impl_::zlib_encode({data.c_str(), static_cast<size_t>(data.size())},
-                                                  level == zlib_impl_::ZLIB_MIN_COMPRESSION_LEVEL ? zlib_impl_::ZLIB_DEFAULT_COMPRESSION_LEVEL : level,
-                                                  ZLIB_ENCODING_DEFLATE)};
+inline string f$gzcompress(const string &data, int64_t level = zlib::MIN_COMPRESSION_LEVEL) noexcept {
+  Optional<string> result{zlib::zlib_encode({data.c_str(), static_cast<size_t>(data.size())},
+                                            level == zlib::MIN_COMPRESSION_LEVEL ? zlib::DEFAULT_COMPRESSION_LEVEL : level, zlib::ENCODING_DEFLATE)};
   return result.has_value() ? result.val() : string{};
 }
 
 inline string f$gzuncompress(const string &data) noexcept {
-  Optional<string> result{zlib_impl_::zlib_decode({data.c_str(), static_cast<size_t>(data.size())}, ZLIB_ENCODING_DEFLATE)};
+  Optional<string> result{zlib::zlib_decode({data.c_str(), static_cast<size_t>(data.size())}, zlib::ENCODING_DEFLATE)};
   return result.has_value() ? result.val() : string{};
 }
