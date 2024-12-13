@@ -312,10 +312,10 @@ task_t<void> finalize_http_server(const string_buffer &output) noexcept {
     const bool deflate_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};
     // compress body if needed
     if (gzip_encoded || deflate_encoded) {
-      auto encoded_body{zlib::zlib_encode({body.c_str(), static_cast<size_t>(body.size())}, zlib::DEFAULT_COMPRESSION_LEVEL,
-                                          gzip_encoded ? zlib::ENCODING_GZIP : zlib::ENCODING_DEFLATE)};
+      auto encoded_body{zlib::encode({body.c_str(), static_cast<size_t>(body.size())}, zlib::DEFAULT_COMPRESSION_LEVEL,
+                                     gzip_encoded ? zlib::ENCODING_GZIP : zlib::ENCODING_DEFLATE)};
       if (encoded_body.has_value()) [[likely]] {
-        body = std::move(encoded_body.val());
+        body = std::move(*encoded_body);
 
         auto &static_SB{RuntimeContext::get().static_SB};
         static_SB.clean() << HttpHeader::CONTENT_ENCODING.data() << ": " << (gzip_encoded ? ENCODING_GZIP.data() : ENCODING_DEFLATE.data());
