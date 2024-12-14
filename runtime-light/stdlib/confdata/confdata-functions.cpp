@@ -12,6 +12,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
+#include "runtime-common/stdlib/serialization/serialize-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/instance-state.h"
@@ -30,7 +31,7 @@ mixed extract_confdata_value(tl::confdataValue &&confdata_value) noexcept {
     return {};
   }
   if (confdata_value.is_php_serialized) {
-    php_critical_error("unimplemented"); // TODO
+    return f$unserialize(confdata_value.value);
   } else if (confdata_value.is_json_serialized) {
     return f$json_decode(confdata_value.value);
   } else {
