@@ -328,7 +328,7 @@ void k2_system_time(struct SystemTime *system_time);
  * libc-like socket api.
  * @return: `0` on success, `errno != 0` otherwise
  */
-int32_t k2_socket(uint64_t *socket_d, int32_t domain, int32_t type, int protocol);
+int32_t k2_socket(uint64_t *socket_d, int32_t domain, int32_t type, int32_t protocol);
 
 /**
  * libc-like socket api.
@@ -395,7 +395,7 @@ uint32_t k2_args_key_len(uint32_t arg_num);
 
 /**
  * @param `arg_num` must satisfy `0 <= arg_num < k2_args_count()`
- * @return length of argumen value with number `arg_num` in bytes
+ * @return length of argument value with number `arg_num` in bytes
  */
 uint32_t k2_args_value_len(uint32_t arg_num);
 
@@ -406,6 +406,33 @@ uint32_t k2_args_value_len(uint32_t arg_num);
  * @param `value` buffer where value will be written, buffer len must staisfy `len >= k2_args_value_len(arg_num)`
  */
 void k2_args_fetch(uint32_t arg_num, char *key, char *value);
+
+/**
+ * Even if env is available at any point, try to cache and parse it as soon as possible (during k2_create_component or even k2_create_image).
+ * Environment are constant and do not change during the component lifetime.
+ * @return number of env key-value pairs available for fetching.
+ */
+uint32_t k2_env_count();
+
+/**
+ * @param `env_num` must satisfy `0 <= env_num < k2_env_count()`
+ * @return length of env key with number `env_num` in bytes
+ */
+uint32_t k2_env_key_len(uint32_t env_num);
+
+/**
+ * @param `env_num` must satisfy `0 <= env_num < k2_env_count()`
+ * @return length of env value with number `env_num` in bytes
+ */
+uint32_t k2_env_value_len(uint32_t env_num);
+
+/**
+ * Note: key and value are **not** null-terminated.
+ * @param `env_num` must satisfy `0 <= env_num < k2_env_count()`
+ * @param `key` buffer where key will be written, buffer len must staisfy `len >= k2_env_key_len(env_num)`
+ * @param `value` buffer where value will be written, buffer len must staisfy `len >= k2_env_value_len(env_num)`
+ */
+void k2_env_fetch(uint32_t env_num, char *key, char *value);
 
 #ifdef __cplusplus
 }

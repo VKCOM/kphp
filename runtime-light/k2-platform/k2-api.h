@@ -180,6 +180,26 @@ inline auto arg_fetch(uint32_t arg_num) noexcept {
                         std::unique_ptr<char, decltype(std::addressof(k2::free))>{value_buffer, k2::free});
 }
 
+inline uint32_t env_count() noexcept {
+  return k2_env_count();
+}
+
+inline auto env_fetch(uint32_t arg_num) noexcept {
+  const auto key_len{k2_env_key_len(arg_num)};
+  const auto value_len{k2_env_value_len(arg_num)};
+
+  // +1 since we get non-null-terminated strings from platform and we want to null-terminate them on our side
+  auto *key_buffer{static_cast<char *>(k2::alloc(key_len + 1))};
+  auto *value_buffer{static_cast<char *>(k2::alloc(value_len + 1))};
+  k2_env_fetch(arg_num, key_buffer, value_buffer);
+  // null-terminate
+  key_buffer[key_len] = '\0';
+  value_buffer[value_len] = '\0';
+
+  return std::make_pair(std::unique_ptr<char, decltype(std::addressof(k2::free))>{key_buffer, k2::free},
+                        std::unique_ptr<char, decltype(std::addressof(k2::free))>{value_buffer, k2::free});
+}
+
 inline int32_t udp_connect(uint64_t *socket_d, const char *host, size_t host_len) noexcept {
   return k2_udp_connect(socket_d, host, host_len);
 }
