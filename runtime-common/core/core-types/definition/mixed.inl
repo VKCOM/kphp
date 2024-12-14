@@ -292,11 +292,15 @@ mixed f$to_mixed(const class_instance<InputClass> &instance) noexcept {
 
 template<class ResultClass>
 ResultClass from_mixed(const mixed &m, const string &) noexcept {
+  if (!m.is_object()) {
+    return ResultClass{};
+  }
   if constexpr (!std::is_polymorphic_v<typename ResultClass::ClassType>) {
     php_error("Internal error. Class inside a mixed is not polymorphic");
     return {};
   } else {
-    return ResultClass::create_from_base_raw_ptr(dynamic_cast<abstract_refcountable_php_interface *>(m.as_object_ptr<ResultClass>()));
+    return m.is_null() ? ResultClass{}
+                       : ResultClass::create_from_base_raw_ptr(dynamic_cast<abstract_refcountable_php_interface *>(m.as_object_ptr<ResultClass>()));
   }
 }
 
