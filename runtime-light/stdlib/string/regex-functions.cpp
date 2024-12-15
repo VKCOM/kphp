@@ -556,7 +556,7 @@ Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject,
 
 Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
   count = 0;
-  if (limit < 0 && limit != PREG_REPLACE_NOLIMIT) [[likely]] {
+  if (limit < 0 && limit != PREG_REPLACE_NOLIMIT) [[unlikely]] {
     php_warning("invalid limit %" PRIi64 " in preg_replace", limit);
     return {};
   }
