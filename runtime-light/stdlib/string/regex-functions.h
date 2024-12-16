@@ -9,6 +9,8 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 
+namespace regex {
+
 inline constexpr int64_t PREG_NO_ERROR = 0;
 inline constexpr int64_t PREG_INTERNAL_ERROR = 1;
 inline constexpr int64_t PREG_BACKTRACK_LIMIT_ERROR = 2;
@@ -27,34 +29,36 @@ inline constexpr auto PREG_UNMATCHED_AS_NULL = static_cast<int64_t>(1U << 6U);
 
 inline constexpr int64_t PREG_REPLACE_NOLIMIT = -1;
 
+} // namespace regex
+
 using regexp = string;
 
 Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
-                               int64_t flags = PREG_NO_FLAGS, int64_t offset = 0) noexcept;
+                               int64_t flags = regex::PREG_NO_FLAGS, int64_t offset = 0) noexcept;
 
 Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
-                                   int64_t flags = PREG_NO_FLAGS, int64_t offset = 0) noexcept;
+                                   int64_t flags = regex::PREG_NO_FLAGS, int64_t offset = 0) noexcept;
 
 /*
  * PHP's implementation of preg_replace doesn't replace some errors. For example, consider replacement containing
  * back reference $123. It cannot be found in the pattern, but PHP doesn't report it as error, it just treats such
  * back reference as an empty string. Our implementation warns user about such error and returns null.
  */
-Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
+Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit = regex::PREG_REPLACE_NOLIMIT,
                                 int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
-Optional<string> f$preg_replace(const mixed &pattern, const string &replacement, const string &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
+Optional<string> f$preg_replace(const mixed &pattern, const string &replacement, const string &subject, int64_t limit = regex::PREG_REPLACE_NOLIMIT,
                                 int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
-Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, const string &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
+Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, const string &subject, int64_t limit = regex::PREG_REPLACE_NOLIMIT,
                                 int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
-mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
+mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit = regex::PREG_REPLACE_NOLIMIT,
                      int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
-auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = PREG_REPLACE_NOLIMIT,
-                           int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) noexcept {
+auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = regex::PREG_REPLACE_NOLIMIT,
+                    int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) noexcept {
   return f$preg_replace(regex, replace_val, subject.val(), limit, replace_count);
 }
 
@@ -65,31 +69,33 @@ auto f$preg_replace_callback(const T1 &regex, const T2 &replace_val, const T3 &s
 }
 
 template<class T>
-Optional<string> f$preg_replace_callback(const regexp &, const T &, const string &, int64_t = -1,
-                                         int64_t & = RegexInstanceState::get().default_preg_replace_count) {
+Optional<string> f$preg_replace_callback(const regexp & /*unused*/, const T & /*unused*/, const string & /*unused*/, int64_t /*unused*/ = -1,
+                                         int64_t & /*unused*/ = RegexInstanceState::get().default_preg_replace_count) {
   php_critical_error("call to unsupported function");
 }
 
 template<class T>
-mixed f$preg_replace_callback(const regexp &, const T &, const mixed &, int64_t = -1, int64_t & = RegexInstanceState::get().default_preg_replace_count) {
+mixed f$preg_replace_callback(const regexp & /*unused*/, const T & /*unused*/, const mixed & /*unused*/, int64_t /*unused*/ = -1,
+                              int64_t & /*unused*/ = RegexInstanceState::get().default_preg_replace_count) {
   php_critical_error("call to unsupported function");
 }
 
 template<class T>
-Optional<string> f$preg_replace_callback(const mixed &, const T &, const string &, int64_t = -1,
-                                         int64_t & = RegexInstanceState::get().default_preg_replace_count) {
+Optional<string> f$preg_replace_callback(const mixed & /*unused*/, const T & /*unused*/, const string & /*unused*/, int64_t /*unused*/ = -1,
+                                         int64_t & /*unused*/ = RegexInstanceState::get().default_preg_replace_count) {
   php_critical_error("call to unsupported function");
 }
 
 template<class T>
-mixed f$preg_replace_callback(const mixed &, const T &, const mixed &, int64_t = -1, int64_t & = RegexInstanceState::get().default_preg_replace_count) {
+mixed f$preg_replace_callback(const mixed & /*unused*/, const T & /*unused*/, const mixed & /*unused*/, int64_t /*unused*/ = -1,
+                              int64_t & /*unused*/ = RegexInstanceState::get().default_preg_replace_count) {
   php_critical_error("call to unsupported function");
 }
 
-inline Optional<array<mixed>> f$preg_split(const string &, const string &, int64_t = -1, int64_t = 0) {
+inline Optional<array<mixed>> f$preg_split(const string & /*unused*/, const string & /*unused*/, int64_t /*unused*/ = -1, int64_t /*unused*/ = 0) {
   php_critical_error("call to unsupported function");
 }
 
-inline Optional<array<mixed>> f$preg_split(const mixed &, const string &, int64_t = -1, int64_t = 0) {
+inline Optional<array<mixed>> f$preg_split(const mixed & /*unused*/, const string & /*unused*/, int64_t /*unused*/ = -1, int64_t /*unused*/ = 0) {
   php_critical_error("call to unsupported function");
 }
