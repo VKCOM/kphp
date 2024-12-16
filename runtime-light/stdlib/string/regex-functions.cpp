@@ -79,7 +79,11 @@ bool valid_preg_replace_mixed(const mixed &param) noexcept {
 
 template<typename... Args>
 requires((std::is_same_v<Args, int64_t> && ...) && sizeof...(Args) > 0) bool valid_regex_flags(int64_t flags, Args... supported_flags) noexcept {
-  return (flags & ~(supported_flags | ...)) == PREG_NO_FLAGS;
+  const bool valid{(flags & ~(supported_flags | ...)) == PREG_NO_FLAGS};
+  if (!valid) [[unlikely]] {
+    php_warning("invalid flags: %" PRIi64, flags);
+  }
+  return valid;
 }
 
 bool correct_offset(int64_t &offset, std::string_view subject) noexcept {
@@ -488,10 +492,6 @@ Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mix
   RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}, RuntimeAllocator::get().memory_resource};
 
   bool success{valid_regex_flags(flags, PREG_NO_FLAGS, PREG_OFFSET_CAPTURE, PREG_UNMATCHED_AS_NULL)};
-  if (!success) [[unlikely]] {
-    php_warning("invalid preg_match flags %" PRIi64, flags);
-    return false;
-  }
   success &= correct_offset(offset, regex_info.subject);
   success &= parse_regex(regex_info);
   success &= compile_regex(regex_info);
@@ -511,10 +511,6 @@ Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject,
   RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}, RuntimeAllocator::get().memory_resource};
 
   bool success{valid_regex_flags(flags, PREG_NO_FLAGS, PREG_PATTERN_ORDER, PREG_SET_ORDER, PREG_OFFSET_CAPTURE, PREG_UNMATCHED_AS_NULL)};
-  if (!success) [[unlikely]] {
-    php_warning("invalid preg_match_all flags %" PRIi64, flags);
-    return false;
-  }
   success &= correct_offset(offset, regex_info.subject);
   success &= parse_regex(regex_info);
   success &= compile_regex(regex_info);
