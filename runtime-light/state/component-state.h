@@ -19,11 +19,16 @@ struct ComponentState final : private vk::not_copyable {
   const uint32_t argc;
   mixed runtime_config;
   array<string> ini_opts;
+  const uint32_t envc;
+  array<string> env;
 
   ComponentState() noexcept
     : allocator(INIT_COMPONENT_ALLOCATOR_SIZE, 0)
     , argc(k2::args_count())
-    , ini_opts(array_size{argc, false}) /* overapproximation */ {
+    , ini_opts(array_size{argc, false}) /* overapproximation */
+    , envc(k2::env_count())
+    , env(array_size{envc, false}) {
+    parse_env();
     parse_args();
   }
 
@@ -39,6 +44,8 @@ private:
   static constexpr std::string_view INI_ARG_PREFIX = "ini ";
   static constexpr std::string_view RUNTIME_CONFIG_ARG = "runtime-config";
   static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(512U * 1024U); // 512KB
+
+  void parse_env() noexcept;
 
   void parse_args() noexcept;
 

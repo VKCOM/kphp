@@ -307,6 +307,8 @@ void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
 void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
   if (G->is_output_mode_k2()) {
     // The current version of runtime-light does not support try blocks
+    W << "/""*** TRY ***""/" << NL;
+    W << root->try_cmd() << NL;
     return;
   }
   auto move_exception = [&](ClassPtr caught_class, VertexAdaptor<op_var> dst) {

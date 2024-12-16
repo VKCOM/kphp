@@ -7,12 +7,28 @@
 #include <cstring>
 #include <iterator>
 #include <string_view>
+#include <utility>
 
 #include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
+
+void ComponentState::parse_env() noexcept {
+  for (auto i = 0; i < envc; ++i) {
+    const auto [env_key, env_value]{k2::env_fetch(i)};
+
+    string key_str{env_key.get()};
+    key_str.set_reference_counter_to(ExtraRefCnt::for_global_const);
+
+    string value_str{env_value.get()};
+    value_str.set_reference_counter_to(ExtraRefCnt::for_global_const);
+
+    env.set_value(key_str, value_str);
+  }
+  env.set_reference_counter_to(ExtraRefCnt::for_global_const);
+}
 
 void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view value_view) noexcept {
   if (key_view.size() <= INI_ARG_PREFIX.size()) [[unlikely]] {
