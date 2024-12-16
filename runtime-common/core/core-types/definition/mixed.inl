@@ -296,7 +296,8 @@ ResultClass from_mixed(const mixed &m, const string &) noexcept {
     php_error("Internal error. Class inside a mixed is not polymorphic");
     return {};
   } else {
-    return ResultClass::create_from_base_raw_ptr(dynamic_cast<abstract_refcountable_php_interface *>(m.as_object_ptr<ResultClass>()));
+    return m.is_object() ? ResultClass::create_from_base_raw_ptr(dynamic_cast<abstract_refcountable_php_interface *>(m.as_object_ptr<ResultClass>()))
+                         : ResultClass{};
   }
 }
 
