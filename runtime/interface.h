@@ -48,6 +48,8 @@ int64_t f$ob_get_level();
 
 void f$flush();
 
+bool f$headers_sent();
+
 void f$header(const string &str, bool replace = true, int64_t http_response_code = 0);
 
 array<string> f$headers_list();
