@@ -48,7 +48,9 @@ int64_t f$ob_get_level();
 
 void f$flush();
 
-bool f$headers_sent();
+Optional<string> &get_dummy_headers_sent_filename() noexcept;
+Optional<int64_t> &get_dummy_headers_sent_line() noexcept;
+bool f$headers_sent(Optional<string> &filename = get_dummy_headers_sent_filename(), Optional<int64_t> &line = get_dummy_headers_sent_line());
 
 void f$header(const string &str, bool replace = true, int64_t http_response_code = 0);
 

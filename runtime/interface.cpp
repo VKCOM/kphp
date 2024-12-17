@@ -370,7 +370,17 @@ array<string> f$headers_list() {
   return result;
 }
 
-bool f$headers_sent() {
+Optional<string> &get_dummy_headers_sent_filename() noexcept {
+  static Optional<string> filename;
+  return filename;
+}
+
+Optional<int64_t> &get_dummy_headers_sent_line() noexcept {
+  static Optional<int64_t> dummy_line;
+  return dummy_line;
+}
+
+bool f$headers_sent([[maybe_unused]] Optional<string> &filename, [[maybe_unused]] Optional<int64_t> &line) {
   return headers_sent;
 }
 
