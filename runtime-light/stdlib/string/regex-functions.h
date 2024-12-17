@@ -58,8 +58,8 @@ mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
 auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = regex::PREG_REPLACE_NOLIMIT,
-                    int64_t &replace_count = RegexInstanceState::get().default_preg_replace_count) noexcept {
-  return f$preg_replace(regex, replace_val, subject.val(), limit, replace_count);
+                    int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept {
+  return f$preg_replace(regex, replace_val, subject.val(), limit, count);
 }
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
