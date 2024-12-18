@@ -14,13 +14,13 @@ function(install_vkext PHP_VERSION)
 
     install(FILES ${VKEXT_DIR}/vkext.ini
             COMPONENT ${COMPONENT_NAME}
-            DESTINATION etc/php/${PHP_VERSION}/mods-available)
+            DESTINATION /etc/php/${PHP_VERSION}/mods-available)
 
-    install_symlink("etc/php/${PHP_VERSION}/mods-available/vkext.ini"
-                    "etc/php/${PHP_VERSION}/apache2/conf.d/20-vkext.ini"
+    install_symlink("/etc/php/${PHP_VERSION}/mods-available/vkext.ini"
+                    "/etc/php/${PHP_VERSION}/apache2/conf.d/20-vkext.ini"
                     ${COMPONENT_NAME})
-    install_symlink("etc/php/${PHP_VERSION}/mods-available/vkext.ini"
-                    "etc/php/${PHP_VERSION}/cli/conf.d/20-vkext.ini"
+    install_symlink("/etc/php/${PHP_VERSION}/mods-available/vkext.ini"
+                    "/etc/php/${PHP_VERSION}/cli/conf.d/20-vkext.ini"
                     ${COMPONENT_NAME})
 
     set(PHP php${PHP_VERSION})
