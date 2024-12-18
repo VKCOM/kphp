@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 echo bcpow (16, 7)."\n";
