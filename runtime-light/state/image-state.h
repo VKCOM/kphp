@@ -15,6 +15,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 
@@ -32,6 +33,7 @@ struct ImageState final : private vk::not_copyable {
 
   RpcImageState rpc_image_state;
   StringImageState string_image_state;
+  MathImageState math_image_state;
 
   ImageState() noexcept
     : allocator(INIT_IMAGE_ALLOCATOR_SIZE, 0)

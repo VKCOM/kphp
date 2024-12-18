@@ -1,5 +1,6 @@
 prepend(STDLIB_ARRAY stdlib/array/ array-functions.cpp)
-prepend(STDLIB_MATH stdlib/math/ math-functions.cpp)
+prepend(STDLIB_MATH stdlib/math/ math-functions.cpp
+        bcmath.cpp)
 prepend(STDLIB_SERIALIZATION stdlib/serialization/ json-functions.cpp
         json-writer.cpp serialize-functions.cpp)
 prepend(STDLIB_STRING stdlib/string/ mbstring-functions.cpp
