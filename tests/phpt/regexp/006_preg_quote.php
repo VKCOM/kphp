@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 // Starting with PHP 7.3, preg_quote does escape '#' sign.

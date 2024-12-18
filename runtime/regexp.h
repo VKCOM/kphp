@@ -10,6 +10,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/mbstring-functions.h"
+#include "runtime-common/stdlib/string/regex-functions.h"
 #include "runtime-common/stdlib/tracing/tracing.h"
 #include "runtime/context/runtime-context.h"
 
@@ -208,8 +209,6 @@ inline Optional<array<mixed>> f$preg_split(const regexp &regex, const string &su
 inline Optional<array<mixed>> f$preg_split(const string &regex, const string &subject, int64_t limit = -1, int64_t flags = 0);
 
 inline Optional<array<mixed>> f$preg_split(const mixed &regex, const string &subject, int64_t limit = -1, int64_t flags = 0);
-
-string f$preg_quote(const string &str, const string &delimiter = string());
 
 inline int64_t f$preg_last_error();
 

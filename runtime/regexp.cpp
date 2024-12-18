@@ -1074,56 +1074,6 @@ int64_t regexp::last_error() {
   }
 }
 
-
-string f$preg_quote(const string &str, const string &delimiter) {
-  const string::size_type len = str.size();
-
-  kphp_runtime_context.static_SB.clean().reserve(4 * len);
-
-  for (string::size_type i = 0; i < len; i++) {
-    switch (str[i]) {
-      case '.':
-      case '\\':
-      case '+':
-      case '*':
-      case '?':
-      case '[':
-      case '^':
-      case ']':
-      case '$':
-      case '(':
-      case ')':
-      case '{':
-      case '}':
-      case '=':
-      case '!':
-      case '>':
-      case '<':
-      case '|':
-      case ':':
-      case '-':
-      case '#':
-        kphp_runtime_context.static_SB.append_char('\\');
-        kphp_runtime_context.static_SB.append_char(str[i]);
-        break;
-      case '\0':
-        kphp_runtime_context.static_SB.append_char('\\');
-        kphp_runtime_context.static_SB.append_char('0');
-        kphp_runtime_context.static_SB.append_char('0');
-        kphp_runtime_context.static_SB.append_char('0');
-        break;
-      default:
-        if (!delimiter.empty() && str[i] == delimiter[0]) {
-          kphp_runtime_context.static_SB.append_char('\\');
-        }
-        kphp_runtime_context.static_SB.append_char(str[i]);
-        break;
-    }
-  }
-
-  return kphp_runtime_context.static_SB.str();
-}
-
 void regexp::global_init() {
   extra.flags = PCRE_EXTRA_MATCH_LIMIT | PCRE_EXTRA_MATCH_LIMIT_RECURSION;
   extra.match_limit = PCRE_BACKTRACK_LIMIT;
