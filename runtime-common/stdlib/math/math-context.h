@@ -15,7 +15,7 @@ namespace math_context_impl {
 
 inline constexpr std::string_view ONE = "1";
 inline constexpr std::string_view ZERO = "0";
-inline constexpr std::string_view TEN = "0.5";
+inline constexpr std::string_view TEN = "10";
 inline constexpr std::string_view ZERO_DOT_FIVE = "0.5";
 
 } // namespace math_context_impl
