@@ -11,7 +11,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <unordered_map>
+#include <unordered_set>
 
+#include "common/algorithms/hashes.h"
+#include "common/wrappers/likely.h"
 #include "common/wrappers/mkdir_recursive.h"
 #include "common/wrappers/pathname.h"
 
@@ -463,9 +466,19 @@ static std::vector<File *> build_runtime_and_common_from_sources(const std::stri
   std::vector<File*> objs;
   objs.reserve(runtime_dir.get_files_count() + common_dir.get_files_count());
 
-  for (const auto *dir : std::vector<const Index*>{&runtime_core_dir, &runtime_dir, &common_dir, &unicode_dir}) {
+  std::unordered_set<size_t> files_hashes;
+  files_hashes.reserve(runtime_core_dir.get_files_count() + runtime_dir.get_files_count() + common_dir.get_files_count() + unicode_dir.get_files_count());
+
+  for (const auto *dir : std::vector<const Index *>{&runtime_core_dir, &runtime_dir, &common_dir, &unicode_dir}) {
     for (File *cpp_file : dir->get_files()) {
-      File *obj_file = obj_dir.insert_file(static_cast<std::string>(cpp_file->name_without_ext) + ".o");
+      auto obj_name = static_cast<std::string>(cpp_file->name_without_ext) + ".o";
+      if (unlikely(vk::contains(files_hashes, vk::std_hash(obj_name)))) {
+        // in case of files with same pathes in different dirs, for example in runtime_dir and common_dir
+        // we append hash of full path, which is unique
+        obj_name = static_cast<std::string>(cpp_file->name_without_ext) + "_" + std::to_string(vk::std_hash(cpp_file->path)) + ".o";
+      }
+      files_hashes.insert(vk::std_hash(obj_name));
+      File *obj_file = obj_dir.insert_file(std::move(obj_name));
       make.create_cpp_target(cpp_file);
       make.create_runtime_src2obj_target(cpp_file, obj_file, compiler_flags);
       objs.push_back(obj_file);
