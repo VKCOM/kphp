@@ -27,7 +27,7 @@
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/array_functions.h"
-#include "runtime/bcmath.h"
+#include "runtime-common/stdlib/math/bcmath-functions.h"
 #include "runtime/confdata-functions.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
