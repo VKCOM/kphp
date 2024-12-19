@@ -6,10 +6,10 @@
 #include "runtime-common/stdlib/math/bcmath-functions.h"
 
 namespace {
-inline constexpr std::string_view ONE_ = "1";
-inline constexpr std::string_view ZERO_ = "0";
-inline constexpr std::string_view TEN_ = "10";
-inline constexpr std::string_view ZERO_DOT_FIVE_ = "0.5";
+constexpr std::string_view ONE_ = "1";
+constexpr std::string_view ZERO_ = "0";
+constexpr std::string_view TEN_ = "10";
+constexpr std::string_view ZERO_DOT_FIVE_ = "0.5";
 } // namespace
 
 MathLibConstants::MathLibConstants() noexcept
