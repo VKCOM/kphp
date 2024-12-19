@@ -5,7 +5,19 @@
 #include "runtime-common/stdlib/math/math-context.h"
 #include "runtime-common/stdlib/math/bcmath-functions.h"
 
-MathLibConstants::MathLibConstants() noexcept {
+namespace {
+inline constexpr std::string_view ONE_ = "1";
+inline constexpr std::string_view ZERO_ = "0";
+inline constexpr std::string_view TEN_ = "10";
+inline constexpr std::string_view ZERO_DOT_FIVE_ = "0.5";
+} // namespace
+
+MathLibConstants::MathLibConstants() noexcept
+  : ONE(ONE_.data(), static_cast<string::size_type>(ONE_.size()))
+  , ZERO(ZERO_.data(), static_cast<string::size_type>(ZERO_.size()))
+  , TEN(TEN_.data(), static_cast<string::size_type>(TEN_.size()))
+  , ZERO_DOT_FIVE(ZERO_DOT_FIVE_.data(), static_cast<string::size_type>(ZERO_DOT_FIVE_.size())) {
+
   ONE.set_reference_counter_to(ExtraRefCnt::for_global_const);
   ZERO.set_reference_counter_to(ExtraRefCnt::for_global_const);
   TEN.set_reference_counter_to(ExtraRefCnt::for_global_const);
