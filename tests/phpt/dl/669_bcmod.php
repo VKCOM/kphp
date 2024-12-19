@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 echo bcmod(16, 7), "\n";
