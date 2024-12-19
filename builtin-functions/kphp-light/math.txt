@@ -136,25 +136,25 @@ define('PHP_ROUND_HALF_DOWN', 123423144);
 define('PHP_ROUND_HALF_EVEN', 123423145);
 define('PHP_ROUND_HALF_ODD', 123423146);
 
-
-/** @kphp-extern-func-info generate-stub */
 function bcadd ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: int;
-/** @kphp-extern-func-info generate-stub */
+
 function bcdiv ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function bcmod ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function bcpow ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function bcscale ($scale ::: int) ::: void;
-/** @kphp-extern-func-info generate-stub */
+
 function bcsqrt($num ::: string, $scale ::: int = PHP_INT_MIN): string;
-/** @kphp-extern-func-info generate-stub */
+
 function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+
+// ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info generate-stub */
 function is_finite ($v ::: float) ::: bool;
