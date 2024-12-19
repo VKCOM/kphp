@@ -8,7 +8,6 @@
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/math/bcmath-functions.h"
 
 namespace math_context_impl_ {
 
@@ -20,8 +19,15 @@ inline constexpr std::string_view ZERO_DOT_FIVE = "0.5";
 } // namespace math_context_impl_
 
 namespace bcmath_impl_ {
-struct BcNum;
-}
+struct BcNum {
+  int n_sign{0};  // sign
+  int n_int{0};   // number of trailing zeroes pluse one if there is '+' or '-' sign
+  int n_dot{0};   // number of bytes prior dot
+  int n_frac{0};  // n_dot + 1
+  int n_scale{0}; // number of digits after dot
+  string str;     // actual string representation
+};
+} // namespace bcmath_impl_
 
 struct MathLibContext final : vk::not_copyable {
   int64_t bc_scale{};
@@ -35,9 +41,9 @@ struct MathLibConstants final : vk::not_copyable {
   string TEN{math_context_impl_::TEN.data(), static_cast<string::size_type>(math_context_impl_::TEN.size())};
   string ZERO_DOT_FIVE{math_context_impl_::ZERO_DOT_FIVE.data(), static_cast<string::size_type>(math_context_impl_::ZERO_DOT_FIVE.size())};
 
-  bcmath_impl_::BcNum BC_NUM_ONE{bcmath_impl_::bc_parse_number(ONE).first};
-  bcmath_impl_::BcNum BC_NUM_ZERO{bcmath_impl_::bc_parse_number(ZERO).first};
-  bcmath_impl_::BcNum BC_ZERO_DOT_FIVE{bcmath_impl_::bc_parse_number(ZERO_DOT_FIVE).first};
+  bcmath_impl_::BcNum BC_NUM_ONE;
+  bcmath_impl_::BcNum BC_NUM_ZERO;
+  bcmath_impl_::BcNum BC_ZERO_DOT_FIVE;
 
   MathLibConstants() noexcept;
 

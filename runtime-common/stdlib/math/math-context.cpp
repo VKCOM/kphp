@@ -11,6 +11,10 @@ MathLibConstants::MathLibConstants() noexcept {
   TEN.set_reference_counter_to(ExtraRefCnt::for_global_const);
   ZERO_DOT_FIVE.set_reference_counter_to(ExtraRefCnt::for_global_const);
 
+  BC_NUM_ONE = bcmath_impl_::bc_parse_number(ONE).first;
+  BC_NUM_ZERO = bcmath_impl_::bc_parse_number(ZERO).first;
+  BC_ZERO_DOT_FIVE = bcmath_impl_::bc_parse_number(ZERO_DOT_FIVE).first;
+
   BC_NUM_ONE.str.set_reference_counter_to(ExtraRefCnt::for_global_const);
   BC_NUM_ZERO.str.set_reference_counter_to(ExtraRefCnt::for_global_const);
   BC_ZERO_DOT_FIVE.str.set_reference_counter_to(ExtraRefCnt::for_global_const);
