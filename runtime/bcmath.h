@@ -4,6 +4,6 @@
 
 #pragma once
 
-#include "runtime-common/stdlib/math/bcmath.h"
+#include "runtime-common/stdlib/math/bcmath-functions.h"
 
 void free_bcmath_lib();
