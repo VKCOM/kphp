@@ -3,7 +3,7 @@ prepend(STDLIB_MATH stdlib/math/ math-functions.cpp)
 prepend(STDLIB_SERIALIZATION stdlib/serialization/ json-functions.cpp
         json-writer.cpp serialize-functions.cpp)
 prepend(STDLIB_STRING stdlib/string/ mbstring-functions.cpp
-        regex-functions-common.cpp string-functions.cpp)
+        regex-functions.cpp string-functions.cpp)
 prepend(STDLIB_SERVER stdlib/server/ url-functions.cpp)
 
 set(STDLIB_SRC ${STDLIB_ARRAY} ${STDLIB_MATH} ${STDLIB_SERIALIZATION}
