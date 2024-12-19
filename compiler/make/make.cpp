@@ -472,7 +472,7 @@ static std::vector<File *> build_runtime_and_common_from_sources(const std::stri
   for (const auto *dir : std::vector<const Index *>{&runtime_core_dir, &runtime_dir, &common_dir, &unicode_dir}) {
     for (File *cpp_file : dir->get_files()) {
       auto obj_name = static_cast<std::string>(cpp_file->name_without_ext) + ".o";
-      if (unlikely(files_hashes.count(vk::std_hash(obj_name)) != 0)) {
+      if (unlikely(vk::contains(files_hashes, vk::std_hash(obj_name)))) {
         // in case of files with same pathes in different dirs, for example in runtime_dir and common_dir
         // we append hash of full path, which is unique
         obj_name = static_cast<std::string>(cpp_file->name_without_ext) + "_" + std::to_string(vk::std_hash(cpp_file->path)) + ".o";
