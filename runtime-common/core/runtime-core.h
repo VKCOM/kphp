@@ -28,20 +28,22 @@
 
 #include "runtime-common/core/array_access.h"
 #include "runtime-common/core/class-instance/class-instance-decl.inl"
+#include "runtime-common/core/core-types/decl/string_decl.inl"
+
 #include "runtime-common/core/core-types/decl/array_decl.inl"
 #include "runtime-common/core/core-types/decl/mixed_decl.inl"
 #include "runtime-common/core/core-types/decl/string_buffer_decl.inl"
-#include "runtime-common/core/core-types/decl/string_decl.inl"
 
 #include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/core-context.h"
+
+#include "runtime-common/core/core-types/definition/string.inl"
 
 #include "runtime-common/core/class-instance/class-instance.inl"
 #include "runtime-common/core/core-types/comparison_operators.inl"
 #include "runtime-common/core/core-types/conversions_types.inl"
 #include "runtime-common/core/core-types/definition/array.inl"
 #include "runtime-common/core/core-types/definition/mixed.inl"
-#include "runtime-common/core/core-types/definition/string.inl"
 #include "runtime-common/core/core-types/definition/string_buffer.inl"
 
 #undef INCLUDED_FROM_KPHP_CORE
