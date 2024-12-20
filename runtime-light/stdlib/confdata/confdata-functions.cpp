@@ -25,7 +25,7 @@ namespace {
 
 constexpr std::string_view CONFDATA_COMPONENT_NAME = "confdata"; // TODO: it may actually have an alias specified in linking config
 
-mixed extract_confdata_value(tl::confdataValue &&confdata_value) noexcept {
+mixed extract_confdata_value(tl::confdataValue&& confdata_value) noexcept {
   if (confdata_value.is_php_serialized && confdata_value.is_json_serialized) { // check that we don't have both flags set
     php_warning("confdata value has both php_serialized and json_serialized flags set");
     return {};
@@ -43,7 +43,7 @@ mixed extract_confdata_value(tl::confdataValue &&confdata_value) noexcept {
 
 // TODO: the performance of this implementation can be enhanced. rework it when the platform has specific API for that
 bool f$is_confdata_loaded() noexcept {
-  auto &instance_st{InstanceState::get()};
+  auto& instance_st{InstanceState::get()};
   if (const auto [stream_d, errc]{instance_st.open_stream(CONFDATA_COMPONENT_NAME, k2::StreamKind::Component)}; errc == k2::errno_ok) {
     instance_st.release_stream(stream_d);
     return true;
@@ -91,6 +91,6 @@ task_t<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noex
 
   array<mixed> result{array_size{static_cast<int64_t>(dict_confdata_value.size()), false}};
   std::for_each(dict_confdata_value.begin(), dict_confdata_value.end(),
-                [&result](auto &&dict_field) { result.set_value(std::move(dict_field.key), extract_confdata_value(std::move(dict_field.value))); });
+                [&result](auto&& dict_field) { result.set_value(std::move(dict_field.key), extract_confdata_value(std::move(dict_field.value))); });
   co_return std::move(result);
 }

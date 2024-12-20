@@ -30,9 +30,7 @@ struct CriticalSectionGuard : private vk::not_copyable {
 
 class CriticalSectionSmartGuard : private vk::not_copyable {
 public:
-  CriticalSectionSmartGuard() noexcept {
-    this->enter_critical_section();
-  }
+  CriticalSectionSmartGuard() noexcept { this->enter_critical_section(); }
 
   void enter_critical_section() noexcept {
     if (!in_critical_section_) {
@@ -48,16 +46,14 @@ public:
     }
   }
 
-  ~CriticalSectionSmartGuard() noexcept {
-    this->leave_critical_section();
-  }
+  ~CriticalSectionSmartGuard() noexcept { this->leave_critical_section(); }
 
 private:
   bool in_critical_section_{false};
 };
 
-template<class F, class ...Args>
-auto critical_section_call(F &&f, Args &&...args) noexcept {
+template <class F, class... Args>
+auto critical_section_call(F&& f, Args&&... args) noexcept {
   CriticalSectionGuard critical_section;
   return f(std::forward<Args>(args)...);
 }

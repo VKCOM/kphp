@@ -15,7 +15,7 @@
 
 namespace {
 
-constexpr const char *CRYPTO_COMPONENT_NAME = "crypto";
+constexpr const char* CRYPTO_COMPONENT_NAME = "crypto";
 
 } // namespace
 
@@ -46,7 +46,7 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
   co_return string(str_view.data(), str_view.size());
 }
 
-task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool shortnames) noexcept {
+task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string& data, bool shortnames) noexcept {
   tl::GetPemCertInfo request{.is_short = shortnames, .bytes = data};
 
   tl::TLBuffer buffer;
@@ -66,7 +66,7 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
   co_return response.data;
 }
 
-task_t<bool> f$openssl_sign(const string &data, string &signature, const string &private_key, int64_t algo) noexcept {
+task_t<bool> f$openssl_sign(const string& data, string& signature, const string& private_key, int64_t algo) noexcept {
   tl::DigestSign request{.data = data, .private_key = private_key, .algorithm = static_cast<tl::DigestAlgorithm>(algo)};
 
   tl::TLBuffer buffer;
@@ -89,7 +89,7 @@ task_t<bool> f$openssl_sign(const string &data, string &signature, const string 
   co_return true;
 }
 
-task_t<int64_t> f$openssl_verify(const string &data, const string &signature, const string &pub_key, int64_t algo) noexcept {
+task_t<int64_t> f$openssl_verify(const string& data, const string& signature, const string& pub_key, int64_t algo) noexcept {
   tl::DigestVerify request{.data = data, .public_key = pub_key, .algorithm = static_cast<tl::DigestAlgorithm>(algo), .signature = signature};
 
   tl::TLBuffer buffer;
@@ -116,7 +116,7 @@ namespace {
 constexpr std::string_view AES_128_CBC = "aes-128-cbc";
 constexpr std::string_view AES_256_CBC = "aes-256-cbc";
 
-std::optional<tl::CipherAlgorithm> parse_algorithm(const string &method) noexcept {
+std::optional<tl::CipherAlgorithm> parse_algorithm(const string& method) noexcept {
   using namespace std::string_view_literals;
   std::string_view method_sv{method.c_str(), method.size()};
 
@@ -141,22 +141,22 @@ int64_t algorithm_iv_len([[maybe_unused]] tl::CipherAlgorithm algorithm) noexcep
 
 int64_t algorithm_key_len(tl::CipherAlgorithm algorithm) noexcept {
   switch (algorithm) {
-    case tl::CipherAlgorithm::AES128: {
-      return AES_128_KEY_LEN;
-    }
-    case tl::CipherAlgorithm::AES256: {
-      return AES_256_KEY_LEN;
-    }
-    default: {
-      php_warning("unexpected cipher algorithm");
-      return 0;
-    }
+  case tl::CipherAlgorithm::AES128: {
+    return AES_128_KEY_LEN;
+  }
+  case tl::CipherAlgorithm::AES256: {
+    return AES_256_KEY_LEN;
+  }
+  default: {
+    php_warning("unexpected cipher algorithm");
+    return 0;
+  }
   }
 }
 
 enum class cipher_opts : int64_t { OPENSSL_RAW_DATA = 1, OPENSSL_ZERO_PADDING = 2, OPENSSL_DONT_ZERO_PAD_KEY = 4 };
 
-Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm algorithm, const string &source_key, const string &source_iv,
+Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm algorithm, const string& source_key, const string& source_iv,
                                                          int64_t options) noexcept {
   const size_t iv_required_len = algorithm_iv_len(algorithm);
   const size_t key_required_len = algorithm_key_len(algorithm);
@@ -193,11 +193,11 @@ Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm alg
 
 array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept {
   array<string> return_value{
-    {std::make_pair(0, string{AES_128_CBC.data(), AES_128_CBC.size()}), std::make_pair(1, string{AES_256_CBC.data(), AES_256_CBC.size()})}};
+      {std::make_pair(0, string{AES_128_CBC.data(), AES_128_CBC.size()}), std::make_pair(1, string{AES_256_CBC.data(), AES_256_CBC.size()})}};
   return return_value;
 }
 
-Optional<int64_t> f$openssl_cipher_iv_length(const string &method) noexcept {
+Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept {
   auto algorithm = parse_algorithm(method);
   if (!algorithm.has_value()) {
     php_warning("Unknown cipher algorithm");
@@ -206,8 +206,8 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string &method) noexcept {
   return algorithm_iv_len(*algorithm);
 }
 
-task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &method, const string &source_key, int64_t options, const string &source_iv,
-                                           string &tag, const string &aad, int64_t tag_length __attribute__((unused))) noexcept {
+task_t<Optional<string>> f$openssl_encrypt(const string& data, const string& method, const string& source_key, int64_t options, const string& source_iv,
+                                           string& tag, const string& aad, int64_t tag_length __attribute__((unused))) noexcept {
   auto algorithm = parse_algorithm(method);
   if (!algorithm.has_value()) {
     php_warning("Unknown cipher algorithm");
@@ -248,11 +248,11 @@ task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &met
   if (!response.fetch(buffer)) {
     co_return false;
   }
-  co_return(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(response.value) : f$base64_encode(response.value);
+  co_return (options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(response.value) : f$base64_encode(response.value);
 }
 
-task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, const string &source_key, int64_t options, const string &source_iv, string tag,
-                                           const string &aad) noexcept {
+task_t<Optional<string>> f$openssl_decrypt(string data, const string& method, const string& source_key, int64_t options, const string& source_iv, string tag,
+                                           const string& aad) noexcept {
   if (!(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA))) {
     Optional<string> decoding_data = f$base64_decode(data, true);
     if (!decoding_data.has_value()) {

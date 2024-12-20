@@ -13,13 +13,12 @@
 
 namespace tl_rpc_request_impl_ {
 // use template, because t_ReqResult_ is unknown on runtime compilation
-template<template<typename, uint32_t> class t_ReqResult_>
+template <template <typename, uint32_t> class t_ReqResult_>
 class KphpRpcRequestResult final : public RpcRequestResult {
 public:
   using RpcRequestResult::RpcRequestResult;
 
-  explicit KphpRpcRequestResult(std::unique_ptr<tl_func_base> &&result_fetcher)
-    : RpcRequestResult(true, std::move(result_fetcher)) {}
+  explicit KphpRpcRequestResult(std::unique_ptr<tl_func_base>&& result_fetcher) : RpcRequestResult(true, std::move(result_fetcher)) {}
 
   class_instance<C$VK$TL$RpcResponse> fetch_typed_response() final {
     class_instance<C$VK$TL$RpcResponse> $response;
@@ -27,20 +26,18 @@ public:
     return $response;
   }
 
-  std::unique_ptr<tl_func_base> extract_untyped_fetcher() final {
-    php_assert(!"Forbidden to call for typed rpc requests");
-  }
+  std::unique_ptr<tl_func_base> extract_untyped_fetcher() final { php_assert(!"Forbidden to call for typed rpc requests"); }
 };
 
 // use template, because t_ReqResult_ is unknown on runtime compilation
-template<template<typename, uint32_t> class t_ReqResult_>
+template <template <typename, uint32_t> class t_ReqResult_>
 class KphpRpcRequest final : public RpcRequest {
 public:
   using RpcRequest::RpcRequest;
 
   std::unique_ptr<RpcRequestResult> store_request() const final {
     //    php_assert(CurException.is_null());
-    auto &rpc_ctx{RpcInstanceState::get()};
+    auto& rpc_ctx{RpcInstanceState::get()};
     rpc_ctx.current_query.set_current_tl_function(tl_function_name());
     std::unique_ptr<tl_func_base> stored_fetcher = storing_function.get()->store();
     rpc_ctx.current_query.reset();
@@ -54,7 +51,7 @@ public:
 };
 } // namespace tl_rpc_request_impl_
 
-template<class T0, uint32_t inner_magic0>
+template <class T0, uint32_t inner_magic0>
 struct t_ReqResult; // the definition appears after the TL scheme codegen, during the site build
 
 using KphpRpcRequest = tl_rpc_request_impl_::KphpRpcRequest<t_ReqResult>;

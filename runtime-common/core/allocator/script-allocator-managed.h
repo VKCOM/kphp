@@ -10,21 +10,15 @@
 
 class ScriptAllocatorManaged {
 public:
-  static void *operator new(size_t size) noexcept {
-    return RuntimeAllocator::get().alloc_script_memory(size);
-  }
+  static void* operator new(size_t size) noexcept { return RuntimeAllocator::get().alloc_script_memory(size); }
 
-  static void *operator new(size_t, void *ptr) noexcept {
-    return ptr;
-  }
+  static void* operator new(size_t, void* ptr) noexcept { return ptr; }
 
-  static void operator delete(void *ptr, size_t size) noexcept {
-    RuntimeAllocator::get().free_script_memory(ptr, size);
-  }
+  static void operator delete(void* ptr, size_t size) noexcept { RuntimeAllocator::get().free_script_memory(ptr, size); }
 
-  static void *operator new[](size_t count) = delete;
-  static void operator delete[](void *ptr, size_t sz) = delete;
-  static void operator delete[](void *ptr) = delete;
+  static void* operator new[](size_t count) = delete;
+  static void operator delete[](void* ptr, size_t sz) = delete;
+  static void operator delete[](void* ptr) = delete;
 
 protected:
   ~ScriptAllocatorManaged() = default;

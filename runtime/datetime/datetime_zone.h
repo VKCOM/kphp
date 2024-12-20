@@ -13,14 +13,10 @@ struct C$DateTimeZone : public refcountable_php_classes<C$DateTimeZone>, private
 
   string timezone;
 
-  const char *get_class() const noexcept {
-    return R"(DateTimeZone)";
-  }
+  const char* get_class() const noexcept { return R"(DateTimeZone)"; }
 
-  int get_hash() const noexcept {
-    return 219249843;
-  }
+  int get_hash() const noexcept { return 219249843; }
 };
 
-class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone> &self, const string &timezone) noexcept;
-string f$DateTimeZone$$getName(const class_instance<C$DateTimeZone> &self) noexcept;
+class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone>& self, const string& timezone) noexcept;
+string f$DateTimeZone$$getName(const class_instance<C$DateTimeZone>& self) noexcept;

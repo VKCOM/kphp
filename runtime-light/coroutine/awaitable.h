@@ -21,14 +21,14 @@
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 
-template<class T>
+template <class T>
 concept Awaitable = requires(T awaitable, std::coroutine_handle<> coro) {
   { awaitable.await_ready() } noexcept -> std::convertible_to<bool>;
   { awaitable.await_suspend(coro) } noexcept;
   { awaitable.await_resume() } noexcept;
 };
 
-template<class T>
+template <class T>
 concept CancellableAwaitable = Awaitable<T> && requires(T awaitable) {
   // semantics: returns 'true' if it's safe to call 'await_resume', 'false' otherwise.
   { awaitable.resumable() } noexcept -> std::convertible_to<bool>;
@@ -50,9 +50,7 @@ class fork_id_watcher_t {
   int64_t fork_id{ForkInstanceState::get().running_fork_id};
 
 protected:
-  void await_resume() const noexcept {
-    ForkInstanceState::get().running_fork_id = fork_id;
-  }
+  void await_resume() const noexcept { ForkInstanceState::get().running_fork_id = fork_id; }
 };
 
 } // namespace awaitable_impl_
@@ -64,17 +62,16 @@ class wait_for_update_t : public awaitable_impl_::fork_id_watcher_t {
 
 public:
   explicit wait_for_update_t(uint64_t stream_d_) noexcept
-    : stream_d(stream_d_)
-    , suspend_token(std::noop_coroutine(), WaitEvent::UpdateOnStream{.stream_d = stream_d}) {}
+      : stream_d(stream_d_), suspend_token(std::noop_coroutine(), WaitEvent::UpdateOnStream{.stream_d = stream_d}) {}
 
-  wait_for_update_t(wait_for_update_t &&other) noexcept
-    : stream_d(std::exchange(other.stream_d, k2::INVALID_PLATFORM_DESCRIPTOR))
-    , suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+  wait_for_update_t(wait_for_update_t&& other) noexcept
+      : stream_d(std::exchange(other.stream_d, k2::INVALID_PLATFORM_DESCRIPTOR)),
+        suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{}))),
+        state(std::exchange(other.state, awaitable_impl_::State::End)) {}
 
-  wait_for_update_t(const wait_for_update_t &) = delete;
-  wait_for_update_t &operator=(const wait_for_update_t &) = delete;
-  wait_for_update_t &operator=(wait_for_update_t &&) = delete;
+  wait_for_update_t(const wait_for_update_t&) = delete;
+  wait_for_update_t& operator=(const wait_for_update_t&) = delete;
+  wait_for_update_t& operator=(wait_for_update_t&&) = delete;
 
   ~wait_for_update_t() {
     if (state == awaitable_impl_::State::Suspend) {
@@ -118,13 +115,13 @@ class wait_for_incoming_stream_t : awaitable_impl_::fork_id_watcher_t {
 public:
   wait_for_incoming_stream_t() noexcept = default;
 
-  wait_for_incoming_stream_t(wait_for_incoming_stream_t &&other) noexcept
-    : suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+  wait_for_incoming_stream_t(wait_for_incoming_stream_t&& other) noexcept
+      : suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{}))),
+        state(std::exchange(other.state, awaitable_impl_::State::End)) {}
 
-  wait_for_incoming_stream_t(const wait_for_incoming_stream_t &) = delete;
-  wait_for_incoming_stream_t &operator=(const wait_for_incoming_stream_t &) = delete;
-  wait_for_incoming_stream_t &operator=(wait_for_incoming_stream_t &&) = delete;
+  wait_for_incoming_stream_t(const wait_for_incoming_stream_t&) = delete;
+  wait_for_incoming_stream_t& operator=(const wait_for_incoming_stream_t&) = delete;
+  wait_for_incoming_stream_t& operator=(wait_for_incoming_stream_t&&) = delete;
 
   ~wait_for_incoming_stream_t() {
     if (state == awaitable_impl_::State::Suspend) {
@@ -171,13 +168,13 @@ class wait_for_reschedule_t : awaitable_impl_::fork_id_watcher_t {
 public:
   wait_for_reschedule_t() noexcept = default;
 
-  wait_for_reschedule_t(wait_for_reschedule_t &&other) noexcept
-    : suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+  wait_for_reschedule_t(wait_for_reschedule_t&& other) noexcept
+      : suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{}))),
+        state(std::exchange(other.state, awaitable_impl_::State::End)) {}
 
-  wait_for_reschedule_t(const wait_for_reschedule_t &) = delete;
-  wait_for_reschedule_t &operator=(const wait_for_reschedule_t &) = delete;
-  wait_for_reschedule_t &operator=(wait_for_reschedule_t &&) = delete;
+  wait_for_reschedule_t(const wait_for_reschedule_t&) = delete;
+  wait_for_reschedule_t& operator=(const wait_for_reschedule_t&) = delete;
+  wait_for_reschedule_t& operator=(wait_for_reschedule_t&&) = delete;
 
   ~wait_for_reschedule_t() {
     if (state == awaitable_impl_::State::Suspend) {
@@ -201,9 +198,7 @@ public:
     fork_id_watcher_t::await_resume();
   }
 
-  bool resumable() const noexcept {
-    return state == awaitable_impl_::State::Suspend && !CoroutineScheduler::get().contains(suspend_token);
-  }
+  bool resumable() const noexcept { return state == awaitable_impl_::State::Suspend && !CoroutineScheduler::get().contains(suspend_token); }
 
   void cancel() noexcept {
     state = awaitable_impl_::State::End;
@@ -220,18 +215,16 @@ class wait_for_timer_t : awaitable_impl_::fork_id_watcher_t {
   awaitable_impl_::State state{awaitable_impl_::State::Init};
 
 public:
-  explicit wait_for_timer_t(std::chrono::nanoseconds duration_) noexcept
-    : duration(duration_) {}
+  explicit wait_for_timer_t(std::chrono::nanoseconds duration_) noexcept : duration(duration_) {}
 
-  wait_for_timer_t(wait_for_timer_t &&other) noexcept
-    : duration(std::exchange(other.duration, std::chrono::nanoseconds{0}))
-    , timer_d(std::exchange(other.timer_d, k2::INVALID_PLATFORM_DESCRIPTOR))
-    , suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+  wait_for_timer_t(wait_for_timer_t&& other) noexcept
+      : duration(std::exchange(other.duration, std::chrono::nanoseconds{0})), timer_d(std::exchange(other.timer_d, k2::INVALID_PLATFORM_DESCRIPTOR)),
+        suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{}))),
+        state(std::exchange(other.state, awaitable_impl_::State::End)) {}
 
-  wait_for_timer_t(const wait_for_timer_t &) = delete;
-  wait_for_timer_t &operator=(const wait_for_timer_t &) = delete;
-  wait_for_timer_t &operator=(wait_for_timer_t &&) = delete;
+  wait_for_timer_t(const wait_for_timer_t&) = delete;
+  wait_for_timer_t& operator=(const wait_for_timer_t&) = delete;
+  wait_for_timer_t& operator=(wait_for_timer_t&&) = delete;
 
   ~wait_for_timer_t() {
     if (state == awaitable_impl_::State::Suspend) {
@@ -262,9 +255,7 @@ public:
     fork_id_watcher_t::await_resume();
   }
 
-  bool resumable() const noexcept {
-    return state == awaitable_impl_::State::Suspend && !CoroutineScheduler::get().contains(suspend_token);
-  }
+  bool resumable() const noexcept { return state == awaitable_impl_::State::Suspend && !CoroutineScheduler::get().contains(suspend_token); }
 
   void cancel() noexcept {
     state = awaitable_impl_::State::End;
@@ -292,20 +283,17 @@ private:
 
 public:
   explicit start_fork_t(task_t<void> task_, execution exec_policy_) noexcept
-    : exec_policy(exec_policy_)
-    , fork_coro(task_.get_handle())
-    , fork_id(ForkInstanceState::get().push_fork(std::move(task_))) {}
+      : exec_policy(exec_policy_), fork_coro(task_.get_handle()), fork_id(ForkInstanceState::get().push_fork(std::move(task_))) {}
 
-  start_fork_t(start_fork_t &&other) noexcept
-    : exec_policy(other.exec_policy)
-    , fork_coro(std::exchange(other.fork_coro, std::noop_coroutine()))
-    , fork_id(std::exchange(other.fork_id, INVALID_FORK_ID))
-    , suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+  start_fork_t(start_fork_t&& other) noexcept
+      : exec_policy(other.exec_policy), fork_coro(std::exchange(other.fork_coro, std::noop_coroutine())),
+        fork_id(std::exchange(other.fork_id, INVALID_FORK_ID)),
+        suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{}))),
+        state(std::exchange(other.state, awaitable_impl_::State::End)) {}
 
-  start_fork_t(const start_fork_t &) = delete;
-  start_fork_t &operator=(const start_fork_t &) = delete;
-  start_fork_t &operator=(start_fork_t &&) = delete;
+  start_fork_t(const start_fork_t&) = delete;
+  start_fork_t& operator=(const start_fork_t&) = delete;
+  start_fork_t& operator=(start_fork_t&&) = delete;
   ~start_fork_t() = default;
 
   constexpr bool await_ready() const noexcept {
@@ -317,17 +305,17 @@ public:
     state = awaitable_impl_::State::Suspend;
     std::coroutine_handle<> continuation{};
     switch (exec_policy) {
-      case execution::fork: {
-        suspend_token.first = current_coro;
-        continuation = fork_coro;
-        ForkInstanceState::get().running_fork_id = fork_id;
-        break;
-      }
-      case execution::self: {
-        suspend_token.first = fork_coro;
-        continuation = current_coro;
-        break;
-      }
+    case execution::fork: {
+      suspend_token.first = current_coro;
+      continuation = fork_coro;
+      ForkInstanceState::get().running_fork_id = fork_id;
+      break;
+    }
+    case execution::self: {
+      suspend_token.first = fork_coro;
+      continuation = current_coro;
+      break;
+    }
     }
     CoroutineScheduler::get().suspend(suspend_token);
     // reset fork_coro and suspend_token to guarantee that the same fork will be started only once
@@ -345,7 +333,7 @@ public:
 
 // ================================================================================================
 
-template<typename T>
+template <typename T>
 class wait_fork_t : awaitable_impl_::fork_id_watcher_t {
   int64_t fork_id;
   task_t<T> fork_task;
@@ -357,19 +345,15 @@ class wait_fork_t : awaitable_impl_::fork_id_watcher_t {
 
 public:
   explicit wait_fork_t(int64_t fork_id_) noexcept
-    : fork_id(fork_id_)
-    , fork_task(static_cast<task_t<T>>(ForkInstanceState::get().pop_fork(fork_id)))
-    , fork_awaiter(std::addressof(fork_task)) {}
+      : fork_id(fork_id_), fork_task(static_cast<task_t<T>>(ForkInstanceState::get().pop_fork(fork_id))), fork_awaiter(std::addressof(fork_task)) {}
 
-  wait_fork_t(wait_fork_t &&other) noexcept
-    : fork_id(std::exchange(other.fork_id, INVALID_FORK_ID))
-    , fork_task(std::move(other.fork_task))
-    , fork_awaiter(std::addressof(fork_task))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+  wait_fork_t(wait_fork_t&& other) noexcept
+      : fork_id(std::exchange(other.fork_id, INVALID_FORK_ID)), fork_task(std::move(other.fork_task)), fork_awaiter(std::addressof(fork_task)),
+        state(std::exchange(other.state, awaitable_impl_::State::End)) {}
 
-  wait_fork_t(const wait_fork_t &) = delete;
-  wait_fork_t &operator=(const wait_fork_t &) = delete;
-  wait_fork_t &operator=(wait_fork_t &&) = delete;
+  wait_fork_t(const wait_fork_t&) = delete;
+  wait_fork_t& operator=(const wait_fork_t&) = delete;
+  wait_fork_t& operator=(wait_fork_t&&) = delete;
 
   ~wait_fork_t() {
     if (state == awaitable_impl_::State::Suspend) {
@@ -410,7 +394,7 @@ public:
 
 // ================================================================================================
 
-template<CancellableAwaitable T>
+template <CancellableAwaitable T>
 class wait_with_timeout_t {
   T awaitable;
   wait_for_timer_t timer_awaitable;
@@ -424,18 +408,15 @@ class wait_with_timeout_t {
   using await_resume_return_t = std::conditional_t<std::is_void_v<awaitable_resume_t>, void, std::optional<awaitable_resume_t>>;
 
 public:
-  wait_with_timeout_t(T &&awaitable_, std::chrono::nanoseconds timeout) noexcept
-    : awaitable(std::move(awaitable_))
-    , timer_awaitable(timeout) {}
+  wait_with_timeout_t(T&& awaitable_, std::chrono::nanoseconds timeout) noexcept : awaitable(std::move(awaitable_)), timer_awaitable(timeout) {}
 
-  wait_with_timeout_t(wait_with_timeout_t &&other) noexcept
-    : awaitable(std::move(other.awaitable))
-    , timer_awaitable(std::move(other.timer_awaitable))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+  wait_with_timeout_t(wait_with_timeout_t&& other) noexcept
+      : awaitable(std::move(other.awaitable)), timer_awaitable(std::move(other.timer_awaitable)),
+        state(std::exchange(other.state, awaitable_impl_::State::End)) {}
 
-  wait_with_timeout_t(const wait_with_timeout_t &) = delete;
-  wait_with_timeout_t &operator=(const wait_with_timeout_t &) = delete;
-  wait_with_timeout_t &operator=(wait_with_timeout_t &&) = delete;
+  wait_with_timeout_t(const wait_with_timeout_t&) = delete;
+  wait_with_timeout_t& operator=(const wait_with_timeout_t&) = delete;
+  wait_with_timeout_t& operator=(wait_with_timeout_t&&) = delete;
   ~wait_with_timeout_t() = default;
 
   constexpr bool await_ready() noexcept {
@@ -480,5 +461,5 @@ public:
   }
 };
 
-template<class T>
-wait_with_timeout_t(T &&, std::chrono::nanoseconds) -> wait_with_timeout_t<T>;
+template <class T>
+wait_with_timeout_t(T&&, std::chrono::nanoseconds) -> wait_with_timeout_t<T>;

@@ -6,6 +6,4 @@
 
 #include "runtime-light/state/instance-state.h"
 
-RandomInstanceState &RandomInstanceState::get() noexcept {
-  return InstanceState::get().random_instance_state;
-}
+RandomInstanceState& RandomInstanceState::get() noexcept { return InstanceState::get().random_instance_state; }

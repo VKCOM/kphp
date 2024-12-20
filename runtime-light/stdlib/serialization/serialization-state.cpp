@@ -6,6 +6,4 @@
 
 #include "runtime-light/state/instance-state.h"
 
-SerializationInstanceState &SerializationInstanceState::get() noexcept {
-  return InstanceState::get().serialization_instance_state;
-}
+SerializationInstanceState& SerializationInstanceState::get() noexcept { return InstanceState::get().serialization_instance_state; }

@@ -7,7 +7,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/math/math-functions.h"
 
-int64_t f$bindec(const string &number) noexcept;
+int64_t f$bindec(const string& number) noexcept;
 
 string f$decbin(int64_t number) noexcept;
 
@@ -43,7 +43,7 @@ inline double f$atan(double v);
 
 inline double f$atan2(double y, double x);
 
-string f$base_convert(const string &number, int64_t frombase, int64_t tobase);
+string f$base_convert(const string& number, int64_t frombase, int64_t tobase);
 
 inline double f$cosh(double v);
 
@@ -79,29 +79,17 @@ void init_math_functions() noexcept;
  *
  */
 
-double f$acos(double v) {
-  return acos(v);
-}
+double f$acos(double v) { return acos(v); }
 
-double f$atan(double v) {
-  return atan(v);
-}
+double f$atan(double v) { return atan(v); }
 
-double f$atan2(double y, double x) {
-  return atan2(y, x);
-}
+double f$atan2(double y, double x) { return atan2(y, x); }
 
-double f$cosh(double v) {
-  return cosh(v);
-}
+double f$cosh(double v) { return cosh(v); }
 
-double f$acosh(double v) {
-  return acosh(v);
-}
+double f$acosh(double v) { return acosh(v); }
 
-double f$exp(double v) {
-  return exp(v);
-}
+double f$exp(double v) { return exp(v); }
 
 double f$fmod(double x, double y) {
   if (fabs(x) > 1e100 || fabs(y) < 1e-100) {
@@ -115,34 +103,18 @@ bool f$is_finite(double v) {
   return (v_class != FP_NAN && v_class != FP_INFINITE);
 }
 
-bool f$is_infinite(double v) {
-  return (std::fpclassify(v) == FP_INFINITE);
-}
+bool f$is_infinite(double v) { return (std::fpclassify(v) == FP_INFINITE); }
 
-bool f$is_nan(double v) {
-  return (std::fpclassify(v) == FP_NAN);
-}
+bool f$is_nan(double v) { return (std::fpclassify(v) == FP_NAN); }
 
-double f$sin(double v) {
-  return sin(v);
-}
+double f$sin(double v) { return sin(v); }
 
-double f$sinh(double v) {
-  return sinh(v);
-}
+double f$sinh(double v) { return sinh(v); }
 
-double f$tan(double v) {
-  return tan(v);
-}
+double f$tan(double v) { return tan(v); }
 
-double f$asin(double v) {
-  return asin(v);
-}
+double f$asin(double v) { return asin(v); }
 
-double f$asinh(double v) {
-  return asinh(v);
-}
+double f$asinh(double v) { return asinh(v); }
 
-double f$rad2deg(double v) {
-  return v * 180 / M_PI;
-}
+double f$rad2deg(double v) { return v * 180 / M_PI; }

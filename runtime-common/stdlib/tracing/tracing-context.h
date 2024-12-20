@@ -21,7 +21,7 @@ struct TracingContext final : private vk::not_copyable {
   //      (same as 1, but more events with more details are written to binlog, significant overhead)
   int32_t cur_trace_level{-1};
 
-  static TracingContext &get() noexcept;
+  static TracingContext& get() noexcept;
 };
 
 } // namespace kphp_tracing

@@ -6,22 +6,21 @@
 
 struct array_size;
 
-template<class T>
+template <class T>
 class array;
 
-template<class T>
+template <class T>
 class class_instance;
 
 class mixed;
 
-class Unknown {
-};
+class Unknown {};
 
 class string;
 
 class string_buffer;
 
-template<typename T>
+template <typename T>
 class Optional;
 
 struct C$RpcConnection;

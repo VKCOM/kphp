@@ -4,7 +4,7 @@
 
 #pragma once
 
-template<class T>
-T f$make_clone(const T &x) noexcept {
+template <class T>
+T f$make_clone(const T& x) noexcept {
   return x;
 }

@@ -10,5 +10,5 @@
 struct SerializationLibContext final : private vk::not_copyable {
   string last_json_processor_error;
 
-  static SerializationLibContext &get() noexcept;
+  static SerializationLibContext& get() noexcept;
 };

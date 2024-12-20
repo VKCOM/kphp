@@ -24,8 +24,8 @@
 namespace {
 
 int32_t merge_output_buffers() noexcept {
-  auto &instance_st{InstanceState::get()};
-  Response &response{instance_st.response};
+  auto& instance_st{InstanceState::get()};
+  Response& response{instance_st.response};
   php_assert(response.current_buffer >= 0);
 
   int32_t ob_first_not_empty{};
@@ -46,7 +46,7 @@ void InstanceState::init_script_execution() noexcept {
   scheduler.suspend(std::make_pair(main_task_.get_handle(), WaitEvent::Rechedule{}));
 }
 
-template<ImageKind kind>
+template <ImageKind kind>
 task_t<void> InstanceState::run_instance_prologue() noexcept {
   static_assert(kind != ImageKind::Invalid);
   image_kind_ = kind;
@@ -55,7 +55,7 @@ task_t<void> InstanceState::run_instance_prologue() noexcept {
   {
     const auto time_mcs{f$_microtime_float()};
 
-    auto &superglobals{php_script_mutable_globals_singleton.get_superglobals()};
+    auto& superglobals{php_script_mutable_globals_singleton.get_superglobals()};
     superglobals.v$_ENV = ComponentState::get().env;
 
     using namespace PhpServerSuperGlobalIndices;
@@ -79,7 +79,7 @@ template task_t<void> InstanceState::run_instance_prologue<ImageKind::Multishot>
 
 task_t<void> InstanceState::run_instance_epilogue() noexcept {
   if (std::exchange(shutdown_state_, shutdown_state::in_progress) == shutdown_state::not_started) [[likely]] {
-    for (auto &sf : shutdown_functions) {
+    for (auto& sf : shutdown_functions) {
       co_await sf;
     }
   }
@@ -90,22 +90,22 @@ task_t<void> InstanceState::run_instance_epilogue() noexcept {
   }
 
   switch (image_kind_) {
-    case ImageKind::Oneshot:
-    case ImageKind::Multishot:
-      break;
-    case ImageKind::CLI: {
-      const auto &buffer{response.output_buffers[merge_output_buffers()]};
-      co_await finalize_kphp_cli_component(buffer);
-      break;
-    }
-    case ImageKind::Server: {
-      const auto &buffer{response.output_buffers[merge_output_buffers()]};
-      co_await finalize_kphp_server_component(buffer);
-      break;
-    }
-    default: {
-      php_error("unexpected ImageKind");
-    }
+  case ImageKind::Oneshot:
+  case ImageKind::Multishot:
+    break;
+  case ImageKind::CLI: {
+    const auto& buffer{response.output_buffers[merge_output_buffers()]};
+    co_await finalize_kphp_cli_component(buffer);
+    break;
+  }
+  case ImageKind::Server: {
+    const auto& buffer{response.output_buffers[merge_output_buffers()]};
+    co_await finalize_kphp_server_component(buffer);
+    break;
+  }
+  default: {
+    php_error("unexpected ImageKind");
+  }
   }
   release_all_streams();
   shutdown_state_ = shutdown_state::finished;
@@ -126,17 +126,17 @@ void InstanceState::process_platform_updates() noexcept {
       if (opened_streams_.contains(stream_d)) { // update on opened stream
         php_debug("took update on stream %" PRIu64, stream_d);
         switch (scheduler.schedule(ScheduleEvent::UpdateOnStream{.stream_d = stream_d})) {
-          case ScheduleStatus::Resumed: { // scheduler's resumed a coroutine waiting for update
-            break;
-          }
-          case ScheduleStatus::Skipped: { // no one is waiting for the event yet, so just save it
-            pending_updates_.insert(stream_d);
-            break;
-          }
-          case ScheduleStatus::Error: { // something bad's happened, stop execution
-            poll_status = k2::PollStatus::PollFinishedError;
-            return;
-          }
+        case ScheduleStatus::Resumed: { // scheduler's resumed a coroutine waiting for update
+          break;
+        }
+        case ScheduleStatus::Skipped: { // no one is waiting for the event yet, so just save it
+          pending_updates_.insert(stream_d);
+          break;
+        }
+        case ScheduleStatus::Error: { // something bad's happened, stop execution
+          poll_status = k2::PollStatus::PollFinishedError;
+          return;
+        }
         }
       } else { // update on incoming stream
         php_debug("got new incoming stream %" PRIu64, stream_d);
@@ -149,17 +149,17 @@ void InstanceState::process_platform_updates() noexcept {
       }
     } else { // we'are out of updates so let the scheduler do whatever it wants
       switch (scheduler.schedule(ScheduleEvent::NoEvent{})) {
-        case ScheduleStatus::Resumed: { // scheduler's resumed some coroutine, so let's continue scheduling
-          break;
-        }
-        case ScheduleStatus::Skipped: { // scheduler's done nothing, so it's either scheduled all coroutines or is waiting for events
-          poll_status = scheduler.done() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollBlocked;
-          return;
-        }
-        case ScheduleStatus::Error: { // something bad's happened, stop execution
-          poll_status = k2::PollStatus::PollFinishedError;
-          return;
-        }
+      case ScheduleStatus::Resumed: { // scheduler's resumed some coroutine, so let's continue scheduling
+        break;
+      }
+      case ScheduleStatus::Skipped: { // scheduler's done nothing, so it's either scheduled all coroutines or is waiting for events
+        poll_status = scheduler.done() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollBlocked;
+        return;
+      }
+      case ScheduleStatus::Error: { // something bad's happened, stop execution
+        poll_status = k2::PollStatus::PollFinishedError;
+        return;
+      }
       }
     }
   }
@@ -182,18 +182,18 @@ std::pair<uint64_t, int32_t> InstanceState::open_stream(std::string_view compone
   uint64_t stream_d{};
   int32_t error_code{};
   switch (stream_kind) {
-    case k2::StreamKind::Component:
-      error_code = k2::open(std::addressof(stream_d), component_name.size(), component_name.data());
-      break;
-    case k2::StreamKind::TCP:
-      error_code = k2::tcp_connect(std::addressof(stream_d), component_name.data(), component_name.size());
-      break;
-    case k2::StreamKind::UDP:
-      error_code = k2::udp_connect(std::addressof(stream_d), component_name.data(), component_name.size());
-      break;
-    default:
-      error_code = k2::errno_einval;
-      break;
+  case k2::StreamKind::Component:
+    error_code = k2::open(std::addressof(stream_d), component_name.size(), component_name.data());
+    break;
+  case k2::StreamKind::TCP:
+    error_code = k2::tcp_connect(std::addressof(stream_d), component_name.data(), component_name.size());
+    break;
+  case k2::StreamKind::UDP:
+    error_code = k2::udp_connect(std::addressof(stream_d), component_name.data(), component_name.size());
+    break;
+  default:
+    error_code = k2::errno_einval;
+    break;
   }
 
   if (error_code == k2::errno_ok) [[likely]] {

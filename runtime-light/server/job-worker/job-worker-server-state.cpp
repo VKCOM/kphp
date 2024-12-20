@@ -6,6 +6,4 @@
 
 #include "runtime-light/state/instance-state.h"
 
-JobWorkerServerInstanceState &JobWorkerServerInstanceState::get() noexcept {
-  return InstanceState::get().job_worker_server_instance_state;
-}
+JobWorkerServerInstanceState& JobWorkerServerInstanceState::get() noexcept { return InstanceState::get().job_worker_server_instance_state; }

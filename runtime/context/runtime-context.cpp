@@ -10,9 +10,7 @@
 RuntimeContext kphp_runtime_context;
 RuntimeAllocator runtime_allocator;
 
-RuntimeContext &RuntimeContext::get() noexcept {
-  return kphp_runtime_context;
-}
+RuntimeContext& RuntimeContext::get() noexcept { return kphp_runtime_context; }
 
 void RuntimeContext::init() noexcept {
   if (static_buffer_length_limit < 0) {
@@ -22,6 +20,4 @@ void RuntimeContext::init() noexcept {
   }
 }
 
-void RuntimeContext::free() noexcept {
-  free_migration_php8();
-}
+void RuntimeContext::free() noexcept { free_migration_php8(); }

@@ -11,9 +11,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 
-inline int64_t f$_hrtime_int() noexcept {
-  return std::chrono::steady_clock::now().time_since_epoch().count();
-}
+inline int64_t f$_hrtime_int() noexcept { return std::chrono::steady_clock::now().time_since_epoch().count(); }
 
 inline array<int64_t> f$_hrtime_array() noexcept {
   namespace chrono = std::chrono;
@@ -44,7 +42,7 @@ inline double f$_microtime_float() noexcept {
   namespace chrono = std::chrono;
   const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
   const double microtime =
-    duration_cast<chrono::seconds>(time_since_epoch).count() + (duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000) * 1e-9;
+      duration_cast<chrono::seconds>(time_since_epoch).count() + (duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000) * 1e-9;
   return microtime;
 }
 
@@ -65,8 +63,8 @@ inline int64_t f$time() noexcept {
 int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
                  Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept;
 
-string f$gmdate(const string &format, Optional<int64_t> timestamp = {}) noexcept;
+string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) noexcept;
 
-string f$date(const string &format, Optional<int64_t> timestamp = {}) noexcept;
+string f$date(const string& format, Optional<int64_t> timestamp = {}) noexcept;
 
-bool f$date_default_timezone_set(const string &s) noexcept;
+bool f$date_default_timezone_set(const string& s) noexcept;

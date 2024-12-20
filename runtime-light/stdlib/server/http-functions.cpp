@@ -34,8 +34,8 @@ bool http_status_header(std::string_view header) noexcept {
 }
 
 bool http_location_header(std::string_view header) noexcept {
-  const auto lowercase_prefix{header | std::views::take(HTTP_LOCATION_HEADER_PREFIX.size())
-                              | std::views::transform([](auto c) noexcept { return std::tolower(c); })};
+  const auto lowercase_prefix{header | std::views::take(HTTP_LOCATION_HEADER_PREFIX.size()) |
+                              std::views::transform([](auto c) noexcept { return std::tolower(c); })};
   return std::ranges::equal(lowercase_prefix, HTTP_LOCATION_HEADER_PREFIX);
 }
 
@@ -96,7 +96,7 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
     return php_warning("http response code can't be negative: %" PRIi64, response_code);
   }
 
-  auto &http_server_instance_st{HttpServerInstanceState::get()};
+  auto& http_server_instance_st{HttpServerInstanceState::get()};
   // HTTP status special case
   if (http_status_header(header_view)) {
     if (const auto opt_status_code{valid_http_status_header(header_view)}; opt_status_code.has_value()) [[likely]] {
@@ -128,8 +128,8 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
 
   // Location: special case
   const bool can_return_redirect{
-    response_code == HttpStatus::NO_STATUS && http_server_instance_st.status_code != HttpStatus::CREATED
-    && (http_server_instance_st.status_code < HttpStatus::MULTIPLE_CHOICES || http_server_instance_st.status_code >= HttpStatus::BAD_REQUEST)};
+      response_code == HttpStatus::NO_STATUS && http_server_instance_st.status_code != HttpStatus::CREATED &&
+      (http_server_instance_st.status_code < HttpStatus::MULTIPLE_CHOICES || http_server_instance_st.status_code >= HttpStatus::BAD_REQUEST)};
   if (can_return_redirect && http_location_header(header_view)) {
     http_server_instance_st.status_code = HttpStatus::FOUND;
   }
@@ -139,9 +139,9 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
   }
 }
 
-void f$setrawcookie(const string &name, const string &value, int64_t expire_or_options, const string &path, const string &domain, bool secure,
+void f$setrawcookie(const string& name, const string& value, int64_t expire_or_options, const string& path, const string& domain, bool secure,
                     bool http_only) noexcept {
-  auto &static_SB_spare{RuntimeContext::get().static_SB_spare};
+  auto& static_SB_spare{RuntimeContext::get().static_SB_spare};
 
   static_SB_spare.clean() << HttpHeader::SET_COOKIE.data() << ": " << name << '=';
   if (value.empty()) {

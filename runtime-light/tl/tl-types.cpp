@@ -14,7 +14,7 @@
 
 namespace tl {
 
-bool K2JobWorkerResponse::fetch(TLBuffer &tlb) noexcept {
+bool K2JobWorkerResponse::fetch(TLBuffer& tlb) noexcept {
   if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != MAGIC) {
     return false;
   }
@@ -31,14 +31,14 @@ bool K2JobWorkerResponse::fetch(TLBuffer &tlb) noexcept {
   return true;
 }
 
-void K2JobWorkerResponse::store(TLBuffer &tlb) const noexcept {
+void K2JobWorkerResponse::store(TLBuffer& tlb) const noexcept {
   tlb.store_trivial<uint32_t>(MAGIC);
   tlb.store_trivial<uint32_t>(0x0); // flags
   tlb.store_trivial<int64_t>(job_id);
   tlb.store_string({body.c_str(), body.size()});
 }
 
-bool GetPemCertInfoResponse::fetch(TLBuffer &tlb) noexcept {
+bool GetPemCertInfoResponse::fetch(TLBuffer& tlb) noexcept {
   if (const auto magic = tlb.fetch_trivial<uint32_t>(); magic.value_or(TL_ZERO) != TL_MAYBE_TRUE) {
     return false;
   }
@@ -69,53 +69,53 @@ bool GetPemCertInfoResponse::fetch(TLBuffer &tlb) noexcept {
     }
 
     switch (*magic) {
-      case CertInfoItem::LONG_MAGIC: {
-        const std::optional<int64_t> val = tlb.fetch_trivial<int64_t>();
-        if (!val.has_value()) {
-          return false;
-        }
-        response[key] = *val;
-        break;
-      }
-      case CertInfoItem::STR_MAGIC: {
-        const auto value_view = tlb.fetch_string();
-        if (value_view.empty()) {
-          return false;
-        }
-        const auto value = string(value_view.data(), value_view.size());
-
-        response[key] = string(value_view.data(), value_view.size());
-        break;
-      }
-      case CertInfoItem::DICT_MAGIC: {
-        auto sub_array = array<string>::create();
-        const std::optional<uint32_t> sub_size = tlb.fetch_trivial<uint32_t>();
-
-        if (!sub_size.has_value()) {
-          return false;
-        }
-
-        for (size_t j = 0; j < sub_size; ++j) {
-          const auto sub_key_view = tlb.fetch_string();
-          if (sub_key_view.empty()) {
-            return false;
-          }
-          const auto sub_key = string(sub_key_view.data(), sub_key_view.size());
-
-          const auto sub_value_view = tlb.fetch_string();
-          if (sub_value_view.empty()) {
-            return false;
-          }
-          const auto sub_value = string(sub_value_view.data(), sub_value_view.size());
-
-          sub_array[sub_key] = sub_value;
-        }
-        response[key] = sub_array;
-
-        break;
-      }
-      default:
+    case CertInfoItem::LONG_MAGIC: {
+      const std::optional<int64_t> val = tlb.fetch_trivial<int64_t>();
+      if (!val.has_value()) {
         return false;
+      }
+      response[key] = *val;
+      break;
+    }
+    case CertInfoItem::STR_MAGIC: {
+      const auto value_view = tlb.fetch_string();
+      if (value_view.empty()) {
+        return false;
+      }
+      const auto value = string(value_view.data(), value_view.size());
+
+      response[key] = string(value_view.data(), value_view.size());
+      break;
+    }
+    case CertInfoItem::DICT_MAGIC: {
+      auto sub_array = array<string>::create();
+      const std::optional<uint32_t> sub_size = tlb.fetch_trivial<uint32_t>();
+
+      if (!sub_size.has_value()) {
+        return false;
+      }
+
+      for (size_t j = 0; j < sub_size; ++j) {
+        const auto sub_key_view = tlb.fetch_string();
+        if (sub_key_view.empty()) {
+          return false;
+        }
+        const auto sub_key = string(sub_key_view.data(), sub_key_view.size());
+
+        const auto sub_value_view = tlb.fetch_string();
+        if (sub_value_view.empty()) {
+          return false;
+        }
+        const auto sub_value = string(sub_value_view.data(), sub_value_view.size());
+
+        sub_array[sub_key] = sub_value;
+      }
+      response[key] = sub_array;
+
+      break;
+    }
+    default:
+      return false;
     }
   }
 
@@ -123,7 +123,7 @@ bool GetPemCertInfoResponse::fetch(TLBuffer &tlb) noexcept {
   return true;
 }
 
-bool confdataValue::fetch(TLBuffer &tlb) noexcept {
+bool confdataValue::fetch(TLBuffer& tlb) noexcept {
   const auto value_view{tlb.fetch_string()};
   Bool is_php_serialized_{};
   Bool is_json_serialized_{};

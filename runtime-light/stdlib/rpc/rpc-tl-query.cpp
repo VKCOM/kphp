@@ -9,11 +9,9 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
 
-void CurrentTlQuery::reset() noexcept {
-  current_tl_function_name = string{};
-}
+void CurrentTlQuery::reset() noexcept { current_tl_function_name = string{}; }
 
-void CurrentTlQuery::set_current_tl_function(const string &tl_function_name) noexcept {
+void CurrentTlQuery::set_current_tl_function(const string& tl_function_name) noexcept {
   // It can be not empty in the following case:
   // 1. Timeout is raised in the middle of serialization (when current TL function is still not reset).
   // 2. Then shutdown functions called from timeout.
@@ -22,11 +20,11 @@ void CurrentTlQuery::set_current_tl_function(const string &tl_function_name) noe
   current_tl_function_name = tl_function_name;
 }
 
-void CurrentTlQuery::set_current_tl_function(const class_instance<RpcTlQuery> &current_query) noexcept {
+void CurrentTlQuery::set_current_tl_function(const class_instance<RpcTlQuery>& current_query) noexcept {
   current_tl_function_name = current_query.get()->tl_function_name;
 }
 
-void CurrentTlQuery::raise_fetching_error(const char *format, ...) const noexcept {
+void CurrentTlQuery::raise_fetching_error(const char* format, ...) const noexcept {
   php_assert(!current_tl_function_name.empty());
 
   if (/* !CurException.is_null() */ false) {
@@ -48,7 +46,7 @@ void CurrentTlQuery::raise_fetching_error(const char *format, ...) const noexcep
   //    THROW_EXCEPTION(new_Exception(string{}, 0, msg, -1));
 }
 
-void CurrentTlQuery::raise_storing_error(const char *format, ...) const noexcept {
+void CurrentTlQuery::raise_storing_error(const char* format, ...) const noexcept {
   if (/*!CurException.is_null()*/ false) {
     return;
   }
@@ -68,18 +66,10 @@ void CurrentTlQuery::raise_storing_error(const char *format, ...) const noexcept
   //  THROW_EXCEPTION(new_Exception(string{}, 0, msg, -1));
 }
 
-void CurrentTlQuery::set_last_stored_tl_function_magic(uint32_t tl_magic) noexcept {
-  last_stored_tl_function_magic = tl_magic;
-}
+void CurrentTlQuery::set_last_stored_tl_function_magic(uint32_t tl_magic) noexcept { last_stored_tl_function_magic = tl_magic; }
 
-uint32_t CurrentTlQuery::get_last_stored_tl_function_magic() const noexcept {
-  return last_stored_tl_function_magic;
-}
+uint32_t CurrentTlQuery::get_last_stored_tl_function_magic() const noexcept { return last_stored_tl_function_magic; }
 
-const string &CurrentTlQuery::get_current_tl_function_name() const noexcept {
-  return current_tl_function_name;
-}
+const string& CurrentTlQuery::get_current_tl_function_name() const noexcept { return current_tl_function_name; }
 
-CurrentTlQuery &CurrentTlQuery::get() noexcept {
-  return RpcInstanceState::get().current_query;
-}
+CurrentTlQuery& CurrentTlQuery::get() noexcept { return RpcInstanceState::get().current_query; }

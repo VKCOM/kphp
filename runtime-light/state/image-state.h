@@ -22,7 +22,7 @@
 struct ImageState final : private vk::not_copyable {
   RuntimeAllocator allocator;
 
-  char *c_linear_mem{nullptr};
+  char* c_linear_mem{nullptr};
   uint32_t pid{};
   string uname_info_s;
   string uname_info_n;
@@ -35,9 +35,7 @@ struct ImageState final : private vk::not_copyable {
   StringImageState string_image_state;
   MathImageState math_image_state;
 
-  ImageState() noexcept
-    : allocator(INIT_IMAGE_ALLOCATOR_SIZE, 0)
-    , pid(k2::getpid()) {
+  ImageState() noexcept : allocator(INIT_IMAGE_ALLOCATOR_SIZE, 0), pid(k2::getpid()) {
     utsname uname_info{};
     if (const auto err{k2::uname(std::addressof(uname_info))}; err != k2::errno_ok) [[unlikely]] {
       php_error("can't get uname, error '%d'", err);
@@ -67,13 +65,9 @@ struct ImageState final : private vk::not_copyable {
     uname_info_a.set_reference_counter_to(ExtraRefCnt::for_global_const);
   }
 
-  static const ImageState &get() noexcept {
-    return *k2::image_state();
-  }
+  static const ImageState& get() noexcept { return *k2::image_state(); }
 
-  static ImageState &get_mutable() noexcept {
-    return *const_cast<ImageState *>(k2::image_state());
-  }
+  static ImageState& get_mutable() noexcept { return *const_cast<ImageState*>(k2::image_state()); }
 
 private:
   static constexpr auto INIT_IMAGE_ALLOCATOR_SIZE = static_cast<size_t>(512U * 1024U); // 512KB

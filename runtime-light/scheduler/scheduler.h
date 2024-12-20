@@ -60,32 +60,24 @@ namespace WaitEvent {
 
 struct Rechedule {
   static constexpr size_t HASH_VALUE = 4001;
-  bool operator==([[maybe_unused]] const Rechedule &other) const noexcept {
-    return true;
-  }
+  bool operator==([[maybe_unused]] const Rechedule& other) const noexcept { return true; }
 };
 
 struct IncomingStream {
   static constexpr size_t HASH_VALUE = 4003;
-  bool operator==([[maybe_unused]] const IncomingStream &other) const noexcept {
-    return true;
-  }
+  bool operator==([[maybe_unused]] const IncomingStream& other) const noexcept { return true; }
 };
 
 struct UpdateOnStream {
   uint64_t stream_d{};
 
-  bool operator==(const UpdateOnStream &other) const noexcept {
-    return stream_d == other.stream_d;
-  }
+  bool operator==(const UpdateOnStream& other) const noexcept { return stream_d == other.stream_d; }
 };
 
 struct UpdateOnTimer {
   uint64_t timer_d{};
 
-  bool operator==(const UpdateOnTimer &other) const noexcept {
-    return timer_d == other.timer_d;
-  }
+  bool operator==(const UpdateOnTimer& other) const noexcept { return timer_d == other.timer_d; }
 };
 
 using EventT = std::variant<Rechedule, IncomingStream, UpdateOnStream, UpdateOnTimer>;
@@ -94,32 +86,24 @@ using EventT = std::variant<Rechedule, IncomingStream, UpdateOnStream, UpdateOnT
 
 // std::hash specializations for WaitEvent types
 
-template<>
+template <>
 struct std::hash<WaitEvent::Rechedule> {
-  size_t operator()([[maybe_unused]] const WaitEvent::Rechedule &v) const noexcept {
-    return WaitEvent::Rechedule::HASH_VALUE;
-  }
+  size_t operator()([[maybe_unused]] const WaitEvent::Rechedule& v) const noexcept { return WaitEvent::Rechedule::HASH_VALUE; }
 };
 
-template<>
+template <>
 struct std::hash<WaitEvent::IncomingStream> {
-  size_t operator()([[maybe_unused]] const WaitEvent::IncomingStream &v) const noexcept {
-    return WaitEvent::IncomingStream::HASH_VALUE;
-  }
+  size_t operator()([[maybe_unused]] const WaitEvent::IncomingStream& v) const noexcept { return WaitEvent::IncomingStream::HASH_VALUE; }
 };
 
-template<>
+template <>
 struct std::hash<WaitEvent::UpdateOnStream> {
-  size_t operator()(const WaitEvent::UpdateOnStream &v) const noexcept {
-    return v.stream_d;
-  }
+  size_t operator()(const WaitEvent::UpdateOnStream& v) const noexcept { return v.stream_d; }
 };
 
-template<>
+template <>
 struct std::hash<WaitEvent::UpdateOnTimer> {
-  size_t operator()(const WaitEvent::UpdateOnTimer &v) const noexcept {
-    return v.timer_d;
-  }
+  size_t operator()(const WaitEvent::UpdateOnTimer& v) const noexcept { return v.timer_d; }
 };
 
 /**
@@ -127,9 +111,9 @@ struct std::hash<WaitEvent::UpdateOnTimer> {
  */
 using SuspendToken = std::pair<std::coroutine_handle<>, WaitEvent::EventT>;
 
-template<>
+template <>
 struct std::hash<SuspendToken> {
-  size_t operator()(const SuspendToken &token) const noexcept {
+  size_t operator()(const SuspendToken& token) const noexcept {
     size_t suspend_token_hash{std::hash<std::coroutine_handle<>>{}(token.first)};
     hash_combine(suspend_token_hash, token.second);
     return suspend_token_hash;
@@ -148,29 +132,29 @@ struct std::hash<SuspendToken> {
  * 6. have `suspend` method that suspends specified coroutine;
  * 7. have `cancel` method that cancels specified SuspendToken.
  */
-template<class scheduler_t>
-concept CoroutineSchedulerConcept = std::constructible_from<scheduler_t, memory_resource::unsynchronized_pool_resource &>
-                                    && requires(scheduler_t && s, ScheduleEvent::EventT schedule_event, SuspendToken token) {
-  { scheduler_t::get() } noexcept -> std::same_as<scheduler_t &>;
-  { s.done() } noexcept -> std::convertible_to<bool>;
-  { s.schedule(schedule_event) } noexcept -> std::same_as<ScheduleStatus>;
-  { s.contains(token) } noexcept -> std::convertible_to<bool>;
-  { s.suspend(token) } noexcept -> std::same_as<void>;
-  { s.cancel(token) } noexcept -> std::same_as<void>;
-};
+template <class scheduler_t>
+concept CoroutineSchedulerConcept = std::constructible_from<scheduler_t, memory_resource::unsynchronized_pool_resource&> &&
+                                    requires(scheduler_t&& s, ScheduleEvent::EventT schedule_event, SuspendToken token) {
+                                      { scheduler_t::get() } noexcept -> std::same_as<scheduler_t&>;
+                                      { s.done() } noexcept -> std::convertible_to<bool>;
+                                      { s.schedule(schedule_event) } noexcept -> std::same_as<ScheduleStatus>;
+                                      { s.contains(token) } noexcept -> std::convertible_to<bool>;
+                                      { s.suspend(token) } noexcept -> std::same_as<void>;
+                                      { s.cancel(token) } noexcept -> std::same_as<void>;
+                                    };
 
 // === SimpleCoroutineScheduler ===================================================================
 
 // This scheduler doesn't support waiting for the same event from multiple coroutines.
 // We need to finalize our decision whether we allow to do it from PHP code or not.
 class SimpleCoroutineScheduler {
-  template<hashable Key, typename Value>
+  template <hashable Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
 
-  template<hashable T>
+  template <hashable T>
   using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
 
-  template<typename T>
+  template <typename T>
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
 
   deque<SuspendToken> yield_tokens;
@@ -184,23 +168,18 @@ class SimpleCoroutineScheduler {
   ScheduleStatus scheduleOnYield() noexcept;
 
 public:
-  explicit SimpleCoroutineScheduler(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
-    : yield_tokens(deque<SuspendToken>::allocator_type{memory_resource})
-    , awaiting_for_stream_tokens(deque<SuspendToken>::allocator_type{memory_resource})
-    , awaiting_for_update_tokens(unordered_map<uint64_t, SuspendToken>::allocator_type{memory_resource})
-    , suspend_tokens(unordered_set<SuspendToken>::allocator_type{memory_resource}) {}
+  explicit SimpleCoroutineScheduler(memory_resource::unsynchronized_pool_resource& memory_resource) noexcept
+      : yield_tokens(deque<SuspendToken>::allocator_type{memory_resource}), awaiting_for_stream_tokens(deque<SuspendToken>::allocator_type{memory_resource}),
+        awaiting_for_update_tokens(unordered_map<uint64_t, SuspendToken>::allocator_type{memory_resource}),
+        suspend_tokens(unordered_set<SuspendToken>::allocator_type{memory_resource}) {}
 
-  static SimpleCoroutineScheduler &get() noexcept;
+  static SimpleCoroutineScheduler& get() noexcept;
 
-  bool done() const noexcept {
-    return suspend_tokens.empty();
-  }
+  bool done() const noexcept { return suspend_tokens.empty(); }
 
   ScheduleStatus schedule(ScheduleEvent::EventT) noexcept;
 
-  bool contains(SuspendToken token) const noexcept {
-    return suspend_tokens.contains(token);
-  }
+  bool contains(SuspendToken token) const noexcept { return suspend_tokens.contains(token); }
   void suspend(SuspendToken) noexcept;
   void cancel(SuspendToken) noexcept;
 };
