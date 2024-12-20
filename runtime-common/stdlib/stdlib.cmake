@@ -6,6 +6,12 @@ prepend(STDLIB_SERIALIZATION stdlib/serialization/ json-functions.cpp
 prepend(STDLIB_STRING stdlib/string/ mbstring-functions.cpp
         regex-functions.cpp string-functions.cpp)
 prepend(STDLIB_SERVER stdlib/server/ url-functions.cpp)
+prepend(STDLIB_VKEXT stdlib/vkext/ string-processing.cpp
+        vkext-functions.cpp)
+
+if(COMPILER_CLANG)
+    set_source_files_properties(${RUNTIME_COMMON_DIR}/stdlib/vkext/string-processing.cpp PROPERTIES COMPILE_FLAGS -Wno-invalid-source-encoding)
+endif()
 
 set(STDLIB_SRC ${STDLIB_ARRAY} ${STDLIB_MATH} ${STDLIB_SERIALIZATION}
-               ${STDLIB_STRING} ${STDLIB_SERVER})
+               ${STDLIB_STRING} ${STDLIB_SERVER} ${STDLIB_VKEXT})
