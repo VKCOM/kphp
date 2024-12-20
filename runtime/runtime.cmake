@@ -69,6 +69,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         context/runtime-context.cpp
         array_functions.cpp
         bcmath.cpp
+        math-context.cpp
         common_template_instantiations.cpp
         confdata-functions.cpp
         confdata-global-manager.cpp
