@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/vkext/string-processing.h"
 

@@ -11,11 +11,11 @@
 namespace {
 
 int cmp_char(const void *a, const void *b) noexcept {
-  return (int)(*(char *)a) - (int)(*(char *)b);
+  return static_cast<int>(*(static_cast<const char *>(a))) - static_cast<int>(*(static_cast<const char *>(b)));
 }
 
 char to_lower(const char c) noexcept {
-  switch ((unsigned char)c) {
+  switch (static_cast<unsigned char>(c)) {
     case 'A' ... 'Z':
     case 0xC0 ... 0xDF:
       return c + 'a' - 'A';
@@ -169,7 +169,7 @@ char conv_letter(const char c) noexcept {
 }
 
 char next_character(const char *s, size_t *_i) noexcept {
-  int i = *_i;
+  size_t i = *_i;
   char cur = s[i];
   if (cur == '&') {
     if (s[i + 1] == 'a' && s[i + 2] == 'm' && s[i + 3] == 'p' && s[i + 4] == ';') {
@@ -211,7 +211,7 @@ char next_character(const char *s, size_t *_i) noexcept {
 namespace vkext_impl_ {
 
 string sp_sort(const string &s) noexcept {
-  string t = s.copy_and_make_not_shared();
+  string t{s.copy_and_make_not_shared()};
   qsort(t.buffer(), t.size(), sizeof(char), cmp_char);
   return t;
 }
@@ -219,7 +219,7 @@ string sp_sort(const string &s) noexcept {
 string sp_to_upper(const string &s) noexcept {
   string t{s.size(), false};
   for (size_t i = 0; i < t.size(); i++) {
-    switch ((unsigned char)s[i]) {
+    switch (static_cast<unsigned char>(s[i])) {
       case 'a' ... 'z':
         t[i] = s[i] + 'A' - 'a';
         break;
