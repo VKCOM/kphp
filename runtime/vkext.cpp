@@ -12,7 +12,7 @@ string f$vk_flex(const string &name, const string &case_name, int64_t sex, const
   constexpr size_t BUFF_LEN = (1 << 16);
   string buff{BUFF_LEN, false};
   const size_t error_msg_buf_size = 1000;
-  char ERROR_MSG_BUF[error_msg_buf_size] = {'\0'};
+  static char ERROR_MSG_BUF[error_msg_buf_size] = {'\0'};
   ERROR_MSG_BUF[0] = '\0';
   vk::string_view ref = flex(vk::string_view{name.c_str(), name.size()}, vk::string_view{case_name.c_str(), case_name.size()}, sex == 1,
                              vk::string_view{type.c_str(), type.size()}, lang_id, buff.buffer(), ERROR_MSG_BUF, error_msg_buf_size);
