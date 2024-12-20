@@ -13,15 +13,15 @@
 namespace {
 
 // TODO: use RuntimeAllocator instead
-void *regex_malloc(PCRE2_SIZE size, [[maybe_unused]] void *memory_data) noexcept {
-  auto *mem{k2::alloc(size)};
+void* regex_malloc(PCRE2_SIZE size, [[maybe_unused]] void* memory_data) noexcept {
+  auto* mem{k2::alloc(size)};
   if (mem == nullptr) [[unlikely]] {
     php_warning("regex malloc: can't allocate %zu bytes", size);
   }
   return mem;
 }
 
-void regex_free(void *mem, [[maybe_unused]] void *memory_data) noexcept {
+void regex_free(void* mem, [[maybe_unused]] void* memory_data) noexcept {
   if (mem == nullptr) [[unlikely]] {
     return;
   }
@@ -30,13 +30,13 @@ void regex_free(void *mem, [[maybe_unused]] void *memory_data) noexcept {
 
 } // namespace
 
-RegexInstanceState::RegexInstanceState(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
-  : default_preg_replace_count()
-  , regex_pcre2_general_context(pcre2_general_context_create_8(regex_malloc, regex_free, nullptr), pcre2_general_context_free_8)
-  , compile_context(pcre2_compile_context_create_8(regex_pcre2_general_context.get()), pcre2_compile_context_free_8)
-  , match_context(pcre2_match_context_create_8(regex_pcre2_general_context.get()), pcre2_match_context_free_8)
-  , regex_pcre2_match_data(pcre2_match_data_create_8(MATCH_DATA_SIZE, regex_pcre2_general_context.get()), pcre2_match_data_free_8)
-  , regex_pcre2_code_cache(decltype(regex_pcre2_code_cache)::allocator_type{memory_resource}) {
+RegexInstanceState::RegexInstanceState(memory_resource::unsynchronized_pool_resource& memory_resource) noexcept
+    : default_preg_replace_count(),
+      regex_pcre2_general_context(pcre2_general_context_create_8(regex_malloc, regex_free, nullptr), pcre2_general_context_free_8),
+      compile_context(pcre2_compile_context_create_8(regex_pcre2_general_context.get()), pcre2_compile_context_free_8),
+      match_context(pcre2_match_context_create_8(regex_pcre2_general_context.get()), pcre2_match_context_free_8),
+      regex_pcre2_match_data(pcre2_match_data_create_8(MATCH_DATA_SIZE, regex_pcre2_general_context.get()), pcre2_match_data_free_8),
+      regex_pcre2_code_cache(decltype(regex_pcre2_code_cache)::allocator_type{memory_resource}) {
   if (!regex_pcre2_general_context) [[unlikely]] {
     php_error("can't create pcre2_general_context");
   }
@@ -48,6 +48,4 @@ RegexInstanceState::RegexInstanceState(memory_resource::unsynchronized_pool_reso
   }
 }
 
-RegexInstanceState &RegexInstanceState::get() noexcept {
-  return InstanceState::get().regex_instance_state;
-}
+RegexInstanceState& RegexInstanceState::get() noexcept { return InstanceState::get().regex_instance_state; }

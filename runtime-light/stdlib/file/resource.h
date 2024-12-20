@@ -48,23 +48,19 @@ public:
   int32_t last_errc{k2::errno_ok};
 
   explicit underlying_resource_t(std::string_view) noexcept;
-  underlying_resource_t(underlying_resource_t &&other) noexcept;
+  underlying_resource_t(underlying_resource_t&& other) noexcept;
   ~underlying_resource_t() override;
 
-  underlying_resource_t(const underlying_resource_t &) = delete;
-  underlying_resource_t &operator=(const underlying_resource_t &) = delete;
-  underlying_resource_t &operator=(underlying_resource_t &&) = delete;
+  underlying_resource_t(const underlying_resource_t&) = delete;
+  underlying_resource_t& operator=(const underlying_resource_t&) = delete;
+  underlying_resource_t& operator=(underlying_resource_t&&) = delete;
 
-  const char *get_class() const noexcept override {
-    return R"(resource)";
-  }
+  const char* get_class() const noexcept override { return R"(resource)"; }
 
-  task_t<int64_t> write(std::string_view text) const noexcept {
-    co_return co_await write_all_to_stream(stream_d_, text.data(), text.size());
-  }
+  task_t<int64_t> write(std::string_view text) const noexcept { co_return co_await write_all_to_stream(stream_d_, text.data(), text.size()); }
 
   Optional<string> get_contents() const noexcept {
-    auto &http_server_instance_st{HttpServerInstanceState::get()};
+    auto& http_server_instance_st{HttpServerInstanceState::get()};
     if (kind != resource_kind::STDIN || !http_server_instance_st.opt_raw_post_data.has_value()) {
       return false;
     }

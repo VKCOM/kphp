@@ -7,7 +7,7 @@
 namespace tl {
 
 void TLBuffer::store_string(std::string_view str) noexcept {
-  const char *str_buf{str.data()};
+  const char* str_buf{str.data()};
   size_t str_len{str.size()};
   uint8_t size_len{};
   if (str_len <= SMALL_STRING_MAX_LEN) {
@@ -46,45 +46,45 @@ std::string_view TLBuffer::fetch_string() noexcept {
   uint8_t size_len{};
   uint64_t string_len{};
   switch (first_byte) {
-    case LARGE_STRING_MAGIC: {
-      if (remaining() < LARGE_STRING_SIZE_LEN) {
-        return {}; // TODO: error handling
-      }
-      size_len = LARGE_STRING_SIZE_LEN + 1;
-      const auto first{static_cast<uint64_t>(fetch_trivial<uint8_t>().value())};
-      const auto second{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 8};
-      const auto third{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 16};
-      const auto fourth{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 24};
-      const auto fifth{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 32};
-      const auto sixth{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 40};
-      const auto seventh{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 48};
-      string_len = first | second | third | fourth | fifth | sixth | seventh;
+  case LARGE_STRING_MAGIC: {
+    if (remaining() < LARGE_STRING_SIZE_LEN) {
+      return {}; // TODO: error handling
+    }
+    size_len = LARGE_STRING_SIZE_LEN + 1;
+    const auto first{static_cast<uint64_t>(fetch_trivial<uint8_t>().value())};
+    const auto second{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 8};
+    const auto third{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 16};
+    const auto fourth{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 24};
+    const auto fifth{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 32};
+    const auto sixth{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 40};
+    const auto seventh{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 48};
+    string_len = first | second | third | fourth | fifth | sixth | seventh;
 
-      const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
-      adjust(total_len_with_padding - size_len);
-      php_warning("large strings aren't supported");
-      return {};
+    const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
+    adjust(total_len_with_padding - size_len);
+    php_warning("large strings aren't supported");
+    return {};
+  }
+  case MEDIUM_STRING_MAGIC: {
+    if (remaining() < MEDIUM_STRING_SIZE_LEN) {
+      return {}; // TODO: error handling
     }
-    case MEDIUM_STRING_MAGIC: {
-      if (remaining() < MEDIUM_STRING_SIZE_LEN) {
-        return {}; // TODO: error handling
-      }
-      size_len = MEDIUM_STRING_SIZE_LEN + 1;
-      const auto first{static_cast<uint64_t>(fetch_trivial<uint8_t>().value())};
-      const auto second{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 8};
-      const auto third{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 16};
-      string_len = first | second | third;
+    size_len = MEDIUM_STRING_SIZE_LEN + 1;
+    const auto first{static_cast<uint64_t>(fetch_trivial<uint8_t>().value())};
+    const auto second{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 8};
+    const auto third{static_cast<uint64_t>(fetch_trivial<uint8_t>().value()) << 16};
+    string_len = first | second | third;
 
-      if (string_len <= SMALL_STRING_MAX_LEN) {
-        php_warning("long string's length is less than 254");
-      }
-      break;
+    if (string_len <= SMALL_STRING_MAX_LEN) {
+      php_warning("long string's length is less than 254");
     }
-    default: {
-      size_len = SMALL_STRING_SIZE_LEN;
-      string_len = static_cast<uint64_t>(first_byte);
-      break;
-    }
+    break;
+  }
+  default: {
+    size_len = SMALL_STRING_SIZE_LEN;
+    string_len = static_cast<uint64_t>(first_byte);
+    break;
+  }
   }
   const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
   if (remaining() < total_len_with_padding - size_len) {

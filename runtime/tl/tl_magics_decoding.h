@@ -8,5 +8,5 @@
 
 #include "runtime-common/core/runtime-core.h"
 
-const char *tl_magic_convert_to_name(uint32_t magic) noexcept;
+const char* tl_magic_convert_to_name(uint32_t magic) noexcept;
 array<string> tl_magic_get_all_functions() noexcept;

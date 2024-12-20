@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <tuple>
 #include <cstdint>
+#include <tuple>
 
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
@@ -13,7 +13,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime/dummy-visitor-methods.h"
 
-using rpc_request_extra_info_t = std::tuple<std::int64_t>; // tuple(request_size)
+using rpc_request_extra_info_t = std::tuple<std::int64_t>;          // tuple(request_size)
 using rpc_response_extra_info_t = std::tuple<std::int64_t, double>; // tuple(response_size, response_time)
 enum class rpc_response_extra_info_status_t : std::uint8_t { NOT_READY, READY };
 
@@ -26,13 +26,9 @@ struct C$KphpRpcRequestsExtraInfo final : public refcountable_php_classes<C$Kphp
 
   C$KphpRpcRequestsExtraInfo() = default;
 
-  const char *get_class() const noexcept {
-    return R"(KphpRpcRequestsExtraInfo)";
-  }
+  const char* get_class() const noexcept { return R"(KphpRpcRequestsExtraInfo)"; }
 
-  int get_hash() const noexcept {
-    return static_cast<std::int32_t>(vk::std_hash(vk::string_view(C$KphpRpcRequestsExtraInfo::get_class())));
-  }
+  int get_hash() const noexcept { return static_cast<std::int32_t>(vk::std_hash(vk::string_view(C$KphpRpcRequestsExtraInfo::get_class()))); }
 };
 
 array<rpc_request_extra_info_t> f$KphpRpcRequestsExtraInfo$$get(class_instance<C$KphpRpcRequestsExtraInfo> v$this);

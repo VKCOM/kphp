@@ -19,9 +19,7 @@ private:
   std::unique_ptr<CurlResponse> response;
 
 public:
-  curl_exec_concurrently(const CurlRequest &request, double timeout_s) noexcept
-    : timeout_s(timeout_s)
-    , request(request) {}
+  curl_exec_concurrently(const CurlRequest& request, double timeout_s) noexcept : timeout_s(timeout_s), request(request) {}
 
   bool run() noexcept final {
     RESUMABLE_BEGIN

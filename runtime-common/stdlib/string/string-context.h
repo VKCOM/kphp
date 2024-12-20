@@ -45,7 +45,7 @@ public:
   // mb_string context
   bool detect_incorrect_encoding_names{};
 
-  static StringLibContext &get() noexcept;
+  static StringLibContext& get() noexcept;
 };
 
 struct StringLibConstants final : vk::not_copyable {
@@ -87,5 +87,5 @@ struct StringLibConstants final : vk::not_copyable {
     PERCENT_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
   }
 
-  static const StringLibConstants &get() noexcept;
+  static const StringLibConstants& get() noexcept;
 };

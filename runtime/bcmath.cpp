@@ -5,6 +5,4 @@
 #include "runtime/bcmath.h"
 #include "runtime-common/stdlib/math/math-context.h"
 
-void free_bcmath_lib() {
-  MathLibContext::get().bc_scale = 0;
-}
+void free_bcmath_lib() { MathLibContext::get().bc_scale = 0; }

@@ -26,9 +26,9 @@ public:
   uint64_t timeout_ns{};
   string body;
 
-  bool fetch(TLBuffer &tlb) noexcept;
+  bool fetch(TLBuffer& tlb) noexcept;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 // ===== CRYPTO =====
@@ -43,14 +43,14 @@ inline constexpr uint32_t CBC_ENCRYPT_MAGIC = 0x6d4e'e36a;
 struct GetCryptosecurePseudorandomBytes final {
   int32_t size{};
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct GetPemCertInfo final {
   bool is_short{true};
   string bytes;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct DigestSign final {
@@ -58,7 +58,7 @@ struct DigestSign final {
   string private_key;
   DigestAlgorithm algorithm;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct DigestVerify final {
@@ -67,7 +67,7 @@ struct DigestVerify final {
   DigestAlgorithm algorithm;
   string signature;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct CbcDecrypt final {
@@ -77,7 +77,7 @@ struct CbcDecrypt final {
   string iv;
   string data;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct CbcEncrypt final {
@@ -87,7 +87,7 @@ struct CbcEncrypt final {
   string iv;
   string data;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 // ===== CONFDATA =====
@@ -98,13 +98,13 @@ inline constexpr uint32_t CONFDATA_GET_WILDCARD_MAGIC = 0x5759'bd9e;
 struct ConfdataGet final {
   string key;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct ConfdataGetWildcard final {
   string wildcard;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 // ===== HTTP =====
@@ -124,7 +124,7 @@ public:
   vector<httpHeaderEntry> headers{};
   string body;
 
-  bool fetch(TLBuffer &tlb) noexcept;
+  bool fetch(TLBuffer& tlb) noexcept;
 };
 
 } // namespace tl

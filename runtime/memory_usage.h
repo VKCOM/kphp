@@ -16,40 +16,40 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime/allocator.h"
 
-template<class T>
+template <class T>
 struct CDataPtr;
 
-template<class T>
+template <class T>
 struct CDataRef;
 
 class CommonMemoryEstimateVisitor : vk::not_copyable {
 public:
-  template<typename T>
-  void operator()(const char *name [[maybe_unused]], T &&value) noexcept {
+  template <typename T>
+  void operator()(const char* name [[maybe_unused]], T&& value) noexcept {
     process(std::forward<T>(value));
-    auto &[size, clazz] = last_instance_element.top();
-    if (clazz < static_cast<const void *>(&value)) {
+    auto& [size, clazz] = last_instance_element.top();
+    if (clazz < static_cast<const void*>(&value)) {
       clazz = &value;
       size = static_cast<int64_t>(sizeof(value));
     }
   }
 
-  template<typename T>
-  void process(const CDataRef<T> &value [[maybe_unused]]) {
-    estimated_elements_memory_ += sizeof(void *);
+  template <typename T>
+  void process(const CDataRef<T>& value [[maybe_unused]]) {
+    estimated_elements_memory_ += sizeof(void*);
   }
 
-  template<typename T>
-  void process(const CDataPtr<T> &value [[maybe_unused]]) {}
+  template <typename T>
+  void process(const CDataPtr<T>& value [[maybe_unused]]) {}
 
-  void process(const string &value) {
+  void process(const string& value) {
     if (value.is_reference_counter(ExtraRefCnt::for_global_const) || value.is_reference_counter(ExtraRefCnt::for_instance_cache)) {
       return;
     }
     estimated_elements_memory_ += value.estimate_memory_usage();
   }
 
-  void process(const mixed &value) {
+  void process(const mixed& value) {
     if (value.is_string()) {
       process(value.as_string());
     }
@@ -58,11 +58,11 @@ public:
     }
   }
 
-  template<typename T, typename = vk::enable_if_in_list<T, vk::list_of_types<bool, int64_t, double, Unknown, void *>>>
-  void process(const T &value [[maybe_unused]]) {}
+  template <typename T, typename = vk::enable_if_in_list<T, vk::list_of_types<bool, int64_t, double, Unknown, void*>>>
+  void process(const T& value [[maybe_unused]]) {}
 
-  template<typename T>
-  void process(const array<T> &value) {
+  template <typename T>
+  void process(const array<T>& value) {
     if (value.is_reference_counter(ExtraRefCnt::for_global_const) || value.is_reference_counter(ExtraRefCnt::for_instance_cache)) {
       return;
     }
@@ -73,51 +73,49 @@ public:
     }
   }
 
-  template<typename T>
-  void process(const Optional<T> &value) {
+  template <typename T>
+  void process(const Optional<T>& value) {
     if (value.has_value()) {
       process(value.val());
     }
   }
 
-  template<typename... Args>
-  void process(const std::tuple<Args...> &value) {
-    for_each(value, [this](const auto &v) { this->process(v); });
+  template <typename... Args>
+  void process(const std::tuple<Args...>& value) {
+    for_each(value, [this](const auto& v) { this->process(v); });
   }
 
-  template<size_t... Is, typename... T>
-  void process(const shape<std::index_sequence<Is...>, T...> &value) {
+  template <size_t... Is, typename... T>
+  void process(const shape<std::index_sequence<Is...>, T...>& value) {
     (process(value.template get<Is>()), ...);
   }
 
-  template<typename T>
-  void process(const class_instance<T> &value) {
+  template <typename T>
+  void process(const class_instance<T>& value) {
     last_instance_element.push({});
     estimated_elements_memory_ += estimate_class_instance_memory_usage(value, std::is_empty<T>{});
     last_instance_element.pop();
   }
 
-  int64_t get_estimated_memory() const {
-    return estimated_elements_memory_;
-  }
+  int64_t get_estimated_memory() const { return estimated_elements_memory_; }
 
 private:
-  template<size_t Index = 0, typename Fn, typename... Args>
-  std::enable_if_t<Index == sizeof...(Args), void> for_each(const std::tuple<Args...> &value [[maybe_unused]], const Fn &func [[maybe_unused]]) {}
+  template <size_t Index = 0, typename Fn, typename... Args>
+  std::enable_if_t<Index == sizeof...(Args), void> for_each(const std::tuple<Args...>& value [[maybe_unused]], const Fn& func [[maybe_unused]]) {}
 
-  template<size_t Index = 0, typename Fn, typename... Args>
-  std::enable_if_t<Index != sizeof...(Args), void> for_each(const std::tuple<Args...> &value, const Fn &func) {
+  template <size_t Index = 0, typename Fn, typename... Args>
+  std::enable_if_t<Index != sizeof...(Args), void> for_each(const std::tuple<Args...>& value, const Fn& func) {
     func(std::get<Index>(value));
     for_each<Index + 1, Fn, Args...>(value, func);
   }
 
-  template<typename T>
-  int64_t estimate_class_instance_memory_usage(const class_instance<T> &value [[maybe_unused]], std::true_type) const {
+  template <typename T>
+  int64_t estimate_class_instance_memory_usage(const class_instance<T>& value [[maybe_unused]], std::true_type) const {
     return 0;
   }
 
-  template<typename T>
-  int64_t estimate_class_instance_memory_usage(const class_instance<T> &value, std::false_type) {
+  template <typename T>
+  int64_t estimate_class_instance_memory_usage(const class_instance<T>& value, std::false_type) {
     if (value.is_null() || value.is_reference_counter(ExtraRefCnt::for_instance_cache)) {
       return 0;
     }
@@ -129,13 +127,13 @@ private:
     return this->get_instance_estimated_memory_impl(value.get(), std::is_polymorphic<T>{});
   }
 
-  template<typename ClassType>
-  int64_t get_instance_estimated_memory_impl(const ClassType *obj [[maybe_unused]], std::false_type) const {
+  template <typename ClassType>
+  int64_t get_instance_estimated_memory_impl(const ClassType* obj [[maybe_unused]], std::false_type) const {
     return sizeof(ClassType);
   }
 
-  template<typename ClassType>
-  int64_t get_instance_estimated_memory_impl(const ClassType *obj, std::true_type) const {
+  template <typename ClassType>
+  int64_t get_instance_estimated_memory_impl(const ClassType* obj, std::true_type) const {
     // TODO: virtual sizeof?
     // empty polymorphic class
     const auto [size, clazz] = last_instance_element.top();
@@ -143,8 +141,8 @@ private:
       // vtable + counter
       return 16;
     }
-    const auto *class_begin = static_cast<const uint8_t *>(dynamic_cast<const void *>(obj));
-    int64_t class_size = static_cast<const uint8_t *>(clazz) - class_begin;
+    const auto* class_begin = static_cast<const uint8_t*>(dynamic_cast<const void*>(obj));
+    int64_t class_size = static_cast<const uint8_t*>(clazz) - class_begin;
     php_assert(class_size > 0);
     class_size += size;
     // all polymorphic classes are aligned by 8 (vtable ptr)
@@ -154,17 +152,17 @@ private:
 
   struct instance_element {
     int64_t size = 0;
-    const void *clazz = nullptr;
+    const void* clazz = nullptr;
   };
 
   int64_t estimated_elements_memory_{0};
 
-  std::unordered_set<void *> processed_instances;
+  std::unordered_set<void*> processed_instances;
   std::stack<instance_element> last_instance_element;
 };
 
-template<typename T>
-int64_t f$estimate_memory_usage(const T &value) {
+template <typename T>
+int64_t f$estimate_memory_usage(const T& value) {
   CommonMemoryEstimateVisitor visitor;
   visitor.process(value);
   return visitor.get_estimated_memory();
@@ -172,9 +170,7 @@ int64_t f$estimate_memory_usage(const T &value) {
 
 array<int64_t> f$get_global_vars_memory_stats(int64_t lower_bound = 0);
 
-inline int64_t f$memory_get_static_usage() {
-  return static_cast<int64_t>(dl::get_heap_memory_used());
-}
+inline int64_t f$memory_get_static_usage() { return static_cast<int64_t>(dl::get_heap_memory_used()); }
 
 inline int64_t f$memory_get_peak_usage(bool real_usage = false) {
   if (real_usage) {
@@ -184,31 +180,24 @@ inline int64_t f$memory_get_peak_usage(bool real_usage = false) {
   }
 }
 
-inline int64_t f$memory_get_usage(bool real_usage __attribute__((unused)) = false) {
-  return static_cast<int64_t>(dl::get_script_memory_stats().memory_used);
-}
+inline int64_t f$memory_get_usage(bool real_usage __attribute__((unused)) = false) { return static_cast<int64_t>(dl::get_script_memory_stats().memory_used); }
 
-inline int64_t f$memory_get_total_usage() {
-  return static_cast<int64_t>(dl::get_script_memory_stats().real_memory_used);
-}
+inline int64_t f$memory_get_total_usage() { return static_cast<int64_t>(dl::get_script_memory_stats().real_memory_used); }
 
 inline array<int64_t> f$memory_get_detailed_stats() {
-  const auto &stats = dl::get_script_memory_stats();
-  return array<int64_t>(
-    {
-      std::make_pair(string{"memory_limit"}, static_cast<int64_t>(stats.memory_limit)),
-      std::make_pair(string{"real_memory_used"}, static_cast<int64_t>(stats.real_memory_used)),
-      std::make_pair(string{"memory_used"}, static_cast<int64_t>(stats.memory_used)),
-      std::make_pair(string{"max_real_memory_used"}, static_cast<int64_t>(stats.max_real_memory_used)),
-      std::make_pair(string{"max_memory_used"}, static_cast<int64_t>(stats.max_memory_used)),
-      std::make_pair(string{"defragmentation_calls"}, static_cast<int64_t>(stats.defragmentation_calls)),
-      std::make_pair(string{"huge_memory_pieces"}, static_cast<int64_t>(stats.huge_memory_pieces)),
-      std::make_pair(string{"small_memory_pieces"}, static_cast<int64_t>(stats.small_memory_pieces)),
-      std::make_pair(string{"heap_memory_used"}, static_cast<int64_t>(dl::get_heap_memory_used()))
-    });
+  const auto& stats = dl::get_script_memory_stats();
+  return array<int64_t>({std::make_pair(string{"memory_limit"}, static_cast<int64_t>(stats.memory_limit)),
+                         std::make_pair(string{"real_memory_used"}, static_cast<int64_t>(stats.real_memory_used)),
+                         std::make_pair(string{"memory_used"}, static_cast<int64_t>(stats.memory_used)),
+                         std::make_pair(string{"max_real_memory_used"}, static_cast<int64_t>(stats.max_real_memory_used)),
+                         std::make_pair(string{"max_memory_used"}, static_cast<int64_t>(stats.max_memory_used)),
+                         std::make_pair(string{"defragmentation_calls"}, static_cast<int64_t>(stats.defragmentation_calls)),
+                         std::make_pair(string{"huge_memory_pieces"}, static_cast<int64_t>(stats.huge_memory_pieces)),
+                         std::make_pair(string{"small_memory_pieces"}, static_cast<int64_t>(stats.small_memory_pieces)),
+                         std::make_pair(string{"heap_memory_used"}, static_cast<int64_t>(dl::get_heap_memory_used()))});
 }
 
 inline std::tuple<int64_t, int64_t> f$memory_get_allocations() {
-  const auto &stats = dl::get_script_memory_stats();
+  const auto& stats = dl::get_script_memory_stats();
   return {stats.total_allocations, stats.total_memory_allocated};
 }

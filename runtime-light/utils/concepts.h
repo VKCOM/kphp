@@ -8,10 +8,10 @@
 #include <cstddef>
 #include <functional>
 
-template<typename T>
+template <typename T>
 concept standard_layout = std::is_standard_layout_v<T>;
 
-template<typename T>
+template <typename T>
 concept hashable = requires(T t) {
   { std::hash<T>{}(t) } -> std::convertible_to<size_t>;
 };

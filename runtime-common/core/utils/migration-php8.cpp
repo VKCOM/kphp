@@ -6,14 +6,8 @@
 
 #include "runtime-common/core/runtime-core.h"
 
-void f$set_migration_php8_warning(int mask) {
-  RuntimeContext::get().show_migration_php8_warning = mask;
-}
+void f$set_migration_php8_warning(int mask) { RuntimeContext::get().show_migration_php8_warning = mask; }
 
-static void reset_migration_php8_global_vars() {
-  RuntimeContext::get().show_migration_php8_warning = 0;
-}
+static void reset_migration_php8_global_vars() { RuntimeContext::get().show_migration_php8_warning = 0; }
 
-void free_migration_php8() {
-  reset_migration_php8_global_vars();
-}
+void free_migration_php8() { reset_migration_php8_global_vars(); }

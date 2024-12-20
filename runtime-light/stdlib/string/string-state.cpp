@@ -7,10 +7,6 @@
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
 
-StringInstanceState &StringInstanceState::get() noexcept {
-  return InstanceState::get().string_instance_state;
-}
+StringInstanceState& StringInstanceState::get() noexcept { return InstanceState::get().string_instance_state; }
 
-const StringImageState &StringImageState::get() noexcept {
-  return ImageState::get().string_image_state;
-}
+const StringImageState& StringImageState::get() noexcept { return ImageState::get().string_image_state; }

@@ -5,8 +5,6 @@
 #include "runtime-common/core/runtime-core.h"
 
 // Don't move this destructor to the headers, it spoils addr2line traces
-string::~string() noexcept {
-  destroy();
-}
+string::~string() noexcept { destroy(); }
 
 static_assert(sizeof(string) == SIZEOF_STRING, "sizeof(string) at runtime doesn't match compile-time");

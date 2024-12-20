@@ -19,7 +19,7 @@ struct tl_func_base : ScriptAllocatorManaged {
     return {};
   }
 
-  virtual void rpc_server_typed_store([[maybe_unused]] const class_instance<C$VK$TL$RpcFunctionReturnResult> &res) {
+  virtual void rpc_server_typed_store([[maybe_unused]] const class_instance<C$VK$TL$RpcFunctionReturnResult>& res) {
     // all functions annotated with @kphp will override this method with the generated code
     php_critical_error("This function should never be called. Should be overridden in every @kphp TL function");
   }

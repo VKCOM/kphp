@@ -16,7 +16,7 @@ namespace tl {
 
 // ===== JOB WORKERS =====
 
-bool K2InvokeJobWorker::fetch(TLBuffer &tlb) noexcept {
+bool K2InvokeJobWorker::fetch(TLBuffer& tlb) noexcept {
   if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != K2_INVOKE_JOB_WORKER_MAGIC) {
     return false;
   }
@@ -38,7 +38,7 @@ bool K2InvokeJobWorker::fetch(TLBuffer &tlb) noexcept {
   return true;
 }
 
-void K2InvokeJobWorker::store(TLBuffer &tlb) const noexcept {
+void K2InvokeJobWorker::store(TLBuffer& tlb) const noexcept {
   const uint32_t flags{ignore_answer ? IGNORE_ANSWER_FLAG : 0x0};
   tlb.store_trivial<uint32_t>(K2_INVOKE_JOB_WORKER_MAGIC);
   tlb.store_trivial<uint32_t>(flags);
@@ -50,25 +50,25 @@ void K2InvokeJobWorker::store(TLBuffer &tlb) const noexcept {
 
 // ===== CRYPTO =====
 
-void GetCryptosecurePseudorandomBytes::store(TLBuffer &tlb) const noexcept {
+void GetCryptosecurePseudorandomBytes::store(TLBuffer& tlb) const noexcept {
   tlb.store_trivial<uint32_t>(GET_CRYPTOSECURE_PSEUDORANDOM_BYTES_MAGIC);
   tlb.store_trivial<int32_t>(size);
 }
 
-void GetPemCertInfo::store(TLBuffer &tlb) const noexcept {
+void GetPemCertInfo::store(TLBuffer& tlb) const noexcept {
   tlb.store_trivial<uint32_t>(GET_PEM_CERT_INFO_MAGIC);
   tlb.store_trivial<uint32_t>(is_short ? TL_BOOL_TRUE : TL_BOOL_FALSE);
   tlb.store_string(std::string_view{bytes.c_str(), bytes.size()});
 }
 
-void DigestSign::store(TLBuffer &tlb) const noexcept {
+void DigestSign::store(TLBuffer& tlb) const noexcept {
   tlb.store_trivial<uint32_t>(DIGEST_SIGN_MAGIC);
   tlb.store_string(std::string_view{data.c_str(), data.size()});
   tlb.store_string(std::string_view{private_key.c_str(), private_key.size()});
   tlb.store_trivial<uint32_t>(algorithm);
 }
 
-void DigestVerify::store(TLBuffer &tlb) const noexcept {
+void DigestVerify::store(TLBuffer& tlb) const noexcept {
   tlb.store_trivial<uint32_t>(DIGEST_VERIFY_MAGIC);
   tlb.store_string(std::string_view{data.c_str(), data.size()});
   tlb.store_string(std::string_view{public_key.c_str(), public_key.size()});
@@ -76,7 +76,7 @@ void DigestVerify::store(TLBuffer &tlb) const noexcept {
   tlb.store_string(std::string_view{signature.c_str(), signature.size()});
 }
 
-void CbcDecrypt::store(TLBuffer &tlb) const noexcept {
+void CbcDecrypt::store(TLBuffer& tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CBC_DECRYPT_MAGIC);
   tlb.store_trivial<uint32_t>(algorithm);
   tlb.store_trivial<uint32_t>(padding);
@@ -85,7 +85,7 @@ void CbcDecrypt::store(TLBuffer &tlb) const noexcept {
   tlb.store_string(std::string_view{data.c_str(), data.size()});
 }
 
-void CbcEncrypt::store(TLBuffer &tlb) const noexcept {
+void CbcEncrypt::store(TLBuffer& tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CBC_ENCRYPT_MAGIC);
   tlb.store_trivial<uint32_t>(algorithm);
   tlb.store_trivial<uint32_t>(padding);
@@ -96,19 +96,19 @@ void CbcEncrypt::store(TLBuffer &tlb) const noexcept {
 
 // ===== CONFDATA =====
 
-void ConfdataGet::store(TLBuffer &tlb) const noexcept {
+void ConfdataGet::store(TLBuffer& tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CONFDATA_GET_MAGIC);
   tlb.store_string({key.c_str(), static_cast<size_t>(key.size())});
 }
 
-void ConfdataGetWildcard::store(TLBuffer &tlb) const noexcept {
+void ConfdataGetWildcard::store(TLBuffer& tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CONFDATA_GET_WILDCARD_MAGIC);
   tlb.store_string({wildcard.c_str(), static_cast<size_t>(wildcard.size())});
 }
 
 // ===== HTTP =====
 
-bool K2InvokeHttp::fetch(TLBuffer &tlb) noexcept {
+bool K2InvokeHttp::fetch(TLBuffer& tlb) noexcept {
   if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != K2_INVOKE_HTTP_MAGIC) {
     return false;
   }

@@ -6,6 +6,4 @@
 
 #include "runtime-light/state/instance-state.h"
 
-CryptoInstanceState &CryptoInstanceState::get() noexcept {
-  return InstanceState::get().crypto_instance_state;
-}
+CryptoInstanceState& CryptoInstanceState::get() noexcept { return InstanceState::get().crypto_instance_state; }

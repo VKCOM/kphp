@@ -29,17 +29,17 @@ struct object_kv;
 
 struct object_array {
   uint32_t size;
-  object *ptr;
+  object* ptr;
 };
 
 struct object_map {
   uint32_t size;
-  object_kv *ptr;
+  object_kv* ptr;
 };
 
 struct object_str {
   uint32_t size;
-  const char *ptr;
+  const char* ptr;
 };
 
 /// Object class that corresponding to MessagePack format object
@@ -66,7 +66,7 @@ struct object {
    * @tparam T The type you want to get.
    * @return The converted object.
    */
-  template<typename T>
+  template <typename T>
   T as() const {
     T v;
     convert(v);
@@ -80,8 +80,8 @@ struct object {
    * @param v The value you want to get. `v` is output parameter. `v` is overwritten by converted value from the object.
    * @return The reference of `v`.
    */
-  template<typename T>
-  std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, T &> convert(T &v) const {
+  template <typename T>
+  std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, T&> convert(T& v) const {
     adaptor::convert<T>{}(*this, v);
     return v;
   }

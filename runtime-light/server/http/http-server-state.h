@@ -56,26 +56,23 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   HttpConnectionKind connection_kind{HttpConnectionKind::CLOSE};
 
 private:
-  memory_resource::unsynchronized_pool_resource &memory_resource_;
+  memory_resource::unsynchronized_pool_resource& memory_resource_;
   headers_map_t headers_;
 
 public:
-  explicit HttpServerInstanceState(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
-    : memory_resource_(memory_resource)
-    , headers_(headers_map_t::allocator_type{memory_resource}) {}
+  explicit HttpServerInstanceState(memory_resource::unsynchronized_pool_resource& memory_resource) noexcept
+      : memory_resource_(memory_resource), headers_(headers_map_t::allocator_type{memory_resource}) {}
 
-  const headers_map_t &headers() const noexcept {
-    return headers_;
-  }
+  const headers_map_t& headers() const noexcept { return headers_; }
 
   void add_header(std::string_view name_view, std::string_view value_view, bool replace) noexcept {
     header_t name{name_view, header_t::allocator_type{memory_resource_}};
-    std::ranges::for_each(name, [](auto &c) noexcept { c = std::tolower(c); });
+    std::ranges::for_each(name, [](auto& c) noexcept { c = std::tolower(c); });
     if (const auto it{headers_.find(name)}; replace && it != headers_.end()) [[unlikely]] {
       headers_.erase(name);
     }
     headers_.emplace(std::move(name), header_t{value_view, header_t::allocator_type{memory_resource_}});
   }
 
-  static HttpServerInstanceState &get() noexcept;
+  static HttpServerInstanceState& get() noexcept;
 };

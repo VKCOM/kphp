@@ -6,12 +6,8 @@
 
 static MathLibContext math_lib_context;
 
-MathLibContext &MathLibContext::get() noexcept {
-  return math_lib_context;
-}
+MathLibContext& MathLibContext::get() noexcept { return math_lib_context; }
 
 const static MathLibConstants string_lib_constants;
 
-const MathLibConstants &MathLibConstants::get() noexcept {
-  return string_lib_constants;
-}
+const MathLibConstants& MathLibConstants::get() noexcept { return string_lib_constants; }
