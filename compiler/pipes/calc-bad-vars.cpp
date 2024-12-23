@@ -4,8 +4,6 @@
 
 #include "compiler/pipes/calc-bad-vars.h"
 
-#include "common/wrappers/fmt_format.h"
-#include "compiler/kphp_assert.h"
 #include <algorithm>
 #include <queue>
 #include <vector>
@@ -586,16 +584,30 @@ class CalcBadVars {
     }
     for (const auto &func : call_graph.functions) {
       func->can_be_implicitly_interrupted_by_other_resumable = into_resumable[func];
-
       if (from_resumable[func] && into_resumable[func]) {
         func->is_resumable = true;
         func->fork_prev = from_parents[func];
         func->wait_prev = to_parents[func];
       }
     }
+
+    auto get_call_resumable_path = [&](FunctionPtr foo) {
+      std::vector<std::string> names;
+      names.push_back(TermStringFormat::paint(foo->as_human_readable(), TermStringFormat::red));
+
+      foo = to_parents[foo];
+      while (foo) {
+        names.push_back(foo->as_human_readable());
+        foo = to_parents[foo];
+      }
+      return vk::join(names, " -> ");
+    };
+
     for (const auto &func : call_graph.functions) {
       if (func->class_id && func->class_id == G->get_class("ArrayAccess") && func->can_be_implicitly_interrupted_by_other_resumable) {
-        kphp_error(false, fmt_format("Function [{}] is a method of ArrayAccess, it cannot call resumable functions\n", func->as_human_readable()));
+        kphp_error(false, fmt_format("Function [{}] is a method of ArrayAccess, it cannot call resumable functions\n"
+                                     "Function transitively calls the resumable function along the following chain:\n{}\n",
+                                     func->as_human_readable(), get_call_resumable_path(func)));
       }
       if (func->is_resumable) {
         if (func->should_be_sync) {
