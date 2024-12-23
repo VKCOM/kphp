@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/calc-bad-vars.h"
 
+#include "common/wrappers/fmt_format.h"
 #include "compiler/kphp_assert.h"
 #include <algorithm>
 #include <queue>
@@ -585,12 +586,6 @@ class CalcBadVars {
     }
     for (const auto &func : call_graph.functions) {
       func->can_be_implicitly_interrupted_by_other_resumable = into_resumable[func];
-      if (unlikely(func->class_id && func->class_id->is_required_interface && into_resumable[func])) {
-        std::string func_name = func->name;
-        std::replace(func_name.begin(), func_name.end(), '$', ':');
-        std::vector<std::string> chain;
-        kphp_error(false, fmt_format("{} cannot call resumable inside({})", func_name, to_parents[func]->as_human_readable()).c_str());
-      }
 
       if (from_resumable[func] && into_resumable[func]) {
         func->is_resumable = true;
@@ -599,6 +594,9 @@ class CalcBadVars {
       }
     }
     for (const auto &func : call_graph.functions) {
+      if (func->class_id && func->class_id == G->get_class("ArrayAccess") && func->can_be_implicitly_interrupted_by_other_resumable) {
+        kphp_error(false, fmt_format("Function [{}] is a method of ArrayAccess, it cannot call resumable functions\n", func->as_human_readable()));
+      }
       if (func->is_resumable) {
         if (func->should_be_sync) {
           kphp_error (0, fmt_format("Function [{}] marked with @kphp-sync, but turn up to be resumable\n"
