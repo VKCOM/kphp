@@ -16,6 +16,8 @@ function vk_sp_to_lower ($str ::: string) ::: string;
 
 function vk_sp_to_upper ($str ::: string) ::: string;
 
+function vk_whitespace_pack ($str ::: string, $html_opt ::: bool = false) ::: string;
+
 // ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info generate-stub */
