@@ -250,7 +250,7 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
                fmt_format("Can not call an abstract method {}()", f->as_human_readable()));
   }
 
-  VertexRange func_params = f->get_params();
+  VertexRange func_params = f->get_params(); // read here, f is concurrently processed in this pass
   VertexRange call_params = call->args();
 
   if (call_params.size() < func_params.size()) {
