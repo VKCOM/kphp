@@ -286,10 +286,10 @@ target_link_options(kphp2cpp PRIVATE ${NO_PIE})
 set_target_properties(kphp2cpp PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR})
 
 # todo make as option, like asan
-target_compile_options(kphp2cpp PUBLIC "-fsanitize=thread" "-fPIC")
-target_compile_options(kphp2cpp_src PUBLIC "-fsanitize=thread" "-fPIC")
-target_link_options(kphp2cpp PUBLIC "-fsanitize=thread" "-fPIC")
-target_link_options(kphp2cpp_src PUBLIC "-fsanitize=thread" "-fPIC")
+# target_compile_options(kphp2cpp PUBLIC "-fsanitize=thread" "-fPIC")
+# target_compile_options(kphp2cpp_src PUBLIC "-fsanitize=thread" "-fPIC")
+# target_link_options(kphp2cpp PUBLIC "-fsanitize=thread" "-fPIC")
+# target_link_options(kphp2cpp_src PUBLIC "-fsanitize=thread" "-fPIC")
 
 add_dependencies(kphp2cpp_src auto_vertices_generation_target)
 if(COMPILE_RUNTIME_LIGHT)
