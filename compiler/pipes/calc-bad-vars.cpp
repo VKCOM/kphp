@@ -12,6 +12,7 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/pipes/calc-func-dep.h"
 #include "compiler/utils/idmap.h"
 
