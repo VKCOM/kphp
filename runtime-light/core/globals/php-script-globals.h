@@ -6,9 +6,8 @@
 
 #include <string_view>
 
-#include "runtime-common/core/memory-resource/resource_allocator.h"
-#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/allocator/allocator.h"
 
 namespace PhpServerSuperGlobalIndices {
 
@@ -68,14 +67,14 @@ struct PhpScriptBuiltInSuperGlobals {
 
 class PhpScriptMutableGlobals {
   template<typename Key, typename Value>
-  using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
+  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::allocator::script_allocator>;
+
   char *g_linear_mem{nullptr};
   unordered_map<int64_t, char *> libs_linear_mem;
   PhpScriptBuiltInSuperGlobals superglobals;
 
 public:
-  explicit PhpScriptMutableGlobals(memory_resource::unsynchronized_pool_resource &resource)
-    : libs_linear_mem(unordered_map<int64_t, char *>::allocator_type{resource}) {}
+  PhpScriptMutableGlobals() noexcept = default;
 
   static PhpScriptMutableGlobals &current() noexcept;
 

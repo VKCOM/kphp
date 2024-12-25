@@ -12,9 +12,8 @@
 #include <utility>
 #include <variant>
 
-#include "runtime-common/core/memory-resource/resource_allocator.h"
-#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/utils/hash.h"
+#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/utils/concepts.h"
 
 /**
@@ -149,8 +148,8 @@ struct std::hash<SuspendToken> {
  * 7. have `cancel` method that cancels specified SuspendToken.
  */
 template<class scheduler_t>
-concept CoroutineSchedulerConcept = std::constructible_from<scheduler_t, memory_resource::unsynchronized_pool_resource &>
-                                    && requires(scheduler_t && s, ScheduleEvent::EventT schedule_event, SuspendToken token) {
+concept CoroutineSchedulerConcept =
+  std::default_initializable<scheduler_t> && requires(scheduler_t && s, ScheduleEvent::EventT schedule_event, SuspendToken token) {
   { scheduler_t::get() } noexcept -> std::same_as<scheduler_t &>;
   { s.done() } noexcept -> std::convertible_to<bool>;
   { s.schedule(schedule_event) } noexcept -> std::same_as<ScheduleStatus>;
@@ -165,13 +164,13 @@ concept CoroutineSchedulerConcept = std::constructible_from<scheduler_t, memory_
 // We need to finalize our decision whether we allow to do it from PHP code or not.
 class SimpleCoroutineScheduler {
   template<hashable Key, typename Value>
-  using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
+  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::allocator::script_allocator>;
 
   template<hashable T>
-  using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
+  using unordered_set = kphp::stl::unordered_set<T, kphp::allocator::script_allocator>;
 
   template<typename T>
-  using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
+  using deque = kphp::stl::deque<T, kphp::allocator::script_allocator>;
 
   deque<SuspendToken> yield_tokens;
   deque<SuspendToken> awaiting_for_stream_tokens;
@@ -184,11 +183,7 @@ class SimpleCoroutineScheduler {
   ScheduleStatus scheduleOnYield() noexcept;
 
 public:
-  explicit SimpleCoroutineScheduler(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
-    : yield_tokens(deque<SuspendToken>::allocator_type{memory_resource})
-    , awaiting_for_stream_tokens(deque<SuspendToken>::allocator_type{memory_resource})
-    , awaiting_for_update_tokens(unordered_map<uint64_t, SuspendToken>::allocator_type{memory_resource})
-    , suspend_tokens(unordered_set<SuspendToken>::allocator_type{memory_resource}) {}
+  SimpleCoroutineScheduler() noexcept = default;
 
   static SimpleCoroutineScheduler &get() noexcept;
 

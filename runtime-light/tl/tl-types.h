@@ -12,10 +12,8 @@
 #include <type_traits>
 
 #include "common/tl/constants/common.h"
-#include "runtime-common/core/allocator/runtime-allocator.h"
-#include "runtime-common/core/memory-resource/resource_allocator.h"
-#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {
@@ -64,8 +62,8 @@ struct Maybe final {
 
 template<typename T>
 struct vector final {
-  using vector_t = memory_resource::stl::vector<T, memory_resource::unsynchronized_pool_resource>;
-  vector_t data{typename vector_t::allocator_type(RuntimeAllocator::get().memory_resource)};
+  using vector_t = kphp::stl::vector<T, kphp::allocator::script_allocator>;
+  vector_t data;
 
   using iterator = vector_t::iterator;
   using const_iterator = vector_t::const_iterator;
