@@ -1,6 +1,5 @@
 import requests.exceptions
 from python.lib.testcase import KphpServerAutoTestCase
-import unittest
 
 
 class TestOomHandler(KphpServerAutoTestCase):
