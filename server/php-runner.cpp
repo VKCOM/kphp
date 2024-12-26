@@ -101,6 +101,13 @@ void PhpScript::error(const char *error_message, script_error_t error_type, [[ma
   }
 #endif
 #if ASAN_ENABLED
+  // AddressSanitizer relies on normal function call and return patterns to maintain its internal stack of
+  // function calls, known as the "shadow stack," which helps it detect stack-related issues like "buffer overflows".
+  // Functions that do not return, e.g. using setcontext() functionality, can interfere with this, causing ASan to lose track of the actual state of the call stack.
+  // By calling __asan_handle_no_return(), we explicitly notify ASan that the current stack frame will not return
+  // as expected, allowing it to clean up and adjust its "shadow stack" correctly and avoid false-positive detections.
+  __asan_handle_no_return();
+
   __sanitizer_start_switch_fiber(nullptr, main_thread_stack, main_thread_stacksize);
 #endif
   setcontext_portable(&exit_context);
