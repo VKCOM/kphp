@@ -39,6 +39,8 @@ void zlib_static_free([[maybe_unused]] voidpf opaque, [[maybe_unused]] voidpf ad
 
 } // namespace
 
+namespace kphp {
+
 namespace zlib {
 
 std::optional<string> encode(std::span<const char> data, int64_t level, int64_t encoding) noexcept {
@@ -116,3 +118,5 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
 }
 
 } // namespace zlib
+
+} // namespace kphp
