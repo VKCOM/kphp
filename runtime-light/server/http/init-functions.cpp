@@ -145,31 +145,31 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
     const std::string_view h_value_view{h_value.c_str(), h_value.size()};
 
     using namespace PhpServerSuperGlobalIndices;
-    if (h_name_view == HttpHeader::ACCEPT_ENCODING) {
+    if (h_name_view == kphp::http::headers::ACCEPT_ENCODING) {
       if (absl::StrContains(h_value_view, ENCODING_GZIP)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_GZIP;
       }
       if (absl::StrContains(h_value_view, ENCODING_DEFLATE)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
       }
-    } else if (h_name_view == HttpHeader::CONNECTION) {
+    } else if (h_name_view == kphp::http::headers::CONNECTION) {
       if (h_value_view == CONNECTION_KEEP_ALIVE) [[likely]] {
-        http_server_instance_st.connection_kind = HttpConnectionKind::KEEP_ALIVE;
+        http_server_instance_st.connection_kind = kphp::http::connection_kind::keep_alive;
       } else if (h_value_view == CONNECTION_CLOSE) [[likely]] {
-        http_server_instance_st.connection_kind = HttpConnectionKind::CLOSE;
+        http_server_instance_st.connection_kind = kphp::http::connection_kind::close;
       } else {
         php_error("unexpected connection header: %s", h_value_view.data());
       }
-    } else if (h_name_view == HttpHeader::COOKIE) {
+    } else if (h_name_view == kphp::http::headers::COOKIE) {
       process_cookie_header(h_value, superglobals);
-    } else if (h_name_view == HttpHeader::HOST) {
+    } else if (h_name_view == kphp::http::headers::HOST) {
       server.set_value(string{SERVER_NAME.data(), SERVER_NAME.size()}, h_value);
-    } else if (h_name_view == HttpHeader::AUTHORIZATION) {
+    } else if (h_name_view == kphp::http::headers::AUTHORIZATION) {
       process_authorization_header(h_value, superglobals);
-    } else if (h_name_view == HttpHeader::CONTENT_TYPE) {
+    } else if (h_name_view == kphp::http::headers::CONTENT_TYPE) {
       content_type = h_value_view;
       continue;
-    } else if (h_name_view == HttpHeader::CONTENT_LENGTH) {
+    } else if (h_name_view == kphp::http::headers::CONTENT_LENGTH) {
       int32_t content_length{};
       const auto [_, ec]{std::from_chars(h_value_view.data(), h_value_view.data() + h_value_view.size(), content_length)};
       if (ec != std::errc{} || content_length != invoke_http.body.size()) [[unlikely]] {
@@ -195,7 +195,11 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
 
 } // namespace
 
-void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
+namespace kphp {
+
+namespace http {
+
+void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   auto &superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
   auto &server{superglobals.v$_SERVER};
   auto &http_server_instance_st{HttpServerInstanceState::get()};
@@ -203,13 +207,13 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   { // determine HTTP method
     const std::string_view http_method{invoke_http.method.c_str(), invoke_http.method.size()};
     if (http_method == GET_METHOD) {
-      http_server_instance_st.http_method = HttpMethod::GET;
+      http_server_instance_st.http_method = method::get;
     } else if (http_method == POST_METHOD) {
-      http_server_instance_st.http_method = HttpMethod::POST;
+      http_server_instance_st.http_method = method::post;
     } else if (http_method == HEAD_METHOD) [[likely]] {
-      http_server_instance_st.http_method = HttpMethod::HEAD;
+      http_server_instance_st.http_method = method::head;
     } else {
-      http_server_instance_st.http_method = HttpMethod::OTHER;
+      http_server_instance_st.http_method = method::other;
     }
   }
 
@@ -267,10 +271,10 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
     server.set_value(string{SCRIPT_URI.data(), SCRIPT_URI.size()}, script_uri);
   }
 
-  if (http_server_instance_st.http_method == HttpMethod::GET) {
+  if (http_server_instance_st.http_method == method::get) {
     server.set_value(string{ARGC.data(), ARGC.size()}, static_cast<int64_t>(1));
     server.set_value(string{ARGV.data(), ARGV.size()}, invoke_http.uri.opt_query.value_or(string{}));
-  } else if (http_server_instance_st.http_method == HttpMethod::POST) {
+  } else if (http_server_instance_st.http_method == method::post) {
     if (content_type == CONTENT_TYPE_APP_FORM_URLENCODED) {
       f$parse_str(invoke_http.body, superglobals.v$_POST);
     } else if (content_type == CONTENT_TYPE_MULTIPART_FORM_DATA) {
@@ -295,18 +299,18 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
 
   // add content-type header
   auto &static_SB{RuntimeContext::get().static_SB};
-  static_SB.clean() << HttpHeader::CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
-  header({static_SB.c_str(), static_SB.size()}, true, HttpStatus::NO_STATUS);
+  static_SB.clean() << headers::CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
+  header({static_SB.c_str(), static_SB.size()}, true, status::no_status);
   // add connection kind header
-  const auto connection_kind{http_server_instance_st.connection_kind == HttpConnectionKind::KEEP_ALIVE ? CONNECTION_KEEP_ALIVE : CONNECTION_CLOSE};
-  static_SB.clean() << HttpHeader::CONNECTION.data() << ": " << connection_kind.data();
+  const auto connection_kind{http_server_instance_st.connection_kind == connection_kind::keep_alive ? CONNECTION_KEEP_ALIVE : CONNECTION_CLOSE};
+  static_SB.clean() << headers::CONNECTION.data() << ": " << connection_kind.data();
 }
 
-task_t<void> finalize_http_server(const string_buffer &output) noexcept {
+task_t<void> finalize_server(const string_buffer &output) noexcept {
   auto &http_server_instance_st{HttpServerInstanceState::get()};
 
   string body{};
-  if (http_server_instance_st.http_method != HttpMethod::HEAD) {
+  if (http_server_instance_st.http_method != method::head) {
     body = output.str();
     const bool gzip_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)};
     const bool deflate_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};
@@ -318,13 +322,13 @@ task_t<void> finalize_http_server(const string_buffer &output) noexcept {
         body = std::move(*encoded_body);
 
         auto &static_SB{RuntimeContext::get().static_SB};
-        static_SB.clean() << HttpHeader::CONTENT_ENCODING.data() << ": " << (gzip_encoded ? ENCODING_GZIP.data() : ENCODING_DEFLATE.data());
-        header({static_SB.c_str(), static_SB.size()}, true, HttpStatus::NO_STATUS);
+        static_SB.clean() << headers::CONTENT_ENCODING.data() << ": " << (gzip_encoded ? ENCODING_GZIP.data() : ENCODING_DEFLATE.data());
+        header({static_SB.c_str(), static_SB.size()}, true, status::no_status);
       }
     }
   }
 
-  const auto status_code{http_server_instance_st.status_code == HttpStatus::NO_STATUS ? HttpStatus::OK : http_server_instance_st.status_code};
+  const auto status_code{http_server_instance_st.status_code == status::no_status ? status::ok : http_server_instance_st.status_code};
   tl::httpResponse http_response{.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11},
                                  .status_code = static_cast<int32_t>(status_code),
                                  .headers = {},
@@ -348,3 +352,7 @@ task_t<void> finalize_http_server(const string_buffer &output) noexcept {
     php_warning("can't write component result to stream %" PRIu64, instance_st.standard_stream());
   }
 }
+
+} // namespace http
+
+} // namespace kphp
