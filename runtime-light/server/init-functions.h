@@ -19,7 +19,7 @@ using ServerQuery = std::variant<tl::K2InvokeHttp, tl::K2InvokeJobWorker>;
 
 inline void init_server(ServerQuery &&query) noexcept {
   static constexpr std::string_view SERVER_SOFTWARE_VALUE = "K2/KPHP";
-  static constexpr std::string_view SERVER_SIGNATURE_VALUE = "K2/KPHP Server v0.0.0";
+  static constexpr std::string_view SERVER_SIGNATURE_VALUE = "K2/KPHP Server v0.0.1";
 
   // common initialization
   {
@@ -34,7 +34,7 @@ inline void init_server(ServerQuery &&query) noexcept {
       using query_t = std::remove_cvref_t<decltype(query)>;
 
       if constexpr (std::same_as<query_t, tl::K2InvokeHttp>) {
-        init_http_server(std::forward<decltype(query)>(query));
+        kphp::http::init_server(std::forward<decltype(query)>(query));
       } else if constexpr (std::same_as<query_t, tl::K2InvokeJobWorker>) {
         init_job_server(std::forward<decltype(query)>(query));
       } else {
