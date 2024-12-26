@@ -7,7 +7,10 @@
 #include <cassert>
 #include <sys/syscall.h>
 #include <unistd.h>
+
+#ifndef __APPLE__
 #include <linux/futex.h>
+#endif
 
 #include "common/wrappers/copyable-atomic.h"
 
@@ -15,6 +18,14 @@
 class CustomMutex {
  public:
   void Lock() {
+#ifdef __APPLE__
+    int old = kFree;
+
+    while (!state_.compare_exchange_strong(old, kLockedWithWaiters)) {
+      usleep(250);
+      old = kFree;
+    }
+#else
     int old = kFree;
     if (state_.compare_exchange_strong(old, kLockedNoWaiters)) {
       return;
@@ -27,13 +38,18 @@ class CustomMutex {
       syscall(SYS_futex, &state_, FUTEX_WAIT, kLockedWithWaiters, 0, 0, 0);
       old = state_.exchange(kLockedWithWaiters);
     }
+#endif
   }
 
   void Unlock() {
+#ifdef __APPLE__
+    state_.store(kFree);
+#else
     if (state_.fetch_sub(1) == kLockedWithWaiters) {
       state_.store(kFree);
       syscall(SYS_futex, &state_, FUTEX_WAKE, 1, 0, 0, 0); // wake one
     }
+#endif
   }
 
   // https://en.cppreference.com/w/cpp/named_req/BasicLockable
