@@ -10,6 +10,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/utils/concepts.h"
 
@@ -17,7 +18,7 @@ inline constexpr int64_t INVALID_FORK_ID = -1;
 
 class ForkInstanceState final : private vk::not_copyable {
   template<hashable Key, typename Value>
-  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::allocator::script_allocator>;
+  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   static constexpr auto FORK_ID_INIT = 0;
   // type erased tasks that represent forks

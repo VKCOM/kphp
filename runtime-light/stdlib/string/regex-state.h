@@ -11,12 +11,13 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/utils/concepts.h"
 
 struct RegexInstanceState final : private vk::not_copyable {
   template<hashable Key, typename Value>
-  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::allocator::script_allocator>;
+  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   static constexpr size_t MAX_SUBPATTERNS_COUNT = 512;
   // match data size should be a multiple of 3 since it holds ovector triples (see pcre2 docs)

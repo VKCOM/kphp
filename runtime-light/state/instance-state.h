@@ -14,6 +14,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/core/globals/php-script-globals.h"
+#include "runtime-light/core/std/containers.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
@@ -48,13 +49,13 @@ enum class ImageKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
 
 struct InstanceState final : vk::not_copyable {
   template<typename T>
-  using unordered_set = kphp::stl::unordered_set<T, kphp::allocator::script_allocator>;
+  using unordered_set = kphp::stl::unordered_set<T, kphp::memory::script_allocator>;
 
   template<typename T>
-  using deque = kphp::stl::deque<T, kphp::allocator::script_allocator>;
+  using deque = kphp::stl::deque<T, kphp::memory::script_allocator>;
 
   template<typename T>
-  using list = kphp::stl::list<T, kphp::allocator::script_allocator>;
+  using list = kphp::stl::list<T, kphp::memory::script_allocator>;
 
   InstanceState() noexcept
     : allocator(INIT_INSTANCE_ALLOCATOR_SIZE, 0) {}

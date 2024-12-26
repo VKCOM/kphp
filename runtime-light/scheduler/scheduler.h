@@ -14,6 +14,7 @@
 
 #include "runtime-common/core/utils/hash.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 #include "runtime-light/utils/concepts.h"
 
 /**
@@ -164,13 +165,13 @@ concept CoroutineSchedulerConcept =
 // We need to finalize our decision whether we allow to do it from PHP code or not.
 class SimpleCoroutineScheduler {
   template<hashable Key, typename Value>
-  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::allocator::script_allocator>;
+  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   template<hashable T>
-  using unordered_set = kphp::stl::unordered_set<T, kphp::allocator::script_allocator>;
+  using unordered_set = kphp::stl::unordered_set<T, kphp::memory::script_allocator>;
 
   template<typename T>
-  using deque = kphp::stl::deque<T, kphp::allocator::script_allocator>;
+  using deque = kphp::stl::deque<T, kphp::memory::script_allocator>;
 
   deque<SuspendToken> yield_tokens;
   deque<SuspendToken> awaiting_for_stream_tokens;

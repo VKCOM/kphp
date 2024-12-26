@@ -12,6 +12,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 
 enum class HttpMethod : uint8_t { GET, POST, HEAD, OTHER };
 
@@ -41,8 +42,8 @@ enum HttpStatus : uint16_t {
 };
 
 struct HttpServerInstanceState final : private vk::not_copyable {
-  using header_t = kphp::stl::string<kphp::allocator::script_allocator>;
-  using headers_map_t = kphp::stl::multimap<header_t, header_t, kphp::allocator::script_allocator>;
+  using header_t = kphp::stl::string<kphp::memory::script_allocator>;
+  using headers_map_t = kphp::stl::multimap<header_t, header_t, kphp::memory::script_allocator>;
 
   static constexpr auto ENCODING_GZIP = static_cast<uint32_t>(1U << 0U);
   static constexpr auto ENCODING_DEFLATE = static_cast<uint32_t>(1U << 1U);

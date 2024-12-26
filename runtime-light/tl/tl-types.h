@@ -14,6 +14,7 @@
 #include "common/tl/constants/common.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {
@@ -62,7 +63,7 @@ struct Maybe final {
 
 template<typename T>
 struct vector final {
-  using vector_t = kphp::stl::vector<T, kphp::allocator::script_allocator>;
+  using vector_t = kphp::stl::vector<T, kphp::memory::script_allocator>;
   vector_t data;
 
   using iterator = vector_t::iterator;

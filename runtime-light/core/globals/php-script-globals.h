@@ -8,6 +8,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 
 namespace PhpServerSuperGlobalIndices {
 
@@ -67,7 +68,7 @@ struct PhpScriptBuiltInSuperGlobals {
 
 class PhpScriptMutableGlobals {
   template<typename Key, typename Value>
-  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::allocator::script_allocator>;
+  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   char *g_linear_mem{nullptr};
   unordered_map<int64_t, char *> libs_linear_mem;

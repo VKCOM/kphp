@@ -21,6 +21,7 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/string/mbstring-functions.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 
@@ -30,7 +31,7 @@ constexpr size_t ERROR_BUFFER_LENGTH = 256;
 
 enum class trailing_unmatch : uint8_t { skip, include };
 
-using regex_pcre2_group_names_t = kphp::stl::vector<const char *, kphp::allocator::script_allocator>;
+using regex_pcre2_group_names_t = kphp::stl::vector<const char *, kphp::memory::script_allocator>;
 
 struct RegexInfo final {
   std::string_view regex;

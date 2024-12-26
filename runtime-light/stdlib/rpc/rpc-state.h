@@ -10,6 +10,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
@@ -17,7 +18,7 @@
 
 struct RpcInstanceState final : private vk::not_copyable {
   template<typename Key, typename Value>
-  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::allocator::script_allocator>;
+  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   tl::TLBuffer rpc_buffer;
   int64_t current_query_id{0};
