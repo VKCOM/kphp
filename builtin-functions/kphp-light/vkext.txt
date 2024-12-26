@@ -18,6 +18,8 @@ function vk_sp_to_upper ($str ::: string) ::: string;
 
 function vk_whitespace_pack ($str ::: string, $html_opt ::: bool = false) ::: string;
 
+function vk_sp_full_simplify ($str ::: string) ::: string;
+
 // ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info generate-stub */
