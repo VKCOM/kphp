@@ -91,16 +91,23 @@ void PhpScript::error(const char *error_message, script_error_t error_type, [[ma
   stack_end = reinterpret_cast<char *>(get_context_stack_ptr_portable(exit_context)) + get_context_stack_size_portable(exit_context);
 
 #if defined(__linux__) && defined(__x86_64__) || defined(__APPLE__) && (__aarch64__)
-  // The PhpScript::error may be produced in process of signal handling. The default behavior on Linux-based platforms
-  // consider to block a signal during handler execution and unblock after handler ending.
-  // For x86_64 arch we have context replacement implementation where the signals manipulations is omitted by design,
-  // e.g. we do not save signals state in context replacement.
-  // Therefore, we need manual control for signal state, especially, we have to unblock blocked signals at logical end of handler.
+  // The PhpScript::error function may be invoked during signal handling. The default behavior on Linux-based platforms
+  // is to block a signal during the execution of its handler and unblock it after the handler completes.
+  // For the x86_64 architecture, we have a context replacement implementation where signal manipulation is omitted by design;
+  // for example, we do not save the signal state during context replacement.
+  // Therefore, we need manual control over the signal state. Specifically, we must unblock any blocked signals at the logical end of the handler.
   if (triggered_by_signal.has_value()) {
     dl_unblock_signal(triggered_by_signal.value());
   }
 #endif
 #if ASAN_ENABLED
+  // AddressSanitizer relies on normal function call and return patterns to maintain its internal stack of
+  // function calls, known as the "shadow stack," which helps it detect stack-related issues like "buffer overflows".
+  // Functions that do not return, e.g. using setcontext() functionality, can interfere with this, causing ASan to lose track of the actual state of the call stack.
+  // By calling __asan_handle_no_return(), we explicitly notify ASan that the current stack frame will not return
+  // as expected, allowing it to clean up and adjust its "shadow stack" correctly and avoid false-positive detections.
+  __asan_handle_no_return();
+
   __sanitizer_start_switch_fiber(nullptr, main_thread_stack, main_thread_stacksize);
 #endif
   setcontext_portable(&exit_context);
