@@ -27,11 +27,11 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
 
 } // namespace zlib
 
-inline string f$gzcompress(const string &data, int64_t level = zlib::MIN_COMPRESSION_LEVEL) noexcept {
+inline string f$gzcompress(const string& data, int64_t level = zlib::MIN_COMPRESSION_LEVEL) noexcept {
   level = level == zlib::MIN_COMPRESSION_LEVEL ? zlib::DEFAULT_COMPRESSION_LEVEL : level;
   return zlib::encode({data.c_str(), static_cast<size_t>(data.size())}, level, zlib::ENCODING_DEFLATE).value_or(string{});
 }
 
-inline string f$gzuncompress(const string &data) noexcept {
+inline string f$gzuncompress(const string& data) noexcept {
   return zlib::decode({data.c_str(), static_cast<size_t>(data.size())}, zlib::ENCODING_DEFLATE).value_or(string{});
 }

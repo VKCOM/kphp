@@ -1,0 +1,11 @@
+# This is a file that can be used by git-blame to ignore some revisions.
+# (git 2.23+, released in August 2019)
+#
+# Can be configured as follow:
+#
+#     $ git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# For more information you can look at git-blame(1) man page.
+
+# Applied clang-format to runtime, runtime-common, and runtime-light directories
+a238ec8da173c0eb00bb60aae90f07c82af387ae

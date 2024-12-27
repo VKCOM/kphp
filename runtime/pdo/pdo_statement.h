@@ -21,18 +21,14 @@ struct C$PDOStatement : public refcountable_polymorphic_php_classes<abstract_ref
 
   virtual ~C$PDOStatement() = default;
 
-  virtual const char *get_class() const noexcept {
-    return "PDOStatement";
-  }
+  virtual const char* get_class() const noexcept { return "PDOStatement"; }
 
-  virtual int32_t get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$PDOStatement::get_class())));
-  }
+  virtual int32_t get_hash() const noexcept { return static_cast<int32_t>(vk::std_hash(vk::string_view(C$PDOStatement::get_class()))); }
 
   using DummyVisitorMethods::accept;
 };
 
-bool f$PDOStatement$$execute(const class_instance<C$PDOStatement> &v$this, const Optional<array<mixed>> &params = {}) noexcept;
+bool f$PDOStatement$$execute(const class_instance<C$PDOStatement>& v$this, const Optional<array<mixed>>& params = {}) noexcept;
 
-mixed f$PDOStatement$$fetch(const class_instance<C$PDOStatement> &v$this) noexcept;
-array<mixed> f$PDOStatement$$fetchAll(const class_instance<C$PDOStatement> &v$this) noexcept;
+mixed f$PDOStatement$$fetch(const class_instance<C$PDOStatement>& v$this) noexcept;
+array<mixed> f$PDOStatement$$fetchAll(const class_instance<C$PDOStatement>& v$this) noexcept;

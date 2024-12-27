@@ -16,14 +16,13 @@ namespace vk::msgpack {
 
 // this class supports packing into a Stream according to msgpack format.
 // See https://github.com/msgpack/msgpack/blob/master/spec.md
-template<typename Stream>
+template <typename Stream>
 class packer : private vk::not_copyable {
 public:
-  explicit packer(Stream &s) noexcept
-    : stream_(s) {}
+  explicit packer(Stream& s) noexcept : stream_(s) {}
 
-  template<typename T>
-  void pack(const T &v) {
+  template <typename T>
+  void pack(const T& v) {
     adaptor::pack<T>{}(*this, v);
   }
 
@@ -46,45 +45,43 @@ public:
   void pack_map(uint32_t n) noexcept;
 
   void pack_str(uint32_t l) noexcept;
-  void pack_str_body(const char *b, uint32_t l) noexcept;
+  void pack_str_body(const char* b, uint32_t l) noexcept;
 
 private:
-  template<typename T>
+  template <typename T>
   void pack_imp_uint8(T d) noexcept;
-  template<typename T>
+  template <typename T>
   void pack_imp_uint32(T d) noexcept;
-  template<typename T>
+  template <typename T>
   void pack_imp_uint64(T d) noexcept;
-  template<typename T>
+  template <typename T>
   void pack_imp_int32(T d) noexcept;
-  template<typename T>
+  template <typename T>
   void pack_imp_int64(T d) noexcept;
 
-  void append_buffer(const char *buf, size_t len) noexcept;
+  void append_buffer(const char* buf, size_t len) noexcept;
 
-  Stream &stream_;
+  Stream& stream_;
 };
 
 class packer_float32_decorator {
 public:
-  static void clear() noexcept {
-    serialize_as_float32_ = 0;
-  }
+  static void clear() noexcept { serialize_as_float32_ = 0; }
 
-  template<class StreamT, class T>
-  static void pack_value_float32(packer<StreamT> &packer, const T &value) {
+  template <class StreamT, class T>
+  static void pack_value_float32(packer<StreamT>& packer, const T& value) {
     ++serialize_as_float32_;
     pack_value(packer, value);
     --serialize_as_float32_;
   }
 
-  template<class StreamT, class T>
-  static void pack_value(packer<StreamT> &packer, const T &value) {
+  template <class StreamT, class T>
+  static void pack_value(packer<StreamT>& packer, const T& value) {
     packer.pack(value);
   }
 
-  template<class StreamT>
-  static void pack_value(packer<StreamT> &packer, double value) {
+  template <class StreamT>
+  static void pack_value(packer<StreamT>& packer, double value) {
     if (serialize_as_float32_ > 0) {
       packer.pack(static_cast<float>(value));
     } else {

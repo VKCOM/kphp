@@ -22,8 +22,8 @@ public:
   bool write_bool(bool b) noexcept;
   bool write_int(int64_t i) noexcept;
   bool write_double(double d) noexcept;
-  bool write_string(const string &s) noexcept;
-  bool write_raw_string(const string &s) noexcept;
+  bool write_string(const string& s) noexcept;
+  bool write_raw_string(const string& s) noexcept;
   bool write_null() noexcept;
 
   bool write_key(std::string_view key, bool escape = false) noexcept;
@@ -32,9 +32,7 @@ public:
   bool start_array() noexcept;
   bool end_array() noexcept;
 
-  void set_double_precision(std::size_t precision) noexcept {
-    double_precision_ = precision;
-  }
+  void set_double_precision(std::size_t precision) noexcept { double_precision_ = precision; }
 
   bool is_complete() const noexcept;
   string get_error() const noexcept;
@@ -59,7 +57,7 @@ private:
   bool has_root_{false};
   std::size_t indent_{0};
 
-  string_buffer &runtime_context_buffer{RuntimeContext::get().static_SB};
+  string_buffer& runtime_context_buffer{RuntimeContext::get().static_SB};
 };
 
 } // namespace impl_

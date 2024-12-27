@@ -6,6 +6,4 @@
 
 #include "runtime-light/state/instance-state.h"
 
-HttpServerInstanceState &HttpServerInstanceState::get() noexcept {
-  return InstanceState::get().http_server_instance_state;
-}
+HttpServerInstanceState& HttpServerInstanceState::get() noexcept { return InstanceState::get().http_server_instance_state; }

@@ -8,8 +8,6 @@
 
 namespace pdo {
 
-AbstractPdoDriver::~AbstractPdoDriver() noexcept {
-  vk::singleton<database_drivers::Adaptor>::get().remove_connector(connector_id);
-}
+AbstractPdoDriver::~AbstractPdoDriver() noexcept { vk::singleton<database_drivers::Adaptor>::get().remove_connector(connector_id); }
 
 } // namespace pdo

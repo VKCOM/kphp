@@ -25,8 +25,8 @@
 #include "runtime-light/stdlib/file/file-system-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
-#include "runtime-light/stdlib/math/random-state.h"
 #include "runtime-light/stdlib/math/math-state.h"
+#include "runtime-light/stdlib/math/random-state.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/stdlib/serialization/serialization-state.h"
@@ -48,59 +48,43 @@ static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
 enum class ImageKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
 
 struct InstanceState final : vk::not_copyable {
-  template<typename T>
+  template <typename T>
   using unordered_set = memory_resource::stl::unordered_set<T, memory_resource::unsynchronized_pool_resource>;
 
-  template<typename T>
+  template <typename T>
   using deque = memory_resource::stl::deque<T, memory_resource::unsynchronized_pool_resource>;
 
-  template<typename T>
+  template <typename T>
   using list = memory_resource::stl::list<T, memory_resource::unsynchronized_pool_resource>;
 
   InstanceState() noexcept
-    : allocator(INIT_INSTANCE_ALLOCATOR_SIZE, 0)
-    , scheduler(allocator.memory_resource)
-    , fork_instance_state(allocator.memory_resource)
-    , php_script_mutable_globals_singleton(allocator.memory_resource)
-    , rpc_instance_state(allocator.memory_resource)
-    , http_server_instance_state(allocator.memory_resource)
-    , regex_instance_state(allocator.memory_resource)
-    , shutdown_functions(decltype(shutdown_functions)::allocator_type{allocator.memory_resource})
-    , incoming_streams_(decltype(incoming_streams_)::allocator_type{allocator.memory_resource})
-    , opened_streams_(decltype(opened_streams_)::allocator_type{allocator.memory_resource})
-    , pending_updates_(decltype(pending_updates_)::allocator_type{allocator.memory_resource}) {}
+      : allocator(INIT_INSTANCE_ALLOCATOR_SIZE, 0), scheduler(allocator.memory_resource), fork_instance_state(allocator.memory_resource),
+        php_script_mutable_globals_singleton(allocator.memory_resource), rpc_instance_state(allocator.memory_resource),
+        http_server_instance_state(allocator.memory_resource), regex_instance_state(allocator.memory_resource),
+        shutdown_functions(decltype(shutdown_functions)::allocator_type{allocator.memory_resource}),
+        incoming_streams_(decltype(incoming_streams_)::allocator_type{allocator.memory_resource}),
+        opened_streams_(decltype(opened_streams_)::allocator_type{allocator.memory_resource}),
+        pending_updates_(decltype(pending_updates_)::allocator_type{allocator.memory_resource}) {}
 
   ~InstanceState() = default;
 
-  static InstanceState &get() noexcept {
-    return *k2::instance_state();
-  }
+  static InstanceState& get() noexcept { return *k2::instance_state(); }
 
   void init_script_execution() noexcept;
 
-  template<ImageKind>
+  template <ImageKind>
   task_t<void> run_instance_prologue() noexcept;
 
   task_t<void> run_instance_epilogue() noexcept;
 
-  ImageKind image_kind() const noexcept {
-    return image_kind_;
-  }
+  ImageKind image_kind() const noexcept { return image_kind_; }
 
   void process_platform_updates() noexcept;
 
-  bool stream_updated(uint64_t stream_d) const noexcept {
-    return pending_updates_.contains(stream_d);
-  }
-  const unordered_set<uint64_t> &opened_streams() const noexcept {
-    return opened_streams_;
-  }
-  const deque<uint64_t> &incoming_streams() const noexcept {
-    return incoming_streams_;
-  }
-  uint64_t standard_stream() const noexcept {
-    return standard_stream_;
-  }
+  bool stream_updated(uint64_t stream_d) const noexcept { return pending_updates_.contains(stream_d); }
+  const unordered_set<uint64_t>& opened_streams() const noexcept { return opened_streams_; }
+  const deque<uint64_t>& incoming_streams() const noexcept { return incoming_streams_; }
+  uint64_t standard_stream() const noexcept { return standard_stream_; }
   uint64_t take_incoming_stream() noexcept;
 
   std::pair<uint64_t, int32_t> open_stream(std::string_view, k2::StreamKind) noexcept;

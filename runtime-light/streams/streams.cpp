@@ -14,11 +14,11 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
-task_t<std::pair<char *, int32_t>> read_all_from_stream(uint64_t stream_d) noexcept {
+task_t<std::pair<char*, int32_t>> read_all_from_stream(uint64_t stream_d) noexcept {
   constexpr int32_t batch_size = 32;
 
   int32_t buffer_capacity = batch_size;
-  auto *buffer = static_cast<char *>(k2::alloc(buffer_capacity));
+  auto* buffer = static_cast<char*>(k2::alloc(buffer_capacity));
   int32_t buffer_size = 0;
 
   k2::StreamStatus status{};
@@ -31,7 +31,7 @@ task_t<std::pair<char *, int32_t>> read_all_from_stream(uint64_t stream_d) noexc
 
     if (status.read_status == k2::IOStatus::IOAvailable) {
       if (buffer_capacity - buffer_size < batch_size) {
-        auto *new_buffer = static_cast<char *>(k2::alloc(static_cast<size_t>(buffer_capacity) * 2));
+        auto* new_buffer = static_cast<char*>(k2::alloc(static_cast<size_t>(buffer_capacity) * 2));
         std::memcpy(new_buffer, buffer, buffer_size);
         k2::free(buffer);
         buffer_capacity = buffer_capacity * 2;
@@ -46,11 +46,11 @@ task_t<std::pair<char *, int32_t>> read_all_from_stream(uint64_t stream_d) noexc
   co_return std::make_pair(buffer, buffer_size);
 }
 
-std::pair<char *, int32_t> read_nonblock_from_stream(uint64_t stream_d) noexcept {
+std::pair<char*, int32_t> read_nonblock_from_stream(uint64_t stream_d) noexcept {
   constexpr int32_t batch_size = 32;
 
   int32_t buffer_capacity = batch_size;
-  auto *buffer = static_cast<char *>(k2::alloc(buffer_capacity));
+  auto* buffer = static_cast<char*>(k2::alloc(buffer_capacity));
   int32_t buffer_size = 0;
 
   k2::StreamStatus status{};
@@ -63,7 +63,7 @@ std::pair<char *, int32_t> read_nonblock_from_stream(uint64_t stream_d) noexcept
 
     if (status.read_status == k2::IOStatus::IOAvailable) {
       if (buffer_capacity - buffer_size < batch_size) {
-        auto *new_buffer = static_cast<char *>(k2::alloc(static_cast<size_t>(buffer_capacity) * 2));
+        auto* new_buffer = static_cast<char*>(k2::alloc(static_cast<size_t>(buffer_capacity) * 2));
         std::memcpy(new_buffer, buffer, buffer_size);
         k2::free(buffer);
         buffer_capacity = buffer_capacity * 2;
@@ -78,13 +78,11 @@ std::pair<char *, int32_t> read_nonblock_from_stream(uint64_t stream_d) noexcept
   return std::make_pair(buffer, buffer_size);
 }
 
-task_t<int32_t> read_exact_from_stream(uint64_t stream_d, char *buffer, int32_t len) noexcept {
+task_t<int32_t> read_exact_from_stream(uint64_t stream_d, char* buffer, int32_t len) noexcept {
   int32_t read = 0;
 
-  k2::StreamStatus status{.read_status = k2::IOStatus::IOAvailable,
-                          .write_status = k2::IOStatus::IOAvailable,
-                          .please_shutdown_write = 0,
-                          .libc_errno = k2::errno_ok};
+  k2::StreamStatus status{
+      .read_status = k2::IOStatus::IOAvailable, .write_status = k2::IOStatus::IOAvailable, .please_shutdown_write = 0, .libc_errno = k2::errno_ok};
   while (read != len && status.read_status != k2::IOStatus::IOClosed) {
     k2::stream_status(stream_d, std::addressof(status));
     if (status.libc_errno != k2::errno_ok) {
@@ -104,7 +102,7 @@ task_t<int32_t> read_exact_from_stream(uint64_t stream_d, char *buffer, int32_t 
   co_return read;
 }
 
-task_t<int32_t> write_all_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept {
+task_t<int32_t> write_all_to_stream(uint64_t stream_d, const char* buffer, int32_t len) noexcept {
   int32_t written = 0;
 
   k2::StreamStatus status{};
@@ -132,7 +130,7 @@ task_t<int32_t> write_all_to_stream(uint64_t stream_d, const char *buffer, int32
   co_return written;
 }
 
-int32_t write_nonblock_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept {
+int32_t write_nonblock_to_stream(uint64_t stream_d, const char* buffer, int32_t len) noexcept {
   int32_t written = 0;
 
   k2::StreamStatus status{};
@@ -154,13 +152,11 @@ int32_t write_nonblock_to_stream(uint64_t stream_d, const char *buffer, int32_t 
   return written;
 }
 
-task_t<int32_t> write_exact_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept {
+task_t<int32_t> write_exact_to_stream(uint64_t stream_d, const char* buffer, int32_t len) noexcept {
   int written = 0;
 
-  k2::StreamStatus status{.read_status = k2::IOStatus::IOAvailable,
-                          .write_status = k2::IOStatus::IOAvailable,
-                          .please_shutdown_write = 0,
-                          .libc_errno = k2::errno_ok};
+  k2::StreamStatus status{
+      .read_status = k2::IOStatus::IOAvailable, .write_status = k2::IOStatus::IOAvailable, .please_shutdown_write = 0, .libc_errno = k2::errno_ok};
   while (written != len && status.write_status != k2::IOStatus::IOClosed) {
     k2::stream_status(stream_d, std::addressof(status));
     if (status.libc_errno != k2::errno_ok) {

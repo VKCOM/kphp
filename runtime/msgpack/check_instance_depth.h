@@ -12,16 +12,12 @@ struct CheckInstanceDepth {
   static size_t depth;
   static constexpr size_t max_depth = 20;
 
-  CheckInstanceDepth() {
-    depth++;
-  }
+  CheckInstanceDepth() { depth++; }
 
-  CheckInstanceDepth(const CheckInstanceDepth &) = delete;
-  CheckInstanceDepth &operator=(const CheckInstanceDepth &) = delete;
+  CheckInstanceDepth(const CheckInstanceDepth&) = delete;
+  CheckInstanceDepth& operator=(const CheckInstanceDepth&) = delete;
 
-  static bool is_exceeded() {
-    return depth > max_depth;
-  }
+  static bool is_exceeded() { return depth > max_depth; }
 
   ~CheckInstanceDepth() {
     if (!is_exceeded()) {

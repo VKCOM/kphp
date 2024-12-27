@@ -67,35 +67,27 @@ struct PhpScriptBuiltInSuperGlobals {
 };
 
 class PhpScriptMutableGlobals {
-  template<typename Key, typename Value>
+  template <typename Key, typename Value>
   using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
-  char *g_linear_mem{nullptr};
-  unordered_map<int64_t, char *> libs_linear_mem;
+  char* g_linear_mem{nullptr};
+  unordered_map<int64_t, char*> libs_linear_mem;
   PhpScriptBuiltInSuperGlobals superglobals;
 
 public:
-  explicit PhpScriptMutableGlobals(memory_resource::unsynchronized_pool_resource &resource)
-    : libs_linear_mem(unordered_map<int64_t, char *>::allocator_type{resource}) {}
+  explicit PhpScriptMutableGlobals(memory_resource::unsynchronized_pool_resource& resource)
+      : libs_linear_mem(unordered_map<int64_t, char*>::allocator_type{resource}) {}
 
-  static PhpScriptMutableGlobals &current() noexcept;
+  static PhpScriptMutableGlobals& current() noexcept;
 
   void once_alloc_linear_mem(unsigned int n_bytes);
-  void once_alloc_linear_mem(const char *lib_name, unsigned int n_bytes);
+  void once_alloc_linear_mem(const char* lib_name, unsigned int n_bytes);
 
-  char *get_linear_mem() const {
-    return g_linear_mem;
-  }
-  char *get_linear_mem(const char *lib_name) const;
+  char* get_linear_mem() const { return g_linear_mem; }
+  char* get_linear_mem(const char* lib_name) const;
 
-  char *mem() const {
-    return g_linear_mem;
-  }
-  char *mem_for_lib(const char *lib_name) const;
+  char* mem() const { return g_linear_mem; }
+  char* mem_for_lib(const char* lib_name) const;
 
-  PhpScriptBuiltInSuperGlobals &get_superglobals() {
-    return superglobals;
-  }
-  const PhpScriptBuiltInSuperGlobals &get_superglobals() const {
-    return superglobals;
-  }
+  PhpScriptBuiltInSuperGlobals& get_superglobals() { return superglobals; }
+  const PhpScriptBuiltInSuperGlobals& get_superglobals() const { return superglobals; }
 };

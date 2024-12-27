@@ -12,5 +12,5 @@ struct SystemInstanceState final : private vk::not_copyable {
   int64_t result_code_dummy{};
   Optional<int64_t> rest_index_dummy;
 
-  static SystemInstanceState &get() noexcept;
+  static SystemInstanceState& get() noexcept;
 };

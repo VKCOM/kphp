@@ -4,10 +4,7 @@
 
 #include "runtime/resumable.h"
 
-Storage::Storage() noexcept
-  : tag(0) {
-  std::memset(storage_.storage_.data(), 0, sizeof(mixed));
-}
+Storage::Storage() noexcept : tag(0) { std::memset(storage_.storage_.data(), 0, sizeof(mixed)); }
 
 void Storage::save_void() noexcept {
   if (!CurException.is_null()) {

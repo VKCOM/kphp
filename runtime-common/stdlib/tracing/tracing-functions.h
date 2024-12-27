@@ -8,8 +8,6 @@
 
 namespace kphp_tracing {
 
-inline bool is_turned_on() {
-  return TracingContext::get().cur_trace_level >= 1;
-}
+inline bool is_turned_on() { return TracingContext::get().cur_trace_level >= 1; }
 
 } // namespace kphp_tracing

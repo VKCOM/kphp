@@ -59,7 +59,7 @@ constexpr std::string_view GET_METHOD = "GET";
 constexpr std::string_view POST_METHOD = "POST";
 constexpr std::string_view HEAD_METHOD = "HEAD";
 
-string get_server_protocol(tl::HttpVersion http_version, const std::optional<string> &opt_scheme) noexcept {
+string get_server_protocol(tl::HttpVersion http_version, const std::optional<string>& opt_scheme) noexcept {
   std::string_view protocol_name{HTTP};
   const auto protocol_version{http_version.string_view()};
   if (opt_scheme.has_value()) {
@@ -78,15 +78,15 @@ string get_server_protocol(tl::HttpVersion http_version, const std::optional<str
   return protocol;
 }
 
-void process_cookie_header(const string &header, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
+void process_cookie_header(const string& header, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
   // *** be careful here ***
-  auto *cookie_start{const_cast<char *>(header.c_str())};
-  auto *cookie_list_end{const_cast<char *>(header.c_str() + header.size())};
+  auto* cookie_start{const_cast<char*>(header.c_str())};
+  auto* cookie_list_end{const_cast<char*>(header.c_str() + header.size())};
   do {
-    auto *cookie_end{std::find(cookie_start, cookie_list_end, ';')};
-    char *cookie_domain_end{std::find(cookie_start, cookie_end, '=')};
+    auto* cookie_end{std::find(cookie_start, cookie_list_end, ';')};
+    char* cookie_domain_end{std::find(cookie_start, cookie_end, '=')};
     if (cookie_domain_end != cookie_end) [[likely]] {
-      char *cookie_value_start{std::next(cookie_domain_end)};
+      char* cookie_value_start{std::next(cookie_domain_end)};
       const auto cookie_domain_size{static_cast<string::size_type>(std::distance(cookie_start, cookie_domain_end))};
       const auto cookie_value_size{static_cast<string::size_type>(std::distance(cookie_value_start, cookie_end))};
       string cookie_domain{cookie_start, cookie_domain_size};
@@ -105,14 +105,14 @@ void process_cookie_header(const string &header, PhpScriptBuiltInSuperGlobals &s
 // RFC link: https://tools.ietf.org/html/rfc2617#section-2
 // Header example:
 //  Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
-void process_authorization_header(const string &header, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
+void process_authorization_header(const string& header, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
   array<string> header_parts{explode(' ', header)};
   if (header_parts.count() != 2) [[unlikely]] {
     return;
   }
 
-  const auto &auth_scheme{header_parts[0]};
-  const auto &auth_credentials{header_parts[1]};
+  const auto& auth_scheme{header_parts[0]};
+  const auto& auth_credentials{header_parts[1]};
   if (std::string_view{auth_scheme.c_str(), auth_scheme.size()} != AUTHORIZATION_BASIC) [[unlikely]] {
     return;
   }
@@ -134,13 +134,13 @@ void process_authorization_header(const string &header, PhpScriptBuiltInSuperGlo
 }
 
 // returns content type
-std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
-  auto &server{superglobals.v$_SERVER};
-  auto &http_server_instance_st{HttpServerInstanceState::get()};
+std::string_view process_headers(tl::K2InvokeHttp& invoke_http, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
+  auto& server{superglobals.v$_SERVER};
+  auto& http_server_instance_st{HttpServerInstanceState::get()};
 
   std::string_view content_type{CONTENT_TYPE_APP_FORM_URLENCODED};
   // platform provides headers that are already in lowercase
-  for (auto &[_, h_name, h_value] : invoke_http.headers) {
+  for (auto& [_, h_name, h_value] : invoke_http.headers) {
     const std::string_view h_name_view{h_name.c_str(), h_name.size()};
     const std::string_view h_value_view{h_value.c_str(), h_value.size()};
 
@@ -195,10 +195,10 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
 
 } // namespace
 
-void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
-  auto &superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
-  auto &server{superglobals.v$_SERVER};
-  auto &http_server_instance_st{HttpServerInstanceState::get()};
+void init_http_server(tl::K2InvokeHttp&& invoke_http) noexcept {
+  auto& superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
+  auto& server{superglobals.v$_SERVER};
+  auto& http_server_instance_st{HttpServerInstanceState::get()};
 
   { // determine HTTP method
     const std::string_view http_method{invoke_http.method.c_str(), invoke_http.method.size()};
@@ -294,7 +294,7 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   // prepare some response headers
 
   // add content-type header
-  auto &static_SB{RuntimeContext::get().static_SB};
+  auto& static_SB{RuntimeContext::get().static_SB};
   static_SB.clean() << HttpHeader::CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
   header({static_SB.c_str(), static_SB.size()}, true, HttpStatus::NO_STATUS);
   // add connection kind header
@@ -302,8 +302,8 @@ void init_http_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   static_SB.clean() << HttpHeader::CONNECTION.data() << ": " << connection_kind.data();
 }
 
-task_t<void> finalize_http_server(const string_buffer &output) noexcept {
-  auto &http_server_instance_st{HttpServerInstanceState::get()};
+task_t<void> finalize_http_server(const string_buffer& output) noexcept {
+  auto& http_server_instance_st{HttpServerInstanceState::get()};
 
   string body{};
   if (http_server_instance_st.http_method != HttpMethod::HEAD) {
@@ -317,7 +317,7 @@ task_t<void> finalize_http_server(const string_buffer &output) noexcept {
       if (encoded_body.has_value()) [[likely]] {
         body = std::move(*encoded_body);
 
-        auto &static_SB{RuntimeContext::get().static_SB};
+        auto& static_SB{RuntimeContext::get().static_SB};
         static_SB.clean() << HttpHeader::CONTENT_ENCODING.data() << ": " << (gzip_encoded ? ENCODING_GZIP.data() : ENCODING_DEFLATE.data());
         header({static_SB.c_str(), static_SB.size()}, true, HttpStatus::NO_STATUS);
       }
@@ -332,8 +332,8 @@ task_t<void> finalize_http_server(const string_buffer &output) noexcept {
   // fill headers
   http_response.headers.data.reserve(http_server_instance_st.headers().size());
   std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.data),
-                 [](const auto &header_entry) noexcept {
-                   const auto &[name, value]{header_entry};
+                 [](const auto& header_entry) noexcept {
+                   const auto& [name, value]{header_entry};
                    string header_name{name.data(), static_cast<string::size_type>(name.size())};
                    string header_value{value.data(), static_cast<string::size_type>(value.size())};
                    return tl::httpHeaderEntry{.is_sensitive = {}, .name = std::move(header_name), .value = std::move(header_value)};
@@ -342,7 +342,7 @@ task_t<void> finalize_http_server(const string_buffer &output) noexcept {
   tl::TLBuffer tlb{};
   tl::HttpResponse{.http_response = std::move(http_response)}.store(tlb);
 
-  auto &instance_st{InstanceState::get()};
+  auto& instance_st{InstanceState::get()};
   if ((co_await write_all_to_stream(instance_st.standard_stream(), tlb.data(), tlb.size())) != tlb.size()) [[unlikely]] {
     instance_st.poll_status = k2::PollStatus::PollFinishedError;
     php_warning("can't write component result to stream %" PRIu64, instance_st.standard_stream());

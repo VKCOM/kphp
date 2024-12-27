@@ -20,42 +20,43 @@ namespace dl {
 extern bool script_allocator_enabled;
 extern long long query_num; // engine query number. query_num == 0 before first query
 
-memory_resource::unsynchronized_pool_resource &get_default_script_allocator() noexcept;
+memory_resource::unsynchronized_pool_resource& get_default_script_allocator() noexcept;
 
-void set_current_script_allocator(memory_resource::unsynchronized_pool_resource &replacer, bool force_enable) noexcept;
+void set_current_script_allocator(memory_resource::unsynchronized_pool_resource& replacer, bool force_enable) noexcept;
 void restore_default_script_allocator(bool force_disable) noexcept;
 
-const memory_resource::MemoryStats &get_script_memory_stats() noexcept;
+const memory_resource::MemoryStats& get_script_memory_stats() noexcept;
 size_t get_heap_memory_used() noexcept;
 
 void global_init_script_allocator() noexcept;
-void init_script_allocator(void *buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept;
+void init_script_allocator(void* buffer, size_t script_mem_size, size_t oom_handling_mem_size) noexcept;
 void free_script_allocator() noexcept;
 
-void *allocate(size_t n) noexcept; // allocate script memory
-void *allocate0(size_t n) noexcept; // allocate zeroed script memory
-void *reallocate(void *p, size_t new_size, size_t old_size) noexcept; // reallocate script memory
-void deallocate(void *p, size_t n) noexcept; // deallocate script memory
+void* allocate(size_t n) noexcept;                                    // allocate script memory
+void* allocate0(size_t n) noexcept;                                   // allocate zeroed script memory
+void* reallocate(void* p, size_t new_size, size_t old_size) noexcept; // reallocate script memory
+void deallocate(void* p, size_t n) noexcept;                          // deallocate script memory
 
-void *heap_allocate(size_t n) noexcept; // allocate heap memory (persistent between script runs)
-void *heap_reallocate(void *p, size_t new_size, size_t old_size) noexcept; // reallocate heap memory
-void heap_deallocate(void *p, size_t n) noexcept; // deallocate heap memory
+void* heap_allocate(size_t n) noexcept;                                    // allocate heap memory (persistent between script runs)
+void* heap_reallocate(void* p, size_t new_size, size_t old_size) noexcept; // reallocate heap memory
+void heap_deallocate(void* p, size_t n) noexcept;                          // deallocate heap memory
 
-void *script_allocator_malloc(size_t x) noexcept;
-void *script_allocator_calloc(size_t nmemb, size_t size) noexcept;
-void *script_allocator_realloc(void *p, size_t x) noexcept;
-char *script_allocator_strdup(const char *str) noexcept;
-void script_allocator_free(void *p) noexcept;
+void* script_allocator_malloc(size_t x) noexcept;
+void* script_allocator_calloc(size_t nmemb, size_t size) noexcept;
+void* script_allocator_realloc(void* p, size_t x) noexcept;
+char* script_allocator_strdup(const char* str) noexcept;
+void script_allocator_free(void* p) noexcept;
 
 bool is_malloc_replaced() noexcept;
 void replace_malloc_with_script_allocator() noexcept;
 void rollback_malloc_replacement() noexcept;
-void write_last_malloc_replacement_stacktrace(char *buf, size_t buf_size) noexcept;
+void write_last_malloc_replacement_stacktrace(char* buf, size_t buf_size) noexcept;
 
 class MemoryReplacementGuard {
   bool force_enable_disable_;
+
 public:
-  explicit MemoryReplacementGuard(memory_resource::unsynchronized_pool_resource &memory_resource, bool force_enable_disable = false);
+  explicit MemoryReplacementGuard(memory_resource::unsynchronized_pool_resource& memory_resource, bool force_enable_disable = false);
   ~MemoryReplacementGuard();
 };
 
@@ -88,28 +89,22 @@ inline auto temporary_rollback_malloc_replacement() noexcept {
 
 class ManagedThroughDlAllocator {
 public:
-  static void *operator new(size_t size) noexcept {
-    return dl::allocate(size);
-  }
+  static void* operator new(size_t size) noexcept { return dl::allocate(size); }
 
-  static void *operator new(size_t, void *ptr) noexcept {
-    return ptr;
-  }
+  static void* operator new(size_t, void* ptr) noexcept { return ptr; }
 
-  static void operator delete(void *ptr, size_t size) noexcept {
-    dl::deallocate(ptr, size);
-  }
+  static void operator delete(void* ptr, size_t size) noexcept { dl::deallocate(ptr, size); }
 
-  static void *operator new[](size_t count) = delete;
-  static void operator delete[](void *ptr, size_t sz) = delete;
-  static void operator delete[](void *ptr) = delete;
+  static void* operator new[](size_t count) = delete;
+  static void operator delete[](void* ptr, size_t sz) = delete;
+  static void operator delete[](void* ptr) = delete;
 
 protected:
   ~ManagedThroughDlAllocator() = default;
 };
 
-template<typename T, typename... Args>
-inline auto make_unique_on_script_memory(Args &&... args) noexcept {
+template <typename T, typename... Args>
+inline auto make_unique_on_script_memory(Args&&... args) noexcept {
   static_assert(std::is_base_of<ManagedThroughDlAllocator, T>{}, "ManagedThroughDlAllocator should be base for T");
   return std::make_unique<T>(std::forward<Args>(args)...);
 }

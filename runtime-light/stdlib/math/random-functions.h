@@ -20,9 +20,7 @@ inline int64_t f$mt_rand(int64_t l, int64_t r) noexcept {
   return std::uniform_int_distribution<int64_t>{l, r}(RandomInstanceState::get().mt_gen);
 }
 
-inline int64_t f$mt_rand() noexcept {
-  return f$mt_rand(0, f$mt_getrandmax());
-}
+inline int64_t f$mt_rand() noexcept { return f$mt_rand(0, f$mt_getrandmax()); }
 
 inline void f$mt_srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexcept {
   if (seed == std::numeric_limits<int64_t>::min()) {
@@ -31,10 +29,6 @@ inline void f$mt_srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexc
   RandomInstanceState::get().mt_gen.seed(static_cast<std::mt19937_64::result_type>(seed));
 }
 
-inline int64_t f$rand() noexcept {
-  return f$mt_rand();
-}
+inline int64_t f$rand() noexcept { return f$mt_rand(); }
 
-inline int64_t f$rand(int64_t l, int64_t r) noexcept {
-  return f$mt_rand(l, r);
-}
+inline int64_t f$rand(int64_t l, int64_t r) noexcept { return f$mt_rand(l, r); }

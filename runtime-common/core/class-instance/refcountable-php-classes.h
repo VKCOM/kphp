@@ -18,10 +18,10 @@ public:
   virtual uint32_t get_refcnt() const noexcept = 0;
   virtual void set_refcnt(uint32_t new_refcnt) noexcept = 0;
 
-  virtual void *get_instance_data_raw_ptr() noexcept = 0;
+  virtual void* get_instance_data_raw_ptr() noexcept = 0;
 };
 
-template<class... Bases>
+template <class... Bases>
 class refcountable_polymorphic_php_classes : public Bases... {
 public:
   void add_ref() noexcept final {
@@ -30,9 +30,7 @@ public:
     }
   }
 
-  uint32_t get_refcnt() const noexcept final {
-    return refcnt;
-  }
+  uint32_t get_refcnt() const noexcept final { return refcnt; }
 
   void release() noexcept final __attribute__((always_inline)) {
     if (refcnt < ExtraRefCnt::for_global_const) {
@@ -43,25 +41,21 @@ public:
     }
   }
 
-  void set_refcnt(uint32_t new_refcnt) noexcept final {
-    refcnt = new_refcnt;
-  }
+  void set_refcnt(uint32_t new_refcnt) noexcept final { refcnt = new_refcnt; }
 
-  void *get_instance_data_raw_ptr() noexcept final {
-    return this;
-  }
+  void* get_instance_data_raw_ptr() noexcept final { return this; }
 
 private:
   uint32_t refcnt{0};
 };
 
-template<class... Interfaces>
+template <class... Interfaces>
 class refcountable_polymorphic_php_classes_virt : public virtual abstract_refcountable_php_interface, public Interfaces... {
 public:
   refcountable_polymorphic_php_classes_virt() __attribute__((always_inline)) = default;
 };
 
-template<>
+template <>
 class refcountable_polymorphic_php_classes_virt<> : public virtual abstract_refcountable_php_interface {
 public:
   refcountable_polymorphic_php_classes_virt() __attribute__((always_inline)) = default;
@@ -72,9 +66,7 @@ public:
     }
   }
 
-  uint32_t get_refcnt() const noexcept final {
-    return refcnt;
-  }
+  uint32_t get_refcnt() const noexcept final { return refcnt; }
 
   void release() noexcept final __attribute__((always_inline)) {
     if (refcnt < ExtraRefCnt::for_global_const) {
@@ -85,19 +77,15 @@ public:
     }
   }
 
-  void set_refcnt(uint32_t new_refcnt) noexcept final {
-    refcnt = new_refcnt;
-  }
+  void set_refcnt(uint32_t new_refcnt) noexcept final { refcnt = new_refcnt; }
 
-  void *get_instance_data_raw_ptr() noexcept final {
-    return this;
-  }
+  void* get_instance_data_raw_ptr() noexcept final { return this; }
 
 private:
   uint32_t refcnt{0};
 };
 
-template<class Derived>
+template <class Derived>
 class refcountable_php_classes : public ScriptAllocatorManaged {
 public:
   void add_ref() noexcept {
@@ -106,9 +94,7 @@ public:
     }
   }
 
-  uint32_t get_refcnt() const noexcept {
-    return refcnt;
-  }
+  uint32_t get_refcnt() const noexcept { return refcnt; }
 
   void release() noexcept __attribute__((always_inline)) {
     if (refcnt < ExtraRefCnt::for_global_const) {
@@ -122,17 +108,13 @@ public:
        * we should have vptr for passing proper sizeof of Derived class, but we don't want to increase size of every class
        * therefore we use static_cast here
        */
-      delete static_cast<Derived *>(this);
+      delete static_cast<Derived*>(this);
     }
   }
 
-  void set_refcnt(uint32_t new_refcnt) noexcept {
-    refcnt = new_refcnt;
-  }
+  void set_refcnt(uint32_t new_refcnt) noexcept { refcnt = new_refcnt; }
 
-  void *get_instance_data_raw_ptr() noexcept {
-    return this;
-  }
+  void* get_instance_data_raw_ptr() noexcept { return this; }
 
 private:
   uint32_t refcnt{0};
@@ -146,5 +128,5 @@ public:
 
 struct may_be_mixed_base : public virtual abstract_refcountable_php_interface {
   ~may_be_mixed_base() override = default;
-  virtual const char *get_class() const noexcept = 0;
+  virtual const char* get_class() const noexcept = 0;
 };
