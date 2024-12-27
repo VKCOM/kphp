@@ -163,25 +163,27 @@ class KphpRunOnce(KphpBuilder):
         return k2_runtime_proc.returncode == 0
 
     def compare_php_and_kphp_stdout(self):
-        print(self._artifacts_dir)
-        if self._kphp_server_stdout == self._php_stdout:
-            return True
+        try:
+            if self._kphp_server_stdout == self._php_stdout:
+                return True
 
-        diff_artifact = self._move_to_artifacts("php_vs_kphp.diff", 1, b"TODO")
-        php_stdout_file = os.path.join(self._artifacts_dir, "php_stdout")
-        with open(php_stdout_file, 'wb') as f:
-            f.write(self._php_stdout)
-        kphp_server_stdout_file = os.path.join(self._artifacts_dir, "kphp_server_stdout")
-        with open(kphp_server_stdout_file, 'wb') as f:
-            f.write(self._kphp_server_stdout)
+            diff_artifact = self._move_to_artifacts("php_vs_kphp.diff", 1, b"TODO")
+            php_stdout_file = os.path.join(self._artifacts_dir, "php_stdout")
+            with open(php_stdout_file, 'wb') as f:
+                f.write(self._php_stdout)
+            kphp_server_stdout_file = os.path.join(self._artifacts_dir, "kphp_server_stdout")
+            with open(kphp_server_stdout_file, 'wb') as f:
+                f.write(self._kphp_server_stdout)
 
-        with open(diff_artifact.file, 'wb') as f:
-            subprocess.call(["diff", "--text", "-ud", php_stdout_file, kphp_server_stdout_file], stdout=f)
-            if 'GITHUB_ACTIONS' in os.environ:
+            with open(diff_artifact.file, 'wb') as f:
+                subprocess.call(["diff", "--text", "-ud", php_stdout_file, kphp_server_stdout_file], stdout=f)
+                if 'GITHUB_ACTIONS' in os.environ:
                 # just open and read the file - it's easier than messing with popen, etc.
-                with open(diff_artifact.file, 'r') as f:
-                    print('diff: ' + f.read())
-        with open(diff_artifact.file, 'r') as f:
-            print(f.read())
-
-        return False
+                    with open(diff_artifact.file, 'r') as f:
+                        print('diff: ' + f.read())
+            with open(diff_artifact.file, 'r') as f:
+                print(f.read())
+            return False
+        except:
+            print(self._artifacts_dir)
+            raise RuntimeError
