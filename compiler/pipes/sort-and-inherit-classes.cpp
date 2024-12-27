@@ -367,7 +367,7 @@ void SortAndInheritClassesF::execute(ClassPtr klass, MultipleDataStreams<Functio
   }
 
   node->data.waiting.clear();
-  node->data.done = true; // write
+  node->data.done = true;
 }
 
 void SortAndInheritClassesF::check_on_finish(DataStream<FunctionPtr> &os) {

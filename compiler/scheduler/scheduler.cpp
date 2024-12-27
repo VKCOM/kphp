@@ -4,10 +4,10 @@
 
 #include "compiler/scheduler/scheduler.h"
 
-#include "compiler/scheduler/scheduler-base.h"
 #include <atomic>
 #include <vector>
 
+#include "compiler/scheduler/scheduler-base.h"
 #include "compiler/scheduler/task.h"
 #include "compiler/threading/thread-id.h"
 #include "compiler/threading/tls.h"

@@ -4,14 +4,14 @@
 
 #pragma once
 
-#include "common/wrappers/copyable-atomic.h"
 #include <atomic>
 #include <string>
 #include <forward_list>
 
+#include "common/wrappers/copyable-atomic.h"
 #include "compiler/debug.h"
-#include "compiler/location.h"
 #include "compiler/inferring/type-data.h"
+#include "compiler/location.h"
 #include "compiler/threading/locks.h"
 
 namespace tinf {

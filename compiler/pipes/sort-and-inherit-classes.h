@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "common/wrappers/copyable-atomic.h"
 #include <forward_list>
 
+#include "common/wrappers/copyable-atomic.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/data_ptr.h"
 #include "compiler/threading/data-stream.h"

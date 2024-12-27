@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "common/wrappers/copyable-atomic.h"
 #include <cstdint>
 #include <string>
 
+#include "common/wrappers/copyable-atomic.h"
 #include "compiler/data/class-members.h"
 #include "compiler/debug.h"
 #include "compiler/inferring/var-node.h"

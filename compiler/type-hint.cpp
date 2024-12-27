@@ -4,18 +4,16 @@
 
 #include "compiler/type-hint.h"
 
-#include "compiler/threading/locks.h"
 #include <atomic>
 #include <mutex>
 
 #include "common/php-functions.h"
-
 #include "compiler/data/class-data.h"
-#include "compiler/data/function-data.h"
 #include "compiler/data/ffi-data.h"
+#include "compiler/data/function-data.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/name-gen.h"
-
+#include "compiler/threading/locks.h"
 
 /**
  * This class stores a big hashtable [hash => TypeHint]

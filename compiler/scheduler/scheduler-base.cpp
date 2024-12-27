@@ -4,8 +4,8 @@
 
 #include "compiler/scheduler/scheduler-base.h"
 
-#include <cassert>
 #include <atomic>
+#include <cassert>
 
 std::atomic_int tasks_before_sync_node = 0;
 

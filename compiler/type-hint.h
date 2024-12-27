@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "compiler/threading/locks.h"
 #include <string>
 #include <string_view>
 #include <vector>
@@ -12,7 +11,6 @@
 #include "compiler/compiler-core.h"
 #include "compiler/debug.h"
 #include "compiler/inferring/primitive-type.h"
-
 
 // do not confuse TypeHint with TypeData!
 // TypeData is a part of _type inferring_; it's mutable and plain, it represents current inferred state of every vertex

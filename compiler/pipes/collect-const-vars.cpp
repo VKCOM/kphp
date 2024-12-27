@@ -4,13 +4,14 @@
 
 #include "compiler/pipes/collect-const-vars.h"
 
+#include <atomic>
+
 #include "compiler/data/src-file.h"
 #include "compiler/vertex-util.h"
 #include "compiler/data/var-data.h"
 #include "compiler/const-manipulations.h"
 #include "compiler/compiler-core.h"
 #include "compiler/name-gen.h"
-#include <atomic>
 
 namespace {
 
