@@ -163,7 +163,6 @@ class KphpRunOnce(KphpBuilder):
         return k2_runtime_proc.returncode == 0
 
     def compare_php_and_kphp_stdout(self):
-        print(self._artifacts_dir)
         if self._kphp_server_stdout == self._php_stdout:
             return True
 
