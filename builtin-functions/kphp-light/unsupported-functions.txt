@@ -10,4 +10,3 @@ require_once __DIR__ . '/unsupported/misc.txt';
 require_once __DIR__ . '/unsupported/spl.txt';
 require_once __DIR__ . '/unsupported/uberh3.txt';
 require_once __DIR__ . '/unsupported/unsupported-server.txt';
-require_once __DIR__ . '/unsupported/vkext.txt';
