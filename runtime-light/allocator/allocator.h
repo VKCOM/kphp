@@ -28,7 +28,7 @@ struct script_allocator {
   }
 
   constexpr void deallocate(T *p, size_t n) noexcept {
-    return RuntimeAllocator::get().free_script_memory(p, n);
+    RuntimeAllocator::get().free_script_memory(p, n);
   }
 };
 
