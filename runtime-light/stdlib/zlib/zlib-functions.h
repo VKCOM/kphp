@@ -11,6 +11,8 @@
 
 #include "runtime-common/core/runtime-core.h"
 
+namespace kphp {
+
 namespace zlib {
 
 inline constexpr int64_t ENCODING_RAW = -0x0f;
@@ -27,11 +29,13 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
 
 } // namespace zlib
 
-inline string f$gzcompress(const string &data, int64_t level = zlib::MIN_COMPRESSION_LEVEL) noexcept {
-  level = level == zlib::MIN_COMPRESSION_LEVEL ? zlib::DEFAULT_COMPRESSION_LEVEL : level;
-  return zlib::encode({data.c_str(), static_cast<size_t>(data.size())}, level, zlib::ENCODING_DEFLATE).value_or(string{});
+} // namespace kphp
+
+inline string f$gzcompress(const string &data, int64_t level = kphp::zlib::MIN_COMPRESSION_LEVEL) noexcept {
+  level = level == kphp::zlib::MIN_COMPRESSION_LEVEL ? kphp::zlib::DEFAULT_COMPRESSION_LEVEL : level;
+  return kphp::zlib::encode({data.c_str(), static_cast<size_t>(data.size())}, level, kphp::zlib::ENCODING_DEFLATE).value_or(string{});
 }
 
 inline string f$gzuncompress(const string &data) noexcept {
-  return zlib::decode({data.c_str(), static_cast<size_t>(data.size())}, zlib::ENCODING_DEFLATE).value_or(string{});
+  return kphp::zlib::decode({data.c_str(), static_cast<size_t>(data.size())}, kphp::zlib::ENCODING_DEFLATE).value_or(string{});
 }
