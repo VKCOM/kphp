@@ -178,11 +178,17 @@ static zend_always_inline zend_class_entry *vk_get_class(const char *class_name)
   return res_class_entry;
 }
 
-static zend_always_inline void vk_get_class_name(const zval *object, char *dst) {
-  zend_string *zend_str_class_name = Z_OBJ_HANDLER_P(object, get_class_name)(Z_OBJ_P(object));
-  strcpy(dst, zend_str_class_name->val);
-  zend_string_release(zend_str_class_name);
+static zend_always_inline void vk_get_class_name(const zval *object, char *dst, size_t dst_size) {
+    // Get the class name of the object
+    zend_string *zend_str_class_name = Z_OBJ_HANDLER_P(object, get_class_name)(Z_OBJ_P(object));
+    // Safely copy the class name to the destination buffer
+    strncpy(dst, zend_str_class_name->val, dst_size - 1);
+    // Ensure null-termination
+    dst[dst_size - 1] = '\0';
+    // Release the zend string
+    zend_string_release(zend_str_class_name);
 }
+
 
 static zend_always_inline zval *vk_zend_read_public_property(zval *object, const char *prop_name) {
 #if PHP_MAJOR_VERSION >= 8
