@@ -8,8 +8,9 @@
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-common/core/memory-resource/resource_allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
@@ -17,21 +18,16 @@
 
 struct RpcInstanceState final : private vk::not_copyable {
   template<typename Key, typename Value>
-  using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
+  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   tl::TLBuffer rpc_buffer;
   int64_t current_query_id{0};
-  CurrentTlQuery current_query;
+  CurrentTlQuery current_query{};
   unordered_map<int64_t, int64_t> response_waiter_forks;
   unordered_map<int64_t, class_instance<RpcTlQuery>> response_fetcher_instances;
   unordered_map<int64_t, std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>> rpc_responses_extra_info;
 
-  explicit RpcInstanceState(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
-    : current_query()
-    , response_waiter_forks(unordered_map<int64_t, int64_t>::allocator_type{memory_resource})
-    , response_fetcher_instances(unordered_map<int64_t, class_instance<RpcTlQuery>>::allocator_type{memory_resource})
-    , rpc_responses_extra_info(
-        unordered_map<int64_t, std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>>::allocator_type{memory_resource}) {}
+  RpcInstanceState() noexcept = default;
 
   static RpcInstanceState &get() noexcept;
 };

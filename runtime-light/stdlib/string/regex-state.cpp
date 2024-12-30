@@ -4,7 +4,6 @@
 
 #include "runtime-light/stdlib/string/regex-state.h"
 
-#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/instance-state.h"
@@ -30,13 +29,11 @@ void regex_free(void *mem, [[maybe_unused]] void *memory_data) noexcept {
 
 } // namespace
 
-RegexInstanceState::RegexInstanceState(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
-  : default_preg_replace_count()
-  , regex_pcre2_general_context(pcre2_general_context_create_8(regex_malloc, regex_free, nullptr), pcre2_general_context_free_8)
+RegexInstanceState::RegexInstanceState() noexcept
+  : regex_pcre2_general_context(pcre2_general_context_create_8(regex_malloc, regex_free, nullptr), pcre2_general_context_free_8)
   , compile_context(pcre2_compile_context_create_8(regex_pcre2_general_context.get()), pcre2_compile_context_free_8)
   , match_context(pcre2_match_context_create_8(regex_pcre2_general_context.get()), pcre2_match_context_free_8)
-  , regex_pcre2_match_data(pcre2_match_data_create_8(MATCH_DATA_SIZE, regex_pcre2_general_context.get()), pcre2_match_data_free_8)
-  , regex_pcre2_code_cache(decltype(regex_pcre2_code_cache)::allocator_type{memory_resource}) {
+  , regex_pcre2_match_data(pcre2_match_data_create_8(MATCH_DATA_SIZE, regex_pcre2_general_context.get()), pcre2_match_data_free_8) {
   if (!regex_pcre2_general_context) [[unlikely]] {
     php_error("can't create pcre2_general_context");
   }

@@ -17,7 +17,7 @@
 // === component query client interface ===========================================================
 
 task_t<class_instance<C$ComponentQuery>> f$component_client_send_request(string name, string message) noexcept {
-  const auto [stream_d, errc]{InstanceState::get().open_stream({name.c_str(), name.size()}, k2::StreamKind::Component)};
+  const auto [stream_d, errc]{InstanceState::get().open_stream({name.c_str(), name.size()}, k2::stream_kind::component)};
   if (errc != k2::errno_ok) {
     co_return class_instance<C$ComponentQuery>{};
   }

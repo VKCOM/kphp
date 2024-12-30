@@ -44,7 +44,7 @@ mixed extract_confdata_value(tl::confdataValue &&confdata_value) noexcept {
 // TODO: the performance of this implementation can be enhanced. rework it when the platform has specific API for that
 bool f$is_confdata_loaded() noexcept {
   auto &instance_st{InstanceState::get()};
-  if (const auto [stream_d, errc]{instance_st.open_stream(CONFDATA_COMPONENT_NAME, k2::StreamKind::Component)}; errc == k2::errno_ok) {
+  if (const auto [stream_d, errc]{instance_st.open_stream(CONFDATA_COMPONENT_NAME, k2::stream_kind::component)}; errc == k2::errno_ok) {
     instance_st.release_stream(stream_d);
     return true;
   }

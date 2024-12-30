@@ -8,8 +8,9 @@
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/utils/concepts.h"
 
@@ -17,7 +18,7 @@ inline constexpr int64_t INVALID_FORK_ID = -1;
 
 class ForkInstanceState final : private vk::not_copyable {
   template<hashable Key, typename Value>
-  using unordered_map = memory_resource::stl::unordered_map<Key, Value, memory_resource::unsynchronized_pool_resource>;
+  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   static constexpr auto FORK_ID_INIT = 0;
   // type erased tasks that represent forks
@@ -45,8 +46,7 @@ class ForkInstanceState final : private vk::not_copyable {
 public:
   int64_t running_fork_id{FORK_ID_INIT};
 
-  explicit ForkInstanceState(memory_resource::unsynchronized_pool_resource &memory_resource) noexcept
-    : forks(unordered_map<int64_t, task_t<void>>::allocator_type{memory_resource}) {}
+  ForkInstanceState() noexcept = default;
 
   static ForkInstanceState &get() noexcept;
 
