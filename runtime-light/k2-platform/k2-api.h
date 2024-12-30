@@ -28,7 +28,7 @@ inline constexpr int32_t errno_einval = EINVAL;
 
 inline constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
 
-enum class StreamKind : uint8_t { Component, UDP, TCP };
+enum class stream_kind : uint8_t { component, udp, tcp };
 
 using IOStatus = IOStatus;
 
