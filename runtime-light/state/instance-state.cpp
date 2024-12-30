@@ -178,17 +178,17 @@ uint64_t InstanceState::take_incoming_stream() noexcept {
   return stream_d;
 }
 
-std::pair<uint64_t, int32_t> InstanceState::open_stream(std::string_view component_name, k2::StreamKind stream_kind) noexcept {
+std::pair<uint64_t, int32_t> InstanceState::open_stream(std::string_view component_name, k2::stream_kind stream_kind) noexcept {
   uint64_t stream_d{};
   int32_t error_code{};
   switch (stream_kind) {
-    case k2::StreamKind::Component:
+    case k2::stream_kind::component:
       error_code = k2::open(std::addressof(stream_d), component_name.size(), component_name.data());
       break;
-    case k2::StreamKind::TCP:
+    case k2::stream_kind::tcp:
       error_code = k2::tcp_connect(std::addressof(stream_d), component_name.data(), component_name.size());
       break;
-    case k2::StreamKind::UDP:
+    case k2::stream_kind::udp:
       error_code = k2::udp_connect(std::addressof(stream_d), component_name.data(), component_name.size());
       break;
     default:

@@ -33,7 +33,7 @@ underlying_resource_t::underlying_resource_t(std::string_view scheme) noexcept
     }
     case resource_kind::UDP: {
       const auto url{scheme.substr(resource_impl_::UDP_SCHEME_PREFIX.size(), scheme.size() - resource_impl_::UDP_SCHEME_PREFIX.size())};
-      std::tie(stream_d_, last_errc) = instance_st.open_stream(url, k2::StreamKind::UDP);
+      std::tie(stream_d_, last_errc) = instance_st.open_stream(url, k2::stream_kind::udp);
       kind = last_errc == k2::errno_ok ? resource_kind::UDP : resource_kind::UNKNOWN;
       break;
     }
