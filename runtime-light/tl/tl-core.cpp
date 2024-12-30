@@ -4,6 +4,27 @@
 
 #include "runtime-light/tl/tl-core.h"
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <string_view>
+
+namespace {
+
+constexpr auto SMALL_STRING_SIZE_LEN = 1;
+constexpr auto MEDIUM_STRING_SIZE_LEN = 3;
+constexpr auto LARGE_STRING_SIZE_LEN = 7;
+
+constexpr uint64_t SMALL_STRING_MAX_LEN = 253;
+constexpr uint64_t MEDIUM_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 24) - 1;
+[[maybe_unused]] constexpr uint64_t LARGE_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 56) - 1;
+
+constexpr uint8_t LARGE_STRING_MAGIC = 0xff;
+constexpr uint8_t MEDIUM_STRING_MAGIC = 0xfe;
+
+} // namespace
+
 namespace tl {
 
 void TLBuffer::store_string(std::string_view str) noexcept {
