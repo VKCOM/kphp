@@ -6,6 +6,7 @@
 
 #include <concepts>
 #include <cstddef>
+#include <iterator>
 #include <optional>
 #include <string_view>
 
@@ -78,7 +79,7 @@ public:
     if (len > remaining()) {
       return {};
     }
-    std::string_view bytes_view{data() + pos(), len};
+    std::string_view bytes_view{std::next(data(), pos()), len};
     adjust(len);
     return bytes_view;
   }
@@ -89,7 +90,6 @@ public:
 
   template<standard_layout T, standard_layout U>
   requires std::convertible_to<U, T> void store_trivial(const U &t) noexcept {
-    // Here we rely on that endianness of architecture is Little Endian
     store_bytes({reinterpret_cast<const char *>(std::addressof(t)), sizeof(T)});
   }
 
@@ -99,8 +99,7 @@ public:
       return std::nullopt;
     }
 
-    // Here we rely on that endianness of architecture is Little Endian
-    const auto t{*reinterpret_cast<const T *>(data() + pos())};
+    const auto t{*reinterpret_cast<const T *>(std::next(data(), pos()))};
     adjust(sizeof(T));
     return t;
   }

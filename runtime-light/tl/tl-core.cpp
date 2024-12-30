@@ -91,7 +91,7 @@ std::string_view TLBuffer::fetch_string() noexcept {
     return {}; // TODO: error handling
   }
 
-  std::string_view response{data() + pos(), static_cast<size_t>(string_len)};
+  std::string_view response{std::next(data(), pos()), static_cast<size_t>(string_len)};
   adjust(total_len_with_padding - size_len);
   return response;
 }
