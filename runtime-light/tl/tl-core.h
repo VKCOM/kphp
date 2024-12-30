@@ -17,17 +17,6 @@
 
 namespace tl {
 
-inline constexpr auto SMALL_STRING_SIZE_LEN = 1;
-inline constexpr auto MEDIUM_STRING_SIZE_LEN = 3;
-inline constexpr auto LARGE_STRING_SIZE_LEN = 7;
-
-inline constexpr uint64_t SMALL_STRING_MAX_LEN = 253;
-inline constexpr uint64_t MEDIUM_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 24) - 1;
-[[maybe_unused]] inline constexpr uint64_t LARGE_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 56) - 1;
-
-inline constexpr uint8_t LARGE_STRING_MAGIC = 0xff;
-inline constexpr uint8_t MEDIUM_STRING_MAGIC = 0xfe;
-
 class TLBuffer final : private vk::not_copyable {
   string_buffer m_buffer;
   size_t m_pos{0};
