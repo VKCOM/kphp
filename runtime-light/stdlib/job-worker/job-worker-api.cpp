@@ -73,7 +73,7 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
     if (!jw_response.fetch(tlb)) {
       co_return string{};
     }
-    co_return std::move(jw_response.body);
+    co_return string{jw_response.body.data(), static_cast<string::size_type>(jw_response.body.size())};
   }(std::move(comp_query), timeout_ns)};
   // start waiter fork and return its ID
   co_return(co_await start_fork_t{static_cast<task_t<void>>(std::move(waiter_task)), start_fork_t::execution::self});
@@ -139,8 +139,7 @@ task_t<int64_t> f$job_worker_store_response(string response) noexcept {
   }
 
   tl::TLBuffer tlb{};
-  tl::K2JobWorkerResponse jw_response{.job_id = jw_server_st.job_id, .body = std::move(response)};
-  jw_response.store(tlb);
+  tl::K2JobWorkerResponse{.job_id = jw_server_st.job_id, .body = {response.c_str(), response.size()}}.store(tlb);
   if ((co_await write_all_to_stream(instance_st.standard_stream(), tlb.data(), tlb.size())) != tlb.size()) {
     php_warning("couldn't store job worker response");
     co_return static_cast<int64_t>(JobWorkerError::store_response_cant_send_error);

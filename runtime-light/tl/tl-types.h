@@ -278,7 +278,7 @@ class K2JobWorkerResponse final {
 
 public:
   int64_t job_id{};
-  string body;
+  std::string_view body;
 
   bool fetch(TLBuffer &tlb) noexcept;
 
