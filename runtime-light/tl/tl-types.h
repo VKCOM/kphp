@@ -164,17 +164,16 @@ struct Vector final {
 
 template<typename T>
 struct dictionaryField final {
-  string key;
+  std::string_view key;
   T value{};
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    const auto key_view{tlb.fetch_string()};
-    key = {key_view.data(), static_cast<string::size_type>(key_view.size())};
+    key = tlb.fetch_string();
     return value.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
-    tlb.store_string({key.c_str(), static_cast<size_t>(key.size())});
+    tlb.store_string(key);
     value.store(tlb);
   }
 };
