@@ -173,7 +173,7 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
       int32_t content_length{};
       const auto [_, ec]{std::from_chars(h_value_view.data(), h_value_view.data() + h_value_view.size(), content_length)};
       if (ec != std::errc{} || content_length != invoke_http.body.size()) [[unlikely]] {
-        php_error("content-length expected to be %d, but it's %u", content_length, invoke_http.body.size());
+        php_error("content-length expected to be %d, but it's %zu", content_length, invoke_http.body.size());
       }
       continue;
     }
@@ -204,17 +204,15 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   auto &server{superglobals.v$_SERVER};
   auto &http_server_instance_st{HttpServerInstanceState::get()};
 
-  { // determine HTTP method
-    const std::string_view http_method{invoke_http.method.c_str(), invoke_http.method.size()};
-    if (http_method == GET_METHOD) {
-      http_server_instance_st.http_method = method::get;
-    } else if (http_method == POST_METHOD) {
-      http_server_instance_st.http_method = method::post;
-    } else if (http_method == HEAD_METHOD) [[likely]] {
-      http_server_instance_st.http_method = method::head;
-    } else {
-      http_server_instance_st.http_method = method::other;
-    }
+  // determine HTTP method
+  if (invoke_http.method == GET_METHOD) {
+    http_server_instance_st.http_method = method::get;
+  } else if (invoke_http.method == POST_METHOD) {
+    http_server_instance_st.http_method = method::post;
+  } else if (invoke_http.method == HEAD_METHOD) [[likely]] {
+    http_server_instance_st.http_method = method::head;
+  } else {
+    http_server_instance_st.http_method = method::other;
   }
 
   using namespace PhpServerSuperGlobalIndices;
@@ -228,7 +226,8 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   server.set_value(string{REMOTE_ADDR.data(), REMOTE_ADDR.size()}, invoke_http.connection.remote_addr);
   server.set_value(string{REMOTE_PORT.data(), REMOTE_PORT.size()}, static_cast<int64_t>(invoke_http.connection.remote_port));
 
-  server.set_value(string{REQUEST_METHOD.data(), REQUEST_METHOD.size()}, invoke_http.method);
+  server.set_value(string{REQUEST_METHOD.data(), REQUEST_METHOD.size()},
+                   string{invoke_http.method.data(), static_cast<string::size_type>(invoke_http.method.size())});
   server.set_value(string{GATEWAY_INTERFACE.data(), GATEWAY_INTERFACE.size()}, string{GATEWAY_INTERFACE_VALUE.data(), GATEWAY_INTERFACE_VALUE.size()});
 
   if (invoke_http.uri.opt_query.has_value()) {
@@ -275,12 +274,13 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
     server.set_value(string{ARGC.data(), ARGC.size()}, static_cast<int64_t>(1));
     server.set_value(string{ARGV.data(), ARGV.size()}, invoke_http.uri.opt_query.value_or(string{}));
   } else if (http_server_instance_st.http_method == method::post) {
+    string body_str{invoke_http.body.data(), static_cast<string::size_type>(invoke_http.body.size())};
     if (content_type == CONTENT_TYPE_APP_FORM_URLENCODED) {
-      f$parse_str(invoke_http.body, superglobals.v$_POST);
+      f$parse_str(body_str, superglobals.v$_POST);
     } else if (content_type == CONTENT_TYPE_MULTIPART_FORM_DATA) {
       php_error("unsupported content-type: %s", CONTENT_TYPE_MULTIPART_FORM_DATA.data());
     } else {
-      http_server_instance_st.opt_raw_post_data.emplace(std::move(invoke_http.body));
+      http_server_instance_st.opt_raw_post_data.emplace(std::move(body_str));
     }
 
     server.set_value(string{CONTENT_TYPE.data(), CONTENT_TYPE.size()}, string{content_type.data(), static_cast<string::size_type>(content_type.size())});

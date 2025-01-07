@@ -108,20 +108,16 @@ void ConfdataGetWildcard::store(TLBuffer &tlb) const noexcept {
 // ===== HTTP =====
 
 bool K2InvokeHttp::fetch(TLBuffer &tlb) noexcept {
-  if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != K2_INVOKE_HTTP_MAGIC) {
-    return false;
-  }
-  if (/* flags */ !tlb.fetch_trivial<uint32_t>().has_value() || !connection.fetch(tlb) || !version.fetch(tlb)) {
+  if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != K2_INVOKE_HTTP_MAGIC || /* flags */ !tlb.fetch_trivial<uint32_t>().has_value()
+      || !connection.fetch(tlb) || !version.fetch(tlb)) {
     return false;
   }
 
-  const auto method_view{tlb.fetch_string()};
-  method = {method_view.data(), static_cast<string::size_type>(method_view.size())};
+  method = tlb.fetch_string();
   if (!uri.fetch(tlb) || !headers.fetch(tlb)) {
     return false;
   }
-  const auto body_view{tlb.fetch_bytes(tlb.remaining())};
-  body = {body_view.data(), static_cast<string::size_type>(body_view.size())};
+  body = tlb.fetch_bytes(tlb.remaining());
 
   return true;
 }

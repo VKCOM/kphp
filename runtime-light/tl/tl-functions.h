@@ -120,10 +120,10 @@ class K2InvokeHttp final {
 public:
   httpConnection connection{};
   HttpVersion version{};
-  string method;
+  std::string_view method;
   httpUri uri{};
   vector<httpHeaderEntry> headers{};
-  string body;
+  std::string_view body;
 
   bool fetch(TLBuffer &tlb) noexcept;
 };
