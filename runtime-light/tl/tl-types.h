@@ -255,22 +255,19 @@ struct Dictionary final {
 };
 
 struct String final {
-  string value;
+  std::string_view value;
 
   bool fetch(TLBuffer &tlb) noexcept {
     if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != TL_STRING) {
       return false;
     }
-    auto string = tlb.fetch_string();
-    // TODO: check tlb.fetch_string() error
-
-    value.assign(string.begin(), string.size());
+    value = tlb.fetch_string();
     return true;
   }
 
   void store(TLBuffer &tlb) const noexcept {
     tlb.store_trivial<uint32_t>(TL_STRING);
-    tlb.store_string(std::string_view{value.c_str(), value.size()});
+    tlb.store_string(value);
   }
 };
 

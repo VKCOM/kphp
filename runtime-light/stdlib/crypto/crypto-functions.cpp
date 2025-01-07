@@ -248,12 +248,13 @@ task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &met
   buffer.clean();
   buffer.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
 
-  tl::String response{.value = resp};
-  // TODO: parse error?
-  if (!response.fetch(buffer)) {
+  string response{};
+  if (tl::String response_{}; response_.fetch(buffer)) {
+    response = {response_.value.data(), static_cast<string::size_type>(response_.value.size())};
+  } else {
     co_return false;
   }
-  co_return(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(response.value) : f$base64_encode(response.value);
+  co_return(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(response) : f$base64_encode(response);
 }
 
 task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, const string &source_key, int64_t options, const string &source_iv, string tag,
@@ -299,10 +300,10 @@ task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, co
   buffer.clean();
   buffer.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
 
-  tl::String response{.value = resp};
+  tl::String response{};
   // TODO: parse error?
   if (!response.fetch(buffer)) {
     co_return false;
   }
-  co_return std::move(response.value);
+  co_return string{response.value.data(), static_cast<string::size_type>(response.value.size())};
 }
