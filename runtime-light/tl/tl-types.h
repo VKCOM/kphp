@@ -150,10 +150,7 @@ struct Vector final {
   }
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != TL_VECTOR) {
-      return false;
-    }
-    return data.fetch(tlb);
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_VECTOR && data.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
@@ -248,10 +245,7 @@ struct Dictionary final {
   }
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != TL_DICTIONARY) {
-      return false;
-    }
-    return data.fetch(tlb);
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_DICTIONARY && data.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
