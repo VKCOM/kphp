@@ -57,40 +57,40 @@ void GetCryptosecurePseudorandomBytes::store(TLBuffer &tlb) const noexcept {
 void GetPemCertInfo::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(GET_PEM_CERT_INFO_MAGIC);
   tlb.store_trivial<uint32_t>(is_short ? TL_BOOL_TRUE : TL_BOOL_FALSE);
-  tlb.store_string(std::string_view{bytes.c_str(), bytes.size()});
+  tlb.store_string(bytes);
 }
 
 void DigestSign::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(DIGEST_SIGN_MAGIC);
-  tlb.store_string(std::string_view{data.c_str(), data.size()});
-  tlb.store_string(std::string_view{private_key.c_str(), private_key.size()});
+  tlb.store_string(data);
+  tlb.store_string(private_key);
   tlb.store_trivial<uint32_t>(algorithm);
 }
 
 void DigestVerify::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(DIGEST_VERIFY_MAGIC);
-  tlb.store_string(std::string_view{data.c_str(), data.size()});
-  tlb.store_string(std::string_view{public_key.c_str(), public_key.size()});
+  tlb.store_string(data);
+  tlb.store_string(public_key);
   tlb.store_trivial<uint32_t>(algorithm);
-  tlb.store_string(std::string_view{signature.c_str(), signature.size()});
+  tlb.store_string(signature);
 }
 
 void CbcDecrypt::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CBC_DECRYPT_MAGIC);
   tlb.store_trivial<uint32_t>(algorithm);
   tlb.store_trivial<uint32_t>(padding);
-  tlb.store_string(std::string_view{passphrase.c_str(), passphrase.size()});
-  tlb.store_string(std::string_view{iv.c_str(), iv.size()});
-  tlb.store_string(std::string_view{data.c_str(), data.size()});
+  tlb.store_string(passphrase);
+  tlb.store_string(iv);
+  tlb.store_string(data);
 }
 
 void CbcEncrypt::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CBC_ENCRYPT_MAGIC);
   tlb.store_trivial<uint32_t>(algorithm);
   tlb.store_trivial<uint32_t>(padding);
-  tlb.store_string(std::string_view{passphrase.c_str(), passphrase.size()});
-  tlb.store_string(std::string_view{iv.c_str(), iv.size()});
-  tlb.store_string(std::string_view{data.c_str(), data.size()});
+  tlb.store_string(passphrase);
+  tlb.store_string(iv);
+  tlb.store_string(data);
 }
 
 // ===== CONFDATA =====

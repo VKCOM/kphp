@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <string_view>
 
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
 
@@ -49,24 +48,24 @@ struct GetCryptosecurePseudorandomBytes final {
 
 struct GetPemCertInfo final {
   bool is_short{true};
-  string bytes;
+  std::string_view bytes;
 
   void store(TLBuffer &tlb) const noexcept;
 };
 
 struct DigestSign final {
-  string data;
-  string private_key;
+  std::string_view data;
+  std::string_view private_key;
   DigestAlgorithm algorithm;
 
   void store(TLBuffer &tlb) const noexcept;
 };
 
 struct DigestVerify final {
-  string data;
-  string public_key;
+  std::string_view data;
+  std::string_view public_key;
   DigestAlgorithm algorithm;
-  string signature;
+  std::string_view signature;
 
   void store(TLBuffer &tlb) const noexcept;
 };
@@ -74,9 +73,9 @@ struct DigestVerify final {
 struct CbcDecrypt final {
   CipherAlgorithm algorithm;
   BlockPadding padding;
-  string passphrase;
-  string iv;
-  string data;
+  std::string_view passphrase;
+  std::string_view iv;
+  std::string_view data;
 
   void store(TLBuffer &tlb) const noexcept;
 };
@@ -84,9 +83,9 @@ struct CbcDecrypt final {
 struct CbcEncrypt final {
   CipherAlgorithm algorithm;
   BlockPadding padding;
-  string passphrase;
-  string iv;
-  string data;
+  std::string_view passphrase;
+  std::string_view iv;
+  std::string_view data;
 
   void store(TLBuffer &tlb) const noexcept;
 };
