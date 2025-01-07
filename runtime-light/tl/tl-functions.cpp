@@ -28,13 +28,12 @@ bool K2InvokeJobWorker::fetch(TLBuffer &tlb) noexcept {
   if (!(opt_flags.has_value() && opt_image_id.has_value() && opt_job_id.has_value() && opt_timeout_ns.has_value())) {
     return false;
   }
-  const auto body_view{tlb.fetch_string()};
 
   ignore_answer = static_cast<bool>(*opt_flags & IGNORE_ANSWER_FLAG);
   image_id = *opt_image_id;
   job_id = *opt_job_id;
   timeout_ns = *opt_timeout_ns;
-  body = {body_view.data(), static_cast<string::size_type>(body_view.size())};
+  body = tlb.fetch_string();
   return true;
 }
 
@@ -45,7 +44,7 @@ void K2InvokeJobWorker::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint64_t>(image_id);
   tlb.store_trivial<int64_t>(job_id);
   tlb.store_trivial<uint64_t>(timeout_ns);
-  tlb.store_string({body.c_str(), body.size()});
+  tlb.store_string(body);
 }
 
 // ===== CRYPTO =====

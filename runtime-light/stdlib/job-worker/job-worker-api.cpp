@@ -52,7 +52,7 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
                                         .job_id = jw_client_st.current_job_id++,
                                         .ignore_answer = ignore_answer,
                                         .timeout_ns = static_cast<uint64_t>(timeout_ns.count()),
-                                        .body = std::move(request)};
+                                        .body = {request.c_str(), request.size()}};
   invoke_jw.store(tlb);
 
   // send JW request

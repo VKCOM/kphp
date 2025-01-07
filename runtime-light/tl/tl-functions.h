@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/tl/tl-core.h"
@@ -24,7 +25,7 @@ public:
   int64_t job_id{};
   bool ignore_answer{};
   uint64_t timeout_ns{};
-  string body;
+  std::string_view body;
 
   bool fetch(TLBuffer &tlb) noexcept;
 
