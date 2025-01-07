@@ -53,7 +53,7 @@ bool f$is_confdata_loaded() noexcept {
 
 task_t<mixed> f$confdata_get_value(string key) noexcept {
   tl::TLBuffer tlb{};
-  tl::ConfdataGet{.key = std::move(key)}.store(tlb);
+  tl::ConfdataGet{.key = {key.c_str(), key.size()}}.store(tlb);
 
   auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME.data(), static_cast<string::size_type>(CONFDATA_COMPONENT_NAME.size())},
                                                       {tlb.data(), static_cast<string::size_type>(tlb.size())})};
@@ -75,7 +75,7 @@ task_t<mixed> f$confdata_get_value(string key) noexcept {
 
 task_t<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
   tl::TLBuffer tlb{};
-  tl::ConfdataGetWildcard{.wildcard = std::move(wildcard)}.store(tlb);
+  tl::ConfdataGetWildcard{.wildcard = {wildcard.c_str(), wildcard.size()}}.store(tlb);
 
   auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME.data(), static_cast<string::size_type>(CONFDATA_COMPONENT_NAME.size())},
                                                       {tlb.data(), static_cast<string::size_type>(tlb.size())})};

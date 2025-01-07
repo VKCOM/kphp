@@ -97,13 +97,13 @@ inline constexpr uint32_t CONFDATA_GET_MAGIC = 0xf0eb'cd89;
 inline constexpr uint32_t CONFDATA_GET_WILDCARD_MAGIC = 0x5759'bd9e;
 
 struct ConfdataGet final {
-  string key;
+  std::string_view key;
 
   void store(TLBuffer &tlb) const noexcept;
 };
 
 struct ConfdataGetWildcard final {
-  string wildcard;
+  std::string_view wildcard;
 
   void store(TLBuffer &tlb) const noexcept;
 };

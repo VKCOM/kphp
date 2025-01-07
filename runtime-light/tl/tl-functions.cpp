@@ -97,12 +97,12 @@ void CbcEncrypt::store(TLBuffer &tlb) const noexcept {
 
 void ConfdataGet::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CONFDATA_GET_MAGIC);
-  tlb.store_string({key.c_str(), static_cast<size_t>(key.size())});
+  tlb.store_string(key);
 }
 
 void ConfdataGetWildcard::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CONFDATA_GET_WILDCARD_MAGIC);
-  tlb.store_string({wildcard.c_str(), static_cast<size_t>(wildcard.size())});
+  tlb.store_string(wildcard);
 }
 
 // ===== HTTP =====
