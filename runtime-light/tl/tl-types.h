@@ -323,7 +323,7 @@ enum BlockPadding : uint32_t {
 // ===== CONFDATA =====
 
 struct confdataValue final {
-  string value;
+  std::string_view value;
   bool is_php_serialized{};
   bool is_json_serialized{};
 

@@ -7,7 +7,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
-#include <tuple>
 
 #include "common/tl/constants/common.h"
 #include "runtime-light/tl/tl-core.h"
@@ -19,7 +18,6 @@ bool K2JobWorkerResponse::fetch(TLBuffer &tlb) noexcept {
     return false;
   }
 
-  std::ignore = tlb.fetch_trivial<uint32_t>(); // ignore flags
   const auto opt_job_id{tlb.fetch_trivial<int64_t>()};
   if (!opt_job_id.has_value()) {
     return false;
@@ -123,14 +121,13 @@ bool GetPemCertInfoResponse::fetch(TLBuffer &tlb) noexcept {
 }
 
 bool confdataValue::fetch(TLBuffer &tlb) noexcept {
-  const auto value_view{tlb.fetch_string()};
+  value = tlb.fetch_string();
   Bool is_php_serialized_{};
   Bool is_json_serialized_{};
   if (!(is_php_serialized_.fetch(tlb) && is_json_serialized_.fetch(tlb))) {
     return false;
   }
 
-  value = {value_view.data(), static_cast<string::size_type>(value_view.size())};
   is_php_serialized = is_php_serialized_.value;
   is_json_serialized = is_json_serialized_.value;
   return true;

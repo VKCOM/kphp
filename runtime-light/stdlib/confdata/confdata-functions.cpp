@@ -25,17 +25,17 @@ namespace {
 
 constexpr std::string_view CONFDATA_COMPONENT_NAME = "confdata"; // TODO: it may actually have an alias specified in linking config
 
-mixed extract_confdata_value(tl::confdataValue &&confdata_value) noexcept {
+mixed extract_confdata_value(tl::confdataValue confdata_value) noexcept {
   if (confdata_value.is_php_serialized && confdata_value.is_json_serialized) { // check that we don't have both flags set
     php_warning("confdata value has both php_serialized and json_serialized flags set");
     return {};
   }
   if (confdata_value.is_php_serialized) {
-    return f$unserialize(confdata_value.value);
+    return f$unserialize(string{confdata_value.value.data(), static_cast<string::size_type>(confdata_value.value.size())});
   } else if (confdata_value.is_json_serialized) {
-    return f$json_decode(confdata_value.value);
+    return f$json_decode(string{confdata_value.value.data(), static_cast<string::size_type>(confdata_value.value.size())});
   } else {
-    return std::move(confdata_value.value);
+    return string{confdata_value.value.data(), static_cast<string::size_type>(confdata_value.value.size())};
   }
 }
 
@@ -70,7 +70,7 @@ task_t<mixed> f$confdata_get_value(string key) noexcept {
   if (!maybe_confdata_value.opt_value.has_value()) { // no such key
     co_return mixed{};
   }
-  co_return extract_confdata_value(*std::move(maybe_confdata_value.opt_value)); // the key exists
+  co_return extract_confdata_value(*maybe_confdata_value.opt_value); // the key exists
 }
 
 task_t<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
