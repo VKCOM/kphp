@@ -35,88 +35,39 @@ void K2JobWorkerResponse::store(TLBuffer &tlb) const noexcept {
   tlb.store_string(body);
 }
 
-bool GetPemCertInfoResponse::fetch(TLBuffer &tlb) noexcept {
-  if (const auto magic = tlb.fetch_trivial<uint32_t>(); magic.value_or(TL_ZERO) != TL_MAYBE_TRUE) {
+bool CertInfoItem::fetch(TLBuffer &tlb) noexcept {
+  const std::optional<uint32_t> magic = tlb.fetch_trivial<uint32_t>();
+  if (!magic.has_value()) {
     return false;
   }
 
-  if (const auto magic = tlb.fetch_trivial<uint32_t>(); magic.value_or(TL_ZERO) != TL_DICTIONARY) {
-    return false;
-  }
-
-  const std::optional<uint32_t> size = tlb.fetch_trivial<uint32_t>();
-  if (!size.has_value()) {
-    return false;
-  }
-
-  auto response = array<mixed>::create();
-  response.reserve(*size, false);
-
-  for (uint32_t i = 0; i < *size; ++i) {
-    const auto key_view = tlb.fetch_string();
-    if (key_view.empty()) {
-      return false;
-    }
-
-    const auto key = string(key_view.data(), key_view.length());
-
-    const std::optional<uint32_t> magic = tlb.fetch_trivial<uint32_t>();
-    if (!magic.has_value()) {
-      return false;
-    }
-
-    switch (*magic) {
-      case CertInfoItem::LONG_MAGIC: {
-        const std::optional<int64_t> val = tlb.fetch_trivial<int64_t>();
-        if (!val.has_value()) {
-          return false;
-        }
-        response[key] = *val;
-        break;
-      }
-      case CertInfoItem::STR_MAGIC: {
-        const auto value_view = tlb.fetch_string();
-        if (value_view.empty()) {
-          return false;
-        }
-        const auto value = string(value_view.data(), value_view.size());
-
-        response[key] = string(value_view.data(), value_view.size());
-        break;
-      }
-      case CertInfoItem::DICT_MAGIC: {
-        auto sub_array = array<string>::create();
-        const std::optional<uint32_t> sub_size = tlb.fetch_trivial<uint32_t>();
-
-        if (!sub_size.has_value()) {
-          return false;
-        }
-
-        for (size_t j = 0; j < sub_size; ++j) {
-          const auto sub_key_view = tlb.fetch_string();
-          if (sub_key_view.empty()) {
-            return false;
-          }
-          const auto sub_key = string(sub_key_view.data(), sub_key_view.size());
-
-          const auto sub_value_view = tlb.fetch_string();
-          if (sub_value_view.empty()) {
-            return false;
-          }
-          const auto sub_value = string(sub_value_view.data(), sub_value_view.size());
-
-          sub_array[sub_key] = sub_value;
-        }
-        response[key] = sub_array;
-
-        break;
-      }
-      default:
+  switch (*magic) {
+    case Magic::LONG: {
+      const std::optional<int64_t> val = tlb.fetch_trivial<int64_t>();
+      if (!val.has_value()) {
         return false;
+      }
+      data = *val;
+      break;
+    }
+    case Magic::STR: {
+      auto val = tl::string{};
+      if (!val.fetch(tlb)) {
+        return false;
+      }
+      data = val;
+      break;
+    }
+    case Magic::DICT: {
+      auto val = dictionary<tl::string>();
+      if (!val.fetch(tlb)) {
+        return false;
+      }
+      data = std::move(val);
+      break;
     }
   }
 
-  data = std::move(response);
   return true;
 }
 

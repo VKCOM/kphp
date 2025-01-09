@@ -58,12 +58,38 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
   buffer.clean();
   buffer.store_bytes({resp_from_platform.c_str(), static_cast<size_t>(resp_from_platform.size())});
 
-  tl::GetPemCertInfoResponse response;
-  if (!response.fetch(buffer)) {
+  tl::Maybe<tl::Dictionary<tl::CertInfoItem>> cert_items;
+  if (!cert_items.fetch(buffer)) {
+    co_return false;
+  }
+  if (!cert_items.opt_value.has_value()) {
     co_return false;
   }
 
-  co_return response.data;
+  array<mixed> response;
+  response.reserve(cert_items.opt_value->size(), false);
+
+  auto item_to_mixed =
+    tl::CertInfoItem::MakeVisitor{[](int64_t val) -> mixed { return val; }, [](tl::string val) -> mixed { return string(val.value.data(), val.value.size()); },
+                                  [](const tl::dictionary<tl::string> &sub_dict) -> mixed {
+                                    array<mixed> resp;
+                                    resp.reserve(sub_dict.size(), false);
+                                    for (auto sub_item : sub_dict) {
+                                      auto key = string(sub_item.key.data(), sub_item.key.size());
+                                      auto value = string(sub_item.value.value.data(), sub_item.value.value.size());
+                                      resp[key] = value;
+                                    }
+
+                                    return resp;
+                                  }};
+
+  for (auto cert_kv : std::move(*cert_items.opt_value)) {
+    auto key = string(cert_kv.key.data(), cert_kv.key.size());
+    tl::CertInfoItem val = std::move(cert_kv.value);
+    response[string(cert_kv.key.data(), cert_kv.key.size())] = std::visit(item_to_mixed, val.data);
+  }
+
+  co_return response;
 }
 
 task_t<bool> f$openssl_sign(const string &data, string &signature, const string &private_key, int64_t algo) noexcept {

@@ -10,6 +10,7 @@
 #include <optional>
 #include <string_view>
 #include <type_traits>
+#include <variant>
 
 #include "common/tl/constants/common.h"
 #include "runtime-common/core/runtime-core.h"
@@ -254,6 +255,19 @@ struct Dictionary final {
   }
 };
 
+struct string final {
+  std::string_view value;
+
+  bool fetch(TLBuffer &tlb) noexcept {
+    value = tlb.fetch_string();
+    return true;
+  }
+
+  void store(TLBuffer &tlb) const noexcept {
+    tlb.store_string(value);
+  }
+};
+
 struct String final {
   std::string_view value;
 
@@ -287,15 +301,15 @@ public:
 
 // ===== CRYPTO =====
 
-// Actually it's "Maybe (Dictionary CertInfoItem)"
-// But I now want to have this logic separately
-class GetPemCertInfoResponse final {
-  enum CertInfoItem : uint32_t { LONG_MAGIC = 0x533f'f89f, STR_MAGIC = 0xc427'feef, DICT_MAGIC = 0x1ea8'a774 };
-
+class CertInfoItem final {
+  enum Magic : uint32_t { LONG = 0x533f'f89f, STR = 0xc427'feef, DICT = 0x1ea8'a774 };
 public:
-  array<mixed> data;
-
+  std::variant<int64_t, tl::string, dictionary<tl::string>> data;
+  
   bool fetch(TLBuffer &tlb) noexcept;
+
+  template<class... Ts>
+  struct MakeVisitor : Ts... { using Ts::operator()...; };
 };
 
 enum DigestAlgorithm : uint32_t {
@@ -413,10 +427,10 @@ class httpUri final {
   static constexpr auto QUERY_FLAG = static_cast<uint32_t>(1U << 2U);
 
 public:
-  std::optional<string> opt_scheme;
-  std::optional<string> opt_host;
-  string path;
-  std::optional<string> opt_query;
+  std::optional<::string> opt_scheme;
+  std::optional<::string> opt_host;
+  ::string path;
+  std::optional<::string> opt_query;
 
   bool fetch(TLBuffer &tlb) noexcept {
     const auto opt_flags{tlb.fetch_trivial<uint32_t>()};
@@ -427,17 +441,17 @@ public:
     const auto flags{*opt_flags};
     if (static_cast<bool>(flags & SCHEME_FLAG)) {
       const auto scheme_view{tlb.fetch_string()};
-      opt_scheme.emplace(scheme_view.data(), static_cast<string::size_type>(scheme_view.size()));
+      opt_scheme.emplace(scheme_view.data(), static_cast<::string::size_type>(scheme_view.size()));
     }
     if (static_cast<bool>(flags & HOST_FLAG)) {
       const auto host_view{tlb.fetch_string()};
-      opt_host.emplace(host_view.data(), static_cast<string::size_type>(host_view.size()));
+      opt_host.emplace(host_view.data(), static_cast<::string::size_type>(host_view.size()));
     }
     const auto path_view{tlb.fetch_string()};
-    path = {path_view.data(), static_cast<string::size_type>(path_view.size())};
+    path = {path_view.data(), static_cast<::string::size_type>(path_view.size())};
     if (static_cast<bool>(flags & QUERY_FLAG)) {
       const auto query_view{tlb.fetch_string()};
-      opt_query.emplace(query_view.data(), static_cast<string::size_type>(query_view.size()));
+      opt_query.emplace(query_view.data(), static_cast<::string::size_type>(query_view.size()));
     }
     return true;
   }
@@ -445,15 +459,15 @@ public:
 
 struct httpHeaderEntry final {
   Bool is_sensitive{};
-  string name;
-  string value;
+  ::string name;
+  ::string value;
 
   bool fetch(TLBuffer &tlb) noexcept {
     const auto ok{is_sensitive.fetch(tlb)};
     const auto name_view{tlb.fetch_string()};
     const auto value_view{tlb.fetch_string()};
-    name = {name_view.data(), static_cast<string::size_type>(name_view.size())};
-    value = {value_view.data(), static_cast<string::size_type>(value_view.size())};
+    name = {name_view.data(), static_cast<::string::size_type>(name_view.size())};
+    value = {value_view.data(), static_cast<::string::size_type>(value_view.size())};
     return ok;
   }
 
@@ -465,17 +479,17 @@ struct httpHeaderEntry final {
 };
 
 struct httpConnection final {
-  string server_addr;
+  ::string server_addr;
   uint32_t server_port{};
-  string remote_addr;
+  ::string remote_addr;
   uint32_t remote_port{};
 
   bool fetch(TLBuffer &tlb) noexcept {
     const auto server_addr_view{tlb.fetch_string()};
-    server_addr = {server_addr_view.data(), static_cast<string::size_type>(server_addr_view.size())};
+    server_addr = {server_addr_view.data(), static_cast<::string::size_type>(server_addr_view.size())};
     const auto opt_server_port{tlb.fetch_trivial<uint32_t>()};
     const auto remote_addr_view{tlb.fetch_string()};
-    remote_addr = {remote_addr_view.data(), static_cast<string::size_type>(remote_addr_view.size())};
+    remote_addr = {remote_addr_view.data(), static_cast<::string::size_type>(remote_addr_view.size())};
     const auto opt_remote_port{tlb.fetch_trivial<uint32_t>()};
 
     if (!opt_server_port.has_value() || !opt_remote_port.has_value()) {
@@ -492,7 +506,7 @@ struct httpResponse final {
   HttpVersion version{};
   int32_t status_code{};
   vector<httpHeaderEntry> headers{};
-  string body;
+  ::string body;
 
   void store(TLBuffer &tlb) const noexcept {
     tlb.store_trivial<uint32_t>(0x0); // flags
