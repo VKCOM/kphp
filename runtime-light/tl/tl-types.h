@@ -303,13 +303,16 @@ public:
 
 class CertInfoItem final {
   enum Magic : uint32_t { LONG = 0x533f'f89f, STR = 0xc427'feef, DICT = 0x1ea8'a774 };
+
 public:
-  std::variant<int64_t, tl::string, dictionary<tl::string>> data;
-  
+  std::variant<int64_t, string, dictionary<string>> data;
+
   bool fetch(TLBuffer &tlb) noexcept;
 
   template<class... Ts>
-  struct MakeVisitor : Ts... { using Ts::operator()...; };
+  struct MakeVisitor : Ts... {
+    using Ts::operator()...;
+  };
 };
 
 enum DigestAlgorithm : uint32_t {

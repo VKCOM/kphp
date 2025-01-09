@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
+#include <utility>
 
 #include "common/tl/constants/common.h"
 #include "runtime-light/tl/tl-core.h"
@@ -36,35 +37,32 @@ void K2JobWorkerResponse::store(TLBuffer &tlb) const noexcept {
 }
 
 bool CertInfoItem::fetch(TLBuffer &tlb) noexcept {
-  const std::optional<uint32_t> magic = tlb.fetch_trivial<uint32_t>();
-  if (!magic.has_value()) {
+  const auto opt_magic{tlb.fetch_trivial<uint32_t>()};
+  if (!opt_magic.has_value()) {
     return false;
   }
 
-  switch (*magic) {
+  switch (*opt_magic) {
     case Magic::LONG: {
-      const std::optional<int64_t> val = tlb.fetch_trivial<int64_t>();
-      if (!val.has_value()) {
-        return false;
+      if (const auto opt_val{tlb.fetch_trivial<int64_t>()}; opt_val.has_value()) [[likely]] {
+        data = *opt_val;
+        break;
       }
-      data = *val;
-      break;
+      return false;
     }
     case Magic::STR: {
-      auto val = tl::string{};
-      if (!val.fetch(tlb)) {
-        return false;
+      if (string val{}; val.fetch(tlb)) [[unlikely]] {
+        data = val;
+        break;
       }
-      data = val;
-      break;
+      return false;
     }
     case Magic::DICT: {
-      auto val = dictionary<tl::string>();
-      if (!val.fetch(tlb)) {
-        return false;
+      if (dictionary<string> val{}; val.fetch(tlb)) [[likely]] {
+        data = std::move(val);
+        break;
       }
-      data = std::move(val);
-      break;
+      return false;
     }
   }
 
