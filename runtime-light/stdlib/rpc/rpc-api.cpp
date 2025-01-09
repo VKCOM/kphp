@@ -23,6 +23,7 @@
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/tl/tl-core.h"
+#include "runtime-light/tl/tl-types.h"
 
 namespace rpc_impl_ {
 
@@ -329,7 +330,7 @@ bool f$store_double(double v) noexcept {
 }
 
 bool f$store_string(const string &v) noexcept {
-  RpcInstanceState::get().rpc_buffer.store_string(std::string_view{v.c_str(), v.size()});
+  tl::string{.value = {v.c_str(), v.size()}}.store(RpcInstanceState::get().rpc_buffer);
   return true;
 }
 
@@ -352,8 +353,9 @@ double f$fetch_float() noexcept {
 }
 
 string f$fetch_string() noexcept {
-  const std::string_view str{RpcInstanceState::get().rpc_buffer.fetch_string()};
-  return {str.data(), static_cast<string::size_type>(str.length())};
+  tl::string str{};
+  str.fetch(RpcInstanceState::get().rpc_buffer);
+  return {str.value.data(), static_cast<string::size_type>(str.value.size())};
 }
 
 // === Rpc Query ==================================================================================

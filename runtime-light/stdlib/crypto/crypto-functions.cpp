@@ -5,6 +5,7 @@
 #include "runtime-light/stdlib/crypto/crypto-functions.h"
 
 #include <cstddef>
+#include <string_view>
 
 #include "common/tl/constants/common.h"
 #include "runtime-common/stdlib/server/url-functions.h"
@@ -15,7 +16,7 @@
 
 namespace {
 
-constexpr const char *CRYPTO_COMPONENT_NAME = "crypto";
+constexpr std::string_view CRYPTO_COMPONENT_NAME = "crypto";
 
 } // namespace
 
@@ -31,7 +32,8 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME}, string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -42,8 +44,10 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
   if (!magic.has_value() || *magic != TL_MAYBE_TRUE) {
     co_return false;
   }
-  std::string_view str_view = buffer.fetch_string();
-  co_return string(str_view.data(), str_view.size());
+
+  tl::string str{};
+  str.fetch(buffer);
+  co_return string{str.value.data(), static_cast<string::size_type>(str.value.size())};
 }
 
 task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool shortnames) noexcept {
@@ -52,7 +56,8 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME}, string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -100,7 +105,8 @@ task_t<bool> f$openssl_sign(const string &data, string &signature, const string 
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME}, string(buffer.data(), buffer.size()));
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string(buffer.data(), buffer.size()));
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -111,8 +117,9 @@ task_t<bool> f$openssl_sign(const string &data, string &signature, const string 
     co_return false;
   }
 
-  std::string_view str_view = buffer.fetch_string();
-  signature = string(str_view.data(), str_view.size());
+  tl::string str{};
+  str.fetch(buffer);
+  signature = string{str.value.data(), static_cast<string::size_type>(str.value.size())};
 
   co_return true;
 }
@@ -126,7 +133,8 @@ task_t<int64_t> f$openssl_verify(const string &data, const string &signature, co
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME}, string(buffer.data(), buffer.size()));
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string(buffer.data(), buffer.size()));
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -268,7 +276,8 @@ task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &met
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME}, string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -320,7 +329,8 @@ task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, co
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME}, string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
