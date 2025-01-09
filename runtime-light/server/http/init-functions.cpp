@@ -12,15 +12,16 @@
 #include <cstring>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <string_view>
 #include <system_error>
 #include <utility>
 
 #include "absl/strings/match.h"
+#include "absl/strings/str_split.h"
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/http/http-server-state.h"
@@ -105,44 +106,43 @@ void process_cookie_header(std::string_view header, PhpScriptBuiltInSuperGlobals
 // RFC link: https://tools.ietf.org/html/rfc2617#section-2
 // Header example:
 //  Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
-void process_authorization_header(const string &header, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
-  array<string> header_parts{explode(' ', header)};
-  if (header_parts.count() != 2) [[unlikely]] {
+void process_authorization_header(std::string_view header, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
+  std::pair<std::string_view, std::string_view> parts{absl::StrSplit(header, absl::MaxSplits(' ', 1))};
+  const auto [auth_scheme, auth_credentials]{parts};
+  if (auth_scheme.size() + auth_credentials.size() + 1 != header.size() || auth_scheme != AUTHORIZATION_BASIC) [[unlikely]] {
     return;
   }
 
-  const auto &auth_scheme{header_parts[0]};
-  const auto &auth_credentials{header_parts[1]};
-  if (std::string_view{auth_scheme.c_str(), auth_scheme.size()} != AUTHORIZATION_BASIC) [[unlikely]] {
-    return;
-  }
-
-  const auto decoded_login_pass{f$base64_decode(auth_credentials, true)};
+  const auto decoded_login_pass{f$base64_decode(string{auth_credentials.data(), static_cast<string::size_type>(auth_credentials.size())}, true)};
   if (!decoded_login_pass.has_value()) [[unlikely]] {
     return;
   }
 
-  array<string> auth_data{explode(':', decoded_login_pass.val())};
-  if (auth_data.count() != 2) [[unlikely]] {
+  const std::string_view decoded_login_pass_view{decoded_login_pass.val().c_str(), decoded_login_pass.val().size()};
+  parts = absl::StrSplit(decoded_login_pass_view, absl::MaxSplits(':', 1));
+  const auto [login, pass]{parts};
+  if (login.size() + pass.size() + 1 != decoded_login_pass_view.size()) [[unlikely]] {
     return;
   }
 
   using namespace PhpServerSuperGlobalIndices;
-  superglobals.v$_SERVER.set_value(string{PHP_AUTH_USER.data(), PHP_AUTH_USER.size()}, auth_data[0]);
-  superglobals.v$_SERVER.set_value(string{PHP_AUTH_PW.data(), PHP_AUTH_PW.size()}, auth_data[1]);
-  superglobals.v$_SERVER.set_value(string{AUTH_TYPE.data(), AUTH_TYPE.size()}, auth_scheme);
+  superglobals.v$_SERVER.set_value(string{PHP_AUTH_USER.data(), PHP_AUTH_USER.size()}, string{login.data(), static_cast<string::size_type>(login.size())});
+  superglobals.v$_SERVER.set_value(string{PHP_AUTH_PW.data(), PHP_AUTH_PW.size()}, string{pass.data(), static_cast<string::size_type>(pass.size())});
+  superglobals.v$_SERVER.set_value(string{AUTH_TYPE.data(), AUTH_TYPE.size()}, string{auth_scheme.data(), static_cast<string::size_type>(auth_scheme.size())});
 }
 
 // returns content type
 std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
   auto &server{superglobals.v$_SERVER};
   auto &http_server_instance_st{HttpServerInstanceState::get()};
+  const auto header_entry_proj{[](const tl::httpHeaderEntry &header_entry) noexcept {
+    return std::pair<std::string_view, std::string_view>{header_entry.name.value, header_entry.value.value};
+  }};
 
   std::string_view content_type{CONTENT_TYPE_APP_FORM_URLENCODED};
   // platform provides headers that are already in lowercase
-  for (auto &[_, tl_name, tl_value] : invoke_http.headers) {
-    const std::string_view h_name{tl_name.value};
-    const std::string_view h_value{tl_value.value};
+  for (const auto &[h_name, h_value] : std::ranges::transform_view(invoke_http.headers, header_entry_proj)) {
+    string h_value_str{h_value.data(), static_cast<string::size_type>(h_value.size())};
 
     using namespace PhpServerSuperGlobalIndices;
     if (h_name == kphp::http::headers::ACCEPT_ENCODING) {
@@ -163,9 +163,9 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
     } else if (h_name == kphp::http::headers::COOKIE) {
       process_cookie_header(h_value, superglobals);
     } else if (h_name == kphp::http::headers::HOST) {
-      server.set_value(string{SERVER_NAME.data(), SERVER_NAME.size()}, string{h_value.data(), static_cast<string::size_type>(h_value.size())});
+      server.set_value(string{SERVER_NAME.data(), SERVER_NAME.size()}, h_value_str);
     } else if (h_name == kphp::http::headers::AUTHORIZATION) {
-      process_authorization_header({h_value.data(), static_cast<string::size_type>(h_value.size())}, superglobals);
+      process_authorization_header(h_value, superglobals);
     } else if (h_name == kphp::http::headers::CONTENT_TYPE) {
       content_type = h_value;
       continue;
@@ -187,7 +187,7 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
     for (int64_t i = HTTP_HEADER_PREFIX.size(); i < key.size(); ++i) {
       key[i] = key[i] != '-' ? std::toupper(key[i]) : '_';
     }
-    server.set_value(key, string{h_value.data(), static_cast<string::size_type>(h_value.size())});
+    server.set_value(key, std::move(h_value_str));
   }
 
   return content_type;
