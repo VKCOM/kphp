@@ -47,7 +47,7 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
 }
 
 task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool shortnames) noexcept {
-  tl::GetPemCertInfo request{.is_short = shortnames, .bytes = {data.c_str(), data.size()}};
+  tl::GetPemCertInfo request{.is_short = shortnames, .bytes = {.value = {data.c_str(), data.size()}}};
 
   tl::TLBuffer buffer;
   request.store(buffer);
@@ -75,7 +75,7 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
                                     array<mixed> resp;
                                     resp.reserve(sub_dict.size(), false);
                                     for (auto sub_item : sub_dict) {
-                                      auto key = string(sub_item.key.data(), sub_item.key.size());
+                                      auto key = string(sub_item.key.value.data(), sub_item.key.value.size());
                                       auto value = string(sub_item.value.value.data(), sub_item.value.value.size());
                                       resp[key] = value;
                                     }
@@ -84,17 +84,17 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
                                   }};
 
   for (auto cert_kv : std::move(*cert_items.opt_value)) {
-    auto key = string(cert_kv.key.data(), cert_kv.key.size());
+    auto key = string(cert_kv.key.value.data(), cert_kv.key.value.size());
     tl::CertInfoItem val = std::move(cert_kv.value);
-    response[string(cert_kv.key.data(), cert_kv.key.size())] = std::visit(item_to_mixed, val.data);
+    response[string(cert_kv.key.value.data(), cert_kv.key.value.size())] = std::visit(item_to_mixed, val.data);
   }
 
   co_return response;
 }
 
 task_t<bool> f$openssl_sign(const string &data, string &signature, const string &private_key, int64_t algo) noexcept {
-  tl::DigestSign request{.data = {data.c_str(), data.size()},
-                         .private_key = {private_key.c_str(), private_key.size()},
+  tl::DigestSign request{.data = {.value = {data.c_str(), data.size()}},
+                         .private_key = {.value = {private_key.c_str(), private_key.size()}},
                          .algorithm = static_cast<tl::DigestAlgorithm>(algo)};
 
   tl::TLBuffer buffer;
@@ -118,10 +118,10 @@ task_t<bool> f$openssl_sign(const string &data, string &signature, const string 
 }
 
 task_t<int64_t> f$openssl_verify(const string &data, const string &signature, const string &pub_key, int64_t algo) noexcept {
-  tl::DigestVerify request{.data = {data.c_str(), data.size()},
-                           .public_key = {pub_key.c_str(), pub_key.size()},
+  tl::DigestVerify request{.data = {.value = {data.c_str(), data.size()}},
+                           .public_key = {.value = {pub_key.c_str(), pub_key.size()}},
                            .algorithm = static_cast<tl::DigestAlgorithm>(algo),
-                           .signature = {signature.c_str(), signature.size()}};
+                           .signature = {.value = {signature.c_str(), signature.size()}}};
 
   tl::TLBuffer buffer;
   request.store(buffer);
@@ -261,9 +261,9 @@ task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &met
   }
   tl::CbcEncrypt request{.algorithm = *algorithm,
                          .padding = tl::BlockPadding::PKCS7,
-                         .passphrase = {key_iv.val().first.c_str(), key_iv.val().first.size()},
-                         .iv = {key_iv.val().second.c_str(), key_iv.val().second.size()},
-                         .data = {data.c_str(), data.size()}};
+                         .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
+                         .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
+                         .data = {.value = {data.c_str(), data.size()}}};
 
   tl::TLBuffer buffer;
   request.store(buffer);
@@ -313,9 +313,9 @@ task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, co
   }
   tl::CbcDecrypt request{.algorithm = *algorithm,
                          .padding = tl::BlockPadding::PKCS7,
-                         .passphrase = {key_iv.val().first.c_str(), key_iv.val().first.size()},
-                         .iv = {key_iv.val().second.c_str(), key_iv.val().second.size()},
-                         .data = {data.c_str(), data.size()}};
+                         .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
+                         .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
+                         .data = {.value = {data.c_str(), data.size()}}};
 
   tl::TLBuffer buffer;
   request.store(buffer);

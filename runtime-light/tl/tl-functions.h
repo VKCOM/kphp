@@ -24,7 +24,7 @@ public:
   int64_t job_id{};
   bool ignore_answer{};
   uint64_t timeout_ns{};
-  std::string_view body;
+  string body;
 
   bool fetch(TLBuffer &tlb) noexcept;
 
@@ -48,44 +48,44 @@ struct GetCryptosecurePseudorandomBytes final {
 
 struct GetPemCertInfo final {
   bool is_short{true};
-  std::string_view bytes;
+  string bytes;
 
   void store(TLBuffer &tlb) const noexcept;
 };
 
 struct DigestSign final {
-  std::string_view data;
-  std::string_view private_key;
-  DigestAlgorithm algorithm;
+  string data;
+  string private_key;
+  DigestAlgorithm algorithm{};
 
   void store(TLBuffer &tlb) const noexcept;
 };
 
 struct DigestVerify final {
-  std::string_view data;
-  std::string_view public_key;
-  DigestAlgorithm algorithm;
-  std::string_view signature;
+  string data;
+  string public_key;
+  DigestAlgorithm algorithm{};
+  string signature;
 
   void store(TLBuffer &tlb) const noexcept;
 };
 
 struct CbcDecrypt final {
-  CipherAlgorithm algorithm;
-  BlockPadding padding;
-  std::string_view passphrase;
-  std::string_view iv;
-  std::string_view data;
+  CipherAlgorithm algorithm{};
+  BlockPadding padding{};
+  string passphrase;
+  string iv;
+  string data;
 
   void store(TLBuffer &tlb) const noexcept;
 };
 
 struct CbcEncrypt final {
-  CipherAlgorithm algorithm;
-  BlockPadding padding;
-  std::string_view passphrase;
-  std::string_view iv;
-  std::string_view data;
+  CipherAlgorithm algorithm{};
+  BlockPadding padding{};
+  string passphrase;
+  string iv;
+  string data;
 
   void store(TLBuffer &tlb) const noexcept;
 };
@@ -96,13 +96,13 @@ inline constexpr uint32_t CONFDATA_GET_MAGIC = 0xf0eb'cd89;
 inline constexpr uint32_t CONFDATA_GET_WILDCARD_MAGIC = 0x5759'bd9e;
 
 struct ConfdataGet final {
-  std::string_view key;
+  string key;
 
   void store(TLBuffer &tlb) const noexcept;
 };
 
 struct ConfdataGetWildcard final {
-  std::string_view wildcard;
+  string wildcard;
 
   void store(TLBuffer &tlb) const noexcept;
 };
@@ -119,7 +119,7 @@ class K2InvokeHttp final {
 public:
   httpConnection connection{};
   HttpVersion version{};
-  std::string_view method;
+  string method;
   httpUri uri{};
   vector<httpHeaderEntry> headers{};
   std::string_view body;

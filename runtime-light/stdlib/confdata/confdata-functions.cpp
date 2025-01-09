@@ -26,16 +26,16 @@ namespace {
 constexpr std::string_view CONFDATA_COMPONENT_NAME = "confdata"; // TODO: it may actually have an alias specified in linking config
 
 mixed extract_confdata_value(tl::confdataValue confdata_value) noexcept {
-  if (confdata_value.is_php_serialized && confdata_value.is_json_serialized) { // check that we don't have both flags set
+  if (confdata_value.is_php_serialized.value && confdata_value.is_json_serialized.value) { // check that we don't have both flags set
     php_warning("confdata value has both php_serialized and json_serialized flags set");
     return {};
   }
-  if (confdata_value.is_php_serialized) {
-    return f$unserialize(string{confdata_value.value.data(), static_cast<string::size_type>(confdata_value.value.size())});
-  } else if (confdata_value.is_json_serialized) {
-    return f$json_decode(string{confdata_value.value.data(), static_cast<string::size_type>(confdata_value.value.size())});
+  if (confdata_value.is_php_serialized.value) {
+    return f$unserialize(string{confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size())});
+  } else if (confdata_value.is_json_serialized.value) {
+    return f$json_decode(string{confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size())});
   } else {
-    return string{confdata_value.value.data(), static_cast<string::size_type>(confdata_value.value.size())};
+    return string{confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size())};
   }
 }
 
@@ -53,7 +53,7 @@ bool f$is_confdata_loaded() noexcept {
 
 task_t<mixed> f$confdata_get_value(string key) noexcept {
   tl::TLBuffer tlb{};
-  tl::ConfdataGet{.key = {key.c_str(), key.size()}}.store(tlb);
+  tl::ConfdataGet{.key = {.value = {key.c_str(), key.size()}}}.store(tlb);
 
   auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME.data(), static_cast<string::size_type>(CONFDATA_COMPONENT_NAME.size())},
                                                       {tlb.data(), static_cast<string::size_type>(tlb.size())})};
@@ -75,7 +75,7 @@ task_t<mixed> f$confdata_get_value(string key) noexcept {
 
 task_t<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
   tl::TLBuffer tlb{};
-  tl::ConfdataGetWildcard{.wildcard = {wildcard.c_str(), wildcard.size()}}.store(tlb);
+  tl::ConfdataGetWildcard{.wildcard = {.value = {wildcard.c_str(), wildcard.size()}}}.store(tlb);
 
   auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME.data(), static_cast<string::size_type>(CONFDATA_COMPONENT_NAME.size())},
                                                       {tlb.data(), static_cast<string::size_type>(tlb.size())})};
@@ -91,7 +91,8 @@ task_t<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noex
 
   array<mixed> result{array_size{static_cast<int64_t>(dict_confdata_value.size()), false}};
   std::for_each(dict_confdata_value.begin(), dict_confdata_value.end(), [&result](auto &&dict_field) {
-    result.set_value(string{dict_field.key.data(), static_cast<string::size_type>(dict_field.key.size())}, extract_confdata_value(std::move(dict_field.value)));
+    result.set_value(string{dict_field.key.value.data(), static_cast<string::size_type>(dict_field.key.value.size())},
+                     extract_confdata_value(std::move(dict_field.value)));
   });
   co_return std::move(result);
 }

@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -185,16 +184,15 @@ struct Vector final {
 
 template<typename T>
 struct dictionaryField final {
-  std::string_view key;
+  string key;
   T value{};
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    key = tlb.fetch_string();
-    return value.fetch(tlb);
+    return key.fetch(tlb) && value.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
-    tlb.store_string(key);
+    key.store(tlb);
     value.store(tlb);
   }
 };
@@ -285,7 +283,7 @@ class K2JobWorkerResponse final {
 
 public:
   int64_t job_id{};
-  std::string_view body;
+  string body;
 
   bool fetch(TLBuffer &tlb) noexcept;
 
@@ -333,11 +331,13 @@ enum BlockPadding : uint32_t {
 // ===== CONFDATA =====
 
 struct confdataValue final {
-  std::string_view value;
-  bool is_php_serialized{};
-  bool is_json_serialized{};
+  string value;
+  Bool is_php_serialized{};
+  Bool is_json_serialized{};
 
-  bool fetch(TLBuffer &tlb) noexcept;
+  bool fetch(TLBuffer &tlb) noexcept {
+    return value.fetch(tlb) && is_php_serialized.fetch(tlb) && is_json_serialized.fetch(tlb);
+  }
 };
 
 // ===== HTTP =====
@@ -423,70 +423,70 @@ class httpUri final {
   static constexpr auto QUERY_FLAG = static_cast<uint32_t>(1U << 2U);
 
 public:
-  std::optional<std::string_view> opt_scheme;
-  std::optional<std::string_view> opt_host;
-  std::string_view path;
-  std::optional<std::string_view> opt_query;
+  std::optional<string> opt_scheme;
+  std::optional<string> opt_host;
+  string path;
+  std::optional<string> opt_query;
 
   bool fetch(TLBuffer &tlb) noexcept {
     const auto opt_flags{tlb.fetch_trivial<uint32_t>()};
-    if (!opt_flags.has_value()) {
-      return false;
-    }
+    bool ok{opt_flags.has_value()};
 
-    const auto flags{*opt_flags};
-    if (static_cast<bool>(flags & SCHEME_FLAG)) {
-      opt_scheme.emplace(tlb.fetch_string());
+    const auto flags{opt_flags.value_or(0x0)};
+    if (ok && static_cast<bool>(flags & SCHEME_FLAG)) [[likely]] {
+      string scheme{};
+      ok &= scheme.fetch(tlb);
+      opt_scheme.emplace(scheme);
     }
-    if (static_cast<bool>(flags & HOST_FLAG)) {
-      opt_host.emplace(tlb.fetch_string());
+    if (ok && static_cast<bool>(flags & HOST_FLAG)) {
+      string host{};
+      ok &= host.fetch(tlb);
+      opt_host.emplace(host);
     }
-    path = tlb.fetch_string();
-    if (static_cast<bool>(flags & QUERY_FLAG)) {
-      opt_query.emplace(tlb.fetch_string());
+    ok &= path.fetch(tlb);
+    if (ok && static_cast<bool>(flags & QUERY_FLAG)) {
+      string query{};
+      ok &= query.fetch(tlb);
+      opt_query.emplace(query);
     }
-    return true;
+    return ok;
   }
 };
 
 struct httpHeaderEntry final {
   Bool is_sensitive{};
-  std::string_view name;
-  std::string_view value;
+  string name;
+  string value;
 
   bool fetch(TLBuffer &tlb) noexcept {
-    const auto ok{is_sensitive.fetch(tlb)};
-    name = tlb.fetch_string();
-    value = tlb.fetch_string();
-    return ok;
+    return is_sensitive.fetch(tlb) && name.fetch(tlb) && value.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept {
     is_sensitive.store(tlb);
-    tlb.store_string(name);
-    tlb.store_string(value);
+    name.store(tlb);
+    value.store(tlb);
   }
 };
 
 struct httpConnection final {
-  std::string_view server_addr;
+  string server_addr;
   uint32_t server_port{};
-  std::string_view remote_addr;
+  string remote_addr;
   uint32_t remote_port{};
 
   bool fetch(TLBuffer &tlb) noexcept {
-    server_addr = tlb.fetch_string();
+    bool ok{server_addr.fetch(tlb)};
     const auto opt_server_port{tlb.fetch_trivial<uint32_t>()};
-    remote_addr = tlb.fetch_string();
+    ok &= opt_server_port.has_value();
+    ok &= remote_addr.fetch(tlb);
     const auto opt_remote_port{tlb.fetch_trivial<uint32_t>()};
+    ok &= opt_remote_port.has_value();
 
-    if (!opt_server_port.has_value() || !opt_remote_port.has_value()) {
-      return false;
-    }
+    server_port = opt_server_port.value_or(0);
+    remote_port = opt_remote_port.value_or(0);
 
-    server_port = *opt_server_port;
-    remote_port = *opt_remote_port;
-    return true;
+    return ok;
   }
 };
 

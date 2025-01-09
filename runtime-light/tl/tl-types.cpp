@@ -4,9 +4,7 @@
 
 #include "runtime-light/tl/tl-types.h"
 
-#include <cstddef>
 #include <cstdint>
-#include <string_view>
 #include <utility>
 
 #include "common/tl/constants/common.h"
@@ -15,25 +13,22 @@
 namespace tl {
 
 bool K2JobWorkerResponse::fetch(TLBuffer &tlb) noexcept {
-  if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != MAGIC || /* flags */ !tlb.fetch_trivial<uint32_t>().has_value()) {
-    return false;
-  }
-
+  bool ok{tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == MAGIC};
+  ok &= tlb.fetch_trivial<uint32_t>().has_value(); // flags
   const auto opt_job_id{tlb.fetch_trivial<int64_t>()};
-  if (!opt_job_id.has_value()) {
-    return false;
-  }
+  ok &= opt_job_id.has_value();
+  ok &= body.fetch(tlb);
 
-  job_id = *opt_job_id;
-  body = tlb.fetch_string();
-  return true;
+  job_id = opt_job_id.value_or(0);
+
+  return ok;
 }
 
 void K2JobWorkerResponse::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(MAGIC);
   tlb.store_trivial<uint32_t>(0x0); // flags
   tlb.store_trivial<int64_t>(job_id);
-  tlb.store_string(body);
+  body.store(tlb);
 }
 
 bool CertInfoItem::fetch(TLBuffer &tlb) noexcept {
@@ -66,19 +61,6 @@ bool CertInfoItem::fetch(TLBuffer &tlb) noexcept {
     }
   }
 
-  return true;
-}
-
-bool confdataValue::fetch(TLBuffer &tlb) noexcept {
-  value = tlb.fetch_string();
-  Bool is_php_serialized_{};
-  Bool is_json_serialized_{};
-  if (!(is_php_serialized_.fetch(tlb) && is_json_serialized_.fetch(tlb))) {
-    return false;
-  }
-
-  is_php_serialized = is_php_serialized_.value;
-  is_json_serialized = is_json_serialized_.value;
   return true;
 }
 

@@ -59,11 +59,11 @@ constexpr std::string_view GET_METHOD = "GET";
 constexpr std::string_view POST_METHOD = "POST";
 constexpr std::string_view HEAD_METHOD = "HEAD";
 
-string get_server_protocol(tl::HttpVersion http_version, const std::optional<std::string_view> &opt_scheme) noexcept {
+string get_server_protocol(tl::HttpVersion http_version, const std::optional<tl::string> &opt_scheme) noexcept {
   std::string_view protocol_name{HTTP};
   const auto protocol_version{http_version.string_view()};
   if (opt_scheme.has_value()) {
-    const std::string_view scheme{*opt_scheme};
+    const std::string_view scheme{(*opt_scheme).value};
     if (scheme == HTTPS_SCHEME) {
       protocol_name = HTTPS;
     } else if (scheme != HTTP_SCHEME) [[unlikely]] {
@@ -140,7 +140,9 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
 
   std::string_view content_type{CONTENT_TYPE_APP_FORM_URLENCODED};
   // platform provides headers that are already in lowercase
-  for (auto &[_, h_name, h_value] : invoke_http.headers) {
+  for (auto &[_, tl_name, tl_value] : invoke_http.headers) {
+    const std::string_view h_name{tl_name.value};
+    const std::string_view h_value{tl_value.value};
 
     using namespace PhpServerSuperGlobalIndices;
     if (h_name == kphp::http::headers::ACCEPT_ENCODING) {
@@ -203,19 +205,19 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   auto &http_server_instance_st{HttpServerInstanceState::get()};
 
   // determine HTTP method
-  if (invoke_http.method == GET_METHOD) {
+  if (invoke_http.method.value == GET_METHOD) {
     http_server_instance_st.http_method = method::get;
-  } else if (invoke_http.method == POST_METHOD) {
+  } else if (invoke_http.method.value == POST_METHOD) {
     http_server_instance_st.http_method = method::post;
-  } else if (invoke_http.method == HEAD_METHOD) [[likely]] {
+  } else if (invoke_http.method.value == HEAD_METHOD) [[likely]] {
     http_server_instance_st.http_method = method::head;
   } else {
     http_server_instance_st.http_method = method::other;
   }
 
-  const string uri_path{invoke_http.uri.path.data(), static_cast<string::size_type>(invoke_http.uri.path.size())};
+  const string uri_path{invoke_http.uri.path.value.data(), static_cast<string::size_type>(invoke_http.uri.path.value.size())};
   const string uri_query{invoke_http.uri.opt_query.has_value()
-                           ? string{(*invoke_http.uri.opt_query).data(), static_cast<string::size_type>((*invoke_http.uri.opt_query).size())}
+                           ? string{(*invoke_http.uri.opt_query).value.data(), static_cast<string::size_type>((*invoke_http.uri.opt_query).value.size())}
                            : string{}};
 
   using namespace PhpServerSuperGlobalIndices;
@@ -224,15 +226,15 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   server.set_value(string{SCRIPT_URL.data(), SCRIPT_URL.size()}, uri_path);
 
   server.set_value(string{SERVER_ADDR.data(), SERVER_ADDR.size()},
-                   string{invoke_http.connection.server_addr.data(), static_cast<string::size_type>(invoke_http.connection.server_addr.size())});
+                   string{invoke_http.connection.server_addr.value.data(), static_cast<string::size_type>(invoke_http.connection.server_addr.value.size())});
   server.set_value(string{SERVER_PORT.data(), SERVER_PORT.size()}, static_cast<int64_t>(invoke_http.connection.server_port));
   server.set_value(string{SERVER_PROTOCOL.data(), SERVER_PROTOCOL.size()}, get_server_protocol(invoke_http.version, invoke_http.uri.opt_scheme));
   server.set_value(string{REMOTE_ADDR.data(), REMOTE_ADDR.size()},
-                   string{invoke_http.connection.remote_addr.data(), static_cast<string::size_type>(invoke_http.connection.remote_addr.size())});
+                   string{invoke_http.connection.remote_addr.value.data(), static_cast<string::size_type>(invoke_http.connection.remote_addr.value.size())});
   server.set_value(string{REMOTE_PORT.data(), REMOTE_PORT.size()}, static_cast<int64_t>(invoke_http.connection.remote_port));
 
   server.set_value(string{REQUEST_METHOD.data(), REQUEST_METHOD.size()},
-                   string{invoke_http.method.data(), static_cast<string::size_type>(invoke_http.method.size())});
+                   string{invoke_http.method.value.data(), static_cast<string::size_type>(invoke_http.method.value.size())});
   server.set_value(string{GATEWAY_INTERFACE.data(), GATEWAY_INTERFACE.size()}, string{GATEWAY_INTERFACE_VALUE.data(), GATEWAY_INTERFACE_VALUE.size()});
 
   if (invoke_http.uri.opt_query.has_value()) {
@@ -249,7 +251,7 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
     server.set_value(string{REQUEST_URI.data(), REQUEST_URI.size()}, uri_path);
   }
 
-  if (invoke_http.uri.opt_scheme.value_or(std::string_view{}) == HTTPS_SCHEME) {
+  if (invoke_http.uri.opt_scheme.has_value() && (*invoke_http.uri.opt_scheme).value == HTTPS_SCHEME) {
     server.set_value(string{HTTPS.data(), HTTPS.size()}, true);
   }
 
@@ -340,7 +342,9 @@ task_t<void> finalize_server(const string_buffer &output) noexcept {
   std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.value),
                  [](const auto &header_entry) noexcept {
                    const auto &[name, value]{header_entry};
-                   return tl::httpHeaderEntry{.is_sensitive = {}, .name = {name.data(), name.size()}, .value = {value.data(), value.size()}};
+                   return tl::httpHeaderEntry{.is_sensitive = {},
+                                              .name = {.value = {name.data(), name.size()}},
+                                              .value = {.value = {value.data(), value.size()}}};
                  });
 
   tl::TLBuffer tlb{};
