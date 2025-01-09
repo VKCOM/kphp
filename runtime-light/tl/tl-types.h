@@ -430,10 +430,10 @@ class httpUri final {
   static constexpr auto QUERY_FLAG = static_cast<uint32_t>(1U << 2U);
 
 public:
-  std::optional<::string> opt_scheme;
-  std::optional<::string> opt_host;
-  ::string path;
-  std::optional<::string> opt_query;
+  std::optional<std::string_view> opt_scheme;
+  std::optional<std::string_view> opt_host;
+  std::string_view path;
+  std::optional<std::string_view> opt_query;
 
   bool fetch(TLBuffer &tlb) noexcept {
     const auto opt_flags{tlb.fetch_trivial<uint32_t>()};
@@ -443,18 +443,14 @@ public:
 
     const auto flags{*opt_flags};
     if (static_cast<bool>(flags & SCHEME_FLAG)) {
-      const auto scheme_view{tlb.fetch_string()};
-      opt_scheme.emplace(scheme_view.data(), static_cast<::string::size_type>(scheme_view.size()));
+      opt_scheme.emplace(tlb.fetch_string());
     }
     if (static_cast<bool>(flags & HOST_FLAG)) {
-      const auto host_view{tlb.fetch_string()};
-      opt_host.emplace(host_view.data(), static_cast<::string::size_type>(host_view.size()));
+      opt_host.emplace(tlb.fetch_string());
     }
-    const auto path_view{tlb.fetch_string()};
-    path = {path_view.data(), static_cast<::string::size_type>(path_view.size())};
+    path = tlb.fetch_string();
     if (static_cast<bool>(flags & QUERY_FLAG)) {
-      const auto query_view{tlb.fetch_string()};
-      opt_query.emplace(query_view.data(), static_cast<::string::size_type>(query_view.size()));
+      opt_query.emplace(tlb.fetch_string());
     }
     return true;
   }

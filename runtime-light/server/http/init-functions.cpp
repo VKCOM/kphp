@@ -59,15 +59,15 @@ constexpr std::string_view GET_METHOD = "GET";
 constexpr std::string_view POST_METHOD = "POST";
 constexpr std::string_view HEAD_METHOD = "HEAD";
 
-string get_server_protocol(tl::HttpVersion http_version, const std::optional<string> &opt_scheme) noexcept {
+string get_server_protocol(tl::HttpVersion http_version, const std::optional<std::string_view> &opt_scheme) noexcept {
   std::string_view protocol_name{HTTP};
   const auto protocol_version{http_version.string_view()};
   if (opt_scheme.has_value()) {
-    const std::string_view scheme_view{(*opt_scheme).c_str(), (*opt_scheme).size()};
-    if (scheme_view == HTTPS_SCHEME) {
+    const std::string_view scheme{*opt_scheme};
+    if (scheme == HTTPS_SCHEME) {
       protocol_name = HTTPS;
-    } else if (scheme_view != HTTP_SCHEME) [[unlikely]] {
-      php_error("unexpected http scheme: %s", scheme_view.data());
+    } else if (scheme != HTTP_SCHEME) [[unlikely]] {
+      php_error("unexpected http scheme: %s", scheme.data());
     }
   }
   string protocol{};
@@ -215,10 +215,15 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
     http_server_instance_st.http_method = method::other;
   }
 
+  const string uri_path{invoke_http.uri.path.data(), static_cast<string::size_type>(invoke_http.uri.path.size())};
+  const string uri_query{invoke_http.uri.opt_query.has_value()
+                           ? string{(*invoke_http.uri.opt_query).data(), static_cast<string::size_type>((*invoke_http.uri.opt_query).size())}
+                           : string{}};
+
   using namespace PhpServerSuperGlobalIndices;
-  server.set_value(string{PHP_SELF.data(), PHP_SELF.size()}, invoke_http.uri.path);
-  server.set_value(string{SCRIPT_NAME.data(), SCRIPT_NAME.size()}, invoke_http.uri.path);
-  server.set_value(string{SCRIPT_URL.data(), SCRIPT_URL.size()}, invoke_http.uri.path);
+  server.set_value(string{PHP_SELF.data(), PHP_SELF.size()}, uri_path);
+  server.set_value(string{SCRIPT_NAME.data(), SCRIPT_NAME.size()}, uri_path);
+  server.set_value(string{SCRIPT_URL.data(), SCRIPT_URL.size()}, uri_path);
 
   server.set_value(string{SERVER_ADDR.data(), SERVER_ADDR.size()}, invoke_http.connection.server_addr);
   server.set_value(string{SERVER_PORT.data(), SERVER_PORT.size()}, static_cast<int64_t>(invoke_http.connection.server_port));
@@ -231,24 +236,21 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   server.set_value(string{GATEWAY_INTERFACE.data(), GATEWAY_INTERFACE.size()}, string{GATEWAY_INTERFACE_VALUE.data(), GATEWAY_INTERFACE_VALUE.size()});
 
   if (invoke_http.uri.opt_query.has_value()) {
-    f$parse_str(*invoke_http.uri.opt_query, superglobals.v$_GET);
-    server.set_value(string{QUERY_STRING.data(), QUERY_STRING.size()}, *invoke_http.uri.opt_query);
+    f$parse_str(uri_query, superglobals.v$_GET);
+    server.set_value(string{QUERY_STRING.data(), QUERY_STRING.size()}, uri_query);
 
     string uri_string{};
-    uri_string.reserve_at_least((invoke_http.uri.path.size()) + (*invoke_http.uri.opt_query).size() + 1); // +1 for '?'
-    uri_string.append(invoke_http.uri.path);
+    uri_string.reserve_at_least(uri_path.size() + uri_query.size() + 1); // +1 for '?'
+    uri_string.append(uri_path);
     uri_string.append(1, '?');
-    uri_string.append(*invoke_http.uri.opt_query);
+    uri_string.append(uri_query);
     server.set_value(string{REQUEST_URI.data(), REQUEST_URI.size()}, uri_string);
   } else {
-    server.set_value(string{REQUEST_URI.data(), REQUEST_URI.size()}, invoke_http.uri.path);
+    server.set_value(string{REQUEST_URI.data(), REQUEST_URI.size()}, uri_path);
   }
 
-  if (invoke_http.uri.opt_scheme.has_value()) {
-    const std::string_view scheme_view{(*invoke_http.uri.opt_scheme).c_str(), (*invoke_http.uri.opt_scheme).size()};
-    if (scheme_view == HTTPS_SCHEME) {
-      server.set_value(string{HTTPS.data(), HTTPS.size()}, true);
-    }
+  if (invoke_http.uri.opt_scheme.value_or(std::string_view{}) == HTTPS_SCHEME) {
+    server.set_value(string{HTTPS.data(), HTTPS.size()}, true);
   }
 
   const auto content_type{process_headers(invoke_http, superglobals)};
@@ -272,7 +274,7 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
 
   if (http_server_instance_st.http_method == method::get) {
     server.set_value(string{ARGC.data(), ARGC.size()}, static_cast<int64_t>(1));
-    server.set_value(string{ARGV.data(), ARGV.size()}, invoke_http.uri.opt_query.value_or(string{}));
+    server.set_value(string{ARGV.data(), ARGV.size()}, uri_query);
   } else if (http_server_instance_st.http_method == method::post) {
     string body_str{invoke_http.body.data(), static_cast<string::size_type>(invoke_http.body.size())};
     if (content_type == CONTENT_TYPE_APP_FORM_URLENCODED) {
