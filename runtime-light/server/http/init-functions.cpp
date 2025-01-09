@@ -334,7 +334,7 @@ task_t<void> finalize_server(const string_buffer &output) noexcept {
   tl::httpResponse http_response{.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11},
                                  .status_code = static_cast<int32_t>(status_code),
                                  .headers = {},
-                                 .body = std::move(body)};
+                                 .body = {body.c_str(), body.size()}};
   // fill headers
   http_response.headers.data.reserve(http_server_instance_st.headers().size());
   std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.data),

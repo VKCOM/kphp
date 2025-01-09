@@ -501,14 +501,14 @@ struct httpResponse final {
   HttpVersion version{};
   int32_t status_code{};
   vector<httpHeaderEntry> headers{};
-  ::string body;
+  std::string_view body;
 
   void store(TLBuffer &tlb) const noexcept {
     tlb.store_trivial<uint32_t>(0x0); // flags
     version.store(tlb);
     tlb.store_trivial<int32_t>(status_code);
     headers.store(tlb);
-    tlb.store_bytes({body.c_str(), static_cast<size_t>(body.size())});
+    tlb.store_bytes(body);
   }
 };
 
