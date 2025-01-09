@@ -112,7 +112,10 @@ bool K2InvokeHttp::fetch(TLBuffer &tlb) noexcept {
   ok &= method.fetch(tlb);
   ok &= uri.fetch(tlb);
   ok &= headers.fetch(tlb);
-  body = tlb.fetch_bytes(tlb.remaining());
+  const auto opt_body{tlb.fetch_bytes(tlb.remaining())};
+  ok &= opt_body.has_value();
+
+  body = opt_body.value_or(std::string_view{});
 
   return ok;
 }

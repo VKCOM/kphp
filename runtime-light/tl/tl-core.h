@@ -12,26 +12,31 @@
 #include <string_view>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 #include "runtime-light/utils/concepts.h"
 
 namespace tl {
 
 class TLBuffer final : private vk::not_copyable {
-  string_buffer m_buffer;
+  static constexpr auto INIT_BUFFER_SIZE = 1024;
+
+  kphp::stl::vector<char, kphp::memory::script_allocator> m_buffer;
   size_t m_pos{0};
   size_t m_remaining{0};
 
 public:
-  TLBuffer() = default;
+  TLBuffer() noexcept {
+    m_buffer.reserve(INIT_BUFFER_SIZE);
+  }
 
   const char *data() const noexcept {
-    return m_buffer.buffer();
+    return m_buffer.data();
   }
 
   size_t size() const noexcept {
-    return static_cast<size_t>(m_buffer.size());
+    return m_buffer.size();
   }
 
   size_t pos() const noexcept {
@@ -43,7 +48,7 @@ public:
   }
 
   void clean() noexcept {
-    m_buffer.clean();
+    m_buffer.clear();
     m_pos = 0;
     m_remaining = 0;
   }
@@ -61,11 +66,13 @@ public:
   }
 
   void store_bytes(std::string_view bytes_view) noexcept {
-    m_buffer.append(bytes_view.data(), bytes_view.size());
+    // TODO: use std::vector::append_range after switch to C++-23
+    m_buffer.reserve(std::max(m_buffer.capacity(), m_buffer.size() + bytes_view.size()));
+    m_buffer.insert(m_buffer.end(), bytes_view.cbegin(), bytes_view.cend());
     m_remaining += bytes_view.size();
   }
 
-  std::string_view fetch_bytes(size_t len) noexcept {
+  std::optional<std::string_view> fetch_bytes(size_t len) noexcept {
     if (len > remaining()) {
       return {};
     }
@@ -85,7 +92,7 @@ public:
       return std::nullopt;
     }
 
-    const auto t{*reinterpret_cast<const T *>(std::next(data(), pos()))};
+    auto t{*reinterpret_cast<const T *>(std::next(data(), pos()))};
     adjust(sizeof(T));
     return t;
   }
@@ -95,7 +102,7 @@ public:
     if (remaining() < sizeof(T)) {
       return std::nullopt;
     }
-    return *reinterpret_cast<const T *>(data() + pos());
+    return *reinterpret_cast<const T *>(std::next(data(), pos()));
   }
 };
 
