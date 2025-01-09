@@ -78,10 +78,10 @@ string get_server_protocol(tl::HttpVersion http_version, const std::optional<std
   return protocol;
 }
 
-void process_cookie_header(const string &header, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
+void process_cookie_header(std::string_view header, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
   // *** be careful here ***
-  auto *cookie_start{const_cast<char *>(header.c_str())};
-  auto *cookie_list_end{const_cast<char *>(header.c_str() + header.size())};
+  auto *cookie_start{const_cast<char *>(header.data())};
+  auto *cookie_list_end{const_cast<char *>(std::next(header.data(), header.size()))};
   do {
     auto *cookie_end{std::find(cookie_start, cookie_list_end, ';')};
     char *cookie_domain_end{std::find(cookie_start, cookie_end, '=')};
@@ -141,37 +141,35 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
   std::string_view content_type{CONTENT_TYPE_APP_FORM_URLENCODED};
   // platform provides headers that are already in lowercase
   for (auto &[_, h_name, h_value] : invoke_http.headers) {
-    const std::string_view h_name_view{h_name.c_str(), h_name.size()};
-    const std::string_view h_value_view{h_value.c_str(), h_value.size()};
 
     using namespace PhpServerSuperGlobalIndices;
-    if (h_name_view == kphp::http::headers::ACCEPT_ENCODING) {
-      if (absl::StrContains(h_value_view, ENCODING_GZIP)) {
+    if (h_name == kphp::http::headers::ACCEPT_ENCODING) {
+      if (absl::StrContains(h_value, ENCODING_GZIP)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_GZIP;
       }
-      if (absl::StrContains(h_value_view, ENCODING_DEFLATE)) {
+      if (absl::StrContains(h_value, ENCODING_DEFLATE)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
       }
-    } else if (h_name_view == kphp::http::headers::CONNECTION) {
-      if (h_value_view == CONNECTION_KEEP_ALIVE) [[likely]] {
+    } else if (h_name == kphp::http::headers::CONNECTION) {
+      if (h_value == CONNECTION_KEEP_ALIVE) [[likely]] {
         http_server_instance_st.connection_kind = kphp::http::connection_kind::keep_alive;
-      } else if (h_value_view == CONNECTION_CLOSE) [[likely]] {
+      } else if (h_value == CONNECTION_CLOSE) [[likely]] {
         http_server_instance_st.connection_kind = kphp::http::connection_kind::close;
       } else {
-        php_error("unexpected connection header: %s", h_value_view.data());
+        php_error("unexpected connection header: %s", h_value.data());
       }
-    } else if (h_name_view == kphp::http::headers::COOKIE) {
+    } else if (h_name == kphp::http::headers::COOKIE) {
       process_cookie_header(h_value, superglobals);
-    } else if (h_name_view == kphp::http::headers::HOST) {
-      server.set_value(string{SERVER_NAME.data(), SERVER_NAME.size()}, h_value);
-    } else if (h_name_view == kphp::http::headers::AUTHORIZATION) {
-      process_authorization_header(h_value, superglobals);
-    } else if (h_name_view == kphp::http::headers::CONTENT_TYPE) {
-      content_type = h_value_view;
+    } else if (h_name == kphp::http::headers::HOST) {
+      server.set_value(string{SERVER_NAME.data(), SERVER_NAME.size()}, string{h_value.data(), static_cast<string::size_type>(h_value.size())});
+    } else if (h_name == kphp::http::headers::AUTHORIZATION) {
+      process_authorization_header({h_value.data(), static_cast<string::size_type>(h_value.size())}, superglobals);
+    } else if (h_name == kphp::http::headers::CONTENT_TYPE) {
+      content_type = h_value;
       continue;
-    } else if (h_name_view == kphp::http::headers::CONTENT_LENGTH) {
+    } else if (h_name == kphp::http::headers::CONTENT_LENGTH) {
       int32_t content_length{};
-      const auto [_, ec]{std::from_chars(h_value_view.data(), h_value_view.data() + h_value_view.size(), content_length)};
+      const auto [_, ec]{std::from_chars(h_value.data(), std::next(h_value.data(), h_value.size()), content_length)};
       if (ec != std::errc{} || content_length != invoke_http.body.size()) [[unlikely]] {
         php_error("content-length expected to be %d, but it's %zu", content_length, invoke_http.body.size());
       }
@@ -182,12 +180,12 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
     string key{};
     key.reserve_at_least(HTTP_HEADER_PREFIX.size() + h_name.size());
     key.append(HTTP_HEADER_PREFIX.data());
-    key.append(h_name_view.data(), h_name_view.size());
+    key.append(h_name.data(), h_name.size());
     // to uppercase inplace
     for (int64_t i = HTTP_HEADER_PREFIX.size(); i < key.size(); ++i) {
       key[i] = key[i] != '-' ? std::toupper(key[i]) : '_';
     }
-    server.set_value(key, std::move(h_value));
+    server.set_value(key, string{h_value.data(), static_cast<string::size_type>(h_value.size())});
   }
 
   return content_type;
@@ -340,9 +338,7 @@ task_t<void> finalize_server(const string_buffer &output) noexcept {
   std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.data),
                  [](const auto &header_entry) noexcept {
                    const auto &[name, value]{header_entry};
-                   string header_name{name.data(), static_cast<string::size_type>(name.size())};
-                   string header_value{value.data(), static_cast<string::size_type>(value.size())};
-                   return tl::httpHeaderEntry{.is_sensitive = {}, .name = std::move(header_name), .value = std::move(header_value)};
+                   return tl::httpHeaderEntry{.is_sensitive = {}, .name = {name.data(), name.size()}, .value = {value.data(), value.size()}};
                  });
 
   tl::TLBuffer tlb{};
