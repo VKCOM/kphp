@@ -17,10 +17,11 @@
 #include <type_traits>
 
 #include "common/containers/final_action.h"
-#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/string/mbstring-functions.h"
+#include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 
@@ -30,7 +31,7 @@ constexpr size_t ERROR_BUFFER_LENGTH = 256;
 
 enum class trailing_unmatch : uint8_t { skip, include };
 
-using regex_pcre2_group_names_t = memory_resource::stl::vector<const char *, memory_resource::unsynchronized_pool_resource>;
+using regex_pcre2_group_names_t = kphp::stl::vector<const char *, kphp::memory::script_allocator>;
 
 struct RegexInfo final {
   std::string_view regex;
@@ -61,12 +62,10 @@ struct RegexInfo final {
 
   RegexInfo() = delete;
 
-  RegexInfo(std::string_view regex_, std::string_view subject_, std::string_view replacement_,
-            memory_resource::unsynchronized_pool_resource &memory_resource_) noexcept
+  RegexInfo(std::string_view regex_, std::string_view subject_, std::string_view replacement_) noexcept
     : regex(regex_)
     , subject(subject_)
-    , replacement(replacement_)
-    , group_names(regex_pcre2_group_names_t::allocator_type{memory_resource_}) {}
+    , replacement(replacement_) {}
 };
 
 bool valid_preg_replace_mixed(const mixed &param) noexcept {
@@ -489,7 +488,7 @@ bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
 
 Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mixed &matches, int64_t flags, int64_t offset) noexcept {
   matches = array<mixed>{};
-  RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}, RuntimeAllocator::get().memory_resource};
+  RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}};
 
   bool success{valid_regex_flags(flags, regex::PREG_NO_FLAGS, regex::PREG_OFFSET_CAPTURE, regex::PREG_UNMATCHED_AS_NULL)};
   success &= correct_offset(offset, regex_info.subject);
@@ -508,7 +507,7 @@ Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mix
 Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches, int64_t flags, int64_t offset) noexcept {
   matches = array<mixed>{};
   int64_t entire_match_count{};
-  RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}, RuntimeAllocator::get().memory_resource};
+  RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}};
 
   bool success{valid_regex_flags(flags, regex::PREG_NO_FLAGS, regex::PREG_PATTERN_ORDER, regex::PREG_SET_ORDER, regex::PREG_OFFSET_CAPTURE,
                                  regex::PREG_UNMATCHED_AS_NULL)};
@@ -558,14 +557,12 @@ Optional<string> f$preg_replace(const string &pattern, const string &replacement
     return {};
   }
 
-  auto &runtime_alloc{RuntimeAllocator::get()};
-
   string pcre2_replacement{replacement};
   { // we need to replace PHP's back references with PCRE2 ones
     static constexpr std::string_view backreference_pattern = R"(/\\(\d)/)";
     static constexpr std::string_view backreference_replacement = "$$$1";
 
-    RegexInfo regex_info{backreference_pattern, {replacement.c_str(), replacement.size()}, backreference_replacement, runtime_alloc.memory_resource};
+    RegexInfo regex_info{backreference_pattern, {replacement.c_str(), replacement.size()}, backreference_replacement};
     bool success{parse_regex(regex_info)};
     success &= compile_regex(regex_info);
     success &= replace_regex(regex_info, std::numeric_limits<uint64_t>::max());
@@ -576,10 +573,7 @@ Optional<string> f$preg_replace(const string &pattern, const string &replacement
     pcre2_replacement = regex_info.opt_replace_result.has_value() ? *std::move(regex_info.opt_replace_result) : replacement;
   }
 
-  RegexInfo regex_info{{pattern.c_str(), pattern.size()},
-                       {subject.c_str(), subject.size()},
-                       {pcre2_replacement.c_str(), pcre2_replacement.size()},
-                       runtime_alloc.memory_resource};
+  RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
 
   bool success{parse_regex(regex_info)};
   success &= compile_regex(regex_info);
