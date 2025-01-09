@@ -32,7 +32,7 @@ const char *get_assert_level_desc(AssertLevelT assert_level) {
   }
 }
 
-CustomMutex ce_locker{};
+Mutex ce_locker{};
 
 namespace {
 FILE *warning_file{nullptr};

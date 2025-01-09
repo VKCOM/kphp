@@ -60,7 +60,7 @@ public:
       newly_created->traverse([&newly_created](const TypeHint *child) {
         newly_created->flags |= child->flags; // parent's flags are merged child flags (which were already calculated up to here)
       });
-      node->data = newly_created; // write here
+      node->data = newly_created;
     } else {
       delete newly_created;
     }

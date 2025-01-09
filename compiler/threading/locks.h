@@ -14,8 +14,9 @@
 
 #include "common/wrappers/copyable-atomic.h"
 
-// This Mutex can is copyable, std::mutex is not
-class CustomMutex {
+// This Mutex is copyable and lock/unlock may be done on differenet threads
+// std::mutex does not have such properties
+class Mutex {
  public:
   void Lock() {
 #ifdef __APPLE__
@@ -79,17 +80,17 @@ void unlock(T locker) {
   locker->unlock();
 }
 
-inline void lock(CustomMutex &m) {
+inline void lock(Mutex &m) {
   m.Lock();
 }
 
-inline void unlock(CustomMutex &m) {
+inline void unlock(Mutex &m) {
   m.Unlock();
 }
 
 class Lockable {
 private:
-  CustomMutex m;
+  Mutex m;
 public:
   Lockable() = default;
   virtual ~Lockable() = default;
