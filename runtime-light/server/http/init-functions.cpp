@@ -223,10 +223,12 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   server.set_value(string{SCRIPT_NAME.data(), SCRIPT_NAME.size()}, uri_path);
   server.set_value(string{SCRIPT_URL.data(), SCRIPT_URL.size()}, uri_path);
 
-  server.set_value(string{SERVER_ADDR.data(), SERVER_ADDR.size()}, invoke_http.connection.server_addr);
+  server.set_value(string{SERVER_ADDR.data(), SERVER_ADDR.size()},
+                   string{invoke_http.connection.server_addr.data(), static_cast<string::size_type>(invoke_http.connection.server_addr.size())});
   server.set_value(string{SERVER_PORT.data(), SERVER_PORT.size()}, static_cast<int64_t>(invoke_http.connection.server_port));
   server.set_value(string{SERVER_PROTOCOL.data(), SERVER_PROTOCOL.size()}, get_server_protocol(invoke_http.version, invoke_http.uri.opt_scheme));
-  server.set_value(string{REMOTE_ADDR.data(), REMOTE_ADDR.size()}, invoke_http.connection.remote_addr);
+  server.set_value(string{REMOTE_ADDR.data(), REMOTE_ADDR.size()},
+                   string{invoke_http.connection.remote_addr.data(), static_cast<string::size_type>(invoke_http.connection.remote_addr.size())});
   server.set_value(string{REMOTE_PORT.data(), REMOTE_PORT.size()}, static_cast<int64_t>(invoke_http.connection.remote_port));
 
   server.set_value(string{REQUEST_METHOD.data(), REQUEST_METHOD.size()},

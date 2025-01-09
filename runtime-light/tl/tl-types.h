@@ -476,17 +476,15 @@ struct httpHeaderEntry final {
 };
 
 struct httpConnection final {
-  ::string server_addr;
+  std::string_view server_addr;
   uint32_t server_port{};
-  ::string remote_addr;
+  std::string_view remote_addr;
   uint32_t remote_port{};
 
   bool fetch(TLBuffer &tlb) noexcept {
-    const auto server_addr_view{tlb.fetch_string()};
-    server_addr = {server_addr_view.data(), static_cast<::string::size_type>(server_addr_view.size())};
+    server_addr = tlb.fetch_string();
     const auto opt_server_port{tlb.fetch_trivial<uint32_t>()};
-    const auto remote_addr_view{tlb.fetch_string()};
-    remote_addr = {remote_addr_view.data(), static_cast<::string::size_type>(remote_addr_view.size())};
+    remote_addr = tlb.fetch_string();
     const auto opt_remote_port{tlb.fetch_trivial<uint32_t>()};
 
     if (!opt_server_port.has_value() || !opt_remote_port.has_value()) {
