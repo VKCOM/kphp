@@ -61,6 +61,32 @@ struct Maybe final {
   }
 };
 
+struct string final {
+  std::string_view value;
+
+  bool fetch(TLBuffer &tlb) noexcept {
+    value = tlb.fetch_string();
+    return true;
+  }
+
+  void store(TLBuffer &tlb) const noexcept {
+    tlb.store_string(value);
+  }
+};
+
+struct String final {
+  string inner;
+
+  bool fetch(TLBuffer &tlb) noexcept {
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_STRING && inner.fetch(tlb);
+  }
+
+  void store(TLBuffer &tlb) const noexcept {
+    tlb.store_trivial<uint32_t>(TL_STRING);
+    inner.store(tlb);
+  }
+};
+
 template<typename T>
 struct vector final {
   using vector_t = kphp::stl::vector<T, kphp::memory::script_allocator>;
@@ -249,36 +275,6 @@ struct Dictionary final {
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
     tlb.store_trivial<uint32_t>(TL_DICTIONARY);
     data.store(tlb);
-  }
-};
-
-struct string final {
-  std::string_view value;
-
-  bool fetch(TLBuffer &tlb) noexcept {
-    value = tlb.fetch_string();
-    return true;
-  }
-
-  void store(TLBuffer &tlb) const noexcept {
-    tlb.store_string(value);
-  }
-};
-
-struct String final {
-  std::string_view value;
-
-  bool fetch(TLBuffer &tlb) noexcept {
-    if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != TL_STRING) {
-      return false;
-    }
-    value = tlb.fetch_string();
-    return true;
-  }
-
-  void store(TLBuffer &tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(TL_STRING);
-    tlb.store_string(value);
   }
 };
 

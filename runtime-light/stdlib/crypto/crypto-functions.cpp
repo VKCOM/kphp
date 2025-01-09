@@ -276,7 +276,7 @@ task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &met
 
   string response{};
   if (tl::String response_{}; response_.fetch(buffer)) {
-    response = {response_.value.data(), static_cast<string::size_type>(response_.value.size())};
+    response = {response_.inner.value.data(), static_cast<string::size_type>(response_.inner.value.size())};
   } else {
     co_return false;
   }
@@ -331,5 +331,5 @@ task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, co
   if (!response.fetch(buffer)) {
     co_return false;
   }
-  co_return string{response.value.data(), static_cast<string::size_type>(response.value.size())};
+  co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
 }
