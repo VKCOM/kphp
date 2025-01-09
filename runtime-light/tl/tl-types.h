@@ -13,7 +13,6 @@
 #include <variant>
 
 #include "common/tl/constants/common.h"
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/core/std/containers.h"
 #include "runtime-light/tl/tl-core.h"
@@ -70,53 +69,51 @@ struct vector final {
   using iterator = vector_t::iterator;
   using const_iterator = vector_t::const_iterator;
 
-  iterator begin() noexcept {
+  constexpr iterator begin() noexcept {
     return data.begin();
   }
-  iterator end() noexcept {
+  constexpr iterator end() noexcept {
     return data.end();
   }
-  const_iterator begin() const noexcept {
+  constexpr const_iterator begin() const noexcept {
     return data.begin();
   }
-  const_iterator end() const noexcept {
+  constexpr const_iterator end() const noexcept {
     return data.end();
   }
-  const_iterator cbegin() const noexcept {
+  constexpr const_iterator cbegin() const noexcept {
     return data.cbegin();
   }
-  const_iterator cend() const noexcept {
+  constexpr const_iterator cend() const noexcept {
     return data.cend();
   }
 
-  size_t size() const noexcept {
+  constexpr size_t size() const noexcept {
     return data.size();
   }
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    int64_t size{};
-    if (const auto opt_size{tlb.fetch_trivial<uint32_t>()}; opt_size.has_value()) {
-      size = *opt_size;
-    } else {
+    int64_t size{tlb.fetch_trivial<uint32_t>().value_or(-1)};
+    if (size < 0) [[unlikely]] {
       return false;
     }
 
     data.clear();
     data.reserve(static_cast<size_t>(size));
     for (auto i = 0; i < size; ++i) {
-      T t{};
-      if (!t.fetch(tlb)) {
-        return false;
+      if (T t{}; t.fetch(tlb)) [[likely]] {
+        data.emplace_back(std::move(t));
+        continue;
       }
-      data.emplace_back(std::move(t));
+      return false;
     }
 
     return true;
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
-    tlb.store_trivial<uint32_t>(static_cast<uint32_t>(data.size()));
-    std::for_each(data.cbegin(), data.cend(), [&tlb](auto &&elem) { std::forward<decltype(elem)>(elem).store(tlb); });
+    tlb.store_trivial<int32_t>(static_cast<int32_t>(data.size()));
+    std::for_each(data.cbegin(), data.cend(), [&tlb](const auto &elem) { elem.store(tlb); });
   }
 };
 
@@ -127,26 +124,26 @@ struct Vector final {
   using iterator = vector<T>::iterator;
   using const_iterator = vector<T>::const_iterator;
 
-  iterator begin() noexcept {
+  constexpr iterator begin() noexcept {
     return data.begin();
   }
-  iterator end() noexcept {
+  constexpr iterator end() noexcept {
     return data.end();
   }
-  const_iterator begin() const noexcept {
+  constexpr const_iterator begin() const noexcept {
     return data.begin();
   }
-  const_iterator end() const noexcept {
+  constexpr const_iterator end() const noexcept {
     return data.end();
   }
-  const_iterator cbegin() const noexcept {
+  constexpr const_iterator cbegin() const noexcept {
     return data.cbegin();
   }
-  const_iterator cend() const noexcept {
+  constexpr const_iterator cend() const noexcept {
     return data.cend();
   }
 
-  size_t size() const noexcept {
+  constexpr size_t size() const noexcept {
     return data.size();
   }
 
@@ -183,26 +180,26 @@ struct dictionary final {
   using iterator = vector<dictionaryField<T>>::iterator;
   using const_iterator = vector<dictionaryField<T>>::const_iterator;
 
-  iterator begin() noexcept {
+  constexpr iterator begin() noexcept {
     return data.begin();
   }
-  iterator end() noexcept {
+  constexpr iterator end() noexcept {
     return data.end();
   }
-  const_iterator begin() const noexcept {
+  constexpr const_iterator begin() const noexcept {
     return data.begin();
   }
-  const_iterator end() const noexcept {
+  constexpr const_iterator end() const noexcept {
     return data.end();
   }
-  const_iterator cbegin() const noexcept {
+  constexpr const_iterator cbegin() const noexcept {
     return data.cbegin();
   }
-  const_iterator cend() const noexcept {
+  constexpr const_iterator cend() const noexcept {
     return data.cend();
   }
 
-  size_t size() const noexcept {
+  constexpr size_t size() const noexcept {
     return data.size();
   }
 
@@ -222,26 +219,26 @@ struct Dictionary final {
   using iterator = dictionary<T>::iterator;
   using const_iterator = dictionary<T>::const_iterator;
 
-  iterator begin() noexcept {
+  constexpr iterator begin() noexcept {
     return data.begin();
   }
-  iterator end() noexcept {
+  constexpr iterator end() noexcept {
     return data.end();
   }
-  const_iterator begin() const noexcept {
+  constexpr const_iterator begin() const noexcept {
     return data.begin();
   }
-  const_iterator end() const noexcept {
+  constexpr const_iterator end() const noexcept {
     return data.end();
   }
-  const_iterator cbegin() const noexcept {
+  constexpr const_iterator cbegin() const noexcept {
     return data.cbegin();
   }
-  const_iterator cend() const noexcept {
+  constexpr const_iterator cend() const noexcept {
     return data.cend();
   }
 
-  size_t size() const noexcept {
+  constexpr size_t size() const noexcept {
     return data.size();
   }
 
