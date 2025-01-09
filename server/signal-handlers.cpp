@@ -4,6 +4,7 @@
 
 #include "server/signal-handlers.h"
 
+#include <array>
 #include <execinfo.h>
 #include <sys/time.h>
 
@@ -16,6 +17,9 @@
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 #include "server/server-log.h"
+
+// Memory for alternative signal stack
+std::array<char, signal_stack_buffer_size> signal_stack_buffer;
 
 namespace {
 
@@ -237,13 +241,10 @@ void perform_error_if_running(const char *msg, script_error_t error_type, const 
 
 //C interface
 void init_handlers() {
-  constexpr size_t SEGV_STACK_SIZE = 65536;
-  static std::array<char, SEGV_STACK_SIZE> buffer;
-
   stack_t segv_stack;
-  segv_stack.ss_sp = buffer.data();
+  segv_stack.ss_sp = signal_stack_buffer.data();
   segv_stack.ss_flags = 0;
-  segv_stack.ss_size = SEGV_STACK_SIZE;
+  segv_stack.ss_size = signal_stack_buffer_size;
   sigaltstack(&segv_stack, nullptr);
 
   ksignal(SIGALRM, default_sigalrm_handler);
