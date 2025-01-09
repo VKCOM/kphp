@@ -60,17 +60,24 @@ struct Maybe final {
   }
 };
 
-struct string final {
+class string final {
+  static constexpr auto SMALL_STRING_SIZE_LEN = 1;
+  static constexpr auto MEDIUM_STRING_SIZE_LEN = 3;
+  static constexpr auto LARGE_STRING_SIZE_LEN = 7;
+
+  static constexpr uint64_t SMALL_STRING_MAX_LEN = 253;
+  static constexpr uint64_t MEDIUM_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 24) - 1;
+  static constexpr uint64_t LARGE_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 56) - 1;
+
+  static constexpr uint8_t LARGE_STRING_MAGIC = 0xff;
+  static constexpr uint8_t MEDIUM_STRING_MAGIC = 0xfe;
+
+public:
   std::string_view value;
 
-  bool fetch(TLBuffer &tlb) noexcept {
-    value = tlb.fetch_string();
-    return true;
-  }
+  bool fetch(TLBuffer &tlb) noexcept;
 
-  void store(TLBuffer &tlb) const noexcept {
-    tlb.store_string(value);
-  }
+  void store(TLBuffer &tlb) const noexcept;
 };
 
 struct String final {

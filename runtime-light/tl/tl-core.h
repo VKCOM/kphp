@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <concepts>
 #include <cstddef>
 #include <iterator>
@@ -72,10 +73,6 @@ public:
     adjust(len);
     return bytes_view;
   }
-
-  void store_string(std::string_view s) noexcept;
-
-  std::string_view fetch_string() noexcept;
 
   template<standard_layout T, standard_layout U>
   requires std::convertible_to<U, T> void store_trivial(const U &t) noexcept {

@@ -5,6 +5,7 @@
 #include "runtime-light/tl/tl-functions.h"
 
 #include <cstdint>
+#include <string_view>
 
 #include "common/tl/constants/common.h"
 #include "runtime-light/tl/tl-core.h"
