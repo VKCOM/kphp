@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <algorithm>
 #include <concepts>
 #include <cstddef>
 #include <iterator>
@@ -67,7 +66,6 @@ public:
 
   void store_bytes(std::string_view bytes_view) noexcept {
     // TODO: use std::vector::append_range after switch to C++-23
-    m_buffer.reserve(std::max(m_buffer.capacity(), m_buffer.size() + bytes_view.size()));
     m_buffer.insert(m_buffer.end(), bytes_view.cbegin(), bytes_view.cend());
     m_remaining += bytes_view.size();
   }
