@@ -90,32 +90,32 @@ struct String final {
 template<typename T>
 struct vector final {
   using vector_t = kphp::stl::vector<T, kphp::memory::script_allocator>;
-  vector_t data;
+  vector_t value;
 
   using iterator = vector_t::iterator;
   using const_iterator = vector_t::const_iterator;
 
   constexpr iterator begin() noexcept {
-    return data.begin();
+    return value.begin();
   }
   constexpr iterator end() noexcept {
-    return data.end();
+    return value.end();
   }
   constexpr const_iterator begin() const noexcept {
-    return data.begin();
+    return value.begin();
   }
   constexpr const_iterator end() const noexcept {
-    return data.end();
+    return value.end();
   }
   constexpr const_iterator cbegin() const noexcept {
-    return data.cbegin();
+    return value.cbegin();
   }
   constexpr const_iterator cend() const noexcept {
-    return data.cend();
+    return value.cend();
   }
 
   constexpr size_t size() const noexcept {
-    return data.size();
+    return value.size();
   }
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
@@ -124,11 +124,11 @@ struct vector final {
       return false;
     }
 
-    data.clear();
-    data.reserve(static_cast<size_t>(size));
+    value.clear();
+    value.reserve(static_cast<size_t>(size));
     for (auto i = 0; i < size; ++i) {
       if (T t{}; t.fetch(tlb)) [[likely]] {
-        data.emplace_back(std::move(t));
+        value.emplace_back(std::move(t));
         continue;
       }
       return false;
@@ -138,48 +138,48 @@ struct vector final {
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
-    tlb.store_trivial<int32_t>(static_cast<int32_t>(data.size()));
-    std::for_each(data.cbegin(), data.cend(), [&tlb](const auto &elem) { elem.store(tlb); });
+    tlb.store_trivial<int32_t>(static_cast<int32_t>(value.size()));
+    std::for_each(value.cbegin(), value.cend(), [&tlb](const auto &elem) { elem.store(tlb); });
   }
 };
 
 template<typename T>
 struct Vector final {
-  vector<T> data{};
+  vector<T> inner{};
 
   using iterator = vector<T>::iterator;
   using const_iterator = vector<T>::const_iterator;
 
   constexpr iterator begin() noexcept {
-    return data.begin();
+    return inner.begin();
   }
   constexpr iterator end() noexcept {
-    return data.end();
+    return inner.end();
   }
   constexpr const_iterator begin() const noexcept {
-    return data.begin();
+    return inner.begin();
   }
   constexpr const_iterator end() const noexcept {
-    return data.end();
+    return inner.end();
   }
   constexpr const_iterator cbegin() const noexcept {
-    return data.cbegin();
+    return inner.cbegin();
   }
   constexpr const_iterator cend() const noexcept {
-    return data.cend();
+    return inner.cend();
   }
 
   constexpr size_t size() const noexcept {
-    return data.size();
+    return inner.size();
   }
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_VECTOR && data.fetch(tlb);
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_VECTOR && inner.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
     tlb.store_trivial<uint32_t>(TL_VECTOR);
-    data.store(tlb);
+    inner.store(tlb);
   }
 };
 
@@ -201,80 +201,80 @@ struct dictionaryField final {
 
 template<typename T>
 struct dictionary final {
-  vector<dictionaryField<T>> data{};
+  vector<dictionaryField<T>> value{};
 
   using iterator = vector<dictionaryField<T>>::iterator;
   using const_iterator = vector<dictionaryField<T>>::const_iterator;
 
   constexpr iterator begin() noexcept {
-    return data.begin();
+    return value.begin();
   }
   constexpr iterator end() noexcept {
-    return data.end();
+    return value.end();
   }
   constexpr const_iterator begin() const noexcept {
-    return data.begin();
+    return value.begin();
   }
   constexpr const_iterator end() const noexcept {
-    return data.end();
+    return value.end();
   }
   constexpr const_iterator cbegin() const noexcept {
-    return data.cbegin();
+    return value.cbegin();
   }
   constexpr const_iterator cend() const noexcept {
-    return data.cend();
+    return value.cend();
   }
 
   constexpr size_t size() const noexcept {
-    return data.size();
+    return value.size();
   }
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    return data.fetch(tlb);
+    return value.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
-    data.store(tlb);
+    value.store(tlb);
   }
 };
 
 template<typename T>
 struct Dictionary final {
-  dictionary<T> data{};
+  dictionary<T> inner{};
 
   using iterator = dictionary<T>::iterator;
   using const_iterator = dictionary<T>::const_iterator;
 
   constexpr iterator begin() noexcept {
-    return data.begin();
+    return inner.begin();
   }
   constexpr iterator end() noexcept {
-    return data.end();
+    return inner.end();
   }
   constexpr const_iterator begin() const noexcept {
-    return data.begin();
+    return inner.begin();
   }
   constexpr const_iterator end() const noexcept {
-    return data.end();
+    return inner.end();
   }
   constexpr const_iterator cbegin() const noexcept {
-    return data.cbegin();
+    return inner.cbegin();
   }
   constexpr const_iterator cend() const noexcept {
-    return data.cend();
+    return inner.cend();
   }
 
   constexpr size_t size() const noexcept {
-    return data.size();
+    return inner.size();
   }
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_DICTIONARY && data.fetch(tlb);
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_DICTIONARY && inner.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
     tlb.store_trivial<uint32_t>(TL_DICTIONARY);
-    data.store(tlb);
+    inner.store(tlb);
   }
 };
 

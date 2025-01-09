@@ -336,8 +336,8 @@ task_t<void> finalize_server(const string_buffer &output) noexcept {
                                  .headers = {},
                                  .body = {body.c_str(), body.size()}};
   // fill headers
-  http_response.headers.data.reserve(http_server_instance_st.headers().size());
-  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.data),
+  http_response.headers.value.reserve(http_server_instance_st.headers().size());
+  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.value),
                  [](const auto &header_entry) noexcept {
                    const auto &[name, value]{header_entry};
                    return tl::httpHeaderEntry{.is_sensitive = {}, .name = {name.data(), name.size()}, .value = {value.data(), value.size()}};
