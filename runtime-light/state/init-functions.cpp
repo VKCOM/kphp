@@ -93,6 +93,6 @@ task_t<uint64_t> init_kphp_server_component() noexcept {
 
 task_t<void> finalize_kphp_server_component(const string_buffer &output) noexcept {
   if (JobWorkerServerInstanceState::get().kind == JobWorkerServerInstanceState::Kind::Invalid) {
-    co_await kphp::http::finalize_server(output); // http server case
+    co_await kphp::http::finalize_server(output);
   }
 }
