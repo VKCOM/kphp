@@ -157,7 +157,7 @@ target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
 set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})
 
 prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre nghttp2 kphp-timelib)
-set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static ${CURL_LIB} OpenSSL::SSL ${NUMA_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB})
+set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static ${CURL_LIB} OpenSSL::SSL ${NUMA_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB} cares brotlicommon brotlidec ssh2)
 
 if (PDO_DRIVER_MYSQL)
     list(APPEND RUNTIME_LINK_TEST_LIBS mysqlclient)
