@@ -26,7 +26,6 @@ namespace {
 
 constexpr std::string_view HTTP_DATE = R"(D, d M Y H:i:s \G\M\T)";
 constexpr std::string_view HTTP_STATUS_PREFIX = "http/";
-constexpr std::string_view HTTP_LOCATION_HEADER_PREFIX = "location:";
 
 bool http_status_header(std::string_view header) noexcept {
   const auto lowercase_prefix{header | std::views::take(HTTP_STATUS_PREFIX.size()) | std::views::transform([](auto c) noexcept { return std::tolower(c); })};
@@ -34,9 +33,17 @@ bool http_status_header(std::string_view header) noexcept {
 }
 
 bool http_location_header(std::string_view header) noexcept {
-  const auto lowercase_prefix{header | std::views::take(HTTP_LOCATION_HEADER_PREFIX.size())
+  {
+    const std::pair<std::string_view, std::string_view> parts{absl::StrSplit(header, absl::MaxSplits(':', 1))};
+    auto [name_view, value_view]{parts};
+    if (name_view.size() + value_view.size() + 1 != header.size()) [[unlikely]] {
+      return false;
+    }
+  }
+
+  const auto lowercase_prefix{header | std::views::take(kphp::http::headers::LOCATION.size())
                               | std::views::transform([](auto c) noexcept { return std::tolower(c); })};
-  return std::ranges::equal(lowercase_prefix, HTTP_LOCATION_HEADER_PREFIX);
+  return std::ranges::equal(lowercase_prefix, kphp::http::headers::LOCATION);
 }
 
 std::optional<uint64_t> valid_http_status_header(std::string_view header) noexcept {
@@ -91,6 +98,10 @@ std::optional<uint64_t> valid_http_status_header(std::string_view header) noexce
 
 } // namespace
 
+namespace kphp {
+
+namespace http {
+
 void header(std::string_view header_view, bool replace, int64_t response_code) noexcept {
   if (response_code < 0) [[unlikely]] {
     return php_warning("http response code can't be negative: %" PRIi64, response_code);
@@ -128,22 +139,26 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
 
   // Location: special case
   const bool can_return_redirect{
-    response_code == HttpStatus::NO_STATUS && http_server_instance_st.status_code != HttpStatus::CREATED
-    && (http_server_instance_st.status_code < HttpStatus::MULTIPLE_CHOICES || http_server_instance_st.status_code >= HttpStatus::BAD_REQUEST)};
+    response_code == status::NO_STATUS && http_server_instance_st.status_code != status::CREATED
+    && (http_server_instance_st.status_code < status::MULTIPLE_CHOICES || http_server_instance_st.status_code >= status::BAD_REQUEST)};
   if (can_return_redirect && http_location_header(header_view)) {
-    http_server_instance_st.status_code = HttpStatus::FOUND;
+    http_server_instance_st.status_code = status::FOUND;
   }
 
-  if (!header_view.empty() && response_code != HttpStatus::NO_STATUS) {
+  if (!header_view.empty() && response_code != status::NO_STATUS) {
     http_server_instance_st.status_code = response_code;
   }
 }
+
+} // namespace http
+
+} // namespace kphp
 
 void f$setrawcookie(const string &name, const string &value, int64_t expire_or_options, const string &path, const string &domain, bool secure,
                     bool http_only) noexcept {
   auto &static_SB_spare{RuntimeContext::get().static_SB_spare};
 
-  static_SB_spare.clean() << HttpHeader::SET_COOKIE.data() << ": " << name << '=';
+  static_SB_spare.clean() << kphp::http::headers::SET_COOKIE.data() << ": " << name << '=';
   if (value.empty()) {
     static_SB_spare << "DELETED; expires=Thu, 01 Jan 1970 00:00:01 GMT";
   } else {
@@ -164,5 +179,5 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire_or_o
   if (http_only) {
     static_SB_spare << "; HttpOnly";
   }
-  header({static_SB_spare.c_str(), static_SB_spare.size()}, false, HttpStatus::NO_STATUS);
+  kphp::http::header({static_SB_spare.c_str(), static_SB_spare.size()}, false, kphp::http::status::NO_STATUS);
 }
