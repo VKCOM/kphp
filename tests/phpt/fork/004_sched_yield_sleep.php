@@ -5,9 +5,9 @@
 1
 2
 3
-waited 0.03
+waited 1
 waited 0.01
-waited 0.02
+waited 0.1
 <?php
 exit;
 #endif
@@ -24,9 +24,9 @@ function f($x, $y) {
 }
 
 $ids = [];
-$ids[] = fork(f(0.03, 3));
+$ids[] = fork(f(1.0, 3));
 $ids[] = fork(f(0.01, 1));
-$ids[] = fork(f(0.02, 2));
+$ids[] = fork(f(0.1, 2));
 
 foreach ($ids as $id) {
   echo "waited ". wait($id) ."\n";
