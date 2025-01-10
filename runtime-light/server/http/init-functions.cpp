@@ -300,7 +300,7 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   // add content-type header
   auto &static_SB{RuntimeContext::get().static_SB};
   static_SB.clean() << headers::CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
-  header({static_SB.c_str(), static_SB.size()}, true, status::no_status);
+  header({static_SB.c_str(), static_SB.size()}, true, status::NO_STATUS);
   // add connection kind header
   const auto connection_kind{http_server_instance_st.connection_kind == connection_kind::keep_alive ? CONNECTION_KEEP_ALIVE : CONNECTION_CLOSE};
   static_SB.clean() << headers::CONNECTION.data() << ": " << connection_kind.data();
@@ -323,12 +323,12 @@ task_t<void> finalize_server(const string_buffer &output) noexcept {
 
         auto &static_SB{RuntimeContext::get().static_SB};
         static_SB.clean() << headers::CONTENT_ENCODING.data() << ": " << (gzip_encoded ? ENCODING_GZIP.data() : ENCODING_DEFLATE.data());
-        header({static_SB.c_str(), static_SB.size()}, true, status::no_status);
+        header({static_SB.c_str(), static_SB.size()}, true, status::NO_STATUS);
       }
     }
   }
 
-  const auto status_code{http_server_instance_st.status_code == status::no_status ? status::ok : http_server_instance_st.status_code};
+  const auto status_code{http_server_instance_st.status_code == status::NO_STATUS ? status::OK : http_server_instance_st.status_code};
   tl::httpResponse http_response{.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11},
                                  .status_code = static_cast<int32_t>(status_code),
                                  .headers = {},

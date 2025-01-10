@@ -21,7 +21,7 @@ void header(std::string_view header, bool replace, int64_t response_code) noexce
 
 } // namespace kphp
 
-inline void f$header(const string &str, bool replace = true, int64_t response_code = kphp::http::status::no_status) noexcept {
+inline void f$header(const string &str, bool replace = true, int64_t response_code = kphp::http::status::NO_STATUS) noexcept {
   kphp::http::header({str.c_str(), str.size()}, replace, response_code);
 }
 

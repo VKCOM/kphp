@@ -23,12 +23,12 @@ enum class method : uint8_t { get, post, head, other };
 enum class connection_kind : uint8_t { keep_alive, close };
 
 enum status : uint16_t {
-  no_status = 0,
-  ok = 200,
-  created = 201,
-  multiple_choices = 300,
-  found = 302,
-  bad_request = 400,
+  NO_STATUS = 0,
+  OK = 200,
+  CREATED = 201,
+  MULTIPLE_CHOICES = 300,
+  FOUND = 302,
+  BAD_REQUEST = 400,
 };
 
 namespace headers {
@@ -60,7 +60,7 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   std::optional<string> opt_raw_post_data;
 
   uint32_t encoding{};
-  uint64_t status_code{kphp::http::status::no_status};
+  uint64_t status_code{kphp::http::status::NO_STATUS};
   kphp::http::method http_method{kphp::http::method::other};
   kphp::http::connection_kind connection_kind{kphp::http::connection_kind::close};
 

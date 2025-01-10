@@ -139,13 +139,13 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
 
   // Location: special case
   const bool can_return_redirect{
-    response_code == status::no_status && http_server_instance_st.status_code != status::created
-    && (http_server_instance_st.status_code < status::multiple_choices || http_server_instance_st.status_code >= status::bad_request)};
+    response_code == status::NO_STATUS && http_server_instance_st.status_code != status::CREATED
+    && (http_server_instance_st.status_code < status::MULTIPLE_CHOICES || http_server_instance_st.status_code >= status::BAD_REQUEST)};
   if (can_return_redirect && http_location_header(header_view)) {
-    http_server_instance_st.status_code = status::found;
+    http_server_instance_st.status_code = status::FOUND;
   }
 
-  if (!header_view.empty() && response_code != status::no_status) {
+  if (!header_view.empty() && response_code != status::NO_STATUS) {
     http_server_instance_st.status_code = response_code;
   }
 }
@@ -179,5 +179,5 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire_or_o
   if (http_only) {
     static_SB_spare << "; HttpOnly";
   }
-  kphp::http::header({static_SB_spare.c_str(), static_SB_spare.size()}, false, kphp::http::status::no_status);
+  kphp::http::header({static_SB_spare.c_str(), static_SB_spare.size()}, false, kphp::http::status::NO_STATUS);
 }
