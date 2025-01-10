@@ -6,10 +6,9 @@
 
 #include "common/unicode/unicode-utils.h"
 #include "common/unicode/utf8-utils.h"
-#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 
-int mb_detect_encoding_new(const string &encoding) noexcept {
+int mb_detect_encoding(const string &encoding) noexcept {
   const auto *encoding_name = f$strtolower(encoding).c_str();
 
   if (!strcmp(encoding_name, "cp1251") || !strcmp(encoding_name, "cp-1251") || !strcmp(encoding_name, "windows-1251")) {
@@ -20,29 +19,6 @@ int mb_detect_encoding_new(const string &encoding) noexcept {
     return 8;
   }
 
-  return -1;
-}
-
-int mb_detect_encoding(const string &encoding) noexcept {
-  const int result_new = mb_detect_encoding_new(encoding);
-  const auto detect_incorrect_encoding_names = StringLibContext::get().detect_incorrect_encoding_names;
-
-  if (strstr(encoding.c_str(), "1251")) {
-    if (detect_incorrect_encoding_names && 1251 != result_new) {
-      php_warning("mb_detect_encoding returns 1251, but new will return %d, encoding %s", result_new, encoding.c_str());
-    }
-    return 1251;
-  }
-  if (strstr(encoding.c_str(), "-8")) {
-    if (detect_incorrect_encoding_names && 8 != result_new) {
-      php_warning("mb_detect_encoding returns 8, but new will return %d, encoding %s", result_new, encoding.c_str());
-    }
-    return 8;
-  }
-
-  if (detect_incorrect_encoding_names && -1 != result_new) {
-    php_warning("mb_detect_encoding returns -1, but new will return %d, encoding %s", result_new, encoding.c_str());
-  }
   return -1;
 }
 
