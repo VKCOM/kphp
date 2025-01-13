@@ -592,14 +592,14 @@ class CalcBadVars {
       }
     }
 
-    auto get_call_resumable_path = [&](FunctionPtr foo) {
+    auto get_call_resumable_path = [&](FunctionPtr func) {
       std::vector<std::string> names;
-      names.push_back(TermStringFormat::paint(foo->as_human_readable(), TermStringFormat::red));
+      names.push_back(TermStringFormat::paint(func->as_human_readable(), TermStringFormat::red));
 
-      foo = to_parents[foo];
-      while (foo) {
-        names.push_back(foo->as_human_readable());
-        foo = to_parents[foo];
+      func = to_parents[func];
+      while (func) {
+        names.push_back(func->as_human_readable());
+        func = to_parents[func];
       }
       return vk::join(names, " -> ");
     };
