@@ -6,41 +6,36 @@
 
 #include <concepts>
 #include <cstddef>
+#include <iterator>
 #include <optional>
 #include <string_view>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-light/allocator/allocator.h"
+#include "runtime-light/core/std/containers.h"
 #include "runtime-light/utils/concepts.h"
 
 namespace tl {
 
-inline constexpr auto SMALL_STRING_SIZE_LEN = 1;
-inline constexpr auto MEDIUM_STRING_SIZE_LEN = 3;
-inline constexpr auto LARGE_STRING_SIZE_LEN = 7;
-
-inline constexpr uint64_t SMALL_STRING_MAX_LEN = 253;
-inline constexpr uint64_t MEDIUM_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 24) - 1;
-[[maybe_unused]] inline constexpr uint64_t LARGE_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 56) - 1;
-
-inline constexpr uint8_t LARGE_STRING_MAGIC = 0xff;
-inline constexpr uint8_t MEDIUM_STRING_MAGIC = 0xfe;
-
 class TLBuffer final : private vk::not_copyable {
-  string_buffer m_buffer;
+  static constexpr auto INIT_BUFFER_SIZE = 1024;
+
+  kphp::stl::vector<char, kphp::memory::script_allocator> m_buffer;
   size_t m_pos{0};
   size_t m_remaining{0};
 
 public:
-  TLBuffer() = default;
+  TLBuffer() noexcept {
+    m_buffer.reserve(INIT_BUFFER_SIZE);
+  }
 
   const char *data() const noexcept {
-    return m_buffer.buffer();
+    return m_buffer.data();
   }
 
   size_t size() const noexcept {
-    return static_cast<size_t>(m_buffer.size());
+    return m_buffer.size();
   }
 
   size_t pos() const noexcept {
@@ -52,7 +47,7 @@ public:
   }
 
   void clean() noexcept {
-    m_buffer.clean();
+    m_buffer.clear();
     m_pos = 0;
     m_remaining = 0;
   }
@@ -70,26 +65,22 @@ public:
   }
 
   void store_bytes(std::string_view bytes_view) noexcept {
-    m_buffer.append(bytes_view.data(), bytes_view.size());
+    // TODO: use std::vector::append_range after switch to C++-23
+    m_buffer.insert(m_buffer.end(), bytes_view.cbegin(), bytes_view.cend());
     m_remaining += bytes_view.size();
   }
 
-  std::string_view fetch_bytes(size_t len) noexcept {
+  std::optional<std::string_view> fetch_bytes(size_t len) noexcept {
     if (len > remaining()) {
       return {};
     }
-    std::string_view bytes_view{data() + pos(), len};
+    std::string_view bytes_view{std::next(data(), pos()), len};
     adjust(len);
     return bytes_view;
   }
 
-  void store_string(std::string_view s) noexcept;
-
-  std::string_view fetch_string() noexcept;
-
   template<standard_layout T, standard_layout U>
   requires std::convertible_to<U, T> void store_trivial(const U &t) noexcept {
-    // Here we rely on that endianness of architecture is Little Endian
     store_bytes({reinterpret_cast<const char *>(std::addressof(t)), sizeof(T)});
   }
 
@@ -99,8 +90,7 @@ public:
       return std::nullopt;
     }
 
-    // Here we rely on that endianness of architecture is Little Endian
-    const auto t{*reinterpret_cast<const T *>(data() + pos())};
+    auto t{*reinterpret_cast<const T *>(std::next(data(), pos()))};
     adjust(sizeof(T));
     return t;
   }
@@ -110,7 +100,7 @@ public:
     if (remaining() < sizeof(T)) {
       return std::nullopt;
     }
-    return *reinterpret_cast<const T *>(data() + pos());
+    return *reinterpret_cast<const T *>(std::next(data(), pos()));
   }
 };
 

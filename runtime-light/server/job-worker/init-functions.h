@@ -14,7 +14,7 @@ inline void init_job_server(tl::K2InvokeJobWorker &&invoke_jw) noexcept {
   jw_server_ctx.kind = invoke_jw.ignore_answer ? JobWorkerServerInstanceState::Kind::NoReply : JobWorkerServerInstanceState::Kind::Regular;
   jw_server_ctx.state = JobWorkerServerInstanceState::State::Working;
   jw_server_ctx.job_id = invoke_jw.job_id;
-  jw_server_ctx.body = std::move(invoke_jw.body);
+  jw_server_ctx.body = {invoke_jw.body.value.data(), static_cast<string::size_type>(invoke_jw.body.value.size())};
 
   {
     using namespace PhpServerSuperGlobalIndices;

@@ -12,15 +12,16 @@
 #include <cstring>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <string_view>
 #include <system_error>
 #include <utility>
 
 #include "absl/strings/match.h"
+#include "absl/strings/str_split.h"
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/http/http-server-state.h"
@@ -59,15 +60,15 @@ constexpr std::string_view GET_METHOD = "GET";
 constexpr std::string_view POST_METHOD = "POST";
 constexpr std::string_view HEAD_METHOD = "HEAD";
 
-string get_server_protocol(tl::HttpVersion http_version, const std::optional<string> &opt_scheme) noexcept {
+string get_server_protocol(tl::HttpVersion http_version, const std::optional<tl::string> &opt_scheme) noexcept {
   std::string_view protocol_name{HTTP};
   const auto protocol_version{http_version.string_view()};
   if (opt_scheme.has_value()) {
-    const std::string_view scheme_view{(*opt_scheme).c_str(), (*opt_scheme).size()};
-    if (scheme_view == HTTPS_SCHEME) {
+    const std::string_view scheme{(*opt_scheme).value};
+    if (scheme == HTTPS_SCHEME) {
       protocol_name = HTTPS;
-    } else if (scheme_view != HTTP_SCHEME) [[unlikely]] {
-      php_error("unexpected http scheme: %s", scheme_view.data());
+    } else if (scheme != HTTP_SCHEME) [[unlikely]] {
+      php_error("unexpected http scheme: %s", scheme.data());
     }
   }
   string protocol{};
@@ -78,10 +79,10 @@ string get_server_protocol(tl::HttpVersion http_version, const std::optional<str
   return protocol;
 }
 
-void process_cookie_header(const string &header, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
+void process_cookie_header(std::string_view header, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
   // *** be careful here ***
-  auto *cookie_start{const_cast<char *>(header.c_str())};
-  auto *cookie_list_end{const_cast<char *>(header.c_str() + header.size())};
+  auto *cookie_start{const_cast<char *>(header.data())};
+  auto *cookie_list_end{const_cast<char *>(std::next(header.data(), header.size()))};
   do {
     auto *cookie_end{std::find(cookie_start, cookie_list_end, ';')};
     char *cookie_domain_end{std::find(cookie_start, cookie_end, '=')};
@@ -105,75 +106,74 @@ void process_cookie_header(const string &header, PhpScriptBuiltInSuperGlobals &s
 // RFC link: https://tools.ietf.org/html/rfc2617#section-2
 // Header example:
 //  Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
-void process_authorization_header(const string &header, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
-  array<string> header_parts{explode(' ', header)};
-  if (header_parts.count() != 2) [[unlikely]] {
+void process_authorization_header(std::string_view header, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
+  std::pair<std::string_view, std::string_view> parts{absl::StrSplit(header, absl::MaxSplits(' ', 1))};
+  const auto [auth_scheme, auth_credentials]{parts};
+  if (auth_scheme.size() + auth_credentials.size() + 1 != header.size() || auth_scheme != AUTHORIZATION_BASIC) [[unlikely]] {
     return;
   }
 
-  const auto &auth_scheme{header_parts[0]};
-  const auto &auth_credentials{header_parts[1]};
-  if (std::string_view{auth_scheme.c_str(), auth_scheme.size()} != AUTHORIZATION_BASIC) [[unlikely]] {
-    return;
-  }
-
-  const auto decoded_login_pass{f$base64_decode(auth_credentials, true)};
+  const auto decoded_login_pass{f$base64_decode(string{auth_credentials.data(), static_cast<string::size_type>(auth_credentials.size())}, true)};
   if (!decoded_login_pass.has_value()) [[unlikely]] {
     return;
   }
 
-  array<string> auth_data{explode(':', decoded_login_pass.val())};
-  if (auth_data.count() != 2) [[unlikely]] {
+  const std::string_view decoded_login_pass_view{decoded_login_pass.val().c_str(), decoded_login_pass.val().size()};
+  parts = absl::StrSplit(decoded_login_pass_view, absl::MaxSplits(':', 1));
+  const auto [login, pass]{parts};
+  if (login.size() + pass.size() + 1 != decoded_login_pass_view.size()) [[unlikely]] {
     return;
   }
 
   using namespace PhpServerSuperGlobalIndices;
-  superglobals.v$_SERVER.set_value(string{PHP_AUTH_USER.data(), PHP_AUTH_USER.size()}, auth_data[0]);
-  superglobals.v$_SERVER.set_value(string{PHP_AUTH_PW.data(), PHP_AUTH_PW.size()}, auth_data[1]);
-  superglobals.v$_SERVER.set_value(string{AUTH_TYPE.data(), AUTH_TYPE.size()}, auth_scheme);
+  superglobals.v$_SERVER.set_value(string{PHP_AUTH_USER.data(), PHP_AUTH_USER.size()}, string{login.data(), static_cast<string::size_type>(login.size())});
+  superglobals.v$_SERVER.set_value(string{PHP_AUTH_PW.data(), PHP_AUTH_PW.size()}, string{pass.data(), static_cast<string::size_type>(pass.size())});
+  superglobals.v$_SERVER.set_value(string{AUTH_TYPE.data(), AUTH_TYPE.size()}, string{auth_scheme.data(), static_cast<string::size_type>(auth_scheme.size())});
 }
 
 // returns content type
 std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
   auto &server{superglobals.v$_SERVER};
   auto &http_server_instance_st{HttpServerInstanceState::get()};
+  const auto header_entry_proj{[](const tl::httpHeaderEntry &header_entry) noexcept {
+    return std::pair<std::string_view, std::string_view>{header_entry.name.value, header_entry.value.value};
+  }};
 
   std::string_view content_type{CONTENT_TYPE_APP_FORM_URLENCODED};
   // platform provides headers that are already in lowercase
-  for (auto &[_, h_name, h_value] : invoke_http.headers) {
-    const std::string_view h_name_view{h_name.c_str(), h_name.size()};
-    const std::string_view h_value_view{h_value.c_str(), h_value.size()};
+  for (const auto &[h_name, h_value] : std::ranges::transform_view(invoke_http.headers, header_entry_proj)) {
+    string h_value_str{h_value.data(), static_cast<string::size_type>(h_value.size())};
 
     using namespace PhpServerSuperGlobalIndices;
-    if (h_name_view == kphp::http::headers::ACCEPT_ENCODING) {
-      if (absl::StrContains(h_value_view, ENCODING_GZIP)) {
+    if (h_name == kphp::http::headers::ACCEPT_ENCODING) {
+      if (absl::StrContains(h_value, ENCODING_GZIP)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_GZIP;
       }
-      if (absl::StrContains(h_value_view, ENCODING_DEFLATE)) {
+      if (absl::StrContains(h_value, ENCODING_DEFLATE)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
       }
-    } else if (h_name_view == kphp::http::headers::CONNECTION) {
-      if (h_value_view == CONNECTION_KEEP_ALIVE) [[likely]] {
+    } else if (h_name == kphp::http::headers::CONNECTION) {
+      if (h_value == CONNECTION_KEEP_ALIVE) [[likely]] {
         http_server_instance_st.connection_kind = kphp::http::connection_kind::keep_alive;
-      } else if (h_value_view == CONNECTION_CLOSE) [[likely]] {
+      } else if (h_value == CONNECTION_CLOSE) [[likely]] {
         http_server_instance_st.connection_kind = kphp::http::connection_kind::close;
       } else {
-        php_error("unexpected connection header: %s", h_value_view.data());
+        php_error("unexpected connection header: %s", h_value.data());
       }
-    } else if (h_name_view == kphp::http::headers::COOKIE) {
+    } else if (h_name == kphp::http::headers::COOKIE) {
       process_cookie_header(h_value, superglobals);
-    } else if (h_name_view == kphp::http::headers::HOST) {
-      server.set_value(string{SERVER_NAME.data(), SERVER_NAME.size()}, h_value);
-    } else if (h_name_view == kphp::http::headers::AUTHORIZATION) {
+    } else if (h_name == kphp::http::headers::HOST) {
+      server.set_value(string{SERVER_NAME.data(), SERVER_NAME.size()}, h_value_str);
+    } else if (h_name == kphp::http::headers::AUTHORIZATION) {
       process_authorization_header(h_value, superglobals);
-    } else if (h_name_view == kphp::http::headers::CONTENT_TYPE) {
-      content_type = h_value_view;
+    } else if (h_name == kphp::http::headers::CONTENT_TYPE) {
+      content_type = h_value;
       continue;
-    } else if (h_name_view == kphp::http::headers::CONTENT_LENGTH) {
+    } else if (h_name == kphp::http::headers::CONTENT_LENGTH) {
       int32_t content_length{};
-      const auto [_, ec]{std::from_chars(h_value_view.data(), h_value_view.data() + h_value_view.size(), content_length)};
+      const auto [_, ec]{std::from_chars(h_value.data(), std::next(h_value.data(), h_value.size()), content_length)};
       if (ec != std::errc{} || content_length != invoke_http.body.size()) [[unlikely]] {
-        php_error("content-length expected to be %d, but it's %u", content_length, invoke_http.body.size());
+        php_error("content-length expected to be %d, but it's %zu", content_length, invoke_http.body.size());
       }
       continue;
     }
@@ -182,12 +182,12 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
     string key{};
     key.reserve_at_least(HTTP_HEADER_PREFIX.size() + h_name.size());
     key.append(HTTP_HEADER_PREFIX.data());
-    key.append(h_name_view.data(), h_name_view.size());
+    key.append(h_name.data(), h_name.size());
     // to uppercase inplace
     for (int64_t i = HTTP_HEADER_PREFIX.size(); i < key.size(); ++i) {
       key[i] = key[i] != '-' ? std::toupper(key[i]) : '_';
     }
-    server.set_value(key, std::move(h_value));
+    server.set_value(key, std::move(h_value_str));
   }
 
   return content_type;
@@ -204,52 +204,55 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   auto &server{superglobals.v$_SERVER};
   auto &http_server_instance_st{HttpServerInstanceState::get()};
 
-  { // determine HTTP method
-    const std::string_view http_method{invoke_http.method.c_str(), invoke_http.method.size()};
-    if (http_method == GET_METHOD) {
-      http_server_instance_st.http_method = method::get;
-    } else if (http_method == POST_METHOD) {
-      http_server_instance_st.http_method = method::post;
-    } else if (http_method == HEAD_METHOD) [[likely]] {
-      http_server_instance_st.http_method = method::head;
-    } else {
-      http_server_instance_st.http_method = method::other;
-    }
+  // determine HTTP method
+  if (invoke_http.method.value == GET_METHOD) {
+    http_server_instance_st.http_method = method::get;
+  } else if (invoke_http.method.value == POST_METHOD) {
+    http_server_instance_st.http_method = method::post;
+  } else if (invoke_http.method.value == HEAD_METHOD) [[likely]] {
+    http_server_instance_st.http_method = method::head;
+  } else {
+    http_server_instance_st.http_method = method::other;
   }
 
-  using namespace PhpServerSuperGlobalIndices;
-  server.set_value(string{PHP_SELF.data(), PHP_SELF.size()}, invoke_http.uri.path);
-  server.set_value(string{SCRIPT_NAME.data(), SCRIPT_NAME.size()}, invoke_http.uri.path);
-  server.set_value(string{SCRIPT_URL.data(), SCRIPT_URL.size()}, invoke_http.uri.path);
+  const string uri_path{invoke_http.uri.path.value.data(), static_cast<string::size_type>(invoke_http.uri.path.value.size())};
+  const string uri_query{invoke_http.uri.opt_query.has_value()
+                           ? string{(*invoke_http.uri.opt_query).value.data(), static_cast<string::size_type>((*invoke_http.uri.opt_query).value.size())}
+                           : string{}};
 
-  server.set_value(string{SERVER_ADDR.data(), SERVER_ADDR.size()}, invoke_http.connection.server_addr);
+  using namespace PhpServerSuperGlobalIndices;
+  server.set_value(string{PHP_SELF.data(), PHP_SELF.size()}, uri_path);
+  server.set_value(string{SCRIPT_NAME.data(), SCRIPT_NAME.size()}, uri_path);
+  server.set_value(string{SCRIPT_URL.data(), SCRIPT_URL.size()}, uri_path);
+
+  server.set_value(string{SERVER_ADDR.data(), SERVER_ADDR.size()},
+                   string{invoke_http.connection.server_addr.value.data(), static_cast<string::size_type>(invoke_http.connection.server_addr.value.size())});
   server.set_value(string{SERVER_PORT.data(), SERVER_PORT.size()}, static_cast<int64_t>(invoke_http.connection.server_port));
   server.set_value(string{SERVER_PROTOCOL.data(), SERVER_PROTOCOL.size()}, get_server_protocol(invoke_http.version, invoke_http.uri.opt_scheme));
-  server.set_value(string{REMOTE_ADDR.data(), REMOTE_ADDR.size()}, invoke_http.connection.remote_addr);
+  server.set_value(string{REMOTE_ADDR.data(), REMOTE_ADDR.size()},
+                   string{invoke_http.connection.remote_addr.value.data(), static_cast<string::size_type>(invoke_http.connection.remote_addr.value.size())});
   server.set_value(string{REMOTE_PORT.data(), REMOTE_PORT.size()}, static_cast<int64_t>(invoke_http.connection.remote_port));
 
-  server.set_value(string{REQUEST_METHOD.data(), REQUEST_METHOD.size()}, invoke_http.method);
+  server.set_value(string{REQUEST_METHOD.data(), REQUEST_METHOD.size()},
+                   string{invoke_http.method.value.data(), static_cast<string::size_type>(invoke_http.method.value.size())});
   server.set_value(string{GATEWAY_INTERFACE.data(), GATEWAY_INTERFACE.size()}, string{GATEWAY_INTERFACE_VALUE.data(), GATEWAY_INTERFACE_VALUE.size()});
 
   if (invoke_http.uri.opt_query.has_value()) {
-    f$parse_str(*invoke_http.uri.opt_query, superglobals.v$_GET);
-    server.set_value(string{QUERY_STRING.data(), QUERY_STRING.size()}, *invoke_http.uri.opt_query);
+    f$parse_str(uri_query, superglobals.v$_GET);
+    server.set_value(string{QUERY_STRING.data(), QUERY_STRING.size()}, uri_query);
 
     string uri_string{};
-    uri_string.reserve_at_least((invoke_http.uri.path.size()) + (*invoke_http.uri.opt_query).size() + 1); // +1 for '?'
-    uri_string.append(invoke_http.uri.path);
+    uri_string.reserve_at_least(uri_path.size() + uri_query.size() + 1); // +1 for '?'
+    uri_string.append(uri_path);
     uri_string.append(1, '?');
-    uri_string.append(*invoke_http.uri.opt_query);
+    uri_string.append(uri_query);
     server.set_value(string{REQUEST_URI.data(), REQUEST_URI.size()}, uri_string);
   } else {
-    server.set_value(string{REQUEST_URI.data(), REQUEST_URI.size()}, invoke_http.uri.path);
+    server.set_value(string{REQUEST_URI.data(), REQUEST_URI.size()}, uri_path);
   }
 
-  if (invoke_http.uri.opt_scheme.has_value()) {
-    const std::string_view scheme_view{(*invoke_http.uri.opt_scheme).c_str(), (*invoke_http.uri.opt_scheme).size()};
-    if (scheme_view == HTTPS_SCHEME) {
-      server.set_value(string{HTTPS.data(), HTTPS.size()}, true);
-    }
+  if (invoke_http.uri.opt_scheme.has_value() && (*invoke_http.uri.opt_scheme).value == HTTPS_SCHEME) {
+    server.set_value(string{HTTPS.data(), HTTPS.size()}, true);
   }
 
   const auto content_type{process_headers(invoke_http, superglobals)};
@@ -273,14 +276,15 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
 
   if (http_server_instance_st.http_method == method::get) {
     server.set_value(string{ARGC.data(), ARGC.size()}, static_cast<int64_t>(1));
-    server.set_value(string{ARGV.data(), ARGV.size()}, invoke_http.uri.opt_query.value_or(string{}));
+    server.set_value(string{ARGV.data(), ARGV.size()}, uri_query);
   } else if (http_server_instance_st.http_method == method::post) {
+    string body_str{invoke_http.body.data(), static_cast<string::size_type>(invoke_http.body.size())};
     if (content_type == CONTENT_TYPE_APP_FORM_URLENCODED) {
-      f$parse_str(invoke_http.body, superglobals.v$_POST);
+      f$parse_str(body_str, superglobals.v$_POST);
     } else if (content_type == CONTENT_TYPE_MULTIPART_FORM_DATA) {
       php_error("unsupported content-type: %s", CONTENT_TYPE_MULTIPART_FORM_DATA.data());
     } else {
-      http_server_instance_st.opt_raw_post_data.emplace(std::move(invoke_http.body));
+      http_server_instance_st.opt_raw_post_data.emplace(std::move(body_str));
     }
 
     server.set_value(string{CONTENT_TYPE.data(), CONTENT_TYPE.size()}, string{content_type.data(), static_cast<string::size_type>(content_type.size())});
@@ -332,15 +336,15 @@ task_t<void> finalize_server(const string_buffer &output) noexcept {
   tl::httpResponse http_response{.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11},
                                  .status_code = static_cast<int32_t>(status_code),
                                  .headers = {},
-                                 .body = std::move(body)};
+                                 .body = {body.c_str(), body.size()}};
   // fill headers
-  http_response.headers.data.reserve(http_server_instance_st.headers().size());
-  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.data),
+  http_response.headers.value.reserve(http_server_instance_st.headers().size());
+  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.value),
                  [](const auto &header_entry) noexcept {
                    const auto &[name, value]{header_entry};
-                   string header_name{name.data(), static_cast<string::size_type>(name.size())};
-                   string header_value{value.data(), static_cast<string::size_type>(value.size())};
-                   return tl::httpHeaderEntry{.is_sensitive = {}, .name = std::move(header_name), .value = std::move(header_value)};
+                   return tl::httpHeaderEntry{.is_sensitive = {},
+                                              .name = {.value = {name.data(), name.size()}},
+                                              .value = {.value = {value.data(), value.size()}}};
                  });
 
   tl::TLBuffer tlb{};

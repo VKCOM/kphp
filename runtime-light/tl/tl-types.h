@@ -4,15 +4,14 @@
 
 #pragma once
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string_view>
 #include <type_traits>
+#include <variant>
 
 #include "common/tl/constants/common.h"
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/core/std/containers.h"
 #include "runtime-light/tl/tl-core.h"
@@ -61,104 +60,132 @@ struct Maybe final {
   }
 };
 
+class string final {
+  static constexpr auto SMALL_STRING_SIZE_LEN = 1;
+  static constexpr auto MEDIUM_STRING_SIZE_LEN = 3;
+  static constexpr auto LARGE_STRING_SIZE_LEN = 7;
+
+  static constexpr uint64_t SMALL_STRING_MAX_LEN = 253;
+  static constexpr uint64_t MEDIUM_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 24) - 1;
+  static constexpr uint64_t LARGE_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 56) - 1;
+
+  static constexpr uint8_t LARGE_STRING_MAGIC = 0xff;
+  static constexpr uint8_t MEDIUM_STRING_MAGIC = 0xfe;
+
+public:
+  std::string_view value;
+
+  bool fetch(TLBuffer &tlb) noexcept;
+
+  void store(TLBuffer &tlb) const noexcept;
+};
+
+struct String final {
+  string inner;
+
+  bool fetch(TLBuffer &tlb) noexcept {
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_STRING && inner.fetch(tlb);
+  }
+
+  void store(TLBuffer &tlb) const noexcept {
+    tlb.store_trivial<uint32_t>(TL_STRING);
+    inner.store(tlb);
+  }
+};
+
 template<typename T>
 struct vector final {
   using vector_t = kphp::stl::vector<T, kphp::memory::script_allocator>;
-  vector_t data;
+  vector_t value;
 
   using iterator = vector_t::iterator;
   using const_iterator = vector_t::const_iterator;
 
-  iterator begin() noexcept {
-    return data.begin();
+  constexpr iterator begin() noexcept {
+    return value.begin();
   }
-  iterator end() noexcept {
-    return data.end();
+  constexpr iterator end() noexcept {
+    return value.end();
   }
-  const_iterator begin() const noexcept {
-    return data.begin();
+  constexpr const_iterator begin() const noexcept {
+    return value.begin();
   }
-  const_iterator end() const noexcept {
-    return data.end();
+  constexpr const_iterator end() const noexcept {
+    return value.end();
   }
-  const_iterator cbegin() const noexcept {
-    return data.cbegin();
+  constexpr const_iterator cbegin() const noexcept {
+    return value.cbegin();
   }
-  const_iterator cend() const noexcept {
-    return data.cend();
+  constexpr const_iterator cend() const noexcept {
+    return value.cend();
   }
 
-  size_t size() const noexcept {
-    return data.size();
+  constexpr size_t size() const noexcept {
+    return value.size();
   }
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    int64_t size{};
-    if (const auto opt_size{tlb.fetch_trivial<uint32_t>()}; opt_size.has_value()) {
-      size = *opt_size;
-    } else {
+    int64_t size{tlb.fetch_trivial<uint32_t>().value_or(-1)};
+    if (size < 0) [[unlikely]] {
       return false;
     }
 
-    data.clear();
-    data.reserve(static_cast<size_t>(size));
+    value.clear();
+    value.reserve(static_cast<size_t>(size));
     for (auto i = 0; i < size; ++i) {
-      T t{};
-      if (!t.fetch(tlb)) {
-        return false;
+      if (T t{}; t.fetch(tlb)) [[likely]] {
+        value.emplace_back(std::move(t));
+        continue;
       }
-      data.emplace_back(std::move(t));
+      return false;
     }
 
     return true;
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
-    tlb.store_trivial<uint32_t>(static_cast<uint32_t>(data.size()));
-    std::for_each(data.cbegin(), data.cend(), [&tlb](auto &&elem) { std::forward<decltype(elem)>(elem).store(tlb); });
+    tlb.store_trivial<int32_t>(static_cast<int32_t>(value.size()));
+    std::for_each(value.cbegin(), value.cend(), [&tlb](const auto &elem) { elem.store(tlb); });
   }
 };
 
 template<typename T>
 struct Vector final {
-  vector<T> data{};
+  vector<T> inner{};
 
   using iterator = vector<T>::iterator;
   using const_iterator = vector<T>::const_iterator;
 
-  iterator begin() noexcept {
-    return data.begin();
+  constexpr iterator begin() noexcept {
+    return inner.begin();
   }
-  iterator end() noexcept {
-    return data.end();
+  constexpr iterator end() noexcept {
+    return inner.end();
   }
-  const_iterator begin() const noexcept {
-    return data.begin();
+  constexpr const_iterator begin() const noexcept {
+    return inner.begin();
   }
-  const_iterator end() const noexcept {
-    return data.end();
+  constexpr const_iterator end() const noexcept {
+    return inner.end();
   }
-  const_iterator cbegin() const noexcept {
-    return data.cbegin();
+  constexpr const_iterator cbegin() const noexcept {
+    return inner.cbegin();
   }
-  const_iterator cend() const noexcept {
-    return data.cend();
+  constexpr const_iterator cend() const noexcept {
+    return inner.cend();
   }
 
-  size_t size() const noexcept {
-    return data.size();
+  constexpr size_t size() const noexcept {
+    return inner.size();
   }
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != TL_VECTOR) {
-      return false;
-    }
-    return data.fetch(tlb);
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_VECTOR && inner.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
     tlb.store_trivial<uint32_t>(TL_VECTOR);
-    data.store(tlb);
+    inner.store(tlb);
   }
 };
 
@@ -168,116 +195,91 @@ struct dictionaryField final {
   T value{};
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    const auto key_view{tlb.fetch_string()};
-    key = {key_view.data(), static_cast<string::size_type>(key_view.size())};
-    return value.fetch(tlb);
+    return key.fetch(tlb) && value.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
-    tlb.store_string({key.c_str(), static_cast<size_t>(key.size())});
+    key.store(tlb);
     value.store(tlb);
   }
 };
 
 template<typename T>
 struct dictionary final {
-  vector<dictionaryField<T>> data{};
+  vector<dictionaryField<T>> value{};
 
   using iterator = vector<dictionaryField<T>>::iterator;
   using const_iterator = vector<dictionaryField<T>>::const_iterator;
 
-  iterator begin() noexcept {
-    return data.begin();
+  constexpr iterator begin() noexcept {
+    return value.begin();
   }
-  iterator end() noexcept {
-    return data.end();
+  constexpr iterator end() noexcept {
+    return value.end();
   }
-  const_iterator begin() const noexcept {
-    return data.begin();
+  constexpr const_iterator begin() const noexcept {
+    return value.begin();
   }
-  const_iterator end() const noexcept {
-    return data.end();
+  constexpr const_iterator end() const noexcept {
+    return value.end();
   }
-  const_iterator cbegin() const noexcept {
-    return data.cbegin();
+  constexpr const_iterator cbegin() const noexcept {
+    return value.cbegin();
   }
-  const_iterator cend() const noexcept {
-    return data.cend();
+  constexpr const_iterator cend() const noexcept {
+    return value.cend();
   }
 
-  size_t size() const noexcept {
-    return data.size();
+  constexpr size_t size() const noexcept {
+    return value.size();
   }
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    return data.fetch(tlb);
+    return value.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
-    data.store(tlb);
+    value.store(tlb);
   }
 };
 
 template<typename T>
 struct Dictionary final {
-  dictionary<T> data{};
+  dictionary<T> inner{};
 
   using iterator = dictionary<T>::iterator;
   using const_iterator = dictionary<T>::const_iterator;
 
-  iterator begin() noexcept {
-    return data.begin();
+  constexpr iterator begin() noexcept {
+    return inner.begin();
   }
-  iterator end() noexcept {
-    return data.end();
+  constexpr iterator end() noexcept {
+    return inner.end();
   }
-  const_iterator begin() const noexcept {
-    return data.begin();
+  constexpr const_iterator begin() const noexcept {
+    return inner.begin();
   }
-  const_iterator end() const noexcept {
-    return data.end();
+  constexpr const_iterator end() const noexcept {
+    return inner.end();
   }
-  const_iterator cbegin() const noexcept {
-    return data.cbegin();
+  constexpr const_iterator cbegin() const noexcept {
+    return inner.cbegin();
   }
-  const_iterator cend() const noexcept {
-    return data.cend();
+  constexpr const_iterator cend() const noexcept {
+    return inner.cend();
   }
 
-  size_t size() const noexcept {
-    return data.size();
+  constexpr size_t size() const noexcept {
+    return inner.size();
   }
 
   bool fetch(TLBuffer &tlb) noexcept requires tl_deserializable<T> {
-    if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != TL_DICTIONARY) {
-      return false;
-    }
-    return data.fetch(tlb);
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_DICTIONARY && inner.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept requires tl_serializable<T> {
     tlb.store_trivial<uint32_t>(TL_DICTIONARY);
-    data.store(tlb);
-  }
-};
-
-struct String final {
-  string value;
-
-  bool fetch(TLBuffer &tlb) noexcept {
-    if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != TL_STRING) {
-      return false;
-    }
-    auto string = tlb.fetch_string();
-    // TODO: check tlb.fetch_string() error
-
-    value.assign(string.begin(), string.size());
-    return true;
-  }
-
-  void store(TLBuffer &tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(TL_STRING);
-    tlb.store_string(std::string_view{value.c_str(), value.size()});
+    inner.store(tlb);
   }
 };
 
@@ -297,15 +299,18 @@ public:
 
 // ===== CRYPTO =====
 
-// Actually it's "Maybe (Dictionary CertInfoItem)"
-// But I now want to have this logic separately
-class GetPemCertInfoResponse final {
-  enum CertInfoItem : uint32_t { LONG_MAGIC = 0x533f'f89f, STR_MAGIC = 0xc427'feef, DICT_MAGIC = 0x1ea8'a774 };
+class CertInfoItem final {
+  enum Magic : uint32_t { LONG = 0x533f'f89f, STR = 0xc427'feef, DICT = 0x1ea8'a774 };
 
 public:
-  array<mixed> data;
+  std::variant<int64_t, string, dictionary<string>> data;
 
   bool fetch(TLBuffer &tlb) noexcept;
+
+  template<class... Ts>
+  struct MakeVisitor : Ts... {
+    using Ts::operator()...;
+  };
 };
 
 enum DigestAlgorithm : uint32_t {
@@ -334,10 +339,12 @@ enum BlockPadding : uint32_t {
 
 struct confdataValue final {
   string value;
-  bool is_php_serialized{};
-  bool is_json_serialized{};
+  Bool is_php_serialized{};
+  Bool is_json_serialized{};
 
-  bool fetch(TLBuffer &tlb) noexcept;
+  bool fetch(TLBuffer &tlb) noexcept {
+    return value.fetch(tlb) && is_php_serialized.fetch(tlb) && is_json_serialized.fetch(tlb);
+  }
 };
 
 // ===== HTTP =====
@@ -430,26 +437,26 @@ public:
 
   bool fetch(TLBuffer &tlb) noexcept {
     const auto opt_flags{tlb.fetch_trivial<uint32_t>()};
-    if (!opt_flags.has_value()) {
-      return false;
-    }
+    bool ok{opt_flags.has_value()};
 
-    const auto flags{*opt_flags};
-    if (static_cast<bool>(flags & SCHEME_FLAG)) {
-      const auto scheme_view{tlb.fetch_string()};
-      opt_scheme.emplace(scheme_view.data(), static_cast<string::size_type>(scheme_view.size()));
+    const auto flags{opt_flags.value_or(0x0)};
+    if (ok && static_cast<bool>(flags & SCHEME_FLAG)) [[likely]] {
+      string scheme{};
+      ok &= scheme.fetch(tlb);
+      opt_scheme.emplace(scheme);
     }
-    if (static_cast<bool>(flags & HOST_FLAG)) {
-      const auto host_view{tlb.fetch_string()};
-      opt_host.emplace(host_view.data(), static_cast<string::size_type>(host_view.size()));
+    if (ok && static_cast<bool>(flags & HOST_FLAG)) {
+      string host{};
+      ok &= host.fetch(tlb);
+      opt_host.emplace(host);
     }
-    const auto path_view{tlb.fetch_string()};
-    path = {path_view.data(), static_cast<string::size_type>(path_view.size())};
-    if (static_cast<bool>(flags & QUERY_FLAG)) {
-      const auto query_view{tlb.fetch_string()};
-      opt_query.emplace(query_view.data(), static_cast<string::size_type>(query_view.size()));
+    ok &= path.fetch(tlb);
+    if (ok && static_cast<bool>(flags & QUERY_FLAG)) {
+      string query{};
+      ok &= query.fetch(tlb);
+      opt_query.emplace(query);
     }
-    return true;
+    return ok;
   }
 };
 
@@ -459,18 +466,13 @@ struct httpHeaderEntry final {
   string value;
 
   bool fetch(TLBuffer &tlb) noexcept {
-    const auto ok{is_sensitive.fetch(tlb)};
-    const auto name_view{tlb.fetch_string()};
-    const auto value_view{tlb.fetch_string()};
-    name = {name_view.data(), static_cast<string::size_type>(name_view.size())};
-    value = {value_view.data(), static_cast<string::size_type>(value_view.size())};
-    return ok;
+    return is_sensitive.fetch(tlb) && name.fetch(tlb) && value.fetch(tlb);
   }
 
   void store(TLBuffer &tlb) const noexcept {
     is_sensitive.store(tlb);
-    tlb.store_string({name.c_str(), static_cast<size_t>(name.size())});
-    tlb.store_string({value.c_str(), static_cast<size_t>(value.size())});
+    name.store(tlb);
+    value.store(tlb);
   }
 };
 
@@ -481,20 +483,17 @@ struct httpConnection final {
   uint32_t remote_port{};
 
   bool fetch(TLBuffer &tlb) noexcept {
-    const auto server_addr_view{tlb.fetch_string()};
-    server_addr = {server_addr_view.data(), static_cast<string::size_type>(server_addr_view.size())};
+    bool ok{server_addr.fetch(tlb)};
     const auto opt_server_port{tlb.fetch_trivial<uint32_t>()};
-    const auto remote_addr_view{tlb.fetch_string()};
-    remote_addr = {remote_addr_view.data(), static_cast<string::size_type>(remote_addr_view.size())};
+    ok &= opt_server_port.has_value();
+    ok &= remote_addr.fetch(tlb);
     const auto opt_remote_port{tlb.fetch_trivial<uint32_t>()};
+    ok &= opt_remote_port.has_value();
 
-    if (!opt_server_port.has_value() || !opt_remote_port.has_value()) {
-      return false;
-    }
+    server_port = opt_server_port.value_or(0);
+    remote_port = opt_remote_port.value_or(0);
 
-    server_port = *opt_server_port;
-    remote_port = *opt_remote_port;
-    return true;
+    return ok;
   }
 };
 
@@ -502,14 +501,14 @@ struct httpResponse final {
   HttpVersion version{};
   int32_t status_code{};
   vector<httpHeaderEntry> headers{};
-  string body;
+  std::string_view body;
 
   void store(TLBuffer &tlb) const noexcept {
     tlb.store_trivial<uint32_t>(0x0); // flags
     version.store(tlb);
     tlb.store_trivial<int32_t>(status_code);
     headers.store(tlb);
-    tlb.store_bytes({body.c_str(), static_cast<size_t>(body.size())});
+    tlb.store_bytes(body);
   }
 };
 

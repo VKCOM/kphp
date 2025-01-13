@@ -5,6 +5,7 @@
 #include "runtime-light/stdlib/crypto/crypto-functions.h"
 
 #include <cstddef>
+#include <string_view>
 
 #include "common/tl/constants/common.h"
 #include "runtime-common/stdlib/server/url-functions.h"
@@ -15,7 +16,7 @@
 
 namespace {
 
-constexpr const char *CRYPTO_COMPONENT_NAME = "crypto";
+constexpr std::string_view CRYPTO_COMPONENT_NAME = "crypto";
 
 } // namespace
 
@@ -31,7 +32,8 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME}, string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -42,37 +44,69 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
   if (!magic.has_value() || *magic != TL_MAYBE_TRUE) {
     co_return false;
   }
-  std::string_view str_view = buffer.fetch_string();
-  co_return string(str_view.data(), str_view.size());
+
+  tl::string str{};
+  str.fetch(buffer);
+  co_return string{str.value.data(), static_cast<string::size_type>(str.value.size())};
 }
 
 task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool shortnames) noexcept {
-  tl::GetPemCertInfo request{.is_short = shortnames, .bytes = data};
+  tl::GetPemCertInfo request{.is_short = shortnames, .bytes = {.value = {data.c_str(), data.size()}}};
 
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME}, string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
   buffer.store_bytes({resp_from_platform.c_str(), static_cast<size_t>(resp_from_platform.size())});
 
-  tl::GetPemCertInfoResponse response;
-  if (!response.fetch(buffer)) {
+  tl::Maybe<tl::Dictionary<tl::CertInfoItem>> cert_items;
+  if (!cert_items.fetch(buffer)) {
+    co_return false;
+  }
+  if (!cert_items.opt_value.has_value()) {
     co_return false;
   }
 
-  co_return response.data;
+  array<mixed> response;
+  response.reserve(cert_items.opt_value->size(), false);
+
+  auto item_to_mixed =
+    tl::CertInfoItem::MakeVisitor{[](int64_t val) -> mixed { return val; }, [](tl::string val) -> mixed { return string(val.value.data(), val.value.size()); },
+                                  [](const tl::dictionary<tl::string> &sub_dict) -> mixed {
+                                    array<mixed> resp;
+                                    resp.reserve(sub_dict.size(), false);
+                                    for (auto sub_item : sub_dict) {
+                                      auto key = string(sub_item.key.value.data(), sub_item.key.value.size());
+                                      auto value = string(sub_item.value.value.data(), sub_item.value.value.size());
+                                      resp[key] = value;
+                                    }
+
+                                    return resp;
+                                  }};
+
+  for (auto cert_kv : std::move(*cert_items.opt_value)) {
+    auto key = string(cert_kv.key.value.data(), cert_kv.key.value.size());
+    tl::CertInfoItem val = std::move(cert_kv.value);
+    response[string(cert_kv.key.value.data(), cert_kv.key.value.size())] = std::visit(item_to_mixed, val.data);
+  }
+
+  co_return response;
 }
 
 task_t<bool> f$openssl_sign(const string &data, string &signature, const string &private_key, int64_t algo) noexcept {
-  tl::DigestSign request{.data = data, .private_key = private_key, .algorithm = static_cast<tl::DigestAlgorithm>(algo)};
+  tl::DigestSign request{.data = {.value = {data.c_str(), data.size()}},
+                         .private_key = {.value = {private_key.c_str(), private_key.size()}},
+                         .algorithm = static_cast<tl::DigestAlgorithm>(algo)};
 
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME}, string(buffer.data(), buffer.size()));
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string(buffer.data(), buffer.size()));
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -83,19 +117,24 @@ task_t<bool> f$openssl_sign(const string &data, string &signature, const string 
     co_return false;
   }
 
-  std::string_view str_view = buffer.fetch_string();
-  signature = string(str_view.data(), str_view.size());
+  tl::string str{};
+  str.fetch(buffer);
+  signature = string{str.value.data(), static_cast<string::size_type>(str.value.size())};
 
   co_return true;
 }
 
 task_t<int64_t> f$openssl_verify(const string &data, const string &signature, const string &pub_key, int64_t algo) noexcept {
-  tl::DigestVerify request{.data = data, .public_key = pub_key, .algorithm = static_cast<tl::DigestAlgorithm>(algo), .signature = signature};
+  tl::DigestVerify request{.data = {.value = {data.c_str(), data.size()}},
+                           .public_key = {.value = {pub_key.c_str(), pub_key.size()}},
+                           .algorithm = static_cast<tl::DigestAlgorithm>(algo),
+                           .signature = {.value = {signature.c_str(), signature.size()}}};
 
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME}, string(buffer.data(), buffer.size()));
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string(buffer.data(), buffer.size()));
   string resp_from_platform = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
@@ -230,25 +269,27 @@ task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &met
   }
   tl::CbcEncrypt request{.algorithm = *algorithm,
                          .padding = tl::BlockPadding::PKCS7,
-                         .passphrase = std::move(key_iv.val().first),
-                         .iv = std::move(key_iv.val().second),
-                         .data = data};
+                         .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
+                         .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
+                         .data = {.value = {data.c_str(), data.size()}}};
 
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME}, string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
   buffer.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
 
-  tl::String response{.value = resp};
-  // TODO: parse error?
-  if (!response.fetch(buffer)) {
+  string response{};
+  if (tl::String response_{}; response_.fetch(buffer)) {
+    response = {response_.inner.value.data(), static_cast<string::size_type>(response_.inner.value.size())};
+  } else {
     co_return false;
   }
-  co_return(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(response.value) : f$base64_encode(response.value);
+  co_return(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(response) : f$base64_encode(response);
 }
 
 task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, const string &source_key, int64_t options, const string &source_iv, string tag,
@@ -281,23 +322,24 @@ task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, co
   }
   tl::CbcDecrypt request{.algorithm = *algorithm,
                          .padding = tl::BlockPadding::PKCS7,
-                         .passphrase = std::move(key_iv.val().first),
-                         .iv = std::move(key_iv.val().second),
-                         .data = data};
+                         .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
+                         .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
+                         .data = {.value = {data.c_str(), data.size()}}};
 
   tl::TLBuffer buffer;
   request.store(buffer);
 
-  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME}, string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp = co_await f$component_client_fetch_response(co_await query);
 
   buffer.clean();
   buffer.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
 
-  tl::String response{.value = resp};
+  tl::String response{};
   // TODO: parse error?
   if (!response.fetch(buffer)) {
     co_return false;
   }
-  co_return std::move(response.value);
+  co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
 }
