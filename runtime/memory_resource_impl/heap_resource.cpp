@@ -54,13 +54,12 @@ void *heap_resource::reallocate(void *mem, size_t new_size, size_t old_size) noe
   memory_used_ += (new_size - old_size);
   return mem;
 }
-
 void heap_resource::deallocate(void *mem, size_t size) noexcept {
-  dl::CriticalSectionGuard lock;
-  memory_used_ -= size;
-
-  std::free(mem);
-  memory_debug("heap deallocate %zu at %p\n", size, mem);
+    dl::CriticalSectionGuard lock;
+    memory_used_ -= size;
+    // Log the deallocation before freeing the memory
+    memory_debug("heap deallocate %zu at %p\n", size, mem);
+    // Free the memory
+    std::free(mem);
 }
-
 } // namespace memory_resource
