@@ -24,7 +24,7 @@ void mixed::init_from(T &&v) {
     if (unlikely(!ptr_to_obj)) {
       php_error("Internal error. Trying to set invalid object to mixed");
     }
-    type_ = type::OBJECT;
+    type_ = v.is_null() ? type::NUL : type::OBJECT;
   } else {
     auto type_and_value_ref = get_type_and_value_ptr(v);
     type_ = type_and_value_ref.first;
