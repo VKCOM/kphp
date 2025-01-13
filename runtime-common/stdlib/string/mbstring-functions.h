@@ -27,11 +27,3 @@ Optional<int64_t> f$mb_stripos(const string &haystack, const string &needle, int
 
 string f$mb_substr(const string &str, int64_t start, const mixed &length = std::numeric_limits<int64_t>::max(),
                    const string &encoding = StringLibConstants::get().CP1251_STR) noexcept;
-
-inline void f$set_detect_incorrect_encoding_names_warning(bool show) noexcept {
-  StringLibContext::get().detect_incorrect_encoding_names = show;
-}
-
-inline void free_detect_incorrect_encoding_names() noexcept {
-  StringLibContext::get().detect_incorrect_encoding_names = false;
-}

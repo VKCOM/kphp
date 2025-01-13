@@ -4,8 +4,6 @@
 
 function set_migration_php8_warning ($mask ::: int) ::: void;
 
-function set_detect_incorrect_encoding_names_warning(bool $show) ::: void;
-
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
 
 function set_json_log_demangle_stacktrace(bool $enable) ::: void;
