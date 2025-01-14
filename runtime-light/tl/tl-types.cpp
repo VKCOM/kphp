@@ -99,7 +99,7 @@ void string::store(TLBuffer &tlb) const noexcept {
   const auto total_len_with_padding{(total_len + 3) & ~3};
   const auto padding{total_len_with_padding - total_len};
 
-  std::array padding_array{'\0', '\0', '\0', '\0'};
+  constexpr std::array padding_array{'\0', '\0', '\0', '\0'};
   tlb.store_bytes({padding_array.data(), padding});
 }
 
