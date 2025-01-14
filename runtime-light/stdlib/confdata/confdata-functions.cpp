@@ -25,7 +25,7 @@ namespace {
 
 constexpr std::string_view CONFDATA_COMPONENT_NAME = "confdata"; // TODO: it may actually have an alias specified in linking config
 
-mixed extract_confdata_value(tl::confdataValue confdata_value) noexcept {
+mixed extract_confdata_value(const tl::confdataValue &confdata_value) noexcept {
   if (confdata_value.is_php_serialized.value && confdata_value.is_json_serialized.value) { // check that we don't have both flags set
     php_warning("confdata value has both php_serialized and json_serialized flags set");
     return {};
