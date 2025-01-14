@@ -5,8 +5,8 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
 
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
 
@@ -56,7 +56,7 @@ struct GetPemCertInfo final {
 struct DigestSign final {
   string data;
   string private_key;
-  DigestAlgorithm algorithm;
+  DigestAlgorithm algorithm{};
 
   void store(TLBuffer &tlb) const noexcept;
 };
@@ -64,15 +64,15 @@ struct DigestSign final {
 struct DigestVerify final {
   string data;
   string public_key;
-  DigestAlgorithm algorithm;
+  DigestAlgorithm algorithm{};
   string signature;
 
   void store(TLBuffer &tlb) const noexcept;
 };
 
 struct CbcDecrypt final {
-  CipherAlgorithm algorithm;
-  BlockPadding padding;
+  CipherAlgorithm algorithm{};
+  BlockPadding padding{};
   string passphrase;
   string iv;
   string data;
@@ -81,8 +81,8 @@ struct CbcDecrypt final {
 };
 
 struct CbcEncrypt final {
-  CipherAlgorithm algorithm;
-  BlockPadding padding;
+  CipherAlgorithm algorithm{};
+  BlockPadding padding{};
   string passphrase;
   string iv;
   string data;
@@ -122,7 +122,7 @@ public:
   string method;
   httpUri uri{};
   vector<httpHeaderEntry> headers{};
-  string body;
+  std::string_view body;
 
   bool fetch(TLBuffer &tlb) noexcept;
 };

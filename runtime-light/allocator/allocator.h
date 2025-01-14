@@ -32,6 +32,16 @@ struct script_allocator {
   }
 };
 
+template<class T, class U>
+constexpr bool operator==(const script_allocator<T> & /*unused*/, const script_allocator<U> & /*unused*/) {
+  return true;
+}
+
+template<class T, class U>
+constexpr bool operator!=(const script_allocator<T> & /*unused*/, const script_allocator<U> & /*unused*/) {
+  return false;
+}
+
 } // namespace memory
 
 } // namespace kphp

@@ -4,136 +4,154 @@
 
 #include "runtime-light/tl/tl-types.h"
 
-#include <cstddef>
+#include <array>
 #include <cstdint>
-#include <string_view>
-#include <tuple>
+#include <utility>
 
 #include "common/tl/constants/common.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {
 
-bool K2JobWorkerResponse::fetch(TLBuffer &tlb) noexcept {
-  if (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) != MAGIC) {
+bool string::fetch(TLBuffer &tlb) noexcept {
+  uint8_t first_byte{};
+  if (const auto opt_first_byte{tlb.fetch_trivial<uint8_t>()}; opt_first_byte) [[likely]] {
+    first_byte = *opt_first_byte;
+  } else {
     return false;
   }
 
-  std::ignore = tlb.fetch_trivial<uint32_t>(); // ignore flags
-  const auto opt_job_id{tlb.fetch_trivial<int64_t>()};
-  if (!opt_job_id.has_value()) {
+  uint8_t size_len{};
+  uint64_t string_len{};
+  switch (first_byte) {
+    case LARGE_STRING_MAGIC: {
+      if (tlb.remaining() < LARGE_STRING_SIZE_LEN) [[unlikely]] {
+        return false;
+      }
+      size_len = LARGE_STRING_SIZE_LEN + 1;
+      const auto first{static_cast<uint64_t>(tlb.fetch_trivial<uint8_t>().value())};
+      const auto second{static_cast<uint64_t>(tlb.fetch_trivial<uint8_t>().value()) << 8};
+      const auto third{static_cast<uint64_t>(tlb.fetch_trivial<uint8_t>().value()) << 16};
+      const auto fourth{static_cast<uint64_t>(tlb.fetch_trivial<uint8_t>().value()) << 24};
+      const auto fifth{static_cast<uint64_t>(tlb.fetch_trivial<uint8_t>().value()) << 32};
+      const auto sixth{static_cast<uint64_t>(tlb.fetch_trivial<uint8_t>().value()) << 40};
+      const auto seventh{static_cast<uint64_t>(tlb.fetch_trivial<uint8_t>().value()) << 48};
+      string_len = first | second | third | fourth | fifth | sixth | seventh;
+
+      const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
+      tlb.adjust(total_len_with_padding - size_len);
+      php_warning("large strings aren't supported");
+      return false;
+    }
+    case MEDIUM_STRING_MAGIC: {
+      if (tlb.remaining() < MEDIUM_STRING_SIZE_LEN) [[unlikely]] {
+        return false;
+      }
+      size_len = MEDIUM_STRING_SIZE_LEN + 1;
+      const auto first{static_cast<uint64_t>(tlb.fetch_trivial<uint8_t>().value())};
+      const auto second{static_cast<uint64_t>(tlb.fetch_trivial<uint8_t>().value()) << 8};
+      const auto third{static_cast<uint64_t>(tlb.fetch_trivial<uint8_t>().value()) << 16};
+      string_len = first | second | third;
+
+      if (string_len <= SMALL_STRING_MAX_LEN) [[unlikely]] {
+        php_warning("long string's length is less than 254");
+      }
+      break;
+    }
+    default: {
+      size_len = SMALL_STRING_SIZE_LEN;
+      string_len = static_cast<uint64_t>(first_byte);
+      break;
+    }
+  }
+  const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
+  if (tlb.remaining() < total_len_with_padding - size_len) [[unlikely]] {
     return false;
   }
-  const auto body_view{tlb.fetch_string()};
 
-  job_id = *opt_job_id;
-  body = string{body_view.data(), static_cast<string::size_type>(body_view.size())};
+  value = {std::next(tlb.data(), tlb.pos()), static_cast<size_t>(string_len)};
+  tlb.adjust(total_len_with_padding - size_len);
   return true;
+}
+
+void string::store(TLBuffer &tlb) const noexcept {
+  const char *str_buf{value.data()};
+  size_t str_len{value.size()};
+  uint8_t size_len{};
+  if (str_len <= SMALL_STRING_MAX_LEN) {
+    size_len = SMALL_STRING_SIZE_LEN;
+    tlb.store_trivial<uint8_t>(str_len);
+  } else if (str_len <= MEDIUM_STRING_MAX_LEN) {
+    size_len = MEDIUM_STRING_SIZE_LEN + 1;
+    tlb.store_trivial<uint8_t>(MEDIUM_STRING_MAGIC);
+    tlb.store_trivial<uint8_t>(str_len & 0xff);
+    tlb.store_trivial<uint8_t>((str_len >> 8) & 0xff);
+    tlb.store_trivial<uint8_t>((str_len >> 16) & 0xff);
+  } else {
+    php_warning("large strings aren't supported");
+    size_len = SMALL_STRING_SIZE_LEN;
+    str_len = 0;
+    tlb.store_trivial<uint8_t>(str_len);
+  }
+  tlb.store_bytes({str_buf, str_len});
+
+  const auto total_len{size_len + str_len};
+  const auto total_len_with_padding{(total_len + 3) & ~3};
+  const auto padding{total_len_with_padding - total_len};
+
+  constexpr std::array padding_array{'\0', '\0', '\0', '\0'};
+  tlb.store_bytes({padding_array.data(), padding});
+}
+
+bool K2JobWorkerResponse::fetch(TLBuffer &tlb) noexcept {
+  bool ok{tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == MAGIC};
+  ok &= tlb.fetch_trivial<uint32_t>().has_value(); // flags
+  const auto opt_job_id{tlb.fetch_trivial<int64_t>()};
+  ok &= opt_job_id.has_value();
+  ok &= body.fetch(tlb);
+
+  job_id = opt_job_id.value_or(0);
+
+  return ok;
 }
 
 void K2JobWorkerResponse::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(MAGIC);
   tlb.store_trivial<uint32_t>(0x0); // flags
   tlb.store_trivial<int64_t>(job_id);
-  tlb.store_string({body.c_str(), body.size()});
+  body.store(tlb);
 }
 
-bool GetPemCertInfoResponse::fetch(TLBuffer &tlb) noexcept {
-  if (const auto magic = tlb.fetch_trivial<uint32_t>(); magic.value_or(TL_ZERO) != TL_MAYBE_TRUE) {
+bool CertInfoItem::fetch(TLBuffer &tlb) noexcept {
+  const auto opt_magic{tlb.fetch_trivial<uint32_t>()};
+  if (!opt_magic.has_value()) {
     return false;
   }
 
-  if (const auto magic = tlb.fetch_trivial<uint32_t>(); magic.value_or(TL_ZERO) != TL_DICTIONARY) {
-    return false;
-  }
-
-  const std::optional<uint32_t> size = tlb.fetch_trivial<uint32_t>();
-  if (!size.has_value()) {
-    return false;
-  }
-
-  auto response = array<mixed>::create();
-  response.reserve(*size, false);
-
-  for (uint32_t i = 0; i < *size; ++i) {
-    const auto key_view = tlb.fetch_string();
-    if (key_view.empty()) {
+  switch (*opt_magic) {
+    case Magic::LONG: {
+      if (const auto opt_val{tlb.fetch_trivial<int64_t>()}; opt_val.has_value()) [[likely]] {
+        data = *opt_val;
+        break;
+      }
       return false;
     }
-
-    const auto key = string(key_view.data(), key_view.length());
-
-    const std::optional<uint32_t> magic = tlb.fetch_trivial<uint32_t>();
-    if (!magic.has_value()) {
+    case Magic::STR: {
+      if (string val{}; val.fetch(tlb)) [[unlikely]] {
+        data = val;
+        break;
+      }
       return false;
     }
-
-    switch (*magic) {
-      case CertInfoItem::LONG_MAGIC: {
-        const std::optional<int64_t> val = tlb.fetch_trivial<int64_t>();
-        if (!val.has_value()) {
-          return false;
-        }
-        response[key] = *val;
+    case Magic::DICT: {
+      if (dictionary<string> val{}; val.fetch(tlb)) [[likely]] {
+        data = std::move(val);
         break;
       }
-      case CertInfoItem::STR_MAGIC: {
-        const auto value_view = tlb.fetch_string();
-        if (value_view.empty()) {
-          return false;
-        }
-        const auto value = string(value_view.data(), value_view.size());
-
-        response[key] = string(value_view.data(), value_view.size());
-        break;
-      }
-      case CertInfoItem::DICT_MAGIC: {
-        auto sub_array = array<string>::create();
-        const std::optional<uint32_t> sub_size = tlb.fetch_trivial<uint32_t>();
-
-        if (!sub_size.has_value()) {
-          return false;
-        }
-
-        for (size_t j = 0; j < sub_size; ++j) {
-          const auto sub_key_view = tlb.fetch_string();
-          if (sub_key_view.empty()) {
-            return false;
-          }
-          const auto sub_key = string(sub_key_view.data(), sub_key_view.size());
-
-          const auto sub_value_view = tlb.fetch_string();
-          if (sub_value_view.empty()) {
-            return false;
-          }
-          const auto sub_value = string(sub_value_view.data(), sub_value_view.size());
-
-          sub_array[sub_key] = sub_value;
-        }
-        response[key] = sub_array;
-
-        break;
-      }
-      default:
-        return false;
+      return false;
     }
   }
 
-  data = std::move(response);
-  return true;
-}
-
-bool confdataValue::fetch(TLBuffer &tlb) noexcept {
-  const auto value_view{tlb.fetch_string()};
-  Bool is_php_serialized_{};
-  Bool is_json_serialized_{};
-  if (!(is_php_serialized_.fetch(tlb) && is_json_serialized_.fetch(tlb))) {
-    return false;
-  }
-
-  value = {value_view.data(), static_cast<string::size_type>(value_view.size())};
-  is_php_serialized = is_php_serialized_.value;
-  is_json_serialized = is_json_serialized_.value;
   return true;
 }
 

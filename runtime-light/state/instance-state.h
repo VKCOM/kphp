@@ -93,7 +93,7 @@ struct InstanceState final : vk::not_copyable {
   }
   uint64_t take_incoming_stream() noexcept;
 
-  std::pair<uint64_t, int32_t> open_stream(std::string_view, k2::StreamKind) noexcept;
+  std::pair<uint64_t, int32_t> open_stream(std::string_view, k2::stream_kind) noexcept;
   std::pair<uint64_t, int32_t> set_timer(std::chrono::nanoseconds) noexcept;
 
   void release_stream(uint64_t) noexcept;
