@@ -1185,6 +1185,10 @@ bool f$is_object(const class_instance<T> &v) {
   return !v.is_null();
 }
 
+template<>
+inline bool f$is_object(const mixed &v) {
+  return v.is_object();
+}
 
 template<class T>
 bool f$is_integer(const T &v) {
