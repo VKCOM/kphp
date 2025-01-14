@@ -593,6 +593,7 @@ class CalcBadVars {
     }
 
     auto get_call_resumable_path = [&](FunctionPtr func) {
+      kphp_assert_msg(func, "Unexpected null FunctionPtr in getting resumable call-chain");
       std::vector<std::string> names;
       names.push_back(TermStringFormat::paint(func->as_human_readable(), TermStringFormat::red));
 
