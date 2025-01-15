@@ -40,3 +40,9 @@ function numa_get_bound_node(): int;
 function setcookie ($name ::: string, $value ::: string, $expire_or_options ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false): void;
 
 function setrawcookie ($name ::: string, $value ::: string, $expire_or_options ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false): void;
+
+function ip2long ($ip ::: string) ::: int | false;
+
+function ip2ulong ($ip ::: string) ::: string | false;
+
+function long2ip ($ip ::: int) ::: string;

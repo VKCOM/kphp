@@ -1,4 +1,4 @@
-@ok geoip k2_skip
+@ok geoip
 <?php
 
 function _dechex($u) {
