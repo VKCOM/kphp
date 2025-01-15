@@ -18,7 +18,7 @@
 namespace dl {
 
 template<typename T, typename Comparator>
-requires(std::invocable<Comparator, T, T>) task_t<void> sort(T *begin_init, T *end_init, Comparator &&compare) {
+requires(std::invocable<Comparator, T, T>) task_t<void> sort(T *begin_init, T *end_init, Comparator &&compare) noexcept{
   auto compare_call = [&compare]<typename U>(U &&lhs, U &&rhs) -> task_t<int64_t> {
     if constexpr (is_async_function_v<Comparator, U, U>) {
       co_return co_await std::invoke(std::forward<Comparator>(compare), std::forward<U>(lhs), std::forward<U>(rhs));
@@ -83,7 +83,7 @@ requires(std::invocable<Comparator, T, T>) task_t<void> sort(T *begin_init, T *e
 namespace array_functions_impl_ {
 
 template<typename Result, typename U, typename Comparator>
-Result sort(array<U> &arr, Comparator &&comparator, bool renumber) {
+Result sort(array<U> &arr, Comparator &&comparator, bool renumber) noexcept {
   using array_inner = typename array<U>::array_inner;
   using array_bucket = typename array<U>::array_bucket;
   int64_t n = arr.count();
@@ -157,7 +157,7 @@ Result sort(array<U> &arr, Comparator &&comparator, bool renumber) {
 }
 
 template<typename Result, typename U, typename Comparator>
-Result ksort(array<U> &arr, Comparator &&comparator) {
+Result ksort(array<U> &arr, Comparator &&comparator) noexcept {
   using array_bucket = typename array<U>::array_bucket;
   using key_type = typename array<U>::key_type;
   using list_hash_entry = typename array<U>::list_hash_entry;
