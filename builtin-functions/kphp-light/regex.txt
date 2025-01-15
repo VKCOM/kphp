@@ -23,12 +23,23 @@ function preg_match_all ($regex ::: string, $subject ::: string, &$matches ::: m
 
 function preg_quote ($str ::: string, $delimiter ::: string = ''): string;
 
-function preg_replace ($regex ::: string | array, $replace_val ::: string | array, $subject ::: string | array, $limit ::: int = -1, &$replace_count ::: int = TODO): string | ^3 | false | null;
+function preg_replace(
+  $regex ::: string | array,
+  $replace_val ::: string | array,
+  $subject ::: string | array,
+  $limit ::: int = -1,
+  &$replace_count ::: int = TODO): string | ^3 | false | null;
+
+/** @kphp-extern-func-info interruptible */
+function preg_replace_callback(
+  $regex ::: string | array,
+  callable(string[] $x):string $callback,
+  $subject ::: string | array,
+  $limit ::: int = -1,
+  &$replace_count ::: int = TODO,
+  $flags ::: int = 0): string | ^3 | null;
 
 // ===== UNSUPPORTED =====
-
-
-function preg_replace_callback ($regex ::: regexp, callable(string[] $x):string $callback, $subject, $limit ::: int = -1, &$replace_count ::: int = TODO) ::: ^3|string|null;
 
 /** @kphp-extern-func-info generate-stub */
 function preg_last_error() ::: int;

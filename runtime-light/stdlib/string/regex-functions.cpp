@@ -69,14 +69,6 @@ struct RegexInfo final {
     , replacement(replacement_) {}
 };
 
-bool valid_preg_replace_mixed(const mixed &param) noexcept {
-  if (!param.is_array() && !param.is_string()) [[unlikely]] {
-    php_warning("invalid parameter: expected to be string or array");
-    return false;
-  }
-  return true;
-}
-
 template<typename... Args>
 requires((std::is_same_v<Args, int64_t> && ...) && sizeof...(Args) > 0) bool valid_regex_flags(int64_t flags, Args... supported_flags) noexcept {
   const bool valid{(flags & ~(supported_flags | ...)) == kphp::regex::PREG_NO_FLAGS};
@@ -588,7 +580,7 @@ Optional<string> f$preg_replace(const string &pattern, const string &replacement
 
 Optional<string> f$preg_replace(const mixed &pattern, const string &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
   count = 0;
-  if (!valid_preg_replace_mixed(pattern)) [[unlikely]] {
+  if (!regex_impl_::valid_preg_replace_mixed(pattern)) [[unlikely]] {
     return {};
   }
 
@@ -614,7 +606,7 @@ Optional<string> f$preg_replace(const mixed &pattern, const string &replacement,
 
 Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
   count = 0;
-  if (!valid_preg_replace_mixed(pattern) || !valid_preg_replace_mixed(replacement)) [[unlikely]] {
+  if (!regex_impl_::valid_preg_replace_mixed(pattern) || !regex_impl_::valid_preg_replace_mixed(replacement)) [[unlikely]] {
     return {};
   }
 
@@ -653,7 +645,8 @@ Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, 
 
 mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit, int64_t &count) noexcept {
   count = 0;
-  if (!valid_preg_replace_mixed(pattern) || !valid_preg_replace_mixed(replacement) || !valid_preg_replace_mixed(subject)) [[unlikely]] {
+  if (!regex_impl_::valid_preg_replace_mixed(pattern) || !regex_impl_::valid_preg_replace_mixed(replacement) || !regex_impl_::valid_preg_replace_mixed(subject))
+    [[unlikely]] {
     return {};
   }
 
