@@ -117,7 +117,7 @@ task_t<Optional<string>> f$preg_replace_callback(string pattern, F callback, str
   co_return f$preg_replace(pattern, replacement, subject, limit, count);
 }
 
-template<std::invocable<array<string>> F>
+template<typename F>
 task_t<Optional<string>> f$preg_replace_callback(mixed pattern, F &&callback, string subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
                                                  int64_t &count = RegexInstanceState::get().default_preg_replace_count,
                                                  int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
@@ -146,7 +146,7 @@ task_t<Optional<string>> f$preg_replace_callback(mixed pattern, F &&callback, st
   co_return std::move(result);
 }
 
-template<std::invocable<array<string>> F>
+template<typename F>
 task_t<mixed> f$preg_replace_callback(mixed pattern, F &&callback, mixed subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
                                       int64_t &count = RegexInstanceState::get().default_preg_replace_count,
                                       int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
@@ -175,7 +175,7 @@ task_t<mixed> f$preg_replace_callback(mixed pattern, F &&callback, mixed subject
   co_return std::move(result);
 }
 
-template<class T1, std::invocable<array<string>> T2, class T3, class = enable_if_t_is_optional<T3>>
+template<class T1, typename T2, class T3, class = enable_if_t_is_optional<T3>>
 auto f$preg_replace_callback(T1 &&pattern, T2 &&callback, T3 &&subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
                              int64_t &count = RegexInstanceState::get().default_preg_replace_count, int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept
   -> decltype(f$preg_replace_callback(std::forward<T1>(pattern), std::forward<T2>(callback), std::forward<T3>(subject).val(), limit, count, flags)) {
