@@ -9,7 +9,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 
-namespace regex {
+namespace kphp::regex {
 
 inline constexpr int64_t PREG_NO_ERROR = 0;
 inline constexpr int64_t PREG_INTERNAL_ERROR = 1;
@@ -29,30 +29,30 @@ inline constexpr auto PREG_UNMATCHED_AS_NULL = static_cast<int64_t>(1U << 6U);
 
 inline constexpr int64_t PREG_REPLACE_NOLIMIT = -1;
 
-} // namespace regex
+} // namespace kphp::regex
 
 using regexp = string;
 
 Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
-                               int64_t flags = regex::PREG_NO_FLAGS, int64_t offset = 0) noexcept;
+                               int64_t flags = kphp::regex::PREG_NO_FLAGS, int64_t offset = 0) noexcept;
 
 Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
-                                   int64_t flags = regex::PREG_NO_FLAGS, int64_t offset = 0) noexcept;
+                                   int64_t flags = kphp::regex::PREG_NO_FLAGS, int64_t offset = 0) noexcept;
 
-Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit = regex::PREG_REPLACE_NOLIMIT,
+Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
                                 int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
-Optional<string> f$preg_replace(const mixed &pattern, const string &replacement, const string &subject, int64_t limit = regex::PREG_REPLACE_NOLIMIT,
+Optional<string> f$preg_replace(const mixed &pattern, const string &replacement, const string &subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
                                 int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
-Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, const string &subject, int64_t limit = regex::PREG_REPLACE_NOLIMIT,
+Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, const string &subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
                                 int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
-mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit = regex::PREG_REPLACE_NOLIMIT,
+mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
                      int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
-auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = regex::PREG_REPLACE_NOLIMIT,
+auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
                     int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept {
   return f$preg_replace(regex, replace_val, subject.val(), limit, count);
 }
