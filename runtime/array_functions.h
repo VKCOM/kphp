@@ -94,7 +94,7 @@ Result sort(array<U> &arr, const Comparator &comparator, bool renumber) {
         arr.mutate_if_vector_shared();
       }
 
-      const auto elements_cmp = [&comparator, &arr](const U &lhs, const U &rhs) { return comparator(lhs, rhs) > 0; };
+      const auto elements_cmp = [&comparator](const U &lhs, const U &rhs) { return std::invoke(comparator, lhs, rhs) > 0; };
       U *begin = reinterpret_cast<U *>(arr.p->entries());
       dl::sort<U, decltype(elements_cmp)>(begin, begin + n, elements_cmp);
       return;
@@ -117,7 +117,7 @@ Result sort(array<U> &arr, const Comparator &comparator, bool renumber) {
     }
     php_assert(i == n);
 
-    const auto hash_entry_cmp = [&comparator](const array_bucket *lhs, const array_bucket *rhs) { return comparator(lhs->value, rhs->value) > 0; };
+    const auto hash_entry_cmp = [&comparator](const array_bucket *lhs, const array_bucket *rhs) { return std::invoke(comparator, lhs->value, rhs->value) > 0; };
     dl::sort<array_bucket *, decltype(hash_entry_cmp)>(arTmp, arTmp + n, hash_entry_cmp);
 
     arTmp[0]->prev = arr.p->get_pointer(arr.p->end());
