@@ -49,11 +49,17 @@ inline bool valid_preg_replace_mixed(const mixed &param) noexcept {
 
 using regexp = string;
 
+// === preg_match =================================================================================
+
 Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
                                int64_t flags = kphp::regex::PREG_NO_FLAGS, int64_t offset = 0) noexcept;
 
+// === preg_match_all =============================================================================
+
 Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
                                    int64_t flags = kphp::regex::PREG_NO_FLAGS, int64_t offset = 0) noexcept;
+
+// === preg_replace ===============================================================================
 
 Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
                                 int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
@@ -72,6 +78,8 @@ auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, i
                     int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept {
   return f$preg_replace(regex, replace_val, subject.val(), limit, count);
 }
+
+// === preg_replace_callback ======================================================================
 
 template<std::invocable<array<string>> F>
 task_t<Optional<string>> f$preg_replace_callback(string pattern, F callback, string subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
@@ -167,6 +175,8 @@ auto f$preg_replace_callback(T1 &&pattern, T2 &&callback, T3 &&subject, int64_t 
   -> decltype(f$preg_replace_callback(std::forward<T1>(pattern), std::forward<T2>(callback), std::forward<T3>(subject).val(), limit, count, flags)) {
   co_return co_await f$preg_replace_callback(std::forward<T1>(pattern), std::forward<T2>(callback), std::forward<T3>(subject).val(), limit, count, flags);
 }
+
+// === preg_split =================================================================================
 
 inline Optional<array<mixed>> f$preg_split(const string & /*unused*/, const string & /*unused*/, int64_t /*unused*/ = -1, int64_t /*unused*/ = 0) {
   php_critical_error("call to unsupported function");
