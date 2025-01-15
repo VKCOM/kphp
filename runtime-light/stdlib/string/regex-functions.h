@@ -103,9 +103,9 @@ task_t<Optional<string>> f$preg_replace_callback(string pattern, F callback, str
 
   string replacement{};
   if constexpr (is_async_function_v<F, array<string>>) {
-    replacement = co_await std::invoke(callback, matches);
+    replacement = co_await std::invoke(callback, std::move(matches));
   } else {
-    replacement = std::invoke(callback, matches);
+    replacement = std::invoke(callback, std::move(matches));
   }
 
   co_return f$preg_replace(pattern, replacement, subject, limit, count);
