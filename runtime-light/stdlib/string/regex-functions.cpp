@@ -57,6 +57,7 @@ struct RegexInfo final {
   uint32_t match_options{PCRE2_NO_UTF_CHECK};
 
   int64_t replace_count{};
+  uint32_t replace_options{PCRE2_SUBSTITUTE_UNKNOWN_UNSET | PCRE2_SUBSTITUTE_UNSET_EMPTY};
   // contains a string after replacements if replace_count > 0, nullopt otherwise
   std::optional<string> opt_replace_result;
 
@@ -427,10 +428,10 @@ bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
 
   // replace all occurences
   if (limit == std::numeric_limits<uint64_t>::max()) [[likely]] {
-    regex_info.replace_count =
-      pcre2_substitute_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), 0, PCRE2_SUBSTITUTE_GLOBAL,
-                         nullptr, regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
-                         reinterpret_cast<PCRE2_UCHAR8 *>(runtime_ctx.static_SB.buffer()), std::addressof(output_length));
+    regex_info.replace_count = pcre2_substitute_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), 0,
+                                                  regex_info.replace_options | PCRE2_SUBSTITUTE_GLOBAL, nullptr, regex_state.match_context.get(),
+                                                  reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
+                                                  reinterpret_cast<PCRE2_UCHAR8 *>(runtime_ctx.static_SB.buffer()), std::addressof(output_length));
 
     if (regex_info.replace_count < 0) [[unlikely]] {
       std::array<char, ERROR_BUFFER_LENGTH> buffer{};
@@ -459,7 +460,7 @@ bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
 
       length_after_replace = buffer_length;
       if (auto replace_one{pcre2_substitute_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(str_after_replace.c_str()), str_after_replace.size(),
-                                              substitute_offset, 0, nullptr, regex_state.match_context.get(),
+                                              substitute_offset, regex_info.replace_options, nullptr, regex_state.match_context.get(),
                                               reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
                                               reinterpret_cast<PCRE2_UCHAR8 *>(runtime_ctx.static_SB.buffer()), std::addressof(length_after_replace))};
           replace_one != 1) [[unlikely]] {

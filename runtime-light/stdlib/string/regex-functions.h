@@ -39,11 +39,6 @@ Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mix
 Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches = RegexInstanceState::get().default_matches,
                                    int64_t flags = regex::PREG_NO_FLAGS, int64_t offset = 0) noexcept;
 
-/*
- * PHP's implementation of preg_replace doesn't replace some errors. For example, consider replacement containing
- * back reference $123. It cannot be found in the pattern, but PHP doesn't report it as error, it just treats such
- * back reference as an empty string. Our implementation warns user about such error and returns null.
- */
 Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit = regex::PREG_REPLACE_NOLIMIT,
                                 int64_t &count = RegexInstanceState::get().default_preg_replace_count) noexcept;
 
