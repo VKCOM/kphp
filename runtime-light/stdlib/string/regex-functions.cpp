@@ -53,8 +53,8 @@ struct RegexInfo final {
   // vector of group names
   regex_pcre2_group_names_t group_names;
 
-  int32_t match_count{};
-  size_t match_options{PCRE2_NO_UTF_CHECK};
+  int64_t match_count{};
+  uint32_t match_options{PCRE2_NO_UTF_CHECK};
 
   int64_t replace_count{};
   // contains a string after replacements if replace_count > 0, nullopt otherwise
