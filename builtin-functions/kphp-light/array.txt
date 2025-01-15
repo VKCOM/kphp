@@ -92,18 +92,35 @@ function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];
 function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
 function instance_to_array(object $instance, $with_class_names ::: bool = false) ::: mixed[];
 
-
+/** @kphp-extern-func-info interruptible */
 function asort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 
+/** @kphp-extern-func-info interruptible */
 function arsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 
+/** @kphp-extern-func-info interruptible */
 function ksort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 
+/** @kphp-extern-func-info interruptible */
 function krsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 
+/** @kphp-extern-func-info interruptible */
 function natsort (&$a ::: array) ::: void;
 
+/** @kphp-extern-func-info interruptible */
 function rsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 
+/** @kphp-extern-func-info interruptible */
 function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
+
+/** @kphp-extern-func-info interruptible */
+function uksort (&$a ::: array, callable(mixed $x, mixed $y):int $callback) ::: void;
+
+/** @kphp-extern-func-info interruptible */
+function usort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
+
+/** @kphp-extern-func-info interruptible */
+function uasort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
+
+
 
