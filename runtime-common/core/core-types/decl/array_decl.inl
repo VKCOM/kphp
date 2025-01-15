@@ -29,15 +29,15 @@ struct array_size {
 
 namespace dl {
 template<class T, class TT, class T1>
-void sort(TT *begin_init, TT *end_init, const T1 &compare);
+void sort(TT *begin_init, TT *end_init, T1 &&compare);
 }
 
 namespace array_functions_impl_ {
 template<typename Result, typename U, typename Comparator>
-Result sort(array<U> & arr, const Comparator &comparator, bool renumber);
+Result sort(array<U> & arr, Comparator &&comparator, bool renumber);
 
 template<typename Result, typename U, typename Comparator>
-Result ksort(array<U> & arr, const Comparator &comparator);
+Result ksort(array<U> & arr, Comparator &&comparator);
 }
 
 enum class overwrite_element { YES, NO };
@@ -442,10 +442,10 @@ private:
   friend class array;
 
   template<typename Result, typename U, typename Comparator>
-  friend Result array_functions_impl_::sort(array<U> & arr, const Comparator &comparator, bool renumber);
+  friend Result array_functions_impl_::sort(array<U> & arr, Comparator &&comparator, bool renumber);
 
   template<typename Result, typename U, typename Comparator>
-  friend Result array_functions_impl_::ksort(array<U> & arr, const Comparator &comparator);
+  friend Result array_functions_impl_::ksort(array<U> & arr, Comparator &&comparator);
 };
 
 template<class T>

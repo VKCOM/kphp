@@ -14,8 +14,8 @@
 
 namespace dl {
 
-template<typename T, typename T1>
-void sort(T *begin_init, T *end_init, const T1 &compare) {
+template<typename T, typename Comparator>
+void sort(T *begin_init, T *end_init, Comparator &&compare) {
   T *begin_stack[32];
   T *end_stack[32];
 
@@ -33,11 +33,11 @@ void sort(T *begin_init, T *end_init, const T1 &compare) {
       T *i = begin + 1, *j = end;
 
       while (1) {
-        while (i < j && compare(*begin, *i) > 0) {
+        while (i < j && std::invoke(std::forward<Comparator>(compare), *begin, *i) > 0) {
           i++;
         }
 
-        while (i <= j && compare(*j, *begin) > 0) {
+        while (i <= j && std::invoke(std::forward<Comparator>(compare), *j, *begin) > 0) {
           j--;
         }
 
@@ -72,7 +72,7 @@ void sort(T *begin_init, T *end_init, const T1 &compare) {
 namespace array_functions_impl_ {
 
 template<typename Result, typename U, typename Comparator>
-Result sort(array<U> &arr, const Comparator &comparator, bool renumber) {
+Result sort(array<U> &arr, Comparator &&comparator, bool renumber) {
     using array_inner = typename array<U>::array_inner;
     using array_bucket = typename array<U>::array_bucket;
     int64_t n = arr.count();
@@ -94,9 +94,10 @@ Result sort(array<U> &arr, const Comparator &comparator, bool renumber) {
         arr.mutate_if_vector_shared();
       }
 
-      const auto elements_cmp = [&comparator](const U &lhs, const U &rhs) { return std::invoke(comparator, lhs, rhs) > 0; };
+      auto elements_cmp = [&comparator](const U &lhs, const U &rhs)
+      { return std::invoke(std::forward<Comparator>(comparator), lhs, rhs) > 0; };
       U *begin = reinterpret_cast<U *>(arr.p->entries());
-      dl::sort<U, decltype(elements_cmp)>(begin, begin + n, elements_cmp);
+      dl::sort<U, decltype(elements_cmp)>(begin, begin + n, std::move(elements_cmp));
       return;
     }
 
@@ -117,8 +118,9 @@ Result sort(array<U> &arr, const Comparator &comparator, bool renumber) {
     }
     php_assert(i == n);
 
-    const auto hash_entry_cmp = [&comparator](const array_bucket *lhs, const array_bucket *rhs) { return std::invoke(comparator, lhs->value, rhs->value) > 0; };
-    dl::sort<array_bucket *, decltype(hash_entry_cmp)>(arTmp, arTmp + n, hash_entry_cmp);
+    auto hash_entry_cmp = [&comparator](const array_bucket *lhs, const array_bucket *rhs)
+    { return std::invoke(std::forward<Comparator>(comparator), lhs->value, rhs->value) > 0; };
+    dl::sort<array_bucket *, decltype(hash_entry_cmp)>(arTmp, arTmp + n, std::move(hash_entry_cmp));
 
     arTmp[0]->prev = arr.p->get_pointer(arr.p->end());
     arr.p->end()->next = arr.p->get_pointer(arTmp[0]);
@@ -133,7 +135,7 @@ Result sort(array<U> &arr, const Comparator &comparator, bool renumber) {
 }
 
 template<typename Result, typename U, typename Comparator>
-Result ksort(array<U> &arr, const Comparator &comparator) {
+Result ksort(array<U> &arr, Comparator &&comparator) {
   using array_bucket = typename array<U>::array_bucket;
   using key_type = typename array<U>::key_type;
   using list_hash_entry = typename array<U>::list_hash_entry;
@@ -155,7 +157,7 @@ Result ksort(array<U> &arr, const Comparator &comparator) {
   }
 
   key_type *keysp = (key_type *)keys.p->entries();
-  dl::sort<key_type, Comparator>(keysp, keysp + n, comparator);
+  dl::sort<key_type, Comparator>(keysp, keysp + n, std::forward<Comparator>(comparator));
 
   list_hash_entry *prev = (list_hash_entry *)arr.p->end();
   for (uint32_t j = 0; j < n; j++) {

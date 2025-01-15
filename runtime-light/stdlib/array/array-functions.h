@@ -18,13 +18,12 @@
 namespace dl {
 
 template<typename T, typename Comparator>
-requires(std::invocable<Comparator, T, T>)
-task_t<void> sort(T *begin_init, T *end_init, const Comparator &compare) {
-  auto compare_call = [&compare]<typename U>(U&& lhs, U&& rhs) -> task_t<int64_t> {
+requires(std::invocable<Comparator, T, T>) task_t<void> sort(T *begin_init, T *end_init, Comparator &&compare) {
+  auto compare_call = [&compare]<typename U>(U &&lhs, U &&rhs) -> task_t<int64_t> {
     if constexpr (is_async_function_v<Comparator, U, U>) {
-      co_return co_await std::invoke(compare, std::forward<U>(lhs), std::forward<U>(rhs));
+      co_return co_await std::invoke(std::forward<Comparator>(compare), std::forward<U>(lhs), std::forward<U>(rhs));
     } else {
-      co_return std::invoke(compare, std::forward<U>(lhs), std::forward<U>(rhs));
+      co_return std::invoke(std::forward<Comparator>(compare), std::forward<U>(lhs), std::forward<U>(rhs));
     }
   };
   T *begin_stack[32];
@@ -84,7 +83,7 @@ task_t<void> sort(T *begin_init, T *end_init, const Comparator &compare) {
 namespace array_functions_impl_ {
 
 template<typename Result, typename U, typename Comparator>
-Result sort(array<U> &arr, const Comparator &comparator, bool renumber) {
+Result sort(array<U> &arr, Comparator &&comparator, bool renumber) {
   using array_inner = typename array<U>::array_inner;
   using array_bucket = typename array<U>::array_bucket;
   int64_t n = arr.count();
@@ -108,9 +107,9 @@ Result sort(array<U> &arr, const Comparator &comparator, bool renumber) {
 
     const auto elements_cmp = [&comparator](const U &lhs, const U &rhs) -> task_t<bool> {
       if constexpr (is_async_function_v<Comparator, U, U>) {
-        co_return(co_await std::invoke(comparator, lhs, rhs)) > 0;
+        co_return(co_await std::invoke(std::forward<Comparator>(comparator), lhs, rhs)) > 0;
       } else {
-        co_return std::invoke(comparator, lhs, rhs) > 0;
+        co_return std::invoke(std::forward<Comparator>(comparator), lhs, rhs) > 0;
       }
     };
 
@@ -158,7 +157,7 @@ Result sort(array<U> &arr, const Comparator &comparator, bool renumber) {
 }
 
 template<typename Result, typename U, typename Comparator>
-Result ksort(array<U> &arr, const Comparator &comparator) {
+Result ksort(array<U> &arr, Comparator &&comparator) {
   using array_bucket = typename array<U>::array_bucket;
   using key_type = typename array<U>::key_type;
   using list_hash_entry = typename array<U>::list_hash_entry;
@@ -180,7 +179,7 @@ Result ksort(array<U> &arr, const Comparator &comparator) {
   }
 
   key_type *keysp = reinterpret_cast<key_type *>(keys.p->entries());
-  co_await dl::sort<key_type, Comparator>(keysp, keysp + n, comparator);
+  co_await dl::sort<key_type, Comparator>(keysp, keysp + n, std::forward<Comparator>(comparator));
 
   list_hash_entry *prev = static_cast<list_hash_entry *>(arr.p->end());
   for (uint32_t j = 0; j < n; j++) {
@@ -515,21 +514,18 @@ task_t<void> f$natsort(array<T> &a) {
 }
 
 template<class T, class Comparator>
-requires(std::invocable<Comparator, T, T>)
-task_t<void> f$usort(array<T> &a, const Comparator &compare) {
-  co_return co_await array_functions_impl_::sort<task_t<void>>(a, compare, true);
+requires(std::invocable<Comparator, T, T>) task_t<void> f$usort(array<T> &a, Comparator &&compare) {
+  co_return co_await array_functions_impl_::sort<task_t<void>>(a, std::forward<Comparator>(compare), true);
 }
 
 template<class T, class Comparator>
-requires(std::invocable<Comparator, T, T>)
-task_t<void> f$uasort(array<T> &a, const Comparator &compare) {
-  co_return co_await array_functions_impl_::sort<task_t<void>>(a, compare, false);
+requires(std::invocable<Comparator, T, T>) task_t<void> f$uasort(array<T> &a, Comparator &&compare) {
+  co_return co_await array_functions_impl_::sort<task_t<void>>(a, std::forward<Comparator>(compare), false);
 }
 
 template<class T, class Comparator>
-requires(std::invocable<Comparator, typename array<T>::key_type, typename array<T>::key_type>)
-task_t<void> f$uksort(array<T> &a, const Comparator &compare) {
-  co_return co_await array_functions_impl_::ksort<task_t<void>>(a, compare);
+requires(std::invocable<Comparator, typename array<T>::key_type, typename array<T>::key_type>) task_t<void> f$uksort(array<T> &a, Comparator &&compare) {
+  co_return co_await array_functions_impl_::ksort<task_t<void>>(a, std::forward<Comparator>(compare));
 }
 
 template<class T>
