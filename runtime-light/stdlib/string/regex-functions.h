@@ -7,6 +7,7 @@
 #include <concepts>
 #include <cstdint>
 #include <functional>
+#include <type_traits>
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
@@ -85,6 +86,7 @@ template<std::invocable<array<string>> F>
 task_t<Optional<string>> f$preg_replace_callback(string pattern, F callback, string subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
                                                  int64_t &count = RegexInstanceState::get().default_preg_replace_count,
                                                  int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
+  static_assert(std::same_as<std::invoke_result_t<F, array<string>>, string>);
   // the performance of this function can be enhanced:
   // 1. don't use public f$preg_match and f$preg_replace;
   // 2. use match_regex and replace_regex directly;
