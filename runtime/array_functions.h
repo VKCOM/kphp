@@ -15,7 +15,7 @@
 namespace dl {
 
 template<typename T, typename Comparator>
-void sort(T *begin_init, T *end_init, Comparator &&compare) {
+void sort(T *begin_init, T *end_init, Comparator &&compare) noexcept {
   T *begin_stack[32];
   T *end_stack[32];
 
@@ -72,7 +72,7 @@ void sort(T *begin_init, T *end_init, Comparator &&compare) {
 namespace array_functions_impl_ {
 
 template<typename Result, typename U, typename Comparator>
-Result sort(array<U> &arr, Comparator &&comparator, bool renumber) {
+Result sort(array<U> &arr, Comparator &&comparator, bool renumber) noexcept {
     using array_inner = typename array<U>::array_inner;
     using array_bucket = typename array<U>::array_bucket;
     int64_t n = arr.count();
@@ -135,7 +135,7 @@ Result sort(array<U> &arr, Comparator &&comparator, bool renumber) {
 }
 
 template<typename Result, typename U, typename Comparator>
-Result ksort(array<U> &arr, Comparator &&comparator) {
+Result ksort(array<U> &arr, Comparator &&comparator) noexcept {
   using array_bucket = typename array<U>::array_bucket;
   using key_type = typename array<U>::key_type;
   using list_hash_entry = typename array<U>::list_hash_entry;

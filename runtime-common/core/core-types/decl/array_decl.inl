@@ -29,15 +29,15 @@ struct array_size {
 
 namespace dl {
 template<class T, class TT, class T1>
-void sort(TT *begin_init, TT *end_init, T1 &&compare);
+void sort(TT *begin_init, TT *end_init, T1 &&compare) noexcept;
 }
 
 namespace array_functions_impl_ {
 template<typename Result, typename U, typename Comparator>
-Result sort(array<U> & arr, Comparator &&comparator, bool renumber);
+Result sort(array<U> & arr, Comparator &&comparator, bool renumber) noexcept;
 
 template<typename Result, typename U, typename Comparator>
-Result ksort(array<U> & arr, Comparator &&comparator);
+Result ksort(array<U> & arr, Comparator &&comparator) noexcept;
 }
 
 enum class overwrite_element { YES, NO };
