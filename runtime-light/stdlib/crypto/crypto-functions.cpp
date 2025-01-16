@@ -100,7 +100,7 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
 task_t<bool> f$openssl_sign(const string &data, string &signature, const string &private_key, int64_t algo) noexcept {
   tl::DigestSign request{.data = {.value = {data.c_str(), data.size()}},
                          .private_key = {.value = {private_key.c_str(), private_key.size()}},
-                         .algorithm = static_cast<tl::DigestAlgorithm>(algo)};
+                         .algorithm = static_cast<tl::HashAlgorithm>(algo)};
 
   tl::TLBuffer buffer;
   request.store(buffer);
@@ -127,7 +127,7 @@ task_t<bool> f$openssl_sign(const string &data, string &signature, const string 
 task_t<int64_t> f$openssl_verify(const string &data, const string &signature, const string &pub_key, int64_t algo) noexcept {
   tl::DigestVerify request{.data = {.value = {data.c_str(), data.size()}},
                            .public_key = {.value = {pub_key.c_str(), pub_key.size()}},
-                           .algorithm = static_cast<tl::DigestAlgorithm>(algo),
+                           .algorithm = static_cast<tl::HashAlgorithm>(algo),
                            .signature = {.value = {signature.c_str(), signature.size()}}};
 
   tl::TLBuffer buffer;

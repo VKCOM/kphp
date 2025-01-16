@@ -56,7 +56,7 @@ struct GetPemCertInfo final {
 struct DigestSign final {
   string data;
   string private_key;
-  DigestAlgorithm algorithm{};
+  HashAlgorithm algorithm{};
 
   void store(TLBuffer &tlb) const noexcept;
 };
@@ -64,7 +64,7 @@ struct DigestSign final {
 struct DigestVerify final {
   string data;
   string public_key;
-  DigestAlgorithm algorithm{};
+  HashAlgorithm algorithm{};
   string signature;
 
   void store(TLBuffer &tlb) const noexcept;
