@@ -69,40 +69,40 @@ inline int64_t f$wait_queue_create() {
   php_critical_error("call to unsupported function");
 }
 
-inline int64_t f$wait_queue_create(const mixed &resumable_ids) {
+inline int64_t f$wait_queue_create(const mixed & /*resumable_ids*/) {
   php_critical_error("call to unsupported function");
 }
 
-inline int64_t f$wait_queue_push(int64_t queue_id, const mixed &resumable_ids) {
+inline int64_t f$wait_queue_push(int64_t /*queue_id*/, const mixed & /*resumable_ids*/) {
   php_critical_error("call to unsupported function");
 }
 
-inline bool f$wait_queue_empty(int64_t queue_id) {
+inline bool f$wait_queue_empty(int64_t /*queue_id*/) {
   php_critical_error("call to unsupported function");
 }
 
-inline Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1.0) {
+inline Optional<int64_t> f$wait_queue_next(int64_t /*queue_id*/, double /*timeout*/ = -1.0) {
   php_critical_error("call to unsupported function");
 }
 
-inline bool f$wait_concurrently(int64_t fork_id) {
+inline bool f$wait_concurrently(int64_t /*fork_id*/) {
   php_critical_error("call to unsupported function");
 }
 
-inline bool f$wait_concurrently(Optional<int64_t> resumable_id) {
+inline bool f$wait_concurrently(Optional<int64_t> /*resumable_id*/) {
   php_critical_error("call to unsupported function");
 }
 
-inline bool f$wait_concurrently(const mixed &resumable_id) {
-  php_critical_error("call to unsupported function");
-}
-
-template<typename T>
-T f$wait_multi(const array<Optional<int64_t>> &resumable_ids) {
+inline bool f$wait_concurrently(const mixed & /*resumable_id*/) {
   php_critical_error("call to unsupported function");
 }
 
 template<typename T>
-T f$wait_multi(const array<int64_t> &resumable_ids) {
+T f$wait_multi(const array<Optional<int64_t>> & /*resumable_ids*/) {
+  php_critical_error("call to unsupported function");
+}
+
+template<typename T>
+T f$wait_multi(const array<int64_t> & /*resumable_ids*/) {
   php_critical_error("call to unsupported function");
 }
