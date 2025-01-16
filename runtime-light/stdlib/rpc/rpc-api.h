@@ -117,13 +117,17 @@ f$typed_rpc_tl_query_result_synchronously(array<query_id_t> query_ids) noexcept 
   co_return co_await f$rpc_fetch_typed_responses_synchronously(std::move(query_ids));
 }
 
-template<class T>
-task_t<array<array<mixed>>> f$rpc_tl_query_result(const array<T> &) {
-  php_critical_error("call to unsupported function");
+inline task_t<array<array<mixed>>> f$rpc_tl_query_result_synchronously(array<int64_t> query_ids) noexcept {
+  co_return co_await f$rpc_fetch_responses(std::move(query_ids));
 }
 
 template<class T>
-array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<T> &) {
+task_t<array<array<mixed>>> f$rpc_tl_query_result_synchronously(array<T> query_ids) noexcept {
+  co_return co_await f$rpc_tl_query_result_synchronously(array<int64_t>::convert_from(query_ids));
+}
+
+template<class T>
+task_t<array<array<mixed>>> f$rpc_tl_query_result(const array<T> &) {
   php_critical_error("call to unsupported function");
 }
 

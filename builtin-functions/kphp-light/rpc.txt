@@ -85,6 +85,9 @@ function rpc_tl_query (\RpcConnection $rpc_conn, $arr ::: array, $timeout ::: fl
 /** @kphp-extern-func-info interruptible */
 function rpc_tl_query_result ($query_ids ::: array) ::: mixed[][];
 
+/** @kphp-extern-func-info interruptible */
+function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
+
 /** @kphp-extern-func-info interruptible generate-stub */
 function typed_rpc_tl_query (\RpcConnection $connection, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
 
@@ -104,8 +107,6 @@ function rpc_queue_empty ($queue_id ::: int) ::: bool;
 function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int | false;
 /** @kphp-extern-func-info interruptible generate-stub */
 function rpc_queue_push ($queue_id ::: int, $request_ids ::: mixed) ::: int;
-
-function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
 
 /** @kphp-extern-func-info interruptible generate-stub */
 function store_error ($error_code ::: int, $error_text ::: string) ::: bool;
