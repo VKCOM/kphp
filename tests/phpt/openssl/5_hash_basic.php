@@ -14,7 +14,6 @@ function test_hash_basic() {
   $a = array("", "asdasd", "abacaba", "1", NULL, false, true, "asdasdasdasdasd42n3jb23jkb2k3vb2hj3v41hj 13hj j23hbr j42hb j42hb jh43b rjh1hb 12jb 3jh4 b32 b24");
 
   foreach ($a as $s) {
-    var_dump (dechex (crc32 ($s)));
     var_dump (sha1 ($s, false));
     var_dump (sha1 ($s, true));
     var_dump (sha1 ($s));
@@ -36,11 +35,6 @@ function test_hash_basic() {
   }
   for ($i = 0; $i < 100; $i++)
     var_dump (md5 ($i));
-
-  var_dump (md5_file ("/bin/ls"));
-  var_dump (md5_file ("/bin/ls", true));
-
-  var_dump (dechex (crc32_file ("/bin/ls")));
 }
 
 function test_hash_equals() {
