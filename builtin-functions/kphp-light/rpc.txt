@@ -74,6 +74,8 @@ function store_string ($v ::: string) ::: bool;
 function store_double ($v ::: float) ::: bool;
 function store_float ($v ::: float) ::: bool;
 
+function rpc_tl_pending_queries_count (): int;
+
 // === Rpc Old API =================================================================================
 
 /** @kphp-extern-func-info interruptible */
@@ -101,8 +103,6 @@ function rpc_queue_empty ($queue_id ::: int) ::: bool;
 function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int | false;
 /** @kphp-extern-func-info interruptible generate-stub */
 function rpc_queue_push ($queue_id ::: int, $request_ids ::: mixed) ::: int;
-/** @kphp-extern-func-info interruptible generate-stub */
-function rpc_tl_pending_queries_count () ::: int;
 
 function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
 
