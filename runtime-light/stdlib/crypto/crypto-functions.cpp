@@ -343,3 +343,17 @@ task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, co
   }
   co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
 }
+
+array<string> f$hash_algos() noexcept {
+  static constexpr const char *algos[] = {"md5", "sha1", "sha224", "sha256", "sha384", "sha512"};
+  array<string> response;
+  response.reserve(std::size(algos), true);
+  for (const char *algo : algos) {
+    response.push_back(string(algo));
+  }
+  return response;
+}
+
+array<string> f$hash_hmac_algos() noexcept {
+  return f$hash_algos();
+}
