@@ -14,14 +14,18 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-kphp-request.h"
 
-inline constexpr int64_t RPC_VALID_QUERY_ID_RANGE_START = 0;
-inline constexpr int64_t RPC_INVALID_QUERY_ID = -1;
-inline constexpr int64_t RPC_IGNORED_ANSWER_QUERY_ID = -2;
+namespace kphp::rpc {
+
+inline constexpr int64_t VALID_QUERY_ID_RANGE_START = 0;
+inline constexpr int64_t INVALID_QUERY_ID = -1;
+inline constexpr int64_t IGNORED_ANSWER_QUERY_ID = -2;
+
+} // namespace kphp::rpc
 
 namespace rpc_impl_ {
 
 struct RpcQueryInfo {
-  int64_t id{RPC_INVALID_QUERY_ID};
+  int64_t id{kphp::rpc::INVALID_QUERY_ID};
   size_t request_size{0};
   double timestamp{0.0};
 };
