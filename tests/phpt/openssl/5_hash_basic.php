@@ -1,4 +1,4 @@
-@ok benchmark k2_skip
+@ok benchmark
 <?php
 #ifndef KPHP
   function crc32_file ($x) {
@@ -9,7 +9,6 @@
 function test_hash_basic() {
   hash_algos();
   $algos = array ("md5", "sha1", "sha224", "sha256", "sha384", "sha512");
-
 
   $a = array("", "asdasd", "abacaba", "1", NULL, false, true, "asdasdasdasdasd42n3jb23jkb2k3vb2hj3v41hj 13hj j23hbr j42hb j42hb jh43b rjh1hb 12jb 3jh4 b32 b24");
 

@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
@@ -18,7 +19,7 @@ string f$addslashes(const string &str) noexcept;
 
 string f$hex2bin(const string &str) noexcept;
 
-inline string f$bin2hex(const string &str) noexcept {
+inline string bin2hex_impl(std::string_view str) noexcept {
   int len = str.size();
   string result(2 * len, false);
 
@@ -28,6 +29,10 @@ inline string f$bin2hex(const string &str) noexcept {
   }
 
   return result;
+}
+
+inline string f$bin2hex(const string &str) noexcept {
+  return bin2hex_impl(std::string_view{str.c_str(), str.size()});
 }
 
 string f$convert_cyr_string(const string &str, const string &from_s, const string &to_s) noexcept;

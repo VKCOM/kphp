@@ -90,6 +90,19 @@ void CbcEncrypt::store(TLBuffer &tlb) const noexcept {
   data.store(tlb);
 }
 
+void Hash::store(TLBuffer &tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(HASH_MAGIC);
+  tlb.store_trivial<uint32_t>(algorithm);
+  data.store(tlb);
+}
+
+void HashHmac::store(TLBuffer &tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(HASH_HMAC_MAGIC);
+  tlb.store_trivial<uint32_t>(algorithm);
+  data.store(tlb);
+  secret_key.store(tlb);
+}
+
 // ===== CONFDATA =====
 
 void ConfdataGet::store(TLBuffer &tlb) const noexcept {

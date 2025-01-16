@@ -4,11 +4,14 @@
 
 #include "runtime-light/stdlib/crypto/crypto-functions.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <string_view>
 
 #include "common/tl/constants/common.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -155,7 +158,7 @@ namespace {
 constexpr std::string_view AES_128_CBC = "aes-128-cbc";
 constexpr std::string_view AES_256_CBC = "aes-256-cbc";
 
-std::optional<tl::CipherAlgorithm> parse_algorithm(const string &method) noexcept {
+std::optional<tl::CipherAlgorithm> parse_cipher_algorithm(const string &method) noexcept {
   using namespace std::string_view_literals;
   std::string_view method_sv{method.c_str(), method.size()};
 
@@ -237,7 +240,7 @@ array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexce
 }
 
 Optional<int64_t> f$openssl_cipher_iv_length(const string &method) noexcept {
-  auto algorithm = parse_algorithm(method);
+  auto algorithm = parse_cipher_algorithm(method);
   if (!algorithm.has_value()) {
     php_warning("Unknown cipher algorithm");
     return false;
@@ -247,7 +250,7 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string &method) noexcept {
 
 task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &method, const string &source_key, int64_t options, const string &source_iv,
                                            string &tag, const string &aad, int64_t tag_length __attribute__((unused))) noexcept {
-  auto algorithm = parse_algorithm(method);
+  auto algorithm = parse_cipher_algorithm(method);
   if (!algorithm.has_value()) {
     php_warning("Unknown cipher algorithm");
     co_return false;
@@ -303,7 +306,7 @@ task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, co
     data = std::move(decoding_data.val());
   }
 
-  auto algorithm = parse_algorithm(method);
+  auto algorithm = parse_cipher_algorithm(method);
   if (!algorithm.has_value()) {
     php_warning("Unknown cipher algorithm");
     co_return false;
@@ -344,16 +347,92 @@ task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, co
   co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
 }
 
+namespace {
+constexpr std::pair<const char *, tl::HashAlgorithm> HASH_ALGOS[] = {{"md5", tl::HashAlgorithm::MD5},       {"sha1", tl::HashAlgorithm::SHA1},
+                                                                     {"sha224", tl::HashAlgorithm::SHA224}, {"sha256", tl::HashAlgorithm::SHA256},
+                                                                     {"sha384", tl::HashAlgorithm::SHA384}, {"sha512", tl::HashAlgorithm::SHA512}};
+
+std::optional<tl::HashAlgorithm> parse_hash_algorithm(const string &algo_str) noexcept {
+  std::string_view algo_sv{algo_str.c_str(), algo_str.size()};
+
+  const auto ichar_equals = [](char a, char b) { return std::tolower(a) == std::tolower(b); };
+
+  const auto *it = std::find_if(std::begin(HASH_ALGOS), std::end(HASH_ALGOS),
+                                [&](auto pair) { return std::ranges::equal(algo_sv, std::string_view{pair.first}, ichar_equals); });
+
+  if (it == std::end(HASH_ALGOS)) {
+    return std::nullopt;
+  }
+  return it->second;
+}
+
+task_t<string> send_and_get_string(tl::TLBuffer &&buffer, bool raw_output) {
+  auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  string resp = co_await f$component_client_fetch_response(co_await query);
+
+  buffer.clean();
+  buffer.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
+
+  tl::String response{};
+  // TODO: parse error?
+  if (!response.fetch(buffer)) {
+    co_return string("");
+  }
+
+  if (!raw_output) {
+    co_return bin2hex_impl(response.inner.value);
+  }
+
+  // Important to pass size because response.inner.value is binary so
+  // it may contain zero in any position, not only in the end
+  co_return string(response.inner.value.data(), response.inner.value.size());
+}
+
+task_t<string> hash_impl(tl::HashAlgorithm algo, const string &s, bool raw_output) noexcept {
+  tl::Hash request{.algorithm = algo, .data = {.value = {s.c_str(), s.size()}}};
+  tl::TLBuffer buffer;
+  request.store(buffer);
+
+  co_return co_await send_and_get_string(std::move(buffer), raw_output);
+}
+
+} // namespace
+
 array<string> f$hash_algos() noexcept {
-  static constexpr const char *algos[] = {"md5", "sha1", "sha224", "sha256", "sha384", "sha512"};
   array<string> response;
-  response.reserve(std::size(algos), true);
-  for (const char *algo : algos) {
-    response.push_back(string(algo));
+  response.reserve(std::size(HASH_ALGOS), true);
+  for (auto [algo_name, _] : HASH_ALGOS) {
+    response.push_back(string(algo_name));
   }
   return response;
 }
 
 array<string> f$hash_hmac_algos() noexcept {
   return f$hash_algos();
+}
+
+task_t<string> f$hash(const string &algo_str, const string &s, bool raw_output) noexcept {
+  const auto algo = parse_hash_algorithm(algo_str);
+  if (!algo.has_value()) {
+    php_critical_error("algo %s not supported in function hash", algo_str.c_str());
+  }
+  co_return co_await hash_impl(*algo, s, raw_output);
+}
+
+task_t<string> f$hash_hmac(const string &algo_str, const string &s, const string &key, bool raw_output) noexcept {
+  const auto algo = parse_hash_algorithm(algo_str);
+  if (!algo.has_value()) {
+    php_critical_error("algo %s not supported in function hash", algo_str.c_str());
+  }
+
+  tl::HashHmac request{.algorithm = *algo, .data = {.value = {s.c_str(), s.size()}}, .secret_key = {.value = {key.c_str(), key.size()}}};
+  tl::TLBuffer buffer;
+  request.store(buffer);
+
+  co_return co_await send_and_get_string(std::move(buffer), raw_output);
+}
+
+task_t<string> f$sha1(const string &s, bool raw_output) noexcept {
+  co_return co_await hash_impl(tl::HashAlgorithm::SHA1, s, raw_output);
 }

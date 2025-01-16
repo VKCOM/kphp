@@ -31,17 +31,11 @@ task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &met
 task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, const string &key, int64_t options = 0, const string &iv = string{},
                                            string tag = string{}, const string &aad = string{}) noexcept;
 
-
 array<string> f$hash_algos() noexcept;
 array<string> f$hash_hmac_algos() noexcept;
-
-// function hash_algos () ::: string[];
-// function hash_hmac_algos () ::: string[];
-// function hash ($algo ::: string, $data ::: string, $raw_output ::: bool = false) ::: string;
-// function hash_hmac ($algo ::: string, $data ::: string, $key ::: string, $raw_output ::: bool = false) ::: string;
-// function hash_equals(string $known_string, string $user_string) ::: bool;
-// function sha1 ($s ::: string, $raw_output ::: bool = false) ::: string;
-
+task_t<string> f$hash(const string &algo_str, const string &s, bool raw_output = false) noexcept;
+task_t<string> f$hash_hmac(const string &algo_str, const string &s, const string &key, bool raw_output = false) noexcept;
+task_t<string> f$sha1(const string &s, bool raw_output = false) noexcept;
 inline string f$md5(const string &str, bool binary = false) noexcept {
   constexpr auto MD5_HASH_LEN = 16;
   string output{static_cast<string::size_type>(MD5_HASH_LEN * (binary ? 1 : 2)), false};
@@ -55,4 +49,3 @@ inline string f$md5(const string &str, bool binary = false) noexcept {
   }
   return output;
 }
-

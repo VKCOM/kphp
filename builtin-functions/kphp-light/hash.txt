@@ -10,14 +10,6 @@ function gzcompress ($str ::: string, $level ::: int = -1): string;
 
 function gzuncompress ($str ::: string): string;
 
-function hash_algos () ::: string[];
-function hash_hmac_algos () ::: string[];
-function hash ($algo ::: string, $data ::: string, $raw_output ::: bool = false) ::: string;
-function hash_hmac ($algo ::: string, $data ::: string, $key ::: string, $raw_output ::: bool = false) ::: string;
-function hash_equals(string $known_string, string $user_string) ::: bool;
-function sha1 ($s ::: string, $raw_output ::: bool = false) ::: string;
-function md5 ($s ::: string, $raw_output ::: bool = false) ::: string;
-
 // ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info generate-stub */
