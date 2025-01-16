@@ -239,20 +239,6 @@ int64_t f$crc32_file(const string &file_name) {
   return res ^ std::numeric_limits<uint32_t>::max();
 }
 
-bool f$hash_equals(const string &known_string, const string &user_string) noexcept {
-  if (known_string.size() != user_string.size()) {
-    return false;
-  }
-  int result = 0;
-  // This is security sensitive code. Do not optimize this for speed
-  // Compares two strings using the same time whether they're equal or not
-  // A difference in length will leak
-  for (int i = 0; i != known_string.size(); ++i) {
-    result |= known_string[i] ^ user_string[i];
-  }
-  return !result;
-}
-
 template<char PREFIX_CHAR>
 struct EVPKeyResourceStorage {
 public:
