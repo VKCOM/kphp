@@ -3,7 +3,7 @@
 require_once 'kphp_tester_include.php';
 
 function like_rpc_write() {
-    printf("log\n");
+    echo "log\n";
     sched_yield(); // resumable
 }
 
@@ -18,7 +18,7 @@ class A implements \ArrayAccess {
     }
 
     public function to_be_forked() {
-        printf("in to_be_forked\n");
+        echo "in to_be_forked\n";
         like_rpc_write();
         return null;
     }

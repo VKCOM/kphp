@@ -1,6 +1,6 @@
 @kphp_should_fail
-/Function \[ArrayAccess::offsetGet\] is a method of ArrayAccess, it cannot call resumable functions/
-/Function transitively calls the resumable function along the following chain:/
+/Function \[ArrayAccess::offsetGet\] is a method of ArrayAccess, it cannot call (resumable|interruptible) functions/
+/Function transitively calls the (resumable|interruptible) function along the following chain:/
 /ArrayAccess::offsetGet -> A::offsetGet -> like_rpc_write -> sched_yield/
 
 <?php

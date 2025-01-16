@@ -549,10 +549,10 @@ class CalcBadVars {
     for (const auto &func : call_graph.functions) {
       if (into_interruptible[func]) {
         func->is_interruptible = true;
-        if (unlikely(func->class_id && func->class_id->is_required_interface)) {
-          std::string func_name = func->name;
-          std::replace(func_name.begin(), func_name.end(), '$', ':');
-          kphp_error(false, fmt_format("{} cannot be interruptible", func_name).c_str());
+        if (unlikely(func->class_id && func->class_id == G->get_class("ArrayAccess"))) {
+          kphp_error(false, fmt_format("Function [{}] is a method of ArrayAccess, it cannot call interruptible functions\n"
+                                       "Function transitively calls the interruptible function along the following chain:\n{}\n",
+                                       func->as_human_readable(), get_call_path(func, to_parents)));
         }
       }
     }
@@ -592,24 +592,11 @@ class CalcBadVars {
       }
     }
 
-    auto get_call_resumable_path = [&](FunctionPtr func) {
-      kphp_assert_msg(func, "Unexpected null FunctionPtr in getting resumable call-chain");
-      std::vector<std::string> names;
-      names.push_back(TermStringFormat::paint(func->as_human_readable(), TermStringFormat::red));
-
-      func = to_parents[func];
-      while (func) {
-        names.push_back(func->as_human_readable());
-        func = to_parents[func];
-      }
-      return vk::join(names, " -> ");
-    };
-
     for (const auto &func : call_graph.functions) {
       if (func->class_id && func->class_id == G->get_class("ArrayAccess") && func->can_be_implicitly_interrupted_by_other_resumable) {
         kphp_error(false, fmt_format("Function [{}] is a method of ArrayAccess, it cannot call resumable functions\n"
                                      "Function transitively calls the resumable function along the following chain:\n{}\n",
-                                     func->as_human_readable(), get_call_resumable_path(func)));
+                                     func->as_human_readable(), get_call_path(func, to_parents)));
       }
       if (func->is_resumable) {
         if (func->should_be_sync) {
@@ -655,6 +642,19 @@ class CalcBadVars {
     }
     my_unique(&main_dep);
   }
+
+  static std::string get_call_path(FunctionPtr func, const IdMap<FunctionPtr> &to_parents) {
+    kphp_assert_msg(func, "Unexpected null FunctionPtr in getting call-chain");
+    std::vector<std::string> names;
+    names.push_back(TermStringFormat::paint(func->as_human_readable(), TermStringFormat::red));
+
+    func = to_parents[func];
+    while (func) {
+      names.push_back(func->as_human_readable());
+      func = to_parents[func];
+    }
+    return vk::join(names, " -> ");
+  };
 
   class MergeRefVarsCallback : public MergeReachalbeCallback<VarPtr> {
   private:
