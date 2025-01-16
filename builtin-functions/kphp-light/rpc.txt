@@ -75,6 +75,7 @@ function store_double ($v ::: float) ::: bool;
 function store_float ($v ::: float) ::: bool;
 
 function rpc_tl_pending_queries_count (): int;
+function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool): bool;
 
 // === Rpc Old API =================================================================================
 
@@ -110,9 +111,6 @@ function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
 function store_error ($error_code ::: int, $error_text ::: string) ::: bool;
 /** @kphp-extern-func-info interruptible generate-stub */
 function store_finish() ::: bool;
-
-/** @kphp-extern-func-info interruptible generate-stub */
-function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool) ::: bool;
 
 /** @kphp-extern-func-info interruptible generate-stub */
 function rpc_tl_query_one (\RpcConnection $rpc_conn, $arr ::: mixed, $timeout ::: float = -1.0) ::: int;

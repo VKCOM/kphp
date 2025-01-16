@@ -142,6 +142,10 @@ inline int64_t f$rpc_tl_pending_queries_count() noexcept {
   return RpcInstanceState::get().response_waiter_forks.size();
 }
 
+inline bool f$set_fail_rpc_on_int32_overflow(bool /*unused*/) noexcept {
+  return true;
+}
+
 // === Misc =======================================================================================
 
 bool is_int32_overflow(int64_t v) noexcept;
