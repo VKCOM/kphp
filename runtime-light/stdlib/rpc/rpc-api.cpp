@@ -392,10 +392,6 @@ task_t<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noex
 
 // === Rpc Misc ==================================================================================
 
-void f$rpc_clean() noexcept {
-  RpcInstanceState::get().rpc_buffer.clean();
-}
-
 // === Misc =======================================================================================
 
 bool is_int32_overflow(int64_t v) noexcept {

@@ -134,7 +134,9 @@ inline task_t<array<int64_t>> f$rpc_tl_query(const class_instance<C$RpcConnectio
 
 // === Rpc Misc ===================================================================================
 
-void f$rpc_clean() noexcept;
+inline void f$rpc_clean() noexcept {
+  RpcInstanceState::get().rpc_buffer.clean();
+}
 
 inline int64_t f$rpc_tl_pending_queries_count() noexcept {
   return RpcInstanceState::get().response_waiter_forks.size();
