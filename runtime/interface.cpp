@@ -745,27 +745,6 @@ void f$die(const mixed &v) {
   f$exit(v);
 }
 
-
-Optional<int64_t> f$ip2long(const string &ip) {
-  struct in_addr result;
-  if (inet_pton(AF_INET, ip.c_str(), &result) != 1) {
-    return false;
-  }
-  return ntohl(result.s_addr);
-}
-
-Optional<string> f$ip2ulong(const string &ip) {
-  struct in_addr result;
-  if (inet_pton(AF_INET, ip.c_str(), &result) != 1) {
-    return false;
-  }
-
-  const size_t buf_size = 25;
-  char buf[buf_size];
-  int len = snprintf(buf, buf_size, "%u", ntohl(result.s_addr));
-  return string(buf, len);
-}
-
 double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b) {
   constexpr auto job = [](int64_t n, double a, double b) {
     double res = 0;
@@ -786,17 +765,6 @@ double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b) {
     std::for_each(results.begin(), results.end(), [&](int64_t local){result += local;});
   }
   return result;
-}
-
-string f$long2ip(int64_t num) {
-  kphp_runtime_context.static_SB.clean().reserve(100);
-  for (int i = 3; i >= 0; i--) {
-    kphp_runtime_context.static_SB << ((num >> (i * 8)) & 255);
-    if (i) {
-      kphp_runtime_context.static_SB.append_char('.');
-    }
-  }
-  return kphp_runtime_context.static_SB.str();
 }
 
 Optional<array<string>> f$gethostbynamel(const string &name) {

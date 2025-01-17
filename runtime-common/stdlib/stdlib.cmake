@@ -5,7 +5,8 @@ prepend(STDLIB_SERIALIZATION stdlib/serialization/ json-functions.cpp
         json-writer.cpp serialize-functions.cpp)
 prepend(STDLIB_STRING stdlib/string/ mbstring-functions.cpp
         regex-functions.cpp string-functions.cpp)
-prepend(STDLIB_SERVER stdlib/server/ url-functions.cpp)
+prepend(STDLIB_SERVER stdlib/server/ url-functions.cpp
+        net-functions.cpp)
 prepend(STDLIB_VKEXT stdlib/vkext/ string-processing.cpp
         vkext-functions.cpp)
 

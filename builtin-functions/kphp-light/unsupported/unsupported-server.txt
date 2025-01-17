@@ -29,12 +29,6 @@ function instance_cache_delete(string $key) ::: bool;
 
 
 /** @kphp-extern-func-info generate-stub */
-function ip2long ($ip ::: string) ::: int | false;
-/** @kphp-extern-func-info generate-stub */
-function ip2ulong ($ip ::: string) ::: string | false;
-/** @kphp-extern-func-info generate-stub */
-function long2ip ($ip ::: int) ::: string;
-/** @kphp-extern-func-info generate-stub */
 function thread_pool_test_load($size ::: int, $n ::: int, $a ::: float, $b ::: float) ::: float;
 /** @kphp-extern-func-info generate-stub */
 function gethostbynamel ($name ::: string) ::: string[] | false;
