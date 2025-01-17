@@ -10,18 +10,23 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
+#include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-kphp-request.h"
 
-inline constexpr int64_t RPC_VALID_QUERY_ID_RANGE_START = 0;
-inline constexpr int64_t RPC_INVALID_QUERY_ID = -1;
-inline constexpr int64_t RPC_IGNORED_ANSWER_QUERY_ID = -2;
+namespace kphp::rpc {
+
+inline constexpr int64_t VALID_QUERY_ID_RANGE_START = 0;
+inline constexpr int64_t INVALID_QUERY_ID = -1;
+inline constexpr int64_t IGNORED_ANSWER_QUERY_ID = -2;
+
+} // namespace kphp::rpc
 
 namespace rpc_impl_ {
 
 struct RpcQueryInfo {
-  int64_t id{RPC_INVALID_QUERY_ID};
+  int64_t id{kphp::rpc::INVALID_QUERY_ID};
   size_t request_size{0};
   double timestamp{0.0};
 };
@@ -112,13 +117,17 @@ f$typed_rpc_tl_query_result_synchronously(array<query_id_t> query_ids) noexcept 
   co_return co_await f$rpc_fetch_typed_responses_synchronously(std::move(query_ids));
 }
 
-template<class T>
-task_t<array<array<mixed>>> f$rpc_tl_query_result(const array<T> &) {
-  php_critical_error("call to unsupported function");
+inline task_t<array<array<mixed>>> f$rpc_tl_query_result_synchronously(array<int64_t> query_ids) noexcept {
+  co_return co_await f$rpc_fetch_responses(std::move(query_ids));
 }
 
 template<class T>
-array<array<mixed>> f$rpc_tl_query_result_synchronously(const array<T> &) {
+task_t<array<array<mixed>>> f$rpc_tl_query_result_synchronously(array<T> query_ids) noexcept {
+  co_return co_await f$rpc_tl_query_result_synchronously(array<int64_t>::convert_from(query_ids));
+}
+
+template<class T>
+task_t<array<array<mixed>>> f$rpc_tl_query_result(const array<T> &) {
   php_critical_error("call to unsupported function");
 }
 
@@ -129,7 +138,18 @@ inline task_t<array<int64_t>> f$rpc_tl_query(const class_instance<C$RpcConnectio
 
 // === Rpc Misc ===================================================================================
 
-void f$rpc_clean() noexcept;
+inline void f$rpc_clean() noexcept {
+  RpcInstanceState::get().rpc_buffer.clean();
+}
+
+inline int64_t f$rpc_tl_pending_queries_count() noexcept {
+  return RpcInstanceState::get().response_waiter_forks.size();
+}
+
+inline bool f$set_fail_rpc_on_int32_overflow(bool fail_rpc) noexcept {
+  RpcInstanceState::get().fail_rpc_on_int32_overflow = fail_rpc;
+  return true;
+}
 
 // === Misc =======================================================================================
 

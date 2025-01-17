@@ -122,7 +122,7 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
   auto comp_query{co_await f$component_client_send_request(actor, request_buf)};
   if (comp_query.is_null()) {
     php_warning("can't send rpc query to %s", actor.c_str());
-    co_return RpcQueryInfo{.id = RPC_INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
+    co_return RpcQueryInfo{.id = kphp::rpc::INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
 
   // create response extra info
@@ -154,7 +154,7 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
   const auto waiter_fork_id{co_await start_fork_t{static_cast<task_t<void>>(std::move(waiter_task)), start_fork_t::execution::self}};
 
   if (ignore_answer) {
-    co_return RpcQueryInfo{.id = RPC_IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
+    co_return RpcQueryInfo{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
   rpc_ctx.response_waiter_forks.emplace(query_id, waiter_fork_id);
   co_return RpcQueryInfo{.id = query_id, .request_size = request_size, .timestamp = timestamp};
@@ -209,7 +209,7 @@ task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest 
 }
 
 task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
-  if (query_id < RPC_VALID_QUERY_ID_RANGE_START) {
+  if (query_id < kphp::rpc::VALID_QUERY_ID_RANGE_START) {
     co_return make_fetch_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
   }
 
@@ -256,7 +256,7 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
 }
 
 task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory &error_factory) noexcept {
-  if (query_id < RPC_VALID_QUERY_ID_RANGE_START) {
+  if (query_id < kphp::rpc::VALID_QUERY_ID_RANGE_START) {
     co_return error_factory.make_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
   }
 
@@ -391,10 +391,6 @@ task_t<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noex
 }
 
 // === Rpc Misc ==================================================================================
-
-void f$rpc_clean() noexcept {
-  RpcInstanceState::get().rpc_buffer.clean();
-}
 
 // === Misc =======================================================================================
 
