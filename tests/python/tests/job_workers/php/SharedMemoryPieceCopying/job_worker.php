@@ -34,7 +34,11 @@ function run_shared_memory_piece_copying_job(JobRequest $req) {
       break;
     }
     case "instance_cache:instance": {
-      instance_cache_store("test_" . $req->id, $req->shared_memory_context->instance);
+      // The Instance Cache does not guarantee immediate and in-place data storage.
+      // To avoid flakiness, we need to ensure that key-value pairs are stored.
+      // Attempt storage for up to 1 second.
+      $t = time();
+      while (!instance_cache_store("test_" . $req->id, $req->shared_memory_context->instance) && time() - $t <= 1) {}
       break;
     }
   }
