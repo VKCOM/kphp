@@ -117,7 +117,7 @@ task_t<Optional<string>> f$preg_replace_callback(string pattern, F callback, str
 }
 
 template<class F>
-task_t<Optional<string>> f$preg_replace_callback(mixed pattern, F &&callback, string subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
+task_t<Optional<string>> f$preg_replace_callback(mixed pattern, F callback, string subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
                                                  int64_t &count = RegexInstanceState::get().default_preg_replace_count,
                                                  int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
   if (!regex_impl_::valid_preg_replace_mixed(pattern)) [[unlikely]] {
@@ -125,7 +125,7 @@ task_t<Optional<string>> f$preg_replace_callback(mixed pattern, F &&callback, st
   }
 
   if (pattern.is_string()) {
-    co_return co_await f$preg_replace_callback(std::move(pattern.as_string()), std::forward<F>(callback), std::move(subject), limit, count, flags);
+    co_return co_await f$preg_replace_callback(std::move(pattern.as_string()), std::move(callback), std::move(subject), limit, count, flags);
   }
 
   string result{subject};
@@ -146,7 +146,7 @@ task_t<Optional<string>> f$preg_replace_callback(mixed pattern, F &&callback, st
 }
 
 template<class F>
-task_t<mixed> f$preg_replace_callback(mixed pattern, F &&callback, mixed subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
+task_t<mixed> f$preg_replace_callback(mixed pattern, F callback, mixed subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
                                       int64_t &count = RegexInstanceState::get().default_preg_replace_count,
                                       int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
   if (!regex_impl_::valid_preg_replace_mixed(pattern) || !regex_impl_::valid_preg_replace_mixed(subject)) [[unlikely]] {
@@ -154,7 +154,7 @@ task_t<mixed> f$preg_replace_callback(mixed pattern, F &&callback, mixed subject
   }
 
   if (subject.is_string()) {
-    co_return co_await f$preg_replace_callback(std::move(pattern), std::forward<F>(callback), std::move(subject.as_string()), limit, count, flags);
+    co_return co_await f$preg_replace_callback(std::move(pattern), std::move(callback), std::move(subject.as_string()), limit, count, flags);
   }
 
   const auto &subject_arr{subject.as_array()};
