@@ -382,7 +382,7 @@ task_t<string> send_and_get_string(tl::TLBuffer &&buffer, bool raw_output) {
   }
 
   if (!raw_output) {
-    co_return bin2hex_impl(response.inner.value);
+    co_return string_functions_impl_::bin2hex(response.inner.value);
   }
 
   // Important to pass size because response.inner.value is binary so
