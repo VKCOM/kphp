@@ -12,14 +12,6 @@ prepend(KPHP_RUNTIME_MEMORY_IMPL_RESOURCE_SOURCES memory_resource_impl/
         memory_resource_stats.cpp
         monotonic_runtime_buffer_resource.cpp)
 
-prepend(KPHP_RUNTIME_MSGPACK_SOURCES msgpack/
-        check_instance_depth.cpp
-        object_visitor.cpp
-        packer.cpp
-        parser.cpp
-        unpacker.cpp
-        zone.cpp)
-
 prepend(KPHP_RUNTIME_JOB_WORKERS_SOURCES job-workers/
         client-functions.cpp
         job-interface.cpp
@@ -57,7 +49,6 @@ endif()
 prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_DATETIME_SOURCES}
         ${KPHP_RUNTIME_MEMORY_IMPL_RESOURCE_SOURCES}
-        ${KPHP_RUNTIME_MSGPACK_SOURCES}
         ${KPHP_RUNTIME_JOB_WORKERS_SOURCES}
         ${KPHP_RUNTIME_SPL_SOURCES}
         ${KPHP_RUNTIME_ML_SOURCES}

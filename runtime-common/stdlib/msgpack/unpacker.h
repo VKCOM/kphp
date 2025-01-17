@@ -7,8 +7,8 @@
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime/msgpack/object.h"
-#include "runtime/msgpack/zone.h"
+#include "runtime-common/stdlib/msgpack/object.h"
+#include "runtime-common/stdlib/msgpack/zone.h"
 
 namespace vk::msgpack {
 

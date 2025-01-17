@@ -3,10 +3,10 @@
 // Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/msgpack/unpacker.h"
+#include "runtime-common/stdlib/msgpack/unpacker.h"
 
-#include "runtime/msgpack/object_visitor.h"
-#include "runtime/msgpack/parser.h"
+#include "runtime-common/stdlib/msgpack/object_visitor.h"
+#include "runtime-common/stdlib/msgpack/parser.h"
 
 namespace vk::msgpack {
 

@@ -3,14 +3,15 @@
 // Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/msgpack/zone.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/msgpack/zone.h"
 
 #include <memory>
 
 namespace vk::msgpack {
 
 zone::chunk_list::chunk_list(size_t chunk_size) {
-  auto *c = static_cast<chunk *>(::malloc(sizeof(chunk) + chunk_size));
+  auto *c = static_cast<chunk *>(RuntimeAllocator::get().alloc_global_memory(sizeof(chunk) + chunk_size));
   if (!c) {
     throw std::bad_alloc{};
   }
@@ -19,13 +20,14 @@ zone::chunk_list::chunk_list(size_t chunk_size) {
   m_free = chunk_size;
   m_ptr = reinterpret_cast<char *>(c) + sizeof(chunk);
   c->m_next = nullptr;
+  c->size = sizeof(chunk) + chunk_size;
 }
 
 zone::chunk_list::~chunk_list() {
   chunk *c = m_head;
   while (c) {
     chunk *n = c->m_next;
-    ::free(c);
+    RuntimeAllocator::get().free_global_memory(c, c->size);
     c = n;
   }
 }
@@ -66,7 +68,7 @@ char *zone::allocate_expand(size_t size) {
     sz = tmp_sz;
   }
 
-  auto *c = static_cast<chunk *>(::malloc(sizeof(chunk) + sz));
+  auto *c = static_cast<chunk *>(RuntimeAllocator::get().alloc_global_memory(sizeof(chunk) + sz));
   if (!c) {
     throw std::bad_alloc{};
   }
@@ -74,6 +76,7 @@ char *zone::allocate_expand(size_t size) {
   char *ptr = reinterpret_cast<char *>(c) + sizeof(chunk);
 
   c->m_next = cl->m_head;
+  c->size = sizeof(chunk) + sz;
   cl->m_head = c;
   cl->m_free = sz;
   cl->m_ptr = ptr;

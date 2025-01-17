@@ -6,11 +6,12 @@
 #include <cassert>
 #include <cstring>
 #include <type_traits>
-#include <vector>
 
-#include "runtime/msgpack/object_visitor.h"
-#include "runtime/msgpack/parser.h"
-#include "runtime/msgpack/sysdep.h"
+#include "runtime-common/core/allocator/script_allocator.h"
+#include "runtime-common/core/std/containers.h"
+#include "runtime-common/stdlib/msgpack/object_visitor.h"
+#include "runtime-common/stdlib/msgpack/parser.h"
+#include "runtime-common/stdlib/msgpack/sysdep.h"
 
 namespace vk::msgpack {
 namespace {
@@ -128,7 +129,7 @@ struct unpack_stack {
   parse_return consume(Visitor &visitor);
 
 private:
-  std::vector<stack_elem> m_stack;
+  kphp::stl::vector<stack_elem, kphp::memory::script_allocator> m_stack;
 };
 
 unpack_stack::unpack_stack() noexcept {

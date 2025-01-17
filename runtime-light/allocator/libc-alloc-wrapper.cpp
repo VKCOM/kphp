@@ -4,9 +4,16 @@
 
 #include <cstddef>
 
+#include <execinfo.h>
+#include <array>
+
 #include "runtime-common/core/utils/kphp-assert-core.h"
 
 extern "C" void *__wrap_malloc([[maybe_unused]] size_t size) noexcept {
+  std::array<void *, 64> b;
+  int s = backtrace(b.data(), 64);
+  backtrace_symbols_fd(b.data(), s, 2);
+
   php_critical_error("unexpected use of malloc");
 }
 
