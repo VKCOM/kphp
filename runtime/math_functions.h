@@ -119,10 +119,6 @@ bool f$is_infinite(double v) {
   return (std::fpclassify(v) == FP_INFINITE);
 }
 
-bool f$is_nan(double v) {
-  return (std::fpclassify(v) == FP_NAN);
-}
-
 double f$sin(double v) {
   return sin(v);
 }
