@@ -11,7 +11,7 @@
 namespace vk::msgpack {
 
 zone::chunk_list::chunk_list(size_t chunk_size) {
-  auto *c = static_cast<chunk *>(RuntimeAllocator::get().alloc_global_memory(sizeof(chunk) + chunk_size));
+  auto *c = static_cast<chunk *>(RuntimeAllocator::get().alloc_script_memory(sizeof(chunk) + chunk_size));
   if (!c) {
     throw std::bad_alloc{};
   }
@@ -27,7 +27,7 @@ zone::chunk_list::~chunk_list() {
   chunk *c = m_head;
   while (c) {
     chunk *n = c->m_next;
-    RuntimeAllocator::get().free_global_memory(c, c->size);
+    RuntimeAllocator::get().free_script_memory(c, c->size);
     c = n;
   }
 }
@@ -68,7 +68,7 @@ char *zone::allocate_expand(size_t size) {
     sz = tmp_sz;
   }
 
-  auto *c = static_cast<chunk *>(RuntimeAllocator::get().alloc_global_memory(sizeof(chunk) + sz));
+  auto *c = static_cast<chunk *>(RuntimeAllocator::get().alloc_script_memory(sizeof(chunk) + sz));
   if (!c) {
     throw std::bad_alloc{};
   }
