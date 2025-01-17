@@ -4,9 +4,12 @@
 
 #include "runtime-light/stdlib/crypto/crypto-functions.h"
 
-#include <array>
 #include <algorithm>
+#include <array>
+#include <cctype>
 #include <cstddef>
+#include <optional>
+#include <ranges>
 #include <string_view>
 
 #include "common/crc32_generic.h"
@@ -350,25 +353,23 @@ task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, co
 }
 
 namespace {
-constexpr std::array<std::pair<const char *, tl::HashAlgorithm>, 6> HASH_ALGOS = {{{"md5", tl::HashAlgorithm::MD5},
-                                                                                   {"sha1", tl::HashAlgorithm::SHA1},
-                                                                                   {"sha224", tl::HashAlgorithm::SHA224},
-                                                                                   {"sha256", tl::HashAlgorithm::SHA256},
-                                                                                   {"sha384", tl::HashAlgorithm::SHA384},
-                                                                                   {"sha512", tl::HashAlgorithm::SHA512}}};
 
-std::optional<tl::HashAlgorithm> parse_hash_algorithm(string algo_str) noexcept {
-  std::string_view algo_sv{algo_str.c_str(), algo_str.size()};
+constexpr std::array<std::pair<std::string_view, tl::HashAlgorithm>, 6> HASH_ALGOS = {{{"md5", tl::HashAlgorithm::MD5},
+                                                                                       {"sha1", tl::HashAlgorithm::SHA1},
+                                                                                       {"sha224", tl::HashAlgorithm::SHA224},
+                                                                                       {"sha256", tl::HashAlgorithm::SHA256},
+                                                                                       {"sha384", tl::HashAlgorithm::SHA384},
+                                                                                       {"sha512", tl::HashAlgorithm::SHA512}}};
 
-  const auto ichar_equals = [](char a, char b) { return std::tolower(a) == std::tolower(b); };
+std::optional<tl::HashAlgorithm> parse_hash_algorithm(std::string_view user_algo) noexcept {
+  const auto *it{std::ranges::find_if(
+    HASH_ALGOS,
+    [user_algo = std::ranges::transform_view(user_algo, [](auto c) { return std::tolower(c); })](auto hash_algo) noexcept {
+      return std::ranges::equal(user_algo, hash_algo);
+    },
+    [](const auto &hash_algo) noexcept { return hash_algo.first; })};
 
-  const auto *it = std::find_if(std::begin(HASH_ALGOS), std::end(HASH_ALGOS),
-                                [&](auto pair) { return std::ranges::equal(algo_sv, std::string_view{pair.first}, ichar_equals); });
-
-  if (it == std::end(HASH_ALGOS)) {
-    return std::nullopt;
-  }
-  return it->second;
+  return it != nullptr && it != HASH_ALGOS.end() ? std::optional{it->second} : std::nullopt;
 }
 
 task_t<string> send_and_get_string(tl::TLBuffer &&buffer, bool raw_output) {
@@ -386,7 +387,7 @@ task_t<string> send_and_get_string(tl::TLBuffer &&buffer, bool raw_output) {
   }
 
   if (!raw_output) {
-    co_return kphp::string_functions::bin2hex(response.inner.value);
+    co_return kphp::string::bin2hex(response.inner.value);
   }
 
   // Important to pass size because response.inner.value is binary so
@@ -406,9 +407,9 @@ task_t<string> hash_impl(tl::HashAlgorithm algo, string s, bool raw_output) noex
 
 array<string> f$hash_algos() noexcept {
   array<string> response;
-  response.reserve(std::size(HASH_ALGOS), true);
+  response.reserve(HASH_ALGOS.size(), true);
   for (auto [algo_name, _] : HASH_ALGOS) {
-    response.push_back(string(algo_name));
+    response.push_back(string{algo_name.data(), static_cast<string::size_type>(algo_name.size())});
   }
   return response;
 }
@@ -418,7 +419,7 @@ array<string> f$hash_hmac_algos() noexcept {
 }
 
 task_t<string> f$hash(string algo_str, string s, bool raw_output) noexcept {
-  const auto algo = parse_hash_algorithm(algo_str);
+  const auto algo = parse_hash_algorithm({algo_str.c_str(), algo_str.size()});
   if (!algo.has_value()) {
     php_critical_error("algo %s not supported in function hash", algo_str.c_str());
   }
@@ -426,7 +427,7 @@ task_t<string> f$hash(string algo_str, string s, bool raw_output) noexcept {
 }
 
 task_t<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output) noexcept {
-  const auto algo = parse_hash_algorithm(algo_str);
+  const auto algo = parse_hash_algorithm({algo_str.c_str(), algo_str.size()});
   if (!algo.has_value()) {
     php_critical_error("algo %s not supported in function hash", algo_str.c_str());
   }
@@ -442,6 +443,6 @@ task_t<string> f$sha1(string s, bool raw_output) noexcept {
   co_return co_await hash_impl(tl::HashAlgorithm::SHA1, s, raw_output);
 }
 
-int64_t f$crc32(string s) {
-  return crc32_partial_generic(static_cast <const void *> (s.c_str()), s.size(), -1) ^ -1;
+int64_t f$crc32(const string &s) {
+  return crc32_partial_generic(static_cast<const void *>(s.c_str()), s.size(), -1) ^ -1;
 }
