@@ -16,9 +16,9 @@
 namespace kphp {
 namespace strings {
 
-inline class string bin2hex(std::string_view str) noexcept {
+inline string bin2hex(std::string_view str) noexcept {
   int len = str.size();
-  class string result(2 * len, false);
+  string result(2 * len, false);
 
   for (int i = 0; i < len; i++) {
     result[2 * i] = StringLibConstants::get().lhex_digits[(str[i] >> 4) & 15];
