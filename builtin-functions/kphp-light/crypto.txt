@@ -56,6 +56,8 @@ function md5 ($s ::: string, $raw_output ::: bool = false): string;
 
 function hash_equals(string $known_string, string $user_string) ::: bool;
 
+function crc32 ($s ::: string) ::: int;
+
 // ===== UNSUPPORTED =====
 
 define('X509_PURPOSE_SSL_CLIENT'    ,     1);

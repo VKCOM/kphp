@@ -1,10 +1,5 @@
 @ok benchmark
 <?php
-#ifndef KPHP
-  function crc32_file ($x) {
-    return crc32 (file_get_contents ($x));
-  }
-#endif
 
 function test_hash_basic() {
   hash_algos();

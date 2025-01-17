@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <string_view>
 
+#include "common/crc32_generic.h"
 #include "common/tl/constants/common.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
@@ -435,4 +436,8 @@ task_t<string> f$hash_hmac(const string &algo_str, const string &s, const string
 
 task_t<string> f$sha1(const string &s, bool raw_output) noexcept {
   co_return co_await hash_impl(tl::HashAlgorithm::SHA1, s, raw_output);
+}
+
+int64_t f$crc32(const string &s) {
+  return crc32_partial_generic(static_cast <const void *> (s.c_str()), s.size(), -1) ^ -1;
 }
