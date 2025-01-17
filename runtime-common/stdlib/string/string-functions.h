@@ -14,7 +14,7 @@
 #include "runtime-common/stdlib/string/string-context.h"
 
 namespace kphp {
-namespace string {
+namespace strings {
 
 inline class string bin2hex(std::string_view str) noexcept {
   int len = str.size();
@@ -28,7 +28,7 @@ inline class string bin2hex(std::string_view str) noexcept {
   return result;
 }
 
-} // namespace string
+} // namespace strings
 } // namespace kphp
 
 string f$addcslashes(const string &str, const string &what) noexcept;
@@ -38,7 +38,7 @@ string f$addslashes(const string &str) noexcept;
 string f$hex2bin(const string &str) noexcept;
 
 inline string f$bin2hex(const string &str) noexcept {
-  return kphp::string::bin2hex(std::string_view{str.c_str(), str.size()});
+  return kphp::strings::bin2hex(std::string_view{str.c_str(), str.size()});
 }
 
 string f$convert_cyr_string(const string &str, const string &from_s, const string &to_s) noexcept;

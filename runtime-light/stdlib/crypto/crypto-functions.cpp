@@ -372,7 +372,7 @@ std::optional<tl::HashAlgorithm> parse_hash_algorithm(std::string_view user_algo
   return it != nullptr && it != HASH_ALGOS.end() ? std::optional{it->second} : std::nullopt;
 }
 
-task_t<string> send_and_get_string(tl::TLBuffer &&buffer, bool raw_output) {
+task_t<string> send_and_get_string(tl::TLBuffer buffer, bool raw_output) {
   auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
                                                string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp = co_await f$component_client_fetch_response(co_await query);
@@ -387,7 +387,7 @@ task_t<string> send_and_get_string(tl::TLBuffer &&buffer, bool raw_output) {
   }
 
   if (!raw_output) {
-    co_return kphp::string::bin2hex(response.inner.value);
+    co_return kphp::strings::bin2hex(response.inner.value);
   }
 
   // Important to pass size because response.inner.value is binary so
@@ -443,6 +443,6 @@ task_t<string> f$sha1(string s, bool raw_output) noexcept {
   co_return co_await hash_impl(tl::HashAlgorithm::SHA1, s, raw_output);
 }
 
-int64_t f$crc32(const string &s) {
+int64_t f$crc32(const string &s) noexcept {
   return crc32_partial_generic(static_cast<const void *>(s.c_str()), s.size(), -1) ^ -1;
 }

@@ -4,7 +4,7 @@
 
 #include "common/crc32_generic.h"
 
-unsigned crc32_partial_generic (const void *data, long len, unsigned crc) {
+unsigned crc32_partial_generic(const void *data, long len, unsigned crc) noexcept {
   const int *p = (const int *) data;
   long x;
 #define DO_ONE(v) crc ^= v; crc = crc32_table0[crc & 0xff] ^ crc32_table1[(crc & 0xff00) >> 8] ^ crc32_table2[(crc & 0xff0000) >> 16] ^ crc32_table[crc >> 24];

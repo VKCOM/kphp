@@ -55,4 +55,4 @@ inline string f$md5(const string &str, bool binary = false) noexcept {
   return output;
 }
 
-int64_t f$crc32(const string &s);
+int64_t f$crc32(const string &s) noexcept;

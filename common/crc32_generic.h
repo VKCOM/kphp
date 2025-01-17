@@ -95,4 +95,4 @@ constexpr unsigned int crc32_table0[256] = {
   0x1bb12e1e, 0x43d23e48, 0xfb6e592d, 0xe9dbf6c3, 0x516791a6, 0xccb0a91f, 0x740cce7a, 0x66b96194, 0xde0506f1,
 };
 
-unsigned crc32_partial_generic (const void *data, long len, unsigned crc);
+unsigned crc32_partial_generic(const void *data, long len, unsigned crc) noexcept;
