@@ -57,8 +57,6 @@ inline bool f$is_finite(double v);
 
 inline bool f$is_infinite(double v);
 
-inline bool f$is_nan(double v);
-
 inline double f$sin(double v);
 
 inline double f$sinh(double v);
