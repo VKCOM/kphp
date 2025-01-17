@@ -13,7 +13,8 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/string/string-context.h"
 
-namespace string_functions_impl_ {
+namespace kphp {
+namespace string_functions {
 
 inline string bin2hex(std::string_view str) noexcept {
   int len = str.size();
@@ -27,7 +28,9 @@ inline string bin2hex(std::string_view str) noexcept {
   return result;
 }
 
-} // namespace string_functions_impl_
+} // namespace string_functions
+
+} // namespace kphp
 
 string f$addcslashes(const string &str, const string &what) noexcept;
 
@@ -36,7 +39,7 @@ string f$addslashes(const string &str) noexcept;
 string f$hex2bin(const string &str) noexcept;
 
 inline string f$bin2hex(const string &str) noexcept {
-  return string_functions_impl_::bin2hex(std::string_view{str.c_str(), str.size()});
+  return kphp::string_functions::bin2hex(std::string_view{str.c_str(), str.size()});
 }
 
 string f$convert_cyr_string(const string &str, const string &from_s, const string &to_s) noexcept;

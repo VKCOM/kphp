@@ -4,6 +4,7 @@
 
 #include "runtime-light/stdlib/crypto/crypto-functions.h"
 
+#include <array>
 #include <algorithm>
 #include <cstddef>
 #include <string_view>
@@ -349,9 +350,12 @@ task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, co
 }
 
 namespace {
-constexpr std::pair<const char *, tl::HashAlgorithm> HASH_ALGOS[] = {{"md5", tl::HashAlgorithm::MD5},       {"sha1", tl::HashAlgorithm::SHA1},
-                                                                     {"sha224", tl::HashAlgorithm::SHA224}, {"sha256", tl::HashAlgorithm::SHA256},
-                                                                     {"sha384", tl::HashAlgorithm::SHA384}, {"sha512", tl::HashAlgorithm::SHA512}};
+constexpr std::array<std::pair<const char *, tl::HashAlgorithm>, 6> HASH_ALGOS = {{{"md5", tl::HashAlgorithm::MD5},
+                                                                                   {"sha1", tl::HashAlgorithm::SHA1},
+                                                                                   {"sha224", tl::HashAlgorithm::SHA224},
+                                                                                   {"sha256", tl::HashAlgorithm::SHA256},
+                                                                                   {"sha384", tl::HashAlgorithm::SHA384},
+                                                                                   {"sha512", tl::HashAlgorithm::SHA512}}};
 
 std::optional<tl::HashAlgorithm> parse_hash_algorithm(string algo_str) noexcept {
   std::string_view algo_sv{algo_str.c_str(), algo_str.size()};
@@ -382,7 +386,7 @@ task_t<string> send_and_get_string(tl::TLBuffer &&buffer, bool raw_output) {
   }
 
   if (!raw_output) {
-    co_return string_functions_impl_::bin2hex(response.inner.value);
+    co_return kphp::string_functions::bin2hex(response.inner.value);
   }
 
   // Important to pass size because response.inner.value is binary so

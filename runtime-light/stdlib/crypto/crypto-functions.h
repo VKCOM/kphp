@@ -32,10 +32,15 @@ task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, co
                                            string tag = string{}, const string &aad = string{}) noexcept;
 
 array<string> f$hash_algos() noexcept;
+
 array<string> f$hash_hmac_algos() noexcept;
+
 task_t<string> f$hash(string algo_str, string s, bool raw_output = false) noexcept;
+
 task_t<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output = false) noexcept;
+
 task_t<string> f$sha1(string s, bool raw_output = false) noexcept;
+
 inline string f$md5(string str, bool binary = false) noexcept {
   constexpr auto MD5_HASH_LEN = 16;
   string output{static_cast<string::size_type>(MD5_HASH_LEN * (binary ? 1 : 2)), false};
