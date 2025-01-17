@@ -52,6 +52,9 @@ function test_shared_memory_piece_copying() {
        * @var $instance SomeContext
        */
       $instance = instance_cache_fetch(SomeContext::class, "test_$i");
+      if ($instance === null) {
+        raise_error("Expected instance by key 'test_" . $i . "' hasn't been restored from instance cache");
+      }
       for ($i = 0; $i < 100; $i++) {
         if ($instance->some_data[$i] !== $some_data[$i]) {
           raise_error("Data was changed in instance cache");
