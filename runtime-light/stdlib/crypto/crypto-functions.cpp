@@ -353,7 +353,7 @@ constexpr std::pair<const char *, tl::HashAlgorithm> HASH_ALGOS[] = {{"md5", tl:
                                                                      {"sha224", tl::HashAlgorithm::SHA224}, {"sha256", tl::HashAlgorithm::SHA256},
                                                                      {"sha384", tl::HashAlgorithm::SHA384}, {"sha512", tl::HashAlgorithm::SHA512}};
 
-std::optional<tl::HashAlgorithm> parse_hash_algorithm(const string &algo_str) noexcept {
+std::optional<tl::HashAlgorithm> parse_hash_algorithm(string algo_str) noexcept {
   std::string_view algo_sv{algo_str.c_str(), algo_str.size()};
 
   const auto ichar_equals = [](char a, char b) { return std::tolower(a) == std::tolower(b); };
@@ -390,7 +390,7 @@ task_t<string> send_and_get_string(tl::TLBuffer &&buffer, bool raw_output) {
   co_return string(response.inner.value.data(), response.inner.value.size());
 }
 
-task_t<string> hash_impl(tl::HashAlgorithm algo, const string &s, bool raw_output) noexcept {
+task_t<string> hash_impl(tl::HashAlgorithm algo, string s, bool raw_output) noexcept {
   tl::Hash request{.algorithm = algo, .data = {.value = {s.c_str(), s.size()}}};
   tl::TLBuffer buffer;
   request.store(buffer);
@@ -413,7 +413,7 @@ array<string> f$hash_hmac_algos() noexcept {
   return f$hash_algos();
 }
 
-task_t<string> f$hash(const string &algo_str, const string &s, bool raw_output) noexcept {
+task_t<string> f$hash(string algo_str, string s, bool raw_output) noexcept {
   const auto algo = parse_hash_algorithm(algo_str);
   if (!algo.has_value()) {
     php_critical_error("algo %s not supported in function hash", algo_str.c_str());
@@ -421,7 +421,7 @@ task_t<string> f$hash(const string &algo_str, const string &s, bool raw_output) 
   co_return co_await hash_impl(*algo, s, raw_output);
 }
 
-task_t<string> f$hash_hmac(const string &algo_str, const string &s, const string &key, bool raw_output) noexcept {
+task_t<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output) noexcept {
   const auto algo = parse_hash_algorithm(algo_str);
   if (!algo.has_value()) {
     php_critical_error("algo %s not supported in function hash", algo_str.c_str());
@@ -434,10 +434,10 @@ task_t<string> f$hash_hmac(const string &algo_str, const string &s, const string
   co_return co_await send_and_get_string(std::move(buffer), raw_output);
 }
 
-task_t<string> f$sha1(const string &s, bool raw_output) noexcept {
+task_t<string> f$sha1(string s, bool raw_output) noexcept {
   co_return co_await hash_impl(tl::HashAlgorithm::SHA1, s, raw_output);
 }
 
-int64_t f$crc32(const string &s) {
+int64_t f$crc32(string s) {
   return crc32_partial_generic(static_cast <const void *> (s.c_str()), s.size(), -1) ^ -1;
 }

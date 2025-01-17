@@ -6,4 +6,4 @@
 
 #include "runtime-common/core/runtime-core.h"
 
-bool f$hash_equals(const string &known_string, const string &user_string) noexcept;
+bool f$hash_equals(string known_string, string user_string) noexcept;

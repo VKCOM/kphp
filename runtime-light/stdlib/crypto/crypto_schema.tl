@@ -9,7 +9,7 @@ resultFalse#27930a7b {t:Type} = Maybe t;
 resultTrue#3f9c8ef8 {t:Type} result:t = Maybe t;
 
 // Vector
-vector#1cb5c415 {t:Type} # [t] = Vector t
+vector#1cb5c415 {t:Type} # [t] = Vector t;
 
 // Tuple
 tuple#9770768a {t:Type} {n:#} [t] = Tuple t n;

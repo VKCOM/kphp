@@ -33,10 +33,10 @@ task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, co
 
 array<string> f$hash_algos() noexcept;
 array<string> f$hash_hmac_algos() noexcept;
-task_t<string> f$hash(const string &algo_str, const string &s, bool raw_output = false) noexcept;
-task_t<string> f$hash_hmac(const string &algo_str, const string &s, const string &key, bool raw_output = false) noexcept;
-task_t<string> f$sha1(const string &s, bool raw_output = false) noexcept;
-inline string f$md5(const string &str, bool binary = false) noexcept {
+task_t<string> f$hash(string algo_str, string s, bool raw_output = false) noexcept;
+task_t<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output = false) noexcept;
+task_t<string> f$sha1(string s, bool raw_output = false) noexcept;
+inline string f$md5(string str, bool binary = false) noexcept {
   constexpr auto MD5_HASH_LEN = 16;
   string output{static_cast<string::size_type>(MD5_HASH_LEN * (binary ? 1 : 2)), false};
   md5(reinterpret_cast<const unsigned char *>(str.c_str()), static_cast<int32_t>(str.size()), reinterpret_cast<unsigned char *>(output.buffer()));
@@ -50,4 +50,4 @@ inline string f$md5(const string &str, bool binary = false) noexcept {
   return output;
 }
 
-int64_t f$crc32(const string &s);
+int64_t f$crc32(string s);

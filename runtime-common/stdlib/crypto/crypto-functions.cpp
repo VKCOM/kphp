@@ -2,9 +2,9 @@
 // Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-common/stdlib/hash/hash-functions.h"
+#include "runtime-common/stdlib/crypto/crypto-functions.h"
 
-bool f$hash_equals(const string &known_string, const string &user_string) noexcept {
+bool f$hash_equals(string known_string, string user_string) noexcept {
   if (known_string.size() != user_string.size()) {
     return false;
   }
