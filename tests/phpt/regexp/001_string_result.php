@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 function accept_string(string $s) { var_dump($s); }
