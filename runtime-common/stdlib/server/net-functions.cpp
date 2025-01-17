@@ -29,7 +29,7 @@ Optional<string> f$ip2ulong(const string &ip) noexcept {
 
 string f$long2ip(int64_t num) noexcept {
   auto &runtime_context{RuntimeContext::get()};
-  runtime_context.static_SB.clean().reserve(20);
+  runtime_context.static_SB.clean().reserve(100);
   for (int i = 3; i >= 0; i--) {
     runtime_context.static_SB << ((num >> (i * 8)) & 255);
     if (i) {
