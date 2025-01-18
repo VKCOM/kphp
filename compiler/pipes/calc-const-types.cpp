@@ -4,6 +4,7 @@
 
 #include "compiler/pipes/calc-const-types.h"
 
+#include "common/wrappers/to_underlying.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
@@ -63,7 +64,7 @@ VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
       break;
     }
     default:
-      kphp_error (0, fmt_format("Unknown cnst-type for [op = {}]", v->type()));
+      kphp_error (0, fmt_format("Unknown cnst-type for [op = {}]", vk::to_underlying(v->type())));
       kphp_fail();
       break;
   }
