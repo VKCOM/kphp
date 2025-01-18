@@ -19,9 +19,9 @@ requires(std::invocable<F, Args...>) void f$register_shutdown_function(F &&f, Ar
   auto shutdown_function_task{std::invoke(
     [](F f, Args... args) noexcept -> task_t<void> {
       if constexpr (is_async_function_v<F, Args...>) {
-        co_await std::invoke(f, args...);
+        co_await std::invoke(std::move(f), std::move(args)...);
       } else {
-        std::invoke(f, args...);
+        std::invoke(std::move(f), std::move(args)...);
       }
     },
     std::forward<F>(f), std::forward<Args>(args)...)};
