@@ -10,6 +10,7 @@
 #include "common/wrappers/field_getter.h"
 #include "common/wrappers/likely.h"
 #include "common/wrappers/string_view.h"
+#include "common/wrappers/to_underlying.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/const-globals-batched-mem.h"
@@ -2522,7 +2523,7 @@ void compile_vertex(VertexPtr root, CodeGenerator &W) {
         compile_conv_op(root.as<meta_op_unary>(), W);
         break;
       default:
-        fmt_print("{}: {}\n", tp, root->type());
+        fmt_print("{}: {}\n", vk::to_underlying(tp), vk::to_underlying(root->type()));
         assert (0);
         break;
     }

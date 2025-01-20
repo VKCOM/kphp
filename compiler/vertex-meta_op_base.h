@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "common/wrappers/iterator_range.h"
+#include "common/wrappers/to_underlying.h"
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
@@ -163,9 +164,9 @@ public:
 
   const Operation &type() const { return type_; }
 
-  virtual const std::string &get_string() const { kphp_fail_msg (fmt_format("not supported [{}:{}]", type_, OpInfo::str(type_))); }
+  virtual const std::string &get_string() const { kphp_fail_msg (fmt_format("not supported [{}:{}]", vk::to_underlying(type_), OpInfo::str(type_))); }
 
-  virtual void set_string(std::string) { kphp_fail_msg (fmt_format("not supported [{}:{}]", type_, OpInfo::str(type_))); }
+  virtual void set_string(std::string) { kphp_fail_msg (fmt_format("not supported [{}:{}]", vk::to_underlying(type_), OpInfo::str(type_))); }
 
   virtual bool has_get_string() const { return false; }
 
