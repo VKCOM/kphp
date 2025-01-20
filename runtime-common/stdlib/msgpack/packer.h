@@ -10,7 +10,8 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "runtime/msgpack/adaptor_base.h"
+#include "runtime-common/stdlib/msgpack/adaptor_base.h"
+#include "runtime-common/stdlib/serialization/serialization-context.h"
 
 namespace vk::msgpack {
 
@@ -68,14 +69,15 @@ private:
 class packer_float32_decorator {
 public:
   static void clear() noexcept {
-    serialize_as_float32_ = 0;
+    SerializationLibContext::get().serialize_as_float32_ = 0;
   }
 
   template<class StreamT, class T>
   static void pack_value_float32(packer<StreamT> &packer, const T &value) {
-    ++serialize_as_float32_;
+    auto &serialization_context{SerializationLibContext::get()};
+    ++serialization_context.serialize_as_float32_;
     pack_value(packer, value);
-    --serialize_as_float32_;
+    --serialization_context.serialize_as_float32_;
   }
 
   template<class StreamT, class T>
@@ -85,15 +87,12 @@ public:
 
   template<class StreamT>
   static void pack_value(packer<StreamT> &packer, double value) {
-    if (serialize_as_float32_ > 0) {
+    if (SerializationLibContext::get().serialize_as_float32_ > 0) {
       packer.pack(static_cast<float>(value));
     } else {
       packer.pack(value);
     }
   }
-
-private:
-  static uint32_t serialize_as_float32_;
 };
 
 } // namespace vk::msgpack

@@ -57,8 +57,6 @@ inline bool f$is_finite(double v);
 
 inline bool f$is_infinite(double v);
 
-inline bool f$is_nan(double v);
-
 inline double f$sin(double v);
 
 inline double f$sinh(double v);
@@ -117,10 +115,6 @@ bool f$is_finite(double v) {
 
 bool f$is_infinite(double v) {
   return (std::fpclassify(v) == FP_INFINITE);
-}
-
-bool f$is_nan(double v) {
-  return (std::fpclassify(v) == FP_NAN);
 }
 
 double f$sin(double v) {

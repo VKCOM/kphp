@@ -8,7 +8,9 @@
 #include <vector>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime/msgpack/object.h"
+#include "runtime-common/core/allocator/script-allocator.h"
+#include "runtime-common/core/std/containers.h"
+#include "runtime-common/stdlib/msgpack/object.h"
 
 namespace vk::msgpack {
 
@@ -18,7 +20,7 @@ class object_visitor : vk::not_copyable {
 public:
   explicit object_visitor(msgpack::zone &zone) noexcept;
 
-  msgpack::object &&flush() &&noexcept {
+  msgpack::object &&flush() && noexcept {
     return std::move(m_obj);
   }
 
@@ -65,7 +67,7 @@ public:
 
 private:
   msgpack::object m_obj;
-  std::vector<msgpack::object *> m_stack{};
+  kphp::stl::vector<msgpack::object *, kphp::memory::script_allocator> m_stack{};
   msgpack::zone &m_zone;
 };
 

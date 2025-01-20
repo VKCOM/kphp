@@ -109,6 +109,10 @@ inline double f$log(double v) noexcept {
   return log(v);
 }
 
+inline bool f$is_nan(double v) noexcept {
+  return (std::fpclassify(v) == FP_NAN);
+}
+
 inline double f$log(double v, double base) noexcept {
   if (v <= 0.0 || base <= 0.0 || fabs(base - 1.0) < 1e-9) {
     return 0.0;

@@ -13,7 +13,7 @@
 
 #include "common/tl/constants/common.h"
 #include "runtime-light/allocator/allocator.h"
-#include "runtime-light/core/std/containers.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {

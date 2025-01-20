@@ -3,10 +3,10 @@
 // Copyright (c) 2022 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/msgpack/packer.h"
+#include "runtime-common/stdlib/msgpack/packer.h"
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime/msgpack/sysdep.h"
+#include "runtime-common/stdlib/msgpack/sysdep.h"
 
 namespace vk::msgpack {
 
@@ -371,7 +371,5 @@ void packer<Stream>::append_buffer(const char *buf, size_t len) noexcept {
 }
 
 template class packer<string_buffer>;
-
-uint32_t packer_float32_decorator::serialize_as_float32_ = 0;
 
 } // namespace vk::msgpack

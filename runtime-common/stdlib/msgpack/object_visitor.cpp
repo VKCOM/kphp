@@ -5,10 +5,10 @@
 
 #include <cstring>
 
-#include "runtime/msgpack/object_visitor.h"
+#include "runtime-common/stdlib/msgpack/object_visitor.h"
 
-#include "runtime/msgpack/unpack_exception.h"
-#include "runtime/msgpack/zone.h"
+#include "runtime-common/stdlib/msgpack/unpack_exception.h"
+#include "runtime-common/stdlib/msgpack/zone.h"
 
 namespace vk::msgpack {
 
