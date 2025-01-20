@@ -39,13 +39,7 @@ public:
     , m_pos(std::exchange(oth.m_pos, 0))
     , m_remaining(std::exchange(oth.m_pos, 0)) {}
 
-  TLBuffer &operator=(TLBuffer &&oth) noexcept {
-    m_buffer = std::exchange(oth.m_buffer, {});
-    m_pos = std::exchange(oth.m_pos, 0);
-    m_remaining = std::exchange(oth.m_remaining, 0);
-
-    return *this;
-  }
+  TLBuffer &operator=(TLBuffer &&) = delete;
 
   ~TLBuffer() = default;
 
