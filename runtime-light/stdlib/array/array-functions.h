@@ -18,8 +18,8 @@
 namespace dl {
 
 template<typename T, typename Comparator>
-requires(std::invocable<Comparator, T, T>) task_t<void> sort(T *begin_init, T *end_init, Comparator &&compare) noexcept{
-  auto compare_call = [&compare]<typename U>(U &&lhs, U &&rhs) -> task_t<int64_t> {
+requires(std::invocable<Comparator, T, T>) task_t<void> sort(T *begin_init, T *end_init, Comparator &&compare) noexcept {
+  auto compare_call = [compare]<typename U>(U &&lhs, U &&rhs) -> task_t<int64_t> {
     if constexpr (is_async_function_v<Comparator, U, U>) {
       co_return co_await std::invoke(std::forward<Comparator>(compare), std::forward<U>(lhs), std::forward<U>(rhs));
     } else {
@@ -105,7 +105,7 @@ Result sort(array<U> &arr, Comparator &&comparator, bool renumber) noexcept {
       arr.mutate_if_vector_shared();
     }
 
-    const auto elements_cmp = [&comparator](const U &lhs, const U &rhs) -> task_t<bool> {
+    const auto elements_cmp = [comparator](const U &lhs, const U &rhs) -> task_t<bool> {
       if constexpr (is_async_function_v<Comparator, U, U>) {
         co_return(co_await std::invoke(std::forward<Comparator>(comparator), lhs, rhs)) > 0;
       } else {
@@ -135,7 +135,7 @@ Result sort(array<U> &arr, Comparator &&comparator, bool renumber) noexcept {
   }
   php_assert(i == n);
 
-  const auto hash_entry_cmp = [&comparator](const array_bucket *lhs, const array_bucket *rhs) -> task_t<bool> {
+  const auto hash_entry_cmp = [comparator](const array_bucket *lhs, const array_bucket *rhs) -> task_t<bool> {
     if constexpr (is_async_function_v<Comparator, U, U>) {
       co_return(co_await std::invoke(comparator, lhs->value, rhs->value)) > 0;
     } else {
