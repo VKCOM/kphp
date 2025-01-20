@@ -299,7 +299,7 @@ public:
   start_fork_t(start_fork_t &&other) noexcept
     : exec_policy(other.exec_policy)
     , fork_coro(std::exchange(other.fork_coro, std::noop_coroutine()))
-    , fork_id(std::exchange(other.fork_id, INVALID_FORK_ID))
+    , fork_id(std::exchange(other.fork_id, kphp::forks::INVALID_ID))
     , suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
     , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
 
@@ -362,7 +362,7 @@ public:
     , fork_awaiter(std::addressof(fork_task)) {}
 
   wait_fork_t(wait_fork_t &&other) noexcept
-    : fork_id(std::exchange(other.fork_id, INVALID_FORK_ID))
+    : fork_id(std::exchange(other.fork_id, kphp::forks::INVALID_ID))
     , fork_task(std::move(other.fork_task))
     , fork_awaiter(std::addressof(fork_task))
     , state(std::exchange(other.state, awaitable_impl_::State::End)) {}

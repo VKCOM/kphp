@@ -215,7 +215,7 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
 
   auto &rpc_ctx{RpcInstanceState::get()};
   class_instance<RpcTlQuery> rpc_query{};
-  int64_t response_waiter_fork_id{INVALID_FORK_ID};
+  int64_t response_waiter_fork_id{kphp::forks::INVALID_ID};
 
   {
     const auto it_rpc_query{rpc_ctx.response_fetcher_instances.find(query_id)};
@@ -242,7 +242,7 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
   if (rpc_query.get()->result_fetcher->is_typed) {
     co_return make_fetch_error(string{"can't get untyped result from typed TL query. Use consistent API for that"}, TL_ERROR_INTERNAL);
   }
-  if (response_waiter_fork_id == INVALID_FORK_ID) {
+  if (response_waiter_fork_id == kphp::forks::INVALID_ID) {
     co_return make_fetch_error(string{"can't find fetcher fork"}, TL_ERROR_INTERNAL);
   }
 
@@ -262,7 +262,7 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
 
   auto &rpc_ctx{RpcInstanceState::get()};
   class_instance<RpcTlQuery> rpc_query{};
-  int64_t response_waiter_fork_id{INVALID_FORK_ID};
+  int64_t response_waiter_fork_id{kphp::forks::INVALID_ID};
 
   {
     const auto it_rpc_query{rpc_ctx.response_fetcher_instances.find(query_id)};
@@ -289,7 +289,7 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
   if (!rpc_query.get()->result_fetcher->is_typed) {
     co_return error_factory.make_error(string{"can't get typed result from untyped TL query. Use consistent API for that"}, TL_ERROR_INTERNAL);
   }
-  if (response_waiter_fork_id == INVALID_FORK_ID) {
+  if (response_waiter_fork_id == kphp::forks::INVALID_ID) {
     co_return error_factory.make_error(string{"can't find fetcher fork"}, TL_ERROR_INTERNAL);
   }
 

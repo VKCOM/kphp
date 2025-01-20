@@ -36,11 +36,11 @@ constexpr double MAX_TIMEOUT_S = 86400.0;
 task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool ignore_answer) noexcept {
   if (!f$is_kphp_job_workers_enabled()) {
     php_warning("can't start job worker: job workers are disabled");
-    co_return INVALID_FORK_ID;
+    co_return kphp::forks::INVALID_ID;
   }
   if (request.empty()) {
     php_warning("job worker request is empty");
-    co_return INVALID_FORK_ID;
+    co_return kphp::forks::INVALID_ID;
   }
 
   auto &jw_client_st{JobWorkerClientInstanceState::get()};
@@ -59,7 +59,7 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
   auto comp_query{co_await f$component_client_send_request(string{JOB_WORKER_COMPONENT_NAME}, string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
   if (comp_query.is_null()) {
     php_warning("couldn't start job worker");
-    co_return INVALID_FORK_ID;
+    co_return kphp::forks::INVALID_ID;
   }
   // create fork to wait for job worker response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send job worker request
@@ -85,19 +85,19 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
 
 task_t<Optional<int64_t>> f$job_worker_send_request(string request, double timeout) noexcept {
   const auto fork_id{co_await kphp_job_worker_start_impl(std::move(request), timeout, false)};
-  co_return fork_id != INVALID_FORK_ID ? fork_id : false;
+  co_return fork_id != kphp::forks::INVALID_ID ? fork_id : false;
 }
 
 task_t<bool> f$job_worker_send_noreply_request(string request, double timeout) noexcept {
   const auto fork_id{co_await kphp_job_worker_start_impl(std::move(request), timeout, true)};
-  co_return fork_id != INVALID_FORK_ID;
+  co_return fork_id != kphp::forks::INVALID_ID;
 }
 
 task_t<array<Optional<int64_t>>> f$job_worker_send_multi_request(array<string> requests, double timeout) noexcept {
   array<Optional<int64_t>> fork_ids{requests.size()};
   for (const auto &it : requests) {
     const auto fork_id{co_await kphp_job_worker_start_impl(it.get_value(), timeout, false)};
-    fork_ids.set_value(it.get_key(), fork_id != INVALID_FORK_ID ? fork_id : false);
+    fork_ids.set_value(it.get_key(), fork_id != kphp::forks::INVALID_ID ? fork_id : false);
   }
   co_return fork_ids;
 }

@@ -15,7 +15,11 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/utils/concepts.h"
 
-inline constexpr int64_t INVALID_FORK_ID = -1;
+namespace kphp::forks {
+
+inline constexpr int64_t INVALID_ID = -1;
+
+} // namespace kphp::forks
 
 class ForkInstanceState final : private vk::not_copyable {
   template<hashable Key, typename Value>
