@@ -7,7 +7,7 @@
 #include <cstring>
 #include <type_traits>
 
-#include "runtime-common/core/allocator/script_allocator.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/msgpack/object_visitor.h"
 #include "runtime-common/stdlib/msgpack/parser.h"

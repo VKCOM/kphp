@@ -10,8 +10,8 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "runtime-common/stdlib/serialization/serialization-context.h"
 #include "runtime-common/stdlib/msgpack/adaptor_base.h"
+#include "runtime-common/stdlib/serialization/serialization-context.h"
 
 namespace vk::msgpack {
 
@@ -74,9 +74,10 @@ public:
 
   template<class StreamT, class T>
   static void pack_value_float32(packer<StreamT> &packer, const T &value) {
-    ++SerializationLibContext::get().serialize_as_float32_;
+    auto &serialization_context{SerializationLibContext::get()};
+    ++serialization_context.serialize_as_float32_;
     pack_value(packer, value);
-    --SerializationLibContext::get().serialize_as_float32_;
+    --serialization_context.serialize_as_float32_;
   }
 
   template<class StreamT, class T>

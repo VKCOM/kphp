@@ -8,8 +8,8 @@
 #include <vector>
 
 #include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-common/core/allocator/script_allocator.h"
 #include "runtime-common/stdlib/msgpack/object.h"
 
 namespace vk::msgpack {

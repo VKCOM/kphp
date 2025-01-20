@@ -7,11 +7,11 @@
 #include "common/containers/final_action.h"
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/msgpack/adaptors.h"
+#include "runtime-common/stdlib/msgpack/check_instance_depth.h"
 #include "runtime-common/stdlib/msgpack/packer.h"
 #include "runtime-common/stdlib/msgpack/unpack_exception.h"
 #include "runtime-common/stdlib/msgpack/unpacker.h"
-#include "runtime-common/stdlib/msgpack/adaptors.h"
-#include "runtime-common/stdlib/msgpack/check_instance_depth.h"
 
 template<class T>
 Optional<string> f$msgpack_serialize(const T &value, string *out_err_msg = nullptr) noexcept {
@@ -39,11 +39,11 @@ Optional<string> f$msgpack_serialize(const T &value, string *out_err_msg = nullp
   return str_buffer.str();
 }
 
-namespace msgpack_functions_impl {
+namespace msgpack_functions_impl_ {
 template<class InstanceClass>
-inline Optional<string> common_instance_serialize(const class_instance<InstanceClass> &instance, string *out_err_msg) noexcept {
+Optional<string> common_instance_serialize(const class_instance<InstanceClass> &instance, string *out_err_msg) noexcept {
   vk::msgpack::packer_float32_decorator::clear();
-  SerializationLibContext::get().check_instance_depth = 0;
+  SerializationLibContext::get().instance_depth = 0;
   auto result = f$msgpack_serialize(instance, out_err_msg);
   if (vk::msgpack::CheckInstanceDepth::is_exceeded()) {
     *out_err_msg = string("maximum depth of nested instances exceeded");
@@ -53,12 +53,12 @@ inline Optional<string> common_instance_serialize(const class_instance<InstanceC
   }
   return result;
 }
-} // namespace msgpack_functions_impl
+} // namespace msgpack_functions_impl_
 
 template<class InstanceClass>
 Optional<string> f$instance_serialize(const class_instance<InstanceClass> &instance) noexcept {
   string err_msg;
-  auto result = msgpack_functions_impl::common_instance_serialize(instance, &err_msg);
+  auto result = msgpack_functions_impl_::common_instance_serialize(instance, &err_msg);
   if (!err_msg.empty()) {
     f$warning(err_msg);
     return {};

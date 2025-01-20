@@ -11,7 +11,7 @@ struct SerializationLibContext final : private vk::not_copyable {
   string last_json_processor_error;
 
   // msgpack serialization
-  size_t check_instance_depth{0};
+  size_t instance_depth{0};
   uint32_t serialize_as_float32_{0};
 
   static SerializationLibContext &get() noexcept;
