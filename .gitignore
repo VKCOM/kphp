@@ -6,7 +6,7 @@
 *.out
 *.bin
 .DS_Store
-
+.vs/
 .idea
 .vscode
 .cache

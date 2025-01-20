@@ -8,8 +8,15 @@ header('X-TEST-2: value2', false);
 header('X-TEST-3: value1', false);
 header('X-TEST-3: value2', false);
 header('X-TEST-3: value3', true);
-header('Date: haha, date in tests');
-setcookie('test-cookie', 'blabla');
+header('Date: haha, date in tests')
+
+// Установка cookie с безопасными флагами
+setcookie('test-cookie', 'blabla', [
+  'httponly' => true, // Prevent access to the cookie via JavaScript
+  'secure' => true,  // Send the cookie only over HTTPS
+  'samesite' => 'Strict' // Prevent CSRF by limiting cross-site requests
+]);
+
 $x = headers_list();
 
 #ifndef KPHP
@@ -22,7 +29,7 @@ $x = [
   'X-TEST-2: value1', 
   'X-TEST-2: value2', 
   'X-TEST-3: value3', 
-  'Set-Cookie: test-cookie=blabla'
+  'Set-Cookie: test-cookie=blabla; HttpOnly; Secure; SameSite=Strict'
 ];
 #endif
 

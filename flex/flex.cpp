@@ -142,15 +142,21 @@ vk::string_view flex(vk::string_view name, vk::string_view case_name, bool is_fe
         memcpy(dst_buf + wp, name.data() + left_pos, right_pos - left_pos);
         wp += (right_pos - left_pos);
       } else {
-        int ml = right_pos - left_pos - cur_lang->nodes[best_node].tail_len;
-        if (ml < 0) {
-          ml = 0;
-        }
-        memcpy(dst_buf + wp, name.data() + left_pos, ml);
-        wp += ml;
-        strcpy(dst_buf + wp, cur_lang->endings[r * cur_lang->cases_num + ca]);
-        wp += static_cast<int>(strlen(cur_lang->endings[r * cur_lang->cases_num + ca]));
-      }
+    int ml = right_pos - left_pos - cur_lang->nodes[best_node].tail_len;
+    if (ml < 0) {
+        ml = 0;
+    }
+    // Copy a section of `name` into `dst_buf` using memcpy
+    memcpy(dst_buf + wp, name.data() + left_pos, ml);
+    wp += ml;
+    // Safely copy the string using strncpy
+    const char* ending = cur_lang->endings[r * cur_lang->cases_num + ca];
+    size_t ending_len = strlen(ending);
+    strncpy(dst_buf + wp, ending, ending_len);
+    // Ensure the destination buffer is null-terminated
+    dst_buf[wp + ending_len] = '\0';
+    wp += static_cast<int>(ending_len);
+}
     }
     if (hyphen) {
       dst_buf[wp++] = '-';
