@@ -41,7 +41,6 @@ function ctype_digit(mixed $text): bool;
 function ctype_xdigit(mixed $text): bool;
 
 /**
- * @kphp-generate-stub-class
  * @kphp-immutable-class
  */
 class CompileTimeLocation {
@@ -49,9 +48,9 @@ class CompileTimeLocation {
   public string $function;
   public int $line;
 
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info */
   public function __construct($file ::: string, $function ::: string, $line ::: int) ::: CompileTimeLocation;
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info */
   static public function calculate(?CompileTimeLocation $passed) ::: CompileTimeLocation;
 }
 
