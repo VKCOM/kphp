@@ -42,7 +42,21 @@ function openssl_encrypt($data ::: string, $method ::: string, $key ::: string, 
 function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '',
                         $tag ::: string = '', $aad ::: string = '') ::: string | false;
 
+function hash_algos () ::: string[];
+function hash_hmac_algos () ::: string[];
+
+/** @kphp-extern-func-info interruptible */
+function hash ($algo ::: string, $data ::: string, $raw_output ::: bool = false) ::: string;
+/** @kphp-extern-func-info interruptible */
+function hash_hmac ($algo ::: string, $data ::: string, $key ::: string, $raw_output ::: bool = false) ::: string;
+
+/** @kphp-extern-func-info interruptible */
+function sha1 ($s ::: string, $raw_output ::: bool = false) ::: string;
 function md5 ($s ::: string, $raw_output ::: bool = false): string;
+
+function hash_equals(string $known_string, string $user_string) ::: bool;
+
+function crc32 ($s ::: string) ::: int;
 
 // ===== UNSUPPORTED =====
 

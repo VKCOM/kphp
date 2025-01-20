@@ -15,9 +15,6 @@ function bindec ($number ::: string) ::: int;
 function decbin ($number ::: int) ::: string;
 
 /** @kphp-extern-func-info generate-stub */
-function crc32 ($s ::: string) ::: int;
-
-/** @kphp-extern-func-info generate-stub */
 function sleep ($seconds ::: int) ::: void;
 /** @kphp-extern-func-info generate-stub */
 function usleep ($micro_seconds ::: int) ::: void;

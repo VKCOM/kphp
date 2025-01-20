@@ -7,6 +7,8 @@
 
 #include <stdint.h>
 
+#include "common/crc32_generic.h"
+
 #define CRC32_POLY 0x04c11db7u
 #define CRC32_REFLECTED_POLY 0xedb88320u
 
@@ -27,10 +29,6 @@ constexpr long long CRC64_REFLECTED_X127  = 0xdabe95afc7875f40;
 constexpr long long CRC64_REFLECTED_X95  = 0x1dee8a5e222ca1dc;
 constexpr long long CRC64_REFLECTED_POLY_65_BIT  = 0x92d8af2baf0e1e85;
 
-extern const unsigned int crc32_table0[256];
-extern const unsigned int crc32_table1[256];
-extern const unsigned int crc32_table2[256];
-extern const unsigned int crc32_table[256];
 extern uint64_t crc64_power_buf[126] __attribute__((aligned(16)));
 void crc64_init_power_buf();
 
@@ -49,7 +47,6 @@ extern crc64_partial_func_t crc64_partial;
 extern crc32_combine_func_t compute_crc32_combine;
 extern crc64_combine_func_t compute_crc64_combine;
 
-unsigned crc32_partial_generic (const void *data, long len, unsigned crc);
 uint64_t crc64_partial_one_table (const void *data, long len, uint64_t crc);
 unsigned compute_crc32_combine_generic (unsigned crc1, unsigned crc2, long len2);
 uint64_t compute_crc64_combine_generic (uint64_t crc1, uint64_t crc2, int64_t len2);

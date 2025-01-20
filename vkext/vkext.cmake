@@ -35,6 +35,7 @@ endfunction()
 
 prepend(VKEXT_COMMON_SOURCES ${COMMON_DIR}/
         crc32.cpp
+        crc32_generic.cpp
         crc32_${CMAKE_SYSTEM_PROCESSOR}.cpp
         string-processing.cpp
         unicode/utf8-utils.cpp

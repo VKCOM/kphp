@@ -9,8 +9,8 @@
 #include <iterator>
 #include <optional>
 #include <string_view>
+#include <utility>
 
-#include "common/mixin/not_copyable.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/core/std/containers.h"
@@ -18,7 +18,7 @@
 
 namespace tl {
 
-class TLBuffer final : private vk::not_copyable {
+class TLBuffer final {
   static constexpr auto INIT_BUFFER_SIZE = 1024;
 
   kphp::stl::vector<char, kphp::memory::script_allocator> m_buffer;
@@ -29,6 +29,19 @@ public:
   TLBuffer() noexcept {
     m_buffer.reserve(INIT_BUFFER_SIZE);
   }
+
+  TLBuffer(const TLBuffer &) = delete;
+
+  TLBuffer &operator=(const TLBuffer &) = delete;
+
+  TLBuffer(TLBuffer &&oth) noexcept
+    : m_buffer(std::exchange(oth.m_buffer, {}))
+    , m_pos(std::exchange(oth.m_pos, 0))
+    , m_remaining(std::exchange(oth.m_pos, 0)) {}
+
+  TLBuffer &operator=(TLBuffer &&) = delete;
+
+  ~TLBuffer() = default;
 
   const char *data() const noexcept {
     return m_buffer.data();

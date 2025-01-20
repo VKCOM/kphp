@@ -1,6 +1,6 @@
 include_guard(GLOBAL)
 
-set(LIGHT_COMMON_SOURCES md5.cpp algorithms/simd-int-to-string.cpp)
+set(LIGHT_COMMON_SOURCES crc32_generic.cpp md5.cpp algorithms/simd-int-to-string.cpp)
 
 if(COMPILE_RUNTIME_LIGHT)
   set(COMMON_SOURCES_FOR_COMP "${LIGHT_COMMON_SOURCES}")
@@ -17,6 +17,7 @@ prepend(
   resolver.cpp
   precise-time.cpp
   cpuid.cpp
+  crc32_generic.cpp
   crc32.cpp
   crc32c.cpp
   options.cpp

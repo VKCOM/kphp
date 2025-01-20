@@ -22,16 +22,16 @@ certInfoItemLong#533ff89f l:long = CertInfoItem;
 certInfoItemStr#c427feef s:string = CertInfoItem;
 certInfoItemDict#1ea8a774 d: %(Dictionary string) = CertInfoItem;
 
-digestAlgorithmDSS1#f572d6b6 = DigestAlgorithm; // DSA digest + with SHA1 hash function
-digestAlgorithmSHA1#215fb97d = DigestAlgorithm;
-digestAlgorithmSHA224#8bce55e9 = DigestAlgorithm;
-digestAlgorithmSHA256#6c977f8c = DigestAlgorithm;
-digestAlgorithmSHA384#f54c2608 = DigestAlgorithm;
-digestAlgorithmSHA512#225df2b6 = DigestAlgorithm;
-digestAlgorithmRMD160#1887e6b4 = DigestAlgorithm;
-digestAlgorithmMD5#257ddf13 = DigestAlgorithm;
-digestAlgorithmMD4#317fe3d1 = DigestAlgorithm;
-digestAlgorithmMD2#5aca6998 = DigestAlgorithm;
+hashAlgorithmDSS1#f572d6b6 = HashAlgorithm; // DSA digest + with SHA1 hash function
+hashAlgorithmSHA1#215fb97d = HashAlgorithm;
+hashAlgorithmSHA224#8bce55e9 = HashAlgorithm;
+hashAlgorithmSHA256#6c977f8c = HashAlgorithm;
+hashAlgorithmSHA384#f54c2608 = HashAlgorithm;
+hashAlgorithmSHA512#225df2b6 = HashAlgorithm;
+hashAlgorithmRMD160#1887e6b4 = HashAlgorithm;
+hashAlgorithmMD5#257ddf13 = HashAlgorithm;
+hashAlgorithmMD4#317fe3d1 = HashAlgorithm;
+hashAlgorithmMD2#5aca6998 = HashAlgorithm;
 
 cipherAlgorithmAes128#e627c460 = CipherAlgorithm;
 cipherAlgorithmAes256#4c98c1f9 = CipherAlgorithm;
@@ -52,13 +52,13 @@ getPemCertInfo#a50cfd6c
 digestSign#d345f658
     data         : string
     private_key  : string
-    algorithm    : DigestAlgorithm
+    algorithm    : HashAlgorithm
     = Maybe string;
 
 digestVerify#5760bd0e
     data        : string
     private_key : string
-    algorithm   : DigestAlgorithm
+    algorithm   : HashAlgorithm
     signature   : string
     = Bool;
 
@@ -77,3 +77,14 @@ cbcEncrypt#6d4ee36a
    iv           : string
    data         : string
    = String;
+
+hash#50732a27
+    algorithm : HashAlgorithm
+    data      : string
+    = String;
+
+hashHmac#8dcb3d9d
+    algorithm  : HashAlgorithm
+    data       : string
+    secret_key : string
+    = String;

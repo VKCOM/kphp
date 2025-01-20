@@ -7,18 +7,16 @@
 #include <cstdint>
 #include <cstring>
 #include <limits>
+#include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/string/string-context.h"
 
-string f$addcslashes(const string &str, const string &what) noexcept;
+namespace kphp {
+namespace strings {
 
-string f$addslashes(const string &str) noexcept;
-
-string f$hex2bin(const string &str) noexcept;
-
-inline string f$bin2hex(const string &str) noexcept {
+inline string bin2hex(std::string_view str) noexcept {
   int len = str.size();
   string result(2 * len, false);
 
@@ -28,6 +26,19 @@ inline string f$bin2hex(const string &str) noexcept {
   }
 
   return result;
+}
+
+} // namespace strings
+} // namespace kphp
+
+string f$addcslashes(const string &str, const string &what) noexcept;
+
+string f$addslashes(const string &str) noexcept;
+
+string f$hex2bin(const string &str) noexcept;
+
+inline string f$bin2hex(const string &str) noexcept {
+  return kphp::strings::bin2hex(std::string_view{str.c_str(), str.size()});
 }
 
 string f$convert_cyr_string(const string &str, const string &from_s, const string &to_s) noexcept;

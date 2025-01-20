@@ -313,7 +313,7 @@ public:
   };
 };
 
-enum DigestAlgorithm : uint32_t {
+enum HashAlgorithm : uint32_t {
   DSS1 = 0xf572'd6b6,
   SHA1 = 0x215f'b97d,
   SHA224 = 0x8bce'55e9,

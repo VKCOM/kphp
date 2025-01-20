@@ -39,8 +39,6 @@ int64_t f$crc32(const string &s);
 
 int64_t f$crc32_file(const string &file_name);
 
-bool f$hash_equals(const string &known_string, const string &user_string) noexcept;
-
 bool f$openssl_public_encrypt(const string &data, string &result, const string &key);
 
 bool f$openssl_public_encrypt(const string &data, mixed &result, const string &key);
