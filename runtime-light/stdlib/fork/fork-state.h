@@ -26,21 +26,21 @@ class ForkInstanceState final : private vk::not_copyable {
   using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   static constexpr auto FORK_ID_INIT = 0;
-  // type erased tasks that represent forks
-  unordered_map<int64_t, task_t<void>> forks;
+
   int64_t next_fork_id{FORK_ID_INIT + 1};
+  unordered_map<int64_t, task_t<void>> forks_; // type erased tasks that represent forks
 
   int64_t push_fork(task_t<void> task) noexcept {
-    return forks.emplace(next_fork_id, std::move(task)), next_fork_id++;
+    return forks_.emplace(next_fork_id, std::move(task)), next_fork_id++;
   }
 
   task_t<void> pop_fork(int64_t fork_id) noexcept {
-    const auto it_fork{forks.find(fork_id)};
-    if (it_fork == forks.end()) {
+    const auto it_fork{forks_.find(fork_id)};
+    if (it_fork == forks_.end()) [[unlikely]] {
       php_critical_error("can't find fork %" PRId64, fork_id);
     }
     auto fork{std::move(it_fork->second)};
-    forks.erase(it_fork);
+    forks_.erase(it_fork);
     return fork;
   }
 
@@ -55,7 +55,7 @@ public:
 
   static ForkInstanceState &get() noexcept;
 
-  bool contains(int64_t fork_id) const noexcept {
-    return forks.contains(fork_id);
+  const auto &forks() const noexcept {
+    return forks_;
   }
 };

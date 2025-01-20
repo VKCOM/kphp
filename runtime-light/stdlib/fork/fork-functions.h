@@ -28,8 +28,8 @@ inline constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chron
 
 template<typename T>
 requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
-  auto &fork_ctx{ForkInstanceState::get()};
-  if (!fork_ctx.contains(fork_id)) {
+  auto &fork_state{ForkInstanceState::get()};
+  if (!fork_state.forks().contains(fork_id)) {
     php_warning("can't find fork %" PRId64, fork_id);
     co_return T{};
   }
