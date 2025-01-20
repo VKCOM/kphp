@@ -153,6 +153,7 @@ void append_curl(std::string &cxx_flags, std::string &ld_flags) noexcept {
     const std::string curl_dir = "/opt/curl7600";
     cxx_flags += " -I" + curl_dir + "/include/";
     ld_flags += " " + curl_dir + "/lib/libcurl.a";
+    ld_flags += " -lssh2 -lcares -lbrotlicommon -lbrotlidec";
 #endif
   }
 }
