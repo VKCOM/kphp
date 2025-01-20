@@ -20,7 +20,7 @@ class object_visitor : vk::not_copyable {
 public:
   explicit object_visitor(msgpack::zone &zone) noexcept;
 
-  msgpack::object &&flush() &&noexcept {
+  msgpack::object &&flush() && noexcept {
     return std::move(m_obj);
   }
 
