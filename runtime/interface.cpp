@@ -209,6 +209,7 @@ static string http_status_line;
 static char headers_storage[sizeof(array<string>)];
 static array<string> *headers = reinterpret_cast <array<string> *> (headers_storage);
 static long long header_last_query_num = -1;
+static bool headers_custom_handler_invoked = false;
 static bool headers_sent = false;
 static headers_custom_handler_function_type headers_custom_handler_function;
 
@@ -367,6 +368,20 @@ array<string> f$headers_list() {
   }
 
   return result;
+}
+
+Optional<string> &get_dummy_headers_sent_filename() noexcept {
+  static Optional<string> filename;
+  return filename;
+}
+
+Optional<int64_t> &get_dummy_headers_sent_line() noexcept {
+  static Optional<int64_t> dummy_line;
+  return dummy_line;
+}
+
+bool f$headers_sent([[maybe_unused]] Optional<string> &filename, [[maybe_unused]] Optional<int64_t> &line) {
+  return headers_sent;
 }
 
 void f$send_http_103_early_hints(const array<string> & headers) {
@@ -568,9 +583,12 @@ static int ob_merge_buffers() {
 void f$flush() {
   php_assert(ob_cur_buffer >= 0 && php_worker.has_value());
   // Run custom headers handler before body processing
-  if (headers_custom_handler_function && !headers_sent && query_type == QUERY_TYPE_HTTP) {
+  if (!headers_custom_handler_invoked && query_type == QUERY_TYPE_HTTP) {
+    headers_custom_handler_invoked = true;
+    if (headers_custom_handler_function) {
+      headers_custom_handler_function();
+    }
     headers_sent = true;
-    headers_custom_handler_function();
   }
   string_buffer const * http_body = compress_http_query_body(&oub[ob_system_level]);
   string_buffer const * http_headers = nullptr;
@@ -586,9 +604,12 @@ void f$flush() {
 
 void f$fastcgi_finish_request(int64_t exit_code) {
   // Run custom headers handler before body processing
-  if (headers_custom_handler_function && !headers_sent && query_type == QUERY_TYPE_HTTP) {
+  if (!headers_custom_handler_invoked && query_type == QUERY_TYPE_HTTP) {
+    headers_custom_handler_invoked = true;
+    if (headers_custom_handler_function) {
+      headers_custom_handler_function();
+    }
     headers_sent = true;
-    headers_custom_handler_function();
   }
   int ob_total_buffer = ob_merge_buffers();
   if (php_worker.has_value() && php_worker->flushed_http_connection) {
@@ -2341,6 +2362,7 @@ static void free_header_handler_function() {
   headers_custom_handler_function.~headers_custom_handler_function_type();
   new(&headers_custom_handler_function) headers_custom_handler_function_type{};
   headers_sent = false;
+  headers_custom_handler_invoked = false;
 }
 
 
