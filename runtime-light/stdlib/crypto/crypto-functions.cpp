@@ -14,6 +14,7 @@
 
 #include "common/crc32_generic.h"
 #include "common/tl/constants/common.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"

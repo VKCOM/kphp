@@ -10,6 +10,7 @@
 #include <string_view>
 
 #include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator.h"
