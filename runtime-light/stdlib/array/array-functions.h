@@ -19,7 +19,7 @@ namespace dl {
 
 template<typename T, typename Comparator>
 requires(std::invocable<Comparator, T, T>) task_t<void> sort(T *begin_init, T *end_init, Comparator &&compare) noexcept {
-  auto compare_call = [compare]<typename U>(U &&lhs, U &&rhs) -> task_t<int64_t> {
+  auto compare_call = [compare]<typename U>(U lhs, U rhs) -> task_t<int64_t> {
     if constexpr (is_async_function_v<Comparator, U, U>) {
       co_return co_await std::invoke(std::forward<Comparator>(compare), std::forward<U>(lhs), std::forward<U>(rhs));
     } else {
@@ -40,9 +40,10 @@ requires(std::invocable<Comparator, T, T>) task_t<void> sort(T *begin_init, T *e
       const auto offset = (end - begin) >> 1;
       swap(*begin, begin[offset]);
 
-      T *i = begin + 1, *j = end;
+      T *i = begin + 1;
+      T *j = end;
 
-      while (1) {
+      while (true) {
         while (i < j && (co_await compare_call(*begin, *i)) > 0) {
           i++;
         }
@@ -83,7 +84,7 @@ requires(std::invocable<Comparator, T, T>) task_t<void> sort(T *begin_init, T *e
 namespace array_functions_impl_ {
 
 template<typename Result, typename U, typename Comparator>
-Result sort(array<U> &arr, Comparator &&comparator, bool renumber) noexcept {
+Result sort(array<U> &arr, Comparator comparator, bool renumber) noexcept {
   using array_inner = typename array<U>::array_inner;
   using array_bucket = typename array<U>::array_bucket;
   int64_t n = arr.count();
@@ -105,7 +106,7 @@ Result sort(array<U> &arr, Comparator &&comparator, bool renumber) noexcept {
       arr.mutate_if_vector_shared();
     }
 
-    const auto elements_cmp = [comparator](const U &lhs, const U &rhs) -> task_t<bool> {
+    const auto elements_cmp = [comparator](U lhs, U rhs) -> task_t<bool> {
       if constexpr (is_async_function_v<Comparator, U, U>) {
         co_return(co_await std::invoke(std::forward<Comparator>(comparator), lhs, rhs)) > 0;
       } else {
@@ -128,7 +129,7 @@ Result sort(array<U> &arr, Comparator &&comparator, bool renumber) noexcept {
     arr.mutate_if_map_shared();
   }
 
-  array_bucket **arTmp = static_cast<array_bucket **>(RuntimeAllocator::get().alloc_script_memory(n * sizeof(array_bucket *)));
+  auto **arTmp = static_cast<array_bucket **>(RuntimeAllocator::get().alloc_script_memory(n * sizeof(array_bucket *)));
   uint32_t i = 0;
   for (array_bucket *it = arr.p->begin(); it != arr.p->end(); it = arr.p->next(it)) {
     arTmp[i++] = it;
@@ -178,17 +179,17 @@ Result ksort(array<U> &arr, Comparator &&comparator) noexcept {
     keys.p->push_back_vector_value(it->get_key());
   }
 
-  key_type *keysp = reinterpret_cast<key_type *>(keys.p->entries());
+  auto *keysp = reinterpret_cast<key_type *>(keys.p->entries());
   co_await dl::sort<key_type, Comparator>(keysp, keysp + n, std::forward<Comparator>(comparator));
 
-  list_hash_entry *prev = static_cast<list_hash_entry *>(arr.p->end());
+  auto *prev = static_cast<list_hash_entry *>(arr.p->end());
   for (uint32_t j = 0; j < n; j++) {
-    list_hash_entry *cur;
+    list_hash_entry *cur = nullptr;
     if (arr.is_int_key(keysp[j])) {
       int64_t int_key = keysp[j].to_int();
       uint32_t bucket = arr.p->choose_bucket(int_key);
       while (arr.p->entries()[bucket].int_key != int_key || !arr.p->entries()[bucket].string_key.is_dummy_string()) {
-        if (unlikely(++bucket == arr.p->buf_size)) {
+        if (++bucket == arr.p->buf_size) [[unlikely]] {
           bucket = 0;
         }
       }
@@ -200,7 +201,7 @@ Result ksort(array<U> &arr, Comparator &&comparator) noexcept {
       uint32_t bucket = arr.p->choose_bucket(int_key);
       while (
         (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
-        if (unlikely(++bucket == arr.p->buf_size)) {
+        if (++bucket == arr.p->buf_size) [[unlikely]] {
           bucket = 0;
         }
       }
