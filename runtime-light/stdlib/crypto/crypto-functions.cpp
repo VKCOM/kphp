@@ -58,7 +58,7 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
   co_return string{str.value.data(), static_cast<string::size_type>(str.value.size())};
 }
 
-task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool shortnames) noexcept {
+task_t<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool shortnames) noexcept {
   tl::GetPemCertInfo request{.is_short = shortnames, .bytes = {.value = {data.c_str(), data.size()}}};
 
   tl::TLBuffer buffer;
@@ -105,7 +105,7 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(const string &data, bool sho
   co_return response;
 }
 
-task_t<bool> f$openssl_sign(const string &data, string &signature, const string &private_key, int64_t algo) noexcept {
+task_t<bool> f$openssl_sign(string data, string &signature, string private_key, int64_t algo) noexcept {
   tl::DigestSign request{.data = {.value = {data.c_str(), data.size()}},
                          .private_key = {.value = {private_key.c_str(), private_key.size()}},
                          .algorithm = static_cast<tl::HashAlgorithm>(algo)};
@@ -132,7 +132,7 @@ task_t<bool> f$openssl_sign(const string &data, string &signature, const string 
   co_return true;
 }
 
-task_t<int64_t> f$openssl_verify(const string &data, const string &signature, const string &pub_key, int64_t algo) noexcept {
+task_t<int64_t> f$openssl_verify(string data, string signature, string pub_key, int64_t algo) noexcept {
   tl::DigestVerify request{.data = {.value = {data.c_str(), data.size()}},
                            .public_key = {.value = {pub_key.c_str(), pub_key.size()}},
                            .algorithm = static_cast<tl::HashAlgorithm>(algo),
@@ -253,8 +253,8 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string &method) noexcept {
   return algorithm_iv_len(*algorithm);
 }
 
-task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &method, const string &source_key, int64_t options, const string &source_iv,
-                                           string &tag, const string &aad, int64_t tag_length __attribute__((unused))) noexcept {
+task_t<Optional<string>> f$openssl_encrypt(string data, string method, string source_key, int64_t options, string source_iv, string &tag, string aad,
+                                           int64_t tag_length __attribute__((unused))) noexcept {
   auto algorithm = parse_cipher_algorithm(method);
   if (!algorithm.has_value()) {
     php_warning("Unknown cipher algorithm");
@@ -300,8 +300,7 @@ task_t<Optional<string>> f$openssl_encrypt(const string &data, const string &met
   co_return(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(response) : f$base64_encode(response);
 }
 
-task_t<Optional<string>> f$openssl_decrypt(string data, const string &method, const string &source_key, int64_t options, const string &source_iv, string tag,
-                                           const string &aad) noexcept {
+task_t<Optional<string>> f$openssl_decrypt(string data, string method, string source_key, int64_t options, string source_iv, string tag, string aad) noexcept {
   if (!(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA))) {
     Optional<string> decoding_data = f$base64_decode(data, true);
     if (!decoding_data.has_value()) {
@@ -419,7 +418,7 @@ array<string> f$hash_hmac_algos() noexcept {
 }
 
 task_t<string> f$hash(string algo_str, string s, bool raw_output) noexcept {
-  const auto algo = parse_hash_algorithm({algo_str.c_str(), algo_str.size()});
+const auto algo = parse_hash_algorithm({algo_str.c_str(), algo_str.size()});
   if (!algo.has_value()) {
     php_critical_error("algo %s not supported in function hash", algo_str.c_str());
   }
