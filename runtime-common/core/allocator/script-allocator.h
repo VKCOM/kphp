@@ -7,7 +7,6 @@
 #include <cstddef>
 
 #include "runtime-common/core/allocator/runtime-allocator.h"
-#include "runtime-common/core/allocator/script-allocator-managed.h"
 
 namespace kphp {
 
