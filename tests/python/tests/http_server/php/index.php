@@ -178,6 +178,22 @@ if (isset($_SERVER["JOB_ID"])) {
 
         break;
     }
+} else if ($_SERVER["PHP_SELF"] === "/test_headers_sent") {
+    switch($_GET["type"]) {
+        case "flush":
+            echo (int)headers_sent();
+            flush();
+            echo (int)headers_sent();
+            break;
+        case "shutdown":
+            if ((int)$_GET['flush']) {
+                flush();
+            }
+            register_shutdown_function(function() {
+              fwrite(STDERR, "headers_sent() after shutdown callback returns " . var_export(headers_sent(), true) . "\n");
+            });
+            break;
+    }
 } else if ($_SERVER["PHP_SELF"] === "/test_ignore_user_abort") {
     register_shutdown_function('shutdown_function');
     /** @var I */

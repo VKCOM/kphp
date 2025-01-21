@@ -141,6 +141,7 @@ function ob_get_flush () ::: string | false;
 function ob_get_length () ::: int | false;
 function ob_get_level () ::: int;
 
+function headers_sent (?string &$filename = null, ?int &$line = null) ::: bool;
 function header ($str ::: string, $replace ::: bool = true, $http_response_code ::: int = 0) ::: void;
 function headers_list () ::: string[];
 function send_http_103_early_hints($headers ::: string[]) ::: void;
