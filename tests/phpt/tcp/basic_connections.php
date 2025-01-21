@@ -38,7 +38,8 @@ function test_no_close($address, $request) {
 
 
 test_simple_connection("tcp://bad_address", "GET / HTTP/1.0\r\nHost: example.com:80\r\nAccept: */*\r\n\r\n");
-test_simple_connection("tcp://wrong_address:80", "GET / HTTP/1.0\r\nHost: example.com:80\r\nAccept: */*\r\n\r\n");
+test_simple_connection("tcp://wrong_address:80", "GET / HTTP/1.0\r\nHost: example.com:80\r\nAccept: */*\r\n\r\n");\
+test_simple_connection("tcp://example.com:wrong_port", "GET / HTTP/1.0\r\nHost: example.com:80\r\nAccept: */*\r\n\r\n");
 test_simple_connection("tcp://example.com:80", "GET / HTTP/1.0\r\nHost: example.com:80\r\nAccept: */*\r\n\r\n");
 test_simple_connection("tcp://example.com:80", "GET / HTTP/1.0\r\nHost: not_working.com:1111\r\nAccept: */*\r\n\r\n");
 
