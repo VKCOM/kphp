@@ -30,7 +30,7 @@ inline string f$msgpack_serialize_safe(const T &value) noexcept {
 template<class InstanceClass>
 inline string f$instance_serialize_safe(const class_instance<InstanceClass> &instance) noexcept {
   string err_msg;
-  auto result = common_instance_serialize(instance, &err_msg);
+  auto result = msgpack_functions_impl_::common_instance_serialize(instance, &err_msg);
   if (!err_msg.empty()) {
     THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, err_msg));
     return {};
