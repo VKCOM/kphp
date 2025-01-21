@@ -1,4 +1,4 @@
-@ok k2_skip
+@
 <?php
 
 function test_simple_connection($address, $request) {
