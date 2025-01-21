@@ -451,7 +451,6 @@ static std::string get_light_runtime_compiler_options() {
     }
   }
   s << "-std=c++20 ";
-  s << "-Wno-invalid-source-encoding "; // required by vkext/string-processing.cpp
   s << "-iquote " << G->settings().runtime_and_common_src.get() << " ";
 #endif
 
@@ -459,6 +458,8 @@ static std::string get_light_runtime_compiler_options() {
 }
 
 static std::vector<File *> build_runtime_and_common_from_sources(const std::string &compiler_flags, MakeSetup &make, Index &obj_dir) {
+  const std::unordered_map<std::string_view, std::string_view> specific_flags_for_files =
+  {{"stdlib/vkext/string-processing.cpp", "-Wno-invalid-source-encoding"}};
   const Index &runtime_core_dir = G->get_runtime_core_index();
   const Index &runtime_dir = G->get_runtime_index();
   const Index &common_dir = G->get_common_index();
@@ -481,7 +482,11 @@ static std::vector<File *> build_runtime_and_common_from_sources(const std::stri
       files_hashes.insert(vk::std_hash(obj_name));
       File *obj_file = obj_dir.insert_file(std::move(obj_name));
       make.create_cpp_target(cpp_file);
-      make.create_runtime_src2obj_target(cpp_file, obj_file, compiler_flags);
+      if (auto it = specific_flags_for_files.find(cpp_file->name); it != specific_flags_for_files.end()) {
+        make.create_runtime_src2obj_target(cpp_file, obj_file, compiler_flags + it->second);
+      } else {
+        make.create_runtime_src2obj_target(cpp_file, obj_file, compiler_flags);
+      }
       objs.push_back(obj_file);
     }
   }
