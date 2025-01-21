@@ -15,18 +15,19 @@
 
 template<class T>
 Optional<string> f$msgpack_serialize(const T &value, string *out_err_msg = nullptr) noexcept {
-  auto &str_buffer{RuntimeContext::get().static_SB.clean()};
+  auto &runtime_ctx{RuntimeContext::get()};
+  auto &str_buffer{runtime_ctx.static_SB.clean()};
   php_assert(str_buffer.size() == 0);
 
-  RuntimeContext::get().sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_ON;
-  auto clean_buffer = vk::finally([&str_buffer] {
+  runtime_ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_ON;
+  auto clean_buffer = vk::finally([&str_buffer, &runtime_ctx] {
     str_buffer.clean();
-    RuntimeContext::get().sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
+    runtime_ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
   });
 
   vk::msgpack::packer{str_buffer}.pack(value);
 
-  if (RuntimeContext::get().sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
+  if (runtime_ctx.sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) {
     string err_msg{"msgpacke_serialize buffer overflow"};
     if (out_err_msg) {
       *out_err_msg = std::move(err_msg);
