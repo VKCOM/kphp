@@ -68,11 +68,11 @@ template<class T, class Pred>
 requires(std::invocable<Pred, T>) task_t<array<T>> f$array_filter(array<T> a, Pred pred) noexcept {
   if constexpr (is_async_function_v<Pred, T>) {
     co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept -> task_t<bool> {
-      co_return co_await std::invoke(std::forward<Pred>(pred), it.get_value());
+      co_return co_await std::invoke(std::move(pred), it.get_value());
     });
   } else {
     co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept {
-      return std::invoke(std::forward<Pred>(pred), it.get_value());
+      return std::invoke(std::move(pred), it.get_value());
     });
   }
 }
