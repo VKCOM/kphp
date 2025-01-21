@@ -451,6 +451,7 @@ static std::string get_light_runtime_compiler_options() {
     }
   }
   s << "-std=c++20 ";
+  s << "-Wno-invalid-source-encoding "; // required by vkext/string-processing.cpp
   s << "-iquote " << G->settings().runtime_and_common_src.get() << " ";
 #endif
 
