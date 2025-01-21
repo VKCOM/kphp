@@ -483,7 +483,7 @@ static std::vector<File *> build_runtime_and_common_from_sources(const std::stri
       File *obj_file = obj_dir.insert_file(std::move(obj_name));
       make.create_cpp_target(cpp_file);
       if (auto it = specific_flags_for_files.find(cpp_file->name); it != specific_flags_for_files.end()) {
-        make.create_runtime_src2obj_target(cpp_file, obj_file, compiler_flags + it->second);
+        make.create_runtime_src2obj_target(cpp_file, obj_file, compiler_flags + std::string(it->second));
       } else {
         make.create_runtime_src2obj_target(cpp_file, obj_file, compiler_flags);
       }
