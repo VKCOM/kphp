@@ -7,25 +7,26 @@
 
 #include <cstddef>
 
+#include "runtime-common/stdlib/serialization/serialization-context.h"
+
 namespace vk::msgpack {
 struct CheckInstanceDepth {
-  static size_t depth;
   static constexpr size_t max_depth = 20;
 
   CheckInstanceDepth() {
-    depth++;
+    SerializationLibContext::get().instance_depth++;
   }
 
   CheckInstanceDepth(const CheckInstanceDepth &) = delete;
   CheckInstanceDepth &operator=(const CheckInstanceDepth &) = delete;
 
   static bool is_exceeded() {
-    return depth > max_depth;
+    return SerializationLibContext::get().instance_depth > max_depth;
   }
 
   ~CheckInstanceDepth() {
     if (!is_exceeded()) {
-      depth--;
+      SerializationLibContext::get().instance_depth--;
     }
   }
 };

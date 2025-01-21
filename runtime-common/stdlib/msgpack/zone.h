@@ -19,6 +19,7 @@ public:
 private:
   struct chunk {
     chunk *m_next{nullptr};
+    int64_t size{0};
   };
   struct chunk_list : private vk::not_copyable {
     explicit chunk_list(size_t chunk_size);

@@ -946,10 +946,6 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
 }
 
 void ClassDeclaration::compile_msgpack_declarations(CodeGenerator &W, ClassPtr klass) {
-  if (G->is_output_mode_k2()) {
-    // The current version of runtime-light does not support msgpack visitors
-    return;
-  }
   if (!klass->is_serializable) {
     return;
   }
@@ -1070,7 +1066,7 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
     (klass->need_instance_cache_visitors && !G->is_output_mode_k2()) ||
     (klass->need_instance_memory_estimate_visitor && !G->is_output_mode_k2());
 
-  if (!need_generic_accept && (!klass->is_serializable || G->is_output_mode_k2()) && klass->json_encoders.empty()) {
+  if (!need_generic_accept && !klass->is_serializable && klass->json_encoders.empty()) {
     return;
   }
 
@@ -1113,12 +1109,10 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
   W << NL;
   compile_accept_json_visitor(W, klass);
 
-  if (!G->is_output_mode_k2()) {
-    W << NL;
-    compile_msgpack_serialize(W, klass);
-    W << NL;
-    compile_msgpack_deserialize(W, klass);
-  }
+  W << NL;
+  compile_msgpack_serialize(W, klass);
+  W << NL;
+  compile_msgpack_deserialize(W, klass);
 
   W << CloseNamespace();
 

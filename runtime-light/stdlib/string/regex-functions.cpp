@@ -18,10 +18,10 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/string/mbstring-functions.h"
 #include "runtime-light/allocator/allocator.h"
-#include "runtime-light/core/std/containers.h"
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 

@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-common/core/allocator/script-allocator-managed.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/image-state.h"

@@ -154,14 +154,14 @@ function bcsqrt($num ::: string, $scale ::: int = PHP_INT_MIN): string;
 
 function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
 
+function is_nan ($v ::: float) ::: bool;
+
 // ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info generate-stub */
 function is_finite ($v ::: float) ::: bool;
 /** @kphp-extern-func-info generate-stub */
 function is_infinite ($v ::: float) ::: bool;
-/** @kphp-extern-func-info generate-stub */
-function is_nan ($v ::: float) ::: bool;
 /** @kphp-extern-func-info generate-stub */
 function random_int($l ::: int, $r ::: int) ::: int | false;
 /** @kphp-extern-func-info generate-stub */
