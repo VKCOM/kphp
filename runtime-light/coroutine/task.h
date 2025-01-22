@@ -164,7 +164,7 @@ struct task_t : public task_base_t {
     task_t *task;
   };
 
-  auto operator co_await() {
+  auto operator co_await() noexcept {
     struct awaiter_t : public awaiter_base_t {
       using awaiter_base_t::awaiter_base_t;
       T await_resume() noexcept {
