@@ -167,6 +167,7 @@ struct task_t : public task_base_t {
 
   auto operator co_await() {
     struct awaiter_t : public awaiter_base_t {
+      using awaiter_base_t::awaiter_base_t;
       T await_resume() noexcept {
         return awaiter_base_t::task->get_result();
       }
@@ -176,6 +177,7 @@ struct task_t : public task_base_t {
 
   auto when_ready() const noexcept {
     struct awaiter_t : public awaiter_base_t {
+      using awaiter_base_t::awaiter_base_t;
       constexpr void await_resume() const noexcept {}
     };
     return awaiter_t{this};

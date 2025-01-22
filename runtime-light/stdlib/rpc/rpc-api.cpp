@@ -136,7 +136,7 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
   auto waiter_task{[](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> task_t<string> {
     auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
-    const auto response{(co_await wait_with_timeout_t{task_t<string>::awaiter_t{std::addressof(fetch_task)}, timeout}).value_or(string{})};
+    const auto response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
     // update response extra info if needed
     if (collect_responses_extra_info) {
       auto &extra_info_map{RpcInstanceState::get().rpc_responses_extra_info};

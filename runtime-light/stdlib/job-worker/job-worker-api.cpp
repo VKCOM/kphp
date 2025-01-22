@@ -65,7 +65,7 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
   // that the stream will not be closed too early. otherwise, platform may even not send job worker request
   auto waiter_task{[](auto comp_query, std::chrono::nanoseconds timeout) noexcept -> task_t<string> {
     auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
-    const string response{(co_await wait_with_timeout_t{task_t<string>::awaiter_t{std::addressof(fetch_task)}, timeout}).value_or(string{})};
+    const string response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
 
     tl::TLBuffer tlb{};
     tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});

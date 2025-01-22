@@ -349,7 +349,7 @@ template<typename T>
 class wait_fork_t : awaitable_impl_::fork_id_watcher_t {
   int64_t fork_id;
   task_t<T> fork_task;
-  task_t<T>::awaiter_t fork_awaiter;
+  decltype(std::declval<task_t<T>>().operator co_await()) fork_awaiter;
   awaitable_impl_::State state{awaitable_impl_::State::Init};
 
   using fork_resume_t = decltype(fork_awaiter.await_resume());
