@@ -105,12 +105,9 @@ void f$exit(const mixed &v = 0);
 __attribute__((noreturn))
 void f$die(const mixed &v = 0);
 
-double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b);
-
 Optional<array<string>> f$gethostbynamel(const string &name);
 
 Optional<string> f$inet_pton(const string &address);
-
 
 void print(const char *s, size_t s_len);
 

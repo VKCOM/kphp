@@ -73,7 +73,6 @@ struct process_rusage_t {
 };
 
 mem_info_t get_self_mem_stats();
-int get_self_threads_count();
 int get_pid_info (pid_t pid, pid_info_t *info);
 unsigned long long get_pid_start_time (pid_t pid);
 int get_cpu_total (unsigned long long *cpu_total);

@@ -10,7 +10,6 @@
 #include <cstdlib>
 #include <fcntl.h>
 #include <sys/resource.h>
-#include <thread>
 #include <unistd.h>
 #include <vector>
 
@@ -274,7 +273,6 @@ static void resource_usage_statistics(stats_t *stats, const char *prefix,
   stats->add_general_stat(stat_temp_format("%sblock_input_operations", prefix), "%ld", usage->ru_inblock);
   stats->add_general_stat(stat_temp_format("%sblock_output_operations", prefix), "%ld", usage->ru_oublock);
 
-  stats->add_general_stat(stat_temp_format("%shardware_concurrency", prefix), "%u", std::thread::hardware_concurrency());
   stats->add_histogram_stat(stat_temp_format("%svoluntary_context_switches", prefix), usage->ru_nvcsw);
   stats->add_histogram_stat(stat_temp_format("%sivoluntary_context_switches", prefix), usage->ru_nivcsw);
 }
