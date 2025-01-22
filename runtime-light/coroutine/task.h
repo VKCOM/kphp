@@ -7,17 +7,12 @@
 #include <cassert>
 #include <concepts>
 #include <coroutine>
-#include <optional>
 #include <type_traits>
 #include <utility>
 
 #include "common/containers/final_action.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
-
-#if __clang_major__ > 7
-#define CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
-#endif
 
 struct task_base_t {
   task_base_t() = default;
@@ -83,20 +78,9 @@ struct task_t : public task_base_t {
       }
 
       std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> h) const noexcept {
-#ifdef CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
         if (h.promise().next) {
           return std::coroutine_handle<>::from_address(h.promise().next);
         }
-#else
-        void *loaded_ptr = h.promise().next;
-        if (loaded_ptr != nullptr) {
-          if (loaded_ptr == &h.promise().next) {
-            h.promise().next = nullptr;
-            return std::noop_coroutine();
-          }
-          return std::coroutine_handle<>::from_address(loaded_ptr);
-        }
-#endif
         return std::noop_coroutine();
       }
 
@@ -126,8 +110,7 @@ struct task_t : public task_base_t {
       return buffer;
     }
 
-    void operator delete(void *ptr, size_t n) noexcept {
-      (void)n;
+    void operator delete(void *ptr, [[maybe_unused]] size_t n) noexcept {
       k2::free(ptr);
     }
   };
@@ -146,10 +129,6 @@ struct task_t : public task_base_t {
     void return_void() {}
   };
 
-  void execute() {
-    get_handle().resume();
-  }
-
   T get_result() noexcept {
     if (get_handle().promise().exception) {
       std::rethrow_exception(std::move(get_handle().promise().exception));
@@ -158,19 +137,6 @@ struct task_t : public task_base_t {
       T *t = std::launder(reinterpret_cast<T *>(get_handle().promise().bytes));
       const vk::final_action final_action([t] { t->~T(); });
       return std::move(*t);
-    }
-  }
-
-  std::conditional_t<std::is_void<T>{}, bool, std::optional<T>> operator()() {
-    execute();
-    if constexpr (std::is_void<T>{}) {
-      get_result();
-      return !done();
-    } else {
-      if (!done()) {
-        return std::nullopt;
-      }
-      return get_result();
     }
   }
 
@@ -183,25 +149,9 @@ struct task_t : public task_base_t {
     }
 
     template<typename PromiseType>
-#ifdef CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
-    std::coroutine_handle<promise_type>
-#else
-    bool
-#endif
-    await_suspend(std::coroutine_handle<PromiseType> h) noexcept {
-#ifdef CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
+    std::coroutine_handle<promise_type> await_suspend(std::coroutine_handle<PromiseType> h) noexcept {
       task->get_handle().promise().next = h.address();
       return task->get_handle();
-#else
-      void *next_ptr = &task->get_handle().promise().next;
-      task->get_handle().promise().next = next_ptr;
-      task->get_handle().resume();
-      if (task->get_handle().promise().next == nullptr) {
-        return false;
-      }
-      task->get_handle().promise().next = h.address();
-      return true;
-#endif
     }
 
     T await_resume() noexcept {
