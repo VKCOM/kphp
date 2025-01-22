@@ -459,7 +459,7 @@ static std::string get_light_runtime_compiler_options() {
 
 static std::vector<File *> build_runtime_and_common_from_sources(const std::string &compiler_flags, MakeSetup &make, Index &obj_dir) {
   const std::unordered_map<std::string_view, std::string_view> specific_flags_for_files =
-  {{"stdlib/vkext/string-processing.cpp", "-Wno-invalid-source-encoding"}};
+  {{"stdlib/vkext/string-processing.cpp", " -Wno-invalid-source-encoding"}};
   const Index &runtime_core_dir = G->get_runtime_core_index();
   const Index &runtime_dir = G->get_runtime_index();
   const Index &common_dir = G->get_common_index();
