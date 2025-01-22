@@ -21,9 +21,9 @@ template<typename T, typename Comparator>
 requires(std::invocable<Comparator, T, T>) task_t<void> sort(T *begin_init, T *end_init, Comparator &&compare) noexcept {
   auto compare_call = [compare]<typename U>(U lhs, U rhs) -> task_t<int64_t> {
     if constexpr (is_async_function_v<Comparator, U, U>) {
-      co_return co_await std::invoke(std::forward<Comparator>(compare), std::forward<U>(lhs), std::forward<U>(rhs));
+      co_return co_await std::invoke(std::forward<Comparator>(compare), std::move(lhs), std::move(rhs));
     } else {
-      co_return std::invoke(std::forward<Comparator>(compare), std::forward<U>(lhs), std::forward<U>(rhs));
+      co_return std::invoke(std::forward<Comparator>(compare), std::move(lhs), std::move(rhs));
     }
   };
   T *begin_stack[32];
@@ -108,9 +108,9 @@ Result sort(array<U> &arr, Comparator comparator, bool renumber) noexcept {
 
     const auto elements_cmp = [comparator](U lhs, U rhs) -> task_t<bool> {
       if constexpr (is_async_function_v<Comparator, U, U>) {
-        co_return(co_await std::invoke(std::forward<Comparator>(comparator), lhs, rhs)) > 0;
+        co_return(co_await std::invoke(std::forward<Comparator>(comparator), std::move(lhs), std::move(rhs))) > 0;
       } else {
-        co_return std::invoke(std::forward<Comparator>(comparator), lhs, rhs) > 0;
+        co_return std::invoke(std::forward<Comparator>(comparator), std::move(lhs), std::move(rhs)) > 0;
       }
     };
 
