@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <cassert>
 #include <concepts>
 #include <coroutine>
 #include <type_traits>
@@ -39,7 +38,7 @@ struct task_base_t {
   }
 
   bool done() const {
-    assert(handle_address);
+    php_assert(handle_address != nullptr);
     return std::coroutine_handle<>::from_address(handle_address).done();
   }
 
