@@ -2197,13 +2197,7 @@ int main_args_handler(int i, const char *long_option) {
       return read_option_to(long_option, 0.0, 5.0, hard_timeout);
     }
     case 2035: {
-      double thread_pool_ratio = 0.0;
-      int res = read_option_to(long_option, 0.0, 10.0, thread_pool_ratio);
-      thread_pool_size = static_cast<int>(std::ceil(std::thread::hardware_concurrency() * thread_pool_ratio));
-      return res;
-    }
-    case 2036: {
-      return read_option_to(long_option, 0U, 2048U, thread_pool_size);
+      return read_option_to(long_option, 0.0, 5.0, thread_pool_ratio);
     }
     case 2037: {
       if (!*optarg) {
@@ -2352,13 +2346,13 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("oom-handling-memory-ratio", required_argument, 2033, "memory ratio of overall script memory to handle OOM errors (default: 0.00)");
   parse_option("hard-time-limit", required_argument, 2034, "time limit for script termination after the main timeout has expired (default: 1 sec). Use 0 to disable");
   parse_option("thread-pool-ratio", required_argument, 2035, "the thread pool size ratio of the overall cpu numbers");
-  parse_option("thread-pool-size", required_argument, 2036, "the total threads num per worker");
   parse_option("confdata-force-ignore-keys-prefix", required_argument, 2037, "an emergency option, e.g. 'highload.vid*', to forcibly drop keys from snapshot/binlog; may be used multiple times");
   parse_option("confdata-update-timeout", required_argument, 2038, "cron confdata binlog replaying will be forcibly stopped after the specified timeout (default: 0.3 sec)"
                                                                    "Initial binlog is readed with x10 times larger timeout");
   parse_option("confdata-soft-oom-ratio", required_argument, 2039, "Memory limit ratio to start ignoring new keys related events (default: 0.85)."
                                                                    "Can't be > hard oom ratio (0.95)");
   parse_option("kml-dir", required_argument, 2040, "Directory that contains .kml files");
+
 
   parse_engine_options_long(argc, argv, main_args_handler);
   parse_main_args_till_option(argc, argv);
