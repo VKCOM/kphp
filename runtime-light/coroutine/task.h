@@ -140,8 +140,8 @@ struct task_t : public task_base_t {
     }
   }
 
-  struct awaiter_t {
-    explicit awaiter_t(task_t *task)
+  struct awaiter_base_t {
+    explicit awaiter_base_t(task_t *task)
       : task{task} {}
 
     constexpr bool await_ready() const noexcept {
@@ -152,10 +152,6 @@ struct task_t : public task_base_t {
     std::coroutine_handle<promise_type> await_suspend(std::coroutine_handle<PromiseType> h) noexcept {
       task->get_handle().promise().next = h.address();
       return task->get_handle();
-    }
-
-    T await_resume() noexcept {
-      return task->get_result();
     }
 
     bool resumable() const noexcept {
@@ -169,7 +165,19 @@ struct task_t : public task_base_t {
     task_t *task;
   };
 
-  awaiter_t operator co_await() {
+  auto operator co_await() {
+    struct awaiter_t : public awaiter_base_t {
+      T await_resume() noexcept {
+        return awaiter_base_t::task->get_result();
+      }
+    };
+    return awaiter_t{this};
+  }
+
+  auto when_ready() const noexcept {
+    struct awaiter_t : public awaiter_base_t {
+      constexpr void await_resume() const noexcept {}
+    };
     return awaiter_t{this};
   }
 
