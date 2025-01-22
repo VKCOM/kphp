@@ -60,18 +60,20 @@ void f$shuffle(array<T> &arr) noexcept {
 }
 
 template<class T>
-task_t<array<T>> f$array_filter(const array<T> &a) noexcept {
+task_t<array<T>> f$array_filter(array<T> a) noexcept {
   co_return co_await array_functions_impl_::array_filter_impl(a, [](const auto &it) noexcept { return it.get_value(); });
 }
 
 template<class T, class Pred>
-requires(std::invocable<Pred, T>) task_t<array<T>> f$array_filter(const array<T> &a, Pred &&pred) noexcept {
+requires(std::invocable<Pred, T>) task_t<array<T>> f$array_filter(array<T> a, Pred pred) noexcept {
   if constexpr (is_async_function_v<Pred, T>) {
     co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept -> task_t<bool> {
-      co_return co_await std::invoke(std::forward<Pred>(pred), it.get_value());
+      co_return co_await std::invoke(std::move(pred), it.get_value());
     });
   } else {
-    co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept { return std::invoke(std::forward<Pred>(pred), it.get_value()); });
+    co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept {
+      return std::invoke(std::move(pred), it.get_value());
+    });
   }
 }
 

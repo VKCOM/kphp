@@ -46,7 +46,7 @@ inline string f$basename(const string &path, const string &suffix = {}) noexcept
 
 resource f$fopen(const string &filename, const string &mode, bool use_include_path = false, const resource &context = {}) noexcept;
 
-task_t<Optional<int64_t>> f$fwrite(const resource &stream, const string &text) noexcept;
+task_t<Optional<int64_t>> f$fwrite(const resource &stream, string text) noexcept;
 
 bool f$fflush(const resource &stream) noexcept;
 

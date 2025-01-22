@@ -49,7 +49,7 @@ Optional<string> f$file_get_contents(const string &stream) noexcept {
   return rsrc.get_contents();
 }
 
-task_t<Optional<int64_t>> f$fwrite(const resource &stream, const string &text) noexcept {
+task_t<Optional<int64_t>> f$fwrite(resource stream, string text) noexcept {
   auto rsrc{from_mixed<class_instance<underlying_resource_t>>(stream, {})};
   if (rsrc.is_null()) [[unlikely]] {
     php_warning("wrong resource in fwrite %s", stream.to_string().c_str());

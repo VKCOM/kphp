@@ -7,8 +7,8 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 
-task_t<void> f$exit(const mixed &v = 0) noexcept;
+task_t<void> f$exit(mixed v = 0) noexcept;
 
-inline task_t<void> f$die(const mixed &v = 0) noexcept {
-  co_await f$exit(v);
+inline task_t<void> f$die(mixed v = 0) noexcept {
+  co_await f$exit(std::move(v));
 }
