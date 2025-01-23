@@ -69,11 +69,11 @@ struct task_t : public task_impl_::task_base_t {
       return task_t{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this))};
     }
 
-    std::suspend_always initial_suspend() {
+    std::suspend_always initial_suspend() const noexcept {
       return {};
     }
 
-    auto final_suspend() noexcept {
+    auto final_suspend() const noexcept {
       struct final_suspend_t {
         final_suspend_t() = default;
 
@@ -94,14 +94,14 @@ struct task_t : public task_impl_::task_base_t {
       return final_suspend_t{};
     }
 
-    void unhandled_exception() {
+    void unhandled_exception() noexcept {
       exception = std::current_exception();
     }
 
     void *next = nullptr;
     std::exception_ptr exception;
 
-    static task_t get_return_object_on_allocation_failure() {
+    static task_t get_return_object_on_allocation_failure() noexcept {
       php_critical_error("cannot allocate memory for task_t");
     }
 
@@ -121,7 +121,7 @@ struct task_t : public task_impl_::task_base_t {
   template<std::same_as<T> F>
   struct promise_non_void_t : public promise_base_t {
     template<typename E>
-    requires std::constructible_from<F, E &&> void return_value(E &&e) {
+    requires std::constructible_from<F, E &&> void return_value(E &&e) noexcept {
       ::new (bytes) F(std::forward<E>(e));
     }
 
@@ -129,7 +129,7 @@ struct task_t : public task_impl_::task_base_t {
   };
 
   struct promise_void_t : public promise_base_t {
-    void return_void() {}
+    constexpr void return_void() const noexcept {}
   };
 
   T get_result() noexcept {
