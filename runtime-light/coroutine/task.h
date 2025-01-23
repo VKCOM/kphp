@@ -133,7 +133,7 @@ struct task_t : public task_impl_::task_base_t {
   };
 
   T get_result() noexcept {
-    if (get_handle().promise().exception) {
+    if (get_handle().promise().exception) [[unlikely]] {
       std::rethrow_exception(std::move(get_handle().promise().exception));
     }
     if constexpr (!std::is_void<T>{}) {
