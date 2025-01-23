@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 // important! this file is saved as cp1251
 require_once 'kphp_tester_include.php';
