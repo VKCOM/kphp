@@ -181,3 +181,16 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire_or_o
   }
   kphp::http::header({static_SB_spare.c_str(), static_SB_spare.size()}, false, kphp::http::status::NO_STATUS);
 }
+
+array<string> f$headers_list() noexcept {
+  auto &http_server_instance_st{HttpServerInstanceState::get()};
+  const auto &headers{http_server_instance_st.headers()};
+
+  array<string> list;
+  for (const auto & header : headers) {
+    string value{(header.first + ": " + header.second).c_str()};
+    list.push_back(std::move(value));
+  }
+
+  return list;
+}

@@ -65,6 +65,9 @@ inline string f$php_uname(const string &mode = string{1, 'a'}) noexcept {
   }
 }
 
+Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) noexcept;
+
+
 inline array<array<string>> f$debug_backtrace() noexcept {
   php_warning("called stub debug_backtrace");
   return {};
