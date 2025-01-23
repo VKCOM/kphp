@@ -32,3 +32,5 @@ inline void f$setcookie(const string &name, const string &value = {}, int64_t ex
                         bool secure = false, bool http_only = false) noexcept {
   f$setrawcookie(name, f$urlencode(value), expire_or_options, path, domain, secure, http_only);
 }
+
+array<string> f$headers_list() noexcept;

@@ -434,6 +434,40 @@ uint32_t k2_env_value_len(uint32_t env_num);
  */
 void k2_env_fetch(uint32_t env_num, char *key, char *value);
 
+// ---- libc analogues, designed to work instance-local ----
+
+/**
+ * Works instance-local.
+ * Does not return previous locale.
+ * @return: `0` on success, `errno != 0` otherwise
+ */
+int32_t k2_uselocale(int32_t category, const char *locale);
+
+/**
+ * Works instance-local.
+ * Synonym for libc `nl_langinfo(NL_LOCALE_NAME(category))`
+ *
+ * The returned string is read-only and will be valid until k2_uselocale is called;
+ *
+ * Note: LC_ALL is not supported for now :(
+ *
+ * @return: current locale name.
+ * if `category` is invalid, as empty string returned.
+ */
+char *k2_current_locale_name(int32_t category);
+
+/**
+ * @return: `0` on success, `errno != 0` otherwise
+ */
+int32_t k2_iconv_open(void **iconv_cd, const char *tocode, const char *fromcode);
+
+void k2_iconv_close(void *iconv_cd);
+
+/**
+ * @return: `0` on success, `errno != 0` otherwise
+ */
+int32_t k2_iconv(size_t *result, void *iconv_cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);
+
 #ifdef __cplusplus
 }
 #endif
