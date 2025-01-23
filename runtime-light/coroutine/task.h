@@ -13,6 +13,8 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
+namespace task_impl_ {
+
 struct task_base_t {
   task_base_t() = default;
 
@@ -46,13 +48,15 @@ protected:
   void *handle_address{nullptr};
 };
 
+} // namespace task_impl_
+
 /**
  * Please, read following documents before trying to understand what's going on here:
  * 1. C++20 coroutines — https://en.cppreference.com/w/cpp/language/coroutines
  * 2. C++ coroutines: understanding symmetric stransfer — https://lewissbaker.github.io/2020/05/11/understanding_symmetric_transfer
  */
 template<typename T>
-struct task_t : public task_base_t {
+struct task_t : public task_impl_::task_base_t {
   template<std::same_as<T> F>
   struct promise_non_void_t;
   struct promise_void_t;
@@ -69,24 +73,24 @@ struct task_t : public task_base_t {
       return {};
     }
 
-    struct final_suspend_t {
-      final_suspend_t() = default;
+    auto final_suspend() noexcept {
+      struct final_suspend_t {
+        final_suspend_t() = default;
 
-      bool await_ready() const noexcept {
-        return false;
-      }
-
-      std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> h) const noexcept {
-        if (h.promise().next) {
-          return std::coroutine_handle<>::from_address(h.promise().next);
+        bool await_ready() const noexcept {
+          return false;
         }
-        return std::noop_coroutine();
-      }
 
-      void await_resume() const noexcept {}
-    };
+        std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> h) const noexcept {
+          if (h.promise().next) {
+            return std::coroutine_handle<>::from_address(h.promise().next);
+          }
+          return std::noop_coroutine();
+        }
 
-    final_suspend_t final_suspend() noexcept {
+        void await_resume() const noexcept {}
+      };
+
       return final_suspend_t{};
     }
 
