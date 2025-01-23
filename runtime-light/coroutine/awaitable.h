@@ -8,7 +8,6 @@
 #include <concepts>
 #include <coroutine>
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <tuple>
 #include <type_traits>
