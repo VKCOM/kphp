@@ -61,7 +61,7 @@ struct task_t : public task_impl_::task_base_t {
   struct promise_non_void_t;
   struct promise_void_t;
 
-  using promise_type = std::conditional_t<!std::is_void<T>{}, promise_non_void_t<T>, promise_void_t>;
+  using promise_type = std::conditional_t<!std::is_void_v<T>, promise_non_void_t<T>, promise_void_t>;
   using task_base_t::task_base_t;
 
   struct promise_base_t {
@@ -69,7 +69,7 @@ struct task_t : public task_impl_::task_base_t {
       return task_t{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this))};
     }
 
-    std::suspend_always initial_suspend() const noexcept {
+    constexpr std::suspend_always initial_suspend() const noexcept {
       return {};
     }
 
@@ -77,7 +77,7 @@ struct task_t : public task_impl_::task_base_t {
       struct final_suspend_t {
         final_suspend_t() = default;
 
-        bool await_ready() const noexcept {
+        constexpr bool await_ready() const noexcept {
           return false;
         }
 
@@ -88,7 +88,7 @@ struct task_t : public task_impl_::task_base_t {
           return std::noop_coroutine();
         }
 
-        void await_resume() const noexcept {}
+        constexpr void await_resume() const noexcept {}
       };
 
       return final_suspend_t{};
@@ -136,7 +136,7 @@ struct task_t : public task_impl_::task_base_t {
     if (get_handle().promise().exception) [[unlikely]] {
       std::rethrow_exception(std::move(get_handle().promise().exception));
     }
-    if constexpr (!std::is_void<T>{}) {
+    if constexpr (!std::is_void_v<T>) {
       T *t = std::launder(reinterpret_cast<T *>(get_handle().promise().bytes));
       const vk::final_action final_action([t] { t->~T(); });
       return std::move(*t);
@@ -174,14 +174,6 @@ struct task_t : public task_impl_::task_base_t {
       T await_resume() noexcept {
         return awaiter_base_t::task->get_result();
       }
-    };
-    return awaiter_t{this};
-  }
-
-  auto when_ready() const noexcept {
-    struct awaiter_t : public awaiter_base_t {
-      using awaiter_base_t::awaiter_base_t;
-      constexpr void await_resume() const noexcept {}
     };
     return awaiter_t{this};
   }
