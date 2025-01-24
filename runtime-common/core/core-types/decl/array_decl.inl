@@ -29,15 +29,15 @@ struct array_size {
 
 namespace dl {
 template<class T, class TT, class T1>
-void sort(TT *begin_init, TT *end_init, T1 &&compare) noexcept;
+void sort(TT *begin_init, TT *end_init, T1 compare) noexcept;
 }
 
 namespace array_functions_impl_ {
 template<typename Result, typename U, typename Comparator>
-Result sort(array<U> & arr, Comparator &&comparator, bool renumber) noexcept;
+Result sort(array<U> & arr, Comparator comparator, bool renumber) noexcept;
 
 template<typename Result, typename U, typename Comparator>
-Result ksort(array<U> & arr, Comparator &&comparator) noexcept;
+Result ksort(array<U> & arr, Comparator comparator) noexcept;
 }
 
 enum class overwrite_element { YES, NO };
@@ -442,10 +442,10 @@ private:
   friend class array;
 
   template<typename Result, typename U, typename Comparator>
-  friend Result array_functions_impl_::sort(array<U> & arr, Comparator &&comparator, bool renumber) noexcept;
+  friend Result array_functions_impl_::sort(array<U> & arr, Comparator comparator, bool renumber) noexcept;
 
   template<typename Result, typename U, typename Comparator>
-  friend Result array_functions_impl_::ksort(array<U> & arr, Comparator &&comparator) noexcept;
+  friend Result array_functions_impl_::ksort(array<U> & arr, Comparator comparator) noexcept;
 };
 
 template<class T>
