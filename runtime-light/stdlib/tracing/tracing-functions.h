@@ -7,8 +7,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/tracing/tracing-event.h"
 #include "runtime-light/stdlib/tracing/tracing-span.h"
-
-struct C$KphpDiv;
+#include "runtime-light/stdlib/tracing/tracing-div.h"
 
 inline class_instance<C$KphpSpan> f$kphp_tracing_get_current_active_span() noexcept {
   return {};

@@ -1,6 +1,5 @@
 <?php
 
-/** @kphp-generate-stub-class */
 final class KphpDiv {
   /** @kphp-extern-func-info generate-stub */
   private function __construct();
