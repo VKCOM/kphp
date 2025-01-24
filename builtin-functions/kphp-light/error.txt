@@ -94,7 +94,7 @@ define('E_ALL', 32767);
 /** @kphp-extern-func-info generate-stub */
 function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: string = '') ::: Exception;
 function error_get_last() ::: mixed;
-/** @kphp-extern-func-info generate-stub */
+
 function error_reporting ($e ::: int = TODO) ::: int;
 /** @kphp-extern-func-info generate-stub */
 function kphp_backtrace($pretty ::: bool = true) ::: string[];
