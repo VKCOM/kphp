@@ -10,8 +10,8 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/math/random-functions.h"
-#include "runtime-light/utils/concepts.h"
 
 namespace array_functions_impl_ {
 
@@ -71,9 +71,7 @@ requires(std::invocable<Pred, T>) task_t<array<T>> f$array_filter(array<T> a, Pr
       co_return co_await std::invoke(std::move(pred), it.get_value());
     });
   } else {
-    co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept {
-      return std::invoke(std::move(pred), it.get_value());
-    });
+    co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept { return std::invoke(std::move(pred), it.get_value()); });
   }
 }
 
@@ -288,8 +286,8 @@ inline Optional<array<mixed>> f$array_column(const array<mixed> &a, const mixed 
 }
 
 template<class T>
-auto f$array_column(const Optional<T> &a, const mixed &column_key, const mixed &index_key = {})
-  -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
+auto f$array_column(const Optional<T> &a, const mixed &column_key,
+                    const mixed &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
   php_critical_error("call to unsupported function");
 }
 

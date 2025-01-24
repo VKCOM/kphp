@@ -8,19 +8,18 @@
 #include "runtime-common/core/include.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/type-traits.h"
 
 namespace null_coalesce_impl_ {
 
 template<class ReturnType, class FallbackType>
-auto perform_fallback_impl(FallbackType &&lambda_fallback,
-                           std::enable_if_t<bool(sizeof((std::declval<FallbackType>()(), 0)))> *) noexcept {
+auto perform_fallback_impl(FallbackType &&lambda_fallback, std::enable_if_t<bool(sizeof((std::declval<FallbackType>()(), 0)))> *) noexcept {
   return ReturnType(lambda_fallback());
 }
 
 template<class ReturnType, class FallbackType>
-requires(is_async_function_v<FallbackType>)
-task_t<ReturnType> perform_fallback_impl(FallbackType &&lambda_fallback,
-                           std::enable_if_t<bool(sizeof((std::declval<FallbackType>()(), 0)))> *) noexcept {
+requires(is_async_function_v<FallbackType>) task_t<ReturnType> perform_fallback_impl(
+  FallbackType &&lambda_fallback, std::enable_if_t<bool(sizeof((std::declval<FallbackType>()(), 0)))> *) noexcept {
   co_return ReturnType(co_await lambda_fallback());
 }
 
@@ -30,8 +29,7 @@ ReturnType perform_fallback_impl(FallbackType &&value_fallback, ...) noexcept {
 }
 
 template<class ReturnType, class FallbackType>
-requires(is_async_function_v<FallbackType>)
-task_t<ReturnType> perform_fallback_impl(FallbackType &&value_fallback) noexcept {
+requires(is_async_function_v<FallbackType>) task_t<ReturnType> perform_fallback_impl(FallbackType &&value_fallback) noexcept {
   co_return ReturnType(std::forward<FallbackType>(value_fallback));
 }
 
@@ -41,12 +39,11 @@ ReturnType perform_fallback(FallbackType &&value_fallback) noexcept {
 }
 
 template<class ReturnType, class FallbackType>
-requires(is_async_function_v<FallbackType>)
-task_t<ReturnType> perform_fallback(FallbackType &&value_fallback) noexcept {
+requires(is_async_function_v<FallbackType>) task_t<ReturnType> perform_fallback(FallbackType &&value_fallback) noexcept {
   co_return co_await perform_fallback_impl<ReturnType>(std::forward<FallbackType>(value_fallback), nullptr);
 }
 
-}
+} // namespace null_coalesce_impl_
 
 template<typename ResultType>
 struct NullCoalesce {
@@ -98,8 +95,7 @@ public:
   }
 
   template<class FallbackType>
-  requires(is_async_function_v<FallbackType>)
-  task_t<ResultType> finalize(FallbackType &&fallback) noexcept {
+  requires(is_async_function_v<FallbackType>) task_t<ResultType> finalize(FallbackType &&fallback) noexcept {
     co_return result_ ? std::move(*result_) : co_await null_coalesce_impl_::perform_fallback<ResultType>(std::forward<FallbackType>(fallback));
   }
 
@@ -111,13 +107,13 @@ public:
 
 private:
   template<class ValueType>
-  using IsOptionalValueAndNonOptionalReturn = std::integral_constant<bool,
-    (is_optional<std::decay_t<ValueType>>{} && !is_optional<std::decay_t<ResultType>>{})>;
+  using IsOptionalValueAndNonOptionalReturn =
+    std::integral_constant<bool, (is_optional<std::decay_t<ValueType>>{} && !is_optional<std::decay_t<ResultType>>{})>;
 
   template<class ValueType>
   std::enable_if_t<!IsOptionalValueAndNonOptionalReturn<ValueType>{}> set_result(ValueType &&value) noexcept {
     if (!f$is_null(value)) {
-      result_ = new(&result_storage_) ResultType(std::forward<ValueType>(value));
+      result_ = new (&result_storage_) ResultType(std::forward<ValueType>(value));
     }
   }
 
@@ -136,7 +132,7 @@ private:
   void set_result(const string &str, const KeyType &key) noexcept {
     string value = str.get_value(key);
     if (!value.empty()) {
-      result_ = new(&result_storage_) ResultType(std::move(value));
+      result_ = new (&result_storage_) ResultType(std::move(value));
     }
   }
 
@@ -148,14 +144,14 @@ private:
   template<class ValueType>
   void set_result_resolve_or_false(std::false_type, const Optional<ValueType> &value) noexcept {
     if (!f$is_null(value)) {
-      result_ = new(&result_storage_) ResultType(value.val());
+      result_ = new (&result_storage_) ResultType(value.val());
     }
   }
 
   template<class ValueType>
   void set_result_resolve_or_false(std::false_type, Optional<ValueType> &&value) noexcept {
     if (!f$is_null(value)) {
-      result_ = new(&result_storage_) ResultType(std::move(value.val()));
+      result_ = new (&result_storage_) ResultType(std::move(value.val()));
       value = {};
     }
   }
