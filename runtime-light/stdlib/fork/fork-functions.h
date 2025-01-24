@@ -85,16 +85,28 @@ inline Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1
   php_critical_error("call to unsupported function");
 }
 
-inline bool f$wait_concurrently(int64_t fork_id) {
-  php_critical_error("call to unsupported function");
+inline task_t<bool> f$wait_concurrently(int64_t fork_id) {
+  auto task = ForkInstanceState::get().pop_fork(fork_id);
+  co_await task;
+  co_return true;
 }
 
-inline bool f$wait_concurrently(Optional<int64_t> resumable_id) {
-  php_critical_error("call to unsupported function");
+inline task_t<bool> f$wait_concurrently(Optional<int64_t> resumable_id) {
+  if (!resumable_id.has_value()) {
+    co_return false;
+  }
+  auto task = ForkInstanceState::get().pop_fork(resumable_id.val());
+  co_await task;
+  co_return true;
 }
 
-inline bool f$wait_concurrently(const mixed &resumable_id) {
-  php_critical_error("call to unsupported function");
+inline task_t<bool> f$wait_concurrently(const mixed &resumable_id) {
+  if (!resumable_id.is_int()) {
+    co_return false;
+  }
+  auto task = ForkInstanceState::get().pop_fork(resumable_id.as_int());
+  co_await task;
+  co_return true;
 }
 
 template<typename T>

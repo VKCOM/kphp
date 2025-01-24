@@ -1,5 +1,6 @@
 <?php
 
+/** @kphp-extern-func-info interruptible */
 function wait_concurrently ($id ::: future<any>) ::: bool;
 
 /** @kphp-extern-func-info can_throw cpp_template_call */

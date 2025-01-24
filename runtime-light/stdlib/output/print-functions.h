@@ -7,7 +7,9 @@
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/state/instance-state.h"
+#include "runtime-light/stdlib/file/file-system-functions.h"
 
 // === print ======================================================================================
 
@@ -69,8 +71,9 @@ inline void f$echo(const string &s) noexcept {
   print(s);
 }
 
-inline Optional<int64_t> f$fprintf(const mixed &, const string &, const array<mixed> &) {
-  php_critical_error("call to unsupported function");
+inline task_t<Optional<int64_t>> f$fprintf(const resource &stream, const string &format, const array<mixed> &args) {
+  string text = f$sprintf(format, args);
+  co_return co_await f$fwrite(stream, text);
 }
 
 inline Optional<int64_t> f$fputcsv(const mixed &, const array<mixed> &, string = string(",", 1), string = string("\"", 1), string = string("\\", 1)) {

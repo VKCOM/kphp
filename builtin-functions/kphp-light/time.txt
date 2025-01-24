@@ -174,7 +174,7 @@ function gmmktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: in
 function localtime ($timestamp ::: int = PHP_INT_MIN, $is_associative ::: bool = false) ::: mixed[];
 /** @kphp-extern-func-info generate-stub */
 function strftime ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function strtotime ($time ::: string, $timestamp ::: int = PHP_INT_MIN) ::: int | false;
 
 

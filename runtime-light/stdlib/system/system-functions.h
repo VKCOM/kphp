@@ -13,7 +13,7 @@
 
 template<typename T>
 int64_t f$estimate_memory_usage(const T & /*unused*/) {
-  php_critical_error("call to unsupported function");
+  return 0;
 }
 
 template<typename F>

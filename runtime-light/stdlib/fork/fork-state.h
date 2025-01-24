@@ -18,6 +18,7 @@
 inline constexpr int64_t INVALID_FORK_ID = -1;
 
 class ForkInstanceState final : private vk::not_copyable {
+public:
   template<hashable Key, typename Value>
   using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
