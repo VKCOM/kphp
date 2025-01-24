@@ -14,17 +14,17 @@ inline class_instance<C$KphpSpan> f$kphp_tracing_get_current_active_span() noexc
   return {};
 }
 
-class_instance<C$KphpSpan> f$kphp_tracing_get_root_span() noexcept {
+inline class_instance<C$KphpSpan> f$kphp_tracing_get_root_span() noexcept {
   php_warning("called stub kphp_tracing_get_root_span");
   return {};
 }
 
-class_instance<C$KphpDiv> f$kphp_tracing_init([[maybe_unused]] const string &root_span_title) noexcept {
+inline class_instance<C$KphpDiv> f$kphp_tracing_init([[maybe_unused]] const string &root_span_title) noexcept {
   php_warning("called stub kphp_tracing_init");
   return {};
 }
 
-class_instance<C$KphpSpan> f$kphp_tracing_start_span([[maybe_unused]] const string &title, [[maybe_unused]] const string &short_desc,
+inline class_instance<C$KphpSpan> f$kphp_tracing_start_span([[maybe_unused]] const string &title, [[maybe_unused]] const string &short_desc,
                                                      [[maybe_unused]] double start_timestamp) noexcept {
   php_warning("called stub kphp_tracing_start_span");
   return {};
