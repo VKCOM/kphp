@@ -11,6 +11,11 @@
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 
+template<typename T>
+int64_t f$estimate_memory_usage(const T & /*unused*/) {
+  php_critical_error("call to unsupported function");
+}
+
 template<typename F>
 void f$register_kphp_on_warning_callback(F && /*callback*/) {
   php_critical_error("call to unsupported function");
@@ -66,3 +71,8 @@ inline string f$php_uname(const string &mode = string{1, 'a'}) noexcept {
 }
 
 Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) noexcept;
+
+inline array<array<string>> f$debug_backtrace() noexcept {
+  php_warning("called stub debug_backtrace");
+  return {};
+}
