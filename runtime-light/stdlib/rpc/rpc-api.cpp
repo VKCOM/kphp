@@ -17,8 +17,10 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/coroutine/shared_task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/component-api.h"
+#include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
@@ -134,24 +136,25 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
                                                                 : DEFAULT_TIMEOUT_NS};
   // create fork to wait for RPC response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
-  auto waiter_task{[](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> task_t<string> {
-    auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
-    const auto response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
-    // update response extra info if needed
-    if (collect_responses_extra_info) {
-      auto &extra_info_map{RpcInstanceState::get().rpc_responses_extra_info};
-      if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) {
-        const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-        it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
-        it_extra_info->second.first = rpc_response_extra_info_status_t::READY;
-      } else {
-        php_warning("can't find extra info for RPC query %" PRId64, query_id);
+  auto waiter_task{
+    [](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> shared_task_t<string> {
+      auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
+      const auto response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
+      // update response extra info if needed
+      if (collect_responses_extra_info) {
+        auto &extra_info_map{RpcInstanceState::get().rpc_responses_extra_info};
+        if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) {
+          const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
+          it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
+          it_extra_info->second.first = rpc_response_extra_info_status_t::READY;
+        } else {
+          php_warning("can't find extra info for RPC query %" PRId64, query_id);
+        }
       }
-    }
-    co_return response;
-  }(query_id, std::move(comp_query), timeout_ns, collect_responses_extra_info)};
+      co_return response;
+    }(query_id, std::move(comp_query), timeout_ns, collect_responses_extra_info)};
   // start waiter fork
-  const auto waiter_fork_id{co_await start_fork_t{static_cast<task_t<void>>(std::move(waiter_task)), start_fork_t::execution::self}};
+  const auto waiter_fork_id{co_await start_fork_t{static_cast<shared_task_t<void>>(std::move(waiter_task))}};
 
   if (ignore_answer) {
     co_return RpcQueryInfo{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
@@ -242,11 +245,17 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
   if (rpc_query.get()->result_fetcher->is_typed) {
     co_return make_fetch_error(string{"can't get untyped result from typed TL query. Use consistent API for that"}, TL_ERROR_INTERNAL);
   }
-  if (response_waiter_fork_id == kphp::forks::INVALID_ID) {
+
+  auto &fork_instance_st{ForkInstanceState::get()};
+  auto opt_fork_task{fork_instance_st.get_fork(response_waiter_fork_id)};
+  if (response_waiter_fork_id == kphp::forks::INVALID_ID || !opt_fork_task.has_value()) {
     co_return make_fetch_error(string{"can't find fetcher fork"}, TL_ERROR_INTERNAL);
   }
 
-  const auto data{(co_await wait_with_timeout_t{wait_fork_t<string>{response_waiter_fork_id}, MAX_TIMEOUT_NS}).value()};
+  auto fork_task{static_cast<shared_task_t<string>>(std::move(*opt_fork_task))};
+  const auto data{(co_await wait_with_timeout_t{fork_task.operator co_await(), MAX_TIMEOUT_NS}).value()};
+  fork_instance_st.erase_fork(response_waiter_fork_id);
+
   if (data.empty()) {
     co_return make_fetch_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
   }
@@ -289,11 +298,17 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
   if (!rpc_query.get()->result_fetcher->is_typed) {
     co_return error_factory.make_error(string{"can't get typed result from untyped TL query. Use consistent API for that"}, TL_ERROR_INTERNAL);
   }
-  if (response_waiter_fork_id == kphp::forks::INVALID_ID) {
+
+  auto &fork_instance_st{ForkInstanceState::get()};
+  auto opt_fork_task{fork_instance_st.get_fork(response_waiter_fork_id)};
+  if (response_waiter_fork_id == kphp::forks::INVALID_ID || !opt_fork_task.has_value()) {
     co_return error_factory.make_error(string{"can't find fetcher fork"}, TL_ERROR_INTERNAL);
   }
 
-  const auto data{(co_await wait_with_timeout_t{wait_fork_t<string>{response_waiter_fork_id}, MAX_TIMEOUT_NS}).value()};
+  auto fork_task{static_cast<shared_task_t<string>>(std::move(*opt_fork_task))};
+  const auto data{(co_await wait_with_timeout_t{fork_task.operator co_await(), MAX_TIMEOUT_NS}).value()};
+  fork_instance_st.erase_fork(response_waiter_fork_id);
+
   if (data.empty()) {
     co_return error_factory.make_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
   }

@@ -14,7 +14,7 @@
 #include <utility>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/shared_task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/state/instance-state.h"
@@ -43,14 +43,14 @@ concept CancellableAwaitable = Awaitable<T> && requires(T awaitable) {
 
 namespace awaitable_impl_ {
 
-enum class State : uint8_t { Init, Suspend, Ready, End };
+enum class state : uint8_t { init, suspend, ready, end };
 
 class fork_id_watcher_t {
-  int64_t fork_id{ForkInstanceState::get().running_fork_id};
+  int64_t fork_id{ForkInstanceState::get().current_id};
 
 protected:
   void await_resume() const noexcept {
-    ForkInstanceState::get().running_fork_id = fork_id;
+    ForkInstanceState::get().current_id = fork_id;
   }
 };
 
@@ -59,7 +59,7 @@ protected:
 class wait_for_update_t : public awaitable_impl_::fork_id_watcher_t {
   uint64_t stream_d;
   SuspendToken suspend_token;
-  awaitable_impl_::State state{awaitable_impl_::State::Init};
+  awaitable_impl_::state state{awaitable_impl_::state::init};
 
 public:
   explicit wait_for_update_t(uint64_t stream_d_) noexcept
@@ -69,41 +69,41 @@ public:
   wait_for_update_t(wait_for_update_t &&other) noexcept
     : stream_d(std::exchange(other.stream_d, k2::INVALID_PLATFORM_DESCRIPTOR))
     , suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+    , state(std::exchange(other.state, awaitable_impl_::state::end)) {}
 
   wait_for_update_t(const wait_for_update_t &) = delete;
   wait_for_update_t &operator=(const wait_for_update_t &) = delete;
   wait_for_update_t &operator=(wait_for_update_t &&) = delete;
 
   ~wait_for_update_t() {
-    if (state == awaitable_impl_::State::Suspend) {
+    if (state == awaitable_impl_::state::suspend) {
       cancel();
     }
   }
 
   bool await_ready() noexcept {
-    php_assert(state == awaitable_impl_::State::Init);
-    state = InstanceState::get().stream_updated(stream_d) ? awaitable_impl_::State::Ready : awaitable_impl_::State::Init;
-    return state == awaitable_impl_::State::Ready;
+    php_assert(state == awaitable_impl_::state::init);
+    state = InstanceState::get().stream_updated(stream_d) ? awaitable_impl_::state::ready : awaitable_impl_::state::init;
+    return state == awaitable_impl_::state::ready;
   }
 
   void await_suspend(std::coroutine_handle<> coro) noexcept {
-    state = awaitable_impl_::State::Suspend;
+    state = awaitable_impl_::state::suspend;
     suspend_token.first = coro;
     CoroutineScheduler::get().suspend(suspend_token);
   }
 
   constexpr void await_resume() noexcept {
-    state = awaitable_impl_::State::End;
+    state = awaitable_impl_::state::end;
     fork_id_watcher_t::await_resume();
   }
 
   bool resumable() const noexcept {
-    return state == awaitable_impl_::State::Ready || (state == awaitable_impl_::State::Suspend && !CoroutineScheduler::get().contains(suspend_token));
+    return state == awaitable_impl_::state::ready || (state == awaitable_impl_::state::suspend && !CoroutineScheduler::get().contains(suspend_token));
   }
 
   void cancel() noexcept {
-    state = awaitable_impl_::State::End;
+    state = awaitable_impl_::state::end;
     CoroutineScheduler::get().cancel(suspend_token);
   }
 };
@@ -112,39 +112,39 @@ public:
 
 class wait_for_incoming_stream_t : awaitable_impl_::fork_id_watcher_t {
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::IncomingStream{}};
-  awaitable_impl_::State state{awaitable_impl_::State::Init};
+  awaitable_impl_::state state{awaitable_impl_::state::init};
 
 public:
   wait_for_incoming_stream_t() noexcept = default;
 
   wait_for_incoming_stream_t(wait_for_incoming_stream_t &&other) noexcept
     : suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+    , state(std::exchange(other.state, awaitable_impl_::state::end)) {}
 
   wait_for_incoming_stream_t(const wait_for_incoming_stream_t &) = delete;
   wait_for_incoming_stream_t &operator=(const wait_for_incoming_stream_t &) = delete;
   wait_for_incoming_stream_t &operator=(wait_for_incoming_stream_t &&) = delete;
 
   ~wait_for_incoming_stream_t() {
-    if (state == awaitable_impl_::State::Suspend) {
+    if (state == awaitable_impl_::state::suspend) {
       cancel();
     }
   }
 
   bool await_ready() noexcept {
-    php_assert(state == awaitable_impl_::State::Init);
-    state = !InstanceState::get().incoming_streams().empty() ? awaitable_impl_::State::Ready : awaitable_impl_::State::Init;
-    return state == awaitable_impl_::State::Ready;
+    php_assert(state == awaitable_impl_::state::init);
+    state = !InstanceState::get().incoming_streams().empty() ? awaitable_impl_::state::ready : awaitable_impl_::state::init;
+    return state == awaitable_impl_::state::ready;
   }
 
   void await_suspend(std::coroutine_handle<> coro) noexcept {
-    state = awaitable_impl_::State::Suspend;
+    state = awaitable_impl_::state::suspend;
     suspend_token.first = coro;
     CoroutineScheduler::get().suspend(suspend_token);
   }
 
   uint64_t await_resume() noexcept {
-    state = awaitable_impl_::State::End;
+    state = awaitable_impl_::state::end;
     fork_id_watcher_t::await_resume();
     const auto incoming_stream_d{InstanceState::get().take_incoming_stream()};
     php_assert(incoming_stream_d != k2::INVALID_PLATFORM_DESCRIPTOR);
@@ -152,11 +152,11 @@ public:
   }
 
   bool resumable() const noexcept {
-    return state == awaitable_impl_::State::Ready || (state == awaitable_impl_::State::Suspend && !CoroutineScheduler::get().contains(suspend_token));
+    return state == awaitable_impl_::state::ready || (state == awaitable_impl_::state::suspend && !CoroutineScheduler::get().contains(suspend_token));
   }
 
   void cancel() noexcept {
-    state = awaitable_impl_::State::End;
+    state = awaitable_impl_::state::end;
     CoroutineScheduler::get().cancel(suspend_token);
   }
 };
@@ -165,47 +165,47 @@ public:
 
 class wait_for_reschedule_t : awaitable_impl_::fork_id_watcher_t {
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
-  awaitable_impl_::State state{awaitable_impl_::State::Init};
+  awaitable_impl_::state state{awaitable_impl_::state::init};
 
 public:
   wait_for_reschedule_t() noexcept = default;
 
   wait_for_reschedule_t(wait_for_reschedule_t &&other) noexcept
     : suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+    , state(std::exchange(other.state, awaitable_impl_::state::end)) {}
 
   wait_for_reschedule_t(const wait_for_reschedule_t &) = delete;
   wait_for_reschedule_t &operator=(const wait_for_reschedule_t &) = delete;
   wait_for_reschedule_t &operator=(wait_for_reschedule_t &&) = delete;
 
   ~wait_for_reschedule_t() {
-    if (state == awaitable_impl_::State::Suspend) {
+    if (state == awaitable_impl_::state::suspend) {
       cancel();
     }
   }
 
   constexpr bool await_ready() const noexcept {
-    php_assert(state == awaitable_impl_::State::Init);
+    php_assert(state == awaitable_impl_::state::init);
     return false;
   }
 
   void await_suspend(std::coroutine_handle<> coro) noexcept {
-    state = awaitable_impl_::State::Suspend;
+    state = awaitable_impl_::state::suspend;
     suspend_token.first = coro;
     CoroutineScheduler::get().suspend(suspend_token);
   }
 
   constexpr void await_resume() noexcept {
-    state = awaitable_impl_::State::End;
+    state = awaitable_impl_::state::end;
     fork_id_watcher_t::await_resume();
   }
 
   bool resumable() const noexcept {
-    return state == awaitable_impl_::State::Suspend && !CoroutineScheduler::get().contains(suspend_token);
+    return state == awaitable_impl_::state::suspend && !CoroutineScheduler::get().contains(suspend_token);
   }
 
   void cancel() noexcept {
-    state = awaitable_impl_::State::End;
+    state = awaitable_impl_::state::end;
     CoroutineScheduler::get().cancel(suspend_token);
   }
 };
@@ -216,7 +216,7 @@ class wait_for_timer_t : awaitable_impl_::fork_id_watcher_t {
   std::chrono::nanoseconds duration;
   uint64_t timer_d{k2::INVALID_PLATFORM_DESCRIPTOR};
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
-  awaitable_impl_::State state{awaitable_impl_::State::Init};
+  awaitable_impl_::state state{awaitable_impl_::state::init};
 
 public:
   explicit wait_for_timer_t(std::chrono::nanoseconds duration_) noexcept
@@ -226,14 +226,14 @@ public:
     : duration(std::exchange(other.duration, std::chrono::nanoseconds{0}))
     , timer_d(std::exchange(other.timer_d, k2::INVALID_PLATFORM_DESCRIPTOR))
     , suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+    , state(std::exchange(other.state, awaitable_impl_::state::end)) {}
 
   wait_for_timer_t(const wait_for_timer_t &) = delete;
   wait_for_timer_t &operator=(const wait_for_timer_t &) = delete;
   wait_for_timer_t &operator=(wait_for_timer_t &&) = delete;
 
   ~wait_for_timer_t() {
-    if (state == awaitable_impl_::State::Suspend) {
+    if (state == awaitable_impl_::state::suspend) {
       cancel();
     }
     if (timer_d != k2::INVALID_PLATFORM_DESCRIPTOR) {
@@ -242,12 +242,12 @@ public:
   }
 
   constexpr bool await_ready() const noexcept {
-    php_assert(state == awaitable_impl_::State::Init);
+    php_assert(state == awaitable_impl_::state::init);
     return false;
   }
 
   void await_suspend(std::coroutine_handle<> coro) noexcept {
-    state = awaitable_impl_::State::Suspend;
+    state = awaitable_impl_::state::suspend;
     int32_t errc{};
     std::tie(timer_d, errc) = InstanceState::get().set_timer(duration);
     if (errc == k2::errno_ok) {
@@ -257,16 +257,16 @@ public:
   }
 
   constexpr void await_resume() noexcept {
-    state = awaitable_impl_::State::End;
+    state = awaitable_impl_::state::end;
     fork_id_watcher_t::await_resume();
   }
 
   bool resumable() const noexcept {
-    return state == awaitable_impl_::State::Suspend && !CoroutineScheduler::get().contains(suspend_token);
+    return state == awaitable_impl_::state::suspend && !CoroutineScheduler::get().contains(suspend_token);
   }
 
   void cancel() noexcept {
-    state = awaitable_impl_::State::End;
+    state = awaitable_impl_::state::end;
     CoroutineScheduler::get().cancel(suspend_token);
   }
 };
@@ -274,33 +274,21 @@ public:
 // ================================================================================================
 
 class start_fork_t : awaitable_impl_::fork_id_watcher_t {
-public:
-  /**
-   * Fork start policy:
-   * 1. self: create fork, suspend fork coroutine, continue current coroutine;
-   * 2. fork: create fork, suspend current coroutine, continue fork coroutine.
-   */
-  enum class execution : uint8_t { self, fork };
-
-private:
-  execution exec_policy;
-  std::coroutine_handle<> fork_coro;
   int64_t fork_id{};
+  decltype(std::declval<shared_task_t<void>>().when_ready()) fork_awaiter;
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
-  awaitable_impl_::State state{awaitable_impl_::State::Init};
+  awaitable_impl_::state state{awaitable_impl_::state::init};
 
 public:
-  explicit start_fork_t(task_t<void> task_, execution exec_policy_) noexcept
-    : exec_policy(exec_policy_)
-    , fork_coro(task_.get_handle())
-    , fork_id(ForkInstanceState::get().push_fork(std::move(task_))) {}
+  explicit start_fork_t(const shared_task_t<void> &fork_task) noexcept
+    : fork_id(ForkInstanceState::get().push_fork(fork_task))
+    , fork_awaiter(fork_task.when_ready()) {}
 
   start_fork_t(start_fork_t &&other) noexcept
-    : exec_policy(other.exec_policy)
-    , fork_coro(std::exchange(other.fork_coro, std::noop_coroutine()))
-    , fork_id(std::exchange(other.fork_id, kphp::forks::INVALID_ID))
+    : fork_id(std::exchange(other.fork_id, kphp::forks::INVALID_ID))
+    , fork_awaiter(std::move(other.fork_awaiter))
     , suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+    , state(std::exchange(other.state, awaitable_impl_::state::end)) {}
 
   start_fork_t(const start_fork_t &) = delete;
   start_fork_t &operator=(const start_fork_t &) = delete;
@@ -308,102 +296,23 @@ public:
   ~start_fork_t() = default;
 
   constexpr bool await_ready() const noexcept {
-    php_assert(state == awaitable_impl_::State::Init);
-    return false;
+    php_assert(state == awaitable_impl_::state::init);
+    return fork_awaiter.await_ready();
   }
 
   std::coroutine_handle<> await_suspend(std::coroutine_handle<> current_coro) noexcept {
-    state = awaitable_impl_::State::Suspend;
-    std::coroutine_handle<> continuation{};
-    switch (exec_policy) {
-      case execution::fork: {
-        suspend_token.first = current_coro;
-        continuation = fork_coro;
-        ForkInstanceState::get().running_fork_id = fork_id;
-        break;
-      }
-      case execution::self: {
-        suspend_token.first = fork_coro;
-        continuation = current_coro;
-        break;
-      }
-    }
-    CoroutineScheduler::get().suspend(suspend_token);
-    // reset fork_coro and suspend_token to guarantee that the same fork will be started only once
-    fork_coro = std::noop_coroutine();
-    suspend_token = std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{});
-    return continuation;
+    state = awaitable_impl_::state::suspend;
+    std::ignore = fork_awaiter.await_suspend(current_coro);
+    // Immediately cancel the await for `current_coro` because we don't want it to be resumed automatically.
+    // Instead, the fork should only resume coroutines that have called `co_await` on its future.
+    fork_awaiter.cancel();
+    return current_coro;
   }
 
   int64_t await_resume() noexcept {
-    state = awaitable_impl_::State::End;
+    state = awaitable_impl_::state::end;
     fork_id_watcher_t::await_resume();
     return fork_id;
-  }
-};
-
-// ================================================================================================
-
-template<typename T>
-class wait_fork_t : awaitable_impl_::fork_id_watcher_t {
-  int64_t fork_id;
-  task_t<T> fork_task;
-  decltype(std::declval<task_t<T>>().operator co_await()) fork_awaiter;
-  awaitable_impl_::State state{awaitable_impl_::State::Init};
-
-  using fork_resume_t = decltype(fork_awaiter.await_resume());
-  using await_resume_t = fork_resume_t;
-
-public:
-  explicit wait_fork_t(int64_t fork_id_) noexcept
-    : fork_id(fork_id_)
-    , fork_task(static_cast<task_t<T>>(ForkInstanceState::get().pop_fork(fork_id)))
-    , fork_awaiter(std::addressof(fork_task)) {}
-
-  wait_fork_t(wait_fork_t &&other) noexcept
-    : fork_id(std::exchange(other.fork_id, kphp::forks::INVALID_ID))
-    , fork_task(std::move(other.fork_task))
-    , fork_awaiter(std::addressof(fork_task))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
-
-  wait_fork_t(const wait_fork_t &) = delete;
-  wait_fork_t &operator=(const wait_fork_t &) = delete;
-  wait_fork_t &operator=(wait_fork_t &&) = delete;
-
-  ~wait_fork_t() {
-    if (state == awaitable_impl_::State::Suspend) {
-      cancel();
-    }
-  }
-
-  bool await_ready() noexcept {
-    php_assert(state == awaitable_impl_::State::Init);
-    state = fork_awaiter.resumable() ? awaitable_impl_::State::Ready : awaitable_impl_::State::Init;
-    return state == awaitable_impl_::State::Ready;
-  }
-
-  constexpr void await_suspend(std::coroutine_handle<> coro) noexcept {
-    state = awaitable_impl_::State::Suspend;
-    fork_awaiter.await_suspend(coro);
-  }
-
-  await_resume_t await_resume() noexcept {
-    state = awaitable_impl_::State::End;
-    fork_id_watcher_t::await_resume();
-    if constexpr (std::is_void_v<await_resume_t>) {
-      fork_awaiter.await_resume();
-    } else {
-      return fork_awaiter.await_resume();
-    }
-  }
-
-  constexpr bool resumable() const noexcept {
-    return state == awaitable_impl_::State::Ready || (state == awaitable_impl_::State::Suspend && fork_awaiter.resumable());
-  }
-
-  constexpr void cancel() noexcept {
-    state = awaitable_impl_::State::End;
-    fork_awaiter.cancel();
   }
 };
 
@@ -413,7 +322,7 @@ template<CancellableAwaitable T>
 class wait_with_timeout_t {
   T awaitable;
   wait_for_timer_t timer_awaitable;
-  awaitable_impl_::State state{awaitable_impl_::State::Init};
+  awaitable_impl_::state state{awaitable_impl_::state::init};
 
   static_assert(CancellableAwaitable<wait_for_timer_t>);
   static_assert(std::is_void_v<decltype(timer_awaitable.await_suspend(std::coroutine_handle<>{}))>);
@@ -430,7 +339,7 @@ public:
   wait_with_timeout_t(wait_with_timeout_t &&other) noexcept
     : awaitable(std::move(other.awaitable))
     , timer_awaitable(std::move(other.timer_awaitable))
-    , state(std::exchange(other.state, awaitable_impl_::State::End)) {}
+    , state(std::exchange(other.state, awaitable_impl_::state::end)) {}
 
   wait_with_timeout_t(const wait_with_timeout_t &) = delete;
   wait_with_timeout_t &operator=(const wait_with_timeout_t &) = delete;
@@ -438,9 +347,9 @@ public:
   ~wait_with_timeout_t() = default;
 
   constexpr bool await_ready() noexcept {
-    php_assert(state == awaitable_impl_::State::Init);
-    state = awaitable.await_ready() || timer_awaitable.await_ready() ? awaitable_impl_::State::Ready : awaitable_impl_::State::Init;
-    return state == awaitable_impl_::State::Ready;
+    php_assert(state == awaitable_impl_::state::init);
+    state = awaitable.await_ready() || timer_awaitable.await_ready() ? awaitable_impl_::state::ready : awaitable_impl_::state::init;
+    return state == awaitable_impl_::state::ready;
   }
 
   // according to C++ standard, there can be 3 possible cases:
@@ -452,7 +361,7 @@ public:
   await_suspend_return_t await_suspend(std::coroutine_handle<> coro) noexcept {
     // as we don't rely on coroutine scheduler implementation, let's always suspend awaitable first. in case of some smart scheduler
     // it won't have any effect, but it will have an effect if our scheduler is quite simple.
-    state = awaitable_impl_::State::Suspend;
+    state = awaitable_impl_::state::suspend;
     if constexpr (std::is_void_v<await_suspend_return_t>) {
       awaitable.await_suspend(coro);
       timer_awaitable.await_suspend(coro);
@@ -464,7 +373,7 @@ public:
   }
 
   await_resume_return_t await_resume() noexcept {
-    state = awaitable_impl_::State::End;
+    state = awaitable_impl_::state::end;
     if (awaitable.resumable()) {
       timer_awaitable.cancel();
       if constexpr (!std::is_void_v<await_resume_return_t>) {

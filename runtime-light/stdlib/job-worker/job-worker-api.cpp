@@ -13,6 +13,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/coroutine/shared_task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
@@ -63,7 +64,7 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
   }
   // create fork to wait for job worker response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send job worker request
-  auto waiter_task{[](auto comp_query, std::chrono::nanoseconds timeout) noexcept -> task_t<string> {
+  auto waiter_task{[](auto comp_query, std::chrono::nanoseconds timeout) noexcept -> shared_task_t<string> {
     auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
     const string response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
 
@@ -76,7 +77,7 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
     co_return string{jw_response.body.value.data(), static_cast<string::size_type>(jw_response.body.value.size())};
   }(std::move(comp_query), timeout_ns)};
   // start waiter fork and return its ID
-  co_return(co_await start_fork_t{static_cast<task_t<void>>(std::move(waiter_task)), start_fork_t::execution::self});
+  co_return(co_await start_fork_t{static_cast<shared_task_t<void>>(std::move(waiter_task))});
 }
 
 } // namespace

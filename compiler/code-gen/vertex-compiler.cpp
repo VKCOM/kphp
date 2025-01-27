@@ -901,7 +901,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
 
     if (mode == func_call_mode::fork_call) {
       if (func->is_interruptible) {
-        W << "(co_await start_fork_t{static_cast<task_t<void>>(" << FunctionName(func);
+        W << "(co_await start_fork_t{static_cast<shared_task_t<void>>(" << FunctionName(func);
       } else {
         W << FunctionForkName(func);
       }
@@ -935,7 +935,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   W << ")";
   if (func->is_interruptible) {
     if (mode == func_call_mode::fork_call) {
-      W << "), start_fork_t::execution::fork})";
+      W << ")})";
     } else {
       W << ")";
     }
