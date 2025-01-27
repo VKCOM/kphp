@@ -8,11 +8,15 @@
 #include <type_traits>
 #include <utility>
 
+#include "runtime-light/coroutine/shared_task.h"
 #include "runtime-light/coroutine/task.h"
 
 template<typename F, typename... Args>
 requires std::invocable<F, Args...> inline constexpr bool is_async_function_v = requires {
   {static_cast<task_t<void>>(std::declval<std::invoke_result_t<F, Args...>>())};
+}
+|| requires {
+  {static_cast<shared_task_t<void>>(std::declval<std::invoke_result_t<F, Args...>>())};
 };
 
 // ================================================================================================
@@ -28,6 +32,11 @@ requires std::invocable<F, Args...> class async_function_unwrapped_return_type {
 
   template<typename U>
   struct task_inner<task_t<U>> {
+    using type = U;
+  };
+
+  template<typename U>
+  struct task_inner<shared_task_t<U>> {
     using type = U;
   };
 
