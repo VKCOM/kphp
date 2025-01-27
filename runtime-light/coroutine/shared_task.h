@@ -116,6 +116,11 @@ struct promise_base_t {
   }
 
   void cancel(const shared_task_impl_::shared_task_waiter_t &waiter) noexcept {
+    const void *const READY_VAL{this};
+    if (m_waiters == READY_VAL) [[unlikely]] {
+      php_critical_error("currently, shared_task_t does not support cancellation after it has finished");
+    }
+
     const void *const NOT_STARTED_VAL{std::addressof(this->m_waiters)};
     if (m_waiters == NOT_STARTED_VAL || m_waiters == STARTED_NO_WAITERS_VAL) [[unlikely]] {
       return;
