@@ -302,16 +302,19 @@ public:
 
   std::coroutine_handle<> await_suspend(std::coroutine_handle<> current_coro) noexcept {
     state = awaitable_impl_::state::suspend;
-    std::ignore = fork_awaiter.await_suspend(current_coro);
-    // Immediately cancel the await for `current_coro` because we don't want it to be resumed automatically.
-    // Instead, the fork should only resume coroutines that have called `co_await` on its future.
-    fork_awaiter.cancel();
+    if (fork_awaiter.await_suspend(current_coro)) [[unlikely]] {
+      // If `fork_awaiter.await_suspend` returned `true`, then `current_coro` is now waiting on the fork.
+      // Cancel the await for `current_coro` immediately, as we don't want it to resume automatically.
+      // The fork should only resume coroutines that have explicitly called `co_await` on its future.
+      fork_awaiter.cancel();
+    }
     return current_coro;
   }
 
   int64_t await_resume() noexcept {
     state = awaitable_impl_::state::end;
     fork_id_watcher_t::await_resume();
+    fork_awaiter.await_resume();
     return fork_id;
   }
 };
