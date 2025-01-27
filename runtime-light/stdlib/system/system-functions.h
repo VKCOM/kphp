@@ -78,10 +78,10 @@ bool f$header_register_callback(F &&) {
   return true;
 }
 
-Optional<string> f$exec(const string &command) {
+Optional<string> f$exec(const string &) {
   php_critical_error("call to unsupported function");
 }
 
-Optional<string> f$exec(const string &command, mixed &output, int64_t &result_code = SystemInstanceState::get().result_code_dummy) {
+Optional<string> f$exec(const string &, mixed &, int64_t & = SystemInstanceState::get().result_code_dummy) {
   php_critical_error("call to unsupported function");
 }
