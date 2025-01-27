@@ -95,6 +95,11 @@ task_t<array<int64_t>> f$rpc_send_typed_query_requests(string actor, array<class
 
 task_t<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noexcept;
 
+template<class T>
+task_t<array<array<mixed>>> f$rpc_fetch_responses(const array<T> &query_ids) noexcept {
+  co_return co_await f$rpc_fetch_responses(array<int64_t>::convert_from(query_ids));
+}
+
 template<std::same_as<int64_t> query_id_t = int64_t, std::same_as<RpcResponseErrorFactory> error_factory_t = RpcResponseErrorFactory>
 requires std::default_initializable<error_factory_t> task_t<array<class_instance<C$VK$TL$RpcResponse>>>
 f$rpc_fetch_typed_responses(array<query_id_t> query_ids) noexcept {

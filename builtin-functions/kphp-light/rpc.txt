@@ -77,6 +77,14 @@ function store_float ($v ::: float) ::: bool;
 function rpc_tl_pending_queries_count (): int;
 function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool): bool;
 
+/**
+ * 'extract_kphp_rpc_response_extra_info' function takes request ID and returns:
+ * 1. 'null' in case there is no extra information about the request;
+ * 2. 'tuple(response size, response time)' in case we got a response associated with
+ *    the request ID.
+ */
+function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
+
 // === Rpc Old API =================================================================================
 
 /** @kphp-extern-func-info interruptible */
@@ -133,15 +141,6 @@ function fetch_lookup_int () ::: int;
 
 /** @kphp-extern-func-info interruptible generate-stub */
 function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
-
-/**
- * 'extract_kphp_rpc_response_extra_info' function takes request ID and returns:
- * 1. 'null' in case there is no extra information about the request;
- * 2. 'tuple(response size, response time)' in case we got a response associated with
- *    the request ID.
- */
- /** @kphp-extern-func-info generate-stub */
-function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
 
 /** @kphp-generate-stub-class */
 final class RpcConnection {

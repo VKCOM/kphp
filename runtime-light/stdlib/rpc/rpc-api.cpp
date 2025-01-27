@@ -57,6 +57,9 @@ array<mixed> make_fetch_error(string &&error_msg, int32_t error_code) {
 
 array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery> &rpc_query) noexcept {
   php_assert(!rpc_query.is_null());
+  if (TlRpcError error{}; error.try_fetch()) [[unlikely]] {
+    return make_fetch_error(std::move(error.error_msg), error.error_code);
+  }
   CurrentTlQuery::get().set_current_tl_function(rpc_query);
   auto fetcher{rpc_query.get()->result_fetcher->extract_untyped_fetcher()};
   php_assert(fetcher);
