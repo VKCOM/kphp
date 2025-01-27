@@ -47,8 +47,6 @@ class RegisterKphpConfiguration final : public SyncPipeF<FunctionPtr> {
 
   const vk::string_view job_workers_shared_memory_distribution_weights_{"--job-workers-shared-memory-distribution-weights"};
 
-  const vk::string_view thread_pool_ratio_key_{"--thread-pool-ratio"};
-  const vk::string_view thread_pool_size_key_{"--thread-pool-size"};
 public:
   void execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os) final;
   void on_finish(DataStream<FunctionPtr> &os) override;

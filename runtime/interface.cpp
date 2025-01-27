@@ -56,7 +56,6 @@
 #include "runtime/rpc.h"
 #include "runtime/streams.h"
 #include "runtime/tcp.h"
-#include "runtime/thread-pool.h"
 #include "runtime/typed_rpc.h"
 #include "runtime/udp.h"
 #include "runtime/url.h"
@@ -766,27 +765,7 @@ void f$die(const mixed &v) {
   f$exit(v);
 }
 
-double f$thread_pool_test_load(int64_t size, int64_t n, double a, double b) {
-  constexpr auto job = [](int64_t n, double a, double b) {
-    double res = 0;
-    for (int i = 0; i < n; ++i) {
-      res += (i * a + 1) / (i * b + 1);
-    }
-    return res;
-  };
-  auto & pool = vk::singleton<ThreadPool>::get().pool();
-  double result = 0;
-  {
-    dl::CriticalSectionGuard guard;
-    BS::multi_future<double> futures;
-    for (int thread = 0; thread < size; ++thread) {
-      futures.push_back(pool.submit(job, n, a, b));
-    }
-    auto results = futures.get();
-    std::for_each(results.begin(), results.end(), [&](int64_t local){result += local;});
-  }
-  return result;
-}
+
 
 Optional<array<string>> f$gethostbynamel(const string &name) {
   dl::enter_critical_section();//OK
@@ -2465,7 +2444,6 @@ void worker_global_init(WorkerType worker_type) noexcept {
   worker_global_init_slot_factories();
   vk::singleton<JsonLogger>::get().reset_json_logs_count();
   worker_global_init_handlers(worker_type);
-  vk::singleton<ThreadPool>::get().init();
   init_kphp_ml_runtime_in_worker();
   init_php_scripts_in_each_worker(PhpScriptMutableGlobals::current());
 }

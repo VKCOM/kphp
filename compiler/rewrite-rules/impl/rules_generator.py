@@ -245,7 +245,7 @@ class RulesGenerator:
         if e.vertex_string:
             printer.write_line(f"if ({name}->get_string() != std::string_view({e.vertex_string})) {{ break; }}", e.line)
         if named_range:
-            printer.write_line(f"const auto &{named_range[0]} = {name}->{named_range[1]}();", e.line)
+            printer.write_line(f"const auto {named_range[0]} = {name}->{named_range[1]}();", e.line)
             return
         for i, subexpr in enumerate(e.members):
             arg_info, range_offset = vertex_info.get_arg(i, len(e.members))
@@ -261,9 +261,9 @@ class RulesGenerator:
             else:
                 if subexpr.op == Expr.OP_ANY:
                     if new_name != "_":
-                        printer.write_line(f"const auto &{new_name} = {arg_expr};", subexpr.line)
+                        printer.write_line(f"const auto {new_name} = {arg_expr};", subexpr.line)
                 else:
-                    printer.write_line(f"const auto &{new_name} = vertex_cast<{subexpr.op}>({arg_expr});", subexpr.line)
+                    printer.write_line(f"const auto {new_name} = vertex_cast<{subexpr.op}>({arg_expr});", subexpr.line)
                     printer.write_line(f"if (!{new_name}) {{ break; }}", subexpr.line)
                 if subexpr.name and subexpr.name != "_":
                     vars_declared.add(subexpr.name)

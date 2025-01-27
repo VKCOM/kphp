@@ -53,7 +53,6 @@
 #include "runtime/memory_resource_impl/memory_resource_stats.h"
 #include "runtime/confdata-global-manager.h"
 #include "runtime/instance-cache.h"
-#include "runtime/thread-pool.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/http-server-context.h"
 #include "server/lease-rpc-client.h"
@@ -1140,9 +1139,6 @@ STATS_PROVIDER_TAGGED(kphp_stats, 100, stats_tag_kphp_server) {
   const auto cpu_stats = server_stats.cpu[1].get_stat();
   stats->add_gauge_stat("cpu.stime", cpu_stats.cpu_s_usage);
   stats->add_gauge_stat("cpu.utime", cpu_stats.cpu_u_usage);
-
-  uint64_t threads_count_stat = vk::singleton<ServerStats>::get().collect_threads_count_stat();
-  stats->add_gauge_stat("server.total_threads_count", threads_count_stat);
 
   auto total_workers_json_count = vk::singleton<ServerStats>::get().collect_json_count_stat();
   uint64_t master_json_logs_count = vk::singleton<JsonLogger>::get().get_json_logs_count();
