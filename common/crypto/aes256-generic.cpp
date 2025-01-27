@@ -4,9 +4,9 @@
 
 #include "common/crypto/aes256-generic.h"
 
-#include <string.h>
+#include "openssl/aes.h"
 
-#include <openssl/aes.h>
+#include <string.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

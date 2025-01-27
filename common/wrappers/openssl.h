@@ -5,12 +5,13 @@
 #ifndef KDB_COMMON_OPENSSL_H
 #define KDB_COMMON_OPENSSL_H
 
-#include <openssl/crypto.h>
-#include <openssl/engine.h>
-#include <openssl/evp.h>
-#include <openssl/opensslv.h>
 #include <stddef.h>
 #include <string.h>
+
+#include "openssl/crypto.h"
+#include "openssl/engine.h"
+#include "openssl/evp.h"
+#include "openssl/opensslv.h"
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 

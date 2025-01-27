@@ -19,7 +19,7 @@ RUN apt update && \
       git cmake make g++ lld gperf netcat \
       python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
     python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
-    apt install -y --no-install-recommends curl-kphp-vk kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
+    apt install -y --no-install-recommends kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
       libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libnuma-dev unzip \
       libldap-dev libkrb5-dev libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* && \
     rm -rf /var/lib/apt/lists/*

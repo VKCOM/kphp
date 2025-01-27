@@ -56,19 +56,25 @@ function(check_compiler_version compiler_name compiler_version)
     endif()
 endfunction(check_compiler_version)
 
-# Function to initialize and update Git submodules
-function(update_git_submodules)
-        message(STATUS "Updating Git submodules...")
+# Function to initialize and update specific Git submodule
+function(update_git_submodule submodule_path)
+    message(STATUS "Updating Git submodule ${submodule_path} ...")
 
-        # Update submodules
-        execute_process(
-            COMMAND git submodule update --init --recursive
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            RESULT_VARIABLE update_result
-            ERROR_QUIET
-        )
+    # Update submodules
+    execute_process(
+            COMMAND ${GIT_EXECUTABLE} submodule update --init --remote ${ARGN} ${submodule_path}
+            WORKING_DIRECTORY ${BASE_DIR}
+            RESULT_VARIABLE update_return_code
+            OUTPUT_VARIABLE update_stdout
+            ERROR_VARIABLE update_stderr
+    )
 
-        if(NOT update_result EQUAL 0)
-            message(FATAL_ERROR "Failed to update Git submodules.")
-        endif()
+    if(NOT update_return_code EQUAL 0)
+        message(FATAL_ERROR "Failed to update Git submodule ${submodule_path}: ${update_stdout} ${update_stderr}")
+    endif()
+endfunction()
+
+function(update_git_submodule_recursive submodule_path)
+    set(extra_option --recursive)
+    update_git_submodule(${submodule_path} ${extra_option})
 endfunction()

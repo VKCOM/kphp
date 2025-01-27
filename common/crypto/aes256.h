@@ -8,7 +8,7 @@
 #include <sys/cdefs.h>
 #include <stdint.h>
 
-#include <openssl/aes.h>
+#include "openssl/aes.h"
 
 #define AES256_KEY_BITS 256
 

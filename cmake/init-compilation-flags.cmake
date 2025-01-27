@@ -49,9 +49,6 @@ else()
     add_link_options(-fno-lto)
 endif()
 
-set(OPENSSL_USE_STATIC_LIBS TRUE)
-find_package(OpenSSL REQUIRED)
-include_directories(${OPENSSL_INCLUDE_DIR})
 
 option(ADDRESS_SANITIZER "Enable address sanitizer")
 if(ADDRESS_SANITIZER)

@@ -5,9 +5,11 @@
 #include "compiler/compiler-settings.h"
 
 #include <fstream>
-#include <openssl/sha.h>
 #include <sstream>
+#include <string_view>
 #include <unistd.h>
+
+#include "openssl/sha.h"
 
 #include "common/algorithms/contains.h"
 #include "common/algorithms/find.h"
@@ -143,16 +145,22 @@ void append_if_doesnt_contain(std::string &ld_flags, const T &libs, vk::string_v
   }
 }
 
-void append_curl(std::string &cxx_flags, std::string &ld_flags) noexcept {
+void append_3dparty_headers(std::string &cxx_flags, const std::string &path_to_3dparty, const std::string &libname) noexcept {
+  cxx_flags += " -I" + path_to_3dparty + "include/" + libname;
+}
+
+void append_3dparty_lib(std::string &ld_flags, const std::string &path_to_3dparty, const std::string &libname) noexcept {
+  ld_flags += " " + path_to_3dparty + "lib/lib" + libname + ".a";
+}
+
+void append_curl([[maybe_unused]] std::string &cxx_flags, std::string &ld_flags, [[maybe_unused]] const std::string &path_to_3dparty) noexcept {
   if (!contains_lib(ld_flags, "curl")) {
 #if defined(__APPLE__)
-    static_cast<void>(cxx_flags);
     ld_flags += " -lcurl";
 #else
     // TODO make it as an option?
-    const std::string curl_dir = "/opt/curl7600";
-    cxx_flags += " -I" + curl_dir + "/include/";
-    ld_flags += " " + curl_dir + "/lib/libcurl.a";
+    append_3dparty_headers(cxx_flags, path_to_3dparty, "curl");
+    append_3dparty_lib(ld_flags, path_to_3dparty, "curl");
 #endif
   }
 }
@@ -354,10 +362,12 @@ void CompilerSettings::init() {
 
   remove_extra_spaces(extra_ld_flags.value_);
 
+  auto third_party_path = kphp_src_path.get() + "objs/";
+
   ld_flags.value_ = extra_ld_flags.get();
-  append_curl(cxx_default_flags, ld_flags.value_);
+  append_curl(cxx_default_flags, ld_flags.value_, third_party_path);
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> external_static_libs{"pcre", "re2", "yaml-cpp", "h3", "z", "zstd", "nghttp2", "kphp-timelib"};
+  std::vector<vk::string_view> system_installed_static_libs{"pcre", "re2", "yaml-cpp", "h3", "z", "zstd", "nghttp2", "kphp-timelib"};
 
 #ifdef KPHP_TIMELIB_LIB_DIR
   ld_flags.value_ += " -L" KPHP_TIMELIB_LIB_DIR;
@@ -377,45 +387,47 @@ void CompilerSettings::init() {
   ld_flags.value_ += " -L /usr/local/lib";
 #endif
 
-  std::vector<vk::string_view> external_libs{"pthread", "m", "dl"};
+  std::vector<vk::string_view> system_installed_dynamic_libs{"pthread", "m", "dl"};
 
 #ifdef PDO_DRIVER_MYSQL
 #ifdef PDO_LIBS_STATIC_LINKING
-  external_static_libs.emplace_back("mysqlclient");
+  system_installed_static_libs.emplace_back("mysqlclient");
 #else
-  external_libs.emplace_back("mysqlclient");
+  system_installed_dynamic_libs.emplace_back("mysqlclient");
 #endif
 #endif
 
 #ifdef PDO_DRIVER_PGSQL
 #ifdef PDO_LIBS_STATIC_LINKING
   ld_flags.value_ += fmt_format(" -L /usr/lib/postgresql/{}/lib/ ", PDO_DRIVER_PGSQL_VERSION);
-  external_static_libs.emplace_back("pq");
-  external_static_libs.emplace_back("pgcommon");
-  external_static_libs.emplace_back("pgport");
+  system_installed_static_libs.emplace_back("pq");
+  system_installed_static_libs.emplace_back("pgcommon");
+  system_installed_static_libs.emplace_back("pgport");
   // following common libraries are required for libpq.a
-  external_libs.emplace_back("ldap");
-  external_libs.emplace_back("gssapi_krb5");
+  system_installed_dynamic_libs.emplace_back("ldap");
+  system_installed_dynamic_libs.emplace_back("gssapi_krb5");
 #else
-  external_libs.emplace_back("pq");
+  system_installed_dynamic_libs.emplace_back("pq");
 #endif
 #endif
-
-  external_static_libs.emplace_back("ssl");
-  external_static_libs.emplace_back("crypto");
 
 #if defined(__APPLE__)
-  append_if_doesnt_contain(ld_flags.value_, external_static_libs, "-l");
+  append_if_doesnt_contain(ld_flags.value_, system_installed_static_libs, "-l");
   auto flex_prefix = kphp_src_path.value_ + "objs/flex/lib";
   append_if_doesnt_contain(ld_flags.value_, vk::to_array({"vk-flex-data"}), flex_prefix, ".a");
-  external_libs.emplace_back("iconv");
+  system_installed_dynamic_libs.emplace_back("iconv");
 #else
-  external_static_libs.emplace_back("numa");
-  external_static_libs.emplace_back("vk-flex-data");
-  append_if_doesnt_contain(ld_flags.value_, external_static_libs, "-l:lib", ".a");
-  external_libs.emplace_back("rt");
+  append_3dparty_lib(ld_flags.value_, third_party_path, "vk-flex-data");
+  system_installed_static_libs.emplace_back("numa");
+  append_if_doesnt_contain(ld_flags.value_, system_installed_static_libs, "-l:lib", ".a");
+  system_installed_dynamic_libs.emplace_back("rt");
 #endif
-  append_if_doesnt_contain(ld_flags.value_, external_libs, "-l");
+
+  append_3dparty_headers(cxx_default_flags, third_party_path, "openssl");
+  append_3dparty_lib(ld_flags.value_, third_party_path, "ssl");
+  append_3dparty_lib(ld_flags.value_, third_party_path, "crypto");
+
+  append_if_doesnt_contain(ld_flags.value_, system_installed_dynamic_libs, "-l");
   ld_flags.value_ += " -rdynamic";
 
   runtime_headers.value_ = "runtime-headers.h";

@@ -274,6 +274,7 @@ set_property(SOURCE ${KPHP_COMPILER_DIR}/kphp2cpp.cpp
 
 add_executable(kphp2cpp ${KPHP_COMPILER_DIR}/kphp2cpp.cpp)
 target_include_directories(kphp2cpp PUBLIC ${KPHP_COMPILER_DIR})
+add_dependencies(kphp2cpp openssl)
 
 prepare_cross_platform_libs(COMPILER_LIBS yaml-cpp re2)
 set(COMPILER_LIBS vk::kphp2cpp_src vk::tlo_parsing_src vk::popular_common ${COMPILER_LIBS} fmt::fmt OpenSSL::Crypto pthread)
