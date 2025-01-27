@@ -73,3 +73,7 @@ inline array<array<string>> f$debug_backtrace() noexcept {
   return {};
 }
 
+template <typename F>
+bool f$header_register_callback(F &&) {
+  return true;
+}
