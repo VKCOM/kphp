@@ -14,7 +14,7 @@ inline class_instance<C$KphpSpan> f$kphp_tracing_get_current_active_span() noexc
   return {};
 }
 
-inline void kphp_tracing_func_enter_branch([[maybe_unused]] int $branch_num) noexcept {
+inline void f$kphp_tracing_func_enter_branch([[maybe_unused]] int $branch_num) noexcept {
   php_warning("called stub kphp_tracing_func_enter_branch");
   return;
 }
