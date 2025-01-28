@@ -18,6 +18,7 @@
 
 namespace shared_task_impl_ {
 
+// TODO: doubly-linked list to perform cancel in O(1)
 struct shared_task_waiter_t final {
   std::coroutine_handle<> m_continuation;
   shared_task_waiter_t *m_next{};
