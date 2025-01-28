@@ -275,7 +275,7 @@ public:
 
 class start_fork_t : awaitable_impl_::fork_id_watcher_t {
   int64_t fork_id{};
-  decltype(std::declval<shared_task_t<void>>().when_ready()) fork_awaiter;
+  std::remove_cvref_t<decltype(std::declval<shared_task_t<void>>().when_ready())> fork_awaiter;
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
   awaitable_impl_::state state{awaitable_impl_::state::init};
 
