@@ -302,6 +302,7 @@ public:
 
   std::coroutine_handle<> await_suspend(std::coroutine_handle<> current_coro) noexcept {
     state = awaitable_impl_::state::suspend;
+    ForkInstanceState::get().current_id = fork_id;
     if (fork_awaiter.await_suspend(current_coro)) [[unlikely]] {
       // If `fork_awaiter.await_suspend` returned `true`, then `current_coro` is now waiting on the fork.
       // Cancel the await for `current_coro` immediately, as we don't want it to resume automatically.
