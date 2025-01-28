@@ -8,7 +8,6 @@
 #include <coroutine>
 #include <cstddef>
 #include <cstdint>
-#include <exception>
 #include <memory>
 #include <new>
 #include <type_traits>
@@ -63,7 +62,7 @@ struct promise_base_t {
   }
 
   constexpr void unhandled_exception() noexcept {
-    m_exception = std::current_exception();
+    php_critical_error("internal unhandled exception");
   }
 
   constexpr bool ready() const noexcept {
@@ -167,9 +166,6 @@ private:
   //                      values are of type 'shared_task_impl_::shared_task_waiter_t'.
   //                      indicates that the coroutine has been started.
   void *m_waiters{std::addressof(m_waiters)};
-
-protected:
-  std::exception_ptr m_exception;
 };
 
 template<typename promise_type>
@@ -301,9 +297,6 @@ struct shared_task_t final {
     }
 
     constexpr const T &result() const noexcept {
-      if (promise_base_t::m_exception) [[unlikely]] {
-        std::rethrow_exception(std::move(promise_base_t::m_exception));
-      }
       return *std::launder(reinterpret_cast<const T *>(m_bytes));
     }
 
@@ -313,11 +306,7 @@ struct shared_task_t final {
   struct promise_void_t final : public promise_base_t {
     constexpr void return_void() const noexcept {}
 
-    constexpr void result() const noexcept {
-      if (promise_base_t::m_exception) [[unlikely]] {
-        std::rethrow_exception(std::move(promise_base_t::m_exception));
-      }
-    }
+    constexpr void result() const noexcept {}
   };
 
   constexpr auto operator co_await() noexcept {
