@@ -2388,7 +2388,6 @@ static void free_runtime_libs() {
   free_kphp_backtrace();
 
   free_use_updated_gmmktime();
-  free_detect_incorrect_encoding_names();
 
   vk::singleton<JsonLogger>::get().reset_buffers();
 #ifdef PDO_DRIVER_MYSQL
