@@ -322,6 +322,68 @@ public:
 
 // ================================================================================================
 
+template<typename T>
+class wait_fork_t : awaitable_impl_::fork_id_watcher_t {
+  shared_task_t<T> fork_task;
+  std::remove_cvref_t<decltype(std::declval<shared_task_t<T>>().operator co_await())> fork_awaiter;
+  awaitable_impl_::state state{awaitable_impl_::state::init};
+
+  using fork_resume_t = std::remove_cvref_t<decltype(fork_awaiter.await_resume())>;
+  using await_resume_t = fork_resume_t;
+
+public:
+  explicit wait_fork_t(shared_task_t<T> fork_task_) noexcept
+    : fork_task(std::move(fork_task_))
+    , fork_awaiter(fork_task.operator co_await()) {}
+
+  wait_fork_t(wait_fork_t &&other) noexcept
+    : fork_task(std::move(other.fork_task))
+    , fork_awaiter(std::move(other.fork_awaiter))
+    , state(std::exchange(other.state, awaitable_impl_::state::end)) {}
+
+  wait_fork_t(const wait_fork_t &) = delete;
+  wait_fork_t &operator=(const wait_fork_t &) = delete;
+  wait_fork_t &operator=(wait_fork_t &&) = delete;
+
+  ~wait_fork_t() {
+    if (state == awaitable_impl_::state::suspend) {
+      cancel();
+    }
+  }
+
+  bool await_ready() noexcept {
+    php_assert(state == awaitable_impl_::state::init);
+    state = fork_awaiter.await_ready() ? awaitable_impl_::state::ready : awaitable_impl_::state::init;
+    return state == awaitable_impl_::state::ready;
+  }
+
+  constexpr bool await_suspend(std::coroutine_handle<> coro) noexcept {
+    state = awaitable_impl_::state::suspend;
+    return fork_awaiter.await_suspend(coro);
+  }
+
+  await_resume_t await_resume() noexcept {
+    state = awaitable_impl_::state::end;
+    fork_id_watcher_t::await_resume();
+    if constexpr (std::is_void_v<await_resume_t>) {
+      fork_awaiter.await_resume();
+    } else {
+      return fork_awaiter.await_resume();
+    }
+  }
+
+  constexpr bool resumable() const noexcept {
+    return state == awaitable_impl_::state::ready || (state == awaitable_impl_::state::suspend && fork_awaiter.resumable());
+  }
+
+  constexpr void cancel() noexcept {
+    state = awaitable_impl_::state::end;
+    fork_awaiter.cancel();
+  }
+};
+
+// ================================================================================================
+
 template<CancellableAwaitable T>
 class wait_with_timeout_t {
   T awaitable;

@@ -43,7 +43,7 @@ requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>
   }
 
   auto fork_task{static_cast<shared_task_t<internal_optional_type_t<T>>>(*std::move(opt_fork_task))};
-  auto opt_result{co_await wait_with_timeout_t{fork_task.operator co_await(), forks_impl_::normalize_timeout(timeout)}};
+  auto opt_result{co_await wait_with_timeout_t{wait_fork_t{std::move(fork_task)}, forks_impl_::normalize_timeout(timeout)}};
   // mark the fork as awaited and remove it from the set of active forks
   fork_instance_st.erase_fork(fork_id);
   co_return opt_result.has_value() ? T{std::move(opt_result.value())} : T{};
@@ -66,7 +66,7 @@ inline task_t<bool> f$wait_concurrently(int64_t fork_id) noexcept {
 
   if (it->second.first != ForkInstanceState::fork_state::awaited) [[likely]] {
     auto fork_task{it->second.second};
-    co_await fork_task.when_ready();
+    co_await wait_fork_t{std::move(fork_task)};
   }
   co_return true;
 }

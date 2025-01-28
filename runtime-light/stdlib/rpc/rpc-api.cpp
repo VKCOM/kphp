@@ -253,7 +253,7 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
   }
 
   auto fork_task{static_cast<shared_task_t<string>>(std::move(*opt_fork_task))};
-  const auto data{(co_await wait_with_timeout_t{fork_task.operator co_await(), MAX_TIMEOUT_NS}).value()};
+  const auto data{(co_await wait_with_timeout_t{wait_fork_t{std::move(fork_task)}, MAX_TIMEOUT_NS}).value()};
   fork_instance_st.erase_fork(response_waiter_fork_id);
 
   if (data.empty()) {
@@ -306,7 +306,7 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
   }
 
   auto fork_task{static_cast<shared_task_t<string>>(std::move(*opt_fork_task))};
-  const auto data{(co_await wait_with_timeout_t{fork_task.operator co_await(), MAX_TIMEOUT_NS}).value()};
+  const auto data{(co_await wait_with_timeout_t{wait_fork_t{std::move(fork_task)}, MAX_TIMEOUT_NS}).value()};
   fork_instance_st.erase_fork(response_waiter_fork_id);
 
   if (data.empty()) {
