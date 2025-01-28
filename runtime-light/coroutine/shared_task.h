@@ -358,8 +358,12 @@ struct shared_task_t final {
 
 private:
   constexpr void destroy() noexcept {
-    if (m_haddress != nullptr && !std::coroutine_handle<promise_type>::from_address(m_haddress).promise().detach()) {
-      std::coroutine_handle<promise_type>::from_address(m_haddress).destroy();
+    if (m_haddress == nullptr) [[unlikely]] {
+      return;
+    }
+    auto coro{std::coroutine_handle<promise_type>::from_address(m_haddress)};
+    if (!coro.promise().detach()) {
+      coro.destroy();
     }
   }
 
