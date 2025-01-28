@@ -322,6 +322,9 @@ public:
 
 // ================================================================================================
 
+// We can have two distinct awaiters instead: wait_fork_t and wait_fork_result_t.
+// The main difference between them is that wait_fork_t can use shared_task_t::when_ready as an awaiter,
+// whereas wait_fork_result_t can use shared_task_t::operator co_await.
 template<typename T>
 class wait_fork_t : awaitable_impl_::fork_id_watcher_t {
   shared_task_t<T> fork_task;
