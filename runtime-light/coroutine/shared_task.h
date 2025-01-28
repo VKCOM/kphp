@@ -79,7 +79,7 @@ struct promise_base_t {
   // waiter->coroutine will be resumed when the task completes.
   // false if the coroutine was already completed and the awaiting
   // coroutine can continue without suspending.
-  bool suspend(shared_task_impl_::shared_task_waiter_t &waiter, std::coroutine_handle<> coro) noexcept {
+  bool suspend(shared_task_impl_::shared_task_waiter_t &waiter) noexcept {
     const void *const NOT_STARTED_VAL{std::addressof(this->m_waiters)};
 
     // NOTE: If the coroutine is not yet started then the first waiter
@@ -95,7 +95,7 @@ struct promise_base_t {
     // start the coroutine if not yet started
     if (m_waiters == NOT_STARTED_VAL) {
       m_waiters = STARTED_NO_WAITERS_VAL;
-      coro.resume();
+      std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this)).resume();
     }
     // coroutine already completed, don't suspend
     if (ready()) {
@@ -204,7 +204,7 @@ public:
   constexpr bool await_suspend(std::coroutine_handle<> awaiter) noexcept {
     m_state = state::suspend;
     m_waiter.m_continuation = awaiter;
-    return m_coro.promise().suspend(m_waiter, m_coro);
+    return m_coro.promise().suspend(m_waiter);
   }
 
   constexpr void await_resume() noexcept {
