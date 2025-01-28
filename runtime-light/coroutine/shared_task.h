@@ -38,12 +38,12 @@ struct promise_base_t {
         return false;
       }
 
-      constexpr void await_suspend(std::coroutine_handle<promise_type> coro) const noexcept {
+      constexpr std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> coro) const noexcept {
         promise_base_t &promise{coro.promise()};
         // mark promise as ready
         auto *waiter{static_cast<shared_task_impl_::shared_task_waiter_t *>(std::exchange(promise.m_waiters, std::addressof(promise)))};
         if (waiter == STARTED_NO_WAITERS_VAL) { // no waiters, so just finish this coroutine
-          return;
+          return std::noop_coroutine();
         }
 
         while (waiter->m_next != nullptr) {
@@ -53,8 +53,8 @@ struct promise_base_t {
           waiter->m_continuation.resume();
           waiter = next;
         }
-        // resume last waiter in tail position to allow it to potentially be compiled as a tail-call
-        waiter->m_continuation.resume();
+        // return last waiter's coroutine_handle to allow it to potentially be compiled as a tail-call
+        return waiter->m_continuation;
       }
 
       constexpr void await_resume() const noexcept {}
