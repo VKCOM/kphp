@@ -21,6 +21,8 @@
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 
+#include "runtime-light/stdlib/output/print-functions.h"
+
 namespace {
 
 constexpr std::string_view CONFDATA_COMPONENT_NAME = "confdata"; // TODO: it may actually have an alias specified in linking config
@@ -31,10 +33,23 @@ mixed extract_confdata_value(const tl::confdataValue &confdata_value) noexcept {
     return {};
   }
   if (confdata_value.is_php_serialized.value) {
-    return f$unserialize(string{confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size())});
+    php_warning("extract_confdata_value : is_php_serialized");
+
+    php_warning("value before : %s", confdata_value.value.value.data());
+    auto tmp = f$unserialize(string{confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size())});
+    php_warning("value after : %s",f$print_r(tmp, true).c_str());
+    return tmp;
   } else if (confdata_value.is_json_serialized.value) {
-    return f$json_decode(string{confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size())});
+    php_warning("extract_confdata_value : is_json_serialized");
+
+    php_warning("value before : %s", confdata_value.value.value.data());
+    auto tmp = f$json_decode(string{confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size())});
+    php_warning("value after : %s",f$print_r(tmp, true).c_str());
+    return tmp;
   } else {
+    php_warning("extract_confdata_value : raw");
+
+    php_warning("value : %s", confdata_value.value.value.data());
     return string{confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size())};
   }
 }
