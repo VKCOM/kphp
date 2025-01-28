@@ -6,7 +6,6 @@ function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env
 
 // === UNSUPPORTED ===
 
-/** @kphp-generate-stub-class */
 interface Throwable {
     public function getMessage () ::: string;
     public function getCode () ::: int;
@@ -17,7 +16,6 @@ interface Throwable {
 }
 
 
-/** @kphp-generate-stub-class */
 class Exception implements Throwable {
     protected $message = '';
     protected $code = 0;
@@ -26,7 +24,7 @@ class Exception implements Throwable {
     /** @var int */
     protected $line;
 
-    /** @kphp-extern-func-info generate-stub */
+
     public function __construct($message ::: string = '', $code ::: int = 0) ::: Exception;
     /** @kphp-extern-func-info generate-stub */
     final public function getMessage () ::: string;
@@ -45,8 +43,6 @@ class Exception implements Throwable {
     final private function __clone() ::: void;
 }
 
-
-/** @kphp-generate-stub-class */
 class Error implements Throwable {
     protected $message = '';
     protected $code = 0;
