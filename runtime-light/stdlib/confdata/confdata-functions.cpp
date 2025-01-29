@@ -52,6 +52,7 @@ bool f$is_confdata_loaded() noexcept {
 }
 
 task_t<mixed> f$confdata_get_value(string key) noexcept {
+  php_warning("f$confdata_get_value key %s", key.c_str());
   tl::TLBuffer tlb{};
   tl::ConfdataGet{.key = {.value = {key.c_str(), key.size()}}}.store(tlb);
 
@@ -68,8 +69,10 @@ task_t<mixed> f$confdata_get_value(string key) noexcept {
   }
 
   if (!maybe_confdata_value.opt_value.has_value()) { // no such key
+    php_warning("f$confdata_get_value no key");
     co_return mixed{};
   }
+  php_warning("f$confdata_get_value key %s", maybe_confdata_value.opt_value.value().value.value.data());
   co_return extract_confdata_value(*maybe_confdata_value.opt_value); // the key exists
 }
 
