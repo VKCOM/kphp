@@ -716,6 +716,7 @@ int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeou
     std::memcpy(request_buf, data_buf.c_str(), request_size);
   }
 
+  php_warning("rpc_send_impl to actor %d", conn.get()->actor_id);
   slot_id_t q_id = rpc_send_query(conn.get()->host_num, request_buf, static_cast<int>(request_size), timeout_convert_to_ms(timeout));
 
   // request's statistics

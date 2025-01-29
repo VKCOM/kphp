@@ -88,7 +88,9 @@ bool f$is_confdata_loaded() noexcept {
 }
 
 mixed f$confdata_get_value(const string &key) noexcept {
+  php_warning("f$confdata_get_value key %s", key.c_str());
   if (unlikely(!verify_confdata_key_param(key, "key"))) {
+    php_warning("f$confdata_get_value unknown key");
     return {};
   }
 
@@ -100,11 +102,13 @@ mixed f$confdata_get_value(const string &key) noexcept {
   if (it != confdata_storage.end()) {
     // if key doesn't contain prefixes
     if (key_maker.get_first_key_type() == ConfdataFirstKeyType::simple_key) {
+      php_warning("f$confdata_get_value value %s", it->second.to_string().c_str());
       return it->second;
     }
     // it must be an array (we loaded it this way)
     php_assert(it->second.is_array());
     if (const auto *value = it->second.as_array().find_value(key_maker.get_second_key())) {
+      php_warning("f$confdata_get_value value %s", value->to_string().c_str());
       return *value;
     }
   }
@@ -112,6 +116,7 @@ mixed f$confdata_get_value(const string &key) noexcept {
   if (unlikely(local_manager.get_key_blacklist().is_blacklisted(vk::string_view{key.c_str(), key.size()}))) {
     php_warning("Trying to get blacklisted key '%s'", key.c_str());
   }
+  php_warning("f$confdata_get_value value blacklisted");
   return {};
 }
 
