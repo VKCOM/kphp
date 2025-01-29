@@ -45,7 +45,7 @@ set_target_properties(runtime-light PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                                ${BASE_DIR}/objs)
 target_compile_options(
   runtime-light PUBLIC -stdlib=libc++ -iquote ${GENERATED_DIR}
-                       ${THIRD_PARTY_INCLUDE} -fPIC -O3)
+                       ${THIRD_PARTY_INCLUDE} -fPIC -O0 -g)
 target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
 # add statically linking libraries
 string(JOIN " " ABSEIL_LIBS ${ABSEIL_LIBS})
