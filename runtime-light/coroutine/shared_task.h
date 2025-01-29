@@ -310,7 +310,7 @@ struct shared_task_t final {
     constexpr void result() const noexcept {}
   };
 
-  constexpr auto operator co_await() noexcept {
+  constexpr auto operator co_await() const noexcept {
     using awaiter_base_t = shared_task_impl_::awaiter_base_t<promise_type>;
     struct awaiter_t final : public awaiter_base_t {
       using awaiter_base_t::awaiter_base_t;
