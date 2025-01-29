@@ -72,7 +72,7 @@ task_t<mixed> f$confdata_get_value(string key) noexcept {
     php_warning("f$confdata_get_value no key");
     co_return mixed{};
   }
-  php_warning("f$confdata_get_value key %s", maybe_confdata_value.opt_value.value().value.value.data());
+  php_warning("f$confdata_get_value %s", extract_confdata_value(*maybe_confdata_value.opt_value).to_string().c_str());
   co_return extract_confdata_value(*maybe_confdata_value.opt_value); // the key exists
 }
 
