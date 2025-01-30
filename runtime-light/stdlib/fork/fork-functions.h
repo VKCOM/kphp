@@ -119,7 +119,7 @@ template<typename T>
 task_t<T> f$wait_multi(const array<int64_t> &resumable_ids) {
   T res;
   for (auto it : resumable_ids) {
-    res.set_value(it.get_key(), co_await f$wait<T::value_type>(it.get_value()));
+    res.set_value(it.get_key(), co_await f$wait<typename T::value_type>(it.get_value()));
   }
   co_return res;
 }
