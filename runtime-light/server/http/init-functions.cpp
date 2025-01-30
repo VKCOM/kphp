@@ -237,8 +237,6 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
                    string{invoke_http.method.value.data(), static_cast<string::size_type>(invoke_http.method.value.size())});
   server.set_value(string{GATEWAY_INTERFACE.data(), GATEWAY_INTERFACE.size()}, string{GATEWAY_INTERFACE_VALUE.data(), GATEWAY_INTERFACE_VALUE.size()});
 
-  php_warning("SETTING GET %s", invoke_http.uri.opt_query.has_value() ? uri_query.c_str() : "no uri query");
-  php_warning("QUERY TYPE %hhu", static_cast<uint8_t>(http_server_instance_st.http_method));
   if (invoke_http.uri.opt_query.has_value()) {
     f$parse_str(uri_query, superglobals.v$_GET);
     server.set_value(string{QUERY_STRING.data(), QUERY_STRING.size()}, uri_query);
@@ -250,6 +248,7 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
     uri_string.append(uri_query);
     server.set_value(string{REQUEST_URI.data(), REQUEST_URI.size()}, uri_string);
   } else {
+    superglobals.v$_GET = array<mixed>();
     server.set_value(string{REQUEST_URI.data(), REQUEST_URI.size()}, uri_path);
   }
 
