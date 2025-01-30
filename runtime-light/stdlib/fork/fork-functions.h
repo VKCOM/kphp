@@ -110,11 +110,28 @@ inline task_t<bool> f$wait_concurrently(const mixed &resumable_id) {
 }
 
 template<typename T>
+task_t<T> f$wait_multi(const array<Optional<int64_t>> &resumable_ids) {
+  auto ids = array<int64_t>::convert_from(resumable_ids);
+  co_return co_await f$wait_multi<T>(ids);
+}
+
+template<typename T>
+task_t<T> f$wait_multi(const array<int64_t> &resumable_ids) {
+  T res;
+  for (auto it : resumable_ids) {
+    res.set_value(it.get_key(), co_await f$wait<T::value_type>(it.get_value()));
+  }
+  co_return res;
+}
+
+
+template<typename T>
 T f$wait_multi(const array<Optional<int64_t>> &resumable_ids) {
   php_critical_error("call to unsupported function");
 }
 
 template<typename T>
 T f$wait_multi(const array<int64_t> &resumable_ids) {
+
   php_critical_error("call to unsupported function");
 }
