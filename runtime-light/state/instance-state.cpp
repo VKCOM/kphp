@@ -200,7 +200,7 @@ std::pair<uint64_t, int32_t> InstanceState::open_stream(std::string_view compone
     opened_streams_.insert(stream_d);
     php_debug("opened a stream %" PRIu64 " to %s", stream_d, component_name.data());
   } else {
-    php_critical_error("can't open stream to %s", component_name.data());
+    php_warning("can't open stream to %s", component_name.data());
   }
   return {stream_d, error_code};
 }
