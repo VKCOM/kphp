@@ -723,10 +723,8 @@ int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeou
   req_extra_info = rpc_request_extra_info_t{request_size};
 
   if (q_id <= 0) {
-    php_warning("rpc_send_impl failed");
     return -1;
   }
-  php_warning("rpc_send_impl succeed");
 
   if (dl::query_num != rpc_requests_last_query_num) {
     rpc_requests_last_query_num = dl::query_num;
