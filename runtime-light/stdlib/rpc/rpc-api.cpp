@@ -99,7 +99,6 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
 }
 
 task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
-  php_warning("rpc_send_impl send to %s", actor.c_str());
   auto &rpc_ctx{RpcInstanceState::get()};
   // prepare RPC request
   string request_buf{};
@@ -153,7 +152,7 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
   }(query_id, std::move(comp_query), timeout_ns, collect_responses_extra_info)};
   // start waiter fork
   const auto waiter_fork_id{co_await start_fork_t{static_cast<task_t<void>>(std::move(waiter_task)), start_fork_t::execution::self}};
-  php_warning("rpc_send_impl to %s succeed", actor.c_str());
+
   if (ignore_answer) {
     co_return RpcQueryInfo{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
