@@ -9,7 +9,7 @@ set(CURL_COMPILE_FLAGS "-O3 -Wno-deprecated-declarations")
 if(COMPILER_CLANG)
     set(CURL_COMPILE_FLAGS "${CURL_COMPILE_FLAGS} -Wno-string-plus-int")
 else()
-    set(CURL_COMPILE_FLAGS "${CURL_COMPILE_FLAGS} -Wno-stringop-truncation -Wno-maybe-uninitialized")
+    set(CURL_COMPILE_FLAGS "${CURL_COMPILE_FLAGS} -Wno-stringop-truncation -Wno-maybe-uninitialized -Wno-stringop-overflow")
 endif()
 
 # The configuration has been based on:
