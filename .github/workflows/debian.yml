@@ -25,16 +25,16 @@ jobs:
     name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Get polyfills repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         repository: 'VKCOM/kphp-polyfills'
         path: 'kphp-polyfills'
 
     - name: Cache docker image
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       id: docker-image-cache
       with:
         path: kphp-build-env-${{matrix.os}}.tar

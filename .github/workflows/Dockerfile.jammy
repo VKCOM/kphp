@@ -16,12 +16,18 @@ RUN apt update && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt update && \
     apt install -y --no-install-recommends \
-      git cmake make g++ lld gperf netcat \
-      python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
-    python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
+      build-essential devscripts fakeroot git cmake make g++ lld gperf netcat \
+      python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools && \
     apt install -y --no-install-recommends kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
-      libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libnuma-dev unzip \
-      libldap-dev libkrb5-dev libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* && \
+      libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libnuma-dev unzip  && \
+    # Install MySQL-related and PostgreSQL-related libraries from the Ubuntu 20.04 (Focal Fossa) repository.
+    # Ubuntu 22.04 has moved to OpenSSL 3.0; however, KPHP relies on OpenSSL 1.1.1.
+    # Therefore, we use downgraded libraries that are compatible with OpenSSL 1.1.1.
+    echo "deb https://archive.ubuntu.com/ubuntu focal main universe" >> /etc/apt/sources.list && \
+    apt update && \
+    apt install -t focal -y --no-install-recommends --allow-downgrades mysql-server libmysqlclient-dev \
+      libldap-dev libtinfo6=6.2* ncurses-bin=6.2* libncurses6=6.2* libncursesw6=6.2* libncurses-dev=6.2* libtinfo-dev=6.2* libcom-err2=1.45* comerr-dev=2.1-1.45* libkrb5support0=1.17* libkrb5-3=1.17* libk5crypto3=1.17* libgssapi-krb5-2=1.17* libkrb5-dev=1.17* libpq5=12.* ssl-cert=1.1.* postgresql-common locales=2.35* postgresql-12 libpq-dev=12.*  && \
+    python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
     rm -rf /var/lib/apt/lists/*
 
 # set php7.4 as default
