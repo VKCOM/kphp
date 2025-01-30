@@ -671,6 +671,7 @@ static void process_rpc_timeout(kphp_event_timer *timer) {
 
 int64_t rpc_send_impl(const class_instance<C$RpcConnection> &conn, double timeout, rpc_request_extra_info_t &req_extra_info, bool collect_resp_extra_info,
                       bool ignore_answer) {
+  php_warning("rpc_send_impl to actor %d", conn.get()->actor_id);
   if (unlikely (conn.is_null() || conn.get()->host_num < 0)) {
     php_warning("Wrong RpcConnection specified");
     return -1;
