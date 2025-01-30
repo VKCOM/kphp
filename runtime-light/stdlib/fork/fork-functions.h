@@ -123,15 +123,3 @@ task_t<T> f$wait_multi(const array<int64_t> &resumable_ids) {
   }
   co_return res;
 }
-
-
-template<typename T>
-T f$wait_multi(const array<Optional<int64_t>> &resumable_ids) {
-  php_critical_error("call to unsupported function");
-}
-
-template<typename T>
-T f$wait_multi(const array<int64_t> &resumable_ids) {
-
-  php_critical_error("call to unsupported function");
-}
