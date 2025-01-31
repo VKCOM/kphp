@@ -20,6 +20,7 @@ bool RpcError::try_fetch() noexcept {
     rpc_set_pos(pos_backup);
     return false;
   }
+  php_warning("~~~~~~~~~~~~~~~got TL_RPC_REQ_ERROR");
 
   tl_parse_long();
   error_code = tl_parse_int();
