@@ -2,11 +2,11 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "common/crypto/aes256-generic.h"
+#include <string.h>
 
 #include "openssl/aes.h"
 
-#include <string.h>
+#include "common/crypto/aes256-generic.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

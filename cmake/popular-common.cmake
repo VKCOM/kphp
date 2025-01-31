@@ -52,4 +52,4 @@ if(COMPILE_RUNTIME_LIGHT)
 endif()
 
 vk_add_library(popular_common OBJECT ${POPULAR_COMMON_SOURCES})
-#set_property(TARGET popular_common PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET popular_common PROPERTY POSITION_INDEPENDENT_CODE ON)
