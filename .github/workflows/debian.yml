@@ -64,7 +64,7 @@ jobs:
 
     - name: Build all
       run: docker exec -u kitten kphp-build-container-${{matrix.os}} bash -c 
-              "cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DADDRESS_SANITIZER=${{matrix.asan}} -DUNDEFINED_SANITIZER=${{matrix.ubsan}} -DPDO_DRIVER_MYSQL=ON -DPDO_DRIVER_PGSQL=ON -DPDO_LIBS_STATIC_LINKING=ON -S ${{env.kphp_root_dir}} -B ${{env.kphp_build_dir}} && make -C ${{env.kphp_build_dir}} -j$(nproc) all"
+              "cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DADDRESS_SANITIZER=${{matrix.asan}} -DUNDEFINED_SANITIZER=${{matrix.ubsan}} -DPDO_DRIVER_MYSQL=ON -DPDO_DRIVER_PGSQL=ON -DPDO_LIBS_STATIC_LINKING=OFF -S ${{env.kphp_root_dir}} -B ${{env.kphp_build_dir}} && make -C ${{env.kphp_build_dir}} -j$(nproc) all"
 
     - name: Run unit tests
       run: docker exec -u kitten kphp-build-container-${{matrix.os}} bash -c 
