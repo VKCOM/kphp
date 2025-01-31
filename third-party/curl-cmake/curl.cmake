@@ -4,7 +4,7 @@ set(CURL_INSTALL_DIR ${CMAKE_BINARY_DIR}/third-party/curl)
 # Ensure the installation directory exists
 file(MAKE_DIRECTORY ${CURL_INSTALL_DIR})
 
-set(CURL_COMPILE_FLAGS "-O3 -Wno-deprecated-declarations")
+set(CURL_COMPILE_FLAGS "-O3 -g0 -Wno-deprecated-declarations")
 # Suppress compiler-specific warnings caused by -O3
 if(COMPILER_CLANG)
     set(CURL_COMPILE_FLAGS "${CURL_COMPILE_FLAGS} -Wno-string-plus-int")
