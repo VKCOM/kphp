@@ -13,6 +13,7 @@
 
 struct RpcTlQuery : refcountable_php_classes<RpcTlQuery> {
   string tl_function_name;
+  string actor_name;
   std::unique_ptr<RpcRequestResult> result_fetcher;
 };
 

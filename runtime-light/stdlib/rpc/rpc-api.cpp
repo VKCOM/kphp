@@ -56,6 +56,7 @@ array<mixed> make_fetch_error(string &&error_msg, int32_t error_code) {
 array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery> &rpc_query) noexcept {
   php_assert(!rpc_query.is_null());
   if (TlRpcError error{}; error.try_fetch()) [[unlikely]] {
+    php_warning("try fetch from act %s and got error ", rpc_query.get()->actor_name.c_str());
     return make_fetch_error(std::move(error.error_msg), error.error_code);
   }
   CurrentTlQuery::get().set_current_tl_function(rpc_query);
@@ -176,6 +177,7 @@ task_t<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, double
   if (rpc_tl_query.is_null()) {
     co_return RpcQueryInfo{};
   }
+  rpc_tl_query.get()->actor_name = actor;
 
   const auto query_info{co_await rpc_send_impl(actor, timeout, ignore_answer, collect_resp_extra_info)};
   if (!ignore_answer) {
@@ -205,6 +207,7 @@ task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest 
     auto rpc_tl_query{make_instance<RpcTlQuery>()};
     rpc_tl_query.get()->result_fetcher = std::move(fetcher);
     rpc_tl_query.get()->tl_function_name = rpc_request.tl_function_name();
+    rpc_tl_query.get()->actor_name = actor;
 
     rpc_ctx.response_fetcher_instances.emplace(query_info.id, std::move(rpc_tl_query));
   }
