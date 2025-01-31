@@ -201,6 +201,13 @@ namespace http {
 
 void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   auto &superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
+  superglobals.v$_SERVER = array<mixed>();
+  superglobals.v$_GET = array<mixed>();
+  superglobals.v$_POST = array<mixed>();
+  superglobals.v$_ENV = array<mixed>();
+  superglobals.v$_FILES = array<mixed>();
+  superglobals.v$_COOKIE = array<mixed>();
+  superglobals.v$_REQUEST = array<mixed>();
   auto &server{superglobals.v$_SERVER};
   auto &http_server_instance_st{HttpServerInstanceState::get()};
 
