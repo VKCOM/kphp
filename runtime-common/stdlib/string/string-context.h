@@ -43,7 +43,7 @@ struct StringLibContext final : private vk::not_copyable {
   // The buffer is intended to be used as raw storage, and its contents will be
   // explicitly managed elsewhere in the code.
   std::array<char, STATIC_BUFFER_LENGTH + 1> static_buf;
-  std::array<char, MASK_BUFFER_LENGTH> mask_buffer;
+  std::array<char, MASK_BUFFER_LENGTH> mask_buf;
 
   StringLibContext() noexcept = default;
 
