@@ -6,9 +6,10 @@
 
 #include <cstdio>
 #include <cstring>
-#include <curl/curl.h>
-#include <curl/easy.h>
-#include <curl/multi.h>
+
+#include "curl/curl.h"
+#include "curl/easy.h"
+#include "curl/multi.h"
 
 #include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/context/runtime-context.h"

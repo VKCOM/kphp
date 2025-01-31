@@ -20,6 +20,7 @@ include(CheckCXXCompilerFlag)
 include(AddFileDependencies)
 include(FetchContent)
 include(GNUInstallDirs)
+include(ExternalProject)
 
 # Global includes must be before all other includes/add_subdirectories
 include(cmake/utils.cmake)
@@ -28,6 +29,9 @@ include(cmake/init-compilation-options.cmake)
 include(cmake/external-libraries.cmake)
 include(cmake/init-compilation-flags.cmake)
 include(cmake/popular-common.cmake)
+
+# OpenSSL building
+include(${THIRD_PARTY_DIR}/openssl-cmake/openssl.cmake)
 
 # TODO: use FetchContent_Declare instead of include_directories
 include_directories(.)
@@ -85,6 +89,13 @@ else ()
             ARCHIVE DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
 endif ()
 
+install(DIRECTORY ${OBJS_DIR}/include
+        COMPONENT KPHP
+        DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+install(DIRECTORY ${OBJS_DIR}/lib
+        COMPONENT KPHP
+        DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+
 install(DIRECTORY ${COMMON_DIR}
                   ${BASE_DIR}/runtime
 		  ${RUNTIME_COMMON_DIR}
@@ -110,7 +121,7 @@ install(FILES ${AUTO_DIR}/runtime/runtime-headers.h
         COMPONENT KPHP
         DESTINATION ${INSTALL_KPHP_SOURCE}/objs/generated/auto/runtime/)
 
-set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, curl-kphp-vk, libuber-h3, libpcre3-dev, libre2-dev, libyaml-cpp-dev, libssl-dev, zlib1g-dev, \
+set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, libuber-h3, libpcre3-dev, libre2-dev, libyaml-cpp-dev, zlib1g-dev, \
                                        libzstd-dev, g++, libnghttp2-dev, kphp-timelib, libnuma-dev")
 
 if (PDO_DRIVER_MYSQL)

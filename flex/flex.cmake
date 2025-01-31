@@ -32,6 +32,10 @@ set_target_properties(flex_data_shared flex_data_static
                       PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OBJS_DIR}/flex
                                  ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR}/flex
                                  OUTPUT_NAME vk-flex-data)
+add_custom_command(
+        TARGET flex_data_static POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:flex_data_static> ${OBJS_DIR}/lib/libvk-flex-data.a
+)
 
 install(TARGETS flex_data_shared flex_data_static
         COMPONENT FLEX

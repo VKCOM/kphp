@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <openssl/pkcs7.h>
+#include "openssl/pkcs7.h"
 
 #include "runtime-common/core/runtime-core.h"
 
