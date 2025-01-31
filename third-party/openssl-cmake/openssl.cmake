@@ -4,7 +4,7 @@ set(OPENSSL_INSTALL_DIR ${CMAKE_BINARY_DIR}/third-party/openssl)
 # Ensure the installation directory exists
 file(MAKE_DIRECTORY ${OPENSSL_INSTALL_DIR})
 
-set(OPENSSL_COMPILE_FLAGS "-O3 -g0")
+set(OPENSSL_COMPILE_FLAGS "-g0")
 
 # The configuration has been based on:
 # https://packages.debian.org/buster/libssl1.1
