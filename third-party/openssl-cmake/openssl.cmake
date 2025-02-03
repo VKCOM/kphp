@@ -1,4 +1,4 @@
-update_git_submodule(${THIRD_PARTY_DIR}/openssl)
+update_git_submodule(${THIRD_PARTY_DIR}/openssl "--remote")
 
 set(OPENSSL_INSTALL_DIR ${CMAKE_BINARY_DIR}/third-party/openssl)
 # Ensure the installation directory exists
