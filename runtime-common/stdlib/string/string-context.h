@@ -37,8 +37,7 @@ struct StringLibContext final : private vk::not_copyable {
   int64_t str_replace_count_dummy{};
   double default_similar_text_percent_stub{};
 
-  // *** IMPORTANT ***
-  // Do not initialize this array. Initializing it would zero out the memory,
+  // Do not initialize these arrays. Initializing it would zero out the memory,
   // which significantly impacts K2's performance due to the large size of the buffer.
   // The buffer is intended to be used as raw storage, and its contents will be
   // explicitly managed elsewhere in the code.
