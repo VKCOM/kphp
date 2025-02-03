@@ -1,7 +1,7 @@
 # prepare third-parties
-update_git_submodule_recursive(${THIRD_PARTY_DIR}/abseil-cpp)
-update_git_submodule_recursive(${THIRD_PARTY_DIR}/pcre2)
-update_git_submodule_recursive(${THIRD_PARTY_DIR}/zlib)
+update_git_submodule(${THIRD_PARTY_DIR}/abseil-cpp "--recursive")
+update_git_submodule(${THIRD_PARTY_DIR}/pcre2 "--recursive")
+update_git_submodule(${THIRD_PARTY_DIR}/zlib "--recursive")
 include(${THIRD_PARTY_DIR}/abseil-cpp-cmake/abseil-cpp.cmake)
 include(${THIRD_PARTY_DIR}/pcre2-cmake/pcre2.cmake)
 include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)

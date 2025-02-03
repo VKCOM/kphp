@@ -1,4 +1,4 @@
-update_git_submodule(${THIRD_PARTY_DIR}/curl)
+update_git_submodule(${THIRD_PARTY_DIR}/curl "--remote")
 
 set(CURL_INSTALL_DIR ${CMAKE_BINARY_DIR}/third-party/curl)
 # Ensure the installation directory exists
