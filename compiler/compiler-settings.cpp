@@ -340,6 +340,8 @@ void CompilerSettings::init() {
     ss << " -std=c++17";
   #elif __cplusplus <= 202002L
     ss << " -std=c++20";
+  #elif __cplusplus <= 202302L
+    ss << " -std=c++23";
   #else
     #error unsupported __cplusplus value
   #endif
