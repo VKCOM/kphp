@@ -7,6 +7,7 @@
 #include <cassert>
 #include <concepts>
 #include <coroutine>
+#include <exception>
 #include <optional>
 #include <type_traits>
 #include <utility>
