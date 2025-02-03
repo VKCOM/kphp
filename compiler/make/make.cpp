@@ -450,7 +450,7 @@ static std::string get_light_runtime_compiler_options() {
       s << option << " ";
     }
   }
-  s << "-std=c++20 ";
+  s << "-std=c++23 ";
   s << "-iquote " << G->settings().runtime_and_common_src.get() << " ";
 #endif
 
