@@ -4,20 +4,20 @@
 #pragma once
 
 #ifndef K2_API_HEADER_H
-#error "should not be directly included"
+  #error "should not be directly included"
 #endif // K2_API_HEADER_H
 
 #include <sys/socket.h>
 #include <sys/utsname.h>
 
 #ifdef __cplusplus
-#include <atomic>
-#include <cstdint>
-#include <cstring>
+  #include <atomic>
+  #include <cstdint>
+  #include <cstring>
 #else
-#include <stdatomic.h>
-#include <stdint.h>
-#include <string.h>
+  #include <stdatomic.h>
+  #include <stdint.h>
+  #include <string.h>
 #endif
 
 #define K2_PLATFORM_HEADER_H_VERSION 11

@@ -16,7 +16,7 @@
 #include "runtime-light/k2-platform/k2-api.h"
 
 #if __clang_major__ > 7
-#define CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
+  #define CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
 #endif
 
 struct task_base_t {
