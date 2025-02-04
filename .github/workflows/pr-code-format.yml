@@ -21,7 +21,7 @@ jobs:
         run: wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && sudo apt-get install -y clang-format-18
 
       - name: Add git safe directory
-        run: git config --global --add safe.directory '*'
+        run: git config --global --add safe.directory '*' && git fetch origin master
         # This command is used to address potential issues with Git's safe directory feature.
         # By setting '*' as a safe directory, we allow Git operations to proceed without errors
         # related to directory safety, ensuring smooth execution of the submodules updating.
