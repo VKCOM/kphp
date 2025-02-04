@@ -23,7 +23,7 @@ jobs:
       - name: Run clang-format on changed files
         run: |
           # Get list of changed files
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM origin/main...HEAD | grep -E '^(runtime-light|runtime-common)/.*\.(cpp|h|inl)$')
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM origin/master...HEAD | grep -E '^(runtime-light|runtime-common)/.*\.(cpp|h|inl)$')
           
           # Apply clang-format to each changed file
           echo "$CHANGED_FILES" | xargs -r clang-format-18 -style=file -i
