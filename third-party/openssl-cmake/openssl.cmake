@@ -4,7 +4,7 @@ set(OPENSSL_INSTALL_DIR ${CMAKE_BINARY_DIR}/third-party/openssl)
 # Ensure the installation directory exists
 file(MAKE_DIRECTORY ${OPENSSL_INSTALL_DIR})
 
-set(OPENSSL_COMPILE_FLAGS "-g0")
+set(OPENSSL_COMPILE_FLAGS "$ENV{CFLAGS} -g0")
 
 # The configuration has been based on:
 # https://packages.debian.org/buster/libssl1.1
@@ -21,9 +21,9 @@ endif()
 
 ExternalProject_Add(openssl
         SOURCE_DIR ${THIRD_PARTY_DIR}/openssl
-        CONFIGURE_COMMAND ./config --prefix=${OPENSSL_INSTALL_DIR} --openssldir=/usr/lib/ssl no-shared no-idea no-mdc2 no-rc5 no-zlib no-ssl3 enable-unit-test no-ssl3-method enable-rfc3779 enable-cms ${OPENSSL_CONFIGURE_EXTRA_OPTION}
+        CONFIGURE_COMMAND env CFLAGS=${OPENSSL_COMPILE_FLAGS} ./config --prefix=${OPENSSL_INSTALL_DIR} --openssldir=/usr/lib/ssl no-shared no-idea no-mdc2 no-rc5 no-zlib no-ssl3 enable-unit-test no-ssl3-method enable-rfc3779 enable-cms ${OPENSSL_CONFIGURE_EXTRA_OPTION}
         BUILD_BYPRODUCTS ${OPENSSL_INSTALL_DIR}/lib/libssl.a ${OPENSSL_INSTALL_DIR}/lib/libcrypto.a
-        BUILD_COMMAND make CFLAGS=${OPENSSL_COMPILE_FLAGS}
+        BUILD_COMMAND env CFLAGS=${OPENSSL_COMPILE_FLAGS} make
         INSTALL_COMMAND
             make install_sw &&
             ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/third-party/openssl/include/ ${OBJS_DIR}/include &&
