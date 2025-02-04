@@ -20,13 +20,19 @@ jobs:
       - name: Install clang-format
         run: wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && sudo apt-get install -y clang-format-18
 
+      - name: Add git safe directory
+        run: git config --global --add safe.directory '*'
+        # This command is used to address potential issues with Git's safe directory feature.
+        # By setting '*' as a safe directory, we allow Git operations to proceed without errors
+        # related to directory safety, ensuring smooth execution of the submodules updating.
+
       - name: Run clang-format on changed files
         run: |
           # Get list of changed files
-          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM master...HEAD --)
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM origin/master...HEAD --)
           CHANGED_CPP_FILES = $(echo "$CHANGED_FILES" | grep -E '^(runtime-light|runtime-common)/.*\.(cpp|h|inl)$')
           
-          # Apply clang-format to each changed file
+          # Apply clang-format to each changed source file
           echo "$CHANGED_CPP_FILES" | xargs -r clang-format-18 -style=file -i
 
       - name: Check for formatting changes
