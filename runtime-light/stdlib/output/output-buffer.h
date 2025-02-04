@@ -14,7 +14,7 @@ struct Response {
   int32_t current_buffer{};
 };
 
-void f$ob_start(const string &callback = string()) noexcept;
+void f$ob_start(const string& callback = string()) noexcept;
 
 Optional<int64_t> f$ob_get_length() noexcept;
 

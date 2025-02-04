@@ -48,27 +48,26 @@ static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
 enum class ImageKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
 
 struct InstanceState final : vk::not_copyable {
-  template<typename T>
+  template <typename T>
   using unordered_set = kphp::stl::unordered_set<T, kphp::memory::script_allocator>;
 
-  template<typename T>
+  template <typename T>
   using deque = kphp::stl::deque<T, kphp::memory::script_allocator>;
 
-  template<typename T>
+  template <typename T>
   using list = kphp::stl::list<T, kphp::memory::script_allocator>;
 
-  InstanceState() noexcept
-    : allocator(INIT_INSTANCE_ALLOCATOR_SIZE, 0) {}
+  InstanceState() noexcept : allocator(INIT_INSTANCE_ALLOCATOR_SIZE, 0) {}
 
   ~InstanceState() = default;
 
-  static InstanceState &get() noexcept {
+  static InstanceState& get() noexcept {
     return *k2::instance_state();
   }
 
   void init_script_execution() noexcept;
 
-  template<ImageKind>
+  template <ImageKind>
   task_t<void> run_instance_prologue() noexcept;
 
   task_t<void> run_instance_epilogue() noexcept;
@@ -82,10 +81,10 @@ struct InstanceState final : vk::not_copyable {
   bool stream_updated(uint64_t stream_d) const noexcept {
     return pending_updates_.contains(stream_d);
   }
-  const unordered_set<uint64_t> &opened_streams() const noexcept {
+  const unordered_set<uint64_t>& opened_streams() const noexcept {
     return opened_streams_;
   }
-  const deque<uint64_t> &incoming_streams() const noexcept {
+  const deque<uint64_t>& incoming_streams() const noexcept {
     return incoming_streams_;
   }
   uint64_t standard_stream() const noexcept {

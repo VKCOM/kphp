@@ -15,17 +15,17 @@
 
 namespace array_functions_impl_ {
 
-template<typename T>
+template <typename T>
 concept convertible_to_php_bool = requires(T t) {
   { f$boolval(t) } -> std::convertible_to<bool>;
 };
 
-template<class T, class Pred>
-requires(std::invocable<Pred, typename array<T>::const_iterator>
-           &&convertible_to_php_bool<async_function_unwrapped_return_type_t<Pred, typename array<T>::const_iterator>>)
-  task_t<array<T>> array_filter_impl(const array<T> &a, Pred &&pred) noexcept {
+template <class T, class Pred>
+requires(std::invocable<Pred, typename array<T>::const_iterator> &&
+         convertible_to_php_bool<async_function_unwrapped_return_type_t<Pred, typename array<T>::const_iterator>>)
+task_t<array<T>> array_filter_impl(const array<T>& a, Pred&& pred) noexcept {
   array<T> result{a.size()};
-  for (const auto &it : a) {
+  for (const auto& it : a) {
     bool condition{false};
     if constexpr (is_async_function_v<Pred, typename array<T>::const_iterator>) {
       condition = f$boolval(co_await std::invoke(std::forward<Pred>(pred), it));
@@ -41,15 +41,15 @@ requires(std::invocable<Pred, typename array<T>::const_iterator>
 
 } // namespace array_functions_impl_
 
-template<class T>
-void f$shuffle(array<T> &arr) noexcept {
+template <class T>
+void f$shuffle(array<T>& arr) noexcept {
   const auto arr_size{arr.count()};
   if (arr_size <= 1) [[unlikely]] {
     return;
   }
 
   array<T> shuffled{array_size(arr_size, true)};
-  for (const auto &it : arr) {
+  for (const auto& it : arr) {
     shuffled.push_back(it.get_value());
   }
   for (int64_t i = 1; i < arr_size; i++) {
@@ -59,34 +59,32 @@ void f$shuffle(array<T> &arr) noexcept {
   arr = std::move(shuffled);
 }
 
-template<class T>
+template <class T>
 task_t<array<T>> f$array_filter(array<T> a) noexcept {
-  co_return co_await array_functions_impl_::array_filter_impl(a, [](const auto &it) noexcept { return it.get_value(); });
+  co_return co_await array_functions_impl_::array_filter_impl(a, [](const auto& it) noexcept { return it.get_value(); });
 }
 
-template<class T, class Pred>
-requires(std::invocable<Pred, T>) task_t<array<T>> f$array_filter(array<T> a, Pred pred) noexcept {
+template <class T, class Pred>
+requires(std::invocable<Pred, T>)
+task_t<array<T>> f$array_filter(array<T> a, Pred pred) noexcept {
   if constexpr (is_async_function_v<Pred, T>) {
-    co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept -> task_t<bool> {
-      co_return co_await std::invoke(std::move(pred), it.get_value());
-    });
+    co_return co_await array_functions_impl_::array_filter_impl(
+        a, [&pred](const auto& it) noexcept -> task_t<bool> { co_return co_await std::invoke(std::move(pred), it.get_value()); });
   } else {
-    co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept {
-      return std::invoke(std::move(pred), it.get_value());
-    });
+    co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto& it) noexcept { return std::invoke(std::move(pred), it.get_value()); });
   }
 }
 
-template<class T>
-typename array<T>::key_type f$array_rand(const array<T> &a) noexcept {
+template <class T>
+typename array<T>::key_type f$array_rand(const array<T>& a) noexcept {
   if (int64_t size{a.count()}) {
     return a.middle(f$mt_rand(0, size - 1)).get_key();
   }
   return {};
 }
 
-template<class T>
-mixed f$array_rand(const array<T> &a, int64_t num) noexcept {
+template <class T>
+mixed f$array_rand(const array<T>& a, int64_t num) noexcept {
   if (num == 1) {
     return f$array_rand(a);
   }
@@ -99,7 +97,7 @@ mixed f$array_rand(const array<T> &a, int64_t num) noexcept {
   }
 
   array<typename array<T>::key_type> result(array_size(num, true));
-  for (const auto &it : a) {
+  for (const auto& it : a) {
     if (f$mt_rand(0, --size) < num) {
       result.push_back(it.get_key());
       --num;
@@ -109,28 +107,28 @@ mixed f$array_rand(const array<T> &a, int64_t num) noexcept {
   return result;
 }
 
-template<class T>
-array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &) {
+template <class T>
+array<T> f$array_splice(array<T>& a, int64_t offset, int64_t length, const array<Unknown>&) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class T1 = T>
-array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(), const array<T1> &replacement = array<T1>()) {
+template <class T, class T1 = T>
+array<T> f$array_splice(array<T>& a, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(), const array<T1>& replacement = array<T1>()) {
   php_critical_error("call to unsupported function");
 }
 
-template<class ReturnT, class InputArrayT, class DefaultValueT>
-ReturnT f$array_pad(const array<InputArrayT> &a, int64_t size, const DefaultValueT &default_value) {
+template <class ReturnT, class InputArrayT, class DefaultValueT>
+ReturnT f$array_pad(const array<InputArrayT>& a, int64_t size, const DefaultValueT& default_value) {
   php_critical_error("call to unsupported function");
 }
 
-template<class ReturnT, class DefaultValueT>
-ReturnT f$array_pad(const array<Unknown> &a, int64_t size, const DefaultValueT &default_value) {
+template <class ReturnT, class DefaultValueT>
+ReturnT f$array_pad(const array<Unknown>& a, int64_t size, const DefaultValueT& default_value) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class T1>
-array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept {
+template <class T, class T1>
+array<T> f$array_filter_by_key(const array<T>& a, const T1& callback) noexcept {
   php_critical_error("call to unsupported function");
 }
 
@@ -139,10 +137,10 @@ array<T> f$array_filter_by_key(const array<T> &a, const T1 &callback) noexcept {
  * we need to be careful with such functions. We may want to split such functions into sync and async
  * versions in case we face with performance problems.
  */
-template<class A, std::invocable<A> F, class R = async_function_unwrapped_return_type_t<F, A>>
+template <class A, std::invocable<A> F, class R = async_function_unwrapped_return_type_t<F, A>>
 task_t<array<R>> f$array_map(F f, array<A> arr) noexcept {
   array<R> result{arr.size()};
-  for (const auto &it : arr) {
+  for (const auto& it : arr) {
     if constexpr (is_async_function_v<F, A>) {
       result.set_value(it.get_key(), co_await std::invoke(f, it.get_value()));
     } else {
@@ -152,163 +150,163 @@ task_t<array<R>> f$array_map(F f, array<A> arr) noexcept {
   co_return result;
 }
 
-template<class R, class T, class CallbackT, class InitialT>
-R f$array_reduce(const array<T> &a, const CallbackT &callback, InitialT initial) {
+template <class R, class T, class CallbackT, class InitialT>
+R f$array_reduce(const array<T>& a, const CallbackT& callback, InitialT initial) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-T f$array_merge_spread(const T &a1) {
+template <class T>
+T f$array_merge_spread(const T& a1) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-T f$array_merge_spread(const T &a1, const T &a2) {
+template <class T>
+T f$array_merge_spread(const T& a1, const T& a2) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-T f$array_merge_spread(const T &a1, const T &a2, const T &a3, const T &a4 = T(), const T &a5 = T(), const T &a6 = T(), const T &a7 = T(), const T &a8 = T(),
-                       const T &a9 = T(), const T &a10 = T(), const T &a11 = T(), const T &a12 = T()) {
+template <class T>
+T f$array_merge_spread(const T& a1, const T& a2, const T& a3, const T& a4 = T(), const T& a5 = T(), const T& a6 = T(), const T& a7 = T(), const T& a8 = T(),
+                       const T& a9 = T(), const T& a10 = T(), const T& a11 = T(), const T& a12 = T()) {
   php_critical_error("call to unsupported function");
 }
 
-template<class ReturnT, class... Args>
-ReturnT f$array_merge_recursive(const Args &...args) {
+template <class ReturnT, class... Args>
+ReturnT f$array_merge_recursive(const Args&... args) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class T1>
-array<T> f$array_intersect_assoc(const array<T> &a1, const array<T1> &a2) {
+template <class T, class T1>
+array<T> f$array_intersect_assoc(const array<T>& a1, const array<T1>& a2) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class T1, class T2>
-array<T> f$array_intersect_assoc(const array<T> &a1, const array<T1> &a2, const array<T2> &a3) {
+template <class T, class T1, class T2>
+array<T> f$array_intersect_assoc(const array<T>& a1, const array<T1>& a2, const array<T2>& a3) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class T1>
-array<T> f$array_diff_key(const array<T> &a1, const array<T1> &a2) {
+template <class T, class T1>
+array<T> f$array_diff_key(const array<T>& a1, const array<T1>& a2) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class T1>
-array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2) {
+template <class T, class T1>
+array<T> f$array_diff_assoc(const array<T>& a1, const array<T1>& a2) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class T1, class T2>
-array<T> f$array_diff_assoc(const array<T> &a1, const array<T1> &a2, const array<T2> &a3) {
+template <class T, class T1, class T2>
+array<T> f$array_diff_assoc(const array<T>& a1, const array<T1>& a2, const array<T2>& a3) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-array<int64_t> f$array_count_values(const array<T> &a) {
+template <class T>
+array<int64_t> f$array_count_values(const array<T>& a) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-array<T> f$array_fill(int64_t start_index, int64_t num, const T &value) {
+template <class T>
+array<T> f$array_fill(int64_t start_index, int64_t num, const T& value) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T1, class T>
-array<T> f$array_fill_keys(const array<T1> &keys, const T &value) {
+template <class T1, class T>
+array<T> f$array_fill_keys(const array<T1>& keys, const T& value) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T1, class T>
-array<T> f$array_combine(const array<T1> &keys, const array<T> &values) {
+template <class T1, class T>
+array<T> f$array_combine(const array<T1>& keys, const array<T>& values) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class T1>
-void f$usort(array<T> &a, const T1 &compare) {
+template <class T, class T1>
+void f$usort(array<T>& a, const T1& compare) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class T1>
-void f$uasort(array<T> &a, const T1 &compare) {
+template <class T, class T1>
+void f$uasort(array<T>& a, const T1& compare) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class T1>
-void f$uksort(array<T> &a, const T1 &compare) {
+template <class T, class T1>
+void f$uksort(array<T>& a, const T1& compare) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-mixed f$getKeyByPos(const array<T> &a, int64_t pos) {
+template <class T>
+mixed f$getKeyByPos(const array<T>& a, int64_t pos) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-T f$getValueByPos(const array<T> &a, int64_t pos) {
+template <class T>
+T f$getValueByPos(const array<T>& a, int64_t pos) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-array<T> f$create_vector(int64_t n, const T &default_value) {
+template <class T>
+array<T> f$create_vector(int64_t n, const T& default_value) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-mixed f$array_first_key(const array<T> &a) {
+template <class T>
+mixed f$array_first_key(const array<T>& a) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-void f$array_swap_int_keys(array<T> &a, int64_t idx1, int64_t idx2) noexcept {
+template <class T>
+void f$array_swap_int_keys(array<T>& a, int64_t idx1, int64_t idx2) noexcept {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-Optional<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>> &a, const mixed &column_key) {
+template <class T>
+Optional<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>>& a, const mixed& column_key) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-Optional<array<class_instance<T>>> f$array_column(const array<Optional<array<class_instance<T>>>> &a, const mixed &column_key) {
+template <class T>
+Optional<array<class_instance<T>>> f$array_column(const array<Optional<array<class_instance<T>>>>& a, const mixed& column_key) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-Optional<array<T>> f$array_column(const array<array<T>> &a, const mixed &column_key, const mixed &index_key = {}) {
+template <class T>
+Optional<array<T>> f$array_column(const array<array<T>>& a, const mixed& column_key, const mixed& index_key = {}) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-Optional<array<T>> f$array_column(const array<Optional<array<T>>> &a, const mixed &column_key, const mixed &index_key = {}) {
+template <class T>
+Optional<array<T>> f$array_column(const array<Optional<array<T>>>& a, const mixed& column_key, const mixed& index_key = {}) {
   php_critical_error("call to unsupported function");
 }
 
-inline Optional<array<mixed>> f$array_column(const array<mixed> &a, const mixed &column_key, const mixed &index_key = {}) {
+inline Optional<array<mixed>> f$array_column(const array<mixed>& a, const mixed& column_key, const mixed& index_key = {}) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-auto f$array_column(const Optional<T> &a, const mixed &column_key, const mixed &index_key = {})
-  -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
+template <class T>
+auto f$array_column(const Optional<T>& a, const mixed& column_key,
+                    const mixed& index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-mixed f$array_key_first(const array<T> &a) {
+template <class T>
+mixed f$array_key_first(const array<T>& a) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-mixed f$array_key_last(const array<T> &a) {
+template <class T>
+mixed f$array_key_last(const array<T>& a) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class T1>
-std::tuple<typename array<T>::key_type, T> f$array_find(const array<T> &a, const T1 &callback) {
+template <class T, class T1>
+std::tuple<typename array<T>::key_type, T> f$array_find(const array<T>& a, const T1& callback) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-T f$vk_dot_product(const array<T> &a, const array<T> &b) {
+template <class T>
+T f$vk_dot_product(const array<T>& a, const array<T>& b) {
   php_critical_error("call to unsupported function");
 }

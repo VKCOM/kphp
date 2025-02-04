@@ -11,5 +11,5 @@
 struct CurlInstanceState final : private vk::not_copyable {
   int64_t curl_multi_info_read_msgs_in_queue_stub{};
 
-  static CurlInstanceState &get() noexcept;
+  static CurlInstanceState& get() noexcept;
 };

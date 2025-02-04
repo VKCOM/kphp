@@ -18,7 +18,7 @@
 #include "runtime-light/tl/tl-core.h"
 
 struct RpcInstanceState final : private vk::not_copyable {
-  template<typename Key, typename Value>
+  template <typename Key, typename Value>
   using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   tl::TLBuffer rpc_buffer;
@@ -31,7 +31,7 @@ struct RpcInstanceState final : private vk::not_copyable {
 
   RpcInstanceState() noexcept = default;
 
-  static RpcInstanceState &get() noexcept;
+  static RpcInstanceState& get() noexcept;
 };
 
 // ================================================================================================
@@ -40,6 +40,6 @@ struct RpcImageState final : private vk::not_copyable {
   array<tl_storer_ptr> tl_storers_ht;
   tl_fetch_wrapper_ptr tl_fetch_wrapper{nullptr};
 
-  static const RpcImageState &get() noexcept;
-  static RpcImageState &get_mutable() noexcept;
+  static const RpcImageState& get() noexcept;
+  static RpcImageState& get_mutable() noexcept;
 };

@@ -42,7 +42,7 @@ public:
   int64_t str_replace_count_dummy{};
   double default_similar_text_percent_stub{};
 
-  static StringLibContext &get() noexcept;
+  static StringLibContext& get() noexcept;
 };
 
 struct StringLibConstants final : vk::not_copyable {
@@ -84,5 +84,5 @@ struct StringLibConstants final : vk::not_copyable {
     PERCENT_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
   }
 
-  static const StringLibConstants &get() noexcept;
+  static const StringLibConstants& get() noexcept;
 };

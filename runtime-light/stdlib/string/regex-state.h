@@ -17,7 +17,7 @@
 #include "runtime-light/utils/concepts.h"
 
 struct RegexInstanceState final : private vk::not_copyable {
-  template<hashable Key, typename Value>
+  template <hashable Key, typename Value>
   using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   static constexpr size_t MAX_SUBPATTERNS_COUNT = 512;
@@ -35,5 +35,5 @@ struct RegexInstanceState final : private vk::not_copyable {
 
   RegexInstanceState() noexcept;
 
-  static RegexInstanceState &get() noexcept;
+  static RegexInstanceState& get() noexcept;
 };

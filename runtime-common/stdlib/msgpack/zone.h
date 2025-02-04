@@ -14,11 +14,11 @@ namespace vk::msgpack {
 class zone : private vk::not_copyable {
 public:
   explicit zone(size_t chunk_size = 8192);
-  void *allocate_align(size_t size, size_t align);
+  void* allocate_align(size_t size, size_t align);
 
 private:
   struct chunk {
-    chunk *m_next{nullptr};
+    chunk* m_next{nullptr};
     int64_t size{0};
   };
   struct chunk_list : private vk::not_copyable {
@@ -26,11 +26,11 @@ private:
     ~chunk_list();
 
     size_t m_free{0};
-    char *m_ptr{nullptr};
-    chunk *m_head{nullptr};
+    char* m_ptr{nullptr};
+    chunk* m_head{nullptr};
   };
 
-  char *allocate_expand(size_t size);
+  char* allocate_expand(size_t size);
 
   size_t m_chunk_size{0};
   chunk_list m_chunk_list;

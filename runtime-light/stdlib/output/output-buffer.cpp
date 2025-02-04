@@ -11,8 +11,8 @@
 
 static constexpr int32_t system_level_buffer = 0;
 
-void f$ob_start(const string &callback) noexcept {
-  Response &httpResponse{InstanceState::get().response};
+void f$ob_start(const string& callback) noexcept {
+  Response& httpResponse{InstanceState::get().response};
   if (httpResponse.current_buffer + 1 == Response::ob_max_buffers) {
     php_warning("Maximum nested level of output buffering reached. Can't do ob_start(%s)", callback.c_str());
     return;
@@ -25,7 +25,7 @@ void f$ob_start(const string &callback) noexcept {
 }
 
 Optional<int64_t> f$ob_get_length() noexcept {
-  Response &httpResponse{InstanceState::get().response};
+  Response& httpResponse{InstanceState::get().response};
   if (httpResponse.current_buffer == 0) {
     return false;
   }
@@ -37,12 +37,12 @@ int64_t f$ob_get_level() noexcept {
 }
 
 void f$ob_clean() noexcept {
-  Response &httpResponse{InstanceState::get().response};
+  Response& httpResponse{InstanceState::get().response};
   httpResponse.output_buffers[httpResponse.current_buffer].clean();
 }
 
 bool f$ob_end_clean() noexcept {
-  Response &httpResponse{InstanceState::get().response};
+  Response& httpResponse{InstanceState::get().response};
   if (httpResponse.current_buffer == system_level_buffer) {
     return false;
   }
@@ -52,7 +52,7 @@ bool f$ob_end_clean() noexcept {
 }
 
 Optional<string> f$ob_get_clean() noexcept {
-  Response &httpResponse{InstanceState::get().response};
+  Response& httpResponse{InstanceState::get().response};
   if (httpResponse.current_buffer == system_level_buffer) {
     return false;
   }
@@ -60,12 +60,12 @@ Optional<string> f$ob_get_clean() noexcept {
 }
 
 string f$ob_get_contents() noexcept {
-  Response &httpResponse{InstanceState::get().response};
+  Response& httpResponse{InstanceState::get().response};
   return httpResponse.output_buffers[httpResponse.current_buffer].str();
 }
 
 void f$ob_flush() noexcept {
-  Response &httpResponse{InstanceState::get().response};
+  Response& httpResponse{InstanceState::get().response};
   if (httpResponse.current_buffer == 0) {
     php_warning("ob_flush with no buffer opented");
     return;
@@ -77,7 +77,7 @@ void f$ob_flush() noexcept {
 }
 
 bool f$ob_end_flush() noexcept {
-  Response &httpResponse{InstanceState::get().response};
+  Response& httpResponse{InstanceState::get().response};
   if (httpResponse.current_buffer == 0) {
     return false;
   }
@@ -86,7 +86,7 @@ bool f$ob_end_flush() noexcept {
 }
 
 Optional<string> f$ob_get_flush() noexcept {
-  Response &httpResponse{InstanceState::get().response};
+  Response& httpResponse{InstanceState::get().response};
   if (httpResponse.current_buffer == 0) {
     return false;
   }

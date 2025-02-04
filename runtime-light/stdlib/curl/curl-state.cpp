@@ -6,6 +6,6 @@
 
 #include "runtime-light/state/instance-state.h"
 
-CurlInstanceState &CurlInstanceState::get() noexcept {
+CurlInstanceState& CurlInstanceState::get() noexcept {
   return InstanceState::get().curl_instance_state;
 }

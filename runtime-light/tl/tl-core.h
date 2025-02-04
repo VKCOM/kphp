@@ -32,20 +32,17 @@ public:
     m_buffer.reserve(INIT_BUFFER_SIZE);
   }
 
-  TLBuffer(const TLBuffer &) = delete;
+  TLBuffer(const TLBuffer&) = delete;
 
-  TLBuffer &operator=(const TLBuffer &) = delete;
+  TLBuffer& operator=(const TLBuffer&) = delete;
 
-  TLBuffer(TLBuffer &&oth) noexcept
-    : m_buffer(std::exchange(oth.m_buffer, {}))
-    , m_pos(std::exchange(oth.m_pos, 0))
-    , m_remaining(std::exchange(oth.m_pos, 0)) {}
+  TLBuffer(TLBuffer&& oth) noexcept : m_buffer(std::exchange(oth.m_buffer, {})), m_pos(std::exchange(oth.m_pos, 0)), m_remaining(std::exchange(oth.m_pos, 0)) {}
 
-  TLBuffer &operator=(TLBuffer &&) = delete;
+  TLBuffer& operator=(TLBuffer&&) = delete;
 
   ~TLBuffer() = default;
 
-  const char *data() const noexcept {
+  const char* data() const noexcept {
     return m_buffer.data();
   }
 
@@ -94,37 +91,38 @@ public:
     return bytes_view;
   }
 
-  template<standard_layout T, standard_layout U>
-  requires std::convertible_to<U, T> void store_trivial(const U &t) noexcept {
-    store_bytes({reinterpret_cast<const char *>(std::addressof(t)), sizeof(T)});
+  template <standard_layout T, standard_layout U>
+  requires std::convertible_to<U, T>
+  void store_trivial(const U& t) noexcept {
+    store_bytes({reinterpret_cast<const char*>(std::addressof(t)), sizeof(T)});
   }
 
-  template<standard_layout T>
+  template <standard_layout T>
   std::optional<T> fetch_trivial() noexcept {
     if (remaining() < sizeof(T)) {
       return std::nullopt;
     }
 
-    auto t{*reinterpret_cast<const T *>(std::next(data(), pos()))};
+    auto t{*reinterpret_cast<const T*>(std::next(data(), pos()))};
     adjust(sizeof(T));
     return t;
   }
 
-  template<standard_layout T>
+  template <standard_layout T>
   std::optional<T> lookup_trivial() const noexcept {
     if (remaining() < sizeof(T)) {
       return std::nullopt;
     }
-    return *reinterpret_cast<const T *>(std::next(data(), pos()));
+    return *reinterpret_cast<const T*>(std::next(data(), pos()));
   }
 };
 
-template<typename T>
+template <typename T>
 concept tl_serializable = std::default_initializable<T> && requires(T t, TLBuffer tlb) {
   { t.store(tlb) } noexcept -> std::same_as<void>;
 };
 
-template<typename T>
+template <typename T>
 concept tl_deserializable = std::default_initializable<T> && requires(T t, TLBuffer tlb) {
   { t.fetch(tlb) } noexcept -> std::convertible_to<bool>;
 };
