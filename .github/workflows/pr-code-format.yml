@@ -1,0 +1,39 @@
+name: "Check code formatting"
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  code_formatter:
+    runs_on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install clang-format
+        run: wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && sudo apt-get install -y clang-format-18
+
+      - name: Run clang-format on changed files
+        run: |
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM origin/main...HEAD | grep -E '^(runtime-light|runtime-common)/.*\.(cpp|h|inl)$')
+          
+          # Apply clang-format to each changed file
+          echo "$CHANGED_FILES" | xargs -r clang-format-18 -style=file -i
+
+      - name: Check for formatting changes
+        run: |
+          # Check if any files were modified by clang-format
+          if [[ `git status --porcelain` ]]; then
+            echo "Code is not formatted. Please run clang-format."
+            git diff
+            exit 1
+          fi
+
