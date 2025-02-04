@@ -26,12 +26,13 @@
 
 #define INCLUDED_FROM_KPHP_CORE
 
+#include "runtime-common/core/core-types/decl/string_decl.inl"
+
 #include "runtime-common/core/array_access.h"
 #include "runtime-common/core/class-instance/class-instance-decl.inl"
 #include "runtime-common/core/core-types/decl/array_decl.inl"
 #include "runtime-common/core/core-types/decl/mixed_decl.inl"
 #include "runtime-common/core/core-types/decl/string_buffer_decl.inl"
-#include "runtime-common/core/core-types/decl/string_decl.inl"
 
 #include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/core-context.h"
