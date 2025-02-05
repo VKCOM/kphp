@@ -55,7 +55,7 @@ T* class_instance<T>::operator->() {
   }
 
   return get();
-};
+}
 
 template <class T>
 T* class_instance<T>::operator->() const {
@@ -64,7 +64,7 @@ T* class_instance<T>::operator->() const {
   }
 
   return get();
-};
+}
 
 template <class T>
 T* class_instance<T>::get() const {

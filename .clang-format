@@ -8,8 +8,9 @@ Standard:                         c++20
 UseTab:                           Never
 AllowShortFunctionsOnASingleLine: Empty
 AlwaysBreakTemplateDeclarations:  Yes
-RequiresClausePosition:           OwnLine
 IndentRequiresClause:             No
+RequiresClausePosition:           OwnLine
+RemoveSemicolon:                  true
 IndentPPDirectives:               BeforeHash
 ...
 

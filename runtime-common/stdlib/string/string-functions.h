@@ -240,7 +240,7 @@ string str_replace_string_array(const array<T1>& search, const array<T2>& replac
   }
 
   return result;
-};
+}
 
 template <typename T1, typename T2>
 string f$str_replace(const array<T1>& search, const array<T2>& replace, const string& subject,

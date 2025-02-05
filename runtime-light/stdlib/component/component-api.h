@@ -20,7 +20,7 @@ struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery
   uint64_t stream_d{k2::INVALID_PLATFORM_DESCRIPTOR};
 
   explicit constexpr C$ComponentQuery(uint64_t stream_d_) noexcept : stream_d(stream_d_) {}
-  constexpr C$ComponentQuery(C$ComponentQuery&& other) noexcept : stream_d(std::exchange(other.stream_d, k2::INVALID_PLATFORM_DESCRIPTOR)) {};
+  constexpr C$ComponentQuery(C$ComponentQuery&& other) noexcept : stream_d(std::exchange(other.stream_d, k2::INVALID_PLATFORM_DESCRIPTOR)) {}
 
   C$ComponentQuery(const C$ComponentQuery&) = delete;
   C$ComponentQuery& operator=(const C$ComponentQuery&) = delete;
