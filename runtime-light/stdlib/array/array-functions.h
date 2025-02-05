@@ -18,14 +18,8 @@
 namespace dl {
 
 template<typename T, typename Comparator>
-requires(std::invocable<Comparator, T, T>) task_t<void> async_sort(T *begin_init, T *end_init, Comparator compare) noexcept {
-  auto compare_call = [compare]<typename U>(U lhs, U rhs) -> task_t<int64_t> {
-    if constexpr (is_async_function_v<Comparator, U, U>) {
-      co_return co_await std::invoke(std::move(compare), std::move(lhs), std::move(rhs));
-    } else {
-      co_return std::invoke(std::move(compare), std::move(lhs), std::move(rhs));
-    }
-  };
+requires(std::invocable<Comparator, T, T> && is_async_function_v<Comparator, T, T>)
+task_t<void> async_sort(T *begin_init, T *end_init, Comparator compare) noexcept {
   T *begin_stack[32];
   T *end_stack[32];
 
@@ -44,11 +38,11 @@ requires(std::invocable<Comparator, T, T>) task_t<void> async_sort(T *begin_init
       T *j = end;
 
       while (true) {
-        while (i < j && (co_await compare_call(*begin, *i)) > 0) {
+        while (i < j && (co_await std::invoke(compare, *begin, *i)) > 0) {
           i++;
         }
 
-        while (i <= j && (co_await compare_call(*j, *begin)) > 0) {
+        while (i <= j && (co_await std::invoke(compare, *j, *begin)) > 0) {
           j--;
         }
 
@@ -106,16 +100,8 @@ Result async_sort(array<U> &arr, Comparator comparator, bool renumber) noexcept 
       arr.mutate_if_vector_shared();
     }
 
-    const auto elements_cmp = [comparator](U lhs, U rhs) -> task_t<bool> {
-      if constexpr (is_async_function_v<Comparator, U, U>) {
-        co_return(co_await std::invoke(std::move(comparator), std::move(lhs), std::move(rhs))) > 0;
-      } else {
-        co_return std::invoke(std::move(comparator), std::move(lhs), std::move(rhs)) > 0;
-      }
-    };
-
     U *begin = reinterpret_cast<U *>(arr.p->entries());
-    co_await dl::sort<U, decltype(elements_cmp)>(begin, begin + n, elements_cmp);
+    co_await dl::async_sort<U, decltype(comparator)>(begin, begin + n, comparator);
     co_return;
   }
 
@@ -136,14 +122,13 @@ Result async_sort(array<U> &arr, Comparator comparator, bool renumber) noexcept 
   }
   php_assert(i == n);
 
-  const auto hash_entry_cmp = [comparator](const array_bucket *lhs, const array_bucket *rhs) -> task_t<bool> {
-    if constexpr (is_async_function_v<Comparator, U, U>) {
-      co_return(co_await std::invoke(std::move(comparator), lhs->value, rhs->value)) > 0;
-    } else {
-      co_return std::invoke(std::move(comparator), lhs->value, rhs->value) > 0;
-    }
+  const auto hash_entry_cmp = []<typename Compare>(Compare compare, const array_bucket *lhs, const array_bucket *rhs) -> task_t<bool> {
+    co_return(co_await std::invoke(std::move(compare), lhs->value, rhs->value)) > 0;
   };
-  co_await dl::sort<array_bucket *, decltype(hash_entry_cmp)>(arTmp, arTmp + n, hash_entry_cmp);
+
+  const auto partial_hash_entry_cmp = std::bind_front(hash_entry_cmp, comparator);
+
+  co_await dl::async_sort<array_bucket *, decltype(partial_hash_entry_cmp)>(arTmp, arTmp + n, partial_hash_entry_cmp);
 
   arTmp[0]->prev = arr.p->get_pointer(arr.p->end());
   arr.p->end()->next = arr.p->get_pointer(arTmp[0]);
@@ -180,7 +165,7 @@ Result async_ksort(array<U> &arr, Comparator comparator) noexcept {
   }
 
   auto *keysp = reinterpret_cast<key_type *>(keys.p->entries());
-  co_await dl::sort<key_type, Comparator>(keysp, keysp + n, std::move(comparator));
+  co_await dl::async_sort<key_type, Comparator>(keysp, keysp + n, std::move(comparator));
 
   auto *prev = static_cast<list_hash_entry *>(arr.p->end());
   for (uint32_t j = 0; j < n; j++) {
@@ -428,6 +413,8 @@ array<T> f$array_combine(const array<T1> &keys, const array<T> &values) {
 template<class T, class Comparator>
 requires(std::invocable<Comparator, T, T>) task_t<void> f$usort(array<T> &a, Comparator compare) {
   if constexpr (is_async_function_v<Comparator, T, T>) {
+    /* make copy temporary since functions is coroutine and sort is inplace */
+    array<T> tmp = a;
     co_return co_await array_functions_impl_::async_sort<task_t<void>>(a, std::move(compare), true);
   } else {
     co_return a.sort(std::move(compare), true);
@@ -437,6 +424,8 @@ requires(std::invocable<Comparator, T, T>) task_t<void> f$usort(array<T> &a, Com
 template<class T, class Comparator>
 requires(std::invocable<Comparator, T, T>) task_t<void> f$uasort(array<T> &a, Comparator compare) {
   if constexpr (is_async_function_v<Comparator, T, T>) {
+    /* make copy temporary since functions is coroutine and sort is inplace */
+    array<T> tmp = a;
     co_return co_await array_functions_impl_::async_sort<task_t<void>>(a, std::move(compare), false);
   } else {
     co_return a.sort(std::move(compare), false);
@@ -446,6 +435,8 @@ requires(std::invocable<Comparator, T, T>) task_t<void> f$uasort(array<T> &a, Co
 template<class T, class Comparator>
 requires(std::invocable<Comparator, typename array<T>::key_type, typename array<T>::key_type>) task_t<void> f$uksort(array<T> &a, Comparator compare) {
   if constexpr (is_async_function_v<Comparator, T, T>) {
+    /* make copy temporary since functions is coroutine and sort is inplace */
+    array<T> tmp = a;
     co_return co_await array_functions_impl_::async_ksort<task_t<void>>(a, std::move(compare));
   } else {
     co_return a.ksort(std::move(compare));

@@ -33,6 +33,9 @@ void sort(TT *begin_init, TT *end_init, T1 compare) noexcept;
 }
 
 namespace array_functions_impl_ {
+/*
+ * async analog of array::sort and array::ksort since in runtime-light comparator can be coroutine
+ * */
 template<typename Result, typename U, typename Comparator>
 Result async_sort(array<U> & arr, Comparator comparator, bool renumber) noexcept;
 
