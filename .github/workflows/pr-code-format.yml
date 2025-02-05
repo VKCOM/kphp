@@ -17,44 +17,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Checkout through merge base
-        uses: rmacklin/fetch-through-merge-base@v0
-        with:
-          base_ref: ${{ github.event.pull_request.base.ref }}
-          head_ref: ${{ github.event.pull_request.head.sha }}
-          deepen_length: 500
-
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v39
-        with:
-          separator: ","
-          skip_initial_fetch: true
-
-      - name: "Listed files"
-        env:
-          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
-        run: |
-          echo "Formatting files:"
-          echo "$CHANGED_FILES"
+          fetch-depth: 0
 
       - name: Install clang-format
-        uses: aminya/setup-cpp@v1
-        with:
-          clangformat: 18.1.8
+        run: sudo apt install -y clang-format-18
 
       - name: Run clang-format on changed files
         run: |
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM origin/master...HEAD --)
+          CHANGED_CPP_FILES=$(echo "$CHANGED_FILES" | grep -E '^(runtime-light|runtime-common)/.*\.(cpp|h|inl)$')
+          
+          # Apply clang-format to each changed source file
           echo "$CHANGED_CPP_FILES" | xargs -r clang-format-18 -i
 
       - name: Check for formatting changes
         run: |
           # Check if any files were modified by clang-format
-          if [[ `git status --porcelain` ]]; then
-            echo "Code is not formatted. Please run clang-format."
-            git diff
-            exit 1
+          git diff --exit-code
+          if [ $? -ne 0 ]; then
+              echo "Code is not formatted. Please run clang-format."
+              exit 1
           fi
-
