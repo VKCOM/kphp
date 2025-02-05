@@ -100,7 +100,7 @@ Result async_sort(array<U> &arr, Comparator comparator, bool renumber) noexcept 
     }
 
     U *begin = reinterpret_cast<U *>(arr.p->entries());
-    co_await dl::async_sort<U, decltype(comparator)>(begin, begin + n, comparator);
+    co_await dl::async_sort<U, decltype(comparator)>(begin, begin + n, std::move(comparator));
     co_return;
   }
 
@@ -122,10 +122,10 @@ Result async_sort(array<U> &arr, Comparator comparator, bool renumber) noexcept 
   php_assert(i == n);
 
   const auto hash_entry_cmp = []<typename Compare>(Compare compare, const array_bucket *lhs, const array_bucket *rhs) -> task_t<bool> {
-    co_return(co_await std::invoke(std::move(compare), lhs->value, rhs->value)) > 0;
+    co_return(co_await std::invoke(compare, lhs->value, rhs->value)) > 0;
   };
 
-  const auto partial_hash_entry_cmp = std::bind_front(hash_entry_cmp, comparator);
+  const auto partial_hash_entry_cmp = std::bind_front(hash_entry_cmp, std::move(comparator));
 
   co_await dl::async_sort<array_bucket *, decltype(partial_hash_entry_cmp)>(arTmp, arTmp + n, partial_hash_entry_cmp);
 
