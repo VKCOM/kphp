@@ -18,7 +18,7 @@
 namespace dl {
 
 template<typename T, typename Comparator>
-requires(std::invocable<Comparator, T, T>) task_t<void> sort(T *begin_init, T *end_init, Comparator compare) noexcept {
+requires(std::invocable<Comparator, T, T>) task_t<void> async_sort(T *begin_init, T *end_init, Comparator compare) noexcept {
   auto compare_call = [compare]<typename U>(U lhs, U rhs) -> task_t<int64_t> {
     if constexpr (is_async_function_v<Comparator, U, U>) {
       co_return co_await std::invoke(std::move(compare), std::move(lhs), std::move(rhs));
@@ -84,7 +84,7 @@ requires(std::invocable<Comparator, T, T>) task_t<void> sort(T *begin_init, T *e
 namespace array_functions_impl_ {
 
 template<typename Result, typename U, typename Comparator>
-Result sort(array<U> &arr, Comparator comparator, bool renumber) noexcept {
+Result async_sort(array<U> &arr, Comparator comparator, bool renumber) noexcept {
   using array_inner = typename array<U>::array_inner;
   using array_bucket = typename array<U>::array_bucket;
   int64_t n = arr.count();
@@ -158,7 +158,7 @@ Result sort(array<U> &arr, Comparator comparator, bool renumber) noexcept {
 }
 
 template<typename Result, typename U, typename Comparator>
-Result ksort(array<U> &arr, Comparator comparator) noexcept {
+Result async_ksort(array<U> &arr, Comparator comparator) noexcept {
   using array_bucket = typename array<U>::array_bucket;
   using key_type = typename array<U>::key_type;
   using list_hash_entry = typename array<U>::list_hash_entry;
@@ -425,108 +425,31 @@ array<T> f$array_combine(const array<T1> &keys, const array<T> &values) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-task_t<void> f$sort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::sort_compare<T>(), true);
-    case SORT_NUMERIC:
-      co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::sort_compare_numeric<T>(), true);
-    case SORT_STRING:
-      co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::sort_compare_string<T>(), true);
-    default:
-      php_warning("Unsupported sort_flag in function sort");
-  }
-}
-
-template<class T>
-task_t<void> f$rsort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::rsort_compare<T>(), true);
-    case SORT_NUMERIC:
-      co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::rsort_compare_numeric<T>(), true);
-    case SORT_STRING:
-      co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::rsort_compare_string<T>(), true);
-    default:
-      php_warning("Unsupported sort_flag in function rsort");
-  }
-}
-
-template<class T>
-task_t<void> f$arsort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::rsort_compare<T>(), false);
-    case SORT_NUMERIC:
-      co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::rsort_compare_numeric<T>(), false);
-    case SORT_STRING:
-      co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::rsort_compare_string<T>(), false);
-    default:
-      php_warning("Unsupported sort_flag in function arsort");
-  }
-}
-
-template<class T>
-task_t<void> f$ksort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      co_return co_await array_functions_impl_::ksort<task_t<void>>(a, array_functions_impl_::sort_compare<typename array<T>::key_type>());
-    case SORT_NUMERIC:
-      co_return co_await array_functions_impl_::ksort<task_t<void>>(a, array_functions_impl_::sort_compare_numeric<typename array<T>::key_type>());
-    case SORT_STRING:
-      co_return co_await array_functions_impl_::ksort<task_t<void>>(a, array_functions_impl_::sort_compare_string<typename array<T>::key_type>());
-    default:
-      php_warning("Unsupported sort_flag in function ksort");
-  }
-}
-
-template<class T>
-task_t<void> f$krsort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      co_return co_await array_functions_impl_::ksort<task_t<void>>(a, array_functions_impl_::rsort_compare<typename array<T>::key_type>());
-    case SORT_NUMERIC:
-      co_return co_await array_functions_impl_::ksort<task_t<void>>(a, array_functions_impl_::rsort_compare_numeric<typename array<T>::key_type>());
-    case SORT_STRING:
-      co_return co_await array_functions_impl_::ksort<task_t<void>>(a, array_functions_impl_::rsort_compare_string<typename array<T>::key_type>());
-    default:
-      php_warning("Unsupported sort_flag in function krsort");
-  }
-}
-
-template<class T>
-task_t<void> f$asort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::sort_compare<T>(), false);
-    case SORT_NUMERIC:
-      co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::sort_compare_numeric<T>(), false);
-    case SORT_STRING:
-      co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::sort_compare_string<T>(), false);
-    default:
-      php_warning("Unsupported sort_flag in function asort");
-  }
-}
-
-template<class T>
-task_t<void> f$natsort(array<T> &a) {
-  co_return co_await array_functions_impl_::sort<task_t<void>>(a, array_functions_impl_::sort_compare_natural<typename array<T>::key_type>(), false);
-}
-
 template<class T, class Comparator>
 requires(std::invocable<Comparator, T, T>) task_t<void> f$usort(array<T> &a, Comparator compare) {
-  co_return co_await array_functions_impl_::sort<task_t<void>>(a, std::move(compare), true);
+  if constexpr (is_async_function_v<Comparator, T, T>) {
+    co_return co_await array_functions_impl_::async_sort<task_t<void>>(a, std::move(compare), true);
+  } else {
+    co_return a.sort(std::move(compare), true);
+  }
 }
 
 template<class T, class Comparator>
 requires(std::invocable<Comparator, T, T>) task_t<void> f$uasort(array<T> &a, Comparator compare) {
-  co_return co_await array_functions_impl_::sort<task_t<void>>(a, std::move(compare), false);
+  if constexpr (is_async_function_v<Comparator, T, T>) {
+    co_return co_await array_functions_impl_::async_sort<task_t<void>>(a, std::move(compare), false);
+  } else {
+    co_return a.sort(std::move(compare), false);
+  }
 }
 
 template<class T, class Comparator>
 requires(std::invocable<Comparator, typename array<T>::key_type, typename array<T>::key_type>) task_t<void> f$uksort(array<T> &a, Comparator compare) {
-  co_return co_await array_functions_impl_::ksort<task_t<void>>(a, std::move(compare));
+  if constexpr (is_async_function_v<Comparator, T, T>) {
+    co_return co_await array_functions_impl_::async_ksort<task_t<void>>(a, std::move(compare));
+  } else {
+    co_return a.ksort(std::move(compare));
+  }
 }
 
 template<class T>

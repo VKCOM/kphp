@@ -36,6 +36,62 @@ array_size &array_size::min(const array_size &other) noexcept {
   return *this;
 }
 
+namespace dl {
+
+template<class T, class T1>
+void sort(T *begin_init, T *end_init, const T1 &compare) {
+  T *begin_stack[32];
+  T *end_stack[32];
+
+  begin_stack[0] = begin_init;
+  end_stack[0] = end_init - 1;
+
+  for (int depth = 0; depth >= 0; --depth) {
+    T *begin = begin_stack[depth];
+    T *end = end_stack[depth];
+
+    while (begin < end) {
+      const auto offset = (end - begin) >> 1;
+      swap(*begin, begin[offset]);
+
+      T *i = begin + 1, *j = end;
+
+      while (1) {
+        while (i < j && compare(*begin, *i) > 0) {
+          i++;
+        }
+
+        while (i <= j && compare(*j, *begin) > 0) {
+          j--;
+        }
+
+        if (i >= j) {
+          break;
+        }
+
+        swap(*i++, *j--);
+      }
+
+      swap(*begin, *j);
+
+      if (j - begin <= end - j) {
+        if (j + 1 < end) {
+          begin_stack[depth] = j + 1;
+          end_stack[depth++] = end;
+        }
+        end = j - 1;
+      } else {
+        if (begin < j - 1) {
+          begin_stack[depth] = begin;
+          end_stack[depth++] = j - 1;
+        }
+        begin = j + 1;
+      }
+    }
+  }
+}
+
+} // namespace dl
 
 template<class T>
 typename array<T>::key_type array<T>::array_bucket::get_key() const {
@@ -1825,6 +1881,130 @@ void array<T>::memcpy_vector(int64_t num __attribute__((unused)), const void *sr
 template<class T>
 int64_t array<T>::get_next_key() const {
   return p->max_key + 1;
+}
+
+
+template<class T>
+template<class T1>
+void array<T>::sort(const T1 &compare, bool renumber) {
+  int64_t n = count();
+
+  if (renumber) {
+    if (n == 0) {
+      return;
+    }
+
+    if (!is_vector()) {
+      array_inner *res = array_inner::create(n, true);
+      for (array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
+        res->push_back_vector_value(it->value);
+      }
+
+      p->dispose();
+      p = res;
+    } else {
+      mutate_if_vector_shared();
+    }
+
+    const auto elements_cmp =
+      [&compare](const T &lhs, const T &rhs) {
+        return compare(lhs, rhs) > 0;
+      };
+    T *begin = reinterpret_cast<T *>(p->entries());
+    dl::sort<T, decltype(elements_cmp)>(begin, begin + n, elements_cmp);
+    return;
+  }
+
+  if (n <= 1) {
+    return;
+  }
+
+  if (is_vector()) {
+    convert_to_map();
+  } else {
+    mutate_if_map_shared();
+  }
+
+  array_bucket **arTmp = (array_bucket **)RuntimeAllocator::get().alloc_script_memory(n * sizeof(array_bucket * ));
+  uint32_t i = 0;
+  for (array_bucket *it = p->begin(); it != p->end(); it = p->next(it)) {
+    arTmp[i++] = it;
+  }
+  php_assert (i == n);
+
+  const auto hash_entry_cmp =
+    [&compare](const array_bucket *lhs, const array_bucket *rhs) {
+      return compare(lhs->value, rhs->value) > 0;
+    };
+  dl::sort<array_bucket *, decltype(hash_entry_cmp)>(arTmp, arTmp + n, hash_entry_cmp);
+
+  arTmp[0]->prev = p->get_pointer(p->end());
+  p->end()->next = p->get_pointer(arTmp[0]);
+  for (uint32_t j = 1; j < n; j++) {
+    arTmp[j]->prev = p->get_pointer(arTmp[j - 1]);
+    arTmp[j - 1]->next = p->get_pointer(arTmp[j]);
+  }
+  arTmp[n - 1]->next = p->get_pointer(p->end());
+  p->end()->prev = p->get_pointer(arTmp[n - 1]);
+
+  RuntimeAllocator::get().free_script_memory(arTmp, n * sizeof(array_bucket * ));
+}
+
+
+template<class T>
+template<class T1>
+void array<T>::ksort(const T1 &compare) {
+  int64_t n = count();
+  if (n <= 1) {
+    return;
+  }
+
+  if (is_vector()) {
+    convert_to_map();
+  } else {
+    mutate_if_map_shared();
+  }
+
+  array<key_type> keys(array_size(n, true));
+  for (auto *it = p->begin(); it != p->end(); it = p->next(it)) {
+    keys.p->push_back_vector_value(it->get_key());
+  }
+
+  key_type *keysp = (key_type *)keys.p->entries();
+  dl::sort<key_type, T1>(keysp, keysp + n, compare);
+
+  list_hash_entry *prev = (list_hash_entry *)p->end();
+  for (uint32_t j = 0; j < n; j++) {
+    list_hash_entry *cur;
+    if (is_int_key(keysp[j])) {
+      int64_t int_key = keysp[j].to_int();
+      uint32_t bucket = p->choose_bucket(int_key);
+      while (p->entries()[bucket].int_key != int_key || !p->entries()[bucket].string_key.is_dummy_string()) {
+        if (unlikely (++bucket == p->buf_size)) {
+          bucket = 0;
+        }
+      }
+      cur = (list_hash_entry * ) &p->entries()[bucket];
+    } else {
+      string string_key = keysp[j].to_string();
+      int64_t int_key = string_key.hash();
+      array_bucket *string_entries = p->entries();
+      uint32_t bucket = p->choose_bucket(int_key);
+      while ((string_entries[bucket].int_key != int_key || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
+        if (unlikely (++bucket == p->buf_size)) {
+          bucket = 0;
+        }
+      }
+      cur = (list_hash_entry * ) & string_entries[bucket];
+    }
+
+    cur->prev = p->get_pointer(prev);
+    prev->next = p->get_pointer(cur);
+
+    prev = cur;
+  }
+  prev->next = p->get_pointer(p->end());
+  p->end()->prev = p->get_pointer(prev);
 }
 
 

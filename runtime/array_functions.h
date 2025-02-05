@@ -12,189 +12,6 @@
 #include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime/math_functions.h"
 
-namespace dl {
-
-template<typename T, typename Comparator>
-void sort(T *begin_init, T *end_init, Comparator compare) noexcept {
-  T *begin_stack[32];
-  T *end_stack[32];
-
-  begin_stack[0] = begin_init;
-  end_stack[0] = end_init - 1;
-
-  for (int depth = 0; depth >= 0; --depth) {
-    T *begin = begin_stack[depth];
-    T *end = end_stack[depth];
-
-    while (begin < end) {
-      const auto offset = (end - begin) >> 1;
-      swap(*begin, begin[offset]);
-
-      T *i = begin + 1, *j = end;
-
-      while (1) {
-        while (i < j && std::invoke(std::move(compare), *begin, *i) > 0) {
-          i++;
-        }
-
-        while (i <= j && std::invoke(std::move(compare), *j, *begin) > 0) {
-          j--;
-        }
-
-        if (i >= j) {
-          break;
-        }
-
-        swap(*i++, *j--);
-      }
-
-      swap(*begin, *j);
-
-      if (j - begin <= end - j) {
-        if (j + 1 < end) {
-          begin_stack[depth] = j + 1;
-          end_stack[depth++] = end;
-        }
-        end = j - 1;
-      } else {
-        if (begin < j - 1) {
-          begin_stack[depth] = begin;
-          end_stack[depth++] = j - 1;
-        }
-        begin = j + 1;
-      }
-    }
-  }
-}
-
-} // namespace dl
-
-namespace array_functions_impl_ {
-
-template<typename Result, typename U, typename Comparator>
-Result sort(array<U> &arr, Comparator comparator, bool renumber) noexcept {
-    using array_inner = typename array<U>::array_inner;
-    using array_bucket = typename array<U>::array_bucket;
-    int64_t n = arr.count();
-
-    if (renumber) {
-      if (n == 0) {
-        return;
-      }
-
-      if (!arr.is_vector()) {
-        array_inner *res = array_inner::create(n, true);
-        for (array_bucket *it = arr.p->begin(); it != arr.p->end(); it = arr.p->next(it)) {
-          res->push_back_vector_value(it->value);
-        }
-
-        arr.p->dispose();
-        arr.p = res;
-      } else {
-        arr.mutate_if_vector_shared();
-      }
-
-      auto elements_cmp = [comparator](const U &lhs, const U &rhs)
-      { return std::invoke(std::move(comparator), lhs, rhs) > 0; };
-      U *begin = reinterpret_cast<U *>(arr.p->entries());
-      dl::sort<U, decltype(elements_cmp)>(begin, begin + n, std::move(elements_cmp));
-      return;
-    }
-
-    if (n <= 1) {
-      return;
-    }
-
-    if (arr.is_vector()) {
-      arr.convert_to_map();
-    } else {
-      arr.mutate_if_map_shared();
-    }
-
-    array_bucket **arTmp = (array_bucket **)RuntimeAllocator::get().alloc_script_memory(n * sizeof(array_bucket *));
-    uint32_t i = 0;
-    for (array_bucket *it = arr.p->begin(); it != arr.p->end(); it = arr.p->next(it)) {
-      arTmp[i++] = it;
-    }
-    php_assert(i == n);
-
-    auto hash_entry_cmp = [comparator](const array_bucket *lhs, const array_bucket *rhs)
-    { return std::invoke(std::move(comparator), lhs->value, rhs->value) > 0; };
-    dl::sort<array_bucket *, decltype(hash_entry_cmp)>(arTmp, arTmp + n, std::move(hash_entry_cmp));
-
-    arTmp[0]->prev = arr.p->get_pointer(arr.p->end());
-    arr.p->end()->next = arr.p->get_pointer(arTmp[0]);
-    for (uint32_t j = 1; j < n; j++) {
-      arTmp[j]->prev = arr.p->get_pointer(arTmp[j - 1]);
-      arTmp[j - 1]->next = arr.p->get_pointer(arTmp[j]);
-    }
-    arTmp[n - 1]->next = arr.p->get_pointer(arr.p->end());
-    arr.p->end()->prev = arr.p->get_pointer(arTmp[n - 1]);
-
-    RuntimeAllocator::get().free_script_memory(arTmp, n * sizeof(array_bucket *));
-}
-
-template<typename Result, typename U, typename Comparator>
-Result ksort(array<U> &arr, Comparator comparator) noexcept {
-  using array_bucket = typename array<U>::array_bucket;
-  using key_type = typename array<U>::key_type;
-  using list_hash_entry = typename array<U>::list_hash_entry;
-
-  int64_t n = arr.count();
-  if (n <= 1) {
-    return;
-  }
-
-  if (arr.is_vector()) {
-    arr.convert_to_map();
-  } else {
-    arr.mutate_if_map_shared();
-  }
-
-  array<key_type> keys(array_size(n, true));
-  for (auto *it = arr.p->begin(); it != arr.p->end(); it = arr.p->next(it)) {
-    keys.p->push_back_vector_value(it->get_key());
-  }
-
-  key_type *keysp = (key_type *)keys.p->entries();
-  dl::sort<key_type, Comparator>(keysp, keysp + n, std::move(comparator));
-
-  list_hash_entry *prev = (list_hash_entry *)arr.p->end();
-  for (uint32_t j = 0; j < n; j++) {
-    list_hash_entry *cur;
-    if (arr.is_int_key(keysp[j])) {
-      int64_t int_key = keysp[j].to_int();
-      uint32_t bucket = arr.p->choose_bucket(int_key);
-      while (arr.p->entries()[bucket].int_key != int_key || !arr.p->entries()[bucket].string_key.is_dummy_string()) {
-        if (unlikely(++bucket == arr.p->buf_size)) {
-          bucket = 0;
-        }
-      }
-      cur = (list_hash_entry *)&arr.p->entries()[bucket];
-    } else {
-      string string_key = keysp[j].to_string();
-      int64_t int_key = string_key.hash();
-      array_bucket *string_entries = arr.p->entries();
-      uint32_t bucket = arr.p->choose_bucket(int_key);
-      while (
-        (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
-        if (unlikely(++bucket == arr.p->buf_size)) {
-          bucket = 0;
-        }
-      }
-      cur = (list_hash_entry *)&string_entries[bucket];
-    }
-
-    cur->prev = arr.p->get_pointer(prev);
-    prev->next = arr.p->get_pointer(cur);
-
-    prev = cur;
-  }
-  prev->next = arr.p->get_pointer(arr.p->end());
-  arr.p->end()->prev = arr.p->get_pointer(prev);
-}
-}
-
 template<class T>
 array<T> f$array_splice(array<T> &a, int64_t offset, int64_t length, const array<Unknown> &);
 
@@ -264,17 +81,17 @@ void f$shuffle(array<T> &a);
 
 template<class T, class T1>
 void f$usort(array<T> &a, const T1 &compare) {
-  return array_functions_impl_::sort<void>(a, compare, true);
+  a.sort(compare, true);
 }
 
 template<class T, class T1>
 void f$uasort(array<T> &a, const T1 &compare) {
-  return array_functions_impl_::sort<void>(a, compare, false);
+  a.sort(compare, false);
 }
 
 template<class T, class T1>
 void f$uksort(array<T> &a, const T1 &compare) {
-  return array_functions_impl_::ksort<void>(a, compare);
+  a.ksort(compare);
 }
 
 template<class T>
@@ -857,95 +674,6 @@ void f$array_swap_int_keys(array<T> &a, int64_t idx1, int64_t idx2) noexcept {
 }
 
 template<class T>
-void f$sort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return array_functions_impl_::sort<void>(a, array_functions_impl_::sort_compare<T>(), true);
-    case SORT_NUMERIC:
-      return array_functions_impl_::sort<void>(a, array_functions_impl_::sort_compare_numeric<T>(), true);
-    case SORT_STRING:
-      return array_functions_impl_::sort<void>(a, array_functions_impl_::sort_compare_string<T>(), true);
-    default:
-      php_warning("Unsupported sort_flag in function sort");
-  }
-}
-
-template<class T>
-void f$rsort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return array_functions_impl_::sort<void>(a, array_functions_impl_::rsort_compare<T>(), true);
-    case SORT_NUMERIC:
-      return array_functions_impl_::sort<void>(a, array_functions_impl_::rsort_compare_numeric<T>(), true);
-    case SORT_STRING:
-      return array_functions_impl_::sort<void>(a, array_functions_impl_::rsort_compare_string<T>(), true);
-    default:
-      php_warning("Unsupported sort_flag in function rsort");
-  }
-}
-
-template<class T>
-void f$arsort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return array_functions_impl_::sort<void>(a, array_functions_impl_::rsort_compare<T>(), false);
-    case SORT_NUMERIC:
-      return array_functions_impl_::sort<void>(a, array_functions_impl_::rsort_compare_numeric<T>(), false);
-    case SORT_STRING:
-      return array_functions_impl_::sort<void>(a, array_functions_impl_::rsort_compare_string<T>(), false);
-    default:
-      php_warning("Unsupported sort_flag in function arsort");
-  }
-}
-
-template<class T>
-void f$ksort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return array_functions_impl_::ksort<void>(a, array_functions_impl_::sort_compare<typename array<T>::key_type>());
-    case SORT_NUMERIC:
-      return array_functions_impl_::ksort<void>(a, array_functions_impl_::sort_compare_numeric<typename array<T>::key_type>());
-    case SORT_STRING:
-      return array_functions_impl_::ksort<void>(a, array_functions_impl_::sort_compare_string<typename array<T>::key_type>());
-    default:
-      php_warning("Unsupported sort_flag in function ksort");
-  }
-}
-
-template<class T>
-void f$krsort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return array_functions_impl_::ksort<void>(a, array_functions_impl_::rsort_compare<typename array<T>::key_type>());
-    case SORT_NUMERIC:
-      return array_functions_impl_::ksort<void>(a, array_functions_impl_::rsort_compare_numeric<typename array<T>::key_type>());
-    case SORT_STRING:
-      return array_functions_impl_::ksort<void>(a, array_functions_impl_::rsort_compare_string<typename array<T>::key_type>());
-    default:
-      php_warning("Unsupported sort_flag in function krsort");
-  }
-}
-
-template<class T>
-void f$asort(array<T> &a, int64_t flag = SORT_REGULAR) {
-  switch (flag) {
-    case SORT_REGULAR:
-      return array_functions_impl_::sort<void>(a, array_functions_impl_::sort_compare<T>(), false);
-    case SORT_NUMERIC:
-      return array_functions_impl_::sort<void>(a, array_functions_impl_::sort_compare_numeric<T>(), false);
-    case SORT_STRING:
-      return array_functions_impl_::sort<void>(a, array_functions_impl_::sort_compare_string<T>(), false);
-    default:
-      php_warning("Unsupported sort_flag in function asort");
-  }
-}
-
-template<class T>
-void f$natsort(array<T> &a) {
-  return array_functions_impl_::sort<void>(a, array_functions_impl_::sort_compare_natural<typename array<T>::key_type>(), false);
-}
-
-template<class T>
 T vk_dot_product_sparse(const array<T> &a, const array<T> &b) {
   T result = T();
   for (const auto &it : a) {
@@ -991,4 +719,16 @@ T f$vk_dot_product(const array<T> &a, const array<T> &b) {
     return vk_dot_product_dense<T>(a, b);
   }
   return vk_dot_product_sparse<T>(a, b);
+}
+
+template<typename Result, typename U, typename Comparator>
+Result array_functions_impl_::async_sort(__attribute__((unused)) array<U> & arr, __attribute__((unused)) Comparator comparator, __attribute__((unused)) bool renumber) noexcept {
+  struct async_sort_stub_class {};
+  static_assert(std::is_same_v<Result, async_sort_stub_class>, "array async sort functions supported only in runtime light ");
+}
+
+template<typename Result, typename U, typename Comparator>
+Result array_functions_impl_::async_ksort(__attribute__((unused)) array<U> & arr, __attribute__((unused)) Comparator comparator) noexcept {
+  struct async_ksort_stub_class {};
+  static_assert(std::is_same_v<Result, async_ksort_stub_class>, "array async sort functions supported only in runtime light ");
 }
