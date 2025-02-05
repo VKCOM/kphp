@@ -16,7 +16,7 @@ string f$dechex(int64_t number) noexcept {
   char s[17];
   int i = 16;
 
-  const auto &lhex_digits{StringLibConstants::get().lhex_digits};
+  const auto& lhex_digits{StringLibConstants::get().lhex_digits};
   do {
     s[--i] = lhex_digits[v & 15];
     v >>= 4;
@@ -25,7 +25,7 @@ string f$dechex(int64_t number) noexcept {
   return {s + i, static_cast<string::size_type>(16 - i)};
 }
 
-int64_t f$hexdec(const string &number) noexcept {
+int64_t f$hexdec(const string& number) noexcept {
   uint64_t v = 0;
   bool bad_str_param = number.empty();
   bool overflow = false;

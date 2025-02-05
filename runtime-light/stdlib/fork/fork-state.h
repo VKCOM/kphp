@@ -18,7 +18,7 @@
 inline constexpr int64_t INVALID_FORK_ID = -1;
 
 class ForkInstanceState final : private vk::not_copyable {
-  template<hashable Key, typename Value>
+  template <hashable Key, typename Value>
   using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   static constexpr auto FORK_ID_INIT = 0;
@@ -41,7 +41,7 @@ class ForkInstanceState final : private vk::not_copyable {
   }
 
   friend class start_fork_t;
-  template<typename>
+  template <typename>
   friend class wait_fork_t;
 
 public:
@@ -49,7 +49,7 @@ public:
 
   ForkInstanceState() noexcept = default;
 
-  static ForkInstanceState &get() noexcept;
+  static ForkInstanceState& get() noexcept;
 
   bool contains(int64_t fork_id) const noexcept {
     return forks.contains(fork_id);

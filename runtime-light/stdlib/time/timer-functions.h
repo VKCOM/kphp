@@ -13,13 +13,13 @@
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 
-template<std::invocable T>
+template <std::invocable T>
 task_t<void> f$set_timer(int64_t timeout_ms, T on_timer_callback) noexcept {
   if (timeout_ms < 0) {
     php_warning("can't set timer for negative duration %" PRId64 "ms", timeout_ms);
     co_return;
   }
-  const auto fork_f{[](std::chrono::nanoseconds duration, T &&on_timer_callback) -> task_t<void> {
+  const auto fork_f{[](std::chrono::nanoseconds duration, T&& on_timer_callback) -> task_t<void> {
     co_await wait_for_timer_t{duration};
     on_timer_callback();
   }}; // TODO: someone should pop that fork from ForkComponentContext since it will stay there unless we perform f$wait on fork

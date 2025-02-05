@@ -13,8 +13,8 @@
 
 namespace math_functions_impl_ {
 
-template<uint8_t M>
-uint64_t mult_and_add(uint64_t x, uint8_t y, bool &overflow) noexcept {
+template <uint8_t M>
+uint64_t mult_and_add(uint64_t x, uint8_t y, bool& overflow) noexcept {
   const uint64_t r = x * M + y;
   overflow = overflow || r < x || r > static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
   return r;
@@ -34,23 +34,23 @@ inline double f$log(double v) noexcept;
 
 inline double f$log(double v, double base) noexcept;
 
-template<class T>
-inline T f$min(const array<T> &a) noexcept;
+template <class T>
+inline T f$min(const array<T>& a) noexcept;
 
-template<class T>
-inline T f$max(const array<T> &a) noexcept;
+template <class T>
+inline T f$max(const array<T>& a) noexcept;
 
-template<class T>
-inline T f$min(const T &arg1) noexcept;
+template <class T>
+inline T f$min(const T& arg1) noexcept;
 
-template<class T, class... Args>
-inline T f$min(const T &arg1, const T &arg2, Args &&...args) noexcept;
+template <class T, class... Args>
+inline T f$min(const T& arg1, const T& arg2, Args&&... args) noexcept;
 
-template<class T>
-inline T f$max(const T &arg1) noexcept;
+template <class T>
+inline T f$max(const T& arg1) noexcept;
 
-template<class T, class... Args>
-inline T f$max(const T &arg1, const T &arg2, Args &&...args) noexcept;
+template <class T, class... Args>
+inline T f$max(const T& arg1, const T& arg2, Args&&... args) noexcept;
 
 inline double f$pi() noexcept;
 
@@ -58,7 +58,7 @@ inline double f$round(double v, int64_t precision = 0) noexcept;
 
 inline double f$sqrt(double v) noexcept;
 
-inline mixed f$abs(const mixed &v) noexcept {
+inline mixed f$abs(const mixed& v) noexcept {
   mixed num = v.to_numeric();
   if (num.is_int()) {
     return std::abs(num.to_int());
@@ -74,15 +74,15 @@ inline double f$abs(double v) noexcept {
   return std::abs(v);
 }
 
-inline int64_t f$abs(const Optional<int64_t> &v) noexcept {
+inline int64_t f$abs(const Optional<int64_t>& v) noexcept {
   return f$abs(val(v));
 }
 
-inline int64_t f$abs(const Optional<bool> &v) noexcept {
+inline int64_t f$abs(const Optional<bool>& v) noexcept {
   return f$abs(static_cast<int64_t>(val(v)));
 }
 
-inline double f$abs(const Optional<double> &v) noexcept {
+inline double f$abs(const Optional<double>& v) noexcept {
   return f$abs(val(v));
 }
 
@@ -120,8 +120,8 @@ inline double f$log(double v, double base) noexcept {
   return log(v) / log(base);
 }
 
-template<class T>
-T f$min(const array<T> &a) noexcept {
+template <class T>
+T f$min(const array<T>& a) noexcept {
   if (a.count() == 0) {
     php_warning("Empty array specified to function min");
     return T();
@@ -137,8 +137,8 @@ T f$min(const array<T> &a) noexcept {
   return res;
 }
 
-template<class T>
-T f$max(const array<T> &a) noexcept {
+template <class T>
+T f$max(const array<T>& a) noexcept {
   if (a.count() == 0) {
     php_warning("Empty array specified to function max");
     return T();
@@ -154,23 +154,23 @@ T f$max(const array<T> &a) noexcept {
   return res;
 }
 
-template<class T>
-T f$min(const T &arg1) noexcept {
+template <class T>
+T f$min(const T& arg1) noexcept {
   return arg1;
 }
 
-template<class T, class... Args>
-T f$min(const T &arg1, const T &arg2, Args &&...args) noexcept {
+template <class T, class... Args>
+T f$min(const T& arg1, const T& arg2, Args&&... args) noexcept {
   return f$min<T>(lt(arg1, arg2) ? arg1 : arg2, std::forward<Args>(args)...);
 }
 
-template<class T>
-T f$max(const T &arg1) noexcept {
+template <class T>
+T f$max(const T& arg1) noexcept {
   return arg1;
 }
 
-template<class T, class... Args>
-T f$max(const T &arg1, const T &arg2, Args &&...args) noexcept {
+template <class T, class... Args>
+T f$max(const T& arg1, const T& arg2, Args&&... args) noexcept {
   return f$max<T>(lt(arg2, arg1) ? arg1 : arg2, std::forward<Args>(args)...);
 }
 
@@ -195,6 +195,6 @@ inline double f$sqrt(double v) noexcept {
   return sqrt(v);
 }
 
-int64_t f$hexdec(const string &number) noexcept;
+int64_t f$hexdec(const string& number) noexcept;
 
 string f$dechex(int64_t number) noexcept;

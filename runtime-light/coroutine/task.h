@@ -16,26 +16,24 @@
 #include "runtime-light/k2-platform/k2-api.h"
 
 #if __clang_major__ > 7
-#define CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
+  #define CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
 #endif
 
 struct task_base_t {
   task_base_t() = default;
 
-  explicit task_base_t(std::coroutine_handle<> handle)
-    : handle_address{handle.address()} {}
+  explicit task_base_t(std::coroutine_handle<> handle) : handle_address{handle.address()} {}
 
-  task_base_t(task_base_t &&task) noexcept
-    : handle_address{std::exchange(task.handle_address, nullptr)} {}
+  task_base_t(task_base_t&& task) noexcept : handle_address{std::exchange(task.handle_address, nullptr)} {}
 
-  task_base_t(const task_base_t &task) = delete;
+  task_base_t(const task_base_t& task) = delete;
 
-  task_base_t &operator=(task_base_t &&task) noexcept {
+  task_base_t& operator=(task_base_t&& task) noexcept {
     std::swap(handle_address, task.handle_address);
     return *this;
   }
 
-  task_base_t &operator=(const task_base_t &task) = delete;
+  task_base_t& operator=(const task_base_t& task) = delete;
 
   ~task_base_t() {
     if (handle_address) {
@@ -49,7 +47,7 @@ struct task_base_t {
   }
 
 protected:
-  void *handle_address{nullptr};
+  void* handle_address{nullptr};
 };
 
 /**
@@ -57,9 +55,9 @@ protected:
  * 1. C++20 coroutines — https://en.cppreference.com/w/cpp/language/coroutines
  * 2. C++ coroutines: understanding symmetric stransfer — https://lewissbaker.github.io/2020/05/11/understanding_symmetric_transfer
  */
-template<typename T>
+template <typename T>
 struct task_t : public task_base_t {
-  template<std::same_as<T> F>
+  template <std::same_as<T> F>
   struct promise_non_void_t;
   struct promise_void_t;
 
@@ -68,7 +66,7 @@ struct task_t : public task_base_t {
 
   struct promise_base_t {
     task_t get_return_object() noexcept {
-      return task_t{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this))};
+      return task_t{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
     }
 
     std::suspend_always initial_suspend() {
@@ -88,7 +86,7 @@ struct task_t : public task_base_t {
           return std::coroutine_handle<>::from_address(h.promise().next);
         }
 #else
-        void *loaded_ptr = h.promise().next;
+        void* loaded_ptr = h.promise().next;
         if (loaded_ptr != nullptr) {
           if (loaded_ptr == &h.promise().next) {
             h.promise().next = nullptr;
@@ -111,31 +109,32 @@ struct task_t : public task_base_t {
       exception = std::current_exception();
     }
 
-    void *next = nullptr;
+    void* next = nullptr;
     std::exception_ptr exception;
 
     static task_t get_return_object_on_allocation_failure() {
       php_critical_error("cannot allocate memory for task_t");
     }
 
-    template<typename... Args>
-    void *operator new(std::size_t n, [[maybe_unused]] Args &&...args) noexcept {
+    template <typename... Args>
+    void* operator new(std::size_t n, [[maybe_unused]] Args&&... args) noexcept {
       // todo:k2 think about args in new
       // todo:k2 make coroutine allocator
-      void *buffer = k2::alloc(n);
+      void* buffer = k2::alloc(n);
       return buffer;
     }
 
-    void operator delete(void *ptr, size_t n) noexcept {
+    void operator delete(void* ptr, size_t n) noexcept {
       (void)n;
       k2::free(ptr);
     }
   };
 
-  template<std::same_as<T> F>
+  template <std::same_as<T> F>
   struct promise_non_void_t : public promise_base_t {
-    template<typename E>
-    requires std::constructible_from<F, E &&> void return_value(E &&e) {
+    template <typename E>
+    requires std::constructible_from<F, E&&>
+    void return_value(E&& e) {
       ::new (bytes) F(std::forward<E>(e));
     }
 
@@ -155,7 +154,7 @@ struct task_t : public task_base_t {
       std::rethrow_exception(std::move(get_handle().promise().exception));
     }
     if constexpr (!std::is_void<T>{}) {
-      T *t = std::launder(reinterpret_cast<T *>(get_handle().promise().bytes));
+      T* t = std::launder(reinterpret_cast<T*>(get_handle().promise().bytes));
       const vk::final_action final_action([t] { t->~T(); });
       return std::move(*t);
     }
@@ -175,14 +174,13 @@ struct task_t : public task_base_t {
   }
 
   struct awaiter_t {
-    explicit awaiter_t(task_t *task)
-      : task{task} {}
+    explicit awaiter_t(task_t* task) : task{task} {}
 
     constexpr bool await_ready() const noexcept {
       return false;
     }
 
-    template<typename PromiseType>
+    template <typename PromiseType>
 #ifdef CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
     std::coroutine_handle<promise_type>
 #else
@@ -193,7 +191,7 @@ struct task_t : public task_base_t {
       task->get_handle().promise().next = h.address();
       return task->get_handle();
 #else
-      void *next_ptr = &task->get_handle().promise().next;
+      void* next_ptr = &task->get_handle().promise().next;
       task->get_handle().promise().next = next_ptr;
       task->get_handle().resume();
       if (task->get_handle().promise().next == nullptr) {
@@ -216,7 +214,7 @@ struct task_t : public task_base_t {
       task->get_handle().promise().next = nullptr;
     }
 
-    task_t *task;
+    task_t* task;
   };
 
   awaiter_t operator co_await() {
@@ -234,31 +232,34 @@ struct task_t : public task_base_t {
     return task_t<void>{std::coroutine_handle<>::from_address(std::exchange(handle_address, nullptr))};
   }
   // restore erased type
-  template<typename U>
-  requires(std::same_as<void, T>) explicit operator task_t<U>() && noexcept {
+  template <typename U>
+  requires(std::same_as<void, T>)
+  explicit operator task_t<U>() && noexcept {
     return task_t<U>{std::coroutine_handle<>::from_address(std::exchange(handle_address, nullptr))};
   }
 };
 
 // === Type traits ================================================================================
 
-template<typename F, typename... Args>
-requires std::invocable<F, Args...> inline constexpr bool is_async_function_v = requires {
-  {static_cast<task_t<void>>(std::declval<std::invoke_result_t<F, Args...>>())};
+template <typename F, typename... Args>
+requires std::invocable<F, Args...>
+inline constexpr bool is_async_function_v = requires {
+  { static_cast<task_t<void>>(std::declval<std::invoke_result_t<F, Args...>>()) };
 };
 
 // ================================================================================================
 
-template<typename F, typename... Args>
-requires std::invocable<F, Args...> class async_function_unwrapped_return_type {
+template <typename F, typename... Args>
+requires std::invocable<F, Args...>
+class async_function_unwrapped_return_type {
   using return_type = std::invoke_result_t<F, Args...>;
 
-  template<typename U>
+  template <typename U>
   struct task_inner {
     using type = U;
   };
 
-  template<typename U>
+  template <typename U>
   struct task_inner<task_t<U>> {
     using type = U;
   };
@@ -267,5 +268,6 @@ public:
   using type = task_inner<return_type>::type;
 };
 
-template<typename F, typename... Args>
-requires std::invocable<F, Args...> using async_function_unwrapped_return_type_t = async_function_unwrapped_return_type<F, Args...>::type;
+template <typename F, typename... Args>
+requires std::invocable<F, Args...>
+using async_function_unwrapped_return_type_t = async_function_unwrapped_return_type<F, Args...>::type;

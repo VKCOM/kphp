@@ -9,22 +9,22 @@ namespace vk::msgpack {
 
 struct object;
 
-template<typename Stream>
+template <typename Stream>
 class packer;
 
 namespace adaptor {
 
-template<typename T>
+template <typename T>
 struct convert {
-  void operator()(const msgpack::object &o, T &v) const {
+  void operator()(const msgpack::object& o, T& v) const {
     v.msgpack_unpack(o);
   }
 };
 
-template<typename T>
+template <typename T>
 struct pack {
-  template<typename Stream>
-  void operator()(msgpack::packer<Stream> &o, const T &v) const {
+  template <typename Stream>
+  void operator()(msgpack::packer<Stream>& o, const T& v) const {
     v.msgpack_pack(o);
   }
 };

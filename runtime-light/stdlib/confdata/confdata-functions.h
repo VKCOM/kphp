@@ -16,5 +16,5 @@ task_t<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noex
 
 inline task_t<array<mixed>> f$confdata_get_values_by_predefined_wildcard(string wildcard) noexcept {
   php_warning("K2 confdata does not support predefined wildcard optimization");
-  co_return(co_await f$confdata_get_values_by_any_wildcard(std::move(wildcard)));
+  co_return (co_await f$confdata_get_values_by_any_wildcard(std::move(wildcard)));
 }

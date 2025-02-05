@@ -18,14 +18,22 @@ namespace memory_resource {
 
 class monotonic_buffer : vk::not_copyable {
 protected:
-  void init(void *buffer, size_t buffer_size) noexcept;
+  void init(void* buffer, size_t buffer_size) noexcept;
 
-  size_t size() const noexcept { return static_cast<size_t>(memory_end_ - memory_current_); }
-  void *memory_begin() const noexcept { return memory_begin_; }
-  void *memory_current() const noexcept { return memory_current_; }
-  const MemoryStats &get_memory_stats() const noexcept { return stats_; }
+  size_t size() const noexcept {
+    return static_cast<size_t>(memory_end_ - memory_current_);
+  }
+  void* memory_begin() const noexcept {
+    return memory_begin_;
+  }
+  void* memory_current() const noexcept {
+    return memory_current_;
+  }
+  const MemoryStats& get_memory_stats() const noexcept {
+    return stats_;
+  }
 
-  void register_allocation(void *mem, size_t size) noexcept {
+  void register_allocation(void* mem, size_t size) noexcept {
     if (mem) {
       stats_.memory_used += size;
       stats_.max_memory_used = std::max(stats_.max_memory_used, stats_.memory_used);
@@ -41,44 +49,43 @@ protected:
     stats_.real_memory_used = static_cast<size_t>(memory_current_ - memory_begin_);
   }
 
-  bool check_memory_piece_was_used(void *mem, size_t size) const noexcept {
-    return memory_begin_ <= static_cast<char *>(mem) && static_cast<char *>(mem) + size <= memory_current_;
+  bool check_memory_piece_was_used(void* mem, size_t size) const noexcept {
+    return memory_begin_ <= static_cast<char*>(mem) && static_cast<char*>(mem) + size <= memory_current_;
   }
 
   MemoryStats stats_;
 
   static_assert(sizeof(char) == 1, "sizeof char should be 1");
-  char *memory_current_{nullptr};
-  char *memory_begin_{nullptr};
-  char *memory_end_{nullptr};
+  char* memory_current_{nullptr};
+  char* memory_begin_{nullptr};
+  char* memory_end_{nullptr};
 };
-
 
 class monotonic_buffer_resource : protected monotonic_buffer {
 public:
-  using monotonic_buffer::init;
   using monotonic_buffer::get_memory_stats;
-  using monotonic_buffer::size;
+  using monotonic_buffer::init;
   using monotonic_buffer::memory_begin;
   using monotonic_buffer::memory_current;
+  using monotonic_buffer::size;
 
-  void *allocate(size_t size) noexcept {
-    void *mem = get_from_pool(size);
+  void* allocate(size_t size) noexcept {
+    void* mem = get_from_pool(size);
     memory_debug("allocate %zu, allocated address from pool %p\n", size, mem);
     register_allocation(mem, size);
     return mem;
   }
 
-  void *allocate0(size_t size) noexcept {
+  void* allocate0(size_t size) noexcept {
     return memset(allocate(size), 0x00, size);
   }
 
-  void *reallocate(void *mem, size_t new_size, size_t old_size) noexcept {
+  void* reallocate(void* mem, size_t new_size, size_t old_size) noexcept {
     return details::universal_reallocate(*this, mem, new_size, old_size);
   }
 
-  void *try_expand(void *mem, size_t new_size, size_t old_size) noexcept {
-    if (static_cast<char *>(mem) + old_size == memory_current_) {
+  void* try_expand(void* mem, size_t new_size, size_t old_size) noexcept {
+    if (static_cast<char*>(mem) + old_size == memory_current_) {
       const auto additional_size = old_size - new_size;
       if (static_cast<size_t>(memory_end_ - memory_current_) >= additional_size) {
         memory_current_ += additional_size;
@@ -89,26 +96,26 @@ public:
     return nullptr;
   }
 
-  void deallocate(void *mem, size_t size) noexcept {
+  void deallocate(void* mem, size_t size) noexcept {
     memory_debug("deallocate %zu at %p\n", size, mem);
     if (put_memory_back(mem, size)) {
       register_deallocation(size);
     }
   }
 
-  bool put_memory_back(void *mem, size_t size) noexcept {
+  bool put_memory_back(void* mem, size_t size) noexcept {
     if (unlikely(!check_memory_piece_was_used(mem, size))) {
       critical_dump(mem, size);
     }
 
-    const bool expandable = static_cast<char *>(mem) + size == memory_current_;
+    const bool expandable = static_cast<char*>(mem) + size == memory_current_;
     if (expandable) {
-      memory_current_ = static_cast<char *>(mem);
+      memory_current_ = static_cast<char*>(mem);
     }
     return expandable;
   }
 
-  void *get_from_pool(size_t size, bool safe = false) noexcept {
+  void* get_from_pool(size_t size, bool safe = false) noexcept {
     if (unlikely(static_cast<size_t>(memory_end_ - memory_current_) < size)) {
       if (unlikely(!safe)) {
         raise_oom(size);
@@ -116,13 +123,13 @@ public:
       return nullptr;
     }
 
-    void *mem = memory_current_;
+    void* mem = memory_current_;
     memory_current_ += size;
     return mem;
   }
 
 protected:
-  void critical_dump(void *mem, size_t size) const noexcept;
+  void critical_dump(void* mem, size_t size) const noexcept;
   // this function should never be called from the nested/base context,
   // since all allocators have their own mem stats;
   // when signaling OOM, we want to see the root mem stats, not the
