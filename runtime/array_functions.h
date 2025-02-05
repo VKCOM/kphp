@@ -81,17 +81,17 @@ void f$shuffle(array<T> &a);
 
 template<class T, class T1>
 void f$usort(array<T> &a, const T1 &compare) {
-  a.sort(compare, true);
+  return a.sort(compare, true);
 }
 
 template<class T, class T1>
 void f$uasort(array<T> &a, const T1 &compare) {
-  a.sort(compare, false);
+  return a.sort(compare, false);
 }
 
 template<class T, class T1>
 void f$uksort(array<T> &a, const T1 &compare) {
-  a.ksort(compare);
+  return a.ksort(compare);
 }
 
 template<class T>
@@ -335,8 +335,8 @@ inline Optional<array<mixed>> f$array_column(const array<mixed> &a, const mixed 
 }
 
 template<class T>
-inline auto f$array_column(const Optional<T> &a, const mixed &column_key, const mixed &index_key = {})
-  -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
+inline auto f$array_column(const Optional<T> &a, const mixed &column_key,
+                           const mixed &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
   if (!a.has_value()) {
     php_warning("first parameter of array_column must be array");
     return false;

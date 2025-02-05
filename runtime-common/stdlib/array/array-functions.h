@@ -638,6 +638,7 @@ bool f$array_is_list(const array<T> &a) noexcept {
   // so we need to call both of them to get the precise and PHP-compatible answer
   return a.is_vector() || a.is_pseudo_vector();
 }
+
 template<class T>
 void f$sort(array<T> &a, int64_t flag = SORT_REGULAR) {
   switch (flag) {
