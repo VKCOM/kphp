@@ -72,7 +72,6 @@ task_t<void> async_sort(T *begin_init, T *end_init, Comparator compare) noexcept
   }
   co_return;
 }
-
 } // namespace dl
 
 namespace array_functions_impl_ {
@@ -414,7 +413,7 @@ template<class T, class Comparator>
 requires(std::invocable<Comparator, T, T>) task_t<void> f$usort(array<T> &a, Comparator compare) {
   if constexpr (is_async_function_v<Comparator, T, T>) {
     /* make temporary copy since functions is coroutine and sort is inplace */
-    array<T> tmp = a;
+    array<T> tmp{a};
     co_return co_await array_functions_impl_::async_sort<task_t<void>>(a, std::move(compare), true);
   } else {
     co_return a.sort(std::move(compare), true);
@@ -425,7 +424,7 @@ template<class T, class Comparator>
 requires(std::invocable<Comparator, T, T>) task_t<void> f$uasort(array<T> &a, Comparator compare) {
   if constexpr (is_async_function_v<Comparator, T, T>) {
     /* make temporary copy since functions is coroutine and sort is inplace */
-    array<T> tmp = a;
+    array<T> tmp{a};
     co_return co_await array_functions_impl_::async_sort<task_t<void>>(a, std::move(compare), false);
   } else {
     co_return a.sort(std::move(compare), false);
@@ -436,7 +435,7 @@ template<class T, class Comparator>
 requires(std::invocable<Comparator, typename array<T>::key_type, typename array<T>::key_type>) task_t<void> f$uksort(array<T> &a, Comparator compare) {
   if constexpr (is_async_function_v<Comparator, T, T>) {
     /* make temporary copy since functions is coroutine and sort is inplace */
-    array<T> tmp = a;
+    array<T> tmp{a};
     co_return co_await array_functions_impl_::async_ksort<task_t<void>>(a, std::move(compare));
   } else {
     co_return a.ksort(std::move(compare));
