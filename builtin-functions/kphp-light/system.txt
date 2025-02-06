@@ -3,3 +3,7 @@
 function php_uname($mode ::: string = "a"): string;
 
 function posix_getpid(): int;
+
+function exec($command ::: string, &$output ::: mixed = [], int &$result_code = 0): string|false;
+
+function header_register_callback (callable():void $callback) ::: bool;
