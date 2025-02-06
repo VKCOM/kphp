@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "runtime-common/core/allocator/runtime-allocator.h"
 
 inline int64_t f$memory_get_peak_usage(bool real_usage = false) noexcept {
