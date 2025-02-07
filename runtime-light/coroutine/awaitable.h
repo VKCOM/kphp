@@ -14,7 +14,7 @@
 #include <utility>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/coroutine/shared_task.h"
+#include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/state/instance-state.h"

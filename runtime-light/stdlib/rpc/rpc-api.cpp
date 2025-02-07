@@ -17,7 +17,7 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/coroutine/awaitable.h"
-#include "runtime-light/coroutine/shared_task.h"
+#include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/fork/fork-state.h"

@@ -8,7 +8,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "runtime-light/coroutine/shared_task.h"
+#include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 
 template<typename F, typename... Args>
