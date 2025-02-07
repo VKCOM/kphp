@@ -80,7 +80,7 @@ struct promise_base_t {
   // waiter->coroutine will be resumed when the task completes.
   // false if the coroutine was already completed and the awaiting
   // coroutine can continue without suspending.
-  bool suspend(shared_task_impl_::shared_task_waiter_t &waiter) noexcept {
+  bool suspend_awaiter(shared_task_impl_::shared_task_waiter_t &waiter) noexcept {
     const void *const NOT_STARTED_VAL{std::addressof(this->m_waiters)};
 
     // NOTE: If the coroutine is not yet started then the first waiter
@@ -115,7 +115,7 @@ struct promise_base_t {
     return m_refcnt-- != 1;
   }
 
-  void cancel(const shared_task_impl_::shared_task_waiter_t &waiter) noexcept {
+  void cancel_awaiter(const shared_task_impl_::shared_task_waiter_t &waiter) noexcept {
     const void *const READY_VAL{this};
     if (m_waiters == READY_VAL) [[unlikely]] {
       php_critical_error("currently, shared_task_t does not support cancellation after it has finished");
@@ -205,7 +205,7 @@ public:
   constexpr bool await_suspend(std::coroutine_handle<> awaiter) noexcept {
     m_state = state::suspend;
     m_waiter.m_continuation = awaiter;
-    return m_coro.promise().suspend(m_waiter);
+    return m_coro.promise().suspend_awaiter(m_waiter);
   }
 
   constexpr void await_resume() noexcept {
@@ -218,7 +218,7 @@ public:
 
   constexpr void cancel() noexcept {
     m_state = state::end;
-    m_coro.promise().cancel(m_waiter);
+    m_coro.promise().cancel_awaiter(m_waiter);
   }
 };
 
