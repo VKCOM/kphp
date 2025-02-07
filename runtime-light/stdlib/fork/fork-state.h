@@ -37,6 +37,7 @@ class ForkInstanceState final : private vk::not_copyable {
     return next_fork_id++;
   }
 
+  template<typename T>
   friend class start_fork_t;
   template<typename T>
   friend task_t<T> f$wait(int64_t, double) noexcept;

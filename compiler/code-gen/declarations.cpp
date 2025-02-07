@@ -73,7 +73,7 @@ void FunctionDeclaration::compile(CodeGenerator &W) const {
     case gen_out_style::tagger:
     case gen_out_style::cpp: {
       if (function->is_interruptible) {
-        FunctionSignatureGenerator(W) << (function->is_k2_fork ? "shared_task_t<" : "task_t<") << ret_type_gen << ">" << " " << FunctionName(function) << "("
+        FunctionSignatureGenerator(W) << "task_t<" << ret_type_gen << ">" << " " << FunctionName(function) << "("
                                       << params_gen << ")";
       } else {
         FunctionSignatureGenerator(W) << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";

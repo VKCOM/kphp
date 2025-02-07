@@ -15,6 +15,7 @@
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/shared-task.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/state/instance-state.h"
@@ -273,21 +274,24 @@ public:
 
 // ================================================================================================
 
+template<typename T>
 class start_fork_t : awaitable_impl_::fork_id_watcher_t {
+  ForkInstanceState &fork_instance_st{ForkInstanceState::get()};
+
   int64_t fork_id{};
   std::remove_cvref_t<decltype(std::declval<shared_task_t<void>>().when_ready())> fork_awaiter;
-  SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
   awaitable_impl_::state state{awaitable_impl_::state::init};
 
 public:
-  explicit start_fork_t(const shared_task_t<void> &fork_task) noexcept
-    : fork_id(ForkInstanceState::get().push_fork(fork_task))
-    , fork_awaiter(fork_task.when_ready()) {}
+  explicit start_fork_t(task_t<T> &&task) noexcept
+    : fork_id(fork_instance_st.push_fork(
+        static_cast<shared_task_t<void>>(std::invoke([](task_t<T> task) noexcept -> shared_task_t<T> { co_return co_await task; }, std::move(task)))))
+    , fork_awaiter((*fork_instance_st.get_fork(fork_id)).when_ready()) {}
 
   start_fork_t(start_fork_t &&other) noexcept
-    : fork_id(std::exchange(other.fork_id, kphp::forks::INVALID_ID))
+    : fork_instance_st(other.fork_instance_st)
+    , fork_id(std::exchange(other.fork_id, kphp::forks::INVALID_ID))
     , fork_awaiter(std::move(other.fork_awaiter))
-    , suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{})))
     , state(std::exchange(other.state, awaitable_impl_::state::end)) {}
 
   start_fork_t(const start_fork_t &) = delete;
@@ -302,7 +306,7 @@ public:
 
   std::coroutine_handle<> await_suspend(std::coroutine_handle<> current_coro) noexcept {
     state = awaitable_impl_::state::suspend;
-    ForkInstanceState::get().current_id = fork_id;
+    fork_instance_st.current_id = fork_id;
     if (fork_awaiter.await_suspend(current_coro)) [[unlikely]] {
       // If `fork_awaiter.await_suspend` returned `true`, then `current_coro` is now waiting on the fork.
       // Cancel the await for `current_coro` immediately, as we don't want it to resume automatically.
