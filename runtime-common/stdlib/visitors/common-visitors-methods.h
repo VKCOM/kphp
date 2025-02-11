@@ -9,5 +9,5 @@
 struct CommonDefaultVisitorMethods {
   // for f$instance_to_array(), f$to_array_debug()
   // set at compiler at deeply_require_to_array_debug_visitor()
-  void accept(ToArrayVisitor &) noexcept {}
+  void accept(ToArrayVisitor & /*unused*/) noexcept {}
 };
