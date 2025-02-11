@@ -11,7 +11,7 @@
 #include "common/wrappers/string_view.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime/dummy-visitor-methods.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
 using rpc_request_extra_info_t = std::tuple<std::int64_t>; // tuple(request_size)
 using rpc_response_extra_info_t = std::tuple<std::int64_t, double>; // tuple(response_size, response_time)
