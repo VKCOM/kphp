@@ -158,7 +158,6 @@ struct promise_base_t {
 private:
   static constexpr void *STARTED_NO_WAITERS_VAL = nullptr;
 
-  uint32_t m_refcnt{1};
   // Value is either
   // - nullptr          - indicates started, no waiters
   // - &this->w_waiters - indicates the coroutine is not yet started
@@ -167,6 +166,7 @@ private:
   //                      values are of type 'shared_task_impl_::shared_task_waiter_t'.
   //                      indicates that the coroutine has been started.
   void *m_waiters{std::addressof(m_waiters)};
+  uint32_t m_refcnt{1};
 };
 
 template<typename promise_type>
