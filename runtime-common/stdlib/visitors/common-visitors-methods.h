@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "runtime-common/stdlib/array/to-array-processor.h"
+class ToArrayVisitor;
 
 struct CommonDefaultVisitorMethods {
   // for f$instance_to_array(), f$to_array_debug()
