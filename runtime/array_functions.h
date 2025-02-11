@@ -722,13 +722,13 @@ T f$vk_dot_product(const array<T> &a, const array<T> &b) {
 }
 
 template<typename Result, typename U, typename Comparator>
-Result array_functions_impl_::async_sort(__attribute__((unused)) array<U> & arr, __attribute__((unused)) Comparator comparator, __attribute__((unused)) bool renumber) noexcept {
+Result array_functions_impl_::async_sort([[maybe_unused]] array<U> & arr, [[maybe_unused]] Comparator comparator, [[maybe_unused]] bool renumber) noexcept {
   struct async_sort_stub_class {};
   static_assert(std::is_same_v<Result, async_sort_stub_class>, "array async sort functions supported only in runtime light ");
 }
 
 template<typename Result, typename U, typename Comparator>
-Result array_functions_impl_::async_ksort(__attribute__((unused)) array<U> & arr, __attribute__((unused)) Comparator comparator) noexcept {
+Result array_functions_impl_::async_ksort([[maybe_unused]] array<U> & arr, [[maybe_unused]] Comparator comparator) noexcept {
   struct async_ksort_stub_class {};
   static_assert(std::is_same_v<Result, async_ksort_stub_class>, "array async sort functions supported only in runtime light ");
 }
