@@ -4,8 +4,10 @@
 
 #pragma once
 
-class CommonMemoryEstimateVisitor;
+#include "runtime-common/stdlib/visitors/common-visitors-methods.h"
+
 class ToArrayVisitor;
+class CommonMemoryEstimateVisitor;
 class InstanceDeepCopyVisitor;
 class InstanceDeepDestroyVisitor;
 class InstanceReferencesCountingVisitor;
