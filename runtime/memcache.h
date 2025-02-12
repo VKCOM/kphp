@@ -10,7 +10,7 @@
 #include "common/wrappers/string_view.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
-#include "runtime/memory_usage.h"
+#include "runtime-common/stdlib/visitors/memory-visitors.h"
 
 void init_memcache_lib();
 void free_memcache_lib();

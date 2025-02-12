@@ -46,3 +46,7 @@ function ip2long ($ip ::: string) ::: int | false;
 function ip2ulong ($ip ::: string) ::: string | false;
 
 function long2ip ($ip ::: int) ::: string;
+
+// === Memory =====================================================================================
+
+function estimate_memory_usage($value ::: any) ::: int;

@@ -9,6 +9,7 @@
 #include <list>
 #include <map>
 #include <queue>
+#include <stack>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -42,6 +43,9 @@ using list = std::list<T, Allocator<T>>;
 
 template<class T, template<class> class Allocator>
 using vector = std::vector<T, Allocator<T>>;
+
+template<class T, template<class> class Allocator>
+using stack = std::stack<T, vector<T, Allocator>>;
 
 template<template<class> class Allocator>
 using string = std::basic_string<char, std::char_traits<char>, Allocator<char>>;

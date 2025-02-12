@@ -7,7 +7,7 @@
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
-#include "runtime/memory_usage.h"
+#include "runtime-common/stdlib/visitors/memory-visitors.h"
 
 class C$mysqli : public refcountable_php_classes<C$mysqli>, private DummyVisitorMethods {
 public:
