@@ -4,7 +4,7 @@
 
 #include "compiler/code-gen/files/shape-keys.h"
 
-#include <string>
+#include <string_view>
 
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
@@ -19,10 +19,10 @@ std::string ShapeKeys::get_function_name() noexcept {
 void ShapeKeys::compile(CodeGenerator &W) const {
   W << OpenFile{"_shape_keys.cpp"};
   W << ExternInclude{G->settings().runtime_headers.get()};
-  std::string shape_keys_storage_t{G->is_output_mode_k2() ? "kphp::stl::unordered_map<int64_t, std::string_view, kphp::memory::script_allocator>"
-                                                          : "std::unordered_map<std::int64_t, std::string_view>"};
-  std::string shape_keys_storage_init{G->is_output_mode_k2() ? "ImageState::get_mutable().shape_key_demangler.init(std::move(shape_keys_storage))"
-                                                             : "vk::singleton<ShapeKeyDemangle>::get().init(std::move(shape_keys_storage))"};
+  std::string_view shape_keys_storage_t{G->is_output_mode_k2() ? "kphp::stl::unordered_map<int64_t, std::string_view, kphp::memory::script_allocator>"
+                                                               : "std::unordered_map<std::int64_t, std::string_view>"};
+  std::string_view shape_keys_storage_init{G->is_output_mode_k2() ? "ImageState::get_mutable().shape_key_demangler.init(std::move(shape_keys_storage))"
+                                                                  : "vk::singleton<ShapeKeyDemangle>::get().init(std::move(shape_keys_storage))"};
 
   FunctionSignatureGenerator{W} << "void " << get_function_name() << "()" << BEGIN;
   W << shape_keys_storage_t << " shape_keys_storage{" << NL;
