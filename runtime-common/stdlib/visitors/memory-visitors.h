@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
@@ -10,6 +10,7 @@
 #include <type_traits>
 
 #include "common/mixin/not_copyable.h"
+#include "common/php-functions.h"
 #include "common/type_traits/list_of_types.h"
 #include "runtime-common/core/allocator/platform-allocator.h"
 #include "runtime-common/core/runtime-core.h"
