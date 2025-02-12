@@ -1,8 +1,10 @@
 update_git_submodule(${THIRD_PARTY_DIR}/openssl "--remote")
 
-set(OPENSSL_SOURCE_DIR  ${THIRD_PARTY_DIR}/openssl)
-set(OPENSSL_BUILD_DIR   ${CMAKE_BINARY_DIR}/third-party/openssl/build)
-set(OPENSSL_INSTALL_DIR ${CMAKE_BINARY_DIR}/third-party/openssl/install)
+set(OPENSSL_SOURCE_DIR      ${THIRD_PARTY_DIR}/openssl)
+set(OPENSSL_BUILD_DIR       ${CMAKE_BINARY_DIR}/third-party/openssl/build)
+set(OPENSSL_INSTALL_DIR     ${CMAKE_BINARY_DIR}/third-party/openssl/install)
+set(OPENSSL_PATCH_DIR       ${OPENSSL_BUILD_DIR}/debian/patches/)
+set(OPENSSL_PATCH_SERIES    ${OPENSSL_BUILD_DIR}/debian/patches/series)
 # Ensure the build and installation directories exists
 file(MAKE_DIRECTORY ${OPENSSL_BUILD_DIR})
 file(MAKE_DIRECTORY ${OPENSSL_INSTALL_DIR})
@@ -29,8 +31,10 @@ ExternalProject_Add(
         INSTALL_DIR ${OPENSSL_INSTALL_DIR}
         BINARY_DIR ${OPENSSL_BUILD_DIR}
         BUILD_BYPRODUCTS ${OPENSSL_INSTALL_DIR}/lib/libssl.a ${OPENSSL_INSTALL_DIR}/lib/libcrypto.a
-        CONFIGURE_COMMAND
+        PATCH_COMMAND
             COMMAND ${CMAKE_COMMAND} -E copy_directory ${OPENSSL_SOURCE_DIR} ${OPENSSL_BUILD_DIR}
+            COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${OPENSSL_BUILD_DIR} -DPATCH_SERIES=${OPENSSL_PATCH_SERIES} -DPATCH_DIR=${OPENSSL_PATCH_DIR} -P ../../cmake/apply_patches.cmake
+        CONFIGURE_COMMAND
             COMMAND ./config --prefix=${OPENSSL_INSTALL_DIR} --openssldir=/usr/lib/ssl no-shared no-pic no-idea no-mdc2 no-rc5 no-zlib no-ssl3 enable-unit-test no-ssl3-method enable-rfc3779 enable-cms no-tests ${OPENSSL_CONFIGURE_EXTRA_OPTION}
         BUILD_COMMAND
             COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${OPENSSL_COMPILE_FLAGS} make

@@ -9,8 +9,8 @@
 	url = https://github.com/PCRE2Project/pcre2.git
 [submodule "third-party/openssl"]
 	path = third-party/openssl
-	url = https://github.com/openssl/openssl.git
-	branch = OpenSSL_1_1_1-stable
+	url = https://salsa.debian.org/debian/openssl.git
+	branch = debian/buster
 [submodule "third-party/curl"]
 	path = third-party/curl
 	url = https://github.com/VKCOM/curl.git
