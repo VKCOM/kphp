@@ -21,7 +21,7 @@ void ShapeKeys::compile(CodeGenerator &W) const {
   W << ExternInclude{G->settings().runtime_headers.get()};
   std::string shape_keys_storage_t{G->is_output_mode_k2() ? "kphp::stl::unordered_map<int64_t, std::string_view, kphp::memory::script_allocator>"
                                                           : "std::unordered_map<std::int64_t, std::string_view>"};
-  std::string shape_keys_storage_init{G->is_output_mode_k2() ? "ShapeKeyDemangle::get_mutable().init(std::move(shape_keys_storage))"
+  std::string shape_keys_storage_init{G->is_output_mode_k2() ? "ImageState::get_mutable().shape_key_demangler.init(std::move(shape_keys_storage))"
                                                              : "vk::singleton<ShapeKeyDemangle>::get().init(std::move(shape_keys_storage))"};
 
   FunctionSignatureGenerator{W} << "void " << get_function_name() << "()" << BEGIN;

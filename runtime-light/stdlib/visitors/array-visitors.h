@@ -5,6 +5,7 @@
 #pragma once
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/state/image-state.h"
 #include "runtime-light/stdlib/visitors/shape-visitors.h"
 
 class ToArrayVisitor {
@@ -28,7 +29,7 @@ public:
 
   template<size_t... Is, typename... T>
   static void process_shape(const shape<std::index_sequence<Is...>, T...> &shape, ToArrayVisitor &visitor) {
-    const auto &demangler{ShapeKeyDemangle::get()};
+    const auto &demangler{ImageState::get().shape_key_demangler};
     (visitor.process_impl(demangler.get_key_by(Is).data(), shape.template get<Is>()), ...);
   }
 

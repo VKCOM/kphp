@@ -31,5 +31,4 @@ prepend(
   file/file-system-state.cpp
   file/resource.cpp
   time/time-functions.cpp
-  visitors/shape-visitors.cpp
   zlib/zlib-functions.cpp)
