@@ -11,15 +11,25 @@
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
 
 #define THROW_EXCEPTION(e)                                                                                                                                     \
-  { php_critical_error("Exceptions unsupported"); }
+  {                                                                                                                                                            \
+    Throwable x_tmp___ = e;                                                                                                                                    \
+    auto &cur_exception{ExceptionInstanceState::get().cur_exception};                                                                                          \
+    php_assert(cur_exception.is_null());                                                                                                                       \
+    cur_exception = std::move(x_tmp___);                                                                                                                       \
+  }
 
-#define CHECK_EXCEPTION(action)
+#define CHECK_EXCEPTION(action)                                                                                                                                \
+  if (!ExceptionInstanceState::get().cur_exception.is_null()) [[unlikely]] {                                                                                   \
+    action;                                                                                                                                                    \
+  }
 
 #ifdef __clang__
 #define TRY_CALL_RET_(x) x
 #else
 #define TRY_CALL_RET_(x) std::move(x)
 #endif
+
+// ================================================================================================
 
 #define TRY_CALL_(CallT, call, action)                                                                                                                         \
   ({                                                                                                                                                           \
@@ -35,8 +45,17 @@
     void();                                                                                                                                                    \
   })
 
+// ================================================================================================
+
 #define TRY_CALL(CallT, ResT, call) TRY_CALL_(CallT, call, return (ResT()))
 #define TRY_CALL_VOID(ResT, call) TRY_CALL_VOID_(call, return (ResT()))
+
+// ================================================================================================
+
+#define TRY_CALL_CORO(CallT, ResT, call) TRY_CALL_(CallT, call, co_return(ResT()))
+#define TRY_CALL_VOID_CORO(ResT, call) TRY_CALL_VOID_(call, co_return(ResT()))
+
+// ================================================================================================
 
 #define TRY_CALL_EXIT(CallT, message, call) TRY_CALL_(CallT, call, php_critical_error(message))
 #define TRY_CALL_VOID_EXIT(message, call) TRY_CALL_VOID_(call, php_critical_error(message))

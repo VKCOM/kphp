@@ -87,7 +87,7 @@ inline string exception_trace_as_string(const Throwable &e) noexcept {
 inline void exception_initialize(const Throwable &e, const string &message, int64_t code) noexcept {
   e->$message = message;
   e->$code = code;
-  php_warning("exception backtrace is not yet supported");
+  php_warning("exception backtrace is not yet supported"); // TODO
 }
 
 } // namespace exception_impl_

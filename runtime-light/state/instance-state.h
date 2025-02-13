@@ -11,9 +11,9 @@
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -22,6 +22,7 @@
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
+#include "runtime-light/stdlib/diagnostics/exception-state.h"
 #include "runtime-light/stdlib/file/file-system-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
@@ -110,6 +111,7 @@ struct InstanceState final : vk::not_copyable {
 
   RuntimeContext runtime_context;
   RpcInstanceState rpc_instance_state;
+  ExceptionInstanceState exception_instance_state;
   SerializationInstanceState serialization_instance_state;
   HttpServerInstanceState http_server_instance_state;
   JobWorkerClientInstanceState job_worker_client_instance_state{};
