@@ -9,14 +9,14 @@
 
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/visitors/common-visitors-methods.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
 using rpc_request_extra_info_t = std::tuple<int64_t>;          // tuple(request_size)
 using rpc_response_extra_info_t = std::tuple<int64_t, double>; // tuple(response_size, response_time)
 enum class rpc_response_extra_info_status_t : uint8_t { NOT_READY, READY };
 
-struct C$KphpRpcRequestsExtraInfo final : public refcountable_php_classes<C$KphpRpcRequestsExtraInfo>, private CommonDefaultVisitorMethods {
-  using CommonDefaultVisitorMethods::accept;
+struct C$KphpRpcRequestsExtraInfo final : public refcountable_php_classes<C$KphpRpcRequestsExtraInfo>, private DummyVisitorMethods {
+  using DummyVisitorMethods::accept;
 
   array<rpc_request_extra_info_t> extra_info_arr;
 

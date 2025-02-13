@@ -4,9 +4,10 @@
 
 #pragma once
 
-#include "runtime-common/stdlib/visitors/common-visitors-methods.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
-struct C$CompileTimeLocation : public refcountable_php_classes<C$CompileTimeLocation>, private CommonDefaultVisitorMethods {
+struct C$CompileTimeLocation : public refcountable_php_classes<C$CompileTimeLocation>, private DummyVisitorMethods {
   string $file;
   string $function;
   int64_t $line;
@@ -17,7 +18,7 @@ struct C$CompileTimeLocation : public refcountable_php_classes<C$CompileTimeLoca
     return "CompileTimeLocation";
   }
 
-  using CommonDefaultVisitorMethods::accept;
+  using DummyVisitorMethods::accept;
 };
 
 using CompileTimeLocation = class_instance<C$CompileTimeLocation>;
