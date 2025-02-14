@@ -145,8 +145,8 @@ void append_if_doesnt_contain(std::string &ld_flags, const T &libs, vk::string_v
   }
 }
 
-void append_3dparty_headers(std::string &cxx_flags, const std::string &path_to_3dparty, const std::string &libname) noexcept {
-  cxx_flags += " -I" + path_to_3dparty + "include/" + libname;
+void append_3dparty_headers(std::string &cxx_flags, const std::string &path_to_3dparty) noexcept {
+  cxx_flags += " -I" + path_to_3dparty + "include/";
 }
 
 void append_3dparty_lib(std::string &ld_flags, const std::string &path_to_3dparty, const std::string &libname) noexcept {
@@ -159,7 +159,6 @@ void append_curl([[maybe_unused]] std::string &cxx_flags, std::string &ld_flags,
     ld_flags += " -lcurl";
 #else
     // TODO make it as an option?
-    append_3dparty_headers(cxx_flags, path_to_3dparty, "curl");
     append_3dparty_lib(ld_flags, path_to_3dparty, "curl");
 #endif
   }
@@ -364,10 +363,12 @@ void CompilerSettings::init() {
 
   auto third_party_path = kphp_src_path.get() + "objs/";
 
+  append_3dparty_headers(cxx_default_flags, third_party_path);
+
   ld_flags.value_ = extra_ld_flags.get();
   append_curl(cxx_default_flags, ld_flags.value_, third_party_path);
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> system_installed_static_libs{"pcre", "re2", "yaml-cpp", "h3", "z", "zstd", "nghttp2", "kphp-timelib"};
+  std::vector<vk::string_view> system_installed_static_libs{"pcre", "re2", "yaml-cpp", "h3", "zstd", "nghttp2", "kphp-timelib"};
 
 #ifdef KPHP_TIMELIB_LIB_DIR
   ld_flags.value_ += " -L" KPHP_TIMELIB_LIB_DIR;
@@ -423,7 +424,11 @@ void CompilerSettings::init() {
   system_installed_dynamic_libs.emplace_back("rt");
 #endif
 
-  append_3dparty_headers(cxx_default_flags, third_party_path, "openssl");
+  if (is_k2_mode) {
+    append_3dparty_lib(ld_flags.value_, third_party_path, "z-pic");
+  } else {
+    append_3dparty_lib(ld_flags.value_, third_party_path, "z-no-pic");
+  }
   append_3dparty_lib(ld_flags.value_, third_party_path, "ssl");
   append_3dparty_lib(ld_flags.value_, third_party_path, "crypto");
 

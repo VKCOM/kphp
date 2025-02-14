@@ -1,16 +1,17 @@
-if(COMPILE_RUNTIME_LIGHT)
-  set(ZLIB_BUILD_EXAMPLES OFF BOOL "Disable ZLIB_BUILD_EXAMPLES")
-  set(ZLIB_COMPILE_FLAGS "-O3" "-fPIC")
+update_git_submodule(${THIRD_PARTY_DIR}/zlib "--recursive")
 
-  set(RENAME_ZCONF OFF)
-  add_subdirectory(${THIRD_PARTY_DIR}/zlib ${CMAKE_BINARY_DIR}/third-party/zlib)
+set(ZLIB_SOURCE_DIR  ${THIRD_PARTY_DIR}/zlib)
 
-  target_compile_definitions(zlibstatic PRIVATE Z_HAVE_UNISTD_H)
-  target_compile_definitions(zlib PRIVATE Z_HAVE_UNISTD_H)
-  target_compile_options(zlibstatic PUBLIC ${ZLIB_COMPILE_FLAGS})
+# The configuration has been based on:
+# https://sources.debian.org/src/zlib/1%3A1.3.dfsg%2Breally1.3.1-1/debian/rules/#L20
+set(ZLIB_COMMON_COMPILE_FLAGS "$ENV{CFLAGS} -g0 -Wall -O3 -D_REENTRANT")
 
-  # Set output directories for zlib targets
-  set(ZLIB_LIB_DIR "${OBJS_DIR}/lib")
-  set_target_properties(zlibstatic PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
-                                              ${ZLIB_LIB_DIR})
+if(APPLE)
+    detect_xcode_sdk_path(CMAKE_OSX_SYSROOT)
+    set(ZLIB_COMMON_COMPILE_FLAGS "${ZLIB_COMMON_COMPILE_FLAGS} --sysroot ${CMAKE_OSX_SYSROOT}")
 endif()
+
+include(${THIRD_PARTY_DIR}/zlib-cmake/zlib-pic.cmake)
+include(${THIRD_PARTY_DIR}/zlib-cmake/zlib-no-pic.cmake)
+
+set(ZLIB_FOUND ON)

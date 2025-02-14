@@ -73,3 +73,27 @@ function(update_git_submodule submodule_path)
         message(FATAL_ERROR "Failed to update Git submodule ${submodule_path}: ${update_stdout} ${update_stderr}")
     endif()
 endfunction()
+
+function(detect_xcode_sdk_path OUTPUT_VARIABLE)
+    # Use execute_process to run the xcrun command and capture the output
+    execute_process(
+            COMMAND xcrun --sdk macosx --show-sdk-path
+            OUTPUT_VARIABLE SDK_PATH
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_VARIABLE ERROR_MSG
+            RESULT_VARIABLE RESULT
+    )
+
+    # Check if the command was successful
+    if(RESULT EQUAL 0)
+        # Check if the SDK_PATH is not empty
+        if(SDK_PATH)
+            set(${OUTPUT_VARIABLE} "${SDK_PATH}" PARENT_SCOPE)
+            message(STATUS "Detected Xcode SDK path: ${SDK_PATH}")
+        else()
+            message(FATAL_ERROR "Failed to detect Xcode SDK path: Output is empty.")
+        endif()
+    else()
+        message(FATAL_ERROR "Failed to detect Xcode SDK path: ${ERROR_MSG}")
+    endif()
+endfunction()

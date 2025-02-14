@@ -9,7 +9,7 @@ set(OPENSSL_PATCH_SERIES    ${OPENSSL_BUILD_DIR}/debian/patches/series)
 file(MAKE_DIRECTORY ${OPENSSL_BUILD_DIR})
 file(MAKE_DIRECTORY ${OPENSSL_INSTALL_DIR})
 
-set(OPENSSL_COMPILE_FLAGS "$ENV{CFLAGS} -g0")
+set(OPENSSL_COMPILE_FLAGS "$ENV{CFLAGS} -g0 -fno-pic -static")
 
 # The configuration has been based on:
 # https://packages.debian.org/buster/libssl1.1
@@ -24,6 +24,11 @@ if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     set(OPENSSL_CONFIGURE_EXTRA_OPTION enable-ec_nistp_64_gcc_128)
 endif()
 
+if(APPLE)
+    detect_xcode_sdk_path(CMAKE_OSX_SYSROOT)
+    set(OPENSSL_COMPILE_FLAGS "${OPENSSL_COMPILE_FLAGS} --sysroot ${CMAKE_OSX_SYSROOT}")
+endif()
+
 ExternalProject_Add(
         openssl
         PREFIX ${OPENSSL_BUILD_DIR}
@@ -35,11 +40,11 @@ ExternalProject_Add(
             COMMAND ${CMAKE_COMMAND} -E copy_directory ${OPENSSL_SOURCE_DIR} ${OPENSSL_BUILD_DIR}
             COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${OPENSSL_BUILD_DIR} -DPATCH_SERIES=${OPENSSL_PATCH_SERIES} -DPATCH_DIR=${OPENSSL_PATCH_DIR} -P ../../cmake/apply_patches.cmake
         CONFIGURE_COMMAND
-            COMMAND ./config --prefix=${OPENSSL_INSTALL_DIR} --openssldir=/usr/lib/ssl no-shared no-pic no-idea no-mdc2 no-rc5 no-zlib no-ssl3 enable-unit-test no-ssl3-method enable-rfc3779 enable-cms no-tests ${OPENSSL_CONFIGURE_EXTRA_OPTION}
+            COMMAND ${CMAKE_COMMAND} -E env CC=${CMAKE_C_COMPILER} CFLAGS=${OPENSSL_COMPILE_FLAGS} ./config --prefix=${OPENSSL_INSTALL_DIR} --openssldir=/usr/lib/ssl no-shared no-pic no-idea no-mdc2 no-rc5 no-zlib no-ssl3 enable-unit-test no-ssl3-method enable-rfc3779 enable-cms no-tests ${OPENSSL_CONFIGURE_EXTRA_OPTION}
         BUILD_COMMAND
-            COMMAND ${CMAKE_COMMAND} -E env CFLAGS=${OPENSSL_COMPILE_FLAGS} make
+            COMMAND make build_libs -j
         INSTALL_COMMAND
-            COMMAND make install_sw
+            COMMAND make install_dev
             COMMAND ${CMAKE_COMMAND} -E copy_directory ${OPENSSL_INSTALL_DIR}/include ${INCLUDE_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy ${OPENSSL_INSTALL_DIR}/lib/libssl.a ${LIB_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy ${OPENSSL_INSTALL_DIR}/lib/libcrypto.a ${LIB_DIR}

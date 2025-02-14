@@ -73,8 +73,9 @@ foreach(PHP_VERSION IN ITEMS "" "7.4" "8.0" "8.1" "8.2" "8.3")
         endif()
         target_compile_definitions(${VKEXT_TARGET} PRIVATE -DVKEXT -DPHP_ATOM_INC)
         target_compile_options(${VKEXT_TARGET} PRIVATE -Wno-unused-parameter -Wno-float-conversion -Wno-ignored-qualifiers)
-        target_include_directories(${VKEXT_TARGET} PRIVATE ${PHP_SOURCE} ${PHP_SOURCE}/main ${PHP_SOURCE}/Zend ${PHP_SOURCE}/TSRM ${BASE_DIR})
-        target_link_libraries(${VKEXT_TARGET} PRIVATE vk::flex_data_shared)
+        target_include_directories(${VKEXT_TARGET} PRIVATE ${PHP_SOURCE} ${PHP_SOURCE}/main ${PHP_SOURCE}/Zend ${PHP_SOURCE}/TSRM ${BASE_DIR} ${ZLIB_PIC_INCLUDE_DIRS})
+        add_dependencies(${VKEXT_TARGET} zlib-pic)
+        target_link_libraries(${VKEXT_TARGET} PRIVATE vk::flex_data_shared ZLIB::ZLIB_PIC)
         set_target_properties(${VKEXT_TARGET} PROPERTIES
                 LIBRARY_OUTPUT_DIRECTORY ${OBJS_DIR}/vkext/modules${PHP_VERSION}/
                 LIBRARY_OUTPUT_NAME vkext

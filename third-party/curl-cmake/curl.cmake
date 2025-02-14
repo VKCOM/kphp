@@ -7,7 +7,11 @@ set(CURL_INSTALL_DIR ${CMAKE_BINARY_DIR}/third-party/curl/install)
 file(MAKE_DIRECTORY ${CURL_BUILD_DIR})
 file(MAKE_DIRECTORY ${CURL_INSTALL_DIR})
 
-set(CURL_COMPILE_FLAGS "$ENV{CFLAGS} -g0 -Wno-deprecated-declarations")
+set(CURL_COMPILE_FLAGS "$ENV{CFLAGS} -g0 -fno-pic -Wno-deprecated-declarations")
+if(NOT APPLE)
+    set(CURL_COMPILE_FLAGS "${CURL_COMPILE_FLAGS} -static")
+endif()
+
 # Suppress compiler-specific warnings caused by -O3
 if(COMPILER_CLANG)
     set(CURL_COMPILE_FLAGS "${CURL_COMPILE_FLAGS} -Wno-string-plus-int")
@@ -34,21 +38,27 @@ set(CURL_CMAKE_ARGS
         -DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}
         -DOPENSSL_LIBRARIES=${OPENSSL_LIBRARIES}
         -DOPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}
+        -DCURL_ZLIB=ON
+        -DZLIB_FOUND=ON
+        -DCURL_SPECIAL_LIBZ=ON
+        -DZLIB_ROOT=${ZLIB_NO_PIC_ROOT}
+        -DZLIB_LIBRARIES=${ZLIB_NO_PIC_LIBRARIES}
+        -DZLIB_INCLUDE_DIR=${ZLIB_NO_PIC_INCLUDE_DIRS}/zlib
         -DCMAKE_C_FLAGS=${CURL_COMPILE_FLAGS}
-        -DCURL_TEST=Off
+        -DCMAKE_POSITION_INDEPENDENT_CODE=OFF
 )
 
 ExternalProject_Add(
         curl
-        DEPENDS openssl
+        DEPENDS openssl zlib-no-pic
         PREFIX ${CURL_BUILD_DIR}
         SOURCE_DIR ${CURL_SOURCE_DIR}
         INSTALL_DIR ${CURL_INSTALL_DIR}
         BUILD_BYPRODUCTS ${CURL_INSTALL_DIR}/lib/libcurl.a
         CONFIGURE_COMMAND
-            COMMAND ${CMAKE_COMMAND} ${CURL_CMAKE_ARGS} -S ${CURL_SOURCE_DIR} -B ${CURL_BUILD_DIR}
+            COMMAND ${CMAKE_COMMAND} ${CURL_CMAKE_ARGS} -S ${CURL_SOURCE_DIR} -B ${CURL_BUILD_DIR} -Wno-dev
         BUILD_COMMAND
-            COMMAND ${CMAKE_COMMAND} --build ${CURL_BUILD_DIR} --config $<CONFIG>
+            COMMAND ${CMAKE_COMMAND} --build ${CURL_BUILD_DIR} --config $<CONFIG> -j
         INSTALL_COMMAND
             COMMAND ${CMAKE_COMMAND} --install ${CURL_BUILD_DIR} --prefix ${CURL_INSTALL_DIR} --config $<CONFIG>
             COMMAND ${CMAKE_COMMAND} -E copy_directory ${CURL_INSTALL_DIR}/include ${INCLUDE_DIR}
@@ -56,14 +66,14 @@ ExternalProject_Add(
         BUILD_IN_SOURCE 0
 )
 
-set(CURL_INCLUDE_DIR ${CURL_INSTALL_DIR}/include)
+set(CURL_INCLUDE_DIRS ${CURL_INSTALL_DIR}/include)
 # Ensure the include directory exists
-file(MAKE_DIRECTORY ${CURL_INCLUDE_DIR})
+file(MAKE_DIRECTORY ${CURL_INCLUDE_DIRS})
 
 add_library(CURL::curl STATIC IMPORTED)
 set_target_properties(CURL::curl PROPERTIES
         IMPORTED_LOCATION ${CURL_INSTALL_DIR}/lib/libcurl.a
-        INTERFACE_INCLUDE_DIRECTORIES ${CURL_INCLUDE_DIR}
+        INTERFACE_INCLUDE_DIRECTORIES ${CURL_INCLUDE_DIRS}
 )
 
 # Set variables indicating that curl has been installed

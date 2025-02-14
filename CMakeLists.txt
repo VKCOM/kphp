@@ -30,7 +30,8 @@ include(cmake/external-libraries.cmake)
 include(cmake/init-compilation-flags.cmake)
 include(cmake/popular-common.cmake)
 
-# OpenSSL building
+# Common third-parties build
+include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)
 include(${THIRD_PARTY_DIR}/openssl-cmake/openssl.cmake)
 
 # TODO: use FetchContent_Declare instead of include_directories

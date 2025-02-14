@@ -1,10 +1,8 @@
 # prepare third-parties
 update_git_submodule(${THIRD_PARTY_DIR}/abseil-cpp "--recursive")
 update_git_submodule(${THIRD_PARTY_DIR}/pcre2 "--recursive")
-update_git_submodule(${THIRD_PARTY_DIR}/zlib "--recursive")
 include(${THIRD_PARTY_DIR}/abseil-cpp-cmake/abseil-cpp.cmake)
 include(${THIRD_PARTY_DIR}/pcre2-cmake/pcre2.cmake)
-include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)
 
 set(THIRD_PARTY_INCLUDE -I${OBJS_DIR}/include -I${THIRD_PARTY_DIR}
                         -I${THIRD_PARTY_DIR}/abseil-cpp)
@@ -54,8 +52,9 @@ string(JOIN " " ABSEIL_LIBS ${ABSEIL_LIBS})
 set_property(
   TARGET runtime-light
   PROPERTY RUNTIME_LINK_LIBS
-           "${ABSEIL_LIBS} ${ZLIB_LIB_DIR}/libz.a ${PCRE2_LIB_DIR}/libpcre2-8.a"
+           "${ABSEIL_LIBS} ${ZLIB_PIC_LIBRARIES} ${PCRE2_LIB_DIR}/libpcre2-8.a"
 )
+add_dependencies(runtime-light zlib-pic)
 
 if(APPLE)
   target_link_options(runtime-light PUBLIC -undefined dynamic_lookup)
