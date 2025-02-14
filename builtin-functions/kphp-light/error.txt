@@ -97,6 +97,8 @@ class RangeException extends RuntimeException {}
 class UnderflowException extends RuntimeException {}
 class UnexpectedValueException extends RuntimeException {}
 
+class Random\RandomException extends Exception {}
+
 /** @kphp-extern-func-info generate-stub */
 function error_reporting ($e ::: int = TODO) ::: int;
 /** @kphp-extern-func-info generate-stub */
