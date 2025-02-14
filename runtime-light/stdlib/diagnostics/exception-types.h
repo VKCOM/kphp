@@ -6,9 +6,9 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
-#include <string_view>
+#include <cstring>
 
+#include "common/php-functions.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
@@ -27,7 +27,8 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
   }
 
   virtual int32_t get_hash() const noexcept {
-    return static_cast<int32_t>(std::hash<std::string_view>{}(std::string_view{get_class()}));
+    const auto *name{get_class()}; // TODO: hash
+    return static_cast<int32_t>(string_hash(name, std::strlen(name)));
   }
 
   template<class Visitor, bool process_raw_trace = true>
