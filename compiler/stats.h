@@ -30,6 +30,26 @@ public:
   std::atomic<double> transpilation_time{0.0};
   std::atomic<double> total_time{0.0};
 
+  // Counters for hash tables' sizes in CompilerCore
+  std::atomic<std::uint64_t> total_files{0u};
+  std::atomic<std::uint64_t> total_dirs{0u};
+  std::atomic<std::uint64_t> total_defines{0u};
+  std::atomic<std::uint64_t> total_libs{0u};
+  std::atomic<std::uint64_t> total_modulites{0u};
+  std::atomic<std::uint64_t> total_composer_jsons{0u};
+
+  // Max sizes of hash tables in CompilerCore
+  std::atomic<std::uint64_t> max_files{0u};
+  std::atomic<std::uint64_t> max_dirs{0u};
+  std::atomic<std::uint64_t> max_functions{0u};
+  std::atomic<std::uint64_t> max_classes{0u};
+  std::atomic<std::uint64_t> max_defines{0u};
+  std::atomic<std::uint64_t> max_constants{0u};
+  std::atomic<std::uint64_t> max_globals{0u};
+  std::atomic<std::uint64_t> max_libs{0u};
+  std::atomic<std::uint64_t> max_modulites{0u};
+  std::atomic<std::uint64_t> max_composer_jsons{0u};
+
   std::unordered_map<std::string, ProfilerRaw> profiler_stats;
 
 private:

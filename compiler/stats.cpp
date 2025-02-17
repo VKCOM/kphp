@@ -6,6 +6,7 @@
 
 #include "common/dl-utils-lite.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 
 void Stats::on_var_inserting(VarData::Type type) {
@@ -89,6 +90,27 @@ void Stats::write_to(std::ostream &out, bool with_indent) const {
   out << indent << "compilation.transpilation_time: " << transpilation_time << std::endl;
   out << indent << "compilation.total_time: " << total_time << std::endl;
   out << indent << "compilation.object_out_size: " << object_out_size << std::endl;
+  out << block_sep;
+  out << indent << "hash_tables.max_files: " << max_files << std::endl;
+  out << indent << "hash_tables.total_files: " << total_files << std::endl;
+  out << indent << "hash_tables.max_dirs: " << max_dirs << std::endl;
+  out << indent << "hash_tables.total_dirs: " << total_dirs << std::endl;
+  out << indent << "hash_tables.max_functions: " << max_functions << std::endl;
+  out << indent << "hash_tables.total_functions: " << total_functions_ << std::endl;
+  out << indent << "hash_tables.max_classes: " << max_classes << std::endl;
+  out << indent << "hash_tables.total_classes: " << total_classes + total_lambdas << std::endl;
+  out << indent << "hash_tables.max_defines: " << max_defines << std::endl;
+  out << indent << "hash_tables.total_defines: " << total_defines << std::endl;
+  out << indent << "hash_tables.max_constants: " << max_constants << std::endl;
+  out << indent << "hash_tables.total_constants: " << global_const_vars_ << std::endl;
+  out << indent << "hash_tables.max_globals: " << max_globals << std::endl;
+  out << indent << "hash_tables.total_globals: " << global_vars_ << std::endl;
+  out << indent << "hash_tables.max_libs: " << max_libs << std::endl;
+  out << indent << "hash_tables.total_libs: " << total_libs << std::endl;
+  out << indent << "hash_tables.max_modulites: " << max_modulites << std::endl;
+  out << indent << "hash_tables.total_modulites: " << total_modulites << std::endl;
+  out << indent << "hash_tables.max_composer_jsons: " << max_composer_jsons << std::endl;
+  out << indent << "hash_tables.total_composer_jsons: " << total_composer_jsons << std::endl;
   out << block_sep;
   out << std::fixed;
   for (const auto &prof : profiler_stats) {

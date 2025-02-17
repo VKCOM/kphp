@@ -4,6 +4,7 @@
 
 #include "compiler/compiler-core.h"
 
+#include <atomic>
 #include <dirent.h>
 
 #include "common/algorithms/contains.h"
@@ -22,6 +23,7 @@
 #include "compiler/index.h"
 #include "compiler/name-gen.h"
 #include "compiler/runtime_build_info.h"
+#include <sys/stat.h>
 
 namespace {
 
@@ -379,7 +381,7 @@ LibPtr CompilerCore::register_lib(LibPtr lib) {
 }
 
 ModulitePtr CompilerCore::register_modulite(ModulitePtr modulite) {
-  TSHashTable<ModulitePtr, 1000>::HTNode *node = modulites_ht.at(vk::std_hash(modulite->modulite_name));
+  auto *node = modulites_ht.at(vk::std_hash(modulite->modulite_name));
   AutoLocker<Lockable *> locker(node);
   kphp_error(!node->data, fmt_format("Redeclaration of modulite {}, declared in:\n- {}\n- {}", modulite->modulite_name, modulite->yaml_file->relative_file_name, node->data->yaml_file->relative_file_name));
   node->data = modulite;
@@ -392,7 +394,7 @@ ModulitePtr CompilerCore::get_modulite(vk::string_view name) {
 }
 
 ComposerJsonPtr CompilerCore::register_composer_json(ComposerJsonPtr composer_json) {
-  TSHashTable<ComposerJsonPtr, 1000>::HTNode *node = composer_json_ht.at(vk::std_hash(composer_json->package_name));
+  auto *node = composer_json_ht.at(vk::std_hash(composer_json->package_name));
   AutoLocker<Lockable *> locker(node);
   kphp_error(!node->data, fmt_format("Redeclaration of composer package {}, declared in:\n- {}\n- {}", composer_json->package_name, composer_json->json_file->relative_file_name, node->data->json_file->relative_file_name));
   node->data = composer_json;
@@ -762,5 +764,36 @@ void CompilerCore::init_composer_class_loader() {
   }
 }
 
+void CompilerCore::update_hash_tables_stats() {
+  stats.max_files = file_ht.max_size();
+  stats.total_files = file_ht.get_used_size();
+
+  stats.max_dirs = dirs_ht.max_size();
+  stats.total_dirs = dirs_ht.get_used_size();
+
+  stats.max_functions = functions_ht.max_size();
+  // total_functions_ set up automatically
+
+  stats.max_classes = classes_ht.max_size();
+  // total_classes and total_lambdas set up automatically
+
+  stats.max_defines = defines_ht.max_size();
+  stats.total_defines = defines_ht.get_used_size();
+
+  stats.max_constants = constants_ht.max_size();
+  // global_const_vars_ set up automatically
+
+  stats.max_globals = globals_ht.max_size();
+  // gloval_vars_ set up automatically
+
+  stats.max_libs = libs_ht.max_size();
+  stats.total_libs = libs_ht.get_used_size();
+
+  stats.max_modulites = modulites_ht.max_size();
+  stats.total_modulites = modulites_ht.get_used_size();
+
+  stats.max_composer_jsons = composer_json_ht.max_size();
+  stats.total_composer_jsons = composer_json_ht.get_used_size();
+}
 
 CompilerCore *G;

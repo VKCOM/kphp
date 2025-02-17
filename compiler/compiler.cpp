@@ -377,6 +377,7 @@ bool compiler_execute(CompilerSettings *settings) {
   G->finish();
   auto profiler_stats = collect_profiler_stats();
   G->stats.update_memory_stats();
+  G->update_hash_tables_stats();
   G->stats.total_time = dl_time() - st;
   if (verbosity >= 1) {
     profiler_print_all(profiler_stats);

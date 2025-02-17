@@ -83,4 +83,12 @@ public:
     }
     return res;
   }
+
+  constexpr int max_size() const {
+    return N;
+  }
+
+  int get_used_size() const {
+    return used_size;
+  }
 };

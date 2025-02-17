@@ -49,8 +49,8 @@ private:
   TSHashTable<VarPtr,2'000'000> constants_ht;   // auto-collected constants (const strings / arrays / regexps / pure func calls); are inited once in a master process
   TSHashTable<VarPtr> globals_ht;               // mutable globals (vars in global scope, class static fields); are reset for each php script inside worker processes
   TSHashTable<LibPtr, 1000> libs_ht;
-  TSHashTable<ModulitePtr, 1000> modulites_ht;
-  TSHashTable<ComposerJsonPtr, 1000> composer_json_ht;
+  TSHashTable<ModulitePtr, 10000> modulites_ht;
+  TSHashTable<ComposerJsonPtr, 10000> composer_json_ht;
   SrcFilePtr main_file;
   CompilerSettings *settings_;
   ComposerAutoloader composer_class_loader;
@@ -223,6 +223,8 @@ public:
   const std::vector<std::string> &get_exclude_namespaces() const {
     return exclude_namespaces;
   }
+
+  void update_hash_tables_stats();
 
   Stats stats;
 };
