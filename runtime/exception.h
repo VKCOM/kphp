@@ -4,10 +4,10 @@
 
 #pragma once
 
+#include <cstring>
 #include <type_traits>
 
-#include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
+#include "common/php-functions.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
@@ -23,7 +23,8 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
   }
 
   virtual int32_t get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(get_class())));
+    const auto *class_name{get_class()};
+    return static_cast<int32_t>(string_hash(class_name, std::strlen(class_name)));
   }
 
   template<class Visitor, bool process_raw_trace = true>
