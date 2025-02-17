@@ -4,6 +4,7 @@
 
 #include "compiler/compiler-core.h"
 
+#include <atomic>
 #include <dirent.h>
 
 #include "common/algorithms/contains.h"
@@ -266,6 +267,7 @@ SrcFilePtr CompilerCore::register_file(const std::string &file_name, LibPtr owne
   if (!node->data) {
     AutoLocker<Lockable *> locker(node);
     if (!node->data) {
+      stats.total_files.fetch_add(1, std::memory_order_relaxed);
       SrcFilePtr new_file = SrcFilePtr(new SrcFile(full_file_name, short_file_name, owner_lib));
       new_file->is_from_functions_file = builtin;
       new_file->relative_file_name = static_cast<std::string>(calc_relative_name(new_file, builtin));
@@ -296,6 +298,8 @@ SrcFilePtr CompilerCore::register_file(const std::string &file_name, LibPtr owne
 SrcDirPtr CompilerCore::register_dir(vk::string_view full_dir_name) {
   static CachedProfiler cache{"Load src dirs tree"};
   AutoProfiler prof{*cache};
+
+  stats.total_dirs.fetch_add(1, std::memory_order_relaxed);
 
   SrcDirPtr dir = SrcDirPtr(new SrcDir(static_cast<std::string>(full_dir_name)));
 
@@ -370,6 +374,7 @@ bool CompilerCore::register_class(ClassPtr cur_class) {
 }
 
 LibPtr CompilerCore::register_lib(LibPtr lib) {
+  stats.total_libs.fetch_add(1, std::memory_order_relaxed);
   TSHashTable<LibPtr, 1000>::HTNode *node = libs_ht.at(vk::std_hash(lib->lib_namespace()));
   AutoLocker<Lockable *> locker(node);
   if (!node->data) {
@@ -379,7 +384,8 @@ LibPtr CompilerCore::register_lib(LibPtr lib) {
 }
 
 ModulitePtr CompilerCore::register_modulite(ModulitePtr modulite) {
-  TSHashTable<ModulitePtr, 1000>::HTNode *node = modulites_ht.at(vk::std_hash(modulite->modulite_name));
+  stats.total_modulites.fetch_add(1, std::memory_order_relaxed);
+  auto *node = modulites_ht.at(vk::std_hash(modulite->modulite_name));
   AutoLocker<Lockable *> locker(node);
   kphp_error(!node->data, fmt_format("Redeclaration of modulite {}, declared in:\n- {}\n- {}", modulite->modulite_name, modulite->yaml_file->relative_file_name, node->data->yaml_file->relative_file_name));
   node->data = modulite;
@@ -392,7 +398,8 @@ ModulitePtr CompilerCore::get_modulite(vk::string_view name) {
 }
 
 ComposerJsonPtr CompilerCore::register_composer_json(ComposerJsonPtr composer_json) {
-  TSHashTable<ComposerJsonPtr, 1000>::HTNode *node = composer_json_ht.at(vk::std_hash(composer_json->package_name));
+  stats.total_composer_jsons.fetch_add(1, std::memory_order_relaxed);
+  auto *node = composer_json_ht.at(vk::std_hash(composer_json->package_name));
   AutoLocker<Lockable *> locker(node);
   kphp_error(!node->data, fmt_format("Redeclaration of composer package {}, declared in:\n- {}\n- {}", composer_json->package_name, composer_json->json_file->relative_file_name, node->data->json_file->relative_file_name));
   node->data = composer_json;
@@ -457,6 +464,8 @@ void CompilerCore::set_memcache_class(ClassPtr klass) {
 bool CompilerCore::register_define(DefinePtr def_id) {
   TSHashTable<DefinePtr>::HTNode *node = defines_ht.at(vk::std_hash(def_id->name));
   AutoLocker<Lockable *> locker(node);
+
+  stats.total_defines.fetch_add(1, std::memory_order_relaxed);
 
   kphp_error_act (
     !node->data,
@@ -762,5 +771,17 @@ void CompilerCore::init_composer_class_loader() {
   }
 }
 
+void CompilerCore::update_hash_tables_stats() {
+  stats.max_files = file_ht.max_size();
+  stats.max_dirs = dirs_ht.max_size();
+  stats.max_functions = functions_ht.max_size();
+  stats.max_classes = classes_ht.max_size();
+  stats.max_defines = defines_ht.max_size();
+  stats.max_constants = constants_ht.max_size();
+  stats.max_globals = globals_ht.max_size();
+  stats.max_libs = libs_ht.max_size();
+  stats.max_modulites = modulites_ht.max_size();
+  stats.max_composer_jsons = composer_json_ht.max_size();
+}
 
 CompilerCore *G;

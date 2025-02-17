@@ -83,4 +83,8 @@ public:
     }
     return res;
   }
+
+  constexpr int max_size() const {
+    return N;
+  }
 };
