@@ -6,7 +6,6 @@
 
 #include "common/dl-utils-lite.h"
 
-#include "compiler/compiler-core.h"
 #include "compiler/data/function-data.h"
 
 void Stats::on_var_inserting(VarData::Type type) {

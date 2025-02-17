@@ -23,7 +23,6 @@
 #include "compiler/index.h"
 #include "compiler/name-gen.h"
 #include "compiler/runtime_build_info.h"
-#include <sys/stat.h>
 
 namespace {
 
