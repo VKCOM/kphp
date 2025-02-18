@@ -13,7 +13,6 @@ class InstanceReferencesCountingVisitor;
 struct DummyVisitorMethods {
   // for f$estimate_memory_usage()
   // set at compiler at deeply_require_instance_memory_estimate_visitor()
-  //  void accept(InstanceMemoryEstimateVisitor &) noexcept {}
   void accept(CommonMemoryEstimateVisitor & /*unused*/) noexcept {}
   // for f$instance_to_array(), f$to_array_debug()
   // set at compiler at deeply_require_to_array_debug_visitor()
