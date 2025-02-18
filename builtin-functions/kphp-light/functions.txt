@@ -118,6 +118,9 @@ function get_running_fork_id() ::: future <void>;
 /** @kphp-extern-func-info interruptible cpp_template_call */
 function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
 
+/** @kphp-extern-func-info interruptible */
+function wait_concurrently ($id ::: future<any>): bool;
+
 // === Fork =======================================================================================
 
 /** @kphp-extern-func-info interruptible */

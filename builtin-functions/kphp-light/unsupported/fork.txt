@@ -1,7 +1,5 @@
 <?php
 
-function wait_concurrently ($id ::: future<any>) ::: bool;
-
 /** @kphp-extern-func-info can_throw cpp_template_call */
 function wait_multi (future<any>[] $resumables) ::: (^1[*][*] | null)[];
 

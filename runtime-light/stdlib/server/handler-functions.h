@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/state/instance-state.h"
 
 template<typename F, typename... Args>

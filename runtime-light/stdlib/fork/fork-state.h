@@ -5,53 +5,64 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/allocator/allocator.h"
+#include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/utils/concepts.h"
 
-inline constexpr int64_t INVALID_FORK_ID = -1;
+namespace kphp::forks {
+
+inline constexpr int64_t INVALID_ID = -1;
+
+} // namespace kphp::forks
 
 class ForkInstanceState final : private vk::not_copyable {
-  template<hashable Key, typename Value>
-  using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
+  // This is a temporary solution to destroy the fork state after the first call to f$wait.
+  // In the future, we plan to implement a reference-counted future<T> that will automatically
+  // manage and destroy the fork state once all referencing futures have been destroyed.
+  // NOTE: The implementation of f$wait_concurrently should be updated as well.
+  enum class fork_state : uint8_t { running, awaited };
+  static constexpr int64_t FORK_ID_INIT = 0;
 
-  static constexpr auto FORK_ID_INIT = 0;
-  // type erased tasks that represent forks
-  unordered_map<int64_t, task_t<void>> forks;
   int64_t next_fork_id{FORK_ID_INIT + 1};
+  // type erased tasks that represent forks
+  kphp::stl::unordered_map<int64_t, std::pair<fork_state, shared_task_t<void>>, kphp::memory::script_allocator> forks;
 
-  int64_t push_fork(task_t<void> task) noexcept {
-    return forks.emplace(next_fork_id, std::move(task)), next_fork_id++;
+  int64_t push_fork(shared_task_t<void> fork_task) noexcept {
+    forks.emplace(next_fork_id, std::make_pair(fork_state::running, std::move(fork_task)));
+    return next_fork_id++;
   }
 
-  task_t<void> pop_fork(int64_t fork_id) noexcept {
-    const auto it_fork{forks.find(fork_id)};
-    if (it_fork == forks.end()) {
-      php_critical_error("can't find fork %" PRId64, fork_id);
-    }
-    auto fork{std::move(it_fork->second)};
-    forks.erase(it_fork);
-    return fork;
-  }
-
+  template<typename T>
   friend class start_fork_t;
-  template<typename>
-  friend class wait_fork_t;
+  template<typename T>
+  friend task_t<T> f$wait(int64_t, double) noexcept;
+  friend task_t<bool> f$wait_concurrently(int64_t) noexcept;
 
 public:
-  int64_t running_fork_id{FORK_ID_INIT};
+  int64_t current_id{FORK_ID_INIT};
 
   ForkInstanceState() noexcept = default;
 
   static ForkInstanceState &get() noexcept;
 
-  bool contains(int64_t fork_id) const noexcept {
-    return forks.contains(fork_id);
+  std::optional<shared_task_t<void>> get_fork(int64_t fork_id) const noexcept {
+    auto it{forks.find(fork_id)};
+    if (it == forks.end() || it->second.first == fork_state::awaited) [[unlikely]] {
+      return std::nullopt;
+    }
+    return it->second.second;
+  }
+
+  void erase_fork(int64_t fork_id) noexcept {
+    auto it{forks.find(fork_id)};
+    if (it == forks.end()) [[unlikely]] {
+      return;
+    }
+    it->second = std::make_pair(fork_state::awaited, shared_task_t<void>{nullptr});
   }
 };

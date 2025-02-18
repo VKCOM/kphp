@@ -4,10 +4,8 @@
 
 #pragma once
 
-#include <cassert>
 #include <concepts>
 #include <coroutine>
-#include <optional>
 #include <type_traits>
 #include <utility>
 
@@ -15,9 +13,7 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
-#if __clang_major__ > 7
-#define CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
-#endif
+namespace task_impl_ {
 
 struct task_base_t {
   task_base_t() = default;
@@ -44,7 +40,7 @@ struct task_base_t {
   }
 
   bool done() const {
-    assert(handle_address);
+    php_assert(handle_address != nullptr);
     return std::coroutine_handle<>::from_address(handle_address).done();
   }
 
@@ -52,18 +48,20 @@ protected:
   void *handle_address{nullptr};
 };
 
+} // namespace task_impl_
+
 /**
  * Please, read following documents before trying to understand what's going on here:
  * 1. C++20 coroutines — https://en.cppreference.com/w/cpp/language/coroutines
  * 2. C++ coroutines: understanding symmetric stransfer — https://lewissbaker.github.io/2020/05/11/understanding_symmetric_transfer
  */
 template<typename T>
-struct task_t : public task_base_t {
+struct task_t : public task_impl_::task_base_t {
   template<std::same_as<T> F>
   struct promise_non_void_t;
   struct promise_void_t;
 
-  using promise_type = std::conditional_t<!std::is_void<T>{}, promise_non_void_t<T>, promise_void_t>;
+  using promise_type = std::conditional_t<!std::is_void_v<T>, promise_non_void_t<T>, promise_void_t>;
   using task_base_t::task_base_t;
 
   struct promise_base_t {
@@ -71,50 +69,39 @@ struct task_t : public task_base_t {
       return task_t{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this))};
     }
 
-    std::suspend_always initial_suspend() {
+    constexpr std::suspend_always initial_suspend() const noexcept {
       return {};
     }
 
-    struct final_suspend_t {
-      final_suspend_t() = default;
+    auto final_suspend() const noexcept {
+      struct final_suspend_t {
+        final_suspend_t() = default;
 
-      bool await_ready() const noexcept {
-        return false;
-      }
-
-      std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> h) const noexcept {
-#ifdef CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
-        if (h.promise().next) {
-          return std::coroutine_handle<>::from_address(h.promise().next);
+        constexpr bool await_ready() const noexcept {
+          return false;
         }
-#else
-        void *loaded_ptr = h.promise().next;
-        if (loaded_ptr != nullptr) {
-          if (loaded_ptr == &h.promise().next) {
-            h.promise().next = nullptr;
-            return std::noop_coroutine();
+
+        std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> h) const noexcept {
+          if (h.promise().next) {
+            return std::coroutine_handle<>::from_address(h.promise().next);
           }
-          return std::coroutine_handle<>::from_address(loaded_ptr);
+          return std::noop_coroutine();
         }
-#endif
-        return std::noop_coroutine();
-      }
 
-      void await_resume() const noexcept {}
-    };
+        constexpr void await_resume() const noexcept {}
+      };
 
-    final_suspend_t final_suspend() noexcept {
       return final_suspend_t{};
     }
 
-    void unhandled_exception() {
+    void unhandled_exception() noexcept {
       exception = std::current_exception();
     }
 
     void *next = nullptr;
     std::exception_ptr exception;
 
-    static task_t get_return_object_on_allocation_failure() {
+    static task_t get_return_object_on_allocation_failure() noexcept {
       php_critical_error("cannot allocate memory for task_t");
     }
 
@@ -126,8 +113,7 @@ struct task_t : public task_base_t {
       return buffer;
     }
 
-    void operator delete(void *ptr, size_t n) noexcept {
-      (void)n;
+    void operator delete(void *ptr, [[maybe_unused]] size_t n) noexcept {
       k2::free(ptr);
     }
   };
@@ -135,7 +121,7 @@ struct task_t : public task_base_t {
   template<std::same_as<T> F>
   struct promise_non_void_t : public promise_base_t {
     template<typename E>
-    requires std::constructible_from<F, E &&> void return_value(E &&e) {
+    requires std::constructible_from<F, E &&> void return_value(E &&e) noexcept {
       ::new (bytes) F(std::forward<E>(e));
     }
 
@@ -143,69 +129,32 @@ struct task_t : public task_base_t {
   };
 
   struct promise_void_t : public promise_base_t {
-    void return_void() {}
+    constexpr void return_void() const noexcept {}
   };
 
-  void execute() {
-    get_handle().resume();
-  }
-
   T get_result() noexcept {
-    if (get_handle().promise().exception) {
+    if (get_handle().promise().exception) [[unlikely]] {
       std::rethrow_exception(std::move(get_handle().promise().exception));
     }
-    if constexpr (!std::is_void<T>{}) {
+    if constexpr (!std::is_void_v<T>) {
       T *t = std::launder(reinterpret_cast<T *>(get_handle().promise().bytes));
       const vk::final_action final_action([t] { t->~T(); });
       return std::move(*t);
     }
   }
 
-  std::conditional_t<std::is_void<T>{}, bool, std::optional<T>> operator()() {
-    execute();
-    if constexpr (std::is_void<T>{}) {
-      get_result();
-      return !done();
-    } else {
-      if (!done()) {
-        return std::nullopt;
-      }
-      return get_result();
-    }
-  }
-
-  struct awaiter_t {
-    explicit awaiter_t(task_t *task)
-      : task{task} {}
+  struct awaiter_base_t {
+    explicit awaiter_base_t(task_t *task_) noexcept
+      : task{task_} {}
 
     constexpr bool await_ready() const noexcept {
       return false;
     }
 
     template<typename PromiseType>
-#ifdef CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
-    std::coroutine_handle<promise_type>
-#else
-    bool
-#endif
-    await_suspend(std::coroutine_handle<PromiseType> h) noexcept {
-#ifdef CPPCORO_COMPILER_SUPPORTS_SYMMETRIC_TRANSFER
+    std::coroutine_handle<promise_type> await_suspend(std::coroutine_handle<PromiseType> h) noexcept {
       task->get_handle().promise().next = h.address();
       return task->get_handle();
-#else
-      void *next_ptr = &task->get_handle().promise().next;
-      task->get_handle().promise().next = next_ptr;
-      task->get_handle().resume();
-      if (task->get_handle().promise().next == nullptr) {
-        return false;
-      }
-      task->get_handle().promise().next = h.address();
-      return true;
-#endif
-    }
-
-    T await_resume() noexcept {
-      return task->get_result();
     }
 
     bool resumable() const noexcept {
@@ -219,7 +168,13 @@ struct task_t : public task_base_t {
     task_t *task;
   };
 
-  awaiter_t operator co_await() {
+  auto operator co_await() noexcept {
+    struct awaiter_t : public awaiter_base_t {
+      using awaiter_base_t::awaiter_base_t;
+      T await_resume() noexcept {
+        return awaiter_base_t::task->get_result();
+      }
+    };
     return awaiter_t{this};
   }
 
@@ -239,33 +194,3 @@ struct task_t : public task_base_t {
     return task_t<U>{std::coroutine_handle<>::from_address(std::exchange(handle_address, nullptr))};
   }
 };
-
-// === Type traits ================================================================================
-
-template<typename F, typename... Args>
-requires std::invocable<F, Args...> inline constexpr bool is_async_function_v = requires {
-  {static_cast<task_t<void>>(std::declval<std::invoke_result_t<F, Args...>>())};
-};
-
-// ================================================================================================
-
-template<typename F, typename... Args>
-requires std::invocable<F, Args...> class async_function_unwrapped_return_type {
-  using return_type = std::invoke_result_t<F, Args...>;
-
-  template<typename U>
-  struct task_inner {
-    using type = U;
-  };
-
-  template<typename U>
-  struct task_inner<task_t<U>> {
-    using type = U;
-  };
-
-public:
-  using type = task_inner<return_type>::type;
-};
-
-template<typename F, typename... Args>
-requires std::invocable<F, Args...> using async_function_unwrapped_return_type_t = async_function_unwrapped_return_type<F, Args...>::type;

@@ -7,45 +7,79 @@
 #include <chrono>
 #include <concepts>
 #include <cstdint>
+#include <utility>
 
 #include "runtime-common/core/core-types/decl/optional.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 
-namespace fork_api_impl_ {
+namespace forks_impl_ {
 
 inline constexpr double MAX_TIMEOUT_S = 86400.0;
 inline constexpr double DEFAULT_TIMEOUT_S = MAX_TIMEOUT_S;
 inline constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S});
 inline constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT_S});
 
-} // namespace fork_api_impl_
+inline std::chrono::nanoseconds normalize_timeout(double timeout_s) noexcept {
+  if (timeout_s < 0 || timeout_s > MAX_TIMEOUT_S) [[unlikely]] {
+    return DEFAULT_TIMEOUT_NS;
+  }
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout_s});
+}
 
-// === Blocking API ================================================================================
+} // namespace forks_impl_
 
 template<typename T>
 requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
-  auto &fork_ctx{ForkInstanceState::get()};
-  if (!fork_ctx.contains(fork_id)) {
-    php_warning("can't find fork %" PRId64, fork_id);
+  auto &fork_instance_st{ForkInstanceState::get()};
+  auto opt_fork_task{fork_instance_st.get_fork(fork_id)};
+  if (!opt_fork_task.has_value()) [[unlikely]] {
+    php_warning("fork with ID %" PRId64 " does not exist or has already been awaited by another fork", fork_id);
     co_return T{};
   }
-  // normalize timeout
-  const auto timeout_ns{timeout > 0 && timeout <= fork_api_impl_::MAX_TIMEOUT_S
-                          ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})
-                          : fork_api_impl_::DEFAULT_TIMEOUT_NS};
-  auto result_opt{co_await wait_with_timeout_t{wait_fork_t<internal_optional_type_t<T>>{fork_id}, timeout_ns}};
-  co_return result_opt.has_value() ? T{std::move(result_opt.value())} : T{};
+
+  auto fork_task{static_cast<shared_task_t<internal_optional_type_t<T>>>(*std::move(opt_fork_task))};
+  auto opt_result{co_await wait_with_timeout_t{wait_fork_t{std::move(fork_task)}, forks_impl_::normalize_timeout(timeout)}};
+  // mark the fork as awaited and remove it from the set of active forks
+  fork_instance_st.erase_fork(fork_id);
+  co_return opt_result.has_value() ? T{std::move(opt_result.value())} : T{};
 }
 
 template<typename T>
-requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(Optional<int64_t> fork_id_opt,
+requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(Optional<int64_t> opt_fork_id,
                                                                                                           double timeout = -1.0) noexcept {
-  co_return co_await f$wait<T>(fork_id_opt.has_value() ? fork_id_opt.val() : INVALID_FORK_ID, timeout);
+  co_return co_await f$wait<T>(opt_fork_id.has_value() ? opt_fork_id.val() : kphp::forks::INVALID_ID, timeout);
 }
+
+// ================================================================================================
+
+inline task_t<bool> f$wait_concurrently(int64_t fork_id) noexcept {
+  auto &fork_instance_st{ForkInstanceState::get()};
+  auto it{fork_instance_st.forks.find(fork_id)};
+  if (it == fork_instance_st.forks.end()) [[unlikely]] {
+    co_return false;
+  }
+
+  if (it->second.first != ForkInstanceState::fork_state::awaited) [[likely]] {
+    auto fork_task{it->second.second};
+    co_await wait_fork_t{std::move(fork_task)};
+  }
+  co_return true;
+}
+
+inline task_t<bool> f$wait_concurrently(Optional<int64_t> opt_fork_id) noexcept {
+  co_return co_await f$wait_concurrently(opt_fork_id.has_value() ? opt_fork_id.val() : kphp::forks::INVALID_ID);
+}
+
+inline task_t<bool> f$wait_concurrently(const mixed &fork_id) noexcept {
+  co_return co_await f$wait_concurrently(fork_id.to_int());
+}
+
+// ================================================================================================
 
 inline task_t<void> f$sched_yield() noexcept {
   co_await wait_for_reschedule_t{};
@@ -59,50 +93,38 @@ inline task_t<void> f$sched_yield_sleep(double duration) noexcept {
   co_await wait_for_timer_t{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{duration})};
 }
 
-// === Non-blocking API ============================================================================
+// ================================================================================================
 
 inline int64_t f$get_running_fork_id() noexcept {
-  return ForkInstanceState::get().running_fork_id;
+  return ForkInstanceState::get().current_id;
 }
 
 inline int64_t f$wait_queue_create() {
   php_critical_error("call to unsupported function");
 }
 
-inline int64_t f$wait_queue_create(const mixed &resumable_ids) {
+inline int64_t f$wait_queue_create(const mixed & /*resumable_ids*/) {
   php_critical_error("call to unsupported function");
 }
 
-inline int64_t f$wait_queue_push(int64_t queue_id, const mixed &resumable_ids) {
+inline int64_t f$wait_queue_push(int64_t /*queue_id*/, const mixed & /*resumable_ids*/) {
   php_critical_error("call to unsupported function");
 }
 
-inline bool f$wait_queue_empty(int64_t queue_id) {
+inline bool f$wait_queue_empty(int64_t /*queue_id*/) {
   php_critical_error("call to unsupported function");
 }
 
-inline Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1.0) {
-  php_critical_error("call to unsupported function");
-}
-
-inline bool f$wait_concurrently(int64_t fork_id) {
-  php_critical_error("call to unsupported function");
-}
-
-inline bool f$wait_concurrently(Optional<int64_t> resumable_id) {
-  php_critical_error("call to unsupported function");
-}
-
-inline bool f$wait_concurrently(const mixed &resumable_id) {
+inline Optional<int64_t> f$wait_queue_next(int64_t /*queue_id*/, double /*timeout*/ = -1.0) {
   php_critical_error("call to unsupported function");
 }
 
 template<typename T>
-T f$wait_multi(const array<Optional<int64_t>> &resumable_ids) {
+T f$wait_multi(const array<Optional<int64_t>> & /*resumable_ids*/) {
   php_critical_error("call to unsupported function");
 }
 
 template<typename T>
-T f$wait_multi(const array<int64_t> &resumable_ids) {
+T f$wait_multi(const array<int64_t> & /*resumable_ids*/) {
   php_critical_error("call to unsupported function");
 }
