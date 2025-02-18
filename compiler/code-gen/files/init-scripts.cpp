@@ -123,7 +123,7 @@ struct RunInterruptedFunction {
     std::string script_start = "co_await InstanceState::get().run_instance_prologue<" + image_kind + ">();";
     std::string script_finish = "co_await InstanceState::get().run_instance_epilogue();";
     FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN << script_start << NL << await_prefix
-                                  << FunctionName(function) << "();" << NL << script_finish << NL << "co_return;" << END;
+                                  << FunctionName(function) << "();" << NL << script_finish << NL << "co_return;" << NL << END;
     W << NL;
   }
 };
