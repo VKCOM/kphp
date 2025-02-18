@@ -33,7 +33,7 @@ struct ForkInstanceState final : private vk::not_copyable {
 private:
   static constexpr int64_t FORK_ID_INIT = 0;
 
-  int64_t next_fork_id{FORK_ID_INIT + 1};
+  int64_t next_fork_id{FORK_ID_INIT};
   // type erased tasks that represent forks
   kphp::stl::unordered_map<int64_t, fork_info, kphp::memory::script_allocator> forks;
 
@@ -44,6 +44,7 @@ private:
 
   template<typename T>
   friend class start_fork_t;
+  friend InstanceState;
 
 public:
   int64_t current_id{FORK_ID_INIT};
