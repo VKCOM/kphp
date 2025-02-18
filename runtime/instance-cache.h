@@ -19,8 +19,8 @@
 #include "common/mixin/not_copyable.h"
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/visitors/memory-visitors.h"
 #include "runtime/instance-copy-processor.h"
-#include "runtime/memory_usage.h"
 #include "server/statshouse/statshouse-manager.h"
 
 enum class InstanceCacheOpStatus;

@@ -6,9 +6,9 @@
 
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime/datetime/datetime_interface.h"
 #include "runtime/datetime/datetime_zone.h"
-#include "runtime/dummy-visitor-methods.h"
 
 struct C$DateInterval;
 struct C$DateTimeImmutable;

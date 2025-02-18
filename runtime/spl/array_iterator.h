@@ -6,10 +6,9 @@
 
 #include "common/algorithms/hashes.h"
 #include "common/wrappers/string_view.h"
-
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime/dummy-visitor-methods.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
 // C$ArrayIterator implements SPL ArrayIterator class.
 struct C$ArrayIterator : public refcountable_php_classes<C$ArrayIterator>, private DummyVisitorMethods {
