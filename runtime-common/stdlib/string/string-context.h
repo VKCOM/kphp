@@ -30,17 +30,21 @@ inline constexpr std::string_view PERCENT_ = "%";
 
 }; // namespace string_context_impl_
 
-class StringLibContext final : vk::not_copyable {
+struct StringLibContext final : private vk::not_copyable {
   static constexpr int32_t MASK_BUFFER_LENGTH = 256;
-
-public:
   static constexpr int32_t STATIC_BUFFER_LENGTH = 1U << 23U;
-
-  std::array<char, STATIC_BUFFER_LENGTH + 1> static_buf{};
-  std::array<char, MASK_BUFFER_LENGTH> mask_buffer{};
 
   int64_t str_replace_count_dummy{};
   double default_similar_text_percent_stub{};
+
+  // Do not initialize these arrays. Initializing it would zero out the memory,
+  // which significantly impacts K2's performance due to the large size of the buffer.
+  // The buffer is intended to be used as raw storage, and its contents will be
+  // explicitly managed elsewhere in the code.
+  std::array<char, STATIC_BUFFER_LENGTH + 1> static_buf;
+  std::array<char, MASK_BUFFER_LENGTH> mask_buf;
+
+  StringLibContext() noexcept = default;
 
   static StringLibContext &get() noexcept;
 };
