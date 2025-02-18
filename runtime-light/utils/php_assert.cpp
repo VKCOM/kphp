@@ -12,6 +12,7 @@
 #include <execinfo.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <utility>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -24,7 +25,7 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
 
   int size = vsnprintf(buf, BUF_SIZE, message, args);
   k2::log(error_type, size, buf);
-  if (error_type == static_cast<std::underlying_type_t<LogLevel>>(LogLevel::Error)) {
+  if (error_type == std::to_underlying(LogLevel::Error)) {
     critical_error_handler();
   }
 }
@@ -32,28 +33,28 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const *mes
 void php_debug(char const *message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(false, static_cast<std::underlying_type_t<LogLevel>>(LogLevel::Debug), message, args);
+  php_warning_impl(false, std::to_underlying(LogLevel::Debug), message, args);
   va_end(args);
 }
 
 void php_notice(char const *message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(false, static_cast<std::underlying_type_t<LogLevel>>(LogLevel::Info), message, args);
+  php_warning_impl(false, std::to_underlying(LogLevel::Info), message, args);
   va_end(args);
 }
 
 void php_warning(char const *message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(false, static_cast<std::underlying_type_t<LogLevel>>(LogLevel::Warn), message, args);
+  php_warning_impl(false, std::to_underlying(LogLevel::Warn), message, args);
   va_end(args);
 }
 
 void php_error(char const *message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(false, static_cast<std::underlying_type_t<LogLevel>>(LogLevel::Error), message, args);
+  php_warning_impl(false, std::to_underlying(LogLevel::Error), message, args);
   va_end(args);
 }
 
