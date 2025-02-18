@@ -11,7 +11,10 @@ if(APPLE)
     set(ZLIB_COMMON_COMPILE_FLAGS "${ZLIB_COMMON_COMPILE_FLAGS} --sysroot ${CMAKE_OSX_SYSROOT}")
 endif()
 
+if (NOT COMPILE_RUNTIME_LIGHT)
+    include(${THIRD_PARTY_DIR}/zlib-cmake/zlib-no-pic.cmake)
+endif ()
+
 include(${THIRD_PARTY_DIR}/zlib-cmake/zlib-pic.cmake)
-include(${THIRD_PARTY_DIR}/zlib-cmake/zlib-no-pic.cmake)
 
 set(ZLIB_FOUND ON)

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(kphp
         VERSION 1.0.1
-        LANGUAGES CXX ASM
+        LANGUAGES C CXX ASM
         DESCRIPTION "Compiler for PHP (aka KPHP)"
         HOMEPAGE_URL https://github.com/VKCOM/kphp)
 
@@ -122,8 +122,8 @@ install(FILES ${AUTO_DIR}/runtime/runtime-headers.h
         COMPONENT KPHP
         DESTINATION ${INSTALL_KPHP_SOURCE}/objs/generated/auto/runtime/)
 
-set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, libuber-h3, libpcre3-dev, libre2-dev, libyaml-cpp-dev, zlib1g-dev, \
-                                       libzstd-dev, g++, libnghttp2-dev, kphp-timelib, libnuma-dev")
+set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, libuber-h3, libpcre3-dev, libre2-dev, libyaml-cpp-dev, \
+                                       libzstd-dev, g++, kphp-timelib, libnuma-dev")
 
 if (PDO_DRIVER_MYSQL)
     set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libmysqlclient-dev")

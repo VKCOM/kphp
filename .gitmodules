@@ -15,3 +15,7 @@
 	path = third-party/curl
 	url = https://github.com/VKCOM/curl.git
 	branch = dpkg-build-7.60.0
+[submodule "third-party/nghttp2"]
+	path = third-party/nghttp2
+	url = https://salsa.debian.org/debian/nghttp2.git
+	branch = buster

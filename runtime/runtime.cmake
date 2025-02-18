@@ -1,4 +1,5 @@
-# CURL Building
+# CURL Build
+include(${THIRD_PARTY_DIR}/nghttp2-cmake/nghttp2.cmake)
 include(${THIRD_PARTY_DIR}/curl-cmake/curl.cmake)
 
 prepend(KPHP_RUNTIME_DATETIME_SOURCES datetime/
@@ -150,8 +151,8 @@ vk_add_library(kphp-full-runtime STATIC)
 target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
 set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})
 
-prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre nghttp2 kphp-timelib)
-set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static CURL::curl OpenSSL::SSL ${NUMA_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB} dl)
+prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre kphp-timelib)
+set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static CURL::curl OpenSSL::SSL NGHTTP2::nghttp2 ${NUMA_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB} dl)
 
 if (PDO_DRIVER_MYSQL)
     list(APPEND RUNTIME_LINK_TEST_LIBS mysqlclient)
