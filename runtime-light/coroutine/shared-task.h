@@ -144,11 +144,10 @@ struct promise_base_t {
   }
 
   template<typename... Args>
-  void *operator new(std::size_t n, [[maybe_unused]] Args &&...args) noexcept {
+  void *operator new(size_t n, [[maybe_unused]] Args &&...args) noexcept {
     // todo:k2 think about args in new
     // todo:k2 make coroutine allocator
-    void *buffer = k2::alloc(n);
-    return buffer;
+    return k2::alloc(n);
   }
 
   void operator delete(void *ptr, [[maybe_unused]] size_t n) noexcept {
