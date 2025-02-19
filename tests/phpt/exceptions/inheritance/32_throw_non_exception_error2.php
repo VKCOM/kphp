@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /Throw not Throwable, but NonException/
 <?php
 

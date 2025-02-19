@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /Can't catch Foo; only classes that implement Throwable can be caught/
 <?php
 

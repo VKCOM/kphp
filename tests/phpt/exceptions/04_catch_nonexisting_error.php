@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /Can't find class: Foo\\Bar/
 /Can't find class: Poof/
 <?php
