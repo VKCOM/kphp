@@ -1,6 +1,5 @@
 <?php
 
-/** @kphp-generate-stub-class */
 final class KphpDiv {
   /** @kphp-extern-func-info generate-stub */
   private function __construct();
@@ -15,15 +14,13 @@ final class KphpDiv {
   function getEndTimestamp(): float;
 }
 
-/** @kphp-generate-stub-class */
 final class KphpSpan {
-  /** @kphp-extern-func-info generate-stub */
   private function __construct();
 
-  /** @kphp-extern-func-info generate-stub */
   function addAttributeString(string $key, string $value) ::: void;
-  /** @kphp-extern-func-info generate-stub */
+
   function addAttributeInt(string $key, int $value) ::: void;
+
   /** @kphp-extern-func-info generate-stub */
   function addAttributeFloat(string $key, float $value) ::: void;
   /** @kphp-extern-func-info generate-stub */
@@ -31,24 +28,22 @@ final class KphpSpan {
   /** @kphp-extern-func-info generate-stub */
   function addAttributeEnum(string $key, int $enum_id, int $value) ::: void;
 
-  /** @kphp-extern-func-info generate-stub */
   function addEvent(string $name, ?float $timestamp = null): KphpSpanEvent;
   /** @kphp-extern-func-info generate-stub */
   function addLink(KphpSpan $another) ::: void;
 
-  /** @kphp-extern-func-info generate-stub */
+
   function updateName(string $title, string $short_desc) ::: void;
-  /** @kphp-extern-func-info generate-stub */
+
   function finish(?float $end_timestamp = null) ::: void;
+
   /** @kphp-extern-func-info generate-stub */
   function finishWithError(int $error_code, string $error_msg, ?float $end_timestamp = null) ::: void;
   /** @kphp-extern-func-info generate-stub */
   function exclude() ::: void;
 }
 
-/** @kphp-generate-stub-class */
 final class KphpSpanEvent {
-  /** @kphp-extern-func-info generate-stub */
   private function __construct();
 
   /** @kphp-extern-func-info generate-stub */
@@ -61,8 +56,8 @@ final class KphpSpanEvent {
   function addAttributeBool(string $key, bool $value) ::: void;
 }
 
-/** @kphp-extern-func-info generate-stub */
 function kphp_tracing_init(string $root_span_title): KphpDiv;
+
 /** @kphp-extern-func-info generate-stub */
 function kphp_tracing_set_level(int $trace_level): void;
 /** @kphp-extern-func-info generate-stub */
@@ -72,11 +67,10 @@ function kphp_tracing_register_on_finish(callable(float $now_timestamp):bool $cb
 function kphp_tracing_register_enums_provider(callable():tuple(int, string, string[])[] $cb_custom_enums);
 function kphp_tracing_register_rpc_details_provider(callable(@tl\RpcFunction):string $cb_for_typed, callable(mixed):string $cb_for_untyped);
 
-/** @kphp-extern-func-info generate-stub */
 function kphp_tracing_start_span(string $title, string $short_desc, float $start_timestamp): KphpSpan;
-/** @kphp-extern-func-info generate-stub */
+
 function kphp_tracing_get_root_span(): KphpSpan;
-/** @kphp-extern-func-info generate-stub */
+
 function kphp_tracing_get_current_active_span(): KphpSpan;
 /** @kphp-extern-func-info generate-stub */
 function kphp_tracing_func_enter_branch(int $branch_num) ::: void;
