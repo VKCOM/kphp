@@ -129,6 +129,7 @@ struct InstanceState final : vk::not_copyable {
   list<task_t<void>> shutdown_functions;
 
 private:
+  task_t<void> main_task_;
   enum class shutdown_state : uint8_t { not_started, in_progress, finished };
   shutdown_state shutdown_state_{shutdown_state::not_started};
 

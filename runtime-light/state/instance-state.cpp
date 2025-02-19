@@ -15,12 +15,13 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/core/globals/php-script-globals.h"
-#include "runtime-light/coroutine/shared-task.h"
+#include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/init-functions.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/time/time-functions.h"
 
@@ -45,12 +46,17 @@ int32_t merge_output_buffers() noexcept {
 
 void InstanceState::init_script_execution() noexcept {
   runtime_context.init();
-  task_t<void> main_task;
-  init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, main_task);
+  task_t<void> script_task;
+  init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, script_task);
 
-  shared_task_t<void> main_fork{std::invoke([](task_t<void> task) noexcept -> shared_task_t<void> { co_await task; }, std::move(main_task))};
-  ForkInstanceState::get().push_fork(main_fork);
-  scheduler.suspend(std::make_pair(main_fork.get_handle(), WaitEvent::Rechedule{}));
+  auto main_task{std::invoke(
+    [](task_t<void> script_task) noexcept -> task_t<void> {
+      auto fork_id{co_await start_fork_t{std::move(script_task)}};
+      php_assert(co_await f$wait_concurrently(fork_id)); // i'd better use f$wait here, but we need to enable its void instantiation first
+    },
+    std::move(script_task))};
+  scheduler.suspend(std::make_pair(main_task.get_handle(), WaitEvent::Rechedule{}));
+  main_task_ = std::move(main_task);
 }
 
 template<ImageKind kind>
