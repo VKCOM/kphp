@@ -114,7 +114,7 @@ struct RunInterruptedFunction {
 
   void compile(CodeGenerator &W) const {
     std::string await_prefix = function->is_interruptible ? "co_await " : "";
-    std::string try_wrapper = function->is_interruptible ? "TRY_CALL_VOID_CORO(void, " : "TRY_CALL_VOID(void, ";
+    std::string try_wrapper = "TRY_CALL_VOID_CORO(void, ";
     std::string image_kind = G->is_output_mode_k2_cli()         ? "ImageKind::CLI"
                              : G->is_output_mode_k2_server()    ? "ImageKind::Server"
                              : G->is_output_mode_k2_oneshot()   ? "ImageKind::Oneshot"

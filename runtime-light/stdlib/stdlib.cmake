@@ -6,7 +6,6 @@ prepend(
   crypto/crypto-functions.cpp
   crypto/crypto-state.cpp
   curl/curl-state.cpp
-  diagnostics/exception-state.cpp
   exit/exit-functions.cpp
   fork/fork-state.cpp
   job-worker/job-worker-api.cpp

@@ -13,13 +13,11 @@
 #define THROW_EXCEPTION(e)                                                                                                                                     \
   {                                                                                                                                                            \
     Throwable x_tmp___ = e;                                                                                                                                    \
-    auto &cur_exception{ExceptionInstanceState::get().cur_exception};                                                                                          \
-    php_assert(cur_exception.is_null());                                                                                                                       \
-    cur_exception = std::move(x_tmp___);                                                                                                                       \
+    php_assert(std::exchange(ForkInstanceState::get().current_info().get().thrown_exception, std::move(x_tmp___)).is_null());                                  \
   }
 
 #define CHECK_EXCEPTION(action)                                                                                                                                \
-  if (!ExceptionInstanceState::get().cur_exception.is_null()) [[unlikely]] {                                                                                   \
+  if (!ForkInstanceState::get().current_info().get().thrown_exception.is_null()) [[unlikely]] {                                                                \
     action;                                                                                                                                                    \
   }
 

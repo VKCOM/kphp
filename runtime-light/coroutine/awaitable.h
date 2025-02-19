@@ -286,7 +286,7 @@ public:
   explicit start_fork_t(task_t<T> &&task) noexcept
     : fork_id(fork_instance_st.push_fork(
         static_cast<shared_task_t<void>>(std::invoke([](task_t<T> task) noexcept -> shared_task_t<T> { co_return co_await task; }, std::move(task)))))
-    , fork_awaiter(std::get<shared_task_t<void>>((*fork_instance_st.get_info(fork_id)).handle).when_ready()) {}
+    , fork_awaiter(std::get<shared_task_t<void>>((*fork_instance_st.get_info(fork_id)).get().handle).when_ready()) {}
 
   start_fork_t(start_fork_t &&other) noexcept
     : fork_instance_st(other.fork_instance_st)

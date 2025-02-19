@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <utility>
 #include <variant>
@@ -12,6 +13,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
 
@@ -26,7 +28,7 @@ struct ForkInstanceState final : private vk::not_copyable {
   // In the future, we plan to implement a reference-counted future<T> that will automatically
   // manage and destroy the fork state once all referencing futures have been destroyed.
   struct fork_info final {
-    std::optional<Throwable> thrown_exception;
+    Throwable thrown_exception;
     std::variant<std::monostate, shared_task_t<void>> handle;
   };
 
@@ -38,7 +40,7 @@ private:
   kphp::stl::unordered_map<int64_t, fork_info, kphp::memory::script_allocator> forks;
 
   int64_t push_fork(shared_task_t<void> fork_task) noexcept {
-    forks.emplace(next_fork_id, fork_info{.thrown_exception = std::nullopt, .handle = std::move(fork_task)});
+    forks.emplace(next_fork_id, fork_info{.thrown_exception = {}, .handle = std::move(fork_task)});
     return next_fork_id++;
   }
 
@@ -52,18 +54,17 @@ public:
 
   static ForkInstanceState &get() noexcept;
 
-  std::optional<fork_info> get_info(int64_t fork_id) const noexcept {
+  std::optional<std::reference_wrapper<fork_info>> get_info(int64_t fork_id) noexcept {
     if (auto it{forks.find(fork_id)}; it != forks.end()) [[likely]] {
       return it->second;
     }
     return std::nullopt;
   }
 
-  void clear_fork(int64_t fork_id) noexcept {
-    auto it{forks.find(fork_id)};
-    if (it == forks.end()) [[unlikely]] {
-      return;
+  std::reference_wrapper<fork_info> current_info() noexcept {
+    if (auto opt_fork_info{get_info(current_id)}; opt_fork_info.has_value()) [[likely]] {
+      return *opt_fork_info;
     }
-    it->second.handle.emplace<std::monostate>();
+    php_critical_error("can't find info for current fork");
   }
 };
