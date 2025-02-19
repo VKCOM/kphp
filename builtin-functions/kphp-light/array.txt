@@ -107,3 +107,14 @@ function rsort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 
 function sort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 
+/** @kphp-extern-func-info interruptible */
+function uksort (&$a ::: array, callable(mixed $x, mixed $y):int $callback) ::: void;
+
+/** @kphp-extern-func-info interruptible */
+function usort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
+
+/** @kphp-extern-func-info interruptible */
+function uasort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
+
+
+

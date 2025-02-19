@@ -29,7 +29,18 @@ struct array_size {
 
 namespace dl {
 template<class T, class TT, class T1>
-void sort(TT *begin_init, TT *end_init, const T1 &compare);
+void sort(TT *begin_init, TT *end_init, T1 compare) noexcept;
+}
+
+namespace array_functions_impl_ {
+/*
+ * async analog of array::sort and array::ksort since in runtime-light comparator can be coroutine
+ * */
+template<typename Result, typename U, typename Comparator>
+Result async_sort(array<U> & arr, Comparator comparator, bool renumber) noexcept;
+
+template<typename Result, typename U, typename Comparator>
+Result async_ksort(array<U> & arr, Comparator comparator) noexcept;
 }
 
 enum class overwrite_element { YES, NO };
@@ -438,6 +449,12 @@ private:
 
   template<class T1>
   friend class array;
+
+  template<typename Result, typename U, typename Comparator>
+  friend Result array_functions_impl_::async_sort(array<U> & arr, Comparator comparator, bool renumber) noexcept;
+
+  template<typename Result, typename U, typename Comparator>
+  friend Result array_functions_impl_::async_ksort(array<U> & arr, Comparator comparator) noexcept;
 };
 
 template<class T>

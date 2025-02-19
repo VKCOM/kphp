@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 print_r(array_map(function ($n, $z = 10) {
