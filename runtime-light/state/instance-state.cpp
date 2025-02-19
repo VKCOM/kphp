@@ -5,6 +5,7 @@
 #include "runtime-light/state/instance-state.h"
 
 #include <chrono>
+#include <cinttypes>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -51,8 +52,16 @@ void InstanceState::init_script_execution() noexcept {
 
   auto main_task{std::invoke(
     [](task_t<void> script_task) noexcept -> task_t<void> {
-      auto fork_id{co_await start_fork_t{std::move(script_task)}};
-      php_assert(co_await f$wait_concurrently(fork_id)); // i'd better use f$wait here, but we need to enable its void instantiation first
+      // wrap script with additional check for unhandled exception
+      script_task = std::invoke(
+        [](task_t<void> script_task) noexcept -> task_t<void> {
+          co_await script_task;
+          if (auto exception{ForkInstanceState::get().current_info().get().thrown_exception}; !exception.is_null()) [[unlikely]] {
+            php_error("unhandled exception '%s' at %s:%" PRId64, exception.get_class(), exception->$file.c_str(), exception->$line);
+          }
+        },
+        std::move(script_task));
+      php_assert(co_await f$wait_concurrently(co_await start_fork_t{std::move(script_task)}));
     },
     std::move(script_task))};
   scheduler.suspend(std::make_pair(main_task.get_handle(), WaitEvent::Rechedule{}));

@@ -22,7 +22,6 @@
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
-#include "runtime-light/stdlib/diagnostics/exception-state.h"
 #include "runtime-light/stdlib/file/file-system-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
@@ -111,7 +110,6 @@ struct InstanceState final : vk::not_copyable {
 
   RuntimeContext runtime_context;
   RpcInstanceState rpc_instance_state;
-  ExceptionInstanceState exception_instance_state;
   SerializationInstanceState serialization_instance_state;
   HttpServerInstanceState http_server_instance_state;
   JobWorkerClientInstanceState job_worker_client_instance_state{};

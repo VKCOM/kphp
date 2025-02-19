@@ -309,7 +309,7 @@ void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
 }
 
 void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
-  std::string_view cur_exception{G->is_output_mode_k2() ? "ExceptionInstanceState::get().cur_exception" : "CurException"};
+  std::string_view cur_exception{G->is_output_mode_k2() ? "ForkInstanceState::get().current_info().get().thrown_exception" : "CurException"};
 
   auto move_exception = [&](ClassPtr caught_class, VertexAdaptor<op_var> dst) {
     if (caught_class->name == "Throwable") {
