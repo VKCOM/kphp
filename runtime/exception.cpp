@@ -71,17 +71,6 @@ Error f$Error$$__construct(const Error &v$this, const string &message, int64_t c
   return v$this;
 }
 
-CompileTimeLocation f$CompileTimeLocation$$__construct(const CompileTimeLocation &v$this, const string &file, const string &function, int64_t line) {
-  v$this->$file = file;
-  v$this->$function = function;
-  v$this->$line = line;
-  return v$this;
-}
-
-CompileTimeLocation f$CompileTimeLocation$$calculate(const CompileTimeLocation &v$passed) {
-  return v$passed;
-}
-
 Exception new_Exception(const string &file, int64_t line, const string &message, int64_t code) {
   return f$_exception_set_location(f$Exception$$__construct(Exception().alloc(), message, code), file, line);
 }

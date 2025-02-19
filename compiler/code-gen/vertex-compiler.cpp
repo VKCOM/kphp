@@ -5,6 +5,7 @@
 #include "compiler/code-gen/vertex-compiler.h"
 
 #include <iterator>
+#include <string_view>
 #include <unordered_map>
 
 #include "common/wrappers/field_getter.h"
@@ -177,7 +178,7 @@ struct CycleBody {
 };
 
 struct EmptyReturn {
-  //TODO: it's copypasted to compile_return
+  // TODO: it's copypasted to compile_return
   void compile(CodeGenerator &W) const {
     CGContext &context = W.get_context();
     const TypeData *tp = tinf::get_type(context.parent_func, -1);
@@ -189,11 +190,17 @@ struct EmptyReturn {
         W << "RETURN_VOID (";
       }
     } else {
-      W << "return ";
+      W << (context.interruptible_flag ? "co_return " : "return ");
     }
+
     if (context.inside_null_coalesce_fallback || tp->ptype() != tp_void) {
+      // we need to specify return type explicitly since co_return needs to know the type
+      if (G->is_output_mode_k2() && context.interruptible_flag) {
+        W << TypeName(tp);
+      }
       W << "{}";
     }
+
     if (context.resumable_flag) {
       W << ")";
     }
@@ -295,10 +302,6 @@ void compile_noerr(VertexAdaptor<op_noerr> root, CodeGenerator &W) {
 }
 
 void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
-  if (G->is_output_mode_k2()) {
-    // The current version of runtime-light does not support exception throw
-    return;
-  }
   W << BEGIN <<
     "THROW_EXCEPTION " << MacroBegin{} << root->exception() << MacroEnd{} << ";" << NL <<
     ThrowAction() << ";" << NL <<
@@ -306,19 +309,15 @@ void compile_throw(VertexAdaptor<op_throw> root, CodeGenerator &W) {
 }
 
 void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
-  if (G->is_output_mode_k2()) {
-    // The current version of runtime-light does not support try blocks
-    W << "/""*** TRY ***""/" << NL;
-    W << root->try_cmd() << NL;
-    return;
-  }
+  std::string_view cur_exception{G->is_output_mode_k2() ? "ForkInstanceState::get().current_info().get().thrown_exception" : "CurException"};
+
   auto move_exception = [&](ClassPtr caught_class, VertexAdaptor<op_var> dst) {
     if (caught_class->name == "Throwable") {
-      W << dst << " = std::move(CurException);" << NL;
+      W << dst << " = std::move(" << cur_exception << ");" << NL;
       return;
     }
     std::string e = gen_unique_name("e");
-    W << BEGIN << "auto " << e << " = std::move(CurException);" << NL <<
+    W << BEGIN << "auto " << e << " = std::move(" << cur_exception << ");" << NL <<
          dst << " = " << e << ".template cast_to<" << caught_class->src_name << ">();" << NL << END << NL;
     // we don't allow catching arbitrary classes, but we don't check
     // interfaces at compile time; to be on the safe side, check that
@@ -385,9 +384,9 @@ void compile_try(VertexAdaptor<op_try> root, CodeGenerator &W) {
       } else {
         W << (is_first_catch ? "if" : "else if");
         if (caught_class->derived_classes.empty()) {
-          W << " (f$get_hash_of_class(CurException) == " << caught_class->get_hash() << ") ";
+          W << " (f$get_hash_of_class(" << cur_exception << ") == " << caught_class->get_hash() << ") ";
         } else {
-          W << " (f$is_a<" << caught_class->src_name << ">(CurException)) ";
+          W << " (f$is_a<" << caught_class->src_name << ">(" << cur_exception << ")) ";
         }
         std::string e = gen_unique_name("e");
         W << BEGIN;

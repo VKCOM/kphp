@@ -9,11 +9,11 @@
 #include "common/algorithms/hashes.h"
 #include "common/kprintf.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/array/to-array-processor.h"
-#include "runtime/dummy-visitor-methods.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime/net_events.h"
 #include "runtime/resumable.h"
 #include "runtime/rpc_extra_info.h"
+#include "runtime/to-array-processor.h"
 
 DECLARE_VERBOSITY(rpc);
 

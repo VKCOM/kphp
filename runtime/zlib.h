@@ -7,10 +7,10 @@
 #include <zlib.h>
 
 #include "common/wrappers/string_view.h"
-
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime/dummy-visitor-methods.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
+#include "runtime/critical_section.h"
 
 constexpr int64_t ZLIB_ENCODING_RAW = -0x0f;
 constexpr int64_t ZLIB_ENCODING_DEFLATE = 0x0f;

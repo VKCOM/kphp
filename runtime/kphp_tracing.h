@@ -10,8 +10,8 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/tracing/tracing-context.h"
 #include "runtime-common/stdlib/tracing/tracing.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime/critical_section.h"
-#include "runtime/dummy-visitor-methods.h"
 
 // for detailed comments about tracing in general, see kphp_tracing.cpp
 

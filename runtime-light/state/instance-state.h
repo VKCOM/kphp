@@ -11,9 +11,9 @@
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -128,7 +128,6 @@ struct InstanceState final : vk::not_copyable {
 
 private:
   task_t<void> main_task_;
-
   enum class shutdown_state : uint8_t { not_started, in_progress, finished };
   shutdown_state shutdown_state_{shutdown_state::not_started};
 
