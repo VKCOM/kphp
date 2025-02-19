@@ -93,7 +93,7 @@ static void print_demangled_adresses(void **buffer, int nptrs, int num_shift, bo
 }
 
 static void php_warning_impl(bool out_of_memory, int error_type, char const *message, va_list args) {
-  if (php_warning_level == 0 || RuntimeContext::get().php_disable_warnings) {
+  if (!out_of_memory && (php_warning_level == 0 || RuntimeContext::get().php_disable_warnings)) {
     return;
   }
 

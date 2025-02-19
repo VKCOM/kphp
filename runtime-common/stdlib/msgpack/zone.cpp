@@ -8,10 +8,39 @@
 
 #include <memory>
 
+namespace {
+// TODO Make RuntimeAllocator API malloc-like and remove this proxy-functions
+
+constexpr size_t SIZE_OFFSET = 8;
+constexpr size_t MAX_ALLOC = 0xFFFFFF00;
+
+void *allocate_memory_with_offset(size_t size) {
+  if (size > MAX_ALLOC - SIZE_OFFSET) {
+    php_warning("attempt to allocate too much memory: %lu", size);
+    return nullptr;
+  }
+  size_t allocated_size{SIZE_OFFSET + size};
+  void *mem{RuntimeAllocator::get().alloc_script_memory(allocated_size)};
+  if (mem == nullptr) {
+    php_warning("not enough memory to continue: %lu", size);
+    return mem;
+  }
+  *static_cast<size_t *>(mem) = allocated_size;
+  return static_cast<char *>(mem) + SIZE_OFFSET;
+}
+
+void free_memory_with_offset(void *ptr) {
+  if (ptr != nullptr) {
+    ptr = static_cast<char *>(ptr) - SIZE_OFFSET;
+    RuntimeAllocator::get().free_script_memory(ptr, *static_cast<size_t *>(ptr));
+  }
+}
+} // namespace
+
 namespace vk::msgpack {
 
 zone::chunk_list::chunk_list(size_t chunk_size) {
-  auto *c = static_cast<chunk *>(RuntimeAllocator::get().alloc_script_memory(sizeof(chunk) + chunk_size));
+  auto *c = static_cast<chunk *>(allocate_memory_with_offset(sizeof(chunk) + chunk_size));
   if (!c) {
     throw std::bad_alloc{};
   }
@@ -20,14 +49,13 @@ zone::chunk_list::chunk_list(size_t chunk_size) {
   m_free = chunk_size;
   m_ptr = reinterpret_cast<char *>(c) + sizeof(chunk);
   c->m_next = nullptr;
-  c->size = sizeof(chunk) + chunk_size;
 }
 
 zone::chunk_list::~chunk_list() {
   chunk *c = m_head;
   while (c) {
     chunk *n = c->m_next;
-    RuntimeAllocator::get().free_script_memory(c, c->size);
+    free_memory_with_offset(c);
     c = n;
   }
 }
@@ -67,8 +95,7 @@ char *zone::allocate_expand(size_t size) {
     }
     sz = tmp_sz;
   }
-
-  auto *c = static_cast<chunk *>(RuntimeAllocator::get().alloc_script_memory(sizeof(chunk) + sz));
+  auto *c = static_cast<chunk *>(allocate_memory_with_offset(sizeof(chunk) + sz));
   if (!c) {
     throw std::bad_alloc{};
   }
@@ -76,7 +103,6 @@ char *zone::allocate_expand(size_t size) {
   char *ptr = reinterpret_cast<char *>(c) + sizeof(chunk);
 
   c->m_next = cl->m_head;
-  c->size = sizeof(chunk) + sz;
   cl->m_head = c;
   cl->m_free = sz;
   cl->m_ptr = ptr;
