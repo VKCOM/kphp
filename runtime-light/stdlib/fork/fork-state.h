@@ -44,7 +44,6 @@ private:
 
   template<typename T>
   friend class start_fork_t;
-  friend InstanceState;
 
 public:
   int64_t current_id{FORK_ID_INIT};
