@@ -16,13 +16,15 @@ struct C$DateTime;
 struct C$DateTimeImmutable : public refcountable_polymorphic_php_classes<C$DateTimeInterface>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  const char *get_class() const noexcept final {
+  const char *get_class() const noexcept override {
     return R"(DateTimeImmutable)";
   }
 
-  int get_hash() const noexcept final {
-    return 1600341038;
+  int get_hash() const noexcept override {
+    const char *class_name{get_class()};
+    return static_cast<int>(string_hash(class_name, std::strlen(class_name)));
   }
+
 
   ~C$DateTimeImmutable();
 };
