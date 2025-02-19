@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /You cannot override final method: MyException::__clone/
 /Can not change access type for method: MyException::__clone/
 <?php
