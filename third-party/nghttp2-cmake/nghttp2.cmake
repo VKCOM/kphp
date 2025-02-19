@@ -3,6 +3,7 @@ update_git_submodule(${THIRD_PARTY_DIR}/nghttp2 "--remote")
 set(NGHTTP2_SOURCE_DIR      ${THIRD_PARTY_DIR}/nghttp2)
 set(NGHTTP2_BUILD_DIR       ${CMAKE_BINARY_DIR}/third-party/nghttp2/build)
 set(NGHTTP2_INSTALL_DIR     ${CMAKE_BINARY_DIR}/third-party/nghttp2/install)
+set(NGHTTP2_LIBRARIES       ${NGHTTP2_INSTALL_DIR}/lib/libnghttp2.a)
 set(NGHTTP2_INCLUDE_DIRS    ${NGHTTP2_INSTALL_DIR}/include)
 set(NGHTTP2_PATCH_DIR       ${NGHTTP2_BUILD_DIR}/debian/patches/)
 set(NGHTTP2_PATCH_SERIES    ${NGHTTP2_BUILD_DIR}/debian/patches/series)
@@ -74,13 +75,12 @@ ExternalProject_Add(
 
 add_library(NGHTTP2::nghttp2 STATIC IMPORTED)
 set_target_properties(NGHTTP2::nghttp2 PROPERTIES
-        IMPORTED_LOCATION ${NGHTTP2_INSTALL_DIR}/lib/libnghttp2.a
+        IMPORTED_LOCATION ${NGHTTP2_LIBRARIES}
         INTERFACE_INCLUDE_DIRECTORIES ${NGHTTP2_INCLUDE_DIRS}
 )
 
 # Set variables indicating that NGHTTP2 has been installed
 set(NGHTTP2_FOUND ON)
 set(NGHTTP2_ROOT ${NGHTTP2_INSTALL_DIR})
-set(NGHTTP2_LIBRARIES ${NGHTTP2_INSTALL_DIR}/lib/libnghttp2.a)
 
 cmake_print_variables(NGHTTP2_LIBRARIES)

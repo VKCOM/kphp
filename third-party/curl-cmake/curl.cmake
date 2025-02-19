@@ -1,9 +1,10 @@
 update_git_submodule(${THIRD_PARTY_DIR}/curl "--remote")
 
-set(CURL_SOURCE_DIR  ${THIRD_PARTY_DIR}/curl)
-set(CURL_BUILD_DIR   ${CMAKE_BINARY_DIR}/third-party/curl/build)
-set(CURL_INSTALL_DIR ${CMAKE_BINARY_DIR}/third-party/curl/install)
-set(CURL_INCLUDE_DIRS ${CURL_INSTALL_DIR}/include)
+set(CURL_SOURCE_DIR     ${THIRD_PARTY_DIR}/curl)
+set(CURL_BUILD_DIR      ${CMAKE_BINARY_DIR}/third-party/curl/build)
+set(CURL_INSTALL_DIR    ${CMAKE_BINARY_DIR}/third-party/curl/install)
+set(CURL_LIBRARIES      ${CURL_INSTALL_DIR}/lib/libcurl.a)
+set(CURL_INCLUDE_DIRS   ${CURL_INSTALL_DIR}/include)
 # Ensure the build, installation and "include" directories exists
 file(MAKE_DIRECTORY ${CURL_BUILD_DIR})
 file(MAKE_DIRECTORY ${CURL_INSTALL_DIR})
@@ -77,7 +78,7 @@ ExternalProject_Add(
 
 add_library(CURL::curl STATIC IMPORTED)
 set_target_properties(CURL::curl PROPERTIES
-        IMPORTED_LOCATION ${CURL_INSTALL_DIR}/lib/libcurl.a
+        IMPORTED_LOCATION ${CURL_LIBRARIES}
         INTERFACE_INCLUDE_DIRECTORIES ${CURL_INCLUDE_DIRS}
 )
 

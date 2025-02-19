@@ -9,7 +9,7 @@
 	url = https://github.com/PCRE2Project/pcre2.git
 [submodule "third-party/openssl"]
 	path = third-party/openssl
-	url = https://salsa.debian.org/debian/openssl.git
+	url = https://github.com/VKCOM/openssl.git
 	branch = debian/buster
 [submodule "third-party/curl"]
 	path = third-party/curl
@@ -17,5 +17,5 @@
 	branch = dpkg-build-7.60.0
 [submodule "third-party/nghttp2"]
 	path = third-party/nghttp2
-	url = https://salsa.debian.org/debian/nghttp2.git
+	url = https://github.com/VKCOM/nghttp2.git
 	branch = buster
