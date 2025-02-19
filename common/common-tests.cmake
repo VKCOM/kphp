@@ -20,5 +20,10 @@ prepend(COMMON_TESTS_SOURCES ${COMMON_DIR}/
         ucontext/ucontext-portable-test.cpp)
 
 prepare_cross_platform_libs(COMMON_TESTS_LIBS zstd)
-set(COMMON_TESTS_LIBS vk::common_src vk::net_src vk::binlog_src vk::unicode ${COMMON_TESTS_LIBS} ${EPOLL_SHIM_LIB} OpenSSL::Crypto z)
+set(COMMON_TESTS_LIBS vk::common_src vk::net_src vk::binlog_src vk::unicode ${COMMON_TESTS_LIBS} ${EPOLL_SHIM_LIB} OpenSSL::Crypto)
+if(COMPILE_RUNTIME_LIGHT)
+    set(COMMON_TESTS_LIBS ${COMMON_TESTS_LIBS} ZLIB::ZLIB_PIC)
+else()
+    set(COMMON_TESTS_LIBS ${COMMON_TESTS_LIBS} ZLIB::ZLIB_NO_PIC)
+endif()
 vk_add_unittest(common "${COMMON_TESTS_LIBS}" ${COMMON_TESTS_SOURCES})

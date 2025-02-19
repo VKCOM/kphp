@@ -1,10 +1,15 @@
 update_git_submodule(${THIRD_PARTY_DIR}/openssl "--remote")
 
-set(OPENSSL_INSTALL_DIR ${CMAKE_BINARY_DIR}/third-party/openssl)
-# Ensure the installation directory exists
+set(OPENSSL_SOURCE_DIR      ${THIRD_PARTY_DIR}/openssl)
+set(OPENSSL_BUILD_DIR       ${CMAKE_BINARY_DIR}/third-party/openssl/build)
+set(OPENSSL_INSTALL_DIR     ${CMAKE_BINARY_DIR}/third-party/openssl/install)
+set(OPENSSL_PATCH_DIR       ${OPENSSL_BUILD_DIR}/debian/patches/)
+set(OPENSSL_PATCH_SERIES    ${OPENSSL_BUILD_DIR}/debian/patches/series)
+# Ensure the build and installation directories exists
+file(MAKE_DIRECTORY ${OPENSSL_BUILD_DIR})
 file(MAKE_DIRECTORY ${OPENSSL_INSTALL_DIR})
 
-set(OPENSSL_COMPILE_FLAGS "-g0")
+set(OPENSSL_COMPILE_FLAGS "$ENV{CFLAGS} -g0 -fno-pic -static")
 
 # The configuration has been based on:
 # https://packages.debian.org/buster/libssl1.1
@@ -19,17 +24,31 @@ if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
     set(OPENSSL_CONFIGURE_EXTRA_OPTION enable-ec_nistp_64_gcc_128)
 endif()
 
-ExternalProject_Add(openssl
-        SOURCE_DIR ${THIRD_PARTY_DIR}/openssl
-        CONFIGURE_COMMAND ./config --prefix=${OPENSSL_INSTALL_DIR} --openssldir=/usr/lib/ssl no-shared no-idea no-mdc2 no-rc5 no-zlib no-ssl3 enable-unit-test no-ssl3-method enable-rfc3779 enable-cms ${OPENSSL_CONFIGURE_EXTRA_OPTION}
+if(APPLE)
+    detect_xcode_sdk_path(CMAKE_OSX_SYSROOT)
+    set(OPENSSL_COMPILE_FLAGS "${OPENSSL_COMPILE_FLAGS} --sysroot ${CMAKE_OSX_SYSROOT}")
+endif()
+
+ExternalProject_Add(
+        openssl
+        PREFIX ${OPENSSL_BUILD_DIR}
+        SOURCE_DIR ${OPENSSL_SOURCE_DIR}
+        INSTALL_DIR ${OPENSSL_INSTALL_DIR}
+        BINARY_DIR ${OPENSSL_BUILD_DIR}
         BUILD_BYPRODUCTS ${OPENSSL_INSTALL_DIR}/lib/libssl.a ${OPENSSL_INSTALL_DIR}/lib/libcrypto.a
-        BUILD_COMMAND make CFLAGS=${OPENSSL_COMPILE_FLAGS}
+        PATCH_COMMAND
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${OPENSSL_SOURCE_DIR} ${OPENSSL_BUILD_DIR}
+            COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${OPENSSL_BUILD_DIR} -DPATCH_SERIES=${OPENSSL_PATCH_SERIES} -DPATCH_DIR=${OPENSSL_PATCH_DIR} -P ../../cmake/apply_patches.cmake
+        CONFIGURE_COMMAND
+            COMMAND ${CMAKE_COMMAND} -E env CC=${CMAKE_C_COMPILER} CFLAGS=${OPENSSL_COMPILE_FLAGS} ./config --prefix=${OPENSSL_INSTALL_DIR} --openssldir=/usr/lib/ssl no-shared no-pic no-idea no-mdc2 no-rc5 no-zlib no-ssl3 enable-unit-test no-ssl3-method enable-rfc3779 enable-cms no-tests ${OPENSSL_CONFIGURE_EXTRA_OPTION}
+        BUILD_COMMAND
+            COMMAND make build_libs -j
         INSTALL_COMMAND
-            make install_sw &&
-            ${CMAKE_COMMAND} -E copy_directory ${CMAKE_BINARY_DIR}/third-party/openssl/include/ ${OBJS_DIR}/include &&
-            ${CMAKE_COMMAND} -E copy ${OPENSSL_INSTALL_DIR}/lib/libssl.a ${OBJS_DIR}/lib/ &&
-            ${CMAKE_COMMAND} -E copy ${OPENSSL_INSTALL_DIR}/lib/libcrypto.a ${OBJS_DIR}/lib/
-        BUILD_IN_SOURCE 1
+            COMMAND make install_dev
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${OPENSSL_INSTALL_DIR}/include ${INCLUDE_DIR}
+            COMMAND ${CMAKE_COMMAND} -E copy ${OPENSSL_INSTALL_DIR}/lib/libssl.a ${LIB_DIR}
+            COMMAND ${CMAKE_COMMAND} -E copy ${OPENSSL_INSTALL_DIR}/lib/libcrypto.a ${LIB_DIR}
+        BUILD_IN_SOURCE 0
 )
 
 set(OPENSSL_INCLUDE_DIR ${OPENSSL_INSTALL_DIR}/include)
@@ -58,4 +77,6 @@ set(OPENSSL_ROOT_DIR ${OPENSSL_INSTALL_DIR})
 set(OPENSSL_LIBRARIES ${OPENSSL_INSTALL_DIR}/lib/libssl.a ${OPENSSL_INSTALL_DIR}/lib/libcrypto.a)
 set(OPENSSL_CRYPTO_LIBRARY ${OPENSSL_INSTALL_DIR}/lib/libcrypto.a)
 set(OPENSSL_SSL_LIBRARY ${OPENSSL_INSTALL_DIR}/lib/libssl.a)
-set(OPENSSL_USE_STATIC_LIBS TRUE)
+set(OPENSSL_USE_STATIC_LIBS ON)
+
+cmake_print_variables(OPENSSL_LIBRARIES)

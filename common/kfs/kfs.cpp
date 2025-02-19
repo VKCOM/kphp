@@ -17,7 +17,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
-#include <zlib.h>
+#include "zlib/zlib.h"
 #include <zstd.h>
 
 #include "common/binlog/kdb-binlog-common.h"

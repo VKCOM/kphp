@@ -5,6 +5,8 @@ set(COMMON_DIR "${BASE_DIR}/common")
 set(THIRD_PARTY_DIR "${BASE_DIR}/third-party")
 set(OBJS_DIR ${BASE_DIR}/objs)
 set(BIN_DIR ${OBJS_DIR}/bin)
+set(LIB_DIR ${OBJS_DIR}/lib)
+set(INCLUDE_DIR ${OBJS_DIR}/include)
 set(GENERATED_DIR "${OBJS_DIR}/generated")
 set(AUTO_DIR "${GENERATED_DIR}/auto")
 set(RUNTIME_LIGHT_DIR "${BASE_DIR}/runtime-light")
@@ -93,5 +95,9 @@ if(DEFINED ENV{PACKAGE_VERSION})
 else()
     set(DEFAULT_KPHP_PATH ${BASE_DIR})
 endif()
+
+# Ensure the dir for dependencies will be created
+file(MAKE_DIRECTORY ${LIB_DIR})
+file(MAKE_DIRECTORY ${INCLUDE_DIR})
 
 cmake_print_variables(CMAKE_INSTALL_PREFIX CPACK_PACKAGING_INSTALL_PREFIX)

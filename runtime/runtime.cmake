@@ -1,4 +1,5 @@
-# CURL Building
+# CURL Build
+include(${THIRD_PARTY_DIR}/nghttp2-cmake/nghttp2.cmake)
 include(${THIRD_PARTY_DIR}/curl-cmake/curl.cmake)
 
 prepend(KPHP_RUNTIME_DATETIME_SOURCES datetime/
@@ -139,19 +140,19 @@ allow_deprecated_declarations(${BASE_DIR}/runtime/allocator.cpp ${BASE_DIR}/runt
 allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.cpp)
 
 vk_add_library(kphp_runtime OBJECT ${KPHP_RUNTIME_ALL_SOURCES})
-target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} ${OPENSSL_INCLUDE_DIR} ${CURL_INCLUDE_DIR})
+target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} ${OPENSSL_INCLUDE_DIR} ${ZLIB_NO_PIC_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS})
 
 add_dependencies(kphp_runtime kphp-timelib curl)
-add_dependencies(curl openssl)
+add_dependencies(curl openssl zlib-no-pic)
 
 prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 zstd h3) # todo: linking between static libs is no-op, is this redundant? do we need to add mysqlclient here?
-set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::runtime-common vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} CURL::curl OpenSSL::SSL OpenSSL::Crypto m z pthread)
+set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::runtime-common vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} CURL::curl OpenSSL::SSL OpenSSL::Crypto m ZLIB::ZLIB_NO_PIC pthread)
 vk_add_library(kphp-full-runtime STATIC)
 target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
 set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})
 
-prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre nghttp2 kphp-timelib)
-set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static CURL::curl OpenSSL::SSL ${NUMA_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB} dl)
+prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre kphp-timelib)
+set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static CURL::curl OpenSSL::SSL NGHTTP2::nghttp2 ${NUMA_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB} dl)
 
 if (PDO_DRIVER_MYSQL)
     list(APPEND RUNTIME_LINK_TEST_LIBS mysqlclient)
@@ -188,6 +189,7 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp
 ]])
 
 add_library(php_lib_version_j OBJECT ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp)
+target_include_directories(php_lib_version_j PUBLIC ${ZLIB_NO_PIC_INCLUDE_DIRS})
 target_compile_options(php_lib_version_j PRIVATE -I. -E)
 add_dependencies(php_lib_version_j kphp-full-runtime)
 
