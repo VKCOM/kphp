@@ -208,4 +208,16 @@ inline int32_t tcp_connect(uint64_t *socket_d, const char *host, size_t host_len
   return k2_tcp_connect(socket_d, host, host_len);
 }
 
+inline int32_t iconv_open(void **iconv_cd, const char *tocode, const char *fromcode) noexcept {
+  return k2_iconv_open(iconv_cd, tocode, fromcode);
+}
+
+inline void iconv_close(void *iconv_cd) noexcept {
+  k2_iconv_close(iconv_cd);
+}
+
+inline int32_t iconv(size_t *result, void *iconv_cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft) noexcept {
+  return k2_iconv(result, iconv_cd, inbuf, inbytesleft, outbuf, outbytesleft);
+}
+
 } // namespace k2

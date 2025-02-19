@@ -41,8 +41,14 @@ function setcookie ($name ::: string, $value ::: string, $expire_or_options ::: 
 
 function setrawcookie ($name ::: string, $value ::: string, $expire_or_options ::: int = 0, $path ::: string = '', $domain ::: string = '', $secure ::: bool = false, $http_only ::: bool = false): void;
 
+function headers_list () ::: string[];
+
 function ip2long ($ip ::: string) ::: int | false;
 
 function ip2ulong ($ip ::: string) ::: string | false;
 
 function long2ip ($ip ::: int) ::: string;
+
+function memory_get_usage ($real_usage ::: bool = false) ::: int;
+
+function memory_get_peak_usage ($real_usage ::: bool = false) ::: int;

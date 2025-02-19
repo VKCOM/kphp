@@ -3,3 +3,5 @@
 function php_uname($mode ::: string = "a"): string;
 
 function posix_getpid(): int;
+
+function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
