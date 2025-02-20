@@ -4,14 +4,15 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/stdlib/msgpack/zone.h"
-#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
 
 #include <memory>
+#include <cstdint>
 
 namespace {
 // TODO Make RuntimeAllocator API malloc-like and remove this proxy-functions
 
-constexpr size_t SIZE_OFFSET = 8;
+constexpr size_t SIZE_OFFSET = sizeof(size_t);
 constexpr size_t MAX_ALLOC = 0xFFFFFF00;
 
 void *allocate_memory_with_offset(size_t size) {
