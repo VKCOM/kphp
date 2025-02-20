@@ -9,6 +9,7 @@ prepend(COMMON_MAIN_SOURCES ${COMMON_DIR}/
 
         sha1.cpp
         allocators/freelist.cpp
+	algorithms/hashes.cpp
         md5.cpp
         allocators/lockfree-slab.cpp
         server/main-binlog.cpp
