@@ -21,7 +21,7 @@ struct C$DateTimeImmutable : public refcountable_polymorphic_php_classes<C$DateT
   }
 
   int get_hash() const noexcept final {
-    return 1600341038;
+    return static_cast<int32_t>(124055511);
   }
 
   ~C$DateTimeImmutable();

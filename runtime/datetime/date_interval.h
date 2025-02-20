@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime/datetime/timelib_wrapper.h"
@@ -17,8 +19,8 @@ struct C$DateInterval: public refcountable_php_classes<C$DateInterval>, private 
     return R"(DateInterval)";
   }
 
-  int get_hash() const  noexcept {
-    return -393296726;
+  int get_hash() const noexcept {
+    return static_cast<int32_t>(1915664120);
   }
 
   ~C$DateInterval();

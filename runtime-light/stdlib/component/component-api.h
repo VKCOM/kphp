@@ -8,6 +8,7 @@
 #include <string_view>
 #include <utility>
 
+#include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
@@ -33,7 +34,8 @@ struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery
   }
 
   constexpr int32_t get_hash() const noexcept {
-    return static_cast<int32_t>(std::hash<std::string_view>{}(get_class()));
+    std::string_view name_view{get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
   ~C$ComponentQuery() {

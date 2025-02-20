@@ -5,8 +5,10 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
 #include <tuple>
 
+#include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
@@ -21,10 +23,19 @@ struct C$KphpRpcRequestsExtraInfo final : public refcountable_php_classes<C$Kphp
   array<rpc_request_extra_info_t> extra_info_arr;
 
   C$KphpRpcRequestsExtraInfo() = default;
-  const char *get_class() const noexcept;
-  int get_hash() const noexcept;
+
+  const char *get_class() const noexcept {
+    return R"(KphpRpcRequestsExtraInfo)";
+  }
+
+  int get_hash() const noexcept {
+    std::string_view name_view{get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
+  }
 };
 
-array<rpc_request_extra_info_t> f$KphpRpcRequestsExtraInfo$$get(class_instance<C$KphpRpcRequestsExtraInfo> v$this) noexcept;
+inline array<rpc_request_extra_info_t> f$KphpRpcRequestsExtraInfo$$get(const class_instance<C$KphpRpcRequestsExtraInfo> &v$this) noexcept {
+  return v$this.get()->extra_info_arr;
+}
 
 Optional<rpc_response_extra_info_t> f$extract_kphp_rpc_response_extra_info(int64_t query_id) noexcept;

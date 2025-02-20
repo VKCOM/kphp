@@ -5,9 +5,9 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
 
 #include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime-common/stdlib/visitors/memory-visitors.h"
@@ -56,7 +56,8 @@ public:
   }
 
   int32_t get_hash() const final {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$McMemcache::get_class())));
+    std::string_view name_view{C$McMemcache::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
   virtual C$McMemcache* virtual_builtin_clone() const noexcept {

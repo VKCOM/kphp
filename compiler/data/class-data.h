@@ -3,12 +3,13 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
+
 #include <atomic>
+#include <cstdint>
 #include <forward_list>
 
 #include "common/algorithms/compare.h"
 #include "common/algorithms/hashes.h"
-
 #include "compiler/data/class-members.h"
 #include "compiler/data/class-modifiers.h"
 #include "compiler/debug.h"
@@ -175,7 +176,7 @@ public:
   void debugPrint();
 
   int get_hash() const {
-    return static_cast<int>(vk::std_hash(name));
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name.data(), name.size()));
   }
 
   std::string get_subdir() const {

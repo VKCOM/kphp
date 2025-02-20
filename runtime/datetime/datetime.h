@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
@@ -21,7 +23,7 @@ struct C$DateTime : public refcountable_polymorphic_php_classes<C$DateTimeInterf
   }
 
   int get_hash() const noexcept final {
-    return 2141635158;
+    return static_cast<int32_t>(1951820907);
   }
 
   ~C$DateTime();
