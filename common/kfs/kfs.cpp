@@ -18,7 +18,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "zlib/zlib.h"
-#include <zstd.h>
+#include "zstd/zstd.h"
 
 #include "common/binlog/kdb-binlog-common.h"
 #include "common/binlog/snapshot-shifts.h"

@@ -140,13 +140,13 @@ allow_deprecated_declarations(${BASE_DIR}/runtime/allocator.cpp ${BASE_DIR}/runt
 allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.cpp)
 
 vk_add_library(kphp_runtime OBJECT ${KPHP_RUNTIME_ALL_SOURCES})
-target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} ${OPENSSL_INCLUDE_DIR} ${ZLIB_NO_PIC_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS})
+target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} ${OPENSSL_INCLUDE_DIR} ${ZLIB_NO_PIC_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS} ${ZSTD_INCLUDE_DIRS})
 
-add_dependencies(kphp_runtime kphp-timelib curl)
+add_dependencies(kphp_runtime kphp-timelib curl zstd)
 add_dependencies(curl openssl zlib-no-pic)
 
-prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 zstd h3) # todo: linking between static libs is no-op, is this redundant? do we need to add mysqlclient here?
-set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::runtime-common vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} CURL::curl OpenSSL::SSL OpenSSL::Crypto m ZLIB::ZLIB_NO_PIC pthread)
+prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 h3) # todo: linking between static libs is no-op, is this redundant? do we need to add mysqlclient here?
+set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::runtime-common vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} CURL::curl OpenSSL::SSL OpenSSL::Crypto m ZLIB::ZLIB_NO_PIC ZSTD::zstd pthread)
 vk_add_library(kphp-full-runtime STATIC)
 target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
 set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})

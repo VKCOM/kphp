@@ -368,7 +368,7 @@ void CompilerSettings::init() {
   ld_flags.value_ = extra_ld_flags.get();
   append_curl(cxx_default_flags, ld_flags.value_, third_party_path);
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> system_installed_static_libs{"pcre", "re2", "yaml-cpp", "h3", "zstd", "kphp-timelib"};
+  std::vector<vk::string_view> system_installed_static_libs{"pcre", "re2", "yaml-cpp", "h3", "kphp-timelib"};
 
 #ifdef KPHP_TIMELIB_LIB_DIR
   ld_flags.value_ += " -L" KPHP_TIMELIB_LIB_DIR;
@@ -424,14 +424,15 @@ void CompilerSettings::init() {
   system_installed_dynamic_libs.emplace_back("rt");
 #endif
 
+  append_3dparty_lib(ld_flags.value_, third_party_path, "ssl");
+  append_3dparty_lib(ld_flags.value_, third_party_path, "crypto");
+  append_3dparty_lib(ld_flags.value_, third_party_path, "nghttp2");
+  append_3dparty_lib(ld_flags.value_, third_party_path, "zstd");
   if (is_k2_mode) {
     append_3dparty_lib(ld_flags.value_, third_party_path, "z-pic");
   } else {
     append_3dparty_lib(ld_flags.value_, third_party_path, "z-no-pic");
   }
-  append_3dparty_lib(ld_flags.value_, third_party_path, "ssl");
-  append_3dparty_lib(ld_flags.value_, third_party_path, "crypto");
-  append_3dparty_lib(ld_flags.value_, third_party_path, "nghttp2");
 
   append_if_doesnt_contain(ld_flags.value_, system_installed_dynamic_libs, "-l");
   ld_flags.value_ += " -rdynamic";

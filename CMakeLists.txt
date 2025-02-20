@@ -33,9 +33,11 @@ include(cmake/popular-common.cmake)
 # Common third-parties build
 include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)
 include(${THIRD_PARTY_DIR}/openssl-cmake/openssl.cmake)
+include(${THIRD_PARTY_DIR}/zstd-cmake/zstd.cmake)
 
 # TODO: use FetchContent_Declare instead of include_directories
 include_directories(.)
+include_directories(${INCLUDE_DIR})
 
 # Custom modules
 include(${BASE_DIR}/flex/flex.cmake)
@@ -123,7 +125,7 @@ install(FILES ${AUTO_DIR}/runtime/runtime-headers.h
         DESTINATION ${INSTALL_KPHP_SOURCE}/objs/generated/auto/runtime/)
 
 set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, libuber-h3, libpcre3-dev, libre2-dev, libyaml-cpp-dev, \
-                                       libzstd-dev, g++, kphp-timelib, libnuma-dev")
+                                       g++, kphp-timelib, libnuma-dev")
 
 if (PDO_DRIVER_MYSQL)
     set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libmysqlclient-dev")

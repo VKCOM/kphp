@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <zstd.h>
+#include "zstd/zstd.h"
 
 #include "runtime-common/stdlib/string/string-context.h"
 

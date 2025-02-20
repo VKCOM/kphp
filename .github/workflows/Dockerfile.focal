@@ -16,7 +16,7 @@ RUN apt-get update && \
       python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
     python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
     apt-get install -y --no-install-recommends kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
-      libzstd-dev libyaml-cpp-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
+      libyaml-cpp-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
       libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* libnuma-dev composer unzip && \
     rm -rf /var/lib/apt/lists/*
 

@@ -19,3 +19,7 @@
 	path = third-party/nghttp2
 	url = https://github.com/VKCOM/nghttp2.git
 	branch = buster
+[submodule "third-party/zstd"]
+	path = third-party/zstd
+	url = https://github.com/VKCOM/libzstd.git
+	branch = master

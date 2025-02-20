@@ -68,8 +68,8 @@ ExternalProject_Add(
             COMMAND ${CMAKE_COMMAND} --build ${NGHTTP2_BUILD_DIR} --config $<CONFIG> -j
         INSTALL_COMMAND
             COMMAND ${CMAKE_COMMAND} --install ${NGHTTP2_BUILD_DIR} --prefix ${NGHTTP2_INSTALL_DIR} --config $<CONFIG>
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${NGHTTP2_INSTALL_DIR}/include ${INCLUDE_DIR}
-            COMMAND ${CMAKE_COMMAND} -E copy ${NGHTTP2_INSTALL_DIR}/lib/libnghttp2.a ${LIB_DIR}
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${NGHTTP2_INCLUDE_DIRS} ${INCLUDE_DIR}
+            COMMAND ${CMAKE_COMMAND} -E copy ${NGHTTP2_LIBRARIES} ${LIB_DIR}
         BUILD_IN_SOURCE 0
 )
 

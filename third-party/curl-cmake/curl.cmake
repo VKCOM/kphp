@@ -84,6 +84,5 @@ set_target_properties(CURL::curl PROPERTIES
 
 # Set variables indicating that curl has been installed
 set(CURL_FOUND ON)
-set(CURL_LIBRARIES ${CURL_INSTALL_DIR}/lib/libcurl.a)
 
 cmake_print_variables(CURL_LIBRARIES)

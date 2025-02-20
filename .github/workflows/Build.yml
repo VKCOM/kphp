@@ -146,7 +146,7 @@ jobs:
       run: |
         brew tap shivammathur/php
         brew update
-        brew install python@3.13 re2c cmake coreutils libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
+        brew install python@3.13 re2c cmake coreutils libiconv re2 pcre yaml-cpp googletest shivammathur/php/php@7.4
         brew link --overwrite --force shivammathur/php/php@7.4
         /opt/homebrew/opt/python@3.13/libexec/bin/python -m pip install --upgrade pip --break-system-packages && /opt/homebrew/opt/python@3.13/libexec/bin/pip install --break-system-packages jsonschema
 
