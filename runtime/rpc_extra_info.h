@@ -4,16 +4,16 @@
 
 #pragma once
 
-#include <tuple>
 #include <cstdint>
+#include <string_view>
+#include <tuple>
 
 #include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
-using rpc_request_extra_info_t = std::tuple<std::int64_t>; // tuple(request_size)
+using rpc_request_extra_info_t = std::tuple<std::int64_t>;          // tuple(request_size)
 using rpc_response_extra_info_t = std::tuple<std::int64_t, double>; // tuple(response_size, response_time)
 enum class rpc_response_extra_info_status_t : std::uint8_t { NOT_READY, READY };
 
@@ -31,7 +31,8 @@ struct C$KphpRpcRequestsExtraInfo final : public refcountable_php_classes<C$Kphp
   }
 
   int get_hash() const noexcept {
-    return static_cast<std::int32_t>(vk::std_hash(vk::string_view(C$KphpRpcRequestsExtraInfo::get_class())));
+    std::string_view name_view{C$KphpRpcRequestsExtraInfo::get_class()};
+    return static_cast<std::int32_t>(vk::murmur_hash<std::uint32_t>(name_view.data(), name_view.size()));
   }
 };
 

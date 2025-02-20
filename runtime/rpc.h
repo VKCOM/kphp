@@ -4,7 +4,9 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
+#include <string_view>
 
 #include "common/algorithms/hashes.h"
 #include "common/kprintf.h"
@@ -135,7 +137,8 @@ struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>,
   }
 
   int get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$RpcConnection::get_class())));
+    std::string_view name_view{C$RpcConnection::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
   using DummyVisitorMethods::accept;

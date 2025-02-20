@@ -4,9 +4,10 @@
 
 #pragma once
 
-#include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
+#include <cstdint>
+#include <string_view>
 
+#include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime/instance-copy-processor.h"
@@ -78,12 +79,13 @@ struct C$KphpJobWorkerResponseError: public refcountable_polymorphic_php_classes
   string error;
   int64_t error_code;
 
-  const char *get_class() const  noexcept {
+  const char *get_class() const noexcept override {
     return R"(KphpJobWorkerResponseError)";
   }
 
-  int get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$KphpJobWorkerResponseError::get_class())));
+  int get_hash() const noexcept override {
+    std::string_view name_view{C$KphpJobWorkerResponseError::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
   template<class Visitor>

@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
@@ -15,7 +17,7 @@ struct C$FFI$CData: public refcountable_php_classes<C$FFI$CData<T>>, private Dum
   T c_value;
 
   const char *get_class() const noexcept { return "FFI\\CData"; }
-  int get_hash() const noexcept { return 1945543994; }
+  int get_hash() const noexcept { return static_cast<int32_t>(-1934403570); }
 
   using DummyVisitorMethods::accept;
 };
@@ -104,7 +106,7 @@ struct CDataRef {
 
   void accept(CommonMemoryEstimateVisitor &visitor __attribute__((unused))) {}
   const char *get_class() const noexcept { return "FFI\\CDataRef"; }
-  int get_hash() const noexcept { return -1965114283; }
+  int get_hash() const noexcept { return static_cast<int32_t>(939385980); }
 };
 
 // CDataArrayRef is a non-owning pointer to a C array that keeps its length
