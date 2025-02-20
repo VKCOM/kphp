@@ -94,29 +94,29 @@ struct C$KphpJobWorkerResponseError: public refcountable_polymorphic_php_classes
     visitor("error_code", error_code);
   }
 
-  void accept(InstanceReferencesCountingVisitor &visitor) noexcept {
+  void accept(InstanceReferencesCountingVisitor &visitor) noexcept override {
     return generic_accept(visitor);
   }
 
-  void accept(InstanceDeepCopyVisitor &visitor) noexcept {
+  void accept(InstanceDeepCopyVisitor &visitor) noexcept override {
     return generic_accept(visitor);
   }
 
-  void accept(InstanceDeepDestroyVisitor &visitor) noexcept {
+  void accept(InstanceDeepDestroyVisitor &visitor) noexcept override {
     return generic_accept(visitor);
   }
 
-  void accept(ToArrayVisitor &visitor) noexcept {
+  void accept(ToArrayVisitor &visitor) noexcept override {
     return generic_accept(visitor);
   }
 
-  void accept(CommonMemoryEstimateVisitor &visitor) noexcept;
+  void accept(CommonMemoryEstimateVisitor &visitor) noexcept override;
 
-  size_t virtual_builtin_sizeof() const  noexcept {
+  size_t virtual_builtin_sizeof() const  noexcept override {
     return sizeof(*this);
   }
 
-  C$KphpJobWorkerResponseError* virtual_builtin_clone() const  noexcept {
+  C$KphpJobWorkerResponseError* virtual_builtin_clone() const  noexcept override {
     return new C$KphpJobWorkerResponseError{*this};
   }
 };
