@@ -11,9 +11,9 @@
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -120,7 +120,7 @@ struct InstanceState final : vk::not_copyable {
   RegexInstanceState regex_instance_state;
   CurlInstanceState curl_instance_state{};
   CryptoInstanceState crypto_instance_state{};
-  StringInstanceState string_instance_state{};
+  StringInstanceState string_instance_state;
   SystemInstanceState system_instance_state{};
   FileSystemInstanceState file_system_instance_state{};
 

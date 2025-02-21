@@ -5,7 +5,6 @@
 #include "runtime-common/stdlib/string/string-functions.h"
 
 #include <cctype>
-#include <clocale>
 #include <cstdint>
 #include <sys/types.h>
 
@@ -16,7 +15,7 @@
 #include "runtime-common/stdlib/string/string-context.h"
 
 const char *get_mask(const string &what) noexcept {
-  auto &mask{StringLibContext::get().mask_buffer};
+  auto &mask{StringLibContext::get().mask_buf};
   std::memset(mask.data(), 0, mask.size());
 
   int len = what.size();
