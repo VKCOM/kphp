@@ -5,6 +5,7 @@
 #include "runtime/zlib.h"
 
 #include "runtime-common/stdlib/string/string-context.h"
+#include "runtime/allocator.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 

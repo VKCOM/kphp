@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 // Test multiple interfaces for errors.

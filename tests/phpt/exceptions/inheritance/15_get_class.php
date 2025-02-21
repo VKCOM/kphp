@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 // Test that get_class() is virtual and that derived classes can override it.

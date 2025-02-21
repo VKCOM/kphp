@@ -38,9 +38,9 @@ function _explode_tuple3($delimiter ::: string, $str ::: string, int $mask, $lim
  */
 function _explode_tuple4($delimiter ::: string, $str ::: string, int $mask, $limit ::: int = 4+1): tuple(string, string, string, string);
 
-// ===== UNSUPPORTED =====
-
 function _exception_set_location($e, string $filename, int $line): ^1;
+
+// ===== UNSUPPORTED =====
 
 // `new $c(...)` => `_by_name_construct($c, ...)`
 function _by_name_construct(string $class_name, ...$args) ::: instance<^1>;

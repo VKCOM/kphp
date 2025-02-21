@@ -6,8 +6,9 @@
 
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime/dummy-visitor-methods.h"
-#include "runtime/memory_usage.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
+#include "runtime-common/stdlib/visitors/memory-visitors.h"
+#include "runtime/allocator.h"
 
 template<class T>
 struct C$FFI$CData: public refcountable_php_classes<C$FFI$CData<T>>, private DummyVisitorMethods {

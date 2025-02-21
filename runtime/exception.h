@@ -4,16 +4,16 @@
 
 #pragma once
 
+#include <cstring>
 #include <type_traits>
 
-#include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
+#include "common/php-functions.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/array/to-array-processor.h"
-#include "runtime/dummy-visitor-methods.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
+#include "runtime-common/stdlib/visitors/memory-visitors.h"
 #include "runtime/instance-copy-processor.h"
-#include "runtime/memory_usage.h"
+#include "runtime/to-array-processor.h"
 
 array<array<string>> f$debug_backtrace();
 
@@ -23,7 +23,8 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
   }
 
   virtual int32_t get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(get_class())));
+    const auto *class_name{get_class()};
+    return static_cast<int32_t>(string_hash(class_name, std::strlen(class_name)));
   }
 
   template<class Visitor, bool process_raw_trace = true>
@@ -97,22 +98,9 @@ struct C$Error : public C$Throwable {
   const char *get_class() const noexcept override { return "Error"; }
 };
 
-struct C$CompileTimeLocation : public refcountable_php_classes<C$CompileTimeLocation>, private DummyVisitorMethods {
-  string $file;
-  string $function;
-  int64_t $line;
-
-  ~C$CompileTimeLocation() = default;
-
-  const char *get_class() const noexcept { return "CompileTimeLocation"; }
-
-  using DummyVisitorMethods::accept;
-};
-
 using Throwable = class_instance<C$Throwable>;
 using Exception = class_instance<C$Exception>;
 using Error = class_instance<C$Error>;
-using CompileTimeLocation = class_instance<C$CompileTimeLocation>;
 
 extern Throwable CurException;
 
@@ -145,8 +133,6 @@ void exception_initialize(const Throwable &e, const string &message, int64_t cod
 
 Exception f$Exception$$__construct(const Exception &v$this, const string &message = string(), int64_t code = 0);
 Error f$Error$$__construct(const Error &v$this, const string &message = string(), int64_t code = 0);
-CompileTimeLocation f$CompileTimeLocation$$__construct(const CompileTimeLocation &v$this, const string &file, const string &function, int64_t line);
-CompileTimeLocation f$CompileTimeLocation$$calculate(const CompileTimeLocation &v$passed);
 
 template<typename T>
 T f$_exception_set_location(const T &e, const string &file, int64_t line) {

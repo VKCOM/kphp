@@ -4,11 +4,14 @@
 
 #pragma once
 
+#include <cstring>
+
+#include "common/php-functions.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime/datetime/datetime_interface.h"
 #include "runtime/datetime/datetime_zone.h"
-#include "runtime/dummy-visitor-methods.h"
 
 struct C$DateInterval;
 struct C$DateTimeImmutable;
@@ -16,12 +19,13 @@ struct C$DateTimeImmutable;
 struct C$DateTime : public refcountable_polymorphic_php_classes<C$DateTimeInterface>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  const char *get_class() const noexcept final {
+  const char *get_class() const noexcept override {
     return R"(DateTime)";
   }
 
-  int get_hash() const noexcept final {
-    return 2141635158;
+  int get_hash() const noexcept override {
+    const char *class_name{get_class()};
+    return static_cast<int>(string_hash(class_name, std::strlen(class_name)));
   }
 
   ~C$DateTime();

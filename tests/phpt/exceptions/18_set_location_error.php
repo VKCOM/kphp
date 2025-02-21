@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /Called internal function _exception_set_location\(\)/
 <?php
 

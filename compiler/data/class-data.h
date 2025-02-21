@@ -8,16 +8,16 @@
 
 #include "common/algorithms/compare.h"
 #include "common/algorithms/hashes.h"
-
+#include "common/php-functions.h"
 #include "compiler/data/class-members.h"
 #include "compiler/data/class-modifiers.h"
 #include "compiler/debug.h"
+#include "compiler/ffi/ffi_types.h"
 #include "compiler/location.h"
 #include "compiler/threading/data-stream.h"
 #include "compiler/threading/locks.h"
 #include "compiler/utils/string-utils.h"
 #include "compiler/vertex.h"
-#include "compiler/ffi/ffi_types.h"
 
 struct FFIClassDataMixin;
 struct FFIScopeDataMixin;
@@ -175,7 +175,7 @@ public:
   void debugPrint();
 
   int get_hash() const {
-    return static_cast<int>(vk::std_hash(name));
+    return static_cast<int>(string_hash(name.data(), name.size()));
   }
 
   std::string get_subdir() const {

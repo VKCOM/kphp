@@ -14,6 +14,16 @@ template<typename T>
 struct platform_allocator {
   using value_type = T;
 
+  platform_allocator() noexcept = default;
+
+  template<typename U>
+  explicit platform_allocator(const platform_allocator<U> & /*unused*/) noexcept {}
+
+  template<typename U>
+  struct rebind {
+    using other = platform_allocator<U>;
+  };
+
   constexpr value_type *allocate(size_t n) noexcept {
     return static_cast<value_type *>(RuntimeAllocator::get().alloc_global_memory(n * sizeof(T)));
   }
