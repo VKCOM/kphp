@@ -18,6 +18,7 @@
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
+#include "runtime-light/stdlib/visitors/shape-visitors.h"
 
 struct ImageState final : private vk::not_copyable {
   RuntimeAllocator allocator;
@@ -30,6 +31,8 @@ struct ImageState final : private vk::not_copyable {
   string uname_info_v;
   string uname_info_m;
   string uname_info_a;
+
+  ShapeKeyDemangle shape_key_demangler;
 
   RpcImageState rpc_image_state;
   StringImageState string_image_state;
