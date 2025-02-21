@@ -36,7 +36,7 @@ namespace vk {
 // MurMur hash function was taken from libstdc++
 template<>
 uint64_t murmur_hash<uint64_t>(const void *ptr, size_t len, size_t seed) noexcept {
-  static const size_t mul = (static_cast<size_t>(0xc6a4a793UL) << 32UL) + static_cast<size_t>(0x5bd1e995UL);
+  static constexpr size_t mul = (static_cast<size_t>(0xc6a4a793UL) << 32UL) + static_cast<size_t>(0x5bd1e995UL);
   const char *const buf = static_cast<const char *>(ptr);
   // Remove the bytes not divisible by the sizeof(size_t).  This
   // allows the main loop to process the data as 64-bit integers.
