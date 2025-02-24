@@ -383,7 +383,7 @@ PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, std::optional
     output.push_back(output_val);
   }
 
-  (*opt_matches).get() = output;
+  (*opt_matches).get() = std::move(output);
   return end_offset;
 }
 
