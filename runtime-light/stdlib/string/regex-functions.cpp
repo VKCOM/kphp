@@ -511,8 +511,8 @@ Optional<int64_t> f$preg_match(const string &pattern, const string &subject, Opt
   std::optional<std::reference_wrapper<mixed>> matches{};
   if (opt_matches.has_value()) {
     php_assert(std::holds_alternative<std::reference_wrapper<mixed>>(opt_matches.val()));
-    auto inner_ref{std::get<std::reference_wrapper<mixed>>(opt_matches.val())};
-    inner_ref.get() = array<mixed>{};
+    auto &inner_ref{std::get<std::reference_wrapper<mixed>>(opt_matches.val()).get()};
+    inner_ref = array<mixed>{};
     matches.emplace(inner_ref);
   }
   set_matches(regex_info, flags, matches, trailing_unmatch::skip);
