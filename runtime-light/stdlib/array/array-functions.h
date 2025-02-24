@@ -15,7 +15,7 @@
 #include "runtime-light/stdlib/math/random-functions.h"
 #include "runtime-light/utils/concepts.h"
 
-namespace {
+namespace array_functions_impl_ {
 template<typename T, typename Comparator>
 requires(std::invocable<Comparator, T, T> &&is_async_function_v<Comparator, T, T>) task_t<void> async_sort(T *begin_init, T *end_init,
                                                                                                            Comparator compare) noexcept {
@@ -71,9 +71,6 @@ requires(std::invocable<Comparator, T, T> &&is_async_function_v<Comparator, T, T
   }
   co_return;
 }
-} // namespace
-
-namespace array_functions_impl_ {
 
 template<typename Result, typename U, typename Comparator>
 Result async_sort(array<U> &arr, Comparator comparator, bool renumber) noexcept {
