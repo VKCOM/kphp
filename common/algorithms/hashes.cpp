@@ -9,14 +9,14 @@
 
 namespace {
 
-size_t unaligned_load(const char *p) {
+size_t unaligned_load(const char *p) noexcept {
   size_t result = 0;
   __builtin_memcpy(&result, p, sizeof(result));
   return result;
 }
 
 // Loads n bytes, where 1 <= n < 8.
-size_t load_bytes(const char *p, int n) {
+size_t load_bytes(const char *p, int n) noexcept {
   size_t result = 0;
   --n;
   do {
@@ -25,7 +25,7 @@ size_t load_bytes(const char *p, int n) {
   return result;
 }
 
-size_t shift_mix(size_t v) {
+size_t shift_mix(size_t v) noexcept {
   return v ^ (v >> 47);
 }
 
