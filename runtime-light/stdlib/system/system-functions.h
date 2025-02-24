@@ -12,11 +12,6 @@
 #include "runtime-light/stdlib/system/system-state.h"
 
 template<typename F>
-void f$register_kphp_on_warning_callback(F && /*callback*/) {
-  php_critical_error("call to unsupported function");
-}
-
-template<typename F>
 bool f$register_kphp_on_oom_callback(F && /*callback*/) {
   php_critical_error("call to unsupported function");
 }
@@ -63,4 +58,24 @@ inline string f$php_uname(const string &mode = string{1, 'a'}) noexcept {
     default:
       return image_st.uname_info_a;
   }
+}
+
+inline array<array<string>> f$debug_backtrace() noexcept {
+  php_warning("called stub debug_backtrace");
+  return {};
+}
+
+template<typename F>
+bool f$header_register_callback(F &&) {
+  php_warning("called stub header_register_callback");
+  return true;
+}
+
+inline Optional<string> f$exec([[maybe_unused]] const string &command) noexcept {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<string> f$exec([[maybe_unused]] const string &command, [[maybe_unused]] mixed &output,
+                               [[maybe_unused]] int64_t &result_code = SystemInstanceState::get().result_code_dummy) noexcept {
+  php_critical_error("call to unsupported function");
 }

@@ -19,7 +19,7 @@ void f$ob_start(const string &callback) noexcept {
   }
 
   if (!callback.empty()) {
-    php_critical_error("unsupported callback %s at buffering level %d", callback.c_str(), httpResponse.current_buffer + 1);
+    php_warning("unsupported callback %s at buffering level %d", callback.c_str(), httpResponse.current_buffer + 1);
   }
   ++httpResponse.current_buffer;
 }
