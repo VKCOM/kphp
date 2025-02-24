@@ -9,6 +9,7 @@
 #include <cinttypes>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <memory>
@@ -17,11 +18,11 @@
 #include <type_traits>
 
 #include "common/containers/final_action.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/string/mbstring-functions.h"
-#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 
@@ -320,17 +321,24 @@ bool match_regex(RegexInfo &regex_info, size_t offset) noexcept {
 }
 
 // returns the ending offset of the entire match
-PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, mixed &matches, trailing_unmatch last_unmatched_policy) noexcept {
+PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, std::optional<std::reference_wrapper<mixed>> opt_matches,
+                       trailing_unmatch last_unmatched_policy) noexcept {
   if (regex_info.regex_code == nullptr || regex_info.match_count <= 0) [[unlikely]] {
     return PCRE2_UNSET;
   }
 
   const auto &regex_state{RegexInstanceState::get()};
 
-  const auto offset_capture{static_cast<bool>(flags & kphp::regex::PREG_OFFSET_CAPTURE)};
-  const auto unmatched_as_null{static_cast<bool>(flags & kphp::regex::PREG_UNMATCHED_AS_NULL)};
   // get the ouput vector from the match data
   const auto *ovector{pcre2_get_ovector_pointer_8(regex_state.regex_pcre2_match_data.get())};
+  const auto end_offset{ovector[1]};
+  // early return in case we don't need to actually set matches
+  if (!opt_matches.has_value()) {
+    return end_offset;
+  }
+
+  const auto offset_capture{static_cast<bool>(flags & kphp::regex::PREG_OFFSET_CAPTURE)};
+  const auto unmatched_as_null{static_cast<bool>(flags & kphp::regex::PREG_UNMATCHED_AS_NULL)};
   // calculate last matched group
   int64_t last_matched_group{-1};
   for (auto i = 0; i < regex_info.match_count; ++i) {
@@ -374,15 +382,20 @@ PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, mixed &matche
     output.push_back(output_val);
   }
 
-  matches = output;
-  return ovector[1];
+  (*opt_matches).get() = output;
+  return end_offset;
 }
 
 // returns the ending offset of the entire match
 // *** importrant ***
 // in case of a pattern order all_matches must already contain all groups as empty arrays before the first call to set_all_matches
-PCRE2_SIZE set_all_matches(const RegexInfo &regex_info, int64_t flags, mixed &all_matches) noexcept {
+PCRE2_SIZE set_all_matches(const RegexInfo &regex_info, int64_t flags, std::optional<std::reference_wrapper<mixed>> opt_all_matches) noexcept {
   const auto pattern_order{!static_cast<bool>(flags & kphp::regex::PREG_SET_ORDER)};
+
+  // early return in case we don't actually need to set matches
+  if (!opt_all_matches.has_value()) {
+    return set_matches(regex_info, flags, std::nullopt, pattern_order ? trailing_unmatch::include : trailing_unmatch::skip);
+  }
 
   mixed matches;
   PCRE2_SIZE offset{set_matches(regex_info, flags, matches, pattern_order ? trailing_unmatch::include : trailing_unmatch::skip)};
@@ -390,6 +403,7 @@ PCRE2_SIZE set_all_matches(const RegexInfo &regex_info, int64_t flags, mixed &al
     return offset;
   }
 
+  mixed &all_matches{(*opt_all_matches).get()};
   if (pattern_order) [[likely]] {
     for (auto &it : matches) {
       all_matches[it.get_key()].push_back(it.get_value());
