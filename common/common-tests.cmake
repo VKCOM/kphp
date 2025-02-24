@@ -19,10 +19,5 @@ prepend(COMMON_TESTS_SOURCES ${COMMON_DIR}/
         wrappers/string_view-test.cpp
         ucontext/ucontext-portable-test.cpp)
 
-set(COMMON_TESTS_LIBS vk::common_src vk::net_src vk::binlog_src vk::unicode ${COMMON_TESTS_LIBS} ${EPOLL_SHIM_LIB} OpenSSL::Crypto ZSTD::zstd)
-if(COMPILE_RUNTIME_LIGHT)
-    set(COMMON_TESTS_LIBS ${COMMON_TESTS_LIBS} ZLIB::ZLIB_PIC)
-else()
-    set(COMMON_TESTS_LIBS ${COMMON_TESTS_LIBS} ZLIB::ZLIB_NO_PIC)
-endif()
+set(COMMON_TESTS_LIBS common-src-no-pic net-src-no-pic binlog-src-no-pic unicode-no-pic ${EPOLL_SHIM_LIB} OpenSSL::no-pic::Crypto ZSTD::no-pic::zstd ZLIB::no-pic::zlib)
 vk_add_unittest(common "${COMMON_TESTS_LIBS}" ${COMMON_TESTS_SOURCES})

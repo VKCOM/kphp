@@ -13,6 +13,7 @@ set(RUNTIME_LIGHT_DIR "${BASE_DIR}/runtime-light")
 set(RUNTIME_COMMON_DIR "${BASE_DIR}/runtime-common")
 
 if(APPLE)
+    detect_xcode_sdk_path(CMAKE_OSX_SYSROOT)
     set(ICONV_LIB iconv)
 else()
     set(RT_LIB rt)

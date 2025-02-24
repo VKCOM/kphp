@@ -16,13 +16,15 @@ file(MAKE_DIRECTORY ${ZSTD_INCLUDE_DIRS})
 # The configuration has been based on:
 # https://sources.debian.org/src/libzstd/1.4.8%2Bdfsg-2.1/debian/rules/
 set(ZSTD_COMPILE_FLAGS "$ENV{CFLAGS} -g0 -fno-pic -Wno-unused-but-set-variable")
-if(NOT APPLE)
+if(APPLE)
+    set(ZSTD_COMPILE_FLAGS "${ZSTD_COMPILE_FLAGS} --sysroot ${CMAKE_OSX_SYSROOT}")
+else()
     set(ZSTD_COMPILE_FLAGS "${ZSTD_COMPILE_FLAGS} -static")
 endif()
 
 set(ZSTD_MAKE_ARGS
         CC=${CMAKE_C_COMPILER}
-        CFLAGS=${OPENSSL_COMPILE_FLAGS}
+        CFLAGS=${ZSTD_COMPILE_FLAGS}
 )
 
 set(ZSTD_MAKE_INSTALL_ARGS
@@ -56,6 +58,32 @@ set_target_properties(ZSTD::zstd PROPERTIES
         IMPORTED_LOCATION ${ZSTD_LIBRARIES}
         INTERFACE_INCLUDE_DIRECTORIES ${ZSTD_INCLUDE_DIRS}
 )
+
+# Ensure that the zstd are built before they are used
+add_dependencies(ZSTD::zstd zstd)
+
+####################################
+add_library(ZSTD::pic::zstd STATIC IMPORTED)
+set_target_properties(ZSTD::pic::zstd PROPERTIES
+        IMPORTED_LOCATION ${ZSTD_LIBRARIES}
+        INTERFACE_INCLUDE_DIRECTORIES ${ZSTD_INCLUDE_DIRS}
+)
+
+# Ensure that the zstd are built before they are used
+add_dependencies(ZSTD::pic::zstd zstd)
+
+
+add_library(ZSTD::no-pic::zstd STATIC IMPORTED)
+set_target_properties(ZSTD::no-pic::zstd PROPERTIES
+        IMPORTED_LOCATION ${ZSTD_LIBRARIES}
+        INTERFACE_INCLUDE_DIRECTORIES ${ZSTD_INCLUDE_DIRS}
+)
+
+# Ensure that the zstd are built before they are used
+add_dependencies(ZSTD::no-pic::zstd zstd)
+#################################################
+
+
 
 # Set variables indicating that zstd has been installed
 set(ZSTD_FOUND ON)

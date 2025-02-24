@@ -79,6 +79,27 @@ set_target_properties(NGHTTP2::nghttp2 PROPERTIES
         INTERFACE_INCLUDE_DIRECTORIES ${NGHTTP2_INCLUDE_DIRS}
 )
 
+add_dependencies(NGHTTP2::nghttp2 nghttp2)
+
+########################################
+add_library(NGHTTP2::pic::nghttp2 STATIC IMPORTED)
+set_target_properties(NGHTTP2::pic::nghttp2 PROPERTIES
+        IMPORTED_LOCATION ${NGHTTP2_LIBRARIES}
+        INTERFACE_INCLUDE_DIRECTORIES ${NGHTTP2_INCLUDE_DIRS}
+)
+
+add_dependencies(NGHTTP2::pic::nghttp2 nghttp2)
+
+add_library(NGHTTP2::no-pic::nghttp2 STATIC IMPORTED)
+set_target_properties(NGHTTP2::no-pic::nghttp2 PROPERTIES
+        IMPORTED_LOCATION ${NGHTTP2_LIBRARIES}
+        INTERFACE_INCLUDE_DIRECTORIES ${NGHTTP2_INCLUDE_DIRS}
+)
+
+add_dependencies(NGHTTP2::no-pic::nghttp2 nghttp2)
+###############################################
+
+
 # Set variables indicating that NGHTTP2 has been installed
 set(NGHTTP2_FOUND ON)
 set(NGHTTP2_ROOT ${NGHTTP2_INSTALL_DIR})

@@ -25,7 +25,6 @@ if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
 endif()
 
 if(APPLE)
-    detect_xcode_sdk_path(CMAKE_OSX_SYSROOT)
     set(OPENSSL_COMPILE_FLAGS "${OPENSSL_COMPILE_FLAGS} --sysroot ${CMAKE_OSX_SYSROOT}")
 endif()
 
@@ -70,6 +69,40 @@ set_target_properties(OpenSSL::Crypto PROPERTIES
 # Ensure that the OpenSSL libraries are built before they are used
 add_dependencies(OpenSSL::SSL openssl)
 add_dependencies(OpenSSL::Crypto openssl)
+
+
+##########################################
+add_library(OpenSSL::pic::SSL STATIC IMPORTED)
+set_target_properties(OpenSSL::pic::SSL PROPERTIES
+        IMPORTED_LOCATION ${OPENSSL_INSTALL_DIR}/lib/libssl.a
+        INTERFACE_INCLUDE_DIRECTORIES ${OPENSSL_INCLUDE_DIR}
+)
+
+add_library(OpenSSL::pic::Crypto STATIC IMPORTED)
+set_target_properties(OpenSSL::pic::Crypto PROPERTIES
+        IMPORTED_LOCATION ${OPENSSL_INSTALL_DIR}/lib/libcrypto.a
+        INTERFACE_INCLUDE_DIRECTORIES ${OPENSSL_INCLUDE_DIR}
+)
+
+add_dependencies(OpenSSL::pic::SSL openssl)
+add_dependencies(OpenSSL::pic::Crypto openssl)
+
+
+add_library(OpenSSL::no-pic::SSL STATIC IMPORTED)
+set_target_properties(OpenSSL::no-pic::SSL PROPERTIES
+        IMPORTED_LOCATION ${OPENSSL_INSTALL_DIR}/lib/libssl.a
+        INTERFACE_INCLUDE_DIRECTORIES ${OPENSSL_INCLUDE_DIR}
+)
+
+add_library(OpenSSL::no-pic::Crypto STATIC IMPORTED)
+set_target_properties(OpenSSL::no-pic::Crypto PROPERTIES
+        IMPORTED_LOCATION ${OPENSSL_INSTALL_DIR}/lib/libcrypto.a
+        INTERFACE_INCLUDE_DIRECTORIES ${OPENSSL_INCLUDE_DIR}
+)
+
+add_dependencies(OpenSSL::no-pic::SSL openssl)
+add_dependencies(OpenSSL::no-pic::Crypto openssl)
+###################
 
 # Set variables indicating that OpenSSL has been found and specify its library locations
 set(OPENSSL_FOUND ON)
