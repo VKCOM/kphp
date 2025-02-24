@@ -4,17 +4,17 @@
 
 #pragma once
 
+#include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/common-visitors-methods.h"
-#include "runtime-light/stdlib/tracing/tracing-event.h"
 
 struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan>, private CommonDefaultVisitorMethods {
   using CommonDefaultVisitorMethods::accept;
 
-  int span_id{0};
+  int32_t span_id{0};
 
   C$KphpSpan() = default;
-  explicit C$KphpSpan(int span_id)
+  explicit C$KphpSpan(int32_t span_id)
     : span_id(span_id) {}
 };
 

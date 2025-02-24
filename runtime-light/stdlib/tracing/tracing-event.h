@@ -4,12 +4,14 @@
 
 #pragma once
 
-#include "runtime-common/core/runtime-core.h"
+#include <cstdint>
+
+#include "runtime-common/core/class-instance/refcountable-php-classes.h"
 
 struct C$KphpSpanEvent : public refcountable_php_classes<C$KphpSpanEvent> {
-  int span_id{0};
+  int32_t span_id{0};
 
   C$KphpSpanEvent() = default;
-  explicit C$KphpSpanEvent(int span_id)
+  explicit C$KphpSpanEvent(int32_t span_id)
     : span_id(span_id) {}
 };

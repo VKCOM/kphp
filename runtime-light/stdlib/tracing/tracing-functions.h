@@ -5,9 +5,9 @@
 #pragma once
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/tracing/tracing-div.h"
 #include "runtime-light/stdlib/tracing/tracing-event.h"
 #include "runtime-light/stdlib/tracing/tracing-span.h"
-#include "runtime-light/stdlib/tracing/tracing-div.h"
 
 inline class_instance<C$KphpSpan> f$kphp_tracing_get_current_active_span() noexcept {
   php_warning("called stub kphp_tracing_get_current_active_span");
@@ -25,7 +25,7 @@ inline class_instance<C$KphpDiv> f$kphp_tracing_init([[maybe_unused]] const stri
 }
 
 inline class_instance<C$KphpSpan> f$kphp_tracing_start_span([[maybe_unused]] const string &title, [[maybe_unused]] const string &short_desc,
-                                                     [[maybe_unused]] double start_timestamp) noexcept {
+                                                            [[maybe_unused]] double start_timestamp) noexcept {
   php_warning("called stub kphp_tracing_start_span");
   return {};
 }
