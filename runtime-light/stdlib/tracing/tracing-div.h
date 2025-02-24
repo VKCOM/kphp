@@ -5,8 +5,8 @@
 #pragma once
 
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
-#include "runtime-common/stdlib/visitors/common-visitors-methods.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
-struct C$KphpDiv : public refcountable_php_classes<C$KphpDiv>, private CommonDefaultVisitorMethods {
-  using CommonDefaultVisitorMethods::accept;
+struct C$KphpDiv : public refcountable_php_classes<C$KphpDiv>, private DummyVisitorMethods {
+  using DummyVisitorMethods::accept;
 };

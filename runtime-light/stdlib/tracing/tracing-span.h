@@ -6,10 +6,10 @@
 
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/visitors/common-visitors-methods.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
-struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan>, private CommonDefaultVisitorMethods {
-  using CommonDefaultVisitorMethods::accept;
+struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan>, private DummyVisitorMethods {
+  using DummyVisitorMethods::accept;
 
   int32_t span_id{0};
 
