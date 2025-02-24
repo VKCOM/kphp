@@ -87,7 +87,7 @@ protected:
   OptionalBase() = default;
   ~OptionalBase() = default;
 
-  T value_{};
+  T value_;
   OptionalState value_state_{OptionalState::null_value};
 };
 
