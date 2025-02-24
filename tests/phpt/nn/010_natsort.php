@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 /*
 * proto bool natsort ( array &$array )

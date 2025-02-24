@@ -5,15 +5,198 @@
 #pragma once
 
 #include <concepts>
+#include <cstdint>
 #include <functional>
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/math/random-functions.h"
 
 namespace array_functions_impl_ {
+template<typename T, typename Comparator>
+requires(std::invocable<Comparator, T, T> &&is_async_function_v<Comparator, T, T>) task_t<void> async_sort(T *begin_init, T *end_init,
+                                                                                                           Comparator compare) noexcept {
+  T *begin_stack[32];
+  T *end_stack[32];
+
+  begin_stack[0] = begin_init;
+  end_stack[0] = end_init - 1;
+
+  for (int depth = 0; depth >= 0; --depth) {
+    T *begin = begin_stack[depth];
+    T *end = end_stack[depth];
+
+    while (begin < end) {
+      const auto offset = (end - begin) >> 1;
+      swap(*begin, begin[offset]);
+
+      T *i = begin + 1;
+      T *j = end;
+
+      while (true) {
+        while (i < j && (co_await std::invoke(compare, *begin, *i)) > 0) {
+          i++;
+        }
+
+        while (i <= j && (co_await std::invoke(compare, *j, *begin)) > 0) {
+          j--;
+        }
+
+        if (i >= j) {
+          break;
+        }
+
+        swap(*i++, *j--);
+      }
+
+      swap(*begin, *j);
+
+      if (j - begin <= end - j) {
+        if (j + 1 < end) {
+          begin_stack[depth] = j + 1;
+          end_stack[depth++] = end;
+        }
+        end = j - 1;
+      } else {
+        if (begin < j - 1) {
+          begin_stack[depth] = begin;
+          end_stack[depth++] = j - 1;
+        }
+        begin = j + 1;
+      }
+    }
+  }
+  co_return;
+}
+
+template<typename Result, typename U, typename Comparator>
+Result async_sort(array<U> &arr, Comparator comparator, bool renumber) noexcept {
+  using array_inner = typename array<U>::array_inner;
+  using array_bucket = typename array<U>::array_bucket;
+  int64_t n = arr.count();
+
+  if (renumber) {
+    if (n == 0) {
+      co_return;
+    }
+
+    if (!arr.is_vector()) {
+      array_inner *res = array_inner::create(n, true);
+      for (array_bucket *it = arr.p->begin(); it != arr.p->end(); it = arr.p->next(it)) {
+        res->push_back_vector_value(it->value);
+      }
+
+      arr.p->dispose();
+      arr.p = res;
+    } else {
+      arr.mutate_if_vector_shared();
+    }
+
+    U *begin = reinterpret_cast<U *>(arr.p->entries());
+    co_await async_sort<U, decltype(comparator)>(begin, begin + n, std::move(comparator));
+    co_return;
+  }
+
+  if (n <= 1) {
+    co_return;
+  }
+
+  if (arr.is_vector()) {
+    arr.convert_to_map();
+  } else {
+    arr.mutate_if_map_shared();
+  }
+  auto &runtimeAllocator{RuntimeAllocator::get()};
+
+  auto **arTmp = static_cast<array_bucket **>(runtimeAllocator.alloc_script_memory(n * sizeof(array_bucket *)));
+  uint32_t i = 0;
+  for (array_bucket *it = arr.p->begin(); it != arr.p->end(); it = arr.p->next(it)) {
+    arTmp[i++] = it;
+  }
+  php_assert(i == n);
+
+  const auto hash_entry_cmp = []<typename Compare>(Compare compare, const array_bucket *lhs, const array_bucket *rhs) -> task_t<bool> {
+    co_return(co_await std::invoke(compare, lhs->value, rhs->value)) > 0;
+  };
+
+  const auto partial_hash_entry_cmp = std::bind_front(hash_entry_cmp, std::move(comparator));
+
+  co_await async_sort<array_bucket *, decltype(partial_hash_entry_cmp)>(arTmp, arTmp + n, partial_hash_entry_cmp);
+
+  arTmp[0]->prev = arr.p->get_pointer(arr.p->end());
+  arr.p->end()->next = arr.p->get_pointer(arTmp[0]);
+  for (uint32_t j = 1; j < n; j++) {
+    arTmp[j]->prev = arr.p->get_pointer(arTmp[j - 1]);
+    arTmp[j - 1]->next = arr.p->get_pointer(arTmp[j]);
+  }
+  arTmp[n - 1]->next = arr.p->get_pointer(arr.p->end());
+  arr.p->end()->prev = arr.p->get_pointer(arTmp[n - 1]);
+
+  runtimeAllocator.free_script_memory(arTmp, n * sizeof(array_bucket *));
+}
+
+template<typename Result, typename U, typename Comparator>
+Result async_ksort(array<U> &arr, Comparator comparator) noexcept {
+  using array_bucket = typename array<U>::array_bucket;
+  using key_type = typename array<U>::key_type;
+  using list_hash_entry = typename array<U>::list_hash_entry;
+
+  int64_t n = arr.count();
+  if (n <= 1) {
+    co_return;
+  }
+
+  if (arr.is_vector()) {
+    arr.convert_to_map();
+  } else {
+    arr.mutate_if_map_shared();
+  }
+
+  array<key_type> keys(array_size(n, true));
+  for (auto *it = arr.p->begin(); it != arr.p->end(); it = arr.p->next(it)) {
+    keys.p->push_back_vector_value(it->get_key());
+  }
+
+  auto *keysp = reinterpret_cast<key_type *>(keys.p->entries());
+  co_await async_sort<key_type, Comparator>(keysp, keysp + n, std::move(comparator));
+
+  auto *prev = static_cast<list_hash_entry *>(arr.p->end());
+  for (uint32_t j = 0; j < n; j++) {
+    list_hash_entry *cur = nullptr;
+    if (arr.is_int_key(keysp[j])) {
+      int64_t int_key = keysp[j].to_int();
+      uint32_t bucket = arr.p->choose_bucket(int_key);
+      while (arr.p->entries()[bucket].int_key != int_key || !arr.p->entries()[bucket].string_key.is_dummy_string()) {
+        if (++bucket == arr.p->buf_size) [[unlikely]] {
+          bucket = 0;
+        }
+      }
+      cur = static_cast<list_hash_entry *>(&arr.p->entries()[bucket]);
+    } else {
+      string string_key = keysp[j].to_string();
+      int64_t int_key = string_key.hash();
+      array_bucket *string_entries = arr.p->entries();
+      uint32_t bucket = arr.p->choose_bucket(int_key);
+      while (
+        (string_entries[bucket].int_key != int_key || string_entries[bucket].string_key.is_dummy_string() || string_entries[bucket].string_key != string_key)) {
+        if (++bucket == arr.p->buf_size) [[unlikely]] {
+          bucket = 0;
+        }
+      }
+      cur = static_cast<list_hash_entry *>(&string_entries[bucket]);
+    }
+
+    cur->prev = arr.p->get_pointer(prev);
+    prev->next = arr.p->get_pointer(cur);
+
+    prev = cur;
+  }
+  prev->next = arr.p->get_pointer(arr.p->end());
+  arr.p->end()->prev = arr.p->get_pointer(prev);
+}
 
 template<typename T>
 concept convertible_to_php_bool = requires(T t) {
@@ -221,19 +404,41 @@ array<T> f$array_combine(const array<T1> &keys, const array<T> &values) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T, class T1>
-void f$usort(array<T> &a, const T1 &compare) {
-  php_critical_error("call to unsupported function");
+template<class T, class Comparator>
+requires(std::invocable<Comparator, T, T>) task_t<void> f$usort(array<T> &a, Comparator compare) {
+  if constexpr (is_async_function_v<Comparator, T, T>) {
+    /* ATTENTION: temporary copy is necessary since functions is coroutine and sort is inplace */
+    array<T> tmp{a};
+    co_await array_functions_impl_::async_sort<task_t<void>>(tmp, std::move(compare), true);
+    a = tmp;
+    co_return;
+  } else {
+    co_return a.sort(std::move(compare), true);
+  }
 }
 
-template<class T, class T1>
-void f$uasort(array<T> &a, const T1 &compare) {
-  php_critical_error("call to unsupported function");
+template<class T, class Comparator>
+requires(std::invocable<Comparator, T, T>) task_t<void> f$uasort(array<T> &a, Comparator compare) {
+  if constexpr (is_async_function_v<Comparator, T, T>) {
+    /* ATTENTION: temporary copy is necessary since functions is coroutine and sort is inplace */
+    array<T> tmp{a};
+    co_await array_functions_impl_::async_sort<task_t<void>>(tmp, std::move(compare), false);
+    a = tmp;
+  } else {
+    co_return a.sort(std::move(compare), false);
+  }
 }
 
-template<class T, class T1>
-void f$uksort(array<T> &a, const T1 &compare) {
-  php_critical_error("call to unsupported function");
+template<class T, class Comparator>
+requires(std::invocable<Comparator, typename array<T>::key_type, typename array<T>::key_type>) task_t<void> f$uksort(array<T> &a, Comparator compare) {
+  if constexpr (is_async_function_v<Comparator, T, T>) {
+    /* ATTENTION: temporary copy is necessary since functions is coroutine and sort is inplace */
+    array<T> tmp{a};
+    co_await array_functions_impl_::async_ksort<task_t<void>>(tmp, std::move(compare), false);
+    a = tmp;
+  } else {
+    co_return a.ksort(std::move(compare));
+  }
 }
 
 template<class T>

@@ -720,3 +720,15 @@ T f$vk_dot_product(const array<T> &a, const array<T> &b) {
   }
   return vk_dot_product_sparse<T>(a, b);
 }
+
+template<typename Result, typename U, typename Comparator>
+Result array_functions_impl_::async_sort([[maybe_unused]] array<U> & arr, [[maybe_unused]] Comparator comparator, [[maybe_unused]] bool renumber) noexcept {
+  struct async_sort_stub_class {};
+  static_assert(std::is_same_v<Result, async_sort_stub_class>, "array async sort functions supported only in runtime light ");
+}
+
+template<typename Result, typename U, typename Comparator>
+Result array_functions_impl_::async_ksort([[maybe_unused]] array<U> & arr, [[maybe_unused]] Comparator comparator) noexcept {
+  struct async_ksort_stub_class {};
+  static_assert(std::is_same_v<Result, async_ksort_stub_class>, "array async sort functions supported only in runtime light ");
+}
