@@ -9,19 +9,21 @@
 #include <cinttypes>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <memory>
 #include <optional>
 #include <string_view>
 #include <type_traits>
+#include <variant>
 
 #include "common/containers/final_action.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/string/mbstring-functions.h"
-#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 
@@ -320,17 +322,24 @@ bool match_regex(RegexInfo &regex_info, size_t offset) noexcept {
 }
 
 // returns the ending offset of the entire match
-PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, mixed &matches, trailing_unmatch last_unmatched_policy) noexcept {
+PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, std::optional<std::reference_wrapper<mixed>> opt_matches,
+                       trailing_unmatch last_unmatched_policy) noexcept {
   if (regex_info.regex_code == nullptr || regex_info.match_count <= 0) [[unlikely]] {
     return PCRE2_UNSET;
   }
 
   const auto &regex_state{RegexInstanceState::get()};
 
-  const auto offset_capture{static_cast<bool>(flags & kphp::regex::PREG_OFFSET_CAPTURE)};
-  const auto unmatched_as_null{static_cast<bool>(flags & kphp::regex::PREG_UNMATCHED_AS_NULL)};
   // get the ouput vector from the match data
   const auto *ovector{pcre2_get_ovector_pointer_8(regex_state.regex_pcre2_match_data.get())};
+  const auto end_offset{ovector[1]};
+  // early return in case we don't need to actually set matches
+  if (!opt_matches.has_value()) {
+    return end_offset;
+  }
+
+  const auto offset_capture{static_cast<bool>(flags & kphp::regex::PREG_OFFSET_CAPTURE)};
+  const auto unmatched_as_null{static_cast<bool>(flags & kphp::regex::PREG_UNMATCHED_AS_NULL)};
   // calculate last matched group
   int64_t last_matched_group{-1};
   for (auto i = 0; i < regex_info.match_count; ++i) {
@@ -374,15 +383,20 @@ PCRE2_SIZE set_matches(const RegexInfo &regex_info, int64_t flags, mixed &matche
     output.push_back(output_val);
   }
 
-  matches = output;
-  return ovector[1];
+  (*opt_matches).get() = std::move(output);
+  return end_offset;
 }
 
 // returns the ending offset of the entire match
 // *** importrant ***
 // in case of a pattern order all_matches must already contain all groups as empty arrays before the first call to set_all_matches
-PCRE2_SIZE set_all_matches(const RegexInfo &regex_info, int64_t flags, mixed &all_matches) noexcept {
+PCRE2_SIZE set_all_matches(const RegexInfo &regex_info, int64_t flags, std::optional<std::reference_wrapper<mixed>> opt_all_matches) noexcept {
   const auto pattern_order{!static_cast<bool>(flags & kphp::regex::PREG_SET_ORDER)};
+
+  // early return in case we don't actually need to set matches
+  if (!opt_all_matches.has_value()) {
+    return set_matches(regex_info, flags, std::nullopt, pattern_order ? trailing_unmatch::include : trailing_unmatch::skip);
+  }
 
   mixed matches;
   PCRE2_SIZE offset{set_matches(regex_info, flags, matches, pattern_order ? trailing_unmatch::include : trailing_unmatch::skip)};
@@ -390,6 +404,7 @@ PCRE2_SIZE set_all_matches(const RegexInfo &regex_info, int64_t flags, mixed &al
     return offset;
   }
 
+  mixed &all_matches{(*opt_all_matches).get()};
   if (pattern_order) [[likely]] {
     for (auto &it : matches) {
       all_matches[it.get_key()].push_back(it.get_value());
@@ -479,8 +494,8 @@ bool replace_regex(RegexInfo &regex_info, uint64_t limit) noexcept {
 
 } // namespace
 
-Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mixed &matches, int64_t flags, int64_t offset) noexcept {
-  matches = array<mixed>{};
+Optional<int64_t> f$preg_match(const string &pattern, const string &subject, Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches,
+                               int64_t flags, int64_t offset) noexcept {
   RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}};
 
   bool success{valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_OFFSET_CAPTURE, kphp::regex::PREG_UNMATCHED_AS_NULL)};
@@ -493,12 +508,19 @@ Optional<int64_t> f$preg_match(const string &pattern, const string &subject, mix
     return false;
   }
 
+  std::optional<std::reference_wrapper<mixed>> matches{};
+  if (opt_matches.has_value()) {
+    php_assert(std::holds_alternative<std::reference_wrapper<mixed>>(opt_matches.val()));
+    auto &inner_ref{std::get<std::reference_wrapper<mixed>>(opt_matches.val()).get()};
+    inner_ref = array<mixed>{};
+    matches.emplace(inner_ref);
+  }
   set_matches(regex_info, flags, matches, trailing_unmatch::skip);
   return regex_info.match_count > 0 ? 1 : 0;
 }
 
-Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject, mixed &matches, int64_t flags, int64_t offset) noexcept {
-  matches = array<mixed>{};
+Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject,
+                                   Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches, int64_t flags, int64_t offset) noexcept {
   int64_t entire_match_count{};
   RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}};
 
@@ -509,14 +531,23 @@ Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject,
   success &= compile_regex(regex_info);
   success &= collect_group_names(regex_info);
 
+  std::optional<std::reference_wrapper<mixed>> matches{};
+  if (opt_matches.has_value()) {
+    php_assert(std::holds_alternative<std::reference_wrapper<mixed>>(opt_matches.val()));
+    auto &inner_ref{std::get<std::reference_wrapper<mixed>>(opt_matches.val()).get()};
+    inner_ref = array<mixed>{};
+    matches.emplace(inner_ref);
+  }
+
   // pre-init matches in case of pattern order
-  if (success && !static_cast<bool>(flags & kphp::regex::PREG_SET_ORDER)) [[likely]] {
+  if (success && matches.has_value() && !static_cast<bool>(flags & kphp::regex::PREG_SET_ORDER)) [[likely]] {
+    auto &inner_ref{(*matches).get()};
     const array<mixed> init_val{};
     for (const auto *group_name : regex_info.group_names) {
       if (group_name != nullptr) {
-        matches.set_value(string{group_name}, init_val);
+        inner_ref.set_value(string{group_name}, init_val);
       }
-      matches.push_back(init_val);
+      inner_ref.push_back(init_val);
     }
   }
 
@@ -543,8 +574,17 @@ Optional<int64_t> f$preg_match_all(const string &pattern, const string &subject,
   return entire_match_count;
 }
 
-Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
-  count = 0;
+Optional<string> f$preg_replace(const string &pattern, const string &replacement, const string &subject, int64_t limit,
+                                Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
+  int64_t count{};
+  vk::final_action count_finalizer{[&count, &opt_count]() noexcept {
+    if (opt_count.has_value()) {
+      php_assert(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
+      auto &inner_ref{std::get<std::reference_wrapper<int64_t>>(opt_count.val()).get()};
+      inner_ref = count;
+    }
+  }};
+
   if (limit < 0 && limit != kphp::regex::PREG_REPLACE_NOLIMIT) [[unlikely]] {
     php_warning("invalid limit %" PRIi64 " in preg_replace", limit);
     return {};
@@ -578,8 +618,17 @@ Optional<string> f$preg_replace(const string &pattern, const string &replacement
   return regex_info.opt_replace_result.value_or(subject);
 }
 
-Optional<string> f$preg_replace(const mixed &pattern, const string &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
-  count = 0;
+Optional<string> f$preg_replace(const mixed &pattern, const string &replacement, const string &subject, int64_t limit,
+                                Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
+  int64_t count{};
+  vk::final_action count_finalizer{[&count, &opt_count]() noexcept {
+    if (opt_count.has_value()) {
+      php_assert(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
+      auto &inner_ref{std::get<std::reference_wrapper<int64_t>>(opt_count.val()).get()};
+      inner_ref = count;
+    }
+  }};
+
   if (!regex_impl_::valid_preg_replace_mixed(pattern)) [[unlikely]] {
     return {};
   }
@@ -604,8 +653,17 @@ Optional<string> f$preg_replace(const mixed &pattern, const string &replacement,
   return result;
 }
 
-Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, const string &subject, int64_t limit, int64_t &count) noexcept {
-  count = 0;
+Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, const string &subject, int64_t limit,
+                                Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
+  int64_t count{};
+  vk::final_action count_finalizer{[&count, &opt_count]() noexcept {
+    if (opt_count.has_value()) {
+      php_assert(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
+      auto &inner_ref{std::get<std::reference_wrapper<int64_t>>(opt_count.val()).get()};
+      inner_ref = count;
+    }
+  }};
+
   if (!regex_impl_::valid_preg_replace_mixed(pattern) || !regex_impl_::valid_preg_replace_mixed(replacement)) [[unlikely]] {
     return {};
   }
@@ -643,8 +701,17 @@ Optional<string> f$preg_replace(const mixed &pattern, const mixed &replacement, 
   return result;
 }
 
-mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit, int64_t &count) noexcept {
-  count = 0;
+mixed f$preg_replace(const mixed &pattern, const mixed &replacement, const mixed &subject, int64_t limit,
+                     Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count) noexcept {
+  int64_t count{};
+  vk::final_action count_finalizer{[&count, &opt_count]() noexcept {
+    if (opt_count.has_value()) {
+      php_assert(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
+      auto &inner_ref{std::get<std::reference_wrapper<int64_t>>(opt_count.val()).get()};
+      inner_ref = count;
+    }
+  }};
+
   if (!regex_impl_::valid_preg_replace_mixed(pattern) || !regex_impl_::valid_preg_replace_mixed(replacement) || !regex_impl_::valid_preg_replace_mixed(subject))
     [[unlikely]] {
     return {};
