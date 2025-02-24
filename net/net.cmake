@@ -23,4 +23,5 @@ prepend(NET_SOURCES ${BASE_DIR}/net/
         net-msg.cpp
         net-msg-part.cpp)
 
-vk_add_library(net_src OBJECT ${NET_SOURCES})
+vk_add_library_no_pic(net-src-no-pic OBJECT ${NET_SOURCES})
+vk_add_library_pic(net-src-pic OBJECT ${NET_SOURCES})

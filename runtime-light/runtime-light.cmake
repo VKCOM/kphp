@@ -65,7 +65,7 @@ endif()
 vk_add_library(kphp-light-runtime STATIC)
 target_link_libraries(
   kphp-light-runtime PUBLIC vk::light-common vk::light-unicode
-                            vk::runtime-light vk::runtime-common)
+                            vk::runtime-light runtime-common-pic)
 set_target_properties(kphp-light-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
                                                     ${OBJS_DIR})
 

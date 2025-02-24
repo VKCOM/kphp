@@ -73,4 +73,5 @@ set(KPHP_SERVER_ALL_SOURCES
     ${KPHP_DATABASE_DRIVERS_PGSQL_SOURCES})
 
 allow_deprecated_declarations_for_apple(${BASE_DIR}/server/php-runner.cpp)
-vk_add_library(kphp_server OBJECT ${KPHP_SERVER_ALL_SOURCES})
+vk_add_library_no_pic(kphp-server-no-pic OBJECT ${KPHP_SERVER_ALL_SOURCES})
+vk_add_library_pic(kphp-server-pic OBJECT ${KPHP_SERVER_ALL_SOURCES})

@@ -139,17 +139,65 @@ set(KPHP_RUNTIME_ALL_SOURCES
 allow_deprecated_declarations(${BASE_DIR}/runtime/allocator.cpp ${BASE_DIR}/runtime/openssl.cpp)
 allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.cpp)
 
-vk_add_library(kphp_runtime OBJECT ${KPHP_RUNTIME_ALL_SOURCES})
-target_include_directories(kphp_runtime PUBLIC ${BASE_DIR} ${OPENSSL_INCLUDE_DIR} ${ZLIB_NO_PIC_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS} ${ZSTD_INCLUDE_DIRS})
+#### NO PIC
+vk_add_library_no_pic(kphp-runtime-no-pic STATIC ${KPHP_RUNTIME_ALL_SOURCES})
+target_include_directories(kphp-runtime-no-pic PUBLIC ${BASE_DIR} ${OPENSSL_INCLUDE_DIR} ${ZLIB_NO_PIC_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS} ${ZSTD_INCLUDE_DIRS})
 
-add_dependencies(kphp_runtime kphp-timelib curl zstd)
-add_dependencies(curl openssl zlib-no-pic)
+prepare_cross_platform_libs(RUNTIME_LIBS_NO_PIC yaml-cpp re2 h3)
+set(RUNTIME_LIBS_NO_PIC
+        kphp-server-no-pic
+        runtime-common-no-pic
+        popular-common-no-pic
+        unicode-no-pic
+        common-src-no-pic
+        binlog-src-no-pic
+        net-src-no-pic
+        ${RUNTIME_LIBS_NO_PIC}
+        CURL::no-pic::curl
+        OpenSSL::no-pic::SSL
+        OpenSSL::no-pic::Crypto
+        ZLIB::no-pic::zlib
+        NGHTTP2::no-pic::nghttp2
+        ZSTD::no-pic::zstd
+        m
+        pthread
+)
+target_link_libraries(kphp-runtime-no-pic PUBLIC ${RUNTIME_LIBS_NO_PIC})
 
-prepare_cross_platform_libs(RUNTIME_LIBS yaml-cpp re2 h3) # todo: linking between static libs is no-op, is this redundant? do we need to add mysqlclient here?
-set(RUNTIME_LIBS vk::kphp_runtime vk::kphp_server vk::runtime-common vk::popular_common vk::unicode vk::common_src vk::binlog_src vk::net_src ${RUNTIME_LIBS} CURL::curl OpenSSL::SSL OpenSSL::Crypto m ZLIB::ZLIB_NO_PIC ZSTD::zstd pthread)
-vk_add_library(kphp-full-runtime STATIC)
-target_link_libraries(kphp-full-runtime PUBLIC ${RUNTIME_LIBS})
-set_target_properties(kphp-full-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR})
+add_dependencies(kphp-runtime-no-pic kphp-timelib OpenSSL::no-pic::Crypto OpenSSL::no-pic::SSL CURL::no-pic::curl NGHTTP2::no-pic::nghttp2 ZLIB::no-pic::zlib ZSTD::no-pic::zstd)
+combine_static_runtime_library(kphp-runtime-no-pic kphp-full-runtime-no-pic)
+
+set(RUNTIME_FULL_LIBS_NO_PIC kphp-runtime-no-pic ${RUNTIME_LIBS_NO_PIC})
+###
+
+#### PIC
+vk_add_library_pic(kphp-runtime-pic STATIC ${KPHP_RUNTIME_ALL_SOURCES})
+target_include_directories(kphp-runtime-pic PUBLIC ${BASE_DIR} ${OPENSSL_INCLUDE_DIR} ${ZLIB_PIC_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS} ${ZSTD_INCLUDE_DIRS})
+
+prepare_cross_platform_libs(RUNTIME_LIBS_PIC yaml-cpp re2 h3)
+set(RUNTIME_LIBS_PIC
+        kphp-server-pic
+        runtime-common-pic
+        popular-common-pic
+        unicode-pic
+        common-src-pic
+        binlog-src-pic
+        net-src-pic
+        ${RUNTIME_LIBS_PIC}
+        CURL::pic::curl
+        OpenSSL::pic::SSL
+        OpenSSL::pic::Crypto
+        ZLIB::pic::zlib
+        NGHTTP2::pic::nghttp2
+        ZSTD::pic::zstd
+        m
+        pthread
+)
+target_link_libraries(kphp-runtime-pic PUBLIC ${RUNTIME_LIBS_PIC})
+
+add_dependencies(kphp-runtime-pic kphp-timelib OpenSSL::pic::Crypto OpenSSL::pic::SSL CURL::pic::curl NGHTTP2::pic::nghttp2 ZLIB::pic::zlib ZSTD::pic::zstd)
+combine_static_runtime_library(kphp-runtime-pic kphp-full-runtime-pic)
+###
 
 prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre kphp-timelib)
 set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static CURL::curl OpenSSL::SSL NGHTTP2::nghttp2 ${NUMA_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB} dl)
@@ -189,9 +237,8 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp
 ]])
 
 add_library(php_lib_version_j OBJECT ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp)
-target_include_directories(php_lib_version_j PUBLIC ${ZLIB_NO_PIC_INCLUDE_DIRS})
 target_compile_options(php_lib_version_j PRIVATE -I. -E)
-add_dependencies(php_lib_version_j kphp-full-runtime)
+add_dependencies(php_lib_version_j kphp-full-runtime-no-pic kphp-full-runtime-pic)
 
 add_custom_command(OUTPUT ${OBJS_DIR}/php_lib_version.sha256
         COMMAND tail -n +3 $<TARGET_OBJECTS:php_lib_version_j> | sha256sum | awk '{print $$1}' > ${OBJS_DIR}/php_lib_version.sha256

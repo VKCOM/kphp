@@ -28,8 +28,6 @@ endif()
 set(CURL_CMAKE_ARGS
         -DCMAKE_C_FLAGS=${CURL_COMPILE_FLAGS}
         -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        -DCMAKE_CXX_FLAGS=${CURL_COMPILE_FLAGS}
-        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
         -DCMAKE_POSITION_INDEPENDENT_CODE=OFF
         -DBUILD_TESTING=OFF
         -DCURL_WERROR=ON                    # Recommend to enable when optimization level less than -O3
@@ -81,6 +79,27 @@ set_target_properties(CURL::curl PROPERTIES
         IMPORTED_LOCATION ${CURL_LIBRARIES}
         INTERFACE_INCLUDE_DIRECTORIES ${CURL_INCLUDE_DIRS}
 )
+
+add_dependencies(CURL::curl curl)
+
+
+##############################
+add_library(CURL::pic::curl STATIC IMPORTED)
+set_target_properties(CURL::pic::curl PROPERTIES
+        IMPORTED_LOCATION ${CURL_LIBRARIES}
+        INTERFACE_INCLUDE_DIRECTORIES ${CURL_INCLUDE_DIRS}
+)
+
+add_dependencies(CURL::pic::curl curl)
+
+add_library(CURL::no-pic::curl STATIC IMPORTED)
+set_target_properties(CURL::no-pic::curl PROPERTIES
+        IMPORTED_LOCATION ${CURL_LIBRARIES}
+        INTERFACE_INCLUDE_DIRECTORIES ${CURL_INCLUDE_DIRS}
+)
+
+add_dependencies(CURL::no-pic::curl curl)
+###############################
 
 # Set variables indicating that curl has been installed
 set(CURL_FOUND ON)
