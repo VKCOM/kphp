@@ -13,8 +13,8 @@ struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan>, private DummyVi
 
   int32_t span_id{0};
 
-  C$KphpSpan() = default;
-  explicit C$KphpSpan(int32_t span_id)
+  C$KphpSpan() noexcept = default;
+  explicit C$KphpSpan(int32_t span_id) noexcept
     : span_id(span_id) {}
 };
 
