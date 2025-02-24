@@ -109,8 +109,9 @@ Result async_sort(array<U> &arr, Comparator comparator, bool renumber) noexcept 
   } else {
     arr.mutate_if_map_shared();
   }
+  auto &runtimeAllocator{RuntimeAllocator::get()};
 
-  auto **arTmp = static_cast<array_bucket **>(RuntimeAllocator::get().alloc_script_memory(n * sizeof(array_bucket *)));
+  auto **arTmp = static_cast<array_bucket **>(runtimeAllocator.alloc_script_memory(n * sizeof(array_bucket *)));
   uint32_t i = 0;
   for (array_bucket *it = arr.p->begin(); it != arr.p->end(); it = arr.p->next(it)) {
     arTmp[i++] = it;
@@ -134,7 +135,7 @@ Result async_sort(array<U> &arr, Comparator comparator, bool renumber) noexcept 
   arTmp[n - 1]->next = arr.p->get_pointer(arr.p->end());
   arr.p->end()->prev = arr.p->get_pointer(arTmp[n - 1]);
 
-  RuntimeAllocator::get().free_script_memory(arTmp, n * sizeof(array_bucket *));
+  runtimeAllocator.free_script_memory(arTmp, n * sizeof(array_bucket *));
 }
 
 template<typename Result, typename U, typename Comparator>
