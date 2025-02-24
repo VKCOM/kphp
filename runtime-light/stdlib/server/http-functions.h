@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <string_view>
+#include <utility>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
@@ -31,4 +32,19 @@ void f$setrawcookie(const string &name, const string &value, int64_t expire_or_o
 inline void f$setcookie(const string &name, const string &value = {}, int64_t expire_or_options = 0, const string &path = {}, const string &domain = {},
                         bool secure = false, bool http_only = false) noexcept {
   f$setrawcookie(name, f$urlencode(value), expire_or_options, path, domain, secure, http_only);
+}
+
+inline array<string> f$headers_list() noexcept {
+  const auto &headers{HttpServerInstanceState::get().headers()};
+  constexpr std::string_view header_separator{": "};
+
+  array<string> list{array_size{static_cast<int64_t>(headers.size()), true}};
+  for (const auto &[header_name, header_value] : headers) {
+    list.push_back(string{static_cast<string::size_type>(header_name.size() + header_value.size() + header_separator.size()), true}
+                     .append(header_name.c_str())
+                     .append(header_separator.data())
+                     .append(header_value.c_str()));
+  }
+
+  return list;
 }

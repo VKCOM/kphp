@@ -64,3 +64,5 @@ inline string f$php_uname(const string &mode = string{1, 'a'}) noexcept {
       return image_st.uname_info_a;
   }
 }
+
+Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) noexcept;
