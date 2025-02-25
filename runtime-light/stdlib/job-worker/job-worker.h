@@ -61,7 +61,7 @@ struct C$KphpJobWorkerResponse : public job_worker_impl_::SendableBase {
 
 struct C$KphpJobWorkerResponseError : public refcountable_polymorphic_php_classes<C$KphpJobWorkerResponse> {
   string error;
-  int64_t error_code;
+  int64_t error_code{};
 
   const char *get_class() const noexcept override {
     return "KphpJobWorkerResponseError";
