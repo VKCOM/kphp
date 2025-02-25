@@ -5,7 +5,7 @@
 #include "common/tl/methods/rwm.h"
 
 #include <memory>
-#include <zstd.h>
+#include "zstd/zstd.h"
 
 #include "common/algorithms/arithmetic.h"
 #include "common/tl/methods/compression.h"

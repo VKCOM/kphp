@@ -4,7 +4,7 @@
 
 #define ZSTD_STATIC_LINKING_ONLY
 
-#include <zstd.h>
+#include "zstd/zstd.h"
 
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
 #include "runtime-common/stdlib/string/string-context.h"

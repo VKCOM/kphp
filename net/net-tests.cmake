@@ -4,6 +4,5 @@ prepend(NET_TESTS_SOURCES ${BASE_DIR}/net/
         net-test.cpp
         time-slice-test.cpp)
 
-prepare_cross_platform_libs(NET_TESTS_LIBS zstd)
-set(NET_TESTS_LIBS vk::common_src vk::net_src vk::binlog_src vk::unicode ${NET_TESTS_LIBS} ${EPOLL_SHIM_LIB} OpenSSL::Crypto z)
+set(NET_TESTS_LIBS common-src-no-pic net-src-no-pic binlog-src-no-pic unicode-no-pic ${NET_TESTS_LIBS} ${EPOLL_SHIM_LIB} OpenSSL::no-pic::Crypto ZSTD::no-pic::zstd ZLIB::no-pic::zlib)
 vk_add_unittest(net "${NET_TESTS_LIBS}" ${NET_TESTS_SOURCES})
