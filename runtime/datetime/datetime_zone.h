@@ -12,16 +12,16 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
-struct C$DateTimeZone : public refcountable_php_classes<C$DateTimeZone>, private DummyVisitorMethods {
+struct C$DateTimeZone final : public refcountable_php_classes<C$DateTimeZone>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
   string timezone;
 
-  const char *get_class() const noexcept {
+  constexpr const char *get_class() const noexcept {
     return R"(DateTimeZone)";
   }
 
-  int get_hash() const noexcept {
+  constexpr int32_t get_hash() const noexcept {
     std::string_view name_view{get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }

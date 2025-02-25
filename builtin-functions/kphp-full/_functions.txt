@@ -1584,13 +1584,13 @@ class JsonEncoder {
   static function from_json_impl(string $encoder_tag, string $json, string $class_name) ::: instance<^3>;
 }
 
-class DateTimeZone {
+final class DateTimeZone {
   /** @kphp-extern-func-info can_throw */
   public function __construct(string $timezone);
   public function getName(): string;
 }
 
-class DateInterval {
+final class DateInterval {
   /** @kphp-extern-func-info can_throw */
   public function __construct(string $duration);
   public static function createFromDateString(string $datetime): ?DateInterval;
@@ -1632,7 +1632,7 @@ interface DateTimeInterface {
   public function getTimestamp(): int;
 }
 
-class DateTime implements DateTimeInterface {
+final class DateTime implements DateTimeInterface {
   /** @kphp-extern-func-info can_throw */
   public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
   public function add(DateInterval $interval): DateTime;
@@ -1656,7 +1656,7 @@ class DateTime implements DateTimeInterface {
   public function getTimestamp(): int;
 }
 
-class DateTimeImmutable implements DateTimeInterface {
+final class DateTimeImmutable implements DateTimeInterface {
   /** @kphp-extern-func-info can_throw */
   public function __construct(string $datetime = "now", ?DateTimeZone $timezone = null);
   public function add(DateInterval $interval): DateTimeImmutable;

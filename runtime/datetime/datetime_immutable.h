@@ -17,19 +17,19 @@
 struct C$DateInterval;
 struct C$DateTime;
 
-struct C$DateTimeImmutable : public refcountable_polymorphic_php_classes<C$DateTimeInterface>, private DummyVisitorMethods {
+struct C$DateTimeImmutable final : public refcountable_polymorphic_php_classes<C$DateTimeInterface>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  const char *get_class() const noexcept final {
+  const char *get_class() const noexcept override {
     return R"(DateTimeImmutable)";
   }
 
-  int get_hash() const noexcept final {
+  int32_t get_hash() const noexcept override {
     std::string_view name_view{get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
-  ~C$DateTimeImmutable();
+  ~C$DateTimeImmutable() override;
 };
 
 extern const string NOW;

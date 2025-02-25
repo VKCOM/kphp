@@ -12,16 +12,16 @@
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime/datetime/timelib_wrapper.h"
 
-struct C$DateInterval: public refcountable_php_classes<C$DateInterval>, private DummyVisitorMethods  {
+struct C$DateInterval final : public refcountable_php_classes<C$DateInterval>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
   timelib_rel_time *rel_time{nullptr};
 
-  const char *get_class() const  noexcept {
+  constexpr const char *get_class() const noexcept {
     return R"(DateInterval)";
   }
 
-  int get_hash() const noexcept {
+  constexpr int32_t get_hash() const noexcept {
     std::string_view name_view{get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
