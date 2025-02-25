@@ -4,21 +4,10 @@
 
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 
-#include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
+#include <cstdint>
+#include <tuple>
+
 #include "runtime-light/stdlib/rpc/rpc-state.h"
-
-const char *C$KphpRpcRequestsExtraInfo::get_class() const noexcept {
-  return R"(KphpRpcRequestsExtraInfo)";
-}
-
-int C$KphpRpcRequestsExtraInfo::get_hash() const noexcept {
-  return static_cast<int32_t>(vk::std_hash(vk::string_view(C$KphpRpcRequestsExtraInfo::get_class())));
-}
-
-array<rpc_request_extra_info_t> f$KphpRpcRequestsExtraInfo$$get(class_instance<C$KphpRpcRequestsExtraInfo> v$this) noexcept {
-  return v$this.get()->extra_info_arr;
-}
 
 Optional<rpc_response_extra_info_t> f$extract_kphp_rpc_response_extra_info(int64_t query_id) noexcept {
   auto &extra_info_map{RpcInstanceState::get().rpc_responses_extra_info};

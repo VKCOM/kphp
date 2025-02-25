@@ -4,11 +4,13 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
+#include <string_view>
 
 #include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/core/runtime-core.h"
 
 struct tl_func_base;
 
@@ -25,7 +27,10 @@ class InstanceDeepDestroyVisitor;
 // this interface is implemented by all PHP classes that represent the TL functions (see tl-to-php)
 struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunction"; }
-  virtual int32_t get_hash() const { return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunction::get_class()))); }
+  virtual int32_t get_hash() const {
+    std::string_view name_view{C$VK$TL$RpcFunction::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
+  }
 
   virtual void accept(ToArrayVisitor &) noexcept {}
   virtual void accept(CommonMemoryEstimateVisitor &) noexcept {}
@@ -44,7 +49,10 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
 // which has ->value of the required type
 struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunctionReturnResult"; }
-  virtual int32_t get_hash() const { return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunctionReturnResult::get_class()))); }
+  virtual int32_t get_hash() const {
+    std::string_view name_view{C$VK$TL$RpcFunctionReturnResult::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
+  }
 
   virtual void accept(ToArrayVisitor &) noexcept {}
   virtual void accept(CommonMemoryEstimateVisitor &) noexcept {}
@@ -70,7 +78,10 @@ struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
   virtual void accept(InstanceDeepDestroyVisitor &) noexcept {}
 
   virtual const char *get_class() const { return "VK\\TL\\RpcResponse"; }
-  virtual int32_t get_hash() const { return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcResponse::get_class()))); }
+  virtual int32_t get_hash() const {
+    std::string_view name_view{C$VK$TL$RpcResponse::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
+  }
 
   virtual size_t virtual_builtin_sizeof() const noexcept { return 0; }
   virtual C$VK$TL$RpcResponse *virtual_builtin_clone() const noexcept { return nullptr; }

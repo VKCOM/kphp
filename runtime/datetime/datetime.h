@@ -4,6 +4,10 @@
 
 #pragma once
 
+#include <cstdint>
+#include <string_view>
+
+#include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
@@ -16,15 +20,16 @@ struct C$DateTimeImmutable;
 struct C$DateTime : public refcountable_polymorphic_php_classes<C$DateTimeInterface>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  const char *get_class() const noexcept final {
+  const char *get_class() const noexcept override {
     return R"(DateTime)";
   }
 
-  int get_hash() const noexcept final {
-    return 2141635158;
+  int32_t get_hash() const noexcept override {
+    std::string_view name_view{C$DateTime::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
-  ~C$DateTime();
+  ~C$DateTime() override;
 };
 
 extern const string NOW;
