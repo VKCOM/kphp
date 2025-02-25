@@ -12,19 +12,21 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
-struct C$DateTimeZone final : public refcountable_php_classes<C$DateTimeZone>, private DummyVisitorMethods {
+struct C$DateTimeZone : public refcountable_polymorphic_php_classes<may_be_mixed_base>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
   string timezone;
 
-  constexpr const char *get_class() const noexcept {
+  const char *get_class() const noexcept override {
     return R"(DateTimeZone)";
   }
 
-  constexpr int32_t get_hash() const noexcept {
-    std::string_view name_view{get_class()};
+  virtual int32_t get_hash() const noexcept {
+    std::string_view name_view{C$DateTimeZone::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
+
+  ~C$DateTimeZone() override = default;
 };
 
 class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone> &self, const string &timezone) noexcept;

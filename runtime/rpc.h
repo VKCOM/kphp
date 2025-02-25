@@ -136,7 +136,7 @@ struct C$RpcConnection final : public refcountable_php_classes<C$RpcConnection>,
     return R"(RpcConnection)";
   }
 
-  int get_hash() const noexcept {
+  int32_t get_hash() const noexcept {
     std::string_view name_view{C$RpcConnection::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }

@@ -20,7 +20,7 @@ struct C$PDOStatement : public refcountable_polymorphic_php_classes<abstract_ref
 
   ~C$PDOStatement() override = default;
 
-  virtual const char *get_class() const noexcept {
+  const char *get_class() const noexcept {
     return "PDOStatement";
   }
 
