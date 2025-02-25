@@ -5,7 +5,9 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
 
+#include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime/datetime/timelib_wrapper.h"
@@ -20,7 +22,8 @@ struct C$DateInterval: public refcountable_php_classes<C$DateInterval>, private 
   }
 
   int get_hash() const noexcept {
-    return static_cast<int32_t>(1915664120);
+    std::string_view name_view{get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
   ~C$DateInterval();
