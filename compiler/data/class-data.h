@@ -175,7 +175,7 @@ public:
 
   void debugPrint();
 
-  int get_hash() const {
+  int32_t get_hash() const {
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name.data(), name.size()));
   }
 
