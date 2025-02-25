@@ -18,10 +18,10 @@ template<class T>
 struct C$FFI$CData final : public refcountable_php_classes<C$FFI$CData<T>>, private DummyVisitorMethods {
   T c_value;
 
-  constexpr const char *get_class() const noexcept { return "FFI\\CData"; }
+  const char *get_class() const noexcept { return "FFI\\CData"; }
 
-  constexpr int32_t get_hash() const noexcept {
-    std::string_view name_view{get_class()};
+  int32_t get_hash() const noexcept {
+    std::string_view name_view{C$FFI$CData::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
@@ -111,9 +111,9 @@ struct CDataRef final {
   T *c_value;
 
   void accept(CommonMemoryEstimateVisitor &visitor __attribute__((unused))) {}
-  constexpr const char *get_class() const noexcept { return "FFI\\CDataRef"; }
-  constexpr int32_t get_hash() const noexcept {
-    std::string_view name_view{get_class()};
+  const char *get_class() const noexcept { return "FFI\\CDataRef"; }
+  int32_t get_hash() const noexcept {
+    std::string_view name_view{CDataRef::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 };

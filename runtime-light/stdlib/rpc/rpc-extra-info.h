@@ -29,7 +29,7 @@ struct C$KphpRpcRequestsExtraInfo final : public refcountable_php_classes<C$Kphp
   }
 
   constexpr int32_t get_hash() const noexcept {
-    std::string_view name_view{get_class()};
+    std::string_view name_view{C$KphpRpcRequestsExtraInfo::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 };

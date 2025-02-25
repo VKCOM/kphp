@@ -30,7 +30,7 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   }
 
   virtual int32_t get_hash() const noexcept {
-    std::string_view name_view{get_class()};
+    std::string_view name_view{C$VK$TL$RpcFunction::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
@@ -58,7 +58,7 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
     return "VK\\TL\\RpcFunctionReturnResult";
   }
   virtual int32_t get_hash() const noexcept {
-    std::string_view name_view{get_class()};
+    std::string_view name_view{C$VK$TL$RpcFunctionReturnResult::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
@@ -93,7 +93,7 @@ struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
     return "VK\\TL\\RpcResponse";
   }
   virtual int32_t get_hash() const noexcept {
-    std::string_view name_view{get_class()};
+    std::string_view name_view{C$VK$TL$RpcResponse::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 

@@ -20,12 +20,12 @@ struct C$ArrayIterator final : public refcountable_php_classes<C$ArrayIterator>,
   array<mixed>::const_iterator it;
   array<mixed>::const_iterator end;
 
-  constexpr const char *get_class() const noexcept {
+  const char *get_class() const noexcept {
     return "ArrayIterator";
   }
 
-  constexpr int32_t get_hash() const noexcept {
-    std::string_view name_view{get_class()};
+  int32_t get_hash() const noexcept {
+    std::string_view name_view{C$ArrayIterator::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
