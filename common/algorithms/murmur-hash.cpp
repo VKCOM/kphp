@@ -22,14 +22,14 @@
 
 namespace {
 
-constexpr size_t unaligned_load(const char *p) noexcept {
+size_t unaligned_load(const char *p) noexcept {
   size_t result = 0;
   __builtin_memcpy(&result, p, sizeof(result));
   return result;
 }
 
 // Loads n bytes, where 1 <= n < 8.
-constexpr size_t load_bytes(const char *p, int n) noexcept {
+size_t load_bytes(const char *p, int n) noexcept {
   size_t result = 0;
   --n;
   do {
@@ -38,7 +38,7 @@ constexpr size_t load_bytes(const char *p, int n) noexcept {
   return result;
 }
 
-constexpr size_t shift_mix(size_t v) noexcept {
+size_t shift_mix(size_t v) noexcept {
   return v ^ (v >> 47);
 }
 
@@ -48,8 +48,8 @@ namespace vk {
 
 // MurMur hash function was taken from libstdc++
 template<>
-constexpr uint64_t murmur_hash<uint64_t>(const void *ptr, size_t len, size_t seed) noexcept {
-  constexpr size_t mul = (static_cast<size_t>(0xc6a4a793UL) << 32UL) + static_cast<size_t>(0x5bd1e995UL);
+uint64_t murmur_hash<uint64_t>(const void *ptr, size_t len, size_t seed) noexcept {
+  static constexpr size_t mul = (static_cast<size_t>(0xc6a4a793UL) << 32UL) + static_cast<size_t>(0x5bd1e995UL);
   const char *const buf = static_cast<const char *>(ptr);
   // Remove the bytes not divisible by the sizeof(size_t).  This
   // allows the main loop to process the data as 64-bit integers.
@@ -72,7 +72,7 @@ constexpr uint64_t murmur_hash<uint64_t>(const void *ptr, size_t len, size_t see
 }
 
 template<>
-constexpr uint32_t murmur_hash<uint32_t>(const void *ptr, size_t len, size_t seed) noexcept {
+uint32_t murmur_hash<uint32_t>(const void *ptr, size_t len, size_t seed) noexcept {
   uint64_t res = murmur_hash<uint64_t>(ptr, len, seed);
   uint64_t mask = (1UL << 32UL) - 1;
   auto head = static_cast<uint32_t>(res & mask);
