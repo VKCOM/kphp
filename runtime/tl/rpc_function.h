@@ -27,7 +27,10 @@ class InstanceDeepDestroyVisitor;
 // this interface is implemented by all PHP classes that represent the TL functions (see tl-to-php)
 struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunction"; }
-  virtual int32_t get_hash() const { return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunction::get_class()))); }
+  virtual int32_t get_hash() const {
+    std::string_view name_view{C$VK$TL$RpcFunction::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
+  }
 
   virtual void accept(ToArrayVisitor &) noexcept {}
   virtual void accept(CommonMemoryEstimateVisitor &) noexcept {}
