@@ -18,7 +18,7 @@
 namespace vk {
 
 template<typename T>
-constexpr T murmur_hash(const void *ptr, size_t len, size_t seed = static_cast<size_t>(0xc70f6907UL)) noexcept;
+T murmur_hash(const void *ptr, size_t len, size_t seed = static_cast<size_t>(0xc70f6907UL)) noexcept;
 
 inline void hash_combine(size_t &seed, size_t new_hash) {
   const uint64_t m = 0xc6a4a7935bd1e995;
