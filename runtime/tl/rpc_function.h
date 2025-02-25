@@ -9,8 +9,8 @@
 #include <string_view>
 
 #include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/core/runtime-core.h"
 
 struct tl_func_base;
 
@@ -28,7 +28,7 @@ class InstanceDeepDestroyVisitor;
 struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunction"; }
   virtual int32_t get_hash() const {
-    std::string_view name_view{C$VK$TL$RpcFunction::get_class()};
+    std::string_view name_view{get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
@@ -50,7 +50,7 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
 struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual const char *get_class() const { return "VK\\TL\\RpcFunctionReturnResult"; }
   virtual int32_t get_hash() const {
-    std::string_view name_view{C$VK$TL$RpcFunctionReturnResult::get_class()};
+    std::string_view name_view{get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
@@ -79,7 +79,7 @@ struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
 
   virtual const char *get_class() const { return "VK\\TL\\RpcResponse"; }
   virtual int32_t get_hash() const {
-    std::string_view name_view{C$VK$TL$RpcResponse::get_class()};
+    std::string_view name_view{get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 

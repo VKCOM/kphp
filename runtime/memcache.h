@@ -51,12 +51,12 @@ public:
     visitor("", array<int64_t>{});
   }
 
-  const char *get_class() const final {
+  const char *get_class() const override {
     return "McMemcache";
   }
 
-  int32_t get_hash() const final {
-    std::string_view name_view{C$McMemcache::get_class()};
+  int32_t get_hash() const override {
+    std::string_view name_view{get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
