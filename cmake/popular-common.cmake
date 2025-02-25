@@ -2,7 +2,7 @@ include_guard(GLOBAL)
 
 set(LIGHT_COMMON_SOURCES
     crc32_generic.cpp md5.cpp algorithms/simd-int-to-string.cpp
-    algorithms/hashes.cpp)
+    algorithms/murmur-hash.cpp)
 
 if(COMPILE_RUNTIME_LIGHT)
   set(COMMON_SOURCES_FOR_COMP "${LIGHT_COMMON_SOURCES}")
