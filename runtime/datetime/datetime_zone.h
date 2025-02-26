@@ -12,12 +12,12 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
-struct C$DateTimeZone : public refcountable_polymorphic_php_classes<may_be_mixed_base>, private DummyVisitorMethods {
+struct C$DateTimeZone : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
   string timezone;
 
-  const char *get_class() const noexcept override {
+  virtual const char *get_class() const noexcept {
     return R"(DateTimeZone)";
   }
 

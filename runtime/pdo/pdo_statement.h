@@ -14,13 +14,13 @@
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime/pdo/abstract_pdo_statement.h"
 
-struct C$PDOStatement : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>, private DummyVisitorMethods {
+struct C$PDOStatement : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   std::unique_ptr<pdo::AbstractPdoStatement> statement;
   int64_t timeout_sec{-1};
 
   ~C$PDOStatement() override = default;
 
-  const char *get_class() const noexcept {
+  virtual const char *get_class() const noexcept {
     return "PDOStatement";
   }
 

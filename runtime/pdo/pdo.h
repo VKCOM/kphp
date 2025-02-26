@@ -14,7 +14,7 @@
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime/pdo/abstract_pdo_driver.h"
 
-struct C$PDO : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>, private DummyVisitorMethods {
+struct C$PDO : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   static constexpr int ATTR_TIMEOUT = 2;
 
   std::unique_ptr<pdo::AbstractPdoDriver> driver;

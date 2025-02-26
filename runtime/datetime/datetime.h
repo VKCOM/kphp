@@ -8,7 +8,6 @@
 #include <string_view>
 
 #include "common/algorithms/hashes.h"
-#include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime/datetime/datetime_interface.h"
@@ -17,7 +16,7 @@
 struct C$DateInterval;
 struct C$DateTimeImmutable;
 
-struct C$DateTime : public refcountable_polymorphic_php_classes<C$DateTimeInterface>, private DummyVisitorMethods {
+struct C$DateTime : public C$DateTimeInterface, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
   const char *get_class() const noexcept override {

@@ -8,7 +8,7 @@
 
 #include "runtime/datetime/timelib_wrapper.h"
 
-struct C$DateTimeInterface : public abstract_refcountable_php_interface {
+struct C$DateTimeInterface : public refcountable_polymorphic_php_classes_virt<> {
   timelib_time *time{nullptr};
 
   virtual const char *get_class() const noexcept = 0;
