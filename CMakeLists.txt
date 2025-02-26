@@ -71,7 +71,7 @@ endif()
 add_custom_target(kphp ALL DEPENDS ${OBJS_DIR}/php_lib_version.sha256)
 
 if (COMPILE_RUNTIME_LIGHT)
-    add_dependencies(kphp kphp2cpp kphp-light-runtime)
+    add_dependencies(kphp kphp2cpp kphp-light-runtime-pic)
 else ()
     add_dependencies(kphp kphp2cpp kphp-full-runtime-no-pic kphp-full-runtime-pic)
 endif ()
@@ -82,7 +82,7 @@ install(TARGETS kphp2cpp
 install_symlink(${VK_INSTALL_DIR}/bin/kphp2cpp ${CMAKE_INSTALL_PREFIX}/bin/kphp KPHP)
 
 if (COMPILE_RUNTIME_LIGHT)
-    install(TARGETS kphp-light-runtime
+    install(TARGETS kphp-light-runtime-pic
             COMPONENT KPHP
             LIBRARY DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
 else ()

@@ -21,5 +21,5 @@ prepend(COMMON_TESTS_SOURCES ${COMMON_DIR}/
 
 allow_deprecated_declarations(${COMMON_TESTS_SOURCES}/algorithms/projections-test.cpp)
 
-set(COMMON_TESTS_LIBS common-src-no-pic net-src-no-pic binlog-src-no-pic unicode-no-pic ${EPOLL_SHIM_LIB} OpenSSL::no-pic::Crypto ZSTD::no-pic::zstd ZLIB::no-pic::zlib)
+set(COMMON_TESTS_LIBS vk::${PIC_MODE}::common-src vk::${PIC_MODE}::net-src vk::${PIC_MODE}::binlog-src vk::${PIC_MODE}::unicode ${EPOLL_SHIM_LIB} OpenSSL::${PIC_MODE}::Crypto ZSTD::${PIC_MODE}::zstd ZLIB::${PIC_MODE}::zlib)
 vk_add_unittest(common "${COMMON_TESTS_LIBS}" ${COMMON_TESTS_SOURCES})

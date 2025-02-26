@@ -2,8 +2,8 @@ if(KPHP_TESTS)
     function(vk_add_unittest TEST_NAME SRC_LIBS)
         set(TEST_NAME unittests-${TEST_NAME})
         add_executable(${TEST_NAME} ${ARGN})
-        target_link_libraries(${TEST_NAME} PRIVATE GTest::GTest GTest::Main gmock ${SRC_LIBS} popular-common-no-pic)
-        target_link_options(${TEST_NAME} PRIVATE ${NO_PIE})
+        target_link_libraries(${TEST_NAME} PRIVATE GTest::GTest GTest::Main gmock ${SRC_LIBS} vk::${PIC_MODE}::popular-common)
+        target_link_options(${TEST_NAME} PRIVATE ${PIE_MODE_FLAGS})
 
         # because of https://github.com/VKCOM/kphp/actions/runs/5463884925/jobs/9945150190
         gtest_discover_tests(${TEST_NAME} PROPERTIES DISCOVERY_TIMEOUT 600)

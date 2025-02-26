@@ -245,7 +245,7 @@ void CompilerSettings::init() {
   bool is_k2_mode = mode.get().substr(0, 3) == "k2-";
   if (link_file.value_.empty()) {
     if (is_k2_mode) {
-      link_file.value_ = kphp_src_path.get() + "/objs/libkphp-light-runtime.a";
+      link_file.value_ = kphp_src_path.get() + "/objs/libkphp-light-runtime-pic.a";
     } else {
       if (dynamic_incremental_linkage.get()) {
         link_file.value_ = kphp_src_path.get() + "/objs/libkphp-full-runtime-pic.a";

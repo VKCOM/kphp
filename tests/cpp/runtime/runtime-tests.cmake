@@ -24,4 +24,4 @@ prepend(RUNTIME_TESTS_SOURCES ${BASE_DIR}/tests/cpp/runtime/
         zstd-test.cpp)
 
 allow_deprecated_declarations_for_apple(${BASE_DIR}/tests/cpp/runtime/inter-process-mutex-test.cpp)
-vk_add_unittest(runtime "${RUNTIME_FULL_LIBS_NO_PIC};${RUNTIME_LINK_TEST_LIBS}" ${RUNTIME_TESTS_SOURCES})
+vk_add_unittest(runtime "${RUNTIME_LIBS};${RUNTIME_LINK_TEST_LIBS}" ${RUNTIME_TESTS_SOURCES})

@@ -139,20 +139,21 @@ set(KPHP_RUNTIME_ALL_SOURCES
 allow_deprecated_declarations(${BASE_DIR}/runtime/allocator.cpp ${BASE_DIR}/runtime/openssl.cpp)
 allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.cpp)
 
+prepare_cross_platform_libs(SYSTEM_INSTALLED_LIBS yaml-cpp re2 h3)
+
 #### NO PIC
 vk_add_library_no_pic(kphp-runtime-no-pic STATIC ${KPHP_RUNTIME_ALL_SOURCES})
 target_include_directories(kphp-runtime-no-pic PUBLIC ${BASE_DIR} ${OPENSSL_INCLUDE_DIR} ${ZLIB_NO_PIC_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS} ${ZSTD_INCLUDE_DIRS})
 
-prepare_cross_platform_libs(RUNTIME_LIBS_NO_PIC yaml-cpp re2 h3)
 set(RUNTIME_LIBS_NO_PIC
-        kphp-server-no-pic
-        runtime-common-no-pic
-        popular-common-no-pic
-        unicode-no-pic
-        common-src-no-pic
-        binlog-src-no-pic
-        net-src-no-pic
-        ${RUNTIME_LIBS_NO_PIC}
+        vk::no-pic::kphp-server
+        vk::no-pic::runtime-common
+        vk::no-pic::popular-common
+        vk::no-pic::unicode
+        vk::no-pic::common-src
+        vk::no-pic::binlog-src
+        vk::no-pic::net-src
+        ${SYSTEM_INSTALLED_LIBS}
         CURL::no-pic::curl
         OpenSSL::no-pic::SSL
         OpenSSL::no-pic::Crypto
@@ -166,24 +167,21 @@ target_link_libraries(kphp-runtime-no-pic PUBLIC ${RUNTIME_LIBS_NO_PIC})
 
 add_dependencies(kphp-runtime-no-pic kphp-timelib OpenSSL::no-pic::Crypto OpenSSL::no-pic::SSL CURL::no-pic::curl NGHTTP2::no-pic::nghttp2 ZLIB::no-pic::zlib ZSTD::no-pic::zstd)
 combine_static_runtime_library(kphp-runtime-no-pic kphp-full-runtime-no-pic)
-
-set(RUNTIME_FULL_LIBS_NO_PIC kphp-runtime-no-pic ${RUNTIME_LIBS_NO_PIC})
 ###
 
 #### PIC
 vk_add_library_pic(kphp-runtime-pic STATIC ${KPHP_RUNTIME_ALL_SOURCES})
 target_include_directories(kphp-runtime-pic PUBLIC ${BASE_DIR} ${OPENSSL_INCLUDE_DIR} ${ZLIB_PIC_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS} ${ZSTD_INCLUDE_DIRS})
 
-prepare_cross_platform_libs(RUNTIME_LIBS_PIC yaml-cpp re2 h3)
 set(RUNTIME_LIBS_PIC
-        kphp-server-pic
-        runtime-common-pic
-        popular-common-pic
-        unicode-pic
-        common-src-pic
-        binlog-src-pic
-        net-src-pic
-        ${RUNTIME_LIBS_PIC}
+        vk::pic::kphp-server
+        vk::pic::runtime-common
+        vk::pic::popular-common
+        vk::pic::unicode
+        vk::pic::common-src
+        vk::pic::binlog-src
+        vk::pic::net-src
+        ${SYSTEM_INSTALLED_LIBS}
         CURL::pic::curl
         OpenSSL::pic::SSL
         OpenSSL::pic::Crypto
@@ -199,8 +197,39 @@ add_dependencies(kphp-runtime-pic kphp-timelib OpenSSL::pic::Crypto OpenSSL::pic
 combine_static_runtime_library(kphp-runtime-pic kphp-full-runtime-pic)
 ###
 
-prepare_cross_platform_libs(RUNTIME_LINK_TEST_LIBS pcre kphp-timelib)
-set(RUNTIME_LINK_TEST_LIBS vk::flex_data_static CURL::curl OpenSSL::SSL NGHTTP2::nghttp2 ${NUMA_LIB} ${RUNTIME_LINK_TEST_LIBS} ${EPOLL_SHIM_LIB} ${ICONV_LIB} ${RT_LIB} dl)
+set(RUNTIME_LIBS
+        vk::${PIC_MODE}::kphp-runtime
+        vk::${PIC_MODE}::kphp-server
+        vk::${PIC_MODE}::runtime-common
+        vk::${PIC_MODE}::popular-common
+        vk::${PIC_MODE}::unicode
+        vk::${PIC_MODE}::common-src
+        vk::${PIC_MODE}::binlog-src
+        vk::${PIC_MODE}::net-src
+        ${SYSTEM_INSTALLED_LIBS}
+        CURL::${PIC_MODE}::curl
+        OpenSSL::${PIC_MODE}::SSL
+        OpenSSL::${PIC_MODE}::Crypto
+        ZLIB::${PIC_MODE}::zlib
+        NGHTTP2::${PIC_MODE}::nghttp2
+        ZSTD::${PIC_MODE}::zstd
+        m
+        pthread
+)
+
+prepare_cross_platform_libs(SYSTEM_INSTALLED_TEST_LIB pcre kphp-timelib)
+set(RUNTIME_LINK_TEST_LIBS
+        vk::${PIC_MODE}::flex-data-src
+        CURL::${PIC_MODE}::curl
+        OpenSSL::${PIC_MODE}::SSL
+        NGHTTP2::${PIC_MODE}::nghttp2
+        ${NUMA_LIB}
+        ${SYSTEM_INSTALLED_TEST_LIB}
+        ${EPOLL_SHIM_LIB}
+        ${ICONV_LIB}
+        ${RT_LIB}
+        dl
+)
 
 if (PDO_DRIVER_MYSQL)
     list(APPEND RUNTIME_LINK_TEST_LIBS mysqlclient)
@@ -237,6 +266,7 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp
 ]])
 
 add_library(php_lib_version_j OBJECT ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp)
+target_include_directories(php_lib_version_j PUBLIC ${OPENSSL_INCLUDE_DIR} ${ZLIB_NO_PIC_INCLUDE_DIRS} ${CURL_INCLUDE_DIRS} ${ZSTD_INCLUDE_DIRS})
 target_compile_options(php_lib_version_j PRIVATE -I. -E)
 add_dependencies(php_lib_version_j kphp-full-runtime-no-pic kphp-full-runtime-pic)
 

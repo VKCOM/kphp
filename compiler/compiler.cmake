@@ -237,7 +237,7 @@ list(APPEND KPHP_COMPILER_SOURCES
      ${RUNTIME_BUILD_INFO}
      ${AUTO_DIR}/compiler/rewrite-rules/early_opt.cpp)
 
-vk_add_library(kphp2cpp_src OBJECT ${KPHP_COMPILER_SOURCES})
+vk_add_library_no_pic(kphp2cpp_src-no-pic OBJECT ${KPHP_COMPILER_SOURCES})
 
 file(MAKE_DIRECTORY ${KPHP_COMPILER_AUTO_DIR})
 add_custom_command(OUTPUT ${KEYWORDS_SET}
@@ -270,23 +270,23 @@ set_property(SOURCE ${KPHP_COMPILER_DIR}/kphp2cpp.cpp
              APPEND
              PROPERTY COMPILE_DEFINITIONS
              DEFAULT_KPHP_PATH="${DEFAULT_KPHP_PATH}/"
-             KPHP_HAS_NO_PIE="${NO_PIE}")
+             KPHP_HAS_NO_PIE="${PIE_MODE_FLAGS}")
 
 add_executable(kphp2cpp ${KPHP_COMPILER_DIR}/kphp2cpp.cpp)
 target_include_directories(kphp2cpp PUBLIC ${KPHP_COMPILER_DIR})
 add_dependencies(kphp2cpp openssl)
 
 prepare_cross_platform_libs(COMPILER_LIBS yaml-cpp re2)
-set(COMPILER_LIBS vk::kphp2cpp_src vk::tlo_parsing_src popular-common-no-pic ${COMPILER_LIBS} fmt::fmt OpenSSL::Crypto pthread)
+set(COMPILER_LIBS vk::no-pic::kphp2cpp_src vk::no-pic::tlo_parsing_src vk::no-pic::popular-common ${COMPILER_LIBS} fmt::fmt OpenSSL::no-pic::Crypto pthread)
 if(NOT APPLE)
     list(APPEND COMPILER_LIBS stdc++fs)
 endif()
 
 target_link_libraries(kphp2cpp PRIVATE ${COMPILER_LIBS})
-target_link_options(kphp2cpp PRIVATE ${NO_PIE})
+target_link_options(kphp2cpp PRIVATE ${PIE_MODE_FLAGS})
 set_target_properties(kphp2cpp PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR})
 
-add_dependencies(kphp2cpp_src auto_vertices_generation_target)
+add_dependencies(kphp2cpp_src-no-pic auto_vertices_generation_target)
 if(COMPILE_RUNTIME_LIGHT)
     add_compile_definitions(RUNTIME_LIGHT)
     add_dependencies(kphp2cpp php_lib_version_sha_256)

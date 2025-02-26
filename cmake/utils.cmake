@@ -4,9 +4,30 @@ function(string_to_list STRING_NAME LIST_NAME)
     string(REPLACE " " ";" "${LIST_NAME}" ${STRING_NAME})
 endfunction()
 
-function(vk_add_library)
-    add_library(${ARGV})
-    add_library(vk::${ARGV0} ALIAS ${ARGV0})
+function(check_vk_library_suffix TARGET SUFFIX)
+    string(LENGTH "${SUFFIX}" suffix_length)
+    string(LENGTH "${TARGET}" target_length)
+
+    math(EXPR suffix_begin "${target_length} - ${suffix_length}")
+    string(SUBSTRING "${TARGET}" ${suffix_begin} -1 expected_suffix)
+
+    if(NOT expected_suffix STREQUAL "${SUFFIX}")
+        message(FATAL_ERROR "vk library name '${TARGET}' does not end with the required suffix '${SUFFIX}'.")
+    endif()
+endfunction()
+
+function(add_vk_library_to_pic_namespace TARGET)
+    check_vk_library_suffix(${TARGET} ${PIC_LIBRARY_SUFFIX})
+
+    string(REGEX REPLACE "${PIC_LIBRARY_SUFFIX}$" "" new_target "${TARGET}")
+    add_library(vk::${PIC_NAMESPACE_NAME}::${new_target} ALIAS ${TARGET})
+endfunction()
+
+function(add_vk_library_to_no_pic_namespace TARGET)
+    check_vk_library_suffix(${TARGET} ${NO_PIC_LIBRARY_SUFFIX})
+
+    string(REGEX REPLACE "${NO_PIC_LIBRARY_SUFFIX}$" "" new_target "${TARGET}")
+    add_library(vk::${NO_PIC_NAMESPACE_NAME}::${new_target} ALIAS ${TARGET})
 endfunction()
 
 function(vk_add_library_pic)
@@ -15,6 +36,7 @@ function(vk_add_library_pic)
             POSITION_INDEPENDENT_CODE 1
             COMPILE_FLAGS "-fPIC"
     )
+    add_vk_library_to_pic_namespace(${ARGV0})
 endfunction()
 
 function(vk_add_library_no_pic)
@@ -23,9 +45,8 @@ function(vk_add_library_no_pic)
             POSITION_INDEPENDENT_CODE 0
             COMPILE_FLAGS "-fno-pic -static"
     )
+    add_vk_library_to_no_pic_namespace(${ARGV0})
 endfunction()
-
-
 
 function(prepend VAR_NAME PREFIX)
     list(TRANSFORM ARGN PREPEND ${PREFIX} OUTPUT_VARIABLE ${VAR_NAME})

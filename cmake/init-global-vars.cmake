@@ -12,6 +12,11 @@ set(AUTO_DIR "${GENERATED_DIR}/auto")
 set(RUNTIME_LIGHT_DIR "${BASE_DIR}/runtime-light")
 set(RUNTIME_COMMON_DIR "${BASE_DIR}/runtime-common")
 
+set(PIC_LIBRARY_SUFFIX "-pic")
+set(PIC_NAMESPACE_NAME "pic")
+set(NO_PIC_LIBRARY_SUFFIX "-no-pic")
+set(NO_PIC_NAMESPACE_NAME "no-pic")
+
 if(APPLE)
     detect_xcode_sdk_path(CMAKE_OSX_SYSROOT)
     set(ICONV_LIB iconv)
@@ -31,11 +36,15 @@ endif()
 
 find_program(PHP_BIN php REQUIRED)
 
-if(NOT APPLE)
-    check_cxx_compiler_flag(-no-pie NO_PIE_IS_FOUND)
-    if(NO_PIE_IS_FOUND)
-        set(NO_PIE -no-pie)
-    endif()
+check_cxx_compiler_flag(-no-pie NO_PIE_IS_FOUND)
+if(NO_PIE_IS_FOUND)
+    set(PIE_MODE_FLAGS -no-pie)
+    set(PIC_MODE_ENABLED ON)
+    set(PIC_MODE ${NO_PIC_NAMESPACE_NAME})
+else()
+    set(PIE_MODE_FLAGS)
+    set(PIC_MODE_ENABLED OFF)
+    set(PIC_MODE ${PIC_NAMESPACE_NAME})
 endif()
 
 # add extra build type release without NDEBUG flag
