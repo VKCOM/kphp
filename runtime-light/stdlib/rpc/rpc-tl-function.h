@@ -24,7 +24,7 @@ class InstanceDeepDestroyVisitor;
 // C$VK$TL$... should match that layout
 
 // this interface is implemented by all PHP classes that represent the TL functions (see tl-to-php)
-struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
+struct C$VK$TL$RpcFunction : refcountable_polymorphic_php_classes_virt<> {
   virtual const char *get_class() const noexcept {
     return "VK\\TL\\RpcFunction";
   }
@@ -53,7 +53,7 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
 
 // every TL function has a class for the result that implements RpcFunctionReturnResult;
 // which has ->value of the required type
-struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
+struct C$VK$TL$RpcFunctionReturnResult : refcountable_polymorphic_php_classes_virt<> {
   virtual const char *get_class() const noexcept {
     return "VK\\TL\\RpcFunctionReturnResult";
   }
@@ -80,7 +80,7 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
 
 // function call response — ReqResult from the TL scheme — is a rpcResponseOk|rpcResponseHeader|rpcResponseError;
 // if it's rpcResponseOk or rpcResponseHeader, then their bodies can be retrieved by a fetcher that was returned by a store
-struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
+struct C$VK$TL$RpcResponse : refcountable_polymorphic_php_classes_virt<> {
   using X = class_instance<C$VK$TL$RpcFunctionReturnResult>;
 
   virtual void accept(ToArrayVisitor & /*unused*/) noexcept {}

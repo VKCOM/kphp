@@ -20,7 +20,7 @@ namespace job_worker_impl_ {
 
 class ToArrayVisitor;
 
-struct SendableBase : virtual abstract_refcountable_php_interface {
+struct SendableBase : refcountable_polymorphic_php_classes_virt<> {
 
   virtual void accept(ToArrayVisitor & /*unused*/) noexcept {}
 
@@ -59,7 +59,7 @@ struct C$KphpJobWorkerResponse : public job_worker_impl_::SendableBase {
 
 // === KphpJobWorkerResponseError =================================================================
 
-struct C$KphpJobWorkerResponseError : public refcountable_polymorphic_php_classes<C$KphpJobWorkerResponse> {
+struct C$KphpJobWorkerResponseError : public C$KphpJobWorkerResponse {
   string error;
   int64_t error_code{};
 
