@@ -19,5 +19,7 @@ prepend(COMMON_TESTS_SOURCES ${COMMON_DIR}/
         wrappers/string_view-test.cpp
         ucontext/ucontext-portable-test.cpp)
 
+allow_deprecated_declarations(${COMMON_TESTS_SOURCES}/algorithms/projections-test.cpp)
+
 set(COMMON_TESTS_LIBS common-src-no-pic net-src-no-pic binlog-src-no-pic unicode-no-pic ${EPOLL_SHIM_LIB} OpenSSL::no-pic::Crypto ZSTD::no-pic::zstd ZLIB::no-pic::zlib)
 vk_add_unittest(common "${COMMON_TESTS_LIBS}" ${COMMON_TESTS_SOURCES})
