@@ -322,7 +322,7 @@ task_t<array<R>> f$array_map(F f, array<A> arr) noexcept {
       result.set_value(it.get_key(), std::invoke(f, it.get_value()));
     }
   }
-  co_return result;
+  co_return std::move(result);
 }
 
 template<class R, class T, class CallbackT, class InitialT>
