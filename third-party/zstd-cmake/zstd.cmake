@@ -1,91 +1,100 @@
 update_git_submodule(${THIRD_PARTY_DIR}/zstd "--remote")
+get_submodule_version(${THIRD_PARTY_DIR}/zstd ZSTD_VERSION)
+get_submodule_remote_url(third-party/zstd ZSTD_SOURCE_URL)
 
-set(ZSTD_SOURCE_DIR     ${THIRD_PARTY_DIR}/zstd)
-set(ZSTD_BUILD_DIR      ${CMAKE_BINARY_DIR}/third-party/zstd/build)
-set(ZSTD_INSTALL_DIR    ${CMAKE_BINARY_DIR}/third-party/zstd/install)
-set(ZSTD_BINARY_DIR     ${ZSTD_BUILD_DIR}/lib)
-set(ZSTD_LIBRARIES      ${ZSTD_INSTALL_DIR}/lib/libzstd.a)
-set(ZSTD_INCLUDE_DIRS   ${ZSTD_INSTALL_DIR}/include)
-set(ZSTD_PATCH_DIR      ${ZSTD_BUILD_DIR}/debian/patches/)
-set(ZSTD_PATCH_SERIES   ${ZSTD_BUILD_DIR}/debian/patches/series)
-# Ensure the build, installation and "include" directories exists
-file(MAKE_DIRECTORY ${ZSTD_BUILD_DIR})
-file(MAKE_DIRECTORY ${ZSTD_INSTALL_DIR})
-file(MAKE_DIRECTORY ${ZSTD_INCLUDE_DIRS})
+function(build_zstd PIC_ENABLED)
+    set(project_generic_name zstd)
+    set(target_namespace ZSTD)
+    set(artifact_name libzstd)
 
-# The configuration has been based on:
-# https://sources.debian.org/src/libzstd/1.4.8%2Bdfsg-2.1/debian/rules/
-set(ZSTD_COMPILE_FLAGS "$ENV{CFLAGS} -g0 -fno-pic -Wno-unused-but-set-variable")
-if(APPLE)
-    set(ZSTD_COMPILE_FLAGS "${ZSTD_COMPILE_FLAGS} --sysroot ${CMAKE_OSX_SYSROOT}")
-else()
-    set(ZSTD_COMPILE_FLAGS "${ZSTD_COMPILE_FLAGS} -static")
-endif()
+    make_third_party_configuration(${PIC_ENABLED} ${project_generic_name} ${target_namespace} ${artifact_name}
+            project_name
+            extra_compile_flags
+            target_name
+            lib_prefix
+            archive_name
+    )
 
-set(ZSTD_MAKE_ARGS
-        CC=${CMAKE_C_COMPILER}
-        CFLAGS=${ZSTD_COMPILE_FLAGS}
-)
+    set(source_dir      ${THIRD_PARTY_DIR}/${project_generic_name})
+    set(build_dir       ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
+    set(install_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
+    set(binary_dir      ${build_dir}/lib)
+    set(include_dirs    ${install_dir}/include)
+    set(libraries       ${install_dir}/lib/${archive_name})
+    set(patch_dir       ${build_dir}/debian/patches/)
+    set(patch_series    ${build_dir}/debian/patches/series)
+    # Ensure the build, installation and "include" directories exists
+    file(MAKE_DIRECTORY ${build_dir})
+    file(MAKE_DIRECTORY ${install_dir})
+    file(MAKE_DIRECTORY ${include_dirs})
 
-set(ZSTD_MAKE_INSTALL_ARGS
-        PREFIX=${ZSTD_INSTALL_DIR}
-        INCLUDEDIR=${ZSTD_INSTALL_DIR}/include/zstd
-)
+    # The configuration has been based on:
+    # https://sources.debian.org/src/libzstd/1.4.8%2Bdfsg-2.1/debian/rules/
+    set(compile_flags "$ENV{CFLAGS} -g0 -Wno-unused-but-set-variable ${extra_compile_flags}")
 
-ExternalProject_Add(
-        zstd
-        PREFIX ${ZSTD_BUILD_DIR}
-        SOURCE_DIR ${ZSTD_SOURCE_DIR}
-        INSTALL_DIR ${ZSTD_INSTALL_DIR}
-        BINARY_DIR ${ZSTD_BINARY_DIR}
-        BUILD_BYPRODUCTS ${ZSTD_INSTALL_DIR}/lib/libzstd.a
-        PATCH_COMMAND
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${ZSTD_SOURCE_DIR} ${ZSTD_BUILD_DIR}
-            COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${ZSTD_BUILD_DIR} -DPATCH_SERIES=${ZSTD_PATCH_SERIES} -DPATCH_DIR=${ZSTD_PATCH_DIR} -P ../../cmake/apply_patches.cmake
-        CONFIGURE_COMMAND
-            COMMAND # Nothing to configure
-        BUILD_COMMAND
-            COMMAND ${CMAKE_COMMAND} -E env ${ZSTD_MAKE_ARGS} make libzstd.a -j
-        INSTALL_COMMAND
-            COMMAND ${CMAKE_COMMAND} -E env ${ZSTD_MAKE_INSTALL_ARGS} make install-static install-includes
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${ZSTD_INCLUDE_DIRS} ${INCLUDE_DIR}
-            COMMAND ${CMAKE_COMMAND} -E copy ${ZSTD_LIBRARIES} ${LIB_DIR}
-        BUILD_IN_SOURCE 0
-)
+    message(STATUS "ZSTD Summary:
 
-add_library(ZSTD::zstd STATIC IMPORTED)
-set_target_properties(ZSTD::zstd PROPERTIES
-        IMPORTED_LOCATION ${ZSTD_LIBRARIES}
-        INTERFACE_INCLUDE_DIRECTORIES ${ZSTD_INCLUDE_DIRS}
-)
+        PIC enabled:    ${PIC_ENABLED}
+        Version:        ${ZSTD_VERSION}
+        Source:         ${ZSTD_SOURCE_URL}
+        Include dirs:   ${include_dirs}
+        Libraries:      ${libraries}
+        Target name:    ${target_name}
+        Compiler:
+          C compiler:   ${CMAKE_C_COMPILER}
+          CFLAGS:       ${compile_flags}
+    ")
 
-# Ensure that the zstd are built before they are used
-add_dependencies(ZSTD::zstd zstd)
+    set(make_args
+            CC=${CMAKE_C_COMPILER}
+            CFLAGS=${compile_flags}
+    )
 
-####################################
-add_library(ZSTD::pic::zstd STATIC IMPORTED)
-set_target_properties(ZSTD::pic::zstd PROPERTIES
-        IMPORTED_LOCATION ${ZSTD_LIBRARIES}
-        INTERFACE_INCLUDE_DIRECTORIES ${ZSTD_INCLUDE_DIRS}
-)
+    set(make_install_args
+            PREFIX=${install_dir}
+            INCLUDEDIR=${install_dir}/include/zstd
+    )
 
-# Ensure that the zstd are built before they are used
-add_dependencies(ZSTD::pic::zstd zstd)
+    ExternalProject_Add(
+            ${project_name}
+            PREFIX ${build_dir}
+            SOURCE_DIR ${source_dir}
+            INSTALL_DIR ${install_dir}
+            BINARY_DIR ${binary_dir}
+            BUILD_BYPRODUCTS ${libraries}
+            PATCH_COMMAND
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${source_dir} ${build_dir}
+                COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${build_dir} -DPATCH_SERIES=${patch_series} -DPATCH_DIR=${patch_dir} -P ../../cmake/apply_patches.cmake
+            CONFIGURE_COMMAND
+                COMMAND # Nothing to configure
+            BUILD_COMMAND
+                COMMAND ${CMAKE_COMMAND} -E env ${make_args} make libzstd.a -j
+            INSTALL_COMMAND
+                COMMAND ${CMAKE_COMMAND} -E env ${make_install_args} make install-static install-includes
+                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/libzstd.a ${libraries}
+                COMMAND ${CMAKE_COMMAND} -E copy ${libraries} ${LIB_DIR}
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
+            BUILD_IN_SOURCE 0
+    )
 
+    add_library(${target_name} STATIC IMPORTED)
+    set_target_properties(${target_name} PROPERTIES
+            IMPORTED_LOCATION ${libraries}
+            INTERFACE_INCLUDE_DIRECTORIES ${include_dirs}
+    )
 
-add_library(ZSTD::no-pic::zstd STATIC IMPORTED)
-set_target_properties(ZSTD::no-pic::zstd PROPERTIES
-        IMPORTED_LOCATION ${ZSTD_LIBRARIES}
-        INTERFACE_INCLUDE_DIRECTORIES ${ZSTD_INCLUDE_DIRS}
-)
+    # Ensure that the ZSTD are built before they are used
+    add_dependencies(${target_name} ${project_name})
 
-# Ensure that the zstd are built before they are used
-add_dependencies(ZSTD::no-pic::zstd zstd)
-#################################################
+    # Set variables indicating that ZSTD has been installed
+    set(${lib_prefix}ROOT ${install_dir} PARENT_SCOPE)
+    set(${lib_prefix}INCLUDE_DIRS ${include_dirs} PARENT_SCOPE)
+    set(${lib_prefix}LIBRARIES ${libraries} PARENT_SCOPE)
+endfunction()
 
+# PIC is OFF
+build_zstd(OFF)
+# PIC is ON
+build_zstd(ON)
 
-
-# Set variables indicating that zstd has been installed
 set(ZSTD_FOUND ON)
-
-cmake_print_variables(ZSTD_LIBRARIES)

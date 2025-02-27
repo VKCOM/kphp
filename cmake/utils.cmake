@@ -245,3 +245,48 @@ function(combine_static_runtime_library TARGET COMBINED_TARGET)
             INTERFACE_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:${TARGET},INTERFACE_INCLUDE_DIRECTORIES>)
     add_dependencies(${COMBINED_TARGET} _combined_${TARGET})
 endfunction()
+
+function(get_submodule_remote_url SUBMODULE_PATH RESULT_VAR)
+    execute_process(
+            COMMAND ${GIT_EXECUTABLE} config --file ${CMAKE_SOURCE_DIR}/.gitmodules --get submodule.${SUBMODULE_PATH}.url
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE submodule_url
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    set(${RESULT_VAR} "${submodule_url}" PARENT_SCOPE)
+endfunction()
+
+function(get_submodule_version SUBMODULE_PATH RESULT_VAR)
+    execute_process(
+            COMMAND ${GIT_EXECUTABLE} -C ${SUBMODULE_PATH} describe --tags
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE submodule_version
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+    )
+    set(${RESULT_VAR} "${submodule_version}" PARENT_SCOPE)
+endfunction()
+
+function(make_third_party_configuration PIC_ENABLED PROJECT_GENERIC_NAME TARGET_NAMESPACE ARTIFACT_NAME PROJECT_NAME EXTRA_COMPILE_FLAGS TARGET_NAME LIB_PREFIX ARCHIVE_NAME)
+    if(PIC_ENABLED)
+        set(${PROJECT_NAME} "${PROJECT_GENERIC_NAME}${PIC_LIBRARY_SUFFIX}" PARENT_SCOPE)
+        if(APPLE)
+            set(${EXTRA_COMPILE_FLAGS} "-fPIC --sysroot ${CMAKE_OSX_SYSROOT}" PARENT_SCOPE)
+        else()
+            set(${EXTRA_COMPILE_FLAGS} "-fPIC" PARENT_SCOPE)
+        endif()
+        set(${TARGET_NAME} ${TARGET_NAMESPACE}::${PIC_NAMESPACE_NAME}::${PROJECT_GENERIC_NAME} PARENT_SCOPE)
+        set(${LIB_PREFIX} ${TARGET_NAMESPACE}_${PIC_LIBRARY_SPECIFIER}_ PARENT_SCOPE)
+        set(${ARCHIVE_NAME} "${ARTIFACT_NAME}${PIC_LIBRARY_SUFFIX}.a" PARENT_SCOPE)
+    else()
+        set(${PROJECT_NAME} "${PROJECT_GENERIC_NAME}${NO_PIC_LIBRARY_SUFFIX}" PARENT_SCOPE)
+        if(APPLE)
+            set(${EXTRA_COMPILE_FLAGS} "-fno-pic --sysroot ${CMAKE_OSX_SYSROOT}" PARENT_SCOPE)
+        else()
+            set(${EXTRA_COMPILE_FLAGS} "-fno-pic -static" PARENT_SCOPE)
+        endif()
+        set(${TARGET_NAME} ${TARGET_NAMESPACE}::${NO_PIC_NAMESPACE_NAME}::${PROJECT_GENERIC_NAME} PARENT_SCOPE)
+        set(${LIB_PREFIX} ${TARGET_NAMESPACE}_${NO_PIC_LIBRARY_SPECIFIER}_ PARENT_SCOPE)
+        set(${ARCHIVE_NAME} "${ARTIFACT_NAME}${NO_PIC_LIBRARY_SUFFIX}.a" PARENT_SCOPE)
+    endif()
+endfunction()
