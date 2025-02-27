@@ -6,6 +6,8 @@ function posix_getpid(): int;
 
 function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
 
+// === UNSUPPORTED ===
+
 function exec($command ::: string, &$output ::: mixed = [], int &$result_code = 0): string|false;
 
 function header_register_callback (callable():void $callback) ::: bool;
