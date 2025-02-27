@@ -270,7 +270,7 @@ mixed f$array_rand(const array<T> &a, int64_t num) noexcept {
     return {};
   }
 
-  array<typename array<T>::key_type> result(array_size(num, true));
+  array<typename array<T>::key_type> result{array_size(num, true)};
   for (const auto &it : a) {
     if (f$mt_rand(0, --size) < num) {
       result.push_back(it.get_key());
