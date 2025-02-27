@@ -50,8 +50,9 @@ size_t hash_range(const Rng &range, Hasher hasher = Hasher()) {
 template<class Rng, class Hasher = std::hash<range_value_type<Rng>>>
 class range_hasher : Hasher {
 public:
-  explicit range_hasher(Hasher hasher = Hasher())
-    : Hasher(std::move(hasher)) {}
+  explicit range_hasher(Hasher hasher = Hasher()) :
+    Hasher(std::move(hasher)) {
+  }
 
   size_t operator()(const Rng &range) const {
     return hash_range(range, static_cast<const Hasher &>(*this));
@@ -64,8 +65,8 @@ size_t std_hash(const T &obj) {
   return std::hash<T>{}(obj);
 }
 
-template<class... Ts>
-size_t hash_sequence(const Ts &...val) {
+template<class ...Ts>
+size_t hash_sequence(const Ts &... val) {
   size_t res = 0;
   auto hashes = std::array<size_t, sizeof...(Ts)>{vk::std_hash(val)...};
   for (auto hash : hashes) {
@@ -81,7 +82,7 @@ namespace std {
 template<class T1, class T2>
 class hash<std::pair<T1, T2>> {
 public:
-  size_t operator()(const std::pair<T1, T2> &pair) const {
+  size_t operator()(const std::pair<T1, T2> & pair) const {
     return vk::hash_sequence(pair.first, pair.second);
   }
 };
