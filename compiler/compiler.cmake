@@ -15,7 +15,7 @@ endif()
 
 prepend(KPHP_COMPILER_COMMON ${COMMON_DIR}/
         dl-utils-lite.cpp
-	algorithms/murmur-hash.cpp
+        algorithms/murmur-hash.cpp
         wrappers/fmt_format.cpp
         termformat/termformat.cpp
         tl2php/combinator-to-php.cpp
