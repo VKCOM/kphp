@@ -313,9 +313,9 @@ array<T> f$array_filter_by_key(const array<T> & /*unused*/, const T1 & /*unused*
  * versions in case we face with performance problems.
  */
 template<class A, std::invocable<A> F, class R = async_function_unwrapped_return_type_t<F, A>>
-task_t<array<R>> f$array_map(F f, array<A> arr) noexcept {
-  array<R> result{arr.size()};
-  for (const auto &it : arr) {
+task_t<array<R>> f$array_map(F f, array<A> a) noexcept {
+  array<R> result{a.size()};
+  for (const auto &it : a) {
     if constexpr (is_async_function_v<F, A>) {
       result.set_value(it.get_key(), co_await std::invoke(f, it.get_value()));
     } else {
