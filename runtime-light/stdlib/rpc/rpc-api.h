@@ -110,7 +110,7 @@ f$rpc_fetch_typed_responses(array<query_id_t> query_ids) noexcept {
   co_return res;
 }
 
-task_t<array<array<mixed>>> f$rpc_fetch_responses_synchronously(array<int64_t> query_ids) noexcept {
+inline task_t<array<array<mixed>>> f$rpc_fetch_responses_synchronously(array<int64_t> query_ids) noexcept {
   co_return co_await f$rpc_fetch_responses(std::move(query_ids));
 }
 
