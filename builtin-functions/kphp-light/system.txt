@@ -11,3 +11,6 @@ function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_
 function exec($command ::: string, &$output ::: mixed = [], int &$result_code = 0): string|false;
 
 function header_register_callback (callable():void $callback) ::: bool;
+
+/** @kphp-extern-func-info generate-stub */
+function getenv(string $varname = '', bool $local_only = false): mixed;

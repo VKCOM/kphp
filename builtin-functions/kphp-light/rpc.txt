@@ -53,6 +53,9 @@ function rpc_fetch_responses($query_ids ::: array) ::: mixed[][];
 /** @kphp-extern-func-info tl_common_h_dep interruptible */
 function rpc_fetch_typed_responses(int[] $query_ids) ::: @tl\RpcResponse[];
 
+/** @kphp-extern-func-info interruptible */
+function rpc_fetch_responses_synchronously($query_ids ::: array) ::: mixed[][];
+
 /** @kphp-extern-func-info tl_common_h_dep interruptible */
 function rpc_fetch_typed_responses_synchronously(int[] $query_ids) ::: @tl\RpcResponse[];
 
@@ -84,23 +87,6 @@ function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool): bool;
  *    the request ID.
  */
 function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
-
-// === Rpc Old API =================================================================================
-
-/** @kphp-extern-func-info interruptible */
-function rpc_tl_query (\RpcConnection $rpc_conn, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
-
-/** @kphp-extern-func-info interruptible */
-function rpc_tl_query_result ($query_ids ::: array) ::: mixed[][];
-
-/** @kphp-extern-func-info interruptible */
-function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
-
-/** @kphp-extern-func-info interruptible generate-stub */
-function typed_rpc_tl_query (\RpcConnection $connection, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
-
-/** @kphp-extern-func-info interruptible generate-stub tl_common_h_dep */
-function typed_rpc_tl_query_result (int[] $query_ids) ::: @tl\RpcResponse[];
 
 // === Unsupported API =================================================================================
 
