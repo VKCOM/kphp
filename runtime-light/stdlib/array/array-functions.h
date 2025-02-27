@@ -241,7 +241,7 @@ void f$shuffle(array<T> &arr) noexcept {
 
 template<class T>
 task_t<array<T>> f$array_filter(array<T> a) noexcept {
-  co_return co_await array_functions_impl_::array_filter_impl(std::move(a), [](const auto &it) noexcept { return it.get_value(); });
+  co_return co_await array_functions_impl_::array_filter_impl(std::move(a), std::identity{});
 }
 
 template<class T, std::invocable<T> F>
