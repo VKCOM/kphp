@@ -202,23 +202,21 @@ concept convertible_to_php_bool = requires(T t) {
   { f$boolval(t) } -> std::convertible_to<bool>;
 };
 
-template<class T, class Pred>
-requires(std::invocable<Pred, typename array<T>::const_iterator>
-           &&convertible_to_php_bool<async_function_unwrapped_return_type_t<Pred, typename array<T>::const_iterator>>)
-  task_t<array<T>> array_filter_impl(const array<T> &a, Pred &&pred) noexcept {
+template<class T, std::invocable<T> F>
+requires convertible_to_php_bool<async_function_unwrapped_return_type_t<F, T>> task_t<array<T>> array_filter_impl(array<T> a, F f) noexcept {
   array<T> result{a.size()};
   for (const auto &it : a) {
-    bool condition{false};
-    if constexpr (is_async_function_v<Pred, typename array<T>::const_iterator>) {
-      condition = f$boolval(co_await std::invoke(std::forward<Pred>(pred), it));
+    bool condition{};
+    if constexpr (is_async_function_v<F, T>) {
+      condition = f$boolval(co_await std::invoke(f, it.get_value()));
     } else {
-      condition = f$boolval(std::invoke(std::forward<Pred>(pred), it));
+      condition = f$boolval(std::invoke(f, it.get_value()));
     }
     if (condition) {
       result.set_value(it);
     }
   }
-  co_return result;
+  co_return std::move(result);
 }
 
 } // namespace array_functions_impl_
@@ -243,18 +241,12 @@ void f$shuffle(array<T> &arr) noexcept {
 
 template<class T>
 task_t<array<T>> f$array_filter(array<T> a) noexcept {
-  co_return co_await array_functions_impl_::array_filter_impl(a, [](const auto &it) noexcept { return it.get_value(); });
+  co_return co_await array_functions_impl_::array_filter_impl(std::move(a), [](const auto &it) noexcept { return it.get_value(); });
 }
 
-template<class T, class Pred>
-requires(std::invocable<Pred, T>) task_t<array<T>> f$array_filter(array<T> a, Pred pred) noexcept {
-  if constexpr (is_async_function_v<Pred, T>) {
-    co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept -> task_t<bool> {
-      co_return co_await std::invoke(std::move(pred), it.get_value());
-    });
-  } else {
-    co_return co_await array_functions_impl_::array_filter_impl(a, [&pred](const auto &it) noexcept { return std::invoke(std::move(pred), it.get_value()); });
-  }
+template<class T, std::invocable<T> F>
+task_t<array<T>> f$array_filter(array<T> a, F f) noexcept {
+  co_return co_await array_functions_impl_::array_filter_impl(std::move(a), std::move(f));
 }
 
 template<class T>
