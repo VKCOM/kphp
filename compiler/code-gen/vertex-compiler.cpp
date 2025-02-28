@@ -2077,7 +2077,7 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
 
   FunctionSignatureGenerator(W) << "(auto &&... args) ";
   if (k2_async_callback) { // add explicit return type to make this lambda async
-    W << "-> task_t<" << TypeName(tinf::get_type(root->func_id, -1)) << "> ";
+    W << "-> decltype(" << FunctionName(root->func_id) << "(std::forward<decltype(args)>(args)...)) ";
   }
   W << BEGIN;
 
