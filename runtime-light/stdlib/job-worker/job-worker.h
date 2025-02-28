@@ -11,15 +11,20 @@
 
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
 inline constexpr int64_t JOB_WORKER_VALID_JOB_ID_RANGE_START = 0;
 inline constexpr int64_t JOB_WORKER_INVALID_JOB_ID = -1;
 
+struct ToArrayVisitor;
+struct CommonMemoryEstimateVisitor;
+
 namespace job_worker_impl_ {
 
-struct SendableBase : virtual abstract_refcountable_php_interface, private DummyVisitorMethods {
-  using DummyVisitorMethods::accept;
+struct SendableBase : virtual abstract_refcountable_php_interface {
+
+  virtual void accept(ToArrayVisitor & /*unused*/) noexcept {}
+
+  virtual void accept(CommonMemoryEstimateVisitor & /*unused*/) noexcept {}
 
   virtual const char *get_class() const noexcept = 0;
   virtual int32_t get_hash() const noexcept = 0;
