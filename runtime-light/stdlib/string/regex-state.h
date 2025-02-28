@@ -5,14 +5,11 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <string_view>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/utils/concepts.h"
 
@@ -25,8 +22,6 @@ struct RegexInstanceState final : private vk::not_copyable {
   static constexpr size_t MATCH_DATA_SIZE = 3 * MAX_SUBPATTERNS_COUNT;
   static constexpr auto REPLACE_BUFFER_SIZE = static_cast<size_t>(16U * 1024U);
 
-  mixed default_matches;
-  int64_t default_preg_replace_count{};
   const regex_pcre2_general_context_t regex_pcre2_general_context;
   const regex_pcre2_compile_context_t compile_context;
   const regex_pcre2_match_context_t match_context;
