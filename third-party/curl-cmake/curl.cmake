@@ -7,11 +7,10 @@ set(CURL_PROJECT_GENERIC_NAMESPACE CURL)
 set(CURL_ARTIFACT_NAME libcurl)
 
 function(build_curl PIC_ENABLED)
-    make_third_party_configuration(${PIC_ENABLED} ${CURL_PROJECT_GENERIC_NAME} ${CURL_PROJECT_GENERIC_NAMESPACE} ${CURL_ARTIFACT_NAME}
+    make_third_party_configuration(${PIC_ENABLED} ${CURL_PROJECT_GENERIC_NAME} ${CURL_PROJECT_GENERIC_NAMESPACE}
             project_name
             target_name
             extra_compile_flags
-            archive_name
             pic_namespace
             pic_lib_specifier
     )
@@ -20,7 +19,7 @@ function(build_curl PIC_ENABLED)
     set(build_dir       ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
     set(install_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
     set(include_dirs    ${install_dir}/include)
-    set(libraries       ${install_dir}/lib/${archive_name})
+    set(libraries       ${install_dir}/lib/${CURL_ARTIFACT_NAME}.a)
     # Ensure the build, installation and "include" directories exists
     file(MAKE_DIRECTORY ${build_dir})
     file(MAKE_DIRECTORY ${install_dir})
@@ -95,8 +94,6 @@ function(build_curl PIC_ENABLED)
                 COMMAND ${CMAKE_COMMAND} --build ${build_dir} --config $<CONFIG> -j
             INSTALL_COMMAND
                 COMMAND ${CMAKE_COMMAND} --install ${build_dir} --prefix ${install_dir} --config $<CONFIG>
-                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/${CURL_ARTIFACT_NAME}.a ${libraries}
-                COMMAND ${CMAKE_COMMAND} -E copy ${libraries} ${LIB_DIR}
                 COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
             BUILD_IN_SOURCE 0
     )

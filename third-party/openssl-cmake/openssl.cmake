@@ -11,11 +11,10 @@ set(OPENSSL_CRYPTO_TARGET Crypto)
 set(OPENSSL_SSL_TARGET SSL)
 
 function(build_openssl PIC_ENABLED)
-    make_third_party_configuration(${PIC_ENABLED} ${OPENSSL_PROJECT_GENERIC_NAME} ${OPENSSL_PROJECT_GENERIC_NAMESPACE} ""
+    make_third_party_configuration(${PIC_ENABLED} ${OPENSSL_PROJECT_GENERIC_NAME} ${OPENSSL_PROJECT_GENERIC_NAMESPACE}
             project_name
             target_name
             extra_compile_flags
-            archive_name
             pic_namespace
             pic_lib_specifier
     )
@@ -24,8 +23,8 @@ function(build_openssl PIC_ENABLED)
     set(build_dir       ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
     set(install_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
     set(include_dirs    ${install_dir}/include)
-    set(crypto_library  ${install_dir}/lib/${OPENSSL_CRYPTO_ARTIFACT_NAME}-${pic_namespace}.a)
-    set(ssl_library     ${install_dir}/lib/${OPENSSL_SSL_ARTIFACT_NAME}-${pic_namespace}.a)
+    set(crypto_library  ${install_dir}/lib/${OPENSSL_CRYPTO_ARTIFACT_NAME}.a)
+    set(ssl_library     ${install_dir}/lib/${OPENSSL_SSL_ARTIFACT_NAME}.a)
     set(libraries       ${crypto_library} ${ssl_library})
     set(patch_dir       ${build_dir}/debian/patches/)
     set(patch_series    ${build_dir}/debian/patches/series)
@@ -88,10 +87,6 @@ function(build_openssl PIC_ENABLED)
                 COMMAND make build_libs -j
             INSTALL_COMMAND
                 COMMAND make install_dev
-                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/${OPENSSL_CRYPTO_ARTIFACT_NAME}.a ${crypto_library}
-                COMMAND ${CMAKE_COMMAND} -E copy ${crypto_library} ${LIB_DIR}
-                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/${OPENSSL_SSL_ARTIFACT_NAME}.a ${ssl_library}
-                COMMAND ${CMAKE_COMMAND} -E copy ${ssl_library} ${LIB_DIR}
                 COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
             BUILD_IN_SOURCE 0
     )

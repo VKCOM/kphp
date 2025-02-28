@@ -44,10 +44,6 @@ set_target_properties(flex_data_shared-pic flex_data_static-no-pic
                       PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OBJS_DIR}/flex
                                  ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR}/flex
                                  OUTPUT_NAME vk-flex-data)
-add_custom_command(
-        TARGET flex_data_static-no-pic POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:flex_data_static-no-pic> ${OBJS_DIR}/lib/libvk-flex-data.a
-)
 
 install(TARGETS flex_data_shared-pic flex_data_static-no-pic
         COMPONENT FLEX

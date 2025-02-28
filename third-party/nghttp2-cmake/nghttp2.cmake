@@ -7,11 +7,10 @@ set(NGHTTP2_PROJECT_GENERIC_NAMESPACE NGHTTP2)
 set(NGHTTP2_ARTIFACT_NAME libnghttp2)
 
 function(build_nghttp2 PIC_ENABLED)
-    make_third_party_configuration(${PIC_ENABLED} ${NGHTTP2_PROJECT_GENERIC_NAME} ${NGHTTP2_PROJECT_GENERIC_NAMESPACE} ${NGHTTP2_ARTIFACT_NAME}
+    make_third_party_configuration(${PIC_ENABLED} ${NGHTTP2_PROJECT_GENERIC_NAME} ${NGHTTP2_PROJECT_GENERIC_NAMESPACE}
             project_name
             target_name
             extra_compile_flags
-            archive_name
             pic_namespace
             pic_lib_specifier
     )
@@ -20,7 +19,7 @@ function(build_nghttp2 PIC_ENABLED)
     set(build_dir       ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
     set(install_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
     set(include_dirs    ${install_dir}/include)
-    set(libraries       ${install_dir}/lib/${archive_name})
+    set(libraries       ${install_dir}/lib/${NGHTTP2_ARTIFACT_NAME}.a)
     set(patch_dir       ${build_dir}/debian/patches/)
     set(patch_series    ${build_dir}/debian/patches/series)
     # Ensure the build, installation and "include" directories exists
@@ -96,8 +95,6 @@ function(build_nghttp2 PIC_ENABLED)
                 COMMAND ${CMAKE_COMMAND} --build ${build_dir} --config $<CONFIG> -j
             INSTALL_COMMAND
                 COMMAND ${CMAKE_COMMAND} --install ${build_dir} --prefix ${install_dir} --config $<CONFIG>
-                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/${NGHTTP2_ARTIFACT_NAME}.a ${libraries}
-                COMMAND ${CMAKE_COMMAND} -E copy ${libraries} ${LIB_DIR}
                 COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
             BUILD_IN_SOURCE 0
     )

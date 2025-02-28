@@ -149,21 +149,6 @@ void append_3dparty_headers(std::string &cxx_flags, const std::string &path_to_3
   cxx_flags += " -I" + path_to_3dparty + "include/";
 }
 
-[[maybe_unused]] void append_3dparty_lib(std::string &ld_flags, const std::string &path_to_3dparty, const std::string &libname) noexcept {
-  ld_flags += " " + path_to_3dparty + "lib/lib" + libname + ".a";
-}
-
-[[maybe_unused]] void append_curl([[maybe_unused]] std::string &cxx_flags, std::string &ld_flags, [[maybe_unused]] const std::string &path_to_3dparty) noexcept {
-  if (!contains_lib(ld_flags, "curl")) {
-#if defined(__APPLE__)
-    ld_flags += " -lcurl";
-#else
-    // TODO make it as an option?
-    append_3dparty_lib(ld_flags, path_to_3dparty, "curl");
-#endif
-  }
-}
-
 void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcept {
 #if defined(__APPLE__)
 #ifdef __arm64__
@@ -370,7 +355,6 @@ void CompilerSettings::init() {
   append_3dparty_headers(cxx_default_flags, third_party_path);
 
   ld_flags.value_ = extra_ld_flags.get();
-  //append_curl(cxx_default_flags, ld_flags.value_, third_party_path);
   append_apple_options(cxx_default_flags, ld_flags.value_);
   std::vector<vk::string_view> system_installed_static_libs{"pcre", "re2", "yaml-cpp", "h3", "kphp-timelib"};
 
@@ -427,16 +411,6 @@ void CompilerSettings::init() {
   append_if_doesnt_contain(ld_flags.value_, system_installed_static_libs, "-l:lib", ".a");
   system_installed_dynamic_libs.emplace_back("rt");
 #endif
-
-//  append_3dparty_lib(ld_flags.value_, third_party_path, "ssl");
-//  append_3dparty_lib(ld_flags.value_, third_party_path, "crypto");
-//  append_3dparty_lib(ld_flags.value_, third_party_path, "nghttp2");
-//  append_3dparty_lib(ld_flags.value_, third_party_path, "zstd");
-//  if (is_k2_mode) {
-//    append_3dparty_lib(ld_flags.value_, third_party_path, "z-pic");
-//  } else {
-//    append_3dparty_lib(ld_flags.value_, third_party_path, "z-no-pic");
-//  }
 
   append_if_doesnt_contain(ld_flags.value_, system_installed_dynamic_libs, "-l");
   ld_flags.value_ += " -rdynamic";

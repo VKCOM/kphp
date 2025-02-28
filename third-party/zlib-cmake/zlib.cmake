@@ -7,11 +7,10 @@ set(ZLIB_PROJECT_GENERIC_NAMESPACE ZLIB)
 set(ZLIB_ARTIFACT_NAME libz)
 
 function(build_zlib PIC_ENABLED)
-    make_third_party_configuration(${PIC_ENABLED} ${ZLIB_PROJECT_GENERIC_NAME} ${ZLIB_PROJECT_GENERIC_NAMESPACE} ${ZLIB_ARTIFACT_NAME}
+    make_third_party_configuration(${PIC_ENABLED} ${ZLIB_PROJECT_GENERIC_NAME} ${ZLIB_PROJECT_GENERIC_NAMESPACE}
             project_name
             target_name
             extra_compile_flags
-            archive_name
             pic_namespace
             pic_lib_specifier
     )
@@ -20,7 +19,7 @@ function(build_zlib PIC_ENABLED)
     set(build_dir       ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
     set(install_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
     set(include_dirs    ${install_dir}/include)
-    set(libraries       ${install_dir}/lib/${archive_name})
+    set(libraries       ${install_dir}/lib/${ZLIB_ARTIFACT_NAME}.a)
     # Ensure the build, installation and "include" directories exists
     file(MAKE_DIRECTORY ${build_dir})
     file(MAKE_DIRECTORY ${install_dir})
@@ -57,8 +56,6 @@ function(build_zlib PIC_ENABLED)
                 COMMAND make libz.a -j
             INSTALL_COMMAND
                 COMMAND make install
-                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/${ZLIB_ARTIFACT_NAME}.a ${libraries}
-                COMMAND ${CMAKE_COMMAND} -E copy ${libraries} ${LIB_DIR}
                 COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
             BUILD_IN_SOURCE 0
     )

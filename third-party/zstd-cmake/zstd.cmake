@@ -7,11 +7,10 @@ set(ZSTD_PROJECT_GENERIC_NAMESPACE ZSTD)
 set(ZSTD_ARTIFACT_NAME libzstd)
 
 function(build_zstd PIC_ENABLED)
-    make_third_party_configuration(${PIC_ENABLED} ${ZSTD_PROJECT_GENERIC_NAME} ${ZSTD_PROJECT_GENERIC_NAMESPACE} ${ZSTD_ARTIFACT_NAME}
+    make_third_party_configuration(${PIC_ENABLED} ${ZSTD_PROJECT_GENERIC_NAME} ${ZSTD_PROJECT_GENERIC_NAMESPACE}
             project_name
             target_name
             extra_compile_flags
-            archive_name
             pic_namespace
             pic_lib_specifier
     )
@@ -21,7 +20,7 @@ function(build_zstd PIC_ENABLED)
     set(install_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
     set(binary_dir      ${build_dir}/lib)
     set(include_dirs    ${install_dir}/include)
-    set(libraries       ${install_dir}/lib/${archive_name})
+    set(libraries       ${install_dir}/lib/${ZSTD_ARTIFACT_NAME}.a)
     set(patch_dir       ${build_dir}/debian/patches/)
     set(patch_series    ${build_dir}/debian/patches/series)
     # Ensure the build, installation and "include" directories exists
@@ -72,8 +71,6 @@ function(build_zstd PIC_ENABLED)
                 COMMAND ${CMAKE_COMMAND} -E env ${make_args} make libzstd.a -j
             INSTALL_COMMAND
                 COMMAND ${CMAKE_COMMAND} -E env ${make_install_args} make install-static install-includes
-                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/${ZSTD_ARTIFACT_NAME}.a ${libraries}
-                COMMAND ${CMAKE_COMMAND} -E copy ${libraries} ${LIB_DIR}
                 COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
             BUILD_IN_SOURCE 0
     )
