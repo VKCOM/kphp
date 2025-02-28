@@ -51,7 +51,8 @@ inline array<string> f$headers_list() noexcept {
 
 inline bool f$headers_sent([[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> filename = {},
                            [[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> line = {}) noexcept {
-  php_critical_error("call to unsupported function");
+  php_warning("called stub headers_sent");
+  return false;
 }
 
 template<typename F>
