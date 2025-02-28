@@ -745,7 +745,7 @@ array<T> f$array_fill(int64_t start_index, int64_t num, const T &value) noexcept
     result.fill_vector(num, value);
   } else {
     result.set_value(start_index, value);
-    for (int64_t i = num; i > 0; --i) {
+    for (int64_t i = num - 1; i > 0; --i) {
       result.push_back(value);
     }
   }
