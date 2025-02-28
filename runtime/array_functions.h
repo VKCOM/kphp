@@ -67,9 +67,6 @@ mixed f$array_rand(const array<T> &a, int64_t num);
 template<class T>
 array<int64_t> f$array_count_values(const array<T> &a);
 
-template<class T>
-array<T> f$array_fill(int64_t start_index, int64_t num, const T &value);
-
 template<class T1, class T>
 array<T> f$array_fill_keys(const array<T1> &keys, const T &value);
 
