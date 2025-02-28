@@ -89,9 +89,11 @@ function range ($from ::: mixed, $to ::: mixed, $step ::: int = 1) ::: mixed[];
 /** @kphp-extern-func-info interruptible */
 function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];
 
+/** @kphp-extern-func-info cpp_template_call interruptible */
+function array_reduce ($a ::: array, callable(^3 | ^2() $carry, ^1[*] $item):any $callback, $initial ::: any) ::: ^2() | ^3;
+
 function to_array_debug(any $instance, bool $with_class_names = false) ::: mixed[];
 function instance_to_array(object $instance, $with_class_names ::: bool = false) ::: mixed[];
-
 
 function asort (&$a ::: array, $flag ::: int = SORT_REGULAR) ::: void;
 
