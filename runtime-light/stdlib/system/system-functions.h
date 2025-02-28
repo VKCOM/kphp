@@ -67,6 +67,16 @@ inline array<array<string>> f$debug_backtrace() noexcept {
   return {};
 }
 
+inline int64_t f$error_reporting([[maybe_unused]] int64_t level) noexcept {
+  php_warning("called stub error_reporting");
+  return 0;
+}
+
+inline int64_t f$error_reporting() noexcept {
+  php_warning("called stub error_reporting");
+  return 0;
+}
+
 inline Optional<string> f$exec([[maybe_unused]] const string &command) noexcept {
   php_critical_error("call to unsupported function");
 }
