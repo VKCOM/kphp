@@ -30,17 +30,17 @@ auto transform_to_vector(const array<T> &a, const F &op) noexcept {
 }
 
 template<class T, class T1, class Proj>
-array<T> array_diff(const array<T> &a1, const array<T1> &a2, const Proj &projector) noexcept {
+array<T> array_diff(const array<T> &a1, const array<T1> &a2, const Proj &key_projector) noexcept {
   array<T> result(a1.size());
 
   array<int64_t> values{array_size{a2.count(), false}};
 
   for (const auto &it : a2) {
-    values.set_value(projector(it.get_value()), 1);
+    values.set_value(key_projector(it.get_value()), 1);
   }
 
   for (const auto &it : a1) {
-    if (!values.has_key(projector(it.get_value()))) {
+    if (!values.has_key(key_projector(it.get_value()))) {
       result.set_value(it);
     }
   }
