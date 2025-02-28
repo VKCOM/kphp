@@ -33,4 +33,3 @@ template<typename F>
 void f$register_kphp_on_warning_callback(F && /*callback*/) {
   php_warning("called stub register_kphp_on_warning_callback");
 }
-

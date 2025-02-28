@@ -135,8 +135,9 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> timeout, bool 
     rpc_ctx.rpc_responses_extra_info.emplace(query_id, std::make_pair(rpc_response_extra_info_status_t::NOT_READY, rpc_response_extra_info_t{0, timestamp}));
   }
   // normalize timeout
-  const auto timeout_ns{timeout.has_value() && timeout.val() > 0 && timeout.val() <= MAX_TIMEOUT_S ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout.val()})
-                                                                : DEFAULT_TIMEOUT_NS};
+  const auto timeout_ns{timeout.has_value() && timeout.val() > 0 && timeout.val() <= MAX_TIMEOUT_S
+                          ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout.val()})
+                          : DEFAULT_TIMEOUT_NS};
   // create fork to wait for RPC response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
   auto waiter_task{[](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> task_t<string> {
