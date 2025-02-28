@@ -15,9 +15,9 @@
 inline constexpr int64_t JOB_WORKER_VALID_JOB_ID_RANGE_START = 0;
 inline constexpr int64_t JOB_WORKER_INVALID_JOB_ID = -1;
 
-namespace job_worker_impl_ {
-
 class ToArrayVisitor;
+
+namespace job_worker_impl_ {
 
 struct SendableBase : virtual abstract_refcountable_php_interface {
 
