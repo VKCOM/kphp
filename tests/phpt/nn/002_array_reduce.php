@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 $t = array(1, 2, 3, 4, 5);
 

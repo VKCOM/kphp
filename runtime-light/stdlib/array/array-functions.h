@@ -7,6 +7,7 @@
 #include <concepts>
 #include <cstdint>
 #include <functional>
+#include <type_traits>
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
@@ -325,9 +326,17 @@ task_t<array<R>> f$array_map(F f, array<A> a) noexcept {
   co_return std::move(result);
 }
 
-template<class R, class T, class CallbackT, class InitialT>
-R f$array_reduce(const array<T> & /*unused*/, const CallbackT & /*unused*/, InitialT /*unused*/) {
-  php_critical_error("call to unsupported function");
+template<class R, class T, std::invocable<R, T> F, class I>
+requires std::constructible_from<R, std::add_rvalue_reference_t<I>> task_t<R> f$array_reduce(array<T> a, F f, I init) noexcept {
+  R result{std::move(init)};
+  for (const auto &it : a) {
+    if constexpr (is_async_function_v<F, R, T>) {
+      result = co_await std::invoke(f, result, it.get_value());
+    } else {
+      result = std::invoke(f, result, it.get_value());
+    }
+  }
+  co_return std::move(result);
 }
 
 template<class T>
