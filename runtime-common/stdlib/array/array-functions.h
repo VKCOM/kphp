@@ -109,6 +109,36 @@ struct rsort_compare_string {
 } // namespace array_functions_impl_
 
 template<class T>
+mixed f$array_first_key(const array<T> &a) noexcept {
+  return a.empty() ? mixed{} : a.begin().get_key();
+}
+
+template<class T>
+mixed f$array_key_first(const array<T> &a) noexcept {
+  return f$array_first_key(a);
+}
+
+template<class T>
+T f$array_first_value(const array<T> &a) noexcept {
+  return a.empty() ? T{} : a.begin().get_value(); // in PHP 'false' on empty, here T()
+}
+
+template<class T>
+mixed f$array_last_key(const array<T> &a) noexcept {
+  return a.empty() ? mixed{} : (--a.end()).get_key();
+}
+
+template<class T>
+mixed f$array_key_last(const array<T> &a) noexcept {
+  return f$array_last_key(a);
+}
+
+template<class T>
+T f$array_last_value(const array<T> &a) noexcept {
+  return a.empty() ? T{} : (--a.end()).get_value(); // in PHP 'false' on empty, here T()
+}
+
+template<class T>
 string f$implode(const string &s, const array<T> &a) noexcept {
   int64_t count = a.count();
   if (count == 1) {
@@ -413,11 +443,6 @@ array<T> f$array_diff(const array<T> &a1, const array<T1> &a2, const array<T2> &
 }
 
 template<class T>
-T f$array_first_value(const array<T> &a) noexcept {
-  return a.empty() ? T() : a.begin().get_value(); // in PHP 'false' on empty, here T()
-}
-
-template<class T>
 array<typename array<T>::key_type> f$array_flip(const array<T> &a) noexcept {
   static_assert(!std::is_same<T, int>{}, "int is forbidden");
   array<typename array<T>::key_type> result;
@@ -432,16 +457,6 @@ array<typename array<T>::key_type> f$array_flip(const array<T> &a) noexcept {
   }
 
   return result;
-}
-
-template<class T>
-mixed f$array_last_key(const array<T> &a) noexcept {
-  return a.empty() ? mixed() : (--a.end()).get_key();
-}
-
-template<class T>
-T f$array_last_value(const array<T> &a) noexcept {
-  return a.empty() ? T() : (--a.end()).get_value(); // in PHP 'false' on empty, here T()
 }
 
 template<class T>
