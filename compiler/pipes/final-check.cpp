@@ -1,23 +1,21 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/pipes/final-check.h"
 
-
-#include "common/termformat/termformat.h"
-#include "common/algorithms/string-algorithms.h"
 #include "common/algorithms/contains.h"
-
+#include "common/algorithms/find.h"
+#include "common/algorithms/string-algorithms.h"
+#include "common/termformat/termformat.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/kphp-tracing-tags.h"
-#include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/primitive-type.h"
-#include "compiler/vertex-util.h"
+#include "compiler/kphp_assert.h"
 #include "compiler/type-hint.h"
-#include "compiler/phpdoc.h"
+#include "compiler/vertex-util.h"
 
 namespace {
 void check_class_immutableness(ClassPtr klass) {
@@ -898,6 +896,17 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       const auto *elem_type = array_type->lookup_at_any_key();
       kphp_error(vk::none_of_equal(elem_type->ptype(), tp_Class, tp_tuple, tp_shape),
                  fmt_format("{} is not comparable and cannot be sorted", elem_type->as_human_readable()));
+    }
+
+    // TODO: get rid of this when rewrite array_diff_impl with some hash set container
+    if (vk::any_of_equal(function_name, "array_diff")) {
+      // Forbid arrays with elements that would be rejected by key projection function.
+      for (const auto arg: call->args()) {
+        const TypeData *array_type = tinf::get_type(arg);
+        const auto *elem_type = array_type->lookup_at_any_key();
+        kphp_error(vk::none_of_equal(elem_type->ptype(), tp_tuple, tp_shape),
+                   fmt_format("{} in {}() is not supported", elem_type->as_human_readable(), function_name));
+      }
     }
   }
 
