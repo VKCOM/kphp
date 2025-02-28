@@ -15,8 +15,8 @@
 inline constexpr int64_t JOB_WORKER_VALID_JOB_ID_RANGE_START = 0;
 inline constexpr int64_t JOB_WORKER_INVALID_JOB_ID = -1;
 
-struct ToArrayVisitor;
-struct CommonMemoryEstimateVisitor;
+class ToArrayVisitor;
+class CommonMemoryEstimateVisitor;
 
 namespace job_worker_impl_ {
 
