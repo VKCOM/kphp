@@ -19,6 +19,7 @@ prepend(COMMON_TESTS_SOURCES ${COMMON_DIR}/
         wrappers/string_view-test.cpp
         ucontext/ucontext-portable-test.cpp)
 
-prepare_cross_platform_libs(COMMON_TESTS_LIBS zstd)
-set(COMMON_TESTS_LIBS vk::common_src vk::net_src vk::binlog_src vk::unicode ${COMMON_TESTS_LIBS} ${EPOLL_SHIM_LIB} OpenSSL::Crypto z)
+allow_deprecated_declarations(${COMMON_TESTS_SOURCES}/algorithms/projections-test.cpp)
+
+set(COMMON_TESTS_LIBS vk::${PIC_MODE}::common-src vk::${PIC_MODE}::net-src vk::${PIC_MODE}::binlog-src vk::${PIC_MODE}::unicode ${EPOLL_SHIM_LIB} OpenSSL::${PIC_MODE}::Crypto ZSTD::${PIC_MODE}::zstd ZLIB::${PIC_MODE}::zlib)
 vk_add_unittest(common "${COMMON_TESTS_LIBS}" ${COMMON_TESTS_SOURCES})

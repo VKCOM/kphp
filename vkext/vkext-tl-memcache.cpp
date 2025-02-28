@@ -3,7 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <fcntl.h>
-#include <zlib.h>
+#include "zlib/zlib.h"
 
 #include "vkext/vkext-rpc-include.h"
 #include "vkext/vkext-rpc.h"
