@@ -80,18 +80,18 @@ inline task_t<bool> f$wait_concurrently(const mixed &fork_id) noexcept {
 }
 
 template<typename T>
-task_t<T> f$wait_multi(array<Optional<int64_t>> fork_ids) noexcept {
-  const auto ids{array<int64_t>::convert_from(fork_ids)};
-  co_return co_await f$wait_multi<T>(ids);
+task_t<T> f$wait_multi(array<int64_t> fork_ids) noexcept {
+  T res{};
+  for (const auto& it : fork_ids) {
+    res.set_value(it.get_key(), co_await f$wait<typename T::value_type>(it.get_value()));
+  }
+  co_return std::move(res);
 }
 
 template<typename T>
-task_t<T> f$wait_multi(array<int64_t> fork_ids) noexcept {
-  T res{};
-  for (auto it : fork_ids) {
-    res.set_value(it.get_key(), co_await f$wait<typename T::value_type>(it.get_value()));
-  }
-  co_return res;
+task_t<T> f$wait_multi(array<Optional<int64_t>> fork_ids) noexcept {
+  const auto ids{array<int64_t>::convert_from(fork_ids)};
+  co_return co_await f$wait_multi<T>(ids);
 }
 
 // ================================================================================================

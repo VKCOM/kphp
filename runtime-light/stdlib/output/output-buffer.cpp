@@ -10,9 +10,10 @@
 #include "runtime-light/stdlib/output/print-functions.h"
 
 namespace {
+
 constexpr int32_t system_level_buffer = 0;
 
-constexpr std::string_view ob_gzhandler_name{"ob_gzhandler"};
+constexpr std::string_view ob_gzhandler_name = "ob_gzhandler";
 
 } // namespace
 
