@@ -19,7 +19,11 @@ void f$ob_start(const string &callback) noexcept {
   }
 
   if (!callback.empty()) {
-    php_warning("unsupported callback %s at buffering level %d", callback.c_str(), httpResponse.current_buffer + 1);
+    if (httpResponse.current_buffer == 0 && callback == string("ob_gzhandler")) {
+      php_warning("ob_gzhandler temporarily unsupported at buffering level %d", httpResponse.current_buffer + 1);
+    } else {
+      php_critical_error ("unsupported callback %s at buffering level %d", callback.c_str(), httpResponse.current_buffer + 1);
+    }
   }
   ++httpResponse.current_buffer;
 }
