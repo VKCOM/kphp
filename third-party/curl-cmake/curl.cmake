@@ -2,12 +2,12 @@ update_git_submodule(${THIRD_PARTY_DIR}/curl "--remote")
 get_submodule_version(${THIRD_PARTY_DIR}/curl CURL_VERSION)
 get_submodule_remote_url(third-party/curl CURL_SOURCE_URL)
 
-set(PROJECT_GENERIC_NAME curl)
-set(PROJECT_GENERIC_NAMESPACE CURL)
-set(ARTIFACT_NAME libcurl)
+set(CURL_PROJECT_GENERIC_NAME curl)
+set(CURL_PROJECT_GENERIC_NAMESPACE CURL)
+set(CURL_ARTIFACT_NAME libcurl)
 
 function(build_curl PIC_ENABLED)
-    make_third_party_configuration(${PIC_ENABLED} ${PROJECT_GENERIC_NAME} ${PROJECT_GENERIC_NAMESPACE} ${ARTIFACT_NAME}
+    make_third_party_configuration(${PIC_ENABLED} ${CURL_PROJECT_GENERIC_NAME} ${CURL_PROJECT_GENERIC_NAMESPACE} ${CURL_ARTIFACT_NAME}
             project_name
             target_name
             extra_compile_flags
@@ -16,7 +16,7 @@ function(build_curl PIC_ENABLED)
             pic_lib_specifier
     )
 
-    set(source_dir      ${THIRD_PARTY_DIR}/${PROJECT_GENERIC_NAME})
+    set(source_dir      ${THIRD_PARTY_DIR}/${CURL_PROJECT_GENERIC_NAME})
     set(build_dir       ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
     set(install_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
     set(include_dirs    ${install_dir}/include)
@@ -67,9 +67,9 @@ function(build_curl PIC_ENABLED)
             -DUSE_NGHTTP2=ON                    # Enable HTTP/2 support.
             -DCMAKE_USE_OPENSSL=ON
             -DOPENSSL_FOUND=ON
-            -DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}
-            -DOPENSSL_LIBRARIES=${OPENSSL_LIBRARIES}
-            -DOPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}
+            -DOPENSSL_ROOT_DIR=${OPENSSL_${pic_lib_specifier}_ROOT_DIR}
+            -DOPENSSL_LIBRARIES=${OPENSSL_${pic_lib_specifier}_LIBRARIES}
+            -DOPENSSL_INCLUDE_DIR=${OPENSSL_${pic_lib_specifier}_INCLUDE_DIR}
             -DCURL_ZLIB=ON
             -DZLIB_FOUND=ON
             -DCURL_SPECIAL_LIBZ=ON
@@ -84,7 +84,7 @@ function(build_curl PIC_ENABLED)
 
     ExternalProject_Add(
             ${project_name}
-            DEPENDS openssl ZLIB::${pic_namespace}::zlib NGHTTP2::${pic_namespace}::nghttp2
+            DEPENDS OpenSSL::${pic_namespace}::Crypto OpenSSL::${pic_namespace}::SSL ZLIB::${pic_namespace}::zlib NGHTTP2::${pic_namespace}::nghttp2
             PREFIX ${build_dir}
             SOURCE_DIR ${source_dir}
             INSTALL_DIR ${install_dir}
@@ -95,7 +95,7 @@ function(build_curl PIC_ENABLED)
                 COMMAND ${CMAKE_COMMAND} --build ${build_dir} --config $<CONFIG> -j
             INSTALL_COMMAND
                 COMMAND ${CMAKE_COMMAND} --install ${build_dir} --prefix ${install_dir} --config $<CONFIG>
-                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/${ARTIFACT_NAME}.a ${libraries}
+                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/${CURL_ARTIFACT_NAME}.a ${libraries}
                 COMMAND ${CMAKE_COMMAND} -E copy ${libraries} ${LIB_DIR}
                 COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
             BUILD_IN_SOURCE 0
@@ -111,9 +111,9 @@ function(build_curl PIC_ENABLED)
     add_dependencies(${target_name} ${project_name})
 
     # Set variables indicating that curl has been installed
-    set(${PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_ROOT ${install_dir} PARENT_SCOPE)
-    set(${PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_INCLUDE_DIRS ${include_dirs} PARENT_SCOPE)
-    set(${PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_LIBRARIES ${libraries} PARENT_SCOPE)
+    set(${CURL_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_ROOT ${install_dir} PARENT_SCOPE)
+    set(${CURL_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_INCLUDE_DIRS ${include_dirs} PARENT_SCOPE)
+    set(${CURL_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_LIBRARIES ${libraries} PARENT_SCOPE)
 endfunction()
 
 # PIC is OFF

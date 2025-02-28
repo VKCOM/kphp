@@ -2,12 +2,12 @@ update_git_submodule(${THIRD_PARTY_DIR}/nghttp2 "--remote")
 get_submodule_version(${THIRD_PARTY_DIR}/nghttp2 NGHTTP2_VERSION)
 get_submodule_remote_url(third-party/nghttp2 NGHTTP2_SOURCE_URL)
 
-set(PROJECT_GENERIC_NAME nghttp2)
-set(PROJECT_GENERIC_NAMESPACE NGHTTP2)
-set(ARTIFACT_NAME libnghttp2)
+set(NGHTTP2_PROJECT_GENERIC_NAME nghttp2)
+set(NGHTTP2_PROJECT_GENERIC_NAMESPACE NGHTTP2)
+set(NGHTTP2_ARTIFACT_NAME libnghttp2)
 
 function(build_nghttp2 PIC_ENABLED)
-    make_third_party_configuration(${PIC_ENABLED} ${PROJECT_GENERIC_NAME} ${PROJECT_GENERIC_NAMESPACE} ${ARTIFACT_NAME}
+    make_third_party_configuration(${PIC_ENABLED} ${NGHTTP2_PROJECT_GENERIC_NAME} ${NGHTTP2_PROJECT_GENERIC_NAMESPACE} ${NGHTTP2_ARTIFACT_NAME}
             project_name
             target_name
             extra_compile_flags
@@ -16,7 +16,7 @@ function(build_nghttp2 PIC_ENABLED)
             pic_lib_specifier
     )
 
-    set(source_dir      ${THIRD_PARTY_DIR}/${PROJECT_GENERIC_NAME})
+    set(source_dir      ${THIRD_PARTY_DIR}/${NGHTTP2_PROJECT_GENERIC_NAME})
     set(build_dir       ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
     set(install_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
     set(include_dirs    ${install_dir}/include)
@@ -70,9 +70,9 @@ function(build_nghttp2 PIC_ENABLED)
             -DWITH_MRUBY=OFF
             -DWITH_NEVERBLEED=OFF
             -DOPENSSL_FOUND=ON
-            -DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}
-            -DOPENSSL_LIBRARIES=${OPENSSL_LIBRARIES}
-            -DOPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}
+            -DOPENSSL_ROOT_DIR=${OPENSSL_${pic_lib_specifier}_ROOT_DIR}
+            -DOPENSSL_LIBRARIES=${OPENSSL_${pic_lib_specifier}_LIBRARIES}
+            -DOPENSSL_INCLUDE_DIR=${OPENSSL_${pic_lib_specifier}_INCLUDE_DIR}
             -DZLIB_FOUND=ON
             -DZLIB_ROOT=${ZLIB_${pic_lib_specifier}_ROOT}
             -DZLIB_LIBRARIES=${ZLIB_${pic_lib_specifier}_LIBRARIES}
@@ -81,7 +81,7 @@ function(build_nghttp2 PIC_ENABLED)
 
     ExternalProject_Add(
             ${project_name}
-            DEPENDS openssl ZLIB::${pic_namespace}::zlib
+            DEPENDS OpenSSL::${pic_namespace}::Crypto OpenSSL::${pic_namespace}::SSL ZLIB::${pic_namespace}::zlib
             PREFIX ${build_dir}
             SOURCE_DIR ${source_dir}
             INSTALL_DIR ${install_dir}
@@ -96,7 +96,7 @@ function(build_nghttp2 PIC_ENABLED)
                 COMMAND ${CMAKE_COMMAND} --build ${build_dir} --config $<CONFIG> -j
             INSTALL_COMMAND
                 COMMAND ${CMAKE_COMMAND} --install ${build_dir} --prefix ${install_dir} --config $<CONFIG>
-                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/${ARTIFACT_NAME}.a ${libraries}
+                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/${NGHTTP2_ARTIFACT_NAME}.a ${libraries}
                 COMMAND ${CMAKE_COMMAND} -E copy ${libraries} ${LIB_DIR}
                 COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
             BUILD_IN_SOURCE 0
@@ -112,9 +112,9 @@ function(build_nghttp2 PIC_ENABLED)
     add_dependencies(${target_name} ${project_name})
 
     # Set variables indicating that Nghttp2 has been installed
-    set(${PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_ROOT ${install_dir} PARENT_SCOPE)
-    set(${PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_INCLUDE_DIRS ${include_dirs} PARENT_SCOPE)
-    set(${PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_LIBRARIES ${libraries} PARENT_SCOPE)
+    set(${NGHTTP2_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_ROOT ${install_dir} PARENT_SCOPE)
+    set(${NGHTTP2_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_INCLUDE_DIRS ${include_dirs} PARENT_SCOPE)
+    set(${NGHTTP2_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_LIBRARIES ${libraries} PARENT_SCOPE)
 endfunction()
 
 # PIC is OFF
