@@ -898,6 +898,7 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
                  fmt_format("{} is not comparable and cannot be sorted", elem_type->as_human_readable()));
     }
 
+    // TODO: get rid of this when rewrite array_diff_impl with some hash set container
     if (vk::any_of_equal(function_name, "array_diff")) {
       // Forbid arrays with elements that would be rejected by key projection function.
       for (const auto arg: call->args()) {
