@@ -18,8 +18,9 @@ void f$ob_start(const string &callback) noexcept {
     return;
   }
 
+  constexpr std::string_view handler_name{"ob_gzhandler"};
   if (!callback.empty()) {
-    if (httpResponse.current_buffer == 0 && callback == string("ob_gzhandler")) {
+    if (httpResponse.current_buffer == 0 && strcmp(callback.c_str(), handler_name.data()) == 0) {
       php_warning("ob_gzhandler temporarily unsupported at buffering level %d", httpResponse.current_buffer + 1);
     } else {
       php_critical_error ("unsupported callback %s at buffering level %d", callback.c_str(), httpResponse.current_buffer + 1);
