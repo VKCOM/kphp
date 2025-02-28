@@ -49,7 +49,8 @@ inline array<string> f$headers_list() noexcept {
   return list;
 }
 
-inline bool f$headers_sent([[maybe_unused]] Optional<string> &filename, [[maybe_unused]] Optional<int64_t> &line) noexcept {
+inline bool f$headers_sent([[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> filename = {},
+                           [[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> line = {}) noexcept {
   php_critical_error("call to unsupported function");
 }
 
