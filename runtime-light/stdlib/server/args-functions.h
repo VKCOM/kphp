@@ -11,13 +11,3 @@ inline Optional<string> f$ini_get(const string &key) noexcept {
   const auto &component_st{ComponentState::get()};
   return component_st.ini_opts.has_key(key) ? Optional<string>{component_st.ini_opts.get_value(key)} : Optional<string>{false};
 }
-
-inline string f$get_engine_version() noexcept {
-  php_warning("called stub get_engine_version");
-  return {};
-}
-
-inline string f$get_kphp_cluster_name() noexcept {
-  php_warning("called stub get_kphp_cluster_name");
-  return string("adm512");
-}

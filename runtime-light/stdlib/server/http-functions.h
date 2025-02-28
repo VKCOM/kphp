@@ -52,3 +52,9 @@ inline array<string> f$headers_list() noexcept {
 inline bool f$headers_sent([[maybe_unused]] Optional<string> &filename, [[maybe_unused]] Optional<int64_t> &line) noexcept {
   php_critical_error("call to unsupported function");
 }
+
+template<typename F>
+bool f$header_register_callback(F &&) noexcept {
+  php_warning("called stub header_register_callback");
+  return true;
+}
