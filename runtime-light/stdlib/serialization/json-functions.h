@@ -7,6 +7,8 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
 
+inline void f$set_json_log_on_timeout_mode([[maybe_unused]] bool enabled) noexcept {}
+
 template<class T>
 string f$vk_json_encode_safe(const T &v, bool simple_encode = true) noexcept {
   auto &rt_ctx{RuntimeContext::get()};

@@ -67,9 +67,6 @@ mixed f$array_rand(const array<T> &a, int64_t num);
 template<class T>
 array<int64_t> f$array_count_values(const array<T> &a);
 
-template<class T>
-array<T> f$array_fill(int64_t start_index, int64_t num, const T &value);
-
 template<class T1, class T>
 array<T> f$array_fill_keys(const array<T1> &keys, const T &value);
 
@@ -546,29 +543,6 @@ array<int64_t> f$array_count_values(const array<T> &a) {
   for (const auto &it : a) {
     ++result[f$strval(it.get_value())];
   }
-  return result;
-}
-
-template<class T>
-array<T> f$array_fill(int64_t start_index, int64_t num, const T &value) {
-  if (unlikely(num < 0)) {
-    php_warning("Parameter num of array_fill must not be negative");
-    return {};
-  }
-  if (num == 0) {
-    return {};
-  }
-  array<T> result(array_size(num, start_index == 0));
-
-  if (result.is_vector()) {
-    result.fill_vector(num, value);
-  } else {
-    result.set_value(start_index, value);
-    while (--num > 0) {
-      result.push_back(value);
-    }
-  }
-
   return result;
 }
 

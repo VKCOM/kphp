@@ -2,9 +2,9 @@
 
 
 
-/** @kphp-extern-func-info generate-stub */
+
 function get_engine_version() ::: string;
-/** @kphp-extern-func-info generate-stub */
+
 function get_kphp_cluster_name(): string;
 /** @kphp-extern-func-info generate-stub */
 function get_webserver_stats() ::: tuple(int, int, int, int);
@@ -73,7 +73,6 @@ define('LC_MESSAGES', 5);
 /** @kphp-extern-func-info generate-stub */
 function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
-/** @kphp-extern-func-info generate-stub */
 function debug_backtrace() ::: string[][];
 
 /** @kphp-extern-func-info generate-stub */

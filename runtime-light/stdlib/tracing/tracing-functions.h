@@ -14,6 +14,10 @@ inline class_instance<C$KphpSpan> f$kphp_tracing_get_current_active_span() noexc
   return {};
 }
 
+inline void f$kphp_tracing_func_enter_branch(int $branch_num) noexcept {
+  php_warning("called stub kphp_tracing_func_enter_branch");
+}
+
 inline class_instance<C$KphpSpan> f$kphp_tracing_get_root_span() noexcept {
   php_warning("called stub kphp_tracing_get_root_span");
   return {};

@@ -56,3 +56,7 @@ function estimate_memory_usage($value ::: any) ::: int;
 function memory_get_usage ($real_usage ::: bool = false) ::: int;
 
 function memory_get_peak_usage ($real_usage ::: bool = false) ::: int;
+
+// ===== UNSUPPORTED =====
+
+function headers_sent (?string &$filename = null, ?int &$line = null) ::: bool;

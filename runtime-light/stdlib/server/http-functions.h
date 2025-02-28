@@ -48,3 +48,21 @@ inline array<string> f$headers_list() noexcept {
 
   return list;
 }
+
+inline bool f$headers_sent([[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> filename = {},
+                           [[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> line = {}) noexcept {
+  php_warning("called stub headers_sent");
+  return false;
+}
+
+template<typename F>
+bool f$header_register_callback(F &&) noexcept {
+  php_warning("called stub header_register_callback");
+  return true;
+}
+
+template<class T>
+string f$http_build_query(const array<T> & /*a*/, const string & /*numeric_prefix*/ = {}, const string & /*arg_separator*/ = string(),
+                          int64_t /*enc_type*/ = 1) {
+  php_critical_error("call to unsupported function");
+}
