@@ -60,3 +60,9 @@ bool f$header_register_callback(F &&) noexcept {
   php_warning("called stub header_register_callback");
   return true;
 }
+
+template<class T>
+string f$http_build_query(const array<T> & /*a*/, const string & /*numeric_prefix*/ = {}, const string & /*arg_separator*/ = string(),
+                          int64_t /*enc_type*/ = 1) {
+  php_critical_error("call to unsupported function");
+}
