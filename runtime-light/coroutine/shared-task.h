@@ -40,13 +40,9 @@ struct promise_base_t {
 
       constexpr std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> coro) const noexcept {
         promise_base_t &promise{coro.promise()};
-        const void *const STARTED_MANUALLY_VAL{std::addressof(promise.m_waiters)};
         // mark promise as ready
         auto *waiter{static_cast<shared_task_impl_::shared_task_waiter_t *>(std::exchange(promise.m_waiters, std::addressof(promise)))};
-        // finish this coroutine if:
-        // 1. it's finished and there are no waiters;
-        // 2. it was started manually (via .resume()).
-        if (waiter == STARTED_NO_WAITERS_VAL || waiter == STARTED_MANUALLY_VAL) {
+        if (waiter == STARTED_NO_WAITERS_VAL) { // no waiters, so just finish this coroutine
           return std::noop_coroutine();
         }
 
