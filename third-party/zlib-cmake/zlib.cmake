@@ -2,20 +2,21 @@ update_git_submodule(${THIRD_PARTY_DIR}/zlib "--recursive")
 get_submodule_version(${THIRD_PARTY_DIR}/zlib ZLIB_VERSION)
 get_submodule_remote_url(third-party/zlib ZLIB_SOURCE_URL)
 
-function(build_zlib PIC_ENABLED)
-    set(project_generic_name zlib)
-    set(target_namespace ZLIB)
-    set(artifact_name libz)
+set(PROJECT_GENERIC_NAME zlib)
+set(PROJECT_GENERIC_NAMESPACE ZLIB)
+set(ARTIFACT_NAME libz)
 
-    make_third_party_configuration(${PIC_ENABLED} ${project_generic_name} ${target_namespace} ${artifact_name}
+function(build_zlib PIC_ENABLED)
+    make_third_party_configuration(${PIC_ENABLED} ${PROJECT_GENERIC_NAME} ${PROJECT_GENERIC_NAMESPACE} ${ARTIFACT_NAME}
             project_name
-            extra_compile_flags
             target_name
-            lib_prefix
+            extra_compile_flags
             archive_name
+            pic_namespace
+            pic_lib_specifier
     )
 
-    set(source_dir      ${THIRD_PARTY_DIR}/${project_generic_name})
+    set(source_dir      ${THIRD_PARTY_DIR}/${PROJECT_GENERIC_NAME})
     set(build_dir       ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
     set(install_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
     set(include_dirs    ${install_dir}/include)
@@ -56,7 +57,7 @@ function(build_zlib PIC_ENABLED)
                 COMMAND make libz.a -j
             INSTALL_COMMAND
                 COMMAND make install
-                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/libz.a ${libraries}
+                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/${ARTIFACT_NAME}.a ${libraries}
                 COMMAND ${CMAKE_COMMAND} -E copy ${libraries} ${LIB_DIR}
                 COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
             BUILD_IN_SOURCE 0
@@ -72,9 +73,9 @@ function(build_zlib PIC_ENABLED)
     add_dependencies(${target_name} ${project_name})
 
     # Set variables indicating that zlib has been installed
-    set(${lib_prefix}ROOT ${install_dir} PARENT_SCOPE)
-    set(${lib_prefix}INCLUDE_DIRS ${include_dirs} PARENT_SCOPE)
-    set(${lib_prefix}LIBRARIES ${libraries} PARENT_SCOPE)
+    set(${PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_ROOT ${install_dir} PARENT_SCOPE)
+    set(${PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_INCLUDE_DIRS ${include_dirs} PARENT_SCOPE)
+    set(${PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_LIBRARIES ${libraries} PARENT_SCOPE)
 endfunction()
 
 # PIC is OFF

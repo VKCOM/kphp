@@ -1,107 +1,125 @@
 update_git_submodule(${THIRD_PARTY_DIR}/nghttp2 "--remote")
+get_submodule_version(${THIRD_PARTY_DIR}/nghttp2 NGHTTP2_VERSION)
+get_submodule_remote_url(third-party/nghttp2 NGHTTP2_SOURCE_URL)
 
-set(NGHTTP2_SOURCE_DIR      ${THIRD_PARTY_DIR}/nghttp2)
-set(NGHTTP2_BUILD_DIR       ${CMAKE_BINARY_DIR}/third-party/nghttp2/build)
-set(NGHTTP2_INSTALL_DIR     ${CMAKE_BINARY_DIR}/third-party/nghttp2/install)
-set(NGHTTP2_LIBRARIES       ${NGHTTP2_INSTALL_DIR}/lib/libnghttp2.a)
-set(NGHTTP2_INCLUDE_DIRS    ${NGHTTP2_INSTALL_DIR}/include)
-set(NGHTTP2_PATCH_DIR       ${NGHTTP2_BUILD_DIR}/debian/patches/)
-set(NGHTTP2_PATCH_SERIES    ${NGHTTP2_BUILD_DIR}/debian/patches/series)
-# Ensure the build, installation and "include" directories exists
-file(MAKE_DIRECTORY ${NGHTTP2_BUILD_DIR})
-file(MAKE_DIRECTORY ${NGHTTP2_INSTALL_DIR})
-file(MAKE_DIRECTORY ${NGHTTP2_INCLUDE_DIRS})
+set(PROJECT_GENERIC_NAME nghttp2)
+set(PROJECT_GENERIC_NAMESPACE NGHTTP2)
+set(ARTIFACT_NAME libnghttp2)
 
-set(NGHTTP2_COMPILE_FLAGS "$ENV{CFLAGS} -g0 -fno-pic")
-if(NOT APPLE)
-    set(NGHTTP2_COMPILE_FLAGS "${NGHTTP2_COMPILE_FLAGS} -static")
-endif()
+function(build_nghttp2 PIC_ENABLED)
+    make_third_party_configuration(${PIC_ENABLED} ${PROJECT_GENERIC_NAME} ${PROJECT_GENERIC_NAMESPACE} ${ARTIFACT_NAME}
+            project_name
+            target_name
+            extra_compile_flags
+            archive_name
+            pic_namespace
+            pic_lib_specifier
+    )
 
-# The configuration has been based on:
-# https://salsa.debian.org/debian/nghttp2/-/blob/buster/debian/rules#L8
-set(NGHTTP2_CMAKE_ARGS
-        -DCMAKE_C_FLAGS=${NGHTTP2_COMPILE_FLAGS}
-        -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-        -DCMAKE_CXX_FLAGS=${NGHTTP2_COMPILE_FLAGS}
-        -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-        -DCMAKE_POSITION_INDEPENDENT_CODE=OFF
-        -DENABLE_WERROR=ON
-        -DENABLE_THREADS=OFF
-        -DENABLE_APP=OFF
-        -DENABLE_HPACK_TOOLS=OFF
-        -DENABLE_ASIO_LIB=OFF
-        -DENABLE_EXAMPLES=OFF
-        -DENABLE_PYTHON_BINDINGS=OFF
-        -DENABLE_FAILMALLOC=OFF
-        -DENABLE_LIB_ONLY=ON
-        -DENABLE_STATIC_LIB=ON
-        -DENABLE_SHARED_LIB=OFF
-        -DWITH_LIBXML2=OFF
-        -DWITH_JEMALLOC=OFF
-        -DWITH_SPDYLAY=OFF
-        -DWITH_MRUBY=OFF
-        -DWITH_NEVERBLEED=OFF
-        -DOPENSSL_FOUND=ON
-        -DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}
-        -DOPENSSL_LIBRARIES=${OPENSSL_LIBRARIES}
-        -DOPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}
-        -DZLIB_FOUND=ON
-        -DZLIB_ROOT=${ZLIB_NO_PIC_ROOT}
-        -DZLIB_LIBRARIES=${ZLIB_NO_PIC_LIBRARIES}
-        -DZLIB_INCLUDE_DIR=${ZLIB_NO_PIC_INCLUDE_DIRS}/zlib
-)
+    set(source_dir      ${THIRD_PARTY_DIR}/${PROJECT_GENERIC_NAME})
+    set(build_dir       ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
+    set(install_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
+    set(include_dirs    ${install_dir}/include)
+    set(libraries       ${install_dir}/lib/${archive_name})
+    set(patch_dir       ${build_dir}/debian/patches/)
+    set(patch_series    ${build_dir}/debian/patches/series)
+    # Ensure the build, installation and "include" directories exists
+    file(MAKE_DIRECTORY ${build_dir})
+    file(MAKE_DIRECTORY ${install_dir})
+    file(MAKE_DIRECTORY ${include_dirs})
 
-ExternalProject_Add(
-        nghttp2
-        DEPENDS openssl zlib-no-pic
-        PREFIX ${NGHTTP2_BUILD_DIR}
-        SOURCE_DIR ${NGHTTP2_SOURCE_DIR}
-        INSTALL_DIR ${NGHTTP2_INSTALL_DIR}
-        BINARY_DIR ${NGHTTP2_BUILD_DIR}
-        BUILD_BYPRODUCTS ${NGHTTP2_INSTALL_DIR}/lib/libnghttp2.a
-        PATCH_COMMAND
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${NGHTTP2_SOURCE_DIR} ${NGHTTP2_BUILD_DIR}
-            COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${NGHTTP2_BUILD_DIR} -DPATCH_SERIES=${NGHTTP2_PATCH_SERIES} -DPATCH_DIR=${NGHTTP2_PATCH_DIR} -P ../../cmake/apply_patches.cmake
-        CONFIGURE_COMMAND
-            COMMAND ${CMAKE_COMMAND} ${NGHTTP2_CMAKE_ARGS} -S ${NGHTTP2_SOURCE_DIR} -B ${NGHTTP2_BUILD_DIR} -Wno-dev
-        BUILD_COMMAND
-            COMMAND ${CMAKE_COMMAND} --build ${NGHTTP2_BUILD_DIR} --config $<CONFIG> -j
-        INSTALL_COMMAND
-            COMMAND ${CMAKE_COMMAND} --install ${NGHTTP2_BUILD_DIR} --prefix ${NGHTTP2_INSTALL_DIR} --config $<CONFIG>
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${NGHTTP2_INCLUDE_DIRS} ${INCLUDE_DIR}
-            COMMAND ${CMAKE_COMMAND} -E copy ${NGHTTP2_LIBRARIES} ${LIB_DIR}
-        BUILD_IN_SOURCE 0
-)
+    # The configuration has been based on:
+    # https://sources.debian.org/src/libzstd/1.4.8%2Bdfsg-2.1/debian/rules/
+    set(compile_flags "$ENV{CFLAGS} -g0 ${extra_compile_flags}")
 
-add_library(NGHTTP2::nghttp2 STATIC IMPORTED)
-set_target_properties(NGHTTP2::nghttp2 PROPERTIES
-        IMPORTED_LOCATION ${NGHTTP2_LIBRARIES}
-        INTERFACE_INCLUDE_DIRECTORIES ${NGHTTP2_INCLUDE_DIRS}
-)
+    message(STATUS "NGHTTP2 Summary:
 
-add_dependencies(NGHTTP2::nghttp2 nghttp2)
+        PIC enabled:    ${PIC_ENABLED}
+        Version:        ${NGHTTP2_VERSION}
+        Source:         ${NGHTTP2_SOURCE_URL}
+        Include dirs:   ${include_dirs}
+        Libraries:      ${libraries}
+        Target name:    ${target_name}
+        Compiler:
+          C compiler:   ${CMAKE_C_COMPILER}
+          CFLAGS:       ${compile_flags}
+    ")
 
-########################################
-add_library(NGHTTP2::pic::nghttp2 STATIC IMPORTED)
-set_target_properties(NGHTTP2::pic::nghttp2 PROPERTIES
-        IMPORTED_LOCATION ${NGHTTP2_LIBRARIES}
-        INTERFACE_INCLUDE_DIRECTORIES ${NGHTTP2_INCLUDE_DIRS}
-)
+    # The configuration has been based on:
+    # https://salsa.debian.org/debian/nghttp2/-/blob/buster/debian/rules#L8
+    set(cmake_args
+            -DCMAKE_C_FLAGS=${compile_flags}
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+            -DCMAKE_CXX_FLAGS=${compile_flags}
+            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+            -DCMAKE_POSITION_INDEPENDENT_CODE=${PIC_ENABLED}
+            -DENABLE_WERROR=ON
+            -DENABLE_THREADS=OFF
+            -DENABLE_APP=OFF
+            -DENABLE_HPACK_TOOLS=OFF
+            -DENABLE_ASIO_LIB=OFF
+            -DENABLE_EXAMPLES=OFF
+            -DENABLE_PYTHON_BINDINGS=OFF
+            -DENABLE_FAILMALLOC=OFF
+            -DENABLE_LIB_ONLY=ON
+            -DENABLE_STATIC_LIB=ON
+            -DENABLE_SHARED_LIB=OFF
+            -DWITH_LIBXML2=OFF
+            -DWITH_JEMALLOC=OFF
+            -DWITH_SPDYLAY=OFF
+            -DWITH_MRUBY=OFF
+            -DWITH_NEVERBLEED=OFF
+            -DOPENSSL_FOUND=ON
+            -DOPENSSL_ROOT_DIR=${OPENSSL_ROOT_DIR}
+            -DOPENSSL_LIBRARIES=${OPENSSL_LIBRARIES}
+            -DOPENSSL_INCLUDE_DIR=${OPENSSL_INCLUDE_DIR}
+            -DZLIB_FOUND=ON
+            -DZLIB_ROOT=${ZLIB_${pic_lib_specifier}_ROOT}
+            -DZLIB_LIBRARIES=${ZLIB_${pic_lib_specifier}_LIBRARIES}
+            -DZLIB_INCLUDE_DIR=${ZLIB_${pic_lib_specifier}_INCLUDE_DIRS}/zlib
+    )
 
-add_dependencies(NGHTTP2::pic::nghttp2 nghttp2)
+    ExternalProject_Add(
+            ${project_name}
+            DEPENDS openssl ZLIB::${pic_namespace}::zlib
+            PREFIX ${build_dir}
+            SOURCE_DIR ${source_dir}
+            INSTALL_DIR ${install_dir}
+            BINARY_DIR ${build_dir}
+            BUILD_BYPRODUCTS ${libraries}
+            PATCH_COMMAND
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${source_dir} ${build_dir}
+                COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${build_dir} -DPATCH_SERIES=${patch_series} -DPATCH_DIR=${patch_dir} -P ../../cmake/apply_patches.cmake
+            CONFIGURE_COMMAND
+                COMMAND ${CMAKE_COMMAND} ${cmake_args} -S ${source_dir} -B ${build_dir} -Wno-dev
+            BUILD_COMMAND
+                COMMAND ${CMAKE_COMMAND} --build ${build_dir} --config $<CONFIG> -j
+            INSTALL_COMMAND
+                COMMAND ${CMAKE_COMMAND} --install ${build_dir} --prefix ${install_dir} --config $<CONFIG>
+                COMMAND ${CMAKE_COMMAND} -E copy ${install_dir}/lib/${ARTIFACT_NAME}.a ${libraries}
+                COMMAND ${CMAKE_COMMAND} -E copy ${libraries} ${LIB_DIR}
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
+            BUILD_IN_SOURCE 0
+    )
 
-add_library(NGHTTP2::no-pic::nghttp2 STATIC IMPORTED)
-set_target_properties(NGHTTP2::no-pic::nghttp2 PROPERTIES
-        IMPORTED_LOCATION ${NGHTTP2_LIBRARIES}
-        INTERFACE_INCLUDE_DIRECTORIES ${NGHTTP2_INCLUDE_DIRS}
-)
+    add_library(${target_name} STATIC IMPORTED)
+    set_target_properties(${target_name} PROPERTIES
+            IMPORTED_LOCATION ${libraries}
+            INTERFACE_INCLUDE_DIRECTORIES ${include_dirs}
+    )
 
-add_dependencies(NGHTTP2::no-pic::nghttp2 nghttp2)
-###############################################
+    # Ensure that the Nghttp2 are built before they are used
+    add_dependencies(${target_name} ${project_name})
 
+    # Set variables indicating that Nghttp2 has been installed
+    set(${PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_ROOT ${install_dir} PARENT_SCOPE)
+    set(${PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_INCLUDE_DIRS ${include_dirs} PARENT_SCOPE)
+    set(${PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_LIBRARIES ${libraries} PARENT_SCOPE)
+endfunction()
 
-# Set variables indicating that NGHTTP2 has been installed
+# PIC is OFF
+build_nghttp2(OFF)
+# PIC is ON
+build_nghttp2(ON)
+
 set(NGHTTP2_FOUND ON)
-set(NGHTTP2_ROOT ${NGHTTP2_INSTALL_DIR})
-
-cmake_print_variables(NGHTTP2_LIBRARIES)
