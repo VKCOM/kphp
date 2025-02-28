@@ -53,6 +53,18 @@ function array_pop (&$a ::: array) ::: ^1[*];
 
 function array_slice ($a ::: array, $offset ::: int, $length = null, $preserve_keys ::: bool = false) ::: ^1;
 
+function array_first_key ($a ::: array): mixed;
+
+function array_key_first($a ::: array): mixed;
+
+function array_first_value ($a ::: array) ::: ^1[*];
+
+function array_last_key ($a ::: array): mixed;
+
+function array_key_last($a ::: array): mixed;
+
+function array_last_value ($a ::: array) ::: ^1[*];
+
 /** @kphp-extern-func-info cpp_template_call */
 function array_replace ($base_array ::: array,
             $replacements_1 ::: array = array(), $replacements_2  ::: array = array(), $replacements_3  ::: array = array(),
@@ -61,13 +73,7 @@ function array_replace ($base_array ::: array,
             $replacements_10 ::: array = array(), $replacements_11 ::: array = array())
                 ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
 
-function array_last_value ($a ::: array) ::: ^1[*];
-
-function array_last_key ($a ::: array) ::: mixed;
-
 function array_flip ($a ::: array) ::: mixed[];
-
-function array_first_value ($a ::: array) ::: ^1[*];
 
 /** @kphp-extern-func-info interruptible */
 function array_filter ($a ::: array, callable(^1[*] $x):bool $callback = TODO) ::: ^1;
