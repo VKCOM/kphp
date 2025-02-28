@@ -422,7 +422,7 @@ requires(std::invocable<Comparator, typename array<T>::key_type, typename array<
   if constexpr (is_async_function_v<Comparator, typename array<T>::key_type, typename array<T>::key_type>) {
     /* ATTENTION: temporary copy is necessary since functions is coroutine and sort is inplace */
     array<T> tmp{a};
-    co_await array_functions_impl_::async_ksort<task_t<void>>(tmp, std::move(compare), false);
+    co_await array_functions_impl_::async_ksort<task_t<void>>(tmp, std::move(compare));
     a = tmp;
   } else {
     co_return a.ksort(std::move(compare));
