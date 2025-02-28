@@ -732,11 +732,11 @@ array<mixed> f$range(const mixed &from, const mixed &to, int64_t step = 1);
 
 template<class T>
 array<T> f$array_fill(int64_t start_index, int64_t num, const T &value) noexcept {
-  if (num < 0) [[unlikely]] {
+  if (unlikely(num < 0)) {
     php_warning("Parameter num of array_fill must not be negative");
     return {};
   }
-  if (num == 0) [[unlikely]] {
+  if (unlikely(num == 0)) {
     return {};
   }
   array<T> result{array_size(num, start_index == 0)};
