@@ -103,7 +103,7 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
   return rpc_tl_query;
 }
 
-task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
+task_t<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
   auto &rpc_ctx{RpcInstanceState::get()};
   // prepare RPC request
   string request_buf{};
@@ -135,7 +135,7 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
     rpc_ctx.rpc_responses_extra_info.emplace(query_id, std::make_pair(rpc_response_extra_info_status_t::NOT_READY, rpc_response_extra_info_t{0, timestamp}));
   }
   // normalize timeout
-  const auto timeout_ns{timeout > 0 && timeout <= MAX_TIMEOUT_S ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})
+  const auto timeout_ns{timeout.has_value() && timeout.val() > 0 && timeout.val() <= MAX_TIMEOUT_S ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout.val()})
                                                                 : DEFAULT_TIMEOUT_NS};
   // create fork to wait for RPC response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
@@ -165,7 +165,7 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, double timeout, bool ignore_ans
   co_return RpcQueryInfo{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 
-task_t<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, double timeout, bool collect_resp_extra_info, bool ignore_answer) noexcept {
+task_t<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, Optional<double> timeout, bool collect_resp_extra_info, bool ignore_answer) noexcept {
   auto &rpc_ctx{RpcInstanceState::get()};
 
   if (!tl_object.is_array()) {
@@ -186,7 +186,7 @@ task_t<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, double
   co_return query_info;
 }
 
-task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest &rpc_request, double timeout, bool collect_responses_extra_info,
+task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest &rpc_request, Optional<double> timeout, bool collect_responses_extra_info,
                                                  bool ignore_answer) noexcept {
   auto &rpc_ctx{RpcInstanceState::get()};
 
@@ -377,7 +377,7 @@ string f$fetch_string() noexcept {
 
 // === Rpc Query ==================================================================================
 
-task_t<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> tl_objects, double timeout, bool ignore_answer,
+task_t<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> tl_objects, Optional<double> timeout, bool ignore_answer,
                                            class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info, bool need_responses_extra_info) noexcept {
   if (ignore_answer && need_responses_extra_info) {
     php_warning("Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
