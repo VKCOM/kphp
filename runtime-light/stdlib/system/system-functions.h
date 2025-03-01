@@ -12,11 +12,6 @@
 #include "runtime-light/stdlib/system/system-state.h"
 
 template<typename F>
-void f$register_kphp_on_warning_callback(F && /*callback*/) {
-  php_critical_error("call to unsupported function");
-}
-
-template<typename F>
 bool f$register_kphp_on_oom_callback(F && /*callback*/) {
   php_critical_error("call to unsupported function");
 }
@@ -66,3 +61,37 @@ inline string f$php_uname(const string &mode = string{1, 'a'}) noexcept {
 }
 
 Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) noexcept;
+
+inline array<array<string>> f$debug_backtrace() noexcept {
+  php_warning("called stub debug_backtrace");
+  return {};
+}
+
+inline int64_t f$error_reporting([[maybe_unused]] int64_t level) noexcept {
+  php_warning("called stub error_reporting");
+  return 0;
+}
+
+inline int64_t f$error_reporting() noexcept {
+  php_warning("called stub error_reporting");
+  return 0;
+}
+
+inline Optional<string> f$exec([[maybe_unused]] const string &command) noexcept {
+  php_critical_error("call to unsupported function");
+}
+
+inline Optional<string> f$exec([[maybe_unused]] const string &command, [[maybe_unused]] mixed &output,
+                               [[maybe_unused]] int64_t &result_code = SystemInstanceState::get().result_code_dummy) noexcept {
+  php_critical_error("call to unsupported function");
+}
+
+inline string f$get_engine_version() noexcept {
+  php_warning("called stub get_engine_version");
+  return {};
+}
+
+inline string f$get_kphp_cluster_name() noexcept {
+  php_warning("called stub get_kphp_cluster_name");
+  return string("adm512");
+}

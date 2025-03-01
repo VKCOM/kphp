@@ -391,11 +391,6 @@ array<int64_t> f$array_count_values(const array<T> & /*unused*/) {
   php_critical_error("call to unsupported function");
 }
 
-template<class T>
-array<T> f$array_fill(int64_t /*unused*/, int64_t /*unused*/, const T & /*unused*/) {
-  php_critical_error("call to unsupported function");
-}
-
 template<class T1, class T>
 array<T> f$array_fill_keys(const array<T1> & /*unused*/, const T & /*unused*/) {
   php_critical_error("call to unsupported function");
@@ -433,10 +428,10 @@ requires(std::invocable<Comparator, T, T>) task_t<void> f$uasort(array<T> &a, Co
 
 template<class T, class Comparator>
 requires(std::invocable<Comparator, typename array<T>::key_type, typename array<T>::key_type>) task_t<void> f$uksort(array<T> &a, Comparator compare) {
-  if constexpr (is_async_function_v<Comparator, T, T>) {
+  if constexpr (is_async_function_v<Comparator, typename array<T>::key_type, typename array<T>::key_type>) {
     /* ATTENTION: temporary copy is necessary since functions is coroutine and sort is inplace */
     array<T> tmp{a};
-    co_await array_functions_impl_::async_ksort<task_t<void>>(tmp, std::move(compare), false);
+    co_await array_functions_impl_::async_ksort<task_t<void>>(tmp, std::move(compare));
     a = tmp;
   } else {
     co_return a.ksort(std::move(compare));

@@ -52,13 +52,13 @@ inline constexpr std::string_view PHP_AUTH_PW = "PHP_AUTH_PW";
 struct PhpScriptBuiltInSuperGlobals {
 
   // variables below are PHP language superglobals
-  mixed v$_SERVER;
-  mixed v$_GET;
-  mixed v$_POST;
-  mixed v$_ENV;
-  mixed v$_FILES;
-  mixed v$_COOKIE;
-  mixed v$_REQUEST;
+  mixed v$_SERVER{array<mixed>{}};
+  mixed v$_GET{array<mixed>{}};
+  mixed v$_POST{array<mixed>{}};
+  mixed v$_ENV{array<mixed>{}};
+  mixed v$_FILES{array<mixed>{}};
+  mixed v$_COOKIE{array<mixed>{}};
+  mixed v$_REQUEST{array<mixed>{}};
 
   // variables below are not superglobals of the PHP language, but since they are set by runtime,
   // the compiler is also aware about them

@@ -28,3 +28,8 @@ requires(std::invocable<F, Args...>) void f$register_shutdown_function(F &&f, Ar
     std::forward<F>(f), std::forward<Args>(args)...)};
   InstanceState::get().shutdown_functions.emplace_back(std::move(shutdown_function_task));
 }
+
+template<typename F>
+void f$register_kphp_on_warning_callback(F && /*callback*/) {
+  php_warning("called stub register_kphp_on_warning_callback");
+}

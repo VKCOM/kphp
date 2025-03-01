@@ -35,23 +35,26 @@ final class KphpRpcRequestsExtraInfo {
 /** @kphp-extern-func-info interruptible */
 function rpc_send_requests($actor ::: string,
                            $arr ::: array,
-                           $timeout ::: float = -1.0,
-                           $ignore_answer ::: bool = false,
-                           \KphpRpcRequestsExtraInfo $requests_extra_info = null,
-                           $need_responses_extra_info ::: bool = false) ::: int[];
+                           $timeout ::: ?float,
+                           $ignore_answer ::: bool,
+                           \KphpRpcRequestsExtraInfo $requests_extra_info,
+                           $need_responses_extra_info ::: bool) ::: int[];
 
 /** @kphp-extern-func-info tl_common_h_dep interruptible */
 function rpc_send_typed_query_requests($actor ::: string, @tl\RpcFunction[] $query_functions,
-                                       $timeout ::: float = -1.0,
-                                       $ignore_answer ::: bool = false,
-                                       \KphpRpcRequestsExtraInfo $requests_extra_info = null,
-                                       $need_responses_extra_info ::: bool = false) ::: int[];
+                                       $timeout ::: ?float,
+                                       $ignore_answer ::: bool,
+                                       \KphpRpcRequestsExtraInfo $requests_extra_info,
+                                       $need_responses_extra_info ::: bool) ::: int[];
 
 /** @kphp-extern-func-info interruptible */
 function rpc_fetch_responses($query_ids ::: array) ::: mixed[][];
 
 /** @kphp-extern-func-info tl_common_h_dep interruptible */
 function rpc_fetch_typed_responses(int[] $query_ids) ::: @tl\RpcResponse[];
+
+/** @kphp-extern-func-info interruptible */
+function rpc_fetch_responses_synchronously($query_ids ::: array) ::: mixed[][];
 
 /** @kphp-extern-func-info tl_common_h_dep interruptible */
 function rpc_fetch_typed_responses_synchronously(int[] $query_ids) ::: @tl\RpcResponse[];
@@ -77,22 +80,13 @@ function store_float ($v ::: float) ::: bool;
 function rpc_tl_pending_queries_count (): int;
 function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool): bool;
 
-// === Rpc Old API =================================================================================
-
-/** @kphp-extern-func-info interruptible */
-function rpc_tl_query (\RpcConnection $rpc_conn, $arr ::: array, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
-
-/** @kphp-extern-func-info interruptible */
-function rpc_tl_query_result ($query_ids ::: array) ::: mixed[][];
-
-/** @kphp-extern-func-info interruptible */
-function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
-
-/** @kphp-extern-func-info interruptible generate-stub */
-function typed_rpc_tl_query (\RpcConnection $connection, @tl\RpcFunction[] $query_functions, $timeout ::: float = -1.0, $ignore_answer ::: bool = false, \KphpRpcRequestsExtraInfo $requests_extra_info = null, $need_responses_extra_info ::: bool = false) ::: int[];
-
-/** @kphp-extern-func-info interruptible generate-stub tl_common_h_dep */
-function typed_rpc_tl_query_result (int[] $query_ids) ::: @tl\RpcResponse[];
+/**
+ * 'extract_kphp_rpc_response_extra_info' function takes request ID and returns:
+ * 1. 'null' in case there is no extra information about the request;
+ * 2. 'tuple(response size, response time)' in case we got a response associated with
+ *    the request ID.
+ */
+function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
 
 // === Unsupported API =================================================================================
 
@@ -133,15 +127,6 @@ function fetch_lookup_int () ::: int;
 
 /** @kphp-extern-func-info interruptible generate-stub */
 function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
-
-/**
- * 'extract_kphp_rpc_response_extra_info' function takes request ID and returns:
- * 1. 'null' in case there is no extra information about the request;
- * 2. 'tuple(response size, response time)' in case we got a response associated with
- *    the request ID.
- */
- /** @kphp-extern-func-info generate-stub */
-function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
 
 /** @kphp-generate-stub-class */
 final class RpcConnection {

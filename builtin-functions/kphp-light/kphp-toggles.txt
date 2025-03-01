@@ -3,7 +3,6 @@
 /** @kphp-extern-func-info generate-stub */
 function kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() ::: void;
 
-/** @kphp-extern-func-info generate-stub */
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
 
 /** @kphp-extern-func-info generate-stub */

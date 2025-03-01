@@ -79,6 +79,21 @@ inline task_t<bool> f$wait_concurrently(const mixed &fork_id) noexcept {
   co_return co_await f$wait_concurrently(fork_id.to_int());
 }
 
+template<typename T>
+task_t<T> f$wait_multi(array<int64_t> fork_ids) noexcept {
+  T res{};
+  for (const auto &it : fork_ids) {
+    res.set_value(it.get_key(), co_await f$wait<typename T::value_type>(it.get_value()));
+  }
+  co_return std::move(res);
+}
+
+template<typename T>
+task_t<T> f$wait_multi(array<Optional<int64_t>> fork_ids) noexcept {
+  const auto ids{array<int64_t>::convert_from(fork_ids)};
+  co_return co_await f$wait_multi<T>(ids);
+}
+
 // ================================================================================================
 
 inline task_t<void> f$sched_yield() noexcept {
@@ -116,15 +131,5 @@ inline bool f$wait_queue_empty(int64_t /*queue_id*/) {
 }
 
 inline Optional<int64_t> f$wait_queue_next(int64_t /*queue_id*/, double /*timeout*/ = -1.0) {
-  php_critical_error("call to unsupported function");
-}
-
-template<typename T>
-T f$wait_multi(const array<Optional<int64_t>> & /*resumable_ids*/) {
-  php_critical_error("call to unsupported function");
-}
-
-template<typename T>
-T f$wait_multi(const array<int64_t> & /*resumable_ids*/) {
   php_critical_error("call to unsupported function");
 }

@@ -121,6 +121,9 @@ function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
 /** @kphp-extern-func-info interruptible */
 function wait_concurrently ($id ::: future<any>): bool;
 
+/** @kphp-extern-func-info interruptible can_throw cpp_template_call */
+function wait_multi (future<any>[] $resumables) ::: (^1[*][*] | null)[];
+
 // === Fork =======================================================================================
 
 /** @kphp-extern-func-info interruptible */
