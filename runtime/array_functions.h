@@ -101,9 +101,6 @@ template<class T>
 inline array<T> f$create_vector(int64_t n, const T &default_value);
 
 template<class T>
-mixed f$array_first_key(const array<T> &a);
-
-template<class T>
 inline void f$array_swap_int_keys(array<T> &a, int64_t idx1, int64_t idx2) noexcept;
 
 /*
@@ -625,21 +622,6 @@ array<T> f$create_vector(int64_t n, const T &default_value) {
     res.push_back(default_value);
   }
   return res;
-}
-
-template<class T>
-mixed f$array_first_key(const array<T> &a) {
-  return a.empty() ? mixed() : a.begin().get_key();
-}
-
-template<class T>
-mixed f$array_key_first(const array<T> &a) {
-  return f$array_first_key(a);
-}
-
-template<class T>
-mixed f$array_key_last(const array<T> &a) {
-  return f$array_last_key(a);
 }
 
 template<class T>

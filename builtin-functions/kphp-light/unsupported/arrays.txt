@@ -5,9 +5,6 @@ function create_vector ($n ::: int, $x ::: any) ::: ^2[];
 function getKeyByPos ($a ::: array, $n ::: int) ::: mixed;
 function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
 
-function array_first_key ($a ::: array) ::: mixed;
-function array_key_first($a ::: array): mixed;
-function array_key_last($a ::: array): mixed;
 function array_swap_int_keys (&$a ::: array, $idx1 ::: int, $idx2 ::: int) ::: void;
 
 function array_splice (&$a ::: array, $offset ::: int, $length ::: int, $replacement ::: array = array()) ::: ^1;

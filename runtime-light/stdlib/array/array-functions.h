@@ -454,11 +454,6 @@ array<T> f$create_vector(int64_t /*unused*/, const T & /*unused*/) {
 }
 
 template<class T>
-mixed f$array_first_key(const array<T> & /*unused*/) {
-  php_critical_error("call to unsupported function");
-}
-
-template<class T>
 void f$array_swap_int_keys(array<T> & /*unused*/, int64_t /*unused*/, int64_t /*unused*/) noexcept {
   php_critical_error("call to unsupported function");
 }
@@ -490,16 +485,6 @@ inline Optional<array<mixed>> f$array_column(const array<mixed> & /*unused*/, co
 template<class T>
 auto f$array_column(const Optional<T> & /*unused*/, const mixed &column_key,
                     const mixed &index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
-  php_critical_error("call to unsupported function");
-}
-
-template<class T>
-mixed f$array_key_first(const array<T> & /*unused*/) {
-  php_critical_error("call to unsupported function");
-}
-
-template<class T>
-mixed f$array_key_last(const array<T> & /*unused*/) {
   php_critical_error("call to unsupported function");
 }
 
