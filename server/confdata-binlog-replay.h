@@ -3,7 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
-#include <re2/re2.h>
+#include "re2/re2.h"
 
 #include "common/stats/provider.h"
 

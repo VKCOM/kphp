@@ -24,6 +24,7 @@ add_custom_command(
         COMMAND prepare_unicode_data -c 0,12 ${UNICODE_AUTO_RAW_DATA_DIR}/UnicodeData.txt ${UNICODE_AUTO_DATA_DIR}/UnicodeUppercase.txt
         COMMAND prepare_unicode_data -a -c 0,5 ${UNICODE_AUTO_RAW_DATA_DIR}/UnicodeData.txt ${UNICODE_AUTO_DATA_DIR}/UnicodeNFKD.txt
         COMMENT "unicode raw data generation")
+add_custom_target(unicode-data ALL DEPENDS ${UNICODE_DATA_LIST})
 
 add_custom_command(
         OUTPUT ${AUTO_DIR}/common/unicode-utils-auto.h

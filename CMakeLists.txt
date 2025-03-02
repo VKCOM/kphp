@@ -34,6 +34,9 @@ include(cmake/popular-common.cmake)
 include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)
 include(${THIRD_PARTY_DIR}/openssl-cmake/openssl.cmake)
 include(${THIRD_PARTY_DIR}/zstd-cmake/zstd.cmake)
+include(${COMMON_DIR}/unicode/unicode.cmake)
+# RE2 depends on unicode
+include(${THIRD_PARTY_DIR}/re2-cmake/re2.cmake)
 
 # TODO: use FetchContent_Declare instead of include_directories
 include_directories(.)
@@ -47,7 +50,6 @@ include(${BASE_DIR}/vkext/vkext.cmake)
 include(${COMMON_DIR}/binlog/binlog.cmake)
 include(${COMMON_DIR}/common.cmake)
 include(${COMMON_DIR}/tl/tl.cmake)
-include(${COMMON_DIR}/unicode/unicode.cmake)
 
 include(${RUNTIME_COMMON_DIR}/runtime-common.cmake)
 

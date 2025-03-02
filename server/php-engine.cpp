@@ -14,7 +14,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <poll.h>
-#include <re2/re2.h>
+#include "re2/re2.h"
 #include <string>
 #include <sys/mman.h>
 #include <sys/socket.h>

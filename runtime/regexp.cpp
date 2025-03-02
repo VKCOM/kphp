@@ -5,7 +5,7 @@
 #include "runtime/regexp.h"
 
 #include <cstddef>
-#include <re2/re2.h>
+#include "re2/re2.h"
 #if ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
 #endif

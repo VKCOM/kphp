@@ -23,3 +23,6 @@
 	path = third-party/zstd
 	url = https://github.com/VKCOM/libzstd.git
 	branch = master
+[submodule "third-party/re2"]
+	path = third-party/re2
+	url = https://github.com/VKCOM/re2.git

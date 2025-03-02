@@ -29,7 +29,8 @@ else()
 endif()
 
 find_package(Git REQUIRED)
-find_package (Python3 COMPONENTS Interpreter REQUIRED)
+find_package(Python3 COMPONENTS Interpreter REQUIRED)
+find_package(Perl REQUIRED)
 
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
