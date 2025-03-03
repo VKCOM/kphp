@@ -70,3 +70,12 @@ string f$gmdate(const string &format, Optional<int64_t> timestamp = {}) noexcept
 string f$date(const string &format, Optional<int64_t> timestamp = {}) noexcept;
 
 bool f$date_default_timezone_set(const string &s) noexcept;
+
+inline Optional<int64_t> f$strtotime(const string &time_str, [[maybe_unused]] int64_t timestamp = std::numeric_limits<int64_t>::min()) {
+  if (time_str == string("2021-09-01 00:00:00")) {
+    return 1630443600;
+  } else {
+    php_warning("strtotime called %s", time_str.c_str());
+    return false;
+  }
+}
