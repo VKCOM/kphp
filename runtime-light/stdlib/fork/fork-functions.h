@@ -115,11 +115,13 @@ inline int64_t f$get_running_fork_id() noexcept {
 }
 
 inline int64_t f$wait_queue_create() {
-  php_critical_error("call to unsupported function");
+  php_warning("call to unsupported function");
+  return 0;
 }
 
 inline int64_t f$wait_queue_create(const mixed & /*resumable_ids*/) {
-  php_critical_error("call to unsupported function");
+  php_warning("call to unsupported function");
+  return 0;
 }
 
 inline int64_t f$wait_queue_push(int64_t /*queue_id*/, const mixed & /*resumable_ids*/) {
