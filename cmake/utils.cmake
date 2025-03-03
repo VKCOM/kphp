@@ -34,8 +34,8 @@ function(vk_add_library_pic)
     add_library(${ARGV})
     set_target_properties(${ARGV0} PROPERTIES
             POSITION_INDEPENDENT_CODE 1
-            COMPILE_FLAGS "-fPIC"
     )
+    target_compile_options(${ARGV0} PRIVATE -fPIC)
     add_vk_library_to_pic_namespace(${ARGV0})
 endfunction()
 
@@ -43,8 +43,8 @@ function(vk_add_library_no_pic)
     add_library(${ARGV})
     set_target_properties(${ARGV0} PROPERTIES
             POSITION_INDEPENDENT_CODE 0
-            COMPILE_FLAGS "-fno-pic -static"
     )
+    target_compile_options(${ARGV0} PRIVATE -fno-pic -static)
     add_vk_library_to_no_pic_namespace(${ARGV0})
 endfunction()
 
