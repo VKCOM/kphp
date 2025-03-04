@@ -8,11 +8,11 @@
 #include <cstdint>
 #include <optional>
 #include <string_view>
-#include <type_traits>
+#include <utility>
 #include <variant>
 
 #include "common/tl/constants/common.h"
-#include "runtime-light/allocator/allocator.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/tl/tl-core.h"
 
@@ -387,26 +387,24 @@ public:
   }
 
   bool fetch(TLBuffer &tlb) noexcept {
-    using version_utype = std::underlying_type_t<Version>;
-
     switch (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO)) {
-      case static_cast<version_utype>(Version::V09): {
+      case std::to_underlying(Version::V09): {
         version = Version::V09;
         break;
       }
-      case static_cast<version_utype>(Version::V10): {
+      case std::to_underlying(Version::V10): {
         version = Version::V10;
         break;
       }
-      case static_cast<version_utype>(Version::V11): {
+      case std::to_underlying(Version::V11): {
         version = Version::V11;
         break;
       }
-      case static_cast<version_utype>(Version::V2): {
+      case std::to_underlying(Version::V2): {
         version = Version::V2;
         break;
       }
-      case static_cast<version_utype>(Version::V3): {
+      case std::to_underlying(Version::V3): {
         version = Version::V3;
         break;
       }
@@ -420,7 +418,7 @@ public:
   }
 
   void store(TLBuffer &tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(static_cast<std::underlying_type_t<Version>>(version));
+    tlb.store_trivial<uint32_t>(std::to_underlying(version));
   }
 };
 
