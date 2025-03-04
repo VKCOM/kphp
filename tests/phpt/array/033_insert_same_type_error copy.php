@@ -7,7 +7,7 @@ function main() {
     /** @var int[] */
     $y = [];
     
-    /** @var int[]*/
+    /** @var int[] */
     $x = [];
     $y[0] = $x;
 }
