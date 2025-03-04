@@ -78,6 +78,9 @@ function array_flip ($a ::: array) ::: mixed[];
 /** @kphp-extern-func-info interruptible */
 function array_filter ($a ::: array, callable(^1[*] $x):bool $callback = TODO) ::: ^1;
 
+/** @kphp-extern-func-info interruptible */
+function array_filter_by_key ($a ::: array, callable(mixed $key):bool $callback) ::: ^1;
+
 function array_diff ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
 
 function array_chunk ($a ::: array, $chunk_size ::: int, $preserve_keys ::: bool = false) ::: ^1[];

@@ -220,6 +220,24 @@ requires convertible_to_php_bool<async_function_unwrapped_return_type_t<F, T>> t
   co_return std::move(result);
 }
 
+template<class T, std::invocable<typename array<T>::const_iterator::key_type> F>
+requires convertible_to_php_bool<async_function_unwrapped_return_type_t<F, typename array<T>::const_iterator::key_type>> task_t<array<T>>
+array_filter_by_key_impl(array<T> a, F f) noexcept {
+  array<T> result{a.size()};
+  for (const auto &it : a) {
+    bool condition{};
+    if constexpr (is_async_function_v<F, typename array<T>::const_iterator::key_type>) {
+      condition = f$boolval(co_await std::invoke(f, it.get_key()));
+    } else {
+      condition = f$boolval(std::invoke(f, it.get_key()));
+    }
+    if (condition) {
+      result.set_value(it);
+    }
+  }
+  co_return std::move(result);
+}
+
 } // namespace array_functions_impl_
 
 template<class T>
@@ -248,6 +266,11 @@ task_t<array<T>> f$array_filter(array<T> a) noexcept {
 template<class T, std::invocable<T> F>
 task_t<array<T>> f$array_filter(array<T> a, F f) noexcept {
   co_return co_await array_functions_impl_::array_filter_impl(std::move(a), std::move(f));
+}
+
+template<class T, std::invocable<typename array<T>::const_iterator::key_type> F>
+task_t<array<T>> f$array_filter_by_key(array<T> a, F f) noexcept {
+  co_return co_await array_functions_impl_::array_filter_by_key_impl(std::move(a), std::move(f));
 }
 
 template<class T>
@@ -300,11 +323,6 @@ ReturnT f$array_pad(const array<InputArrayT> & /*unused*/, int64_t /*unused*/, c
 
 template<class ReturnT, class DefaultValueT>
 ReturnT f$array_pad(const array<Unknown> & /*unused*/, int64_t /*unused*/, const DefaultValueT & /*unused*/) {
-  php_critical_error("call to unsupported function");
-}
-
-template<class T, class T1>
-array<T> f$array_filter_by_key(const array<T> & /*unused*/, const T1 & /*unused*/) noexcept {
   php_critical_error("call to unsupported function");
 }
 
