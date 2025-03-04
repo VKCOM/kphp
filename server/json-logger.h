@@ -65,7 +65,7 @@ private:
   volatile sig_atomic_t json_traces_count{0};
 
   int64_t release_version_{0};
-  std::string_view hostname_{""};
+  vk::string_view hostname_;
   int json_log_fd_{-1};   // kphp_log.json
   int traces_log_fd_{-1}; // kphp_log.traces.jsonl
 
