@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 require_once 'kphp_tester_include.php';
@@ -27,6 +27,14 @@ function test_classes() {
 function test_classes_default_filtered() {
     $filtered = array_filter([new Classes\IntHolder(1), new Classes\IntHolder(3), null]);
     var_dump(count($filtered));
+}
+
+function test_async_callback_capture() {
+    $lower_bound = 777;
+    $is_valid = function ($id) use ($lower_bound) { sched_yield_sleep(0.001); return $id >= $lower_bound; };
+
+    $filtered = array_filter([1, 777, 2, 888, 101], $is_valid);
+    var_dump($filtered);
 }
 
 function test_primitive_types_filter_by_key() {
@@ -62,5 +70,6 @@ function test_classes_filter_by_key() {
 test_primitive_types();
 test_classes();
 test_classes_default_filtered();
+test_async_callback_capture();
 test_primitive_types_filter_by_key();
 test_classes_filter_by_key();

@@ -2077,7 +2077,11 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
 
   FunctionSignatureGenerator(W) << "(auto &&... args) ";
   if (k2_async_callback) { // add explicit return type to make this lambda async
-    W << "-> decltype(" << FunctionName(root->func_id) << "(std::forward<decltype(args)>(args)...)) ";
+    W << "-> decltype(" << FunctionName(root->func_id) << "(";
+    for (auto idx = 1; idx <= root->size(); ++idx) {
+      W << "captured" << idx << ", ";
+    }
+    W << "std::forward<decltype(args)>(args)...)) ";
   }
   W << BEGIN;
 
