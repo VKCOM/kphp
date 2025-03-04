@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2020 LLC «V Kontakte»
+// Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "compiler/inferring/var-node.h"
@@ -89,6 +89,9 @@ void VarNodeRecalc::on_restricted_type_mismatch(const tinf::Edge *edge, const Ty
     if (e->from == edge->from && e->to == edge->to) {
       return;
     }
+  }
+  if (edge->from_at) {
+    type_restriction = type_restriction->const_read_at(*edge->from_at);
   }
   tinf::get_inferer()->add_restriction(new RestrictionMatchPhpdoc(dynamic_cast<tinf::VarNode *>(edge->from), edge->to, type_restriction));
   already_fired_errors.emplace_back(edge);
