@@ -1,3 +1,5 @@
+import socket
+
 from python.lib.testcase import KphpServerAutoTestCase
 
 
@@ -12,7 +14,7 @@ class TestJsonLogsExceptions(KphpServerAutoTestCase):
         self.assertEqual(resp.status_code, 500)
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": 1, "env": "",  "tags": {"uncaught": True},
+                "version": 0, "hostname": socket.gethostname(), "type": 1, "env": "", "tags": {"uncaught": True},
                 "msg": "Unhandled ServerException from index.php:\\d+; Error 123; Message: hello",
             }])
 
@@ -26,7 +28,7 @@ class TestJsonLogsExceptions(KphpServerAutoTestCase):
         self.assertEqual(resp.status_code, 500)
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": 1, "env": "efg",  "tags": {"a": "b", "uncaught": True}, "extra_info": {"c": "d"},
+                "version": 0, "hostname": socket.gethostname(), "type": 1, "env": "efg", "tags": {"a": "b", "uncaught": True}, "extra_info": {"c": "d"},
                 "msg": "Unhandled ServerException from index.php:\\d+; Error 3456; Message: world",
             }])
 
@@ -40,6 +42,7 @@ class TestJsonLogsExceptions(KphpServerAutoTestCase):
         self.assertEqual(resp.status_code, 500)
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": 1, "env": "efg",  "tags": {"a": "b\\c\"d\n", "uncaught": True}, "extra_info": {"c": "\\\\xxx\""},
+                "version": 0, "hostname": socket.gethostname(), "type": 1, "env": "efg", "tags": {"a": "b\\c\"d\n", "uncaught": True},
+                "extra_info": {"c": "\\\\xxx\""},
                 "msg": "Unhandled ServerException from index.php:\\d+; Error 123; Message: \\\\a\\\\b  c\"d ?",
             }])
