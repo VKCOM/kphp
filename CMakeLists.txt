@@ -128,8 +128,8 @@ install(FILES ${AUTO_DIR}/runtime/runtime-headers.h
         COMPONENT KPHP
         DESTINATION ${INSTALL_KPHP_SOURCE}/objs/generated/auto/runtime/)
 
-set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, libuber-h3, libpcre3-dev, libre2-dev, libyaml-cpp-dev, \
-                                       g++, kphp-timelib, libnuma-dev")
+set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, libuber-h3, libyaml-cpp-dev, \
+                                       gcc, g++, kphp-timelib, libnuma-dev")
 
 if (PDO_DRIVER_MYSQL)
     set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libmysqlclient-dev")

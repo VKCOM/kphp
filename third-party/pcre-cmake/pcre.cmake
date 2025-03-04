@@ -1,13 +1,13 @@
-update_git_submodule(${THIRD_PARTY_DIR}/nghttp2 "--remote")
-get_submodule_version(${THIRD_PARTY_DIR}/nghttp2 NGHTTP2_VERSION)
-get_submodule_remote_url(third-party/nghttp2 NGHTTP2_SOURCE_URL)
+update_git_submodule(${THIRD_PARTY_DIR}/pcre "--remote")
+get_submodule_version(${THIRD_PARTY_DIR}/pcre PCRE_VERSION)
+get_submodule_remote_url(third-party/pcre PCRE_SOURCE_URL)
 
-set(NGHTTP2_PROJECT_GENERIC_NAME nghttp2)
-set(NGHTTP2_PROJECT_GENERIC_NAMESPACE NGHTTP2)
-set(NGHTTP2_ARTIFACT_NAME libnghttp2)
+set(PCRE_PROJECT_GENERIC_NAME pcre)
+set(PCRE_PROJECT_GENERIC_NAMESPACE PCRE)
+set(PCRE_ARTIFACT_NAME libpcre)
 
-function(build_nghttp2 PIC_ENABLED)
-    make_third_party_configuration(${PIC_ENABLED} ${NGHTTP2_PROJECT_GENERIC_NAME} ${NGHTTP2_PROJECT_GENERIC_NAMESPACE}
+function(build_pcre PIC_ENABLED)
+    make_third_party_configuration(${PIC_ENABLED} ${PCRE_PROJECT_GENERIC_NAME} ${PCRE_PROJECT_GENERIC_NAMESPACE}
             project_name
             target_name
             extra_compile_flags
@@ -15,11 +15,11 @@ function(build_nghttp2 PIC_ENABLED)
             pic_lib_specifier
     )
 
-    set(source_dir      ${THIRD_PARTY_DIR}/${NGHTTP2_PROJECT_GENERIC_NAME})
+    set(source_dir      ${THIRD_PARTY_DIR}/${PCRE_PROJECT_GENERIC_NAME})
     set(build_dir       ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
     set(install_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
     set(include_dirs    ${install_dir}/include)
-    set(libraries       ${install_dir}/lib/${NGHTTP2_ARTIFACT_NAME}.a)
+    set(libraries       ${install_dir}/lib/${PCRE_ARTIFACT_NAME}.a)
     set(patch_dir       ${build_dir}/debian/patches/)
     set(patch_series    ${build_dir}/debian/patches/series)
     # Ensure the build, installation and "include" directories exists
@@ -27,13 +27,13 @@ function(build_nghttp2 PIC_ENABLED)
     file(MAKE_DIRECTORY ${install_dir})
     file(MAKE_DIRECTORY ${include_dirs})
 
-    set(compile_flags "$ENV{CFLAGS} -g0 ${extra_compile_flags}")
+    set(compile_flags "$ENV{CFLAGS} -g0 -Wall ${extra_compile_flags}")
 
-    message(STATUS "NGHTTP2 Summary:
+    message(STATUS "PCRE Summary:
 
         PIC enabled:    ${PIC_ENABLED}
-        Version:        ${NGHTTP2_VERSION}
-        Source:         ${NGHTTP2_SOURCE_URL}
+        Version:        ${PCRE_VERSION}
+        Source:         ${PCRE_SOURCE_URL}
         Include dirs:   ${include_dirs}
         Libraries:      ${libraries}
         Target name:    ${target_name}
@@ -43,33 +43,24 @@ function(build_nghttp2 PIC_ENABLED)
     ")
 
     # The configuration has been based on:
-    # https://salsa.debian.org/debian/nghttp2/-/blob/buster/debian/rules#L8
+    # https://sources.debian.org/src/pcre3/2%3A8.39-12/debian/rules/#L30
     set(cmake_args
             -DCMAKE_C_FLAGS=${compile_flags}
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
             -DCMAKE_CXX_FLAGS=${compile_flags}
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
             -DCMAKE_POSITION_INDEPENDENT_CODE=${PIC_ENABLED}
-            -DENABLE_WERROR=ON
-            -DENABLE_THREADS=OFF
-            -DENABLE_APP=OFF
-            -DENABLE_HPACK_TOOLS=OFF
-            -DENABLE_ASIO_LIB=OFF
-            -DENABLE_EXAMPLES=OFF
-            -DENABLE_PYTHON_BINDINGS=OFF
-            -DENABLE_FAILMALLOC=OFF
-            -DENABLE_LIB_ONLY=ON
-            -DENABLE_STATIC_LIB=ON
-            -DENABLE_SHARED_LIB=OFF
-            -DWITH_LIBXML2=OFF
-            -DWITH_JEMALLOC=OFF
-            -DWITH_SPDYLAY=OFF
-            -DWITH_MRUBY=OFF
-            -DWITH_NEVERBLEED=OFF
-            -DOPENSSL_FOUND=ON
-            -DOPENSSL_ROOT_DIR=${OPENSSL_${pic_lib_specifier}_ROOT_DIR}
-            -DOPENSSL_LIBRARIES=${OPENSSL_${pic_lib_specifier}_LIBRARIES}
-            -DOPENSSL_INCLUDE_DIR=${OPENSSL_${pic_lib_specifier}_INCLUDE_DIR}
+            -DBUILD_STATIC_LIBS=ON
+            -DBUILD_SHARED_LIBS=OFF
+            -DPCRE_BUILD_PCRE8=ON
+            -DPCRE_BUILD_PCRECPP=OFF
+            -DPCRE_BUILD_PCREGREP=OFF
+            -DPCRE_BUILD_TESTS=OFF
+            -DPCRE_REBUILD_CHARTABLES=OFF
+            -DPCRE_SUPPORT_JIT=ON
+            -DPCRE_SUPPORT_UTF=ON
+            -DPCRE_SUPPORT_UNICODE_PROPERTIES=ON
+            -DPCRE_SUPPORT_LIBZ=ON
             -DZLIB_FOUND=ON
             -DZLIB_ROOT=${ZLIB_${pic_lib_specifier}_ROOT}
             -DZLIB_LIBRARIES=${ZLIB_${pic_lib_specifier}_LIBRARIES}
@@ -78,7 +69,7 @@ function(build_nghttp2 PIC_ENABLED)
 
     ExternalProject_Add(
             ${project_name}
-            DEPENDS OpenSSL::${pic_namespace}::Crypto OpenSSL::${pic_namespace}::SSL ZLIB::${pic_namespace}::zlib
+            DEPENDS ZLIB::${pic_namespace}::zlib
             PREFIX ${build_dir}
             SOURCE_DIR ${source_dir}
             INSTALL_DIR ${install_dir}
@@ -93,7 +84,8 @@ function(build_nghttp2 PIC_ENABLED)
                 COMMAND ${CMAKE_COMMAND} --build ${build_dir} --config $<CONFIG> -j
             INSTALL_COMMAND
                 COMMAND ${CMAKE_COMMAND} --install ${build_dir} --prefix ${install_dir} --config $<CONFIG>
-                COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${include_dirs}/${PCRE_PROJECT_GENERIC_NAME}
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs}/${PCRE_PROJECT_GENERIC_NAME} ${INCLUDE_DIR}/${PCRE_PROJECT_GENERIC_NAME}
             BUILD_IN_SOURCE 0
     )
 
@@ -103,18 +95,18 @@ function(build_nghttp2 PIC_ENABLED)
             INTERFACE_INCLUDE_DIRECTORIES ${include_dirs}
     )
 
-    # Ensure that the Nghttp2 is built before they are used
+    # Ensure that the PCRE is built before they are used
     add_dependencies(${target_name} ${project_name})
 
-    # Set variables indicating that Nghttp2 has been installed
-    set(${NGHTTP2_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_ROOT ${install_dir} PARENT_SCOPE)
-    set(${NGHTTP2_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_INCLUDE_DIRS ${include_dirs} PARENT_SCOPE)
-    set(${NGHTTP2_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_LIBRARIES ${libraries} PARENT_SCOPE)
+    # Set variables indicating that PCRE has been installed
+    set(${PCRE_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_ROOT ${install_dir} PARENT_SCOPE)
+    set(${PCRE_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_INCLUDE_DIRS ${include_dirs} PARENT_SCOPE)
+    set(${PCRE_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_LIBRARIES ${libraries} PARENT_SCOPE)
 endfunction()
 
 # PIC is OFF
-build_nghttp2(OFF)
+build_pcre(OFF)
 # PIC is ON
-build_nghttp2(ON)
+build_pcre(ON)
 
-set(NGHTTP2_FOUND ON)
+set(PCRE_FOUND ON)

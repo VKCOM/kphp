@@ -81,7 +81,7 @@ function(build_zstd PIC_ENABLED)
             INTERFACE_INCLUDE_DIRECTORIES ${include_dirs}
     )
 
-    # Ensure that the ZSTD are built before they are used
+    # Ensure that the ZSTD is built before they are used
     add_dependencies(${target_name} ${project_name})
 
     # Set variables indicating that ZSTD has been installed

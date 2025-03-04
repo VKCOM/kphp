@@ -66,7 +66,7 @@ function(build_zlib PIC_ENABLED)
             INTERFACE_INCLUDE_DIRECTORIES ${include_dirs}
     )
 
-    # Ensure that the zlib are built before they are used
+    # Ensure that the zlib is built before they are used
     add_dependencies(${target_name} ${project_name})
 
     # Set variables indicating that zlib has been installed

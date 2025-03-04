@@ -101,7 +101,7 @@ function(build_re2 PIC_ENABLED)
             INTERFACE_INCLUDE_DIRECTORIES ${include_dirs}
     )
 
-    # Ensure that the RE2 are built before they are used
+    # Ensure that the RE2 is built before they are used
     add_dependencies(${target_name} ${project_name})
 
     # Set variables indicating that RE2 has been installed

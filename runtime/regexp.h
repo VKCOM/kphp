@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <pcre.h>
+#include "pcre/pcre.h"
 
 #include "common/mixin/not_copyable.h"
 

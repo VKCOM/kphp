@@ -104,7 +104,7 @@ function(build_curl PIC_ENABLED)
             INTERFACE_INCLUDE_DIRECTORIES ${include_dirs}
     )
 
-    # Ensure that the curl are built before they are used
+    # Ensure that the curl is built before they are used
     add_dependencies(${target_name} ${project_name})
 
     # Set variables indicating that curl has been installed

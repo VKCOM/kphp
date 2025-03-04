@@ -356,7 +356,7 @@ void CompilerSettings::init() {
 
   ld_flags.value_ = extra_ld_flags.get();
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> system_installed_static_libs{"pcre", "yaml-cpp", "h3", "kphp-timelib"};
+  std::vector<vk::string_view> system_installed_static_libs{"yaml-cpp", "h3", "kphp-timelib"};
 
 #ifdef KPHP_TIMELIB_LIB_DIR
   ld_flags.value_ += " -L" KPHP_TIMELIB_LIB_DIR;

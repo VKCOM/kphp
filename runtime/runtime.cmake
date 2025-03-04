@@ -1,4 +1,5 @@
-# CURL and deps build
+# Only runtime-related third-parties
+include(${THIRD_PARTY_DIR}/pcre-cmake/pcre.cmake)
 include(${THIRD_PARTY_DIR}/nghttp2-cmake/nghttp2.cmake)
 include(${THIRD_PARTY_DIR}/curl-cmake/curl.cmake)
 
@@ -161,12 +162,13 @@ set(RUNTIME_LIBS_NO_PIC
         NGHTTP2::no-pic::nghttp2
         ZSTD::no-pic::zstd
         RE2::no-pic::re2
+        PCRE::no-pic::pcre
         m
         pthread
 )
 target_link_libraries(kphp-runtime-no-pic PUBLIC ${RUNTIME_LIBS_NO_PIC})
 
-add_dependencies(kphp-runtime-no-pic kphp-timelib OpenSSL::no-pic::Crypto OpenSSL::no-pic::SSL CURL::no-pic::curl NGHTTP2::no-pic::nghttp2 ZLIB::no-pic::zlib ZSTD::no-pic::zstd)
+add_dependencies(kphp-runtime-no-pic kphp-timelib OpenSSL::no-pic::Crypto OpenSSL::no-pic::SSL CURL::no-pic::curl NGHTTP2::no-pic::nghttp2 ZLIB::no-pic::zlib ZSTD::no-pic::zstd RE2::no-pic::re2 PCRE::no-pic::pcre)
 combine_static_runtime_library(kphp-runtime-no-pic kphp-full-runtime-no-pic)
 ###
 
@@ -190,12 +192,13 @@ set(RUNTIME_LIBS_PIC
         NGHTTP2::pic::nghttp2
         ZSTD::pic::zstd
         RE2::pic::re2
+        PCRE::pic::pcre
         m
         pthread
 )
 target_link_libraries(kphp-runtime-pic PUBLIC ${RUNTIME_LIBS_PIC})
 
-add_dependencies(kphp-runtime-pic kphp-timelib OpenSSL::pic::Crypto OpenSSL::pic::SSL CURL::pic::curl NGHTTP2::pic::nghttp2 ZLIB::pic::zlib ZSTD::pic::zstd)
+add_dependencies(kphp-runtime-pic kphp-timelib OpenSSL::pic::Crypto OpenSSL::pic::SSL CURL::pic::curl NGHTTP2::pic::nghttp2 ZLIB::pic::zlib ZSTD::pic::zstd RE2::pic::re2 PCRE::pic::pcre)
 combine_static_runtime_library(kphp-runtime-pic kphp-full-runtime-pic)
 ###
 
@@ -220,12 +223,13 @@ set(RUNTIME_LIBS
         pthread
 )
 
-prepare_cross_platform_libs(SYSTEM_INSTALLED_TEST_LIB pcre kphp-timelib)
+prepare_cross_platform_libs(SYSTEM_INSTALLED_TEST_LIB kphp-timelib)
 set(RUNTIME_LINK_TEST_LIBS
         vk::${PIC_MODE}::flex-data-src
         CURL::${PIC_MODE}::curl
         OpenSSL::${PIC_MODE}::SSL
         NGHTTP2::${PIC_MODE}::nghttp2
+        PCRE::${PIC_MODE}::pcre
         ${NUMA_LIB}
         ${SYSTEM_INSTALLED_TEST_LIB}
         ${EPOLL_SHIM_LIB}
@@ -269,7 +273,7 @@ file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp
 ]])
 
 add_library(php_lib_version_j OBJECT ${CMAKE_CURRENT_BINARY_DIR}/php_lib_version.cpp)
-target_include_directories(php_lib_version_j PUBLIC ${ZLIB_NO_PIC_INCLUDE_DIRS})
+target_include_directories(php_lib_version_j PUBLIC ${ZLIB_NO_PIC_INCLUDE_DIRS} ${PCRE_NO_PIC_INCLUDE_DIRS})
 target_compile_options(php_lib_version_j PRIVATE -I. -E)
 add_dependencies(php_lib_version_j kphp-full-runtime-no-pic kphp-full-runtime-pic)
 
