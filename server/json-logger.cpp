@@ -185,9 +185,9 @@ JsonLogger::JsonBuffer &JsonLogger::JsonBuffer::append_raw_string(vk::string_vie
   return *this;
 }
 
-void JsonLogger::init(const int64_t release_version, const vk::string_view host_name) noexcept {
+void JsonLogger::init(const int64_t release_version, const vk::string_view hostname) noexcept {
   release_version_ = release_version;
-  host_name_ = host_name;
+  hostname_ = hostname;
 }
 
 bool JsonLogger::reopen_log_file(const char *log_file_name) noexcept {
@@ -326,7 +326,7 @@ void JsonLogger::reset_buffers() noexcept {
 
 void JsonLogger::write_general_info(JsonBuffer *json_out_it, int type, int64_t created_at, bool uncaught) {
   json_out_it->append_key("version").append_integer(release_version_);
-  json_out_it->append_key("host_name").append_string(host_name_);
+  json_out_it->append_key("hostname").append_string(hostname_);
   json_out_it->append_key("type").append_integer(type);
   json_out_it->append_key("created_at").append_integer(created_at);
   json_out_it->append_key("env").append_string(env_available_ ? env_ : vk::string_view{});

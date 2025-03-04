@@ -1657,8 +1657,8 @@ void init_all() {
   const auto *tag = engine_tag ?: "0";
 
   const int64_t release_version = string::to_int(tag, static_cast<string::size_type>(strlen(tag)));
-  const vk::string_view host_name = kdb_gethostname();
-  vk::singleton<JsonLogger>::get().init(release_version, host_name);
+  const vk::string_view hostname = kdb_gethostname();
+  vk::singleton<JsonLogger>::get().init(release_version, hostname);
 
   for (auto deprecation_warning : vk::singleton<DeprecatedOptions>::get().get_warnings()) {
     if (deprecation_warning.empty()) {

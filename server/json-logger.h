@@ -17,7 +17,7 @@ class JsonLogger : vk::not_copyable {
 public:
   friend class vk::singleton<JsonLogger>;
 
-  void init(int64_t release_version, vk::string_view host_name) noexcept;
+  void init(int64_t release_version, vk::string_view hostname) noexcept;
 
   bool reopen_log_file(const char *log_file_name) noexcept;
   bool reopen_traces_file(const char *traces_file_name) noexcept;
@@ -65,7 +65,7 @@ private:
   volatile sig_atomic_t json_traces_count{0};
 
   int64_t release_version_{0};
-  std::string_view host_name_{""};
+  std::string_view hostname_{""};
   int json_log_fd_{-1};   // kphp_log.json
   int traces_log_fd_{-1}; // kphp_log.traces.jsonl
 
