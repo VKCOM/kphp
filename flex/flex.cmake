@@ -13,31 +13,39 @@ add_custom_command(
                 ${FLEX_DIR}/lib/vkext-flex-generate.lib.php
                 ${FLEX_DIR}/lib/configs/flex-config.php
         COMMENT "vk-flex-data generation")
+add_custom_target(flex-data ALL DEPENDS ${FLEX_DATA_SRC})
 
 if(COMPILER_CLANG)
     set_source_files_properties(${FLEX_DATA_SRC} PROPERTIES COMPILE_FLAGS -Wno-invalid-source-encoding)
 endif()
 
-vk_add_library(flex_data_shared SHARED ${FLEX_SOURCES})
-vk_add_library(flex_data_static STATIC ${FLEX_SOURCES})
+vk_add_library_pic(flex-data-src-pic OBJECT ${FLEX_SOURCES})
+add_dependencies(flex-data-src-pic flex-data)
+vk_add_library_no_pic(flex-data-src-no-pic OBJECT ${FLEX_SOURCES})
+add_dependencies(flex-data-src-no-pic flex-data)
+
+vk_add_library_pic(flex_data_shared-pic SHARED $<TARGET_OBJECTS:flex-data-src-pic>)
+add_dependencies(flex_data_shared-pic flex-data-src-pic)
+
+vk_add_library_no_pic(flex_data_static-no-pic STATIC $<TARGET_OBJECTS:flex-data-src-no-pic>)
+add_dependencies(flex_data_static-no-pic flex-data-src-no-pic)
+
 check_cxx_compiler_flag(-fno-sanitize=all NO_SANITIZE_IS_FOUND)
 if(NO_SANITIZE_IS_FOUND)
-    target_compile_options(flex_data_shared PRIVATE -fno-sanitize=all)
-    target_link_options(flex_data_shared PRIVATE -fno-sanitize=all)
+    target_compile_options(flex-data-src-pic PRIVATE -fno-sanitize=all)
+    target_link_options(flex-data-src-pic PRIVATE -fno-sanitize=all)
+    target_compile_options(flex_data_shared-pic PRIVATE -fno-sanitize=all)
+    target_link_options(flex_data_shared-pic PRIVATE -fno-sanitize=all)
 endif()
 # to prevent double generation of ${FLEX_DATA_SRC}
-add_dependencies(flex_data_shared flex_data_static)
+add_dependencies(flex_data_shared-pic flex_data_static-no-pic)
 
-set_target_properties(flex_data_shared flex_data_static
+set_target_properties(flex_data_shared-pic flex_data_static-no-pic
                       PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${OBJS_DIR}/flex
                                  ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR}/flex
                                  OUTPUT_NAME vk-flex-data)
-add_custom_command(
-        TARGET flex_data_static POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:flex_data_static> ${OBJS_DIR}/lib/libvk-flex-data.a
-)
 
-install(TARGETS flex_data_shared flex_data_static
+install(TARGETS flex_data_shared-pic flex_data_static-no-pic
         COMPONENT FLEX
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

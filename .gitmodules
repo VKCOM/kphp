@@ -9,9 +9,24 @@
 	url = https://github.com/PCRE2Project/pcre2.git
 [submodule "third-party/openssl"]
 	path = third-party/openssl
-	url = https://github.com/openssl/openssl.git
-	branch = OpenSSL_1_1_1-stable
+	url = https://github.com/VKCOM/openssl.git
+	branch = debian/buster
 [submodule "third-party/curl"]
 	path = third-party/curl
 	url = https://github.com/VKCOM/curl.git
 	branch = dpkg-build-7.60.0
+[submodule "third-party/nghttp2"]
+	path = third-party/nghttp2
+	url = https://github.com/VKCOM/nghttp2.git
+	branch = buster
+[submodule "third-party/zstd"]
+	path = third-party/zstd
+	url = https://github.com/VKCOM/libzstd.git
+	branch = master
+[submodule "third-party/re2"]
+	path = third-party/re2
+	url = https://github.com/VKCOM/re2.git
+[submodule "third-party/pcre"]
+	path = third-party/pcre
+	url = https://github.com/VKCOM/PCRE.git
+	branch = debian/buster

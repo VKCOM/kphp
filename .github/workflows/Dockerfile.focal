@@ -12,11 +12,11 @@ RUN apt-get update && \
     add-apt-repository ppa:deadsnakes/ppa && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-      git cmake make clang g++ g++-10 gperf netcat \
+      git cmake make clang g++ g++-10 gperf netcat patch \
       python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools mysql-server libmysqlclient-dev && \
     python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
-    apt-get install -y --no-install-recommends kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
-      libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
+    apt-get install -y --no-install-recommends kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev \
+      libyaml-cpp-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
       libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* libnuma-dev composer unzip && \
     rm -rf /var/lib/apt/lists/*
 

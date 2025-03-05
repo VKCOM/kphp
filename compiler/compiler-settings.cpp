@@ -145,24 +145,8 @@ void append_if_doesnt_contain(std::string &ld_flags, const T &libs, vk::string_v
   }
 }
 
-void append_3dparty_headers(std::string &cxx_flags, const std::string &path_to_3dparty, const std::string &libname) noexcept {
-  cxx_flags += " -I" + path_to_3dparty + "include/" + libname;
-}
-
-void append_3dparty_lib(std::string &ld_flags, const std::string &path_to_3dparty, const std::string &libname) noexcept {
-  ld_flags += " " + path_to_3dparty + "lib/lib" + libname + ".a";
-}
-
-void append_curl([[maybe_unused]] std::string &cxx_flags, std::string &ld_flags, [[maybe_unused]] const std::string &path_to_3dparty) noexcept {
-  if (!contains_lib(ld_flags, "curl")) {
-#if defined(__APPLE__)
-    ld_flags += " -lcurl";
-#else
-    // TODO make it as an option?
-    append_3dparty_headers(cxx_flags, path_to_3dparty, "curl");
-    append_3dparty_lib(ld_flags, path_to_3dparty, "curl");
-#endif
-  }
+void append_3dparty_headers(std::string &cxx_flags, const std::string &path_to_3dparty) noexcept {
+  cxx_flags += " -I" + path_to_3dparty + "include/";
 }
 
 void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcept {
@@ -246,9 +230,13 @@ void CompilerSettings::init() {
   bool is_k2_mode = mode.get().substr(0, 3) == "k2-";
   if (link_file.value_.empty()) {
     if (is_k2_mode) {
-      link_file.value_ = kphp_src_path.get() + "/objs/libkphp-light-runtime.a";
+      link_file.value_ = kphp_src_path.get() + "/objs/libkphp-light-runtime-pic.a";
     } else {
-      link_file.value_ = kphp_src_path.get() + "/objs/libkphp-full-runtime.a";
+      if (dynamic_incremental_linkage.get()) {
+        link_file.value_ = kphp_src_path.get() + "/objs/libkphp-full-runtime-pic.a";
+      } else {
+        link_file.value_ = kphp_src_path.get() + "/objs/libkphp-full-runtime-no-pic.a";
+      }
     }
   }
   link_file.value_ = get_full_path(link_file.get());
@@ -366,10 +354,11 @@ void CompilerSettings::init() {
 
   auto third_party_path = kphp_src_path.get() + "objs/";
 
+  append_3dparty_headers(cxx_default_flags, third_party_path);
+
   ld_flags.value_ = extra_ld_flags.get();
-  append_curl(cxx_default_flags, ld_flags.value_, third_party_path);
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> system_installed_static_libs{"pcre", "re2", "yaml-cpp", "h3", "z", "zstd", "nghttp2", "kphp-timelib"};
+  std::vector<vk::string_view> system_installed_static_libs{"yaml-cpp", "h3", "kphp-timelib"};
 
 #ifdef KPHP_TIMELIB_LIB_DIR
   ld_flags.value_ += " -L" KPHP_TIMELIB_LIB_DIR;
@@ -424,10 +413,6 @@ void CompilerSettings::init() {
   append_if_doesnt_contain(ld_flags.value_, system_installed_static_libs, "-l:lib", ".a");
   system_installed_dynamic_libs.emplace_back("rt");
 #endif
-
-  append_3dparty_headers(cxx_default_flags, third_party_path, "openssl");
-  append_3dparty_lib(ld_flags.value_, third_party_path, "ssl");
-  append_3dparty_lib(ld_flags.value_, third_party_path, "crypto");
 
   append_if_doesnt_contain(ld_flags.value_, system_installed_dynamic_libs, "-l");
   ld_flags.value_ += " -rdynamic";

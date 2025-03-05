@@ -19,11 +19,11 @@ RUN apt-get update && \
     apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 467B942D3A79BD29 && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
-      git cmake-data=3.18* cmake=3.18* make g++ gperf netcat \
+      git cmake-data=3.18* cmake=3.18* make g++ gperf netcat patch \
       python3.7 python3-dev libpython3-dev python3-pip python3-setuptools python3-wheel mysql-server libmysqlclient-dev && \
     pip3 install -r /tmp/requirements.txt && \
-    apt-get install -y --no-install-recommends kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
-      libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
+    apt-get install -y --no-install-recommends kphp-timelib libuber-h3-dev libfmt-dev libgtest-dev libgmock-dev \
+      libyaml-cpp-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
       libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* libnuma-dev composer && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --set php /usr/bin/php7.4

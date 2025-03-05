@@ -1,0 +1,20 @@
+The Unicode data from the KPHP project should be used, rather than
+downloading from unicode.org.
+
+---
+ re2/unicode.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/re2/unicode.py b/re2/unicode.py
+index e0f33ef..651b7cc 100644
+--- a/re2/unicode.py
++++ b/re2/unicode.py
+@@ -13,7 +13,7 @@ import re
+ from six.moves import urllib
+
+ # Directory or URL where Unicode tables reside.
+-_UNICODE_DIR = "/usr/share/unicode"
++_UNICODE_DIR = "${UNICODE_AUTO_RAW_DATA_DIR}"
+
+ # Largest valid Unicode code value.
+ _RUNE_MAX = 0x10FFFF

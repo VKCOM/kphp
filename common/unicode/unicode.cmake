@@ -24,28 +24,33 @@ add_custom_command(
         COMMAND prepare_unicode_data -c 0,12 ${UNICODE_AUTO_RAW_DATA_DIR}/UnicodeData.txt ${UNICODE_AUTO_DATA_DIR}/UnicodeUppercase.txt
         COMMAND prepare_unicode_data -a -c 0,5 ${UNICODE_AUTO_RAW_DATA_DIR}/UnicodeData.txt ${UNICODE_AUTO_DATA_DIR}/UnicodeNFKD.txt
         COMMENT "unicode raw data generation")
+add_custom_target(unicode-data ALL DEPENDS ${UNICODE_DATA_LIST})
 
 add_custom_command(
         OUTPUT ${AUTO_DIR}/common/unicode-utils-auto.h
         COMMAND generate_unicode_utils ${UNICODE_DATA_LIST} ${AUTO_DIR}/common/unicode-utils-auto.h
         DEPENDS ${UNICODE_DATA_LIST}
         COMMENT "unicode-utils-auto.h generation")
+add_custom_target(unicode-utils-auto ALL DEPENDS ${AUTO_DIR}/common/unicode-utils-auto.h)
 
 set(UNICODE_SOURCES unicode-utils.cpp utf8-utils.cpp)
 
 if (COMPILE_RUNTIME_LIGHT)
-	set(UNICODE_SOURCES_FOR_COMP "${UNICODE_SOURCES}")
-	configure_file(${BASE_DIR}/compiler/unicode_sources.h.in ${AUTO_DIR}/compiler/unicode_sources.h)
+    set(UNICODE_SOURCES_FOR_COMP "${UNICODE_SOURCES}")
+    configure_file(${BASE_DIR}/compiler/unicode_sources.h.in ${AUTO_DIR}/compiler/unicode_sources.h)
 endif()
 
 prepend(UNICODE_SOURCES ${UNICODE_DIR}/ ${UNICODE_SOURCES})
 
-if (COMPILE_RUNTIME_LIGHT)
-	vk_add_library(light-unicode OBJECT ${UNICODE_SOURCES} ${AUTO_DIR}/common/unicode-utils-auto.h)
-	set_property(TARGET light-unicode PROPERTY POSITION_INDEPENDENT_CODE ON)
+vk_add_library_no_pic(unicode-no-pic OBJECT ${UNICODE_SOURCES} ${AUTO_DIR}/common/unicode-utils-auto.h)
+vk_add_library_pic(unicode-pic OBJECT ${UNICODE_SOURCES} ${AUTO_DIR}/common/unicode-utils-auto.h)
 
-	target_compile_options(light-unicode PUBLIC -stdlib=libc++ -fPIC)
-	target_link_options(light-unicode PUBLIC -stdlib=libc++)
+if (COMPILE_RUNTIME_LIGHT)
+    target_compile_options(unicode-pic PUBLIC -stdlib=libc++)
+    target_link_options(unicode-pic PUBLIC -stdlib=libc++)
 endif()
 
-vk_add_library(unicode OBJECT ${UNICODE_SOURCES} ${AUTO_DIR}/common/unicode-utils-auto.h)
+add_dependencies(unicode-no-pic unicode-utils-auto)
+
+# Prevent race-condition in "unicode raw data generation" operations
+add_dependencies(unicode-pic unicode-no-pic)

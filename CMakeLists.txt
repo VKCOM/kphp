@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(kphp
         VERSION 1.0.1
-        LANGUAGES CXX ASM
+        LANGUAGES C CXX ASM
         DESCRIPTION "Compiler for PHP (aka KPHP)"
         HOMEPAGE_URL https://github.com/VKCOM/kphp)
 
@@ -30,11 +30,17 @@ include(cmake/external-libraries.cmake)
 include(cmake/init-compilation-flags.cmake)
 include(cmake/popular-common.cmake)
 
-# OpenSSL building
+# Common third-parties build
+include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)
 include(${THIRD_PARTY_DIR}/openssl-cmake/openssl.cmake)
+include(${THIRD_PARTY_DIR}/zstd-cmake/zstd.cmake)
+include(${COMMON_DIR}/unicode/unicode.cmake)
+# RE2 depends on unicode
+include(${THIRD_PARTY_DIR}/re2-cmake/re2.cmake)
 
 # TODO: use FetchContent_Declare instead of include_directories
 include_directories(.)
+include_directories(${INCLUDE_DIR})
 
 # Custom modules
 include(${BASE_DIR}/flex/flex.cmake)
@@ -44,7 +50,6 @@ include(${BASE_DIR}/vkext/vkext.cmake)
 include(${COMMON_DIR}/binlog/binlog.cmake)
 include(${COMMON_DIR}/common.cmake)
 include(${COMMON_DIR}/tl/tl.cmake)
-include(${COMMON_DIR}/unicode/unicode.cmake)
 
 include(${RUNTIME_COMMON_DIR}/runtime-common.cmake)
 
@@ -68,9 +73,9 @@ endif()
 add_custom_target(kphp ALL DEPENDS ${OBJS_DIR}/php_lib_version.sha256)
 
 if (COMPILE_RUNTIME_LIGHT)
-    add_dependencies(kphp kphp2cpp kphp-light-runtime)
+    add_dependencies(kphp kphp2cpp kphp-light-runtime-pic)
 else ()
-    add_dependencies(kphp kphp2cpp kphp-full-runtime)
+    add_dependencies(kphp kphp2cpp kphp-full-runtime-no-pic kphp-full-runtime-pic)
 endif ()
 
 install(TARGETS kphp2cpp
@@ -79,14 +84,16 @@ install(TARGETS kphp2cpp
 install_symlink(${VK_INSTALL_DIR}/bin/kphp2cpp ${CMAKE_INSTALL_PREFIX}/bin/kphp KPHP)
 
 if (COMPILE_RUNTIME_LIGHT)
-    install(TARGETS kphp-light-runtime
+    install(TARGETS kphp-light-runtime-pic
             COMPONENT KPHP
             LIBRARY DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
 else ()
-    install(TARGETS kphp-full-runtime
+    install(FILES ${OBJS_DIR}/libkphp-full-runtime-no-pic.a
             COMPONENT KPHP
-            LIBRARY DESTINATION ${INSTALL_KPHP_SOURCE}/objs
-            ARCHIVE DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+            DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+    install(FILES ${OBJS_DIR}/libkphp-full-runtime-pic.a
+            COMPONENT KPHP
+            DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
 endif ()
 
 install(DIRECTORY ${OBJS_DIR}/include
@@ -121,8 +128,8 @@ install(FILES ${AUTO_DIR}/runtime/runtime-headers.h
         COMPONENT KPHP
         DESTINATION ${INSTALL_KPHP_SOURCE}/objs/generated/auto/runtime/)
 
-set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, libuber-h3, libpcre3-dev, libre2-dev, libyaml-cpp-dev, zlib1g-dev, \
-                                       libzstd-dev, g++, libnghttp2-dev, kphp-timelib, libnuma-dev")
+set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, libuber-h3, libyaml-cpp-dev, \
+                                       gcc, g++, kphp-timelib, libnuma-dev")
 
 if (PDO_DRIVER_MYSQL)
     set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libmysqlclient-dev")

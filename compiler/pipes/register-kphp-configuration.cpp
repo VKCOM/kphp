@@ -4,7 +4,7 @@
 
 #include "compiler/pipes/register-kphp-configuration.h"
 
-#include <re2/re2.h>
+#include "re2/re2.h"
 
 #include "common/algorithms/find.h"
 #include "compiler/compiler-core.h"

@@ -10,8 +10,9 @@ if(COMPILE_RUNTIME_LIGHT)
 endif()
 
 prepend(RUNTIME_COMMON_SRC ${RUNTIME_COMMON_DIR}/ "${RUNTIME_COMMON_SRC}")
-vk_add_library(runtime-common OBJECT ${RUNTIME_COMMON_SRC})
+vk_add_library_no_pic(runtime-common-no-pic OBJECT ${RUNTIME_COMMON_SRC})
+vk_add_library_pic(runtime-common-pic OBJECT ${RUNTIME_COMMON_SRC})
 
 if(COMPILE_RUNTIME_LIGHT)
-  target_compile_options(runtime-common PUBLIC -stdlib=libc++ -fPIC)
+  target_compile_options(runtime-common-pic PUBLIC -stdlib=libc++)
 endif()

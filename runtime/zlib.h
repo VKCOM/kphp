@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <zlib.h>
+#include "zlib/zlib.h"
 
 #include "common/wrappers/string_view.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"

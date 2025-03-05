@@ -53,8 +53,8 @@ Install packages
 ```bash
 apt-get update
 apt install git cmake-data=3.16* cmake=3.16* make g++ gperf python3-minimal python3-jsonschema \
-            curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
-            libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libmysqlclient-dev libnuma-dev \
+            curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev \
+            libyaml-cpp-dev php7.4-dev libmysqlclient-dev libnuma-dev \
             postgresql postgresql-server-dev-all libpq-dev libldap-dev libkrb5-dev
 ```
 
@@ -73,8 +73,8 @@ Install packages
 ```bash
 apt-get update
 apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
-            curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev libre2-dev libpcre3-dev \
-            libzstd-dev libyaml-cpp-dev libnghttp2-dev zlib1g-dev php7.4-dev libmysqlclient-dev libnuma-dev \
+            curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev \
+            libyaml-cpp-dev php7.4-dev libmysqlclient-dev libnuma-dev \
             postgresql postgresql-server-dev-all libpq-dev libldap-dev libkrb5-dev
 ```
 
@@ -85,7 +85,7 @@ Make sure you have `brew` and `clang` (at least `Apple clang version 10.0.0`)
 # Install dependencies
 brew tap shivammathur/php
 brew update
-brew install re2c cmake coreutils openssl libiconv re2 pcre yaml-cpp zstd googletest shivammathur/php/php@7.4
+brew install re2c cmake coreutils openssl libiconv yaml-cpp googletest shivammathur/php/php@7.4
 brew link --overwrite shivammathur/php/php@7.4
 pip3 install jsonschema
 

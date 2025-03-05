@@ -7,6 +7,7 @@ rm -rf *.txt
 wget ${host}/CaseFolding.txt -O CaseFolding.txt
 wget ${host}/extracted/DerivedGeneralCategory.txt -O GeneralCategory.txt
 wget ${host}/UnicodeData.txt -O UnicodeData.txt
+wget ${host}/Scripts.txt -O Scripts.txt # for RE2
 
 touch *.txt
 

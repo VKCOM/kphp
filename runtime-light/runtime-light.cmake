@@ -1,10 +1,8 @@
 # prepare third-parties
 update_git_submodule(${THIRD_PARTY_DIR}/abseil-cpp "--recursive")
 update_git_submodule(${THIRD_PARTY_DIR}/pcre2 "--recursive")
-update_git_submodule(${THIRD_PARTY_DIR}/zlib "--recursive")
 include(${THIRD_PARTY_DIR}/abseil-cpp-cmake/abseil-cpp.cmake)
 include(${THIRD_PARTY_DIR}/pcre2-cmake/pcre2.cmake)
-include(${THIRD_PARTY_DIR}/zlib-cmake/zlib.cmake)
 
 set(THIRD_PARTY_INCLUDE -I${OBJS_DIR}/include -I${THIRD_PARTY_DIR}
                         -I${THIRD_PARTY_DIR}/abseil-cpp)
@@ -41,34 +39,35 @@ configure_file(${BASE_DIR}/compiler/runtime_sources.h.in
 
 prepend(RUNTIME_LIGHT_SRC ${RUNTIME_LIGHT_DIR}/ "${RUNTIME_LIGHT_SRC}")
 
-vk_add_library(runtime-light OBJECT ${RUNTIME_LIGHT_SRC})
-set_property(TARGET runtime-light PROPERTY POSITION_INDEPENDENT_CODE ON)
-set_target_properties(runtime-light PROPERTIES LIBRARY_OUTPUT_DIRECTORY
+vk_add_library_pic(runtime-light-pic OBJECT ${RUNTIME_LIGHT_SRC})
+set_target_properties(runtime-light-pic PROPERTIES LIBRARY_OUTPUT_DIRECTORY
                                                ${BASE_DIR}/objs)
 target_compile_options(
-  runtime-light PUBLIC -stdlib=libc++ -iquote ${GENERATED_DIR}
-                       ${THIRD_PARTY_INCLUDE} -fPIC -O3)
-target_link_options(runtime-light PUBLIC -stdlib=libc++ -static-libstdc++)
+  runtime-light-pic PUBLIC -stdlib=libc++ -iquote ${GENERATED_DIR}
+                       ${THIRD_PARTY_INCLUDE} -O3)
+target_link_options(runtime-light-pic PUBLIC -stdlib=libc++ -static-libstdc++)
 # add statically linking libraries
 string(JOIN " " ABSEIL_LIBS ${ABSEIL_LIBS})
 set_property(
-  TARGET runtime-light
+  TARGET runtime-light-pic
   PROPERTY RUNTIME_LINK_LIBS
-           "${ABSEIL_LIBS} ${ZLIB_LIB_DIR}/libz.a ${PCRE2_LIB_DIR}/libpcre2-8.a"
+           "${ABSEIL_LIBS} ${ZLIB_PIC_LIBRARIES} ${PCRE2_LIB_DIR}/libpcre2-8.a"
 )
+add_dependencies(runtime-light-pic ZLIB::pic::zlib)
 
 if(APPLE)
-  target_link_options(runtime-light PUBLIC -undefined dynamic_lookup)
+  target_link_options(runtime-light-pic PUBLIC -undefined dynamic_lookup)
 else()
-  target_link_options(runtime-light PUBLIC --allow-shlib-undefined)
+  target_link_options(runtime-light-pic PUBLIC --allow-shlib-undefined)
 endif()
 
-vk_add_library(kphp-light-runtime STATIC)
+vk_add_library_pic(kphp-light-runtime-pic STATIC)
 target_link_libraries(
-  kphp-light-runtime PUBLIC vk::light-common vk::light-unicode
-                            vk::runtime-light vk::runtime-common)
-set_target_properties(kphp-light-runtime PROPERTIES ARCHIVE_OUTPUT_DIRECTORY
-                                                    ${OBJS_DIR})
+  kphp-light-runtime-pic PUBLIC vk::pic::light-common vk::pic::unicode
+                            vk::pic::runtime-light vk::pic::runtime-common)
+set_target_properties(kphp-light-runtime-pic PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY ${OBJS_DIR}
+        LIBRARY_OUTPUT_NAME libkphp-light-runtime.a)
 
 file(
   GLOB_RECURSE KPHP_RUNTIME_ALL_HEADERS
@@ -103,7 +102,7 @@ add_library(php_lib_version_j OBJECT
 target_compile_options(php_lib_version_j PRIVATE -I. ${THIRD_PARTY_INCLUDE} -E)
 target_compile_options(php_lib_version_j PUBLIC -stdlib=libc++)
 target_link_options(php_lib_version_j PUBLIC -stdlib=libc++ -static-libstdc++)
-add_dependencies(php_lib_version_j kphp-light-runtime)
+add_dependencies(php_lib_version_j kphp-light-runtime-pic)
 
 add_custom_command(
   OUTPUT ${OBJS_DIR}/php_lib_version.sha256
@@ -117,11 +116,11 @@ add_custom_target(php_lib_version_sha_256
 
 get_property(
   RUNTIME_COMPILE_FLAGS
-  TARGET runtime-light
+  TARGET runtime-light-pic
   PROPERTY COMPILE_OPTIONS)
 get_property(
   RUNTIME_INCLUDE_DIRS
-  TARGET runtime-light
+  TARGET runtime-light-pic
   PROPERTY INCLUDE_DIRECTORIES)
 
 list(JOIN RUNTIME_COMPILE_FLAGS "\;" RUNTIME_COMPILE_FLAGS)
@@ -131,7 +130,7 @@ configure_file(${BASE_DIR}/compiler/runtime_compile_flags.h.in
 
 get_property(
   RUNTIME_LINK_LIBS
-  TARGET runtime-light
+  TARGET runtime-light-pic
   PROPERTY RUNTIME_LINK_LIBS)
 list(JOIN RUNTIME_LINK_LIBS "\;" RUNTIME_LINK_LIBS)
 string(REPLACE "\"" "\\\"" RUNTIME_LINK_LIBS ${RUNTIME_LINK_LIBS})
