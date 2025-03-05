@@ -1,5 +1,6 @@
 import signal
 import resource
+import socket
 
 from python.lib.testcase import KphpServerAutoTestCase
 
@@ -23,7 +24,7 @@ class TestJsonLogsSignals(KphpServerAutoTestCase):
 
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": -1, "env": "e1", "msg": "SIGSEGV terminating program",
+                "version": 0, "hostname": socket.gethostname(), "type": -1, "env": "e1", "msg": "SIGSEGV terminating program",
                 "tags": {"a": "b", "uncaught": True}, "extra_info": {"c": "d"}
             }])
 
@@ -31,7 +32,7 @@ class TestJsonLogsSignals(KphpServerAutoTestCase):
         self.kphp_server.get_workers()[0].send_signal(signal.SIGSEGV)
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": -1, "env": "", "msg": "SIGSEGV terminating program",
+                "version": 0, "hostname": socket.gethostname(), "type": -1, "env": "", "msg": "SIGSEGV terminating program",
                 "tags": {"uncaught": True}
             }])
 
@@ -39,7 +40,7 @@ class TestJsonLogsSignals(KphpServerAutoTestCase):
         self.kphp_server.get_workers()[1].send_signal(signal.SIGBUS)
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": -1, "env": "", "msg": "SIGBUS terminating program",
+                "version": 0, "hostname": socket.gethostname(), "type": -1, "env": "", "msg": "SIGBUS terminating program",
                 "tags": {"uncaught": True}
             }])
 
@@ -47,7 +48,7 @@ class TestJsonLogsSignals(KphpServerAutoTestCase):
         self.kphp_server.get_workers()[2].send_signal(signal.SIGABRT)
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": -1, "env": "", "msg": "SIGABRT terminating program",
+                "version": 0, "hostname": socket.gethostname(), "type": -1, "env": "", "msg": "SIGABRT terminating program",
                 "tags": {"uncaught": True}
             }])
 
@@ -62,7 +63,7 @@ class TestJsonLogsSignals(KphpServerAutoTestCase):
 
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": 1, "env": "e1", "msg": "Stack overflow",
+                "version": 0, "hostname": socket.gethostname(), "type": 1, "env": "e1", "msg": "Stack overflow",
                 "tags": {"a": "b", "uncaught": True}, "extra_info": {"c": "d"}
             }])
 
@@ -73,7 +74,7 @@ class TestJsonLogsSignals(KphpServerAutoTestCase):
         self.kphp_server.start()
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": -1, "env": "", "msg": "SIGSEGV terminating program",
+                "version": 0, "hostname": socket.gethostname(), "type": -1, "env": "", "msg": "SIGSEGV terminating program",
                 "tags": {"uncaught": True}
             }])
 
@@ -84,7 +85,7 @@ class TestJsonLogsSignals(KphpServerAutoTestCase):
         self.kphp_server.start()
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": -1, "env": "", "msg": "SIGBUS terminating program",
+                "version": 0, "hostname": socket.gethostname(), "type": -1, "env": "", "msg": "SIGBUS terminating program",
                 "tags": {"uncaught": True}
             }])
 
@@ -95,6 +96,6 @@ class TestJsonLogsSignals(KphpServerAutoTestCase):
         self.kphp_server.start()
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": -1, "env": "", "msg": "SIGABRT terminating program",
+                "version": 0, "hostname": socket.gethostname(), "type": -1, "env": "", "msg": "SIGABRT terminating program",
                 "tags": {"uncaught": True}
             }])

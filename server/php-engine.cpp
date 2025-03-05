@@ -44,6 +44,7 @@
 #include "common/tl/parse.h"
 #include "common/tl/query-header.h"
 #include "common/type_traits/function_traits.h"
+#include "common/wrappers/string_view.h"
 #include "net/net-buffers.h"
 #include "net/net-connections.h"
 #include "net/net-crypto-aes.h"
@@ -1654,7 +1655,11 @@ void init_all() {
     script_timeout = run_once ? 1e6 : DEFAULT_SCRIPT_TIMEOUT;
   }
   const auto *tag = engine_tag ?: "0";
-  vk::singleton<JsonLogger>::get().init(string::to_int(tag, static_cast<string::size_type>(strlen(tag))));
+
+  const int64_t release_version = string::to_int(tag, static_cast<string::size_type>(strlen(tag)));
+  const vk::string_view hostname = kdb_gethostname();
+  vk::singleton<JsonLogger>::get().init(release_version, hostname);
+
   for (auto deprecation_warning : vk::singleton<DeprecatedOptions>::get().get_warnings()) {
     if (deprecation_warning.empty()) {
       break;

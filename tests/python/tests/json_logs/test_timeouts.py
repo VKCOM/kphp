@@ -1,3 +1,5 @@
+import socket
+
 from python.lib.testcase import KphpServerAutoTestCase
 
 
@@ -15,7 +17,7 @@ class TestJsonLogTimeouts(KphpServerAutoTestCase):
         self.assertEqual(resp.status_code, 500)
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": 1, "env": "",  "tags": {"uncaught": True},
+                "version": 0, "hostname": socket.gethostname(), "type": 1, "env": "", "tags": {"uncaught": True},
                 "msg": "Maximum execution time exceeded",
             }],
             timeout=5)
@@ -30,7 +32,7 @@ class TestJsonLogTimeouts(KphpServerAutoTestCase):
         self.assertEqual(resp.status_code, 500)
         self.kphp_server.assert_json_log(
             expect=[{
-                "version": 0, "type": 1, "env": "efg",  "tags": {"a": "b", "uncaught": True}, "extra_info": {"c": "d"},
+                "version": 0, "hostname": socket.gethostname(), "type": 1, "env": "efg", "tags": {"a": "b", "uncaught": True}, "extra_info": {"c": "d"},
                 "msg": "Maximum execution time exceeded",
             }],
             timeout=5)
