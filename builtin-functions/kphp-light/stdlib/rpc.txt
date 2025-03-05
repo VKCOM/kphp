@@ -1,6 +1,6 @@
 <?php
 
-// === Rpc ========================================================================================
+// ===== SUPPORTED =====
 
 /** @kphp-tl-class */
 interface RpcFunction {
@@ -88,48 +88,50 @@ function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool): bool;
  */
 function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
 
-// === Unsupported API =================================================================================
+// ===== UNSUPPORTED =====
 
+/** @kphp-extern-func-info stub */
 function rpc_parse ($data) ::: bool;
 
+/** @kphp-extern-func-info stub */
 function rpc_clean() ::: bool;
-/** @kphp-extern-func-info interruptible generate-stub */
+/** @kphp-extern-func-info interruptible stub generation-required */
 function rpc_queue_create ($request_ids ::: mixed = TODO) ::: int;
-/** @kphp-extern-func-info interruptible generate-stub */
+/** @kphp-extern-func-info interruptible stub generation-required */
 function rpc_queue_empty ($queue_id ::: int) ::: bool;
-/** @kphp-extern-func-info interruptible generate-stub */
+/** @kphp-extern-func-info interruptible stub generation-required */
 function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int | false;
-/** @kphp-extern-func-info interruptible generate-stub */
+/** @kphp-extern-func-info interruptible stub generation-required */
 function rpc_queue_push ($queue_id ::: int, $request_ids ::: mixed) ::: int;
 
-/** @kphp-extern-func-info interruptible generate-stub */
+/** @kphp-extern-func-info interruptible stub generation-required */
 function store_error ($error_code ::: int, $error_text ::: string) ::: bool;
-/** @kphp-extern-func-info interruptible generate-stub */
+/** @kphp-extern-func-info interruptible stub generation-required */
 function store_finish() ::: bool;
 
-/** @kphp-extern-func-info interruptible generate-stub */
+/** @kphp-extern-func-info interruptible stub generation-required */
 function rpc_tl_query_one (\RpcConnection $rpc_conn, $arr ::: mixed, $timeout ::: float = -1.0) ::: int;
 
-/** @kphp-extern-func-info can_throw interruptible generate-stub */
+/** @kphp-extern-func-info can_throw interruptible stub generation-required */
 function rpc_server_fetch_request() ::: @tl\RpcFunction;
 
-/** @kphp-extern-func-info can_throw interruptible generate-stub */
+/** @kphp-extern-func-info can_throw interruptible stub generation-required */
 function rpc_server_store_response(@tl\RpcFunctionReturnResult $response) ::: void;
 
-/** @kphp-extern-func-info tl_common_h_dep interruptible */
+/** @kphp-extern-func-info tl_common_h_dep interruptible stub */
 function typed_rpc_tl_query_result_synchronously (int[] $query_ids) ::: @tl\RpcResponse[];
 
-/** @kphp-extern-func-info tl_common_h_dep interruptible generate-stub */
+/** @kphp-extern-func-info tl_common_h_dep interruptible stub generation-required */
 function typed_rpc_tl_query_result_one (int $query_id) ::: @tl\RpcResponse;
 
-/** @kphp-extern-func-info interruptible generate-stub can_throw */
+/** @kphp-extern-func-info interruptible stub generation-required can_throw */
 function fetch_lookup_int () ::: int;
 
-/** @kphp-extern-func-info interruptible generate-stub */
+/** @kphp-extern-func-info interruptible stub generation-required */
 function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
 
 /** @kphp-generate-stub-class */
 final class RpcConnection {
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     private function __construct();
 }

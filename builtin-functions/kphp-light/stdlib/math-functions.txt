@@ -32,92 +32,50 @@ function dechex ($number ::: int): string;
 
 function hexdec ($number ::: string): int;
 
-// === UNSUPPORTED ===
-
 /**
  * @kphp-pure-function
  */
 function abs ($v ::: mixed) ::: ^1 | int;
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-pure-function
- */
-function acos ($v ::: float) ::: float;
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-pure-function
- */
-function atan ($v ::: float) ::: float;
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-pure-function
- */
-function atan2 ($y ::: float, $x ::: float) ::: float;
+
 /**
  * @kphp-pure-function
  */
 function ceil ($v ::: float) ::: float;
+
 /**
  * @kphp-pure-function
  */
 function cos ($v ::: float) ::: float;
+
 /**
  * @kphp-pure-function
  */
 function deg2rad ($v ::: float) ::: float;
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-pure-function
- */
-function exp ($v ::: float) ::: float;
+
 /**
  * @kphp-pure-function
  */
 function floor ($v ::: float) ::: float;
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-pure-function
- */
-function fmod ($x ::: float, $y ::: float) ::: float;
+
 /**
  * @kphp-pure-function
  */
 function log ($v ::: float, $base ::: float = 2.7182818284590452353602874713527) ::: float;
+
 /**
  * @kphp-pure-function
  */
 function round ($v ::: float, $precision ::: int = 0) ::: float;
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-pure-function
- */
-function sin ($v ::: float) ::: float;
+
 /**
  * @kphp-pure-function
  */
 function sqrt ($v ::: float) ::: float;
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-pure-function
- */
-function tan ($v ::: float) ::: float;
+
 /**
  * @kphp-pure-function
  */
 function pi() ::: float;
-/**
- * @kphp-extern-func-info generate-stub
- * @kphp-pure-function
- */
-function rad2deg ($v ::: float) ::: float;
-
-/** @kphp-extern-func-info generate-stub */
-function lcg_value() ::: float;
-/** @kphp-extern-func-info generate-stub */
-function levenshtein ($str1 ::: string, $str2 ::: string) ::: int;
-
-/** @kphp-extern-func-info generate-stub */
-function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
 
 /**
  * @kphp-extern-func-info cpp_template_call cpp_variadic_call
@@ -129,12 +87,6 @@ function min (...$a) ::: ^1[*];
  * @kphp-pure-function
  */
 function max (...$a) ::: ^1[*];
-
-
-define('PHP_ROUND_HALF_UP', 123423141);
-define('PHP_ROUND_HALF_DOWN', 123423144);
-define('PHP_ROUND_HALF_EVEN', 123423145);
-define('PHP_ROUND_HALF_ODD', 123423146);
 
 function bcadd ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
 
@@ -156,14 +108,73 @@ function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) 
 
 function is_nan ($v ::: float) ::: bool;
 
-// ===== UNSUPPORTED =====
+// === UNSUPPORTED ===
 
-/** @kphp-extern-func-info generate-stub */
+/**
+ * @kphp-extern-func-info stub generation-required
+ * @kphp-pure-function
+ */
+function acos ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info stub generation-required
+ * @kphp-pure-function
+ */
+function atan ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info stub generation-required
+ * @kphp-pure-function
+ */
+function atan2 ($y ::: float, $x ::: float) ::: float;
+/**
+ * @kphp-extern-func-info stub generation-required
+ * @kphp-pure-function
+ */
+function exp ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info stub generation-required
+ * @kphp-pure-function
+ */
+function fmod ($x ::: float, $y ::: float) ::: float;
+/**
+ * @kphp-extern-func-info stub generation-required
+ * @kphp-pure-function
+ */
+function sin ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info stub generation-required
+ * @kphp-pure-function
+ */
+function tan ($v ::: float) ::: float;
+/**
+ * @kphp-extern-func-info stub generation-required
+ * @kphp-pure-function
+ */
+function rad2deg ($v ::: float) ::: float;
+
+/** @kphp-extern-func-info stub generation-required */
+function lcg_value() ::: float;
+/** @kphp-extern-func-info stub generation-required */
+function levenshtein ($str1 ::: string, $str2 ::: string) ::: int;
+
+/** @kphp-extern-func-info stub generation-required */
+function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
+
+define('PHP_ROUND_HALF_UP', 123423141);
+define('PHP_ROUND_HALF_DOWN', 123423144);
+define('PHP_ROUND_HALF_EVEN', 123423145);
+define('PHP_ROUND_HALF_ODD', 123423146);
+
+/** @kphp-extern-func-info stub generation-required */
 function is_finite ($v ::: float) ::: bool;
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function is_infinite ($v ::: float) ::: bool;
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function random_int($l ::: int, $r ::: int) ::: int | false;
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function random_bytes($length ::: int) ::: string | false;
 
+/** @kphp-extern-func-info stub generation-required */
+function bindec ($number ::: string) ::: int;
+
+/** @kphp-extern-func-info stub generation-required */
+function decbin ($number ::: int) ::: string;

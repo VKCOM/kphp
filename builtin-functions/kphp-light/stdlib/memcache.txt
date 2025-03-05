@@ -1,5 +1,7 @@
 <?php
 
+// ===== UNSUPPORTED =====
+
 /** @kphp-generate-stub-class */
 interface Memcache {
     public function get (string|string[] $key) ::: mixed;
@@ -19,28 +21,28 @@ interface Memcache {
 
 /** @kphp-generate-stub-class */
 final class McMemcache implements Memcache {
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function __construct() ::: McMemcache;
 
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function get (string|string[] $key) ::: mixed;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function delete (string $key) ::: bool;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function add (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function set (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function replace (string $key, mixed $value, int $flags = 0, int $expire = 0) ::: bool;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function decrement (string $key, int $v = 1) ::: mixed;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function increment (string $key, int $v = 1) ::: mixed;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function getVersion () ::: mixed;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function addServer (string $host, int $port = 11211, bool $persistent = true, int $weight = 1, float $timeout = 1, int $retry_interval = 15, bool $status = true, mixed $failure_callback = null, int $timeoutms = 0) ::: bool;
 
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function rpc_connect (string $host, int $port, mixed $default_actor_id = 0, float $timeout = 0.3, float $connect_timeout = 0.3, float $reconnect_timeout = 17.0) ::: bool;
 }

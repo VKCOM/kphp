@@ -1,5 +1,7 @@
 <?php
 
+// ===== SUPPORTED =====
+
 function addcslashes ($str ::: string, $what ::: string) ::: string;
 function addslashes ($str ::: string) ::: string;
 
@@ -21,7 +23,6 @@ function nl2br ($str ::: string, $is_xhtml ::: bool = true) ::: string;
 function number_format ($number ::: float, $decimals ::: int = 0, $dec_point ::: ?string = '.', $thousands_sep ::: ?string = ',') ::: string;
 function ord ($c ::: string) ::: int;
 
-/** @kphp-extern-func-info generate-stub */
 function parse_str ($str ::: string, &$arr ::: mixed) ::: void; // TODO: why no ::: array? // TODO because it is an output parameter, input can have any type and it's ok.
 
 function strcasecmp ($str1 ::: string, $str2 ::: string) ::: int;
@@ -71,9 +72,8 @@ function strtoupper ($str ::: string) ::: string;
 function strspn ($haystack ::: string, $char_list ::: string, $offset ::: int = 0) ::: int;
 
 function wordwrap ($str ::: string, $width ::: int = 75, $break ::: string = '\n', $cut ::: bool = false) ::: string;
-/** @kphp-extern-func-info generate-stub */
-function str_getcsv($str ::: string, string $delimiter ::: string = ",", string $enclosure ::: string = "\"", string $escape ::: string = "\\") ::: mixed[] | false;
 
+function strlen ($str ::: string) ::: int;
 
 /**
  * @kphp-internal-param-readonly $str
@@ -116,23 +116,38 @@ function mb_strtolower ($str ::: string, $encoding ::: string = "cp1251") ::: st
 function mb_strtoupper ($str ::: string, $encoding ::: string = "cp1251") ::: string;
 function mb_substr ($str ::: string, $start ::: int, $length ::: mixed = PHP_INT_MAX, $encoding ::: string = "cp1251") ::: string;
 
-
-
 function lcfirst ($str ::: string) ::: string;
 function ucfirst ($str ::: string) ::: string;
 function ucwords ($str ::: string) ::: string;
 
+define('ENT_HTML401', 0);
+define('ENT_COMPAT', 0);
+define('ENT_QUOTES', 1);
+define('ENT_NOQUOTES', 2);
+
+
+function pack ($pattern ::: string, ...$args) ::: string;
+
+function unpack ($pattern ::: string, $data ::: string) ::: mixed[] | false;
+
+
+
+// === UNSUPPORTED ===
+
+/** @kphp-extern-func-info stub generation-required */
+function str_getcsv($str ::: string, string $delimiter ::: string = ",", string $enclosure ::: string = "\"", string $escape ::: string = "\\") ::: mixed[] | false;
+
 
 /**
- * @kphp-extern-func-info generate-stub
+ * @kphp-extern-func-info stub generation-required
  * @kphp-pure-function
  */
 function base_convert ($number ::: string, $frombase ::: int, $tobase ::: int) ::: string;
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function zstd_compress(string $data, int $level = 3) ::: string | false;
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function zstd_uncompress(string $data) ::: string | false;
 
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function getimagesize ($name ::: string) ::: mixed;
 

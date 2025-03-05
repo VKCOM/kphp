@@ -1,0 +1,22 @@
+<?php
+
+// ===== SUPPORTED =====
+
+class ComponentQuery {
+    private function __construct() ::: \ComponentQuery;
+}
+
+/** @kphp-extern-func-info interruptible */
+function component_client_send_request($name ::: string, $message ::: string) ::: ComponentQuery;
+
+/** @kphp-extern-func-info interruptible */
+function component_client_fetch_response($query ::: ComponentQuery) ::: string;
+
+/** @kphp-extern-func-info interruptible */
+function component_server_accept_query() ::: ComponentQuery;
+
+/** @kphp-extern-func-info interruptible */
+function component_server_fetch_request($query ::: ComponentQuery) ::: string;
+
+/** @kphp-extern-func-info interruptible */
+function component_server_send_response($query ::: ComponentQuery, $message ::: string) ::: void;

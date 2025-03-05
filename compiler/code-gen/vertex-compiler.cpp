@@ -858,6 +858,10 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       W << "_tr_f.enter_branch(" << root->args()[0] << ")";
       return;
     }
+    if (root->func_id->is_stub && G->settings().forbid_stubs_using.get()) {
+      kphp_error(0, fmt_format("try call {} stub that is prohibited by option", root->func_id->name));
+    }
+
     if (root->str_val == "empty") {
       if (auto index = root->args()[0].try_as<op_index>(); index && tinf::get_type(index->array())->get_real_ptype() == tp_mixed) {
         W << "(" << index->array() << ")";

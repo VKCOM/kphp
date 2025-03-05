@@ -1,185 +1,38 @@
 <?php
 
-require_once __DIR__ . '/array.txt';
-require_once __DIR__ . '/confdata.txt';
-require_once __DIR__ . '/crypto.txt';
-require_once __DIR__ . '/error.txt';
-require_once __DIR__ . '/file.txt';
-require_once __DIR__ . '/hash.txt';
-require_once __DIR__ . '/job-workers.txt';
-require_once __DIR__ . '/rpc.txt';
-require_once __DIR__ . '/serialize.txt';
-require_once __DIR__ . '/string.txt';
-require_once __DIR__ . '/server.txt';
-require_once __DIR__ . '/system.txt';
-require_once __DIR__ . '/kphp-toggles.txt';
-require_once __DIR__ . '/kphp_internal.txt';
-require_once __DIR__ . '/math.txt';
-require_once __DIR__ . '/time.txt';
-require_once __DIR__ . '/regex.txt';
-require_once __DIR__ . '/vkext.txt';
-
-/** defined in runtime-core.h **/
-function likely ($x ::: bool) ::: bool;
-function unlikely ($x ::: bool) ::: bool;
-
 define('TODO', -1);
 define('TODO_OVERLOAD', -1);
 
-define('PHP_INT_MAX', 9223372036854775807);
-define('PHP_INT_MIN', -9223372036854775808);
-define('PHP_INT_SIZE', 8);
-define('PHP_EOL', "\n");
+require_once __DIR__ . '/core/core-functions.txt';
+require_once __DIR__ . '/core/kphp_internal.txt';
+require_once __DIR__ . '/stdlib/array-functions.txt';
+require_once __DIR__ . '/stdlib/component-functions.txt';
+require_once __DIR__ . '/stdlib/confdata-functions.txt';
+require_once __DIR__ . '/stdlib/crypto-functions.txt';
+require_once __DIR__ . '/stdlib/curl-functions.txt';
+require_once __DIR__ . '/stdlib/diagnostic.txt';
+require_once __DIR__ . '/stdlib/error.txt';
+require_once __DIR__ . '/stdlib/file-functions.txt';
+require_once __DIR__ . '/stdlib/fork-functions.txt';
+require_once __DIR__ . '/stdlib/job-workers.txt';
+require_once __DIR__ . '/stdlib/kml-functions.txt';
+require_once __DIR__ . '/stdlib/kphp-toggles.txt';
+require_once __DIR__ . '/stdlib/kphp-tracing.txt';
+require_once __DIR__ . '/stdlib/math-functions.txt';
+require_once __DIR__ . '/stdlib/memcache.txt';
+require_once __DIR__ . '/stdlib/output-functions.txt';
+require_once __DIR__ . '/stdlib/regex-functions.txt';
+require_once __DIR__ . '/stdlib/rpc.txt';
+require_once __DIR__ . '/stdlib/serialize-functions.txt';
+require_once __DIR__ . '/stdlib/server-functions.txt';
+require_once __DIR__ . '/stdlib/spl.txt';
+require_once __DIR__ . '/stdlib/string-functions.txt';
+require_once __DIR__ . '/stdlib/system-functions.txt';
+require_once __DIR__ . '/stdlib/time-functions.txt';
+require_once __DIR__ . '/stdlib/uberh3.txt';
+require_once __DIR__ . '/stdlib/vkext-functions.txt';
+require_once __DIR__ . '/stdlib/zlib-functions.txt';
 
 if (0) {
   define('PHP_SAPI', php_sapi_name());//"Defined in source code"
-}
-
-/** @var mixed $_SERVER */
-global $_SERVER;
-/** @var mixed $_GET */
-global $_GET;
-/** @var mixed $_POST */
-global $_POST;
-/** @var mixed $_FILES */
-global $_FILES;
-/** @var mixed $_COOKIE */
-global $_COOKIE;
-/** @var mixed $_REQUEST */
-global $_REQUEST;
-/** @var mixed $_ENV */
-global $_ENV;
-/** @var mixed $argc */
-global $argc;
-/** @var mixed $argv */
-global $argv;
-
-function boolval ($v ::: any) ::: bool;
-function intval ($v ::: mixed) ::: int;
-function floatval ($v ::: mixed) ::: float;
-function strval ($v ::: mixed) ::: string;
-
-/**
- * @kphp-no-return
- * @kphp-extern-func-info interruptible
- */
-function exit($code = 0) ::: void;
-
-/**
- * @kphp-no-return
- * @kphp-extern-func-info interruptible
- */
-function die($code = 0) ::: void;
-
-function ob_clean() ::: void;
-function ob_end_clean() ::: bool;
-function ob_get_clean() ::: string | false;
-function ob_get_contents() ::: string;
-function ob_start ($x ::: string = "") ::: void;
-function ob_flush () ::: void;
-function ob_end_flush () ::: bool;
-function ob_get_flush () ::: string | false;
-function ob_get_length () ::: int | false;
-function ob_get_level () ::: int;
-
-function print_r ($v ::: any, $buffered ::: bool = false) ::: string;
-function var_export ($v ::: any, $buffered ::: bool = false) ::: string;
-function print ($v ::: string) ::: int;
-function echo ($v ::: string) ::: void;
-function dbg_echo ($v ::: string) ::: void;
-function var_dump ($v ::: any) ::: void;
-
-function empty ($val ::: any) ::: bool;
-function count ($val ::: any) ::: int;
-function sizeof ($val ::: any) ::: int;
-function gettype ($v ::: any) ::: string;
-function is_scalar ($v ::: any) ::: bool;
-function is_numeric ($v ::: mixed) ::: bool;
-function is_null ($v ::: any) ::: bool;
-function is_bool ($v ::: mixed) ::: bool;
-function is_int ($v ::: mixed) ::: bool;
-function is_integer ($v ::: mixed) ::: bool;
-function is_long ($v ::: mixed) ::: bool;
-function is_float ($v ::: mixed) ::: bool;
-function is_double ($v ::: mixed) ::: bool;
-function is_real ($v ::: mixed) ::: bool;
-function is_string ($v ::: mixed) ::: bool;
-function is_array ($v ::: any) ::: bool;
-function is_object ($v ::: any) ::: bool;
-function get_class ($v ::: any) ::: string;
-function get_hash_of_class (object $klass) ::: int;
-
-function strlen ($str ::: string) ::: int;
-
-// === Future =====================================================================================
-
-function get_running_fork_id() ::: future <void>;
-
-/** @kphp-extern-func-info can_throw interruptible cpp_template_call */
-function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
-
-/** @kphp-extern-func-info interruptible */
-function wait_concurrently ($id ::: future<any>): bool;
-
-/** @kphp-extern-func-info interruptible can_throw cpp_template_call */
-function wait_multi (future<any>[] $resumables) ::: (^1[*][*] | null)[];
-
-// === Fork =======================================================================================
-
-/** @kphp-extern-func-info interruptible */
-function sched_yield() ::: void;
-
-/** @kphp-extern-func-info interruptible */
-function sched_yield_sleep($duration ::: float) ::: void;
-
-// === Component ==================================================================================
-
-final class ComponentQuery {
-    private function __construct() ::: \ComponentQuery;
-}
-
-/** @kphp-extern-func-info interruptible */
-function component_client_send_request($name ::: string, $message ::: string) ::: ComponentQuery;
-
-/** @kphp-extern-func-info interruptible */
-function component_client_fetch_response($query ::: ComponentQuery) ::: string;
-
-/** @kphp-extern-func-info interruptible */
-function component_server_accept_query() ::: ComponentQuery;
-
-/** @kphp-extern-func-info interruptible */
-function component_server_fetch_request($query ::: ComponentQuery) ::: string;
-
-/** @kphp-extern-func-info interruptible */
-function component_server_send_response($query ::: ComponentQuery, $message ::: string) ::: void;
-
-// === Misc =======================================================================================
-
-/** @kphp-extern-func-info cpp_template_call */
-function instance_cast(any $instance, $to_type ::: string) ::: instance<^2>;
-
-function make_clone ($x ::: any) ::: ^1;
-
-function check_shutdown() ::: void;
-
-function warning($message ::: string) ::: void;
-/** @kphp-no-return */
-function critical_error($message ::: string) ::: void;
-
-/** @kphp-extern-func-info interruptible */
-function set_timer(int $timeout, callable():void $callback) ::: void;
-
-// builtin that allows to store objects inside a mixed
-function to_mixed(object $instance) ::: mixed;
-
-// === Unsupported =======================================================================================
-
-require_once __DIR__ . '/unsupported-functions.txt';
-
-/** @kphp-required */
-interface ArrayAccess {
-  public function offsetExists(mixed $offset): bool;
-  public function offsetGet(mixed $offset): mixed;
-  public function offsetSet(mixed $offset, mixed $value);
-  public function offsetUnset(mixed $offset);
 }

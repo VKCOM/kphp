@@ -1,5 +1,7 @@
 <?php
 
+// ===== SUPPORTED =====
+
 define('SORT_REGULAR', 0);
 define('SORT_NUMERIC', 1);
 define('SORT_STRING', 2);
@@ -93,6 +95,16 @@ function implode ($s ::: string, $v ::: array) ::: string;
 
 function explode ($delimiter ::: string, $str ::: string, $limit ::: int = PHP_INT_MAX) ::: string[];
 
+function array_is_list ($a ::: array) ::: bool;
+
+function array_is_vector ($a ::: array) ::: bool;
+
+function array_unset (&$a ::: array, any $key) ::: ^1[*];
+
+function array_push (&$a ::: array, $val2 ::: any, $val3 ::: any = TODO, $val4 ::: any = TODO, $val5 ::: any = TODO, $val6 ::: any = TODO) ::: int;
+
+function in_array ($value ::: any, $a ::: array, $strict ::: bool = false) ::: bool;
+
 function range ($from ::: mixed, $to ::: mixed, $step ::: int = 1) ::: mixed[];
 
 /** @kphp-extern-func-info interruptible */
@@ -128,4 +140,56 @@ function usort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: v
 function uasort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
 
 
+// ===== UNSUPPORTED =====
 
+
+/** @kphp-extern-func-info stub */
+function create_vector ($n ::: int, $x ::: any) ::: ^2[];
+
+/** @kphp-extern-func-info stub */
+function getKeyByPos ($a ::: array, $n ::: int) ::: mixed;
+/** @kphp-extern-func-info stub */
+function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
+
+/** @kphp-extern-func-info stub */
+function array_swap_int_keys (&$a ::: array, $idx1 ::: int, $idx2 ::: int) ::: void;
+
+/** @kphp-extern-func-info stub */
+function array_splice (&$a ::: array, $offset ::: int, $length ::: int, $replacement ::: array = array()) ::: ^1;
+
+/**
+ * @kphp-extern-func-info stub cpp_template_call cpp_variadic_call
+ * @kphp-pure-function
+ */
+function array_merge_recursive (...$a) ::: mixed[];
+/** @kphp-extern-func-info stub cpp_template_call */
+function array_merge_spread ($a1 ::: array, $a2  ::: array = array(), $a3  ::: array = array(),
+            $a4 ::: array = array(), $a5  ::: array = array(), $a6  ::: array = array(),
+            $a7 ::: array = array(), $a8  ::: array = array(), $a9  ::: array = array(),
+           $a10 ::: array = array(), $a11 ::: array = array(), $a12 ::: array = array())
+                ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
+
+/** @kphp-extern-func-info stub */
+function array_intersect_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
+/** @kphp-extern-func-info stub */
+function array_diff_key ($a1 ::: array, $a2 ::: array) ::: ^1;
+/** @kphp-extern-func-info stub */
+function array_diff_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
+/** @kphp-extern-func-info stub */
+function array_find ($val ::: array, callable(^1[*] $x):bool $callback) ::: tuple(mixed, ^1[*]);
+/** @kphp-extern-func-info stub */
+function array_count_values ($a ::: array) ::: int[];
+/** @kphp-extern-func-info stub */
+function array_fill ($start_index ::: int, $num ::: int, $value ::: any) ::: ^3[];
+/** @kphp-extern-func-info stub */
+function array_fill_keys ($a ::: array, $value ::: any) ::: ^2[];
+/** @kphp-extern-func-info stub */
+function array_combine ($keys ::: array, $values ::: array) ::: ^2;
+/** @kphp-extern-func-info stub cpp_template_call */
+function array_pad ($a ::: array, $size ::: int, $value ::: any) ::: array< ^1[*] | ^3 >;
+/** @kphp-extern-func-info stub */
+function array_column ($a ::: array, $column_key, $index_key = null) ::: array< ^1[*][*] > | false;
+
+
+/** @kphp-extern-func-info stub cpp_template_call */
+function vk_dot_product ($a ::: array, $b ::: array) ::: ^1[*] | ^2[*];

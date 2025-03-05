@@ -1,16 +1,17 @@
 <?php
 
-final class KphpDiv {
-  /** @kphp-extern-func-info generate-stub */
-  private function __construct();
+// ===== UNSUPPORTED =====
 
-  /** @kphp-extern-func-info generate-stub */
+final class KphpDiv {
+  /** @kphp-extern-func-info stub generation-required */
+  private function __construct();
+  /** @kphp-extern-func-info stub generation-required */
   function generateTraceCtxForChild(int $div_id, int $trace_flags): tuple(int, int);
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function assignTraceCtx(int $int1, int $int2, ?int $override_div_id): int;
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function getStartTimestamp(): float;
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function getEndTimestamp(): float;
 }
 
@@ -20,16 +21,15 @@ final class KphpSpan {
   function addAttributeString(string $key, string $value) ::: void;
 
   function addAttributeInt(string $key, int $value) ::: void;
-
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function addAttributeFloat(string $key, float $value) ::: void;
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function addAttributeBool(string $key, bool $value) ::: void;
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function addAttributeEnum(string $key, int $enum_id, int $value) ::: void;
 
   function addEvent(string $name, ?float $timestamp = null): KphpSpanEvent;
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function addLink(KphpSpan $another) ::: void;
 
 
@@ -37,30 +37,30 @@ final class KphpSpan {
 
   function finish(?float $end_timestamp = null) ::: void;
 
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function finishWithError(int $error_code, string $error_msg, ?float $end_timestamp = null) ::: void;
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function exclude() ::: void;
 }
 
 final class KphpSpanEvent {
   private function __construct();
 
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function addAttributeString(string $key, string $value) ::: void;
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function addAttributeInt(string $key, int $value) ::: void;
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function addAttributeFloat(string $key, float $value) ::: void;
-  /** @kphp-extern-func-info generate-stub */
+  /** @kphp-extern-func-info stub generation-required */
   function addAttributeBool(string $key, bool $value) ::: void;
 }
 
 function kphp_tracing_init(string $root_span_title): KphpDiv;
 
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function kphp_tracing_set_level(int $trace_level): void;
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function kphp_tracing_get_level(): int;
 
 function kphp_tracing_register_on_finish(callable(float $now_timestamp):bool $cb_should_be_flushed);

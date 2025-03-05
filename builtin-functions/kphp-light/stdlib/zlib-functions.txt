@@ -12,16 +12,16 @@ function gzuncompress ($str ::: string): string;
 
 // ===== UNSUPPORTED =====
 
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function gzencode ($str ::: string, $level ::: int = -1) ::: string;
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function gzdecode ($str ::: string) ::: string;
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function gzdeflate ($str ::: string, $level ::: int = -1) ::: string;
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function gzinflate ($str ::: string) ::: string;
 
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function md5_file ($s ::: string, $raw_output ::: bool = false) ::: string | false;
 
 define('ZLIB_NO_FLUSH', 0);
@@ -40,12 +40,13 @@ define('ZLIB_DEFAULT_STRATEGY', 0);
 
 /** @kphp-generate-stub-class */
 final class DeflateContext {
+    /** @kphp-extern-func-info stub generation-required */
     private function __construct() ::: DeflateContext;
 }
 
 // todo: deflate_init php signature has type array instead mixed
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function deflate_init(int $encoding, mixed $options = []) ::: ?DeflateContext;
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function deflate_add(DeflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH) ::: string | false;
 
