@@ -9,6 +9,7 @@
 #include <cstring>
 #include <string_view>
 
+#include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 
@@ -20,7 +21,7 @@ class CommonMemoryEstimateVisitor;
 
 namespace job_worker_impl_ {
 
-struct SendableBase : virtual abstract_refcountable_php_interface {
+struct SendableBase : refcountable_polymorphic_php_classes_virt<> {
 
   virtual void accept(ToArrayVisitor & /*unused*/) noexcept {}
 
@@ -61,16 +62,17 @@ struct C$KphpJobWorkerResponse : public job_worker_impl_::SendableBase {
 
 // === KphpJobWorkerResponseError =================================================================
 
-struct C$KphpJobWorkerResponseError : public refcountable_polymorphic_php_classes<C$KphpJobWorkerResponse> {
+struct C$KphpJobWorkerResponseError : public C$KphpJobWorkerResponse {
   string error;
-  int64_t error_code;
+  int64_t error_code{};
 
   const char *get_class() const noexcept override {
     return "KphpJobWorkerResponseError";
   }
 
   int32_t get_hash() const noexcept override {
-    return static_cast<int32_t>(std::hash<std::string_view>{}(get_class()));
+    std::string_view name_view{C$KphpJobWorkerResponseError::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
   size_t virtual_builtin_sizeof() const noexcept override {
@@ -86,10 +88,10 @@ inline class_instance<C$KphpJobWorkerResponseError> f$KphpJobWorkerResponseError
   return v$this;
 }
 
-inline string f$KphpJobWorkerResponseError$$getError(class_instance<C$KphpJobWorkerResponseError> v$this) noexcept {
+inline string f$KphpJobWorkerResponseError$$getError(const class_instance<C$KphpJobWorkerResponseError> &v$this) noexcept {
   return v$this.get()->error;
 }
 
-inline int64_t f$KphpJobWorkerResponseError$$getErrorCode(class_instance<C$KphpJobWorkerResponseError> v$this) noexcept {
+inline int64_t f$KphpJobWorkerResponseError$$getErrorCode(const class_instance<C$KphpJobWorkerResponseError> &v$this) noexcept {
   return v$this.get()->error_code;
 }

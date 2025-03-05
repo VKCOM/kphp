@@ -4,22 +4,29 @@
 
 #pragma once
 
+#include <cstdint>
+#include <string_view>
+
+#include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
-struct C$DateTimeZone : public refcountable_php_classes<C$DateTimeZone>, private DummyVisitorMethods {
+struct C$DateTimeZone : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
   string timezone;
 
-  const char *get_class() const noexcept {
+  virtual const char *get_class() const noexcept {
     return R"(DateTimeZone)";
   }
 
-  int get_hash() const noexcept {
-    return 219249843;
+  virtual int32_t get_hash() const noexcept {
+    std::string_view name_view{C$DateTimeZone::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
+
+  ~C$DateTimeZone() override = default;
 };
 
 class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone> &self, const string &timezone) noexcept;

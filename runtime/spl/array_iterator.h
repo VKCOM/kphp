@@ -4,14 +4,16 @@
 
 #pragma once
 
+#include <cstdint>
+#include <string_view>
+
 #include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
 // C$ArrayIterator implements SPL ArrayIterator class.
-struct C$ArrayIterator : public refcountable_php_classes<C$ArrayIterator>, private DummyVisitorMethods {
+struct C$ArrayIterator final : public refcountable_php_classes<C$ArrayIterator>, private DummyVisitorMethods {
   // we store an array to keep a living reference to it while iterator is valid;
   // also we may implement rewind() method later if we feel like it
   array<mixed> arr;
@@ -23,7 +25,8 @@ struct C$ArrayIterator : public refcountable_php_classes<C$ArrayIterator>, priva
   }
 
   int32_t get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(get_class())));
+    std::string_view name_view{C$ArrayIterator::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
   using DummyVisitorMethods::accept;

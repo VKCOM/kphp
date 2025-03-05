@@ -5,10 +5,11 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
 
 #include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/core/runtime-core.h"
 
 struct tl_func_base;
 
@@ -23,19 +24,21 @@ class InstanceDeepDestroyVisitor;
 // C$VK$TL$... should match that layout
 
 // this interface is implemented by all PHP classes that represent the TL functions (see tl-to-php)
-struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
-  virtual const char *get_class() const {
+struct C$VK$TL$RpcFunction : refcountable_polymorphic_php_classes_virt<> {
+  virtual const char *get_class() const noexcept {
     return "VK\\TL\\RpcFunction";
   }
-  virtual int32_t get_hash() const {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunction::get_class())));
+
+  virtual int32_t get_hash() const noexcept {
+    std::string_view name_view{C$VK$TL$RpcFunction::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
-  virtual void accept(ToArrayVisitor &) noexcept {}
-  virtual void accept(CommonMemoryEstimateVisitor &) noexcept {}
-  virtual void accept(InstanceReferencesCountingVisitor &) noexcept {}
-  virtual void accept(InstanceDeepCopyVisitor &) noexcept {}
-  virtual void accept(InstanceDeepDestroyVisitor &) noexcept {}
+  virtual void accept(ToArrayVisitor & /*unused*/) noexcept {}
+  virtual void accept(CommonMemoryEstimateVisitor & /*unused*/) noexcept {}
+  virtual void accept(InstanceReferencesCountingVisitor & /*unused*/) noexcept {}
+  virtual void accept(InstanceDeepCopyVisitor & /*unused*/) noexcept {}
+  virtual void accept(InstanceDeepDestroyVisitor & /*unused*/) noexcept {}
 
   virtual size_t virtual_builtin_sizeof() const noexcept {
     return 0;
@@ -50,19 +53,20 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
 
 // every TL function has a class for the result that implements RpcFunctionReturnResult;
 // which has ->value of the required type
-struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
-  virtual const char *get_class() const {
+struct C$VK$TL$RpcFunctionReturnResult : refcountable_polymorphic_php_classes_virt<> {
+  virtual const char *get_class() const noexcept {
     return "VK\\TL\\RpcFunctionReturnResult";
   }
-  virtual int32_t get_hash() const {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcFunctionReturnResult::get_class())));
+  virtual int32_t get_hash() const noexcept {
+    std::string_view name_view{C$VK$TL$RpcFunctionReturnResult::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
-  virtual void accept(ToArrayVisitor &) noexcept {}
-  virtual void accept(CommonMemoryEstimateVisitor &) noexcept {}
-  virtual void accept(InstanceReferencesCountingVisitor &) noexcept {}
-  virtual void accept(InstanceDeepCopyVisitor &) noexcept {}
-  virtual void accept(InstanceDeepDestroyVisitor &) noexcept {}
+  virtual void accept(ToArrayVisitor & /*unused*/) noexcept {}
+  virtual void accept(CommonMemoryEstimateVisitor & /*unused*/) noexcept {}
+  virtual void accept(InstanceReferencesCountingVisitor & /*unused*/) noexcept {}
+  virtual void accept(InstanceDeepCopyVisitor & /*unused*/) noexcept {}
+  virtual void accept(InstanceDeepDestroyVisitor & /*unused*/) noexcept {}
 
   virtual size_t virtual_builtin_sizeof() const noexcept {
     return 0;
@@ -76,20 +80,21 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
 
 // function call response — ReqResult from the TL scheme — is a rpcResponseOk|rpcResponseHeader|rpcResponseError;
 // if it's rpcResponseOk or rpcResponseHeader, then their bodies can be retrieved by a fetcher that was returned by a store
-struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {
+struct C$VK$TL$RpcResponse : refcountable_polymorphic_php_classes_virt<> {
   using X = class_instance<C$VK$TL$RpcFunctionReturnResult>;
 
-  virtual void accept(ToArrayVisitor &) noexcept {}
-  virtual void accept(CommonMemoryEstimateVisitor &) noexcept {}
-  virtual void accept(InstanceReferencesCountingVisitor &) noexcept {}
-  virtual void accept(InstanceDeepCopyVisitor &) noexcept {}
-  virtual void accept(InstanceDeepDestroyVisitor &) noexcept {}
+  virtual void accept(ToArrayVisitor & /*unused*/) noexcept {}
+  virtual void accept(CommonMemoryEstimateVisitor & /*unused*/) noexcept {}
+  virtual void accept(InstanceReferencesCountingVisitor & /*unused*/) noexcept {}
+  virtual void accept(InstanceDeepCopyVisitor & /*unused*/) noexcept {}
+  virtual void accept(InstanceDeepDestroyVisitor & /*unused*/) noexcept {}
 
-  virtual const char *get_class() const {
+  virtual const char *get_class() const noexcept {
     return "VK\\TL\\RpcResponse";
   }
-  virtual int32_t get_hash() const {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$VK$TL$RpcResponse::get_class())));
+  virtual int32_t get_hash() const noexcept {
+    std::string_view name_view{C$VK$TL$RpcResponse::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
   virtual size_t virtual_builtin_sizeof() const noexcept {

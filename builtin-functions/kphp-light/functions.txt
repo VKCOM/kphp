@@ -134,7 +134,7 @@ function sched_yield_sleep($duration ::: float) ::: void;
 
 // === Component ==================================================================================
 
-class ComponentQuery {
+final class ComponentQuery {
     private function __construct() ::: \ComponentQuery;
 }
 
