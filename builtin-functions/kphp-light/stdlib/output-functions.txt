@@ -1,0 +1,21 @@
+<?php
+
+// ===== SUPPORTED =====
+
+function ob_clean() ::: void;
+function ob_end_clean() ::: bool;
+function ob_get_clean() ::: string | false;
+function ob_get_contents() ::: string;
+function ob_start ($x ::: string = "") ::: void;
+function ob_flush () ::: void;
+function ob_end_flush () ::: bool;
+function ob_get_flush () ::: string | false;
+function ob_get_length () ::: int | false;
+function ob_get_level () ::: int;
+
+function print_r ($v ::: any, $buffered ::: bool = false) ::: string;
+function var_export ($v ::: any, $buffered ::: bool = false) ::: string;
+function print ($v ::: string) ::: int;
+function echo ($v ::: string) ::: void;
+function dbg_echo ($v ::: string) ::: void;
+function var_dump ($v ::: any) ::: void;

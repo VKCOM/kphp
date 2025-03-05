@@ -1,0 +1,52 @@
+<?php
+
+function php_uname($mode ::: string = "a"): string;
+
+function posix_getpid(): int;
+
+function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
+
+/**
+ * @kphp-no-return
+ * @kphp-extern-func-info interruptible
+ */
+function exit($code = 0) ::: void;
+
+/**
+ * @kphp-no-return
+ * @kphp-extern-func-info interruptible
+ */
+function die($code = 0) ::: void;
+
+// === UNSUPPORTED ===
+
+/** @kphp-extern-func-info stub */
+function exec($command ::: string, &$output ::: mixed = [], int &$result_code = 0): string|false;
+
+/** @kphp-extern-func-info stub */
+function header_register_callback (callable():void $callback) ::: bool;
+
+/** @kphp-extern-func-info stub generation-required */
+function getenv(string $varname = '', bool $local_only = false): mixed;
+
+
+/** @kphp-extern-func-info stub generation-required */
+function sleep ($seconds ::: int) ::: void;
+/** @kphp-extern-func-info stub generation-required */
+function usleep ($micro_seconds ::: int) ::: void;
+
+/** @kphp-extern-func-info stub */
+function system($command ::: string, int &$result_code = 0): int;
+
+/** @kphp-extern-func-info stub generation-required */
+function php_sapi_name() ::: string;
+
+/** @kphp-extern-func-info stub generation-required */
+function function_exists ($func_name ::: mixed) ::: bool;
+
+/** @kphp-extern-func-info stub generation-required */
+function ctype_alnum(mixed $text): bool;
+/** @kphp-extern-func-info stub generation-required */
+function ctype_digit(mixed $text): bool;
+/** @kphp-extern-func-info stub generation-required */
+function ctype_xdigit(mixed $text): bool;

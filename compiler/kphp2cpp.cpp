@@ -221,6 +221,8 @@ int main(int argc, char *argv[]) {
              'l', "link-with", "KPHP_LINK_FILE");
   parser.add("Build runtime from sources", settings->force_link_runtime,
              "force-link-runtime", "KPHP_FORCE_LINK_RUNTIME");
+  parser.add("Enable safe compilation mode to forbid builtins stubs using", settings->forbid_stubs_using,
+             "forbid-stubs", "KPHP_FORBID_STUBS_USING");
   parser.add("Path to runtime sources", settings->runtime_and_common_src, "rt-path", "KPHP_RT_PATH", get_default_kphp_path());
   parser.add("Directory where php files will be searched", settings->includes,
              'I', "include-dir", "KPHP_INCLUDE_DIR");

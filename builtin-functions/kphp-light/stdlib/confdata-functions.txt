@@ -1,4 +1,6 @@
-<?
+<?php
+
+// ===== SUPPORTED =====
 
 function is_confdata_loaded(): bool;
 

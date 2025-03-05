@@ -284,9 +284,14 @@ private:
             f_->tl_common_h_dep = true;
           } else if (token == "interruptible") {
             f_->is_interruptible = true;
-          } else if (token == "generate-stub") {
-            f_->need_generated_stub = true;
+          } else if (token == "stub") {
+            f_->is_stub = true;
+          } else if (token == "generation-required") {
+            if (!f_->is_stub) {
+              kphp_error(0, fmt_format("generation required can be used only for stubs"));
+            }
             doc_is_generated_stub = true;
+            f_->need_generated_stub = true;
           } else {
             kphp_error(0, fmt_format("Unknown @kphp-extern-func-info {}", token));
           }
