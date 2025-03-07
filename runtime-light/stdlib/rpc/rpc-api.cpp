@@ -17,9 +17,9 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/coroutine/awaitable.h"
-#include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/component-api.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
@@ -31,7 +31,7 @@ namespace rpc_impl_ {
 
 constexpr double MAX_TIMEOUT_S = 86400.0;
 constexpr double DEFAULT_TIMEOUT_S = 0.3;
-constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S});
+[[maybe_unused]] constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S});
 constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT_S});
 
 mixed mixed_array_get_value(const mixed &arr, const string &str_key, int64_t num_key) noexcept {
@@ -249,19 +249,15 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
     co_return make_fetch_error(string{"can't get untyped result from typed TL query. Use consistent API for that"}, TL_ERROR_INTERNAL);
   }
 
-  auto &fork_instance_st{ForkInstanceState::get()};
-  auto opt_fork_task{fork_instance_st.get_fork(response_waiter_fork_id)};
-  if (response_waiter_fork_id == kphp::forks::INVALID_ID || !opt_fork_task.has_value()) {
-    co_return make_fetch_error(string{"can't find fetcher fork"}, TL_ERROR_INTERNAL);
+  auto opt_data{co_await f$wait<Optional<string>>(response_waiter_fork_id, MAX_TIMEOUT_S)};
+  if (!opt_data.has_value()) [[unlikely]] {
+    co_return make_fetch_error(string{"can't find waiter fork"}, TL_ERROR_INTERNAL);
   }
-
-  auto fork_task{static_cast<shared_task_t<string>>(std::move(*opt_fork_task))};
-  const auto data{(co_await wait_with_timeout_t{wait_fork_t{std::move(fork_task)}, MAX_TIMEOUT_NS}).value()};
-  fork_instance_st.erase_fork(response_waiter_fork_id);
-
-  if (data.empty()) {
+  if (opt_data.val().empty()) [[unlikely]] {
     co_return make_fetch_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
   }
+
+  auto data{std::move(opt_data.val())};
   rpc_ctx.rpc_buffer.clean();
   rpc_ctx.rpc_buffer.store_bytes({data.c_str(), static_cast<size_t>(data.size())});
   co_return fetch_function_untyped(rpc_query);
@@ -302,19 +298,15 @@ task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(i
     co_return error_factory.make_error(string{"can't get typed result from untyped TL query. Use consistent API for that"}, TL_ERROR_INTERNAL);
   }
 
-  auto &fork_instance_st{ForkInstanceState::get()};
-  auto opt_fork_task{fork_instance_st.get_fork(response_waiter_fork_id)};
-  if (response_waiter_fork_id == kphp::forks::INVALID_ID || !opt_fork_task.has_value()) {
-    co_return error_factory.make_error(string{"can't find fetcher fork"}, TL_ERROR_INTERNAL);
+  auto opt_data{co_await f$wait<Optional<string>>(response_waiter_fork_id, MAX_TIMEOUT_S)};
+  if (!opt_data.has_value()) [[unlikely]] {
+    co_return error_factory.make_error(string{"can't find waiter fork"}, TL_ERROR_INTERNAL);
   }
-
-  auto fork_task{static_cast<shared_task_t<string>>(std::move(*opt_fork_task))};
-  const auto data{(co_await wait_with_timeout_t{wait_fork_t{std::move(fork_task)}, MAX_TIMEOUT_NS}).value()};
-  fork_instance_st.erase_fork(response_waiter_fork_id);
-
-  if (data.empty()) {
+  if (opt_data.val().empty()) [[unlikely]] {
     co_return error_factory.make_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
   }
+
+  auto data{std::move(opt_data.val())};
   rpc_ctx.rpc_buffer.clean();
   rpc_ctx.rpc_buffer.store_bytes({data.c_str(), static_cast<size_t>(data.size())});
   co_return fetch_function_typed(rpc_query, error_factory);

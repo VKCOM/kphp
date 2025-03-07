@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 function get_value(int $x) : int {

@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 // Test that throwing functions that have a catch are not
