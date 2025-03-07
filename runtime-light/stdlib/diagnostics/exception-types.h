@@ -7,8 +7,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <string_view>
 
-#include "common/php-functions.h"
+#include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
@@ -22,13 +23,16 @@ class InstanceReferencesCountingVisitor;
 // ================================================================================================
 
 struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
+  C$Throwable() noexcept = default;
+  ~C$Throwable() override = default;
+
   virtual const char *get_class() const noexcept {
     return "Throwable";
   }
 
   virtual int32_t get_hash() const noexcept {
-    const auto *name{get_class()}; // TODO: hash
-    return static_cast<int32_t>(string_hash(name, std::strlen(name)));
+    std::string_view name_view{get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
   template<class Visitor, bool process_raw_trace = true>
@@ -56,10 +60,6 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
   virtual void accept(ToArrayVisitor &visitor) noexcept {
     generic_accept<decltype(visitor), false>(visitor); // don't process raw_trace because `mixed` can't store `void *` (to_array_debug returns array<mixed>)
   }
-
-  C$Throwable() noexcept = default;
-  ~C$Throwable() override = default;
-
   string $message;
   int64_t $code{};
   string $file;
