@@ -95,3 +95,8 @@ inline string f$get_kphp_cluster_name() noexcept {
   php_warning("called stub get_kphp_cluster_name");
   return string("adm512");
 }
+
+inline string f$php_sapi_name() noexcept {
+  php_warning("called stub php_sapi_name");
+  return string("K2-server");
+}
