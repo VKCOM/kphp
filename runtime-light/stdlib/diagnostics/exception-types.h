@@ -60,6 +60,7 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
   virtual void accept(ToArrayVisitor &visitor) noexcept {
     generic_accept<decltype(visitor), false>(visitor); // don't process raw_trace because `mixed` can't store `void *` (to_array_debug returns array<mixed>)
   }
+
   string $message;
   int64_t $code{};
   string $file;
