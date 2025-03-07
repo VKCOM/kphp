@@ -1,5 +1,7 @@
 <?php
 
+// ===== SUPPORTED =====
+
 function json_encode ($v ::: mixed, $options ::: int = 0) ::: string | false;
 function json_decode ($v ::: string, $assoc ::: bool = false) ::: mixed;
 
@@ -47,11 +49,11 @@ function msgpack_deserialize($v ::: string) ::: mixed;
 
 // ===== UNSUPPORTED =====
 
-/** @kphp-extern-func-info can_throw generate-stub */
+/** @kphp-extern-func-info can_throw stub generation-required */
 function msgpack_serialize_safe($v ::: mixed) ::: string;
-/** @kphp-extern-func-info can_throw generate-stub */
+/** @kphp-extern-func-info can_throw stub generation-required */
 function msgpack_deserialize_safe($v ::: string) ::: mixed;
-/** @kphp-extern-func-info can_throw */
+/** @kphp-extern-func-info can_throw stub */
 function instance_serialize_safe(object $instance) ::: string;
-/** @kphp-extern-func-info cpp_template_call can_throw */
+/** @kphp-extern-func-info cpp_template_call can_throw stub */
 function instance_deserialize_safe($serialized ::: string, $to_type ::: string) ::: instance<^2>;

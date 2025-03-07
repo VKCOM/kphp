@@ -562,7 +562,6 @@ class CalcBadVars {
     for (int i = 0; i < call_graph.n; ++i) {
       for (const auto &fork : dep_data[i].forks) {
         fork->is_interruptible = true;
-        fork->is_k2_fork = true;
       }
     }
   }

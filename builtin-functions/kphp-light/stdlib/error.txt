@@ -2,7 +2,11 @@
 
 // === SUPPORTED ===
 
+function error_get_last() ::: mixed;
+
 function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env = "") ::: void;
+
+function error_reporting ($e ::: int = TODO) ::: int;
 
 // === UNSUPPORTED ===
 
@@ -26,22 +30,22 @@ class Exception implements Throwable {
     /** @var int */
     protected $line;
 
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function __construct($message ::: string = '', $code ::: int = 0) ::: Exception;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final public function getMessage () ::: string;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final public function getCode () ::: int;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final public function getFile () ::: string;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final public function getLine () ::: int;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final public function getTrace () ::: string[][];
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final public function getTraceAsString () ::: string;
 
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final private function __clone() ::: void;
 }
 
@@ -55,22 +59,22 @@ class Error implements Throwable {
     /** @var int */
     protected $line;
 
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function __construct($message ::: string = '', $code ::: int = 0) ::: Error;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final public function getMessage () ::: string;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final public function getCode () ::: int;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final public function getFile () ::: string;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final public function getLine () ::: int;
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final public function getTrace () ::: string[][];
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final public function getTraceAsString () ::: string;
 
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     final private function __clone() ::: void;
 }
 
@@ -91,10 +95,8 @@ define('E_DEPRECATED', 8192);
 define('E_USER_DEPRECATED', 16384);
 define('E_ALL', 32767);
 
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: string = '') ::: Exception;
-function error_get_last() ::: mixed;
 
-function error_reporting ($e ::: int = TODO) ::: int;
-/** @kphp-extern-func-info generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function kphp_backtrace($pretty ::: bool = true) ::: string[];

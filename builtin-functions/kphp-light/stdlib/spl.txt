@@ -1,5 +1,7 @@
 <?php
 
+// ===== UNSUPPORTED =====
+
 /** @kphp-generate-stub-class */
 class ArithmeticError extends Error {}
 /** @kphp-generate-stub-class */
@@ -55,21 +57,21 @@ class Random\RandomException extends Exception {}
 // For now, it only supports mixed[].
 /** @kphp-generate-stub-class */
 final class ArrayIterator {
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function __construct($arr ::: mixed[]);
 
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function count(): int;
 
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function current(): mixed;
 
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function key(): mixed;
 
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function next(): void;
 
-    /** @kphp-extern-func-info generate-stub */
+    /** @kphp-extern-func-info stub generation-required */
     public function valid(): bool;
 }
