@@ -4,16 +4,17 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
+#include <string_view>
 
 #include "common/algorithms/hashes.h"
-#include "common/wrappers/string_view.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime/pdo/abstract_pdo_driver.h"
 
-struct C$PDO : public refcountable_polymorphic_php_classes<abstract_refcountable_php_interface>, private DummyVisitorMethods {
+struct C$PDO : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   static constexpr int ATTR_TIMEOUT = 2;
 
   std::unique_ptr<pdo::AbstractPdoDriver> driver;
@@ -26,19 +27,19 @@ struct C$PDO : public refcountable_polymorphic_php_classes<abstract_refcountable
   }
 
   virtual int32_t get_hash() const noexcept {
-    return static_cast<int32_t>(vk::std_hash(vk::string_view(C$PDO::get_class())));
+    std::string_view name_view{C$PDO::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
   using DummyVisitorMethods::accept;
 };
 
 class_instance<C$PDO> f$PDO$$__construct(class_instance<C$PDO> const &v$this, const string &dsn, const Optional<string> &username = {},
-                                                                const Optional<string> &password = {}, const Optional<array<mixed>> &options= {}) noexcept;
+                                         const Optional<string> &password = {}, const Optional<array<mixed>> &options = {}) noexcept;
 
 struct C$PDOStatement;
 
 class_instance<C$PDOStatement> f$PDO$$prepare(const class_instance<C$PDO> &v$this, const string &query, const array<mixed> &options = {}) noexcept;
-
 
 class_instance<C$PDOStatement> f$PDO$$query(const class_instance<C$PDO> &v$this, const string &query, Optional<int64_t> fetchMode = {});
 
