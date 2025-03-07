@@ -2,7 +2,7 @@
 
 // ===== SUPPORTED =====
 
-class ComponentQuery {
+final class ComponentQuery {
     private function __construct() ::: \ComponentQuery;
 }
 
