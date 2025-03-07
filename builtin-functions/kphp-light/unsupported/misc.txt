@@ -36,18 +36,3 @@ function ctype_alnum(mixed $text): bool;
 function ctype_digit(mixed $text): bool;
 /** @kphp-extern-func-info generate-stub */
 function ctype_xdigit(mixed $text): bool;
-
-/**
- * @kphp-immutable-class
- */
-class CompileTimeLocation {
-  public string $file;
-  public string $function;
-  public int $line;
-
-  /** @kphp-extern-func-info */
-  public function __construct($file ::: string, $function ::: string, $line ::: int) ::: CompileTimeLocation;
-  /** @kphp-extern-func-info */
-  static public function calculate(?CompileTimeLocation $passed) ::: CompileTimeLocation;
-}
-
