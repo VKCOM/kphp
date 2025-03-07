@@ -908,6 +908,11 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
                    fmt_format("{} in {}() is not supported", elem_type->as_human_readable(), function_name));
       }
     }
+
+    if (call->func_id->is_stub) {
+      kphp_error(!G->settings().forbid_stubs_using.get(),
+                 fmt_format("try call {} stub that is prohibited by option", function_name));
+    }
   }
 
   check_func_call_params(call);
