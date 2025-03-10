@@ -360,10 +360,12 @@ Optional<int64_t> f$stream_select(mixed &read, mixed &write, mixed &except, cons
 
 
 Stream f$fopen(const string &stream, const string &mode) {
+  kprintf("mkornaukhov: %s(%s)\n", __FUNCTION__, stream.to_string().c_str());
   STREAM_FUNCTION_BODY(fopen, false)(url, mode);
 }
 
 Optional<int64_t> f$fwrite(const Stream &stream, const string &text) {
+  kprintf("mkornaukhov: %s(%s, %s)\n", __FUNCTION__, stream.to_string().c_str(), text.c_str());
   STREAM_FUNCTION_BODY(fwrite, false)(stream, text);
 }
 
@@ -404,6 +406,7 @@ bool f$feof(const Stream &stream) {
 }
 
 bool f$fclose(const Stream &stream) {
+  kprintf("mkornaukhov: %s(%s)\n", __FUNCTION__, stream.to_string().c_str());
   STREAM_FUNCTION_BODY(fclose, false)(stream);
 }
 
@@ -764,6 +767,7 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
 }
 
 Optional<string> f$file_get_contents(const string &stream) {
+  kprintf("mkornaukhov: %s(%s)\n", __FUNCTION__, stream.to_string().c_str());
   STREAM_FUNCTION_BODY(file_get_contents, false)(url);
 }
 
