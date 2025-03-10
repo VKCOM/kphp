@@ -91,6 +91,18 @@ int is_same_data_center(struct connection *c, int is_client) {
     const int remote_dc = get_dc_by_ipv4(remote_ip);
     const int local_dc = get_dc_by_ipv4(local_ip);
 
-    return remote_dc != -1 && local_dc != -1 && remote_dc == local_dc;
+    bool same = remote_dc != -1 && local_dc != -1 && remote_dc == local_dc;
+    if (!same) {
+      print_not_same_dc_log("is_same_data_center()", c);
+    }
+    return same;
   }
+}
+
+void print_not_same_dc_log(const char *prefix, connection *c) {
+  const uint32_t remote_ip = inet_sockaddr_address(&c->remote_endpoint);
+  const uint32_t local_ip = inet_sockaddr_address(&c->local_endpoint);
+  kprintf("mkornaukhov: not same dc in %s: local_ip = %d.%d.%d.%d, remote_ip = %d.%d.%d.%d\n", prefix,
+          local_ip >> 24, (local_ip >> 16) & 0xff, (local_ip >> 8) & 0xff, local_ip & 0xff,
+          remote_ip >> 24, (remote_ip >> 16) & 0xff, (remote_ip >> 8) & 0xff, remote_ip & 0xff);
 }

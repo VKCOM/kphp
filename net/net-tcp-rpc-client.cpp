@@ -127,6 +127,7 @@ static int tcp_rpcc_process_nonce_packet (struct connection *c, raw_message_t *m
     if (abs (P.crypto_ts - D->nonce_time) > 30) {
       return -6;        //less'om
     }
+    print_not_same_dc_log("tcp_rpcc_process_nonce_packet()", c);
     res = TCP_RPCC_FUNC(c)->rpc_start_crypto (c, P.crypto_nonce, P.key_select);
     if (res < 0) {
       return -6;
