@@ -54,27 +54,6 @@ else()
     add_link_options(-L${kphp-timelib_SOURCE_DIR}/objs)
 endif()
 
-find_library(KPHP_H3 h3)
-if(KPHP_H3)
-    add_library(libh3 STATIC IMPORTED ${KPHP_H3})
-else()
-    handle_missing_library("h3")
-    FetchContent_Declare(
-            h3
-            GIT_REPOSITORY https://github.com/VKCOM/uber-h3.git
-            GIT_TAG        fetch_content
-    )
-    message(STATUS "---------------------")
-    FetchContent_MakeAvailable(h3)
-    # This is an indicator for runtime library "combiner" (`combine_static_runtime_library` CMake method)
-    # On some platforms h3 may be recognized as a "normal" CMake target, while on others it could be seen as an `unknown lib` (-l:libh3.a).
-    # As a result, the `combiner` cannot determine that `h3` is a system-installed library and should not be included in the single-file runtime library.
-    set_target_properties(h3 PROPERTIES DOWNLOADED_LIBRARY 1)
-    include_directories(${h3_BINARY_DIR}/src/include)
-    add_definitions(-DKPHP_H3_LIB_DIR="${h3_BINARY_DIR}/lib")
-    add_link_options(-L${h3_BINARY_DIR}/lib)
-endif()
-
 if(APPLE)
     if (DEFINED ENV{EPOLL_SHIM_REPO})
         FetchContent_Declare(

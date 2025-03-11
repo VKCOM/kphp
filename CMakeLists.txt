@@ -119,8 +119,7 @@ else() # kphp specific
             DESTINATION ${INSTALL_KPHP_SOURCE}
             FILES_MATCHING REGEX ".*\\.(hpp|h|inl)$")
 
-    set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, libuber-h3, libyaml-cpp-dev, \
-                                           gcc, g++, kphp-timelib, libnuma-dev")
+    set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, gcc, g++")
 
     if (PDO_DRIVER_MYSQL)
         set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libmysqlclient-dev")

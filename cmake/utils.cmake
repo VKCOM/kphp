@@ -161,11 +161,6 @@ function(combine_static_runtime_library TARGET COMBINED_TARGET)
                     set(dep ${alias})
                 endif()
 
-                get_target_property(is_downloaded_lib ${dep} DOWNLOADED_LIBRARY)
-                if(is_downloaded_lib EQUAL 1)
-                    continue()
-                endif()
-
                 get_target_property(dep_kind ${dep} TYPE)
                 if(${dep_kind} STREQUAL "STATIC_LIBRARY")
                     list(APPEND dependencies_list ${dep})

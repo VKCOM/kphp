@@ -27,3 +27,7 @@
 	path = third-party/pcre
 	url = https://github.com/VKCOM/PCRE.git
 	branch = debian/buster
+[submodule "third-party/uber-h3"]
+	path = third-party/uber-h3
+	url = https://github.com/VKCOM/uber-h3.git
+	branch = master

@@ -356,21 +356,12 @@ void CompilerSettings::init() {
 
   ld_flags.value_ = extra_ld_flags.get();
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> system_installed_static_libs{"yaml-cpp", "h3", "kphp-timelib"};
+  std::vector<vk::string_view> system_installed_static_libs{"yaml-cpp", "kphp-timelib"};
 
 #ifdef KPHP_TIMELIB_LIB_DIR
   ld_flags.value_ += " -L" KPHP_TIMELIB_LIB_DIR;
 #else
   // kphp-timelib is usually installed in /usr/local/lib;
-  // LDD may not find a library in /usr/local/lib if we don't add it here
-  // TODO: can we avoid this hardcoded library path?
-  ld_flags.value_ += " -L /usr/local/lib";
-#endif
-
-#ifdef KPHP_H3_LIB_DIR
-  ld_flags.value_ += " -L" KPHP_H3_LIB_DIR;
-#else
-  // kphp-h3 is usually installed in /usr/local/lib;
   // LDD may not find a library in /usr/local/lib if we don't add it here
   // TODO: can we avoid this hardcoded library path?
   ld_flags.value_ += " -L /usr/local/lib";
