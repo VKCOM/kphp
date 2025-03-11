@@ -5,6 +5,7 @@
 #pragma once
 
 #include <type_traits>
+#include <utility>
 
 namespace vk {
 struct identity {
@@ -14,4 +15,4 @@ struct identity {
   }
   using is_transparent = std::true_type;
 };
-}
+} // namespace vk
