@@ -14,9 +14,7 @@
 #include <string_view>
 #include <utility>
 
-#include "absl/strings/ascii.h"
-#include "absl/strings/str_split.h"
-
+#include "common/algorithms/string-algorithms.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/server/http/http-server-state.h"
@@ -34,7 +32,7 @@ bool http_status_header(std::string_view header) noexcept {
 
 bool http_location_header(std::string_view header) noexcept {
   {
-    const std::pair<std::string_view, std::string_view> parts{absl::StrSplit(header, absl::MaxSplits(':', 1))};
+    const std::pair<std::string_view, std::string_view> parts{vk::split_string_view(header, ':')};
     auto [name_view, value_view]{parts};
     if (name_view.size() + value_view.size() + 1 != header.size()) [[unlikely]] {
       return false;
@@ -118,19 +116,19 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
     }
   }
 
-  const std::pair<std::string_view, std::string_view> parts{absl::StrSplit(header_view, absl::MaxSplits(':', 1))};
+  const std::pair<std::string_view, std::string_view> parts{vk::split_string_view(header_view, ':')};
   auto [name_view, value_view]{parts};
   if (name_view.size() + value_view.size() + 1 != header_view.size()) [[unlikely]] {
     return php_warning("invalid header: %s", header_view.data());
   }
 
   // validate header name
-  name_view = absl::StripAsciiWhitespace(name_view);
+  name_view = vk::strip_ascii_whitespace(name_view);
   if (!std::ranges::all_of(name_view, [](char c) noexcept { return std::isalnum(c) || c == '-' || c == '_'; })) [[unlikely]] {
     return php_warning("invalid header name: %s", name_view.data());
   }
   // validate header value
-  value_view = absl::StripAsciiWhitespace(value_view);
+  value_view = vk::strip_ascii_whitespace(value_view);
   if (!std::ranges::all_of(value_view, [](char c) noexcept { return std::isprint(c); })) [[unlikely]] {
     return php_warning("invalid header value: %s", value_view.data());
   }

@@ -17,9 +17,7 @@
 #include <system_error>
 #include <utility>
 
-#include "absl/strings/match.h"
-#include "absl/strings/str_split.h"
-
+#include "common/algorithms/string-algorithms.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
@@ -107,7 +105,7 @@ void process_cookie_header(std::string_view header, PhpScriptBuiltInSuperGlobals
 // Header example:
 //  Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
 void process_authorization_header(std::string_view header, PhpScriptBuiltInSuperGlobals &superglobals) noexcept {
-  std::pair<std::string_view, std::string_view> parts{absl::StrSplit(header, absl::MaxSplits(' ', 1))};
+  std::pair<std::string_view, std::string_view> parts{vk::split_string_view(header, ' ')};
   const auto [auth_scheme, auth_credentials]{parts};
   if (auth_scheme.size() + auth_credentials.size() + 1 != header.size() || auth_scheme != AUTHORIZATION_BASIC) [[unlikely]] {
     return;
@@ -119,7 +117,7 @@ void process_authorization_header(std::string_view header, PhpScriptBuiltInSuper
   }
 
   const std::string_view decoded_login_pass_view{decoded_login_pass.val().c_str(), decoded_login_pass.val().size()};
-  parts = absl::StrSplit(decoded_login_pass_view, absl::MaxSplits(':', 1));
+  parts = vk::split_string_view(decoded_login_pass_view, ':');
   const auto [login, pass]{parts};
   if (login.size() + pass.size() + 1 != decoded_login_pass_view.size()) [[unlikely]] {
     return;
@@ -146,10 +144,10 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
 
     using namespace PhpServerSuperGlobalIndices;
     if (h_name == kphp::http::headers::ACCEPT_ENCODING) {
-      if (absl::StrContains(h_value, ENCODING_GZIP)) {
+      if (h_value.contains(ENCODING_GZIP)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_GZIP;
       }
-      if (absl::StrContains(h_value, ENCODING_DEFLATE)) {
+      if (h_value.contains(ENCODING_DEFLATE)) {
         http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_DEFLATE;
       }
     } else if (h_name == kphp::http::headers::CONNECTION) {
