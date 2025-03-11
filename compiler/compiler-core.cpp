@@ -153,7 +153,7 @@ const std::string &CompilerCore::get_global_namespace() const {
 }
 
 FunctionPtr CompilerCore::get_function(const std::string &name) {
-  TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(vk::std_hash(name));
+  auto *node = functions_ht.at(vk::std_hash(name));
   AutoLocker<Lockable *> locker(node);
   if (!node->data || node->data == UNPARSED_BUT_REQUIRED_FUNC_PTR) {
     return {};
