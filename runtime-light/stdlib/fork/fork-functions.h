@@ -39,7 +39,7 @@ template<typename T>
 requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
   auto &fork_instance_st{ForkInstanceState::get()};
   auto opt_fork_info{fork_instance_st.get_info(fork_id)};
-  if (!opt_fork_info.has_value() || (*opt_fork_info).get().awaited) [[unlikely]] {
+  if (!opt_fork_info.has_value() || !(*opt_fork_info).get().opt_handle.has_value() || (*opt_fork_info).get().awaited) [[unlikely]] {
     php_warning("fork with ID %" PRId64 " does not exist or has already been awaited by another fork", fork_id);
     co_return T{};
   }
