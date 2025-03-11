@@ -8,7 +8,6 @@
 #include <functional>
 #include <optional>
 #include <utility>
-#include <variant>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -29,7 +28,7 @@ struct ForkInstanceState final : private vk::not_copyable {
   // manage and destroy the fork state once all referencing futures have been destroyed.
   struct fork_info final {
     Throwable thrown_exception;
-    std::variant<std::monostate, shared_task_t<void>> handle;
+    std::optional<shared_task_t<void>> opt_handle;
   };
 
 private:
@@ -40,7 +39,7 @@ private:
   kphp::stl::unordered_map<int64_t, fork_info, kphp::memory::script_allocator> forks;
 
   int64_t push_fork(shared_task_t<void> fork_task) noexcept {
-    forks.emplace(next_fork_id, fork_info{.thrown_exception = {}, .handle = std::move(fork_task)});
+    forks.emplace(next_fork_id, fork_info{.thrown_exception = {}, .opt_handle = std::move(fork_task)});
     return next_fork_id++;
   }
 

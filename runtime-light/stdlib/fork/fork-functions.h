@@ -10,7 +10,6 @@
 #include <cstdint>
 #include <optional>
 #include <utility>
-#include <variant>
 
 #include "runtime-common/core/core-types/decl/optional.h"
 #include "runtime-common/core/runtime-core.h"
@@ -40,13 +39,13 @@ template<typename T>
 requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
   auto &fork_instance_st{ForkInstanceState::get()};
   auto opt_fork_info{fork_instance_st.get_info(fork_id)};
-  if (!opt_fork_info.has_value() || std::holds_alternative<std::monostate>((*opt_fork_info).get().handle)) [[unlikely]] {
+  if (!opt_fork_info.has_value() || !(*opt_fork_info).get().opt_handle.has_value()) [[unlikely]] {
     php_warning("fork with ID %" PRId64 " does not exist or has already been awaited by another fork", fork_id);
     co_return T{};
   }
 
   auto &fork_info{(*opt_fork_info).get()};
-  auto fork_task{std::get<shared_task_t<void>>(fork_info.handle)};
+  auto fork_task{*fork_info.opt_handle};
   auto opt_result{co_await wait_with_timeout_t{wait_fork_t{static_cast<shared_task_t<internal_optional_type_t<T>>>(std::move(fork_task))},
                                                forks_impl_::normalize_timeout(timeout)}};
   // Execute essential housekeeping tasks to maintain proper state management.
@@ -55,7 +54,7 @@ requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>
   auto current_fork_info{fork_instance_st.current_info()};
   php_assert(std::exchange(current_fork_info.get().thrown_exception, std::move(fork_info.thrown_exception)).is_null());
   // 2. Detach the shared_task_t from fork_info to prevent further associations, ensuring that resources are released.
-  fork_info.handle.emplace<std::monostate>();
+  fork_info.opt_handle.reset();
 
   co_return opt_result.has_value() ? T{std::move(opt_result.value())} : T{};
 }
@@ -76,8 +75,8 @@ inline task_t<bool> f$wait_concurrently(int64_t fork_id) noexcept {
   }
 
   const auto &fork_info{(*opt_fork_info).get()};
-  if (std::holds_alternative<shared_task_t<void>>(fork_info.handle)) {
-    auto fork_task{std::get<shared_task_t<void>>(fork_info.handle)};
+  if (fork_info.opt_handle.has_value()) {
+    auto fork_task{*fork_info.opt_handle};
     co_await wait_fork_t{std::move(fork_task)};
   }
   co_return true;
