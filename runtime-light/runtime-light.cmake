@@ -1,11 +1,8 @@
 # prepare third-parties
-update_git_submodule(${THIRD_PARTY_DIR}/abseil-cpp "--recursive")
 update_git_submodule(${THIRD_PARTY_DIR}/pcre2 "--recursive")
-include(${THIRD_PARTY_DIR}/abseil-cpp-cmake/abseil-cpp.cmake)
 include(${THIRD_PARTY_DIR}/pcre2-cmake/pcre2.cmake)
 
-set(THIRD_PARTY_INCLUDE -I${OBJS_DIR}/include -I${THIRD_PARTY_DIR}
-                        -I${THIRD_PARTY_DIR}/abseil-cpp)
+set(THIRD_PARTY_INCLUDE -I${OBJS_DIR}/include -I${THIRD_PARTY_DIR})
 
 # =================================================================================================
 include(${RUNTIME_LIGHT_DIR}/allocator/allocator.cmake)
@@ -47,11 +44,10 @@ target_compile_options(
                        ${THIRD_PARTY_INCLUDE} -O3)
 target_link_options(runtime-light-pic PUBLIC -stdlib=libc++ -static-libstdc++)
 # add statically linking libraries
-string(JOIN " " ABSEIL_LIBS ${ABSEIL_LIBS})
 set_property(
   TARGET runtime-light-pic
   PROPERTY RUNTIME_LINK_LIBS
-           "${ABSEIL_LIBS} ${ZLIB_PIC_LIBRARIES} ${PCRE2_LIB_DIR}/libpcre2-8.a"
+           "${ZLIB_PIC_LIBRARIES} ${PCRE2_LIB_DIR}/libpcre2-8.a"
 )
 add_dependencies(runtime-light-pic ZLIB::pic::zlib)
 
