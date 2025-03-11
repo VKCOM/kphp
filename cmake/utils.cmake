@@ -208,9 +208,10 @@ function(combine_static_runtime_library TARGET COMBINED_TARGET)
         endif()
 
         add_custom_command(
+                DEPENDS ${TARGET}
                 COMMAND ${ar_tool} -M < ${CMAKE_BINARY_DIR}/${COMBINED_TARGET}.ar
                 OUTPUT ${combined_target_path}
-                COMMENT "Bundling ${COMBINED_TARGET}"
+                COMMENT "Combining ${COMBINED_TARGET}"
                 VERBATIM
         )
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "^AppleClang$")
@@ -224,11 +225,11 @@ function(combine_static_runtime_library TARGET COMBINED_TARGET)
         list(TRANSFORM dependencies_list APPEND ">")
 
         add_custom_command(
-                COMMAND cmake -E echo "$<GENEX_EVAL:$<JOIN:${dependencies_list},$<SEMICOLON>>>"
+                DEPENDS ${TARGET}
                 COMMAND ${ar_tool} -static -o ${combined_target_path} "$<GENEX_EVAL:$<JOIN:${dependencies_list},$<SEMICOLON>>>"
                 COMMAND_EXPAND_LISTS
                 OUTPUT ${combined_target_path}
-                COMMENT "Bundling ${COMBINED_TARGET}"
+                COMMENT "Combining ${COMBINED_TARGET}"
                 VERBATIM
         )
     else()
