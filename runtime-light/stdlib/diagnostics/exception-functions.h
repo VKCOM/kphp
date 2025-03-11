@@ -64,14 +64,14 @@ namespace kphp::exceptions {
 
 template<std::derived_from<C$Throwable> T>
 class_instance<T> make_throwable(const string &file, int64_t line, int64_t code, const string &desc) noexcept {
-  auto ci{make_instance<T>()};
+  auto instance{make_instance<T>()};
 
-  auto *ins_ptr{ci.get()};
-  ins_ptr->$file = file;
-  ins_ptr->$line = line;
-  ins_ptr->$code = code;
-  ins_ptr->$message = desc;
-  return ci;
+  auto *instance_ptr{instance.get()};
+  instance_ptr->$file = file;
+  instance_ptr->$line = line;
+  instance_ptr->$code = code;
+  instance_ptr->$message = desc;
+  return instance;
 }
 
 } // namespace kphp::exceptions
