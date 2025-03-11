@@ -365,7 +365,7 @@ Stream f$fopen(const string &stream, const string &mode) {
 }
 
 Optional<int64_t> f$fwrite(const Stream &stream, const string &text) {
-  kprintf("mkornaukhov: %s(%s, %s)\n", __FUNCTION__, stream.to_string().c_str(), text.c_str());
+  kprintf("mkornaukhov: %s(%s, ...)\n", __FUNCTION__, stream.to_string().c_str());
   STREAM_FUNCTION_BODY(fwrite, false)(stream, text);
 }
 
