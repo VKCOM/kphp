@@ -84,7 +84,7 @@ inline vk::string_view strip_ascii_whitespace(vk::string_view view) noexcept {
 }
 
 inline std::pair<vk::string_view, vk::string_view> split_string_view(vk::string_view view, char delimiter) noexcept {
-  size_t pos = view.find_first_of(delimiter);
+  size_t pos = view.find(delimiter);
   if (pos == vk::string_view::npos) {
     return {view, vk::string_view{}};
   }
