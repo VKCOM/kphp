@@ -153,7 +153,7 @@ const std::string &CompilerCore::get_global_namespace() const {
 }
 
 FunctionPtr CompilerCore::get_function(const std::string &name) {
-  TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(vk::std_hash(name));
+  auto *node = functions_ht.at(vk::std_hash(name));
   AutoLocker<Lockable *> locker(node);
   if (!node->data || node->data == UNPARSED_BUT_REQUIRED_FUNC_PTR) {
     return {};
@@ -267,7 +267,6 @@ SrcFilePtr CompilerCore::register_file(const std::string &file_name, LibPtr owne
   if (!node->data) {
     AutoLocker<Lockable *> locker(node);
     if (!node->data) {
-      stats.total_files.fetch_add(1, std::memory_order_relaxed);
       SrcFilePtr new_file = SrcFilePtr(new SrcFile(full_file_name, short_file_name, owner_lib));
       new_file->is_from_functions_file = builtin;
       new_file->relative_file_name = static_cast<std::string>(calc_relative_name(new_file, builtin));
@@ -298,8 +297,6 @@ SrcFilePtr CompilerCore::register_file(const std::string &file_name, LibPtr owne
 SrcDirPtr CompilerCore::register_dir(vk::string_view full_dir_name) {
   static CachedProfiler cache{"Load src dirs tree"};
   AutoProfiler prof{*cache};
-
-  stats.total_dirs.fetch_add(1, std::memory_order_relaxed);
 
   SrcDirPtr dir = SrcDirPtr(new SrcDir(static_cast<std::string>(full_dir_name)));
 
@@ -374,7 +371,6 @@ bool CompilerCore::register_class(ClassPtr cur_class) {
 }
 
 LibPtr CompilerCore::register_lib(LibPtr lib) {
-  stats.total_libs.fetch_add(1, std::memory_order_relaxed);
   TSHashTable<LibPtr, 1000>::HTNode *node = libs_ht.at(vk::std_hash(lib->lib_namespace()));
   AutoLocker<Lockable *> locker(node);
   if (!node->data) {
@@ -384,7 +380,6 @@ LibPtr CompilerCore::register_lib(LibPtr lib) {
 }
 
 ModulitePtr CompilerCore::register_modulite(ModulitePtr modulite) {
-  stats.total_modulites.fetch_add(1, std::memory_order_relaxed);
   auto *node = modulites_ht.at(vk::std_hash(modulite->modulite_name));
   AutoLocker<Lockable *> locker(node);
   kphp_error(!node->data, fmt_format("Redeclaration of modulite {}, declared in:\n- {}\n- {}", modulite->modulite_name, modulite->yaml_file->relative_file_name, node->data->yaml_file->relative_file_name));
@@ -398,7 +393,6 @@ ModulitePtr CompilerCore::get_modulite(vk::string_view name) {
 }
 
 ComposerJsonPtr CompilerCore::register_composer_json(ComposerJsonPtr composer_json) {
-  stats.total_composer_jsons.fetch_add(1, std::memory_order_relaxed);
   auto *node = composer_json_ht.at(vk::std_hash(composer_json->package_name));
   AutoLocker<Lockable *> locker(node);
   kphp_error(!node->data, fmt_format("Redeclaration of composer package {}, declared in:\n- {}\n- {}", composer_json->package_name, composer_json->json_file->relative_file_name, node->data->json_file->relative_file_name));
@@ -464,8 +458,6 @@ void CompilerCore::set_memcache_class(ClassPtr klass) {
 bool CompilerCore::register_define(DefinePtr def_id) {
   TSHashTable<DefinePtr>::HTNode *node = defines_ht.at(vk::std_hash(def_id->name));
   AutoLocker<Lockable *> locker(node);
-
-  stats.total_defines.fetch_add(1, std::memory_order_relaxed);
 
   kphp_error_act (
     !node->data,
@@ -772,16 +764,27 @@ void CompilerCore::init_composer_class_loader() {
 }
 
 void CompilerCore::update_hash_tables_stats() {
-  stats.max_files = file_ht.max_size();
-  stats.max_dirs = dirs_ht.max_size();
-  stats.max_functions = functions_ht.max_size();
-  stats.max_classes = classes_ht.max_size();
-  stats.max_defines = defines_ht.max_size();
-  stats.max_constants = constants_ht.max_size();
-  stats.max_globals = globals_ht.max_size();
-  stats.max_libs = libs_ht.max_size();
-  stats.max_modulites = modulites_ht.max_size();
-  stats.max_composer_jsons = composer_json_ht.max_size();
+  stats.ht_max_files = file_ht.max_size();
+  stats.ht_max_dirs = dirs_ht.max_size();
+  stats.ht_max_functions = functions_ht.max_size();
+  stats.ht_max_classes = classes_ht.max_size();
+  stats.ht_max_defines = defines_ht.max_size();
+  stats.ht_max_constants = constants_ht.max_size();
+  stats.ht_max_globals = globals_ht.max_size();
+  stats.ht_max_libs = libs_ht.max_size();
+  stats.ht_max_modulites = modulites_ht.max_size();
+  stats.ht_max_composer_jsons = composer_json_ht.max_size();
+
+  stats.ht_total_files = file_ht.get_size();
+  stats.ht_total_dirs = dirs_ht.get_size();
+  stats.ht_total_functions = functions_ht.get_size();
+  stats.ht_total_classes = classes_ht.get_size();
+  stats.ht_total_defines = defines_ht.get_size();
+  stats.ht_total_constants = constants_ht.get_size();
+  stats.ht_total_globals = globals_ht.get_size();
+  stats.ht_total_libs = libs_ht.get_size();
+  stats.ht_total_modulites = modulites_ht.get_size();
+  stats.ht_total_composer_jsons = composer_json_ht.get_size();
 }
 
 CompilerCore *G;

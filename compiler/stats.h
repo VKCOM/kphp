@@ -31,24 +31,28 @@ public:
   std::atomic<double> total_time{0.0};
 
   // Counters for hash tables' sizes in CompilerCore
-  std::atomic<std::uint64_t> total_files{0u};
-  std::atomic<std::uint64_t> total_dirs{0u};
-  std::atomic<std::uint64_t> total_defines{0u};
-  std::atomic<std::uint64_t> total_libs{0u};
-  std::atomic<std::uint64_t> total_modulites{0u};
-  std::atomic<std::uint64_t> total_composer_jsons{0u};
+  std::atomic<std::uint64_t> ht_total_files{0u};
+  std::atomic<std::uint64_t> ht_total_dirs{0u};
+  std::atomic<std::uint64_t> ht_total_functions{0u};
+  std::atomic<std::uint64_t> ht_total_classes{0u};
+  std::atomic<std::uint64_t> ht_total_defines{0u};
+  std::atomic<std::uint64_t> ht_total_constants{0u};
+  std::atomic<std::uint64_t> ht_total_globals{0u};
+  std::atomic<std::uint64_t> ht_total_libs{0u};
+  std::atomic<std::uint64_t> ht_total_modulites{0u};
+  std::atomic<std::uint64_t> ht_total_composer_jsons{0u};
 
   // Max sizes of hash tables in CompilerCore
-  std::atomic<std::uint64_t> max_files{0u};
-  std::atomic<std::uint64_t> max_dirs{0u};
-  std::atomic<std::uint64_t> max_functions{0u};
-  std::atomic<std::uint64_t> max_classes{0u};
-  std::atomic<std::uint64_t> max_defines{0u};
-  std::atomic<std::uint64_t> max_constants{0u};
-  std::atomic<std::uint64_t> max_globals{0u};
-  std::atomic<std::uint64_t> max_libs{0u};
-  std::atomic<std::uint64_t> max_modulites{0u};
-  std::atomic<std::uint64_t> max_composer_jsons{0u};
+  std::atomic<std::uint64_t> ht_max_files{0u};
+  std::atomic<std::uint64_t> ht_max_dirs{0u};
+  std::atomic<std::uint64_t> ht_max_functions{0u};
+  std::atomic<std::uint64_t> ht_max_classes{0u};
+  std::atomic<std::uint64_t> ht_max_defines{0u};
+  std::atomic<std::uint64_t> ht_max_constants{0u};
+  std::atomic<std::uint64_t> ht_max_globals{0u};
+  std::atomic<std::uint64_t> ht_max_libs{0u};
+  std::atomic<std::uint64_t> ht_max_modulites{0u};
+  std::atomic<std::uint64_t> ht_max_composer_jsons{0u};
 
   std::unordered_map<std::string, ProfilerRaw> profiler_stats;
 

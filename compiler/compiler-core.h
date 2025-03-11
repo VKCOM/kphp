@@ -43,7 +43,7 @@ private:
   Index unicode_sources_index;
   TSHashTable<SrcFilePtr> file_ht;
   TSHashTable<SrcDirPtr> dirs_ht;
-  TSHashTable<FunctionPtr> functions_ht;
+  TSHashTable<FunctionPtr, 2'000'000> functions_ht;
   TSHashTable<ClassPtr> classes_ht;
   TSHashTable<DefinePtr> defines_ht;
   TSHashTable<VarPtr,2'000'000> constants_ht;   // auto-collected constants (const strings / arrays / regexps / pure func calls); are inited once in a master process
@@ -101,7 +101,7 @@ public:
   void operate_on_function_locking(const std::string &name, CallbackT callback) {
     static_assert(std::is_constructible<std::function<void(FunctionPtr&)>, CallbackT>::value, "invalid callback signature");
 
-    TSHashTable<FunctionPtr>::HTNode *node = functions_ht.at(vk::std_hash(name));
+    auto *node = functions_ht.at(vk::std_hash(name));
     AutoLocker<Lockable *> locker(node);
     callback(node->data);
   }

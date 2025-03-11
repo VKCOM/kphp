@@ -73,6 +73,17 @@ public:
     return res;
   }
 
+  int get_size() const {
+    int size = 0;
+    for (int i = 0; i < N; ++i) {
+      if (nodes[i].hash != 0) {
+        size++;
+      }
+    }
+
+    return size;
+  }
+
   template<class CondF>
   std::vector<T> get_all_if(const CondF &callbackF) {
     std::vector<T> res;
