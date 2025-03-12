@@ -442,7 +442,7 @@ static std::string get_light_runtime_compiler_options() {
 
 #ifdef RUNTIME_LIGHT
   std::vector<std::string> black_list_substrings = {"debug-prefix-map"};
-  std::vector<std::string> options = split(RUNTIME_COMPILER_FLAGS, ';');
+  std::vector<std::string> options = split(RUNTIME_LIGHT_COMPILE_FLAGS, ';');
 
   for (vk::string_view option : options) {
     for (vk::string_view prohibit_substr : black_list_substrings) {
@@ -452,6 +452,8 @@ static std::string get_light_runtime_compiler_options() {
   }
   s << "-std=c++23 ";
   s << "-iquote " << G->settings().runtime_and_common_src.get() << " ";
+  s << "-iquote " << G->settings().kphp_src_path.get() << "objs/include ";
+  s << "-iquote " << G->settings().kphp_src_path.get() << "objs/generated ";
 #endif
 
   return s.str();

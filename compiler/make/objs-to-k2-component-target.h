@@ -67,7 +67,7 @@ public:
 #endif
 
     // add vendored statically linking libs
-    std::vector<std::string> libs = split(RUNTIME_LINK_LIBS);
+    std::vector<std::string> libs = split(RUNTIME_LIGHT_LINK_LIBS);
     ss << start_group;
     std::for_each(libs.cbegin(), libs.cend(), [&ss](const auto &lib) noexcept { ss << lib << " "; });
     ss << end_group;

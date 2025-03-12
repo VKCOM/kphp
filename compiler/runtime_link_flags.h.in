@@ -1,0 +1,3 @@
+#pragma once
+
+#define RUNTIME_LIGHT_LINK_FLAGS "${RUNTIME_LIGHT_LINK_FLAGS}"
