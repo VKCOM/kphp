@@ -64,7 +64,7 @@ void InstanceState::init_script_execution() noexcept {
       php_assert(co_await f$wait_concurrently(co_await start_fork_t{std::move(script_task)}));
     },
     std::move(script_task))};
-  scheduler.suspend(std::make_pair(main_task.get_handle(), WaitEvent::Rechedule{}));
+  scheduler.suspend({main_task.get_handle(), WaitEvent::Rechedule{}});
   main_task_ = std::move(main_task);
 }
 
