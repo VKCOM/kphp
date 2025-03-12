@@ -56,7 +56,7 @@ void InstanceState::init_script_execution() noexcept {
       script_task = std::invoke(
         [](task_t<void> script_task) noexcept -> task_t<void> {
           co_await script_task;
-          if (auto exception{ForkInstanceState::get().current_info().get().thrown_exception}; !exception.is_null()) [[unlikely]] {
+          if (auto exception{std::move(ForkInstanceState::get().current_info().get().thrown_exception)}; !exception.is_null()) [[unlikely]] {
             php_error("unhandled exception '%s' at %s:%" PRId64, exception.get_class(), exception->$file.c_str(), exception->$line);
           }
         },
