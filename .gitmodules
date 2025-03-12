@@ -31,3 +31,7 @@
 	path = third-party/uber-h3
 	url = https://github.com/VKCOM/uber-h3.git
 	branch = master
+[submodule "third-party/timelib"]
+	path = third-party/timelib
+	url = https://github.com/VKCOM/timelib.git
+	branch = master

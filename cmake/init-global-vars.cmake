@@ -31,6 +31,14 @@ endif()
 find_package(Git REQUIRED)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 find_package(Perl REQUIRED)
+find_program(RE2C_EXECUTABLE re2c)
+
+if(NOT RE2C_EXECUTABLE)
+    message(FATAL_ERROR "re2c is required but was not found. Please install re2c and try again.")
+else()
+    message(STATUS "Found re2c: ${RE2C_EXECUTABLE}")
+endif()
+
 
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)

@@ -1,4 +1,5 @@
 # Only runtime-related third-parties
+include(${THIRD_PARTY_DIR}/timelib-cmake/timelib.cmake)
 include(${THIRD_PARTY_DIR}/uber-h3-cmake/uber-h3.cmake)
 include(${THIRD_PARTY_DIR}/pcre-cmake/pcre.cmake)
 include(${THIRD_PARTY_DIR}/nghttp2-cmake/nghttp2.cmake)
@@ -165,12 +166,13 @@ set(RUNTIME_LIBS_NO_PIC
         RE2::no-pic::re2
         PCRE::no-pic::pcre
         UBER_H3::no-pic::uber-h3
+        KPHP_TIMELIB::no-pic::timelib
         m
         pthread
 )
 target_link_libraries(kphp-runtime-no-pic PUBLIC ${RUNTIME_LIBS_NO_PIC})
 
-add_dependencies(kphp-runtime-no-pic kphp-timelib OpenSSL::no-pic::Crypto OpenSSL::no-pic::SSL CURL::no-pic::curl NGHTTP2::no-pic::nghttp2 ZLIB::no-pic::zlib ZSTD::no-pic::zstd RE2::no-pic::re2 PCRE::no-pic::pcre UBER_H3::no-pic::uber-h3)
+add_dependencies(kphp-runtime-no-pic KPHP_TIMELIB::no-pic::timelib OpenSSL::no-pic::Crypto OpenSSL::no-pic::SSL CURL::no-pic::curl NGHTTP2::no-pic::nghttp2 ZLIB::no-pic::zlib ZSTD::no-pic::zstd RE2::no-pic::re2 PCRE::no-pic::pcre UBER_H3::no-pic::uber-h3)
 combine_static_runtime_library(kphp-runtime-no-pic kphp-full-runtime-no-pic)
 ###
 
@@ -196,12 +198,13 @@ set(RUNTIME_LIBS_PIC
         RE2::pic::re2
         PCRE::pic::pcre
         UBER_H3::pic::uber-h3
+        KPHP_TIMELIB::pic::timelib
         m
         pthread
 )
 target_link_libraries(kphp-runtime-pic PUBLIC ${RUNTIME_LIBS_PIC})
 
-add_dependencies(kphp-runtime-pic kphp-timelib OpenSSL::pic::Crypto OpenSSL::pic::SSL CURL::pic::curl NGHTTP2::pic::nghttp2 ZLIB::pic::zlib ZSTD::pic::zstd RE2::pic::re2 PCRE::pic::pcre UBER_H3::pic::uber-h3)
+add_dependencies(kphp-runtime-pic KPHP_TIMELIB::pic::timelib OpenSSL::pic::Crypto OpenSSL::pic::SSL CURL::pic::curl NGHTTP2::pic::nghttp2 ZLIB::pic::zlib ZSTD::pic::zstd RE2::pic::re2 PCRE::pic::pcre UBER_H3::pic::uber-h3)
 combine_static_runtime_library(kphp-runtime-pic kphp-full-runtime-pic)
 ###
 
@@ -226,7 +229,6 @@ set(RUNTIME_LIBS
         pthread
 )
 
-prepare_cross_platform_libs(SYSTEM_INSTALLED_TEST_LIB kphp-timelib)
 set(RUNTIME_LINK_TEST_LIBS
         vk::${PIC_MODE}::flex-data-src
         CURL::${PIC_MODE}::curl
@@ -234,7 +236,7 @@ set(RUNTIME_LINK_TEST_LIBS
         NGHTTP2::${PIC_MODE}::nghttp2
         PCRE::${PIC_MODE}::pcre
         ${NUMA_LIB}
-        ${SYSTEM_INSTALLED_TEST_LIB}
+        KPHP_TIMELIB::${PIC_MODE}::timelib
         ${EPOLL_SHIM_LIB}
         ${ICONV_LIB}
         ${RT_LIB}
