@@ -1,75 +1,105 @@
-if(COMPILE_RUNTIME_LIGHT)
-  # set cmake_policy to silence set & option warnings
-  cmake_policy(PUSH)
-  cmake_policy(SET CMP0077 NEW)
+update_git_submodule(${THIRD_PARTY_DIR}/pcre2 "--recursive")
+get_submodule_version(${THIRD_PARTY_DIR}/pcre2 PCRE2_VERSION)
+get_submodule_remote_url(third-party/pcre2 PCRE2_SOURCE_URL)
 
-  set(PCRE2_STATIC_PIC
-      ON
-      CACHE BOOL "Enable PCRE2 PIC")
-  set(PCRE2_BUILD_PCRE2_16
-      OFF
-      CACHE BOOL "Disable PCRE2-16")
-  set(PCRE2_BUILD_PCRE2_32
-      OFF
-      CACHE BOOL "Disable PCRE2-32")
-  if(APPLE)
-    set(PCRE2_SUPPORT_JIT
-        OFF
-        CACHE BOOL "Disable PCRE2 JIT on Apple platforms")
-  else()
-    set(PCRE2_SUPPORT_JIT
-        ON
-        CACHE BOOL "Enable PCRE2 JIT")
-  endif()
-  set(PCRE2_BUILD_PCRE2GREP
-      OFF
-      CACHE BOOL "Disable build of pcre2grep")
-  set(PCRE2_BUILD_TESTS
-      OFF
-      CACHE BOOL "Disable build of PCRE2 tests")
-  set(PCRE2_SUPPORT_LIBBZ2
-      OFF
-      CACHE BOOL "Disable PCRE2 LIBBZ2 support")
-  set(PCRE2_SUPPORT_LIBZ
-      OFF
-      CACHE BOOL "Disable PCRE2 ZLIB support")
-  set(PCRE2_SUPPORT_LIBEDIT
-      OFF
-      CACHE BOOL "Disable PCRE2 LIBEDIT support")
-  set(PCRE2_SUPPORT_LIBREADLINE
-      OFF
-      CACHE BOOL "Disable PCRE2 LIBREADLINE support")
+set(PCRE2_PROJECT_GENERIC_NAME pcre2)
+set(PCRE2_PROJECT_GENERIC_NAMESPACE PCRE2)
+set(PCRE2_ARTIFACT_PREFIX libpcre2)
 
-  # set the output directory for static lib
-  set(PCRE2_LIB_DIR "${OBJS_DIR}/lib")
-  set(SAVE_CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
-  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PCRE2_LIB_DIR})
+function(build_pcre2 PIC_ENABLED)
+    make_third_party_configuration(
+            ${PIC_ENABLED}
+            ${PCRE2_PROJECT_GENERIC_NAME}
+            ${PCRE2_PROJECT_GENERIC_NAMESPACE}
+            project_name
+            target_name
+            extra_compile_flags
+            pic_namespace
+            pic_lib_specifier
+    )
 
-  # set cmake_install_prefix
-  set(PCRE2_INSTALL_DIR "${OBJS_DIR}")
-  set(SAVE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
-  set(CMAKE_INSTALL_PREFIX ${PCRE2_INSTALL_DIR})
+    set(source_dir ${THIRD_PARTY_DIR}/${PCRE2_PROJECT_GENERIC_NAME})
+    set(build_dir ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
+    set(install_dir ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
+    set(include_dirs ${install_dir}/include)
+    set(libraries ${install_dir}/lib/${PCRE2_ARTIFACT_PREFIX}-8.a)
+    # Ensure the build, installation and "include" directories exists
+    file(MAKE_DIRECTORY ${build_dir})
+    file(MAKE_DIRECTORY ${install_dir})
+    file(MAKE_DIRECTORY ${include_dirs})
 
-  # save and set C flags
-  set(SAVE_C_FLAGS "${CMAKE_C_FLAGS}")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+    set(compile_flags "$ENV{CFLAGS} -O3 ${extra_compile_flags}")
 
-  add_subdirectory(${THIRD_PARTY_DIR}/pcre2
-                   ${CMAKE_BINARY_DIR}/third-party/pcre2)
+    message(STATUS "PCRE2 Summary:
 
-  # copy the generated pcre2.h from build directory
-  file(COPY ${CMAKE_BINARY_DIR}/third-party/pcre2/pcre2.h
-       DESTINATION ${OBJS_DIR}/include/pcre2)
+        PIC enabled:    ${PIC_ENABLED}
+	Version:        ${PCRE2_VERSION}
+	Source:         ${PCRE2_SOURCE_URL}
+        Include dirs:   ${include_dirs}
+        Libraries:      ${libraries}
+        Target name:    ${target_name}
+        Compiler:
+          C compiler:   ${CMAKE_C_COMPILER}
+          CFLAGS:       ${compile_flags}
+    ")
 
-  # restore C flags
-  set(CMAKE_C_FLAGS ${SAVE_C_FLAGS})
+    set(PCRE2_SUPPORT_JIT)
+    if(APPLE)
+        set(PCRE2_SUPPORT_JIT OFF BOOL)
+    else()
+        set(PCRE2_SUPPORT_JIT ON BOOL)
+    endif()
 
-  # restore cmake_install prefix
-  set(CMAKE_INSTALL_PREFIX "${SAVE_INSTALL_PREFIX}")
+    set(cmake_args
+            -DCMAKE_C_FLAGS=${compile_flags}
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+            -DBUILD_STATIC_LIBS=ON
+            -DCMAKE_POSITION_INDEPENDENT_CODE=${PIC_ENABLED}
+            -DPCRE2_STATIC_PIC=${PIC_ENABLED}
+            -DPCRE2_BUILD_PCRE2_16=OFF
+            -DPCRE2_BUILD_PCRE2_32=OFF
+            -DPCRE2_DEBUG=OFF
+            -DPCRE2_SUPPORT_JIT=${PCRE2_SUPPORT_JIT}
+            -DPCRE2_SUPPORT_UNICODE=OFF
+            -DPCRE2_BUILD_PCRE2GREP=OFF
+            -DPCRE2_BUILD_TESTS=OFF
+            -DPCRE2_SUPPORT_LIBBZ2=OFF
+            -DPCRE2_SUPPORT_LIBZ=OFF
+            -DPCRE2_SUPPORT_LIBEDIT=OFF
+            -DPCRE2_SUPPORT_LIBREADLINE=OFF
+    )
 
-  # restore CMAKE_ARCHIVE_OUTPUT_DIRECTORY
-  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${SAVE_CMAKE_ARCHIVE_OUTPUT_DIRECTORY}")
+    ExternalProject_Add(
+            ${project_name}
+            PREFIX ${build_dir}
+            SOURCE_DIR ${source_dir}
+            INSTALL_DIR ${install_dir}
+            BINARY_DIR ${build_dir}
+            BUILD_BYPRODUCTS ${libraries}
+            CONFIGURE_COMMAND
+                COMMAND ${CMAKE_COMMAND} ${cmake_args} -S ${source_dir} -B ${build_dir}
+            BUILD_COMMAND
+                COMMAND ${CMAKE_COMMAND} --build ${build_dir} --config $<CONFIG> -j
+            INSTALL_COMMAND
+                COMMAND ${CMAKE_COMMAND} --install ${build_dir} --prefix ${install_dir} --config $<CONFIG>
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${include_dirs}/${PCRE2_PROJECT_GENERIC_NAME}
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs}/${PCRE2_PROJECT_GENERIC_NAME} ${INCLUDE_DIR}/${PCRE2_PROJECT_GENERIC_NAME}
+            BUILD_IN_SOURCE 0
+    )
 
-  # restore cmake_policy
-  cmake_policy(POP)
-endif()
+    add_library(${target_name} STATIC IMPORTED)
+    set_target_properties(${target_name} PROPERTIES IMPORTED_LOCATION ${libraries} INTERFACE_INCLUDE_DIRECTORIES ${include_dirs})
+
+    # Ensure that the pcre2 is built before they are used
+    add_dependencies(${target_name} ${project_name})
+
+    # Set variables indicating that pcre2 has been installed
+    set(${PCRE2_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_ROOT ${install_dir} PARENT_SCOPE)
+    set(${PCRE2_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_INCLUDE_DIRS ${include_dirs} PARENT_SCOPE)
+    set(${PCRE2_PROJECT_GENERIC_NAMESPACE}_${pic_lib_specifier}_LIBRARIES ${libraries} PARENT_SCOPE)
+endfunction()
+
+# PIC is ON
+build_pcre2(ON)
+
+set(PCRE2_FOUND ON)

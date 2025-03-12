@@ -84,9 +84,9 @@ install(TARGETS kphp2cpp
 install_symlink(${VK_INSTALL_DIR}/bin/kphp2cpp ${CMAKE_INSTALL_PREFIX}/bin/kphp KPHP)
 
 if (COMPILE_RUNTIME_LIGHT)
-    install(TARGETS kphp-light-runtime-pic
+    install(FILES ${OBJS_DIR}/libk2kphp-rt.a
             COMPONENT KPHP
-            LIBRARY DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+            DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
 else ()
     install(FILES ${OBJS_DIR}/libkphp-full-runtime-no-pic.a
             COMPONENT KPHP

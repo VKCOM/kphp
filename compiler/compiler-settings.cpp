@@ -230,7 +230,7 @@ void CompilerSettings::init() {
   bool is_k2_mode = mode.get().substr(0, 3) == "k2-";
   if (link_file.value_.empty()) {
     if (is_k2_mode) {
-      link_file.value_ = kphp_src_path.get() + "/objs/libkphp-light-runtime-pic.a";
+      link_file.value_ = kphp_src_path.get() + "/objs/libk2kphp-rt.a";
     } else {
       if (dynamic_incremental_linkage.get()) {
         link_file.value_ = kphp_src_path.get() + "/objs/libkphp-full-runtime-pic.a";
@@ -338,8 +338,6 @@ void CompilerSettings::init() {
     // for now k2-component must be compiled with clang and statically linked libc++
     ss << " -stdlib=libc++";
     ss << " -I" << kphp_src_path.get() + "objs/include ";
-    ss << " -I" << kphp_src_path.get() + "third-party ";
-    ss << " -I" << kphp_src_path.get() + "third-party/abseil-cpp ";
   } else {
     // default value is false
     // when we build using full runtime, we should force to use runtime as static lib

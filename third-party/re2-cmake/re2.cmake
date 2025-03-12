@@ -83,7 +83,7 @@ function(build_re2 PIC_ENABLED)
                 # KPHP patches
                 COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${build_dir} -DPATCH_SERIES=${generated_patch_series} -DPATCH_DIR=${generated_patch_dir} -P ../../cmake/apply_patches.cmake
             CONFIGURE_COMMAND
-                COMMAND pwd && ${Python3_EXECUTABLE} re2/make_unicode_casefold.py > re2/unicode_casefold.cc
+                COMMAND ${Python3_EXECUTABLE} re2/make_unicode_casefold.py > re2/unicode_casefold.cc
                 COMMAND ${Python3_EXECUTABLE} re2/make_unicode_groups.py > re2/unicode_groups.cc
                 COMMAND ${PERL_EXECUTABLE} re2/make_perl_groups.pl > re2/perl_groups.cc
                 COMMAND ${CMAKE_COMMAND} ${cmake_args} -S ${source_dir} -B ${build_dir}
