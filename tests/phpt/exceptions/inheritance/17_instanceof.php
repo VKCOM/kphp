@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 // Test that instanceof works as expected for Exception and derived classes.

@@ -1,55 +1,5 @@
 <?php
 
-/** @kphp-generate-stub-class */
-class ArithmeticError extends Error {}
-/** @kphp-generate-stub-class */
-class DivisionByZeroError extends ArithmeticError {}
-/** @kphp-generate-stub-class */
-class AssertionError extends Error {}
-/** @kphp-generate-stub-class */
-class CompileError extends Error {}
-/** @kphp-generate-stub-class */
-class ParseError extends CompileError {}
-/** @kphp-generate-stub-class */
-class TypeError extends Error {}
-/** @kphp-generate-stub-class */
-class ArgumentCountError extends TypeError {}
-/** @kphp-generate-stub-class */
-class ValueError extends Error {}
-/** @kphp-generate-stub-class */
-class UnhandledMatchError extends Error {}
-
-/** @kphp-generate-stub-class */
-class LogicException extends Exception {}
-/** @kphp-generate-stub-class */
-class BadFunctionCallException extends LogicException {}
-/** @kphp-generate-stub-class */
-class BadMethodCallException extends BadFunctionCallException {}
-/** @kphp-generate-stub-class */
-class DomainException extends LogicException {}
-/** @kphp-generate-stub-class */
-class InvalidArgumentException extends LogicException {}
-/** @kphp-generate-stub-class */
-class LengthException extends LogicException {}
-/** @kphp-generate-stub-class */
-class OutOfRangeException extends LogicException {}
-
-/** @kphp-generate-stub-class */
-class RuntimeException extends Exception {}
-/** @kphp-generate-stub-class */
-class OutOfBoundsException extends RuntimeException {}
-/** @kphp-generate-stub-class */
-class OverflowException extends RuntimeException {}
-/** @kphp-generate-stub-class */
-class RangeException extends RuntimeException {}
-/** @kphp-generate-stub-class */
-class UnderflowException extends RuntimeException {}
-/** @kphp-generate-stub-class */
-class UnexpectedValueException extends RuntimeException {}
-
-/** @kphp-generate-stub-class */
-class Random\RandomException extends Exception {}
-
 // https://www.php.net/manual/en/class.arrayiterator.php
 // TODO: make it work with T[] arrays when generic classes are available.
 // For now, it only supports mixed[].

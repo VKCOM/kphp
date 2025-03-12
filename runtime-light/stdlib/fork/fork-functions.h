@@ -5,8 +5,10 @@
 #pragma once
 
 #include <chrono>
+#include <cinttypes>
 #include <concepts>
 #include <cstdint>
+#include <optional>
 #include <utility>
 
 #include "runtime-common/core/core-types/decl/optional.h"
@@ -36,16 +38,25 @@ inline std::chrono::nanoseconds normalize_timeout(double timeout_s) noexcept {
 template<typename T>
 requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
   auto &fork_instance_st{ForkInstanceState::get()};
-  auto opt_fork_task{fork_instance_st.get_fork(fork_id)};
-  if (!opt_fork_task.has_value()) [[unlikely]] {
+  auto opt_fork_info{fork_instance_st.get_info(fork_id)};
+  if (!opt_fork_info.has_value() || !(*opt_fork_info).get().opt_handle.has_value() || (*opt_fork_info).get().awaited) [[unlikely]] {
     php_warning("fork with ID %" PRId64 " does not exist or has already been awaited by another fork", fork_id);
     co_return T{};
   }
 
-  auto fork_task{static_cast<shared_task_t<internal_optional_type_t<T>>>(*std::move(opt_fork_task))};
-  auto opt_result{co_await wait_with_timeout_t{wait_fork_t{std::move(fork_task)}, forks_impl_::normalize_timeout(timeout)}};
-  // mark the fork as awaited and remove it from the set of active forks
-  fork_instance_st.erase_fork(fork_id);
+  auto &fork_info{(*opt_fork_info).get()};
+  auto fork_task{*fork_info.opt_handle};
+  fork_info.awaited = true; // prevent further f$wait from awaiting on the same fork
+  auto opt_result{co_await wait_with_timeout_t{wait_fork_t{static_cast<shared_task_t<internal_optional_type_t<T>>>(std::move(fork_task))},
+                                               forks_impl_::normalize_timeout(timeout)}};
+  // Execute essential housekeeping tasks to maintain proper state management.
+  // 1. Check for any exceptions that may have occurred during the fork execution. If an exception is found, propagate it to the current fork.
+  //    Clean fork_info's exception state.
+  auto current_fork_info{fork_instance_st.current_info()};
+  php_assert(std::exchange(current_fork_info.get().thrown_exception, std::move(fork_info.thrown_exception)).is_null());
+  // 2. Detach the shared_task_t from fork_info to prevent further associations, ensuring that resources are released.
+  fork_info.opt_handle.reset();
+
   co_return opt_result.has_value() ? T{std::move(opt_result.value())} : T{};
 }
 
@@ -59,13 +70,14 @@ requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>
 
 inline task_t<bool> f$wait_concurrently(int64_t fork_id) noexcept {
   auto &fork_instance_st{ForkInstanceState::get()};
-  auto it{fork_instance_st.forks.find(fork_id)};
-  if (it == fork_instance_st.forks.end()) [[unlikely]] {
+  auto opt_fork_info{fork_instance_st.get_info(fork_id)};
+  if (!opt_fork_info.has_value()) [[unlikely]] {
     co_return false;
   }
 
-  if (it->second.first != ForkInstanceState::fork_state::awaited) [[likely]] {
-    auto fork_task{it->second.second};
+  const auto &fork_info{(*opt_fork_info).get()};
+  if (fork_info.opt_handle.has_value()) {
+    auto fork_task{*fork_info.opt_handle};
     co_await wait_fork_t{std::move(fork_task)};
   }
   co_return true;

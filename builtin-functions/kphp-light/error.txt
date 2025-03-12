@@ -4,9 +4,20 @@
 
 function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env = "") ::: void;
 
-// === UNSUPPORTED ===
+/**
+ * @kphp-immutable-class
+ */
+class CompileTimeLocation {
+  public string $file;
+  public string $function;
+  public int $line;
 
-/** @kphp-generate-stub-class */
+  /** @kphp-extern-func-info */
+  public function __construct($file ::: string, $function ::: string, $line ::: int) ::: CompileTimeLocation;
+  /** @kphp-extern-func-info */
+  static public function calculate(?CompileTimeLocation $passed) ::: CompileTimeLocation;
+}
+
 interface Throwable {
     public function getMessage () ::: string;
     public function getCode () ::: int;
@@ -16,8 +27,6 @@ interface Throwable {
     public function getTraceAsString () ::: string;
 }
 
-
-/** @kphp-generate-stub-class */
 class Exception implements Throwable {
     protected $message = '';
     protected $code = 0;
@@ -26,27 +35,17 @@ class Exception implements Throwable {
     /** @var int */
     protected $line;
 
-    /** @kphp-extern-func-info generate-stub */
     public function __construct($message ::: string = '', $code ::: int = 0) ::: Exception;
-    /** @kphp-extern-func-info generate-stub */
     final public function getMessage () ::: string;
-    /** @kphp-extern-func-info generate-stub */
     final public function getCode () ::: int;
-    /** @kphp-extern-func-info generate-stub */
     final public function getFile () ::: string;
-    /** @kphp-extern-func-info generate-stub */
     final public function getLine () ::: int;
-    /** @kphp-extern-func-info generate-stub */
     final public function getTrace () ::: string[][];
-    /** @kphp-extern-func-info generate-stub */
     final public function getTraceAsString () ::: string;
 
-    /** @kphp-extern-func-info generate-stub */
     final private function __clone() ::: void;
 }
 
-
-/** @kphp-generate-stub-class */
 class Error implements Throwable {
     protected $message = '';
     protected $code = 0;
@@ -55,22 +54,14 @@ class Error implements Throwable {
     /** @var int */
     protected $line;
 
-    /** @kphp-extern-func-info generate-stub */
     public function __construct($message ::: string = '', $code ::: int = 0) ::: Error;
-    /** @kphp-extern-func-info generate-stub */
     final public function getMessage () ::: string;
-    /** @kphp-extern-func-info generate-stub */
     final public function getCode () ::: int;
-    /** @kphp-extern-func-info generate-stub */
     final public function getFile () ::: string;
-    /** @kphp-extern-func-info generate-stub */
     final public function getLine () ::: int;
-    /** @kphp-extern-func-info generate-stub */
     final public function getTrace () ::: string[][];
-    /** @kphp-extern-func-info generate-stub */
     final public function getTraceAsString () ::: string;
 
-    /** @kphp-extern-func-info generate-stub */
     final private function __clone() ::: void;
 }
 
@@ -91,10 +82,38 @@ define('E_DEPRECATED', 8192);
 define('E_USER_DEPRECATED', 16384);
 define('E_ALL', 32767);
 
-/** @kphp-extern-func-info generate-stub */
 function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: string = '') ::: Exception;
+
 function error_get_last() ::: mixed;
 
+class ArithmeticError extends Error {}
+class DivisionByZeroError extends ArithmeticError {}
+class AssertionError extends Error {}
+class CompileError extends Error {}
+class ParseError extends CompileError {}
+class TypeError extends Error {}
+class ArgumentCountError extends TypeError {}
+class ValueError extends Error {}
+class UnhandledMatchError extends Error {}
+
+class LogicException extends Exception {}
+class BadFunctionCallException extends LogicException {}
+class BadMethodCallException extends BadFunctionCallException {}
+class DomainException extends LogicException {}
+class InvalidArgumentException extends LogicException {}
+class LengthException extends LogicException {}
+class OutOfRangeException extends LogicException {}
+
+class RuntimeException extends Exception {}
+class OutOfBoundsException extends RuntimeException {}
+class OverflowException extends RuntimeException {}
+class RangeException extends RuntimeException {}
+class UnderflowException extends RuntimeException {}
+class UnexpectedValueException extends RuntimeException {}
+
+class Random\RandomException extends Exception {}
+
+/** @kphp-extern-func-info generate-stub */
 function error_reporting ($e ::: int = TODO) ::: int;
 /** @kphp-extern-func-info generate-stub */
 function kphp_backtrace($pretty ::: bool = true) ::: string[];

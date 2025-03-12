@@ -5,7 +5,9 @@
 #include "runtime-light/state/instance-state.h"
 
 #include <chrono>
+#include <cinttypes>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string_view>
 #include <utility>
@@ -14,11 +16,14 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/core/globals/php-script-globals.h"
+#include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/init-functions.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
+#include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/time/time-functions.h"
 
 namespace {
@@ -42,8 +47,25 @@ int32_t merge_output_buffers() noexcept {
 
 void InstanceState::init_script_execution() noexcept {
   runtime_context.init();
-  init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, main_task_);
-  scheduler.suspend(std::make_pair(main_task_.get_handle(), WaitEvent::Rechedule{}));
+  task_t<void> script_task;
+  init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, script_task);
+
+  auto main_task{std::invoke(
+    [](task_t<void> script_task) noexcept -> task_t<void> {
+      // wrap script with additional check for unhandled exception
+      script_task = std::invoke(
+        [](task_t<void> script_task) noexcept -> task_t<void> {
+          co_await script_task;
+          if (auto exception{std::move(ForkInstanceState::get().current_info().get().thrown_exception)}; !exception.is_null()) [[unlikely]] {
+            php_error("unhandled exception '%s' at %s:%" PRId64, exception.get_class(), exception->$file.c_str(), exception->$line);
+          }
+        },
+        std::move(script_task));
+      php_assert(co_await f$wait_concurrently(co_await start_fork_t{std::move(script_task)}));
+    },
+    std::move(script_task))};
+  scheduler.suspend({main_task.get_handle(), WaitEvent::Rechedule{}});
+  main_task_ = std::move(main_task);
 }
 
 template<ImageKind kind>
