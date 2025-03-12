@@ -4,7 +4,10 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <utility>
 
 #include "common/functional/identity.h"
 #include "common/smart_iterators/transform_iterator.h"
@@ -67,6 +70,25 @@ inline std::string replace_all(const std::string &haystack, const std::string &f
     start_pos += replace.length();
   }
   return res;
+}
+
+inline bool is_ascii_whitespace(char c) noexcept {
+  return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
+}
+
+inline vk::string_view strip_ascii_whitespace(vk::string_view view) noexcept {
+  const auto *not_space = std::find_if_not(view.begin(), view.end(), is_ascii_whitespace);
+  view = vk::string_view{not_space, view.end()};
+  not_space = std::find_if_not(view.rbegin(), view.rend(), is_ascii_whitespace).base();
+  return vk::string_view{view.begin(), not_space};
+}
+
+inline std::pair<vk::string_view, vk::string_view> split_string_view(vk::string_view view, char delimiter) noexcept {
+  size_t pos = view.find(delimiter);
+  if (pos == vk::string_view::npos) {
+    return {view, vk::string_view{}};
+  }
+  return {view.substr(0, pos), view.substr(pos + 1)};
 }
 
 } // namespace vk
