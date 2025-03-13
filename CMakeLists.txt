@@ -83,34 +83,66 @@ install(TARGETS kphp2cpp
         RUNTIME DESTINATION ${VK_INSTALL_DIR}/bin/)
 install_symlink(${VK_INSTALL_DIR}/bin/kphp2cpp ${CMAKE_INSTALL_PREFIX}/bin/kphp KPHP)
 
-if (COMPILE_RUNTIME_LIGHT)
+# k2 specific
+if(COMPILE_RUNTIME_LIGHT)
     install(FILES ${OBJS_DIR}/libk2kphp-rt.a
             COMPONENT KPHP
             DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
-else ()
+
+    install(DIRECTORY ${COMMON_DIR}
+                      ${RUNTIME_COMMON_DIR}
+                      ${RUNTIME_LIGHT_DIR}
+            COMPONENT KPHP
+            DESTINATION ${INSTALL_KPHP_SOURCE}
+            FILES_MATCHING REGEX ".*\\.(hpp|h|inl)$"
+    )
+
+    set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "clang-18, libc++1-18, libc++abi1-18")
+    set(CPACK_DEBIAN_KPHP_PACKAGE_RECOMMENDS "vk-tl-tools")
+    set(CPACK_DEBIAN_KPHP_DESCRIPTION "kphp compiler and asynchronous runtime")
+    set(CPACK_DEBIAN_KPHP_PACKAGE_NAME "k2kphp")
+else() # kphp specific
     install(FILES ${OBJS_DIR}/libkphp-full-runtime-no-pic.a
             COMPONENT KPHP
             DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+
     install(FILES ${OBJS_DIR}/libkphp-full-runtime-pic.a
             COMPONENT KPHP
             DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
-endif ()
 
+    install(DIRECTORY ${COMMON_DIR}
+                      ${BASE_DIR}/runtime
+                      ${RUNTIME_COMMON_DIR}
+                      ${BASE_DIR}/server
+                      ${BASE_DIR}/third-party
+            COMPONENT KPHP
+            DESTINATION ${INSTALL_KPHP_SOURCE}
+            FILES_MATCHING REGEX ".*\\.(hpp|h|inl)$")
+
+    set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, libuber-h3, libyaml-cpp-dev, \
+                                           gcc, g++, kphp-timelib, libnuma-dev")
+
+    if (PDO_DRIVER_MYSQL)
+        set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libmysqlclient-dev")
+    endif()
+
+    if (PDO_DRIVER_PGSQL)
+        set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libpq-dev")
+    endif()
+
+    set(CPACK_DEBIAN_KPHP_PACKAGE_RECOMMENDS "vk-tl-tools")
+    set(CPACK_DEBIAN_KPHP_DESCRIPTION "kphp2cpp compiler and runtime for it")
+    set(CPACK_DEBIAN_KPHP_PACKAGE_NAME "kphp")
+endif()
+
+# common
 install(DIRECTORY ${OBJS_DIR}/include
         COMPONENT KPHP
         DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
+
 install(DIRECTORY ${OBJS_DIR}/lib
         COMPONENT KPHP
         DESTINATION ${INSTALL_KPHP_SOURCE}/objs)
-
-install(DIRECTORY ${COMMON_DIR}
-                  ${BASE_DIR}/runtime
-		  ${RUNTIME_COMMON_DIR}
-                  ${BASE_DIR}/server
-                  ${BASE_DIR}/third-party
-        COMPONENT KPHP
-        DESTINATION ${INSTALL_KPHP_SOURCE}
-        FILES_MATCHING REGEX ".*\\.(hpp|h|inl)$")
 
 install(FILES ${OBJS_DIR}/php_lib_version.sha256
         COMPONENT KPHP
@@ -127,21 +159,6 @@ install(FILES ${COMMON_DIR}/php-functions.h
 install(FILES ${AUTO_DIR}/runtime/runtime-headers.h
         COMPONENT KPHP
         DESTINATION ${INSTALL_KPHP_SOURCE}/objs/generated/auto/runtime/)
-
-set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, libuber-h3, libyaml-cpp-dev, \
-                                       gcc, g++, kphp-timelib, libnuma-dev")
-
-if (PDO_DRIVER_MYSQL)
-    set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libmysqlclient-dev")
-endif()
-
-if (PDO_DRIVER_PGSQL)
-    set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libpq-dev")
-endif()
-
-set(CPACK_DEBIAN_KPHP_PACKAGE_RECOMMENDS "vk-tl-tools")
-set(CPACK_DEBIAN_KPHP_DESCRIPTION "kphp2cpp compiler and runtime for it")
-set(CPACK_DEBIAN_KPHP_PACKAGE_NAME "kphp")
 
 add_custom_target(force_clean_all
                   COMMAND rm -rf ${OBJS_DIR}
