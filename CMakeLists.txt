@@ -98,9 +98,8 @@ if(COMPILE_RUNTIME_LIGHT)
     )
 
     set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "clang-18, libc++1-18, libc++abi1-18")
-
     set(CPACK_DEBIAN_KPHP_PACKAGE_RECOMMENDS "vk-tl-tools")
-    set(CPACK_DEBIAN_KPHP_DESCRIPTION "kphp compiler and its new asynchronous runtime")
+    set(CPACK_DEBIAN_KPHP_DESCRIPTION "kphp compiler and asynchronous runtime")
     set(CPACK_DEBIAN_KPHP_PACKAGE_NAME "k2kphp")
 else() # kphp specific
     install(FILES ${OBJS_DIR}/libkphp-full-runtime-no-pic.a
