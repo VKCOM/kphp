@@ -35,3 +35,6 @@
 	path = third-party/timelib
 	url = https://github.com/VKCOM/timelib.git
 	branch = master
+[submodule "third-party/yaml-cpp"]
+	path = third-party/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git

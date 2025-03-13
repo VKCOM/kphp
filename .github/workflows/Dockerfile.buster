@@ -23,7 +23,7 @@ RUN apt-get update && \
       python3.7 python3-dev libpython3-dev python3-pip python3-setuptools python3-wheel mysql-server libmysqlclient-dev && \
     pip3 install -r /tmp/requirements.txt && \
     apt-get install -y --no-install-recommends libfmt-dev libgtest-dev libgmock-dev \
-      libyaml-cpp-dev zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
+      zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
       libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* libnuma-dev composer && \
     rm -rf /var/lib/apt/lists/* && \
     update-alternatives --set php /usr/bin/php7.4

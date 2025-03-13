@@ -356,7 +356,7 @@ void CompilerSettings::init() {
 
   ld_flags.value_ = extra_ld_flags.get();
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> system_installed_static_libs{"yaml-cpp"};
+  std::vector<vk::string_view> system_installed_static_libs{};
   std::vector<vk::string_view> system_installed_dynamic_libs{"pthread", "m", "dl"};
 
 #ifdef PDO_DRIVER_MYSQL

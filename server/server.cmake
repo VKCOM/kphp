@@ -30,6 +30,15 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         shared-data-worker-cache.cpp
         signal-handlers.cpp)
 
+# Suppress YAML-cpp-related warnings
+if(COMPILER_CLANG)
+    allow_deprecated_declarations(${BASE_DIR}/server/json-logger.cpp)
+    allow_deprecated_declarations(${BASE_DIR}/server/lease-config-parser.cpp)
+    allow_deprecated_declarations(${BASE_DIR}/server/php-engine.cpp)
+    allow_deprecated_declarations(${BASE_DIR}/server/php-master.cpp)
+    allow_deprecated_declarations(${BASE_DIR}/server/server-config.cpp)
+endif()
+
 prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
         job-stats.cpp
         job-worker-server.cpp
@@ -41,6 +50,8 @@ prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
 prepend(KPHP_STATSHOUSE_SOURCES ${BASE_DIR}/server/statshouse/
         statshouse-client.cpp
         statshouse-manager.cpp)
+
+allow_deprecated_declarations(${BASE_DIR}/server/statshouse/statshouse-manager.cpp)
 
 prepend(KPHP_DATABASE_DRIVERS_SOURCES ${BASE_DIR}/server/database-drivers/
         adaptor.cpp
@@ -75,9 +86,9 @@ set(KPHP_SERVER_ALL_SOURCES
 allow_deprecated_declarations_for_apple(${BASE_DIR}/server/php-runner.cpp)
 
 vk_add_library_no_pic(kphp-server-no-pic OBJECT ${KPHP_SERVER_ALL_SOURCES})
-add_dependencies(kphp-server-no-pic RE2::no-pic::re2)
-target_include_directories(kphp-server-no-pic PUBLIC ${RE2_NO_PIC_INCLUDE_DIRS})
+add_dependencies(kphp-server-no-pic RE2::no-pic::re2 YAML_CPP::no-pic::yaml-cpp)
+target_include_directories(kphp-server-no-pic PUBLIC ${RE2_NO_PIC_INCLUDE_DIRS} ${YAML_CPP_NO_PIC_INCLUDE_DIRS})
 
 vk_add_library_pic(kphp-server-pic OBJECT ${KPHP_SERVER_ALL_SOURCES})
-add_dependencies(kphp-server-pic RE2::pic::re2)
-target_include_directories(kphp-server-pic PUBLIC ${RE2_NO_PIC_INCLUDE_DIRS})
+add_dependencies(kphp-server-pic RE2::pic::re2 YAML_CPP::pic::yaml-cpp)
+target_include_directories(kphp-server-pic PUBLIC ${RE2_PIC_INCLUDE_DIRS} ${YAML_CPP_PIC_INCLUDE_DIRS})
