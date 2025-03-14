@@ -4,7 +4,7 @@
 
 #include "compiler/data/composer-json-data.h"
 
-#include <yaml-cpp/yaml.h>
+#include "yaml-cpp/yaml.h"
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/src-dir.h"

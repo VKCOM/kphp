@@ -224,6 +224,12 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         vertex.cpp
         utils/string-utils.cpp)
 
+# Suppress YAML-cpp-related warnings
+if(COMPILER_CLANG)
+    allow_deprecated_declarations(${KPHP_COMPILER_DIR}/data/composer-json-data.cpp)
+    allow_deprecated_declarations(${KPHP_COMPILER_DIR}/data/modulite-data.cpp)
+endif()
+
 if(APPLE)
     set_source_files_properties(${KPHP_COMPILER_DIR}/lexer.cpp PROPERTIES COMPILE_FLAGS -Wno-deprecated-register)
 endif()
@@ -239,8 +245,8 @@ list(APPEND KPHP_COMPILER_SOURCES
      ${AUTO_DIR}/compiler/rewrite-rules/early_opt.cpp)
 
 vk_add_library_no_pic(kphp2cpp_src-no-pic OBJECT ${KPHP_COMPILER_SOURCES})
-add_dependencies(kphp2cpp_src-no-pic OpenSSL::no-pic::Crypto RE2::no-pic::re2)
-target_include_directories(kphp2cpp_src-no-pic PUBLIC ${OPENSSL_NO_PIC_INCLUDE_DIRS} ${RE2_NO_PIC_INCLUDE_DIRS})
+add_dependencies(kphp2cpp_src-no-pic OpenSSL::no-pic::Crypto RE2::no-pic::re2 YAML_CPP::no-pic::yaml-cpp)
+target_include_directories(kphp2cpp_src-no-pic PUBLIC ${OPENSSL_NO_PIC_INCLUDE_DIRS} ${RE2_NO_PIC_INCLUDE_DIRS} ${YAML_CPP_NO_PIC_INCLUDE_DIRS})
 
 file(MAKE_DIRECTORY ${KPHP_COMPILER_AUTO_DIR})
 add_custom_command(OUTPUT ${KEYWORDS_SET}
@@ -278,8 +284,7 @@ set_property(SOURCE ${KPHP_COMPILER_DIR}/kphp2cpp.cpp
 add_executable(kphp2cpp ${KPHP_COMPILER_DIR}/kphp2cpp.cpp)
 target_include_directories(kphp2cpp PUBLIC ${KPHP_COMPILER_DIR})
 
-prepare_cross_platform_libs(COMPILER_LIBS yaml-cpp)
-set(COMPILER_LIBS vk::no-pic::kphp2cpp_src vk::no-pic::tlo_parsing_src vk::no-pic::popular-common ${COMPILER_LIBS} fmt::fmt OpenSSL::no-pic::Crypto RE2::no-pic::re2 pthread)
+set(COMPILER_LIBS vk::no-pic::kphp2cpp_src vk::no-pic::tlo_parsing_src vk::no-pic::popular-common YAML_CPP::no-pic::yaml-cpp fmt::fmt OpenSSL::no-pic::Crypto RE2::no-pic::re2 pthread)
 if(NOT APPLE)
     list(APPEND COMPILER_LIBS stdc++fs)
 endif()

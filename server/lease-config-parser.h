@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <yaml-cpp/yaml.h>
+#include "yaml-cpp/yaml.h"
 #include <optional>
 
 #include "common/kphp-tasks-lease/lease-worker-mode.h"

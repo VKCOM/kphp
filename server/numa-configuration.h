@@ -6,7 +6,7 @@
 struct bitmask {};
 struct cpu_set_t {};
 #else
-#include <numa.h>
+#include "numactl/numa.h"
 #endif
 
 #include <sched.h>

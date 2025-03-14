@@ -15,14 +15,17 @@ function(build_nghttp2 PIC_ENABLED)
             pic_lib_specifier
     )
 
-    set(source_dir      ${THIRD_PARTY_DIR}/${NGHTTP2_PROJECT_GENERIC_NAME})
-    set(build_dir       ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
-    set(install_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
-    set(include_dirs    ${install_dir}/include)
-    set(libraries       ${install_dir}/lib/${NGHTTP2_ARTIFACT_NAME}.a)
-    set(patch_dir       ${build_dir}/debian/patches/)
-    set(patch_series    ${build_dir}/debian/patches/series)
+    set(source_dir          ${THIRD_PARTY_DIR}/${NGHTTP2_PROJECT_GENERIC_NAME})
+    set(patched_source_dir  ${CMAKE_BINARY_DIR}/third-party/${project_name}/source)
+    set(build_dir           ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
+    set(install_dir         ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
+    set(include_dirs        ${install_dir}/include)
+    set(libraries           ${install_dir}/lib/${NGHTTP2_ARTIFACT_NAME}.a)
+    set(patch_dir           ${patched_source_dir}/debian/patches/)
+    set(patch_series        ${patched_source_dir}/debian/patches/series)
+
     # Ensure the build, installation and "include" directories exists
+    file(MAKE_DIRECTORY ${patched_source_dir})
     file(MAKE_DIRECTORY ${build_dir})
     file(MAKE_DIRECTORY ${install_dir})
     file(MAKE_DIRECTORY ${include_dirs})
@@ -82,13 +85,13 @@ function(build_nghttp2 PIC_ENABLED)
             PREFIX ${build_dir}
             SOURCE_DIR ${source_dir}
             INSTALL_DIR ${install_dir}
-            BINARY_DIR ${build_dir}
+            BINARY_DIR ${patched_source_dir}
             BUILD_BYPRODUCTS ${libraries}
             PATCH_COMMAND
-                COMMAND ${CMAKE_COMMAND} -E copy_directory ${source_dir} ${build_dir}
-                COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${build_dir} -DPATCH_SERIES=${patch_series} -DPATCH_DIR=${patch_dir} -P ../../cmake/apply_patches.cmake
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${source_dir} ${patched_source_dir}
+                COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${patched_source_dir} -DPATCH_SERIES=${patch_series} -DPATCH_DIR=${patch_dir} -P ../../cmake/apply_patches.cmake
             CONFIGURE_COMMAND
-                COMMAND ${CMAKE_COMMAND} ${cmake_args} -S ${source_dir} -B ${build_dir} -Wno-dev
+                COMMAND ${CMAKE_COMMAND} ${cmake_args} -S ${patched_source_dir} -B ${build_dir} -Wno-dev
             BUILD_COMMAND
                 COMMAND ${CMAKE_COMMAND} --build ${build_dir} --config $<CONFIG> -j
             INSTALL_COMMAND

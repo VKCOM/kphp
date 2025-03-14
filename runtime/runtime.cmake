@@ -1,4 +1,12 @@
 # Only runtime-related third-parties
+if(NOT APPLE)
+    include(${THIRD_PARTY_DIR}/numactl-cmake/numactl.cmake)
+    set(NUMA_LIB NUMACTL::${PIC_MODE}::numactl)
+    set(NUMA_LIB_PIC NUMACTL::pic::numactl)
+    set(NUMA_LIB_NO_PIC NUMACTL::no-pic::numactl)
+endif()
+include(${THIRD_PARTY_DIR}/timelib-cmake/timelib.cmake)
+include(${THIRD_PARTY_DIR}/uber-h3-cmake/uber-h3.cmake)
 include(${THIRD_PARTY_DIR}/pcre-cmake/pcre.cmake)
 include(${THIRD_PARTY_DIR}/nghttp2-cmake/nghttp2.cmake)
 include(${THIRD_PARTY_DIR}/curl-cmake/curl.cmake)
@@ -133,14 +141,17 @@ set_source_files_properties(
         PROPERTIES COMPILE_FLAGS "-Wno-unused-result"
 )
 
+# Suppress YAML-cpp-related warnings
+if(COMPILER_CLANG)
+    allow_deprecated_declarations(${BASE_DIR}/runtime/interface.cpp)
+endif()
+
 set(KPHP_RUNTIME_ALL_SOURCES
     ${KPHP_RUNTIME_SOURCES}
     ${KPHP_SERVER_SOURCES})
 
 allow_deprecated_declarations(${BASE_DIR}/runtime/allocator.cpp ${BASE_DIR}/runtime/openssl.cpp)
 allow_deprecated_declarations_for_apple(${BASE_DIR}/runtime/inter-process-mutex.cpp)
-
-prepare_cross_platform_libs(SYSTEM_INSTALLED_LIBS yaml-cpp h3)
 
 #### NO PIC
 vk_add_library_no_pic(kphp-runtime-no-pic STATIC ${KPHP_RUNTIME_ALL_SOURCES})
@@ -154,7 +165,6 @@ set(RUNTIME_LIBS_NO_PIC
         vk::no-pic::common-src
         vk::no-pic::binlog-src
         vk::no-pic::net-src
-        ${SYSTEM_INSTALLED_LIBS}
         CURL::no-pic::curl
         OpenSSL::no-pic::SSL
         OpenSSL::no-pic::Crypto
@@ -163,12 +173,16 @@ set(RUNTIME_LIBS_NO_PIC
         ZSTD::no-pic::zstd
         RE2::no-pic::re2
         PCRE::no-pic::pcre
+        UBER_H3::no-pic::uber-h3
+        KPHP_TIMELIB::no-pic::timelib
+        YAML_CPP::no-pic::yaml-cpp
+        ${NUMA_LIB_NO_PIC}
         m
         pthread
 )
 target_link_libraries(kphp-runtime-no-pic PUBLIC ${RUNTIME_LIBS_NO_PIC})
 
-add_dependencies(kphp-runtime-no-pic kphp-timelib OpenSSL::no-pic::Crypto OpenSSL::no-pic::SSL CURL::no-pic::curl NGHTTP2::no-pic::nghttp2 ZLIB::no-pic::zlib ZSTD::no-pic::zstd RE2::no-pic::re2 PCRE::no-pic::pcre)
+add_dependencies(kphp-runtime-no-pic KPHP_TIMELIB::no-pic::timelib OpenSSL::no-pic::Crypto OpenSSL::no-pic::SSL CURL::no-pic::curl NGHTTP2::no-pic::nghttp2 ZLIB::no-pic::zlib ZSTD::no-pic::zstd RE2::no-pic::re2 PCRE::no-pic::pcre UBER_H3::no-pic::uber-h3 YAML_CPP::no-pic::yaml-cpp ${NUMA_LIB_NO_PIC})
 combine_static_runtime_library(kphp-runtime-no-pic kphp-full-runtime-no-pic)
 ###
 
@@ -184,7 +198,6 @@ set(RUNTIME_LIBS_PIC
         vk::pic::common-src
         vk::pic::binlog-src
         vk::pic::net-src
-        ${SYSTEM_INSTALLED_LIBS}
         CURL::pic::curl
         OpenSSL::pic::SSL
         OpenSSL::pic::Crypto
@@ -193,12 +206,16 @@ set(RUNTIME_LIBS_PIC
         ZSTD::pic::zstd
         RE2::pic::re2
         PCRE::pic::pcre
+        UBER_H3::pic::uber-h3
+        KPHP_TIMELIB::pic::timelib
+        YAML_CPP::pic::yaml-cpp
+        ${NUMA_LIB_PIC}
         m
         pthread
 )
 target_link_libraries(kphp-runtime-pic PUBLIC ${RUNTIME_LIBS_PIC})
 
-add_dependencies(kphp-runtime-pic kphp-timelib OpenSSL::pic::Crypto OpenSSL::pic::SSL CURL::pic::curl NGHTTP2::pic::nghttp2 ZLIB::pic::zlib ZSTD::pic::zstd RE2::pic::re2 PCRE::pic::pcre)
+add_dependencies(kphp-runtime-pic KPHP_TIMELIB::pic::timelib OpenSSL::pic::Crypto OpenSSL::pic::SSL CURL::pic::curl NGHTTP2::pic::nghttp2 ZLIB::pic::zlib ZSTD::pic::zstd RE2::pic::re2 PCRE::pic::pcre UBER_H3::pic::uber-h3 YAML_CPP::pic::yaml-cpp ${NUMA_LIB_PIC})
 combine_static_runtime_library(kphp-runtime-pic kphp-full-runtime-pic)
 ###
 
@@ -211,7 +228,6 @@ set(RUNTIME_LIBS
         vk::${PIC_MODE}::common-src
         vk::${PIC_MODE}::binlog-src
         vk::${PIC_MODE}::net-src
-        ${SYSTEM_INSTALLED_LIBS}
         CURL::${PIC_MODE}::curl
         OpenSSL::${PIC_MODE}::SSL
         OpenSSL::${PIC_MODE}::Crypto
@@ -219,11 +235,11 @@ set(RUNTIME_LIBS
         NGHTTP2::${PIC_MODE}::nghttp2
         ZSTD::${PIC_MODE}::zstd
         RE2::${PIC_MODE}::re2
+        YAML_CPP::${PIC_MODE}::yaml-cpp
         m
         pthread
 )
 
-prepare_cross_platform_libs(SYSTEM_INSTALLED_TEST_LIB kphp-timelib)
 set(RUNTIME_LINK_TEST_LIBS
         vk::${PIC_MODE}::flex-data-src
         CURL::${PIC_MODE}::curl
@@ -231,7 +247,7 @@ set(RUNTIME_LINK_TEST_LIBS
         NGHTTP2::${PIC_MODE}::nghttp2
         PCRE::${PIC_MODE}::pcre
         ${NUMA_LIB}
-        ${SYSTEM_INSTALLED_TEST_LIB}
+        KPHP_TIMELIB::${PIC_MODE}::timelib
         ${EPOLL_SHIM_LIB}
         ${ICONV_LIB}
         ${RT_LIB}

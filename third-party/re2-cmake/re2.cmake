@@ -16,18 +16,20 @@ function(build_re2 PIC_ENABLED)
     )
 
     set(source_dir              ${THIRD_PARTY_DIR}/${RE2_PROJECT_GENERIC_NAME})
+    set(patched_source_dir      ${CMAKE_BINARY_DIR}/third-party/${project_name}/source)
     set(build_dir               ${CMAKE_BINARY_DIR}/third-party/${project_name}/build)
     set(install_dir             ${CMAKE_BINARY_DIR}/third-party/${project_name}/install)
     set(include_dirs            ${install_dir}/include)
     set(libraries               ${install_dir}/lib/${RE2_ARTIFACT_NAME}.a)
-    set(vendor_patch_dir        ${build_dir}/debian/patches/)
-    set(vendor_patch_series     ${build_dir}/debian/patches/series)
+    set(vendor_patch_dir        ${patched_source_dir}/debian/patches/)
+    set(vendor_patch_series     ${patched_source_dir}/debian/patches/series)
     set(template_patch_dir      ${THIRD_PARTY_DIR}/${RE2_PROJECT_GENERIC_NAME}-cmake/patches)
     set(template_patch_series   ${THIRD_PARTY_DIR}/${RE2_PROJECT_GENERIC_NAME}-cmake/patches/series)
     set(generated_patch_dir     ${CMAKE_BINARY_DIR}/third-party/${project_name}/patches/)
     set(generated_patch_series  ${CMAKE_BINARY_DIR}/third-party/${project_name}/patches/series)
 
     # Ensure the build, installation and "include" directories exists
+    file(MAKE_DIRECTORY ${patched_source_dir})
     file(MAKE_DIRECTORY ${build_dir})
     file(MAKE_DIRECTORY ${install_dir})
     file(MAKE_DIRECTORY ${include_dirs})
@@ -73,20 +75,20 @@ function(build_re2 PIC_ENABLED)
             PREFIX ${build_dir}
             SOURCE_DIR ${source_dir}
             INSTALL_DIR ${install_dir}
-            BINARY_DIR ${build_dir}
+            BINARY_DIR ${patched_source_dir}
             BUILD_BYPRODUCTS ${libraries}
             PATCH_COMMAND
-                COMMAND ${CMAKE_COMMAND} -E copy_directory ${source_dir} ${build_dir}
+                COMMAND ${CMAKE_COMMAND} -E copy_directory ${source_dir} ${patched_source_dir}
                 COMMAND ${CMAKE_COMMAND} -E copy_directory ${template_patch_dir} ${generated_patch_dir}
                 # Vendor patches
-                COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${build_dir} -DPATCH_SERIES=${vendor_patch_series} -DPATCH_DIR=${vendor_patch_dir} -P ../../cmake/apply_patches.cmake
+                COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${patched_source_dir} -DPATCH_SERIES=${vendor_patch_series} -DPATCH_DIR=${vendor_patch_dir} -P ../../cmake/apply_patches.cmake
                 # KPHP patches
-                COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${build_dir} -DPATCH_SERIES=${generated_patch_series} -DPATCH_DIR=${generated_patch_dir} -P ../../cmake/apply_patches.cmake
+                COMMAND ${CMAKE_COMMAND} -DBUILD_DIR=${patched_source_dir} -DPATCH_SERIES=${generated_patch_series} -DPATCH_DIR=${generated_patch_dir} -P ../../cmake/apply_patches.cmake
             CONFIGURE_COMMAND
                 COMMAND ${Python3_EXECUTABLE} re2/make_unicode_casefold.py > re2/unicode_casefold.cc
                 COMMAND ${Python3_EXECUTABLE} re2/make_unicode_groups.py > re2/unicode_groups.cc
                 COMMAND ${PERL_EXECUTABLE} re2/make_perl_groups.pl > re2/perl_groups.cc
-                COMMAND ${CMAKE_COMMAND} ${cmake_args} -S ${source_dir} -B ${build_dir}
+                COMMAND ${CMAKE_COMMAND} ${cmake_args} -S ${patched_source_dir} -B ${build_dir}
             BUILD_COMMAND
                 COMMAND ${CMAKE_COMMAND} --build ${build_dir} --config $<CONFIG> -j
             INSTALL_COMMAND

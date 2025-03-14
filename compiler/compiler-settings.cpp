@@ -356,26 +356,7 @@ void CompilerSettings::init() {
 
   ld_flags.value_ = extra_ld_flags.get();
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> system_installed_static_libs{"yaml-cpp", "h3", "kphp-timelib"};
-
-#ifdef KPHP_TIMELIB_LIB_DIR
-  ld_flags.value_ += " -L" KPHP_TIMELIB_LIB_DIR;
-#else
-  // kphp-timelib is usually installed in /usr/local/lib;
-  // LDD may not find a library in /usr/local/lib if we don't add it here
-  // TODO: can we avoid this hardcoded library path?
-  ld_flags.value_ += " -L /usr/local/lib";
-#endif
-
-#ifdef KPHP_H3_LIB_DIR
-  ld_flags.value_ += " -L" KPHP_H3_LIB_DIR;
-#else
-  // kphp-h3 is usually installed in /usr/local/lib;
-  // LDD may not find a library in /usr/local/lib if we don't add it here
-  // TODO: can we avoid this hardcoded library path?
-  ld_flags.value_ += " -L /usr/local/lib";
-#endif
-
+  std::vector<vk::string_view> system_installed_static_libs{};
   std::vector<vk::string_view> system_installed_dynamic_libs{"pthread", "m", "dl"};
 
 #ifdef PDO_DRIVER_MYSQL
@@ -406,7 +387,6 @@ void CompilerSettings::init() {
   append_if_doesnt_contain(ld_flags.value_, vk::to_array({"vk-flex-data"}), flex_prefix, ".a");
   system_installed_dynamic_libs.emplace_back("iconv");
 #else
-  system_installed_static_libs.emplace_back("numa");
   system_installed_static_libs.emplace_back("vk-flex-data");
   append_if_doesnt_contain(ld_flags.value_, system_installed_static_libs, "-l:lib", ".a");
   system_installed_dynamic_libs.emplace_back("rt");

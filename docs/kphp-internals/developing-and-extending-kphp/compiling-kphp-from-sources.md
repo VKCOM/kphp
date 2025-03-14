@@ -34,9 +34,6 @@ apt-get update
 apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget lsb-release
 # for newest cmake package
 echo "deb https://archive.debian.org/debian buster-backports main" >> /etc/apt/sources.list
-# for curl-kphp-vk, libuber-h3-dev packages and kphp-timelib
-wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public
-echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp buster main" >> /etc/apt/sources.list 
 # for php7.4-dev package
 wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add -
 echo "deb https://packages.sury.org/php/ buster main" >> /etc/apt/sources.list.d/php.list 
@@ -53,8 +50,8 @@ Install packages
 ```bash
 apt-get update
 apt install git cmake-data=3.16* cmake=3.16* make g++ gperf python3-minimal python3-jsonschema \
-            curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev \
-            libyaml-cpp-dev php7.4-dev libmysqlclient-dev libnuma-dev \
+            libfmt-dev libgtest-dev libgmock-dev \
+            php7.4-dev libmysqlclient-dev \
             postgresql postgresql-server-dev-all libpq-dev libldap-dev libkrb5-dev
 ```
 
@@ -65,16 +62,13 @@ Add external repositories
 apt-get update
 # utils for adding repositories
 apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget
-# for curl-kphp-vk, libuber-h3-dev packages and kphp-timelib
-wget -qO /etc/apt/trusted.gpg.d/vkpartner.asc https://artifactory-external.vkpartner.ru/artifactory/api/gpg/key/public
-echo "deb https://artifactory-external.vkpartner.ru/artifactory/kphp focal main" >> /etc/apt/sources.list
 ```
 Install packages
 ```bash
 apt-get update
 apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
-            curl-kphp-vk libuber-h3-dev kphp-timelib libfmt-dev libgtest-dev libgmock-dev \
-            libyaml-cpp-dev php7.4-dev libmysqlclient-dev libnuma-dev \
+            libfmt-dev libgtest-dev libgmock-dev \
+            php7.4-dev libmysqlclient-dev \
             postgresql postgresql-server-dev-all libpq-dev libldap-dev libkrb5-dev
 ```
 
@@ -85,7 +79,7 @@ Make sure you have `brew` and `clang` (at least `Apple clang version 10.0.0`)
 # Install dependencies
 brew tap shivammathur/php
 brew update
-brew install re2c cmake coreutils openssl libiconv yaml-cpp googletest shivammathur/php/php@7.4
+brew install re2c cmake coreutils openssl libiconv googletest shivammathur/php/php@7.4
 brew link --overwrite shivammathur/php/php@7.4
 pip3 install jsonschema
 
@@ -97,7 +91,7 @@ make -j$(nproc)
 ```
 
 ##### Other Linux
-Make sure you are using the same package list. You may use system default libcurl package, it would work, but without DNS resolving. `uber-h3` must be installed from sources.
+Make sure you are using the same package list. You may use system default libcurl package, it would work, but without DNS resolving.
 
 
 ### Recommendations

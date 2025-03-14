@@ -4,7 +4,7 @@
 
 #include "compiler/data/modulite-data.h"
 
-#include <yaml-cpp/yaml.h>
+#include "yaml-cpp/yaml.h"
 
 #include "common/algorithms/contains.h"
 #include "common/wrappers/likely.h"
