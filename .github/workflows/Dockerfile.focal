@@ -17,7 +17,7 @@ RUN apt-get update && \
     python3.7 -m pip install pip && python3.7 -m pip install -r /tmp/requirements.txt && \
     apt-get install -y --no-install-recommends libfmt-dev libgtest-dev libgmock-dev \
       zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
-      libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* libnuma-dev composer unzip && \
+      libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* composer unzip && \
     rm -rf /var/lib/apt/lists/*
 
 ENV ASAN_OPTIONS=detect_leaks=0

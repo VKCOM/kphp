@@ -38,3 +38,6 @@
 [submodule "third-party/yaml-cpp"]
 	path = third-party/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "third-party/numactl"]
+	path = third-party/numactl
+	url = https://github.com/numactl/numactl.git

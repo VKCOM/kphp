@@ -387,7 +387,6 @@ void CompilerSettings::init() {
   append_if_doesnt_contain(ld_flags.value_, vk::to_array({"vk-flex-data"}), flex_prefix, ".a");
   system_installed_dynamic_libs.emplace_back("iconv");
 #else
-  system_installed_static_libs.emplace_back("numa");
   system_installed_static_libs.emplace_back("vk-flex-data");
   append_if_doesnt_contain(ld_flags.value_, system_installed_static_libs, "-l:lib", ".a");
   system_installed_dynamic_libs.emplace_back("rt");
