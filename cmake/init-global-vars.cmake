@@ -25,7 +25,6 @@ if(APPLE)
     set(ICONV_LIB iconv)
 else()
     set(RT_LIB rt)
-    set(NUMA_LIB numa)
 endif()
 
 find_package(Git REQUIRED)

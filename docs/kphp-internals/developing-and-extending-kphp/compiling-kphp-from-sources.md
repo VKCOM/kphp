@@ -51,7 +51,7 @@ Install packages
 apt-get update
 apt install git cmake-data=3.16* cmake=3.16* make g++ gperf python3-minimal python3-jsonschema \
             libfmt-dev libgtest-dev libgmock-dev \
-            php7.4-dev libmysqlclient-dev libnuma-dev \
+            php7.4-dev libmysqlclient-dev \
             postgresql postgresql-server-dev-all libpq-dev libldap-dev libkrb5-dev
 ```
 
@@ -68,7 +68,7 @@ Install packages
 apt-get update
 apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
             libfmt-dev libgtest-dev libgmock-dev \
-            php7.4-dev libmysqlclient-dev libnuma-dev \
+            php7.4-dev libmysqlclient-dev \
             postgresql postgresql-server-dev-all libpq-dev libldap-dev libkrb5-dev
 ```
 
