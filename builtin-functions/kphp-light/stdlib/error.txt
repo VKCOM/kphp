@@ -1,0 +1,107 @@
+<?php
+
+// === SUPPORTED ===
+
+function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env = "") ::: void;
+
+interface Throwable {
+    public function getMessage () ::: string;
+    public function getCode () ::: int;
+    public function getFile () ::: string;
+    public function getLine () ::: int;
+    public function getTrace () ::: string[][];
+    public function getTraceAsString () ::: string;
+}
+
+class Exception implements Throwable {
+    protected $message = '';
+    protected $code = 0;
+    /** @var string */
+    protected $file;
+    /** @var int */
+    protected $line;
+
+    public function __construct($message ::: string = '', $code ::: int = 0) ::: Exception;
+    final public function getMessage () ::: string;
+    final public function getCode () ::: int;
+    final public function getFile () ::: string;
+    final public function getLine () ::: int;
+    final public function getTrace () ::: string[][];
+    final public function getTraceAsString () ::: string;
+
+    final private function __clone() ::: void;
+}
+
+class Error implements Throwable {
+    protected $message = '';
+    protected $code = 0;
+    /** @var string */
+    protected $file;
+    /** @var int */
+    protected $line;
+
+    public function __construct($message ::: string = '', $code ::: int = 0) ::: Error;
+    final public function getMessage () ::: string;
+    final public function getCode () ::: int;
+    final public function getFile () ::: string;
+    final public function getLine () ::: int;
+    final public function getTrace () ::: string[][];
+    final public function getTraceAsString () ::: string;
+
+    final private function __clone() ::: void;
+}
+
+define('E_ERROR', 1);
+define('E_WARNING', 2);
+define('E_PARSE', 4);
+define('E_NOTICE', 8);
+define('E_CORE_ERROR', 16);
+define('E_CORE_WARNING', 32);
+define('E_COMPILE_ERROR', 64);
+define('E_COMPILE_WARNING', 128);
+define('E_USER_ERROR', 256);
+define('E_USER_WARNING', 512);
+define('E_USER_NOTICE', 1024);
+define('E_STRICT', 2048);
+define('E_RECOVERABLE_ERROR', 4096);
+define('E_DEPRECATED', 8192);
+define('E_USER_DEPRECATED', 16384);
+define('E_ALL', 32767);
+
+function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: string = '') ::: Exception;
+
+function error_get_last() ::: mixed;
+
+class ArithmeticError extends Error {}
+class DivisionByZeroError extends ArithmeticError {}
+class AssertionError extends Error {}
+class CompileError extends Error {}
+class ParseError extends CompileError {}
+class TypeError extends Error {}
+class ArgumentCountError extends TypeError {}
+class ValueError extends Error {}
+class UnhandledMatchError extends Error {}
+
+class LogicException extends Exception {}
+class BadFunctionCallException extends LogicException {}
+class BadMethodCallException extends BadFunctionCallException {}
+class DomainException extends LogicException {}
+class InvalidArgumentException extends LogicException {}
+class LengthException extends LogicException {}
+class OutOfRangeException extends LogicException {}
+
+class RuntimeException extends Exception {}
+class OutOfBoundsException extends RuntimeException {}
+class OverflowException extends RuntimeException {}
+class RangeException extends RuntimeException {}
+class UnderflowException extends RuntimeException {}
+class UnexpectedValueException extends RuntimeException {}
+
+class Random\RandomException extends Exception {}
+
+// === UNSUPPORTED ===
+
+/** @kphp-extern-func-info stub generation-required */
+function error_reporting ($e ::: int = TODO) ::: int;
+/** @kphp-extern-func-info stub generation-required */
+function kphp_backtrace($pretty ::: bool = true) ::: string[];

@@ -1,0 +1,77 @@
+<?php
+
+// ===== SUPPORTED =====
+
+/** @var mixed $_SERVER */
+global $_SERVER;
+/** @var mixed $_GET */
+global $_GET;
+/** @var mixed $_POST */
+global $_POST;
+/** @var mixed $_FILES */
+global $_FILES;
+/** @var mixed $_COOKIE */
+global $_COOKIE;
+/** @var mixed $_REQUEST */
+global $_REQUEST;
+/** @var mixed $_ENV */
+global $_ENV;
+/** @var mixed $argc */
+global $argc;
+/** @var mixed $argv */
+global $argv;
+
+define('PHP_INT_MAX', 9223372036854775807);
+define('PHP_INT_MIN', -9223372036854775808);
+define('PHP_INT_SIZE', 8);
+define('PHP_EOL', "\n");
+
+function empty ($val ::: any) ::: bool;
+function count ($val ::: any) ::: int;
+function sizeof ($val ::: any) ::: int;
+function gettype ($v ::: any) ::: string;
+function is_scalar ($v ::: any) ::: bool;
+function is_numeric ($v ::: mixed) ::: bool;
+function is_null ($v ::: any) ::: bool;
+function is_bool ($v ::: mixed) ::: bool;
+function is_int ($v ::: mixed) ::: bool;
+function is_integer ($v ::: mixed) ::: bool;
+function is_long ($v ::: mixed) ::: bool;
+function is_float ($v ::: mixed) ::: bool;
+function is_double ($v ::: mixed) ::: bool;
+function is_real ($v ::: mixed) ::: bool;
+function is_string ($v ::: mixed) ::: bool;
+function is_array ($v ::: any) ::: bool;
+function is_object ($v ::: any) ::: bool;
+function get_class ($v ::: any) ::: string;
+function get_hash_of_class (object $klass) ::: int;
+
+
+/** defined in runtime-core.h **/
+function likely ($x ::: bool) ::: bool;
+function unlikely ($x ::: bool) ::: bool;
+
+function boolval ($v ::: any) ::: bool;
+function intval ($v ::: mixed) ::: int;
+function floatval ($v ::: mixed) ::: float;
+function strval ($v ::: mixed) ::: string;
+
+/** @kphp-extern-func-info cpp_template_call */
+function instance_cast(any $instance, $to_type ::: string) ::: instance<^2>;
+
+function make_clone ($x ::: any) ::: ^1;
+
+function warning($message ::: string) ::: void;
+/** @kphp-no-return */
+function critical_error($message ::: string) ::: void;
+
+// builtin that allows to store objects inside a mixed
+function to_mixed(object $instance) ::: mixed;
+
+/** @kphp-required */
+interface ArrayAccess {
+  public function offsetExists(mixed $offset): bool;
+  public function offsetGet(mixed $offset): mixed;
+  public function offsetSet(mixed $offset, mixed $value);
+  public function offsetUnset(mixed $offset);
+}

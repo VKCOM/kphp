@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * @kphp-immutable-class
+ */
+class CompileTimeLocation {
+  public string $file;
+  public string $function;
+  public int $line;
+
+
+  public function __construct($file ::: string, $function ::: string, $line ::: int) ::: CompileTimeLocation;
+
+  static public function calculate(?CompileTimeLocation $passed) ::: CompileTimeLocation;
+}
+
