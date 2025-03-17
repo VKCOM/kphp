@@ -101,7 +101,7 @@ class Random\RandomException extends Exception {}
 
 // === UNSUPPORTED ===
 
-/** @kphp-extern-func-info stub generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function error_reporting ($e ::: int = TODO) ::: int;
-/** @kphp-extern-func-info stub generate-stub */
+/** @kphp-extern-func-info stub generation-required */
 function kphp_backtrace($pretty ::: bool = true) ::: string[];
