@@ -1,3 +1,4 @@
+check_python_package(six)
 update_git_submodule(${THIRD_PARTY_DIR}/re2 "--recursive")
 get_submodule_version(${THIRD_PARTY_DIR}/re2 RE2_VERSION)
 get_submodule_remote_url(third-party/re2 RE2_SOURCE_URL)

@@ -260,6 +260,7 @@ prepend(VERTEX_AUTO_GENERATED ${KPHP_COMPILER_AUTO_DIR}/vertex/
         foreach-op.h
         is-base-of.h)
 
+check_python_package(jsonschema)
 add_custom_command(OUTPUT ${VERTEX_AUTO_GENERATED}
                    COMMAND ${Python3_EXECUTABLE} ${KPHP_COMPILER_DIR}/vertex-gen.py --auto ${AUTO_DIR} --config ${KPHP_COMPILER_DIR}/vertex-desc.json
                    DEPENDS ${KPHP_COMPILER_DIR}/vertex-gen.py ${KPHP_COMPILER_DIR}/vertex-desc.json

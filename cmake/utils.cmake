@@ -277,3 +277,17 @@ function(make_third_party_configuration PIC_ENABLED PROJECT_GENERIC_NAME PROJECT
         set(${OUT_LIB_SPECIFIER} ${NO_PIC_LIBRARY_SPECIFIER} PARENT_SCOPE)
     endif()
 endfunction()
+
+function(check_python_package PACKAGE_NAME)
+    execute_process(
+            COMMAND ${Python3_EXECUTABLE} -c "import ${PACKAGE_NAME}"
+            RESULT_VARIABLE return_code
+            OUTPUT_QUIET
+            ERROR_QUIET
+    )
+    if(return_code EQUAL 0)
+        message(STATUS "Found Python3 package `${PACKAGE_NAME}`")
+    else()
+        message(FATAL_ERROR "Python3 package `${PACKAGE_NAME}` is required but was not found")
+    endif()
+endfunction()
