@@ -6,20 +6,6 @@ function error_get_last() ::: mixed;
 
 function kphp_set_context_on_error(mixed[] $tags, mixed $extra_info, string $env = "") ::: void;
 
-/**
- * @kphp-immutable-class
- */
-class CompileTimeLocation {
-  public string $file;
-  public string $function;
-  public int $line;
-
-  /** @kphp-extern-func-info */
-  public function __construct($file ::: string, $function ::: string, $line ::: int) ::: CompileTimeLocation;
-  /** @kphp-extern-func-info */
-  static public function calculate(?CompileTimeLocation $passed) ::: CompileTimeLocation;
-}
-
 interface Throwable {
     public function getMessage () ::: string;
     public function getCode () ::: int;
