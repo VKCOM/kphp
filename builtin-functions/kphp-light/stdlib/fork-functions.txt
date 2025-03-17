@@ -6,7 +6,7 @@
 
 function get_running_fork_id() ::: future <void>;
 
-/** @kphp-extern-func-info interruptible cpp_template_call */
+/** @kphp-extern-func-info can_throw interruptible cpp_template_call */
 function wait(future<any> | false $id, float $timeout = -1.0) ::: ^1[*] | null;
 
 /** @kphp-extern-func-info interruptible */
