@@ -120,6 +120,9 @@ class KphpBuilder:
         env, sanitizer_glob_mask = self._prepare_sanitizer_env(self._kphp_build_tmp_dir, sanitizer_log_name, detect_leaks=0)
         if kphp_env:
             env.update(kphp_env)
+        if "KPHP_FUNCTIONS" in env.keys():
+            env["KPHP_FUNCTIONS"] = self._test_file_path[:self._test_file_path.rfind('/')] + "/" + env["KPHP_FUNCTIONS"]
+
         env.setdefault("KPHP_THREADS_COUNT", "3")
         env.setdefault("KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS", "1")
         env.setdefault("KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE", "1")
