@@ -15,13 +15,14 @@
 
 using resource = mixed;
 
-enum class resource_kind : uint8_t { STDIN, STDOUT, STDERR, UDP, UNKNOWN };
+enum class resource_kind : uint8_t { STDIN, STDOUT, STDERR, INPUT, UDP, UNKNOWN };
 
 namespace resource_impl_ {
 
 inline constexpr std::string_view STDIN_NAME = "php://stdin";
 inline constexpr std::string_view STDOUT_NAME = "php://stdout";
 inline constexpr std::string_view STDERR_NAME = "php://stderr";
+inline constexpr std::string_view INPUT_NAME = "php://input";
 inline constexpr std::string_view UDP_SCHEME_PREFIX = "udp://";
 
 inline resource_kind uri_to_resource_kind(std::string_view uri) noexcept {
@@ -32,6 +33,8 @@ inline resource_kind uri_to_resource_kind(std::string_view uri) noexcept {
     kind = resource_kind::STDOUT;
   } else if (uri == resource_impl_::STDERR_NAME) {
     kind = resource_kind::STDERR;
+  } else if (uri == resource_impl_::INPUT_NAME) {
+    kind = resource_kind::INPUT;
   } else if (uri.starts_with(resource_impl_::UDP_SCHEME_PREFIX)) {
     kind = resource_kind::UDP;
   }
@@ -65,7 +68,7 @@ public:
 
   Optional<string> get_contents() const noexcept {
     auto &http_server_instance_st{HttpServerInstanceState::get()};
-    if (kind != resource_kind::STDIN || !http_server_instance_st.opt_raw_post_data.has_value()) {
+    if (kind != resource_kind::INPUT || !http_server_instance_st.opt_raw_post_data.has_value()) {
       return false;
     }
     return *http_server_instance_st.opt_raw_post_data;

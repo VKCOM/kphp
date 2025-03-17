@@ -15,10 +15,8 @@ underlying_resource_t::underlying_resource_t(std::string_view scheme) noexcept
   : kind(resource_impl_::uri_to_resource_kind(scheme)) {
   auto &instance_st{InstanceState::get()};
   switch (kind) {
-    case resource_kind::STDIN: {
-      last_errc = instance_st.image_kind() == ImageKind::Server ? k2::errno_ok : k2::errno_einval;
-      break;
-    }
+    case resource_kind::STDIN:
+      [[fallthrough]];
     case resource_kind::STDERR: {
       last_errc = k2::errno_einval;
       break;
@@ -29,6 +27,10 @@ underlying_resource_t::underlying_resource_t(std::string_view scheme) noexcept
       } else {
         last_errc = k2::errno_einval;
       }
+      break;
+    }
+    case resource_kind::INPUT: {
+      last_errc = instance_st.image_kind() == ImageKind::Server ? k2::errno_ok : k2::errno_einval;
       break;
     }
     case resource_kind::UDP: {
@@ -63,8 +65,12 @@ void underlying_resource_t::close() noexcept {
 
   switch (kind) {
     case resource_kind::STDIN:
+      [[fallthrough]];
     case resource_kind::STDOUT:
-    case resource_kind::STDERR: {
+      [[fallthrough]];
+    case resource_kind::STDERR:
+      [[fallthrough]];
+    case resource_kind::INPUT: {
       // PHP supports multiple opening/closing operations on standard IO streams.
       stream_d_ = k2::INVALID_PLATFORM_DESCRIPTOR;
       break;
