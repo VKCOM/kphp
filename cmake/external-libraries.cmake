@@ -27,6 +27,27 @@ if(KPHP_TESTS)
 
     if(GTest_FOUND)
         include(GoogleTest)
+        # Check if gmock is not available
+        if(NOT TARGET GTest::gmock)
+            find_library(GMOCK_LIBRARY
+                    NAMES gmock
+                    HINTS ${CMAKE_INSTALL_FULL_LIBDIR} ${CMAKE_OSX_SYSROOT}
+            )
+            if(GMOCK_LIBRARY)
+                include(GNUInstallDirs)
+                message(STATUS "Found Google Mock library: ${GMOCK_LIBRARY}")
+                add_library(gmock STATIC IMPORTED)
+                set_target_properties(gmock PROPERTIES
+                        IMPORTED_LOCATION ${GMOCK_LIBRARY}
+                        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_INSTALL_FULL_INCLUDEDIR};${CMAKE_OSX_INCLUDE_DIRS}"
+                )
+                add_library(GTest::gmock ALIAS gmock)
+            else()
+                message(FATAL_ERROR "Google Mock library not found. Please install libgmock-dev.")
+            endif()
+        else()
+            message(STATUS "Google Mock found in GTest")
+        endif()
     else()
         handle_missing_library("gtest")
         FetchContent_Declare(

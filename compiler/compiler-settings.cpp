@@ -156,17 +156,15 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
 #else
   std::string common_path = "/usr/local";
 #endif
-  cxx_flags += " -I" + common_path + "/include"
-               " -I" + common_path + "/opt/openssl/include";
+  cxx_flags += " -I" + common_path + "/include";
   ld_flags += " -liconv"
               " -lepoll-shim"
               " -L" EPOLL_SHIM_LIB_DIR
               " -L" + common_path + "/lib"
-              " -undefined dynamic_lookup"
 #ifdef PDO_DRIVER_PGSQL
               " -L" + common_path + "/opt/libpq/lib"
 #endif
-              " -L" + common_path + "/opt/openssl/lib";
+              " -undefined dynamic_lookup";
 
 #else
   static_cast<void>(cxx_flags);

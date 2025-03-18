@@ -21,7 +21,7 @@ set(NO_PIC_LIBRARY_SUFFIX "-${NO_PIC_NAMESPACE}")
 set(NO_PIC_LIBRARY_SPECIFIER "NO_PIC")
 
 if(APPLE)
-    detect_xcode_sdk_path(CMAKE_OSX_SYSROOT)
+    detect_xcode_sdk_path(CMAKE_OSX_SYSROOT CMAKE_OSX_INCLUDE_DIRS)
     set(ICONV_LIB iconv)
 else()
     set(RT_LIB rt)

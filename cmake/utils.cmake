@@ -104,7 +104,7 @@ function(update_git_submodule SUBMODULE_PATH)
     endif()
 endfunction()
 
-function(detect_xcode_sdk_path OUTPUT_VARIABLE)
+function(detect_xcode_sdk_path SDK_PATH INCLUDE_DIRS)
     # Use execute_process to run the xcrun command and capture the output
     execute_process(
             COMMAND xcrun --sdk macosx --show-sdk-path
@@ -118,13 +118,19 @@ function(detect_xcode_sdk_path OUTPUT_VARIABLE)
     if(return_code EQUAL 0)
         # Check if the SDK_PATH is not empty
         if(sdk_path)
-            set(${OUTPUT_VARIABLE} "${sdk_path}" PARENT_SCOPE)
+            set(${SDK_PATH} "${sdk_path}" PARENT_SCOPE)
             message(STATUS "Detected Xcode SDK path: ${sdk_path}")
         else()
             message(FATAL_ERROR "Failed to detect Xcode SDK path: Output is empty.")
         endif()
     else()
         message(FATAL_ERROR "Failed to detect Xcode SDK path: ${stderr}")
+    endif()
+
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+        set(${INCLUDE_DIRS} /usr/local/include)
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+        set(${INCLUDE_DIRS} /opt/homebrew/include)
     endif()
 endfunction()
 
