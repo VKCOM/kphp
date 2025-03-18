@@ -145,10 +145,6 @@ void append_if_doesnt_contain(std::string &ld_flags, const T &libs, vk::string_v
   }
 }
 
-void append_3dparty_headers(std::string &cxx_flags, const std::string &path_to_3dparty) noexcept {
-  cxx_flags += " -I" + path_to_3dparty + "include/";
-}
-
 void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcept {
 #if defined(__APPLE__)
 #ifdef __arm64__
@@ -332,10 +328,10 @@ void CompilerSettings::init() {
     #error unsupported __cplusplus value
   #endif
 
+  ss << " -I" << kphp_src_path.get() + "objs/include ";
   if (is_k2_mode) {
     // for now k2-component must be compiled with clang and statically linked libc++
     ss << " -stdlib=libc++";
-    ss << " -I" << kphp_src_path.get() + "objs/include ";
   } else {
     // default value is false
     // when we build using full runtime, we should force to use runtime as static lib
@@ -347,10 +343,6 @@ void CompilerSettings::init() {
   incremental_linker_flags.value_ = dynamic_incremental_linkage.get() ? "-shared" : "-r -nostdlib";
 
   remove_extra_spaces(extra_ld_flags.value_);
-
-  auto third_party_path = kphp_src_path.get() + "objs/";
-
-  append_3dparty_headers(cxx_default_flags, third_party_path);
 
   ld_flags.value_ = extra_ld_flags.get();
   append_apple_options(cxx_default_flags, ld_flags.value_);
