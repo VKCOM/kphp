@@ -4,6 +4,8 @@
 
 #include "common/server/statsd-client.h"
 
+#include <string>
+
 #include "common/binlog/kdb-binlog-common.h"
 #include "common/kfs/kfs.h"
 #include "net/net-connections.h"
@@ -22,6 +24,7 @@ static conn_target_t *statsd_targets[STATSD_PORTS_CNT_MAX];
 static int connected_to_targets[STATSD_PORTS_CNT_MAX];
 static int disable_statsd;
 static const char *statsd_host;
+static std::string statsd_prefix;
 
 SAVE_STRING_OPTION_PARSER(OPT_GENERIC, "statsd-host", statsd_host, "engine will connect to statsd daemon at this host and send stats to it");
 
@@ -31,6 +34,14 @@ OPTION_PARSER(OPT_GENERIC, "statsd-port", required_argument, "engine will connec
     return -1;
   }
   statsd_ports_cnt++;
+  return 0;
+}
+
+OPTION_PARSER(OPT_GENERIC, "statsd-prefix", required_argument, "Prefix for statsd metrics. All metric names will start with 'kphp_stats.<prefix>'."
+                                                               "You can use it to override default statsd-prefix "
+                                                               "which is usually taken as cluster_name from --server-config") {
+  statsd_prefix = "kphp_stats.";
+  statsd_prefix += optarg;
   return 0;
 }
 
@@ -130,7 +141,7 @@ static void init_statsd_targets() {
   }
 }
 
-void send_data_to_statsd_with_prefix(const char *stats_prefix, unsigned int tag_mask) {
+void send_data_to_statsd_with_prefix(const char *custom_stats_prefix, unsigned int tag_mask) {
   if (disable_statsd) {
     vkprintf(2, "Not sending stats to statsd, because it is disabled\n");
     return;
@@ -150,7 +161,7 @@ void send_data_to_statsd_with_prefix(const char *stats_prefix, unsigned int tag_
       kprintf("Connected to statsd at %s\n", sockaddr_storage_to_string(&statsd_targets[i]->endpoint));
       connected_to_targets[i] = 1;
     }
-
+    const char *stats_prefix = statsd_prefix.empty() ? custom_stats_prefix : statsd_prefix.c_str();
     auto [result, len] = engine_default_prepare_stats_with_tag_mask(statsd_stats_t{}, stats_prefix, tag_mask);
     write_out(&c->Out, result, len);
     flush_later(c);
