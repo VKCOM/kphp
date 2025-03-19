@@ -110,6 +110,8 @@ function range ($from ::: mixed, $to ::: mixed, $step ::: int = 1) ::: mixed[];
 /** @kphp-extern-func-info interruptible */
 function array_map (callable(^2[*] $x):any $callback, $a ::: array) ::: ^1() [];
 
+function array_fill ($start_index ::: int, $num ::: int, $value ::: any) ::: ^3[];
+
 /** @kphp-extern-func-info cpp_template_call interruptible */
 function array_reduce ($a ::: array, callable(^3 | ^2() $carry, ^1[*] $item):any $callback, $initial ::: any) ::: ^2() | ^3;
 
@@ -179,8 +181,6 @@ function array_diff_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) :
 function array_find ($val ::: array, callable(^1[*] $x):bool $callback) ::: tuple(mixed, ^1[*]);
 /** @kphp-extern-func-info stub */
 function array_count_values ($a ::: array) ::: int[];
-/** @kphp-extern-func-info stub */
-function array_fill ($start_index ::: int, $num ::: int, $value ::: any) ::: ^3[];
 /** @kphp-extern-func-info stub */
 function array_fill_keys ($a ::: array, $value ::: any) ::: ^2[];
 /** @kphp-extern-func-info stub */

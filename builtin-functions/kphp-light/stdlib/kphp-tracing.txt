@@ -58,8 +58,8 @@ final class KphpSpanEvent {
 
 function kphp_tracing_init(string $root_span_title): KphpDiv;
 
-/** @kphp-extern-func-info stub generation-required */
 function kphp_tracing_set_level(int $trace_level): void;
+
 /** @kphp-extern-func-info stub generation-required */
 function kphp_tracing_get_level(): int;
 
