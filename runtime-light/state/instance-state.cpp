@@ -24,6 +24,7 @@
 #include "runtime-light/state/init-functions.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
+#include "runtime-light/stdlib/system/system-functions.h"
 #include "runtime-light/stdlib/time/time-functions.h"
 
 namespace {
@@ -83,8 +84,9 @@ task_t<void> InstanceState::run_instance_prologue() noexcept {
     using namespace PhpServerSuperGlobalIndices;
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME.data(), REQUEST_TIME.size()}, static_cast<int64_t>(time_mcs));
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME_FLOAT.data(), REQUEST_TIME_FLOAT.size()}, static_cast<double>(time_mcs));
+    superglobals.v$d$PHP_SAPI = system_functions_impl_::php_sapi_name(image_kind_);
   }
-  // TODO sapi, env
+  // env
 
   // specific initialization
   if constexpr (kind == ImageKind::CLI) {

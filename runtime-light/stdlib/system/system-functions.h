@@ -11,6 +11,25 @@
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 
+namespace system_functions_impl_ {
+
+inline string php_sapi_name(ImageKind imageKind) noexcept {
+  switch (imageKind) {
+    case ImageKind::CLI:
+      return string("cli");
+    case ImageKind::Server:
+      return string("K2-server");
+    case ImageKind::Oneshot:
+      return string("oneshot");
+    case ImageKind::Multishot:
+      return string("multishot");
+    default:
+      return string("Invalid interface");
+  }
+}
+
+} // namespace system_functions_impl_
+
 template<typename F>
 bool f$register_kphp_on_oom_callback(F && /*callback*/) {
   php_critical_error("call to unsupported function");
@@ -60,6 +79,8 @@ inline string f$php_uname(const string &mode = string{1, 'a'}) noexcept {
   }
 }
 
+string f$php_sapi_name() noexcept;
+
 Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) noexcept;
 
 inline array<array<string>> f$debug_backtrace() noexcept {
@@ -94,9 +115,4 @@ inline string f$get_engine_version() noexcept {
 inline string f$get_kphp_cluster_name() noexcept {
   php_warning("called stub get_kphp_cluster_name");
   return string("adm512");
-}
-
-inline string f$php_sapi_name() noexcept {
-  php_warning("called stub php_sapi_name");
-  return string("K2-server");
 }

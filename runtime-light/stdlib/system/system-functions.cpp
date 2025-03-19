@@ -9,7 +9,12 @@
 #include "common/containers/final_action.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/system/system-functions.h"
+
+string f$php_sapi_name() noexcept {
+  return InstanceState::get().php_script_mutable_globals_singleton.get_superglobals().v$d$PHP_SAPI;
+}
 
 Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) noexcept {
   iconv_t cd{};
