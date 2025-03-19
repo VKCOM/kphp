@@ -53,15 +53,6 @@ function(prepend VAR_NAME PREFIX)
     set(${VAR_NAME} ${${VAR_NAME}} PARENT_SCOPE)
 endfunction(prepend)
 
-function(prepare_cross_platform_libs VAR_NAME)
-    set(${VAR_NAME} ${ARGN})
-    if(NOT APPLE)
-        list(TRANSFORM ${VAR_NAME} PREPEND -l:lib OUTPUT_VARIABLE ${VAR_NAME})
-        list(TRANSFORM ${VAR_NAME} APPEND .a OUTPUT_VARIABLE ${VAR_NAME})
-    endif()
-    set(${VAR_NAME} ${${VAR_NAME}} PARENT_SCOPE)
-endfunction(prepare_cross_platform_libs)
-
 function(install_symlink TARGET_PATH LINK COMPONENT_NAME)
     get_filename_component(LINK_DIR ${LINK} DIRECTORY)
     get_filename_component(LINK_FILE_NAME ${LINK} NAME)
@@ -113,7 +104,7 @@ function(update_git_submodule SUBMODULE_PATH)
     endif()
 endfunction()
 
-function(detect_xcode_sdk_path OUTPUT_VARIABLE)
+function(detect_xcode_sdk_path SDK_PATH INCLUDE_DIRS)
     # Use execute_process to run the xcrun command and capture the output
     execute_process(
             COMMAND xcrun --sdk macosx --show-sdk-path
@@ -127,13 +118,19 @@ function(detect_xcode_sdk_path OUTPUT_VARIABLE)
     if(return_code EQUAL 0)
         # Check if the SDK_PATH is not empty
         if(sdk_path)
-            set(${OUTPUT_VARIABLE} "${sdk_path}" PARENT_SCOPE)
+            set(${SDK_PATH} "${sdk_path}" PARENT_SCOPE)
             message(STATUS "Detected Xcode SDK path: ${sdk_path}")
         else()
             message(FATAL_ERROR "Failed to detect Xcode SDK path: Output is empty.")
         endif()
     else()
         message(FATAL_ERROR "Failed to detect Xcode SDK path: ${stderr}")
+    endif()
+
+    if (CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
+        set(${INCLUDE_DIRS} /usr/local/include)
+    elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64")
+        set(${INCLUDE_DIRS} /opt/homebrew/include)
     endif()
 endfunction()
 
@@ -159,11 +156,6 @@ function(combine_static_runtime_library TARGET COMBINED_TARGET)
                 get_target_property(alias ${dep} ALIASED_TARGET)
                 if(TARGET ${alias})
                     set(dep ${alias})
-                endif()
-
-                get_target_property(is_downloaded_lib ${dep} DOWNLOADED_LIBRARY)
-                if(is_downloaded_lib EQUAL 1)
-                    continue()
                 endif()
 
                 get_target_property(dep_kind ${dep} TYPE)
@@ -289,5 +281,19 @@ function(make_third_party_configuration PIC_ENABLED PROJECT_GENERIC_NAME PROJECT
         endif()
         set(${OUT_NAMESPACE} ${NO_PIC_NAMESPACE} PARENT_SCOPE)
         set(${OUT_LIB_SPECIFIER} ${NO_PIC_LIBRARY_SPECIFIER} PARENT_SCOPE)
+    endif()
+endfunction()
+
+function(check_python_package PACKAGE_NAME)
+    execute_process(
+            COMMAND ${Python3_EXECUTABLE} -c "import ${PACKAGE_NAME}"
+            RESULT_VARIABLE return_code
+            OUTPUT_QUIET
+            ERROR_QUIET
+    )
+    if(return_code EQUAL 0)
+        message(STATUS "Found Python3 package `${PACKAGE_NAME}`")
+    else()
+        message(FATAL_ERROR "Python3 package `${PACKAGE_NAME}` is required but was not found")
     endif()
 endfunction()

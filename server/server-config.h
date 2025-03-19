@@ -7,7 +7,7 @@
 #include <array>
 #include <climits>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "yaml-cpp/yaml.h"
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"

@@ -21,16 +21,23 @@ set(NO_PIC_LIBRARY_SUFFIX "-${NO_PIC_NAMESPACE}")
 set(NO_PIC_LIBRARY_SPECIFIER "NO_PIC")
 
 if(APPLE)
-    detect_xcode_sdk_path(CMAKE_OSX_SYSROOT)
+    detect_xcode_sdk_path(CMAKE_OSX_SYSROOT CMAKE_OSX_INCLUDE_DIRS)
     set(ICONV_LIB iconv)
 else()
     set(RT_LIB rt)
-    set(NUMA_LIB numa)
 endif()
 
 find_package(Git REQUIRED)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 find_package(Perl REQUIRED)
+find_program(RE2C_EXECUTABLE re2c)
+
+if(NOT RE2C_EXECUTABLE)
+    message(FATAL_ERROR "re2c is required but was not found. Please install re2c and try again.")
+else()
+    message(STATUS "Found re2c: ${RE2C_EXECUTABLE}")
+endif()
+
 
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)

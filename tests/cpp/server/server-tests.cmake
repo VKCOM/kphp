@@ -6,6 +6,11 @@ prepend(SERVER_TESTS_SOURCES ${BASE_DIR}/tests/cpp/server/
         php-engine-test.cpp
         workers-control-test.cpp)
 
+# Suppress YAML-cpp-related warnings
+if(COMPILER_CLANG)
+    allow_deprecated_declarations(${BASE_DIR}/tests/cpp/server/server-config-test.cpp)
+endif()
+
 if(COMPILER_GCC)
     set_source_files_properties(${BASE_DIR}/tests/cpp/server/confdata-binlog-events-test.cpp PROPERTIES COMPILE_FLAGS -Wno-stringop-overflow)
 endif()

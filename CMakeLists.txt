@@ -37,6 +37,7 @@ include(${THIRD_PARTY_DIR}/zstd-cmake/zstd.cmake)
 include(${COMMON_DIR}/unicode/unicode.cmake)
 # RE2 depends on unicode
 include(${THIRD_PARTY_DIR}/re2-cmake/re2.cmake)
+include(${THIRD_PARTY_DIR}/yaml-cpp-cmake/yaml-cpp.cmake)
 
 # TODO: use FetchContent_Declare instead of include_directories
 include_directories(.)
@@ -119,8 +120,7 @@ else() # kphp specific
             DESTINATION ${INSTALL_KPHP_SOURCE}
             FILES_MATCHING REGEX ".*\\.(hpp|h|inl)$")
 
-    set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, libuber-h3, libyaml-cpp-dev, \
-                                           gcc, g++, kphp-timelib, libnuma-dev")
+    set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "vk-flex-data, gcc, g++")
 
     if (PDO_DRIVER_MYSQL)
         set(CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS "${CPACK_DEBIAN_KPHP_PACKAGE_DEPENDS}, libmysqlclient-dev")

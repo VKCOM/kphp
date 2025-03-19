@@ -27,6 +27,27 @@ if(KPHP_TESTS)
 
     if(GTest_FOUND)
         include(GoogleTest)
+        # Check if gmock is not available
+        if(NOT TARGET GTest::gmock)
+            find_library(GMOCK_LIBRARY
+                    NAMES gmock
+                    HINTS ${CMAKE_INSTALL_FULL_LIBDIR} ${CMAKE_OSX_SYSROOT}
+            )
+            if(GMOCK_LIBRARY)
+                include(GNUInstallDirs)
+                message(STATUS "Found Google Mock library: ${GMOCK_LIBRARY}")
+                add_library(gmock STATIC IMPORTED)
+                set_target_properties(gmock PROPERTIES
+                        IMPORTED_LOCATION ${GMOCK_LIBRARY}
+                        INTERFACE_INCLUDE_DIRECTORIES "${CMAKE_INSTALL_FULL_INCLUDEDIR};${CMAKE_OSX_INCLUDE_DIRS}"
+                )
+                add_library(GTest::gmock ALIAS gmock)
+            else()
+                message(FATAL_ERROR "Google Mock library not found. Please install libgmock-dev.")
+            endif()
+        else()
+            message(STATUS "Google Mock found in GTest")
+        endif()
     else()
         handle_missing_library("gtest")
         FetchContent_Declare(
@@ -39,40 +60,6 @@ if(KPHP_TESTS)
         add_library(GTest::Main ALIAS gtest_main)
         message(STATUS "---------------------")
     endif()
-endif()
-
-find_library(KPHP_TIMELIB kphp-timelib)
-if(KPHP_TIMELIB)
-    add_library(kphp-timelib STATIC IMPORTED ${KPHP_TIMELIB})
-else()
-    handle_missing_library("kphp-timelib")
-    FetchContent_Declare(kphp-timelib GIT_REPOSITORY https://github.com/VKCOM/timelib)
-    message(STATUS "---------------------")
-    FetchContent_MakeAvailable(kphp-timelib)
-    include_directories(${kphp-timelib_SOURCE_DIR}/include)
-    add_definitions(-DKPHP_TIMELIB_LIB_DIR="${kphp-timelib_SOURCE_DIR}/objs")
-    add_link_options(-L${kphp-timelib_SOURCE_DIR}/objs)
-endif()
-
-find_library(KPHP_H3 h3)
-if(KPHP_H3)
-    add_library(libh3 STATIC IMPORTED ${KPHP_H3})
-else()
-    handle_missing_library("h3")
-    FetchContent_Declare(
-            h3
-            GIT_REPOSITORY https://github.com/VKCOM/uber-h3.git
-            GIT_TAG        fetch_content
-    )
-    message(STATUS "---------------------")
-    FetchContent_MakeAvailable(h3)
-    # This is an indicator for runtime library "combiner" (`combine_static_runtime_library` CMake method)
-    # On some platforms h3 may be recognized as a "normal" CMake target, while on others it could be seen as an `unknown lib` (-l:libh3.a).
-    # As a result, the `combiner` cannot determine that `h3` is a system-installed library and should not be included in the single-file runtime library.
-    set_target_properties(h3 PROPERTIES DOWNLOADED_LIBRARY 1)
-    include_directories(${h3_BINARY_DIR}/src/include)
-    add_definitions(-DKPHP_H3_LIB_DIR="${h3_BINARY_DIR}/lib")
-    add_link_options(-L${h3_BINARY_DIR}/lib)
 endif()
 
 if(APPLE)

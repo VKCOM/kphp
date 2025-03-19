@@ -145,10 +145,6 @@ void append_if_doesnt_contain(std::string &ld_flags, const T &libs, vk::string_v
   }
 }
 
-void append_3dparty_headers(std::string &cxx_flags, const std::string &path_to_3dparty) noexcept {
-  cxx_flags += " -I" + path_to_3dparty + "include/";
-}
-
 void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcept {
 #if defined(__APPLE__)
 #ifdef __arm64__
@@ -156,17 +152,15 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
 #else
   std::string common_path = "/usr/local";
 #endif
-  cxx_flags += " -I" + common_path + "/include"
-               " -I" + common_path + "/opt/openssl/include";
+  cxx_flags += " -I" + common_path + "/include";
   ld_flags += " -liconv"
               " -lepoll-shim"
               " -L" EPOLL_SHIM_LIB_DIR
               " -L" + common_path + "/lib"
-              " -undefined dynamic_lookup"
 #ifdef PDO_DRIVER_PGSQL
               " -L" + common_path + "/opt/libpq/lib"
 #endif
-              " -L" + common_path + "/opt/openssl/lib";
+              " -undefined dynamic_lookup";
 
 #else
   static_cast<void>(cxx_flags);
@@ -334,10 +328,10 @@ void CompilerSettings::init() {
     #error unsupported __cplusplus value
   #endif
 
+  ss << " -I" << kphp_src_path.get() + "objs/include ";
   if (is_k2_mode) {
     // for now k2-component must be compiled with clang and statically linked libc++
     ss << " -stdlib=libc++";
-    ss << " -I" << kphp_src_path.get() + "objs/include ";
   } else {
     // default value is false
     // when we build using full runtime, we should force to use runtime as static lib
@@ -350,32 +344,9 @@ void CompilerSettings::init() {
 
   remove_extra_spaces(extra_ld_flags.value_);
 
-  auto third_party_path = kphp_src_path.get() + "objs/";
-
-  append_3dparty_headers(cxx_default_flags, third_party_path);
-
   ld_flags.value_ = extra_ld_flags.get();
   append_apple_options(cxx_default_flags, ld_flags.value_);
-  std::vector<vk::string_view> system_installed_static_libs{"yaml-cpp", "h3", "kphp-timelib"};
-
-#ifdef KPHP_TIMELIB_LIB_DIR
-  ld_flags.value_ += " -L" KPHP_TIMELIB_LIB_DIR;
-#else
-  // kphp-timelib is usually installed in /usr/local/lib;
-  // LDD may not find a library in /usr/local/lib if we don't add it here
-  // TODO: can we avoid this hardcoded library path?
-  ld_flags.value_ += " -L /usr/local/lib";
-#endif
-
-#ifdef KPHP_H3_LIB_DIR
-  ld_flags.value_ += " -L" KPHP_H3_LIB_DIR;
-#else
-  // kphp-h3 is usually installed in /usr/local/lib;
-  // LDD may not find a library in /usr/local/lib if we don't add it here
-  // TODO: can we avoid this hardcoded library path?
-  ld_flags.value_ += " -L /usr/local/lib";
-#endif
-
+  std::vector<vk::string_view> system_installed_static_libs{};
   std::vector<vk::string_view> system_installed_dynamic_libs{"pthread", "m", "dl"};
 
 #ifdef PDO_DRIVER_MYSQL
@@ -406,7 +377,6 @@ void CompilerSettings::init() {
   append_if_doesnt_contain(ld_flags.value_, vk::to_array({"vk-flex-data"}), flex_prefix, ".a");
   system_installed_dynamic_libs.emplace_back("iconv");
 #else
-  system_installed_static_libs.emplace_back("numa");
   system_installed_static_libs.emplace_back("vk-flex-data");
   append_if_doesnt_contain(ld_flags.value_, system_installed_static_libs, "-l:lib", ".a");
   system_installed_dynamic_libs.emplace_back("rt");

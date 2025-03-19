@@ -27,3 +27,17 @@
 	path = third-party/pcre
 	url = https://github.com/VKCOM/PCRE.git
 	branch = debian/buster
+[submodule "third-party/uber-h3"]
+	path = third-party/uber-h3
+	url = https://github.com/VKCOM/uber-h3.git
+	branch = master
+[submodule "third-party/timelib"]
+	path = third-party/timelib
+	url = https://github.com/VKCOM/timelib.git
+	branch = master
+[submodule "third-party/yaml-cpp"]
+	path = third-party/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "third-party/numactl"]
+	path = third-party/numactl
+	url = https://github.com/numactl/numactl.git
