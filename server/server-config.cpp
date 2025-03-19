@@ -55,6 +55,11 @@ int ServerConfig::init_from_config(const char *config_path) noexcept {
     if (auto err_msg = set_cluster_name(cluster_name.data(), false)) {
       throw std::runtime_error(err_msg);
     }
+
+    if (const auto dc_name = node["dc_name"]) {
+      dc_name_ = dc_name.as<std::string>();
+    }
+
     if (auto environment = node["environment"]) {
       environment_ = environment.as<std::string>();
     }
