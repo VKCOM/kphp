@@ -5,6 +5,7 @@
 #include "runtime-light/state/init-functions.h"
 
 #include <cinttypes>
+#include <string_view>
 #include <cstdint>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
@@ -14,12 +15,55 @@
 #include "runtime-light/server/http/init-functions.h"
 #include "runtime-light/server/init-functions.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
+#include "runtime-light/state/component-state.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 
 namespace {
+
+array<mixed> format_cli_argv() {
+  constexpr std::string_view INI_ARG_PHP_PREFIX = "-D";
+  constexpr std::string_view SHORT_ARG_PHP_PREFIX = "-";
+  constexpr std::string_view LONG_ARG_PHP_PREFIX = "--";
+  constexpr std::string_view RUNTIME_CONFIG_PHP_PREFIX = "--runtime_config";
+
+  array<mixed> argv;
+
+  const auto &component_state{ComponentState::get()};
+  argv.reserve(component_state.argc * 2, false);
+
+  for (const auto &ini_opt : component_state.ini_opts) {
+    argv.push_back(string{INI_ARG_PHP_PREFIX.data()});
+    argv.push_back(ini_opt.get_key());
+
+    const auto &value{ini_opt.get_value()};
+    if (!value.empty()) {
+      argv.push_back(string{"="});
+      argv.push_back(value);
+    }
+  }
+
+  for (const auto &cli_opt : component_state.cli_opts) {
+    const bool is_short_option = cli_opt.get_key().as_string().size() == 1;
+    argv.push_back((is_short_option ? string{SHORT_ARG_PHP_PREFIX.data()} : string{LONG_ARG_PHP_PREFIX.data()}).append(cli_opt.get_key()));
+
+    const auto &value{cli_opt.get_value()};
+    if (!value.empty()) {
+      argv.push_back(string{"="});
+      argv.push_back(value);
+    }
+  }
+
+  if (!component_state.runtime_config.empty()) {
+    argv.push_back(string{RUNTIME_CONFIG_PHP_PREFIX.data()});
+    argv.push_back(string{"="});
+    argv.push_back(component_state.runtime_config);
+  }
+
+  return argv;
+}
 
 void process_k2_invoke_http(tl::TLBuffer &tlb) noexcept {
   tl::K2InvokeHttp invoke_http{};
@@ -44,8 +88,8 @@ task_t<uint64_t> init_kphp_cli_component() noexcept {
   { // TODO superglobals init
     auto &superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
     using namespace PhpServerSuperGlobalIndices;
-    superglobals.v$argc = static_cast<int64_t>(0);
-    superglobals.v$argv = array<mixed>{};
+    superglobals.v$argv = format_cli_argv();
+    superglobals.v$argc = superglobals.v$argv.as_array().size().size;
     superglobals.v$_SERVER.set_value(string{ARGC.data(), ARGC.size()}, superglobals.v$argc);
     superglobals.v$_SERVER.set_value(string{ARGV.data(), ARGV.size()}, superglobals.v$argv);
     superglobals.v$_SERVER.set_value(string{PHP_SELF.data(), PHP_SELF.size()}, string{});
