@@ -4,8 +4,8 @@
 
 #include "runtime-light/state/component-state.h"
 
+#include <cctype>
 #include <cstring>
-#include <iterator>
 #include <string_view>
 #include <utility>
 
@@ -44,6 +44,25 @@ void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view v
   ini_opts.set_value(key_str, value_str);
 }
 
+void ComponentState::parse_cli_arg_list(std::string_view value_view) noexcept {
+  constexpr char QUOTE = '\"';
+  bool isQuotes{};
+  string current_arg;
+  for (char c : value_view) {
+    if (c == QUOTE) {
+      isQuotes = !isQuotes;
+    } else if (std::isspace(c) && !isQuotes && !current_arg.empty()) {
+      cli_args.push_back(current_arg);
+      current_arg = string();
+    } else {
+      current_arg.push_back(c);
+    }
+  }
+  if (std::isspace(value_view[value_view.size() - 1])) {
+    cli_args.push_back(current_arg);
+  }
+}
+
 void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexcept {
   // FIXME: actually no need to allocate string here
   auto [config, ok]{json_decode(string{value_view.data(), static_cast<string::size_type>(value_view.size())})};
@@ -62,6 +81,8 @@ void ComponentState::parse_args() noexcept {
 
     if (key_view.starts_with(INI_ARG_PREFIX)) {
       parse_ini_arg(key_view, value_view);
+    } else if (key_view == CLI_ARG_LIST) {
+      parse_cli_arg_list(value_view);
     } else if (key_view == RUNTIME_CONFIG_ARG) {
       parse_runtime_config_arg(value_view);
     } else {
@@ -69,5 +90,6 @@ void ComponentState::parse_args() noexcept {
     }
   }
   runtime_config.set_reference_counter_to(ExtraRefCnt::for_global_const);
+  cli_args.set_reference_counter_to(ExtraRefCnt::for_global_const);
   ini_opts.set_reference_counter_to(ExtraRefCnt::for_global_const);
 }

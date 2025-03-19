@@ -5,6 +5,7 @@
 #include "runtime-light/state/init-functions.h"
 
 #include <cinttypes>
+#include <string_view>
 #include <cstdint>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
@@ -14,6 +15,7 @@
 #include "runtime-light/server/http/init-functions.h"
 #include "runtime-light/server/init-functions.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
+#include "runtime-light/state/component-state.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/tl/tl-core.h"
@@ -43,9 +45,10 @@ void process_k2_invoke_job_worker(tl::TLBuffer &tlb) noexcept {
 task_t<uint64_t> init_kphp_cli_component() noexcept {
   { // TODO superglobals init
     auto &superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
+    auto &component_st{ComponentState::get()};
     using namespace PhpServerSuperGlobalIndices;
-    superglobals.v$argc = static_cast<int64_t>(0);
-    superglobals.v$argv = array<mixed>{};
+    superglobals.v$argv = component_st.cli_args;
+    superglobals.v$argc = component_st.cli_args.size().size;
     superglobals.v$_SERVER.set_value(string{ARGC.data(), ARGC.size()}, superglobals.v$argc);
     superglobals.v$_SERVER.set_value(string{ARGV.data(), ARGV.size()}, superglobals.v$argv);
     superglobals.v$_SERVER.set_value(string{PHP_SELF.data(), PHP_SELF.size()}, string{});
