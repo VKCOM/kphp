@@ -468,6 +468,8 @@ void k2_iconv_close(void *iconv_cd);
  */
 int32_t k2_iconv(size_t *result, void *iconv_cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);
 
+size_t k2_stderr_write(size_t data_len, const void *data);
+
 #ifdef __cplusplus
 }
 #endif

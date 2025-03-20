@@ -16,26 +16,25 @@
 using resource = mixed;
 
 enum class resource_kind : uint8_t { STDIN, STDOUT, STDERR, INPUT, UDP, UNKNOWN };
-
-namespace resource_impl_ {
-
 inline constexpr std::string_view STDIN_NAME = "php://stdin";
 inline constexpr std::string_view STDOUT_NAME = "php://stdout";
 inline constexpr std::string_view STDERR_NAME = "php://stderr";
 inline constexpr std::string_view INPUT_NAME = "php://input";
 inline constexpr std::string_view UDP_SCHEME_PREFIX = "udp://";
 
+namespace resource_impl_ {
+
 inline resource_kind uri_to_resource_kind(std::string_view uri) noexcept {
   resource_kind kind{resource_kind::UNKNOWN};
-  if (uri == resource_impl_::STDIN_NAME) {
+  if (uri == STDIN_NAME) {
     kind = resource_kind::STDIN;
-  } else if (uri == resource_impl_::STDOUT_NAME) {
+  } else if (uri == STDOUT_NAME) {
     kind = resource_kind::STDOUT;
-  } else if (uri == resource_impl_::STDERR_NAME) {
+  } else if (uri == STDERR_NAME) {
     kind = resource_kind::STDERR;
-  } else if (uri == resource_impl_::INPUT_NAME) {
+  } else if (uri == INPUT_NAME) {
     kind = resource_kind::INPUT;
-  } else if (uri.starts_with(resource_impl_::UDP_SCHEME_PREFIX)) {
+  } else if (uri.starts_with(UDP_SCHEME_PREFIX)) {
     kind = resource_kind::UDP;
   }
   return kind;
@@ -52,18 +51,31 @@ public:
 
   explicit underlying_resource_t(std::string_view) noexcept;
   underlying_resource_t(underlying_resource_t &&other) noexcept;
+
+  // Forget all previous state
+  underlying_resource_t &operator=(underlying_resource_t &&other) noexcept {
+    this->stream_d_ = std::exchange(other.stream_d_, k2::INVALID_PLATFORM_DESCRIPTOR);
+    this->kind = std::exchange(other.kind, resource_kind::UNKNOWN);
+    this->last_errc = std::exchange(other.last_errc, k2::errno_ok);
+    return *this;
+  }
+
   ~underlying_resource_t() override;
+
 
   underlying_resource_t(const underlying_resource_t &) = delete;
   underlying_resource_t &operator=(const underlying_resource_t &) = delete;
-  underlying_resource_t &operator=(underlying_resource_t &&) = delete;
 
   const char *get_class() const noexcept override {
     return R"(resource)";
   }
 
   task_t<int64_t> write(std::string_view text) const noexcept {
-    co_return co_await write_all_to_stream(stream_d_, text.data(), text.size());
+    if (kind == resource_kind::STDERR) {
+      co_return k2::stderr_write(text.size(), text.data());
+    } else {
+      co_return co_await write_all_to_stream(stream_d_, text.data(), text.size());
+    }
   }
 
   Optional<string> get_contents() const noexcept {

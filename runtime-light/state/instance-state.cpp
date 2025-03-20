@@ -22,6 +22,8 @@
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/init-functions.h"
+#include "runtime-light/stdlib/file/file-system-functions.h"
+#include "runtime-light/stdlib/file/resource.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/time/time-functions.h"
@@ -83,6 +85,8 @@ task_t<void> InstanceState::run_instance_prologue() noexcept {
     using namespace PhpServerSuperGlobalIndices;
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME.data(), REQUEST_TIME.size()}, static_cast<int64_t>(time_mcs));
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME_FLOAT.data(), REQUEST_TIME_FLOAT.size()}, static_cast<double>(time_mcs));
+
+    file_system_instance_state.STDERR = f$fopen(string(STDERR_NAME.data(), STDERR_NAME.size()), string("w"));
   }
   // TODO sapi, env
 

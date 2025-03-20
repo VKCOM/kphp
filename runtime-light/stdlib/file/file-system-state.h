@@ -11,5 +11,8 @@ struct FileSystemInstanceState final : private vk::not_copyable {
   mixed error_number_dummy;
   mixed error_description_dummy;
 
+  // TODO shoud we create something like `StreamInstanceState`?
+  mixed STDERR;
+
   static FileSystemInstanceState &get() noexcept;
 };
