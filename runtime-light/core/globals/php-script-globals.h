@@ -4,12 +4,12 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string_view>
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/allocator/allocator.h"
 
 namespace PhpServerSuperGlobalIndices {
 

@@ -8,8 +8,8 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/state/image-state.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 
 template<typename F>
@@ -62,7 +62,7 @@ inline string f$php_uname(const string &mode = string{1, 'a'}) noexcept {
 }
 
 inline string f$php_sapi_name() noexcept {
-  return InstanceState::get().php_script_mutable_globals_singleton.get_superglobals().v$d$PHP_SAPI;
+  return PhpScriptMutableGlobals::current().get_superglobals().v$d$PHP_SAPI;
 }
 
 Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) noexcept;

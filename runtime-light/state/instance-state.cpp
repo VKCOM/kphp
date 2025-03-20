@@ -29,17 +29,17 @@
 namespace {
 
 template<ImageKind kind>
-string php_sapi_name() noexcept {
+consteval std::string_view resolve_sapi_name() noexcept {
   if constexpr (kind == ImageKind::CLI) {
-    return string("cli");
+    return "cli";
   } else if constexpr (kind == ImageKind::Server) {
-    return string("server");
+    return "server";
   } else if constexpr (kind == ImageKind::Oneshot) {
-    return string("oneshot");
+    return "oneshot";
   } else if constexpr (kind == ImageKind::Multishot) {
-    return string("multishot");
+    return "multishot";
   } else {
-    return string("Invalid interface");
+    return "invalid interface";
   }
 }
 
@@ -91,6 +91,7 @@ task_t<void> InstanceState::run_instance_prologue() noexcept {
   // common initialization
   {
     const auto time_mcs{f$_microtime_float()};
+    constexpr auto sapi_name{resolve_sapi_name<kind>()};
 
     auto &superglobals{php_script_mutable_globals_singleton.get_superglobals()};
     superglobals.v$_ENV = ComponentState::get().env;
@@ -98,7 +99,7 @@ task_t<void> InstanceState::run_instance_prologue() noexcept {
     using namespace PhpServerSuperGlobalIndices;
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME.data(), REQUEST_TIME.size()}, static_cast<int64_t>(time_mcs));
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME_FLOAT.data(), REQUEST_TIME_FLOAT.size()}, static_cast<double>(time_mcs));
-    superglobals.v$d$PHP_SAPI = php_sapi_name<kind>();
+    superglobals.v$d$PHP_SAPI = string{sapi_name.data(), sapi_name.size()};
   }
 
   // specific initialization
