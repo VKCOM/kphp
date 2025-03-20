@@ -14,5 +14,5 @@ inline Optional<string> f$ini_get(const string &key) noexcept {
   return component_st.ini_opts.has_key(key) ? Optional<string>{component_st.ini_opts.get_value(key)} : Optional<string>{false};
 }
 
-Optional<array<mixed>> f$getopt(const string &options, const array<string> &longopts = {},
+Optional<array<mixed>> f$getopt(const string &short_options, const array<string> &long_options = {},
                                 Optional<std::optional<std::reference_wrapper<string>>> rest_index = {}) noexcept;
