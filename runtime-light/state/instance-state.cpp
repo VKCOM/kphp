@@ -24,10 +24,24 @@
 #include "runtime-light/state/init-functions.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
-#include "runtime-light/stdlib/system/system-functions.h"
 #include "runtime-light/stdlib/time/time-functions.h"
 
 namespace {
+
+template<ImageKind kind>
+string php_sapi_name() noexcept {
+  if constexpr (kind == ImageKind::CLI) {
+    return string("cli");
+  } else if constexpr (kind == ImageKind::Server) {
+    return string("server");
+  } else if constexpr (kind == ImageKind::Oneshot) {
+    return string("oneshot");
+  } else if constexpr (kind == ImageKind::Multishot) {
+    return string("multishot");
+  } else {
+    return string("Invalid interface");
+  }
+}
 
 int32_t merge_output_buffers() noexcept {
   auto &instance_st{InstanceState::get()};
@@ -84,9 +98,8 @@ task_t<void> InstanceState::run_instance_prologue() noexcept {
     using namespace PhpServerSuperGlobalIndices;
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME.data(), REQUEST_TIME.size()}, static_cast<int64_t>(time_mcs));
     superglobals.v$_SERVER.set_value(string{REQUEST_TIME_FLOAT.data(), REQUEST_TIME_FLOAT.size()}, static_cast<double>(time_mcs));
-    superglobals.v$d$PHP_SAPI = system_functions_impl_::php_sapi_name(image_kind_);
+    superglobals.v$d$PHP_SAPI = php_sapi_name<kind>();
   }
-  // env
 
   // specific initialization
   if constexpr (kind == ImageKind::CLI) {
