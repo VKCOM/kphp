@@ -28,15 +28,15 @@ Optional<array<mixed>> f$getopt(const string &short_options, const array<string>
     }
     string option{1, short_options[pos]};
 
-    OptionKind optionKind{OptionKind::NotAcceptValue};
+    OptionKind kind{OptionKind::NotAcceptValue};
     // check that char followed by a colon
     if (pos + 1 < short_options.size() && short_options[pos + 1] == ':') {
-      optionKind = OptionKind::RequiredValue;
+      kind = OptionKind::RequiredValue;
       pos++;
 
       // check that char followed by a two colon
       if (pos + 1 < short_options.size() && short_options[pos + 1] == ':') {
-        optionKind = OptionKind::OptionalValue;
+        kind = OptionKind::OptionalValue;
         pos++;
       }
     }
@@ -47,11 +47,11 @@ Optional<array<mixed>> f$getopt(const string &short_options, const array<string>
     }
 
     const mixed &value{cli_opts.get_value(option)};
-    if (optionKind == OptionKind::OptionalValue) {
+    if (kind == OptionKind::OptionalValue) {
       options.set_value(std::move(option), value.empty() ? false : value);
-    } else if (optionKind == OptionKind::RequiredValue && !value.empty()) {
+    } else if (kind == OptionKind::RequiredValue && !value.empty()) {
       options.set_value(std::move(option), value);
-    } else if (optionKind == OptionKind::NotAcceptValue) {
+    } else if (kind == OptionKind::NotAcceptValue) {
       options.set_value(std::move(option), false);
     }
   }
@@ -61,12 +61,12 @@ Optional<array<mixed>> f$getopt(const string &short_options, const array<string>
     const std::string_view option_view{long_option.get_value().c_str(), long_option.get_value().size()};
     uint8_t offset{};
 
-    OptionKind optionKind{OptionKind::NotAcceptValue};
+    OptionKind kind{OptionKind::NotAcceptValue};
     if (option_view.ends_with("::")) {
-      optionKind = OptionKind::OptionalValue;
+      kind = OptionKind::OptionalValue;
       offset = 2;
     } else if (option_view.ends_with(":")) {
-      optionKind = OptionKind::RequiredValue;
+      kind = OptionKind::RequiredValue;
       offset = 1;
     }
     string option{option_view.data(), static_cast<string::size_type>(option_view.size() - offset)};
@@ -77,11 +77,11 @@ Optional<array<mixed>> f$getopt(const string &short_options, const array<string>
     }
 
     const mixed &value{cli_opts.get_value(option)};
-    if (optionKind == OptionKind::OptionalValue) {
+    if (kind == OptionKind::OptionalValue) {
       options.set_value(std::move(option), value.empty() ? false : value);
-    } else if (optionKind == OptionKind::RequiredValue && !value.empty()) {
+    } else if (kind == OptionKind::RequiredValue && !value.empty()) {
       options.set_value(std::move(option), value);
-    } else if (optionKind == OptionKind::NotAcceptValue) {
+    } else if (kind == OptionKind::NotAcceptValue) {
       options.set_value(std::move(option), false);
     }
   }
