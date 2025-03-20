@@ -10,7 +10,6 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/init-functions.h"
 #include "runtime-light/server/init-functions.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
@@ -68,7 +67,7 @@ task_t<uint64_t> init_kphp_server_component() noexcept {
   php_assert(size >= sizeof(uint32_t)); // check that we can fetch at least magic
   tl::TLBuffer tlb{};
   tlb.store_bytes({buffer, static_cast<size_t>(size)});
-  k2::free(buffer);
+  RuntimeAllocator::get().free_script_memory(buffer, size);
 
   switch (const auto magic{*tlb.lookup_trivial<uint32_t>()}) { // lookup magic
     case tl::K2_INVOKE_HTTP_MAGIC: {
