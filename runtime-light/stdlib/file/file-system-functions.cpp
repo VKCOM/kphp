@@ -4,6 +4,9 @@
 
 #include "runtime-light/stdlib/file/file-system-functions.h"
 
+#include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-light/state/instance-state.h"
+#include "runtime-light/stdlib/file/file-system-state.h"
 #include <cstdint>
 #include <string_view>
 
@@ -50,7 +53,17 @@ Optional<string> f$file_get_contents(const string &stream) noexcept {
 }
 
 task_t<Optional<int64_t>> f$fwrite(resource stream, string text) noexcept {
-  auto rsrc{from_mixed<class_instance<underlying_resource_t>>(stream, {})};
+  class_instance<underlying_resource_t> rsrc;
+
+  if (stream.is_string()) {
+    const char *str = stream.as_string().c_str();
+    if (str == STDERR_NAME) {
+      rsrc = from_mixed<class_instance<underlying_resource_t>>(FileSystemInstanceState::get().STDERR, {});
+    }
+  } else {
+    rsrc = from_mixed<class_instance<underlying_resource_t>>(stream, {});
+  }
+
   if (rsrc.is_null()) [[unlikely]] {
     php_warning("wrong resource in fwrite %s", stream.to_string().c_str());
     co_return false;

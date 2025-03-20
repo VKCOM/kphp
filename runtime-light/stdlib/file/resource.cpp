@@ -15,10 +15,14 @@ underlying_resource_t::underlying_resource_t(std::string_view scheme) noexcept
   : kind(resource_impl_::uri_to_resource_kind(scheme)) {
   auto &instance_st{InstanceState::get()};
   switch (kind) {
-    case resource_kind::STDIN:
-      [[fallthrough]];
-    case resource_kind::STDERR: {
+    case resource_kind::STDIN: {
       last_errc = k2::errno_einval;
+      break;
+    }
+    case resource_kind::STDERR: {
+      // Later, we want to have a specific descriptor for stderr and use k2 stream api
+      // For now, we have k2_stderr_write function for writing
+      last_errc = k2::errno_ok;
       break;
     }
     case resource_kind::STDOUT: {
@@ -34,7 +38,7 @@ underlying_resource_t::underlying_resource_t(std::string_view scheme) noexcept
       break;
     }
     case resource_kind::UDP: {
-      const auto url{scheme.substr(resource_impl_::UDP_SCHEME_PREFIX.size(), scheme.size() - resource_impl_::UDP_SCHEME_PREFIX.size())};
+      const auto url{scheme.substr(UDP_SCHEME_PREFIX.size(), scheme.size() - UDP_SCHEME_PREFIX.size())};
       std::tie(stream_d_, last_errc) = instance_st.open_stream(url, k2::stream_kind::udp);
       kind = last_errc == k2::errno_ok ? resource_kind::UDP : resource_kind::UNKNOWN;
       break;
