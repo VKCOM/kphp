@@ -23,6 +23,10 @@ function fclose ($stream ::: mixed) ::: bool;
 
 function file_get_contents ($name ::: string) ::: string | false;
 
+function printf ($format ::: string, ...$args) ::: int;
+
+function sprintf ($format ::: string, ...$args) ::: string;
+
 // === UNSUPPORTED ===
 
 /** @kphp-extern-func-info stub generation-required */
@@ -95,9 +99,5 @@ function stream_context_create ($options ::: mixed = array()) ::: mixed;
 function fprintf ($stream, $format ::: string, ...$args) ::: int;
 /** @kphp-extern-func-info stub */
 function fputcsv ($stream, $fields ::: array, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: int | false;
-/** @kphp-extern-func-info stub */
-function printf ($format ::: string, ...$args) ::: int;
-/** @kphp-extern-func-info stub */
-function sprintf ($format ::: string, ...$args) ::: string;
 /** @kphp-extern-func-info stub */
 function vsprintf ($format ::: string, $args ::: array) ::: string;
