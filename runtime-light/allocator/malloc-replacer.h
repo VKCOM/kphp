@@ -23,15 +23,15 @@ inline void *alloc(size_t size) noexcept {
     php_warning("attempt to allocate too much memory: %lu", size);
     return nullptr;
   }
-  const size_t real_allocate{size + MALLOC_REPLACER_SIZE_OFFSET};
-  void *mem{RuntimeAllocator::get().alloc_script_memory(size)};
+  const size_t real_size{size + MALLOC_REPLACER_SIZE_OFFSET};
+  void *mem{RuntimeAllocator::get().alloc_script_memory(real_size)};
 
   if (mem == nullptr) [[unlikely]] {
     php_warning("not enough memory to continue: %lu", size);
     return mem;
   }
-  *static_cast<size_t *>(mem) = real_allocate;
-  return static_cast<char *>(mem) + MALLOC_REPLACER_SIZE_OFFSET;
+  *static_cast<size_t *>(mem) = real_size;
+  return static_cast<std::byte *>(mem) + MALLOC_REPLACER_SIZE_OFFSET;
 }
 
 inline void *calloc(size_t nmemb, size_t size) noexcept {
