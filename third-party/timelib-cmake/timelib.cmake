@@ -1,3 +1,11 @@
+find_program(RE2C_EXECUTABLE re2c)
+
+if(NOT RE2C_EXECUTABLE)
+    message(FATAL_ERROR "re2c is required but was not found. Please install re2c and try again.")
+else()
+    message(STATUS "Found re2c: ${RE2C_EXECUTABLE}")
+endif()
+
 update_git_submodule(${THIRD_PARTY_DIR}/timelib "--remote")
 get_submodule_version(${THIRD_PARTY_DIR}/timelib TIMELIB_VERSION)
 get_submodule_remote_url(third-party/timelib TIMELIB_SOURCE_URL)
