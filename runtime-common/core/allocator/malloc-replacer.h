@@ -4,8 +4,10 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 
 #include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
@@ -52,7 +54,7 @@ inline void *realloc(void *p, size_t new_size) noexcept {
     return nullptr;
   }
 
-  void *real_p{static_cast<char *>(p) - sizeof(size_t)};
+  void *real_p{static_cast<std::byte *>(p) - sizeof(size_t)};
   const size_t old_size{*static_cast<size_t *>(real_p)};
 
   void *new_p{alloc(new_size)};
@@ -65,7 +67,7 @@ inline void *realloc(void *p, size_t new_size) noexcept {
 
 inline void free(void *mem) noexcept {
   if (mem) {
-    mem = static_cast<char *>(mem) - MALLOC_REPLACER_SIZE_OFFSET;
+    mem = static_cast<std::byte *>(mem) - MALLOC_REPLACER_SIZE_OFFSET;
     RuntimeAllocator::get().free_script_memory(mem, *static_cast<size_t *>(mem));
   }
 }
