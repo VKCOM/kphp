@@ -10,7 +10,6 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/streams/streams.h"
 
@@ -42,7 +41,7 @@ task_t<string> f$component_client_fetch_response(class_instance<C$ComponentQuery
 
   const auto [buffer, size]{co_await read_all_from_stream(stream_d)};
   string result{buffer, static_cast<string::size_type>(size)};
-  k2::free(buffer);
+  RuntimeAllocator::get().free_script_memory(buffer, size);
   php_debug("read %d bytes from stream %" PRIu64, size, stream_d);
   InstanceState::get().release_stream(stream_d);
   query.get()->stream_d = k2::INVALID_PLATFORM_DESCRIPTOR;
@@ -59,7 +58,7 @@ task_t<string> f$component_server_fetch_request(class_instance<C$ComponentQuery>
   uint64_t stream_d{query.is_null() ? k2::INVALID_PLATFORM_DESCRIPTOR : query.get()->stream_d};
   const auto [buffer, size]{co_await read_all_from_stream(stream_d)};
   string result{buffer, static_cast<string::size_type>(size)};
-  k2::free(buffer);
+  RuntimeAllocator::get().free_script_memory(buffer, size);
   co_return result;
 }
 
