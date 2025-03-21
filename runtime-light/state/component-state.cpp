@@ -77,10 +77,10 @@ void ComponentState::parse_args() noexcept {
 
     if (key_view.starts_with(INI_ARG_PREFIX)) {
       parse_ini_arg(key_view, value_view);
-    } else if (key_view == RUNTIME_CONFIG_ARG) {
-      parse_runtime_config_arg(value_view);
     } else if (key_view.starts_with(CLI_ARG_PREFIX)) {
       parse_cli_arg(key_view, value_view);
+    } else if (key_view == RUNTIME_CONFIG_ARG) {
+      parse_runtime_config_arg(value_view);
     } else {
       php_warning("unknown argument: %s", key_view.data());
     }

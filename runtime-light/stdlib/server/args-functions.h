@@ -5,6 +5,7 @@
 #pragma once
 
 #include <functional>
+#include <optional>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/state/component-state.h"

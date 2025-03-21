@@ -16,27 +16,28 @@ Optional<array<mixed>> f$getopt(const string &short_options, const array<string>
     return false;
   }
 
-  enum class OptionKind : uint8_t { OptionalValue, RequiredValue, NotAcceptValue };
+  enum class OptionKind : uint8_t { flag, required, optional };
 
   const auto &cli_opts{ComponentState::get().cli_opts};
   array<mixed> options;
 
+  std::string_view short_options_view{short_options.c_str(), short_options.size()};
   // parse short options
-  for (string::size_type pos = 0; pos < short_options.size(); ++pos) {
-    if (!std::isalpha(short_options[pos])) {
+  for (size_t pos = 0; pos < short_options_view.size(); ++pos) {
+    if (!std::isalnum(short_options_view[pos])) {
       continue;
     }
-    string option{1, short_options[pos]};
+    string option{1, short_options_view[pos]};
 
-    OptionKind kind{OptionKind::NotAcceptValue};
+    OptionKind kind{OptionKind::flag};
     // check that char followed by a colon
-    if (pos + 1 < short_options.size() && short_options[pos + 1] == ':') {
-      kind = OptionKind::RequiredValue;
+    if (pos + 1 < short_options_view.size() && short_options_view[pos + 1] == ':') {
+      kind = OptionKind::required;
       pos++;
 
       // check that char followed by a two colon
-      if (pos + 1 < short_options.size() && short_options[pos + 1] == ':') {
-        kind = OptionKind::OptionalValue;
+      if (pos + 1 < short_options_view.size() && short_options_view[pos + 1] == ':') {
+        kind = OptionKind::optional;
         pos++;
       }
     }
@@ -47,12 +48,12 @@ Optional<array<mixed>> f$getopt(const string &short_options, const array<string>
     }
 
     const mixed &value{cli_opts.get_value(option)};
-    if (kind == OptionKind::OptionalValue) {
-      options.set_value(std::move(option), value.empty() ? false : value);
-    } else if (kind == OptionKind::RequiredValue && !value.empty()) {
-      options.set_value(std::move(option), value);
-    } else if (kind == OptionKind::NotAcceptValue) {
-      options.set_value(std::move(option), false);
+    if (kind == OptionKind::optional) {
+      options.set_value(option, value.empty() ? false : value);
+    } else if (kind == OptionKind::required && !value.empty()) {
+      options.set_value(option, value);
+    } else if (kind == OptionKind::flag) {
+      options.set_value(option, false);
     }
   }
 
@@ -61,12 +62,12 @@ Optional<array<mixed>> f$getopt(const string &short_options, const array<string>
     const std::string_view option_view{long_option.get_value().c_str(), long_option.get_value().size()};
     uint8_t offset{};
 
-    OptionKind kind{OptionKind::NotAcceptValue};
+    OptionKind kind{OptionKind::flag};
     if (option_view.ends_with("::")) {
-      kind = OptionKind::OptionalValue;
+      kind = OptionKind::optional;
       offset = 2;
     } else if (option_view.ends_with(":")) {
-      kind = OptionKind::RequiredValue;
+      kind = OptionKind::required;
       offset = 1;
     }
     string option{option_view.data(), static_cast<string::size_type>(option_view.size() - offset)};
@@ -77,12 +78,12 @@ Optional<array<mixed>> f$getopt(const string &short_options, const array<string>
     }
 
     const mixed &value{cli_opts.get_value(option)};
-    if (kind == OptionKind::OptionalValue) {
-      options.set_value(std::move(option), value.empty() ? false : value);
-    } else if (kind == OptionKind::RequiredValue && !value.empty()) {
-      options.set_value(std::move(option), value);
-    } else if (kind == OptionKind::NotAcceptValue) {
-      options.set_value(std::move(option), false);
+    if (kind == OptionKind::optional) {
+      options.set_value(option, value.empty() ? false : value);
+    } else if (kind == OptionKind::required && !value.empty()) {
+      options.set_value(option, value);
+    } else if (kind == OptionKind::flag) {
+      options.set_value(option, false);
     }
   }
 
