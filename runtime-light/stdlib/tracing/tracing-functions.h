@@ -48,3 +48,7 @@ template<typename F1, typename F2>
 void f$kphp_tracing_register_rpc_details_provider([[maybe_unused]] F1 &&cb_for_typed, [[maybe_unused]] F2 &&cb_for_untyped) noexcept {
   php_warning("called stub kphp_tracing_register_rpc_details_provider");
 }
+
+inline void f$kphp_tracing_set_level([[maybe_unused]] int64_t trace_level) noexcept {
+  php_warning("called stub kphp_tracing_set_level");
+}
