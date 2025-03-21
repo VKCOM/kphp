@@ -12,7 +12,7 @@
 
 Optional<array<mixed>> f$getopt(const string &short_options, const array<string> &long_options,
                                 [[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> rest_index) noexcept {
-  if (const auto &instance_st{InstanceState::get()}; instance_st.image_kind() != ImageKind::CLI) {
+  if (const auto &instance_st{InstanceState::get()}; instance_st.image_kind() != ImageKind::CLI) [[unlikely]] {
     return false;
   }
 
