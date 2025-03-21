@@ -8,6 +8,7 @@
 #include <string_view>
 #include <unordered_map>
 
+#include "auto/compiler/vertex/vertex-types.h"
 #include "common/wrappers/field_getter.h"
 #include "common/wrappers/likely.h"
 #include "common/wrappers/string_view.h"
@@ -22,6 +23,7 @@
 #include "compiler/code-gen/raw-data.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/ffi-data.h"
 #include "compiler/data/function-data.h"
@@ -29,6 +31,7 @@
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/primitive-type.h"
 #include "compiler/inferring/public.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
 #include "compiler/vertex-util.h"
@@ -182,6 +185,14 @@ struct EmptyReturn {
   void compile(CodeGenerator &W) const {
     CGContext &context = W.get_context();
     const TypeData *tp = tinf::get_type(context.parent_func, -1);
+
+    if (G->is_output_mode_k2()) {
+      const std::string_view return_stmnt = context.interruptible_flag ? "co_return" : "return";
+      const TypeData *return_t = W.get_context().null_coalescing_rhs_t == nullptr ? tp : W.get_context().null_coalescing_rhs_t;
+      W << return_stmnt << "(" << TypeName(return_t) << "())";
+      return;
+    }
+
     if (context.resumable_flag) {
       kphp_assert(!context.inside_null_coalesce_fallback);
       if (tp->ptype() != tp_void) {
@@ -190,14 +201,10 @@ struct EmptyReturn {
         W << "RETURN_VOID (";
       }
     } else {
-      W << (context.interruptible_flag ? "co_return " : "return ");
+      W << "return ";
     }
 
     if (context.inside_null_coalesce_fallback || tp->ptype() != tp_void) {
-      // we need to specify return type explicitly since co_return needs to know the type
-      if (G->is_output_mode_k2() && context.interruptible_flag) {
-        W << TypeName(tp);
-      }
       W << "{}";
     }
 
@@ -499,17 +506,21 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
     auto &context = W.get_context();
     context.catch_labels.emplace_back();
     ++context.inside_null_coalesce_fallback;
-    /* TODO:K2
+    /* TODO: K2
      * It is not correctly to catch context by & in cpp coroutine case in general.
      * But simple solution with catching by = isn't working
+     *
+     * TODO: K2
+     * think about more general solution instead of storing rhs' type into the CGContext
      */
+    const auto *prev_null_coalescing_rhs_t = W.get_context().null_coalescing_rhs_t;
+    W.get_context().null_coalescing_rhs_t = tinf::get_type(rhs);
     FunctionSignatureGenerator(W) << "[&] ()";
-    W << " -> "
-    << (interruptible_call ? "task_t<" : "")
-    << TypeName{tinf::get_type(rhs)}
-    << (interruptible_call ? "> ": " ") << BEGIN
-      << (interruptible_call ? "co_return ": "return ") << rhs << ";" << NL
-      << END;
+    W << " -> " << (interruptible_call ? "task_t<" : "") << TypeName{tinf::get_type(rhs)} << (interruptible_call ? "> " : " ") << BEGIN;
+    W << (interruptible_call ? "co_return " : "return ") << rhs << ";" << NL;
+    W << END;
+    W.get_context().null_coalescing_rhs_t = prev_null_coalescing_rhs_t;
+
     context.catch_labels.pop_back();
     kphp_assert(context.inside_null_coalesce_fallback > 0);
     context.inside_null_coalesce_fallback--;

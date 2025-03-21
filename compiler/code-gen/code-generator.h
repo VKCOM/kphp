@@ -8,16 +8,17 @@
 
 #include "common/algorithms/simd-int-to-string.h"
 #include "common/php-functions.h"
-#include "common/wrappers/fmt_format.h"
-
+#include "common/wrappers/string_view.h"
 #include "compiler/code-gen/writer-data.h"
 #include "compiler/data/data_ptr.h"
+#include "compiler/inferring/type-data.h"
 #include "compiler/threading/data-stream.h"
 
 struct CGContext {
   std::vector<std::string> catch_labels;
   std::vector<int> catch_label_used;
   FunctionPtr parent_func;
+  const TypeData *null_coalescing_rhs_t{};
   bool resumable_flag{false};
   bool interruptible_flag{false};
   bool namespace_opened{false};
