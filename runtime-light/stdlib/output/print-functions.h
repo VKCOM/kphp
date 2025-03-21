@@ -7,6 +7,7 @@
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/state/instance-state.h"
 
 // === print ======================================================================================
@@ -69,14 +70,16 @@ inline void f$echo(const string &s) noexcept {
   print(s);
 }
 
+inline int64_t f$printf(const string &format, const array<mixed> &a) noexcept {
+  const string to_print{f$sprintf(format, a)};
+  print(to_print);
+  return to_print.size();
+}
+
 inline Optional<int64_t> f$fprintf(const mixed &, const string &, const array<mixed> &) {
   php_critical_error("call to unsupported function");
 }
 
 inline Optional<int64_t> f$fputcsv(const mixed &, const array<mixed> &, string = string(",", 1), string = string("\"", 1), string = string("\\", 1)) {
-  php_critical_error("call to unsupported function");
-}
-
-inline int64_t f$printf(const string &, const array<mixed> &) {
   php_critical_error("call to unsupported function");
 }
