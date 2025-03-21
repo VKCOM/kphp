@@ -6,6 +6,8 @@ function posix_getpid(): int;
 
 function iconv ($input_encoding ::: string, $output_encoding ::: string, $input_str ::: string) ::: string | false;
 
+function php_sapi_name() ::: string;
+
 /**
  * @kphp-no-return
  * @kphp-extern-func-info interruptible
@@ -38,8 +40,6 @@ function usleep ($micro_seconds ::: int) ::: void;
 /** @kphp-extern-func-info stub */
 function system($command ::: string, int &$result_code = 0): int;
 
-// Not marked as stub since it used in functions.txt by if(0)
-function php_sapi_name() ::: string;
 
 /** @kphp-extern-func-info stub generation-required */
 function function_exists ($func_name ::: mixed) ::: bool;

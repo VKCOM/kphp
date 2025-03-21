@@ -8,6 +8,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 
@@ -60,6 +61,10 @@ inline string f$php_uname(const string &mode = string{1, 'a'}) noexcept {
   }
 }
 
+inline string f$php_sapi_name() noexcept {
+  return PhpScriptMutableGlobals::current().get_superglobals().v$d$PHP_SAPI;
+}
+
 Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) noexcept;
 
 inline array<array<string>> f$debug_backtrace() noexcept {
@@ -94,9 +99,4 @@ inline string f$get_engine_version() noexcept {
 inline string f$get_kphp_cluster_name() noexcept {
   php_warning("called stub get_kphp_cluster_name");
   return string("adm512");
-}
-
-inline string f$php_sapi_name() noexcept {
-  php_warning("called stub php_sapi_name");
-  return string("K2-server");
 }
