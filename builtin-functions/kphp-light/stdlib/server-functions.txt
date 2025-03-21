@@ -51,6 +51,17 @@ function ip2ulong ($ip ::: string) ::: string | false;
 
 function long2ip ($ip ::: int) ::: string;
 
+// Dummy realization without caching
+/** @kphp-extern-func-info cpp_template_call */
+function instance_cache_fetch(string $type, string $key, bool $even_if_expired = false) ::: instance<^1>;
+
+function instance_cache_store(string $key, object $value, int $ttl = 0) ::: bool;
+
+function instance_cache_update_ttl(string $key, int $ttl = 0) ::: bool;
+
+function instance_cache_delete(string $key) ::: bool;
+
+
 // === Memory =====================================================================================
 
 function estimate_memory_usage($value ::: any) ::: int;
@@ -75,16 +86,6 @@ function get_webserver_stats() ::: tuple(int, int, int, int);
 /** @kphp-extern-func-info stub generation-required */
 function ini_set ($s ::: string, $v ::: string) ::: bool;
 
-
-
-/** @kphp-extern-func-info cpp_template_call */
-function instance_cache_fetch(string $type, string $key, bool $even_if_expired = false) ::: instance<^1>;
-
-function instance_cache_store(string $key, object $value, int $ttl = 0) ::: bool;
-/** @kphp-extern-func-info stub generation-required */
-function instance_cache_update_ttl(string $key, int $ttl = 0) ::: bool;
-/** @kphp-extern-func-info stub generation-required */
-function instance_cache_delete(string $key) ::: bool;
 
 
 /** @kphp-extern-func-info stub generation-required */
