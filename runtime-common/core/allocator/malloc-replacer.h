@@ -22,14 +22,14 @@ constexpr uint64_t MALLOC_REPLACER_MAX_ALLOC = 0xFFFFFF00;
 inline void *alloc(size_t size) noexcept {
   static_assert(sizeof(size_t) <= MALLOC_REPLACER_SIZE_OFFSET, "small size offset");
   if (size > MALLOC_REPLACER_MAX_ALLOC - MALLOC_REPLACER_SIZE_OFFSET) {
-    php_warning("attempt to allocate too much memory: %lu", size);
+    php_warning("attempt to allocate too much memory by malloc replacer : %lu", size);
     return nullptr;
   }
   const size_t real_size{size + MALLOC_REPLACER_SIZE_OFFSET};
   void *mem{RuntimeAllocator::get().alloc_script_memory(real_size)};
 
   if (mem == nullptr) [[unlikely]] {
-    php_warning("not enough memory to continue: %lu", size);
+    php_warning("not enough script memory to allocate: %lu", size);
     return mem;
   }
   *static_cast<size_t *>(mem) = real_size;
