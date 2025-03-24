@@ -7,6 +7,7 @@
 #include <cinttypes>
 #include <cstdint>
 
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"

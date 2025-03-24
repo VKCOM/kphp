@@ -9,6 +9,7 @@
 #include <memory>
 #include <utility>
 
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
@@ -47,7 +48,7 @@ task_t<std::pair<char *, int32_t>> read_all_from_stream(uint64_t stream_d) noexc
     }
 
   } while (status.read_status != k2::IOStatus::IOClosed);
-  co_return  std::make_pair(buffer, static_cast<string::size_type>(buffer_size));
+  co_return std::make_pair(buffer, static_cast<string::size_type>(buffer_size));
 }
 
 std::pair<char *, int32_t> read_nonblock_from_stream(uint64_t stream_d) noexcept {
