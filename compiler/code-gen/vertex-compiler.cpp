@@ -8,7 +8,7 @@
 #include <string_view>
 #include <unordered_map>
 
-#include "auto/compiler/vertex/vertex-types.h"
+#include "common/containers/final_action.h"
 #include "common/wrappers/field_getter.h"
 #include "common/wrappers/likely.h"
 #include "common/wrappers/string_view.h"
@@ -513,13 +513,17 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
      * TODO: K2
      * think about more general solution instead of storing rhs' type into the CGContext
      */
-    const auto *prev_null_coalescing_rhs_t = W.get_context().null_coalescing_rhs_t;
-    W.get_context().null_coalescing_rhs_t = tinf::get_type(rhs);
-    FunctionSignatureGenerator(W) << "[&] ()";
-    W << " -> " << (interruptible_call ? "task_t<" : "") << TypeName{tinf::get_type(rhs)} << (interruptible_call ? "> " : " ") << BEGIN;
-    W << (interruptible_call ? "co_return " : "return ") << rhs << ";" << NL;
-    W << END;
-    W.get_context().null_coalescing_rhs_t = prev_null_coalescing_rhs_t;
+    {
+      const auto restore_rhs_t = vk::finally([&W, prev_null_coalescing_rhs_t = W.get_context().null_coalescing_rhs_t]() noexcept {
+        W.get_context().null_coalescing_rhs_t = prev_null_coalescing_rhs_t;
+      });
+      W.get_context().null_coalescing_rhs_t = tinf::get_type(rhs);
+
+      FunctionSignatureGenerator(W) << "[&] ()";
+      W << " -> " << (interruptible_call ? "task_t<" : "") << TypeName{tinf::get_type(rhs)} << (interruptible_call ? "> " : " ") << BEGIN;
+      W << (interruptible_call ? "co_return " : "return ") << rhs << ";" << NL;
+      W << END;
+    }
 
     context.catch_labels.pop_back();
     kphp_assert(context.inside_null_coalesce_fallback > 0);
