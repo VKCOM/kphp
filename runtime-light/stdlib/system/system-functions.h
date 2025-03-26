@@ -4,11 +4,14 @@
 
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/core/globals/php-script-globals.h"
+#include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 
@@ -66,6 +69,15 @@ inline string f$php_sapi_name() noexcept {
 }
 
 Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) noexcept;
+
+inline task_t<void> f$usleep(int64_t microseconds) noexcept {
+  if (microseconds <= 0) [[unlikely]] {
+    php_warning("Value of microseconds (%" PRIi64 ") must be positive", microseconds);
+    co_return;
+  }
+  const std::chrono::milliseconds sleep_time{microseconds * 1000};
+  co_await wait_for_timer_t{sleep_time};
+}
 
 inline array<array<string>> f$debug_backtrace() noexcept {
   php_warning("called stub debug_backtrace");

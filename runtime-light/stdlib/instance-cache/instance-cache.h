@@ -8,12 +8,18 @@
 
 template<typename ClassInstanceType>
 bool f$instance_cache_store(const string & /*key*/, const ClassInstanceType & /*instance*/, int64_t /*ttl*/ = 0) noexcept {
-  php_warning("called stub instance_cache_store");
   return false;
 }
 
 template<typename ClassInstanceType>
 ClassInstanceType f$instance_cache_fetch(const string & /*class_name*/, const string & /*key*/, bool /*even_if_expired*/ = false) noexcept {
-  php_warning("called stub instance_cache_fetch");
   return {};
+}
+
+inline bool f$instance_cache_update_ttl(const string & /*key*/, int64_t /*ttl*/ = 0) noexcept {
+  return false;
+}
+
+inline bool f$instance_cache_delete(const string & /*key*/) noexcept {
+  return false;
 }
