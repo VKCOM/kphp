@@ -4,7 +4,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/stdlib/msgpack/zone.h"
-#include "runtime-common/core/allocator/script-malloc-like-allocator.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 
 #include <memory>
 

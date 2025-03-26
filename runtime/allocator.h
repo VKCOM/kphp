@@ -9,7 +9,7 @@
 #include <memory>
 
 #include "common/containers/final_action.h"
-#include "runtime-common/core/allocator/script-malloc-like-allocator.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/memory-resource/memory_resource.h"
 
 namespace memory_resource {

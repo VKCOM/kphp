@@ -74,8 +74,6 @@ inline void *realloc(void *ptr, size_t new_size) noexcept {
   return new_ptr;
 }
 
-
-
 } // namespace script
 
 } // namespace memory

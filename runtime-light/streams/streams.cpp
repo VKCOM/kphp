@@ -9,7 +9,7 @@
 #include <memory>
 #include <utility>
 
-#include "runtime-common/core/allocator/script-malloc-like-allocator.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"

@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/string/regex-state.h"
 
-#include "runtime-common/core/allocator/script-malloc-like-allocator.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/string/regex-include.h"

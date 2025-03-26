@@ -8,7 +8,7 @@
 #include <memory>
 #include <utility>
 
-#include "runtime-common/core/allocator/script-malloc-like-allocator.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/task.h"
 
 /**
