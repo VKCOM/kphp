@@ -46,6 +46,13 @@ inline void *calloc(size_t num, size_t size) noexcept {
   return std::memset(ptr, 0, num * size);
 }
 
+inline void free(void *ptr) noexcept {
+  if (likely(ptr != nullptr)) {
+    void *real_ptr{static_cast<std::byte *>(ptr) - MALLOC_REPLACER_SIZE_OFFSET};
+    RuntimeAllocator::get().free_script_memory(real_ptr, *static_cast<size_t *>(real_ptr));
+  }
+}
+
 inline void *realloc(void *ptr, size_t new_size) noexcept {
   if (unlikely(ptr == nullptr)) {
     return alloc(new_size);
@@ -67,12 +74,7 @@ inline void *realloc(void *ptr, size_t new_size) noexcept {
   return new_ptr;
 }
 
-inline void free(void *ptr) noexcept {
-  if (likely(ptr != nullptr)) {
-    void *real_ptr{static_cast<std::byte *>(ptr) - MALLOC_REPLACER_SIZE_OFFSET};
-    RuntimeAllocator::get().free_script_memory(real_ptr, *static_cast<size_t *>(real_ptr));
-  }
-}
+
 
 } // namespace script
 
