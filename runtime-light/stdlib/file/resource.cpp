@@ -15,10 +15,14 @@ underlying_resource_t::underlying_resource_t(std::string_view scheme) noexcept
   : kind(resource_impl_::uri_to_resource_kind(scheme)) {
   auto &instance_st{InstanceState::get()};
   switch (kind) {
-    case resource_kind::STDIN:
-      [[fallthrough]];
-    case resource_kind::STDERR: {
+    case resource_kind::STDIN: {
       last_errc = k2::errno_einval;
+      break;
+    }
+    case resource_kind::STDERR: {
+      // Later, we want to have a specific descriptor for stderr and use k2 stream api
+      // For now, we have k2_stderr_write function for writing
+      last_errc = k2::errno_ok;
       break;
     }
     case resource_kind::STDOUT: {

@@ -63,7 +63,11 @@ public:
   }
 
   task_t<int64_t> write(std::string_view text) const noexcept {
-    co_return co_await write_all_to_stream(stream_d_, text.data(), text.size());
+    if (kind == resource_kind::STDERR) {
+      co_return k2::stderr_write(text.size(), text.data());
+    } else {
+      co_return co_await write_all_to_stream(stream_d_, text.data(), text.size());
+    }
   }
 
   Optional<string> get_contents() const noexcept {

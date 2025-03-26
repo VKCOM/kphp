@@ -112,6 +112,10 @@ inline size_t write(uint64_t stream_d, size_t data_len, const void *data) noexce
   return k2_write(stream_d, data_len, data);
 }
 
+inline size_t stderr_write(size_t data_len, const void *data) noexcept {
+  return k2_stderr_write(data_len, data);
+}
+
 inline size_t read(uint64_t stream_d, size_t buf_len, void *buf) noexcept {
   return k2_read(stream_d, buf_len, buf);
 }
