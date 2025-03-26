@@ -39,7 +39,7 @@ inline void *alloc(size_t size) noexcept {
 }
 
 inline void *calloc(size_t num, size_t size) noexcept {
-  void *ptr{alloc(num * size)};
+  void *ptr{kphp::memory::script::alloc(num * size)};
   if (unlikely(ptr == nullptr)) {
     return nullptr;
   }
@@ -59,7 +59,7 @@ inline void *realloc(void *ptr, size_t new_size) noexcept {
   }
 
   if (unlikely(new_size == 0)) {
-    free(ptr);
+    kphp::memory::script::free(ptr);
     return nullptr;
   }
 
