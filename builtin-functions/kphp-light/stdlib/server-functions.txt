@@ -71,6 +71,7 @@ function memory_get_peak_usage ($real_usage ::: bool = false) ::: int;
 // ===== UNSUPPORTED =====
 
 
+/** @kphp-extern-func-info stub */
 function getopt ($options ::: string, $longopt ::: array = array(), ?int &$rest_index = null) ::: mixed[] | false;
 
 /** @kphp-extern-func-info stub */
