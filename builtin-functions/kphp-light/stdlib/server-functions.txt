@@ -49,7 +49,7 @@ function ip2ulong ($ip ::: string) ::: string | false;
 
 function long2ip ($ip ::: int) ::: string;
 
-// Dummy realization without caching
+// Dummy implementation without caching
 /** @kphp-extern-func-info cpp_template_call */
 function instance_cache_fetch(string $type, string $key, bool $even_if_expired = false) ::: instance<^1>;
 
