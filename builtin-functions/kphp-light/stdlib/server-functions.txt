@@ -70,10 +70,6 @@ function memory_get_peak_usage ($real_usage ::: bool = false) ::: int;
 
 // ===== UNSUPPORTED =====
 
-
-/** @kphp-extern-func-info stub */
-function getopt ($options ::: string, $longopt ::: array = array(), ?int &$rest_index = null) ::: mixed[] | false;
-
 /** @kphp-extern-func-info stub */
 function headers_sent (?string &$filename = null, ?int &$line = null) ::: bool;
 
@@ -122,6 +118,8 @@ function kphp_extended_instance_cache_metrics_init(callable(string $key):string 
 function register_kphp_on_warning_callback(callable(string $warning_message, string[] $stacktrace):void $stacktrace) ::: void;
 function register_kphp_on_oom_callback(callable():void $callback) ::: bool;
 
+/** @kphp-extern-func-info stub */
+function getopt ($options ::: string, $longopt ::: array = array(), ?int &$rest_index = null) ::: mixed[] | false;
 
 /** @kphp-extern-func-info stub generation-required */
 function profiler_set_function_label($label ::: string) ::: void;
