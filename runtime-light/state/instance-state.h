@@ -137,5 +137,5 @@ private:
   unordered_set<uint64_t> opened_streams_;
   unordered_set<uint64_t> pending_updates_;
 
-  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(512U * 1024U); // 512KB
+  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(16U * 1024U * 1024U); // 16MB
 };
