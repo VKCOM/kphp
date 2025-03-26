@@ -8,7 +8,11 @@ RUN apt update && \
 
 WORKDIR /kphp-docs/
 COPY Gemfile /kphp-docs/
-RUN gem install jekyll bundler && bundle install
+RUN gem install ffi -v 1.16.3 && \
+        gem install public_suffix -v 5.1.1 && \
+        gem install jekyll -v 3.9.0 && \
+        gem install bundler -v 2.4.22 && \
+        bundle install
 EXPOSE 4000 35729
 ENTRYPOINT bundle exec jekyll server --livereload --incremental --host 0.0.0.0 \
             --config /kphp-docs/src/_config.yml \
