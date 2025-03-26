@@ -2,7 +2,7 @@ title: KPHP — a PHP compiler
 lang: en
 description: KPHP compiles a limited subset of PHP, making it run faster than plain PHP
 
-remote_theme: rundocs/jekyll-rtd-theme@v1.1.7
+theme: jekyll-rtd-theme
 edit: false
 
 url_github_kphp: https://github.com/VKCOM/kphp

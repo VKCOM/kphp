@@ -12,13 +12,11 @@ We have not tested if KPHP can be compiled for a non-Debian system. If you have 
 ## Where all sources are located
 
 All KPHP sources are [on GitHub]({{site.url_github_kphp}}), distributed under the GPLv3 license.  
-These are sources of KPHP, vkext, flex data (for Russian declensions), and all TL tools.
+These are sources of KPHP, vkext, flex data (for Russian declensions), and all TL tools. 
+All significant dependencies are managed as Git submodules.
 
 KPHP linkage depends on some custom packages, that are also compiled from source:
-* patched curl build [on GitHub]({{site.url_package_curl}}) (branch *dpkg-build-7.60.0*)
-* custom uber-h3 build [on GitHub]({{site.url_package_h3}}) (branch *dpkg-build*)
 * epoll implementation for MacOS [on GitHub]({{site.url_package_epoll_shim}}) (branch *osx-platform*)
-* custom timelib build [on GitHub]({{site.url_package_timelib}}) (branch *master*)
 
 KPHP is compiled with CMake and packed with CPack.
 
@@ -35,24 +33,24 @@ apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget 
 # for newest cmake package
 echo "deb https://archive.debian.org/debian buster-backports main" >> /etc/apt/sources.list
 # for php7.4-dev package
-wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add -
-echo "deb https://packages.sury.org/php/ buster main" >> /etc/apt/sources.list.d/php.list 
+wget -qO - https://debian.octopuce.fr/snapshots/sury-php/buster-latest/apt.gpg | apt-key add -
+echo "deb https://debian.octopuce.fr/snapshots/sury-php/buster-latest/ buster main" >> /etc/apt/sources.list.d/php.list
 # for libmysqlclient-dev
 TEMP_DEB="$(mktemp)"
 wget -O "$TEMP_DEB" 'https://dev.mysql.com/get/mysql-apt-config_0.8.20-1_all.deb'
 DEBIAN_FRONTEND=noninteractive dpkg -i "$TEMP_DEB"
 rm -f "$TEMP_DEB"
 # for postgresql 
-echo "deb http://apt.postgresql.org/pub/repos/apt buster-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
-wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 
+echo "deb https://apt-archive.postgresql.org/pub/repos/apt buster-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list
+wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
 ```
 Install packages
 ```bash
 apt-get update
-apt install git cmake-data=3.16* cmake=3.16* make g++ gperf python3-minimal python3-jsonschema \
+apt install git cmake-data=3.18* cmake=3.18* make patch re2c g++ gperf python3-minimal python3-jsonschema python3-six \
             libfmt-dev libgtest-dev libgmock-dev \
-            php7.4-dev libmysqlclient-dev \
-            postgresql postgresql-server-dev-all libpq-dev libldap-dev libkrb5-dev
+            zlib1g-dev php7.4-dev libldap-dev libkrb5-dev \
+            libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* composer
 ```
 
 
@@ -61,15 +59,22 @@ Add external repositories
 ```bash
 apt-get update
 # utils for adding repositories
-apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget
+apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget pkg-config software-properties-common
+# for postgresql
+echo "deb https://apt-archive.postgresql.org/pub/repos/apt focal-pgdg-archive main" > /etc/apt/sources.list.d/pgdg.list 
+wget -qO - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - 
+# for python package
+add-apt-repository ppa:deadsnakes/ppa 
+apt-get update
 ```
 Install packages
 ```bash
 apt-get update
-apt install git cmake make g++ gperf python3-minimal python3-jsonschema \
+apt install git cmake make g++ gperf netcat patch re2c \
+            python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools python3-six \
             libfmt-dev libgtest-dev libgmock-dev \
-            php7.4-dev libmysqlclient-dev \
-            postgresql postgresql-server-dev-all libpq-dev libldap-dev libkrb5-dev
+            zlib1g-dev php7.4-dev libldap-dev libkrb5-dev mysql-server libmysqlclient-dev \
+            libpq5=14.* postgresql-14 postgresql-server-dev-14 libpq-dev=14.* composer
 ```
 
 
@@ -79,9 +84,9 @@ Make sure you have `brew` and `clang` (at least `Apple clang version 10.0.0`)
 # Install dependencies
 brew tap shivammathur/php
 brew update
-brew install re2c cmake coreutils openssl libiconv googletest shivammathur/php/php@7.4
+brew install python@3.13 re2c cmake coreutils libiconv googletest shivammathur/php/php@7.4
 brew link --overwrite shivammathur/php/php@7.4
-pip3 install jsonschema
+python3.13 -m pip install jsonschema six
 
 # Build kphp
 git clone https://github.com/VKCOM/kphp.git && cd kphp
@@ -91,7 +96,7 @@ make -j$(nproc)
 ```
 
 ##### Other Linux
-Make sure you are using the same package list. You may use system default libcurl package, it would work, but without DNS resolving.
+Make sure you are using the same package list.
 
 
 ### Recommendations
