@@ -4,16 +4,15 @@
 
 #include "runtime-light/stdlib/string/regex-state.h"
 
+#include "runtime-common/core/allocator/script-malloc-like-allocator.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-common/core/allocator/malloc-replacer.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/string/regex-include.h"
 
 namespace {
 
-// TODO: use RuntimeAllocator instead
 void *regex_malloc(PCRE2_SIZE size, [[maybe_unused]] void *memory_data) noexcept {
-  auto *mem{kphp::malloc_replace::alloc(size)};
+  auto *mem{kphp::memory::script::alloc(size)};
   if (mem == nullptr) [[unlikely]] {
     php_warning("regex malloc: can't allocate %zu bytes", size);
   }
@@ -24,7 +23,7 @@ void regex_free(void *mem, [[maybe_unused]] void *memory_data) noexcept {
   if (mem == nullptr) [[unlikely]] {
     return;
   }
-  kphp::malloc_replace::free(mem);
+  kphp::memory::script::free(mem);
 }
 
 } // namespace

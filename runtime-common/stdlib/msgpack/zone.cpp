@@ -4,14 +4,14 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/stdlib/msgpack/zone.h"
-#include "runtime-common/core/allocator/malloc-replacer.h"
+#include "runtime-common/core/allocator/script-malloc-like-allocator.h"
 
 #include <memory>
 
 namespace vk::msgpack {
 
 zone::chunk_list::chunk_list(size_t chunk_size) {
-  auto *c = static_cast<chunk *>(kphp::malloc_replace::alloc(sizeof(chunk) + chunk_size));
+  auto *c = static_cast<chunk *>(kphp::memory::script::alloc(sizeof(chunk) + chunk_size));
   if (!c) {
     throw std::bad_alloc{};
   }
@@ -26,7 +26,7 @@ zone::chunk_list::~chunk_list() {
   chunk *c = m_head;
   while (c) {
     chunk *n = c->m_next;
-    kphp::malloc_replace::free(c);
+    kphp::memory::script::free(c);
     c = n;
   }
 }
@@ -66,7 +66,7 @@ char *zone::allocate_expand(size_t size) {
     }
     sz = tmp_sz;
   }
-  auto *c = static_cast<chunk *>(kphp::malloc_replace::alloc(sizeof(chunk) + sz));
+  auto *c = static_cast<chunk *>(kphp::memory::script::alloc(sizeof(chunk) + sz));
   if (!c) {
     throw std::bad_alloc{};
   }

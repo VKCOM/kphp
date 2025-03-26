@@ -9,7 +9,7 @@
 #include <memory>
 #include <utility>
 
-#include "runtime-common/core/allocator/runtime-allocator.h"
+#include "runtime-common/core/allocator/script-malloc-like-allocator.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
@@ -19,11 +19,11 @@ namespace {
 constexpr int32_t STREAM_BATCH_SIZE = 4096;
 }
 
-task_t<std::pair<char *, int32_t>> read_all_from_stream(uint64_t stream_d) noexcept {
-  auto &rt_allocator{RuntimeAllocator::get()};
+task_t<std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>, size_t>> read_all_from_stream(uint64_t stream_d) noexcept {
+  using byte_pointer_t = std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>;
 
   int32_t buffer_capacity{STREAM_BATCH_SIZE};
-  auto *buffer{static_cast<char *>(rt_allocator.alloc_script_memory(buffer_capacity))};
+  auto *buffer{static_cast<char *>(kphp::memory::script::alloc(buffer_capacity))};
   int32_t buffer_size{};
 
   k2::StreamStatus status{};
@@ -31,16 +31,13 @@ task_t<std::pair<char *, int32_t>> read_all_from_stream(uint64_t stream_d) noexc
     k2::stream_status(stream_d, std::addressof(status));
     if (status.libc_errno != k2::errno_ok) {
       php_warning("get stream status returned status %d", status.libc_errno);
-      co_return std::make_pair(nullptr, 0);
+      co_return std::make_pair(byte_pointer_t{nullptr, kphp::memory::script::free}, 0);
     }
 
     if (status.read_status == k2::IOStatus::IOAvailable) {
       if (buffer_capacity - buffer_size < STREAM_BATCH_SIZE) {
-        auto *new_buffer = static_cast<char *>(rt_allocator.alloc_script_memory(static_cast<size_t>(buffer_capacity) * 2));
-        std::memcpy(new_buffer, buffer, buffer_size);
-        rt_allocator.free_script_memory(buffer, buffer_capacity);
         buffer_capacity = buffer_capacity * 2;
-        buffer = new_buffer;
+        buffer = static_cast<char *>(kphp::memory::script::realloc(static_cast<void *>(buffer), buffer_capacity));
       }
       buffer_size += k2::read(stream_d, STREAM_BATCH_SIZE, buffer + buffer_size);
     } else if (status.read_status == k2::IOStatus::IOBlocked) {
@@ -48,14 +45,15 @@ task_t<std::pair<char *, int32_t>> read_all_from_stream(uint64_t stream_d) noexc
     }
 
   } while (status.read_status != k2::IOStatus::IOClosed);
-  co_return std::make_pair(buffer, static_cast<string::size_type>(buffer_size));
+
+  co_return std::make_pair(byte_pointer_t{buffer, kphp::memory::script::free}, buffer_size);
 }
 
-std::pair<char *, int32_t> read_nonblock_from_stream(uint64_t stream_d) noexcept {
-  auto &rt_allocator{RuntimeAllocator::get()};
+std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>, int64_t> read_nonblock_from_stream(uint64_t stream_d) noexcept {
+  using byte_pointer_t = std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>;
 
   int32_t buffer_capacity{STREAM_BATCH_SIZE};
-  auto *buffer{static_cast<char *>(rt_allocator.alloc_script_memory(buffer_capacity))};
+  auto *buffer{static_cast<char *>(kphp::memory::script::alloc(buffer_capacity))};
   int32_t buffer_size{};
 
   k2::StreamStatus status{};
@@ -63,16 +61,13 @@ std::pair<char *, int32_t> read_nonblock_from_stream(uint64_t stream_d) noexcept
     k2::stream_status(stream_d, std::addressof(status));
     if (status.libc_errno != k2::errno_ok) {
       php_warning("get stream status returned status %d", status.libc_errno);
-      return {};
+      return std::make_pair(byte_pointer_t{nullptr, kphp::memory::script::free}, 0);
     }
 
     if (status.read_status == k2::IOStatus::IOAvailable) {
       if (buffer_capacity - buffer_size < STREAM_BATCH_SIZE) {
-        auto *new_buffer = static_cast<char *>(rt_allocator.alloc_script_memory(static_cast<size_t>(buffer_capacity) * 2));
-        std::memcpy(new_buffer, buffer, buffer_size);
-        rt_allocator.free_script_memory(buffer, buffer_capacity);
         buffer_capacity = buffer_capacity * 2;
-        buffer = new_buffer;
+        buffer = static_cast<char *>(kphp::memory::script::realloc(static_cast<void *>(buffer), buffer_capacity));
       }
       buffer_size += k2::read(stream_d, STREAM_BATCH_SIZE, buffer + buffer_size);
     } else {
@@ -80,7 +75,7 @@ std::pair<char *, int32_t> read_nonblock_from_stream(uint64_t stream_d) noexcept
     }
   } while (status.read_status != k2::IOStatus::IOClosed);
 
-  return {buffer, static_cast<string::size_type>(buffer_size)};
+  return std::make_pair(byte_pointer_t{buffer, kphp::memory::script::free}, buffer_size);
 }
 
 task_t<int32_t> read_exact_from_stream(uint64_t stream_d, char *buffer, int32_t len) noexcept {

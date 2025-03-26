@@ -9,7 +9,7 @@
 #include <memory>
 
 #include "common/containers/final_action.h"
-#include "runtime-common/core/allocator/malloc-replacer.h"
+#include "runtime-common/core/allocator/script-malloc-like-allocator.h"
 #include "runtime-common/core/memory-resource/memory_resource.h"
 
 namespace memory_resource {
@@ -43,15 +43,15 @@ void *heap_reallocate(void *p, size_t new_size, size_t old_size) noexcept; // re
 void heap_deallocate(void *p, size_t n) noexcept; // deallocate heap memory
 
 inline void *script_allocator_malloc(size_t size) noexcept {
-  return kphp::malloc_replace::alloc(size);
+  return kphp::memory::script::alloc(size);
 }
 
 inline void *script_allocator_calloc(size_t nmemb, size_t size) noexcept {
-  return kphp::malloc_replace::calloc(nmemb, size);
+  return kphp::memory::script::calloc(nmemb, size);
 }
 
 inline void *script_allocator_realloc(void *p, size_t x) noexcept {
-  return kphp::malloc_replace::realloc(p, x);
+  return kphp::memory::script::realloc(p, x);
 }
 
 inline char *script_allocator_strdup(const char *str) noexcept {
@@ -65,7 +65,7 @@ inline char *script_allocator_strdup(const char *str) noexcept {
 }
 
 inline void script_allocator_free(void *p) noexcept {
-  kphp::malloc_replace::free(p);
+  kphp::memory::script::free(p);
 }
 
 bool is_malloc_replaced() noexcept;

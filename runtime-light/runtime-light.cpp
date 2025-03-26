@@ -31,7 +31,7 @@ void k2_init_image() {
 ComponentState *k2_create_component() {
   // Note that in k2_create_component most of K2 functionality is not yet available
   php_debug("create component state of \"%s\"", k2::describe()->image_name);
-  auto *component_state_ptr{static_cast<ComponentState *>(RuntimeAllocator::get().alloc_global_memory(sizeof(ComponentState)))};
+  auto *component_state_ptr{static_cast<ComponentState *>(k2::alloc(sizeof(ComponentState)))};
   if (component_state_ptr == nullptr) {
     php_warning("can't allocate enough memory for ImageState");
     return nullptr;
@@ -49,7 +49,7 @@ void k2_init_component() {
 InstanceState *k2_create_instance() {
   // Note that in k2_create_instance most of K2 functionality is not yet available
   php_debug("create instance state of \"%s\"", k2::describe()->image_name);
-  auto *instance_state_ptr{static_cast<InstanceState *>(RuntimeAllocator::get().alloc_global_memory(sizeof(InstanceState)))};
+  auto *instance_state_ptr{static_cast<InstanceState *>(k2::alloc(sizeof(InstanceState)))};
   if (instance_state_ptr == nullptr) {
     php_warning("cannot allocate enough memory for ComponentState");
     return nullptr;
