@@ -55,7 +55,7 @@ inline void free(void *ptr) noexcept {
 
 inline void *realloc(void *ptr, size_t new_size) noexcept {
   if (unlikely(ptr == nullptr)) {
-    return alloc(new_size);
+    return kphp::memory::script::alloc(new_size);
   }
 
   if (unlikely(new_size == 0)) {
@@ -66,7 +66,7 @@ inline void *realloc(void *ptr, size_t new_size) noexcept {
   void *real_ptr{static_cast<std::byte *>(ptr) - sizeof(size_t)};
   const size_t old_size{*static_cast<size_t *>(real_ptr)};
 
-  void *new_ptr{alloc(new_size)};
+  void *new_ptr{kphp::memory::script::alloc(new_size)};
   if (likely(new_ptr != nullptr)) {
     std::memcpy(new_ptr, ptr, std::min(new_size, old_size));
     RuntimeAllocator::get().free_script_memory(real_ptr, old_size);
