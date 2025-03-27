@@ -29,11 +29,6 @@ inline int64_t f$system(const string & /*command*/, int64_t & /*result_code*/ = 
   php_critical_error("call to unsupported function");
 }
 
-inline Optional<array<mixed>> f$getopt(const string & /*options*/, const array<string> & /*longopts*/ = {},
-                                       Optional<int64_t> & /*rest_index*/ = SystemInstanceState::get().rest_index_dummy) {
-  php_critical_error("call to unsupported function");
-}
-
 inline int64_t f$numa_get_bound_node() noexcept {
   return -1;
 }
