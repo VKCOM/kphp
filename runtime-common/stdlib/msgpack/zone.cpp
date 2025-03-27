@@ -4,44 +4,14 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/stdlib/msgpack/zone.h"
-#include "runtime-common/core/allocator/runtime-allocator.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 
 #include <memory>
-#include <cstdint>
-
-namespace {
-// TODO Make RuntimeAllocator API malloc-like and remove this proxy-functions
-
-constexpr size_t SIZE_OFFSET = sizeof(size_t);
-constexpr size_t MAX_ALLOC = 0xFFFFFF00;
-
-void *allocate_memory_with_offset(size_t size) {
-  if (size > MAX_ALLOC - SIZE_OFFSET) {
-    php_warning("attempt to allocate too much memory: %lu", size);
-    return nullptr;
-  }
-  size_t allocated_size{SIZE_OFFSET + size};
-  void *mem{RuntimeAllocator::get().alloc_script_memory(allocated_size)};
-  if (mem == nullptr) {
-    php_warning("not enough memory to continue: %lu", size);
-    return mem;
-  }
-  *static_cast<size_t *>(mem) = allocated_size;
-  return static_cast<char *>(mem) + SIZE_OFFSET;
-}
-
-void free_memory_with_offset(void *ptr) {
-  if (ptr != nullptr) {
-    ptr = static_cast<char *>(ptr) - SIZE_OFFSET;
-    RuntimeAllocator::get().free_script_memory(ptr, *static_cast<size_t *>(ptr));
-  }
-}
-} // namespace
 
 namespace vk::msgpack {
 
 zone::chunk_list::chunk_list(size_t chunk_size) {
-  auto *c = static_cast<chunk *>(allocate_memory_with_offset(sizeof(chunk) + chunk_size));
+  auto *c = static_cast<chunk *>(kphp::memory::script::alloc(sizeof(chunk) + chunk_size));
   if (!c) {
     throw std::bad_alloc{};
   }
@@ -56,7 +26,7 @@ zone::chunk_list::~chunk_list() {
   chunk *c = m_head;
   while (c) {
     chunk *n = c->m_next;
-    free_memory_with_offset(c);
+    kphp::memory::script::free(c);
     c = n;
   }
 }
@@ -96,7 +66,7 @@ char *zone::allocate_expand(size_t size) {
     }
     sz = tmp_sz;
   }
-  auto *c = static_cast<chunk *>(allocate_memory_with_offset(sizeof(chunk) + sz));
+  auto *c = static_cast<chunk *>(kphp::memory::script::alloc(sizeof(chunk) + sz));
   if (!c) {
     throw std::bad_alloc{};
   }

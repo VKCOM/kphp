@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "common/containers/final_action.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/memory-resource/memory_resource.h"
 
 namespace memory_resource {
@@ -41,11 +42,31 @@ void *heap_allocate(size_t n) noexcept; // allocate heap memory (persistent betw
 void *heap_reallocate(void *p, size_t new_size, size_t old_size) noexcept; // reallocate heap memory
 void heap_deallocate(void *p, size_t n) noexcept; // deallocate heap memory
 
-void *script_allocator_malloc(size_t x) noexcept;
-void *script_allocator_calloc(size_t nmemb, size_t size) noexcept;
-void *script_allocator_realloc(void *p, size_t x) noexcept;
-char *script_allocator_strdup(const char *str) noexcept;
-void script_allocator_free(void *p) noexcept;
+inline void *script_allocator_malloc(size_t size) noexcept {
+  return kphp::memory::script::alloc(size);
+}
+
+inline void *script_allocator_calloc(size_t nmemb, size_t size) noexcept {
+  return kphp::memory::script::calloc(nmemb, size);
+}
+
+inline void *script_allocator_realloc(void *p, size_t x) noexcept {
+  return kphp::memory::script::realloc(p, x);
+}
+
+inline char *script_allocator_strdup(const char *str) noexcept {
+  const size_t len = strlen(str) + 1;
+  char *res = static_cast<char *>(script_allocator_malloc(len));
+  if (unlikely(res == nullptr)) {
+    return nullptr;
+  }
+  memcpy(res, str, len);
+  return res;
+}
+
+inline void script_allocator_free(void *p) noexcept {
+  kphp::memory::script::free(p);
+}
 
 bool is_malloc_replaced() noexcept;
 void replace_malloc_with_script_allocator() noexcept;
@@ -54,6 +75,7 @@ void write_last_malloc_replacement_stacktrace(char *buf, size_t buf_size) noexce
 
 class MemoryReplacementGuard {
   bool force_enable_disable_;
+
 public:
   explicit MemoryReplacementGuard(memory_resource::unsynchronized_pool_resource &memory_resource, bool force_enable_disable = false);
   ~MemoryReplacementGuard();
@@ -109,7 +131,7 @@ protected:
 };
 
 template<typename T, typename... Args>
-inline auto make_unique_on_script_memory(Args &&... args) noexcept {
+inline auto make_unique_on_script_memory(Args &&...args) noexcept {
   static_assert(std::is_base_of<ManagedThroughDlAllocator, T>{}, "ManagedThroughDlAllocator should be base for T");
   return std::make_unique<T>(std::forward<Args>(args)...);
 }

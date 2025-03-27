@@ -5,8 +5,10 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <utility>
 
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/task.h"
 
 /**
@@ -17,9 +19,9 @@ task_t<uint64_t> accept_initial_stream() noexcept;
 
 // === read =======================================================================================
 
-task_t<std::pair<char *, int32_t>> read_all_from_stream(uint64_t stream_d) noexcept;
+task_t<std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>, size_t>> read_all_from_stream(uint64_t stream_d) noexcept;
 
-std::pair<char *, int32_t> read_nonblock_from_stream(uint64_t stream_d) noexcept;
+std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>, int64_t>  read_nonblock_from_stream(uint64_t stream_d) noexcept;
 
 task_t<int32_t> read_exact_from_stream(uint64_t stream_d, char *buffer, int32_t len) noexcept;
 
