@@ -1,13 +1,14 @@
-import socket
+import pytest
 
-from python.lib.testcase import KphpServerAutoTestCase
-from python.lib.http_client import RawResponse
+from python.lib.testcase import WebServerAutoTestCase
 
-class TestGzipHeaderReset(KphpServerAutoTestCase):
+
+class TestGzipHeaderReset(WebServerAutoTestCase):
     def test_single_gzip_buffer(self):
         response = self.gzip_request("gzip")
         self.assertEqual(response.headers["Content-Encoding"], "gzip")
 
+    @pytest.mark.k2_skip
     def test_single_gzip_buffer_closed(self):
         response = self.gzip_request("reset")
         with self.assertRaises(KeyError):
@@ -20,7 +21,7 @@ class TestGzipHeaderReset(KphpServerAutoTestCase):
 
     def gzip_request(self, type):
         url = "/test_script_gzip_header?type=" + type
-        return self.kphp_server.http_get(url, headers={
+        return self.web_server.http_get(url, headers={
             "Host": "localhost",
             "Accept-Encoding": "gzip"
         })

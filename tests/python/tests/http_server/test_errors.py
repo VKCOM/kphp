@@ -1,26 +1,28 @@
-from python.lib.testcase import KphpServerAutoTestCase
+import pytest
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestErrors(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestErrors(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--workers-num": 1
         })
 
     def test_script_errors(self):
-        stats_before = self.kphp_server.get_stats()
+        stats_before = self.web_server.get_stats()
 
         for i in range(5):
-            response = self.kphp_server.http_request(uri="/test_script_errors", method='GET')
+            response = self.web_server.http_request(uri="/test_script_errors", method='GET')
             self.assertEqual(500, response.status_code)
             self.assertTrue(len(response.content) > 0)
-            self.kphp_server.assert_log([
+            self.web_server.assert_log([
                 'Warning: Critical error "Test error" in file',
                 "Critical error during script execution: php assert error"
             ])
 
-        self.kphp_server.assert_stats(
+        self.web_server.assert_stats(
             timeout=5,
             initial_stats=stats_before,
             expected_added_stats={

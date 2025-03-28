@@ -9,10 +9,12 @@ import glob
 from unittest import TestCase
 
 from .kphp_server import KphpServer
+from .k2_server import K2Server
 from .kphp_builder import KphpBuilder
 from .kphp_run_once import KphpRunOnce
 from .file_utils import search_combined_tlo, can_ignore_sanitizer_log, search_php_bin
 from .nocc_for_kphp_tester import nocc_env, nocc_start_daemon_in_background
+from .web_server import WebServer
 
 logging.disable(logging.DEBUG)
 
@@ -80,14 +82,14 @@ def _create_tmp_folders(test_script_file):
 
 class BaseTestCase(TestCase):
     kphp_build_working_dir = ""
-    kphp_server_working_dir = ""
+    web_server_working_dir = ""
     artifacts_dir = ""
     test_dir = ""
 
     @classmethod
     def _setup_tmp_folder(cls):
         script_file = sys.modules.get(cls.__module__).__file__
-        cls.kphp_build_working_dir, cls.kphp_server_working_dir, cls.artifacts_dir, cls.test_dir = \
+        cls.kphp_build_working_dir, cls.web_server_working_dir, cls.artifacts_dir, cls.test_dir = \
             _create_tmp_folders(script_file)
 
     @classmethod
@@ -168,12 +170,14 @@ def _check_if_tl_required(php_dir):
     return False
 
 
-class KphpServerAutoTestCase(BaseTestCase):
+class WebServerAutoTestCase(BaseTestCase):
     """
-    :type kphp_server: KphpServer
+    :type web_server: WebServer
     """
-    kphp_server = None
-    kphp_server_bin = ""
+    web_server = None
+    web_server_bin = ""
+    kphp_builder = None
+    sanitizer_pattern = None
 
     @classmethod
     def custom_setup(cls):
@@ -201,30 +205,49 @@ class KphpServerAutoTestCase(BaseTestCase):
                 kphp_env["KPHP_GEN_TL_INTERNALS"] = "1"
                 kphp_env["KPHP_TL_SCHEMA"] = search_combined_tlo(cls.kphp_build_working_dir)
 
-            print("\nCompiling kphp server")
+            if cls.should_use_k2():
+                kphp_env["KPHP_CXX"] = "clang++"
+                kphp_env["KPHP_MODE"] = "k2-server"
+                kphp_env["KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE"] = "0"
+                kphp_env["KPHP_PROFILER"] = "0"
+                kphp_env["KPHP_USER_BINARY_PATH"] = "component.so"
+
+            print("\nCompiling kphp")
             if not cls.kphp_builder.compile_with_kphp(kphp_env):
                 raise RuntimeError("Can't compile php script")
-            cls.kphp_server_bin = os.path.join(cls.kphp_server_working_dir, "kphp_server")
-            os.link(cls.kphp_builder.kphp_runtime_bin, cls.kphp_server_bin)
 
-        cls.sanitizer_pattern = os.path.join(cls.kphp_server_working_dir, "engine_sanitizer_log")
+            if cls.should_use_k2():
+                cls.web_server_bin = os.getenv("K2_BIN")
+            else:
+                cls.web_server_bin = os.path.join(cls.web_server_working_dir, "kphp_server")
+                os.link(cls.kphp_builder.kphp_runtime_bin, cls.web_server_bin)
+
+        cls.sanitizer_pattern = os.path.join(cls.web_server_working_dir, "engine_sanitizer_log")
         os.environ["ASAN_OPTIONS"] = "log_path=" + cls.sanitizer_pattern
         os.environ["UBSAN_OPTIONS"] = f"print_stacktrace=1:allow_addr2line=1:log_path={cls.sanitizer_pattern}"
-        cls.kphp_server = KphpServer(
-            engine_bin=cls.kphp_server_bin,
-            working_dir=cls.kphp_server_working_dir
-        )
+
+        if cls.should_use_k2():
+            cls.web_server = K2Server(
+                k2_server_bin=cls.web_server_bin,
+                working_dir=cls.web_server_working_dir,
+                kphp_build_dir=cls.kphp_builder.kphp_build_tmp_dir)
+        else:
+            cls.web_server = KphpServer(
+                engine_bin=cls.web_server_bin,
+                working_dir=cls.web_server_working_dir)
+
         cls.extra_class_setup()
-        cls.kphp_server.start()
+        cls.web_server.start()
 
     @classmethod
     def custom_teardown(cls):
-        cls.kphp_server.stop()
+        cls.web_server.stop()
         cls.extra_class_teardown()
-        try:
-            os.remove(cls.kphp_server_bin)
-        except OSError:
-            pass
+        if not cls.should_use_k2():
+            try:
+                os.remove(cls.web_server_bin)
+            except OSError:
+                pass
         for sanitizer_log in glob.glob(cls.sanitizer_pattern + ".*"):
             if not can_ignore_sanitizer_log(sanitizer_log):
                 raise RuntimeError("Got unexpected sanitizer log '{}'".format(sanitizer_log))
@@ -233,7 +256,7 @@ class KphpServerAutoTestCase(BaseTestCase):
         pass
 
     def custom_teardown_method(self, method):
-        self.kphp_server._engine_logs = []
+        self.web_server._engine_logs = []
 
     @classmethod
     def extra_class_setup(cls):
@@ -255,12 +278,16 @@ class KphpServerAutoTestCase(BaseTestCase):
     def should_use_nocc(cls):
         return nocc_env("NOCC_SERVERS_FILENAME", None) is not None
 
+    @classmethod
+    def should_use_k2(cls):
+        return os.getenv("K2_BIN") is not None
+
     def assertKphpNoTerminatedRequests(self):
         """
         Проверяем что в статах kphp сервер нет terminated requests
         """
         self.assertEqual(
-            self.kphp_server.get_stats(prefix="kphp_server.workers_general_errors_"),
+            self.web_server.get_stats(prefix="kphp_server.workers_general_errors_"),
             {
                 "memory_limit_exceeded": 0,
                 "timeout": 0,
@@ -316,7 +343,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     def make_kphp_once_runner(self, php_script_path):
         once_runner = KphpRunOnce(
             php_script_path=os.path.join(self.test_dir, php_script_path),
-            artifacts_dir=self.kphp_server_working_dir,
+            artifacts_dir=self.web_server_working_dir,
             working_dir=self.kphp_build_working_dir,
             php_bin=search_php_bin(php_version=self.php_version),
             use_nocc=self.should_use_nocc(),

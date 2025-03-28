@@ -32,6 +32,10 @@ class KphpBuilder:
         self._cxx_name = cxx_name
 
     @property
+    def kphp_build_tmp_dir(self):
+        return self._kphp_build_tmp_dir
+
+    @property
     def kphp_build_stderr_artifact(self):
         return self._kphp_build_stderr_artifact
 

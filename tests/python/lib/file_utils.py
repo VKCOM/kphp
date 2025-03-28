@@ -3,6 +3,7 @@ import subprocess
 import re
 import sys
 import shutil
+import time
 
 _SUPPORTED_PHP_VERSIONS = ["php7.4", "php8", "php8.1", "php8.2", "php8.3"]
 
@@ -119,3 +120,20 @@ def search_php_bin(php_version: str):
             return exe_path
 
     return None
+
+def wait_for_file(file_path, timeout=1, check_interval=0.1):
+    """
+    Ожидает создания файла в течение заданного таймаута.
+
+    :param file_path: Путь к файлу, который нужно дождаться.
+    :param timeout: Максимальное время ожидания в секундах.
+    :param check_interval: Интервал проверки в секундах.
+    :raises TimeoutError: Если файл не был создан в течение таймаута.
+    """
+    start_time = time.time()
+    while True:
+        if os.path.exists(file_path):
+            return
+        elif time.time() - start_time > timeout:
+            raise TimeoutError(f"file '{file_path}' has not been created within  {timeout} seconds.")
+        time.sleep(check_interval)
