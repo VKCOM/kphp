@@ -26,6 +26,10 @@ public:
     return environment_;
   }
 
+  const std::string &get_dc_name() const {
+    return dc_name_;
+  }
+
   const char *set_cluster_name(const char *cluster_name, bool deprecated) noexcept;
 
   int init_from_config(const char *config_path) noexcept;
@@ -40,4 +44,5 @@ private:
   std::array<char, NAME_MAX> cluster_name_;
   std::array<char, NAME_MAX> statsd_prefix_;
   std::string environment_;
+  std::string dc_name_;
 };
