@@ -16,32 +16,32 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
-namespace shared_task_impl_ {
+namespace kphp::coro {
 
-// TODO: doubly-linked list to perform cancel in O(1)
-struct shared_task_waiter_t final {
+namespace shared_task_impl {
+
+struct shared_task_waiter final {
   std::coroutine_handle<> m_continuation;
-  shared_task_waiter_t *m_next{};
+  shared_task_waiter *m_next{};
+  shared_task_waiter *m_prev{};
 };
 
 template<typename promise_type>
-struct promise_base_t {
-  constexpr std::suspend_always initial_suspend() const noexcept {
+struct promise_base {
+  auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
 
-  constexpr auto final_suspend() const noexcept {
-    struct final_suspend_t {
-      constexpr final_suspend_t() noexcept = default;
-
-      constexpr bool await_ready() const noexcept {
+  auto final_suspend() const noexcept {
+    struct awaiter {
+      auto await_ready() const noexcept -> bool {
         return false;
       }
 
-      constexpr std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> coro) const noexcept {
-        promise_base_t &promise{coro.promise()};
+      auto await_suspend(std::coroutine_handle<promise_type> coro) const noexcept -> std::coroutine_handle<> {
+        promise_base &promise{coro.promise()};
         // mark promise as ready
-        auto *waiter{static_cast<shared_task_impl_::shared_task_waiter_t *>(std::exchange(promise.m_waiters, std::addressof(promise)))};
+        auto *waiter{static_cast<shared_task_impl::shared_task_waiter *>(std::exchange(promise.m_waiters, std::addressof(promise)))};
         if (waiter == STARTED_NO_WAITERS_VAL) { // no waiters, so just finish this coroutine
           return std::noop_coroutine();
         }
@@ -57,20 +57,20 @@ struct promise_base_t {
         return waiter->m_continuation;
       }
 
-      constexpr void await_resume() const noexcept {}
+      auto await_resume() const noexcept -> void {}
     };
-    return final_suspend_t{};
+    return awaiter{};
   }
 
-  constexpr void unhandled_exception() noexcept {
+  auto unhandled_exception() const noexcept -> void {
     php_critical_error("internal unhandled exception");
   }
 
-  constexpr bool ready() const noexcept {
+  auto done() const noexcept -> bool {
     return m_waiters == this;
   }
 
-  constexpr void add_ref() noexcept {
+  auto add_ref() noexcept -> void {
     ++m_refcnt;
   }
 
@@ -80,7 +80,7 @@ struct promise_base_t {
   // waiter->coroutine will be resumed when the task completes.
   // false if the coroutine was already completed and the awaiting
   // coroutine can continue without suspending.
-  bool suspend_awaiter(shared_task_impl_::shared_task_waiter_t &waiter) noexcept {
+  auto suspend_awaiter(shared_task_impl::shared_task_waiter &waiter) noexcept -> bool {
     const void *const NOT_STARTED_VAL{std::addressof(this->m_waiters)};
 
     // NOTE: If the coroutine is not yet started then the first waiter
@@ -99,11 +99,16 @@ struct promise_base_t {
       std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this)).resume();
     }
     // coroutine already completed, don't suspend
-    if (ready()) {
+    if (done()) {
       return false;
     }
 
-    waiter.m_next = static_cast<shared_task_impl_::shared_task_waiter_t *>(m_waiters);
+    waiter.m_prev = nullptr;
+    waiter.m_next = static_cast<shared_task_impl::shared_task_waiter *>(m_waiters);
+    // at this point 'm_waiters' can only be 'STARTED_NO_WAITERS_VAL' or 'other'
+    if (m_waiters != STARTED_NO_WAITERS_VAL) {
+      static_cast<shared_task_waiter *>(m_waiters)->m_prev = std::addressof(waiter);
+    }
     m_waiters = static_cast<void *>(std::addressof(waiter));
     return true;
   }
@@ -111,14 +116,14 @@ struct promise_base_t {
   // return true if successfully detached, false if this was the last
   // reference to the coroutine, in which case the caller must
   // call destroy() on the coroutine handle.
-  constexpr bool detach() noexcept {
+  auto detach() noexcept -> bool {
     return m_refcnt-- != 1;
   }
 
-  void cancel_awaiter(const shared_task_impl_::shared_task_waiter_t &waiter) noexcept {
+  auto cancel_awaiter(const shared_task_impl::shared_task_waiter &waiter) noexcept -> void {
     const void *const READY_VAL{this};
     if (m_waiters == READY_VAL) [[unlikely]] {
-      php_critical_error("currently, shared_task_t does not support cancellation after it has finished");
+      php_critical_error("currently, shared_task does not support cancellation after it has finished");
     }
 
     const void *const NOT_STARTED_VAL{std::addressof(this->m_waiters)};
@@ -129,18 +134,12 @@ struct promise_base_t {
     const auto *waiter_ptr{std::addressof(waiter)};
     if (m_waiters == waiter_ptr) { // waiter is the head of the list
       m_waiters = waiter_ptr->m_next;
-      return;
+    } else if (waiter_ptr->m_next == nullptr) { // waiter is the last in the list
+      waiter_ptr->m_prev->m_next = nullptr;
+    } else { // waiter is somewhere in the middle of the list
+      waiter_ptr->m_next->m_prev = waiter_ptr->m_prev;
+      waiter_ptr->m_prev->m_next = waiter_ptr->m_next;
     }
-
-    auto *tmp_waiters{static_cast<shared_task_impl_::shared_task_waiter_t *>(m_waiters)};
-    while (tmp_waiters->m_next != nullptr && tmp_waiters->m_next != waiter_ptr) {
-      tmp_waiters = tmp_waiters->m_next;
-    }
-    if (tmp_waiters->m_next == nullptr) [[unlikely]] { // for some reason there is no such waiter
-      return;
-    }
-
-    tmp_waiters->m_next = tmp_waiters->m_next->m_next;
   }
 
   template<typename... Args>
@@ -169,82 +168,82 @@ private:
 };
 
 template<typename promise_type>
-class awaiter_base_t {
+class awaiter_base {
   enum class state : uint8_t { init, suspend, end };
   state m_state{state::init};
 
 protected:
   std::coroutine_handle<promise_type> m_coro;
-  shared_task_impl_::shared_task_waiter_t m_waiter{};
+  shared_task_impl::shared_task_waiter m_waiter{};
 
 public:
-  constexpr explicit awaiter_base_t(std::coroutine_handle<promise_type> coro) noexcept
+  explicit awaiter_base(std::coroutine_handle<promise_type> coro) noexcept
     : m_coro(coro) {}
 
-  awaiter_base_t(awaiter_base_t &&other) noexcept
+  awaiter_base(awaiter_base &&other) noexcept
     : m_state(std::exchange(other.m_state, state::end))
     , m_coro(std::exchange(other.m_coro, {}))
     , m_waiter(std::exchange(other.m_waiter, {})) {}
 
-  awaiter_base_t(const awaiter_base_t &other) = delete;
-  awaiter_base_t &operator=(const awaiter_base_t &other) = delete;
-  awaiter_base_t &operator=(awaiter_base_t &&other) = delete;
+  awaiter_base(const awaiter_base &other) = delete;
+  awaiter_base &operator=(const awaiter_base &other) = delete;
+  awaiter_base &operator=(awaiter_base &&other) = delete;
 
-  ~awaiter_base_t() {
+  ~awaiter_base() {
     if (m_state == state::suspend) {
       cancel();
     }
   }
 
-  constexpr bool await_ready() const noexcept {
+  auto await_ready() const noexcept -> bool {
     php_assert(m_state == state::init && m_coro);
-    return m_coro.promise().ready();
+    return m_coro.promise().done();
   }
 
-  constexpr bool await_suspend(std::coroutine_handle<> awaiter) noexcept {
+  auto await_suspend(std::coroutine_handle<> awaiter) noexcept -> bool {
     m_state = state::suspend;
     m_waiter.m_continuation = awaiter;
     return m_coro.promise().suspend_awaiter(m_waiter);
   }
 
-  constexpr void await_resume() noexcept {
+  auto await_resume() noexcept -> void {
     m_state = state::end;
   }
 
-  constexpr bool resumable() const noexcept {
-    return m_coro.promise().ready();
+  auto resumable() const noexcept -> bool {
+    return m_coro.promise().done();
   }
 
-  constexpr void cancel() noexcept {
+  auto cancel() noexcept -> void {
     m_state = state::end;
     m_coro.promise().cancel_awaiter(m_waiter);
   }
 };
 
-} // namespace shared_task_impl_
+} // namespace shared_task_impl
 
-template<typename T>
-struct shared_task_t final {
+template<typename T = void>
+struct shared_task final {
   template<std::same_as<T> F>
-  struct promise_non_void_t;
-  struct promise_void_t;
+  struct promise_non_void;
+  struct promise_void;
 
-  using promise_type = std::conditional_t<!std::is_void_v<T>, promise_non_void_t<T>, promise_void_t>;
+  using promise_type = std::conditional_t<!std::is_void_v<T>, promise_non_void<T>, promise_void>;
 
-  constexpr explicit shared_task_t(std::coroutine_handle<> coro) noexcept
+  explicit shared_task(std::coroutine_handle<> coro) noexcept
     : m_haddress(coro.address()) {}
 
-  constexpr shared_task_t(const shared_task_t &other) noexcept
+  shared_task(const shared_task &other) noexcept
     : m_haddress(other.m_haddress) {
     if (m_haddress != nullptr) [[likely]] {
       std::coroutine_handle<promise_type>::from_address(m_haddress).promise().add_ref();
     }
   }
 
-  constexpr shared_task_t(shared_task_t &&other) noexcept
+  shared_task(shared_task &&other) noexcept
     : m_haddress(std::exchange(other.m_haddress, nullptr)) {}
 
-  shared_task_t &operator=(const shared_task_t &other) noexcept {
+  shared_task &operator=(const shared_task &other) noexcept {
     if (m_haddress != other.m_haddress) [[likely]] {
       destroy();
       m_haddress = other.m_haddress;
@@ -255,7 +254,7 @@ struct shared_task_t final {
     return *this;
   }
 
-  shared_task_t &operator=(shared_task_t &&other) noexcept {
+  shared_task &operator=(shared_task &&other) noexcept {
     if (this != std::addressof(other)) [[likely]] {
       destroy();
       m_haddress = std::exchange(other.m_haddress, nullptr);
@@ -263,90 +262,90 @@ struct shared_task_t final {
     return *this;
   }
 
-  ~shared_task_t() {
+  ~shared_task() {
     if (m_haddress) {
       destroy();
     }
   }
 
-  struct promise_base_t : public shared_task_impl_::promise_base_t<promise_type> {
-    constexpr shared_task_t get_return_object() noexcept {
-      return shared_task_t{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this))};
+  struct promise_base : public shared_task_impl::promise_base<promise_type> {
+    auto get_return_object() noexcept -> shared_task {
+      return shared_task{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this))};
     }
 
-    static shared_task_t get_return_object_on_allocation_failure() noexcept {
-      php_critical_error("cannot allocate memory for shared_task_t");
+    static auto get_return_object_on_allocation_failure() noexcept -> shared_task {
+      php_critical_error("cannot allocate memory for shared_task");
     }
   };
 
   template<std::same_as<T> F>
-  struct promise_non_void_t final : public promise_base_t {
-    constexpr promise_non_void_t() noexcept = default;
-    promise_non_void_t(const promise_non_void_t &other) = delete;
-    promise_non_void_t(promise_non_void_t &&other) = delete;
-    promise_non_void_t &operator=(const promise_non_void_t &other) = delete;
-    promise_non_void_t &operator=(promise_non_void_t &&other) = delete;
+  struct promise_non_void final : public promise_base {
+    promise_non_void() noexcept = default;
+    promise_non_void(const promise_non_void &other) = delete;
+    promise_non_void(promise_non_void &&other) = delete;
+    promise_non_void &operator=(const promise_non_void &other) = delete;
+    promise_non_void &operator=(promise_non_void &&other) = delete;
 
-    ~promise_non_void_t() {
+    ~promise_non_void() {
       std::launder(reinterpret_cast<T *>(m_bytes))->~T();
     }
 
     template<typename E>
-    requires std::constructible_from<F, E &&> constexpr void return_value(E &&e) noexcept {
+    requires std::constructible_from<F, E &&> auto return_value(E &&e) noexcept -> void {
       ::new (m_bytes) F(std::forward<E>(e));
     }
 
-    constexpr const T &result() const noexcept {
+    auto result() const noexcept -> const T & {
       return *std::launder(reinterpret_cast<const T *>(m_bytes));
     }
 
     alignas(F) std::byte m_bytes[sizeof(F)]{};
   };
 
-  struct promise_void_t final : public promise_base_t {
-    constexpr void return_void() const noexcept {}
+  struct promise_void final : public promise_base {
+    auto return_void() const noexcept -> void {}
 
-    constexpr void result() const noexcept {}
+    auto result() const noexcept -> void {}
   };
 
-  constexpr auto operator co_await() const noexcept {
-    using awaiter_base_t = shared_task_impl_::awaiter_base_t<promise_type>;
-    struct awaiter_t final : public awaiter_base_t {
-      using awaiter_base_t::awaiter_base_t;
-      constexpr T await_resume() noexcept {
-        awaiter_base_t::await_resume();
-        return awaiter_base_t::m_coro.promise().result();
+  auto operator co_await() const noexcept {
+    using awaiter_base = shared_task_impl::awaiter_base<promise_type>;
+    struct awaiter final : public awaiter_base {
+      using awaiter_base::awaiter_base;
+      auto await_resume() noexcept -> T {
+        awaiter_base::await_resume();
+        return awaiter_base::m_coro.promise().result();
       }
     };
-    return awaiter_t{std::coroutine_handle<promise_type>::from_address(m_haddress)};
+    return awaiter{std::coroutine_handle<promise_type>::from_address(m_haddress)};
   }
 
-  constexpr auto when_ready() const noexcept {
-    using awaiter_base_t = shared_task_impl_::awaiter_base_t<promise_type>;
-    struct awaiter_t final : public awaiter_base_t {
-      using awaiter_base_t::awaiter_base_t;
+  auto when_ready() const noexcept {
+    using awaiter_base = shared_task_impl::awaiter_base<promise_type>;
+    struct awaiter final : public awaiter_base {
+      using awaiter_base::awaiter_base;
     };
-    return awaiter_t{std::coroutine_handle<promise_type>::from_address(m_haddress)};
+    return awaiter{std::coroutine_handle<promise_type>::from_address(m_haddress)};
   }
 
-  constexpr std::coroutine_handle<promise_type> get_handle() const noexcept {
+  auto get_handle() const noexcept -> std::coroutine_handle<promise_type> {
     return std::coroutine_handle<promise_type>::from_address(m_haddress);
   }
 
   // conversion functions
   //
   // erase type
-  explicit operator shared_task_t<void>() && noexcept {
-    return shared_task_t<void>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
+  explicit operator shared_task<>() && noexcept {
+    return shared_task<>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
   }
   // restore erased type
   template<typename U>
-  requires(std::same_as<void, T>) explicit operator shared_task_t<U>() && noexcept {
-    return shared_task_t<U>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
+  requires(std::same_as<void, T>) explicit operator shared_task<U>() && noexcept {
+    return shared_task<U>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
   }
 
 private:
-  constexpr void destroy() noexcept {
+  auto destroy() noexcept -> void {
     if (m_haddress == nullptr) [[unlikely]] {
       return;
     }
@@ -358,3 +357,5 @@ private:
 
   void *m_haddress{};
 };
+
+} // namespace kphp::coro
