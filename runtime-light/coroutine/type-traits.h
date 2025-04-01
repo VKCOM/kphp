@@ -30,7 +30,7 @@ requires std::invocable<F, Args...> class async_function_return_type {
   };
 
   template<typename U>
-  struct task_inner<shared_task_t<U>> {
+  struct task_inner<shared_task<U>> {
     using type = U;
   };
 
@@ -45,7 +45,7 @@ requires std::invocable<F, Args...> inline constexpr bool is_async_function_v = 
   {static_cast<task_t<void>>(std::declval<std::invoke_result_t<F, Args...>>())};
 }
 || requires {
-  {static_cast<shared_task_t<void>>(std::declval<std::invoke_result_t<F, Args...>>())};
+  {static_cast<shared_task<>>(std::declval<std::invoke_result_t<F, Args...>>())};
 };
 
 // ================================================================================================

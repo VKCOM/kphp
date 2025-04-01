@@ -47,14 +47,14 @@ requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>
   auto &fork_info{(*opt_fork_info).get()};
   auto fork_task{*fork_info.opt_handle};
   fork_info.awaited = true; // prevent further f$wait from awaiting on the same fork
-  auto opt_result{co_await wait_with_timeout_t{wait_fork_t{static_cast<shared_task_t<internal_optional_type_t<T>>>(std::move(fork_task))},
+  auto opt_result{co_await wait_with_timeout_t{wait_fork_t{static_cast<kphp::coro::shared_task<internal_optional_type_t<T>>>(std::move(fork_task))},
                                                forks_impl_::normalize_timeout(timeout)}};
   // Execute essential housekeeping tasks to maintain proper state management.
   // 1. Check for any exceptions that may have occurred during the fork execution. If an exception is found, propagate it to the current fork.
   //    Clean fork_info's exception state.
   auto current_fork_info{fork_instance_st.current_info()};
   php_assert(std::exchange(current_fork_info.get().thrown_exception, std::move(fork_info.thrown_exception)).is_null());
-  // 2. Detach the shared_task_t from fork_info to prevent further associations, ensuring that resources are released.
+  // 2. Detach the shared_task from fork_info to prevent further associations, ensuring that resources are released.
   fork_info.opt_handle.reset();
 
   co_return opt_result.has_value() ? T{std::move(opt_result.value())} : T{};
