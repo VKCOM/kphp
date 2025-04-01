@@ -19,7 +19,7 @@ requires(std::invocable<F, Args...>) void f$register_shutdown_function(F &&f, Ar
   // 2. parameters are passed by value.
   auto shutdown_function_task{std::invoke(
     [](F f, Args... args) noexcept -> task_t<void> {
-      if constexpr (is_async_function_v<F, Args...>) {
+      if constexpr (kphp::coro::is_async_function_v<F, Args...>) {
         co_await std::invoke(std::move(f), std::move(args)...);
       } else {
         std::invoke(std::move(f), std::move(args)...);

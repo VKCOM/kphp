@@ -17,8 +17,8 @@
 
 namespace array_functions_impl_ {
 template<typename T, typename Comparator>
-requires(std::invocable<Comparator, T, T> &&is_async_function_v<Comparator, T, T>) task_t<void> async_sort(T *begin_init, T *end_init,
-                                                                                                           Comparator compare) noexcept {
+requires(std::invocable<Comparator, T, T> &&kphp::coro::is_async_function_v<Comparator, T, T>) task_t<void> async_sort(T *begin_init, T *end_init,
+                                                                                                                       Comparator compare) noexcept {
   T *begin_stack[32];
   T *end_stack[32];
 
@@ -204,11 +204,11 @@ concept convertible_to_php_bool = requires(T t) {
 };
 
 template<class T, std::invocable<T> F>
-requires convertible_to_php_bool<async_function_unwrapped_return_type_t<F, T>> task_t<array<T>> array_filter_impl(array<T> a, F f) noexcept {
+requires convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, T>> task_t<array<T>> array_filter_impl(array<T> a, F f) noexcept {
   array<T> result{a.size()};
   for (const auto &it : a) {
     bool condition{};
-    if constexpr (is_async_function_v<F, T>) {
+    if constexpr (kphp::coro::is_async_function_v<F, T>) {
       condition = f$boolval(co_await std::invoke(f, it.get_value()));
     } else {
       condition = f$boolval(std::invoke(f, it.get_value()));
@@ -221,12 +221,12 @@ requires convertible_to_php_bool<async_function_unwrapped_return_type_t<F, T>> t
 }
 
 template<class T, std::invocable<typename array<T>::const_iterator::key_type> F>
-requires convertible_to_php_bool<async_function_unwrapped_return_type_t<F, typename array<T>::const_iterator::key_type>> task_t<array<T>>
+requires convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, typename array<T>::const_iterator::key_type>> task_t<array<T>>
 array_filter_by_key_impl(array<T> a, F f) noexcept {
   array<T> result{a.size()};
   for (const auto &it : a) {
     bool condition{};
-    if constexpr (is_async_function_v<F, typename array<T>::const_iterator::key_type>) {
+    if constexpr (kphp::coro::is_async_function_v<F, typename array<T>::const_iterator::key_type>) {
       condition = f$boolval(co_await std::invoke(f, it.get_key()));
     } else {
       condition = f$boolval(std::invoke(f, it.get_key()));
@@ -331,11 +331,11 @@ ReturnT f$array_pad(const array<Unknown> & /*unused*/, int64_t /*unused*/, const
  * we need to be careful with such functions. We may want to split such functions into sync and async
  * versions in case we face with performance problems.
  */
-template<class A, std::invocable<A> F, class R = async_function_unwrapped_return_type_t<F, A>>
+template<class A, std::invocable<A> F, class R = kphp::coro::async_function_return_type_t<F, A>>
 task_t<array<R>> f$array_map(F f, array<A> a) noexcept {
   array<R> result{a.size()};
   for (const auto &it : a) {
-    if constexpr (is_async_function_v<F, A>) {
+    if constexpr (kphp::coro::is_async_function_v<F, A>) {
       result.set_value(it.get_key(), co_await std::invoke(f, it.get_value()));
     } else {
       result.set_value(it.get_key(), std::invoke(f, it.get_value()));
@@ -348,7 +348,7 @@ template<class R, class T, std::invocable<R, T> F, class I>
 requires std::constructible_from<R, std::add_rvalue_reference_t<I>> task_t<R> f$array_reduce(array<T> a, F f, I init) noexcept {
   R result{std::move(init)};
   for (const auto &it : a) {
-    if constexpr (is_async_function_v<F, R, T>) {
+    if constexpr (kphp::coro::is_async_function_v<F, R, T>) {
       result = co_await std::invoke(f, result, it.get_value());
     } else {
       result = std::invoke(f, result, it.get_value());
@@ -421,7 +421,7 @@ array<T> f$array_combine(const array<T1> & /*unused*/, const array<T> & /*unused
 
 template<class T, class Comparator>
 requires(std::invocable<Comparator, T, T>) task_t<void> f$usort(array<T> &a, Comparator compare) {
-  if constexpr (is_async_function_v<Comparator, T, T>) {
+  if constexpr (kphp::coro::is_async_function_v<Comparator, T, T>) {
     /* ATTENTION: temporary copy is necessary since functions is coroutine and sort is inplace */
     array<T> tmp{a};
     co_await array_functions_impl_::async_sort<task_t<void>>(tmp, std::move(compare), true);
@@ -434,7 +434,7 @@ requires(std::invocable<Comparator, T, T>) task_t<void> f$usort(array<T> &a, Com
 
 template<class T, class Comparator>
 requires(std::invocable<Comparator, T, T>) task_t<void> f$uasort(array<T> &a, Comparator compare) {
-  if constexpr (is_async_function_v<Comparator, T, T>) {
+  if constexpr (kphp::coro::is_async_function_v<Comparator, T, T>) {
     /* ATTENTION: temporary copy is necessary since functions is coroutine and sort is inplace */
     array<T> tmp{a};
     co_await array_functions_impl_::async_sort<task_t<void>>(tmp, std::move(compare), false);
@@ -446,7 +446,7 @@ requires(std::invocable<Comparator, T, T>) task_t<void> f$uasort(array<T> &a, Co
 
 template<class T, class Comparator>
 requires(std::invocable<Comparator, typename array<T>::key_type, typename array<T>::key_type>) task_t<void> f$uksort(array<T> &a, Comparator compare) {
-  if constexpr (is_async_function_v<Comparator, typename array<T>::key_type, typename array<T>::key_type>) {
+  if constexpr (kphp::coro::is_async_function_v<Comparator, typename array<T>::key_type, typename array<T>::key_type>) {
     /* ATTENTION: temporary copy is necessary since functions is coroutine and sort is inplace */
     array<T> tmp{a};
     co_await array_functions_impl_::async_ksort<task_t<void>>(tmp, std::move(compare));
