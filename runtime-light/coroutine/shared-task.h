@@ -121,11 +121,6 @@ struct promise_base {
   }
 
   auto cancel_awaiter(const shared_task_impl::shared_task_waiter &waiter) noexcept -> void {
-    const void *const READY_VAL{this};
-    if (m_waiters == READY_VAL) [[unlikely]] {
-      php_critical_error("currently, shared_task does not support cancellation after it has finished");
-    }
-
     const void *const NOT_STARTED_VAL{std::addressof(this->m_waiters)};
     if (m_waiters == NOT_STARTED_VAL || m_waiters == STARTED_NO_WAITERS_VAL) [[unlikely]] {
       return;
