@@ -103,7 +103,7 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
   return rpc_tl_query;
 }
 
-task_t<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
+kphp::coro::task<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
   auto &rpc_ctx{RpcInstanceState::get()};
   // prepare RPC request
   string request_buf{};
@@ -140,22 +140,23 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> timeout, bool 
                           : DEFAULT_TIMEOUT_NS};
   // create fork to wait for RPC response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
-  auto waiter_task{[](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> task_t<string> {
-    auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
-    const auto response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
-    // update response extra info if needed
-    if (collect_responses_extra_info) {
-      auto &extra_info_map{RpcInstanceState::get().rpc_responses_extra_info};
-      if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) {
-        const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-        it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
-        it_extra_info->second.first = rpc_response_extra_info_status_t::READY;
-      } else {
-        php_warning("can't find extra info for RPC query %" PRId64, query_id);
+  auto waiter_task{
+    [](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> kphp::coro::task<string> {
+      auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
+      const auto response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
+      // update response extra info if needed
+      if (collect_responses_extra_info) {
+        auto &extra_info_map{RpcInstanceState::get().rpc_responses_extra_info};
+        if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) {
+          const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
+          it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
+          it_extra_info->second.first = rpc_response_extra_info_status_t::READY;
+        } else {
+          php_warning("can't find extra info for RPC query %" PRId64, query_id);
+        }
       }
-    }
-    co_return response;
-  }(query_id, std::move(comp_query), timeout_ns, collect_responses_extra_info)};
+      co_return response;
+    }(query_id, std::move(comp_query), timeout_ns, collect_responses_extra_info)};
   // start waiter fork
   const auto waiter_fork_id{co_await start_fork_t{std::move(waiter_task)}};
 
@@ -166,7 +167,8 @@ task_t<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> timeout, bool 
   co_return RpcQueryInfo{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 
-task_t<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, Optional<double> timeout, bool collect_resp_extra_info, bool ignore_answer) noexcept {
+kphp::coro::task<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, Optional<double> timeout, bool collect_resp_extra_info,
+                                                     bool ignore_answer) noexcept {
   auto &rpc_ctx{RpcInstanceState::get()};
 
   if (!tl_object.is_array()) {
@@ -187,8 +189,8 @@ task_t<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, Option
   co_return query_info;
 }
 
-task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest &rpc_request, Optional<double> timeout, bool collect_responses_extra_info,
-                                                 bool ignore_answer) noexcept {
+kphp::coro::task<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest &rpc_request, Optional<double> timeout,
+                                                           bool collect_responses_extra_info, bool ignore_answer) noexcept {
   auto &rpc_ctx{RpcInstanceState::get()};
 
   if (rpc_request.empty()) {
@@ -214,7 +216,7 @@ task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest 
   co_return query_info;
 }
 
-task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
+kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
   if (query_id < kphp::rpc::VALID_QUERY_ID_RANGE_START) {
     co_return make_fetch_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
   }
@@ -263,7 +265,7 @@ task_t<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
   co_return fetch_function_untyped(rpc_query);
 }
 
-task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory &error_factory) noexcept {
+kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory &error_factory) noexcept {
   if (query_id < kphp::rpc::VALID_QUERY_ID_RANGE_START) {
     co_return error_factory.make_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
   }
@@ -370,8 +372,8 @@ string f$fetch_string() noexcept {
 
 // === Rpc Query ==================================================================================
 
-task_t<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> tl_objects, Optional<double> timeout, bool ignore_answer,
-                                           class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info, bool need_responses_extra_info) noexcept {
+kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> tl_objects, Optional<double> timeout, bool ignore_answer,
+                                                     class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info, bool need_responses_extra_info) noexcept {
   if (ignore_answer && need_responses_extra_info) {
     php_warning("Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
   }
@@ -392,7 +394,7 @@ task_t<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> tl_objects
   co_return query_ids;
 }
 
-task_t<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noexcept {
+kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noexcept {
   array<array<mixed>> res{query_ids.size()};
   for (const auto &it : query_ids) {
     res.set_value(it.get_key(), co_await rpc_impl_::rpc_tl_query_result_one_impl(it.get_value()));

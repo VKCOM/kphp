@@ -70,7 +70,7 @@ inline string f$php_sapi_name() noexcept {
 
 Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) noexcept;
 
-inline task_t<void> f$usleep(int64_t microseconds) noexcept {
+inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
   if (microseconds <= 0) [[unlikely]] {
     php_warning("Value of microseconds (%" PRIi64 ") must be positive", microseconds);
     co_return;

@@ -62,7 +62,7 @@ public:
     return R"(resource)";
   }
 
-  task_t<int64_t> write(std::string_view text) const noexcept {
+  kphp::coro::task<int64_t> write(std::string_view text) const noexcept {
     if (kind == resource_kind::STDERR) {
       co_return k2::stderr_write(text.size(), text.data());
     } else {

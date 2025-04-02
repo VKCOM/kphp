@@ -15,20 +15,21 @@
  * **Oneshot component only**
  * Wait for initial stream and process it. There can be 2 types of initial (or starter) streams: 1. http; 2. job worker.
  */
-task_t<uint64_t> accept_initial_stream() noexcept;
+kphp::coro::task<uint64_t> accept_initial_stream() noexcept;
 
 // === read =======================================================================================
 
-task_t<std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>, size_t>> read_all_from_stream(uint64_t stream_d) noexcept;
+kphp::coro::task<std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>, size_t>>
+read_all_from_stream(uint64_t stream_d) noexcept;
 
-std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>, int64_t>  read_nonblock_from_stream(uint64_t stream_d) noexcept;
+std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>, int64_t> read_nonblock_from_stream(uint64_t stream_d) noexcept;
 
-task_t<int32_t> read_exact_from_stream(uint64_t stream_d, char *buffer, int32_t len) noexcept;
+kphp::coro::task<int32_t> read_exact_from_stream(uint64_t stream_d, char *buffer, int32_t len) noexcept;
 
 // === write ======================================================================================
 
-task_t<int32_t> write_all_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept;
+kphp::coro::task<int32_t> write_all_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept;
 
 int32_t write_nonblock_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept;
 
-task_t<int32_t> write_exact_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept;
+kphp::coro::task<int32_t> write_exact_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept;

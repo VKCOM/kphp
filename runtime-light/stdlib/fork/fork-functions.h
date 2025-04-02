@@ -36,7 +36,8 @@ inline std::chrono::nanoseconds normalize_timeout(double timeout_s) noexcept {
 } // namespace forks_impl_
 
 template<typename T>
-requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
+requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) kphp::coro::task<T> f$wait(int64_t fork_id,
+                                                                                                                    double timeout = -1.0) noexcept {
   auto &fork_instance_st{ForkInstanceState::get()};
   auto opt_fork_info{fork_instance_st.get_info(fork_id)};
   if (!opt_fork_info.has_value() || !(*opt_fork_info).get().opt_handle.has_value() || (*opt_fork_info).get().awaited) [[unlikely]] {
@@ -61,14 +62,14 @@ requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>
 }
 
 template<typename T>
-requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) task_t<T> f$wait(Optional<int64_t> opt_fork_id,
-                                                                                                          double timeout = -1.0) noexcept {
+requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) kphp::coro::task<T> f$wait(Optional<int64_t> opt_fork_id,
+                                                                                                                    double timeout = -1.0) noexcept {
   co_return co_await f$wait<T>(opt_fork_id.has_value() ? opt_fork_id.val() : kphp::forks::INVALID_ID, timeout);
 }
 
 // ================================================================================================
 
-inline task_t<bool> f$wait_concurrently(int64_t fork_id) noexcept {
+inline kphp::coro::task<bool> f$wait_concurrently(int64_t fork_id) noexcept {
   auto &fork_instance_st{ForkInstanceState::get()};
   auto opt_fork_info{fork_instance_st.get_info(fork_id)};
   if (!opt_fork_info.has_value()) [[unlikely]] {
@@ -83,16 +84,16 @@ inline task_t<bool> f$wait_concurrently(int64_t fork_id) noexcept {
   co_return true;
 }
 
-inline task_t<bool> f$wait_concurrently(Optional<int64_t> opt_fork_id) noexcept {
+inline kphp::coro::task<bool> f$wait_concurrently(Optional<int64_t> opt_fork_id) noexcept {
   co_return co_await f$wait_concurrently(opt_fork_id.has_value() ? opt_fork_id.val() : kphp::forks::INVALID_ID);
 }
 
-inline task_t<bool> f$wait_concurrently(const mixed &fork_id) noexcept {
+inline kphp::coro::task<bool> f$wait_concurrently(const mixed &fork_id) noexcept {
   co_return co_await f$wait_concurrently(fork_id.to_int());
 }
 
 template<typename T>
-task_t<T> f$wait_multi(array<int64_t> fork_ids) noexcept {
+kphp::coro::task<T> f$wait_multi(array<int64_t> fork_ids) noexcept {
   T res{};
   for (const auto &it : fork_ids) {
     res.set_value(it.get_key(), co_await f$wait<typename T::value_type>(it.get_value()));
@@ -101,18 +102,18 @@ task_t<T> f$wait_multi(array<int64_t> fork_ids) noexcept {
 }
 
 template<typename T>
-task_t<T> f$wait_multi(array<Optional<int64_t>> fork_ids) noexcept {
+kphp::coro::task<T> f$wait_multi(array<Optional<int64_t>> fork_ids) noexcept {
   const auto ids{array<int64_t>::convert_from(fork_ids)};
   co_return co_await f$wait_multi<T>(ids);
 }
 
 // ================================================================================================
 
-inline task_t<void> f$sched_yield() noexcept {
+inline kphp::coro::task<> f$sched_yield() noexcept {
   co_await wait_for_reschedule_t{};
 }
 
-inline task_t<void> f$sched_yield_sleep(double duration) noexcept {
+inline kphp::coro::task<> f$sched_yield_sleep(double duration) noexcept {
   if (duration <= 0) {
     php_warning("can't sleep for negative or zero duration %.9f", duration);
     co_return;

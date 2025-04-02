@@ -123,7 +123,7 @@ struct RunInterruptedFunction {
 
     std::string script_start = "co_await InstanceState::get().run_instance_prologue<" + image_kind + ">();";
     std::string script_finish = "co_await InstanceState::get().run_instance_epilogue();";
-    FunctionSignatureGenerator(W) << "task_t<void> " << FunctionName(function) << "$run() " << BEGIN << script_start << NL << try_wrapper << await_prefix
+    FunctionSignatureGenerator(W) << "kphp::coro::task<> " << FunctionName(function) << "$run() " << BEGIN << script_start << NL << try_wrapper << await_prefix
                                   << FunctionName(function) << "());" << NL << script_finish << NL << "co_return;" << NL << END;
     W << NL;
   }
@@ -234,7 +234,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << GlobalsResetFunction(main_file_id->main_function) << NL;
 
   if (G->is_output_mode_k2()) {
-    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", task_t<void> &run" ")" << BEGIN;
+    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", kphp::coro::task<> &run" ")" << BEGIN;
   } else {
     FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
   }

@@ -283,9 +283,9 @@ class start_fork_t : awaitable_impl_::fork_id_watcher_t {
   awaitable_impl_::state state{awaitable_impl_::state::init};
 
 public:
-  explicit start_fork_t(task_t<T> &&task) noexcept
+  explicit start_fork_t(kphp::coro::task<T> &&task) noexcept
     : fork_id(fork_instance_st.push_fork(static_cast<kphp::coro::shared_task<>>(
-        std::invoke([](task_t<T> task) noexcept -> kphp::coro::shared_task<T> { co_return co_await task; }, std::move(task)))))
+        std::invoke([](kphp::coro::task<T> task) noexcept -> kphp::coro::shared_task<T> { co_return co_await task; }, std::move(task)))))
     , fork_awaiter((*(*fork_instance_st.get_info(fork_id)).get().opt_handle).when_ready()) {}
 
   start_fork_t(start_fork_t &&other) noexcept

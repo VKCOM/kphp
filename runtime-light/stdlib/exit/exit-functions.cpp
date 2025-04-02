@@ -9,7 +9,7 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/instance-state.h"
 
-task_t<void> f$exit(mixed v) noexcept { // TODO: make it synchronous
+kphp::coro::task<> f$exit(mixed v) noexcept { // TODO: make it synchronous
   auto &instance_st{InstanceState::get()};
 
   int64_t exit_code{};
