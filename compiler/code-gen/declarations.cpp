@@ -73,7 +73,7 @@ void FunctionDeclaration::compile(CodeGenerator &W) const {
     case gen_out_style::tagger:
     case gen_out_style::cpp: {
       if (function->is_interruptible) {
-        FunctionSignatureGenerator(W) << "task_t<" << ret_type_gen << ">" << " " << FunctionName(function) << "("
+        FunctionSignatureGenerator(W) << "kphp::coro::task<" << ret_type_gen << ">" << " " << FunctionName(function) << "("
                                       << params_gen << ")";
       } else {
         FunctionSignatureGenerator(W) << ret_type_gen << " " << FunctionName(function) << "(" << params_gen << ")";

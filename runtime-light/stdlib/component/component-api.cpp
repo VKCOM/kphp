@@ -15,7 +15,7 @@
 
 // === component query client interface ===========================================================
 
-task_t<class_instance<C$ComponentQuery>> f$component_client_send_request(string name, string message) noexcept {
+kphp::coro::task<class_instance<C$ComponentQuery>> f$component_client_send_request(string name, string message) noexcept {
   const auto [stream_d, errc]{InstanceState::get().open_stream({name.c_str(), name.size()}, k2::stream_kind::component)};
   if (errc != k2::errno_ok) {
     co_return class_instance<C$ComponentQuery>{};
@@ -32,7 +32,7 @@ task_t<class_instance<C$ComponentQuery>> f$component_client_send_request(string 
   co_return make_instance<C$ComponentQuery>(stream_d);
 }
 
-task_t<string> f$component_client_fetch_response(class_instance<C$ComponentQuery> query) noexcept {
+kphp::coro::task<string> f$component_client_fetch_response(class_instance<C$ComponentQuery> query) noexcept {
   uint64_t stream_d{query.is_null() ? k2::INVALID_PLATFORM_DESCRIPTOR : query.get()->stream_d};
   if (stream_d == k2::INVALID_PLATFORM_DESCRIPTOR) {
     php_warning("can't fetch component response from stream %" PRIu64, stream_d);
@@ -49,18 +49,18 @@ task_t<string> f$component_client_fetch_response(class_instance<C$ComponentQuery
 
 // === component query server interface ===========================================================
 
-task_t<class_instance<C$ComponentQuery>> f$component_server_accept_query() noexcept {
+kphp::coro::task<class_instance<C$ComponentQuery>> f$component_server_accept_query() noexcept {
   co_return make_instance<C$ComponentQuery>(co_await wait_for_incoming_stream_t{});
 }
 
-task_t<string> f$component_server_fetch_request(class_instance<C$ComponentQuery> query) noexcept {
+kphp::coro::task<string> f$component_server_fetch_request(class_instance<C$ComponentQuery> query) noexcept {
   uint64_t stream_d{query.is_null() ? k2::INVALID_PLATFORM_DESCRIPTOR : query.get()->stream_d};
   const auto [buffer, size]{co_await read_all_from_stream(stream_d)};
   string result{buffer.get(), static_cast<string::size_type>(size)};
   co_return result;
 }
 
-task_t<void> f$component_server_send_response(class_instance<C$ComponentQuery> query, string message) noexcept {
+kphp::coro::task<> f$component_server_send_response(class_instance<C$ComponentQuery> query, string message) noexcept {
   uint64_t stream_d{query.is_null() ? k2::INVALID_PLATFORM_DESCRIPTOR : query.get()->stream_d};
   if ((co_await write_all_to_stream(stream_d, message.c_str(), message.size())) != message.size()) {
     php_warning("can't send component response to stream %" PRIu64, stream_d);

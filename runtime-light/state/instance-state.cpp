@@ -62,14 +62,14 @@ int32_t merge_output_buffers() noexcept {
 
 void InstanceState::init_script_execution() noexcept {
   runtime_context.init();
-  task_t<void> script_task;
+  kphp::coro::task<> script_task;
   init_php_scripts_in_each_worker(php_script_mutable_globals_singleton, script_task);
 
   auto main_task{std::invoke(
-    [](task_t<void> script_task) noexcept -> task_t<void> {
+    [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
       // wrap script with additional check for unhandled exception
       script_task = std::invoke(
-        [](task_t<void> script_task) noexcept -> task_t<void> {
+        [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
           co_await script_task;
           if (auto exception{std::move(ForkInstanceState::get().current_info().get().thrown_exception)}; !exception.is_null()) [[unlikely]] {
             php_error("unhandled exception '%s' at %s:%" PRId64, exception.get_class(), exception->$file.c_str(), exception->$line);
@@ -84,7 +84,7 @@ void InstanceState::init_script_execution() noexcept {
 }
 
 template<ImageKind kind>
-task_t<void> InstanceState::run_instance_prologue() noexcept {
+kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
   static_assert(kind != ImageKind::Invalid);
   image_kind_ = kind;
 
@@ -110,12 +110,12 @@ task_t<void> InstanceState::run_instance_prologue() noexcept {
   }
 }
 
-template task_t<void> InstanceState::run_instance_prologue<ImageKind::CLI>();
-template task_t<void> InstanceState::run_instance_prologue<ImageKind::Server>();
-template task_t<void> InstanceState::run_instance_prologue<ImageKind::Oneshot>();
-template task_t<void> InstanceState::run_instance_prologue<ImageKind::Multishot>();
+template kphp::coro::task<> InstanceState::run_instance_prologue<ImageKind::CLI>();
+template kphp::coro::task<> InstanceState::run_instance_prologue<ImageKind::Server>();
+template kphp::coro::task<> InstanceState::run_instance_prologue<ImageKind::Oneshot>();
+template kphp::coro::task<> InstanceState::run_instance_prologue<ImageKind::Multishot>();
 
-task_t<void> InstanceState::run_instance_epilogue() noexcept {
+kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   if (std::exchange(shutdown_state_, shutdown_state::in_progress) == shutdown_state::not_started) [[likely]] {
     for (auto &sf : shutdown_functions) {
       co_await sf;

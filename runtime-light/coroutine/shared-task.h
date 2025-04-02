@@ -138,13 +138,13 @@ struct promise_base {
   }
 
   template<typename... Args>
-  void *operator new(size_t n, [[maybe_unused]] Args &&...args) noexcept {
+  auto operator new(size_t n, [[maybe_unused]] Args &&...args) noexcept -> void * {
     // todo:k2 think about args in new
     // todo:k2 make coroutine allocator
     return k2::alloc(n);
   }
 
-  void operator delete(void *ptr, [[maybe_unused]] size_t n) noexcept {
+  auto operator delete(void *ptr, [[maybe_unused]] size_t n) noexcept -> void {
     k2::free(ptr);
   }
 

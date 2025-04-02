@@ -15,7 +15,7 @@
 #include "runtime-light/coroutine/task.h"
 
 template<std::invocable T>
-task_t<void> f$set_timer(int64_t timeout_ms, T on_timer_callback) noexcept {
+kphp::coro::task<> f$set_timer(int64_t timeout_ms, T on_timer_callback) noexcept {
   if (timeout_ms < 0) {
     php_warning("can't set timer for negative duration %" PRId64 "ms", timeout_ms);
     co_return;

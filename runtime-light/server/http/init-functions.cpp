@@ -308,7 +308,7 @@ void init_server(tl::K2InvokeHttp &&invoke_http) noexcept {
   static_SB.clean() << headers::CONNECTION.data() << ": " << connection_kind.data();
 }
 
-task_t<void> finalize_server(const string_buffer &output) noexcept {
+kphp::coro::task<> finalize_server(const string_buffer &output) noexcept {
   auto &http_server_instance_st{HttpServerInstanceState::get()};
 
   string body{};

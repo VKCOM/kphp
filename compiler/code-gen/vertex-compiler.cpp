@@ -520,7 +520,7 @@ void compile_null_coalesce(VertexAdaptor<op_null_coalesce> root, CodeGenerator &
       W.get_context().null_coalescing_rhs_t = tinf::get_type(rhs);
 
       FunctionSignatureGenerator(W) << "[&] ()";
-      W << " -> " << (interruptible_call ? "task_t<" : "") << TypeName{tinf::get_type(rhs)} << (interruptible_call ? "> " : " ") << BEGIN;
+      W << " -> " << (interruptible_call ? "kphp::coro::task<" : "") << TypeName{tinf::get_type(rhs)} << (interruptible_call ? "> " : " ") << BEGIN;
       W << (interruptible_call ? "co_return " : "return ") << rhs << ";" << NL;
       W << END;
     }
@@ -2072,7 +2072,7 @@ void compile_callback_of_builtin(VertexAdaptor<op_callback_of_builtin> root, Cod
    *       return lambda$xxx(captured1, std::forward<decltype(args)>(args)...);
    *   }, const_array);
    * or in K2 mode:
-   *   co_await array_map([captured1 = $extern] (auto &&... args) (-> task_t<lambda's return type>)? {
+   *   co_await array_map([captured1 = $extern] (auto &&... args) (-> kphp::coro::task<lambda's return type>)? {
    *       (return lambda$xxx(captured1, std::forward<decltype(args)>(args)...);
    *       | co_return(co_await lambda$xxx(captured1, std::forward<decltype(args)>(args)...));)
    *   }, const_array);
