@@ -20,13 +20,13 @@ namespace task_impl {
 
 template<typename promise_type>
 struct promise_base {
-  auto initial_suspend() const noexcept -> std::suspend_always {
+  constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
 
-  auto final_suspend() const noexcept {
+  constexpr auto final_suspend() const noexcept {
     struct awaiter {
-      auto await_ready() const noexcept -> bool {
+      constexpr auto await_ready() const noexcept -> bool {
         return false;
       }
 
@@ -37,7 +37,7 @@ struct promise_base {
         return std::noop_coroutine();
       }
 
-      auto await_resume() const noexcept -> void {}
+      constexpr auto await_resume() const noexcept -> void {}
     };
     return awaiter{};
   }
@@ -76,13 +76,28 @@ public:
   explicit awaiter_base(std::coroutine_handle<promise_type> coro) noexcept
     : m_coro(coro) {}
 
-  auto await_ready() const noexcept -> bool {
+  awaiter_base(awaiter_base &&other) noexcept
+    : m_state(std::exchange(other.m_state, state::end))
+    , m_coro(std::exchange(other.m_coro, {})) {}
+
+  awaiter_base(const awaiter_base &other) = delete;
+  awaiter_base &operator=(const awaiter_base &other) = delete;
+  awaiter_base &operator=(awaiter_base &&other) = delete;
+
+  ~awaiter_base() {
+    if (m_state == state::suspend) {
+      cancel();
+    }
+  }
+
+  constexpr auto await_ready() const noexcept -> bool {
     php_assert(m_state == state::init && m_coro);
     return false;
   }
 
   template<typename promise_t>
   auto await_suspend(std::coroutine_handle<promise_t> coro) noexcept -> std::coroutine_handle<promise_type> {
+    m_state = state::suspend;
     m_coro.promise().m_next = coro.address();
     return m_coro;
   }
@@ -166,12 +181,12 @@ struct task {
   };
 
   struct promise_void final : public promise_base {
-    auto return_void() const noexcept -> void {}
+    constexpr auto return_void() const noexcept -> void {}
 
-    auto result() const noexcept -> void {}
+    constexpr auto result() const noexcept -> void {}
   };
 
-  auto operator co_await() noexcept {
+  constexpr auto operator co_await() noexcept {
     using awaiter_base = task_impl::awaiter_base<promise_type>;
     struct awaiter final : public awaiter_base {
       using awaiter_base::awaiter_base;
