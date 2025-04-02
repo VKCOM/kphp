@@ -28,13 +28,13 @@ struct shared_task_waiter final {
 
 template<typename promise_type>
 struct promise_base {
-  auto initial_suspend() const noexcept -> std::suspend_always {
+  constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
 
-  auto final_suspend() const noexcept {
+  constexpr auto final_suspend() const noexcept {
     struct awaiter {
-      auto await_ready() const noexcept -> bool {
+      constexpr auto await_ready() const noexcept -> bool {
         return false;
       }
 
@@ -57,7 +57,7 @@ struct promise_base {
         return waiter->m_continuation;
       }
 
-      auto await_resume() const noexcept -> void {}
+      constexpr auto await_resume() const noexcept -> void {}
     };
     return awaiter{};
   }
@@ -298,9 +298,9 @@ struct shared_task final {
   };
 
   struct promise_void final : public promise_base {
-    auto return_void() const noexcept -> void {}
+    constexpr auto return_void() const noexcept -> void {}
 
-    auto result() const noexcept -> void {}
+    constexpr auto result() const noexcept -> void {}
   };
 
   auto operator co_await() const noexcept {
