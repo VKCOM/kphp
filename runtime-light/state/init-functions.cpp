@@ -40,7 +40,7 @@ void process_k2_invoke_job_worker(tl::TLBuffer &tlb) noexcept {
 
 } // namespace
 
-task_t<uint64_t> init_kphp_cli_component() noexcept {
+kphp::coro::task<uint64_t> init_kphp_cli_component() noexcept {
   { // TODO superglobals init
     auto &superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
     using namespace PhpServerSuperGlobalIndices;
@@ -54,7 +54,7 @@ task_t<uint64_t> init_kphp_cli_component() noexcept {
   co_return co_await wait_for_incoming_stream_t{};
 }
 
-task_t<void> finalize_kphp_cli_component(const string_buffer &output) noexcept {
+kphp::coro::task<> finalize_kphp_cli_component(const string_buffer &output) noexcept {
   auto &instance_st{InstanceState::get()};
   if ((co_await write_all_to_stream(instance_st.standard_stream(), output.buffer(), output.size())) != output.size()) [[unlikely]] {
     instance_st.poll_status = k2::PollStatus::PollFinishedError;
@@ -62,7 +62,7 @@ task_t<void> finalize_kphp_cli_component(const string_buffer &output) noexcept {
   }
 }
 
-task_t<uint64_t> init_kphp_server_component() noexcept {
+kphp::coro::task<uint64_t> init_kphp_server_component() noexcept {
   auto stream_d{co_await wait_for_incoming_stream_t{}};
   const auto [buffer, size]{co_await read_all_from_stream(stream_d)};
   php_assert(size >= sizeof(uint32_t)); // check that we can fetch at least magic
@@ -90,7 +90,7 @@ task_t<uint64_t> init_kphp_server_component() noexcept {
   co_return stream_d;
 }
 
-task_t<void> finalize_kphp_server_component(const string_buffer &output) noexcept {
+kphp::coro::task<> finalize_kphp_server_component(const string_buffer &output) noexcept {
   if (JobWorkerServerInstanceState::get().kind == JobWorkerServerInstanceState::Kind::Invalid) {
     co_await kphp::http::finalize_server(output);
   }

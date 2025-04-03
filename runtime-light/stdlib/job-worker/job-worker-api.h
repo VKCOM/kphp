@@ -12,17 +12,17 @@
 
 // === Client =====================================================================================
 
-task_t<Optional<int64_t>> f$job_worker_send_request(string request, double timeout) noexcept;
+kphp::coro::task<Optional<int64_t>> f$job_worker_send_request(string request, double timeout) noexcept;
 
-task_t<bool> f$job_worker_send_noreply_request(string request, double timeout) noexcept;
+kphp::coro::task<bool> f$job_worker_send_noreply_request(string request, double timeout) noexcept;
 
-task_t<array<Optional<int64_t>>> f$job_worker_send_multi_request(array<string> requests, double timeout) noexcept;
+kphp::coro::task<array<Optional<int64_t>>> f$job_worker_send_multi_request(array<string> requests, double timeout) noexcept;
 
 // === Server =====================================================================================
 
-task_t<string> f$job_worker_fetch_request() noexcept;
+kphp::coro::task<string> f$job_worker_fetch_request() noexcept;
 
-task_t<int64_t> f$job_worker_store_response(string response) noexcept;
+kphp::coro::task<int64_t> f$job_worker_store_response(string response) noexcept;
 
 // === Misc =======================================================================================
 

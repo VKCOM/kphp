@@ -69,9 +69,9 @@ struct InstanceState final : vk::not_copyable {
   void init_script_execution() noexcept;
 
   template<ImageKind>
-  task_t<void> run_instance_prologue() noexcept;
+  kphp::coro::task<> run_instance_prologue() noexcept;
 
-  task_t<void> run_instance_epilogue() noexcept;
+  kphp::coro::task<> run_instance_epilogue() noexcept;
 
   ImageKind image_kind() const noexcept {
     return image_kind_;
@@ -124,10 +124,10 @@ struct InstanceState final : vk::not_copyable {
   SystemInstanceState system_instance_state{};
   FileSystemInstanceState file_system_instance_state{};
 
-  list<task_t<void>> shutdown_functions;
+  list<kphp::coro::task<>> shutdown_functions;
 
 private:
-  task_t<void> main_task_;
+  kphp::coro::task<> main_task_;
   enum class shutdown_state : uint8_t { not_started, in_progress, finished };
   shutdown_state shutdown_state_{shutdown_state::not_started};
 

@@ -6,7 +6,7 @@
 
 #include <concepts>
 #include <coroutine>
-#include <exception>
+#include <new>
 #include <type_traits>
 #include <utility>
 
@@ -14,184 +14,208 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
-namespace task_impl_ {
+namespace kphp::coro {
 
-struct task_base_t {
-  task_base_t() = default;
+namespace task_impl {
 
-  explicit task_base_t(std::coroutine_handle<> handle)
-    : handle_address{handle.address()} {}
-
-  task_base_t(task_base_t &&task) noexcept
-    : handle_address{std::exchange(task.handle_address, nullptr)} {}
-
-  task_base_t(const task_base_t &task) = delete;
-
-  task_base_t &operator=(task_base_t &&task) noexcept {
-    std::swap(handle_address, task.handle_address);
-    return *this;
+template<typename promise_type>
+struct promise_base {
+  constexpr auto initial_suspend() const noexcept -> std::suspend_always {
+    return {};
   }
 
-  task_base_t &operator=(const task_base_t &task) = delete;
+  constexpr auto final_suspend() const noexcept {
+    struct awaiter {
+      constexpr auto await_ready() const noexcept -> bool {
+        return false;
+      }
 
-  ~task_base_t() {
-    if (handle_address) {
-      std::coroutine_handle<>::from_address(handle_address).destroy();
+      auto await_suspend(std::coroutine_handle<promise_type> coro) const noexcept -> std::coroutine_handle<> {
+        if (coro.promise().m_next != nullptr) [[likely]] {
+          return std::coroutine_handle<>::from_address(coro.promise().m_next);
+        }
+        return std::noop_coroutine();
+      }
+
+      constexpr auto await_resume() const noexcept -> void {}
+    };
+    return awaiter{};
+  }
+
+  auto unhandled_exception() const noexcept -> void {
+    php_critical_error("internal unhandled exception");
+  }
+
+  auto done() const noexcept -> bool {
+    return std::coroutine_handle<promise_type>::from_promise(*const_cast<promise_type *>(static_cast<const promise_type *>(this))).done();
+  }
+
+  template<typename... Args>
+  auto operator new(std::size_t n, [[maybe_unused]] Args &&...args) noexcept -> void * {
+    // todo:k2 think about args in new
+    // todo:k2 make coroutine allocator
+    return k2::alloc(n);
+  }
+
+  auto operator delete(void *ptr, [[maybe_unused]] size_t n) noexcept -> void {
+    k2::free(ptr);
+  }
+
+  void *m_next{};
+};
+
+template<typename promise_type>
+class awaiter_base {
+  enum class state : uint8_t { init, suspend, end };
+  state m_state{state::init};
+
+protected:
+  std::coroutine_handle<promise_type> m_coro{};
+
+public:
+  explicit awaiter_base(std::coroutine_handle<promise_type> coro) noexcept
+    : m_coro(coro) {}
+
+  awaiter_base(awaiter_base &&other) noexcept
+    : m_state(std::exchange(other.m_state, state::end))
+    , m_coro(std::exchange(other.m_coro, {})) {}
+
+  awaiter_base(const awaiter_base &other) = delete;
+  awaiter_base &operator=(const awaiter_base &other) = delete;
+  awaiter_base &operator=(awaiter_base &&other) = delete;
+
+  ~awaiter_base() {
+    if (m_state == state::suspend) {
+      cancel();
     }
   }
 
-  bool done() const {
-    php_assert(handle_address != nullptr);
-    return std::coroutine_handle<>::from_address(handle_address).done();
+  constexpr auto await_ready() const noexcept -> bool {
+    php_assert(m_state == state::init && m_coro);
+    return false;
   }
 
-protected:
-  void *handle_address{nullptr};
+  template<typename promise_t>
+  auto await_suspend(std::coroutine_handle<promise_t> coro) noexcept -> std::coroutine_handle<promise_type> {
+    m_state = state::suspend;
+    m_coro.promise().m_next = coro.address();
+    return m_coro;
+  }
+
+  auto await_resume() noexcept -> void {
+    m_state = state::end;
+  }
+
+  auto resumable() const noexcept -> bool {
+    return m_coro.promise().done();
+  }
+
+  auto cancel() noexcept -> void {
+    m_state = state::end;
+    m_coro.promise().m_next = nullptr;
+  }
 };
 
-} // namespace task_impl_
+} // namespace task_impl
 
 /**
  * Please, read following documents before trying to understand what's going on here:
  * 1. C++20 coroutines — https://en.cppreference.com/w/cpp/language/coroutines
  * 2. C++ coroutines: understanding symmetric stransfer — https://lewissbaker.github.io/2020/05/11/understanding_symmetric_transfer
  */
-template<typename T>
-struct task_t : public task_impl_::task_base_t {
+template<typename T = void>
+struct task {
   template<std::same_as<T> F>
-  struct promise_non_void_t;
-  struct promise_void_t;
+  struct promise_non_void;
+  struct promise_void;
 
-  using promise_type = std::conditional_t<!std::is_void_v<T>, promise_non_void_t<T>, promise_void_t>;
-  using task_base_t::task_base_t;
+  using promise_type = std::conditional_t<!std::is_void_v<T>, promise_non_void<T>, promise_void>;
 
-  struct promise_base_t {
-    task_t get_return_object() noexcept {
-      return task_t{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this))};
+  task() noexcept = default;
+
+  explicit task(std::coroutine_handle<> coro) noexcept
+    : m_haddress(coro.address()) {}
+
+  task(const task &other) noexcept = delete;
+
+  task(task &&other) noexcept
+    : m_haddress(std::exchange(other.m_haddress, nullptr)) {}
+
+  task &operator=(const task &other) noexcept = delete;
+
+  task &operator=(task &&other) noexcept {
+    std::swap(m_haddress, other.m_haddress);
+    return *this;
+  }
+
+  ~task() {
+    if (m_haddress) {
+      std::coroutine_handle<promise_type>::from_address(m_haddress).destroy();
+    }
+  }
+
+  struct promise_base : task_impl::promise_base<promise_type> {
+    auto get_return_object() noexcept -> task {
+      return task{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this))};
     }
 
-    constexpr std::suspend_always initial_suspend() const noexcept {
-      return {};
-    }
-
-    auto final_suspend() const noexcept {
-      struct final_suspend_t {
-        final_suspend_t() = default;
-
-        constexpr bool await_ready() const noexcept {
-          return false;
-        }
-
-        std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_type> h) const noexcept {
-          if (h.promise().next) {
-            return std::coroutine_handle<>::from_address(h.promise().next);
-          }
-          return std::noop_coroutine();
-        }
-
-        constexpr void await_resume() const noexcept {}
-      };
-
-      return final_suspend_t{};
-    }
-
-    void unhandled_exception() noexcept {
-      exception = std::current_exception();
-    }
-
-    void *next = nullptr;
-    std::exception_ptr exception;
-
-    static task_t get_return_object_on_allocation_failure() noexcept {
-      php_critical_error("cannot allocate memory for task_t");
-    }
-
-    template<typename... Args>
-    void *operator new(std::size_t n, [[maybe_unused]] Args &&...args) noexcept {
-      // todo:k2 think about args in new
-      // todo:k2 make coroutine allocator
-      void *buffer = k2::alloc(n);
-      return buffer;
-    }
-
-    void operator delete(void *ptr, [[maybe_unused]] size_t n) noexcept {
-      k2::free(ptr);
+    static auto get_return_object_on_allocation_failure() noexcept -> task {
+      php_critical_error("cannot allocate memory for task");
     }
   };
 
   template<std::same_as<T> F>
-  struct promise_non_void_t : public promise_base_t {
+  struct promise_non_void final : public promise_base {
     template<typename E>
-    requires std::constructible_from<F, E &&> void return_value(E &&e) noexcept {
+    requires std::constructible_from<F, E &&> auto return_value(E &&e) noexcept -> void {
       ::new (bytes) F(std::forward<E>(e));
     }
 
-    alignas(F) std::byte bytes[sizeof(F)];
-  };
-
-  struct promise_void_t : public promise_base_t {
-    constexpr void return_void() const noexcept {}
-  };
-
-  T get_result() noexcept {
-    if (get_handle().promise().exception) [[unlikely]] {
-      std::rethrow_exception(std::move(get_handle().promise().exception));
-    }
-    if constexpr (!std::is_void_v<T>) {
-      T *t = std::launder(reinterpret_cast<T *>(get_handle().promise().bytes));
-      const vk::final_action final_action([t] { t->~T(); });
+    auto result() noexcept -> T {
+      auto *t{std::launder(reinterpret_cast<T *>(bytes))};
+      const auto finalizer{vk::finally([t] noexcept { t->~T(); })};
       return std::move(*t);
     }
-  }
 
-  struct awaiter_base_t {
-    explicit awaiter_base_t(task_t *task_) noexcept
-      : task{task_} {}
-
-    constexpr bool await_ready() const noexcept {
-      return false;
-    }
-
-    template<typename PromiseType>
-    std::coroutine_handle<promise_type> await_suspend(std::coroutine_handle<PromiseType> h) noexcept {
-      task->get_handle().promise().next = h.address();
-      return task->get_handle();
-    }
-
-    bool resumable() const noexcept {
-      return task->done();
-    }
-
-    void cancel() const noexcept {
-      task->get_handle().promise().next = nullptr;
-    }
-
-    task_t *task;
+    alignas(F) std::byte bytes[sizeof(F)]{};
   };
 
-  auto operator co_await() noexcept {
-    struct awaiter_t : public awaiter_base_t {
-      using awaiter_base_t::awaiter_base_t;
-      T await_resume() noexcept {
-        return awaiter_base_t::task->get_result();
+  struct promise_void final : public promise_base {
+    constexpr auto return_void() const noexcept -> void {}
+
+    constexpr auto result() const noexcept -> void {}
+  };
+
+  constexpr auto operator co_await() noexcept {
+    using awaiter_base = task_impl::awaiter_base<promise_type>;
+    struct awaiter final : public awaiter_base {
+      using awaiter_base::awaiter_base;
+      auto await_resume() noexcept -> T {
+        awaiter_base::await_resume();
+        return awaiter_base::m_coro.promise().result();
       }
     };
-    return awaiter_t{this};
+    return awaiter{std::coroutine_handle<promise_type>::from_address(m_haddress)};
   }
 
-  std::coroutine_handle<promise_type> get_handle() {
-    return std::coroutine_handle<promise_type>::from_address(handle_address);
+  auto get_handle() noexcept -> std::coroutine_handle<promise_type> {
+    return std::coroutine_handle<promise_type>::from_address(m_haddress);
   }
 
   // conversion functions
   //
   // erase type
-  explicit operator task_t<void>() && noexcept {
-    return task_t<void>{std::coroutine_handle<>::from_address(std::exchange(handle_address, nullptr))};
+  explicit operator task<>() && noexcept {
+    return task<>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
   }
   // restore erased type
   template<typename U>
-  requires(std::same_as<void, T>) explicit operator task_t<U>() && noexcept {
-    return task_t<U>{std::coroutine_handle<>::from_address(std::exchange(handle_address, nullptr))};
+  requires(std::same_as<void, T>) explicit operator task<U>() && noexcept {
+    return task<U>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
   }
+
+private:
+  void *m_haddress{};
 };
+
+} // namespace kphp::coro

@@ -86,10 +86,10 @@ auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, i
 // === preg_replace_callback ======================================================================
 
 template<std::invocable<array<string>> F>
-task_t<Optional<string>> f$preg_replace_callback(string pattern, F callback, string subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
-                                                 Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {},
-                                                 int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
-  static_assert(std::same_as<async_function_unwrapped_return_type_t<F, array<string>>, string>);
+kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F callback, string subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
+                                                           Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {},
+                                                           int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
+  static_assert(std::same_as<kphp::coro::async_function_return_type_t<F, array<string>>, string>);
   // the performance of this function can be enhanced:
   // 1. don't use public f$preg_match and f$preg_replace;
   // 2. use match_regex and replace_regex directly;
@@ -111,7 +111,7 @@ task_t<Optional<string>> f$preg_replace_callback(string pattern, F callback, str
   }
 
   string replacement{};
-  if constexpr (is_async_function_v<F, array<string>>) {
+  if constexpr (kphp::coro::is_async_function_v<F, array<string>>) {
     replacement = co_await std::invoke(callback, std::move(matches));
   } else {
     replacement = std::invoke(callback, std::move(matches));
@@ -121,9 +121,9 @@ task_t<Optional<string>> f$preg_replace_callback(string pattern, F callback, str
 }
 
 template<class F>
-task_t<Optional<string>> f$preg_replace_callback(mixed pattern, F callback, string subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
-                                                 Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {},
-                                                 int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
+kphp::coro::task<Optional<string>> f$preg_replace_callback(mixed pattern, F callback, string subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
+                                                           Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {},
+                                                           int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
   if (!regex_impl_::valid_preg_replace_mixed(pattern)) [[unlikely]] {
     co_return Optional<string>{};
   }
@@ -160,9 +160,9 @@ task_t<Optional<string>> f$preg_replace_callback(mixed pattern, F callback, stri
 }
 
 template<class F>
-task_t<mixed> f$preg_replace_callback(mixed pattern, F callback, mixed subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
-                                      Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {},
-                                      int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
+kphp::coro::task<mixed> f$preg_replace_callback(mixed pattern, F callback, mixed subject, int64_t limit = kphp::regex::PREG_REPLACE_NOLIMIT,
+                                                Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {},
+                                                int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
   if (!regex_impl_::valid_preg_replace_mixed(pattern) || !regex_impl_::valid_preg_replace_mixed(subject)) [[unlikely]] {
     co_return mixed{};
   }

@@ -14,7 +14,6 @@
 
 #include "common/crc32_generic.h"
 #include "common/tl/constants/common.h"
-#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
@@ -29,7 +28,7 @@ constexpr std::string_view CRYPTO_COMPONENT_NAME = "crypto";
 
 } // namespace
 
-task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
+kphp::coro::task<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept {
   if (length <= 0 || length > string::max_size()) {
     co_return false;
   }
@@ -59,7 +58,7 @@ task_t<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length) noexcept 
   co_return string{str.value.data(), static_cast<string::size_type>(str.value.size())};
 }
 
-task_t<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool shortnames) noexcept {
+kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool shortnames) noexcept {
   tl::GetPemCertInfo request{.is_short = shortnames, .bytes = {.value = {data.c_str(), data.size()}}};
 
   tl::TLBuffer buffer;
@@ -106,7 +105,7 @@ task_t<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool shortnames
   co_return response;
 }
 
-task_t<bool> f$openssl_sign(string data, string &signature, string private_key, int64_t algo) noexcept {
+kphp::coro::task<bool> f$openssl_sign(string data, string &signature, string private_key, int64_t algo) noexcept {
   tl::DigestSign request{.data = {.value = {data.c_str(), data.size()}},
                          .private_key = {.value = {private_key.c_str(), private_key.size()}},
                          .algorithm = static_cast<tl::HashAlgorithm>(algo)};
@@ -133,7 +132,7 @@ task_t<bool> f$openssl_sign(string data, string &signature, string private_key, 
   co_return true;
 }
 
-task_t<int64_t> f$openssl_verify(string data, string signature, string pub_key, int64_t algo) noexcept {
+kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string pub_key, int64_t algo) noexcept {
   tl::DigestVerify request{.data = {.value = {data.c_str(), data.size()}},
                            .public_key = {.value = {pub_key.c_str(), pub_key.size()}},
                            .algorithm = static_cast<tl::HashAlgorithm>(algo),
@@ -254,8 +253,8 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string &method) noexcept {
   return algorithm_iv_len(*algorithm);
 }
 
-task_t<Optional<string>> f$openssl_encrypt(string data, string method, string source_key, int64_t options, string source_iv, string &tag, string aad,
-                                           int64_t tag_length __attribute__((unused))) noexcept {
+kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method, string source_key, int64_t options, string source_iv, string &tag, string aad,
+                                                     int64_t tag_length __attribute__((unused))) noexcept {
   auto algorithm = parse_cipher_algorithm(method);
   if (!algorithm.has_value()) {
     php_warning("Unknown cipher algorithm");
@@ -301,7 +300,8 @@ task_t<Optional<string>> f$openssl_encrypt(string data, string method, string so
   co_return(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(response) : f$base64_encode(response);
 }
 
-task_t<Optional<string>> f$openssl_decrypt(string data, string method, string source_key, int64_t options, string source_iv, string tag, string aad) noexcept {
+kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method, string source_key, int64_t options, string source_iv, string tag,
+                                                     string aad) noexcept {
   if (!(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA))) {
     Optional<string> decoding_data = f$base64_decode(data, true);
     if (!decoding_data.has_value()) {
@@ -372,7 +372,7 @@ std::optional<tl::HashAlgorithm> parse_hash_algorithm(std::string_view user_algo
   return it != nullptr && it != HASH_ALGOS.end() ? std::optional{it->second} : std::nullopt;
 }
 
-task_t<string> send_and_get_string(tl::TLBuffer buffer, bool raw_output) {
+kphp::coro::task<string> send_and_get_string(tl::TLBuffer buffer, bool raw_output) {
   auto query = f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
                                                string{buffer.data(), static_cast<string::size_type>(buffer.size())});
   string resp = co_await f$component_client_fetch_response(co_await query);
@@ -395,7 +395,7 @@ task_t<string> send_and_get_string(tl::TLBuffer buffer, bool raw_output) {
   co_return string(response.inner.value.data(), response.inner.value.size());
 }
 
-task_t<string> hash_impl(tl::HashAlgorithm algo, string s, bool raw_output) noexcept {
+kphp::coro::task<string> hash_impl(tl::HashAlgorithm algo, string s, bool raw_output) noexcept {
   tl::Hash request{.algorithm = algo, .data = {.value = {s.c_str(), s.size()}}};
   tl::TLBuffer buffer;
   request.store(buffer);
@@ -418,15 +418,15 @@ array<string> f$hash_hmac_algos() noexcept {
   return f$hash_algos();
 }
 
-task_t<string> f$hash(string algo_str, string s, bool raw_output) noexcept {
-const auto algo = parse_hash_algorithm({algo_str.c_str(), algo_str.size()});
+kphp::coro::task<string> f$hash(string algo_str, string s, bool raw_output) noexcept {
+  const auto algo = parse_hash_algorithm({algo_str.c_str(), algo_str.size()});
   if (!algo.has_value()) {
     php_critical_error("algo %s not supported in function hash", algo_str.c_str());
   }
   co_return co_await hash_impl(*algo, s, raw_output);
 }
 
-task_t<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output) noexcept {
+kphp::coro::task<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output) noexcept {
   const auto algo = parse_hash_algorithm({algo_str.c_str(), algo_str.size()});
   if (!algo.has_value()) {
     php_critical_error("algo %s not supported in function hash", algo_str.c_str());
@@ -439,7 +439,7 @@ task_t<string> f$hash_hmac(string algo_str, string s, string key, bool raw_outpu
   co_return co_await send_and_get_string(std::move(buffer), raw_output);
 }
 
-task_t<string> f$sha1(string s, bool raw_output) noexcept {
+kphp::coro::task<string> f$sha1(string s, bool raw_output) noexcept {
   co_return co_await hash_impl(tl::HashAlgorithm::SHA1, s, raw_output);
 }
 
