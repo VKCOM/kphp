@@ -149,7 +149,13 @@ void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr> &os)
 }
 
 void ClassData::create_default_constructor_if_required(DataStream<FunctionPtr> &os) {
-  if (!is_class() || modifiers.is_abstract() || construct_function || name == "KphpConfiguration") {
+  if (!is_class() || construct_function || name == "KphpConfiguration") {
+    return;
+  }
+
+  if (modifiers.is_abstract() && parent_class && parent_class->has_custom_constructor) {
+    has_custom_constructor = true;
+    construct_function = parent_class->construct_function;
     return;
   }
 
