@@ -15,6 +15,7 @@ resource f$fopen(const string &filename, [[maybe_unused]] const string &mode, [[
                  [[maybe_unused]] const resource &context) noexcept {
   underlying_resource_t rsrc{{filename.c_str(), filename.size()}};
   if (rsrc.last_errc != k2::errno_ok) [[unlikely]] {
+    php_warning("cannot fopen %s", filename.c_str());
     return {};
   }
 
