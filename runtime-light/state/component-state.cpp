@@ -44,6 +44,21 @@ void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view v
   ini_opts.set_value(key_str, value_str);
 }
 
+void ComponentState::parse_cli_arg(std::string_view key_view, std::string_view value_view) noexcept {
+  if (!key_view.starts_with(CLI_ARG_PREFIX)) [[unlikely]] {
+    php_warning("wrong cli argument format %s", key_view.data());
+    return;
+  }
+
+  string key_str{std::next(key_view.data(), CLI_ARG_PREFIX.size()), static_cast<string::size_type>(key_view.size() - CLI_ARG_PREFIX.size())};
+  key_str.set_reference_counter_to(ExtraRefCnt::for_global_const);
+
+  string value_str{value_view.data(), static_cast<string::size_type>(value_view.size())};
+  value_str.set_reference_counter_to(ExtraRefCnt::for_global_const);
+
+  cli_opts.set_value(key_str, value_str);
+}
+
 void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexcept {
   // FIXME: actually no need to allocate string here
   auto [config, ok]{json_decode(string{value_view.data(), static_cast<string::size_type>(value_view.size())})};
@@ -62,6 +77,8 @@ void ComponentState::parse_args() noexcept {
 
     if (key_view.starts_with(INI_ARG_PREFIX)) {
       parse_ini_arg(key_view, value_view);
+    } else if (key_view.starts_with(CLI_ARG_PREFIX)) {
+      parse_cli_arg(key_view, value_view);
     } else if (key_view == RUNTIME_CONFIG_ARG) {
       parse_runtime_config_arg(value_view);
     } else {
@@ -70,4 +87,5 @@ void ComponentState::parse_args() noexcept {
   }
   runtime_config.set_reference_counter_to(ExtraRefCnt::for_global_const);
   ini_opts.set_reference_counter_to(ExtraRefCnt::for_global_const);
+  cli_opts.set_reference_counter_to(ExtraRefCnt::for_global_const);
 }
