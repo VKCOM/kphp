@@ -15,7 +15,6 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/core/utils/hash.h"
-#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/utils/concepts.h"
 
 /**
