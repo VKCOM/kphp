@@ -20,6 +20,9 @@
 #include "runtime/inter-process-mutex.h"
 #include "runtime/inter-process-resource.h"
 
+std::array<std::pair<uint64_t, uint64_t>, 10> ic_mem_stats{};
+int ic_mem_stats_count{0};
+
 namespace impl_ {
 
 //#define DEBUG_INSTANCE_CACHE
@@ -166,6 +169,7 @@ public:
     shared_memory_pool_size_ = pool_size;
     share_memory_full_size_ = get_context_size() + get_data_size() + shared_memory_pool_size_;
     shared_memory_ = mmap_shared(share_memory_full_size_);
+    ic_mem_stats[ic_mem_stats_count++] = std::make_pair(reinterpret_cast<uint64_t>(shared_memory_), reinterpret_cast<uint64_t>(reinterpret_cast<uint8_t*>(shared_memory_) + share_memory_full_size_));
     construct_data_inplace();
   }
 

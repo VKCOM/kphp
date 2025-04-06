@@ -64,7 +64,7 @@ endif()
 
 cmake_print_variables(CMAKE_BUILD_TYPE)
 if("${CMAKE_BUILD_TYPE}" STREQUAL ${DEFAULT_BUILD_TYPE})
-    add_compile_options(-O3)
+    add_compile_options(-O0)
 endif()
 
 if(DEFINED ENV{FAST_COMPILATION_FMT})

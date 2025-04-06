@@ -13,6 +13,7 @@
 #include "runtime-common/core/memory-resource/details/universal_reallocate.h"
 #include "runtime-common/core/memory-resource/memory_resource.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
+#include "common/fast-backtrace.h"
 
 namespace memory_resource {
 

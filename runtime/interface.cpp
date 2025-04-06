@@ -664,6 +664,10 @@ void f$fastcgi_finish_request(int64_t exit_code) {
   coub->clean();
 }
 
+extern std::array<std::pair<uint64_t, uint64_t>, 10> ic_mem_stats;
+extern int ic_mem_stats_count;
+
+
 void run_shutdown_functions(ShutdownType shutdown_type) {
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_shutdown_functions_start(static_cast<int>(shutdown_type));
@@ -675,6 +679,14 @@ void run_shutdown_functions(ShutdownType shutdown_type) {
   ShutdownProfiler shutdown_profiler;
   for (int i = 0; i < shutdown_functions_count; i++) {
     shutdown_functions[i]();
+    if (ic_mem_stats_count > 0) {
+      auto m = reinterpret_cast<uint64_t>(dl::allocate(8));
+      for (int j = 0; j < ic_mem_stats_count; ++j) {
+        if (ic_mem_stats[j].first <= m && m <= ic_mem_stats[j].second) {
+          fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!\n");
+        }
+      }
+    }
   }
 
   // don't wrap this call into if(kphp_tracing::is_turned_on()), intentionally

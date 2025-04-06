@@ -8,8 +8,52 @@
 #include <cstdio>
 #include <cstring>
 #include <limits>
+#include <map>
 
 // #define DEBUG_MEMORY
+#include <sys/mman.h>
+extern char *malloc_tracing_buffer;
+extern char *dummy_allocator_current_ptr;
+extern uint64_t dummy_allocator_mem_usage;
+
+template<class T>
+struct DummyAllocator
+{
+  using value_type = T;
+
+  DummyAllocator() = default;
+
+  template<class U>
+  constexpr DummyAllocator(const DummyAllocator <U>&) noexcept {}
+
+  [[nodiscard]] T* allocate(std::size_t n) {
+    if (dummy_allocator_mem_usage >= (1800 * (1 << 20))) {
+      malloc_tracing_buffer = static_cast<char *>(mmap(nullptr, (2000 * (1 << 20)) , PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+      dummy_allocator_current_ptr = malloc_tracing_buffer;
+      dummy_allocator_mem_usage = 0;
+    }
+    auto *cur = dummy_allocator_current_ptr;
+    dummy_allocator_current_ptr += (n * sizeof(T)) + 1;
+    dummy_allocator_mem_usage += n * sizeof(T);
+
+    return reinterpret_cast<T*>(cur);
+  }
+
+  void deallocate([[maybe_unused]] T* p, [[maybe_unused]] std::size_t n) noexcept {}
+};
+
+template<class T, class U>
+bool operator==(const DummyAllocator <T>&, const DummyAllocator <U>&) { return true; }
+
+template<class T, class U>
+bool operator!=(const DummyAllocator <T>&, const DummyAllocator <U>&) { return false; }
+
+using malloc_tracing_key_t = uint64_t;
+using malloc_tracing_val_t = uint64_t;//std::array<void*, 16>;
+using dummy_allocator_t = DummyAllocator<std::pair<malloc_tracing_key_t const, malloc_tracing_val_t>>;
+using malloc_tracing_storage_t = std::map<malloc_tracing_key_t, malloc_tracing_val_t, std::less<malloc_tracing_key_t>, dummy_allocator_t>;
+
+extern malloc_tracing_storage_t* const malloc_tracing_storage;
 
 inline void memory_debug(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
 

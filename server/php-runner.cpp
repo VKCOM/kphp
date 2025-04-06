@@ -52,6 +52,8 @@ std::optional<PhpScript> php_script;
 // Memory for alternative signal stack
 extern std::array<char, signal_stack_buffer_size> signal_stack_buffer;
 
+extern uint64_t dummy_allocator_mem_usage;
+
 namespace {
 //TODO: sometimes I need to call old handlers
 //TODO: recheck!
@@ -405,11 +407,12 @@ void PhpScript::finish() noexcept {
         }
       }
     }
-    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, heap_memory_used = %9d, peak_script_memory = %9d, total_script_memory = %9d] %s\n",
+    kprintf("[worked = %.3lf, net = %.3lf, script = %.3lf, queries_cnt = %5d, long_queries_cnt = %5d, heap_memory_used = %9d, peak_script_memory = %9d, total_script_memory = %9d, allocator_trace_memory = %9ld] %s\n",
             script_time + net_time, net_time, script_time, queries_cnt, long_queries_cnt,
             (int)dl::get_heap_memory_used(),
             (int)script_mem_stats.max_real_memory_used,
-            (int)script_mem_stats.real_memory_used, buf);
+            (int)script_mem_stats.real_memory_used,
+            dummy_allocator_mem_usage, buf);
   }
 }
 

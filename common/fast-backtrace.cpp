@@ -57,6 +57,22 @@ int fast_backtrace_by_bp(void *bp, void *stack_end_, void **buffer, int size) {
   return i;
 }
 
+int fast_backtrace_by_bp_my(void *bp, [[maybe_unused]] void *stack_end_, void **buffer, int size) {
+  stack_frame *current_bp = static_cast<stack_frame *>(bp);
+  int i = 0;
+  while (i < size && reinterpret_cast<char *>(current_bp) <= stack_end_ && !(reinterpret_cast<long>(current_bp) & (sizeof(long) - 1))) {
+    void *ip = current_bp->ip;
+    buffer[i++] = ip;
+    stack_frame *p = current_bp->bp;
+    if (p <= current_bp) {
+      break;
+    }
+    current_bp = p;
+  }
+  return i;
+}
+
+
 int fast_backtrace_without_recursions(void **buffer, int size) noexcept {
 #ifndef __APPLE__
   if (!stack_end) {

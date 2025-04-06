@@ -7,6 +7,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
+#include <fmt/format.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 #include "common/algorithms/find.h"
@@ -14,12 +16,45 @@
 #include "common/fast-backtrace.h"
 #include "common/macos-ports.h"
 #include "common/wrappers/likely.h"
+#include "server/json-logger.h"
 
 #include "runtime/critical_section.h"
 #include "runtime/kphp-backtrace.h"
 #include "runtime/memory_resource_impl//dealer.h"
 #include "runtime/php_assert.h"
 #include "server/server-log.h"
+
+char *malloc_tracing_buffer{nullptr};
+char *dummy_allocator_current_ptr{nullptr};
+uint64_t dummy_allocator_mem_usage{0};
+
+char *malloc_tracing_storage_raw_mem[sizeof(malloc_tracing_storage_t)];
+malloc_tracing_storage_t* const malloc_tracing_storage = reinterpret_cast<malloc_tracing_storage_t*>(malloc_tracing_storage_raw_mem);
+
+char *instance_dummmy_allocator_raw_mem[sizeof(dummy_allocator_t)];
+dummy_allocator_t* const instance_dummmy_allocator = reinterpret_cast<dummy_allocator_t*>(instance_dummmy_allocator_raw_mem);
+
+[[maybe_unused]] static __inline__ void *get_bp() {
+  void *result = nullptr;
+#ifdef __x86_64__
+  __asm__ volatile("movq %%rbp, %[r]" : [r] "=r"(result));
+#elif defined(__aarch64__)
+  __asm__ volatile("mov %0, fp" : "=r"(result));
+#else
+#error "Unsupported arch"
+#endif
+  return result;
+}
+
+inline void init_dummy_allocator() noexcept {
+  if (!malloc_tracing_buffer) {
+    malloc_tracing_buffer = static_cast<char *>(mmap(nullptr, (2000 * (1 << 20)) , PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+    dummy_allocator_current_ptr = malloc_tracing_buffer;
+    dummy_allocator_mem_usage = 0;
+    new (&instance_dummmy_allocator_raw_mem) dummy_allocator_t();
+    new (&malloc_tracing_storage_raw_mem) malloc_tracing_storage_t{(*instance_dummmy_allocator)};
+  }
+}
 
 namespace dl {
 namespace {
@@ -98,17 +133,26 @@ void free_script_allocator() noexcept {
 }
 
 void *allocate(size_t size) noexcept {
+  init_dummy_allocator();
   php_assert(size);
   auto &dealer = get_memory_dealer();
   if (auto *heap_replacer = dealer.heap_script_resource_replacer()) {
-    return heap_replacer->allocate(size);
+    auto* mem = heap_replacer->allocate(size);
+    malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), size);
+    //malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), malloc_tracing_val_t{});
+    //fast_backtrace(malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(mem)).data(), malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(mem)).size());
+    return mem;
   }
   if (unlikely(!script_allocator_enabled)) {
     php_critical_error("Trying to call allocate for non runned script, n = %zu", size);
     return nullptr;
   }
 
-  return dealer.current_script_resource().allocate(size);
+  auto* mem = dealer.current_script_resource().allocate(size);
+  malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), size);
+  //malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), malloc_tracing_val_t{});
+  //fast_backtrace(malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(mem)).data(), malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(mem)).size());
+  return mem;
 }
 
 void *allocate0(size_t size) noexcept {

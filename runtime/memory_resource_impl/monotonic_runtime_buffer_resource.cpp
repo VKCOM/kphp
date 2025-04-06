@@ -9,9 +9,64 @@
 #include "runtime/allocator.h"
 #include "runtime/php_assert.h"
 #include "runtime/oom_handler.h"
+#include "common/dl-utils-lite.h"
+
+extern malloc_tracing_storage_t* const malloc_tracing_storage;
+extern std::array<std::pair<uint64_t, uint64_t>, 10> ic_mem_stats;
+extern int ic_mem_stats_count;
+
+struct _string_inner {
+  int32_t size;
+  int32_t capacity;
+  int32_t ref_count;
+  char    data[4];
+};
 
 namespace memory_resource {
 void monotonic_buffer_resource::critical_dump(void *mem, size_t size) const noexcept {
+  if (size == 16) {
+    fprintf(stderr, "DATA: %s \n", reinterpret_cast<_string_inner*>(mem)->data);
+  }
+
+  if (ic_mem_stats_count > 0) {
+    for (int i = 0; i <  ic_mem_stats_count; ++i) {
+      auto* l = reinterpret_cast<void*>(ic_mem_stats[i].first);
+      auto* r = reinterpret_cast<void*>(ic_mem_stats[i].second);
+      auto m = reinterpret_cast<uint64_t>(mem);
+      fprintf(stderr, "IC mem %d range: [%p, %p]", i, l, r);
+      if (ic_mem_stats[i].first <= m && m <= ic_mem_stats[i].second) {
+        fprintf(stderr, "[YES]\n");
+      } else {
+        fprintf(stderr, "[NO]\n");
+      }
+    }
+  }
+
+  if (malloc_tracing_buffer != nullptr) {
+    if ((*malloc_tracing_storage).find(reinterpret_cast<uint64_t>(mem)) != (*malloc_tracing_storage).end()) {
+      fprintf(stderr, "Found trace!!!\n");
+      //dl_print_backtrace(malloc_tracing_storage->operator[](reinterpret_cast<uint64_t>(mem)).data(), malloc_tracing_storage->operator[](reinterpret_cast<uint64_t>(mem)).size());
+    } else {
+      auto l = reinterpret_cast<uint64_t >(mem);
+      auto lower = (*malloc_tracing_storage).lower_bound(l);
+      if (lower != (*malloc_tracing_storage).begin()) {
+        fprintf(stderr, "Found nearest %lu bytes chunk: [%p, %p] \n", lower->second, reinterpret_cast<void*>(lower->first), reinterpret_cast<uint8_t*>(lower->first) + lower->second);
+        lower--;
+        if (lower != (*malloc_tracing_storage).begin()) {
+          fprintf(stderr, "Try find in prev %lu bytes chunk: [%p, %p] \n", lower->second, reinterpret_cast<void *>(lower->first),
+                  reinterpret_cast<uint8_t *>(lower->first) + lower->second);
+          if (lower->first <= l && l <= lower->first + lower->second) {
+            fprintf(stderr, "Found in range [%p, %p] \n", reinterpret_cast<void *>(lower->first), reinterpret_cast<uint8_t *>(lower->first) + lower->second);
+          }
+        }
+      }
+
+      //dl_print_backtrace(malloc_tracing_storage->operator[](lower).data(), malloc_tracing_storage->operator[](lower).size());
+      //dl_print_backtrace(malloc_tracing_storage->operator[](upper).data(), malloc_tracing_storage->operator[](upper).size());
+    }
+  } else {
+    php_critical_error("Tracing buffer is null!");
+  }
   std::array<char, 1000> malloc_replacement_stacktrace_buf = {'\0'};
   if (dl::is_malloc_replaced()) {
     const char *descr = "last_malloc_replacement_stacktrace:\n";

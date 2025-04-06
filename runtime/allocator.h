@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <memory>
+#include <map>
 
 #include "common/containers/final_action.h"
 #include "runtime-common/core/allocator/script-malloc-interface.h"
