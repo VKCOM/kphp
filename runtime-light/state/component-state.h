@@ -20,7 +20,7 @@ struct ComponentState final : private vk::not_copyable {
   mixed runtime_config;
   array<string> ini_opts;
   const uint32_t envc;
-  array<string> env;
+  array<string> env; // FIXME: change to array<mixed> improves performance
 
   ComponentState() noexcept
     : allocator(INIT_COMPONENT_ALLOCATOR_SIZE, 0)
