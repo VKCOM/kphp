@@ -33,7 +33,7 @@ constexpr const char *JOB_WORKER_COMPONENT_NAME = "_self";
 constexpr double MIN_TIMEOUT_S = 0.05;
 constexpr double MAX_TIMEOUT_S = 86400.0;
 
-task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool ignore_answer) noexcept {
+kphp::coro::task<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool ignore_answer) noexcept {
   if (!f$is_kphp_job_workers_enabled()) {
     php_warning("can't start job worker: job workers are disabled");
     co_return kphp::forks::INVALID_ID;
@@ -63,7 +63,7 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
   }
   // create fork to wait for job worker response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send job worker request
-  auto waiter_task{[](auto comp_query, std::chrono::nanoseconds timeout) noexcept -> task_t<string> {
+  auto waiter_task{[](auto comp_query, std::chrono::nanoseconds timeout) noexcept -> kphp::coro::task<string> {
     auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
     const string response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
 
@@ -83,17 +83,17 @@ task_t<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool 
 
 // ================================================================================================
 
-task_t<Optional<int64_t>> f$job_worker_send_request(string request, double timeout) noexcept {
+kphp::coro::task<Optional<int64_t>> f$job_worker_send_request(string request, double timeout) noexcept {
   const auto fork_id{co_await kphp_job_worker_start_impl(std::move(request), timeout, false)};
   co_return fork_id != kphp::forks::INVALID_ID ? fork_id : false;
 }
 
-task_t<bool> f$job_worker_send_noreply_request(string request, double timeout) noexcept {
+kphp::coro::task<bool> f$job_worker_send_noreply_request(string request, double timeout) noexcept {
   const auto fork_id{co_await kphp_job_worker_start_impl(std::move(request), timeout, true)};
   co_return fork_id != kphp::forks::INVALID_ID;
 }
 
-task_t<array<Optional<int64_t>>> f$job_worker_send_multi_request(array<string> requests, double timeout) noexcept {
+kphp::coro::task<array<Optional<int64_t>>> f$job_worker_send_multi_request(array<string> requests, double timeout) noexcept {
   array<Optional<int64_t>> fork_ids{requests.size()};
   for (const auto &it : requests) {
     const auto fork_id{co_await kphp_job_worker_start_impl(it.get_value(), timeout, false)};
@@ -104,7 +104,7 @@ task_t<array<Optional<int64_t>>> f$job_worker_send_multi_request(array<string> r
 
 // ================================================================================================
 
-task_t<string> f$job_worker_fetch_request() noexcept {
+kphp::coro::task<string> f$job_worker_fetch_request() noexcept {
   if (!f$is_kphp_job_workers_enabled()) {
     php_warning("couldn't fetch job worker request: job workers are disabled");
     co_return string{};
@@ -118,7 +118,7 @@ task_t<string> f$job_worker_fetch_request() noexcept {
   co_return std::exchange(jw_server_st.body, string{});
 }
 
-task_t<int64_t> f$job_worker_store_response(string response) noexcept {
+kphp::coro::task<int64_t> f$job_worker_store_response(string response) noexcept {
   auto &instance_st{InstanceState::get()};
   auto &jw_server_st{JobWorkerServerInstanceState::get()};
   if (!f$is_kphp_job_workers_enabled()) { // workers are enabled

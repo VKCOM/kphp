@@ -41,7 +41,7 @@ struct StringLibContext final : private vk::not_copyable {
   // which significantly impacts K2's performance due to the large size of the buffer.
   // The buffer is intended to be used as raw storage, and its contents will be
   // explicitly managed elsewhere in the code.
-  std::array<char, STATIC_BUFFER_LENGTH + 1> static_buf;
+  std::array<char, STATIC_BUFFER_LENGTH + 1> static_buf; // FIXME: so large static array causes too many page faults in k2 mode
   std::array<char, MASK_BUFFER_LENGTH> mask_buf;
 
   StringLibContext() noexcept = default;

@@ -279,13 +279,13 @@ class start_fork_t : awaitable_impl_::fork_id_watcher_t {
   ForkInstanceState &fork_instance_st{ForkInstanceState::get()};
 
   int64_t fork_id{};
-  std::remove_cvref_t<decltype(std::declval<shared_task_t<void>>().when_ready())> fork_awaiter;
+  std::remove_cvref_t<decltype(std::declval<kphp::coro::shared_task<>>().when_ready())> fork_awaiter;
   awaitable_impl_::state state{awaitable_impl_::state::init};
 
 public:
-  explicit start_fork_t(task_t<T> &&task) noexcept
-    : fork_id(fork_instance_st.push_fork(
-        static_cast<shared_task_t<void>>(std::invoke([](task_t<T> task) noexcept -> shared_task_t<T> { co_return co_await task; }, std::move(task)))))
+  explicit start_fork_t(kphp::coro::task<T> &&task) noexcept
+    : fork_id(fork_instance_st.push_fork(static_cast<kphp::coro::shared_task<>>(
+        std::invoke([](kphp::coro::task<T> task) noexcept -> kphp::coro::shared_task<T> { co_return co_await task; }, std::move(task)))))
     , fork_awaiter((*(*fork_instance_st.get_info(fork_id)).get().opt_handle).when_ready()) {}
 
   start_fork_t(start_fork_t &&other) noexcept
@@ -327,19 +327,19 @@ public:
 // ================================================================================================
 
 // We can have two distinct awaiters instead: wait_fork_t and wait_fork_result_t.
-// The main difference between them is that wait_fork_t can use shared_task_t::when_ready as an awaiter,
-// whereas wait_fork_result_t can use shared_task_t::operator co_await.
+// The main difference between them is that wait_fork_t can use shared_task::when_ready as an awaiter,
+// whereas wait_fork_result_t can use shared_task::operator co_await.
 template<typename T>
 class wait_fork_t : awaitable_impl_::fork_id_watcher_t {
-  shared_task_t<T> fork_task;
-  std::remove_cvref_t<decltype(std::declval<shared_task_t<T>>().operator co_await())> fork_awaiter;
+  kphp::coro::shared_task<T> fork_task;
+  std::remove_cvref_t<decltype(std::declval<kphp::coro::shared_task<T>>().operator co_await())> fork_awaiter;
   awaitable_impl_::state state{awaitable_impl_::state::init};
 
   using fork_resume_t = std::remove_cvref_t<decltype(fork_awaiter.await_resume())>;
   using await_resume_t = fork_resume_t;
 
 public:
-  explicit wait_fork_t(shared_task_t<T> fork_task_) noexcept
+  explicit wait_fork_t(kphp::coro::shared_task<T> fork_task_) noexcept
     : fork_task(std::move(fork_task_))
     , fork_awaiter(fork_task.operator co_await()) {}
 

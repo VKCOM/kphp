@@ -51,7 +51,7 @@ bool f$is_confdata_loaded() noexcept {
   return false;
 }
 
-task_t<mixed> f$confdata_get_value(string key) noexcept {
+kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
   tl::TLBuffer tlb{};
   tl::ConfdataGet{.key = {.value = {key.c_str(), key.size()}}}.store(tlb);
 
@@ -73,7 +73,7 @@ task_t<mixed> f$confdata_get_value(string key) noexcept {
   co_return extract_confdata_value(*maybe_confdata_value.opt_value); // the key exists
 }
 
-task_t<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
+kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
   tl::TLBuffer tlb{};
   tl::ConfdataGetWildcard{.wildcard = {.value = {wildcard.c_str(), wildcard.size()}}}.store(tlb);
 

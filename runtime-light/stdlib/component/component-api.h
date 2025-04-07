@@ -48,14 +48,14 @@ struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery
 
 // === component query client interface ===========================================================
 
-task_t<class_instance<C$ComponentQuery>> f$component_client_send_request(string name, string message) noexcept;
+kphp::coro::task<class_instance<C$ComponentQuery>> f$component_client_send_request(string name, string message) noexcept;
 
-task_t<string> f$component_client_fetch_response(class_instance<C$ComponentQuery> query) noexcept;
+kphp::coro::task<string> f$component_client_fetch_response(class_instance<C$ComponentQuery> query) noexcept;
 
 // === component query server interface ===========================================================
 
-task_t<class_instance<C$ComponentQuery>> f$component_server_accept_query() noexcept;
+kphp::coro::task<class_instance<C$ComponentQuery>> f$component_server_accept_query() noexcept;
 
-task_t<string> f$component_server_fetch_request(class_instance<C$ComponentQuery> query) noexcept;
+kphp::coro::task<string> f$component_server_fetch_request(class_instance<C$ComponentQuery> query) noexcept;
 
-task_t<void> f$component_server_send_response(class_instance<C$ComponentQuery> query, string message) noexcept;
+kphp::coro::task<> f$component_server_send_response(class_instance<C$ComponentQuery> query, string message) noexcept;

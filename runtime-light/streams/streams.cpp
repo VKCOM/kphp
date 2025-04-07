@@ -16,10 +16,13 @@
 #include "runtime-light/k2-platform/k2-api.h"
 
 namespace {
-constexpr int32_t STREAM_BATCH_SIZE = 4096;
-}
 
-task_t<std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>, size_t>> read_all_from_stream(uint64_t stream_d) noexcept {
+constexpr int32_t STREAM_BATCH_SIZE = 4096;
+
+} // namespace
+
+kphp::coro::task<std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>, size_t>>
+read_all_from_stream(uint64_t stream_d) noexcept {
   using byte_pointer_t = std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>;
 
   int32_t buffer_capacity{STREAM_BATCH_SIZE};
@@ -78,7 +81,7 @@ std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::fr
   return std::make_pair(byte_pointer_t{buffer, kphp::memory::script::free}, buffer_size);
 }
 
-task_t<int32_t> read_exact_from_stream(uint64_t stream_d, char *buffer, int32_t len) noexcept {
+kphp::coro::task<int32_t> read_exact_from_stream(uint64_t stream_d, char *buffer, int32_t len) noexcept {
   int32_t read = 0;
 
   k2::StreamStatus status{.read_status = k2::IOStatus::IOAvailable,
@@ -104,7 +107,7 @@ task_t<int32_t> read_exact_from_stream(uint64_t stream_d, char *buffer, int32_t 
   co_return read;
 }
 
-task_t<int32_t> write_all_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept {
+kphp::coro::task<int32_t> write_all_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept {
   int32_t written = 0;
 
   k2::StreamStatus status{};
@@ -154,7 +157,7 @@ int32_t write_nonblock_to_stream(uint64_t stream_d, const char *buffer, int32_t 
   return written;
 }
 
-task_t<int32_t> write_exact_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept {
+kphp::coro::task<int32_t> write_exact_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept {
   int written = 0;
 
   k2::StreamStatus status{.read_status = k2::IOStatus::IOAvailable,

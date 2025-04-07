@@ -31,10 +31,10 @@ struct RpcQueryInfo {
   double timestamp{0.0};
 };
 
-task_t<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest &rpc_request, Optional<double> timeout, bool collect_responses_extra_info,
-                                                 bool ignore_answer) noexcept;
+kphp::coro::task<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest &rpc_request, Optional<double> timeout,
+                                                           bool collect_responses_extra_info, bool ignore_answer) noexcept;
 
-task_t<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory &error_factory) noexcept;
+kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory &error_factory) noexcept;
 
 } // namespace rpc_impl_
 
@@ -64,14 +64,13 @@ string f$fetch_string() noexcept;
 
 // === Rpc Query ==================================================================================
 
-task_t<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> tl_objects, Optional<double> timeout, bool ignore_answer,
-                                           class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info,
-                                           bool need_responses_extra_info) noexcept;
+kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> tl_objects, Optional<double> timeout, bool ignore_answer,
+                                                     class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info, bool need_responses_extra_info) noexcept;
 
 template<std::derived_from<C$VK$TL$RpcFunction> rpc_function_t, std::same_as<KphpRpcRequest> rpc_request_t = KphpRpcRequest>
-task_t<array<int64_t>> f$rpc_send_typed_query_requests(string actor, array<class_instance<rpc_function_t>> query_functions, Optional<double> timeout,
-                                                       bool ignore_answer, class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info,
-                                                       bool need_responses_extra_info) noexcept {
+kphp::coro::task<array<int64_t>> f$rpc_send_typed_query_requests(string actor, array<class_instance<rpc_function_t>> query_functions, Optional<double> timeout,
+                                                                 bool ignore_answer, class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info,
+                                                                 bool need_responses_extra_info) noexcept {
   if (ignore_answer && need_responses_extra_info) {
     php_warning("Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
   }
@@ -93,15 +92,15 @@ task_t<array<int64_t>> f$rpc_send_typed_query_requests(string actor, array<class
   co_return query_ids;
 }
 
-task_t<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noexcept;
+kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noexcept;
 
 template<class T>
-task_t<array<array<mixed>>> f$rpc_fetch_responses(array<T> query_ids) noexcept {
+kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses(array<T> query_ids) noexcept {
   co_return co_await f$rpc_fetch_responses(array<int64_t>::convert_from(query_ids));
 }
 
 template<std::same_as<int64_t> query_id_t = int64_t, std::same_as<RpcResponseErrorFactory> error_factory_t = RpcResponseErrorFactory>
-requires std::default_initializable<error_factory_t> task_t<array<class_instance<C$VK$TL$RpcResponse>>>
+requires std::default_initializable<error_factory_t> kphp::coro::task<array<class_instance<C$VK$TL$RpcResponse>>>
 f$rpc_fetch_typed_responses(array<query_id_t> query_ids) noexcept {
   array<class_instance<C$VK$TL$RpcResponse>> res{query_ids.size()};
   for (const auto &it : query_ids) {
@@ -110,17 +109,17 @@ f$rpc_fetch_typed_responses(array<query_id_t> query_ids) noexcept {
   co_return res;
 }
 
-inline task_t<array<array<mixed>>> f$rpc_fetch_responses_synchronously(array<int64_t> query_ids) noexcept {
+inline kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses_synchronously(array<int64_t> query_ids) noexcept {
   co_return co_await f$rpc_fetch_responses(std::move(query_ids));
 }
 
 template<class T>
-task_t<array<array<mixed>>> f$rpc_fetch_responses_synchronously(array<T> query_ids) noexcept {
+kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses_synchronously(array<T> query_ids) noexcept {
   co_return co_await f$rpc_fetch_responses_synchronously(array<int64_t>::convert_from(query_ids));
 }
 
 template<std::same_as<int64_t> query_id_t = int64_t, std::same_as<RpcResponseErrorFactory> error_factory_t = RpcResponseErrorFactory>
-requires std::default_initializable<error_factory_t> task_t<array<class_instance<C$VK$TL$RpcResponse>>>
+requires std::default_initializable<error_factory_t> kphp::coro::task<array<class_instance<C$VK$TL$RpcResponse>>>
 f$rpc_fetch_typed_responses_synchronously(array<query_id_t> query_ids) noexcept {
   co_return co_await f$rpc_fetch_typed_responses(std::move(query_ids));
 }
@@ -149,6 +148,6 @@ void store_raw_vector_double(const array<double> &vector) noexcept;
 void fetch_raw_vector_double(array<double> &vector, int64_t num_elems) noexcept;
 
 template<typename T>
-bool f$rpc_parse(T) {
+bool f$rpc_parse(T /*unused*/) {
   php_critical_error("call to unsupported function");
 }
