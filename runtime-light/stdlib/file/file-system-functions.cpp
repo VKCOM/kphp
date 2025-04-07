@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/file/resource.h"
 
@@ -15,9 +16,11 @@ resource f$fopen(const string &filename, [[maybe_unused]] const string &mode, [[
                  [[maybe_unused]] const resource &context) noexcept {
   underlying_resource_t rsrc{{filename.c_str(), filename.size()}};
   if (rsrc.last_errc != k2::errno_ok) [[unlikely]] {
+    php_warning("cannot fopen %s", filename.c_str());
     return {};
   }
 
+  php_notice("successfully fopened %s\n", filename.c_str());
   return f$to_mixed(make_instance<underlying_resource_t>(std::move(rsrc)));
 }
 
