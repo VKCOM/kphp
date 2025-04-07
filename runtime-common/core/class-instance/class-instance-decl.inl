@@ -23,11 +23,12 @@ class abstract_refcountable_php_interface;
 
 template<class T>
 class class_instance {
-  vk::intrusive_ptr<T> o;
+
 
   void warn_on_access_null() const;
 
 public:
+  vk::intrusive_ptr<T> o;
   using ClassType = T;
 
   class_instance() = default;

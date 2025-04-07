@@ -432,6 +432,7 @@ public:
 
   template<typename U>
   static array<T> convert_from(const array<U> &);
+  array_inner *p;
 
 private:
   template<class ...Key>
@@ -445,7 +446,7 @@ private:
   template<merge_recursive recursive = merge_recursive::NO, class T1>
   void push_back_iterator(const array_iterator<T1> &it) noexcept;
 
-  array_inner *p;
+
 
   template<class T1>
   friend class array;

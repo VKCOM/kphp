@@ -44,7 +44,7 @@ public:
     }
 
     register_allocation(mem, aligned_size);
-    malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), aligned_size);
+    //malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), aligned_size);
     //malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), malloc_tracing_val_t{});
     //fast_backtrace(malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(mem)).data(), malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(mem)).size());
 

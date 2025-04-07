@@ -121,6 +121,10 @@ inline string f$strval(int64_t val) {
   return string(val);
 }
 
+inline string f$strval(uint64_t val) {
+  return string(val);
+}
+
 inline string f$strval(double val) {
   return string(val);
 }

@@ -75,6 +75,10 @@ public:
 
   void release() noexcept {
     if (--refcnt == 0) {
+      fprintf(stderr, "&&&&&&&&&&&&&&&&&&&&&&&&&& ElementHolder::release \n");
+      std::array<void*, 16> buf;
+      fast_backtrace(buf.data(), buf.size());
+      dl_print_backtrace(buf.data(), buf.size());
       cache_context.move_to_garbage(this);
     }
   }
@@ -492,7 +496,7 @@ public:
       std::lock_guard<inter_process_mutex> shared_data_lock{data_shard.storage_mutex};
       for (auto it = data_shard.storage.begin(); it != data_shard.storage.end();) {
         if (it->second->expiring_at <= now_with_delay) {
-          ic_debug("purge '%s'\n", it->first.c_str());
+          kprintf("purge '%s'\n", it->first.c_str());
           string removing_key = it->first;
           it = data_shard.storage.erase(it);
           InstanceDeepDestroyVisitor{ExtraRefCnt::for_instance_cache}.process(removing_key);

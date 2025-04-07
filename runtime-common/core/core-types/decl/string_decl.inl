@@ -38,7 +38,7 @@ public:
   using size_type = string_size_type;
   static constexpr size_type npos = (size_type)-1;
 
-private:
+//private:
   char *p;
 
 private:
@@ -103,6 +103,7 @@ public:
   // Use it unless you have to manually operate with string's internal buffer.
   inline string(size_type n, char c);
   inline string(size_type n, bool b);
+  inline explicit string(uint64_t i);
   inline explicit string(int64_t i);
   inline explicit string(int32_t i): string(static_cast<int64_t>(i)) {}
   inline explicit string(double f);

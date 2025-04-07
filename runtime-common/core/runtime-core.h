@@ -506,6 +506,17 @@ inline int64_t f$get_reference_counter(const mixed &v);
 
 
 template<class T>
+inline uint64_t f$get_address_of(const array<T> &v);
+
+template<class T>
+inline uint64_t f$get_address_of(const class_instance<T> &v);
+
+inline uint64_t f$get_address_of(const string &v);
+
+inline uint64_t f$get_address_of(const mixed &v);
+
+
+template<class T>
 inline T &val(T &x);
 
 template<class T>
@@ -1361,6 +1372,25 @@ int64_t f$get_reference_counter(const string &v) {
 
 int64_t f$get_reference_counter(const mixed &v) {
   return v.get_reference_counter();
+}
+
+
+template<class T>
+uint64_t f$get_address_of(const array<T> &v) {
+  return reinterpret_cast<uint64_t >(v.p);
+}
+
+template<class T>
+uint64_t f$get_address_of(const class_instance<T> &v) {
+  return reinterpret_cast<uint64_t >(v.o.get());
+}
+
+uint64_t f$get_address_of(const string &v) {
+  return reinterpret_cast<uint64_t >(v.p);
+}
+
+uint64_t f$get_address_of(const mixed &v) {
+  return reinterpret_cast<uint64_t >(v.storage_);
 }
 
 

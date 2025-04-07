@@ -25,7 +25,7 @@ struct _string_inner {
 namespace memory_resource {
 void monotonic_buffer_resource::critical_dump(void *mem, size_t size) const noexcept {
   if (size == 16) {
-    fprintf(stderr, "DATA: %s \n", reinterpret_cast<_string_inner*>(mem)->data);
+    fprintf(stderr, "DATA: %s  REFCNT: %d\n", reinterpret_cast<_string_inner*>(mem)->data, reinterpret_cast<_string_inner*>(mem)->ref_count);
   }
 
   if (ic_mem_stats_count > 0) {
@@ -44,20 +44,22 @@ void monotonic_buffer_resource::critical_dump(void *mem, size_t size) const noex
 
   if (malloc_tracing_buffer != nullptr) {
     if ((*malloc_tracing_storage).find(reinterpret_cast<uint64_t>(mem)) != (*malloc_tracing_storage).end()) {
-      fprintf(stderr, "Found trace!!!\n");
-      //dl_print_backtrace(malloc_tracing_storage->operator[](reinterpret_cast<uint64_t>(mem)).data(), malloc_tracing_storage->operator[](reinterpret_cast<uint64_t>(mem)).size());
+      fprintf(stderr, "Found trace!!! REFCNT: %lu \n", reinterpret_cast<uint64_t>(malloc_tracing_storage->operator[](reinterpret_cast<uint64_t>(mem))[0]));
+      dl_print_backtrace(malloc_tracing_storage->operator[](reinterpret_cast<uint64_t>(mem)).data() + 1, malloc_tracing_storage->operator[](reinterpret_cast<uint64_t>(mem)).size() - 1);
     } else {
       auto l = reinterpret_cast<uint64_t >(mem);
       auto lower = (*malloc_tracing_storage).lower_bound(l);
       if (lower != (*malloc_tracing_storage).begin()) {
-        fprintf(stderr, "Found nearest %lu bytes chunk: [%p, %p] \n", lower->second, reinterpret_cast<void*>(lower->first), reinterpret_cast<uint8_t*>(lower->first) + lower->second);
+        //fprintf(stderr, "Found nearest %lu bytes chunk: [%p, %p] \n", lower->second, reinterpret_cast<void*>(lower->first), reinterpret_cast<uint8_t*>(lower->first) + lower->second);
+        fprintf(stderr, "Found nearest bytes chunk: [%p, ...] \n", reinterpret_cast<void*>(lower->first));
         lower--;
         if (lower != (*malloc_tracing_storage).begin()) {
-          fprintf(stderr, "Try find in prev %lu bytes chunk: [%p, %p] \n", lower->second, reinterpret_cast<void *>(lower->first),
-                  reinterpret_cast<uint8_t *>(lower->first) + lower->second);
-          if (lower->first <= l && l <= lower->first + lower->second) {
-            fprintf(stderr, "Found in range [%p, %p] \n", reinterpret_cast<void *>(lower->first), reinterpret_cast<uint8_t *>(lower->first) + lower->second);
-          }
+            dl_print_backtrace(lower->second.data() + 1, lower->second.size() - 1);
+//          fprintf(stderr, "Try find in prev %lu bytes chunk: [%p, %p] \n", lower->second, reinterpret_cast<void *>(lower->first),
+//                  reinterpret_cast<uint8_t *>(lower->first) + lower->second);
+//          if (lower->first <= l && l <= lower->first + lower->second) {
+//            fprintf(stderr, "Found in range [%p, %p] \n", reinterpret_cast<void *>(lower->first), reinterpret_cast<uint8_t *>(lower->first) + lower->second);
+//          }
         }
       }
 

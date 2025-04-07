@@ -72,10 +72,15 @@ char *string::string_inner::reserve(size_type requested_capacity) {
   return p->ref_data();
 }
 
+#include "common/dl-utils-lite.h"
+
 void string::string_inner::dispose() {
 //  fprintf (stderr, "dec ref cnt %d %s\n", ref_count - 1, ref_data());
   if (ref_count < ExtraRefCnt::for_global_const) {
     ref_count--;
+    if (ref_count == -2) {
+      fprintf(stderr, "^^^^^^^^^^^^^^^^^^^^^^^^^^^ string::string_inner::dispose  %p %d %s\n", this, ref_count, (const char*)(this + 1));
+    }
     if (ref_count <= -1) {
       destroy();
     }
@@ -186,6 +191,10 @@ string::string(const string &str) noexcept:
 string::string(string &&str) noexcept:
   p(str.p) {
   str.p = string_cache::empty_string().ref_data();
+  //malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>((string::string_inner *)p - 1), inner()->size);
+  //malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(reinterpret_cast<string::string_inner*>(p) - 1), malloc_tracing_val_t{});
+  //malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(reinterpret_cast<string::string_inner*>(p) - 1))[0] = reinterpret_cast<void *>((reinterpret_cast<string::string_inner*>(p) - 1)->ref_count);
+  //fast_backtrace(malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(reinterpret_cast<string::string_inner*>(p) - 1)).data() + 1, malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(reinterpret_cast<string::string_inner*>(p) - 1)).size() - 1);
 }
 
 string::string(const char *s, size_type n) :
@@ -226,6 +235,24 @@ string::string(int64_t i) {
   } else {
     p = create(STRLEN_INT64, true);
     end = simd_int64_to_string(i, p);
+  }
+  inner()->size = static_cast<size_type>(end - p);
+  p[inner()->size] = '\0';
+}
+
+string::string(uint64_t i) {
+  if (i < string_cache::cached_int_max()) {
+    p = string_cache::cached_int(i).ref_data();
+    return;
+  }
+  const auto u32 = static_cast<uint32_t>(i);
+  const char *end = nullptr;
+  if (static_cast<int64_t>(u32) == i) {
+    p = create(STRLEN_INT32, true);
+    end = simd_uint32_to_string(u32, p);
+  } else {
+    p = create(STRLEN_INT64, true);
+    end = simd_uint64_to_string(i, p);
   }
   inner()->size = static_cast<size_type>(end - p);
   p[inner()->size] = '\0';
@@ -286,6 +313,11 @@ string &string::operator=(string &&str) noexcept {
     destroy();
     p = str.p;
     str.p = string_cache::empty_string().ref_data();
+    //malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>((string::string_inner *)p - 1), inner()->size);
+    //malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(reinterpret_cast<string::string_inner*>(p) - 1), malloc_tracing_val_t{});
+    //malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(reinterpret_cast<string::string_inner*>(p) - 1))[0] = reinterpret_cast<void *>((reinterpret_cast<string::string_inner*>(p) - 1)->ref_count);
+    //fast_backtrace(malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(reinterpret_cast<string::string_inner*>(p) - 1)).data() + 1, malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(reinterpret_cast<string::string_inner*>(p) - 1)).size() - 1);
+    //fast_backtrace(malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(reinterpret_cast<string::string_inner*>(p) - 1)).data(), malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(reinterpret_cast<string::string_inner*>(p) - 1)).size());
   }
   return *this;
 }
@@ -1055,6 +1087,9 @@ bool string::is_reference_counter(ExtraRefCnt ref_cnt_value) const noexcept {
 }
 
 void string::set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept {
+  if (strcmp(this->c_str(),"http://10.248.0.113:8099") == 0) {
+    fprintf(stderr, "@@@@@@@@@@ %p %d %d\n", this->p, inner()->ref_count, (int)ref_cnt_value);
+  }
   // some const arrays are placed in read only memory and can't be modified
   if (inner()->ref_count != ref_cnt_value) {
     inner()->ref_count = ref_cnt_value;
@@ -1063,6 +1098,12 @@ void string::set_reference_counter_to(ExtraRefCnt ref_cnt_value) noexcept {
 
 void string::force_destroy(ExtraRefCnt expected_ref_cnt) noexcept {
   php_assert(expected_ref_cnt != ExtraRefCnt::for_global_const);
+  if (strcmp(this->c_str(),"http://10.248.0.113:8099") == 0) {
+    fprintf(stderr, "$$$$$$$$$$$$$$ string::force_destroy %p %d\n", this->p, inner()->ref_count);
+    std::array<void*, 16> buf;
+    fast_backtrace(buf.data(), buf.size());
+    dl_print_backtrace(buf.data(), buf.size());
+  }
   if (p) {
     php_assert(inner()->ref_count == expected_ref_cnt);
     inner()->ref_count = 0;

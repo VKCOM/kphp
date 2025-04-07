@@ -138,7 +138,7 @@ void *allocate(size_t size) noexcept {
   auto &dealer = get_memory_dealer();
   if (auto *heap_replacer = dealer.heap_script_resource_replacer()) {
     auto* mem = heap_replacer->allocate(size);
-    malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), size);
+    //malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), size);
     //malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), malloc_tracing_val_t{});
     //fast_backtrace(malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(mem)).data(), malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(mem)).size());
     return mem;
@@ -149,7 +149,7 @@ void *allocate(size_t size) noexcept {
   }
 
   auto* mem = dealer.current_script_resource().allocate(size);
-  malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), size);
+  //malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), size);
   //malloc_tracing_storage->emplace(reinterpret_cast<malloc_tracing_key_t>(mem), malloc_tracing_val_t{});
   //fast_backtrace(malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(mem)).data(), malloc_tracing_storage->operator[](reinterpret_cast<malloc_tracing_key_t>(mem)).size());
   return mem;

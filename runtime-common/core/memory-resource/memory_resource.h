@@ -49,7 +49,7 @@ template<class T, class U>
 bool operator!=(const DummyAllocator <T>&, const DummyAllocator <U>&) { return false; }
 
 using malloc_tracing_key_t = uint64_t;
-using malloc_tracing_val_t = uint64_t;//std::array<void*, 16>;
+using malloc_tracing_val_t = std::array<void*, 16>; // uint64_t;//
 using dummy_allocator_t = DummyAllocator<std::pair<malloc_tracing_key_t const, malloc_tracing_val_t>>;
 using malloc_tracing_storage_t = std::map<malloc_tracing_key_t, malloc_tracing_val_t, std::less<malloc_tracing_key_t>, dummy_allocator_t>;
 

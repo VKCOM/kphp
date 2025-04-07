@@ -1369,6 +1369,7 @@ define("CURLM_ADDED_ALREADY", 7);
 
 function get_reference_counter ($v) ::: int;
 function prepare_search_query ($query ::: string) ::: string;
+function get_address_of ($v) ::: int;
 
 /** For local usage only **/
 function exec($command ::: string, &$output ::: mixed = [], int &$result_code = 0): string|false;

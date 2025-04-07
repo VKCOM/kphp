@@ -16,6 +16,7 @@
 #include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/string/string-functions.h"
+#include "common/dl-utils-lite.h"
 
 namespace {
 
@@ -244,7 +245,16 @@ parse_host:
   if ((p - s) < 1) {
     return {};
   }
-  result.set_value(string("host", 4), string(s, static_cast<string::size_type>(p - s)));
+  result.set_value(string("host", 4), [&]() -> string {
+      auto sss = string(s, static_cast<string::size_type>(p - s));
+//      if (sss.find(string("10.248.0.113")) != string::npos) {
+//        fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!! %p %s\n", sss.p, sss.c_str());
+//        std::array<void*, 16> buf;
+//        fast_backtrace(buf.data(), buf.size());
+//        dl_print_backtrace(buf.data(), buf.size());
+//      }
+      return sss;
+    }());
 
   if (e == ue) {
     return result;
@@ -462,8 +472,32 @@ string f$urldecode(const string &s) noexcept {
   return runtime_ctx.static_SB.str();
 }
 
+extern std::array<std::pair<uint64_t, uint64_t>, 10> ic_mem_stats;
+extern int ic_mem_stats_count;
+
 // returns var, as array|false|null (null if component doesn't exist)
 mixed f$parse_url(const string &s, int64_t component) noexcept {
+  if (strcmp(s.c_str(),"http://10.248.0.113:8099") == 0) {
+    fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!! addr: %p; refcnt: %lu; val: %s ", s.p, s.get_reference_counter(), s.c_str());
+    if (ic_mem_stats_count > 0) {
+      for (int i = 0; i <  ic_mem_stats_count; ++i) {
+        auto* l = reinterpret_cast<void*>(ic_mem_stats[i].first);
+        auto* r = reinterpret_cast<void*>(ic_mem_stats[i].second);
+        auto m = reinterpret_cast<uint64_t>(s.p);
+        fprintf(stderr, "IC mem %d range: [%p, %p]", i, l, r);
+        if (ic_mem_stats[i].first <= m && m <= ic_mem_stats[i].second) {
+          fprintf(stderr, "in ic: [YES]\n");
+        } else {
+          fprintf(stderr, "in ic:  [NO]\n");
+        }
+      }
+    }
+
+    //std::array<void*, 16> buf;
+    //fast_backtrace(buf.data(), buf.size());
+    //dl_print_backtrace(buf.data(), buf.size());
+  }
+
   array<mixed> url_as_array = php_url_parse_ex(s.c_str(), s.size());
 
   if (url_as_array.empty()) {

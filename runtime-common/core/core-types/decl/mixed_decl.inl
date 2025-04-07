@@ -316,7 +316,7 @@ public:
   size_t estimate_memory_usage() const;
 
   static inline void reset_empty_values() noexcept;
-
+  uint64_t storage_{0};
 private:
   void copy_from(const mixed &other);
   void copy_from(mixed &&other);
@@ -344,7 +344,7 @@ private:
   static T &empty_value() noexcept;
 
   type type_{type::NUL};
-  uint64_t storage_{0};
+
 };
 
 
