@@ -17,13 +17,7 @@
 
 namespace kphp::rpc {
 
-inline constexpr int64_t VALID_QUERY_ID_RANGE_START = 0;
-inline constexpr int64_t INVALID_QUERY_ID = -1;
-inline constexpr int64_t IGNORED_ANSWER_QUERY_ID = -2;
-
-} // namespace kphp::rpc
-
-namespace rpc_impl_ {
+namespace rpc_impl {
 
 struct RpcQueryInfo {
   int64_t id{kphp::rpc::INVALID_QUERY_ID};
@@ -36,7 +30,9 @@ kphp::coro::task<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const R
 
 kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory &error_factory) noexcept;
 
-} // namespace rpc_impl_
+} // namespace rpc_impl
+
+} // namespace kphp::rpc
 
 // === Rpc Store ==================================================================================
 
@@ -81,7 +77,7 @@ kphp::coro::task<array<int64_t>> f$rpc_send_typed_query_requests(string actor, a
 
   for (const auto &it : query_functions) {
     const auto query_info{
-      co_await rpc_impl_::typed_rpc_tl_query_one_impl(actor, rpc_request_t{it.get_value()}, timeout, collect_resp_extra_info, ignore_answer)};
+      co_await kphp::rpc::rpc_impl::typed_rpc_tl_query_one_impl(actor, rpc_request_t{it.get_value()}, timeout, collect_resp_extra_info, ignore_answer)};
     query_ids.set_value(it.get_key(), query_info.id);
     req_extra_info_arr.set_value(it.get_key(), rpc_request_extra_info_t{query_info.request_size});
   }
@@ -104,7 +100,7 @@ requires std::default_initializable<error_factory_t> kphp::coro::task<array<clas
 f$rpc_fetch_typed_responses(array<query_id_t> query_ids) noexcept {
   array<class_instance<C$VK$TL$RpcResponse>> res{query_ids.size()};
   for (const auto &it : query_ids) {
-    res.set_value(it.get_key(), co_await rpc_impl_::typed_rpc_tl_query_result_one_impl(it.get_value(), error_factory_t{}));
+    res.set_value(it.get_key(), co_await kphp::rpc::rpc_impl::typed_rpc_tl_query_result_one_impl(it.get_value(), error_factory_t{}));
   }
   co_return res;
 }

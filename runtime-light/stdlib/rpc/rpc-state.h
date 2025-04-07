@@ -16,12 +16,20 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/tl/tl-core.h"
 
+namespace kphp::rpc {
+
+inline constexpr int64_t VALID_QUERY_ID_RANGE_START = 1;
+inline constexpr int64_t INVALID_QUERY_ID = 0;
+inline constexpr int64_t IGNORED_ANSWER_QUERY_ID = -1;
+
+} // namespace kphp::rpc
+
 struct RpcInstanceState final : private vk::not_copyable {
   template<typename Key, typename Value>
   using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   tl::TLBuffer rpc_buffer;
-  int64_t current_query_id{0};
+  int64_t current_query_id{kphp::rpc::VALID_QUERY_ID_RANGE_START};
   CurrentTlQuery current_query{};
   bool fail_rpc_on_int32_overflow{};
   unordered_map<int64_t, int64_t> response_waiter_forks;
