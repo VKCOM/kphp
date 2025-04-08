@@ -27,7 +27,9 @@
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
 
-namespace rpc_impl_ {
+namespace kphp::rpc {
+
+namespace rpc_impl {
 
 constexpr double MAX_TIMEOUT_S = 86400.0;
 constexpr double DEFAULT_TIMEOUT_S = 0.3;
@@ -314,7 +316,9 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   co_return fetch_function_typed(rpc_query, error_factory);
 }
 
-} // namespace rpc_impl_
+} // namespace rpc_impl
+
+} // namespace kphp::rpc
 
 // === Rpc Store ==================================================================================
 
@@ -383,7 +387,7 @@ kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> 
   array<rpc_request_extra_info_t> req_extra_info_arr{tl_objects.size()};
 
   for (const auto &it : tl_objects) {
-    const auto query_info{co_await rpc_impl_::rpc_tl_query_one_impl(actor, it.get_value(), timeout, collect_resp_extra_info, ignore_answer)};
+    const auto query_info{co_await kphp::rpc::rpc_impl::rpc_tl_query_one_impl(actor, it.get_value(), timeout, collect_resp_extra_info, ignore_answer)};
     query_ids.set_value(it.get_key(), query_info.id);
     req_extra_info_arr.set_value(it.get_key(), rpc_request_extra_info_t{query_info.request_size});
   }
@@ -397,7 +401,7 @@ kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> 
 kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noexcept {
   array<array<mixed>> res{query_ids.size()};
   for (const auto &it : query_ids) {
-    res.set_value(it.get_key(), co_await rpc_impl_::rpc_tl_query_result_one_impl(it.get_value()));
+    res.set_value(it.get_key(), co_await kphp::rpc::rpc_impl::rpc_tl_query_result_one_impl(it.get_value()));
   }
   co_return res;
 }
