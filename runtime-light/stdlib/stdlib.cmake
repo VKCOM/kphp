@@ -22,6 +22,7 @@ prepend(
   rpc/rpc-tl-query.cpp
   rpc/rpc-tl-request.cpp
   serialization/serialization-state.cpp
+  server/args-functions.cpp
   server/http-functions.cpp
   string/regex-functions.cpp
   string/regex-state.cpp
