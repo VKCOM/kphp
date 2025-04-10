@@ -22,7 +22,7 @@ constexpr std::array<std::string_view, 7> PHP_TIMELIB_DAY_SHORT_NAMES = {"Sun", 
 
 constexpr std::array<std::string_view, 4> suffix = {"st", "nd", "rd", "th"};
 
-void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) noexcept {
+void iso_week_number(int y, int doy, int weekday, int& iw, int& iy) noexcept {
   int y_leap = std::chrono::year(y).is_leap();
   int prev_y_leap = std::chrono::year(y - 1).is_leap();
   int jan1weekday = (weekday - (doy % 7) + 7) % 7;
@@ -63,8 +63,8 @@ void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) noexcept {
   }
 }
 
-string date(const string &format, const tm &t, int64_t timestamp, bool local) noexcept {
-  string_buffer &SB{RuntimeContext::get().static_SB};
+string date(const string& format, const tm& t, int64_t timestamp, bool local) noexcept {
+  string_buffer& SB{RuntimeContext::get().static_SB};
 
   int year = t.tm_year + 1900;
   int month = t.tm_mon + 1;
@@ -82,211 +82,211 @@ string date(const string &format, const tm &t, int64_t timestamp, bool local) no
   SB.clean();
   for (int i = 0; i < static_cast<int>(format.size()); i++) {
     switch (format[i]) {
-      case 'd':
-        SB << static_cast<char>(day / 10 + '0') << static_cast<char>(day % 10 + '0');
+    case 'd':
+      SB << static_cast<char>(day / 10 + '0') << static_cast<char>(day % 10 + '0');
+      break;
+    case 'D':
+      SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week].data();
+      break;
+    case 'j':
+      SB << day;
+      break;
+    case 'l':
+      SB << PHP_TIMELIB_DAY_FULL_NAMES[day_of_week].data();
+      break;
+    case 'N':
+      SB << (day_of_week == 0 ? '7' : static_cast<char>(day_of_week + '0'));
+      break;
+    case 'S': {
+      int c = INT_MAX;
+      switch (day) {
+      case 1:
+      case 21:
+      case 31:
+        c = 0;
         break;
-      case 'D':
-        SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week].data();
+      case 2:
+      case 22:
+        c = 1;
         break;
-      case 'j':
-        SB << day;
+      case 3:
+      case 23:
+        c = 2;
         break;
-      case 'l':
-        SB << PHP_TIMELIB_DAY_FULL_NAMES[day_of_week].data();
-        break;
-      case 'N':
-        SB << (day_of_week == 0 ? '7' : static_cast<char>(day_of_week + '0'));
-        break;
-      case 'S': {
-        int c = INT_MAX;
-        switch (day) {
-          case 1:
-          case 21:
-          case 31:
-            c = 0;
-            break;
-          case 2:
-          case 22:
-            c = 1;
-            break;
-          case 3:
-          case 23:
-            c = 2;
-            break;
-          default:
-            c = 3;
-        }
-        SB << suffix[c].data();
-        break;
-      }
-      case 'w':
-        SB << static_cast<char>(day_of_week + '0');
-        break;
-      case 'z':
-        SB << day_of_year;
-        break;
-      case 'W':
-        iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
-        SB << static_cast<char>('0' + iso_week / 10) << static_cast<char>('0' + iso_week % 10);
-        break;
-      case 'F':
-        SB << PHP_TIMELIB_MON_FULL_NAMES[month - 1].data();
-        break;
-      case 'm':
-        SB << static_cast<char>(month / 10 + '0') << static_cast<char>(month % 10 + '0');
-        break;
-      case 'M':
-        SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1].data();
-        break;
-      case 'n':
-        SB << month;
-        break;
-      case 't':
-        SB << static_cast<unsigned>(
-          std::chrono::year_month_day_last(std::chrono::year(year), std::chrono::month_day_last{std::chrono::month(month) / std::chrono::last}).day());
-        break;
-      case 'L':
-        SB << static_cast<int>(std::chrono::year(year).is_leap());
-        break;
-      case 'o':
-        iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
-        SB << iso_year;
-        break;
-      case 'Y':
-        SB << year;
-        break;
-      case 'y':
-        SB << static_cast<char>(year / 10 % 10 + '0') << static_cast<char>(year % 10 + '0');
-        break;
-      case 'a':
-        SB << (hour < 12 ? "am" : "pm");
-        break;
-      case 'A':
-        SB << (hour < 12 ? "AM" : "PM");
-        break;
-      case 'B':
-        internet_time = (timestamp + 3600) % 86400 * 1000 / 86400;
-        SB << static_cast<char>(internet_time / 100 + '0') << static_cast<char>((internet_time / 10) % 10 + '0') << static_cast<char>(internet_time % 10 + '0');
-        break;
-      case 'g':
-        SB << hour12;
-        break;
-      case 'G':
-        SB << hour;
-        break;
-      case 'h':
-        SB << static_cast<char>(hour12 / 10 + '0') << static_cast<char>(hour12 % 10 + '0');
-        break;
-      case 'H':
-        SB << static_cast<char>(hour / 10 + '0');
-        SB << static_cast<char>(hour % 10 + '0');
-        break;
-      case 'i':
-        SB << static_cast<char>(minute / 10 + '0');
-        SB << static_cast<char>(minute % 10 + '0');
-        break;
-      case 's':
-        SB << static_cast<char>(second / 10 + '0');
-        SB << static_cast<char>(second % 10 + '0');
-        break;
-      case 'u':
-        SB << "000000";
-        break;
-      case 'e':
-        if (local) {
-          SB << PHP_TIMELIB_TZ_MOSCOW.data();
-        } else {
-          SB << "UTC";
-        }
-        break;
-      case 'I':
-        SB << static_cast<int>(t.tm_isdst > 0);
-        break;
-      case 'O':
-        if (local) {
-          SB << "+0300";
-        } else {
-          SB << "+0000";
-        }
-        break;
-      case 'P':
-        if (local) {
-          SB << "+03:00";
-        } else {
-          SB << "+00:00";
-        }
-        break;
-      case 'T':
-        if (local) {
-          SB << "MSK";
-        } else {
-          SB << "GMT";
-        }
-        break;
-      case 'Z':
-        if (local) {
-          SB << 3 * 3600;
-        } else {
-          SB << 0;
-        }
-        break;
-      case 'c':
-        SB << year;
-        SB << '-';
-        SB << static_cast<char>(month / 10 + '0');
-        SB << static_cast<char>(month % 10 + '0');
-        SB << '-';
-        SB << static_cast<char>(day / 10 + '0');
-        SB << static_cast<char>(day % 10 + '0');
-        SB << "T";
-        SB << static_cast<char>(hour / 10 + '0');
-        SB << static_cast<char>(hour % 10 + '0');
-        SB << ':';
-        SB << static_cast<char>(minute / 10 + '0');
-        SB << static_cast<char>(minute % 10 + '0');
-        SB << ':';
-        SB << static_cast<char>(second / 10 + '0');
-        SB << static_cast<char>(second % 10 + '0');
-        if (local) {
-          SB << "+03:00";
-        } else {
-          SB << "+00:00";
-        }
-        break;
-      case 'r':
-        SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week].data();
-        SB << ", ";
-        SB << static_cast<char>(day / 10 + '0');
-        SB << static_cast<char>(day % 10 + '0');
-        SB << ' ';
-        SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1].data();
-        SB << ' ';
-        SB << year;
-        SB << ' ';
-        SB << static_cast<char>(hour / 10 + '0');
-        SB << static_cast<char>(hour % 10 + '0');
-        SB << ':';
-        SB << static_cast<char>(minute / 10 + '0');
-        SB << static_cast<char>(minute % 10 + '0');
-        SB << ':';
-        SB << static_cast<char>(second / 10 + '0');
-        SB << static_cast<char>(second % 10 + '0');
-        if (local) {
-          SB << " +0300";
-        } else {
-          SB << " +0000";
-        }
-        break;
-      case 'U':
-        SB << timestamp;
-        break;
-      case '\\':
-        if (format[i + 1]) {
-          i++;
-        }
-        /* fallthrough */
       default:
-        SB << format[i];
+        c = 3;
+      }
+      SB << suffix[c].data();
+      break;
+    }
+    case 'w':
+      SB << static_cast<char>(day_of_week + '0');
+      break;
+    case 'z':
+      SB << day_of_year;
+      break;
+    case 'W':
+      iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
+      SB << static_cast<char>('0' + iso_week / 10) << static_cast<char>('0' + iso_week % 10);
+      break;
+    case 'F':
+      SB << PHP_TIMELIB_MON_FULL_NAMES[month - 1].data();
+      break;
+    case 'm':
+      SB << static_cast<char>(month / 10 + '0') << static_cast<char>(month % 10 + '0');
+      break;
+    case 'M':
+      SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1].data();
+      break;
+    case 'n':
+      SB << month;
+      break;
+    case 't':
+      SB << static_cast<unsigned>(
+          std::chrono::year_month_day_last(std::chrono::year(year), std::chrono::month_day_last{std::chrono::month(month) / std::chrono::last}).day());
+      break;
+    case 'L':
+      SB << static_cast<int>(std::chrono::year(year).is_leap());
+      break;
+    case 'o':
+      iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
+      SB << iso_year;
+      break;
+    case 'Y':
+      SB << year;
+      break;
+    case 'y':
+      SB << static_cast<char>(year / 10 % 10 + '0') << static_cast<char>(year % 10 + '0');
+      break;
+    case 'a':
+      SB << (hour < 12 ? "am" : "pm");
+      break;
+    case 'A':
+      SB << (hour < 12 ? "AM" : "PM");
+      break;
+    case 'B':
+      internet_time = (timestamp + 3600) % 86400 * 1000 / 86400;
+      SB << static_cast<char>(internet_time / 100 + '0') << static_cast<char>((internet_time / 10) % 10 + '0') << static_cast<char>(internet_time % 10 + '0');
+      break;
+    case 'g':
+      SB << hour12;
+      break;
+    case 'G':
+      SB << hour;
+      break;
+    case 'h':
+      SB << static_cast<char>(hour12 / 10 + '0') << static_cast<char>(hour12 % 10 + '0');
+      break;
+    case 'H':
+      SB << static_cast<char>(hour / 10 + '0');
+      SB << static_cast<char>(hour % 10 + '0');
+      break;
+    case 'i':
+      SB << static_cast<char>(minute / 10 + '0');
+      SB << static_cast<char>(minute % 10 + '0');
+      break;
+    case 's':
+      SB << static_cast<char>(second / 10 + '0');
+      SB << static_cast<char>(second % 10 + '0');
+      break;
+    case 'u':
+      SB << "000000";
+      break;
+    case 'e':
+      if (local) {
+        SB << PHP_TIMELIB_TZ_MOSCOW.data();
+      } else {
+        SB << "UTC";
+      }
+      break;
+    case 'I':
+      SB << static_cast<int>(t.tm_isdst > 0);
+      break;
+    case 'O':
+      if (local) {
+        SB << "+0300";
+      } else {
+        SB << "+0000";
+      }
+      break;
+    case 'P':
+      if (local) {
+        SB << "+03:00";
+      } else {
+        SB << "+00:00";
+      }
+      break;
+    case 'T':
+      if (local) {
+        SB << "MSK";
+      } else {
+        SB << "GMT";
+      }
+      break;
+    case 'Z':
+      if (local) {
+        SB << 3 * 3600;
+      } else {
+        SB << 0;
+      }
+      break;
+    case 'c':
+      SB << year;
+      SB << '-';
+      SB << static_cast<char>(month / 10 + '0');
+      SB << static_cast<char>(month % 10 + '0');
+      SB << '-';
+      SB << static_cast<char>(day / 10 + '0');
+      SB << static_cast<char>(day % 10 + '0');
+      SB << "T";
+      SB << static_cast<char>(hour / 10 + '0');
+      SB << static_cast<char>(hour % 10 + '0');
+      SB << ':';
+      SB << static_cast<char>(minute / 10 + '0');
+      SB << static_cast<char>(minute % 10 + '0');
+      SB << ':';
+      SB << static_cast<char>(second / 10 + '0');
+      SB << static_cast<char>(second % 10 + '0');
+      if (local) {
+        SB << "+03:00";
+      } else {
+        SB << "+00:00";
+      }
+      break;
+    case 'r':
+      SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week].data();
+      SB << ", ";
+      SB << static_cast<char>(day / 10 + '0');
+      SB << static_cast<char>(day % 10 + '0');
+      SB << ' ';
+      SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1].data();
+      SB << ' ';
+      SB << year;
+      SB << ' ';
+      SB << static_cast<char>(hour / 10 + '0');
+      SB << static_cast<char>(hour % 10 + '0');
+      SB << ':';
+      SB << static_cast<char>(minute / 10 + '0');
+      SB << static_cast<char>(minute % 10 + '0');
+      SB << ':';
+      SB << static_cast<char>(second / 10 + '0');
+      SB << static_cast<char>(second % 10 + '0');
+      if (local) {
+        SB << " +0300";
+      } else {
+        SB << " +0000";
+      }
+      break;
+    case 'U':
+      SB << timestamp;
+      break;
+    case '\\':
+      if (format[i + 1]) {
+        i++;
+      }
+      /* fallthrough */
+    default:
+      SB << format[i];
     }
   }
   return SB.str();
@@ -322,7 +322,7 @@ int64_t f$mktime(Optional<int64_t> hour, Optional<int64_t> minute, Optional<int6
   return duration_cast<chrono::seconds>(result).count();
 }
 
-string f$gmdate(const string &format, Optional<int64_t> timestamp) noexcept {
+string f$gmdate(const string& format, Optional<int64_t> timestamp) noexcept {
   namespace chrono = std::chrono;
 
   const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
@@ -331,7 +331,7 @@ string f$gmdate(const string &format, Optional<int64_t> timestamp) noexcept {
   return date(format, tm, now, false);
 }
 
-string f$date(const string &format, Optional<int64_t> timestamp) noexcept {
+string f$date(const string& format, Optional<int64_t> timestamp) noexcept {
   namespace chrono = std::chrono;
 
   const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
@@ -340,7 +340,7 @@ string f$date(const string &format, Optional<int64_t> timestamp) noexcept {
   return date(format, tm, now, true);
 }
 
-bool f$date_default_timezone_set(const string &s) noexcept {
+bool f$date_default_timezone_set(const string& s) noexcept {
   const std::string_view timezone_view{s.c_str(), s.size()};
   if (timezone_view != PHP_TIMELIB_TZ_GMT3 && timezone_view != PHP_TIMELIB_TZ_MOSCOW) {
     php_warning("unsupported default timezone \"%s\"", s.c_str());

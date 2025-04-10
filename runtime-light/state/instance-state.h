@@ -58,11 +58,11 @@ struct InstanceState final : vk::not_copyable {
   using list = kphp::stl::list<T, kphp::memory::script_allocator>;
 
   InstanceState() noexcept
-    : allocator(INIT_INSTANCE_ALLOCATOR_SIZE, 0) {}
+      : allocator(INIT_INSTANCE_ALLOCATOR_SIZE, 0) {}
 
   ~InstanceState() = default;
 
-  static InstanceState &get() noexcept {
+  static InstanceState& get() noexcept {
     return *k2::instance_state();
   }
 
@@ -82,10 +82,10 @@ struct InstanceState final : vk::not_copyable {
   bool stream_updated(uint64_t stream_d) const noexcept {
     return pending_updates_.contains(stream_d);
   }
-  const unordered_set<uint64_t> &opened_streams() const noexcept {
+  const unordered_set<uint64_t>& opened_streams() const noexcept {
     return opened_streams_;
   }
-  const deque<uint64_t> &incoming_streams() const noexcept {
+  const deque<uint64_t>& incoming_streams() const noexcept {
     return incoming_streams_;
   }
   uint64_t standard_stream() const noexcept {

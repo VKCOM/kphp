@@ -15,25 +15,25 @@ struct MergeData {
   VarPtr var;
 };
 
-bool operator<(const MergeData&a, const MergeData&b) {
+bool operator<(const MergeData& a, const MergeData& b) {
   // sort by types if they're different;
   // sort by name otherwise (name$vN < name$vM with N<M, name < name$vN)
   const int eq = type_out(tinf::get_type(a.var), gen_out_style::txt).compare(type_out(tinf::get_type(b.var), gen_out_style::txt));
   return eq == 0 ? a.var->name < b.var->name : eq < 0;
 }
 
-bool operator==(const MergeData &a, const MergeData &b) {
-  return type_out(tinf::get_type(a.var), gen_out_style::txt) ==
-         type_out(tinf::get_type(b.var), gen_out_style::txt);
+bool operator==(const MergeData& a, const MergeData& b) {
+  return type_out(tinf::get_type(a.var), gen_out_style::txt) == type_out(tinf::get_type(b.var), gen_out_style::txt);
 }
 
-bool operator!=(const MergeData &a, const MergeData &b) {
+bool operator!=(const MergeData& a, const MergeData& b) {
   return !(a == b);
 }
 
-static VarPtr merge_vars(FunctionPtr function, const std::vector<VarPtr> &vars, const std::string &new_name) {
-  VarPtr new_var = G->create_var(new_name, VarData::var_unknown_t);;
-  //new_var->tinf = vars[0]->tinf; //hack, TODO: fix it
+static VarPtr merge_vars(FunctionPtr function, const std::vector<VarPtr>& vars, const std::string& new_name) {
+  VarPtr new_var = G->create_var(new_name, VarData::var_unknown_t);
+  ;
+  // new_var->tinf = vars[0]->tinf; //hack, TODO: fix it
   new_var->tinf_node.copy_type_from(tinf::get_type(vars[0]));
 
   int param_i = -1;
@@ -42,8 +42,8 @@ static VarPtr merge_vars(FunctionPtr function, const std::vector<VarPtr> &vars, 
     if (var->type() == VarData::var_param_t) {
       param_i = var->param_i;
     } else if (var->type() == VarData::var_local_t) {
-      //FIXME: remember to remove all unused variables
-      //func->local_var_ids.erase (*i);
+      // FIXME: remember to remove all unused variables
+      // func->local_var_ids.erase (*i);
       auto tmp = std::find(function->local_var_ids.begin(), function->local_var_ids.end(), var);
       if (function->local_var_ids.end() != tmp) {
         function->local_var_ids.erase(tmp);
@@ -66,9 +66,9 @@ static VarPtr merge_vars(FunctionPtr function, const std::vector<VarPtr> &vars, 
   return new_var;
 }
 
-static void merge_same_type(FunctionPtr function, const std::forward_list<std::vector<std::vector<VertexAdaptor<op_var>>>> &split_parts_list) {
+static void merge_same_type(FunctionPtr function, const std::forward_list<std::vector<std::vector<VertexAdaptor<op_var>>>>& split_parts_list) {
   std::vector<MergeData> to_merge;
-  for (const auto &parts : split_parts_list) {
+  for (const auto& parts : split_parts_list) {
     to_merge.clear();
     to_merge.reserve(parts.size());
     for (int i = 0; i < parts.size(); i++) {
@@ -86,7 +86,7 @@ static void merge_same_type(FunctionPtr function, const std::forward_list<std::v
           vars.push_back(parts[id][0]->var_id);
         }
 
-        const std::string &new_name = vars[0]->name; // name or name$vN
+        const std::string& new_name = vars[0]->name; // name or name$vN
         VarPtr new_var = merge_vars(function, vars, new_name);
         for (int id : ids) {
           for (auto v : parts[id]) {
@@ -104,18 +104,18 @@ static void merge_same_type(FunctionPtr function, const std::forward_list<std::v
   }
 }
 
-static void check_uninited(const std::forward_list<VertexAdaptor<op_var>> &uninited_vars) {
+static void check_uninited(const std::forward_list<VertexAdaptor<op_var>>& uninited_vars) {
   for (auto v : uninited_vars) {
     if (tinf::get_type(v)->ptype() == tp_mixed) {
       continue;
     }
 
     stage::set_location(v->get_location());
-    kphp_warning (fmt_format("Variable ${} may be used uninitialized", v->var_id->name));
+    kphp_warning(fmt_format("Variable ${} may be used uninitialized", v->var_id->name));
   }
 }
 
-void CFGEndF::execute(FunctionAndCFG data, DataStream<FunctionPtr> &os) {
+void CFGEndF::execute(FunctionAndCFG data, DataStream<FunctionPtr>& os) {
   stage::set_name("Control flow graph. End");
   stage::set_function(data.function);
   check_uninited(data.data.uninited_vars);

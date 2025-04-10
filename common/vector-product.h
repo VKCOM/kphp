@@ -7,14 +7,14 @@
 #include <cmath>
 
 #ifdef __x86_64__
-#include <emmintrin.h>
+  #include <emmintrin.h>
 #endif // __x86_64__
 
 #ifdef __aarch64__
-#include <arm_neon.h>
+  #include <arm_neon.h>
 #endif // __arch64_-
 
-static inline double __dot_product(const double *x, const double *y, const int size) {
+static inline double __dot_product(const double* x, const double* y, const int size) {
 #if defined(__x86_64__)
   __v2df as, bs, result;
   double temp[2];

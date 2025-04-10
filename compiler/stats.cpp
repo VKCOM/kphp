@@ -10,29 +10,29 @@
 
 void Stats::on_var_inserting(VarData::Type type) {
   switch (type) {
-    case VarData::var_local_t:
-      ++local_vars_;
-      break;
-    case VarData::var_local_inplace_t:
-      ++local_inplace_vars_;
-      break;
-    case VarData::var_global_t:
-      ++global_vars_;
-      break;
-    case VarData::var_param_t:
-      ++param_vars_;
-      break;
-    case VarData::var_const_t:
-      ++global_const_vars_;
-      break;
-    case VarData::var_static_t:
-      ++static_vars_;
-      break;
-    case VarData::var_instance_t:
-      ++instance_vars_;
-      break;
-    default:
-      break;
+  case VarData::var_local_t:
+    ++local_vars_;
+    break;
+  case VarData::var_local_inplace_t:
+    ++local_inplace_vars_;
+    break;
+  case VarData::var_global_t:
+    ++global_vars_;
+    break;
+  case VarData::var_param_t:
+    ++param_vars_;
+    break;
+  case VarData::var_const_t:
+    ++global_const_vars_;
+    break;
+  case VarData::var_static_t:
+    ++static_vars_;
+    break;
+  case VarData::var_instance_t:
+    ++instance_vars_;
+    break;
+  default:
+    break;
   }
 }
 
@@ -58,9 +58,9 @@ void Stats::update_memory_stats() {
   memory_rss_peak_ = mem_info.rss_peak;
 }
 
-void Stats::write_to(std::ostream &out, bool with_indent) const {
-  const char *indent = with_indent ? "  " : "";
-  const char *block_sep = with_indent ? "\n" : "";
+void Stats::write_to(std::ostream& out, bool with_indent) const {
+  const char* indent = with_indent ? "  " : "";
+  const char* block_sep = with_indent ? "\n" : "";
   out << indent << "classes.total: " << total_classes << std::endl;
   out << indent << "classes.total_lambdas: " << total_lambdas << std::endl;
   out << block_sep;
@@ -112,7 +112,7 @@ void Stats::write_to(std::ostream &out, bool with_indent) const {
   out << indent << "hash_tables.total_composer_jsons: " << ht_total_composer_jsons << std::endl;
   out << block_sep;
   out << std::fixed;
-  for (const auto &prof : profiler_stats) {
+  for (const auto& prof : profiler_stats) {
     std::string name = prof.first;
     std::replace_if(name.begin(), name.end(), [](char c) { return !std::isalnum(c); }, '_');
     out << "pipes." << name << ".working_time: " << std::chrono::duration<double>(prof.second.get_working_time()).count() << std::endl;

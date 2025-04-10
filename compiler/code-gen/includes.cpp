@@ -11,26 +11,26 @@
 #include "compiler/data/function-data.h"
 #include "compiler/data/var-data.h"
 
-ExternInclude::ExternInclude(vk::string_view file_name) :
-  file_name(file_name) {
+ExternInclude::ExternInclude(vk::string_view file_name)
+    : file_name(file_name) {
   kphp_assert(!file_name.empty());
 }
 
-void ExternInclude::compile(CodeGenerator &W) const {
+void ExternInclude::compile(CodeGenerator& W) const {
   W << "#include \"" << file_name << "\"" << NL;
 }
 
-void Include::compile(CodeGenerator &W) const {
+void Include::compile(CodeGenerator& W) const {
   W.add_include(static_cast<std::string>(file_name));
   ExternInclude::compile(W);
 }
 
-void LibInclude::compile(CodeGenerator &W) const {
+void LibInclude::compile(CodeGenerator& W) const {
   W.add_lib_include(static_cast<std::string>(absolute_path));
   ExternInclude::compile(W);
 }
 
-static std::string make_relative_path(const std::string &source_path, const std::string &to_include_path) noexcept {
+static std::string make_relative_path(const std::string& source_path, const std::string& to_include_path) noexcept {
   std::size_t idx = 0;
   while ((idx < source_path.size()) && (idx < to_include_path.size()) && (source_path[idx] == to_include_path[idx])) {
     ++idx;
@@ -47,7 +47,7 @@ static std::string make_relative_path(const std::string &source_path, const std:
   return relative_path;
 }
 
-void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
+void IncludesCollector::add_function_body_depends(const FunctionPtr& function) {
   for (auto to_include : function->dep) {
     if (to_include == function) {
       continue;
@@ -78,24 +78,24 @@ void IncludesCollector::add_function_body_depends(const FunctionPtr &function) {
     add_var_signature_depends(global_var);
   }
 
-  if (function->tl_common_h_dep) {    // functions that use a typed TL RPC need to see t_ReqResult during the compilation
+  if (function->tl_common_h_dep) { // functions that use a typed TL RPC need to see t_ReqResult during the compilation
     kphp_error(!G->settings().tl_schema_file.get().empty(), "tl schema not given as -T option for compilation");
     internal_headers_.emplace("tl/common.h");
   }
 }
 
-void IncludesCollector::add_function_signature_depends(const FunctionPtr &function) {
+void IncludesCollector::add_function_signature_depends(const FunctionPtr& function) {
   add_all_class_types(*function->tinf_node.get_type());
-  for (const auto &param : function->param_ids) {
+  for (const auto& param : function->param_ids) {
     add_all_class_types(*param->tinf_node.get_type());
   }
 }
 
-void IncludesCollector::add_class_include(const ClassPtr &klass) {
+void IncludesCollector::add_class_include(const ClassPtr& klass) {
   classes_.emplace(klass);
 }
 
-void IncludesCollector::add_class_forward_declaration(const ClassPtr &klass) {
+void IncludesCollector::add_class_forward_declaration(const ClassPtr& klass) {
   // CData classes do not require forward declarations, they're bundled
   // with their associated FFI scope class in a single header file
   if (!klass->is_ffi_cdata()) {
@@ -103,15 +103,15 @@ void IncludesCollector::add_class_forward_declaration(const ClassPtr &klass) {
   }
 }
 
-void IncludesCollector::add_var_signature_forward_declarations(const VarPtr &var) {
+void IncludesCollector::add_var_signature_forward_declarations(const VarPtr& var) {
   std::unordered_set<ClassPtr> all_classes;
   var->tinf_node.get_type()->get_all_class_types_inside(all_classes);
-  for (auto klass: all_classes) {
+  for (auto klass : all_classes) {
     add_class_forward_declaration(klass);
   }
 }
 
-void IncludesCollector::add_base_classes_include(const ClassPtr &klass) {
+void IncludesCollector::add_base_classes_include(const ClassPtr& klass) {
   classes_.insert(klass->implements.cbegin(), klass->implements.cend());
 
   if (klass->parent_class && klass->parent_class->does_need_codegen()) {
@@ -119,17 +119,17 @@ void IncludesCollector::add_base_classes_include(const ClassPtr &klass) {
   }
 }
 
-void IncludesCollector::add_var_signature_depends(const VarPtr &var) {
+void IncludesCollector::add_var_signature_depends(const VarPtr& var) {
   add_all_class_types(*var->tinf_node.get_type());
 }
 
-void IncludesCollector::add_all_class_types(const TypeData &tinf_type) {
+void IncludesCollector::add_all_class_types(const TypeData& tinf_type) {
   if (tinf_type.has_class_type_inside()) {
     tinf_type.get_all_class_types_inside(classes_);
   }
 }
 
-void IncludesCollector::add_raw_filename_include(const std::string &file_name) {
+void IncludesCollector::add_raw_filename_include(const std::string& file_name) {
   internal_headers_.emplace(file_name);
 }
 
@@ -142,7 +142,7 @@ void IncludesCollector::add_vertex_depends(VertexPtr v) {
   }
   if (auto as_func_call = v.try_as<op_func_call>()) {
     if (as_func_call->func_id) {
-      const auto &header_full_name = as_func_call->func_id->header_full_name;
+      const auto& header_full_name = as_func_call->func_id->header_full_name;
       if (!header_full_name.empty()) {
         add_raw_filename_include(as_func_call->func_id->header_full_name);
       }
@@ -154,15 +154,15 @@ void IncludesCollector::add_vertex_depends(VertexPtr v) {
   }
 }
 
-void IncludesCollector::compile(CodeGenerator &W) const {
-  for (const auto &lib_header : lib_headers_) {
+void IncludesCollector::compile(CodeGenerator& W) const {
+  for (const auto& lib_header : lib_headers_) {
     if (!prev_headers_.count(lib_header.first)) {
       W << LibInclude(lib_header.first, lib_header.second);
     }
   }
 
   std::set<std::string> class_headers;
-  for (const auto &klass : classes_) {
+  for (const auto& klass : classes_) {
     ClassPtr class_to_include;
     if (klass->ffi_class_mixin) {
       // FFI CData classes (structs really) are defined at their scope class header
@@ -174,28 +174,26 @@ void IncludesCollector::compile(CodeGenerator &W) const {
       class_headers.emplace(class_to_include->get_subdir() + "/" + class_to_include->h_filename);
     }
   }
-  for (const auto &class_header : class_headers) {
+  for (const auto& class_header : class_headers) {
     W << Include(class_header);
   }
 
   std::set<vk::string_view> class_forward_declarations;
-  for (const auto &klass : forward_declarations_) {
-    if (!prev_classes_forward_declared_.count(klass) &&
-        !prev_classes_.count(klass) &&
-        !classes_.count(klass)) {
+  for (const auto& klass : forward_declarations_) {
+    if (!prev_classes_forward_declared_.count(klass) && !prev_classes_.count(klass) && !classes_.count(klass)) {
       class_forward_declarations.emplace(klass->src_name);
     }
   }
 
   if (!class_forward_declarations.empty()) {
     W << OpenNamespace();
-    for (const auto &class_name : class_forward_declarations) {
+    for (const auto& class_name : class_forward_declarations) {
       W << "struct " << class_name << ";" << NL;
     }
     W << CloseNamespace();
   }
 
-  for (const auto &internal_header : internal_headers_) {
+  for (const auto& internal_header : internal_headers_) {
     if (!prev_headers_.count(internal_header)) {
       W << Include(internal_header);
     }
@@ -210,7 +208,7 @@ void IncludesCollector::start_next_block() {
   classes_.clear();
 
   prev_headers_.insert(internal_headers_.begin(), internal_headers_.end());
-  for (const auto &header : lib_headers_) {
+  for (const auto& header : lib_headers_) {
     prev_headers_.insert(header.first);
   }
   internal_headers_.clear();

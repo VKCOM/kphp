@@ -13,7 +13,9 @@
 #include "compiler/kphp_assert.h"
 
 class MultiKey {
-  DEBUG_STRING_METHOD { return to_string(); }
+  DEBUG_STRING_METHOD {
+    return to_string();
+  }
 
 private:
   std::vector<Key> keys_;
@@ -24,18 +26,17 @@ public:
   using reverse_iterator = std::vector<Key>::const_reverse_iterator;
 
   MultiKey() = default;
-  MultiKey(const MultiKey &multi_key) = default;
-  MultiKey &operator=(const MultiKey &multi_key) = default;
+  MultiKey(const MultiKey& multi_key) = default;
+  MultiKey& operator=(const MultiKey& multi_key) = default;
 
-  explicit MultiKey(std::vector<Key> keys) :
-    keys_(std::move(keys)) {
-  }
+  explicit MultiKey(std::vector<Key> keys)
+      : keys_(std::move(keys)) {}
 
-  void push_back(const Key &key) {
+  void push_back(const Key& key) {
     keys_.push_back(key);
   }
 
-  void push_front(const Key &key) {
+  void push_front(const Key& key) {
     keys_.insert(keys_.begin(), key);
   }
 
@@ -69,7 +70,7 @@ public:
     }
   }
 
-  static const MultiKey &any_key(uint32_t depth) {
+  static const MultiKey& any_key(uint32_t depth) {
     if (depth < any_key_vec.size()) {
       return any_key_vec[depth];
     }

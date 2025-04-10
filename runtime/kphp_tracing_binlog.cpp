@@ -4,9 +4,9 @@
 
 #include "runtime/kphp_tracing_binlog.h"
 
-#include <unordered_map>
 #include <forward_list>
 #include <unistd.h>
+#include <unordered_map>
 #include <vector>
 
 #include "runtime-common/stdlib/string/string-context.h"
@@ -56,7 +56,6 @@ static std::unordered_map<int64_t, int> worker_process_strings_table;
 // before any trace flush, if that binlog is not empty, it's flushed in advance and cleared
 static std::vector<string> current_php_script_registered_strings;
 
-
 void tracing_binary_buffer::set_use_heap_memory() {
   use_heap_memory = true;
 }
@@ -80,12 +79,8 @@ void tracing_binary_buffer::finish_cur_chunk_start_next() {
     last_chunk->size_bytes = get_cur_chunk_size();
   }
 
-  void *mem = use_heap_memory ? dl::heap_allocate(BUF_CHUNK_SIZE) : dl::allocate(BUF_CHUNK_SIZE);
-  one_chunk *next_chunk = new (mem) one_chunk{
-    reinterpret_cast<int *>(reinterpret_cast<char *>(mem) + sizeof(one_chunk)),
-    0,
-    last_chunk
-  };
+  void* mem = use_heap_memory ? dl::heap_allocate(BUF_CHUNK_SIZE) : dl::allocate(BUF_CHUNK_SIZE);
+  one_chunk* next_chunk = new (mem) one_chunk{reinterpret_cast<int*>(reinterpret_cast<char*>(mem) + sizeof(one_chunk)), 0, last_chunk};
 
   last_chunk = next_chunk;
   pos = last_chunk->buf;
@@ -97,8 +92,8 @@ void tracing_binary_buffer::clear(bool real_deallocate) {
   // but for heap memory, we need to really deallocate all chunks
 
   if (real_deallocate) {
-    for (one_chunk *chunk = last_chunk; chunk;) {
-      one_chunk *prev_chunk = chunk->prev_chunk;
+    for (one_chunk* chunk = last_chunk; chunk;) {
+      one_chunk* prev_chunk = chunk->prev_chunk;
       dl::heap_deallocate(chunk, BUF_CHUNK_SIZE);
       chunk = prev_chunk;
     }
@@ -123,31 +118,31 @@ void tracing_binary_buffer::write_event_type(EventTypeEnum event_type, int custo
 
 int tracing_binary_buffer::calc_total_size() const {
   int binlog_size = get_cur_chunk_size();
-  for (const one_chunk *chunk = last_chunk->prev_chunk; chunk; chunk = chunk->prev_chunk) {
+  for (const one_chunk* chunk = last_chunk->prev_chunk; chunk; chunk = chunk->prev_chunk) {
     binlog_size += chunk->size_bytes;
   }
   return binlog_size;
 }
 
 void tracing_binary_buffer::write_int64(int64_t v) {
-  int64_t *pos64 = reinterpret_cast<int64_t *>(pos);
+  int64_t* pos64 = reinterpret_cast<int64_t*>(pos);
   *pos64 = v;
   pos += 2;
 }
 
 void tracing_binary_buffer::write_uint64(uint64_t v) {
-  uint64_t *pos64 = reinterpret_cast<uint64_t *>(pos);
+  uint64_t* pos64 = reinterpret_cast<uint64_t*>(pos);
   *pos64 = v;
   pos += 2;
 }
 
 void tracing_binary_buffer::write_float64(double v) {
-  int64_t *pos64 = reinterpret_cast<int64_t *>(pos);
-  *pos64 = *reinterpret_cast<int64_t *>(&v);
+  int64_t* pos64 = reinterpret_cast<int64_t*>(pos);
+  *pos64 = *reinterpret_cast<int64_t*>(&v);
   pos += 2;
 }
 
-int tracing_binary_buffer::register_string_in_table(const string &v) {
+int tracing_binary_buffer::register_string_in_table(const string& v) {
   if (unlikely(v.size() > 255)) {
     php_warning("too large string for register_string_in_table, len %d", v.size());
     return 0;
@@ -170,7 +165,7 @@ int tracing_binary_buffer::register_string_in_table(const string &v) {
   return idx_in_table;
 }
 
-void tracing_binary_buffer::write_string_inlined(const string &v) {
+void tracing_binary_buffer::write_string_inlined(const string& v) {
   if (unlikely(v.size() > 127)) {
     string cut = v.substr(0, 127);
     write_string_inlined(cut);
@@ -180,19 +175,19 @@ void tracing_binary_buffer::write_string_inlined(const string &v) {
   write_int32(static_cast<int>(v.size()));
   alloc_next_chunk_if_not_enough(256);
 
-  char *pos8 = reinterpret_cast<char *>(pos);
+  char* pos8 = reinterpret_cast<char*>(pos);
   memcpy(pos8, v.c_str(), v.size());
-  pos += (v.size() + 3) / 4;  // a string is rounded up to 4 bytes (len 7 -> consumes 8)
+  pos += (v.size() + 3) / 4; // a string is rounded up to 4 bytes (len 7 -> consumes 8)
 }
 
-void tracing_binary_buffer::append_enum_values(int enumID, const string &enumName, const array<string> &enumKV) {
+void tracing_binary_buffer::append_enum_values(int enumID, const string& enumName, const array<string>& enumKV) {
   if (last_chunk == nullptr) {
     init_and_alloc();
   }
 
   write_event_type(EventTypeEnum::etEnumCreateBlank, enumID);
   write_string_inlined(enumName);
-  for (const auto &it : enumKV) {
+  for (const auto& it : enumKV) {
     int64_t key = enumKV.is_vector() ? it.get_key().to_int() : it.get_int_key();
     write_event_type(EventTypeEnum::etEnumSetMeaning, enumID);
     write_uint32(static_cast<unsigned int>(key));
@@ -209,7 +204,7 @@ void tracing_binary_buffer::append_current_php_script_strings() {
     init_and_alloc();
   }
 
-  for (const string &v : current_php_script_registered_strings) {
+  for (const string& v : current_php_script_registered_strings) {
     int idx_in_table = worker_process_strings_table[v.hash()];
     write_event_type(EventTypeEnum::etStringsTableRegister, idx_in_table);
     write_string_inlined(v);
@@ -218,7 +213,7 @@ void tracing_binary_buffer::append_current_php_script_strings() {
 
 // final json line will look like this:
 // {...(json_without_binlog),"pid":%d,"binlog_v":%d,"binlog":"...hex..."}\n
-void tracing_binary_buffer::output_to_json_log(const char *json_without_binlog) {
+void tracing_binary_buffer::output_to_json_log(const char* json_without_binlog) {
   if (last_chunk == nullptr) {
     return;
   }
@@ -226,23 +221,23 @@ void tracing_binary_buffer::output_to_json_log(const char *json_without_binlog) 
   last_chunk->size_bytes = get_cur_chunk_size();
 
   size_t binlog_size = 0;
-  std::forward_list<const one_chunk *> chunks_ordered;
-  for (const one_chunk *chunk = last_chunk; chunk; chunk = chunk->prev_chunk) {
+  std::forward_list<const one_chunk*> chunks_ordered;
+  for (const one_chunk* chunk = last_chunk; chunk; chunk = chunk->prev_chunk) {
     chunks_ordered.emplace_front(chunk);
     binlog_size += chunk->size_bytes;
   }
 
   size_t custom_strlen = strlen(json_without_binlog);
   size_t buffer_capacity = custom_strlen + 128 + binlog_size * 2;
-  char *buffer = new char[buffer_capacity];
+  char* buffer = new char[buffer_capacity];
   int buffer_i = 0;
 
   memcpy(buffer, json_without_binlog, custom_strlen - 1);
   buffer_i += custom_strlen - 1;
   buffer_i += snprintf(buffer + buffer_i, buffer_capacity, R"(,"pid":%d,"binlog_v":%d,"binlog":")", static_cast<int>(getpid()), BINLOG_VERSION);
 
-  for (const auto &it : chunks_ordered) {
-    for (const unsigned char *p = reinterpret_cast<const unsigned char *>(it->buf), *end = p + it->size_bytes; p != end; ++p) {
+  for (const auto& it : chunks_ordered) {
+    for (const unsigned char *p = reinterpret_cast<const unsigned char*>(it->buf), *end = p + it->size_bytes; p != end; ++p) {
       buffer[buffer_i++] = StringLibConstants::get().lhex_digits[(*p & 0xF0) >> 4];
       buffer[buffer_i++] = StringLibConstants::get().lhex_digits[(*p & 0x0F)];
     }
@@ -253,7 +248,7 @@ void tracing_binary_buffer::output_to_json_log(const char *json_without_binlog) 
   buffer[buffer_i++] = '\n';
   assert(buffer_i < buffer_capacity);
 
-  JsonLogger &json_logger = vk::singleton<JsonLogger>::get();
+  JsonLogger& json_logger = vk::singleton<JsonLogger>::get();
   json_logger.write_trace_line(buffer, buffer_i);
   delete[] buffer;
 }

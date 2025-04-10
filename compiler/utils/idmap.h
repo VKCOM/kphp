@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "compiler/stage.h"
 #include "common/wrappers/likely.h"
+#include "compiler/stage.h"
 
 template<class DataType>
 class IdMap {
@@ -15,25 +15,32 @@ class IdMap {
 
 public:
   using iterator = typename std::vector<DataType>::iterator;
-  
+
   IdMap() = default;
-  explicit IdMap(int size): data(size) {}
+  explicit IdMap(int size)
+      : data(size) {}
 
   template<class IndexType>
-  inline DataType &operator[](const IndexType &i);
+  inline DataType& operator[](const IndexType& i);
   template<class IndexType>
-  inline const DataType &operator[](const IndexType &i) const;
+  inline const DataType& operator[](const IndexType& i) const;
 
-  iterator begin() { return data.begin(); }
-  iterator end() { return data.end(); }
-  void clear() { data.clear(); }
+  iterator begin() {
+    return data.begin();
+  }
+  iterator end() {
+    return data.end();
+  }
+  void clear() {
+    data.clear();
+  }
 
   void update_size(int n);
 };
 
 template<class DataType>
 template<class IndexType>
-DataType &IdMap<DataType>::operator[](const IndexType &i) {
+DataType& IdMap<DataType>::operator[](const IndexType& i) {
   int index = get_index(i);
   if (unlikely(index < 0 || index >= data.size())) {
     print_error_invalid_index(index);
@@ -43,7 +50,7 @@ DataType &IdMap<DataType>::operator[](const IndexType &i) {
 
 template<class DataType>
 template<class IndexType>
-const DataType &IdMap<DataType>::operator[](const IndexType &i) const {
+const DataType& IdMap<DataType>::operator[](const IndexType& i) const {
   int index = get_index(i);
   if (unlikely(index < 0 || index >= data.size())) {
     print_error_invalid_index(index);

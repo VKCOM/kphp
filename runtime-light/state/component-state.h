@@ -23,21 +23,22 @@ struct ComponentState final : private vk::not_copyable {
   array<mixed> env;
 
   ComponentState() noexcept
-    : allocator(INIT_COMPONENT_ALLOCATOR_SIZE, 0)
-    , argc(k2::args_count())
-    , envc(k2::env_count())
-    , ini_opts(array_size{argc, false}) /* overapproximation */
-    , env(array_size{envc, false}) {
+      : allocator(INIT_COMPONENT_ALLOCATOR_SIZE, 0),
+        argc(k2::args_count()),
+        envc(k2::env_count()),
+        ini_opts(array_size{argc, false}) /* overapproximation */
+        ,
+        env(array_size{envc, false}) {
     parse_env();
     parse_args();
   }
 
-  static const ComponentState &get() noexcept {
+  static const ComponentState& get() noexcept {
     return *k2::component_state();
   }
 
-  static ComponentState &get_mutable() noexcept {
-    return *const_cast<ComponentState *>(k2::component_state());
+  static ComponentState& get_mutable() noexcept {
+    return *const_cast<ComponentState*>(k2::component_state());
   }
 
 private:

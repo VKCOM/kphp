@@ -11,5 +11,5 @@
 
 class CalcBadVarsF final : public SyncPipeF<std::pair<FunctionPtr, DepData>, FunctionPtr> {
 public:
-  void on_finish(DataStream<FunctionPtr> &os) final;
+  void on_finish(DataStream<FunctionPtr>& os) final;
 };

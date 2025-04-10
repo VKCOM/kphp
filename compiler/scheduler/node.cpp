@@ -8,7 +8,7 @@
 
 #include "compiler/scheduler/scheduler-base.h"
 
-void Node::add_to_scheduler(SchedulerBase *scheduler) {
+void Node::add_to_scheduler(SchedulerBase* scheduler) {
   if (in_scheduler == scheduler) {
     return;
   }
@@ -26,6 +26,6 @@ bool Node::is_parallel() {
   return parallel;
 }
 
-Node::Node(bool parallel) :
-  in_scheduler(nullptr),
-  parallel(parallel) {}
+Node::Node(bool parallel)
+    : in_scheduler(nullptr),
+      parallel(parallel) {}

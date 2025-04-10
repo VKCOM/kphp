@@ -15,25 +15,24 @@ public:
   pthread_t pthread_id;
   int thread_id;
 
-  class Scheduler *scheduler;
+  class Scheduler* scheduler;
 
-  Node *node;
+  Node* node;
   bool run_flag;
 };
 
-
-void *scheduler_thread_execute(void *arg) {
-  auto *tls = (ThreadContext *)arg;
+void* scheduler_thread_execute(void* arg) {
+  auto* tls = (ThreadContext*)arg;
   tls->scheduler->thread_execute(tls);
   return nullptr;
 }
 
-Scheduler::Scheduler() :
-  threads_count(-1) {
+Scheduler::Scheduler()
+    : threads_count(-1) {
   task_pull = new TaskPull();
 }
 
-void Scheduler::add_node(Node *node) {
+void Scheduler::add_node(Node* node) {
   if (node->is_parallel()) {
     nodes.push_back(node);
   } else {
@@ -41,12 +40,12 @@ void Scheduler::add_node(Node *node) {
   }
 }
 
-void Scheduler::add_sync_node(Node *node) {
+void Scheduler::add_sync_node(Node* node) {
   sync_nodes.push(node);
 }
 
-void Scheduler::add_task(Task *task) {
-  assert (task_pull != nullptr);
+void Scheduler::add_task(Task* task) {
+  assert(task_pull != nullptr);
   task_pull->add_task(task);
 }
 
@@ -55,7 +54,7 @@ void Scheduler::execute() {
   set_thread_id(0);
   std::vector<ThreadContext> threads(threads_count + 1);
 
-  assert ((int)one_thread_nodes.size() < threads_count);
+  assert((int)one_thread_nodes.size() < threads_count);
   for (int i = 1; i <= threads_count; i++) {
     threads[i].thread_id = i;
     threads[i].scheduler = this;
@@ -84,18 +83,18 @@ void Scheduler::execute() {
     pthread_join(threads[i].pthread_id, nullptr);
   }
 
-  for (auto *node : nodes) {
+  for (auto* node : nodes) {
     delete node;
   }
 }
 
 void Scheduler::set_threads_count(int new_threads_count) {
-  assert (1 <= new_threads_count && new_threads_count <= MAX_THREADS_COUNT);
+  assert(1 <= new_threads_count && new_threads_count <= MAX_THREADS_COUNT);
   threads_count = new_threads_count;
 }
 
-bool Scheduler::thread_process_node(Node *node) {
-  Task *task = node->get_task();
+bool Scheduler::thread_process_node(Node* node) {
+  Task* task = node->get_task();
   if (task == nullptr) {
     return false;
   }
@@ -105,10 +104,10 @@ bool Scheduler::thread_process_node(Node *node) {
   return true;
 }
 
-void Scheduler::thread_execute(ThreadContext *tls) {
+void Scheduler::thread_execute(ThreadContext* tls) {
   set_thread_id(tls->thread_id);
 
-  auto process_node = [this](Node *node) {
+  auto process_node = [this](Node* node) {
     bool at_least_one_task_executed = false;
     while (thread_process_node(node)) {
       at_least_one_task_executed = true;

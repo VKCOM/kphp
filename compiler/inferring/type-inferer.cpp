@@ -15,29 +15,30 @@
 namespace tinf {
 
 TypeInferer::TypeInferer()
-  : finish_flag(false) {}
+    : finish_flag(false) {}
 
-void TypeInferer::recalc_node(Node *node) {
-  //fprintf (stderr, "tinf::recalc_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
+void TypeInferer::recalc_node(Node* node) {
+  // fprintf (stderr, "tinf::recalc_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
   if (node->try_start_recalc()) {
     Q->push(node);
   }
 }
 
-void TypeInferer::add_node(Node *node) {
-  //fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
+void TypeInferer::add_node(Node* node) {
+  // fprintf (stderr, "tinf::add_node %d %p %s\n", get_thread_id(), node, node->get_description().c_str());
   if (!node->was_recalc_started_at_least_once()) {
     recalc_node(node);
   }
 }
 
-void TypeInferer::add_edge(const Edge *edge) {
-  //fprintf (stderr, "add_edge %d [%p %s] -> [%p %s]\n", get_thread_id(), edge->from, edge->from->get_description().c_str(), edge->to, edge->to->get_description().c_str());
+void TypeInferer::add_edge(const Edge* edge) {
+  // fprintf (stderr, "add_edge %d [%p %s] -> [%p %s]\n", get_thread_id(), edge->from, edge->from->get_description().c_str(), edge->to,
+  // edge->to->get_description().c_str());
   edge->from->register_edge_from_this(edge);
   edge->to->register_edge_to_this(edge);
 }
 
-void TypeInferer::add_restriction(RestrictionBase *restriction) {
+void TypeInferer::add_restriction(RestrictionBase* restriction) {
   restrictions->push_back(restriction);
 }
 
@@ -46,7 +47,7 @@ void TypeInferer::check_restrictions() {
   int shown = 0;
 
   for (int i = 0; i < restrictions.size(); i++) {
-    for (RestrictionBase *r : restrictions.get(i)) {
+    for (RestrictionBase* r : restrictions.get(i)) {
       if (r->is_restriction_broken()) {
         std::string description = r->get_description();
         stage::set_location(r->get_location()); // after get_description(), as its call could change location
@@ -60,17 +61,17 @@ void TypeInferer::check_restrictions() {
   }
 }
 
-
 class TypeInfererTask : public Task {
   static CachedProfiler type_inferer_profiler;
+
 private:
-  TypeInferer *inferer_;
+  TypeInferer* inferer_;
   NodeQueue queue_;
+
 public:
-  TypeInfererTask(TypeInferer *inferer, NodeQueue &&queue) :
-    inferer_(inferer),
-    queue_(std::move(queue)) {
-  }
+  TypeInfererTask(TypeInferer* inferer, NodeQueue&& queue)
+      : inferer_(inferer),
+        queue_(std::move(queue)) {}
 
   void execute() override {
     AutoProfiler profiler{*type_inferer_profiler};
@@ -82,8 +83,8 @@ public:
 
 CachedProfiler TypeInfererTask::type_inferer_profiler{"Type Inferring"};
 
-std::vector<Task *> TypeInferer::get_tasks() {
-  std::vector<Task *> res;
+std::vector<Task*> TypeInferer::get_tasks() {
+  std::vector<Task*> res;
   for (int i = 0; i < Q.size(); i++) {
     NodeQueue q = std::move(Q.get(i));
     if (q.empty()) {
@@ -96,10 +97,10 @@ std::vector<Task *> TypeInferer::get_tasks() {
 }
 
 void TypeInferer::do_run_queue() {
-  NodeQueue &q = Q.get();
+  NodeQueue& q = Q.get();
 
   while (!q.empty()) {
-    Node *node = q.front();
+    Node* node = q.front();
 
     node->start_recalc();
     node->recalc(this);
@@ -109,12 +110,12 @@ void TypeInferer::do_run_queue() {
   }
 }
 
-void TypeInferer::run_queue(NodeQueue *new_q) {
+void TypeInferer::run_queue(NodeQueue* new_q) {
   *Q = std::move(*new_q);
   do_run_queue();
 }
 
-void TypeInferer::run_node(Node *node) {
+void TypeInferer::run_node(Node* node) {
   if (!node->was_recalc_started_at_least_once()) {
     add_node(node);
     do_run_queue();
@@ -129,7 +130,4 @@ void TypeInferer::finish() {
   kphp_assert(Q->empty());
 }
 
-
-
 } // namespace tinf
-

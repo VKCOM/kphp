@@ -9,13 +9,13 @@
 #include "compiler/code-gen/const-globals-batched-mem.h"
 
 struct ConstVarsInit : CodeGenRootCmd {
-  explicit ConstVarsInit(const ConstantsBatchedMem &all_constants_in_mem);
-  
-  void compile(CodeGenerator &W) const final;
+  explicit ConstVarsInit(const ConstantsBatchedMem& all_constants_in_mem);
+
+  void compile(CodeGenerator& W) const final;
 
   static void compile_const_init_part(CodeGenerator& W, const ConstantsBatchedMem::OneBatchInfo& batch);
-  static void compile_const_init(CodeGenerator &W, const ConstantsBatchedMem &all_constants_in_mem);
+  static void compile_const_init(CodeGenerator& W, const ConstantsBatchedMem& all_constants_in_mem);
 
 private:
-  const ConstantsBatchedMem &all_constants_in_mem;
+  const ConstantsBatchedMem& all_constants_in_mem;
 };

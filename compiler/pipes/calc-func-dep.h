@@ -12,14 +12,14 @@
 #include "compiler/function-pass.h"
 
 struct DepData : private vk::movable_only {
-  std::vector<FunctionPtr> dep;               // functions accessible directly from the current (called or lambdas) (except extern)
-  std::vector<VarPtr> modified_global_vars;   // val_l globals for ub check later
+  std::vector<FunctionPtr> dep;             // functions accessible directly from the current (called or lambdas) (except extern)
+  std::vector<VarPtr> modified_global_vars; // val_l globals for ub check later
 
-  std::forward_list<VarPtr> ref_param_vars;                       // param &$refs from func declaration
-  std::forward_list<std::pair<VarPtr, VarPtr>> ref_ref_edges;     // calls to f($v) when $v is a reference
-  std::forward_list<std::pair<VarPtr, VarPtr>> global_ref_edges;  // calls to f($v) when $v is a global
+  std::forward_list<VarPtr> ref_param_vars;                      // param &$refs from func declaration
+  std::forward_list<std::pair<VarPtr, VarPtr>> ref_ref_edges;    // calls to f($v) when $v is a reference
+  std::forward_list<std::pair<VarPtr, VarPtr>> global_ref_edges; // calls to f($v) when $v is a global
 
-  std::forward_list<FunctionPtr> forks;       // calls to fork(f(...)) to calc resumable graph later
+  std::forward_list<FunctionPtr> forks; // calls to fork(f(...)) to calc resumable graph later
 };
 
 static_assert(std::is_nothrow_move_constructible<DepData>::value, "DepData should be movable");
@@ -29,8 +29,8 @@ class CalcFuncDepPass final : public FunctionPassBase {
 private:
   DepData data;
   std::vector<FunctionPtr> calls;
-public:
 
+public:
   std::string get_description() override {
     return "Calc function dependencies";
   }

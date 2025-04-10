@@ -32,26 +32,26 @@ static inline char crash_dump_half_byte_char(uint8_t hb) {
   return '*';
 }
 
-static inline void crash_dump_write_uint8(uint8_t value, crash_dump_buffer_t *buffer) {
+static inline void crash_dump_write_uint8(uint8_t value, crash_dump_buffer_t* buffer) {
   assert(sizeof(buffer->scratchpad) - buffer->position >= 2);
   buffer->scratchpad[buffer->position++] = crash_dump_half_byte_char(value >> 4);
   buffer->scratchpad[buffer->position++] = crash_dump_half_byte_char(value & 0x0F);
 }
 
-static inline void crash_dump_write_uint32(uint32_t value, crash_dump_buffer_t *buffer) {
+static inline void crash_dump_write_uint32(uint32_t value, crash_dump_buffer_t* buffer) {
   for (int i = 0; i < sizeof(value); ++i) {
     const uint8_t byte = (value >> (8 * (3 - i))) & 0xFF;
     crash_dump_write_uint8(byte, buffer);
   }
 }
 
-static inline void crash_dump_write_uint64(uint64_t value, crash_dump_buffer_t *buffer) {
+static inline void crash_dump_write_uint64(uint64_t value, crash_dump_buffer_t* buffer) {
   crash_dump_write_uint32(static_cast<uint32_t>(value >> 32), buffer);
   crash_dump_write_uint32(static_cast<uint32_t>(value & 0xFFFFFFFF), buffer);
 }
 
-[[maybe_unused]] static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_size, uint64_t reg_value, crash_dump_buffer_t *buffer) {
-  assert(reg_name_size +buffer->position <= sizeof(buffer->scratchpad));
+[[maybe_unused]] static inline void crash_dump_write_reg(const char* reg_name, size_t reg_name_size, uint64_t reg_value, crash_dump_buffer_t* buffer) {
+  assert(reg_name_size + buffer->position <= sizeof(buffer->scratchpad));
   memcpy(&buffer->scratchpad[buffer->position], reg_name, reg_name_size);
   buffer->position += reg_name_size;
   crash_dump_write_uint64(reg_value, buffer);
@@ -67,10 +67,10 @@ static inline void crash_dump_write_uint64(uint64_t value, crash_dump_buffer_t *
 // Keep in mind that:
 //  * `ucontext_t_portable` -- using for more efficient user context manipulations (e.g. `swapcontext`, `getcontext`, `setcontext`, etc)
 //  * `ucontext_t` -- using in signal handlers for machine state extracting in debug purposes.
-static inline void crash_dump_prepare_registers([[maybe_unused]] crash_dump_buffer_t *buffer, [[maybe_unused]] void *ucontext) {
+static inline void crash_dump_prepare_registers([[maybe_unused]] crash_dump_buffer_t* buffer, [[maybe_unused]] void* ucontext) {
 #ifdef __x86_64__
-#ifdef __APPLE__
-  const auto *uc = static_cast<ucontext_t *>(ucontext);
+  #ifdef __APPLE__
+  const auto* uc = static_cast<ucontext_t*>(ucontext);
 
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RIP=0x"), uc->uc_mcontext->__ss.__rip, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RSP=0x"), uc->uc_mcontext->__ss.__rsp, buffer);
@@ -92,8 +92,8 @@ static inline void crash_dump_prepare_registers([[maybe_unused]] crash_dump_buff
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R13=0x"), uc->uc_mcontext->__ss.__r13, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R14=0x"), uc->uc_mcontext->__ss.__r14, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext->__ss.__r15, buffer);
-#else
-  const auto *uc = static_cast<ucontext_t *>(ucontext);
+  #else
+  const auto* uc = static_cast<ucontext_t*>(ucontext);
 
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RIP=0x"), uc->uc_mcontext.gregs[REG_RIP], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RSP=0x"), uc->uc_mcontext.gregs[REG_RSP], buffer);
@@ -117,15 +117,15 @@ static inline void crash_dump_prepare_registers([[maybe_unused]] crash_dump_buff
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R13=0x"), uc->uc_mcontext.gregs[REG_R13], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R14=0x"), uc->uc_mcontext.gregs[REG_R14], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext.gregs[REG_R15], buffer);
-#endif
-#elif defined(__arm64__) || defined (__aarch64__)
+  #endif
+#elif defined(__arm64__) || defined(__aarch64__)
   // TODO: need to examine `ucontext_t` layout from glibc for aarch64/linux and aarch64/darwin
 #else
-#error "Unsupported arch"
+  #error "Unsupported arch"
 #endif
 }
 
-void crash_dump_write(void *ucontext) {
+void crash_dump_write(void* ucontext) {
   static const char header[] = "\n------- Register Values -------\n";
   kwrite(STDERR_FILENO, header, sizeof(header) - 1);
 

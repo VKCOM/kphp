@@ -4,37 +4,37 @@
 
 #include "runtime/math_functions.h"
 
-#include <chrono>
-#include <random>
-#include <cstring>
 #include <cerrno>
+#include <chrono>
+#include <cstring>
+#include <random>
 #include <sys/time.h>
 
 #if defined(__APPLE__)
-#include <stdlib.h>
+  #include <stdlib.h>
 #else
-#include <sys/random.h>
+  #include <sys/random.h>
 #endif
 
 #include "common/cycleclock.h"
-#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/math/random-functions.h"
+#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 #include "server/php-engine-vars.h"
 
 namespace {
-  int64_t secure_rand_buf(char * const buf, int64_t length) noexcept {
+int64_t secure_rand_buf(char* const buf, int64_t length) noexcept {
 #if defined(__APPLE__)
-    arc4random_buf(static_cast<void*>(buf), static_cast<size_t>(length));
-    return 0;
+  arc4random_buf(static_cast<void*>(buf), static_cast<size_t>(length));
+  return 0;
 #else
-    return getrandom(buf, static_cast<size_t>(length), 0x0);
+  return getrandom(buf, static_cast<size_t>(length), 0x0);
 #endif
-  }
+}
 } // namespace
 
-int64_t f$bindec(const string &number) noexcept {
+int64_t f$bindec(const string& number) noexcept {
   uint64_t v = 0;
   bool bad_str_param = number.empty();
   bool overflow = false;
@@ -52,7 +52,8 @@ int64_t f$bindec(const string &number) noexcept {
   }
   if (unlikely(overflow)) {
     php_warning("Integer overflow on converting '%s' in function bindec, "
-                "the result will be different from PHP", number.c_str());
+                "the result will be different from PHP",
+                number.c_str());
   }
   return static_cast<int64_t>(v);
 }
@@ -72,7 +73,7 @@ string f$decbin(int64_t number) noexcept {
 }
 
 double f$lcg_value() {
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
 
   static long long lcg_value_last_query_num = -1;
   static int s1 = 0, s2 = 0;
@@ -95,7 +96,12 @@ double f$lcg_value() {
   }
 
   int q;
-#define MODMULT(a, b, c, m, s) q = s / a; s = b * (s - a * q) - c * q; if (s < 0) {s += m;}
+#define MODMULT(a, b, c, m, s)                                                                                                                                 \
+  q = s / a;                                                                                                                                                   \
+  s = b * (s - a * q) - c * q;                                                                                                                                 \
+  if (s < 0) {                                                                                                                                                 \
+    s += m;                                                                                                                                                    \
+  }
   MODMULT(53668, 40014, 12211, 2147483563, s1);
   MODMULT(52774, 40692, 3791, 2147483399, s2);
 #undef MODMULT
@@ -113,7 +119,7 @@ namespace {
 
 class MTRandGenerator : vk::not_copyable {
 public:
-  static MTRandGenerator &get() {
+  static MTRandGenerator& get() {
     static MTRandGenerator generator;
     return generator;
   }
@@ -121,7 +127,7 @@ public:
   void lazy_init() noexcept {
     if (unlikely(!gen_)) {
       const uint64_t s = (static_cast<uint64_t>(pid) << 32) ^ cycleclock_now();
-      gen_ = new(&gen_storage_) std::mt19937_64{s};
+      gen_ = new (&gen_storage_) std::mt19937_64{s};
     }
   }
 
@@ -142,7 +148,7 @@ private:
   MTRandGenerator() = default;
 
   std::aligned_storage_t<sizeof(std::mt19937_64), alignof(std::mt19937_64)> gen_storage_{};
-  std::mt19937_64 *gen_{nullptr};
+  std::mt19937_64* gen_{nullptr};
 };
 
 } // namespace
@@ -193,7 +199,7 @@ Optional<int64_t> f$random_int(int64_t l, int64_t r) noexcept {
     std::uniform_int_distribution dist{l, r};
 
     return dist(rd);
-  } catch (const std::exception &e) {
+  } catch (const std::exception& e) {
     php_warning("Source of randomness cannot be found: %s", e.what());
     return false;
   } catch (...) {
@@ -217,8 +223,7 @@ Optional<string> f$random_bytes(int64_t length) noexcept {
   return str;
 }
 
-
-string f$base_convert(const string &number, int64_t frombase, int64_t tobase) {
+string f$base_convert(const string& number, int64_t frombase, int64_t tobase) {
   if (frombase < 2 || frombase > 36) {
     php_warning("Wrong parameter frombase (%" PRIi64 ") in function base_convert", frombase);
     return number;
@@ -243,11 +248,11 @@ string f$base_convert(const string &number, int64_t frombase, int64_t tobase) {
     return number;
   }
 
-  const char *digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+  const char* digits = "0123456789abcdefghijklmnopqrstuvwxyz";
 
   string n(len, false);
   for (string::size_type i = 0; i < len; i++) {
-    const char *s = (const char *)memchr(digits, tolower(number[i + f]), 36);
+    const char* s = (const char*)memchr(digits, tolower(number[i + f]), 36);
     if (s == nullptr || s - digits >= frombase) {
       php_warning("Wrong character '%c' at position %u in parameter number (%s) in function base_convert", number[i + f], i + f, number.c_str());
       return number;

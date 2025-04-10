@@ -13,8 +13,10 @@
 #include "compiler/debug.h"
 
 class SrcFile {
-  DEBUG_STRING_METHOD { return relative_file_name; }
-  
+  DEBUG_STRING_METHOD {
+    return relative_file_name;
+  }
+
 public:
   int id{0};
   std::string text, file_name, short_file_name;
@@ -22,7 +24,7 @@ public:
   std::string relative_dir_name;
   bool loaded{false};
   bool is_required{false};
-  bool is_strict_types{false}; // whether declare(strict_types=1) is set
+  bool is_strict_types{false};        // whether declare(strict_types=1) is set
   bool is_from_functions_file{false}; // functions.txt + all files required from it
   bool is_loaded_by_psr0{false};
 
@@ -38,17 +40,18 @@ public:
   std::map<vk::string_view, vk::string_view> namespace_uses;
 
   SrcFile() = default;
-  SrcFile(std::string file_name, std::string short_file_name, LibPtr owner_lib_id) :
-    file_name(std::move(file_name)),
-    short_file_name(std::move(short_file_name)),
-    owner_lib(owner_lib_id) {
-  }
+  SrcFile(std::string file_name, std::string short_file_name, LibPtr owner_lib_id)
+      : file_name(std::move(file_name)),
+        short_file_name(std::move(short_file_name)),
+        owner_lib(owner_lib_id) {}
 
   bool load();
 
   vk::string_view get_line(int id);
 
-  bool is_builtin() const { return is_from_functions_file || is_from_owner_lib(); }
+  bool is_builtin() const {
+    return is_from_functions_file || is_from_owner_lib();
+  }
   bool is_from_owner_lib() const;
 
   std::string get_main_func_run_var_name() const;

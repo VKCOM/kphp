@@ -18,7 +18,7 @@ static __inline__ uint64_t cycleclock_now() {
 
   return virtual_timer_value;
 #else
-#error "Unsupported arch"
+  #error "Unsupported arch"
 #endif
 }
 
@@ -48,6 +48,6 @@ static __inline__ uint64_t cycleclock_freq() {
   asm volatile("mrs %0, cntfrq_el0" : "=r"(aarch64_timer_frequency));
   return aarch64_timer_frequency;
 #else
-#error "Unsupported arch"
+  #error "Unsupported arch"
 #endif
 }

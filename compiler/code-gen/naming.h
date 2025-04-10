@@ -15,38 +15,37 @@
 struct LabelName {
   int label_id;
 
-  void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator& W) const {
     W << "label" << label_id;
   }
 };
 
 struct MacroBegin {
-  void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator& W) const {
     W.get_context().inside_macro++;
     W << "(";
   }
 };
 
 struct MacroEnd {
-  void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator& W) const {
     W.get_context().inside_macro--;
     W << ")";
   }
 };
 
 struct TypeName {
-  const TypeData *type;
+  const TypeData* type;
   gen_out_style style;
-  explicit TypeName(const TypeData *type, gen_out_style style = gen_out_style::cpp) :
-    type(type),
-    style(style) {
-  }
+  explicit TypeName(const TypeData* type, gen_out_style style = gen_out_style::cpp)
+      : type(type),
+        style(style) {}
 
-  void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator& W) const {
     std::string s = type_out(type, style);
     if (W.get_context().inside_macro) {
       while (s.find(',') != std::string::npos) {
-        s = s.replace(s.find(','), 1, " COMMA ");   // tuples have it
+        s = s.replace(s.find(','), 1, " COMMA "); // tuples have it
       }
     }
     W << s;
@@ -55,15 +54,14 @@ struct TypeName {
 
 class FunctionSignatureGenerator {
 public:
-  explicit FunctionSignatureGenerator(CodeGenerator &W) noexcept
-    : W_(W) {
-  }
-  
-  FunctionSignatureGenerator(const FunctionSignatureGenerator &) = delete;
-  FunctionSignatureGenerator& operator=(const FunctionSignatureGenerator &) = delete;
+  explicit FunctionSignatureGenerator(CodeGenerator& W) noexcept
+      : W_(W) {}
 
-  template<class T> 
-  FunctionSignatureGenerator &&operator<<(const T &value) && noexcept {
+  FunctionSignatureGenerator(const FunctionSignatureGenerator&) = delete;
+  FunctionSignatureGenerator& operator=(const FunctionSignatureGenerator&) = delete;
+
+  template<class T>
+  FunctionSignatureGenerator&& operator<<(const T& value) && noexcept {
     if (is_empty_) {
       if (inline_) {
         W_ << "inline ";
@@ -78,11 +76,11 @@ public:
     return std::move(*this);
   }
 
-  FunctionSignatureGenerator &&operator<<(const OpenBlock &value) && noexcept {
+  FunctionSignatureGenerator&& operator<<(const OpenBlock& value) && noexcept {
     return generate_specifiers(value);
   }
 
-  FunctionSignatureGenerator &&operator<<(const SemicolonAndNL &value) && noexcept {
+  FunctionSignatureGenerator&& operator<<(const SemicolonAndNL& value) && noexcept {
     return generate_specifiers(value);
   }
 
@@ -90,61 +88,61 @@ public:
     generate_specifiers("");
   }
 
-  FunctionSignatureGenerator &&set_is_virtual(bool new_value = true) && noexcept {
+  FunctionSignatureGenerator&& set_is_virtual(bool new_value = true) && noexcept {
     virtual_ = new_value;
     return std::move(*this);
   }
 
-  FunctionSignatureGenerator &&set_noexcept(bool new_value = true) && noexcept {
+  FunctionSignatureGenerator&& set_noexcept(bool new_value = true) && noexcept {
     noexcept_ = new_value;
     return std::move(*this);
   }
 
-  FunctionSignatureGenerator &&set_const_this(bool new_value = true) && noexcept {
+  FunctionSignatureGenerator&& set_const_this(bool new_value = true) && noexcept {
     const_this_ = new_value;
     return std::move(*this);
   }
 
-  FunctionSignatureGenerator &&set_overridden(bool new_value = true) && noexcept {
+  FunctionSignatureGenerator&& set_overridden(bool new_value = true) && noexcept {
     overridden_ = new_value;
     return std::move(*this);
   }
 
-  FunctionSignatureGenerator &&set_final(bool new_value = true) && noexcept {
+  FunctionSignatureGenerator&& set_final(bool new_value = true) && noexcept {
     final_ = new_value;
     return std::move(*this);
   }
 
-  FunctionSignatureGenerator &&set_pure_virtual(bool new_value = true) && noexcept {
+  FunctionSignatureGenerator&& set_pure_virtual(bool new_value = true) && noexcept {
     pure_virtual_ = new_value;
     return std::move(*this);
   }
 
-  FunctionSignatureGenerator &&set_inline(bool new_value = true) && noexcept {
+  FunctionSignatureGenerator&& set_inline(bool new_value = true) && noexcept {
     inline_ = new_value;
     return std::move(*this);
   }
 
-  FunctionSignatureGenerator &&set_definition(bool new_value = true) && noexcept {
+  FunctionSignatureGenerator&& set_definition(bool new_value = true) && noexcept {
     definition_ = new_value;
     return std::move(*this);
   }
 
-  FunctionSignatureGenerator &&clear_all() &&noexcept {
+  FunctionSignatureGenerator&& clear_all() && noexcept {
     return std::move(*this)
-      .set_is_virtual(false)
-      .set_noexcept(false)
-      .set_const_this(false)
-      .set_overridden(false)
-      .set_final(false)
-      .set_pure_virtual(false)
-      .set_inline(false)
-      .set_definition(false);
+        .set_is_virtual(false)
+        .set_noexcept(false)
+        .set_const_this(false)
+        .set_overridden(false)
+        .set_final(false)
+        .set_pure_virtual(false)
+        .set_inline(false)
+        .set_definition(false);
   }
 
 private:
   template<class T>
-  FunctionSignatureGenerator &&generate_specifiers(const T &value) noexcept {
+  FunctionSignatureGenerator&& generate_specifiers(const T& value) noexcept {
     if (!specifiers_generated_) {
       if (const_this_) {
         W_ << " const ";
@@ -177,7 +175,7 @@ private:
   bool is_empty_ = true;
   bool specifiers_generated_ = false;
 
-  CodeGenerator &W_;
+  CodeGenerator& W_;
 
   bool virtual_ = false;
   bool const_this_ = false;
@@ -191,31 +189,30 @@ private:
 
 struct FunctionName {
   FunctionPtr function;
-  explicit FunctionName(FunctionPtr function) :
-    function(function) {
-  }
+  explicit FunctionName(FunctionPtr function)
+      : function(function) {}
 
-  void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator& W) const {
     W << "f$" << function->name;
   }
 };
 
 struct FunctionForkName {
   FunctionPtr function;
-  inline FunctionForkName(FunctionPtr function) : function(function) {}
+  inline FunctionForkName(FunctionPtr function)
+      : function(function) {}
 
-  void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator& W) const {
     W << "f$fork$" << function->name;
   }
 };
 
 struct FunctionClassName {
   FunctionPtr function;
-  explicit FunctionClassName(FunctionPtr function) :
-    function(function) {
-  }
+  explicit FunctionClassName(FunctionPtr function)
+      : function(function) {}
 
-  void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator& W) const {
     W << "c$" << function->name;
   }
 };
@@ -225,14 +222,16 @@ struct VarName {
   vk::string_view name;
 
   VarName() = default;
-  explicit VarName(VarPtr var) : var(var) {}
-  explicit VarName(vk::string_view name) : name{name} {}
+  explicit VarName(VarPtr var)
+      : var(var) {}
+  explicit VarName(vk::string_view name)
+      : name{name} {}
 
   bool empty() const {
     return !var && name.empty();
   }
 
-  void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator& W) const {
     if (!name.empty()) {
       W << name;
     } else {

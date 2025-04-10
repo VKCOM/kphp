@@ -6,9 +6,9 @@
 
 #include "compiler/scheduler/pipe.h"
 
+#include <cmath>
 #include <iomanip>
 #include <iostream>
-#include <cmath>
 #include <mutex>
 
 template<typename PipeT>
@@ -29,7 +29,7 @@ struct PipeProgressName<TranspilingProcessFinishTag> {
 
 class PipesProgress {
 public:
-  static PipesProgress &get() {
+  static PipesProgress& get() {
     static PipesProgress this_;
     return this_;
   }
@@ -65,11 +65,10 @@ public:
 
 private:
   template<typename PipeFunctionT>
-  void write_progress(const char *name_postfix = "") {
+  void write_progress(const char* name_postfix = "") {
     std::lock_guard<std::mutex> lock{mutex_};
     const size_t percent = *name_postfix ? 100 * ++stages_counter_ / total_stages_ : 100;
-    std::cerr << "[" << std::setw(3) << percent << "%] "
-              << PipeProgressName<PipeFunctionT>::get() << name_postfix << "\n";
+    std::cerr << "[" << std::setw(3) << percent << "%] " << PipeProgressName<PipeFunctionT>::get() << name_postfix << "\n";
   }
 
   template<typename PipeFunctionT>
@@ -92,15 +91,15 @@ private:
 public:
   using BasePipe::BasePipe;
 
-  explicit PipeWithProgress(bool parallel = true) :
-    BasePipe(parallel) {
+  explicit PipeWithProgress(bool parallel = true)
+      : BasePipe(parallel) {
     PipesProgress::get().register_stage();
     if (BasePipe::pipe_fun_have_on_finish::value) {
       PipesProgress::get().register_stage();
     }
   }
 
-  void process_input(typename BasePipe::InputType &&input) final {
+  void process_input(typename BasePipe::InputType&& input) final {
     PipesProgress::get().on_pipe_process_input<PipeF>();
     BasePipe::process_input(std::move(input));
   }

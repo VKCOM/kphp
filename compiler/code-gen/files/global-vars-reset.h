@@ -9,14 +9,14 @@
 #include "compiler/code-gen/const-globals-batched-mem.h"
 
 struct GlobalVarsReset : CodeGenRootCmd {
-  explicit GlobalVarsReset(const GlobalsBatchedMem &all_globals_in_mem);
+  explicit GlobalVarsReset(const GlobalsBatchedMem& all_globals_in_mem);
 
-  void compile(CodeGenerator &W) const final;
+  void compile(CodeGenerator& W) const final;
 
-  static void compile_globals_reset_part(CodeGenerator &W, const GlobalsBatchedMem::OneBatchInfo &batch);
-  static void compile_globals_reset(CodeGenerator &W, const GlobalsBatchedMem &all_globals_in_mem);
-  static void compile_globals_allocate(CodeGenerator &W);
+  static void compile_globals_reset_part(CodeGenerator& W, const GlobalsBatchedMem::OneBatchInfo& batch);
+  static void compile_globals_reset(CodeGenerator& W, const GlobalsBatchedMem& all_globals_in_mem);
+  static void compile_globals_allocate(CodeGenerator& W);
 
 private:
-  const GlobalsBatchedMem &all_globals_in_mem;
+  const GlobalsBatchedMem& all_globals_in_mem;
 };

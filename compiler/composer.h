@@ -29,35 +29,35 @@ public:
   // load_file parses the "$pkg_root/composer.json" file and saves
   // all relevant definitions inside loader;
   // this method is not thread-safe and should be called only during the compiler init
-  void load_file(const std::string &pkg_root);
+  void load_file(const std::string& pkg_root);
 
   // load_root_file is like load_file, but should be only used
   // for the main composer file;
   // this method is not thread-safe and should be called only during the compiler init
-  void load_root_file(const std::string &pkg_root);
+  void load_root_file(const std::string& pkg_root);
 
   // psr4_lookup/psr0_lookup tries to find a filename that should contain
   // a class class_name; the lookup is based on the loaded
   // composer files and their autoload definitions
-  std::string psr4_lookup(const std::string &class_name) const;
-  std::string psr0_lookup(const std::string &class_name) const;
+  std::string psr4_lookup(const std::string& class_name) const;
+  std::string psr0_lookup(const std::string& class_name) const;
 
   // is_autoload_file reports whether the specified absolute filename
   // is a composer-generated autoload.php file
-  bool is_autoload_file(const std::string &filename) const noexcept {
+  bool is_autoload_file(const std::string& filename) const noexcept {
     return filename == autoload_filename_;
   }
 
-  const std::vector<std::string> &get_files_to_require() const noexcept {
+  const std::vector<std::string>& get_files_to_require() const noexcept {
     return files_to_require_;
   }
 
   using PsrMap = std::map<std::string, std::vector<std::string>, std::less<>>;
 
 private:
-  void load_file(const std::string &filename, bool root);
+  void load_file(const std::string& filename, bool root);
 
-  static std::string psr_lookup_nocache(const PsrMap &psr, const std::string &class_name, bool transform_underscore = false);
+  static std::string psr_lookup_nocache(const PsrMap& psr, const std::string& class_name, bool transform_underscore = false);
 
   bool use_dev_;
   PsrMap autoload_psr4_;

@@ -11,19 +11,17 @@
 struct RValue {
   RValue() = default;
 
-  explicit RValue(const TypeData *type, const MultiKey *key = nullptr) :
-    type(type),
-    key(key) {
-  }
+  explicit RValue(const TypeData* type, const MultiKey* key = nullptr)
+      : type(type),
+        key(key) {}
 
-  explicit RValue(tinf::Node *node, const MultiKey *key = nullptr) :
-    node(node),
-    key(key) {
-  }
+  explicit RValue(tinf::Node* node, const MultiKey* key = nullptr)
+      : node(node),
+        key(key) {}
 
-  const TypeData *type{nullptr};
-  tinf::Node *node{nullptr};
-  const MultiKey *key{nullptr};
+  const TypeData* type{nullptr};
+  tinf::Node* node{nullptr};
+  const MultiKey* key{nullptr};
   bool drop_or_false{false};
   bool drop_or_null{false};
   TypeData::FFIRvalueFlags ffi_flags;
@@ -59,8 +57,7 @@ inline RValue drop_or_false(RValue rvalue) {
   return rvalue;
 }
 
-
-inline RValue as_rvalue(VertexPtr v, const MultiKey *key = nullptr) {
+inline RValue as_rvalue(VertexPtr v, const MultiKey* key = nullptr) {
   return RValue(tinf::get_tinf_node(v), key);
 }
 
@@ -72,14 +69,14 @@ inline RValue as_rvalue(VarPtr var) {
   return RValue(tinf::get_tinf_node(var));
 }
 
-inline RValue as_rvalue(const TypeData *type, const MultiKey *key = nullptr) {
+inline RValue as_rvalue(const TypeData* type, const MultiKey* key = nullptr) {
   return RValue(type, key);
 }
 
-inline const RValue &as_rvalue(const RValue &rvalue) {
+inline const RValue& as_rvalue(const RValue& rvalue) {
   return rvalue;
 }
 
-inline RValue as_rvalue(tinf::Node *node, const MultiKey *key = nullptr) {
+inline RValue as_rvalue(tinf::Node* node, const MultiKey* key = nullptr) {
   return RValue(node, key);
 }

@@ -8,8 +8,8 @@
 #include <dirent.h>
 
 #include "common/algorithms/contains.h"
-#include "common/wrappers/mkdir_recursive.h"
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
+#include "common/wrappers/mkdir_recursive.h"
 
 #include "compiler/const-manipulations.h"
 #include "compiler/data/composer-json-data.h"
@@ -26,11 +26,11 @@
 
 namespace {
 
-void close_dir(DIR *d) {
+void close_dir(DIR* d) {
   closedir(d);
 }
 
-void collect_composer_folders(const std::string &path, std::vector<std::string> &result) {
+void collect_composer_folders(const std::string& path, std::vector<std::string>& result) {
   // can't use nftw here as it doesn't provide a portable way to stop directory traversal;
   // we don't want to visit *all* files in the vendor tree
   //
@@ -57,7 +57,7 @@ void collect_composer_folders(const std::string &path, std::vector<std::string> 
   bool recurse = true;
   std::vector<std::string> dirs;
 
-  while (const auto *entry = readdir(dp.get())) {
+  while (const auto* entry = readdir(dp.get())) {
     if (entry->d_name[0] == '.') {
       continue;
     }
@@ -83,26 +83,25 @@ void collect_composer_folders(const std::string &path, std::vector<std::string> 
   }
 
   if (recurse) {
-    for (const auto &dir : dirs) {
+    for (const auto& dir : dirs) {
       collect_composer_folders(dir, result);
     }
   }
 }
 
 // Collect all composer.json file roots that can be found in the given directory.
-std::vector<std::string> find_composer_folders(const std::string &dir) {
+std::vector<std::string> find_composer_folders(const std::string& dir) {
   std::vector<std::string> result;
   collect_composer_folders(dir, result);
   return result;
 }
 
-}
+} // namespace
 
-static FunctionPtr UNPARSED_BUT_REQUIRED_FUNC_PTR = FunctionPtr(reinterpret_cast<FunctionData *>(0x0001));
+static FunctionPtr UNPARSED_BUT_REQUIRED_FUNC_PTR = FunctionPtr(reinterpret_cast<FunctionData*>(0x0001));
 
-CompilerCore::CompilerCore() :
-  settings_(nullptr) {
-}
+CompilerCore::CompilerCore()
+    : settings_(nullptr) {}
 
 void CompilerCore::start() {
   stage::die_if_global_errors();
@@ -121,7 +120,7 @@ void CompilerCore::finish() {
   settings_ = nullptr;
 }
 
-void CompilerCore::register_settings(CompilerSettings *settings) {
+void CompilerCore::register_settings(CompilerSettings* settings) {
   kphp_assert(settings_ == nullptr);
   settings_ = settings;
   const auto mode = settings->mode.get();
@@ -143,18 +142,18 @@ void CompilerCore::register_settings(CompilerSettings *settings) {
   }
 }
 
-const CompilerSettings &CompilerCore::settings() const {
-  kphp_assert (settings_ != nullptr);
+const CompilerSettings& CompilerCore::settings() const {
+  kphp_assert(settings_ != nullptr);
   return *settings_;
 }
 
-const std::string &CompilerCore::get_global_namespace() const {
+const std::string& CompilerCore::get_global_namespace() const {
   return settings().static_lib_name.get();
 }
 
-FunctionPtr CompilerCore::get_function(const std::string &name) {
-  auto *node = functions_ht.at(vk::std_hash(name));
-  AutoLocker<Lockable *> locker(node);
+FunctionPtr CompilerCore::get_function(const std::string& name) {
+  auto* node = functions_ht.at(vk::std_hash(name));
+  AutoLocker<Lockable*> locker(node);
   if (!node->data || node->data == UNPARSED_BUT_REQUIRED_FUNC_PTR) {
     return {};
   }
@@ -164,13 +163,13 @@ FunctionPtr CompilerCore::get_function(const std::string &name) {
   return f;
 }
 
-std::string CompilerCore::search_file_in_include_dirs(const std::string &file_name, size_t *dir_index) const {
+std::string CompilerCore::search_file_in_include_dirs(const std::string& file_name, size_t* dir_index) const {
   if (file_name.empty() || file_name[0] == '/' || file_name[0] == '.') {
     return {};
   }
   std::string full_file_name;
   size_t index = 0;
-  const auto &includes = settings().includes.get();
+  const auto& includes = settings().includes.get();
   for (; index < includes.size() && full_file_name.empty(); ++index) {
     full_file_name = get_full_path(includes[index] + file_name);
   }
@@ -182,7 +181,7 @@ std::string CompilerCore::search_file_in_include_dirs(const std::string &file_na
 
 // search_required_file resolves the file_name like it would be expanded when user as require() argument;
 // it uses search_file_in_include_dirs as well as the current file relative search
-std::string CompilerCore::search_required_file(const std::string &file_name) const {
+std::string CompilerCore::search_required_file(const std::string& file_name) const {
   std::string full_file_name = search_file_in_include_dirs(file_name);
   if (file_name[0] == '/') {
     return get_full_path(file_name);
@@ -194,7 +193,7 @@ std::string CompilerCore::search_required_file(const std::string &file_name) con
     if (from_file) {
       std::string from_file_name = from_file->file_name;
       size_t en = from_file_name.find_last_of('/');
-      assert (en != std::string::npos);
+      assert(en != std::string::npos);
       std::string cur_dir = from_file_name.substr(0, en + 1);
       cur_include_dirs.push_back(cur_dir);
       if (from_file->owner_lib) {
@@ -213,14 +212,13 @@ std::string CompilerCore::search_required_file(const std::string &file_name) con
   return full_file_name;
 }
 
-FFIRoot &CompilerCore::get_ffi_root() {
+FFIRoot& CompilerCore::get_ffi_root() {
   return ffi;
 }
 
 OutputMode CompilerCore::get_output_mode() const {
   return output_mode;
 }
-
 
 vk::string_view CompilerCore::calc_relative_name(SrcFilePtr file, bool builtin) const {
   vk::string_view full_file_name = file->file_name;
@@ -235,7 +233,7 @@ vk::string_view CompilerCore::calc_relative_name(SrcFilePtr file, bool builtin) 
   }
 }
 
-SrcFilePtr CompilerCore::register_file(const std::string &file_name, LibPtr owner_lib, bool builtin) {
+SrcFilePtr CompilerCore::register_file(const std::string& file_name, LibPtr owner_lib, bool builtin) {
   if (file_name.empty()) {
     return {};
   }
@@ -262,10 +260,10 @@ SrcFilePtr CompilerCore::register_file(const std::string &file_name, LibPtr owne
     short_file_name += extension;
   }
 
-  //register file if needed
-  TSHashTable<SrcFilePtr>::HTNode *node = file_ht.at(vk::std_hash(full_file_name));
+  // register file if needed
+  TSHashTable<SrcFilePtr>::HTNode* node = file_ht.at(vk::std_hash(full_file_name));
   if (!node->data) {
-    AutoLocker<Lockable *> locker(node);
+    AutoLocker<Lockable*> locker(node);
     if (!node->data) {
       SrcFilePtr new_file = SrcFilePtr(new SrcFile(full_file_name, short_file_name, owner_lib));
       new_file->is_from_functions_file = builtin;
@@ -279,9 +277,9 @@ SrcFilePtr CompilerCore::register_file(const std::string &file_name, LibPtr owne
     }
   }
 
-  TSHashTable<SrcDirPtr>::HTNode *node_file_dir = dirs_ht.at(vk::std_hash(full_dir_name));
+  TSHashTable<SrcDirPtr>::HTNode* node_file_dir = dirs_ht.at(vk::std_hash(full_dir_name));
   if (!node_file_dir->data) {
-    AutoLocker<Lockable *> locker(node_file_dir);
+    AutoLocker<Lockable*> locker(node_file_dir);
     if (!node_file_dir->data) {
       node_file_dir->data = register_dir(full_dir_name);
     }
@@ -304,22 +302,22 @@ SrcDirPtr CompilerCore::register_dir(vk::string_view full_dir_name) {
     size_t last_pos_of_slash = full_dir_name.rfind('/', full_dir_name.size() - 2);
     vk::string_view parent_dir_name = full_dir_name.substr(0, last_pos_of_slash + 1);
 
-    TSHashTable<SrcDirPtr>::HTNode *node_parent_dir = dirs_ht.at(vk::std_hash(parent_dir_name));
+    TSHashTable<SrcDirPtr>::HTNode* node_parent_dir = dirs_ht.at(vk::std_hash(parent_dir_name));
     if (!node_parent_dir->data) {
-      AutoLocker<Lockable *> locker(node_parent_dir);
+      AutoLocker<Lockable*> locker(node_parent_dir);
       if (!node_parent_dir->data) {
         node_parent_dir->data = register_dir(parent_dir_name);
       }
     }
     dir->parent_dir = node_parent_dir->data;
-//    printf("%s -> %s\n", dir->full_dir_name.c_str(), dir->parent_dir->full_dir_name.c_str());
+    //    printf("%s -> %s\n", dir->full_dir_name.c_str(), dir->parent_dir->full_dir_name.c_str());
   }
 
   return dir;
 }
 
-void CompilerCore::require_function(const std::string &name, DataStream<FunctionPtr> &os) {
-  operate_on_function_locking(name, [&](FunctionPtr &f) {
+void CompilerCore::require_function(const std::string& name, DataStream<FunctionPtr>& os) {
+  operate_on_function_locking(name, [&](FunctionPtr& f) {
     if (!f) {
       f = UNPARSED_BUT_REQUIRED_FUNC_PTR;
     } else if (f != UNPARSED_BUT_REQUIRED_FUNC_PTR) {
@@ -328,7 +326,7 @@ void CompilerCore::require_function(const std::string &name, DataStream<Function
   });
 }
 
-void CompilerCore::require_function(FunctionPtr function, DataStream<FunctionPtr> &os) {
+void CompilerCore::require_function(FunctionPtr function, DataStream<FunctionPtr>& os) {
   if (!function->is_required) {
     function->is_required = true;
     os << function;
@@ -341,8 +339,8 @@ void CompilerCore::register_function(FunctionPtr function) {
   kphp_assert(!function->is_required);
 }
 
-void CompilerCore::register_and_require_function(FunctionPtr function, DataStream<FunctionPtr> &os, bool force_require /*= false*/) {
-  operate_on_function_locking(function->name, [&](FunctionPtr &f) {
+void CompilerCore::register_and_require_function(FunctionPtr function, DataStream<FunctionPtr>& os, bool force_require /*= false*/) {
+  operate_on_function_locking(function->name, [&](FunctionPtr& f) {
     bool was_previously_required = f == UNPARSED_BUT_REQUIRED_FUNC_PTR;
     kphp_error(!f || was_previously_required,
                fmt_format("Redeclaration of function {}(), the previous declaration was in {}", function->as_human_readable(), f->file_id->file_name));
@@ -355,8 +353,8 @@ void CompilerCore::register_and_require_function(FunctionPtr function, DataStrea
 }
 
 ClassPtr CompilerCore::try_register_class(ClassPtr cur_class) {
-  TSHashTable<ClassPtr>::HTNode *node = classes_ht.at(vk::std_hash(cur_class->name));
-  AutoLocker<Lockable *> locker(node);
+  TSHashTable<ClassPtr>::HTNode* node = classes_ht.at(vk::std_hash(cur_class->name));
+  AutoLocker<Lockable*> locker(node);
   if (!node->data) {
     node->data = cur_class;
   }
@@ -365,14 +363,14 @@ ClassPtr CompilerCore::try_register_class(ClassPtr cur_class) {
 
 bool CompilerCore::register_class(ClassPtr cur_class) {
   auto registered_class = try_register_class(cur_class);
-  kphp_error (registered_class == cur_class,
-              fmt_format("Redeclaration of class {}, the previous declaration was in {}", cur_class->name, registered_class->file_id->file_name));
+  kphp_error(registered_class == cur_class,
+             fmt_format("Redeclaration of class {}, the previous declaration was in {}", cur_class->name, registered_class->file_id->file_name));
   return registered_class == cur_class;
 }
 
 LibPtr CompilerCore::register_lib(LibPtr lib) {
-  TSHashTable<LibPtr, 1000>::HTNode *node = libs_ht.at(vk::std_hash(lib->lib_namespace()));
-  AutoLocker<Lockable *> locker(node);
+  TSHashTable<LibPtr, 1000>::HTNode* node = libs_ht.at(vk::std_hash(lib->lib_namespace()));
+  AutoLocker<Lockable*> locker(node);
   if (!node->data) {
     node->data = lib;
   }
@@ -380,22 +378,24 @@ LibPtr CompilerCore::register_lib(LibPtr lib) {
 }
 
 ModulitePtr CompilerCore::register_modulite(ModulitePtr modulite) {
-  auto *node = modulites_ht.at(vk::std_hash(modulite->modulite_name));
-  AutoLocker<Lockable *> locker(node);
-  kphp_error(!node->data, fmt_format("Redeclaration of modulite {}, declared in:\n- {}\n- {}", modulite->modulite_name, modulite->yaml_file->relative_file_name, node->data->yaml_file->relative_file_name));
+  auto* node = modulites_ht.at(vk::std_hash(modulite->modulite_name));
+  AutoLocker<Lockable*> locker(node);
+  kphp_error(!node->data, fmt_format("Redeclaration of modulite {}, declared in:\n- {}\n- {}", modulite->modulite_name, modulite->yaml_file->relative_file_name,
+                                     node->data->yaml_file->relative_file_name));
   node->data = modulite;
   return node->data;
 }
 
 ModulitePtr CompilerCore::get_modulite(vk::string_view name) {
-  const auto *result = modulites_ht.find(vk::std_hash(name));
+  const auto* result = modulites_ht.find(vk::std_hash(name));
   return result ? *result : ModulitePtr{};
 }
 
 ComposerJsonPtr CompilerCore::register_composer_json(ComposerJsonPtr composer_json) {
-  auto *node = composer_json_ht.at(vk::std_hash(composer_json->package_name));
-  AutoLocker<Lockable *> locker(node);
-  kphp_error(!node->data, fmt_format("Redeclaration of composer package {}, declared in:\n- {}\n- {}", composer_json->package_name, composer_json->json_file->relative_file_name, node->data->json_file->relative_file_name));
+  auto* node = composer_json_ht.at(vk::std_hash(composer_json->package_name));
+  AutoLocker<Lockable*> locker(node);
+  kphp_error(!node->data, fmt_format("Redeclaration of composer package {}, declared in:\n- {}\n- {}", composer_json->package_name,
+                                     composer_json->json_file->relative_file_name, node->data->json_file->relative_file_name));
   node->data = composer_json;
   kphp_assert(composer_json->json_file->dir);
   composer_json->json_file->dir->has_composer_json = true;
@@ -403,23 +403,21 @@ ComposerJsonPtr CompilerCore::register_composer_json(ComposerJsonPtr composer_js
 }
 
 ComposerJsonPtr CompilerCore::get_composer_json(vk::string_view name) {
-  const auto *result = composer_json_ht.find(vk::std_hash(name));
+  const auto* result = composer_json_ht.find(vk::std_hash(name));
   return result ? *result : ComposerJsonPtr{};
 }
 
 ComposerJsonPtr CompilerCore::get_composer_json_at_dir(SrcDirPtr dir) {
-  std::vector<ComposerJsonPtr> at_dir = composer_json_ht.get_all_if([dir](ComposerJsonPtr j) {
-    return j->json_file->dir == dir;
-  });
+  std::vector<ComposerJsonPtr> at_dir = composer_json_ht.get_all_if([dir](ComposerJsonPtr j) { return j->json_file->dir == dir; });
   kphp_assert(at_dir.size() < 2);
   return at_dir.empty() ? ComposerJsonPtr{} : at_dir.front();
 }
 
-void CompilerCore::register_main_file(const std::string &file_name, DataStream<SrcFilePtr> &os) {
+void CompilerCore::register_main_file(const std::string& file_name, DataStream<SrcFilePtr>& os) {
   kphp_assert(!main_file);
 
   SrcFilePtr res = register_file(file_name, LibPtr{});
-  kphp_error (file_name.empty() || res, fmt_format("Cannot load main file [{}]", file_name));
+  kphp_error(file_name.empty() || res, fmt_format("Cannot load main file [{}]", file_name));
 
   if (res && try_require_file(res)) {
     main_file = res;
@@ -427,44 +425,39 @@ void CompilerCore::register_main_file(const std::string &file_name, DataStream<S
   }
 }
 
-SrcFilePtr CompilerCore::require_file(const std::string &file_name, LibPtr owner_lib, DataStream<SrcFilePtr> &os, bool error_if_not_exists /* = true */, bool builtin) {
+SrcFilePtr CompilerCore::require_file(const std::string& file_name, LibPtr owner_lib, DataStream<SrcFilePtr>& os, bool error_if_not_exists /* = true */,
+                                      bool builtin) {
   SrcFilePtr file = register_file(file_name, owner_lib, builtin);
-  kphp_error (file || !error_if_not_exists, fmt_format("Cannot load file [{}]", file_name));
+  kphp_error(file || !error_if_not_exists, fmt_format("Cannot load file [{}]", file_name));
   if (file && try_require_file(file)) {
     os << file;
   }
   return file;
 }
 
-
 ClassPtr CompilerCore::get_class(vk::string_view name) {
-  const auto *result = classes_ht.find(vk::std_hash(name));
+  const auto* result = classes_ht.find(vk::std_hash(name));
   return result ? *result : ClassPtr{};
 }
 
 ClassPtr CompilerCore::get_memcache_class() {
-  if (!memcache_class) {            // if specific memcache implementation is not set
-    return get_class("Memcache");   // take it from the functions.txt
+  if (!memcache_class) {          // if specific memcache implementation is not set
+    return get_class("Memcache"); // take it from the functions.txt
   }
   return memcache_class;
 }
 
 void CompilerCore::set_memcache_class(ClassPtr klass) {
-  kphp_error(!memcache_class || memcache_class == klass,
-             fmt_format("Duplicate Memcache realization {} and {}", memcache_class->name, klass->name));
+  kphp_error(!memcache_class || memcache_class == klass, fmt_format("Duplicate Memcache realization {} and {}", memcache_class->name, klass->name));
   memcache_class = klass;
 }
 
 bool CompilerCore::register_define(DefinePtr def_id) {
-  TSHashTable<DefinePtr>::HTNode *node = defines_ht.at(vk::std_hash(def_id->name));
-  AutoLocker<Lockable *> locker(node);
+  TSHashTable<DefinePtr>::HTNode* node = defines_ht.at(vk::std_hash(def_id->name));
+  AutoLocker<Lockable*> locker(node);
 
-  kphp_error_act (
-    !node->data,
-    fmt_format("Redeclaration of define [{}], the previous declaration was in [{}]",
-               def_id->name, node->data->file_id->file_name),
-    return false
-  );
+  kphp_error_act(!node->data, fmt_format("Redeclaration of define [{}], the previous declaration was in [{}]", def_id->name, node->data->file_id->file_name),
+                 return false);
 
   node->data = def_id;
   return true;
@@ -476,11 +469,11 @@ DefinePtr CompilerCore::get_define(std::string_view name) {
   if (!name.empty() && name.front() == '\\') {
     name.remove_prefix(1);
   }
-  const auto *result = defines_ht.find(vk::std_hash(name));
+  const auto* result = defines_ht.find(vk::std_hash(name));
   return result ? *result : DefinePtr{};
 }
 
-VarPtr CompilerCore::create_var(const std::string &name, VarData::Type type) {
+VarPtr CompilerCore::create_var(const std::string& name, VarData::Type type) {
   VarPtr var = VarPtr(new VarData(type));
   var->name = name;
   var->tinf_node.init_as_variable(var);
@@ -488,11 +481,11 @@ VarPtr CompilerCore::create_var(const std::string &name, VarData::Type type) {
   return var;
 }
 
-VarPtr CompilerCore::get_global_var(const std::string &name, VertexPtr init_val) {
-  auto *node = globals_ht.at(vk::std_hash(name));
+VarPtr CompilerCore::get_global_var(const std::string& name, VertexPtr init_val) {
+  auto* node = globals_ht.at(vk::std_hash(name));
 
   if (!node->data) {
-    AutoLocker<Lockable *> locker(node);
+    AutoLocker<Lockable*> locker(node);
     if (!node->data) {
       node->data = create_var(name, VarData::var_global_t);
       node->data->init_val = init_val;
@@ -503,11 +496,11 @@ VarPtr CompilerCore::get_global_var(const std::string &name, VertexPtr init_val)
   return node->data;
 }
 
-VarPtr CompilerCore::get_constant_var(const std::string &name, VertexPtr init_val, bool *is_new_inserted) {
-  auto *node = constants_ht.at(vk::std_hash(name));
+VarPtr CompilerCore::get_constant_var(const std::string& name, VertexPtr init_val, bool* is_new_inserted) {
+  auto* node = constants_ht.at(vk::std_hash(name));
   VarPtr new_var;
   if (!node->data) {
-    AutoLocker<Lockable *> locker(node);
+    AutoLocker<Lockable*> locker(node);
     if (!node->data) {
       new_var = create_var(name, VarData::var_const_t);
       new_var->init_val = init_val;
@@ -519,7 +512,7 @@ VarPtr CompilerCore::get_constant_var(const std::string &name, VertexPtr init_va
   // it's created by a thread that first found it, and all others just ref to the same node
   // here we make var->init_val->location stable, as it's sometimes used in code generation (locations of regexps, for example)
   if (!new_var) {
-    AutoLocker<Lockable *> locker(node);
+    AutoLocker<Lockable*> locker(node);
     if (node->data->init_val->get_location() < init_val->get_location()) {
       std::swap(node->data->init_val, init_val);
     }
@@ -537,45 +530,45 @@ VarPtr CompilerCore::get_constant_var(const std::string &name, VertexPtr init_va
     kphp_assert_msg(var->name == name, fmt_format("bug in compiler (hash collision) {} {}", var->name, name));
 
     switch (init_val->type()) {
-      case op_string:
-        kphp_assert(var->init_val->get_string() == init_val->get_string());
-        break;
-      case op_conv_regexp: {
-        const std::string &new_regexp = init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
-        const std::string &hashed_regexp = var->init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
-        kphp_assert_msg(hashed_regexp == new_regexp, fmt_format("hash collision of regexp: {} vs {}", new_regexp, hashed_regexp));
-        break;
-      }
-      case op_array: {
-        std::string new_array_repr = VertexPtrFormatter::to_string(init_val);
-        std::string hashed_array_repr = VertexPtrFormatter::to_string(var->init_val);
-        kphp_assert_msg(new_array_repr == hashed_array_repr, fmt_format("hash collision of arrays: {} vs {}", new_array_repr, hashed_array_repr));
-        break;
-      }
-      default:
-        break;
+    case op_string:
+      kphp_assert(var->init_val->get_string() == init_val->get_string());
+      break;
+    case op_conv_regexp: {
+      const std::string& new_regexp = init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
+      const std::string& hashed_regexp = var->init_val.as<op_conv_regexp>()->expr().as<op_string>()->str_val;
+      kphp_assert_msg(hashed_regexp == new_regexp, fmt_format("hash collision of regexp: {} vs {}", new_regexp, hashed_regexp));
+      break;
+    }
+    case op_array: {
+      std::string new_array_repr = VertexPtrFormatter::to_string(init_val);
+      std::string hashed_array_repr = VertexPtrFormatter::to_string(var->init_val);
+      kphp_assert_msg(new_array_repr == hashed_array_repr, fmt_format("hash collision of arrays: {} vs {}", new_array_repr, hashed_array_repr));
+      break;
+    }
+    default:
+      break;
     }
   }
   return var;
 }
 
-VarPtr CompilerCore::create_local_var(FunctionPtr function, const std::string &name, VarData::Type type) {
+VarPtr CompilerCore::create_local_var(FunctionPtr function, const std::string& name, VarData::Type type) {
   VarPtr var = create_var(name, type);
   var->holder_func = function;
   switch (type) {
-    case VarData::var_local_t:
-    case VarData::var_local_inplace_t:
-      function->local_var_ids.push_back(var);
-      break;
-    case VarData::var_static_t:
-      function->static_var_ids.push_back(var);
-      break;
-    case VarData::var_param_t:
-      var->param_i = (int)function->param_ids.size();
-      var->tinf_node.init_as_argument(var);
-      function->param_ids.push_back(var);
-      break;
-    default:
+  case VarData::var_local_t:
+  case VarData::var_local_inplace_t:
+    function->local_var_ids.push_back(var);
+    break;
+  case VarData::var_static_t:
+    function->static_var_ids.push_back(var);
+    break;
+  case VarData::var_param_t:
+    var->param_i = (int)function->param_ids.size();
+    var->tinf_node.init_as_argument(var);
+    function->param_ids.push_back(var);
+    break;
+  default:
     kphp_fail();
   }
   return var;
@@ -603,9 +596,7 @@ std::vector<ClassPtr> CompilerCore::get_classes() {
 }
 
 std::vector<InterfacePtr> CompilerCore::get_interfaces() {
-  return classes_ht.get_all_if([](ClassPtr klass) {
-    return klass->is_interface();
-  });
+  return classes_ht.get_all_if([](ClassPtr klass) { return klass->is_interface(); });
 }
 
 std::vector<DefinePtr> CompilerCore::get_defines() {
@@ -624,7 +615,7 @@ std::vector<ModulitePtr> CompilerCore::get_modulites() {
   return modulites_ht.get_all();
 }
 
-const ComposerAutoloader &CompilerCore::get_composer_autoloader() const {
+const ComposerAutoloader& CompilerCore::get_composer_autoloader() const {
   return composer_class_loader;
 }
 
@@ -640,27 +631,27 @@ void CompilerCore::save_index() {
   }
 }
 
-const Index &CompilerCore::get_index() {
+const Index& CompilerCore::get_index() {
   return cpp_index;
 }
 
-const Index &CompilerCore::get_runtime_index() {
+const Index& CompilerCore::get_runtime_index() {
   return runtime_sources_index;
 }
 
-const Index &CompilerCore::get_runtime_core_index() {
+const Index& CompilerCore::get_runtime_core_index() {
   return runtime_common_sources_index;
 }
 
-const Index &CompilerCore::get_common_index() {
+const Index& CompilerCore::get_common_index() {
   return common_sources_index;
 }
 
-const Index &CompilerCore::get_unicode_index() {
+const Index& CompilerCore::get_unicode_index() {
   return unicode_sources_index;
 }
 
-File *CompilerCore::get_file_info(std::string &&file_name) {
+File* CompilerCore::get_file_info(std::string&& file_name) {
   return cpp_index.insert_file(std::move(file_name));
 }
 
@@ -757,7 +748,7 @@ void CompilerCore::init_composer_class_loader() {
   std::string vendor = settings().composer_root.get() + "vendor";
   bool vendor_folder_exists = access(vendor.c_str(), F_OK) == 0;
   if (vendor_folder_exists) {
-    for (const std::string &composer_root : find_composer_folders(vendor)) {
+    for (const std::string& composer_root : find_composer_folders(vendor)) {
       composer_class_loader.load_file(composer_root);
     }
   }
@@ -787,4 +778,4 @@ void CompilerCore::update_hash_tables_stats() {
   stats.ht_total_composer_jsons = composer_json_ht.get_size();
 }
 
-CompilerCore *G;
+CompilerCore* G;

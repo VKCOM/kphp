@@ -4,13 +4,12 @@
 
 #pragma once
 
-#include <string>
 #include <forward_list>
+#include <string>
 #include <vector>
 
 #include "compiler/data/data_ptr.h"
 #include "compiler/data/vertex-adaptor.h"
-
 
 enum class PhpDocType {
   unknown,
@@ -64,22 +63,27 @@ struct PhpDocTag {
   // if a tag value is like "int|false $var_name" (for @param / @var / etc.),
   // it's represented as this structure
   struct TypeAndVarName {
-    const TypeHint *type_hint{nullptr};
-    vk::string_view var_name;     // stored without leading "$"; could be empty if omitted in phpdoc
+    const TypeHint* type_hint{nullptr};
+    vk::string_view var_name; // stored without leading "$"; could be empty if omitted in phpdoc
 
-    operator bool() const noexcept { return static_cast<bool>(type_hint); }
+    operator bool() const noexcept {
+      return static_cast<bool>(type_hint);
+    }
   };
-
 
   PhpDocType type;
   vk::string_view value;
 
-  PhpDocTag(PhpDocType type, vk::string_view value) : type(type), value(value) {}
+  PhpDocTag(PhpDocType type, vk::string_view value)
+      : type(type),
+        value(value) {}
 
   std::string get_tag_name() const noexcept;
 
-  std::string value_as_string() const noexcept { return std::string(value); }
-  TypeAndVarName value_as_type_and_var_name(FunctionPtr current_function, const GenericsDeclarationMixin *genericTs) const;
+  std::string value_as_string() const noexcept {
+    return std::string(value);
+  }
+  TypeAndVarName value_as_type_and_var_name(FunctionPtr current_function, const GenericsDeclarationMixin* genericTs) const;
 };
 
 // a class representing whole php doc comment
@@ -92,7 +96,7 @@ public:
   explicit PhpDocComment(vk::string_view phpdoc_str);
 
   bool has_tag(PhpDocType type) const noexcept {
-    for (const PhpDocTag &tag: tags) {
+    for (const PhpDocTag& tag : tags) {
       if (tag.type == type) {
         return true;
       }
@@ -101,7 +105,7 @@ public:
   }
 
   bool has_tag(PhpDocType type, PhpDocType or_type2) const noexcept {
-    for (const PhpDocTag &tag: tags) {
+    for (const PhpDocTag& tag : tags) {
       if (tag.type == type || tag.type == or_type2) {
         return true;
       }
@@ -109,8 +113,8 @@ public:
     return false;
   }
 
-  const PhpDocTag *find_tag(PhpDocType type) const noexcept {
-    for (const PhpDocTag &tag: tags) {
+  const PhpDocTag* find_tag(PhpDocType type) const noexcept {
+    for (const PhpDocTag& tag : tags) {
       if (tag.type == type) {
         return &tag;
       }
@@ -123,31 +127,31 @@ public:
 // such parsing could be done only based on current_function, when we know all classes and function's properties
 class PhpDocTypeHintParser {
 public:
-  explicit PhpDocTypeHintParser(FunctionPtr current_function, const GenericsDeclarationMixin *genericTs)
-    : current_function(current_function)
-    , genericTs(genericTs) {}
+  explicit PhpDocTypeHintParser(FunctionPtr current_function, const GenericsDeclarationMixin* genericTs)
+      : current_function(current_function),
+        genericTs(genericTs) {}
 
-  const TypeHint *parse_from_tokens(std::vector<Token>::const_iterator &tok_iter);
-  const TypeHint *parse_from_tokens_silent(std::vector<Token>::const_iterator &tok_iter) noexcept;
+  const TypeHint* parse_from_tokens(std::vector<Token>::const_iterator& tok_iter);
+  const TypeHint* parse_from_tokens_silent(std::vector<Token>::const_iterator& tok_iter) noexcept;
 
 private:
   FunctionPtr current_function;
-  const GenericsDeclarationMixin *genericTs;
+  const GenericsDeclarationMixin* genericTs;
   std::vector<Token>::const_iterator cur_tok;
 
-  const TypeHint *parse_ffi_scope();
-  const TypeHint *parse_ffi_cdata();
-  const TypeHint *parse_classname(const std::string &phpdoc_class_name);
-  const TypeHint *parse_simple_type();
-  const TypeHint *parse_arg_ref();
-  const TypeHint *parse_type_array();
-  std::vector<const TypeHint *> parse_nested_type_hints();
-  const TypeHint *parse_shape_type();
-  const TypeHint *parse_nested_one_type_hint();
-  const TypeHint *parse_typed_callable();
-  const TypeHint *parse_type_expression();
+  const TypeHint* parse_ffi_scope();
+  const TypeHint* parse_ffi_cdata();
+  const TypeHint* parse_classname(const std::string& phpdoc_class_name);
+  const TypeHint* parse_simple_type();
+  const TypeHint* parse_arg_ref();
+  const TypeHint* parse_type_array();
+  std::vector<const TypeHint*> parse_nested_type_hints();
+  const TypeHint* parse_shape_type();
+  const TypeHint* parse_nested_one_type_hint();
+  const TypeHint* parse_typed_callable();
+  const TypeHint* parse_type_expression();
 };
 
-const TypeHint *phpdoc_finalize_type_hint_and_resolve(const TypeHint *type_hint, FunctionPtr resolve_context);
-const TypeHint *phpdoc_replace_genericTs_with_reified(const TypeHint *type_hint, const GenericsInstantiationMixin *reifiedTs);
-const TypeHint *phpdoc_convert_default_value_to_type_hint(VertexPtr init_val);
+const TypeHint* phpdoc_finalize_type_hint_and_resolve(const TypeHint* type_hint, FunctionPtr resolve_context);
+const TypeHint* phpdoc_replace_genericTs_with_reified(const TypeHint* type_hint, const GenericsInstantiationMixin* reifiedTs);
+const TypeHint* phpdoc_convert_default_value_to_type_hint(VertexPtr init_val);

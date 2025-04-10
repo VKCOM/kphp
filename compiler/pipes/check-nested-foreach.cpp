@@ -24,15 +24,13 @@ VarPtr get_non_local_scope_visible_var(VertexAdaptor<op_foreach_param> params) n
 }
 
 VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex) {
-  auto already_used = [&](VarPtr v) {
-    return vk::contains(foreach_vars_, v) || vk::contains(foreach_key_vars_, v);
-  };
+  auto already_used = [&](VarPtr v) { return vk::contains(foreach_vars_, v) || vk::contains(foreach_key_vars_, v); };
   if (auto foreach_v = vertex.try_as<op_foreach>()) {
     auto params = foreach_v->params();
     auto x = params->x();
     if (already_used(x->var_id)) {
-      kphp_warning (fmt_format("Foreach key {} shadows key or value of outer foreach",
-                               TermStringFormat::add_text_attribute("&$" + x->var_id->name, TermStringFormat::bold)));
+      kphp_warning(fmt_format("Foreach key {} shadows key or value of outer foreach",
+                              TermStringFormat::add_text_attribute("&$" + x->var_id->name, TermStringFormat::bold)));
     }
     foreach_vars_.push_back(x->var_id);
     if (x->ref_flag) {
@@ -41,8 +39,8 @@ VertexPtr CheckNestedForeachPass::on_enter_vertex(VertexPtr vertex) {
     if (params->has_key()) {
       auto key = params->key();
       if (already_used(key->var_id)) {
-        kphp_warning (fmt_format("Foreach key {} shadows key or value of outer foreach",
-                                 TermStringFormat::add_text_attribute("&$" + key->var_id->name, TermStringFormat::bold)));
+        kphp_warning(fmt_format("Foreach key {} shadows key or value of outer foreach",
+                                TermStringFormat::add_text_attribute("&$" + key->var_id->name, TermStringFormat::bold)));
       }
       foreach_key_vars_.push_back(key->var_id);
     }

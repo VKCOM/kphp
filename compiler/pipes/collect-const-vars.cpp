@@ -4,12 +4,12 @@
 
 #include "compiler/pipes/collect-const-vars.h"
 
-#include "compiler/data/src-file.h"
-#include "compiler/vertex-util.h"
-#include "compiler/data/var-data.h"
-#include "compiler/const-manipulations.h"
 #include "compiler/compiler-core.h"
+#include "compiler/const-manipulations.h"
+#include "compiler/data/src-file.h"
+#include "compiler/data/var-data.h"
 #include "compiler/name-gen.h"
+#include "compiler/vertex-util.h"
 
 namespace {
 
@@ -17,22 +17,22 @@ template<class Derived, class ResultType>
 struct VertexVisitor {
   static ResultType visit(VertexPtr v) {
     switch (v->type()) {
-      case op_array:
-        return Derived::on_array(v.as<op_array>());
-      case op_string:
-        return Derived::on_string(v.as<op_string>());
-      case op_concat:
-        return Derived::on_concat(v.as<op_concat>());
-      case op_conv_regexp:
-        return Derived::on_conv_regexp(v.as<op_conv_regexp>());
-      case op_func_call:
-        return Derived::on_func_call(v.as<op_func_call>());
-      case op_string_build:
-        return Derived::on_string_build(v.as<op_string_build>());
-      case op_define_val:
-        return Derived::on_define_val(v.as<op_define_val>());
-      default:
-        return Derived::fallback(v);
+    case op_array:
+      return Derived::on_array(v.as<op_array>());
+    case op_string:
+      return Derived::on_string(v.as<op_string>());
+    case op_concat:
+      return Derived::on_concat(v.as<op_concat>());
+    case op_conv_regexp:
+      return Derived::on_conv_regexp(v.as<op_conv_regexp>());
+    case op_func_call:
+      return Derived::on_func_call(v.as<op_func_call>());
+    case op_string_build:
+      return Derived::on_string_build(v.as<op_string_build>());
+    case op_define_val:
+      return Derived::on_define_val(v.as<op_define_val>());
+    default:
+      return Derived::fallback(v);
     }
   }
 
@@ -91,7 +91,7 @@ struct ShouldStoreOnTopDown : public VertexVisitor<ShouldStoreOnTopDown, bool> {
 
   static bool on_func_call(VertexAdaptor<op_func_call> v) {
     // const constructors are handled in on_define_val
-    auto res =  v->func_id && v->func_id->is_pure;
+    auto res = v->func_id && v->func_id->is_pure;
     return res;
   }
 
@@ -115,7 +115,7 @@ struct ShouldStoreOnBottomUp : public VertexVisitor<ShouldStoreOnBottomUp, bool>
 struct NameGenerator : public VertexVisitor<NameGenerator, std::string> {
   static constexpr auto prefix = "const_var";
 
-  static std::string fallback(VertexPtr v[[maybe_unused]]) {
+  static std::string fallback(VertexPtr v [[maybe_unused]]) {
     return gen_unique_name(prefix);
   }
 
@@ -147,63 +147,63 @@ struct NameGenerator : public VertexVisitor<NameGenerator, std::string> {
 private:
   // checks that inlined as define' value constructor is suitable to be stored as constant var
   static bool is_object_suitable_for_hashing(VertexPtr vertex) {
-    return vertex->type() == op_define_val && vertex.as<op_define_val>()->value()->type() == op_func_call
-           && vertex.as<op_define_val>()->value()->extra_type == op_ex_constructor_call && vertex->const_type == cnst_const_val;
+    return vertex->type() == op_define_val && vertex.as<op_define_val>()->value()->type() == op_func_call &&
+           vertex.as<op_define_val>()->value()->extra_type == op_ex_constructor_call && vertex->const_type == cnst_const_val;
   }
 
   static bool is_array_suitable_for_hashing(VertexPtr vertex) {
     return vertex->type() == op_array && CheckConst::is_const(vertex);
   }
 
-  static std::string gen_const_string_name(const std::string &str) {
+  static std::string gen_const_string_name(const std::string& str) {
     return fmt_format("c_str${:x}", vk::std_hash(str));
   }
 
-  static std::string gen_const_regexp_name(const std::string &str) {
+  static std::string gen_const_regexp_name(const std::string& str) {
     return fmt_format("c_reg${:x}", vk::std_hash(str));
   }
 
-  static std::string gen_const_object_name(const VertexAdaptor<op_define_val> &def) {
+  static std::string gen_const_object_name(const VertexAdaptor<op_define_val>& def) {
     kphp_assert_msg(def->value()->type() == op_func_call, "Internal error: expected op_define_val <op_func_call>");
     return fmt_format("c_obj${:x}", ObjectHash::calc_hash(def));
   }
 
-  static std::string gen_const_array_name(const VertexAdaptor<op_array> &array) {
+  static std::string gen_const_array_name(const VertexAdaptor<op_array>& array) {
     return fmt_format("c_arr${:x}", ArrayHash::calc_hash(array));
   }
 };
 
 struct ProcessBeforeReplace : public VertexVisitor<ProcessBeforeReplace, VertexPtr> {
-    static VertexPtr fallback(VertexPtr v) {
-      return v;
-    }
+  static VertexPtr fallback(VertexPtr v) {
+    return v;
+  }
 
-    static VertexPtr on_func_call(VertexAdaptor<op_func_call> v) {
-      return remove_op_define_val(v);
-    }
+  static VertexPtr on_func_call(VertexAdaptor<op_func_call> v) {
+    return remove_op_define_val(v);
+  }
 
-    static VertexPtr on_conv_regexp(VertexAdaptor<op_conv_regexp> regexp) {
-      return remove_op_define_val(regexp);
-    }
+  static VertexPtr on_conv_regexp(VertexAdaptor<op_conv_regexp> regexp) {
+    return remove_op_define_val(regexp);
+  }
 
-    static VertexPtr on_concat(VertexAdaptor<op_concat> concat) {
-      return remove_op_define_val(concat);
-    }
+  static VertexPtr on_concat(VertexAdaptor<op_concat> concat) {
+    return remove_op_define_val(concat);
+  }
 
-    static VertexPtr on_string_build(VertexAdaptor<op_string_build> str_build) {
-      return remove_op_define_val(str_build);
-    }
+  static VertexPtr on_string_build(VertexAdaptor<op_string_build> str_build) {
+    return remove_op_define_val(str_build);
+  }
 
-  private:
-    static VertexPtr remove_op_define_val(VertexPtr v) {
-      for (VertexPtr& sub_vertex: *v) {
-        sub_vertex = remove_op_define_val(sub_vertex);
-      }
-      if (auto as_op_define_val = v.try_as<op_define_val>()) {
-        return as_op_define_val->value();
-      }
-      return v;
+private:
+  static VertexPtr remove_op_define_val(VertexPtr v) {
+    for (VertexPtr& sub_vertex : *v) {
+      sub_vertex = remove_op_define_val(sub_vertex);
     }
+    if (auto as_op_define_val = v.try_as<op_define_val>()) {
+      return as_op_define_val->value();
+    }
+    return v;
+  }
 };
 
 int get_expr_dep_level(VertexPtr vertex) {
@@ -211,7 +211,7 @@ int get_expr_dep_level(VertexPtr vertex) {
     return var->var_id->dependency_level;
   }
   int max_dependency_level = 0;
-  for (const auto &child: *vertex) {
+  for (const auto& child : *vertex) {
     max_dependency_level = std::max(max_dependency_level, get_expr_dep_level(child));
   }
   return max_dependency_level;
@@ -225,15 +225,13 @@ void set_var_dep_level(VarPtr var_id) {
   }
 }
 
-
 } // namespace
-
 
 VertexPtr CollectConstVarsPass::on_exit_vertex(VertexPtr root) {
   if (root->const_type == cnst_const_val) {
     composite_const_depth_ -= static_cast<int>(IsComposite::visit(root));
-    if (ShouldStoreOnBottomUp::visit(root)
-        && !current_function->is_extern()) { // don't extract constants from extern func default arguments, they are in C++ runtime
+    if (ShouldStoreOnBottomUp::visit(root) &&
+        !current_function->is_extern()) { // don't extract constants from extern func default arguments, they are in C++ runtime
       root = ProcessBeforeReplace::visit(root);
       root = create_const_variable(root, root->location);
     }
@@ -262,7 +260,6 @@ VertexPtr CollectConstVarsPass::on_enter_vertex(VertexPtr root) {
   }
   return root;
 }
-
 
 VertexPtr CollectConstVarsPass::create_const_variable(VertexPtr root, Location loc) {
   std::string name = NameGenerator::visit(root);
@@ -293,12 +290,12 @@ bool CollectConstVarsPass::user_recursion(VertexPtr v) {
   if (v->type() == op_function) {
     if (current_function->type == FunctionData::func_class_holder) {
       ClassPtr c = current_function->class_id;
-      c->members.for_each([&](ClassMemberInstanceField &field) {
+      c->members.for_each([&](ClassMemberInstanceField& field) {
         if (field.var->init_val) {
           run_function_pass(field.var->init_val, this);
         }
       });
-      c->members.for_each([&](ClassMemberStaticField &field) {
+      c->members.for_each([&](ClassMemberStaticField& field) {
         if (field.var->init_val) {
           run_function_pass(field.var->init_val, this);
         }

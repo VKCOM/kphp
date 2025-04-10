@@ -14,22 +14,22 @@
 
 struct KphpRawOption : vk::not_copyable {
 public:
-  const std::string &get_env_var() const noexcept {
+  const std::string& get_env_var() const noexcept {
     return env_var_;
   }
 
-  void init(const char *env, std::string default_value, std::vector<std::string> choices) noexcept;
+  void init(const char* env, std::string default_value, std::vector<std::string> choices) noexcept;
 
-  void substitute_depends(const KphpRawOption &other) noexcept;
+  void substitute_depends(const KphpRawOption& other) noexcept;
   void verify_arg_value() const;
 
-  virtual void set_option_arg_value(const char *optarg_value) noexcept = 0;
+  virtual void set_option_arg_value(const char* optarg_value) noexcept = 0;
   virtual void parse_arg_value() = 0;
-  virtual void dump_option(std::ostream &out) const noexcept = 0;
+  virtual void dump_option(std::ostream& out) const noexcept = 0;
   virtual ~KphpRawOption() = default;
 
 protected:
-  void throw_param_exception(const std::string &reason) const;
+  void throw_param_exception(const std::string& reason) const;
 
   std::string env_var_;
   std::string raw_option_arg_;
@@ -41,7 +41,7 @@ class KphpOption final : public KphpRawOption {
 public:
   friend class CompilerSettings;
 
-  const T &get() const noexcept {
+  const T& get() const noexcept {
     return value_;
   }
 
@@ -51,14 +51,14 @@ private:
   using KphpRawOption::substitute_depends;
   using KphpRawOption::verify_arg_value;
 
-  KphpOption &set_default(std::string &&default_opt) noexcept {
+  KphpOption& set_default(std::string&& default_opt) noexcept {
     if (raw_option_arg_.empty()) {
       raw_option_arg_ = std::move(default_opt);
     }
     return *this;
   }
 
-  void set_option_arg_value(const char *optarg_value) noexcept final {
+  void set_option_arg_value(const char* optarg_value) noexcept final {
     if (std::is_same<T, bool>{}) {
       raw_option_arg_ = "1";
     } else if (std::is_same<T, std::vector<std::string>>{} && !raw_option_arg_.empty()) {
@@ -68,7 +68,7 @@ private:
     }
   }
 
-  void dump_option(std::ostream &out) const noexcept final;
+  void dump_option(std::ostream& out) const noexcept final;
   void parse_arg_value() final;
 
   T value_{};
@@ -79,7 +79,7 @@ public:
   friend class CompilerSettings;
   friend class CxxFlags;
 
-  const std::string &get() const noexcept {
+  const std::string& get() const noexcept {
     return value_;
   }
 
@@ -89,24 +89,20 @@ private:
 
 class CxxFlags {
 public:
-  void init(const std::string &runtime_sha256, const std::string &cxx, std::string cxx_flags_line, const std::string &dest_cpp_dir, bool enable_pch) noexcept;
+  void init(const std::string& runtime_sha256, const std::string& cxx, std::string cxx_flags_line, const std::string& dest_cpp_dir, bool enable_pch) noexcept;
 
   KphpImplicitOption flags;
   KphpImplicitOption flags_sha256;
   KphpImplicitOption pch_dir;
 
-  friend inline bool operator==(const CxxFlags &lhs, const CxxFlags &rhs) noexcept {
+  friend inline bool operator==(const CxxFlags& lhs, const CxxFlags& rhs) noexcept {
     return std::tie(lhs.flags.get(), lhs.flags_sha256.get(), lhs.pch_dir.get()) == std::tie(rhs.flags.get(), rhs.flags_sha256.get(), rhs.pch_dir.get());
   }
 };
 
 class CompilerSettings : vk::not_copyable {
 public:
-  enum color_settings {
-    auto_colored,
-    not_colored,
-    colored
-  };
+  enum color_settings { auto_colored, not_colored, colored };
 
   KphpOption<std::string> main_file;
 
@@ -199,10 +195,10 @@ public:
 
   void init();
 
-  static std::string read_runtime_sha256_file(const std::string &filename);
+  static std::string read_runtime_sha256_file(const std::string& filename);
 
 private:
-  static void option_as_dir(KphpOption<std::string> &path) noexcept;
+  static void option_as_dir(KphpOption<std::string>& path) noexcept;
 
   color_settings color_{auto_colored};
 };

@@ -17,21 +17,22 @@ class Target : private vk::not_copyable {
   friend class MakeRunner;
 
 private:
-  std::vector<Target *> rdeps;
+  std::vector<Target*> rdeps;
 
   long long mtime = 0;
   int pending_deps = 0;
   bool is_required = false;
   bool is_waiting = false;
   bool is_ready = false;
-  File *file = nullptr;
+  File* file = nullptr;
 
 protected:
   bool upd_mtime(long long new_mtime);
   void set_mtime(long long new_mtime);
 
-  std::vector<Target *> deps;
-  const CompilerSettings *settings{nullptr};
+  std::vector<Target*> deps;
+  const CompilerSettings* settings{nullptr};
+
 public:
   long long priority;
   double start_time;
@@ -51,7 +52,7 @@ public:
   std::string target();
   std::string dep_list();
 
-  void set_file(File *new_file);
-  File *get_file() const;
-  void set_settings(const CompilerSettings *new_settings);
+  void set_file(File* new_file);
+  File* get_file() const;
+  void set_settings(const CompilerSettings* new_settings);
 };

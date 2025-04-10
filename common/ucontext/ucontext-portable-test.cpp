@@ -2,8 +2,8 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <gtest/gtest.h>
 #include "common/ucontext/ucontext-portable.h"
+#include <gtest/gtest.h>
 
 uint8_t ctx1_stack[8192];
 uint8_t ctx2_stack[8192];
@@ -12,7 +12,7 @@ ucontext_t_portable cur_ctx;
 ucontext_t_portable ctx1;
 ucontext_t_portable ctx2;
 ucontext_t_portable ctx3;
-volatile int finished {0};
+volatile int finished{0};
 
 void ctx1_entrypoint(int a0, int a1, int a2, int a3, int a4, int a5, int a6, int a7) {
   ASSERT_EQ(a0, 0);
@@ -42,13 +42,13 @@ TEST(ucontext_portable, swapcontext) {
   set_context_stack_ptr_portable(ctx1, ctx1_stack);
   set_context_stack_size_portable(ctx1, sizeof(ctx1_stack));
   set_context_link_portable(ctx1, &cur_ctx);
-  makecontext_portable(&ctx1, reinterpret_cast<void(*)()>(ctx1_entrypoint), 8, 0, 1, 2, 3, 4, 5, 6, 7);
+  makecontext_portable(&ctx1, reinterpret_cast<void (*)()>(ctx1_entrypoint), 8, 0, 1, 2, 3, 4, 5, 6, 7);
 
   ASSERT_EQ(getcontext_portable(&ctx2), 0);
   set_context_stack_ptr_portable(ctx2, ctx2_stack);
   set_context_stack_size_portable(ctx2, sizeof(ctx2_stack));
   set_context_link_portable(ctx2, &ctx1);
-  makecontext_portable(&ctx2, reinterpret_cast<void(*)()>(ctx2_entrypoint), 0);
+  makecontext_portable(&ctx2, reinterpret_cast<void (*)()>(ctx2_entrypoint), 0);
 
   ASSERT_EQ(swapcontext_portable(&cur_ctx, &ctx2), 0);
   ASSERT_EQ(finished, 1);
@@ -57,7 +57,7 @@ TEST(ucontext_portable, swapcontext) {
 /*
   Imitation of `do { i++; } while (i < 10)`
 */
-volatile int context_set_cnt {0};
+volatile int context_set_cnt{0};
 TEST(ucontext_portable, get_and_setcontext) {
   getcontext_portable(&ctx3);
   context_set_cnt = context_set_cnt + 1; // Due to `++` and `+=` ops with volatile are deprecated

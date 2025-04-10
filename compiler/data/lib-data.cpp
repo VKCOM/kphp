@@ -9,18 +9,16 @@
 #include "compiler/stage.h"
 
 namespace {
-std::string get_lib_dir(const std::string &main_file_path) {
+std::string get_lib_dir(const std::string& main_file_path) {
   const std::size_t last_slash = main_file_path.rfind('/');
   kphp_assert_msg(last_slash != std::string::npos, "bad lib main file path");
   return main_file_path.substr(0, last_slash + 1);
 }
 
-std::string get_lib_name(const std::string &lib_require_name) {
+std::string get_lib_name(const std::string& lib_require_name) {
   // expected: .../?${name}
   const std::size_t start_pos = lib_require_name.rfind('/');
-  std::string lib_name = start_pos == std::string::npos
-                         ? lib_require_name
-                         : lib_require_name.substr(start_pos + 1);
+  std::string lib_name = start_pos == std::string::npos ? lib_require_name : lib_require_name.substr(start_pos + 1);
   kphp_assert_msg(!lib_name.empty(), "bad lib require name");
   return lib_name;
 }
@@ -30,23 +28,21 @@ bool is_raw_php_dir(vk::string_view lib_dir) {
 }
 } // namespace
 
-LibData::LibData(const std::string &lib_name, const std::string &lib_dir) :
-  lib_dir_(lib_dir),
-  lib_name_(lib_name) {
-}
+LibData::LibData(const std::string& lib_name, const std::string& lib_dir)
+    : lib_dir_(lib_dir),
+      lib_name_(lib_name) {}
 
-LibData::LibData(const std::string &lib_require_name) :
-  lib_name_(get_lib_name(lib_require_name)) {
-}
+LibData::LibData(const std::string& lib_require_name)
+    : lib_name_(get_lib_name(lib_require_name)) {}
 
-void LibData::update_lib_main_file(const std::string &main_file_path, const std::string &unified_lib_dir) {
+void LibData::update_lib_main_file(const std::string& main_file_path, const std::string& unified_lib_dir) {
   kphp_assert_msg(lib_dir_.empty(), "lib directory is known");
   lib_dir_ = get_lib_dir(main_file_path);
   unified_lib_dir_ = unified_lib_dir;
   is_raw_php_ = is_raw_php_dir(lib_dir_);
 }
 
-std::string LibData::run_global_function_name(const std::string &lib_name) {
+std::string LibData::run_global_function_name(const std::string& lib_name) {
   return lib_name + "_run_global";
 }
 
@@ -77,15 +73,15 @@ std::string LibData::runtime_lib_sha256_file() const {
   return lib_dir() + "php_lib_version.sha256";
 }
 
-const std::string &LibData::lib_dir() const {
+const std::string& LibData::lib_dir() const {
   kphp_assert_msg(!lib_dir_.empty(), "lib directory is unknown");
   return lib_dir_;
 }
 
-const char *LibData::headers_tmp_dir() {
+const char* LibData::headers_tmp_dir() {
   return "lib_headers/";
 }
 
-const char *LibData::functions_txt_tmp_file() {
+const char* LibData::functions_txt_tmp_file() {
   return "lib_functions.txt";
 }

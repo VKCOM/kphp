@@ -7,32 +7,30 @@
 
 namespace tl2cpp {
 struct TlTemplatePhpTypeHelpers {
-  explicit TlTemplatePhpTypeHelpers(const vk::tlo_parsing::type *type) :
-    type(get_this_from_renamed_tl_scheme(type)),
-    constructor(nullptr) {}
+  explicit TlTemplatePhpTypeHelpers(const vk::tlo_parsing::type* type)
+      : type(get_this_from_renamed_tl_scheme(type)),
+        constructor(nullptr) {}
 
-  explicit TlTemplatePhpTypeHelpers(const vk::tlo_parsing::combinator *constructor) :
-    type(nullptr),
-    constructor(get_this_from_renamed_tl_scheme(constructor)) {}
+  explicit TlTemplatePhpTypeHelpers(const vk::tlo_parsing::combinator* constructor)
+      : type(nullptr),
+        constructor(get_this_from_renamed_tl_scheme(constructor)) {}
 
-  void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator& W) const {
     size_t cnt = 0;
     std::vector<std::string> type_var_names;
-    const vk::tlo_parsing::combinator *target_constructor = type ? type->constructors[0].get() : constructor;
-    for (const auto &arg : target_constructor->args) {
+    const vk::tlo_parsing::combinator* target_constructor = type ? type->constructors[0].get() : constructor;
+    for (const auto& arg : target_constructor->args) {
       if (arg->is_type()) {
         ++cnt;
         type_var_names.emplace_back(arg->name);
       }
     }
-    const std::string &struct_name = cpp_tl_struct_name("", type ? type->name : constructor->name, "__");
+    const std::string& struct_name = cpp_tl_struct_name("", type ? type->name : constructor->name, "__");
     W << "template <" << vk::join(std::vector<std::string>(cnt, "typename"), ", ") << ">" << NL;
-    W << "struct " << struct_name << " " << BEGIN
-      << "using type = tl_undefined_php_type;" << NL
-      << END << ";" << NL << NL;
+    W << "struct " << struct_name << " " << BEGIN << "using type = tl_undefined_php_type;" << NL << END << ";" << NL << NL;
     auto php_classes = type ? get_all_php_classes_of_tl_type(type) : get_all_php_classes_of_tl_constructor(constructor);
-    for (const auto &cur_php_class_template_instantiation : php_classes) {
-      const std::string &cur_instantiation_name = cur_php_class_template_instantiation->src_name;
+    for (const auto& cur_php_class_template_instantiation : php_classes) {
+      const std::string& cur_instantiation_name = cur_php_class_template_instantiation->src_name;
       std::vector<std::string> template_specialization_params = type_var_names;
       std::string type_var_access;
       if (type) {
@@ -50,15 +48,16 @@ struct TlTemplatePhpTypeHelpers {
         }
       }
       std::transform(template_specialization_params.begin(), template_specialization_params.end(), template_specialization_params.begin(),
-                     [&](const std::string &s) { return type_var_access + "::" += s; });
+                     [&](const std::string& s) { return type_var_access + "::" += s; });
       W << "template <>" << NL;
       W << "struct " << struct_name << "<" << vk::join(template_specialization_params, ", ") << "> " << BEGIN;
       W << "using type = " << cur_instantiation_name << ";" << NL;
       W << END << ";" << NL << NL;
     }
   }
+
 private:
-  const vk::tlo_parsing::type *type;
-  const vk::tlo_parsing::combinator *constructor;
+  const vk::tlo_parsing::type* type;
+  const vk::tlo_parsing::combinator* constructor;
 };
-}
+} // namespace tl2cpp

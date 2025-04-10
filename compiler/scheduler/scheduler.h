@@ -14,22 +14,22 @@ class ThreadContext;
 
 class Scheduler : public SchedulerBase {
 private:
-  std::vector<Node *> nodes;
-  std::vector<Node *> one_thread_nodes;
-  std::queue<Node *> sync_nodes;
+  std::vector<Node*> nodes;
+  std::vector<Node*> one_thread_nodes;
+  std::queue<Node*> sync_nodes;
   int threads_count;
-  TaskPull *task_pull;
+  TaskPull* task_pull;
 
-  bool thread_process_node(Node *node);
-  void thread_execute(ThreadContext *tls);
-  friend void *scheduler_thread_execute(void *arg);
+  bool thread_process_node(Node* node);
+  void thread_execute(ThreadContext* tls);
+  friend void* scheduler_thread_execute(void* arg);
 
 public:
   Scheduler();
 
-  void add_node(Node *node) override;
-  void add_sync_node(Node *node) override;
-  void add_task(Task *task) override;
+  void add_node(Node* node) override;
+  void add_sync_node(Node* node) override;
+  void add_task(Task* task) override;
   void execute() override;
 
   void set_threads_count(int new_threads_count);

@@ -40,8 +40,7 @@ private:
   }
 };
 
-template <typename Duration>
+template<typename Duration>
 using SteadyTimer = Timer<std::chrono::steady_clock, Duration>;
 
 } // namespace vk
-

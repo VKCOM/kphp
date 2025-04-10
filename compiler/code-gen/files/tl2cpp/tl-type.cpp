@@ -11,18 +11,15 @@ namespace tl2cpp {
 using vk::tlo_parsing::FLAG_DEFAULT_CONSTRUCTOR;
 using vk::tlo_parsing::FLAG_NOCONS;
 
-void TypeStore::compile(CodeGenerator &W) const {
+void TypeStore::compile(CodeGenerator& W) const {
   // todo: CHECK_EXCEPTION(return); ??? Should we interrupt storing if the exception was thrown? (Right now it's inconsistent with fetching)
   auto store_params = get_optional_args_for_call(type->constructors[0]);
-  store_params.insert(store_params.begin(),
-                      typed_mode ? (type->is_polymorphic() ? "conv_obj" : "tl_object.get()") : "tl_object");
+  store_params.insert(store_params.begin(), typed_mode ? (type->is_polymorphic() ? "conv_obj" : "tl_object.get()") : "tl_object");
   std::string store_call = (typed_mode ? "typed_store(" : "store(") + vk::join(store_params, ", ") + ");";
 
   if (typed_mode) {
-    W << "if (tl_object.is_null()) " << BEGIN
-      << "CurrentTlQuery::get().raise_storing_error(\"Instance expected, but false given while storing tl type\");" << NL
-      << "return;" << NL
-      << END << NL;
+    W << "if (tl_object.is_null()) " << BEGIN << "CurrentTlQuery::get().raise_storing_error(\"Instance expected, but false given while storing tl type\");"
+      << NL << "return;" << NL << END << NL;
   }
   // non-polymorphic types — 1 constructor — forwards a ::store() into the constructor without 'magic'
   if (!type->is_polymorphic()) {
@@ -30,12 +27,12 @@ void TypeStore::compile(CodeGenerator &W) const {
     return;
   }
 
-  auto *default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
+  auto* default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
   // for polymorphic types:
   // typed TL: ifs with dynamic_cast, similar to the interface methods
   if (typed_mode) {
     bool first = true;
-    for (const auto &c : type->constructors) {
+    for (const auto& c : type->constructors) {
       W << (first ? "if " : " else if ");
       first = false;
 
@@ -47,17 +44,14 @@ void TypeStore::compile(CodeGenerator &W) const {
       W << "const " << cpp_class << " *conv_obj = tl_object.template cast_to<" << cpp_class << ">().get();" << NL;
       W << cpp_tl_struct_name("c_", c->name, template_str) << "::" << store_call << NL << END;
     }
-    W << (first ? "" : " else ") << BEGIN
-      << "CurrentTlQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
-      << "tl_object.get_class(), \"" << type->name << "\");" << NL
-      << END << NL;
+    W << (first ? "" : " else ") << BEGIN << "CurrentTlQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
+      << "tl_object.get_class(), \"" << type->name << "\");" << NL << END << NL;
 
     // untyped TL: ifs with constructor_name checks
   } else {
     bool first = true;
-    W << "const string &c_name = tl_arr_get(tl_object, "
-      << register_tl_const_str("_") << ", 0, " << hash_tl_const_str("_") << "L).to_string();" << NL;
-    for (const auto &c : type->constructors) {
+    W << "const string &c_name = tl_arr_get(tl_object, " << register_tl_const_str("_") << ", 0, " << hash_tl_const_str("_") << "L).to_string();" << NL;
+    for (const auto& c : type->constructors) {
       W << (first ? "if " : " else if ");
       first = false;
 
@@ -67,14 +61,12 @@ void TypeStore::compile(CodeGenerator &W) const {
       }
       W << cpp_tl_struct_name("c_", c->name, template_str) << "::" << store_call << NL << END;
     }
-    W << (first ? "" : " else ") << BEGIN
-      << "CurrentTlQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
-      << "c_name.c_str(), \"" << type->name << "\");" << NL
-      << END << NL;
+    W << (first ? "" : " else ") << BEGIN << "CurrentTlQuery::get().raise_storing_error(\"Invalid constructor %s of type %s\", "
+      << "c_name.c_str(), \"" << type->name << "\");" << NL << END << NL;
   }
 }
 
-void TypeFetch::compile(CodeGenerator &W) const {
+void TypeFetch::compile(CodeGenerator& W) const {
   auto fetch_params = get_optional_args_for_call(type->constructors[0]);
   std::string fetch_call;
   if (!typed_mode) {
@@ -86,7 +78,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
 
   // non-polymorphic types are fetched in a trivial way - their fetch is delegated to the constructor
   if (!type->is_polymorphic()) {
-    const auto &constructor = type->constructors.front();
+    const auto& constructor = type->constructors.front();
     if (typed_mode) {
       W << "CHECK_EXCEPTION(return);" << NL;
       W << get_php_runtime_type(constructor.get(), true) << " result;" << NL;
@@ -107,14 +99,14 @@ void TypeFetch::compile(CodeGenerator &W) const {
     W << "array<mixed> result;" << NL;
   }
   W << "CHECK_EXCEPTION(return" << (typed_mode ? "" : " result") << ");" << NL;
-  auto *default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
+  auto* default_constructor = (type->flags & FLAG_DEFAULT_CONSTRUCTOR ? type->constructors.back().get() : nullptr);
   bool has_name = type->constructors_num > 1 && !(type->flags & FLAG_NOCONS);
   if (default_constructor != nullptr) {
     W << "int pos = tl_parse_save_pos();" << NL;
   }
   W << "auto magic = static_cast<unsigned int>(f$fetch_int());" << NL;
   W << "switch(magic) " << BEGIN;
-  for (const auto &c : type->constructors) {
+  for (const auto& c : type->constructors) {
     if (c.get() == default_constructor) {
       continue;
     }
@@ -122,8 +114,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
     if (!typed_mode) {
       W << "result = " << cpp_tl_struct_name("c_", c->name, template_str) << "::" << fetch_call << NL;
       if (has_name) {
-        W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(c->name) << ", " << hash_tl_const_str("_") << "L);"
-          << NL;
+        W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(c->name) << ", " << hash_tl_const_str("_") << "L);" << NL;
       }
     } else {
       W << get_php_runtime_type(c.get(), true) << " result;" << NL;
@@ -140,8 +131,8 @@ void TypeFetch::compile(CodeGenerator &W) const {
     if (!typed_mode) {
       W << "result = " << cpp_tl_struct_name("c_", default_constructor->name, template_str) << "::" << fetch_call << NL;
       if (has_name) {
-        W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(default_constructor->name) << ", "
-          << hash_tl_const_str("_") << "L);" << NL;
+        W << "result.set_value(" << register_tl_const_str("_") << ", " << register_tl_const_str(default_constructor->name) << ", " << hash_tl_const_str("_")
+          << "L);" << NL;
       }
     } else {
       W << get_php_runtime_type(default_constructor, true) << " result;" << NL;
@@ -159,7 +150,7 @@ void TypeFetch::compile(CodeGenerator &W) const {
   }
 }
 
-void TlTypeDeclaration::compile(CodeGenerator &W) const {
+void TlTypeDeclaration::compile(CodeGenerator& W) const {
   W << "/* ~~~~~~~~~ " << t->name << " ~~~~~~~~~ */\n" << NL;
   const bool needs_typed_fetch_store = TlTypeDeclaration::does_tl_type_need_typed_fetch_store(t);
   if (needs_typed_fetch_store && is_type_dependent(t, tl) && t->is_polymorphic()) {
@@ -167,17 +158,16 @@ void TlTypeDeclaration::compile(CodeGenerator &W) const {
     W << TlTemplatePhpTypeHelpers(t);
   }
   std::string struct_name = cpp_tl_struct_name("t_", t->name);
-  auto *constructor = t->constructors[0].get();
+  auto* constructor = t->constructors[0].get();
   std::string template_decl = get_template_declaration(constructor);
   if (!template_decl.empty()) {
     W << template_decl << NL;
   }
   W << "struct " << struct_name << " " << BEGIN;
-  W << "using PhpType = "
-    << (needs_typed_fetch_store ? get_php_runtime_type(t) : "tl_undefined_php_type") << ";" << NL;
+  W << "using PhpType = " << (needs_typed_fetch_store ? get_php_runtime_type(t) : "tl_undefined_php_type") << ";" << NL;
   std::vector<std::string> constructor_params;
   std::vector<std::string> constructor_inits;
-  for (const auto &arg : constructor->args) {
+  for (const auto& arg : constructor->args) {
     if (arg->var_num != -1) {
       if (type_of(arg->type_expr)->is_integer_variable()) {
         if (arg->is_optional()) {
@@ -201,16 +191,16 @@ void TlTypeDeclaration::compile(CodeGenerator &W) const {
     FunctionSignatureGenerator(W) << "array<mixed> fetch()" << SemicolonAndNL();
   }
   if (needs_typed_fetch_store) {
-    FunctionSignatureGenerator(W)  << "void typed_store(const PhpType &tl_object)" << SemicolonAndNL();
-    FunctionSignatureGenerator(W)  << "void typed_fetch_to(PhpType &tl_object)" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "void typed_store(const PhpType &tl_object)" << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "void typed_fetch_to(PhpType &tl_object)" << SemicolonAndNL();
   }
   W << END << ";\n\n";
 }
 
-void TlTypeDefinition::compile(CodeGenerator &W) const {
+void TlTypeDefinition::compile(CodeGenerator& W) const {
   const bool needs_typed_fetch_store = TlTypeDeclaration::does_tl_type_need_typed_fetch_store(t);
 
-  auto *constructor = t->constructors[0].get();
+  auto* constructor = t->constructors[0].get();
   std::string struct_name = cpp_tl_struct_name("t_", t->name);
   std::string template_decl = get_template_declaration(constructor);
   std::string template_def = get_template_definition(constructor);
@@ -240,4 +230,4 @@ void TlTypeDefinition::compile(CodeGenerator &W) const {
     W << END << "\n\n";
   }
 }
-}
+} // namespace tl2cpp

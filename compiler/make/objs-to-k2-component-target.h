@@ -70,7 +70,7 @@ public:
     if (!settings->force_link_runtime.get()) {
       std::vector<std::string> libs = split(RUNTIME_LIGHT_LINK_LIBS);
       ss << start_group;
-      std::for_each(libs.cbegin(), libs.cend(), [&ss](const auto &lib) noexcept { ss << lib << " "; });
+      std::for_each(libs.cbegin(), libs.cend(), [&ss](const auto& lib) noexcept { ss << lib << " "; });
       ss << end_group;
     }
     return ss.str();

@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <vector>
 
-enum class FFITypeKind: uint16_t {
+enum class FFITypeKind : uint16_t {
   Unknown,
 
   // Function is a function definition.
@@ -35,13 +35,13 @@ enum class FFITypeKind: uint16_t {
   // this->members[0]: type
   Var,
 
-  Struct, // str: struct type name
+  Struct,    // str: struct type name
   StructDef, // str: struct type name; members: StructField entries
 
-  Enum, // str: enum type name
+  Enum,    // str: enum type name
   EnumDef, // str: enum type name
 
-  Union, // str: union type name
+  Union,    // str: union type name
   UnionDef, // str: union type name; members: StructField entries
 
   Name, // str: associated name
@@ -84,8 +84,8 @@ enum class FFITypeKind: uint16_t {
   // They're like intermediate AST representations.
 
   _abstractArrayDeclarator, // num: array size
-  _arrayDeclarator, // num: array size
-  _pointerDeclarator, // num: indirection level
+  _arrayDeclarator,         // num: array size
+  _pointerDeclarator,       // num: indirection level
   _typesList,
   _structFieldList,
   _initDeclaratorList,
@@ -100,17 +100,17 @@ enum class FFITypeKind: uint16_t {
 };
 
 struct FFIType {
-  enum Flag: uint16_t {
+  enum Flag : uint16_t {
     EmptySet = 0,
 
-    Const    = 1 << 0,
+    Const = 1 << 0,
     Volatile = 1 << 1,
     Variadic = 1 << 2,
 
     Unsigned = 1 << 3,
-    Signed   = 1 << 4,
-    Short    = 1 << 5,
-    Long     = 1 << 6,
+    Signed = 1 << 4,
+    Short = 1 << 5,
+    Long = 1 << 6,
     LongLong = 1 << 7, // Second "long" specifier bit
 
     Used = 1 << 8,
@@ -126,15 +126,26 @@ struct FFIType {
 
   FFIType() = default;
 
-  explicit FFIType(FFITypeKind kind): kind{kind} {}
-  explicit FFIType(std::string str): str{std::move(str)} {}
-  explicit FFIType(Flag flags): flags{flags} {}
+  explicit FFIType(FFITypeKind kind)
+      : kind{kind} {}
+  explicit FFIType(std::string str)
+      : str{std::move(str)} {}
+  explicit FFIType(Flag flags)
+      : flags{flags} {}
 
-  FFIType(FFITypeKind kind, Flag flags): kind{kind}, flags{flags} {}
+  FFIType(FFITypeKind kind, Flag flags)
+      : kind{kind},
+        flags{flags} {}
 
-  bool is_const() const noexcept { return flags & Flag::Const; }
-  bool is_variadic() const noexcept { return flags & Flag::Variadic; }
-  bool is_signal_safe() const noexcept { return flags & Flag::SignalSafe; }
+  bool is_const() const noexcept {
+    return flags & Flag::Const;
+  }
+  bool is_variadic() const noexcept {
+    return flags & Flag::Variadic;
+  }
+  bool is_signal_safe() const noexcept {
+    return flags & Flag::SignalSafe;
+  }
 
   // whether a type is `void*`
   bool is_void_ptr() const noexcept {
@@ -143,10 +154,7 @@ struct FFIType {
 
   // whether a type is `const char*`
   bool is_cstring() const noexcept {
-    return kind == FFITypeKind::Pointer &&
-           members[0]->kind == FFITypeKind::Char &&
-           members[0]->is_const() &&
-           num == 1;
+    return kind == FFITypeKind::Pointer && members[0]->kind == FFITypeKind::Char && members[0]->is_const() && num == 1;
   }
 };
 
@@ -157,6 +165,6 @@ struct FFIBuiltinType {
   std::string src_name;
 };
 
-void ffi_type_delete(const FFIType *type);
+void ffi_type_delete(const FFIType* type);
 
 using FFITypedefs = std::unordered_map<std::string, FFIType*>;

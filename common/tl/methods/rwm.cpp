@@ -4,15 +4,15 @@
 
 #include "common/tl/methods/rwm.h"
 
-#include <memory>
 #include "zstd/zstd.h"
+#include <memory>
 
 #include "common/algorithms/arithmetic.h"
 #include "common/tl/methods/compression.h"
 #include "common/tl/parse.h"
 
-static inline int rwm_do_xor_compress(void *extra __attribute__((unused)), void *data_, int len) {
-  auto *data = static_cast<uint8_t *>(data_);
+static inline int rwm_do_xor_compress(void* extra __attribute__((unused)), void* data_, int len) {
+  auto* data = static_cast<uint8_t*>(data_);
   for (int i = 0; i < len; i++) {
     data[i] ^= 0xbe;
   }
@@ -20,14 +20,14 @@ static inline int rwm_do_xor_compress(void *extra __attribute__((unused)), void 
 }
 
 struct zstd_compression_extra_t {
-  raw_message_t *raw_out;
-  ZSTD_CStream *zstd_stream;
-  char *buffer;
+  raw_message_t* raw_out;
+  ZSTD_CStream* zstd_stream;
+  char* buffer;
   size_t buf_len;
 };
 
-static inline int tl_raw_msg_zstd_compress(void *_extra, const void *data, int len) {
-  auto *extra = static_cast<zstd_compression_extra_t *>(_extra);
+static inline int tl_raw_msg_zstd_compress(void* _extra, const void* data, int len) {
+  auto* extra = static_cast<zstd_compression_extra_t*>(_extra);
   ZSTD_outBuffer output = {.dst = extra->buffer, .size = extra->buf_len, .pos = 0};
   ZSTD_inBuffer input = {.src = data, .size = (size_t)len, .pos = 0};
   while (input.pos < input.size) {
@@ -38,18 +38,18 @@ static inline int tl_raw_msg_zstd_compress(void *_extra, const void *data, int l
   return 0;
 }
 
-static void raw_zstd_compress(raw_message_t &rwm) {
+static void raw_zstd_compress(raw_message_t& rwm) {
   raw_message_t out;
   rwm_init(&out, 0);
-  static ZSTD_CStream *zstd_stream = nullptr;
+  static ZSTD_CStream* zstd_stream = nullptr;
   if (zstd_stream == nullptr) {
     zstd_stream = ZSTD_createCStream();
   }
-  static char *out_buf = nullptr;
+  static char* out_buf = nullptr;
   static size_t buf_len = 0;
   if (out_buf == nullptr) {
     buf_len = ZSTD_CStreamOutSize();
-    out_buf = static_cast<char *>(malloc(buf_len));
+    out_buf = static_cast<char*>(malloc(buf_len));
   }
   ZSTD_initCStream(zstd_stream, 1); // TODO: maybe change compression level?
   zstd_compression_extra_t extra = {.raw_out = &out, .zstd_stream = zstd_stream, .buffer = out_buf, .buf_len = buf_len};
@@ -75,14 +75,14 @@ static void raw_zstd_compress(raw_message_t &rwm) {
 }
 
 struct zstd_decompression_extra_t {
-  raw_message_t *raw_out;
-  ZSTD_DStream *zstd_stream;
-  char *buffer;
+  raw_message_t* raw_out;
+  ZSTD_DStream* zstd_stream;
+  char* buffer;
   size_t buf_len;
 };
 
-static inline int tl_raw_msg_zstd_decompress(void *_extra, const void *data, int len) {
-  auto *extra = static_cast<zstd_decompression_extra_t *>(_extra);
+static inline int tl_raw_msg_zstd_decompress(void* _extra, const void* data, int len) {
+  auto* extra = static_cast<zstd_decompression_extra_t*>(_extra);
   ZSTD_outBuffer output = {.dst = extra->buffer, .size = extra->buf_len, .pos = 0};
   ZSTD_inBuffer input = {.src = data, .size = (size_t)len, .pos = 0};
   while (input.pos < input.size) {
@@ -99,18 +99,18 @@ static inline int tl_raw_msg_zstd_decompress(void *_extra, const void *data, int
   return 0;
 }
 
-static void rwm_zstd_decompress(raw_message_t &in) {
+static void rwm_zstd_decompress(raw_message_t& in) {
   raw_message_t out;
   rwm_init(&out, 0);
-  static ZSTD_DStream *zstd_stream = nullptr;
+  static ZSTD_DStream* zstd_stream = nullptr;
   if (zstd_stream == nullptr) {
     zstd_stream = ZSTD_createDStream();
   }
-  static char *out_buf = nullptr;
+  static char* out_buf = nullptr;
   static size_t buf_len = 0;
   if (out_buf == nullptr) {
     buf_len = ZSTD_DStreamOutSize();
-    out_buf = static_cast<char *>(malloc(buf_len));
+    out_buf = static_cast<char*>(malloc(buf_len));
   }
   ZSTD_initDStream(zstd_stream);
   zstd_decompression_extra_t extra = {.raw_out = &out, .zstd_stream = zstd_stream, .buffer = out_buf, .buf_len = buf_len};
@@ -122,42 +122,42 @@ static void rwm_zstd_decompress(raw_message_t &in) {
   rwm_steal(&in, &out);
 }
 
-void compress_rwm(raw_message_t &rwm, int version) noexcept {
+void compress_rwm(raw_message_t& rwm, int version) noexcept {
   assert(version <= COMPRESSION_VERSION_MAX);
   switch (version) {
-    case COMPRESSION_VERSION_TEST_XOR: {
-      rwm_fork_deep(&rwm);
-      rwm_transform_from_offset(&rwm, rwm.total_bytes, 0, rwm_do_xor_compress, nullptr);
-      break;
-    }
-    case COMPRESSION_VERSION_ZSTD: {
-      raw_zstd_compress(rwm);
-      break;
-    }
-    default:
-      assert(0);
+  case COMPRESSION_VERSION_TEST_XOR: {
+    rwm_fork_deep(&rwm);
+    rwm_transform_from_offset(&rwm, rwm.total_bytes, 0, rwm_do_xor_compress, nullptr);
+    break;
+  }
+  case COMPRESSION_VERSION_ZSTD: {
+    raw_zstd_compress(rwm);
+    break;
+  }
+  default:
+    assert(0);
   }
 }
 
-void decompress_rwm(raw_message_t &in, int version) noexcept {
+void decompress_rwm(raw_message_t& in, int version) noexcept {
   assert(version <= COMPRESSION_VERSION_MAX);
   assert(in.magic == RM_INIT_MAGIC);
   switch (version) {
-    case COMPRESSION_VERSION_TEST_XOR: {
-      rwm_fork_deep(&in);
-      rwm_transform_from_offset(&in, in.total_bytes, 0, rwm_do_xor_compress, nullptr);
-      break;
-    }
-    case COMPRESSION_VERSION_ZSTD: {
-      rwm_zstd_decompress(in);
-      break;
-    }
-    default:
-      assert(0);
+  case COMPRESSION_VERSION_TEST_XOR: {
+    rwm_fork_deep(&in);
+    rwm_transform_from_offset(&in, in.total_bytes, 0, rwm_do_xor_compress, nullptr);
+    break;
+  }
+  case COMPRESSION_VERSION_ZSTD: {
+    rwm_zstd_decompress(in);
+    break;
+  }
+  default:
+    assert(0);
   }
 }
 
-void tl_fetch_init_raw_message(raw_message_t *msg) {
+void tl_fetch_init_raw_message(raw_message_t* msg) {
   const auto total_bytes = msg->total_bytes;
   return tl_fetch_init(std::make_unique<tl_in_methods_raw_msg>(msg), total_bytes);
 }

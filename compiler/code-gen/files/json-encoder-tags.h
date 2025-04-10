@@ -13,13 +13,13 @@
 class CodeGenerator;
 
 struct JsonEncoderTags : CodeGenRootCmd {
-  explicit JsonEncoderTags(std::set<ClassPtr> &&all_json_encoders) noexcept :
-    all_json_encoders_(all_json_encoders) {}
+  explicit JsonEncoderTags(std::set<ClassPtr>&& all_json_encoders) noexcept
+      : all_json_encoders_(all_json_encoders) {}
 
-  void compile(CodeGenerator &W) const final;
+  void compile(CodeGenerator& W) const final;
 
   static const std::string all_tags_file_;
-  static std::string get_cppStructTag_name(const std::string &json_encoder) noexcept;
+  static std::string get_cppStructTag_name(const std::string& json_encoder) noexcept;
 
 private:
   const std::set<ClassPtr> all_json_encoders_;

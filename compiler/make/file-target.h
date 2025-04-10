@@ -9,7 +9,7 @@
 class FileTarget : public Target {
 public:
   std::string get_cmd() final {
-    assert (0);
+    assert(0);
     return "";
   }
 };

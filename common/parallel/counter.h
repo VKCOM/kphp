@@ -21,32 +21,32 @@ typedef struct parallel_counter_tls parallel_counter_tls_t;
 
 struct parallel_counter {
   uint64_t final;
-  parallel_counter_tls_t *ptrs[NR_THREADS];
+  parallel_counter_tls_t* ptrs[NR_THREADS];
   pthread_mutex_t mtx;
 };
 typedef struct parallel_counter parallel_counter_t;
 
-static inline void parallel_counter_inc(parallel_counter_tls_t *tls) {
+static inline void parallel_counter_inc(parallel_counter_tls_t* tls) {
   ++tls->counter;
 }
 
-static inline void parallel_counter_add(parallel_counter_tls_t *tls, uint64_t value) {
+static inline void parallel_counter_add(parallel_counter_tls_t* tls, uint64_t value) {
   tls->counter += value;
 }
 
-static inline void parallel_counter_dec(parallel_counter_tls_t *tls) {
+static inline void parallel_counter_dec(parallel_counter_tls_t* tls) {
   --tls->counter;
 }
 
-static inline void parallel_counter_sub(parallel_counter_tls_t *tls, uint64_t value) {
+static inline void parallel_counter_sub(parallel_counter_tls_t* tls, uint64_t value) {
   tls->counter -= value;
 }
 
-void parallel_counter_register_thread(parallel_counter_t *counter, parallel_counter_tls_t *tls);
-void parallel_counter_init(parallel_counter_t *counter);
-void parallel_counter_unregister_thread(parallel_counter_t *counter, parallel_counter_tls_t *tls);
+void parallel_counter_register_thread(parallel_counter_t* counter, parallel_counter_tls_t* tls);
+void parallel_counter_init(parallel_counter_t* counter);
+void parallel_counter_unregister_thread(parallel_counter_t* counter, parallel_counter_tls_t* tls);
 
-uint64_t parallel_counter_read(parallel_counter_t *counter);
+uint64_t parallel_counter_read(parallel_counter_t* counter);
 
 #define PARALLEL_COUNTER(name)                                                                                                                                 \
   static __thread parallel_counter_tls_t parallel_counter_##name##_tls;                                                                                        \

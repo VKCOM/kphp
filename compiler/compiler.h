@@ -8,4 +8,4 @@
 
 class Compiler;
 
-bool compiler_execute(CompilerSettings *settings);
+bool compiler_execute(CompilerSettings* settings);

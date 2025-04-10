@@ -16,10 +16,10 @@
 #include "compiler/data/src-file.h"
 
 struct StaticInit {
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
 
-void StaticInit::compile(CodeGenerator &W) const {
+void StaticInit::compile(CodeGenerator& W) const {
   if (G->is_output_mode_lib()) {
     return;
   }
@@ -48,7 +48,7 @@ void StaticInit::compile(CodeGenerator &W) const {
   if (!G->is_output_mode_k2()) {
     FunctionSignatureGenerator(W) << ("char **get_runtime_options([[maybe_unused]] int *count)") << BEGIN;
 
-    const auto &runtime_opts = G->get_kphp_runtime_opts();
+    const auto& runtime_opts = G->get_kphp_runtime_opts();
     if (runtime_opts.empty()) {
       W << "return nullptr;" << NL;
     } else {
@@ -84,21 +84,21 @@ void StaticInit::compile(CodeGenerator &W) const {
   FunctionSignatureGenerator(W) << "void " << ShapeKeys::get_function_name() << "()" << SemicolonAndNL();
   W << ShapeKeys::get_function_name() << "();" << NL;
 
-  const auto &ffi = G->get_ffi_root();
-  const auto &ffi_shared_libs = ffi.get_shared_libs();
+  const auto& ffi = G->get_ffi_root();
+  const auto& ffi_shared_libs = ffi.get_shared_libs();
   if (!ffi_shared_libs.empty()) {
     W << "ffi_env_instance = FFIEnv{" << ffi_shared_libs.size() << ", " << ffi.get_dynamic_symbols_num() << "};" << NL;
     W << "ffi_env_instance.funcs.dlopen = dlopen;" << NL;
     W << "ffi_env_instance.funcs.dlsym = dlsym;" << NL;
-    for (const auto &lib : ffi_shared_libs) {
+    for (const auto& lib : ffi_shared_libs) {
       W << "ffi_env_instance.libs[" << lib.id << "].path = " << RawString{lib.path} << ";" << NL;
     }
-    const auto &ffi_scopes = ffi.get_scopes();
-    for (const auto &ffi_scope : ffi_scopes) {
-      for (const auto &sym : ffi_scope->variables) {
+    const auto& ffi_scopes = ffi.get_scopes();
+    for (const auto& ffi_scope : ffi_scopes) {
+      for (const auto& sym : ffi_scope->variables) {
         W << "ffi_env_instance.symbols[" << sym.env_index << "].name = \"" << sym.name() << "\";" << NL;
       }
-      for (const auto &sym : ffi_scope->functions) {
+      for (const auto& sym : ffi_scope->functions) {
         W << "ffi_env_instance.symbols[" << sym.env_index << "].name = \"" << sym.name() << "\";" << NL;
       }
     }
@@ -110,9 +110,9 @@ void StaticInit::compile(CodeGenerator &W) const {
 struct RunInterruptedFunction {
   FunctionPtr function;
   RunInterruptedFunction(FunctionPtr function)
-    : function(function) {}
+      : function(function) {}
 
-  void compile(CodeGenerator &W) const {
+  void compile(CodeGenerator& W) const {
     std::string await_prefix = function->is_interruptible ? "co_await " : "";
     std::string try_wrapper = "TRY_CALL_VOID_CORO(void, ";
     std::string image_kind = G->is_output_mode_k2_cli()         ? "ImageKind::CLI"
@@ -131,33 +131,31 @@ struct RunInterruptedFunction {
 
 struct RunFunction {
   FunctionPtr function;
-  RunFunction(FunctionPtr function) : function(function) {}
+  RunFunction(FunctionPtr function)
+      : function(function) {}
 
-  void compile(CodeGenerator &W) const {
-    FunctionSignatureGenerator(W) << "void " << FunctionName(function) << "$run() " << BEGIN
-      << "TRY_CALL_VOID (void, " << FunctionName(function) << "());" << NL
-      << "finish (0, false);" << NL
-      << END;
+  void compile(CodeGenerator& W) const {
+    FunctionSignatureGenerator(W) << "void " << FunctionName(function) << "$run() " << BEGIN << "TRY_CALL_VOID (void, " << FunctionName(function) << "());"
+                                  << NL << "finish (0, false);" << NL << END;
     W << NL;
   }
 };
 
-
 struct GlobalsResetFunction {
   FunctionPtr main_function;
   explicit GlobalsResetFunction(FunctionPtr main_function);
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
 
 GlobalsResetFunction::GlobalsResetFunction(FunctionPtr main_function)
-  : main_function(main_function) {}
+    : main_function(main_function) {}
 
-void GlobalsResetFunction::compile(CodeGenerator &W) const {
+void GlobalsResetFunction::compile(CodeGenerator& W) const {
   // "global vars reset" declarations
   FunctionSignatureGenerator(W) << "void global_vars_allocate(" << PhpMutableGlobalsRefArgument() << ")" << SemicolonAndNL();
   FunctionSignatureGenerator(W) << "void global_vars_reset(" << PhpMutableGlobalsRefArgument() << ")" << SemicolonAndNL();
   W << NL;
-  for (LibPtr lib: G->get_libs()) {
+  for (LibPtr lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       W << OpenNamespace(lib->lib_namespace());
       FunctionSignatureGenerator(W) << "void global_vars_allocate(" << PhpMutableGlobalsRefArgument() << ")" << SemicolonAndNL();
@@ -169,7 +167,7 @@ void GlobalsResetFunction::compile(CodeGenerator &W) const {
   // "global vars reset" calls
   FunctionSignatureGenerator(W) << "void " << FunctionName(main_function) << "$globals_reset(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
   W << "global_vars_reset(php_globals);" << NL;
-  for (LibPtr lib: G->get_libs()) {
+  for (LibPtr lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       W << lib->lib_namespace() << "::global_vars_reset(php_globals);" << NL;
     }
@@ -177,45 +175,39 @@ void GlobalsResetFunction::compile(CodeGenerator &W) const {
   W << END << NL;
 }
 
-
 struct LibRunFunction {
   FunctionPtr main_function;
   LibRunFunction(FunctionPtr main_function);
-  void compile(CodeGenerator &W) const;
+  void compile(CodeGenerator& W) const;
 };
 
-LibRunFunction::LibRunFunction(FunctionPtr main_function) :
-  main_function(main_function) {
-}
+LibRunFunction::LibRunFunction(FunctionPtr main_function)
+    : main_function(main_function) {}
 
-void LibRunFunction::compile(CodeGenerator &W) const {
+void LibRunFunction::compile(CodeGenerator& W) const {
   // "run" functions just calls the main file of a lib
   // it's guaranteed that it doesn't contain code except declarations (body_value is empty),
   // that's why we shouldn't deal with `if (!called)` global
-  W << StaticLibraryRunGlobal(gen_out_style::cpp) << BEGIN
-    << "using namespace " << G->get_global_namespace() << ";" << NL
-    << FunctionName(main_function) << "();" << NL
-    << END << NL << NL;
+  W << StaticLibraryRunGlobal(gen_out_style::cpp) << BEGIN << "using namespace " << G->get_global_namespace() << ";" << NL << FunctionName(main_function)
+    << "();" << NL << END << NL << NL;
 }
 
+InitScriptsCpp::InitScriptsCpp(SrcFilePtr main_file_id)
+    : main_file_id(main_file_id) {}
 
-InitScriptsCpp::InitScriptsCpp(SrcFilePtr main_file_id) :
-  main_file_id(main_file_id) {}
-
-void InitScriptsCpp::compile(CodeGenerator &W) const {
+void InitScriptsCpp::compile(CodeGenerator& W) const {
   W << OpenFile("init_php_scripts.cpp", "", false);
 
   W << ExternInclude(G->settings().runtime_headers.get());
   if (!G->is_output_mode_k2()) {
-     W << ExternInclude("server/php-init-scripts.h");
+    W << ExternInclude("server/php-init-scripts.h");
   }
-
 
   W << Include(main_file_id->main_function->header_full_name);
 
   if (!G->get_ffi_root().get_shared_libs().empty()) {
     W << ExternInclude("runtime/ffi.h"); // FFI env singleton
-    W << ExternInclude("dlfcn.h"); // dlopen, dlsym
+    W << ExternInclude("dlfcn.h");       // dlopen, dlsym
   }
 
   W << NL << StaticInit() << NL;
@@ -234,13 +226,16 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << GlobalsResetFunction(main_file_id->main_function) << NL;
 
   if (G->is_output_mode_k2()) {
-    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ", kphp::coro::task<> &run" ")" << BEGIN;
+    FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument()
+                                  << ", kphp::coro::task<> &run"
+                                     ")"
+                                  << BEGIN;
   } else {
     FunctionSignatureGenerator(W) << "void init_php_scripts_in_each_worker(" << PhpMutableGlobalsRefArgument() << ")" << BEGIN;
   }
 
   W << "global_vars_allocate(php_globals);" << NL;
-  for (LibPtr lib: G->get_libs()) {
+  for (LibPtr lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
       W << lib->lib_namespace() << "::global_vars_allocate(php_globals);" << NL;
     }
@@ -251,9 +246,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   if (G->is_output_mode_k2()) {
     W << "run = " << FunctionName(main_file_id->main_function) << "$run();" << NL;
   } else {
-    W << "set_script ("
-      << FunctionName(main_file_id->main_function) << "$run, "
-      << FunctionName(main_file_id->main_function) << "$globals_reset);" << NL;
+    W << "set_script (" << FunctionName(main_file_id->main_function) << "$run, " << FunctionName(main_file_id->main_function) << "$globals_reset);" << NL;
   }
 
   W << END;
@@ -261,7 +254,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
-void LibVersionHFile::compile(CodeGenerator &W) const {
+void LibVersionHFile::compile(CodeGenerator& W) const {
   W << OpenFile("_lib_version.h");
   W << "// Runtime sha256: " << G->settings().runtime_sha256.get() << NL;
   W << "// CXX: " << G->settings().cxx.get() << NL;
@@ -270,18 +263,16 @@ void LibVersionHFile::compile(CodeGenerator &W) const {
   W << CloseFile();
 }
 
-void CppMainFile::compile(CodeGenerator &W) const {
+void CppMainFile::compile(CodeGenerator& W) const {
   kphp_assert(G->is_output_mode_server() || G->is_output_mode_cli());
   W << OpenFile("main.cpp");
   W << ExternInclude("server/php-engine.h") << NL;
 
-  W << "int main(int argc, char *argv[]) " << BEGIN
-    << "return run_main(argc, argv, php_mode::" << G->settings().mode.get() << ")" << SemicolonAndNL{}
-    << END;
+  W << "int main(int argc, char *argv[]) " << BEGIN << "return run_main(argc, argv, php_mode::" << G->settings().mode.get() << ")" << SemicolonAndNL{} << END;
   W << CloseFile();
 }
 
-void ComponentInfoFile::compile(CodeGenerator &W) const {
+void ComponentInfoFile::compile(CodeGenerator& W) const {
   kphp_assert(G->is_output_mode_k2());
   G->settings().get_version();
   auto now = std::chrono::system_clock::now();

@@ -18,11 +18,8 @@ public:
     kphp_assert(deps.size() == 1);
 
     std::stringstream ss;
-    const auto &cxx_flags = get_file()->compile_with_debug_info_flag ? settings->cxx_flags_with_debug : settings->cxx_flags_default;
-    ss << settings->cxx.get() <<
-       " -c -o " << target() <<
-       " -x c++-header " << deps[0]->get_name() <<
-       " " << cxx_flags.flags.get();
+    const auto& cxx_flags = get_file()->compile_with_debug_info_flag ? settings->cxx_flags_with_debug : settings->cxx_flags_default;
+    ss << settings->cxx.get() << " -c -o " << target() << " -x c++-header " << deps[0]->get_name() << " " << cxx_flags.flags.get();
 
     // printf("compile pch cmd line %s\n", ss.str().c_str());
     return ss.str();

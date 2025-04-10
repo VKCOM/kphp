@@ -4,7 +4,6 @@
 
 #include "compiler/inferring/type-data.h"
 
-
 #include <string>
 #include <vector>
 
@@ -24,8 +23,8 @@
 #include "compiler/threading/hash-table.h"
 #include "compiler/utils/string-utils.h"
 
-static std::vector<const TypeData *> primitive_types;
-static std::vector<const TypeData *> array_types;
+static std::vector<const TypeData*> primitive_types;
+static std::vector<const TypeData*> array_types;
 
 void TypeData::init_static() {
   if (!primitive_types.empty()) {
@@ -43,19 +42,19 @@ void TypeData::init_static() {
   }
 }
 
-const TypeData *TypeData::get_type(PrimitiveType type) {
+const TypeData* TypeData::get_type(PrimitiveType type) {
   return primitive_types[type];
 }
 
-const TypeData *TypeData::get_type(PrimitiveType array, PrimitiveType type) {
+const TypeData* TypeData::get_type(PrimitiveType array, PrimitiveType type) {
   if (array != tp_array) {
     return get_type(array);
   }
   return array_types[type];
 }
 
-TypeData::TypeData(PrimitiveType ptype) :
-  ptype_(ptype) {
+TypeData::TypeData(PrimitiveType ptype)
+    : ptype_(ptype) {
   if (ptype_ == tp_Null) {
     set_or_null_flag();
     ptype_ = tp_any;
@@ -66,19 +65,19 @@ TypeData::TypeData(PrimitiveType ptype) :
   }
 }
 
-TypeData::TypeData(const TypeData &from) :
-  ptype_(from.ptype_),
-  flags_(from.flags_),
-  indirection_(from.indirection_),
-  class_type_(from.class_type_),
-  subkeys(from.subkeys) {
-  for (auto &subkey : subkeys) {
+TypeData::TypeData(const TypeData& from)
+    : ptype_(from.ptype_),
+      flags_(from.flags_),
+      indirection_(from.indirection_),
+      class_type_(from.class_type_),
+      subkeys(from.subkeys) {
+  for (auto& subkey : subkeys) {
     subkey.second = subkey.second->clone();
   }
 }
 
 TypeData::~TypeData() {
-  for (auto &subkey : subkeys) {
+  for (auto& subkey : subkeys) {
     delete subkey.second;
   }
 }
@@ -87,65 +86,65 @@ std::string TypeData::as_human_readable(bool colored) const {
   std::string res;
 
   switch (ptype_) {
-    case tp_array: {
-      const TypeData *inner = lookup_at_any_key() ?: TypeData::get_type(tp_any);
-      if (inner->get_real_ptype() == tp_any) {
-        res = "array";
-      } else {
-        std::string inner_str = inner->as_human_readable(false);
-        res = inner->use_optional() ? "(" + inner_str + ")" + "[]" : inner_str + "[]";
+  case tp_array: {
+    const TypeData* inner = lookup_at_any_key() ?: TypeData::get_type(tp_any);
+    if (inner->get_real_ptype() == tp_any) {
+      res = "array";
+    } else {
+      std::string inner_str = inner->as_human_readable(false);
+      res = inner->use_optional() ? "(" + inner_str + ")" + "[]" : inner_str + "[]";
+    }
+    break;
+  }
+  case tp_tuple: {
+    res = "tuple(";
+    for (int tuple_i = 0; tuple_i < get_tuple_max_index(); ++tuple_i) {
+      if (tuple_i > 0) {
+        res += ", ";
       }
-      break;
+      res += lookup_at(Key::int_key(tuple_i))->as_human_readable(false);
     }
-    case tp_tuple: {
-      res = "tuple(";
-      for (int tuple_i = 0; tuple_i < get_tuple_max_index(); ++tuple_i) {
-        if (tuple_i > 0) {
-          res += ", ";
-        }
-        res += lookup_at(Key::int_key(tuple_i))->as_human_readable(false);
-      }
-      res += ")";
-      break;
+    res += ")";
+    break;
+  }
+  case tp_shape: {
+    std::vector<SubkeyItem> items{lookup_begin(), lookup_end()};
+    std::reverse(items.begin(), items.end());
+    res = "shape(" + vk::join(items, ", ", [](const SubkeyItem& p) { return p.first.to_string() + ":" + p.second->as_human_readable(false); });
+    if (shape_has_varg_flag()) {
+      res += ", ...";
     }
-    case tp_shape: {
-      std::vector<SubkeyItem> items{lookup_begin(), lookup_end()};
-      std::reverse(items.begin(), items.end());
-      res = "shape(" + vk::join(items, ", ", [](const SubkeyItem &p) { return p.first.to_string() + ":" + p.second->as_human_readable(false); });
-      if (shape_has_varg_flag()) {
-        res += ", ...";
-      }
-      res += ")";
-      break;
+    res += ")";
+    break;
+  }
+  case tp_future: {
+    const TypeData* inner = lookup_at_any_key() ?: TypeData::get_type(tp_any);
+    res = "future<" + inner->as_human_readable(false) + ">";
+    break;
+  }
+  case tp_future_queue: {
+    const TypeData* inner = lookup_at_any_key() ?: TypeData::get_type(tp_any);
+    res = "future_queue<" + inner->as_human_readable(false) + ">";
+    break;
+  }
+  case tp_Class: {
+    res = class_type()->as_human_readable();
+    break;
+  }
+  case tp_any: {
+    if (or_null_flag() && !or_false_flag()) {
+      res = "null";
+    } else if (or_false_flag() && !or_null_flag()) {
+      res += "false";
+    } else if (or_false_flag() && or_null_flag()) {
+      res += "false|null";
+    } else {
+      res = "any";
     }
-    case tp_future: {
-      const TypeData *inner = lookup_at_any_key() ?: TypeData::get_type(tp_any);
-      res = "future<" + inner->as_human_readable(false) + ">";
-      break;
-    }
-    case tp_future_queue: {
-      const TypeData *inner = lookup_at_any_key() ?: TypeData::get_type(tp_any);
-      res = "future_queue<" + inner->as_human_readable(false) + ">";
-      break;
-    }
-    case tp_Class: {
-      res = class_type()->as_human_readable();
-      break;
-    }
-    case tp_any: {
-      if (or_null_flag() && !or_false_flag()) {
-        res = "null";
-      } else if (or_false_flag() && !or_null_flag()) {
-        res += "false";
-      } else if (or_false_flag() && or_null_flag()) {
-        res += "false|null";
-      } else {
-        res = "any";
-      }
-      break;
-    }
-    default:
-      res = ptype_name(ptype_);
+    break;
+  }
+  default:
+    res = ptype_name(ptype_);
   }
 
   if (ptype_ != tp_any) {
@@ -168,16 +167,16 @@ std::string TypeData::as_human_readable(bool colored) const {
   return colored ? TermStringFormat::paint_green(res) : res;
 }
 
-TypeData *TypeData::at_force(const Key &key) {
-  kphp_assert_msg (structured(), "bug in TypeData");
+TypeData* TypeData::at_force(const Key& key) {
+  kphp_assert_msg(structured(), "bug in TypeData");
 
-  for (const auto &subkey : subkeys) {
+  for (const auto& subkey : subkeys) {
     if (subkey.first == key) {
       return subkey.second;
     }
   }
 
-  TypeData *value = get_type(tp_any)->clone();
+  TypeData* value = get_type(tp_any)->clone();
   subkeys.emplace_front(key, value);
   return value;
 }
@@ -198,7 +197,7 @@ bool TypeData::is_ffi_ref() const {
   return false;
 }
 
-void TypeData::set_ffi_pointer_type(const TypeData *new_ptr_type, int new_indirection) {
+void TypeData::set_ffi_pointer_type(const TypeData* new_ptr_type, int new_indirection) {
   if (std::distance(new_ptr_type->class_type_.begin(), new_ptr_type->class_type_.end()) != 1) {
     set_ptype(tp_Error);
     return;
@@ -220,7 +219,7 @@ void TypeData::set_ffi_pointer_type(const TypeData *new_ptr_type, int new_indire
     return;
   }
 
-  auto *ptr_class = class_type()->ffi_class_mixin;
+  auto* ptr_class = class_type()->ffi_class_mixin;
 
   if (!ptr_class) {
     set_ptype(tp_Error);
@@ -233,7 +232,7 @@ void TypeData::set_ffi_pointer_type(const TypeData *new_ptr_type, int new_indire
     return;
   }
 
-  auto *new_ptr_class = new_ptr_type->class_type()->ffi_class_mixin;
+  auto* new_ptr_class = new_ptr_type->class_type()->ffi_class_mixin;
   if (ptr_class != new_ptr_class) {
     set_ptype(tp_Error);
     return;
@@ -246,7 +245,7 @@ void TypeData::set_ffi_pointer_type(const TypeData *new_ptr_type, int new_indire
   }
 }
 
-void TypeData::set_class_type(const std::forward_list<ClassPtr> &new_class_type) {
+void TypeData::set_class_type(const std::forward_list<ClassPtr>& new_class_type) {
   if (new_class_type.empty()) {
     return;
   }
@@ -255,8 +254,8 @@ void TypeData::set_class_type(const std::forward_list<ClassPtr> &new_class_type)
     class_type_ = new_class_type;
   } else if (!vk::all_of(class_type_, [&](ClassPtr c) { return vk::contains(new_class_type, c); })) {
     std::unordered_set<ClassPtr> result_type;
-    for (const auto &possible_class : class_type_) {
-      for (const auto &new_class : new_class_type) {
+    for (const auto& possible_class : class_type_) {
+      for (const auto& new_class : new_class_type) {
         auto common_interfaces = possible_class->get_common_base_or_interface(new_class);
         result_type.insert(common_interfaces.begin(), common_interfaces.end());
       }
@@ -272,11 +271,11 @@ void TypeData::set_class_type(const std::forward_list<ClassPtr> &new_class_type)
 }
 
 template<typename F>
-bool TypeData::for_each_deep(const F &visitor) const {
+bool TypeData::for_each_deep(const F& visitor) const {
   if (visitor(*this)) {
     return true;
   }
-  for (const auto &sub_key: subkeys) {
+  for (const auto& sub_key : subkeys) {
     if (sub_key.second->for_each_deep(visitor)) {
       return true;
     }
@@ -288,13 +287,13 @@ bool TypeData::for_each_deep(const F &visitor) const {
  * Faster alternative for !get_all_class_types_inside().empty()
  */
 bool TypeData::has_class_type_inside() const {
-  return for_each_deep([](const TypeData &data) { return !data.class_type_.empty(); });
+  return for_each_deep([](const TypeData& data) { return !data.class_type_.empty(); });
 }
 
 void TypeData::mark_classes_used() const {
-  for_each_deep([](const TypeData &this_) {
+  for_each_deep([](const TypeData& this_) {
     if (this_.ptype() == tp_Class) {
-      for (const auto &klass : this_.class_type_) {
+      for (const auto& klass : this_.class_type_) {
         klass->mark_as_used();
       }
     }
@@ -302,8 +301,8 @@ void TypeData::mark_classes_used() const {
   });
 }
 
-void TypeData::get_all_class_types_inside(std::unordered_set<ClassPtr> &out) const {
-  for_each_deep([&out](const TypeData &this_) {
+void TypeData::get_all_class_types_inside(std::unordered_set<ClassPtr>& out) const {
+  for_each_deep([&out](const TypeData& this_) {
     out.insert(this_.class_type_.begin(), this_.class_type_.end());
     return false;
   });
@@ -311,7 +310,7 @@ void TypeData::get_all_class_types_inside(std::unordered_set<ClassPtr> &out) con
 
 ClassPtr TypeData::get_first_class_type_inside() const {
   ClassPtr first_class;
-  for_each_deep([&first_class](const TypeData &this_) {
+  for_each_deep([&first_class](const TypeData& this_) {
     first_class = this_.class_type();
     return first_class;
   });
@@ -342,11 +341,11 @@ bool TypeData::structured() const {
   return vk::any_of_equal(ptype(), tp_array, tp_tuple, tp_shape, tp_future, tp_future_queue);
 }
 
-TypeData *TypeData::clone() const {
+TypeData* TypeData::clone() const {
   return new TypeData(*this);
 }
 
-const TypeData *TypeData::const_read_at(const Key &key) const {
+const TypeData* TypeData::const_read_at(const Key& key) const {
   if (ptype() == tp_mixed) {
     return get_type(tp_mixed);
   }
@@ -368,7 +367,7 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
     return get_type(tp_any);
   }
 
-  const TypeData *res = lookup_at(key);
+  const TypeData* res = lookup_at(key);
   if (res == nullptr && !key.is_any_key()) {
     res = lookup_at_any_key();
   }
@@ -382,8 +381,8 @@ const TypeData *TypeData::const_read_at(const Key &key) const {
   return res;
 }
 
-const TypeData *TypeData::lookup_at(const Key &key) const {
-  for (const auto &subkey : subkeys) {
+const TypeData* TypeData::lookup_at(const Key& key) const {
+  for (const auto& subkey : subkeys) {
     if (subkey.first == key) {
       return subkey.second;
     }
@@ -391,8 +390,8 @@ const TypeData *TypeData::lookup_at(const Key &key) const {
   return nullptr;
 }
 
-const TypeData *TypeData::const_read_at(const MultiKey &multi_key) const {
-  const TypeData *res = this;
+const TypeData* TypeData::const_read_at(const MultiKey& multi_key) const {
+  const TypeData* res = this;
   for (Key i : multi_key) {
     res = res->const_read_at(i);
   }
@@ -407,28 +406,28 @@ void TypeData::make_structured() {
   }
 }
 
-TypeData *TypeData::write_at(const Key &key) {
+TypeData* TypeData::write_at(const Key& key) {
   make_structured();
   if (!structured()) {
     return nullptr;
   }
-  TypeData *res = at_force(key);
+  TypeData* res = at_force(key);
   res->set_write_flag();
   return res;
 }
 
-const TypeData *TypeData::get_deepest_type_of_array() const {
+const TypeData* TypeData::get_deepest_type_of_array() const {
   if (ptype() == tp_array) {
     return lookup_at_any_key()->get_deepest_type_of_array();
   }
   return this;
 }
 
-void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_null, FFIRvalueFlags ffi_flags) {
+void TypeData::set_lca(const TypeData* rhs, bool save_or_false, bool save_or_null, FFIRvalueFlags ffi_flags) {
   if (rhs == nullptr) {
     return;
   }
-  TypeData *lhs = this;
+  TypeData* lhs = this;
 
   PrimitiveType new_ptype = type_lca(lhs->ptype(), rhs->ptype());
   if (lhs->ptype_ == tp_array && rhs->ptype_ == tp_Class) {
@@ -467,7 +466,7 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   lhs->set_flags(new_flags);
 
   if (ffi_flags.drop_ref && rhs->is_ffi_ref()) {
-    auto *new_rhs = rhs->clone();
+    auto* new_rhs = rhs->clone();
     new_rhs->class_type_ = {rhs->class_type()->ffi_class_mixin->non_ref};
     rhs = new_rhs;
   }
@@ -498,7 +497,7 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
 
   if (new_ptype == tp_tuple && rhs->ptype() == tp_tuple) {
     if (!lhs->subkeys.empty() && !rhs->subkeys.empty() && lhs->get_tuple_max_index() != rhs->get_tuple_max_index()) {
-      lhs->set_ptype(tp_Error);   // mixing tuples of different sizes
+      lhs->set_ptype(tp_Error); // mixing tuples of different sizes
       return;
     }
   }
@@ -511,17 +510,17 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
 
   bool needs_any_key = vk::any_of_equal(new_ptype, tp_array, tp_future, tp_future_queue);
   if (needs_any_key) {
-    lhs->at_force(Key::any_key());  // if didn't exist, became tp_any
+    lhs->at_force(Key::any_key()); // if didn't exist, became tp_any
   }
 
   if (!rhs->subkeys.empty()) {
-    for (const auto &rhs_subkey : rhs->subkeys) {
+    for (const auto& rhs_subkey : rhs->subkeys) {
       Key rhs_key = rhs_subkey.first;
-      TypeData *rhs_value = rhs_subkey.second;
-      TypeData *lhs_value = lhs->at_force(rhs_key);
+      TypeData* rhs_value = rhs_subkey.second;
+      TypeData* lhs_value = lhs->at_force(rhs_key);
       lhs_value->set_lca(rhs_value);
     }
-    for (auto &lhs_subkey : lhs->subkeys) {
+    for (auto& lhs_subkey : lhs->subkeys) {
       if (!rhs->lookup_at(lhs_subkey.first)) {
         lhs_subkey.second->set_or_null_flag();
       }
@@ -529,11 +528,11 @@ void TypeData::set_lca(const TypeData *rhs, bool save_or_false, bool save_or_nul
   }
 }
 
-void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool save_or_false, bool save_or_null, FFIRvalueFlags ffi_flags) {
-  TypeData *cur = this;
-  
-  for (const Key &key : multi_key) {
-    auto *prev = cur;
+void TypeData::set_lca_at(const MultiKey& multi_key, const TypeData* rhs, bool save_or_false, bool save_or_null, FFIRvalueFlags ffi_flags) {
+  TypeData* cur = this;
+
+  for (const Key& key : multi_key) {
+    auto* prev = cur;
     cur = cur->write_at(key);
     // handle writing to a subkey of mixed (when cur is not structured)
     if (cur == nullptr) {
@@ -558,15 +557,15 @@ void TypeData::set_lca_at(const MultiKey &multi_key, const TypeData *rhs, bool s
   }
 
   cur->set_lca(rhs, save_or_false, save_or_null, ffi_flags);
-  if (cur->error_flag()) {  // proxy tp_Error from keys to the type itself
+  if (cur->error_flag()) { // proxy tp_Error from keys to the type itself
     this->set_ptype(tp_Error);
   }
 }
 
 void TypeData::fix_inf_array() {
-  //hack: used just to make current version stable
+  // hack: used just to make current version stable
   int depth = 0;
-  const TypeData *cur = this;
+  const TypeData* cur = this;
   while (cur != nullptr) {
     cur = cur->lookup_at_any_key();
     depth++;
@@ -580,9 +579,9 @@ void TypeData::set_lca(PrimitiveType ptype) {
   set_lca(TypeData::get_type(ptype));
 }
 
-static void append_ffi_type(const TypeData *type, ClassPtr klass, bool boxed, std::string &res) {
-  auto *as_ffi = klass->ffi_class_mixin;
-  const auto *key = type->lookup_at_any_key();
+static void append_ffi_type(const TypeData* type, ClassPtr klass, bool boxed, std::string& res) {
+  auto* as_ffi = klass->ffi_class_mixin;
+  const auto* key = type->lookup_at_any_key();
   if (key) {
     // CData as FFI array
     res += "class_instance<CDataArray<";
@@ -619,57 +618,57 @@ static void append_ffi_type(const TypeData *type, ClassPtr klass, bool boxed, st
   }
 }
 
-inline void get_cpp_style_type(const TypeData *type, std::string &res) {
+inline void get_cpp_style_type(const TypeData* type, std::string& res) {
   const PrimitiveType tp = type->get_real_ptype();
 
   switch (tp) {
-    case tp_Class: {
-      auto klass = type->class_type();
-      if (klass->ffi_class_mixin) {
-        append_ffi_type(type, klass, true, res);
-        break;
-      }
-      res += "class_instance<";
-      res += klass->src_name;
-      res += ">";
+  case tp_Class: {
+    auto klass = type->class_type();
+    if (klass->ffi_class_mixin) {
+      append_ffi_type(type, klass, true, res);
       break;
     }
-    case tp_float: {
-      res += "double";
-      break;
-    }
-    case tp_int: {
-      res += "int64_t";
-      break;
-    }
-    case tp_tuple: {
-      res += "std::tuple";
-      break;
-    }
-    case tp_any: {
-      res += "Unknown";
-      break;
-    }
-    default : {
-      res += ptype_name(tp);
-      break;
-    }
+    res += "class_instance<";
+    res += klass->src_name;
+    res += ">";
+    break;
+  }
+  case tp_float: {
+    res += "double";
+    break;
+  }
+  case tp_int: {
+    res += "int64_t";
+    break;
+  }
+  case tp_tuple: {
+    res += "std::tuple";
+    break;
+  }
+  case tp_any: {
+    res += "Unknown";
+    break;
+  }
+  default: {
+    res += ptype_name(tp);
+    break;
+  }
   }
 }
 
-inline void get_txt_style_type(const TypeData *type, std::string &res) {
+inline void get_txt_style_type(const TypeData* type, std::string& res) {
   const PrimitiveType tp = type->get_real_ptype();
   switch (tp) {
-    case tp_Class:
-      res += vk::join(type->class_types(), ", ", std::mem_fn(&ClassData::name));
-      break;
-    default :
-      res += ptype_name(tp);
-      break;
+  case tp_Class:
+    res += vk::join(type->class_types(), ", ", std::mem_fn(&ClassData::name));
+    break;
+  default:
+    res += ptype_name(tp);
+    break;
   }
 }
 
-static bool try_get_txt_or_false_or_null_for_unknown(const TypeData *type, std::string &res) {
+static bool try_get_txt_or_false_or_null_for_unknown(const TypeData* type, std::string& res) {
   if (type->ptype() == tp_any) {
     if (type->or_false_flag()) {
       res += "false";
@@ -687,7 +686,7 @@ static bool try_get_txt_or_false_or_null_for_unknown(const TypeData *type, std::
   return false;
 }
 
-static void get_txt_or_false_or_null(const TypeData *type, std::string &res) {
+static void get_txt_or_false_or_null(const TypeData* type, std::string& res) {
   if (type->use_or_null()) {
     res += "|null";
   }
@@ -696,7 +695,7 @@ static void get_txt_or_false_or_null(const TypeData *type, std::string &res) {
   }
 }
 
-static void type_out_impl(const TypeData *type, std::string &res, gen_out_style style) {
+static void type_out_impl(const TypeData* type, std::string& res, gen_out_style style) {
   if (style == gen_out_style::txt && try_get_txt_or_false_or_null_for_unknown(type, res)) {
     return;
   }
@@ -724,8 +723,8 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
 
     if (tp == tp_tuple) {
       res += "<";
-      int size = type->get_tuple_max_index();             // order of keys is undetermined
-      for (int tuple_i = 0; tuple_i < size; ++tuple_i) {  // that's why use loop by indexes
+      int size = type->get_tuple_max_index();            // order of keys is undetermined
+      for (int tuple_i = 0; tuple_i < size; ++tuple_i) { // that's why use loop by indexes
         if (tuple_i > 0) {
           res += " , ";
         }
@@ -739,10 +738,10 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
       // we emit the shape keys sorted by their key hashes to get the stable code generation
       // Note: key ids can vary between the compiler runs, so they can't be used for sorting
       // Note: this order is used during the shape construction, see compile_shape()
-      std::vector<std::pair<Key, TypeData *>> sorted_by_hash(type->lookup_begin(), type->lookup_end());
-      std::sort(sorted_by_hash.begin(), sorted_by_hash.end(), [](const auto &a, const auto &b) -> bool {
-        const std::string &a_str = a.first.to_string();
-        const std::string &b_str = b.first.to_string();
+      std::vector<std::pair<Key, TypeData*>> sorted_by_hash(type->lookup_begin(), type->lookup_end());
+      std::sort(sorted_by_hash.begin(), sorted_by_hash.end(), [](const auto& a, const auto& b) -> bool {
+        const std::string& a_str = a.first.to_string();
+        const std::string& b_str = b.first.to_string();
         return string_hash(a_str.c_str(), a_str.size()) < string_hash(b_str.c_str(), b_str.size());
       });
 
@@ -752,7 +751,7 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
           keys_hashes_str += ",";
           types_str += ", ";
         }
-        const std::string &key_str = subkey.first.to_string();
+        const std::string& key_str = subkey.first.to_string();
         keys_hashes_str += std::to_string(static_cast<size_t>(string_hash(key_str.c_str(), key_str.size())));
         keys_hashes_str += "UL";
         if (style == gen_out_style::txt) {
@@ -785,57 +784,57 @@ static void type_out_impl(const TypeData *type, std::string &res, gen_out_style 
   }
 }
 
-std::string type_out(const TypeData *type, gen_out_style style) {
+std::string type_out(const TypeData* type, gen_out_style style) {
   std::string res;
   type_out_impl(type, res, style);
   return res;
 }
 
-int type_strlen(const TypeData *type) {
+int type_strlen(const TypeData* type) {
   PrimitiveType tp = type->ptype();
   switch (tp) {
-    case tp_any:
-      if (type->or_null_flag() || type->or_false_flag()) {
-        return STRLEN_EMPTY;
-      }
-      return STRLEN_UNKNOWN;
-    case tp_Null:
-    case tp_False:
+  case tp_any:
+    if (type->or_null_flag() || type->or_false_flag()) {
       return STRLEN_EMPTY;
-    case tp_bool:
-      return STRLEN_BOOL_;
-    case tp_int:
-      return STRLEN_INT;
-    case tp_float:
-      return STRLEN_FLOAT;
-    case tp_array:
-    case tp_tuple:
-    case tp_shape:
-      return STRLEN_ARRAY_;
-    case tp_string:
-    case tp_tmp_string:
-      return STRLEN_STRING;
-    case tp_mixed:
-      return STRLEN_VAR;
-    case tp_Class:
-    case tp_object:
-      return STRLEN_CLASS;
-    case tp_void:
-      return STRLEN_VOID;
-    case tp_future:
-      return STRLEN_FUTURE;
-    case tp_future_queue:
-      return STRLEN_FUTURE_QUEUE;
-    case tp_Error:
-      return STRLEN_ERROR;
-    case tp_regexp:
-    case ptype_size:
+    }
+    return STRLEN_UNKNOWN;
+  case tp_Null:
+  case tp_False:
+    return STRLEN_EMPTY;
+  case tp_bool:
+    return STRLEN_BOOL_;
+  case tp_int:
+    return STRLEN_INT;
+  case tp_float:
+    return STRLEN_FLOAT;
+  case tp_array:
+  case tp_tuple:
+  case tp_shape:
+    return STRLEN_ARRAY_;
+  case tp_string:
+  case tp_tmp_string:
+    return STRLEN_STRING;
+  case tp_mixed:
+    return STRLEN_VAR;
+  case tp_Class:
+  case tp_object:
+    return STRLEN_CLASS;
+  case tp_void:
+    return STRLEN_VOID;
+  case tp_future:
+    return STRLEN_FUTURE;
+  case tp_future_queue:
+    return STRLEN_FUTURE_QUEUE;
+  case tp_Error:
+    return STRLEN_ERROR;
+  case tp_regexp:
+  case ptype_size:
     kphp_fail();
   }
   return STRLEN_ERROR;
 }
 
-bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
+bool can_be_same_type(const TypeData* type1, const TypeData* type2) {
   if (type1->ptype() == tp_mixed || type2->ptype() == tp_mixed) {
     return true;
   }
@@ -847,7 +846,7 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
   }
 
   // TODO: do we need this?
-  auto is_array_or_tuple = [](const TypeData *type) { return vk::any_of_equal(type->ptype(), tp_array, tp_tuple, tp_shape); };
+  auto is_array_or_tuple = [](const TypeData* type) { return vk::any_of_equal(type->ptype(), tp_array, tp_tuple, tp_shape); };
   if (is_array_or_tuple(type1) && is_array_or_tuple(type2)) {
     return true;
   }
@@ -857,7 +856,7 @@ bool can_be_same_type(const TypeData *type1, const TypeData *type2) {
 
 // check if types fully equal (if type2 is any, it's equal to anything)
 // note that false != bool here
-bool are_equal_types(const TypeData *type1, const TypeData *type2) {
+bool are_equal_types(const TypeData* type1, const TypeData* type2) {
   if (type1 == nullptr) {
     return type2 == nullptr;
   }
@@ -882,7 +881,7 @@ bool are_equal_types(const TypeData *type1, const TypeData *type2) {
 
   if (vk::any_of_equal(tp, tp_shape, tp_tuple)) {
     for (auto it1 = type1->lookup_begin(); it1 != type1->lookup_end(); ++it1) {
-      const TypeData *t2_at_it = type2->lookup_at(it1->first);
+      const TypeData* t2_at_it = type2->lookup_at(it1->first);
       if (t2_at_it == nullptr && !type2->shape_has_varg_flag()) {
         return false;
       } else if (t2_at_it && !are_equal_types(it1->second, t2_at_it)) {
@@ -890,7 +889,7 @@ bool are_equal_types(const TypeData *type1, const TypeData *type2) {
       }
     }
     for (auto it2 = type2->lookup_begin(); it2 != type2->lookup_end(); ++it2) {
-      const TypeData *t1_at_it = type1->lookup_at(it2->first);
+      const TypeData* t1_at_it = type1->lookup_at(it2->first);
       if (t1_at_it == nullptr && !type1->shape_has_varg_flag()) {
         return false;
       }
@@ -902,51 +901,51 @@ bool are_equal_types(const TypeData *type1, const TypeData *type2) {
 
 // check that given <= expected, to if expected is a phpdoc restriction, check that actual inferred type matches
 // note that false < bool
-bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, const MultiKey *from_at) {
+bool is_less_or_equal_type(const TypeData* given, const TypeData* expected, const MultiKey* from_at) {
   // optimization: for obvious cases (like primitive=primitive or primitive<mixed, which is about 80% of calls)
   // immediately return true, without extra memory allocations and lca checks
   bool eq_flags = given->use_or_false() == expected->use_or_false() && given->use_or_null() == expected->use_or_null();
   if (eq_flags && !from_at) {
     PrimitiveType tp = given->ptype();
     switch (expected->ptype()) {
-      case tp_any:
-        if (expected->get_real_ptype() == tp_any) {
+    case tp_any:
+      if (expected->get_real_ptype() == tp_any) {
+        return true;
+      }
+      break;
+    case tp_string:
+    case tp_int:
+    case tp_float:
+    case tp_bool:
+    case tp_void:
+      if (tp == expected->ptype()) {
+        return true;
+      }
+      break;
+    case tp_array:
+      if (tp == tp_array && expected->lookup_at(Key::any_key())->get_real_ptype() == tp_any) {
+        return true;
+      }
+      break;
+    case tp_mixed:
+      if (vk::any_of_equal(tp, tp_bool, tp_int, tp_float, tp_string, tp_mixed)) {
+        return true;
+      }
+      break;
+    case tp_Class:
+      if (given->class_types() == expected->class_types()) {
+        if (given->ffi_const_flag() && !expected->ffi_const_flag()) {
+          return false;
+        }
+        if (given->get_indirection() == expected->get_indirection()) {
           return true;
         }
-        break;
-      case tp_string:
-      case tp_int:
-      case tp_float:
-      case tp_bool:
-      case tp_void:
-        if (tp == expected->ptype()) {
-          return true;
-        }
-        break;
-      case tp_array:
-        if (tp == tp_array && expected->lookup_at(Key::any_key())->get_real_ptype() == tp_any) {
-          return true;
-        }
-        break;
-      case tp_mixed:
-        if (vk::any_of_equal(tp, tp_bool, tp_int, tp_float, tp_string, tp_mixed)) {
-          return true;
-        }
-        break;
-      case tp_Class:
-        if (given->class_types() == expected->class_types()) {
-          if (given->ffi_const_flag() && !expected->ffi_const_flag()) {
-            return false;
-          }
-          if (given->get_indirection() == expected->get_indirection()) {
-            return true;
-          }
-        }
-        break;
-      case tp_object:
-        return tp == tp_Class || tp == tp_object;
-      default:
-        break;
+      }
+      break;
+    case tp_object:
+      return tp == tp_Class || tp == tp_object;
+    default:
+      break;
     }
   }
 
@@ -962,12 +961,12 @@ bool is_less_or_equal_type(const TypeData *given, const TypeData *expected, cons
   return are_equal_types(type_of_to_node.get(), expected);
 }
 
-bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noexcept {
+bool is_implicit_array_conversion(const TypeData* from, const TypeData* to) noexcept {
   if (!from || !to) {
     return false;
   }
   if (from->get_real_ptype() == tp_array) {
-    const auto *from_array_value_type = from->lookup_at_any_key();
+    const auto* from_array_value_type = from->lookup_at_any_key();
     if (from_array_value_type->get_real_ptype() == tp_any) {
       return false;
     }
@@ -977,7 +976,7 @@ bool is_implicit_array_conversion(const TypeData *from, const TypeData *to) noex
     return !are_equal_types(from_array_value_type, to->lookup_at_any_key());
   }
 
-  const auto implicit_cast_pred = [to](const TypeData::SubkeyItem &key_value) {
+  const auto implicit_cast_pred = [to](const TypeData::SubkeyItem& key_value) {
     return is_implicit_array_conversion(key_value.second, to->lookup_at(key_value.first));
   };
   return std::find_if(from->lookup_begin(), from->lookup_end(), implicit_cast_pred) != from->lookup_end();
@@ -988,7 +987,7 @@ size_t TypeData::get_tuple_max_index() const {
   return std::distance(subkeys.begin(), subkeys.end());
 }
 
-bool TypeData::did_type_data_change_after_tinf_step(const TypeData *before) const {
+bool TypeData::did_type_data_change_after_tinf_step(const TypeData* before) const {
   if (ptype_ != before->ptype_ || flags_ != before->flags_) {
     return true;
   }
@@ -1013,15 +1012,14 @@ bool TypeData::did_type_data_change_after_tinf_step(const TypeData *before) cons
   return i1 != e1 || i2 != e2;
 }
 
-const TypeData *TypeData::create_for_class(ClassPtr klass) {
-  auto *res = new TypeData(tp_Class);
+const TypeData* TypeData::create_for_class(ClassPtr klass) {
+  auto* res = new TypeData(tp_Class);
   res->class_type_ = {klass};
   return res;
 }
 
-const TypeData *TypeData::create_array_of(const TypeData *element_type) {
-  auto *res = new TypeData(tp_array);
+const TypeData* TypeData::create_array_of(const TypeData* element_type) {
+  auto* res = new TypeData(tp_array);
   res->set_lca_at(MultiKey::any_key(1), element_type);
   return res;
 }
-

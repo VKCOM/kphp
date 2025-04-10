@@ -9,12 +9,14 @@
 #pragma once
 
 #include <cstdint>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include "runtime-common/core/runtime-core.h"
 
-namespace kphp_ml { struct MLModel; }
+namespace kphp_ml {
+struct MLModel;
+}
 
 namespace kphp_ml_catboost {
 
@@ -65,7 +67,7 @@ struct CatboostCtrValueTable {
   std::vector<CatboostCtrMeanHistory> ctr_mean_history;
   std::vector<int> ctr_total;
 
-  const unsigned int *resolve_hash_index(uint64_t hash) const noexcept {
+  const unsigned int* resolve_hash_index(uint64_t hash) const noexcept {
     auto found_it = index_hash_viewer.find(hash);
     return found_it == index_hash_viewer.end() ? nullptr : &found_it->second;
   }
@@ -135,11 +137,12 @@ struct CatboostModel {
   static constexpr int REINDEX_MAP_CATEGORIAL_SHIFT = 1000000;
 };
 
-double kml_predict_catboost_by_vectors(const kphp_ml::MLModel &kml, const array<double> &float_features, const array<string> &cat_features, char *mutable_buffer);
-double kml_predict_catboost_by_ht_remap_str_keys(const kphp_ml::MLModel &kml, const array<double> &features_map, char *mutable_buffer);
+double kml_predict_catboost_by_vectors(const kphp_ml::MLModel& kml, const array<double>& float_features, const array<string>& cat_features,
+                                       char* mutable_buffer);
+double kml_predict_catboost_by_ht_remap_str_keys(const kphp_ml::MLModel& kml, const array<double>& features_map, char* mutable_buffer);
 
-array<double> kml_predict_catboost_by_vectors_multi(const kphp_ml::MLModel &kml, const array<double> &float_features, const array<string> &cat_features, char *mutable_buffer);
-array<double> kml_predict_catboost_by_ht_remap_str_keys_multi(const kphp_ml::MLModel &kml, const array<double> &features_map, char *mutable_buffer);
-
+array<double> kml_predict_catboost_by_vectors_multi(const kphp_ml::MLModel& kml, const array<double>& float_features, const array<string>& cat_features,
+                                                    char* mutable_buffer);
+array<double> kml_predict_catboost_by_ht_remap_str_keys_multi(const kphp_ml::MLModel& kml, const array<double>& features_map, char* mutable_buffer);
 
 } // namespace kphp_ml_catboost

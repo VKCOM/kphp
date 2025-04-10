@@ -10,8 +10,8 @@
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/define-data.h"
-#include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/function-data.h"
+#include "compiler/data/kphp-json-tags.h"
 #include "compiler/data/kphp-tracing-tags.h"
 #include "compiler/vertex-util.h"
 
@@ -45,8 +45,10 @@ static bool is_class_JsonEncoder_or_child(ClassPtr class_id) {
 // `new $c(...)` is stored as `_by_name_construct($c, ...)` in AST
 // here we replace `_by_name_construct('A', ...args)` => `A::__construct(op_alloc, ...args)`
 static VertexPtr replace_by_name_construct(VertexAdaptor<op_func_call> call) {
-  const std::string *class_name = VertexUtil::get_constexpr_string(call->args()[0]);
-  kphp_error_act(class_name, "Syntax 'new $class_name' works only if $class_name is compile-time known.\nIt can be achieved via generics and class-string<T>, for example.", return call);
+  const std::string* class_name = VertexUtil::get_constexpr_string(call->args()[0]);
+  kphp_error_act(class_name,
+                 "Syntax 'new $class_name' works only if $class_name is compile-time known.\nIt can be achieved via generics and class-string<T>, for example.",
+                 return call);
 
   ClassPtr klass = G->get_class(*class_name);
   kphp_assert(klass);
@@ -77,22 +79,28 @@ static VertexPtr replace_by_name_construct(VertexAdaptor<op_func_call> call) {
 // `$c::method()` is stored as `_by_name_call_method($c, 'method')` in AST
 // here we replace `_by_name_call_method('A', 'method', ...args)` => `A::method(...args)`
 static VertexPtr replace_by_name_call_method(VertexAdaptor<op_func_call> call) {
-  const std::string *class_name = VertexUtil::get_constexpr_string(call->args()[0]);
-  const std::string *method_name = VertexUtil::get_constexpr_string(call->args()[1]);
-  kphp_error_act(class_name, "Syntax '$class_name::method()' works only if $class_name is compile-time known.\nIt can be achieved via generics and class-string<T>, for example.", return call);
+  const std::string* class_name = VertexUtil::get_constexpr_string(call->args()[0]);
+  const std::string* method_name = VertexUtil::get_constexpr_string(call->args()[1]);
+  kphp_error_act(
+      class_name,
+      "Syntax '$class_name::method()' works only if $class_name is compile-time known.\nIt can be achieved via generics and class-string<T>, for example.",
+      return call);
 
   ClassPtr klass = G->get_class(*class_name);
   kphp_assert(klass && method_name);
 
-  const auto *m_method = klass->members.get_static_method(*method_name);
+  const auto* m_method = klass->members.get_static_method(*method_name);
   if (!m_method) {
-    const auto *instance_method_m = klass->get_instance_method(*method_name);
-    kphp_error(!instance_method_m, fmt_format("Syntax '$class_name::method()' works only for static methods, but {} is an instance method", instance_method_m->function->as_human_readable()));
-    kphp_error( instance_method_m, fmt_format("Syntax '$class_name::method()' not resolved: method {} not found in class {}", *method_name, klass->as_human_readable()));
+    const auto* instance_method_m = klass->get_instance_method(*method_name);
+    kphp_error(!instance_method_m, fmt_format("Syntax '$class_name::method()' works only for static methods, but {} is an instance method",
+                                              instance_method_m->function->as_human_readable()));
+    kphp_error(instance_method_m,
+               fmt_format("Syntax '$class_name::method()' not resolved: method {} not found in class {}", *method_name, klass->as_human_readable()));
     return call;
   }
   FunctionPtr method = m_method->function;
-  kphp_error(method->is_required, fmt_format("Add @kphp-required over {}, because it's used only from a '$class_name::method()' syntax", method->as_human_readable()));
+  kphp_error(method->is_required,
+             fmt_format("Add @kphp-required over {}, because it's used only from a '$class_name::method()' syntax", method->as_human_readable()));
 
   std::vector<VertexPtr> method_args;
   method_args.reserve(call->size() - 2);
@@ -109,14 +117,17 @@ static VertexPtr replace_by_name_call_method(VertexAdaptor<op_func_call> call) {
 // `$c::CONST` is stored as `_by_name_get_const($c, 'CONST')` in AST
 // here we replace `_by_name_get_const('A', 'const')` => `A::CONST (value of)`
 static VertexPtr replace_by_name_get_const(FunctionPtr current_function, VertexAdaptor<op_func_call> call) {
-  const std::string *class_name = VertexUtil::get_constexpr_string(call->args()[0]);
-  const std::string *const_name = VertexUtil::get_constexpr_string(call->args()[1]);
-  kphp_error_act(class_name, "Syntax '$class_name::CONST' works only if $class_name is compile-time known.\nIt can be achieved via generics and class-string<T>, for example.", return call);
+  const std::string* class_name = VertexUtil::get_constexpr_string(call->args()[0]);
+  const std::string* const_name = VertexUtil::get_constexpr_string(call->args()[1]);
+  kphp_error_act(
+      class_name,
+      "Syntax '$class_name::CONST' works only if $class_name is compile-time known.\nIt can be achieved via generics and class-string<T>, for example.",
+      return call);
 
   ClassPtr klass = G->get_class(*class_name);
   kphp_assert(klass && const_name);
 
-  const auto *m_const = klass->get_constant(*const_name);
+  const auto* m_const = klass->get_constant(*const_name);
   if (!m_const) {
     kphp_error(0, fmt_format("Syntax '$class_name::CONST' not resolved: const {} not found in class {}", *const_name, klass->as_human_readable()));
     return call;
@@ -134,18 +145,23 @@ static VertexPtr replace_by_name_get_const(FunctionPtr current_function, VertexA
 // `$c::$field` is stored as `_by_name_get_field($c, 'field')` in AST
 // here we replace `_by_name_get_field('A', 'field')` => `A::$field`
 static VertexPtr replace_by_name_get_field(VertexAdaptor<op_func_call> call) {
-  const std::string *class_name = VertexUtil::get_constexpr_string(call->args()[0]);
-  const std::string *field_name = VertexUtil::get_constexpr_string(call->args()[1]);
-  kphp_error_act(class_name, "Syntax '$class_name::$field' works only if $class_name is compile-time known.\nIt can be achieved via generics and class-string<T>, for example.", return call);
+  const std::string* class_name = VertexUtil::get_constexpr_string(call->args()[0]);
+  const std::string* field_name = VertexUtil::get_constexpr_string(call->args()[1]);
+  kphp_error_act(
+      class_name,
+      "Syntax '$class_name::$field' works only if $class_name is compile-time known.\nIt can be achieved via generics and class-string<T>, for example.",
+      return call);
 
   ClassPtr klass = G->get_class(*class_name);
   kphp_assert(klass && field_name);
 
-  const auto *m_field = klass->get_static_field(*field_name);
+  const auto* m_field = klass->get_static_field(*field_name);
   if (!m_field) {
-    const auto *instance_field_m = klass->get_instance_field(*field_name);
-    kphp_error(!instance_field_m, fmt_format("Syntax '$class_name::$field' works only for static fields, but {} is an instance field", instance_field_m->var->as_human_readable()));
-    kphp_error( instance_field_m, fmt_format("Syntax '$class_name::$field' not resolved: field ${} not found in class {}", *field_name, klass->as_human_readable()));
+    const auto* instance_field_m = klass->get_instance_field(*field_name);
+    kphp_error(!instance_field_m, fmt_format("Syntax '$class_name::$field' works only for static fields, but {} is an instance field",
+                                             instance_field_m->var->as_human_readable()));
+    kphp_error(instance_field_m,
+               fmt_format("Syntax '$class_name::$field' not resolved: field ${} not found in class {}", *field_name, klass->as_human_readable()));
     return call;
   }
   VarPtr field = m_field->var;
@@ -186,12 +202,11 @@ static VertexPtr replace_classof([[maybe_unused]] FunctionPtr current_function, 
   return call;
 }
 
-
 // it's the main (exported) function
 // see comment at the top of the file
 VertexPtr maybe_replace_extern_func_call(FunctionPtr current_function, VertexAdaptor<op_func_call> call) {
   FunctionPtr f_called = call->func_id;
-  const std::string &f_name = f_called->name;
+  const std::string& f_name = f_called->name;
   int n_args = call->size();
 
   // new $c, $c::method(), $c::CONST, $c::$FIELD

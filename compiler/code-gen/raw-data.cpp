@@ -7,58 +7,58 @@
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/const-manipulations.h"
 
-void RawString::compile(CodeGenerator &W) const {
+void RawString::compile(CodeGenerator& W) const {
   W << "\"";
   for (size_t i = 0; i < str.size(); i++) {
     switch (str[i]) {
-      case '\r':
-        W << "\\r";
-        break;
-      case '\n':
-        W << "\\n";
-        break;
-      case '"':
-        W << "\\\"";
-        break;
-      case '\\':
-        W << "\\\\";
-        break;
-      case '\'':
-        W << "\\\'";
-        break;
-      case 0: {
-        if (str[i + 1] < '0' || str[i + 1] > '9') {
-          W << "\\0";
-        } else {
-          W << "\\000";
-        }
-        break;
+    case '\r':
+      W << "\\r";
+      break;
+    case '\n':
+      W << "\\n";
+      break;
+    case '"':
+      W << "\\\"";
+      break;
+    case '\\':
+      W << "\\\\";
+      break;
+    case '\'':
+      W << "\\\'";
+      break;
+    case 0: {
+      if (str[i + 1] < '0' || str[i + 1] > '9') {
+        W << "\\0";
+      } else {
+        W << "\\000";
       }
-      case '\a':
-        W << "\\a";
-        break;
-      case '\b':
-        W << "\\b";
-        break;
-      case '\f':
-        W << "\\f";
-        break;
-      case '\t':
-        W << "\\t";
-        break;
-      case '\v':
-        W << "\\v";
-        break;
-      default:
-        if ((unsigned char)str[i] < 32) {
-          std::string tmp = "\\0";
-          tmp += (char)('0' + (str[i] / 8));
-          tmp += (char)('0' + (str[i] % 8));
-          W << tmp;
-        } else {
-          W << str[i];
-        }
-        break;
+      break;
+    }
+    case '\a':
+      W << "\\a";
+      break;
+    case '\b':
+      W << "\\b";
+      break;
+    case '\f':
+      W << "\\f";
+      break;
+    case '\t':
+      W << "\\t";
+      break;
+    case '\v':
+      W << "\\v";
+      break;
+    default:
+      if ((unsigned char)str[i] < 32) {
+        std::string tmp = "\\0";
+        tmp += (char)('0' + (str[i] / 8));
+        tmp += (char)('0' + (str[i] % 8));
+        W << tmp;
+      } else {
+        W << str[i];
+      }
+      break;
     }
   }
   W << "\"";
@@ -71,7 +71,7 @@ DepLevelContainer::const_iterator DepLevelContainer::begin() const {
   return {*this, begin_idx, 0};
 }
 
-const std::vector<VarPtr> &DepLevelContainer::vars_by_dep_level(size_t dep_level) const {
+const std::vector<VarPtr>& DepLevelContainer::vars_by_dep_level(size_t dep_level) const {
   if (dep_level >= max_dep_level()) {
     static const auto EMPTY = std::vector<VarPtr>{};
     return EMPTY;
@@ -88,7 +88,7 @@ void DepLevelContainer::add(VarPtr v) {
   mapping[dep_level].emplace_back(v);
 }
 
-DepLevelContainer::const_iterator &DepLevelContainer::const_iterator::operator++() {
+DepLevelContainer::const_iterator& DepLevelContainer::const_iterator::operator++() {
   ++internal_index;
   while (dep_level < owner.mapping.size() && internal_index >= owner.mapping[dep_level].size()) {
     internal_index = 0;
@@ -104,7 +104,7 @@ static inline int array_len() {
   return (8 * sizeof(int)) / sizeof(double);
 }
 
-std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &const_raw_array_vars, CodeGenerator &W) {
+std::vector<int> compile_arrays_raw_representation(const DepLevelContainer& const_raw_array_vars, CodeGenerator& W) {
   if (const_raw_array_vars.empty()) {
     return {};
   }
@@ -117,8 +117,7 @@ std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &cons
   for (auto var_it : const_raw_array_vars) {
     VertexAdaptor<op_array> vertex = var_it->init_val.as<op_array>();
 
-    const TypeData *vertex_inner_type = vertex->tinf_node.get_type()->lookup_at_any_key();
-
+    const TypeData* vertex_inner_type = vertex->tinf_node.get_type()->lookup_at_any_key();
 
     int array_size = vertex->size();
     int array_len_in_doubles = -1;
@@ -137,12 +136,9 @@ std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &cons
     if (shift != 0) {
       W << ",";
     } else {
-      W << "static_assert(sizeof(array<Unknown>::iterator::inner_type) == " << array_len() * sizeof(double) << ", \"size of array_len should be compatible with runtime array_inner\");" << NL;
-      W << "static const union " << BEGIN
-        << "struct { uint32_t a; uint32_t b; } is;" << NL
-        << "double d;" << NL
-        << "int64_t i64;" << NL
-        << END
+      W << "static_assert(sizeof(array<Unknown>::iterator::inner_type) == " << array_len() * sizeof(double)
+        << ", \"size of array_len should be compatible with runtime array_inner\");" << NL;
+      W << "static const union " << BEGIN << "struct { uint32_t a; uint32_t b; } is;" << NL << "double d;" << NL << "int64_t i64;" << NL << END
         << " raw_arrays[] = { ";
     }
 
@@ -181,4 +177,3 @@ std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &cons
 
   return shifts;
 }
-

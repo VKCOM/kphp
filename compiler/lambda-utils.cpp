@@ -5,15 +5,15 @@
 #include "compiler/lambda-utils.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/gentree.h"
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/gentree.h"
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
-#include "compiler/vertex.h"
 #include "compiler/vertex-util.h"
+#include "compiler/vertex.h"
 
 /*
  * How do lambdas work.
@@ -166,7 +166,6 @@
  * for the same reason that we can bind op_invoke_call only at that moment.
  */
 
-
 // this function adds variables from uses_list to arguments
 //    function($x) use ($a)
 // before: lambda$xxx($x)
@@ -244,7 +243,7 @@ static FunctionPtr generate_invoke_method_for_lambda_class(FunctionPtr f_lambda,
 // implicitly created a class Lambda$xxx { public $a; }, and here we generate
 //    __construct($a) { $this->a = $a; }
 static FunctionPtr generate_constructor_for_lambda_class(FunctionPtr f_lambda, ClassPtr c_lambda) {
-  const Location &location = f_lambda->root->location;
+  const Location& location = f_lambda->root->location;
 
   std::vector<VertexAdaptor<op_func_param>> construct_params;
   std::vector<VertexPtr> fields_initializers;
@@ -279,8 +278,7 @@ ClassPtr generate_lambda_class_wrapping_lambda_function(FunctionPtr f_lambda) {
     var_as_field->str_val = var_as_use->str_val;
     c_lambda->members.add_instance_field(var_as_field, {}, FieldModifiers{}.set_public(), nullptr, nullptr);
 
-    kphp_error(!f_lambda->modifiers.is_static_lambda() || var_as_use->extra_type != op_ex_var_this,
-               "Using $this in a static lambda");
+    kphp_error(!f_lambda->modifiers.is_static_lambda() || var_as_use->extra_type != op_ex_var_this, "Using $this in a static lambda");
   }
 
   FunctionPtr f_invoke = generate_invoke_method_for_lambda_class(f_lambda, c_lambda);
@@ -292,7 +290,7 @@ ClassPtr generate_lambda_class_wrapping_lambda_function(FunctionPtr f_lambda) {
   G->register_function(f_construct);
 
   kphp_assert(!f_lambda->class_id);
-  f_lambda->class_id = c_lambda;    // save the class that wraps this lambda (its __invoke method calls it)
+  f_lambda->class_id = c_lambda; // save the class that wraps this lambda (its __invoke method calls it)
 
   return c_lambda;
 }
@@ -319,8 +317,8 @@ VertexPtr generate_lambda_class_construct_call_replacing_op_lambda(FunctionPtr f
 // at the moment, it has no implementations:
 // when actual lambdas are passed/assigned to this typed callable, they will implicitly implement this interface,
 // and the body of __invoke() method will be generated like a regular virtual function, after processing all lambdas
-InterfacePtr generate_interface_from_typed_callable(const TypeHint *type_hint) {
-  const auto *typed_callable = type_hint->try_as<TypeHintCallable>();
+InterfacePtr generate_interface_from_typed_callable(const TypeHint* type_hint) {
+  const auto* typed_callable = type_hint->try_as<TypeHintCallable>();
   kphp_assert(typed_callable && typed_callable->is_typed_callable());
 
   std::string interface_name = "ITyped$" + replace_non_alphanum(typed_callable->as_human_readable());
@@ -334,7 +332,7 @@ InterfacePtr generate_interface_from_typed_callable(const TypeHint *type_hint) {
 
   auto registered_interface = G->try_register_class(interface);
   if (registered_interface != interface) {
-    while (!registered_interface->members.has_any_instance_method()) {    // __invoke not registered yet by another thread
+    while (!registered_interface->members.has_any_instance_method()) { // __invoke not registered yet by another thread
       usleep(150);
     }
     return registered_interface;
@@ -371,19 +369,19 @@ void inherit_lambda_class_from_typed_callable(ClassPtr c_lambda, InterfacePtr ty
 
   c_lambda->implements.emplace_back(typed_interface);
 
-  AutoLocker<Lockable *> locker(&(*typed_interface));
+  AutoLocker<Lockable*> locker(&(*typed_interface));
   typed_interface->derived_classes.emplace_back(c_lambda);
 }
 
 // having 'strlen' or [$obj, 'method'] used as callable, generate a lambda
 // think of it as: fn($s) => strlen($s) or function(...$args) use($obj) { return $obj->method(...$args); }
-FunctionPtr generate_lambda_from_string_or_array(FunctionPtr current_function, const std::string &func_name, VertexPtr bound_this, VertexPtr v_location) {
+FunctionPtr generate_lambda_from_string_or_array(FunctionPtr current_function, const std::string& func_name, VertexPtr bound_this, VertexPtr v_location) {
   FunctionPtr f_to_be_wrapped;
 
   if (bound_this) {
     ClassPtr klass = assume_class_of_expr(current_function, bound_this, v_location).try_as_class();
     kphp_error_act(klass, fmt_format("Could not detect a class, method {} of which to call", func_name), return {});
-    const auto *method = klass->get_instance_method(func_name);
+    const auto* method = klass->get_instance_method(func_name);
     kphp_error_act(method, fmt_format("Could not find a method {} in class {}", func_name, klass->as_human_readable()), return {});
     f_to_be_wrapped = method->function;
   } else {
@@ -391,7 +389,8 @@ FunctionPtr generate_lambda_from_string_or_array(FunctionPtr current_function, c
   }
 
   kphp_error_act(f_to_be_wrapped, fmt_format("Could not find a function {}", func_name), return {});
-  kphp_error_act(f_to_be_wrapped->is_required, fmt_format("{} needs the @kphp-required tag, because it's used only as a string callback", f_to_be_wrapped->as_human_readable()), return {});
+  kphp_error_act(f_to_be_wrapped->is_required,
+                 fmt_format("{} needs the @kphp-required tag, because it's used only as a string callback", f_to_be_wrapped->as_human_readable()), return {});
 
   std::vector<VertexAdaptor<op_func_param>> w_params;
   std::vector<VertexPtr> w_call_args;
@@ -424,7 +423,7 @@ FunctionPtr generate_lambda_from_string_or_array(FunctionPtr current_function, c
 
   if (bound_this) {
     w_call->extra_type = op_ex_func_call_arrow;
-    if (auto bound_this_var = bound_this.try_as<op_var>()) {    // [$inst, 'method'], not [getInst(), 'method']
+    if (auto bound_this_var = bound_this.try_as<op_var>()) { // [$inst, 'method'], not [getInst(), 'method']
       f_lambda->uses_list.emplace_front(bound_this_var);
     }
   }
@@ -435,13 +434,10 @@ FunctionPtr generate_lambda_from_string_or_array(FunctionPtr current_function, c
 // having fn($x) => $x + $other + $captured + $variables,
 // walk the arrow function body and capture them by value (fill f_lambda->uses_list)
 void auto_capture_vars_from_body_in_arrow_lambda(FunctionPtr f_lambda) {
-  auto needs_to_be_captured = [f_lambda](const std::string &var_name) {
-    return var_name != "this" &&      // $this is captured by another approach, in non-arrow lambdas also
-           var_name.find("::") == std::string::npos &&
-           var_name.find("$u") == std::string::npos &&   // not a superlocal var created in gentree
-           !VarData::does_name_eq_any_language_superglobal(var_name) &&
-           !f_lambda->find_param_by_name(var_name) &&
-           !f_lambda->find_use_by_name(var_name);
+  auto needs_to_be_captured = [f_lambda](const std::string& var_name) {
+    return var_name != "this" && // $this is captured by another approach, in non-arrow lambdas also
+           var_name.find("::") == std::string::npos && var_name.find("$u") == std::string::npos && // not a superlocal var created in gentree
+           !VarData::does_name_eq_any_language_superglobal(var_name) && !f_lambda->find_param_by_name(var_name) && !f_lambda->find_use_by_name(var_name);
   };
 
   std::function<void(VertexPtr)> find_recursive = [&find_recursive, &needs_to_be_captured, f_lambda](VertexPtr root) {
@@ -450,7 +446,7 @@ void auto_capture_vars_from_body_in_arrow_lambda(FunctionPtr f_lambda) {
         f_lambda->uses_list.emplace_front(v);
       }
     } else if (auto inner_lambda = root.try_as<op_lambda>()) {
-      for (auto v : inner_lambda->func_id->uses_list) {   // bubble up uses from nested lambdas
+      for (auto v : inner_lambda->func_id->uses_list) { // bubble up uses from nested lambdas
         if (needs_to_be_captured(v->str_val)) {
           f_lambda->uses_list.emplace_front(v);
         }

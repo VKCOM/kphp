@@ -47,21 +47,21 @@ struct promise_base {
   }
 
   auto done() const noexcept -> bool {
-    return std::coroutine_handle<promise_type>::from_promise(*const_cast<promise_type *>(static_cast<const promise_type *>(this))).done();
+    return std::coroutine_handle<promise_type>::from_promise(*const_cast<promise_type*>(static_cast<const promise_type*>(this))).done();
   }
 
   template<typename... Args>
-  auto operator new(std::size_t n, [[maybe_unused]] Args &&...args) noexcept -> void * {
+  auto operator new(std::size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
     // todo:k2 think about args in new
     // todo:k2 make coroutine allocator
     return k2::alloc(n);
   }
 
-  auto operator delete(void *ptr, [[maybe_unused]] size_t n) noexcept -> void {
+  auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
     k2::free(ptr);
   }
 
-  void *m_next{};
+  void* m_next{};
 };
 
 template<typename promise_type>
@@ -74,15 +74,15 @@ protected:
 
 public:
   explicit awaiter_base(std::coroutine_handle<promise_type> coro) noexcept
-    : m_coro(coro) {}
+      : m_coro(coro) {}
 
-  awaiter_base(awaiter_base &&other) noexcept
-    : m_state(std::exchange(other.m_state, state::end))
-    , m_coro(std::exchange(other.m_coro, {})) {}
+  awaiter_base(awaiter_base&& other) noexcept
+      : m_state(std::exchange(other.m_state, state::end)),
+        m_coro(std::exchange(other.m_coro, {})) {}
 
-  awaiter_base(const awaiter_base &other) = delete;
-  awaiter_base &operator=(const awaiter_base &other) = delete;
-  awaiter_base &operator=(awaiter_base &&other) = delete;
+  awaiter_base(const awaiter_base& other) = delete;
+  awaiter_base& operator=(const awaiter_base& other) = delete;
+  awaiter_base& operator=(awaiter_base&& other) = delete;
 
   ~awaiter_base() {
     if (m_state == state::suspend) {
@@ -134,16 +134,16 @@ struct task {
   task() noexcept = default;
 
   explicit task(std::coroutine_handle<> coro) noexcept
-    : m_haddress(coro.address()) {}
+      : m_haddress(coro.address()) {}
 
-  task(const task &other) noexcept = delete;
+  task(const task& other) noexcept = delete;
 
-  task(task &&other) noexcept
-    : m_haddress(std::exchange(other.m_haddress, nullptr)) {}
+  task(task&& other) noexcept
+      : m_haddress(std::exchange(other.m_haddress, nullptr)) {}
 
-  task &operator=(const task &other) noexcept = delete;
+  task& operator=(const task& other) noexcept = delete;
 
-  task &operator=(task &&other) noexcept {
+  task& operator=(task&& other) noexcept {
     std::swap(m_haddress, other.m_haddress);
     return *this;
   }
@@ -156,7 +156,7 @@ struct task {
 
   struct promise_base : task_impl::promise_base<promise_type> {
     auto get_return_object() noexcept -> task {
-      return task{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this))};
+      return task{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
     }
 
     static auto get_return_object_on_allocation_failure() noexcept -> task {
@@ -167,12 +167,13 @@ struct task {
   template<std::same_as<T> F>
   struct promise_non_void final : public promise_base {
     template<typename E>
-    requires std::constructible_from<F, E &&> auto return_value(E &&e) noexcept -> void {
+    requires std::constructible_from<F, E&&>
+    auto return_value(E&& e) noexcept -> void {
       ::new (bytes) F(std::forward<E>(e));
     }
 
     auto result() noexcept -> T {
-      auto *t{std::launder(reinterpret_cast<T *>(bytes))};
+      auto* t{std::launder(reinterpret_cast<T*>(bytes))};
       const auto finalizer{vk::finally([t] noexcept { t->~T(); })};
       return std::move(*t);
     }
@@ -210,12 +211,13 @@ struct task {
   }
   // restore erased type
   template<typename U>
-  requires(std::same_as<void, T>) explicit operator task<U>() && noexcept {
+  requires(std::same_as<void, T>)
+  explicit operator task<U>() && noexcept {
     return task<U>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
   }
 
 private:
-  void *m_haddress{};
+  void* m_haddress{};
 };
 
 } // namespace kphp::coro

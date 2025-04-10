@@ -11,7 +11,7 @@ C$DateInterval::~C$DateInterval() {
   rel_time = nullptr;
 }
 
-class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<C$DateInterval> &self, const string &duration) noexcept {
+class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<C$DateInterval>& self, const string& duration) noexcept {
   auto [rel_time, error_msg] = php_timelib_date_interval_initialize(duration);
   if (!rel_time) {
     string error{"DateInterval::__construct(): "};
@@ -23,7 +23,7 @@ class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<
   return self;
 }
 
-class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string &datetime) noexcept {
+class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string& datetime) noexcept {
   auto [rel_time, error_msg] = php_timelib_date_interval_create_from_date_string(datetime);
   if (!rel_time) {
     php_warning("DateInterval::createFromDateString(): %s", error_msg.c_str());
@@ -35,6 +35,6 @@ class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string
   return date_interval;
 }
 
-string f$DateInterval$$format(const class_instance<C$DateInterval> &self, const string &format) noexcept {
+string f$DateInterval$$format(const class_instance<C$DateInterval>& self, const string& format) noexcept {
   return php_timelib_date_interval_format(format, self->rel_time);
 }

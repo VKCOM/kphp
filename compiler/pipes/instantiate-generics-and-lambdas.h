@@ -22,5 +22,5 @@ public:
   // (this pipe is needed to have several outputs, which is impossible with Pass structure)
   using need_profiler = std::false_type;
 
-  void execute(FunctionPtr function, OStreamT &os);
+  void execute(FunctionPtr function, OStreamT& os);
 };
