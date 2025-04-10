@@ -22,7 +22,7 @@ TEST(parallel_counter, basic) {
   std::vector<std::thread> threads(nr_threads);
 
   std::uint64_t expected_sum = 0;
-  for (auto &thread : threads) {
+  for (auto& thread : threads) {
     const int counter = distribution(random_engine);
     expected_sum += counter;
 
@@ -37,7 +37,7 @@ TEST(parallel_counter, basic) {
     });
   }
 
-  for (auto &thread : threads) {
+  for (auto& thread : threads) {
     thread.join();
   }
 

@@ -23,29 +23,29 @@ inline class_instance<C$KphpSpan> f$kphp_tracing_get_root_span() noexcept {
   return {};
 }
 
-inline class_instance<C$KphpDiv> f$kphp_tracing_init([[maybe_unused]] const string &root_span_title) noexcept {
+inline class_instance<C$KphpDiv> f$kphp_tracing_init([[maybe_unused]] const string& root_span_title) noexcept {
   php_warning("called stub kphp_tracing_init");
   return {};
 }
 
-inline class_instance<C$KphpSpan> f$kphp_tracing_start_span([[maybe_unused]] const string &title, [[maybe_unused]] const string &short_desc,
+inline class_instance<C$KphpSpan> f$kphp_tracing_start_span([[maybe_unused]] const string& title, [[maybe_unused]] const string& short_desc,
                                                             [[maybe_unused]] double start_timestamp) noexcept {
   php_warning("called stub kphp_tracing_start_span");
   return {};
 }
 
 template<typename F>
-void f$kphp_tracing_register_enums_provider([[maybe_unused]] F &&cb_custom_enums) noexcept {
+void f$kphp_tracing_register_enums_provider([[maybe_unused]] F&& cb_custom_enums) noexcept {
   php_warning("called stub kphp_tracing_register_enums_provider");
 }
 
 template<typename F>
-void f$kphp_tracing_register_on_finish([[maybe_unused]] F &&cb_should_be_flushed) noexcept {
+void f$kphp_tracing_register_on_finish([[maybe_unused]] F&& cb_should_be_flushed) noexcept {
   php_warning("called stub kphp_tracing_register_on_finish");
 }
 
 template<typename F1, typename F2>
-void f$kphp_tracing_register_rpc_details_provider([[maybe_unused]] F1 &&cb_for_typed, [[maybe_unused]] F2 &&cb_for_untyped) noexcept {
+void f$kphp_tracing_register_rpc_details_provider([[maybe_unused]] F1&& cb_for_typed, [[maybe_unused]] F2&& cb_for_untyped) noexcept {
   php_warning("called stub kphp_tracing_register_rpc_details_provider");
 }
 

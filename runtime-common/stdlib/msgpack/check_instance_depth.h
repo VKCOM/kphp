@@ -17,8 +17,8 @@ struct CheckInstanceDepth {
     SerializationLibContext::get().instance_depth++;
   }
 
-  CheckInstanceDepth(const CheckInstanceDepth &) = delete;
-  CheckInstanceDepth &operator=(const CheckInstanceDepth &) = delete;
+  CheckInstanceDepth(const CheckInstanceDepth&) = delete;
+  CheckInstanceDepth& operator=(const CheckInstanceDepth&) = delete;
 
   static bool is_exceeded() {
     return SerializationLibContext::get().instance_depth > max_depth;

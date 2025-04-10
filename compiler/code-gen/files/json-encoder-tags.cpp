@@ -11,11 +11,11 @@
 
 const std::string JsonEncoderTags::all_tags_file_ = "_json_tags.h";
 
-std::string JsonEncoderTags::get_cppStructTag_name(const std::string &json_encoder) noexcept {
+std::string JsonEncoderTags::get_cppStructTag_name(const std::string& json_encoder) noexcept {
   return replace_backslashes(json_encoder) + "Tag";
 }
 
-void JsonEncoderTags::compile(CodeGenerator &W) const {
+void JsonEncoderTags::compile(CodeGenerator& W) const {
   if (all_json_encoders_.empty()) {
     return;
   }

@@ -26,7 +26,7 @@ read_all_from_stream(uint64_t stream_d) noexcept {
   using byte_pointer_t = std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>;
 
   int32_t buffer_capacity{STREAM_BATCH_SIZE};
-  auto *buffer{static_cast<char *>(kphp::memory::script::alloc(buffer_capacity))};
+  auto* buffer{static_cast<char*>(kphp::memory::script::alloc(buffer_capacity))};
   int32_t buffer_size{};
 
   k2::StreamStatus status{};
@@ -40,7 +40,7 @@ read_all_from_stream(uint64_t stream_d) noexcept {
     if (status.read_status == k2::IOStatus::IOAvailable) {
       if (buffer_capacity - buffer_size < STREAM_BATCH_SIZE) {
         buffer_capacity = buffer_capacity * 2;
-        buffer = static_cast<char *>(kphp::memory::script::realloc(static_cast<void *>(buffer), buffer_capacity));
+        buffer = static_cast<char*>(kphp::memory::script::realloc(static_cast<void*>(buffer), buffer_capacity));
       }
       buffer_size += k2::read(stream_d, STREAM_BATCH_SIZE, buffer + buffer_size);
     } else if (status.read_status == k2::IOStatus::IOBlocked) {
@@ -56,7 +56,7 @@ std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::fr
   using byte_pointer_t = std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>;
 
   int32_t buffer_capacity{STREAM_BATCH_SIZE};
-  auto *buffer{static_cast<char *>(kphp::memory::script::alloc(buffer_capacity))};
+  auto* buffer{static_cast<char*>(kphp::memory::script::alloc(buffer_capacity))};
   int32_t buffer_size{};
 
   k2::StreamStatus status{};
@@ -70,7 +70,7 @@ std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::fr
     if (status.read_status == k2::IOStatus::IOAvailable) {
       if (buffer_capacity - buffer_size < STREAM_BATCH_SIZE) {
         buffer_capacity = buffer_capacity * 2;
-        buffer = static_cast<char *>(kphp::memory::script::realloc(static_cast<void *>(buffer), buffer_capacity));
+        buffer = static_cast<char*>(kphp::memory::script::realloc(static_cast<void*>(buffer), buffer_capacity));
       }
       buffer_size += k2::read(stream_d, STREAM_BATCH_SIZE, buffer + buffer_size);
     } else {
@@ -81,13 +81,11 @@ std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::fr
   return std::make_pair(byte_pointer_t{buffer, kphp::memory::script::free}, buffer_size);
 }
 
-kphp::coro::task<int32_t> read_exact_from_stream(uint64_t stream_d, char *buffer, int32_t len) noexcept {
+kphp::coro::task<int32_t> read_exact_from_stream(uint64_t stream_d, char* buffer, int32_t len) noexcept {
   int32_t read = 0;
 
-  k2::StreamStatus status{.read_status = k2::IOStatus::IOAvailable,
-                          .write_status = k2::IOStatus::IOAvailable,
-                          .please_shutdown_write = 0,
-                          .libc_errno = k2::errno_ok};
+  k2::StreamStatus status{
+      .read_status = k2::IOStatus::IOAvailable, .write_status = k2::IOStatus::IOAvailable, .please_shutdown_write = 0, .libc_errno = k2::errno_ok};
   while (read != len && status.read_status != k2::IOStatus::IOClosed) {
     k2::stream_status(stream_d, std::addressof(status));
     if (status.libc_errno != k2::errno_ok) {
@@ -107,7 +105,7 @@ kphp::coro::task<int32_t> read_exact_from_stream(uint64_t stream_d, char *buffer
   co_return read;
 }
 
-kphp::coro::task<int32_t> write_all_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept {
+kphp::coro::task<int32_t> write_all_to_stream(uint64_t stream_d, const char* buffer, int32_t len) noexcept {
   int32_t written = 0;
 
   k2::StreamStatus status{};
@@ -135,7 +133,7 @@ kphp::coro::task<int32_t> write_all_to_stream(uint64_t stream_d, const char *buf
   co_return written;
 }
 
-int32_t write_nonblock_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept {
+int32_t write_nonblock_to_stream(uint64_t stream_d, const char* buffer, int32_t len) noexcept {
   int32_t written = 0;
 
   k2::StreamStatus status{};
@@ -157,13 +155,11 @@ int32_t write_nonblock_to_stream(uint64_t stream_d, const char *buffer, int32_t 
   return written;
 }
 
-kphp::coro::task<int32_t> write_exact_to_stream(uint64_t stream_d, const char *buffer, int32_t len) noexcept {
+kphp::coro::task<int32_t> write_exact_to_stream(uint64_t stream_d, const char* buffer, int32_t len) noexcept {
   int written = 0;
 
-  k2::StreamStatus status{.read_status = k2::IOStatus::IOAvailable,
-                          .write_status = k2::IOStatus::IOAvailable,
-                          .please_shutdown_write = 0,
-                          .libc_errno = k2::errno_ok};
+  k2::StreamStatus status{
+      .read_status = k2::IOStatus::IOAvailable, .write_status = k2::IOStatus::IOAvailable, .please_shutdown_write = 0, .libc_errno = k2::errno_ok};
   while (written != len && status.write_status != k2::IOStatus::IOClosed) {
     k2::stream_status(stream_d, std::addressof(status));
     if (status.libc_errno != k2::errno_ok) {

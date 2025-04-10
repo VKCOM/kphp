@@ -10,7 +10,7 @@
 RuntimeContext kphp_runtime_context;
 RuntimeAllocator runtime_allocator;
 
-RuntimeContext &RuntimeContext::get() noexcept {
+RuntimeContext& RuntimeContext::get() noexcept {
   return kphp_runtime_context;
 }
 

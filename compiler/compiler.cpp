@@ -16,8 +16,8 @@
 #include <unistd.h>
 
 #include "common/algorithms/hashes.h"
-#include "common/dl-utils-lite.h"
 #include "common/crc32.h"
+#include "common/dl-utils-lite.h"
 #include "common/type_traits/function_traits.h"
 #include "common/version-string.h"
 
@@ -27,6 +27,7 @@
 #include "compiler/make/make.h"
 #include "compiler/pipes/analyze-performance.h"
 #include "compiler/pipes/analyzer.h"
+#include "compiler/pipes/array-access-transform.h"
 #include "compiler/pipes/calc-actual-edges.h"
 #include "compiler/pipes/calc-bad-vars.h"
 #include "compiler/pipes/calc-const-types.h"
@@ -44,7 +45,6 @@
 #include "compiler/pipes/check-func-calls-and-vararg.h"
 #include "compiler/pipes/check-modifications-of-const-vars.h"
 #include "compiler/pipes/check-nested-foreach.h"
-#include "compiler/pipes/wait-for-all-classes.h"
 #include "compiler/pipes/check-restrictions.h"
 #include "compiler/pipes/check-tl-classes.h"
 #include "compiler/pipes/check-type-hint-variance.h"
@@ -58,24 +58,23 @@
 #include "compiler/pipes/convert-invoke-to-func-call.h"
 #include "compiler/pipes/convert-list-assignments.h"
 #include "compiler/pipes/convert-sprintf-calls.h"
+#include "compiler/pipes/deduce-implicit-types-and-casts.h"
+#include "compiler/pipes/early-optimization.h"
 #include "compiler/pipes/erase-defines-declarations.h"
 #include "compiler/pipes/extract-async.h"
 #include "compiler/pipes/extract-resumable-calls.h"
 #include "compiler/pipes/file-to-tokens.h"
 #include "compiler/pipes/filter-only-actually-used.h"
 #include "compiler/pipes/final-check.h"
-#include "compiler/pipes/array-access-transform.h"
 #include "compiler/pipes/fix-returns.h"
 #include "compiler/pipes/gen-tree-postprocess.h"
 #include "compiler/pipes/generate-virtual-methods.h"
-#include "compiler/pipes/deduce-implicit-types-and-casts.h"
-#include "compiler/pipes/instantiate-generics-and-lambdas.h"
-#include "compiler/pipes/instantiate-ffi-operations.h"
 #include "compiler/pipes/inline-defines-usages.h"
 #include "compiler/pipes/inline-simple-functions.h"
+#include "compiler/pipes/instantiate-ffi-operations.h"
+#include "compiler/pipes/instantiate-generics-and-lambdas.h"
 #include "compiler/pipes/load-files.h"
 #include "compiler/pipes/optimization.h"
-#include "compiler/pipes/early-optimization.h"
 #include "compiler/pipes/parse-and-apply-phpdoc.h"
 #include "compiler/pipes/parse.h"
 #include "compiler/pipes/preprocess-break.h"
@@ -91,6 +90,7 @@
 #include "compiler/pipes/sort-and-inherit-classes.h"
 #include "compiler/pipes/split-switch.h"
 #include "compiler/pipes/type-inferer.h"
+#include "compiler/pipes/wait-for-all-classes.h"
 #include "compiler/pipes/write-files.h"
 #include "compiler/scheduler/constructor.h"
 #include "compiler/scheduler/one-thread-scheduler.h"
@@ -156,11 +156,7 @@ template<typename F>
 using ExecuteFunctionOutput = typename std::remove_reference<typename ExecuteFunctionArguments<F>::template Argument<1>>::type;
 
 template<class PipeFunctionT>
-using PipeStream = PipeWithProgress<
-  PipeFunctionT,
-  DataStream<ExecuteFunctionInput<PipeFunctionT>>,
-  ExecuteFunctionOutput<PipeFunctionT>
->;
+using PipeStream = PipeWithProgress<PipeFunctionT, DataStream<ExecuteFunctionInput<PipeFunctionT>>, ExecuteFunctionOutput<PipeFunctionT>>;
 
 using SyncNode = sync_node_tag<PipeWithProgress>;
 
@@ -168,8 +164,7 @@ template<class Pass>
 using FunctionPassPipe = PipeStream<FunctionPassF<Pass>>;
 
 template<typename Pass>
-struct PipeProgressName<FunctionPassF<Pass>> : PipeProgressName<Pass> {
-};
+struct PipeProgressName<FunctionPassF<Pass>> : PipeProgressName<Pass> {};
 
 template<class PipeFunctionT, bool parallel = true>
 using PipeC = pipe_creator_tag<PipeStream<PipeFunctionT>, parallel>;
@@ -180,14 +175,13 @@ using PassC = pipe_creator_tag<FunctionPassPipe<Pass>>;
 template<class PipeFunctionT>
 using SyncC = sync_pipe_creator_tag<PipeStream<PipeFunctionT>>;
 
-
-bool compiler_execute(CompilerSettings *settings) {
+bool compiler_execute(CompilerSettings* settings) {
   double st = dl_time();
   G = new CompilerCore();
   G->register_settings(settings);
   G->start();
   if (!settings->warnings_file.get().empty()) {
-    FILE *f = fopen(settings->warnings_file.get().c_str(), "w");
+    FILE* f = fopen(settings->warnings_file.get().c_str(), "w");
     if (!f) {
       std::cerr << "Can't open warnings-file " << settings->warnings_file.get() << "\n";
       return false;
@@ -195,7 +189,7 @@ bool compiler_execute(CompilerSettings *settings) {
     stage::set_warning_file(f);
   }
 
-  //TODO: call it with pthread_once on need
+  // TODO: call it with pthread_once on need
   lexer_init();
   if (G->is_output_mode_k2()) {
     k2_lexer_init();
@@ -214,13 +208,13 @@ bool compiler_execute(CompilerSettings *settings) {
     return false;
   }
 
-  SchedulerBase *scheduler;
+  SchedulerBase* scheduler;
   const auto scheduler_threads = static_cast<int32_t>(G->settings().threads_count.get());
   if (scheduler_threads == 1) {
     scheduler = new OneThreadScheduler();
     vk::singleton<CppDestDirInitializer>::get().initialize_sync();
   } else {
-    auto *s = new Scheduler();
+    auto* s = new Scheduler();
     s->set_threads_count(scheduler_threads);
     scheduler = s;
     vk::singleton<CppDestDirInitializer>::get().initialize_async(scheduler_threads + 1);
@@ -233,99 +227,39 @@ bool compiler_execute(CompilerSettings *settings) {
 
   PipeC<LoadFileF>::get()->set_input_stream(&src_file_stream);
 
-  SchedulerConstructor{scheduler}
-    >> PipeC<LoadFileF>{}
-    >> PipeC<FileToTokensF>{}
-    >> PipeC<ParseF>{}
-    >> PassC<GenTreePostprocessPass>{}
-    >> PipeC<SplitSwitchF>{}
-    >> PipeC<RegisterFFIScopesF>{}
-    >> PassC<RegisterDefinesPass>{}
-    >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{}
-    >> SyncC<WaitForAllClassesF>{}
-    >> PipeC<CheckTypeHintVariance>{}
-    >> PassC<CalcLocationsPass>{}
-    >> PassC<ResolveSelfStaticParentPass>{}
-    >> SyncC<CalcRealDefinesAndAssignModulitesF>{}
-    >> SyncC<RegisterKphpConfiguration>{}
-    >> PassC<EraseDefinesDeclarationsPass>{}
-    >> PassC<InlineDefinesUsagesPass>{}
-    >> PassC<PreprocessEq3Pass>{}
-    >> PassC<PreprocessExceptions>{}
-    >> SyncC<ParseAndApplyPhpdocF>{}
-    // from this point, @param/@return are parsed in all functions, we can calculate and use assumptions
-    // lambdas don't traverse this part of pipeline — they are processed by containing functions as vertices
-    // generics are also stopped by the SyncPipe above, they are instantiated on demand and passed here, see <1> output
-    // do NOT insert any pipe before, see DeduceImplicitTypesAndCastsPass::check_function()
-    >> PassC<DeduceImplicitTypesAndCastsPass>{}
-    >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<0>{}
-    >> PipeC<EarlyOptimizationF>{}
-    >> SyncC<GenerateVirtualMethodsF>{}
-    >> PipeC<ConvertInvokeToFuncCallF>{}
-    >> PassC<CheckFuncCallsAndVarargPass>{}
-    >> PassC<InstantiateFFIOperationsPass>{}
-    >> PipeC<CheckAbstractFunctionDefaults>{}
-    >> PipeC<CalcEmptyFunctions>{}
-    >> PassC<CalcActualCallsEdgesPass>{}
-    >> SyncC<FilterOnlyActuallyUsedFunctionsF>{}
-    >> PassC<RemoveEmptyFunctionCallsPass>{}
-    >> PassC<PreprocessBreakPass>{}
-    >> PassC<ConvertSprintfCallsPass>{}
-    >> PassC<CalcConstTypePass>{}
-    >> PassC<CollectConstVarsPass>{}
-    >> PassC<ConvertListAssignmentsPass>{}
-    >> PassC<RegisterVariablesPass>{}
-    >> PassC<PropagateThrowFlagPass>{}
-    >> PassC<CheckModificationsOfConstVars>{}
-    >> PipeC<CalcRLF>{}
-    >> PipeC<CFGBeginF>{}
-    >> SyncC<CFGBeginSync>{}
-    >> PassC<CloneStrangeConstParams>{}
-    >> PassC<CollectMainEdgesPass>{}
-    >> SyncC<TypeInfererF>{}
-    >> SyncC<CheckRestrictionsF>{}
-    >> PipeC<CFGEndF>{}
-    >> PassC<CheckClassesPass>{}
-    >> PassC<CheckConversionsPass>{}
-    >> PassC<OptimizationPass>{}
-    >> PassC<ArrayAccessTransformPass>{}
-    >> PassC<FixReturnsPass>{}
-    >> PassC<CalcValRefPass>{}
-    >> PassC<CalcFuncDepPass>{}
-    >> SyncC<CalcBadVarsF>{}
-    >> PipeC<CheckUBF>{}
-    >> PassC<ExtractResumableCallsPass>{}
-    >> PassC<ExtractAsyncPass>{}
-    >> PassC<CheckNestedForeachPass>{}
-    >> PassC<InlineSimpleFunctions>{}
-    >> PassC<CommonAnalyzerPass>{}
-    >> PassC<CheckTlClasses>{}
-    >> PassC<CheckAccessModifiersPass>{}
-    >> PassC<AnalyzePerformance>{}
-    >> PassC<FinalCheckPass>{}
-    >> PassC<CollectForkableTypesPass>{}
-    >> SyncC<CodeGenF>{}              // create all codegen commands and launch them in "just calc hashes" mode
-    >> PipeC<CodeGenForDiffF>{}       // re-launch codegen commands that diff from the previous kphp launch
-    >> PipeC<WriteFilesF, false>{};   // store files that differ from the previous kphp launch
+  SchedulerConstructor{scheduler} >> PipeC<LoadFileF>{} >> PipeC<FileToTokensF>{} >> PipeC<ParseF>{} >> PassC<GenTreePostprocessPass>{} >>
+      PipeC<SplitSwitchF>{} >> PipeC<RegisterFFIScopesF>{} >> PassC<RegisterDefinesPass>{} >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<0>{} >>
+      SyncC<WaitForAllClassesF>{} >> PipeC<CheckTypeHintVariance>{} >> PassC<CalcLocationsPass>{} >> PassC<ResolveSelfStaticParentPass>{} >>
+      SyncC<CalcRealDefinesAndAssignModulitesF>{} >> SyncC<RegisterKphpConfiguration>{} >> PassC<EraseDefinesDeclarationsPass>{} >>
+      PassC<InlineDefinesUsagesPass>{} >> PassC<PreprocessEq3Pass>{} >> PassC<PreprocessExceptions>{} >> SyncC<ParseAndApplyPhpdocF>{}
+      // from this point, @param/@return are parsed in all functions, we can calculate and use assumptions
+      // lambdas don't traverse this part of pipeline — they are processed by containing functions as vertices
+      // generics are also stopped by the SyncPipe above, they are instantiated on demand and passed here, see <1> output
+      // do NOT insert any pipe before, see DeduceImplicitTypesAndCastsPass::check_function()
+      >> PassC<DeduceImplicitTypesAndCastsPass>{} >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<0>{} >> PipeC<EarlyOptimizationF>{} >>
+      SyncC<GenerateVirtualMethodsF>{} >> PipeC<ConvertInvokeToFuncCallF>{} >> PassC<CheckFuncCallsAndVarargPass>{} >> PassC<InstantiateFFIOperationsPass>{} >>
+      PipeC<CheckAbstractFunctionDefaults>{} >> PipeC<CalcEmptyFunctions>{} >> PassC<CalcActualCallsEdgesPass>{} >> SyncC<FilterOnlyActuallyUsedFunctionsF>{} >>
+      PassC<RemoveEmptyFunctionCallsPass>{} >> PassC<PreprocessBreakPass>{} >> PassC<ConvertSprintfCallsPass>{} >> PassC<CalcConstTypePass>{} >>
+      PassC<CollectConstVarsPass>{} >> PassC<ConvertListAssignmentsPass>{} >> PassC<RegisterVariablesPass>{} >> PassC<PropagateThrowFlagPass>{} >>
+      PassC<CheckModificationsOfConstVars>{} >> PipeC<CalcRLF>{} >> PipeC<CFGBeginF>{} >> SyncC<CFGBeginSync>{} >> PassC<CloneStrangeConstParams>{} >>
+      PassC<CollectMainEdgesPass>{} >> SyncC<TypeInfererF>{} >> SyncC<CheckRestrictionsF>{} >> PipeC<CFGEndF>{} >> PassC<CheckClassesPass>{} >>
+      PassC<CheckConversionsPass>{} >> PassC<OptimizationPass>{} >> PassC<ArrayAccessTransformPass>{} >> PassC<FixReturnsPass>{} >> PassC<CalcValRefPass>{} >>
+      PassC<CalcFuncDepPass>{} >> SyncC<CalcBadVarsF>{} >> PipeC<CheckUBF>{} >> PassC<ExtractResumableCallsPass>{} >> PassC<ExtractAsyncPass>{} >>
+      PassC<CheckNestedForeachPass>{} >> PassC<InlineSimpleFunctions>{} >> PassC<CommonAnalyzerPass>{} >> PassC<CheckTlClasses>{} >>
+      PassC<CheckAccessModifiersPass>{} >> PassC<AnalyzePerformance>{} >> PassC<FinalCheckPass>{} >> PassC<CollectForkableTypesPass>{} >> SyncC<CodeGenF>{}
+      // create all codegen commands and launch them in "just calc hashes" mode
+      >> PipeC<CodeGenForDiffF>{}     // re-launch codegen commands that diff from the previous kphp launch
+      >> PipeC<WriteFilesF, false>{}; // store files that differ from the previous kphp launch
 
-  SchedulerConstructor{scheduler}
-    >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<1>{}
-    >> PipeC<LoadFileF>{};
+  SchedulerConstructor{scheduler} >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<1>{} >> PipeC<LoadFileF>{};
 
-  SchedulerConstructor{scheduler}
-    >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<2>{}
-    >> PassC<GenTreePostprocessPass>{};
+  SchedulerConstructor{scheduler} >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<2>{} >> PassC<GenTreePostprocessPass>{};
 
-  SchedulerConstructor{scheduler}
-    >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<3>{}
-    // output 1 is used to restart class processing
-    >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<1>{}
-    >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<0>{}
-    >> PassC<GenTreePostprocessPass>{};
+  SchedulerConstructor{scheduler} >> PipeC<CollectRequiredAndClassesF>{} >> use_nth_output_tag<3>{} // output 1 is used to restart class processing
+      >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<1>{} >> PipeC<SortAndInheritClassesF>{} >> use_nth_output_tag<0>{} >>
+      PassC<GenTreePostprocessPass>{};
 
-  SchedulerConstructor{scheduler}
-    >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<1>{}
-    >> PassC<DeduceImplicitTypesAndCastsPass>{};
+  SchedulerConstructor{scheduler} >> PipeC<InstantiateGenericsAndLambdasF>{} >> use_nth_output_tag<1>{} >> PassC<DeduceImplicitTypesAndCastsPass>{};
 
   if (G->settings().show_progress.get()) {
     PipesProgress::get().enable();
@@ -342,7 +276,7 @@ bool compiler_execute(CompilerSettings *settings) {
   }
 
   if (vk::singleton<PerformanceIssuesReport>::get().is_flush_required()) {
-    if (auto *report_file = fopen(G->settings().performance_analyze_report_path.get().c_str(), "w")) {
+    if (auto* report_file = fopen(G->settings().performance_analyze_report_path.get().c_str(), "w")) {
       vk::singleton<PerformanceIssuesReport>::get().flush_to(report_file);
       fclose(report_file);
     } else {
@@ -357,7 +291,7 @@ bool compiler_execute(CompilerSettings *settings) {
 
   if (verbosity > 1) {
     bool got_changes = false;
-    for (const auto &file: G->get_index().get_files()) {
+    for (const auto& file : G->get_index().get_files()) {
       if (file->is_changed) {
         std::cerr << "\nFile [" << file->path << "] changed";
         got_changes = true;

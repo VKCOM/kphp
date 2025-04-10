@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include <cctype>
 #include <climits>
 #include <cstring>
-#include <cctype>
 #include <limits>
 #include <type_traits>
 
@@ -68,8 +68,8 @@ public:
   };
 
   // wrapping this into a class helps avoid the global namespace pollution
-  ExtraRefCnt(extra_ref_cnt_value value) noexcept:
-    value_(value) {}
+  ExtraRefCnt(extra_ref_cnt_value value) noexcept
+      : value_(value) {}
 
   operator int() const noexcept {
     return static_cast<int>(value_);
@@ -79,9 +79,9 @@ private:
   extra_ref_cnt_value value_;
 };
 
-inline int64_t string_hash(const char *p, size_t l) __attribute__ ((always_inline)) ubsan_supp("alignment");
+inline int64_t string_hash(const char* p, size_t l) __attribute__((always_inline)) ubsan_supp("alignment");
 
-int64_t string_hash(const char *p, size_t l) {
+int64_t string_hash(const char* p, size_t l) {
   constexpr uint64_t HASH_MUL = 1915239017;
   uint64_t hash = 2147483648U;
 
@@ -90,7 +90,7 @@ int64_t string_hash(const char *p, size_t l) {
     hash = hash * HASH_MUL + p[i];
   }
 
-  const auto *p_uint = reinterpret_cast<const uint32_t *>(p + prev);
+  const auto* p_uint = reinterpret_cast<const uint32_t*>(p + prev);
   l >>= 2;
   while (l-- > 0) {
     hash = hash * HASH_MUL + *p_uint++;
@@ -100,7 +100,7 @@ int64_t string_hash(const char *p, size_t l) {
   return (result != std::numeric_limits<int64_t>::min()) * result;
 }
 
-inline bool php_is_numeric(const char *s) {
+inline bool php_is_numeric(const char* s) {
   while (isspace(*s)) {
     s++;
   }
@@ -145,9 +145,9 @@ inline bool php_is_numeric(const char *s) {
   return *s == '\0';
 }
 
-inline bool php_is_int(const char *s, size_t l) __attribute__ ((always_inline));
+inline bool php_is_int(const char* s, size_t l) __attribute__((always_inline));
 
-bool php_is_int(const char *s, size_t l) {
+bool php_is_int(const char* s, size_t l) {
   if (l == 0) {
     return false;
   }
@@ -187,10 +187,9 @@ bool php_is_int(const char *s, size_t l) {
   return true;
 }
 
+inline bool php_try_to_int(const char* s, size_t l, int64_t* val) __attribute__((always_inline));
 
-inline bool php_try_to_int(const char *s, size_t l, int64_t *val) __attribute__ ((always_inline));
-
-bool php_try_to_int(const char *s, size_t l, int64_t *val) {
+bool php_try_to_int(const char* s, size_t l, int64_t* val) {
   int64_t mul = 1;
   if (l == 0) {
     return false;
@@ -243,7 +242,6 @@ bool php_try_to_int(const char *s, size_t l, int64_t *val) {
 }
 
 template<class T>
-inline constexpr int three_way_comparison(const T &lhs, const T &rhs) {
-  return lhs < rhs ? -1 :
-         (rhs < lhs ?  1 : 0);
+inline constexpr int three_way_comparison(const T& lhs, const T& rhs) {
+  return lhs < rhs ? -1 : (rhs < lhs ? 1 : 0);
 }

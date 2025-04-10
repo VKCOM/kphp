@@ -11,9 +11,10 @@
 #include "runtime/kphp_tracing.h"
 
 namespace {
-size_t strip_trailing_whitespace(char *buffer, int bytes_read) {
+size_t strip_trailing_whitespace(char* buffer, int bytes_read) {
   size_t l = bytes_read;
-  while (l-- > 0 && isspace((reinterpret_cast<unsigned char *>(buffer))[l])){};
+  while (l-- > 0 && isspace((reinterpret_cast<unsigned char*>(buffer))[l])) {
+  };
   if (l != (bytes_read - 1)) {
     bytes_read = l + 1;
     buffer[bytes_read] = '\0';
@@ -21,7 +22,7 @@ size_t strip_trailing_whitespace(char *buffer, int bytes_read) {
   return bytes_read;
 }
 
-void pclose_wrapper(FILE *f) {
+void pclose_wrapper(FILE* f) {
   pclose(f);
 }
 
@@ -31,8 +32,8 @@ struct ExecStatus {
   string last_line;
 };
 
-template <typename ExecHandler>
-ExecStatus exec_impl(const string &cmd, ExecHandler &&handler) {
+template<typename ExecHandler>
+ExecStatus exec_impl(const string& cmd, ExecHandler&& handler) {
   dl::CriticalSectionGuard heap_guard;
 
   if (cmd.empty()) {
@@ -46,7 +47,7 @@ ExecStatus exec_impl(const string &cmd, ExecHandler &&handler) {
     return {};
   }
 
-  char *line = nullptr;
+  char* line = nullptr;
   std::size_t line_size = 0;
   int bytes_read = 0;
   for (;;) {
@@ -71,7 +72,7 @@ ExecStatus exec_impl(const string &cmd, ExecHandler &&handler) {
   return {true, ret, last_line};
 }
 
-ExecStatus passthru_impl(const string &cmd) {
+ExecStatus passthru_impl(const string& cmd) {
   dl::CriticalSectionGuard heap_guard;
 
   if (cmd.empty()) {
@@ -101,24 +102,24 @@ ExecStatus passthru_impl(const string &cmd) {
 }
 } // namespace
 
-int64_t &get_dummy_result_code() noexcept {
+int64_t& get_dummy_result_code() noexcept {
   static int64_t result_code = 0;
   return result_code;
 }
 
-Optional<string> f$exec(const string &command) {
+Optional<string> f$exec(const string& command) {
   int exec_id = kphp_tracing::generate_uniq_id();
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_external_program_start(exec_id, kphp_tracing::BuiltinFuncID::exec, command);
   }
-  auto [success, exit_code, last_line] = exec_impl(command, [](char */*buff*/, std::size_t size) { return size; });
+  auto [success, exit_code, last_line] = exec_impl(command, [](char* /*buff*/, std::size_t size) { return size; });
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_external_program_finish(exec_id, success, exit_code);
   }
   return success ? Optional<string>{last_line} : Optional<string>{false};
 }
 
-Optional<string> f$exec(const string &command, mixed &output, int64_t &result_code) {
+Optional<string> f$exec(const string& command, mixed& output, int64_t& result_code) {
   if (!output.is_array()) {
     output = array<mixed>();
   }
@@ -126,7 +127,7 @@ Optional<string> f$exec(const string &command, mixed &output, int64_t &result_co
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_external_program_start(exec_id, kphp_tracing::BuiltinFuncID::exec, command);
   }
-  auto [success, exit_code, last_line] = exec_impl(command, [&output](char *buff, std::size_t size) {
+  auto [success, exit_code, last_line] = exec_impl(command, [&output](char* buff, std::size_t size) {
     const std::size_t bytes_read = strip_trailing_whitespace(buff, size);
     output.as_array().push_back(string(buff, bytes_read));
     return bytes_read;
@@ -142,12 +143,12 @@ Optional<string> f$exec(const string &command, mixed &output, int64_t &result_co
 }
 
 // ultimate version of system(), the same as in php
-static Optional<string> php_system(const string &command, int64_t &result_code) {
+static Optional<string> php_system(const string& command, int64_t& result_code) {
   int exec_id = kphp_tracing::generate_uniq_id();
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_external_program_start(exec_id, kphp_tracing::BuiltinFuncID::system, command);
   }
-  auto [success, exit_code, last_line] = exec_impl(command, [](char *buff, std::size_t size) {
+  auto [success, exit_code, last_line] = exec_impl(command, [](char* buff, std::size_t size) {
     [[maybe_unused]] auto bytes_written = write(STDOUT_FILENO, buff, size);
     [[maybe_unused]] auto res = fflush(stdout);
     return size;
@@ -164,12 +165,12 @@ static Optional<string> php_system(const string &command, int64_t &result_code) 
 
 // interim version of system(), required for transitional period
 // TODO: should be removed once transition is completed
-int64_t f$system(const string &command, int64_t &result_code) {
+int64_t f$system(const string& command, int64_t& result_code) {
   php_system(command, result_code);
   return result_code;
 }
 
-Optional<bool> f$passthru(const string &command, int64_t &result_code) {
+Optional<bool> f$passthru(const string& command, int64_t& result_code) {
   int exec_id = kphp_tracing::generate_uniq_id();
   if (kphp_tracing::is_turned_on()) {
     kphp_tracing::on_external_program_start(exec_id, kphp_tracing::BuiltinFuncID::passthru, command);
@@ -185,7 +186,7 @@ Optional<bool> f$passthru(const string &command, int64_t &result_code) {
   return false;
 }
 
-string f$escapeshellarg(const string &arg) noexcept {
+string f$escapeshellarg(const string& arg) noexcept {
   php_assert(std::strlen(arg.c_str()) == arg.size() && "Input string contains NULL bytes");
 
   string result;
@@ -205,52 +206,52 @@ string f$escapeshellarg(const string &arg) noexcept {
   return result;
 }
 
-string f$escapeshellcmd(const string &cmd) noexcept {
+string f$escapeshellcmd(const string& cmd) noexcept {
   php_assert(std::strlen(cmd.c_str()) == cmd.size() && "Input string contains NULL bytes");
 
   string result;
   result.reserve_at_least(cmd.size());
 
-  const char *p = nullptr;
+  const char* p = nullptr;
 
   for (std::size_t i = 0; i < cmd.size(); ++i) {
     switch (cmd[i]) {
-      case '"':
-      case '\'':
-        if (!p && (p = static_cast<const char *>(std::memchr(cmd.c_str() + i + 1, cmd[i], cmd.size() - i - 1)))) {
-          // noop
-        } else if (p && *p == cmd[i]) {
-          p = nullptr;
-        } else {
-          result.push_back('\\');
-        }
-        result.push_back(cmd[i]);
-        break;
-      case '#': // this is character-set independent
-      case '&':
-      case ';':
-      case '`':
-      case '|':
-      case '*':
-      case '?':
-      case '~':
-      case '<':
-      case '>':
-      case '^':
-      case '(':
-      case ')':
-      case '[':
-      case ']':
-      case '{':
-      case '}':
-      case '$':
-      case '\\':
-      case '\x0A':
-      case '\xFF':
+    case '"':
+    case '\'':
+      if (!p && (p = static_cast<const char*>(std::memchr(cmd.c_str() + i + 1, cmd[i], cmd.size() - i - 1)))) {
+        // noop
+      } else if (p && *p == cmd[i]) {
+        p = nullptr;
+      } else {
         result.push_back('\\');
-        [[fallthrough]];
-      default:
-        result.push_back(cmd[i]);
+      }
+      result.push_back(cmd[i]);
+      break;
+    case '#': // this is character-set independent
+    case '&':
+    case ';':
+    case '`':
+    case '|':
+    case '*':
+    case '?':
+    case '~':
+    case '<':
+    case '>':
+    case '^':
+    case '(':
+    case ')':
+    case '[':
+    case ']':
+    case '{':
+    case '}':
+    case '$':
+    case '\\':
+    case '\x0A':
+    case '\xFF':
+      result.push_back('\\');
+      [[fallthrough]];
+    default:
+      result.push_back(cmd[i]);
     }
   }
 

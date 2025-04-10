@@ -19,21 +19,20 @@
 template<class T>
 class TracingProfilerListNode : vk::not_copyable {
 public:
-  explicit TracingProfilerListNode(T *next = nullptr) :
-    next_(next) {
-  }
+  explicit TracingProfilerListNode(T* next = nullptr)
+      : next_(next) {}
 
-  T *get_next() const noexcept {
+  T* get_next() const noexcept {
     return next_;
   }
 
-  T *set_next(T *new_next) noexcept {
+  T* set_next(T* new_next) noexcept {
     std::swap(new_next, next_);
     return new_next;
   }
 
 protected:
-  T *next_{nullptr};
+  T* next_{nullptr};
 };
 
 class FunctionStatsWithLabel;
@@ -53,26 +52,26 @@ public:
     QueriesStat sql_requests_stat;
     QueriesStat mc_requests_stat;
 
-    Stats &operator+=(const Stats &other) noexcept;
-    Stats &operator-=(const Stats &other) noexcept;
-    void write_to(FILE *out, long double nanoseconds_to_tsc_rate) const noexcept;
+    Stats& operator+=(const Stats& other) noexcept;
+    Stats& operator-=(const Stats& other) noexcept;
+    void write_to(FILE* out, long double nanoseconds_to_tsc_rate) const noexcept;
   };
 
-  FunctionStatsBase(const char *file, const char *function, size_t line, size_t level) noexcept;
+  FunctionStatsBase(const char* file, const char* function, size_t line, size_t level) noexcept;
 
-  void on_call_finish(const Stats &profiled_stats) noexcept;
+  void on_call_finish(const Stats& profiled_stats) noexcept;
 
-  void on_callee_call_finish(const FunctionStatsBase &callee_stats, const Stats &callee_profiled_stats) noexcept;
+  void on_callee_call_finish(const FunctionStatsBase& callee_stats, const Stats& callee_profiled_stats) noexcept;
 
   uint64_t calls_count() const noexcept;
 
-  virtual FunctionStatsWithLabel &get_stats_with_label(vk::string_view label) noexcept = 0;
-  virtual void write_function_name_with_label(FILE *out) const noexcept = 0;
+  virtual FunctionStatsWithLabel& get_stats_with_label(vk::string_view label) noexcept = 0;
+  virtual void write_function_name_with_label(FILE* out) const noexcept = 0;
 
-  void flush(FILE *out = nullptr, long double nanoseconds_to_tsc_rate = 1.0) noexcept;
+  void flush(FILE* out = nullptr, long double nanoseconds_to_tsc_rate = 1.0) noexcept;
 
-  const char *const file_name{nullptr};
-  const char *const function_name{nullptr};
+  const char* const file_name{nullptr};
+  const char* const function_name{nullptr};
 
   const size_t function_line{0};
   const size_t profiler_level{0};
@@ -81,23 +80,22 @@ protected:
   virtual ~FunctionStatsBase() = default;
 
   Stats self_stats_;
-  std::unordered_map<const FunctionStatsBase *, Stats> callees_;
+  std::unordered_map<const FunctionStatsBase*, Stats> callees_;
 };
-
 
 class FunctionStatsNoLabel final : public FunctionStatsBase, public TracingProfilerListNode<FunctionStatsNoLabel> {
 public:
-  FunctionStatsNoLabel(const char *file, const char *function, size_t line, size_t level) noexcept;
+  FunctionStatsNoLabel(const char* file, const char* function, size_t line, size_t level) noexcept;
 
-  const auto &get_labels() const noexcept {
+  const auto& get_labels() const noexcept {
     return labels_;
   }
 
-  void write_function_name_with_label(FILE *out) const noexcept final {
+  void write_function_name_with_label(FILE* out) const noexcept final {
     fprintf(out, "%s", function_name);
   }
 
-  FunctionStatsWithLabel &get_stats_with_label(vk::string_view label) noexcept final;
+  FunctionStatsWithLabel& get_stats_with_label(vk::string_view label) noexcept final;
 
 private:
   std::unordered_map<vk::string_view, std::unique_ptr<FunctionStatsWithLabel>> labels_;
@@ -105,9 +103,9 @@ private:
 
 class FunctionStatsWithLabel final : public FunctionStatsBase {
 public:
-  FunctionStatsWithLabel(FunctionStatsNoLabel &no_label, vk::string_view label) noexcept;
+  FunctionStatsWithLabel(FunctionStatsNoLabel& no_label, vk::string_view label) noexcept;
 
-  const char *get_label() const noexcept {
+  const char* get_label() const noexcept {
     return label_buffer_.data();
   }
 
@@ -115,15 +113,15 @@ public:
     return label_max_len_;
   }
 
-  void write_function_name_with_label(FILE *out) const noexcept final {
+  void write_function_name_with_label(FILE* out) const noexcept final {
     fprintf(out, "%s (%s)", function_name, label_buffer_.data());
   }
 
-  FunctionStatsWithLabel &get_stats_with_label(vk::string_view label) noexcept final {
+  FunctionStatsWithLabel& get_stats_with_label(vk::string_view label) noexcept final {
     return parent_stats_no_label.get_stats_with_label(label);
   }
 
-  FunctionStatsNoLabel &parent_stats_no_label;
+  FunctionStatsNoLabel& parent_stats_no_label;
 
 private:
   static constexpr size_t label_max_len_ = 255;
@@ -141,20 +139,16 @@ protected:
   ProfilerBase() = default;
   ~ProfilerBase() = default;
 
-  void set_initial_stats(uint64_t start_working_tsc, const memory_resource::MemoryStats &memory_stats) noexcept;
+  void set_initial_stats(uint64_t start_working_tsc, const memory_resource::MemoryStats& memory_stats) noexcept;
 
-  static void forcibly_dump_log_on_finish(const char *function_name) noexcept;
+  static void forcibly_dump_log_on_finish(const char* function_name) noexcept;
 
   static bool is_profiling_allowed(bool is_root) noexcept;
 
   template<class FunctionTag>
-  static FunctionStatsNoLabel &get_function_stats() noexcept {
-    static FunctionStatsNoLabel function_stats{
-      FunctionTag::file_name(),
-      FunctionTag::function_name(),
-      FunctionTag::function_line(),
-      FunctionTag::profiler_level()
-    };
+  static FunctionStatsNoLabel& get_function_stats() noexcept {
+    static FunctionStatsNoLabel function_stats{FunctionTag::file_name(), FunctionTag::function_name(), FunctionTag::function_line(),
+                                               FunctionTag::profiler_level()};
     if (FunctionTag::is_root()) {
       forcibly_dump_log_on_finish(FunctionTag::profiler_level() == 1 ? FunctionTag::function_name() : nullptr);
     }
@@ -175,7 +169,7 @@ protected:
 
   uint64_t last_callee_waiting_generation_{0};
   uint64_t waiting_generation_{0};
-  FunctionStatsBase *function_stats_{nullptr};
+  FunctionStatsBase* function_stats_{nullptr};
 };
 
 template<class FunctionTag>
@@ -198,10 +192,18 @@ public:
 
 class ShutdownProfiler final : AutoProfiler<ShutdownProfiler> {
 public:
-  static constexpr const char *file_name() noexcept { return "(unknown)"; }
-  static constexpr const char *function_name() noexcept { return "<shutdown caller>"; }
-  static constexpr size_t function_line() noexcept { return 0; }
-  static constexpr size_t profiler_level() noexcept { return 2; }
+  static constexpr const char* file_name() noexcept {
+    return "(unknown)";
+  }
+  static constexpr const char* function_name() noexcept {
+    return "<shutdown caller>";
+  }
+  static constexpr size_t function_line() noexcept {
+    return 0;
+  }
+  static constexpr size_t profiler_level() noexcept {
+    return 2;
+  }
   static bool is_root() noexcept;
 };
 
@@ -222,14 +224,14 @@ private:
   void start_all_functions_from_this_resumable_stack() noexcept;
   void stop_all_callers_from_this_resumable_stack() noexcept;
 
-  ResumableProfilerBase *resumable_caller_{nullptr};
+  ResumableProfilerBase* resumable_caller_{nullptr};
 
   // Pointer to a beginning of bidirectional list of called functions (below)
-  ResumableProfilerBase *resumable_callee_{nullptr};
+  ResumableProfilerBase* resumable_callee_{nullptr};
 
   // A bidirectional list of called sibling functions (pointer to a beginning is stored in caller)
-  ResumableProfilerBase *resumable_sibling_callee_next_{nullptr};
-  ResumableProfilerBase *resumable_sibling_callee_prev_{nullptr};
+  ResumableProfilerBase* resumable_sibling_callee_next_{nullptr};
+  ResumableProfilerBase* resumable_sibling_callee_prev_{nullptr};
 
   bool awakening_call_{false};
 };
@@ -262,9 +264,9 @@ void notify_profiler_stop_waiting() noexcept;
 void forcibly_stop_profiler() noexcept;
 void forcibly_stop_and_flush_profiler() noexcept;
 
-bool set_profiler_log_path(const char *mask) noexcept;
+bool set_profiler_log_path(const char* mask) noexcept;
 
 void global_init_profiler() noexcept;
 
-void f$profiler_set_log_suffix(const string &suffix) noexcept;
-void f$profiler_set_function_label(const string &label) noexcept;
+void f$profiler_set_log_suffix(const string& suffix) noexcept;
+void f$profiler_set_function_label(const string& label) noexcept;

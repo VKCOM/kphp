@@ -30,5 +30,5 @@ struct RegexInstanceState final : private vk::not_copyable {
 
   RegexInstanceState() noexcept;
 
-  static RegexInstanceState &get() noexcept;
+  static RegexInstanceState& get() noexcept;
 };

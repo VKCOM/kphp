@@ -9,11 +9,10 @@
 FFIEnv ffi_env_instance;
 
 FFIEnv::FFIEnv(int num_libs, int num_symbols)
-  : num_libs{num_libs}
-  , libs{new SharedLib[num_libs]}
-  , num_symbols{num_symbols}
-  , symbols{new Symbol[num_symbols]} {
-}
+    : num_libs{num_libs},
+      libs{new SharedLib[num_libs]},
+      num_symbols{num_symbols},
+      symbols{new Symbol[num_symbols]} {}
 
 bool FFIEnv::is_shared_lib_opened(int id) {
   return libs[id].handle != nullptr;
@@ -26,7 +25,7 @@ bool FFIEnv::is_scope_loaded(int sym_offset) {
 // open_shared_libs performs an actual shared lib open operation;
 // only once per shared_lib_id, several scopes can use this library
 void FFIEnv::open_shared_lib(int id) {
-  void *handle = funcs.dlopen(libs[id].path, RTLD_LAZY);
+  void* handle = funcs.dlopen(libs[id].path, RTLD_LAZY);
   if (!handle) {
     php_critical_error("can't open %s library", libs[id].path);
   }
@@ -44,8 +43,8 @@ void FFIEnv::load_scope_symbols(int id, int sym_offset, int num_lib_symbols) {
 }
 
 void FFIEnv::load_symbol(int lib_id, int dst_sym_id) {
-  const char *symbol_name = symbols[dst_sym_id].name;
-  void *symbol = funcs.dlsym(libs[lib_id].handle, symbol_name);
+  const char* symbol_name = symbols[dst_sym_id].name;
+  void* symbol = funcs.dlsym(libs[lib_id].handle, symbol_name);
   if (!symbol) {
     php_warning("%s library doesn't export %s symbol", libs[lib_id].path, symbol_name);
     return;
@@ -53,11 +52,11 @@ void FFIEnv::load_symbol(int lib_id, int dst_sym_id) {
   symbols[dst_sym_id].ptr = symbol;
 }
 
-class_instance<C$FFI$Scope> f$FFI$$load(const string &filename __attribute__ ((unused))) {
+class_instance<C$FFI$Scope> f$FFI$$load(const string& filename __attribute__((unused))) {
   return class_instance<C$FFI$Scope>().empty_alloc();
 }
 
-class_instance<C$FFI$Scope> f$FFI$$scope(const string &scope_name __attribute__ ((unused))) {
+class_instance<C$FFI$Scope> f$FFI$$scope(const string& scope_name __attribute__((unused))) {
   return class_instance<C$FFI$Scope>().empty_alloc();
 }
 

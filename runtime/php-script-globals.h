@@ -22,7 +22,7 @@ struct PhpScriptBuiltInSuperGlobals {
   // the compiler is also aware about them
   mixed v$argc;
   mixed v$argv;
-  string v$d$PHP_SAPI;  // define('PHP_SAPI')
+  string v$d$PHP_SAPI; // define('PHP_SAPI')
 };
 
 // storage of linear memory used for mutable globals in each script
@@ -30,20 +30,26 @@ struct PhpScriptBuiltInSuperGlobals {
 // it initializes g_linear_mem, and every mutable global access is codegenerated
 // as smth line `(*reinterpret_cast<T*>(&php_globals.mem()+offset))`
 class PhpScriptMutableGlobals {
-  char *g_linear_mem{nullptr};
-  std::unordered_map<int64_t, char *> libs_linear_mem;
+  char* g_linear_mem{nullptr};
+  std::unordered_map<int64_t, char*> libs_linear_mem;
   PhpScriptBuiltInSuperGlobals superglobals;
 
 public:
-  static PhpScriptMutableGlobals &current();
+  static PhpScriptMutableGlobals& current();
   ~PhpScriptMutableGlobals();
 
   void once_alloc_linear_mem(unsigned int n_bytes);
-  void once_alloc_linear_mem(const char *lib_name, unsigned int n_bytes);
+  void once_alloc_linear_mem(const char* lib_name, unsigned int n_bytes);
 
-  char *mem() const { return g_linear_mem; }
-  char *mem_for_lib(const char *lib_name) const;
+  char* mem() const {
+    return g_linear_mem;
+  }
+  char* mem_for_lib(const char* lib_name) const;
 
-  PhpScriptBuiltInSuperGlobals &get_superglobals() { return superglobals; }
-  const PhpScriptBuiltInSuperGlobals &get_superglobals() const { return superglobals; }
+  PhpScriptBuiltInSuperGlobals& get_superglobals() {
+    return superglobals;
+  }
+  const PhpScriptBuiltInSuperGlobals& get_superglobals() const {
+    return superglobals;
+  }
 };

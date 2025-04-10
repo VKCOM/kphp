@@ -10,5 +10,5 @@
 
 class FileToTokensF {
 public:
-  void execute(SrcFilePtr file, DataStream<std::pair<SrcFilePtr, std::vector<Token>>> &os);
+  void execute(SrcFilePtr file, DataStream<std::pair<SrcFilePtr, std::vector<Token>>>& os);
 };

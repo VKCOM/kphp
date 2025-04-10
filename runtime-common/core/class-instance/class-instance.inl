@@ -1,11 +1,11 @@
 #pragma once
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from runtime-core.h"
+#error "this file must be included only from runtime-core.h"
 #endif
 
 template<class T>
-class_instance<T> &class_instance<T>::operator=(const Optional<bool> &null) noexcept {
+class_instance<T>& class_instance<T>::operator=(const Optional<bool>& null) noexcept {
   php_assert(null.value_state() == OptionalState::null_value);
   o.reset();
   return *this;
@@ -33,7 +33,7 @@ class_instance<T> class_instance<T>::clone() const {
 
 template<class T>
 template<class... Args>
-class_instance<T> class_instance<T>::alloc(Args &&... args) {
+class_instance<T> class_instance<T>::alloc(Args&&... args) {
   static_assert(!std::is_empty<T>{}, "class T may not be empty");
   php_assert(!o);
   new (&o) vk::intrusive_ptr<T>(new T{std::forward<Args>(args)...});
@@ -49,25 +49,25 @@ inline class_instance<T> class_instance<T>::empty_alloc() {
 }
 
 template<class T>
-T *class_instance<T>::operator->() {
+T* class_instance<T>::operator->() {
   if (unlikely(!o)) {
     warn_on_access_null();
   }
 
   return get();
-};
+}
 
 template<class T>
-T *class_instance<T>::operator->() const {
+T* class_instance<T>::operator->() const {
   if (unlikely(!o)) {
     warn_on_access_null();
   }
 
   return get();
-};
+}
 
 template<class T>
-T *class_instance<T>::get() const {
+T* class_instance<T>::get() const {
   static_assert(!std::is_empty<T>{}, "class T may not be empty");
   return o.get();
 }
@@ -75,7 +75,7 @@ T *class_instance<T>::get() const {
 template<class T>
 void class_instance<T>::warn_on_access_null() const {
   php_warning("Trying to access property of null object");
-  const_cast<class_instance<T> *>(this)->alloc();
+  const_cast<class_instance<T>*>(this)->alloc();
 }
 
 template<class T>

@@ -16,20 +16,19 @@ namespace {
 static_assert(2 * ZSTD_BLOCKSIZE_MAX < StringLibContext::STATIC_BUFFER_LENGTH, "double block size is expected to be less then buffer size");
 
 ZSTD_customMem make_custom_alloc() noexcept {
-  return ZSTD_customMem{
-    [](void *, size_t size) { return dl::script_allocator_malloc(size); },
-    [](void *, void *address) { dl::script_allocator_free(address); },
-    nullptr
-  };
+  return ZSTD_customMem{[](void*, size_t size) { return dl::script_allocator_malloc(size); }, [](void*, void* address) { dl::script_allocator_free(address); },
+                        nullptr};
 }
 
-template<class T, size_t (*Deleter)(T *)>
-void free_ctx_wrapper(T *ptr) { Deleter(ptr); }
+template<class T, size_t (*Deleter)(T*)>
+void free_ctx_wrapper(T* ptr) {
+  Deleter(ptr);
+}
 
 using ZSTD_CCtxPtr = vk::unique_ptr_with_delete_function<ZSTD_CStream, free_ctx_wrapper<ZSTD_CCtx, ZSTD_freeCCtx>>;
 using ZSTD_DCtxPtr = vk::unique_ptr_with_delete_function<ZSTD_DCtx, free_ctx_wrapper<ZSTD_DCtx, ZSTD_freeDCtx>>;
 
-Optional<string> zstd_compress_impl(const string &data, int64_t level = DEFAULT_COMPRESS_LEVEL, const string &dict = string{}) noexcept {
+Optional<string> zstd_compress_impl(const string& data, int64_t level = DEFAULT_COMPRESS_LEVEL, const string& dict = string{}) noexcept {
   ZSTD_CCtxPtr ctx{ZSTD_createCCtx_advanced(make_custom_alloc())};
   if (!ctx) {
     php_warning("zstd_compress: can not create context");
@@ -59,13 +58,13 @@ Optional<string> zstd_compress_impl(const string &data, int64_t level = DEFAULT_
       php_warning("zstd_compress: got zstd stream compression error: %s", ZSTD_getErrorName(result));
       return false;
     }
-    encoded_string.append(static_cast<char *>(out.dst), out.pos);
+    encoded_string.append(static_cast<char*>(out.dst), out.pos);
     out.pos = 0;
   } while (result);
   return encoded_string;
 }
 
-Optional<string> zstd_uncompress_impl(const string &data, const string &dict = string{}) noexcept {
+Optional<string> zstd_uncompress_impl(const string& data, const string& dict = string{}) noexcept {
   auto size = ZSTD_getFrameContentSize(data.c_str(), data.size());
   if (size == ZSTD_CONTENTSIZE_ERROR) {
     php_warning("zstd_uncompress: it was not compressed by zstd");
@@ -110,7 +109,7 @@ Optional<string> zstd_uncompress_impl(const string &data, const string &dict = s
   string decoded_string;
   while (in.pos < in.size) {
     if (out.pos == out.size) {
-      decoded_string.append(static_cast<char *>(out.dst), static_cast<string::size_type>(out.pos));
+      decoded_string.append(static_cast<char*>(out.dst), static_cast<string::size_type>(out.pos));
       out.pos = 0;
     }
 
@@ -123,13 +122,13 @@ Optional<string> zstd_uncompress_impl(const string &data, const string &dict = s
       break;
     }
   }
-  decoded_string.append(static_cast<char *>(out.dst), static_cast<string::size_type>(out.pos));
+  decoded_string.append(static_cast<char*>(out.dst), static_cast<string::size_type>(out.pos));
   return decoded_string;
 }
 
 } // namespace
 
-Optional<string> f$zstd_compress(const string &data, int64_t level) noexcept {
+Optional<string> f$zstd_compress(const string& data, int64_t level) noexcept {
   const int min_level = ZSTD_minCLevel();
   const int max_level = ZSTD_maxCLevel();
   if (min_level > level || level > max_level) {
@@ -140,14 +139,14 @@ Optional<string> f$zstd_compress(const string &data, int64_t level) noexcept {
   return zstd_compress_impl(data, level);
 }
 
-Optional<string> f$zstd_uncompress(const string &data) noexcept {
+Optional<string> f$zstd_uncompress(const string& data) noexcept {
   return zstd_uncompress_impl(data);
 }
 
-Optional<string> f$zstd_compress_dict(const string &data, const string &dict) noexcept {
+Optional<string> f$zstd_compress_dict(const string& data, const string& dict) noexcept {
   return zstd_compress_impl(data, DEFAULT_COMPRESS_LEVEL, dict);
 }
 
-Optional<string> f$zstd_uncompress_dict(const string &data, const string &dict) noexcept {
+Optional<string> f$zstd_uncompress_dict(const string& data, const string& dict) noexcept {
   return zstd_uncompress_impl(data, dict);
 }

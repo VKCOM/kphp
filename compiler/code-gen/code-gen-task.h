@@ -9,21 +9,21 @@
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 
-ProfilerRaw &get_code_gen_profiler();
+ProfilerRaw& get_code_gen_profiler();
 
 struct CodeGenRootCmd;
 
 class CodeGenSchedulerTask : public Task {
   CodeGenerator W;
-  DataStream<std::unique_ptr<CodeGenRootCmd>> &os;
+  DataStream<std::unique_ptr<CodeGenRootCmd>>& os;
   std::unique_ptr<CodeGenRootCmd> cmd;
 
 public:
-  CodeGenSchedulerTask(DataStream<std::unique_ptr<CodeGenRootCmd>> &os, std::unique_ptr<CodeGenRootCmd> &&cmd);
+  CodeGenSchedulerTask(DataStream<std::unique_ptr<CodeGenRootCmd>>& os, std::unique_ptr<CodeGenRootCmd>&& cmd);
 
   void execute() final;
 };
 
-inline void code_gen_start_root_task(DataStream<std::unique_ptr<CodeGenRootCmd>> &os, std::unique_ptr<CodeGenRootCmd> &&cmd) {
+inline void code_gen_start_root_task(DataStream<std::unique_ptr<CodeGenRootCmd>>& os, std::unique_ptr<CodeGenRootCmd>&& cmd) {
   register_async_task(new CodeGenSchedulerTask(os, std::move(cmd)));
 }

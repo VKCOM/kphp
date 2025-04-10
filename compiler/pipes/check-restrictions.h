@@ -13,10 +13,11 @@
 
 class CheckRestrictionsF final : public SyncPipeF<FunctionAndCFG> {
   using Base = SyncPipeF<FunctionAndCFG>;
+
 public:
   CheckRestrictionsF() = default;
 
-  void on_finish(DataStream<FunctionAndCFG> &os) final {
+  void on_finish(DataStream<FunctionAndCFG>& os) final {
     tinf::get_inferer()->check_restrictions();
     tinf::get_inferer()->finish();
     Base::on_finish(os);

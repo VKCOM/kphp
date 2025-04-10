@@ -4,6 +4,5 @@
 
 struct CodeGenRootCmd {
   virtual ~CodeGenRootCmd() = default;
-  virtual void compile(CodeGenerator &W) const = 0;
+  virtual void compile(CodeGenerator& W) const = 0;
 };
-

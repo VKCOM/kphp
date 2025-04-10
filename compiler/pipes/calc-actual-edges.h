@@ -39,11 +39,10 @@ public:
     bool inside_fork;
     bool can_throw = true; // always `true` for now
 
-    EdgeInfo(const FunctionPtr &called_f, std::vector<VertexAdaptor<op_try>> try_stack, bool inside_fork) :
-      called_f(called_f),
-      try_stack(std::move(try_stack)),
-      inside_fork(inside_fork)
-      {}
+    EdgeInfo(const FunctionPtr& called_f, std::vector<VertexAdaptor<op_try>> try_stack, bool inside_fork)
+        : called_f(called_f),
+          try_stack(std::move(try_stack)),
+          inside_fork(inside_fork) {}
   };
 
 private:
@@ -52,7 +51,7 @@ private:
   int inside_fork = 0;
 
 public:
-  static bool handle_exception(std::vector<VertexAdaptor<op_try>> &try_stack, ClassPtr thrown_class);
+  static bool handle_exception(std::vector<VertexAdaptor<op_try>>& try_stack, ClassPtr thrown_class);
 
   std::string get_description() override {
     return "Collect actual calls edges";
@@ -66,5 +65,3 @@ public:
     return std::move(edges);
   }
 };
-
-

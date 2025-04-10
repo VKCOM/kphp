@@ -23,14 +23,14 @@ namespace job_worker_impl_ {
 
 struct SendableBase : virtual abstract_refcountable_php_interface {
 
-  virtual void accept(ToArrayVisitor & /*unused*/) noexcept {}
+  virtual void accept(ToArrayVisitor& /*unused*/) noexcept {}
 
-  virtual void accept(CommonMemoryEstimateVisitor & /*unused*/) noexcept {}
+  virtual void accept(CommonMemoryEstimateVisitor& /*unused*/) noexcept {}
 
-  virtual const char *get_class() const noexcept = 0;
+  virtual const char* get_class() const noexcept = 0;
   virtual int32_t get_hash() const noexcept = 0;
   virtual size_t virtual_builtin_sizeof() const noexcept = 0;
-  virtual SendableBase *virtual_builtin_clone() const noexcept = 0;
+  virtual SendableBase* virtual_builtin_clone() const noexcept = 0;
 
   ~SendableBase() override = default;
 };
@@ -45,19 +45,19 @@ enum class JobWorkerError : int16_t {
 // === KphpJobWorkerSharedMemoryPiece =============================================================
 
 struct C$KphpJobWorkerSharedMemoryPiece : public job_worker_impl_::SendableBase {
-  C$KphpJobWorkerSharedMemoryPiece *virtual_builtin_clone() const noexcept override = 0;
+  C$KphpJobWorkerSharedMemoryPiece* virtual_builtin_clone() const noexcept override = 0;
 };
 
 // === KphpJobWorkerRequest =======================================================================
 
 struct C$KphpJobWorkerRequest : public job_worker_impl_::SendableBase {
-  C$KphpJobWorkerRequest *virtual_builtin_clone() const noexcept override = 0;
+  C$KphpJobWorkerRequest* virtual_builtin_clone() const noexcept override = 0;
 };
 
 // === KphpJobWorkerResponse ======================================================================
 
 struct C$KphpJobWorkerResponse : public job_worker_impl_::SendableBase {
-  C$KphpJobWorkerResponse *virtual_builtin_clone() const noexcept override = 0;
+  C$KphpJobWorkerResponse* virtual_builtin_clone() const noexcept override = 0;
 };
 
 // === KphpJobWorkerResponseError =================================================================
@@ -66,7 +66,7 @@ struct C$KphpJobWorkerResponseError : public refcountable_polymorphic_php_classe
   string error;
   int64_t error_code{};
 
-  const char *get_class() const noexcept override {
+  const char* get_class() const noexcept override {
     return "KphpJobWorkerResponseError";
   }
 
@@ -79,7 +79,7 @@ struct C$KphpJobWorkerResponseError : public refcountable_polymorphic_php_classe
     return sizeof(*this);
   }
 
-  C$KphpJobWorkerResponseError *virtual_builtin_clone() const noexcept override {
+  C$KphpJobWorkerResponseError* virtual_builtin_clone() const noexcept override {
     return new C$KphpJobWorkerResponseError{*this};
   }
 };
@@ -88,10 +88,10 @@ inline class_instance<C$KphpJobWorkerResponseError> f$KphpJobWorkerResponseError
   return v$this;
 }
 
-inline string f$KphpJobWorkerResponseError$$getError(const class_instance<C$KphpJobWorkerResponseError> &v$this) noexcept {
+inline string f$KphpJobWorkerResponseError$$getError(const class_instance<C$KphpJobWorkerResponseError>& v$this) noexcept {
   return v$this.get()->error;
 }
 
-inline int64_t f$KphpJobWorkerResponseError$$getErrorCode(const class_instance<C$KphpJobWorkerResponseError> &v$this) noexcept {
+inline int64_t f$KphpJobWorkerResponseError$$getErrorCode(const class_instance<C$KphpJobWorkerResponseError>& v$this) noexcept {
   return v$this.get()->error_code;
 }

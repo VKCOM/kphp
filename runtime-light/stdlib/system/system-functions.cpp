@@ -11,7 +11,7 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/system/system-functions.h"
 
-Optional<string> f$iconv(const string &input_encoding, const string &output_encoding, const string &input_str) noexcept {
+Optional<string> f$iconv(const string& input_encoding, const string& output_encoding, const string& input_str) noexcept {
   iconv_t cd{};
   if (k2::iconv_open(std::addressof(cd), output_encoding.c_str(), input_encoding.c_str()) != k2::errno_ok) [[unlikely]] {
     php_warning(R"(unsupported iconv from "%s" to "%s")", input_encoding.c_str(), output_encoding.c_str());
@@ -25,11 +25,11 @@ Optional<string> f$iconv(const string &input_encoding, const string &output_enco
 
     size_t input_len{input_str.size()};
     size_t output_len{output_str.size()};
-    char *input_buf{const_cast<char *>(input_str.c_str())};
-    char *output_buf{output_str.buffer()};
+    char* input_buf{const_cast<char*>(input_str.c_str())};
+    char* output_buf{output_str.buffer()};
     size_t res{};
-    if (k2::iconv(std::addressof(res), cd, std::addressof(input_buf), std::addressof(input_len), std::addressof(output_buf), std::addressof(output_len))
-        == k2::errno_ok) {
+    if (k2::iconv(std::addressof(res), cd, std::addressof(input_buf), std::addressof(input_len), std::addressof(output_buf), std::addressof(output_len)) ==
+        k2::errno_ok) {
       output_str.shrink(static_cast<string::size_type>(output_buf - output_str.c_str()));
       return output_str;
     }

@@ -14,8 +14,8 @@
 #include "common/version-string.h"
 #include "common/wrappers/string_view.h"
 
-#include "compiler/compiler.h"
 #include "compiler/compiler-settings.h"
+#include "compiler/compiler.h"
 #include "compiler/threading/tls.h"
 #include "compiler/utils/string-utils.h"
 
@@ -23,7 +23,7 @@ namespace {
 
 class OptionParser : vk::not_copyable {
 public:
-  static OptionParser &get_instance() noexcept {
+  static OptionParser& get_instance() noexcept {
     static OptionParser parser;
     return parser;
   }
@@ -34,23 +34,21 @@ public:
     parse_option("version", no_argument, version_and_first_option_id_, "Print version and exit.");
   }
 
-  void add_other_args(const char *description, KphpRawOption &raw_option) {
+  void add_other_args(const char* description, KphpRawOption& raw_option) {
     usage_set_other_args_desc(description);
     other_options_ = &raw_option;
     other_options_description_ = description;
   }
 
   template<class T>
-  void add(const char *description, KphpOption<T> &option,
-           const char *long_option, const char *env,
-           std::string default_value = {}, std::vector<std::string> choices = {}) noexcept {
+  void add(const char* description, KphpOption<T>& option, const char* long_option, const char* env, std::string default_value = {},
+           std::vector<std::string> choices = {}) noexcept {
     add(description, option, 0, long_option, env, std::move(default_value), std::move(choices));
   }
 
   template<class T>
-  void add(const char *description, KphpOption<T> &option,
-           char short_option, const char *long_option, const char *env,
-           std::string default_value = {}, std::vector<std::string> choices = {}) noexcept {
+  void add(const char* description, KphpOption<T>& option, char short_option, const char* long_option, const char* env, std::string default_value = {},
+           std::vector<std::string> choices = {}) noexcept {
     assert(envs_.insert(vk::string_view{env}).second);
     std::string default_str;
     if (!default_value.empty()) {
@@ -62,22 +60,22 @@ public:
     }
 
     const auto option_id = static_cast<int32_t>(version_and_first_option_id_ + options_.size() + 1);
-    parse_option(long_option, std::is_same<T, bool>{} ? no_argument : required_argument, option_id,
-                 "[%s] %s%s%s.", env, description, choices_str.c_str(), default_str.c_str());
+    parse_option(long_option, std::is_same<T, bool>{} ? no_argument : required_argument, option_id, "[%s] %s%s%s.", env, description, choices_str.c_str(),
+                 default_str.c_str());
     if (short_option) {
       parse_option_alias(long_option, short_option);
     }
-    KphpRawOption &raw_option = option;
+    KphpRawOption& raw_option = option;
     raw_option.init(env, std::move(default_value), std::move(choices));
     options_.emplace_back(&raw_option);
   }
 
-  void add_implicit_option(vk::string_view description, KphpImplicitOption &implicit_option) {
+  void add_implicit_option(vk::string_view description, KphpImplicitOption& implicit_option) {
     implicit_options_.emplace_back(description, &implicit_option);
   }
 
-  void process_args(int32_t argc, char **argv) {
-    parse_engine_options_long(argc, argv, [](int32_t option_id, const char *) {
+  void process_args(int32_t argc, char** argv) {
+    parse_engine_options_long(argc, argv, [](int32_t option_id, const char*) {
       if (option_id == 'h') {
         usage_and_exit();
       }
@@ -86,7 +84,7 @@ public:
         exit(0);
       }
       option_id -= version_and_first_option_id_ + 1;
-      auto &this_ = get_instance();
+      auto& this_ = get_instance();
       if (option_id < 0 || option_id >= this_.options_.size()) {
         return -1;
       }
@@ -108,17 +106,17 @@ public:
     finalize();
   }
 
-  void dump_options(std::ostream &out) const noexcept {
+  void dump_options(std::ostream& out) const noexcept {
     out << other_options_description_ << ": ";
     other_options_->dump_option(out);
     out << std::endl << std::endl;
-    for (const auto &raw_option : options_) {
+    for (const auto& raw_option : options_) {
       out << raw_option->get_env_var() << ": [";
       raw_option->dump_option(out);
       out << "]" << std::endl;
     }
     out << std::endl;
-    for (const auto &implicit_option : implicit_options_) {
+    for (const auto& implicit_option : implicit_options_) {
       out << implicit_option.first << ": [" << implicit_option.second->get() << "]" << std::endl;
     }
     out << std::endl;
@@ -128,8 +126,8 @@ private:
   void finalize() {
     other_options_->parse_arg_value();
 
-    for (auto &raw_option : options_) {
-      for (auto &option_for_substitute : options_) {
+    for (auto& raw_option : options_) {
+      for (auto& option_for_substitute : options_) {
         raw_option->substitute_depends(*option_for_substitute);
       }
       raw_option->verify_arg_value();
@@ -139,13 +137,13 @@ private:
 
   OptionParser() = default;
 
-  KphpRawOption *other_options_{nullptr};
+  KphpRawOption* other_options_{nullptr};
   vk::string_view other_options_description_;
 
-  std::vector<KphpRawOption *> options_;
+  std::vector<KphpRawOption*> options_;
   std::unordered_set<vk::string_view> envs_;
 
-  std::vector<std::pair<vk::string_view, KphpImplicitOption *>> implicit_options_;
+  std::vector<std::pair<vk::string_view, KphpImplicitOption*>> implicit_options_;
 
   static constexpr int32_t version_and_first_option_id_{2000};
 };
@@ -154,7 +152,7 @@ std::string get_default_kphp_path() noexcept {
 #ifdef DEFAULT_KPHP_PATH
   return as_dir(DEFAULT_KPHP_PATH);
 #endif
-  auto *home = getenv("HOME");
+  auto* home = getenv("HOME");
   assert(home);
   return std::string{home} + "/kphp/";
 }
@@ -191,7 +189,7 @@ std::string get_default_extra_ldflags() noexcept {
 
 } // namespace
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
 #if ASAN_ENABLED
   // asan adds redzones to the stack variables, which increases the footprint,
   // therefore increase the system limit on the main thread stack
@@ -205,106 +203,76 @@ int main(int argc, char *argv[]) {
   auto settings = std::make_unique<CompilerSettings>();
 
   OptionParser::add_default_options();
-  auto &parser = OptionParser::get_instance();
+  auto& parser = OptionParser::get_instance();
   parser.add_other_args("<main-file>", settings->main_file);
-  parser.add("Verbosity", settings->verbosity,
-             'v', "verbosity", "KPHP_VERBOSITY", "0", {"0", "1", "2", "3"});
-  parser.add("Path to kphp source", settings->kphp_src_path,
-             's', "source-path", "KPHP_PATH", get_default_kphp_path());
-  parser.add("Internal file with the list of supported PHP functions", settings->functions_file,
-             'f', "functions-file", "KPHP_FUNCTIONS");
-  parser.add("File with kphp runtime sha256 hash", settings->runtime_sha256_file,
-             "runtime-sha256", "KPHP_RUNTIME_SHA256", "${KPHP_PATH}/objs/php_lib_version.sha256");
+  parser.add("Verbosity", settings->verbosity, 'v', "verbosity", "KPHP_VERBOSITY", "0", {"0", "1", "2", "3"});
+  parser.add("Path to kphp source", settings->kphp_src_path, 's', "source-path", "KPHP_PATH", get_default_kphp_path());
+  parser.add("Internal file with the list of supported PHP functions", settings->functions_file, 'f', "functions-file", "KPHP_FUNCTIONS");
+  parser.add("File with kphp runtime sha256 hash", settings->runtime_sha256_file, "runtime-sha256", "KPHP_RUNTIME_SHA256",
+             "${KPHP_PATH}/objs/php_lib_version.sha256");
   parser.add("The output binary type: server, cli, lib, k2-cli, k2-server, k2-oneshot, k2-multishot", settings->mode, 'M', "mode", "KPHP_MODE", "server",
              {"server", "cli", "lib", "k2-cli", "k2-server", "k2-oneshot", "k2-multishot"});
-  parser.add("A runtime library for building the output binary", settings->link_file,
-             'l', "link-with", "KPHP_LINK_FILE");
-  parser.add("Build runtime from sources", settings->force_link_runtime,
-             "force-link-runtime", "KPHP_FORCE_LINK_RUNTIME");
-  parser.add("Enable safe compilation mode that treats calls to stub functions as compilation error", settings->forbid_stubs_using,
-             "forbid-stubs", "KPHP_FORBID_STUBS_USING");
+  parser.add("A runtime library for building the output binary", settings->link_file, 'l', "link-with", "KPHP_LINK_FILE");
+  parser.add("Build runtime from sources", settings->force_link_runtime, "force-link-runtime", "KPHP_FORCE_LINK_RUNTIME");
+  parser.add("Enable safe compilation mode that treats calls to stub functions as compilation error", settings->forbid_stubs_using, "forbid-stubs",
+             "KPHP_FORBID_STUBS_USING");
   parser.add("Path to runtime sources", settings->runtime_and_common_src, "rt-path", "KPHP_RT_PATH", get_default_kphp_path());
-  parser.add("Directory where php files will be searched", settings->includes,
-             'I', "include-dir", "KPHP_INCLUDE_DIR");
-  parser.add("Destination directory", settings->dest_dir,
-             'd', "destination-directory", "KPHP_DEST_DIR", "./kphp_out/");
-  parser.add("Path for the output binary", settings->user_binary_path,
-             'o', "output-file", "KPHP_USER_BINARY_PATH");
-  parser.add("Directory for placing out static lib and header. Compatible only with lib mode", settings->static_lib_out_dir,
-             'O', "output-lib-dir", "KPHP_OUT_LIB_DIR");
-  parser.add("Force make. Old object files and binary will be removed", settings->force_make,
-             'F', "force-make", "KPHP_FORCE_MAKE");
-  parser.add("Code generation only, without making an output binary", settings->no_make,
-             "no-make", "KPHP_NO_MAKE");
-  parser.add("Processes number for the compilation", settings->jobs_count,
-             'j', "jobs-num", "KPHP_JOBS_COUNT", std::to_string(get_default_threads_count()));
-  parser.add("Threads number for the transpilation", settings->threads_count,
-             't', "threads-count", "KPHP_THREADS_COUNT", std::to_string(get_default_threads_count()));
-  parser.add("Builtin tl schema. Incompatible with lib mode", settings->tl_schema_file,
-             'T', "tl-schema", "KPHP_TL_SCHEMA");
-  parser.add("Generate storers and fetchers for internal tl functions", settings->gen_tl_internals,
-             "gen-tl-internals", "KPHP_GEN_TL_INTERNALS");
-  parser.add("All compile time warnings will be errors", settings->error_on_warns,
-             'W', "Werror", "KPHP_ERROR_ON_WARNINGS");
-  parser.add("Print all warnings to file, otherwise warnings are printed to stderr", settings->warnings_file,
-             "warnings-file", "KPHP_WARNINGS_FILE");
-  parser.add("Warnings level: prints more warnings, according to level set", settings->warnings_level,
-             "warnings-level", "KPHP_WARNINGS_LEVEL", "0", {"0", "1", "2"});
-  parser.add("Show all type errors", settings->show_all_type_errors,
-             "show-all-type-errors", "KPHP_SHOW_ALL_TYPE_ERRORS");
-  parser.add("Colorize warnings output: yes, no, auto", settings->colorize,
-             "colorize", "KPHP_COLORS", "auto", {"auto", "yes", "no"});
-  parser.add("Save C++ compiler statistics to file", settings->stats_file,
-             "stats-file", "KPHP_STATS_FILE");
-  parser.add("Save transpilation metrics to file", settings->compilation_metrics_file,
-             "compilation-metrics-file", "KPHP_COMPILATION_METRICS_FILE");
-  parser.add("Override kphp version string", settings->override_kphp_version,
-             "kphp-version-override", "KPHP_VERSION_OVERRIDE");
-  parser.add("Specify the compiled php code version", settings->php_code_version,
-             "php-code-version", "KPHP_PHP_CODE_VERSION", "unknown");
-  parser.add("C++ compiler for building the output binary", settings->cxx,
-             "cxx", "KPHP_CXX", get_default_cxx());
-  parser.add("Directory for c++ compiler toolchain. Will be passed to cxx via -B option", settings->cxx_toolchain_dir,
-             "cxx-toolchain-dir", "KPHP_CXX_TOOLCHAIN_DIR");
-  parser.add("Extra C++ compiler flags for building the output binary", settings->extra_cxx_flags,
-             "extra-cxx-flags", "KPHP_EXTRA_CXXFLAGS", get_default_extra_cxxflags());
-  parser.add("Extra linker flags for building the output binary", settings->extra_ld_flags,
-             "extra-linker-flags", "KPHP_EXTRA_LDFLAGS", get_default_extra_ldflags());
-  parser.add("C++ compiler debug level for building the output binary", settings->extra_cxx_debug_level,
-             "debug-level", "KPHP_DEBUG_LEVEL");
-  parser.add("Probability of partially disabling debug info for some random part of files",
-             settings->debug_info_force_disable_prob, "debug-info-force-disable-probability", "KPHP_DEBUG_INFO_FORCE_DISABLE_PROBABILITY");
-  parser.add("Seed for random check from --debug-info-force-disable-probability option",
-             settings->debug_info_force_disable_prob_seed, "debug-info-force-disable-probability-seed", "KPHP_DEBUG_INFO_FORCE_DISABLE_PROBABILITY_SEED");
+  parser.add("Directory where php files will be searched", settings->includes, 'I', "include-dir", "KPHP_INCLUDE_DIR");
+  parser.add("Destination directory", settings->dest_dir, 'd', "destination-directory", "KPHP_DEST_DIR", "./kphp_out/");
+  parser.add("Path for the output binary", settings->user_binary_path, 'o', "output-file", "KPHP_USER_BINARY_PATH");
+  parser.add("Directory for placing out static lib and header. Compatible only with lib mode", settings->static_lib_out_dir, 'O', "output-lib-dir",
+             "KPHP_OUT_LIB_DIR");
+  parser.add("Force make. Old object files and binary will be removed", settings->force_make, 'F', "force-make", "KPHP_FORCE_MAKE");
+  parser.add("Code generation only, without making an output binary", settings->no_make, "no-make", "KPHP_NO_MAKE");
+  parser.add("Processes number for the compilation", settings->jobs_count, 'j', "jobs-num", "KPHP_JOBS_COUNT", std::to_string(get_default_threads_count()));
+  parser.add("Threads number for the transpilation", settings->threads_count, 't', "threads-count", "KPHP_THREADS_COUNT",
+             std::to_string(get_default_threads_count()));
+  parser.add("Builtin tl schema. Incompatible with lib mode", settings->tl_schema_file, 'T', "tl-schema", "KPHP_TL_SCHEMA");
+  parser.add("Generate storers and fetchers for internal tl functions", settings->gen_tl_internals, "gen-tl-internals", "KPHP_GEN_TL_INTERNALS");
+  parser.add("All compile time warnings will be errors", settings->error_on_warns, 'W', "Werror", "KPHP_ERROR_ON_WARNINGS");
+  parser.add("Print all warnings to file, otherwise warnings are printed to stderr", settings->warnings_file, "warnings-file", "KPHP_WARNINGS_FILE");
+  parser.add("Warnings level: prints more warnings, according to level set", settings->warnings_level, "warnings-level", "KPHP_WARNINGS_LEVEL", "0",
+             {"0", "1", "2"});
+  parser.add("Show all type errors", settings->show_all_type_errors, "show-all-type-errors", "KPHP_SHOW_ALL_TYPE_ERRORS");
+  parser.add("Colorize warnings output: yes, no, auto", settings->colorize, "colorize", "KPHP_COLORS", "auto", {"auto", "yes", "no"});
+  parser.add("Save C++ compiler statistics to file", settings->stats_file, "stats-file", "KPHP_STATS_FILE");
+  parser.add("Save transpilation metrics to file", settings->compilation_metrics_file, "compilation-metrics-file", "KPHP_COMPILATION_METRICS_FILE");
+  parser.add("Override kphp version string", settings->override_kphp_version, "kphp-version-override", "KPHP_VERSION_OVERRIDE");
+  parser.add("Specify the compiled php code version", settings->php_code_version, "php-code-version", "KPHP_PHP_CODE_VERSION", "unknown");
+  parser.add("C++ compiler for building the output binary", settings->cxx, "cxx", "KPHP_CXX", get_default_cxx());
+  parser.add("Directory for c++ compiler toolchain. Will be passed to cxx via -B option", settings->cxx_toolchain_dir, "cxx-toolchain-dir",
+             "KPHP_CXX_TOOLCHAIN_DIR");
+  parser.add("Extra C++ compiler flags for building the output binary", settings->extra_cxx_flags, "extra-cxx-flags", "KPHP_EXTRA_CXXFLAGS",
+             get_default_extra_cxxflags());
+  parser.add("Extra linker flags for building the output binary", settings->extra_ld_flags, "extra-linker-flags", "KPHP_EXTRA_LDFLAGS",
+             get_default_extra_ldflags());
+  parser.add("C++ compiler debug level for building the output binary", settings->extra_cxx_debug_level, "debug-level", "KPHP_DEBUG_LEVEL");
+  parser.add("Probability of partially disabling debug info for some random part of files", settings->debug_info_force_disable_prob,
+             "debug-info-force-disable-probability", "KPHP_DEBUG_INFO_FORCE_DISABLE_PROBABILITY");
+  parser.add("Seed for random check from --debug-info-force-disable-probability option", settings->debug_info_force_disable_prob_seed,
+             "debug-info-force-disable-probability-seed", "KPHP_DEBUG_INFO_FORCE_DISABLE_PROBABILITY_SEED");
 
-  parser.add("Archive creator for building the output binary", settings->archive_creator,
-             "archive-creator", "KPHP_ARCHIVE_CREATOR", "ar");
-  parser.add("Use dynamic incremental linkage for building the output binary", settings->dynamic_incremental_linkage,
-             "dynamic-incremental-linkage", "KPHP_DYNAMIC_INCREMENTAL_LINKAGE");
-  parser.add("Profile functions: 0 - disabled, 1 - enabled for marked functions, 2 - enabled for all", settings->profiler_level,
-             'g', "profiler", "KPHP_PROFILER", "0", {"0", "1", "2"});
-  parser.add("Enable an ability to get global vars memory stats", settings->enable_global_vars_memory_stats,
-             "enable-global-vars-memory-stats", "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS");
+  parser.add("Archive creator for building the output binary", settings->archive_creator, "archive-creator", "KPHP_ARCHIVE_CREATOR", "ar");
+  parser.add("Use dynamic incremental linkage for building the output binary", settings->dynamic_incremental_linkage, "dynamic-incremental-linkage",
+             "KPHP_DYNAMIC_INCREMENTAL_LINKAGE");
+  parser.add("Profile functions: 0 - disabled, 1 - enabled for marked functions, 2 - enabled for all", settings->profiler_level, 'g', "profiler",
+             "KPHP_PROFILER", "0", {"0", "1", "2"});
+  parser.add("Enable an ability to get global vars memory stats", settings->enable_global_vars_memory_stats, "enable-global-vars-memory-stats",
+             "KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS");
   parser.add("Enable all inspections available for @kphp-analyze-performance for all reachable functions", settings->enable_full_performance_analyze,
              "enable-full-performance-analyze", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE");
-  parser.add("Print graph of resumable calls to stderr", settings->print_resumable_graph,
-             'p', "print-graph", "KPHP_PRINT_RESUMABLE_GRAPH");
-  parser.add("Forbid to use the precompile header", settings->no_pch,
-             "no-pch", "KPHP_NO_PCH");
-  parser.add("Forbid to use an index file which contains codegen hashes from previous compilation", settings->no_index_file,
-             "no-index-file", "KPHP_NO_INDEX_FILE");
-  parser.add("Show transpilation progress", settings->show_progress,
-             "show-progress", "KPHP_SHOW_PROGRESS");
-  parser.add("A folder that contains composer.json file", settings->composer_root,
-             "composer-root", "KPHP_COMPOSER_ROOT");
-  parser.add("Include autoload-dev section for the root composer file", settings->composer_autoload_dev,
-             "composer-autoload-dev", "KPHP_COMPOSER_AUTOLOAD_DEV");
+  parser.add("Print graph of resumable calls to stderr", settings->print_resumable_graph, 'p', "print-graph", "KPHP_PRINT_RESUMABLE_GRAPH");
+  parser.add("Forbid to use the precompile header", settings->no_pch, "no-pch", "KPHP_NO_PCH");
+  parser.add("Forbid to use an index file which contains codegen hashes from previous compilation", settings->no_index_file, "no-index-file",
+             "KPHP_NO_INDEX_FILE");
+  parser.add("Show transpilation progress", settings->show_progress, "show-progress", "KPHP_SHOW_PROGRESS");
+  parser.add("A folder that contains composer.json file", settings->composer_root, "composer-root", "KPHP_COMPOSER_ROOT");
+  parser.add("Include autoload-dev section for the root composer file", settings->composer_autoload_dev, "composer-autoload-dev", "KPHP_COMPOSER_AUTOLOAD_DEV");
   parser.add("Require functions typing (1 - @param / type hint is mandatory, 0 - auto infer or check if exists)", settings->require_functions_typing,
              "require-functions-typing", "KPHP_REQUIRE_FUNCTIONS_TYPING");
   parser.add("Require class typing (1 - @var / default value is mandatory, 0 - auto infer or check if exists)", settings->require_class_typing,
              "require-class-typing", "KPHP_REQUIRE_CLASS_TYPING");
-  parser.add("Define k2 component name. Default is \"KPHP\"", settings->k2_component_name,
-             "k2-component-name", "KPHP_K2_COMPONENT_NAME", "KPHP");
+  parser.add("Define k2 component name. Default is \"KPHP\"", settings->k2_component_name, "k2-component-name", "KPHP_K2_COMPONENT_NAME", "KPHP");
 
   parser.add_implicit_option("Linker flags", settings->ld_flags);
   parser.add_implicit_option("Incremental linker flags", settings->incremental_linker_flags);
@@ -328,7 +296,7 @@ int main(int argc, char *argv[]) {
   try {
     parser.process_args(argc, argv);
     settings->init();
-  } catch (const std::exception &ex) {
+  } catch (const std::exception& ex) {
     std::cout << ex.what() << std::endl;
     return 1;
   }

@@ -21,12 +21,10 @@ public:
   template<size_t data_id>
   using NthDataType = DataType;
 
-  explicit DataStream(bool is_sink = false) :
-    is_sink_mode_(is_sink)
-  {
-  }
+  explicit DataStream(bool is_sink = false)
+      : is_sink_mode_(is_sink) {}
 
-  bool get(DataType &result) {
+  bool get(DataType& result) {
     std::lock_guard<std::mutex> lock{mutex_};
     if (!queue_.empty()) {
       result = std::move(queue_.front());
@@ -60,34 +58,33 @@ private:
   const bool is_sink_mode_;
 };
 
-
 struct EmptyStream {
   template<size_t stream_id>
   using NthDataType = EmptyStream;
 };
 
-template<class ...DataTypes>
+template<class... DataTypes>
 class MultipleDataStreams {
 private:
-  std::tuple<DataStream<DataTypes> *...> streams_;
+  std::tuple<DataStream<DataTypes>*...> streams_;
 
 public:
   template<size_t data_id>
   using NthDataType = vk::get_nth_type<data_id, DataTypes...>;
 
   template<size_t stream_id>
-  decltype(std::get<stream_id>(streams_)) &project_to_nth_data_stream() {
+  decltype(std::get<stream_id>(streams_))& project_to_nth_data_stream() {
     return std::get<stream_id>(streams_);
   }
 
   template<class DataType>
-  DataStream<DataType> *&project_to_single_data_stream() {
+  DataStream<DataType>*& project_to_single_data_stream() {
     constexpr size_t data_id = vk::index_of_type<DataType, DataTypes...>::value;
     return std::get<data_id>(streams_);
   }
 
   template<class DataType>
-  void operator<<(const DataType &data) {
+  void operator<<(const DataType& data) {
     *project_to_single_data_stream<DataType>() << data;
   }
 };

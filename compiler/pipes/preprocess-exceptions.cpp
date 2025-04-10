@@ -4,21 +4,19 @@
 
 #include "compiler/pipes/preprocess-exceptions.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/data/src-file.h"
 #include "compiler/vertex-util.h"
-#include "compiler/compiler-core.h"
 
 VertexPtr PreprocessExceptions::on_exit_vertex(VertexPtr root) {
   static const ClassPtr throwable_class = G->get_class("Throwable");
-  if (!throwable_class) {   // when functions.txt deleted while development
+  if (!throwable_class) { // when functions.txt deleted while development
     return root;
   }
 
   if (auto catch_op = root.try_as<op_catch>()) {
     catch_op->exception_class = G->get_class(catch_op->type_declaration);
-    kphp_error_act(catch_op->exception_class,
-                   fmt_format("Can't find class: {}", catch_op->type_declaration),
-                   return catch_op);
+    kphp_error_act(catch_op->exception_class, fmt_format("Can't find class: {}", catch_op->type_declaration), return catch_op);
     if (catch_op->exception_class->is_class()) {
       kphp_error(throwable_class->is_parent_of(catch_op->exception_class),
                  fmt_format("Can't catch {}; only classes that implement Throwable can be caught", catch_op->type_declaration));

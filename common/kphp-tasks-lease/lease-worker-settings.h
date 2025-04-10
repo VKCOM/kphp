@@ -13,9 +13,9 @@ struct lease_worker_settings {
   int php_timeout_ms{0};
 
   lease_worker_settings() = default;
-  explicit lease_worker_settings(int php_timeout_ms) :
-    fields_mask(vk::tl::kphp::lease_worker_settings_fields_mask::php_timeout),
-    php_timeout_ms(php_timeout_ms) {};
+  explicit lease_worker_settings(int php_timeout_ms)
+      : fields_mask(vk::tl::kphp::lease_worker_settings_fields_mask::php_timeout),
+        php_timeout_ms(php_timeout_ms) {};
 
   bool has_timeout() const {
     return fields_mask & vk::tl::kphp::lease_worker_settings_fields_mask::php_timeout;

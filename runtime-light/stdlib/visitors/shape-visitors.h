@@ -14,7 +14,7 @@
 struct ShapeKeyDemangle final : vk::not_copyable {
   ShapeKeyDemangle() = default;
 
-  void init(kphp::stl::unordered_map<int64_t, std::string_view, kphp::memory::script_allocator> &&shape_keys_storage) noexcept {
+  void init(kphp::stl::unordered_map<int64_t, std::string_view, kphp::memory::script_allocator>&& shape_keys_storage) noexcept {
     inited_ = true;
     shape_keys_storage_ = std::move(shape_keys_storage);
   }

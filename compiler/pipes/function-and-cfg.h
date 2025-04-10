@@ -19,8 +19,7 @@ struct FunctionAndCFG {
   CFGData data;
 
   FunctionAndCFG() = default;
-  explicit FunctionAndCFG(FunctionPtr function, CFGData data) :
-    function(std::move(function)),
-    data(std::move(data)) {
-  }
+  explicit FunctionAndCFG(FunctionPtr function, CFGData data)
+      : function(std::move(function)),
+        data(std::move(data)) {}
 };

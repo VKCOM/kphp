@@ -12,9 +12,9 @@
 
 #include "runtime/critical_section.h"
 
-std::forward_list<char **> KphpBacktrace::last_used_symbols_;
+std::forward_list<char**> KphpBacktrace::last_used_symbols_;
 
-KphpBacktrace::KphpBacktrace(void *const *raw_backtrace, int32_t size) noexcept {
+KphpBacktrace::KphpBacktrace(void* const* raw_backtrace, int32_t size) noexcept {
   dl::CriticalSectionGuard signal_critical_section;
   if ((symbols_begin_ = backtrace_symbols(raw_backtrace, size))) {
     symbols_end_ = symbols_begin_ + size;
@@ -28,16 +28,16 @@ void KphpBacktrace::clear() noexcept {
   free(symbols_begin_);
 }
 
-const char *KphpBacktrace::make_line(const char *symbol, bool full_trace) noexcept {
-  const char *mangled_name = nullptr;
-  const char *offset_begin = nullptr;
-  const char *offset_end = nullptr;
+const char* KphpBacktrace::make_line(const char* symbol, bool full_trace) noexcept {
+  const char* mangled_name = nullptr;
+  const char* offset_begin = nullptr;
+  const char* offset_end = nullptr;
 #ifdef __APPLE__
-  const char *begin = strchr(symbol, '_');
+  const char* begin = strchr(symbol, '_');
   if (begin == nullptr) {
     return nullptr;
   }
-  const char *end = strchr(begin, '+');
+  const char* end = strchr(begin, '+');
   if (end == nullptr) {
     return nullptr;
   }
@@ -49,7 +49,7 @@ const char *KphpBacktrace::make_line(const char *symbol, bool full_trace) noexce
 
   full_trace = false;
 #else
-  for (const char *p = symbol; *p; ++p) {
+  for (const char* p = symbol; *p; ++p) {
     if (*p == '(') {
       mangled_name = p;
     } else if (*p == '+' && mangled_name != nullptr) {
@@ -71,7 +71,7 @@ const char *KphpBacktrace::make_line(const char *symbol, bool full_trace) noexce
 
   dl::CriticalSectionGuard critical_section;
   int status = 0;
-  char *real_name = abi::__cxa_demangle(name_buffer_.data(), nullptr, nullptr, &status);
+  char* real_name = abi::__cxa_demangle(name_buffer_.data(), nullptr, nullptr, &status);
   if (status == 0) {
     const size_t name_len = std::min(strlen(real_name), name_buffer_.size() - 1);
     memcpy(name_buffer_.data(), real_name, name_len);
@@ -79,27 +79,22 @@ const char *KphpBacktrace::make_line(const char *symbol, bool full_trace) noexce
     free(real_name);
   }
   if (full_trace) {
-    snprintf(trace_buffer_.data(), trace_buffer_.size(), "%.*s : %s+%.*s%s\n",
-             static_cast<int32_t>(mangled_name - symbol),
-             symbol,
-             name_buffer_.data(),
-             static_cast<int32_t>(offset_end - offset_begin - 1),
-             offset_begin + 1,
-             offset_end + 1);
+    snprintf(trace_buffer_.data(), trace_buffer_.size(), "%.*s : %s+%.*s%s\n", static_cast<int32_t>(mangled_name - symbol), symbol, name_buffer_.data(),
+             static_cast<int32_t>(offset_end - offset_begin - 1), offset_begin + 1, offset_end + 1);
     return trace_buffer_.data();
   }
   return name_buffer_.data();
 }
 
-void parse_kphp_backtrace(char * buffer, size_t buffer_len, void * const * raw_backtrace, int backtrace_len) {
+void parse_kphp_backtrace(char* buffer, size_t buffer_len, void* const* raw_backtrace, int backtrace_len) {
   if (buffer_len == 0) {
     return;
   }
   buffer[0] = '\0';
-  const char *sep = ";\n";
+  const char* sep = ";\n";
   KphpBacktrace demangler{raw_backtrace, backtrace_len};
   size_t cur_len = 0;
-  for (const char *name : demangler.make_demangled_backtrace_range()) {
+  for (const char* name : demangler.make_demangled_backtrace_range()) {
     const size_t len = name ? strlen(name) : 0;
     if (len == 0) {
       continue;
@@ -125,11 +120,11 @@ void free_kphp_backtrace() noexcept {
 }
 
 array<string> f$kphp_backtrace(bool pretty) noexcept {
-  std::array<void *, 128> buffer{};
+  std::array<void*, 128> buffer{};
   const int32_t nptrs = fast_backtrace(buffer.data(), buffer.size());
   array<string> backtrace{array_size{nptrs, true}};
   KphpBacktrace demangler{buffer.data(), nptrs};
-  for (const char *name : demangler.make_demangled_backtrace_range()) {
+  for (const char* name : demangler.make_demangled_backtrace_range()) {
     const size_t len = name ? strlen(name) : 0;
     if (!len) {
       continue;
@@ -137,8 +132,7 @@ array<string> f$kphp_backtrace(bool pretty) noexcept {
     vk::string_view func_name{name, len};
     // depending on the compilation options the fast_backtrace function and f$kphp_backtrace
     // may be present or absent inside a backtrace
-    if (func_name.starts_with(__FUNCTION__) &&
-        vk::string_view{__PRETTY_FUNCTION__}.ends_with(func_name)) {
+    if (func_name.starts_with(__FUNCTION__) && vk::string_view{__PRETTY_FUNCTION__}.ends_with(func_name)) {
       backtrace.clear();
       continue;
     }
@@ -155,8 +149,8 @@ array<string> f$kphp_backtrace(bool pretty) noexcept {
       continue;
     }
     string pretty_name{static_cast<string::size_type>(func_name.size()), true};
-    for (const auto *it = func_name.begin(); it != func_name.end();) {
-      const auto *next = std::next(it);
+    for (const auto* it = func_name.begin(); it != func_name.end();) {
+      const auto* next = std::next(it);
       if (*it == '$') {
         if (next != func_name.end() && *next == '$') {
           pretty_name.append_unsafe("::", 2);

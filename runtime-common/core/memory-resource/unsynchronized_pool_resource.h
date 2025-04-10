@@ -7,10 +7,10 @@
 #include <array>
 #include <cstddef>
 
-#include "runtime-common/core/memory-resource/extra-memory-pool.h"
 #include "runtime-common/core/memory-resource/details/memory_chunk_list.h"
 #include "runtime-common/core/memory-resource/details/memory_chunk_tree.h"
 #include "runtime-common/core/memory-resource/details/universal_reallocate.h"
+#include "runtime-common/core/memory-resource/extra-memory-pool.h"
 #include "runtime-common/core/memory-resource/monotonic_buffer_resource.h"
 #include "runtime-common/core/memory-resource/resource_allocator.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
@@ -19,16 +19,16 @@ namespace memory_resource {
 
 class unsynchronized_pool_resource : private monotonic_buffer_resource {
 public:
-  using monotonic_buffer_resource::try_expand;
   using monotonic_buffer_resource::get_memory_stats;
   using monotonic_buffer_resource::memory_begin;
+  using monotonic_buffer_resource::try_expand;
 
-  void init(void *buffer, size_t buffer_size, size_t oom_handling_buffer_size = 0) noexcept;
+  void init(void* buffer, size_t buffer_size, size_t oom_handling_buffer_size = 0) noexcept;
   void hard_reset() noexcept;
   void unfreeze_oom_handling_memory() noexcept;
 
-  void *allocate(size_t size) noexcept {
-    void *mem = nullptr;
+  void* allocate(size_t size) noexcept {
+    void* mem = nullptr;
     const auto aligned_size = details::align_for_chunk(size);
     if (aligned_size < MAX_CHUNK_BLOCK_SIZE_) {
       mem = try_allocate_small_piece(aligned_size);
@@ -46,21 +46,21 @@ public:
     return mem;
   }
 
-  void *allocate0(size_t size) noexcept {
-    auto *mem = allocate(size);
+  void* allocate0(size_t size) noexcept {
+    auto* mem = allocate(size);
     if (likely(mem != nullptr)) {
       memset(mem, 0x00, size);
     }
     return mem;
   }
 
-  void *reallocate(void *mem, size_t new_size, size_t old_size) noexcept {
+  void* reallocate(void* mem, size_t new_size, size_t old_size) noexcept {
     const auto aligned_old_size = details::align_for_chunk(old_size);
     const auto aligned_new_size = details::align_for_chunk(new_size);
     return details::universal_reallocate(*this, mem, aligned_new_size, aligned_old_size);
   }
 
-  void deallocate(void *mem, size_t size) noexcept {
+  void deallocate(void* mem, size_t size) noexcept {
     memory_debug("deallocate %zu at %p\n", size, mem);
     const auto aligned_size = details::align_for_chunk(size);
     put_memory_back(mem, aligned_size);
@@ -75,20 +75,20 @@ public:
     return static_cast<size_t>(memory_end_ - memory_current_) >= aligned_size || huge_pieces_.has_memory_for(aligned_size);
   }
 
-  extra_memory_pool *get_extra_memory_head() noexcept {
+  extra_memory_pool* get_extra_memory_head() noexcept {
     return extra_memory_head_;
   }
 
-  void add_extra_memory(extra_memory_pool *extra_memory) noexcept {
+  void add_extra_memory(extra_memory_pool* extra_memory) noexcept {
     extra_memory->next_in_chain = extra_memory_head_;
     extra_memory_head_ = extra_memory;
     put_memory_back(extra_memory->memory_begin(), extra_memory->get_pool_payload_size());
   }
 
 private:
-  void *try_allocate_small_piece(size_t aligned_size) noexcept {
+  void* try_allocate_small_piece(size_t aligned_size) noexcept {
     const auto chunk_id = details::get_chunk_id(aligned_size);
-    auto *mem = free_chunks_[chunk_id].get_mem();
+    auto* mem = free_chunks_[chunk_id].get_mem();
     if (mem) {
       --stats_.small_memory_pieces;
       memory_debug("allocate %zu, chunk found, allocated address %p\n", aligned_size, mem);
@@ -99,14 +99,14 @@ private:
     return mem;
   }
 
-  void *allocate_huge_piece(size_t aligned_size, bool safe) noexcept {
-    void *mem = nullptr;
-    if (details::memory_chunk_tree::tree_node *piece = huge_pieces_.extract(aligned_size)) {
+  void* allocate_huge_piece(size_t aligned_size, bool safe) noexcept {
+    void* mem = nullptr;
+    if (details::memory_chunk_tree::tree_node* piece = huge_pieces_.extract(aligned_size)) {
       --stats_.huge_memory_pieces;
       const size_t real_size = details::memory_chunk_tree::get_chunk_size(piece);
       mem = piece;
       if (const size_t left = real_size - aligned_size) {
-        put_memory_back(static_cast<char *>(mem) + aligned_size, left);
+        put_memory_back(static_cast<char*>(mem) + aligned_size, left);
       }
       memory_debug("allocate %zu, huge chunk (%zu) found, allocated address %p\n", aligned_size, real_size, mem);
       return piece;
@@ -116,11 +116,11 @@ private:
     return mem;
   }
 
-  void *allocate_small_piece_from_fallback_resource(size_t aligned_size) noexcept;
-  void *perform_defragmentation_and_allocate_huge_piece(size_t aligned_size) noexcept;
-  bool is_memory_from_extra_pool(void *mem, size_t size) const noexcept;
+  void* allocate_small_piece_from_fallback_resource(size_t aligned_size) noexcept;
+  void* perform_defragmentation_and_allocate_huge_piece(size_t aligned_size) noexcept;
+  bool is_memory_from_extra_pool(void* mem, size_t size) const noexcept;
 
-  void put_memory_back(void *mem, size_t size) noexcept {
+  void put_memory_back(void* mem, size_t size) noexcept {
     const bool from_extra_pool = (extra_memory_head_ != &extra_memory_tail_) && is_memory_from_extra_pool(mem, size);
     if (from_extra_pool || !monotonic_buffer_resource::put_memory_back(mem, size)) {
       if (size < MAX_CHUNK_BLOCK_SIZE_) {
@@ -138,7 +138,7 @@ private:
   monotonic_buffer_resource fallback_resource_;
   size_t oom_handling_memory_size_{0};
 
-  extra_memory_pool *extra_memory_head_{nullptr};
+  extra_memory_pool* extra_memory_head_{nullptr};
   extra_memory_pool extra_memory_tail_{sizeof(extra_memory_pool)};
 
   static constexpr size_t MAX_CHUNK_BLOCK_SIZE_{static_cast<size_t>(16U * 1024U)};

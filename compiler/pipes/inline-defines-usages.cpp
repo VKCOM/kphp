@@ -12,11 +12,7 @@
 VertexPtr InlineDefinesUsagesPass::on_enter_vertex(VertexPtr root) {
   // defined('NAME') is replaced by true or false
   if (auto defined = root.try_as<op_defined>()) {
-    kphp_error_act (
-      (int)root->size() == 1 && defined->expr()->type() == op_string,
-      "wrong arguments in 'defined'",
-      return VertexPtr()
-    );
+    kphp_error_act((int)root->size() == 1 && defined->expr()->type() == op_string, "wrong arguments in 'defined'", return VertexPtr());
 
     DefinePtr def = G->get_define(defined->expr()->get_string());
 
@@ -73,12 +69,12 @@ void InlineDefinesUsagesPass::on_start() {
   lambda_class_id = current_function->get_this_or_topmost_if_lambda()->class_id;
 
   if (current_function->type == FunctionData::func_class_holder) {
-    current_function->class_id->members.for_each([&](ClassMemberStaticField &f) {
+    current_function->class_id->members.for_each([&](ClassMemberStaticField& f) {
       if (f.var->init_val) {
         run_function_pass(f.var->init_val, this);
       }
     });
-    current_function->class_id->members.for_each([&](ClassMemberInstanceField &f) {
+    current_function->class_id->members.for_each([&](ClassMemberInstanceField& f) {
       if (f.var->init_val) {
         run_function_pass(f.var->init_val, this);
       }

@@ -14,22 +14,22 @@ public:
   static void serialize(bool b) noexcept;
   static void serialize(int64_t i) noexcept;
   static void serialize(double d) noexcept;
-  static void serialize(const string &s) noexcept;
-  static void serialize(const mixed &v) noexcept;
+  static void serialize(const string& s) noexcept;
+  static void serialize(const mixed& v) noexcept;
 
   template<class T>
-  static void serialize(const array<T> &arr) noexcept;
+  static void serialize(const array<T>& arr) noexcept;
 
   template<class T>
-  static void serialize(const Optional<T> &opt) noexcept;
+  static void serialize(const Optional<T>& opt) noexcept;
 
 private:
   static void serialize_null() noexcept;
 };
 
 template<class T>
-void PhpSerializer::serialize(const array<T> &arr) noexcept {
-  auto &static_SB{RuntimeContext::get().static_SB};
+void PhpSerializer::serialize(const array<T>& arr) noexcept {
+  auto& static_SB{RuntimeContext::get().static_SB};
   static_SB.append("a:", 2);
   static_SB << arr.count();
   static_SB.append(":{", 2);
@@ -46,27 +46,27 @@ void PhpSerializer::serialize(const array<T> &arr) noexcept {
 }
 
 template<class T>
-void PhpSerializer::serialize(const Optional<T> &opt) noexcept {
+void PhpSerializer::serialize(const Optional<T>& opt) noexcept {
   switch (opt.value_state()) {
-    case OptionalState::has_value:
-      return serialize(opt.val());
-    case OptionalState::false_value:
-      return serialize(false);
-    case OptionalState::null_value:
-      return serialize_null();
+  case OptionalState::has_value:
+    return serialize(opt.val());
+  case OptionalState::false_value:
+    return serialize(false);
+  case OptionalState::null_value:
+    return serialize_null();
   }
 }
 
 } // namespace impl_
 
 template<class T>
-string f$serialize(const T &v) noexcept {
-  auto &static_SB{RuntimeContext::get().static_SB};
+string f$serialize(const T& v) noexcept {
+  auto& static_SB{RuntimeContext::get().static_SB};
   static_SB.clean();
   impl_::PhpSerializer::serialize(v);
   return static_SB.str();
 }
 
-mixed f$unserialize(const string &v) noexcept;
+mixed f$unserialize(const string& v) noexcept;
 
-mixed unserialize_raw(const char *v, int32_t v_len) noexcept;
+mixed unserialize_raw(const char* v, int32_t v_len) noexcept;

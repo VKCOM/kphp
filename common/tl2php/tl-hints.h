@@ -17,9 +17,9 @@ struct TlHint {
 
 class TlHints {
 public:
-  void load_from_combined2_tl_file(const std::string &combined2_tl_file, bool rename_all_forbidden_names = true);
+  void load_from_combined2_tl_file(const std::string& combined2_tl_file, bool rename_all_forbidden_names = true);
 
-  const TlHint *get_hint_for_combinator(const std::string &combinator_name) const;
+  const TlHint* get_hint_for_combinator(const std::string& combinator_name) const;
 
 private:
   std::unordered_map<std::string, TlHint> hints_;

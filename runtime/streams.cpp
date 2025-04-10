@@ -18,17 +18,17 @@ DEFINE_VERBOSITY(streams);
 
 static string::size_type max_wrapper_name_size = 0;
 
-static array<const stream_functions *> wrappers;
+static array<const stream_functions*> wrappers;
 
-static const stream_functions *default_stream_functions;
+static const stream_functions* default_stream_functions;
 
-void register_stream_functions(const stream_functions *functions, bool is_default) {
+void register_stream_functions(const stream_functions* functions, bool is_default) {
   string wrapper_name = functions->name;
 
-  php_assert (dl::query_num == 0);
-  php_assert (functions != nullptr);
-  php_assert (!wrappers.isset(wrapper_name));
-  php_assert (strlen(wrapper_name.c_str()) == wrapper_name.size());
+  php_assert(dl::query_num == 0);
+  php_assert(functions != nullptr);
+  php_assert(!wrappers.isset(wrapper_name));
+  php_assert(strlen(wrapper_name.c_str()) == wrapper_name.size());
 
   if (wrapper_name.size() > max_wrapper_name_size) {
     max_wrapper_name_size = wrapper_name.size();
@@ -37,40 +37,38 @@ void register_stream_functions(const stream_functions *functions, bool is_defaul
   wrappers.set_value(wrapper_name, functions);
 
   if (is_default) {
-    php_assert (default_stream_functions == nullptr);
+    php_assert(default_stream_functions == nullptr);
     default_stream_functions = functions;
   }
 }
 
-static const stream_functions *get_stream_functions(const string &name) {
+static const stream_functions* get_stream_functions(const string& name) {
   return wrappers.get_value(name);
 }
 
-static const stream_functions *get_stream_functions_from_url(const string &url, const char *invoker_name) {
+static const stream_functions* get_stream_functions_from_url(const string& url, const char* invoker_name) {
   if (url.empty()) {
     return nullptr;
   }
 
   tvkprintf(streams, 2, "PHP streams: %s is processing stream %.200s\n", invoker_name, url.c_str());
 
-  void *res = memmem(static_cast<const void *> (url.c_str()), url.size(),
-                     static_cast<const void *> ("://"), 3);
+  void* res = memmem(static_cast<const void*>(url.c_str()), url.size(), static_cast<const void*>("://"), 3);
   if (res != nullptr) {
-    const char *wrapper_end = static_cast<const char *> (res);
+    const char* wrapper_end = static_cast<const char*>(res);
     return get_stream_functions(string(url.c_str(), static_cast<string::size_type>(wrapper_end - url.c_str())));
   }
 
   return default_stream_functions;
 }
 
-
-mixed f$stream_context_create(const mixed &options) {
+mixed f$stream_context_create(const mixed& options) {
   mixed result;
   f$stream_context_set_option(result, options);
   return result;
 }
 
-bool f$stream_context_set_option(mixed &context, const mixed &wrapper, const string &option, const mixed &value) {
+bool f$stream_context_set_option(mixed& context, const mixed& wrapper, const string& option, const mixed& value) {
   if (!context.is_array() && !context.is_null()) {
     php_warning("Wrong context specified");
     return false;
@@ -82,7 +80,7 @@ bool f$stream_context_set_option(mixed &context, const mixed &wrapper, const str
   }
 
   string wrapper_string = wrapper.to_string();
-  const stream_functions *functions = get_stream_functions(wrapper_string);
+  const stream_functions* functions = get_stream_functions(wrapper_string);
   if (functions == nullptr) {
     php_warning("Wrapper \"%s\" is not supported", wrapper_string.c_str());
     return false;
@@ -95,12 +93,12 @@ bool f$stream_context_set_option(mixed &context, const mixed &wrapper, const str
   return functions->context_set_option(context[wrapper_string], option, value);
 }
 
-bool f$stream_context_set_option(mixed &context __attribute__((unused)), const mixed &, const string &) {
+bool f$stream_context_set_option(mixed& context __attribute__((unused)), const mixed&, const string&) {
   php_warning("Function stream_context_set_option can't take 3 arguments");
   return false;
 }
 
-bool f$stream_context_set_option(mixed &context, const mixed &options_var) {
+bool f$stream_context_set_option(mixed& context, const mixed& options_var) {
   if (!context.is_array() && !context.is_null()) {
     php_warning("Wrong context specified");
     return false;
@@ -114,8 +112,8 @@ bool f$stream_context_set_option(mixed &context, const mixed &options_var) {
   bool was_error = false;
   const array<mixed> options_array = options_var.to_array();
   for (array<mixed>::const_iterator it = options_array.begin(); it != options_array.end(); ++it) {
-    const mixed &wrapper = it.get_key();
-    const mixed &values = it.get_value();
+    const mixed& wrapper = it.get_key();
+    const mixed& values = it.get_value();
 
     if (!values.is_array()) {
       php_warning("Parameter options[%s] must be an array", wrapper.to_string().c_str());
@@ -134,12 +132,10 @@ bool f$stream_context_set_option(mixed &context, const mixed &options_var) {
   return !was_error;
 }
 
-
 mixed error_number_dummy;
 mixed error_description_dummy;
 
-mixed f$stream_socket_client(const string &url, mixed &error_number, mixed &error_description,
-                           double timeout, int64_t flags, const mixed &context) {
+mixed f$stream_socket_client(const string& url, mixed& error_number, mixed& error_description, double timeout, int64_t flags, const mixed& context) {
   if (flags != STREAM_CLIENT_CONNECT) {
     php_warning("Wrong parameter flags = %" PRIi64 " in function stream_socket_client", flags);
     error_number = -1001;
@@ -147,7 +143,7 @@ mixed f$stream_socket_client(const string &url, mixed &error_number, mixed &erro
     return false;
   }
 
-  const stream_functions *functions = get_stream_functions_from_url(url, "stream_socket_client");
+  const stream_functions* functions = get_stream_functions_from_url(url, "stream_socket_client");
   if (functions == nullptr) {
     php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
     error_number = -1002;
@@ -169,10 +165,10 @@ mixed f$stream_socket_client(const string &url, mixed &error_number, mixed &erro
   return result;
 }
 
-bool f$stream_set_blocking(const Stream &stream, bool mode) {
-  const string &url = stream.to_string();
+bool f$stream_set_blocking(const Stream& stream, bool mode) {
+  const string& url = stream.to_string();
 
-  const stream_functions *functions = get_stream_functions_from_url(url, "stream_set_blocking");
+  const stream_functions* functions = get_stream_functions_from_url(url, "stream_set_blocking");
   if (functions == nullptr) {
     php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
     return false;
@@ -185,10 +181,10 @@ bool f$stream_set_blocking(const Stream &stream, bool mode) {
   return functions->stream_set_option(stream, STREAM_SET_BLOCKING_OPTION, mode);
 }
 
-int64_t f$stream_set_write_buffer(const Stream &stream, int64_t size) {
-  const string &url = stream.to_string();
+int64_t f$stream_set_write_buffer(const Stream& stream, int64_t size) {
+  const string& url = stream.to_string();
 
-  const stream_functions *functions = get_stream_functions_from_url(url, "stream_set_write_buffer");
+  const stream_functions* functions = get_stream_functions_from_url(url, "stream_set_write_buffer");
   if (functions == nullptr) {
     php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
     return -1;
@@ -201,10 +197,10 @@ int64_t f$stream_set_write_buffer(const Stream &stream, int64_t size) {
   return functions->stream_set_option(stream, STREAM_SET_WRITE_BUFFER_OPTION, size);
 }
 
-int64_t f$stream_set_read_buffer(const Stream &stream, int64_t size) {
-  const string &url = stream.to_string();
+int64_t f$stream_set_read_buffer(const Stream& stream, int64_t size) {
+  const string& url = stream.to_string();
 
-  const stream_functions *functions = get_stream_functions_from_url(url, "stream_set_read_buffer");
+  const stream_functions* functions = get_stream_functions_from_url(url, "stream_set_read_buffer");
   if (functions == nullptr) {
     php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
     return -1;
@@ -217,8 +213,7 @@ int64_t f$stream_set_read_buffer(const Stream &stream, int64_t size) {
   return functions->stream_set_option(stream, STREAM_SET_READ_BUFFER_OPTION, size);
 }
 
-
-static void stream_array_to_fd_set(const mixed &streams_var, fd_set *fds, int32_t *nfds) {
+static void stream_array_to_fd_set(const mixed& streams_var, fd_set* fds, int32_t* nfds) {
   FD_ZERO(fds);
 
   if (!streams_var.is_array()) {
@@ -230,12 +225,12 @@ static void stream_array_to_fd_set(const mixed &streams_var, fd_set *fds, int32_
   }
 
   array<Stream> result;
-  const array<Stream> &streams = streams_var.to_array();
+  const array<Stream>& streams = streams_var.to_array();
   for (array<Stream>::const_iterator p = streams.begin(); p != streams.end(); ++p) {
-    const Stream &stream = p.get_value();
-    const string &url = stream.to_string();
+    const Stream& stream = p.get_value();
+    const string& url = stream.to_string();
 
-    const stream_functions *functions = get_stream_functions_from_url(url, "stream_select");
+    const stream_functions* functions = get_stream_functions_from_url(url, "stream_select");
     if (functions == nullptr) {
       php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
       continue;
@@ -258,22 +253,22 @@ static void stream_array_to_fd_set(const mixed &streams_var, fd_set *fds, int32_
   }
 }
 
-static void stream_array_from_fd_set(mixed &streams_var, fd_set *fds) {
+static void stream_array_from_fd_set(mixed& streams_var, fd_set* fds) {
   if (!streams_var.is_array()) {
     return;
   }
 
-  const array<Stream> &streams = streams_var.to_array();
+  const array<Stream>& streams = streams_var.to_array();
   if (streams.empty()) {
     return;
   }
 
   array<Stream> result;
   for (array<Stream>::const_iterator p = streams.begin(); p != streams.end(); ++p) {
-    const Stream &stream = p.get_value();
-    const string &url = stream.to_string();
+    const Stream& stream = p.get_value();
+    const string& url = stream.to_string();
 
-    const stream_functions *functions = get_stream_functions_from_url(url, "stream_select");
+    const stream_functions* functions = get_stream_functions_from_url(url, "stream_select");
     if (functions == nullptr) {
       continue;
     }
@@ -294,7 +289,7 @@ static void stream_array_from_fd_set(mixed &streams_var, fd_set *fds) {
   streams_var = result;
 }
 
-Optional<int64_t> f$stream_select(mixed &read, mixed &write, mixed &except, const mixed &tv_sec_var, int64_t tv_usec) {
+Optional<int64_t> f$stream_select(mixed& read, mixed& write, mixed& except, const mixed& tv_sec_var, int64_t tv_usec) {
   struct timeval tv, *timeout = nullptr;
   if (!tv_sec_var.is_null()) {
     int64_t tv_sec = tv_sec_var.to_int();
@@ -325,8 +320,8 @@ Optional<int64_t> f$stream_select(mixed &read, mixed &write, mixed &except, cons
     return false;
   }
 
-//TODO use pselect
-  dl::enter_critical_section();//OK
+  // TODO use pselect
+  dl::enter_critical_section(); // OK
   int32_t select_result = select(nfds + 1, &rfds, &wfds, &efds, timeout);
   dl::leave_critical_section();
 
@@ -342,82 +337,79 @@ Optional<int64_t> f$stream_select(mixed &read, mixed &write, mixed &except, cons
   return select_result;
 }
 
-
-#define STREAM_FUNCTION_BODY(function_name, error_result)                                             \
-  const string &url = stream.to_string();                                                             \
-                                                                                                      \
-  const stream_functions *functions = get_stream_functions_from_url (url, #function_name);            \
-  if (functions == nullptr) {                                                                            \
-    php_warning ("Can't find appropriate wrapper for \"%s\"", url.c_str());                           \
-    return error_result;                                                                              \
-  }                                                                                                   \
-  if (functions->function_name == nullptr) {                                                             \
-    php_warning ("Wrapper \"%s\" doesn't support function " #function_name, functions->name.c_str()); \
-    return error_result;                                                                              \
-  }                                                                                                   \
-                                                                                                      \
+#define STREAM_FUNCTION_BODY(function_name, error_result)                                                                                                      \
+  const string& url = stream.to_string();                                                                                                                      \
+                                                                                                                                                               \
+  const stream_functions* functions = get_stream_functions_from_url(url, #function_name);                                                                      \
+  if (functions == nullptr) {                                                                                                                                  \
+    php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());                                                                                     \
+    return error_result;                                                                                                                                       \
+  }                                                                                                                                                            \
+  if (functions->function_name == nullptr) {                                                                                                                   \
+    php_warning("Wrapper \"%s\" doesn't support function " #function_name, functions->name.c_str());                                                           \
+    return error_result;                                                                                                                                       \
+  }                                                                                                                                                            \
+                                                                                                                                                               \
   return functions->function_name
 
-
-Stream f$fopen(const string &stream, const string &mode) {
+Stream f$fopen(const string& stream, const string& mode) {
   STREAM_FUNCTION_BODY(fopen, false)(url, mode);
 }
 
-Optional<int64_t> f$fwrite(const Stream &stream, const string &text) {
+Optional<int64_t> f$fwrite(const Stream& stream, const string& text) {
   STREAM_FUNCTION_BODY(fwrite, false)(stream, text);
 }
 
-int64_t f$fseek(const Stream &stream, int64_t offset, int64_t whence) {
+int64_t f$fseek(const Stream& stream, int64_t offset, int64_t whence) {
   STREAM_FUNCTION_BODY(fseek, -1)(stream, offset, whence);
 }
 
-bool f$rewind(const Stream &stream) {
+bool f$rewind(const Stream& stream) {
   return f$fseek(stream, 0, 0) == 0;
 }
 
-Optional<int64_t> f$ftell(const Stream &stream) {
+Optional<int64_t> f$ftell(const Stream& stream) {
   STREAM_FUNCTION_BODY(ftell, false)(stream);
 }
 
-Optional<string> f$fread(const Stream &stream, int64_t length) {
+Optional<string> f$fread(const Stream& stream, int64_t length) {
   STREAM_FUNCTION_BODY(fread, false)(stream, length);
 }
 
-Optional<string> f$fgetc(const Stream &stream) {
+Optional<string> f$fgetc(const Stream& stream) {
   STREAM_FUNCTION_BODY(fgetc, false)(stream);
 }
 
-Optional<string> f$fgets(const Stream &stream, int64_t length) {
+Optional<string> f$fgets(const Stream& stream, int64_t length) {
   STREAM_FUNCTION_BODY(fgets, false)(stream, length);
 }
 
-Optional<int64_t> f$fpassthru(const Stream &stream) {
+Optional<int64_t> f$fpassthru(const Stream& stream) {
   STREAM_FUNCTION_BODY(fpassthru, false)(stream);
 }
 
-bool f$fflush(const Stream &stream) {
+bool f$fflush(const Stream& stream) {
   STREAM_FUNCTION_BODY(fflush, false)(stream);
 }
 
-bool f$feof(const Stream &stream) {
+bool f$feof(const Stream& stream) {
   STREAM_FUNCTION_BODY(feof, true)(stream);
 }
 
-bool f$fclose(const Stream &stream) {
+bool f$fclose(const Stream& stream) {
   STREAM_FUNCTION_BODY(fclose, false)(stream);
 }
 
-Optional<int64_t> f$fprintf(const Stream &stream, const string &format, const array<mixed> &args) {
+Optional<int64_t> f$fprintf(const Stream& stream, const string& format, const array<mixed>& args) {
   return f$vfprintf(stream, format, args);
 }
 
-Optional<int64_t> f$vfprintf(const Stream &stream, const string &format, const array<mixed> &args) {
+Optional<int64_t> f$vfprintf(const Stream& stream, const string& format, const array<mixed>& args) {
   string text = f$vsprintf(format, args);
   return f$fwrite(stream, text);
 }
 
-Optional<int64_t> f$fputcsv(const Stream &stream, const array<mixed> &fields, string delimiter,
-                            string enclosure, string escape) {
+Optional<int64_t> f$fputcsv(const Stream& stream, const array<mixed>& fields, string delimiter, string enclosure, string escape) {
   if (delimiter.empty()) {
     php_warning("delimiter must be a character");
     return false;
@@ -439,8 +431,7 @@ Optional<int64_t> f$fputcsv(const Stream &stream, const array<mixed> &fields, st
   char delimiter_char = delimiter[0];
   char enclosure_char = enclosure[0];
   string_buffer csvline;
-  string to_enclose = string(" \t\r\n", 4).append(string(1, delimiter_char))
-                                          .append(string(1, enclosure_char));
+  string to_enclose = string(" \t\r\n", 4).append(string(1, delimiter_char)).append(string(1, enclosure_char));
   if (escape_char != PHP_CSV_NO_ESCAPE) {
     to_enclose.append(string(1, static_cast<char>(escape_char)));
   }
@@ -448,7 +439,7 @@ Optional<int64_t> f$fputcsv(const Stream &stream, const array<mixed> &fields, st
     if (it != fields.begin()) {
       csvline.append_char(delimiter_char);
     }
-    const string &value = it.get_value().to_string();
+    const string& value = it.get_value().to_string();
     if (value.find_first_of(to_enclose) != string::npos) {
       bool escaped = false;
       csvline.append_char(enclosure_char);
@@ -474,37 +465,37 @@ Optional<int64_t> f$fputcsv(const Stream &stream, const array<mixed> &fields, st
 
 // this function is imported from https://github.com/php/php-src/blob/master/ext/standard/file.c,
 // function php_fgetcsv_lookup_trailing_spaces
-static const char *fgetcsv_lookup_trailing_spaces(const char *ptr, size_t len) {
+static const char* fgetcsv_lookup_trailing_spaces(const char* ptr, size_t len) {
   int inc_len;
   unsigned char last_chars[2] = {0, 0};
 
   while (len > 0) {
     inc_len = (*ptr == '\0' ? 1 : mblen(ptr, len));
     switch (inc_len) {
-      case -2:
-      case -1:
-        inc_len = 1;
-        break;
-      case 0:
-        goto quit_loop;
-      case 1:
-      default:
-        last_chars[0] = last_chars[1];
-        last_chars[1] = *ptr;
-        break;
+    case -2:
+    case -1:
+      inc_len = 1;
+      break;
+    case 0:
+      goto quit_loop;
+    case 1:
+    default:
+      last_chars[0] = last_chars[1];
+      last_chars[1] = *ptr;
+      break;
     }
     ptr += inc_len;
     len -= inc_len;
   }
-  quit_loop:
+quit_loop:
   switch (last_chars[1]) {
-    case '\n':
-      if (last_chars[0] == '\r') {
-        return ptr - 2;
-      }
-      /* fallthrough */
-    case '\r':
-      return ptr - 1;
+  case '\n':
+    if (last_chars[0] == '\r') {
+      return ptr - 2;
+    }
+    /* fallthrough */
+  case '\r':
+    return ptr - 1;
   }
   return ptr;
 }
@@ -513,27 +504,27 @@ static const char *fgetcsv_lookup_trailing_spaces(const char *ptr, size_t len) {
 // * fgetcsv
 // * str_getcsv
 // The function is similar to `php_fgetcsv` function from https://github.com/php/php-src/blob/master/ext/standard/file.c
-Optional<array<mixed>> getcsv(const Stream &stream, string buffer, char delimiter, char enclosure, char escape) {
+Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimiter, char enclosure, char escape) {
   array<mixed> answer;
   int current_id = 0;
   string_buffer tmp_buffer;
   // Following part is imported from `php_fgetcsv`
-  char const *buf = buffer.c_str();
-  char const *bptr = buf;
+  char const* buf = buffer.c_str();
+  char const* bptr = buf;
   size_t buf_len = buffer.size();
-  char const *tptr = fgetcsv_lookup_trailing_spaces(buf, buf_len);
+  char const* tptr = fgetcsv_lookup_trailing_spaces(buf, buf_len);
   size_t line_end_len = buf_len - (tptr - buf);
   char const *line_end = tptr, *limit = tptr;
   bool first_field = true;
   size_t temp_len = buf_len;
   int inc_len;
   do {
-    char const *hunk_begin;
+    char const* hunk_begin;
 
     inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
     if (inc_len == 1) {
-      char const *tmp = bptr;
-      while ((*tmp != delimiter) && isspace((int)*(unsigned char *)tmp)) {
+      char const* tmp = bptr;
+      while ((*tmp != delimiter) && isspace((int)*(unsigned char*)tmp)) {
         tmp++;
       }
       if (*tmp == enclosure) {
@@ -550,141 +541,140 @@ Optional<array<mixed>> getcsv(const Stream &stream, string buffer, char delimite
     if (inc_len != 0 && *bptr == enclosure) {
       int state = 0;
 
-      bptr++;        /* move on to first character in field */
+      bptr++; /* move on to first character in field */
       hunk_begin = bptr;
 
       /* 2A. handle enclosure delimited field */
       for (;;) {
         switch (inc_len) {
-          case 0:
-            switch (state) {
-              case 2:
-                tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
-                hunk_begin = bptr;
-                goto quit_loop_2;
+        case 0:
+          switch (state) {
+          case 2:
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
+            hunk_begin = bptr;
+            goto quit_loop_2;
 
-              case 1:
-                tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
-                hunk_begin = bptr;
-                /* fallthrough */
-              case 0: {
-
-                if (hunk_begin != line_end) {
-                  tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
-                  hunk_begin = bptr;
-                }
-
-                /* add the embedded line end to the field */
-                tmp_buffer.append(line_end, line_end_len);
-                string new_buffer;
-
-                if (stream.is_null()) {
-                  goto quit_loop_2;
-                } else {
-                  Optional<string> new_buffer_optional = f$fgets(stream);
-                  if (!new_buffer_optional.has_value()) {
-                    if ((size_t)temp_len > (size_t)(limit - buf)) {
-                      goto quit_loop_2;
-                    }
-                    return answer;
-                  }
-                  new_buffer = new_buffer_optional.val();
-                }
-                temp_len += new_buffer.size();
-                buf_len = new_buffer.size();
-                buffer = new_buffer;
-                buf = bptr = buffer.c_str();
-                hunk_begin = buf;
-
-                line_end = limit = fgetcsv_lookup_trailing_spaces(buf, buf_len);
-                line_end_len = buf_len - (size_t)(limit - buf);
-
-                state = 0;
-              }
-                break;
-            }
-            break;
-
-          case -2:
-          case -1:
-            /* break is omitted intentionally */
           case 1:
-            /* we need to determine if the enclosure is
-             * 'real' or is it escaped */
-            switch (state) {
-              case 1: /* escaped */
-                bptr++;
-                state = 0;
-                break;
-              case 2: /* embedded enclosure ? let's check it */
-                if (*bptr != enclosure) {
-                  /* real enclosure */
-                  tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
-                  hunk_begin = bptr;
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+            hunk_begin = bptr;
+            /* fallthrough */
+          case 0: {
+
+            if (hunk_begin != line_end) {
+              tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+              hunk_begin = bptr;
+            }
+
+            /* add the embedded line end to the field */
+            tmp_buffer.append(line_end, line_end_len);
+            string new_buffer;
+
+            if (stream.is_null()) {
+              goto quit_loop_2;
+            } else {
+              Optional<string> new_buffer_optional = f$fgets(stream);
+              if (!new_buffer_optional.has_value()) {
+                if ((size_t)temp_len > (size_t)(limit - buf)) {
                   goto quit_loop_2;
                 }
-                tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
-                bptr++;
-                hunk_begin = bptr;
-                state = 0;
-                break;
-              default:
-                if (*bptr == enclosure) {
-                  state = 2;
-                } else if (escape != PHP_CSV_NO_ESCAPE && *bptr == escape) {
-                  state = 1;
-                }
-                bptr++;
-                break;
+                return answer;
+              }
+              new_buffer = new_buffer_optional.val();
             }
-            break;
+            temp_len += new_buffer.size();
+            buf_len = new_buffer.size();
+            buffer = new_buffer;
+            buf = bptr = buffer.c_str();
+            hunk_begin = buf;
 
-          default:
-            switch (state) {
-              case 2:
-                /* real enclosure */
-                tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
-                hunk_begin = bptr;
-                goto quit_loop_2;
-              case 1:
-                bptr += inc_len;
-                tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
-                hunk_begin = bptr;
-                state = 0;
-                break;
-              default:
-                bptr += inc_len;
-                break;
-            }
+            line_end = limit = fgetcsv_lookup_trailing_spaces(buf, buf_len);
+            line_end_len = buf_len - (size_t)(limit - buf);
+
+            state = 0;
+          } break;
+          }
+          break;
+
+        case -2:
+        case -1:
+          /* break is omitted intentionally */
+        case 1:
+          /* we need to determine if the enclosure is
+           * 'real' or is it escaped */
+          switch (state) {
+          case 1: /* escaped */
+            bptr++;
+            state = 0;
             break;
+          case 2: /* embedded enclosure ? let's check it */
+            if (*bptr != enclosure) {
+              /* real enclosure */
+              tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
+              hunk_begin = bptr;
+              goto quit_loop_2;
+            }
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+            bptr++;
+            hunk_begin = bptr;
+            state = 0;
+            break;
+          default:
+            if (*bptr == enclosure) {
+              state = 2;
+            } else if (escape != PHP_CSV_NO_ESCAPE && *bptr == escape) {
+              state = 1;
+            }
+            bptr++;
+            break;
+          }
+          break;
+
+        default:
+          switch (state) {
+          case 2:
+            /* real enclosure */
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
+            hunk_begin = bptr;
+            goto quit_loop_2;
+          case 1:
+            bptr += inc_len;
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+            hunk_begin = bptr;
+            state = 0;
+            break;
+          default:
+            bptr += inc_len;
+            break;
+          }
+          break;
         }
         inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
       }
 
-      quit_loop_2:
+    quit_loop_2:
       /* look up for a delimiter */
       for (;;) {
         switch (inc_len) {
-          case 0:
-            goto quit_loop_3;
+        case 0:
+          goto quit_loop_3;
 
-          case -2:
-          case -1:
-            inc_len = 1;
-            /* fallthrough */
-          case 1:
-            if (*bptr == delimiter) {
-              goto quit_loop_3;
-            }
-            break;
-          default:
-            break;
+        case -2:
+        case -1:
+          inc_len = 1;
+          /* fallthrough */
+        case 1:
+          if (*bptr == delimiter) {
+            goto quit_loop_3;
+          }
+          break;
+        default:
+          break;
         }
         bptr += inc_len;
         inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
       }
 
-      quit_loop_3:
+    quit_loop_3:
       tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
       bptr += inc_len;
     } else {
@@ -694,27 +684,27 @@ Optional<array<mixed>> getcsv(const Stream &stream, string buffer, char delimite
 
       for (;;) {
         switch (inc_len) {
-          case 0:
+        case 0:
+          goto quit_loop_4;
+        case -2:
+        case -1:
+          inc_len = 1;
+          /* fallthrough */
+        case 1:
+          if (*bptr == delimiter) {
             goto quit_loop_4;
-          case -2:
-          case -1:
-            inc_len = 1;
-            /* fallthrough */
-          case 1:
-            if (*bptr == delimiter) {
-              goto quit_loop_4;
-            }
-            break;
-          default:
-            break;
+          }
+          break;
+        default:
+          break;
         }
         bptr += inc_len;
         inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
       }
-      quit_loop_4:
+    quit_loop_4:
       tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
 
-      char const *comp_end = (char *)fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size());
+      char const* comp_end = (char*)fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size());
       tmp_buffer.set_pos(comp_end - tmp_buffer.c_str());
       if (*bptr == delimiter) {
         bptr++;
@@ -729,7 +719,7 @@ Optional<array<mixed>> getcsv(const Stream &stream, string buffer, char delimite
   return answer;
 }
 
-Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string delimiter, string enclosure, string escape) {
+Optional<array<mixed>> f$fgetcsv(const Stream& stream, int64_t length, string delimiter, string enclosure, string escape) {
   if (delimiter.empty()) {
     php_warning("delimiter must be a character");
     return false;
@@ -763,11 +753,11 @@ Optional<array<mixed>> f$fgetcsv(const Stream &stream, int64_t length, string de
   return getcsv(stream, buf_optional.val(), delimiter_char, enclosure_char, escape_char);
 }
 
-Optional<string> f$file_get_contents(const string &stream) {
+Optional<string> f$file_get_contents(const string& stream) {
   STREAM_FUNCTION_BODY(file_get_contents, false)(url);
 }
 
-Optional<int64_t> f$file_put_contents(const string &stream, const mixed &content_var, int64_t flags) {
+Optional<int64_t> f$file_put_contents(const string& stream, const mixed& content_var, int64_t flags) {
   string content;
   if (content_var.is_array()) {
     content = f$implode(string(), content_var.to_array());

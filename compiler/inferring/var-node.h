@@ -21,7 +21,7 @@ public:
   VarPtr var_;
   int param_i{e_uninited};
   FunctionPtr function_;
-  const TypeData *type_restriction{nullptr};
+  const TypeData* type_restriction{nullptr};
 
   VarNode() = default;
 
@@ -29,19 +29,19 @@ public:
   void init_as_argument(VarPtr var);
   void init_as_return_value(FunctionPtr function);
 
-  void copy_type_from(const TypeData *from) {
+  void copy_type_from(const TypeData* from) {
     type_ = from;
     recalc_state_ = recalc_st_waiting | recalc_bit_at_least_once;
   }
 
-  void recalc(TypeInferer *inferer) final;
+  void recalc(TypeInferer* inferer) final;
 
   VarPtr get_var() const {
     return var_;
   }
 
   std::string get_description() final;
-  const Location &get_location() const final;
+  const Location& get_location() const final;
 
   bool is_variable() const {
     return param_i == e_variable;
@@ -55,7 +55,7 @@ public:
     return param_i >= 0;
   }
 
-  void set_type_restriction(const TypeData *r);
+  void set_type_restriction(const TypeData* r);
 };
 
 } // namespace tinf

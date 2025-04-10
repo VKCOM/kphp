@@ -4,7 +4,6 @@
 
 #pragma once
 
-
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/msgpack-functions.h"
 
@@ -17,18 +16,18 @@
 #include "runtime/string_functions.h"
 
 template<class T>
-inline string f$msgpack_serialize_safe(const T &value) noexcept {
+inline string f$msgpack_serialize_safe(const T& value) noexcept {
   string err_msg;
   auto res = f$msgpack_serialize(value, &err_msg);
   if (!err_msg.empty()) {
-    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, err_msg));
+    THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, err_msg));
     return {};
   }
   return res.val();
 }
 
 template<class InstanceClass>
-inline string f$instance_serialize_safe(const class_instance<InstanceClass> &instance) noexcept {
+inline string f$instance_serialize_safe(const class_instance<InstanceClass>& instance) noexcept {
   string err_msg;
   auto result = msgpack_functions_impl_::common_instance_serialize(instance, &err_msg);
   if (!err_msg.empty()) {
@@ -47,7 +46,7 @@ inline string f$instance_serialize_safe(const class_instance<InstanceClass> &ins
  * https://monoinfinito.wordpress.com/series/exception-handling-in-c/
  */
 template<class ResultType = mixed>
-inline ResultType f$msgpack_deserialize(const string &buffer, string *out_err_msg = nullptr) noexcept {
+inline ResultType f$msgpack_deserialize(const string& buffer, string* out_err_msg = nullptr) noexcept {
   if (buffer.empty()) {
     return {};
   }
@@ -63,9 +62,9 @@ inline ResultType f$msgpack_deserialize(const string &buffer, string *out_err_ms
     } else {
       return obj.as<ResultType>();
     }
-  } catch (vk::msgpack::type_error &e) {
+  } catch (vk::msgpack::type_error& e) {
     err_msg = string("Unknown type found during deserialization");
-  } catch (vk::msgpack::unpack_error &e) {
+  } catch (vk::msgpack::unpack_error& e) {
     err_msg = string(e.what());
   } catch (...) {
     err_msg = string("something went wrong in deserialization, pass it to KPHP|Team");
@@ -84,27 +83,27 @@ inline ResultType f$msgpack_deserialize(const string &buffer, string *out_err_ms
 }
 
 template<class ResultType = mixed>
-inline ResultType f$msgpack_deserialize_safe(const string &buffer) noexcept {
+inline ResultType f$msgpack_deserialize_safe(const string& buffer) noexcept {
   string err_msg;
   auto res = f$msgpack_deserialize(buffer, &err_msg);
   if (!err_msg.empty()) {
-    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, err_msg));
+    THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, err_msg));
     return {};
   }
   return res;
 }
 
 template<class ResultClass>
-inline ResultClass f$instance_deserialize(const string &buffer, const string&) noexcept {
+inline ResultClass f$instance_deserialize(const string& buffer, const string&) noexcept {
   return f$msgpack_deserialize<ResultClass>(buffer);
 }
 
 template<class ResultClass>
-inline ResultClass f$instance_deserialize_safe(const string &buffer, const string&) noexcept {
+inline ResultClass f$instance_deserialize_safe(const string& buffer, const string&) noexcept {
   string err_msg;
   auto res = f$msgpack_deserialize<ResultClass>(buffer, &err_msg);
   if (!err_msg.empty()) {
-    THROW_EXCEPTION (new_Exception(string(__FILE__), __LINE__, err_msg));
+    THROW_EXCEPTION(new_Exception(string(__FILE__), __LINE__, err_msg));
     return {};
   }
   return res;

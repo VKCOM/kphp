@@ -25,4 +25,3 @@ long long log_cur_pos();
  * @return calls log_cur_pos
  */
 long long log_last_pos();
-

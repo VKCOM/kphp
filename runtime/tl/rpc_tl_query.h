@@ -19,17 +19,19 @@ struct RpcTlQuery : refcountable_php_classes<RpcTlQuery> {
 
 class RpcPendingQueries {
 public:
-  void save(const class_instance<RpcTlQuery> &query);
+  void save(const class_instance<RpcTlQuery>& query);
   class_instance<RpcTlQuery> withdraw(int64_t query_id);
 
   void hard_reset();
 
-  static RpcPendingQueries &get() {
+  static RpcPendingQueries& get() {
     static RpcPendingQueries queries;
     return queries;
   }
 
-  int64_t count() const { return queries_.count(); }
+  int64_t count() const {
+    return queries_.count();
+  }
 
 private:
   RpcPendingQueries() = default;
@@ -39,22 +41,26 @@ private:
 
 class CurrentTlQuery {
 public:
-  static CurrentTlQuery &get() {
+  static CurrentTlQuery& get() {
     static CurrentTlQuery context;
     return context;
   }
 
   void reset();
-  void set_current_tl_function(const string &tl_function_name);
-  void set_current_tl_function(const class_instance<RpcTlQuery> &current_query);
-  void raise_fetching_error(const char *format, ...) __attribute__ ((format (printf, 2, 3)));
-  void raise_storing_error(const char *format, ...) __attribute__ ((format (printf, 2, 3)));
+  void set_current_tl_function(const string& tl_function_name);
+  void set_current_tl_function(const class_instance<RpcTlQuery>& current_query);
+  void raise_fetching_error(const char* format, ...) __attribute__((format(printf, 2, 3)));
+  void raise_storing_error(const char* format, ...) __attribute__((format(printf, 2, 3)));
 
   // called from generated TL serializers (from autogen)
-  void set_last_stored_tl_function_magic(uint32_t tl_magic) { last_stored_tl_function_magic_ = tl_magic; }
-  uint32_t get_last_stored_tl_function_magic() const { return last_stored_tl_function_magic_; }
+  void set_last_stored_tl_function_magic(uint32_t tl_magic) {
+    last_stored_tl_function_magic_ = tl_magic;
+  }
+  uint32_t get_last_stored_tl_function_magic() const {
+    return last_stored_tl_function_magic_;
+  }
 
-  const string &get_current_tl_function_name() const {
+  const string& get_current_tl_function_name() const {
     return current_tl_function_name_;
   }
 

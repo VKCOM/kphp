@@ -5,21 +5,20 @@
 #include "compiler/type-hint.h"
 
 #include "compiler/data/function-data.h"
-#include "compiler/vertex-util.h"
 #include "compiler/inferring/public.h"
+#include "compiler/vertex-util.h"
 
 // recalc_type_data_in_context_of_call() from type-hint.h for all ancestors
 // they are implemented in a separate .cpp file to leave type-hint.cpp more clear, as recalculation is a separate inferring part
 
-
-void TypeHintArgRef::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+void TypeHintArgRef::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
   if (auto vertex = VertexUtil::get_call_arg_ref(arg_num, call)) {
     dst->set_lca(vertex->tinf_node.get_type());
   }
 }
 
-void TypeHintArgRefCallbackCall::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
-  static auto prevent_recursion_thread_safe = [](const std::function<void(std::vector<std::string> &)> &callback) {
+void TypeHintArgRefCallbackCall::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
+  static auto prevent_recursion_thread_safe = [](const std::function<void(std::vector<std::string>&)>& callback) {
     static std::mutex mutex;
     static std::vector<std::string> recursively_recalculated;
     std::lock_guard<std::mutex> guard{mutex};
@@ -37,26 +36,24 @@ void TypeHintArgRefCallbackCall::recalc_type_data_in_context_of_call(TypeData *d
   // create a fake inner call: array_map(function(...$args) { return array_filter(...$args); }, $arr)
   if (provided_callback->return_typehint && provided_callback->return_typehint->has_argref_inside()) {
     bool in_recursion = false;
-    prevent_recursion_thread_safe([provided_callback, &in_recursion](std::vector<std::string> &recursion) {
+    prevent_recursion_thread_safe([provided_callback, &in_recursion](std::vector<std::string>& recursion) {
       in_recursion = std::find(recursion.begin(), recursion.end(), provided_callback->name) != recursion.end();
     });
     if (in_recursion) { // see array_reduce(): when we calc ^2() as a return, stop calculating ^2() as a callback parameter
       return;
     }
 
-    std::vector<VertexPtr> fake_call_params;    // e.g., only one here for fake array_filter call: ^2[*]
-    for (const auto *callback_param_hint : callback_param->type_hint->try_as<TypeHintCallable>()->arg_types) {
-      prevent_recursion_thread_safe([provided_callback](std::vector<std::string> &recursion) {
-        recursion.emplace_back(provided_callback->name);
-      });
+    std::vector<VertexPtr> fake_call_params; // e.g., only one here for fake array_filter call: ^2[*]
+    for (const auto* callback_param_hint : callback_param->type_hint->try_as<TypeHintCallable>()->arg_types) {
+      prevent_recursion_thread_safe([provided_callback](std::vector<std::string>& recursion) { recursion.emplace_back(provided_callback->name); });
 
-      auto fake_call_param = VertexAdaptor<op_none>::create();  // it has no contents, only tinf_node
-      TypeData *type_of_passed = TypeData::get_type(tp_any)->clone();  // type of passed ^2[*]
+      auto fake_call_param = VertexAdaptor<op_none>::create();        // it has no contents, only tinf_node
+      TypeData* type_of_passed = TypeData::get_type(tp_any)->clone(); // type of passed ^2[*]
       callback_param_hint->recalc_type_data_in_context_of_call(type_of_passed, call);
       fake_call_param->tinf_node.set_type(type_of_passed);
       fake_call_params.emplace_back(fake_call_param);
 
-      prevent_recursion_thread_safe([provided_callback](std::vector<std::string> &recursion) {
+      prevent_recursion_thread_safe([provided_callback](std::vector<std::string>& recursion) {
         recursion.erase(std::find(recursion.begin(), recursion.end(), provided_callback->name));
       });
     }
@@ -71,9 +68,9 @@ void TypeHintArgRefCallbackCall::recalc_type_data_in_context_of_call(TypeData *d
   }
 }
 
-void TypeHintArgRefInstance::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+void TypeHintArgRefInstance::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
   if (auto v = VertexUtil::get_call_arg_ref(arg_num, call)) {
-    if (const auto *class_name = VertexUtil::get_constexpr_string(v)) {
+    if (const auto* class_name = VertexUtil::get_constexpr_string(v)) {
       if (auto klass = G->get_class(*class_name)) {
         dst->set_lca(klass->type_data);
         return;
@@ -86,20 +83,20 @@ void TypeHintArgRefInstance::recalc_type_data_in_context_of_call(TypeData *dst, 
   dst->set_lca(TypeData::get_type(tp_Error));
 }
 
-void TypeHintArgSubkeyGet::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+void TypeHintArgSubkeyGet::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
   TypeData nested(*TypeData::get_type(tp_any));
   inner->recalc_type_data_in_context_of_call(&nested, call);
   dst->set_lca(nested.const_read_at(MultiKey::any_key(1)));
 }
 
-void TypeHintArray::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+void TypeHintArray::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
   dst->set_lca(TypeData::get_type(tp_array));
   TypeData nested(*TypeData::get_type(tp_any));
   inner->recalc_type_data_in_context_of_call(&nested, call);
   dst->set_lca_at(MultiKey::any_key(1), &nested);
 }
 
-void TypeHintCallable::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+void TypeHintCallable::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
   if (is_typed_callable() && (!call || !call.as<op_func_call>()->func_id->is_extern())) {
     dst->set_lca(get_interface()->type_data);
   } else if (is_untyped_callable() && f_bound_to) {
@@ -111,7 +108,7 @@ void TypeHintCallable::recalc_type_data_in_context_of_call(TypeData *dst, Vertex
   }
 }
 
-static void recalc_ffi_type(TypeData *dst, const std::string &scope_name, const FFIType *type) {
+static void recalc_ffi_type(TypeData* dst, const std::string& scope_name, const FFIType* type) {
   if (type->kind == FFITypeKind::Pointer) {
     TypeData nested{*TypeData::get_type(tp_any)};
     recalc_ffi_type(&nested, scope_name, type->members[0]);
@@ -140,29 +137,29 @@ static void recalc_ffi_type(TypeData *dst, const std::string &scope_name, const 
     return;
   }
 
-  if (const auto *builtin = ffi_builtin_type(type->kind)) {
+  if (const auto* builtin = ffi_builtin_type(type->kind)) {
     dst->set_lca(G->get_class(builtin->php_class_name)->type_data);
     return;
   }
 }
 
-void TypeHintFFIType::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintFFIType::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call __attribute__((unused))) const {
   recalc_ffi_type(dst, scope_name, type);
 }
 
-void TypeHintFFIScopeArgRef::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+void TypeHintFFIScopeArgRef::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
   if (auto v = VertexUtil::get_call_arg_ref(arg_num, call)) {
-    if (const auto *arg_scope_name = VertexUtil::get_constexpr_string(v)) {
+    if (const auto* arg_scope_name = VertexUtil::get_constexpr_string(v)) {
       dst->set_lca(G->get_class(FFIRoot::scope_class_name(*arg_scope_name))->type_data);
     }
   }
 }
 
-void TypeHintFFIScope::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintFFIScope::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call __attribute__((unused))) const {
   dst->set_lca(G->get_class(FFIRoot::scope_class_name(scope_name))->type_data);
 }
 
-void TypeHintFuture::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+void TypeHintFuture::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
   kphp_assert(vk::any_of_equal(ptype, tp_future, tp_future_queue));
   dst->set_lca(ptype);
   TypeData nested(*TypeData::get_type(tp_any));
@@ -170,27 +167,27 @@ void TypeHintFuture::recalc_type_data_in_context_of_call(TypeData *dst, VertexPt
   dst->set_lca_at(MultiKey::any_key(1), &nested);
 }
 
-void TypeHintNotNull::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+void TypeHintNotNull::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
   TypeData nested(*TypeData::get_type(tp_any));
   inner->recalc_type_data_in_context_of_call(&nested, call);
   dst->set_lca(&nested, !drop_not_false, !drop_not_null);
 }
 
-void TypeHintInstance::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintInstance::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call __attribute__((unused))) const {
   dst->set_lca(resolve()->type_data);
 }
 
-void TypeHintRefToField::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintRefToField::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call __attribute__((unused))) const {
   kphp_error(0, "Syntax ClassName::field is available only in a combination with generics");
   dst->set_lca(tp_any);
 }
 
-void TypeHintRefToMethod::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintRefToMethod::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call __attribute__((unused))) const {
   kphp_error(0, "Syntax ClassName::method() is available only in a combination with generics");
   dst->set_lca(tp_any);
 }
 
-void TypeHintOptional::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+void TypeHintOptional::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
   inner->recalc_type_data_in_context_of_call(dst, call);
   if (or_null) {
     dst->set_lca(TypeData::get_type(tp_Null));
@@ -200,25 +197,25 @@ void TypeHintOptional::recalc_type_data_in_context_of_call(TypeData *dst, Vertex
   }
 }
 
-void TypeHintPipe::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
-  for (const TypeHint *item : items) {
+void TypeHintPipe::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
+  for (const TypeHint* item : items) {
     item->recalc_type_data_in_context_of_call(dst, call);
   }
 }
 
-void TypeHintPrimitive::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintPrimitive::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call __attribute__((unused))) const {
   dst->set_lca(TypeData::get_type(ptype));
 }
 
-void TypeHintObject::recalc_type_data_in_context_of_call(TypeData *dst __attribute__ ((unused)), VertexPtr call __attribute__ ((unused))) const {
+void TypeHintObject::recalc_type_data_in_context_of_call(TypeData* dst __attribute__((unused)), VertexPtr call __attribute__((unused))) const {
   // 'object' keyword is allowed only in params of functions
   // (it remains for extern functions, but for PHP functions it converts a function into generic and drops away)
   dst->set_lca(tp_object);
 }
 
-void TypeHintShape::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+void TypeHintShape::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
   dst->set_lca(TypeData::get_type(tp_shape));
-  for (const auto &item : items) {
+  for (const auto& item : items) {
     TypeData nested(*TypeData::get_type(tp_any));
     item.second->recalc_type_data_in_context_of_call(&nested, call);
     MultiKey key({Key::string_key(item.first)});
@@ -229,7 +226,7 @@ void TypeHintShape::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr
   }
 }
 
-void TypeHintTuple::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call) const {
+void TypeHintTuple::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call) const {
   dst->set_lca(TypeData::get_type(tp_tuple));
   for (int int_index = 0; int_index < items.size(); ++int_index) {
     TypeData nested(*TypeData::get_type(tp_any));
@@ -239,12 +236,11 @@ void TypeHintTuple::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr
   }
 }
 
-void TypeHintGenericT::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintGenericT::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call __attribute__((unused))) const {
   dst->set_lca(tp_Error);
   kphp_assert(0 && "generic T not instantiated before type inferring");
 }
 
-void TypeHintClassString::recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr call __attribute__ ((unused))) const {
+void TypeHintClassString::recalc_type_data_in_context_of_call(TypeData* dst, VertexPtr call __attribute__((unused))) const {
   dst->set_ptype(tp_string);
 }
-

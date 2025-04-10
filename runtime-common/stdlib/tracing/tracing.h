@@ -46,8 +46,8 @@ class KphpTracingAggregateGuard {
 
 public:
   KphpTracingAggregateGuard() noexcept = default;
-  KphpTracingAggregateGuard(const KphpTracingAggregateGuard &) = delete;
-  KphpTracingAggregateGuard &operator=(const KphpTracingAggregateGuard &) = delete;
+  KphpTracingAggregateGuard(const KphpTracingAggregateGuard&) = delete;
+  KphpTracingAggregateGuard& operator=(const KphpTracingAggregateGuard&) = delete;
 
   void start(int32_t call_mask) {
     if (unlikely(kphp_tracing::TracingContext::get().cur_trace_level >= 2)) {

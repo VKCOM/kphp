@@ -10,51 +10,51 @@
 // for untyped json_encode() and json_decode(), see json-functions.cpp
 namespace impl_ {
 
-static void escape_json_string(string_buffer &buffer, std::string_view s) noexcept {
+static void escape_json_string(string_buffer& buffer, std::string_view s) noexcept {
   for (auto c : s) {
     switch (c) {
-      case '"':
-        buffer.append_char('\\');
-        buffer.append_char('"');
-        break;
-      case '\\':
-        buffer.append_char('\\');
-        buffer.append_char('\\');
-        break;
-      case '/':
-        buffer.append_char('\\');
-        buffer.append_char('/');
-        break;
-      case '\b':
-        buffer.append_char('\\');
-        buffer.append_char('b');
-        break;
-      case '\f':
-        buffer.append_char('\\');
-        buffer.append_char('f');
-        break;
-      case '\n':
-        buffer.append_char('\\');
-        buffer.append_char('n');
-        break;
-      case '\r':
-        buffer.append_char('\\');
-        buffer.append_char('r');
-        break;
-      case '\t':
-        buffer.append_char('\\');
-        buffer.append_char('t');
-        break;
-      default:
-        buffer.append_char(c);
-        break;
+    case '"':
+      buffer.append_char('\\');
+      buffer.append_char('"');
+      break;
+    case '\\':
+      buffer.append_char('\\');
+      buffer.append_char('\\');
+      break;
+    case '/':
+      buffer.append_char('\\');
+      buffer.append_char('/');
+      break;
+    case '\b':
+      buffer.append_char('\\');
+      buffer.append_char('b');
+      break;
+    case '\f':
+      buffer.append_char('\\');
+      buffer.append_char('f');
+      break;
+    case '\n':
+      buffer.append_char('\\');
+      buffer.append_char('n');
+      break;
+    case '\r':
+      buffer.append_char('\\');
+      buffer.append_char('r');
+      break;
+    case '\t':
+      buffer.append_char('\\');
+      buffer.append_char('t');
+      break;
+    default:
+      buffer.append_char(c);
+      break;
     }
   }
 }
 
 JsonWriter::JsonWriter(bool pretty_print, bool preserve_zero_fraction) noexcept
-  : pretty_print_(pretty_print)
-  , preserve_zero_fraction_(preserve_zero_fraction) {
+    : pretty_print_(pretty_print),
+      preserve_zero_fraction_(preserve_zero_fraction) {
   runtime_context_buffer.clean();
 }
 
@@ -98,7 +98,7 @@ bool JsonWriter::write_double(double d) noexcept {
   return true;
 }
 
-bool JsonWriter::write_string(const string &s) noexcept {
+bool JsonWriter::write_string(const string& s) noexcept {
   if (!register_value()) {
     return false;
   }
@@ -109,7 +109,7 @@ bool JsonWriter::write_string(const string &s) noexcept {
   return true;
 }
 
-bool JsonWriter::write_raw_string(const string &s) noexcept {
+bool JsonWriter::write_raw_string(const string& s) noexcept {
   if (!register_value()) {
     return false;
   }
@@ -224,7 +224,7 @@ bool JsonWriter::register_value() noexcept {
     has_root_ = true;
     return true;
   }
-  auto &top = stack_.back();
+  auto& top = stack_.back();
   if (top.in_array) {
     if (top.values_count) {
       runtime_context_buffer << ',';

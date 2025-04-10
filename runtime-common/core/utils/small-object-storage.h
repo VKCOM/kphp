@@ -14,15 +14,15 @@
 template<size_t limit>
 union small_object_storage {
   std::array<std::byte, limit> storage_;
-  void *storage_ptr;
+  void* storage_ptr;
 
   template<typename T, typename... Args>
-  std::enable_if_t<sizeof(T) <= limit, T *> emplace(Args &&...args) noexcept {
+  std::enable_if_t<sizeof(T) <= limit, T*> emplace(Args&&... args) noexcept {
     return new (storage_.data()) T(std::forward<Args>(args)...);
   }
   template<typename T>
-  std::enable_if_t<sizeof(T) <= limit, T *> get() noexcept {
-    return reinterpret_cast<T *>(storage_.data());
+  std::enable_if_t<sizeof(T) <= limit, T*> get() noexcept {
+    return reinterpret_cast<T*>(storage_.data());
   }
   template<typename T>
   std::enable_if_t<sizeof(T) <= limit> destroy() noexcept {
@@ -30,17 +30,17 @@ union small_object_storage {
   }
 
   template<typename T, typename... Args>
-    std::enable_if_t < limit<sizeof(T), T *> emplace(Args &&...args) noexcept {
+      std::enable_if_t < limit<sizeof(T), T*> emplace(Args&&... args) noexcept {
     storage_ptr = RuntimeAllocator::get().alloc_script_memory(sizeof(T));
     return new (storage_ptr) T(std::forward<Args>(args)...);
   }
   template<typename T>
-    std::enable_if_t < limit<sizeof(T), T *> get() noexcept {
-    return static_cast<T *>(storage_ptr);
+      std::enable_if_t < limit<sizeof(T), T*> get() noexcept {
+    return static_cast<T*>(storage_ptr);
   }
   template<typename T>
-    std::enable_if_t < limit<sizeof(T)> destroy() noexcept {
-    T *mem = get<T>();
+      std::enable_if_t < limit<sizeof(T)> destroy() noexcept {
+    T* mem = get<T>();
     mem->~T();
     RuntimeAllocator::get().free_script_memory(mem, sizeof(T));
   }

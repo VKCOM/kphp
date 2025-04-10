@@ -8,7 +8,6 @@
 
 #include "compiler/function-pass.h"
 
-
 class AnalyzePerformance final : public FunctionPassBase {
 public:
   std::string get_description() final {
@@ -26,6 +25,7 @@ public:
     PerformanceInspections::Inspections inspection;
     std::string description;
   };
+
 private:
   void analyze_func_call(VertexAdaptor<op_func_call> op_func_call_vertex) noexcept;
   void analyze_set(VertexAdaptor<op_set> op_set_vertex) noexcept;
@@ -36,7 +36,7 @@ private:
   void analyze_op_return(VertexAdaptor<op_return> op_return_vertex) noexcept;
   void analyze_op_var(VertexAdaptor<op_var> op_var_vertex) noexcept;
 
-  void check_implicit_array_conversion(VertexPtr expr, const TypeData *to) noexcept;
+  void check_implicit_array_conversion(VertexPtr expr, const TypeData* to) noexcept;
 
   void save_to_second_pass_analyze_on_loop_exit(VertexPtr vertex) noexcept;
   void run_second_pass_on_loop_exit(VertexPtr vertex, uint64_t enabled_inspections, VertexPtr loop_vertex) noexcept;
@@ -80,10 +80,10 @@ class PerformanceIssuesReport : vk::not_copyable {
 public:
   friend class vk::singleton<PerformanceIssuesReport>;
 
-  void add_issues_and_require_flush(FunctionPtr function, std::vector<AnalyzePerformance::Issue> &&issues) noexcept;
+  void add_issues_and_require_flush(FunctionPtr function, std::vector<AnalyzePerformance::Issue>&& issues) noexcept;
 
   bool is_flush_required() const noexcept;
-  void flush_to(FILE *out) noexcept;
+  void flush_to(FILE* out) noexcept;
 
 private:
   PerformanceIssuesReport() = default;

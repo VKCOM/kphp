@@ -24,7 +24,7 @@ struct C$KphpRpcRequestsExtraInfo final : public refcountable_php_classes<C$Kphp
 
   C$KphpRpcRequestsExtraInfo() = default;
 
-  constexpr const char *get_class() const noexcept {
+  constexpr const char* get_class() const noexcept {
     return R"(KphpRpcRequestsExtraInfo)";
   }
 
@@ -34,7 +34,7 @@ struct C$KphpRpcRequestsExtraInfo final : public refcountable_php_classes<C$Kphp
   }
 };
 
-inline array<rpc_request_extra_info_t> f$KphpRpcRequestsExtraInfo$$get(const class_instance<C$KphpRpcRequestsExtraInfo> &v$this) noexcept {
+inline array<rpc_request_extra_info_t> f$KphpRpcRequestsExtraInfo$$get(const class_instance<C$KphpRpcRequestsExtraInfo>& v$this) noexcept {
   return v$this.get()->extra_info_arr;
 }
 

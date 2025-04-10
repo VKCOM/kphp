@@ -63,7 +63,7 @@ TEST(algorithms_projections_test, sort_lower_bound_cooperation) {
   vk::sort(rng, proj);
   const int needle = rnd();
 
-  EXPECT_EQ(vk::lower_bound(rng, needle, proj), std::find_if(rng.begin(), rng.end(), [needle](std::pair<int, int> p){ return p.second >= needle; }));
+  EXPECT_EQ(vk::lower_bound(rng, needle, proj), std::find_if(rng.begin(), rng.end(), [needle](std::pair<int, int> p) { return p.second >= needle; }));
 }
 
 TEST(algorithms_projections_test, adjacent_find) {

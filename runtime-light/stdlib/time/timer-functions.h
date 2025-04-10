@@ -20,7 +20,7 @@ kphp::coro::task<> f$set_timer(int64_t timeout_ms, T on_timer_callback) noexcept
     php_warning("can't set timer for negative duration %" PRId64 "ms", timeout_ms);
     co_return;
   }
-  const auto fork_f{[](std::chrono::nanoseconds duration, T &&on_timer_callback) -> kphp::coro::shared_task<> {
+  const auto fork_f{[](std::chrono::nanoseconds duration, T&& on_timer_callback) -> kphp::coro::shared_task<> {
     co_await wait_for_timer_t{duration};
     on_timer_callback();
   }}; // TODO: someone should pop that fork from ForkComponentContext since it will stay there unless we perform f$wait on fork

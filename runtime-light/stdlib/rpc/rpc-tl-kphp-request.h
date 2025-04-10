@@ -18,8 +18,8 @@ class KphpRpcRequestResult final : public RpcRequestResult {
 public:
   using RpcRequestResult::RpcRequestResult;
 
-  explicit KphpRpcRequestResult(std::unique_ptr<tl_func_base> &&result_fetcher)
-    : RpcRequestResult(true, std::move(result_fetcher)) {}
+  explicit KphpRpcRequestResult(std::unique_ptr<tl_func_base>&& result_fetcher)
+      : RpcRequestResult(true, std::move(result_fetcher)) {}
 
   class_instance<C$VK$TL$RpcResponse> fetch_typed_response() final {
     class_instance<C$VK$TL$RpcResponse> $response;
@@ -40,7 +40,7 @@ public:
 
   std::unique_ptr<RpcRequestResult> store_request() const final {
     //    php_assert(CurException.is_null());
-    auto &rpc_ctx{RpcInstanceState::get()};
+    auto& rpc_ctx{RpcInstanceState::get()};
     rpc_ctx.current_query.set_current_tl_function(tl_function_name());
     std::unique_ptr<tl_func_base> stored_fetcher = storing_function.get()->store();
     rpc_ctx.current_query.reset();

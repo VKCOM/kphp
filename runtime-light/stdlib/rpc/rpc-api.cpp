@@ -36,28 +36,28 @@ constexpr double DEFAULT_TIMEOUT_S = 0.3;
 [[maybe_unused]] constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S});
 constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT_S});
 
-mixed mixed_array_get_value(const mixed &arr, const string &str_key, int64_t num_key) noexcept {
+mixed mixed_array_get_value(const mixed& arr, const string& str_key, int64_t num_key) noexcept {
   if (!arr.is_array()) {
     return {};
   }
 
-  if (const auto &elem{arr.get_value(num_key)}; !elem.is_null()) {
+  if (const auto& elem{arr.get_value(num_key)}; !elem.is_null()) {
     return elem;
   }
-  if (const auto &elem{arr.get_value(str_key)}; !elem.is_null()) {
+  if (const auto& elem{arr.get_value(str_key)}; !elem.is_null()) {
     return elem;
   }
   return {};
 }
 
-array<mixed> make_fetch_error(string &&error_msg, int32_t error_code) {
+array<mixed> make_fetch_error(string&& error_msg, int32_t error_code) {
   array<mixed> res;
   res.set_value(string{"__error", 7}, std::move(error_msg));
   res.set_value(string{"__error_code", 12}, error_code);
   return res;
 }
 
-array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery> &rpc_query) noexcept {
+array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery>& rpc_query) noexcept {
   php_assert(!rpc_query.is_null());
   if (TlRpcError error{}; error.try_fetch()) [[unlikely]] {
     return make_fetch_error(std::move(error.error_msg), error.error_code);
@@ -72,7 +72,7 @@ array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery> &rpc_query)
   return res;
 }
 
-class_instance<C$VK$TL$RpcResponse> fetch_function_typed(const class_instance<RpcTlQuery> &rpc_query, const RpcErrorFactory &error_factory) noexcept {
+class_instance<C$VK$TL$RpcResponse> fetch_function_typed(const class_instance<RpcTlQuery>& rpc_query, const RpcErrorFactory& error_factory) noexcept {
   php_assert(!rpc_query.is_null());
   CurrentTlQuery::get().set_current_tl_function(rpc_query);
   // check if the response is error
@@ -85,9 +85,9 @@ class_instance<C$VK$TL$RpcResponse> fetch_function_typed(const class_instance<Rp
   return res;
 }
 
-class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
-  auto &cur_query{CurrentTlQuery::get()};
-  const auto &rpc_image_state{RpcImageState::get()};
+class_instance<RpcTlQuery> store_function(const mixed& tl_object) noexcept {
+  auto& cur_query{CurrentTlQuery::get()};
+  const auto& rpc_image_state{RpcImageState::get()};
 
   const auto fun_name{mixed_array_get_value(tl_object, string{"_"}, 0).to_string()}; // TODO: constexpr ctor for string{"_"}
   if (!rpc_image_state.tl_storers_ht.has_key(fun_name)) {
@@ -99,14 +99,14 @@ class_instance<RpcTlQuery> store_function(const mixed &tl_object) noexcept {
   rpc_tl_query.get()->tl_function_name = fun_name;
 
   cur_query.set_current_tl_function(fun_name);
-  const auto &untyped_storer = rpc_image_state.tl_storers_ht.get_value(fun_name);
+  const auto& untyped_storer = rpc_image_state.tl_storers_ht.get_value(fun_name);
   rpc_tl_query.get()->result_fetcher = make_unique_on_script_memory<RpcRequestResultUntyped>(untyped_storer(tl_object));
   cur_query.reset();
   return rpc_tl_query;
 }
 
 kphp::coro::task<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
-  auto &rpc_ctx{RpcInstanceState::get()};
+  auto& rpc_ctx{RpcInstanceState::get()};
   // prepare RPC request
   string request_buf{};
   size_t request_size{rpc_ctx.rpc_buffer.size()};
@@ -118,7 +118,7 @@ kphp::coro::task<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> time
     request_size = request_size - cur_extra_header_size + new_extra_header_size;
 
     request_buf.reserve_at_least(request_size);
-    request_buf.append(reinterpret_cast<const char *>(std::addressof(new_extra_header)), new_extra_header_size);
+    request_buf.append(reinterpret_cast<const char*>(std::addressof(new_extra_header)), new_extra_header_size);
     request_buf.append(rpc_ctx.rpc_buffer.data() + cur_extra_header_size, rpc_ctx.rpc_buffer.size() - cur_extra_header_size);
   } else {
     request_buf.append(rpc_ctx.rpc_buffer.data(), request_size);
@@ -138,27 +138,27 @@ kphp::coro::task<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> time
   }
   // normalize timeout
   const auto timeout_ns{timeout.has_value() && timeout.val() > 0 && timeout.val() <= MAX_TIMEOUT_S
-                          ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout.val()})
-                          : DEFAULT_TIMEOUT_NS};
+                            ? std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout.val()})
+                            : DEFAULT_TIMEOUT_NS};
   // create fork to wait for RPC response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
   auto waiter_task{
-    [](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> kphp::coro::task<string> {
-      auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
-      const auto response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
-      // update response extra info if needed
-      if (collect_responses_extra_info) {
-        auto &extra_info_map{RpcInstanceState::get().rpc_responses_extra_info};
-        if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) {
-          const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-          it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
-          it_extra_info->second.first = rpc_response_extra_info_status_t::READY;
-        } else {
-          php_warning("can't find extra info for RPC query %" PRId64, query_id);
+      [](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> kphp::coro::task<string> {
+        auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
+        const auto response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
+        // update response extra info if needed
+        if (collect_responses_extra_info) {
+          auto& extra_info_map{RpcInstanceState::get().rpc_responses_extra_info};
+          if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) {
+            const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
+            it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
+            it_extra_info->second.first = rpc_response_extra_info_status_t::READY;
+          } else {
+            php_warning("can't find extra info for RPC query %" PRId64, query_id);
+          }
         }
-      }
-      co_return response;
-    }(query_id, std::move(comp_query), timeout_ns, collect_responses_extra_info)};
+        co_return response;
+      }(query_id, std::move(comp_query), timeout_ns, collect_responses_extra_info)};
   // start waiter fork
   const auto waiter_fork_id{co_await start_fork_t{std::move(waiter_task)}};
 
@@ -171,7 +171,7 @@ kphp::coro::task<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> time
 
 kphp::coro::task<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, Optional<double> timeout, bool collect_resp_extra_info,
                                                      bool ignore_answer) noexcept {
-  auto &rpc_ctx{RpcInstanceState::get()};
+  auto& rpc_ctx{RpcInstanceState::get()};
 
   if (!tl_object.is_array()) {
     rpc_ctx.current_query.raise_storing_error("not an array passed to function rpc_tl_query");
@@ -191,9 +191,9 @@ kphp::coro::task<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_obje
   co_return query_info;
 }
 
-kphp::coro::task<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest &rpc_request, Optional<double> timeout,
+kphp::coro::task<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest& rpc_request, Optional<double> timeout,
                                                            bool collect_responses_extra_info, bool ignore_answer) noexcept {
-  auto &rpc_ctx{RpcInstanceState::get()};
+  auto& rpc_ctx{RpcInstanceState::get()};
 
   if (rpc_request.empty()) {
     rpc_ctx.current_query.raise_storing_error("query function is null");
@@ -223,7 +223,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
     co_return make_fetch_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
   }
 
-  auto &rpc_ctx{RpcInstanceState::get()};
+  auto& rpc_ctx{RpcInstanceState::get()};
   class_instance<RpcTlQuery> rpc_query{};
   int64_t response_waiter_fork_id{kphp::forks::INVALID_ID};
 
@@ -267,12 +267,12 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   co_return fetch_function_untyped(rpc_query);
 }
 
-kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory &error_factory) noexcept {
+kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory& error_factory) noexcept {
   if (query_id < kphp::rpc::VALID_QUERY_ID_RANGE_START) {
     co_return error_factory.make_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
   }
 
-  auto &rpc_ctx{RpcInstanceState::get()};
+  auto& rpc_ctx{RpcInstanceState::get()};
   class_instance<RpcTlQuery> rpc_query{};
   int64_t response_waiter_fork_id{kphp::forks::INVALID_ID};
 
@@ -345,7 +345,7 @@ bool f$store_double(double v) noexcept {
   return true;
 }
 
-bool f$store_string(const string &v) noexcept {
+bool f$store_string(const string& v) noexcept {
   tl::string{.value = {v.c_str(), v.size()}}.store(RpcInstanceState::get().rpc_buffer);
   return true;
 }
@@ -386,7 +386,7 @@ kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> 
   array<int64_t> query_ids{tl_objects.size()};
   array<rpc_request_extra_info_t> req_extra_info_arr{tl_objects.size()};
 
-  for (const auto &it : tl_objects) {
+  for (const auto& it : tl_objects) {
     const auto query_info{co_await kphp::rpc::rpc_impl::rpc_tl_query_one_impl(actor, it.get_value(), timeout, collect_resp_extra_info, ignore_answer)};
     query_ids.set_value(it.get_key(), query_info.id);
     req_extra_info_arr.set_value(it.get_key(), rpc_request_extra_info_t{query_info.request_size});
@@ -400,7 +400,7 @@ kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> 
 
 kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noexcept {
   array<array<mixed>> res{query_ids.size()};
-  for (const auto &it : query_ids) {
+  for (const auto& it : query_ids) {
     res.set_value(it.get_key(), co_await kphp::rpc::rpc_impl::rpc_tl_query_result_one_impl(it.get_value()));
   }
   co_return res;
@@ -418,13 +418,13 @@ bool is_int32_overflow(int64_t v) noexcept {
   return vk::none_of_equal(v, int64_t{v32}, int64_t{static_cast<uint32_t>(v32)});
 }
 
-void store_raw_vector_double(const array<double> &vector) noexcept { // TODO: didn't we forget vector's length?
-  const std::string_view vector_view{reinterpret_cast<const char *>(vector.get_const_vector_pointer()), sizeof(double) * vector.count()};
+void store_raw_vector_double(const array<double>& vector) noexcept { // TODO: didn't we forget vector's length?
+  const std::string_view vector_view{reinterpret_cast<const char*>(vector.get_const_vector_pointer()), sizeof(double) * vector.count()};
   RpcInstanceState::get().rpc_buffer.store_bytes(vector_view);
 }
 
-void fetch_raw_vector_double(array<double> &vector, int64_t num_elems) noexcept {
-  auto &rpc_buf{RpcInstanceState::get().rpc_buffer};
+void fetch_raw_vector_double(array<double>& vector, int64_t num_elems) noexcept {
+  auto& rpc_buf{RpcInstanceState::get().rpc_buffer};
   const auto len_bytes{sizeof(double) * num_elems};
   if (rpc_buf.remaining() < len_bytes) {
     return; // TODO: error handling

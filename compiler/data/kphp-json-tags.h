@@ -7,24 +7,16 @@
 #include <string>
 #include <vector>
 
-#include "compiler/data/data_ptr.h"
 #include "common/wrappers/string_view.h"
+#include "compiler/data/data_ptr.h"
 
 struct ClassMemberInstanceField;
 
-
 namespace kphp_json {
 
-enum class RenamePolicy {
-  none,
-  snake_case,
-  camel_case
-};
+enum class RenamePolicy { none, snake_case, camel_case };
 
-enum class VisibilityPolicy {
-  all,
-  public_only
-};
+enum class VisibilityPolicy { all, public_only };
 
 enum class SkipFieldType {
   dont_skip,
@@ -48,15 +40,14 @@ enum JsonAttrType {
   json_attr_fields = 1 << 11,
 };
 
-
 // one `@kphp-json attr=value` is represented as this class
 // depending on attr_type, one of union fields is set
 // there could be for statement: `@kphp-json for MyEncoder attr=value`
 struct KphpJsonTag {
   JsonAttrType attr_type{json_attr_unknown};
   ClassPtr for_encoder;
-  
-  union { 
+
+  union {
     vk::string_view rename;
     SkipFieldType skip;
     bool array_as_hashmap;
@@ -77,15 +68,21 @@ class KphpJsonTagList {
   std::vector<KphpJsonTag> tags;
 
 public:
-  bool empty() const noexcept { return tags.empty(); }
-  auto begin() const noexcept { return tags.begin(); }
-  auto end() const noexcept { return tags.end(); }
+  bool empty() const noexcept {
+    return tags.empty();
+  }
+  auto begin() const noexcept {
+    return tags.begin();
+  }
+  auto end() const noexcept {
+    return tags.end();
+  }
 
   template<class CallbackT>
-  const KphpJsonTag *find_tag(const CallbackT &callback) const noexcept {
+  const KphpJsonTag* find_tag(const CallbackT& callback) const noexcept {
     // no-'for' tag appears above 'for', so find the last one satisfying
-    const KphpJsonTag *last{nullptr};
-    for (const KphpJsonTag &tag : tags) {
+    const KphpJsonTag* last{nullptr};
+    for (const KphpJsonTag& tag : tags) {
       if (callback(tag)) {
         last = &tag;
       }
@@ -93,11 +90,11 @@ public:
     return last;
   }
 
-  void add_tag(const KphpJsonTag &json_tag);
+  void add_tag(const KphpJsonTag& json_tag);
   void validate_tags_compatibility(ClassPtr above_class) const;
   void check_flatten_class(ClassPtr flatten_class) const;
 
-  static const KphpJsonTagList *create_from_phpdoc(FunctionPtr resolve_context, const PhpDocComment *phpdoc, ClassPtr above_class);
+  static const KphpJsonTagList* create_from_phpdoc(FunctionPtr resolve_context, const PhpDocComment* phpdoc, ClassPtr above_class);
 };
 
 // represents final settings for a field
@@ -114,7 +111,7 @@ struct FieldJsonSettings {
 };
 
 std::string transform_json_name_to(RenamePolicy policy, vk::string_view name) noexcept;
-const KphpJsonTagList *convert_encoder_constants_to_tags(ClassPtr json_encoder);
-FieldJsonSettings merge_and_inherit_json_tags(const ClassMemberInstanceField &field, ClassPtr klass, ClassPtr json_encoder);
+const KphpJsonTagList* convert_encoder_constants_to_tags(ClassPtr json_encoder);
+FieldJsonSettings merge_and_inherit_json_tags(const ClassMemberInstanceField& field, ClassPtr klass, ClassPtr json_encoder);
 
 } // namespace kphp_json

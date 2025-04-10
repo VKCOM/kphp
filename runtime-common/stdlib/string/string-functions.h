@@ -31,38 +31,38 @@ inline string bin2hex(std::string_view str) noexcept {
 } // namespace strings
 } // namespace kphp
 
-string f$addcslashes(const string &str, const string &what) noexcept;
+string f$addcslashes(const string& str, const string& what) noexcept;
 
-string f$addslashes(const string &str) noexcept;
+string f$addslashes(const string& str) noexcept;
 
-string f$hex2bin(const string &str) noexcept;
+string f$hex2bin(const string& str) noexcept;
 
-inline string f$bin2hex(const string &str) noexcept {
+inline string f$bin2hex(const string& str) noexcept {
   return kphp::strings::bin2hex(std::string_view{str.c_str(), str.size()});
 }
 
-string f$convert_cyr_string(const string &str, const string &from_s, const string &to_s) noexcept;
+string f$convert_cyr_string(const string& str, const string& from_s, const string& to_s) noexcept;
 
 inline string f$chr(int64_t v) noexcept {
   return {1, static_cast<char>(v)};
 }
 
-inline int64_t f$ord(const string &s) noexcept {
+inline int64_t f$ord(const string& s) noexcept {
   return static_cast<unsigned char>(s[0]);
 }
 
-mixed f$count_chars(const string &str, int64_t mode = 0) noexcept;
+mixed f$count_chars(const string& str, int64_t mode = 0) noexcept;
 
-string f$htmlentities(const string &str) noexcept;
+string f$htmlentities(const string& str) noexcept;
 
-string f$html_entity_decode(const string &str, int64_t flags = StringLibConstants::ENT_COMPAT | StringLibConstants::ENT_HTML401,
-                            const string &encoding = StringLibConstants::get().CP1251_STR) noexcept;
+string f$html_entity_decode(const string& str, int64_t flags = StringLibConstants::ENT_COMPAT | StringLibConstants::ENT_HTML401,
+                            const string& encoding = StringLibConstants::get().CP1251_STR) noexcept;
 
-string f$htmlspecialchars(const string &str, int64_t flags = StringLibConstants::ENT_COMPAT | StringLibConstants::ENT_HTML401) noexcept;
+string f$htmlspecialchars(const string& str, int64_t flags = StringLibConstants::ENT_COMPAT | StringLibConstants::ENT_HTML401) noexcept;
 
-string f$htmlspecialchars_decode(const string &str, int64_t flags = StringLibConstants::ENT_COMPAT | StringLibConstants::ENT_HTML401) noexcept;
+string f$htmlspecialchars_decode(const string& str, int64_t flags = StringLibConstants::ENT_COMPAT | StringLibConstants::ENT_HTML401) noexcept;
 
-inline string f$lcfirst(const string &str) noexcept {
+inline string f$lcfirst(const string& str) noexcept {
   int n = str.size();
   if (n == 0) {
     return str;
@@ -75,31 +75,31 @@ inline string f$lcfirst(const string &str) noexcept {
   return res;
 }
 
-int64_t f$levenshtein(const string &str1, const string &str2) noexcept;
+int64_t f$levenshtein(const string& str1, const string& str2) noexcept;
 
-string f$ltrim(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
+string f$ltrim(const string& s, const string& what = StringLibConstants::get().WHAT_STR) noexcept;
 
-string f$mysql_escape_string(const string &str) noexcept;
+string f$mysql_escape_string(const string& str) noexcept;
 
-string f$nl2br(const string &str, bool is_xhtml = true) noexcept;
+string f$nl2br(const string& str, bool is_xhtml = true) noexcept;
 
-string f$number_format(double number, int64_t decimals, const string &dec_point, const string &thousands_sep) noexcept;
+string f$number_format(double number, int64_t decimals, const string& dec_point, const string& thousands_sep) noexcept;
 
-string f$pack(const string &pattern, const array<mixed> &a) noexcept;
+string f$pack(const string& pattern, const array<mixed>& a) noexcept;
 
-string f$rtrim(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
+string f$rtrim(const string& s, const string& what = StringLibConstants::get().WHAT_STR) noexcept;
 
-inline string f$chop(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept {
+inline string f$chop(const string& s, const string& what = StringLibConstants::get().WHAT_STR) noexcept {
   return f$rtrim(s, what);
 }
 
-string f$sprintf(const string &format, const array<mixed> &a) noexcept;
+string f$sprintf(const string& format, const array<mixed>& a) noexcept;
 
-string f$stripcslashes(const string &str) noexcept;
+string f$stripcslashes(const string& str) noexcept;
 
-string f$stripslashes(const string &str) noexcept;
+string f$stripslashes(const string& str) noexcept;
 
-inline int64_t f$strcasecmp(const string &lhs, const string &rhs) noexcept {
+inline int64_t f$strcasecmp(const string& lhs, const string& rhs) noexcept {
   int n = min(lhs.size(), rhs.size());
   for (int i = 0; i < n; i++) {
     if (tolower(lhs[i]) != tolower(rhs[i])) {
@@ -111,22 +111,22 @@ inline int64_t f$strcasecmp(const string &lhs, const string &rhs) noexcept {
   return static_cast<int64_t>(lhs.size()) - static_cast<int64_t>(rhs.size());
 }
 
-int64_t f$strcmp(const string &lhs, const string &rhs) noexcept;
+int64_t f$strcmp(const string& lhs, const string& rhs) noexcept;
 
-string f$strip_tags(const string &str, const string &allow = string{});
+string f$strip_tags(const string& str, const string& allow = string{});
 
-inline string f$strip_tags(const string &str, const array<Unknown> &allow_list) noexcept {
+inline string f$strip_tags(const string& str, const array<Unknown>& allow_list) noexcept {
   php_assert(allow_list.empty());
   return f$strip_tags(str, string());
 }
 
-string f$strip_tags(const string &str, const mixed &allow);
+string f$strip_tags(const string& str, const mixed& allow);
 
-string f$strip_tags(const string &str, const array<string> &allow_list);
+string f$strip_tags(const string& str, const array<string>& allow_list);
 
-Optional<int64_t> f$stripos(const string &haystack, const string &needle, int64_t offset = 0) noexcept;
+Optional<int64_t> f$stripos(const string& haystack, const string& needle, int64_t offset = 0) noexcept;
 
-inline Optional<int64_t> f$stripos(const string &haystack, const mixed &needle, int64_t offset = 0) noexcept {
+inline Optional<int64_t> f$stripos(const string& haystack, const mixed& needle, int64_t offset = 0) noexcept {
   if (needle.is_string()) {
     return f$stripos(haystack, needle.to_string(), offset);
   } else {
@@ -134,29 +134,29 @@ inline Optional<int64_t> f$stripos(const string &haystack, const mixed &needle, 
   }
 }
 
-Optional<string> f$stristr(const string &haystack, const string &needle, bool before_needle = false) noexcept;
+Optional<string> f$stristr(const string& haystack, const string& needle, bool before_needle = false) noexcept;
 
-Optional<string> f$strrchr(const string &haystack, const string &needle) noexcept;
+Optional<string> f$strrchr(const string& haystack, const string& needle) noexcept;
 
-inline int64_t f$strncmp(const string &lhs, const string &rhs, int64_t len) noexcept {
+inline int64_t f$strncmp(const string& lhs, const string& rhs, int64_t len) noexcept {
   if (len < 0) {
     return 0;
   }
   return std::memcmp(lhs.c_str(), rhs.c_str(), min(int64_t{min(lhs.size(), rhs.size())} + 1, len));
 }
 
-int64_t f$strnatcmp(const string &lhs, const string &rhs) noexcept;
+int64_t f$strnatcmp(const string& lhs, const string& rhs) noexcept;
 
-inline int64_t f$strspn(const string &hayshack, const string &char_list, int64_t offset = 0) noexcept {
+inline int64_t f$strspn(const string& hayshack, const string& char_list, int64_t offset = 0) noexcept {
   return std::strspn(hayshack.c_str() + hayshack.get_correct_offset_clamped(offset), char_list.c_str());
 }
 
-inline int64_t f$strcspn(const string &hayshack, const string &char_list, int64_t offset = 0) noexcept {
+inline int64_t f$strcspn(const string& hayshack, const string& char_list, int64_t offset = 0) noexcept {
   return std::strcspn(hayshack.c_str() + hayshack.get_correct_offset_clamped(offset), char_list.c_str());
 }
 
-inline Optional<string> f$strpbrk(const string &haystack, const string &char_list) noexcept {
-  const char *pos = std::strpbrk(haystack.c_str(), char_list.c_str());
+inline Optional<string> f$strpbrk(const string& haystack, const string& char_list) noexcept {
+  const char* pos = std::strpbrk(haystack.c_str(), char_list.c_str());
   if (pos == nullptr) {
     return false;
   }
@@ -164,9 +164,9 @@ inline Optional<string> f$strpbrk(const string &haystack, const string &char_lis
   return string(pos, static_cast<string::size_type>(haystack.size() - (pos - haystack.c_str())));
 }
 
-Optional<int64_t> f$strpos(const string &haystack, const string &needle, int64_t offset = 0) noexcept;
+Optional<int64_t> f$strpos(const string& haystack, const string& needle, int64_t offset = 0) noexcept;
 
-inline Optional<int64_t> f$strpos(const string &haystack, const mixed &needle, int64_t offset = 0) noexcept {
+inline Optional<int64_t> f$strpos(const string& haystack, const mixed& needle, int64_t offset = 0) noexcept {
   if (needle.is_string()) {
     return f$strpos(haystack, needle.to_string(), offset);
   } else {
@@ -175,15 +175,15 @@ inline Optional<int64_t> f$strpos(const string &haystack, const mixed &needle, i
 }
 
 template<class T>
-Optional<int64_t> f$strpos(const string &haystack, const Optional<T> &needle, int64_t offset = 0) noexcept {
+Optional<int64_t> f$strpos(const string& haystack, const Optional<T>& needle, int64_t offset = 0) noexcept {
   return f$strpos(haystack, needle.val(), offset);
 }
 
-Optional<int64_t> f$strrpos(const string &haystack, const string &needle, int64_t offset = 0) noexcept;
+Optional<int64_t> f$strrpos(const string& haystack, const string& needle, int64_t offset = 0) noexcept;
 
-Optional<int64_t> f$strripos(const string &haystack, const string &needle, int64_t offset = 0) noexcept;
+Optional<int64_t> f$strripos(const string& haystack, const string& needle, int64_t offset = 0) noexcept;
 
-inline string f$strrev(const string &str) noexcept {
+inline string f$strrev(const string& str) noexcept {
   int n = str.size();
 
   string res(n, false);
@@ -194,31 +194,31 @@ inline string f$strrev(const string &str) noexcept {
   return res;
 }
 
-Optional<string> f$strstr(const string &haystack, const string &needle, bool before_needle = false) noexcept;
+Optional<string> f$strstr(const string& haystack, const string& needle, bool before_needle = false) noexcept;
 
-string f$strtolower(const string &str) noexcept;
+string f$strtolower(const string& str) noexcept;
 
-string f$strtoupper(const string &str) noexcept;
+string f$strtoupper(const string& str) noexcept;
 
-string f$strtr(const string &subject, const string &from, const string &to) noexcept;
+string f$strtr(const string& subject, const string& from, const string& to) noexcept;
 
-string f$str_pad(const string &input, int64_t len, const string &pad_str = StringLibConstants::get().SPACE_STR,
+string f$str_pad(const string& input, int64_t len, const string& pad_str = StringLibConstants::get().SPACE_STR,
                  int64_t pad_type = StringLibConstants::STR_PAD_RIGHT) noexcept;
 
-string f$str_repeat(const string &s, int64_t multiplier) noexcept;
+string f$str_repeat(const string& s, int64_t multiplier) noexcept;
 
-string f$str_replace(const string &search, const string &replace, const string &subject,
-                     int64_t &replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
+string f$str_replace(const string& search, const string& replace, const string& subject,
+                     int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
 
-string f$str_ireplace(const string &search, const string &replace, const string &subject,
-                      int64_t &replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
+string f$str_ireplace(const string& search, const string& replace, const string& subject,
+                      int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
 
-void str_replace_inplace(const string &search, const string &replace, string &subject, int64_t &replace_count, bool with_case) noexcept;
+void str_replace_inplace(const string& search, const string& replace, string& subject, int64_t& replace_count, bool with_case) noexcept;
 
-string str_replace(const string &search, const string &replace, const string &subject, int64_t &replace_count, bool with_case) noexcept;
+string str_replace(const string& search, const string& replace, const string& subject, int64_t& replace_count, bool with_case) noexcept;
 
 template<typename T1, typename T2>
-string str_replace_string_array(const array<T1> &search, const array<T2> &replace, const string &subject, int64_t &replace_count, bool with_case) noexcept {
+string str_replace_string_array(const array<T1>& search, const array<T2>& replace, const string& subject, int64_t& replace_count, bool with_case) noexcept {
   string result = subject;
   string replace_value;
   typename array<T2>::const_iterator cur_replace_val = replace.begin();
@@ -231,7 +231,7 @@ string str_replace_string_array(const array<T1> &search, const array<T2> &replac
       replace_value = string{};
     }
 
-    const string &search_string = f$strval(it.get_value());
+    const string& search_string = f$strval(it.get_value());
     if (search_string.size() >= replace_value.size()) {
       str_replace_inplace(search_string, replace_value, result, replace_count, with_case);
     } else {
@@ -240,49 +240,49 @@ string str_replace_string_array(const array<T1> &search, const array<T2> &replac
   }
 
   return result;
-};
+}
 
 template<typename T1, typename T2>
-string f$str_replace(const array<T1> &search, const array<T2> &replace, const string &subject,
-                     int64_t &replace_count = StringLibContext::get().str_replace_count_dummy) noexcept {
+string f$str_replace(const array<T1>& search, const array<T2>& replace, const string& subject,
+                     int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept {
   replace_count = 0;
   return str_replace_string_array(search, replace, subject, replace_count, true);
 }
 
 template<typename T1, typename T2>
-string f$str_ireplace(const array<T1> &search, const array<T2> &replace, const string &subject,
-                      int64_t &replace_count = StringLibContext::get().str_replace_count_dummy) noexcept {
+string f$str_ireplace(const array<T1>& search, const array<T2>& replace, const string& subject,
+                      int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept {
   replace_count = 0;
   return str_replace_string_array(search, replace, subject, replace_count, false);
 }
 
-string f$str_replace(const mixed &search, const mixed &replace, const string &subject,
-                     int64_t &replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
+string f$str_replace(const mixed& search, const mixed& replace, const string& subject,
+                     int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
 
-string f$str_ireplace(const mixed &search, const mixed &replace, const string &subject,
-                      int64_t &replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
+string f$str_ireplace(const mixed& search, const mixed& replace, const string& subject,
+                      int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
 
 template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT>>
-SubjectT f$str_replace(const T1 &search, const T2 &replace, const SubjectT &subject,
-                       int64_t &replace_count = StringLibContext::get().str_replace_count_dummy) noexcept {
+SubjectT f$str_replace(const T1& search, const T2& replace, const SubjectT& subject,
+                       int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept {
   return f$str_replace(search, replace, subject.val(), replace_count);
 }
 
 template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT>>
-SubjectT f$str_ireplace(const T1 &search, const T2 &replace, const SubjectT &subject,
-                        int64_t &replace_count = StringLibContext::get().str_replace_count_dummy) noexcept {
+SubjectT f$str_ireplace(const T1& search, const T2& replace, const SubjectT& subject,
+                        int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept {
   return f$str_ireplace(search, replace, subject.val(), replace_count);
 }
 
-mixed f$str_replace(const mixed &search, const mixed &replace, const mixed &subject,
-                    int64_t &replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
+mixed f$str_replace(const mixed& search, const mixed& replace, const mixed& subject,
+                    int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
 
-mixed f$str_ireplace(const mixed &search, const mixed &replace, const mixed &subject,
-                     int64_t &replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
+mixed f$str_ireplace(const mixed& search, const mixed& replace, const mixed& subject,
+                     int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
 
-array<string> f$str_split(const string &str, int64_t split_length = 1) noexcept;
+array<string> f$str_split(const string& str, int64_t split_length = 1) noexcept;
 
-inline Optional<string> f$substr(const string &str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept {
+inline Optional<string> f$substr(const string& str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept {
   if (!wrap_substr_args(str.size(), start, length)) {
     return false;
   }
@@ -296,7 +296,7 @@ inline Optional<string> f$substr(tmp_string str, int64_t start, int64_t length =
   return string(str.data + start, length);
 }
 
-inline tmp_string f$_tmp_substr(const string &str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept {
+inline tmp_string f$_tmp_substr(const string& str, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept {
   if (!wrap_substr_args(str.size(), start, length)) {
     return {};
   }
@@ -310,30 +310,30 @@ inline tmp_string f$_tmp_substr(tmp_string str, int64_t start, int64_t length = 
   return {str.data + start, static_cast<string::size_type>(length)};
 }
 
-int64_t f$substr_count(const string &haystack, const string &needle, int64_t offset = 0, int64_t length = std::numeric_limits<int64_t>::max()) noexcept;
+int64_t f$substr_count(const string& haystack, const string& needle, int64_t offset = 0, int64_t length = std::numeric_limits<int64_t>::max()) noexcept;
 
-string f$substr_replace(const string &str, const string &replacement, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept;
+string f$substr_replace(const string& str, const string& replacement, int64_t start, int64_t length = std::numeric_limits<int64_t>::max()) noexcept;
 
-Optional<int64_t> f$substr_compare(const string &main_str, const string &str, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(),
+Optional<int64_t> f$substr_compare(const string& main_str, const string& str, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(),
                                    bool case_insensitivity = false) noexcept;
 
-inline bool f$str_starts_with(const string &haystack, const string &needle) noexcept {
+inline bool f$str_starts_with(const string& haystack, const string& needle) noexcept {
   return haystack.starts_with(needle);
 }
 
-inline bool f$str_ends_with(const string &haystack, const string &needle) noexcept {
+inline bool f$str_ends_with(const string& haystack, const string& needle) noexcept {
   return haystack.ends_with(needle);
 }
 
-tmp_string f$_tmp_trim(tmp_string s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
+tmp_string f$_tmp_trim(tmp_string s, const string& what = StringLibConstants::get().WHAT_STR) noexcept;
 
-tmp_string f$_tmp_trim(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
+tmp_string f$_tmp_trim(const string& s, const string& what = StringLibConstants::get().WHAT_STR) noexcept;
 
-string f$trim(tmp_string s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
+string f$trim(tmp_string s, const string& what = StringLibConstants::get().WHAT_STR) noexcept;
 
-string f$trim(const string &s, const string &what = StringLibConstants::get().WHAT_STR) noexcept;
+string f$trim(const string& s, const string& what = StringLibConstants::get().WHAT_STR) noexcept;
 
-inline string f$ucfirst(const string &str) noexcept {
+inline string f$ucfirst(const string& str) noexcept {
   int n = str.size();
   if (n == 0) {
     return str;
@@ -346,15 +346,15 @@ inline string f$ucfirst(const string &str) noexcept {
   return res;
 }
 
-string f$ucwords(const string &str) noexcept;
+string f$ucwords(const string& str) noexcept;
 
-Optional<array<mixed>> f$unpack(const string &pattern, const string &data) noexcept;
+Optional<array<mixed>> f$unpack(const string& pattern, const string& data) noexcept;
 
-inline string f$vsprintf(const string &format, const array<mixed> &args) noexcept {
+inline string f$vsprintf(const string& format, const array<mixed>& args) noexcept {
   return f$sprintf(format, args);
 }
 
-string f$wordwrap(const string &str, int64_t width = 75, const string &brk = StringLibConstants::get().NEWLINE_STR, bool cut = false) noexcept;
+string f$wordwrap(const string& str, int64_t width = 75, const string& brk = StringLibConstants::get().NEWLINE_STR, bool cut = false) noexcept;
 
 namespace hex2char_impl_ {
 
@@ -371,7 +371,7 @@ public:
   template<size_t... Ints>
   static constexpr auto make(std::index_sequence<Ints...> /*unused*/) noexcept {
     return std::array<uint8_t, sizeof...(Ints)>{{
-      hex2int_char(Ints)...,
+        hex2int_char(Ints)...,
     }};
   }
 };
@@ -387,33 +387,33 @@ inline string f$number_format(double number, int64_t decimals = 0) noexcept {
   return f$number_format(number, decimals, StringLibConstants::get().DOT_STR, StringLibConstants::get().COLON_STR);
 }
 
-inline string f$number_format(double number, int64_t decimals, const string &dec_point) noexcept {
+inline string f$number_format(double number, int64_t decimals, const string& dec_point) noexcept {
   return f$number_format(number, decimals, dec_point, StringLibConstants::get().COLON_STR);
 }
 
-inline string f$number_format(double number, int64_t decimals, const mixed &dec_point) noexcept {
+inline string f$number_format(double number, int64_t decimals, const mixed& dec_point) noexcept {
   return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT_STR : dec_point.to_string(),
                          StringLibConstants::get().COLON_STR);
 }
 
-inline string f$number_format(double number, int64_t decimals, const string &dec_point, const mixed &thousands_sep) noexcept {
+inline string f$number_format(double number, int64_t decimals, const string& dec_point, const mixed& thousands_sep) noexcept {
   return f$number_format(number, decimals, dec_point, thousands_sep.is_null() ? StringLibConstants::get().COLON_STR : thousands_sep.to_string());
 }
 
-inline string f$number_format(double number, int64_t decimals, const mixed &dec_point, const string &thousands_sep) noexcept {
+inline string f$number_format(double number, int64_t decimals, const mixed& dec_point, const string& thousands_sep) noexcept {
   return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT_STR : dec_point.to_string(), thousands_sep);
 }
 
-inline string f$number_format(double number, int64_t decimals, const mixed &dec_point, const mixed &thousands_sep) noexcept {
+inline string f$number_format(double number, int64_t decimals, const mixed& dec_point, const mixed& thousands_sep) noexcept {
   return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT_STR : dec_point.to_string(),
                          thousands_sep.is_null() ? StringLibConstants::get().COLON_STR : thousands_sep.to_string());
 }
 
-inline int64_t f$strlen(const string &s) noexcept {
+inline int64_t f$strlen(const string& s) noexcept {
   return s.size();
 }
 
-inline Optional<string> f$stristr(const string &haystack, const mixed &needle, bool before_needle = false) noexcept {
+inline Optional<string> f$stristr(const string& haystack, const mixed& needle, bool before_needle = false) noexcept {
   if (needle.is_string()) {
     return f$stristr(haystack, needle.to_string(), before_needle);
   } else {
@@ -421,7 +421,7 @@ inline Optional<string> f$stristr(const string &haystack, const mixed &needle, b
   }
 }
 
-inline Optional<int64_t> f$strrpos(const string &haystack, const mixed &needle, int64_t offset = 0) noexcept {
+inline Optional<int64_t> f$strrpos(const string& haystack, const mixed& needle, int64_t offset = 0) noexcept {
   if (needle.is_string()) {
     return f$strrpos(haystack, needle.to_string(), offset);
   } else {
@@ -429,7 +429,7 @@ inline Optional<int64_t> f$strrpos(const string &haystack, const mixed &needle, 
   }
 }
 
-inline Optional<int64_t> f$strripos(const string &haystack, const mixed &needle, int64_t offset) noexcept {
+inline Optional<int64_t> f$strripos(const string& haystack, const mixed& needle, int64_t offset) noexcept {
   if (needle.is_string()) {
     return f$strripos(haystack, needle.to_string(), offset);
   } else {
@@ -437,7 +437,7 @@ inline Optional<int64_t> f$strripos(const string &haystack, const mixed &needle,
   }
 }
 
-inline Optional<string> f$strstr(const string &haystack, const mixed &needle, bool before_needle = false) noexcept {
+inline Optional<string> f$strstr(const string& haystack, const mixed& needle, bool before_needle = false) noexcept {
   if (needle.is_string()) {
     return f$strstr(haystack, needle.to_string(), before_needle);
   } else {
@@ -446,12 +446,12 @@ inline Optional<string> f$strstr(const string &haystack, const mixed &needle, bo
 }
 
 template<class T>
-string f$strtr(const string &subject, const array<T> &replace_pairs) noexcept {
-  const char *piece = subject.c_str();
-  const char *piece_end = subject.c_str() + subject.size();
+string f$strtr(const string& subject, const array<T>& replace_pairs) noexcept {
+  const char* piece = subject.c_str();
+  const char* piece_end = subject.c_str() + subject.size();
   string result;
   while (true) {
-    const char *best_pos = nullptr;
+    const char* best_pos = nullptr;
     int64_t best_len = -1;
     string replace;
     for (typename array<T>::const_iterator p = replace_pairs.begin(); p != replace_pairs.end(); ++p) {
@@ -460,8 +460,8 @@ string f$strtr(const string &subject, const array<T> &replace_pairs) noexcept {
       if (search_len == 0) {
         return subject;
       }
-      const char *pos = static_cast<const char *>(memmem(static_cast<const void *>(piece), static_cast<size_t>(piece_end - piece),
-                                                         static_cast<const void *>(search.c_str()), static_cast<size_t>(search_len)));
+      const char* pos = static_cast<const char*>(memmem(static_cast<const void*>(piece), static_cast<size_t>(piece_end - piece),
+                                                        static_cast<const void*>(search.c_str()), static_cast<size_t>(search_len)));
       if (pos != nullptr && (best_pos == nullptr || best_pos > pos || (best_pos == pos && search_len > best_len))) {
         best_pos = pos;
         best_len = search_len;
@@ -482,17 +482,17 @@ string f$strtr(const string &subject, const array<T> &replace_pairs) noexcept {
   return result;
 }
 
-inline string f$strtr(const string &subject, const mixed &from, const mixed &to) noexcept {
+inline string f$strtr(const string& subject, const mixed& from, const mixed& to) noexcept {
   return f$strtr(subject, from.to_string(), to.to_string());
 }
 
-inline string f$strtr(const string &subject, const mixed &replace_pairs) noexcept {
+inline string f$strtr(const string& subject, const mixed& replace_pairs) noexcept {
   return f$strtr(subject, replace_pairs.as_array("strtr"));
 }
 
-string f$xor_strings(const string &s, const string &t) noexcept;
+string f$xor_strings(const string& s, const string& t) noexcept;
 
-int64_t f$similar_text(const string &first, const string &second, double &percent = StringLibContext::get().default_similar_text_percent_stub) noexcept;
+int64_t f$similar_text(const string& first, const string& second, double& percent = StringLibContext::get().default_similar_text_percent_stub) noexcept;
 
 // similar_text ( string $first , string $second [, float &$percent ] ) : int
 
@@ -502,15 +502,15 @@ int64_t f$similar_text(const string &first, const string &second, double &percen
 // there is a special (string, string) overloading for concat2 to
 // allow the empty string result optimization to kick in
 struct str_concat_arg {
-  const char *data;
+  const char* data;
   string::size_type size;
 
-  str_concat_arg(const string &s) noexcept
-    : data{s.c_str()}
-    , size{s.size()} {}
+  str_concat_arg(const string& s) noexcept
+      : data{s.c_str()},
+        size{s.size()} {}
   str_concat_arg(tmp_string s) noexcept
-    : data{s.data}
-    , size{s.size} {}
+      : data{s.data},
+        size{s.size} {}
 
   tmp_string as_tmp_string() const noexcept {
     return {data, size};
@@ -531,7 +531,7 @@ struct str_concat_arg {
 //     565: 6 args
 //     350: 9 args
 // Both 6 and 7 argument combination already look infrequent enough to not bother
-string str_concat(const string &s1, const string &s2) noexcept;
+string str_concat(const string& s1, const string& s2) noexcept;
 string str_concat(str_concat_arg s1, str_concat_arg s2) noexcept;
 string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3) noexcept;
 string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4) noexcept;

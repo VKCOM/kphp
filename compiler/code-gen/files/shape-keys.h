@@ -12,10 +12,10 @@
 class CodeGenerator;
 
 struct ShapeKeys : CodeGenRootCmd {
-  explicit ShapeKeys(std::map<std::int64_t, std::string> shape_keys_storage) noexcept :
-    shape_keys_storage_(std::move(shape_keys_storage)) {}
+  explicit ShapeKeys(std::map<std::int64_t, std::string> shape_keys_storage) noexcept
+      : shape_keys_storage_(std::move(shape_keys_storage)) {}
 
-  void compile(CodeGenerator &W) const final;
+  void compile(CodeGenerator& W) const final;
 
   static std::string get_function_name() noexcept;
 

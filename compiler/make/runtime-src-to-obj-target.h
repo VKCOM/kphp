@@ -8,14 +8,14 @@
 
 class RuntimeSrc2ObjTarget : public Target {
   std::string options;
+
 public:
   RuntimeSrc2ObjTarget(std::string options)
-    : options(std::move(options)) {}
+      : options(std::move(options)) {}
   std::string get_cmd() final {
     std::stringstream ss;
     const auto cpp_list = dep_list();
-    ss << settings->cxx.get() <<
-      " -c -o " << target();
+    ss << settings->cxx.get() << " -c -o " << target();
     ss << " " << dep_list() << " " << options;
 
     return ss.str();

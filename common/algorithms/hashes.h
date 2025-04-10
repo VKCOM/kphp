@@ -18,9 +18,9 @@
 namespace vk {
 
 template<typename T>
-T murmur_hash(const void *ptr, size_t len, size_t seed = static_cast<size_t>(0xc70f6907UL)) noexcept;
+T murmur_hash(const void* ptr, size_t len, size_t seed = static_cast<size_t>(0xc70f6907UL)) noexcept;
 
-inline void hash_combine(size_t &seed, size_t new_hash) {
+inline void hash_combine(size_t& seed, size_t new_hash) {
   const uint64_t m = 0xc6a4a7935bd1e995;
   const uint32_t r = 47;
 
@@ -43,30 +43,29 @@ size_t hash_range(Iter first, Iter last, Hasher hasher = Hasher()) {
 }
 
 template<class Rng, class Hasher = std::hash<range_value_type<Rng>>>
-size_t hash_range(const Rng &range, Hasher hasher = Hasher()) {
+size_t hash_range(const Rng& range, Hasher hasher = Hasher()) {
   return hash_range(std::begin(range), std::end(range), hasher);
 }
 
 template<class Rng, class Hasher = std::hash<range_value_type<Rng>>>
 class range_hasher : Hasher {
 public:
-  explicit range_hasher(Hasher hasher = Hasher()) :
-    Hasher(std::move(hasher)) {
-  }
+  explicit range_hasher(Hasher hasher = Hasher())
+      : Hasher(std::move(hasher)) {}
 
-  size_t operator()(const Rng &range) const {
-    return hash_range(range, static_cast<const Hasher &>(*this));
+  size_t operator()(const Rng& range) const {
+    return hash_range(range, static_cast<const Hasher&>(*this));
   }
 };
 
 template<class T>
-size_t std_hash(const T &obj) {
-  static_assert(!std::is_same<T, const char *>{}, "You don't want to use std::hash with `const char *`");
+size_t std_hash(const T& obj) {
+  static_assert(!std::is_same<T, const char*>{}, "You don't want to use std::hash with `const char *`");
   return std::hash<T>{}(obj);
 }
 
-template<class ...Ts>
-size_t hash_sequence(const Ts &... val) {
+template<class... Ts>
+size_t hash_sequence(const Ts&... val) {
   size_t res = 0;
   auto hashes = std::array<size_t, sizeof...(Ts)>{vk::std_hash(val)...};
   for (auto hash : hashes) {
@@ -82,7 +81,7 @@ namespace std {
 template<class T1, class T2>
 class hash<std::pair<T1, T2>> {
 public:
-  size_t operator()(const std::pair<T1, T2> & pair) const {
+  size_t operator()(const std::pair<T1, T2>& pair) const {
     return vk::hash_sequence(pair.first, pair.second);
   }
 };
@@ -90,7 +89,7 @@ public:
 template<class T>
 class hash<vk::span<T>> {
 public:
-  size_t operator()(const vk::span<T> &span) const {
+  size_t operator()(const vk::span<T>& span) const {
     return hash_range(span);
   }
 };

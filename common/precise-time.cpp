@@ -5,8 +5,8 @@
 #include "common/precise-time.h"
 
 #include <algorithm>
-#include <cstdint>
 #include <chrono>
+#include <cstdint>
 
 #include "common/cycleclock.h"
 #include "common/wrappers/likely.h"

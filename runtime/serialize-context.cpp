@@ -6,6 +6,6 @@
 
 static SerializationLibContext serialize_lib_context{};
 
-SerializationLibContext &SerializationLibContext::get() noexcept {
+SerializationLibContext& SerializationLibContext::get() noexcept {
   return serialize_lib_context;
 }

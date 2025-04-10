@@ -4,11 +4,11 @@
 
 #include "compiler/pipes/check-func-calls-and-vararg.h"
 
-#include "compiler/modulite-check-rules.h"
 #include "compiler/data/src-file.h"
+#include "compiler/modulite-check-rules.h"
 #include "compiler/rewrite-rules/replace-extern-func-calls.h"
-#include "compiler/vertex-util.h"
 #include "compiler/type-hint.h"
+#include "compiler/vertex-util.h"
 
 /*
  * This pass checks that func calls are correct, i.e. provided necessary amount of arguments, etc.
@@ -159,7 +159,8 @@ VertexAdaptor<op_func_call> CheckFuncCallsAndVarargPass::process_varargs(VertexA
 }
 
 // when calling f($arg) like f() (without $arg), then maybe, this $arg is auto-filled
-VertexPtr CheckFuncCallsAndVarargPass::maybe_autofill_missing_call_arg(VertexAdaptor<op_func_call> call, [[maybe_unused]] FunctionPtr f_called, VertexAdaptor<op_func_param> param) {
+VertexPtr CheckFuncCallsAndVarargPass::maybe_autofill_missing_call_arg(VertexAdaptor<op_func_call> call, [[maybe_unused]] FunctionPtr f_called,
+                                                                       VertexAdaptor<op_func_param> param) {
   if (param->type_hint == nullptr) {
     return {};
   }
@@ -167,7 +168,7 @@ VertexPtr CheckFuncCallsAndVarargPass::maybe_autofill_missing_call_arg(VertexAda
   // CompileTimeLocation is a built-in KPHP class
   // in PHP, we declare f(CompileTimeLocation $loc = null) and just call f()
   // in KPHP, we implicitly replace f() with f(new CompileTimeLocation(__FILE__, __METHOD__, __LINE__))
-  if (const auto *as_instance = param->type_hint->unwrap_optional()->try_as<TypeHintInstance>()) {
+  if (const auto* as_instance = param->type_hint->unwrap_optional()->try_as<TypeHintInstance>()) {
     if (as_instance->resolve()->name == "CompileTimeLocation" && param->has_default_value()) {
       return CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(call->location);
     }
@@ -177,7 +178,7 @@ VertexPtr CheckFuncCallsAndVarargPass::maybe_autofill_missing_call_arg(VertexAda
 }
 
 // create constructor call: new CompileTimeLocation(__RELATIVE_FILE__, __METHOD__, __LINE__)
-VertexPtr CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(const Location &call_location) {
+VertexPtr CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(const Location& call_location) {
   ClassPtr klass_CompileTimeLocation = G->get_class("CompileTimeLocation");
   kphp_assert(klass_CompileTimeLocation);
 
@@ -185,12 +186,11 @@ VertexPtr CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(const
   v_file->str_val = call_location.get_file()->relative_file_name;
 
   auto v_function = VertexAdaptor<op_string>::create().set_location(call_location);
-  if (current_function->is_lambda()) {  // like tok_method_c in gentree (PHP polyfill also emits the same format)
+  if (current_function->is_lambda()) { // like tok_method_c in gentree (PHP polyfill also emits the same format)
     v_function->str_val = "{closure}";
   } else if (!current_function->is_main_function()) {
-    v_function->str_val = !current_function->modifiers.is_nonmember()
-                          ? current_function->class_id->name + "::" + current_function->local_name()
-                          : current_function->name;
+    v_function->str_val =
+        !current_function->modifiers.is_nonmember() ? current_function->class_id->name + "::" + current_function->local_name() : current_function->name;
   }
 
   auto v_line = VertexUtil::create_int_const(call_location.get_line());
@@ -204,13 +204,12 @@ VertexPtr CheckFuncCallsAndVarargPass::create_CompileTimeLocation_call_arg(const
   return v_loc;
 }
 
-
 // check func call, that a call is valid (not abstract, etc) and provided a valid number of arguments
 // also, check the number of arguments passed as callbacks to extern functions
 VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> call) {
   FunctionPtr f = call->func_id;
   if (!f) {
-    return call;    // an error has already been printed when it wasn't set
+    return call; // an error has already been printed when it wasn't set
   }
 
   if (f->is_extern()) {
@@ -230,24 +229,20 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
   }
 
   // if f_called is f(...$args) or call is f(...[1,2]), then resample called arguments
-  bool has_variadic_arg = vk::any_of(call->args(), [](VertexPtr arg) {
-    return arg->type() == op_varg;
-  });
+  bool has_variadic_arg = vk::any_of(call->args(), [](VertexPtr arg) { return arg->type() == op_varg; });
   if (f->has_variadic_param || has_variadic_arg) {
     call = process_varargs(call, call->func_id);
   }
 
   if (f->modifiers.is_static()) {
-    kphp_error(call->extra_type != op_ex_func_call_arrow,
-               fmt_format("Called static method {}() using -> (need to use ::)", f->as_human_readable()));
+    kphp_error(call->extra_type != op_ex_func_call_arrow, fmt_format("Called static method {}() using -> (need to use ::)", f->as_human_readable()));
   }
   if (f->modifiers.is_instance()) {
     kphp_error(call->extra_type == op_ex_func_call_arrow || call->extra_type == op_ex_constructor_call,
                fmt_format("Non-static method {}() is called statically (use ->, not ::)", f->as_human_readable()));
   }
   if (f->modifiers.is_abstract()) {
-    kphp_error(f->is_virtual_method,
-               fmt_format("Can not call an abstract method {}()", f->as_human_readable()));
+    kphp_error(f->is_virtual_method, fmt_format("Can not call an abstract method {}()", f->as_human_readable()));
   }
 
   VertexRange func_params = f->get_params();
@@ -266,12 +261,14 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
   }
 
   int call_n_params = call_params.size();
-  int delta_this = f->has_implicit_this_arg() ? 1 : 0;    // not to count implicit $this on error output
+  int delta_this = f->has_implicit_this_arg() ? 1 : 0; // not to count implicit $this on error output
 
   kphp_error(call_n_params >= f->get_min_argn(),
-             fmt_format("Too few arguments in call to {}(), expected {}, have {}", TermStringFormat::paint_bold(f->as_human_readable()), f->get_min_argn() - delta_this, call_n_params - delta_this));
+             fmt_format("Too few arguments in call to {}(), expected {}, have {}", TermStringFormat::paint_bold(f->as_human_readable()),
+                        f->get_min_argn() - delta_this, call_n_params - delta_this));
   kphp_error(func_params.size() >= call_n_params,
-             fmt_format("Too many arguments in call to {}(), expected {}, have {}", TermStringFormat::paint_bold(f->as_human_readable()), func_params.size() - delta_this, call_n_params - delta_this));
+             fmt_format("Too many arguments in call to {}(), expected {}, have {}", TermStringFormat::paint_bold(f->as_human_readable()),
+                        func_params.size() - delta_this, call_n_params - delta_this));
 
   for (int i = 0; i < call_params.size() && i < func_params.size(); ++i) {
     auto func_param = func_params[i].as<op_func_param>();
@@ -283,8 +280,8 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
         int delta_this = f_callback->has_implicit_this_arg() ? 1 : 0;
         kphp_error(call_n_params >= f_callback->get_min_argn(),
                    fmt_format("Too few arguments in callback, expected {}, have {}", f_callback->get_min_argn() - delta_this, call_n_params - delta_this));
-        kphp_error(f_callback->get_params().size() >= call_n_params,
-                   fmt_format("Too many arguments in callback, expected {}, have {}", f_callback->get_params().size() - delta_this, call_n_params - delta_this));
+        kphp_error(f_callback->get_params().size() >= call_n_params, fmt_format("Too many arguments in callback, expected {}, have {}",
+                                                                                f_callback->get_params().size() - delta_this, call_n_params - delta_this));
 
         for (auto p : f_callback->get_params()) {
           kphp_error(!p.as<op_func_param>()->var()->ref_flag, "You can't pass callbacks with &references to built-in functions");
@@ -299,7 +296,7 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
     if (f->type == FunctionData::func_local && !is_instance_call) {
       // static::f() (and some other cases) could be earlier replaced by Base::f(static=Derived)
       if (f->modifiers.is_static() && f->context_class && f->outer_function) {
-        f = f->outer_function;  // refs back to Base::f()
+        f = f->outer_function; // refs back to Base::f()
       }
       modulite_check_when_call_function(current_function, f);
     } else if (f->type == FunctionData::func_local && is_constructor_call) {

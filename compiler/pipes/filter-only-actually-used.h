@@ -23,12 +23,13 @@ using FunctionAndEdges = std::pair<FunctionPtr, std::vector<EdgeInfo>>;
 // 4) Sends actually reachable functions to the os.
 //    All instance functions are parsed, but this pipe sends only those that are actually used.
 // 5) Removes the unused class methods.
-class FilterOnlyActuallyUsedFunctionsF final: public SyncPipeF<filter_detail::FunctionAndEdges, FunctionPtr> {
+class FilterOnlyActuallyUsedFunctionsF final : public SyncPipeF<filter_detail::FunctionAndEdges, FunctionPtr> {
 public:
   using EdgeInfo = filter_detail::EdgeInfo;
   using FunctionAndEdges = filter_detail::FunctionAndEdges;
+
 public:
   FilterOnlyActuallyUsedFunctionsF() = default;
 
-  void on_finish(DataStream<FunctionPtr> &os) final;
+  void on_finish(DataStream<FunctionPtr>& os) final;
 };

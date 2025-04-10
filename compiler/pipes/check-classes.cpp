@@ -16,16 +16,14 @@
 #include "compiler/phpdoc.h"
 
 VertexPtr CheckClassesPass::on_enter_vertex(VertexPtr root) {
-  const auto *type_data = root->tinf_node.get_type();
+  const auto* type_data = root->tinf_node.get_type();
   if (auto var = root.try_as<op_var>()) {
     type_data = var->var_id ? var->var_id->tinf_node.get_type() : type_data;
   }
   if (type_data && type_data->ptype() == tp_Class) {
-    const auto &class_types = type_data->class_types();
+    const auto& class_types = type_data->class_types();
     kphp_error(std::distance(class_types.begin(), class_types.end()) == 1,
-               fmt_format("Can't deduce class type, possible options are: {}",
-                          vk::join(class_types, ", ", [](ClassPtr c) { return c->as_human_readable(); }))
-    );
+               fmt_format("Can't deduce class type, possible options are: {}", vk::join(class_types, ", ", [](ClassPtr c) { return c->as_human_readable(); })));
   }
 
   return root;
@@ -44,9 +42,9 @@ inline void CheckClassesPass::analyze_class(ClassPtr klass) {
     check_instance_fields_inited(klass);
   }
   if (klass->can_be_php_autoloaded && !klass->is_builtin() && !klass->need_generated_stub) {
-    kphp_error(klass->file_id->main_function->body_seq == FunctionData::body_value::empty,
-               fmt_format("class {} can be autoloaded, but its file contains some logic (maybe, require_once files with global vars?)\n",
-                          klass->as_human_readable()));
+    kphp_error(
+        klass->file_id->main_function->body_seq == FunctionData::body_value::empty,
+        fmt_format("class {} can be autoloaded, but its file contains some logic (maybe, require_once files with global vars?)\n", klass->as_human_readable()));
   }
 }
 
@@ -54,7 +52,7 @@ inline void CheckClassesPass::analyze_class(ClassPtr klass) {
  * Check that all static class fields are properly initialized during the declaration.
  */
 inline void CheckClassesPass::check_static_fields_inited(ClassPtr klass) {
-  klass->members.for_each([&](const ClassMemberStaticField &f) {
+  klass->members.for_each([&](const ClassMemberStaticField& f) {
     bool allow_no_default_value = false;
     // default value can be omitted for the instance values
     if (!f.var->init_val) {
@@ -62,16 +60,14 @@ inline void CheckClassesPass::check_static_fields_inited(ClassPtr klass) {
     }
 
     kphp_error(f.var->init_val || allow_no_default_value,
-               fmt_format("static {} is not inited at declaration (inferred {})",
-                          f.var->as_human_readable(), f.get_inferred_type()->as_human_readable()));
+               fmt_format("static {} is not inited at declaration (inferred {})", f.var->as_human_readable(), f.get_inferred_type()->as_human_readable()));
   });
 }
 
 inline void CheckClassesPass::check_instance_fields_inited(ClassPtr klass) {
-  klass->members.for_each([](const ClassMemberInstanceField &f) {
+  klass->members.for_each([](const ClassMemberInstanceField& f) {
     PrimitiveType ptype = f.var->tinf_node.get_type()->get_real_ptype();
-    kphp_error(ptype != tp_any,
-               fmt_format("var {} is declared but never written; please, provide a default value", f.var->as_human_readable()));
+    kphp_error(ptype != tp_any, fmt_format("var {} is declared but never written; please, provide a default value", f.var->as_human_readable()));
   });
 }
 
@@ -79,7 +75,7 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
   used_serialization_tags_t used_serialization_tags_for_fields{false};
   fill_reserved_serialization_tags(used_serialization_tags_for_fields, klass);
 
-  klass->members.for_each([&](ClassMemberInstanceField &f) {
+  klass->members.for_each([&](ClassMemberInstanceField& f) {
     auto kphp_serialized_field_tag = f.phpdoc ? f.phpdoc->find_tag(PhpDocType::kphp_serialized_field) : nullptr;
     if (!kphp_serialized_field_tag) {
       kphp_error(!klass->is_serializable, fmt_format("kphp-serialized-field is required for field: {}", f.local_name()));
@@ -91,12 +87,12 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
     }
 
     std::string value = kphp_serialized_field_tag->value_as_string();
-    const auto *field_type = f.root->var_id->tinf_node.get_type();
+    const auto* field_type = f.root->var_id->tinf_node.get_type();
     std::unordered_set<ClassPtr> classes_inside;
     field_type->get_all_class_types_inside(classes_inside);
     for (auto inner_c : classes_inside) {
-      kphp_error(inner_c->is_serializable, fmt_format("class {} must be serializable as it is used in field {}::{}",
-                                                      TermStringFormat::paint_red(inner_c->name), klass->name, f.local_name()));
+      kphp_error(inner_c->is_serializable, fmt_format("class {} must be serializable as it is used in field {}::{}", TermStringFormat::paint_red(inner_c->name),
+                                                      klass->name, f.local_name()));
     }
 
     try {
@@ -114,25 +110,24 @@ void CheckClassesPass::check_serialized_fields(ClassPtr klass) {
       f.serialization_tag = kphp_serialized_field;
       f.serialize_as_float32 = f.phpdoc->has_tag(PhpDocType::kphp_serialized_float32);
       used_serialization_tags_for_fields[kphp_serialized_field] = true;
-    } catch (std::logic_error &) {
+    } catch (std::logic_error&) {
       kphp_error_return(false, fmt_format("bad kphp-serialized-field: '{}'", value));
     }
   });
 
-  klass->members.for_each([&](ClassMemberStaticField &f) {
+  klass->members.for_each([&](ClassMemberStaticField& f) {
     if (f.phpdoc) {
-      kphp_error_return(!f.phpdoc->has_tag(PhpDocType::kphp_serialized_field) &&
-                        !f.phpdoc->has_tag(PhpDocType::kphp_serialized_float32),
+      kphp_error_return(!f.phpdoc->has_tag(PhpDocType::kphp_serialized_field) && !f.phpdoc->has_tag(PhpDocType::kphp_serialized_float32),
                         fmt_format("kphp-serialized-field is allowed only for instance fields: {}", f.local_name()));
     }
   });
 }
 
-void CheckClassesPass::fill_reserved_serialization_tags(used_serialization_tags_t &used_serialization_tags_for_fields, ClassPtr klass) {
+void CheckClassesPass::fill_reserved_serialization_tags(used_serialization_tags_t& used_serialization_tags_for_fields, ClassPtr klass) {
   if (!klass->phpdoc) {
     return;
   }
-  if (const PhpDocTag *reserved_ids = klass->phpdoc->find_tag(PhpDocType::kphp_reserved_fields)) {
+  if (const PhpDocTag* reserved_ids = klass->phpdoc->find_tag(PhpDocType::kphp_reserved_fields)) {
     vk::string_view ids = reserved_ids->value;
     kphp_error_return(ids.size() >= 2 && ids[0] == '[' && ids[ids.size() - 1] == ']', "reserved tags must be wrapped by []");
     ids = ids.substr(1, ids.size() - 2);
@@ -140,9 +135,9 @@ void CheckClassesPass::fill_reserved_serialization_tags(used_serialization_tags_
     for (auto id_str : split_skipping_delimeters(ids, ",")) {
       int id;
       kphp_error_return(sscanf(id_str.data(), "%d", &id) == 1, "tag expected");
-      kphp_error_return(0 <= id && id < max_serialization_tag_value, fmt_format("kphp-reserved-field({}) must be >=0 and < than {}", id, max_serialization_tag_value + 0));
+      kphp_error_return(0 <= id && id < max_serialization_tag_value,
+                        fmt_format("kphp-reserved-field({}) must be >=0 and < than {}", id, max_serialization_tag_value + 0));
       used_serialization_tags_for_fields[id] = true;
     }
   }
 }
-

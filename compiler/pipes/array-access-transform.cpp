@@ -64,7 +64,7 @@ std::pair<VertexPtr, bool> fixup_check_function(VertexPtr cur, VertexPtr prev, F
     auto klass = func_call->func_id->class_id;
     kphp_assert_msg(klass, "Internal error: cannot get type of object for [] access");
 
-    const auto *isset_method = klass->get_instance_method("offsetExists");
+    const auto* isset_method = klass->get_instance_method("offsetExists");
     kphp_error(isset_method, fmt_format("Class {} does not implement \\ArrayAccess", klass->name).c_str());
 
     if (prev->type() == op_index) {
@@ -91,8 +91,8 @@ std::pair<VertexPtr, bool> fixup_check_function(VertexPtr cur, VertexPtr prev, F
       exists_call->str_val = isset_method->global_name();
       exists_call->func_id = isset_method->function;
 
-      auto as_or =
-        VertexAdaptor<op_log_or>::create(VertexAdaptor<op_log_not>::create(exists_call), VertexAdaptor<op_eq2>::create(cur, VertexAdaptor<op_null>::create()));
+      auto as_or = VertexAdaptor<op_log_or>::create(VertexAdaptor<op_log_not>::create(exists_call),
+                                                    VertexAdaptor<op_eq2>::create(cur, VertexAdaptor<op_null>::create()));
       as_or.set_location_recursively(cur);
 
       return {as_or, true};
@@ -139,7 +139,7 @@ VertexPtr on_log_not(VertexAdaptor<op_log_not> log_not_op) {
     }
 
     if (has_index) {
-      const auto *tpe = tinf::get_type(v);
+      const auto* tpe = tinf::get_type(v);
       if (tpe->ptype() == tp_mixed || (tpe->ptype() == tp_Class && G->get_class("ArrayAccess")->is_parent_of(tpe->class_type()))) {
         return VertexAdaptor<op_eq3>::create(isset->front(), VertexAdaptor<op_null>::create());
       }
@@ -157,7 +157,7 @@ VertexPtr on_unset(VertexAdaptor<op_unset> unset) {
       auto klass = func_call->func_id->class_id;
       kphp_assert_msg(klass, "Internal error: cannot get type of object for [] access");
 
-      const auto *unset_method = klass->get_instance_method("offsetUnset");
+      const auto* unset_method = klass->get_instance_method("offsetUnset");
       kphp_error(unset_method, fmt_format("Class {} does not implement \\ArrayAccess", klass->name).c_str());
 
       func_call->str_val = unset_method->global_name();

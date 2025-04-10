@@ -12,10 +12,12 @@ class RestrictionBase {
 public:
   virtual ~RestrictionBase() = default;
 
-  RestrictionBase() :
-    location(stage::get_location()) {}
+  RestrictionBase()
+      : location(stage::get_location()) {}
 
-  const Location &get_location() const { return location; }
+  const Location& get_location() const {
+    return location;
+  }
 
   virtual bool is_restriction_broken() = 0;
   virtual std::string get_description() = 0;

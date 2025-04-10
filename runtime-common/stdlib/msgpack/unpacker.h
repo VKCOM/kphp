@@ -14,15 +14,15 @@ namespace vk::msgpack {
 
 class unpacker : private vk::not_copyable {
 public:
-  explicit unpacker(const string &input) noexcept
-    : input_(input) {}
+  explicit unpacker(const string& input) noexcept
+      : input_(input) {}
 
   msgpack::object unpack();
   bool has_error() const noexcept;
   string get_error_msg() const noexcept;
 
 private:
-  const string &input_;
+  const string& input_;
   std::size_t bytes_consumed_{0};
   msgpack::zone zone_;
 };

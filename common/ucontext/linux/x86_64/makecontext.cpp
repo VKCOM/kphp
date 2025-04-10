@@ -41,18 +41,18 @@
 
 extern "C" void start_context_portable(void) __attribute__((visibility("hidden")));
 
-extern "C" void makecontext_portable(kcontext_t *kcp, void (*func)(void), int argc, ...) {
-  kgreg_t *sp;
+extern "C" void makecontext_portable(kcontext_t* kcp, void (*func)(void), int argc, ...) {
+  kgreg_t* sp;
   va_list ap;
   uint32_t argc_on_stack = (argc > 6 ? argc - 6 : 0); // Prev 6 args passed via regs
   uint32_t link = argc_on_stack + 1;
   int i;
 
   // Generate room on stack for parameter if needed and link
-  sp = reinterpret_cast<kgreg_t *>(reinterpret_cast<uintptr_t>(kcp->stack.sp) + kcp->stack.size);
+  sp = reinterpret_cast<kgreg_t*>(reinterpret_cast<uintptr_t>(kcp->stack.sp) + kcp->stack.size);
   sp -= argc_on_stack + 1;
   // Align stack and make space for trampoline address
-  sp = reinterpret_cast<kgreg_t *>((reinterpret_cast<uintptr_t>(sp) & -16L) - 8);
+  sp = reinterpret_cast<kgreg_t*>((reinterpret_cast<uintptr_t>(sp) & -16L) - 8);
 
   // Address to jump to context entrypoint
   kcp->mcontext.gregs[GREG_RIP] = reinterpret_cast<uintptr_t>(func);
@@ -68,28 +68,28 @@ extern "C" void makecontext_portable(kcontext_t *kcp, void (*func)(void), int ar
   /* Handle arguments. */
   for (i = 0; i < argc; ++i)
     switch (i) {
-      case 0:
-        kcp->mcontext.gregs[GREG_RDI] = va_arg(ap, kgreg_t);
-        break;
-      case 1:
-        kcp->mcontext.gregs[GREG_RSI] = va_arg(ap, kgreg_t);
-        break;
-      case 2:
-        kcp->mcontext.gregs[GREG_RDX] = va_arg(ap, kgreg_t);
-        break;
-      case 3:
-        kcp->mcontext.gregs[GREG_RCX] = va_arg(ap, kgreg_t);
-        break;
-      case 4:
-        kcp->mcontext.gregs[GREG_R8] = va_arg(ap, kgreg_t);
-        break;
-      case 5:
-        kcp->mcontext.gregs[GREG_R9] = va_arg(ap, kgreg_t);
-        break;
-      default:
-        /* Put value on stack.  */
-        sp[i - 5] = va_arg(ap, kgreg_t);
-        break;
+    case 0:
+      kcp->mcontext.gregs[GREG_RDI] = va_arg(ap, kgreg_t);
+      break;
+    case 1:
+      kcp->mcontext.gregs[GREG_RSI] = va_arg(ap, kgreg_t);
+      break;
+    case 2:
+      kcp->mcontext.gregs[GREG_RDX] = va_arg(ap, kgreg_t);
+      break;
+    case 3:
+      kcp->mcontext.gregs[GREG_RCX] = va_arg(ap, kgreg_t);
+      break;
+    case 4:
+      kcp->mcontext.gregs[GREG_R8] = va_arg(ap, kgreg_t);
+      break;
+    case 5:
+      kcp->mcontext.gregs[GREG_R9] = va_arg(ap, kgreg_t);
+      break;
+    default:
+      /* Put value on stack.  */
+      sp[i - 5] = va_arg(ap, kgreg_t);
+      break;
     }
   va_end(ap);
 }

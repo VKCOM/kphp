@@ -20,7 +20,7 @@ struct C$ArrayIterator final : public refcountable_php_classes<C$ArrayIterator>,
   array<mixed>::const_iterator it;
   array<mixed>::const_iterator end;
 
-  const char *get_class() const noexcept {
+  const char* get_class() const noexcept {
     return "ArrayIterator";
   }
 
@@ -32,33 +32,33 @@ struct C$ArrayIterator final : public refcountable_php_classes<C$ArrayIterator>,
   using DummyVisitorMethods::accept;
 };
 
-void array_iterator_reset(class_instance<C$ArrayIterator> const &v$this, const array<mixed> &arr) noexcept;
+void array_iterator_reset(class_instance<C$ArrayIterator> const& v$this, const array<mixed>& arr) noexcept;
 
-class_instance<C$ArrayIterator> f$ArrayIterator$$__construct(class_instance<C$ArrayIterator> const &v$this, const array<mixed> &arr) noexcept;
+class_instance<C$ArrayIterator> f$ArrayIterator$$__construct(class_instance<C$ArrayIterator> const& v$this, const array<mixed>& arr) noexcept;
 
-inline bool f$ArrayIterator$$valid(class_instance<C$ArrayIterator> const &v$this) noexcept {
+inline bool f$ArrayIterator$$valid(class_instance<C$ArrayIterator> const& v$this) noexcept {
   return v$this->it != v$this->end;
 }
 
-inline int64_t f$ArrayIterator$$count(class_instance<C$ArrayIterator> const &v$this) noexcept {
+inline int64_t f$ArrayIterator$$count(class_instance<C$ArrayIterator> const& v$this) noexcept {
   return v$this->arr.count();
 }
 
-inline mixed f$ArrayIterator$$current(class_instance<C$ArrayIterator> const &v$this) noexcept {
+inline mixed f$ArrayIterator$$current(class_instance<C$ArrayIterator> const& v$this) noexcept {
   return v$this->it != v$this->end ? v$this->it.get_value() : Optional<bool>{};
 }
 
-inline mixed f$ArrayIterator$$key(class_instance<C$ArrayIterator> const &v$this) noexcept {
+inline mixed f$ArrayIterator$$key(class_instance<C$ArrayIterator> const& v$this) noexcept {
   return v$this->it != v$this->end ? v$this->it.get_key() : Optional<bool>{};
 }
 
-inline void f$ArrayIterator$$next(class_instance<C$ArrayIterator> const &v$this) noexcept {
+inline void f$ArrayIterator$$next(class_instance<C$ArrayIterator> const& v$this) noexcept {
   if (v$this->it != v$this->end) {
     ++v$this->it;
   }
 }
 
-inline class_instance<C$ArrayIterator> f$reset_array_iterator(const class_instance<C$ArrayIterator> &iter, const array<mixed> &arr) {
+inline class_instance<C$ArrayIterator> f$reset_array_iterator(const class_instance<C$ArrayIterator>& iter, const array<mixed>& arr) {
   array_iterator_reset(iter, arr);
   return iter;
 }

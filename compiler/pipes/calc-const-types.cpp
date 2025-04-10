@@ -16,13 +16,13 @@ void CalcConstTypePass::on_start() {
 }
 
 void CalcConstTypePass::calc_const_type_of_class_fields(ClassPtr klass) {
-  klass->members.for_each([this](ClassMemberStaticField &f) {
+  klass->members.for_each([this](ClassMemberStaticField& f) {
     if (f.var->init_val) {
       run_function_pass(f.var->init_val, this);
       kphp_error(f.var->init_val->const_type == cnst_const_val, fmt_format("Default value of {} is not constant", f.var->as_human_readable()));
     }
   });
-  klass->members.for_each([this](ClassMemberInstanceField &f) {
+  klass->members.for_each([this](ClassMemberInstanceField& f) {
     if (f.var->init_val) {
       run_function_pass(f.var->init_val, this);
       kphp_error(f.var->init_val->const_type == cnst_const_val, fmt_format("Default value of {} is not constant", f.var->as_human_readable()));
@@ -42,31 +42,31 @@ VertexPtr CalcConstTypePass::on_exit_vertex(VertexPtr v) {
   // for now only pure functions and
   // constructors in defines can be `cnst_const_val`-ed
   if (auto as_func_call = v.try_as<op_func_call>()) {
-    const bool can_be_const = as_func_call->func_id && ((as_func_call->func_id->is_constructor() && inlined_define_cnt > 0)|| as_func_call->func_id->is_pure);
+    const bool can_be_const = as_func_call->func_id && ((as_func_call->func_id->is_constructor() && inlined_define_cnt > 0) || as_func_call->func_id->is_pure);
     if (!can_be_const) {
       v->const_type = cnst_nonconst_val;
       return v;
     }
   }
   switch (OpInfo::cnst(v->type())) {
-    case cnst_func:
-    case cnst_const_func: {
-      bool has_nonconst_son = vk::any_of(*v, [](VertexPtr son) { return son->const_type == cnst_nonconst_val; });
-      v->const_type = has_nonconst_son ? cnst_nonconst_val : cnst_const_val;
-      break;
-    }
-    case cnst_nonconst_func: {
-      v->const_type = cnst_nonconst_val;
-      break;
-    }
-    case cnst_not_func: {
-      v->const_type = cnst_not_val;
-      break;
-    }
-    default:
-      kphp_error (0, fmt_format("Unknown cnst-type for [op = {}]", vk::to_underlying(v->type())));
-      kphp_fail();
-      break;
+  case cnst_func:
+  case cnst_const_func: {
+    bool has_nonconst_son = vk::any_of(*v, [](VertexPtr son) { return son->const_type == cnst_nonconst_val; });
+    v->const_type = has_nonconst_son ? cnst_nonconst_val : cnst_const_val;
+    break;
+  }
+  case cnst_nonconst_func: {
+    v->const_type = cnst_nonconst_val;
+    break;
+  }
+  case cnst_not_func: {
+    v->const_type = cnst_not_val;
+    break;
+  }
+  default:
+    kphp_error(0, fmt_format("Unknown cnst-type for [op = {}]", vk::to_underlying(v->type())));
+    kphp_fail();
+    break;
   }
   return v;
 }

@@ -6,6 +6,6 @@
 
 #include "runtime-light/state/instance-state.h"
 
-FileSystemInstanceState &FileSystemInstanceState::get() noexcept {
+FileSystemInstanceState& FileSystemInstanceState::get() noexcept {
   return InstanceState::get().file_system_instance_state;
 }

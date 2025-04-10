@@ -5,6 +5,6 @@
 #pragma once
 
 template<class T>
-T f$make_clone(const T &x) noexcept {
+T f$make_clone(const T& x) noexcept {
   return x;
 }

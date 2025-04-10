@@ -20,7 +20,9 @@
  * It's much faster than native xgboost due to compressed layout and avoiding ifs in code.
  */
 
-namespace kphp_ml { struct MLModel; }
+namespace kphp_ml {
+struct MLModel;
+}
 
 namespace kphp_ml_xgboost {
 
@@ -35,7 +37,7 @@ struct CalibrationMethod {
   enum {
     no_calibration,
     platt_scaling, // https://en.wikipedia.org/wiki/Platt_scaling
-    update_prior, // https://www.mpia.de/3432751/probcomb_TN.pdf, formulae 12, 18
+    update_prior,  // https://www.mpia.de/3432751/probcomb_TN.pdf, formulae 12, 18
   } calibration_method{no_calibration};
 
   union {
@@ -58,11 +60,21 @@ struct XgbTreeNode {
   int combined_value;
   float split_cond;
 
-  bool is_leaf() const noexcept { return combined_value < 0; }
-  int vec_offset_dense() const noexcept { return combined_value & 0xFFFF; }
-  int vec_offset_sparse() const noexcept { return (combined_value & 0xFFFF) >> 1; }
-  int left_child() const noexcept { return combined_value >> 16; }
-  bool default_left() const noexcept { return combined_value & 1; }
+  bool is_leaf() const noexcept {
+    return combined_value < 0;
+  }
+  int vec_offset_dense() const noexcept {
+    return combined_value & 0xFFFF;
+  }
+  int vec_offset_sparse() const noexcept {
+    return (combined_value & 0xFFFF) >> 1;
+  }
+  int left_child() const noexcept {
+    return combined_value >> 16;
+  }
+  bool default_left() const noexcept {
+    return combined_value & 1;
+  }
 };
 
 struct XgbTree {
@@ -86,13 +98,13 @@ struct XgboostModel {
   std::unordered_map<uint64_t, int> reindex_map_str2int;
   // to accept input_kind = ht_remap_int_keys_to_fvalue
   // see below, same format
-  int *reindex_map_int2int;
+  int* reindex_map_int2int;
   // to accept input_kind = ht_direct_int_keys_to_fvalue
   // looks like [-1, vec_offset, -1, -1, ...]
   // any feature_id can be looked up as offset_in_vec[feature_id]:
   // * -1 means "feature is not used in a model (in any tree)"
   // * otherwise, it's used to access vector_x, see XgbDensePredictor
-  int *offset_in_vec;
+  int* offset_in_vec;
 
   // for ModelKind::xgboost_ht_remap
   bool skip_zeroes;
@@ -102,6 +114,6 @@ struct XgboostModel {
   double transform_prediction(double score) const noexcept;
 };
 
-array<double> kml_predict_xgboost(const kphp_ml::MLModel &kml, const array<array<double>> &in, char *mutable_buffer);
+array<double> kml_predict_xgboost(const kphp_ml::MLModel& kml, const array<array<double>>& in, char* mutable_buffer);
 
 } // namespace kphp_ml_xgboost

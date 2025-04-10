@@ -49,7 +49,7 @@ static std::string format_help_arg_name(int val) {
   result << "\t";
   result << "--" << options[val].name;
   if (options[val].short_name) {
-    result <<  "/-" << options[val].short_name;
+    result << "/-" << options[val].short_name;
   }
   if (options[val].has_arg == required_argument) {
     result << " <arg>";
@@ -73,7 +73,7 @@ void parse_usage() {
   }
   std::sort(sections.begin(), sections.end());
   sections.erase(std::unique(sections.begin(), sections.end()), sections.end());
-  for (const auto &section : sections) {
+  for (const auto& section : sections) {
     printf("\n%s options:\n", get_option_section_name(section));
     for (int i = 1; i < MAX_OPTION_ID; i++) {
       if (is_valid_option(i) && options[i].section == section) {
@@ -103,7 +103,7 @@ void parse_usage() {
   }
 }
 
-static void vparse_common_option(option_section_t section, options_parser parser, const char *name, int has_arg, int val, const char *help, va_list ap) {
+static void vparse_common_option(option_section_t section, options_parser parser, const char* name, int has_arg, int val, const char* help, va_list ap) {
   need_rebuild = true;
   if (vk::none_of_equal(has_arg, no_argument, required_argument, optional_argument)) {
     kprintf("Strange has_arg value %d\n", has_arg);
@@ -115,9 +115,9 @@ static void vparse_common_option(option_section_t section, options_parser parser
   }
   if (is_valid_option(val) || get_option_alias(val)) {
     if (33 <= val && val <= 127) {
-      kprintf ("Duplicate option `%c`\n", (char)val);
+      kprintf("Duplicate option `%c`\n", (char)val);
     } else {
-      kprintf ("Duplicate option %d\n", val);
+      kprintf("Duplicate option %d\n", val);
     }
     exit(5);
   }
@@ -136,26 +136,25 @@ static void vparse_common_option(option_section_t section, options_parser parser
   }
 }
 
-void parse_option(const char *name, int has_arg, int val, const char *help, ...) {
+void parse_option(const char* name, int has_arg, int val, const char* help, ...) {
   va_list ap;
-  va_start (ap, help);
+  va_start(ap, help);
   vparse_common_option(OPT_ENGINE_CUSTOM, nullptr, name, has_arg, val, help, ap);
-  va_end (ap);
+  va_end(ap);
 }
 
-void parse_common_option(option_section_t section, options_parser parser, const char *name, int has_arg, int val, const char *help, ...) {
+void parse_common_option(option_section_t section, options_parser parser, const char* name, int has_arg, int val, const char* help, ...) {
   static int useless_option_id = 5000;
   if (val == -1) {
     val = useless_option_id++;
   }
   va_list ap;
-  va_start (ap, help);
+  va_start(ap, help);
   vparse_common_option(section, parser, name, has_arg, val, help, ap);
-  va_end (ap);
+  va_end(ap);
 }
 
-
-static int find_parse_option_by_name(const char *name) {
+static int find_parse_option_by_name(const char* name) {
   int i;
   for (i = 0; i < MAX_OPTION_ID; i++) {
     while (options[i].name == name) {
@@ -165,7 +164,7 @@ static int find_parse_option_by_name(const char *name) {
   return 0;
 }
 
-void parse_option_alias(const char *name, char val) {
+void parse_option_alias(const char* name, char val) {
   need_rebuild = true;
   assert(name);
   assert(val >= 33 && static_cast<unsigned char>(val) <= 127);
@@ -191,7 +190,7 @@ static void remove_option_by_index(int val) {
   options[val] = engine_option_t();
 }
 
-void remove_parse_option(const char *name) {
+void remove_parse_option(const char* name) {
   int val = find_parse_option_by_name(name);
   if (!val) {
     send_message_to_assertion_chat("Try to remove unexistent option %s\n", name);
@@ -207,7 +206,7 @@ void remove_all_options() {
   }
 }
 
-void init_parse_options(const option_section_t *sections) {
+void init_parse_options(const option_section_t* sections) {
   for (int i = 0; i < MAX_OPTION_ID; i++) {
     if (is_valid_option(i)) {
       int to_save = 0;
@@ -223,44 +222,44 @@ void init_parse_options(const option_section_t *sections) {
   }
 }
 
-long long parse_memory_limit_default(const char *s, char def_size) {
+long long parse_memory_limit_default(const char* s, char def_size) {
   long long x;
   char c = 0;
   if (sscanf(s, "%lld%c", &x, &c) < 1) {
-    kprintf ("Parsing memory limit for option fail: %s\n", s);
+    kprintf("Parsing memory limit for option fail: %s\n", s);
     exit(1);
   }
   if (c == 0) {
     if (def_size) {
-      kprintf ("No size modifier given in parse_memory_limit, using default (%c)\n", def_size);
+      kprintf("No size modifier given in parse_memory_limit, using default (%c)\n", def_size);
     }
     c = def_size;
   }
   switch (c | 0x20) {
-    case ' ':
-      break;
-    case 'b':
-      break;
-    case 'k':
-      x <<= 10;
-      break;
-    case 'm':
-      x <<= 20;
-      break;
-    case 'g':
-      x <<= 30;
-      break;
-    case 't':
-      x <<= 40;
-      break;
-    default:
-      kprintf ("Parsing memory limit fail. Unknown suffix '%c'.\n", c);
-      exit(1);
+  case ' ':
+    break;
+  case 'b':
+    break;
+  case 'k':
+    x <<= 10;
+    break;
+  case 'm':
+    x <<= 20;
+    break;
+  case 'g':
+    x <<= 30;
+    break;
+  case 't':
+    x <<= 40;
+    break;
+  default:
+    kprintf("Parsing memory limit fail. Unknown suffix '%c'.\n", c);
+    exit(1);
   }
   return x;
 }
 
-int convert_bytes_num_to_string(long long bytes, char *res, int res_size) {
+int convert_bytes_num_to_string(long long bytes, char* res, int res_size) {
   const char suf[] = {' ', 'k', 'm', 'g', 't'};
   constexpr int suf_count = sizeof(suf);
 
@@ -273,44 +272,44 @@ int convert_bytes_num_to_string(long long bytes, char *res, int res_size) {
   return snprintf(res, res_size, "%.3f%c", result, suf[cur_suf]);
 }
 
-int parse_time_limit(const char *s) {
+int parse_time_limit(const char* s) {
   int x = 0;
   char c = 0;
   if (sscanf(s, "%d%c", &x, &c) < 1) {
-    kprintf ("Parsing time limit for option fail: %s\n", s);
+    kprintf("Parsing time limit for option fail: %s\n", s);
     exit(1);
   }
   switch (c | 0x20) {
-    case ' ':
-      break;
-    case 's':
-      break;
-    case 'm':
-      x *= 60;
-      break;
-    case 'h':
-      x *= 3600;
-      break;
-    case 'd':
-      x *= 86400;
-      break;
-    default:
-      kprintf ("Parsing time limit fail. Unknown suffix '%c'.\n", c);
-      exit(1);
+  case ' ':
+    break;
+  case 's':
+    break;
+  case 'm':
+    x *= 60;
+    break;
+  case 'h':
+    x *= 3600;
+    break;
+  case 'd':
+    x *= 86400;
+    break;
+  default:
+    kprintf("Parsing time limit fail. Unknown suffix '%c'.\n", c);
+    exit(1);
   }
   return x;
 }
 
-long long parse_memory_limit(const char *s) {
+long long parse_memory_limit(const char* s) {
   return parse_memory_limit_default(s, 0);
 }
 
-static const char *usage_other_args_desc = "<kfs-binlog-prefix>";
-static const char *usage_progname;
+static const char* usage_other_args_desc = "<kfs-binlog-prefix>";
+static const char* usage_progname;
 void (*usage_options_desc)() = parse_usage;
 void (*usage_other_info)() = nullptr;
 
-void usage_set_other_args_desc(const char *s) {
+void usage_set_other_args_desc(const char* s) {
   usage_other_args_desc = s;
 }
 
@@ -326,7 +325,7 @@ void usage_and_exit() {
   exit(2);
 }
 
-int parse_engine_options_long(int argc, char **argv, options_parser execute) {
+int parse_engine_options_long(int argc, char** argv, options_parser execute) {
   usage_progname = argv[0];
   std::string opt_string;
   std::vector<option> long_opts;
@@ -377,7 +376,6 @@ int parse_engine_options_long(int argc, char **argv, options_parser execute) {
     exit(56);
   };
 
-
   while (true) {
     if (need_rebuild) {
       rebuild_options();
@@ -414,12 +412,12 @@ int parse_engine_options_long(int argc, char **argv, options_parser execute) {
   return 0;
 }
 
-void always_enable_option(const char *name, char *arg) {
+void always_enable_option(const char* name, char* arg) {
   need_rebuild = true;
   int c = find_parse_option_by_name(name);
   assert(c);
   assert(options[c].parser);
-  char *old_optarg = optarg;
+  char* old_optarg = optarg;
   optarg = arg;
   options[c].help += " [enabled by default]";
   options[c].parser(c, options[c].name.c_str());

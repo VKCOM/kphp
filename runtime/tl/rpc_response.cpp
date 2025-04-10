@@ -11,7 +11,7 @@
 #include "runtime/rpc.h"
 #include "runtime/tl/rpc_req_error.h"
 
-class_instance<C$VK$TL$RpcResponse> RpcErrorFactory::make_error(const char *error, int error_code) const {
+class_instance<C$VK$TL$RpcResponse> RpcErrorFactory::make_error(const char* error, int error_code) const {
   return make_error(string{error}, error_code);
 }
 

@@ -8,11 +8,10 @@
 #include "compiler/inferring/restriction-base.h"
 
 class RestrictionNonVoid : public tinf::RestrictionBase {
-  tinf::Node *node;
+  tinf::Node* node;
 
 public:
-
-  explicit RestrictionNonVoid(tinf::Node *node);
+  explicit RestrictionNonVoid(tinf::Node* node);
 
   bool is_restriction_broken() final;
   std::string get_description() final;

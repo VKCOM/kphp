@@ -7,7 +7,7 @@
 #include "compiler/compiler-core.h"
 
 void CppDestDirInitializer::initialize_sync() noexcept {
-  const char *description = "Init cpp dest dir";
+  const char* description = "Init cpp dest dir";
   stage::set_name(description);
   stage::set_file(SrcFilePtr{});
   static CachedProfiler cache{description};

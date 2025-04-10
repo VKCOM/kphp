@@ -21,9 +21,9 @@ private:
 
 class RpcErrorFactory {
 public:
-  virtual class_instance<C$VK$TL$RpcResponse> make_error(const string &error, int32_t error_code) const noexcept = 0;
+  virtual class_instance<C$VK$TL$RpcResponse> make_error(const string& error, int32_t error_code) const noexcept = 0;
 
-  class_instance<C$VK$TL$RpcResponse> make_error(const char *error, int32_t error_code) const noexcept;
+  class_instance<C$VK$TL$RpcResponse> make_error(const char* error, int32_t error_code) const noexcept;
   class_instance<C$VK$TL$RpcResponse> make_error_from_exception_if_possible() const noexcept;
   class_instance<C$VK$TL$RpcResponse> fetch_error_if_possible() const noexcept;
 
@@ -38,7 +38,7 @@ struct RpcResponseErrorFactory : public RpcErrorFactory {
   RpcResponseErrorFactory() = default;
 
 private:
-  class_instance<C$VK$TL$RpcResponse> make_error(const string &error, int32_t error_code) const noexcept final {
+  class_instance<C$VK$TL$RpcResponse> make_error(const string& error, int32_t error_code) const noexcept final {
     auto err{make_instance<C$VK$TL$_common$Types$rpcResponseError_>()};
     err.get()->$error = error;
     err.get()->$error_code = error_code;

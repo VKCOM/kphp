@@ -17,16 +17,16 @@ public:
     return data;
   }
 
-  T *operator->() {
+  T* operator->() {
     return &get();
   }
 
-  T &operator*() {
+  T& operator*() {
     return get();
   }
 
   template<typename Arg>
-  decltype(std::declval<T>()[std::declval<Arg>()]) operator[](Arg &&arg) {
+  decltype(std::declval<T>()[std::declval<Arg>()]) operator[](Arg&& arg) {
     return get()[std::forward<Arg>(arg)];
   }
 };

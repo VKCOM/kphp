@@ -82,19 +82,19 @@ kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool 
   array<mixed> response;
   response.reserve(cert_items.opt_value->size(), false);
 
-  auto item_to_mixed =
-    tl::CertInfoItem::MakeVisitor{[](int64_t val) -> mixed { return val; }, [](tl::string val) -> mixed { return string(val.value.data(), val.value.size()); },
-                                  [](const tl::dictionary<tl::string> &sub_dict) -> mixed {
-                                    array<mixed> resp;
-                                    resp.reserve(sub_dict.size(), false);
-                                    for (auto sub_item : sub_dict) {
-                                      auto key = string(sub_item.key.value.data(), sub_item.key.value.size());
-                                      auto value = string(sub_item.value.value.data(), sub_item.value.value.size());
-                                      resp[key] = value;
-                                    }
+  auto item_to_mixed = tl::CertInfoItem::MakeVisitor{[](int64_t val) -> mixed { return val; },
+                                                     [](tl::string val) -> mixed { return string(val.value.data(), val.value.size()); },
+                                                     [](const tl::dictionary<tl::string>& sub_dict) -> mixed {
+                                                       array<mixed> resp;
+                                                       resp.reserve(sub_dict.size(), false);
+                                                       for (auto sub_item : sub_dict) {
+                                                         auto key = string(sub_item.key.value.data(), sub_item.key.value.size());
+                                                         auto value = string(sub_item.value.value.data(), sub_item.value.value.size());
+                                                         resp[key] = value;
+                                                       }
 
-                                    return resp;
-                                  }};
+                                                       return resp;
+                                                     }};
 
   for (auto cert_kv : std::move(*cert_items.opt_value)) {
     auto key = string(cert_kv.key.value.data(), cert_kv.key.value.size());
@@ -105,7 +105,7 @@ kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool 
   co_return response;
 }
 
-kphp::coro::task<bool> f$openssl_sign(string data, string &signature, string private_key, int64_t algo) noexcept {
+kphp::coro::task<bool> f$openssl_sign(string data, string& signature, string private_key, int64_t algo) noexcept {
   tl::DigestSign request{.data = {.value = {data.c_str(), data.size()}},
                          .private_key = {.value = {private_key.c_str(), private_key.size()}},
                          .algorithm = static_cast<tl::HashAlgorithm>(algo)};
@@ -163,7 +163,7 @@ namespace {
 constexpr std::string_view AES_128_CBC = "aes-128-cbc";
 constexpr std::string_view AES_256_CBC = "aes-256-cbc";
 
-std::optional<tl::CipherAlgorithm> parse_cipher_algorithm(const string &method) noexcept {
+std::optional<tl::CipherAlgorithm> parse_cipher_algorithm(const string& method) noexcept {
   using namespace std::string_view_literals;
   std::string_view method_sv{method.c_str(), method.size()};
 
@@ -188,22 +188,22 @@ int64_t algorithm_iv_len([[maybe_unused]] tl::CipherAlgorithm algorithm) noexcep
 
 int64_t algorithm_key_len(tl::CipherAlgorithm algorithm) noexcept {
   switch (algorithm) {
-    case tl::CipherAlgorithm::AES128: {
-      return AES_128_KEY_LEN;
-    }
-    case tl::CipherAlgorithm::AES256: {
-      return AES_256_KEY_LEN;
-    }
-    default: {
-      php_warning("unexpected cipher algorithm");
-      return 0;
-    }
+  case tl::CipherAlgorithm::AES128: {
+    return AES_128_KEY_LEN;
+  }
+  case tl::CipherAlgorithm::AES256: {
+    return AES_256_KEY_LEN;
+  }
+  default: {
+    php_warning("unexpected cipher algorithm");
+    return 0;
+  }
   }
 }
 
 enum class cipher_opts : int64_t { OPENSSL_RAW_DATA = 1, OPENSSL_ZERO_PADDING = 2, OPENSSL_DONT_ZERO_PAD_KEY = 4 };
 
-Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm algorithm, const string &source_key, const string &source_iv,
+Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm algorithm, const string& source_key, const string& source_iv,
                                                          int64_t options) noexcept {
   const size_t iv_required_len = algorithm_iv_len(algorithm);
   const size_t key_required_len = algorithm_key_len(algorithm);
@@ -240,11 +240,11 @@ Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm alg
 
 array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept {
   array<string> return_value{
-    {std::make_pair(0, string{AES_128_CBC.data(), AES_128_CBC.size()}), std::make_pair(1, string{AES_256_CBC.data(), AES_256_CBC.size()})}};
+      {std::make_pair(0, string{AES_128_CBC.data(), AES_128_CBC.size()}), std::make_pair(1, string{AES_256_CBC.data(), AES_256_CBC.size()})}};
   return return_value;
 }
 
-Optional<int64_t> f$openssl_cipher_iv_length(const string &method) noexcept {
+Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept {
   auto algorithm = parse_cipher_algorithm(method);
   if (!algorithm.has_value()) {
     php_warning("Unknown cipher algorithm");
@@ -253,7 +253,7 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string &method) noexcept {
   return algorithm_iv_len(*algorithm);
 }
 
-kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method, string source_key, int64_t options, string source_iv, string &tag, string aad,
+kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method, string source_key, int64_t options, string source_iv, string& tag, string aad,
                                                      int64_t tag_length __attribute__((unused))) noexcept {
   auto algorithm = parse_cipher_algorithm(method);
   if (!algorithm.has_value()) {
@@ -297,7 +297,7 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
   } else {
     co_return false;
   }
-  co_return(options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(response) : f$base64_encode(response);
+  co_return (options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(response) : f$base64_encode(response);
 }
 
 kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method, string source_key, int64_t options, string source_iv, string tag,
@@ -362,12 +362,12 @@ constexpr std::array<std::pair<std::string_view, tl::HashAlgorithm>, 6> HASH_ALG
                                                                                        {"sha512", tl::HashAlgorithm::SHA512}}};
 
 std::optional<tl::HashAlgorithm> parse_hash_algorithm(std::string_view user_algo) noexcept {
-  const auto *it{std::ranges::find_if(
-    HASH_ALGOS,
-    [user_algo = std::ranges::transform_view(user_algo, [](auto c) { return std::tolower(c); })](auto hash_algo) noexcept {
-      return std::ranges::equal(user_algo, hash_algo);
-    },
-    [](const auto &hash_algo) noexcept { return hash_algo.first; })};
+  const auto* it{std::ranges::find_if(
+      HASH_ALGOS,
+      [user_algo = std::ranges::transform_view(user_algo, [](auto c) { return std::tolower(c); })](auto hash_algo) noexcept {
+        return std::ranges::equal(user_algo, hash_algo);
+      },
+      [](const auto& hash_algo) noexcept { return hash_algo.first; })};
 
   return it != nullptr && it != HASH_ALGOS.end() ? std::optional{it->second} : std::nullopt;
 }
@@ -443,6 +443,6 @@ kphp::coro::task<string> f$sha1(string s, bool raw_output) noexcept {
   co_return co_await hash_impl(tl::HashAlgorithm::SHA1, s, raw_output);
 }
 
-int64_t f$crc32(const string &s) noexcept {
-  return crc32_partial_generic(static_cast<const void *>(s.c_str()), s.size(), -1) ^ -1;
+int64_t f$crc32(const string& s) noexcept {
+  return crc32_partial_generic(static_cast<const void*>(s.c_str()), s.size(), -1) ^ -1;
 }

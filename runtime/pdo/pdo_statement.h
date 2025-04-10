@@ -20,7 +20,7 @@ struct C$PDOStatement : public refcountable_polymorphic_php_classes_virt<>, priv
 
   ~C$PDOStatement() override = default;
 
-  virtual const char *get_class() const noexcept {
+  virtual const char* get_class() const noexcept {
     return "PDOStatement";
   }
 
@@ -32,7 +32,7 @@ struct C$PDOStatement : public refcountable_polymorphic_php_classes_virt<>, priv
   using DummyVisitorMethods::accept;
 };
 
-bool f$PDOStatement$$execute(const class_instance<C$PDOStatement> &v$this, const Optional<array<mixed>> &params = {}) noexcept;
+bool f$PDOStatement$$execute(const class_instance<C$PDOStatement>& v$this, const Optional<array<mixed>>& params = {}) noexcept;
 
-mixed f$PDOStatement$$fetch(const class_instance<C$PDOStatement> &v$this) noexcept;
-array<mixed> f$PDOStatement$$fetchAll(const class_instance<C$PDOStatement> &v$this) noexcept;
+mixed f$PDOStatement$$fetch(const class_instance<C$PDOStatement>& v$this) noexcept;
+array<mixed> f$PDOStatement$$fetchAll(const class_instance<C$PDOStatement>& v$this) noexcept;

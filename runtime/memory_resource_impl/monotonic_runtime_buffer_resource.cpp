@@ -7,14 +7,14 @@
 #include <array>
 
 #include "runtime/allocator.h"
-#include "runtime/php_assert.h"
 #include "runtime/oom_handler.h"
+#include "runtime/php_assert.h"
 
 namespace memory_resource {
-void monotonic_buffer_resource::critical_dump(void *mem, size_t size) const noexcept {
+void monotonic_buffer_resource::critical_dump(void* mem, size_t size) const noexcept {
   std::array<char, 1000> malloc_replacement_stacktrace_buf = {'\0'};
   if (dl::is_malloc_replaced()) {
-    const char *descr = "last_malloc_replacement_stacktrace:\n";
+    const char* descr = "last_malloc_replacement_stacktrace:\n";
     std::strcpy(malloc_replacement_stacktrace_buf.data(), descr);
     dl::write_last_malloc_replacement_stacktrace(malloc_replacement_stacktrace_buf.data() + strlen(descr),
                                                  malloc_replacement_stacktrace_buf.size() - strlen(descr));
@@ -52,7 +52,7 @@ void monotonic_buffer_resource::raise_oom(size_t size) const noexcept {
     // values below 0.1 are very good
     auto fragmentation_rate = static_cast<double>(mem_available - size) / static_cast<double>(mem_pool_size);
     auto buffer_free_space = static_cast<double>(mem_available) / static_cast<double>(mem_pool_size);
-    const char *fragmentation_hint = "low fragmentation";
+    const char* fragmentation_hint = "low fragmentation";
     if (fragmentation_rate >= 0.4) {
       fragmentation_hint = "very high fragmentation";
     } else if (fragmentation_rate >= 0.25) {
@@ -65,4 +65,4 @@ void monotonic_buffer_resource::raise_oom(size_t size) const noexcept {
 
   raise(SIGUSR2);
 }
-}
+} // namespace memory_resource

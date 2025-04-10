@@ -10,17 +10,17 @@ static int mysql_callback_state;
 
 constexpr int DB_TIMEOUT_MS = 120000;
 
-static string *error_ptr;
-static int *errno_ptr;
-static int *affected_rows_ptr;
-static int *insert_id_ptr;
-static array<array<mixed>> *query_result_ptr;
-static bool *query_id_ptr;
+static string* error_ptr;
+static int* errno_ptr;
+static int* affected_rows_ptr;
+static int* insert_id_ptr;
+static array<array<mixed>>* query_result_ptr;
+static bool* query_id_ptr;
 
-static int *field_cnt_ptr;
-static array<string> *field_names_ptr;
+static int* field_cnt_ptr;
+static array<string>* field_names_ptr;
 
-static unsigned long long mysql_read_long_long(const unsigned char *&result, int &result_len, bool &is_null) {
+static unsigned long long mysql_read_long_long(const unsigned char*& result, int& result_len, bool& is_null) {
   result_len--;
   if (result_len < 0) {
     return 0;
@@ -52,7 +52,7 @@ static unsigned long long mysql_read_long_long(const unsigned char *&result, int
   return value;
 }
 
-static string mysql_read_string(const unsigned char *&result, int &result_len, bool &is_null, bool need_value = false) {
+static string mysql_read_string(const unsigned char*& result, int& result_len, bool& is_null, bool need_value = false) {
   if (result_len < 0) {
     return {};
   }
@@ -63,20 +63,20 @@ static string mysql_read_string(const unsigned char *&result, int &result_len, b
     result += value_len;
     return {};
   }
-  string value((const char *)result, (int)value_len);
+  string value((const char*)result, (int)value_len);
   result_len -= (int)value_len;
   result += value_len;
   return value;
 }
 
-static void mysql_query_callback(const char *result_, int result_len) {
-//  fprintf (stderr, "%d %d\n", mysql_callback_state, result_len);
+static void mysql_query_callback(const char* result_, int result_len) {
+  //  fprintf (stderr, "%d %d\n", mysql_callback_state, result_len);
   if (!*query_id_ptr || !strcmp(result_, "ERROR\r\n")) {
     *query_id_ptr = false;
     return;
   }
 
-  const auto *result = (const unsigned char *)result_;
+  const auto* result = (const unsigned char*)result_;
   if (result_len < 4) {
     return;
   }
@@ -92,138 +92,137 @@ static void mysql_query_callback(const char *result_, int result_len) {
   bool is_null = false;
   result += 4;
   result_len -= 4;
-  const unsigned char *result_end = result + len;
+  const unsigned char* result_end = result + len;
   switch (mysql_callback_state) {
-    case 0:
-      if (result[0] == 0) {
-        mysql_callback_state = 5;
-
-        ++result;
-        result_len--;
-        *affected_rows_ptr = (int)mysql_read_long_long(result, result_len, is_null);
-        *insert_id_ptr = (int)mysql_read_long_long(result, result_len, is_null);
-        if (result_len < 0 || is_null) {
-          *query_id_ptr = false;
-        }
-        break;
-      }
-      if (result[0] == 255) {
-        ++result;
-        result_len--;
-        *query_id_ptr = false;
-        int message_len = len - 9;
-        if (message_len < 0 || result[2] != '#') {
-          return;
-        }
-        *errno_ptr = result[0] + (result[1] << 8);
-        result += 8;
-        result_len -= 8;
-        error_ptr->assign((const char *)result, message_len);
-        return;
-      }
-      if (result[0] == 254) {
-        ++result;
-        result_len--;
-        *query_id_ptr = false;
-        return;
-      }
-
-      *field_cnt_ptr = (int)mysql_read_long_long(result, result_len, is_null);
-      if (result < result_end) {
-        mysql_read_long_long(result, result_len, is_null);
-      }
-      if (result_len < 0 || is_null || result != result_end) {
-        *query_id_ptr = false;
-        return;
-      }
-      *field_names_ptr = array<string>(array_size(*field_cnt_ptr, true));
-
-      mysql_callback_state = 1;
-      break;
-    case 1:
-      if (result[0] == 254) {
-        *query_id_ptr = false;
-        return;
-      }
-      mysql_read_string(result, result_len, is_null);//catalog
-      mysql_read_string(result, result_len, is_null);//db
-      mysql_read_string(result, result_len, is_null);//table
-      mysql_read_string(result, result_len, is_null);//org_table
-      field_names_ptr->push_back(mysql_read_string(result, result_len, is_null, true));//name
-      mysql_read_string(result, result_len, is_null);//org_name
-
-      result_len -= 13;
-      result += 13;
-
-      if (result < result_end) {
-        mysql_read_string(result, result_len, is_null);//default
-      }
-
-      if (result_len < 0 || result != result_end) {
-        *query_id_ptr = false;
-        return;
-      }
-
-      if (field_names_ptr->count() == *field_cnt_ptr) {
-        mysql_callback_state = 2;
-      }
-      break;
-    case 2:
-      if (len != 5 || result[0] != 254) {
-        *query_id_ptr = false;
-        return;
-      }
-      result += 5;
-      result_len -= 5;
-      mysql_callback_state = 3;
-      break;
-    case 3:
-      if (result[0] != 254) {
-        array<mixed> row(array_size(*field_cnt_ptr, false));
-        for (int i = 0; i < *field_cnt_ptr; i++) {
-          is_null = false;
-          mixed value = mysql_read_string(result, result_len, is_null, true);
-//          fprintf (stderr, "%p %p \"%s\" %d\n", result, result_end, value.to_string().c_str(), (int)is_null);
-          if (is_null) {
-            value = mixed();
-          }
-          if (result_len < 0 || result > result_end) {
-            *query_id_ptr = false;
-            return;
-          }
-//          row[i] = value;
-          row[field_names_ptr->get_value(i)] = value;
-        }
-        if (result != result_end) {
-          *query_id_ptr = false;
-          return;
-        }
-        query_result_ptr->push_back(row);
-
-        break;
-      }
-      mysql_callback_state = 4;
-      /* fallthrough */
-    case 4:
-      if (len != 5 || result[0] != 254) {
-        *query_id_ptr = false;
-        return;
-      }
-      result += 5;
-      result_len -= 5;
-
+  case 0:
+    if (result[0] == 0) {
       mysql_callback_state = 5;
+
+      ++result;
+      result_len--;
+      *affected_rows_ptr = (int)mysql_read_long_long(result, result_len, is_null);
+      *insert_id_ptr = (int)mysql_read_long_long(result, result_len, is_null);
+      if (result_len < 0 || is_null) {
+        *query_id_ptr = false;
+      }
       break;
-    case 5:
+    }
+    if (result[0] == 255) {
+      ++result;
+      result_len--;
       *query_id_ptr = false;
+      int message_len = len - 9;
+      if (message_len < 0 || result[2] != '#') {
+        return;
+      }
+      *errno_ptr = result[0] + (result[1] << 8);
+      result += 8;
+      result_len -= 8;
+      error_ptr->assign((const char*)result, message_len);
+      return;
+    }
+    if (result[0] == 254) {
+      ++result;
+      result_len--;
+      *query_id_ptr = false;
+      return;
+    }
+
+    *field_cnt_ptr = (int)mysql_read_long_long(result, result_len, is_null);
+    if (result < result_end) {
+      mysql_read_long_long(result, result_len, is_null);
+    }
+    if (result_len < 0 || is_null || result != result_end) {
+      *query_id_ptr = false;
+      return;
+    }
+    *field_names_ptr = array<string>(array_size(*field_cnt_ptr, true));
+
+    mysql_callback_state = 1;
+    break;
+  case 1:
+    if (result[0] == 254) {
+      *query_id_ptr = false;
+      return;
+    }
+    mysql_read_string(result, result_len, is_null);                                   // catalog
+    mysql_read_string(result, result_len, is_null);                                   // db
+    mysql_read_string(result, result_len, is_null);                                   // table
+    mysql_read_string(result, result_len, is_null);                                   // org_table
+    field_names_ptr->push_back(mysql_read_string(result, result_len, is_null, true)); // name
+    mysql_read_string(result, result_len, is_null);                                   // org_name
+
+    result_len -= 13;
+    result += 13;
+
+    if (result < result_end) {
+      mysql_read_string(result, result_len, is_null); // default
+    }
+
+    if (result_len < 0 || result != result_end) {
+      *query_id_ptr = false;
+      return;
+    }
+
+    if (field_names_ptr->count() == *field_cnt_ptr) {
+      mysql_callback_state = 2;
+    }
+    break;
+  case 2:
+    if (len != 5 || result[0] != 254) {
+      *query_id_ptr = false;
+      return;
+    }
+    result += 5;
+    result_len -= 5;
+    mysql_callback_state = 3;
+    break;
+  case 3:
+    if (result[0] != 254) {
+      array<mixed> row(array_size(*field_cnt_ptr, false));
+      for (int i = 0; i < *field_cnt_ptr; i++) {
+        is_null = false;
+        mixed value = mysql_read_string(result, result_len, is_null, true);
+        //          fprintf (stderr, "%p %p \"%s\" %d\n", result, result_end, value.to_string().c_str(), (int)is_null);
+        if (is_null) {
+          value = mixed();
+        }
+        if (result_len < 0 || result > result_end) {
+          *query_id_ptr = false;
+          return;
+        }
+        //          row[i] = value;
+        row[field_names_ptr->get_value(i)] = value;
+      }
+      if (result != result_end) {
+        *query_id_ptr = false;
+        return;
+      }
+      query_result_ptr->push_back(row);
+
       break;
+    }
+    mysql_callback_state = 4;
+    /* fallthrough */
+  case 4:
+    if (len != 5 || result[0] != 254) {
+      *query_id_ptr = false;
+      return;
+    }
+    result += 5;
+    result_len -= 5;
+
+    mysql_callback_state = 5;
+    break;
+  case 5:
+    *query_id_ptr = false;
+    break;
   }
 }
 
-
 static class_instance<C$mysqli> DB_Proxy;
 
-static bool mysql_query(const class_instance<C$mysqli> &db, const string &query) {
+static bool mysql_query(const class_instance<C$mysqli>& db, const string& query) {
   if (query.size() > (1 << 24) - 10) {
     return false;
   }
@@ -270,15 +269,15 @@ static bool mysql_query(const class_instance<C$mysqli> &db, const string &query)
   return true;
 }
 
-string f$mysqli_error(const class_instance<C$mysqli> &db) {
+string f$mysqli_error(const class_instance<C$mysqli>& db) {
   return db->error;
 }
 
-int64_t f$mysqli_errno(const class_instance<C$mysqli> &db) {
+int64_t f$mysqli_errno(const class_instance<C$mysqli>& db) {
   return db->errno_;
 }
 
-int64_t f$mysqli_affected_rows(const class_instance<C$mysqli> &db) {
+int64_t f$mysqli_affected_rows(const class_instance<C$mysqli>& db) {
   if (db->connected < 0) {
     return 0;
   }
@@ -293,8 +292,8 @@ Optional<array<mixed>> f$mysqli_fetch_array(int64_t query_id, int64_t result_typ
     return Optional<array<mixed>>{};
   }
 
-  array<array<mixed>> &query_result = DB_Proxy->query_results[query_id];
-  int &cur = DB_Proxy->cur_pos[query_id];
+  array<array<mixed>>& query_result = DB_Proxy->query_results[query_id];
+  int& cur = DB_Proxy->cur_pos[query_id];
   if (cur >= (int)query_result.count()) {
     return Optional<array<mixed>>{};
   }
@@ -305,7 +304,7 @@ Optional<array<mixed>> f$mysqli_fetch_array(int64_t query_id, int64_t result_typ
   return Optional<array<mixed>>{std::move(result)};
 }
 
-int64_t f$mysqli_insert_id(const class_instance<C$mysqli> &db) {
+int64_t f$mysqli_insert_id(const class_instance<C$mysqli>& db) {
   if (db->connected < 0) {
     return -1;
   }
@@ -328,7 +327,7 @@ int64_t f$mysqli_num_rows(int64_t query_id) {
   return DB_Proxy->query_results[static_cast<int64_t>(DB_Proxy->last_query_id)].count();
 }
 
-mixed f$mysqli_query(const class_instance<C$mysqli> &db, const string &query) {
+mixed f$mysqli_query(const class_instance<C$mysqli>& db, const string& query) {
   if (db.is_null()) {
     php_warning("DB object is NULL in mysql_query");
     return false;
@@ -340,7 +339,9 @@ mixed f$mysqli_query(const class_instance<C$mysqli> &db, const string &query) {
   return db->last_query_id = db->biggest_query_id;
 }
 
-class_instance<C$mysqli> f$mysqli_connect(const string &host __attribute__((unused)), const string &username __attribute__((unused)), const string &password __attribute__((unused)), const string &db_name __attribute__((unused)), int64_t port __attribute__((unused))) {
+class_instance<C$mysqli> f$mysqli_connect(const string& host __attribute__((unused)), const string& username __attribute__((unused)),
+                                          const string& password __attribute__((unused)), const string& db_name __attribute__((unused)),
+                                          int64_t port __attribute__((unused))) {
   // though this function is named like PHP's mysqli_connect(), it doesn't use provided credentials for connection
   // instead, they are embedded to and managed by db proxy
   // even db name is skipped: it is set as an option on server start
@@ -369,7 +370,7 @@ class_instance<C$mysqli> f$mysqli_connect(const string &host __attribute__((unus
   }
 }
 
-bool f$mysqli_select_db(const class_instance<C$mysqli> &db __attribute__((unused)), const string &name __attribute__((unused))) {
+bool f$mysqli_select_db(const class_instance<C$mysqli>& db __attribute__((unused)), const string& name __attribute__((unused))) {
   return true;
 }
 

@@ -37,19 +37,19 @@ enum {
 };
 
 struct SendingInstanceBase : virtual abstract_refcountable_php_interface {
-  virtual const char *get_class() const noexcept = 0;
+  virtual const char* get_class() const noexcept = 0;
   virtual int get_hash() const noexcept = 0;
 
-  virtual void accept(InstanceReferencesCountingVisitor &) noexcept = 0;
-  virtual void accept(InstanceDeepCopyVisitor &) noexcept = 0;
-  virtual void accept(InstanceDeepDestroyVisitor &) noexcept = 0;
+  virtual void accept(InstanceReferencesCountingVisitor&) noexcept = 0;
+  virtual void accept(InstanceDeepCopyVisitor&) noexcept = 0;
+  virtual void accept(InstanceDeepDestroyVisitor&) noexcept = 0;
 
-  virtual void accept(ToArrayVisitor &) noexcept {}
+  virtual void accept(ToArrayVisitor&) noexcept {}
 
-  virtual void accept(CommonMemoryEstimateVisitor &) noexcept {}
+  virtual void accept(CommonMemoryEstimateVisitor&) noexcept {}
 
   virtual size_t virtual_builtin_sizeof() const noexcept = 0;
-  virtual SendingInstanceBase *virtual_builtin_clone() const noexcept = 0;
+  virtual SendingInstanceBase* virtual_builtin_clone() const noexcept = 0;
 
   virtual ~SendingInstanceBase() = default;
 };
@@ -58,28 +58,28 @@ struct FinishedJob;
 
 struct JobSharedMessage;
 
-} // job_workers
+} // namespace job_workers
 
 struct C$KphpJobWorkerSharedMemoryPiece : job_workers::SendingInstanceBase {
-  C$KphpJobWorkerSharedMemoryPiece *virtual_builtin_clone() const noexcept override = 0;
+  C$KphpJobWorkerSharedMemoryPiece* virtual_builtin_clone() const noexcept override = 0;
 };
 
 struct C$KphpJobWorkerRequest : job_workers::SendingInstanceBase {
-  C$KphpJobWorkerRequest *virtual_builtin_clone() const noexcept override = 0;
+  C$KphpJobWorkerRequest* virtual_builtin_clone() const noexcept override = 0;
 
   virtual class_instance<C$KphpJobWorkerSharedMemoryPiece> get_shared_memory_piece() const noexcept = 0;
-  virtual void set_shared_memory_piece(const class_instance<C$KphpJobWorkerSharedMemoryPiece> &) noexcept = 0;
+  virtual void set_shared_memory_piece(const class_instance<C$KphpJobWorkerSharedMemoryPiece>&) noexcept = 0;
 };
 
 struct C$KphpJobWorkerResponse : job_workers::SendingInstanceBase {
-  C$KphpJobWorkerResponse *virtual_builtin_clone() const noexcept override = 0;
+  C$KphpJobWorkerResponse* virtual_builtin_clone() const noexcept override = 0;
 };
 
-struct C$KphpJobWorkerResponseError: public refcountable_polymorphic_php_classes<C$KphpJobWorkerResponse> {
+struct C$KphpJobWorkerResponseError : public refcountable_polymorphic_php_classes<C$KphpJobWorkerResponse> {
   string error;
   int64_t error_code;
 
-  const char *get_class() const noexcept override {
+  const char* get_class() const noexcept override {
     return R"(KphpJobWorkerResponseError)";
   }
 
@@ -89,44 +89,44 @@ struct C$KphpJobWorkerResponseError: public refcountable_polymorphic_php_classes
   }
 
   template<class Visitor>
-  void generic_accept(Visitor &&visitor) noexcept {
+  void generic_accept(Visitor&& visitor) noexcept {
     visitor("error", error);
     visitor("error_code", error_code);
   }
 
-  void accept(InstanceReferencesCountingVisitor &visitor) noexcept override {
+  void accept(InstanceReferencesCountingVisitor& visitor) noexcept override {
     return generic_accept(visitor);
   }
 
-  void accept(InstanceDeepCopyVisitor &visitor) noexcept override {
+  void accept(InstanceDeepCopyVisitor& visitor) noexcept override {
     return generic_accept(visitor);
   }
 
-  void accept(InstanceDeepDestroyVisitor &visitor) noexcept override {
+  void accept(InstanceDeepDestroyVisitor& visitor) noexcept override {
     return generic_accept(visitor);
   }
 
-  void accept(ToArrayVisitor &visitor) noexcept override {
+  void accept(ToArrayVisitor& visitor) noexcept override {
     return generic_accept(visitor);
   }
 
-  void accept(CommonMemoryEstimateVisitor &visitor) noexcept override;
+  void accept(CommonMemoryEstimateVisitor& visitor) noexcept override;
 
-  size_t virtual_builtin_sizeof() const  noexcept override {
+  size_t virtual_builtin_sizeof() const noexcept override {
     return sizeof(*this);
   }
 
-  C$KphpJobWorkerResponseError* virtual_builtin_clone() const  noexcept override {
+  C$KphpJobWorkerResponseError* virtual_builtin_clone() const noexcept override {
     return new C$KphpJobWorkerResponseError{*this};
   }
 };
 
-class_instance<C$KphpJobWorkerResponseError> f$KphpJobWorkerResponseError$$__construct(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept;
-string f$KphpJobWorkerResponseError$$getError(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept;
-int64_t f$KphpJobWorkerResponseError$$getErrorCode(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept;
+class_instance<C$KphpJobWorkerResponseError> f$KphpJobWorkerResponseError$$__construct(class_instance<C$KphpJobWorkerResponseError> const& v$this) noexcept;
+string f$KphpJobWorkerResponseError$$getError(class_instance<C$KphpJobWorkerResponseError> const& v$this) noexcept;
+int64_t f$KphpJobWorkerResponseError$$getErrorCode(class_instance<C$KphpJobWorkerResponseError> const& v$this) noexcept;
 
-class_instance<C$KphpJobWorkerResponseError> create_error_on_other_memory(int32_t error_code, const char *error_msg,
-                                                                          memory_resource::unsynchronized_pool_resource &resource) noexcept;
+class_instance<C$KphpJobWorkerResponseError> create_error_on_other_memory(int32_t error_code, const char* error_msg,
+                                                                          memory_resource::unsynchronized_pool_resource& resource) noexcept;
 
 bool f$is_kphp_job_workers_enabled() noexcept;
 
@@ -137,6 +137,6 @@ void clear_shared_job_messages() noexcept;
 
 int get_job_timeout_wakeup_id();
 
-void process_job_answer(int job_id, job_workers::FinishedJob *job_result) noexcept;
+void process_job_answer(int job_id, job_workers::FinishedJob* job_result) noexcept;
 
 void process_job_timeout(int job_id) noexcept;

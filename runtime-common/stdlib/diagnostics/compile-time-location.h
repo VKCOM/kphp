@@ -21,7 +21,7 @@ struct C$CompileTimeLocation : public refcountable_polymorphic_php_classes_virt<
 
   ~C$CompileTimeLocation() override = default;
 
-  virtual const char *get_class() const noexcept {
+  virtual const char* get_class() const noexcept {
     return "CompileTimeLocation";
   }
 
@@ -33,7 +33,7 @@ struct C$CompileTimeLocation : public refcountable_polymorphic_php_classes_virt<
 
 using CompileTimeLocation = class_instance<C$CompileTimeLocation>;
 
-inline CompileTimeLocation f$CompileTimeLocation$$__construct(const CompileTimeLocation &v$this, const string &file, const string &function,
+inline CompileTimeLocation f$CompileTimeLocation$$__construct(const CompileTimeLocation& v$this, const string& file, const string& function,
                                                               int64_t line) noexcept {
   v$this->$file = file;
   v$this->$function = function;
@@ -41,6 +41,6 @@ inline CompileTimeLocation f$CompileTimeLocation$$__construct(const CompileTimeL
   return v$this;
 }
 
-inline CompileTimeLocation f$CompileTimeLocation$$calculate(const CompileTimeLocation &v$passed) noexcept {
+inline CompileTimeLocation f$CompileTimeLocation$$calculate(const CompileTimeLocation& v$passed) noexcept {
   return v$passed;
 }

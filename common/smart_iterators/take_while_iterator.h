@@ -12,21 +12,24 @@
 
 namespace vk {
 
-template <class Predicate, class Iterator>
+template<class Predicate, class Iterator>
 class take_while_iterator : function_holder<Predicate> {
 public:
   using iterator_category = std::input_iterator_tag;
-  using value_type        = typename std::iterator_traits<Iterator>::value_type;
-  using difference_type   = typename std::iterator_traits<Iterator>::difference_type;
-  using pointer           = typename std::iterator_traits<Iterator>::pointer;
-  using reference         = typename std::iterator_traits<Iterator>::reference;
-  take_while_iterator(Predicate f, Iterator x, Iterator end = Iterator()) : function_holder<Predicate>{std::move(f)}, iter{std::move(x)}, end{std::move(end)} {
+  using value_type = typename std::iterator_traits<Iterator>::value_type;
+  using difference_type = typename std::iterator_traits<Iterator>::difference_type;
+  using pointer = typename std::iterator_traits<Iterator>::pointer;
+  using reference = typename std::iterator_traits<Iterator>::reference;
+  take_while_iterator(Predicate f, Iterator x, Iterator end = Iterator())
+      : function_holder<Predicate>{std::move(f)},
+        iter{std::move(x)},
+        end{std::move(end)} {
     if (iter != end && !(*this)(*iter)) {
       iter = end;
     }
   }
 
-  take_while_iterator<Predicate, Iterator> &operator++() {
+  take_while_iterator<Predicate, Iterator>& operator++() {
     ++iter;
     if (iter != end && !(*this)(*iter)) {
       iter = end;
@@ -34,11 +37,11 @@ public:
     return *this;
   }
 
-  bool operator==(const take_while_iterator<Predicate, Iterator> &other) const {
+  bool operator==(const take_while_iterator<Predicate, Iterator>& other) const {
     return iter == other.iter;
   }
 
-  bool operator!=(const take_while_iterator<Predicate, Iterator> &other) const {
+  bool operator!=(const take_while_iterator<Predicate, Iterator>& other) const {
     return iter != other.iter;
   }
 
@@ -51,7 +54,7 @@ private:
   Iterator end;
 };
 
-template <class Predicate, class Iterator>
+template<class Predicate, class Iterator>
 take_while_iterator<std::decay_t<Predicate>, Iterator> make_take_while_iterator(Predicate f, Iterator iter, Iterator end = Iterator()) {
   return {std::move(f), std::move(iter), std::move(end)};
 }

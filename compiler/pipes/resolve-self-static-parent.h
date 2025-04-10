@@ -8,7 +8,7 @@
 
 class ResolveSelfStaticParentPass final : public FunctionPassBase {
 private:
-  void check_access_to_class_from_this_file(const std::string &prefix_name, ClassPtr ref_class);
+  void check_access_to_class_from_this_file(const std::string& prefix_name, ClassPtr ref_class);
   VertexPtr replace_func_call_with_colons_with_this_call(FunctionPtr called_method, ClassPtr ref_class, VertexAdaptor<op_func_call> call_colons);
 
 public:
