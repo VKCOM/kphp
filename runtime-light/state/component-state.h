@@ -17,16 +17,16 @@ struct ComponentState final : private vk::not_copyable {
   RuntimeAllocator allocator;
 
   const uint32_t argc;
+  const uint32_t envc;
   mixed runtime_config;
   array<string> ini_opts;
-  const uint32_t envc;
-  array<string> env; // FIXME: change to array<mixed> improves performance
+  array<mixed> env;
 
   ComponentState() noexcept
     : allocator(INIT_COMPONENT_ALLOCATOR_SIZE, 0)
     , argc(k2::args_count())
-    , ini_opts(array_size{argc, false}) /* overapproximation */
     , envc(k2::env_count())
+    , ini_opts(array_size{argc, false}) /* overapproximation */
     , env(array_size{envc, false}) {
     parse_env();
     parse_args();
