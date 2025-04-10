@@ -14,6 +14,6 @@ SpaceAfterTemplateKeyword:        false
 AlwaysBreakTemplateDeclarations:  Yes
 IndentRequiresClause:             No
 RequiresClausePosition:           OwnLine
-IndentPPDirectives:               BeforeHash
+IndentPPDirectives:               None
 ...
 
