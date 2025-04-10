@@ -28,7 +28,7 @@ struct block_t {
   char data[0];
 };
 
-  #define MAX_BLOCK_SIZE 16384
+#define MAX_BLOCK_SIZE 16384
 
 class ZAllocatorRaw {
 private:

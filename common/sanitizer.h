@@ -7,23 +7,23 @@
 #include <sanitizer/asan_interface.h>
 
 #if defined(__SANITIZE_ADDRESS__)
-  #define ASAN_ENABLED 1
+#define ASAN_ENABLED 1
 #elif defined(__has_feature)
-  #if __has_feature(address_sanitizer)
-    #define ASAN_ENABLED 1
-  #endif
+#if __has_feature(address_sanitizer)
+#define ASAN_ENABLED 1
+#endif
 #endif
 
 #if !defined(ASAN_ENABLED)
-  #define ASAN_ENABLED 0
+#define ASAN_ENABLED 0
 #endif
 
 #if defined(__clang__)
-  #define ubsan_supp(x) __attribute__((no_sanitize(x)))
+#define ubsan_supp(x) __attribute__((no_sanitize(x)))
 #else
-  #define ubsan_supp(x) __attribute__((no_sanitize_undefined))
+#define ubsan_supp(x) __attribute__((no_sanitize_undefined))
 #endif
 
 #if !defined(USAN_ENABLED)
-  #define USAN_ENABLED 0
+#define USAN_ENABLED 0
 #endif

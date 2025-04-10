@@ -3,7 +3,7 @@
 #include "common/smart_ptrs/intrusive_ptr.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from runtime-core.h"
+#error "this file must be included only from runtime-core.h"
 #endif
 
 // PHP classes produce the C++ structures of the form:

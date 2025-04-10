@@ -25,7 +25,7 @@ namespace impl_ {
 // #define DEBUG_INSTANCE_CACHE
 
 #ifdef DEBUG_INSTANCE_CACHE
-  #define ic_debug kprintf
+#define ic_debug kprintf
 #else
 inline void ic_debug(const char* format, ...) __attribute__((format(printf, 1, 2)));
 inline void ic_debug(const char*, ...) {}

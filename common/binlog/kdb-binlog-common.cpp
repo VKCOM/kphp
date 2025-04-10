@@ -3,7 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #if !defined(__APPLE__)
-  #define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 500
 #endif
 
 #include "common/binlog/kdb-binlog-common.h"

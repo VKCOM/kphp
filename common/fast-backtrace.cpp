@@ -28,7 +28,7 @@ static __inline__ void* get_bp() {
 #elif defined(__aarch64__)
   __asm__ volatile("mov %0, fp" : "=r"(result));
 #else
-  #error "Unsupported arch"
+#error "Unsupported arch"
 #endif
   return result;
 }

@@ -137,7 +137,7 @@ const unsigned char* ASN1_STRING_get0_data(const ASN1_STRING* x) {
 // this is copypasted from openssl 1.1
 #if OPENSSL_VERSION_NUMBER < 0x10002000L
 
-  #define SECS_PER_DAY (24 * 60 * 60)
+#define SECS_PER_DAY (24 * 60 * 60)
 
 static long date_to_julian(int y, int m, int d);
 static void julian_to_date(long jd, int* y, int* m, int* d);
@@ -495,7 +495,7 @@ int ASN1_TIME_diff(int* pday, int* psec, const ASN1_TIME* from, const ASN1_TIME*
   return OPENSSL_gmtime_diff(pday, psec, &tm_from, &tm_to);
 }
 
-  #undef SECS_PER_DAY
+#undef SECS_PER_DAY
 
 #endif
 

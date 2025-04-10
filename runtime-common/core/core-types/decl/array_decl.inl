@@ -8,7 +8,7 @@
 #include "runtime-common/core/include.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from runtime-core.h"
+#error "this file must be included only from runtime-core.h"
 #endif
 
 struct array_size {

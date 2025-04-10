@@ -7,13 +7,13 @@
 #include "compiler/ffi/c_parser/lexer.h"
 
 #if defined(__GNUC__) && (__GNUC__ >= 7)
-  #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #elif defined(__clang__)
-  #pragma clang diagnostic ignored "-Wunused-variable"
+#pragma clang diagnostic ignored "-Wunused-variable"
 #elif defined(__has_warning)
-  #if __has_warning("-Wimplicit-fallthrough")
-    #pragma clang diagnostic ignored "-Wimplicit-fallthrough"
-  #endif
+#if __has_warning("-Wimplicit-fallthrough")
+#pragma clang diagnostic ignored "-Wimplicit-fallthrough"
+#endif
 #endif
 
 #line 18 "lexer.rl"

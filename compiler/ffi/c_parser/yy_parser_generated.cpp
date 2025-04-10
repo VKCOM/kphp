@@ -48,24 +48,24 @@
 #include "yy_parser_generated.hpp"
 
 #ifndef YY_
-  #if defined YYENABLE_NLS && YYENABLE_NLS
-    #if ENABLE_NLS
-      #include <libintl.h> // FIXME: INFRINGES ON USER NAME SPACE.
-      #define YY_(msgid) dgettext("bison-runtime", msgid)
-    #endif
-  #endif
-  #ifndef YY_
-    #define YY_(msgid) msgid
-  #endif
+#if defined YYENABLE_NLS && YYENABLE_NLS
+#if ENABLE_NLS
+#include <libintl.h> // FIXME: INFRINGES ON USER NAME SPACE.
+#define YY_(msgid) dgettext("bison-runtime", msgid)
+#endif
+#endif
+#ifndef YY_
+#define YY_(msgid) msgid
+#endif
 #endif
 
 // Whether we are compiled with exception support.
 #ifndef YY_EXCEPTIONS
-  #if defined __GNUC__ && !defined __EXCEPTIONS
-    #define YY_EXCEPTIONS 0
-  #else
-    #define YY_EXCEPTIONS 1
-  #endif
+#if defined __GNUC__ && !defined __EXCEPTIONS
+#define YY_EXCEPTIONS 0
+#else
+#define YY_EXCEPTIONS 1
+#endif
 #endif
 
 #define YYRHSLOC(Rhs, K) ((Rhs)[K].location)
@@ -74,54 +74,54 @@
    the previous symbol: RHS[0] (always defined).  */
 
 #ifndef YYLLOC_DEFAULT
-  #define YYLLOC_DEFAULT(Current, Rhs, N)                                                                                                                      \
-    do                                                                                                                                                         \
-      if (N) {                                                                                                                                                 \
-        (Current).begin = YYRHSLOC(Rhs, 1).begin;                                                                                                              \
-        (Current).end = YYRHSLOC(Rhs, N).end;                                                                                                                  \
-      } else {                                                                                                                                                 \
-        (Current).begin = (Current).end = YYRHSLOC(Rhs, 0).end;                                                                                                \
-      }                                                                                                                                                        \
-    while (false)
+#define YYLLOC_DEFAULT(Current, Rhs, N)                                                                                                                        \
+  do                                                                                                                                                           \
+    if (N) {                                                                                                                                                   \
+      (Current).begin = YYRHSLOC(Rhs, 1).begin;                                                                                                                \
+      (Current).end = YYRHSLOC(Rhs, N).end;                                                                                                                    \
+    } else {                                                                                                                                                   \
+      (Current).begin = (Current).end = YYRHSLOC(Rhs, 0).end;                                                                                                  \
+    }                                                                                                                                                          \
+  while (false)
 #endif
 
 // Enable debugging if requested.
 #if YYDEBUG
 
-  // A pseudo ostream that takes yydebug_ into account.
-  #define YYCDEBUG                                                                                                                                             \
+// A pseudo ostream that takes yydebug_ into account.
+#define YYCDEBUG                                                                                                                                               \
+  if (yydebug_)                                                                                                                                                \
+  (*yycdebug_)
+
+#define YY_SYMBOL_PRINT(Title, Symbol)                                                                                                                         \
+  do {                                                                                                                                                         \
+    if (yydebug_) {                                                                                                                                            \
+      *yycdebug_ << Title << ' ';                                                                                                                              \
+      yy_print_(*yycdebug_, Symbol);                                                                                                                           \
+      *yycdebug_ << '\n';                                                                                                                                      \
+    }                                                                                                                                                          \
+  } while (false)
+
+#define YY_REDUCE_PRINT(Rule)                                                                                                                                  \
+  do {                                                                                                                                                         \
     if (yydebug_)                                                                                                                                              \
-    (*yycdebug_)
+      yy_reduce_print_(Rule);                                                                                                                                  \
+  } while (false)
 
-  #define YY_SYMBOL_PRINT(Title, Symbol)                                                                                                                       \
-    do {                                                                                                                                                       \
-      if (yydebug_) {                                                                                                                                          \
-        *yycdebug_ << Title << ' ';                                                                                                                            \
-        yy_print_(*yycdebug_, Symbol);                                                                                                                         \
-        *yycdebug_ << '\n';                                                                                                                                    \
-      }                                                                                                                                                        \
-    } while (false)
-
-  #define YY_REDUCE_PRINT(Rule)                                                                                                                                \
-    do {                                                                                                                                                       \
-      if (yydebug_)                                                                                                                                            \
-        yy_reduce_print_(Rule);                                                                                                                                \
-    } while (false)
-
-  #define YY_STACK_PRINT()                                                                                                                                     \
-    do {                                                                                                                                                       \
-      if (yydebug_)                                                                                                                                            \
-        yy_stack_print_();                                                                                                                                     \
-    } while (false)
+#define YY_STACK_PRINT()                                                                                                                                       \
+  do {                                                                                                                                                         \
+    if (yydebug_)                                                                                                                                              \
+      yy_stack_print_();                                                                                                                                       \
+  } while (false)
 
 #else // !YYDEBUG
 
-  #define YYCDEBUG                                                                                                                                             \
-    if (false)                                                                                                                                                 \
-    std::cerr
-  #define YY_SYMBOL_PRINT(Title, Symbol) YY_USE(Symbol)
-  #define YY_REDUCE_PRINT(Rule) static_cast<void>(0)
-  #define YY_STACK_PRINT() static_cast<void>(0)
+#define YYCDEBUG                                                                                                                                               \
+  if (false)                                                                                                                                                   \
+  std::cerr
+#define YY_SYMBOL_PRINT(Title, Symbol) YY_USE(Symbol)
+#define YY_REDUCE_PRINT(Rule) static_cast<void>(0)
+#define YY_STACK_PRINT() static_cast<void>(0)
 
 #endif // !YYDEBUG
 

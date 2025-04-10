@@ -11,9 +11,9 @@
 #include <sys/time.h>
 
 #if defined(__APPLE__)
-  #include <stdlib.h>
+#include <stdlib.h>
 #else
-  #include <sys/random.h>
+#include <sys/random.h>
 #endif
 
 #include "common/cycleclock.h"

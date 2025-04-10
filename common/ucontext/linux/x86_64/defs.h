@@ -3,11 +3,11 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #ifndef TYPE
-  #ifdef __clang__
-    #define TYPE(name) // .type not supported
-  #else
-    #define TYPE(name) .type name, @function;
-  #endif
+#ifdef __clang__
+#define TYPE(name) // .type not supported
+#else
+#define TYPE(name) .type name, @function;
+#endif
 #endif
 
 #define ALIGNARG(log2) 1 << log2

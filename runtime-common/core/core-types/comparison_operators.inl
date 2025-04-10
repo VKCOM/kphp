@@ -3,7 +3,7 @@
 #include "runtime-common/core/utils/migration-php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from runtime-core.h"
+#error "this file must be included only from runtime-core.h"
 #endif
 
 namespace impl_ {

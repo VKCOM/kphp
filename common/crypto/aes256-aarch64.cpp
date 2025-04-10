@@ -505,18 +505,18 @@ static inline void crypto_aarch64_aes256_encrypt_n_blocks(vk_aes_ctx_t* vk_ctx, 
 }
 
 #if defined(__GNUC__)
-  #if defined(__clang__) && defined(__has_warning)
-    #if __has_warning("-Wmaybe-uninitialized")
-      #define MAYBE_UNINITIALIZED
-    #endif
-  #elif !defined(__clang__)
-    #define MAYBE_UNINITIALIZED
-  #endif
+#if defined(__clang__) && defined(__has_warning)
+#if __has_warning("-Wmaybe-uninitialized")
+#define MAYBE_UNINITIALIZED
+#endif
+#elif !defined(__clang__)
+#define MAYBE_UNINITIALIZED
+#endif
 #endif
 void crypto_aarch64_aes256_ctr_encrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, uint8_t* out, int size, uint8_t iv[16], uint64_t offset) {
 #if defined(MAYBE_UNINITIALIZED)
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
   unsigned char iv_copy[16], u[16];
   memcpy(iv_copy, iv, 16);
@@ -550,6 +550,6 @@ void crypto_aarch64_aes256_ctr_encrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, 
     } while (i < l);
   }
 #if defined(MAYBE_UNINITIALIZED)
-  #pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 #endif
 }

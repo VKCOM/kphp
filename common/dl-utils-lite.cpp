@@ -27,16 +27,16 @@
 #include "common/wrappers/pathname.h"
 
 #if DL_DEBUG_MEM >= 1
-  #define MEM_POS                                                                                                                                              \
-    {                                                                                                                                                          \
-      void* buffer[64];                                                                                                                                        \
-      int nptrs = backtrace(buffer, 4);                                                                                                                        \
-      fprintf(stderr, "\n------- Stack Backtrace -------\n");                                                                                                  \
-      backtrace_symbols_fd(buffer + 1, nptrs - 1, 2);                                                                                                          \
-      fprintf(stderr, "-------------------------------\n");                                                                                                    \
-    }
+#define MEM_POS                                                                                                                                                \
+  {                                                                                                                                                            \
+    void* buffer[64];                                                                                                                                          \
+    int nptrs = backtrace(buffer, 4);                                                                                                                          \
+    fprintf(stderr, "\n------- Stack Backtrace -------\n");                                                                                                    \
+    backtrace_symbols_fd(buffer + 1, nptrs - 1, 2);                                                                                                            \
+    fprintf(stderr, "-------------------------------\n");                                                                                                      \
+  }
 #else
-  #define MEM_POS
+#define MEM_POS
 #endif
 
 static std::array<char, 1024> assert_message{{0}};

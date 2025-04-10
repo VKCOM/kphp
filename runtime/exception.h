@@ -122,9 +122,9 @@ extern Throwable CurException;
   }
 
 #ifdef __clang__
-  #define TRY_CALL_RET_(x) x
+#define TRY_CALL_RET_(x) x
 #else
-  #define TRY_CALL_RET_(x) std::move(x)
+#define TRY_CALL_RET_(x) std::move(x)
 #endif
 
 #define TRY_CALL_(CallT, call, action)                                                                                                                         \

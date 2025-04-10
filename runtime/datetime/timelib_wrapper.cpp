@@ -2,7 +2,7 @@
 
 #include "kphp/timelib/timelib.h"
 #if ASAN_ENABLED
-  #include <sanitizer/lsan_interface.h>
+#include <sanitizer/lsan_interface.h>
 #endif
 #include <sys/time.h>
 

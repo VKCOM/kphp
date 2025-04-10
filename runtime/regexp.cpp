@@ -7,7 +7,7 @@
 #include "re2/re2.h"
 #include <cstddef>
 #if ASAN_ENABLED
-  #include <sanitizer/lsan_interface.h>
+#include <sanitizer/lsan_interface.h>
 #endif
 #include "common/unicode/utf8-utils.h"
 
@@ -20,10 +20,10 @@ int64_t preg_replace_count_dummy;
 
 // TODO: remove when/if we migrate to pcre2
 #ifndef PCRE2_ERROR_BADOFFSET
-  #define PCRE2_ERROR_BADOFFSET -33
+#define PCRE2_ERROR_BADOFFSET -33
 #endif
 #ifndef PCRE2_UNSET
-  #define PCRE2_UNSET -1
+#define PCRE2_UNSET -1
 #endif
 
 static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];

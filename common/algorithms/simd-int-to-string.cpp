@@ -16,11 +16,11 @@
 // based on
 // https://github.com/miloyip/itoa-benchmark/blob/master/src/sse2.cpp
 
-  #include <cassert>
-  #include <cstdint>
-  #include <emmintrin.h>
+#include <cassert>
+#include <cstdint>
+#include <emmintrin.h>
 
-  #include "common/algorithms/fastmod.h"
+#include "common/algorithms/fastmod.h"
 
 namespace impl_ {
 inline char lookup_digit_table(size_t x) noexcept {
@@ -266,13 +266,13 @@ char* simd_int64_to_string(int64_t value, char* out_buffer) {
 }
 
 #else
-  // as written above, the same functions for M1 are just implemented without simd
-  // todo anyone who wants to practice some low-level magic — welcome to implement a proper SIMD form with ARM intrinsics
-  #include <array>
-  #include <cinttypes>
-  #include <cstdint>
-  #include <cstdio>
-  #include <cstring>
+// as written above, the same functions for M1 are just implemented without simd
+// todo anyone who wants to practice some low-level magic — welcome to implement a proper SIMD form with ARM intrinsics
+#include <array>
+#include <cinttypes>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 
 template<size_t S, typename T>
 inline int simd_value_to_string(char* out_buffer, const char* format, T value) noexcept {

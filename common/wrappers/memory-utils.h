@@ -12,11 +12,11 @@
 #include "common/macos-ports.h"
 
 #ifndef MADV_FREE
-  #define MADV_FREE 8
+#define MADV_FREE 8
 #endif
 
 #ifndef MADV_DONTDUMP
-  #define MADV_DONTDUMP 16
+#define MADV_DONTDUMP 16
 #endif
 
 inline int our_madvise(void* addr, size_t len, int advice) noexcept {
@@ -35,11 +35,11 @@ inline void* mmap_shared(size_t size, int fd = -1) noexcept {
 
 inline auto get_malloc_stats() noexcept {
 #ifdef __GLIBC_PREREQ
-  #if __GLIBC_PREREQ(2, 33)
+#if __GLIBC_PREREQ(2, 33)
   return mallinfo2();
-  #else
+#else
   return mallinfo();
-  #endif
+#endif
 #else
   return mallinfo();
 #endif
