@@ -46,7 +46,7 @@ Some correlations may occur between these metrics, but each of them has its own 
 3. Run compiled binary with the `--profiler-log-prefix` option, for example `--profiler-log-prefix /tmp/kphp-profile/callgrind.out.kphp`
 4. Send a request to this version of your site, forcing this function to invoke.
 5. Download report (`ls` directory you provided by prefix and find the report).
-6. Open the report with KCacheGrind (for [Linux](http://kcachegrind.sourceforge.net/html/Download.html)) or QCacheGrind (for [Mac](https://formulae.brew.sh/formula/qcachegrind) and [Windows](https://sourceforge.net/projects/qcachegrindwin/)) — examine lots of metrics and interactive call graphs.
+6. Open the report with KCacheGrind (for [Linux](https://kcachegrind.sourceforge.net/html/Download.html)) or QCacheGrind (for [Mac](https://formulae.brew.sh/formula/qcachegrind) and [Windows](https://sourceforge.net/projects/qcachegrindwin/)) — examine lots of metrics and interactive call graphs.
 7. Don't commit `@kphp-profile`, it is for development, profiling purposes. 
 
 <p class="img-c">
