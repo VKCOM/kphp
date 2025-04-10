@@ -20,7 +20,6 @@ resource f$fopen(const string &filename, [[maybe_unused]] const string &mode, [[
     return {};
   }
 
-  php_notice("successfully fopened %s\n", filename.c_str());
   return f$to_mixed(make_instance<underlying_resource_t>(std::move(rsrc)));
 }
 
