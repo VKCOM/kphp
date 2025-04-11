@@ -160,6 +160,27 @@ function send_rpc(int $master_port, float $duration, bool $expect_resume = true)
   return $resp["result"];
 }
 
+/** @kphp-immutable-class */
+class InstanceCacheElement {
+  public string $payload;
+  function __construct() {
+    $this->payload = "i'm in shared memory";
+  }
+}
+
+function capture_instance_cache_element() {
+    instance_cache_store("test", new InstanceCacheElement);
+    $el = instance_cache_fetch(InstanceCacheElement::class, "test");
+    register_shutdown_function(function () use ($el) {
+      // 0x7ffffff1 is a value of extra_ref_cnt_value::for_instance_cache
+      $expected = 0x7ffffff1;
+      $got = get_reference_counter($el->payload);
+      if ($got !== $expected) {
+        critical_error("Reference counter of Instance Cache element mismatch: expected $expected, got $got");
+      }
+    });
+}
+
 function main() {
   foreach (json_decode(file_get_contents('php://input')) as $action) {
     fprintf(STDERR, $action["op"] . "\n");
@@ -208,6 +229,9 @@ function main() {
         break;
       case "register_shutdown_function":
         do_register_shutdown_function((string)$action["msg"]);
+        break;
+      case "capture_instance_cache_element":
+        capture_instance_cache_element();
         break;
       default:
         echo "unknown operation";
