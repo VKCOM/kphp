@@ -30,7 +30,7 @@ public:
     static_assert(std::is_same_v<std::remove_cv_t<Value>, std::remove_cv_t<S>>);
 
     dl::CriticalSectionGuard guard;
-    auto res = ht.template insert_or_assign(key, std::forward<S>(value));
+    auto res = ht.template insert_or_assign<S>(key, std::forward<S>(value));
     return res.second;
   }
 
