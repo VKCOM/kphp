@@ -2362,6 +2362,7 @@ static void free_interface_lib() {
 static void free_runtime_libs() {
   php_assert (dl::in_critical_section == 0);
 
+  free_interface_lib();
   forcibly_stop_and_flush_profiler();
   free_bcmath_lib();
   free_exception_lib();
@@ -2399,7 +2400,6 @@ static void free_runtime_libs() {
   vk::singleton<database_drivers::Adaptor>::get().reset();
   vk::singleton<curl_async::CurlAdaptor>::get().reset();
   vk::singleton<OomHandler>::get().reset();
-  free_interface_lib();
   hard_reset_var(SerializationLibContext::get().last_json_processor_error);
 }
 
