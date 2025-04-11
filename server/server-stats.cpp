@@ -473,7 +473,7 @@ template<typename E>
 struct WorkerSamplesBundle : EnumTable<E, WorkerSamples<typename E::StatType>>, private vk::not_copyable {
 public:
   void recalc(const WorkerStatsBundle<E> &stats, uint16_t first_worker_id, uint16_t last_worker_id) noexcept {
-    if (const uint16_t len = last_worker_id - first_worker_id) {
+    if ([[maybe_unused]] const uint16_t len = last_worker_id - first_worker_id) {
       for (size_t i = 0; i != this->size(); ++i) {
         const auto &stat = stats[i];
         size_t buffer_index = 0;
