@@ -5,12 +5,12 @@
 #include "runtime-light/server/http/init-functions.h"
 
 #include <algorithm>
-#include <cctype>
 #include <charconv>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <iterator>
+#include <locale>
 #include <optional>
 #include <ranges>
 #include <string_view>
@@ -183,7 +183,7 @@ std::string_view process_headers(tl::K2InvokeHttp &invoke_http, PhpScriptBuiltIn
     key.append(h_name.data(), h_name.size());
     // to uppercase inplace
     for (int64_t i = HTTP_HEADER_PREFIX.size(); i < key.size(); ++i) {
-      key[i] = key[i] != '-' ? std::toupper(key[i]) : '_';
+      key[i] = key[i] != '-' ? std::toupper(key[i], std::locale::classic()) : '_';
     }
     server.set_value(key, std::move(h_value_str));
   }

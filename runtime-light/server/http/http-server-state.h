@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <locale>
 #include <optional>
 #include <string_view>
 
@@ -13,7 +14,6 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/allocator/allocator.h"
 
 namespace kphp {
 
@@ -77,7 +77,7 @@ public:
 
   void add_header(std::string_view name_view, std::string_view value_view, bool replace) noexcept {
     header_t name{name_view};
-    std::ranges::for_each(name, [](auto &c) noexcept { c = std::tolower(c); });
+    std::ranges::for_each(name, [](auto &c) noexcept { c = std::tolower(c, std::locale::classic()); });
     if (const auto it{headers_.find(name)}; replace && it != headers_.end()) [[unlikely]] {
       headers_.erase(name);
     }

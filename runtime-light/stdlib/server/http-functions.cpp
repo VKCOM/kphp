@@ -5,10 +5,10 @@
 #include "runtime-light/stdlib/server/http-functions.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cinttypes>
 #include <cstddef>
 #include <cstdint>
+#include <locale>
 #include <optional>
 #include <ranges>
 #include <string_view>
@@ -26,7 +26,8 @@ constexpr std::string_view HTTP_DATE = R"(D, d M Y H:i:s \G\M\T)";
 constexpr std::string_view HTTP_STATUS_PREFIX = "http/";
 
 bool http_status_header(std::string_view header) noexcept {
-  const auto lowercase_prefix{header | std::views::take(HTTP_STATUS_PREFIX.size()) | std::views::transform([](auto c) noexcept { return std::tolower(c); })};
+  const auto lowercase_prefix{header | std::views::take(HTTP_STATUS_PREFIX.size())
+                              | std::views::transform([](auto c) noexcept { return std::tolower(c, std::locale::classic()); })};
   return std::ranges::equal(lowercase_prefix, HTTP_STATUS_PREFIX);
 }
 
@@ -40,7 +41,7 @@ bool http_location_header(std::string_view header) noexcept {
   }
 
   const auto lowercase_prefix{header | std::views::take(kphp::http::headers::LOCATION.size())
-                              | std::views::transform([](auto c) noexcept { return std::tolower(c); })};
+                              | std::views::transform([](auto c) noexcept { return std::tolower(c, std::locale::classic()); })};
   return std::ranges::equal(lowercase_prefix, kphp::http::headers::LOCATION);
 }
 
@@ -53,30 +54,30 @@ std::optional<uint64_t> valid_http_status_header(std::string_view header) noexce
   }
   // skip digits
   size_t pos{HTTP_STATUS_PREFIX.size()};
-  for (; pos < header_size && std::isdigit(header[pos]); ++pos) {
+  for (; pos < header_size && std::isdigit(header[pos], std::locale::classic()); ++pos) {
   }
   // expect '.'
   if (pos == header_size || header[pos++] != '.') [[unlikely]] {
     return {};
   }
   // skip digits
-  for (; pos < header_size && std::isdigit(header[pos]); ++pos) {
+  for (; pos < header_size && std::isdigit(header[pos], std::locale::classic()); ++pos) {
   }
   // expect ' '
   if (pos == header_size || header[pos++] != ' ') [[unlikely]] {
     return {};
   }
   // expect 3 digits http code
-  if (pos == header_size || !std::isdigit(header[pos])) [[unlikely]] {
+  if (pos == header_size || !std::isdigit(header[pos], std::locale::classic())) [[unlikely]] {
     return {};
   }
   http_response_code = header[pos++] - '0';
-  if (pos == header_size || !std::isdigit(header[pos])) [[unlikely]] {
+  if (pos == header_size || !std::isdigit(header[pos], std::locale::classic())) [[unlikely]] {
     return {};
   }
   http_response_code *= 10;
   http_response_code += header[pos++] - '0';
-  if (pos == header_size || !std::isdigit(header[pos])) [[unlikely]] {
+  if (pos == header_size || !std::isdigit(header[pos], std::locale::classic())) [[unlikely]] {
     return {};
   }
   http_response_code *= 10;
@@ -87,7 +88,7 @@ std::optional<uint64_t> valid_http_status_header(std::string_view header) noexce
   }
   // expect all remaining characters to be printable
   for (; pos < header_size; ++pos) {
-    if (std::isprint(header[pos]) == 0) [[unlikely]] {
+    if (std::isprint(header[pos], std::locale::classic()) == 0) [[unlikely]] {
       return {};
     }
   }
@@ -124,12 +125,12 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
 
   // validate header name
   name_view = vk::strip_ascii_whitespace(name_view);
-  if (!std::ranges::all_of(name_view, [](char c) noexcept { return std::isalnum(c) || c == '-' || c == '_'; })) [[unlikely]] {
+  if (!std::ranges::all_of(name_view, [](char c) noexcept { return std::isalnum(c, std::locale::classic()) || c == '-' || c == '_'; })) [[unlikely]] {
     return php_warning("invalid header name: %s", name_view.data());
   }
   // validate header value
   value_view = vk::strip_ascii_whitespace(value_view);
-  if (!std::ranges::all_of(value_view, [](char c) noexcept { return std::isprint(c); })) [[unlikely]] {
+  if (!std::ranges::all_of(value_view, [](char c) noexcept { return std::isprint(c, std::locale::classic()); })) [[unlikely]] {
     return php_warning("invalid header value: %s", value_view.data());
   }
 
