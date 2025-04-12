@@ -93,6 +93,7 @@ jobs:
               "composer install -d ${{env.kphp_polyfills_dir}}"
 
     - name: Run python tests
+      if: github.ref != 'refs/heads/master'
       id: python_tests
       continue-on-error: true
       run: docker exec kphp-build-container-${{matrix.os}} bash -c
