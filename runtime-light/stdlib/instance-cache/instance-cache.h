@@ -7,19 +7,19 @@
 #include "runtime-common/core/runtime-core.h"
 
 template<typename ClassInstanceType>
-bool f$instance_cache_store(const string& /*key*/, const ClassInstanceType& /*instance*/, int64_t /*ttl*/ = 0) noexcept {
+bool f$instance_cache_store(const string & /*key*/, const ClassInstanceType & /*instance*/, int64_t /*ttl*/ = 0) noexcept {
   return false;
 }
 
 template<typename ClassInstanceType>
-ClassInstanceType f$instance_cache_fetch(const string& /*class_name*/, const string& /*key*/, bool /*even_if_expired*/ = false) noexcept {
+ClassInstanceType f$instance_cache_fetch(const string & /*class_name*/, const string & /*key*/, bool /*even_if_expired*/ = false) noexcept {
   return {};
 }
 
-inline bool f$instance_cache_update_ttl(const string& /*key*/, int64_t /*ttl*/ = 0) noexcept {
+inline bool f$instance_cache_update_ttl(const string & /*key*/, int64_t /*ttl*/ = 0) noexcept {
   return false;
 }
 
-inline bool f$instance_cache_delete(const string& /*key*/) noexcept {
+inline bool f$instance_cache_delete(const string & /*key*/) noexcept {
   return false;
 }

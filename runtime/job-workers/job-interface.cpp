@@ -8,8 +8,8 @@
 #include "server/workers-control.h"
 
 #include "runtime/job-workers/processing-jobs.h"
-#include "runtime/net_events.h"
 #include "runtime/resumable.h"
+#include "runtime/net_events.h"
 
 #include "runtime/job-workers/job-interface.h"
 
@@ -17,7 +17,7 @@ namespace {
 
 int job_timeout_wakeup_id{-1};
 
-void process_job_timeout(kphp_event_timer* timer) {
+void process_job_timeout(kphp_event_timer *timer) {
   ::process_job_timeout(timer->wakeup_extra);
 }
 
@@ -35,6 +35,7 @@ int64_t f$get_job_workers_number() noexcept {
   return vk::singleton<WorkersControl>::get().get_count(WorkerType::job_worker);
 }
 
+
 void global_init_job_workers_lib() noexcept {
   if (f$is_kphp_job_workers_enabled()) {
     vk::singleton<job_workers::SharedMemoryManager>::get().init();
@@ -48,7 +49,7 @@ void clear_shared_job_messages() noexcept {
   }
 }
 
-void process_job_answer(int job_id, job_workers::FinishedJob* job_result) noexcept {
+void process_job_answer(int job_id, job_workers::FinishedJob *job_result) noexcept {
   int64_t job_resumable_id = vk::singleton<job_workers::ProcessingJobs>::get().finish_job_on_answer(job_id, job_result);
 
   if (job_resumable_id == 0) {
@@ -68,20 +69,20 @@ void process_job_timeout(int job_id) noexcept {
   resumable_run_ready(job_resumable_id);
 }
 
-class_instance<C$KphpJobWorkerResponseError> f$KphpJobWorkerResponseError$$__construct(class_instance<C$KphpJobWorkerResponseError> const& v$this) noexcept {
+class_instance<C$KphpJobWorkerResponseError> f$KphpJobWorkerResponseError$$__construct(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept {
   return v$this;
 }
 
-string f$KphpJobWorkerResponseError$$getError(class_instance<C$KphpJobWorkerResponseError> const& v$this) noexcept {
+string f$KphpJobWorkerResponseError$$getError(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept {
   return v$this.get()->error;
 }
 
-int64_t f$KphpJobWorkerResponseError$$getErrorCode(class_instance<C$KphpJobWorkerResponseError> const& v$this) noexcept {
+int64_t f$KphpJobWorkerResponseError$$getErrorCode(class_instance<C$KphpJobWorkerResponseError> const &v$this) noexcept {
   return v$this.get()->error_code;
 }
 
-class_instance<C$KphpJobWorkerResponseError> create_error_on_other_memory(int32_t error_code, const char* error_msg,
-                                                                          memory_resource::unsynchronized_pool_resource& resource) noexcept {
+class_instance<C$KphpJobWorkerResponseError> create_error_on_other_memory(int32_t error_code, const char *error_msg,
+                                                                          memory_resource::unsynchronized_pool_resource &resource) noexcept {
   dl::set_current_script_allocator(resource, false);
   class_instance<C$KphpJobWorkerResponseError> error;
   assert(resource.is_enough_memory_for(sizeof(C$KphpJobWorkerResponseError)));
@@ -96,6 +97,6 @@ class_instance<C$KphpJobWorkerResponseError> create_error_on_other_memory(int32_
   return error;
 }
 
-void C$KphpJobWorkerResponseError::accept(CommonMemoryEstimateVisitor& visitor) noexcept {
+void C$KphpJobWorkerResponseError::accept(CommonMemoryEstimateVisitor &visitor) noexcept {
   return generic_accept(visitor);
 }

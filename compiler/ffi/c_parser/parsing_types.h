@@ -8,35 +8,15 @@ struct FFIType;
 
 namespace ffi {
 
-struct TypeSpecifier {
-  FFIType* type;
-};
-struct DeclarationSpecifiers {
-  FFIType* type;
-};
-struct InitDeclaratorList {
-  FFIType* type;
-};
-struct AbstractDeclarator {
-  FFIType* type;
-};
-struct DirectAbstractDeclarator {
-  FFIType* type;
-};
-struct DirectDeclarator {
-  FFIType* type;
-};
-struct Declarator {
-  FFIType* type;
-};
-struct TypeQualifier {
-  FFIType* type;
-};
-struct Pointer {
-  FFIType* type;
-};
-struct SpecifierQualifierList {
-  FFIType* type;
-};
+struct TypeSpecifier { FFIType *type; };
+struct DeclarationSpecifiers { FFIType *type; };
+struct InitDeclaratorList { FFIType *type; };
+struct AbstractDeclarator { FFIType *type; };
+struct DirectAbstractDeclarator { FFIType *type; };
+struct DirectDeclarator { FFIType *type; };
+struct Declarator { FFIType *type; };
+struct TypeQualifier { FFIType *type; };
+struct Pointer { FFIType *type; };
+struct SpecifierQualifierList { FFIType *type; };
 
 } // namespace ffi

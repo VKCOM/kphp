@@ -12,7 +12,7 @@ class GenTreePostprocessPass final : public FunctionPassBase {
     int args;
   };
 
-  builtin_fun get_builtin_function(const std::string& name);
+  builtin_fun get_builtin_function(const std::string &name);
 
 public:
   std::string get_description() override {

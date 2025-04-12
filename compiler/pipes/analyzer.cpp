@@ -51,21 +51,21 @@ std::set<std::string> collect_duplicate_keys(VertexPtr to_check) {
   return duplicates;
 }
 
-void check_var_init_value(const VarPtr& var) {
+void check_var_init_value(const VarPtr &var) {
   if (auto var_init_const = var->init_val.try_as<op_var>()) {
     if (auto const_array = var_init_const->var_id->init_val.try_as<op_array>()) {
       auto duplications = collect_duplicate_keys(const_array);
       if (!duplications.empty()) {
-        const char* static_prefix = (var->is_function_static_var() || var->is_class_static_var()) ? "static " : "";
+        const char *static_prefix = (var->is_function_static_var() || var->is_class_static_var()) ? "static " : "";
         stage::set_location(const_array->get_location());
-        kphp_warning(
-            fmt_format("Got array duplicate keys ['{}'] in '{}{}' init value", vk::join(duplications, "', '"), static_prefix, var->as_human_readable()));
+        kphp_warning(fmt_format("Got array duplicate keys ['{}'] in '{}{}' init value",
+                                vk::join(duplications, "', '"), static_prefix, var->as_human_readable()));
       }
     }
   }
 }
 
-} // namespace
+}
 
 void CommonAnalyzerPass::check_set(VertexAdaptor<op_set> to_check) {
   VertexPtr left = to_check->lhs();
@@ -74,7 +74,7 @@ void CommonAnalyzerPass::check_set(VertexAdaptor<op_set> to_check) {
     VarPtr lvar = left.as<op_var>()->var_id;
     VarPtr rvar = right.as<op_var>()->var_id;
     if (lvar->name == rvar->name) {
-      kphp_warning("Assigning variable to itself\n");
+      kphp_warning ("Assigning variable to itself\n");
     }
   }
 }
@@ -108,26 +108,26 @@ VertexPtr CommonAnalyzerPass::on_enter_vertex(VertexPtr vertex) {
     }
   }
   if (vertex->type() == op_set) {
-    // TODO: $x = (int)$x;
-    // check_set(vertex.as<op_set>());
+    //TODO: $x = (int)$x;
+    //check_set(vertex.as<op_set>());
     return vertex;
   }
   return vertex;
 }
 
 void CommonAnalyzerPass::on_finish() {
-  for (VarPtr& var : current_function->local_var_ids) {
+  for (VarPtr &var : current_function->local_var_ids) {
     G->stats.cnt_mixed_vars += tinf::get_type(var)->ptype() == tp_mixed;
   }
 
-  for (VarPtr& var : current_function->param_ids) {
+  for (VarPtr &var : current_function->param_ids) {
     G->stats.cnt_mixed_params += tinf::get_type(var)->ptype() == tp_mixed;
     G->stats.cnt_const_mixed_params += (tinf::get_type(var)->ptype() == tp_mixed) && var->is_read_only;
   }
 
   if (current_function->type == FunctionData::func_class_holder) {
-    current_function->class_id->members.for_each([](ClassMemberStaticField& field) { check_var_init_value(field.var); });
-    current_function->class_id->members.for_each([](ClassMemberInstanceField& field) { check_var_init_value(field.var); });
+    current_function->class_id->members.for_each([](ClassMemberStaticField &field) { check_var_init_value(field.var); });
+    current_function->class_id->members.for_each([](ClassMemberInstanceField &field) { check_var_init_value(field.var); });
   }
 
   std::for_each(current_function->static_var_ids.begin(), current_function->static_var_ids.end(), check_var_init_value);

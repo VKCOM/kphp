@@ -6,8 +6,8 @@
 
 #include <cstring>
 
-inline const char* kbasename(const char* path) noexcept {
-  if (const char* file_short = strrchr(path, '/')) {
+inline const char *kbasename(const char *path) noexcept {
+  if (const char *file_short = strrchr(path, '/')) {
     if (file_short[1]) {
       path = file_short + 1;
     }

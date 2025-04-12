@@ -14,8 +14,8 @@
 namespace {
 
 template<class FN>
-void walk_parts(const char* d, int64_t d_len, const string& str, int64_t limit, FN handle_part) noexcept {
-  const char* s = str.c_str();
+void walk_parts(const char *d, int64_t d_len, const string &str, int64_t limit, FN handle_part) noexcept {
+  const char *s = str.c_str();
   int64_t s_len = str.size();
   int64_t prev = 0;
 
@@ -89,7 +89,7 @@ array<mixed> range_int(int64_t from, int64_t to, int64_t step) {
   }
 }
 
-array<mixed> range_string(const string& from_s, const string& to_s, int64_t step) {
+array<mixed> range_string(const string &from_s, const string &to_s, int64_t step) {
   if (from_s.empty() || to_s.empty() || from_s.size() > 1 || to_s.size() > 1) {
     php_warning("Wrong parameters \"%s\" and \"%s\" for function range", from_s.c_str(), to_s.c_str());
     return {};
@@ -117,10 +117,10 @@ array<mixed> range_string(const string& from_s, const string& to_s, int64_t step
 
 namespace array_functions_impl_ {
 
-string implode_string_vector(const string& s, const array<string>& a) noexcept {
+string implode_string_vector(const string &s, const array<string> &a) noexcept {
   // we use a precondition here that array is not empty: count-1 is not negative, elems[0] is valid
   int64_t count = a.count();
-  const string* elems = a.get_const_vector_pointer();
+  const string *elems = a.get_const_vector_pointer();
 
   int result_size = 0;
   for (int64_t i = 0; i < count; i++) {
@@ -148,14 +148,14 @@ string implode_string_vector(const string& s, const array<string>& a) noexcept {
 
 } // namespace array_functions_impl_
 
-string f$_explode_nth(const string& delimiter, const string& str, int64_t index) noexcept {
+string f$_explode_nth(const string &delimiter, const string &str, int64_t index) noexcept {
   if (delimiter.empty()) {
     php_warning("Empty delimiter in function explode");
     return {};
   }
   int result_index = 0;
   string res;
-  walk_parts(delimiter.c_str(), delimiter.size(), str, index + 2, [&](const char* s, string::size_type l) noexcept {
+  walk_parts(delimiter.c_str(), delimiter.size(), str, index + 2, [&](const char *s, string::size_type l) noexcept {
     if (result_index++ == index) {
       res = string(s, l);
     }
@@ -163,103 +163,103 @@ string f$_explode_nth(const string& delimiter, const string& str, int64_t index)
   return res;
 }
 
-string f$_explode_1(const string& delimiter, const string& str) noexcept {
+string f$_explode_1(const string &delimiter, const string &str) noexcept {
   return f$_explode_nth(delimiter, str, 0);
 }
 
-std::tuple<string, string> f$_explode_tuple2(const string& delimiter, const string& str, int64_t mask, int64_t limit) noexcept {
+std::tuple<string, string> f$_explode_tuple2(const string &delimiter, const string &str, int64_t mask, int64_t limit) noexcept {
   if (delimiter.empty()) {
     php_warning("Empty delimiter in function explode");
     return {};
   }
   int result_index = 0;
   std::tuple<string, string> res;
-  walk_parts(delimiter.c_str(), delimiter.size(), str, limit, [&](const char* s, string::size_type l) {
+  walk_parts(delimiter.c_str(), delimiter.size(), str, limit, [&](const char *s, string::size_type l) {
     int index = result_index++;
     if (((1 << index) & mask) == 0) {
       return; // this result index will be discarded, don't allocate the string
     }
     switch (index) {
-    case 0:
-      std::get<0>(res) = string(s, l);
-      return;
-    case 1:
-      std::get<1>(res) = string(s, l);
-      return;
-    default:
-      return;
+      case 0:
+        std::get<0>(res) = string(s, l);
+        return;
+      case 1:
+        std::get<1>(res) = string(s, l);
+        return;
+      default:
+        return;
     }
   });
   return res;
 }
 
-std::tuple<string, string, string> f$_explode_tuple3(const string& delimiter, const string& str, int64_t mask, int64_t limit) noexcept {
+std::tuple<string, string, string> f$_explode_tuple3(const string &delimiter, const string &str, int64_t mask, int64_t limit) noexcept {
   if (delimiter.empty()) {
     php_warning("Empty delimiter in function explode");
     return {};
   }
   int result_index = 0;
   std::tuple<string, string, string> res;
-  walk_parts(delimiter.c_str(), delimiter.size(), str, limit, [&](const char* s, string::size_type l) {
+  walk_parts(delimiter.c_str(), delimiter.size(), str, limit, [&](const char *s, string::size_type l) {
     int index = result_index++;
     if (((1 << index) & mask) == 0) {
       return; // this result index will be discarded, don't allocate the string
     }
     switch (index) {
-    case 0:
-      std::get<0>(res) = string(s, l);
-      return;
-    case 1:
-      std::get<1>(res) = string(s, l);
-      return;
-    case 2:
-      std::get<2>(res) = string(s, l);
-      return;
-    default:
-      return;
+      case 0:
+        std::get<0>(res) = string(s, l);
+        return;
+      case 1:
+        std::get<1>(res) = string(s, l);
+        return;
+      case 2:
+        std::get<2>(res) = string(s, l);
+        return;
+      default:
+        return;
     }
   });
   return res;
 }
 
-std::tuple<string, string, string, string> f$_explode_tuple4(const string& delimiter, const string& str, int64_t mask, int64_t limit) noexcept {
+std::tuple<string, string, string, string> f$_explode_tuple4(const string &delimiter, const string &str, int64_t mask, int64_t limit) noexcept {
   if (delimiter.empty()) {
     php_warning("Empty delimiter in function explode");
     return {};
   }
   int result_index = 0;
   std::tuple<string, string, string, string> res;
-  walk_parts(delimiter.c_str(), delimiter.size(), str, limit, [&](const char* s, string::size_type l) {
+  walk_parts(delimiter.c_str(), delimiter.size(), str, limit, [&](const char *s, string::size_type l) {
     int index = result_index++;
     if (((1 << index) & mask) == 0) {
       return; // this result index will be discarded, don't allocate the string
     }
     switch (index) {
-    case 0:
-      std::get<0>(res) = string(s, l);
-      return;
-    case 1:
-      std::get<1>(res) = string(s, l);
-      return;
-    case 2:
-      std::get<2>(res) = string(s, l);
-      return;
-    case 3:
-      std::get<3>(res) = string(s, l);
-      return;
-    default:
-      return;
+      case 0:
+        std::get<0>(res) = string(s, l);
+        return;
+      case 1:
+        std::get<1>(res) = string(s, l);
+        return;
+      case 2:
+        std::get<2>(res) = string(s, l);
+        return;
+      case 3:
+        std::get<3>(res) = string(s, l);
+        return;
+      default:
+        return;
     }
   });
   return res;
 }
-array<string> explode(char delimiter, const string& str, int64_t limit) noexcept {
+array<string> explode(char delimiter, const string &str, int64_t limit) noexcept {
   array<string> res(array_size(limit < 10 ? limit : 1, true));
-  walk_parts(std::addressof(delimiter), 1, str, limit, [&](const char* s, string::size_type l) { res.push_back(string(s, l)); });
+  walk_parts(std::addressof(delimiter), 1, str, limit, [&](const char *s, string::size_type l) { res.push_back(string(s, l)); });
   return res;
 }
 
-array<string> f$explode(const string& delimiter, const string& str, int64_t limit) noexcept {
+array<string> f$explode(const string &delimiter, const string &str, int64_t limit) noexcept {
   if (limit < 1) {
     php_warning("Wrong limit %" PRIi64 " specified in function explode", limit);
     limit = 1;
@@ -270,11 +270,11 @@ array<string> f$explode(const string& delimiter, const string& str, int64_t limi
   }
 
   array<string> res(array_size(limit < 10 ? limit : 1, true));
-  walk_parts(delimiter.c_str(), delimiter.size(), str, limit, [&](const char* s, string::size_type l) { res.push_back(string(s, l)); });
+  walk_parts(delimiter.c_str(), delimiter.size(), str, limit, [&](const char *s, string::size_type l) { res.push_back(string(s, l)); });
   return res;
 }
 
-array<mixed> f$range(const mixed& from, const mixed& to, int64_t step) {
+array<mixed> f$range(const mixed &from, const mixed &to, int64_t step) {
   if ((from.is_string() && !from.is_numeric()) || (to.is_string() && !to.is_numeric())) {
     return range_string(from.to_string(), to.to_string(), step);
   }

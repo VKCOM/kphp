@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include <map>
-#include <string>
 #include <vector>
+#include <string>
+#include <map>
 
 #include "common/wrappers/string_view.h"
 
@@ -20,18 +20,18 @@
 // depending on kind, a field of a union is set
 struct ModuliteSymbol {
   enum Kind {
-    kind_ref_stringname, // @another_m or #composer/package until being resolved
-    kind_modulite,       // @feed or @msg/channels
-    kind_klass,          // SomeClass
-    kind_function,       // someFunction() or A::someMethod()
-    kind_constant,       // A::CONST
-    kind_property,       // A::$static_field
-    kind_global_const,   // SOME_DEFINE or GLOBAL_CONST
-    kind_global_var,     // $global_var
+    kind_ref_stringname,    // @another_m or #composer/package until being resolved
+    kind_modulite,          // @feed or @msg/channels
+    kind_klass,             // SomeClass
+    kind_function,          // someFunction() or A::someMethod()
+    kind_constant,          // A::CONST
+    kind_property,          // A::$static_field
+    kind_global_const,      // SOME_DEFINE or GLOBAL_CONST
+    kind_global_var,        // $global_var
   } kind;
 
   int line;
-  ClassPtr klass; // valid for kind_klass, kind_function (when method), kind_constant, kind_property
+  ClassPtr klass;   // valid for kind_klass, kind_function (when method), kind_constant, kind_property
   // note, that for inheritance, when A{const C} and B extends A, B::C refers to A::C actually
   // (when we parse "B::C" in yaml, we call $b->get_constant('C'), it returns a member of A)
   // if B and A belong to different modulites, this fact leads to unexpected errors
@@ -54,17 +54,13 @@ struct ModuliteSymbol {
 // represents structure of .modulite.yaml
 // IMPORTANT! keep this class and logic very close to ModuliteData in modulite-phpstan
 class ModuliteData {
-  DEBUG_STRING_METHOD {
-    return modulite_name;
-  }
+  DEBUG_STRING_METHOD { return modulite_name; }
 
-  ModulitePtr get_self_ptr() {
-    return ModulitePtr(this);
-  }
+  ModulitePtr get_self_ptr() { return ModulitePtr(this); }
 
 public:
   static ModulitePtr create_from_composer_json(ComposerJsonPtr composer_json, bool has_modulite_yaml_also);
-  static ModulitePtr create_from_modulite_yaml(const std::string& yaml_filename, ModulitePtr parent);
+  static ModulitePtr create_from_modulite_yaml(const std::string &yaml_filename, ModulitePtr parent);
 
   // full absolute path to .modulite.yaml, it's registered in G, it has ->dir, kphp_error can point to it
   SrcFilePtr yaml_file;
@@ -98,8 +94,9 @@ public:
   // "allow-internal-access" from yaml lists additional "export" rules for specific usage contexts
   std::vector<std::pair<ModuliteSymbol, std::vector<ModuliteSymbol>>> allow_internal;
 
+
   void resolve_names_to_pointers();
-  void resolve_symbol_from_yaml(ModuliteSymbol& s);
+  void resolve_symbol_from_yaml(ModuliteSymbol &s);
 
   void validate_yaml_requires();
   void validate_yaml_exports();
@@ -107,3 +104,4 @@ public:
 
   ModulitePtr find_lca_with(ModulitePtr another_m);
 };
+

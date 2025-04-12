@@ -9,7 +9,7 @@
 #include "runtime/exception.h"
 #include "runtime/tl/rpc_request.h"
 
-void RpcPendingQueries::save(const class_instance<RpcTlQuery>& query) {
+void RpcPendingQueries::save(const class_instance<RpcTlQuery> &query) {
   php_assert(!queries_.has_key(query.get()->query_id));
   queries_.set_value(query.get()->query_id, query);
 }
@@ -28,7 +28,7 @@ void CurrentTlQuery::reset() {
   current_tl_function_name_ = string();
 }
 
-void CurrentTlQuery::set_current_tl_function(const string& tl_function_name) {
+void CurrentTlQuery::set_current_tl_function(const string &tl_function_name) {
   // It can be not empty in the following case:
   // 1. Timeout is raised in the middle of serialization (when current TL function is still not reset).
   // 2. Then shutdown functions called from timeout.
@@ -37,11 +37,11 @@ void CurrentTlQuery::set_current_tl_function(const string& tl_function_name) {
   current_tl_function_name_ = tl_function_name;
 }
 
-void CurrentTlQuery::set_current_tl_function(const class_instance<RpcTlQuery>& current_query) {
+void CurrentTlQuery::set_current_tl_function(const class_instance<RpcTlQuery> &current_query) {
   current_tl_function_name_ = current_query.get()->tl_function_name;
 }
 
-void CurrentTlQuery::raise_fetching_error(const char* format, ...) {
+void CurrentTlQuery::raise_fetching_error(const char *format, ...) {
   php_assert(!current_tl_function_name_.empty());
   if (CurException.is_null()) {
     constexpr size_t BUFF_SZ = 1024;
@@ -58,13 +58,13 @@ void CurrentTlQuery::raise_fetching_error(const char* format, ...) {
   }
 }
 
-void CurrentTlQuery::raise_storing_error(const char* format, ...) {
-  const char* function_name = current_tl_function_name_.empty() ? "_unknown_" : current_tl_function_name_.c_str();
+void CurrentTlQuery::raise_storing_error(const char *format, ...) {
+  const char *function_name = current_tl_function_name_.empty() ? "_unknown_" : current_tl_function_name_.c_str();
   if (CurException.is_null()) {
     constexpr size_t BUFF_SZ = 1024;
     char buff[BUFF_SZ] = {0};
     va_list args;
-    va_start(args, format);
+    va_start (args, format);
     int32_t sz = vsnprintf(buff, BUFF_SZ, format, args);
     php_assert(sz > 0);
     va_end(args);

@@ -34,7 +34,7 @@
 #include "compiler/pipes/collect-forkable-types.h"
 #include "compiler/type-hint.h"
 
-void CodeGenF::execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>>& unused_os __attribute__((unused))) {
+void CodeGenF::execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenRootCmd>> &unused_os __attribute__ ((unused))) {
   if (function->does_need_codegen() || function->is_imported_from_static_lib()) {
     prepare_generate_function(function);
     G->stats.on_function_processed(function);
@@ -42,7 +42,7 @@ void CodeGenF::execute(FunctionPtr function, DataStream<std::unique_ptr<CodeGenR
   }
 }
 
-void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>>& os) {
+void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   vk::singleton<CppDestDirInitializer>::get().wait();
 
   G->get_ffi_root().bind_symbols();
@@ -52,18 +52,18 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>>& os) {
   stage::set_file(SrcFilePtr());
   stage::die_if_global_errors();
 
-  std::forward_list<FunctionPtr> all_functions = tmp_stream.flush(); // functions to codegen, order doesn't matter
-  const std::vector<ClassPtr>& all_classes = G->get_classes();
+  std::forward_list<FunctionPtr> all_functions = tmp_stream.flush();   // functions to codegen, order doesn't matter
+  const std::vector<ClassPtr> &all_classes = G->get_classes();
   std::set<ClassPtr> all_json_encoders;
 
   std::vector<VarPtr> all_globals = G->get_global_vars();
   for (FunctionPtr f : all_functions) {
     all_globals.insert(all_globals.end(), f->static_var_ids.begin(), f->static_var_ids.end());
   }
-  const GlobalsBatchedMem& all_globals_in_mem = GlobalsBatchedMem::prepare_mem_and_assign_offsets(all_globals);
+  const GlobalsBatchedMem &all_globals_in_mem = GlobalsBatchedMem::prepare_mem_and_assign_offsets(all_globals);
 
   std::vector<VarPtr> all_constants = G->get_constants_vars();
-  const ConstantsBatchedMem& all_constants_in_mem = ConstantsBatchedMem::prepare_mem_and_assign_offsets(all_constants);
+  const ConstantsBatchedMem &all_constants_in_mem = ConstantsBatchedMem::prepare_mem_and_assign_offsets(all_constants);
 
   for (FunctionPtr f : all_functions) {
     code_gen_start_root_task(os, std::make_unique<FunctionH>(f));
@@ -79,19 +79,19 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>>& os) {
     }
 
     switch (c->class_type) {
-    case ClassType::klass:
-      code_gen_start_root_task(os, std::make_unique<ClassDeclaration>(c));
-      code_gen_start_root_task(os, std::make_unique<ClassMembersDefinition>(c));
-      break;
-    case ClassType::interface:
-      code_gen_start_root_task(os, std::make_unique<InterfaceDeclaration>(c));
-      break;
-    case ClassType::ffi_scope:
-      code_gen_start_root_task(os, std::make_unique<FFIDeclaration>(c));
-      break;
+      case ClassType::klass:
+        code_gen_start_root_task(os, std::make_unique<ClassDeclaration>(c));
+        code_gen_start_root_task(os, std::make_unique<ClassMembersDefinition>(c));
+        break;
+      case ClassType::interface:
+        code_gen_start_root_task(os, std::make_unique<InterfaceDeclaration>(c));
+        break;
+      case ClassType::ffi_scope:
+        code_gen_start_root_task(os, std::make_unique<FFIDeclaration>(c));
+        break;
 
-    default:
-      kphp_assert(false);
+      default:
+        kphp_assert(false);
     }
   }
 
@@ -149,9 +149,9 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
   // because original (long) function names are sometimes parsed to show proper compilation errors
   // (for instance, from "baseclass$$method$$contextclass" static=contextclass is parsed)
   if (file_name.size() > 100 && func->is_instantiation_of_generic_function()) {
-    for (const auto& [_, type_hint] : *func->instantiationTs) {
-      type_hint->traverse([&file_name, this](const TypeHint* child) {
-        if (const auto* as_instance = child->try_as<TypeHintInstance>()) {
+    for (const auto &[_, type_hint] : *func->instantiationTs) {
+      type_hint->traverse([&file_name, this](const TypeHint *child) {
+        if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
           file_name = shorten_occurence_of_class_in_file_name(as_instance->resolve(), file_name);
         }
       });
@@ -170,16 +170,20 @@ void CodeGenF::prepare_generate_function(FunctionPtr func) {
   }
 
   func->header_full_name =
-      func->is_imported_from_static_lib() ? func->file_id->owner_lib->headers_dir() + func->header_name : func->subdir + "/" + func->header_name;
+    func->is_imported_from_static_lib()
+    ? func->file_id->owner_lib->headers_dir() + func->header_name
+    : func->subdir + "/" + func->header_name;
 
-  std::sort(func->local_var_ids.begin(), func->local_var_ids.end(), [](VarPtr v1, VarPtr v2) { return v1->name.compare(v2->name) < 0; });
+  std::sort(func->local_var_ids.begin(), func->local_var_ids.end(), [](VarPtr v1, VarPtr v2) {
+    return v1->name.compare(v2->name) < 0;
+  });
 
   if (func->kphp_tracing) {
     TracingAutogen::register_function_marked_kphp_tracing(func);
   }
 }
 
-std::string CodeGenF::shorten_occurence_of_class_in_file_name(ClassPtr occuring_class, const std::string& file_name) {
+std::string CodeGenF::shorten_occurence_of_class_in_file_name(ClassPtr occuring_class, const std::string &file_name) {
   size_t pos = occuring_class->name.rfind('\\');
   if (pos == std::string::npos) {
     return file_name;
@@ -214,7 +218,8 @@ std::string CodeGenF::calc_subdir_for_function(FunctionPtr func) {
   return "o_" + std::to_string(bucket);
 }
 
-void CodeGenForDiffF::execute(std::unique_ptr<CodeGenRootCmd> cmd, DataStream<WriterData*>& os) {
+
+void CodeGenForDiffF::execute(std::unique_ptr<CodeGenRootCmd> cmd, DataStream<WriterData *> &os) {
   stage::set_name("Code generation for diff");
 
   // re-launch cmd not with "calc hashes", but with "store cpp/h contents and php comments" mode

@@ -12,7 +12,7 @@
 //    2. switch over all @kphp functions
 //    3. tl_func_state storing inside the CurrentRpcServerQuery
 
-void f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult>& response) noexcept {
+void f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult> &response) noexcept {
   f$rpc_clean();
   std::unique_ptr<tl_func_base> tl_func_state = CurrentRpcServerQuery::get().extract();
   if (!tl_func_state) {
@@ -34,3 +34,4 @@ std::unique_ptr<tl_func_base> CurrentRpcServerQuery::extract() noexcept {
 void CurrentRpcServerQuery::reset() noexcept {
   this->query.reset(nullptr);
 }
+

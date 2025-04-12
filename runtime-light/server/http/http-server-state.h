@@ -71,18 +71,18 @@ private:
 public:
   HttpServerInstanceState() noexcept = default;
 
-  const headers_map_t& headers() const noexcept {
+  const headers_map_t &headers() const noexcept {
     return headers_;
   }
 
   void add_header(std::string_view name_view, std::string_view value_view, bool replace) noexcept {
     header_t name{name_view};
-    std::ranges::for_each(name, [](auto& c) noexcept { c = std::tolower(c); });
+    std::ranges::for_each(name, [](auto &c) noexcept { c = std::tolower(c); });
     if (const auto it{headers_.find(name)}; replace && it != headers_.end()) [[unlikely]] {
       headers_.erase(name);
     }
     headers_.emplace(std::move(name), header_t{value_view});
   }
 
-  static HttpServerInstanceState& get() noexcept;
+  static HttpServerInstanceState &get() noexcept;
 };

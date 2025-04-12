@@ -52,7 +52,7 @@ public:
 
   ForkInstanceState() noexcept = default;
 
-  static ForkInstanceState& get() noexcept;
+  static ForkInstanceState &get() noexcept;
 
   std::optional<std::reference_wrapper<fork_info>> get_info(int64_t fork_id) noexcept {
     if (auto it{forks.find(fork_id)}; it != forks.end()) [[likely]] {

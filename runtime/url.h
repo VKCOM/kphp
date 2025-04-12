@@ -14,7 +14,8 @@ constexpr int64_t PHP_QUERY_RFC3986 = 2;
 extern string AMPERSAND;
 
 template<class T>
-string f$http_build_query(const array<T>& a, const string& numeric_prefix = {}, const string& arg_separator = AMPERSAND, int64_t enc_type = PHP_QUERY_RFC1738);
+string f$http_build_query(const array<T> &a, const string &numeric_prefix = {},
+                          const string &arg_separator = AMPERSAND, int64_t enc_type = PHP_QUERY_RFC1738);
 
 /*
  *
@@ -23,12 +24,12 @@ string f$http_build_query(const array<T>& a, const string& numeric_prefix = {}, 
  */
 
 template<class T>
-string http_build_query_get_param_array(const string& key, const array<T>& a, const string& arg_separator, int64_t enc_type) {
+string http_build_query_get_param_array(const string &key, const array<T> &a,
+                                        const string &arg_separator, int64_t enc_type) {
   string result;
   bool first = true;
   for (typename array<T>::const_iterator p = a.begin(); p != a.end(); ++p) {
-    const string& key_value_param =
-        http_build_query_get_param((kphp_runtime_context.static_SB.clean() << key << '[' << p.get_key() << ']').str(), p.get_value(), arg_separator, enc_type);
+    const string &key_value_param = http_build_query_get_param((kphp_runtime_context.static_SB.clean() << key << '[' << p.get_key() << ']').str(), p.get_value(), arg_separator, enc_type);
     if (!key_value_param.empty()) {
       if (!first) {
         result.append(arg_separator);
@@ -40,8 +41,10 @@ string http_build_query_get_param_array(const string& key, const array<T>& a, co
   return result;
 }
 
+
 template<class T>
-string http_build_query_get_param(const string& key, const T& a, const string& arg_separator, int64_t enc_type) {
+string http_build_query_get_param(const string &key, const T &a,
+                                  const string &arg_separator, int64_t enc_type) {
   if (f$is_null(a)) {
     return {};
   }
@@ -61,8 +64,10 @@ string http_build_query_get_param(const string& key, const T& a, const string& a
   }
 }
 
+
 template<class T>
-string f$http_build_query(const array<T>& a, const string& numeric_prefix, const string& arg_separator, int64_t enc_type) {
+string f$http_build_query(const array<T> &a, const string &numeric_prefix,
+                          const string &arg_separator, int64_t enc_type) {
   if (!vk::any_of_equal(enc_type, PHP_QUERY_RFC1738, PHP_QUERY_RFC3986)) {
     php_warning("Unknown enc type %ld in http_build_query", enc_type);
     enc_type = PHP_QUERY_RFC1738;

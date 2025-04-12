@@ -10,8 +10,8 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/memory-resource/unsynchronized_pool_resource.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
 
@@ -21,23 +21,21 @@ template<typename Child>
 class InstanceDeepBasicVisitor : vk::not_copyable {
 public:
   template<typename T>
-  void operator()(const char*, T&& value) noexcept {
+  void operator()(const char *, T &&value) noexcept {
     const bool is_ok = child_.process(std::forward<T>(value));
     is_ok_ = is_ok_ && is_ok;
   }
 
   template<typename T>
-  bool process(T&) noexcept {
-    return true;
-  }
+  bool process(T &) noexcept { return true; }
 
   template<typename T>
-  bool process(Optional<T>& value) noexcept {
+  bool process(Optional<T> &value) noexcept {
     return value.has_value() ? child_.process(value.val()) : true;
   }
 
   template<typename I>
-  bool process(class_instance<I>& instance) noexcept {
+  bool process(class_instance<I> &instance) noexcept {
     if (!instance.is_null()) {
       instance.get()->accept(child_);
       return child_.is_ok();
@@ -45,18 +43,18 @@ public:
     return true;
   }
 
-  template<typename... Args>
-  bool process(std::tuple<Args...>& value) noexcept {
+  template<typename ...Args>
+  bool process(std::tuple<Args...> &value) noexcept {
     return process_tuple(value);
   }
 
-  template<size_t... Is, typename... T>
-  bool process(shape<std::index_sequence<Is...>, T...>& value) noexcept {
+  template<size_t ...Is, typename ...T>
+  bool process(shape<std::index_sequence<Is...>, T...> &value) noexcept {
     const bool child_res[] = {child_.process(value.template get<Is>())...};
     return std::all_of(std::begin(child_res), std::end(child_res), [](bool r) { return r; });
   }
 
-  bool process(mixed& value) noexcept {
+  bool process(mixed &value) noexcept {
     if (value.is_string()) {
       return child_.process(value.as_string());
     } else if (value.is_array()) {
@@ -65,18 +63,15 @@ public:
     return true;
   }
 
-  bool is_ok() const noexcept {
-    return is_ok_;
-  }
+  bool is_ok() const noexcept { return is_ok_; }
 
-  ExtraRefCnt get_memory_ref_cnt() const noexcept {
-    return memory_ref_cnt_;
-  }
+  ExtraRefCnt get_memory_ref_cnt() const noexcept { return memory_ref_cnt_; }
 
 protected:
-  InstanceDeepBasicVisitor(Child& child, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0)) noexcept
-      : memory_ref_cnt_(memory_ref_cnt),
-        child_(child) {}
+  InstanceDeepBasicVisitor(Child &child, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0)) noexcept:
+    memory_ref_cnt_(memory_ref_cnt),
+    child_(child) {
+  }
 
   template<typename Iterator>
   bool process_range(Iterator first, Iterator last) noexcept {
@@ -93,20 +88,20 @@ protected:
   }
 
 private:
-  template<size_t Index = 0, typename... Args>
-  std::enable_if_t<Index != sizeof...(Args), bool> process_tuple(std::tuple<Args...>& value) noexcept {
+  template<size_t Index = 0, typename ...Args>
+  std::enable_if_t<Index != sizeof...(Args), bool> process_tuple(std::tuple<Args...> &value) noexcept {
     bool res = child_.process(std::get<Index>(value));
     return process_tuple<Index + 1>(value) && res;
   }
 
-  template<size_t Index = 0, typename... Args>
-  std::enable_if_t<Index == sizeof...(Args), bool> process_tuple(std::tuple<Args...>&) noexcept {
+  template<size_t Index = 0, typename ...Args>
+  std::enable_if_t<Index == sizeof...(Args), bool> process_tuple(std::tuple<Args...> &) noexcept {
     return true;
   }
 
   bool is_ok_{true};
   const ExtraRefCnt memory_ref_cnt_{ExtraRefCnt::extra_ref_cnt_value(0)};
-  Child& child_;
+  Child &child_;
 };
 
 constexpr static uint32_t VISITED_INSTANCE_MASK{0x80000000};
@@ -120,33 +115,34 @@ public:
   using Basic = impl_::InstanceDeepBasicVisitor<InstanceReferencesCountingVisitor>;
   using Basic::operator();
 
-  explicit InstanceReferencesCountingVisitor(std::unordered_map<void*, uint32_t>& instances_refcnt_table)
-      : Basic(*this),
-        instances_refcnt_table(instances_refcnt_table) {}
+  explicit InstanceReferencesCountingVisitor(std::unordered_map<void *, uint32_t> &instances_refcnt_table) :
+    Basic(*this),
+    instances_refcnt_table(instances_refcnt_table) {
+  }
 
   template<typename I>
-  bool process_instance(class_instance<I>& instance) noexcept {
+  bool process_instance(class_instance<I> &instance) noexcept {
     return process(instance);
   }
 
 private:
-  std::unordered_map<void*, uint32_t>& instances_refcnt_table;
+  std::unordered_map<void *, uint32_t> &instances_refcnt_table;
 
   template<typename T>
-  bool process(T& t) noexcept {
+  bool process(T &t) noexcept {
     return is_class_instance_inside<T>{} ? Basic::process(t) : true;
   }
 
   template<typename T>
-  std::enable_if_t<is_class_instance_inside<T>{}, bool> process(array<T>& arr) noexcept {
+  std::enable_if_t<is_class_instance_inside<T>{}, bool> process(array<T> &arr) noexcept {
     Basic::process_range(arr.begin_no_mutate(), arr.end_no_mutate());
     return true;
   }
 
   template<typename I>
-  bool process(class_instance<I>& instance) noexcept {
+  bool process(class_instance<I> &instance) noexcept {
     if (!instance.is_null()) {
-      uint32_t& refcnt_info = instances_refcnt_table[instance.get()->get_instance_data_raw_ptr()];
+      uint32_t &refcnt_info = instances_refcnt_table[instance.get()->get_instance_data_raw_ptr()];
       const bool visited = ++refcnt_info & impl_::VISITED_INSTANCE_MASK;
       refcnt_info |= impl_::VISITED_INSTANCE_MASK;
       if (visited) {
@@ -157,7 +153,7 @@ private:
   }
 };
 
-using ResourceCallbackOOM = bool (*)(memory_resource::unsynchronized_pool_resource&, size_t);
+using ResourceCallbackOOM = bool (*)(memory_resource::unsynchronized_pool_resource &, size_t);
 
 class InstanceDeepCopyVisitor : impl_::InstanceDeepBasicVisitor<InstanceDeepCopyVisitor> {
 public:
@@ -168,15 +164,16 @@ public:
   using Basic::operator();
   using Basic::get_memory_ref_cnt;
 
-  InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource& memory_pool, ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0),
+  InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool,
+                          ExtraRefCnt memory_ref_cnt = ExtraRefCnt::extra_ref_cnt_value(0),
                           ResourceCallbackOOM oom_callback = nullptr) noexcept;
 
   template<class T>
-  bool process(array<T>& arr) noexcept {
+  bool process(array<T> &arr) noexcept {
     return process_array(arr);
   }
 
-  bool process(string& str) noexcept;
+  bool process(string &str) noexcept;
 
   bool is_memory_limit_exceeded() const noexcept {
     return memory_limit_exceeded_;
@@ -199,12 +196,12 @@ public:
     return !memory_limit_exceeded_;
   }
 
-  void* prepare_raw_memory(size_t size) noexcept {
+  void *prepare_raw_memory(size_t size) noexcept {
     return is_enough_memory_for(size) ? memory_pool_.allocate(size) : nullptr;
   }
 
   template<class I>
-  bool process_instance(class_instance<I>& instance) noexcept {
+  bool process_instance(class_instance<I> &instance) noexcept {
     class_instance<I> instance_copy = instance;
     const bool result = process(instance);
     copied_instances_table.clear();
@@ -213,12 +210,12 @@ public:
 
 private:
   template<class I>
-  bool process(class_instance<I>& instance) noexcept {
+  bool process(class_instance<I> &instance) noexcept {
     if (instance.is_null()) {
       return true;
     }
 
-    auto& copied_instance_ptr = copied_instances_table[instance.get()->get_instance_data_raw_ptr()];
+    auto &copied_instance_ptr = copied_instances_table[instance.get()->get_instance_data_raw_ptr()];
 
     if (copied_instance_ptr) {
       instance = class_instance<I>::create_from_base_raw_ptr(copied_instance_ptr);
@@ -241,14 +238,14 @@ private:
 
   template<class T>
   struct PrimitiveArrayProcessor {
-    static bool process(InstanceDeepCopyVisitor& self, array<T>& arr) noexcept;
+    static bool process(InstanceDeepCopyVisitor &self, array<T> &arr) noexcept;
   };
 
   template<class T>
   using is_primitive = vk::is_type_in_list<T, int64_t, double, bool, Optional<int64_t>, Optional<double>, Optional<bool>>;
 
   template<class T>
-  bool process_array_impl(array<T>& arr) noexcept {
+  bool process_array_impl(array<T> &arr) noexcept {
     if (arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       return true;
     }
@@ -273,21 +270,21 @@ private:
   }
 
   template<class T>
-  std::enable_if_t<!is_primitive<T>{}, bool> process_array(array<T>& arr) noexcept {
+  std::enable_if_t<!is_primitive<T>{}, bool> process_array(array<T> &arr) noexcept {
     return process_array_impl(arr);
   }
 
   template<class T>
-  std::enable_if_t<is_primitive<T>{}, bool> process_array(array<T>& arr) noexcept {
+  std::enable_if_t<is_primitive<T>{}, bool> process_array(array<T> &arr) noexcept {
     return PrimitiveArrayProcessor<T>::process(*this, arr);
   }
 
   bool memory_limit_exceeded_{false};
-  memory_resource::unsynchronized_pool_resource& memory_pool_;
+  memory_resource::unsynchronized_pool_resource &memory_pool_;
   ResourceCallbackOOM oom_callback_{nullptr};
 
   dl::CriticalSectionGuard guard; // as we use STL container
-  std::unordered_map<void*, void*> copied_instances_table;
+  std::unordered_map<void *, void *> copied_instances_table;
 };
 
 class InstanceDeepDestroyVisitor : impl_::InstanceDeepBasicVisitor<InstanceDeepDestroyVisitor> {
@@ -302,7 +299,7 @@ public:
   explicit InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) noexcept;
 
   template<typename T>
-  bool process(array<T>& arr) noexcept {
+  bool process(array<T> &arr) noexcept {
     // if array is constant, skip it, otherwise element was cached and should be destroyed
     if (!arr.is_reference_counter(ExtraRefCnt::for_global_const)) {
       Basic::process_range(arr.begin_no_mutate(), arr.end_no_mutate());
@@ -312,10 +309,10 @@ public:
     return true;
   }
 
-  bool process(string& str) noexcept;
+  bool process(string &str) noexcept;
 
   template<class I>
-  bool process_instance(class_instance<I>& instance) noexcept {
+  bool process_instance(class_instance<I> &instance) noexcept {
     InstanceReferencesCountingVisitor{instances_refcnt_table}.process_instance(instance);
     auto res = process(instance);
     instances_refcnt_table.clear();
@@ -324,15 +321,15 @@ public:
 
 private:
   dl::CriticalSectionGuard guard; // as we use STL container
-  std::unordered_map<void*, uint32_t> instances_refcnt_table;
+  std::unordered_map<void *, uint32_t> instances_refcnt_table;
 
   template<typename I>
-  bool process(class_instance<I>& instance) noexcept {
+  bool process(class_instance<I> &instance) noexcept {
     if (instance.is_null()) {
       return true;
     }
 
-    uint32_t& refcnt_info = instances_refcnt_table[instance.get()->get_instance_data_raw_ptr()];
+    uint32_t &refcnt_info = instances_refcnt_table[instance.get()->get_instance_data_raw_ptr()];
     if (refcnt_info & impl_::VISITED_INSTANCE_MASK) {
       refcnt_info ^= impl_::VISITED_INSTANCE_MASK;
       Basic::process(instance);
@@ -348,8 +345,8 @@ private:
 
 class InstanceCopyistBase : public ManagedThroughDlAllocator, vk::not_copyable {
 public:
-  virtual const char* get_class() const noexcept = 0;
-  virtual std::unique_ptr<InstanceCopyistBase> deep_copy_and_set_ref_cnt(InstanceDeepCopyVisitor& detach_processor) const noexcept = 0;
+  virtual const char *get_class() const noexcept = 0;
+  virtual std::unique_ptr<InstanceCopyistBase> deep_copy_and_set_ref_cnt(InstanceDeepCopyVisitor &detach_processor) const noexcept = 0;
   virtual std::unique_ptr<InstanceCopyistBase> shallow_copy() const noexcept = 0;
   virtual ~InstanceCopyistBase() noexcept = default;
 };
@@ -360,18 +357,20 @@ class InstanceCopyistImpl;
 template<typename I>
 class InstanceCopyistImpl<class_instance<I>> final : public InstanceCopyistBase {
 public:
-  explicit InstanceCopyistImpl(const class_instance<I>& instance) noexcept
-      : instance_(instance) {}
+  explicit InstanceCopyistImpl(const class_instance<I> &instance) noexcept:
+    instance_(instance) {
+  }
 
-  InstanceCopyistImpl(class_instance<I>&& instance, ExtraRefCnt memory_ref_cnt) noexcept
-      : instance_(std::move(instance)),
-        memory_ref_cnt_(memory_ref_cnt) {}
+  InstanceCopyistImpl(class_instance<I> &&instance, ExtraRefCnt memory_ref_cnt) noexcept:
+    instance_(std::move(instance)),
+    memory_ref_cnt_(memory_ref_cnt) {
+  }
 
-  const char* get_class() const noexcept final {
+  const char *get_class() const noexcept final {
     return instance_.get_class();
   }
 
-  std::unique_ptr<InstanceCopyistBase> deep_copy_and_set_ref_cnt(InstanceDeepCopyVisitor& detach_processor) const noexcept final {
+  std::unique_ptr<InstanceCopyistBase> deep_copy_and_set_ref_cnt(InstanceDeepCopyVisitor &detach_processor) const noexcept final {
     auto detached_instance = instance_;
     detach_processor.process_instance(detached_instance);
 
@@ -406,7 +405,8 @@ private:
 };
 
 template<class T>
-class_instance<T> copy_instance_into_other_memory(const class_instance<T>& instance, memory_resource::unsynchronized_pool_resource& memory_pool,
+class_instance<T> copy_instance_into_other_memory(const class_instance<T> &instance,
+                                                  memory_resource::unsynchronized_pool_resource &memory_pool,
                                                   ExtraRefCnt memory_ref_cnt = ExtraRefCnt{ExtraRefCnt::extra_ref_cnt_value(0)},
                                                   ResourceCallbackOOM oom_callback = nullptr) noexcept {
   dl::MemoryReplacementGuard shared_memory_guard{memory_pool};

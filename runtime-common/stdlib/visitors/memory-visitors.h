@@ -25,31 +25,31 @@ struct CDataRef;
 class CommonMemoryEstimateVisitor : vk::not_copyable {
 public:
   template<typename T>
-  void operator()(const char* name [[maybe_unused]], T&& value) noexcept {
+  void operator()(const char *name [[maybe_unused]], T &&value) noexcept {
     process(std::forward<T>(value));
-    auto& [size, clazz] = last_instance_element.top();
-    if (clazz < static_cast<const void*>(&value)) {
+    auto &[size, clazz] = last_instance_element.top();
+    if (clazz < static_cast<const void *>(&value)) {
       clazz = &value;
       size = static_cast<int64_t>(sizeof(value));
     }
   }
 
   template<typename T>
-  void process(const CDataRef<T>& value [[maybe_unused]]) {
-    estimated_elements_memory_ += sizeof(void*);
+  void process(const CDataRef<T> &value [[maybe_unused]]) {
+    estimated_elements_memory_ += sizeof(void *);
   }
 
   template<typename T>
-  void process(const CDataPtr<T>& value [[maybe_unused]]) {}
+  void process(const CDataPtr<T> &value [[maybe_unused]]) {}
 
-  void process(const string& value) {
+  void process(const string &value) {
     if (value.is_reference_counter(ExtraRefCnt::for_global_const) || value.is_reference_counter(ExtraRefCnt::for_instance_cache)) {
       return;
     }
     estimated_elements_memory_ += value.estimate_memory_usage();
   }
 
-  void process(const mixed& value) {
+  void process(const mixed &value) {
     if (value.is_string()) {
       process(value.as_string());
     }
@@ -58,11 +58,11 @@ public:
     }
   }
 
-  template<typename T, typename = vk::enable_if_in_list<T, vk::list_of_types<bool, int64_t, double, Unknown, void*>>>
-  void process(const T& value [[maybe_unused]]) {}
+  template<typename T, typename = vk::enable_if_in_list<T, vk::list_of_types<bool, int64_t, double, Unknown, void *>>>
+  void process(const T &value [[maybe_unused]]) {}
 
   template<typename T>
-  void process(const array<T>& value) {
+  void process(const array<T> &value) {
     if (value.is_reference_counter(ExtraRefCnt::for_global_const) || value.is_reference_counter(ExtraRefCnt::for_instance_cache)) {
       return;
     }
@@ -74,24 +74,24 @@ public:
   }
 
   template<typename T>
-  void process(const Optional<T>& value) {
+  void process(const Optional<T> &value) {
     if (value.has_value()) {
       process(value.val());
     }
   }
 
   template<typename... Args>
-  void process(const std::tuple<Args...>& value) {
-    for_each(value, [this](const auto& v) { this->process(v); });
+  void process(const std::tuple<Args...> &value) {
+    for_each(value, [this](const auto &v) { this->process(v); });
   }
 
   template<size_t... Is, typename... T>
-  void process(const shape<std::index_sequence<Is...>, T...>& value) {
+  void process(const shape<std::index_sequence<Is...>, T...> &value) {
     (process(value.template get<Is>()), ...);
   }
 
   template<typename T>
-  void process(const class_instance<T>& value) {
+  void process(const class_instance<T> &value) {
     last_instance_element.push({});
     estimated_elements_memory_ += estimate_class_instance_memory_usage(value, std::is_empty<T>{});
     last_instance_element.pop();
@@ -103,21 +103,21 @@ public:
 
 private:
   template<size_t Index = 0, typename Fn, typename... Args>
-  std::enable_if_t<Index == sizeof...(Args), void> for_each(const std::tuple<Args...>& value [[maybe_unused]], const Fn& func [[maybe_unused]]) {}
+  std::enable_if_t<Index == sizeof...(Args), void> for_each(const std::tuple<Args...> &value [[maybe_unused]], const Fn &func [[maybe_unused]]) {}
 
   template<size_t Index = 0, typename Fn, typename... Args>
-  std::enable_if_t<Index != sizeof...(Args), void> for_each(const std::tuple<Args...>& value, const Fn& func) {
+  std::enable_if_t<Index != sizeof...(Args), void> for_each(const std::tuple<Args...> &value, const Fn &func) {
     func(std::get<Index>(value));
     for_each<Index + 1, Fn, Args...>(value, func);
   }
 
   template<typename T>
-  int64_t estimate_class_instance_memory_usage(const class_instance<T>& value [[maybe_unused]], std::true_type /*unused*/) const {
+  int64_t estimate_class_instance_memory_usage(const class_instance<T> &value [[maybe_unused]], std::true_type /*unused*/) const {
     return 0;
   }
 
   template<typename T>
-  int64_t estimate_class_instance_memory_usage(const class_instance<T>& value, std::false_type /*unused*/) {
+  int64_t estimate_class_instance_memory_usage(const class_instance<T> &value, std::false_type /*unused*/) {
     if (value.is_null() || value.is_reference_counter(ExtraRefCnt::for_instance_cache)) {
       return 0;
     }
@@ -130,12 +130,12 @@ private:
   }
 
   template<typename ClassType>
-  int64_t get_instance_estimated_memory_impl(const ClassType* obj [[maybe_unused]], std::false_type /*unused*/) const {
+  int64_t get_instance_estimated_memory_impl(const ClassType *obj [[maybe_unused]], std::false_type /*unused*/) const {
     return sizeof(ClassType);
   }
 
   template<typename ClassType>
-  int64_t get_instance_estimated_memory_impl(const ClassType* obj, std::true_type /*unused*/) const {
+  int64_t get_instance_estimated_memory_impl(const ClassType *obj, std::true_type /*unused*/) const {
     // TODO: virtual sizeof?
     // empty polymorphic class
     const auto [size, clazz] = last_instance_element.top();
@@ -143,8 +143,8 @@ private:
       // vtable + counter
       return 16;
     }
-    const auto* class_begin = static_cast<const uint8_t*>(dynamic_cast<const void*>(obj));
-    int64_t class_size = static_cast<const uint8_t*>(clazz) - class_begin;
+    const auto *class_begin = static_cast<const uint8_t *>(dynamic_cast<const void *>(obj));
+    int64_t class_size = static_cast<const uint8_t *>(clazz) - class_begin;
     php_assert(class_size > 0);
     class_size += size;
     // all polymorphic classes are aligned by 8 (vtable ptr)
@@ -154,17 +154,17 @@ private:
 
   struct instance_element {
     int64_t size = 0;
-    const void* clazz = nullptr;
+    const void *clazz = nullptr;
   };
 
   int64_t estimated_elements_memory_{0};
 
-  kphp::stl::unordered_set<void*, kphp::memory::platform_allocator> processed_instances;
+  kphp::stl::unordered_set<void *, kphp::memory::platform_allocator> processed_instances;
   kphp::stl::stack<instance_element, kphp::memory::platform_allocator> last_instance_element;
 };
 
 template<typename T>
-int64_t f$estimate_memory_usage(const T& value) noexcept {
+int64_t f$estimate_memory_usage(const T &value) noexcept {
   CommonMemoryEstimateVisitor visitor;
   visitor.process(value);
   return visitor.get_estimated_memory();

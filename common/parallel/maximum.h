@@ -28,13 +28,13 @@ struct parallel_maximum {
 };
 typedef struct parallel_maximum parallel_maximum_t;
 
-void parallel_maximum_register_thread(parallel_maximum_t* maximum, parallel_maximum_tls_t* tls);
-void parallel_maximum_unregister_thread(parallel_maximum_t* maximum, parallel_maximum_tls_t* tls);
-void parallel_maximum_init(parallel_maximum_t* maximum, uint64_t counter_max);
-void parallel_maximum_add_slow_path(parallel_maximum_t* maximum, parallel_maximum_tls_t* tls, uint64_t value);
-void parallel_maximum_sub_slow_path(parallel_maximum_t* maximum, parallel_maximum_tls_t* tls, uint64_t value);
+void parallel_maximum_register_thread(parallel_maximum_t *maximum, parallel_maximum_tls_t *tls);
+void parallel_maximum_unregister_thread(parallel_maximum_t *maximum, parallel_maximum_tls_t *tls);
+void parallel_maximum_init(parallel_maximum_t *maximum, uint64_t counter_max);
+void parallel_maximum_add_slow_path(parallel_maximum_t *maximum, parallel_maximum_tls_t *tls, uint64_t value);
+void parallel_maximum_sub_slow_path(parallel_maximum_t *maximum, parallel_maximum_tls_t *tls, uint64_t value);
 
-static inline void parallel_maximum_add(parallel_maximum_t* maximum, parallel_maximum_tls_t* tls, uint64_t value) {
+static inline void parallel_maximum_add(parallel_maximum_t *maximum, parallel_maximum_tls_t *tls, uint64_t value) {
   if (tls->counter_max - tls->counter >= value) {
     tls->counter += value;
     return;
@@ -43,7 +43,7 @@ static inline void parallel_maximum_add(parallel_maximum_t* maximum, parallel_ma
   return parallel_maximum_add_slow_path(maximum, tls, value);
 }
 
-static inline void parallel_maximum_sub(parallel_maximum_t* maximum, parallel_maximum_tls_t* tls, uint64_t value) {
+static inline void parallel_maximum_sub(parallel_maximum_t *maximum, parallel_maximum_tls_t *tls, uint64_t value) {
   if (tls->counter >= value) {
     tls->counter -= value;
     return;
@@ -52,11 +52,11 @@ static inline void parallel_maximum_sub(parallel_maximum_t* maximum, parallel_ma
   return parallel_maximum_sub_slow_path(maximum, tls, value);
 }
 
-static inline uint64_t parallel_maximum_read(const parallel_maximum_t* maximum) {
+static inline uint64_t parallel_maximum_read(const parallel_maximum_t *maximum) {
   return maximum->global_maximum;
 }
 
-static inline uint64_t parallel_maximum_read_current(const parallel_maximum_t* maximum) {
+static inline uint64_t parallel_maximum_read_current(const parallel_maximum_t *maximum) {
   return maximum->global_count + maximum->global_reserve;
 }
 

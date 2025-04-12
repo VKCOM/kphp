@@ -11,8 +11,9 @@
 class FinalCheckPass final : public FunctionPassBase {
 private:
   void check_static_var_inited(VarPtr static_var);
-
+  
 public:
+
   std::string get_description() override {
     return "Final check";
   }

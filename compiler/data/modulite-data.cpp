@@ -39,17 +39,19 @@
  * IMPORTANT! keep this file and logic very close to ModuliteData in modulite-phpstan
  */
 
+
 static const std::string EMPTY_STRING_RETURNED_WHEN_GOT_NONSTRING_IN_YAML;
 
-[[gnu::cold]] static void fire_yaml_error(ModulitePtr inside_m, const std::string& reason, int line) {
-  inside_m->yaml_file->load(); // load a file from disk, so that error message in console outputs a line
+
+[[gnu::cold]] static void fire_yaml_error(ModulitePtr inside_m, const std::string &reason, int line) {
+  inside_m->yaml_file->load();  // load a file from disk, so that error message in console outputs a line
 
   stage::set_file(inside_m->yaml_file);
   stage::set_line(line);
   kphp_error(0, fmt_format("Failed loading {}:\n{}", inside_m->yaml_file->relative_file_name, reason));
 }
 
-[[gnu::cold]] static void fire_yaml_error(ModulitePtr inside_m, const std::string& reason, const YAML::Node& y_node) {
+[[gnu::cold]] static void fire_yaml_error(ModulitePtr inside_m, const std::string &reason, const YAML::Node &y_node) {
   fire_yaml_error(inside_m, reason, y_node.Mark().line + 1);
 }
 
@@ -61,7 +63,7 @@ static const std::string EMPTY_STRING_RETURNED_WHEN_GOT_NONSTRING_IN_YAML;
 class ModuliteYamlParser {
   ModulitePtr out;
 
-  [[gnu::always_inline]] const std::string& as_string(const YAML::Node& y) {
+  [[gnu::always_inline]] const std::string &as_string(const YAML::Node &y) {
     if (unlikely(!y.IsScalar() || y.Scalar().empty())) {
       fire_yaml_error(out, "expected non-empty string", y);
       return EMPTY_STRING_RETURNED_WHEN_GOT_NONSTRING_IN_YAML;
@@ -69,8 +71,8 @@ class ModuliteYamlParser {
     return y.Scalar();
   }
 
-  void parse_yaml_name(const YAML::Node& y_name) {
-    const std::string& name = y_name.Scalar();
+  void parse_yaml_name(const YAML::Node &y_name) {
+    const std::string &name = y_name.Scalar();
     if (name.empty() || name[0] != '@') {
       if (name == "<composer_root>") {
         return;
@@ -95,8 +97,8 @@ class ModuliteYamlParser {
     out->modulite_name = std::move(modulite_name);
   }
 
-  void parse_yaml_namespace(const YAML::Node& y_namespace) {
-    const std::string& ns = y_namespace.Scalar();
+  void parse_yaml_namespace(const YAML::Node &y_namespace) {
+    const std::string &ns = y_namespace.Scalar();
     if (ns.empty() || ns == "\\") {
       return;
     }
@@ -113,42 +115,42 @@ class ModuliteYamlParser {
 
   // parse any symbol as a string: "\\f()", "@msg/channels", "RelativeClass", etc.
   // at the moment of parsing, they are stored as strings, and later resolved to symbols (see resolve_names_to_pointers())
-  ModuliteSymbol parse_any_scalar_symbol(const std::string& s, const YAML::Node& y_loc) const {
+  ModuliteSymbol parse_any_scalar_symbol(const std::string &s, const YAML::Node &y_loc) const {
     int line = y_loc.Mark().line + 1;
-    return ModuliteSymbol{.kind = ModuliteSymbol::kind_ref_stringname, .line = line, .ref_stringname = string_view_dup(s)};
+    return ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=line, .ref_stringname=string_view_dup(s)};
   }
 
-  void parse_yaml_export(const YAML::Node& y_export) {
-    for (const auto& y : y_export) {
-      const std::string& y_name = as_string(y);
+  void parse_yaml_export(const YAML::Node &y_export) {
+    for (const auto &y : y_export) {
+      const std::string &y_name = as_string(y);
       out->exports.emplace_back(parse_any_scalar_symbol(y_name, y));
     }
   }
 
-  void parse_yaml_force_internal(const YAML::Node& y_force_internal) {
-    for (const auto& y : y_force_internal) {
-      const std::string& y_name = as_string(y);
+  void parse_yaml_force_internal(const YAML::Node &y_force_internal) {
+    for (const auto &y : y_force_internal) {
+      const std::string &y_name = as_string(y);
       out->force_internal.emplace_back(parse_any_scalar_symbol(y_name, y));
     }
   }
 
-  void parse_yaml_require(const YAML::Node& y_require) {
-    for (const auto& y : y_require) {
-      const std::string& y_name = as_string(y);
+  void parse_yaml_require(const YAML::Node &y_require) {
+    for (const auto &y : y_require) {
+      const std::string &y_name = as_string(y);
       out->require.emplace_back(parse_any_scalar_symbol(y_name, y));
     }
   }
 
-  void parse_yaml_allow_internal(const YAML::Node& y_allow_internal) {
-    for (const auto& y : y_allow_internal) {
-      const std::string& y_rule = as_string(y.first);
+  void parse_yaml_allow_internal(const YAML::Node &y_allow_internal) {
+    for (const auto &y : y_allow_internal) {
+      const std::string &y_rule = as_string(y.first);
       if (!y.second.IsSequence()) {
         fire_yaml_error(out, "invalid format, expected a map of sequences", y.first);
         continue;
       }
       std::vector<ModuliteSymbol> e_vector;
       e_vector.reserve(y.second.size());
-      for (const auto& y_rule_val : y.second) {
+      for (const auto &y_rule_val : y.second) {
         e_vector.emplace_back(parse_any_scalar_symbol(as_string(y_rule_val), y_rule_val));
       }
       out->allow_internal.emplace_back(parse_any_scalar_symbol(y_rule, y.first), std::move(e_vector));
@@ -156,25 +158,24 @@ class ModuliteYamlParser {
   }
 
 public:
-  explicit ModuliteYamlParser(ModulitePtr out)
-      : out(std::move(out)) {}
+  explicit ModuliteYamlParser(ModulitePtr out) : out(std::move(out)) {}
 
-  void parse_modulite_yaml_file(const YAML::Node& y_file) {
-    const auto& y_name = y_file["name"];
+  void parse_modulite_yaml_file(const YAML::Node &y_file) {
+    const auto &y_name = y_file["name"];
     if (y_name && y_name.IsScalar()) {
       parse_yaml_name(y_name);
     } else {
       fire_yaml_error(out, "'name' not specified", -1);
     }
 
-    const auto& y_namespace = y_file["namespace"];
+    const auto &y_namespace = y_file["namespace"];
     if (y_namespace && y_namespace.IsScalar()) {
       parse_yaml_namespace(y_namespace);
     } else {
       fire_yaml_error(out, "'namespace' not specified", -1);
     }
 
-    const auto& y_export = y_file["export"];
+    const auto &y_export = y_file["export"];
     if (y_export && y_export.IsSequence()) {
       parse_yaml_export(y_export);
     } else if (!y_export) {
@@ -183,14 +184,14 @@ public:
       fire_yaml_error(out, "'export' has incorrect format", y_export);
     }
 
-    const auto& y_force_internal = y_file["force-internal"];
+    const auto &y_force_internal = y_file["force-internal"];
     if (y_force_internal && y_force_internal.IsSequence()) {
       parse_yaml_force_internal(y_force_internal);
     } else if (y_force_internal && !y_force_internal.IsNull()) {
       fire_yaml_error(out, "'force-internal' has incorrect format", y_force_internal);
     }
 
-    const auto& y_require = y_file["require"];
+    const auto &y_require = y_file["require"];
     if (y_require && y_require.IsSequence()) {
       parse_yaml_require(y_require);
     } else if (!y_require) {
@@ -199,7 +200,7 @@ public:
       fire_yaml_error(out, "'require' has incorrect format", y_require);
     }
 
-    const auto& y_allow_internal = y_file["allow-internal-access"];
+    const auto &y_allow_internal = y_file["allow-internal-access"];
     if (y_allow_internal && y_allow_internal.IsMap()) {
       parse_yaml_allow_internal(y_allow_internal);
     } else if (y_allow_internal && !y_allow_internal.IsNull()) {
@@ -211,14 +212,15 @@ public:
   // modulites named absolutely, like @utils or @flood-details — like in any other project
   // but when a monolith uses that package placed in vendor/, all its modulites are prefixed:
   // @flood/details in #vk/common is represented as "#vk/common/@flood/details" on monolith compilation
-  static std::string prepend_composer_package_to_name(ComposerJsonPtr composer_json, const std::string& modulite_name) {
+  static std::string prepend_composer_package_to_name(ComposerJsonPtr composer_json, const std::string &modulite_name) {
     return "#" + composer_json->package_name + "/" + modulite_name;
   }
 };
 
+
 // having some_file.php, detect a modulite this file belongs to
 // up to this point, all dirs have been traversed and propagated to child dirs also
-static inline ModulitePtr get_modulite_of_file(const SrcFilePtr& file_id) {
+static inline ModulitePtr get_modulite_of_file(const SrcFilePtr &file_id) {
   return file_id->dir->nested_files_modulite;
 }
 
@@ -227,24 +229,24 @@ static inline ModulitePtr get_modulite_of_file(const SrcFilePtr& file_id) {
 // because that properties haven't been assigned up to the point of yaml validation
 // `FunctionData::modulite` and similar will be assigned later, to be used for checking func calls / class access / etc.
 // See `CalcRealDefinesAndAssignModulitesF` sync pipe.
-static ModulitePtr get_modulite_of_symbol(const ModuliteSymbol& s) {
+static ModulitePtr get_modulite_of_symbol(const ModuliteSymbol &s) {
   switch (s.kind) {
-  case ModuliteSymbol::kind_ref_stringname:
-    return ModulitePtr{};
-  case ModuliteSymbol::kind_modulite:
-    return s.modulite->parent;
-  case ModuliteSymbol::kind_klass:
-  case ModuliteSymbol::kind_constant:
-  case ModuliteSymbol::kind_property:
-    return get_modulite_of_file(s.klass->file_id);
-  case ModuliteSymbol::kind_function:
-    return get_modulite_of_file(s.klass ? s.klass->file_id : s.function->file_id);
-  case ModuliteSymbol::kind_global_const:
-    return get_modulite_of_file(s.constant->file_id);
-  case ModuliteSymbol::kind_global_var:
-    return ModulitePtr{};
-  default:
-    __builtin_unreachable();
+    case ModuliteSymbol::kind_ref_stringname:
+      return ModulitePtr{};
+    case ModuliteSymbol::kind_modulite:
+      return s.modulite->parent;
+    case ModuliteSymbol::kind_klass:
+    case ModuliteSymbol::kind_constant:
+    case ModuliteSymbol::kind_property:
+      return get_modulite_of_file(s.klass->file_id);
+    case ModuliteSymbol::kind_function:
+      return get_modulite_of_file(s.klass ? s.klass->file_id : s.function->file_id);
+    case ModuliteSymbol::kind_global_const:
+      return get_modulite_of_file(s.constant->file_id);
+    case ModuliteSymbol::kind_global_var:
+      return ModulitePtr{};
+    default:
+      __builtin_unreachable();
   }
 }
 
@@ -259,9 +261,8 @@ ModulitePtr ModuliteData::create_from_composer_json(ComposerJsonPtr composer_jso
   out->is_composer_package = true;
 
   // json->require (dependent packages, e.g. "vk/utils") are copied to modulite->require, e.g. "#vk/utils"
-  for (const ComposerJsonData::RequireItem& c_require : composer_json->require) {
-    out->require.emplace_back(
-        ModuliteSymbol{.kind = ModuliteSymbol::kind_ref_stringname, .line = -1, .ref_stringname = string_view_dup("#" + c_require.package_name)});
+  for (const ComposerJsonData::RequireItem &c_require : composer_json->require) {
+    out->require.emplace_back(ModuliteSymbol{.kind=ModuliteSymbol::kind_ref_stringname, .line=-1, .ref_stringname=string_view_dup("#" + c_require.package_name)});
   }
 
   if (has_modulite_yaml_also) {
@@ -271,7 +272,7 @@ ModulitePtr ModuliteData::create_from_composer_json(ComposerJsonPtr composer_jso
       YAML::Node y_file = YAML::LoadFile(out->yaml_file->file_name);
       ModuliteYamlParser parser(out);
       parser.parse_modulite_yaml_file(y_file);
-    } catch (const YAML::Exception& ex) {
+    } catch (const YAML::Exception &ex) {
       fire_yaml_error(out, ex.msg, ex.mark.line + 1);
       return ModulitePtr{};
     }
@@ -281,7 +282,7 @@ ModulitePtr ModuliteData::create_from_composer_json(ComposerJsonPtr composer_jso
 }
 
 // parse modulite.yaml and emit ModulitePtr from it
-ModulitePtr ModuliteData::create_from_modulite_yaml(const std::string& yaml_filename, ModulitePtr parent) {
+ModulitePtr ModuliteData::create_from_modulite_yaml(const std::string &yaml_filename, ModulitePtr parent) {
   ModulitePtr out = ModulitePtr(new ModuliteData());
   out->yaml_file = G->register_file(yaml_filename, LibPtr{});
   out->parent = parent;
@@ -293,7 +294,7 @@ ModulitePtr ModuliteData::create_from_modulite_yaml(const std::string& yaml_file
     ModuliteYamlParser parser(out);
     parser.parse_modulite_yaml_file(y_file);
     return out;
-  } catch (const YAML::Exception& ex) {
+  } catch (const YAML::Exception &ex) {
     fire_yaml_error(out, ex.msg, ex.mark.line + 1);
     return ModulitePtr{};
   }
@@ -304,24 +305,25 @@ ModulitePtr ModuliteData::create_from_modulite_yaml(const std::string& yaml_file
 void ModuliteData::resolve_names_to_pointers() {
   ModulitePtr inside_m = get_self_ptr();
 
-  for (ModuliteSymbol& symbol : exports) {
+  for (ModuliteSymbol &symbol : exports) {
     resolve_symbol_from_yaml(symbol);
   }
-  for (ModuliteSymbol& symbol : force_internal) {
+  for (ModuliteSymbol &symbol : force_internal) {
     resolve_symbol_from_yaml(symbol);
   }
-  for (ModuliteSymbol& symbol : require) {
+  for (ModuliteSymbol &symbol : require) {
     resolve_symbol_from_yaml(symbol);
   }
-  for (auto& p_allow_rule : allow_internal) {
+  for (auto &p_allow_rule : allow_internal) {
     resolve_symbol_from_yaml(p_allow_rule.first);
-    for (ModuliteSymbol& symbol : p_allow_rule.second) {
+    for (ModuliteSymbol &symbol : p_allow_rule.second) {
       resolve_symbol_from_yaml(symbol);
     }
   }
 
-  inside_m->exported_from_parent =
-      parent && vk::any_of(parent->exports, [inside_m](const ModuliteSymbol& e) { return e.kind == ModuliteSymbol::kind_modulite && e.modulite == inside_m; });
+  inside_m->exported_from_parent = parent && vk::any_of(parent->exports, [inside_m](const ModuliteSymbol &e) {
+    return e.kind == ModuliteSymbol::kind_modulite && e.modulite == inside_m;
+  });
 
   // if a composer package is written using modulites, then all its child modulites are exported and available from the monolith
   // (unless .modulite.yaml near composer.json explicitly declares "export")
@@ -341,7 +343,7 @@ void ModuliteData::resolve_names_to_pointers() {
 // resolve any config item ("SomeClass", "SomeClass::f()", "@msg", etc.) from a string to a symbol
 // this is done in-place, modifying s.kind and s.{union_prop}
 // on error resolving, it's also printed here, pointing to a concrete line in yaml file
-void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol& s) {
+void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol &s) {
   kphp_assert(s.kind == ModuliteSymbol::kind_ref_stringname);
   ModulitePtr inside_m = get_self_ptr();
   vk::string_view v = s.ref_stringname;
@@ -360,7 +362,7 @@ void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol& s) {
     }
     return;
   }
-
+  
   // #composer-package
   if (v[0] == '#') {
     if (ModulitePtr m_ref = G->get_modulite(v)) {
@@ -419,7 +421,7 @@ void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol& s) {
     // C::$static_field
     if (v[pos$$ + 2] == '$') {
       vk::string_view local_name = v.substr(pos$$ + 3);
-      if (const ClassMemberStaticField* f = klass->get_static_field(local_name)) {
+      if (const ClassMemberStaticField *f = klass->get_static_field(local_name)) {
         s.kind = ModuliteSymbol::kind_property;
         s.klass = klass;
         s.property = f->var;
@@ -431,11 +433,11 @@ void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol& s) {
     // C::static_method() or C::instance_method()
     if (v[v.size() - 1] == ')') {
       vk::string_view local_name = v.substr(pos$$ + 2, v.size() - pos$$ - 4);
-      if (const ClassMemberStaticMethod* m = klass->members.get_static_method(local_name)) {
+      if (const ClassMemberStaticMethod *m = klass->members.get_static_method(local_name)) {
         s.kind = ModuliteSymbol::kind_function;
         s.klass = klass;
         s.function = m->function;
-      } else if (const ClassMemberInstanceMethod* m = klass->get_instance_method(local_name)) {
+      } else if (const ClassMemberInstanceMethod *m = klass->get_instance_method(local_name)) {
         s.kind = ModuliteSymbol::kind_function;
         s.klass = klass;
         s.function = m->function;
@@ -446,7 +448,7 @@ void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol& s) {
     }
     // C::CONST
     vk::string_view local_name = v.substr(pos$$ + 2);
-    if (const ClassMemberConstant* c = klass->get_constant(local_name)) {
+    if (const ClassMemberConstant *c = klass->get_constant(local_name)) {
       s.kind = ModuliteSymbol::kind_constant;
       s.klass = klass;
       s.constant = G->get_define(c->define_name);
@@ -454,12 +456,12 @@ void ModuliteData::resolve_symbol_from_yaml(ModuliteSymbol& s) {
       fire_yaml_error(inside_m, fmt_format("can't find constant {}::{}", paint_bold(c_fqn), paint_bold(local_name)), s.line);
     }
   }
-}
+};
 
 void ModuliteData::validate_yaml_requires() {
   ModulitePtr inside_m = get_self_ptr();
 
-  for (const ModuliteSymbol& r : require) {
+  for (const ModuliteSymbol &r : require) {
     if (r.kind == ModuliteSymbol::kind_modulite) {
       // @msg requires @feed or @some/another
       // valid: @feed has no parent or @some/another is exported from @some
@@ -475,17 +477,14 @@ void ModuliteData::validate_yaml_requires() {
         if (ModulitePtr cur_parent = child->parent; cur_parent && !child->exported_from_parent) {
           // valid: even if @some/another is not exported, but mentioned in "allow-internal-access" for @msg in @some
           auto it_this = std::find_if(cur_parent->allow_internal.begin(), cur_parent->allow_internal.end(),
-                                      [inside_m](const auto& p) { return p.first.kind == ModuliteSymbol::kind_modulite && p.first.modulite == inside_m; });
+                                      [inside_m](const auto &p) { return p.first.kind == ModuliteSymbol::kind_modulite && p.first.modulite == inside_m; });
           if (it_this != cur_parent->allow_internal.end()) {
-            bool lists_cur =
-                vk::any_of(it_this->second, [child](const ModuliteSymbol& s) { return s.kind == ModuliteSymbol::kind_modulite && s.modulite == child; });
+            bool lists_cur = vk::any_of(it_this->second, [child](const ModuliteSymbol &s) { return s.kind == ModuliteSymbol::kind_modulite && s.modulite == child; });
             if (lists_cur) {
               continue;
             }
           }
-          fire_yaml_error(inside_m,
-                          fmt_format("can't require {}: {} is internal in {}", another_m->modulite_name, child->modulite_name, child->parent->modulite_name),
-                          r.line);
+          fire_yaml_error(inside_m, fmt_format("can't require {}: {} is internal in {}", another_m->modulite_name, child->modulite_name, child->parent->modulite_name), r.line);
         }
       }
 
@@ -496,10 +495,7 @@ void ModuliteData::validate_yaml_requires() {
       ModulitePtr of_modulite = get_modulite_of_symbol(r);
       bool is_global_scope = !of_modulite || (of_modulite->is_composer_package && of_modulite->composer_json == inside_m->composer_json);
       if (!is_global_scope) {
-        fire_yaml_error(inside_m,
-                        fmt_format("'require' contains a member of {}; you should require {} directly, not its members", of_modulite->modulite_name,
-                                   of_modulite->modulite_name),
-                        r.line);
+        fire_yaml_error(inside_m, fmt_format("'require' contains a member of {}; you should require {} directly, not its members", of_modulite->modulite_name, of_modulite->modulite_name), r.line);
       }
     }
   }
@@ -508,7 +504,7 @@ void ModuliteData::validate_yaml_requires() {
 void ModuliteData::validate_yaml_exports() {
   ModulitePtr inside_m = get_self_ptr();
 
-  for (const ModuliteSymbol& e : exports) {
+  for (const ModuliteSymbol &e : exports) {
     if (e.kind == ModuliteSymbol::kind_modulite) {
       // @msg exports @another_m
       // valid: @msg exports @msg/channels
@@ -536,17 +532,18 @@ void ModuliteData::validate_yaml_exports() {
 void ModuliteData::validate_yaml_force_internal() {
   ModulitePtr inside_m = get_self_ptr();
 
-  for (const ModuliteSymbol& fi : force_internal) {
+  for (const ModuliteSymbol &fi : force_internal) {
     // if @msg force internals A::someMethod() or A::CONST,
     // it can't be also declared in exports
-    for (const ModuliteSymbol& e : inside_m->exports) {
+    for (const ModuliteSymbol &e : inside_m->exports) {
       if (e.kind == fi.kind && e.function == fi.function) {
         fire_yaml_error(inside_m, fmt_format("'force-internal' contains a symbol which is exported"), fi.line);
       }
     }
 
-    bool is_allowed = (fi.kind == ModuliteSymbol::kind_constant && fi.klass) || (fi.kind == ModuliteSymbol::kind_function && fi.klass) ||
-                      (fi.kind == ModuliteSymbol::kind_property && fi.klass);
+    bool is_allowed = (fi.kind == ModuliteSymbol::kind_constant && fi.klass)
+                      || (fi.kind == ModuliteSymbol::kind_function && fi.klass)
+                      || (fi.kind == ModuliteSymbol::kind_property && fi.klass);
     if (!is_allowed) {
       // @msg force internals @msg/channels or #vk/common or SomeClass
       fire_yaml_error(inside_m, "'force-internal' can contain only class members", fi.line);

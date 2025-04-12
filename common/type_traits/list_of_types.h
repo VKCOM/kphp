@@ -41,10 +41,12 @@ struct list_of_types<> {
 };
 
 template<class T, class... TypeList>
-struct is_type_in_list : std::integral_constant<bool, list_of_types<TypeList...>::template in_list<T>()> {};
+struct is_type_in_list : std::integral_constant<bool, list_of_types<TypeList...>::template in_list<T>()> {
+};
 
 template<class T, class... TypeList>
-struct is_type_in_list<T, vk::list_of_types<TypeList...>> : is_type_in_list<T, TypeList...> {};
+struct is_type_in_list<T, vk::list_of_types<TypeList...>> : is_type_in_list<T, TypeList...> {
+};
 
 template<class T, class ListT, class ResT = void>
 using enable_if_in_list = std::enable_if_t<ListT::template in_list<T>(), ResT>;

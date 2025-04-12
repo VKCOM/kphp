@@ -18,9 +18,9 @@ class zone;
 
 class object_visitor : vk::not_copyable {
 public:
-  explicit object_visitor(msgpack::zone& zone) noexcept;
+  explicit object_visitor(msgpack::zone &zone) noexcept;
 
-  msgpack::object&& flush() && noexcept {
+  msgpack::object &&flush() && noexcept {
     return std::move(m_obj);
   }
 
@@ -30,7 +30,7 @@ public:
   bool visit_negative_integer(int64_t v) noexcept;
   bool visit_float32(float v) noexcept;
   bool visit_float64(double v) noexcept;
-  bool visit_str(const char* v, uint32_t size);
+  bool visit_str(const char *v, uint32_t size);
   bool start_array(uint32_t num_elements);
   bool start_map(uint32_t num_kv_pairs);
   bool start_array_item() const noexcept {
@@ -67,8 +67,8 @@ public:
 
 private:
   msgpack::object m_obj;
-  kphp::stl::vector<msgpack::object*, kphp::memory::script_allocator> m_stack{};
-  msgpack::zone& m_zone;
+  kphp::stl::vector<msgpack::object *, kphp::memory::script_allocator> m_stack{};
+  msgpack::zone &m_zone;
 };
 
 } // namespace vk::msgpack

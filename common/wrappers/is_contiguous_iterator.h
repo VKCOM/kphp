@@ -22,25 +22,25 @@ struct is_contiguous_iterator_of_type<const V, const V*> : std::true_type {};
 template<typename V>
 struct is_contiguous_iterator_of_type<V, std::nullptr_t> : std::true_type {};
 
-template<>
-struct is_contiguous_iterator_of_type<const bool, typename std::vector<bool>::const_iterator> : std::false_type {};
+template<>                                                                                                                        \
+struct is_contiguous_iterator_of_type<const bool, typename std::vector<bool>::const_iterator> : std::false_type {};                    \
 
-template<>
+template<>                                                                                                                        \
 struct is_contiguous_iterator_of_type<const bool, typename std::vector<bool>::iterator> : std::false_type {};
 } // namespace vk
 
-#define DECLARE_IS_CONTIGUOUS_FOR_ALLOCATOR(vector, string)                                                                                                    \
-  namespace vk {                                                                                                                                               \
-  template<typename V>                                                                                                                                         \
-  struct is_contiguous_iterator_of_type<V, typename vector<std::remove_const_t<V>>::iterator> : std::true_type {};                                             \
-  template<typename V>                                                                                                                                         \
-  struct is_contiguous_iterator_of_type<const V, typename vector<std::remove_const_t<V>>::const_iterator> : std::true_type {};                                 \
-  template<>                                                                                                                                                   \
-  struct is_contiguous_iterator_of_type<char, typename string::iterator> : std::true_type {};                                                                  \
-  template<>                                                                                                                                                   \
-  struct is_contiguous_iterator_of_type<const char, typename string::iterator> : std::true_type {};                                                            \
-  template<>                                                                                                                                                   \
-  struct is_contiguous_iterator_of_type<const char, typename string::const_iterator> : std::true_type {};                                                      \
-  }
+#define DECLARE_IS_CONTIGUOUS_FOR_ALLOCATOR(vector, string)                                                                       \
+namespace vk {                                                                                                                    \
+template<typename V>                                                                                                              \
+struct is_contiguous_iterator_of_type<V, typename vector<std::remove_const_t<V>>::iterator> : std::true_type {};                  \
+template<typename V>                                                                                                              \
+struct is_contiguous_iterator_of_type<const V, typename vector<std::remove_const_t<V>>::const_iterator> : std::true_type {};      \
+template<>                                                                                                                        \
+struct is_contiguous_iterator_of_type<char, typename string::iterator> : std::true_type {};                                       \
+template<>                                                                                                                        \
+struct is_contiguous_iterator_of_type<const char, typename string::iterator> : std::true_type {};                                 \
+template<>                                                                                                                        \
+struct is_contiguous_iterator_of_type<const char, typename string::const_iterator> : std::true_type {};                           \
+}
 
 DECLARE_IS_CONTIGUOUS_FOR_ALLOCATOR(std::vector, std::string)

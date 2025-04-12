@@ -9,5 +9,5 @@
 
 class LoadFileF {
 public:
-  void execute(SrcFilePtr file, DataStream<SrcFilePtr>& os);
+  void execute(SrcFilePtr file, DataStream<SrcFilePtr> &os);
 };

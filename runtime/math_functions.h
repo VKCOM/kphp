@@ -7,7 +7,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/math/math-functions.h"
 
-int64_t f$bindec(const string& number) noexcept;
+int64_t f$bindec(const string &number) noexcept;
 
 string f$decbin(int64_t number) noexcept;
 
@@ -43,7 +43,7 @@ inline double f$atan(double v);
 
 inline double f$atan2(double y, double x);
 
-string f$base_convert(const string& number, int64_t frombase, int64_t tobase);
+string f$base_convert(const string &number, int64_t frombase, int64_t tobase);
 
 inline double f$cosh(double v);
 

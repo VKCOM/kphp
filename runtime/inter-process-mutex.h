@@ -5,8 +5,8 @@
 #pragma once
 #include <sys/types.h>
 
-#include "common/cacheline.h"
 #include "common/mixin/not_copyable.h"
+#include "common/cacheline.h"
 
 class inter_process_mutex : vk::not_copyable {
 public:

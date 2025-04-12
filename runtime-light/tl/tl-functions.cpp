@@ -14,7 +14,7 @@ namespace tl {
 
 // ===== JOB WORKERS =====
 
-bool K2InvokeJobWorker::fetch(TLBuffer& tlb) noexcept {
+bool K2InvokeJobWorker::fetch(TLBuffer &tlb) noexcept {
   bool ok{tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == K2_INVOKE_JOB_WORKER_MAGIC};
   const auto opt_flags{tlb.fetch_trivial<uint32_t>()};
   ok &= opt_flags.has_value();
@@ -34,7 +34,7 @@ bool K2InvokeJobWorker::fetch(TLBuffer& tlb) noexcept {
   return ok;
 }
 
-void K2InvokeJobWorker::store(TLBuffer& tlb) const noexcept {
+void K2InvokeJobWorker::store(TLBuffer &tlb) const noexcept {
   const uint32_t flags{ignore_answer ? IGNORE_ANSWER_FLAG : 0x0};
   tlb.store_trivial<uint32_t>(K2_INVOKE_JOB_WORKER_MAGIC);
   tlb.store_trivial<uint32_t>(flags);
@@ -46,25 +46,25 @@ void K2InvokeJobWorker::store(TLBuffer& tlb) const noexcept {
 
 // ===== CRYPTO =====
 
-void GetCryptosecurePseudorandomBytes::store(TLBuffer& tlb) const noexcept {
+void GetCryptosecurePseudorandomBytes::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(GET_CRYPTOSECURE_PSEUDORANDOM_BYTES_MAGIC);
   tlb.store_trivial<int32_t>(size);
 }
 
-void GetPemCertInfo::store(TLBuffer& tlb) const noexcept {
+void GetPemCertInfo::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(GET_PEM_CERT_INFO_MAGIC);
   tlb.store_trivial<uint32_t>(is_short ? TL_BOOL_TRUE : TL_BOOL_FALSE);
   bytes.store(tlb);
 }
 
-void DigestSign::store(TLBuffer& tlb) const noexcept {
+void DigestSign::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(DIGEST_SIGN_MAGIC);
   data.store(tlb);
   private_key.store(tlb);
   tlb.store_trivial<uint32_t>(algorithm);
 }
 
-void DigestVerify::store(TLBuffer& tlb) const noexcept {
+void DigestVerify::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(DIGEST_VERIFY_MAGIC);
   data.store(tlb);
   public_key.store(tlb);
@@ -72,7 +72,7 @@ void DigestVerify::store(TLBuffer& tlb) const noexcept {
   signature.store(tlb);
 }
 
-void CbcDecrypt::store(TLBuffer& tlb) const noexcept {
+void CbcDecrypt::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CBC_DECRYPT_MAGIC);
   tlb.store_trivial<uint32_t>(algorithm);
   tlb.store_trivial<uint32_t>(padding);
@@ -81,7 +81,7 @@ void CbcDecrypt::store(TLBuffer& tlb) const noexcept {
   data.store(tlb);
 }
 
-void CbcEncrypt::store(TLBuffer& tlb) const noexcept {
+void CbcEncrypt::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CBC_ENCRYPT_MAGIC);
   tlb.store_trivial<uint32_t>(algorithm);
   tlb.store_trivial<uint32_t>(padding);
@@ -90,13 +90,13 @@ void CbcEncrypt::store(TLBuffer& tlb) const noexcept {
   data.store(tlb);
 }
 
-void Hash::store(TLBuffer& tlb) const noexcept {
+void Hash::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(HASH_MAGIC);
   tlb.store_trivial<uint32_t>(algorithm);
   data.store(tlb);
 }
 
-void HashHmac::store(TLBuffer& tlb) const noexcept {
+void HashHmac::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(HASH_HMAC_MAGIC);
   tlb.store_trivial<uint32_t>(algorithm);
   data.store(tlb);
@@ -105,19 +105,19 @@ void HashHmac::store(TLBuffer& tlb) const noexcept {
 
 // ===== CONFDATA =====
 
-void ConfdataGet::store(TLBuffer& tlb) const noexcept {
+void ConfdataGet::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CONFDATA_GET_MAGIC);
   key.store(tlb);
 }
 
-void ConfdataGetWildcard::store(TLBuffer& tlb) const noexcept {
+void ConfdataGetWildcard::store(TLBuffer &tlb) const noexcept {
   tlb.store_trivial<uint32_t>(CONFDATA_GET_WILDCARD_MAGIC);
   wildcard.store(tlb);
 }
 
 // ===== HTTP =====
 
-bool K2InvokeHttp::fetch(TLBuffer& tlb) noexcept {
+bool K2InvokeHttp::fetch(TLBuffer &tlb) noexcept {
   bool ok{tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == K2_INVOKE_HTTP_MAGIC};
   ok &= tlb.fetch_trivial<uint32_t>().has_value(); // flags
   ok &= connection.fetch(tlb);

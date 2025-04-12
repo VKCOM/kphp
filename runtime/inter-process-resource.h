@@ -23,7 +23,7 @@ public:
   static_assert(RESOURCE_AMOUNT != 0, "at least one resource is expected");
 
   InterProcessResourceControl() {
-    for (auto& pids : acquired_pids_) {
+    for (auto &pids: acquired_pids_) {
       pids.fill(0);
     }
   }
@@ -36,7 +36,7 @@ public:
 
   void release(uint32_t resource_id) noexcept {
     php_assert(resource_id < RESOURCE_AMOUNT);
-    pid_t& stored_pid = acquired_pids_[resource_id][get_user_index()];
+    pid_t &stored_pid = acquired_pids_[resource_id][get_user_index()];
     php_assert(stored_pid == pid);
     stored_pid = 0;
   }
@@ -82,29 +82,31 @@ private:
 template<typename T, size_t RESOURCE_AMOUNT>
 class InterProcessResourceManager {
 public:
-  InterProcessResourceManager() noexcept
-      : initiate_process_pid_{pid} {}
+  InterProcessResourceManager() noexcept :
+    initiate_process_pid_{pid} {
+  }
 
   // called from master process once during initialization
   // all children inherit pointers and data from mem and control_block_
-  template<typename... Args>
-  void init(Args&&... args) noexcept {
+  template<typename ...Args>
+  void init(Args &&... args) noexcept {
     php_assert(is_initial_process());
-    for (auto& resource : switchable_resource_) {
+    for (auto &resource: switchable_resource_) {
       resource.init(args...);
     }
-    control_block_ = new (mmap_shared(sizeof(*control_block_))) std::decay_t<decltype(*control_block_)>{};
+    control_block_ = new(mmap_shared(sizeof(*control_block_))) std::decay_t<decltype(*control_block_)>{};
   }
 
-  T* acquire_current_resource() noexcept {
+  T *acquire_current_resource() noexcept {
     php_assert(control_block_);
     const uint32_t resource_id = (*control_block_)->acquire_active_resource_id();
     return &switchable_resource_[resource_id];
   }
 
-  void release_resource(const T* data) noexcept {
+  void release_resource(const T *data) noexcept {
     php_assert(control_block_);
-    const auto it = std::find_if(switchable_resource_.begin(), switchable_resource_.end(), [data](const T& res) { return &res == data; });
+    const auto it = std::find_if(switchable_resource_.begin(), switchable_resource_.end(),
+                                 [data](const T &res) { return &res == data; });
     php_assert(it != switchable_resource_.end());
     const auto resource_id = static_cast<uint32_t>(it - switchable_resource_.begin());
     (*control_block_)->release(resource_id);
@@ -115,14 +117,14 @@ public:
   }
 
   // this function should be called only from master
-  T& get_current_resource() noexcept {
+  T &get_current_resource() noexcept {
     php_assert(is_initial_process());
     php_assert(control_block_);
     return switchable_resource_[(*control_block_)->get_active_resource_id()];
   }
 
   // this function should be called only from master
-  bool is_next_resource_unused(uint32_t* inactive_resource_id_out = nullptr) noexcept {
+  bool is_next_resource_unused(uint32_t *inactive_resource_id_out = nullptr) noexcept {
     php_assert(is_initial_process());
     php_assert(control_block_);
     auto locked_block = control_block_->acquire_lock();
@@ -134,8 +136,8 @@ public:
   }
 
   // this function should be called only from master
-  template<typename... Args>
-  bool try_switch_to_next_unused_resource(Args&&... args) noexcept {
+  template<typename ...Args>
+  bool try_switch_to_next_unused_resource(Args &&... args) noexcept {
     php_assert(is_initial_process());
     uint32_t inactive_resource_id = 0;
     if (is_next_resource_unused(&inactive_resource_id)) {
@@ -160,7 +162,8 @@ public:
     // resources are cleared strictly in the order they were marked as unused: starting with the oldest, etc.
     // if the oldest can't be cleared, the cleanup is stopped
     const uint32_t current_resource_id = (*control_block_)->get_active_resource_id();
-    for (uint32_t resource_id = (current_resource_id + 1) % RESOURCE_AMOUNT; resource_id != current_resource_id && dirty_inactive_resources_.any();
+    for (uint32_t resource_id = (current_resource_id + 1) % RESOURCE_AMOUNT;
+         resource_id != current_resource_id && dirty_inactive_resources_.any();
          resource_id = (resource_id + 1) % RESOURCE_AMOUNT) {
       if (dirty_inactive_resources_.test(resource_id)) {
         if ((*control_block_)->is_resource_unused(resource_id)) {
@@ -184,7 +187,7 @@ public:
     munmap(control_block_, sizeof(*control_block_));
     control_block_ = nullptr;
 
-    for (auto& resource : switchable_resource_) {
+    for (auto &resource: switchable_resource_) {
       resource.destroy();
     }
   }
@@ -199,5 +202,5 @@ private:
   std::bitset<RESOURCE_AMOUNT> dirty_inactive_resources_;
   const pid_t initiate_process_pid_{0};
   std::array<T, RESOURCE_AMOUNT> switchable_resource_;
-  vk::lock_accessible<InterProcessResourceControl<RESOURCE_AMOUNT>, inter_process_mutex>* control_block_{nullptr};
+  vk::lock_accessible<InterProcessResourceControl<RESOURCE_AMOUNT>, inter_process_mutex> *control_block_{nullptr};
 };

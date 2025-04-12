@@ -9,15 +9,15 @@
 #include "common/stats/buffer.h"
 #include "common/tl/parse.h"
 
-int (*tl_stat_function)(const std::optional<std::vector<std::string>>& sorted_filter_keys);
+int (*tl_stat_function)(const std::optional<std::vector<std::string>> &sorted_filter_keys);
 
 static char buf[STATS_BUFFER_LEN];
 
-char* get_engine_default_prepare_stats_buffer() {
+char *get_engine_default_prepare_stats_buffer() {
   return buf;
 }
 
-std::pair<char*, int> engine_default_prepare_stats_with_tag_mask(stats_t&& stats, const char* stats_prefix, unsigned int tag_mask) {
+std::pair<char *, int> engine_default_prepare_stats_with_tag_mask(stats_t &&stats, const char *stats_prefix, unsigned int tag_mask) {
   stats.stats_prefix = stats_prefix;
 
   sb_init(&stats.sb, buf, STATS_BUFFER_LEN);
@@ -26,18 +26,19 @@ std::pair<char*, int> engine_default_prepare_stats_with_tag_mask(stats_t&& stats
   return {buf, stats.sb.pos};
 }
 
-char* engine_default_prepare_stats(stats_t&& stats, const char* stats_prefix) {
+char *engine_default_prepare_stats(stats_t &&stats, const char *stats_prefix) {
   return engine_default_prepare_stats_with_tag_mask(std::move(stats), stats_prefix, stats_tag_mask_full).first;
 }
 
-void engine_default_tl_stat_function(const std::optional<std::vector<std::string>>& sorted_filter_keys) {
+void engine_default_tl_stat_function(const std::optional<std::vector<std::string>> &sorted_filter_keys) {
   tl_store_stats(engine_default_prepare_stats(tl_stats_t{}, NULL), 0, sorted_filter_keys);
 }
 
-const char* engine_default_char_stats() {
+const char *engine_default_char_stats() {
   return engine_default_prepare_stats(tl_stats_t{}, NULL);
 }
 
-__attribute__((constructor)) static void register_char_stats() {
+__attribute__((constructor))
+static void register_char_stats() {
   engine_settings_handlers.char_stats = engine_default_char_stats;
 }

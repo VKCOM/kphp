@@ -13,8 +13,8 @@
 class CalcRealDefinesAndAssignModulitesF final : public SyncPipeF<FunctionPtr> {
 private:
   using Base = SyncPipeF<FunctionPtr>;
-  std::set<std::string*> in_progress;
-  std::vector<std::string*> stack;
+  std::set<std::string *> in_progress;
+  std::vector<std::string *> stack;
 
   CheckConstWithDefines check_const;
   CheckConstAccess check_const_access;
@@ -26,8 +26,9 @@ private:
   void print_error_infinite_define(DefinePtr cur_def);
 
 public:
+
   CalcRealDefinesAndAssignModulitesF();
 
-  void execute(FunctionPtr f, DataStream<FunctionPtr>& unused_os) override;
-  void on_finish(DataStream<FunctionPtr>& os) final;
+  void execute(FunctionPtr f, DataStream<FunctionPtr> &unused_os) override;
+  void on_finish(DataStream<FunctionPtr> &os) final;
 };

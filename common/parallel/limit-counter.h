@@ -26,19 +26,19 @@ struct parallel_limit_counter {
   uint64_t global_count;
   uint64_t global_reserve;
   uint64_t thread_max;
-  parallel_limit_counter_tls_t* ptrs[NR_THREADS];
+  parallel_limit_counter_tls_t *ptrs[NR_THREADS];
   pthread_mutex_t mtx;
 };
 typedef struct parallel_limit_counter parallel_limit_counter_t;
 
-void parallel_limit_counter_register_thread(parallel_limit_counter_t* counter, parallel_limit_counter_tls_t* tls);
-void parallel_limit_counter_init(parallel_limit_counter_t* counter, uint64_t global_limit, uint64_t thread_max);
-void parallel_limit_counter_unregister_thread(parallel_limit_counter_t* counter, parallel_limit_counter_tls_t* tls);
-uint64_t parallel_limit_counter_read(parallel_limit_counter_t* counter);
-bool parallel_limit_counter_add_slow_path(parallel_limit_counter_t* counter, parallel_limit_counter_tls_t* tls, uint64_t value);
-bool parallel_limit_counter_sub_slow_path(parallel_limit_counter_t* counter, parallel_limit_counter_tls_t* tls, uint64_t value);
+void parallel_limit_counter_register_thread(parallel_limit_counter_t *counter, parallel_limit_counter_tls_t *tls);
+void parallel_limit_counter_init(parallel_limit_counter_t *counter, uint64_t global_limit, uint64_t thread_max);
+void parallel_limit_counter_unregister_thread(parallel_limit_counter_t *counter, parallel_limit_counter_tls_t *tls);
+uint64_t parallel_limit_counter_read(parallel_limit_counter_t *counter);
+bool parallel_limit_counter_add_slow_path(parallel_limit_counter_t *counter, parallel_limit_counter_tls_t *tls, uint64_t value);
+bool parallel_limit_counter_sub_slow_path(parallel_limit_counter_t *counter, parallel_limit_counter_tls_t *tls, uint64_t value);
 
-static inline bool parallel_limit_counter_add(parallel_limit_counter_t* counter, parallel_limit_counter_tls_t* tls, uint64_t value) {
+static inline bool parallel_limit_counter_add(parallel_limit_counter_t *counter, parallel_limit_counter_tls_t *tls, uint64_t value) {
   if (tls->counter_max - tls->counter >= value) {
     tls->counter += value;
     return true;
@@ -47,11 +47,11 @@ static inline bool parallel_limit_counter_add(parallel_limit_counter_t* counter,
   return parallel_limit_counter_add_slow_path(counter, tls, value);
 }
 
-static inline bool parallel_limit_counter_inc(parallel_limit_counter_t* counter, parallel_limit_counter_tls_t* tls) {
+static inline bool parallel_limit_counter_inc(parallel_limit_counter_t *counter, parallel_limit_counter_tls_t *tls) {
   return parallel_limit_counter_add(counter, tls, 1);
 }
 
-static inline bool parallel_limit_counter_sub(parallel_limit_counter_t* counter, parallel_limit_counter_tls_t* tls, uint64_t value) {
+static inline bool parallel_limit_counter_sub(parallel_limit_counter_t *counter, parallel_limit_counter_tls_t *tls, uint64_t value) {
   if (tls->counter >= value) {
     tls->counter -= value;
     return true;
@@ -60,11 +60,11 @@ static inline bool parallel_limit_counter_sub(parallel_limit_counter_t* counter,
   return parallel_limit_counter_sub_slow_path(counter, tls, value);
 }
 
-static inline bool parallel_limit_counter_dec(parallel_limit_counter_t* counter, parallel_limit_counter_tls_t* tls) {
+static inline bool parallel_limit_counter_dec(parallel_limit_counter_t *counter, parallel_limit_counter_tls_t *tls) {
   return parallel_limit_counter_sub(counter, tls, 1);
 }
 
-static inline uint64_t parallel_limit_counter_read_approx(const parallel_limit_counter_t* counter) {
+static inline uint64_t parallel_limit_counter_read_approx(const parallel_limit_counter_t *counter) {
   return counter->global_count + counter->global_reserve;
 }
 
@@ -80,11 +80,9 @@ static inline uint64_t parallel_limit_counter_read_approx(const parallel_limit_c
   extern __thread parallel_limit_counter_tls_t parallel_limit_counter_##name##_tls;                                                                            \
   extern parallel_limit_counter_t parallel_limit_counter_##name;
 
-#define PARALLEL_LIMIT_COUNTER_REGISTER_THREAD(name)                                                                                                           \
-  parallel_limit_counter_register_thread(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)
+#define PARALLEL_LIMIT_COUNTER_REGISTER_THREAD(name) parallel_limit_counter_register_thread(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)
 #define PARALLEL_LIMIT_COUNTER_INIT(name, global_limit, thread_max) parallel_limit_counter_init(&parallel_limit_counter_##name, global_limit, thread_max)
-#define PARALLEL_LIMIT_COUNTER_UNREGISTER_THREAD(name)                                                                                                         \
-  parallel_limit_counter_unregister_thread(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)
+#define PARALLEL_LIMIT_COUNTER_UNREGISTER_THREAD(name) parallel_limit_counter_unregister_thread(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)
 #define PARALLEL_LIMIT_COUNTER_ADD(name, value) parallel_limit_counter_add(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls, value)
 #define PARALLEL_LIMIT_COUNTER_INC(name) parallel_limit_counter_inc(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)
 #define PARALLEL_LIMIT_COUNTER_SUB(name, value) parallel_limit_counter_sub(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls, value)

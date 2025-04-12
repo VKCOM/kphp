@@ -12,12 +12,19 @@
 #include "compiler/inferring/var-node.h"
 
 class VarData {
-  DEBUG_STRING_METHOD {
-    return as_human_readable();
-  }
-
+  DEBUG_STRING_METHOD { return as_human_readable(); }
+  
 public:
-  enum Type { var_unknown_t = 0, var_local_t, var_local_inplace_t, var_global_t, var_param_t, var_const_t, var_static_t, var_instance_t };
+  enum Type {
+    var_unknown_t = 0,
+    var_local_t,
+    var_local_inplace_t,
+    var_global_t,
+    var_param_t,
+    var_const_t,
+    var_static_t,
+    var_instance_t
+  };
 
   Type type_ = var_unknown_t;
   int id = -1;
@@ -28,7 +35,7 @@ public:
   bool had_user_assigned_val = false;
   FunctionPtr holder_func;
   ClassPtr class_id;
-  std::unordered_set<VarPtr>* bad_vars = nullptr;
+  std::unordered_set<VarPtr> *bad_vars = nullptr;
   bool is_reference = false;
   bool uninited_flag = false;
   bool optimize_flag = false;
@@ -38,19 +45,17 @@ public:
   bool marked_as_const = false;
   bool is_read_only = true;
   bool is_foreach_reference = false;
-  bool is_builtin_runtime = false; // $_SERVER, $argv, etc., see PhpScriptBuiltInSuperGlobals in runtime
-  int dependency_level = 0;        // for constants only (c_str$, c_arr$, etc)
-  int offset_in_linear_mem = -1;   // for globals only (offset in g_linear_mem)
-  int batch_idx = -1;              // for constants and globals, a number [0;N), see const-globals-batched-mem.h
+  bool is_builtin_runtime = false;        // $_SERVER, $argv, etc., see PhpScriptBuiltInSuperGlobals in runtime
+  int dependency_level = 0;               // for constants only (c_str$, c_arr$, etc)
+  int offset_in_linear_mem = -1;          // for globals only (offset in g_linear_mem)
+  int batch_idx = -1;                     // for constants and globals, a number [0;N), see const-globals-batched-mem.h
 
   void set_uninited_flag(bool f);
   bool get_uninited_flag();
 
   explicit VarData(Type type);
 
-  inline Type& type() {
-    return type_;
-  }
+  inline Type &type() { return type_; }
 
   std::string as_human_readable() const;
 
@@ -78,9 +83,9 @@ public:
     return type_ == var_const_t;
   }
 
-  const ClassMemberStaticField* as_class_static_field() const;
-  const ClassMemberInstanceField* as_class_instance_field() const;
+  const ClassMemberStaticField *as_class_static_field() const;
+  const ClassMemberInstanceField *as_class_instance_field() const;
 
-  static bool does_name_eq_any_language_superglobal(const std::string& name);
-  static bool does_name_eq_any_builtin_runtime(const std::string& name);
+  static bool does_name_eq_any_language_superglobal(const std::string &name);
+  static bool does_name_eq_any_builtin_runtime(const std::string &name);
 };

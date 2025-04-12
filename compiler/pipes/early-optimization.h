@@ -12,5 +12,5 @@
 // that would execute faster or allocate less heap memory.
 class EarlyOptimizationF {
 public:
-  void execute(FunctionPtr f, DataStream<FunctionPtr>& os);
+  void execute(FunctionPtr f, DataStream<FunctionPtr> &os);
 };

@@ -10,5 +10,5 @@
 // and FFI::load() - it parses FFI strings and creates scope classes.
 class RegisterFFIScopesF {
 public:
-  void execute(FunctionPtr f, DataStream<FunctionPtr>& os);
+  void execute(FunctionPtr f, DataStream<FunctionPtr> &os);
 };

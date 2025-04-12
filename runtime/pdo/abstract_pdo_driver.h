@@ -21,11 +21,11 @@ public:
   AbstractPdoDriver() = default;
   virtual ~AbstractPdoDriver() noexcept;
 
-  virtual void connect(const class_instance<C$PDO>& pdo_instance, const string& connection_string, const Optional<string>& username,
-                       const Optional<string>& password, const Optional<array<mixed>>& options) noexcept = 0;
-  virtual class_instance<C$PDOStatement> prepare(const class_instance<C$PDO>& v$this, const string& query, const array<mixed>& options) noexcept = 0;
-  virtual const char* error_code_sqlstate() noexcept = 0;
-  virtual std::pair<int, const char*> error_info() noexcept = 0;
+  virtual void connect(const class_instance<C$PDO> &pdo_instance, const string &connection_string,
+                       const Optional<string> &username, const Optional<string> &password, const Optional<array<mixed>> &options) noexcept = 0;
+  virtual class_instance<C$PDOStatement> prepare(const class_instance<C$PDO> &v$this, const string &query, const array<mixed> &options) noexcept = 0;
+  virtual const char *error_code_sqlstate() noexcept = 0;
+  virtual std::pair<int, const char *> error_info() noexcept = 0;
 };
 
 } // namespace pdo

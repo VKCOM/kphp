@@ -17,13 +17,13 @@ typedef struct {
    * This function are called when data is read from binlog. Size is number of bytes ready to process and E is a pointer to data.
    * Function should return the real size of next event or REPLAY_BINLOG_NOT_ENOUGH_DATA.
    */
-  int (*replay_logevent)(const struct lev_generic* E, int size);
+  int (*replay_logevent)(const struct lev_generic *E, int size);
 
   /**
    * There is a default LEV_START event handler, which sets global variables log_split_{min, max, mod}.
    * If you want to process LEV_START event in a different way, this callback should be set.
    */
-  void (*on_lev_start)(const struct lev_start* E);
+  void (*on_lev_start)(const struct lev_start *E);
 
   /**
    * This function is called to load index. It is opened as Snapshot global var.
@@ -42,12 +42,12 @@ typedef struct {
   /**
    * engine name displayed in version in logs and stats
    */
-  const char* name;
+  const char *name;
 
 } engine_settings_t;
 
-void set_engine_settings(engine_settings_t* settings);
-engine_settings_t* get_engine_settings();
+void set_engine_settings(engine_settings_t *settings);
+engine_settings_t *get_engine_settings();
 
 // normally, this shouldn't be set from engine
 // this is a way to avoid linkage errors,
@@ -57,3 +57,5 @@ typedef struct {
 } engine_settings_handlers_t;
 
 extern engine_settings_handlers_t engine_settings_handlers;
+
+

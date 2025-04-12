@@ -17,10 +17,10 @@
 #include "common/precise-time.h"
 #include "common/resolver.h"
 
-char* stats_t::normalize_key(const char* key, const char* format, const char* prefix) noexcept {
+char *stats_t::normalize_key(const char *key, const char *format, const char *prefix) noexcept {
   const size_t result_start_size = 1 << 10;
   static char result_start[result_start_size];
-  char* result = result_start;
+  char *result = result_start;
   int prefix_length = snprintf(result, result_start_size, "%s", prefix);
   snprintf(result + prefix_length, result_start_size - prefix_length, format, key);
   while (*result) {
@@ -34,7 +34,7 @@ char* stats_t::normalize_key(const char* key, const char* format, const char* pr
   return result_start;
 }
 
-char* stat_temp_format(const char* format, ...) {
+char *stat_temp_format(const char *format, ...) {
   static char buffer[1 << 15];
   va_list ap;
   va_start(ap, format);
@@ -54,7 +54,8 @@ struct memory_stat_t {
   long long swap_used;
 };
 
-static int read_whole_file(const char* filename, void* output, int olen) {
+
+static int read_whole_file(const char *filename, void *output, int olen) {
   int fd = open(filename, O_RDONLY), n = -1;
   if (fd < 0) {
     vkprintf(1, "%s: open (\"%s\", O_RDONLY) failed. %m\n", __func__, filename);
@@ -79,23 +80,23 @@ static int read_whole_file(const char* filename, void* output, int olen) {
     vkprintf(1, "%s: output buffer is too small (%d bytes).\n", __func__, olen);
     return -1;
   }
-  auto* p = static_cast<unsigned char*>(output);
+  auto *p = static_cast<unsigned char *>(output);
   p[n] = 0;
   return n;
 }
 
-static int parse_statm(const char* buf, long long* a, int m) {
+static int parse_statm(const char *buf, long long *a, int m) {
   static long long page_size = -1;
   if (page_size < 0) {
     page_size = sysconf(_SC_PAGESIZE);
-    assert(page_size > 0);
+    assert (page_size > 0);
   }
   int i;
   if (m > 7) {
     m = 7;
   }
-  const char* p = buf;
-  char* q;
+  const char *p = buf;
+  char *q;
   errno = 0;
   for (i = 0; i < m; i++) {
     a[i] = strtoll(p, &q, 10);
@@ -108,17 +109,17 @@ static int parse_statm(const char* buf, long long* a, int m) {
   return 0;
 }
 
-int am_get_memory_usage(pid_t pid, long long* a, int m) {
+int am_get_memory_usage(pid_t pid, long long *a, int m) {
   char proc_filename[32];
   char buf[4096];
-  assert(snprintf(proc_filename, sizeof(proc_filename), "/proc/%d/statm", (int)pid) < sizeof(proc_filename));
+  assert (snprintf(proc_filename, sizeof(proc_filename), "/proc/%d/statm", (int)pid) < sizeof(proc_filename));
   if (read_whole_file(proc_filename, buf, sizeof(buf)) < 0) {
     return -1;
   }
   return parse_statm(buf, a, m);
 }
 
-static int get_memory_stats(memory_stat_t* mem_stat, int flags) {
+static int get_memory_stats(memory_stat_t *mem_stat, int flags) {
   if (!flags) {
     return -1;
   }
@@ -182,17 +183,16 @@ STATS_PROVIDER(memory, 500) {
   }
 }
 
-static std::vector<stats_provider_t>& get_registered_storage() {
+static std::vector<stats_provider_t> &get_registered_storage() {
   static std::vector<stats_provider_t> providers;
   return providers;
 }
 
 void register_stats_provider(stats_provider_t provider) {
-  auto& providers = get_registered_storage();
+  auto &providers = get_registered_storage();
   providers.push_back(provider);
   for (int i = providers.size() - 1; i > 0; i--) {
-    if (providers[i - 1].priority > providers[i].priority ||
-        (providers[i - 1].priority == providers[i].priority && strcmp(providers[i - 1].name, providers[i].name) > 0)) {
+    if (providers[i - 1].priority > providers[i].priority || (providers[i - 1].priority == providers[i].priority && strcmp(providers[i - 1].name, providers[i].name) > 0)) {
       std::swap(providers[i], providers[i - 1]);
     } else {
       break;
@@ -200,27 +200,27 @@ void register_stats_provider(stats_provider_t provider) {
   }
 }
 
-static void prepare_registered_stats(stats_t* stats, unsigned int tag_mask) {
-  for (auto& provider : get_registered_storage()) {
+static void prepare_registered_stats(stats_t *stats, unsigned int tag_mask) {
+  for (auto &provider : get_registered_storage()) {
     if (provider.tag & tag_mask) {
       provider.prepare(stats);
     }
   }
 }
 
-void prepare_common_stats_with_tag_mask(stats_t* stats, unsigned int tag_mask) {
+void prepare_common_stats_with_tag_mask(stats_t *stats, unsigned int tag_mask) {
   prepare_registered_stats(stats, tag_mask);
 }
 
-void prepare_common_stats(stats_t* stats) {
+void prepare_common_stats(stats_t *stats) {
   prepare_common_stats_with_tag_mask(stats, stats_tag_mask_full);
 }
 
-static void get_cmdline(int my_pid, char* cmdline_buffer, int len) {
+static void get_cmdline(int my_pid, char *cmdline_buffer, int len) {
   const size_t cmd_line_file_size = 100;
   static char cmd_line_file[cmd_line_file_size];
   snprintf(cmd_line_file, cmd_line_file_size, "/proc/%d/cmdline", my_pid);
-  FILE* f = fopen(cmd_line_file, "rb");
+  FILE *f = fopen(cmd_line_file, "rb");
   if (f) {
     int got = fread(cmdline_buffer, 1, len - 1, f);
     fclose(f);
@@ -257,7 +257,8 @@ STATS_PROVIDER(general, 0) {
   stats->add_general_stat("hostname", "%s", kdb_gethostname() ?: "failed_to_get_hostname");
 }
 
-static void resource_usage_statistics(stats_t* stats, const char* prefix, struct rusage* usage) {
+static void resource_usage_statistics(stats_t *stats, const char *prefix,
+                                      struct rusage *usage) {
   double cpu_time;
 
   cpu_time = usage->ru_utime.tv_sec + (usage->ru_utime.tv_usec / 1E6);

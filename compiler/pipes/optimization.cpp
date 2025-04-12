@@ -15,41 +15,44 @@
 #include "common/algorithms/hashes.h"
 
 #include "compiler/data/class-data.h"
-#include "compiler/inferring/public.h"
 #include "compiler/vertex-util.h"
+#include "compiler/inferring/public.h"
 
 namespace {
 
-bool can_init_value_be_removed(VertexPtr init_value, const VarPtr& variable) {
-  const auto* variable_type = tinf::get_type(variable);
-  if (variable_type->use_optional() || vk::any_of_equal(variable_type->ptype(), tp_Class, tp_mixed)) {
+bool can_init_value_be_removed(VertexPtr init_value, const VarPtr &variable) {
+  const auto *variable_type = tinf::get_type(variable);
+  if (variable_type->use_optional() ||
+      vk::any_of_equal(variable_type->ptype(), tp_Class, tp_mixed)) {
     return init_value->type() == op_null;
   }
 
-  const auto* init_type = tinf::get_type(init_value);
-  if (init_value->extra_type != op_ex_var_const || init_type->use_optional() || init_type->ptype() != variable_type->ptype()) {
+  const auto *init_type = tinf::get_type(init_value);
+  if (init_value->extra_type != op_ex_var_const ||
+      init_type->use_optional() ||
+      init_type->ptype() != variable_type->ptype()) {
     return false;
   }
 
   switch (init_type->ptype()) {
-  case tp_string: {
-    const auto* init_string = VertexUtil::get_constexpr_string(init_value);
-    return init_string && init_string->empty();
-  }
-  case tp_array:
-    return init_type->lookup_at_any_key()->get_real_ptype() == tp_any;
-  default:
-    return false;
+    case tp_string: {
+      const auto *init_string = VertexUtil::get_constexpr_string(init_value);
+      return init_string && init_string->empty();
+    }
+    case tp_array:
+      return init_type->lookup_at_any_key()->get_real_ptype() == tp_any;
+    default:
+      return false;
   }
 }
 
-VarPtr cast_const_array_type(VertexPtr& type_acceptor, const TypeData* required_type) noexcept {
+VarPtr cast_const_array_type(VertexPtr &type_acceptor, const TypeData *required_type) noexcept {
   std::stringstream ss;
   ss << type_acceptor->get_string() << "$" << std::hex << vk::std_hash(type_out(required_type));
   std::string name = ss.str();
   bool is_new = true;
   VarPtr var_id = G->get_constant_var(name, type_acceptor, &is_new);
-  var_id->tinf_node.copy_type_from(required_type); // not inside if(is_new) to avoid race conditions when one thread creates and another uses faster
+  var_id->tinf_node.copy_type_from(required_type);  // not inside if(is_new) to avoid race conditions when one thread creates and another uses faster
   if (is_new) {
     var_id->dependency_level = type_acceptor.as<op_var>()->var_id->dependency_level + 1;
   }
@@ -64,7 +67,7 @@ VarPtr cast_const_array_type(VertexPtr& type_acceptor, const TypeData* required_
   return var_id;
 }
 
-void cast_array_creation_type(VertexAdaptor<op_array> op_array_vertex, const TypeData* required_type) noexcept {
+void cast_array_creation_type(VertexAdaptor<op_array> op_array_vertex, const TypeData *required_type) noexcept {
   if (required_type->get_real_ptype() == tp_mixed) {
     required_type = TypeData::get_type(tp_array, tp_mixed);
   } else if (required_type->use_optional()) {
@@ -73,9 +76,10 @@ void cast_array_creation_type(VertexAdaptor<op_array> op_array_vertex, const Typ
   op_array_vertex->tinf_node.set_type(required_type);
 }
 
-void explicit_cast_array_type(VertexPtr& type_acceptor, const TypeData* required_type, std::set<VarPtr>* new_var_out = nullptr) noexcept {
-  const auto* existed_type = tinf::get_type(type_acceptor);
-  if (existed_type->get_real_ptype() != tp_array || !is_implicit_array_conversion(existed_type, required_type)) {
+void explicit_cast_array_type(VertexPtr &type_acceptor, const TypeData *required_type, std::set<VarPtr> *new_var_out = nullptr) noexcept {
+  const auto *existed_type = tinf::get_type(type_acceptor);
+  if (existed_type->get_real_ptype() != tp_array ||
+      !is_implicit_array_conversion(existed_type, required_type)) {
     return;
   }
   if (!vk::any_of_equal(required_type->get_real_ptype(), tp_array, tp_mixed)) {
@@ -106,7 +110,7 @@ VertexPtr transform_set_on_class(VertexPtr set_op, VertexPtr container, VertexPt
   auto klass = tinf::get_type(container)->class_type();
   kphp_assert_msg(klass, "Internal error: cannot get type of object for write [] access");
 
-  const auto* method = klass->get_instance_method("offsetSet");
+  const auto *method = klass->get_instance_method("offsetSet");
   kphp_error(method, fmt::format("Class {} does not implement \\ArrayAccess", klass->name).c_str());
 
   if (set_op->rl_type == val_none) {
@@ -129,15 +133,15 @@ VertexPtr transform_set_on_class(VertexPtr set_op, VertexPtr container, VertexPt
   return result;
 }
 
-VertexPtr optimize_set_push_back(VertexPtr set_op, VertexAdaptor<op_index> index, VertexPtr container, VertexPtr key, VertexPtr value,
-                                 PrimitiveType container_ptype) {
+VertexPtr optimize_set_push_back(VertexPtr set_op, VertexAdaptor<op_index> index, VertexPtr container, VertexPtr key, VertexPtr value, PrimitiveType container_ptype ) {
   VertexPtr result;
   if (index->has_key() && set_op->rl_type != val_none) {
     return set_op;
   }
 
   if (!key) {
-    kphp_error(container_ptype == tp_array || container_ptype == tp_mixed, fmt_format("Can not use [] for {}", type_out(tinf::get_type(container))));
+    kphp_error (container_ptype == tp_array || container_ptype == tp_mixed,
+                fmt_format("Can not use [] for {}", type_out(tinf::get_type(container))));
 
     if (set_op->rl_type == val_none) {
       result = VertexAdaptor<op_push_back>::create(container, value);
@@ -163,14 +167,14 @@ VertexPtr OptimizationPass::optimize_set_with_offset(VertexAdaptor<op_set> set_o
   VertexPtr container = index->array();
   VertexPtr key = index->has_key() ? index->key() : VertexPtr{};
   VertexPtr value = set_op->rhs();
-
+  
   PrimitiveType container_ptype = tinf::get_type(container)->get_real_ptype();
   if (container_ptype == tp_Class) {
     return transform_set_on_class(set_op, container, key, value);
   }
   return optimize_set_push_back(set_op, index, container, key, value, container_ptype);
 }
-void OptimizationPass::collect_concat(VertexPtr root, std::vector<VertexPtr>* collected) {
+void OptimizationPass::collect_concat(VertexPtr root, std::vector<VertexPtr> *collected) {
   if (root->type() == op_string_build || root->type() == op_concat) {
     for (auto i : *root) {
       collect_concat(i, collected);
@@ -212,19 +216,19 @@ VertexPtr OptimizationPass::optimize_postfix_dec(VertexPtr root) {
 VertexPtr OptimizationPass::optimize_index(VertexAdaptor<op_index> index) {
   if (!index->has_key()) {
     if (index->rl_type == val_l) {
-      kphp_error(0, "Unsupported []");
+      kphp_error (0, "Unsupported []");
     } else {
-      kphp_error(0, "Cannot use [] for reading");
+      kphp_error (0, "Cannot use [] for reading");
     }
   }
 
-  auto& lhs = index->array();
-  const auto* tpe = tinf::get_type(index->array()); // funny
+  auto &lhs = index->array();
+  const auto *tpe = tinf::get_type(index->array()); // funny
   if (tpe->get_real_ptype() == tp_Class) {
     auto klass = tpe->class_type();
     kphp_assert_msg(klass, "Internal error: cannot get type of object for read [] access");
 
-    const auto* method = klass->get_instance_method("offsetGet");
+    const auto *method = klass->get_instance_method("offsetGet");
     kphp_error(method, fmt_format("Class {} does not implement \\ArrayAccess", klass->name).c_str());
 
     auto new_call = VertexAdaptor<op_func_call>::create(lhs, index->key()).set_location(lhs);
@@ -249,7 +253,7 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
 
   while (OpInfo::type(root->type()) == conv_op || vk::any_of_equal(root->type(), op_conv_array_l, op_conv_int_l, op_conv_string_l)) {
     VertexPtr expr = root.as<meta_op_unary>()->expr();
-    const TypeData* tp = tinf::get_type(expr);
+    const TypeData *tp = tinf::get_type(expr);
     VertexPtr res;
     if (!tp->use_optional()) {
       if (vk::any_of_equal(root->type(), op_conv_int, op_conv_int_l) && tp->ptype() == tp_int) {
@@ -263,19 +267,19 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
       } else if (vk::any_of_equal(root->type(), op_conv_array, op_conv_array_l) && tp->get_real_ptype() == tp_array) {
         res = expr;
       } else if (root->type() == op_force_mixed && tp->ptype() == tp_void) {
-        expr->rl_type = val_none;
-        res = VertexAdaptor<op_seq_rval>::create(expr, VertexAdaptor<op_null>::create());
+          expr->rl_type = val_none;
+          res = VertexAdaptor<op_seq_rval>::create(expr, VertexAdaptor<op_null>::create());
       }
     }
     if (root->type() == op_conv_mixed) {
       res = expr;
     }
-    if (root->type() == op_conv_drop_null) {
+    if (root->type() == op_conv_drop_null){
       if (!tp->can_store_null()) {
         res = expr;
       }
     }
-    if (root->type() == op_conv_drop_false) {
+    if (root->type() == op_conv_drop_false){
       if (!tp->can_store_false()) {
         res = expr;
       }
@@ -295,7 +299,7 @@ VertexPtr OptimizationPass::remove_extra_conversions(VertexPtr root) {
 // has such a method.
 // If the conversion fails, an empty VertexPtr will be returned.
 VertexPtr OptimizationPass::try_convert_expr_to_call_to_string_method(VertexPtr expr) {
-  const auto* type = tinf::get_type(expr);
+  const auto *type = tinf::get_type(expr);
   if (type == nullptr) {
     return {};
   }
@@ -305,8 +309,9 @@ VertexPtr OptimizationPass::try_convert_expr_to_call_to_string_method(VertexPtr 
     return {};
   }
 
-  const auto* to_string_method = klass->get_instance_method(ClassData::NAME_OF_TO_STRING);
-  kphp_error_act(to_string_method, fmt_format("Converting to a string of a class {} that does not contain a __toString() method", klass->as_human_readable()),
+  const auto *to_string_method = klass->get_instance_method(ClassData::NAME_OF_TO_STRING);
+  kphp_error_act(to_string_method,
+                 fmt_format("Converting to a string of a class {} that does not contain a __toString() method", klass->as_human_readable()),
                  return {});
 
   auto call_function = VertexAdaptor<op_func_call>::create(expr);
@@ -343,7 +348,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   } else if (auto param = root.try_as<op_foreach_param>()) {
     if (!param->x()->ref_flag) {
       auto temp_var = root.as<op_foreach_param>()->temp_var().as<op_var>();
-      if (temp_var && temp_var->extra_type == op_ex_var_superlocal) { // see CreateSwitchForeachVarsPass
+      if (temp_var && temp_var->extra_type == op_ex_var_superlocal) {     // see CreateSwitchForeachVarsPass
         temp_var->var_id->needs_const_iterator_flag = true;
       }
     }
@@ -355,7 +360,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
     auto func = func_call->func_id;
     if (!func->is_extern()) {
       auto args = func_call->args();
-      const auto& params = func->param_ids;
+      const auto &params = func->param_ids;
       const size_t elements = std::min(static_cast<size_t>(args.size()), params.size());
       for (size_t index = 0; index < elements; ++index) {
         explicit_cast_array_type(args[index], tinf::get_type(params[index]), &current_function->explicit_const_var_ids);
@@ -363,8 +368,8 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
     }
   } else if (auto op_array_vertex = root.try_as<op_array>()) {
     if (!var_init_expression_optimization_depth_) {
-      for (auto& array_element : *op_array_vertex) {
-        const auto* required_type = tinf::get_type(op_array_vertex)->lookup_at_any_key();
+      for (auto &array_element : *op_array_vertex) {
+        const auto *required_type = tinf::get_type(op_array_vertex)->lookup_at_any_key();
         if (vk::any_of_equal(array_element->type(), op_var, op_array)) {
           explicit_cast_array_type(array_element, required_type, &current_function->explicit_const_var_ids);
         } else if (auto array_key_value = array_element.try_as<op_double_arrow>()) {
@@ -380,7 +385,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
     root = convert_strval_to_magic_tostring_method_call(op_conv_string_vertex);
   }
 
-  if (root->rl_type != val_none /* && root->rl_type != val_error*/) {
+  if (root->rl_type != val_none/* && root->rl_type != val_error*/) {
     // wtf?
     tinf::get_type(root);
   }
@@ -390,7 +395,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
 bool OptimizationPass::user_recursion(VertexPtr root) {
   if (auto var_vertex = root.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
-    kphp_assert(var);
+    kphp_assert (var);
     if (var->init_val) {
       if (__sync_bool_compare_and_swap(&var->optimize_flag, false, true)) {
         ++var_init_expression_optimization_depth_;
@@ -413,7 +418,7 @@ bool OptimizationPass::check_function(FunctionPtr function) const {
 void OptimizationPass::on_finish() {
   if (current_function->type == FunctionData::func_class_holder) {
     auto class_id = current_function->class_id;
-    class_id->members.for_each([this](ClassMemberInstanceField& class_field) {
+    class_id->members.for_each([this](ClassMemberInstanceField &class_field) {
       if (class_field.var->init_val) {
         run_function_pass(class_field.var->init_val, this);
 
@@ -426,7 +431,7 @@ void OptimizationPass::on_finish() {
       }
     });
 
-    class_id->members.for_each([this](ClassMemberStaticField& static_field) {
+    class_id->members.for_each([this](ClassMemberStaticField &static_field) {
       if (static_field.var->init_val) {
         run_function_pass(static_field.var->init_val, this);
       }

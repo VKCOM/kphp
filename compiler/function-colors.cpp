@@ -8,16 +8,16 @@
 
 using namespace function_palette;
 
-PaletteRule::PaletteRule(std::vector<color_t>&& colors, std::string error)
-    : colors(std::move(colors)),
-      error(std::move(error)) {
+PaletteRule::PaletteRule(std::vector<color_t> &&colors, std::string error)
+  : colors(std::move(colors))
+  , error(std::move(error)) {
 
   for (color_t color : this->colors) {
     mask |= color;
   }
 }
 
-std::string PaletteRule::as_human_readable(const Palette& palette) const {
+std::string PaletteRule::as_human_readable(const Palette &palette) const {
   return vk::join(colors, " ", [palette](auto color) { return palette.get_name_by_color(color); });
 }
 
@@ -28,13 +28,13 @@ Palette::Palette() {
   color_names_mapping["remover"] = special_color_remover;
 }
 
-color_t Palette::register_color_name(const std::string& color_name) {
+color_t Palette::register_color_name(const std::string &color_name) {
   auto found = color_names_mapping.find(color_name);
   if (found != color_names_mapping.end()) {
     return found->second;
   }
 
-  int bit_shift = color_names_mapping.size() - 1; // user-defined colors are 1<<1, 1<<2, and so on
+  int bit_shift = color_names_mapping.size() - 1;   // user-defined colors are 1<<1, 1<<2, and so on
   color_t color = 1ULL << bit_shift;
 
   color_names_mapping[color_name] = color;
@@ -42,14 +42,14 @@ color_t Palette::register_color_name(const std::string& color_name) {
   return color;
 }
 
-color_t Palette::get_color_by_name(const std::string& color_name) const {
+color_t Palette::get_color_by_name(const std::string &color_name) const {
   const auto found = color_names_mapping.find(color_name);
   kphp_assert(found != color_names_mapping.end());
   return found->second;
 }
 
 std::string Palette::get_name_by_color(color_t color) const {
-  for (const auto& pair : color_names_mapping) {
+  for (const auto &pair : color_names_mapping) {
     if (pair.second == color) {
       return pair.first;
     }
@@ -73,7 +73,7 @@ bool ColorContainer::contains(color_t color) const {
   return std::any_of(sep_colors.begin(), sep_colors.end(), [=](color_t c) { return c == color; });
 }
 
-std::string ColorContainer::to_string(const Palette& palette, colors_mask_t with_highlights) const {
+std::string ColorContainer::to_string(const Palette &palette, colors_mask_t with_highlights) const {
   std::string desc;
 
   for (color_t color : sep_colors) {

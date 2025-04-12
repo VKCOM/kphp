@@ -10,7 +10,11 @@
 #include "common/pid.h"
 #include "common/tl/constants/common.h"
 
-enum class result_header_type { result, error, wrapped_error };
+enum class result_header_type {
+  result,
+  error,
+  wrapped_error
+};
 
 struct tl_stats_result_t {
   double proxy_got_query_ts;
@@ -40,7 +44,7 @@ struct tl_query_answer_header_t {
   int request_size{};
   int result_size{};
   int failed_subqueries{};
-  struct process_id PID {};
+  struct process_id PID{};
   int compression_version{};
   tl_stats_result_t stats_result{};
   int error_code;
@@ -50,11 +54,12 @@ struct tl_query_answer_header_t {
   }
 };
 
-bool tl_fetch_query_header(tl_query_header_t* header);
-bool tl_fetch_query_answer_header(tl_query_answer_header_t* header);
-void tl_store_header(const tl_query_header_t* header);
-void tl_store_answer_header(const tl_query_answer_header_t* header);
+bool tl_fetch_query_header(tl_query_header_t *header);
+bool tl_fetch_query_answer_header(tl_query_answer_header_t *header);
+void tl_store_header(const tl_query_header_t *header);
+void tl_store_answer_header(const tl_query_answer_header_t *header);
 
-void set_result_header_values(tl_query_answer_header_t* header, int flags);
+void set_result_header_values(tl_query_answer_header_t *header, int flags);
 
-#define RPC_REQ_ERROR_WRAPPED (TL_RPC_REQ_ERROR + 1)
+#define RPC_REQ_ERROR_WRAPPED           (TL_RPC_REQ_ERROR + 1)
+

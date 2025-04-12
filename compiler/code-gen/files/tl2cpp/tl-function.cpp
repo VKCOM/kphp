@@ -8,13 +8,13 @@
 #include "compiler/code-gen/naming.h"
 
 namespace tl2cpp {
-void TlFunctionDecl::compile(CodeGenerator& W) const {
+void TlFunctionDecl::compile(CodeGenerator &W) const {
   W << "/* ~~~~~~~~~ " << f->name << " ~~~~~~~~~ */\n" << NL;
   const bool needs_typed_fetch_store = TlFunctionDecl::does_tl_function_need_typed_fetch_store(f);
 
   std::string struct_name = cpp_tl_struct_name("f_", f->name);
   W << "struct " + struct_name + " : tl_func_base " << BEGIN;
-  for (const auto& arg : f->args) {
+  for (const auto &arg : f->args) {
     if (arg->is_optional()) {
       W << "tl_exclamation_fetch_wrapper " << arg->name << ";" << NL;
     } else if (arg->var_num != -1) {
@@ -29,8 +29,7 @@ void TlFunctionDecl::compile(CodeGenerator& W) const {
   }
   if (needs_typed_fetch_store) {
     FunctionSignatureGenerator(W) << "static std::unique_ptr<tl_func_base> typed_store(const " << get_php_runtime_type(f) << " *tl_object)" << SemicolonAndNL();
-    FunctionSignatureGenerator(W) << "class_instance<" << G->settings().tl_classname_prefix.get() << "RpcFunctionReturnResult> typed_fetch()"
-                                  << SemicolonAndNL();
+    FunctionSignatureGenerator(W) << "class_instance<" << G->settings().tl_classname_prefix.get() << "RpcFunctionReturnResult> typed_fetch()" << SemicolonAndNL();
   }
   if (f->is_kphp_rpc_server_function() && needs_typed_fetch_store) {
     check_kphp_function(f);
@@ -42,7 +41,7 @@ void TlFunctionDecl::compile(CodeGenerator& W) const {
   W << END << ";" << NL << NL;
 }
 
-void TlFunctionDef::compile(CodeGenerator& W) const {
+void TlFunctionDef::compile(CodeGenerator &W) const {
   const bool needs_typed_fetch_store = TlFunctionDecl::does_tl_function_need_typed_fetch_store(f);
   std::string struct_name = cpp_tl_struct_name("f_", f->name);
 
@@ -58,21 +57,18 @@ void TlFunctionDef::compile(CodeGenerator& W) const {
     W << END << NL << NL;
   }
   if (needs_typed_fetch_store) {
-    FunctionSignatureGenerator(W) << "std::unique_ptr<tl_func_base> " << struct_name << "::typed_store(const " << get_php_runtime_type(f) << " *tl_object) "
-                                  << BEGIN;
+    FunctionSignatureGenerator(W) << "std::unique_ptr<tl_func_base> " << struct_name << "::typed_store(const " << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
     W << "auto tl_func_state = make_unique_on_script_memory<" << struct_name << ">();" << NL;
     W << CombinatorStore(f, CombinatorPart::LEFT, true);
     W << "return std::move(tl_func_state);" << NL;
     W << END << NL << NL;
 
-    FunctionSignatureGenerator(W) << "class_instance<" << G->settings().tl_classname_prefix.get() << "RpcFunctionReturnResult> " << struct_name
-                                  << "::typed_fetch() " << BEGIN;
+    FunctionSignatureGenerator(W) << "class_instance<" << G->settings().tl_classname_prefix.get() << "RpcFunctionReturnResult> " << struct_name << "::typed_fetch() " << BEGIN;
     W << CombinatorFetch(f, CombinatorPart::RIGHT, true);
     W << END << NL << NL;
   }
   if (f->is_kphp_rpc_server_function() && needs_typed_fetch_store) {
-    FunctionSignatureGenerator(W) << "std::unique_ptr<tl_func_base> " << struct_name << "::rpc_server_typed_fetch(" << get_php_runtime_type(f)
-                                  << " *tl_object) " << BEGIN;
+    FunctionSignatureGenerator(W) << "std::unique_ptr<tl_func_base> " << struct_name << "::rpc_server_typed_fetch(" << get_php_runtime_type(f) << " *tl_object) " << BEGIN;
     W << "CurrentTlQuery::get().set_current_tl_function(" << register_tl_const_str(f->name) << ");" << NL;
     W << "auto tl_func_state = make_unique_on_script_memory<" << struct_name << ">();" << NL;
     W << CombinatorFetch(f, CombinatorPart::LEFT, true);
@@ -88,4 +84,4 @@ void TlFunctionDef::compile(CodeGenerator& W) const {
     W << END << NL << NL;
   }
 }
-} // namespace tl2cpp
+}

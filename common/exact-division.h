@@ -19,7 +19,7 @@ struct exact_division {
 };
 typedef struct exact_division exact_division_t;
 
-static inline void exact_division_init(exact_division_t* exact_division, uint32_t divisor) {
+static inline void exact_division_init(exact_division_t *exact_division, uint32_t divisor) {
   assert(divisor);
 
   exact_division->shift = __builtin_ctz(divisor);
@@ -42,7 +42,7 @@ static inline void exact_division_init(exact_division_t* exact_division, uint32_
   }
 }
 
-static inline uint32_t exact_division(exact_division_t* exact_division, uint64_t dividend) {
+static inline uint32_t exact_division(exact_division_t *exact_division, uint64_t dividend) {
   uint64_t quotient = dividend >> exact_division->shift;
   quotient *= exact_division->mulinv;
 

@@ -17,7 +17,7 @@ public:
 
   void update_memory_stats();
 
-  void write_to(std::ostream& out, bool with_indent = true) const;
+  void write_to(std::ostream &out, bool with_indent = true) const;
 
   std::atomic<std::uint64_t> total_classes{0u};
   std::atomic<std::uint64_t> total_lambdas{0u};
@@ -73,3 +73,5 @@ private:
   std::atomic<std::uint64_t> memory_rss_{0};
   std::atomic<std::uint64_t> memory_rss_peak_{0};
 };
+
+

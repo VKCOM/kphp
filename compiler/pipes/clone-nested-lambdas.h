@@ -14,15 +14,15 @@
 // This pass takes functions that were cloned from existing ones (base$$fname$$context, trait methods, etc).
 // Every op_lambda inside must point to a new function instead of an old one.
 class CloneNestedLambdasPass final : public FunctionPassBase {
-  DataStream<FunctionPtr>* function_stream;
+  DataStream<FunctionPtr> *function_stream;
 
 public:
   std::string get_description() override {
     return "Clone nested lambdas";
   }
 
-  explicit CloneNestedLambdasPass(DataStream<FunctionPtr>* function_stream)
-      : function_stream(function_stream) {}
+  explicit CloneNestedLambdasPass(DataStream<FunctionPtr> *function_stream) :
+    function_stream(function_stream) {}
 
   VertexPtr on_enter_vertex(VertexPtr root) override {
     if (auto as_op_lambda = root.try_as<op_lambda>()) {
@@ -42,7 +42,7 @@ public:
     return root;
   }
 
-  static inline void run_if_lambdas_inside(FunctionPtr cloned_function, DataStream<FunctionPtr>* function_stream) {
+  static inline void run_if_lambdas_inside(FunctionPtr cloned_function, DataStream<FunctionPtr> *function_stream) {
     if (cloned_function->has_lambdas_inside) {
       CloneNestedLambdasPass pass(function_stream);
       run_function_pass(cloned_function, &pass);

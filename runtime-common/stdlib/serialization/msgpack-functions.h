@@ -14,9 +14,9 @@
 #include "runtime-common/stdlib/msgpack/unpacker.h"
 
 template<class T>
-Optional<string> f$msgpack_serialize(const T& value, string* out_err_msg = nullptr) noexcept {
-  auto& runtime_ctx{RuntimeContext::get()};
-  auto& str_buffer{runtime_ctx.static_SB.clean()};
+Optional<string> f$msgpack_serialize(const T &value, string *out_err_msg = nullptr) noexcept {
+  auto &runtime_ctx{RuntimeContext::get()};
+  auto &str_buffer{runtime_ctx.static_SB.clean()};
   php_assert(str_buffer.size() == 0);
 
   runtime_ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_ON;
@@ -42,7 +42,7 @@ Optional<string> f$msgpack_serialize(const T& value, string* out_err_msg = nullp
 
 namespace msgpack_functions_impl_ {
 template<class InstanceClass>
-Optional<string> common_instance_serialize(const class_instance<InstanceClass>& instance, string* out_err_msg) noexcept {
+Optional<string> common_instance_serialize(const class_instance<InstanceClass> &instance, string *out_err_msg) noexcept {
   vk::msgpack::packer_float32_decorator::clear();
   SerializationLibContext::get().instance_depth = 0;
   auto result = f$msgpack_serialize(instance, out_err_msg);
@@ -57,7 +57,7 @@ Optional<string> common_instance_serialize(const class_instance<InstanceClass>& 
 } // namespace msgpack_functions_impl_
 
 template<class InstanceClass>
-Optional<string> f$instance_serialize(const class_instance<InstanceClass>& instance) noexcept {
+Optional<string> f$instance_serialize(const class_instance<InstanceClass> &instance) noexcept {
   string err_msg;
   auto result = msgpack_functions_impl_::common_instance_serialize(instance, &err_msg);
   if (!err_msg.empty()) {

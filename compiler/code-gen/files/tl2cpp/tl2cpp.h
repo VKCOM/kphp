@@ -8,5 +8,5 @@
 #include "compiler/code-gen/code-generator.h"
 
 struct TlSchemaToCpp : CodeGenRootCmd {
-  void compile(CodeGenerator& W) const final;
+  void compile(CodeGenerator &W) const final;
 };

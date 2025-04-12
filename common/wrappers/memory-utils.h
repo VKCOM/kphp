@@ -19,15 +19,15 @@
   #define MADV_DONTDUMP 16
 #endif
 
-inline int our_madvise(void* addr, size_t len, int advice) noexcept {
+inline int our_madvise(void *addr, size_t len, int advice) noexcept {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
   return static_cast<int>(syscall(SYS_madvise, addr, len, advice));
 #pragma GCC diagnostic pop
 }
 
-inline void* mmap_shared(size_t size, int fd = -1) noexcept {
-  void* mem = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED | (fd == -1 ? MAP_ANONYMOUS : 0), fd, 0);
+inline void *mmap_shared(size_t size, int fd = -1) noexcept {
+  void *mem = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED | (fd == -1 ? MAP_ANONYMOUS : 0), fd, 0);
   assert(mem);
   assert(mem != MAP_FAILED);
   return mem;

@@ -10,13 +10,13 @@
 #include "runtime-common/core/utils/small-object-storage.h"
 #include "runtime/exception.h"
 
-extern const char* last_wait_error;
+extern const char *last_wait_error;
 
 struct thrown_exception {
   Throwable exception;
   thrown_exception() = default;
   explicit thrown_exception(Throwable exception) noexcept
-      : exception(std::move(exception)) {}
+    : exception(std::move(exception)) {}
 };
 
 class Storage {
@@ -41,7 +41,7 @@ public:
   template<typename T>
   struct loader {
     static_assert(!std::is_same<T, int>{}, "int is forbidden");
-    using loader_fun = T (*)(storage_ptr&);
+    using loader_fun = T (*)(storage_ptr &);
     static loader_fun get_function(int tag) noexcept;
   };
 
@@ -68,7 +68,7 @@ public:
 
 template<class X, class Y>
 struct Storage::load_implementation_helper<X, Y, std::false_type> {
-  static Y load(storage_ptr&) noexcept {
+  static Y load(storage_ptr &) noexcept {
     php_assert(0); // should be never called in runtime, used just to prevent compilation errors
     return Y();
   }
@@ -79,8 +79,8 @@ struct Storage::load_implementation_helper<X, Y, std::true_type> {
   static_assert(!std::is_same<X, int>{}, "int is forbidden");
   static_assert(!std::is_same<Y, int>{}, "int is forbidden");
 
-  static Y load(storage_ptr& storage) noexcept {
-    X* data = storage.get<X>();
+  static Y load(storage_ptr &storage) noexcept {
+    X *data = storage.get<X>();
     Y result = std::move(*data);
     storage.destroy<X>();
     return result;
@@ -89,14 +89,14 @@ struct Storage::load_implementation_helper<X, Y, std::true_type> {
 
 template<>
 struct Storage::load_implementation_helper<void, void, std::true_type> {
-  static void load(storage_ptr&) noexcept {}
+  static void load(storage_ptr &) noexcept {}
 };
 
 template<typename T>
 struct Storage::load_implementation_helper<T, void, std::false_type> {
   static_assert(!std::is_same<T, int>{}, "int is forbidden");
 
-  static void load(storage_ptr& storage) noexcept {
+  static void load(storage_ptr &storage) noexcept {
     Storage::load_implementation_helper<T, T>::load(storage);
   }
 };
@@ -105,7 +105,7 @@ template<class Y>
 struct Storage::load_implementation_helper<thrown_exception, Y, std::false_type> {
   static_assert(!std::is_same<Y, int>{}, "int is forbidden");
 
-  static Y load(storage_ptr& storage) noexcept {
+  static Y load(storage_ptr &storage) noexcept {
     php_assert(CurException.is_null());
     CurException = load_implementation_helper<thrown_exception, thrown_exception>::load(storage).exception;
     return Y();
@@ -114,7 +114,7 @@ struct Storage::load_implementation_helper<thrown_exception, Y, std::false_type>
 
 template<>
 struct Storage::load_implementation_helper<thrown_exception, void, std::false_type> {
-  static void load(storage_ptr& storage) noexcept {
+  static void load(storage_ptr &storage) noexcept {
     php_assert(CurException.is_null());
     CurException = load_implementation_helper<thrown_exception, thrown_exception>::load(storage).exception;
   }

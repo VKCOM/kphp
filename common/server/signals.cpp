@@ -21,7 +21,7 @@
 #include "common/server/engine-settings.h"
 #include "common/version-string.h"
 
-// TODO: it's strange file for it
+//TODO: it's strange file for it
 int daemonize;
 
 OPTION_PARSER_SHORT(OPT_GENERIC, "daemonize", 'd', optional_argument, "changes between daemonize/not daemonize mode") {
@@ -33,7 +33,7 @@ OPTION_PARSER_SHORT(OPT_GENERIC, "daemonize", 'd', optional_argument, "changes b
   return 0;
 }
 
-static void write_to_stderr(const char* str, bool first = false) {
+static void write_to_stderr(const char *str, bool first = false) {
   if (first) {
     kwrite(STDERR_FILENO, str, strlen(str));
   } else {
@@ -51,12 +51,12 @@ void print_backtrace() {
     return;
   }
   double_print_backtrace_guard = 1;
-  void* buffer[64];
+  void *buffer[64];
   int nptrs = backtrace(buffer, 64);
   kwrite(STDERR_FILENO, "\n------- Stack Backtrace -------\n", 33);
   backtrace_symbols_fd(buffer, nptrs, 2);
   kwrite(STDERR_FILENO, "-------------------------------\n", 32);
-  const char* version_string = get_version_string();
+  const char *version_string = get_version_string();
   int l = strlen(version_string);
   kwrite(STDERR_FILENO, version_string, l);
   kwrite(STDERR_FILENO, "\n", 1);
@@ -77,7 +77,7 @@ void kill_main() {
 }
 
 static void dump_stats() {
-  const char* buf = nullptr;
+  const char *buf = nullptr;
   if (engine_settings_handlers.char_stats) {
     buf = engine_settings_handlers.char_stats();
   }
@@ -86,110 +86,55 @@ static void dump_stats() {
   }
 }
 
-const char* signal_shortname(int sig) {
+const char *signal_shortname(int sig) {
   switch (sig) {
-  case SIGHUP:
-    return "SIGHUP";
-  case SIGINT:
-    return "SIGINT";
-  case SIGQUIT:
-    return "SIGQUIT";
-  case SIGILL:
-    return "SIGILL";
-  case SIGTRAP:
-    return "SIGTRAP";
-  case SIGABRT:
-    return "SIGABRT";
-  case SIGBUS:
-    return "SIGBUS";
-  case SIGFPE:
-    return "SIGFPE";
-  case SIGKILL:
-    return "SIGKILL";
-  case SIGUSR1:
-    return "SIGUSR1";
-  case SIGSEGV:
-    return "SIGSEGV";
-  case SIGUSR2:
-    return "SIGUSR2";
-  case SIGPIPE:
-    return "SIGPIPE";
-  case SIGALRM:
-    return "SIGALRM";
-  case SIGTERM:
-    return "SIGTERM";
-  case SIGCHLD:
-    return "SIGCHLD";
-  case SIGCONT:
-    return "SIGCONT";
-  case SIGSTOP:
-    return "SIGSTOP";
-  case SIGTSTP:
-    return "SIGTSTP";
-  case SIGTTIN:
-    return "SIGTTIN";
-  case SIGTTOU:
-    return "SIGTTOU";
-  case SIGURG:
-    return "SIGURG";
-  case SIGXCPU:
-    return "SIGXCPU";
-  case SIGXFSZ:
-    return "SIGXFSZ";
-  case SIGVTALRM:
-    return "SIGVTALRM";
-  case SIGPROF:
-    return "SIGPROF";
-  case SIGWINCH:
-    return "SIGWINCH";
-  case SIGIO:
-    return "SIGIO";
-  case SIGSYS:
-    return "SIGSYS";
-  default: {
+    case SIGHUP: return "SIGHUP";
+    case SIGINT: return "SIGINT";
+    case SIGQUIT: return "SIGQUIT";
+    case SIGILL: return "SIGILL";
+    case SIGTRAP: return "SIGTRAP";
+    case SIGABRT: return "SIGABRT";
+    case SIGBUS: return "SIGBUS";
+    case SIGFPE: return "SIGFPE";
+    case SIGKILL: return "SIGKILL";
+    case SIGUSR1: return "SIGUSR1";
+    case SIGSEGV: return "SIGSEGV";
+    case SIGUSR2: return "SIGUSR2";
+    case SIGPIPE: return "SIGPIPE";
+    case SIGALRM: return "SIGALRM";
+    case SIGTERM: return "SIGTERM";
+    case SIGCHLD: return "SIGCHLD";
+    case SIGCONT: return "SIGCONT";
+    case SIGSTOP: return "SIGSTOP";
+    case SIGTSTP: return "SIGTSTP";
+    case SIGTTIN: return "SIGTTIN";
+    case SIGTTOU: return "SIGTTOU";
+    case SIGURG: return "SIGURG";
+    case SIGXCPU: return "SIGXCPU";
+    case SIGXFSZ: return "SIGXFSZ";
+    case SIGVTALRM: return "SIGVTALRM";
+    case SIGPROF: return "SIGPROF";
+    case SIGWINCH: return "SIGWINCH";
+    case SIGIO: return "SIGIO";
+    case SIGSYS: return "SIGSYS";
+    default: {
 #if !defined(__APPLE__)
-    if (sig == SIGPWR) {
-      return "SIGPWR";
-    }
-    if (sig == SIGSTKFLT) {
-      return "SIGSTKFLT";
-    }
-    if (sig == SIGRTMAX - 0) {
-      return "SIGRTMAX";
-    }
-    if (sig == SIGRTMAX - 1) {
-      return "SIGRTMAX-1";
-    }
-    if (sig == SIGRTMAX - 2) {
-      return "SIGRTMAX-2";
-    }
-    if (sig == SIGRTMAX - 3) {
-      return "SIGRTMAX-3";
-    }
-    if (sig == SIGRTMAX - 4) {
-      return "SIGRTMAX-4";
-    }
-    if (sig == SIGRTMAX - 5) {
-      return "SIGRTMAX-5";
-    }
-    if (sig == SIGRTMAX - 5) {
-      return "SIGRTMAX-5";
-    }
-    if (sig == SIGRTMAX - 6) {
-      return "SIGRTMAX-6";
-    }
-    if (sig == SIGRTMAX - 7) {
-      return "SIGRTMAX-7";
-    }
-    if (sig == SIGRTMAX - 8) {
-      return "SIGRTMAX-8";
-    }
-    if (sig == SIGRTMAX - 9) {
-      return "SIGRTMAX-9";
-    }
+      if (sig == SIGPWR) { return "SIGPWR"; }
+      if (sig == SIGSTKFLT) { return "SIGSTKFLT"; }
+      if (sig == SIGRTMAX - 0) { return "SIGRTMAX"; }
+      if (sig == SIGRTMAX - 1) { return "SIGRTMAX-1"; }
+      if (sig == SIGRTMAX - 2) { return "SIGRTMAX-2"; }
+      if (sig == SIGRTMAX - 3) { return "SIGRTMAX-3"; }
+      if (sig == SIGRTMAX - 4) { return "SIGRTMAX-4"; }
+      if (sig == SIGRTMAX - 5) { return "SIGRTMAX-5"; }
+      if (sig == SIGRTMAX - 5) { return "SIGRTMAX-5"; }
+      if (sig == SIGRTMAX - 6) { return "SIGRTMAX-6"; }
+      if (sig == SIGRTMAX - 7) { return "SIGRTMAX-7"; }
+      if (sig == SIGRTMAX - 8) { return "SIGRTMAX-8"; }
+      if (sig == SIGRTMAX - 9) { return "SIGRTMAX-9"; }
 #endif
-    break;
-  }
+      break;
+    }
   }
   return strsignal(sig);
 }
@@ -221,12 +166,12 @@ static int get_exit_code_from_signal(int sig) {
   return EXIT_FAILURE;
 }
 
-static void generic_debug_handler(int sig, siginfo_t* info, void* ucontext) {
+static void generic_debug_handler(int sig, siginfo_t *info, void *ucontext) {
   ksignal(sig, SIG_DFL);
   if (sig == SIGABRT) {
     dump_stats();
   }
-  const auto* name = signal_shortname(sig);
+  const auto *name = signal_shortname(sig);
   write_to_stderr(name, true);
   if (info->si_code == SI_USER) {
     write_to_stderr(" received from process ");
@@ -258,7 +203,7 @@ static void ksignal_ext(int sig, void (*handler)(int), int sa_flags) {
   }
 }
 
-static void ksignal_ext(int sig, void (*info)(int, siginfo_t*, void*), int sa_flags) {
+static void ksignal_ext(int sig, void (*info)(int, siginfo_t *, void *), int sa_flags) {
   struct sigaction act;
   sigemptyset(&act.sa_mask);
   act.sa_flags = sa_flags | SA_SIGINFO;
@@ -271,7 +216,7 @@ static void ksignal_ext(int sig, void (*info)(int, siginfo_t*, void*), int sa_fl
   }
 }
 
-// can be called inside signal handler
+//can be called inside signal handler
 void ksignal(int sig, void (*handler)(int)) {
   ksignal_ext(sig, handler, SA_ONSTACK | SA_RESTART);
 }
@@ -280,13 +225,14 @@ void ksignal_intr(int sig, void (*handler)(int)) {
   ksignal_ext(sig, handler, SA_ONSTACK);
 }
 
-void ksignal(int sig, void (*info)(int, siginfo_t*, void*)) {
+void ksignal(int sig, void (*info)(int, siginfo_t *, void *)) {
   ksignal_ext(sig, info, SA_ONSTACK | SA_RESTART);
 }
 
-void ksignal_intr(int sig, void (*info)(int, siginfo_t*, void*)) {
+void ksignal_intr(int sig, void (*info)(int, siginfo_t *, void *)) {
   ksignal_ext(sig, info, SA_ONSTACK);
 }
+
 
 void set_debug_handlers(bool save_signal_in_exit_code_) {
   save_signal_in_exit_code = save_signal_in_exit_code_;
@@ -315,7 +261,7 @@ void set_debug_handlers(bool save_signal_in_exit_code_) {
 
 volatile long long pending_signals;
 
-static void generic_immediate_stop_handler(int sig, siginfo_t* info, void*) {
+static void generic_immediate_stop_handler(int sig, siginfo_t *info, void *) {
   write_to_stderr(signal_shortname(sig), true);
   if (info->si_pid && info->si_pid != getpid()) {
     write_to_stderr(" received from");
@@ -327,7 +273,7 @@ static void generic_immediate_stop_handler(int sig, siginfo_t* info, void*) {
   _exit(EXIT_FAILURE);
 }
 
-static void generic_stop_handler(int sig, siginfo_t* info, void*) {
+static void generic_stop_handler(int sig, siginfo_t *info, void *) {
   write_to_stderr(signal_shortname(sig), true);
   if (info->si_pid && info->si_pid != getpid()) {
     write_to_stderr(" received from process ");
@@ -346,7 +292,7 @@ static void count_signal(int sig) {
   __sync_fetch_and_add(&signals_cnt[sig], 1);
 }
 
-static void generic_counting_handler(int sig, siginfo_t* info, void*) {
+static void generic_counting_handler(int sig, siginfo_t *info, void *) {
   write_to_stderr("got ", true);
   write_to_stderr(signal_shortname(sig));
   if (info->si_pid && info->si_pid != getpid()) {

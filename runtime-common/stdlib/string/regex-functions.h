@@ -6,4 +6,4 @@
 
 #include "runtime-common/core/runtime-core.h"
 
-string f$preg_quote(const string& str, const string& delimiter = {}) noexcept;
+string f$preg_quote(const string &str, const string &delimiter = {}) noexcept;

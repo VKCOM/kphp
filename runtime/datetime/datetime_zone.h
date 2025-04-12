@@ -17,7 +17,7 @@ struct C$DateTimeZone : public refcountable_polymorphic_php_classes_virt<>, priv
 
   string timezone;
 
-  virtual const char* get_class() const noexcept {
+  virtual const char *get_class() const noexcept {
     return R"(DateTimeZone)";
   }
 
@@ -29,5 +29,5 @@ struct C$DateTimeZone : public refcountable_polymorphic_php_classes_virt<>, priv
   ~C$DateTimeZone() override = default;
 };
 
-class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone>& self, const string& timezone) noexcept;
-string f$DateTimeZone$$getName(const class_instance<C$DateTimeZone>& self) noexcept;
+class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone> &self, const string &timezone) noexcept;
+string f$DateTimeZone$$getName(const class_instance<C$DateTimeZone> &self) noexcept;

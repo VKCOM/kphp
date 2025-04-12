@@ -16,5 +16,5 @@ public:
   using ReadyFunctionPtr = FunctionPtr;
   using OStreamT = MultipleDataStreams<ReadyFunctionPtr, SrcFilePtr, FunctionPtr, ClassPtr>;
 
-  void execute(FunctionPtr function, OStreamT& os);
+  void execute(FunctionPtr function, OStreamT &os);
 };

@@ -12,8 +12,8 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/file/resource.h"
 
-resource f$fopen(const string& filename, [[maybe_unused]] const string& mode, [[maybe_unused]] bool use_include_path,
-                 [[maybe_unused]] const resource& context) noexcept {
+resource f$fopen(const string &filename, [[maybe_unused]] const string &mode, [[maybe_unused]] bool use_include_path,
+                 [[maybe_unused]] const resource &context) noexcept {
   underlying_resource_t rsrc{{filename.c_str(), filename.size()}};
   if (rsrc.last_errc != k2::errno_ok) [[unlikely]] {
     php_warning("cannot fopen %s", filename.c_str());
@@ -23,8 +23,8 @@ resource f$fopen(const string& filename, [[maybe_unused]] const string& mode, [[
   return f$to_mixed(make_instance<underlying_resource_t>(std::move(rsrc)));
 }
 
-resource f$stream_socket_client(const string& address, mixed& error_code, [[maybe_unused]] mixed& error_message, [[maybe_unused]] double timeout,
-                                [[maybe_unused]] int64_t flags, [[maybe_unused]] const resource& context) noexcept {
+resource f$stream_socket_client(const string &address, mixed &error_code, [[maybe_unused]] mixed &error_message, [[maybe_unused]] double timeout,
+                                [[maybe_unused]] int64_t flags, [[maybe_unused]] const resource &context) noexcept {
   /*
    * TODO: Here should be waiting with timeout,
    *       but it can't be expressed simple ways by awaitables since we blocked inside k2
@@ -43,7 +43,7 @@ resource f$stream_socket_client(const string& address, mixed& error_code, [[mayb
   return f$to_mixed(make_instance<underlying_resource_t>(std::move(rsrc)));
 }
 
-Optional<string> f$file_get_contents(const string& stream) noexcept {
+Optional<string> f$file_get_contents(const string &stream) noexcept {
   underlying_resource_t rsrc{{stream.c_str(), stream.size()}};
   if (rsrc.last_errc != k2::errno_ok) [[unlikely]] {
     return false;
@@ -61,7 +61,7 @@ kphp::coro::task<Optional<int64_t>> f$fwrite(resource stream, string text) noexc
   co_return co_await rsrc.get()->write({text.c_str(), text.size()});
 }
 
-bool f$fflush(const resource& stream) noexcept {
+bool f$fflush(const resource &stream) noexcept {
   auto rsrc{from_mixed<class_instance<underlying_resource_t>>(stream, {})};
   if (rsrc.is_null()) [[unlikely]] {
     php_warning("wrong resource in fflush %s", stream.to_string().c_str());
@@ -72,7 +72,7 @@ bool f$fflush(const resource& stream) noexcept {
   return true;
 }
 
-bool f$fclose(const resource& stream) noexcept {
+bool f$fclose(const resource &stream) noexcept {
   auto rsrc{from_mixed<class_instance<underlying_resource_t>>(stream, {})};
   if (rsrc.is_null()) [[unlikely]] {
     php_warning("wrong resource in fclose: %s", stream.to_string().c_str());

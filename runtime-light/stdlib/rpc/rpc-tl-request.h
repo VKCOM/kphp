@@ -15,7 +15,7 @@ class RpcRequestResult : public ScriptAllocatorManaged {
 public:
   const bool is_typed{};
 
-  RpcRequestResult(bool is_typed, std::unique_ptr<tl_func_base>&& result_fetcher);
+  RpcRequestResult(bool is_typed, std::unique_ptr<tl_func_base> &&result_fetcher);
 
   bool empty() const;
 
@@ -35,7 +35,7 @@ public:
 
   bool empty() const;
 
-  const class_instance<C$VK$TL$RpcFunction>& get_tl_function() const;
+  const class_instance<C$VK$TL$RpcFunction> &get_tl_function() const;
 
   virtual std::unique_ptr<RpcRequestResult> store_request() const = 0;
   virtual ~RpcRequest() = default;
@@ -48,7 +48,7 @@ class RpcRequestResultUntyped final : public RpcRequestResult {
 public:
   using RpcRequestResult::RpcRequestResult;
 
-  explicit RpcRequestResultUntyped(std::unique_ptr<tl_func_base>&& result_fetcher);
+  explicit RpcRequestResultUntyped(std::unique_ptr<tl_func_base> &&result_fetcher);
 
   class_instance<C$VK$TL$RpcResponse> fetch_typed_response() final;
 

@@ -17,9 +17,9 @@
 
 namespace vk {
 namespace tlo_parsing {
-tlo_parser::tlo_parser(const char* tlo_path)
-    : pos(0) {
-  FILE* f = std::fopen(tlo_path, "rb");
+tlo_parser::tlo_parser(const char *tlo_path) :
+  pos(0) {
+  FILE *f = std::fopen(tlo_path, "rb");
   if (f == nullptr) {
     error("%s", strerror(errno));
     return;
@@ -41,11 +41,11 @@ tlo_parser::tlo_parser(const char* tlo_path)
 
 std::string tlo_parser::get_string() {
   check_pos(4);
-  size_t len = *reinterpret_cast<unsigned char*>(data.data() + pos);
+  size_t len = *reinterpret_cast<unsigned char *>(data.data() + pos);
   if (len < 254) {
     pos += 1;
   } else {
-    len = *reinterpret_cast<unsigned int*>(data.data() + pos);
+    len = *reinterpret_cast<unsigned int *>(data.data() + pos);
     pos += 4;
   }
   check_pos(len);
@@ -56,80 +56,80 @@ std::string tlo_parser::get_string() {
 }
 
 void tlo_parser::check_pos(size_t size) {
-  assert(pos + size <= len);
+  assert (pos + size <= len);
 }
 
 std::unique_ptr<type_expr_base> tlo_parser::read_type_expr() {
   auto magic = get_value<unsigned int>();
   switch (magic) {
-  case TL_TLS_TYPE_VAR: {
-    return std::make_unique<type_var>(this);
-  }
-  case TL_TLS_TYPE_EXPR: {
-    return std::make_unique<type_expr>(this);
-  }
-  case TL_TLS_ARRAY: {
-    return std::make_unique<type_array>(this);
-  }
-  default: {
-    error("Unexpected type_expr magic: %08x", magic);
-    return nullptr;
-  }
+    case TL_TLS_TYPE_VAR: {
+      return std::make_unique<type_var>(this);
+    }
+    case TL_TLS_TYPE_EXPR: {
+      return std::make_unique<type_expr>(this);
+    }
+    case TL_TLS_ARRAY: {
+      return std::make_unique<type_array>(this);
+    }
+    default: {
+      error("Unexpected type_expr magic: %08x", magic);
+      return nullptr;
+    }
   }
 }
 
 std::unique_ptr<nat_expr_base> tlo_parser::read_nat_expr() {
   auto magic = get_value<unsigned int>();
   switch (magic) {
-  case TL_TLS_EXPR_NAT: // Legacy typo fix
-  case TL_TLS_NAT_CONST: {
-    return std::make_unique<nat_const>(this);
-  }
-  case TL_TLS_NAT_VAR: {
-    return std::make_unique<nat_var>(this);
-  }
-  default: {
-    error("Unexpected nat_expr magic: %08x", magic);
-    return nullptr;
-  }
+    case TL_TLS_EXPR_NAT: // Legacy typo fix
+    case TL_TLS_NAT_CONST: {
+      return std::make_unique<nat_const>(this);
+    }
+    case TL_TLS_NAT_VAR: {
+      return std::make_unique<nat_var>(this);
+    }
+    default: {
+      error("Unexpected nat_expr magic: %08x", magic);
+      return nullptr;
+    }
   }
 }
 
 std::unique_ptr<expr_base> tlo_parser::read_expr() {
   auto magic = get_value<unsigned int>();
   switch (magic) {
-  case TL_TLS_EXPR_NAT: {
-    return read_nat_expr();
-  }
-  case TL_TLS_EXPR_TYPE: {
-    return read_type_expr();
-  }
-  default: {
-    error("Unexpected expr magic: %08x", magic);
-    return nullptr;
-  }
+    case TL_TLS_EXPR_NAT: {
+      return read_nat_expr();
+    }
+    case TL_TLS_EXPR_TYPE: {
+      return read_type_expr();
+    }
+    default: {
+      error("Unexpected expr magic: %08x", magic);
+      return nullptr;
+    }
   }
 }
 
 void tlo_parser::get_schema_version() {
   auto v = get_value<unsigned int>();
   switch (v) {
-  case TL_TLS_SCHEMA_V4: {
-    tl_sch->scheme_version = 4;
-    return;
-  }
-  case TL_TLS_SCHEMA_V3: {
-    tl_sch->scheme_version = 3;
-    return;
-  }
-  case TL_TLS_SCHEMA_V2: {
-    tl_sch->scheme_version = 2;
-    return;
-  }
-  default: {
-    error("Unexpected tl-scheme version %u", v);
-    return;
-  }
+    case TL_TLS_SCHEMA_V4: {
+      tl_sch->scheme_version = 4;
+      return;
+    }
+    case TL_TLS_SCHEMA_V3: {
+      tl_sch->scheme_version = 3;
+      return;
+    }
+    case TL_TLS_SCHEMA_V2: {
+      tl_sch->scheme_version = 2;
+      return;
+    }
+    default: {
+      error("Unexpected tl-scheme version %u", v);
+      return;
+    }
   }
 }
 
@@ -181,11 +181,11 @@ void tlo_parser::get_functions(bool rename_all_forbidden_names) {
   }
 }
 
-void tlo_parser::error(const char* format, ...) {
+void tlo_parser::error(const char *format, ...) {
   constexpr size_t BUFF_SZ = 1024;
   char buff[BUFF_SZ];
   va_list args;
-  va_start(args, format);
+  va_start (args, format);
   int sz = vsnprintf(buff, BUFF_SZ, format, args);
   std::string error_msg = std::string(buff, static_cast<size_t>(sz));
   va_end(args);
@@ -193,10 +193,10 @@ void tlo_parser::error(const char* format, ...) {
 }
 
 TLOParsingResult::TLOParsingResult() = default;
-TLOParsingResult::TLOParsingResult(TLOParsingResult&&) = default;
+TLOParsingResult::TLOParsingResult(TLOParsingResult &&) = default;
 TLOParsingResult::~TLOParsingResult() = default;
 
-TLOParsingResult parse_tlo(const char* tlo_path, bool rename_all_forbidden_names) {
+TLOParsingResult parse_tlo(const char *tlo_path, bool rename_all_forbidden_names) {
   TLOParsingResult result;
   try {
     tlo_parser reader{tlo_path};
@@ -206,26 +206,30 @@ TLOParsingResult parse_tlo(const char* tlo_path, bool rename_all_forbidden_names
     reader.get_types(rename_all_forbidden_names);
     reader.get_constructors(rename_all_forbidden_names);
     reader.get_functions(rename_all_forbidden_names);
-    for (auto& item : reader.tl_sch->types) {
+    for (auto &item : reader.tl_sch->types) {
       reader.tl_sch->magics[item.second->name] = item.first;
-      for (auto& ctor : item.second->constructors) {
+      for (auto &ctor : item.second->constructors) {
         reader.tl_sch->magics[ctor->name] = ctor->id;
         reader.tl_sch->owner_type_magics[ctor->id] = item.second->id;
       }
     }
-    for (auto& item : reader.tl_sch->functions) {
+    for (auto &item : reader.tl_sch->functions) {
       reader.tl_sch->magics[item.second->name] = item.first;
     }
     result.parsed_schema = std::move(reader.tl_sch);
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     result.error = e.what();
   }
   return result;
 }
 
-void rename_tl_name_if_forbidden(std::string& tl_name) {
+void rename_tl_name_if_forbidden(std::string &tl_name) {
   static const std::unordered_map<std::string, std::string> RENAMING_MAP = {
-      {"ReqResult", "RpcResponse"}, {"_", "rpcResponseOk"}, {"reqResultHeader", "rpcResponseHeader"}, {"reqError", "rpcResponseError"}};
+    {"ReqResult",       "RpcResponse"},
+    {"_",               "rpcResponseOk"},
+    {"reqResultHeader", "rpcResponseHeader"},
+    {"reqError",        "rpcResponseError"}
+  };
   auto it = RENAMING_MAP.find(tl_name);
   if (it != RENAMING_MAP.end()) {
     tl_name = it->second;

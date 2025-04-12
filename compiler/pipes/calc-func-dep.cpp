@@ -25,9 +25,9 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     }
 
     // There are 117 callbacks was passed to internal functions which throw exception
-    // bool extern_func_throws_exception = local->extern_func_call->get_func_id()->can_throw;
-    // bool callback_throws = !callback_passed_to_extern_func->can_throw;
-    // if (callback_throws && !extern_func_throws_exception) {
+    //bool extern_func_throws_exception = local->extern_func_call->get_func_id()->can_throw;
+    //bool callback_throws = !callback_passed_to_extern_func->can_throw;
+    //if (callback_throws && !extern_func_throws_exception) {
     //  kphp_error(false, "It's not allowed to throw exception in callback which was passed to internal function");
     //}
   }
@@ -47,7 +47,7 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     current_function->class_dep.insert(klass);
   }
 
-  // NB: There is no user functions in default values of any kind.
+  //NB: There is no user functions in default values of any kind.
   if (auto call = vertex.try_as<op_func_call>()) {
     FunctionPtr other_function = call->func_id;
     // instead of just
@@ -58,14 +58,14 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     // 2) build resumable call graph — to propagate resumable state and to calc resumable chains
     // 3) build interruptible call graph - calc interruptible chains
     // adding all built-in calls won't affect codegen, it will just overhead call graphs and execution time
-    if (!other_function->is_extern() || other_function->is_resumable || other_function->is_imported_from_static_lib() || other_function->is_interruptible ||
-        other_function->need_generated_stub) {
+    if (!other_function->is_extern() || other_function->is_resumable || other_function->is_imported_from_static_lib()
+      || other_function->is_interruptible || other_function->need_generated_stub) {
       data.dep.push_back(other_function);
     }
     calls.push_back(other_function);
     if (other_function->is_extern()) {
       if (other_function->cpp_template_call) {
-        const auto* tp = tinf::get_type(call);
+        const auto *tp = tinf::get_type(call);
         if (auto klass = tp->class_type()) {
           current_function->class_dep.insert(klass);
         }
@@ -79,16 +79,16 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
     }
 
     int cnt_func_params = other_function->param_ids.size();
-    if (other_function->has_variadic_param) {
+    if(other_function->has_variadic_param) {
       cnt_func_params--;
     }
     cnt_func_params = std::min(cnt_func_params, static_cast<int>(call->args().size()));
     for (int ii = 0; ii < cnt_func_params; ++ii) {
       auto val = call->args()[ii];
       VarPtr to_var = other_function->param_ids[ii];
-      if (to_var->is_reference) { // passed as reference
+      if (to_var->is_reference) { //passed as reference
         while (val->type() == op_index) {
-          val = val.as<op_index>()->array(); // from $a['b'] extract $a
+          val = val.as<op_index>()->array();    // from $a['b'] extract $a
         }
         VarPtr from_var = (val->type() == op_var ? val.as<op_var>()->var_id : val.as<op_instance_prop>()->var_id);
         if (from_var->is_in_global_scope()) {
@@ -103,8 +103,8 @@ VertexPtr CalcFuncDepPass::on_enter_vertex(VertexPtr vertex) {
   } else if (auto var_vertex = vertex.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
     // here we add var for later ub check; we store only vars that can potentially lead to ub, see check-ub.cpp
-    if ((var->is_global_var() || var->is_class_static_var()) &&               // only globals (not even static inside functions)
-        vertex->rl_type == val_l &&                                           // only modified in one way or another
+    if ((var->is_global_var() || var->is_class_static_var()) &&   // only globals (not even static inside functions)
+        vertex->rl_type == val_l &&                               // only modified in one way or another
         vk::any_of_equal(tinf::get_type(var)->ptype(), tp_array, tp_mixed)) { // only indexable that can be ref-passed
       data.modified_global_vars.push_back(var);
     }
@@ -136,6 +136,7 @@ VertexPtr CalcFuncDepPass::on_exit_vertex(VertexPtr vertex) {
 
   return vertex;
 }
+
 
 DepData CalcFuncDepPass::get_data() {
   my_unique(&data.dep);

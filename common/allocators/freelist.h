@@ -16,9 +16,9 @@ struct freelist {
 };
 typedef struct freelist freelist_t;
 
-void freelist_init(freelist_t* freelist);
-void* freelist_get(freelist_t* freelist);
-bool freelist_try_put(freelist_t* freelist, void* ptr);
-void freelist_put(freelist_t* freelist, void* ptr);
+void freelist_init(freelist_t *freelist);
+void *freelist_get(freelist_t *freelist);
+bool freelist_try_put(freelist_t *freelist, void *ptr);
+void freelist_put(freelist_t *freelist, void *ptr);
 
 #endif // KDB_COMMON_ALLOCATORS_FREELIST_H

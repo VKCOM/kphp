@@ -6,6 +6,6 @@
 
 #include "runtime-light/state/instance-state.h"
 
-ForkInstanceState& ForkInstanceState::get() noexcept {
+ForkInstanceState &ForkInstanceState::get() noexcept {
   return InstanceState::get().fork_instance_state;
 }

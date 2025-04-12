@@ -11,7 +11,7 @@
 #include "compiler/data/function-data.h"
 #include "compiler/pipes/calc-real-defines-values.h"
 
-void CheckAbstractFunctionDefaults::execute(FunctionPtr interface_function, DataStream<FunctionPtr>& os) {
+void CheckAbstractFunctionDefaults::execute(FunctionPtr interface_function, DataStream<FunctionPtr> &os) {
   stage::set_function(interface_function);
   auto forward_function_next = vk::finally([&] { os << interface_function; });
 
@@ -29,7 +29,7 @@ void CheckAbstractFunctionDefaults::execute(FunctionPtr interface_function, Data
 
   auto interface_params = interface_function->get_params();
   for (auto derived_class : interface_function->class_id->get_all_derived_classes()) {
-    auto* derived_method = derived_class->members.get_instance_method(interface_function->local_name());
+    auto *derived_method = derived_class->members.get_instance_method(interface_function->local_name());
     if (!derived_method || derived_method->function == interface_function) {
       continue;
     }

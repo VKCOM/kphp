@@ -32,18 +32,18 @@ void CollectForkableTypesPass::on_finish() {
   }
 }
 
-void ForkableTypeStorage::add_types(const std::vector<const TypeData*>& waitable_types, const std::vector<const TypeData*>& forkable_types) noexcept {
+void ForkableTypeStorage::add_types(const std::vector<const TypeData *> &waitable_types, const std::vector<const TypeData *> &forkable_types) noexcept {
   std::lock_guard<std::mutex> lock{mutex_};
   waitable_types_.insert(waitable_types_.end(), waitable_types.begin(), waitable_types.end());
   forkable_types_.insert(forkable_types_.end(), forkable_types.begin(), forkable_types.end());
 }
 
-std::vector<const TypeData*> ForkableTypeStorage::flush_waitable_types() noexcept {
+std::vector<const TypeData *> ForkableTypeStorage::flush_waitable_types() noexcept {
   std::lock_guard<std::mutex> lock{mutex_};
   return std::move(waitable_types_);
 }
 
-std::vector<const TypeData*> ForkableTypeStorage::flush_forkable_types() noexcept {
+std::vector<const TypeData *> ForkableTypeStorage::flush_forkable_types() noexcept {
   std::lock_guard<std::mutex> lock{mutex_};
   return std::move(forkable_types_);
 }

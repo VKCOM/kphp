@@ -14,17 +14,17 @@ struct sync_node_tag {
 };
 
 template<size_t id>
-struct use_nth_output_tag {};
+struct use_nth_output_tag {
+};
 
 template<class PipeT, bool parallel, bool unique>
 class pipe_creator;
 
 template<class PipeT, bool parallel>
 class pipe_creator<PipeT, parallel, true> {
-  static PipeT* pipe;
-
+  static PipeT *pipe;
 public:
-  static PipeT* get() {
+  static PipeT *get() {
     if (pipe == nullptr) {
       pipe = new PipeT(parallel);
     }
@@ -33,19 +33,21 @@ public:
 };
 
 template<class PipeT, bool parallel>
-PipeT* pipe_creator<PipeT, parallel, true>::pipe = nullptr;
+PipeT *pipe_creator<PipeT, parallel, true>::pipe = nullptr;
 
 template<class PipeT, bool parallel>
 class pipe_creator<PipeT, parallel, false> {
 public:
-  static PipeT* get() {
+  static PipeT *get() {
     return new PipeT(parallel);
   }
 };
 
+
 template<class PipeT, bool parallel = true, bool unique = true>
 struct pipe_creator_tag : pipe_creator<PipeT, parallel, unique> {
   static_assert(!PipeT::pipe_fun_have_on_finish::value, "Non-sync pipe mustn't have on_finish function");
+
 };
 
 template<class PipeT, bool parallel = true, bool unique = true>
@@ -56,12 +58,13 @@ struct sync_pipe_creator_tag : pipe_creator<PipeT, parallel, unique> {
 template<class StreamT>
 class SC_Pipe {
 private:
-  SchedulerBase* scheduler;
-  StreamT*& previous_output_stream;
-  Node* previous_node;
+  SchedulerBase *scheduler;
+  StreamT *&previous_output_stream;
+  Node *previous_node;
 
 private:
-  static void connect(StreamT*& first_stream, StreamT*& second_stream) {
+
+  static void connect(StreamT *&first_stream, StreamT *&second_stream) {
     if (first_stream != nullptr && second_stream != nullptr) {
       assert(first_stream == second_stream);
       return;
@@ -78,23 +81,23 @@ private:
   }
 
   template<class NextPipeT>
-  SC_Pipe<typename NextPipeT::OutputStreamType> operator>>(NextPipeT& next_pipe) {
+  SC_Pipe<typename NextPipeT::OutputStreamType> operator>>(NextPipeT &next_pipe) {
     connect(previous_output_stream, next_pipe.get_input_stream());
     next_pipe.init_output_stream_if_not_inited();
     return {scheduler, &next_pipe};
   }
 
 public:
-  SC_Pipe(SchedulerBase* scheduler, StreamT*& stream, Node* previous_node)
-      : scheduler(scheduler),
-        previous_output_stream(stream),
-        previous_node(previous_node) {}
+  SC_Pipe(SchedulerBase *scheduler, StreamT *&stream, Node *previous_node) :
+    scheduler(scheduler),
+    previous_output_stream(stream),
+    previous_node(previous_node) {}
 
   template<class PipeT>
-  SC_Pipe(SchedulerBase* scheduler, PipeT* pipe)
-      : scheduler(scheduler),
-        previous_output_stream(pipe->get_output_stream()),
-        previous_node(pipe) {
+  SC_Pipe(SchedulerBase *scheduler, PipeT *pipe) :
+    scheduler(scheduler),
+    previous_output_stream(pipe->get_output_stream()),
+    previous_node(pipe) {
     pipe->add_to_scheduler(scheduler);
   }
 
@@ -116,14 +119,16 @@ public:
 
   template<size_t id>
   SC_Pipe<ConcreteIndexedStream<id, StreamT>> operator>>(use_nth_output_tag<id>) {
-    return SC_Pipe<ConcreteIndexedStream<id, StreamT>>{scheduler, previous_output_stream->template project_to_nth_data_stream<id>(), previous_node};
+    return SC_Pipe<ConcreteIndexedStream<id, StreamT>>
+      {scheduler, previous_output_stream->template project_to_nth_data_stream<id>(), previous_node};
   }
+
 };
 
 class SchedulerConstructor {
-  SchedulerBase* scheduler;
-
+  SchedulerBase *scheduler;
 public:
+
   template<typename NextPipeT, bool parallel, bool unique>
   SC_Pipe<typename NextPipeT::OutputStreamType> operator>>(pipe_creator<NextPipeT, parallel, unique>) {
     auto pipe = pipe_creator<NextPipeT, parallel, unique>::get();
@@ -134,6 +139,6 @@ public:
     return sc_pipe;
   }
 
-  explicit SchedulerConstructor(SchedulerBase* scheduler)
-      : scheduler(scheduler) {}
+  explicit SchedulerConstructor(SchedulerBase *scheduler) :
+    scheduler(scheduler) {}
 };

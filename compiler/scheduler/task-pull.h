@@ -11,15 +11,14 @@ class Task;
 
 class TaskPull : public Node {
 private:
-  DataStream<Task*> stream;
-
+  DataStream<Task *> stream;
 public:
-  inline void add_task(Task* task) {
+  inline void add_task(Task *task) {
     stream << task;
   }
 
-  Task* get_task() override {
-    Task* x = nullptr;
+  Task *get_task() override {
+    Task *x = nullptr;
     if (!stream.get(x)) {
       return nullptr;
     }

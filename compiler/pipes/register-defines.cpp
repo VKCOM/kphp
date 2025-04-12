@@ -16,7 +16,7 @@ VertexPtr RegisterDefinesPass::on_exit_vertex(VertexPtr root) {
 
     kphp_error_act(name->type() == op_string, "Define name should be a valid string", return root);
 
-    auto* data = new DefineData(name->get_string(), val, DefineData::def_unknown);
+    auto *data = new DefineData(name->get_string(), val, DefineData::def_unknown);
     data->file_id = stage::get_file();
     G->register_define(DefinePtr(data));
 

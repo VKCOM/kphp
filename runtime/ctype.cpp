@@ -7,9 +7,9 @@
 #include <algorithm>
 #include <cctype>
 
-static bool ctype_impl(const mixed& text, int (*iswhat)(int), bool allow_digits, bool allow_minus) noexcept {
+static bool ctype_impl(const mixed &text, int (*iswhat)(int), bool allow_digits, bool allow_minus) noexcept {
   if (text.is_string()) {
-    const string& str = text.as_string();
+    const string &str = text.as_string();
     if (str.empty()) {
       return false;
     }
@@ -32,46 +32,46 @@ static bool ctype_impl(const mixed& text, int (*iswhat)(int), bool allow_digits,
   return false;
 }
 
-bool f$ctype_alnum(const mixed& text) noexcept {
+bool f$ctype_alnum(const mixed &text) noexcept {
   return ctype_impl(text, std::isalnum, true, false);
 }
 
-bool f$ctype_alpha(const mixed& text) noexcept {
+bool f$ctype_alpha(const mixed &text) noexcept {
   return ctype_impl(text, std::isalpha, false, false);
 }
 
-bool f$ctype_cntrl(const mixed& text) noexcept {
+bool f$ctype_cntrl(const mixed &text) noexcept {
   return ctype_impl(text, std::iscntrl, false, false);
 }
 
-bool f$ctype_digit(const mixed& text) noexcept {
+bool f$ctype_digit(const mixed &text) noexcept {
   return ctype_impl(text, std::isdigit, true, false);
 }
 
-bool f$ctype_graph(const mixed& text) noexcept {
+bool f$ctype_graph(const mixed &text) noexcept {
   return ctype_impl(text, std::isgraph, true, true);
 }
 
-bool f$ctype_lower(const mixed& text) noexcept {
+bool f$ctype_lower(const mixed &text) noexcept {
   return ctype_impl(text, std::islower, false, false);
 }
 
-bool f$ctype_print(const mixed& text) noexcept {
+bool f$ctype_print(const mixed &text) noexcept {
   return ctype_impl(text, std::isprint, true, true);
 }
 
-bool f$ctype_punct(const mixed& text) noexcept {
+bool f$ctype_punct(const mixed &text) noexcept {
   return ctype_impl(text, std::ispunct, false, false);
 }
 
-bool f$ctype_space(const mixed& text) noexcept {
+bool f$ctype_space(const mixed &text) noexcept {
   return ctype_impl(text, std::isspace, false, false);
 }
 
-bool f$ctype_upper(const mixed& text) noexcept {
+bool f$ctype_upper(const mixed &text) noexcept {
   return ctype_impl(text, std::isupper, false, false);
 }
 
-bool f$ctype_xdigit(const mixed& text) noexcept {
+bool f$ctype_xdigit(const mixed &text) noexcept {
   return ctype_impl(text, std::isxdigit, true, false);
 }

@@ -3,8 +3,8 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <gtest/gtest.h>
-#include <iterator>
 #include <vector>
+#include <iterator>
 
 #include "common/algorithms/hashes.h"
 

@@ -18,7 +18,7 @@ public:
   virtual uint32_t get_refcnt() const noexcept = 0;
   virtual void set_refcnt(uint32_t new_refcnt) noexcept = 0;
 
-  virtual void* get_instance_data_raw_ptr() noexcept = 0;
+  virtual void *get_instance_data_raw_ptr() noexcept = 0;
 };
 
 template<class... Bases>
@@ -47,7 +47,7 @@ public:
     refcnt = new_refcnt;
   }
 
-  void* get_instance_data_raw_ptr() noexcept final {
+  void *get_instance_data_raw_ptr() noexcept final {
     return this;
   }
 
@@ -89,7 +89,7 @@ public:
     refcnt = new_refcnt;
   }
 
-  void* get_instance_data_raw_ptr() noexcept final {
+  void *get_instance_data_raw_ptr() noexcept final {
     return this;
   }
 
@@ -122,7 +122,7 @@ public:
        * we should have vptr for passing proper sizeof of Derived class, but we don't want to increase size of every class
        * therefore we use static_cast here
        */
-      delete static_cast<Derived*>(this);
+      delete static_cast<Derived *>(this);
     }
   }
 
@@ -130,7 +130,7 @@ public:
     refcnt = new_refcnt;
   }
 
-  void* get_instance_data_raw_ptr() noexcept {
+  void *get_instance_data_raw_ptr() noexcept {
     return this;
   }
 
@@ -146,5 +146,5 @@ public:
 
 struct may_be_mixed_base : public virtual abstract_refcountable_php_interface {
   ~may_be_mixed_base() override = default;
-  virtual const char* get_class() const noexcept = 0;
+  virtual const char *get_class() const noexcept = 0;
 };

@@ -14,8 +14,8 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-context.h"
 
-const char* get_mask(const string& what) noexcept {
-  auto& mask{StringLibContext::get().mask_buf};
+const char *get_mask(const string &what) noexcept {
+  auto &mask{StringLibContext::get().mask_buf};
   std::memset(mask.data(), 0, mask.size());
 
   int len = what.size();
@@ -34,11 +34,11 @@ const char* get_mask(const string& what) noexcept {
   return mask.data();
 }
 
-string f$addcslashes(const string& str, const string& what) noexcept {
-  const char* mask = get_mask(what);
+string f$addcslashes(const string &str, const string &what) noexcept {
+  const char *mask = get_mask(what);
 
   int len = str.size();
-  auto& static_SB = RuntimeContext::get().static_SB;
+  auto &static_SB = RuntimeContext::get().static_SB;
   static_SB.clean().reserve(4 * len);
 
   for (int i = 0; i < len; i++) {
@@ -47,31 +47,31 @@ string f$addcslashes(const string& str, const string& what) noexcept {
       static_SB.append_char('\\');
       if (c < 32 || c > 126) {
         switch (c) {
-        case '\n':
-          static_SB.append_char('n');
-          break;
-        case '\t':
-          static_SB.append_char('t');
-          break;
-        case '\r':
-          static_SB.append_char('r');
-          break;
-        case '\a':
-          static_SB.append_char('a');
-          break;
-        case '\v':
-          static_SB.append_char('v');
-          break;
-        case '\b':
-          static_SB.append_char('b');
-          break;
-        case '\f':
-          static_SB.append_char('f');
-          break;
-        default:
-          static_SB.append_char(static_cast<char>((c >> 6) + '0'));
-          static_SB.append_char(static_cast<char>(((c >> 3) & 7) + '0'));
-          static_SB.append_char(static_cast<char>((c & 7) + '0'));
+          case '\n':
+            static_SB.append_char('n');
+            break;
+          case '\t':
+            static_SB.append_char('t');
+            break;
+          case '\r':
+            static_SB.append_char('r');
+            break;
+          case '\a':
+            static_SB.append_char('a');
+            break;
+          case '\v':
+            static_SB.append_char('v');
+            break;
+          case '\b':
+            static_SB.append_char('b');
+            break;
+          case '\f':
+            static_SB.append_char('f');
+            break;
+          default:
+            static_SB.append_char(static_cast<char>((c >> 6) + '0'));
+            static_SB.append_char(static_cast<char>(((c >> 3) & 7) + '0'));
+            static_SB.append_char(static_cast<char>((c & 7) + '0'));
         }
       } else {
         static_SB.append_char(c);
@@ -83,56 +83,58 @@ string f$addcslashes(const string& str, const string& what) noexcept {
   return static_SB.str();
 }
 
-string f$addslashes(const string& str) noexcept {
+string f$addslashes(const string &str) noexcept {
   int len = str.size();
 
-  auto& static_SB = RuntimeContext::get().static_SB;
+  auto &static_SB = RuntimeContext::get().static_SB;
   static_SB.clean().reserve(2 * len);
   for (int i = 0; i < len; i++) {
     switch (str[i]) {
-    case '\0':
-      static_SB.append_char('\\');
-      static_SB.append_char('0');
-      break;
-    case '\'':
-    case '\"':
-    case '\\':
-      static_SB.append_char('\\');
-      /* fallthrough */
-    default:
-      static_SB.append_char(str[i]);
+      case '\0':
+        static_SB.append_char('\\');
+        static_SB.append_char('0');
+        break;
+      case '\'':
+      case '\"':
+      case '\\':
+        static_SB.append_char('\\');
+        /* fallthrough */
+      default:
+        static_SB.append_char(str[i]);
     }
   }
   return static_SB.str();
 }
 
-constexpr unsigned char win_to_koi[] = {
-    0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,
-    29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,
-    58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,  85,  86,
-    87,  88,  89,  90,  91,  92,  93,  94,  95,  96,  97,  98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
-    116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,
-    46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  154, 174, 190, 46,  159, 189, 46,  46,  179, 191, 180, 157, 46,  46,
-    156, 183, 46,  46,  182, 166, 173, 46,  46,  158, 163, 152, 164, 155, 46,  46,  46,  167, 225, 226, 247, 231, 228, 229, 246, 250, 233, 234, 235,
-    236, 237, 238, 239, 240, 242, 243, 244, 245, 230, 232, 227, 254, 251, 253, 255, 249, 248, 252, 224, 241, 193, 194, 215, 199, 196, 197, 214, 218,
-    201, 202, 203, 204, 205, 206, 207, 208, 210, 211, 212, 213, 198, 200, 195, 222, 219, 221, 223, 217, 216, 220, 192, 209};
+constexpr unsigned char win_to_koi[] = {0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,
+                                        24,  25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
+                                        48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,
+                                        72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,  85,  86,  87,  88,  89,  90,  91,  92,  93,  94,  95,
+                                        96,  97,  98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+                                        120, 121, 122, 123, 124, 125, 126, 127, 46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,
+                                        46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  46,  154, 174, 190, 46,  159, 189, 46,  46,
+                                        179, 191, 180, 157, 46,  46,  156, 183, 46,  46,  182, 166, 173, 46,  46,  158, 163, 152, 164, 155, 46,  46,  46,  167,
+                                        225, 226, 247, 231, 228, 229, 246, 250, 233, 234, 235, 236, 237, 238, 239, 240, 242, 243, 244, 245, 230, 232, 227, 254,
+                                        251, 253, 255, 249, 248, 252, 224, 241, 193, 194, 215, 199, 196, 197, 214, 218, 201, 202, 203, 204, 205, 206, 207, 208,
+                                        210, 211, 212, 213, 198, 200, 195, 222, 219, 221, 223, 217, 216, 220, 192, 209};
 
-constexpr unsigned char koi_to_win[] = {
-    0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25,  26,  27,  28,
-    29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,
-    58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,  72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,  85,  86,
-    87,  88,  89,  90,  91,  92,  93,  94,  95,  96,  97,  98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115,
-    116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,
-    32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  184, 186, 32,  179, 191, 32,  32,  32,  32,  32,  180,
-    162, 32,  32,  32,  32,  168, 170, 32,  178, 175, 32,  32,  32,  32,  32,  165, 161, 169, 254, 224, 225, 246, 228, 229, 244, 227, 245, 232, 233,
-    234, 235, 236, 237, 238, 239, 255, 240, 241, 242, 243, 230, 226, 252, 251, 231, 248, 253, 249, 247, 250, 222, 192, 193, 214, 196, 197, 212, 195,
-    213, 200, 201, 202, 203, 204, 205, 206, 207, 223, 208, 209, 210, 211, 198, 194, 220, 219, 199, 216, 221, 217, 215, 218};
+constexpr unsigned char koi_to_win[] = {0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11,  12,  13,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,
+                                        24,  25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
+                                        48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,
+                                        72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,  85,  86,  87,  88,  89,  90,  91,  92,  93,  94,  95,
+                                        96,  97,  98,  99,  100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+                                        120, 121, 122, 123, 124, 125, 126, 127, 32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,
+                                        32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  32,  184, 186, 32,  179, 191,
+                                        32,  32,  32,  32,  32,  180, 162, 32,  32,  32,  32,  168, 170, 32,  178, 175, 32,  32,  32,  32,  32,  165, 161, 169,
+                                        254, 224, 225, 246, 228, 229, 244, 227, 245, 232, 233, 234, 235, 236, 237, 238, 239, 255, 240, 241, 242, 243, 230, 226,
+                                        252, 251, 231, 248, 253, 249, 247, 250, 222, 192, 193, 214, 196, 197, 212, 195, 213, 200, 201, 202, 203, 204, 205, 206,
+                                        207, 223, 208, 209, 210, 211, 198, 194, 220, 219, 199, 216, 221, 217, 215, 218};
 
-string f$convert_cyr_string(const string& str, const string& from_s, const string& to_s) noexcept {
+string f$convert_cyr_string(const string &str, const string &from_s, const string &to_s) noexcept {
   char from = static_cast<char>(toupper(from_s[0]));
   char to = static_cast<char>(toupper(to_s[0]));
 
-  const unsigned char* table = nullptr;
+  const unsigned char *table = nullptr;
   if (from == 'W' && to == 'K') {
     table = win_to_koi;
   }
@@ -152,7 +154,7 @@ string f$convert_cyr_string(const string& str, const string& from_s, const strin
   return result;
 }
 
-mixed f$count_chars(const string& str, int64_t mode) noexcept {
+mixed f$count_chars(const string &str, int64_t mode) noexcept {
   int64_t chars[256] = {0};
 
   if (static_cast<uint32_t>(mode) > 4U) {
@@ -184,7 +186,7 @@ mixed f$count_chars(const string& str, int64_t mode) noexcept {
   return result;
 }
 
-string f$hex2bin(const string& str) noexcept {
+string f$hex2bin(const string &str) noexcept {
   int len = str.size();
   if (len & 1) {
     php_warning("Wrong argument \"%s\" supplied for function hex2bin", str.c_str());
@@ -207,37 +209,39 @@ string f$hex2bin(const string& str) noexcept {
 
 constexpr int entities_size = 251;
 
-static const char* const ent_to_num_s[entities_size] = {
-    "AElig",  "Aacute", "Acirc",  "Agrave",  "Alpha",    "Aring",  "Atilde", "Auml",   "Beta",    "Ccedil", "Chi",    "Dagger",  "Delta",  "ETH",
-    "Eacute", "Ecirc",  "Egrave", "Epsilon", "Eta",      "Euml",   "Gamma",  "Iacute", "Icirc",   "Igrave", "Iota",   "Iuml",    "Kappa",  "Lambda",
-    "Mu",     "Ntilde", "Nu",     "OElig",   "Oacute",   "Ocirc",  "Ograve", "Omega",  "Omicron", "Oslash", "Otilde", "Ouml",    "Phi",    "Pi",
-    "Prime",  "Psi",    "Rho",    "Scaron",  "Sigma",    "THORN",  "Tau",    "Theta",  "Uacute",  "Ucirc",  "Ugrave", "Upsilon", "Uuml",   "Xi",
-    "Yacute", "Yuml",   "Zeta",   "aacute",  "acirc",    "acute",  "aelig",  "agrave", "alefsym", "alpha",  "amp",    "and",     "ang",    "aring",
-    "asymp",  "atilde", "auml",   "bdquo",   "beta",     "brvbar", "bull",   "cap",    "ccedil",  "cedil",  "cent",   "chi",     "circ",   "clubs",
-    "cong",   "copy",   "crarr",  "cup",     "curren",   "dArr",   "dagger", "darr",   "deg",     "delta",  "diams",  "divide",  "eacute", "ecirc",
-    "egrave", "empty",  "emsp",   "ensp",    "epsilon",  "equiv",  "eta",    "eth",    "euml",    "euro",   "exist",  "fnof",    "forall", "frac12",
-    "frac14", "frac34", "frasl",  "gamma",   "ge",       "gt",     "hArr",   "harr",   "hearts",  "hellip", "iacute", "icirc",   "iexcl",  "igrave",
-    "image",  "infin",  "int",    "iota",    "iquest",   "isin",   "iuml",   "kappa",  "lArr",    "lambda", "lang",   "laquo",   "larr",   "lceil",
-    "ldquo",  "le",     "lfloor", "lowast",  "loz",      "lrm",    "lsaquo", "lsquo",  "lt",      "macr",   "mdash",  "micro",   "middot", "minus",
-    "mu",     "nabla",  "nbsp",   "ndash",   "ne",       "ni",     "not",    "notin",  "nsub",    "ntilde", "nu",     "oacute",  "ocirc",  "oelig",
-    "ograve", "oline",  "omega",  "omicron", "oplus",    "or",     "ordf",   "ordm",   "oslash",  "otilde", "otimes", "ouml",    "para",   "part",
-    "permil", "perp",   "phi",    "pi",      "piv",      "plusmn", "pound",  "prime",  "prod",    "prop",   "psi",    "rArr",    "radic",  "rang",
-    "raquo",  "rarr",   "rceil",  "rdquo",   "real",     "reg",    "rfloor", "rho",    "rlm",     "rsaquo", "rsquo",  "sbquo",   "scaron", "sdot",
-    "sect",   "shy",    "sigma",  "sigmaf",  "sim",      "spades", "sub",    "sube",   "sum",     "sup",    "sup1",   "sup2",    "sup3",   "supe",
-    "szlig",  "tau",    "there4", "theta",   "thetasym", "thinsp", "thorn",  "tilde",  "times",   "trade",  "uArr",   "uacute",  "uarr",   "ucirc",
-    "ugrave", "uml",    "upsih",  "upsilon", "uuml",     "weierp", "xi",     "yacute", "yen",     "yuml",   "zeta",   "zwj",     "zwnj"};
+static const char *const ent_to_num_s[entities_size] =
+  {"AElig",  "Aacute",  "Acirc",   "Agrave",   "Alpha",   "Aring",  "Atilde",  "Auml",   "Beta",    "Ccedil", "Chi",    "Dagger", "Delta",   "ETH",    "Eacute",
+   "Ecirc",  "Egrave",  "Epsilon", "Eta",      "Euml",    "Gamma",  "Iacute",  "Icirc",  "Igrave",  "Iota",   "Iuml",   "Kappa",  "Lambda",  "Mu",     "Ntilde",
+   "Nu",     "OElig",   "Oacute",  "Ocirc",    "Ograve",  "Omega",  "Omicron", "Oslash", "Otilde",  "Ouml",   "Phi",    "Pi",     "Prime",   "Psi",    "Rho",
+   "Scaron", "Sigma",   "THORN",   "Tau",      "Theta",   "Uacute", "Ucirc",   "Ugrave", "Upsilon", "Uuml",   "Xi",     "Yacute", "Yuml",    "Zeta",   "aacute",
+   "acirc",  "acute",   "aelig",   "agrave",   "alefsym", "alpha",  "amp",     "and",    "ang",     "aring",  "asymp",  "atilde", "auml",    "bdquo",  "beta",
+   "brvbar", "bull",    "cap",     "ccedil",   "cedil",   "cent",   "chi",     "circ",   "clubs",   "cong",   "copy",   "crarr",  "cup",     "curren", "dArr",
+   "dagger", "darr",    "deg",     "delta",    "diams",   "divide", "eacute",  "ecirc",  "egrave",  "empty",  "emsp",   "ensp",   "epsilon", "equiv",  "eta",
+   "eth",    "euml",    "euro",    "exist",    "fnof",    "forall", "frac12",  "frac14", "frac34",  "frasl",  "gamma",  "ge",     "gt",      "hArr",   "harr",
+   "hearts", "hellip",  "iacute",  "icirc",    "iexcl",   "igrave", "image",   "infin",  "int",     "iota",   "iquest", "isin",   "iuml",    "kappa",  "lArr",
+   "lambda", "lang",    "laquo",   "larr",     "lceil",   "ldquo",  "le",      "lfloor", "lowast",  "loz",    "lrm",    "lsaquo", "lsquo",   "lt",     "macr",
+   "mdash",  "micro",   "middot",  "minus",    "mu",      "nabla",  "nbsp",    "ndash",  "ne",      "ni",     "not",    "notin",  "nsub",    "ntilde", "nu",
+   "oacute", "ocirc",   "oelig",   "ograve",   "oline",   "omega",  "omicron", "oplus",  "or",      "ordf",   "ordm",   "oslash", "otilde",  "otimes", "ouml",
+   "para",   "part",    "permil",  "perp",     "phi",     "pi",     "piv",     "plusmn", "pound",   "prime",  "prod",   "prop",   "psi",     "rArr",   "radic",
+   "rang",   "raquo",   "rarr",    "rceil",    "rdquo",   "real",   "reg",     "rfloor", "rho",     "rlm",    "rsaquo", "rsquo",  "sbquo",   "scaron", "sdot",
+   "sect",   "shy",     "sigma",   "sigmaf",   "sim",     "spades", "sub",     "sube",   "sum",     "sup",    "sup1",   "sup2",   "sup3",    "supe",   "szlig",
+   "tau",    "there4",  "theta",   "thetasym", "thinsp",  "thorn",  "tilde",   "times",  "trade",   "uArr",   "uacute", "uarr",   "ucirc",   "ugrave", "uml",
+   "upsih",  "upsilon", "uuml",    "weierp",   "xi",      "yacute", "yen",     "yuml",   "zeta",    "zwj",    "zwnj"};
 
-constexpr int32_t ent_to_num_i[entities_size] = {
-    198,  193,  194,  192,  913,  197,  195,  196,  914,  199,  935,  8225, 916,  208,  201,  202,  200,  917,  919,  203, 915,  205,  206,  204,  921,  207,
-    922,  923,  924,  209,  925,  338,  211,  212,  210,  937,  927,  216,  213,  214,  934,  928,  8243, 936,  929,  352, 931,  222,  932,  920,  218,  219,
-    217,  933,  220,  926,  221,  376,  918,  225,  226,  180,  230,  224,  8501, 945,  38,   8743, 8736, 229,  8776, 227, 228,  8222, 946,  166,  8226, 8745,
-    231,  184,  162,  967,  710,  9827, 8773, 169,  8629, 8746, 164,  8659, 8224, 8595, 176,  948,  9830, 247,  233,  234, 232,  8709, 8195, 8194, 949,  8801,
-    951,  240,  235,  8364, 8707, 402,  8704, 189,  188,  190,  8260, 947,  8805, 62,   8660, 8596, 9829, 8230, 237,  238, 161,  236,  8465, 8734, 8747, 953,
-    191,  8712, 239,  954,  8656, 955,  9001, 171,  8592, 8968, 8220, 8804, 8970, 8727, 9674, 8206, 8249, 8216, 60,   175, 8212, 181,  183,  8722, 956,  8711,
-    160,  8211, 8800, 8715, 172,  8713, 8836, 241,  957,  243,  244,  339,  242,  8254, 969,  959,  8853, 8744, 170,  186, 248,  245,  8855, 246,  182,  8706,
-    8240, 8869, 966,  960,  982,  177,  163,  8242, 8719, 8733, 968,  8658, 8730, 9002, 187,  8594, 8969, 8221, 8476, 174, 8971, 961,  8207, 8250, 8217, 8218,
-    353,  8901, 167,  173,  963,  962,  8764, 9824, 8834, 8838, 8721, 8835, 185,  178,  179,  8839, 223,  964,  8756, 952, 977,  8201, 254,  732,  215,  8482,
-    8657, 250,  8593, 251,  249,  168,  978,  965,  252,  8472, 958,  253,  165,  255,  950,  8205, 8204};
+constexpr int32_t ent_to_num_i[entities_size] = {198,  193,  194,  192,  913,  197,  195,  196,  914,  199,  935,  8225, 916,  208,  201,  202,  200,  917,
+                                                 919,  203,  915,  205,  206,  204,  921,  207,  922,  923,  924,  209,  925,  338,  211,  212,  210,  937,
+                                                 927,  216,  213,  214,  934,  928,  8243, 936,  929,  352,  931,  222,  932,  920,  218,  219,  217,  933,
+                                                 220,  926,  221,  376,  918,  225,  226,  180,  230,  224,  8501, 945,  38,   8743, 8736, 229,  8776, 227,
+                                                 228,  8222, 946,  166,  8226, 8745, 231,  184,  162,  967,  710,  9827, 8773, 169,  8629, 8746, 164,  8659,
+                                                 8224, 8595, 176,  948,  9830, 247,  233,  234,  232,  8709, 8195, 8194, 949,  8801, 951,  240,  235,  8364,
+                                                 8707, 402,  8704, 189,  188,  190,  8260, 947,  8805, 62,   8660, 8596, 9829, 8230, 237,  238,  161,  236,
+                                                 8465, 8734, 8747, 953,  191,  8712, 239,  954,  8656, 955,  9001, 171,  8592, 8968, 8220, 8804, 8970, 8727,
+                                                 9674, 8206, 8249, 8216, 60,   175,  8212, 181,  183,  8722, 956,  8711, 160,  8211, 8800, 8715, 172,  8713,
+                                                 8836, 241,  957,  243,  244,  339,  242,  8254, 969,  959,  8853, 8744, 170,  186,  248,  245,  8855, 246,
+                                                 182,  8706, 8240, 8869, 966,  960,  982,  177,  163,  8242, 8719, 8733, 968,  8658, 8730, 9002, 187,  8594,
+                                                 8969, 8221, 8476, 174,  8971, 961,  8207, 8250, 8217, 8218, 353,  8901, 167,  173,  963,  962,  8764, 9824,
+                                                 8834, 8838, 8721, 8835, 185,  178,  179,  8839, 223,  964,  8756, 952,  977,  8201, 254,  732,  215,  8482,
+                                                 8657, 250,  8593, 251,  249,  168,  978,  965,  252,  8472, 958,  253,  165,  255,  950,  8205, 8204};
 /*
 static int cp1251_to_utf8[128] = {
   0x402, 0x403,  0x201A, 0x453,  0x201E, 0x2026, 0x2020, 0x2021, 0x20AC, 0x2030, 0x409,  0x2039, 0x40A, 0x40C, 0x40B, 0x40F,
@@ -249,66 +253,66 @@ static int cp1251_to_utf8[128] = {
   0x430, 0x431,  0x432,  0x433,  0x434,  0x435,  0x436,  0x437,  0x438,  0x439,  0x43A,  0x43B,  0x43C, 0x43D, 0x43E, 0x43F,
   0x440, 0x441,  0x442,  0x443,  0x444,  0x445,  0x446,  0x447,  0x448,  0x449,  0x44A,  0x44B,  0x44C, 0x44D, 0x44E, 0x44F};
 */
-static const char* const cp1251_to_utf8_str[128] = {
-    "&#1026;", "&#1027;", "&#8218;", "&#1107;",  "&#8222;", "&hellip;", "&dagger;", "&Dagger;", "&euro;",  "&permil;", "&#1033;",  "&#8249;", "&#1034;",
-    "&#1036;", "&#1035;", "&#1039;", "&#1106;",  "&#8216;", "&#8217;",  "&#8219;",  "&#8220;",  "&bull;",  "&ndash;",  "&mdash;",  "",        "&trade;",
-    "&#1113;", "&#8250;", "&#1114;", "&#1116;",  "&#1115;", "&#1119;",  "&nbsp;",   "&#1038;",  "&#1118;", "&#1032;",  "&curren;", "&#1168;", "&brvbar;",
-    "&sect;",  "&#1025;", "&copy;",  "&#1028;",  "&laquo;", "&not;",    "&shy;",    "&reg;",    "&#1031;", "&deg;",    "&plusmn;", "&#1030;", "&#1110;",
-    "&#1169;", "&micro;", "&para;",  "&middot;", "&#1105;", "&#8470;",  "&#1108;",  "&raquo;",  "&#1112;", "&#1029;",  "&#1109;",  "&#1111;", "&#1040;",
-    "&#1041;", "&#1042;", "&#1043;", "&#1044;",  "&#1045;", "&#1046;",  "&#1047;",  "&#1048;",  "&#1049;", "&#1050;",  "&#1051;",  "&#1052;", "&#1053;",
-    "&#1054;", "&#1055;", "&#1056;", "&#1057;",  "&#1058;", "&#1059;",  "&#1060;",  "&#1061;",  "&#1062;", "&#1063;",  "&#1064;",  "&#1065;", "&#1066;",
-    "&#1067;", "&#1068;", "&#1069;", "&#1070;",  "&#1071;", "&#1072;",  "&#1073;",  "&#1074;",  "&#1075;", "&#1076;",  "&#1077;",  "&#1078;", "&#1079;",
-    "&#1080;", "&#1081;", "&#1082;", "&#1083;",  "&#1084;", "&#1085;",  "&#1086;",  "&#1087;",  "&#1088;", "&#1089;",  "&#1090;",  "&#1091;", "&#1092;",
-    "&#1093;", "&#1094;", "&#1095;", "&#1096;",  "&#1097;", "&#1098;",  "&#1099;",  "&#1100;",  "&#1101;", "&#1102;",  "&#1103;"};
+static const char *const cp1251_to_utf8_str[128] =
+  {"&#1026;", "&#1027;", "&#8218;", "&#1107;",  "&#8222;", "&hellip;", "&dagger;", "&Dagger;", "&euro;",  "&permil;", "&#1033;",  "&#8249;", "&#1034;",
+   "&#1036;", "&#1035;", "&#1039;", "&#1106;",  "&#8216;", "&#8217;",  "&#8219;",  "&#8220;",  "&bull;",  "&ndash;",  "&mdash;",  "",        "&trade;",
+   "&#1113;", "&#8250;", "&#1114;", "&#1116;",  "&#1115;", "&#1119;",  "&nbsp;",   "&#1038;",  "&#1118;", "&#1032;",  "&curren;", "&#1168;", "&brvbar;",
+   "&sect;",  "&#1025;", "&copy;",  "&#1028;",  "&laquo;", "&not;",    "&shy;",    "&reg;",    "&#1031;", "&deg;",    "&plusmn;", "&#1030;", "&#1110;",
+   "&#1169;", "&micro;", "&para;",  "&middot;", "&#1105;", "&#8470;",  "&#1108;",  "&raquo;",  "&#1112;", "&#1029;",  "&#1109;",  "&#1111;", "&#1040;",
+   "&#1041;", "&#1042;", "&#1043;", "&#1044;",  "&#1045;", "&#1046;",  "&#1047;",  "&#1048;",  "&#1049;", "&#1050;",  "&#1051;",  "&#1052;", "&#1053;",
+   "&#1054;", "&#1055;", "&#1056;", "&#1057;",  "&#1058;", "&#1059;",  "&#1060;",  "&#1061;",  "&#1062;", "&#1063;",  "&#1064;",  "&#1065;", "&#1066;",
+   "&#1067;", "&#1068;", "&#1069;", "&#1070;",  "&#1071;", "&#1072;",  "&#1073;",  "&#1074;",  "&#1075;", "&#1076;",  "&#1077;",  "&#1078;", "&#1079;",
+   "&#1080;", "&#1081;", "&#1082;", "&#1083;",  "&#1084;", "&#1085;",  "&#1086;",  "&#1087;",  "&#1088;", "&#1089;",  "&#1090;",  "&#1091;", "&#1092;",
+   "&#1093;", "&#1094;", "&#1095;", "&#1096;",  "&#1097;", "&#1098;",  "&#1099;",  "&#1100;",  "&#1101;", "&#1102;",  "&#1103;"};
 
-string f$htmlentities(const string& str) noexcept {
+string f$htmlentities(const string &str) noexcept {
   int len = static_cast<int>(str.size());
-  auto& static_SB = RuntimeContext::get().static_SB;
+  auto &static_SB = RuntimeContext::get().static_SB;
   static_SB.clean().reserve(8 * len);
 
   for (int i = 0; i < len; i++) {
     switch (str[i]) {
-    case '&':
-      static_SB.append_char('&');
-      static_SB.append_char('a');
-      static_SB.append_char('m');
-      static_SB.append_char('p');
-      static_SB.append_char(';');
-      break;
-    case '"':
-      static_SB.append_char('&');
-      static_SB.append_char('q');
-      static_SB.append_char('u');
-      static_SB.append_char('o');
-      static_SB.append_char('t');
-      static_SB.append_char(';');
-      break;
-    case '<':
-      static_SB.append_char('&');
-      static_SB.append_char('l');
-      static_SB.append_char('t');
-      static_SB.append_char(';');
-      break;
-    case '>':
-      static_SB.append_char('&');
-      static_SB.append_char('g');
-      static_SB.append_char('t');
-      static_SB.append_char(';');
-      break;
-    default:
-      if (str[i] < 0) {
-        const char* utf8_str = cp1251_to_utf8_str[128 + str[i]];
-        static_SB.append_unsafe(utf8_str, static_cast<int>(strlen(utf8_str)));
-      } else {
-        static_SB.append_char(str[i]);
-      }
+      case '&':
+        static_SB.append_char('&');
+        static_SB.append_char('a');
+        static_SB.append_char('m');
+        static_SB.append_char('p');
+        static_SB.append_char(';');
+        break;
+      case '"':
+        static_SB.append_char('&');
+        static_SB.append_char('q');
+        static_SB.append_char('u');
+        static_SB.append_char('o');
+        static_SB.append_char('t');
+        static_SB.append_char(';');
+        break;
+      case '<':
+        static_SB.append_char('&');
+        static_SB.append_char('l');
+        static_SB.append_char('t');
+        static_SB.append_char(';');
+        break;
+      case '>':
+        static_SB.append_char('&');
+        static_SB.append_char('g');
+        static_SB.append_char('t');
+        static_SB.append_char(';');
+        break;
+      default:
+        if (str[i] < 0) {
+          const char *utf8_str = cp1251_to_utf8_str[128 + str[i]];
+          static_SB.append_unsafe(utf8_str, static_cast<int>(strlen(utf8_str)));
+        } else {
+          static_SB.append_char(str[i]);
+        }
     }
   }
 
   return static_SB.str();
 }
 
-string f$html_entity_decode(const string& str, int64_t flags, const string& encoding) noexcept {
+string f$html_entity_decode(const string &str, int64_t flags, const string &encoding) noexcept {
   if (flags >= 3) {
     php_critical_error("unsupported parameter flags = %" PRIi64 " in function html_entity_decode", flags);
   }
@@ -321,7 +325,7 @@ string f$html_entity_decode(const string& str, int64_t flags, const string& enco
 
   int len = str.size();
   string res(len * 7 / 4 + 4, false);
-  char* p = &res[0];
+  char *p = &res[0];
   for (int i = 0; i < len; i++) {
     if (str[i] == '&') {
       int j = i + 1;
@@ -395,87 +399,87 @@ string f$html_entity_decode(const string& str, int64_t flags, const string& enco
   return res;
 }
 
-string f$htmlspecialchars(const string& str, int64_t flags) noexcept {
+string f$htmlspecialchars(const string &str, int64_t flags) noexcept {
   if (flags >= 3) {
     php_critical_error("unsupported parameter flags = %" PRIi64 " in function htmlspecialchars", flags);
   }
 
   const string::size_type len = str.size();
-  auto& static_SB = RuntimeContext::get().static_SB;
+  auto &static_SB = RuntimeContext::get().static_SB;
   static_SB.clean().reserve(6 * len);
 
   for (string::size_type i = 0; i < len; i++) {
     switch (str[i]) {
-    case '&':
-      static_SB.append_char('&');
-      static_SB.append_char('a');
-      static_SB.append_char('m');
-      static_SB.append_char('p');
-      static_SB.append_char(';');
-      break;
-    case '"':
-      if (!(flags & StringLibConstants::ENT_NOQUOTES)) {
+      case '&':
         static_SB.append_char('&');
-        static_SB.append_char('q');
-        static_SB.append_char('u');
-        static_SB.append_char('o');
+        static_SB.append_char('a');
+        static_SB.append_char('m');
+        static_SB.append_char('p');
+        static_SB.append_char(';');
+        break;
+      case '"':
+        if (!(flags & StringLibConstants::ENT_NOQUOTES)) {
+          static_SB.append_char('&');
+          static_SB.append_char('q');
+          static_SB.append_char('u');
+          static_SB.append_char('o');
+          static_SB.append_char('t');
+          static_SB.append_char(';');
+        } else {
+          static_SB.append_char('"');
+        }
+        break;
+      case '\'':
+        if (flags & StringLibConstants::ENT_QUOTES) {
+          static_SB.append_char('&');
+          static_SB.append_char('#');
+          static_SB.append_char('0');
+          static_SB.append_char('3');
+          static_SB.append_char('9');
+          static_SB.append_char(';');
+        } else {
+          static_SB.append_char('\'');
+        }
+        break;
+      case '<':
+        static_SB.append_char('&');
+        static_SB.append_char('l');
         static_SB.append_char('t');
         static_SB.append_char(';');
-      } else {
-        static_SB.append_char('"');
-      }
-      break;
-    case '\'':
-      if (flags & StringLibConstants::ENT_QUOTES) {
+        break;
+      case '>':
         static_SB.append_char('&');
-        static_SB.append_char('#');
-        static_SB.append_char('0');
-        static_SB.append_char('3');
-        static_SB.append_char('9');
+        static_SB.append_char('g');
+        static_SB.append_char('t');
         static_SB.append_char(';');
-      } else {
-        static_SB.append_char('\'');
-      }
-      break;
-    case '<':
-      static_SB.append_char('&');
-      static_SB.append_char('l');
-      static_SB.append_char('t');
-      static_SB.append_char(';');
-      break;
-    case '>':
-      static_SB.append_char('&');
-      static_SB.append_char('g');
-      static_SB.append_char('t');
-      static_SB.append_char(';');
-      break;
-    default:
-      static_SB.append_char(str[i]);
+        break;
+      default:
+        static_SB.append_char(str[i]);
     }
   }
 
   return static_SB.str();
 }
 
-string f$htmlspecialchars_decode(const string& str, int64_t flags) noexcept {
+string f$htmlspecialchars_decode(const string &str, int64_t flags) noexcept {
   if (flags >= 3) {
     php_critical_error("unsupported parameter flags = %" PRIi64 " in function htmlspecialchars_decode", flags);
   }
 
   int len = str.size();
   string res(len, false);
-  char* p = &res[0];
+  char *p = &res[0];
   for (int i = 0; i < len;) {
     if (str[i] == '&') {
       if (str[i + 1] == 'a' && str[i + 2] == 'm' && str[i + 3] == 'p' && str[i + 4] == ';') {
         *p++ = '&';
         i += 5;
-      } else if (str[i + 1] == 'q' && str[i + 2] == 'u' && str[i + 3] == 'o' && str[i + 4] == 't' && str[i + 5] == ';' &&
-                 !(flags & StringLibConstants::ENT_NOQUOTES)) {
+      } else if (str[i + 1] == 'q' && str[i + 2] == 'u' && str[i + 3] == 'o' && str[i + 4] == 't' && str[i + 5] == ';'
+                 && !(flags & StringLibConstants::ENT_NOQUOTES)) {
         *p++ = '"';
         i += 6;
-      } else if (str[i + 1] == '#' && str[i + 2] == '0' && str[i + 3] == '3' && str[i + 4] == '9' && str[i + 5] == ';' &&
-                 (flags & StringLibConstants::ENT_QUOTES)) {
+      } else if (str[i + 1] == '#' && str[i + 2] == '0' && str[i + 3] == '3' && str[i + 4] == '9' && str[i + 5] == ';'
+                 && (flags & StringLibConstants::ENT_QUOTES)) {
         *p++ = '\'';
         i += 6;
       } else if (str[i + 1] == 'l' && str[i + 2] == 't' && str[i + 3] == ';') {
@@ -498,7 +502,7 @@ string f$htmlspecialchars_decode(const string& str, int64_t flags) noexcept {
   return res;
 }
 
-int64_t f$levenshtein(const string& str1, const string& str2) noexcept {
+int64_t f$levenshtein(const string &str1, const string &str2) noexcept {
   string::size_type len1 = str1.size();
   string::size_type len2 = str2.size();
 
@@ -539,34 +543,34 @@ int64_t f$levenshtein(const string& str1, const string& str2) noexcept {
   return dp[len1 & 1][len2];
 }
 
-string f$mysql_escape_string(const string& str) noexcept {
+string f$mysql_escape_string(const string &str) noexcept {
   int len = str.size();
-  auto& static_SB = RuntimeContext::get().static_SB;
+  auto &static_SB = RuntimeContext::get().static_SB;
   static_SB.clean().reserve(2 * len);
   for (int i = 0; i < len; i++) {
     switch (str[i]) {
-    case '\0':
-    case '\n':
-    case '\r':
-    case 26:
-    case '\'':
-    case '\"':
-    case '\\':
-      static_SB.append_char('\\');
-      /* fallthrough */
-    default:
-      static_SB.append_char(str[i]);
+      case '\0':
+      case '\n':
+      case '\r':
+      case 26:
+      case '\'':
+      case '\"':
+      case '\\':
+        static_SB.append_char('\\');
+        /* fallthrough */
+      default:
+        static_SB.append_char(str[i]);
     }
   }
   return static_SB.str();
 }
 
-string f$nl2br(const string& str, bool is_xhtml) noexcept {
-  const char* br = is_xhtml ? "<br />" : "<br>";
+string f$nl2br(const string &str, bool is_xhtml) noexcept {
+  const char *br = is_xhtml ? "<br />" : "<br>";
   int br_len = static_cast<int>(strlen(br));
 
   int len = str.size();
-  auto& static_SB = RuntimeContext::get().static_SB;
+  auto &static_SB = RuntimeContext::get().static_SB;
   static_SB.clean().reserve((br_len + 1) * len);
 
   for (int i = 0; i < len;) {
@@ -582,8 +586,8 @@ string f$nl2br(const string& str, bool is_xhtml) noexcept {
   return static_SB.str();
 }
 
-string f$number_format(double number, int64_t decimals, const string& dec_point, const string& thousands_sep) noexcept {
-  char* result_begin = StringLibContext::get().static_buf.data() + StringLibContext::STATIC_BUFFER_LENGTH;
+string f$number_format(double number, int64_t decimals, const string &dec_point, const string &thousands_sep) noexcept {
+  char *result_begin = StringLibContext::get().static_buf.data() + StringLibContext::STATIC_BUFFER_LENGTH;
 
   if (decimals < 0 || decimals > 100) {
     php_warning("Wrong parameter decimals (%" PRIi64 ") in function number_format", decimals);
@@ -667,8 +671,8 @@ static double float64_from_bits(uint64_t bits) {
   return f;
 }
 
-string f$pack(const string& pattern, const array<mixed>& a) noexcept {
-  auto& static_SB = RuntimeContext::get().static_SB;
+string f$pack(const string &pattern, const array<mixed> &a) noexcept {
+  auto &static_SB = RuntimeContext::get().static_SB;
   static_SB.clean();
   int cur_arg = 0;
   for (int i = 0; i < static_cast<int>(pattern.size());) {
@@ -716,144 +720,144 @@ string f$pack(const string& pattern, const array<mixed>& a) noexcept {
 
     char filler = 0;
     switch (format) {
-    case 'A':
-      filler = ' ';
-      /* fallthrough */
-    case 'a': {
-      string arg_str = arg.to_string();
-      int len = arg_str.size();
-      if (!cnt) {
-        cnt = len;
-        i++;
+      case 'A':
+        filler = ' ';
+        /* fallthrough */
+      case 'a': {
+        string arg_str = arg.to_string();
+        int len = arg_str.size();
+        if (!cnt) {
+          cnt = len;
+          i++;
+        }
+        static_SB.append(arg_str.c_str(), static_cast<size_t>(min(cnt, len)));
+        while (cnt > len) {
+          static_SB << filler;
+          cnt--;
+        }
+        break;
       }
-      static_SB.append(arg_str.c_str(), static_cast<size_t>(min(cnt, len)));
-      while (cnt > len) {
-        static_SB << filler;
-        cnt--;
-      }
-      break;
-    }
-    case 'h':
-    case 'H': {
-      string arg_str = arg.to_string();
-      int len = arg_str.size();
-      if (!cnt) {
-        cnt = len;
-        i++;
-      }
-      for (int j = 0; cnt > 0 && j < len; j += 2) {
-        int num_high = hex_to_int(arg_str[j]);
-        int num_low = cnt > 1 ? hex_to_int(arg_str[j + 1]) : 0;
-        cnt -= 2;
-        if (num_high == 16 || num_low == 16) {
-          php_warning("Wrong argument \"%s\" supplied for format '%c' in function pack", arg_str.c_str(), format);
-          return {};
+      case 'h':
+      case 'H': {
+        string arg_str = arg.to_string();
+        int len = arg_str.size();
+        if (!cnt) {
+          cnt = len;
+          i++;
         }
-        if (format == 'H') {
-          static_SB << static_cast<char>((num_high << 4) + num_low);
-        } else {
-          static_SB << static_cast<char>((num_low << 4) + num_high);
-        }
-      }
-      if (cnt > 0) {
-        php_warning("Type %c: not enough characters in string \"%s\" in function pack", format, arg_str.c_str());
-      }
-      break;
-    }
-
-    default:
-      do {
-        switch (format) {
-        case 'c':
-        case 'C':
-          static_SB << static_cast<char>(arg.to_int());
-          break;
-        case 's':
-        case 'S':
-        case 'v': {
-          unsigned short value = static_cast<short>(arg.to_int());
-          static_SB.append(reinterpret_cast<const char*>(&value), 2);
-          break;
-        }
-        case 'n': {
-          unsigned short value = static_cast<short>(arg.to_int());
-          static_SB << static_cast<char>(value >> 8) << static_cast<char>(value & 255);
-          break;
-        }
-        case 'i':
-        case 'I':
-        case 'l':
-        case 'L':
-        case 'V': {
-          auto value = static_cast<int32_t>(arg.to_int());
-          static_SB.append(reinterpret_cast<const char*>(&value), 4);
-          break;
-        }
-        case 'N': {
-          auto value = static_cast<uint32_t>(arg.to_int());
-          static_SB << static_cast<char>(value >> 24) << static_cast<char>((value >> 16) & 255) << static_cast<char>((value >> 8) & 255)
-                    << static_cast<char>(value & 255);
-          break;
-        }
-        case 'f': {
-          auto value = static_cast<float>(arg.to_float());
-          static_SB.append(reinterpret_cast<const char*>(&value), sizeof(float));
-          break;
-        }
-        case 'e':
-        case 'E':
-        case 'd': {
-          double value = arg.to_float();
-          uint64_t value_byteordered = float64_bits(value);
-          if (format == 'e') {
-            value_byteordered = htole64(value_byteordered);
-          } else if (format == 'E') {
-            value_byteordered = htobe64(value_byteordered);
-          }
-          static_SB.append(reinterpret_cast<const char*>(&value_byteordered), sizeof(uint64_t));
-          break;
-        }
-        case 'J':
-        case 'P':
-        case 'Q': {
-          // stored in the host machine order by the default (Q flag)
-          unsigned long long value_byteordered = static_cast<unsigned long long>(arg.to_string().to_int());
-          if (format == 'P') {
-            // for P encode in little endian order
-            value_byteordered = htole64(value_byteordered);
-          } else if (format == 'J') {
-            // for J encode in big endian order
-            value_byteordered = htobe64(value_byteordered);
-          }
-
-          static_SB.append(reinterpret_cast<const char*>(&value_byteordered), sizeof(unsigned long long));
-          break;
-        }
-        case 'q': {
-          int64_t value = arg.to_string().to_int();
-          static_SB.append(reinterpret_cast<const char*>(&value), sizeof(long long));
-          break;
-        }
-        default:
-          php_warning("Format code \"%c\" not supported", format);
-          return {};
-        }
-
-        if (cnt > 1) {
-          arg_num = cur_arg++;
-          if (arg_num >= a.count()) {
-            php_warning("Not enough parameters to call function pack");
+        for (int j = 0; cnt > 0 && j < len; j += 2) {
+          int num_high = hex_to_int(arg_str[j]);
+          int num_low = cnt > 1 ? hex_to_int(arg_str[j + 1]) : 0;
+          cnt -= 2;
+          if (num_high == 16 || num_low == 16) {
+            php_warning("Wrong argument \"%s\" supplied for format '%c' in function pack", arg_str.c_str(), format);
             return {};
           }
-
-          arg = a.get_value(arg_num);
-
-          if (arg.is_array()) {
-            php_warning("Argument %d of function pack is array", arg_num);
-            return {};
+          if (format == 'H') {
+            static_SB << static_cast<char>((num_high << 4) + num_low);
+          } else {
+            static_SB << static_cast<char>((num_low << 4) + num_high);
           }
         }
-      } while (--cnt > 0);
+        if (cnt > 0) {
+          php_warning("Type %c: not enough characters in string \"%s\" in function pack", format, arg_str.c_str());
+        }
+        break;
+      }
+
+      default:
+        do {
+          switch (format) {
+            case 'c':
+            case 'C':
+              static_SB << static_cast<char>(arg.to_int());
+              break;
+            case 's':
+            case 'S':
+            case 'v': {
+              unsigned short value = static_cast<short>(arg.to_int());
+              static_SB.append(reinterpret_cast<const char *>(&value), 2);
+              break;
+            }
+            case 'n': {
+              unsigned short value = static_cast<short>(arg.to_int());
+              static_SB << static_cast<char>(value >> 8) << static_cast<char>(value & 255);
+              break;
+            }
+            case 'i':
+            case 'I':
+            case 'l':
+            case 'L':
+            case 'V': {
+              auto value = static_cast<int32_t>(arg.to_int());
+              static_SB.append(reinterpret_cast<const char *>(&value), 4);
+              break;
+            }
+            case 'N': {
+              auto value = static_cast<uint32_t>(arg.to_int());
+              static_SB << static_cast<char>(value >> 24) << static_cast<char>((value >> 16) & 255) << static_cast<char>((value >> 8) & 255)
+                        << static_cast<char>(value & 255);
+              break;
+            }
+            case 'f': {
+              auto value = static_cast<float>(arg.to_float());
+              static_SB.append(reinterpret_cast<const char *>(&value), sizeof(float));
+              break;
+            }
+            case 'e':
+            case 'E':
+            case 'd': {
+              double value = arg.to_float();
+              uint64_t value_byteordered = float64_bits(value);
+              if (format == 'e') {
+                value_byteordered = htole64(value_byteordered);
+              } else if (format == 'E') {
+                value_byteordered = htobe64(value_byteordered);
+              }
+              static_SB.append(reinterpret_cast<const char *>(&value_byteordered), sizeof(uint64_t));
+              break;
+            }
+            case 'J':
+            case 'P':
+            case 'Q': {
+              // stored in the host machine order by the default (Q flag)
+              unsigned long long value_byteordered = static_cast<unsigned long long>(arg.to_string().to_int());
+              if (format == 'P') {
+                // for P encode in little endian order
+                value_byteordered = htole64(value_byteordered);
+              } else if (format == 'J') {
+                // for J encode in big endian order
+                value_byteordered = htobe64(value_byteordered);
+              }
+
+              static_SB.append(reinterpret_cast<const char *>(&value_byteordered), sizeof(unsigned long long));
+              break;
+            }
+            case 'q': {
+              int64_t value = arg.to_string().to_int();
+              static_SB.append(reinterpret_cast<const char *>(&value), sizeof(long long));
+              break;
+            }
+            default:
+              php_warning("Format code \"%c\" not supported", format);
+              return {};
+          }
+
+          if (cnt > 1) {
+            arg_num = cur_arg++;
+            if (arg_num >= a.count()) {
+              php_warning("Not enough parameters to call function pack");
+              return {};
+            }
+
+            arg = a.get_value(arg_num);
+
+            if (arg.is_array()) {
+              php_warning("Argument %d of function pack is array", arg_num);
+              return {};
+            }
+          }
+        } while (--cnt > 0);
     }
   }
 
@@ -865,8 +869,8 @@ string f$pack(const string& pattern, const array<mixed>& a) noexcept {
   return static_SB.str();
 }
 
-string f$ltrim(const string& s, const string& what) noexcept {
-  const char* mask = get_mask(what);
+string f$ltrim(const string &s, const string &what) noexcept {
+  const char *mask = get_mask(what);
 
   int len = static_cast<int>(s.size());
   if (len == 0 || !mask[static_cast<unsigned char>(s[0])]) {
@@ -880,8 +884,8 @@ string f$ltrim(const string& s, const string& what) noexcept {
   return {s.c_str() + l, static_cast<string::size_type>(len - l)};
 }
 
-string f$rtrim(const string& s, const string& what) noexcept {
-  const char* mask = get_mask(what);
+string f$rtrim(const string &s, const string &what) noexcept {
+  const char *mask = get_mask(what);
 
   int len = static_cast<int>(s.size()) - 1;
   if (len == -1 || !mask[static_cast<unsigned char>(s[len])]) {
@@ -895,8 +899,8 @@ string f$rtrim(const string& s, const string& what) noexcept {
   return {s.c_str(), static_cast<string::size_type>(len)};
 }
 
-string f$sprintf(const string& format, const array<mixed>& a) noexcept {
-  auto& static_SB = RuntimeContext::get().static_SB;
+string f$sprintf(const string &format, const array<mixed> &a) noexcept {
+  auto &static_SB = RuntimeContext::get().static_SB;
   string result;
   result.reserve_at_least(format.size());
   int cur_arg = 0;
@@ -980,7 +984,7 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
         return {};
       }
 
-      const mixed& arg = a.get_value(arg_num);
+      const mixed &arg = a.get_value(arg_num);
 
       if (arg.is_array()) {
         php_warning("Argument %d of function sprintf is array", arg_num);
@@ -988,113 +992,113 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
       }
 
       switch (format[i]) {
-      case 'b': {
-        auto arg_int = static_cast<uint64_t>(arg.to_int());
-        int cur_pos = 70;
-        do {
-          StringLibContext::get().static_buf[--cur_pos] = static_cast<char>((arg_int & 1) + '0');
-          arg_int >>= 1;
-        } while (arg_int > 0);
-        piece.assign(StringLibContext::get().static_buf.data() + cur_pos, 70 - cur_pos);
-        break;
-      }
-      case 'c': {
-        int64_t arg_int = arg.to_int();
-        if (arg_int <= -128 || arg_int > 255) {
-          php_warning("Wrong parameter for specifier %%c in function sprintf with format \"%s\"", format.c_str());
-        }
-        piece.assign(1, static_cast<char>(arg_int));
-        break;
-      }
-      case 'd': {
-        int64_t arg_int = arg.to_int();
-        if (sign == '+' && arg_int >= 0) {
-          piece = (static_SB.clean() << "+" << arg_int).str();
-        } else {
-          piece = string(arg_int);
-        }
-        break;
-      }
-      case 'u': {
-        auto arg_int = static_cast<uint64_t>(arg.to_int());
-        int cur_pos = 70;
-        do {
-          StringLibContext::get().static_buf[--cur_pos] = static_cast<char>(arg_int % 10 + '0');
-          arg_int /= 10;
-        } while (arg_int > 0);
-        piece.assign(StringLibContext::get().static_buf.data() + cur_pos, 70 - cur_pos);
-        break;
-      }
-      case 'e':
-      case 'E':
-      case 'f':
-      case 'F':
-      case 'g':
-      case 'G': {
-        double arg_float = arg.to_float();
-
-        static_SB.clean() << '%';
-        if (sign) {
-          static_SB << sign;
-        }
-        if (precision >= 0) {
-          static_SB << '.' << precision;
-        }
-        static_SB << format[i];
-
-        int len = snprintf(StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, static_SB.c_str(), arg_float);
-        if (len >= StringLibContext::STATIC_BUFFER_LENGTH) {
-          error_too_big = true;
+        case 'b': {
+          auto arg_int = static_cast<uint64_t>(arg.to_int());
+          int cur_pos = 70;
+          do {
+            StringLibContext::get().static_buf[--cur_pos] = static_cast<char>((arg_int & 1) + '0');
+            arg_int >>= 1;
+          } while (arg_int > 0);
+          piece.assign(StringLibContext::get().static_buf.data() + cur_pos, 70 - cur_pos);
           break;
         }
-
-        piece.assign(StringLibContext::get().static_buf.data(), len);
-        break;
-      }
-      case 'o': {
-        auto arg_int = static_cast<uint64_t>(arg.to_int());
-        int cur_pos = 70;
-        do {
-          StringLibContext::get().static_buf[--cur_pos] = static_cast<char>((arg_int & 7) + '0');
-          arg_int >>= 3;
-        } while (arg_int > 0);
-        piece.assign(StringLibContext::get().static_buf.data() + cur_pos, 70 - cur_pos);
-        break;
-      }
-      case 's': {
-        string arg_string = arg.to_string();
-
-        static_SB.clean() << '%';
-        if (precision >= 0) {
-          static_SB << '.' << precision;
-        }
-        static_SB << 's';
-
-        int len = snprintf(StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, static_SB.c_str(), arg_string.c_str());
-        if (len >= StringLibContext::STATIC_BUFFER_LENGTH) {
-          error_too_big = true;
+        case 'c': {
+          int64_t arg_int = arg.to_int();
+          if (arg_int <= -128 || arg_int > 255) {
+            php_warning("Wrong parameter for specifier %%c in function sprintf with format \"%s\"", format.c_str());
+          }
+          piece.assign(1, static_cast<char>(arg_int));
           break;
         }
+        case 'd': {
+          int64_t arg_int = arg.to_int();
+          if (sign == '+' && arg_int >= 0) {
+            piece = (static_SB.clean() << "+" << arg_int).str();
+          } else {
+            piece = string(arg_int);
+          }
+          break;
+        }
+        case 'u': {
+          auto arg_int = static_cast<uint64_t>(arg.to_int());
+          int cur_pos = 70;
+          do {
+            StringLibContext::get().static_buf[--cur_pos] = static_cast<char>(arg_int % 10 + '0');
+            arg_int /= 10;
+          } while (arg_int > 0);
+          piece.assign(StringLibContext::get().static_buf.data() + cur_pos, 70 - cur_pos);
+          break;
+        }
+        case 'e':
+        case 'E':
+        case 'f':
+        case 'F':
+        case 'g':
+        case 'G': {
+          double arg_float = arg.to_float();
 
-        piece.assign(StringLibContext::get().static_buf.data(), len);
-        break;
-      }
-      case 'x':
-      case 'X': {
-        const char* hex_digits = (format[i] == 'x' ? StringLibConstants::get().lhex_digits : StringLibConstants::get().uhex_digits);
-        auto arg_int = static_cast<uint64_t>(arg.to_int());
+          static_SB.clean() << '%';
+          if (sign) {
+            static_SB << sign;
+          }
+          if (precision >= 0) {
+            static_SB << '.' << precision;
+          }
+          static_SB << format[i];
 
-        int cur_pos = 70;
-        do {
-          StringLibContext::get().static_buf[--cur_pos] = hex_digits[arg_int & 15];
-          arg_int >>= 4;
-        } while (arg_int > 0);
-        piece.assign(StringLibContext::get().static_buf.data() + cur_pos, 70 - cur_pos);
-        break;
-      }
-      default:
-        php_warning("Unsupported specifier %%%c in sprintf with format \"%s\"", format[i], format.c_str());
-        return {};
+          int len = snprintf(StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, static_SB.c_str(), arg_float);
+          if (len >= StringLibContext::STATIC_BUFFER_LENGTH) {
+            error_too_big = true;
+            break;
+          }
+
+          piece.assign(StringLibContext::get().static_buf.data(), len);
+          break;
+        }
+        case 'o': {
+          auto arg_int = static_cast<uint64_t>(arg.to_int());
+          int cur_pos = 70;
+          do {
+            StringLibContext::get().static_buf[--cur_pos] = static_cast<char>((arg_int & 7) + '0');
+            arg_int >>= 3;
+          } while (arg_int > 0);
+          piece.assign(StringLibContext::get().static_buf.data() + cur_pos, 70 - cur_pos);
+          break;
+        }
+        case 's': {
+          string arg_string = arg.to_string();
+
+          static_SB.clean() << '%';
+          if (precision >= 0) {
+            static_SB << '.' << precision;
+          }
+          static_SB << 's';
+
+          int len = snprintf(StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, static_SB.c_str(), arg_string.c_str());
+          if (len >= StringLibContext::STATIC_BUFFER_LENGTH) {
+            error_too_big = true;
+            break;
+          }
+
+          piece.assign(StringLibContext::get().static_buf.data(), len);
+          break;
+        }
+        case 'x':
+        case 'X': {
+          const char *hex_digits = (format[i] == 'x' ? StringLibConstants::get().lhex_digits : StringLibConstants::get().uhex_digits);
+          auto arg_int = static_cast<uint64_t>(arg.to_int());
+
+          int cur_pos = 70;
+          do {
+            StringLibContext::get().static_buf[--cur_pos] = hex_digits[arg_int & 15];
+            arg_int >>= 4;
+          } while (arg_int > 0);
+          piece.assign(StringLibContext::get().static_buf.data() + cur_pos, 70 - cur_pos);
+          break;
+        }
+        default:
+          php_warning("Unsupported specifier %%%c in sprintf with format \"%s\"", format[i], format.c_str());
+          return {};
       }
     }
 
@@ -1109,7 +1113,7 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
   return result;
 }
 
-string f$stripcslashes(const string& str) noexcept {
+string f$stripcslashes(const string &str) noexcept {
   if (str.empty()) {
     return str;
   }
@@ -1119,7 +1123,7 @@ string f$stripcslashes(const string& str) noexcept {
   auto len = str.size();
   auto new_len = len;
   string result(len, false);
-  char* result_c_str = &result[0];
+  char *result_c_str = &result[0];
   char num_tmp[4]; // we need up to three digits + a space for null-terminator
   int j = 0;
 
@@ -1129,73 +1133,73 @@ string f$stripcslashes(const string& str) noexcept {
     } else {
       i++; // step over a backslash
       switch (str[i]) {
-      case 'n':
-        *result_c_str++ = '\n';
-        new_len--;
-        break;
-      case 'r':
-        *result_c_str++ = '\r';
-        new_len--;
-        break;
-      case 'a':
-        *result_c_str++ = '\a';
-        new_len--;
-        break;
-      case 't':
-        *result_c_str++ = '\t';
-        new_len--;
-        break;
-      case 'v':
-        *result_c_str++ = '\v';
-        new_len--;
-        break;
-      case 'b':
-        *result_c_str++ = '\b';
-        new_len--;
-        break;
-      case 'f':
-        *result_c_str++ = '\f';
-        new_len--;
-        break;
-      case '\\':
-        *result_c_str++ = '\\';
-        new_len--;
-        break;
-      case 'x': // \\xN or \\xNN
-        // collect up to two hex digits and interpret them as char
-        if (i + 1 < len && isxdigit(static_cast<int>(str[i + 1]))) {
-          num_tmp[0] = str[++i];
+        case 'n':
+          *result_c_str++ = '\n';
+          new_len--;
+          break;
+        case 'r':
+          *result_c_str++ = '\r';
+          new_len--;
+          break;
+        case 'a':
+          *result_c_str++ = '\a';
+          new_len--;
+          break;
+        case 't':
+          *result_c_str++ = '\t';
+          new_len--;
+          break;
+        case 'v':
+          *result_c_str++ = '\v';
+          new_len--;
+          break;
+        case 'b':
+          *result_c_str++ = '\b';
+          new_len--;
+          break;
+        case 'f':
+          *result_c_str++ = '\f';
+          new_len--;
+          break;
+        case '\\':
+          *result_c_str++ = '\\';
+          new_len--;
+          break;
+        case 'x': // \\xN or \\xNN
+          // collect up to two hex digits and interpret them as char
           if (i + 1 < len && isxdigit(static_cast<int>(str[i + 1]))) {
-            num_tmp[1] = str[++i];
-            num_tmp[2] = '\0';
-            new_len -= 3;
+            num_tmp[0] = str[++i];
+            if (i + 1 < len && isxdigit(static_cast<int>(str[i + 1]))) {
+              num_tmp[1] = str[++i];
+              num_tmp[2] = '\0';
+              new_len -= 3;
+            } else {
+              num_tmp[1] = '\0';
+              new_len -= 2;
+            }
+            *result_c_str++ = static_cast<char>(strtol(num_tmp, nullptr, 16));
           } else {
-            num_tmp[1] = '\0';
-            new_len -= 2;
+            // not a hex literal, just copy a char as i
+            *result_c_str++ = str[i];
+            new_len--;
           }
-          *result_c_str++ = static_cast<char>(strtol(num_tmp, nullptr, 16));
-        } else {
-          // not a hex literal, just copy a char as i
-          *result_c_str++ = str[i];
-          new_len--;
-        }
-        break;
-      default: // \N \NN \NNN
-        // collect up to three octal digits and interpret them as char
-        j = 0;
-        while (i < len && str[i] >= '0' && str[i] <= '7' && j < 3) {
-          num_tmp[j++] = str[i++];
-        }
-        if (j) {
-          num_tmp[j] = '\0';
-          *result_c_str++ = static_cast<char>(strtol(num_tmp, nullptr, 8));
-          new_len -= j;
-          i--;
-        } else {
-          // not an octal literal, just copy a char as is
-          *result_c_str++ = str[i];
-          new_len--;
-        }
+          break;
+        default: // \N \NN \NNN
+          // collect up to three octal digits and interpret them as char
+          j = 0;
+          while (i < len && str[i] >= '0' && str[i] <= '7' && j < 3) {
+            num_tmp[j++] = str[i++];
+          }
+          if (j) {
+            num_tmp[j] = '\0';
+            *result_c_str++ = static_cast<char>(strtol(num_tmp, nullptr, 8));
+            new_len -= j;
+            i--;
+          } else {
+            // not an octal literal, just copy a char as is
+            *result_c_str++ = str[i];
+            new_len--;
+          }
       }
     }
   }
@@ -1207,12 +1211,12 @@ string f$stripcslashes(const string& str) noexcept {
   return result;
 }
 
-string f$stripslashes(const string& str) noexcept {
+string f$stripslashes(const string &str) noexcept {
   int len = str.size();
   int i = 0;
 
   string result(len, false);
-  char* result_c_str = &result[0];
+  char *result_c_str = &result[0];
   for (i = 0; i + 1 < len; i++) {
     if (str[i] == '\\') {
       i++;
@@ -1231,7 +1235,7 @@ string f$stripslashes(const string& str) noexcept {
   return result;
 }
 
-Optional<int64_t> f$stripos(const string& haystack, const string& needle, int64_t offset) noexcept {
+Optional<int64_t> f$stripos(const string &haystack, const string &needle, int64_t offset) noexcept {
   if (offset < 0) {
     php_warning("Wrong offset = %" PRIi64 " in function stripos", offset);
     return false;
@@ -1244,14 +1248,14 @@ Optional<int64_t> f$stripos(const string& haystack, const string& needle, int64_
     return false;
   }
 
-  const char* s = strcasestr(haystack.c_str() + offset, needle.c_str());
+  const char *s = strcasestr(haystack.c_str() + offset, needle.c_str());
   if (s == nullptr) {
     return false;
   }
   return s - haystack.c_str();
 }
 
-static bool php_tag_find(const string& tag, const string& allow) {
+static bool php_tag_find(const string &tag, const string &allow) {
   if (tag.empty() || allow.empty()) {
     return false;
   }
@@ -1262,43 +1266,43 @@ static bool php_tag_find(const string& tag, const string& allow) {
   for (int i = 0; tag[i] && !done; i++) {
     char c = static_cast<char>(tolower(tag[i]));
     switch (c) {
-    case '<':
-      norm.push_back(c);
-      break;
-    case '>':
-      done = 1;
-      break;
-    default:
-      if (!isspace(c)) {
-        // since PHP5.3.4, self-closing tags are interpreted as normal tags,
-        // so normalized <br/> = <br>; note that tags from $allow are not normalized
-        if (c != '/') {
-          norm.push_back(c);
+      case '<':
+        norm.push_back(c);
+        break;
+      case '>':
+        done = 1;
+        break;
+      default:
+        if (!isspace(c)) {
+          // since PHP5.3.4, self-closing tags are interpreted as normal tags,
+          // so normalized <br/> = <br>; note that tags from $allow are not normalized
+          if (c != '/') {
+            norm.push_back(c);
+          }
+          if (state == 0) {
+            state = 1;
+          }
+        } else {
+          if (state == 1) {
+            done = 1;
+          }
         }
-        if (state == 0) {
-          state = 1;
-        }
-      } else {
-        if (state == 1) {
-          done = 1;
-        }
-      }
-      break;
+        break;
     }
   }
   norm.push_back('>');
   return memmem(allow.c_str(), allow.size(), norm.c_str(), norm.size()) != nullptr;
 }
 
-string f$strip_tags(const string& str, const string& allow) {
+string f$strip_tags(const string &str, const string &allow) {
   int br = 0;
   int depth = 0;
   int in_q = 0;
   int state = 0;
 
   const string allow_low = f$strtolower(allow);
-  auto& static_SB = RuntimeContext::get().static_SB;
-  auto& static_SB_spare = RuntimeContext::get().static_SB_spare;
+  auto &static_SB = RuntimeContext::get().static_SB;
+  auto &static_SB_spare = RuntimeContext::get().static_SB_spare;
   static_SB.clean();
   static_SB_spare.clean();
   char lc = 0;
@@ -1306,174 +1310,174 @@ string f$strip_tags(const string& str, const string& allow) {
   for (int i = 0; i < len; i++) {
     char c = str[i];
     switch (c) {
-    case '\0':
-      break;
-    case '<':
-      if (!in_q) {
-        if (isspace(str[i + 1])) {
+      case '\0':
+        break;
+      case '<':
+        if (!in_q) {
+          if (isspace(str[i + 1])) {
+            if (state == 0) {
+              static_SB << c;
+            } else if (state == 1) {
+              static_SB_spare << c;
+            }
+          } else if (state == 0) {
+            lc = '<';
+            state = 1;
+            static_SB_spare << '<';
+          } else if (state == 1) {
+            depth++;
+          }
+        }
+        break;
+      case '(':
+        if (state == 2) {
+          if (lc != '"' && lc != '\'') {
+            lc = '(';
+            br++;
+          }
+        } else if (state == 1) {
+          static_SB_spare << c;
+        } else if (state == 0) {
+          static_SB << c;
+        }
+        break;
+      case ')':
+        if (state == 2) {
+          if (lc != '"' && lc != '\'') {
+            lc = ')';
+            br--;
+          }
+        } else if (state == 1) {
+          static_SB_spare << c;
+        } else if (state == 0) {
+          static_SB << c;
+        }
+        break;
+      case '>':
+        if (depth) {
+          depth--;
+          break;
+        }
+
+        if (in_q) {
+          break;
+        }
+
+        switch (state) {
+          case 1: /* HTML/XML */
+            lc = '>';
+            in_q = state = 0;
+            static_SB_spare << '>';
+            if (php_tag_find(static_SB_spare.str(), allow_low)) {
+              static_SB << static_SB_spare.c_str();
+            }
+            static_SB_spare.clean();
+            break;
+          case 2: /* PHP */
+            if (!br && lc != '\"' && str[i - 1] == '?') {
+              in_q = state = 0;
+              static_SB_spare.clean();
+            }
+            break;
+          case 3:
+            in_q = state = 0;
+            static_SB_spare.clean();
+            break;
+          case 4: /* JavaScript/CSS/etc... */
+            if (i >= 2 && str[i - 1] == '-' && str[i - 2] == '-') {
+              in_q = state = 0;
+              static_SB_spare.clean();
+            }
+            break;
+          default:
+            static_SB << c;
+            break;
+        }
+        break;
+
+      case '"':
+      case '\'':
+        if (state == 4) {
+          /* Inside <!-- comment --> */
+          break;
+        } else if (state == 2 && str[i - 1] != '\\') {
+          if (lc == c) {
+            lc = 0;
+          } else if (lc != '\\') {
+            lc = c;
+          }
+        } else if (state == 0) {
+          static_SB << c;
+        } else if (state == 1) {
+          static_SB_spare << c;
+        }
+        if (state && i > 0 && (state == 1 || str[i - 1] != '\\') && (!in_q || c == in_q)) {
+          if (in_q) {
+            in_q = 0;
+          } else {
+            in_q = c;
+          }
+        }
+        break;
+      case '!':
+        /* JavaScript & Other HTML scripting languages */
+        if (state == 1 && str[i - 1] == '<') {
+          state = 3;
+          lc = c;
+        } else {
           if (state == 0) {
             static_SB << c;
           } else if (state == 1) {
             static_SB_spare << c;
           }
-        } else if (state == 0) {
-          lc = '<';
-          state = 1;
-          static_SB_spare << '<';
-        } else if (state == 1) {
-          depth++;
-        }
-      }
-      break;
-    case '(':
-      if (state == 2) {
-        if (lc != '"' && lc != '\'') {
-          lc = '(';
-          br++;
-        }
-      } else if (state == 1) {
-        static_SB_spare << c;
-      } else if (state == 0) {
-        static_SB << c;
-      }
-      break;
-    case ')':
-      if (state == 2) {
-        if (lc != '"' && lc != '\'') {
-          lc = ')';
-          br--;
-        }
-      } else if (state == 1) {
-        static_SB_spare << c;
-      } else if (state == 0) {
-        static_SB << c;
-      }
-      break;
-    case '>':
-      if (depth) {
-        depth--;
-        break;
-      }
-
-      if (in_q) {
-        break;
-      }
-
-      switch (state) {
-      case 1: /* HTML/XML */
-        lc = '>';
-        in_q = state = 0;
-        static_SB_spare << '>';
-        if (php_tag_find(static_SB_spare.str(), allow_low)) {
-          static_SB << static_SB_spare.c_str();
-        }
-        static_SB_spare.clean();
-        break;
-      case 2: /* PHP */
-        if (!br && lc != '\"' && str[i - 1] == '?') {
-          in_q = state = 0;
-          static_SB_spare.clean();
         }
         break;
-      case 3:
-        in_q = state = 0;
-        static_SB_spare.clean();
-        break;
-      case 4: /* JavaScript/CSS/etc... */
-        if (i >= 2 && str[i - 1] == '-' && str[i - 2] == '-') {
-          in_q = state = 0;
-          static_SB_spare.clean();
-        }
-        break;
-      default:
-        static_SB << c;
-        break;
-      }
-      break;
-
-    case '"':
-    case '\'':
-      if (state == 4) {
-        /* Inside <!-- comment --> */
-        break;
-      } else if (state == 2 && str[i - 1] != '\\') {
-        if (lc == c) {
-          lc = 0;
-        } else if (lc != '\\') {
-          lc = c;
-        }
-      } else if (state == 0) {
-        static_SB << c;
-      } else if (state == 1) {
-        static_SB_spare << c;
-      }
-      if (state && i > 0 && (state == 1 || str[i - 1] != '\\') && (!in_q || c == in_q)) {
-        if (in_q) {
-          in_q = 0;
+      case '-':
+        if (state == 3 && i >= 2 && str[i - 1] == '-' && str[i - 2] == '!') {
+          state = 4;
         } else {
-          in_q = c;
+          if (state == 0) {
+            static_SB << c;
+          } else if (state == 1) {
+            static_SB_spare << c;
+          }
         }
-      }
-      break;
-    case '!':
-      /* JavaScript & Other HTML scripting languages */
-      if (state == 1 && str[i - 1] == '<') {
-        state = 3;
-        lc = c;
-      } else {
+        break;
+      case '?':
+        if (state == 1 && str[i - 1] == '<') {
+          br = 0;
+          state = 2;
+          break;
+        }
+        /* fall-through */
+      case 'E':
+      case 'e':
+        /* !DOCTYPE exception */
+        if (state == 3 && i > 6 && tolower(str[i - 1]) == 'p' && tolower(str[i - 2]) == 'y' && tolower(str[i - 3]) == 't' && tolower(str[i - 4]) == 'c'
+            && tolower(str[i - 5]) == 'o' && tolower(str[i - 6]) == 'd') {
+          state = 1;
+          break;
+        }
+        /* fall-through */
+      case 'l':
+      case 'L':
+        /* swm: If we encounter '<?xml' then we shouldn't be in
+         * state == 2 (PHP). Switch back to HTML.
+         */
+
+        if (state == 2 && i > 2 && tolower(str[i - 1]) == 'm' && tolower(str[i - 2]) == 'x') {
+          state = 1;
+          break;
+        }
+
+        /* fall-through */
+      default:
         if (state == 0) {
           static_SB << c;
         } else if (state == 1) {
           static_SB_spare << c;
         }
-      }
-      break;
-    case '-':
-      if (state == 3 && i >= 2 && str[i - 1] == '-' && str[i - 2] == '!') {
-        state = 4;
-      } else {
-        if (state == 0) {
-          static_SB << c;
-        } else if (state == 1) {
-          static_SB_spare << c;
-        }
-      }
-      break;
-    case '?':
-      if (state == 1 && str[i - 1] == '<') {
-        br = 0;
-        state = 2;
         break;
-      }
-      /* fall-through */
-    case 'E':
-    case 'e':
-      /* !DOCTYPE exception */
-      if (state == 3 && i > 6 && tolower(str[i - 1]) == 'p' && tolower(str[i - 2]) == 'y' && tolower(str[i - 3]) == 't' && tolower(str[i - 4]) == 'c' &&
-          tolower(str[i - 5]) == 'o' && tolower(str[i - 6]) == 'd') {
-        state = 1;
-        break;
-      }
-      /* fall-through */
-    case 'l':
-    case 'L':
-      /* swm: If we encounter '<?xml' then we shouldn't be in
-       * state == 2 (PHP). Switch back to HTML.
-       */
-
-      if (state == 2 && i > 2 && tolower(str[i - 1]) == 'm' && tolower(str[i - 2]) == 'x') {
-        state = 1;
-        break;
-      }
-
-      /* fall-through */
-    default:
-      if (state == 0) {
-        static_SB << c;
-      } else if (state == 1) {
-        static_SB_spare << c;
-      }
-      break;
     }
   }
 
@@ -1481,12 +1485,12 @@ string f$strip_tags(const string& str, const string& allow) {
 }
 
 template<class T>
-string strip_tags_string(const array<T>& list) {
+string strip_tags_string(const array<T> &list) {
   string allow_str;
   if (!list.empty()) {
     allow_str.reserve_at_least(list.count() * strlen("<br>"));
-    for (const auto& it : list) {
-      const auto& s = it.get_value();
+    for (const auto &it : list) {
+      const auto &s = it.get_value();
       if (!s.empty()) {
         allow_str.push_back('<');
         allow_str.append(f$strval(s));
@@ -1497,7 +1501,7 @@ string strip_tags_string(const array<T>& list) {
   return allow_str;
 }
 
-string f$strip_tags(const string& str, const mixed& allow) {
+string f$strip_tags(const string &str, const mixed &allow) {
   if (!allow.is_array()) {
     return f$strip_tags(str, allow.to_string());
   }
@@ -1505,17 +1509,17 @@ string f$strip_tags(const string& str, const mixed& allow) {
   return f$strip_tags(str, strip_tags_string(allow_list));
 }
 
-string f$strip_tags(const string& str, const array<string>& allow_list) {
+string f$strip_tags(const string &str, const array<string> &allow_list) {
   return f$strip_tags(str, strip_tags_string(allow_list));
 }
 
-Optional<string> f$stristr(const string& haystack, const string& needle, bool before_needle) noexcept {
+Optional<string> f$stristr(const string &haystack, const string &needle, bool before_needle) noexcept {
   if (static_cast<int>(needle.size()) == 0) {
     php_warning("Parameter needle is empty in function stristr");
     return false;
   }
 
-  const char* s = strcasestr(haystack.c_str(), needle.c_str());
+  const char *s = strcasestr(haystack.c_str(), needle.c_str());
   if (s == nullptr) {
     return false;
   }
@@ -1527,7 +1531,7 @@ Optional<string> f$stristr(const string& haystack, const string& needle, bool be
   return haystack.substr(pos, haystack.size() - pos);
 }
 
-Optional<string> f$strrchr(const string& haystack, const string& needle) noexcept {
+Optional<string> f$strrchr(const string &haystack, const string &needle) noexcept {
   if (needle.empty()) {
     php_warning("Parameter needle is empty in function strrchr");
     return false;
@@ -1568,7 +1572,7 @@ Optional<string> f$strrchr(const string& haystack, const string& needle) noexcep
   3. This notice may not be removed or altered from any source distribution.
 */
 
-static int64_t compare_right(char const** a, char const* aend, char const** b, char const* bend) {
+static int64_t compare_right(char const **a, char const *aend, char const **b, char const *bend) {
   int64_t bias = 0;
 
   /* The longest run of digits wins.  That aside, the greatest
@@ -1576,8 +1580,8 @@ static int64_t compare_right(char const** a, char const* aend, char const** b, c
      both numbers to know that they have the same magnitude, so we
      remember it in BIAS. */
   for (;; (*a)++, (*b)++) {
-    if ((*a == aend || !isdigit(static_cast<int32_t>(static_cast<unsigned char>(**a)))) &&
-        (*b == bend || !isdigit(static_cast<int32_t>(static_cast<unsigned char>(**b))))) {
+    if ((*a == aend || !isdigit(static_cast<int32_t>(static_cast<unsigned char>(**a))))
+        && (*b == bend || !isdigit(static_cast<int32_t>(static_cast<unsigned char>(**b))))) {
       return bias;
     } else if (*a == aend || !isdigit(static_cast<int32_t>(static_cast<unsigned char>(**a)))) {
       return -1;
@@ -1597,12 +1601,12 @@ static int64_t compare_right(char const** a, char const* aend, char const** b, c
   return 0;
 }
 
-static int64_t compare_left(char const** a, char const* aend, char const** b, char const* bend) {
+static int64_t compare_left(char const **a, char const *aend, char const **b, char const *bend) {
   /* Compare two left-aligned numbers: the first to have a
      different value wins. */
   for (;; (*a)++, (*b)++) {
-    if ((*a == aend || !isdigit(static_cast<int32_t>(static_cast<unsigned char>(**a)))) &&
-        (*b == bend || !isdigit(static_cast<int32_t>(static_cast<unsigned char>(**b))))) {
+    if ((*a == aend || !isdigit(static_cast<int32_t>(static_cast<unsigned char>(**a))))
+        && (*b == bend || !isdigit(static_cast<int32_t>(static_cast<unsigned char>(**b))))) {
       return 0;
     } else if (*a == aend || !isdigit(static_cast<int32_t>(static_cast<unsigned char>(**a)))) {
       return -1;
@@ -1618,13 +1622,13 @@ static int64_t compare_left(char const** a, char const* aend, char const** b, ch
   return 0;
 }
 
-static int64_t strnatcmp_ex(char const* a, size_t a_len, char const* b, size_t b_len, int64_t fold_case) {
+static int64_t strnatcmp_ex(char const *a, size_t a_len, char const *b, size_t b_len, int64_t fold_case) {
   unsigned char ca = 0;
   unsigned char cb = 0;
-  char const* ap = nullptr;
-  char const* bp = nullptr;
-  char const* aend = a + a_len;
-  char const* bend = b + b_len;
+  char const *ap = nullptr;
+  char const *bp = nullptr;
+  char const *aend = a + a_len;
+  char const *bend = b + b_len;
   bool fractional = false;
   int64_t result = 0;
   short leading = 1;
@@ -1708,15 +1712,15 @@ static int64_t strnatcmp_ex(char const* a, size_t a_len, char const* b, size_t b
   }
 }
 
-int64_t f$strcmp(const string& lhs, const string& rhs) noexcept {
+int64_t f$strcmp(const string &lhs, const string &rhs) noexcept {
   return lhs.compare(rhs);
 }
 
-int64_t f$strnatcmp(const string& lhs, const string& rhs) noexcept {
+int64_t f$strnatcmp(const string &lhs, const string &rhs) noexcept {
   return strnatcmp_ex(lhs.c_str(), lhs.size(), rhs.c_str(), rhs.size(), 0);
 }
 
-Optional<int64_t> f$strpos(const string& haystack, const string& needle, int64_t offset) noexcept {
+Optional<int64_t> f$strpos(const string &haystack, const string &needle, int64_t offset) noexcept {
   if (offset < 0) {
     php_warning("Wrong offset = %" PRIi64 " in function strpos", offset);
     return false;
@@ -1730,22 +1734,22 @@ Optional<int64_t> f$strpos(const string& haystack, const string& needle, int64_t
       return false;
     }
 
-    const char* s = static_cast<const char*>(memchr(haystack.c_str() + offset, needle[0], haystack.size() - offset));
+    const char *s = static_cast<const char *>(memchr(haystack.c_str() + offset, needle[0], haystack.size() - offset));
     if (s == nullptr) {
       return false;
     }
     return s - haystack.c_str();
   }
 
-  const char* s = static_cast<const char*>(memmem(haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size()));
+  const char *s = static_cast<const char *>(memmem(haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size()));
   if (s == nullptr) {
     return false;
   }
   return s - haystack.c_str();
 }
 
-Optional<int64_t> f$strrpos(const string& haystack, const string& needle, int64_t offset) noexcept {
-  const char* end = haystack.c_str() + haystack.size();
+Optional<int64_t> f$strrpos(const string &haystack, const string &needle, int64_t offset) noexcept {
+  const char *end = haystack.c_str() + haystack.size();
   if (offset < 0) {
     offset += haystack.size() + 1;
     if (offset < 0) {
@@ -1763,19 +1767,19 @@ Optional<int64_t> f$strrpos(const string& haystack, const string& needle, int64_
     return false;
   }
 
-  const char* s = static_cast<const char*>(memmem(haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size()));
-  const char* t = nullptr;
+  const char *s = static_cast<const char *>(memmem(haystack.c_str() + offset, haystack.size() - offset, needle.c_str(), needle.size()));
+  const char *t = nullptr;
   if (s == nullptr || s >= end) {
     return false;
   }
-  while ((t = static_cast<const char*>(memmem(s + 1, haystack.c_str() + haystack.size() - s - 1, needle.c_str(), needle.size()))) != nullptr && t < end) {
+  while ((t = static_cast<const char *>(memmem(s + 1, haystack.c_str() + haystack.size() - s - 1, needle.c_str(), needle.size()))) != nullptr && t < end) {
     s = t;
   }
   return s - haystack.c_str();
 }
 
-Optional<int64_t> f$strripos(const string& haystack, const string& needle, int64_t offset) noexcept {
-  const char* end = haystack.c_str() + haystack.size();
+Optional<int64_t> f$strripos(const string &haystack, const string &needle, int64_t offset) noexcept {
+  const char *end = haystack.c_str() + haystack.size();
   if (offset < 0) {
     offset += haystack.size() + 1;
     if (offset < 0) {
@@ -1793,8 +1797,8 @@ Optional<int64_t> f$strripos(const string& haystack, const string& needle, int64
     return false;
   }
 
-  const char* s = strcasestr(haystack.c_str() + offset, needle.c_str());
-  const char* t = nullptr;
+  const char *s = strcasestr(haystack.c_str() + offset, needle.c_str());
+  const char *t = nullptr;
   if (s == nullptr || s >= end) {
     return false;
   }
@@ -1804,13 +1808,13 @@ Optional<int64_t> f$strripos(const string& haystack, const string& needle, int64
   return s - haystack.c_str();
 }
 
-Optional<string> f$strstr(const string& haystack, const string& needle, bool before_needle) noexcept {
+Optional<string> f$strstr(const string &haystack, const string &needle, bool before_needle) noexcept {
   if (static_cast<int>(needle.size()) == 0) {
     php_warning("Parameter needle is empty in function strstr");
     return false;
   }
 
-  const char* s = static_cast<const char*>(memmem(haystack.c_str(), haystack.size(), needle.c_str(), needle.size()));
+  const char *s = static_cast<const char *>(memmem(haystack.c_str(), haystack.size(), needle.c_str(), needle.size()));
   if (s == nullptr) {
     return false;
   }
@@ -1822,7 +1826,7 @@ Optional<string> f$strstr(const string& haystack, const string& needle, bool bef
   return haystack.substr(pos, haystack.size() - pos);
 }
 
-string f$strtolower(const string& str) noexcept {
+string f$strtolower(const string &str) noexcept {
   int n = str.size();
 
   // if there is no upper case char inside the string, we can
@@ -1831,8 +1835,8 @@ string f$strtolower(const string& str) noexcept {
   // use memcpy to copy everything before that pos;
   // note: do not use islower() here, the compiler does not inline that function call;
   // it could be beneficial to use 256-byte LUT here, but SIMD approach could be even better
-  const char* end = str.c_str() + n;
-  const char* uppercase_pos = std::find_if(str.c_str(), end, [](unsigned char ch) { return ch >= 'A' && ch <= 'Z'; });
+  const char *end = str.c_str() + n;
+  const char *uppercase_pos = std::find_if(str.c_str(), end, [](unsigned char ch) { return ch >= 'A' && ch <= 'Z'; });
   if (uppercase_pos == end) {
     return str;
   }
@@ -1849,12 +1853,12 @@ string f$strtolower(const string& str) noexcept {
   return res;
 }
 
-string f$strtoupper(const string& str) noexcept {
+string f$strtoupper(const string &str) noexcept {
   int n = str.size();
 
   // same optimization as in strtolower
-  const char* end = str.c_str() + n;
-  const char* lowercase_pos = std::find_if(str.c_str(), end, [](unsigned char ch) { return ch >= 'a' && ch <= 'z'; });
+  const char *end = str.c_str() + n;
+  const char *lowercase_pos = std::find_if(str.c_str(), end, [](unsigned char ch) { return ch >= 'a' && ch <= 'z'; });
   if (lowercase_pos == end) {
     return str;
   }
@@ -1871,12 +1875,12 @@ string f$strtoupper(const string& str) noexcept {
   return res;
 }
 
-string f$strtr(const string& subject, const string& from, const string& to) noexcept {
+string f$strtr(const string &subject, const string &from, const string &to) noexcept {
   int n = subject.size();
   string result(n, false);
   for (int i = 0; i < n; i++) {
-    const char* p = static_cast<const char*>(
-        memchr(static_cast<const void*>(from.c_str()), static_cast<int>(static_cast<unsigned char>(subject[i])), static_cast<size_t>(from.size())));
+    const char *p = static_cast<const char *>(
+      memchr(static_cast<const void *>(from.c_str()), static_cast<int>(static_cast<unsigned char>(subject[i])), static_cast<size_t>(from.size())));
     if (p == nullptr || static_cast<string::size_type>(p - from.c_str()) >= to.size()) {
       result[i] = subject[i];
     } else {
@@ -1886,7 +1890,7 @@ string f$strtr(const string& subject, const string& from, const string& to) noex
   return result;
 }
 
-string f$str_pad(const string& input, int64_t len, const string& pad_str, int64_t pad_type) noexcept {
+string f$str_pad(const string &input, int64_t len, const string &pad_str, int64_t pad_type) noexcept {
   string::size_type old_len = input.size();
   if (len <= old_len) {
     return input;
@@ -1929,7 +1933,7 @@ string f$str_pad(const string& input, int64_t len, const string& pad_str, int64_
   return res;
 }
 
-string f$str_repeat(const string& s, int64_t multiplier) noexcept {
+string f$str_repeat(const string &s, int64_t multiplier) noexcept {
   const string::size_type len = s.size();
   if (multiplier <= 0 || len == 0) {
     return {};
@@ -1959,10 +1963,10 @@ string f$str_repeat(const string& s, int64_t multiplier) noexcept {
   return result;
 }
 
-static string str_replace_char(char c, const string& replace, const string& subject, int64_t& replace_count, bool with_case) {
+static string str_replace_char(char c, const string &replace, const string &subject, int64_t &replace_count, bool with_case) {
   int count = 0;
-  const char* piece = subject.c_str();
-  const char* piece_end = subject.c_str() + subject.size();
+  const char *piece = subject.c_str();
+  const char *piece_end = subject.c_str() + subject.size();
 
   string result;
   if (!replace.empty()) {
@@ -1970,9 +1974,9 @@ static string str_replace_char(char c, const string& replace, const string& subj
   }
 
   while (true) {
-    const char* pos = nullptr;
+    const char *pos = nullptr;
     if (with_case) {
-      pos = static_cast<const char*>(memchr(piece, c, piece_end - piece));
+      pos = static_cast<const char *>(memchr(piece, c, piece_end - piece));
     } else {
       const char needle[] = {c, '\0'};
       pos = strcasestr(piece, needle);
@@ -1998,15 +2002,15 @@ static string str_replace_char(char c, const string& replace, const string& subj
   return {};
 }
 
-static const char* find_substr(const char* where, const char* where_end, const string& what, bool with_case) {
+static const char *find_substr(const char *where, const char *where_end, const string &what, bool with_case) {
   if (with_case) {
-    return static_cast<char*>(memmem(where, where_end - where, what.c_str(), what.size()));
+    return static_cast<char *>(memmem(where, where_end - where, what.c_str(), what.size()));
   }
 
   return strcasestr(where, what.c_str());
 }
 
-void str_replace_inplace(const string& search, const string& replace, string& subject, int64_t& replace_count, bool with_case) noexcept {
+void str_replace_inplace(const string &search, const string &replace, string &subject, int64_t &replace_count, bool with_case) noexcept {
   if (search.empty()) {
     php_warning("Parameter search is empty in function str_replace");
     return;
@@ -2015,14 +2019,14 @@ void str_replace_inplace(const string& search, const string& replace, string& su
   subject.make_not_shared();
 
   int count = 0;
-  const char* piece = subject.c_str();
-  const char* piece_end = subject.c_str() + subject.size();
+  const char *piece = subject.c_str();
+  const char *piece_end = subject.c_str() + subject.size();
 
-  char* output = subject.buffer();
+  char *output = subject.buffer();
   bool length_no_change = search.size() == replace.size();
 
   while (true) {
-    const char* pos = find_substr(piece, piece_end, search, with_case);
+    const char *pos = find_substr(piece, piece_end, search, with_case);
     if (pos == nullptr) {
       if (count == 0) {
         return;
@@ -2052,19 +2056,19 @@ void str_replace_inplace(const string& search, const string& replace, string& su
   php_assert(0); // unreachable
 }
 
-string str_replace(const string& search, const string& replace, const string& subject, int64_t& replace_count, bool with_case) noexcept {
+string str_replace(const string &search, const string &replace, const string &subject, int64_t &replace_count, bool with_case) noexcept {
   if (search.empty()) {
     php_warning("Parameter search is empty in function str_replace");
     return subject;
   }
 
   int count = 0;
-  const char* piece = subject.c_str();
-  const char* piece_end = subject.c_str() + subject.size();
+  const char *piece = subject.c_str();
+  const char *piece_end = subject.c_str() + subject.size();
 
   string result;
   while (true) {
-    const char* pos = find_substr(piece, piece_end, search, with_case);
+    const char *pos = find_substr(piece, piece_end, search, with_case);
     if (pos == nullptr) {
       if (count == 0) {
         return subject;
@@ -2086,17 +2090,17 @@ string str_replace(const string& search, const string& replace, const string& su
 }
 
 // common for f$str_replace(string) and f$str_ireplace(string)
-string str_replace_gen(const string& search, const string& replace, const string& subject, int64_t& replace_count, bool with_case);
+string str_replace_gen(const string &search, const string &replace, const string &subject, int64_t &replace_count, bool with_case);
 
-string str_replace_string(const mixed& search, const mixed& replace, const string& subject, int64_t& replace_count, bool with_case) {
+string str_replace_string(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count, bool with_case) {
   if (search.is_array() && replace.is_array()) {
     return str_replace_string_array(search.as_array(""), replace.as_array(""), subject, replace_count, with_case);
   } else if (search.is_array()) {
     string result = subject;
-    const string& replace_value = replace.to_string();
+    const string &replace_value = replace.to_string();
 
     for (array<mixed>::const_iterator it = search.begin(); it != search.end(); ++it) {
-      const string& search_string = f$strval(it.get_value());
+      const string &search_string = f$strval(it.get_value());
       if (search_string.size() >= replace_value.size()) {
         str_replace_inplace(search_string, replace_value, result, replace_count, with_case);
       } else {
@@ -2115,7 +2119,7 @@ string str_replace_string(const mixed& search, const mixed& replace, const strin
 }
 
 // common for f$str_replace(string) and f$str_ireplace(string)
-string str_replace_gen(const string& search, const string& replace, const string& subject, int64_t& replace_count, bool with_case) {
+string str_replace_gen(const string &search, const string &replace, const string &subject, int64_t &replace_count, bool with_case) {
   replace_count = 0;
   if (search.size() == 1) {
     return str_replace_char(search[0], replace, subject, replace_count, with_case);
@@ -2124,24 +2128,24 @@ string str_replace_gen(const string& search, const string& replace, const string
   }
 }
 
-string f$str_replace(const string& search, const string& replace, const string& subject, int64_t& replace_count) noexcept {
+string f$str_replace(const string &search, const string &replace, const string &subject, int64_t &replace_count) noexcept {
   return str_replace_gen(search, replace, subject, replace_count, true);
 }
 
-string f$str_ireplace(const string& search, const string& replace, const string& subject, int64_t& replace_count) noexcept {
+string f$str_ireplace(const string &search, const string &replace, const string &subject, int64_t &replace_count) noexcept {
   return str_replace_gen(search, replace, subject, replace_count, false);
 }
 
-string f$str_replace(const mixed& search, const mixed& replace, const string& subject, int64_t& replace_count) noexcept {
+string f$str_replace(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count) noexcept {
   return str_replace_string(search, replace, subject, replace_count, true);
 }
 
-string f$str_ireplace(const mixed& search, const mixed& replace, const string& subject, int64_t& replace_count) noexcept {
+string f$str_ireplace(const mixed &search, const mixed &replace, const string &subject, int64_t &replace_count) noexcept {
   return str_replace_string(search, replace, subject, replace_count, false);
 }
 
 // common for f$str_replace(mixed) and f$str_ireplace(mixed)
-mixed str_replace_gen(const mixed& search, const mixed& replace, const mixed& subject, int64_t& replace_count, bool with_case) {
+mixed str_replace_gen(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count, bool with_case) {
   replace_count = 0;
   if (subject.is_array()) {
     array<mixed> result;
@@ -2157,15 +2161,15 @@ mixed str_replace_gen(const mixed& search, const mixed& replace, const mixed& su
   }
 }
 
-mixed f$str_replace(const mixed& search, const mixed& replace, const mixed& subject, int64_t& replace_count) noexcept {
+mixed f$str_replace(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count) noexcept {
   return str_replace_gen(search, replace, subject, replace_count, true);
 }
 
-mixed f$str_ireplace(const mixed& search, const mixed& replace, const mixed& subject, int64_t& replace_count) noexcept {
+mixed f$str_ireplace(const mixed &search, const mixed &replace, const mixed &subject, int64_t &replace_count) noexcept {
   return str_replace_gen(search, replace, subject, replace_count, false);
 }
 
-array<string> f$str_split(const string& str, int64_t split_length) noexcept {
+array<string> f$str_split(const string &str, int64_t split_length) noexcept {
   if (split_length <= 0) {
     php_warning("Wrong parameter split_length = %" PRIi64 " in function str_split", split_length);
     array<string> result(array_size(1, true));
@@ -2184,7 +2188,7 @@ array<string> f$str_split(const string& str, int64_t split_length) noexcept {
   return result;
 }
 
-int64_t f$substr_count(const string& haystack, const string& needle, int64_t offset, int64_t length) noexcept {
+int64_t f$substr_count(const string &haystack, const string &needle, int64_t offset, int64_t length) noexcept {
   offset = haystack.get_correct_offset(offset);
   if (offset >= haystack.size()) {
     return 0;
@@ -2194,15 +2198,15 @@ int64_t f$substr_count(const string& haystack, const string& needle, int64_t off
   }
 
   int64_t ans = 0;
-  const char* s = haystack.c_str() + offset;
-  const char* end = haystack.c_str() + offset + length;
+  const char *s = haystack.c_str() + offset;
+  const char *end = haystack.c_str() + offset + length;
   if (needle.empty()) {
     php_warning("Needle is empty in function substr_count");
     return end - s;
   }
   do {
-    s = static_cast<const char*>(
-        memmem(static_cast<const void*>(s), static_cast<size_t>(end - s), static_cast<const void*>(needle.c_str()), static_cast<size_t>(needle.size())));
+    s = static_cast<const char *>(
+      memmem(static_cast<const void *>(s), static_cast<size_t>(end - s), static_cast<const void *>(needle.c_str()), static_cast<size_t>(needle.size())));
     if (s == nullptr) {
       return ans;
     }
@@ -2211,7 +2215,7 @@ int64_t f$substr_count(const string& haystack, const string& needle, int64_t off
   } while (true);
 }
 
-string f$substr_replace(const string& str, const string& replacement, int64_t start, int64_t length) noexcept {
+string f$substr_replace(const string &str, const string &replacement, int64_t start, int64_t length) noexcept {
   int64_t str_len = str.size();
 
   // if $start is negative, count $start from the end of the string
@@ -2240,7 +2244,7 @@ string f$substr_replace(const string& str, const string& replacement, int64_t st
   return result;
 }
 
-Optional<int64_t> f$substr_compare(const string& main_str, const string& str, int64_t offset, int64_t length, bool case_insensitivity) noexcept {
+Optional<int64_t> f$substr_compare(const string &main_str, const string &str, int64_t offset, int64_t length, bool case_insensitivity) noexcept {
   int64_t str_len = main_str.size();
 
   if (length < 0) {
@@ -2263,8 +2267,8 @@ Optional<int64_t> f$substr_compare(const string& main_str, const string& str, in
   }
 }
 
-tmp_string trim_impl(const char* s, string::size_type s_len, const string& what) {
-  const char* mask = get_mask(what);
+tmp_string trim_impl(const char *s, string::size_type s_len, const string &what) {
+  const char *mask = get_mask(what);
 
   int len = s_len;
   if (len == 0 || (!mask[static_cast<unsigned char>(s[len - 1])] && !mask[static_cast<unsigned char>(s[0])])) {
@@ -2286,19 +2290,19 @@ tmp_string trim_impl(const char* s, string::size_type s_len, const string& what)
   return {s + l, static_cast<string::size_type>(len - l)};
 }
 
-tmp_string f$_tmp_trim(tmp_string s, const string& what) noexcept {
+tmp_string f$_tmp_trim(tmp_string s, const string &what) noexcept {
   return trim_impl(s.data, s.size, what);
 }
 
-tmp_string f$_tmp_trim(const string& s, const string& what) noexcept {
+tmp_string f$_tmp_trim(const string &s, const string &what) noexcept {
   return trim_impl(s.c_str(), s.size(), what);
 }
 
-string f$trim(tmp_string s, const string& what) noexcept {
+string f$trim(tmp_string s, const string &what) noexcept {
   return materialize_tmp_string(trim_impl(s.data, s.size, what));
 }
 
-string f$trim(const string& s, const string& what) noexcept {
+string f$trim(const string &s, const string &what) noexcept {
   tmp_string result = trim_impl(s.c_str(), s.size(), what);
   if (result.data == s.c_str() && result.size == s.size()) {
     return s;
@@ -2306,7 +2310,7 @@ string f$trim(const string& s, const string& what) noexcept {
   return materialize_tmp_string(result);
 }
 
-string f$ucwords(const string& str) noexcept {
+string f$ucwords(const string &str) noexcept {
   int n = str.size();
 
   bool in_word = false;
@@ -2329,7 +2333,7 @@ string f$ucwords(const string& str) noexcept {
   return res;
 }
 
-Optional<array<mixed>> f$unpack(const string& pattern, const string& data) noexcept {
+Optional<array<mixed>> f$unpack(const string &pattern, const string &data) noexcept {
   array<mixed> result;
 
   int data_len = data.size();
@@ -2359,7 +2363,7 @@ Optional<array<mixed>> f$unpack(const string& pattern, const string& data) noexc
       return result;
     }
 
-    const char* key_end = strchrnul(&pattern[i], '/');
+    const char *key_end = strchrnul(&pattern[i], '/');
     string key_prefix(pattern.c_str() + i, static_cast<string::size_type>(key_end - pattern.c_str() - i));
     i = static_cast<int>(key_end - pattern.c_str());
     if (i < static_cast<int>(pattern.size())) {
@@ -2373,235 +2377,235 @@ Optional<array<mixed>> f$unpack(const string& pattern, const string& data) noexc
 
     char filler = 0;
     switch (format) {
-    case 'A':
-      filler = ' ';
-      /* fallthrough */
-    case 'a': {
-      if (cnt == 0) {
-        cnt = data_len - data_pos;
-      } else if (cnt == -1) {
-        cnt = 1;
-      }
-      int read_len = cnt;
-      if (read_len + data_pos > data_len) {
-        php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-        return false;
-      }
-      while (cnt > 0 && data[data_pos + cnt - 1] == filler) {
-        cnt--;
-      }
-
-      if (key_prefix.empty()) {
-        key_prefix = StringLibConstants::get().ONE_STR;
-      }
-
-      result.set_value(key_prefix, string(data.c_str() + data_pos, cnt));
-
-      data_pos += read_len;
-      break;
-    }
-    case 'h':
-    case 'H': {
-      if (cnt == 0) {
-        cnt = (data_len - data_pos) * 2;
-      } else if (cnt == -1) {
-        cnt = 1;
-      }
-
-      int read_len = (cnt + 1) / 2;
-      if (read_len + data_pos > data_len) {
-        php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-        return false;
-      }
-
-      string value(cnt, false);
-      for (int j = data_pos; cnt > 0; j++, cnt -= 2) {
-        unsigned char ch = data[j];
-        char num_high = StringLibConstants::get().lhex_digits[ch >> 4];
-        char num_low = StringLibConstants::get().lhex_digits[ch & 15];
-        if (format == 'h') {
-          swap(num_high, num_low);
+      case 'A':
+        filler = ' ';
+        /* fallthrough */
+      case 'a': {
+        if (cnt == 0) {
+          cnt = data_len - data_pos;
+        } else if (cnt == -1) {
+          cnt = 1;
+        }
+        int read_len = cnt;
+        if (read_len + data_pos > data_len) {
+          php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
+          return false;
+        }
+        while (cnt > 0 && data[data_pos + cnt - 1] == filler) {
+          cnt--;
         }
 
-        value[(j - data_pos) * 2] = num_high;
-        if (cnt > 1) {
-          value[(j - data_pos) * 2 + 1] = num_low;
+        if (key_prefix.empty()) {
+          key_prefix = StringLibConstants::get().ONE_STR;
         }
+
+        result.set_value(key_prefix, string(data.c_str() + data_pos, cnt));
+
+        data_pos += read_len;
+        break;
       }
-      php_assert(cnt == 0 || cnt == -1);
+      case 'h':
+      case 'H': {
+        if (cnt == 0) {
+          cnt = (data_len - data_pos) * 2;
+        } else if (cnt == -1) {
+          cnt = 1;
+        }
 
-      if (key_prefix.empty()) {
-        key_prefix = StringLibConstants::get().ONE_STR;
-      }
-
-      result.set_value(key_prefix, value);
-
-      data_pos += read_len;
-      break;
-    }
-
-    default: {
-      if (key_prefix.empty() && cnt == -1) {
-        key_prefix = StringLibConstants::get().ONE_STR;
-      }
-      int counter = 1;
-      do {
-        mixed value;
-        int value_int = 0;
-        if (data_pos >= data_len) {
+        int read_len = (cnt + 1) / 2;
+        if (read_len + data_pos > data_len) {
           php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
           return false;
         }
 
-        switch (format) {
-        case 'c':
-        case 'C':
-          value_int = static_cast<int>(data[data_pos++]);
-          if (format != 'c' && value_int < 0) {
-            value_int += 256;
-          }
-          value = value_int;
-          break;
-        case 's':
-        case 'S':
-        case 'v':
-          value_int = static_cast<unsigned char>(data[data_pos]);
-          if (data_pos + 1 < data_len) {
-            value_int |= data[data_pos + 1] << 8;
-          }
-          data_pos += 2;
-          if (format != 's' && value_int < 0) {
-            value_int += 65536;
-          }
-          value = value_int;
-          break;
-        case 'n':
-          value_int = static_cast<unsigned char>(data[data_pos]) << 8;
-          if (data_pos + 1 < data_len) {
-            value_int |= static_cast<unsigned char>(data[data_pos + 1]);
-          }
-          data_pos += 2;
-          value = value_int;
-          break;
-        case 'i':
-        case 'I':
-        case 'l':
-        case 'L':
-        case 'V':
-          value_int = static_cast<unsigned char>(data[data_pos]);
-          if (data_pos + 1 < data_len) {
-            value_int |= static_cast<unsigned char>(data[data_pos + 1]) << 8;
-            if (data_pos + 2 < data_len) {
-              value_int |= static_cast<unsigned char>(data[data_pos + 2]) << 16;
-              if (data_pos + 3 < data_len) {
-                value_int |= data[data_pos + 3] << 24;
-              }
-            }
-          }
-          data_pos += 4;
-          value = value_int;
-          break;
-        case 'N':
-          value_int = static_cast<unsigned char>(data[data_pos]) << 24;
-          if (data_pos + 1 < data_len) {
-            value_int |= static_cast<unsigned char>(data[data_pos + 1]) << 16;
-            if (data_pos + 2 < data_len) {
-              value_int |= static_cast<unsigned char>(data[data_pos + 2]) << 8;
-              if (data_pos + 3 < data_len) {
-                value_int |= static_cast<unsigned char>(data[data_pos + 3]);
-              }
-            }
-          }
-          data_pos += 4;
-          value = value_int;
-          break;
-        case 'f': {
-          if (data_pos + static_cast<int>(sizeof(float)) > data_len) {
-            php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-            return false;
-          }
-          value = static_cast<double>(*(float*)(data.c_str() + data_pos));
-          data_pos += static_cast<int>(sizeof(float));
-          break;
-        }
-        case 'e':
-        case 'E':
-        case 'd': {
-          if (data_pos + static_cast<int>(sizeof(double)) > data_len) {
-            php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-            return false;
-          }
-          uint64_t value_byteordered = 0;
-          memcpy(&value_byteordered, data.c_str() + data_pos, sizeof(double));
-          if (format == 'e') {
-            value_byteordered = le64toh(value_byteordered);
-          } else if (format == 'E') {
-            value_byteordered = be64toh(value_byteordered);
-          }
-          value = float64_from_bits(value_byteordered);
-          data_pos += static_cast<int>(sizeof(double));
-          break;
-        }
-        case 'J':
-        case 'P':
-        case 'Q': {
-          if (data_pos + static_cast<int>(sizeof(unsigned long long)) > data_len) {
-            php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-            return false;
+        string value(cnt, false);
+        for (int j = data_pos; cnt > 0; j++, cnt -= 2) {
+          unsigned char ch = data[j];
+          char num_high = StringLibConstants::get().lhex_digits[ch >> 4];
+          char num_low = StringLibConstants::get().lhex_digits[ch & 15];
+          if (format == 'h') {
+            swap(num_high, num_low);
           }
 
-          // stored in the host machine order by the default (Q flag)
-          unsigned long long value_byteordered = 0;
-          memcpy(&value_byteordered, data.c_str() + data_pos, sizeof(value_byteordered));
-          if (format == 'P') {
-            // for P encode in little endian order
-            value_byteordered = le64toh(value_byteordered);
-          } else if (format == 'J') {
-            // for J encode in big endian order
-            value_byteordered = be64toh(value_byteordered);
+          value[(j - data_pos) * 2] = num_high;
+          if (cnt > 1) {
+            value[(j - data_pos) * 2 + 1] = num_low;
           }
+        }
+        php_assert(cnt == 0 || cnt == -1);
 
-          const size_t buf_size = 20;
-          char buf[buf_size];
-          value = string{buf, static_cast<string::size_type>(simd_uint64_to_string(value_byteordered, buf) - buf)};
-          data_pos += static_cast<int>(sizeof(unsigned long long));
-          break;
-        }
-        case 'q': {
-          if (data_pos + static_cast<int>(sizeof(long long)) > data_len) {
-            php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
-            return false;
-          }
-          long long value_ll = *reinterpret_cast<const long long*>(data.c_str() + data_pos);
-          value = f$strval(static_cast<int64_t>(value_ll));
-          data_pos += static_cast<int>(sizeof(long long));
-          break;
-        }
-        default:
-          php_warning("Format code \"%c\" not supported", format);
-          return false;
+        if (key_prefix.empty()) {
+          key_prefix = StringLibConstants::get().ONE_STR;
         }
 
-        string key = key_prefix;
-        if (cnt != -1) {
-          key.append(string(counter++));
+        result.set_value(key_prefix, value);
+
+        data_pos += read_len;
+        break;
+      }
+
+      default: {
+        if (key_prefix.empty() && cnt == -1) {
+          key_prefix = StringLibConstants::get().ONE_STR;
         }
-
-        result.set_value(key, value);
-
-        if (cnt == 0) {
+        int counter = 1;
+        do {
+          mixed value;
+          int value_int = 0;
           if (data_pos >= data_len) {
-            return result;
+            php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
+            return false;
           }
-        }
-      } while (cnt == 0 || --cnt > 0);
-    }
+
+          switch (format) {
+            case 'c':
+            case 'C':
+              value_int = static_cast<int>(data[data_pos++]);
+              if (format != 'c' && value_int < 0) {
+                value_int += 256;
+              }
+              value = value_int;
+              break;
+            case 's':
+            case 'S':
+            case 'v':
+              value_int = static_cast<unsigned char>(data[data_pos]);
+              if (data_pos + 1 < data_len) {
+                value_int |= data[data_pos + 1] << 8;
+              }
+              data_pos += 2;
+              if (format != 's' && value_int < 0) {
+                value_int += 65536;
+              }
+              value = value_int;
+              break;
+            case 'n':
+              value_int = static_cast<unsigned char>(data[data_pos]) << 8;
+              if (data_pos + 1 < data_len) {
+                value_int |= static_cast<unsigned char>(data[data_pos + 1]);
+              }
+              data_pos += 2;
+              value = value_int;
+              break;
+            case 'i':
+            case 'I':
+            case 'l':
+            case 'L':
+            case 'V':
+              value_int = static_cast<unsigned char>(data[data_pos]);
+              if (data_pos + 1 < data_len) {
+                value_int |= static_cast<unsigned char>(data[data_pos + 1]) << 8;
+                if (data_pos + 2 < data_len) {
+                  value_int |= static_cast<unsigned char>(data[data_pos + 2]) << 16;
+                  if (data_pos + 3 < data_len) {
+                    value_int |= data[data_pos + 3] << 24;
+                  }
+                }
+              }
+              data_pos += 4;
+              value = value_int;
+              break;
+            case 'N':
+              value_int = static_cast<unsigned char>(data[data_pos]) << 24;
+              if (data_pos + 1 < data_len) {
+                value_int |= static_cast<unsigned char>(data[data_pos + 1]) << 16;
+                if (data_pos + 2 < data_len) {
+                  value_int |= static_cast<unsigned char>(data[data_pos + 2]) << 8;
+                  if (data_pos + 3 < data_len) {
+                    value_int |= static_cast<unsigned char>(data[data_pos + 3]);
+                  }
+                }
+              }
+              data_pos += 4;
+              value = value_int;
+              break;
+            case 'f': {
+              if (data_pos + static_cast<int>(sizeof(float)) > data_len) {
+                php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
+                return false;
+              }
+              value = static_cast<double>(*(float *)(data.c_str() + data_pos));
+              data_pos += static_cast<int>(sizeof(float));
+              break;
+            }
+            case 'e':
+            case 'E':
+            case 'd': {
+              if (data_pos + static_cast<int>(sizeof(double)) > data_len) {
+                php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
+                return false;
+              }
+              uint64_t value_byteordered = 0;
+              memcpy(&value_byteordered, data.c_str() + data_pos, sizeof(double));
+              if (format == 'e') {
+                value_byteordered = le64toh(value_byteordered);
+              } else if (format == 'E') {
+                value_byteordered = be64toh(value_byteordered);
+              }
+              value = float64_from_bits(value_byteordered);
+              data_pos += static_cast<int>(sizeof(double));
+              break;
+            }
+            case 'J':
+            case 'P':
+            case 'Q': {
+              if (data_pos + static_cast<int>(sizeof(unsigned long long)) > data_len) {
+                php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
+                return false;
+              }
+
+              // stored in the host machine order by the default (Q flag)
+              unsigned long long value_byteordered = 0;
+              memcpy(&value_byteordered, data.c_str() + data_pos, sizeof(value_byteordered));
+              if (format == 'P') {
+                // for P encode in little endian order
+                value_byteordered = le64toh(value_byteordered);
+              } else if (format == 'J') {
+                // for J encode in big endian order
+                value_byteordered = be64toh(value_byteordered);
+              }
+
+              const size_t buf_size = 20;
+              char buf[buf_size];
+              value = string{buf, static_cast<string::size_type>(simd_uint64_to_string(value_byteordered, buf) - buf)};
+              data_pos += static_cast<int>(sizeof(unsigned long long));
+              break;
+            }
+            case 'q': {
+              if (data_pos + static_cast<int>(sizeof(long long)) > data_len) {
+                php_warning("Not enough data to unpack with format \"%s\"", pattern.c_str());
+                return false;
+              }
+              long long value_ll = *reinterpret_cast<const long long *>(data.c_str() + data_pos);
+              value = f$strval(static_cast<int64_t>(value_ll));
+              data_pos += static_cast<int>(sizeof(long long));
+              break;
+            }
+            default:
+              php_warning("Format code \"%c\" not supported", format);
+              return false;
+          }
+
+          string key = key_prefix;
+          if (cnt != -1) {
+            key.append(string(counter++));
+          }
+
+          result.set_value(key, value);
+
+          if (cnt == 0) {
+            if (data_pos >= data_len) {
+              return result;
+            }
+          }
+        } while (cnt == 0 || --cnt > 0);
+      }
     }
   }
   return result;
 }
 
-string f$wordwrap(const string& str, int64_t width, const string& brk, bool cut) noexcept {
+string f$wordwrap(const string &str, int64_t width, const string &brk, bool cut) noexcept {
   if (width <= 0) {
     php_warning("Wrong parameter width = %" PRIi64 " in function wordwrap", width);
     return str;
@@ -2630,12 +2634,12 @@ string f$wordwrap(const string& str, int64_t width, const string& brk, bool cut)
   return result;
 }
 
-string f$xor_strings(const string& s, const string& t) noexcept {
+string f$xor_strings(const string &s, const string &t) noexcept {
   string::size_type length = min(s.size(), t.size());
   string result{length, false};
-  const char* s_str = s.c_str();
-  const char* t_str = t.c_str();
-  char* res_str = result.buffer();
+  const char *s_str = s.c_str();
+  const char *t_str = t.c_str();
+  char *res_str = result.buffer();
   for (string::size_type i = 0; i < length; i++) {
     *res_str = *s_str ^ *t_str;
     ++s_str;
@@ -2648,11 +2652,11 @@ string f$xor_strings(const string& s, const string& t) noexcept {
 namespace impl_ {
 // Based on the original PHP implementation
 // https://github.com/php/php-src/blob/e8678fcb42c5cb1ea38ff9c6819baca74c2bb5ea/ext/standard/string.c#L3375-L3418
-inline size_t php_similar_str(vk::string_view first, vk::string_view second, size_t& pos1, size_t& pos2, size_t& count) {
+inline size_t php_similar_str(vk::string_view first, vk::string_view second, size_t &pos1, size_t &pos2, size_t &count) {
   size_t max = 0;
   count = 0;
-  for (const char* p = first.begin(); p != first.end(); ++p) {
-    for (const char* q = second.begin(); q != second.end(); ++q) {
+  for (const char *p = first.begin(); p != first.end(); ++p) {
+    for (const char *q = second.begin(); q != second.end(); ++q) {
       size_t l = 0;
       for (; (p + l < first.end()) && (q + l < second.end()) && (p[l] == q[l]); ++l) {
       }
@@ -2689,7 +2693,7 @@ size_t php_similar_char(vk::string_view first, vk::string_view second) {
 
 } // namespace impl_
 
-int64_t f$similar_text(const string& first, const string& second, double& percent) noexcept {
+int64_t f$similar_text(const string &first, const string &second, double &percent) noexcept {
   if (first.empty() && second.empty()) {
     percent = 0.0;
     return 0;
@@ -2699,7 +2703,7 @@ int64_t f$similar_text(const string& first, const string& second, double& percen
   return static_cast<int64_t>(sim);
 }
 
-string str_concat(const string& s1, const string& s2) noexcept {
+string str_concat(const string &s1, const string &s2) noexcept {
   // for 2 argument concatenation it's not so uncommon to have at least one empty string argument;
   // it happens in cases like `$prefix . $s` where $prefix could be empty depending on some condition
   // real-world applications analysis shows that ~17.6% of all two arguments concatenations have
@@ -2732,20 +2736,20 @@ string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3) noexc
 string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4) noexcept {
   auto new_size = s1.size + s2.size + s3.size + s4.size;
   return string(new_size, true)
-      .append_unsafe(s1.as_tmp_string())
-      .append_unsafe(s2.as_tmp_string())
-      .append_unsafe(s3.as_tmp_string())
-      .append_unsafe(s4.as_tmp_string())
-      .finish_append();
+    .append_unsafe(s1.as_tmp_string())
+    .append_unsafe(s2.as_tmp_string())
+    .append_unsafe(s3.as_tmp_string())
+    .append_unsafe(s4.as_tmp_string())
+    .finish_append();
 }
 
 string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4, str_concat_arg s5) noexcept {
   auto new_size = s1.size + s2.size + s3.size + s4.size + s5.size;
   return string(new_size, true)
-      .append_unsafe(s1.as_tmp_string())
-      .append_unsafe(s2.as_tmp_string())
-      .append_unsafe(s3.as_tmp_string())
-      .append_unsafe(s4.as_tmp_string())
-      .append_unsafe(s5.as_tmp_string())
-      .finish_append();
+    .append_unsafe(s1.as_tmp_string())
+    .append_unsafe(s2.as_tmp_string())
+    .append_unsafe(s3.as_tmp_string())
+    .append_unsafe(s4.as_tmp_string())
+    .append_unsafe(s5.as_tmp_string())
+    .finish_append();
 }

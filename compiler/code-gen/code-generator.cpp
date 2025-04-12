@@ -2,11 +2,11 @@
 // Copyright (c) 2021 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "compiler/code-gen/code-generator.h"
 #include "compiler/compiler-core.h"
+#include "compiler/code-gen/code-generator.h"
 #include "compiler/data/src-file.h"
 
-void CodeGenerator::open_file_create_writer(bool compile_with_debug_info_flag, bool compile_with_crc, const std::string& file_name, const std::string& subdir) {
+void CodeGenerator::open_file_create_writer(bool compile_with_debug_info_flag, bool compile_with_crc, const std::string &file_name, const std::string &subdir) {
   std::string full_file_name = G->cpp_dir;
   if (!subdir.empty()) {
     full_file_name += subdir;
@@ -14,8 +14,8 @@ void CodeGenerator::open_file_create_writer(bool compile_with_debug_info_flag, b
   }
   full_file_name += file_name;
 
-  const auto& exclude_from_debug = G->get_exclude_namespaces();
-  for (const auto& exclude_symbol : exclude_from_debug) {
+  const auto &exclude_from_debug = G->get_exclude_namespaces();
+  for (const auto &exclude_symbol : exclude_from_debug) {
     if (file_name.rfind(exclude_symbol, 0) != std::string::npos) {
       compile_with_debug_info_flag = false;
     }
@@ -66,8 +66,8 @@ void CodeGenerator::close_file_clear_writer() {
     kphp_assert(data != nullptr);
     data->end_line();
     data->set_calculated_hashes(hash_of_cpp, hash_of_comments);
-    os << data;     // pass it to WriteFilesF
-    data = nullptr; // do not delete data, as it will be used by and deleted by WriteFilesF
+    os << data;       // pass it to WriteFilesF
+    data = nullptr;   // do not delete data, as it will be used by and deleted by WriteFilesF
   }
 }
 
@@ -76,14 +76,14 @@ void CodeGenerator::feed_hash_of_comments(SrcFilePtr file, int line_num) {
   hash_of_comments = hash_of_comments * 56235415617457ULL + string_hash(line_contents.data(), line_contents.size());
 }
 
-void CodeGenerator::add_include(const std::string& s) {
+void CodeGenerator::add_include(const std::string &s) {
   kphp_assert(cur_file != nullptr);
   feed_hash(string_hash(s.c_str(), s.size()));
   // we need to store includes even when just calculating hashes — to make a dependency map for make
   cur_file->includes.emplace_front(s);
 }
 
-void CodeGenerator::add_lib_include(const std::string& s) {
+void CodeGenerator::add_lib_include(const std::string &s) {
   kphp_assert(cur_file != nullptr);
   feed_hash(string_hash(s.c_str(), s.size()));
   cur_file->lib_includes.emplace_front(s);

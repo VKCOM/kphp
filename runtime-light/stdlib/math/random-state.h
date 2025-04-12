@@ -20,5 +20,5 @@ struct RandomInstanceState final : private vk::not_copyable {
     mt_gen = std::mt19937_64{seed};
   }
 
-  static RandomInstanceState& get() noexcept;
+  static RandomInstanceState &get() noexcept;
 };

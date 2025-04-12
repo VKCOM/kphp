@@ -21,3 +21,4 @@ public:
 private:
   void check_modifications(VertexPtr v, bool write_flag = false) const;
 };
+

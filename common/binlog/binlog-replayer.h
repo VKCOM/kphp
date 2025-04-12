@@ -30,7 +30,7 @@ struct have_get_size_checker {
   template<typename T, typename U>
   struct SFINAE;
   template<typename T>
-  static std::true_type test(SFINAE<T, decltype(&T::get_extra_bytes)>*);
+  static std::true_type test(SFINAE<T, decltype(&T::get_extra_bytes)> *);
   template<typename T>
   static std::false_type test(...);
 };
@@ -40,15 +40,15 @@ using have_get_size = decltype(have_get_size_checker::test<T>(0));
 
 struct get_size_helper {
   template<typename T>
-  static int get_size_impl(const T& E, std::true_type) {
+  static int get_size_impl(const T &E, std::true_type) {
     return static_cast<int>(sizeof(T)) + E.get_extra_bytes();
   }
   template<typename T>
-  static int get_size_impl(const T&, std::false_type) {
+  static int get_size_impl(const T &, std::false_type) {
     return static_cast<int>(sizeof(T));
   }
   template<typename T>
-  static int get_size(const T& E) {
+  static int get_size(const T &E) {
     return get_size_impl(E, have_get_size<T>{});
   }
 };
@@ -57,7 +57,7 @@ struct have_name_checker {
   template<typename T, typename U>
   struct SFINAE;
   template<typename T>
-  static std::true_type test(SFINAE<T, decltype(T::NAME)>*);
+  static std::true_type test(SFINAE<T, decltype(T::NAME)> *);
   template<typename T>
   static std::false_type test(...);
 };
@@ -87,7 +87,7 @@ using event_by_handler = vk::decay_function_arg_t<T, 0>;
 template<typename ResT>
 struct call_handler_dispatcher {
   template<typename Handler, typename T>
-  static void call(const Handler&, const T&) {
+  static void call(const Handler &, const T &) {
     static_assert(std::is_same<T, void>{}, "binlog handler should return either void or replay_binlog_result");
   }
 };
@@ -95,7 +95,7 @@ struct call_handler_dispatcher {
 template<>
 struct call_handler_dispatcher<void> {
   template<typename Handler, typename T>
-  static replay_binlog_result call(const Handler& handler, const T& E) {
+  static replay_binlog_result call(const Handler &handler, const T &E) {
     handler(E);
     return REPLAY_BINLOG_OK;
   }
@@ -104,23 +104,27 @@ struct call_handler_dispatcher<void> {
 template<>
 struct call_handler_dispatcher<replay_binlog_result> {
   template<typename Handler, typename T>
-  static replay_binlog_result call(const Handler& handler, const T& E) {
+  static replay_binlog_result call(const Handler &handler, const T &E) {
     return handler(E);
   }
 };
 
+
+
 template<typename Handler, typename T>
-replay_binlog_result call_handler(const Handler& handler, const T& E) {
+replay_binlog_result call_handler(const Handler &handler, const T &E) {
   return call_handler_dispatcher<decltype(handler(E))>::call(handler, E);
 }
 
+
+
 template<typename T>
-std::function<int(const lev_generic&, int)> get_handler_wrapper(T&& handler_) {
+std::function<int(const lev_generic &, int)> get_handler_wrapper(T &&handler_) {
   auto handler = std::forward<T>(handler_);
-  return [handler](const lev_generic& E, int size) -> int {
+  return [handler](const lev_generic &E, int size) -> int {
     using lev = detail::event_by_handler<T>;
     static_assert(std::is_class<lev>(), "log event must be a structure");
-    const auto& EE = reinterpret_cast<const lev&>(E);
+    const auto &EE = reinterpret_cast<const lev &>(E);
     if (size < sizeof(EE)) {
       return REPLAY_BINLOG_NOT_ENOUGH_DATA;
     }
@@ -139,19 +143,19 @@ std::function<int(const lev_generic&, int)> get_handler_wrapper(T&& handler_) {
 } // namespace detail
 
 class replayer {
-  using handler_func_t = std::function<int(const lev_generic&, int)>;
+  using handler_func_t = std::function<int(const lev_generic &, int)>;
 
   struct handler_record {
-    explicit handler_record(handler_func_t handler, handler_func_t size_handler, std::string name, lev_type_t base_magic)
-        : handler{std::move(handler)},
-          size_handler{std::move(size_handler)},
-          name{std::move(name)},
-          calls{0},
-          time_spent{0},
-          base_magic{base_magic},
-          used_space{0} {}
+    explicit handler_record(handler_func_t handler, handler_func_t size_handler, std::string name, lev_type_t base_magic) :
+      handler{std::move(handler)},
+      size_handler{std::move(size_handler)},
+      name{std::move(name)},
+      calls{0},
+      time_spent{0},
+      base_magic{base_magic},
+      used_space{0} {}
 
-    int operator()(const lev_generic& E, int size) const {
+    int operator()(const lev_generic &E, int size) const {
       double start_time = get_network_time();
       ++calls;
       int res = handler(E, size);
@@ -163,7 +167,7 @@ class replayer {
       return res;
     }
 
-    int get_event_size(const lev_generic& E, int size) const {
+    int get_event_size(const lev_generic &E, int size) const {
       return size_handler(E, size);
     }
 
@@ -197,9 +201,9 @@ class replayer {
   };
 
   std::unordered_map<lev_type_t, handler_record> handlers;
-  std::function<int(const lev_generic*, int)> default_handler;
+  std::function<int(const lev_generic *, int)> default_handler;
 
-  int do_replay(const lev_generic* E, int size, bool just_size) const {
+  int do_replay(const lev_generic *E, int size, bool just_size) const {
     auto it = handlers.find(E->type);
     if (it == handlers.end()) {
       if (default_handler != nullptr) {
@@ -213,8 +217,9 @@ class replayer {
   }
 
 public:
-  explicit replayer(std::function<int(const lev_generic*, int)> default_handler)
-      : default_handler(std::move(default_handler)) {}
+
+  explicit replayer(std::function<int(const lev_generic *, int)> default_handler) :
+    default_handler(std::move(default_handler)) {}
 
   explicit replayer() = default;
 
@@ -222,43 +227,45 @@ public:
     return handlers.find(magic) != handlers.end();
   }
 
-  int replay(const lev_generic* E, int size) const {
+  int replay(const lev_generic *E, int size) const {
     return do_replay(E, size, false);
   }
 
-  int get_event_size(const lev_generic* E, int size) const {
+  int get_event_size(const lev_generic *E, int size) const {
     return do_replay(E, size, true);
   }
 
   template<typename T>
-  replayer& add_handler(lev_type_t magic, T&& handler, lev_type_t base_magic = 0) {
+  replayer &add_handler(lev_type_t magic, T &&handler, lev_type_t base_magic = 0) {
     if (base_magic == 0) {
       base_magic = magic;
     }
-    handler_record h{detail::get_handler_wrapper(std::forward<T>(handler)), detail::get_handler_wrapper([](const detail::event_by_handler<T>&) {}),
-                     detail::get_name_helper::get_name<typename detail::event_by_handler<T>>(), base_magic};
+    handler_record h{detail::get_handler_wrapper(std::forward<T>(handler)),
+                     detail::get_handler_wrapper([](const detail::event_by_handler<T> &) {}),
+                     detail::get_name_helper::get_name<typename detail::event_by_handler<T>>(),
+                     base_magic};
     bool inserted = handlers.emplace(magic, std::move(h)).second;
     assert(inserted);
     return *this;
   }
 
   template<typename T>
-  replayer& add_skip_handler() {
-    return add_handler([](const T&) {});
+  replayer &add_skip_handler() {
+    return add_handler([](const T&){});
   }
 
   template<typename T>
-  replayer& add_skip_handler_range() {
-    return add_handler_range([](const T&) {});
+  replayer &add_skip_handler_range() {
+    return add_handler_range([](const T&){});
   }
 
   template<typename T>
-  replayer& add_handler(T&& handler) {
+  replayer &add_handler(T &&handler) {
     return add_handler(detail::event_by_handler<T>::MAGIC, std::forward<T>(handler));
   }
 
   template<typename T>
-  replayer& add_handler_range(lev_type_t from, lev_type_t to, const T& handler) {
+  replayer &add_handler_range(lev_type_t from, lev_type_t to, const T &handler) {
     for (lev_type_t magic = from; magic < to; magic++) {
       add_handler(magic, handler, from);
     }
@@ -266,15 +273,16 @@ public:
   }
 
   template<typename T>
-  replayer& add_handler_range(const T& handler) {
+  replayer &add_handler_range(const T &handler) {
     using event_type = detail::event_by_handler<T>;
     return add_handler_range(event_type::MAGIC_BASE, event_type::MAGIC_BASE + event_type::MAGIC_MASK + 1, handler);
   }
 
   template<typename T>
-  static size_t get_event_size(const T& EE) {
+  static size_t get_event_size(const T &EE) {
     return detail::get_size_helper::get_size(EE);
   }
+
 };
 
 } // namespace binlog

@@ -36,7 +36,11 @@ public:
     return disabled_inspections_;
   }
 
-  enum class InheritStatus { ok, no_need, conflict };
+  enum class InheritStatus {
+    ok,
+    no_need,
+    conflict
+  };
   std::pair<InheritStatus, Inspections> merge_with_caller(PerformanceInspections caller_inspections) noexcept;
 
   static vk::string_view inspection2string(Inspections inspection) noexcept;

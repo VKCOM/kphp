@@ -14,9 +14,9 @@
 
 namespace memory_resource {
 
-void* heap_resource::allocate(size_t size) noexcept {
+void *heap_resource::allocate(size_t size) noexcept {
   dl::CriticalSectionGuard lock;
-  void* mem = std::malloc(size);
+  void *mem = std::malloc(size);
   if (unlikely(!mem)) {
     php_out_of_memory_warning("Can't heap_allocate %zu bytes", size);
     raise(SIGUSR2);
@@ -28,9 +28,9 @@ void* heap_resource::allocate(size_t size) noexcept {
   return mem;
 }
 
-void* heap_resource::allocate0(size_t size) noexcept {
+void *heap_resource::allocate0(size_t size) noexcept {
   dl::CriticalSectionGuard lock;
-  void* mem = std::calloc(1, size);
+  void *mem = std::calloc(1, size);
   if (unlikely(!mem)) {
     php_out_of_memory_warning("Can't heap_allocate0 %zu bytes", size);
     raise(SIGUSR2);
@@ -42,7 +42,7 @@ void* heap_resource::allocate0(size_t size) noexcept {
   return mem;
 }
 
-void* heap_resource::reallocate(void* mem, size_t new_size, size_t old_size) noexcept {
+void *heap_resource::reallocate(void *mem, size_t new_size, size_t old_size) noexcept {
   dl::CriticalSectionGuard lock;
   mem = std::realloc(mem, new_size);
   memory_debug("heap reallocate %zu at %p\n", old_size, mem);
@@ -55,7 +55,7 @@ void* heap_resource::reallocate(void* mem, size_t new_size, size_t old_size) noe
   return mem;
 }
 
-void heap_resource::deallocate(void* mem, size_t size) noexcept {
+void heap_resource::deallocate(void *mem, size_t size) noexcept {
   dl::CriticalSectionGuard lock;
   memory_used_ -= size;
 

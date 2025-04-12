@@ -27,7 +27,7 @@ inline constexpr int64_t DEFAULT_SOCKET_TIMEOUT = 60;
 //
 // This implementation works the same way as PHP. That means we can face with some problems
 // during transition to K2
-inline string f$basename(const string& path, const string& suffix = {}) noexcept {
+inline string f$basename(const string &path, const string &suffix = {}) noexcept {
   std::string_view path_view{path.c_str(), path.size()};
   const std::string_view suffix_view{suffix.c_str(), suffix.size()};
   // skip trailing separators
@@ -44,16 +44,16 @@ inline string f$basename(const string& path, const string& suffix = {}) noexcept
   return {filename_view.data(), static_cast<string::size_type>(filename_view.size())};
 }
 
-resource f$fopen(const string& filename, const string& mode, bool use_include_path = false, const resource& context = {}) noexcept;
+resource f$fopen(const string &filename, const string &mode, bool use_include_path = false, const resource &context = {}) noexcept;
 
 kphp::coro::task<Optional<int64_t>> f$fwrite(resource stream, string text) noexcept;
 
-bool f$fflush(const resource& stream) noexcept;
+bool f$fflush(const resource &stream) noexcept;
 
-bool f$fclose(const resource& stream) noexcept;
+bool f$fclose(const resource &stream) noexcept;
 
-resource f$stream_socket_client(const string& address, mixed& error_code = FileSystemInstanceState::get().error_number_dummy,
-                                mixed& error_message = FileSystemInstanceState::get().error_description_dummy, double timeout = DEFAULT_SOCKET_TIMEOUT,
-                                int64_t flags = STREAM_CLIENT_CONNECT, const resource& context = {}) noexcept;
+resource f$stream_socket_client(const string &address, mixed &error_code = FileSystemInstanceState::get().error_number_dummy,
+                                mixed &error_message = FileSystemInstanceState::get().error_description_dummy, double timeout = DEFAULT_SOCKET_TIMEOUT,
+                                int64_t flags = STREAM_CLIENT_CONNECT, const resource &context = {}) noexcept;
 
-Optional<string> f$file_get_contents(const string& stream) noexcept;
+Optional<string> f$file_get_contents(const string &stream) noexcept;

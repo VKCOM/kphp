@@ -23,14 +23,14 @@
 namespace {
 
 voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) noexcept {
-  auto* buf_pos_ptr{reinterpret_cast<size_t*>(opaque)};
+  auto *buf_pos_ptr{reinterpret_cast<size_t *>(opaque)};
   auto required_mem{static_cast<size_t>(items * size)};
   if (items == 0 || StringInstanceState::STATIC_BUFFER_LENGTH - *buf_pos_ptr < required_mem) [[unlikely]] {
     php_warning("zlib static alloc: can't allocate %zu bytes", required_mem);
     return Z_NULL;
   }
 
-  auto* mem{std::next(StringInstanceState::get().static_buf.data(), *buf_pos_ptr)};
+  auto *mem{std::next(StringInstanceState::get().static_buf.data(), *buf_pos_ptr)};
   *buf_pos_ptr += required_mem;
   return mem;
 }
@@ -67,14 +67,14 @@ std::optional<string> encode(std::span<const char> data, int64_t level, int64_t 
     return {};
   }
 
-  auto& runtime_ctx{RuntimeContext::get()};
+  auto &runtime_ctx{RuntimeContext::get()};
   auto out_size_upper_bound{static_cast<size_t>(deflateBound(std::addressof(zstrm), data.size()))};
   runtime_ctx.static_SB.clean().reserve(out_size_upper_bound);
 
   zstrm.avail_in = data.size();
-  zstrm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(data.data()));
+  zstrm.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(data.data()));
   zstrm.avail_out = out_size_upper_bound;
-  zstrm.next_out = reinterpret_cast<Bytef*>(runtime_ctx.static_SB.buffer());
+  zstrm.next_out = reinterpret_cast<Bytef *>(runtime_ctx.static_SB.buffer());
 
   const auto deflate_res{deflate(std::addressof(zstrm), Z_FINISH)};
   if (deflate_res != Z_STREAM_END) [[unlikely]] {
@@ -96,17 +96,17 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
   zstrm.zfree = zlib_static_free;
   zstrm.opaque = std::addressof(buf_pos);
   zstrm.avail_in = data.size();
-  zstrm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(data.data()));
+  zstrm.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(data.data()));
 
   if (inflateInit2(std::addressof(zstrm), encoding) != Z_OK) [[unlikely]] {
     php_warning("can't initialize zlib decode for data of length %zu", data.size());
     return {};
   }
 
-  auto& runtime_ctx{RuntimeContext::get()};
+  auto &runtime_ctx{RuntimeContext::get()};
   runtime_ctx.static_SB.clean().reserve(StringInstanceState::STATIC_BUFFER_LENGTH);
   zstrm.avail_out = StringInstanceState::STATIC_BUFFER_LENGTH;
-  zstrm.next_out = reinterpret_cast<Bytef*>(runtime_ctx.static_SB.buffer());
+  zstrm.next_out = reinterpret_cast<Bytef *>(runtime_ctx.static_SB.buffer());
   const auto inflate_res{inflate(std::addressof(zstrm), Z_NO_FLUSH)};
 
   if (inflate_res != Z_STREAM_END) [[unlikely]] {

@@ -36,16 +36,16 @@ inline std::chrono::nanoseconds normalize_timeout(double timeout_s) noexcept {
 } // namespace forks_impl_
 
 template<typename T>
-requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value)
-kphp::coro::task<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
-  auto& fork_instance_st{ForkInstanceState::get()};
+requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) kphp::coro::task<T> f$wait(int64_t fork_id,
+                                                                                                                    double timeout = -1.0) noexcept {
+  auto &fork_instance_st{ForkInstanceState::get()};
   auto opt_fork_info{fork_instance_st.get_info(fork_id)};
   if (!opt_fork_info.has_value() || !(*opt_fork_info).get().opt_handle.has_value() || (*opt_fork_info).get().awaited) [[unlikely]] {
     php_warning("fork with ID %" PRId64 " does not exist or has already been awaited by another fork", fork_id);
     co_return T{};
   }
 
-  auto& fork_info{(*opt_fork_info).get()};
+  auto &fork_info{(*opt_fork_info).get()};
   auto fork_task{*fork_info.opt_handle};
   fork_info.awaited = true; // prevent further f$wait from awaiting on the same fork
   auto opt_result{co_await wait_with_timeout_t{wait_fork_t{static_cast<kphp::coro::shared_task<internal_optional_type_t<T>>>(std::move(fork_task))},
@@ -62,21 +62,21 @@ kphp::coro::task<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
 }
 
 template<typename T>
-requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value)
-kphp::coro::task<T> f$wait(Optional<int64_t> opt_fork_id, double timeout = -1.0) noexcept {
+requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value) kphp::coro::task<T> f$wait(Optional<int64_t> opt_fork_id,
+                                                                                                                    double timeout = -1.0) noexcept {
   co_return co_await f$wait<T>(opt_fork_id.has_value() ? opt_fork_id.val() : kphp::forks::INVALID_ID, timeout);
 }
 
 // ================================================================================================
 
 inline kphp::coro::task<bool> f$wait_concurrently(int64_t fork_id) noexcept {
-  auto& fork_instance_st{ForkInstanceState::get()};
+  auto &fork_instance_st{ForkInstanceState::get()};
   auto opt_fork_info{fork_instance_st.get_info(fork_id)};
   if (!opt_fork_info.has_value()) [[unlikely]] {
     co_return false;
   }
 
-  const auto& fork_info{(*opt_fork_info).get()};
+  const auto &fork_info{(*opt_fork_info).get()};
   if (fork_info.opt_handle.has_value()) {
     auto fork_task{*fork_info.opt_handle};
     co_await wait_fork_t{std::move(fork_task)};
@@ -88,14 +88,14 @@ inline kphp::coro::task<bool> f$wait_concurrently(Optional<int64_t> opt_fork_id)
   co_return co_await f$wait_concurrently(opt_fork_id.has_value() ? opt_fork_id.val() : kphp::forks::INVALID_ID);
 }
 
-inline kphp::coro::task<bool> f$wait_concurrently(const mixed& fork_id) noexcept {
+inline kphp::coro::task<bool> f$wait_concurrently(const mixed &fork_id) noexcept {
   co_return co_await f$wait_concurrently(fork_id.to_int());
 }
 
 template<typename T>
 kphp::coro::task<T> f$wait_multi(array<int64_t> fork_ids) noexcept {
   T res{};
-  for (const auto& it : fork_ids) {
+  for (const auto &it : fork_ids) {
     res.set_value(it.get_key(), co_await f$wait<typename T::value_type>(it.get_value()));
   }
   co_return std::move(res);
@@ -131,11 +131,11 @@ inline int64_t f$wait_queue_create() {
   php_critical_error("call to unsupported function");
 }
 
-inline int64_t f$wait_queue_create(const mixed& /*resumable_ids*/) {
+inline int64_t f$wait_queue_create(const mixed & /*resumable_ids*/) {
   php_critical_error("call to unsupported function");
 }
 
-inline int64_t f$wait_queue_push(int64_t /*queue_id*/, const mixed& /*resumable_ids*/) {
+inline int64_t f$wait_queue_push(int64_t /*queue_id*/, const mixed & /*resumable_ids*/) {
   php_critical_error("call to unsupported function");
 }
 

@@ -4,8 +4,8 @@
 
 #pragma once
 #include "runtime-common/core/runtime-core.h"
-#include "runtime/allocator.h"
 #include "runtime/tl/rpc_function.h"
+#include "runtime/allocator.h"
 
 struct tl_func_base : ManagedThroughDlAllocator {
   virtual mixed fetch() = 0;
@@ -18,7 +18,7 @@ struct tl_func_base : ManagedThroughDlAllocator {
     return {};
   }
 
-  virtual void rpc_server_typed_store(const class_instance<C$VK$TL$RpcFunctionReturnResult>&) {
+  virtual void rpc_server_typed_store(const class_instance<C$VK$TL$RpcFunctionReturnResult> &) {
     // all functions annotated with @kphp will override this method with the generated code
     php_critical_error("This function should never be called. Should be overridden in every @kphp TL function");
   }

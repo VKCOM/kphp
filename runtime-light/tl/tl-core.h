@@ -32,20 +32,20 @@ public:
     m_buffer.reserve(INIT_BUFFER_SIZE);
   }
 
-  TLBuffer(const TLBuffer&) = delete;
+  TLBuffer(const TLBuffer &) = delete;
 
-  TLBuffer& operator=(const TLBuffer&) = delete;
+  TLBuffer &operator=(const TLBuffer &) = delete;
 
-  TLBuffer(TLBuffer&& oth) noexcept
-      : m_buffer(std::exchange(oth.m_buffer, {})),
-        m_pos(std::exchange(oth.m_pos, 0)),
-        m_remaining(std::exchange(oth.m_pos, 0)) {}
+  TLBuffer(TLBuffer &&oth) noexcept
+    : m_buffer(std::exchange(oth.m_buffer, {}))
+    , m_pos(std::exchange(oth.m_pos, 0))
+    , m_remaining(std::exchange(oth.m_pos, 0)) {}
 
-  TLBuffer& operator=(TLBuffer&&) = delete;
+  TLBuffer &operator=(TLBuffer &&) = delete;
 
   ~TLBuffer() = default;
 
-  const char* data() const noexcept {
+  const char *data() const noexcept {
     return m_buffer.data();
   }
 
@@ -95,9 +95,8 @@ public:
   }
 
   template<standard_layout T, standard_layout U>
-  requires std::convertible_to<U, T>
-  void store_trivial(const U& t) noexcept {
-    store_bytes({reinterpret_cast<const char*>(std::addressof(t)), sizeof(T)});
+  requires std::convertible_to<U, T> void store_trivial(const U &t) noexcept {
+    store_bytes({reinterpret_cast<const char *>(std::addressof(t)), sizeof(T)});
   }
 
   template<standard_layout T>
@@ -106,7 +105,7 @@ public:
       return std::nullopt;
     }
 
-    auto t{*reinterpret_cast<const T*>(std::next(data(), pos()))};
+    auto t{*reinterpret_cast<const T *>(std::next(data(), pos()))};
     adjust(sizeof(T));
     return t;
   }
@@ -116,7 +115,7 @@ public:
     if (remaining() < sizeof(T)) {
       return std::nullopt;
     }
-    return *reinterpret_cast<const T*>(std::next(data(), pos()));
+    return *reinterpret_cast<const T *>(std::next(data(), pos()));
   }
 };
 

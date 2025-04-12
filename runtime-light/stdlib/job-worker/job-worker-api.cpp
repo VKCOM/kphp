@@ -28,7 +28,7 @@
 
 namespace {
 
-constexpr const char* JOB_WORKER_COMPONENT_NAME = "_self";
+constexpr const char *JOB_WORKER_COMPONENT_NAME = "_self";
 
 constexpr double MIN_TIMEOUT_S = 0.05;
 constexpr double MAX_TIMEOUT_S = 86400.0;
@@ -43,7 +43,7 @@ kphp::coro::task<int64_t> kphp_job_worker_start_impl(string request, double time
     co_return kphp::forks::INVALID_ID;
   }
 
-  auto& jw_client_st{JobWorkerClientInstanceState::get()};
+  auto &jw_client_st{JobWorkerClientInstanceState::get()};
   // normalize timeout
   const auto timeout_ns{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(std::clamp(timeout, MIN_TIMEOUT_S, MAX_TIMEOUT_S)))};
   // prepare JW component request
@@ -76,7 +76,7 @@ kphp::coro::task<int64_t> kphp_job_worker_start_impl(string request, double time
     co_return string{jw_response.body.value.data(), static_cast<string::size_type>(jw_response.body.value.size())};
   }(std::move(comp_query), timeout_ns)};
   // start waiter fork and return its ID
-  co_return (co_await start_fork_t{std::move(waiter_task)});
+  co_return(co_await start_fork_t{std::move(waiter_task)});
 }
 
 } // namespace
@@ -95,7 +95,7 @@ kphp::coro::task<bool> f$job_worker_send_noreply_request(string request, double 
 
 kphp::coro::task<array<Optional<int64_t>>> f$job_worker_send_multi_request(array<string> requests, double timeout) noexcept {
   array<Optional<int64_t>> fork_ids{requests.size()};
-  for (const auto& it : requests) {
+  for (const auto &it : requests) {
     const auto fork_id{co_await kphp_job_worker_start_impl(it.get_value(), timeout, false)};
     fork_ids.set_value(it.get_key(), fork_id != kphp::forks::INVALID_ID ? fork_id : false);
   }
@@ -110,7 +110,7 @@ kphp::coro::task<string> f$job_worker_fetch_request() noexcept {
     co_return string{};
   }
 
-  auto& jw_server_st{JobWorkerServerInstanceState::get()};
+  auto &jw_server_st{JobWorkerServerInstanceState::get()};
   if (jw_server_st.job_id == JOB_WORKER_INVALID_JOB_ID || jw_server_st.body.empty()) {
     php_warning("couldn't fetch job worker request");
     co_return string{};
@@ -119,8 +119,8 @@ kphp::coro::task<string> f$job_worker_fetch_request() noexcept {
 }
 
 kphp::coro::task<int64_t> f$job_worker_store_response(string response) noexcept {
-  auto& instance_st{InstanceState::get()};
-  auto& jw_server_st{JobWorkerServerInstanceState::get()};
+  auto &instance_st{InstanceState::get()};
+  auto &jw_server_st{JobWorkerServerInstanceState::get()};
   if (!f$is_kphp_job_workers_enabled()) { // workers are enabled
     php_warning("couldn't store job worker response: job workers are disabled");
     co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);

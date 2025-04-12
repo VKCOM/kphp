@@ -170,9 +170,9 @@ In the future, the following points might be considered as areas of investigatio
 
 #pragma once
 
-#include <optional>
 #include <string>
 #include <variant>
+#include <optional>
 
 #include "runtime/kphp_ml/kphp_ml_catboost.h"
 #include "runtime/kphp_ml/kphp_ml_xgboost.h"
@@ -215,15 +215,11 @@ struct MLModel {
 
   std::variant<kphp_ml_xgboost::XgboostModel, kphp_ml_catboost::CatboostModel> impl;
 
-  bool is_xgboost() const {
-    return model_kind == ModelKind::xgboost_trees_no_cat;
-  }
-  bool is_catboost() const {
-    return model_kind == ModelKind::catboost_trees;
-  }
+  bool is_xgboost() const { return model_kind == ModelKind::xgboost_trees_no_cat; }
+  bool is_catboost() const { return model_kind == ModelKind::catboost_trees; }
   bool is_catboost_multi_classification() const;
-  const std::vector<std::string>& get_feature_names() const;
-  std::optional<std::string> get_custom_property(const std::string& property_name) const;
+  const std::vector<std::string> &get_feature_names() const;
+  std::optional<std::string> get_custom_property(const std::string &property_name) const;
 
   unsigned int calculate_mutable_buffer_size() const;
 };

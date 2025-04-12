@@ -14,7 +14,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-static inline bool mkdir_recursive(const char* s, mode_t mode) {
+static inline bool mkdir_recursive(const char *s, mode_t mode) {
   assert(s != NULL);
 
   size_t len = strlen(s);
@@ -29,7 +29,7 @@ static inline bool mkdir_recursive(const char* s, mode_t mode) {
     path[len + 1] = '\0';
   }
 
-  char* it = path;
+  char *it = path;
   while ((it = strchr(it + 1, '/'))) {
     *it = 0;
 

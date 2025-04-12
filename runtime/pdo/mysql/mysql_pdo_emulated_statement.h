@@ -15,10 +15,10 @@ class MysqlResponse;
 namespace pdo::mysql {
 class MysqlPdoEmulatedStatement : public pdo::AbstractPdoStatement {
 public:
-  MysqlPdoEmulatedStatement(const string& statement, int connector_id);
+  MysqlPdoEmulatedStatement(const string &statement, int connector_id);
 
-  bool execute(const class_instance<C$PDOStatement>& v$this, const Optional<array<mixed>>& params) noexcept final;
-  mixed fetch(const class_instance<C$PDOStatement>& v$this) noexcept final;
+  bool execute(const class_instance<C$PDOStatement> &v$this, const Optional<array<mixed>> &params) noexcept final;
+  mixed fetch(const class_instance<C$PDOStatement> &v$this) noexcept final;
   int64_t affected_rows() noexcept final;
 
 private:

@@ -12,22 +12,22 @@ namespace vk::msgpack {
 
 template<typename T>
 static char take8_8(T d) noexcept {
-  return static_cast<char>(reinterpret_cast<uint8_t*>(&d)[0]);
+  return static_cast<char>(reinterpret_cast<uint8_t *>(&d)[0]);
 }
 
 template<typename T>
 static char take8_16(T d) noexcept {
-  return static_cast<char>(reinterpret_cast<uint8_t*>(&d)[0]);
+  return static_cast<char>(reinterpret_cast<uint8_t *>(&d)[0]);
 }
 
 template<typename T>
 static char take8_32(T d) noexcept {
-  return static_cast<char>(reinterpret_cast<uint8_t*>(&d)[0]);
+  return static_cast<char>(reinterpret_cast<uint8_t *>(&d)[0]);
 }
 
 template<typename T>
 static char take8_64(T d) noexcept {
-  return static_cast<char>(reinterpret_cast<uint8_t*>(&d)[0]);
+  return static_cast<char>(reinterpret_cast<uint8_t *>(&d)[0]);
 }
 
 template<typename Stream>
@@ -168,7 +168,7 @@ void packer<Stream>::pack_str(uint32_t l) noexcept {
 }
 
 template<typename Stream>
-void packer<Stream>::pack_str_body(const char* b, uint32_t l) noexcept {
+void packer<Stream>::pack_str_body(const char *b, uint32_t l) noexcept {
   append_buffer(b, l);
 }
 
@@ -365,7 +365,7 @@ void packer<Stream>::pack_imp_int64(T d) noexcept {
 }
 
 template<typename Stream>
-void packer<Stream>::append_buffer(const char* buf, size_t len) noexcept {
+void packer<Stream>::append_buffer(const char *buf, size_t len) noexcept {
   static_assert(noexcept(std::declval<Stream>().write(buf, len)), "require Stream::write() to be noxecept");
   stream_.write(buf, len);
 }

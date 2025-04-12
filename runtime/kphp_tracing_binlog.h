@@ -86,64 +86,55 @@ enum class EventTypeEnum {
 
 class tracing_binary_buffer {
   struct one_chunk {
-    int* buf;
+    int *buf;
     size_t size_bytes;
-    one_chunk* prev_chunk;
+    one_chunk *prev_chunk;
   };
 
-  one_chunk* last_chunk{nullptr};
-  int* pos{nullptr}; // points inside cur_chunk->buf
+  one_chunk *last_chunk{nullptr};
+  int *pos{nullptr};  // points inside cur_chunk->buf
   bool use_heap_memory{false};
 
 public:
+
   void set_use_heap_memory();
   void init_and_alloc();
   void alloc_next_chunk_if_not_enough(int reserve_bytes);
   void finish_cur_chunk_start_next();
   void clear(bool real_deallocate);
 
-  int get_cur_chunk_size() const {
-    return (pos - last_chunk->buf) * 4;
-  }
+  int get_cur_chunk_size() const { return (pos - last_chunk->buf) * 4; }
   int calc_total_size() const;
-  bool empty() const {
-    return last_chunk == nullptr || pos == last_chunk->buf;
-  }
+  bool empty() const { return last_chunk == nullptr || pos == last_chunk->buf; }
 
   void write_event_type(EventTypeEnum eventType, int custom24bits);
-  void write_int32(int v) {
-    *pos++ = v;
-  }
-  void write_uint32(unsigned int v) {
-    *pos++ = v;
-  }
+  void write_int32(int v) { *pos++ = v; }
+  void write_uint32(unsigned int v) { *pos++ = v; }
   void write_int64(int64_t v);
   void write_uint64(uint64_t v);
-  void write_float32(float v) {
-    *pos++ = *reinterpret_cast<int*>(&v);
-  }
+  void write_float32(float v) { *pos++ = *reinterpret_cast<int *>(&v); }
   void write_float64(double v);
 
-  int register_string_if_const(const string& v) {
+  int register_string_if_const(const string &v) {
     if (!v.is_reference_counter(ExtraRefCnt::for_global_const)) {
       return 0;
     }
     return register_string_in_table(v);
   }
-  int register_string_in_table(const string& v);
+  int register_string_in_table(const string &v);
 
-  void write_string(const string& v, int idx_in_table) {
+  void write_string(const string &v, int idx_in_table) {
     if (idx_in_table > 0) {
       *pos++ = idx_in_table << 8;
     } else {
       write_string_inlined(v);
     }
   }
-  void write_string_inlined(const string& v);
+  void write_string_inlined(const string &v);
 
-  void append_enum_values(int enumID, const string& enumName, const array<string>& enumKV);
+  void append_enum_values(int enumID, const string &enumName, const array<string> &enumKV);
   void append_current_php_script_strings();
-  void output_to_json_log(const char* json_without_binlog);
+  void output_to_json_log(const char *json_without_binlog);
 };
 
 extern tracing_binary_buffer cur_binlog;
@@ -172,19 +163,19 @@ struct BinlogWriter {
     cur_binlog.write_int32(allocatedTotal);
   }
 
-  static void provideRuntimeWarning(int errorCode, const string& warningMessage) {
+  static void provideRuntimeWarning(int errorCode, const string &warningMessage) {
     cur_binlog.write_event_type(EventTypeEnum::etProvideRuntimeWarning, errorCode);
     cur_binlog.write_string_inlined(warningMessage);
   }
 
-  static void onSpanCreatedRoot(const string& title, double startTimestamp) {
+  static void onSpanCreatedRoot(const string &title, double startTimestamp) {
     int idx1 = cur_binlog.register_string_if_const(title);
     cur_binlog.write_event_type(EventTypeEnum::etSpanCreatedRoot, 1);
     cur_binlog.write_string(title, idx1);
     cur_binlog.write_float64(startTimestamp);
   }
 
-  static void onSpanCreatedTitleDesc(int spanID, const string& title, const string& shortDesc, float timeOffset) {
+  static void onSpanCreatedTitleDesc(int spanID, const string &title, const string &shortDesc, float timeOffset) {
     int idx1 = cur_binlog.register_string_if_const(title);
     int idx2 = cur_binlog.register_string_if_const(shortDesc);
     cur_binlog.write_event_type(EventTypeEnum::etSpanCreatedTitleDesc, spanID);
@@ -193,7 +184,7 @@ struct BinlogWriter {
     cur_binlog.write_float32(timeOffset);
   }
 
-  static void onSpanCreatedTitleOnly(int spanID, const string& title, float timeOffset) {
+  static void onSpanCreatedTitleOnly(int spanID, const string &title, float timeOffset) {
     int idx1 = cur_binlog.register_string_if_const(title);
     cur_binlog.write_event_type(EventTypeEnum::etSpanCreatedTitleOnly, spanID);
     cur_binlog.write_string(title, idx1);
@@ -205,14 +196,14 @@ struct BinlogWriter {
     cur_binlog.write_float32(timeOffset);
   }
 
-  static void onSpanFinishedWithError(int spanID, int errorCode, const string& errorMsg, float timeOffset) {
+  static void onSpanFinishedWithError(int spanID, int errorCode, const string &errorMsg, float timeOffset) {
     cur_binlog.write_event_type(EventTypeEnum::etSpanFinishedWithError, spanID);
     cur_binlog.write_int32(errorCode);
     cur_binlog.write_string_inlined(errorMsg);
     cur_binlog.write_float32(timeOffset);
   }
 
-  static void onSpanRenamed(int spanID, const string& title, const string& shortDesc) {
+  static void onSpanRenamed(int spanID, const string &title, const string &shortDesc) {
     int idx1 = cur_binlog.register_string_if_const(title);
     int idx2 = cur_binlog.register_string_if_const(shortDesc);
     cur_binlog.write_event_type(EventTypeEnum::etSpanRename, spanID);
@@ -224,48 +215,48 @@ struct BinlogWriter {
     cur_binlog.write_event_type(EventTypeEnum::etSpanExclude, spanID);
   }
 
-  static void onSpanAddedAttributeString(int spanID, const string& key, const string& value) {
+  static void onSpanAddedAttributeString(int spanID, const string &key, const string &value) {
     int idx1 = cur_binlog.register_string_if_const(key);
     cur_binlog.write_event_type(EventTypeEnum::etSpanAddAttributeString, spanID);
     cur_binlog.write_string(key, idx1);
     cur_binlog.write_string_inlined(value);
   }
 
-  static void onSpanAddedAttributeInt32(int spanID, const string& key, int value) {
+  static void onSpanAddedAttributeInt32(int spanID, const string &key, int value) {
     int idx1 = cur_binlog.register_string_if_const(key);
     cur_binlog.write_event_type(EventTypeEnum::etSpanAddAttributeInt32, spanID);
     cur_binlog.write_string(key, idx1);
     cur_binlog.write_int32(value);
   }
 
-  static void onSpanAddedAttributeInt64(int spanID, const string& key, int64_t value) {
+  static void onSpanAddedAttributeInt64(int spanID, const string &key, int64_t value) {
     int idx1 = cur_binlog.register_string_if_const(key);
     cur_binlog.write_event_type(EventTypeEnum::etSpanAddAttributeInt64, spanID);
     cur_binlog.write_string(key, idx1);
     cur_binlog.write_int64(value);
   }
 
-  static void onSpanAddedAttributeFloat64(int spanID, const string& key, double value) {
+  static void onSpanAddedAttributeFloat64(int spanID, const string &key, double value) {
     int idx1 = cur_binlog.register_string_if_const(key);
     cur_binlog.write_event_type(EventTypeEnum::etSpanAddAttributeFloat64, spanID);
     cur_binlog.write_string(key, idx1);
     cur_binlog.write_float64(value);
   }
 
-  static void onSpanAddedAttributeFloat32(int spanID, const string& key, float value) {
+  static void onSpanAddedAttributeFloat32(int spanID, const string &key, float value) {
     int idx1 = cur_binlog.register_string_if_const(key);
     cur_binlog.write_event_type(EventTypeEnum::etSpanAddAttributeFloat32, spanID);
     cur_binlog.write_string(key, idx1);
     cur_binlog.write_float32(value);
   }
 
-  static void onSpanAddedAttributeBool(int spanID, const string& key, bool value) {
+  static void onSpanAddedAttributeBool(int spanID, const string &key, bool value) {
     int idx1 = cur_binlog.register_string_if_const(key);
     cur_binlog.write_event_type(EventTypeEnum::etSpanAddAttributeBool, value ? 65536 + spanID : spanID);
     cur_binlog.write_string(key, idx1);
   }
 
-  static void onSpanAddedAttributeInt32Enum(int spanID, const string& key, int enumID, int value) {
+  static void onSpanAddedAttributeInt32Enum(int spanID, const string &key, int enumID, int value) {
     int idx1 = cur_binlog.register_string_if_const(key);
     cur_binlog.write_event_type(EventTypeEnum::etSpanAddAttributeInt32Enum, spanID);
     cur_binlog.write_string(key, idx1);
@@ -273,7 +264,7 @@ struct BinlogWriter {
     cur_binlog.write_int32(value);
   }
 
-  static void onSpanAddedEvent(int spanID, int eventSpanID, const string& name, float timeOffset) {
+  static void onSpanAddedEvent(int spanID, int eventSpanID, const string &name, float timeOffset) {
     int idx1 = cur_binlog.register_string_if_const(name);
     cur_binlog.write_event_type(EventTypeEnum::etSpanAddEvent, spanID);
     cur_binlog.write_int32(eventSpanID);
@@ -286,7 +277,7 @@ struct BinlogWriter {
     cur_binlog.write_int32(anotherSpanID);
   }
 
-  static void onFuncCallStarted(int spanID, const string& fName, float timeOffset) {
+  static void onFuncCallStarted(int spanID, const string &fName, float timeOffset) {
     int idx1 = cur_binlog.register_string_in_table(fName);
     cur_binlog.write_event_type(EventTypeEnum::etFuncCallStarted, spanID);
     cur_binlog.write_string(fName, idx1);
@@ -332,12 +323,12 @@ struct BinlogWriter {
     cur_binlog.write_float32(timeOffset);
   }
 
-  static void onRpcQueryProvideDetails(const string& details, bool isTypedRpc) {
+  static void onRpcQueryProvideDetails(const string &details, bool isTypedRpc) {
     cur_binlog.write_event_type(EventTypeEnum::etRpcQueryProvideDetails, isTypedRpc ? 1 : 0);
     cur_binlog.write_string_inlined(details);
   }
 
-  static void onJobWorkerLaunch(int jobID, const string& jobClassName, float timeOffset, bool isNoReply) {
+  static void onJobWorkerLaunch(int jobID, const string &jobClassName, float timeOffset, bool isNoReply) {
     // it's not const, but they are also from a limited set
     int idx1 = cur_binlog.register_string_in_table(jobClassName);
     cur_binlog.write_event_type(EventTypeEnum::etJobWorkerLaunch, 0);
@@ -351,7 +342,7 @@ struct BinlogWriter {
     cur_binlog.write_int32(jobID);
     cur_binlog.write_float32(timeOffset);
   }
-
+  
   static void onJobWorkerFailed(int jobID, int errorCodePositive, float timeOffset) {
     cur_binlog.write_event_type(EventTypeEnum::etJobWorkerFailed, errorCodePositive);
     cur_binlog.write_int32(jobID);
@@ -360,7 +351,7 @@ struct BinlogWriter {
 
   static void onWaitNet(int microseconds) {
     static constexpr int32_t UPPER_BOUND_MICRO_TIME_MASK = 0x00f00000; // 15'728'640
-    static constexpr int32_t MAX_MILLI_TIME_MASK = 0x000fffff;         //  1'048'575
+    static constexpr int32_t MAX_MILLI_TIME_MASK         = 0x000fffff; //  1'048'575
     // Here is dynamic precision hack to store wait times > 16 sec in 24 bits:
     //    - if time < UPPER_BOUND_MICRO_TIME_MASK (~15.73 sec) it's stored as microseconds
     //    - else it's stored as milliseconds in lowest 20 bits (e.g. max value is ~ 1048.58 sec)
@@ -398,12 +389,12 @@ struct BinlogWriter {
     cur_binlog.write_event_type(EventTypeEnum::etCoroutineSwitchTo, coroutineID);
   }
 
-  static void onCoroutineProvideDesc(int coroutineID, const string& desc) {
+  static void onCoroutineProvideDesc(int coroutineID, const string &desc) {
     cur_binlog.write_event_type(EventTypeEnum::etCoroutineProvideDesc, coroutineID);
     cur_binlog.write_string_inlined(desc);
   }
 
-  static void onCurlStarted(int curlHandleID, const string& url, float timeOffset) {
+  static void onCurlStarted(int curlHandleID, const string &url, float timeOffset) {
     cur_binlog.write_event_type(EventTypeEnum::etCurlStarted, 0);
     cur_binlog.write_int32(curlHandleID);
     cur_binlog.write_string_inlined(url);
@@ -422,15 +413,15 @@ struct BinlogWriter {
     cur_binlog.write_float32(timeOffset);
   }
 
-  static void onCurlAddedAttributeString(int curlHandleID, const string& key, const string& value) {
+  static void onCurlAddedAttributeString(int curlHandleID, const string &key, const string &value) {
     int idx1 = cur_binlog.register_string_if_const(key);
-    cur_binlog.write_event_type(EventTypeEnum::etCurlAddAttributeString, 0); // curlHandleID may not fit 24 bits
+    cur_binlog.write_event_type(EventTypeEnum::etCurlAddAttributeString, 0);  // curlHandleID may not fit 24 bits
     cur_binlog.write_int32(curlHandleID);
     cur_binlog.write_string(key, idx1);
     cur_binlog.write_string_inlined(value);
   }
 
-  static void onCurlAddedAttributeInt32(int curlHandleID, const string& key, int value) {
+  static void onCurlAddedAttributeInt32(int curlHandleID, const string &key, int value) {
     int idx1 = cur_binlog.register_string_if_const(key);
     cur_binlog.write_event_type(EventTypeEnum::etCurlAddAttributeInt32, 0);
     cur_binlog.write_int32(curlHandleID);
@@ -444,7 +435,7 @@ struct BinlogWriter {
     cur_binlog.write_float32(timeOffset);
   }
 
-  static void onCurlMultiAddHandle(int curlMultiID, int curlHandleID, const string& url, float timeOffset) {
+  static void onCurlMultiAddHandle(int curlMultiID, int curlHandleID, const string &url, float timeOffset) {
     cur_binlog.write_event_type(EventTypeEnum::etCurlMultiAddHandle, 0);
     cur_binlog.write_int32(curlMultiID);
     cur_binlog.write_int32(curlHandleID);
@@ -465,7 +456,7 @@ struct BinlogWriter {
     cur_binlog.write_float32(timeOffset);
   }
 
-  static void onExternalProgramStarted(int execID, int funcID, const string& command, float timeOffset) {
+  static void onExternalProgramStarted(int execID, int funcID, const string &command, float timeOffset) {
     cur_binlog.write_event_type(EventTypeEnum::etExternalProgramStarted, funcID);
     cur_binlog.write_int32(execID);
     cur_binlog.write_string_inlined(command);
@@ -484,7 +475,7 @@ struct BinlogWriter {
     cur_binlog.write_float32(timeOffset);
   }
 
-  static void onFileIOStarted(int fd, bool isWrite, const string& fileName, float timeOffset) {
+  static void onFileIOStarted(int fd, bool isWrite, const string &fileName, float timeOffset) {
     cur_binlog.write_event_type(EventTypeEnum::etFileIOStarted, static_cast<int>(isWrite));
     cur_binlog.write_int32(fd);
     cur_binlog.write_string_inlined(fileName);

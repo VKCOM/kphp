@@ -17,7 +17,8 @@ template<typename T>
 using clean_function = typename vk::remove_cv_ref_for_method<std::decay_t<T>>::type;
 
 template<class T>
-struct function_traits_helper : public function_traits_helper<clean_function<decltype(&T::operator())>> {};
+struct function_traits_helper : public function_traits_helper<clean_function<decltype(&T::operator())>> {
+};
 
 template<class R, class C, class... A>
 struct function_traits_helper<R (C::*)(A...)> {
@@ -29,7 +30,7 @@ struct function_traits_helper<R (C::*)(A...)> {
 };
 
 template<class R, class... A>
-struct function_traits_helper<R (*)(A...)> {
+struct function_traits_helper<R(*)(A...)> {
   using ResultType = R;
   template<int arg_id>
   using Argument = vk::get_nth_type<arg_id, A...>;

@@ -16,5 +16,5 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
 
 inline kphp::coro::task<array<mixed>> f$confdata_get_values_by_predefined_wildcard(string wildcard) noexcept {
   php_notice("K2 confdata does not support predefined wildcard optimization");
-  co_return (co_await f$confdata_get_values_by_any_wildcard(std::move(wildcard)));
+  co_return(co_await f$confdata_get_values_by_any_wildcard(std::move(wildcard)));
 }

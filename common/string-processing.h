@@ -16,20 +16,20 @@ extern __thread int sp_errno;
 
 // Sets pool pointer to the begin. "frees" all allocated memory.
 // Must be called before allocating functions.
-void sp_init();
+void sp_init ();
 
 // Preallocates 'len + 1' bytes. In fact, doesn't allocates anything,
 // just checks whether there is enough available memory.
-char* sp_str_pre_alloc(int len);
+char *sp_str_pre_alloc (int len);
 // Allocates 'len' bytes.
-char* sp_str_alloc(int len);
+char *sp_str_alloc (int len);
 
 // Returns sorted s string.
-char* sp_sort(const char* s);
+char *sp_sort (const char *s);
 
 // Returns upper/lower case string for s in cp1251.
-char* sp_to_upper(const char* s);
-char* sp_to_lower(const char* s);
+char *sp_to_upper (const char *s);
+char *sp_to_lower (const char *s);
 
 /**
  * Simplifications: look to source code to see full list of replacements.
@@ -37,18 +37,18 @@ char* sp_to_lower(const char* s);
 
 // Returns simplified s.
 // Deletes all except digits, latin and russian letters in cp1251, lowercase letters.
-char* sp_simplify(const char* s);
+char *sp_simplify (const char *s);
 
 // Returns ultra-simplified s.
 // Recognizes unicode characters encoded in cp1251 and html-entities. Remove diacritics
 // from unicode characters, delete all except digits, latin and russian letters, lowercase
 // letters. Unifies similar russian and english characters (i.e. ('n'|'п') --> 'п')
-char* sp_full_simplify(const char* s);
+char *sp_full_simplify (const char *s);
 
 // Converts all unicode characters encoded in cp1251 and html-entities into real cp1251,
 // removing diacritics if possible. If converting is impossible - removes such characters.
-char* sp_deunicode(const char* s);
+char *sp_deunicode (const char *s);
 
-char* sp_remove_repeats(const char* s);
-char* sp_to_cyrillic(const char* s);
-char* sp_words_only(const char* s);
+char *sp_remove_repeats (const char *s);
+char *sp_to_cyrillic (const char *s);
+char *sp_words_only (const char *s);

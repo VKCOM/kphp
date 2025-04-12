@@ -4,34 +4,35 @@
 
 #include "compiler/data/class-data.h"
 
-#include <queue>
 #include <string>
+#include <queue>
 
 #include "common/termformat/termformat.h"
 #include "common/wrappers/string_view.h"
 
 #include "compiler/compiler-core.h"
-#include "compiler/data/define-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/src-file.h"
+#include "compiler/vertex-util.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/name-gen.h"
 #include "compiler/type-hint.h"
 #include "compiler/utils/string-utils.h"
-#include "compiler/vertex-util.h"
+#include "compiler/data/define-data.h"
 
-const char* ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
-const char* ClassData::NAME_OF_CLONE = "__clone";
-const char* ClassData::NAME_OF_CONSTRUCT = "__construct";
-const char* ClassData::NAME_OF_TO_STRING = "__toString";
-const char* ClassData::NAME_OF_WAKEUP = "__wakeup";
+const char *ClassData::NAME_OF_VIRT_CLONE = "__virt_clone$";
+const char *ClassData::NAME_OF_CLONE = "__clone";
+const char *ClassData::NAME_OF_CONSTRUCT = "__construct";
+const char *ClassData::NAME_OF_TO_STRING = "__toString";
+const char *ClassData::NAME_OF_WAKEUP = "__wakeup";
 
-ClassData::ClassData(ClassType type)
-    : class_type(type),
-      members(this),
-      type_data(TypeData::create_for_class(ClassPtr(this))) {}
+ClassData::ClassData(ClassType type) :
+  class_type(type),
+  members(this),
+  type_data(TypeData::create_for_class(ClassPtr(this))) {
+}
 
-void ClassData::set_name_and_src_name(const std::string& full_name) {
+void ClassData::set_name_and_src_name(const std::string &full_name) {
   this->name = full_name;
   this->src_name = std::string("C$").append(replace_backslashes(full_name));
   this->cpp_filename = replace_characters(src_name + ".cpp", '$', '@');
@@ -49,19 +50,31 @@ void ClassData::set_name_and_src_name(const std::string& full_name) {
 }
 
 void ClassData::debugPrint() {
-  const char* str_class_type = is_interface() ? "interface" : is_trait() ? "trait" : "class";
+  const char *str_class_type =
+    is_interface() ? "interface" :
+    is_trait() ? "trait" : "class";
   fmt_print("=== {} {}\n", str_class_type, name);
 
-  members.for_each([](ClassMemberConstant& m) { fmt_print("const {}\n", m.local_name()); });
-  members.for_each([](ClassMemberStaticField& m) { fmt_print("static ${}\n", m.local_name()); });
-  members.for_each([](ClassMemberStaticMethod& m) { fmt_print("static {}()\n", m.local_name()); });
-  members.for_each([](ClassMemberInstanceField& m) { fmt_print("var ${}\n", m.local_name()); });
-  members.for_each([](ClassMemberInstanceMethod& m) { fmt_print("method {}()\n", m.local_name()); });
+  members.for_each([](ClassMemberConstant &m) {
+    fmt_print("const {}\n", m.local_name());
+  });
+  members.for_each([](ClassMemberStaticField &m) {
+    fmt_print("static ${}\n", m.local_name());
+  });
+  members.for_each([](ClassMemberStaticMethod &m) {
+    fmt_print("static {}()\n", m.local_name());
+  });
+  members.for_each([](ClassMemberInstanceField &m) {
+    fmt_print("var ${}\n", m.local_name());
+  });
+  members.for_each([](ClassMemberInstanceMethod &m) {
+    fmt_print("method {}()\n", m.local_name());
+  });
 }
 
 std::string ClassData::as_human_readable() const {
   if (is_typed_callable_interface()) {
-    const auto* m_invoke = get_instance_method("__invoke");
+    const auto *m_invoke = get_instance_method("__invoke");
     return m_invoke ? m_invoke->function->as_human_readable() : name;
   }
   if (is_ffi_scope()) {
@@ -70,8 +83,8 @@ std::string ClassData::as_human_readable() const {
   return name;
 }
 
-FunctionPtr ClassData::gen_holder_function(const std::string& name) {
-  std::string func_name = "$" + replace_backslashes(name); // function-wrapper for class
+FunctionPtr ClassData::gen_holder_function(const std::string &name) {
+  std::string func_name = "$" + replace_backslashes(name);  // function-wrapper for class
   auto func_params = VertexAdaptor<op_func_param_list>::create();
   auto func_body = VertexAdaptor<op_seq>::create();
   auto func_root = VertexAdaptor<op_function>::create(func_params, func_body);
@@ -101,7 +114,9 @@ FunctionPtr ClassData::add_virt_clone() {
   std::string virt_clone_f_name = replace_backslashes(name) + "$$" + NAME_OF_VIRT_CLONE;
 
   auto param_list = VertexAdaptor<op_func_param_list>::create(gen_param_this({}));
-  auto body = !is_interface() ? VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(clone_this)) : VertexAdaptor<op_seq>::create();
+  auto body = !is_interface()
+              ? VertexAdaptor<op_seq>::create(VertexAdaptor<op_return>::create(clone_this))
+              : VertexAdaptor<op_seq>::create();
   auto v_op_function = VertexAdaptor<op_function>::create(param_list, body);
 
   FunctionPtr f_virt_clone = FunctionData::create_function(virt_clone_f_name, v_op_function, FunctionData::func_local);
@@ -111,7 +126,7 @@ FunctionPtr ClassData::add_virt_clone() {
   f_virt_clone->modifiers = FunctionModifiers::instance_public();
   f_virt_clone->root.set_location_recursively(Location(location_line_num));
 
-  members.add_instance_method(f_virt_clone); // don't need a lock here, it's invoked from a sync pipe
+  members.add_instance_method(f_virt_clone);    // don't need a lock here, it's invoked from a sync pipe
   return f_virt_clone;
 }
 
@@ -119,7 +134,7 @@ void ClassData::add_class_constant() {
   members.add_constant("class", VertexUtil::create_string_const(get_self()->name), AccessModifiers::public_);
 }
 
-void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr>& os) {
+void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr> &os) {
   auto parent_constructor = parent_class->construct_function;
   auto list = parent_constructor->root->param_list().clone();
   // skip parent's this
@@ -133,7 +148,7 @@ void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr>& os)
   construct_function->is_auto_inherited = true;
 }
 
-void ClassData::create_default_constructor_if_required(DataStream<FunctionPtr>& os) {
+void ClassData::create_default_constructor_if_required(DataStream<FunctionPtr> &os) {
   if (!is_class() || construct_function || name == "KphpConfiguration") {
     return;
   }
@@ -151,8 +166,7 @@ void ClassData::create_default_constructor_if_required(DataStream<FunctionPtr>& 
   }
 }
 
-void ClassData::create_constructor(VertexAdaptor<op_func_param_list> param_list, VertexAdaptor<op_seq> body, const PhpDocComment* phpdoc,
-                                   DataStream<FunctionPtr>& os) {
+void ClassData::create_constructor(VertexAdaptor<op_func_param_list> param_list, VertexAdaptor<op_seq> body, const PhpDocComment *phpdoc, DataStream<FunctionPtr> &os) {
   auto func = VertexAdaptor<op_function>::create(param_list, body);
   func.set_location_recursively(Location{location_line_num});
   create_constructor(func);
@@ -182,7 +196,7 @@ bool ClassData::is_parent_of(ClassPtr other) const {
     return true;
   }
 
-  for (const auto& interface : other->implements) {
+  for (const auto &interface : other->implements) {
     if (is_parent_of(interface)) {
       return true;
     }
@@ -223,7 +237,7 @@ std::vector<ClassPtr> ClassData::get_common_base_or_interface(ClassPtr other) co
     if (cur_ancestor->parent_class) {
       active_ancestors.push(cur_ancestor->parent_class);
     }
-    for (const auto& c : cur_ancestor->implements) {
+    for (const auto &c : cur_ancestor->implements) {
       active_ancestors.push(c);
     }
   }
@@ -231,28 +245,28 @@ std::vector<ClassPtr> ClassData::get_common_base_or_interface(ClassPtr other) co
   return lcas;
 }
 
-static const ClassMemberInstanceMethod* find_method_in_interface(InterfacePtr interface, vk::string_view local_name) {
+static const ClassMemberInstanceMethod *find_method_in_interface(InterfacePtr interface, vk::string_view local_name) {
   // we don't lock the class here: it's assumed, that members are not inserted concurrently
-  if (const auto* member = interface->members.find_by_local_name<ClassMemberInstanceMethod>(local_name)) {
+  if (const auto *member = interface->members.find_by_local_name<ClassMemberInstanceMethod>(local_name)) {
     return member;
   }
 
   // interfaces can extend multiple other interfaces; these interfaces are stored in 'implements' member
   for (InterfacePtr base_interface : interface->implements) {
-    if (const auto* member = find_method_in_interface(base_interface, local_name)) {
+    if (const auto *member = find_method_in_interface(base_interface, local_name)) {
       return member;
     }
   }
   return nullptr;
 }
 
-const ClassMemberInstanceMethod* ClassData::find_instance_method_by_local_name(vk::string_view local_name) const {
-  const ClassMemberInstanceMethod* result{nullptr};
+const ClassMemberInstanceMethod *ClassData::find_instance_method_by_local_name(vk::string_view local_name) const {
+  const ClassMemberInstanceMethod *result{nullptr};
 
   ClassPtr current = get_self();
   while (current) {
     // we don't lock the class here: it's assumed, that members are not inserted concurrently
-    const auto* member = current->members.find_by_local_name<ClassMemberInstanceMethod>(local_name);
+    const auto *member = current->members.find_by_local_name<ClassMemberInstanceMethod>(local_name);
 
     if (member) {
       if (!member->function->modifiers.is_abstract()) {
@@ -266,7 +280,7 @@ const ClassMemberInstanceMethod* ClassData::find_instance_method_by_local_name(v
     // if we already found some abstract implementation, don't bother with interfaces traversal
     if (!result) {
       for (InterfacePtr interface : current->implements) {
-        if (const auto* member = find_method_in_interface(interface, local_name)) {
+        if (const auto *member = find_method_in_interface(interface, local_name)) {
           result = member;
           break;
         }
@@ -297,7 +311,7 @@ VertexAdaptor<op_var> ClassData::gen_vertex_this(Location location) {
 std::vector<ClassPtr> ClassData::get_all_derived_classes() const {
   std::vector<ClassPtr> inheritors{get_self()};
   for (int last_derived_indx = 0; last_derived_indx != inheritors.size(); ++last_derived_indx) {
-    const auto& cur_derived = inheritors[last_derived_indx]->derived_classes;
+    const auto &cur_derived = inheritors[last_derived_indx]->derived_classes;
     inheritors.insert(inheritors.end(), cur_derived.begin(), cur_derived.end());
   }
   return inheritors;
@@ -329,26 +343,27 @@ bool ClassData::is_polymorphic_or_has_polymorphic_member() const {
   return has_polymorphic_member_dfs(checked);
 }
 
-bool ClassData::has_polymorphic_member_dfs(std::unordered_set<ClassPtr>& checked) const {
-  return nullptr != members.find_member([&checked](const ClassMemberInstanceField& field) {
-    std::unordered_set<ClassPtr> sub_classes;
-    field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
-    for (auto klass : sub_classes) {
-      if (checked.insert(klass).second) {
-        if (klass->is_polymorphic_class() || klass->has_polymorphic_member_dfs(checked)) {
-          return true;
+bool ClassData::has_polymorphic_member_dfs(std::unordered_set<ClassPtr> &checked) const {
+  return nullptr != members.find_member(
+    [&checked](const ClassMemberInstanceField &field) {
+      std::unordered_set<ClassPtr> sub_classes;
+      field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
+      for (auto klass : sub_classes) {
+        if (checked.insert(klass).second) {
+          if (klass->is_polymorphic_class() || klass->has_polymorphic_member_dfs(checked)) {
+            return true;
+          }
         }
       }
-    }
-    return false;
-  });
+      return false;
+    });
 }
 
 bool ClassData::does_need_codegen() const {
   return need_generated_stub || (!is_builtin() && !is_trait() && (really_used || is_tl_class));
 }
 
-bool operator<(const ClassPtr& lhs, const ClassPtr& rhs) {
+bool operator<(const ClassPtr &lhs, const ClassPtr &rhs) {
   return lhs->name < rhs->name;
 }
 
@@ -360,7 +375,7 @@ void ClassData::mark_as_used() {
   if (parent_class) {
     parent_class->mark_as_used();
   }
-  for (const auto& interface : implements) {
+  for (const auto &interface : implements) {
     interface->mark_as_used();
   }
 }
@@ -373,7 +388,7 @@ void ClassData::set_atomic_field_deeply(bool on_fields) {
 
   this->*field_ptr = true;
   if (on_fields) {
-    members.for_each([](ClassMemberInstanceField& field) {
+    members.for_each([](ClassMemberInstanceField &field) {
       std::unordered_set<ClassPtr> sub_classes;
       field.var->tinf_node.get_type()->get_all_class_types_inside(sub_classes);
       for (auto klass : sub_classes) {
@@ -422,8 +437,8 @@ void ClassData::add_str_dependent(FunctionPtr cur_function, ClassType type, vk::
 }
 
 void ClassData::register_defines() const {
-  members.for_each([this](const ClassMemberConstant& c) {
-    auto* data = new DefineData(std::string{c.global_name()}, c.value, DefineData::def_unknown);
+  members.for_each([this](const ClassMemberConstant &c) {
+    auto *data = new DefineData(std::string{c.global_name()}, c.value, DefineData::def_unknown);
     data->file_id = file_id;
     data->access = c.access;
     data->class_id = get_self();
@@ -431,13 +446,13 @@ void ClassData::register_defines() const {
   });
 }
 
-std::vector<const ClassMemberInstanceField*> ClassData::get_job_shared_memory_pieces() const {
+std::vector<const ClassMemberInstanceField *> ClassData::get_job_shared_memory_pieces() const {
   auto shared_memory_piece_interface = G->get_class("KphpJobWorkerSharedMemoryPiece");
   kphp_assert(shared_memory_piece_interface);
 
-  std::vector<const ClassMemberInstanceField*> res;
+  std::vector<const ClassMemberInstanceField *> res;
   for (ClassPtr ancestor : get_all_ancestors()) {
-    ancestor->members.for_each([&](const ClassMemberInstanceField& field) {
+    ancestor->members.for_each([&](const ClassMemberInstanceField &field) {
       for (ClassPtr field_class : field.get_inferred_type()->class_types()) {
         if (shared_memory_piece_interface->is_parent_of(field_class)) {
           res.emplace_back(&field);

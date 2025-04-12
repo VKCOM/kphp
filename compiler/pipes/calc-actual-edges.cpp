@@ -5,18 +5,18 @@
 #include "compiler/pipes/calc-actual-edges.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/inferring/public.h"
 #include "compiler/data/class-data.h"
 #include "compiler/function-pass.h"
-#include "compiler/inferring/public.h"
 
 // handle_exception reports whether a thrown_class will be caught by any of the given try blocks;
 // try_stack should contain the innermost try block in its end.
 //
 // This function will mark try blocks that failed to handle the exception with catches_all=false.
-bool CalcActualCallsEdgesPass::handle_exception(std::vector<VertexAdaptor<op_try>>& try_stack, ClassPtr thrown_class) {
+bool CalcActualCallsEdgesPass::handle_exception(std::vector<VertexAdaptor<op_try>> &try_stack, ClassPtr thrown_class) {
   // walk from the innermost try statement
   for (auto i = try_stack.rbegin(); i != try_stack.rend(); ++i) {
-    auto& try_op = *i;
+    auto &try_op = *i;
     for (auto c : try_op->catch_list()) {
       if (c.as<op_catch>()->exception_class->is_parent_of(thrown_class)) {
         return true;

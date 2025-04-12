@@ -10,8 +10,8 @@
 #include "common/php-functions.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
-#include "compiler/data/var-data.h"
 #include "compiler/vertex.h"
+#include "compiler/data/var-data.h"
 
 struct DepLevelContainer {
   DepLevelContainer() {
@@ -19,27 +19,27 @@ struct DepLevelContainer {
   }
 
   struct const_iterator {
-    const_iterator(const DepLevelContainer& owner, size_t dep_level, size_t internal_index)
-        : owner(owner),
-          dep_level(dep_level),
-          internal_index(internal_index) {}
+    const_iterator(const DepLevelContainer &owner, size_t dep_level, size_t internal_index)
+      : owner(owner)
+      , dep_level(dep_level)
+      , internal_index(internal_index) {}
 
-    const VarPtr& operator*() {
+    const VarPtr &operator*() {
       return owner.mapping[dep_level][internal_index];
     }
 
-    const_iterator& operator++();
+    const_iterator &operator++();
 
-    bool operator==(const const_iterator& oth) const {
+    bool operator==(const const_iterator &oth) const {
       return std::make_tuple(&owner, dep_level, internal_index) == std::make_tuple(&oth.owner, oth.dep_level, oth.internal_index);
     }
 
-    bool operator!=(const const_iterator& oth) const {
+    bool operator!=(const const_iterator &oth) const {
       return !(*this == oth);
     }
 
   private:
-    const DepLevelContainer& owner;
+    const DepLevelContainer &owner;
     size_t dep_level;
     size_t internal_index;
   };
@@ -62,7 +62,7 @@ struct DepLevelContainer {
     return mapping.size();
   }
 
-  const std::vector<VarPtr>& vars_by_dep_level(size_t dep_level) const;
+  const std::vector<VarPtr> &vars_by_dep_level(size_t dep_level) const;
 
   void add(VarPtr v);
 
@@ -75,18 +75,19 @@ private:
 
 class RawString {
 public:
-  explicit RawString(vk::string_view str)
-      : str(str) {}
+  explicit RawString(vk::string_view str) :
+    str(str) {
+  }
 
-  void compile(CodeGenerator& W) const;
+  void compile(CodeGenerator &W) const;
 
 private:
   std::string str;
 };
 
-std::vector<int> compile_arrays_raw_representation(const DepLevelContainer& const_raw_array_vars, CodeGenerator& W);
+std::vector<int> compile_arrays_raw_representation(const DepLevelContainer &const_raw_array_vars, CodeGenerator &W);
 
-// returns len of raw string representation or -1 on error
+//returns len of raw string representation or -1 on error
 inline int string_raw_len(int src_len) {
   if (src_len < 0 || src_len >= (1 << 30) - 13) {
     return -1;
@@ -95,13 +96,13 @@ inline int string_raw_len(int src_len) {
   return src_len + 13;
 }
 
-// returns len of raw string representation and writes it to dest or returns -1 on error
-inline int string_raw(char* dest, int dest_len, const char* src, int src_len) {
+//returns len of raw string representation and writes it to dest or returns -1 on error
+inline int string_raw(char *dest, int dest_len, const char *src, int src_len) {
   int raw_len = string_raw_len(src_len);
   if (raw_len == -1 || raw_len > dest_len) {
     return -1;
   }
-  int* dest_int = reinterpret_cast<int*>(dest);
+  int *dest_int = reinterpret_cast <int *> (dest);
   dest_int[0] = src_len;
   dest_int[1] = src_len;
   dest_int[2] = ExtraRefCnt::for_global_const;
@@ -111,22 +112,22 @@ inline int string_raw(char* dest, int dest_len, const char* src, int src_len) {
   return raw_len;
 }
 
-template<typename Container>
-std::vector<int> compile_raw_data(CodeGenerator& W, const Container& values) {
+template <typename Container>
+std::vector<int> compile_raw_data(CodeGenerator &W, const Container &values) {
   std::string raw_data;
   std::vector<int> const_string_shifts(values.size());
   int ii = 0;
-  for (const auto& s : values) {
+  for (const auto &s : values) {
     int shift_to_align = (((int)raw_data.size() + 7) & -8) - (int)raw_data.size();
     if (shift_to_align != 0) {
       raw_data.append(shift_to_align, 0);
     }
     int raw_len = string_raw_len(static_cast<int>(s.size()));
-    kphp_assert(raw_len != -1);
+    kphp_assert (raw_len != -1);
     const_string_shifts[ii] = (int)raw_data.size();
     raw_data.append(raw_len, 0);
     int err = string_raw(&raw_data[const_string_shifts[ii]], raw_len, s.c_str(), (int)s.size());
-    kphp_assert(err == raw_len);
+    kphp_assert (err == raw_len);
     ii++;
   }
   if (!raw_data.empty()) {
@@ -134,3 +135,4 @@ std::vector<int> compile_raw_data(CodeGenerator& W, const Container& values) {
   }
   return const_string_shifts;
 }
+

@@ -11,10 +11,10 @@
 namespace vk {
 namespace tl {
 
-void PhpClasses::load_from(const vk::tlo_parsing::tl_scheme& scheme, bool generate_tl_internals) {
+void PhpClasses::load_from(const vk::tlo_parsing::tl_scheme &scheme, bool generate_tl_internals) {
   TlToPhpClassesConverter tl_to_php_doc_converter{scheme, *this};
-  for (const auto& func : scheme.functions) {
-    const tlo_parsing::combinator& tl_combinator = *func.second;
+  for (const auto &func : scheme.functions) {
+    const tlo_parsing::combinator &tl_combinator = *func.second;
     if (generate_tl_internals || !tl_combinator.is_internal_function()) {
       tl_to_php_doc_converter.register_function(tl_combinator);
     }
@@ -25,12 +25,12 @@ bool is_or_null_possible(php_field_type internal_type) {
   return vk::none_of_equal(internal_type, php_field_type::t_mixed, php_field_type::t_maybe);
 }
 
-bool is_php_code_gen_allowed(const TlTypePhpRepresentation& type_repr) noexcept {
+bool is_php_code_gen_allowed(const TlTypePhpRepresentation &type_repr) noexcept {
   // tl type RpcReqResult has multiple constructors, but one named as itself, it's incorrect, skip it
   return type_repr.type_representation->tl_name != "RpcReqResult";
 }
 
-bool is_php_code_gen_allowed(const TlFunctionPhpRepresentation& func_repr) noexcept {
+bool is_php_code_gen_allowed(const TlFunctionPhpRepresentation &func_repr) noexcept {
   // this tl function uses 'RpcReqResult' and should never be used from php code
   return func_repr.function_args->tl_name != "rpcInvokeReq";
 }

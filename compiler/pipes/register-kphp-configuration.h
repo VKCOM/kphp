@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "compiler/data/class-members.h"
-#include "compiler/data/data_ptr.h"
-#include "compiler/function-colors.h"
 #include "compiler/pipes/sync.h"
+#include "compiler/data/data_ptr.h"
+#include "compiler/data/class-members.h"
+#include "compiler/function-colors.h"
 
 class RegisterKphpConfiguration final : public SyncPipeF<FunctionPtr> {
   using need_profiler = std::false_type;
@@ -15,19 +15,19 @@ class RegisterKphpConfiguration final : public SyncPipeF<FunctionPtr> {
 
   void handle_KphpConfiguration_class(ClassPtr klass);
 
-  void handle_constant_runtime_options(const ClassMemberConstant& c);
+  void handle_constant_runtime_options(const ClassMemberConstant &c);
   void generic_register_simple_option(VertexPtr value, vk::string_view opt_key) const noexcept;
 
   void register_confdata_blacklist(VertexPtr value) const noexcept;
   void register_confdata_predefined_wildcard(VertexPtr value) const noexcept;
   void register_net_dc_mask(VertexPtr value) const noexcept;
 
-  void handle_constant_function_palette(const ClassMemberConstant& c);
-  void parse_palette(VertexPtr const_val, function_palette::Palette& palette);
-  void parse_palette_ruleset(VertexAdaptor<op_array> arr, function_palette::Palette& palette);
-  void parse_palette_rule(VertexAdaptor<op_double_arrow> pair, function_palette::Palette& palette, function_palette::PaletteRuleset& add_to);
+  void handle_constant_function_palette(const ClassMemberConstant &c);
+  void parse_palette(VertexPtr const_val, function_palette::Palette &palette);
+  void parse_palette_ruleset(VertexAdaptor<op_array> arr, function_palette::Palette &palette);
+  void parse_palette_rule(VertexAdaptor<op_double_arrow> pair, function_palette::Palette &palette, function_palette::PaletteRuleset &add_to);
 
-  void handle_constant_function_exclude_namespaces(const ClassMemberConstant& c);
+  void handle_constant_function_exclude_namespaces(const ClassMemberConstant &c);
 
   const vk::string_view configuration_class_name_{"KphpConfiguration"};
   const vk::string_view runtime_options_name_{"DEFAULT_RUNTIME_OPTIONS"};
@@ -48,6 +48,6 @@ class RegisterKphpConfiguration final : public SyncPipeF<FunctionPtr> {
   const vk::string_view job_workers_shared_memory_distribution_weights_{"--job-workers-shared-memory-distribution-weights"};
 
 public:
-  void execute(FunctionPtr function, DataStream<FunctionPtr>& unused_os) final;
-  void on_finish(DataStream<FunctionPtr>& os) override;
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &unused_os) final;
+  void on_finish(DataStream<FunctionPtr> &os) override;
 };

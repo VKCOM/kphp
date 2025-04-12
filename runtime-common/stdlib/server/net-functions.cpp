@@ -11,7 +11,7 @@ namespace {
 constexpr int64_t IPV4_SIZE = 25;
 }
 
-Optional<int64_t> f$ip2long(const string& ip) noexcept {
+Optional<int64_t> f$ip2long(const string &ip) noexcept {
   struct in_addr result;
   if (inet_pton(AF_INET, ip.c_str(), &result) != 1) {
     return false;
@@ -19,7 +19,7 @@ Optional<int64_t> f$ip2long(const string& ip) noexcept {
   return ntohl(result.s_addr);
 }
 
-Optional<string> f$ip2ulong(const string& ip) noexcept {
+Optional<string> f$ip2ulong(const string &ip) noexcept {
   struct in_addr result;
   if (inet_pton(AF_INET, ip.c_str(), &result) != 1) {
     return false;
@@ -31,7 +31,7 @@ Optional<string> f$ip2ulong(const string& ip) noexcept {
 }
 
 string f$long2ip(int64_t num) noexcept {
-  auto& runtime_context{RuntimeContext::get()};
+  auto &runtime_context{RuntimeContext::get()};
   runtime_context.static_SB.clean().reserve(IPV4_SIZE);
   for (int i = 3; i >= 0; i--) {
     runtime_context.static_SB << ((num >> (i * 8)) & 255);

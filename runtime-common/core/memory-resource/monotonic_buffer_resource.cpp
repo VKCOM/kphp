@@ -6,9 +6,9 @@
 
 namespace memory_resource {
 
-void monotonic_buffer::init(void* buffer, size_t buffer_size) noexcept {
+void monotonic_buffer::init(void *buffer, size_t buffer_size) noexcept {
   php_assert(buffer_size <= memory_buffer_limit());
-  memory_begin_ = static_cast<char*>(buffer);
+  memory_begin_ = static_cast<char *>(buffer);
   memory_current_ = memory_begin_;
   memory_end_ = memory_begin_ + buffer_size;
 

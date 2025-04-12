@@ -10,5 +10,5 @@
 
 class GenerateVirtualMethodsF final : public SyncPipeF<FunctionPtr> {
 public:
-  void on_finish(DataStream<FunctionPtr>& os) final;
+  void on_finish(DataStream<FunctionPtr> &os) final;
 };

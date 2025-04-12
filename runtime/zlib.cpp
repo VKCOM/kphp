@@ -11,12 +11,12 @@
 
 namespace {
 voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) {
-  int* buf_pos = (int*)opaque;
-  php_assert(items != 0 && (StringLibContext::STATIC_BUFFER_LENGTH - *buf_pos) / items >= size);
+  int *buf_pos = (int *)opaque;
+  php_assert (items != 0 && (StringLibContext::STATIC_BUFFER_LENGTH - *buf_pos) / items >= size);
 
   int pos = *buf_pos;
   *buf_pos += items * size;
-  php_assert(*buf_pos <= StringLibContext::STATIC_BUFFER_LENGTH);
+  php_assert (*buf_pos <= StringLibContext::STATIC_BUFFER_LENGTH);
   return StringLibContext::get().static_buf.data() + pos;
 }
 
@@ -31,7 +31,7 @@ void zlib_dynamic_free(voidpf opaque __attribute__((unused)), voidpf address) {
 }
 } // namespace
 
-const string_buffer* zlib_encode(const char* s, int32_t s_len, int32_t level, int32_t encoding) {
+const string_buffer *zlib_encode(const char *s, int32_t s_len, int32_t level, int32_t encoding) {
   int buf_pos = 0;
   z_stream strm;
   strm.zalloc = zlib_static_alloc;
@@ -41,13 +41,13 @@ const string_buffer* zlib_encode(const char* s, int32_t s_len, int32_t level, in
   unsigned int res_len = (unsigned int)compressBound(s_len) + 30;
   kphp_runtime_context.static_SB.clean().reserve(res_len);
 
-  dl::enter_critical_section(); // OK
-  int ret = deflateInit2(&strm, level, Z_DEFLATED, encoding, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY);
+  dl::enter_critical_section();//OK
+  int ret = deflateInit2 (&strm, level, Z_DEFLATED, encoding, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY);
   if (ret == Z_OK) {
     strm.avail_in = (unsigned int)s_len;
-    strm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(s));
+    strm.next_in = reinterpret_cast <Bytef *> (const_cast <char *> (s));
     strm.avail_out = res_len;
-    strm.next_out = reinterpret_cast<Bytef*>(kphp_runtime_context.static_SB.buffer());
+    strm.next_out = reinterpret_cast <Bytef *> (kphp_runtime_context.static_SB.buffer());
 
     ret = deflate(&strm, Z_FINISH);
     deflateEnd(&strm);
@@ -67,12 +67,12 @@ const string_buffer* zlib_encode(const char* s, int32_t s_len, int32_t level, in
   return &kphp_runtime_context.static_SB;
 }
 
-class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed>& options) {
+class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed> &options) {
   int level = -1;
   int memory = 8;
   int window = 15;
   int strategy = Z_DEFAULT_STRATEGY;
-  auto extract_int_option = [&](int lbound, int ubound, const array_iterator<const mixed>& option, int& dst) {
+  auto extract_int_option = [&](int lbound, int ubound, const array_iterator<const mixed> & option, int & dst) {
     mixed value = option.get_value();
     if (value.is_int() && value.as_int() >= lbound && value.as_int() <= ubound) {
       dst = value.as_int();
@@ -83,15 +83,15 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
     }
   };
   switch (encoding) {
-  case ZLIB_ENCODING_RAW:
-  case ZLIB_ENCODING_DEFLATE:
-  case ZLIB_ENCODING_GZIP:
-    break;
-  default:
-    php_warning("deflate_init() : encoding should be one of ZLIB_ENCODING_RAW, ZLIB_ENCODING_DEFLATE, ZLIB_ENCODING_GZIP");
-    return {};
+    case ZLIB_ENCODING_RAW:
+    case ZLIB_ENCODING_DEFLATE:
+    case ZLIB_ENCODING_GZIP:
+      break;
+    default:
+      php_warning("deflate_init() : encoding should be one of ZLIB_ENCODING_RAW, ZLIB_ENCODING_DEFLATE, ZLIB_ENCODING_GZIP");
+      return {};
   }
-  for (const auto& option : options) {
+  for (const auto &option : options) {
     mixed value;
     if (!option.is_string_key()) {
       php_warning("deflate_init() : unsupported option");
@@ -113,16 +113,16 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
       value = option.get_value();
       if (value.is_int()) {
         switch (value.as_int()) {
-        case Z_FILTERED:
-        case Z_HUFFMAN_ONLY:
-        case Z_RLE:
-        case Z_FIXED:
-        case Z_DEFAULT_STRATEGY:
-          strategy = value.as_int();
-          break;
-        default:
-          php_warning("deflate_init() : option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
-          return {};
+          case Z_FILTERED:
+          case Z_HUFFMAN_ONLY:
+          case Z_RLE:
+          case Z_FIXED:
+          case Z_DEFAULT_STRATEGY:
+            strategy = value.as_int();
+            break;
+          default:
+            php_warning("deflate_init() : option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
+            return {};
         }
       } else {
         php_warning("deflate_init() : option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
@@ -140,7 +140,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   class_instance<C$DeflateContext> context;
   context.alloc();
 
-  z_stream* stream = &context.get()->stream;
+  z_stream *stream = &context.get()->stream;
   stream->zalloc = zlib_dynamic_alloc;
   stream->zfree = zlib_dynamic_free;
   stream->opaque = nullptr;
@@ -161,29 +161,28 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   return context;
 }
 
-Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, const string& data, int64_t flush_type) {
+Optional<string> f$deflate_add(const class_instance<C$DeflateContext> &context, const string &data, int64_t flush_type) {
   switch (flush_type) {
-  case Z_BLOCK:
-  case Z_NO_FLUSH:
-  case Z_PARTIAL_FLUSH:
-  case Z_SYNC_FLUSH:
-  case Z_FULL_FLUSH:
-  case Z_FINISH:
-    break;
-  default:
-    php_warning(
-        "deflate_add() : flush type should be one of ZLIB_NO_FLUSH, ZLIB_PARTIAL_FLUSH, ZLIB_SYNC_FLUSH, ZLIB_FULL_FLUSH, ZLIB_FINISH, ZLIB_BLOCK, ZLIB_TREES");
-    return {};
+    case Z_BLOCK:
+    case Z_NO_FLUSH:
+    case Z_PARTIAL_FLUSH:
+    case Z_SYNC_FLUSH:
+    case Z_FULL_FLUSH:
+    case Z_FINISH:
+      break;
+    default:
+      php_warning("deflate_add() : flush type should be one of ZLIB_NO_FLUSH, ZLIB_PARTIAL_FLUSH, ZLIB_SYNC_FLUSH, ZLIB_FULL_FLUSH, ZLIB_FINISH, ZLIB_BLOCK, ZLIB_TREES");
+      return {};
   }
 
   dl::CriticalSectionGuard guard;
-  z_stream* stream = &context.get()->stream;
+  z_stream *stream = &context.get()->stream;
   int out_size = deflateBound(stream, data.size()) + 30;
   out_size = out_size < 64 ? 64 : out_size;
-  char* buffer = static_cast<char*>(dl::script_allocator_malloc(out_size));
-  auto finalizer = vk::finally([buffer]() { dl::script_allocator_free(buffer); });
-  stream->next_in = const_cast<Bytef*>(reinterpret_cast<const Bytef*>(data.c_str()));
-  stream->next_out = reinterpret_cast<Bytef*>(buffer);
+  char * buffer = static_cast<char *>(dl::script_allocator_malloc(out_size));
+  auto finalizer = vk::finally([buffer](){dl::script_allocator_free(buffer);});
+  stream->next_in = const_cast<Bytef *>(reinterpret_cast<const Bytef *>(data.c_str()));
+  stream->next_out = reinterpret_cast<Bytef *>(buffer);
   stream->avail_in = data.size();
   stream->avail_out = out_size;
 
@@ -191,10 +190,10 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, 
   int buffer_used = 0;
   do {
     if (stream->avail_out == 0) {
-      buffer = static_cast<char*>(dl::script_allocator_realloc(buffer, out_size + 64));
+      buffer = static_cast<char *>(dl::script_allocator_realloc(buffer, out_size + 64));
       out_size += 64;
       stream->avail_out = 64;
-      stream->next_out = reinterpret_cast<Bytef*>(buffer + buffer_used);
+      stream->next_out = reinterpret_cast<Bytef *>(buffer + buffer_used);
     }
     status = deflate(stream, flush_type);
     buffer_used = out_size - stream->avail_out;
@@ -202,20 +201,20 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, 
 
   int len;
   switch (status) {
-  case Z_OK:
-    len = stream->next_out - reinterpret_cast<Bytef*>(buffer);
-    return string(buffer, len);
-  case Z_STREAM_END:
-    len = stream->next_out - reinterpret_cast<Bytef*>(buffer);
-    deflateReset(stream);
-    return string(buffer, len);
-  default:
-    php_warning("deflate_add() : zlib error %s", zError(status));
-    return {};
+    case Z_OK:
+      len = stream->next_out - reinterpret_cast<Bytef *>(buffer);
+      return string(buffer, len);
+    case Z_STREAM_END:
+      len = stream->next_out - reinterpret_cast<Bytef *>(buffer);
+      deflateReset(stream);
+      return string(buffer, len);
+    default:
+      php_warning("deflate_add() : zlib error %s", zError(status));
+      return {};
   }
 }
 
-string f$gzcompress(const string& s, int64_t level) {
+string f$gzcompress(const string &s, int64_t level) {
   if (level < -1 || level > 9) {
     php_warning("Wrong parameter level = %" PRIi64 " in function gzcompress", level);
     level = 6;
@@ -224,7 +223,7 @@ string f$gzcompress(const string& s, int64_t level) {
   return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_ENCODING_DEFLATE)->str();
 }
 
-string f$gzdeflate(const string& s, int64_t level) {
+string f$gzdeflate(const string &s, int64_t level) {
   if (level < -1 || level > 9) {
     php_warning("Wrong parameter level = %" PRIi64 " in function gzcompress", level);
     level = 6;
@@ -233,7 +232,7 @@ string f$gzdeflate(const string& s, int64_t level) {
   return zlib_encode(s.c_str(), s.size(), static_cast<int32_t>(level), ZLIB_ENCODING_RAW)->str();
 }
 
-string f$gzencode(const string& s, int64_t level) {
+string f$gzencode(const string &s, int64_t level) {
   if (level < -1 || level > 9) {
     php_warning("Wrong parameter level = %" PRIi64 " in function gzencode", level);
   }
@@ -249,9 +248,9 @@ static string::size_type zlib_decode_raw(vk::string_view s, int encoding) {
   strm.zfree = Z_NULL;
   strm.opaque = Z_NULL;
   strm.avail_in = s.size();
-  strm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(s.data()));
+  strm.next_in = reinterpret_cast<Bytef *>(const_cast<char *>(s.data()));
   strm.avail_out = StringLibContext::STATIC_BUFFER_LENGTH;
-  strm.next_out = reinterpret_cast<Bytef*>(StringLibContext::get().static_buf.data());
+  strm.next_out = reinterpret_cast<Bytef *>(StringLibContext::get().static_buf.data());
 
   int ret = inflateInit2(&strm, encoding);
   if (ret != Z_OK) {
@@ -261,15 +260,15 @@ static string::size_type zlib_decode_raw(vk::string_view s, int encoding) {
 
   ret = inflate(&strm, Z_NO_FLUSH);
   switch (ret) {
-  case Z_NEED_DICT:
-  case Z_DATA_ERROR:
-  case Z_MEM_ERROR:
-  case Z_STREAM_ERROR:
-    inflateEnd(&strm);
-    dl::leave_critical_section();
+    case Z_NEED_DICT:
+    case Z_DATA_ERROR:
+    case Z_MEM_ERROR:
+    case Z_STREAM_ERROR:
+      inflateEnd(&strm);
+      dl::leave_critical_section();
 
-    php_assert(ret != Z_STREAM_ERROR);
-    return -1;
+      php_assert(ret != Z_STREAM_ERROR);
+      return -1;
   }
 
   int res_len = StringLibContext::STATIC_BUFFER_LENGTH - strm.avail_out;
@@ -287,7 +286,7 @@ static string::size_type zlib_decode_raw(vk::string_view s, int encoding) {
   return res_len;
 }
 
-const char* gzuncompress_raw(vk::string_view s, string::size_type* result_len) {
+const char *gzuncompress_raw(vk::string_view s, string::size_type *result_len) {
   auto len = zlib_decode_raw(s, ZLIB_ENCODING_DEFLATE);
   if (len == -1u) {
     *result_len = 0;
@@ -297,7 +296,7 @@ const char* gzuncompress_raw(vk::string_view s, string::size_type* result_len) {
   return StringLibContext::get().static_buf.data();
 }
 
-string zlib_decode(const string& s, int encoding) {
+string zlib_decode(const string &s, int encoding) {
   int len = zlib_decode_raw({s.c_str(), s.size()}, encoding);
   if (len == -1u) {
     return {};
@@ -305,14 +304,14 @@ string zlib_decode(const string& s, int encoding) {
   return {StringLibContext::get().static_buf.data(), static_cast<string::size_type>(len)};
 }
 
-string f$gzdecode(const string& s) {
+string f$gzdecode(const string &s) {
   return zlib_decode(s, ZLIB_ENCODING_GZIP);
 }
 
-string f$gzuncompress(const string& s) {
+string f$gzuncompress(const string &s) {
   return zlib_decode(s, ZLIB_ENCODING_DEFLATE);
 }
 
-string f$gzinflate(const string& s) {
+string f$gzinflate(const string &s) {
   return zlib_decode(s, ZLIB_ENCODING_RAW);
 }

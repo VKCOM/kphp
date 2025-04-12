@@ -17,7 +17,8 @@ struct C$ArrayAccess : public may_be_mixed_base {
   ~C$ArrayAccess() override __attribute__((always_inline)) = default;
 };
 
-bool f$ArrayAccess$$offsetExists(class_instance<C$ArrayAccess> const& /*v$this*/, mixed const& /*v$offset*/) noexcept;
-mixed f$ArrayAccess$$offsetGet(class_instance<C$ArrayAccess> const& /*v$this*/, mixed const& /*v$offset*/) noexcept;
-void f$ArrayAccess$$offsetSet(class_instance<C$ArrayAccess> const& /*v$this*/, mixed const& /*v$offset*/, mixed const& /*v$value*/) noexcept;
-void f$ArrayAccess$$offsetUnset(class_instance<C$ArrayAccess> const& /*v$this*/, mixed const& /*v$offset*/) noexcept;
+
+bool f$ArrayAccess$$offsetExists(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept;
+mixed f$ArrayAccess$$offsetGet(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept;
+void f$ArrayAccess$$offsetSet(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/, mixed const & /*v$value*/) noexcept;
+void f$ArrayAccess$$offsetUnset(class_instance<C$ArrayAccess> const & /*v$this*/, mixed const & /*v$offset*/) noexcept;

@@ -10,8 +10,8 @@
 inline void f$set_json_log_on_timeout_mode([[maybe_unused]] bool enabled) noexcept {}
 
 template<class T>
-string f$vk_json_encode_safe(const T& v, bool simple_encode = true) noexcept {
-  auto& rt_ctx{RuntimeContext::get()};
+string f$vk_json_encode_safe(const T &v, bool simple_encode = true) noexcept {
+  auto &rt_ctx{RuntimeContext::get()};
   rt_ctx.static_SB.clean();
   rt_ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_ON;
   impl_::JsonEncoder(0, simple_encode).encode(v, RuntimeContext::get().static_SB);

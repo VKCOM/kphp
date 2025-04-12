@@ -8,11 +8,11 @@
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
 #include "compiler/data/generics-mixins.h"
+#include "compiler/vertex-util.h"
 #include "compiler/lambda-utils.h"
 #include "compiler/phpdoc.h"
-#include "compiler/pipes/clone-nested-lambdas.h"
 #include "compiler/type-hint.h"
-#include "compiler/vertex-util.h"
+#include "compiler/pipes/clone-nested-lambdas.h"
 
 /*
  * This pass creates new functions and passes them backwards to be handled again:
@@ -25,12 +25,13 @@
 
 class InstantiateGenericFunctionPass final : public FunctionPassBase {
   FunctionPtr generic_function;
-  const GenericsInstantiationMixin* instantiationTs;
+  const GenericsInstantiationMixin *instantiationTs;
 
 public:
-  InstantiateGenericFunctionPass(FunctionPtr generic_function, const GenericsInstantiationMixin* instantiationTs)
-      : generic_function(generic_function),
-        instantiationTs(instantiationTs) {}
+  InstantiateGenericFunctionPass(FunctionPtr generic_function, const GenericsInstantiationMixin *instantiationTs)
+    : generic_function(generic_function)
+    , instantiationTs(instantiationTs) {
+  }
 
   std::string get_description() override {
     return "Instantiate generic function";
@@ -45,15 +46,15 @@ public:
       if (as_call->reifiedTs) {
         kphp_assert(as_call->reifiedTs->empty() && as_call->reifiedTs->commentTs);
         as_call->reifiedTs = new GenericsInstantiationMixin(*as_call->reifiedTs);
-        for (auto& type_hint : as_call->reifiedTs->commentTs->vectorTs) {
+        for (auto &type_hint : as_call->reifiedTs->commentTs->vectorTs) {
           type_hint = phpdoc_replace_genericTs_with_reified(type_hint, instantiationTs);
         }
       }
       // inside f<A>, replace `classof($o)` with "A" if `f<T>(T $o)` called as `f(expr_assumed_A)`
       if (as_call->str_val == "classof" && as_call->size() == 1 && as_call->extra_type != op_ex_func_call_arrow) {
         if (auto as_var = as_call->args().begin()->try_as<op_var>()) {
-          if (const TypeHint* param_type_hint = get_param_type_hint_if_generic(as_var->str_val)) {
-            if (const auto* as_genericT = param_type_hint->try_as<TypeHintGenericT>()) {
+          if (const TypeHint *param_type_hint = get_param_type_hint_if_generic(as_var->str_val)) {
+            if (const auto *as_genericT = param_type_hint->try_as<TypeHintGenericT>()) {
               return replace_with_string_const_if_T_is_class(as_genericT->nameT, root);
             }
           }
@@ -62,8 +63,8 @@ public:
 
     } else if (auto as_var = root.try_as<op_var>()) {
       // inside f<A>, replace `$cn` with "A" if `f<T>(class-string<T> $cn)` called as `f(A::class)`
-      if (const TypeHint* param_type_hint = get_param_type_hint_if_generic(as_var->str_val)) {
-        if (const auto* as_class_string = param_type_hint->try_as<TypeHintClassString>()) {
+      if (const TypeHint *param_type_hint = get_param_type_hint_if_generic(as_var->str_val)) {
+        if (const auto *as_class_string = param_type_hint->try_as<TypeHintClassString>()) {
           return replace_with_string_const_if_T_is_class(as_class_string->inner->try_as<TypeHintGenericT>()->nameT, root);
         }
       }
@@ -84,16 +85,16 @@ public:
     return false;
   }
 
-  VertexPtr replace_with_string_const_if_T_is_class(const std::string& nameT, VertexPtr v_to_replace) {
-    if (const TypeHint* instT = instantiationTs->find(nameT)) {
-      if (const auto* as_instance = instT->try_as<TypeHintInstance>()) {
+  VertexPtr replace_with_string_const_if_T_is_class(const std::string &nameT, VertexPtr v_to_replace) {
+    if (const TypeHint *instT = instantiationTs->find(nameT)) {
+      if (const auto *as_instance = instT->try_as<TypeHintInstance>()) {
         return VertexUtil::create_string_const(as_instance->full_class_name).set_location(v_to_replace);
       }
     }
     return v_to_replace;
   }
 
-  const TypeHint* get_param_type_hint_if_generic(const std::string& var_name) {
+  const TypeHint *get_param_type_hint_if_generic(const std::string &var_name) {
     auto param = generic_function->find_param_by_name(var_name);
     if (param && param->type_hint && param->type_hint->has_genericT_inside() && find_param_by_name(var_name)) {
       return param->type_hint;
@@ -101,7 +102,7 @@ public:
     return nullptr;
   }
 
-  VertexAdaptor<op_func_param> find_param_by_name(const std::string& var_name) {
+  VertexAdaptor<op_func_param> find_param_by_name(const std::string &var_name) {
     FunctionPtr outer_function = current_function;
     while (outer_function->is_lambda()) {
       bool is_used = std::find_if(outer_function->uses_list.begin(), outer_function->uses_list.end(),
@@ -115,10 +116,12 @@ public:
   }
 };
 
+
 // when we have a call `f<T1, T2>(...)`, we generate a new function `f$_$T1$_$T2`,
 // which is not a generic one, but an instantiated one
-static FunctionPtr instantiate_generic_function(FunctionPtr generic_function, GenericsInstantiationMixin* instantiationTs,
-                                                const std::string& name_of_instantiated_function) {
+static FunctionPtr instantiate_generic_function(FunctionPtr generic_function,
+                                                GenericsInstantiationMixin *instantiationTs,
+                                                const std::string &name_of_instantiated_function) {
 
   auto new_function = FunctionData::clone_from(generic_function, name_of_instantiated_function);
   CloneNestedLambdasPass::run_if_lambdas_inside(new_function, nullptr);
@@ -148,11 +151,13 @@ static FunctionPtr instantiate_generic_function(FunctionPtr generic_function, Ge
   return new_function;
 }
 
-static FunctionPtr instantiate_generic_function_concurrent(FunctionPtr generic_function, GenericsInstantiationMixin* instantiationTs,
-                                                           const std::string& name_of_instantiated_function, DataStream<FunctionPtr>& function_stream) {
+static FunctionPtr instantiate_generic_function_concurrent(FunctionPtr generic_function,
+                                                           GenericsInstantiationMixin *instantiationTs,
+                                                           const std::string &name_of_instantiated_function,
+                                                           DataStream<FunctionPtr> &function_stream) {
   FunctionPtr generated_function;
 
-  G->operate_on_function_locking(name_of_instantiated_function, [&](FunctionPtr& f) {
+  G->operate_on_function_locking(name_of_instantiated_function, [&](FunctionPtr &f) {
     if (!f) {
       f = instantiate_generic_function(generic_function, instantiationTs, name_of_instantiated_function);
 
@@ -170,16 +175,18 @@ static FunctionPtr instantiate_generic_function_concurrent(FunctionPtr generic_f
   return generated_function;
 }
 
+
 // the pass which is called from the F pipe
 // (the F pipe is needed to have several outputs, which is impossible with Pass structure)
 class InstantiateGenericsAndLambdasPass final : public FunctionPassBase {
-  DataStream<FunctionPtr>& function_stream;
-  DataStream<FunctionPtr>& forward_next_stream;
+  DataStream<FunctionPtr> &function_stream;
+  DataStream<FunctionPtr> &forward_next_stream;
 
 public:
-  explicit InstantiateGenericsAndLambdasPass(DataStream<FunctionPtr>& function_stream, DataStream<FunctionPtr>& forward_next_stream)
-      : function_stream(function_stream),
-        forward_next_stream(forward_next_stream) {}
+
+  explicit InstantiateGenericsAndLambdasPass(DataStream<FunctionPtr> &function_stream, DataStream<FunctionPtr> &forward_next_stream)
+    : function_stream(function_stream)
+    , forward_next_stream(forward_next_stream) {}
 
   std::string get_description() override {
     return "Instantiate generics and lambdas";
@@ -211,10 +218,10 @@ public:
     // if f<T> is a member of an interface, instantiate f<T> in all derived classes
     // note, that we don't allow `class A { foo<T>() { ... } } class B : A { foo<T>() { ... } }` (moving a generic to self method)
     if (generic_function->modifiers.is_instance() && generic_function->is_virtual_method) {
-      kphp_assert(generic_function->modifiers.is_abstract()); // should have been checked in advance
+      kphp_assert(generic_function->modifiers.is_abstract());  // should have been checked in advance
       for (ClassPtr derived : generic_function->class_id->get_all_derived_classes()) {
         if (derived != generic_function->class_id) {
-          if (const auto* method = derived->members.get_instance_method(generic_function->local_name())) {
+          if (const auto *method = derived->members.get_instance_method(generic_function->local_name())) {
             on_generic_func_call_instantiate(method->function, call);
           }
         }
@@ -238,7 +245,7 @@ public:
     ClassPtr c_lambda = generate_lambda_class_wrapping_lambda_function(f_lambda);
     kphp_assert(f_lambda->class_id == c_lambda);
 
-    if (v_lambda->lambda_class) { // while deducing types, we used this field to express inheritance from a typed callable
+    if (v_lambda->lambda_class) {   // while deducing types, we used this field to express inheritance from a typed callable
       kphp_assert(v_lambda->lambda_class->is_typed_callable_interface());
       inherit_lambda_class_from_typed_callable(c_lambda, v_lambda->lambda_class);
       G->require_function(v_lambda->lambda_class->get_instance_method("__invoke")->function, function_stream);
@@ -247,7 +254,7 @@ public:
 
     InstantiateGenericsAndLambdasPass pass_lambda(function_stream, forward_next_stream);
     run_function_pass(f_lambda, &pass_lambda);
-    forward_next_stream << f_lambda; // nested lambdas were already processed by DeduceImplicitTypesAndCastsPass
+    forward_next_stream << f_lambda;  // nested lambdas were already processed by DeduceImplicitTypesAndCastsPass
 
     G->require_function(c_lambda->construct_function, function_stream);
     G->require_function(c_lambda->get_instance_method("__invoke")->function, function_stream);
@@ -274,9 +281,10 @@ public:
   }
 };
 
-void InstantiateGenericsAndLambdasF::execute(FunctionPtr function, OStreamT& os) {
-  auto& forward_next_stream = *os.project_to_nth_data_stream<0>();
-  auto& newly_generated_functions_stream = *os.project_to_nth_data_stream<1>();
+
+void InstantiateGenericsAndLambdasF::execute(FunctionPtr function, OStreamT &os) {
+  auto &forward_next_stream = *os.project_to_nth_data_stream<0>();
+  auto &newly_generated_functions_stream = *os.project_to_nth_data_stream<1>();
 
   InstantiateGenericsAndLambdasPass pass(newly_generated_functions_stream, forward_next_stream);
   run_function_pass(function, &pass);

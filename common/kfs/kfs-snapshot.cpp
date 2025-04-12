@@ -20,13 +20,13 @@ kfs_file_handle_t open_snapshot(kfs_replica_handle_t r, int snapshot_index) {
   if (!r) {
     return 0;
   }
-  assert(0 <= snapshot_index && snapshot_index < r->snapshot_num);
+  assert (0 <= snapshot_index && snapshot_index < r->snapshot_num);
 
   if (r->snapshots[snapshot_index]->flags & KFS_FILE_TEMP) {
     return 0;
   }
 
-  struct kfs_file_info* fi = r->snapshots[snapshot_index];
+  struct kfs_file_info *fi = r->snapshots[snapshot_index];
 
   int fd = preload_file_info_ex(fi);
 
@@ -42,17 +42,17 @@ kfs_file_handle_t open_snapshot(kfs_replica_handle_t r, int snapshot_index) {
       kprintf("cannot open snapshot file %s: %m\n", fi->filename);
       return 0;
     }
-    assert(lseek(fd, sizeof(struct kfs_file_header) * fi->kfs_headers, SEEK_SET) == sizeof(struct kfs_file_header) * fi->kfs_headers);
+    assert (lseek(fd, sizeof(struct kfs_file_header) * fi->kfs_headers, SEEK_SET) == sizeof(struct kfs_file_header) * fi->kfs_headers);
   }
 
   if (lock_whole_file(fd, F_RDLCK) <= 0) {
-    assert(close(fd) >= 0);
+    assert (close(fd) >= 0);
     kprintf("cannot lock snapshot file %s: %m\n", fi->filename);
     return 0;
   }
 
-  auto* f = static_cast<kfs_file*>(malloc(sizeof(struct kfs_file)));
-  assert(f);
+  auto *f = static_cast<kfs_file *>(malloc(sizeof(struct kfs_file)));
+  assert (f);
   memset(f, 0, sizeof(*f));
   f->info = fi;
   f->fd = fd;
@@ -69,7 +69,7 @@ kfs_file_handle_t open_recent_snapshot(kfs_replica_handle_t r) {
   }
   vkprintf(2, "opening last snapshot file\n");
 
-  struct kfs_file* f = 0;
+  struct kfs_file *f = 0;
   int p = r->snapshot_num - 1;
   while (p >= 0 && (f = open_snapshot(r, p)) == 0) {
     --p;
@@ -86,19 +86,20 @@ kfs_file_handle_t open_main_snapshot(kfs_file_handle_t snapshot_diff) {
   // find and open first NON-diff snapshot
   //
   kfs_replica_handle_t r = snapshot_diff->info->replica;
-  kfs_file* f = nullptr;
+  kfs_file *f = nullptr;
 
   for (int p = r->snapshot_num - 1; p >= 0; --p) {
-    if ((KFS_FILE_TEMP | KFS_FILE_SNAPSHOT_DIFF) & r->snapshots[p]->flags) {
+    if ( (KFS_FILE_TEMP | KFS_FILE_SNAPSHOT_DIFF) & r->snapshots[p]->flags) {
       continue;
     }
 
-    if ((f = open_snapshot(r, p))) {
+    if ( (f = open_snapshot(r, p)) ) {
       return f;
     }
   }
 
   return f;
+
 
   //
   // Useless to read parent_pos here: cant compare it with pos in parent snapshot
@@ -106,11 +107,12 @@ kfs_file_handle_t open_main_snapshot(kfs_file_handle_t snapshot_diff) {
   //
 }
 
+
 int close_snapshot(kfs_file_handle_t f, bool close_handle) {
   return kfs_close_file(f, close_handle);
 }
 
-void init_engine_snapshot_descr(struct engine_snapshot_descr* _descr, kfs_file_handle_t _snapshot) {
+void init_engine_snapshot_descr(struct engine_snapshot_descr *_descr, kfs_file_handle_t _snapshot) {
   if (_snapshot) {
     _descr->name = strdup(_snapshot->info->filename);
     _descr->size = _snapshot->info->file_size;
@@ -121,3 +123,4 @@ void init_engine_snapshot_descr(struct engine_snapshot_descr* _descr, kfs_file_h
     _descr->modification_time = 0;
   }
 }
+

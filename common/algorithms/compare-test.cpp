@@ -4,8 +4,8 @@
 
 #include <gtest/gtest.h>
 #include <iterator>
-#include <random>
 #include <vector>
+#include <random>
 
 #include "common/algorithms/compare.h"
 
@@ -38,10 +38,10 @@ TEST(algorithms_compare, random_ranges) {
   size_t l2 = random() % 100 + 10;
   std::vector<uint8_t> v1(l1);
   std::vector<uint8_t> v2(l2);
-  for (auto& c : v1) {
+  for (auto &c : v1) {
     c = random();
   }
-  for (auto& c : v2) {
+  for (auto &c : v2) {
     c = random();
   }
 

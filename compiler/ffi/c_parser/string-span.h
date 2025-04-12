@@ -16,18 +16,18 @@ namespace ffi {
 //
 // As a workaround, we pass this string_span wrapper around the parser.
 struct string_span {
-  const char* data_;
+  const char *data_;
   size_t len_;
 
   string_span() = default;
 
-  string_span(const char* data)
-      : data_{data},
-        len_{std::strlen(data)} {}
+  string_span(const char *data)
+    : data_{data}
+    , len_{std::strlen(data)} {}
 
-  string_span(const char* data, const char* data_end)
-      : data_{data},
-        len_{static_cast<size_t>(data_end - data)} {}
+  string_span(const char *data, const char *data_end)
+    : data_{data}
+    , len_{static_cast<size_t>(data_end - data)} {}
 
   std::string to_string() const {
     return std::string{data_, len_};

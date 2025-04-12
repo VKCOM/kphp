@@ -12,20 +12,20 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 
 using tl_undefined_php_type = std::nullptr_t;
-using tl_storer_ptr = std::unique_ptr<tl_func_base> (*)(const mixed&);
+using tl_storer_ptr = std::unique_ptr<tl_func_base> (*)(const mixed &);
 using tl_fetch_wrapper_ptr = array<mixed> (*)(std::unique_ptr<tl_func_base>);
 
 struct tl_exclamation_fetch_wrapper {
   std::unique_ptr<tl_func_base> fetcher;
 
   explicit tl_exclamation_fetch_wrapper(std::unique_ptr<tl_func_base> fetcher)
-      : fetcher(std::move(fetcher)) {}
+    : fetcher(std::move(fetcher)) {}
 
   tl_exclamation_fetch_wrapper() noexcept = default;
-  tl_exclamation_fetch_wrapper(const tl_exclamation_fetch_wrapper&) = delete;
-  tl_exclamation_fetch_wrapper(tl_exclamation_fetch_wrapper&&) noexcept = default;
-  tl_exclamation_fetch_wrapper& operator=(const tl_exclamation_fetch_wrapper&) = delete;
-  tl_exclamation_fetch_wrapper& operator=(tl_exclamation_fetch_wrapper&&) noexcept = delete;
+  tl_exclamation_fetch_wrapper(const tl_exclamation_fetch_wrapper &) = delete;
+  tl_exclamation_fetch_wrapper(tl_exclamation_fetch_wrapper &&) noexcept = default;
+  tl_exclamation_fetch_wrapper &operator=(const tl_exclamation_fetch_wrapper &) = delete;
+  tl_exclamation_fetch_wrapper &operator=(tl_exclamation_fetch_wrapper &&) noexcept = delete;
   ~tl_exclamation_fetch_wrapper() = default;
 
   mixed fetch() const {
@@ -34,7 +34,7 @@ struct tl_exclamation_fetch_wrapper {
 
   using PhpType = class_instance<C$VK$TL$RpcFunctionReturnResult>;
 
-  void typed_fetch_to(PhpType& out) const {
+  void typed_fetch_to(PhpType &out) const {
     php_assert(fetcher);
     out = fetcher->typed_fetch();
   }

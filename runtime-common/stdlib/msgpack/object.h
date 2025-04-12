@@ -29,17 +29,17 @@ struct object_kv;
 
 struct object_array {
   uint32_t size;
-  object* ptr;
+  object *ptr;
 };
 
 struct object_map {
   uint32_t size;
-  object_kv* ptr;
+  object_kv *ptr;
 };
 
 struct object_str {
   uint32_t size;
-  const char* ptr;
+  const char *ptr;
 };
 
 /// Object class that corresponding to MessagePack format object
@@ -81,7 +81,7 @@ struct object {
    * @return The reference of `v`.
    */
   template<typename T>
-  std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, T&> convert(T& v) const {
+  std::enable_if_t<!std::is_array_v<T> && !std::is_pointer_v<T>, T &> convert(T &v) const {
     adaptor::convert<T>{}(*this, v);
     return v;
   }

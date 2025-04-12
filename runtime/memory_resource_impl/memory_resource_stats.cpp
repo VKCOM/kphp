@@ -4,7 +4,7 @@
 
 #include "runtime/memory_resource_impl/memory_resource_stats.h"
 
-void write_memory_stats_to(const memory_resource::MemoryStats& memoryStats, stats_t* stats, const char* prefix) noexcept {
+void write_memory_stats_to(const memory_resource::MemoryStats & memoryStats, stats_t *stats, const char *prefix) noexcept {
   stats->add_gauge_stat(memoryStats.memory_limit, prefix, ".memory.limit");
   stats->add_gauge_stat(memoryStats.memory_used, prefix, ".memory.used");
   stats->add_gauge_stat(memoryStats.real_memory_used, prefix, ".memory.real_used");

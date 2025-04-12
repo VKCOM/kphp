@@ -24,7 +24,7 @@ struct remove_cv_ref_for_method<R (C::*)(A...) &&> {
   using type = R (C::*)(A...);
 };
 template<class R, class C, class... A>
-struct remove_cv_ref_for_method<R (C::*)(A...)&> {
+struct remove_cv_ref_for_method<R (C::*)(A...) &> {
   using type = R (C::*)(A...);
 };
 #endif
@@ -34,11 +34,11 @@ struct remove_cv_ref_for_method<R (C::*)(A...) volatile> {
 };
 #ifdef VK_GCC_SUPPORTS_REF
 template<class R, class C, class... A>
-struct remove_cv_ref_for_method<R (C::*)(A...) volatile&&> {
+struct remove_cv_ref_for_method<R (C::*)(A...) volatile &&> {
   using type = R (C::*)(A...);
 };
 template<class R, class C, class... A>
-struct remove_cv_ref_for_method<R (C::*)(A...) volatile&> {
+struct remove_cv_ref_for_method<R (C::*)(A...) volatile &> {
   using type = R (C::*)(A...);
 };
 #endif
@@ -48,11 +48,11 @@ struct remove_cv_ref_for_method<R (C::*)(A...) const> {
 };
 #ifdef VK_GCC_SUPPORTS_REF
 template<class R, class C, class... A>
-struct remove_cv_ref_for_method<R (C::*)(A...) const&&> {
+struct remove_cv_ref_for_method<R (C::*)(A...) const &&> {
   using type = R (C::*)(A...);
 };
 template<class R, class C, class... A>
-struct remove_cv_ref_for_method<R (C::*)(A...) const&> {
+struct remove_cv_ref_for_method<R (C::*)(A...) const &> {
   using type = R (C::*)(A...);
 };
 #endif
@@ -62,14 +62,14 @@ struct remove_cv_ref_for_method<R (C::*)(A...) const volatile> {
 };
 #ifdef VK_GCC_SUPPORTS_REF
 template<class R, class C, class... A>
-struct remove_cv_ref_for_method<R (C::*)(A...) const volatile&&> {
+struct remove_cv_ref_for_method<R (C::*)(A...) const volatile &&> {
   using type = R (C::*)(A...);
 };
 template<class R, class C, class... A>
-struct remove_cv_ref_for_method<R (C::*)(A...) const volatile&> {
+struct remove_cv_ref_for_method<R (C::*)(A...) const volatile &> {
   using type = R (C::*)(A...);
 };
 #endif
 
 #undef VK_GCC_SUPPORTS_REF
-} // namespace vk
+}

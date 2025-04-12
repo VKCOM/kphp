@@ -2,6 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+
 #include "runtime/mail.h"
 
 #include <cstdio>
@@ -10,7 +11,7 @@
 #include "runtime/critical_section.h"
 #include "runtime/interface.h"
 
-static bool check_header(const string& str) {
+static bool check_header(const string &str) {
   int str_len = (int)str.size();
   for (int i = 0; i < str_len; i++) {
     if ((str[i] <= 31 && str[i] != '\t') || str[i] >= 127) {
@@ -25,7 +26,7 @@ static bool check_header(const string& str) {
   return true;
 }
 
-bool f$mail(const string& to, const string& subject, const string& message, string additional_headers) {
+bool f$mail(const string &to, const string &subject, const string &message, string additional_headers) {
   if (!check_header(to)) {
     php_warning("Wrong parameter to in function mail");
     return false;
@@ -51,7 +52,7 @@ bool f$mail(const string& to, const string& subject, const string& message, stri
     return false;
   }
   dl::enter_critical_section();
-  FILE* sendmail = popen(sendmail_path.c_str(), "w");
+  FILE *sendmail = popen(sendmail_path.c_str(), "w");
   if (sendmail == nullptr) {
     php_warning("Could not execute \"%s\"", sendmail_path.c_str());
     return false;
@@ -70,7 +71,7 @@ bool f$mail(const string& to, const string& subject, const string& message, stri
     if (result > 0) {
       php_warning("sendmail process terminated unsuccessfully");
     } else {
-      php_assert(result == -1);
+      php_assert (result == -1);
       php_warning("Error on waiting for sendmail process to terminate");
     }
     return false;

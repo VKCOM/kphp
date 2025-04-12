@@ -13,24 +13,23 @@
 #include "runtime-light/state/instance-state.h"
 
 template<typename F, typename... Args>
-requires(std::invocable<F, Args...>)
-void f$register_shutdown_function(F&& f, Args&&... args) noexcept {
+requires(std::invocable<F, Args...>) void f$register_shutdown_function(F &&f, Args &&...args) noexcept {
   // it's a lambda coroutine, so:
   // 1. don't capture anything;
   // 2. parameters are passed by value.
   auto shutdown_function_task{std::invoke(
-      [](F f, Args... args) noexcept -> kphp::coro::task<> {
-        if constexpr (kphp::coro::is_async_function_v<F, Args...>) {
-          co_await std::invoke(std::move(f), std::move(args)...);
-        } else {
-          std::invoke(std::move(f), std::move(args)...);
-        }
-      },
-      std::forward<F>(f), std::forward<Args>(args)...)};
+    [](F f, Args... args) noexcept -> kphp::coro::task<> {
+      if constexpr (kphp::coro::is_async_function_v<F, Args...>) {
+        co_await std::invoke(std::move(f), std::move(args)...);
+      } else {
+        std::invoke(std::move(f), std::move(args)...);
+      }
+    },
+    std::forward<F>(f), std::forward<Args>(args)...)};
   InstanceState::get().shutdown_functions.emplace_back(std::move(shutdown_function_task));
 }
 
 template<typename F>
-void f$register_kphp_on_warning_callback(F&& /*callback*/) {
+void f$register_kphp_on_warning_callback(F && /*callback*/) {
   php_warning("called stub register_kphp_on_warning_callback");
 }

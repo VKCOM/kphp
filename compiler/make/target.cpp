@@ -48,7 +48,7 @@ std::string Target::target() {
 
 std::string Target::dep_list() {
   std::string ss;
-  for (auto* dep : deps) {
+  for (auto *dep : deps) {
     ss += dep->get_name();
     ss += " ";
   }
@@ -78,17 +78,17 @@ void Target::after_run_fail() {
   file->unlink();
 }
 
-void Target::set_file(File* new_file) {
-  assert(file == nullptr);
+void Target::set_file(File *new_file) {
+  assert (file == nullptr);
   file = new_file;
   set_mtime(file->mtime);
 }
 
-File* Target::get_file() const {
+File *Target::get_file() const {
   return file;
 }
 
-void Target::set_settings(const CompilerSettings* new_settings) {
-  assert(settings == nullptr);
+void Target::set_settings(const CompilerSettings *new_settings) {
+  assert (settings == nullptr);
   settings = new_settings;
 }

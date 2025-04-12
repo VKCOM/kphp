@@ -21,7 +21,7 @@ struct BcNum {
 struct MathLibContext final : vk::not_copyable {
   int64_t bc_scale{};
 
-  static MathLibContext& get() noexcept;
+  static MathLibContext &get() noexcept;
 };
 
 struct MathLibConstants final : vk::not_copyable {
@@ -36,5 +36,5 @@ struct MathLibConstants final : vk::not_copyable {
 
   MathLibConstants() noexcept;
 
-  static const MathLibConstants& get() noexcept;
+  static const MathLibConstants &get() noexcept;
 };

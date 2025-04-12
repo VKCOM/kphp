@@ -38,6 +38,7 @@ public:
   }
 
 private:
+
   VertexPtr on_list(VertexAdaptor<op_list> root) {
     auto rhs = root->array().try_as<op_func_call>();
     if (!rhs || rhs->get_string() != std::string_view{"explode"} || vk::none_of_equal(rhs->args().size(), 2, 3)) {
@@ -63,8 +64,8 @@ private:
     }
     std::vector<VertexPtr> new_call_args;
     new_call_args.reserve(rhs->args().size() + 1);
-    new_call_args.push_back(rhs->args()[0]);                                        // delimiter
-    new_call_args.push_back(rhs->args()[1]);                                        // string
+    new_call_args.push_back(rhs->args()[0]); // delimiter
+    new_call_args.push_back(rhs->args()[1]); // string
     new_call_args.push_back(VertexUtil::create_int_const(mask).set_location(root)); // result mask
     if (rhs->args().size() == 3) {
       new_call_args.push_back(rhs->args()[2]); // limit
@@ -111,7 +112,7 @@ private:
   }
 };
 
-void EarlyOptimizationF::execute(FunctionPtr f, DataStream<FunctionPtr>& os) {
+void EarlyOptimizationF::execute(FunctionPtr f, DataStream<FunctionPtr> &os) {
   if (!f->is_extern()) {
     run_early_opt_rules_pass(f);
 
@@ -121,3 +122,4 @@ void EarlyOptimizationF::execute(FunctionPtr f, DataStream<FunctionPtr>& os) {
 
   os << f;
 }
+

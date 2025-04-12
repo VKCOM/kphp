@@ -16,7 +16,7 @@ namespace adaptor {
 
 template<typename T>
 struct convert {
-  void operator()(const msgpack::object& o, T& v) const {
+  void operator()(const msgpack::object &o, T &v) const {
     v.msgpack_unpack(o);
   }
 };
@@ -24,7 +24,7 @@ struct convert {
 template<typename T>
 struct pack {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream>& o, const T& v) const {
+  void operator()(msgpack::packer<Stream> &o, const T &v) const {
     v.msgpack_pack(o);
   }
 };

@@ -9,9 +9,9 @@
 class CodeGenerator;
 
 struct CmakeListsTxt : CodeGenRootCmd {
-  void compile(CodeGenerator& W) const noexcept final;
+  void compile(CodeGenerator &W) const noexcept final;
 
 private:
   void compile_include_cmake() const noexcept;
-  void compile_cmake_lists_txt(CodeGenerator& W) const noexcept;
+  void compile_cmake_lists_txt(CodeGenerator &W) const noexcept;
 };

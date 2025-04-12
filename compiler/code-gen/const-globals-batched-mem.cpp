@@ -9,9 +9,9 @@
 
 #include "common/php-functions.h"
 
+#include "compiler/compiler-core.h"
 #include "compiler/code-gen/common.h"
 #include "compiler/code-gen/includes.h"
-#include "compiler/compiler-core.h"
 #include "compiler/data/var-data.h"
 #include "compiler/inferring/public.h"
 
@@ -22,45 +22,45 @@ namespace {
 ConstantsBatchedMem constants_batched_mem;
 GlobalsBatchedMem globals_batched_mem;
 
-int calc_sizeof_tuple_shape(const TypeData* type);
+int calc_sizeof_tuple_shape(const TypeData *type);
 
-[[gnu::always_inline]] inline int calc_sizeof_in_bytes_runtime(const TypeData* type) {
+[[gnu::always_inline]] inline int calc_sizeof_in_bytes_runtime(const TypeData *type) {
   switch (type->get_real_ptype()) {
-  case tp_int:
-    return type->use_optional() ? SIZEOF_OPTIONAL + sizeof(int64_t) : sizeof(int64_t);
-  case tp_float:
-    return type->use_optional() ? SIZEOF_OPTIONAL + sizeof(double) : sizeof(double);
-  case tp_string:
-    return type->use_optional() ? SIZEOF_OPTIONAL + SIZEOF_STRING : SIZEOF_STRING;
-  case tp_array:
-    return type->use_optional() ? SIZEOF_OPTIONAL + SIZEOF_ARRAY_ANY : SIZEOF_ARRAY_ANY;
-  case tp_regexp:
-    kphp_assert(!type->use_optional());
-    return SIZEOF_REGEXP;
-  case tp_Class:
-    kphp_assert(!type->use_optional());
-    return SIZEOF_INSTANCE_ANY;
-  case tp_mixed:
-    kphp_assert(!type->use_optional());
-    return SIZEOF_MIXED;
-  case tp_bool:
-    return type->use_optional() ? 2 : 1;
-  case tp_tuple:
-  case tp_shape:
-    return calc_sizeof_tuple_shape(type);
-  case tp_future:
-    return type->use_optional() ? SIZEOF_OPTIONAL + SIZEOF_FUTURE : SIZEOF_FUTURE;
-  case tp_future_queue:
-    return type->use_optional() ? SIZEOF_OPTIONAL + SIZEOF_FUTURE_QUEUE : SIZEOF_FUTURE_QUEUE;
-  case tp_any:
-    return SIZEOF_UNKNOWN;
-  default:
-    kphp_error(0, fmt_format("Unable to detect sizeof() for type = {}", type->as_human_readable()));
-    return 0;
+    case tp_int:
+      return type->use_optional() ? SIZEOF_OPTIONAL + sizeof(int64_t) : sizeof(int64_t);
+    case tp_float:
+      return type->use_optional() ? SIZEOF_OPTIONAL + sizeof(double) : sizeof(double);
+    case tp_string:
+      return type->use_optional() ? SIZEOF_OPTIONAL + SIZEOF_STRING : SIZEOF_STRING;
+    case tp_array:
+      return type->use_optional() ? SIZEOF_OPTIONAL + SIZEOF_ARRAY_ANY : SIZEOF_ARRAY_ANY;
+    case tp_regexp:
+      kphp_assert(!type->use_optional());
+      return SIZEOF_REGEXP;
+    case tp_Class:
+      kphp_assert(!type->use_optional());
+      return SIZEOF_INSTANCE_ANY;
+    case tp_mixed:
+      kphp_assert(!type->use_optional());
+      return SIZEOF_MIXED;
+    case tp_bool:
+      return type->use_optional() ? 2 : 1;
+    case tp_tuple:
+    case tp_shape:
+      return calc_sizeof_tuple_shape(type);
+    case tp_future:
+      return type->use_optional() ? SIZEOF_OPTIONAL + SIZEOF_FUTURE : SIZEOF_FUTURE;
+    case tp_future_queue:
+      return type->use_optional() ? SIZEOF_OPTIONAL + SIZEOF_FUTURE_QUEUE : SIZEOF_FUTURE_QUEUE;
+    case tp_any:
+      return SIZEOF_UNKNOWN;
+    default:
+      kphp_error(0, fmt_format("Unable to detect sizeof() for type = {}", type->as_human_readable()));
+      return 0;
   }
 }
 
-[[gnu::noinline]] int calc_sizeof_tuple_shape(const TypeData* type) {
+[[gnu::noinline]] int calc_sizeof_tuple_shape(const TypeData *type) {
   kphp_assert(vk::any_of_equal(type->ptype(), tp_tuple, tp_shape));
 
   int result = 0;
@@ -76,62 +76,56 @@ int calc_sizeof_tuple_shape(const TypeData* type);
   if (has_align_8bytes) {
     result = (result + 7) & -8;
   }
-  return type->use_optional() ? has_align_8bytes ? SIZEOF_OPTIONAL + result : 1 + result : result;
+  return type->use_optional()
+         ? has_align_8bytes ? SIZEOF_OPTIONAL + result : 1 + result
+         : result;
 }
 
 } // namespace
 
-void ConstantsBatchedMem::inc_count_by_type(const TypeData* type) {
+
+void ConstantsBatchedMem::inc_count_by_type(const TypeData *type) {
   if (type->use_optional()) {
     count_of_type_other++;
     return;
   }
   switch (type->get_real_ptype()) {
-  case tp_string:
-    count_of_type_string++;
-    break;
-  case tp_regexp:
-    count_of_type_regexp++;
-    break;
-  case tp_array:
-    count_of_type_array++;
-    return;
-  case tp_mixed:
-    count_of_type_mixed++;
-    break;
-  case tp_Class:
-    count_of_type_instance++;
-    break;
-  default:
-    count_of_type_other++;
+    case tp_string:
+      count_of_type_string++;
+      break;
+    case tp_regexp:
+      count_of_type_regexp++;
+      break;
+    case tp_array:
+      count_of_type_array++;
+      return;
+    case tp_mixed:
+      count_of_type_mixed++;
+      break;
+    case tp_Class:
+      count_of_type_instance++;
+      break;
+    default:
+      count_of_type_other++;
   }
 }
 
 int ConstantsBatchedMem::detect_constants_batch_count(int n_constants) {
   // these values are heuristics (don't use integer division, to avoid changing buckets count frequently)
-  if (n_constants > 1200000)
-    return 2048;
-  if (n_constants > 800000)
-    return 1536;
-  if (n_constants > 500000)
-    return 1024;
-  if (n_constants > 100000)
-    return 512;
-  if (n_constants > 10000)
-    return 256;
-  if (n_constants > 5000)
-    return 128;
-  if (n_constants > 1000)
-    return 32;
-  if (n_constants > 500)
-    return 16;
-  if (n_constants > 100)
-    return 4;
+  if (n_constants > 1200000) return 2048;
+  if (n_constants > 800000) return 1536;
+  if (n_constants > 500000) return 1024;
+  if (n_constants > 100000) return 512;
+  if (n_constants > 10000) return 256;
+  if (n_constants > 5000) return 128;
+  if (n_constants > 1000) return 32;
+  if (n_constants > 500) return 16;
+  if (n_constants > 100) return 4;
   return 1;
 }
 
-const ConstantsBatchedMem& ConstantsBatchedMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr>& all_constants) {
-  ConstantsBatchedMem& mem = constants_batched_mem;
+const ConstantsBatchedMem &ConstantsBatchedMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_constants) {
+  ConstantsBatchedMem &mem = constants_batched_mem;
 
   const int N_BATCHES = detect_constants_batch_count(all_constants.size());
   mem.batches.resize(N_BATCHES);
@@ -154,13 +148,15 @@ const ConstantsBatchedMem& ConstantsBatchedMem::prepare_mem_and_assign_offsets(c
     mem.batches[var->batch_idx].constants.emplace_back(var);
   }
 
-  for (OneBatchInfo& batch : mem.batches) {
+  for (OneBatchInfo &batch : mem.batches) {
     // sort constants by name to make codegen stable
-    std::sort(batch.constants.begin(), batch.constants.end(), [](VarPtr c1, VarPtr c2) -> bool { return c1->name.compare(c2->name) < 0; });
+    std::sort(batch.constants.begin(), batch.constants.end(), [](VarPtr c1, VarPtr c2) -> bool {
+      return c1->name.compare(c2->name) < 0;
+    });
 
     for (VarPtr var : batch.constants) {
-      const TypeData* var_type = tinf::get_type(var);
-      mem.inc_count_by_type(var_type); // count stat to output it
+      const TypeData *var_type = tinf::get_type(var);
+      mem.inc_count_by_type(var_type);  // count stat to output it
     }
 
     mem.total_count += batch.constants.size();
@@ -180,27 +176,21 @@ void GlobalsBatchedMem::inc_count_by_origin(VarPtr var) {
     count_of_require_once++;
   } else if (!var->is_builtin_runtime) {
     count_of_php_global_scope++;
-  }
+  } 
 }
 
 int GlobalsBatchedMem::detect_globals_batch_count(int n_globals) {
-  if (n_globals > 10000)
-    return 256;
-  if (n_globals > 5000)
-    return 128;
-  if (n_globals > 1000)
-    return 32;
-  if (n_globals > 500)
-    return 16;
-  if (n_globals > 100)
-    return 4;
-  if (n_globals > 50)
-    return 2;
+  if (n_globals > 10000) return 256;
+  if (n_globals > 5000) return 128;
+  if (n_globals > 1000) return 32;
+  if (n_globals > 500) return 16;
+  if (n_globals > 100) return 4;
+  if (n_globals > 50) return 2;
   return 1;
 }
 
-const GlobalsBatchedMem& GlobalsBatchedMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr>& all_globals) {
-  GlobalsBatchedMem& mem = globals_batched_mem;
+const GlobalsBatchedMem &GlobalsBatchedMem::prepare_mem_and_assign_offsets(const std::vector<VarPtr> &all_globals) {
+  GlobalsBatchedMem &mem = globals_batched_mem;
 
   const int N_BATCHES = detect_globals_batch_count(all_globals.size());
   mem.batches.resize(N_BATCHES);
@@ -220,7 +210,7 @@ const GlobalsBatchedMem& GlobalsBatchedMem::prepare_mem_and_assign_offsets(const
     mem.batches[var->batch_idx].globals.emplace_back(var);
   }
 
-  for (OneBatchInfo& batch : mem.batches) {
+  for (OneBatchInfo &batch : mem.batches) {
     // sort variables by name to make codegen stable
     // note, that all_globals contains also function static vars (explicitly added),
     // and their names can duplicate or be equal to global vars;
@@ -234,10 +224,8 @@ const GlobalsBatchedMem& GlobalsBatchedMem::prepare_mem_and_assign_offsets(const
       } else if (c1 == c2) {
         return false;
       } else {
-        if (!c1->holder_func)
-          return true;
-        if (!c2->holder_func)
-          return false;
+        if (!c1->holder_func) return true;
+        if (!c2->holder_func) return false;
         return c1->holder_func->name.compare(c2->holder_func->name) < 0;
       }
     });
@@ -245,7 +233,7 @@ const GlobalsBatchedMem& GlobalsBatchedMem::prepare_mem_and_assign_offsets(const
     int offset = 0;
 
     for (VarPtr var : batch.globals) {
-      const TypeData* var_type = tinf::get_type(var);
+      const TypeData *var_type = tinf::get_type(var);
       int cur_sizeof = (calc_sizeof_in_bytes_runtime(var_type) + 7) & -8; // min 8 bytes per variable
 
       var->offset_in_linear_mem = mem.total_mem_size + offset; // it's continuous
@@ -282,14 +270,14 @@ void ConstantsExternCollector::add_extern_from_init_val(VertexPtr init_val) {
   }
 }
 
-void ConstantsExternCollector::compile(CodeGenerator& W) const {
+void ConstantsExternCollector::compile(CodeGenerator &W) const {
   for (VarPtr c : extern_constants) {
     W << "extern " << type_out(tinf::get_type(c)) << " " << c->name << ";" << NL;
   }
 }
 
-void ConstantsMemAllocation::compile(CodeGenerator& W) const {
-  const ConstantsBatchedMem& mem = constants_batched_mem;
+void ConstantsMemAllocation::compile(CodeGenerator &W) const {
+  const ConstantsBatchedMem &mem = constants_batched_mem;
 
   W << "// total_count = " << mem.total_count << NL;
   W << "// count(string) = " << mem.count_of_type_string << NL;
@@ -301,8 +289,8 @@ void ConstantsMemAllocation::compile(CodeGenerator& W) const {
   W << "// n_batches = " << mem.batches.size() << NL;
 }
 
-void GlobalsMemAllocation::compile(CodeGenerator& W) const {
-  const GlobalsBatchedMem& mem = globals_batched_mem;
+void GlobalsMemAllocation::compile(CodeGenerator &W) const {
+  const GlobalsBatchedMem &mem = globals_batched_mem;
 
   W << "// total_mem_size = " << mem.total_mem_size << NL;
   W << "// total_count = " << mem.total_count << NL;
@@ -320,33 +308,32 @@ void GlobalsMemAllocation::compile(CodeGenerator& W) const {
   }
 }
 
-void PhpMutableGlobalsAssignCurrent::compile(CodeGenerator& W) const {
+void PhpMutableGlobalsAssignCurrent::compile(CodeGenerator &W) const {
   W << "PhpScriptMutableGlobals &php_globals = PhpScriptMutableGlobals::current();" << NL;
 }
 
-void PhpMutableGlobalsDeclareInResumableClass::compile(CodeGenerator& W) const {
+void PhpMutableGlobalsDeclareInResumableClass::compile(CodeGenerator &W) const {
   W << "PhpScriptMutableGlobals &php_globals;" << NL;
 }
 
-void PhpMutableGlobalsAssignInResumableConstructor::compile(CodeGenerator& W) const {
+void PhpMutableGlobalsAssignInResumableConstructor::compile(CodeGenerator &W) const {
   W << "php_globals(PhpScriptMutableGlobals::current())";
 }
 
-void PhpMutableGlobalsRefArgument::compile(CodeGenerator& W) const {
+void PhpMutableGlobalsRefArgument::compile(CodeGenerator &W) const {
   W << "PhpScriptMutableGlobals &php_globals";
 }
 
-void PhpMutableGlobalsConstRefArgument::compile(CodeGenerator& W) const {
+void PhpMutableGlobalsConstRefArgument::compile(CodeGenerator &W) const {
   W << "const PhpScriptMutableGlobals &php_globals";
 }
 
-void GlobalVarInPhpGlobals::compile(CodeGenerator& W) const {
+void GlobalVarInPhpGlobals::compile(CodeGenerator &W) const {
   if (global_var->is_builtin_runtime) {
     W << "php_globals.get_superglobals().v$" << global_var->name;
   } else if (!G->is_output_mode_lib()) {
     W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(php_globals.mem()+" << global_var->offset_in_linear_mem << "))";
   } else {
-    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(php_globals.mem_for_lib(\"" << G->settings().static_lib_name.get() << "\")+"
-      << global_var->offset_in_linear_mem << "))";
+    W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(php_globals.mem_for_lib(\"" << G->settings().static_lib_name.get() << "\")+" << global_var->offset_in_linear_mem << "))";
   }
 }

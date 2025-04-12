@@ -18,7 +18,7 @@ struct CGContext {
   std::vector<std::string> catch_labels;
   std::vector<int> catch_label_used;
   FunctionPtr parent_func;
-  const TypeData* null_coalescing_rhs_t{};
+  const TypeData *null_coalescing_rhs_t{};
   bool resumable_flag{false};
   bool interruptible_flag{false};
   bool namespace_opened{false};
@@ -45,11 +45,11 @@ private:
   // (one codegen command may produce multiple files, they are set to 0 on opening a new one)
   unsigned long long hash_of_cpp;
   unsigned long long hash_of_comments;
-  File* cur_file{nullptr};
+  File *cur_file{nullptr};
 
-  WriterData* data{nullptr};   // stored contents, is created only on step 2 (re-generating diff files)
-  DataStream<WriterData*>& os; // output stream for stored contents, used only on step 2
-
+  WriterData *data{nullptr};      // stored contents, is created only on step 2 (re-generating diff files)
+  DataStream<WriterData *> &os;   // output stream for stored contents, used only on step 2
+  
   CGContext context;
 
   int indent_level;
@@ -63,15 +63,16 @@ private:
   void feed_hash_of_comments(SrcFilePtr file, int line_num);
 
 public:
-  explicit CodeGenerator(bool is_step_just_calc_hashes, DataStream<WriterData*>& os)
-      : is_step_just_calc_hashes(is_step_just_calc_hashes),
-        os(os) {}
+
+  explicit CodeGenerator(bool is_step_just_calc_hashes, DataStream<WriterData *> &os)
+    : is_step_just_calc_hashes(is_step_just_calc_hashes)
+    , os(os) {}
   ~CodeGenerator() = default;
 
-  CodeGenerator(const CodeGenerator& from) = delete;
-  CodeGenerator& operator=(const CodeGenerator&) = delete;
+  CodeGenerator(const CodeGenerator &from) = delete;
+  CodeGenerator &operator=(const CodeGenerator &) = delete;
 
-  void open_file_create_writer(bool compile_with_debug_info_flag, bool compile_with_crc, const std::string& file_name, const std::string& subdir);
+  void open_file_create_writer(bool compile_with_debug_info_flag, bool compile_with_crc, const std::string &file_name, const std::string &subdir);
   void close_file_clear_writer();
 
   void append(char c) {
@@ -81,7 +82,7 @@ public:
     }
   }
 
-  void append(const char* p, size_t len) {
+  void append(const char *p, size_t len) {
     if (need_indent) {
       need_indent = false;
       feed_hash(static_cast<unsigned long long>(' ') * indent_level);
@@ -131,6 +132,7 @@ public:
     }
   }
 
+
   void indent(int diff) {
     indent_level += diff;
   }
@@ -166,10 +168,10 @@ public:
     lock_comments_cnt--;
   }
 
-  void add_include(const std::string& s);
-  void add_lib_include(const std::string& s);
+  void add_include(const std::string &s);
+  void add_lib_include(const std::string &s);
 
-  CGContext& get_context() {
+  CGContext &get_context() {
     return context;
   }
 
@@ -179,57 +181,58 @@ public:
 };
 
 template<class T, class = decltype(&T::compile)>
-CodeGenerator& operator<<(CodeGenerator& c, const T& value) {
+CodeGenerator &operator<<(CodeGenerator &c, const T &value) {
   value.compile(c);
   return c;
 }
 
-inline CodeGenerator& operator<<(CodeGenerator& c, const std::string& value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, const std::string &value) {
   c.append(value.c_str(), value.size());
   return c;
 }
 
-inline CodeGenerator& operator<<(CodeGenerator& c, const char* value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, const char *value) {
   c.append(value, strlen(value));
   return c;
 }
 
-inline CodeGenerator& operator<<(CodeGenerator& c, const vk::string_view& value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, const vk::string_view &value) {
   c.append(value.data(), value.size());
   return c;
 }
 
-inline CodeGenerator& operator<<(CodeGenerator& c, long long value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, long long value) {
   c.append(value);
   return c;
 }
 
-inline CodeGenerator& operator<<(CodeGenerator& c, long value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, long value) {
   c.append(static_cast<long long>(value));
   return c;
 }
 
-inline CodeGenerator& operator<<(CodeGenerator& c, unsigned long long value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, unsigned long long value) {
   c.append(value);
   return c;
 }
 
-inline CodeGenerator& operator<<(CodeGenerator& c, unsigned long value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, unsigned long value) {
   c.append(static_cast<unsigned long long>(value));
   return c;
 }
 
-inline CodeGenerator& operator<<(CodeGenerator& c, int value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, int value) {
   c.append(value);
   return c;
 }
 
-inline CodeGenerator& operator<<(CodeGenerator& c, unsigned int value) {
+inline CodeGenerator &operator<<(CodeGenerator &c, unsigned int value) {
   c.append(value);
   return c;
 }
 
-inline CodeGenerator& operator<<(CodeGenerator& c, char value) {
+inline CodeGenerator& operator<<(CodeGenerator &c, char value) {
   c.append(value);
   return c;
 }
+

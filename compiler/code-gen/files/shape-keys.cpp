@@ -16,7 +16,7 @@ std::string ShapeKeys::get_function_name() noexcept {
   return "init_shape_demangler";
 }
 
-void ShapeKeys::compile(CodeGenerator& W) const {
+void ShapeKeys::compile(CodeGenerator &W) const {
   W << OpenFile{"_shape_keys.cpp"};
   W << ExternInclude{G->settings().runtime_headers.get()};
   std::string_view shape_keys_storage_t{G->is_output_mode_k2() ? "kphp::stl::unordered_map<int64_t, std::string_view, kphp::memory::script_allocator>"
@@ -27,7 +27,7 @@ void ShapeKeys::compile(CodeGenerator& W) const {
   FunctionSignatureGenerator{W} << "void " << get_function_name() << "()" << BEGIN;
   W << shape_keys_storage_t << " shape_keys_storage{" << NL;
 
-  for (const auto& [hash, key] : shape_keys_storage_) {
+  for (const auto &[hash, key] : shape_keys_storage_) {
     W << Indent{2} << "{" << hash << ", \"" << key.data() << "\"}," << NL << Indent{-2};
   }
 

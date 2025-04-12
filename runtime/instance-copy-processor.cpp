@@ -4,16 +4,18 @@
 
 #include "runtime/instance-copy-processor.h"
 
-InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource& memory_pool, ExtraRefCnt memory_ref_cnt,
-                                                 ResourceCallbackOOM oom_callback) noexcept
-    : Basic(*this, memory_ref_cnt),
-      memory_pool_(memory_pool),
-      oom_callback_(oom_callback) {}
+InstanceDeepCopyVisitor::InstanceDeepCopyVisitor(memory_resource::unsynchronized_pool_resource &memory_pool,
+                                                 ExtraRefCnt memory_ref_cnt, ResourceCallbackOOM oom_callback) noexcept:
+  Basic(*this, memory_ref_cnt),
+  memory_pool_(memory_pool),
+  oom_callback_(oom_callback) {
+}
 
-InstanceDeepDestroyVisitor::InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) noexcept
-    : Basic(*this, memory_ref_cnt) {}
+InstanceDeepDestroyVisitor::InstanceDeepDestroyVisitor(ExtraRefCnt memory_ref_cnt) noexcept:
+  Basic(*this, memory_ref_cnt) {
+}
 
-bool InstanceDeepCopyVisitor::process(string& str) noexcept {
+bool InstanceDeepCopyVisitor::process(string &str) noexcept {
   if (str.is_reference_counter(ExtraRefCnt::for_global_const)) {
     return true;
   }
@@ -39,7 +41,7 @@ bool InstanceDeepCopyVisitor::process(string& str) noexcept {
   return true;
 }
 
-bool InstanceDeepDestroyVisitor::process(string& str) noexcept {
+bool InstanceDeepDestroyVisitor::process(string &str) noexcept {
   // if string is constant, skip it, otherwise element was cached and should be destroyed
   if (!str.is_reference_counter(ExtraRefCnt::for_global_const)) {
     str.force_destroy(get_memory_ref_cnt());
@@ -49,7 +51,7 @@ bool InstanceDeepDestroyVisitor::process(string& str) noexcept {
 }
 
 template<class T>
-bool InstanceDeepCopyVisitor::PrimitiveArrayProcessor<T>::process(InstanceDeepCopyVisitor& self, array<T>& arr) noexcept {
+bool InstanceDeepCopyVisitor::PrimitiveArrayProcessor<T>::process(InstanceDeepCopyVisitor &self, array<T> &arr) noexcept {
   return self.process_array_impl(arr);
 }
 

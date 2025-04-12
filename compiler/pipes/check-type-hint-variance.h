@@ -22,5 +22,5 @@
 // https://www.php.net/manual/en/language.oop5.variance.php
 class CheckTypeHintVariance {
 public:
-  void execute(FunctionPtr interface_function, DataStream<FunctionPtr>& os);
+  void execute(FunctionPtr interface_function, DataStream<FunctionPtr> &os);
 };

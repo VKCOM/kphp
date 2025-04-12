@@ -7,4 +7,4 @@
 #include "common/stats/provider.h"
 #include "runtime-common/core/memory-resource/memory_resource.h"
 
-void write_memory_stats_to(const memory_resource::MemoryStats& memoryStats, stats_t* stats, const char* prefix) noexcept;
+void write_memory_stats_to(const memory_resource::MemoryStats & memoryStats, stats_t *stats, const char *prefix) noexcept;

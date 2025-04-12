@@ -7,11 +7,11 @@
 #include "common/kprintf.h"
 #include "runtime/allocator.h"
 #include "runtime/php_assert.h"
-#include "runtime/resumable.h"
 #include "server/php-runner.h"
+#include "runtime/resumable.h"
 
-bool register_kphp_on_oom_callback_impl(on_oom_callback_t&& callback) {
-  OomHandler& oom_handler_ctx = vk::singleton<OomHandler>::get();
+bool register_kphp_on_oom_callback_impl(on_oom_callback_t &&callback) {
+  OomHandler &oom_handler_ctx = vk::singleton<OomHandler>::get();
   if (PhpScript::current_script->oom_handling_memory_ratio == 0) {
     php_warning("Trying to register OOM handler callback with no memory to run it on. You need to specify '--oom-handling-memory-ratio' option for it.");
     return false;
@@ -40,7 +40,7 @@ bool OomHandler::is_running() const noexcept {
   return callback_running_;
 }
 
-void OomHandler::set_callback(on_oom_callback_t&& callback) noexcept {
+void OomHandler::set_callback(on_oom_callback_t &&callback) noexcept {
   callback_ = std::move(callback);
 }
 

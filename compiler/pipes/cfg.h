@@ -11,13 +11,13 @@
 
 class CFGBeginF {
 public:
-  void execute(FunctionPtr function, DataStream<FunctionAndCFG>& os);
+  void execute(FunctionPtr function, DataStream<FunctionAndCFG> &os);
 };
 
 // This wrapper is used to get a readable name in the profiler.
 class CFGBeginSync final : public SyncPipeF<FunctionAndCFG> {
 public:
-  void on_finish(DataStream<FunctionAndCFG>& os) final {
+  void on_finish(DataStream<FunctionAndCFG> &os) final {
     SyncPipeF<FunctionAndCFG>::on_finish(os);
   }
 };

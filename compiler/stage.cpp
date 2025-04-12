@@ -16,36 +16,36 @@
 
 int stage::warnings_count;
 
-const char* get_assert_level_desc(AssertLevelT assert_level) {
+const char *get_assert_level_desc(AssertLevelT assert_level) {
   switch (assert_level) {
-  case WRN_ASSERT_LEVEL:
-    return "Warning";
-  case CE_ASSERT_LEVEL:
-    return "Compilation error";
-  case NOTICE_ASSERT_LEVEL:
-    return "Notice";
-  case FATAL_ASSERT_LEVEL:
-    return "Fatal error";
-  default:
-    assert(0);
+    case WRN_ASSERT_LEVEL:
+      return "Warning";
+    case CE_ASSERT_LEVEL:
+      return "Compilation error";
+    case NOTICE_ASSERT_LEVEL:
+      return "Notice";
+    case FATAL_ASSERT_LEVEL:
+      return "Fatal error";
+    default:
+      assert (0);
   }
 }
 
 volatile int ce_locker;
 
 namespace {
-FILE* warning_file{nullptr};
+FILE *warning_file{nullptr};
 }
 
-void stage::set_warning_file(FILE* file) noexcept {
+void stage::set_warning_file(FILE *file) noexcept {
   warning_file = file;
 }
 
-void on_compilation_error(const char* description __attribute__((unused)), const char* file_name, int line_number, const char* full_description,
-                          AssertLevelT assert_level) {
+void on_compilation_error(const char *description __attribute__((unused)), const char *file_name, int line_number,
+                          const char *full_description, AssertLevelT assert_level) {
 
-  AutoLocker<volatile int*> locker(&ce_locker);
-  FILE* file = stdout;
+  AutoLocker<volatile int *> locker(&ce_locker);
+  FILE *file = stdout;
   if (assert_level == WRN_ASSERT_LEVEL && warning_file) {
     file = warning_file;
   }
@@ -60,7 +60,7 @@ void on_compilation_error(const char* description __attribute__((unused)), const
                       "It is probably happened due to incorrect or unsupported PHP input.\n"
                       "But it is still bug in compiler.\n");
 #ifdef __arm64__
-    __builtin_debugtrap(); // for easier debugging kphp_assert / kphp_fail
+    __builtin_debugtrap();  // for easier debugging kphp_assert / kphp_fail
 #endif
     abort();
   }
@@ -72,6 +72,7 @@ void on_compilation_error(const char* description __attribute__((unused)), const
   }
   fflush(file);
 }
+
 
 void Location::set_file(SrcFilePtr new_file) {
   file = new_file;
@@ -91,10 +92,10 @@ void Location::set_line(int new_line) {
   line = new_line;
 }
 
-Location::Location(const SrcFilePtr& file, const FunctionPtr& function, int line)
-    : file(file),
-      function(function),
-      line(line) {}
+Location::Location(const SrcFilePtr &file, const FunctionPtr &function, int line) :
+  file(file),
+  function(function),
+  line(line) {}
 
 // return a location in the format: "{file}:{line}  in {function}"
 std::string Location::as_human_readable() const {
@@ -106,7 +107,7 @@ std::string Location::as_human_readable() const {
 
   // if it's a method of an PSR-4 class /path/to/A.php, output only A::methodName, not fully-qualified path\to\A::methodName
   // if we are inside a lambda, print out the outermost named function
-  const auto* f_outer = function ? function->get_this_or_topmost_if_lambda() : nullptr;
+  const auto *f_outer = function ? function->get_this_or_topmost_if_lambda() : nullptr;
   if (f_outer && f_outer->type == FunctionData::func_local) {
     std::string function_name = f_outer->as_human_readable();
     std::string psr4_file_name = replace_characters(function_name.substr(0, function_name.find(':')), '\\', '/') + ".php";
@@ -120,7 +121,7 @@ std::string Location::as_human_readable() const {
   return out;
 }
 
-bool operator<(const Location& lhs, const Location& rhs) {
+bool operator<(const Location &lhs, const Location &rhs) {
   if (lhs.file && rhs.file) {
     if (const int cmp = lhs.file->file_name.compare(rhs.file->file_name)) {
       return cmp < 0;
@@ -141,7 +142,7 @@ namespace stage {
 static TLS<StageInfo> stage_info;
 } // namespace stage
 
-void stage::print_current_location_on_error(FILE* f) {
+void stage::print_current_location_on_error(FILE *f) {
   bool use_colors = should_be_colored(f);
   Location location = get_location();
 
@@ -162,7 +163,7 @@ void stage::print_current_location_on_error(FILE* f) {
   }
 }
 
-stage::StageInfo* stage::get_stage_info_ptr() {
+stage::StageInfo *stage::get_stage_info_ptr() {
   return &*stage_info;
 }
 
@@ -170,7 +171,7 @@ void stage::set_exit_code(ExitCode code) {
   get_stage_info_ptr()->exit_code = code;
 }
 
-void stage::set_name(std::string&& name) {
+void stage::set_name(std::string &&name) {
   get_stage_info_ptr()->name = std::move(name);
   get_stage_info_ptr()->cnt_errors = 0;
 }
@@ -200,7 +201,7 @@ void stage::die_if_global_errors() {
   }
 }
 
-const std::string& stage::get_name() {
+const std::string &stage::get_name() {
   return get_stage_info_ptr()->name;
 }
 
@@ -208,15 +209,15 @@ ExitCode stage::get_exit_code() {
   return get_stage_info_ptr()->exit_code;
 }
 
-Location* stage::get_location_ptr() {
+Location *stage::get_location_ptr() {
   return &get_stage_info_ptr()->location;
 }
 
-const Location& stage::get_location() {
+const Location &stage::get_location() {
   return *get_location_ptr();
 }
 
-void stage::set_location(const Location& new_location) {
+void stage::set_location(const Location &new_location) {
   if (!new_location.get_file()) {
     return;
   }
@@ -247,7 +248,7 @@ int stage::get_line() {
   return get_location().get_line();
 }
 
-const std::string& stage::get_function_name() {
+const std::string &stage::get_function_name() {
   static std::string no_function = "unknown";
   FunctionPtr function = get_function();
   if (!function) {
@@ -256,16 +257,15 @@ const std::string& stage::get_function_name() {
   return function->name;
 }
 
-bool stage::should_be_colored(FILE* f) {
-  if (!G)
-    return TermStringFormat::is_terminal(f);
+bool stage::should_be_colored(FILE *f)  {
+  if (!G) return TermStringFormat::is_terminal(f);
   switch (G->settings().get_color_settings()) {
-  case CompilerSettings::colored:
-    return true;
-  case CompilerSettings::not_colored:
-    return false;
-  case CompilerSettings::auto_colored:
-  default:
-    return TermStringFormat::is_terminal(f);
+    case CompilerSettings::colored:
+      return true;
+    case CompilerSettings::not_colored:
+      return false;
+    case CompilerSettings::auto_colored:
+    default:
+      return TermStringFormat::is_terminal(f);
   }
 }

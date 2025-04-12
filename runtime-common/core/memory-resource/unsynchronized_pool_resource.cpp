@@ -12,7 +12,7 @@ namespace memory_resource {
 
 constexpr size_t unsynchronized_pool_resource::MAX_CHUNK_BLOCK_SIZE_;
 
-void unsynchronized_pool_resource::init(void* buffer, size_t buffer_size, size_t oom_handling_buffer_size) noexcept {
+void unsynchronized_pool_resource::init(void *buffer, size_t buffer_size, size_t oom_handling_buffer_size) noexcept {
   monotonic_buffer_resource::init(buffer, buffer_size);
 
   huge_pieces_.hard_reset();
@@ -48,15 +48,15 @@ void unsynchronized_pool_resource::perform_defragmentation() noexcept {
   php_assert(free_chunks_[0].get_mem() == nullptr);
   for (size_t chunk_id = 1; chunk_id < free_chunks_.size(); ++chunk_id) {
     const size_t chunk_size = details::get_chunk_size(chunk_id);
-    for (void* slot_mem = free_chunks_[chunk_id].get_mem(); slot_mem; slot_mem = free_chunks_[chunk_id].get_mem()) {
+    for (void *slot_mem = free_chunks_[chunk_id].get_mem(); slot_mem; slot_mem = free_chunks_[chunk_id].get_mem()) {
       mem_list.add_memory(slot_mem, chunk_size);
     }
   }
 
   stats_.small_memory_pieces = 0;
   stats_.huge_memory_pieces = 0;
-  for (auto* free_mem = mem_list.flush(); free_mem;) {
-    auto* next_mem = mem_list.get_next(free_mem);
+  for (auto *free_mem = mem_list.flush(); free_mem;) {
+    auto *next_mem = mem_list.get_next(free_mem);
     put_memory_back(free_mem, free_mem->size());
     free_mem = next_mem;
   }
@@ -66,13 +66,13 @@ void unsynchronized_pool_resource::perform_defragmentation() noexcept {
   ++stats_.defragmentation_calls;
 }
 
-void* unsynchronized_pool_resource::allocate_small_piece_from_fallback_resource(size_t aligned_size) noexcept {
-  void* mem = fallback_resource_.get_from_pool(aligned_size, true);
+void *unsynchronized_pool_resource::allocate_small_piece_from_fallback_resource(size_t aligned_size) noexcept {
+  void *mem = fallback_resource_.get_from_pool(aligned_size, true);
   if (likely(mem != nullptr)) {
     memory_debug("allocate %zu, pool was empty, allocated address from fallback resource %p\n", aligned_size, mem);
     return mem;
   }
-  details::memory_chunk_tree::tree_node* smallest_huge_piece = huge_pieces_.extract_smallest();
+  details::memory_chunk_tree::tree_node *smallest_huge_piece = huge_pieces_.extract_smallest();
   if (!smallest_huge_piece) {
     perform_defragmentation();
     if (mem = try_allocate_small_piece(aligned_size); mem != nullptr) {
@@ -99,14 +99,14 @@ void* unsynchronized_pool_resource::allocate_small_piece_from_fallback_resource(
   return mem;
 }
 
-void* unsynchronized_pool_resource::perform_defragmentation_and_allocate_huge_piece(size_t aligned_size) noexcept {
+void *unsynchronized_pool_resource::perform_defragmentation_and_allocate_huge_piece(size_t aligned_size) noexcept {
   // the body of this function is moved to the cpp file intentionally, so it doesn't get inlined into the allocate method
   perform_defragmentation();
   return allocate_huge_piece(aligned_size, false);
 }
 
-bool unsynchronized_pool_resource::is_memory_from_extra_pool(void* mem, size_t size) const noexcept {
-  auto* extra_pool = extra_memory_head_;
+bool unsynchronized_pool_resource::is_memory_from_extra_pool(void *mem, size_t size) const noexcept {
+  auto *extra_pool = extra_memory_head_;
   do {
     if (extra_pool->is_memory_from_this_pool(mem, size)) {
       return true;

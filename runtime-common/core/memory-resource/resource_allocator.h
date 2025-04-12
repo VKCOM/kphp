@@ -26,23 +26,23 @@ public:
   template<class, class>
   friend class resource_allocator;
 
-  explicit resource_allocator(MemoryResource& memory_resource) noexcept
-      : memory_resource_(memory_resource) {}
+  explicit resource_allocator(MemoryResource &memory_resource) noexcept
+    : memory_resource_(memory_resource) {}
 
   template<class U>
-  explicit resource_allocator(const resource_allocator<U, MemoryResource>& other) noexcept
-      : memory_resource_(other.memory_resource_) {}
+  explicit resource_allocator(const resource_allocator<U, MemoryResource> &other) noexcept
+    : memory_resource_(other.memory_resource_) {}
 
-  value_type* allocate(size_t size, [[maybe_unused]] void const* ptr = nullptr) {
+  value_type *allocate(size_t size, [[maybe_unused]] void const *ptr = nullptr) {
     static_assert(sizeof(value_type) <= max_value_type_size(), "memory limit");
-    auto result = static_cast<value_type*>(memory_resource_.allocate(sizeof(value_type) * size));
+    auto result = static_cast<value_type *>(memory_resource_.allocate(sizeof(value_type) * size));
     if (unlikely(!result)) {
       php_critical_error("not enough memory to continue");
     }
     return result;
   }
 
-  void deallocate(value_type* mem, size_t size) {
+  void deallocate(value_type *mem, size_t size) {
     static_assert(sizeof(value_type) <= max_value_type_size(), "memory limit");
     memory_resource_.deallocate(mem, sizeof(value_type) * size);
   }
@@ -51,16 +51,16 @@ public:
     return 128U;
   }
 
-  friend inline bool operator==(const resource_allocator& lhs, const resource_allocator& rhs) noexcept {
+  friend inline bool operator==(const resource_allocator &lhs, const resource_allocator &rhs) noexcept {
     return &lhs.memory_resource_ == &rhs.memory_resource_;
   }
 
-  friend inline bool operator!=(const resource_allocator& lhs, const resource_allocator& rhs) noexcept {
+  friend inline bool operator!=(const resource_allocator &lhs, const resource_allocator &rhs) noexcept {
     return !(lhs == rhs);
   }
 
 private:
-  MemoryResource& memory_resource_;
+  MemoryResource &memory_resource_;
 };
 
 namespace stl {

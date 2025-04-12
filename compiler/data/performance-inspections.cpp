@@ -10,13 +10,14 @@
 namespace {
 
 constexpr auto get_all_inspections() noexcept {
-  return vk::to_array<std::pair<PerformanceInspections::Inspections, const char*>>({
-      {PerformanceInspections::array_merge_into, "array-merge-into"},
-      {PerformanceInspections::array_reserve, "array-reserve"},
+  return vk::to_array<std::pair<PerformanceInspections::Inspections, const char *>>(
+    {
+      {PerformanceInspections::array_merge_into,           "array-merge-into"},
+      {PerformanceInspections::array_reserve,              "array-reserve"},
       {PerformanceInspections::constant_execution_in_loop, "constant-execution-in-loop"},
-      {PerformanceInspections::implicit_array_cast, "implicit-array-cast"},
-      {PerformanceInspections::all_inspections, "all"},
-  });
+      {PerformanceInspections::implicit_array_cast,        "implicit-array-cast"},
+      {PerformanceInspections::all_inspections,            "all"},
+    });
 }
 
 PerformanceInspections::Inspections string2inspection(vk::string_view str_inspection) {
@@ -31,7 +32,8 @@ PerformanceInspections::Inspections string2inspection(vk::string_view str_inspec
 } // namespace
 
 PerformanceInspections::PerformanceInspections(Inspections enabled) noexcept
-    : enabled_inspections_(enabled) {}
+  : enabled_inspections_(enabled) {
+}
 
 void PerformanceInspections::set_from_php_doc(vk::string_view php_doc_tag) {
   const auto raw_inspections = split_skipping_delimeters(php_doc_tag);
@@ -64,8 +66,8 @@ PerformanceInspections::merge_with_caller(PerformanceInspections caller_inspecti
     return {InheritStatus::no_need, no_inspections};
   }
 
-  if (std::underlying_type_t<Inspections> conflicts =
-          (inspections() & caller_inspections.disabled_inspections_) | (disabled_inspections_ & caller_inspections.inspections())) {
+  if (std::underlying_type_t<Inspections> conflicts = (inspections() & caller_inspections.disabled_inspections_) |
+                                                      (disabled_inspections_ & caller_inspections.inspections())) {
     const auto first_conflict = static_cast<Inspections>((1 << (__builtin_ffsll(conflicts) - 1)));
     return {InheritStatus::conflict, first_conflict};
   }

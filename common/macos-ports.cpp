@@ -11,5 +11,5 @@ nothing __start_run_scheduler_section;
 nothing __stop_run_scheduler_section;
 
 #else
-  #error "Don't compiler for other platforms"
+#error "Don't compiler for other platforms"
 #endif

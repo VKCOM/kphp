@@ -34,57 +34,59 @@
 
 #include "compiler/data/class-data.h"
 #include "compiler/data/function-data.h"
-#include "compiler/function-pass.h"
-#include "compiler/phpdoc.h"
-#include "compiler/pipes/deduce-implicit-types-and-casts.h"
 #include "compiler/pipes/instantiate-ffi-operations.h"
+#include "compiler/pipes/deduce-implicit-types-and-casts.h"
+#include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
-#include "compiler/vertex-util.h"
+#include "compiler/function-pass.h"
 #include "compiler/vertex.h"
+#include "compiler/vertex-util.h"
 
-static inline const TypeHint* assumption_unwrap_optional(const TypeHint* assum_hint) {
+
+static inline const TypeHint *assumption_unwrap_optional(const TypeHint *assum_hint) {
   if (assum_hint == nullptr) {
     return nullptr;
   }
-  if (const auto* as_optional = assum_hint->try_as<TypeHintOptional>()) {
+  if (const auto *as_optional = assum_hint->try_as<TypeHintOptional>()) {
     return as_optional->inner;
   }
   return assum_hint;
 }
 
-static inline bool assumption_needs_to_be_saved(const TypeHint* assum_hint) {
+static inline bool assumption_needs_to_be_saved(const TypeHint *assum_hint) {
   return assum_hint && assum_hint->is_typedata_constexpr() && !assum_hint->has_autogeneric_inside();
 }
 
-Assumption::Assumption(ClassPtr klass)
-    : assum_hint(klass->type_hint) {}
+
+Assumption::Assumption(ClassPtr klass) : assum_hint(klass->type_hint) {
+}
 
 std::string Assumption::as_human_readable() const {
   return assum_hint ? assum_hint->as_human_readable() : "undefined";
 }
 
 Assumption Assumption::get_inner_if_array() const {
-  const TypeHint* type_hint = assumption_unwrap_optional(assum_hint);
+  const TypeHint *type_hint = assumption_unwrap_optional(assum_hint);
 
   if (type_hint == nullptr) {
     return {};
   }
-  if (const auto* as_array = type_hint->try_as<TypeHintArray>()) {
+  if (const auto *as_array = type_hint->try_as<TypeHintArray>()) {
     return Assumption(as_array->inner);
   }
   return {};
 }
 
 Assumption Assumption::get_subkey_by_index(VertexPtr index_key) const {
-  const TypeHint* type_hint = assumption_unwrap_optional(assum_hint);
+  const TypeHint *type_hint = assumption_unwrap_optional(assum_hint);
 
   if (type_hint == nullptr) {
     return {};
   }
-  if (const auto* as_array = type_hint->try_as<TypeHintArray>()) {
+  if (const auto *as_array = type_hint->try_as<TypeHintArray>()) {
     return Assumption(as_array->inner);
   }
-  if (const auto* as_tuple = type_hint->try_as<TypeHintTuple>()) {
+  if (const auto *as_tuple = type_hint->try_as<TypeHintTuple>()) {
     if (auto as_int_index = VertexUtil::get_actual_value(index_key).try_as<op_int_const>()) {
       int int_index = parse_int_from_string(as_int_index);
       if (int_index >= 0 && int_index < as_tuple->items.size()) {
@@ -92,10 +94,10 @@ Assumption Assumption::get_subkey_by_index(VertexPtr index_key) const {
       }
     }
   }
-  if (const auto* as_shape = type_hint->try_as<TypeHintShape>()) {
+  if (const auto *as_shape = type_hint->try_as<TypeHintShape>()) {
     if (vk::any_of_equal(VertexUtil::get_actual_value(index_key)->type(), op_int_const, op_string)) {
-      const auto& string_index = VertexUtil::get_actual_value(index_key)->get_string();
-      if (const TypeHint* at_index = as_shape->find_at(string_index)) {
+      const auto &string_index = VertexUtil::get_actual_value(index_key)->get_string();
+      if (const TypeHint *at_index = as_shape->find_at(string_index)) {
         return Assumption(at_index);
       }
     }
@@ -103,8 +105,8 @@ Assumption Assumption::get_subkey_by_index(VertexPtr index_key) const {
   return {};
 }
 
-static ClassPtr extract_instance_from_ffi_scope(const std::string& scope_name, const FFIType* type) {
-  if (const auto* builtin = ffi_builtin_type(type->kind)) {
+static ClassPtr extract_instance_from_ffi_scope(const std::string &scope_name, const FFIType *type) {
+  if (const auto *builtin = ffi_builtin_type(type->kind)) {
     return G->get_class(builtin->php_class_name);
   }
   if (vk::any_of_equal(type->kind, FFITypeKind::Struct, FFITypeKind::StructDef, FFITypeKind::Union)) {
@@ -117,26 +119,26 @@ static ClassPtr extract_instance_from_ffi_scope(const std::string& scope_name, c
 }
 
 // we have to resolve $a->..., knowing (by phpdoc or rough inferring) the TypeHint of a
-ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint* a) {
+ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint *a) {
   if (a == nullptr) {
     return ClassPtr{};
   }
   // for T|false or T|null, narrow down to T
-  if (const auto* as_optional = a->try_as<TypeHintOptional>()) {
+  if (const auto *as_optional = a->try_as<TypeHintOptional>()) {
     a = as_optional->inner;
   }
 
   // the simpliest (and most common) case: just A
-  if (const auto* as_instance = a->try_as<TypeHintInstance>()) {
+  if (const auto *as_instance = a->try_as<TypeHintInstance>()) {
     return as_instance->resolve();
   }
   // for A|B, when A and B all are instances and have a common base
-  if (const auto* as_pipe = a->try_as<TypeHintPipe>()) {
+  if (const auto *as_pipe = a->try_as<TypeHintPipe>()) {
     kphp_assert(as_pipe->items.size() >= 2);
     // to avoid the redundant work, check whether all union variants are classes
     // and that they have some parent or interface (otherwise they would never have a common base)
-    for (const auto* item : as_pipe->items) {
-      if (const auto* as_primitive = item->try_as<TypeHintPrimitive>()) {
+    for (const auto *item : as_pipe->items) {
+      if (const auto *as_primitive = item->try_as<TypeHintPrimitive>()) {
         if (as_primitive->ptype != tp_Null) {
           return ClassPtr{};
         }
@@ -154,7 +156,7 @@ ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint* a) {
     // the method below is somewhat conservative, but it's good enough in the usual cases
     ClassPtr result;
     ClassPtr first;
-    for (const auto* item : as_pipe->items) {
+    for (const auto *item : as_pipe->items) {
       if (item->try_as<TypeHintPrimitive>()) {
         continue; // we know that it's tp_Null
       }
@@ -177,51 +179,54 @@ ClassPtr Assumption::extract_instance_from_type_hint(const TypeHint* a) {
     return result;
   }
   // an instantiated callable or a typed callable (which is called with __invoke for example)
-  if (const auto* as_callable = a->try_as<TypeHintCallable>()) {
+  if (const auto *as_callable = a->try_as<TypeHintCallable>()) {
     return as_callable->is_typed_callable() ? as_callable->get_interface() : as_callable->get_lambda_class();
   }
   // 'T::fieldName' — a syntax that's used in @return for generics
-  if (const auto* as_field_ref = a->try_as<TypeHintRefToField>()) {
-    if (const TypeHint* field_type_hint = as_field_ref->resolve_field_type_hint()) {
+  if (const auto *as_field_ref = a->try_as<TypeHintRefToField>()) {
+    if (const TypeHint *field_type_hint = as_field_ref->resolve_field_type_hint()) {
       return extract_instance_from_type_hint(field_type_hint);
     }
   }
   // 'T::methodName()' — a syntax that's used in @return for generics
-  if (const auto* as_method_ref = a->try_as<TypeHintRefToMethod>()) {
+  if (const auto *as_method_ref = a->try_as<TypeHintRefToMethod>()) {
     if (FunctionPtr method = as_method_ref->resolve_method()) {
       return assume_return_of_function(method).try_as_class();
     }
   }
   // ffi_cdata<scope, struct T> — return T inside scope, it's a registered class
-  if (const auto* as_ffi = a->try_as<TypeHintFFIType>()) {
+  if (const auto *as_ffi = a->try_as<TypeHintFFIType>()) {
     return extract_instance_from_ffi_scope(as_ffi->scope_name, as_ffi->type);
   }
   // ffi_scope<name> — return the corresponding registered class of this scope
-  if (const auto* as_ffi_scope = a->try_as<TypeHintFFIScope>()) {
+  if (const auto *as_ffi_scope = a->try_as<TypeHintFFIScope>()) {
     return G->get_class(FFIRoot::scope_class_name(as_ffi_scope->scope_name));
   }
+
 
   return ClassPtr{};
 }
 
+
 // --------------------------------------------
 
-static Assumption calc_assumption_for_class_static_var(ClassPtr c, const std::string& var_name);
-static Assumption calc_assumption_for_class_instance_field(ClassPtr c, const std::string& var_name);
+static Assumption calc_assumption_for_class_static_var(ClassPtr c, const std::string &var_name);
+static Assumption calc_assumption_for_class_instance_field(ClassPtr c, const std::string &var_name);
 
-static Assumption assumption_merge(const Assumption& dst, const Assumption& rhs) {
+
+static Assumption assumption_merge(const Assumption &dst, const Assumption &rhs) {
   if (dst.assum_hint == rhs.assum_hint) {
     return dst;
   }
 
-  const TypeHint* dst_hint = assumption_unwrap_optional(dst.assum_hint);
-  const TypeHint* rhs_hint = assumption_unwrap_optional(rhs.assum_hint);
+  const TypeHint *dst_hint = assumption_unwrap_optional(dst.assum_hint);
+  const TypeHint *rhs_hint = assumption_unwrap_optional(rhs.assum_hint);
   if (dst_hint == rhs_hint) {
     return dst.assum_hint->try_as<TypeHintOptional>() ? dst : rhs;
   }
 
-  const auto* dst_as_instance = dst_hint->try_as<TypeHintInstance>();
-  const auto* rhs_as_instance = rhs_hint->try_as<TypeHintInstance>();
+  const auto *dst_as_instance = dst_hint->try_as<TypeHintInstance>();
+  const auto *rhs_as_instance = rhs_hint->try_as<TypeHintInstance>();
   if (dst_as_instance && rhs_as_instance && dst_as_instance->resolve()->is_parent_of(rhs_as_instance->resolve())) {
     return dst.assum_hint->try_as<TypeHintOptional>() ? dst : Assumption(dst_as_instance);
   }
@@ -229,7 +234,7 @@ static Assumption assumption_merge(const Assumption& dst, const Assumption& rhs)
   return {};
 }
 
-static void __attribute__((noinline)) print_error_assumptions_arent_merged_for_var(FunctionPtr f, const std::string& var_name, Assumption a, Assumption b) {
+static void __attribute__((noinline)) print_error_assumptions_arent_merged_for_var(FunctionPtr f, const std::string &var_name, Assumption a, Assumption b) {
   ClassPtr a_klass = a.try_as_class();
   ClassPtr b_klass = b.try_as_class();
   std::vector<ClassPtr> common_bases = a_klass ? a_klass->get_common_base_or_interface(b_klass) : std::vector<ClassPtr>{};
@@ -238,22 +243,21 @@ static void __attribute__((noinline)) print_error_assumptions_arent_merged_for_v
                     fmt_format("${} is was declared as @param {}, and later reassigned to {}\nPlease, use different names for local vars and arguments",
                                var_name, TermStringFormat::paint_green(a.as_human_readable()), TermStringFormat::paint_green(b.as_human_readable())));
   kphp_error_return(common_bases.empty(),
-                    fmt_format("${} is assumed to be both {} and {}\nAdd /** @var {} ${} */ above all assignments to ${} to resolve this conflict.\nProbably, "
-                               "you want /** @var \\{} ${} */",
-                               var_name, TermStringFormat::paint_green(a.as_human_readable()), TermStringFormat::paint_green(b.as_human_readable()), "{type}",
-                               var_name, var_name, common_bases.front()->name, var_name));
-  kphp_error_return(0, fmt_format("${} is assumed to be both {} and {}\nAdd /** @var {} ${} */ above all assignments to ${} to resolve this conflict.",
-                                  var_name, TermStringFormat::paint_green(a.as_human_readable()), TermStringFormat::paint_green(b.as_human_readable()),
-                                  "{type}", var_name, var_name));
+                    fmt_format("${} is assumed to be both {} and {}\nAdd /** @var {} ${} */ above all assignments to ${} to resolve this conflict.\nProbably, you want /** @var \\{} ${} */",
+                               var_name, TermStringFormat::paint_green(a.as_human_readable()), TermStringFormat::paint_green(b.as_human_readable()), "{type}", var_name, var_name, common_bases.front()->name, var_name));
+  kphp_error_return(0,
+                    fmt_format("${} is assumed to be both {} and {}\nAdd /** @var {} ${} */ above all assignments to ${} to resolve this conflict.",
+                               var_name, TermStringFormat::paint_green(a.as_human_readable()), TermStringFormat::paint_green(b.as_human_readable()), "{type}", var_name, var_name));
 }
 
 static void __attribute__((noinline)) print_error_assumptions_arent_merged_for_return(FunctionPtr f, Assumption a, Assumption b) {
-  kphp_error_return(0, fmt_format("{}() is assumed to return both {} and {}\nAdd /** @return {} */ above a function to resolve this conflict.",
-                                  f->as_human_readable(), TermStringFormat::paint_green(a.as_human_readable()),
-                                  TermStringFormat::paint_green(b.as_human_readable()), "{type}"));
+  kphp_error_return(0,
+                    fmt_format("{}() is assumed to return both {} and {}\nAdd /** @return {} */ above a function to resolve this conflict.",
+                               f->as_human_readable(), TermStringFormat::paint_green(a.as_human_readable()), TermStringFormat::paint_green(b.as_human_readable()), "{type}"));
 }
 
-void assumption_add_for_var(FunctionPtr f, const std::string& var_name, const Assumption& assumption, VertexPtr v_location) {
+
+void assumption_add_for_var(FunctionPtr f, const std::string &var_name, const Assumption &assumption, VertexPtr v_location) {
   if (!assumption_needs_to_be_saved(assumption.assum_hint)) {
     return;
   }
@@ -264,7 +268,7 @@ void assumption_add_for_var(FunctionPtr f, const std::string& var_name, const As
     }
   }
 
-  for (auto& name_and_a : f->assumptions_for_vars) {
+  for (auto &name_and_a : f->assumptions_for_vars) {
     if (name_and_a.first == var_name) {
       if (Assumption merged = assumption_merge(name_and_a.second, assumption)) {
         name_and_a.second = merged;
@@ -277,10 +281,10 @@ void assumption_add_for_var(FunctionPtr f, const std::string& var_name, const As
   }
 
   f->assumptions_for_vars.emplace_front(var_name, assumption);
-  //  printf("%s() $%s %s\n", f->name.c_str(), var_name.c_str(), assumption.as_human_readable().c_str());
+//  printf("%s() $%s %s\n", f->name.c_str(), var_name.c_str(), assumption.as_human_readable().c_str());
 }
 
-void assumption_add_for_return(FunctionPtr f, const Assumption& assumption, VertexPtr v_location) {
+void assumption_add_for_return(FunctionPtr f, const Assumption &assumption, VertexPtr v_location) {
   if (!assumption_needs_to_be_saved(assumption.assum_hint)) {
     return;
   }
@@ -296,8 +300,9 @@ void assumption_add_for_return(FunctionPtr f, const Assumption& assumption, Vert
   }
 
   f->assumption_for_return = assumption;
-  //  printf("%s() returns %s\n", f->as_human_readable().c_str(), assumption.as_human_readable().c_str());
+//  printf("%s() returns %s\n", f->as_human_readable().c_str(), assumption.as_human_readable().c_str());
 }
+
 
 // this pass is executed on demand to calculate an assumption for $var_name inside a function
 // it traverses function body, searching for "$var_name = rhs" and other cases (trivial, must most common type-affecting ones)
@@ -306,7 +311,7 @@ void assumption_add_for_return(FunctionPtr f, const Assumption& assumption, Vert
 // (an assumption for B is appended afterward from DeduceImplicitTypesAndCastsPass, resulting in an appropriate error)
 class CalcAssumptionForVarPass final : public FunctionPassBase {
   VertexPtr stop_at;
-  const std::string& var_name;
+  const std::string &var_name;
   bool stopped{false};
 
 public:
@@ -314,12 +319,12 @@ public:
     return "Calc assumption for var";
   }
 
-  explicit CalcAssumptionForVarPass(const std::string& var_name, VertexPtr stop_at)
-      : stop_at(stop_at),
-        var_name(var_name) {}
+  explicit CalcAssumptionForVarPass(const std::string &var_name, VertexPtr stop_at)
+    : stop_at(stop_at)
+    , var_name(var_name) {}
 
   void on_start() override {
-    //    printf("start assumptions for %s() $%s\n", current_function->as_human_readable().c_str(), std::string(var_name).c_str());
+//    printf("start assumptions for %s() $%s\n", current_function->as_human_readable().c_str(), std::string(var_name).c_str());
   }
 
   VertexPtr on_enter_vertex(VertexPtr root) override {
@@ -414,7 +419,7 @@ public:
   }
 
   void on_start() override {
-    //    printf("start assumptions for %s() return\n", current_function->as_human_readable().c_str());
+//    printf("start assumptions for %s() return\n", current_function->as_human_readable().c_str());
   }
 
   VertexPtr on_enter_vertex(VertexPtr root) override {
@@ -433,7 +438,7 @@ public:
  * A high-level function which deduces the type of $a inside f.
  * The results are cached per var_name; init on f is called during the first invocation.
  */
-static Assumption calc_assumption_for_var(FunctionPtr f, const std::string& var_name, VertexPtr stop_at) {
+static Assumption calc_assumption_for_var(FunctionPtr f, const std::string &var_name, VertexPtr stop_at) {
   if (f->modifiers.is_instance() && var_name == "this") {
     return Assumption(f->class_id);
   }
@@ -449,7 +454,7 @@ static Assumption calc_assumption_for_var(FunctionPtr f, const std::string& var_
     }
     for (auto v : f->uses_list) {
       if (v->str_val == var_name) {
-        return calc_assumption_for_var(f->outer_function, var_name, {}); // empty stop_at is ok here
+        return calc_assumption_for_var(f->outer_function, var_name, {});    // empty stop_at is ok here
       }
     }
   }
@@ -461,7 +466,7 @@ static Assumption calc_assumption_for_var(FunctionPtr f, const std::string& var_
   }
 
   auto pos = var_name.find("$$");
-  if (pos != std::string::npos) { // static class variable that is used inside a function
+  if (pos != std::string::npos) {   // static class variable that is used inside a function
     if (auto of_class = G->get_class(replace_characters(var_name.substr(0, pos), '$', '\\'))) {
       return calc_assumption_for_class_static_var(of_class, var_name.substr(pos + 2));
     }
@@ -473,23 +478,25 @@ static Assumption calc_assumption_for_var(FunctionPtr f, const std::string& var_
   return f->get_assumption_for_var(var_name);
 }
 
-static Assumption calc_assumption_for_class_instance_field(ClassPtr c, const std::string& var_name) {
-  if (const auto* field = c->get_instance_field(var_name)) {
+static Assumption calc_assumption_for_class_instance_field(ClassPtr c, const std::string &var_name) {
+  if (const auto *field = c->get_instance_field(var_name)) {
     return field->type_hint ? Assumption(field->type_hint) : Assumption();
   }
 
   return {};
 }
 
-static Assumption calc_assumption_for_class_static_var(ClassPtr c, const std::string& var_name) {
-  if (const auto* field = c->get_static_field(var_name)) {
+static Assumption calc_assumption_for_class_static_var(ClassPtr c, const std::string &var_name) {
+  if (const auto *field = c->get_static_field(var_name)) {
     return field->type_hint ? Assumption(field->type_hint) : Assumption();
   }
 
   return {};
 }
+
 
 // —————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+
 
 namespace {
 
@@ -508,34 +515,34 @@ Assumption infer_from_call(FunctionPtr f, VertexAdaptor<op_func_call> call, Vert
 
   // built-in functions like array_pop/array_filter/instance_cast/etc
   if (f_called->return_typehint && f_called->return_typehint->has_argref_inside()) {
-    const TypeHint* return_typehint = f_called->return_typehint->unwrap_optional();
+    const TypeHint *return_typehint = f_called->return_typehint->unwrap_optional();
 
-    if (const auto* as_arg_ref = return_typehint->try_as<TypeHintArgRef>()) { // array_values ($a ::: array) ::: ^1
+    if (const auto *as_arg_ref = return_typehint->try_as<TypeHintArgRef>()) {       // array_values ($a ::: array) ::: ^1
       return assume_class_of_expr(f, VertexUtil::get_call_arg_ref(as_arg_ref->arg_num, call), stop_at);
     }
-    if (const auto* as_sub = return_typehint->try_as<TypeHintArgSubkeyGet>()) { // array_shift (&$a ::: array) ::: ^1[*]
-      if (const auto* arg_ref = as_sub->inner->try_as<TypeHintArgRef>()) {
+    if (const auto *as_sub = return_typehint->try_as<TypeHintArgSubkeyGet>()) {  // array_shift (&$a ::: array) ::: ^1[*]
+      if (const auto *arg_ref = as_sub->inner->try_as<TypeHintArgRef>()) {
         auto expr_a = assume_class_of_expr(f, VertexUtil::get_call_arg_ref(arg_ref->arg_num, call), stop_at);
         if (Assumption inner = expr_a.get_inner_if_array()) {
           return inner;
         }
       }
     }
-    if (const auto* as_arg_ref = return_typehint->try_as<TypeHintArgRefInstance>()) { // f (...) ::: instance<^1>
+    if (const auto *as_arg_ref = return_typehint->try_as<TypeHintArgRefInstance>()) {   // f (...) ::: instance<^1>
       if (auto arg = VertexUtil::get_call_arg_ref(as_arg_ref->arg_num, call)) {
-        if (const auto* class_name = VertexUtil::get_constexpr_string(arg)) {
+        if (const auto *class_name = VertexUtil::get_constexpr_string(arg)) {
           if (auto klass = G->get_class(*class_name)) {
             return Assumption(klass);
           }
         }
       }
     }
-    if (const auto* as_ffi = return_typehint->try_as<TypeHintFFIType>()) {
+    if (const auto *as_ffi = return_typehint->try_as<TypeHintFFIType>()) {
       return Assumption(as_ffi);
     }
-    if (const auto* as_ffi_scope = return_typehint->try_as<TypeHintFFIScopeArgRef>()) {
+    if (const auto *as_ffi_scope = return_typehint->try_as<TypeHintFFIScopeArgRef>()) {
       if (auto arg = VertexUtil::get_call_arg_ref(as_ffi_scope->arg_num, call)) {
-        if (const auto* scope_name = VertexUtil::get_constexpr_string(arg)) {
+        if (const auto *scope_name = VertexUtil::get_constexpr_string(arg)) {
           if (auto module_class = G->get_class(FFIRoot::scope_class_name(*scope_name))) {
             return Assumption(module_class);
           }
@@ -609,7 +616,7 @@ Assumption infer_from_array(FunctionPtr f, VertexAdaptor<op_array> array, Vertex
 }
 
 Assumption infer_from_tuple(FunctionPtr f, VertexAdaptor<op_tuple> tuple, VertexPtr stop_at) {
-  std::vector<const TypeHint*> sub;
+  std::vector<const TypeHint *> sub;
   for (auto sub_expr : *tuple) {
     sub.emplace_back(assume_class_of_expr(f, sub_expr, stop_at).assum_hint ?: TypeHintPrimitive::create(tp_any));
   }
@@ -617,9 +624,9 @@ Assumption infer_from_tuple(FunctionPtr f, VertexAdaptor<op_tuple> tuple, Vertex
 }
 
 Assumption infer_from_shape(FunctionPtr f, VertexAdaptor<op_shape> shape, VertexPtr stop_at) {
-  std::vector<std::pair<std::string, const TypeHint*>> sub;
+  std::vector<std::pair<std::string, const TypeHint *>> sub;
   for (auto sub_expr : shape->args()) {
-    const std::string& shape_key = VertexUtil::get_actual_value(sub_expr->front())->get_string();
+    const std::string &shape_key = VertexUtil::get_actual_value(sub_expr->front())->get_string();
     sub.emplace_back(shape_key, assume_class_of_expr(f, sub_expr->back(), stop_at).assum_hint ?: TypeHintPrimitive::create(tp_any));
   }
   return Assumption(TypeHintShape::create(std::move(sub), false));
@@ -645,21 +652,21 @@ Assumption infer_from_null_coalesce(FunctionPtr f, VertexAdaptor<op_null_coalesc
   return infer_from_pair_vertex_merge(f, null_coalesce->lhs(), null_coalesce->rhs(), stop_at);
 }
 
-Assumption infer_from_instance_prop(FunctionPtr f __attribute__((unused)), VertexAdaptor<op_instance_prop> prop, VertexPtr stop_at __attribute__((unused))) {
+Assumption infer_from_instance_prop(FunctionPtr f __attribute__ ((unused)), VertexAdaptor<op_instance_prop> prop, VertexPtr stop_at __attribute__ ((unused))) {
   return prop->class_id ? calc_assumption_for_class_instance_field(prop->class_id, prop->str_val) : Assumption();
 }
 
-Assumption infer_from_op_lambda(FunctionPtr f __attribute__((unused)), VertexAdaptor<op_lambda> lambda, VertexPtr stop_at __attribute__((unused))) {
+Assumption infer_from_op_lambda(FunctionPtr f __attribute__ ((unused)), VertexAdaptor<op_lambda> lambda, VertexPtr stop_at __attribute__ ((unused))) {
   return Assumption(TypeHintCallable::create_ptr_to_function(lambda->func_id));
 }
 
 Assumption infer_from_invoke_call(FunctionPtr f, VertexAdaptor<op_invoke_call> invoke_call, VertexPtr stop_at) {
   // we have $cb(...) transformed to op_invoke_call($cb, ...), this is called on $cb()->prop
   Assumption cb_assum = assume_class_of_expr(f, invoke_call->args()[0], stop_at);
-  const TypeHint* assum_hint = assumption_unwrap_optional(cb_assum.assum_hint) ?: TypeHintPrimitive::create(tp_any);
+  const TypeHint *assum_hint = assumption_unwrap_optional(cb_assum.assum_hint) ?: TypeHintPrimitive::create(tp_any);
 
   // $cb can be a raw callable got from op_lambda, while deducing types (until generics and lambdas are instantiated)
-  if (const auto* as_callable = assum_hint->try_as<TypeHintCallable>()) {
+  if (const auto *as_callable = assum_hint->try_as<TypeHintCallable>()) {
     if (as_callable->is_untyped_callable() && as_callable->f_bound_to) {
       return assume_return_of_function(as_callable->f_bound_to);
     } else if (as_callable->is_typed_callable()) {
@@ -677,6 +684,7 @@ Assumption infer_from_invoke_call(FunctionPtr f, VertexAdaptor<op_invoke_call> i
 }
 
 } // namespace
+
 
 // a public function of this module: deduce the result type of f
 // for `$a = getSome(), $a->...`  or `getSome()->...`, we need to deduce the result type of getSome()
@@ -705,8 +713,7 @@ Assumption assume_return_of_function(FunctionPtr f) {
       run_function_pass(f, &ret_pass);
       f->assumption_pass_status = FunctionData::AssumptionStatus::done_returns_in_body;
     } else if (expected == FunctionData::AssumptionStatus::processing_returns_in_body) {
-      while (f->assumption_pass_status == FunctionData::AssumptionStatus::processing_returns_in_body &&
-             f->assumption_processing_thread != std::this_thread::get_id()) {
+      while (f->assumption_pass_status == FunctionData::AssumptionStatus::processing_returns_in_body && f->assumption_processing_thread != std::this_thread::get_id()) {
         std::this_thread::sleep_for(std::chrono::nanoseconds{100});
       }
     }
@@ -721,75 +728,75 @@ Assumption assume_return_of_function(FunctionPtr f) {
 //  and if he have to traverse the function body, we start analyzing from the start and finist at stop_at)
 Assumption assume_class_of_expr(FunctionPtr f, VertexPtr root, VertexPtr stop_at) {
   switch (root->type()) {
-  case op_var:
-    return infer_from_var(f, root.as<op_var>(), stop_at);
-  case op_instance_prop:
-    return infer_from_instance_prop(f, root.as<op_instance_prop>(), stop_at);
-  case op_func_call:
-    return infer_from_call(f, root.as<op_func_call>(), stop_at);
-  case op_invoke_call:
-    return infer_from_invoke_call(f, root.as<op_invoke_call>(), stop_at);
-  case op_ffi_load_call:
-    return infer_from_call(f, root.as<op_ffi_load_call>()->func_call(), stop_at);
-  case op_ffi_addr:
-    return assume_class_of_expr(f, root.as<op_ffi_addr>()->expr(), stop_at);
-  case op_ffi_cast:
-    return Assumption(root.as<op_ffi_cast>()->php_type);
-  case op_ffi_new:
-    return Assumption(root.as<op_ffi_new>()->php_type);
-  case op_ffi_c2php_conv:
-    return Assumption(root.as<op_ffi_c2php_conv>()->php_type);
-  case op_ffi_cdata_value_ref:
-    return assume_class_of_expr(f, root.as<op_ffi_cdata_value_ref>()->expr(), stop_at);
-  case op_ffi_array_get:
-    return Assumption(root.as<op_ffi_array_get>()->c_elem_type);
-  case op_index: {
-    auto index = root.as<op_index>();
-    if (index->has_key()) {
-      return assume_class_of_expr(f, index->array(), stop_at).get_subkey_by_index(index->key());
+    case op_var:
+      return infer_from_var(f, root.as<op_var>(), stop_at);
+    case op_instance_prop:
+      return infer_from_instance_prop(f, root.as<op_instance_prop>(), stop_at);
+    case op_func_call:
+      return infer_from_call(f, root.as<op_func_call>(), stop_at);
+    case op_invoke_call:
+      return infer_from_invoke_call(f, root.as<op_invoke_call>(), stop_at);
+    case op_ffi_load_call:
+      return infer_from_call(f, root.as<op_ffi_load_call>()->func_call(), stop_at);
+    case op_ffi_addr:
+      return assume_class_of_expr(f, root.as<op_ffi_addr>()->expr(), stop_at);
+    case op_ffi_cast:
+      return Assumption(root.as<op_ffi_cast>()->php_type);
+    case op_ffi_new:
+      return Assumption(root.as<op_ffi_new>()->php_type);
+    case op_ffi_c2php_conv:
+      return Assumption(root.as<op_ffi_c2php_conv>()->php_type);
+    case op_ffi_cdata_value_ref:
+      return assume_class_of_expr(f, root.as<op_ffi_cdata_value_ref>()->expr(), stop_at);
+    case op_ffi_array_get:
+      return Assumption(root.as<op_ffi_array_get>()->c_elem_type);
+    case op_index: {
+      auto index = root.as<op_index>();
+      if (index->has_key()) {
+        return assume_class_of_expr(f, index->array(), stop_at).get_subkey_by_index(index->key());
+      }
+      return {};
     }
-    return {};
-  }
-  case op_array:
-    return infer_from_array(f, root.as<op_array>(), stop_at);
-  case op_tuple:
-    return infer_from_tuple(f, root.as<op_tuple>(), stop_at);
-  case op_shape:
-    return infer_from_shape(f, root.as<op_shape>(), stop_at);
-  case op_ternary:
-    return infer_from_ternary(f, root.as<op_ternary>(), stop_at);
-  case op_null_coalesce:
-    return infer_from_null_coalesce(f, root.as<op_null_coalesce>(), stop_at);
-  case op_lambda:
-    return infer_from_op_lambda(f, root.as<op_lambda>(), stop_at);
-  case op_conv_array:
-  case op_conv_array_l:
-    return assume_class_of_expr(f, root.as<meta_op_unary>()->expr(), stop_at);
-  case op_clone:
-    return assume_class_of_expr(f, root.as<op_clone>()->expr(), stop_at);
-  case op_seq_rval:
-    return assume_class_of_expr(f, root.as<op_seq_rval>()->back(), stop_at);
-  case op_move:
-    return assume_class_of_expr(f, root.as<op_move>()->expr(), stop_at);
-  case op_set:
-    return assume_class_of_expr(f, root.as<op_set>()->rhs(), stop_at);
-  case op_define_val:
-    return assume_class_of_expr(f, root.as<op_define_val>()->value(), stop_at);
+    case op_array:
+      return infer_from_array(f, root.as<op_array>(), stop_at);
+    case op_tuple:
+      return infer_from_tuple(f, root.as<op_tuple>(), stop_at);
+    case op_shape:
+      return infer_from_shape(f, root.as<op_shape>(), stop_at);
+    case op_ternary:
+      return infer_from_ternary(f, root.as<op_ternary>(), stop_at);
+    case op_null_coalesce:
+      return infer_from_null_coalesce(f, root.as<op_null_coalesce>(), stop_at);
+    case op_lambda:
+      return infer_from_op_lambda(f, root.as<op_lambda>(), stop_at);
+    case op_conv_array:
+    case op_conv_array_l:
+      return assume_class_of_expr(f, root.as<meta_op_unary>()->expr(), stop_at);
+    case op_clone:
+      return assume_class_of_expr(f, root.as<op_clone>()->expr(), stop_at);
+    case op_seq_rval:
+      return assume_class_of_expr(f, root.as<op_seq_rval>()->back(), stop_at);
+    case op_move:
+      return assume_class_of_expr(f, root.as<op_move>()->expr(), stop_at);
+    case op_set:
+      return assume_class_of_expr(f, root.as<op_set>()->rhs(), stop_at);
+    case op_define_val:
+      return assume_class_of_expr(f, root.as<op_define_val>()->value(), stop_at);
 
-  // assumptions for primitives aren't saved to $local_vars and don't help to resolve ->arrows,
-  // but they are useful for generics reification
-  case op_int_const:
-    return Assumption(TypeHintPrimitive::create(tp_int));
-  case op_float_const:
-    return Assumption(TypeHintPrimitive::create(tp_float));
-  case op_string:
-  case op_conv_string:
-    return Assumption(TypeHintPrimitive::create(tp_string));
-  case op_false:
-  case op_true:
-    return Assumption(TypeHintPrimitive::create(tp_bool));
+    // assumptions for primitives aren't saved to $local_vars and don't help to resolve ->arrows,
+    // but they are useful for generics reification
+    case op_int_const:
+      return Assumption(TypeHintPrimitive::create(tp_int));
+    case op_float_const:
+      return Assumption(TypeHintPrimitive::create(tp_float));
+    case op_string:
+    case op_conv_string:
+      return Assumption(TypeHintPrimitive::create(tp_string));
+    case op_false:
+    case op_true:
+      return Assumption(TypeHintPrimitive::create(tp_bool));
 
-  default:
-    return {};
+    default:
+      return {};
   }
 }

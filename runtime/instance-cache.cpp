@@ -22,13 +22,13 @@
 
 namespace impl_ {
 
-// #define DEBUG_INSTANCE_CACHE
+//#define DEBUG_INSTANCE_CACHE
 
 #ifdef DEBUG_INSTANCE_CACHE
   #define ic_debug kprintf
 #else
-inline void ic_debug(const char* format, ...) __attribute__((format(printf, 1, 2)));
-inline void ic_debug(const char*, ...) {}
+inline void ic_debug(const char *format, ...) __attribute__ ((format (printf, 1, 2)));
+inline void ic_debug(const char *, ...) {}
 #endif
 
 // Default memory limit for the entire buffer (there are 2 buffers in total)
@@ -57,14 +57,12 @@ struct CacheContext : private vk::not_copyable {
   InstanceCacheStats stats;
   std::atomic<bool> memory_swap_required{false};
 
-  void move_to_garbage(ElementHolder* element) noexcept;
-  bool has_garbage() const noexcept {
-    return cache_garbage_ != nullptr;
-  }
+  void move_to_garbage(ElementHolder *element) noexcept;
+  bool has_garbage() const noexcept { return cache_garbage_ != nullptr; }
   void clear_garbage() noexcept;
 
 private:
-  std::atomic<ElementHolder*> cache_garbage_{nullptr};
+  std::atomic<ElementHolder *> cache_garbage_{nullptr};
 };
 
 class ElementHolder : private vk::thread_safe_refcnt<ElementHolder> {
@@ -81,15 +79,17 @@ public:
   void destroy() noexcept {
     php_assert(refcnt == 0);
     cache_context.stats.elements_destroyed.fetch_add(1, std::memory_order_relaxed);
-    auto& mem_resource = cache_context.memory_resource;
+    auto &mem_resource = cache_context.memory_resource;
     this->~ElementHolder();
     mem_resource.deallocate(this, sizeof(ElementHolder));
   }
 
-  ElementHolder(std::chrono::nanoseconds now, int64_t ttl, std::unique_ptr<InstanceCopyistBase>&& instance, CacheContext& context) noexcept
-      : inserted_by_process(getpid()),
-        instance_wrapper(std::move(instance)),
-        cache_context(context) {
+  ElementHolder(std::chrono::nanoseconds now, int64_t ttl,
+                std::unique_ptr<InstanceCopyistBase> &&instance,
+                CacheContext &context) noexcept:
+    inserted_by_process(getpid()),
+    instance_wrapper(std::move(instance)),
+    cache_context(context) {
     update_time_points(now, ttl);
     cache_context.stats.elements_created.fetch_add(1, std::memory_order_relaxed);
   }
@@ -120,37 +120,38 @@ public:
   const pid_t inserted_by_process{0};
 
   std::unique_ptr<InstanceCopyistBase> instance_wrapper;
-  CacheContext& cache_context;
+  CacheContext &cache_context;
 
   // Removed elements list
-  std::atomic<ElementHolder*> next_in_garbage_list{nullptr};
+  std::atomic<ElementHolder *> next_in_garbage_list{nullptr};
 };
 
 using ElementStorage_ = memory_resource::stl::map<string, vk::intrusive_ptr<ElementHolder>, memory_resource::unsynchronized_pool_resource, stl_string_less>;
 
 struct SharedDataStorages : private vk::not_copyable {
-  explicit SharedDataStorages(memory_resource::unsynchronized_pool_resource& resource)
-      : storage(ElementStorage_::allocator_type{resource}) {}
+  explicit SharedDataStorages(memory_resource::unsynchronized_pool_resource &resource) :
+    storage(ElementStorage_::allocator_type{resource}) {
+  }
 
   inter_process_mutex storage_mutex;
   ElementStorage_ storage;
   std::atomic<bool> is_storage_empty{true};
 };
 
-void CacheContext::move_to_garbage(ElementHolder* element) noexcept {
+void CacheContext::move_to_garbage(ElementHolder *element) noexcept {
   php_assert(element->next_in_garbage_list == nullptr);
   // Put all garbage into the cache_context.cache_garbage; the cleanup happens later, under the lock
-  auto* next = cache_garbage_.load();
+  auto *next = cache_garbage_.load();
   do {
     element->next_in_garbage_list.store(next);
   } while (!cache_garbage_.compare_exchange_strong(next, element));
 }
 
 void CacheContext::clear_garbage() noexcept {
-  auto* element = cache_garbage_.exchange(nullptr);
+  auto *element = cache_garbage_.exchange(nullptr);
 
   while (element) {
-    auto* next = element->next_in_garbage_list.load();
+    auto *next = element->next_in_garbage_list.load();
     element->destroy();
     element = next;
   }
@@ -179,12 +180,12 @@ public:
     cache_context_ = nullptr;
   }
 
-  SharedDataStorages& get_data(const string& key) noexcept {
+  SharedDataStorages &get_data(const string &key) noexcept {
     php_assert(data_shards_);
     return data_shards_[static_cast<uint32_t>(key.hash()) % DATA_SHARDS_COUNT];
   }
 
-  SharedDataStorages* get_data_shards() noexcept {
+  SharedDataStorages *get_data_shards() noexcept {
     return data_shards_;
   }
 
@@ -192,7 +193,7 @@ public:
     return DATA_SHARDS_COUNT;
   }
 
-  CacheContext& get_context() noexcept {
+  CacheContext &get_context() noexcept {
     php_assert(cache_context_);
     return *cache_context_;
   }
@@ -210,12 +211,12 @@ private:
   }
 
   void construct_data_inplace() noexcept {
-    cache_context_ = new (shared_memory_) CacheContext();
-    uint8_t* data_storage_mem = static_cast<uint8_t*>(shared_memory_) + get_context_size();
+    cache_context_ = new(shared_memory_) CacheContext();
+    uint8_t *data_storage_mem = static_cast<uint8_t *>(shared_memory_) + get_context_size();
     cache_context_->memory_resource.init(data_storage_mem + get_data_size(), shared_memory_pool_size_);
-    data_shards_ = reinterpret_cast<SharedDataStorages*>(data_storage_mem);
+    data_shards_ = reinterpret_cast<SharedDataStorages *>(data_storage_mem);
     for (size_t i = 0; i != DATA_SHARDS_COUNT; ++i) {
-      new (&data_shards_[i]) SharedDataStorages{cache_context_->memory_resource};
+      new(&data_shards_[i]) SharedDataStorages{cache_context_->memory_resource};
     }
   }
 
@@ -227,11 +228,11 @@ private:
     return (sizeof(SharedDataStorages) * DATA_SHARDS_COUNT + 7) & -8;
   }
 
-  void* shared_memory_{nullptr};
+  void *shared_memory_{nullptr};
   size_t share_memory_full_size_{0};
   size_t shared_memory_pool_size_{0};
-  CacheContext* cache_context_{nullptr};
-  SharedDataStorages* data_shards_{nullptr};
+  CacheContext *cache_context_{nullptr};
+  SharedDataStorages *data_shards_{nullptr};
 };
 
 struct {
@@ -240,11 +241,12 @@ struct {
 
 class InstanceCache {
 private:
-  InstanceCache()
-      : now_(std::chrono::system_clock::now().time_since_epoch()) {}
+  InstanceCache() :
+    now_(std::chrono::system_clock::now().time_since_epoch()) {
+  }
 
 public:
-  static InstanceCache& get() {
+  static InstanceCache &get() {
     static InstanceCache cache;
     return cache;
   }
@@ -287,7 +289,7 @@ public:
     context_ = nullptr;
   }
 
-  InstanceCacheOpStatus store(const string& key, const InstanceCopyistBase& instance_wrapper, int64_t ttl) noexcept {
+  InstanceCacheOpStatus store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl) noexcept {
     ic_debug("store '%s'\n", key.c_str());
     php_assert(current_ && context_);
     if (context_->memory_swap_required) {
@@ -296,14 +298,15 @@ public:
 
     sync_delayed();
     // various service things that we can do without synchronization
-    auto& data = current_->get_data(key);
+    auto &data = current_->get_data(key);
     update_now();
     if (is_element_insertion_can_be_skipped(data, key)) {
       return InstanceCacheOpStatus::skipped;
     }
 
     InstanceDeepCopyVisitor detach_processor{context_->memory_resource, ExtraRefCnt::for_instance_cache};
-    const ElementHolder* inserted_element = try_insert_element_into_cache(data, key, ttl, instance_wrapper, detach_processor);
+    const ElementHolder *inserted_element = try_insert_element_into_cache(
+      data, key, ttl, instance_wrapper, detach_processor);
 
     if (!inserted_element) {
       // failed to insert the element due to some problems (e.g. memory, depth limit)
@@ -330,16 +333,16 @@ public:
     return InstanceCacheOpStatus::success;
   }
 
-  const InstanceCopyistBase* fetch(const string& key, bool even_if_expired) {
+  const InstanceCopyistBase *fetch(const string &key, bool even_if_expired) {
     php_assert(current_ && context_);
     sync_delayed();
     // storing_delayed_ uses a script memory
-    if (const auto* delayed_instance = storing_delayed_.find_value(key)) {
+    if (const auto *delayed_instance = storing_delayed_.find_value(key)) {
       ic_debug("fetch '%s' from delayed cache\n", key.c_str());
       return delayed_instance->get()->instance_wrapper.get();
     }
     // request_cache_ uses a script memory
-    if (const ElementHolder* const* cached_element_ptr = request_cache_.find_value(key)) {
+    if (const ElementHolder *const *cached_element_ptr = request_cache_.find_value(key)) {
       ic_debug("fetch '%s' from request cache\n", key.c_str());
       return (*cached_element_ptr)->instance_wrapper.get();
     }
@@ -347,7 +350,7 @@ public:
     vk::intrusive_ptr<ElementHolder> element;
     bool element_logically_expired = false;
     {
-      auto& data = current_->get_data(key);
+      auto &data = current_->get_data(key);
       std::lock_guard<inter_process_mutex> shared_data_lock{data.storage_mutex};
       auto it = data.storage.find(key);
       if (it == data.storage.end()) {
@@ -359,10 +362,12 @@ public:
       update_now();
       // if more than EARLY_EXPIRATION_ELEMENT_RATIO time is passed out of the expected element lifetime,
       // return null to the next worker process so it knows that the value needs to be updated in advance
-      if (!it->second->early_fetch_performed && it->second->freshness_ratio(now_) >= EARLY_EXPIRATION_ELEMENT_RATIO) {
+      if (!it->second->early_fetch_performed &&
+          it->second->freshness_ratio(now_) >= EARLY_EXPIRATION_ELEMENT_RATIO) {
         it->second->early_fetch_performed = true;
         context_->stats.elements_missed_earlier.fetch_add(1, std::memory_order_relaxed);
-        ic_debug("can't fetch '%s' because less than %f of total time is left\n", key.c_str(), EARLY_EXPIRATION_ELEMENT_RATIO);
+        ic_debug("can't fetch '%s' because less than %f of total time is left\n",
+                 key.c_str(), EARLY_EXPIRATION_ELEMENT_RATIO);
         return nullptr;
       }
       element_logically_expired = it->second->expiring_at <= now_;
@@ -389,7 +394,7 @@ public:
       request_cache_.set_value(key, element.get());
     }
 
-    const auto* result = element->instance_wrapper.get();
+    const auto *result = element->instance_wrapper.get();
     {
       // used_elements uses a heap memory, it'll hold an element until the end of the request
       dl::CriticalSectionGuard heap_guard;
@@ -398,18 +403,18 @@ public:
     return result;
   }
 
-  bool update_ttl(const string& key, int64_t ttl) {
+  bool update_ttl(const string &key, int64_t ttl) {
     php_assert(current_ && context_);
     ic_debug("update_ttl '%s', new ttl '%" PRIi64 "'\n", key.c_str(), ttl);
     sync_delayed();
     // storing_delayed_ uses a script memory
     // it's not obvious what to do with the storing_delayed_;
     // but perhaps we need to either clear it from this key or do nothing at all
-    if (const auto* delayed_instance = storing_delayed_.find_value(key)) {
+    if (const auto *delayed_instance = storing_delayed_.find_value(key)) {
       delayed_instance->get()->ttl = ttl;
     }
 
-    auto& data = current_->get_data(key);
+    auto &data = current_->get_data(key);
     update_now();
     std::lock_guard<inter_process_mutex> shared_data_lock{data.storage_mutex};
     auto it = data.storage.find(key);
@@ -421,14 +426,14 @@ public:
     return true;
   }
 
-  bool del(const string& key) {
+  bool del(const string &key) {
     php_assert(current_ && context_);
     ic_debug("delete '%s'\n", key.c_str());
     sync_delayed();
     // request_cache_ and storing_delayed_ use a script memory
     storing_delayed_.unset(key);
     request_cache_.unset(key);
-    auto& data = current_->get_data(key);
+    auto &data = current_->get_data(key);
     update_now();
     std::lock_guard<inter_process_mutex> shared_data_lock{data.storage_mutex};
     auto it = data.storage.find(key);
@@ -454,24 +459,26 @@ public:
     update_now();
     const auto now_with_delay = now_ - PHYSICAL_REMOVING_DELAY;
 
-    auto& current_data = data_manager_.get_current_resource();
-    auto& context = current_data.get_context();
+    auto &current_data = data_manager_.get_current_resource();
+    auto &context = current_data.get_context();
     // replace the default script allocator
     // as this call happens from the master process
     // we need to explicitly activate and deactivate it
     dl::MemoryReplacementGuard shared_memory_guard{context.memory_resource, true};
 
-    auto* data_shards = current_data.get_data_shards();
+    auto *data_shards = current_data.get_data_shards();
     const size_t shards_count = current_data.get_data_shards_count();
     for (size_t shard_id = purge_shard_offset_; shard_id < shards_count; shard_id += SHARDS_PURGE_PERIOD) {
-      auto& data_shard = data_shards[shard_id];
+      auto &data_shard = data_shards[shard_id];
       if (data_shard.is_storage_empty.load(std::memory_order_relaxed)) {
         continue;
       }
       {
         std::lock_guard<inter_process_mutex> shared_data_lock{data_shard.storage_mutex};
         if (std::none_of(data_shard.storage.begin(), data_shard.storage.end(),
-                         [now_with_delay](const auto& stored_element) { return stored_element.second->expiring_at <= now_with_delay; })) {
+                         [now_with_delay](const auto &stored_element) {
+                           return stored_element.second->expiring_at <= now_with_delay;
+                         })) {
           continue;
         }
       }
@@ -503,30 +510,35 @@ public:
 
   // this function should be called only from master
   InstanceCacheSwapStatus try_swap_memory_resource() {
-    const auto& memory_stats = get_last_memory_stats();
+    const auto &memory_stats = get_last_memory_stats();
     const auto threshold = REAL_MEMORY_USED_THRESHOLD * static_cast<double>(memory_stats.memory_limit);
-    if (static_cast<double>(memory_stats.real_memory_used) < threshold && !data_manager_.get_current_resource().get_context().memory_swap_required) {
+    if (static_cast<double>(memory_stats.real_memory_used) < threshold &&
+        !data_manager_.get_current_resource().get_context().memory_swap_required) {
       return InstanceCacheSwapStatus::no_need;
     }
-    return data_manager_.try_switch_to_next_unused_resource() ? InstanceCacheSwapStatus::swap_is_finished : InstanceCacheSwapStatus::swap_is_forbidden;
+    return data_manager_.try_switch_to_next_unused_resource()
+           ? InstanceCacheSwapStatus::swap_is_finished
+           : InstanceCacheSwapStatus::swap_is_forbidden;
   }
 
   // this function should be called only from master
-  const InstanceCacheStats& get_stats() {
+  const InstanceCacheStats &get_stats() {
     return data_manager_.get_current_resource().get_context().stats;
   }
 
   // this function should be called only from master
-  const memory_resource::MemoryStats& get_last_memory_stats() const noexcept {
+  const memory_resource::MemoryStats &get_last_memory_stats() const noexcept {
     return last_memory_stats_;
   }
 
 private:
-  bool is_element_insertion_can_be_skipped(SharedDataStorages& data, const string& key) const {
+  bool is_element_insertion_can_be_skipped(SharedDataStorages &data, const string &key) const {
     std::lock_guard<inter_process_mutex> shared_data_lock{data.storage_mutex};
     auto it = data.storage.find(key);
     // allow to skip the insertion of the element if it was inserted by another process recently enough
-    if (it != data.storage.end() && it->second->freshness_ratio(now_) < FRESHNESS_ELEMENT_RATIO && it->second->inserted_by_process != getpid()) {
+    if (it != data.storage.end() &&
+        it->second->freshness_ratio(now_) < FRESHNESS_ELEMENT_RATIO &&
+        it->second->inserted_by_process != getpid()) {
       ic_debug("skip '%s' because it was recently updated\n", key.c_str());
       context_->stats.elements_storing_skipped_due_recent_update.fetch_add(1, std::memory_order_relaxed);
       return true;
@@ -543,15 +555,16 @@ private:
     InstanceDeepCopyVisitor detach_processor{context_->memory_resource, ExtraRefCnt::for_instance_cache};
     for (auto it = storing_delayed_.cbegin(); it != storing_delayed_.cend(); it = storing_delayed_.cbegin()) {
       string key = it.get_key().to_string();
-      const auto& delayed_instance = *it.get_value().get();
-      auto& data = current_->get_data(key);
+      const auto &delayed_instance = *it.get_value().get();
+      auto &data = current_->get_data(key);
       update_now();
       if (is_element_insertion_can_be_skipped(data, key)) {
         storing_delayed_.unset(key);
         continue;
       }
-      const ElementHolder* inserted_element =
-          try_insert_element_into_cache(data, key, delayed_instance.ttl, *delayed_instance.instance_wrapper, detach_processor);
+      const ElementHolder *inserted_element = try_insert_element_into_cache(
+        data, key, delayed_instance.ttl,
+        *delayed_instance.instance_wrapper, detach_processor);
       if (!inserted_element) {
         if (likely(detach_processor.is_ok())) {
           // failed to acquire an allocator lock; try later
@@ -571,8 +584,10 @@ private:
     }
   }
 
-  ElementHolder* try_insert_element_into_cache(SharedDataStorages& data, const string& key_in_script_memory, int64_t ttl,
-                                               const InstanceCopyistBase& instance_wrapper, InstanceDeepCopyVisitor& detach_processor) noexcept {
+  ElementHolder *try_insert_element_into_cache(SharedDataStorages &data,
+                                               const string &key_in_script_memory, int64_t ttl,
+                                               const InstanceCopyistBase &instance_wrapper,
+                                               InstanceDeepCopyVisitor &detach_processor) noexcept {
     // swap the allocator
     dl::MemoryReplacementGuard shared_memory_guard{context_->memory_resource};
 
@@ -587,8 +602,8 @@ private:
 
     // moving an instance into a shared memory
     if (auto cached_instance_wrapper = instance_wrapper.deep_copy_and_set_ref_cnt(detach_processor)) {
-      if (void* mem = detach_processor.prepare_raw_memory(sizeof(ElementHolder))) {
-        vk::intrusive_ptr<ElementHolder> element{new (mem) ElementHolder{now_, ttl, std::move(cached_instance_wrapper), *context_}};
+      if (void *mem = detach_processor.prepare_raw_memory(sizeof(ElementHolder))) {
+        vk::intrusive_ptr<ElementHolder> element{new(mem) ElementHolder{now_, ttl, std::move(cached_instance_wrapper), *context_}};
         std::lock_guard<inter_process_mutex> shared_data_lock{data.storage_mutex};
         auto it = data.storage.find(key_in_script_memory);
         if (it == data.storage.end()) {
@@ -623,17 +638,18 @@ private:
     return nullptr;
   }
 
-  void fire_warning(const char* class_name) noexcept {
+  void fire_warning(const char *class_name) noexcept {
     php_warning("Memory limit exceeded on saving instance of class '%s' into cache", class_name);
     context_->memory_swap_required = true;
   }
 
-  SharedMemoryData* current_{nullptr};
-  CacheContext* context_{nullptr};
+  SharedMemoryData *current_{nullptr};
+  CacheContext *context_{nullptr};
   InterProcessResourceManager<SharedMemoryData, 2> data_manager_;
 
+
   struct IntrusivePtrHash {
-    size_t operator()(const vk::intrusive_ptr<ElementHolder>& el) const {
+    size_t operator()(const vk::intrusive_ptr<ElementHolder> &el) const {
       return reinterpret_cast<size_t>(el.get());
     }
   };
@@ -647,7 +663,7 @@ private:
 
   // A local cache that can be used to get elements without taking a storage_mutex lock
   // Uses a script memory
-  array<const ElementHolder*> request_cache_;
+  array<const ElementHolder *> request_cache_;
 
   // A container for instances which we failed to save from the first try due to the allocator lock
   // Uses script memory. Wrapped into the class_instance as array doesn't work with unique_ptr
@@ -664,28 +680,21 @@ private:
 
 std::string_view instance_cache_store_status_to_str(InstanceCacheOpStatus status) {
   switch (status) {
-  case InstanceCacheOpStatus::success:
-    return "success";
-  case InstanceCacheOpStatus::skipped:
-    return "skipped";
-  case InstanceCacheOpStatus::memory_limit_exceeded:
-    return "memory_limit_exceeded";
-  case InstanceCacheOpStatus::delayed:
-    return "delayed";
-  case InstanceCacheOpStatus::not_found:
-    return "not_found";
-  case InstanceCacheOpStatus::failed:
-    return "failed";
-  default:
-    return "unknown";
+    case InstanceCacheOpStatus::success:                 return "success";
+    case InstanceCacheOpStatus::skipped:                 return "skipped";
+    case InstanceCacheOpStatus::memory_limit_exceeded:   return "memory_limit_exceeded";
+    case InstanceCacheOpStatus::delayed:                 return "delayed";
+    case InstanceCacheOpStatus::not_found:               return "not_found";
+    case InstanceCacheOpStatus::failed:                  return "failed";
+    default:                                             return "unknown";
   }
 }
 
-InstanceCacheOpStatus instance_cache_store(const string& key, const InstanceCopyistBase& instance_wrapper, int64_t ttl) {
+InstanceCacheOpStatus instance_cache_store(const string &key, const InstanceCopyistBase &instance_wrapper, int64_t ttl) {
   return InstanceCache::get().store(key, instance_wrapper, ttl);
 }
 
-const InstanceCopyistBase* instance_cache_fetch_wrapper(const string& key, bool even_if_expired) {
+const InstanceCopyistBase *instance_cache_fetch_wrapper(const string &key, bool even_if_expired) {
   return InstanceCache::get().fetch(key, even_if_expired);
 }
 
@@ -714,12 +723,12 @@ InstanceCacheSwapStatus instance_cache_try_swap_memory() {
 }
 
 // should be called only from master
-const InstanceCacheStats& instance_cache_get_stats() {
+const InstanceCacheStats &instance_cache_get_stats() {
   return impl_::InstanceCache::get().get_stats();
 }
 
 // should be called only from master
-const memory_resource::MemoryStats& instance_cache_get_memory_stats() {
+const memory_resource::MemoryStats &instance_cache_get_memory_stats() {
   return impl_::InstanceCache::get().get_last_memory_stats();
 }
 
@@ -732,10 +741,10 @@ void instance_cache_release_all_resources_acquired_by_this_proc() {
   impl_::InstanceCache::get().force_release_all_resources();
 }
 
-bool f$instance_cache_update_ttl(const string& key, int64_t ttl) {
+bool f$instance_cache_update_ttl(const string &key, int64_t ttl) {
   return impl_::InstanceCache::get().update_ttl(key, ttl);
 }
 
-bool f$instance_cache_delete(const string& key) {
+bool f$instance_cache_delete(const string &key) {
   return impl_::InstanceCache::get().del(key);
 }

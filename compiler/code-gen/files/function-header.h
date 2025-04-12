@@ -11,5 +11,6 @@
 struct FunctionH : CodeGenRootCmd {
   FunctionPtr function;
   explicit FunctionH(FunctionPtr function);
-  void compile(CodeGenerator& W) const final;
+  void compile(CodeGenerator &W) const final;
 };
+

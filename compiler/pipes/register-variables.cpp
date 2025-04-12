@@ -11,7 +11,7 @@
 #include "compiler/name-gen.h"
 #include "compiler/utils/string-utils.h"
 
-VarPtr RegisterVariablesPass::create_global_var(const std::string& name) {
+VarPtr RegisterVariablesPass::create_global_var(const std::string &name) {
   VarPtr var = G->get_global_var(name, VertexPtr());
   auto it = registred_vars.insert(make_pair(name, var));
   if (it.second == false) {
@@ -24,19 +24,19 @@ VarPtr RegisterVariablesPass::create_global_var(const std::string& name) {
   return var;
 }
 
-VarPtr RegisterVariablesPass::create_local_var(const std::string& name, VarData::Type type, bool create_flag) {
+VarPtr RegisterVariablesPass::create_local_var(const std::string &name, VarData::Type type, bool create_flag) {
   auto it = registred_vars.find(name);
   if (it != registred_vars.end()) {
-    kphp_error(!create_flag, fmt_format("Redeclaration of local variable: {}", name));
+    kphp_error (!create_flag, fmt_format("Redeclaration of local variable: {}", name));
     return it->second;
   }
   VarPtr var = G->create_local_var(current_function, name, type);
-  kphp_error(registred_vars.insert(make_pair(name, var)).second, fmt_format("Redeclaration of local variable: {}", name));
+  kphp_error (registred_vars.insert(make_pair(name, var)).second, fmt_format("Redeclaration of local variable: {}", name));
 
   return var;
 }
 
-VarPtr RegisterVariablesPass::get_global_var(const std::string& name) {
+VarPtr RegisterVariablesPass::get_global_var(const std::string &name) {
   auto it = registred_vars.find(name);
   if (it != registred_vars.end()) {
     return it->second;
@@ -44,7 +44,7 @@ VarPtr RegisterVariablesPass::get_global_var(const std::string& name) {
   return create_global_var(name);
 }
 
-VarPtr RegisterVariablesPass::get_local_var(const std::string& name, VarData::Type type) {
+VarPtr RegisterVariablesPass::get_local_var(const std::string &name, VarData::Type type) {
   return create_local_var(name, type, false);
 }
 
@@ -59,7 +59,8 @@ void RegisterVariablesPass::register_global_var(VertexAdaptor<op_var> var_vertex
 }
 
 bool RegisterVariablesPass::is_const(VertexPtr v) {
-  return v->const_type == cnst_const_val || (v->type() == op_var && v.as<op_var>()->var_id->is_constant());
+  return v->const_type == cnst_const_val ||
+         (v->type() == op_var && v.as<op_var>()->var_id->is_constant());
 }
 
 bool RegisterVariablesPass::is_global_var(VertexPtr v) {
@@ -87,7 +88,7 @@ void RegisterVariablesPass::register_param_var(VertexAdaptor<op_var> var_vertex,
   VarPtr var = create_local_var(name, VarData::var_param_t, true);
   var->is_reference = var_vertex->ref_flag;
   var->marked_as_const = var_vertex->is_const;
-  kphp_assert(var);
+  kphp_assert (var);
   if (default_value) {
     kphp_error_return(is_const(default_value) || current_function->is_extern(), fmt_format("Default value of [{}] is not constant", name));
     var->init_val = default_value;
@@ -100,7 +101,9 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
   ClassPtr requested_class;
   std::string name = var_vertex->str_val;
   size_t pos$$ = name.find("$$");
-  if (pos$$ != std::string::npos || (vk::none_of_equal(var_vertex->extra_type, op_ex_var_superlocal, op_ex_var_superlocal_inplace) && global_function_flag) ||
+  if (pos$$ != std::string::npos ||
+      (vk::none_of_equal(var_vertex->extra_type, op_ex_var_superlocal, op_ex_var_superlocal_inplace) &&
+       global_function_flag) ||
       var_vertex->extra_type == op_ex_var_superglobal) {
     if (pos$$ != std::string::npos) {
       std::string class_name = name.substr(0, pos$$);
@@ -112,7 +115,7 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
         klass = klass->parent_class;
       }
       kphp_error_return(klass, fmt_format("static field not found: {}", name));
-      const auto* field = klass->members.get_static_field(var_name);
+      const auto *field = klass->members.get_static_field(var_name);
       kphp_error_return(field, fmt_format("field {} is not static in class {}", var_name, requested_class->name));
       kphp_error_return(klass == requested_class || !field->modifiers.is_private(),
                         fmt_format("Can't access private static field using derived class: {}", name));
@@ -120,7 +123,9 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
     }
     var = get_global_var(name);
   } else {
-    VarData::Type var_type = var_vertex->extra_type == op_ex_var_superlocal_inplace ? VarData::var_local_inplace_t : VarData::var_local_t;
+    VarData::Type var_type = var_vertex->extra_type == op_ex_var_superlocal_inplace
+                             ? VarData::var_local_inplace_t
+                             : VarData::var_local_t;
     var = get_local_var(name, var_type);
   }
   var_vertex->var_id = var;
@@ -136,7 +141,11 @@ void RegisterVariablesPass::register_var(VertexAdaptor<op_var> var_vertex) {
 
 void RegisterVariablesPass::visit_global_vertex(VertexAdaptor<op_global> global) {
   for (auto var : global->args()) {
-    kphp_error_act(var->type() == op_var, "unexpected expression in 'global'", continue);
+    kphp_error_act (
+      var->type() == op_var,
+      "unexpected expression in 'global'",
+      continue
+    );
     register_global_var(var.as<op_var>());
     if (current_function->modulite) {
       modulite_check_when_global_keyword(current_function, var.as<op_var>()->str_val);
@@ -151,11 +160,15 @@ void RegisterVariablesPass::visit_static_vertex(VertexAdaptor<op_static> stat) {
     auto var = node.try_as<op_var>();
     if (!var) {
       if (auto set_expr = node.try_as<op_set>()) {
-        kphp_error_act(set_expr->lhs()->type() == op_var, "unexpected expression in 'static'", continue);
+        kphp_error_act (
+          set_expr->lhs()->type() == op_var,
+          "unexpected expression in 'static'",
+          continue
+        );
         var = set_expr->lhs().as<op_var>();
         default_value = set_expr->rhs();
       } else {
-        kphp_error_act(0, "unexpected expression in 'static'", continue);
+        kphp_error_act (0, "unexpected expression in 'static'", continue);
       }
     }
 
@@ -166,14 +179,15 @@ void RegisterVariablesPass::visit_static_vertex(VertexAdaptor<op_static> stat) {
 void RegisterVariablesPass::visit_var(VertexAdaptor<op_var> var) {
   if (var->var_id) {
     // autogenerated via CREATE_VERTEX op_var types that have one VarData per multiple vertices
-    kphp_assert(var->var_id->is_constant() || vk::any_of_equal(var->var_id->type(), VarData::var_local_inplace_t, VarData::var_local_t));
+    kphp_assert (var->var_id->is_constant() || vk::any_of_equal(var->var_id->type(), VarData::var_local_inplace_t, VarData::var_local_t));
     return;
   }
   register_var(var);
 }
 
+
 VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root) {
-  kphp_assert(root);
+  kphp_assert (root);
   if (root->type() == op_global) {
     visit_global_vertex(root.as<op_global>());
     return VertexAdaptor<op_empty>::create();
@@ -190,8 +204,7 @@ VertexPtr RegisterVariablesPass::on_enter_vertex(VertexPtr root) {
 VertexPtr RegisterVariablesPass::on_exit_vertex(VertexPtr root) {
   if (auto foreach = root.try_as<op_foreach_param>()) {
     if (foreach->x()->ref_flag) {
-      foreach
-        ->x()->var_id->is_foreach_reference = true;
+      foreach->x()->var_id->is_foreach_reference = true;
     }
   }
   return root;
@@ -211,7 +224,7 @@ void RegisterVariablesPass::visit_func_param_list(VertexAdaptor<op_func_param_li
 }
 
 void RegisterVariablesPass::visit_phpdoc_var(VertexAdaptor<op_phpdoc_var> phpdoc_var) {
-  const std::string& var_name = phpdoc_var->var()->str_val;
+  const std::string &var_name = phpdoc_var->var()->str_val;
 
   VarPtr var_in_f = current_function->find_var_by_name(var_name);
   kphp_error(var_in_f, fmt_format("Unknown var ${} in phpdoc", var_name));

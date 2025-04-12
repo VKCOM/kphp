@@ -8,7 +8,7 @@
 #include "common/crc32c.h"
 
 void __attribute__((constructor(101))) crc32c_init() {
-  const kdb_cpuid_t* p = kdb_cpuid();
+  const kdb_cpuid_t *p = kdb_cpuid();
   assert(p->type == KDB_CPUID_ARM64);
 
   crc32c_partial = crc32c_partial_four_tables;

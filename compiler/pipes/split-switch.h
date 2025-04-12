@@ -9,5 +9,5 @@
 
 class SplitSwitchF {
 public:
-  void execute(FunctionPtr function, DataStream<FunctionPtr>& os);
+  void execute(FunctionPtr function, DataStream<FunctionPtr> &os);
 };

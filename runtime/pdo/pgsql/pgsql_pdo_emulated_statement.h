@@ -11,10 +11,10 @@ class PgsqlResponse;
 namespace pdo::pgsql {
 class PgsqlPdoEmulatedStatement : public pdo::AbstractPdoStatement {
 public:
-  PgsqlPdoEmulatedStatement(const string& statement, int connector_id);
+  PgsqlPdoEmulatedStatement(const string &statement, int connector_id);
 
-  bool execute(const class_instance<C$PDOStatement>& v$this, const Optional<array<mixed>>& params) noexcept final;
-  mixed fetch(const class_instance<C$PDOStatement>& v$this) noexcept final;
+  bool execute(const class_instance<C$PDOStatement> &v$this, const Optional<array<mixed>> &params) noexcept final;
+  mixed fetch(const class_instance<C$PDOStatement> &v$this) noexcept final;
   int64_t affected_rows() noexcept final;
 
 private:

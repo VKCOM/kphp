@@ -10,7 +10,7 @@
 #include "common/mixin/not_copyable.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-  #error "this file must be included only from runtime-core.h"
+#error "this file must be included only from runtime-core.h"
 #endif
 
 struct RuntimeContext final : vk::not_copyable {
@@ -25,5 +25,5 @@ struct RuntimeContext final : vk::not_copyable {
   void init() noexcept;
   void free() noexcept;
 
-  static RuntimeContext& get() noexcept;
+  static RuntimeContext &get() noexcept;
 };

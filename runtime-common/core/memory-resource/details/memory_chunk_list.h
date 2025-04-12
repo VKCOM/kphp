@@ -15,23 +15,24 @@ class memory_chunk_list {
 public:
   memory_chunk_list() = default;
 
-  void* get_mem() noexcept {
-    void* result = next_;
+  void *get_mem() noexcept {
+    void *result = next_;
     if (next_) {
       next_ = next_->next_;
     }
     return result;
   }
 
-  void put_mem(void* block) noexcept {
-    next_ = new (block) memory_chunk_list{next_};
+  void put_mem(void *block) noexcept {
+    next_ = new(block) memory_chunk_list{next_};
   }
 
 private:
-  explicit memory_chunk_list(memory_chunk_list* next) noexcept
-      : next_(next) {}
+  explicit memory_chunk_list(memory_chunk_list *next) noexcept :
+    next_(next) {
+  }
 
-  memory_chunk_list* next_{nullptr};
+  memory_chunk_list *next_{nullptr};
 };
 
 static_assert(sizeof(memory_chunk_list) == 8, "sizeof memory_chunk_list should be 8");

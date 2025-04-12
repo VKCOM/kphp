@@ -16,39 +16,39 @@ struct libucontext_mcontext {
 };
 
 struct libucontext_stack {
-  void* ss_sp;
+  void *ss_sp;
   int ss_flags;
   size_t ss_size;
 };
 
 struct libucontext_ucontext {
   unsigned long uc_flags;
-  struct libucontext_ucontext* uc_link;
+  struct libucontext_ucontext *uc_link;
   libucontext_stack uc_stack;
   unsigned char __pad[136];
   libucontext_mcontext uc_mcontext;
 };
 
-inline constexpr void* get_context_stack_ptr_portable(const libucontext_ucontext& ctx) noexcept {
+inline constexpr void *get_context_stack_ptr_portable(const libucontext_ucontext &ctx) noexcept {
   return ctx.uc_stack.ss_sp;
 }
 
-inline constexpr size_t get_context_stack_size_portable(const libucontext_ucontext& ctx) noexcept {
+inline constexpr size_t get_context_stack_size_portable(const libucontext_ucontext &ctx) noexcept {
   return ctx.uc_stack.ss_size;
 }
 
-inline constexpr void set_context_stack_ptr_portable(libucontext_ucontext& ctx, void* sp) noexcept {
+inline constexpr void set_context_stack_ptr_portable(libucontext_ucontext &ctx, void *sp) noexcept {
   ctx.uc_stack.ss_sp = sp;
 }
 
-inline constexpr void set_context_stack_size_portable(libucontext_ucontext& ctx, size_t size) noexcept {
+inline constexpr void set_context_stack_size_portable(libucontext_ucontext &ctx, size_t size) noexcept {
   ctx.uc_stack.ss_size = size;
 }
 
-inline constexpr void set_context_link_portable(libucontext_ucontext& ctx, libucontext_ucontext* link) noexcept {
+inline constexpr void set_context_link_portable(libucontext_ucontext &ctx, libucontext_ucontext *link) noexcept {
   ctx.uc_link = link;
 }
 
-inline void* get_context_stack_base_ptr_portable(const libucontext_ucontext& ctx) noexcept {
-  return reinterpret_cast<void*>(ctx.uc_mcontext.fp);
+inline void *get_context_stack_base_ptr_portable(const libucontext_ucontext &ctx) noexcept {
+  return reinterpret_cast<void *>(ctx.uc_mcontext.fp);
 }

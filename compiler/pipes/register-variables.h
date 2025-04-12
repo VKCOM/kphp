@@ -24,10 +24,10 @@ private:
   bool global_function_flag{false};
   int in_param_list{0};
 
-  VarPtr create_global_var(const std::string& name);
-  VarPtr create_local_var(const std::string& name, VarData::Type type, bool create_flag);
-  VarPtr get_global_var(const std::string& name);
-  VarPtr get_local_var(const std::string& name, VarData::Type type = VarData::var_local_t);
+  VarPtr create_global_var(const std::string &name);
+  VarPtr create_local_var(const std::string &name, VarData::Type type, bool create_flag);
+  VarPtr get_global_var(const std::string &name);
+  VarPtr get_local_var(const std::string &name, VarData::Type type = VarData::var_local_t);
   void register_global_var(VertexAdaptor<op_var> var_vertex);
   bool is_const(VertexPtr v);
   bool is_global_var(VertexPtr v);
@@ -41,7 +41,9 @@ private:
 
   void visit_func_param_list(VertexAdaptor<op_func_param_list> list);
 
+
 public:
+
   std::string get_description() override {
     return "Register variables";
   }
@@ -56,4 +58,5 @@ public:
   VertexPtr on_exit_vertex(VertexPtr root) override;
 
   bool user_recursion(VertexPtr v) override;
+
 };

@@ -28,22 +28,22 @@ struct C$DeflateContext : public refcountable_php_classes<C$DeflateContext>, pri
   z_stream stream{};
 };
 
-const string_buffer* zlib_encode(const char* s, int32_t s_len, int32_t level, int32_t encoding); // returns pointer to static_SB
+const string_buffer *zlib_encode(const char *s, int32_t s_len, int32_t level, int32_t encoding);//returns pointer to static_SB
 
-class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed>& options = {});
+class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed> & options = {});
 
-Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, const string& data, int64_t flush_type = Z_SYNC_FLUSH);
+Optional<string> f$deflate_add(const class_instance<C$DeflateContext> & context, const string & data, int64_t flush_type = Z_SYNC_FLUSH);
 
-string f$gzcompress(const string& s, int64_t level = -1);
+string f$gzcompress(const string &s, int64_t level = -1);
 
-const char* gzuncompress_raw(vk::string_view s, string::size_type* result_len);
+const char *gzuncompress_raw(vk::string_view s, string::size_type *result_len);
 
-string f$gzuncompress(const string& s);
+string f$gzuncompress(const string &s);
 
-string f$gzencode(const string& s, int64_t level = -1);
+string f$gzencode(const string &s, int64_t level = -1);
 
-string f$gzdecode(const string& s);
+string f$gzdecode(const string &s);
 
-string f$gzdeflate(const string& s, int64_t level);
+string f$gzdeflate(const string &s, int64_t level);
 
-string f$gzinflate(const string& s);
+string f$gzinflate(const string &s);

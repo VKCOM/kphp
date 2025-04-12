@@ -8,7 +8,7 @@
 constexpr string_size_type initial_minimum_string_buffer_length = 1024;
 constexpr string_size_type initial_maximum_string_buffer_length = (1 << 24);
 
-RuntimeContext& RuntimeContext::get() noexcept {
+RuntimeContext &RuntimeContext::get() noexcept {
   return InstanceState::get().runtime_context;
 }
 

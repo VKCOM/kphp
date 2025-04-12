@@ -3,4 +3,4 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 void init_version_string(const char* version);
-const char* get_version_string();
+const char *get_version_string();

@@ -4,29 +4,30 @@
 
 #include "compiler/pipes/collect-required-and-classes.h"
 
-#include "compiler/compiler-core.h"
 #include "compiler/const-manipulations.h"
+#include "compiler/compiler-core.h"
 #include "compiler/data/modulite-data.h"
-#include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/src-dir.h"
 #include "compiler/function-pass.h"
 #include "compiler/phpdoc.h"
 #include "compiler/type-hint.h"
 
+
 class CollectRequiredPass final : public FunctionPassBase {
 private:
-  DataStream<SrcFilePtr>& file_stream;
-  DataStream<FunctionPtr>& function_stream;
+  DataStream<SrcFilePtr> &file_stream;
+  DataStream<FunctionPtr> &function_stream;
 
-  SrcFilePtr require_file(const std::string& file_name, bool error_if_not_exists, bool builtin = false) {
+  SrcFilePtr require_file(const std::string &file_name, bool error_if_not_exists, bool builtin = false) {
     return G->require_file(file_name, current_function->file_id->owner_lib, file_stream, error_if_not_exists, builtin);
   }
 
-  void require_function(const std::string& name) {
+  void require_function(const std::string &name) {
     G->require_function(name, function_stream);
   }
 
-  void require_class(const std::string& class_name) {
+  void require_class(const std::string &class_name) {
     // avoid a race condition, when we try to search for RpcFunction.php and other built-in classes that are visible from index.php
     // (if such files exist, extra src_xxx$called variables will be created: unstable codegeneration)
     while (!G->get_functions_txt_parsed()) {
@@ -39,12 +40,12 @@ private:
     std::string file_name = replace_characters(class_name, '\\', '/');
 
     if (G->settings().is_composer_enabled()) {
-      const auto& composer = G->get_composer_autoloader();
-      if (const auto& psr4_filename = composer.psr4_lookup(file_name); !psr4_filename.empty()) {
+      const auto &composer = G->get_composer_autoloader();
+      if (const auto &psr4_filename = composer.psr4_lookup(file_name); !psr4_filename.empty()) {
         require_file(psr4_filename, false);
         return; // required from the composer autoload PSR-4 path
       }
-      if (const auto& psr0_filename = composer.psr0_lookup(file_name); !psr0_filename.empty()) {
+      if (const auto &psr0_filename = composer.psr0_lookup(file_name); !psr0_filename.empty()) {
         auto file = require_file(psr0_filename, false);
         file->is_loaded_by_psr0 = true;
         return; // required from the composer autoload PSR-0 path
@@ -64,7 +65,7 @@ private:
       FFIRoot::register_builtin_classes(function_stream);
     }
 
-    for (const auto& dep : cur_class->get_str_dependents()) {
+    for (const auto &dep : cur_class->get_str_dependents()) {
       if (!cur_class->is_builtin() && dep.class_name == "Throwable") {
         if (cur_class->is_interface()) {
           kphp_error(false, fmt_format("Interface {} cannot extend Throwable", cur_class->name));
@@ -76,8 +77,10 @@ private:
       require_class(dep.class_name);
     }
     // class constant values may contain other class constants that may need require_class()
-    cur_class->members.for_each([&](ClassMemberConstant& c) { run_function_pass(c.value, this); });
-    cur_class->members.for_each([&](ClassMemberStaticField& f) {
+    cur_class->members.for_each([&](ClassMemberConstant &c) {
+      run_function_pass(c.value, this);
+    });
+    cur_class->members.for_each([&](ClassMemberStaticField &f) {
       if (f.var->init_val) {
         run_function_pass(f.var->init_val, this);
       }
@@ -88,7 +91,7 @@ private:
         require_all_classes_in_phpdoc_type(f.type_hint);
       }
     });
-    cur_class->members.for_each([&](ClassMemberInstanceField& f) {
+    cur_class->members.for_each([&](ClassMemberInstanceField &f) {
       if (f.var->init_val) {
         run_function_pass(f.var->init_val, this);
       }
@@ -102,8 +105,8 @@ private:
   }
 
   // looking at /** @var Photo */ above a field, load Photo class
-  inline void require_all_classes_in_field_phpdoc(const PhpDocComment* phpdoc) {
-    if (const PhpDocTag* var_tag = phpdoc->find_tag(PhpDocType::var)) {
+  inline void require_all_classes_in_field_phpdoc(const PhpDocComment *phpdoc) {
+    if (const PhpDocTag *var_tag = phpdoc->find_tag(PhpDocType::var)) {
       if (auto tag_parsed = var_tag->value_as_type_and_var_name(current_function, current_function->genericTs)) {
         require_all_classes_in_phpdoc_type(tag_parsed.type_hint);
       }
@@ -111,10 +114,10 @@ private:
   }
 
   // Searching for classes inside @var/@param phpdoc as well as inside type hints
-  inline void require_all_classes_in_phpdoc_type(const TypeHint* type_hint) {
+  inline void require_all_classes_in_phpdoc_type(const TypeHint *type_hint) {
     if (type_hint && type_hint->has_instances_inside()) {
-      type_hint->traverse([this](const TypeHint* child) {
-        if (const auto* as_instance = child->try_as<TypeHintInstance>()) {
+      type_hint->traverse([this](const TypeHint *child) {
+        if (const auto *as_instance = child->try_as<TypeHintInstance>()) {
           if (!as_instance->has_self_static_parent_inside()) {
             require_class(as_instance->full_class_name);
           }
@@ -132,7 +135,7 @@ private:
     // (that "invalid" functions aren't reachable in fact, they just exist in a dead codebase,
     //  so their phpdocs aren't analyzed later, but trying to parse them in gentree leads to 10k errors)
     if (f->phpdoc && !f->is_lambda()) {
-      for (const PhpDocTag& tag : f->phpdoc->tags) {
+      for (const PhpDocTag &tag : f->phpdoc->tags) {
         if (tag.type == PhpDocType::param) {
           if (auto tag_parsed = tag.value_as_type_and_var_name(current_function, current_function->genericTs)) {
             require_all_classes_in_phpdoc_type(tag_parsed.type_hint);
@@ -140,7 +143,7 @@ private:
         }
       }
     }
-    for (const auto& p : f->get_params()) {
+    for (const auto &p: f->get_params()) {
       if (p.as<op_func_param>()->type_hint) {
         require_all_classes_in_phpdoc_type(p.as<op_func_param>()->type_hint);
       }
@@ -150,9 +153,9 @@ private:
     }
   }
 
-  VertexPtr make_require_call(VertexPtr root, const std::string& name, bool once, bool builtin = false) {
+  VertexPtr make_require_call(VertexPtr root, const std::string &name, bool once, bool builtin = false) {
     auto file = require_file(name, true, builtin);
-    kphp_error_act(file, fmt_format("Cannot require [{}]\n", name), return root);
+    kphp_error_act (file, fmt_format("Cannot require [{}]\n", name), return root);
     VertexPtr call = VertexAdaptor<op_func_call>::create();
     call->set_string(file->main_func_name);
     call->location = root->location;
@@ -165,7 +168,7 @@ private:
   }
 
   // whether required file name refers to the composer-generated autoload file
-  static bool is_composer_autoload(const std::string& required_path) {
+  static bool is_composer_autoload(const std::string &required_path) {
     // fast path: it there is no "/autoload.php", then we don't
     // need to bother and expand the filename
     if (!vk::ends_with(required_path, "/autoload.php")) {
@@ -181,10 +184,10 @@ private:
     //
     // note that we use once=true all the time since composer would
     // do the same (it uses require+inclusion map to perform the inclusion exactly once)
-    const auto& files_to_require = G->get_composer_autoloader().get_files_to_require();
+    const auto &files_to_require = G->get_composer_autoloader().get_files_to_require();
     std::vector<VertexPtr> list;
     list.reserve(files_to_require.size());
-    for (const auto& file : files_to_require) {
+    for (const auto &file : files_to_require) {
       list.emplace_back(make_require_call(root, file, true));
     }
     return VertexAdaptor<op_seq>::create(list).set_location(root->location);
@@ -229,7 +232,7 @@ private:
       ModulitePtr modulite = ModuliteData::create_from_composer_json(composer_json, dir->has_modulite_yaml);
 
       bool is_root = dir->full_dir_name == G->settings().composer_root.get();
-      if (is_root || !modulite) { // composer.json at project root is loaded, but not stored as a modulite
+      if (is_root || !modulite) {  // composer.json at project root is loaded, but not stored as a modulite
         return {};
       }
       dir->nested_files_modulite = modulite;
@@ -246,7 +249,7 @@ private:
       ModulitePtr parent = with_parent ? with_parent->nested_files_modulite : ModulitePtr{};
 
       ModulitePtr modulite = ModuliteData::create_from_modulite_yaml(dir->get_modulite_yaml_filename(), parent);
-      if (!modulite || modulite->modulite_name.empty()) { // an error while parsing yaml, was already printed
+      if (!modulite || modulite->modulite_name.empty()) {   // an error while parsing yaml, was already printed
         return {};
       }
       dir->nested_files_modulite = modulite;
@@ -268,9 +271,9 @@ private:
   // this is quite important, because Modulite plugin auto-generates config from all sources,
   // and some of them may not be reachable at the moment of compilation (some wip yet unused code)
   void require_all_deps_of_modulite(ModulitePtr modulite) {
-    for (const ModuliteSymbol& s : modulite->exports) {
+    for (const ModuliteSymbol &s : modulite->exports) {
       if (s.kind == ModuliteSymbol::kind_ref_stringname) {
-        vk::string_view e = s.ref_stringname; // exported symbol: class / define / method / etc.
+        vk::string_view e = s.ref_stringname;   // exported symbol: class / define / method / etc.
         bool seems_like_classname = !e.ends_with(")") && e[0] != '$' && e[0] != '@' && e[0] != '#';
         if (seems_like_classname) {
           require_class(modulite->modulite_namespace + e);
@@ -284,9 +287,10 @@ private:
   }
 
 public:
-  CollectRequiredPass(DataStream<SrcFilePtr>& file_stream, DataStream<FunctionPtr>& function_stream)
-      : file_stream(file_stream),
-        function_stream(function_stream) {}
+  CollectRequiredPass(DataStream<SrcFilePtr> &file_stream, DataStream<FunctionPtr> &function_stream)
+    : file_stream(file_stream)
+    , function_stream(function_stream) {
+  }
 
   std::string get_description() override {
     return "Collect required";
@@ -319,9 +323,9 @@ public:
     if (root->type() == op_func_call && root->extra_type != op_ex_func_call_arrow) {
       size_t pos = root->get_string().find("::");
       if (pos != std::string::npos) {
-        const std::string& prefix_name = root->get_string().substr(0, pos);
-        const std::string& local_name = root->get_string().substr(pos + 2);
-        const std::string& class_name = resolve_uses(current_function, prefix_name);
+        const std::string &prefix_name = root->get_string().substr(0, pos);
+        const std::string &local_name = root->get_string().substr(pos + 2);
+        const std::string &class_name = resolve_uses(current_function, prefix_name);
         require_class(class_name);
         require_function(resolve_static_method_append_context(current_function, prefix_name, class_name, local_name));
       } else {
@@ -332,8 +336,8 @@ public:
     if (root->type() == op_var || root->type() == op_func_name) {
       size_t pos = root->get_string().find("::");
       if (pos != std::string::npos) {
-        const std::string& prefix_name = root->get_string().substr(0, pos);
-        const std::string& class_name = resolve_uses(current_function, prefix_name);
+        const std::string &prefix_name = root->get_string().substr(0, pos);
+        const std::string &class_name = resolve_uses(current_function, prefix_name);
         require_class(class_name);
       }
     }
@@ -346,7 +350,7 @@ public:
 
     if (auto require = root.try_as<op_require>()) {
       std::string name = collect_string_concatenation(require->expr(), true);
-      kphp_error_act(!name.empty(), "Not a string in 'require' arguments", return root);
+      kphp_error_act (!name.empty(), "Not a string in 'require' arguments", return root);
       if (is_composer_autoload(name)) {
         return require_composer_autoload(root);
       }
@@ -359,13 +363,15 @@ public:
 
     return root;
   }
+
 };
 
-void CollectRequiredAndClassesF::execute(FunctionPtr function, CollectRequiredAndClassesF::OStreamT& os) {
-  auto& ready_function_stream = *os.template project_to_nth_data_stream<0>();
-  auto& file_stream = *os.template project_to_nth_data_stream<1>();
-  auto& function_stream = *os.template project_to_nth_data_stream<2>();
-  auto& class_stream = *os.template project_to_nth_data_stream<3>();
+
+void CollectRequiredAndClassesF::execute(FunctionPtr function, CollectRequiredAndClassesF::OStreamT &os) {
+  auto &ready_function_stream = *os.template project_to_nth_data_stream<0>();
+  auto &file_stream = *os.template project_to_nth_data_stream<1>();
+  auto &function_stream = *os.template project_to_nth_data_stream<2>();
+  auto &class_stream = *os.template project_to_nth_data_stream<3>();
 
   CollectRequiredPass pass(file_stream, function_stream);
   run_function_pass(function, &pass);

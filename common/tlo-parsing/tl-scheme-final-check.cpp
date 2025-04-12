@@ -23,17 +23,18 @@ struct CaseInsensitiveLess {
 
 class TlSchemaChecker final : const_expr_visitor {
 public:
-  explicit TlSchemaChecker(const tl_scheme& scheme) noexcept
-      : scheme_(scheme),
-        ignoring_types_(
-            {"Dictionary", "IntKeyDictionary", "LongKeyDictionary", "Tuple", "Vector", "String", "Int", "Long", "Double", "Float", "Bool", "False", "True"}),
-        checked_types_(scheme.types.bucket_count()) {}
+  explicit TlSchemaChecker(const tl_scheme &scheme) noexcept:
+    scheme_(scheme),
+    ignoring_types_({"Dictionary", "IntKeyDictionary", "LongKeyDictionary", "Tuple", "Vector",
+                     "String", "Int", "Long", "Double", "Float", "Bool", "False", "True"}),
+    checked_types_(scheme.types.bucket_count()) {
+  }
 
-  void check_combinator(combinator& tl_combinator) {
+  void check_combinator(combinator &tl_combinator) {
     vk::string_view processing_combinator_name = tl_combinator.name;
     register_name_and_check_collision(processing_combinator_name);
     std::swap(processing_combinator_name_, processing_combinator_name);
-    for (auto& tl_arg : tl_combinator.args) {
+    for (auto &tl_arg : tl_combinator.args) {
       if (tl_arg->name.empty()) {
         raise_exception("Got an empty name arg");
       }
@@ -47,12 +48,12 @@ public:
   }
 
 private:
-  void apply(const type_expr& tl_type_expr) final {
-    for (const auto& child : tl_type_expr.children) {
+  void apply(const type_expr &tl_type_expr) final {
+    for (const auto &child : tl_type_expr.children) {
       child->visit(*this);
     }
 
-    auto* tl_type = scheme_.get_type_by_magic(tl_type_expr.type_id);
+    auto *tl_type = scheme_.get_type_by_magic(tl_type_expr.type_id);
     assert(tl_type);
     if (ignoring_types_.count(tl_type->name)) {
       return;
@@ -64,9 +65,9 @@ private:
 
     if (tl_type->name == "Maybe") {
       assert(tl_type_expr.children.size() == 1);
-      const auto& child = tl_type_expr.children.back();
-      if (auto* child_as_type_expr = child->as<vk::tlo_parsing::type_expr>()) {
-        auto* child_type = scheme_.get_type_by_magic(child_as_type_expr->type_id);
+      const auto &child = tl_type_expr.children.back();
+      if (auto *child_as_type_expr = child->as<vk::tlo_parsing::type_expr>()) {
+        auto *child_type = scheme_.get_type_by_magic(child_as_type_expr->type_id);
         assert(child_type);
         if (child_type->name == "True") {
           raise_exception("Got 'Maybe True' usage");
@@ -75,7 +76,7 @@ private:
     }
 
     if (checked_types_.emplace(tl_type_expr.type_id).second) {
-      for (const auto& tl_constructor : tl_type->constructors) {
+      for (const auto &tl_constructor : tl_type->constructors) {
         check_combinator(*tl_constructor);
         check_constructor(*tl_constructor);
       }
@@ -85,30 +86,30 @@ private:
     }
   }
 
-  void apply(const type_array& tl_type_array) final {
-    for (const auto& anonymous_arg : tl_type_array.args) {
+  void apply(const type_array &tl_type_array) final {
+    for (const auto &anonymous_arg : tl_type_array.args) {
       anonymous_arg->type_expr->visit(*this);
     }
   }
 
-  void apply(const type_var&) final {}
-  void apply(const nat_const&) final {}
-  void apply(const nat_var&) final {}
+  void apply(const type_var &) final {}
+  void apply(const nat_const &) final {}
+  void apply(const nat_var &) final {}
 
-  void check_constructor(const vk::tlo_parsing::combinator& c) {
+  void check_constructor(const vk::tlo_parsing::combinator &c) {
     // Проверяем, что порядок неявных аргументов конструктора совпадает с их порядком в типе
     std::vector<int> var_nums;
-    for (const auto& arg : c.args) {
+    for (const auto &arg : c.args) {
       if (arg->is_optional() && arg->var_num != -1) {
         var_nums.push_back(arg->var_num);
       }
     }
     std::vector<int> params_order;
-    auto* as_type_expr = c.result->as<vk::tlo_parsing::type_expr>();
-    for (const auto& child : as_type_expr->children) {
-      if (auto* as_nat_var = child->as<vk::tlo_parsing::nat_var>()) {
+    auto *as_type_expr = c.result->as<vk::tlo_parsing::type_expr>();
+    for (const auto &child : as_type_expr->children) {
+      if (auto *as_nat_var = child->as<vk::tlo_parsing::nat_var>()) {
         params_order.push_back(as_nat_var->var_num);
-      } else if (auto* as_type_var = child->as<vk::tlo_parsing::type_var>()) {
+      } else if (auto *as_type_var = child->as<vk::tlo_parsing::type_var>()) {
         params_order.push_back(as_type_var->var_num);
       }
     }
@@ -126,8 +127,8 @@ private:
     }
     std::vector<int> indices_in_type_tree;
     int i = 0;
-    for (const auto& child : as_type_expr->children) {
-      if (dynamic_cast<vk::tlo_parsing::type_var*>(child.get())) {
+    for (const auto &child : as_type_expr->children) {
+      if (dynamic_cast<vk::tlo_parsing::type_var *>(child.get())) {
         indices_in_type_tree.push_back(i);
       }
       ++i;
@@ -144,11 +145,11 @@ private:
     }
   }
 
-  void raise_exception(const std::string& msg) {
+  void raise_exception(const std::string &msg) {
     throw std::runtime_error{msg + " in '" + static_cast<std::string>(processing_combinator_name_) + "'"};
   }
 
-  const tl_scheme& scheme_;
+  const tl_scheme &scheme_;
   const std::unordered_set<vk::string_view> ignoring_types_;
 
   vk::string_view processing_combinator_name_;
@@ -159,9 +160,9 @@ private:
 
 } // namespace
 
-void tl_scheme_final_check(const tl_scheme& scheme) {
+void tl_scheme_final_check(const tl_scheme &scheme) {
   TlSchemaChecker schema_checker{scheme};
-  for (const auto& tl_function : scheme.functions) {
+  for (const auto &tl_function : scheme.functions) {
     schema_checker.check_combinator(*tl_function.second);
   }
 }

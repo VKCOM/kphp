@@ -13,16 +13,16 @@
 #include "compiler/inferring/type-data.h"
 #include "compiler/kphp_assert.h"
 
-TypeTagger::TypeTagger(std::vector<const TypeData*>&& forkable_types, std::vector<const TypeData*>&& waitable_types) noexcept
-    : forkable_types_(std::move(forkable_types)),
-      waitable_types_(std::move(waitable_types)) {}
+TypeTagger::TypeTagger(std::vector<const TypeData *> &&forkable_types, std::vector<const TypeData *> &&waitable_types) noexcept
+  : forkable_types_(std::move(forkable_types))
+  , waitable_types_(std::move(waitable_types)) {}
 
 IncludesCollector TypeTagger::collect_includes() const noexcept {
   IncludesCollector includes;
-  for (const auto* type : forkable_types_) {
+  for (const auto *type : forkable_types_) {
     includes.add_all_class_types(*type);
   }
-  for (const auto* type : waitable_types_) {
+  for (const auto *type : waitable_types_) {
     includes.add_all_class_types(*type);
   }
   return includes;
@@ -32,29 +32,29 @@ std::map<int, std::string> TypeTagger::collect_hash_of_types() const noexcept {
   // Be care, do not remove spaces from these types
   // TODO fix it?
   std::set<std::string> sorted_types{
-      "bool",
-      "int64_t",
-      "Optional < int64_t >",
-      "void",
-      "thrown_exception",
-      "mixed",
-      "array< mixed >",
-      "Optional < string >",
-      "Optional < array< mixed > >",
-      "array< array< mixed > >",
-      "class_instance<C$KphpJobWorkerResponse>",
-      "class_instance<C$VK$TL$RpcResponse>",
-      "array< class_instance<C$VK$TL$RpcResponse> >",
-      "class_instance<C$PDOStatement>",
+    "bool",
+    "int64_t",
+    "Optional < int64_t >",
+    "void",
+    "thrown_exception",
+    "mixed",
+    "array< mixed >",
+    "Optional < string >",
+    "Optional < array< mixed > >",
+    "array< array< mixed > >",
+    "class_instance<C$KphpJobWorkerResponse>",
+    "class_instance<C$VK$TL$RpcResponse>",
+    "array< class_instance<C$VK$TL$RpcResponse> >",
+    "class_instance<C$PDOStatement>",
   };
 
-  for (const auto* type : forkable_types_) {
+  for (const auto *type : forkable_types_) {
     sorted_types.emplace(type_out(type, gen_out_style::tagger));
   }
 
   std::map<int, std::string> hashes;
 
-  for (const auto& type : sorted_types) {
+  for (const auto &type : sorted_types) {
     const auto hash = static_cast<int>(vk::std_hash(type));
     kphp_assert(hash);
     kphp_assert(hashes.emplace(hash, type).second);
@@ -63,12 +63,12 @@ std::map<int, std::string> TypeTagger::collect_hash_of_types() const noexcept {
   return hashes;
 }
 
-void TypeTagger::compile_tagger(CodeGenerator& W, const IncludesCollector& includes, const std::map<int, std::string>& hash_of_types) const noexcept {
+void TypeTagger::compile_tagger(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept {
   W << OpenFile{"_tagger.cpp"};
   W << ExternInclude{G->settings().runtime_headers.get()};
   W << includes << NL;
 
-  for (const auto& [hash, type] : hash_of_types) {
+  for (const auto &[hash, type] : hash_of_types) {
     W << "template<>" << NL;
     FunctionSignatureGenerator{W} << "int Storage::tagger<" << type << ">::get_tag() " << BEGIN;
     W << "return " << hash << ";" << NL;
@@ -78,7 +78,7 @@ void TypeTagger::compile_tagger(CodeGenerator& W, const IncludesCollector& inclu
   W << CloseFile{};
 }
 
-void TypeTagger::compile_loader_header(CodeGenerator& W, const IncludesCollector& includes, const std::map<int, std::string>& hash_of_types) const noexcept {
+void TypeTagger::compile_loader_header(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept {
   W << OpenFile{loader_file_};
   W << ExternInclude{G->settings().runtime_headers.get()};
   W << includes << NL;
@@ -86,7 +86,7 @@ void TypeTagger::compile_loader_header(CodeGenerator& W, const IncludesCollector
   W << "template<typename T>" << NL;
   FunctionSignatureGenerator{W} << "typename Storage::loader<T>::loader_fun Storage::loader<T>::get_function(int tag)" << BEGIN;
   W << "switch(tag)" << BEGIN;
-  for (const auto& [hash, type] : hash_of_types) {
+  for (const auto &[hash, type] : hash_of_types) {
     W << "case " << hash << ":"
       << " return Storage::load_implementation_helper<" << type << ", T>::load;" << NL;
   }
@@ -97,8 +97,8 @@ void TypeTagger::compile_loader_header(CodeGenerator& W, const IncludesCollector
   W << CloseFile{};
 }
 
-template<typename It>
-static void compile_loader_instantiations_batch(CodeGenerator& W, const IncludesCollector& includes, It begin, It end, std::size_t batch) noexcept {
+template <typename It>
+static void compile_loader_instantiations_batch(CodeGenerator &W, const IncludesCollector &includes, It begin, It end, std::size_t batch) noexcept {
   W << OpenFile{fmt_format("_loader_instantiations{}.cpp", batch)};
   W << ExternInclude{G->settings().runtime_headers.get()};
   W << includes << NL;
@@ -110,12 +110,12 @@ static void compile_loader_instantiations_batch(CodeGenerator& W, const Includes
   W << CloseFile{};
 }
 
-void TypeTagger::compile_loader_instantiations(CodeGenerator& W) const noexcept {
+void TypeTagger::compile_loader_instantiations(CodeGenerator &W) const noexcept {
   IncludesCollector loader_includes;
   loader_includes.add_raw_filename_include(loader_file_);
 
   std::set<std::string> waitable_types_str;
-  for (const auto* type : waitable_types_) {
+  for (const auto *type : waitable_types_) {
     waitable_types_str.emplace(type_out(type, gen_out_style::tagger));
   }
 
@@ -129,12 +129,12 @@ void TypeTagger::compile_loader_instantiations(CodeGenerator& W) const noexcept 
   }
 }
 
-void TypeTagger::compile_loader(CodeGenerator& W, const IncludesCollector& includes, const std::map<int, std::string>& hash_of_types) const noexcept {
+void TypeTagger::compile_loader(CodeGenerator &W, const IncludesCollector &includes, const std::map<int, std::string> &hash_of_types) const noexcept {
   compile_loader_header(W, includes, hash_of_types);
   compile_loader_instantiations(W);
 }
 
-void TypeTagger::compile(CodeGenerator& W) const {
+void TypeTagger::compile(CodeGenerator &W) const {
   const auto includes = collect_includes();
   const auto hash_of_types = collect_hash_of_types();
 

@@ -42,7 +42,7 @@ TEST(string_view_tests, string_view) {
   EXPECT_TRUE(sv1.starts_with("test"));
   EXPECT_TRUE(sv1.starts_with(std::string("test")));
   EXPECT_TRUE(sv1.starts_with(vk::string_view{"test"}));
-
+  
   EXPECT_FALSE(sv1.starts_with("string"));
   EXPECT_FALSE(sv1.starts_with(" test"));
   EXPECT_FALSE(sv1.starts_with("test string "));

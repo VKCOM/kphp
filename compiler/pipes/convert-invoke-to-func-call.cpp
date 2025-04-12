@@ -55,8 +55,7 @@ VertexPtr ConvertInvokeToFuncCallPass::on_callback_of_builtin(VertexAdaptor<op_c
   if (v_callback->args().empty()) {
     FunctionPtr f_points_to = G->get_function(v_callback->str_val);
     kphp_error_act(f_points_to, fmt_format("Can't find function {}", v_callback->str_val), return v_callback);
-    kphp_error(f_points_to->is_required,
-               fmt_format("{} needs the @kphp-required tag, because it's used only as a string callback", f_points_to->as_human_readable()));
+    kphp_error(f_points_to->is_required, fmt_format("{} needs the @kphp-required tag, because it's used only as a string callback", f_points_to->as_human_readable()));
 
     v_callback->func_id = f_points_to;
     return v_callback;
@@ -64,7 +63,7 @@ VertexPtr ConvertInvokeToFuncCallPass::on_callback_of_builtin(VertexAdaptor<op_c
 
   auto bound_this = v_callback->args()[0];
   ClassPtr c_assumed = assume_class_of_expr(current_function, bound_this, v_callback).try_as_class();
-  const auto* class_method = c_assumed ? c_assumed->get_instance_method(v_callback->str_val) : nullptr;
+  const auto *class_method = c_assumed ? c_assumed->get_instance_method(v_callback->str_val) : nullptr;
   kphp_error_act(class_method, "Invalid callback passed, could not detect a class or its method", return v_callback);
 
   v_callback->func_id = class_method->function;
@@ -90,7 +89,8 @@ VertexPtr ConvertInvokeToFuncCallPass::on_func_call(VertexAdaptor<op_func_call> 
 // this can be done only here (not in deducing types), after all lambdas have been instantiated
 VertexPtr ConvertInvokeToFuncCallPass::on_invoke_call(VertexAdaptor<op_invoke_call> v_invoke_call) {
   ClassPtr klass = assume_class_of_expr(current_function, v_invoke_call->args()[0], v_invoke_call).try_as_class();
-  kphp_error_act(klass && (klass->is_lambda_class() || klass->is_typed_callable_interface()), "Invalid ()-invocation of a non-lambda", return v_invoke_call);
+  kphp_error_act(klass && (klass->is_lambda_class() || klass->is_typed_callable_interface()),
+                 "Invalid ()-invocation of a non-lambda", return v_invoke_call);
 
   auto v_func_call = VertexAdaptor<op_func_call>::create(v_invoke_call->args()).set_location(v_invoke_call);
   v_func_call->extra_type = op_ex_func_call_arrow;
@@ -105,8 +105,9 @@ VertexPtr ConvertInvokeToFuncCallPass::on_invoke_call(VertexAdaptor<op_invoke_ca
 // note, that on_exit_vertex (not on_enter_vertex) is significant to bypass recursion
 VertexPtr ConvertInvokeToFuncCallPass::on_clone(VertexAdaptor<op_clone> v_clone) {
   ClassPtr klass = v_clone->class_id;
-  bool inside_virt_clone =
-      vk::any_of_equal(current_function->local_name(), ClassData::NAME_OF_VIRT_CLONE, FunctionData::get_name_of_self_method(ClassData::NAME_OF_VIRT_CLONE));
+  bool inside_virt_clone = vk::any_of_equal(current_function->local_name(),
+                                            ClassData::NAME_OF_VIRT_CLONE,
+                                            FunctionData::get_name_of_self_method(ClassData::NAME_OF_VIRT_CLONE));
 
   // clone $obj, when $obj is a parent class/interface, is replaced with $obj->__virt_clone()
   if (!klass->derived_classes.empty() && !inside_virt_clone) {
@@ -139,7 +140,7 @@ VertexPtr ConvertInvokeToFuncCallPass::on_clone(VertexAdaptor<op_clone> v_clone)
 }
 
 // ConvertInvokeToFuncCallF is needed to hold lambdas so they don't pass the pipeline before a containing function
-void ConvertInvokeToFuncCallF::execute(FunctionPtr f, DataStream<FunctionPtr>& os) {
+void ConvertInvokeToFuncCallF::execute(FunctionPtr f, DataStream<FunctionPtr> &os) {
   if (f->is_lambda()) {
     // don't push it into pipeline
     // it will be pushed (or already was pushed) by a function containing this lambda
@@ -150,7 +151,7 @@ void ConvertInvokeToFuncCallF::execute(FunctionPtr f, DataStream<FunctionPtr>& o
 }
 
 // whenever f is pushed to the pipeline, all lambdas within it have already been processed
-void ConvertInvokeToFuncCallF::execute_with_nested_lambdas(FunctionPtr f, DataStream<FunctionPtr>& os) {
+void ConvertInvokeToFuncCallF::execute_with_nested_lambdas(FunctionPtr f, DataStream<FunctionPtr> &os) {
   ConvertInvokeToFuncCallPass pass;
   run_function_pass(f, &pass);
   for (FunctionPtr f_lambda : pass.flush_nested_lambdas()) {

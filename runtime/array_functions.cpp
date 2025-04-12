@@ -5,3 +5,4 @@
 #include "runtime/array_functions.h"
 
 static_assert(sizeof(array<Unknown>) == SIZEOF_ARRAY_ANY, "sizeof(array) at runtime doesn't match compile-time");
+

@@ -8,9 +8,7 @@
 
 class RemoveEmptyFunctionCallsPass final : public FunctionPassBase {
 public:
-  std::string get_description() override {
-    return "Filter empty functions";
-  }
+  std::string get_description() override { return "Filter empty functions"; }
 
   VertexPtr on_enter_vertex(VertexPtr v) override;
   VertexPtr on_exit_vertex(VertexPtr v) override;

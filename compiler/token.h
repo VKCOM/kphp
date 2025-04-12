@@ -200,30 +200,29 @@ public:
   vk::string_view str_val;
   vk::string_view debug_str;
 
-  explicit Token(TokenType type)
-      : type_(type) {}
+  explicit Token(TokenType type) :
+    type_(type) {
+  }
 
-  Token(TokenType type_, vk::string_view s)
-      : type_(type_),
-        str_val(s) {}
+  Token(TokenType type_, vk::string_view s) :
+    type_(type_),
+    str_val(s) {
+  }
 
-  Token(TokenType type_, const char* s, const char* t)
-      : type_(type_),
-        str_val(s, t) {}
+  Token(TokenType type_, const char *s, const char *t) :
+    type_(type_),
+    str_val(s, t) {
+  }
 
   // use 'cur->debugPrint()' anywhere in gentree while development
   // (in release it's not used and is not linked to a binary)
   void debugPrint() const {
-    std::string debugTokenName(TokenType t); // implemented in debug.cpp
+    std::string debugTokenName(TokenType t);  // implemented in debug.cpp
     printf("%s '%s'\n", debugTokenName(type_).c_str(), static_cast<std::string>(debug_str.empty() ? str_val : debug_str).c_str());
   }
 
-  inline TokenType& type() {
-    return type_;
-  }
-  inline const TokenType& type() const {
-    return type_;
-  }
+  inline TokenType &type() { return type_; }
+  inline const TokenType &type() const { return type_; }
 
   std::string to_str() const {
     return static_cast<std::string>(debug_str);

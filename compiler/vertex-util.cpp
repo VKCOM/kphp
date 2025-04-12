@@ -30,7 +30,7 @@ VertexPtr VertexUtil::unwrap_inlined_define(VertexPtr v) {
   return v;
 }
 
-const std::string* VertexUtil::get_constexpr_string(VertexPtr v) {
+const std::string *VertexUtil::get_constexpr_string(VertexPtr v) {
   v = VertexUtil::get_actual_value(v);
   if (auto conv_vertex = v.try_as<op_conv_string>()) {
     return get_constexpr_string(conv_vertex->expr());
@@ -74,24 +74,23 @@ VertexPtr VertexUtil::create_int_const(int64_t number) {
   return int_v;
 }
 
-VertexAdaptor<op_string> VertexUtil::create_string_const(const std::string& s) {
+VertexAdaptor<op_string> VertexUtil::create_string_const(const std::string &s) {
   auto string_v = VertexAdaptor<op_string>::create();
   string_v->set_string(s);
   return string_v;
 }
 
-VertexAdaptor<op_var> VertexUtil::create_superlocal_var(const std::string& name_prefix, FunctionPtr cur_function) {
+VertexAdaptor<op_var> VertexUtil::create_superlocal_var(const std::string &name_prefix, FunctionPtr cur_function) {
   auto v = VertexAdaptor<op_var>::create();
   v->str_val = gen_unique_name(name_prefix, cur_function);
   v->extra_type = op_ex_var_superlocal;
   return v;
 }
 
-VertexAdaptor<op_switch> VertexUtil::create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr>&& cases) {
+VertexAdaptor<op_switch> VertexUtil::create_switch_vertex(FunctionPtr cur_function, VertexPtr switch_condition, std::vector<VertexPtr> &&cases) {
   auto temp_var_condition_on_switch = create_superlocal_var("condition_on_switch", cur_function);
   auto temp_var_matched_with_one_case = create_superlocal_var("matched_with_one_case", cur_function);
-  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases))
-      .set_location(switch_condition);
+  return VertexAdaptor<op_switch>::create(switch_condition, temp_var_condition_on_switch, temp_var_matched_with_one_case, std::move(cases)).set_location(switch_condition);
 }
 
 VertexAdaptor<op_seq> VertexUtil::embrace(VertexPtr v) {
@@ -103,7 +102,7 @@ VertexAdaptor<op_seq> VertexUtil::embrace(VertexPtr v) {
 
 void VertexUtil::func_force_return(VertexAdaptor<op_function> func, VertexPtr val) {
   VertexPtr cmd = func->cmd();
-  assert(cmd->type() == op_seq);
+  assert (cmd->type() == op_seq);
 
   VertexAdaptor<op_return> return_node;
   if (val) {
@@ -124,68 +123,65 @@ bool VertexUtil::is_positive_constexpr_int(VertexPtr v) {
 
 bool VertexUtil::is_const_int(VertexPtr root) {
   switch (root->type()) {
-  case op_int_const:
-    return true;
-  case op_minus:
-  case op_plus:
-  case op_not:
-    return is_const_int(root.as<meta_op_unary>()->expr());
-  case op_add:
-  case op_mul:
-  case op_sub:
-  case op_div:
-  case op_and:
-  case op_or:
-  case op_xor:
-  case op_shl:
-  case op_shr:
-  case op_mod:
-  case op_pow:
-    return is_const_int(root.as<meta_op_binary>()->lhs()) && is_const_int(root.as<meta_op_binary>()->rhs());
-  default:
-    break;
+    case op_int_const:
+      return true;
+    case op_minus:
+    case op_plus:
+    case op_not:
+      return is_const_int(root.as<meta_op_unary>()->expr());
+    case op_add:
+    case op_mul:
+    case op_sub:
+    case op_div:
+    case op_and:
+    case op_or:
+    case op_xor:
+    case op_shl:
+    case op_shr:
+    case op_mod:
+    case op_pow:
+      return is_const_int(root.as<meta_op_binary>()->lhs()) && is_const_int(root.as<meta_op_binary>()->rhs());
+    default:
+      break;
   }
   return false;
 }
 
 VertexPtr VertexUtil::create_conv_to(PrimitiveType targetType, VertexPtr x) {
   switch (targetType) {
-  case tp_int:
-    return VertexAdaptor<op_conv_int>::create(x).set_location(x);
+    case tp_int:
+      return VertexAdaptor<op_conv_int>::create(x).set_location(x);
 
-  case tp_bool:
-    return VertexAdaptor<op_conv_bool>::create(x).set_location(x);
+    case tp_bool:
+      return VertexAdaptor<op_conv_bool>::create(x).set_location(x);
 
-  case tp_string:
-    return VertexAdaptor<op_conv_string>::create(x).set_location(x);
+    case tp_string:
+      return VertexAdaptor<op_conv_string>::create(x).set_location(x);
 
-  case tp_float:
-    return VertexAdaptor<op_conv_float>::create(x).set_location(x);
+    case tp_float:
+      return VertexAdaptor<op_conv_float>::create(x).set_location(x);
 
-  case tp_array:
-    return VertexAdaptor<op_conv_array>::create(x).set_location(x);
+    case tp_array:
+      return VertexAdaptor<op_conv_array>::create(x).set_location(x);
 
-  case tp_regexp:
-    return VertexAdaptor<op_conv_regexp>::create(x).set_location(x);
+    case tp_regexp:
+      return VertexAdaptor<op_conv_regexp>::create(x).set_location(x);
 
-  case tp_mixed:
-    return VertexAdaptor<op_conv_mixed>::create(x).set_location(x);
+    case tp_mixed:
+      return VertexAdaptor<op_conv_mixed>::create(x).set_location(x);
 
-  default:
-    return x;
+    default:
+      return x;
   }
 }
 
 VertexAdaptor<meta_op_unary> VertexUtil::create_conv_to_lval(PrimitiveType targetType, VertexPtr x) {
   switch (targetType) {
-  case tp_array:
-    return VertexAdaptor<op_conv_array_l>::create(x).set_location(x);
-  case tp_int:
-    return VertexAdaptor<op_conv_int_l>::create(x).set_location(x);
-  case tp_string:
-    return VertexAdaptor<op_conv_string_l>::create(x).set_location(x);
-  default:
-    return {};
+    case tp_array : return VertexAdaptor<op_conv_array_l>::create(x).set_location(x);
+    case tp_int   : return VertexAdaptor<op_conv_int_l>::create(x).set_location(x);
+    case tp_string: return VertexAdaptor<op_conv_string_l>::create(x).set_location(x);
+    default:
+      return {};
   }
 }
 

@@ -9,5 +9,5 @@
 
 class CalcEmptyFunctions {
 public:
-  void execute(FunctionPtr f, DataStream<FunctionPtr>& os);
+  void execute(FunctionPtr f, DataStream<FunctionPtr> &os);
 };

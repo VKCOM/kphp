@@ -7,9 +7,9 @@
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/composer-json-data.h"
-#include "compiler/data/modulite-data.h"
 #include "compiler/data/src-dir.h"
 #include "compiler/data/src-file.h"
+#include "compiler/data/modulite-data.h"
 
 /*
  * This is a sync point. When `on_finish()` is called (once, in a single thread), then
@@ -24,7 +24,7 @@
  * On complete, pass all functions forward the compilation pipeline.
  */
 
-void WaitForAllClassesF::on_finish(DataStream<FunctionPtr>& os) {
+void WaitForAllClassesF::on_finish(DataStream<FunctionPtr> &os) {
   stage::die_if_global_errors();
   SortAndInheritClassesF::check_on_finish(tmp_stream);
   stage::set_name("Register modulites");
@@ -38,7 +38,9 @@ void WaitForAllClassesF::resolve_and_validate_modulites() {
   // sort all modulites from short to long, so that a parent appears before a child when iterating
   // this fact is used to fill `child->exported_from_parent` by lookup, and some others
   std::vector<ModulitePtr> all_modulites = G->get_modulites();
-  std::sort(all_modulites.begin(), all_modulites.end(), [](ModulitePtr m1, ModulitePtr m2) { return m1->modulite_name.size() < m2->modulite_name.size(); });
+  std::sort(all_modulites.begin(), all_modulites.end(), [](ModulitePtr m1, ModulitePtr m2) {
+    return m1->modulite_name.size() < m2->modulite_name.size();
+  });
 
   // resolve symbols like SomeClass and @msg in "export"/"require"/etc.
   // until now, they are stored just as string names, they can be resolved only after all classes have been loaded

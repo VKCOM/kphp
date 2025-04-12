@@ -45,8 +45,7 @@ void ExtractAsyncPass::raise_cant_save_result_of_resumable_func(FunctionPtr func
     kphp_error(false, fmt_format("Can't save result of resumable function {} into non-var inside another resumable function\n"
                                  "Consider using a temporary variable for this call.\n"
                                  "Function is resumable because of calls chain:\n"
-                                 "{}",
-                                 func->as_human_readable(), func->get_resumable_path()));
+                                 "{}", func->as_human_readable(), func->get_resumable_path()));
   } else if (cnt == max_errors_count) {
     kphp_error(false, "Too many same errors about resumable functions, will skip others");
   }

@@ -15,9 +15,9 @@
 struct C$DateInterval : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  timelib_rel_time* rel_time{nullptr};
+  timelib_rel_time *rel_time{nullptr};
 
-  virtual const char* get_class() const noexcept {
+  virtual const char *get_class() const noexcept {
     return R"(DateInterval)";
   }
 
@@ -29,8 +29,8 @@ struct C$DateInterval : public refcountable_polymorphic_php_classes_virt<>, priv
   ~C$DateInterval() override;
 };
 
-class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<C$DateInterval>& self, const string& duration) noexcept;
+class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<C$DateInterval> &self, const string &duration) noexcept;
 
-class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string& datetime) noexcept;
+class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string &datetime) noexcept;
 
-string f$DateInterval$$format(const class_instance<C$DateInterval>& self, const string& format) noexcept;
+string f$DateInterval$$format(const class_instance<C$DateInterval> &self, const string &format) noexcept;

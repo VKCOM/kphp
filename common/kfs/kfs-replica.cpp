@@ -32,7 +32,7 @@
 
 static struct kfs_file_info *t_binlogs[MAX_REPLICA_FILES], *t_snapshots[MAX_REPLICA_FILES];
 
-static inline int cmp_file_info(const struct kfs_file_info* FI, const struct kfs_file_info* FJ) {
+static inline int cmp_file_info(const struct kfs_file_info *FI, const struct kfs_file_info *FJ) {
   if (FI->min_log_pos < FJ->min_log_pos) {
     return -1;
   } else if (FI->min_log_pos > FJ->min_log_pos) {
@@ -43,11 +43,11 @@ static inline int cmp_file_info(const struct kfs_file_info* FI, const struct kfs
 }
 
 /* storage-engine optimization (replacing O(n^2) sort by qsort) */
-static int qsort_cmp_file_info(const void* x, const void* y) {
-  return cmp_file_info(*(const struct kfs_file_info**)x, *(const struct kfs_file_info**)y);
+static int qsort_cmp_file_info(const void *x, const void *y) {
+  return cmp_file_info(*(const struct kfs_file_info **)x, *(const struct kfs_file_info **)y);
 }
 
-static void kf_sort(struct kfs_file_info** T, int n) {
+static void kf_sort(struct kfs_file_info **T, int n) {
   qsort(T, n, sizeof(T[0]), qsort_cmp_file_info);
 }
 
@@ -63,32 +63,32 @@ static enum kfs_file_type get_kfs_file_type(int name_class) {
     return kfs_enc;
   }
   switch (name_class & 3) {
-  case 0:
-  case 2:
-    return kfs_binlog;
-  case 1:
-    return kfs_snapshot;
-  case 3:
-    return kfs_partial;
-  default:
-    kprintf("illegal name_class %d.\n", name_class);
+    case 0:
+    case 2:
+      return kfs_binlog;
+    case 1:
+      return kfs_snapshot;
+    case 3:
+      return kfs_partial;
+    default:
+      kprintf("illegal name_class %d.\n", name_class);
   }
   return kfs_unknown;
 }
 
-kfs_replica_handle_t open_replica(const char* replica_name, int flags) {
-  const char* after_slash = strrchr(replica_name, '/');
+kfs_replica_handle_t open_replica(const char *replica_name, int flags) {
+  const char *after_slash = strrchr(replica_name, '/');
   static __thread char dirname[MAX_DIRNAME_LEN + 1 + MAX_FNAME_LEN + 1];
   int dirname_len, filename_len;
 
-  struct kfs_file_info* t_enc = NULL;
+  struct kfs_file_info *t_enc = NULL;
 
   static __thread struct stat tmp_stat;
 
   if (after_slash) {
     after_slash++;
     dirname_len = after_slash - replica_name;
-    assert(dirname_len < MAX_DIRNAME_LEN);
+    assert (dirname_len < MAX_DIRNAME_LEN);
     memcpy(dirname, replica_name, dirname_len);
     dirname[dirname_len] = 0;
   } else {
@@ -101,7 +101,7 @@ kfs_replica_handle_t open_replica(const char* replica_name, int flags) {
 
   filename_len = strlen(after_slash);
 
-  DIR* D = opendir(dirname);
+  DIR *D = opendir(dirname);
 
   if (!D) {
     kprintf("kfs_open_replica: cannot open directory %s: %m\n", dirname);
@@ -109,20 +109,20 @@ kfs_replica_handle_t open_replica(const char* replica_name, int flags) {
   }
 
   int len, path_len, name_class, binlogs = 0, snapshots = 0;
-  struct kfs_file_info* FI;
-  struct kfs_replica* R = 0;
+  struct kfs_file_info *FI;
+  struct kfs_replica *R = 0;
 
   if (flags & KFS_OPEN_REPLICA_FLAG_FORCE) {
-    R = static_cast<kfs_replica*>(calloc(sizeof(*R), 1));
-    assert(R);
+    R = static_cast<kfs_replica *>(calloc(sizeof(*R), 1));
+    assert (R);
     R->replica_prefix = strdup(replica_name);
-    assert(R->replica_prefix);
+    assert (R->replica_prefix);
     R->replica_prefix_len = strlen(replica_name);
   }
 
   while (true) {
     errno = 0;
-    dirent* DE = readdir(D);
+    dirent *DE = readdir(D);
     if (errno) {
       dirname[dirname_len] = 0;
       kprintf("kfs_open_replica: error while reading directory %s: %m\n", dirname);
@@ -173,7 +173,7 @@ kfs_replica_handle_t open_replica(const char* replica_name, int flags) {
       continue;
     }
 
-    if (S_ISLNK(tmp_stat.st_mode)) {
+    if (S_ISLNK (tmp_stat.st_mode)) {
       name_class |= KFS_FILE_SYMLINK;
       if (stat(dirname, &tmp_stat) < 0) {
         kprintf("warning: unable to stat %s: %m\n", dirname);
@@ -181,20 +181,20 @@ kfs_replica_handle_t open_replica(const char* replica_name, int flags) {
       }
     }
 
-    if (!S_ISREG(tmp_stat.st_mode)) {
+    if (!S_ISREG (tmp_stat.st_mode)) {
       vkprintf(1, "continue :(\n");
       continue;
     }
 
     if (!R) {
-      R = static_cast<kfs_replica*>(calloc(1, sizeof(*R)));
-      assert(R);
+      R = static_cast<kfs_replica *>(calloc(1, sizeof(*R)));
+      assert (R);
       R->replica_prefix = strdup(replica_name);
       R->replica_prefix_len = strlen(replica_name);
     }
 
-    FI = static_cast<kfs_file_info*>(calloc(1, sizeof(struct kfs_file_info)));
-    assert(FI);
+    FI = static_cast<kfs_file_info *>(calloc(1, sizeof(struct kfs_file_info)));
+    assert (FI);
 
     FI->mtime = tmp_stat.st_mtime;
     FI->refcnt = 1;
@@ -217,11 +217,12 @@ kfs_replica_handle_t open_replica(const char* replica_name, int flags) {
 
     vkprintf(2, "found file %s, size %lld, name class %d, min pos %lld, max pos %lld\n", dirname, FI->file_size, name_class, FI->min_log_pos, FI->max_log_pos);
 
+
     if (FI->kfs_file_type == kfs_binlog) {
       if (binlogs >= MAX_REPLICA_FILES) {
         kprintf("assertion: found at least %d binlogs of %s, it is too much\n", binlogs, replica_name);
       }
-      assert(binlogs < MAX_REPLICA_FILES);
+      assert (binlogs < MAX_REPLICA_FILES);
       t_binlogs[binlogs++] = FI;
     } else if (FI->kfs_file_type == kfs_enc) {
       if (t_enc) {
@@ -239,7 +240,7 @@ kfs_replica_handle_t open_replica(const char* replica_name, int flags) {
       if (snapshots >= MAX_REPLICA_FILES) {
         kprintf("assertion: found at least %d snapshots of %s, it is too much\n", binlogs, replica_name);
       }
-      assert(snapshots < MAX_REPLICA_FILES);
+      assert (snapshots < MAX_REPLICA_FILES);
       t_snapshots[snapshots++] = FI;
     }
   }
@@ -259,8 +260,8 @@ kfs_replica_handle_t open_replica(const char* replica_name, int flags) {
           assert(0);
         }
         if (t_binlogs[m]->log_pos == t_binlogs[i]->log_pos) {
-          kprintf("warning: skip possible duplicate zipped binlog file '%s', since file '%s' was already found.\n", t_binlogs[i]->filename,
-                  t_binlogs[m]->filename);
+          kprintf("warning: skip possible duplicate zipped binlog file '%s', since file '%s' was already found.\n",
+                  t_binlogs[i]->filename, t_binlogs[m]->filename);
           need_remove = 1;
         }
       }
@@ -271,17 +272,17 @@ kfs_replica_handle_t open_replica(const char* replica_name, int flags) {
       }
     }
     R->binlog_num = m + 1;
-    R->binlogs = static_cast<kfs_file_info**>(malloc(sizeof(void*) * R->binlog_num));
-    assert(R->binlogs);
-    memcpy(R->binlogs, t_binlogs, sizeof(void*) * R->binlog_num);
+    R->binlogs = static_cast<kfs_file_info **>(malloc(sizeof(void *) * R->binlog_num));
+    assert (R->binlogs);
+    memcpy(R->binlogs, t_binlogs, sizeof(void *) * R->binlog_num);
   }
 
   if (snapshots) {
     kf_sort(t_snapshots, snapshots);
     R->snapshot_num = snapshots;
-    R->snapshots = static_cast<kfs_file_info**>(malloc(sizeof(void*) * snapshots));
-    assert(R->snapshots);
-    memcpy(R->snapshots, t_snapshots, sizeof(void*) * snapshots);
+    R->snapshots = static_cast<kfs_file_info **>(malloc(sizeof(void *) * snapshots));
+    assert (R->snapshots);
+    memcpy(R->snapshots, t_snapshots, sizeof(void *) * snapshots);
   }
 
   if (t_enc) {
@@ -321,7 +322,7 @@ int close_replica(kfs_replica_handle_t R) {
     R->enc = 0;
   }
 
-  free((void*)R->replica_prefix);
+  free((void *)R->replica_prefix);
   free(R->binlogs);
   free(R->snapshots);
 
@@ -348,12 +349,12 @@ int update_replica(kfs_replica_handle_t R, int flags) {
 
   /* swap cryptographic fields */
   {
-    vk_aes_ctx_t* t = R->ctx_crypto;
+    vk_aes_ctx_t *t = R->ctx_crypto;
     R->ctx_crypto = RN->ctx_crypto;
     RN->ctx_crypto = t;
   }
   {
-    struct kfs_file_info* t = R->enc;
+    struct kfs_file_info *t = R->enc;
     R->enc = RN->enc;
     RN->enc = t;
   }
@@ -380,7 +381,7 @@ int update_replica(kfs_replica_handle_t R, int flags) {
       R->binlogs[j++] = FI;
       if (FJ->file_size > FI->file_size) {
         kprintf("Size of %s is decreased: old_size = %lld, new_size = %lld\n", FI->filename, FJ->file_size, FI->file_size);
-        assert(FJ->file_size <= FI->file_size);
+        assert (FJ->file_size <= FI->file_size);
       }
       if (FJ->file_size < FI->file_size) {
         tvkprintf(kfs_replica, 1, "Updated size of %s: old_size = %lld, new_size = %lld\n", FI->filename, FJ->file_size, FI->file_size);
@@ -402,10 +403,9 @@ int update_replica(kfs_replica_handle_t R, int flags) {
       RN->snapshots[i++] = FJ;
       R->snapshots[j++] = FI;
       if (FJ->file_size > FI->file_size) {
-        kprintf("Strange: I had %s of size %lld (log_pos = %lld), new version with name %s had size %lld (log_pos = %lld)\n", FJ->filename, FJ->file_size,
-                FJ->log_pos, FI->filename, FI->file_size, FI->log_pos);
+        kprintf("Strange: I had %s of size %lld (log_pos = %lld), new version with name %s had size %lld (log_pos = %lld)\n", FJ->filename, FJ->file_size, FJ->log_pos, FI->filename, FI->file_size, FI->log_pos);
       }
-      assert(FJ->file_size <= FI->file_size);
+      assert (FJ->file_size <= FI->file_size);
       if (FJ->file_size < FI->file_size) {
         tvkprintf(kfs_replica, 1, "Updated size of %s: old_size = %lld, new_size = %lld\n", FI->filename, FJ->file_size, FI->file_size);
       }
@@ -427,8 +427,8 @@ int update_replica(kfs_replica_handle_t R, int flags) {
   R->snapshots = RN->snapshots;
   RN->snapshots = T;
 
-  vkprintf(2, "finished reloading file list for replica %s: %d binlogs, %d snapshots (OLD: %d, %d)\n", R->replica_prefix, R->binlog_num, R->snapshot_num,
-           RN->binlog_num, RN->snapshot_num);
+  vkprintf(2, "finished reloading file list for replica %s: %d binlogs, %d snapshots (OLD: %d, %d)\n",
+           R->replica_prefix, R->binlog_num, R->snapshot_num, RN->binlog_num, RN->snapshot_num);
 
   close_replica(RN);
 
@@ -453,10 +453,11 @@ kfs_file_handle_t Snapshot, SnapshotDiff;
 struct engine_snapshot_descr engine_snapshot_description;
 struct engine_snapshot_descr engine_snapshot_diff_description;
 
-int engine_preload_filelist(const char* main_replica_name, const char* aux_replica_name) {
+int engine_preload_filelist(const char *main_replica_name, const char *aux_replica_name) {
   int l = strlen(main_replica_name);
-  if (!aux_replica_name || !*aux_replica_name || !strcmp(aux_replica_name, ".bin") || !strcmp(aux_replica_name, main_replica_name) ||
-      (!strncmp(aux_replica_name, main_replica_name, l) && !strcmp(aux_replica_name + l, ".bin"))) {
+  if (!aux_replica_name || !*aux_replica_name || !strcmp(aux_replica_name, ".bin")
+      || !strcmp(aux_replica_name, main_replica_name)
+      || (!strncmp(aux_replica_name, main_replica_name, l) && !strcmp(aux_replica_name + l, ".bin"))) {
     engine_snapshot_replica_name = engine_replica_name = strdup(main_replica_name);
   } else {
     int l2 = strlen(aux_replica_name);
@@ -465,19 +466,19 @@ int engine_preload_filelist(const char* main_replica_name, const char* aux_repli
     }
     engine_snapshot_replica_name = strdup(main_replica_name);
     if (aux_replica_name[0] == '.') {
-      engine_replica_name = static_cast<char*>(malloc(l + l2 + 1));
-      assert(engine_replica_name);
+      engine_replica_name = static_cast<char *>(malloc(l + l2 + 1));
+      assert (engine_replica_name);
       memcpy(engine_replica_name, main_replica_name, l);
       memcpy(engine_replica_name + l, aux_replica_name, l2);
       engine_replica_name[l + l2] = 0;
     } else {
-      engine_replica_name = static_cast<char*>(malloc(l2 + 1));
-      assert(engine_replica_name);
+      engine_replica_name = static_cast<char *>(malloc(l2 + 1));
+      assert (engine_replica_name);
       memcpy(engine_replica_name, aux_replica_name, l2);
       engine_replica_name[l2] = 0;
     }
   }
-  assert(engine_replica_name && engine_snapshot_replica_name);
+  assert (engine_replica_name && engine_snapshot_replica_name);
 
   engine_replica = open_replica(engine_replica_name, 0);
   if (!engine_replica) {
@@ -495,14 +496,15 @@ int engine_preload_filelist(const char* main_replica_name, const char* aux_repli
   return 1;
 }
 
-void _kfs_file_info_decref(struct kfs_file_info* FI) {
+void _kfs_file_info_decref(struct kfs_file_info *FI) {
   int refcnt = __sync_sub_and_fetch(&FI->refcnt, 1);
-  assert(refcnt >= 0);
+  assert (refcnt >= 0);
   if (refcnt) {
     return;
   }
   free(FI->start);
   free(FI->iv);
-  free((char*)FI->filename);
+  free((char *)FI->filename);
   free(FI);
 }
+

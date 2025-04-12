@@ -11,7 +11,7 @@
 #include "common/cpuid.h"
 
 bool crypto_aarch64_has_aes_extension() {
-  const kdb_cpuid_t* cpuid = kdb_cpuid();
+  const kdb_cpuid_t *cpuid = kdb_cpuid();
   assert(cpuid->type == KDB_CPUID_AARCH64);
 
   static bool cached = false;
@@ -25,19 +25,19 @@ bool crypto_aarch64_has_aes_extension() {
   return has_aes_extension;
 }
 
-void crypto_aarch64_aes256_set_encrypt_key(vk_aes_ctx_t* vk_ctx, const uint8_t key[32]) {
+void crypto_aarch64_aes256_set_encrypt_key(vk_aes_ctx_t *vk_ctx, const uint8_t key[32]) {
   static const int32_t rcon[] = {0x01, 0x01, 0x01, 0x01, 0x0c0f0e0d, 0x0c0f0e0d, 0x0c0f0e0d, 0x0c0f0e0d, 0x1b, 0x1b, 0x1b, 0x1b};
   asm volatile("mov x9, %[rcon]  ;"
                "mov x10, %[ctx] ;"
                "mov x11, %[key] ;"
 
-               "eor	v0.16b, v0.16b, v0.16b ;"          // zero v0.16b
-               "ld1	{v3.16b}, [x11], #16	;"         // load second half of userKey into v3
-               "mov	w1, #8 ;"                          // reuse w1
+               "eor	v0.16b, v0.16b, v0.16b ;"    // zero v0.16b
+               "ld1	{v3.16b}, [x11], #16	;"     // load second half of userKey into v3
+               "mov	w1, #8 ;"                    // reuse w1
                "ld1	{v1.4s, v2.4s}, [x9], #32	;" // place in v1 and v2
-               "ld1	{v4.16b}, [x11]	;"                 // load first half of userKey into v4
-               "mov	w1, #7 ;"                          // place 7 in w1
-               "st1	{v3.4s}, [x10], #16 ;"             // place 4 words into key[16]
+               "ld1	{v4.16b}, [x11]	;"           // load first half of userKey into v4
+               "mov	w1, #7 ;"                    // place 7 in w1
+               "st1	{v3.4s}, [x10], #16 ;"       // place 4 words into key[16]
 
                "1: ;"
                "tbl	v6.16b, {v4.16b}, v2.16b ;"
@@ -75,10 +75,10 @@ void crypto_aarch64_aes256_set_encrypt_key(vk_aes_ctx_t* vk_ctx, const uint8_t k
                : [ctx] "r"(align16(&vk_ctx->u.ctx.a)), [key] "r"(key), [rcon] "r"(rcon));
 }
 
-void crypto_aarch64_aes256_set_decrypt_key(vk_aes_ctx_t* vk_ctx, const uint8_t key[32]) {
+void crypto_aarch64_aes256_set_decrypt_key(vk_aes_ctx_t *vk_ctx, const uint8_t key[32]) {
   crypto_aarch64_aes256_set_encrypt_key(vk_ctx, key);
 
-  unsigned char* a = static_cast<unsigned char*>(align16(&vk_ctx->u.ctx.a));
+  unsigned char *a = static_cast<unsigned char *>(align16(&vk_ctx->u.ctx.a));
   for (int i = 1; i <= 13; i++) {
     asm volatile("mov x9, %[key] ;"
                  "ld1 {v0.16b}, [x9] ;"
@@ -90,17 +90,17 @@ void crypto_aarch64_aes256_set_decrypt_key(vk_aes_ctx_t* vk_ctx, const uint8_t k
   }
 }
 
-void crypto_aarch64_aes256_cbc_encrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, uint8_t* out, int size, uint8_t iv[16]) {
+void crypto_aarch64_aes256_cbc_encrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, uint8_t *out, int size, uint8_t iv[16]) {
   if (size < 16) {
     return;
   }
 
-  asm volatile("mov x9, %[iv]  ;"            // move IV address in x9
-               "mov x10, %[out] ;"           // move out address in x10
-               "mov x11, %x[size] ;"         // move size value in x11
-               "mov x12, %[in] ;"            // move plaintext address in x12
-               "mov x13, %[key] ;"           // move key address in x13
-               "ld1 {v25.16b}, [x9] ;"       // load IV to v0.16b
+  asm volatile("mov x9, %[iv]  ;"       // move IV address in x9
+               "mov x10, %[out] ;"      // move out address in x10
+               "mov x11, %x[size] ;"    // move size value in x11
+               "mov x12, %[in] ;"       // move plaintext address in x12
+               "mov x13, %[key] ;"      // move key address in x13
+               "ld1 {v25.16b}, [x9] ;"  // load IV to v0.16b
                "ld1 {v1.16b}, [x13], #16 ;"  // load key for round 1
                "ld1 {v2.16b}, [x13], #16 ;"  // load key for round 2
                "ld1 {v3.16b}, [x13], #16 ;"  // load key for round 3
@@ -108,17 +108,17 @@ void crypto_aarch64_aes256_cbc_encrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, 
                "ld1 {v5.16b}, [x13], #16 ;"  // load key for round 5
                "ld1 {v6.16b}, [x13], #16 ;"  // load key for round 6
                "ld1 {v7.16b}, [x13], #16 ;"  // load key for round 7
-               "ld1 {v16.16b}, [x13], #16 ;" // load key for round 8
-               "ld1 {v17.16b}, [x13], #16 ;" // load key for round 9
+               "ld1 {v16.16b}, [x13], #16 ;"  // load key for round 8
+               "ld1 {v17.16b}, [x13], #16 ;"  // load key for round 9
                "ld1 {v18.16b}, [x13], #16 ;" // load key for round 10
                "ld1 {v19.16b}, [x13], #16 ;" // load key for round 11
                "ld1 {v20.16b}, [x13], #16 ;" // load key for round 12
                "ld1 {v21.16b}, [x13], #16 ;" // load key for round 13
                "ld1 {v22.16b}, [x13], #16 ;" // load key for round 14
-               "ld1 {v23.16b}, [x13] ;"      // load key for round 14
+               "ld1 {v23.16b}, [x13] ;" // load key for round 14
 
-               "1: ;"                        // start block processing
-               "sub x11, x11, 16 ;"          // substract block size from size
+               "1: ;"                   // start block processing
+               "sub x11, x11, 16 ;"     // substract block size from size
                "ld1 {v24.16b}, [x12], #16 ;" // load plaintext in v24.16b
 
                "eor v0.16b, v25.16b, v24.16b;" // CBC mode
@@ -160,17 +160,17 @@ void crypto_aarch64_aes256_cbc_encrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, 
                : [key] "r"(align16(&vk_ctx->u.ctx.a)), [in] "r"(in), [size] "r"(size), [iv] "r"(iv), [out] "r"(out));
 }
 
-void crypto_aarch64_aes256_cbc_decrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, uint8_t* out, int size, uint8_t iv[16]) {
+void crypto_aarch64_aes256_cbc_decrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, uint8_t *out, int size, uint8_t iv[16]) {
   if (size < 16) {
     return;
   }
 
-  asm volatile("mov x9, %[iv]  ;"      // move IV address in x9
-               "mov x10, %[out] ;"     // move out address in x10
-               "mov x11, %x[size] ;"   // move size value in x11
-               "mov x12, %[in] ;"      // move ciphertext address in x12
-               "mov x13, %[key] ;"     // move key address in x13
-               "ld1 {v25.16b}, [x9] ;" // load IV to v25.16b
+  asm volatile("mov x9, %[iv]  ;"       // move IV address in x9
+               "mov x10, %[out] ;"      // move out address in x10
+               "mov x11, %x[size] ;"    // move size value in x11
+               "mov x12, %[in] ;"       // move ciphertext address in x12
+               "mov x13, %[key] ;"      // move key address in x13
+               "ld1 {v25.16b}, [x9] ;"  // load IV to v25.16b
 
                "ld1 {v23.16b}, [x13], #16 ;"
                "ld1 {v22.16b}, [x13], #16 ;"
@@ -188,11 +188,11 @@ void crypto_aarch64_aes256_cbc_decrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, 
                "ld1 {v2.16b}, [x13], #16 ;"
                "ld1 {v1.16b}, [x13], #16 ;"
 
-               "1: ;"                  // start block processing
-               "sub x11, x11, 16 ;"    // substract block size from size
-               "ld1 {v0.16b}, [x12] ;" // load ciphertext in v0.16b
+               "1: ;"                   // start block processing
+               "sub x11, x11, 16 ;"     // substract block size from size
+               "ld1 {v0.16b}, [x12] ;"  // load ciphertext in v0.16b
 
-               "aesd v0.16b, v1.16b ;" // Round 1
+               "aesd v0.16b, v1.16b ;"  // Round 1
                "aesimc v0.16b, v0.16b ;"
                "aesd  v0.16b, v2.16b ;" // Round 2
                "aesimc v0.16b, v0.16b ;"
@@ -218,10 +218,10 @@ void crypto_aarch64_aes256_cbc_decrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, 
                "aesimc v0.16b, v0.16b ;"
                "aesd  v0.16b, v21.16b ;" // Round 13
                "aesimc v0.16b, v0.16b ;"
-               "aesd  v0.16b, v22.16b ;"       // Round 14
-               "eor v0.16b, v0.16b, v23.16b; " // last XOR
-               "eor v0.16b, v0.16b, v25.16b; " // CBC XOR
-               "ld1 {v25.16b}, [x12], #16 ;"   // load cyphertext to v25.16b
+               "aesd  v0.16b, v22.16b ;"        // Round 14
+               "eor v0.16b, v0.16b, v23.16b; "  // last XOR
+               "eor v0.16b, v0.16b, v25.16b; "  // CBC XOR
+               "ld1 {v25.16b}, [x12], #16 ;"    // load cyphertext to v25.16b
                "st1 {v0.16b}, [x10], #16 ;"
                "cmp x11, 16 ;"
                "bge 1b ;"
@@ -231,38 +231,38 @@ void crypto_aarch64_aes256_cbc_decrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, 
                : [key] "r"(align16(&vk_ctx->u.ctx.a)), [in] "r"(in), [size] "r"(size), [iv] "r"(iv), [out] "r"(out));
 }
 
-void crypto_aarch64_aes256_ige_encrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, uint8_t* out, int size, uint8_t iv[32]) {
+void crypto_aarch64_aes256_ige_encrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, uint8_t *out, int size, uint8_t iv[32]) {
   if (size < 16) {
     return;
   }
 
-  asm volatile("mov x9, %[iv]  ;"           // move IGE IV address in x9
-               "mov x10, %[out] ;"          // move out address in x10
-               "mov x11, %x[size] ;"        // move size value in x11
-               "mov x12, %[in] ;"           // move plaintext address in x12
-               "mov x13, %[key] ;"          // move key address in x13
-               "ld1 {v25.16b}, [x9], #16 ;" // load IGE IV Y to v25.16b
-               "ld1 {v26.16b}, [x9] ;"      // load IGE IV X to v26.16b
+  asm volatile("mov x9, %[iv]  ;"             // move IGE IV address in x9
+               "mov x10, %[out] ;"            // move out address in x10
+               "mov x11, %x[size] ;"          // move size value in x11
+               "mov x12, %[in] ;"             // move plaintext address in x12
+               "mov x13, %[key] ;"            // move key address in x13
+               "ld1 {v25.16b}, [x9], #16 ;"   // load IGE IV Y to v25.16b
+               "ld1 {v26.16b}, [x9] ;"        // load IGE IV X to v26.16b
 
-               "ld1 {v1.16b}, [x13], #16 ;"  // load key for round 1
-               "ld1 {v2.16b}, [x13], #16 ;"  // load key for round 2
-               "ld1 {v3.16b}, [x13], #16 ;"  // load key for round 3
-               "ld1 {v4.16b}, [x13], #16 ;"  // load key for round 4
-               "ld1 {v5.16b}, [x13], #16 ;"  // load key for round 5
-               "ld1 {v6.16b}, [x13], #16 ;"  // load key for round 6
-               "ld1 {v7.16b}, [x13], #16 ;"  // load key for round 7
-               "ld1 {v16.16b}, [x13], #16 ;" // load key for round 8
-               "ld1 {v17.16b}, [x13], #16 ;" // load key for round 9
-               "ld1 {v18.16b}, [x13], #16 ;" // load key for round 10
-               "ld1 {v19.16b}, [x13], #16 ;" // load key for round 11
-               "ld1 {v20.16b}, [x13], #16 ;" // load key for round 12
-               "ld1 {v21.16b}, [x13], #16 ;" // load key for round 13
-               "ld1 {v22.16b}, [x13], #16 ;" // load key for round 14
-               "ld1 {v23.16b}, [x13] ;"      // load key for round 14
+               "ld1 {v1.16b}, [x13], #16 ;"   // load key for round 1
+               "ld1 {v2.16b}, [x13], #16 ;"   // load key for round 2
+               "ld1 {v3.16b}, [x13], #16 ;"   // load key for round 3
+               "ld1 {v4.16b}, [x13], #16 ;"   // load key for round 4
+               "ld1 {v5.16b}, [x13], #16 ;"   // load key for round 5
+               "ld1 {v6.16b}, [x13], #16 ;"   // load key for round 6
+               "ld1 {v7.16b}, [x13], #16 ;"   // load key for round 7
+               "ld1 {v16.16b}, [x13], #16 ;"   // load key for round 8
+               "ld1 {v17.16b}, [x13], #16 ;"   // load key for round 9
+               "ld1 {v18.16b}, [x13], #16 ;"  // load key for round 10
+               "ld1 {v19.16b}, [x13], #16 ;"  // load key for round 11
+               "ld1 {v20.16b}, [x13], #16 ;"  // load key for round 12
+               "ld1 {v21.16b}, [x13], #16 ;"  // load key for round 13
+               "ld1 {v22.16b}, [x13], #16 ;"  // load key for round 14
+               "ld1 {v23.16b}, [x13] ;"       // load key for round 14
 
-               "1: ;"                        // start block processing
-               "sub x11, x11, 16 ;"          // substract block size from size
-               "ld1 {v24.16b}, [x12], #16 ;" // load plaintext in v24.16b
+               "1: ;"                         // start block processing
+               "sub x11, x11, 16 ;"           // substract block size from size
+               "ld1 {v24.16b}, [x12], #16 ;"  // load plaintext in v24.16b
 
                "eor v0.16b, v24.16b, v25.16b ;" // IGE mode XOR Y
                "aese v0.16b, v1.16b ;"          // Round 1
@@ -306,7 +306,7 @@ void crypto_aarch64_aes256_ige_encrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, 
                : [key] "r"(align16(&vk_ctx->u.ctx.a)), [in] "r"(in), [size] "r"(size), [iv] "r"(iv), [out] "r"(out));
 }
 
-void crypto_aarch64_aes256_ige_decrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, uint8_t* out, int size, uint8_t iv[32]) {
+void crypto_aarch64_aes256_ige_decrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, uint8_t *out, int size, uint8_t iv[32]) {
   if (size < 16) {
     return;
   }
@@ -380,28 +380,28 @@ void crypto_aarch64_aes256_ige_decrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, 
 }
 
 /* in, out should be aligned 16 */
-static inline void crypto_aarch64_aes256_encrypt_single_block(vk_aes_ctx_t* vk_ctx, const uint8_t* in, uint8_t* out) {
-  asm volatile("mov x9, %[out] ;"  // move out address in x9
-               "mov x10, %[in] ;"  // move plaintext address in x10
-               "mov x11, %[key] ;" // move key address in x11
+static inline void crypto_aarch64_aes256_encrypt_single_block(vk_aes_ctx_t *vk_ctx, const uint8_t *in, uint8_t *out) {
+  asm volatile("mov x9, %[out] ;"      // move out address in x9
+               "mov x10, %[in] ;"       // move plaintext address in x10
+               "mov x11, %[key] ;"      // move key address in x11
 
-               "ld1 {v1.16b}, [x11], #16 ;"  // load key for round 1
-               "ld1 {v2.16b}, [x11], #16 ;"  // load key for round 2
-               "ld1 {v3.16b}, [x11], #16 ;"  // load key for round 3
-               "ld1 {v4.16b}, [x11], #16 ;"  // load key for round 4
-               "ld1 {v5.16b}, [x11], #16 ;"  // load key for round 5
-               "ld1 {v6.16b}, [x11], #16 ;"  // load key for round 6
-               "ld1 {v7.16b}, [x11], #16 ;"  // load key for round 7
-               "ld1 {v16.16b}, [x11], #16 ;" // load key for round 8
-               "ld1 {v17.16b}, [x11], #16 ;" // load key for round 9
-               "ld1 {v18.16b}, [x11], #16 ;" // load key for round 10
-               "ld1 {v19.16b}, [x11], #16 ;" // load key for round 11
-               "ld1 {v20.16b}, [x11], #16 ;" // load key for round 12
-               "ld1 {v21.16b}, [x11], #16 ;" // load key for round 13
-               "ld1 {v22.16b}, [x11], #16 ;" // load key for round 14
-               "ld1 {v23.16b}, [x11] ;"      // load key for round 14
+               "ld1 {v1.16b}, [x11], #16 ;"   // load key for round 1
+               "ld1 {v2.16b}, [x11], #16 ;"   // load key for round 2
+               "ld1 {v3.16b}, [x11], #16 ;"   // load key for round 3
+               "ld1 {v4.16b}, [x11], #16 ;"   // load key for round 4
+               "ld1 {v5.16b}, [x11], #16 ;"   // load key for round 5
+               "ld1 {v6.16b}, [x11], #16 ;"   // load key for round 6
+               "ld1 {v7.16b}, [x11], #16 ;"   // load key for round 7
+               "ld1 {v16.16b}, [x11], #16 ;"   // load key for round 8
+               "ld1 {v17.16b}, [x11], #16 ;"   // load key for round 9
+               "ld1 {v18.16b}, [x11], #16 ;"  // load key for round 10
+               "ld1 {v19.16b}, [x11], #16 ;"  // load key for round 11
+               "ld1 {v20.16b}, [x11], #16 ;"  // load key for round 12
+               "ld1 {v21.16b}, [x11], #16 ;"  // load key for round 13
+               "ld1 {v22.16b}, [x11], #16 ;"  // load key for round 14
+               "ld1 {v23.16b}, [x11] ;"       // load key for round 14
 
-               "aese v0.16b, v1.16b ;" // Round 1
+               "aese v0.16b, v1.16b ;"  // Round 1
                "aesmc v0.16b, v0.16b ;"
                "aese  v0.16b, v2.16b ;" // Round 2
                "aesmc v0.16b, v0.16b ;"
@@ -434,7 +434,7 @@ static inline void crypto_aarch64_aes256_encrypt_single_block(vk_aes_ctx_t* vk_c
                : [key] "r"(align16(&vk_ctx->u.ctx.a)), [in] "r"(in), [out] "r"(out));
 }
 
-static inline void crypto_aarch64_aes256_encrypt_n_blocks(vk_aes_ctx_t* vk_ctx, const uint8_t* in, uint8_t* out, uint8_t iv[16], int n) {
+static inline void crypto_aarch64_aes256_encrypt_n_blocks(vk_aes_ctx_t *vk_ctx, const uint8_t *in, uint8_t *out, uint8_t iv[16], int n) {
   asm volatile("mov x9, %[out] ;"       // move out address in x9
                "mov x10, %[in] ;"       // move plaintext address in x10
                "mov x11, %[key] ;"      // move key address in x11
@@ -445,23 +445,23 @@ static inline void crypto_aarch64_aes256_encrypt_n_blocks(vk_aes_ctx_t* vk_ctx, 
                "mov w15, #1 ;"
                "mov v25.s[2], w15 ;"
 
-               "ld1 {v1.16b}, [x11], #16 ;"  // load key for round 1
-               "ld1 {v2.16b}, [x11], #16 ;"  // load key for round 2
-               "ld1 {v3.16b}, [x11], #16 ;"  // load key for round 3
-               "ld1 {v4.16b}, [x11], #16 ;"  // load key for round 4
-               "ld1 {v5.16b}, [x11], #16 ;"  // load key for round 5
-               "ld1 {v6.16b}, [x11], #16 ;"  // load key for round 6
-               "ld1 {v7.16b}, [x11], #16 ;"  // load key for round 7
-               "ld1 {v16.16b}, [x11], #16 ;" // load key for round 8
-               "ld1 {v17.16b}, [x11], #16 ;" // load key for round 9
-               "ld1 {v18.16b}, [x11], #16 ;" // load key for round 10
-               "ld1 {v19.16b}, [x11], #16 ;" // load key for round 11
-               "ld1 {v20.16b}, [x11], #16 ;" // load key for round 12
-               "ld1 {v21.16b}, [x11], #16 ;" // load key for round 13
-               "ld1 {v22.16b}, [x11], #16 ;" // load key for round 14
-               "ld1 {v23.16b}, [x11] ;"      // load key for round 14
+               "ld1 {v1.16b}, [x11], #16 ;"   // load key for round 1
+               "ld1 {v2.16b}, [x11], #16 ;"   // load key for round 2
+               "ld1 {v3.16b}, [x11], #16 ;"   // load key for round 3
+               "ld1 {v4.16b}, [x11], #16 ;"   // load key for round 4
+               "ld1 {v5.16b}, [x11], #16 ;"   // load key for round 5
+               "ld1 {v6.16b}, [x11], #16 ;"   // load key for round 6
+               "ld1 {v7.16b}, [x11], #16 ;"   // load key for round 7
+               "ld1 {v16.16b}, [x11], #16 ;"   // load key for round 8
+               "ld1 {v17.16b}, [x11], #16 ;"   // load key for round 9
+               "ld1 {v18.16b}, [x11], #16 ;"  // load key for round 10
+               "ld1 {v19.16b}, [x11], #16 ;"  // load key for round 11
+               "ld1 {v20.16b}, [x11], #16 ;"  // load key for round 12
+               "ld1 {v21.16b}, [x11], #16 ;"  // load key for round 13
+               "ld1 {v22.16b}, [x11], #16 ;"  // load key for round 14
+               "ld1 {v23.16b}, [x11] ;"       // load key for round 14
 
-               "1:"                          // block processing
+               "1:" // block processing
                "ld1 {v24.16b}, [x10], #16 ;" // load plaintext in v24.16b
                "mov v0.16b, v26.16b ;"
                "aese v0.16b, v1.16b ;" // Round 1
@@ -505,22 +505,22 @@ static inline void crypto_aarch64_aes256_encrypt_n_blocks(vk_aes_ctx_t* vk_ctx, 
 }
 
 #if defined(__GNUC__)
-  #if defined(__clang__) && defined(__has_warning)
-    #if __has_warning("-Wmaybe-uninitialized")
-      #define MAYBE_UNINITIALIZED
-    #endif
-  #elif !defined(__clang__)
-    #define MAYBE_UNINITIALIZED
-  #endif
+#   if defined(__clang__) && defined(__has_warning)
+#       if __has_warning("-Wmaybe-uninitialized")
+#           define MAYBE_UNINITIALIZED
+#       endif
+#   elif !defined(__clang__)
+#           define MAYBE_UNINITIALIZED
+#   endif
 #endif
-void crypto_aarch64_aes256_ctr_encrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, uint8_t* out, int size, uint8_t iv[16], uint64_t offset) {
+void crypto_aarch64_aes256_ctr_encrypt(vk_aes_ctx_t *vk_ctx, const uint8_t *in, uint8_t *out, int size, uint8_t iv[16], uint64_t offset) {
 #if defined(MAYBE_UNINITIALIZED)
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#   pragma GCC diagnostic push
+#   pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #endif
   unsigned char iv_copy[16], u[16];
   memcpy(iv_copy, iv, 16);
-  unsigned long long* p = (unsigned long long*)(iv_copy + 8);
+  unsigned long long *p = (unsigned long long *)(iv_copy + 8);
   (*p) += offset >> 4;
   int i = offset & 15, l;
   if (i) {
@@ -550,6 +550,6 @@ void crypto_aarch64_aes256_ctr_encrypt(vk_aes_ctx_t* vk_ctx, const uint8_t* in, 
     } while (i < l);
   }
 #if defined(MAYBE_UNINITIALIZED)
-  #pragma GCC diagnostic pop
+#   pragma GCC diagnostic pop
 #endif
 }

@@ -8,8 +8,8 @@
 
 #include "runtime-common/core/runtime-core.h"
 
-Optional<int64_t> f$ip2long(const string& ip) noexcept;
+Optional<int64_t> f$ip2long(const string &ip) noexcept;
 
-Optional<string> f$ip2ulong(const string& ip) noexcept;
+Optional<string> f$ip2ulong(const string &ip) noexcept;
 
 string f$long2ip(int64_t num) noexcept;

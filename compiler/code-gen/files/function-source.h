@@ -11,8 +11,8 @@
 struct FunctionCpp : CodeGenRootCmd {
   FunctionPtr function;
   explicit FunctionCpp(FunctionPtr function);
-  void compile(CodeGenerator& W) const final;
+  void compile(CodeGenerator &W) const final;
 };
 
-void declare_global_vars(FunctionPtr function, CodeGenerator& W);
-void declare_const_vars(FunctionPtr function, CodeGenerator& W);
+void declare_global_vars(FunctionPtr function, CodeGenerator &W);
+void declare_const_vars(FunctionPtr function, CodeGenerator &W);

@@ -21,12 +21,8 @@ public:
     abstract_modifier_ = AbstractModifiers::abstract_;
   }
 
-  bool is_final() const {
-    return abstract_modifier_ == AbstractModifiers::final_;
-  }
-  bool is_abstract() const {
-    return abstract_modifier_ == AbstractModifiers::abstract_;
-  }
+  bool is_final()    const { return abstract_modifier_ == AbstractModifiers::final_;    }
+  bool is_abstract() const { return abstract_modifier_ == AbstractModifiers::abstract_; }
 
 private:
   AbstractModifiers abstract_modifier_{AbstractModifiers::not_modifier_};

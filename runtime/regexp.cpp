@@ -4,10 +4,10 @@
 
 #include "runtime/regexp.h"
 
-#include "re2/re2.h"
 #include <cstddef>
+#include "re2/re2.h"
 #if ASAN_ENABLED
-  #include <sanitizer/lsan_interface.h>
+#include <sanitizer/lsan_interface.h>
 #endif
 #include "common/unicode/utf8-utils.h"
 
@@ -20,10 +20,10 @@ int64_t preg_replace_count_dummy;
 
 // TODO: remove when/if we migrate to pcre2
 #ifndef PCRE2_ERROR_BADOFFSET
-  #define PCRE2_ERROR_BADOFFSET -33
+#  define PCRE2_ERROR_BADOFFSET -33
 #endif
 #ifndef PCRE2_UNSET
-  #define PCRE2_UNSET -1
+#  define PCRE2_UNSET -1
 #endif
 
 static re2::StringPiece RE2_submatch[MAX_SUBPATTERNS];
@@ -36,20 +36,20 @@ pcre_extra regexp::extra;
 
 static_assert(sizeof(regexp) == SIZEOF_REGEXP, "sizeof(regexp) at runtime doesn't match compile-time");
 
-regexp::regexp(const string& regexp_string) {
+regexp::regexp(const string &regexp_string) {
   init(regexp_string);
 }
 
-regexp::regexp(const char* regexp_string, int64_t regexp_len) {
+regexp::regexp(const char *regexp_string, int64_t regexp_len) {
   init(regexp_string, regexp_len);
 }
 
-void regexp::pattern_compilation_warning(const char* function, const char* file, char const* message, ...) noexcept {
+void regexp::pattern_compilation_warning(const char *function, const char *file, char const *message, ...) noexcept {
   va_list args;
-  va_start(args, message);
+  va_start (args, message);
   char buf[1024];
   vsnprintf(buf, sizeof(buf), message, args);
-  va_end(args);
+  va_end (args);
 
   if (function || file) {
     php_warning("%s [in function %s() at %s]", buf, function ? function : "unknown_function", file ? file : "unknown_file");
@@ -70,7 +70,7 @@ void regexp::check_pattern_compilation_warning() const noexcept {
   }
 }
 
-int64_t regexp::skip_utf8_subsequent_bytes(int64_t offset, const string& subject) const noexcept {
+int64_t regexp::skip_utf8_subsequent_bytes(int64_t offset, const string &subject) const noexcept {
   if (!is_utf8) {
     return offset;
   }
@@ -83,140 +83,193 @@ int64_t regexp::skip_utf8_subsequent_bytes(int64_t offset, const string& subject
   return offset;
 }
 
-bool regexp::is_valid_RE2_regexp(const char* regexp_string, int64_t regexp_len, bool is_utf8, const char* function, const char* file) noexcept {
+bool regexp::is_valid_RE2_regexp(const char *regexp_string, int64_t regexp_len, bool is_utf8, const char *function, const char *file) noexcept {
   int64_t brackets_depth = 0;
   bool prev_is_group = false;
 
   for (int64_t i = 0; i < regexp_len; i++) {
     switch (regexp_string[i]) {
-    case -128 ... - 1:
-    case 1 ... 35:
-    case 37 ... 39:
-    case ',' ... '>':
-    case '@':
-    case 'A' ... 'Z':
-    case ']':
-    case '_':
-    case '`':
-    case 'a' ... 'z':
-    case '}' ... 127:
-      prev_is_group = true;
-      break;
-    case '$':
-    case '^':
-    case '|':
-      prev_is_group = false;
-      break;
-    case 0:
-      pattern_compilation_warning(function, file, "Regexp contains symbol with code 0 after %s", regexp_string);
-      return false;
-    case '(':
-      brackets_depth++;
-
-      if (regexp_string[i + 1] == '*') {
+      case -128 ... -1:
+      case 1 ... 35:
+      case 37 ... 39:
+      case ',' ... '>':
+      case '@':
+      case 'A' ... 'Z':
+      case ']':
+      case '_':
+      case '`':
+      case 'a' ... 'z':
+      case '}' ... 127:
+        prev_is_group = true;
+        break;
+      case '$':
+      case '^':
+      case '|':
+        prev_is_group = false;
+        break;
+      case 0:
+        pattern_compilation_warning(function, file, "Regexp contains symbol with code 0 after %s", regexp_string);
         return false;
-      }
+      case '(':
+        brackets_depth++;
 
-      if (regexp_string[i + 1] == '?') {
-        if (regexp_string[i + 2] == ':') {
-          i += 2;
-          break;
-        }
-        if (regexp_string[i + 2] == ':') {
-          i += 2;
-          break;
-        }
-        return false;
-      }
-      prev_is_group = false;
-      break;
-    case ')':
-      brackets_depth--;
-      if (brackets_depth < 0) {
-        return false;
-      }
-      prev_is_group = true;
-      break;
-    case '+':
-    case '*':
-      if (!prev_is_group) {
-        return false;
-      }
-
-      prev_is_group = false;
-      break;
-    case '?':
-      if (!prev_is_group && (i == 0 || (regexp_string[i - 1] != '+' && regexp_string[i - 1] != '*' && regexp_string[i - 1] != '?'))) {
-        return false;
-      }
-
-      prev_is_group = false;
-      break;
-    case '{': {
-      if (!prev_is_group) {
-        return false;
-      }
-
-      i++;
-      int64_t k = 0;
-      while ('0' <= regexp_string[i] && regexp_string[i] <= '9') {
-        i++;
-        k++;
-      }
-
-      if (k > 2) {
-        return false;
-      }
-
-      if (regexp_string[i] == ',') {
-        i++;
-      }
-
-      k = 0;
-      while ('0' <= regexp_string[i] && regexp_string[i] <= '9') {
-        k++;
-        i++;
-      }
-
-      if (k > 2) {
-        return false;
-      }
-
-      if (regexp_string[i] != '}') {
-        pattern_compilation_warning(function, file, "Wrong regexp %s", regexp_string);
-        return false;
-      }
-
-      prev_is_group = false;
-      break;
-    }
-    case '[':
-      if (regexp_string[i + 1] == '^') {
-        i++;
-      }
-      if (regexp_string[i + 1] == ']') {
-        i++;
-      }
-      while (true) {
-        while (++i < regexp_len && regexp_string[i] != '\\' && regexp_string[i] != ']' && regexp_string[i] != '[') {
-        }
-
-        if (i == regexp_len) {
+        if (regexp_string[i + 1] == '*') {
           return false;
         }
 
-        if (regexp_string[i] == '\\') {
-          switch (regexp_string[i + 1]) {
+        if (regexp_string[i + 1] == '?') {
+          if (regexp_string[i + 2] == ':') {
+            i += 2;
+            break;
+          }
+          if (regexp_string[i + 2] == ':') {
+            i += 2;
+            break;
+          }
+          return false;
+        }
+        prev_is_group = false;
+        break;
+      case ')':
+        brackets_depth--;
+        if (brackets_depth < 0) {
+          return false;
+        }
+        prev_is_group = true;
+        break;
+      case '+':
+      case '*':
+        if (!prev_is_group) {
+          return false;
+        }
+
+        prev_is_group = false;
+        break;
+      case '?':
+        if (!prev_is_group && (i == 0 || (regexp_string[i - 1] != '+' && regexp_string[i - 1] != '*' && regexp_string[i - 1] != '?'))) {
+          return false;
+        }
+
+        prev_is_group = false;
+        break;
+      case '{': {
+        if (!prev_is_group) {
+          return false;
+        }
+
+        i++;
+        int64_t k = 0;
+        while ('0' <= regexp_string[i] && regexp_string[i] <= '9') {
+          i++;
+          k++;
+        }
+
+        if (k > 2) {
+          return false;
+        }
+
+        if (regexp_string[i] == ',') {
+          i++;
+        }
+
+        k = 0;
+        while ('0' <= regexp_string[i] && regexp_string[i] <= '9') {
+          k++;
+          i++;
+        }
+
+        if (k > 2) {
+          return false;
+        }
+
+        if (regexp_string[i] != '}') {
+          pattern_compilation_warning(function, file, "Wrong regexp %s", regexp_string);
+          return false;
+        }
+
+        prev_is_group = false;
+        break;
+      }
+      case '[':
+        if (regexp_string[i + 1] == '^') {
+          i++;
+        }
+        if (regexp_string[i + 1] == ']') {
+          i++;
+        }
+        while (true) {
+          while (++i < regexp_len && regexp_string[i] != '\\' && regexp_string[i] != ']' && regexp_string[i] != '[') {
+          }
+
+          if (i == regexp_len) {
+            return false;
+          }
+
+          if (regexp_string[i] == '\\') {
+            switch (regexp_string[i + 1]) {
+              case 'x':
+                if (isxdigit(regexp_string[i + 2]) &&
+                    isxdigit(regexp_string[i + 3])) {
+                  i += 3;
+                  continue;
+                }
+                return false;
+              case '0':
+                if ('0' <= regexp_string[i + 2] && regexp_string[i + 2] <= '7' &&
+                    '0' <= regexp_string[i + 3] && regexp_string[i + 3] <= '7') {
+                  i += 3;
+                  continue;
+                }
+                return false;
+              case 'a':
+              case 'f':
+              case 'n':
+              case 'r':
+              case 't':
+              case -128 ... '/':
+              case ':' ... '@':
+              case '[' ... '`':
+              case '{' ... 127:
+                i++;
+                continue;
+              case 'd':
+              case 'D':
+              case 's':
+              case 'S':
+              case 'w':
+              case 'W':
+                if (!is_utf8) {
+                  i++;
+                  continue;
+                }
+                return false;
+              default:
+                return false;
+            }
+          } else if (regexp_string[i] == '[') {
+            if (regexp_string[i + 1] == ':') {
+              return false;
+            }
+          } else if (regexp_string[i] == ']') {
+            break;
+          }
+        }
+        prev_is_group = true;
+        break;
+      case '\\':
+        switch (regexp_string[i + 1]) {
           case 'x':
-            if (isxdigit(regexp_string[i + 2]) && isxdigit(regexp_string[i + 3])) {
+            if (isxdigit(regexp_string[i + 2]) &&
+                isxdigit(regexp_string[i + 3])) {
               i += 3;
-              continue;
+              break;
             }
             return false;
           case '0':
-            if ('0' <= regexp_string[i + 2] && regexp_string[i + 2] <= '7' && '0' <= regexp_string[i + 3] && regexp_string[i + 3] <= '7') {
+            if ('0' <= regexp_string[i + 2] && regexp_string[i + 2] <= '7' &&
+                '0' <= regexp_string[i + 3] && regexp_string[i + 3] <= '7') {
               i += 3;
-              continue;
+              break;
             }
             return false;
           case 'a':
@@ -229,7 +282,9 @@ bool regexp::is_valid_RE2_regexp(const char* regexp_string, int64_t regexp_len, 
           case '[' ... '`':
           case '{' ... 127:
             i++;
-            continue;
+            break;
+          case 'b':
+          case 'B':
           case 'd':
           case 'D':
           case 's':
@@ -243,63 +298,11 @@ bool regexp::is_valid_RE2_regexp(const char* regexp_string, int64_t regexp_len, 
             return false;
           default:
             return false;
-          }
-        } else if (regexp_string[i] == '[') {
-          if (regexp_string[i + 1] == ':') {
-            return false;
-          }
-        } else if (regexp_string[i] == ']') {
-          break;
         }
-      }
-      prev_is_group = true;
-      break;
-    case '\\':
-      switch (regexp_string[i + 1]) {
-      case 'x':
-        if (isxdigit(regexp_string[i + 2]) && isxdigit(regexp_string[i + 3])) {
-          i += 3;
-          break;
-        }
-        return false;
-      case '0':
-        if ('0' <= regexp_string[i + 2] && regexp_string[i + 2] <= '7' && '0' <= regexp_string[i + 3] && regexp_string[i + 3] <= '7') {
-          i += 3;
-          break;
-        }
-        return false;
-      case 'a':
-      case 'f':
-      case 'n':
-      case 'r':
-      case 't':
-      case -128 ... '/':
-      case ':' ... '@':
-      case '[' ... '`':
-      case '{' ... 127:
-        i++;
-        break;
-      case 'b':
-      case 'B':
-      case 'd':
-      case 'D':
-      case 's':
-      case 'S':
-      case 'w':
-      case 'W':
-        if (!is_utf8) {
-          i++;
-          continue;
-        }
-        return false;
-      default:
-        return false;
-      }
 
-      prev_is_group = true;
-      break;
-    default:
-      php_critical_error("wrong char range assumed");
+        prev_is_group = true;
+        break;
+      default: php_critical_error ("wrong char range assumed");
     }
   }
   if (brackets_depth != 0) {
@@ -310,22 +313,22 @@ bool regexp::is_valid_RE2_regexp(const char* regexp_string, int64_t regexp_len, 
   return true;
 }
 
-void regexp::init(const string& regexp_string, const char* function, const char* file) {
-  static char regexp_cache_storage[sizeof(array<regexp*>)];
-  static array<regexp*>* regexp_cache = (array<regexp*>*)regexp_cache_storage;
+void regexp::init(const string &regexp_string, const char *function, const char *file) {
+  static char regexp_cache_storage[sizeof(array<regexp *>)];
+  static array<regexp *> *regexp_cache = (array<regexp *> *)regexp_cache_storage;
   static long long regexp_last_query_num = -1;
 
   use_heap_memory = !(php_script.has_value() && php_script->is_running());
 
   if (!use_heap_memory) {
     if (dl::query_num != regexp_last_query_num) {
-      new (regexp_cache_storage) array<regexp*>();
+      new(regexp_cache_storage) array<regexp *>();
       regexp_last_query_num = dl::query_num;
     }
 
-    regexp* re = regexp_cache->get_value(regexp_string);
+    regexp *re = regexp_cache->get_value(regexp_string);
     if (re != nullptr) {
-      php_assert(!re->use_heap_memory);
+      php_assert (!re->use_heap_memory);
 
       subpatterns_count = re->subpatterns_count;
       named_subpatterns_count = re->named_subpatterns_count;
@@ -344,8 +347,8 @@ void regexp::init(const string& regexp_string, const char* function, const char*
   init(regexp_string.c_str(), regexp_string.size(), function, file);
 
   if (!use_heap_memory) {
-    regexp* re = static_cast<regexp*>(dl::allocate(sizeof(regexp)));
-    new (re) regexp();
+    regexp *re = static_cast <regexp *> (dl::allocate(sizeof(regexp)));
+    new(re) regexp();
 
     re->subpatterns_count = subpatterns_count;
     re->named_subpatterns_count = named_subpatterns_count;
@@ -361,7 +364,7 @@ void regexp::init(const string& regexp_string, const char* function, const char*
   }
 }
 
-void regexp::init(const char* regexp_string, int64_t regexp_len, const char* function, const char* file) {
+void regexp::init(const char *regexp_string, int64_t regexp_len, const char *function, const char *file) {
   if (regexp_len == 0) {
     pattern_compilation_warning(function, file, "Empty regular expression");
     return;
@@ -369,35 +372,35 @@ void regexp::init(const char* regexp_string, int64_t regexp_len, const char* fun
 
   char start_delimiter = regexp_string[0], end_delimiter;
   switch (start_delimiter) {
-  case '(':
-    end_delimiter = ')';
-    break;
-  case '[':
-    end_delimiter = ']';
-    break;
-  case '{':
-    end_delimiter = '}';
-    break;
-  case '>':
-    end_delimiter = '>';
-    break;
-  case '!' ... '\'':
-  case '*' ... '/':
-  case ':':
-  case ';':
-  case '=':
-  case '?':
-  case '@':
-  case '^':
-  case '_':
-  case '`':
-  case '|':
-  case '~':
-    end_delimiter = start_delimiter;
-    break;
-  default:
-    pattern_compilation_warning(function, file, "Wrong start delimiter in regular expression \"%s\"", regexp_string);
-    return;
+    case '(':
+      end_delimiter = ')';
+      break;
+    case '[':
+      end_delimiter = ']';
+      break;
+    case '{':
+      end_delimiter = '}';
+      break;
+    case '>':
+      end_delimiter = '>';
+      break;
+    case '!' ... '\'':
+    case '*' ... '/':
+    case ':':
+    case ';':
+    case '=':
+    case '?':
+    case '@':
+    case '^':
+    case '_':
+    case '`':
+    case '|':
+    case '~':
+      end_delimiter = start_delimiter;
+      break;
+    default:
+      pattern_compilation_warning(function, file, "Wrong start delimiter in regular expression \"%s\"", regexp_string);
+      return;
   }
 
   int64_t regexp_end = regexp_len - 1;
@@ -424,55 +427,55 @@ void regexp::init(const char* regexp_string, int64_t regexp_len, const char* fun
 
   for (int64_t i = regexp_end + 1; i < regexp_len; i++) {
     switch (regexp_string[i]) {
-    case 'i':
-      pcre_options |= PCRE_CASELESS;
-      RE2_options.set_case_sensitive(false);
-      break;
-    case 'm':
-      pcre_options |= PCRE_MULTILINE;
-      RE2_options.set_one_line(false);
-      can_use_RE2 = false; // supported by RE2::Regexp but disabled in an interface while not using posix_syntax
-      break;
-    case 's':
-      pcre_options |= PCRE_DOTALL;
-      RE2_options.set_dot_nl(true);
-      break;
-    case 'x':
-      pcre_options |= PCRE_EXTENDED;
-      can_use_RE2 = false;
-      break;
+      case 'i':
+        pcre_options |= PCRE_CASELESS;
+        RE2_options.set_case_sensitive(false);
+        break;
+      case 'm':
+        pcre_options |= PCRE_MULTILINE;
+        RE2_options.set_one_line(false);
+        can_use_RE2 = false;//supported by RE2::Regexp but disabled in an interface while not using posix_syntax
+        break;
+      case 's':
+        pcre_options |= PCRE_DOTALL;
+        RE2_options.set_dot_nl(true);
+        break;
+      case 'x':
+        pcre_options |= PCRE_EXTENDED;
+        can_use_RE2 = false;
+        break;
 
-    case 'A':
-      pcre_options |= PCRE_ANCHORED;
-      can_use_RE2 = false;
-      break;
-    case 'D':
-      pcre_options |= PCRE_DOLLAR_ENDONLY;
-      can_use_RE2 = false;
-      break;
-    case 'S':
-      pattern_compilation_warning(function, file, "Study doesn't supported");
-      break;
-    case 'U':
-      pcre_options |= PCRE_UNGREEDY;
-      can_use_RE2 = false; // supported by RE2::Regexp but there is no such an option
-      break;
-    case 'X':
-      pcre_options |= PCRE_EXTRA;
-      break;
-    case 'u':
-      pcre_options |= PCRE_UTF8;
+      case 'A':
+        pcre_options |= PCRE_ANCHORED;
+        can_use_RE2 = false;
+        break;
+      case 'D':
+        pcre_options |= PCRE_DOLLAR_ENDONLY;
+        can_use_RE2 = false;
+        break;
+      case 'S':
+        pattern_compilation_warning(function, file, "Study doesn't supported");
+        break;
+      case 'U':
+        pcre_options |= PCRE_UNGREEDY;
+        can_use_RE2 = false;//supported by RE2::Regexp but there is no such an option
+        break;
+      case 'X':
+        pcre_options |= PCRE_EXTRA;
+        break;
+      case 'u':
+        pcre_options |= PCRE_UTF8;
 #ifdef PCRE_UCP
-      pcre_options |= PCRE_UCP;
+        pcre_options |= PCRE_UCP;
 #endif
-      RE2_options.set_encoding(RE2::Options::EncodingUTF8);
-      is_utf8 = true;
-      break;
+        RE2_options.set_encoding(RE2::Options::EncodingUTF8);
+        is_utf8 = true;
+        break;
 
-    default:
-      pattern_compilation_warning(function, file, "Unknown modifier '%c' found", regexp_string[i]);
-      clean();
-      return;
+      default:
+        pattern_compilation_warning(function, file, "Unknown modifier '%c' found", regexp_string[i]);
+        clean();
+        return;
     }
   }
 
@@ -491,8 +494,7 @@ void regexp::init(const char* regexp_string, int64_t regexp_len, const char* fun
     __lsan_ignore_object(RE2_regexp);
 #endif
     if (!RE2_regexp->ok()) {
-      pattern_compilation_warning(function, file, "RE2 compilation of regexp \"%s\" failed. Error %d at %s", kphp_runtime_context.static_SB.c_str(),
-                                  RE2_regexp->error_code(), RE2_regexp->error().c_str());
+      pattern_compilation_warning(function, file, "RE2 compilation of regexp \"%s\" failed. Error %d at %s", kphp_runtime_context.static_SB.c_str(), RE2_regexp->error_code(), RE2_regexp->error().c_str());
 
       delete RE2_regexp;
       RE2_regexp = nullptr;
@@ -500,17 +502,17 @@ void regexp::init(const char* regexp_string, int64_t regexp_len, const char* fun
       std::string min_str;
       std::string max_str;
 
-      if (!RE2_regexp->PossibleMatchRange(&min_str, &max_str, 1) || min_str.empty()) { // rough estimate for "can match empty string"
+      if (!RE2_regexp->PossibleMatchRange(&min_str, &max_str, 1) || min_str.empty()) {//rough estimate for "can match empty string"
         need_pcre = true;
       }
     }
 
-    // We can not mimic PCRE now, but we can't check this. There is no such a function in the interface.
-    // So just ignore this distinction
+    //We can not mimic PCRE now, but we can't check this. There is no such a function in the interface.
+    //So just ignore this distinction
   }
 
   if (RE2_regexp == nullptr || need_pcre) {
-    const char* error;
+    const char *error;
     int32_t erroffset = 0;
     pcre_regexp = pcre_compile(kphp_runtime_context.static_SB.c_str(), pcre_options, &error, &erroffset, nullptr);
 #if ASAN_ENABLED
@@ -523,16 +525,16 @@ void regexp::init(const char* regexp_string, int64_t regexp_len, const char* fun
     }
   }
 
-  // compile has finished
+  //compile has finished
 
   named_subpatterns_count = 0;
   if (RE2_regexp) {
     subpatterns_count = RE2_regexp->NumberOfCapturingGroups();
   } else {
-    php_assert(pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_CAPTURECOUNT, &subpatterns_count) == 0);
+    php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_CAPTURECOUNT, &subpatterns_count) == 0);
 
     if (subpatterns_count) {
-      php_assert(pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMECOUNT, &named_subpatterns_count) == 0);
+      php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMECOUNT, &named_subpatterns_count) == 0);
 
       if (named_subpatterns_count > 0) {
         subpattern_names = new string[subpatterns_count + 1];
@@ -541,10 +543,10 @@ void regexp::init(const char* regexp_string, int64_t regexp_len, const char* fun
 #endif
 
         int32_t name_entry_size = 0;
-        php_assert(pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size) == 0);
+        php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMEENTRYSIZE, &name_entry_size) == 0);
 
-        char* name_table;
-        php_assert(pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMETABLE, &name_table) == 0);
+        char *name_table;
+        php_assert (pcre_fullinfo(pcre_regexp, nullptr, PCRE_INFO_NAMETABLE, &name_table) == 0);
 
         for (int64_t i = 0; i < named_subpatterns_count; i++) {
           int64_t name_id = (((unsigned char)name_table[0]) << 8) + (unsigned char)name_table[1];
@@ -612,9 +614,10 @@ regexp::~regexp() {
   }
 }
 
+
 int64_t regexp::pcre_last_error;
 
-int64_t regexp::exec(const string& subject, int64_t offset, bool second_try) const {
+int64_t regexp::exec(const string &subject, int64_t offset, bool second_try) const {
   if (RE2_regexp && !second_try) {
     {
       dl::CriticalSectionGuard critical_section;
@@ -630,7 +633,7 @@ int64_t regexp::exec(const string& subject, int64_t offset, bool second_try) con
     int64_t count = -1;
     for (int64_t i = 0; i < subpatterns_count; i++) {
       if (RE2_submatch[i].data()) {
-        submatch[i + i] = static_cast<int32_t>(RE2_submatch[i].data() - subject.c_str());
+        submatch[i + i]     = static_cast<int32_t>(RE2_submatch[i].data() - subject.c_str());
         submatch[i + i + 1] = static_cast<int32_t>(submatch[i + i] + RE2_submatch[i].size());
         count = i;
       } else {
@@ -638,19 +641,20 @@ int64_t regexp::exec(const string& subject, int64_t offset, bool second_try) con
         submatch[i + i + 1] = PCRE2_UNSET;
       }
     }
-    php_assert(count >= 0);
+    php_assert (count >= 0);
 
     return count + 1;
   }
 
-  php_assert(pcre_regexp);
+  php_assert (pcre_regexp);
 
   int32_t options = second_try ? PCRE_NO_UTF8_CHECK | PCRE_NOTEMPTY_ATSTART : PCRE_NO_UTF8_CHECK;
-  dl::enter_critical_section(); // OK
-  int64_t count = pcre_exec(pcre_regexp, &extra, subject.c_str(), subject.size(), static_cast<int32_t>(offset), options, submatch, 3 * subpatterns_count);
+  dl::enter_critical_section();//OK
+  int64_t count = pcre_exec(pcre_regexp, &extra, subject.c_str(), subject.size(),
+                            static_cast<int32_t>(offset), options, submatch, 3 * subpatterns_count);
   dl::leave_critical_section();
 
-  php_assert(count != 0);
+  php_assert (count != 0);
   if (count == PCRE_ERROR_NOMATCH) {
     return 0;
   }
@@ -662,7 +666,8 @@ int64_t regexp::exec(const string& subject, int64_t offset, bool second_try) con
   return count;
 }
 
-Optional<int64_t> regexp::match(const string& subject, bool all_matches) const {
+
+Optional<int64_t> regexp::match(const string &subject, bool all_matches) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -675,7 +680,7 @@ Optional<int64_t> regexp::match(const string& subject, bool all_matches) const {
     return false;
   }
 
-  bool second_try = false; // set after matching an empty string
+  bool second_try = false;//set after matching an empty string
   pcre_last_error = 0;
 
   int64_t result = 0;
@@ -709,7 +714,7 @@ Optional<int64_t> regexp::match(const string& subject, bool all_matches) const {
   return result;
 }
 
-Optional<int64_t> regexp::match(const string& subject, mixed& matches, bool all_matches, int64_t offset) const {
+Optional<int64_t> regexp::match(const string &subject, mixed &matches, bool all_matches, int64_t offset) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -728,7 +733,7 @@ Optional<int64_t> regexp::match(const string& subject, mixed& matches, bool all_
     }
   }
 
-  bool second_try = false; // set after matching an empty string
+  bool second_try = false;//set after matching an empty string
   pcre_last_error = 0;
 
   int64_t result = 0;
@@ -808,7 +813,7 @@ Optional<int64_t> regexp::match(const string& subject, mixed& matches, bool all_
   return result;
 }
 
-Optional<int64_t> regexp::match(const string& subject, mixed& matches, int64_t flags, bool all_matches, int64_t offset) const {
+Optional<int64_t> regexp::match(const string &subject, mixed &matches, int64_t flags, bool all_matches, int64_t offset) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -849,7 +854,7 @@ Optional<int64_t> regexp::match(const string& subject, mixed& matches, int64_t f
     matches = array<mixed>();
   }
 
-  bool second_try = false; // set after matching an empty string
+  bool second_try = false;//set after matching an empty string
 
   int64_t result = 0;
   auto empty_match = array<mixed>::create(string(), PCRE2_UNSET);
@@ -889,7 +894,7 @@ Optional<int64_t> regexp::match(const string& subject, mixed& matches, int64_t f
     if (pattern_order) {
       // push_match() is almost preg_add_match(), but we do a push_back for named matches here;
       // TODO: can we generalize match collection? offset_capture handling is also copied in several places
-      const auto push_match = [this](mixed& matches, int i, const mixed& match) {
+      const auto push_match = [this](mixed &matches, int i, const mixed &match) {
         if (named_subpatterns_count && !subpattern_names[i].empty()) {
           matches[subpattern_names[i]].push_back(match);
         }
@@ -954,7 +959,7 @@ Optional<int64_t> regexp::match(const string& subject, mixed& matches, int64_t f
   return result;
 }
 
-Optional<array<mixed>> regexp::split(const string& subject, int64_t limit, int64_t flags) const {
+Optional<array<mixed>> regexp::split(const string &subject, int64_t limit, int64_t flags) const {
   pcre_last_error = 0;
 
   check_pattern_compilation_warning();
@@ -967,8 +972,8 @@ Optional<array<mixed>> regexp::split(const string& subject, int64_t limit, int64
     return false;
   }
 
-  bool no_empty = flags & PREG_SPLIT_NO_EMPTY;
-  bool delim_capture = flags & PREG_SPLIT_DELIM_CAPTURE;
+  bool no_empty       = flags & PREG_SPLIT_NO_EMPTY;
+  bool delim_capture  = flags & PREG_SPLIT_DELIM_CAPTURE;
   bool offset_capture = flags & PREG_SPLIT_OFFSET_CAPTURE;
 
   if (flags & ~(PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_OFFSET_CAPTURE)) {
@@ -1051,21 +1056,21 @@ Optional<array<mixed>> regexp::split(const string& subject, int64_t limit, int64
 
 int64_t regexp::last_error() {
   switch (pcre_last_error) {
-  case PHP_PCRE_NO_ERROR:
-    return PHP_PCRE_NO_ERROR;
-  case PCRE_ERROR_MATCHLIMIT:
-    return PHP_PCRE_BACKTRACK_LIMIT_ERROR;
-  case PCRE_ERROR_RECURSIONLIMIT:
-    return PHP_PCRE_RECURSION_LIMIT_ERROR;
-  case PCRE_ERROR_BADUTF8:
-    return PHP_PCRE_BAD_UTF8_ERROR;
-  case PCRE_ERROR_BADUTF8_OFFSET:
-    return PREG_BAD_UTF8_OFFSET_ERROR;
-  case PCRE2_ERROR_BADOFFSET:
-    return PHP_PCRE_INTERNAL_ERROR;
-  default:
-    php_assert(0);
-    exit(1);
+    case PHP_PCRE_NO_ERROR:
+      return PHP_PCRE_NO_ERROR;
+    case PCRE_ERROR_MATCHLIMIT:
+      return PHP_PCRE_BACKTRACK_LIMIT_ERROR;
+    case PCRE_ERROR_RECURSIONLIMIT:
+      return PHP_PCRE_RECURSION_LIMIT_ERROR;
+    case PCRE_ERROR_BADUTF8:
+      return PHP_PCRE_BAD_UTF8_ERROR;
+    case PCRE_ERROR_BADUTF8_OFFSET:
+      return PREG_BAD_UTF8_OFFSET_ERROR;
+    case PCRE2_ERROR_BADOFFSET:
+      return PHP_PCRE_INTERNAL_ERROR;
+    default:
+      php_assert (0);
+      exit(1);
   }
 }
 
@@ -1078,3 +1083,4 @@ void regexp::global_init() {
 void global_init_regexp_lib() {
   regexp::global_init();
 }
+

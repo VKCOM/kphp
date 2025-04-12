@@ -9,7 +9,7 @@
 #include "compiler/stage.h"
 #include "compiler/threading/profiler.h"
 
-void FileToTokensF::execute(SrcFilePtr file, DataStream<std::pair<SrcFilePtr, std::vector<Token>>>& os) {
+void FileToTokensF::execute(SrcFilePtr file, DataStream<std::pair<SrcFilePtr, std::vector<Token>>> &os) {
   stage::set_name("Split file to tokens");
   stage::set_file(file);
   kphp_assert(file);

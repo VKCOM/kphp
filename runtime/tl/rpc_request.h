@@ -14,8 +14,9 @@ class RpcRequestResult;
 
 class RpcRequest {
 public:
-  explicit RpcRequest(class_instance<C$VK$TL$RpcFunction> function)
-      : storing_function_(std::move(function)) {}
+  explicit RpcRequest(class_instance<C$VK$TL$RpcFunction> function) :
+    storing_function_(std::move(function)) {
+  }
 
   string tl_function_name() const {
     string class_name{storing_function_.get()->get_class()};
@@ -28,12 +29,8 @@ public:
     return class_name;
   }
 
-  bool empty() const {
-    return storing_function_.is_null();
-  }
-  const class_instance<C$VK$TL$RpcFunction>& get_tl_function() const {
-    return storing_function_;
-  }
+  bool empty() const { return storing_function_.is_null(); }
+  const class_instance<C$VK$TL$RpcFunction>& get_tl_function() const { return storing_function_; }
 
   virtual std::unique_ptr<RpcRequestResult> store_request() const = 0;
   virtual ~RpcRequest() = default;
@@ -46,9 +43,9 @@ class RpcRequestResult : public ManagedThroughDlAllocator {
 public:
   const bool is_typed{};
 
-  RpcRequestResult(bool is_typed, std::unique_ptr<tl_func_base>&& result_fetcher)
-      : is_typed(is_typed),
-        result_fetcher_(std::move(result_fetcher)) {}
+  RpcRequestResult(bool is_typed, std::unique_ptr<tl_func_base> &&result_fetcher)
+    : is_typed(is_typed)
+    , result_fetcher_(std::move(result_fetcher)) {}
 
   bool empty() const {
     return !result_fetcher_;
@@ -66,8 +63,8 @@ class RpcRequestResultUntyped final : public RpcRequestResult {
 public:
   using RpcRequestResult::RpcRequestResult;
 
-  explicit RpcRequestResultUntyped(std::unique_ptr<tl_func_base>&& result_fetcher)
-      : RpcRequestResult(false, std::move(result_fetcher)) {}
+  explicit RpcRequestResultUntyped(std::unique_ptr<tl_func_base> &&result_fetcher)
+    : RpcRequestResult(false, std::move(result_fetcher)) {}
 
   class_instance<C$VK$TL$RpcResponse> fetch_typed_response() final {
     php_assert(!"Forbidden to call for non typed rpc requests");
@@ -86,8 +83,8 @@ class KphpRpcRequestResult final : public RpcRequestResult {
 public:
   using RpcRequestResult::RpcRequestResult;
 
-  explicit KphpRpcRequestResult(std::unique_ptr<tl_func_base>&& result_fetcher)
-      : RpcRequestResult(true, std::move(result_fetcher)) {}
+  explicit KphpRpcRequestResult(std::unique_ptr<tl_func_base> &&result_fetcher)
+    : RpcRequestResult(true, std::move(result_fetcher)) {}
 
   class_instance<C$VK$TL$RpcResponse> fetch_typed_response() final {
     class_instance<C$VK$TL$RpcResponse> $response;
@@ -122,6 +119,6 @@ public:
 } // namespace impl_
 
 template<class T0, unsigned int inner_magic0>
-struct t_ReqResult; // the definition appears after the TL scheme codegen, during the site build
+struct t_ReqResult;   // the definition appears after the TL scheme codegen, during the site build
 //
 using KphpRpcRequest = impl_::KphpRpcRequest<t_ReqResult>;

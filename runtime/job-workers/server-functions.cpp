@@ -42,7 +42,7 @@ class_instance<C$KphpJobWorkerRequest> f$kphp_job_worker_fetch_request() noexcep
   return result;
 }
 
-int64_t f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerResponse>& response) noexcept {
+int64_t f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerResponse> &response) noexcept {
   if (response.is_null()) {
     php_warning("Can't store job response: the response shouldn't be null");
     return job_workers::store_response_incorrect_call_error;
@@ -55,14 +55,14 @@ int64_t f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerRes
     php_warning("Can't store job response %s: this is a not job request", response.get_class());
     return job_workers::store_response_incorrect_call_error;
   }
-  auto& memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
-  auto* response_memory = memory_manager.acquire_shared_message<job_workers::JobSharedMessage>();
+  auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
+  auto *response_memory = memory_manager.acquire_shared_message<job_workers::JobSharedMessage>();
   if (!response_memory) {
     php_warning("Can't store job response %s: not enough shared messages", response.get_class());
     return job_workers::store_response_not_enough_shared_messages_error;
   }
-  response_memory->instance =
-      copy_instance_into_other_memory(response, response_memory->resource, ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
+  response_memory->instance = copy_instance_into_other_memory(response, response_memory->resource,
+                                                              ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
   if (response_memory->instance.is_null()) {
     php_warning("Can't store job response %s: too big response", response.get_class());
     memory_manager.release_shared_message(response_memory);
@@ -70,7 +70,7 @@ int64_t f$kphp_job_worker_store_response(const class_instance<C$KphpJobWorkerRes
   }
 
   dl::CriticalSectionSmartGuard critical_section;
-  if (const char* err = current_job.send_reply(response_memory)) {
+  if (const char *err = current_job.send_reply(response_memory)) {
     memory_manager.release_shared_message(response_memory);
     critical_section.leave_critical_section();
     php_warning("Can't store job response %s: %s", response.get_class(), err);

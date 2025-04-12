@@ -12,27 +12,29 @@
 #include "compiler/vertex.h"
 
 class VarNodeRecalc : public NodeRecalc {
-  static void on_restricted_type_mismatch(const tinf::Edge* edge, const TypeData* type_restriction);
+  static void on_restricted_type_mismatch(const tinf::Edge *edge, const TypeData *type_restriction);
 
 public:
-  VarNodeRecalc(tinf::VarNode* node, tinf::TypeInferer* inferer);
+  VarNodeRecalc(tinf::VarNode *node, tinf::TypeInferer *inferer);
   void do_recalc() final;
-  void on_new_type_became_tpError(const TypeData* because_of_type, const RValue& because_of_rvalue) final;
+  void on_new_type_became_tpError(const TypeData *because_of_type, const RValue &because_of_rvalue) final;
 };
 
-VarNodeRecalc::VarNodeRecalc(tinf::VarNode* node, tinf::TypeInferer* inferer)
-    : NodeRecalc(node, inferer) {}
+
+VarNodeRecalc::VarNodeRecalc(tinf::VarNode *node, tinf::TypeInferer *inferer) :
+  NodeRecalc(node, inferer) {
+}
 
 void VarNodeRecalc::do_recalc() {
-  tinf::VarNode* node = dynamic_cast<tinf::VarNode*>(this->node_);
+  tinf::VarNode *node = dynamic_cast<tinf::VarNode *>(this->node_);
 
   if (inferer_->is_finished()) {
     // the main reason of this error is that you have forgotten add_node() in collect-main-edges
-    kphp_error(0, fmt_format("called do_recalc on finished inferer, {}", node->get_description()));
+    kphp_error (0, fmt_format("called do_recalc on finished inferer, {}", node->get_description()));
     kphp_fail();
   }
   // at first, we just calculate new_type_ without any checks
-  for (const tinf::Edge* e : node->get_edges_from_this()) {
+  for (const tinf::Edge *e : node->get_edges_from_this()) {
     set_lca_at(e->from_at, as_rvalue(e->to));
     inferer_->add_node(e->to);
   }
@@ -50,14 +52,13 @@ void VarNodeRecalc::do_recalc() {
     // so, passed string/tuple won't affect @param array, but will show a mismatch error after tinf finishes
     new_type_ = node->get_type()->clone();
 
-    for (const tinf::Edge* e : node->get_edges_from_this()) {
-      TypeData* before_type = new_type_->clone();
+    for (const tinf::Edge *e : node->get_edges_from_this()) {
+      TypeData *before_type = new_type_->clone();
       set_lca_at(e->from_at, as_rvalue(e->to));
 
       satisfied = !new_type_->error_flag() && is_less_or_equal_type(new_type_, node->type_restriction);
       if (!satisfied) {
-        //          fmt_print("rollback {} from {} to {} due to restriction {}\n", node->get_description(), colored_type_out(new_type_),
-        //          colored_type_out(before_type), colored_type_out(node->type_restriction));
+//          fmt_print("rollback {} from {} to {} due to restriction {}\n", node->get_description(), colored_type_out(new_type_), colored_type_out(before_type), colored_type_out(node->type_restriction));
         on_restricted_type_mismatch(e, node->type_restriction);
         new_type_ = before_type->clone();
       }
@@ -69,8 +70,8 @@ void VarNodeRecalc::do_recalc() {
 
 // when new_type_ became tp_Error but a node is restricted with phpdoc (example: @param string, but passed Exception)
 // — then don't print it out, just skip this fact, it will be handled just a type mismatch
-void VarNodeRecalc::on_new_type_became_tpError(const TypeData* because_of_type, const RValue& because_of_rvalue) {
-  tinf::VarNode* node = dynamic_cast<tinf::VarNode*>(this->node_);
+void VarNodeRecalc::on_new_type_became_tpError(const TypeData *because_of_type, const RValue &because_of_rvalue) {
+  tinf::VarNode *node = dynamic_cast<tinf::VarNode *>(this->node_);
   if (!node->type_restriction) {
     NodeRecalc::on_new_type_became_tpError(because_of_type, because_of_rvalue);
   }
@@ -79,12 +80,12 @@ void VarNodeRecalc::on_new_type_became_tpError(const TypeData* because_of_type, 
 // when a type restriction is broken (examples: 1) @param string, but passed int 2) @return int[], but actually return mixed)
 // then we have an edge (edge->from is VarNode with restriction, edge->to is a mismatched actual node)
 // this error will be shown after tinf finishes
-void VarNodeRecalc::on_restricted_type_mismatch(const tinf::Edge* edge, const TypeData* type_restriction) {
+void VarNodeRecalc::on_restricted_type_mismatch(const tinf::Edge *edge, const TypeData *type_restriction) {
   static std::mutex mutex;
-  static std::vector<const tinf::Edge*> already_fired_errors;
+  static std::vector<const tinf::Edge *> already_fired_errors;
 
   std::lock_guard<std::mutex> guard{mutex};
-  for (const tinf::Edge* e : already_fired_errors) {
+  for (const tinf::Edge *e : already_fired_errors) {
     if (e->from == edge->from && e->to == edge->to) {
       return;
     }
@@ -92,11 +93,11 @@ void VarNodeRecalc::on_restricted_type_mismatch(const tinf::Edge* edge, const Ty
   if (edge->from_at) {
     type_restriction = type_restriction->const_read_at(*edge->from_at);
   }
-  tinf::get_inferer()->add_restriction(new RestrictionMatchPhpdoc(dynamic_cast<tinf::VarNode*>(edge->from), edge->to, type_restriction));
+  tinf::get_inferer()->add_restriction(new RestrictionMatchPhpdoc(dynamic_cast<tinf::VarNode *>(edge->from), edge->to, type_restriction));
   already_fired_errors.emplace_back(edge);
 }
 
-void tinf::VarNode::recalc(tinf::TypeInferer* inferer) {
+void tinf::VarNode::recalc(tinf::TypeInferer *inferer) {
   kphp_assert(param_i != e_uninited);
   VarNodeRecalc(this, inferer).run();
 }
@@ -108,14 +109,13 @@ std::string tinf::VarNode::get_description() {
   } else if (is_return_value_from_function()) {
     return fmt_format("VarNode (return of {}) : {}", function_->as_human_readable(), tinf::get_type(function_, -1)->as_human_readable());
   } else if (is_argument_of_function()) {
-    return fmt_format("VarNode (arg{} {} of {}) : {}", var_->param_i, var_->as_human_readable(), var_->holder_func->as_human_readable(),
-                      tinf::get_type(var_)->as_human_readable());
+    return fmt_format("VarNode (arg{} {} of {}) : {}", var_->param_i, var_->as_human_readable(), var_->holder_func->as_human_readable(), tinf::get_type(var_)->as_human_readable());
   } else {
     return "VarNode (strange)";
   }
 }
 
-const Location& tinf::VarNode::get_location() const {
+const Location &tinf::VarNode::get_location() const {
   if (is_variable()) {
     return var_->init_val ? var_->init_val->location : var_->holder_func ? var_->holder_func->root->location : stage::get_location();
   } else if (is_argument_of_function()) {
@@ -125,7 +125,7 @@ const Location& tinf::VarNode::get_location() const {
   }
 }
 
-void tinf::VarNode::set_type_restriction(const TypeData* r) {
+void tinf::VarNode::set_type_restriction(const TypeData *r) {
   kphp_assert(!type_restriction && "Setting type_restriction to VarNode more than once");
   type_restriction = r;
 }

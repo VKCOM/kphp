@@ -12,13 +12,13 @@
 
 namespace tinf {
 
-tinf::Node* get_tinf_node(VertexPtr vertex);
-tinf::Node* get_tinf_node(VarPtr vertex);
-tinf::Node* get_tinf_node(FunctionPtr function, int param_i);
+tinf::Node *get_tinf_node(VertexPtr vertex);
+tinf::Node *get_tinf_node(VarPtr vertex);
+tinf::Node *get_tinf_node(FunctionPtr function, int param_i);
 
-tinf::TypeInferer* get_inferer();
-const TypeData* get_type(VertexPtr vertex);
-const TypeData* get_type(VarPtr var);
-const TypeData* get_type(FunctionPtr function, int param_i);
+tinf::TypeInferer *get_inferer();
+const TypeData *get_type(VertexPtr vertex);
+const TypeData *get_type(VarPtr var);
+const TypeData *get_type(FunctionPtr function, int param_i);
 
 } // namespace tinf

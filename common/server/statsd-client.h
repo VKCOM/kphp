@@ -6,4 +6,5 @@
 
 #include "common/server/engine-settings.h"
 
-void send_data_to_statsd_with_prefix(const char* custom_stats_prefix, unsigned int tag_mask);
+void send_data_to_statsd_with_prefix(const char *custom_stats_prefix, unsigned int tag_mask);
+

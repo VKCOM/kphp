@@ -14,29 +14,30 @@
 namespace vk {
 namespace tl {
 
-void trim(std::string& str) {
+void trim(std::string &str) {
   str.erase(str.begin(), std::find_if_not(str.begin(), str.end(), isspace));
   str.erase(std::find_if_not(str.rbegin(), str.rend(), isspace).base(), str.end());
 }
 
 struct FileLineReader {
-  explicit FileLineReader(const std::string& combined2_tl_file)
-      : combined2_tl_file_(combined2_tl_file),
-        combined2_tl_(combined2_tl_file_) {
+  explicit FileLineReader(const std::string &combined2_tl_file) :
+    combined2_tl_file_(combined2_tl_file),
+    combined2_tl_(combined2_tl_file_) {
     if (!combined2_tl_) {
       raise_parsing_excpetion(std::strerror(errno));
     }
   }
 
-  void raise_parsing_excpetion(const std::string& what) {
+  void raise_parsing_excpetion(const std::string &what) {
     std::string line_hint;
     if (line_number_) {
       line_hint = ":" + std::to_string(line_number_);
     }
-    throw std::runtime_error{"Error on reading tl hints from '" + combined2_tl_file_ + line_hint + "': " + std::string{what}};
+    throw std::runtime_error{
+      "Error on reading tl hints from '" + combined2_tl_file_ + line_hint + "': " + std::string{what}};
   }
 
-  void check_pos(size_t pos, const char* what) {
+  void check_pos(size_t pos, const char *what) {
     if (pos == std::string::npos || pos + 1 >= line_.size()) {
       raise_parsing_excpetion(std::string{what} + " is expected");
     }
@@ -54,9 +55,7 @@ struct FileLineReader {
     return !line_.empty();
   }
 
-  const std::string& get_current_line() const {
-    return line_;
-  }
+  const std::string &get_current_line() const { return line_; }
 
 private:
   const std::string combined2_tl_file_;
@@ -65,11 +64,11 @@ private:
   size_t line_number_{0};
 };
 
-void TlHints::load_from_combined2_tl_file(const std::string& combined2_tl_file, bool rename_all_forbidden_names) {
+void TlHints::load_from_combined2_tl_file(const std::string &combined2_tl_file, bool rename_all_forbidden_names) {
   FileLineReader reader{combined2_tl_file};
 
   while (reader.read_next_line()) {
-    const auto& line = reader.get_current_line();
+    const auto &line = reader.get_current_line();
 
     size_t name_end_pos = line.find('#');
     reader.check_pos(name_end_pos, "name");
@@ -126,7 +125,7 @@ void TlHints::load_from_combined2_tl_file(const std::string& combined2_tl_file, 
   }
 }
 
-const TlHint* TlHints::get_hint_for_combinator(const std::string& combinator_name) const {
+const TlHint *TlHints::get_hint_for_combinator(const std::string &combinator_name) const {
   auto it = hints_.find(combinator_name);
   return it == hints_.end() ? nullptr : &it->second;
 }

@@ -4,8 +4,8 @@
 
 #include "compiler/ffi/ffi_types.h"
 
-void ffi_type_delete(const FFIType* type) {
-  for (const auto* member : type->members) {
+void ffi_type_delete(const FFIType *type) {
+  for (const auto *member : type->members) {
     ffi_type_delete(member);
   }
   delete type;

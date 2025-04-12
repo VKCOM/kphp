@@ -5,11 +5,11 @@
 #include "compiler/pipes/extract-resumable-calls.h"
 
 #include "compiler/compiler-core.h"
+#include "compiler/vertex-util.h"
 #include "compiler/inferring/public.h"
 #include "compiler/name-gen.h"
-#include "compiler/vertex-util.h"
 
-VertexPtr* ExtractResumableCallsPass::skip_conv_and_sets(VertexPtr* replace) noexcept {
+VertexPtr *ExtractResumableCallsPass::skip_conv_and_sets(VertexPtr *replace) noexcept {
   if (auto set_modify = replace->try_as<op_set_modify>()) {
     return skip_conv_and_sets(&(set_modify->rhs()));
   }
@@ -42,8 +42,8 @@ bool ExtractResumableCallsPass::is_resumable_expr(VertexPtr vertex) noexcept {
   return false;
 }
 
-VertexPtr* ExtractResumableCallsPass::extract_resumable_expr(VertexPtr vertex) noexcept {
-  VertexPtr* resumable_expr = nullptr;
+VertexPtr *ExtractResumableCallsPass::extract_resumable_expr(VertexPtr vertex) noexcept {
+  VertexPtr *resumable_expr = nullptr;
 
   if (auto return_v = vertex.try_as<op_return>()) {
     resumable_expr = return_v->has_expr() ? &return_v->expr() : nullptr;
@@ -99,12 +99,12 @@ std::pair<VertexAdaptor<op_move>, VertexAdaptor<op_set>> ExtractResumableCallsPa
 
 VertexPtr ExtractResumableCallsPass::replace_set_ternary(VertexAdaptor<op_set_modify> set_vertex, VertexAdaptor<op_ternary> rhs_ternary) noexcept {
   auto set_true_case = set_vertex.clone();
-  VertexPtr& true_case_rhs = *skip_conv_and_sets(&set_true_case->rhs());
+  VertexPtr &true_case_rhs = *skip_conv_and_sets(&set_true_case->rhs());
   true_case_rhs = rhs_ternary->true_expr();
   true_case_rhs->val_ref_flag = rhs_ternary->val_ref_flag;
 
   auto set_false_case = set_vertex.clone();
-  VertexPtr& false_case_rhs = *skip_conv_and_sets(&set_false_case->rhs());
+  VertexPtr &false_case_rhs = *skip_conv_and_sets(&set_false_case->rhs());
   false_case_rhs = rhs_ternary->false_expr();
   false_case_rhs->val_ref_flag = rhs_ternary->val_ref_flag;
 
@@ -119,23 +119,23 @@ VertexPtr ExtractResumableCallsPass::replace_set_logical_operation(VertexAdaptor
   auto set_if_lhs_false = set_vertex.clone();
 
   switch (operation->type()) {
-  case op_log_or:
-    *skip_conv_and_sets(&set_if_lhs_true->rhs()) = temp_var.first;
-    *skip_conv_and_sets(&set_if_lhs_false->rhs()) = operation->rhs();
-    break;
-  case op_log_and:
-    *skip_conv_and_sets(&set_if_lhs_false->rhs()) = temp_var.first;
-    *skip_conv_and_sets(&set_if_lhs_true->rhs()) = operation->rhs();
-    break;
-  default:
-    kphp_assert(0 && "unexpected type");
+    case op_log_or:
+      *skip_conv_and_sets(&set_if_lhs_true->rhs()) = temp_var.first;
+      *skip_conv_and_sets(&set_if_lhs_false->rhs()) = operation->rhs();
+      break;
+    case op_log_and:
+      *skip_conv_and_sets(&set_if_lhs_false->rhs()) = temp_var.first;
+      *skip_conv_and_sets(&set_if_lhs_true->rhs()) = operation->rhs();
+      break;
+    default:
+      kphp_assert(0 && "unexpected type");
   }
 
   auto check_lhs = VertexAdaptor<op_if>::create(temp_var.second, VertexUtil::embrace(set_if_lhs_true), VertexUtil::embrace(set_if_lhs_false));
   return VertexUtil::embrace(check_lhs.set_rl_type(val_none).set_location(operation));
 }
 
-VertexPtr ExtractResumableCallsPass::replace_resumable_expr_with_temp_var(VertexPtr* resumable_expr, VertexPtr expr_user) noexcept {
+VertexPtr ExtractResumableCallsPass::replace_resumable_expr_with_temp_var(VertexPtr *resumable_expr, VertexPtr expr_user) noexcept {
   auto temp_var = make_temp_resumable_var(*resumable_expr);
   *resumable_expr = temp_var.first;
   return VertexAdaptor<op_seq>::create(temp_var.second, expr_user).set_rl_type(val_none).set_location(expr_user);
@@ -146,7 +146,7 @@ VertexPtr ExtractResumableCallsPass::on_enter_vertex(VertexPtr vertex) {
     return vertex;
   }
 
-  VertexPtr* resumable_expr = extract_resumable_expr(vertex);
+  VertexPtr *resumable_expr = extract_resumable_expr(vertex);
   if (!resumable_expr) {
     return vertex;
   }

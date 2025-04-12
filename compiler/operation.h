@@ -23,8 +23,19 @@ enum OperationExtra {
   op_ex_safe_version,
 };
 
-enum RLValueType { val_error = 0, val_r, val_l, val_none };
-enum ConstValueType { cnst_error_ = 0, cnst_not_val, cnst_nonconst_val, cnst_const_val };
+enum RLValueType {
+  val_error = 0,
+  val_r,
+  val_l,
+  val_none
+};
+enum ConstValueType {
+  cnst_error_ = 0,
+  cnst_not_val,
+  cnst_nonconst_val,
+  cnst_const_val
+};
+
 
 struct OpProperties {
   Operation op;
@@ -44,7 +55,7 @@ struct OpProperties {
 
 struct OpInfo {
   static int was_init_static;
-  // TODO: assert that 255 is enough
+  //TODO: assert that 255 is enough
   static Operation tok_to_op[255];
   static Operation tok_to_binary_op[255];
   static Operation tok_to_unary_op[255];
@@ -59,7 +70,7 @@ struct OpInfo {
   static void init_static();
 
 private:
-  static inline OpProperties& get_properties(Operation op) {
+  static inline OpProperties &get_properties(Operation op) {
     return P[op];
   }
 
@@ -68,7 +79,7 @@ private:
   }
 
 public:
-  static inline const OpProperties& properties(Operation op) {
+  static inline const OpProperties &properties(Operation op) {
     return get_properties(op);
   }
 
@@ -84,15 +95,15 @@ public:
     return properties(op).type;
   }
 
-  static inline const std::string& desc(Operation op) {
+  static inline const std::string &desc(Operation op) {
     return properties(op).description;
   }
 
-  static inline const std::string& str(Operation op) {
+  static inline const std::string &str(Operation op) {
     return properties(op).str;
   }
 
-  static inline const char* op_str(Operation op) {
+  static inline const char *op_str(Operation op) {
     return properties(op).op_str.c_str();
   }
 
@@ -108,3 +119,4 @@ public:
     return properties(op).fixity;
   }
 };
+

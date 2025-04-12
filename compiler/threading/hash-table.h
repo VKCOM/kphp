@@ -16,21 +16,22 @@ public:
     unsigned long long hash;
     T data;
 
-    HTNode()
-        : hash(0),
-          data() {}
+    HTNode() :
+      hash(0),
+      data() {
+    }
   };
 
 private:
-  HTNode* nodes;
+  HTNode *nodes;
   int used_size;
-
 public:
-  TSHashTable()
-      : nodes(new HTNode[N]),
-        used_size(0) {}
+  TSHashTable() :
+    nodes(new HTNode[N]),
+    used_size(0) {
+  }
 
-  HTNode* at(unsigned long long hash) {
+  HTNode *at(unsigned long long hash) {
     int i = (unsigned)hash % (unsigned)N;
     while (true) {
       while (nodes[i].hash != 0 && nodes[i].hash != hash) {
@@ -49,7 +50,7 @@ public:
     return &nodes[i];
   }
 
-  const T* find(unsigned long long hash) {
+  const T *find(unsigned long long hash) {
     int i = (unsigned)hash % (unsigned)N;
     while (nodes[i].hash != 0 && nodes[i].hash != hash) {
       i++;
@@ -84,7 +85,7 @@ public:
   }
 
   template<class CondF>
-  std::vector<T> get_all_if(const CondF& callbackF) {
+  std::vector<T> get_all_if(const CondF &callbackF) {
     std::vector<T> res;
     for (int i = 0; i < N; i++) {
       if (nodes[i].hash != 0 && callbackF(nodes[i].data)) {

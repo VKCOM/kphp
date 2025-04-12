@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <memory>
 #include <thread>
+#include <memory>
 
 #include "common/mixin/not_copyable.h"
 #include "common/smart_ptrs/singleton.h"

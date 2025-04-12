@@ -7,18 +7,20 @@
 // This file is intended to be used inside auto-generated rewrite rules.
 // Do not include it from somewhere else.
 
-#include "compiler/compiler-core.h"
-#include "compiler/vertex.h"
 #include <string>
+#include "compiler/vertex.h"
+#include "compiler/compiler-core.h"
 
 namespace rewrite_rules {
 
 template<Operation Op>
 class VertexCache {
 private:
+
   std::vector<VertexAdaptor<Op>> stack_;
 
 public:
+
   VertexAdaptor<Op> pop() {
     if (!stack_.empty()) {
       auto v = stack_.back();
@@ -47,7 +49,7 @@ struct Context {
   std::vector<VertexPtr> tmp_args_vector_;
 };
 
-Context& get_context();
+Context &get_context();
 
 bool is_pure(VertexPtr v);
 bool is_same(VertexPtr x, VertexPtr y);
@@ -65,24 +67,24 @@ VertexAdaptor<Op> vertex_cast(T v) {
   return v.template as<Op>();
 }
 
-void retire_vertex(Context& ctx, VertexPtr v);
+void retire_vertex(Context &ctx, VertexPtr v);
 
 inline void set_func_call_args(VertexAdaptor<op_func_call> call __attribute__((unused))) {}
 
-inline void set_func_call_args(VertexAdaptor<op_func_call> call, const std::vector<VertexPtr>& args) {
+inline void set_func_call_args(VertexAdaptor<op_func_call> call, const std::vector<VertexPtr> &args) {
   for (int i = 0; i < args.size(); i++) {
     call->args()[i] = args[i];
   }
 }
 
 template<class... Args>
-void set_func_call_args(VertexAdaptor<op_func_call> call, const Args&... args) {
+void set_func_call_args(VertexAdaptor<op_func_call> call, const Args &...args) {
   int i = 0;
   ((call->args()[i++] = args), ...);
 }
 
 template<Operation Op, class... Args>
-VertexAdaptor<Op> create_vertex_with_string(Context& ctx, std::string&& str_val, Args&&... args) {
+VertexAdaptor<Op> create_vertex_with_string(Context &ctx, std::string &&str_val, Args &&...args) {
   // allocate a vertex or take it from the cache
   VertexAdaptor<Op> v;
 
@@ -122,7 +124,7 @@ VertexAdaptor<Op> create_vertex_with_string(Context& ctx, std::string&& str_val,
 }
 
 template<Operation Op>
-VertexAdaptor<Op> create_vertex_with_string(Context& ctx, std::string&& name, const VertexConstRange& args) {
+VertexAdaptor<Op> create_vertex_with_string(Context &ctx, std::string &&name, const VertexConstRange &args) {
   ctx.tmp_args_vector_.insert(ctx.tmp_args_vector_.end(), args.begin(), args.end());
   auto result = create_vertex_with_string<Op>(ctx, std::move(name), ctx.tmp_args_vector_);
   ctx.tmp_args_vector_.clear();
@@ -130,7 +132,7 @@ VertexAdaptor<Op> create_vertex_with_string(Context& ctx, std::string&& name, co
 }
 
 template<Operation Op, class... Args>
-VertexAdaptor<Op> create_vertex(Context& ctx, Args&&... args) {
+VertexAdaptor<Op> create_vertex(Context &ctx, Args &&...args) {
   static_cast<void>(ctx);
   auto v = VertexAdaptor<Op>::create(std::forward<Args>(args)...);
   return v;

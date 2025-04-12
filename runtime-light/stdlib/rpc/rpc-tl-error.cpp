@@ -71,7 +71,7 @@ void TlRpcError::fetch_and_skip_header() const noexcept {
   }
 }
 
-class_instance<C$VK$TL$RpcResponse> RpcErrorFactory::make_error(const char* error, int32_t error_code) const noexcept {
+class_instance<C$VK$TL$RpcResponse> RpcErrorFactory::make_error(const char *error, int32_t error_code) const noexcept {
   return make_error(string{error}, error_code);
 }
 

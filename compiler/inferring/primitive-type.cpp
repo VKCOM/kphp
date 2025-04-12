@@ -11,48 +11,28 @@
 
 #include "compiler/stage.h"
 
-const char* ptype_name(PrimitiveType id) {
+const char *ptype_name(PrimitiveType id) {
   switch (id) {
-  case tp_any:
-    return "any";
-  case tp_Null:
-    return "Null";
-  case tp_False:
-    return "False";
-  case tp_bool:
-    return "bool";
-  case tp_int:
-    return "int";
-  case tp_float:
-    return "float";
-  case tp_array:
-    return "array";
-  case tp_string:
-    return "string";
-  case tp_tmp_string:
-    return "tmp_string";
-  case tp_mixed:
-    return "mixed";
-  case tp_tuple:
-    return "tuple";
-  case tp_shape:
-    return "shape";
-  case tp_future:
-    return "future";
-  case tp_future_queue:
-    return "future_queue";
-  case tp_regexp:
-    return "regexp";
-  case tp_Class:
-    return "Class";
-  case tp_object:
-    return "object";
-  case tp_void:
-    return "void";
-  case tp_Error:
-    return "Error";
-  case ptype_size:
-    kphp_fail();
+    case tp_any:           return "any";
+    case tp_Null:          return "Null";
+    case tp_False:         return "False";
+    case tp_bool:          return "bool";
+    case tp_int:           return "int";
+    case tp_float:         return "float";
+    case tp_array:         return "array";
+    case tp_string:        return "string";
+    case tp_tmp_string:    return "tmp_string";
+    case tp_mixed:         return "mixed";
+    case tp_tuple:         return "tuple";
+    case tp_shape:         return "shape";
+    case tp_future:        return "future";
+    case tp_future_queue:  return "future_queue";
+    case tp_regexp:        return "regexp";
+    case tp_Class:         return "Class";
+    case tp_object:        return "object";
+    case tp_void:          return "void";
+    case tp_Error:         return "Error";
+    case ptype_size:       kphp_fail();
   }
   kphp_fail();
 }

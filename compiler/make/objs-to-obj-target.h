@@ -13,8 +13,11 @@ class Objs2ObjTarget : public Target {
 public:
   std::string get_cmd() final {
     std::stringstream ss;
-    ss << settings->cxx.get() << " " << settings->cxx_toolchain_option.get() << " " << settings->incremental_linker_flags.get() << " -o " << target() << " "
-       << dep_list();
+    ss << settings->cxx.get() <<
+       " " << settings->cxx_toolchain_option.get() <<
+       " " << settings->incremental_linker_flags.get() <<
+       " -o " << target() <<
+       " " << dep_list();
     return ss.str();
   }
 };

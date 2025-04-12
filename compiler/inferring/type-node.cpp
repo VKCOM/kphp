@@ -11,6 +11,6 @@ std::string tinf::TypeNode::get_description() {
   return "TypeNode at " + location_.as_human_readable() + " : " + type_->as_human_readable();
 }
 
-const Location& tinf::TypeNode::get_location() const {
+const Location &tinf::TypeNode::get_location() const {
   return location_;
 }

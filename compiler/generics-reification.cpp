@@ -11,6 +11,7 @@
 #include "compiler/type-hint.h"
 #include "compiler/vertex-util.h"
 
+
 /*
  * The word "reification" means deducing generic T to instantiate generic functions/classes.
  *    function f<T>(T $arg) {}
@@ -57,12 +58,12 @@
  */
 
 // implemented in DeduceImplicitTypesAndCastsPass cpp
-void patch_rhs_casting_to_callable(VertexPtr& rhs, const TypeHintCallable* as_callable, VertexAdaptor<op_func_call> call);
+void patch_rhs_casting_to_callable(VertexPtr &rhs, const TypeHintCallable *as_callable, VertexAdaptor<op_func_call> call);
 
 // assumptions for vars aren't saved unless they contain instances (neither for parameters, nor for local vars)
 // i.e. even if you write `@var int|false $a`, it won't be saved as an assumption, and `return $a` will assume unknown
 // for generics instantiating, like calls `f($a)` we intentionally search for @var even with primitives
-static const TypeHint* find_first_phpdoc_for_var(FunctionPtr current_function, const std::string& var_name, VertexPtr stop_at) {
+static const TypeHint *find_first_phpdoc_for_var(FunctionPtr current_function, const std::string &var_name, VertexPtr stop_at) {
   bool stopped = false;
   VertexAdaptor<op_phpdoc_var> found;
 
@@ -92,7 +93,7 @@ static const TypeHint* find_first_phpdoc_for_var(FunctionPtr current_function, c
 // we also support `f<T1, T2=T1>`, that's why we call phpdoc_replace_genericTs_with_reified() here
 // having default types which depend on earlier T is specially useful for generic classes, e.g. `C<T, TCont=Container<T>>`
 static inline void apply_defaultTs_if_someTs_not_set(FunctionPtr generic_function, VertexAdaptor<op_func_call> call) {
-  for (const auto& itemT : *generic_function->genericTs) {
+  for (const auto &itemT : *generic_function->genericTs) {
     if (itemT.def_hint && !call->reifiedTs->find(itemT.nameT)) {
       call->reifiedTs->provideT(itemT.nameT, phpdoc_replace_genericTs_with_reified(itemT.def_hint, call->reifiedTs), call);
     }
@@ -101,7 +102,7 @@ static inline void apply_defaultTs_if_someTs_not_set(FunctionPtr generic_functio
 
 // when php code contains an explicit generics instantiation `f/*<T1, T2>*/()`, apply it to f
 // "T1, T2" was parsed earlier by tokenizer in ParseAndApplyPhpDocForFunction
-void apply_instantiationTs_from_php_comment(FunctionPtr generic_function, VertexAdaptor<op_func_call> call, const GenericsInstantiationPhpComment* commentTs) {
+void apply_instantiationTs_from_php_comment(FunctionPtr generic_function, VertexAdaptor<op_func_call> call, const GenericsInstantiationPhpComment *commentTs) {
   kphp_assert(commentTs != nullptr && !commentTs->vectorTs.empty());
   kphp_error(commentTs->vectorTs.size() <= generic_function->genericTs->size(),
              fmt_format("Mismatch generics instantiation count: waiting {}, got {}", generic_function->genericTs->size(), commentTs->vectorTs.size()));
@@ -116,8 +117,8 @@ void apply_instantiationTs_from_php_comment(FunctionPtr generic_function, Vertex
 
 // when we have a call `f($v)` for a generic function `f<T>`, then T depends on $v
 // for $v=1 return int, for $v=$a->field return type of A::$field (even for primitives), etc.
-static const TypeHint* reify_instantiationT_from_expr(FunctionPtr current_function, VertexPtr v) {
-  const TypeHint* instantiationT = assume_class_of_expr(current_function, v, v).assum_hint;
+static const TypeHint *reify_instantiationT_from_expr(FunctionPtr current_function, VertexPtr v) {
+  const TypeHint *instantiationT = assume_class_of_expr(current_function, v, v).assum_hint;
 
   // assumptions don't save @var for variables if they are primitives (on purpose, because they can be splitted)
   // that's why, having code `$a = 1; f($a)`, assumption for $a will be null, even if `@var int` written
@@ -133,8 +134,7 @@ static const TypeHint* reify_instantiationT_from_expr(FunctionPtr current_functi
 // having a call `f($arg)`, where f is `f<T>`, and $arg is `@param T[] $array`, deduce T
 // for example, if an assumption for $arg is A[], then T is A
 // this function is called for every generic argument of `f()` invocation
-static void reify_genericT_from_call_argument(FunctionPtr current_function, FunctionPtr generic_function, const TypeHint* param_hint,
-                                              VertexAdaptor<op_func_call> call, VertexPtr& call_arg, bool old_syntax) {
+static void reify_genericT_from_call_argument(FunctionPtr current_function, FunctionPtr generic_function, const TypeHint *param_hint, VertexAdaptor<op_func_call> call, VertexPtr &call_arg, bool old_syntax) {
   kphp_assert(param_hint->has_genericT_inside() && generic_function->genericTs != nullptr);
 
   param_hint = param_hint->unwrap_optional();
@@ -144,8 +144,8 @@ static void reify_genericT_from_call_argument(FunctionPtr current_function, Func
   // f($a->field) means T=(type hint of A::$field), f(someFn()) means T=(return of someFn())
   // f($var) means T=(assumption of $var)
   // f(null) and other (which can't be handled or are not handled in assumptions) don't reify T
-  if (const auto* as_genericT = param_hint->try_as<TypeHintGenericT>()) {
-    const TypeHint* extends_hint = generic_function->genericTs->get_extends_hint(as_genericT->nameT);
+  if (const auto *as_genericT = param_hint->try_as<TypeHintGenericT>()) {
+    const TypeHint *extends_hint = generic_function->genericTs->get_extends_hint(as_genericT->nameT);
 
     // here extends_hint is just used for converting 'strlen' to callable
     // this seems ugly, but I couldn't find a better way to reify f<lambda$xxx>, not f<string>
@@ -157,7 +157,7 @@ static void reify_genericT_from_call_argument(FunctionPtr current_function, Func
       // fall through, instantiationT will be set to lambda$xxx
     }
 
-    const TypeHint* instantiationT = reify_instantiationT_from_expr(current_function, call_arg);
+    const TypeHint *instantiationT = reify_instantiationT_from_expr(current_function, call_arg);
     if (old_syntax && !instantiationT) {
       instantiationT = TypeHintPrimitive::create(tp_any);
     }
@@ -169,11 +169,11 @@ static void reify_genericT_from_call_argument(FunctionPtr current_function, Func
   // for @param T[], if an argument is an array, reify T
   // f($arr_of_A) means T=A if $arr_of_a has an assumption A[]
   // f([1, ...]) means T=int, f($a->field) and f(someFn()) also work, even for arrays of primitives
-  if (const auto* as_array = param_hint->try_as<TypeHintArray>()) {
-    if (const auto* as_genericT = as_array->inner->try_as<TypeHintGenericT>()) {
-      const TypeHint* instantiationT = reify_instantiationT_from_expr(current_function, call_arg);
+  if (const auto *as_array = param_hint->try_as<TypeHintArray>()) {
+    if (const auto *as_genericT = as_array->inner->try_as<TypeHintGenericT>()) {
+      const TypeHint *instantiationT = reify_instantiationT_from_expr(current_function, call_arg);
       if (instantiationT) {
-        if (const auto* arg_array = instantiationT->try_as<TypeHintArray>()) {
+        if (const auto *arg_array = instantiationT->try_as<TypeHintArray>()) {
           call->reifiedTs->provideT(as_genericT->nameT, arg_array->inner, call);
         }
       }
@@ -186,7 +186,7 @@ static void reify_genericT_from_call_argument(FunctionPtr current_function, Func
   // it will be reified (and filled into call) in `patch_rhs_casting_to_callable()`
 
   // for @param class-string<T>, if an argument is A::class, reify T=A
-  if (const auto* as_class_string = param_hint->try_as<TypeHintClassString>()) {
+  if (const auto *as_class_string = param_hint->try_as<TypeHintClassString>()) {
     ClassPtr klassT;
     auto real_call_arg = VertexUtil::get_actual_value(call_arg);
     if (real_call_arg->type() == op_string) {
@@ -195,7 +195,7 @@ static void reify_genericT_from_call_argument(FunctionPtr current_function, Func
     }
 
     kphp_error_return(klassT, "Expected ::class as a parameter, but got not a const string");
-    const auto* as_genericT = as_class_string->inner->try_as<TypeHintGenericT>();
+    const auto *as_genericT = as_class_string->inner->try_as<TypeHintGenericT>();
     kphp_assert(as_genericT);
     call->reifiedTs->provideT(as_genericT->nameT, TypeHintInstance::create(klassT->name), call);
   }
@@ -205,8 +205,7 @@ static void reify_genericT_from_call_argument(FunctionPtr current_function, Func
 // "auto deducing" for generic arguments is typically called "reification"
 // note, that if a PHP user calls f explicitly using `f/*<T1, T2>*/(...)`, this is NOT called:
 // this is called for auto-reification, when /*<...>*/ is omitted, meant to be obviously reified
-void reify_function_genericTs_on_generic_func_call(FunctionPtr current_function, FunctionPtr generic_function, VertexAdaptor<op_func_call> call,
-                                                   bool old_syntax) {
+void reify_function_genericTs_on_generic_func_call(FunctionPtr current_function, FunctionPtr generic_function, VertexAdaptor<op_func_call> call, bool old_syntax) {
   kphp_assert(generic_function->is_generic() && generic_function->genericTs);
 
   call->reifiedTs = new GenericsInstantiationMixin(call->location);
@@ -237,9 +236,9 @@ void reify_function_genericTs_on_generic_func_call(FunctionPtr current_function,
 // on instantiation `f<A>()`, we have to detect whether `A` satisfies this "extends" restriction (implements SomeInterface here)
 // this function does this check, filling out_err or leaving it empty
 // for `f<T:Some1|Some2>` this function is called for every of OR conditions
-static bool does_instantiationT_fit_extends_condition(const TypeHint* instantiationT, const TypeHint* extends_cond, std::string& out_err) {
-  if (const auto* as_instance = extends_cond->try_as<TypeHintInstance>()) {
-    const auto* inst_instance = instantiationT->try_as<TypeHintInstance>();
+static bool does_instantiationT_fit_extends_condition(const TypeHint *instantiationT, const TypeHint *extends_cond, std::string &out_err) {
+  if (const auto *as_instance = extends_cond->try_as<TypeHintInstance>()) {
+    const auto *inst_instance = instantiationT->try_as<TypeHintInstance>();
     if (!inst_instance) {
       out_err = fmt_format("It should be a class extending {}", as_instance->full_class_name);
     } else if (!as_instance->resolve()->is_parent_of(inst_instance->resolve())) {
@@ -281,16 +280,16 @@ static bool does_instantiationT_fit_extends_condition(const TypeHint* instantiat
 // check that A corresponds SomeInterface
 // for `f<T: int|string>`, check all conditions
 // we check only hints that are supported in declarations, see check_declarationT_extends_hint()
-static void check_reifiedT_extends_hint(const std::string& nameT, const TypeHint* instantiationT, const TypeHint* extends_hint) {
+static void check_reifiedT_extends_hint(const std::string &nameT, const TypeHint *instantiationT, const TypeHint *extends_hint) {
   std::string err;
 
   if (extends_hint->try_as<TypeHintInstance>() || extends_hint->try_as<TypeHintCallable>() || extends_hint->try_as<TypeHintObject>()) {
     // 'T: SomeInterface' / 'T: BaseClass' / 'T: callable' / 'T: object'
     does_instantiationT_fit_extends_condition(instantiationT->unwrap_optional(), extends_hint, err);
 
-  } else if (const auto* as_pipe = extends_hint->try_as<TypeHintPipe>()) {
+  } else if (const auto *as_pipe = extends_hint->try_as<TypeHintPipe>()) {
     // 'T: int|string' / 'T: SomeInterface|SomeInterface2'
-    for (const TypeHint* item : as_pipe->items) {
+    for (const TypeHint *item : as_pipe->items) {
       if (does_instantiationT_fit_extends_condition(instantiationT->unwrap_optional(), item, err)) {
         return;
       }
@@ -301,25 +300,24 @@ static void check_reifiedT_extends_hint(const std::string& nameT, const TypeHint
     kphp_assert(0 && "unexpected extends_hint branch");
   }
 
-  kphp_error(err.empty(), fmt_format("Calculated generic <{}> = {} breaks condition '{}:{}'.\n{}", nameT,
-                                     TermStringFormat::paint_green(instantiationT->as_human_readable()), nameT, extends_hint->as_human_readable(), err));
+  kphp_error(err.empty(),
+             fmt_format("Calculated generic <{}> = {} breaks condition '{}:{}'.\n{}", nameT, TermStringFormat::paint_green(instantiationT->as_human_readable()), nameT, extends_hint->as_human_readable(), err));
 }
 
 // when all generic T of `f<T1, T2, ...>()` have been auto-reified or parsed from /*<php comment>*/,
 // check their correctness
-void check_reifiedTs_for_generic_func_call(const GenericsDeclarationMixin* genericTs, VertexAdaptor<op_func_call> call, bool old_syntax) {
+void check_reifiedTs_for_generic_func_call(const GenericsDeclarationMixin *genericTs, VertexAdaptor<op_func_call> call, bool old_syntax) {
   kphp_assert(call->reifiedTs);
 
-  for (const auto& itemT : *genericTs) {
-    const TypeHint* instantiationT = call->reifiedTs->find(itemT.nameT);
+  for (const auto &itemT : *genericTs) {
+    const TypeHint *instantiationT = call->reifiedTs->find(itemT.nameT);
     if (!instantiationT || instantiationT->has_genericT_inside() || instantiationT->has_autogeneric_inside()) {
       kphp_error(0, fmt_format("Couldn't reify generic <{}> for call.\n{}", itemT.nameT, genericTs->prompt_provide_commentTs_human_readable(call)));
       continue;
     }
     // prohibit f<array>() and others any-containing (even if set explicitly)
     if (!old_syntax) {
-      kphp_error(!instantiationT->has_tp_any_inside(), fmt_format("Generics <{}> = {} should be strict, it must not contain 'any' inside", itemT.nameT,
-                                                                  TermStringFormat::paint_green(instantiationT->as_human_readable())));
+      kphp_error(!instantiationT->has_tp_any_inside(), fmt_format("Generics <{}> = {} should be strict, it must not contain 'any' inside", itemT.nameT, TermStringFormat::paint_green(instantiationT->as_human_readable())));
     }
 
     if (itemT.extends_hint) {
@@ -343,8 +341,8 @@ class ReplaceVariadicArgWithNArgsPass : public FunctionPassBase {
 
 public:
   explicit ReplaceVariadicArgWithNArgsPass(FunctionPtr generic_function, int n_variadic)
-      : generic_function(std::move(generic_function)),
-        n_variadic(n_variadic) {}
+    : generic_function(std::move(generic_function))
+    , n_variadic(n_variadic) {}
 
   std::string get_description() override {
     return "Replace $args with $args$1, $args$2";
@@ -370,9 +368,7 @@ public:
     }
 
     if (is_op_var_generic(root)) {
-      kphp_error(0, fmt_format("Variadic argument ...${} used incorrectly in a variadic generic.\nIt can not be replaced with N={} copies here.\nFor example, "
-                               "f(${}) is incorrect, but f(...${}) is okay.",
-                               variadic_var_name, n_variadic, variadic_var_name, variadic_var_name));
+      kphp_error(0, fmt_format("Variadic argument ...${} used incorrectly in a variadic generic.\nIt can not be replaced with N={} copies here.\nFor example, f(${}) is incorrect, but f(...${}) is okay.", variadic_var_name, n_variadic, variadic_var_name, variadic_var_name));
     }
 
     return root;
@@ -446,12 +442,12 @@ public:
     new_args_vector.reserve(call->size() - 1 + n_variadic);
 
     for (VertexPtr arg : call->args()) {
-      if (is_op_varg_op_var_generic(arg)) { // f(1, 2, ...$here)
+      if (is_op_varg_op_var_generic(arg)) {   // f(1, 2, ...$here)
         occured_varg = true;
         for (int i = 1; i <= n_variadic; ++i) {
           new_args_vector.emplace_back(create_ith_op_var(arg, i));
         }
-      } else if (is_array_creation && is_op_var_generic(arg)) { // [1, 2, ...$here] (actually array_merge_spread(1, 2, $here))
+      } else if (is_array_creation && is_op_var_generic(arg)) {   // [1, 2, ...$here] (actually array_merge_spread(1, 2, $here))
         occured_varg = true;
         for (int i = 1; i <= n_variadic; ++i) {
           std::vector<VertexPtr> ith_wrap{create_ith_op_var(arg, i)};
@@ -481,7 +477,7 @@ FunctionPtr convert_variadic_generic_function_accepting_N_args(FunctionPtr gener
   std::string name = generic_function->name + "$n" + std::to_string(n_variadic);
   FunctionPtr f_converted;
 
-  G->operate_on_function_locking(name, [generic_function, n_variadic, name, &f_converted](FunctionPtr& f_ht) {
+  G->operate_on_function_locking(name, [generic_function, n_variadic, name, &f_converted](FunctionPtr &f_ht) {
     if (f_ht) {
       f_converted = f_ht;
       return;

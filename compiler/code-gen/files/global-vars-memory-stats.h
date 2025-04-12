@@ -9,15 +9,15 @@
 #include "compiler/data/data_ptr.h"
 
 struct GlobalVarsMemoryStats : CodeGenRootCmd {
-  explicit GlobalVarsMemoryStats(const std::vector<VarPtr>& all_globals);
+  explicit GlobalVarsMemoryStats(const std::vector<VarPtr> &all_globals);
 
-  void compile(CodeGenerator& W) const final;
+  void compile(CodeGenerator &W) const final;
 
 private:
-  static void compile_getter_part(CodeGenerator& W, int part_id, const std::vector<VarPtr>& global_vars, int offset, int count);
+  static void compile_getter_part(CodeGenerator &W, int part_id, const std::vector<VarPtr> &global_vars, int offset, int count);
 
   std::vector<VarPtr> all_nonprimitive_globals;
 
-  static constexpr const char* getter_name_ = "globals_memory_stats_impl"; // hardcoded in runtime, see f$get_global_vars_memory_stats()
+  static constexpr const char *getter_name_ = "globals_memory_stats_impl";  // hardcoded in runtime, see f$get_global_vars_memory_stats()
   static constexpr int N_GLOBALS_PER_FILE = 512;
 };

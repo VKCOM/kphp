@@ -21,7 +21,7 @@
 #if !defined(__APPLE__)
 
 TEST(parallel_maximum, basic) {
-  for (int i = 0; i < 1000; ++i) {
+  for(int i = 0; i < 1000; ++i) {
     constexpr std::size_t thread_max = 1 * 1024 * 1024;
 
     PARALLEL_MAXIMUM(maximum);
@@ -34,7 +34,7 @@ TEST(parallel_maximum, basic) {
     std::array<std::size_t, nr_threads> thread_consumption;
 
     std::size_t remains = expected_max;
-    for (auto* t = thread_consumption.begin(); t < std::prev(thread_consumption.end()); ++t) {
+    for (auto *t = thread_consumption.begin(); t < std::prev(thread_consumption.end()); ++t) {
       std::uniform_int_distribution<size_t> distribution(0, remains);
       *t = distribution(random_engine);
       assert(remains >= *t);
@@ -44,7 +44,7 @@ TEST(parallel_maximum, basic) {
     EXPECT_EQ(expected_max, std::accumulate(thread_consumption.begin(), thread_consumption.end(), 0LL));
 
     std::array<std::thread, nr_threads> threads;
-    for (auto* t = threads.begin(); t < threads.end(); ++t) {
+    for (auto *t = threads.begin(); t < threads.end(); ++t) {
       const std::size_t consumption = thread_consumption[std::distance(threads.begin(), t)];
 
       *t = std::thread([=]() {
@@ -67,7 +67,7 @@ TEST(parallel_maximum, basic) {
       });
     }
 
-    for (auto& t : threads) {
+    for (auto &t : threads) {
       t.join();
     }
 

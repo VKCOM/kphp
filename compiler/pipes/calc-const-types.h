@@ -10,8 +10,8 @@
 class CalcConstTypePass final : public FunctionPassBase {
   void calc_const_type_of_class_fields(ClassPtr klass);
   int inlined_define_cnt{0};
-
 public:
+
   void on_start() override;
 
   std::string get_description() override {

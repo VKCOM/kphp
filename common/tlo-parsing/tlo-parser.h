@@ -19,7 +19,7 @@ struct tl_scheme;
 
 struct tlo_parser {
   tlo_parser() = default;
-  explicit tlo_parser(const char* tlo_path);
+  explicit tlo_parser(const char *tlo_path);
 
   template<typename T>
   T get_value() {
@@ -42,7 +42,7 @@ struct tlo_parser {
   void get_functions(bool rename_all_forbidden_names);
 
   void check_pos(size_t size);
-  void error(const char* format, ...) __attribute__((format(printf, 2, 3)));
+  void error(const char *format, ...) __attribute__ ((format (printf, 2, 3)));
 
   size_t len;
   size_t pos;

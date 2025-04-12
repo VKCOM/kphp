@@ -25,7 +25,7 @@ struct convert_integer_sign;
 
 template<typename T>
 struct convert_integer_sign<T, true> {
-  static T convert(const msgpack::object& o) {
+  static T convert(const msgpack::object &o) {
     if (o.type == stored_type::POSITIVE_INTEGER) {
       if (o.via.u64 > static_cast<uint64_t>(std::numeric_limits<T>::max())) {
         throw type_error{};
@@ -43,7 +43,7 @@ struct convert_integer_sign<T, true> {
 
 template<typename T>
 struct convert_integer_sign<T, false> {
-  static T convert(const msgpack::object& o) {
+  static T convert(const msgpack::object &o) {
     if (o.type == stored_type::POSITIVE_INTEGER) {
       if (o.via.u64 > static_cast<uint64_t>(std::numeric_limits<T>::max())) {
         throw type_error{};
@@ -60,7 +60,7 @@ struct is_signed {
 };
 
 template<typename T>
-inline T convert_integer(const msgpack::object& o) {
+inline T convert_integer(const msgpack::object &o) {
   return detail::convert_integer_sign<T, is_signed<T>::value>::convert(o);
 }
 
@@ -70,35 +70,35 @@ namespace adaptor {
 
 template<>
 struct convert<int32_t> {
-  void operator()(const msgpack::object& o, int32_t& v) const {
+  void operator()(const msgpack::object &o, int32_t &v) const {
     v = detail::convert_integer<int32_t>(o);
   }
 };
 
 template<>
 struct convert<int64_t> {
-  void operator()(const msgpack::object& o, int64_t& v) const {
+  void operator()(const msgpack::object &o, int64_t &v) const {
     v = detail::convert_integer<int64_t>(o);
   }
 };
 
 template<>
 struct convert<uint8_t> {
-  void operator()(const msgpack::object& o, uint8_t& v) const {
+  void operator()(const msgpack::object &o, uint8_t &v) const {
     v = detail::convert_integer<uint8_t>(o);
   }
 };
 
 template<>
 struct convert<uint32_t> {
-  void operator()(const msgpack::object& o, uint32_t& v) const {
+  void operator()(const msgpack::object &o, uint32_t &v) const {
     v = detail::convert_integer<uint32_t>(o);
   }
 };
 
 template<>
 struct convert<uint64_t> {
-  void operator()(const msgpack::object& o, uint64_t& v) const {
+  void operator()(const msgpack::object &o, uint64_t &v) const {
     v = detail::convert_integer<uint64_t>(o);
   }
 };
@@ -106,7 +106,7 @@ struct convert<uint64_t> {
 template<>
 struct pack<int32_t> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream>& o, int32_t v) const {
+  void operator()(msgpack::packer<Stream> &o, int32_t v) const {
     o.pack_int32(v);
   }
 };
@@ -114,7 +114,7 @@ struct pack<int32_t> {
 template<>
 struct pack<int64_t> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream>& o, int64_t v) const {
+  void operator()(msgpack::packer<Stream> &o, int64_t v) const {
     o.pack_int64(v);
   }
 };
@@ -122,7 +122,7 @@ struct pack<int64_t> {
 template<>
 struct pack<uint8_t> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream>& o, uint8_t v) const {
+  void operator()(msgpack::packer<Stream> &o, uint8_t v) const {
     o.pack_uint8(v);
   }
 };
@@ -130,7 +130,7 @@ struct pack<uint8_t> {
 template<>
 struct pack<uint32_t> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream>& o, uint32_t v) const {
+  void operator()(msgpack::packer<Stream> &o, uint32_t v) const {
     o.pack_uint32(v);
   }
 };
@@ -138,14 +138,14 @@ struct pack<uint32_t> {
 template<>
 struct pack<uint64_t> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream>& o, uint64_t v) const {
+  void operator()(msgpack::packer<Stream> &o, uint64_t v) const {
     o.pack_uint64(v);
   }
 };
 
 template<>
 struct convert<bool> {
-  void operator()(const msgpack::object& o, bool& v) const {
+  void operator()(const msgpack::object &o, bool &v) const {
     if (o.type != stored_type::BOOLEAN) {
       throw type_error{};
     }
@@ -156,7 +156,7 @@ struct convert<bool> {
 template<>
 struct pack<bool> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream>& o, const bool& v) const {
+  void operator()(msgpack::packer<Stream> &o, const bool &v) const {
     if (v) {
       o.pack_true();
     } else {
@@ -167,7 +167,7 @@ struct pack<bool> {
 
 template<>
 struct convert<float> {
-  void operator()(const msgpack::object& o, float& v) const {
+  void operator()(const msgpack::object &o, float &v) const {
     if (o.type == stored_type::FLOAT32 || o.type == stored_type::FLOAT64) {
       v = static_cast<float>(o.via.f64);
     } else if (o.type == stored_type::POSITIVE_INTEGER) {
@@ -183,14 +183,14 @@ struct convert<float> {
 template<>
 struct pack<float> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream>& o, const float& v) const {
+  void operator()(msgpack::packer<Stream> &o, const float &v) const {
     o.pack_float(v);
   }
 };
 
 template<>
 struct convert<double> {
-  void operator()(const msgpack::object& o, double& v) const {
+  void operator()(const msgpack::object &o, double &v) const {
     if (o.type == stored_type::FLOAT32 || o.type == stored_type::FLOAT64) {
       v = o.via.f64;
     } else if (o.type == stored_type::POSITIVE_INTEGER) {
@@ -206,14 +206,14 @@ struct convert<double> {
 template<>
 struct pack<double> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream>& o, const double& v) const {
+  void operator()(msgpack::packer<Stream> &o, const double &v) const {
     o.pack_double(v);
   }
 };
 
 template<class T>
 struct convert<array<T>> {
-  const msgpack::object& operator()(const msgpack::object& obj, array<T>& res_arr) const {
+  const msgpack::object &operator()(const msgpack::object &obj, array<T> &res_arr) const {
     if (obj.type == stored_type::ARRAY) {
       res_arr.reserve(obj.via.array.size, true);
 
@@ -233,27 +233,27 @@ struct convert<array<T>> {
   }
 
 private:
-  static void fill_array_as_map(const msgpack::object_map& obj_map, array<T>& res_arr) {
+  static void fill_array_as_map(const msgpack::object_map &obj_map, array<T> &res_arr) {
     res_arr.reserve(obj_map.size, false);
 
     for (size_t i = 0; i < obj_map.size; ++i) {
-      auto& key = obj_map.ptr[i].key;
-      auto& value = obj_map.ptr[i].val;
+      auto &key = obj_map.ptr[i].key;
+      auto &value = obj_map.ptr[i].val;
 
       switch (key.type) {
-      case stored_type::POSITIVE_INTEGER:
-      case stored_type::NEGATIVE_INTEGER: {
-        const auto key_php = key.as<int64_t>();
-        res_arr.set_value(key_php, value.as<T>());
-        break;
-      }
-      case stored_type::STR: {
-        const auto& key_php = key.as<string>();
-        res_arr.set_value(key_php, value.as<T>());
-        break;
-      }
-      default:
-        throw msgpack::unpack_error("expected string or integer in array unpacking");
+        case stored_type::POSITIVE_INTEGER:
+        case stored_type::NEGATIVE_INTEGER: {
+          const auto key_php = key.as<int64_t>();
+          res_arr.set_value(key_php, value.as<T>());
+          break;
+        }
+        case stored_type::STR: {
+          const auto &key_php = key.as<string>();
+          res_arr.set_value(key_php, value.as<T>());
+          break;
+        }
+        default:
+          throw msgpack::unpack_error("expected string or integer in array unpacking");
       }
     }
   }
@@ -262,17 +262,17 @@ private:
 template<class T>
 struct pack<array<T>> {
   template<typename Stream>
-  packer<Stream>& operator()(msgpack::packer<Stream>& packer, const array<T>& arr) const noexcept {
+  packer<Stream> &operator()(msgpack::packer<Stream> &packer, const array<T> &arr) const noexcept {
     if (arr.is_vector() || arr.is_pseudo_vector()) {
       packer.pack_array(static_cast<uint32_t>(arr.count()));
-      for (const auto& it : arr) {
+      for (const auto &it : arr) {
         packer_float32_decorator::pack_value(packer, it.get_value());
       }
       return packer;
     }
 
     packer.pack_map(static_cast<uint32_t>(arr.count()));
-    for (const auto& it : arr) {
+    for (const auto &it : arr) {
       if (it.is_string_key()) {
         packer.pack(it.get_string_key());
       } else {
@@ -287,17 +287,17 @@ struct pack<array<T>> {
 
 template<class T>
 struct convert<class_instance<T>> {
-  const msgpack::object& operator()(const msgpack::object& obj, class_instance<T>& instance) const {
+  const msgpack::object &operator()(const msgpack::object &obj, class_instance<T> &instance) const {
     switch (obj.type) {
-    case stored_type::NIL:
-      instance = class_instance<T>{};
-      break;
-    case stored_type::ARRAY:
-      instance = class_instance<T>{}.alloc();
-      obj.convert(*instance.get());
-      break;
-    default:
-      throw msgpack::unpack_error("Expected NIL or ARRAY type for unpacking class_instance");
+      case stored_type::NIL:
+        instance = class_instance<T>{};
+        break;
+      case stored_type::ARRAY:
+        instance = class_instance<T>{}.alloc();
+        obj.convert(*instance.get());
+        break;
+      default:
+        throw msgpack::unpack_error("Expected NIL or ARRAY type for unpacking class_instance");
     }
 
     return obj;
@@ -307,7 +307,7 @@ struct convert<class_instance<T>> {
 template<class T>
 struct pack<class_instance<T>> {
   template<typename Stream>
-  packer<Stream>& operator()(msgpack::packer<Stream>& packer, const class_instance<T>& instance) const noexcept {
+  packer<Stream> &operator()(msgpack::packer<Stream> &packer, const class_instance<T> &instance) const noexcept {
     CheckInstanceDepth check_depth;
     if (CheckInstanceDepth::is_exceeded()) {
       return packer;
@@ -324,7 +324,7 @@ struct pack<class_instance<T>> {
 
 template<>
 struct convert<string> {
-  const msgpack::object& operator()(const msgpack::object& obj, string& res_s) const {
+  const msgpack::object &operator()(const msgpack::object &obj, string &res_s) const {
     if (obj.type != stored_type::STR) {
       throw type_error{};
     }
@@ -337,7 +337,7 @@ struct convert<string> {
 template<>
 struct pack<string> {
   template<typename Stream>
-  packer<Stream>& operator()(msgpack::packer<Stream>& packer, const string& s) const noexcept {
+  packer<Stream> &operator()(msgpack::packer<Stream> &packer, const string &s) const noexcept {
     packer.pack_str(s.size());
     packer.pack_str_body(s.c_str(), s.size());
     return packer;
@@ -346,7 +346,7 @@ struct pack<string> {
 
 template<typename Tuple, std::size_t N>
 struct StdTupleConverter {
-  static void convert(const msgpack::object& o, Tuple& v) {
+  static void convert(const msgpack::object &o, Tuple &v) {
     StdTupleConverter<Tuple, N - 1>::convert(o, v);
     if (o.via.array.size >= N)
       o.via.array.ptr[N - 1].convert<typename std::remove_reference<decltype(std::get<N - 1>(v))>::type>(std::get<N - 1>(v));
@@ -355,13 +355,13 @@ struct StdTupleConverter {
 
 template<typename Tuple>
 struct StdTupleConverter<Tuple, 0> {
-  static void convert(const msgpack::object& /*o*/, Tuple& /*v*/) {}
+  static void convert(const msgpack::object & /*o*/, Tuple & /*v*/) {}
 };
 
 template<size_t N>
 struct PackValueHelper {
   template<class StreamT, class TupleT>
-  static void convert(packer<StreamT>& packer, const TupleT& value) {
+  static void convert(packer<StreamT> &packer, const TupleT &value) {
     PackValueHelper<N - 1>::convert(packer, value);
     packer_float32_decorator::pack_value(packer, std::get<N - 1>(value));
   }
@@ -370,12 +370,12 @@ struct PackValueHelper {
 template<>
 struct PackValueHelper<0> {
   template<class StreamT, class TupleT>
-  static void convert(packer<StreamT>& /*o*/, const TupleT& /*v*/) {}
+  static void convert(packer<StreamT> & /*o*/, const TupleT & /*v*/) {}
 };
 
 template<typename... Args>
 struct convert<std::tuple<Args...>> {
-  void operator()(const msgpack::object& o, std::tuple<Args...>& v) const {
+  void operator()(const msgpack::object &o, std::tuple<Args...> &v) const {
     if (o.type != stored_type::ARRAY) {
       throw type_error{};
     }
@@ -386,7 +386,7 @@ struct convert<std::tuple<Args...>> {
 template<typename... Args>
 struct pack<std::tuple<Args...>> {
   template<typename Stream>
-  void operator()(msgpack::packer<Stream>& o, const std::tuple<Args...>& v) const {
+  void operator()(msgpack::packer<Stream> &o, const std::tuple<Args...> &v) const {
     o.pack_array(sizeof...(Args));
     PackValueHelper<sizeof...(Args)>::convert(o, v);
   }
@@ -394,24 +394,24 @@ struct pack<std::tuple<Args...>> {
 
 template<class T>
 struct convert<Optional<T>> {
-  const msgpack::object& operator()(const msgpack::object& obj, Optional<T>& v) const {
+  const msgpack::object &operator()(const msgpack::object &obj, Optional<T> &v) const {
     switch (obj.type) {
-    case stored_type::BOOLEAN: {
-      bool value = obj.as<bool>();
-      if (!std::is_same<T, bool>{} && value) {
-        char err_msg[256];
-        snprintf(err_msg, 256, "Expected false for type `%s|false` but true was given", typeid(T).name());
-        throw msgpack::unpack_error(err_msg);
+      case stored_type::BOOLEAN: {
+        bool value = obj.as<bool>();
+        if (!std::is_same<T, bool>{} && value) {
+          char err_msg[256];
+          snprintf(err_msg, 256, "Expected false for type `%s|false` but true was given", typeid(T).name());
+          throw msgpack::unpack_error(err_msg);
+        }
+        v = value;
+        break;
       }
-      v = value;
-      break;
-    }
-    case stored_type::NIL:
-      v = Optional<T>{};
-      break;
-    default:
-      v = obj.as<T>();
-      break;
+      case stored_type::NIL:
+        v = Optional<T>{};
+        break;
+      default:
+        v = obj.as<T>();
+        break;
     }
 
     return obj;
@@ -421,19 +421,19 @@ struct convert<Optional<T>> {
 template<class T>
 struct pack<Optional<T>> {
   template<typename Stream>
-  packer<Stream>& operator()(msgpack::packer<Stream>& packer, const Optional<T>& v) const noexcept {
+  packer<Stream> &operator()(msgpack::packer<Stream> &packer, const Optional<T> &v) const noexcept {
     switch (v.value_state()) {
-    case OptionalState::has_value:
-      packer_float32_decorator::pack_value(packer, v.val());
-      break;
-    case OptionalState::false_value:
-      packer.pack_false();
-      break;
-    case OptionalState::null_value:
-      packer.pack_nil();
-      break;
-    default:
-      __builtin_unreachable();
+      case OptionalState::has_value:
+        packer_float32_decorator::pack_value(packer, v.val());
+        break;
+      case OptionalState::false_value:
+        packer.pack_false();
+        break;
+      case OptionalState::null_value:
+        packer.pack_nil();
+        break;
+      default:
+        __builtin_unreachable();
     }
 
     return packer;
@@ -442,33 +442,33 @@ struct pack<Optional<T>> {
 
 template<>
 struct convert<mixed> {
-  const msgpack::object& operator()(const msgpack::object& obj, mixed& v) const {
+  const msgpack::object &operator()(const msgpack::object &obj, mixed &v) const {
     switch (obj.type) {
-    case stored_type::STR:
-      v = obj.as<string>();
-      break;
-    case stored_type::ARRAY:
-      v = obj.as<array<mixed>>();
-      break;
-    case stored_type::NEGATIVE_INTEGER:
-    case stored_type::POSITIVE_INTEGER:
-      v = obj.as<int64_t>();
-      break;
-    case stored_type::FLOAT32:
-    case stored_type::FLOAT64:
-      v = obj.as<double>();
-      break;
-    case stored_type::BOOLEAN:
-      v = obj.as<bool>();
-      break;
-    case stored_type::MAP:
-      v = obj.as<array<mixed>>();
-      break;
-    case stored_type::NIL:
-      v = mixed{};
-      break;
-    default:
-      throw type_error{};
+      case stored_type::STR:
+        v = obj.as<string>();
+        break;
+      case stored_type::ARRAY:
+        v = obj.as<array<mixed>>();
+        break;
+      case stored_type::NEGATIVE_INTEGER:
+      case stored_type::POSITIVE_INTEGER:
+        v = obj.as<int64_t>();
+        break;
+      case stored_type::FLOAT32:
+      case stored_type::FLOAT64:
+        v = obj.as<double>();
+        break;
+      case stored_type::BOOLEAN:
+        v = obj.as<bool>();
+        break;
+      case stored_type::MAP:
+        v = obj.as<array<mixed>>();
+        break;
+      case stored_type::NIL:
+        v = mixed{};
+        break;
+      default:
+        throw type_error{};
     }
 
     return obj;
@@ -478,31 +478,31 @@ struct convert<mixed> {
 template<>
 struct pack<mixed> {
   template<typename Stream>
-  packer<Stream>& operator()(msgpack::packer<Stream>& packer, const mixed& v) const noexcept {
+  packer<Stream> &operator()(msgpack::packer<Stream> &packer, const mixed &v) const noexcept {
     switch (v.get_type()) {
-    case mixed::type::NUL:
-      packer.pack_nil();
-      break;
-    case mixed::type::BOOLEAN:
-      packer.pack(v.as_bool());
-      break;
-    case mixed::type::INTEGER:
-      packer.pack(v.as_int());
-      break;
-    case mixed::type::FLOAT:
-      packer_float32_decorator::pack_value(packer, v.as_double());
-      break;
-    case mixed::type::STRING:
-      packer.pack(v.as_string());
-      break;
-    case mixed::type::ARRAY:
-      packer.pack(v.as_array());
-      break;
-    case mixed::type::OBJECT:
-      php_warning("Objects (%s) are not supported in msgpack", v.get_type_or_class_name());
-      break;
-    default:
-      __builtin_unreachable();
+      case mixed::type::NUL:
+        packer.pack_nil();
+        break;
+      case mixed::type::BOOLEAN:
+        packer.pack(v.as_bool());
+        break;
+      case mixed::type::INTEGER:
+        packer.pack(v.as_int());
+        break;
+      case mixed::type::FLOAT:
+        packer_float32_decorator::pack_value(packer, v.as_double());
+        break;
+      case mixed::type::STRING:
+        packer.pack(v.as_string());
+        break;
+      case mixed::type::ARRAY:
+        packer.pack(v.as_array());
+        break;
+      case mixed::type::OBJECT:
+        php_warning("Objects (%s) are not supported in msgpack", v.get_type_or_class_name());
+        break;
+      default:
+        __builtin_unreachable();
     }
 
     return packer;

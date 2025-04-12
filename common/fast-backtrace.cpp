@@ -10,45 +10,45 @@
 
 #include "common/sanitizer.h"
 
-char* stack_end;
+char *stack_end;
 
 #ifndef __APPLE__
-extern void* __libc_stack_end;
+extern void *__libc_stack_end;
 #endif
 
 struct stack_frame {
-  struct stack_frame* bp;
-  void* ip;
+  struct stack_frame *bp;
+  void *ip;
 };
 
-static __inline__ void* get_bp() {
-  void* result = nullptr;
+static __inline__ void *get_bp() {
+  void *result = nullptr;
 #ifdef __x86_64__
   __asm__ volatile("movq %%rbp, %[r]" : [r] "=r"(result));
 #elif defined(__aarch64__)
   __asm__ volatile("mov %0, fp" : "=r"(result));
 #else
-  #error "Unsupported arch"
+#error "Unsupported arch"
 #endif
   return result;
 }
 
-int fast_backtrace(void** buffer, int size) {
+int fast_backtrace(void **buffer, int size) {
 #ifndef __APPLE__
   if (!stack_end) {
-    stack_end = static_cast<char*>(__libc_stack_end);
+    stack_end = static_cast<char *>(__libc_stack_end);
   }
 #endif
   return fast_backtrace_by_bp(get_bp(), stack_end, buffer, size);
 }
 
-int fast_backtrace_by_bp(void* bp, void* stack_end_, void** buffer, int size) {
-  stack_frame* current_bp = static_cast<stack_frame*>(bp);
+int fast_backtrace_by_bp(void *bp, void *stack_end_, void **buffer, int size) {
+  stack_frame *current_bp = static_cast<stack_frame *>(bp);
   int i = 0;
-  while (i < size && reinterpret_cast<char*>(current_bp) <= stack_end_ && !(reinterpret_cast<long>(current_bp) & (sizeof(long) - 1))) {
-    void* ip = current_bp->ip;
+  while (i < size && reinterpret_cast<char *>(current_bp) <= stack_end_ && !(reinterpret_cast<long>(current_bp) & (sizeof(long) - 1))) {
+    void *ip = current_bp->ip;
     buffer[i++] = ip;
-    stack_frame* p = current_bp->bp;
+    stack_frame *p = current_bp->bp;
     if (p <= current_bp) {
       break;
     }
@@ -57,19 +57,19 @@ int fast_backtrace_by_bp(void* bp, void* stack_end_, void** buffer, int size) {
   return i;
 }
 
-int fast_backtrace_without_recursions(void** buffer, int size) noexcept {
+int fast_backtrace_without_recursions(void **buffer, int size) noexcept {
 #ifndef __APPLE__
   if (!stack_end) {
-    stack_end = static_cast<char*>(__libc_stack_end);
+    stack_end = static_cast<char *>(__libc_stack_end);
   }
 #endif
   return fast_backtrace_without_recursions_by_bp(get_bp(), stack_end, buffer, size);
 }
 
-int fast_backtrace_without_recursions_by_bp(void* bp, void* stack_end_, void** buffer, int size) noexcept {
-  stack_frame* current_bp = static_cast<stack_frame*>(bp);
+int fast_backtrace_without_recursions_by_bp(void *bp, void *stack_end_, void **buffer, int size) noexcept {
+  stack_frame *current_bp = static_cast<stack_frame *>(bp);
   int i = 0;
-  while (i < size && reinterpret_cast<char*>(current_bp) <= stack_end_ && !(reinterpret_cast<long>(current_bp) & (sizeof(long) - 1))) {
+  while (i < size && reinterpret_cast<char *>(current_bp) <= stack_end_ && !(reinterpret_cast<long>(current_bp) & (sizeof(long) - 1))) {
     buffer[i++] = current_bp->ip;
     for (int possible_recursion_len = 1; i >= 2 * possible_recursion_len; ++possible_recursion_len) {
       if (std::equal(buffer + i - possible_recursion_len, buffer + i, buffer + i - possible_recursion_len * 2)) {
@@ -78,7 +78,7 @@ int fast_backtrace_without_recursions_by_bp(void* bp, void* stack_end_, void** b
       }
     }
 
-    stack_frame* p = current_bp->bp;
+    stack_frame *p = current_bp->bp;
     if (p <= current_bp) {
       break;
     }

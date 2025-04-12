@@ -12,9 +12,9 @@ namespace kphp {
 
 namespace http {
 
-void init_server(tl::K2InvokeHttp&& invoke_http) noexcept;
+void init_server(tl::K2InvokeHttp &&invoke_http) noexcept;
 
-kphp::coro::task<> finalize_server(const string_buffer& output) noexcept;
+kphp::coro::task<> finalize_server(const string_buffer &output) noexcept;
 
 } // namespace http
 

@@ -16,7 +16,7 @@
 #include "server/statshouse/statshouse-manager.h"
 #include "server/workers-control.h"
 
-extern string_buffer* coub; // TODO static
+extern string_buffer *coub;//TODO static
 using shutdown_function_type = std::function<void()>;
 using headers_custom_handler_function_type = std::function<void()>;
 
@@ -34,7 +34,7 @@ Optional<string> f$ob_get_clean();
 
 string f$ob_get_contents();
 
-void f$ob_start(const string& callback = string());
+void f$ob_start(const string &callback = string());
 
 void f$ob_flush();
 
@@ -48,21 +48,19 @@ int64_t f$ob_get_level();
 
 void f$flush();
 
-Optional<string>& get_dummy_headers_sent_filename() noexcept;
-Optional<int64_t>& get_dummy_headers_sent_line() noexcept;
-bool f$headers_sent(Optional<string>& filename = get_dummy_headers_sent_filename(), Optional<int64_t>& line = get_dummy_headers_sent_line());
+Optional<string> &get_dummy_headers_sent_filename() noexcept;
+Optional<int64_t> &get_dummy_headers_sent_line() noexcept;
+bool f$headers_sent(Optional<string> &filename = get_dummy_headers_sent_filename(), Optional<int64_t> &line = get_dummy_headers_sent_line());
 
-void f$header(const string& str, bool replace = true, int64_t http_response_code = 0);
+void f$header(const string &str, bool replace = true, int64_t http_response_code = 0);
 
 array<string> f$headers_list();
 
-void f$send_http_103_early_hints(const array<string>& headers);
+void f$send_http_103_early_hints(const array<string> & headers);
 
-void f$setcookie(const string& name, const string& value, int64_t expire = 0, const string& path = string(), const string& domain = string(),
-                 bool secure = false, bool http_only = false);
+void f$setcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
-void f$setrawcookie(const string& name, const string& value, int64_t expire = 0, const string& path = string(), const string& domain = string(),
-                    bool secure = false, bool http_only = false);
+void f$setrawcookie(const string &name, const string &value, int64_t expire = 0, const string &path = string(), const string &domain = string(), bool secure = false, bool http_only = false);
 
 int64_t f$ignore_user_abort(Optional<bool> enable = Optional<bool>());
 
@@ -79,50 +77,53 @@ void run_shutdown_functions_from_script(ShutdownType shutdown_type);
 int get_shutdown_functions_count();
 shutdown_functions_status get_shutdown_functions_status();
 
-void register_shutdown_function_impl(shutdown_function_type&& f);
+void register_shutdown_function_impl(shutdown_function_type &&f);
 
-template<typename F>
-void f$register_shutdown_function(F&& f) {
+template <typename F>
+void f$register_shutdown_function(F &&f) {
   // std::function sometimes uses heap, when constructed from captured lambda. So it must be constructed under critical section only.
   dl::CriticalSectionGuard heap_guard;
   register_shutdown_function_impl(shutdown_function_type{std::forward<F>(f)});
 }
 
-void register_header_handler_impl(headers_custom_handler_function_type&& f);
+void register_header_handler_impl(headers_custom_handler_function_type &&f);
 
-template<typename F>
-bool f$header_register_callback(F&& f) {
+template <typename F>
+bool f$header_register_callback(F &&f) {
   register_header_handler_impl(headers_custom_handler_function_type{std::forward<F>(f)});
   return true;
 }
 
 void f$fastcgi_finish_request(int64_t exit_code = 0);
 
-__attribute__((noreturn)) void finish(int64_t exit_code, bool from_exit);
+__attribute__((noreturn))
+void finish(int64_t exit_code, bool from_exit);
 
-__attribute__((noreturn)) void f$exit(const mixed& v = 0);
+__attribute__((noreturn))
+void f$exit(const mixed &v = 0);
 
-__attribute__((noreturn)) void f$die(const mixed& v = 0);
+__attribute__((noreturn))
+void f$die(const mixed &v = 0);
 
-Optional<array<string>> f$gethostbynamel(const string& name);
+Optional<array<string>> f$gethostbynamel(const string &name);
 
-Optional<string> f$inet_pton(const string& address);
+Optional<string> f$inet_pton(const string &address);
 
-void print(const char* s, size_t s_len);
+void print(const char *s, size_t s_len);
 
-void print(const char* s);
+void print(const char *s);
 
-void print(const string& s);
+void print(const string &s);
 
-void print(const string_buffer& sb);
+void print(const string_buffer &sb);
 
-void dbg_echo(const char* s, size_t s_len);
+void dbg_echo(const char *s, size_t s_len);
 
-void dbg_echo(const char* s);
+void dbg_echo(const char *s);
 
-void dbg_echo(const string& s);
+void dbg_echo(const string &s);
 
-void dbg_echo(const string_buffer& sb);
+void dbg_echo(const string_buffer &sb);
 
 inline int64_t f$print(const string& s) {
   print(s);
@@ -137,7 +138,10 @@ inline void f$dbg_echo(const string& s) {
   dbg_echo(s);
 }
 
+
+
 bool f$get_magic_quotes_gpc();
+
 
 string f$php_sapi_name();
 
@@ -154,17 +158,21 @@ const int32_t UPLOAD_ERR_NO_TMP_DIR = 6;
 const int32_t UPLOAD_ERR_CANT_WRITE = 7;
 const int32_t UPLOAD_ERR_EXTENSION = 8;
 
-bool f$is_uploaded_file(const string& filename);
 
-bool f$move_uploaded_file(const string& oldname, const string& newname);
+bool f$is_uploaded_file(const string &filename);
 
-void init_superglobals(const php_query_data_t& data);
+bool f$move_uploaded_file(const string &oldname, const string &newname);
+
+
+void init_superglobals(const php_query_data_t &data);
+
 
 double f$get_net_time();
 
 double f$get_script_time();
 
 int64_t f$get_net_queries_count();
+
 
 int64_t f$get_engine_uptime();
 
@@ -176,27 +184,26 @@ string f$get_kphp_cluster_name();
 
 std::tuple<int64_t, int64_t, int64_t, int64_t> f$get_webserver_stats();
 
-void arg_add(const char* value);
+void arg_add(const char *value);
 
 void ini_set(vk::string_view key, vk::string_view value);
-int32_t ini_set_from_config(const char* config_file_name);
+int32_t ini_set_from_config(const char *config_file_name);
 
-void read_engine_tag(const char* file_name);
+void read_engine_tag(const char *file_name);
 
-bool f$ini_set(const string& s, const string& value);
+bool f$ini_set(const string &s, const string &value);
 
-Optional<string> f$ini_get(const string& s);
+Optional<string> f$ini_get(const string &s);
 
-Optional<int64_t>& get_dummy_rest_index() noexcept;
-Optional<array<mixed>> f$getopt(const string& options, array<string> longopts = {}, Optional<int64_t>& rest_index = get_dummy_rest_index());
+Optional<int64_t> &get_dummy_rest_index() noexcept;
+Optional<array<mixed>> f$getopt(const string &options, array<string> longopts = {}, Optional<int64_t> &rest_index = get_dummy_rest_index());
 
 void global_init_runtime_libs();
 void global_init_script_allocator();
 
-void init_runtime_environment(const php_query_data_t& data, PhpScriptBuiltInSuperGlobals& superglobals, void* mem, size_t script_mem_size,
-                              size_t oom_handling_mem_size = 0);
+void init_runtime_environment(const php_query_data_t &data, PhpScriptBuiltInSuperGlobals &superglobals, void *mem, size_t script_mem_size, size_t oom_handling_mem_size = 0);
 
-void free_runtime_environment(PhpScriptBuiltInSuperGlobals& superglobals);
+void free_runtime_environment(PhpScriptBuiltInSuperGlobals &superglobals);
 
 // called only once at the beginning of each worker
 void worker_global_init(WorkerType worker_type) noexcept;
@@ -213,7 +220,7 @@ void use_utf8();
 void f$raise_sigsegv();
 
 template<class T>
-T f$make_clone(const T& x) {
+T f$make_clone(const T &x) {
   return x;
 }
 
@@ -233,12 +240,12 @@ inline void f$kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() {
   StatsHouseManager::get().turn_on_host_tag_toggle();
 }
 
-template<typename F>
-inline void f$kphp_extended_instance_cache_metrics_init(F&& callback) {
+template <typename F>
+inline void f$kphp_extended_instance_cache_metrics_init(F &&callback) {
   dl::CriticalSectionGuard guard;
   StatsHouseManager::get().set_normalization_function(normalization_function{std::forward<F>(callback)});
 }
 
 int64_t f$numa_get_bound_node();
 
-bool f$extension_loaded(const string& extension);
+bool f$extension_loaded(const string &extension);

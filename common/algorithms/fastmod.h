@@ -20,10 +20,10 @@ constexpr uint64_t mul128_s32(uint64_t lowbits, int32_t d) {
 // This is for the 64-bit functions.
 constexpr uint64_t mul128_u64(__uint128_t lowbits, uint64_t d) {
   __uint128_t bottom_half = (lowbits & UINT64_C(0xFFFFFFFFFFFFFFFF)) * d; // Won't overflow
-  bottom_half >>= 64;                                                     // Only need the top 64 bits, as we'll shift the lower half away;
+  bottom_half >>= 64;  // Only need the top 64 bits, as we'll shift the lower half away;
   __uint128_t top_half = (lowbits >> 64) * d;
   __uint128_t both_halves = bottom_half + top_half; // Both halves are already shifted down by 64
-  both_halves >>= 64;                               // Get top half of both_halves
+  both_halves >>= 64; // Get top half of both_halves
   return (uint64_t)both_halves;
 }
 
@@ -35,6 +35,7 @@ constexpr uint64_t mul128_u64(__uint128_t lowbits, uint64_t d) {
  *  fastmod_u32(a,M,d) is a % d for all 32-bit a.
  *
  **/
+
 
 // M = ceil( (1<<64) / d ), d > 0
 constexpr uint64_t computeM_u32(uint32_t d) {

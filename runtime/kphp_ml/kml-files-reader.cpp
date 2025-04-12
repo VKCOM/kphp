@@ -25,18 +25,18 @@ namespace {
 
 // This class is used to free memory in the end of the program
 // It is utilized to allocate memory for 'offset_in_vec' and 'reindex_map_int2int'
-template<typename T>
+template <typename T>
 class GlobalLifetimeResource {
   std::vector<T*> managed_resources;
 
   ~GlobalLifetimeResource() {
-    for (T* ptr : managed_resources) {
+    for (T *ptr : managed_resources) {
       delete[] ptr;
     }
   }
 
 public:
-  static T* acquire(size_t size) {
+  static T *acquire(size_t size) {
     static GlobalLifetimeResource data;
 
     data.managed_resources.push_back(new T[size]);
@@ -48,7 +48,7 @@ class KmlFileReader {
   std::ifstream fi;
 
 public:
-  explicit KmlFileReader(const std::string& kml_filename) {
+  explicit KmlFileReader(const std::string &kml_filename) {
     fi = std::ifstream(kml_filename, std::ios::binary);
     if (!fi.is_open()) {
       throw std::invalid_argument("can't open " + kml_filename + " for reading");
@@ -61,53 +61,53 @@ public:
 
   int read_int() noexcept {
     int v;
-    fi.read((char*)&v, sizeof(int));
+    fi.read((char *)&v, sizeof(int));
     return v;
   }
 
-  void read_int(int& v) noexcept {
-    fi.read((char*)&v, sizeof(int));
+  void read_int(int &v) noexcept {
+    fi.read((char *)&v, sizeof(int));
   }
 
-  void read_uint32(uint32_t& v) noexcept {
-    fi.read((char*)&v, sizeof(uint32_t));
+  void read_uint32(uint32_t &v) noexcept {
+    fi.read((char *)&v, sizeof(uint32_t));
   }
 
-  void read_uint64(uint64_t& v) noexcept {
-    fi.read((char*)&v, sizeof(uint64_t));
+  void read_uint64(uint64_t &v) noexcept {
+    fi.read((char *)&v, sizeof(uint64_t));
   }
 
-  void read_float(float& v) noexcept {
-    fi.read((char*)&v, sizeof(float));
+  void read_float(float &v) noexcept {
+    fi.read((char *)&v, sizeof(float));
   }
 
-  void read_double(double& v) noexcept {
-    fi.read((char*)&v, sizeof(double));
+  void read_double(double &v) noexcept {
+    fi.read((char *)&v, sizeof(double));
   }
 
   template<class T>
-  void read_enum(T& v) noexcept {
+  void read_enum(T &v) noexcept {
     static_assert(sizeof(T) == sizeof(int));
-    fi.read((char*)&v, sizeof(int));
+    fi.read((char *)&v, sizeof(int));
   }
 
-  void read_string(std::string& v) noexcept {
+  void read_string(std::string &v) noexcept {
     int len;
-    fi.read((char*)&len, sizeof(int));
+    fi.read((char *)&len, sizeof(int));
     v.resize(len);
     fi.read(v.data(), len);
   }
 
-  void read_bool(bool& v) noexcept {
+  void read_bool(bool &v) noexcept {
     v = static_cast<bool>(read_int());
   }
 
-  void read_bytes(void* v, size_t len) noexcept {
-    fi.read((char*)v, static_cast<std::streamsize>(len));
+  void read_bytes(void *v, size_t len) noexcept {
+    fi.read((char *)v, static_cast<std::streamsize>(len));
   }
 
   template<class T>
-  void read_vec(std::vector<T>& v) {
+  void read_vec(std::vector<T> &v) {
     static_assert(std::is_standard_layout_v<T> && std::is_trivial_v<T>);
     int sz;
     read_int(sz);
@@ -116,11 +116,11 @@ public:
   }
 
   template<class T>
-  void read_2d_vec(std::vector<std::vector<T>>& v) {
+  void read_2d_vec(std::vector<std::vector<T>> &v) {
     int sz;
     read_int(sz);
     v.resize(sz);
-    for (std::vector<T>& elem : v) {
+    for (std::vector<T> &elem: v) {
       read_vec(elem);
     }
   }
@@ -133,20 +133,20 @@ public:
 };
 
 template<>
-void KmlFileReader::read_vec<std::string>(std::vector<std::string>& v) {
+void KmlFileReader::read_vec<std::string>(std::vector<std::string> &v) {
   int sz = read_int();
   v.resize(sz);
-  for (auto& str : v) {
+  for (auto &str : v) {
     read_string(str);
   }
 }
 
-void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostProjection& v) {
+void kml_read_catboost_field(KmlFileReader &f, kphp_ml_catboost::CatboostProjection &v) {
   f.read_vec(v.transposed_cat_feature_indexes);
   f.read_vec(v.binarized_indexes);
 }
 
-void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostModelCtr& v) {
+void kml_read_catboost_field(KmlFileReader &f, kphp_ml_catboost::CatboostModelCtr &v) {
   f.read_uint64(v.base_hash);
   f.read_enum(v.base_ctr_type);
   f.read_int(v.target_border_idx);
@@ -156,17 +156,17 @@ void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostModelCt
   f.read_float(v.scale);
 }
 
-void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostCompressedModelCtr& v) {
+void kml_read_catboost_field(KmlFileReader &f, kphp_ml_catboost::CatboostCompressedModelCtr &v) {
   kml_read_catboost_field(f, v.projection);
-
+  
   int sz = f.read_int();
   v.model_ctrs.resize(sz);
-  for (auto& item : v.model_ctrs) {
+  for (auto &item: v.model_ctrs) {
     kml_read_catboost_field(f, item);
   }
 }
 
-void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostCtrValueTable& v) {
+void kml_read_catboost_field(KmlFileReader &f, kphp_ml_catboost::CatboostCtrValueTable &v) {
   int sz = f.read_int();
   v.index_hash_viewer.reserve(sz);
   for (int i = 0; i < sz; ++i) {
@@ -181,7 +181,7 @@ void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostCtrValu
   f.read_vec(v.ctr_total);
 }
 
-void kml_write_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostCtrData& v) {
+void kml_write_catboost_field(KmlFileReader &f, kphp_ml_catboost::CatboostCtrData &v) {
   int sz = f.read_int();
   v.learn_ctrs.reserve(sz);
   for (int i = 0; i < sz; ++i) {
@@ -191,16 +191,16 @@ void kml_write_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostCtrDat
   }
 }
 
-void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostModelCtrsContainer& v) {
+void kml_read_catboost_field(KmlFileReader &f, kphp_ml_catboost::CatboostModelCtrsContainer &v) {
   bool has;
   f.read_bool(has);
-
+  
   if (has) {
     f.read_int(v.used_model_ctrs_count);
 
     int sz = f.read_int();
     v.compressed_model_ctrs.resize(sz);
-    for (auto& item : v.compressed_model_ctrs) {
+    for (auto &item: v.compressed_model_ctrs) {
       kml_read_catboost_field(f, item);
     }
 
@@ -210,7 +210,7 @@ void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostModelCt
 
 // -------------
 
-void kml_file_read_xgboost_trees_no_cat(KmlFileReader& f, [[maybe_unused]] int version, kphp_ml_xgboost::XgboostModel& xgb) {
+void kml_file_read_xgboost_trees_no_cat(KmlFileReader &f, [[maybe_unused]] int version, kphp_ml_xgboost::XgboostModel &xgb) {
   f.read_enum(xgb.tparam_objective);
   f.read_bytes(&xgb.calibration, sizeof(kphp_ml_xgboost::CalibrationMethod));
   f.read_float(xgb.base_score);
@@ -229,7 +229,7 @@ void kml_file_read_xgboost_trees_no_cat(KmlFileReader& f, [[maybe_unused]] int v
   }
 
   xgb.trees.resize(num_trees);
-  for (kphp_ml_xgboost::XgbTree& tree : xgb.trees) {
+  for (kphp_ml_xgboost::XgbTree &tree: xgb.trees) {
     int num_nodes = f.read_int();
     if (num_nodes <= 0 || num_nodes > 10000) {
       throw std::invalid_argument("wrong num_nodes");
@@ -261,7 +261,7 @@ void kml_file_read_xgboost_trees_no_cat(KmlFileReader& f, [[maybe_unused]] int v
   f.read_float(xgb.default_missing_value);
 }
 
-void kml_file_read_catboost_trees(KmlFileReader& f, [[maybe_unused]] int version, kphp_ml_catboost::CatboostModel& cbm) {
+void kml_file_read_catboost_trees(KmlFileReader &f, [[maybe_unused]] int version, kphp_ml_catboost::CatboostModel &cbm) {
   f.read_int(cbm.float_feature_count);
   f.read_int(cbm.cat_feature_count);
   f.read_int(cbm.binary_feature_count);
@@ -309,7 +309,7 @@ void kml_file_read_catboost_trees(KmlFileReader& f, [[maybe_unused]] int version
 
 } // namespace
 
-kphp_ml::MLModel kml_file_read(const std::string& kml_filename) {
+kphp_ml::MLModel kml_file_read(const std::string &kml_filename) {
   kphp_ml::MLModel kml;
   KmlFileReader f(kml_filename);
 
@@ -337,16 +337,16 @@ kphp_ml::MLModel kml_file_read(const std::string& kml_filename) {
   f.check_not_eof();
 
   switch (kml.model_kind) {
-  case kphp_ml::ModelKind::xgboost_trees_no_cat:
-    kml.impl = kphp_ml_xgboost::XgboostModel();
-    kml_file_read_xgboost_trees_no_cat(f, version, std::get<kphp_ml_xgboost::XgboostModel>(kml.impl));
-    break;
-  case kphp_ml::ModelKind::catboost_trees:
-    kml.impl = kphp_ml_catboost::CatboostModel();
-    kml_file_read_catboost_trees(f, version, std::get<kphp_ml_catboost::CatboostModel>(kml.impl));
-    break;
-  default:
-    throw std::invalid_argument("unsupported model_kind");
+    case kphp_ml::ModelKind::xgboost_trees_no_cat:
+      kml.impl = kphp_ml_xgboost::XgboostModel();
+      kml_file_read_xgboost_trees_no_cat(f, version, std::get<kphp_ml_xgboost::XgboostModel>(kml.impl));
+      break;
+    case kphp_ml::ModelKind::catboost_trees:
+      kml.impl = kphp_ml_catboost::CatboostModel();
+      kml_file_read_catboost_trees(f, version, std::get<kphp_ml_catboost::CatboostModel>(kml.impl));
+      break;
+    default:
+      throw std::invalid_argument("unsupported model_kind");
   }
 
   return kml;

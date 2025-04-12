@@ -9,10 +9,10 @@
 #include "compiler/compiler-core.h"
 #include "compiler/stage.h"
 
-void WriteFilesF::execute(WriterData* data, EmptyStream&) {
+void WriteFilesF::execute(WriterData *data, EmptyStream &) {
   stage::set_name("Write files");
 
-  File* file = data->get_file();
+  File *file = data->get_file();
 
   bool need_del = false;
   bool need_fix = false;
@@ -35,7 +35,7 @@ void WriteFilesF::execute(WriterData* data, EmptyStream&) {
   if (need_fix) {
     std::string code_str;
     data->dump(code_str);
-    //    printf("overwrite file %s need_fix=%d need_del=%d need_save_time=%d\n", file->path.c_str(), need_fix, need_del, need_save_time);
+//    printf("overwrite file %s need_fix=%d need_del=%d need_save_time=%d\n", file->path.c_str(), need_fix, need_del, need_save_time);
 
     long long mtime_before = 0;
     if (need_save_time) {
@@ -49,8 +49,9 @@ void WriteFilesF::execute(WriterData* data, EmptyStream&) {
       int err = unlink(file->path.c_str());
       kphp_assert_msg(err == 0, fmt_format("Failed to unlink [{}] : {}", file->path, strerror(errno)));
     }
-    FILE* dest_file = fopen(file->path.c_str(), "w");
-    kphp_assert_msg(dest_file != nullptr, fmt_format("Failed to open [{}] for write : {}\n", file->path, strerror(errno)));
+    FILE *dest_file = fopen(file->path.c_str(), "w");
+    kphp_assert_msg(dest_file != nullptr,
+                fmt_format("Failed to open [{}] for write : {}\n", file->path, strerror(errno)));
 
     if (data->compile_with_crc()) {
       // the first two lines of every .cpp/.h are hashes
@@ -64,7 +65,8 @@ void WriteFilesF::execute(WriterData* data, EmptyStream&) {
       kphp_assert(fseek(dest_file, 0, SEEK_SET) >= 0);
       kphp_assert(fprintf(dest_file, "//crc64:%016llx\n", hash_of_cpp) >= 0);
       kphp_assert(fprintf(dest_file, "//crc64_with_comments:%016llx\n", hash_of_comments) >= 0);
-    } else {
+    }
+    else {
       kphp_assert(fprintf(dest_file, "%s", code_str.c_str()) >= 0);
     }
 

@@ -13,17 +13,17 @@
 struct InitScriptsCpp : CodeGenRootCmd {
   SrcFilePtr main_file_id;
   explicit InitScriptsCpp(SrcFilePtr main_file_id);
-  void compile(CodeGenerator& W) const final;
+  void compile(CodeGenerator &W) const final;
 };
 
 struct LibVersionHFile : CodeGenRootCmd {
-  void compile(CodeGenerator& W) const final;
+  void compile(CodeGenerator &W) const final;
 };
 
 struct CppMainFile : CodeGenRootCmd {
-  void compile(CodeGenerator& W) const final;
+  void compile(CodeGenerator &W) const final;
 };
 
 struct ComponentInfoFile : CodeGenRootCmd {
-  void compile(CodeGenerator& W) const final;
+  void compile(CodeGenerator &W) const final;
 };

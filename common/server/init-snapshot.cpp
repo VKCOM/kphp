@@ -20,7 +20,7 @@
 
 static double index_load_time;
 
-void engine_default_load_index(const char* name) {
+void engine_default_load_index(const char *name) {
   if (engine_preload_filelist(name, nullptr) < 0) {
     kprintf("cannot open binlog files for %s\n", name);
     exit(1);
@@ -28,7 +28,7 @@ void engine_default_load_index(const char* name) {
 
   vkprintf(3, "engine_preload_filelist done\n");
 
-  // Snapshot reading
+  //Snapshot reading
   SnapshotDiff = NULL;
   Snapshot = open_recent_snapshot(engine_snapshot_replica);
   if (Snapshot && (KFS_FILE_SNAPSHOT_DIFF & Snapshot->info->flags)) {
@@ -36,7 +36,7 @@ void engine_default_load_index(const char* name) {
     // open 'main' snapshot
     Snapshot = open_main_snapshot(SnapshotDiff);
 
-    vkprintf(0, "snapshot: main %s, diff: %s\n", (Snapshot) ? Snapshot->info->filename : "none", (SnapshotDiff) ? SnapshotDiff->info->filename : "none");
+    vkprintf(0, "snapshot: main %s, diff: %s\n", (Snapshot)?Snapshot->info->filename:"none", (SnapshotDiff)?SnapshotDiff->info->filename:"none");
   }
 
   if (get_engine_settings()->load_index) {
@@ -63,3 +63,4 @@ void engine_default_load_index(const char* name) {
     Snapshot = NULL;
   }
 }
+

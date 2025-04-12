@@ -34,17 +34,17 @@ enum class LeaseWorkerMode {
   QUEUE_TYPES // new worker mode: get tasks only from queues of given types with filter by queue_id
 };
 
-inline const char* lease_worker_mode_str(LeaseWorkerMode mode) {
+inline const char *lease_worker_mode_str(LeaseWorkerMode mode) {
   switch (mode) {
-  case LeaseWorkerMode::ALL_QUEUES:
-    return "LeaseWorkerMode::ALL_QUEUES";
-  case LeaseWorkerMode::QUEUE_TYPES:
-    return "LeaseWorkerMode::QUEUE_TYPES";
+    case LeaseWorkerMode::ALL_QUEUES:
+      return "LeaseWorkerMode::ALL_QUEUES";
+    case LeaseWorkerMode::QUEUE_TYPES:
+      return "LeaseWorkerMode::QUEUE_TYPES";
   }
   return "unreachable";
 }
 
-template<typename T>
-LeaseWorkerMode get_lease_mode(const std::optional<T>& mode) {
+template <typename T>
+LeaseWorkerMode get_lease_mode(const std::optional<T> &mode) {
   return mode.has_value() ? LeaseWorkerMode::QUEUE_TYPES : LeaseWorkerMode::ALL_QUEUES;
 }

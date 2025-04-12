@@ -21,7 +21,7 @@ class CheckClassesPass final : public FunctionPassBase {
 
   static void check_serialized_fields(ClassPtr klass);
 
-  static void fill_reserved_serialization_tags(used_serialization_tags_t& used_serialization_tags_for_fields, ClassPtr klass);
+  static void fill_reserved_serialization_tags(used_serialization_tags_t &used_serialization_tags_for_fields, ClassPtr klass);
 
 public:
   std::string get_description() override {

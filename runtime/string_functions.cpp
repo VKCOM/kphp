@@ -9,30 +9,30 @@
 #include "runtime/interface.h"
 #include "runtime/streams.h"
 
-int64_t f$printf(const string& format, const array<mixed>& a) noexcept {
+int64_t f$printf(const string &format, const array<mixed> &a) noexcept {
   string to_print = f$sprintf(format, a);
   print(to_print);
   return to_print.size();
 }
 
-int64_t f$vprintf(const string& format, const array<mixed>& args) noexcept {
+int64_t f$vprintf(const string &format, const array<mixed> &args) noexcept {
   return f$printf(format, args);
 }
 
-Optional<string> f$setlocale(int64_t category, const string& locale) noexcept {
-  const char* loc = locale.c_str();
+Optional<string> f$setlocale(int64_t category, const string &locale) noexcept {
+  const char *loc = locale.c_str();
   if (locale[0] == '0' && locale.size() == 1) {
     loc = nullptr;
   }
-  char* res = setlocale(static_cast<int32_t>(category), loc);
+  char *res = setlocale(static_cast<int32_t>(category), loc);
   if (res == nullptr) {
     return false;
   }
   return string(res);
 }
 
-string f$prepare_search_query(const string& query) noexcept {
-  const char* s = clean_str(query.c_str());
+string f$prepare_search_query(const string &query) noexcept {
+  const char *s = clean_str(query.c_str());
   if (s == nullptr) {
     s = "";
   }
@@ -40,7 +40,7 @@ string f$prepare_search_query(const string& query) noexcept {
 }
 
 // Based on `getcsv` from `streams`
-Optional<array<mixed>> f$str_getcsv(const string& str, const string& delimiter, const string& enclosure, const string& escape) noexcept {
+Optional<array<mixed>> f$str_getcsv(const string &str, const string &delimiter, const string &enclosure, const string &escape) noexcept {
   char delimiter_char = ',';
   char enclosure_char = '"';
   char escape_char = PHP_CSV_NO_ESCAPE;

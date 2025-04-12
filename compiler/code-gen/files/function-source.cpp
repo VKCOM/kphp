@@ -13,10 +13,11 @@
 #include "compiler/code-gen/vertex-compiler.h"
 #include "compiler/stage.h"
 
-FunctionCpp::FunctionCpp(FunctionPtr function)
-    : function(function) {}
+FunctionCpp::FunctionCpp(FunctionPtr function) :
+  function(function) {
+}
 
-void declare_const_vars(FunctionPtr function, CodeGenerator& W) {
+void declare_const_vars(FunctionPtr function, CodeGenerator &W) {
   ConstantsExternCollector c_mem_extern;
   for (VarPtr var : function->explicit_const_var_ids) {
     c_mem_extern.add_extern_from_var(var);
@@ -24,7 +25,7 @@ void declare_const_vars(FunctionPtr function, CodeGenerator& W) {
   W << c_mem_extern << NL;
 }
 
-void FunctionCpp::compile(CodeGenerator& W) const {
+void FunctionCpp::compile(CodeGenerator &W) const {
   if (function->is_inline) {
     return;
   }
@@ -33,7 +34,7 @@ void FunctionCpp::compile(CodeGenerator& W) const {
   W << Include(function->header_full_name);
 
   stage::set_function(function);
-  function->name_gen_map = {}; // make codegeneration of this function idempotent
+  function->name_gen_map = {};  // make codegeneration of this function idempotent
 
   IncludesCollector includes;
   includes.add_function_body_depends(function);

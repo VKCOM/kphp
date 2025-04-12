@@ -13,16 +13,14 @@ class CodeGenerator;
 class KphpTracingDeclarationMixin;
 
 struct TracingAutogen : CodeGenRootCmd {
-  void compile(CodeGenerator& W) const final;
+  void compile(CodeGenerator &W) const final;
 
   static void register_function_marked_kphp_tracing(FunctionPtr f);
   static void finished_appending_and_prepare();
-  static bool empty() {
-    return all_with_aggregate.empty();
-  }
+  static bool empty() { return all_with_aggregate.empty(); }
 
-  static void codegen_runtime_func_guard_declaration(CodeGenerator& W, FunctionPtr f);
-  static void codegen_runtime_func_guard_start(CodeGenerator& W, FunctionPtr f);
+  static void codegen_runtime_func_guard_declaration(CodeGenerator &W, FunctionPtr f);
+  static void codegen_runtime_func_guard_start(CodeGenerator &W, FunctionPtr f);
 
 private:
   static std::vector<FunctionPtr> all_with_aggregate;

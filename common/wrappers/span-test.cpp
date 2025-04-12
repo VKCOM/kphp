@@ -34,6 +34,7 @@ TEST(span_tests, from_iterator_and_size) {
     static_assert(!std::is_constructible<vk::span<int>, decltype(cv.cbegin()), size_t>{}, "can't drop const");
   }
 
+
   {
     std::vector<int> v{1, 2, 3};
     const std::vector<int> cv{1, 2, 3};
@@ -70,6 +71,7 @@ TEST(span_tests, from_two_iterators) {
     static_assert(!std::is_constructible<vk::span<int>, decltype(cv.cbegin()), decltype(cv.cend())>{}, "can't drop const");
   }
 
+
   {
     std::vector<int> v{1, 2, 3};
     const std::vector<int> cv{1, 2, 3};
@@ -101,6 +103,7 @@ TEST(span_tests, from_container) {
     static_assert(!std::is_constructible<vk::span<int>, decltype(cv)>{}, "can't drop const");
   }
 
+
   {
     std::vector<int> v{1, 2, 3};
     const std::vector<int> cv{1, 2, 3};
@@ -116,3 +119,4 @@ TEST(span_tests, from_container) {
   static_assert(std::is_constructible<vk::span<int>, std::array<int, 5>&>{}, "array is contiguous");
   static_assert(!std::is_constructible<vk::span<int>, std::set<int>&>{}, "set is not contiguous");
 }
+

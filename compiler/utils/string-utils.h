@@ -12,9 +12,9 @@
 #include "common/algorithms/string-algorithms.h"
 #include "common/wrappers/string_view.h"
 
-inline std::string get_full_path(const std::string& file_name) {
+inline std::string get_full_path(const std::string &file_name) {
   char name[PATH_MAX + 1];
-  char* ptr = realpath(file_name.c_str(), name);
+  char *ptr = realpath(file_name.c_str(), name);
 
   if (ptr == nullptr) {
     return "";
@@ -71,12 +71,12 @@ static inline int conv_hex_digit(int c) {
 }
 
 inline vk::string_view string_view_dup(vk::string_view s) {
-  char* buf = new char[s.size()];
+  char *buf = new char[s.size()];
   memcpy(buf, s.begin(), s.size());
   return {buf, buf + s.size()};
 }
 
-inline std::vector<std::string> split(const std::string& s, char delimiter = ' ') {
+inline std::vector<std::string> split(const std::string &s, char delimiter = ' ') {
   std::vector<std::string> res;
 
   int prev = 0;
@@ -113,8 +113,8 @@ static inline std::string replace_characters(std::string s, char from, char to) 
   return s;
 }
 
-static inline void replace_non_alphanum_inplace(std::string& s, char to = '_') {
-  // std::not_fn
+static inline void replace_non_alphanum_inplace(std::string &s, char to = '_') {
+  //std::not_fn
   std::replace_if(s.begin(), s.end(), [](auto c) { return !is_alphanum(c); }, to);
 }
 
@@ -123,24 +123,24 @@ static inline std::string replace_non_alphanum(std::string s, char to = '_') {
   return s;
 }
 
-static inline std::string replace_backslashes(const std::string& s) {
+static inline std::string replace_backslashes(const std::string &s) {
   return replace_characters(s, '\\', '$');
 }
 
-static inline std::string replace_call_string_to_readable(const std::string& s_with_$) {
+static inline std::string replace_call_string_to_readable(const std::string &s_with_$) {
   std::string repl = vk::replace_all(s_with_$, "$$", "::");
   repl = vk::replace_all(repl, "$", "\\");
   return repl;
 }
 
-static inline void remove_extra_spaces(std::string& str) {
+static inline void remove_extra_spaces(std::string &str) {
   std::replace_if(str.begin(), str.end(), isspace, ' ');
   str = static_cast<std::string>(vk::trim(str));
   auto new_end = std::unique(str.begin(), str.end(), [](char lhs, char rhs) { return (lhs == rhs) && lhs == ' '; });
   str.erase(new_end, str.end());
 }
 
-static inline bool is_string_self_static_parent(const std::string& s) {
+static inline bool is_string_self_static_parent(const std::string &s) {
   return s == "self" || s == "static" || s == "parent";
 }
 

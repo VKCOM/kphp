@@ -4,12 +4,12 @@
 
 #include "compiler/pipes/collect-main-edges.h"
 
-#include "common/php-functions.h"
 #include "compiler/compiler-core.h"
 #include "compiler/data/define-data.h"
 #include "compiler/data/src-file.h"
 #include "compiler/data/var-data.h"
 #include "compiler/function-pass.h"
+#include "compiler/vertex-util.h"
 #include "compiler/inferring/edge.h"
 #include "compiler/inferring/ifi.h"
 #include "compiler/inferring/public.h"
@@ -18,7 +18,7 @@
 #include "compiler/inferring/restriction-non-void.h"
 #include "compiler/inferring/type-node.h"
 #include "compiler/type-hint.h"
-#include "compiler/vertex-util.h"
+#include "common/php-functions.h"
 
 namespace {
 
@@ -87,8 +87,8 @@ RValue CollectMainEdgesPass::as_set_value(VertexPtr v) {
 
 // an isset check will analyze expressions that may differ from PHP after getting elements from typed arrays
 // for example: if $a is int[], then if($a[100] === 0) may differ from PHP if 100-th element doesn't exist (null vs 0)
-void CollectMainEdgesPass::create_isset_check(const RValue& rvalue) {
-  tinf::Node* a = rvalue.node;
+void CollectMainEdgesPass::create_isset_check(const RValue &rvalue) {
+  tinf::Node *a = rvalue.node;
   tinf::get_inferer()->add_node(a);
   tinf::get_inferer()->add_restriction(new RestrictionIsset(a));
 }
@@ -98,8 +98,8 @@ void CollectMainEdgesPass::create_isset_check(const RValue& rvalue) {
 // lhs is VarNode (for ExprNode this has no effect, as expr nodes are recalculated in another way)
 // rhs is an expression (not a type!), so every time rhs is recalculated, lhs is recalculated also
 template<class R>
-void CollectMainEdgesPass::create_set(const LValue& lhs, const R& rhs) {
-  tinf::Edge* edge = new tinf::Edge();
+void CollectMainEdgesPass::create_set(const LValue &lhs, const R &rhs) {
+  tinf::Edge *edge = new tinf::Edge();
   edge->from = lhs.value;
   edge->from_at = lhs.key;
   edge->to = as_rvalue(rhs).node;
@@ -112,8 +112,8 @@ void CollectMainEdgesPass::create_set(const LValue& lhs, const R& rhs) {
 // for example, a key in foreach is mixed
 // it is very similar to create_set(), but this function exists in parallel to express another semantics
 // btw, this edge also appears in stacktrace on type mismatch, answering "why it was inferred in such a way"
-void CollectMainEdgesPass::create_type_assign(const LValue& lhs, const TypeData* initial_type) {
-  tinf::Edge* edge = new tinf::Edge();
+void CollectMainEdgesPass::create_type_assign(const LValue &lhs, const TypeData *initial_type) {
+  tinf::Edge *edge = new tinf::Edge();
   edge->from = lhs.value;
   edge->from_at = lhs.key;
   edge->to = new tinf::TypeNode(initial_type, stage::get_location());
@@ -125,7 +125,7 @@ void CollectMainEdgesPass::create_type_assign(const LValue& lhs, const TypeData*
 // it's because array_map's first argument is declared as callable(^2[*] $x) : any
 // as an input, we have lhs ($v), func_call (exact array_map invocation), and type_hint for lhs (^2[*])
 // it's not a type assign, because tinf::TypeNode holds a constexpr type, whereas here we have a rule with call context
-void CollectMainEdgesPass::create_type_assign_with_arg_ref_rule(const LValue& lhs, const TypeHint* type_hint, VertexPtr func_call) {
+void CollectMainEdgesPass::create_type_assign_with_arg_ref_rule(const LValue &lhs, const TypeHint *type_hint, VertexPtr func_call) {
   auto recalc_trigger = VertexAdaptor<op_trigger_recalc_arg_ref_rule>::create(); // see ExprNodeRecalc
   recalc_trigger->type_hint = type_hint;
   recalc_trigger->func_call = func_call;
@@ -139,12 +139,12 @@ void CollectMainEdgesPass::create_type_assign_with_arg_ref_rule(const LValue& lh
 // for example, function f(?int $x) — then $x is set int|null, and even if passed string to f, $x remains int|null, triggering an error
 // if a type contains any, e.g. array $x — then $x is set to any[], this any is inferred via other edges, but passing string triggers an error
 // lhs here is VarNode (it means: a variable, or a function param, or a function return)
-void CollectMainEdgesPass::create_type_assign_with_restriction(const LValue& var_lhs, const TypeHint* type_hint) {
-  auto* restricted_node = dynamic_cast<tinf::VarNode*>(var_lhs.value);
+void CollectMainEdgesPass::create_type_assign_with_restriction(const LValue &var_lhs, const TypeHint *type_hint) {
+  auto *restricted_node = dynamic_cast<tinf::VarNode *>(var_lhs.value);
   kphp_assert(restricted_node && var_lhs.key->empty() && type_hint->is_typedata_constexpr());
 
   // this is just a type assign
-  tinf::Edge* edge = new tinf::Edge();
+  tinf::Edge *edge = new tinf::Edge();
   edge->from = restricted_node;
   edge->from_at = var_lhs.key;
   edge->to = new tinf::TypeNode(type_hint->to_type_data(), stage::get_location());
@@ -160,9 +160,9 @@ void CollectMainEdgesPass::create_type_assign_with_restriction(const LValue& var
 // therefore, we don't need to create an edge $x->$v, but after tinf has finished, we need to check that type of $v matches int|null
 // this is just an optimization to create less set edges: whenever $v is updated, $x recalculation is not triggered
 // without this, everything would still work jue to type checks, but a bit slower due to useless recalculations
-void CollectMainEdgesPass::create_postponed_type_check(const RValue& restricted_value, const RValue& actual_value, const TypeHint* type_hint) {
-  auto* restricted_node = dynamic_cast<tinf::VarNode*>(restricted_value.node);
-  auto* actual_node = actual_value.node;
+void CollectMainEdgesPass::create_postponed_type_check(const RValue &restricted_value, const RValue &actual_value, const TypeHint *type_hint) {
+  auto *restricted_node = dynamic_cast<tinf::VarNode *>(restricted_value.node);
+  auto *actual_node = actual_value.node;
   kphp_assert(restricted_node && actual_node && type_hint->is_typedata_constexpr());
   tinf::get_inferer()->add_node(actual_node);
   tinf::get_inferer()->add_restriction(new RestrictionMatchPhpdoc(restricted_node, actual_node, type_hint->to_type_data()));
@@ -170,38 +170,40 @@ void CollectMainEdgesPass::create_postponed_type_check(const RValue& restricted_
 
 // a 'non-void check' will test that lhs value is not void
 // for example, callback of array_map isn't allowed to return void
-void CollectMainEdgesPass::create_non_void(const RValue& lhs) {
-  tinf::Node* a = lhs.node;
+void CollectMainEdgesPass::create_non_void(const RValue &lhs) {
+  tinf::Node *a = lhs.node;
   tinf::get_inferer()->add_node(a);
   tinf::get_inferer()->add_restriction(new RestrictionNonVoid(a));
 }
 
 // create edges for ^1, ^2[*] recalculations in a context of a func call like array_map('cb', $arr);
 // every type call_arg ^i is recalculated ($arr for example), dependent_vertex recalculation will be triggered
-void CollectMainEdgesPass::create_edges_to_recalc_arg_ref(const TypeHint* type_hint, VertexPtr dependent_vertex, VertexPtr func_call) {
+void CollectMainEdgesPass::create_edges_to_recalc_arg_ref(const TypeHint *type_hint, VertexPtr dependent_vertex, VertexPtr func_call) {
   kphp_assert(type_hint->has_argref_inside());
-  type_hint->traverse([func_call, dependent_vertex](const TypeHint* child) {
+  type_hint->traverse([func_call, dependent_vertex](const TypeHint *child) {
     VertexPtr call_arg{nullptr};
 
-    if (const auto* as_arg_ref = child->try_as<TypeHintArgRef>()) {
+    if (const auto *as_arg_ref = child->try_as<TypeHintArgRef>()) {
       call_arg = VertexUtil::get_call_arg_ref(as_arg_ref->arg_num, func_call);
-    } else if (const auto* as_arg_ref = child->try_as<TypeHintArgRefInstance>()) {
+    } else if (const auto *as_arg_ref = child->try_as<TypeHintArgRefInstance>()) {
       call_arg = VertexUtil::get_call_arg_ref(as_arg_ref->arg_num, func_call);
-    } else if (const auto* as_arg_ref = child->try_as<TypeHintArgRefCallbackCall>()) {
+    } else if (const auto *as_arg_ref = child->try_as<TypeHintArgRefCallbackCall>()) {
       call_arg = VertexUtil::get_call_arg_ref(as_arg_ref->arg_num, func_call);
     }
 
     if (call_arg) {
-      tinf::Edge* e = new tinf::Edge;
+      tinf::Edge *e = new tinf::Edge;
       e->from = tinf::get_tinf_node(dependent_vertex);
-      e->to =
-          call_arg->type() == op_callback_of_builtin ? tinf::get_tinf_node(call_arg.as<op_callback_of_builtin>()->func_id, -1) : tinf::get_tinf_node(call_arg);
+      e->to = call_arg->type() == op_callback_of_builtin
+              ? tinf::get_tinf_node(call_arg.as<op_callback_of_builtin>()->func_id, -1)
+              : tinf::get_tinf_node(call_arg);
       e->from_at = nullptr;
       tinf::get_inferer()->add_edge(e);
       tinf::get_inferer()->add_node(e->to);
     }
   });
 }
+
 
 // handle @var phpdoc for local/static vars inside a function (or global vars, for top-level functions)
 void CollectMainEdgesPass::on_var_phpdoc(VertexAdaptor<op_phpdoc_var> var_op) {
@@ -224,7 +226,7 @@ void CollectMainEdgesPass::on_func_call_extern_modifying_arg_type(VertexAdaptor<
     VertexRange args = call->args();
     LValue val = as_lvalue(args[0]);
 
-    auto* key = new MultiKey(*val.key);
+    auto *key = new MultiKey(*val.key);
     key->push_back(Key::any_key());
     val.key = key;
 
@@ -247,11 +249,12 @@ void CollectMainEdgesPass::on_func_call_extern_modifying_arg_type(VertexAdaptor<
     create_set(dest_array_arg, another_array_arg);
   }
 
+
   if (extern_function->name == "wait_queue_push") {
     VertexRange args = call->args();
     LValue future_queue_arg = as_lvalue(args[0]);
 
-    const TypeHint* type_hint = TypeHintFuture::create(tp_future_queue, TypeHintArgSubkeyGet::create(TypeHintArgRef::create(2)));
+    const TypeHint *type_hint = TypeHintFuture::create(tp_future_queue, TypeHintArgSubkeyGet::create(TypeHintArgRef::create(2)));
     create_type_assign_with_arg_ref_rule(as_lvalue(future_queue_arg), type_hint, call);
   }
 }
@@ -260,15 +263,15 @@ void CollectMainEdgesPass::on_func_call_extern_modifying_arg_type(VertexAdaptor<
 // array_filter($a, function($v) { ... }), array_filter($a, 'cb') and similar
 // (not to php functions with callable arguments! built-in only)
 void CollectMainEdgesPass::on_passed_callback_to_builtin(VertexAdaptor<op_func_call> call, int param_i, VertexAdaptor<op_callback_of_builtin> v_callback) {
-  FunctionPtr call_function = call->func_id;           // array_filter, etc
-  FunctionPtr provided_callback = v_callback->func_id; // typically, a lambda or __invoke method
+  FunctionPtr call_function = call->func_id;            // array_filter, etc
+  FunctionPtr provided_callback = v_callback->func_id;  // typically, a lambda or __invoke method
   auto callback_param = call_function->get_params()[param_i].as<op_func_param>();
-  const auto* type_hint_callable = callback_param->type_hint->try_as<TypeHintCallable>();
+  const auto *type_hint_callable = callback_param->type_hint->try_as<TypeHintCallable>();
 
   // set restriction of return type of provided callback
   // built-in functions are declared as 'callable(...):any' or 'callable(...):bool'
   // if 'any', it must return anything but void; otherwise, the type rule must be satisfied (it's static, no argument depends)
-  const auto* as_primitive = type_hint_callable->return_type->try_as<TypeHintPrimitive>();
+  const auto *as_primitive = type_hint_callable->return_type->try_as<TypeHintPrimitive>();
   if (as_primitive && as_primitive->ptype == tp_any) {
     create_non_void(as_rvalue(provided_callback, -1));
   } else {
@@ -278,7 +281,7 @@ void CollectMainEdgesPass::on_passed_callback_to_builtin(VertexAdaptor<op_func_c
   // analyze uncommon pattern 'array_map("array_filter", $arr)': the callback itself has ^1 return typehint
   // so, we need to recalc this call whenever arguments applied for this callback are recalculated
   if (provided_callback->return_typehint && provided_callback->return_typehint->has_argref_inside()) {
-    for (const auto* callback_param_type_hint : type_hint_callable->arg_types) {
+    for (const auto *callback_param_type_hint : type_hint_callable->arg_types) {
       if (callback_param_type_hint->has_argref_inside()) {
         create_edges_to_recalc_arg_ref(callback_param_type_hint, call, call);
       }
@@ -299,7 +302,7 @@ void CollectMainEdgesPass::on_passed_callback_to_builtin(VertexAdaptor<op_func_c
     param_i++;
   }
   for (int i = 0; i < type_hint_callable->arg_types.size(); ++i, ++param_i) {
-    const auto* callback_param_decl = type_hint_callable->arg_types[i]; // ^2[*] above
+    const auto *callback_param_decl = type_hint_callable->arg_types[i]; // ^2[*] above
     if (callback_param_decl->has_argref_inside()) {
       create_type_assign_with_arg_ref_rule(as_lvalue(provided_callback, param_i), callback_param_decl, call);
     } else {
@@ -341,7 +344,8 @@ void CollectMainEdgesPass::on_func_call(VertexAdaptor<op_func_call> call) {
     //   we create a set-edge, as we need to infer this 'any' (remember, that $x has a type restriction created in on_function)
     // * the paragraph above about 'any' refers only to PHP functions; built-ins accepting 'any' need only a postponed check
     // * cast params go their own way
-    bool should_create_set_to_infer = (!param->type_hint || param->type_hint->has_tp_any_inside()) && !function->is_extern() && !is_cast_param;
+    bool should_create_set_to_infer = (!param->type_hint || param->type_hint->has_tp_any_inside())
+                                      && !function->is_extern() && !is_cast_param;
 
     if (should_create_set_to_infer) {
       create_set(as_lvalue(function, i), arg);
@@ -410,7 +414,7 @@ void CollectMainEdgesPass::on_switch(VertexAdaptor<op_switch> switch_op) {
   } else if (switch_op->kind != SwitchKind::EmptySwitch) {
     // the condition variable should be lca of all case expression types and the condition expr result type itself
     create_set(as_lvalue(switch_op->condition_on_switch()->var_id), switch_op->condition());
-    for (const auto& c : switch_op->cases()) {
+    for (const auto &c : switch_op->cases()) {
       if (auto as_case = c.try_as<op_case>()) {
         create_set(as_lvalue(switch_op->condition_on_switch()->var_id), as_case->expr());
       }
@@ -453,18 +457,18 @@ void CollectMainEdgesPass::on_set_op(VertexPtr v) {
     kphp_fail();
   }
 
-  const RValue& rval = as_set_value(v);
+  const RValue &rval = as_set_value(v);
 
   // if it's a variable with type hint (for example, public int|false $prop), we also don't need to create a set-edge, only a postponed check
   // here we try to detect if lval is a variable with type hint or @var declared, looks a bit complicated
   // (it's still an optimization, everything would work without it, always creating set-edges, but a bit slower)
-  const TypeHint* type_hint{nullptr};
+  const TypeHint *type_hint{nullptr};
   VarPtr lhs_var;
   if (auto as_prop = lval.try_as<op_instance_prop>()) { // $a->prop++
     lhs_var = as_prop->var_id;
     type_hint = as_prop->var_id->as_class_instance_field()->type_hint;
   } else if (auto as_var = lval.try_as<op_var>()) {
-    if (as_var->var_id->is_class_static_var()) { // A::$prop++
+    if (as_var->var_id->is_class_static_var()) {        // A::$prop++
       lhs_var = as_var->var_id;
       type_hint = as_var->var_id->as_class_static_field()->type_hint;
     }
@@ -496,9 +500,11 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
       }
     }
 
-    const auto is_indexing_func_call = [](VertexPtr v) { return v->type() == op_func_call && v.as<op_func_call>()->func_id->is_result_indexing; };
+    const auto is_indexing_func_call = [](VertexPtr v) {
+      return v->type() == op_func_call && v.as<op_func_call>()->func_id->is_result_indexing;
+    };
     if ((cur->type() == op_var && ifi_tp != ifi_unset) || (ifi_tp > ifi_isset && (cur->type() == op_index || is_indexing_func_call(cur)))) {
-      tinf::Node* node = tinf::get_tinf_node(cur);
+      tinf::Node *node = tinf::get_tinf_node(cur);
       if (node->isset_flags == 0) {
         create_isset_check(as_rvalue(node));
       }
@@ -508,14 +514,14 @@ void CollectMainEdgesPass::ifi_fix(VertexPtr v) {
 }
 
 void CollectMainEdgesPass::on_class(ClassPtr klass) {
-  klass->members.for_each([&](ClassMemberInstanceField& f) {
+  klass->members.for_each([&](ClassMemberInstanceField &f) {
     on_var(f.var);
     if (f.type_hint) {
       create_type_assign_with_restriction(as_lvalue(f.var), f.type_hint);
     }
   });
 
-  klass->members.for_each([&](ClassMemberStaticField& f) {
+  klass->members.for_each([&](ClassMemberStaticField &f) {
     on_var(f.var);
     if (f.type_hint) {
       create_type_assign_with_restriction(as_lvalue(f.var), f.type_hint);
@@ -551,30 +557,30 @@ void CollectMainEdgesPass::on_start() {
 
 VertexPtr CollectMainEdgesPass::on_enter_vertex(VertexPtr v) {
   switch (v->type()) {
-  case op_func_call:
-    on_func_call(v.as<op_func_call>());
-    break;
-  case op_return:
-    have_returns = true;
-    on_return(v.as<op_return>(), current_function);
-    break;
-  case op_foreach:
-    on_foreach(v.as<op_foreach>());
-    break;
-  case op_switch:
-    on_switch(v.as<op_switch>());
-    break;
-  case op_list:
-    on_list(v.as<op_list>());
-    break;
-  case op_try:
-    on_try(v.as<op_try>());
-    break;
-  case op_phpdoc_var:
-    on_var_phpdoc(v.as<op_phpdoc_var>());
-    break;
-  default:
-    break;
+    case op_func_call:
+      on_func_call(v.as<op_func_call>());
+      break;
+    case op_return:
+      have_returns = true;
+      on_return(v.as<op_return>(), current_function);
+      break;
+    case op_foreach:
+      on_foreach(v.as<op_foreach>());
+      break;
+    case op_switch:
+      on_switch(v.as<op_switch>());
+      break;
+    case op_list:
+      on_list(v.as<op_list>());
+      break;
+    case op_try:
+      on_try(v.as<op_try>());
+      break;
+    case op_phpdoc_var:
+      on_var_phpdoc(v.as<op_phpdoc_var>());
+      break;
+    default:
+      break;
   }
   if (OpInfo::rl(v->type()) == rl_set || vk::any_of_equal(v->type(), op_prefix_inc, op_postfix_inc, op_prefix_dec, op_postfix_dec)) {
     on_set_op(v);
@@ -628,8 +634,8 @@ void CollectMainEdgesPass::on_finish() {
 }
 
 template<class CollectionT>
-void CollectMainEdgesPass::call_on_var(const CollectionT& collection) {
-  for (const auto& el : collection) {
+void CollectMainEdgesPass::call_on_var(const CollectionT &collection) {
+  for (const auto &el: collection) {
     on_var(el);
   }
 }

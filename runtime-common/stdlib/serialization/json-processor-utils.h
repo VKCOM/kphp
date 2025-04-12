@@ -23,7 +23,7 @@ struct HasClassWakeupMethod<T, std::enable_if_t<T::has_wakeup_method>> : std::tr
 } // namespace impl_
 
 struct JsonRawString {
-  explicit JsonRawString(string& s) noexcept
-      : str(s) {}
-  string& str;
+  explicit JsonRawString(string &s) noexcept
+    : str(s) {}
+  string &str;
 };

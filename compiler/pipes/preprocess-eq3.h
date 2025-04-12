@@ -9,7 +9,6 @@
 class PreprocessEq3Pass final : public FunctionPassBase {
 private:
   VertexPtr convert_eq3_null_to_isset(VertexPtr eq_op, VertexPtr not_null);
-
 public:
   std::string get_description() override {
     return "Preprocess eq3";

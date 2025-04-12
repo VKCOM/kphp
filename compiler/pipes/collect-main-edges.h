@@ -15,15 +15,16 @@ private:
 
   static RValue as_set_value(VertexPtr v);
 
+
   template<class R>
-  static void create_set(const LValue& lhs, const R& rhs);
-  static void create_type_assign(const LValue& lhs, const TypeData* initial_type);
-  static void create_type_assign_with_arg_ref_rule(const LValue& lhs, const TypeHint* type_hint, VertexPtr func_call);
-  static void create_type_assign_with_restriction(const LValue& var_lhs, const TypeHint* type_hint);
-  static void create_postponed_type_check(const RValue& restricted_value, const RValue& actual_value, const TypeHint* type_hint);
-  static void create_non_void(const RValue& lhs);
-  static void create_isset_check(const RValue& rvalue);
-  static void create_edges_to_recalc_arg_ref(const TypeHint* type_hint, VertexPtr dependent_vertex, VertexPtr func_call);
+  static void create_set(const LValue &lhs, const R &rhs);
+  static void create_type_assign(const LValue &lhs, const TypeData *initial_type);
+  static void create_type_assign_with_arg_ref_rule(const LValue &lhs, const TypeHint *type_hint, VertexPtr func_call);
+  static void create_type_assign_with_restriction(const LValue &var_lhs, const TypeHint *type_hint);
+  static void create_postponed_type_check(const RValue &restricted_value, const RValue &actual_value, const TypeHint *type_hint);
+  static void create_non_void(const RValue &lhs);
+  static void create_isset_check(const RValue &rvalue);
+  static void create_edges_to_recalc_arg_ref(const TypeHint *type_hint, VertexPtr dependent_vertex, VertexPtr func_call);
 
   static void on_var_phpdoc(VertexAdaptor<op_phpdoc_var> var_op);
   static void on_passed_callback_to_builtin(VertexAdaptor<op_func_call> call, int param_i, VertexAdaptor<op_callback_of_builtin> v_callback);
@@ -42,9 +43,10 @@ private:
   static void search_for_nested_calls(VertexPtr v);
 
   template<class CollectionT>
-  void call_on_var(const CollectionT& collection);
+  void call_on_var(const CollectionT &collection);
 
 public:
+
   using ExecuteType = FunctionAndCFG;
 
   std::string get_description() override {

@@ -14,34 +14,34 @@ namespace vk::msgpack {
 
 constexpr static std::size_t STACK_SIZE = 32;
 
-object_visitor::object_visitor(msgpack::zone& zone) noexcept
-    : m_zone(zone) {
+object_visitor::object_visitor(msgpack::zone &zone) noexcept
+  : m_zone(zone) {
   m_stack.reserve(STACK_SIZE);
   m_stack.push_back(&m_obj);
 }
 
 bool object_visitor::visit_nil() noexcept {
-  auto* obj = m_stack.back();
+  auto *obj = m_stack.back();
   obj->type = stored_type::NIL;
   return true;
 }
 
 bool object_visitor::visit_boolean(bool v) noexcept {
-  auto* obj = m_stack.back();
+  auto *obj = m_stack.back();
   obj->type = stored_type::BOOLEAN;
   obj->via.boolean = v;
   return true;
 }
 
 bool object_visitor::visit_positive_integer(uint64_t v) noexcept {
-  auto* obj = m_stack.back();
+  auto *obj = m_stack.back();
   obj->type = stored_type::POSITIVE_INTEGER;
   obj->via.u64 = v;
   return true;
 }
 
 bool object_visitor::visit_negative_integer(int64_t v) noexcept {
-  auto* obj = m_stack.back();
+  auto *obj = m_stack.back();
   if (v >= 0) {
     obj->type = stored_type::POSITIVE_INTEGER;
     obj->via.u64 = v;
@@ -53,24 +53,24 @@ bool object_visitor::visit_negative_integer(int64_t v) noexcept {
 }
 
 bool object_visitor::visit_float32(float v) noexcept {
-  auto* obj = m_stack.back();
+  auto *obj = m_stack.back();
   obj->type = stored_type::FLOAT32;
   obj->via.f64 = v;
   return true;
 }
 
 bool object_visitor::visit_float64(double v) noexcept {
-  auto* obj = m_stack.back();
+  auto *obj = m_stack.back();
   obj->type = stored_type::FLOAT64;
   obj->via.f64 = v;
   return true;
 }
 
-bool object_visitor::visit_str(const char* v, uint32_t size) {
-  auto* obj = m_stack.back();
+bool object_visitor::visit_str(const char *v, uint32_t size) {
+  auto *obj = m_stack.back();
   obj->type = stored_type::STR;
   if (v) {
-    char* tmp = static_cast<char*>(m_zone.allocate_align(size, alignof(char)));
+    char *tmp = static_cast<char *>(m_zone.allocate_align(size, alignof(char)));
     std::memcpy(tmp, v, size);
     obj->via.str.ptr = tmp;
     obj->via.str.size = size;
@@ -82,7 +82,7 @@ bool object_visitor::visit_str(const char* v, uint32_t size) {
 }
 
 bool object_visitor::start_array(uint32_t num_elements) {
-  auto* obj = m_stack.back();
+  auto *obj = m_stack.back();
   obj->type = stored_type::ARRAY;
   obj->via.array.size = num_elements;
   if (num_elements == 0) {
@@ -92,14 +92,14 @@ bool object_visitor::start_array(uint32_t num_elements) {
     if (size / sizeof(msgpack::object) != num_elements) {
       throw msgpack::array_size_overflow("array size overflow");
     }
-    obj->via.array.ptr = static_cast<msgpack::object*>(m_zone.allocate_align(size, alignof(msgpack::object)));
+    obj->via.array.ptr = static_cast<msgpack::object *>(m_zone.allocate_align(size, alignof(msgpack::object)));
   }
   m_stack.push_back(obj->via.array.ptr);
   return true;
 }
 
 bool object_visitor::start_map(uint32_t num_kv_pairs) {
-  auto* obj = m_stack.back();
+  auto *obj = m_stack.back();
   obj->type = stored_type::MAP;
   obj->via.map.size = num_kv_pairs;
   if (num_kv_pairs == 0) {
@@ -109,9 +109,9 @@ bool object_visitor::start_map(uint32_t num_kv_pairs) {
     if (size / sizeof(msgpack::object_kv) != num_kv_pairs) {
       throw msgpack::map_size_overflow("map size overflow");
     }
-    obj->via.map.ptr = static_cast<msgpack::object_kv*>(m_zone.allocate_align(size, alignof(msgpack::object_kv)));
+    obj->via.map.ptr = static_cast<msgpack::object_kv *>(m_zone.allocate_align(size, alignof(msgpack::object_kv)));
   }
-  m_stack.push_back(reinterpret_cast<msgpack::object*>(obj->via.map.ptr));
+  m_stack.push_back(reinterpret_cast<msgpack::object *>(obj->via.map.ptr));
   return true;
 }
 

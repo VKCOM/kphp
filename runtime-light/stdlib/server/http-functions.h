@@ -22,28 +22,28 @@ void header(std::string_view header, bool replace, int64_t response_code) noexce
 
 } // namespace kphp
 
-inline void f$header(const string& str, bool replace = true, int64_t response_code = kphp::http::status::NO_STATUS) noexcept {
+inline void f$header(const string &str, bool replace = true, int64_t response_code = kphp::http::status::NO_STATUS) noexcept {
   kphp::http::header({str.c_str(), str.size()}, replace, response_code);
 }
 
-void f$setrawcookie(const string& name, const string& value, int64_t expire_or_options = 0, const string& path = {}, const string& domain = {},
+void f$setrawcookie(const string &name, const string &value, int64_t expire_or_options = 0, const string &path = {}, const string &domain = {},
                     bool secure = false, bool http_only = false) noexcept;
 
-inline void f$setcookie(const string& name, const string& value = {}, int64_t expire_or_options = 0, const string& path = {}, const string& domain = {},
+inline void f$setcookie(const string &name, const string &value = {}, int64_t expire_or_options = 0, const string &path = {}, const string &domain = {},
                         bool secure = false, bool http_only = false) noexcept {
   f$setrawcookie(name, f$urlencode(value), expire_or_options, path, domain, secure, http_only);
 }
 
 inline array<string> f$headers_list() noexcept {
-  const auto& headers{HttpServerInstanceState::get().headers()};
+  const auto &headers{HttpServerInstanceState::get().headers()};
   constexpr std::string_view header_separator{": "};
 
   array<string> list{array_size{static_cast<int64_t>(headers.size()), true}};
-  for (const auto& [header_name, header_value] : headers) {
+  for (const auto &[header_name, header_value] : headers) {
     list.push_back(string{static_cast<string::size_type>(header_name.size() + header_value.size() + header_separator.size()), true}
-                       .append(header_name.c_str())
-                       .append(header_separator.data())
-                       .append(header_value.c_str()));
+                     .append(header_name.c_str())
+                     .append(header_separator.data())
+                     .append(header_value.c_str()));
   }
 
   return list;
@@ -56,12 +56,13 @@ inline bool f$headers_sent([[maybe_unused]] Optional<std::optional<std::referenc
 }
 
 template<typename F>
-bool f$header_register_callback(F&&) noexcept {
+bool f$header_register_callback(F &&) noexcept {
   php_warning("called stub header_register_callback");
   return true;
 }
 
 template<class T>
-string f$http_build_query(const array<T>& /*a*/, const string& /*numeric_prefix*/ = {}, const string& /*arg_separator*/ = string(), int64_t /*enc_type*/ = 1) {
+string f$http_build_query(const array<T> & /*a*/, const string & /*numeric_prefix*/ = {}, const string & /*arg_separator*/ = string(),
+                          int64_t /*enc_type*/ = 1) {
   php_critical_error("call to unsupported function");
 }

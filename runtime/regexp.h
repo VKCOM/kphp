@@ -49,18 +49,18 @@ private:
   bool is_utf8{false};
   bool use_heap_memory{false};
 
-  string* subpattern_names{nullptr};
+  string *subpattern_names{nullptr};
 
-  pcre* pcre_regexp{nullptr};
-  re2::RE2* RE2_regexp{nullptr};
+  pcre *pcre_regexp{nullptr};
+  re2::RE2 *RE2_regexp{nullptr};
 
-  char* regex_compilation_warning{nullptr};
+  char *regex_compilation_warning{nullptr};
 
   void clean();
 
-  int64_t exec(const string& subject, int64_t offset, bool second_try) const;
+  int64_t exec(const string &subject, int64_t offset, bool second_try) const;
 
-  bool is_valid_RE2_regexp(const char* regexp_string, int64_t regexp_len, bool is_utf8, const char* function, const char* file) noexcept;
+  bool is_valid_RE2_regexp(const char *regexp_string, int64_t regexp_len, bool is_utf8, const char *function, const char *file) noexcept;
 
   static pcre_extra extra;
 
@@ -69,22 +69,22 @@ private:
   static int32_t submatch[3 * MAX_SUBPATTERNS];
 
   template<class T>
-  inline string get_replacement(const T& replace_val, const string& subject, int64_t count) const;
+  inline string get_replacement(const T &replace_val, const string &subject, int64_t count) const;
 
-  void pattern_compilation_warning(const char* function, const char* file, char const* message, ...) noexcept __attribute__((format(printf, 4, 5)));
+  void pattern_compilation_warning(const char *function, const char *file, char const *message, ...) noexcept __attribute__((format(printf, 4, 5)));
 
   void check_pattern_compilation_warning() const noexcept;
 
-  int64_t skip_utf8_subsequent_bytes(int64_t offset, const string& subject) const noexcept;
+  int64_t skip_utf8_subsequent_bytes(int64_t offset, const string &subject) const noexcept;
 
 public:
   regexp() = default;
 
-  explicit regexp(const string& regexp_string);
-  regexp(const char* regexp_string, int64_t regexp_len);
+  explicit regexp(const string &regexp_string);
+  regexp(const char *regexp_string, int64_t regexp_len);
 
-  void init(const string& regexp_string, const char* function = nullptr, const char* file = nullptr);
-  void init(const char* regexp_string, int64_t regexp_len, const char* function = nullptr, const char* file = nullptr);
+  void init(const string &regexp_string, const char *function = nullptr, const char *file = nullptr);
+  void init(const char *regexp_string, int64_t regexp_len, const char *function = nullptr, const char *file = nullptr);
 
   bool does_need_compilation() const {
     // const regexps are compiled beforehand in master process and stored in heap memory
@@ -92,15 +92,15 @@ public:
     return !use_heap_memory;
   }
 
-  Optional<int64_t> match(const string& subject, bool all_matches) const;
-  Optional<int64_t> match(const string& subject, mixed& matches, bool all_matches, int64_t offset = 0) const;
+  Optional<int64_t> match(const string &subject, bool all_matches) const;
+  Optional<int64_t> match(const string &subject, mixed &matches, bool all_matches, int64_t offset = 0) const;
 
-  Optional<int64_t> match(const string& subject, mixed& matches, int64_t flags, bool all_matches, int64_t offset = 0) const;
+  Optional<int64_t> match(const string &subject, mixed &matches, int64_t flags, bool all_matches, int64_t offset = 0) const;
 
-  Optional<array<mixed>> split(const string& subject, int64_t limit, int64_t flags) const;
+  Optional<array<mixed>> split(const string &subject, int64_t limit, int64_t flags) const;
 
   template<class T>
-  Optional<string> replace(const T& replace_val, const string& subject, int64_t limit, int64_t& replace_count) const;
+  Optional<string> replace(const T &replace_val, const string &subject, int64_t limit, int64_t &replace_count) const;
 
   static int64_t last_error();
 
@@ -111,104 +111,104 @@ public:
 
 void global_init_regexp_lib();
 
-inline void preg_add_match(array<mixed>& v, const mixed& match, const string& name);
-inline void preg_add_match(array<string>& v, const string& match, const string& name);
+inline void preg_add_match(array<mixed> &v, const mixed &match, const string &name);
+inline void preg_add_match(array<string> &v, const string &match, const string &name);
 
-inline Optional<int64_t> f$preg_match(const regexp& regex, const string& subject);
+inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject);
 
-inline Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject);
+inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject);
 
-inline Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed& matches);
+inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches);
 
-inline Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, mixed& matches);
+inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches);
 
-inline Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
 
-inline Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
 
-inline Optional<int64_t> f$preg_match(const string& regex, const string& subject);
+inline Optional<int64_t> f$preg_match(const string &regex, const string &subject);
 
-inline Optional<int64_t> f$preg_match_all(const string& regex, const string& subject);
+inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject);
 
-inline Optional<int64_t> f$preg_match(const string& regex, const string& subject, mixed& matches);
+inline Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches);
 
-inline Optional<int64_t> f$preg_match_all(const string& regex, const string& subject, mixed& matches);
+inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches);
 
-inline Optional<int64_t> f$preg_match(const string& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
 
-inline Optional<int64_t> f$preg_match_all(const string& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
 
-inline Optional<int64_t> f$preg_match(const mixed& regex, const string& subject);
+inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject);
 
-inline Optional<int64_t> f$preg_match_all(const mixed& regex, const string& subject);
+inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject);
 
-inline Optional<int64_t> f$preg_match(const mixed& regex, const string& subject, mixed& matches);
+inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches);
 
-inline Optional<int64_t> f$preg_match_all(const mixed& regex, const string& subject, mixed& matches);
+inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches);
 
-inline Optional<int64_t> f$preg_match(const mixed& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
 
-inline Optional<int64_t> f$preg_match_all(const mixed& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset = 0);
+inline Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset = 0);
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
-inline auto f$preg_replace(const T1& regex, const T2& replace_val, const T3& subject, int64_t limit = -1, int64_t& replace_count = preg_replace_count_dummy);
+inline auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
-inline Optional<string> f$preg_replace(const regexp& regex, const string& replace_val, const string& subject, int64_t limit = -1,
-                                       int64_t& replace_count = preg_replace_count_dummy);
+inline Optional<string> f$preg_replace(const regexp &regex, const string &replace_val, const string &subject, int64_t limit = -1,
+                                       int64_t &replace_count = preg_replace_count_dummy);
 
-inline Optional<string> f$preg_replace(const regexp& regex, const mixed& replace_val, const string& subject, int64_t limit = -1,
-                                       int64_t& replace_count = preg_replace_count_dummy);
+inline Optional<string> f$preg_replace(const regexp &regex, const mixed &replace_val, const string &subject, int64_t limit = -1,
+                                       int64_t &replace_count = preg_replace_count_dummy);
 
-inline mixed f$preg_replace(const regexp& regex, const string& replace_val, const mixed& subject, int64_t limit = -1,
-                            int64_t& replace_count = preg_replace_count_dummy);
+inline mixed f$preg_replace(const regexp &regex, const string &replace_val, const mixed &subject, int64_t limit = -1,
+                            int64_t &replace_count = preg_replace_count_dummy);
 
-inline mixed f$preg_replace(const regexp& regex, const mixed& replace_val, const mixed& subject, int64_t limit = -1,
-                            int64_t& replace_count = preg_replace_count_dummy);
+inline mixed f$preg_replace(const regexp &regex, const mixed &replace_val, const mixed &subject, int64_t limit = -1,
+                            int64_t &replace_count = preg_replace_count_dummy);
 
 template<class T1, class T2>
-inline auto f$preg_replace(const string& regex, const T1& replace_val, const T2& subject, int64_t limit = -1,
-                           int64_t& replace_count = preg_replace_count_dummy);
+inline auto f$preg_replace(const string &regex, const T1 &replace_val, const T2 &subject, int64_t limit = -1,
+                           int64_t &replace_count = preg_replace_count_dummy);
 
-inline Optional<string> f$preg_replace(const mixed& regex, const string& replace_val, const string& subject, int64_t limit = -1,
-                                       int64_t& replace_count = preg_replace_count_dummy);
+inline Optional<string> f$preg_replace(const mixed &regex, const string &replace_val, const string &subject, int64_t limit = -1,
+                                       int64_t &replace_count = preg_replace_count_dummy);
 
-inline mixed f$preg_replace(const mixed& regex, const string& replace_val, const mixed& subject, int64_t limit = -1,
-                            int64_t& replace_count = preg_replace_count_dummy);
+inline mixed f$preg_replace(const mixed &regex, const string &replace_val, const mixed &subject, int64_t limit = -1,
+                            int64_t &replace_count = preg_replace_count_dummy);
 
-inline Optional<string> f$preg_replace(const mixed& regex, const mixed& replace_val, const string& subject, int64_t limit = -1,
-                                       int64_t& replace_count = preg_replace_count_dummy);
+inline Optional<string> f$preg_replace(const mixed &regex, const mixed &replace_val, const string &subject, int64_t limit = -1,
+                                       int64_t &replace_count = preg_replace_count_dummy);
 
-inline mixed f$preg_replace(const mixed& regex, const mixed& replace_val, const mixed& subject, int64_t limit = -1,
-                            int64_t& replace_count = preg_replace_count_dummy);
+inline mixed f$preg_replace(const mixed &regex, const mixed &replace_val, const mixed &subject, int64_t limit = -1,
+                            int64_t &replace_count = preg_replace_count_dummy);
 
 template<class T1, class T2, class T3, class = enable_if_t_is_optional<T3>>
-auto f$preg_replace_callback(const T1& regex, const T2& replace_val, const T3& subject, int64_t limit = -1, int64_t& replace_count = preg_replace_count_dummy);
+auto f$preg_replace_callback(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit = -1, int64_t &replace_count = preg_replace_count_dummy);
 
 template<class T>
-Optional<string> f$preg_replace_callback(const regexp& regex, const T& replace_val, const string& subject, int64_t limit = -1,
-                                         int64_t& replace_count = preg_replace_count_dummy);
+Optional<string> f$preg_replace_callback(const regexp &regex, const T &replace_val, const string &subject, int64_t limit = -1,
+                                         int64_t &replace_count = preg_replace_count_dummy);
 
 template<class T>
-mixed f$preg_replace_callback(const regexp& regex, const T& replace_val, const mixed& subject, int64_t limit = -1,
-                              int64_t& replace_count = preg_replace_count_dummy);
+mixed f$preg_replace_callback(const regexp &regex, const T &replace_val, const mixed &subject, int64_t limit = -1,
+                              int64_t &replace_count = preg_replace_count_dummy);
 
 template<class T, class T2>
-auto f$preg_replace_callback(const string& regex, const T& replace_val, const T2& subject, int64_t limit = -1,
-                             int64_t& replace_count = preg_replace_count_dummy);
+auto f$preg_replace_callback(const string &regex, const T &replace_val, const T2 &subject, int64_t limit = -1,
+                             int64_t &replace_count = preg_replace_count_dummy);
 
 template<class T>
-Optional<string> f$preg_replace_callback(const mixed& regex, const T& replace_val, const string& subject, int64_t limit = -1,
-                                         int64_t& replace_count = preg_replace_count_dummy);
+Optional<string> f$preg_replace_callback(const mixed &regex, const T &replace_val, const string &subject, int64_t limit = -1,
+                                         int64_t &replace_count = preg_replace_count_dummy);
 
 template<class T>
-mixed f$preg_replace_callback(const mixed& regex, const T& replace_val, const mixed& subject, int64_t limit = -1,
-                              int64_t& replace_count = preg_replace_count_dummy);
+mixed f$preg_replace_callback(const mixed &regex, const T &replace_val, const mixed &subject, int64_t limit = -1,
+                              int64_t &replace_count = preg_replace_count_dummy);
 
-inline Optional<array<mixed>> f$preg_split(const regexp& regex, const string& subject, int64_t limit = -1, int64_t flags = 0);
+inline Optional<array<mixed>> f$preg_split(const regexp &regex, const string &subject, int64_t limit = -1, int64_t flags = 0);
 
-inline Optional<array<mixed>> f$preg_split(const string& regex, const string& subject, int64_t limit = -1, int64_t flags = 0);
+inline Optional<array<mixed>> f$preg_split(const string &regex, const string &subject, int64_t limit = -1, int64_t flags = 0);
 
-inline Optional<array<mixed>> f$preg_split(const mixed& regex, const string& subject, int64_t limit = -1, int64_t flags = 0);
+inline Optional<array<mixed>> f$preg_split(const mixed &regex, const string &subject, int64_t limit = -1, int64_t flags = 0);
 
 inline int64_t f$preg_last_error();
 
@@ -219,7 +219,7 @@ inline int64_t f$preg_last_error();
  */
 
 template<>
-inline string regexp::get_replacement(const string& replace_val, const string& subject, int64_t count) const {
+inline string regexp::get_replacement(const string &replace_val, const string &subject, int64_t count) const {
   const string::size_type len = replace_val.size();
   kphp_runtime_context.static_SB.clean();
   for (string::size_type i = 0; i < len; i++) {
@@ -261,7 +261,7 @@ inline string regexp::get_replacement(const string& replace_val, const string& s
 }
 
 template<class T>
-string regexp::get_replacement(const T& replace_val, const string& subject, const int64_t count) const {
+string regexp::get_replacement(const T &replace_val, const string &subject, const int64_t count) const {
   array<string> result_set(array_size(count + named_subpatterns_count, named_subpatterns_count == 0));
 
   if (named_subpatterns_count) {
@@ -280,7 +280,7 @@ string regexp::get_replacement(const T& replace_val, const string& subject, cons
 }
 
 template<class T>
-Optional<string> regexp::replace(const T& replace_val, const string& subject, int64_t limit, int64_t& replace_count) const {
+Optional<string> regexp::replace(const T &replace_val, const string &subject, int64_t limit, int64_t &replace_count) const {
   pcre_last_error = 0;
   int64_t result_count = 0; // calls can be recursive, can't write to replace_count directly
 
@@ -346,7 +346,7 @@ Optional<string> regexp::replace(const T& replace_val, const string& subject, in
   return result;
 }
 
-void preg_add_match(array<mixed>& v, const mixed& match, const string& name) {
+void preg_add_match(array<mixed> &v, const mixed &match, const string &name) {
   if (name.size()) {
     v.set_value(name, match);
   }
@@ -354,7 +354,7 @@ void preg_add_match(array<mixed>& v, const mixed& match, const string& name) {
   v.push_back(match);
 }
 
-void preg_add_match(array<string>& v, const string& match, const string& name) {
+void preg_add_match(array<string> &v, const string &match, const string &name) {
   if (name.size()) {
     v.set_value(name, match);
   }
@@ -362,7 +362,7 @@ void preg_add_match(array<string>& v, const string& match, const string& name) {
   v.push_back(match);
 }
 
-Optional<int64_t> f$preg_match(const regexp& regex, const string& subject) {
+Optional<int64_t> f$preg_match(const regexp &regex, const string &subject) {
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -370,7 +370,7 @@ Optional<int64_t> f$preg_match(const regexp& regex, const string& subject) {
   return regex.match(subject, false);
 }
 
-Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject) {
+Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject) {
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match_all, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -378,7 +378,7 @@ Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject) {
   return regex.match(subject, true);
 }
 
-Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed& matches) {
+Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches) {
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -386,7 +386,7 @@ Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed
   return regex.match(subject, matches, false);
 }
 
-Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, mixed& matches) {
+Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches) {
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match_all, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -394,7 +394,7 @@ Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, m
   return regex.match(subject, matches, true);
 }
 
-Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
+Optional<int64_t> f$preg_match(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -402,7 +402,7 @@ Optional<int64_t> f$preg_match(const regexp& regex, const string& subject, mixed
   return regex.match(subject, matches, flags, false, offset);
 }
 
-Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
+Optional<int64_t> f$preg_match_all(const regexp &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_match_all, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -410,60 +410,60 @@ Optional<int64_t> f$preg_match_all(const regexp& regex, const string& subject, m
   return regex.match(subject, matches, flags, true, offset);
 }
 
-Optional<int64_t> f$preg_match(const string& regex, const string& subject) {
+Optional<int64_t> f$preg_match(const string &regex, const string &subject) {
   return f$preg_match(regexp(regex), subject);
 }
 
-Optional<int64_t> f$preg_match_all(const string& regex, const string& subject) {
+Optional<int64_t> f$preg_match_all(const string &regex, const string &subject) {
   return f$preg_match_all(regexp(regex), subject);
 }
 
-Optional<int64_t> f$preg_match(const string& regex, const string& subject, mixed& matches) {
+Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches) {
   return f$preg_match(regexp(regex), subject, matches);
 }
 
-Optional<int64_t> f$preg_match_all(const string& regex, const string& subject, mixed& matches) {
+Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches) {
   return f$preg_match_all(regexp(regex), subject, matches);
 }
 
-Optional<int64_t> f$preg_match(const string& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
+Optional<int64_t> f$preg_match(const string &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {
   return f$preg_match(regexp(regex), subject, matches, flags, offset);
 }
 
-Optional<int64_t> f$preg_match_all(const string& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
+Optional<int64_t> f$preg_match_all(const string &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {
   return f$preg_match_all(regexp(regex), subject, matches, flags, offset);
 }
 
-Optional<int64_t> f$preg_match(const mixed& regex, const string& subject) {
+Optional<int64_t> f$preg_match(const mixed &regex, const string &subject) {
   return f$preg_match(regexp(regex.to_string()), subject);
 }
 
-Optional<int64_t> f$preg_match_all(const mixed& regex, const string& subject) {
+Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject) {
   return f$preg_match_all(regexp(regex.to_string()), subject);
 }
 
-Optional<int64_t> f$preg_match(const mixed& regex, const string& subject, mixed& matches) {
+Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches) {
   return f$preg_match(regexp(regex.to_string()), subject, matches);
 }
 
-Optional<int64_t> f$preg_match_all(const mixed& regex, const string& subject, mixed& matches) {
+Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches) {
   return f$preg_match_all(regexp(regex.to_string()), subject, matches);
 }
 
-Optional<int64_t> f$preg_match(const mixed& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
+Optional<int64_t> f$preg_match(const mixed &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {
   return f$preg_match(regexp(regex.to_string()), subject, matches, flags, offset);
 }
 
-Optional<int64_t> f$preg_match_all(const mixed& regex, const string& subject, mixed& matches, int64_t flags, int64_t offset) {
+Optional<int64_t> f$preg_match_all(const mixed &regex, const string &subject, mixed &matches, int64_t flags, int64_t offset) {
   return f$preg_match_all(regexp(regex.to_string()), subject, matches, flags, offset);
 }
 
 template<class T1, class T2, class T3, class>
-inline auto f$preg_replace(const T1& regex, const T2& replace_val, const T3& subject, int64_t limit, int64_t& replace_count) {
+inline auto f$preg_replace(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit, int64_t &replace_count) {
   return f$preg_replace(regex, replace_val, subject.val(), limit, replace_count);
 }
 
-Optional<string> f$preg_replace(const regexp& regex, const string& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
+Optional<string> f$preg_replace(const regexp &regex, const string &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_replace, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -471,7 +471,7 @@ Optional<string> f$preg_replace(const regexp& regex, const string& replace_val, 
   return regex.replace(replace_val, subject, limit, replace_count);
 }
 
-Optional<string> f$preg_replace(const regexp& regex, const mixed& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
+Optional<string> f$preg_replace(const regexp &regex, const mixed &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
   if (replace_val.is_array()) {
     php_warning("Parameter mismatch, pattern is a string while replacement is an array");
     return false;
@@ -480,11 +480,11 @@ Optional<string> f$preg_replace(const regexp& regex, const mixed& replace_val, c
   return f$preg_replace(regex, replace_val.to_string(), subject, limit, replace_count);
 }
 
-mixed f$preg_replace(const regexp& regex, const string& replace_val, const mixed& subject, int64_t limit, int64_t& replace_count) {
+mixed f$preg_replace(const regexp &regex, const string &replace_val, const mixed &subject, int64_t limit, int64_t &replace_count) {
   return f$preg_replace(regex, mixed(replace_val), subject, limit, replace_count);
 }
 
-mixed f$preg_replace(const regexp& regex, const mixed& replace_val, const mixed& subject, int64_t limit, int64_t& replace_count) {
+mixed f$preg_replace(const regexp &regex, const mixed &replace_val, const mixed &subject, int64_t limit, int64_t &replace_count) {
   if (replace_val.is_array()) {
     php_warning("Parameter mismatch, pattern is a string while replacement is an array");
     return false;
@@ -493,7 +493,7 @@ mixed f$preg_replace(const regexp& regex, const mixed& replace_val, const mixed&
   if (subject.is_array()) {
     replace_count = 0;
     int64_t replace_count_one;
-    const array<mixed>& subject_arr = subject.as_array("");
+    const array<mixed> &subject_arr = subject.as_array("");
     array<mixed> result(subject_arr.size());
     for (array<mixed>::const_iterator it = subject_arr.begin(); it != subject_arr.end(); ++it) {
       mixed cur_result = f$preg_replace(regex, replace_val.to_string(), it.get_value().to_string(), limit, replace_count_one);
@@ -509,19 +509,19 @@ mixed f$preg_replace(const regexp& regex, const mixed& replace_val, const mixed&
 }
 
 template<class T1, class T2>
-auto f$preg_replace(const string& regex, const T1& replace_val, const T2& subject, int64_t limit, int64_t& replace_count) {
+auto f$preg_replace(const string &regex, const T1 &replace_val, const T2 &subject, int64_t limit, int64_t &replace_count) {
   return f$preg_replace(regexp(regex), replace_val, subject, limit, replace_count);
 }
 
-Optional<string> f$preg_replace(const mixed& regex, const string& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
+Optional<string> f$preg_replace(const mixed &regex, const string &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
   return f$preg_replace(regex, mixed(replace_val), subject, limit, replace_count);
 }
 
-mixed f$preg_replace(const mixed& regex, const string& replace_val, const mixed& subject, int64_t limit, int64_t& replace_count) {
+mixed f$preg_replace(const mixed &regex, const string &replace_val, const mixed &subject, int64_t limit, int64_t &replace_count) {
   return f$preg_replace(regex, mixed(replace_val), subject, limit, replace_count);
 }
 
-Optional<string> f$preg_replace(const mixed& regex, const mixed& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
+Optional<string> f$preg_replace(const mixed &regex, const mixed &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
   if (regex.is_array()) {
     Optional<string> result = subject;
 
@@ -561,11 +561,11 @@ Optional<string> f$preg_replace(const mixed& regex, const mixed& replace_val, co
   }
 }
 
-mixed f$preg_replace(const mixed& regex, const mixed& replace_val, const mixed& subject, int64_t limit, int64_t& replace_count) {
+mixed f$preg_replace(const mixed &regex, const mixed &replace_val, const mixed &subject, int64_t limit, int64_t &replace_count) {
   if (subject.is_array()) {
     replace_count = 0;
     int64_t replace_count_one;
-    const array<mixed>& subject_arr = subject.as_array("");
+    const array<mixed> &subject_arr = subject.as_array("");
     array<mixed> result(subject_arr.size());
     for (array<mixed>::const_iterator it = subject_arr.begin(); it != subject_arr.end(); ++it) {
       mixed cur_result = f$preg_replace(regex, replace_val, it.get_value().to_string(), limit, replace_count_one);
@@ -581,12 +581,12 @@ mixed f$preg_replace(const mixed& regex, const mixed& replace_val, const mixed& 
 }
 
 template<class T1, class T2, class T3, class>
-auto f$preg_replace_callback(const T1& regex, const T2& replace_val, const T3& subject, int64_t limit, int64_t& replace_count) {
+auto f$preg_replace_callback(const T1 &regex, const T2 &replace_val, const T3 &subject, int64_t limit, int64_t &replace_count) {
   return f$preg_replace_callback(regex, replace_val, subject.val(), limit, replace_count);
 }
 
 template<class T>
-Optional<string> f$preg_replace_callback(const regexp& regex, const T& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
+Optional<string> f$preg_replace_callback(const regexp &regex, const T &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_replace_callback, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -595,7 +595,7 @@ Optional<string> f$preg_replace_callback(const regexp& regex, const T& replace_v
 }
 
 template<class T>
-mixed f$preg_replace_callback(const regexp& regex, const T& replace_val, const mixed& subject, int64_t limit, int64_t& replace_count) {
+mixed f$preg_replace_callback(const regexp &regex, const T &replace_val, const mixed &subject, int64_t limit, int64_t &replace_count) {
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_replace_callback, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -603,7 +603,7 @@ mixed f$preg_replace_callback(const regexp& regex, const T& replace_val, const m
   if (subject.is_array()) {
     replace_count = 0;
     int64_t replace_count_one;
-    const array<mixed>& subject_arr = subject.as_array("");
+    const array<mixed> &subject_arr = subject.as_array("");
     array<mixed> result(subject_arr.size());
     for (array<mixed>::const_iterator it = subject_arr.begin(); it != subject_arr.end(); ++it) {
       mixed cur_result = f$preg_replace_callback(regex, replace_val, it.get_value().to_string(), limit, replace_count_one);
@@ -619,12 +619,12 @@ mixed f$preg_replace_callback(const regexp& regex, const T& replace_val, const m
 }
 
 template<class T, class T2>
-auto f$preg_replace_callback(const string& regex, const T& replace_val, const T2& subject, int64_t limit, int64_t& replace_count) {
+auto f$preg_replace_callback(const string &regex, const T &replace_val, const T2 &subject, int64_t limit, int64_t &replace_count) {
   return f$preg_replace_callback(regexp(regex), replace_val, subject, limit, replace_count);
 }
 
 template<class T>
-Optional<string> f$preg_replace_callback(const mixed& regex, const T& replace_val, const string& subject, int64_t limit, int64_t& replace_count) {
+Optional<string> f$preg_replace_callback(const mixed &regex, const T &replace_val, const string &subject, int64_t limit, int64_t &replace_count) {
   if (regex.is_array()) {
     Optional<string> result = subject;
 
@@ -643,11 +643,11 @@ Optional<string> f$preg_replace_callback(const mixed& regex, const T& replace_va
 }
 
 template<class T>
-mixed f$preg_replace_callback(const mixed& regex, const T& replace_val, const mixed& subject, int64_t limit, int64_t& replace_count) {
+mixed f$preg_replace_callback(const mixed &regex, const T &replace_val, const mixed &subject, int64_t limit, int64_t &replace_count) {
   if (subject.is_array()) {
     replace_count = 0;
     int64_t replace_count_one;
-    const array<mixed>& subject_arr = subject.as_array("");
+    const array<mixed> &subject_arr = subject.as_array("");
     array<mixed> result(subject_arr.size());
     for (array<mixed>::const_iterator it = subject_arr.begin(); it != subject_arr.end(); ++it) {
       mixed cur_result = f$preg_replace_callback(regex, replace_val, it.get_value().to_string(), limit, replace_count_one);
@@ -662,7 +662,7 @@ mixed f$preg_replace_callback(const mixed& regex, const T& replace_val, const mi
   }
 }
 
-Optional<array<mixed>> f$preg_split(const regexp& regex, const string& subject, int64_t limit, int64_t flags) {
+Optional<array<mixed>> f$preg_split(const regexp &regex, const string &subject, int64_t limit, int64_t flags) {
   KphpTracingAggregateGuard g(kphp_tracing::BuiltinFuncID::preg_split, kphp_tracing::BuiltinFuncID::aggregate_regexp_functions);
   if (regex.does_need_compilation()) {
     g.enter_branch(kphp_tracing::BuiltinFuncID::branch_regex_needs_compilation);
@@ -670,11 +670,11 @@ Optional<array<mixed>> f$preg_split(const regexp& regex, const string& subject, 
   return regex.split(subject, limit, flags);
 }
 
-Optional<array<mixed>> f$preg_split(const string& regex, const string& subject, int64_t limit, int64_t flags) {
+Optional<array<mixed>> f$preg_split(const string &regex, const string &subject, int64_t limit, int64_t flags) {
   return f$preg_split(regexp(regex), subject, limit, flags);
 }
 
-Optional<array<mixed>> f$preg_split(const mixed& regex, const string& subject, int64_t limit, int64_t flags) {
+Optional<array<mixed>> f$preg_split(const mixed &regex, const string &subject, int64_t limit, int64_t flags) {
   return f$preg_split(regexp(regex.to_string()), subject, limit, flags);
 }
 

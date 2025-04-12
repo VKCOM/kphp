@@ -11,10 +11,10 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
-static inline bool read_exact(int fd, void* buffer, size_t count) {
+static inline bool read_exact(int fd, void *buffer, size_t count) {
   size_t total = 0;
   do {
-    const ssize_t part = read(fd, (char*)(buffer) + total, count - total);
+    const ssize_t part = read(fd, (char *) (buffer) + total, count - total);
     if (part > 0) {
       total += part;
     } else if (part == 0 && count > 0) {
@@ -31,10 +31,10 @@ static inline bool read_exact(int fd, void* buffer, size_t count) {
   return true;
 }
 
-static inline bool write_exact(int fd, const void* buffer, size_t size) {
+static inline bool write_exact(int fd, const void *buffer, size_t size) {
   ssize_t total = 0;
   do {
-    const ssize_t part = write(fd, (const char*)(buffer) + total, size - total);
+    const ssize_t part = write(fd, (const char *) (buffer) + total, size - total);
     if (part > 0) {
       total += part;
     } else if (part == 0 && size > 0) {
@@ -46,7 +46,7 @@ static inline bool write_exact(int fd, const void* buffer, size_t size) {
 
       return false;
     }
-  } while (total > 0 && (size_t)total < size);
+  } while (total > 0 && (size_t) total < size);
 
   return true;
 }

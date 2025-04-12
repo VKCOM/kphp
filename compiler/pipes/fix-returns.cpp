@@ -8,8 +8,12 @@
 #include "compiler/inferring/public.h"
 
 VertexPtr FixReturnsPass::on_enter_vertex(VertexPtr root) {
-  auto is_void_fun = [](FunctionPtr f) { return tinf::get_type(f, -1)->ptype() == tp_void; };
-  auto is_void_expr = [](VertexPtr root) { return tinf::get_type(root)->ptype() == tp_void; };
+  auto is_void_fun = [](FunctionPtr f) {
+    return tinf::get_type(f, -1)->ptype() == tp_void;
+  };
+  auto is_void_expr = [](VertexPtr root) {
+    return tinf::get_type(root)->ptype() == tp_void;
+  };
 
   if (root->rl_type == val_r && is_void_expr(root)) {
     if (auto call = root.try_as<op_func_call>()) {

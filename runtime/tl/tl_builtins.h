@@ -22,11 +22,11 @@ bool tl_parse_restore_pos(int pos);
 struct tl_exclamation_fetch_wrapper {
   std::unique_ptr<tl_func_base> fetcher;
 
-  explicit tl_exclamation_fetch_wrapper(std::unique_ptr<tl_func_base> fetcher)
-      : fetcher(std::move(fetcher)) {}
+  explicit tl_exclamation_fetch_wrapper(std::unique_ptr<tl_func_base> fetcher) :
+    fetcher(std::move(fetcher)) {}
 
   tl_exclamation_fetch_wrapper() = default;
-  tl_exclamation_fetch_wrapper(tl_exclamation_fetch_wrapper&&) = default;
+  tl_exclamation_fetch_wrapper(tl_exclamation_fetch_wrapper &&) = default;
 
   mixed fetch() {
     return fetcher->fetch();
@@ -34,24 +34,24 @@ struct tl_exclamation_fetch_wrapper {
 
   using PhpType = class_instance<C$VK$TL$RpcFunctionReturnResult>;
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     php_assert(fetcher);
     out = fetcher->typed_fetch();
   }
 };
 
-using tl_storer_ptr = std::unique_ptr<tl_func_base> (*)(const mixed&);
+using tl_storer_ptr = std::unique_ptr<tl_func_base>(*)(const mixed &);
 
-inline mixed tl_arr_get(const mixed& arr, const string& str_key, int64_t num_key, int64_t precomputed_hash = 0) {
+inline mixed tl_arr_get(const mixed &arr, const string &str_key, int64_t num_key, int64_t precomputed_hash = 0) {
   if (!arr.is_array()) {
     CurrentTlQuery::get().raise_storing_error("Array expected, when trying to access field #%" PRIi64 " : %s", num_key, str_key.c_str());
     return {};
   }
-  const mixed& num_v = arr.get_value(num_key);
+  const mixed &num_v = arr.get_value(num_key);
   if (!num_v.is_null()) {
     return num_v;
   }
-  const mixed& str_v = (precomputed_hash == 0 ? arr.get_value(str_key) : arr.get_value(str_key, precomputed_hash));
+  const mixed &str_v = (precomputed_hash == 0 ? arr.get_value(str_key) : arr.get_value(str_key, precomputed_hash));
   if (!str_v.is_null()) {
     return str_v;
   }
@@ -65,7 +65,7 @@ inline void store_magic_if_not_bare(unsigned int inner_magic) {
   }
 }
 
-inline void fetch_magic_if_not_bare(unsigned int inner_magic, const char* error_msg) {
+inline void fetch_magic_if_not_bare(unsigned int inner_magic, const char *error_msg) {
   if (inner_magic) {
     auto actual_magic = static_cast<unsigned int>(rpc_fetch_int());
     if (actual_magic != inner_magic) {
@@ -75,22 +75,22 @@ inline void fetch_magic_if_not_bare(unsigned int inner_magic, const char* error_
 }
 
 template<class T>
-inline void fetch_raw_vector_T(array<T>& out __attribute__((unused)), int64_t n_elems __attribute__((unused))) {
+inline void fetch_raw_vector_T(array<T> &out __attribute__ ((unused)), int64_t n_elems __attribute__ ((unused))) {
   php_assert(0 && "never called in runtime");
 }
 
 template<>
-inline void fetch_raw_vector_T<double>(array<double>& out, int64_t n_elems) {
+inline void fetch_raw_vector_T<double>(array<double> &out, int64_t n_elems) {
   f$fetch_raw_vector_double(out, n_elems);
 }
 
 template<class T>
-inline void store_raw_vector_T(const array<T>& v __attribute__((unused))) {
+inline void store_raw_vector_T(const array<T> &v __attribute__ ((unused))) {
   php_assert(0 && "never called in runtime");
 }
 
 template<>
-inline void store_raw_vector_T<double>(const array<double>& v) {
+inline void store_raw_vector_T<double>(const array<double> &v) {
   f$store_raw_vector_double(v);
 }
 
@@ -103,33 +103,41 @@ inline void store_raw_vector_T<double>(const array<double>& v) {
 //  3. mixed (long in TL scheme or mixed in the phpdoc) UPD: it will be wrapped after the int64_t transition is over
 
 template<typename S>
-struct need_Optional : vk::is_type_in_list<S, double, string, bool, int64_t> {};
+struct need_Optional : vk::is_type_in_list<S, double, string, bool, int64_t> {
+};
 
 template<typename S>
-struct need_Optional<array<S>> : std::true_type {};
+struct need_Optional<array<S>> : std::true_type {
+};
 
-enum class FieldAccessType { read, write };
+enum class FieldAccessType {
+  read,
+  write
+};
 
 // C++14 if constexpr
 template<typename SerializerT, FieldAccessType ac, typename OptionalFieldT>
-inline std::enable_if_t<need_Optional<typename SerializerT::PhpType>::value && ac == FieldAccessType::read, const typename SerializerT::PhpType&>
-get_serialization_target_from_optional_field(const OptionalFieldT& v) {
+inline std::enable_if_t<need_Optional<typename SerializerT::PhpType>::value && ac == FieldAccessType::read,
+                                      const typename SerializerT::PhpType &>
+get_serialization_target_from_optional_field(const OptionalFieldT &v) {
   return v.val();
 }
 
 template<typename SerializerT, FieldAccessType ac, typename OptionalFieldT>
-inline std::enable_if_t<need_Optional<typename SerializerT::PhpType>::value && ac == FieldAccessType::write, typename SerializerT::PhpType&>
-get_serialization_target_from_optional_field(OptionalFieldT& v) {
+inline std::enable_if_t<need_Optional<typename SerializerT::PhpType>::value && ac == FieldAccessType::write,
+                                      typename SerializerT::PhpType &>
+get_serialization_target_from_optional_field(OptionalFieldT &v) {
   return v.ref();
 }
 
 template<typename SerializerT, FieldAccessType ac, typename OptionalFieldT>
-inline std::enable_if_t<!need_Optional<typename SerializerT::PhpType>::value, OptionalFieldT&> get_serialization_target_from_optional_field(OptionalFieldT& v) {
+inline std::enable_if_t<!need_Optional<typename SerializerT::PhpType>::value, OptionalFieldT &>
+get_serialization_target_from_optional_field(OptionalFieldT &v) {
   return v;
 }
 
 struct t_Int {
-  void store(const mixed& tl_object) {
+  void store(const mixed &tl_object) {
     int32_t v32 = prepare_int_for_storing(f$intval(tl_object));
     store_int(v32);
   }
@@ -141,12 +149,12 @@ struct t_Int {
 
   using PhpType = int64_t;
 
-  void typed_store(const PhpType& v) {
+  void typed_store(const PhpType &v) {
     int32_t v32 = prepare_int_for_storing(v);
     store_int(v32);
   }
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out = rpc_fetch_int();
   }
@@ -166,7 +174,7 @@ struct t_Int {
 };
 
 struct t_Long {
-  void store(const mixed& tl_object) {
+  void store(const mixed &tl_object) {
     store_long(tl_object);
   }
 
@@ -177,18 +185,18 @@ struct t_Long {
 
   using PhpType = int64_t;
 
-  void typed_store(const PhpType& v) {
+  void typed_store(const PhpType &v) {
     f$store_long(v);
   }
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out = f$fetch_long();
   }
 };
 
 struct t_Double {
-  void store(const mixed& tl_object) {
+  void store(const mixed &tl_object) {
     f$store_double(f$floatval(tl_object));
   }
 
@@ -199,18 +207,18 @@ struct t_Double {
 
   using PhpType = double;
 
-  void typed_store(const PhpType& v) {
+  void typed_store(const PhpType &v) {
     f$store_double(v);
   }
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out = f$fetch_double();
   }
 };
 
 struct t_Float {
-  void store(const mixed& tl_object) {
+  void store(const mixed &tl_object) {
     f$store_float(f$floatval(tl_object));
   }
 
@@ -221,18 +229,18 @@ struct t_Float {
 
   using PhpType = double;
 
-  void typed_store(const PhpType& v) {
+  void typed_store(const PhpType &v) {
     f$store_float(v);
   }
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out = f$fetch_float();
   }
 };
 
 struct t_String {
-  void store(const mixed& tl_object) {
+  void store(const mixed &tl_object) {
     f$store_string(f$strval(tl_object));
   }
 
@@ -243,18 +251,18 @@ struct t_String {
 
   using PhpType = string;
 
-  void typed_store(const PhpType& v) {
+  void typed_store(const PhpType &v) {
     f$store_string(f$strval(v));
   }
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out = f$fetch_string();
   }
 };
 
 struct t_Bool {
-  void store(const mixed& tl_object) {
+  void store(const mixed &tl_object) {
     store_int(tl_object.to_bool() ? TL_BOOL_TRUE : TL_BOOL_FALSE);
   }
 
@@ -262,24 +270,24 @@ struct t_Bool {
     CHECK_EXCEPTION(return false);
     auto magic = static_cast<unsigned int>(rpc_fetch_int());
     switch (magic) {
-    case TL_BOOL_FALSE:
-      return false;
-    case TL_BOOL_TRUE:
-      return true;
-    default: {
-      CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Bool: 0x%08x", magic);
-      return -1;
-    }
+      case TL_BOOL_FALSE:
+        return false;
+      case TL_BOOL_TRUE:
+        return true;
+      default: {
+        CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Bool: 0x%08x", magic);
+        return -1;
+      }
     }
   }
 
   using PhpType = bool;
 
-  void typed_store(const PhpType& v) {
+  void typed_store(const PhpType &v) {
     store_int(v ? TL_BOOL_TRUE : TL_BOOL_FALSE);
   }
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     auto magic = static_cast<unsigned int>(rpc_fetch_int());
     if (magic != TL_BOOL_TRUE && magic != TL_BOOL_FALSE) {
@@ -293,15 +301,15 @@ struct t_Bool {
 struct t_True {
   using PhpType = bool;
 
-  void store(const mixed& __attribute__((unused))) {}
+  void store(const mixed &__attribute__((unused))) {}
 
   array<mixed> fetch() {
     return {};
   }
 
-  void typed_store(const PhpType& __attribute__((unused))) {}
+  void typed_store(const PhpType &__attribute__((unused))) {}
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out = true;
   }
@@ -311,15 +319,15 @@ template<typename T, unsigned int inner_magic>
 struct t_Vector {
   T elem_state;
 
-  explicit t_Vector(T param_type)
-      : elem_state(std::move(param_type)) {}
+  explicit t_Vector(T param_type) :
+    elem_state(std::move(param_type)) {}
 
-  void store(const mixed& v) {
+  void store(const mixed &v) {
     if (!v.is_array()) {
       CurrentTlQuery::get().raise_storing_error("Expected array, got %s", v.get_type_c_str());
       return;
     }
-    const array<mixed>& a = v.as_array();
+    const array<mixed> &a = v.as_array();
     int64_t n = v.count();
     f$store_int(n);
     for (int64_t i = 0; i < n; ++i) {
@@ -342,7 +350,7 @@ struct t_Vector {
     array<mixed> result(array_size(std::min(n, 10000), true));
     for (int i = 0; i < n; ++i) {
       fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Vector");
-      const mixed& cur_elem = elem_state.fetch();
+      const mixed &cur_elem = elem_state.fetch();
       CHECK_EXCEPTION(return result);
       result.push_back(cur_elem);
     }
@@ -352,7 +360,7 @@ struct t_Vector {
   using PhpType = array<typename T::PhpType>;
   using PhpElemT = typename T::PhpType;
 
-  void typed_store(const PhpType& v) {
+  void typed_store(const PhpType &v) {
     int64_t n = v.count();
     f$store_int(n);
 
@@ -371,7 +379,7 @@ struct t_Vector {
     }
   }
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     int n = rpc_fetch_int();
     if (n < 0) {
@@ -401,11 +409,11 @@ struct t_Maybe {
 
   T elem_state;
 
-  explicit t_Maybe(T param_type)
-      : elem_state(std::move(param_type)) {}
+  explicit t_Maybe(T param_type) :
+    elem_state(std::move(param_type)) {}
 
-  void store(const mixed& v) {
-    const string& name = f$strval(tl_arr_get(v, tl_str_underscore, 0, tl_str_underscore_hash));
+  void store(const mixed &v) {
+    const string &name = f$strval(tl_arr_get(v, tl_str_underscore, 0, tl_str_underscore_hash));
     if (name == tl_str_resultFalse) {
       store_int(TL_MAYBE_FALSE);
     } else if (name == tl_str_resultTrue) {
@@ -422,28 +430,28 @@ struct t_Maybe {
     CHECK_EXCEPTION(return mixed());
     auto magic = static_cast<unsigned int>(rpc_fetch_int());
     switch (magic) {
-    case TL_MAYBE_FALSE: {
-      return false;
-    }
-    case TL_MAYBE_TRUE: {
-      fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Maybe");
-      return elem_state.fetch();
-    }
-    default: {
-      CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Maybe: 0x%08x", magic);
-      return -1;
-    }
+      case TL_MAYBE_FALSE: {
+        return false;
+      }
+      case TL_MAYBE_TRUE: {
+        fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Maybe");
+        return elem_state.fetch();
+      }
+      default: {
+        CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Maybe: 0x%08x", magic);
+        return -1;
+      }
     }
   }
 
   static constexpr bool inner_needs_Optional = need_Optional<typename T::PhpType>::value;
   using PhpType = typename std::conditional<inner_needs_Optional, Optional<typename T::PhpType>, typename T::PhpType>::type;
 
-  static bool has_maybe_value(const PhpType& v) {
+  static bool has_maybe_value(const PhpType &v) {
     return !v.is_null();
   }
 
-  void typed_store(const PhpType& v) {
+  void typed_store(const PhpType &v) {
     if (!has_maybe_value(v)) {
       store_int(TL_MAYBE_FALSE);
     } else {
@@ -453,25 +461,25 @@ struct t_Maybe {
     }
   }
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     auto magic = static_cast<unsigned int>(rpc_fetch_int());
     switch (magic) {
-    case TL_MAYBE_FALSE: {
-      // Wrapped into Optional: array<T>, int64_t, double, string, bool
-      // Not wrapped:         : var, class_instance<T>, Optional<T>
-      out = PhpType();
-      break;
-    }
-    case TL_MAYBE_TRUE: {
-      fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Maybe");
-      elem_state.typed_fetch_to(get_serialization_target_from_optional_field<T, FieldAccessType::write>(out));
-      break;
-    }
-    default: {
-      CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Maybe: 0x%08x", magic);
-      return;
-    }
+      case TL_MAYBE_FALSE: {
+        // Wrapped into Optional: array<T>, int64_t, double, string, bool
+        // Not wrapped:         : var, class_instance<T>, Optional<T>
+        out = PhpType();
+        break;
+      }
+      case TL_MAYBE_TRUE: {
+        fetch_magic_if_not_bare(inner_magic, "Incorrect magic of inner type of type Maybe");
+        elem_state.typed_fetch_to(get_serialization_target_from_optional_field<T, FieldAccessType::write>(out));
+        break;
+      }
+      default: {
+        CurrentTlQuery::get().raise_fetching_error("Incorrect magic of type Maybe: 0x%08x", magic);
+        return;
+      }
     }
   }
 };
@@ -480,10 +488,10 @@ template<typename KeyT, typename ValueT, unsigned int inner_value_magic>
 struct tl_Dictionary_impl {
   ValueT value_state;
 
-  explicit tl_Dictionary_impl(ValueT value_type)
-      : value_state(std::move(value_type)) {}
+  explicit tl_Dictionary_impl(ValueT value_type) :
+    value_state(std::move(value_type)) {}
 
-  void store(const mixed& v) {
+  void store(const mixed &v) {
     if (!v.is_array()) {
       CurrentTlQuery::get().raise_storing_error("Expected array (dictionary), got something strange");
       return;
@@ -506,9 +514,9 @@ struct tl_Dictionary_impl {
     }
     array<mixed> result{array_size{n, false}};
     for (int32_t i = 0; i < n; ++i) {
-      const auto& key = KeyT().fetch();
+      const auto &key = KeyT().fetch();
       fetch_magic_if_not_bare(inner_value_magic, "Incorrect magic of inner type of some Dictionary");
-      const mixed& value = value_state.fetch();
+      const mixed &value = value_state.fetch();
       CHECK_EXCEPTION(return result);
       result.set_value(key, value);
     }
@@ -517,7 +525,7 @@ struct tl_Dictionary_impl {
 
   using PhpType = array<typename ValueT::PhpType>;
 
-  void typed_store(const PhpType& v) {
+  void typed_store(const PhpType &v) {
     int64_t n = v.count();
     f$store_int(n);
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -531,7 +539,7 @@ struct tl_Dictionary_impl {
     }
   }
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     int32_t n = rpc_fetch_int();
     if (n < 0) {
@@ -565,16 +573,16 @@ struct t_Tuple {
   T elem_state;
   int64_t size;
 
-  t_Tuple(T param_type, int64_t size)
-      : elem_state(std::move(param_type)),
-        size(size) {}
+  t_Tuple(T param_type, int64_t size) :
+    elem_state(std::move(param_type)),
+    size(size) {}
 
-  void store(const mixed& v) {
+  void store(const mixed &v) {
     if (!v.is_array()) {
       CurrentTlQuery::get().raise_storing_error("Expected tuple, got %s", v.get_type_c_str());
       return;
     }
-    const array<mixed>& a = v.as_array();
+    const array<mixed> &a = v.as_array();
     for (int64_t i = 0; i < size; ++i) {
       if (!a.isset(i)) {
         CurrentTlQuery::get().raise_storing_error("Tuple[%ld] not set", i);
@@ -597,7 +605,7 @@ struct t_Tuple {
 
   using PhpType = array<typename T::PhpType>;
 
-  void typed_store(const PhpType& v) {
+  void typed_store(const PhpType &v) {
     if (std::is_same<T, t_Double>{} && inner_magic == 0 && v.is_vector() && v.count() == size) {
       store_raw_vector_T<typename T::PhpType>(v);
       return;
@@ -613,7 +621,7 @@ struct t_Tuple {
     }
   }
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out.reserve(size, true);
 
@@ -637,16 +645,16 @@ struct tl_array {
   int64_t size;
   T cell;
 
-  tl_array(int64_t size, T cell)
-      : size(size),
-        cell(std::move(cell)) {}
+  tl_array(int64_t size, T cell) :
+    size(size),
+    cell(std::move(cell)) {}
 
-  void store(const mixed& v) {
+  void store(const mixed &v) {
     if (!v.is_array()) {
       CurrentTlQuery::get().raise_storing_error("Expected array, got %s", v.get_type_c_str());
       return;
     }
-    const array<mixed>& a = v.as_array();
+    const array<mixed> &a = v.as_array();
     for (int64_t i = 0; i < size; ++i) {
       if (!a.isset(i)) {
         CurrentTlQuery::get().raise_storing_error("Array[%ld] not set", i);
@@ -670,7 +678,7 @@ struct tl_array {
 
   using PhpType = array<typename T::PhpType>;
 
-  void typed_store(const PhpType& v) {
+  void typed_store(const PhpType &v) {
     if (std::is_same<T, t_Double>{} && inner_magic == 0 && v.is_vector() && v.count() == size) {
       store_raw_vector_T<typename T::PhpType>(v);
       return;
@@ -686,7 +694,7 @@ struct tl_array {
     }
   }
 
-  void typed_fetch_to(PhpType& out) {
+  void typed_fetch_to(PhpType &out) {
     CHECK_EXCEPTION(return);
     out.reserve(size, true);
 

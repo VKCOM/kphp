@@ -21,11 +21,12 @@ struct OpenFile {
   std::string subdir;
   bool compile_with_debug_info_flag;
   bool compile_with_crc;
-  OpenFile(const std::string& file_name, const std::string& subdir = "", bool compile_with_debug_info_flag = true, bool compile_with_crc = true)
-      : file_name(file_name),
-        subdir(subdir),
-        compile_with_debug_info_flag(compile_with_debug_info_flag),
-        compile_with_crc(compile_with_crc) {
+  OpenFile(const std::string &file_name, const std::string &subdir = "",
+           bool compile_with_debug_info_flag = true, bool compile_with_crc = true) :
+    file_name(file_name),
+    subdir(subdir),
+    compile_with_debug_info_flag(compile_with_debug_info_flag),
+    compile_with_crc(compile_with_crc) {
     double debug_info_disable_prob = G->settings().debug_info_force_disable_prob.get();
     if (compile_with_debug_info_flag && debug_info_disable_prob > 0) {
       if (flip_coin(debug_info_disable_prob)) {
@@ -45,22 +46,23 @@ struct OpenFile {
     return hash * seed % PROB_RANGE < prob * PROB_RANGE;
   }
 
-  void compile(CodeGenerator& W) const {
+  void compile(CodeGenerator &W) const {
     W.open_file_create_writer(compile_with_debug_info_flag, compile_with_crc, file_name, subdir);
   }
 };
 
 struct CloseFile {
-  void compile(CodeGenerator& W) const {
+  void compile(CodeGenerator &W) const {
     W.close_file_clear_writer();
   }
 };
 
 struct UpdateLocation {
-  const Location& location;
-  explicit UpdateLocation(const Location& location)
-      : location(location) {}
-  void compile(CodeGenerator& W) const {
+  const Location &location;
+  explicit UpdateLocation(const Location &location):
+    location(location) {
+  }
+  void compile(CodeGenerator &W) const {
     if (!W.is_comments_locked()) {
       stage::set_location(location);
       W.add_location(stage::get_file(), stage::get_line());
@@ -69,57 +71,59 @@ struct UpdateLocation {
 };
 
 struct NewLine {
-  void compile(CodeGenerator& W) const {
+  void compile(CodeGenerator &W) const {
     W.new_line();
   }
 };
 
 struct Indent {
   int val;
-  Indent(int val)
-      : val(val) {}
-  inline void compile(CodeGenerator& W) const {
+  Indent(int val) : val(val) { }
+  inline void compile(CodeGenerator &W) const {
     W.indent(val);
   }
 };
 
 struct OpenBlock {
-  void compile(CodeGenerator& W) const {
+  void compile(CodeGenerator &W) const {
     W << "{" << NL << Indent(+2);
   }
 };
 
 struct CloseBlock {
-  inline void compile(CodeGenerator& W) const {
+  inline void compile(CodeGenerator &W) const {
     W << Indent(-2) << "}";
   }
 };
 
 struct SemicolonAndNL {
-  inline void compile(CodeGenerator& W) const {
+  inline void compile(CodeGenerator &W) const {
     W << ";" << NL;
   }
 };
 
 struct LockComments {
-  inline void compile(CodeGenerator& W) const {
+  inline void compile(CodeGenerator &W) const {
     W.lock_comments();
   }
 };
 
 struct UnlockComments {
-  inline void compile(CodeGenerator& W) const {
+  inline void compile(CodeGenerator &W) const {
     W.unlock_comments();
   }
 };
 
-enum class join_mode { one_line, multiple_lines };
+enum class join_mode {
+  one_line,
+  multiple_lines
+};
 
 template<typename T>
 struct ValueSelfGen {
   using element_type = decltype(*std::begin(std::declval<T>()));
 
-  void operator()(CodeGenerator& W, const element_type& obj) const {
+  void operator()(CodeGenerator &W, const element_type &obj) const {
     W << obj;
   }
 };
@@ -127,13 +131,14 @@ struct ValueSelfGen {
 template<typename T, typename F = ValueSelfGen<T>>
 class JoinValues {
 public:
-  JoinValues(const T& values_container, const char* sep, join_mode mode = join_mode::one_line, const F& value_gen = {})
-      : values_container_(values_container),
-        sep_(sep),
-        mode_(mode),
-        value_gen_(value_gen) {}
+  JoinValues(const T &values_container, const char *sep, join_mode mode = join_mode::one_line, const F &value_gen = {}) :
+    values_container_(values_container),
+    sep_(sep),
+    mode_(mode),
+    value_gen_(value_gen) {
+  }
 
-  void compile(CodeGenerator& W) const {
+  void compile(CodeGenerator &W) const {
     auto it = std::begin(values_container_);
     const auto last = std::end(values_container_);
     for (; it != last;) {
@@ -148,8 +153,8 @@ public:
   }
 
 private:
-  const T& values_container_;
-  const char* sep_{nullptr};
+  const T &values_container_;
+  const char *sep_{nullptr};
   const join_mode mode_{join_mode::one_line};
   F value_gen_;
 };

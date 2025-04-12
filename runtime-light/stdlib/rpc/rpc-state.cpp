@@ -7,14 +7,14 @@
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
 
-RpcInstanceState& RpcInstanceState::get() noexcept {
+RpcInstanceState &RpcInstanceState::get() noexcept {
   return InstanceState::get().rpc_instance_state;
 }
 
-const RpcImageState& RpcImageState::get() noexcept {
+const RpcImageState &RpcImageState::get() noexcept {
   return ImageState::get().rpc_image_state;
 }
 
-RpcImageState& RpcImageState::get_mutable() noexcept {
+RpcImageState &RpcImageState::get_mutable() noexcept {
   return ImageState::get_mutable().rpc_image_state;
 }

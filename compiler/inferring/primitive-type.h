@@ -4,7 +4,7 @@
 
 #pragma once
 
-// Order is important. These values are compared with operator<
+// Order is important. These values are compared with operator< 
 // in some passes (in type inferring, for example)
 enum PrimitiveType {
   tp_any,
@@ -29,7 +29,8 @@ enum PrimitiveType {
   ptype_size
 };
 
-const char* ptype_name(PrimitiveType id);
+const char *ptype_name(PrimitiveType id);
 PrimitiveType type_lca(PrimitiveType a, PrimitiveType b);
 bool can_store_false(PrimitiveType tp);
 bool can_store_null(PrimitiveType tp);
+

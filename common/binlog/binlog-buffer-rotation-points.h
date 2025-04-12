@@ -15,10 +15,10 @@ enum bb_rotation_point_type {
   rpt_slice_end = 2,
 };
 
-struct bb_rotation_point* bb_rotation_point_alloc(struct bb_buffer* B, enum bb_rotation_point_type tp, long long log_pos);
-void bb_rotation_point_assign(struct bb_rotation_point** lhs, struct bb_rotation_point* rhs);
+struct bb_rotation_point *bb_rotation_point_alloc(struct bb_buffer *B, enum bb_rotation_point_type tp, long long log_pos);
+void bb_rotation_point_assign(struct bb_rotation_point **lhs, struct bb_rotation_point *rhs);
 
-void bb_rotation_point_close_binlog(struct bb_rotation_point* p);
-void bb_rotation_point_free(struct bb_rotation_point* p);
+void bb_rotation_point_close_binlog(struct bb_rotation_point *p);
+void bb_rotation_point_free(struct bb_rotation_point *p);
 
-#endif // ENGINE_BINLOG_BUFFER_ROTATION_POINTS_H
+#endif //ENGINE_BINLOG_BUFFER_ROTATION_POINTS_H

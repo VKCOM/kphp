@@ -20,10 +20,10 @@
 #define STATSD_PORTS_CNT_MAX (3)
 static int statsd_ports[STATSD_PORTS_CNT_MAX] = {8125, 14880, -1};
 static int statsd_ports_cnt = STATSD_PORTS_CNT_DEFAULT;
-static conn_target_t* statsd_targets[STATSD_PORTS_CNT_MAX];
+static conn_target_t *statsd_targets[STATSD_PORTS_CNT_MAX];
 static int connected_to_targets[STATSD_PORTS_CNT_MAX];
 static int disable_statsd;
-static const char* statsd_host;
+static const char *statsd_host;
 static std::string statsd_prefix;
 
 SAVE_STRING_OPTION_PARSER(OPT_GENERIC, "statsd-host", statsd_host, "engine will connect to statsd daemon at this host and send stats to it");
@@ -37,10 +37,9 @@ OPTION_PARSER(OPT_GENERIC, "statsd-port", required_argument, "engine will connec
   return 0;
 }
 
-OPTION_PARSER(OPT_GENERIC, "statsd-prefix", required_argument,
-              "Prefix for statsd metrics. All metric names will start with 'kphp_stats.<prefix>'."
-              "You can use it to override default statsd-prefix "
-              "which is usually taken as cluster_name from --server-config") {
+OPTION_PARSER(OPT_GENERIC, "statsd-prefix", required_argument, "Prefix for statsd metrics. All metric names will start with 'kphp_stats.<prefix>'."
+                                                               "You can use it to override default statsd-prefix "
+                                                               "which is usually taken as cluster_name from --server-config") {
   statsd_prefix = "kphp_stats.";
   statsd_prefix += optarg;
   return 0;
@@ -51,41 +50,39 @@ FLAG_OPTION_PARSER(OPT_GENERIC, "disable-statsd", disable_statsd, "disable sendi
 namespace {
 class statsd_stats_t : public stats_t {
 public:
-  void add_general_stat(const char*, const char*, ...) noexcept final {
+  void add_general_stat(const char *, const char *, ...) noexcept final {
     // ignore it
   }
 
 protected:
-  void add_stat(char type, const char* key, double value) noexcept final {
+  void add_stat(char type, const char *key, double value) noexcept final {
     sb_printf(&sb, "%s.%s:", stats_prefix, normalize_key(key, "%s", ""));
     sb_printf(&sb, "%.3f", value);
     sb_printf(&sb, "|%c\n", type);
   }
 
-  void add_stat(char type, const char* key, long long value) noexcept final {
+  void add_stat(char type, const char *key, long long value) noexcept final {
     sb_printf(&sb, "%s.%s:", stats_prefix, normalize_key(key, "%s", ""));
     sb_printf(&sb, "%lld", value);
     sb_printf(&sb, "|%c\n", type);
   }
 
-  void add_stat_with_tag_type(char type [[maybe_unused]], const char* key [[maybe_unused]], const char* type_tag [[maybe_unused]],
-                              double value [[maybe_unused]]) noexcept final {
+  void add_stat_with_tag_type(char type [[maybe_unused]], const char *key [[maybe_unused]], const char *type_tag [[maybe_unused]], double value [[maybe_unused]]) noexcept final {
     sb_printf(&sb, "%s.%s_%s:", stats_prefix, normalize_key(key, "%s", ""), type_tag);
     sb_printf(&sb, "%.3f", value);
     sb_printf(&sb, "|%c\n", type);
   }
 
-  void add_stat_with_tag_type(char type [[maybe_unused]], const char* key [[maybe_unused]], const char* type_tag [[maybe_unused]],
-                              long long value [[maybe_unused]]) noexcept final {
+  void add_stat_with_tag_type(char type [[maybe_unused]], const char *key [[maybe_unused]], const char *type_tag [[maybe_unused]], long long value [[maybe_unused]]) noexcept final {
     sb_printf(&sb, "%s.%s_%s:", stats_prefix, normalize_key(key, "%s", ""), type_tag);
     sb_printf(&sb, "%lld", value);
     sb_printf(&sb, "|%c\n", type);
-  }
+  };
 };
 } // namespace
 
-static int statsd_parse_execute(struct connection* c) {
-  netbuffer_t* in = &c->In;
+static int statsd_parse_execute(struct connection *c) {
+  netbuffer_t *in = &c->In;
   int len;
   while ((len = get_ready_bytes(in)) > 0) {
     advance_skip_read_ptr(in, len);
@@ -127,8 +124,8 @@ static void init_statsd_targets() {
 
   for (int i = 0; i < statsd_ports_cnt; i++) {
     int port = statsd_ports[i];
-    struct hostent* h;
-    const char* hostname = statsd_host ?: "localhost";
+    struct hostent *h;
+    const char *hostname = statsd_host ?: "localhost";
     if (!(h = kdb_gethostbyname(hostname)) || h->h_addrtype != AF_INET || h->h_length != 4 || !h->h_addr_list || !h->h_addr) {
       kprintf("cannot resolve %s\n", hostname);
       exit(2);
@@ -139,12 +136,12 @@ static void init_statsd_targets() {
     statsd_ct.type = &ct_statsd_client;
     statsd_ct.extra = NULL;
     statsd_ct.reconnect_timeout = 17;
-    statsd_ct.endpoint = make_inet_sockaddr_storage(ntohl(*(uint32_t*)(h->h_addr)), (uint16_t)port);
+    statsd_ct.endpoint = make_inet_sockaddr_storage(ntohl(*(uint32_t *)(h->h_addr)), (uint16_t)port);
     statsd_targets[i] = create_target(&statsd_ct, 0);
   }
 }
 
-void send_data_to_statsd_with_prefix(const char* custom_stats_prefix, unsigned int tag_mask) {
+void send_data_to_statsd_with_prefix(const char *custom_stats_prefix, unsigned int tag_mask) {
   if (disable_statsd) {
     vkprintf(2, "Not sending stats to statsd, because it is disabled\n");
     return;
@@ -153,7 +150,7 @@ void send_data_to_statsd_with_prefix(const char* custom_stats_prefix, unsigned i
   init_statsd_targets();
 
   for (int i = statsd_ports_cnt - 1; i >= 0; i--) {
-    struct connection* c = get_default_target_connection(statsd_targets[i]);
+    struct connection *c = get_default_target_connection(statsd_targets[i]);
     if (c == NULL) {
       if (connected_to_targets[i] == 1) {
         kprintf("Can't create connection to statsd at %s\n", sockaddr_storage_to_string(&statsd_targets[i]->endpoint));
@@ -164,7 +161,7 @@ void send_data_to_statsd_with_prefix(const char* custom_stats_prefix, unsigned i
       kprintf("Connected to statsd at %s\n", sockaddr_storage_to_string(&statsd_targets[i]->endpoint));
       connected_to_targets[i] = 1;
     }
-    const char* stats_prefix = statsd_prefix.empty() ? custom_stats_prefix : statsd_prefix.c_str();
+    const char *stats_prefix = statsd_prefix.empty() ? custom_stats_prefix : statsd_prefix.c_str();
     auto [result, len] = engine_default_prepare_stats_with_tag_mask(statsd_stats_t{}, stats_prefix, tag_mask);
     write_out(&c->Out, result, len);
     flush_later(c);

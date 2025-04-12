@@ -28,7 +28,7 @@ TEST(parallel_limit_counter, basic) {
   std::array<std::thread, nr_threads> threads;
 
   std::uint64_t expected_sum = 0;
-  for (auto& thread : threads) {
+  for (auto &thread : threads) {
     const int counter = distribution(random_engine);
     expected_sum += counter;
 
@@ -45,7 +45,7 @@ TEST(parallel_limit_counter, basic) {
     });
   }
 
-  for (auto& thread : threads) {
+  for (auto &thread : threads) {
     thread.join();
   }
 
@@ -85,7 +85,7 @@ TEST(parallel_limit_counter, accuracy) {
     });
   }
 
-  for (auto& thread : threads) {
+  for (auto &thread : threads) {
     thread.join();
   }
 
