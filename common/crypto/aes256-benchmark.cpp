@@ -18,7 +18,7 @@ static void BM_crypto_aes256_set_encrypt_key(benchmark::State& state) {
   std::independent_bits_engine<std::default_random_engine, 8, std::uint8_t> engine;
   std::generate(key.begin(), key.end(), std::ref(engine));
 
-  for(auto _ : state) {
+  for (auto _ : state) {
     vk_aes_ctx_t ctx;
     vk_aes_set_encrypt_key(&ctx, key.data(), AES256_KEY_BITS);
   }
@@ -30,7 +30,7 @@ static void BM_crypto_aes256_set_decrypt_key(benchmark::State& state) {
   std::independent_bits_engine<std::default_random_engine, 8, std::uint8_t> engine;
   std::generate(key.begin(), key.end(), std::ref(engine));
 
-  for(auto _ : state) {
+  for (auto _ : state) {
     vk_aes_ctx_t ctx;
     vk_aes_set_decrypt_key(&ctx, key.data(), AES256_KEY_BITS);
   }
@@ -51,7 +51,7 @@ static void BM_crypto_aes256_encrypt_cbc(benchmark::State& state) {
   vk_aes_ctx_t ctx;
   vk_aes_set_encrypt_key(&ctx, key.data(), AES256_KEY_BITS);
 
-  for(auto _ : state) {
+  for (auto _ : state) {
     ctx.cbc_crypt(&ctx, payload.data(), ciphertext.data(), payload.size(), iv.data());
   }
 }
@@ -70,7 +70,7 @@ static void BM_crypto_generic_aes256_encrypt_cbc(benchmark::State& state) {
   vk_aes_ctx_t ctx;
   crypto_generic_aes256_set_encrypt_key(&ctx, key.data());
 
-  for(auto _ : state) {
+  for (auto _ : state) {
     crypto_generic_aes256_cbc_encrypt(&ctx, payload.data(), ciphertext.data(), payload.size(), iv.data());
   }
 }
@@ -89,7 +89,7 @@ static void BM_crypto_generic_aes256_encrypt_ige(benchmark::State& state) {
   vk_aes_ctx_t ctx;
   crypto_generic_aes256_set_encrypt_key(&ctx, key.data());
 
-  for(auto _ : state) {
+  for (auto _ : state) {
     crypto_generic_aes256_ige_encrypt(&ctx, payload.data(), ciphertext.data(), payload.size(), iv.data());
   }
 }
@@ -108,7 +108,7 @@ static void BM_crypto_aes256_encrypt_ige(benchmark::State& state) {
   vk_aes_ctx_t ctx;
   vk_aes_set_encrypt_key(&ctx, key.data(), AES256_KEY_BITS);
 
-  for(auto _ : state) {
+  for (auto _ : state) {
     ctx.ige_crypt(&ctx, payload.data(), ciphertext.data(), payload.size(), iv.data());
   }
 }
@@ -128,7 +128,7 @@ static void BM_crypto_aes256_encrypt_ctr(benchmark::State& state) {
   vk_aes_ctx_t ctx;
   vk_aes_set_encrypt_key(&ctx, key.data(), AES256_KEY_BITS);
 
-  for(auto _ : state) {
+  for (auto _ : state) {
     ctx.ctr_crypt(&ctx, payload.data(), ciphertext.data(), payload.size(), iv.data(), 0);
   }
 }

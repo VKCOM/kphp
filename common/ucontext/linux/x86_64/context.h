@@ -43,7 +43,7 @@ struct kfpstate {
 };
 
 // Structure to describe FPU registers
-using kfpregset_t = kfpstate *;
+using kfpregset_t = kfpstate*;
 
 // Context to describe whole processor state
 struct kmcontext_t {
@@ -54,14 +54,14 @@ struct kmcontext_t {
 };
 
 struct kstack_t {
-  void *sp;
+  void* sp;
   uint64_t size;
 };
 
 // Userlevel KPHP context
 struct kcontext_t {
   uint64_t flags;
-  kcontext_t *link;
+  kcontext_t* link;
   kstack_t stack;
   kmcontext_t mcontext;
   kfpstate fpregs_mem;
@@ -69,28 +69,28 @@ struct kcontext_t {
 
 #pragma pack(pop)
 
-inline constexpr void *get_context_stack_ptr_portable(const kcontext_t &ctx) noexcept {
+inline constexpr void* get_context_stack_ptr_portable(const kcontext_t& ctx) noexcept {
   return ctx.stack.sp;
 }
 
-inline constexpr uint64_t get_context_stack_size_portable(const kcontext_t &ctx) noexcept {
+inline constexpr uint64_t get_context_stack_size_portable(const kcontext_t& ctx) noexcept {
   return ctx.stack.size;
 }
 
-inline constexpr void set_context_stack_ptr_portable(kcontext_t &ctx, void *sp) noexcept {
+inline constexpr void set_context_stack_ptr_portable(kcontext_t& ctx, void* sp) noexcept {
   ctx.stack.sp = sp;
 }
 
-inline constexpr void set_context_stack_size_portable(kcontext_t &ctx, uint64_t size) noexcept {
+inline constexpr void set_context_stack_size_portable(kcontext_t& ctx, uint64_t size) noexcept {
   ctx.stack.size = size;
 }
 
-inline constexpr void set_context_link_portable(kcontext_t &ctx, kcontext_t *link) noexcept {
+inline constexpr void set_context_link_portable(kcontext_t& ctx, kcontext_t* link) noexcept {
   ctx.link = link;
 }
 
-inline void *get_context_stack_base_ptr_portable(const kcontext_t &ctx) noexcept {
-  return reinterpret_cast<void *>(ctx.mcontext.gregs[GREG_RBP]);
+inline void* get_context_stack_base_ptr_portable(const kcontext_t& ctx) noexcept {
+  return reinterpret_cast<void*>(ctx.mcontext.gregs[GREG_RBP]);
 }
 
 // Zero-cost offsets double-checking

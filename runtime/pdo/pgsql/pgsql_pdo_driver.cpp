@@ -13,16 +13,16 @@
 
 namespace pdo::pgsql {
 
-void PgsqlPdoDriver::connect(const class_instance<C$PDO> &v$this __attribute__((unused)), const string &connection_string, const Optional<string> &username,
-                             const Optional<string> &password, const Optional<array<mixed>> &options) noexcept {
+void PgsqlPdoDriver::connect(const class_instance<C$PDO>& v$this __attribute__((unused)), const string& connection_string, const Optional<string>& username,
+                             const Optional<string>& password, const Optional<array<mixed>>& options) noexcept {
   array<string> connection_string_parts = explode(';', connection_string);
   string conninfo{};
 
-  for (const auto &it : connection_string_parts) {
+  for (const auto& it : connection_string_parts) {
     array<string> kv_parts = explode('=', it.get_value());
     php_assert(kv_parts.count() == 2);
-    const auto &key = kv_parts[0];
-    const auto &value = kv_parts[1];
+    const auto& key = kv_parts[0];
+    const auto& value = kv_parts[1];
 
     if (key == string{"host"}) {
       conninfo.append(" host=").append(value.c_str());
@@ -44,15 +44,15 @@ void PgsqlPdoDriver::connect(const class_instance<C$PDO> &v$this __attribute__((
   if (options.has_value()) {
     for (auto it = options.val().cbegin(); it != options.val().cend(); ++it) {
       switch (int64_t option = it.get_int_key()) {
-        case C$PDO::ATTR_TIMEOUT: {
-          int64_t timeout_sec = it.get_value().to_int();
-          v$this.get()->timeout_sec = timeout_sec;
-          conninfo.append(" connect_timeout=").append(string(timeout_sec));
-          break;
-        }
-        default: {
-          php_warning("pgSQL option %" PRId64 " is not supported", option);
-        }
+      case C$PDO::ATTR_TIMEOUT: {
+        int64_t timeout_sec = it.get_value().to_int();
+        v$this.get()->timeout_sec = timeout_sec;
+        conninfo.append(" connect_timeout=").append(string(timeout_sec));
+        break;
+      }
+      default: {
+        php_warning("pgSQL option %" PRId64 " is not supported", option);
+      }
       }
     }
   }
@@ -61,7 +61,7 @@ void PgsqlPdoDriver::connect(const class_instance<C$PDO> &v$this __attribute__((
   connector_id = vk::singleton<database_drivers::Adaptor>::get().initiate_connect(std::move(connector));
 }
 
-class_instance<C$PDOStatement> PgsqlPdoDriver::prepare(const class_instance<C$PDO> &v$this, const string &query, const array<mixed> &options) noexcept {
+class_instance<C$PDOStatement> PgsqlPdoDriver::prepare(const class_instance<C$PDO>& v$this, const string& query, const array<mixed>& options) noexcept {
   (void)options;
   class_instance<C$PDOStatement> res;
   res.alloc();
@@ -72,8 +72,8 @@ class_instance<C$PDOStatement> PgsqlPdoDriver::prepare(const class_instance<C$PD
   return res;
 }
 
-const char *PgsqlPdoDriver::error_code_sqlstate() noexcept {
-  auto *connector = vk::singleton<database_drivers::Adaptor>::get().get_connector<database_drivers::PgsqlConnector>(connector_id);
+const char* PgsqlPdoDriver::error_code_sqlstate() noexcept {
+  auto* connector = vk::singleton<database_drivers::Adaptor>::get().get_connector<database_drivers::PgsqlConnector>(connector_id);
   if (connector == nullptr) {
     return {};
   }
@@ -81,13 +81,13 @@ const char *PgsqlPdoDriver::error_code_sqlstate() noexcept {
   return code.empty() ? "00000" : code.c_str();
 }
 
-std::pair<int, const char *> PgsqlPdoDriver::error_info() noexcept {
-  auto *connector = vk::singleton<database_drivers::Adaptor>::get().get_connector<database_drivers::PgsqlConnector>(connector_id);
+std::pair<int, const char*> PgsqlPdoDriver::error_info() noexcept {
+  auto* connector = vk::singleton<database_drivers::Adaptor>::get().get_connector<database_drivers::PgsqlConnector>(connector_id);
   if (connector == nullptr) {
     return {};
   }
   int status = connector->ctx.last_result_status;
-  char *message = LIB_PGSQL_CALL(PQerrorMessage(connector->ctx.conn));
+  char* message = LIB_PGSQL_CALL(PQerrorMessage(connector->ctx.conn));
   return {status == 1 || status == 2 ? 0 : status, message};
 }
 

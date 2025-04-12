@@ -15,12 +15,8 @@ struct tl_scheme;
 namespace tl {
 class TlHints;
 
-size_t gen_php_code(const tlo_parsing::tl_scheme &scheme,
-                    const TlHints &hints,
-                    const std::string &out_php_dir,
-                    bool forcibly_overwrite_dir,
-                    bool generate_tests,
-                    bool generate_tl_internals);
+size_t gen_php_code(const tlo_parsing::tl_scheme& scheme, const TlHints& hints, const std::string& out_php_dir, bool forcibly_overwrite_dir,
+                    bool generate_tests, bool generate_tl_internals);
 
 } // namespace tl
 } // namespace vk

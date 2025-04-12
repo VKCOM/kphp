@@ -9,10 +9,10 @@
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
 
-ImageState *k2_create_image() {
+ImageState* k2_create_image() {
   // Note that in k2_create_image most of K2 functionality is not yet available
   php_debug("create image state of \"%s\"", k2::describe()->image_name);
-  auto *image_state_ptr{static_cast<ImageState *>(k2::alloc(sizeof(ImageState)))};
+  auto* image_state_ptr{static_cast<ImageState*>(k2::alloc(sizeof(ImageState)))};
   if (image_state_ptr == nullptr) {
     php_warning("can't allocate enough memory for ImageState");
     return nullptr;
@@ -23,15 +23,15 @@ ImageState *k2_create_image() {
 
 void k2_init_image() {
   php_debug("start image state init");
-  new (const_cast<ImageState *>(k2::image_state())) ImageState{};
+  new (const_cast<ImageState*>(k2::image_state())) ImageState{};
   init_php_scripts_once_in_master();
   php_debug("end image state init");
 }
 
-ComponentState *k2_create_component() {
+ComponentState* k2_create_component() {
   // Note that in k2_create_component most of K2 functionality is not yet available
   php_debug("create component state of \"%s\"", k2::describe()->image_name);
-  auto *component_state_ptr{static_cast<ComponentState *>(k2::alloc(sizeof(ComponentState)))};
+  auto* component_state_ptr{static_cast<ComponentState*>(k2::alloc(sizeof(ComponentState)))};
   if (component_state_ptr == nullptr) {
     php_warning("can't allocate enough memory for ImageState");
     return nullptr;
@@ -42,14 +42,14 @@ ComponentState *k2_create_component() {
 
 void k2_init_component() {
   php_debug("start component state init");
-  new (const_cast<ComponentState *>(k2::component_state())) ComponentState{};
+  new (const_cast<ComponentState*>(k2::component_state())) ComponentState{};
   php_debug("end component state init");
 }
 
-InstanceState *k2_create_instance() {
+InstanceState* k2_create_instance() {
   // Note that in k2_create_instance most of K2 functionality is not yet available
   php_debug("create instance state of \"%s\"", k2::describe()->image_name);
-  auto *instance_state_ptr{static_cast<InstanceState *>(k2::alloc(sizeof(InstanceState)))};
+  auto* instance_state_ptr{static_cast<InstanceState*>(k2::alloc(sizeof(InstanceState)))};
   if (instance_state_ptr == nullptr) {
     php_warning("cannot allocate enough memory for ComponentState");
     return nullptr;
@@ -67,7 +67,7 @@ void k2_init_instance() {
 
 k2::PollStatus k2_poll() {
   php_debug("k2_poll started...");
-  auto &instance_state{InstanceState::get()};
+  auto& instance_state{InstanceState::get()};
   instance_state.process_platform_updates();
   const auto poll_status{instance_state.poll_status};
   php_debug("k2_poll finished with status: %d", poll_status);

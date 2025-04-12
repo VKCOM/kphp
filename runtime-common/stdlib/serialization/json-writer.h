@@ -22,8 +22,8 @@ public:
   bool write_bool(bool b) noexcept;
   bool write_int(int64_t i) noexcept;
   bool write_double(double d) noexcept;
-  bool write_string(const string &s) noexcept;
-  bool write_raw_string(const string &s) noexcept;
+  bool write_string(const string& s) noexcept;
+  bool write_raw_string(const string& s) noexcept;
   bool write_null() noexcept;
 
   bool write_key(std::string_view key, bool escape = false) noexcept;
@@ -59,7 +59,7 @@ private:
   bool has_root_{false};
   std::size_t indent_{0};
 
-  string_buffer &runtime_context_buffer{RuntimeContext::get().static_SB};
+  string_buffer& runtime_context_buffer{RuntimeContext::get().static_SB};
 };
 
 } // namespace impl_

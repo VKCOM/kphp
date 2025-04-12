@@ -13,5 +13,5 @@ struct C$KphpSpanEvent : public refcountable_php_classes<C$KphpSpanEvent> {
 
   C$KphpSpanEvent() noexcept = default;
   explicit C$KphpSpanEvent(int32_t span_id) noexcept
-    : span_id(span_id) {}
+      : span_id(span_id) {}
 };

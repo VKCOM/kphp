@@ -50,8 +50,8 @@
 
 // ================================================================================================
 
-#define TRY_CALL_CORO(CallT, ResT, call) TRY_CALL_(CallT, call, co_return(ResT()))
-#define TRY_CALL_VOID_CORO(ResT, call) TRY_CALL_VOID_(call, co_return(ResT()))
+#define TRY_CALL_CORO(CallT, ResT, call) TRY_CALL_(CallT, call, co_return (ResT()))
+#define TRY_CALL_VOID_CORO(ResT, call) TRY_CALL_VOID_(call, co_return (ResT()))
 
 // ================================================================================================
 
@@ -63,10 +63,10 @@
 namespace kphp::exceptions {
 
 template<std::derived_from<C$Throwable> T>
-class_instance<T> make_throwable(const string &file, int64_t line, int64_t code, const string &desc) noexcept {
+class_instance<T> make_throwable(const string& file, int64_t line, int64_t code, const string& desc) noexcept {
   auto instance{make_instance<T>()};
 
-  auto *instance_ptr{instance.get()};
+  auto* instance_ptr{instance.get()};
   instance_ptr->$file = file;
   instance_ptr->$line = line;
   instance_ptr->$code = code;
@@ -79,12 +79,12 @@ class_instance<T> make_throwable(const string &file, int64_t line, int64_t code,
 // ================================================================================================
 
 template<typename T>
-T f$_exception_set_location(const T &e, const string &file, int64_t line) noexcept {
+T f$_exception_set_location(const T& e, const string& file, int64_t line) noexcept {
   e->$file = file;
   e->$line = line;
   return e;
 }
 
-inline Exception f$err(const string &file, int64_t line, const string &code, const string &desc = {}) noexcept {
+inline Exception f$err(const string& file, int64_t line, const string& code, const string& desc = {}) noexcept {
   return kphp::exceptions::make_throwable<C$Exception>(file, line, 0, (RuntimeContext::get().static_SB.clean() << "ERR_" << code << ": " << desc).str());
 }

@@ -17,8 +17,8 @@ public:
   AbstractPdoStatement() = default;
   virtual ~AbstractPdoStatement() = default;
 
-  virtual bool execute(const class_instance<C$PDOStatement> &v$this, const Optional<array<mixed>> &params) noexcept = 0;
-  virtual mixed fetch(const class_instance<C$PDOStatement> &v$this) noexcept = 0;
+  virtual bool execute(const class_instance<C$PDOStatement>& v$this, const Optional<array<mixed>>& params) noexcept = 0;
+  virtual mixed fetch(const class_instance<C$PDOStatement>& v$this) noexcept = 0;
   virtual int64_t affected_rows() noexcept = 0;
 };
 

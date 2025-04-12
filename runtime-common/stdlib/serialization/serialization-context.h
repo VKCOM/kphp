@@ -14,5 +14,5 @@ struct SerializationLibContext final : private vk::not_copyable {
   size_t instance_depth{0};
   uint32_t serialize_as_float32_{0};
 
-  static SerializationLibContext &get() noexcept;
+  static SerializationLibContext& get() noexcept;
 };

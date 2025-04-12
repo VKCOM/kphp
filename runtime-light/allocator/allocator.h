@@ -10,6 +10,7 @@
 #include "runtime-common/core/allocator/script-allocator-managed.h"
 
 template<std::derived_from<ScriptAllocatorManaged> T, typename... Args>
-requires std::constructible_from<T, Args...> auto make_unique_on_script_memory(Args &&...args) noexcept {
+requires std::constructible_from<T, Args...>
+auto make_unique_on_script_memory(Args&&... args) noexcept {
   return std::make_unique<T>(std::forward<Args>(args)...);
 }

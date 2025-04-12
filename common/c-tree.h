@@ -5,11 +5,10 @@
 #include <assert.h>
 #include <stdbool.h>
 
-
 #define __DEFINE_TREE(prefix, name, value_t, value_compare, y_t, y_compare, new_tree_node, free_tree_node)                                                     \
   __DECLARE_TREE(prefix, name, value_t, y_t)                                                                                                                   \
                                                                                                                                                                \
-  tree_##name##_t *tree_lookup_##name(tree_##name##_t *T, value_t x) {                                                                                         \
+  tree_##name##_t* tree_lookup_##name(tree_##name##_t* T, value_t x) {                                                                                         \
     long long c;                                                                                                                                               \
     while (T && (c = value_compare(x, T->x))) {                                                                                                                \
       T = (c < 0) ? T->left : T->right;                                                                                                                        \
@@ -17,7 +16,7 @@
     return T;                                                                                                                                                  \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  tree_##name##_t *tree_lookup_p_##name(tree_##name##_t *T, value_t *x) {                                                                                      \
+  tree_##name##_t* tree_lookup_p_##name(tree_##name##_t* T, value_t* x) {                                                                                      \
     long long c;                                                                                                                                               \
     while (T && (c = value_compare((*x), T->x))) {                                                                                                             \
       T = (c < 0) ? T->left : T->right;                                                                                                                        \
@@ -25,7 +24,7 @@
     return T;                                                                                                                                                  \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  value_t *tree_lookup_value_##name(tree_##name##_t *T, value_t x) {                                                                                           \
+  value_t* tree_lookup_value_##name(tree_##name##_t* T, value_t x) {                                                                                           \
     long long c;                                                                                                                                               \
     while (T && (c = value_compare(x, T->x))) {                                                                                                                \
       T = (c < 0) ? T->left : T->right;                                                                                                                        \
@@ -33,7 +32,7 @@
     return T ? &T->x : 0;                                                                                                                                      \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  value_t *tree_lookup_value_p_##name(tree_##name##_t *T, value_t *x) {                                                                                        \
+  value_t* tree_lookup_value_p_##name(tree_##name##_t* T, value_t* x) {                                                                                        \
     long long c;                                                                                                                                               \
     while (T && (c = value_compare((*x), T->x))) {                                                                                                             \
       T = (c < 0) ? T->left : T->right;                                                                                                                        \
@@ -41,7 +40,7 @@
     return T ? &T->x : 0;                                                                                                                                      \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  void tree_split_##name(tree_##name##_t **L, tree_##name##_t **R, tree_##name##_t *T, value_t x) {                                                            \
+  void tree_split_##name(tree_##name##_t** L, tree_##name##_t** R, tree_##name##_t* T, value_t x) {                                                            \
     if (!T) {                                                                                                                                                  \
       *L = *R = 0;                                                                                                                                             \
       return;                                                                                                                                                  \
@@ -58,7 +57,7 @@
     }                                                                                                                                                          \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  void tree_split_p_##name(tree_##name##_t **L, tree_##name##_t **R, tree_##name##_t *T, value_t *x) {                                                         \
+  void tree_split_p_##name(tree_##name##_t** L, tree_##name##_t** R, tree_##name##_t* T, value_t* x) {                                                         \
     if (!T) {                                                                                                                                                  \
       *L = *R = 0;                                                                                                                                             \
       return;                                                                                                                                                  \
@@ -75,8 +74,8 @@
     }                                                                                                                                                          \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  tree_##name##_t *tree_insert_##name(tree_##name##_t *T, value_t x, y_t y) {                                                                                  \
-    tree_##name##_t *P;                                                                                                                                        \
+  tree_##name##_t* tree_insert_##name(tree_##name##_t* T, value_t x, y_t y) {                                                                                  \
+    tree_##name##_t* P;                                                                                                                                        \
     if (!T) {                                                                                                                                                  \
       P = new_tree_node(x, y);                                                                                                                                 \
       tree_relax_##name(P);                                                                                                                                    \
@@ -100,8 +99,8 @@
     return P;                                                                                                                                                  \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  tree_##name##_t *tree_insert_p_##name(tree_##name##_t *T, value_t *x, y_t y) {                                                                               \
-    tree_##name##_t *P;                                                                                                                                        \
+  tree_##name##_t* tree_insert_p_##name(tree_##name##_t* T, value_t* x, y_t y) {                                                                               \
+    tree_##name##_t* P;                                                                                                                                        \
     if (!T) {                                                                                                                                                  \
       P = new_tree_node(*x, y);                                                                                                                                \
       tree_relax_##name(P);                                                                                                                                    \
@@ -125,7 +124,7 @@
     return P;                                                                                                                                                  \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  tree_##name##_t *tree_merge_##name(tree_##name##_t *L, tree_##name##_t *R) {                                                                                 \
+  tree_##name##_t* tree_merge_##name(tree_##name##_t* L, tree_##name##_t* R) {                                                                                 \
     if (!L) {                                                                                                                                                  \
       return R;                                                                                                                                                \
     }                                                                                                                                                          \
@@ -143,11 +142,11 @@
     }                                                                                                                                                          \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  tree_##name##_t *tree_delete_##name(tree_##name##_t *T, value_t x) {                                                                                         \
+  tree_##name##_t* tree_delete_##name(tree_##name##_t* T, value_t x) {                                                                                         \
     assert(T);                                                                                                                                                 \
     long long c = value_compare(x, T->x);                                                                                                                      \
     if (!c) {                                                                                                                                                  \
-      tree_##name##_t *N = tree_merge_##name(T->left, T->right);                                                                                               \
+      tree_##name##_t* N = tree_merge_##name(T->left, T->right);                                                                                               \
       free_tree_node(T);                                                                                                                                       \
       return N;                                                                                                                                                \
     } else if (c < 0) {                                                                                                                                        \
@@ -159,11 +158,11 @@
     return T;                                                                                                                                                  \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  tree_##name##_t *tree_delete_p_##name(tree_##name##_t *T, value_t *x) {                                                                                      \
+  tree_##name##_t* tree_delete_p_##name(tree_##name##_t* T, value_t* x) {                                                                                      \
     assert(T);                                                                                                                                                 \
     long long c = value_compare((*x), T->x);                                                                                                                   \
     if (!c) {                                                                                                                                                  \
-      tree_##name##_t *N = tree_merge_##name(T->left, T->right);                                                                                               \
+      tree_##name##_t* N = tree_merge_##name(T->left, T->right);                                                                                               \
       free_tree_node(T);                                                                                                                                       \
       return N;                                                                                                                                                \
     } else if (c < 0) {                                                                                                                                        \
@@ -175,20 +174,20 @@
     return T;                                                                                                                                                  \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  tree_##name##_t *tree_get_min_##name(tree_##name##_t *T) {                                                                                                   \
+  tree_##name##_t* tree_get_min_##name(tree_##name##_t* T) {                                                                                                   \
     while (T && T->left) {                                                                                                                                     \
       T = T->left;                                                                                                                                             \
     }                                                                                                                                                          \
     return T;                                                                                                                                                  \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  tree_##name##_t *tree_get_max_##name(tree_##name##_t *T) {                                                                                                   \
+  tree_##name##_t* tree_get_max_##name(tree_##name##_t* T) {                                                                                                   \
     while (T && T->right) {                                                                                                                                    \
       T = T->right;                                                                                                                                            \
     }                                                                                                                                                          \
     return T;                                                                                                                                                  \
   }                                                                                                                                                            \
-  void tree_act_##name(tree_##name##_t *T, tree_##name##_act_t A) {                                                                                            \
+  void tree_act_##name(tree_##name##_t* T, tree_##name##_act_t A) {                                                                                            \
     if (!T) {                                                                                                                                                  \
       return;                                                                                                                                                  \
     }                                                                                                                                                          \
@@ -196,7 +195,7 @@
     A(T->x);                                                                                                                                                   \
     tree_act_##name(T->right, A);                                                                                                                              \
   }                                                                                                                                                            \
-  void tree_act_ex_##name(tree_##name##_t *T, tree_##name##_act_ex_t A, void *extra) {                                                                         \
+  void tree_act_ex_##name(tree_##name##_t* T, tree_##name##_act_ex_t A, void* extra) {                                                                         \
     if (!T) {                                                                                                                                                  \
       return;                                                                                                                                                  \
     }                                                                                                                                                          \
@@ -204,7 +203,7 @@
     A(T->x, extra);                                                                                                                                            \
     tree_act_ex_##name(T->right, A, extra);                                                                                                                    \
   }                                                                                                                                                            \
-  void tree_act_ex2_##name(tree_##name##_t *T, tree_##name##_act_ex2_t A, void *extra, void *extra2) {                                                         \
+  void tree_act_ex2_##name(tree_##name##_t* T, tree_##name##_act_ex2_t A, void* extra, void* extra2) {                                                         \
     if (!T) {                                                                                                                                                  \
       return;                                                                                                                                                  \
     }                                                                                                                                                          \
@@ -212,7 +211,7 @@
     A(T->x, extra, extra2);                                                                                                                                    \
     tree_act_ex2_##name(T->right, A, extra, extra2);                                                                                                           \
   }                                                                                                                                                            \
-  bool tree_act_stop_##name(tree_##name##_t *T, tree_##name##_act_stop_t A, void *extra) {                                                                     \
+  bool tree_act_stop_##name(tree_##name##_t* T, tree_##name##_act_stop_t A, void* extra) {                                                                     \
     if (!T) {                                                                                                                                                  \
       return true;                                                                                                                                             \
     }                                                                                                                                                          \
@@ -227,7 +226,7 @@
     }                                                                                                                                                          \
     return true;                                                                                                                                               \
   }                                                                                                                                                            \
-  tree_##name##_t *tree_clear_##name(tree_##name##_t *T) {                                                                                                     \
+  tree_##name##_t* tree_clear_##name(tree_##name##_t* T) {                                                                                                     \
     if (!T) {                                                                                                                                                  \
       return 0;                                                                                                                                                \
     }                                                                                                                                                          \
@@ -237,7 +236,7 @@
     return 0;                                                                                                                                                  \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  int tree_count_##name(tree_##name##_t *T) {                                                                                                                  \
+  int tree_count_##name(tree_##name##_t* T) {                                                                                                                  \
     if (!T) {                                                                                                                                                  \
       return 0;                                                                                                                                                \
     }                                                                                                                                                          \
@@ -246,22 +245,22 @@
 
 #define __DEFINE_TREE_STDNOZ_ALLOC_PREFIX(prefix, name, value_t, value_compare, y_t, y_compare)                                                                \
   __DECLARE_TREE_TYPE(name, value_t, y_t)                                                                                                                      \
-  prefix tree_##name##_t *tree_alloc_##name(value_t x, y_t);                                                                                                   \
-  prefix void tree_free_##name(tree_##name##_t *T);                                                                                                            \
+  prefix tree_##name##_t* tree_alloc_##name(value_t x, y_t);                                                                                                   \
+  prefix void tree_free_##name(tree_##name##_t* T);                                                                                                            \
   __DEFINE_TREE(prefix, name, value_t, value_compare, y_t, y_compare, tree_alloc_##name, tree_free_##name)                                                     \
-  tree_##name##_t *tree_alloc_##name(value_t x, y_t y) {                                                                                                       \
-    tree_##name##_t *T = reinterpret_cast<tree_##name##_t *>(malloc(sizeof(tree_##name##_t)));                                                                                                      \
+  tree_##name##_t* tree_alloc_##name(value_t x, y_t y) {                                                                                                       \
+    tree_##name##_t* T = reinterpret_cast<tree_##name##_t*>(malloc(sizeof(tree_##name##_t)));                                                                  \
     assert(T);                                                                                                                                                 \
     T->x = x;                                                                                                                                                  \
     T->y = y;                                                                                                                                                  \
     T->left = T->right = 0;                                                                                                                                    \
     return T;                                                                                                                                                  \
   }                                                                                                                                                            \
-  void tree_free_##name(tree_##name##_t *T) {                                                                                                                  \
+  void tree_free_##name(tree_##name##_t* T) {                                                                                                                  \
     free(T);                                                                                                                                                   \
   }                                                                                                                                                            \
-  void tree_relax_##name(tree_##name##_t *T __attribute__((unused))) {}                                                                                        \
-  void tree_check_##name(tree_##name##_t *T) {                                                                                                                 \
+  void tree_relax_##name(tree_##name##_t* T __attribute__((unused))) {}                                                                                        \
+  void tree_check_##name(tree_##name##_t* T) {                                                                                                                 \
     if (!T) {                                                                                                                                                  \
       return;                                                                                                                                                  \
     }                                                                                                                                                          \
@@ -286,9 +285,9 @@
   };                                                                                                                                                           \
   typedef struct tree_##name tree_##name##_t;                                                                                                                  \
   typedef void (*tree_##name##_act_t)(value_t x);                                                                                                              \
-  typedef void (*tree_##name##_act_ex_t)(value_t x, void *extra);                                                                                              \
-  typedef void (*tree_##name##_act_ex2_t)(value_t x, void *extra, void *extra2);                                                                               \
-  typedef bool (*tree_##name##_act_stop_t)(value_t x, void *extra);
+  typedef void (*tree_##name##_act_ex_t)(value_t x, void* extra);                                                                                              \
+  typedef void (*tree_##name##_act_ex2_t)(value_t x, void* extra, void* extra2);                                                                               \
+  typedef bool (*tree_##name##_act_stop_t)(value_t x, void* extra);
 
 #define __DECLARE_TREE_TYPE_CNT(name, value_t, y_t)                                                                                                            \
   struct tree_##name {                                                                                                                                         \
@@ -299,40 +298,40 @@
   };                                                                                                                                                           \
   typedef struct tree_##name tree_##name##_t;                                                                                                                  \
   typedef void (*tree_##name##_act_t)(value_t x);                                                                                                              \
-  typedef void (*tree_##name##_act_ex_t)(value_t x, void *extra);                                                                                              \
-  typedef void (*tree_##name##_act_ex2_t)(value_t x, void *extra, void *extra2);                                                                               \
-  typedef bool (*tree_##name##_act_stop_t)(value_t x, void *extra);
+  typedef void (*tree_##name##_act_ex_t)(value_t x, void* extra);                                                                                              \
+  typedef void (*tree_##name##_act_ex2_t)(value_t x, void* extra, void* extra2);                                                                               \
+  typedef bool (*tree_##name##_act_stop_t)(value_t x, void* extra);
 
 #define __DECLARE_TREE(prefix, name, value_t, y_t)                                                                                                             \
-  prefix tree_##name##_t *tree_lookup_##name(tree_##name##_t *T, value_t x) __attribute__((unused));                                                           \
-  prefix tree_##name##_t *tree_lookup_p_##name(tree_##name##_t *T, value_t *x) __attribute__((unused));                                                        \
-  prefix value_t *tree_lookup_value_##name(tree_##name##_t *T, value_t x) __attribute__((unused));                                                             \
-  prefix value_t *tree_lookup_value_p_##name(tree_##name##_t *T, value_t *x) __attribute__((unused));                                                          \
-  prefix void tree_split_##name(tree_##name##_t **L, tree_##name##_t **R, tree_##name##_t *T, value_t x) __attribute__((unused));                              \
-  prefix void tree_split_p_##name(tree_##name##_t **L, tree_##name##_t **R, tree_##name##_t *T, value_t *x) __attribute__((unused));                           \
-  prefix tree_##name##_t *tree_insert_##name(tree_##name##_t *T, value_t x, y_t y) __attribute__((warn_unused_result, unused));                                \
-  prefix tree_##name##_t *tree_insert_p_##name(tree_##name##_t *T, value_t *x, y_t y) __attribute__((warn_unused_result, unused));                             \
-  prefix tree_##name##_t *tree_merge_##name(tree_##name##_t *L, tree_##name##_t *R) __attribute__((unused));                                                   \
-  prefix tree_##name##_t *tree_delete_##name(tree_##name##_t *T, value_t x) __attribute__((warn_unused_result, unused));                                       \
-  prefix tree_##name##_t *tree_delete_p_##name(tree_##name##_t *T, value_t *x) __attribute__((warn_unused_result, unused));                                    \
-  prefix tree_##name##_t *tree_get_min_##name(tree_##name##_t *T) __attribute__((unused));                                                                     \
-  prefix tree_##name##_t *tree_get_max_##name(tree_##name##_t *T) __attribute__((unused));                                                                     \
-  prefix void tree_act_##name(tree_##name##_t *T, tree_##name##_act_t A) __attribute__((unused));                                                              \
-  prefix void tree_act_ex_##name(tree_##name##_t *T, tree_##name##_act_ex_t A, void *extra) __attribute__((unused));                                           \
-  prefix void tree_act_ex2_##name(tree_##name##_t *T, tree_##name##_act_ex2_t A, void *extra, void *extra2) __attribute__((unused));                           \
-  prefix bool tree_act_stop_##name(tree_##name##_t *T, tree_##name##_act_stop_t A, void *extra) __attribute__((unused));                                       \
-  prefix tree_##name##_t *tree_clear_##name(tree_##name##_t *T) __attribute__((unused));                                                                       \
-  prefix void tree_check_##name(tree_##name##_t *T) __attribute__((unused));                                                                                   \
-  prefix int tree_count_##name(tree_##name##_t *T) __attribute__((unused));                                                                                    \
-  prefix void tree_relax_##name(tree_##name##_t *T) __attribute__((unused));
+  prefix tree_##name##_t* tree_lookup_##name(tree_##name##_t* T, value_t x) __attribute__((unused));                                                           \
+  prefix tree_##name##_t* tree_lookup_p_##name(tree_##name##_t* T, value_t* x) __attribute__((unused));                                                        \
+  prefix value_t* tree_lookup_value_##name(tree_##name##_t* T, value_t x) __attribute__((unused));                                                             \
+  prefix value_t* tree_lookup_value_p_##name(tree_##name##_t* T, value_t* x) __attribute__((unused));                                                          \
+  prefix void tree_split_##name(tree_##name##_t** L, tree_##name##_t** R, tree_##name##_t* T, value_t x) __attribute__((unused));                              \
+  prefix void tree_split_p_##name(tree_##name##_t** L, tree_##name##_t** R, tree_##name##_t* T, value_t* x) __attribute__((unused));                           \
+  prefix tree_##name##_t* tree_insert_##name(tree_##name##_t* T, value_t x, y_t y) __attribute__((warn_unused_result, unused));                                \
+  prefix tree_##name##_t* tree_insert_p_##name(tree_##name##_t* T, value_t* x, y_t y) __attribute__((warn_unused_result, unused));                             \
+  prefix tree_##name##_t* tree_merge_##name(tree_##name##_t* L, tree_##name##_t* R) __attribute__((unused));                                                   \
+  prefix tree_##name##_t* tree_delete_##name(tree_##name##_t* T, value_t x) __attribute__((warn_unused_result, unused));                                       \
+  prefix tree_##name##_t* tree_delete_p_##name(tree_##name##_t* T, value_t* x) __attribute__((warn_unused_result, unused));                                    \
+  prefix tree_##name##_t* tree_get_min_##name(tree_##name##_t* T) __attribute__((unused));                                                                     \
+  prefix tree_##name##_t* tree_get_max_##name(tree_##name##_t* T) __attribute__((unused));                                                                     \
+  prefix void tree_act_##name(tree_##name##_t* T, tree_##name##_act_t A) __attribute__((unused));                                                              \
+  prefix void tree_act_ex_##name(tree_##name##_t* T, tree_##name##_act_ex_t A, void* extra) __attribute__((unused));                                           \
+  prefix void tree_act_ex2_##name(tree_##name##_t* T, tree_##name##_act_ex2_t A, void* extra, void* extra2) __attribute__((unused));                           \
+  prefix bool tree_act_stop_##name(tree_##name##_t* T, tree_##name##_act_stop_t A, void* extra) __attribute__((unused));                                       \
+  prefix tree_##name##_t* tree_clear_##name(tree_##name##_t* T) __attribute__((unused));                                                                       \
+  prefix void tree_check_##name(tree_##name##_t* T) __attribute__((unused));                                                                                   \
+  prefix int tree_count_##name(tree_##name##_t* T) __attribute__((unused));                                                                                    \
+  prefix void tree_relax_##name(tree_##name##_t* T) __attribute__((unused));
 
 struct tree_any_ptr {
   struct tree_any_ptr *left, *right;
-  void *x;
+  void* x;
   int y;
 };
 
-static inline void tree_act_any(struct tree_any_ptr *T, void (*f)(void *)) {
+static inline void tree_act_any(struct tree_any_ptr* T, void (*f)(void*)) {
   if (!T) {
     return;
   }
@@ -341,7 +340,7 @@ static inline void tree_act_any(struct tree_any_ptr *T, void (*f)(void *)) {
   tree_act_any(T->right, f);
 }
 
-static inline void tree_act_any_ex(struct tree_any_ptr *T, void (*f)(void *, void *), void *extra) {
+static inline void tree_act_any_ex(struct tree_any_ptr* T, void (*f)(void*, void*), void* extra) {
   if (!T) {
     return;
   }
@@ -350,7 +349,7 @@ static inline void tree_act_any_ex(struct tree_any_ptr *T, void (*f)(void *, voi
   tree_act_any_ex(T->right, f, extra);
 }
 
-static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, void *, void *), void *extra, void *extra2) {
+static inline void tree_act_any_ex2(struct tree_any_ptr* T, void (*f)(void*, void*, void*), void* extra, void* extra2) {
   if (!T) {
     return;
   }
@@ -360,12 +359,12 @@ static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, vo
 }
 
 #define DEFINE_HASH(prefix, name, value_t, value_compare, value_hash)                                                                                          \
-  prefix hash_elem_##name##_t *hash_lookup_##name(hash_table_##name##_t *T, value_t x) __attribute__((unused));                                                \
-  prefix void hash_insert_##name(hash_table_##name##_t *T, value_t x) __attribute__((unused));                                                                 \
-  prefix int hash_delete_##name(hash_table_##name##_t *T, value_t x) __attribute__((unused));                                                                  \
-  prefix void hash_clear_##name(hash_table_##name##_t *T) __attribute__((unused));                                                                             \
-  prefix void hash_clear_act_##name(hash_table_##name##_t *T, void (*act)(value_t)) __attribute__((unused));                                                   \
-  prefix hash_elem_##name##_t *hash_lookup_##name(hash_table_##name##_t *T, value_t x) {                                                                       \
+  prefix hash_elem_##name##_t* hash_lookup_##name(hash_table_##name##_t* T, value_t x) __attribute__((unused));                                                \
+  prefix void hash_insert_##name(hash_table_##name##_t* T, value_t x) __attribute__((unused));                                                                 \
+  prefix int hash_delete_##name(hash_table_##name##_t* T, value_t x) __attribute__((unused));                                                                  \
+  prefix void hash_clear_##name(hash_table_##name##_t* T) __attribute__((unused));                                                                             \
+  prefix void hash_clear_act_##name(hash_table_##name##_t* T, void (*act)(value_t)) __attribute__((unused));                                                   \
+  prefix hash_elem_##name##_t* hash_lookup_##name(hash_table_##name##_t* T, value_t x) {                                                                       \
     long long hash = value_hash(x);                                                                                                                            \
     if (hash < 0) {                                                                                                                                            \
       hash = -hash;                                                                                                                                            \
@@ -381,7 +380,7 @@ static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, vo
     if (!T->E[hash]) {                                                                                                                                         \
       return 0;                                                                                                                                                \
     }                                                                                                                                                          \
-    hash_elem_##name##_t *E = T->E[hash];                                                                                                                      \
+    hash_elem_##name##_t* E = T->E[hash];                                                                                                                      \
     do {                                                                                                                                                       \
       if (!value_compare(E->x, x)) {                                                                                                                           \
         return E;                                                                                                                                              \
@@ -391,7 +390,7 @@ static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, vo
     return 0;                                                                                                                                                  \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  prefix void hash_insert_##name(hash_table_##name##_t *T, value_t x) {                                                                                        \
+  prefix void hash_insert_##name(hash_table_##name##_t* T, value_t x) {                                                                                        \
     long long hash = value_hash(x);                                                                                                                            \
     if (hash < 0) {                                                                                                                                            \
       hash = -hash;                                                                                                                                            \
@@ -404,7 +403,7 @@ static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, vo
     } else {                                                                                                                                                   \
       hash %= (T->size);                                                                                                                                       \
     }                                                                                                                                                          \
-    hash_elem_##name##_t *E = hash_alloc_##name(x);                                                                                                            \
+    hash_elem_##name##_t* E = hash_alloc_##name(x);                                                                                                            \
     if (T->E[hash]) {                                                                                                                                          \
       E->next = T->E[hash];                                                                                                                                    \
       E->prev = T->E[hash]->prev;                                                                                                                              \
@@ -417,7 +416,7 @@ static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, vo
     }                                                                                                                                                          \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  prefix int hash_delete_##name(hash_table_##name##_t *T, value_t x) {                                                                                         \
+  prefix int hash_delete_##name(hash_table_##name##_t* T, value_t x) {                                                                                         \
     long long hash = value_hash(x);                                                                                                                            \
     if (hash < 0) {                                                                                                                                            \
       hash = -hash;                                                                                                                                            \
@@ -433,7 +432,7 @@ static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, vo
     if (!T->E[hash]) {                                                                                                                                         \
       return 0;                                                                                                                                                \
     }                                                                                                                                                          \
-    hash_elem_##name##_t *E = T->E[hash];                                                                                                                      \
+    hash_elem_##name##_t* E = T->E[hash];                                                                                                                      \
     int ok = 0;                                                                                                                                                \
     do {                                                                                                                                                       \
       if (!value_compare(E->x, x)) {                                                                                                                           \
@@ -459,14 +458,14 @@ static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, vo
     return 1;                                                                                                                                                  \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  prefix void hash_clear_##name(hash_table_##name##_t *T) {                                                                                                    \
+  prefix void hash_clear_##name(hash_table_##name##_t* T) {                                                                                                    \
     int i;                                                                                                                                                     \
     for (i = 0; i < T->size; i++) {                                                                                                                            \
       if (T->E[i]) {                                                                                                                                           \
-        hash_elem_##name##_t *cur = T->E[i];                                                                                                                   \
-        hash_elem_##name##_t *first = cur;                                                                                                                     \
+        hash_elem_##name##_t* cur = T->E[i];                                                                                                                   \
+        hash_elem_##name##_t* first = cur;                                                                                                                     \
         do {                                                                                                                                                   \
-          hash_elem_##name##_t *next = cur->next;                                                                                                              \
+          hash_elem_##name##_t* next = cur->next;                                                                                                              \
           hash_free_##name(cur);                                                                                                                               \
           cur = next;                                                                                                                                          \
         } while (cur != first);                                                                                                                                \
@@ -475,14 +474,14 @@ static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, vo
     }                                                                                                                                                          \
   }                                                                                                                                                            \
                                                                                                                                                                \
-  prefix void hash_clear_act_##name(hash_table_##name##_t *T, void (*act)(value_t)) {                                                                          \
+  prefix void hash_clear_act_##name(hash_table_##name##_t* T, void (*act)(value_t)) {                                                                          \
     int i;                                                                                                                                                     \
     for (i = 0; i < T->size; i++) {                                                                                                                            \
       if (T->E[i]) {                                                                                                                                           \
-        hash_elem_##name##_t *cur = T->E[i];                                                                                                                   \
-        hash_elem_##name##_t *first = cur;                                                                                                                     \
+        hash_elem_##name##_t* cur = T->E[i];                                                                                                                   \
+        hash_elem_##name##_t* first = cur;                                                                                                                     \
         do {                                                                                                                                                   \
-          hash_elem_##name##_t *next = cur->next;                                                                                                              \
+          hash_elem_##name##_t* next = cur->next;                                                                                                              \
           act(cur->x);                                                                                                                                         \
           hash_free_##name(cur);                                                                                                                               \
           cur = next;                                                                                                                                          \
@@ -492,18 +491,17 @@ static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, vo
     }                                                                                                                                                          \
   }
 
-
 #define DEFINE_HASH_STDNOZ_ALLOC_PREFIX(prefix, name, value_t, value_compare, value_hash)                                                                      \
   DECLARE_HASH_TYPE(name, value_t)                                                                                                                             \
-  prefix hash_elem_##name##_t *hash_alloc_##name(value_t x);                                                                                                   \
-  prefix void hash_free_##name(hash_elem_##name##_t *T);                                                                                                       \
+  prefix hash_elem_##name##_t* hash_alloc_##name(value_t x);                                                                                                   \
+  prefix void hash_free_##name(hash_elem_##name##_t* T);                                                                                                       \
   DEFINE_HASH(prefix, name, value_t, value_compare, value_hash);                                                                                               \
-  hash_elem_##name##_t *hash_alloc_##name(value_t x) {                                                                                                         \
-    hash_elem_##name##_t *E = (hash_elem_##name##_t *)malloc(sizeof(*E));                                                                                      \
+  hash_elem_##name##_t* hash_alloc_##name(value_t x) {                                                                                                         \
+    hash_elem_##name##_t* E = (hash_elem_##name##_t*)malloc(sizeof(*E));                                                                                       \
     E->x = x;                                                                                                                                                  \
     return E;                                                                                                                                                  \
   }                                                                                                                                                            \
-  void hash_free_##name(hash_elem_##name##_t *E) {                                                                                                             \
+  void hash_free_##name(hash_elem_##name##_t* E) {                                                                                                             \
     free(E);                                                                                                                                                   \
   }
 
@@ -515,7 +513,7 @@ static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, vo
     value_t x;                                                                                                                                                 \
   };                                                                                                                                                           \
   struct hash_table_##name {                                                                                                                                   \
-    struct hash_elem_##name **E;                                                                                                                               \
+    struct hash_elem_##name** E;                                                                                                                               \
     int size;                                                                                                                                                  \
     int mask;                                                                                                                                                  \
   };                                                                                                                                                           \
@@ -523,4 +521,4 @@ static inline void tree_act_any_ex2(struct tree_any_ptr *T, void (*f)(void *, vo
   typedef struct hash_table_##name hash_table_##name##_t;
 
 #define std_int_compare(a, b) ((a) - (b))
-#define std_ll_ptr_compare(a, b) ((*(long long *)(a)) - (*(long long *)(b)))
+#define std_ll_ptr_compare(a, b) ((*(long long*)(a)) - (*(long long*)(b)))

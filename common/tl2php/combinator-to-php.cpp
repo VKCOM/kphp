@@ -14,9 +14,9 @@ namespace tl {
 
 class AutoPushPop {
 public:
-  AutoPushPop(CombinatorToPhp &this_converter, php_field_type pushed_type) :
-    this_converter_(this_converter),
-    pushed_type_(pushed_type) {
+  AutoPushPop(CombinatorToPhp& this_converter, php_field_type pushed_type)
+      : this_converter_(this_converter),
+        pushed_type_(pushed_type) {
     this_converter_.type_stack_.push_back(pushed_type_);
   }
 
@@ -26,20 +26,20 @@ public:
     this_converter_.type_stack_.pop_back();
     this_converter_.last_processed_type_ = pushed_type_;
   }
+
 private:
-  CombinatorToPhp &this_converter_;
+  CombinatorToPhp& this_converter_;
   const php_field_type pushed_type_;
 };
 
-CombinatorToPhp::CombinatorToPhp(TlToPhpClassesConverter &tl_to_php, const tlo_parsing::combinator &tl_combinator) :
-  tl_to_php_(tl_to_php),
-  tl_combinator_(tl_combinator) {
-}
+CombinatorToPhp::CombinatorToPhp(TlToPhpClassesConverter& tl_to_php, const tlo_parsing::combinator& tl_combinator)
+    : tl_to_php_(tl_to_php),
+      tl_combinator_(tl_combinator) {}
 
-std::vector<PhpClassField> CombinatorToPhp::args_to_php_class_fields(const std::vector<std::unique_ptr<tlo_parsing::arg>> &args) {
+std::vector<PhpClassField> CombinatorToPhp::args_to_php_class_fields(const std::vector<std::unique_ptr<tlo_parsing::arg>>& args) {
   std::vector<PhpClassField> fields;
   fields.reserve(args.size());
-  for (const auto &tl_arg : args) {
+  for (const auto& tl_arg : args) {
     if (!(tl_arg->is_optional())) {
       fields.emplace_back(arg_type_to_php_field(*tl_arg));
     }
@@ -47,14 +47,14 @@ std::vector<PhpClassField> CombinatorToPhp::args_to_php_class_fields(const std::
   return fields;
 }
 
-void CombinatorToPhp::apply_state(const CombinatorToPhp &other) {
+void CombinatorToPhp::apply_state(const CombinatorToPhp& other) {
   assert(other.last_processed_type_ != php_field_type::t_unknown);
   php_doc_.append(other.php_doc_);
   last_processed_type_ = other.last_processed_type_;
   has_class_inside_ = has_class_inside_ || other.has_class_inside_;
 }
 
-PhpClassField CombinatorToPhp::arg_type_to_php_field(const tlo_parsing::arg &combinator_arg) {
+PhpClassField CombinatorToPhp::arg_type_to_php_field(const tlo_parsing::arg& combinator_arg) {
   assert(php_doc_.empty());
   assert(type_stack_.empty());
   has_class_inside_ = false;
@@ -64,37 +64,32 @@ PhpClassField CombinatorToPhp::arg_type_to_php_field(const tlo_parsing::arg &com
   assert(last_processed_type_ != php_field_type::t_unknown);
   std::string field_mask_name;
   if ((combinator_arg.is_fields_mask_optional())) {
-    const auto *filed_mask_arg = tl_combinator_.get_var_num_arg(combinator_arg.exist_var_num);
+    const auto* filed_mask_arg = tl_combinator_.get_var_num_arg(combinator_arg.exist_var_num);
     assert(filed_mask_arg);
     field_mask_name = filed_mask_arg->name;
   }
 
   assert(combinator_arg.idx >= 0);
-  std::string field_name = combinator_arg.name.empty()
-                           ? "arg" + std::to_string(combinator_arg.idx)
-                           : combinator_arg.name;
+  std::string field_name = combinator_arg.name.empty() ? "arg" + std::to_string(combinator_arg.idx) : combinator_arg.name;
 
-  return PhpClassField{std::move(field_name), std::move(php_doc_),
-                       std::move(field_mask_name), combinator_arg.exist_var_bit,
-                       last_processed_type_, has_class_inside_};
+  return PhpClassField{std::move(field_name),        std::move(php_doc_),  std::move(field_mask_name),
+                       combinator_arg.exist_var_bit, last_processed_type_, has_class_inside_};
 }
 
-bool CombinatorToPhp::try_as_primitive_builtin_type(const vk::string_view &tl_type_name) {
+bool CombinatorToPhp::try_as_primitive_builtin_type(const vk::string_view& tl_type_name) {
   struct PhpTypeName {
     vk::string_view name;
     php_field_type type;
   };
-  static const std::unordered_map<vk::string_view, PhpTypeName> builtin_types{
-    {"String", PhpTypeName{"string", php_field_type::t_string}},
-    {"Int",    PhpTypeName{"int", php_field_type::t_int}},
-    {"#",      PhpTypeName{"int", php_field_type::t_int}},
-    {"Long",   PhpTypeName{"int", php_field_type::t_int}},
-    {"Double", PhpTypeName{"float", php_field_type::t_double}},
-    {"Float",  PhpTypeName{"float", php_field_type::t_double}},
-    {"Bool",   PhpTypeName{"boolean", php_field_type::t_bool}},
-    {"False",  PhpTypeName{"boolean", php_field_type::t_bool}},
-    {"True",   PhpTypeName{"boolean", php_field_type::t_bool_true}}
-  };
+  static const std::unordered_map<vk::string_view, PhpTypeName> builtin_types{{"String", PhpTypeName{"string", php_field_type::t_string}},
+                                                                              {"Int", PhpTypeName{"int", php_field_type::t_int}},
+                                                                              {"#", PhpTypeName{"int", php_field_type::t_int}},
+                                                                              {"Long", PhpTypeName{"int", php_field_type::t_int}},
+                                                                              {"Double", PhpTypeName{"float", php_field_type::t_double}},
+                                                                              {"Float", PhpTypeName{"float", php_field_type::t_double}},
+                                                                              {"Bool", PhpTypeName{"boolean", php_field_type::t_bool}},
+                                                                              {"False", PhpTypeName{"boolean", php_field_type::t_bool}},
+                                                                              {"True", PhpTypeName{"boolean", php_field_type::t_bool_true}}};
 
   const auto it = builtin_types.find(tl_type_name);
   const bool found = it != builtin_types.end();
@@ -105,10 +100,8 @@ bool CombinatorToPhp::try_as_primitive_builtin_type(const vk::string_view &tl_ty
   return found;
 }
 
-bool CombinatorToPhp::try_as_array_type(const tlo_parsing::type_expr &tl_type_expr, const vk::string_view &tl_type_name) {
-  static const std::unordered_set<vk::string_view> array_types{
-    "Vector", "Tuple", "Dictionary", "IntKeyDictionary", "LongKeyDictionary"
-  };
+bool CombinatorToPhp::try_as_array_type(const tlo_parsing::type_expr& tl_type_expr, const vk::string_view& tl_type_name) {
+  static const std::unordered_set<vk::string_view> array_types{"Vector", "Tuple", "Dictionary", "IntKeyDictionary", "LongKeyDictionary"};
   if (array_types.count(tl_type_name) == 0) {
     return false;
   }
@@ -117,7 +110,7 @@ bool CombinatorToPhp::try_as_array_type(const tlo_parsing::type_expr &tl_type_ex
   return true;
 }
 
-void CombinatorToPhp::as_array_type(const tlo_parsing::expr_base &array_item) {
+void CombinatorToPhp::as_array_type(const tlo_parsing::expr_base& array_item) {
   if (is_template_instantiating()) {
     php_doc_.append("array_");
   }
@@ -130,7 +123,7 @@ void CombinatorToPhp::as_array_type(const tlo_parsing::expr_base &array_item) {
   }
 }
 
-bool CombinatorToPhp::try_as_maybe_type(const tlo_parsing::type_expr &tl_type_expr, const vk::string_view &tl_type_name) {
+bool CombinatorToPhp::try_as_maybe_type(const tlo_parsing::type_expr& tl_type_expr, const vk::string_view& tl_type_name) {
   if (tl_type_name != "Maybe") {
     return false;
   }
@@ -161,12 +154,10 @@ bool CombinatorToPhp::try_as_maybe_type(const tlo_parsing::type_expr &tl_type_ex
   return true;
 }
 
-void CombinatorToPhp::as_complex_type(const tlo_parsing::type_expr &tl_type_expr, const tlo_parsing::type &tl_type) {
+void CombinatorToPhp::as_complex_type(const tlo_parsing::type_expr& tl_type_expr, const tlo_parsing::type& tl_type) {
   assert(!tl_type.constructors.empty());
   const bool is_template = is_template_instantiating();
-  auto php_doc_type = is_template || tl_type.is_polymorphic()
-                      ? tl_type.name
-                      : tl_type.constructors.front()->name;
+  auto php_doc_type = is_template || tl_type.is_polymorphic() ? tl_type.name : tl_type.constructors.front()->name;
 
   has_class_inside_ = true;
   if (is_template) {
@@ -189,7 +180,7 @@ void CombinatorToPhp::as_complex_type(const tlo_parsing::type_expr &tl_type_expr
   size_t type_postfix_end = type_postfix_start;
   {
     AutoPushPop auto_push_pop{*this, php_field_type::t_class};
-    for (const auto &child : tl_type_expr.children) {
+    for (const auto& child : tl_type_expr.children) {
       child->visit(*this);
       if (type_postfix_end != php_doc_.size()) {
         php_doc_.insert(type_postfix_end, "__");
@@ -209,7 +200,7 @@ void CombinatorToPhp::as_complex_type(const tlo_parsing::type_expr &tl_type_expr
   tl_to_php_.register_type(tl_type, std::move(type_postfix), *this, tl_type_expr, is_builtin);
 }
 
-void CombinatorToPhp::apply(const tlo_parsing::type_expr &tl_type_expr) {
+void CombinatorToPhp::apply(const tlo_parsing::type_expr& tl_type_expr) {
   auto tl_type_it = tl_to_php_.get_sheme().types.find(tl_type_expr.type_id);
   assert(tl_type_it != tl_to_php_.get_sheme().types.end());
 
@@ -226,7 +217,7 @@ void CombinatorToPhp::apply(const tlo_parsing::type_expr &tl_type_expr) {
   as_complex_type(tl_type_expr, *tl_type_it->second);
 }
 
-void CombinatorToPhp::apply(const tlo_parsing::type_array &tl_type_array) {
+void CombinatorToPhp::apply(const tlo_parsing::type_array& tl_type_array) {
   // expect anonymous args replacing before (check replace_anonymous_args)
   assert(tl_type_array.args.size() == 1);
   as_array_type(*tl_type_array.args.front()->type_expr);

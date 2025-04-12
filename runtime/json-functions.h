@@ -9,8 +9,8 @@
 #include "runtime/exception.h"
 
 template<class T>
-string f$vk_json_encode_safe(const T &v, bool simple_encode = true) noexcept {
-  auto &ctx = RuntimeContext::get();
+string f$vk_json_encode_safe(const T& v, bool simple_encode = true) noexcept {
+  auto& ctx = RuntimeContext::get();
   ctx.static_SB.clean();
   ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_ON;
   impl_::JsonEncoder(0, simple_encode).encode(v, RuntimeContext::get().static_SB);

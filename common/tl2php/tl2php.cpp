@@ -7,20 +7,15 @@
 #include "common/options.h"
 #include "common/tl2php/gen-php-code.h"
 #include "common/tl2php/tl-hints.h"
-#include "common/tlo-parsing/tlo-parsing.h"
 #include "common/tlo-parsing/tl-objects.h"
+#include "common/tlo-parsing/tlo-parsing.h"
 #include "common/version-string.h"
 
 namespace vk {
 namespace tl {
-int convert_tlo_to_php(const char *tlo_file_path,
-                       const std::string &out_php_dir,
-                       const std::string &combined2_tl_file,
-                       bool forcibly_overwrite_dir,
-                       bool generate_tests,
-                       bool generate_tl_internals) {
-  std::cout << "Generating PHP classes" << std::endl
-            << "  schema file: '" << tlo_file_path << "'" << std::endl;
+int convert_tlo_to_php(const char* tlo_file_path, const std::string& out_php_dir, const std::string& combined2_tl_file, bool forcibly_overwrite_dir,
+                       bool generate_tests, bool generate_tl_internals) {
+  std::cout << "Generating PHP classes" << std::endl << "  schema file: '" << tlo_file_path << "'" << std::endl;
   if (!combined2_tl_file.empty()) {
     std::cout << "  combined2.tl file: '" << combined2_tl_file << "'" << std::endl;
   }
@@ -39,7 +34,7 @@ int convert_tlo_to_php(const char *tlo_file_path,
     if (!parsing_result.parsed_schema) {
       throw std::runtime_error{"Error while reading tlo: " + parsing_result.error};
     }
-    auto &schema = *parsing_result.parsed_schema;
+    auto& schema = *parsing_result.parsed_schema;
     total_functions = schema.functions.size();
     total_types = schema.types.size();
 
@@ -54,7 +49,7 @@ int convert_tlo_to_php(const char *tlo_file_path,
     tlo_parsing::tl_scheme_final_check(schema);
 
     total_classes = gen_php_code(schema, hints, out_php_dir, forcibly_overwrite_dir, generate_tests, generate_tl_internals);
-  } catch (const std::exception &ex) {
+  } catch (const std::exception& ex) {
     std::cerr << "Can't convert tlo to PHP classes: " << ex.what() << std::endl;
     return 1;
   }
@@ -74,39 +69,39 @@ static bool generate_tests = false;
 static bool generate_tl_internals = false;
 static std::string combined2_tl_file;
 
-int tl2php_parse_f(int i, const char *) {
+int tl2php_parse_f(int i, const char*) {
   switch (i) {
-    case 'f': {
-      forcibly_overwrite_dir = true;
-      return 0;
-    }
-    case 't': {
-      generate_tests = true;
-      return 0;
-    }
-    case 'c': {
-      combined2_tl_file = optarg;
-      return 0;
-    }
-    case 'd': {
-      out_php_dir = optarg;
-      return 0;
-    }
-    case 'i': {
-      generate_tl_internals = true;
-      return 0;
-    }
+  case 'f': {
+    forcibly_overwrite_dir = true;
+    return 0;
+  }
+  case 't': {
+    generate_tests = true;
+    return 0;
+  }
+  case 'c': {
+    combined2_tl_file = optarg;
+    return 0;
+  }
+  case 'd': {
+    out_php_dir = optarg;
+    return 0;
+  }
+  case 'i': {
+    generate_tl_internals = true;
+    return 0;
+  }
   }
   return -1;
 }
 
-void get_bool_option_from_env(bool &option_value, const char *env, bool default_value) {
+void get_bool_option_from_env(bool& option_value, const char* env, bool default_value) {
   if (option_value == default_value) {
-    const char *env_value = getenv(env);
+    const char* env_value = getenv(env);
     if (env_value == nullptr) {
       return;
     }
-    option_value = static_cast <bool> (atoi(env_value));
+    option_value = static_cast<bool>(atoi(env_value));
   }
 }
 
@@ -114,8 +109,7 @@ static void get_options_from_env() {
   get_bool_option_from_env(generate_tl_internals, "TL2PHP_GEN_TL_INTERNALS", false);
 }
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   static constexpr char version_str[]{"tl2php-0.1.0"};
   init_version_string(version_str);
   option_section_t sections[] = {OPT_GENERIC, OPT_ARRAY_END};
@@ -134,6 +128,6 @@ int main(int argc, char *argv[]) {
   }
   get_options_from_env();
 
-  const char *tlo_file_path = argv[optind++];
+  const char* tlo_file_path = argv[optind++];
   return vk::tl::convert_tlo_to_php(tlo_file_path, out_php_dir, combined2_tl_file, forcibly_overwrite_dir, generate_tests, generate_tl_internals);
 }

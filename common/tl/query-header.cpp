@@ -21,7 +21,7 @@
 #include "common/tl/parse.h"
 #include "common/tl/store.h"
 
-static int tl_fetch_query_flags(tl_query_header_t *header) {
+static int tl_fetch_query_flags(tl_query_header_t* header) {
   namespace flag = vk::tl::common::rpc_invoke_req_extra_flags;
   int flags = tl_fetch_int();
   if (tl_fetch_error()) {
@@ -93,21 +93,21 @@ static int tl_fetch_query_flags(tl_query_header_t *header) {
   return 0;
 }
 
-bool tl_fetch_query_header(tl_query_header_t *header) {
-  assert (header);
+bool tl_fetch_query_header(tl_query_header_t* header) {
+  assert(header);
   if (vk::tl::fetch_magic(TL_RPC_INVOKE_REQ)) {
     header->qid = tl_fetch_long();
     while (!tl_fetch_error() && tl_fetch_unread()) {
       uint32_t op = tl_fetch_lookup_int();
       if (op == TL_RPC_DEST_ACTOR) {
-        assert (tl_fetch_int() == (int)TL_RPC_DEST_ACTOR);
+        assert(tl_fetch_int() == (int)TL_RPC_DEST_ACTOR);
         header->actor_id = tl_fetch_long();
       } else if (op == TL_RPC_DEST_ACTOR_FLAGS) {
-        assert (tl_fetch_int() == (int)TL_RPC_DEST_ACTOR_FLAGS);
+        assert(tl_fetch_int() == (int)TL_RPC_DEST_ACTOR_FLAGS);
         header->actor_id = tl_fetch_long();
         tl_fetch_query_flags(header);
       } else if (op == TL_RPC_DEST_FLAGS) {
-        assert (tl_fetch_int() == (int)TL_RPC_DEST_FLAGS);
+        assert(tl_fetch_int() == (int)TL_RPC_DEST_FLAGS);
         tl_fetch_query_flags(header);
       } else {
         break;
@@ -123,7 +123,7 @@ bool tl_fetch_query_header(tl_query_header_t *header) {
   return true;
 }
 
-static int tl_fetch_query_answer_flags(tl_query_answer_header_t *header) {
+static int tl_fetch_query_answer_flags(tl_query_answer_header_t* header) {
   namespace flag = vk::tl::common::rpc_req_result_extra_flags;
   int flags = tl_fetch_int();
   if (tl_fetch_error()) {
@@ -186,7 +186,7 @@ static int tl_fetch_query_answer_flags(tl_query_answer_header_t *header) {
     static const int max_len = 64;
     static char buf[max_len];
 
-    auto fetch_stat = [](const char *expected_name, int idx) -> std::optional<double> {
+    auto fetch_stat = [](const char* expected_name, int idx) -> std::optional<double> {
       tl_fetch_string0(buf, max_len);
       if (tl_fetch_error() || strcmp(buf, expected_name)) {
         tl_fetch_set_error_format(TL_ERROR_HEADER, "Stat #%d should be '%s', not '%s'", idx, expected_name, buf);
@@ -216,8 +216,8 @@ static int tl_fetch_query_answer_flags(tl_query_answer_header_t *header) {
   return 0;
 }
 
-bool tl_fetch_query_answer_header(tl_query_answer_header_t *header) {
-  assert (header);
+bool tl_fetch_query_answer_header(tl_query_answer_header_t* header) {
+  assert(header);
   int op = tl_fetch_int();
   if (op == TL_RPC_REQ_RESULT) {
     header->type = result_header_type::result;
@@ -231,14 +231,14 @@ bool tl_fetch_query_answer_header(tl_query_answer_header_t *header) {
   while (!tl_fetch_error() && tl_fetch_unread() && header->type != result_header_type::error) {
     uint32_t op = tl_fetch_lookup_int();
     if (op == TL_RPC_REQ_ERROR) {
-      assert (tl_fetch_int() == TL_RPC_REQ_ERROR);
+      assert(tl_fetch_int() == TL_RPC_REQ_ERROR);
       header->type = result_header_type::wrapped_error;
       tl_fetch_long();
     } else if (op == RPC_REQ_ERROR_WRAPPED) {
       header->type = result_header_type::wrapped_error;
-      assert (tl_fetch_int() == RPC_REQ_ERROR_WRAPPED);
+      assert(tl_fetch_int() == RPC_REQ_ERROR_WRAPPED);
     } else if (op == TL_REQ_RESULT_HEADER) {
-      assert (tl_fetch_int() == (int)TL_REQ_RESULT_HEADER);
+      assert(tl_fetch_int() == (int)TL_REQ_RESULT_HEADER);
       tl_fetch_query_answer_flags(header);
       if (header->flags & vk::tl::common::rpc_req_result_extra_flags::compression_version) {
         if (!tl_fetch_error()) {
@@ -262,7 +262,7 @@ bool tl_fetch_query_answer_header(tl_query_answer_header_t *header) {
   return true;
 }
 
-static void tl_store_stats_result(const tl_stats_result_t *stats) {
+static void tl_store_stats_result(const tl_stats_result_t* stats) {
   static auto double_to_string0 = [](double x) {
     const size_t buf_size = 30;
     static char buf[buf_size];
@@ -277,8 +277,8 @@ static void tl_store_stats_result(const tl_stats_result_t *stats) {
   tl_store_string0(double_to_string0(stats->got_answer_from_engine_ts));
 }
 
-void tl_store_header(const tl_query_header_t *header) {
-  assert (tl_store_check(0) >= 0);
+void tl_store_header(const tl_query_header_t* header) {
+  assert(tl_store_check(0) >= 0);
   tl_store_int(TL_RPC_INVOKE_REQ);
   tl_store_long(header->qid);
   if (header->actor_id || header->flags) {
@@ -325,54 +325,53 @@ void tl_store_header(const tl_query_header_t *header) {
   }
 }
 
-void tl_store_answer_header(const tl_query_answer_header_t *header) {
-  assert (tl_store_check(0) >= 0);
+void tl_store_answer_header(const tl_query_answer_header_t* header) {
+  assert(tl_store_check(0) >= 0);
   switch (header->type) {
-    case result_header_type::wrapped_error: {
-      tl_store_int(TL_RPC_REQ_ERROR);
-      tl_store_long(tl_current_query_id());
-    }
-      /* fallthrough */
-    case result_header_type::error: {
-      tl_store_int(header->error_code);
-      vk::tl::store_string(header->error);
-      break;
-    }
-    case result_header_type::result: {
-      if (header->flags) {
-        namespace flag = vk::tl::common::rpc_req_result_extra_flags;
-        tl_store_int(TL_REQ_RESULT_HEADER);
-        tl_store_int(header->flags);
-        if (header->flags & flag::binlog_pos) {
-          tl_store_long(header->binlog_pos);
-        }
-        if (header->flags & flag::binlog_time) {
-          tl_store_long(header->binlog_time);
-        }
-        if (header->flags & flag::engine_pid) {
-          tl_store_raw_data(&header->PID, sizeof(header->PID));
-        }
-        if (header->flags & flag::request_size) {
-          tl_store_int(header->request_size);
-          tl_store_int(header->result_size);
-        }
-        if (header->flags & flag::failed_subqueries) {
-          tl_store_int(header->failed_subqueries);
-        }
-        if (header->flags & flag::compression_version) {
-          tl_store_int(header->compression_version);
-        }
-        if (header->flags & flag::stats) {
-          tl_store_stats_result(&header->stats_result);
-        }
+  case result_header_type::wrapped_error: {
+    tl_store_int(TL_RPC_REQ_ERROR);
+    tl_store_long(tl_current_query_id());
+  }
+    /* fallthrough */
+  case result_header_type::error: {
+    tl_store_int(header->error_code);
+    vk::tl::store_string(header->error);
+    break;
+  }
+  case result_header_type::result: {
+    if (header->flags) {
+      namespace flag = vk::tl::common::rpc_req_result_extra_flags;
+      tl_store_int(TL_REQ_RESULT_HEADER);
+      tl_store_int(header->flags);
+      if (header->flags & flag::binlog_pos) {
+        tl_store_long(header->binlog_pos);
       }
-      break;
+      if (header->flags & flag::binlog_time) {
+        tl_store_long(header->binlog_time);
+      }
+      if (header->flags & flag::engine_pid) {
+        tl_store_raw_data(&header->PID, sizeof(header->PID));
+      }
+      if (header->flags & flag::request_size) {
+        tl_store_int(header->request_size);
+        tl_store_int(header->result_size);
+      }
+      if (header->flags & flag::failed_subqueries) {
+        tl_store_int(header->failed_subqueries);
+      }
+      if (header->flags & flag::compression_version) {
+        tl_store_int(header->compression_version);
+      }
+      if (header->flags & flag::stats) {
+        tl_store_stats_result(&header->stats_result);
+      }
     }
+    break;
+  }
   }
 }
 
-
-void set_result_header_values(tl_query_answer_header_t *header, int flags) {
+void set_result_header_values(tl_query_answer_header_t* header, int flags) {
   namespace request_flag = vk::tl::common::rpc_invoke_req_extra_flags;
   namespace result_flag = vk::tl::common::rpc_req_result_extra_flags;
 
@@ -400,7 +399,7 @@ void set_result_header_values(tl_query_answer_header_t *header, int flags) {
   }
 
   // TODO: process request_flag::return_query_stats
-  //if (flags & request_flag::return_query_stats) {
+  // if (flags & request_flag::return_query_stats) {
   //  header->flags |= result_flag::stats;
   //  header->stats_result = ...???;
   //}

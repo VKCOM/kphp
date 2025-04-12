@@ -26,7 +26,7 @@ public:
 
   using DummyVisitorMethods::accept;
 
-  void accept(CommonMemoryEstimateVisitor &visitor) {
+  void accept(CommonMemoryEstimateVisitor& visitor) {
     visitor("", error);
     visitor("", query_results);
     visitor("", last_query_id);
@@ -35,23 +35,23 @@ public:
   }
 };
 
-string f$mysqli_error(const class_instance<C$mysqli> &db);
+string f$mysqli_error(const class_instance<C$mysqli>& db);
 
-int64_t f$mysqli_errno(const class_instance<C$mysqli> &db);
+int64_t f$mysqli_errno(const class_instance<C$mysqli>& db);
 
-int64_t f$mysqli_affected_rows(const class_instance<C$mysqli> &db);
+int64_t f$mysqli_affected_rows(const class_instance<C$mysqli>& db);
 
 Optional<array<mixed>> f$mysqli_fetch_array(int64_t query_id_var, int64_t result_type);
 
-int64_t f$mysqli_insert_id(const class_instance<C$mysqli> &db);
+int64_t f$mysqli_insert_id(const class_instance<C$mysqli>& db);
 
 int64_t f$mysqli_num_rows(int64_t query_id);
 
-mixed f$mysqli_query(const class_instance<C$mysqli> &dn, const string &query);
+mixed f$mysqli_query(const class_instance<C$mysqli>& dn, const string& query);
 
-class_instance<C$mysqli> f$mysqli_connect(const string &host, const string &username, const string &password, const string &db_name, int64_t port);
+class_instance<C$mysqli> f$mysqli_connect(const string& host, const string& username, const string& password, const string& db_name, int64_t port);
 
-bool f$mysqli_select_db(const class_instance<C$mysqli> &db, const string &name);
+bool f$mysqli_select_db(const class_instance<C$mysqli>& db, const string& name);
 
 void init_mysql_lib();
 

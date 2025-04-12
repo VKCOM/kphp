@@ -7,4 +7,4 @@
 #include "runtime-common/core/runtime-core.h"
 
 array<string> f$getenv() noexcept;
-Optional<string> f$getenv(const string &varname, bool local_only = false) noexcept;
+Optional<string> f$getenv(const string& varname, bool local_only = false) noexcept;

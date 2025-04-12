@@ -19,7 +19,7 @@
 array<array<string>> f$debug_backtrace();
 
 struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
-  virtual const char *get_class() const noexcept {
+  virtual const char* get_class() const noexcept {
     return "Throwable";
   }
 
@@ -29,7 +29,7 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
   }
 
   template<class Visitor, bool process_raw_trace = true>
-  void generic_accept(Visitor &&visitor) noexcept {
+  void generic_accept(Visitor&& visitor) noexcept {
     visitor("message", $message);
     visitor("code", $code);
     visitor("file", $file);
@@ -40,23 +40,23 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
     }
   }
 
-  virtual void accept(CommonMemoryEstimateVisitor &visitor) noexcept {
+  virtual void accept(CommonMemoryEstimateVisitor& visitor) noexcept {
     generic_accept(visitor);
   }
 
-  virtual void accept(InstanceDeepCopyVisitor &visitor) noexcept {
+  virtual void accept(InstanceDeepCopyVisitor& visitor) noexcept {
     generic_accept(visitor);
   }
 
-  virtual void accept(InstanceDeepDestroyVisitor &visitor) noexcept {
+  virtual void accept(InstanceDeepDestroyVisitor& visitor) noexcept {
     generic_accept(visitor);
   }
 
-  virtual void accept(InstanceReferencesCountingVisitor &visitor) noexcept {
+  virtual void accept(InstanceReferencesCountingVisitor& visitor) noexcept {
     generic_accept(visitor);
   }
 
-  virtual void accept(ToArrayVisitor &visitor) noexcept {
+  virtual void accept(ToArrayVisitor& visitor) noexcept {
     generic_accept<decltype(visitor), false>(visitor); // don't process raw_trace because `mixed` can't store `void *` (to_array_debug returns array<mixed>)
   }
 
@@ -67,7 +67,7 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
   int64_t $code = 0;
   string $file;
   int64_t $line = 0;
-  array<void *> raw_trace;
+  array<void*> raw_trace;
   array<array<string>> trace;
 };
 
@@ -82,7 +82,9 @@ struct C$Exception : public C$Throwable {
     return sizeof(*this);
   }
 
-  const char *get_class() const noexcept override { return "Exception"; }
+  const char* get_class() const noexcept override {
+    return "Exception";
+  }
 };
 
 struct C$Error : public C$Throwable {
@@ -96,7 +98,9 @@ struct C$Error : public C$Throwable {
     return sizeof(*this);
   }
 
-  const char *get_class() const noexcept override { return "Error"; }
+  const char* get_class() const noexcept override {
+    return "Error";
+  }
 };
 
 using Throwable = class_instance<C$Throwable>;
@@ -105,56 +109,68 @@ using Error = class_instance<C$Error>;
 
 extern Throwable CurException;
 
-#define THROW_EXCEPTION(e) {Throwable x_tmp___ = e; php_assert(CurException.is_null()); CurException = std::move(x_tmp___);}
+#define THROW_EXCEPTION(e)                                                                                                                                     \
+  {                                                                                                                                                            \
+    Throwable x_tmp___ = e;                                                                                                                                    \
+    php_assert(CurException.is_null());                                                                                                                        \
+    CurException = std::move(x_tmp___);                                                                                                                        \
+  }
 
-#define CHECK_EXCEPTION(action) if (!CurException.is_null()) {action;}
+#define CHECK_EXCEPTION(action)                                                                                                                                \
+  if (!CurException.is_null()) {                                                                                                                               \
+    action;                                                                                                                                                    \
+  }
 
 #ifdef __clang__
-  #define TRY_CALL_RET_(x) x
+#define TRY_CALL_RET_(x) x
 #else
-  #define TRY_CALL_RET_(x) std::move(x)
+#define TRY_CALL_RET_(x) std::move(x)
 #endif
 
-#define TRY_CALL_(CallT, call, action) ({ \
-  CallT x_tmp___ = (call);                \
-  CHECK_EXCEPTION(action);                \
-  TRY_CALL_RET_(x_tmp___);                \
-})
+#define TRY_CALL_(CallT, call, action)                                                                                                                         \
+  ({                                                                                                                                                           \
+    CallT x_tmp___ = (call);                                                                                                                                   \
+    CHECK_EXCEPTION(action);                                                                                                                                   \
+    TRY_CALL_RET_(x_tmp___);                                                                                                                                   \
+  })
 
-#define TRY_CALL_VOID_(call, action) ({(call); CHECK_EXCEPTION(action); void();})
+#define TRY_CALL_VOID_(call, action)                                                                                                                           \
+  ({                                                                                                                                                           \
+    (call);                                                                                                                                                    \
+    CHECK_EXCEPTION(action);                                                                                                                                   \
+    void();                                                                                                                                                    \
+  })
 
 #define TRY_CALL(CallT, ResT, call) TRY_CALL_(CallT, call, return (ResT()))
 #define TRY_CALL_VOID(ResT, call) TRY_CALL_VOID_(call, return (ResT()))
 
-#define TRY_CALL_EXIT(CallT, message, call) TRY_CALL_(CallT, call, php_critical_error (message))
-#define TRY_CALL_VOID_EXIT(message, call) TRY_CALL_VOID_(call, php_critical_error (message))
+#define TRY_CALL_EXIT(CallT, message, call) TRY_CALL_(CallT, call, php_critical_error(message))
+#define TRY_CALL_VOID_EXIT(message, call) TRY_CALL_VOID_(call, php_critical_error(message))
 
-string exception_trace_as_string(const Throwable &e);
-void exception_initialize(const Throwable &e, const string &message, int64_t code);
+string exception_trace_as_string(const Throwable& e);
+void exception_initialize(const Throwable& e, const string& message, int64_t code);
 
-Exception f$Exception$$__construct(const Exception &v$this, const string &message = string(), int64_t code = 0);
-Error f$Error$$__construct(const Error &v$this, const string &message = string(), int64_t code = 0);
+Exception f$Exception$$__construct(const Exception& v$this, const string& message = string(), int64_t code = 0);
+Error f$Error$$__construct(const Error& v$this, const string& message = string(), int64_t code = 0);
 
 template<typename T>
-T f$_exception_set_location(const T &e, const string &file, int64_t line) {
+T f$_exception_set_location(const T& e, const string& file, int64_t line) {
   e->$file = file;
   e->$line = line;
   return e;
 }
 
-Exception new_Exception(const string &file, int64_t line, const string &message = string(), int64_t code = 0);
+Exception new_Exception(const string& file, int64_t line, const string& message = string(), int64_t code = 0);
 
-Exception f$err(const string &file, int64_t line, const string &code, const string &desc = string());
+Exception f$err(const string& file, int64_t line, const string& code, const string& desc = string());
 
-template <typename T>
-inline class_instance<T> make_throwable(const string &file, int64_t line, int64_t code, const string &desc) noexcept {
-  static_assert(
-    std::is_base_of_v<C$Throwable, T>,
-    "Template argument must be a subtype of C$Throwable");
+template<typename T>
+inline class_instance<T> make_throwable(const string& file, int64_t line, int64_t code, const string& desc) noexcept {
+  static_assert(std::is_base_of_v<C$Throwable, T>, "Template argument must be a subtype of C$Throwable");
 
   auto ci = make_instance<T>();
 
-  auto *ins_ptr = ci.get();
+  auto* ins_ptr = ci.get();
   ins_ptr->$file = file;
   ins_ptr->$line = line;
   ins_ptr->$code = code;
@@ -163,114 +179,160 @@ inline class_instance<T> make_throwable(const string &file, int64_t line, int64_
   return ci;
 }
 
-string f$Exception$$getMessage(const Exception &e);
-string f$Error$$getMessage(const Error &e);
+string f$Exception$$getMessage(const Exception& e);
+string f$Error$$getMessage(const Error& e);
 
-int64_t f$Exception$$getCode(const Exception &e);
-int64_t f$Error$$getCode(const Error &e);
+int64_t f$Exception$$getCode(const Exception& e);
+int64_t f$Error$$getCode(const Error& e);
 
-string f$Exception$$getFile(const Exception &e);
-string f$Error$$getFile(const Error &e);
+string f$Exception$$getFile(const Exception& e);
+string f$Error$$getFile(const Error& e);
 
-int64_t f$Exception$$getLine(const Exception &e);
-int64_t f$Error$$getLine(const Error &e);
+int64_t f$Exception$$getLine(const Exception& e);
+int64_t f$Error$$getLine(const Error& e);
 
-array<array<string>> f$Exception$$getTrace(const Exception &e);
-array<array<string>> f$Error$$getTrace(const Error &e);
+array<array<string>> f$Exception$$getTrace(const Exception& e);
+array<array<string>> f$Error$$getTrace(const Error& e);
 
-string f$Exception$$getTraceAsString(const Exception &e);
-string f$Error$$getTraceAsString(const Error &e);
+string f$Exception$$getTraceAsString(const Exception& e);
+string f$Error$$getTraceAsString(const Error& e);
 
 void free_exception_lib();
 
 struct C$ArithmeticError : public C$Error {
-  const char *get_class() const noexcept override { return "ArithmeticError"; }
+  const char* get_class() const noexcept override {
+    return "ArithmeticError";
+  }
 };
 
 struct C$DivisionByZeroError : public C$ArithmeticError {
-  const char *get_class() const noexcept override { return "DivisionByZeroError"; }
+  const char* get_class() const noexcept override {
+    return "DivisionByZeroError";
+  }
 };
 
 struct C$AssertionError : public C$Error {
-  const char *get_class() const noexcept override { return "AssertionError"; }
+  const char* get_class() const noexcept override {
+    return "AssertionError";
+  }
 };
 
 struct C$CompileError : public C$Error {
-  const char *get_class() const noexcept override { return "CompileError"; }
+  const char* get_class() const noexcept override {
+    return "CompileError";
+  }
 };
 
 struct C$ParseError : public C$CompileError {
-  const char *get_class() const noexcept override { return "ParseError"; }
+  const char* get_class() const noexcept override {
+    return "ParseError";
+  }
 };
 
 struct C$TypeError : public C$Error {
-  const char *get_class() const noexcept override { return "TypeError"; }
+  const char* get_class() const noexcept override {
+    return "TypeError";
+  }
 };
 
 struct C$ArgumentCountError : public C$TypeError {
-  const char *get_class() const noexcept override { return "ArgumentCountError"; }
+  const char* get_class() const noexcept override {
+    return "ArgumentCountError";
+  }
 };
 
 struct C$ValueError : public C$Error {
-  const char *get_class() const noexcept override { return "ValueError"; }
+  const char* get_class() const noexcept override {
+    return "ValueError";
+  }
 };
 
 struct C$UnhandledMatchError : public C$Error {
-  const char *get_class() const noexcept override { return "UnhandledMatchError"; }
+  const char* get_class() const noexcept override {
+    return "UnhandledMatchError";
+  }
 };
 
 struct C$LogicException : public C$Exception {
-  const char *get_class() const noexcept override { return "LogicException"; }
+  const char* get_class() const noexcept override {
+    return "LogicException";
+  }
 };
 
 struct C$BadFunctionCallException : public C$LogicException {
-  const char *get_class() const noexcept override { return "BadFunctionCallException"; }
+  const char* get_class() const noexcept override {
+    return "BadFunctionCallException";
+  }
 };
 
 struct C$BadMethodCallException : public C$BadFunctionCallException {
-  const char *get_class() const noexcept override { return "BadMethodCallException"; }
+  const char* get_class() const noexcept override {
+    return "BadMethodCallException";
+  }
 };
 
 struct C$DomainException : public C$LogicException {
-  const char *get_class() const noexcept override { return "DomainException"; }
+  const char* get_class() const noexcept override {
+    return "DomainException";
+  }
 };
 
 struct C$InvalidArgumentException : public C$LogicException {
-  const char *get_class() const noexcept override { return "InvalidArgumentException"; }
+  const char* get_class() const noexcept override {
+    return "InvalidArgumentException";
+  }
 };
 
 struct C$LengthException : public C$LogicException {
-  const char *get_class() const noexcept override { return "LengthException"; }
+  const char* get_class() const noexcept override {
+    return "LengthException";
+  }
 };
 
 struct C$OutOfRangeException : public C$LogicException {
-  const char *get_class() const noexcept override { return "OutOfRangeException"; }
+  const char* get_class() const noexcept override {
+    return "OutOfRangeException";
+  }
 };
 
 struct C$RuntimeException : public C$Exception {
-  const char *get_class() const noexcept override { return "RuntimeException"; }
+  const char* get_class() const noexcept override {
+    return "RuntimeException";
+  }
 };
 
 struct C$OutOfBoundsException : public C$RuntimeException {
-  const char *get_class() const noexcept override { return "OutOfBoundsException"; }
+  const char* get_class() const noexcept override {
+    return "OutOfBoundsException";
+  }
 };
 
 struct C$OverflowException : public C$RuntimeException {
-  const char *get_class() const noexcept override { return "OverflowException"; }
+  const char* get_class() const noexcept override {
+    return "OverflowException";
+  }
 };
 
 struct C$RangeException : public C$RuntimeException {
-  const char *get_class() const noexcept override { return "RangeException"; }
+  const char* get_class() const noexcept override {
+    return "RangeException";
+  }
 };
 
 struct C$UnderflowException : public C$RuntimeException {
-  const char *get_class() const noexcept override { return "UnderflowException"; }
+  const char* get_class() const noexcept override {
+    return "UnderflowException";
+  }
 };
 
 struct C$UnexpectedValueException : public C$RuntimeException {
-  const char *get_class() const noexcept override { return "UnexpectedValueException"; }
+  const char* get_class() const noexcept override {
+    return "UnexpectedValueException";
+  }
 };
 
 struct C$Random$RandomException : public C$Exception {
-  const char *get_class() const noexcept override { return "Random\\RandomException"; }
+  const char* get_class() const noexcept override {
+    return "Random\\RandomException";
+  }
 };
