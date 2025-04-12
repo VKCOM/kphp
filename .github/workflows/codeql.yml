@@ -7,6 +7,14 @@ on:
 jobs:
   analyze:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: buster
+            compiler: g++
+            cpp: 17
+            asan: off
+            ubsan: off
 
     permissions:
       security-events: write
