@@ -1,86 +1,19 @@
 ---
-Language:        Cpp
-# BasedOnStyle:  LLVM
-AccessModifierOffset: -2
-AlignAfterOpenBracket: Align
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
-AlignEscapedNewlinesLeft: false
-AlignOperands:   true
-AlignTrailingComments: true
-AllowAllParametersOfDeclarationOnNextLine: true
-AllowShortBlocksOnASingleLine: false
-AllowShortCaseLabelsOnASingleLine: false
+Language:                         Cpp
+BasedOnStyle:                     LLVM
+ColumnLimit:                      160
+PointerAlignment:                 Left
+ReferenceAlignment:               Pointer
+Standard:                         c++20
+UseTab:                           Never
+SortIncludes:                     true
+RemoveSemicolon:                  true
 AllowShortFunctionsOnASingleLine: Empty
-AllowShortIfStatementsOnASingleLine: false
-AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterDefinitionReturnType: None
-AlwaysBreakAfterReturnType: None
-AlwaysBreakBeforeMultilineStrings: false
-AlwaysBreakTemplateDeclarations: true
-BinPackArguments: true
-BinPackParameters: true
-BraceWrapping:   
-  AfterClass:      false
-  AfterControlStatement: false
-  AfterEnum:       true
-  AfterFunction:   false
-  AfterNamespace:  false
-  AfterObjCDeclaration: false
-  AfterStruct:     false
-  AfterUnion:      false
-  BeforeCatch:     false
-  BeforeElse:      false
-  IndentBraces:    false
-BreakBeforeBinaryOperators: NonAssignment
-BreakBeforeBraces: Attach
-BreakBeforeTernaryOperators: true
-BreakConstructorInitializers: BeforeComma
-ColumnLimit:     160
-CommentPragmas:  '^ IWYU pragma:'
-ConstructorInitializerAllOnOneLineOrOnePerLine: false
-ConstructorInitializerIndentWidth: 2
-ContinuationIndentWidth: 2
-Cpp11BracedListStyle: true
-DerivePointerAlignment: false
-ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
-IncludeBlocks: Preserve
-IncludeCategories:
-  - Regex:           '^<'
-    Priority:        1
-IndentCaseLabels: true
-IndentWidth:     2
-IndentWrappedFunctionNames: false
-KeepEmptyLinesAtTheStartOfBlocks: true
-MacroBlockBegin: '^TL_[A-Z_]+_FUN$|^REGISTER_MODULE$'
-MacroBlockEnd:   '^TL_[A-Z_]+_FUN_END$|^REGISTER_MODULE_END$'
-MaxEmptyLinesToKeep: 1
-NamespaceIndentation: None
-ObjCBlockIndentWidth: 2
-ObjCSpaceAfterProperty: false
-ObjCSpaceBeforeProtocolList: true
-PenaltyBreakBeforeFirstCallParameter: 1100
-PenaltyBreakComment: 300
-PenaltyBreakFirstLessLess: 120
-PenaltyBreakString: 1000
-PenaltyExcessCharacter: 1000000
-PenaltyReturnTypeOnItsOwnLine: 60
-PointerAlignment: Right
-ReflowComments:  true
-SortIncludes:    true
-SpaceAfterCStyleCast: false
-SpaceAfterTemplateKeyword: false
-SpaceBeforeAssignmentOperators: true
-SpaceBeforeParens: ControlStatements
-SpaceInEmptyParentheses: false
-SpacesBeforeTrailingComments: 1
-SpacesInAngles:  false
-SpacesInContainerLiterals: true
-SpacesInCStyleCastParentheses: false
-SpacesInParentheses: false
-SpacesInSquareBrackets: false
-Standard: c++17
-TabWidth:        2
-UseTab:          Never
+PackConstructorInitializers:      Never
+SpaceAfterTemplateKeyword:        false
+AlwaysBreakTemplateDeclarations:  Yes
+IndentRequiresClause:             No
+RequiresClausePosition:           OwnLine
+IndentPPDirectives:               None
 ...
 
