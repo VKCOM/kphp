@@ -1,0 +1,54 @@
+name: CodeQL
+
+on:
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  analyze:
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: cpp
+
+      - name: Cache docker image
+        uses: actions/cache@v4
+        id: docker-image-cache
+        with:
+          path: kphp-build-env-${{matrix.os}}.tar
+          key: docker-image-cache-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*', 'tests/python/requirements.txt') }}
+
+      - name: Build and save docker image
+        if: steps.docker-image-cache.outputs.cache-hit != 'true'
+        run: |
+          docker build -f $GITHUB_WORKSPACE/.github/workflows/Dockerfile.${{matrix.os}} $GITHUB_WORKSPACE \
+                -t kphp-build-img-${{matrix.os}} \
+                --cache-from=type=local,src=kphp-build-img-${{matrix.os}}-cache
+          docker tag kphp-build-img-${{matrix.os}} kphp-build-img-${{matrix.os}}-cache
+          docker save kphp-build-img-${{matrix.os}}-cache -o kphp-build-env-${{matrix.os}}.tar
+
+      - name: Load docker image from cache
+        if: steps.docker-image-cache.outputs.cache-hit == 'true'
+        run: docker load --input kphp-build-env-${{matrix.os}}.tar
+
+      - name: Start docker container
+        run: |
+          docker run -dt --name kphp-build-container-${{matrix.os}} kphp-build-img-${{matrix.os}}-cache
+          docker cp $GITHUB_WORKSPACE/. kphp-build-container-${{matrix.os}}:${{env.kphp_root_dir}}
+
+      - name: Build all
+        run: docker exec kphp-build-container-${{matrix.os}} bash -c
+          "cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DADDRESS_SANITIZER=${{matrix.asan}} -DUNDEFINED_SANITIZER=${{matrix.ubsan}} -DPDO_DRIVER_MYSQL=ON -DPDO_DRIVER_PGSQL=ON -DPDO_LIBS_STATIC_LINKING=OFF -S ${{env.kphp_root_dir}} -B ${{env.kphp_build_dir}} && make -C ${{env.kphp_build_dir}} -j$(nproc) all"
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
