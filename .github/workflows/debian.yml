@@ -23,7 +23,7 @@ jobs:
             asan: off
             ubsan: off
 
-    name: "${{matrix.os}}/${{matrix.compiler}}/c++${{matrix.cpp}}/asan=${{matrix.asan}}/ubsan=${{matrix.ubsan}}"
+    name: "${{matrix.os}} / ${{matrix.compiler}} / c++${{matrix.cpp}} / asan=${{matrix.asan}} / ubsan=${{matrix.ubsan}}"
 
     steps:
       - uses: actions/checkout@v4
