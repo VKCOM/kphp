@@ -9,10 +9,9 @@
 namespace vk {
 namespace tl {
 
-FunctionToPhp::FunctionToPhp(TlToPhpClassesConverter &tl_to_php, const tlo_parsing::combinator &tl_function) :
-  CombinatorToPhp(tl_to_php, tl_function),
-  exclamation_interface_(std::cref(tl_to_php.get_rpc_function_interface())) {
-}
+FunctionToPhp::FunctionToPhp(TlToPhpClassesConverter& tl_to_php, const tlo_parsing::combinator& tl_function)
+    : CombinatorToPhp(tl_to_php, tl_function),
+      exclamation_interface_(std::cref(tl_to_php.get_rpc_function_interface())) {}
 
 PhpClassField FunctionToPhp::return_type_to_php_field() {
   assert(tl_combinator_.result);
@@ -31,22 +30,22 @@ PhpClassField FunctionToPhp::return_type_to_php_field() {
   return return_type;
 }
 
-std::unique_ptr<CombinatorToPhp> FunctionToPhp::clone(const std::vector<php_field_type> &type_stack) const {
+std::unique_ptr<CombinatorToPhp> FunctionToPhp::clone(const std::vector<php_field_type>& type_stack) const {
   auto result = std::make_unique<FunctionToPhp>(tl_to_php_, tl_combinator_);
   result->type_stack_ = type_stack;
   return std::move(result);
 }
 
-const PhpClassRepresentation &FunctionToPhp::update_exclamation_interface(const PhpClassRepresentation &interface) {
+const PhpClassRepresentation& FunctionToPhp::update_exclamation_interface(const PhpClassRepresentation& interface) {
   auto old = exclamation_interface_;
   exclamation_interface_ = std::cref(interface);
   return old;
 }
 
-void FunctionToPhp::apply(const tlo_parsing::type_var &tl_type_var) {
-  for (const auto &combinator_arg: tl_combinator_.args) {
+void FunctionToPhp::apply(const tlo_parsing::type_var& tl_type_var) {
+  for (const auto& combinator_arg : tl_combinator_.args) {
     if (combinator_arg->is_forwarded_function()) {
-      auto *excl_type_var = combinator_arg->type_expr->as<tlo_parsing::type_var>();
+      auto* excl_type_var = combinator_arg->type_expr->as<tlo_parsing::type_var>();
       assert(excl_type_var);
       if (excl_type_var->var_num == tl_type_var.var_num) {
         last_processed_type_ = php_field_type::t_class;
@@ -60,7 +59,7 @@ void FunctionToPhp::apply(const tlo_parsing::type_var &tl_type_var) {
       }
     }
   }
-  auto *arg_ptr = tl_combinator_.get_var_num_arg(tl_type_var.var_num);
+  auto* arg_ptr = tl_combinator_.get_var_num_arg(tl_type_var.var_num);
   assert(arg_ptr);
   arg_ptr->type_expr->visit(*this);
 }

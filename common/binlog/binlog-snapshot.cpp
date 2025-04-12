@@ -18,9 +18,9 @@ constexpr int32_t RESULT_TRUE_MAGIC{0x3f9c8ef8};
 } // namespace
 
 BarsicSnapshotHeader::BarsicSnapshotHeader()
-  : fields_mask()
-  , dependencies(DEPENDENCIES_BUFFER_SIZE)
-  , payload_offset() {}
+    : fields_mask(),
+      dependencies(DEPENDENCIES_BUFFER_SIZE),
+      payload_offset() {}
 
 void BarsicSnapshotHeader::SnapshotDependency::tl_fetch() noexcept {
   std::basic_string<char> buffer{};

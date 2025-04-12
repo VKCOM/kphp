@@ -21,7 +21,7 @@ string bc_zero(int scale) noexcept {
 namespace legacy {
 
 // parse a number into parts, returns scale on success and -1 on error
-int bc_parse_number_impl(const string &s, int &lsign, int &lint, int &ldot, int &lfrac, int &lscale) noexcept {
+int bc_parse_number_impl(const string& s, int& lsign, int& lint, int& ldot, int& lfrac, int& lscale) noexcept {
   int i = 0;
   lsign = 1;
   if (s[i] == '-' || s[i] == '+') {
@@ -70,7 +70,7 @@ int bc_parse_number_impl(const string &s, int &lsign, int &lint, int &ldot, int 
   return lscale;
 }
 
-int bc_comp_impl(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale) noexcept {
+int bc_comp_impl(const char* lhs, int lint, int ldot, int lfrac, int lscale, const char* rhs, int rint, int rdot, int rfrac, int rscale, int scale) noexcept {
   int llen = ldot - lint;
   int rlen = rdot - rint;
 
@@ -96,7 +96,7 @@ int bc_comp_impl(const char *lhs, int lint, int ldot, int lfrac, int lscale, con
   return 0;
 }
 
-string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int scale, int sign, int add_trailing_zeroes) noexcept {
+string bc_round(char* lhs, int lint, int ldot, int lfrac, int lscale, int scale, int sign, int add_trailing_zeroes) noexcept {
   while (lhs[lint] == '0' && lint + 1 < ldot) {
     lint++;
   }
@@ -138,7 +138,7 @@ string bc_round(char *lhs, int lint, int ldot, int lfrac, int lscale, int scale,
   }
 }
 
-string bc_add_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale,
+string bc_add_positive(const char* lhs, int lint, int ldot, int lfrac, int lscale, const char* rhs, int rint, int rdot, int rfrac, int rscale, int scale,
                        int sign) noexcept {
   int llen = ldot - lint;
   int rlen = rdot - rint;
@@ -191,7 +191,7 @@ string bc_add_positive(const char *lhs, int lint, int ldot, int lfrac, int lscal
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 1);
 }
 
-string bc_sub_positive(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale,
+string bc_sub_positive(const char* lhs, int lint, int ldot, int lfrac, int lscale, const char* rhs, int rint, int rdot, int rfrac, int rscale, int scale,
                        int sign) noexcept {
   int llen = ldot - lint;
   int rlen = rdot - rint;
@@ -254,7 +254,7 @@ string bc_sub_positive(const char *lhs, int lint, int ldot, int lfrac, int lscal
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 1);
 }
 
-string bc_mul_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale,
+string bc_mul_positive_impl(const char* lhs, int lint, int ldot, int lfrac, int lscale, const char* rhs, int rint, int rdot, int rfrac, int rscale, int scale,
                             int sign) noexcept {
   int llen = ldot - lint;
   int rlen = rdot - rint;
@@ -266,7 +266,7 @@ string bc_mul_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int 
   int result_size = result_len + result_scale + 3;
   string result(static_cast<string::size_type>(result_size), false);
 
-  int *res = (int *)RuntimeAllocator::get().alloc0_script_memory(static_cast<size_t>(sizeof(int) * result_size));
+  int* res = (int*)RuntimeAllocator::get().alloc0_script_memory(static_cast<size_t>(sizeof(int) * result_size));
   for (int i = -lscale; i < llen; i++) {
     int x = (i < 0 ? lhs[lfrac - i - 1] : lhs[ldot - i - 1]) - '0';
     for (int j = -rscale; j < rlen; j++) {
@@ -301,7 +301,7 @@ string bc_mul_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int 
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 1);
 }
 
-string bc_div_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rint, int rdot, int rfrac, int rscale, int scale,
+string bc_div_positive_impl(const char* lhs, int lint, int ldot, int lfrac, int lscale, const char* rhs, int rint, int rdot, int rfrac, int rscale, int scale,
                             int sign) noexcept {
   int llen = ldot - lint;
   int rlen = rdot - rint;
@@ -319,8 +319,8 @@ string bc_div_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int 
 
   int dividend_len = llen + lscale;
   int divider_len = rlen + rscale;
-  int *dividend = (int *)RuntimeAllocator::get().alloc0_script_memory(static_cast<size_t>(sizeof(int) * (result_size + dividend_len + divider_len)));
-  int *divider = (int *)RuntimeAllocator::get().alloc_script_memory(static_cast<size_t>(sizeof(int) * divider_len));
+  int* dividend = (int*)RuntimeAllocator::get().alloc0_script_memory(static_cast<size_t>(sizeof(int) * (result_size + dividend_len + divider_len)));
+  int* divider = (int*)RuntimeAllocator::get().alloc_script_memory(static_cast<size_t>(sizeof(int) * divider_len));
 
   for (int i = -lscale; i < llen; i++) {
     int x = (i < 0 ? lhs[lfrac - i - 1] : lhs[ldot - i - 1]) - '0';
@@ -416,7 +416,7 @@ string bc_div_positive_impl(const char *lhs, int lint, int ldot, int lfrac, int 
   return bc_round(result.buffer(), resint, resdot, resfrac, resscale, scale, sign, 0);
 }
 
-string bc_add_impl(const char *lhs, int lsign, int lint, int ldot, int lfrac, int lscale, const char *rhs, int rsign, int rint, int rdot, int rfrac, int rscale,
+string bc_add_impl(const char* lhs, int lsign, int lint, int ldot, int lfrac, int lscale, const char* rhs, int rsign, int rint, int rdot, int rfrac, int rscale,
                    int scale) noexcept {
   if (lsign > 0 && rsign > 0) {
     return bc_add_positive(lhs, lint, ldot, lfrac, lscale, rhs, rint, rdot, rfrac, rscale, scale, 1);
@@ -447,34 +447,34 @@ string bc_add_impl(const char *lhs, int lsign, int lint, int ldot, int lfrac, in
 
 } // namespace legacy
 
-int bc_comp(const bcmath_impl_::BcNum &lhs, const bcmath_impl_::BcNum &rhs, int scale) noexcept {
+int bc_comp(const bcmath_impl_::BcNum& lhs, const bcmath_impl_::BcNum& rhs, int scale) noexcept {
   return legacy::bc_comp_impl(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale, rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac, rhs.n_scale,
                               scale);
 }
 
-string bc_mul_positive(const bcmath_impl_::BcNum &lhs, const bcmath_impl_::BcNum &rhs, int scale, int sign) noexcept {
+string bc_mul_positive(const bcmath_impl_::BcNum& lhs, const bcmath_impl_::BcNum& rhs, int scale, int sign) noexcept {
   return legacy::bc_mul_positive_impl(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale, rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac,
                                       rhs.n_scale, scale, sign);
 }
 
-string bc_div_positive(const bcmath_impl_::BcNum &lhs, const bcmath_impl_::BcNum &rhs, int scale, int sign) noexcept {
+string bc_div_positive(const bcmath_impl_::BcNum& lhs, const bcmath_impl_::BcNum& rhs, int scale, int sign) noexcept {
   return legacy::bc_div_positive_impl(lhs.str.c_str(), lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale, rhs.str.c_str(), rhs.n_int, rhs.n_dot, rhs.n_frac,
                                       rhs.n_scale, scale, sign);
 }
 
-string bc_add(const bcmath_impl_::BcNum &lhs, const bcmath_impl_::BcNum &rhs, int scale) noexcept {
+string bc_add(const bcmath_impl_::BcNum& lhs, const bcmath_impl_::BcNum& rhs, int scale) noexcept {
   return legacy::bc_add_impl(lhs.str.c_str(), lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale, rhs.str.c_str(), rhs.n_sign, rhs.n_int, rhs.n_dot,
                              rhs.n_frac, rhs.n_scale, scale);
 }
 
-string bc_sub(const bcmath_impl_::BcNum &lhs, const bcmath_impl_::BcNum &rhs, int scale) noexcept {
+string bc_sub(const bcmath_impl_::BcNum& lhs, const bcmath_impl_::BcNum& rhs, int scale) noexcept {
   return legacy::bc_add_impl(lhs.str.c_str(), lhs.n_sign, lhs.n_int, lhs.n_dot, lhs.n_frac, lhs.n_scale, rhs.str.c_str(), (-1) * rhs.n_sign, rhs.n_int,
                              rhs.n_dot, rhs.n_frac, rhs.n_scale, scale);
 }
 
 } // namespace
 
-std::pair<bcmath_impl_::BcNum, bool> bcmath_impl_::bc_parse_number(const string &num) noexcept {
+std::pair<bcmath_impl_::BcNum, bool> bcmath_impl_::bc_parse_number(const string& num) noexcept {
   BcNum bc_num;
   bc_num.str = num;
   bool success = legacy::bc_parse_number_impl(num, bc_num.n_sign, bc_num.n_int, bc_num.n_dot, bc_num.n_frac, bc_num.n_scale) >= 0;
@@ -482,7 +482,7 @@ std::pair<bcmath_impl_::BcNum, bool> bcmath_impl_::bc_parse_number(const string 
 }
 
 void f$bcscale(int64_t scale) noexcept {
-  auto &math_lib_context{MathLibContext::get()};
+  auto& math_lib_context{MathLibContext::get()};
   if (scale < 0) {
     math_lib_context.bc_scale = 0;
   } else {
@@ -490,9 +490,9 @@ void f$bcscale(int64_t scale) noexcept {
   }
 }
 
-string f$bcdiv(const string &lhs_str, const string &rhs_str, int64_t scale) noexcept {
-  auto &math_lib_context{MathLibContext::get()};
-  const auto &math_lib_constants{MathLibConstants::get()};
+string f$bcdiv(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+  auto& math_lib_context{MathLibContext::get()};
+  const auto& math_lib_constants{MathLibConstants::get()};
   if (scale == std::numeric_limits<int64_t>::min()) {
     scale = math_lib_context.bc_scale;
   }
@@ -523,7 +523,7 @@ string f$bcdiv(const string &lhs_str, const string &rhs_str, int64_t scale) noex
   return bc_div_positive(lhs, rhs, static_cast<int>(scale), lhs.n_sign * rhs.n_sign);
 }
 
-static string scale_num(const string &num, int64_t scale) noexcept {
+static string scale_num(const string& num, int64_t scale) noexcept {
   if (scale > 0) {
     string result = num;
     result.append(1, '.');
@@ -533,9 +533,9 @@ static string scale_num(const string &num, int64_t scale) noexcept {
   return num;
 }
 
-string f$bcmod(const string &lhs_str, const string &rhs_str, int64_t scale) noexcept {
-  auto &math_lib_context{MathLibContext::get()};
-  const auto &math_lib_constants{MathLibConstants::get()};
+string f$bcmod(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+  auto& math_lib_context{MathLibContext::get()};
+  const auto& math_lib_constants{MathLibConstants::get()};
   if (scale == std::numeric_limits<int64_t>::min()) {
     scale = math_lib_context.bc_scale;
   }
@@ -584,7 +584,7 @@ string f$bcmod(const string &lhs_str, const string &rhs_str, int64_t scale) noex
   return bc_div_positive(x, math_lib_constants.BC_NUM_ONE, scale, result_sign);
 }
 
-static std::pair<std::int64_t, bool> bc_num2int(const bcmath_impl_::BcNum &num) noexcept {
+static std::pair<std::int64_t, bool> bc_num2int(const bcmath_impl_::BcNum& num) noexcept {
   if (num.n_dot - num.n_int > 18) {
     return {0, false};
   }
@@ -600,9 +600,9 @@ static std::pair<std::int64_t, bool> bc_num2int(const bcmath_impl_::BcNum &num) 
   return {ingeger, true};
 }
 
-string f$bcpow(const string &lhs_str, const string &rhs_str, int64_t scale) noexcept {
-  auto &math_lib_context{MathLibContext::get()};
-  const auto &math_lib_constants{MathLibConstants::get()};
+string f$bcpow(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+  auto& math_lib_context{MathLibContext::get()};
+  const auto& math_lib_constants{MathLibConstants::get()};
   if (scale == std::numeric_limits<int64_t>::min()) {
     scale = math_lib_context.bc_scale;
   }
@@ -672,7 +672,7 @@ string f$bcpow(const string &lhs_str, const string &rhs_str, int64_t scale) noex
   string result = temp;
 
   if (neg) {
-    const bcmath_impl_::BcNum &temp_bc_num = bcmath_impl_::bc_parse_number(temp).first;
+    const bcmath_impl_::BcNum& temp_bc_num = bcmath_impl_::bc_parse_number(temp).first;
     if (bc_comp(temp_bc_num, math_lib_constants.BC_NUM_ZERO, temp_bc_num.n_scale) != 0) {
       result = f$bcdiv(math_lib_constants.ONE, temp, rscale);
     }
@@ -681,8 +681,8 @@ string f$bcpow(const string &lhs_str, const string &rhs_str, int64_t scale) noex
   return f$bcadd(result, math_lib_constants.ZERO, scale);
 }
 
-string f$bcadd(const string &lhs_str, const string &rhs_str, int64_t scale) noexcept {
-  const auto &math_lib_constants{MathLibConstants::get()};
+string f$bcadd(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+  const auto& math_lib_constants{MathLibConstants::get()};
   if (lhs_str.empty()) {
     return f$bcadd(math_lib_constants.ZERO, rhs_str, scale);
   }
@@ -713,8 +713,8 @@ string f$bcadd(const string &lhs_str, const string &rhs_str, int64_t scale) noex
   return bc_add(lhs, rhs, static_cast<int>(scale));
 }
 
-string f$bcsub(const string &lhs_str, const string &rhs_str, int64_t scale) noexcept {
-  const auto &math_lib_constants{MathLibConstants::get()};
+string f$bcsub(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+  const auto& math_lib_constants{MathLibConstants::get()};
   if (lhs_str.empty()) {
     return f$bcsub(math_lib_constants.ZERO, rhs_str, scale);
   }
@@ -747,8 +747,8 @@ string f$bcsub(const string &lhs_str, const string &rhs_str, int64_t scale) noex
   return bc_add(lhs, rhs, static_cast<int>(scale));
 }
 
-string f$bcmul(const string &lhs_str, const string &rhs_str, int64_t scale) noexcept {
-  const auto &math_lib_constants{MathLibConstants::get()};
+string f$bcmul(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+  const auto& math_lib_constants{MathLibConstants::get()};
   if (lhs_str.empty()) {
     return f$bcmul(math_lib_constants.ZERO, rhs_str, scale);
   }
@@ -779,8 +779,8 @@ string f$bcmul(const string &lhs_str, const string &rhs_str, int64_t scale) noex
   return bc_mul_positive(lhs, rhs, static_cast<int>(scale), lhs.n_sign * rhs.n_sign);
 }
 
-int64_t f$bccomp(const string &lhs_str, const string &rhs_str, int64_t scale) noexcept {
-  const auto &math_lib_constants{MathLibConstants::get()};
+int64_t f$bccomp(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+  const auto& math_lib_constants{MathLibConstants::get()};
   if (lhs_str.empty()) {
     return f$bccomp(math_lib_constants.ZERO, rhs_str, scale);
   }
@@ -818,7 +818,7 @@ int64_t f$bccomp(const string &lhs_str, const string &rhs_str, int64_t scale) no
 // In some places we need to check if the number NUM is almost zero.
 // Specifically, all but the last digit is 0 and the last digit is 1.
 // Last digit is defined by scale.
-static bool bc_is_near_zero(const bcmath_impl_::BcNum &num, int scale) noexcept {
+static bool bc_is_near_zero(const bcmath_impl_::BcNum& num, int scale) noexcept {
   if (scale > num.n_scale) {
     scale = num.n_scale;
   }
@@ -835,7 +835,7 @@ static bool bc_is_near_zero(const bcmath_impl_::BcNum &num, int scale) noexcept 
   }
 
   const int count = scale - 1;
-  const char *ptr = num.str.c_str() + num.n_frac;
+  const char* ptr = num.str.c_str() + num.n_frac;
 
   for (int i = 0; i < count; ++i) {
     if (ptr[i] != '0') {
@@ -846,8 +846,8 @@ static bool bc_is_near_zero(const bcmath_impl_::BcNum &num, int scale) noexcept 
   return ptr[count] == '1' || ptr[count] == '0';
 }
 
-static std::pair<bcmath_impl_::BcNum, int> bc_sqrt_calc_initial_guess(const bcmath_impl_::BcNum &num, int cmp_with_one) noexcept {
-  const auto &math_lib_constants{MathLibConstants::get()};
+static std::pair<bcmath_impl_::BcNum, int> bc_sqrt_calc_initial_guess(const bcmath_impl_::BcNum& num, int cmp_with_one) noexcept {
+  const auto& math_lib_constants{MathLibConstants::get()};
   if (cmp_with_one < 0) {
     // the number is between 0 and 1. Guess should start at 1.
     return {math_lib_constants.BC_NUM_ONE, num.n_scale};
@@ -860,8 +860,8 @@ static std::pair<bcmath_impl_::BcNum, int> bc_sqrt_calc_initial_guess(const bcma
   return {std::move(guess), 3};
 }
 
-static std::pair<string, bool> bc_sqrt(const bcmath_impl_::BcNum &num, int scale) noexcept {
-  const auto &math_lib_constants{MathLibConstants::get()};
+static std::pair<string, bool> bc_sqrt(const bcmath_impl_::BcNum& num, int scale) noexcept {
+  const auto& math_lib_constants{MathLibConstants::get()};
   // initial checks
   const int cmp_zero = bc_comp(num, math_lib_constants.BC_NUM_ZERO, num.n_scale);
   if (cmp_zero < 0 || num.n_sign == -1) {
@@ -907,7 +907,7 @@ static std::pair<string, bool> bc_sqrt(const bcmath_impl_::BcNum &num, int scale
   return {bc_div_positive(guess, math_lib_constants.BC_NUM_ONE, rscale, 1), true};
 }
 
-string f$bcsqrt(const string &num_str, int64_t scale) noexcept {
+string f$bcsqrt(const string& num_str, int64_t scale) noexcept {
   if (scale == std::numeric_limits<int64_t>::min()) {
     scale = MathLibContext::get().bc_scale;
   }
@@ -931,6 +931,6 @@ string f$bcsqrt(const string &num_str, int64_t scale) noexcept {
     return {};
   }
 
-  const bcmath_impl_::BcNum &sqrt_bc_num = bcmath_impl_::bc_parse_number(sqrt).first;
+  const bcmath_impl_::BcNum& sqrt_bc_num = bcmath_impl_::bc_parse_number(sqrt).first;
   return bc_div_positive(sqrt_bc_num, MathLibConstants::get().BC_NUM_ONE, scale, 1);
 }

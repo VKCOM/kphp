@@ -19,16 +19,14 @@
 
 namespace {
 
-constexpr std::array<short, 256> base64_reverse_table = {-2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -2, -2, -1, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-                                                         -2, -2, -2, -2, -2, -2, -1, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, 62, -2, -2, -2, 63, 52, 53, 54, 55,
-                                                         56, 57, 58, 59, 60, 61, -2, -2, -2, -2, -2, -2, -2, 0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12,
-                                                         13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -2, -2, -2, -2, -2, -2, 26, 27, 28, 29, 30, 31, 32,
-                                                         33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -2, -2, -2, -2, -2, -2, -2,
-                                                         -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-                                                         -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-                                                         -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-                                                         -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
-                                                         -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2};
+constexpr std::array<short, 256> base64_reverse_table = {
+    -2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -2, -2, -1, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -2, -2, -2, -2,
+    -2, -2, -2, -2, -2, -2, 62, -2, -2, -2, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -2, -2, -2, -2, -2, -2, -2, 0,  1,  2,  3,  4,  5,  6,  7,  8,
+    9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -2, -2, -2, -2, -2, -2, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+    40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+    -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+    -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,
+    -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2};
 
 constexpr std::string_view good_url_symbols_mask = "00000000000000000000000000000000"
                                                    "00000000000001101111111111000000"
@@ -39,10 +37,10 @@ constexpr std::string_view good_url_symbols_mask = "0000000000000000000000000000
                                                    "00000000000000000000000000000000"
                                                    "00000000000000000000000000000000"; //[0-9a-zA-Z-_.]
 
-int32_t base64_encode(const unsigned char *input, int32_t ilen, char *output, int32_t olen) noexcept {
+int32_t base64_encode(const unsigned char* input, int32_t ilen, char* output, int32_t olen) noexcept {
   static constexpr std::string_view symbols64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
 
-  auto next_input_uchar = [input, ilen](int32_t &i) {
+  auto next_input_uchar = [input, ilen](int32_t& i) {
     if (i >= ilen) {
       return static_cast<unsigned char>(0);
     }
@@ -83,16 +81,16 @@ int32_t base64_encode(const unsigned char *input, int32_t ilen, char *output, in
 }
 
 // returns associative array like [host=> path=>] or empty array if str is not a valid url
-array<mixed> php_url_parse_ex(const char *str, string::size_type length) noexcept {
+array<mixed> php_url_parse_ex(const char* str, string::size_type length) noexcept {
   array<mixed> result;
-  const char *s = str;
-  const char *e = nullptr;
-  const char *p = nullptr;
-  const char *pp = nullptr;
-  const char *ue = str + length;
+  const char* s = str;
+  const char* e = nullptr;
+  const char* p = nullptr;
+  const char* pp = nullptr;
+  const char* ue = str + length;
 
   /* parse scheme */
-  if ((e = static_cast<const char *>(memchr(s, ':', length))) && e != s) {
+  if ((e = static_cast<const char*>(memchr(s, ':', length))) && e != s) {
     /* validate scheme */
     p = s;
     while (p < e) {
@@ -190,19 +188,19 @@ array<mixed> php_url_parse_ex(const char *str, string::size_type length) noexcep
 parse_host:
   /* Binary-safe strcspn(s, "/?#") */
   e = ue;
-  if ((p = static_cast<const char *>(memchr(s, '/', e - s)))) {
+  if ((p = static_cast<const char*>(memchr(s, '/', e - s)))) {
     e = p;
   }
-  if ((p = static_cast<const char *>(memchr(s, '?', e - s)))) {
+  if ((p = static_cast<const char*>(memchr(s, '?', e - s)))) {
     e = p;
   }
-  if ((p = static_cast<const char *>(memchr(s, '#', e - s)))) {
+  if ((p = static_cast<const char*>(memchr(s, '#', e - s)))) {
     e = p;
   }
 
   /* check for login and password */
-  if ((p = static_cast<const char *>(memrchr(s, '@', (e - s))))) {
-    if ((pp = static_cast<const char *>(memchr(s, ':', (p - s))))) {
+  if ((p = static_cast<const char*>(memrchr(s, '@', (e - s))))) {
+    if ((pp = static_cast<const char*>(memchr(s, ':', (p - s))))) {
       result.set_value(string("user", 4), string(s, static_cast<string::size_type>(pp - s)));
       pp++;
       result.set_value(string("pass", 4), string(pp, static_cast<string::size_type>(p - pp)));
@@ -218,7 +216,7 @@ parse_host:
     /* Short circuit portscan, we're dealing with an IPv6 embedded address */
     p = nullptr;
   } else {
-    p = static_cast<const char *>(memrchr(s, ':', (e - s)));
+    p = static_cast<const char*>(memrchr(s, ':', (e - s)));
   }
 
   if (p) {
@@ -255,7 +253,7 @@ parse_host:
 just_path:
 
   e = ue;
-  p = static_cast<const char *>(memchr(s, '#', (e - s)));
+  p = static_cast<const char*>(memchr(s, '#', (e - s)));
   if (p) {
     p++;
     if (p < e) {
@@ -264,7 +262,7 @@ just_path:
     e = p - 1;
   }
 
-  p = static_cast<const char *>(memchr(s, '?', (e - s)));
+  p = static_cast<const char*>(memchr(s, '?', (e - s)));
   if (p) {
     p++;
     if (p < e) {
@@ -280,9 +278,9 @@ just_path:
   return result;
 }
 
-void parse_str_set_array_value(mixed &arr, const char *left_br_pos, int key_len, const string &value) noexcept {
+void parse_str_set_array_value(mixed& arr, const char* left_br_pos, int key_len, const string& value) noexcept {
   php_assert(*left_br_pos == '[');
-  const char *right_br_pos = static_cast<const char *>(memchr(left_br_pos + 1, ']', key_len - 1));
+  const char* right_br_pos = static_cast<const char*>(memchr(left_br_pos + 1, ']', key_len - 1));
   if (right_br_pos != nullptr) {
     string next_key(left_br_pos + 1, static_cast<string::size_type>(right_br_pos - left_br_pos - 1));
     if (!arr.is_array()) {
@@ -305,10 +303,10 @@ void parse_str_set_array_value(mixed &arr, const char *left_br_pos, int key_len,
 
 } // namespace
 
-string f$base64_encode(const string &s) noexcept {
+string f$base64_encode(const string& s) noexcept {
   int32_t result_len = (s.size() + 2) / 3 * 4;
   string res(result_len, false);
-  result_len = base64_encode(reinterpret_cast<const unsigned char *>(s.c_str()), static_cast<int32_t>(s.size()), res.buffer(), result_len + 1);
+  result_len = base64_encode(reinterpret_cast<const unsigned char*>(s.c_str()), static_cast<int32_t>(s.size()), res.buffer(), result_len + 1);
 
   if (result_len != 0) {
     return {};
@@ -320,7 +318,7 @@ string f$base64_encode(const string &s) noexcept {
 /* Function f$base64_decode ported from https://github.com/php/php-src/blob/master/ext/standard/base64.c#L130
  * "This product includes PHP software, freely available from <http://www.php.net/software/>".
  */
-Optional<string> f$base64_decode(const string &s, bool strict) noexcept {
+Optional<string> f$base64_decode(const string& s, bool strict) noexcept {
   /* run through the whole string, converting as we go */
   string::size_type result_len = (s.size() + 3) / 4 * 3;
   string result(result_len, false);
@@ -352,21 +350,21 @@ Optional<string> f$base64_decode(const string &s, bool strict) noexcept {
     }
 
     switch (i % 4) {
-      case 0:
-        result[j] = static_cast<unsigned char>(ch << 2);
-        break;
-      case 1:
-        result[j] = static_cast<char>(result[j] | (ch >> 4));
-        result[++j] = static_cast<unsigned char>((ch & 0x0f) << 4);
-        break;
-      case 2:
-        result[j] = static_cast<char>(result[j] | (ch >> 2));
-        result[++j] = static_cast<unsigned char>((ch & 0x03) << 6);
-        break;
-      case 3:
-        result[j] = static_cast<char>(result[j] | ch);
-        ++j;
-        break;
+    case 0:
+      result[j] = static_cast<unsigned char>(ch << 2);
+      break;
+    case 1:
+      result[j] = static_cast<char>(result[j] | (ch >> 4));
+      result[++j] = static_cast<unsigned char>((ch & 0x0f) << 4);
+      break;
+    case 2:
+      result[j] = static_cast<char>(result[j] | (ch >> 2));
+      result[++j] = static_cast<unsigned char>((ch & 0x03) << 6);
+      break;
+    case 3:
+      result[j] = static_cast<char>(result[j] | ch);
+      ++j;
+      break;
     }
     i++;
   }
@@ -385,11 +383,11 @@ Optional<string> f$base64_decode(const string &s, bool strict) noexcept {
   return result;
 }
 
-string f$rawurlencode(const string &s) noexcept {
-  auto &runtime_ctx{RuntimeContext::get()};
+string f$rawurlencode(const string& s) noexcept {
+  auto& runtime_ctx{RuntimeContext::get()};
   runtime_ctx.static_SB.clean().reserve(3 * s.size());
 
-  const auto &string_lib_constants{StringLibConstants::get()};
+  const auto& string_lib_constants{StringLibConstants::get()};
   for (string::size_type i = 0; i < s.size(); ++i) {
     if (good_url_symbols_mask[static_cast<unsigned char>(s[i])] == '1') {
       runtime_ctx.static_SB.append_char(s[i]);
@@ -402,8 +400,8 @@ string f$rawurlencode(const string &s) noexcept {
   return runtime_ctx.static_SB.str();
 }
 
-string f$rawurldecode(const string &s) noexcept {
-  auto &runtime_ctx{RuntimeContext::get()};
+string f$rawurldecode(const string& s) noexcept {
+  auto& runtime_ctx{RuntimeContext::get()};
   runtime_ctx.static_SB.clean().reserve(s.size());
 
   for (string::size_type i = 0; i < s.size(); ++i) {
@@ -421,11 +419,11 @@ string f$rawurldecode(const string &s) noexcept {
   return runtime_ctx.static_SB.str();
 }
 
-string f$urlencode(const string &s) noexcept {
-  auto &runtime_ctx{RuntimeContext::get()};
+string f$urlencode(const string& s) noexcept {
+  auto& runtime_ctx{RuntimeContext::get()};
   runtime_ctx.static_SB.clean().reserve(3 * s.size());
 
-  const auto &string_lib_constants{StringLibConstants::get()};
+  const auto& string_lib_constants{StringLibConstants::get()};
   for (string::size_type i = 0; i < s.size(); ++i) {
     if (good_url_symbols_mask[static_cast<unsigned char>(s[i])] == '1') {
       runtime_ctx.static_SB.append_char(s[i]);
@@ -440,8 +438,8 @@ string f$urlencode(const string &s) noexcept {
   return runtime_ctx.static_SB.str();
 }
 
-string f$urldecode(const string &s) noexcept {
-  auto &runtime_ctx{RuntimeContext::get()};
+string f$urldecode(const string& s) noexcept {
+  auto& runtime_ctx{RuntimeContext::get()};
   runtime_ctx.static_SB.clean().reserve(s.size());
 
   for (string::size_type i = 0; i < s.size(); ++i) {
@@ -463,7 +461,7 @@ string f$urldecode(const string &s) noexcept {
 }
 
 // returns var, as array|false|null (null if component doesn't exist)
-mixed f$parse_url(const string &s, int64_t component) noexcept {
+mixed f$parse_url(const string& s, int64_t component) noexcept {
   array<mixed> url_as_array = php_url_parse_ex(s.c_str(), s.size());
 
   if (url_as_array.empty()) {
@@ -472,34 +470,34 @@ mixed f$parse_url(const string &s, int64_t component) noexcept {
 
   if (component != -1) {
     switch (component) {
-      case 0: // PHP_URL_SCHEME
-        return url_as_array.get_value(string("scheme", 6));
-      case 1: // PHP_URL_HOST
-        return url_as_array.get_value(string("host", 4));
-      case 2: // PHP_URL_PORT
-        return url_as_array.get_value(string("port", 4));
-      case 3: // PHP_URL_USER
-        return url_as_array.get_value(string("user", 4));
-      case 4: // PHP_URL_PASS
-        return url_as_array.get_value(string("pass", 4));
-      case 5: // PHP_URL_PATH
-        return url_as_array.get_value(string("path", 4));
-      case 6: // PHP_URL_QUERY
-        return url_as_array.get_value(string("query", 5));
-      case 7: // PHP_URL_FRAGMENT
-        return url_as_array.get_value(string("fragment", 8));
-      default:
-        php_warning("Wrong parameter component = %" PRIi64 " in function parse_url", component);
-        return false;
+    case 0: // PHP_URL_SCHEME
+      return url_as_array.get_value(string("scheme", 6));
+    case 1: // PHP_URL_HOST
+      return url_as_array.get_value(string("host", 4));
+    case 2: // PHP_URL_PORT
+      return url_as_array.get_value(string("port", 4));
+    case 3: // PHP_URL_USER
+      return url_as_array.get_value(string("user", 4));
+    case 4: // PHP_URL_PASS
+      return url_as_array.get_value(string("pass", 4));
+    case 5: // PHP_URL_PATH
+      return url_as_array.get_value(string("path", 4));
+    case 6: // PHP_URL_QUERY
+      return url_as_array.get_value(string("query", 5));
+    case 7: // PHP_URL_FRAGMENT
+      return url_as_array.get_value(string("fragment", 8));
+    default:
+      php_warning("Wrong parameter component = %" PRIi64 " in function parse_url", component);
+      return false;
     }
   }
 
   return url_as_array;
 }
 
-void parse_str_set_value(mixed &arr, const string &key, const string &value) noexcept {
-  const char *key_c = key.c_str();
-  const char *left_br_pos = static_cast<const char *>(std::memchr(key_c, '[', key.size()));
+void parse_str_set_value(mixed& arr, const string& key, const string& value) noexcept {
+  const char* key_c = key.c_str();
+  const char* left_br_pos = static_cast<const char*>(std::memchr(key_c, '[', key.size()));
   if (left_br_pos != nullptr) {
     return parse_str_set_array_value(arr[string(key_c, static_cast<string::size_type>(left_br_pos - key_c))], left_br_pos,
                                      static_cast<int>(key_c + key.size() - left_br_pos), value);
@@ -508,7 +506,7 @@ void parse_str_set_value(mixed &arr, const string &key, const string &value) noe
   arr.set_value(key, value);
 }
 
-void f$parse_str(const string &str, mixed &arr) noexcept {
+void f$parse_str(const string& str, mixed& arr) noexcept {
   if (f$trim(str).empty()) {
     arr = array<mixed>();
     return;
@@ -519,8 +517,8 @@ void f$parse_str(const string &str, mixed &arr) noexcept {
   array<string> par = explode('&', str, std::numeric_limits<int32_t>::max());
   int64_t len = par.count();
   for (int64_t i = 0; i < len; i++) {
-    const char *cur = par.get_value(i).c_str();
-    const char *eq_pos = strchrnul(cur, '=');
+    const char* cur = par.get_value(i).c_str();
+    const char* eq_pos = strchrnul(cur, '=');
     string value;
     if (*eq_pos) {
       value = f$urldecode(string(eq_pos + 1));

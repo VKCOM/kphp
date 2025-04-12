@@ -20,14 +20,13 @@ const int MAX_INPUT_VALUE_LEN = (1 << 24);
 
 const string UNDERSCORE("_", 1);
 
-
-const char *mc_method{nullptr};
-static const char *mc_last_key{nullptr};
+const char* mc_method{nullptr};
+static const char* mc_last_key{nullptr};
 static int mc_last_key_len{0};
 static mixed mc_res;
 static bool mc_bool_res{false};
 
-const string mc_prepare_key(const string &key) {
+const string mc_prepare_key(const string& key) {
   if (key.size() < 3) {
     php_warning("Very short key \"%s\" in Memcache::%s", key.c_str(), mc_method);
   }
@@ -42,7 +41,7 @@ const string mc_prepare_key(const string &key) {
     return key;
   }
 
-  string real_key = key.substr(0, min(MAX_KEY_LEN, key.size()));//need a copy
+  string real_key = key.substr(0, min(MAX_KEY_LEN, key.size())); // need a copy
   for (int i = 0; i < (int)real_key.size(); i++) {
     if ((unsigned int)real_key[i] <= 32u) {
       real_key[i] = '_';
@@ -57,12 +56,12 @@ const string mc_prepare_key(const string &key) {
   return real_key;
 }
 
-
-bool mc_is_immediate_query(const string &key) {
+bool mc_is_immediate_query(const string& key) {
   return key[0] == '^' && key.size() >= 2;
 }
 
-const char *mc_parse_value(const char *result, int result_len, const char **key, int *key_len, const char **value, int *value_len, int *flags, int *error_code) {
+const char* mc_parse_value(const char* result, int result_len, const char** key, int* key_len, const char** value, int* value_len, int* flags,
+                           int* error_code) {
   if (strncmp(result, "VALUE", 5)) {
     *error_code = 1;
     return nullptr;
@@ -128,9 +127,7 @@ const char *mc_parse_value(const char *result, int result_len, const char **key,
     return nullptr;
   }
   int64_t value_len64 = 0;
-  if (!php_try_to_int(*value, static_cast<size_t>(result + i - *value), &value_len64)
-      || value_len64 < 0
-      || value_len64 >= MAX_INPUT_VALUE_LEN) {
+  if (!php_try_to_int(*value, static_cast<size_t>(result + i - *value), &value_len64) || value_len64 < 0 || value_len64 >= MAX_INPUT_VALUE_LEN) {
     *error_code = 9;
     return nullptr;
   }
@@ -152,7 +149,7 @@ const char *mc_parse_value(const char *result, int result_len, const char **key,
   return result + i + 2;
 }
 
-mixed mc_get_value(const char *result_str, int32_t result_str_len, int64_t flags) {
+mixed mc_get_value(const char* result_str, int32_t result_str_len, int64_t flags) {
   mixed result;
   if (flags & MEMCACHE_COMPRESSED) {
     flags ^= MEMCACHE_COMPRESSED;
@@ -174,7 +171,7 @@ mixed mc_get_value(const char *result_str, int32_t result_str_len, int64_t flags
   return result;
 }
 
-void mc_set_callback(const char *result, int result_len __attribute__((unused))) {
+void mc_set_callback(const char* result, int result_len __attribute__((unused))) {
   if (!strcmp(result, "ERROR\r\n")) {
     return;
   }
@@ -192,83 +189,83 @@ void mc_set_callback(const char *result, int result_len __attribute__((unused)))
   mc_bool_res = false;
 }
 
-void mc_multiget_callback(const char *result, int result_len) {
+void mc_multiget_callback(const char* result, int result_len) {
   if (!strcmp(result, "ERROR\r\n")) {
     return;
   }
-  const char *full_result = result;
+  const char* full_result = result;
 
   while (*result) {
     switch (*result) {
-      case 'V': {
-        int key_len, value_len;
-        const char *key, *value;
-        int flags;
-        int error_code;
-
-        const char *new_result = mc_parse_value(result, result_len, &key, &key_len, &value, &value_len, &flags, &error_code);
-        if (!new_result) {
-          php_warning("Wrong memcache response \"%s\" in Memcache::get with multikey %s and error code %d", result, mc_last_key, error_code);
-          return;
-        }
-        php_assert (new_result > result);
-        result_len -= (int)(new_result - result);
-        php_assert (result_len >= 0);
-        result = new_result;
-        mc_res.set_value(string(key, key_len), mc_get_value(value, value_len, flags));
-        break;
-      }
-      case 'E':
-        if (result_len == 5 && !strncmp(result, "END\r\n", 5)) {
-          return;
-        }
-        /* fallthrough */
-      default:
-        php_warning("Wrong memcache response \"%s\" in Memcache::get with multikey %s", full_result, mc_last_key);
-    }
-  }
-}
-
-void mc_get_callback(const char *result, int result_len) {
-  if (!strcmp(result, "ERROR\r\n")) {
-    return;
-  }
-  const char *full_result = result;
-
-  switch (*result) {
     case 'V': {
       int key_len, value_len;
       const char *key, *value;
       int flags;
       int error_code;
 
-      const char *new_result = mc_parse_value(result, result_len, &key, &key_len, &value, &value_len, &flags, &error_code);
+      const char* new_result = mc_parse_value(result, result_len, &key, &key_len, &value, &value_len, &flags, &error_code);
       if (!new_result) {
-        php_warning("Wrong memcache response \"%s\" in Memcache::get with key %s and error code %d", result, mc_last_key, error_code);
+        php_warning("Wrong memcache response \"%s\" in Memcache::get with multikey %s and error code %d", result, mc_last_key, error_code);
         return;
       }
-      if (mc_last_key_len != key_len || memcmp(mc_last_key, key, (size_t)key_len)) {
-        php_warning("Wrong memcache response \"%s\" in Memcache::get with key %s", result, mc_last_key);
-        return;
-      }
-      php_assert (new_result > result);
+      php_assert(new_result > result);
       result_len -= (int)(new_result - result);
-      php_assert (result_len >= 0);
+      php_assert(result_len >= 0);
       result = new_result;
-      mc_res = mc_get_value(value, value_len, flags);
+      mc_res.set_value(string(key, key_len), mc_get_value(value, value_len, flags));
+      break;
     }
-      /* fallthrough */
     case 'E':
       if (result_len == 5 && !strncmp(result, "END\r\n", 5)) {
         return;
       }
       /* fallthrough */
     default:
-      php_warning("Wrong memcache response \"%s\" in Memcache::get with key %s", full_result, mc_last_key);
+      php_warning("Wrong memcache response \"%s\" in Memcache::get with multikey %s", full_result, mc_last_key);
+    }
   }
 }
 
-void mc_delete_callback(const char *result, int result_len __attribute__((unused))) {
+void mc_get_callback(const char* result, int result_len) {
+  if (!strcmp(result, "ERROR\r\n")) {
+    return;
+  }
+  const char* full_result = result;
+
+  switch (*result) {
+  case 'V': {
+    int key_len, value_len;
+    const char *key, *value;
+    int flags;
+    int error_code;
+
+    const char* new_result = mc_parse_value(result, result_len, &key, &key_len, &value, &value_len, &flags, &error_code);
+    if (!new_result) {
+      php_warning("Wrong memcache response \"%s\" in Memcache::get with key %s and error code %d", result, mc_last_key, error_code);
+      return;
+    }
+    if (mc_last_key_len != key_len || memcmp(mc_last_key, key, (size_t)key_len)) {
+      php_warning("Wrong memcache response \"%s\" in Memcache::get with key %s", result, mc_last_key);
+      return;
+    }
+    php_assert(new_result > result);
+    result_len -= (int)(new_result - result);
+    php_assert(result_len >= 0);
+    result = new_result;
+    mc_res = mc_get_value(value, value_len, flags);
+  }
+    /* fallthrough */
+  case 'E':
+    if (result_len == 5 && !strncmp(result, "END\r\n", 5)) {
+      return;
+    }
+    /* fallthrough */
+  default:
+    php_warning("Wrong memcache response \"%s\" in Memcache::get with key %s", full_result, mc_last_key);
+  }
+}
+
+void mc_delete_callback(const char* result, int result_len __attribute__((unused))) {
   if (!strcmp(result, "ERROR\r\n")) {
     return;
   }
@@ -283,7 +280,7 @@ void mc_delete_callback(const char *result, int result_len __attribute__((unused
   }
 }
 
-void mc_increment_callback(const char *result, int result_len) {
+void mc_increment_callback(const char* result, int result_len) {
   if (!strcmp(result, "ERROR\r\n")) {
     return;
   }
@@ -299,50 +296,45 @@ void mc_increment_callback(const char *result, int result_len) {
   }
 }
 
-void mc_version_callback(const char *result, int result_len) {
+void mc_version_callback(const char* result, int result_len) {
   if (!strcmp(result, "ERROR\r\n")) {
     return;
   }
 
   switch (*result) {
-    case 'V': {
-      if (!strncmp(result, "VERSION ", 8)) {
-        if (result_len >= 10 && result[result_len - 2] == '\r' && result[result_len - 1] == '\n') {
-          mc_res.assign(result + 8, result_len - 10);
-          break;
-        }
+  case 'V': {
+    if (!strncmp(result, "VERSION ", 8)) {
+      if (result_len >= 10 && result[result_len - 2] == '\r' && result[result_len - 1] == '\n') {
+        mc_res.assign(result + 8, result_len - 10);
+        break;
       }
     }
-      /* fallthrough */
-    default:
-      php_warning("Wrong memcache response \"%s\" in Memcache::getVersion", result);
+  }
+    /* fallthrough */
+  default:
+    php_warning("Wrong memcache response \"%s\" in Memcache::getVersion", result);
   }
 }
 
+C$McMemcache::host::host()
+    : host_num(-1),
+      host_port(-1),
+      host_weight(0),
+      timeout_ms(200) {}
 
-C$McMemcache::host::host() :
-  host_num(-1),
-  host_port(-1),
-  host_weight(0),
-  timeout_ms(200) {
-}
+C$McMemcache::host::host(int32_t host_num, int32_t host_port, int32_t host_weight, int32_t timeout_ms)
+    : host_num(host_num),
+      host_port(host_port),
+      host_weight(host_weight),
+      timeout_ms(timeout_ms) {}
 
-C$McMemcache::host::host(int32_t host_num, int32_t host_port, int32_t host_weight, int32_t timeout_ms) :
-  host_num(host_num),
-  host_port(host_port),
-  host_weight(host_weight),
-  timeout_ms(timeout_ms) {
-}
-
-
-C$McMemcache::host get_host(const array<C$McMemcache::host> &hosts) {
-  php_assert (hosts.count() > 0);
+C$McMemcache::host get_host(const array<C$McMemcache::host>& hosts) {
+  php_assert(hosts.count() > 0);
 
   return hosts.get_value(f$array_rand(hosts));
 }
 
-
-static bool run_set(const class_instance<C$McMemcache> &mc, const string &key, const mixed &value, int64_t flags, int64_t expire) {
+static bool run_set(const class_instance<C$McMemcache>& mc, const string& key, const mixed& value, int64_t flags, int64_t expire) {
   if (mc->hosts.count() <= 0) {
     php_warning("There is no available server to run Memcache::%s with key \"%s\"", mc_method, key.c_str());
     return false;
@@ -377,13 +369,7 @@ static bool run_set(const class_instance<C$McMemcache> &mc, const string &key, c
     return false;
   }
 
-  drivers_SB.clean() << mc_method
-                     << ' ' << real_key
-                     << ' ' << flags
-                     << ' ' << expire
-                     << ' ' << (int)string_value.size()
-                     << "\r\n" << string_value
-                     << "\r\n";
+  drivers_SB.clean() << mc_method << ' ' << real_key << ' ' << flags << ' ' << expire << ' ' << (int)string_value.size() << "\r\n" << string_value << "\r\n";
 
   mc_bool_res = false;
   auto cur_host = get_host(mc->hosts);
@@ -398,7 +384,7 @@ static bool run_set(const class_instance<C$McMemcache> &mc, const string &key, c
   }
 }
 
-mixed run_increment(const class_instance<C$McMemcache> &mc, const string &key, const mixed &count) {
+mixed run_increment(const class_instance<C$McMemcache>& mc, const string& key, const mixed& count) {
   if (mc->hosts.count() <= 0) {
     php_warning("There is no available server to run Memcache::%s with key \"%s\"", mc_method, key.c_str());
     return false;
@@ -439,9 +425,9 @@ mixed run_increment(const class_instance<C$McMemcache> &mc, const string &key, c
   }
 }
 
-bool f$McMemcache$$addServer(const class_instance<C$McMemcache> & mc, const string &host_name, int64_t port,
-                             bool persistent __attribute__((unused)), int64_t weight, double timeout, int64_t retry_interval __attribute__((unused)),
-                             bool status __attribute__((unused)), const mixed &failure_callback __attribute__((unused)), int64_t timeoutms) {
+bool f$McMemcache$$addServer(const class_instance<C$McMemcache>& mc, const string& host_name, int64_t port, bool persistent __attribute__((unused)),
+                             int64_t weight, double timeout, int64_t retry_interval __attribute__((unused)), bool status __attribute__((unused)),
+                             const mixed& failure_callback __attribute__((unused)), int64_t timeoutms) {
   int32_t result_timeout = static_cast<int32_t>(static_cast<int64_t>(timeout * 1000) + timeoutms);
 
   if (result_timeout <= 0) {
@@ -458,22 +444,22 @@ bool f$McMemcache$$addServer(const class_instance<C$McMemcache> & mc, const stri
   return host_num >= 0;
 }
 
-bool f$McMemcache$$add(const class_instance<C$McMemcache> &v$this, const string &key, const mixed &value, int64_t flags, int64_t expire) {
+bool f$McMemcache$$add(const class_instance<C$McMemcache>& v$this, const string& key, const mixed& value, int64_t flags, int64_t expire) {
   mc_method = "add";
   return run_set(v$this, key, value, flags, expire);
 }
 
-bool f$McMemcache$$set(const class_instance<C$McMemcache> &v$this, const string &key, const mixed &value, int64_t flags, int64_t expire) {
+bool f$McMemcache$$set(const class_instance<C$McMemcache>& v$this, const string& key, const mixed& value, int64_t flags, int64_t expire) {
   mc_method = "set";
   return run_set(v$this, key, value, flags, expire);
 }
 
-bool f$McMemcache$$replace(const class_instance<C$McMemcache> &v$this, const string &key, const mixed &value, int64_t flags, int64_t expire) {
+bool f$McMemcache$$replace(const class_instance<C$McMemcache>& v$this, const string& key, const mixed& value, int64_t flags, int64_t expire) {
   mc_method = "replace";
   return run_set(v$this, key, value, flags, expire);
 }
 
-mixed f$McMemcache$$get(const class_instance<C$McMemcache> &v$this, const mixed &key_var) {
+mixed f$McMemcache$$get(const class_instance<C$McMemcache>& v$this, const mixed& key_var) {
   mc_method = "get";
   if (f$is_array(key_var)) {
     if (v$this->hosts.count() <= 0) {
@@ -495,11 +481,11 @@ mixed f$McMemcache$$get(const class_instance<C$McMemcache> &v$this, const mixed 
     mc_res = array<mixed>(array_size(key_var.count(), false));
     auto cur_host = get_host(v$this->hosts);
     if (is_immediate_query) {
-      mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr); //TODO wrong if we have no mc_proxy
+      mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, nullptr); // TODO wrong if we have no mc_proxy
     } else {
       mc_last_key = drivers_SB.c_str();
       mc_last_key_len = (int)drivers_SB.size();
-      mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_multiget_callback); //TODO wrong if we have no mc_proxy
+      mc_run_query(cur_host.host_num, drivers_SB.c_str(), drivers_SB.size(), cur_host.timeout_ms, 0, mc_multiget_callback); // TODO wrong if we have no mc_proxy
     }
   } else {
     if (v$this->hosts.count() <= 0) {
@@ -526,7 +512,7 @@ mixed f$McMemcache$$get(const class_instance<C$McMemcache> &v$this, const mixed 
   return mc_res;
 }
 
-bool f$McMemcache$$delete(const class_instance<C$McMemcache> &v$this,const string &key) {
+bool f$McMemcache$$delete(const class_instance<C$McMemcache>& v$this, const string& key) {
   mc_method = "delete";
   if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run Memcache::delete with key \"%s\"", key.c_str());
@@ -550,18 +536,18 @@ bool f$McMemcache$$delete(const class_instance<C$McMemcache> &v$this,const strin
   }
 }
 
-mixed f$McMemcache$$decrement(const class_instance<C$McMemcache> &mc, const string &key, const mixed &count) {
+mixed f$McMemcache$$decrement(const class_instance<C$McMemcache>& mc, const string& key, const mixed& count) {
   mc_method = "decr";
   return run_increment(mc, key, count);
 }
 
-mixed f$McMemcache$$increment(const class_instance<C$McMemcache> &mc,const string &key, const mixed &count) {
+mixed f$McMemcache$$increment(const class_instance<C$McMemcache>& mc, const string& key, const mixed& count) {
   mc_method = "incr";
   return run_increment(mc, key, count);
 }
 
 mixed f$McMemcache$$getVersion(const class_instance<C$McMemcache>& v$this) {
-  static const char *version_str = "version\r\n";
+  static const char* version_str = "version\r\n";
   if (v$this->hosts.count() <= 0) {
     php_warning("There is no available server to run Memcache::getVersion");
     return false;
@@ -574,12 +560,12 @@ mixed f$McMemcache$$getVersion(const class_instance<C$McMemcache>& v$this) {
   return mc_res;
 }
 
-bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache> &, const string &, int64_t, const mixed &, double, double, double) {
+bool f$McMemcache$$rpc_connect(const class_instance<C$McMemcache>&, const string&, int64_t, const mixed&, double, double, double) {
   php_warning("rpc_connect used on non-rpc Memcache object");
   return false;
 }
 
-class_instance<C$McMemcache> f$McMemcache$$__construct(const class_instance<C$McMemcache> &v$this) {
+class_instance<C$McMemcache> f$McMemcache$$__construct(const class_instance<C$McMemcache>& v$this) {
   return v$this;
 }
 

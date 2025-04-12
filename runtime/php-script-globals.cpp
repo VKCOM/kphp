@@ -13,13 +13,13 @@ PhpScriptMutableGlobals::~PhpScriptMutableGlobals() {
     delete g_linear_mem;
     g_linear_mem = nullptr;
   }
-  for (const auto &[k, _] : libs_linear_mem) {
+  for (const auto& [k, _] : libs_linear_mem) {
     delete libs_linear_mem[k];
   }
   libs_linear_mem.clear();
 }
 
-PhpScriptMutableGlobals &PhpScriptMutableGlobals::current() {
+PhpScriptMutableGlobals& PhpScriptMutableGlobals::current() {
   return php_script_mutable_globals_singleton;
 }
 
@@ -29,14 +29,14 @@ void PhpScriptMutableGlobals::once_alloc_linear_mem(unsigned int n_bytes) {
   memset(g_linear_mem, 0, n_bytes);
 }
 
-void PhpScriptMutableGlobals::once_alloc_linear_mem(const char *lib_name, unsigned int n_bytes) {
+void PhpScriptMutableGlobals::once_alloc_linear_mem(const char* lib_name, unsigned int n_bytes) {
   int64_t key_lib_name = string_hash(lib_name, strlen(lib_name));
   php_assert(libs_linear_mem.find(key_lib_name) == libs_linear_mem.end());
   libs_linear_mem[key_lib_name] = new char[n_bytes];
   memset(libs_linear_mem[key_lib_name], 0, n_bytes);
 }
 
-char *PhpScriptMutableGlobals::mem_for_lib(const char *lib_name) const {
+char* PhpScriptMutableGlobals::mem_for_lib(const char* lib_name) const {
   int64_t key_lib_name = string_hash(lib_name, strlen(lib_name));
   auto found = libs_linear_mem.find(key_lib_name);
   php_assert(found != libs_linear_mem.end());

@@ -37,7 +37,7 @@
 #define FUTEX_TRYLOCK_PI 8
 #define FUTEX_WAITERS 0x80000000
 
-extern char **environ;
+extern char** environ;
 
 struct ucred {
   pid_t pid;
@@ -45,16 +45,16 @@ struct ucred {
   gid_t gid;
 };
 
-inline const char *strchrnul(const char *s, char c) noexcept {
-  while(*s && *s != c) {
+inline const char* strchrnul(const char* s, char c) noexcept {
+  while (*s && *s != c) {
     ++s;
   }
   return s;
 }
 
-inline const void *memrchr(const void *s, int c, size_t n) noexcept {
+inline const void* memrchr(const void* s, int c, size_t n) noexcept {
   if (n != 0) {
-    const unsigned char *cp = static_cast<const unsigned char *>(s) + n;
+    const unsigned char* cp = static_cast<const unsigned char*>(s) + n;
     do {
       if (*(--cp) == static_cast<unsigned char>(c)) {
         return cp;
@@ -64,7 +64,7 @@ inline const void *memrchr(const void *s, int c, size_t n) noexcept {
   return nullptr;
 }
 
-inline char *__xpg_basename(char *path) noexcept {
+inline char* __xpg_basename(char* path) noexcept {
   return basename(path);
 }
 
@@ -83,7 +83,7 @@ inline int pipe2(int pipefd[2], int flags) noexcept {
   return res;
 }
 
-inline ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t) noexcept {
+inline ssize_t sendfile(int out_fd, int in_fd, off_t* offset, size_t) noexcept {
   assert(!offset && "offset is not supported");
   off_t len = 0;
   ssize_t s = sendfile(in_fd, out_fd, 0, &len, nullptr, 0);
@@ -95,7 +95,7 @@ inline ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t) noexcept {
 
 #define SOCK_CLOEXEC FD_CLOEXEC
 
-inline int accept4(int sockfd, struct sockaddr *addr, socklen_t *addrlen, int flags) noexcept {
+inline int accept4(int sockfd, struct sockaddr* addr, socklen_t* addrlen, int flags) noexcept {
   assert((!flags || flags == SOCK_CLOEXEC) && "only SOCK_CLOEXEC is supported");
 
   int fd = accept(sockfd, addr, addrlen);
@@ -115,11 +115,11 @@ inline int prctl(int, unsigned long) noexcept {
 
 #define PTHREAD_MUTEX_ROBUST_NP 2
 
-inline int pthread_mutexattr_setrobust(const pthread_mutexattr_t *, int) noexcept {
+inline int pthread_mutexattr_setrobust(const pthread_mutexattr_t*, int) noexcept {
   return 0;
 }
 
-inline int pthread_mutex_consistent(pthread_mutex_t *) noexcept {
+inline int pthread_mutex_consistent(pthread_mutex_t*) noexcept {
   return 0;
 }
 
@@ -131,9 +131,9 @@ struct mallinfo_port {
 
 inline mallinfo_port mallinfo() noexcept {
   return mallinfo_port{};
-};
+}
 
-inline size_t malloc_usable_size(void *ptr) noexcept {
+inline size_t malloc_usable_size(void* ptr) noexcept {
   return malloc_size(ptr);
 }
 

@@ -84,7 +84,7 @@ enum PollStatus {
 struct ImageInfo {
   // TODO: null terminated string is OK?
   // TODO: namespaces?
-  const char *image_name;
+  const char* image_name;
 
   uint64_t build_timestamp;
   uint64_t header_h_version;
@@ -102,14 +102,14 @@ struct ImageInfo {
 enum PollStatus k2_poll();
 
 // Symbols provided by .so.
-struct ImageState *k2_create_image();
+struct ImageState* k2_create_image();
 void k2_init_image();
-struct ComponentState *k2_create_component();
+struct ComponentState* k2_create_component();
 void k2_init_component();
-struct InstanceState *k2_create_instance();
+struct InstanceState* k2_create_instance();
 void k2_init_instance();
 
-const struct ImageInfo *k2_describe();
+const struct ImageInfo* k2_describe();
 
 struct ControlFlags {
   atomic_uint32_t please_yield;
@@ -125,21 +125,21 @@ struct ControlFlags {
  * differences. Preferable way to communication with k2-node.
  *
  */
-struct ControlFlags *k2_control_flags();
-struct ImageState *k2_image_state();
-struct ComponentState *k2_component_state();
-struct InstanceState *k2_instance_state();
+struct ControlFlags* k2_control_flags();
+struct ImageState* k2_image_state();
+struct ComponentState* k2_component_state();
+struct InstanceState* k2_instance_state();
 
 /**
  * If component track alignment and allocated memory size -
  * it is preferable to use the `*_checked` versions, which have additional checks enabled.
  * The rest of the functions are allowed to be used in any case.
  */
-void *k2_alloc(size_t size, size_t align);
-void *k2_realloc(void *ptr, size_t new_size);
-void *k2_realloc_checked(void *ptr, size_t old_size, size_t align, size_t new_size);
-void k2_free(void *ptr);
-void k2_free_checked(void *ptr, size_t size, size_t align);
+void* k2_alloc(size_t size, size_t align);
+void* k2_realloc(void* ptr, size_t new_size);
+void* k2_realloc_checked(void* ptr, size_t old_size, size_t align, size_t new_size);
+void k2_free(void* ptr);
+void k2_free_checked(void* ptr, size_t size, size_t align);
 
 /**
  * Immediately abort component execution.
@@ -161,7 +161,7 @@ uint32_t k2_getpid();
  * Possible 'errno':
  * 'EFAULT' => buf is not valid
  */
-int32_t k2_uname(struct utsname *buf);
+int32_t k2_uname(struct utsname* buf);
 
 /**
  * @return return `0` on success. libc-like `errno` otherwise
@@ -174,7 +174,7 @@ int32_t k2_uname(struct utsname *buf);
  * `ENOMEM` => our component has no enough memory for stream
  * `EACCES` => permission denied
  */
-int32_t k2_open(uint64_t *stream_d, size_t name_len, const char *name);
+int32_t k2_open(uint64_t* stream_d, size_t name_len, const char* name);
 
 /**
  * If the write or read status is `Blocked` - then the platform ensures that
@@ -188,7 +188,7 @@ int32_t k2_open(uint64_t *stream_d, size_t name_len, const char *name);
  * `EBADF` => d is not valid(never was valid or used after free)
  * `EBADR` => d is valid descriptor, but not a stream (probably, timer)
  */
-void k2_stream_status(uint64_t stream_d, struct StreamStatus *status);
+void k2_stream_status(uint64_t stream_d, struct StreamStatus* status);
 
 /**
  * Guaranteed to return `0` if  the stream is `Closed`, `Blocked` or `stream_d` is invalid.
@@ -201,7 +201,7 @@ void k2_stream_status(uint64_t stream_d, struct StreamStatus *status);
  *
  * @return number of written bytes.
  */
-size_t k2_write(uint64_t stream_d, size_t data_len, const void *data);
+size_t k2_write(uint64_t stream_d, size_t data_len, const void* data);
 
 /**
  * Guaranteed to return `0` if  the stream is `Closed`, `Blocked` or `stream_d` is invalid.
@@ -214,7 +214,7 @@ size_t k2_write(uint64_t stream_d, size_t data_len, const void *data);
  *
  * @return number of read bytes.
  */
-size_t k2_read(uint64_t stream_d, size_t buf_len, void *buf);
+size_t k2_read(uint64_t stream_d, size_t buf_len, void* buf);
 
 /**
  * Sets `StreamStatus.please_whutdown_write=true` for the component on the
@@ -236,7 +236,7 @@ void k2_please_shutdown(uint64_t stream_d);
 void k2_shutdown_write(uint64_t stream_d);
 
 // Coordinated with timers. Monotonical, for timeouts, measurements, etc..
-void k2_instant(struct TimePoint *time_point);
+void k2_instant(struct TimePoint* time_point);
 
 /**
  * One-shot timer.
@@ -250,7 +250,7 @@ void k2_instant(struct TimePoint *time_point);
  * Looks like `ENOMEM` is only reasonable error.
  * I think component should prefer abortion in this case.
  */
-int32_t k2_new_timer(uint64_t *descriptor, uint64_t duration_ns);
+int32_t k2_new_timer(uint64_t* descriptor, uint64_t duration_ns);
 
 /**
  * @return `0` on success. libc-like `errno` on error.
@@ -261,7 +261,7 @@ int32_t k2_new_timer(uint64_t *descriptor, uint64_t duration_ns);
  * `EBADF` => `d` is not valid(never was valid or used after free)
  * `EBADR` => `d` is valid descriptor, but not a timer (probably stream)
  */
-int32_t k2_timer_deadline(uint64_t d, struct TimePoint *deadline);
+int32_t k2_timer_deadline(uint64_t d, struct TimePoint* deadline);
 
 /**
  * "Free" associated descriptor.
@@ -300,7 +300,7 @@ void k2_free_descriptor(uint64_t descriptor);
  * @return: `1` if update is successfully taken. `descriptor` will be assigned to updated descriptor.
  * @return: `1` if there is no updates to take. `descriptor` will be assigned to `0`.
  */
-uint8_t k2_take_update(uint64_t *update_d);
+uint8_t k2_take_update(uint64_t* update_d);
 
 /**
  * Only utf-8 string supported.
@@ -313,40 +313,40 @@ uint8_t k2_take_update(uint64_t *update_d);
  * Any other value will cause the log to be skipped
  * if `level` > `log_level_enabled()` log will be skipped
  */
-void k2_log(size_t level, size_t len, const char *str);
+void k2_log(size_t level, size_t len, const char* str);
 
 // Use for optimization, see `k2_log`
 size_t k2_log_level_enabled();
 
 // Note: prefer to use only as seed generator for pseudo-random
-void k2_os_rnd(size_t len, void *bytes);
+void k2_os_rnd(size_t len, void* bytes);
 
 // Time since epoch, non-monotonical
-void k2_system_time(struct SystemTime *system_time);
+void k2_system_time(struct SystemTime* system_time);
 
 /**
  * libc-like socket api.
  * @return: `0` on success, `errno != 0` otherwise
  */
-int32_t k2_socket(uint64_t *socket_d, int32_t domain, int32_t type, int32_t protocol);
+int32_t k2_socket(uint64_t* socket_d, int32_t domain, int32_t type, int32_t protocol);
 
 /**
  * libc-like socket api.
  * @return: `0` on success, `errno != 0` otherwise
  */
-int32_t k2_connect(uint64_t socket_d, const struct sockaddr_storage *addr, size_t addrlen);
+int32_t k2_connect(uint64_t socket_d, const struct sockaddr_storage* addr, size_t addrlen);
 
 /**
  * Perform sequentially `k2_lookup_host` -> `k2_socket` -> `k2_connect`
  * @return: `0` on success, `errno != 0` otherwise
  */
-int32_t k2_udp_connect(uint64_t *socket_d, const char *hostport, size_t hostport_len);
+int32_t k2_udp_connect(uint64_t* socket_d, const char* hostport, size_t hostport_len);
 
 /**
  * Perform sequentially `k2_lookup_host` -> `k2_socket` -> `k2_connect`
  * @return: `0` on success, `errno != 0` otherwise
  */
-int32_t k2_tcp_connect(uint64_t *socket_d, const char *hostport, size_t hostport_len);
+int32_t k2_tcp_connect(uint64_t* socket_d, const char* hostport, size_t hostport_len);
 
 struct SockAddr {
   uint16_t is_v6;
@@ -378,7 +378,7 @@ struct SockAddr {
  * `result_buf_len` is set to the number of resolved addresses. `0 <= result_buf_len <= min(result_buf_len, 128)`.
  * the first `result_buf_len` items of `result_buf` will be filled with resolved addresses
  */
-int32_t k2_lookup_host(const char *hostport, size_t hostport_len, struct SockAddr *result_buf, size_t *result_buf_len);
+int32_t k2_lookup_host(const char* hostport, size_t hostport_len, struct SockAddr* result_buf, size_t* result_buf_len);
 
 /**
  * Only available during `k2_create_component` call. Returns `0` in other context.
@@ -405,7 +405,7 @@ uint32_t k2_args_value_len(uint32_t arg_num);
  * @param `key` buffer where key will be written, buffer len must staisfy `len >= k2_args_key_len(arg_num)`
  * @param `value` buffer where value will be written, buffer len must staisfy `len >= k2_args_value_len(arg_num)`
  */
-void k2_args_fetch(uint32_t arg_num, char *key, char *value);
+void k2_args_fetch(uint32_t arg_num, char* key, char* value);
 
 /**
  * Even if env is available at any point, try to cache and parse it as soon as possible (during k2_create_component or even k2_create_image).
@@ -432,7 +432,7 @@ uint32_t k2_env_value_len(uint32_t env_num);
  * @param `key` buffer where key will be written, buffer len must staisfy `len >= k2_env_key_len(env_num)`
  * @param `value` buffer where value will be written, buffer len must staisfy `len >= k2_env_value_len(env_num)`
  */
-void k2_env_fetch(uint32_t env_num, char *key, char *value);
+void k2_env_fetch(uint32_t env_num, char* key, char* value);
 
 // ---- libc analogues, designed to work instance-local ----
 
@@ -441,7 +441,7 @@ void k2_env_fetch(uint32_t env_num, char *key, char *value);
  * Does not return previous locale.
  * @return: `0` on success, `errno != 0` otherwise
  */
-int32_t k2_uselocale(int32_t category, const char *locale);
+int32_t k2_uselocale(int32_t category, const char* locale);
 
 /**
  * Works instance-local.
@@ -454,19 +454,19 @@ int32_t k2_uselocale(int32_t category, const char *locale);
  * @return: current locale name.
  * if `category` is invalid, as empty string returned.
  */
-char *k2_current_locale_name(int32_t category);
+char* k2_current_locale_name(int32_t category);
 
 /**
  * @return: `0` on success, `errno != 0` otherwise
  */
-int32_t k2_iconv_open(void **iconv_cd, const char *tocode, const char *fromcode);
+int32_t k2_iconv_open(void** iconv_cd, const char* tocode, const char* fromcode);
 
-void k2_iconv_close(void *iconv_cd);
+void k2_iconv_close(void* iconv_cd);
 
 /**
  * @return: `0` on success, `errno != 0` otherwise
  */
-int32_t k2_iconv(size_t *result, void *iconv_cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);
+int32_t k2_iconv(size_t* result, void* iconv_cd, char** inbuf, size_t* inbytesleft, char** outbuf, size_t* outbytesleft);
 
 /**
  * Writes `data` into stderr. On success, it's guaranteed that
@@ -474,7 +474,7 @@ int32_t k2_iconv(size_t *result, void *iconv_cd, char **inbuf, size_t *inbytesle
  *
  * @return `data_len` on success, `0` otherwise
  */
-size_t k2_stderr_write(size_t data_len, const void *data);
+size_t k2_stderr_write(size_t data_len, const void* data);
 
 #ifdef __cplusplus
 }

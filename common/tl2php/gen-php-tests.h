@@ -11,7 +11,7 @@ namespace tl {
 
 struct PhpClasses;
 
-void gen_php_tests(const std::string &dir, const PhpClasses &classes);
+void gen_php_tests(const std::string& dir, const PhpClasses& classes);
 
 } // namespace tl
 } // namespace vk

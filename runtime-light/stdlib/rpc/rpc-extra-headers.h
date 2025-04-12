@@ -35,4 +35,4 @@ struct RpcDestFlagsHeaders {
  * 3) return \<RpcDestActorFlagsHeaders instance, current extra header's size\> pair.
  * Otherwise, return \<std::nullopt, current extra header's size\>.
  * */
-std::pair<std::optional<RpcDestActorFlagsHeaders>, uint32_t> regularize_extra_headers(const char *rpc_payload, bool ignore_result) noexcept;
+std::pair<std::optional<RpcDestActorFlagsHeaders>, uint32_t> regularize_extra_headers(const char* rpc_payload, bool ignore_result) noexcept;

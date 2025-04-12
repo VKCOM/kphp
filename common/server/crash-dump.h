@@ -5,6 +5,6 @@
 #ifndef COMMON_SERVER_CRASH_DUMP_H
 #define COMMON_SERVER_CRASH_DUMP_H
 
-void crash_dump_write(void *ucontext);
+void crash_dump_write(void* ucontext);
 
 #endif // COMMON_SERVER_CRASH_DUMP_H

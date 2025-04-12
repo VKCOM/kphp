@@ -37,14 +37,14 @@ static inline void parse_kernel_version() {
 #if defined(__APPLE__)
   is_macos = true;
 #endif
-  struct utsname *uname_val = cached_uname();
+  struct utsname* uname_val = cached_uname();
   if (!uname_val || sscanf(uname_val->release, "%d.%d.%d", &kernel_x, &kernel_y, &kernel_z) != 3) {
     kernel_x = kernel_y = kernel_z = -1;
   }
 }
 
 STATS_PROVIDER(kernel, 1000) {
-  struct utsname *uname_val = cached_uname();
+  struct utsname* uname_val = cached_uname();
   if (uname_val != NULL) {
     stats->add_general_stat("kernel_version", "%s", uname_val->release);
   }

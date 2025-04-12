@@ -14,8 +14,8 @@
 #include "runtime/resumable.h"
 
 #include "server/job-workers/job-message.h"
-#include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/job-stats.h"
+#include "server/job-workers/job-worker-client.h"
 #include "server/job-workers/shared-memory-manager.h"
 #include "server/php-engine-vars.h"
 #include "server/server-stats.h"
@@ -28,7 +28,7 @@ public:
   using ReturnT = class_instance<C$KphpJobWorkerResponse>;
 
   explicit job_resumable(int job_id)
-    : job_id(job_id) {}
+      : job_id(job_id) {}
 
   bool is_internal_resumable() const noexcept final {
     return true;
@@ -36,9 +36,10 @@ public:
 
 protected:
   bool run() final {
-    const class_instance<C$KphpJobWorkerResponse> &res = vk::singleton<job_workers::ProcessingJobs>::get().withdraw(job_id);
+    const class_instance<C$KphpJobWorkerResponse>& res = vk::singleton<job_workers::ProcessingJobs>::get().withdraw(job_id);
     RETURN(res);
   }
+
 private:
   int job_id;
 };
@@ -46,17 +47,18 @@ private:
 namespace {
 
 template<typename JobMessageT, typename T>
-JobMessageT *make_job_request_message(const class_instance<T> &instance) {
-  auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
-  auto *memory_request = memory_manager.acquire_shared_message<JobMessageT>();
+JobMessageT* make_job_request_message(const class_instance<T>& instance) {
+  auto& memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
+  auto* memory_request = memory_manager.acquire_shared_message<JobMessageT>();
   if (memory_request == nullptr) {
     php_notice("Can't send job %s: not enough shared messages. "
-               "Most probably job workers are slowed and overloaded due to external factors: net/cpu lags, network queries slowdown etc.", instance.get_class());
+               "Most probably job workers are slowed and overloaded due to external factors: net/cpu lags, network queries slowdown etc.",
+               instance.get_class());
     return nullptr;
   }
 
-  memory_request->instance = copy_instance_into_other_memory(instance, memory_request->resource,
-                                                             ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
+  memory_request->instance =
+      copy_instance_into_other_memory(instance, memory_request->resource, ExtraRefCnt::for_job_worker_communication, job_workers::request_extra_shared_memory);
   if (memory_request->instance.is_null()) {
     memory_manager.release_shared_message(memory_request);
     php_warning("Can't send job %s: too big request", instance.get_class());
@@ -65,7 +67,7 @@ JobMessageT *make_job_request_message(const class_instance<T> &instance) {
   return memory_request;
 }
 
-void init_job_request_metadata(job_workers::JobSharedMessage *job_message, bool no_reply, double timeout) {
+void init_job_request_metadata(job_workers::JobSharedMessage* job_message, bool no_reply, double timeout) {
   const auto now = std::chrono::system_clock::now();
 
   job_message->no_reply = no_reply;
@@ -74,8 +76,9 @@ void init_job_request_metadata(job_workers::JobSharedMessage *job_message, bool 
   job_message->job_start_time = std::chrono::duration<double>{now.time_since_epoch()}.count();
 }
 
-int send_job_request_message(job_workers::JobSharedMessage *job_message, double timeout, job_workers::JobSharedMemoryPiece *common_job = nullptr, bool no_reply = false) {
-  auto &client = vk::singleton<job_workers::JobWorkerClient>::get();
+int send_job_request_message(job_workers::JobSharedMessage* job_message, double timeout, job_workers::JobSharedMemoryPiece* common_job = nullptr,
+                             bool no_reply = false) {
+  auto& client = vk::singleton<job_workers::JobWorkerClient>::get();
 
   // save it here, as it's incorrect to use job_message after send
   int job_id = job_message->job_id;
@@ -86,7 +89,7 @@ int send_job_request_message(job_workers::JobSharedMessage *job_message, double 
       job_message->bind_common_job(common_job);
     }
     bool success = client.send_job(job_message);
-    auto &memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
+    auto& memory_manager = vk::singleton<job_workers::SharedMemoryManager>::get();
     if (success) {
       memory_manager.detach_shared_message_from_this_proc(job_message);
     } else {
@@ -107,10 +110,10 @@ int send_job_request_message(job_workers::JobSharedMessage *job_message, double 
   int64_t job_resumable_id = register_forked_resumable(new job_resumable{job_id});
 
   update_precise_now();
-  kphp_event_timer *timer = allocate_event_timer(get_precise_now() + timeout, get_job_timeout_wakeup_id(), job_id);
+  kphp_event_timer* timer = allocate_event_timer(get_precise_now() + timeout, get_job_timeout_wakeup_id(), job_id);
 
   vk::singleton<job_workers::ProcessingJobs>::get().start_job_processing(job_id, job_workers::JobRequestInfo{job_resumable_id, timer});
-  
+
   return job_resumable_id;
 }
 
@@ -133,7 +136,7 @@ double normalize_job_timeout(double timeout) {
   return timeout;
 }
 
-Optional<int64_t> kphp_job_worker_start_impl(const class_instance<C$KphpJobWorkerRequest> &request, double timeout, bool no_reply) noexcept {
+Optional<int64_t> kphp_job_worker_start_impl(const class_instance<C$KphpJobWorkerRequest>& request, double timeout, bool no_reply) noexcept {
   if (!job_workers_api_allowed()) {
     return false;
   }
@@ -143,7 +146,7 @@ Optional<int64_t> kphp_job_worker_start_impl(const class_instance<C$KphpJobWorke
   }
   timeout = normalize_job_timeout(timeout);
 
-  auto *memory_request = make_job_request_message<job_workers::JobSharedMessage>(request);
+  auto* memory_request = make_job_request_message<job_workers::JobSharedMessage>(request);
   if (memory_request == nullptr) {
     return false;
   }
@@ -167,15 +170,15 @@ Optional<int64_t> kphp_job_worker_start_impl(const class_instance<C$KphpJobWorke
 
 } // namespace
 
-Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest> &request, double timeout) noexcept {
+Optional<int64_t> f$kphp_job_worker_start(const class_instance<C$KphpJobWorkerRequest>& request, double timeout) noexcept {
   return kphp_job_worker_start_impl(request, timeout, false);
 }
 
-bool f$kphp_job_worker_start_no_reply(const class_instance<C$KphpJobWorkerRequest> &request, double timeout) noexcept {
+bool f$kphp_job_worker_start_no_reply(const class_instance<C$KphpJobWorkerRequest>& request, double timeout) noexcept {
   return kphp_job_worker_start_impl(request, timeout, true).has_value();
 }
 
-array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instance<C$KphpJobWorkerRequest>> &requests, double timeout) noexcept {
+array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instance<C$KphpJobWorkerRequest>>& requests, double timeout) noexcept {
   if (!job_workers_api_allowed()) {
     return {};
   }
@@ -183,15 +186,15 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
 
   class_instance<C$KphpJobWorkerSharedMemoryPiece> common_shared_memory_piece;
   bool first = true;
-  for (const auto &it : requests) {
-    const auto &req = it.get_value();
-    
+  for (const auto& it : requests) {
+    const auto& req = it.get_value();
+
     if (req.is_null()) {
       php_warning("Can't send multiple jobs: requests[%s] is null", it.get_key().to_string().c_str());
       return {};
     }
-    
-    const auto &cur_shared_mem_piece = req.get()->get_shared_memory_piece();
+
+    const auto& cur_shared_mem_piece = req.get()->get_shared_memory_piece();
     if (first) {
       common_shared_memory_piece = cur_shared_mem_piece; // increment ref count here to prevent unexpected destroy on temporary resetting before copying below
       first = false;
@@ -206,7 +209,7 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
 
   array<Optional<int64_t>> res{requests.size()};
 
-  job_workers::JobSharedMemoryPiece *common_job_request = nullptr;
+  job_workers::JobSharedMemoryPiece* common_job_request = nullptr;
   if (!common_shared_memory_piece.is_null()) {
     common_job_request = make_job_request_message<job_workers::JobSharedMemoryPiece>(common_shared_memory_piece);
     /**
@@ -223,15 +226,15 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
     if (common_job_request == nullptr) {
       return {};
     }
-    const auto &job_mem_stats = common_job_request->resource.get_memory_stats();
+    const auto& job_mem_stats = common_job_request->resource.get_memory_stats();
     vk::singleton<ServerStats>::get().add_job_common_memory_stats(job_mem_stats.max_memory_used, job_mem_stats.max_real_memory_used);
   }
 
-  for (const auto &it : requests) {
-    const auto &req = it.get_value();
+  for (const auto& it : requests) {
+    const auto& req = it.get_value();
 
     req.get()->set_shared_memory_piece({});                                           // prepare for copying to shared memory
-    auto *job_request = make_job_request_message<job_workers::JobSharedMessage>(req); // copy to shared memory
+    auto* job_request = make_job_request_message<job_workers::JobSharedMessage>(req); // copy to shared memory
     req.get()->set_shared_memory_piece(common_shared_memory_piece);                   // roll it back to keep original instance unchanged
     if (job_request == nullptr) {
       res.set_value(it.get_key(), false);
@@ -239,8 +242,8 @@ array<Optional<int64_t>> f$kphp_job_worker_start_multi(const array<class_instanc
     }
 
     if (common_job_request) {
-      const auto &job_instance = job_request->instance.cast_to<C$KphpJobWorkerRequest>();
-      const auto &common_job_instance = common_job_request->instance.cast_to<C$KphpJobWorkerSharedMemoryPiece>();
+      const auto& job_instance = job_request->instance.cast_to<C$KphpJobWorkerRequest>();
+      const auto& common_job_instance = common_job_request->instance.cast_to<C$KphpJobWorkerSharedMemoryPiece>();
       php_assert(!job_instance.is_null());
       php_assert(!common_job_instance.is_null());
       job_instance.get()->set_shared_memory_piece(common_job_instance);

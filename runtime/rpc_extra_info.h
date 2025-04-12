@@ -26,7 +26,7 @@ struct C$KphpRpcRequestsExtraInfo final : public refcountable_php_classes<C$Kphp
 
   C$KphpRpcRequestsExtraInfo() = default;
 
-  const char *get_class() const noexcept {
+  const char* get_class() const noexcept {
     return R"(KphpRpcRequestsExtraInfo)";
   }
 

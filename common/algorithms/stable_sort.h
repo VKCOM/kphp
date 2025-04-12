@@ -13,39 +13,34 @@
 
 namespace vk {
 
-template<
-  typename Iter, // RandomAccessIterator
-  typename Proj, // value_type(Iter) -> T
-  typename Cmp   // StrictWeakOrdering(T, T)
-  = std::less<std::invoke_result_t<Proj, typename std::iterator_traits<Iter>::reference>>>
+template<typename Iter, // RandomAccessIterator
+         typename Proj, // value_type(Iter) -> T
+         typename Cmp   // StrictWeakOrdering(T, T)
+         = std::less<std::invoke_result_t<Proj, typename std::iterator_traits<Iter>::reference>>>
 void stable_sort(Iter f, Iter l, Proj projector, Cmp cmp = Cmp()) {
-  return std::stable_sort(f, l, [&](const auto &lhs, const auto &rhs) { return cmp(projector(lhs), projector(rhs)); });
+  return std::stable_sort(f, l, [&](const auto& lhs, const auto& rhs) { return cmp(projector(lhs), projector(rhs)); });
 }
 
-template<
-  typename Iter,                  // RandomAccessIterator
-  typename Field,
-  typename Cmp = std::less<Field> // StrictWeakOrdering(Field, Field)
->
+template<typename Iter, // RandomAccessIterator
+         typename Field,
+         typename Cmp = std::less<Field> // StrictWeakOrdering(Field, Field)
+         >
 void stable_sort(Iter f, Iter l, Field std::iterator_traits<Iter>::value_type::*field, Cmp cmp = Cmp()) {
   return vk::stable_sort(f, l, vk::make_field_getter(field), cmp);
 }
 
-template<
-  typename Rng,
-  typename Proj, // value_type(Rng) -> T
-  typename Cmp   // StrictWeakOrdering(T, T)
-  = std::less<std::invoke_result_t<Proj, vk::range_value_type<Rng>>>>
-void stable_sort(Rng &&rng, Proj projector, Cmp cmp = Cmp()) {
+template<typename Rng,
+         typename Proj, // value_type(Rng) -> T
+         typename Cmp   // StrictWeakOrdering(T, T)
+         = std::less<std::invoke_result_t<Proj, vk::range_value_type<Rng>>>>
+void stable_sort(Rng&& rng, Proj projector, Cmp cmp = Cmp()) {
   return vk::stable_sort(std::begin(rng), std::end(rng), projector, cmp);
 }
 
-template<
-  typename Rng,
-  typename Field,
-  typename Cmp = std::less<Field> // StrictWeakOrdering(Field, Field)
->
-void stable_sort(Rng &&rng, Field range_value_type<Rng>::*field, Cmp cmp = Cmp()) {
+template<typename Rng, typename Field,
+         typename Cmp = std::less<Field> // StrictWeakOrdering(Field, Field)
+         >
+void stable_sort(Rng&& rng, Field range_value_type<Rng>::*field, Cmp cmp = Cmp()) {
   return vk::stable_sort(std::begin(rng), std::end(rng), field, cmp);
 }
 

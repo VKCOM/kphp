@@ -17,11 +17,11 @@
 
 extern long timezone;
 
-static const char *default_timezone_id = "";
+static const char* default_timezone_id = "";
 
 // this function should only be called with supported timezone_id values;
 // it could be "Etc/GMT-3" or "Europe/Moscow"
-static void set_default_timezone_id(const char *timezone_id) {
+static void set_default_timezone_id(const char* timezone_id) {
   if (strcmp(default_timezone_id, timezone_id) == 0) {
     return;
   }
@@ -33,12 +33,12 @@ static void set_default_timezone_id(const char *timezone_id) {
   default_timezone_id = timezone_id;
 }
 
-static const char *suffix[] = {"st", "nd", "rd", "th"};
+static const char* suffix[] = {"st", "nd", "rd", "th"};
 
 static bool use_updated_gmmktime = false;
 
-static time_t deprecated_gmmktime(struct tm * tm) {
-  char *tz = getenv("TZ");
+static time_t deprecated_gmmktime(struct tm* tm) {
+  char* tz = getenv("TZ");
   setenv("TZ", "", 1);
   tzset();
 
@@ -69,7 +69,7 @@ static inline int32_t fix_year(int32_t year) {
   return year;
 }
 
-void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) {
+void iso_week_number(int y, int doy, int weekday, int& iw, int& iy) {
   int y_leap, prev_y_leap, jan1weekday;
 
   y_leap = timelib_is_leap_year(y);
@@ -115,9 +115,8 @@ void iso_week_number(int y, int doy, int weekday, int &iw, int &iy) {
   }
 }
 
-
-static string date(const string &format, const tm &t, int64_t timestamp, bool local) {
-  string_buffer &SB = kphp_runtime_context.static_SB_spare;
+static string date(const string& format, const tm& t, int64_t timestamp, bool local) {
+  string_buffer& SB = kphp_runtime_context.static_SB_spare;
 
   int year = t.tm_year + 1900;
   int month = t.tm_mon + 1;
@@ -134,223 +133,223 @@ static string date(const string &format, const tm &t, int64_t timestamp, bool lo
   SB.clean();
   for (int i = 0; i < (int)format.size(); i++) {
     switch (format[i]) {
-      case 'd':
-        SB << (char)(day / 10 + '0');
-        SB << (char)(day % 10 + '0');
+    case 'd':
+      SB << (char)(day / 10 + '0');
+      SB << (char)(day % 10 + '0');
+      break;
+    case 'D':
+      SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week];
+      break;
+    case 'j':
+      SB << day;
+      break;
+    case 'l':
+      SB << PHP_TIMELIB_DAY_FULL_NAMES[day_of_week];
+      break;
+    case 'N':
+      SB << (day_of_week == 0 ? '7' : (char)(day_of_week + '0'));
+      break;
+    case 'S': {
+      int c = INT_MAX;
+      switch (day) {
+      case 1:
+      case 21:
+      case 31:
+        c = 0;
         break;
-      case 'D':
-        SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week];
+      case 2:
+      case 22:
+        c = 1;
         break;
-      case 'j':
-        SB << day;
+      case 3:
+      case 23:
+        c = 2;
         break;
-      case 'l':
-        SB << PHP_TIMELIB_DAY_FULL_NAMES[day_of_week];
-        break;
-      case 'N':
-        SB << (day_of_week == 0 ? '7' : (char)(day_of_week + '0'));
-        break;
-      case 'S': {
-        int c = INT_MAX;
-        switch (day) {
-          case 1:
-          case 21:
-          case 31:
-            c = 0;
-            break;
-          case 2:
-          case 22:
-            c = 1;
-            break;
-          case 3:
-          case 23:
-            c = 2;
-            break;
-          default:
-            c = 3;
-        }
-        SB << suffix[c];
-        break;
-      }
-      case 'w':
-        SB << (char)(day_of_week + '0');
-        break;
-      case 'z':
-        SB << day_of_year;
-        break;
-      case 'W':
-        iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
-        SB << (char)('0' + iso_week / 10);
-        SB << (char)('0' + iso_week % 10);
-        break;
-      case 'F':
-        SB << PHP_TIMELIB_MON_FULL_NAMES[month - 1];
-        break;
-      case 'm':
-        SB << (char)(month / 10 + '0');
-        SB << (char)(month % 10 + '0');
-        break;
-      case 'M':
-        SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1];
-        break;
-      case 'n':
-        SB << month;
-        break;
-      case 't':
-        SB << php_timelib_days_in_month(month, year);
-        break;
-      case 'L':
-        SB << (int)timelib_is_leap_year(year);
-        break;
-      case 'o':
-        iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
-        SB << iso_year;
-        break;
-      case 'Y':
-        SB << year;
-        break;
-      case 'y':
-        SB << (char)(year / 10 % 10 + '0');
-        SB << (char)(year % 10 + '0');
-        break;
-      case 'a':
-        SB << (hour < 12 ? "am" : "pm");
-        break;
-      case 'A':
-        SB << (hour < 12 ? "AM" : "PM");
-        break;
-      case 'B':
-        internet_time = (timestamp + 3600) % 86400 * 1000 / 86400;
-        SB << (char)(internet_time / 100 + '0');
-        SB << (char)((internet_time / 10) % 10 + '0');
-        SB << (char)(internet_time % 10 + '0');
-        break;
-      case 'g':
-        SB << hour12;
-        break;
-      case 'G':
-        SB << hour;
-        break;
-      case 'h':
-        SB << (char)(hour12 / 10 + '0');
-        SB << (char)(hour12 % 10 + '0');
-        break;
-      case 'H':
-        SB << (char)(hour / 10 + '0');
-        SB << (char)(hour % 10 + '0');
-        break;
-      case 'i':
-        SB << (char)(minute / 10 + '0');
-        SB << (char)(minute % 10 + '0');
-        break;
-      case 's':
-        SB << (char)(second / 10 + '0');
-        SB << (char)(second % 10 + '0');
-        break;
-      case 'u':
-        SB << "000000";
-        break;
-      case 'e':
-        if (local) {
-          SB << PHP_TIMELIB_TZ_MOSCOW;
-        } else {
-          SB << "UTC";
-        }
-        break;
-      case 'I':
-        SB << (int)(t.tm_isdst > 0);
-        break;
-      case 'O':
-        if (local) {
-          SB << "+0300";
-        } else {
-          SB << "+0000";
-        }
-        break;
-      case 'P':
-        if (local) {
-          SB << "+03:00";
-        } else {
-          SB << "+00:00";
-        }
-        break;
-      case 'T':
-        if (local) {
-          SB << "MSK";
-        } else {
-          SB << "GMT";
-        }
-        break;
-      case 'Z':
-        if (local) {
-          SB << 3 * 3600;
-        } else {
-          SB << 0;
-        }
-        break;
-      case 'c':
-        SB << year;
-        SB << '-';
-        SB << (char)(month / 10 + '0');
-        SB << (char)(month % 10 + '0');
-        SB << '-';
-        SB << (char)(day / 10 + '0');
-        SB << (char)(day % 10 + '0');
-        SB << "T";
-        SB << (char)(hour / 10 + '0');
-        SB << (char)(hour % 10 + '0');
-        SB << ':';
-        SB << (char)(minute / 10 + '0');
-        SB << (char)(minute % 10 + '0');
-        SB << ':';
-        SB << (char)(second / 10 + '0');
-        SB << (char)(second % 10 + '0');
-        if (local) {
-          SB << "+03:00";
-        } else {
-          SB << "+00:00";
-        }
-        break;
-      case 'r':
-        SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week];
-        SB << ", ";
-        SB << (char)(day / 10 + '0');
-        SB << (char)(day % 10 + '0');
-        SB << ' ';
-        SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1];
-        SB << ' ';
-        SB << year;
-        SB << ' ';
-        SB << (char)(hour / 10 + '0');
-        SB << (char)(hour % 10 + '0');
-        SB << ':';
-        SB << (char)(minute / 10 + '0');
-        SB << (char)(minute % 10 + '0');
-        SB << ':';
-        SB << (char)(second / 10 + '0');
-        SB << (char)(second % 10 + '0');
-        if (local) {
-          SB << " +0300";
-        } else {
-          SB << " +0000";
-        }
-        break;
-      case 'U':
-        SB << timestamp;
-        break;
-      case '\\':
-        if (format[i + 1]) {
-          i++;
-        }
-        /* fallthrough */
       default:
-        SB << format[i];
+        c = 3;
+      }
+      SB << suffix[c];
+      break;
+    }
+    case 'w':
+      SB << (char)(day_of_week + '0');
+      break;
+    case 'z':
+      SB << day_of_year;
+      break;
+    case 'W':
+      iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
+      SB << (char)('0' + iso_week / 10);
+      SB << (char)('0' + iso_week % 10);
+      break;
+    case 'F':
+      SB << PHP_TIMELIB_MON_FULL_NAMES[month - 1];
+      break;
+    case 'm':
+      SB << (char)(month / 10 + '0');
+      SB << (char)(month % 10 + '0');
+      break;
+    case 'M':
+      SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1];
+      break;
+    case 'n':
+      SB << month;
+      break;
+    case 't':
+      SB << php_timelib_days_in_month(month, year);
+      break;
+    case 'L':
+      SB << (int)timelib_is_leap_year(year);
+      break;
+    case 'o':
+      iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
+      SB << iso_year;
+      break;
+    case 'Y':
+      SB << year;
+      break;
+    case 'y':
+      SB << (char)(year / 10 % 10 + '0');
+      SB << (char)(year % 10 + '0');
+      break;
+    case 'a':
+      SB << (hour < 12 ? "am" : "pm");
+      break;
+    case 'A':
+      SB << (hour < 12 ? "AM" : "PM");
+      break;
+    case 'B':
+      internet_time = (timestamp + 3600) % 86400 * 1000 / 86400;
+      SB << (char)(internet_time / 100 + '0');
+      SB << (char)((internet_time / 10) % 10 + '0');
+      SB << (char)(internet_time % 10 + '0');
+      break;
+    case 'g':
+      SB << hour12;
+      break;
+    case 'G':
+      SB << hour;
+      break;
+    case 'h':
+      SB << (char)(hour12 / 10 + '0');
+      SB << (char)(hour12 % 10 + '0');
+      break;
+    case 'H':
+      SB << (char)(hour / 10 + '0');
+      SB << (char)(hour % 10 + '0');
+      break;
+    case 'i':
+      SB << (char)(minute / 10 + '0');
+      SB << (char)(minute % 10 + '0');
+      break;
+    case 's':
+      SB << (char)(second / 10 + '0');
+      SB << (char)(second % 10 + '0');
+      break;
+    case 'u':
+      SB << "000000";
+      break;
+    case 'e':
+      if (local) {
+        SB << PHP_TIMELIB_TZ_MOSCOW;
+      } else {
+        SB << "UTC";
+      }
+      break;
+    case 'I':
+      SB << (int)(t.tm_isdst > 0);
+      break;
+    case 'O':
+      if (local) {
+        SB << "+0300";
+      } else {
+        SB << "+0000";
+      }
+      break;
+    case 'P':
+      if (local) {
+        SB << "+03:00";
+      } else {
+        SB << "+00:00";
+      }
+      break;
+    case 'T':
+      if (local) {
+        SB << "MSK";
+      } else {
+        SB << "GMT";
+      }
+      break;
+    case 'Z':
+      if (local) {
+        SB << 3 * 3600;
+      } else {
+        SB << 0;
+      }
+      break;
+    case 'c':
+      SB << year;
+      SB << '-';
+      SB << (char)(month / 10 + '0');
+      SB << (char)(month % 10 + '0');
+      SB << '-';
+      SB << (char)(day / 10 + '0');
+      SB << (char)(day % 10 + '0');
+      SB << "T";
+      SB << (char)(hour / 10 + '0');
+      SB << (char)(hour % 10 + '0');
+      SB << ':';
+      SB << (char)(minute / 10 + '0');
+      SB << (char)(minute % 10 + '0');
+      SB << ':';
+      SB << (char)(second / 10 + '0');
+      SB << (char)(second % 10 + '0');
+      if (local) {
+        SB << "+03:00";
+      } else {
+        SB << "+00:00";
+      }
+      break;
+    case 'r':
+      SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week];
+      SB << ", ";
+      SB << (char)(day / 10 + '0');
+      SB << (char)(day % 10 + '0');
+      SB << ' ';
+      SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1];
+      SB << ' ';
+      SB << year;
+      SB << ' ';
+      SB << (char)(hour / 10 + '0');
+      SB << (char)(hour % 10 + '0');
+      SB << ':';
+      SB << (char)(minute / 10 + '0');
+      SB << (char)(minute % 10 + '0');
+      SB << ':';
+      SB << (char)(second / 10 + '0');
+      SB << (char)(second % 10 + '0');
+      if (local) {
+        SB << " +0300";
+      } else {
+        SB << " +0000";
+      }
+      break;
+    case 'U':
+      SB << timestamp;
+      break;
+    case '\\':
+      if (format[i + 1]) {
+        i++;
+      }
+      /* fallthrough */
+    default:
+      SB << format[i];
     }
   }
   return SB.str();
 }
 
-string f$date(const string &format, int64_t timestamp) {
+string f$date(const string& format, int64_t timestamp) {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = time(nullptr);
   }
@@ -361,7 +360,7 @@ string f$date(const string &format, int64_t timestamp) {
   return date(format, t, timestamp, true);
 }
 
-bool f$date_default_timezone_set(const string &s) {
+bool f$date_default_timezone_set(const string& s) {
   if (strcmp(s.c_str(), PHP_TIMELIB_TZ_GMT3) == 0) {
     set_default_timezone_id(PHP_TIMELIB_TZ_GMT3);
     return true;
@@ -375,7 +374,7 @@ bool f$date_default_timezone_set(const string &s) {
     php_warning("Timezone %s is not supported, use %s instead", PHP_TIMELIB_TZ_GMT4, PHP_TIMELIB_TZ_GMT3);
     return false;
   }
-  php_critical_error ("unsupported default timezone \"%s\"", s.c_str());
+  php_critical_error("unsupported default timezone \"%s\"", s.c_str());
 }
 
 string f$date_default_timezone_get() {
@@ -388,7 +387,7 @@ array<mixed> f$getdate(int64_t timestamp) {
   }
   tm t;
   time_t timestamp_t = timestamp;
-  tm * tp = localtime_r(&timestamp_t, &t);
+  tm* tp = localtime_r(&timestamp_t, &t);
   if (tp == nullptr) {
     php_warning("Error \"%s\" in getdate with timestamp %" PRId64, strerror(errno), timestamp);
     memset(&t, 0, sizeof(tm));
@@ -415,7 +414,7 @@ void f$set_use_updated_gmmktime(bool enable) {
   use_updated_gmmktime = enable;
 }
 
-string f$gmdate(const string &format, int64_t timestamp) {
+string f$gmdate(const string& format, int64_t timestamp) {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = time(nullptr);
   }
@@ -500,16 +499,15 @@ void free_use_updated_gmmktime() {
   use_updated_gmmktime = false;
 }
 
-
 double microtime_monotonic() {
   struct timespec T;
-  php_assert (clock_gettime(CLOCK_MONOTONIC, &T) >= 0);
+  php_assert(clock_gettime(CLOCK_MONOTONIC, &T) >= 0);
   return static_cast<double>(T.tv_sec) + static_cast<double>(T.tv_nsec) * 1e-9;
 }
 
 static string microtime_string() {
   struct timespec T;
-  php_assert (clock_gettime(CLOCK_REALTIME, &T) >= 0);
+  php_assert(clock_gettime(CLOCK_REALTIME, &T) >= 0);
   const size_t buf_size = 45;
   char buf[buf_size];
   int len = snprintf(buf, buf_size, "0.%09d %d", (int)T.tv_nsec, (int)T.tv_sec);
@@ -518,7 +516,7 @@ static string microtime_string() {
 
 double microtime() {
   struct timespec T;
-  php_assert (clock_gettime(CLOCK_REALTIME, &T) >= 0);
+  php_assert(clock_gettime(CLOCK_REALTIME, &T) >= 0);
   return static_cast<double>(T.tv_sec) + static_cast<double>(T.tv_nsec) * 1e-9;
 }
 
@@ -530,8 +528,12 @@ mixed f$microtime(bool get_as_float) {
   }
 }
 
-double f$_microtime_float() { return microtime(); }
-string f$_microtime_string() { return microtime_string(); }
+double f$_microtime_float() {
+  return microtime();
+}
+string f$_microtime_string() {
+  return microtime_string();
+}
 
 int64_t f$mktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) {
   tm t;
@@ -567,7 +569,7 @@ int64_t f$mktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, in
   return mktime(&t);
 }
 
-string f$strftime(const string &format, int64_t timestamp) {
+string f$strftime(const string& format, int64_t timestamp) {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = time(nullptr);
   }
@@ -582,7 +584,7 @@ string f$strftime(const string &format, int64_t timestamp) {
   return string(StringLibContext::get().static_buf.data());
 }
 
-Optional<int64_t> f$strtotime(const string &time_str, int64_t timestamp) {
+Optional<int64_t> f$strtotime(const string& time_str, int64_t timestamp) {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = time(nullptr);
   }
@@ -590,11 +592,11 @@ Optional<int64_t> f$strtotime(const string &time_str, int64_t timestamp) {
   return ok ? Optional<int64_t>(ts) : Optional<int64_t>(false);
 }
 
-array<mixed> f$date_parse(const string &time_str) {
+array<mixed> f$date_parse(const string& time_str) {
   return php_timelib_date_parse(time_str);
 }
 
-array<mixed> f$date_parse_from_format(const string &format, const string &time_str) {
+array<mixed> f$date_parse_from_format(const string& format, const string& time_str) {
   return php_timelib_date_parse_from_format(format, time_str);
 }
 
@@ -608,10 +610,8 @@ int64_t hrtime_int() {
 
 array<int64_t> hrtime_array() {
   auto since_epoch = std::chrono::steady_clock::now().time_since_epoch();
-  return array<int64_t>::create(
-    std::chrono::duration_cast<std::chrono::seconds>(since_epoch).count(),
-    std::chrono::nanoseconds{since_epoch % std::chrono::seconds{1}}.count()
-  );
+  return array<int64_t>::create(std::chrono::duration_cast<std::chrono::seconds>(since_epoch).count(),
+                                std::chrono::nanoseconds{since_epoch % std::chrono::seconds{1}}.count());
 }
 
 mixed f$hrtime(bool as_number) {
@@ -621,11 +621,15 @@ mixed f$hrtime(bool as_number) {
   return hrtime_array();
 }
 
-array<int64_t> f$_hrtime_array() { return hrtime_array(); }
-int64_t f$_hrtime_int() { return hrtime_int(); }
+array<int64_t> f$_hrtime_array() {
+  return hrtime_array();
+}
+int64_t f$_hrtime_int() {
+  return hrtime_int();
+}
 
 void init_datetime_lib() {
-  dl::enter_critical_section();//OK
+  dl::enter_critical_section(); // OK
 
   set_default_timezone_id(PHP_TIMELIB_TZ_MOSCOW);
 

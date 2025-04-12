@@ -22,8 +22,8 @@ namespace shared_task_impl {
 
 struct shared_task_waiter final {
   std::coroutine_handle<> m_continuation;
-  shared_task_waiter *m_next{};
-  shared_task_waiter *m_prev{};
+  shared_task_waiter* m_next{};
+  shared_task_waiter* m_prev{};
 };
 
 template<typename promise_type>
@@ -39,9 +39,9 @@ struct promise_base {
       }
 
       auto await_suspend(std::coroutine_handle<promise_type> coro) const noexcept -> std::coroutine_handle<> {
-        promise_base &promise{coro.promise()};
+        promise_base& promise{coro.promise()};
         // mark promise as ready
-        auto *waiter{static_cast<shared_task_impl::shared_task_waiter *>(std::exchange(promise.m_waiters, std::addressof(promise)))};
+        auto* waiter{static_cast<shared_task_impl::shared_task_waiter*>(std::exchange(promise.m_waiters, std::addressof(promise)))};
         if (waiter == STARTED_NO_WAITERS_VAL) { // no waiters, so just finish this coroutine
           return std::noop_coroutine();
         }
@@ -49,7 +49,7 @@ struct promise_base {
         while (waiter->m_next != nullptr) {
           // read the m_next pointer before resuming the coroutine
           // since resuming the coroutine may destroy the shared_task_waiter value
-          auto *next{waiter->m_next};
+          auto* next{waiter->m_next};
           waiter->m_continuation.resume();
           waiter = next;
         }
@@ -80,8 +80,8 @@ struct promise_base {
   // waiter->coroutine will be resumed when the task completes.
   // false if the coroutine was already completed and the awaiting
   // coroutine can continue without suspending.
-  auto suspend_awaiter(shared_task_impl::shared_task_waiter &waiter) noexcept -> bool {
-    const void *const NOT_STARTED_VAL{std::addressof(this->m_waiters)};
+  auto suspend_awaiter(shared_task_impl::shared_task_waiter& waiter) noexcept -> bool {
+    const void* const NOT_STARTED_VAL{std::addressof(this->m_waiters)};
 
     // NOTE: If the coroutine is not yet started then the first waiter
     // will start the coroutine before enqueuing itself up to the list
@@ -96,7 +96,7 @@ struct promise_base {
     // start the coroutine if not yet started
     if (m_waiters == NOT_STARTED_VAL) {
       m_waiters = STARTED_NO_WAITERS_VAL;
-      std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this)).resume();
+      std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
     }
     // coroutine already completed, don't suspend
     if (done()) {
@@ -104,12 +104,12 @@ struct promise_base {
     }
 
     waiter.m_prev = nullptr;
-    waiter.m_next = static_cast<shared_task_impl::shared_task_waiter *>(m_waiters);
+    waiter.m_next = static_cast<shared_task_impl::shared_task_waiter*>(m_waiters);
     // at this point 'm_waiters' can only be 'STARTED_NO_WAITERS_VAL' or 'other'
     if (m_waiters != STARTED_NO_WAITERS_VAL) {
-      static_cast<shared_task_waiter *>(m_waiters)->m_prev = std::addressof(waiter);
+      static_cast<shared_task_waiter*>(m_waiters)->m_prev = std::addressof(waiter);
     }
-    m_waiters = static_cast<void *>(std::addressof(waiter));
+    m_waiters = static_cast<void*>(std::addressof(waiter));
     return true;
   }
 
@@ -120,13 +120,13 @@ struct promise_base {
     return m_refcnt-- != 1;
   }
 
-  auto cancel_awaiter(const shared_task_impl::shared_task_waiter &waiter) noexcept -> void {
-    const void *const NOT_STARTED_VAL{std::addressof(this->m_waiters)};
+  auto cancel_awaiter(const shared_task_impl::shared_task_waiter& waiter) noexcept -> void {
+    const void* const NOT_STARTED_VAL{std::addressof(this->m_waiters)};
     if (m_waiters == NOT_STARTED_VAL || m_waiters == STARTED_NO_WAITERS_VAL) [[unlikely]] {
       return;
     }
 
-    const auto *waiter_ptr{std::addressof(waiter)};
+    const auto* waiter_ptr{std::addressof(waiter)};
     if (m_waiters == waiter_ptr) { // waiter is the head of the list
       m_waiters = waiter_ptr->m_next;
     } else if (waiter_ptr->m_next == nullptr) { // waiter is the last in the list
@@ -138,18 +138,18 @@ struct promise_base {
   }
 
   template<typename... Args>
-  auto operator new(size_t n, [[maybe_unused]] Args &&...args) noexcept -> void * {
+  auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
     // todo:k2 think about args in new
     // todo:k2 make coroutine allocator
     return k2::alloc(n);
   }
 
-  auto operator delete(void *ptr, [[maybe_unused]] size_t n) noexcept -> void {
+  auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
     k2::free(ptr);
   }
 
 private:
-  static constexpr void *STARTED_NO_WAITERS_VAL = nullptr;
+  static constexpr void* STARTED_NO_WAITERS_VAL = nullptr;
 
   uint32_t m_refcnt{1};
   // Value is either
@@ -159,7 +159,7 @@ private:
   // - other            - pointer to head item in linked-list of waiters.
   //                      values are of type 'shared_task_impl_::shared_task_waiter_t'.
   //                      indicates that the coroutine has been started.
-  void *m_waiters{std::addressof(m_waiters)};
+  void* m_waiters{std::addressof(m_waiters)};
 };
 
 template<typename promise_type>
@@ -173,16 +173,16 @@ protected:
 
 public:
   explicit awaiter_base(std::coroutine_handle<promise_type> coro) noexcept
-    : m_coro(coro) {}
+      : m_coro(coro) {}
 
-  awaiter_base(awaiter_base &&other) noexcept
-    : m_state(std::exchange(other.m_state, state::end))
-    , m_coro(std::exchange(other.m_coro, {}))
-    , m_waiter(std::exchange(other.m_waiter, {})) {}
+  awaiter_base(awaiter_base&& other) noexcept
+      : m_state(std::exchange(other.m_state, state::end)),
+        m_coro(std::exchange(other.m_coro, {})),
+        m_waiter(std::exchange(other.m_waiter, {})) {}
 
-  awaiter_base(const awaiter_base &other) = delete;
-  awaiter_base &operator=(const awaiter_base &other) = delete;
-  awaiter_base &operator=(awaiter_base &&other) = delete;
+  awaiter_base(const awaiter_base& other) = delete;
+  awaiter_base& operator=(const awaiter_base& other) = delete;
+  awaiter_base& operator=(awaiter_base&& other) = delete;
 
   ~awaiter_base() {
     if (m_state == state::suspend) {
@@ -226,19 +226,19 @@ struct shared_task final {
   using promise_type = std::conditional_t<!std::is_void_v<T>, promise_non_void<T>, promise_void>;
 
   explicit shared_task(std::coroutine_handle<> coro) noexcept
-    : m_haddress(coro.address()) {}
+      : m_haddress(coro.address()) {}
 
-  shared_task(const shared_task &other) noexcept
-    : m_haddress(other.m_haddress) {
+  shared_task(const shared_task& other) noexcept
+      : m_haddress(other.m_haddress) {
     if (m_haddress != nullptr) [[likely]] {
       std::coroutine_handle<promise_type>::from_address(m_haddress).promise().add_ref();
     }
   }
 
-  shared_task(shared_task &&other) noexcept
-    : m_haddress(std::exchange(other.m_haddress, nullptr)) {}
+  shared_task(shared_task&& other) noexcept
+      : m_haddress(std::exchange(other.m_haddress, nullptr)) {}
 
-  shared_task &operator=(const shared_task &other) noexcept {
+  shared_task& operator=(const shared_task& other) noexcept {
     if (m_haddress != other.m_haddress) [[likely]] {
       destroy();
       m_haddress = other.m_haddress;
@@ -249,7 +249,7 @@ struct shared_task final {
     return *this;
   }
 
-  shared_task &operator=(shared_task &&other) noexcept {
+  shared_task& operator=(shared_task&& other) noexcept {
     if (this != std::addressof(other)) [[likely]] {
       destroy();
       m_haddress = std::exchange(other.m_haddress, nullptr);
@@ -265,7 +265,7 @@ struct shared_task final {
 
   struct promise_base : public shared_task_impl::promise_base<promise_type> {
     auto get_return_object() noexcept -> shared_task {
-      return shared_task{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type *>(this))};
+      return shared_task{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
     }
 
     static auto get_return_object_on_allocation_failure() noexcept -> shared_task {
@@ -276,22 +276,23 @@ struct shared_task final {
   template<std::same_as<T> F>
   struct promise_non_void final : public promise_base {
     promise_non_void() noexcept = default;
-    promise_non_void(const promise_non_void &other) = delete;
-    promise_non_void(promise_non_void &&other) = delete;
-    promise_non_void &operator=(const promise_non_void &other) = delete;
-    promise_non_void &operator=(promise_non_void &&other) = delete;
+    promise_non_void(const promise_non_void& other) = delete;
+    promise_non_void(promise_non_void&& other) = delete;
+    promise_non_void& operator=(const promise_non_void& other) = delete;
+    promise_non_void& operator=(promise_non_void&& other) = delete;
 
     ~promise_non_void() {
-      std::launder(reinterpret_cast<T *>(m_bytes))->~T();
+      std::launder(reinterpret_cast<T*>(m_bytes))->~T();
     }
 
     template<typename E>
-    requires std::constructible_from<F, E &&> auto return_value(E &&e) noexcept -> void {
+    requires std::constructible_from<F, E&&>
+    auto return_value(E&& e) noexcept -> void {
       ::new (m_bytes) F(std::forward<E>(e));
     }
 
-    auto result() const noexcept -> const T & {
-      return *std::launder(reinterpret_cast<const T *>(m_bytes));
+    auto result() const noexcept -> const T& {
+      return *std::launder(reinterpret_cast<const T*>(m_bytes));
     }
 
     alignas(F) std::byte m_bytes[sizeof(F)]{};
@@ -335,7 +336,8 @@ struct shared_task final {
   }
   // restore erased type
   template<typename U>
-  requires(std::same_as<void, T>) explicit operator shared_task<U>() && noexcept {
+  requires(std::same_as<void, T>)
+  explicit operator shared_task<U>() && noexcept {
     return shared_task<U>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
   }
 
@@ -350,7 +352,7 @@ private:
     }
   }
 
-  void *m_haddress{};
+  void* m_haddress{};
 };
 
 } // namespace kphp::coro

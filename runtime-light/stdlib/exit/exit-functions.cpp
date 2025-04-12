@@ -10,11 +10,11 @@
 #include "runtime-light/state/instance-state.h"
 
 kphp::coro::task<> f$exit(mixed v) noexcept { // TODO: make it synchronous
-  auto &instance_st{InstanceState::get()};
+  auto& instance_st{InstanceState::get()};
 
   int64_t exit_code{};
   if (v.is_string()) {
-    Response &response{instance_st.response};
+    Response& response{instance_st.response};
     response.output_buffers[response.current_buffer] << v;
   } else if (v.is_int()) {
     int64_t v_code{v.to_int()};
@@ -24,7 +24,7 @@ kphp::coro::task<> f$exit(mixed v) noexcept { // TODO: make it synchronous
     exit_code = 1;
   }
   instance_st.poll_status =
-    instance_st.poll_status != k2::PollStatus::PollFinishedError && exit_code == 0 ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollFinishedError;
+      instance_st.poll_status != k2::PollStatus::PollFinishedError && exit_code == 0 ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollFinishedError;
   co_await instance_st.run_instance_epilogue();
   k2::exit(static_cast<int32_t>(exit_code));
 }

@@ -16,7 +16,8 @@ namespace kphp::coro {
 namespace type_traits_impl {
 
 template<typename F, typename... Args>
-requires std::invocable<F, Args...> class async_function_return_type {
+requires std::invocable<F, Args...>
+class async_function_return_type {
   using return_type = std::invoke_result_t<F, Args...>;
 
   template<typename U>
@@ -41,16 +42,17 @@ public:
 } // namespace type_traits_impl
 
 template<typename F, typename... Args>
-requires std::invocable<F, Args...> inline constexpr bool is_async_function_v = requires {
-  {static_cast<task<>>(std::declval<std::invoke_result_t<F, Args...>>())};
-}
-|| requires {
-  {static_cast<shared_task<>>(std::declval<std::invoke_result_t<F, Args...>>())};
+requires std::invocable<F, Args...>
+inline constexpr bool is_async_function_v = requires {
+  { static_cast<task<>>(std::declval<std::invoke_result_t<F, Args...>>()) };
+} || requires {
+  { static_cast<shared_task<>>(std::declval<std::invoke_result_t<F, Args...>>()) };
 };
 
 // ================================================================================================
 
 template<typename F, typename... Args>
-requires std::invocable<F, Args...> using async_function_return_type_t = kphp::coro::type_traits_impl::async_function_return_type<F, Args...>::type;
+requires std::invocable<F, Args...>
+using async_function_return_type_t = kphp::coro::type_traits_impl::async_function_return_type<F, Args...>::type;
 
 } // namespace kphp::coro

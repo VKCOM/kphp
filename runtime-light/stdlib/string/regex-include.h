@@ -13,4 +13,4 @@ using regex_pcre2_general_context_t = std::unique_ptr<pcre2_general_context_8, d
 using regex_pcre2_compile_context_t = std::unique_ptr<pcre2_compile_context_8, decltype(std::addressof(pcre2_compile_context_free_8))>;
 using regex_pcre2_match_context_t = std::unique_ptr<pcre2_match_context_8, decltype(std::addressof(pcre2_match_context_free_8))>;
 using regex_pcre2_match_data_t = std::unique_ptr<pcre2_match_data_8, decltype(std::addressof(pcre2_match_data_free_8))>;
-using regex_pcre2_code_t = pcre2_code_8 *;
+using regex_pcre2_code_t = pcre2_code_8*;

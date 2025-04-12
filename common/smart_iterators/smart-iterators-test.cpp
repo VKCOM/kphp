@@ -19,7 +19,9 @@ TEST(filter_iterator, filter_odd) {
   EXPECT_THAT(odd_numbers, ElementsAre(1, 3));
 }
 
-static bool is_odd(int x) { return x % 2 != 0; }
+static bool is_odd(int x) {
+  return x % 2 != 0;
+}
 TEST(filter_iterator, filter_odd_with_function) {
   std::vector<int> v{1, 2, 3, 4};
   auto odd_numbers = vk::make_filter_iterator_range(is_odd, v.begin(), v.end());
@@ -32,7 +34,9 @@ TEST(transform_iterator, square_strings) {
   EXPECT_THAT(square_strings, ElementsAre("1", "4", "9", "16"));
 }
 
-static auto square_str(int x) { return std::to_string(x * x); }
+static auto square_str(int x) {
+  return std::to_string(x * x);
+}
 TEST(transform_iterator, square_strings_function) {
   std::vector<int> v{1, 2, 3, 4};
   auto square_strings = vk::make_transform_iterator_range(square_str, v.begin(), v.end());
@@ -45,7 +49,9 @@ TEST(take_while_iterator, less_10) {
   EXPECT_THAT(first_less_10_numbers, ElementsAre(1, 2, 3));
 }
 
-static bool less_10(int x) { return x < 10; }
+static bool less_10(int x) {
+  return x < 10;
+}
 TEST(take_while_iterator, less_10_function) {
   std::vector<int> v{1, 2, 3, 10, 15, 20, 4, 5};
   auto first_less_10_numbers = vk::make_take_while_iterator_range(less_10, v.begin(), v.end());

@@ -16,8 +16,8 @@
 // based on
 // https://github.com/miloyip/itoa-benchmark/blob/master/src/sse2.cpp
 
-#include <cstdint>
 #include <cassert>
+#include <cstdint>
 #include <emmintrin.h>
 
 #include "common/algorithms/fastmod.h"
@@ -25,17 +25,13 @@
 namespace impl_ {
 inline char lookup_digit_table(size_t x) noexcept {
   static constexpr char digit_table[200] = {
-    '0', '0', '0', '1', '0', '2', '0', '3', '0', '4', '0', '5', '0', '6', '0', '7', '0', '8', '0', '9',
-    '1', '0', '1', '1', '1', '2', '1', '3', '1', '4', '1', '5', '1', '6', '1', '7', '1', '8', '1', '9',
-    '2', '0', '2', '1', '2', '2', '2', '3', '2', '4', '2', '5', '2', '6', '2', '7', '2', '8', '2', '9',
-    '3', '0', '3', '1', '3', '2', '3', '3', '3', '4', '3', '5', '3', '6', '3', '7', '3', '8', '3', '9',
-    '4', '0', '4', '1', '4', '2', '4', '3', '4', '4', '4', '5', '4', '6', '4', '7', '4', '8', '4', '9',
-    '5', '0', '5', '1', '5', '2', '5', '3', '5', '4', '5', '5', '5', '6', '5', '7', '5', '8', '5', '9',
-    '6', '0', '6', '1', '6', '2', '6', '3', '6', '4', '6', '5', '6', '6', '6', '7', '6', '8', '6', '9',
-    '7', '0', '7', '1', '7', '2', '7', '3', '7', '4', '7', '5', '7', '6', '7', '7', '7', '8', '7', '9',
-    '8', '0', '8', '1', '8', '2', '8', '3', '8', '4', '8', '5', '8', '6', '8', '7', '8', '8', '8', '9',
-    '9', '0', '9', '1', '9', '2', '9', '3', '9', '4', '9', '5', '9', '6', '9', '7', '9', '8', '9', '9'
-  };
+      '0', '0', '0', '1', '0', '2', '0', '3', '0', '4', '0', '5', '0', '6', '0', '7', '0', '8', '0', '9', '1', '0', '1', '1', '1', '2', '1', '3', '1',
+      '4', '1', '5', '1', '6', '1', '7', '1', '8', '1', '9', '2', '0', '2', '1', '2', '2', '2', '3', '2', '4', '2', '5', '2', '6', '2', '7', '2', '8',
+      '2', '9', '3', '0', '3', '1', '3', '2', '3', '3', '3', '4', '3', '5', '3', '6', '3', '7', '3', '8', '3', '9', '4', '0', '4', '1', '4', '2', '4',
+      '3', '4', '4', '4', '5', '4', '6', '4', '7', '4', '8', '4', '9', '5', '0', '5', '1', '5', '2', '5', '3', '5', '4', '5', '5', '5', '6', '5', '7',
+      '5', '8', '5', '9', '6', '0', '6', '1', '6', '2', '6', '3', '6', '4', '6', '5', '6', '6', '6', '7', '6', '8', '6', '9', '7', '0', '7', '1', '7',
+      '2', '7', '3', '7', '4', '7', '5', '7', '6', '7', '7', '7', '8', '7', '9', '8', '0', '8', '1', '8', '2', '8', '3', '8', '4', '8', '5', '8', '6',
+      '8', '7', '8', '8', '8', '9', '9', '0', '9', '1', '9', '2', '9', '3', '9', '4', '9', '5', '9', '6', '9', '7', '9', '8', '9', '9'};
   return digit_table[x];
 }
 
@@ -82,29 +78,29 @@ inline __m128i convert_8digits_to_128bits_vector(uint32_t value) noexcept {
 
 inline __m128i shift_digits(__m128i a, unsigned digit) noexcept {
   switch (digit) {
-    case 0:
-      return a;
-    case 1:
-      return _mm_srli_si128(a, 1);
-    case 2:
-      return _mm_srli_si128(a, 2);
-    case 3:
-      return _mm_srli_si128(a, 3);
-    case 4:
-      return _mm_srli_si128(a, 4);
-    case 5:
-      return _mm_srli_si128(a, 5);
-    case 6:
-      return _mm_srli_si128(a, 6);
-    case 7:
-      return _mm_srli_si128(a, 7);
-    case 8:
-      return _mm_srli_si128(a, 8);
+  case 0:
+    return a;
+  case 1:
+    return _mm_srli_si128(a, 1);
+  case 2:
+    return _mm_srli_si128(a, 2);
+  case 3:
+    return _mm_srli_si128(a, 3);
+  case 4:
+    return _mm_srli_si128(a, 4);
+  case 5:
+    return _mm_srli_si128(a, 5);
+  case 6:
+    return _mm_srli_si128(a, 6);
+  case 7:
+    return _mm_srli_si128(a, 7);
+  case 8:
+    return _mm_srli_si128(a, 8);
   }
   assert(0);
 }
 
-inline char *uint32_less10000_to_string(uint32_t value, char *out_buffer) {
+inline char* uint32_less10000_to_string(uint32_t value, char* out_buffer) {
   if (value < 10U) {
     *out_buffer = static_cast<char>('0' + static_cast<char>(value));
     return out_buffer + 1;
@@ -124,7 +120,7 @@ inline char *uint32_less10000_to_string(uint32_t value, char *out_buffer) {
   return out_buffer;
 }
 
-inline char *uint32_greater10000_less100000000_to_string(uint32_t value, char *out_buffer) {
+inline char* uint32_greater10000_less100000000_to_string(uint32_t value, char* out_buffer) {
   // value = bbbbcccc
   const uint32_t b = fastmod::fastdiv<10000U>(value);
   const uint32_t c = fastmod::fastmod<10000U>(value);
@@ -154,7 +150,7 @@ inline char *uint32_greater10000_less100000000_to_string(uint32_t value, char *o
 }
 } // namespace impl_
 
-char *simd_uint32_to_string(uint32_t value, char *out_buffer) noexcept {
+char* simd_uint32_to_string(uint32_t value, char* out_buffer) noexcept {
   if (value < 10000U) {
     return impl_::uint32_less10000_to_string(value, out_buffer);
   }
@@ -179,11 +175,11 @@ char *simd_uint32_to_string(uint32_t value, char *out_buffer) noexcept {
   const __m128i ascii_zero = _mm_set_epi8('0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0');
   const __m128i ba = _mm_add_epi8(_mm_packus_epi16(_mm_setzero_si128(), b), ascii_zero);
   const __m128i result = _mm_srli_si128(ba, 8);
-  _mm_storel_epi64(reinterpret_cast<__m128i *>(out_buffer), result);
+  _mm_storel_epi64(reinterpret_cast<__m128i*>(out_buffer), result);
   return out_buffer + 8;
 }
 
-char *simd_int32_to_string(int32_t value, char *out_buffer) noexcept {
+char* simd_int32_to_string(int32_t value, char* out_buffer) noexcept {
   auto u = static_cast<uint32_t>(value);
   if (value < 0) {
     *out_buffer++ = '-';
@@ -192,7 +188,7 @@ char *simd_int32_to_string(int32_t value, char *out_buffer) noexcept {
   return simd_uint32_to_string(u, out_buffer);
 }
 
-char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
+char* simd_uint64_to_string(uint64_t value, char* out_buffer) {
   if (value < 10000U) {
     return impl_::uint32_less10000_to_string(static_cast<uint32_t>(value), out_buffer);
   }
@@ -219,7 +215,7 @@ char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
 
     // Shift digits to the beginning
     __m128i result = impl_::shift_digits(va, digit);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(out_buffer), result);
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(out_buffer), result);
     return out_buffer + 16 - digit;
   }
 
@@ -256,11 +252,11 @@ char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
 
   // Convert to bytes, add '0'
   const __m128i va = _mm_add_epi8(_mm_packus_epi16(a0, a1), ascii_zero);
-  _mm_storeu_si128(reinterpret_cast<__m128i *>(out_buffer), va);
+  _mm_storeu_si128(reinterpret_cast<__m128i*>(out_buffer), va);
   return out_buffer + 16;
 }
 
-char *simd_int64_to_string(int64_t value, char *out_buffer) {
+char* simd_int64_to_string(int64_t value, char* out_buffer) {
   auto u = static_cast<uint64_t>(value);
   if (value < 0) {
     *out_buffer++ = '-';
@@ -272,33 +268,34 @@ char *simd_int64_to_string(int64_t value, char *out_buffer) {
 #else
 // as written above, the same functions for M1 are just implemented without simd
 // todo anyone who wants to practice some low-level magic — welcome to implement a proper SIMD form with ARM intrinsics
+#include <array>
+#include <cinttypes>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <array>
-#include <cinttypes>
 
-template <size_t S, typename T>
-inline int simd_value_to_string(char *out_buffer, const char* format, T value) noexcept {
+template<size_t S, typename T>
+inline int simd_value_to_string(char* out_buffer, const char* format, T value) noexcept {
   std::array<char, S> buffer{};
   int n = snprintf(buffer.data(), S, format, value);
   memcpy(out_buffer, buffer.data(), n);
   return n;
 }
 
-char *simd_uint32_to_string(uint32_t value, char *out_buffer) noexcept {
-  return out_buffer + simd_value_to_string<11>(out_buffer, "%u", value);;
+char* simd_uint32_to_string(uint32_t value, char* out_buffer) noexcept {
+  return out_buffer + simd_value_to_string<11>(out_buffer, "%u", value);
+  ;
 }
 
-char *simd_int32_to_string(int32_t value, char *out_buffer) noexcept {
+char* simd_int32_to_string(int32_t value, char* out_buffer) noexcept {
   return out_buffer + simd_value_to_string<12>(out_buffer, "%d", value);
 }
 
-char *simd_uint64_to_string(uint64_t value, char *out_buffer) {
+char* simd_uint64_to_string(uint64_t value, char* out_buffer) {
   return out_buffer + simd_value_to_string<21>(out_buffer, "%" PRIu64, value);
 }
 
-char *simd_int64_to_string(int64_t value, char *out_buffer) {
+char* simd_int64_to_string(int64_t value, char* out_buffer) {
   return out_buffer + simd_value_to_string<21>(out_buffer, "%" PRId64, value);
 }
 

@@ -6,8 +6,8 @@
 
 namespace memory_resource {
 
-Dealer::Dealer() noexcept :
-  current_script_resource_(&default_script_resource_) {
+Dealer::Dealer() noexcept
+    : current_script_resource_(&default_script_resource_) {
   set_script_resource_replacer(heap_resource_);
 }
 

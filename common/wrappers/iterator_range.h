@@ -14,7 +14,7 @@
 
 namespace vk {
 
-template <class Iter>
+template<class Iter>
 class iterator_range {
 public:
   using value_type = typename std::iterator_traits<Iter>::value_type;
@@ -26,7 +26,9 @@ public:
   using iterator = Iter;
   using const_iterator = iterator;
 
-  iterator_range(iterator begin, iterator end) : m_begin{std::move(begin)}, m_end{std::move(end)} {}
+  iterator_range(iterator begin, iterator end)
+      : m_begin{std::move(begin)},
+        m_end{std::move(end)} {}
 
   iterator begin() const {
     return m_begin;
@@ -46,16 +48,11 @@ public:
   }
 
   template<typename dummy = reference_type>
-  typename std::enable_if<
-    std::is_same<
-      iterator_category,
-      std::random_access_iterator_tag
-    >::value,
-    dummy>::type operator[](int x) const {
+  typename std::enable_if<std::is_same<iterator_category, std::random_access_iterator_tag>::value, dummy>::type operator[](int x) const {
     return *(m_begin + x);
   }
 
-  iterator_range<std::reverse_iterator<iterator >> get_reversed_range() const {
+  iterator_range<std::reverse_iterator<iterator>> get_reversed_range() const {
     return {std::make_reverse_iterator(m_end), std::make_reverse_iterator(m_begin)};
   }
 
@@ -72,40 +69,31 @@ private:
   iterator m_end;
 };
 
-template <class Iter>
+template<class Iter>
 iterator_range<Iter> make_iterator_range(Iter begin, Iter end) {
   return iterator_range<Iter>(std::move(begin), std::move(end));
-};
+}
 
 template<class Mapper, class Iter>
-iterator_range<transform_iterator<std::decay_t<Mapper>, Iter>> make_transform_iterator_range(const Mapper &mapper, Iter begin, Iter end) {
-  return {
-    {mapper, std::move(begin)},
-    {mapper, std::move(end)}
-  };
-};
+iterator_range<transform_iterator<std::decay_t<Mapper>, Iter>> make_transform_iterator_range(const Mapper& mapper, Iter begin, Iter end) {
+  return {{mapper, std::move(begin)}, {mapper, std::move(end)}};
+}
 
 template<class Predicate, class Iter>
-iterator_range<filter_iterator<std::decay_t<Predicate>, Iter>> make_filter_iterator_range(const Predicate &pred, Iter begin, Iter end) {
-  return {
-    {pred, begin, end},
-    {pred, end,   end}
-  };
-};
+iterator_range<filter_iterator<std::decay_t<Predicate>, Iter>> make_filter_iterator_range(const Predicate& pred, Iter begin, Iter end) {
+  return {{pred, begin, end}, {pred, end, end}};
+}
 
 template<class Predicate, class Iter>
-iterator_range<take_while_iterator<std::decay_t<Predicate>, Iter>> make_take_while_iterator_range(const Predicate &pred, Iter begin, Iter end) {
-  return {
-    {pred, begin, end},
-    {pred, end,   end}
-  };
-};
+iterator_range<take_while_iterator<std::decay_t<Predicate>, Iter>> make_take_while_iterator_range(const Predicate& pred, Iter begin, Iter end) {
+  return {{pred, begin, end}, {pred, end, end}};
+}
 
 template<class Predicate, class Cont>
-auto filter(const Predicate &pred, const Cont &container) {
+auto filter(const Predicate& pred, const Cont& container) {
   auto rng = make_filter_iterator_range(pred, std::begin(container), std::end(container));
   return Cont{rng.begin(), rng.end()};
-};
+}
 } // namespace vk
 
 #endif // ENGINE_ITERATOR_RANGE_H

@@ -58,25 +58,25 @@ static_assert(BYTE_ORDER == LITTLE_ENDIAN);
 #define _msgpack_be64(x) __DARWIN_OSSwapInt64(x)
 #else
 #define _msgpack_be64(x)                                                                                                                                       \
-  (((((uint64_t)x) << 56)) | ((((uint64_t)x) << 40) & 0x00ff000000000000ULL) | ((((uint64_t)x) << 24) & 0x0000ff0000000000ULL)                                 \
-   | ((((uint64_t)x) << 8) & 0x000000ff00000000ULL) | ((((uint64_t)x) >> 8) & 0x00000000ff000000ULL) | ((((uint64_t)x) >> 24) & 0x0000000000ff0000ULL)         \
-   | ((((uint64_t)x) >> 40) & 0x000000000000ff00ULL) | ((((uint64_t)x) >> 56)))
+  (((((uint64_t)x) << 56)) | ((((uint64_t)x) << 40) & 0x00ff000000000000ULL) | ((((uint64_t)x) << 24) & 0x0000ff0000000000ULL) |                               \
+   ((((uint64_t)x) << 8) & 0x000000ff00000000ULL) | ((((uint64_t)x) >> 8) & 0x00000000ff000000ULL) | ((((uint64_t)x) >> 24) & 0x0000000000ff0000ULL) |         \
+   ((((uint64_t)x) >> 40) & 0x000000000000ff00ULL) | ((((uint64_t)x) >> 56)))
 #endif
 
 #define _msgpack_load16(cast, from, to)                                                                                                                        \
   do {                                                                                                                                                         \
-    memcpy((cast *)(to), (from), sizeof(cast));                                                                                                                \
+    memcpy((cast*)(to), (from), sizeof(cast));                                                                                                                 \
     *(to) = _msgpack_be16(*(to));                                                                                                                              \
   } while (0);
 
 #define _msgpack_load32(cast, from, to)                                                                                                                        \
   do {                                                                                                                                                         \
-    memcpy((cast *)(to), (from), sizeof(cast));                                                                                                                \
+    memcpy((cast*)(to), (from), sizeof(cast));                                                                                                                 \
     *(to) = _msgpack_be32(*(to));                                                                                                                              \
   } while (0);
 #define _msgpack_load64(cast, from, to)                                                                                                                        \
   do {                                                                                                                                                         \
-    memcpy((cast *)(to), (from), sizeof(cast));                                                                                                                \
+    memcpy((cast*)(to), (from), sizeof(cast));                                                                                                                 \
     *(to) = _msgpack_be64(*(to));                                                                                                                              \
   } while (0);
 

@@ -26,9 +26,9 @@ public:
   uint64_t timeout_ns{};
   string body;
 
-  bool fetch(TLBuffer &tlb) noexcept;
+  bool fetch(TLBuffer& tlb) noexcept;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 // ===== CRYPTO =====
@@ -45,14 +45,14 @@ inline constexpr uint32_t HASH_HMAC_MAGIC = 0x8dcb'3d9d;
 struct GetCryptosecurePseudorandomBytes final {
   int32_t size{};
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct GetPemCertInfo final {
   bool is_short{true};
   string bytes;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct DigestSign final {
@@ -60,7 +60,7 @@ struct DigestSign final {
   string private_key;
   HashAlgorithm algorithm{};
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct DigestVerify final {
@@ -69,7 +69,7 @@ struct DigestVerify final {
   HashAlgorithm algorithm{};
   string signature;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct CbcDecrypt final {
@@ -79,7 +79,7 @@ struct CbcDecrypt final {
   string iv;
   string data;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct CbcEncrypt final {
@@ -89,14 +89,14 @@ struct CbcEncrypt final {
   string iv;
   string data;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct Hash final {
   HashAlgorithm algorithm{};
   string data;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct HashHmac final {
@@ -104,7 +104,7 @@ struct HashHmac final {
   string data;
   string secret_key;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 // ===== CONFDATA =====
@@ -115,13 +115,13 @@ inline constexpr uint32_t CONFDATA_GET_WILDCARD_MAGIC = 0x5759'bd9e;
 struct ConfdataGet final {
   string key;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 struct ConfdataGetWildcard final {
   string wildcard;
 
-  void store(TLBuffer &tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept;
 };
 
 // ===== HTTP =====
@@ -141,7 +141,7 @@ public:
   vector<httpHeaderEntry> headers{};
   std::string_view body;
 
-  bool fetch(TLBuffer &tlb) noexcept;
+  bool fetch(TLBuffer& tlb) noexcept;
 };
 
 } // namespace tl

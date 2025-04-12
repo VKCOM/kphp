@@ -11,49 +11,49 @@
 namespace memory_resource {
 namespace details {
 
-memory_ordered_chunk_list::memory_ordered_chunk_list(char *memory_resource_begin, char *memory_resource_end) noexcept
-  : memory_resource_begin_(memory_resource_begin)
-  , memory_resource_end_(memory_resource_end) {
+memory_ordered_chunk_list::memory_ordered_chunk_list(char* memory_resource_begin, char* memory_resource_end) noexcept
+    : memory_resource_begin_(memory_resource_begin),
+      memory_resource_end_(memory_resource_end) {
   static_assert(sizeof(list_node) == 8, "8 bytes expected");
 }
 
-memory_ordered_chunk_list::list_node *memory_ordered_chunk_list::flush() noexcept {
+memory_ordered_chunk_list::list_node* memory_ordered_chunk_list::flush() noexcept {
   add_from_array(tmp_buffer_.data(), tmp_buffer_.data() + tmp_buffer_size_);
   tmp_buffer_size_ = 0;
 
-  memory_ordered_chunk_list::list_node *ret = head_;
+  memory_ordered_chunk_list::list_node* ret = head_;
   head_ = nullptr;
   return ret;
 }
 
-void memory_ordered_chunk_list::save_next(list_node *node, const list_node *next) const noexcept {
-  node->next_chunk_offset_ = static_cast<uint32_t>(reinterpret_cast<const char *>(next) - memory_resource_begin_);
+void memory_ordered_chunk_list::save_next(list_node* node, const list_node* next) const noexcept {
+  node->next_chunk_offset_ = static_cast<uint32_t>(reinterpret_cast<const char*>(next) - memory_resource_begin_);
 }
 
-void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **last) noexcept {
+void memory_ordered_chunk_list::add_from_array(list_node** first, list_node** last) noexcept {
   if (first == last) {
     return;
   }
 
-  last = std::partition(first, last, [this](const auto *mem) {
-    return reinterpret_cast<uintptr_t>(mem) >= reinterpret_cast<uintptr_t>(this->memory_resource_begin_)
-           && reinterpret_cast<uintptr_t>(mem) < reinterpret_cast<uintptr_t>(this->memory_resource_end_);
+  last = std::partition(first, last, [this](const auto* mem) {
+    return reinterpret_cast<uintptr_t>(mem) >= reinterpret_cast<uintptr_t>(this->memory_resource_begin_) &&
+           reinterpret_cast<uintptr_t>(mem) < reinterpret_cast<uintptr_t>(this->memory_resource_end_);
   });
   std::sort(first, last, std::greater<>{});
 
   if (!head_) {
     head_ = *first++;
-  } else if (reinterpret_cast<char *>(head_) < reinterpret_cast<char *>(*first)) {
-    list_node *next = head_;
+  } else if (reinterpret_cast<char*>(head_) < reinterpret_cast<char*>(*first)) {
+    list_node* next = head_;
     head_ = *first++;
     save_next(head_, next);
   }
 
   // current is always greater than *first
-  list_node *current = head_;
+  list_node* current = head_;
   for (; first != last && current->has_next();) {
-    list_node *next = get_next(current);
-    if (reinterpret_cast<char *>(*first) < reinterpret_cast<char *>(next)) {
+    list_node* next = get_next(current);
+    if (reinterpret_cast<char*>(*first) < reinterpret_cast<char*>(next)) {
       current = next;
     } else {
       (*first)->next_chunk_offset_ = current->next_chunk_offset_;
@@ -69,8 +69,8 @@ void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **la
   }
 
   // merge adjacent nodes
-  for (list_node *next = get_next(head_); next; next = get_next(head_)) {
-    if (reinterpret_cast<char *>(head_) == reinterpret_cast<char *>(next) + next->chunk_size_) {
+  for (list_node* next = get_next(head_); next; next = get_next(head_)) {
+    if (reinterpret_cast<char*>(head_) == reinterpret_cast<char*>(next) + next->chunk_size_) {
       next->chunk_size_ += (head_)->chunk_size_;
       head_ = next;
     } else {
@@ -78,10 +78,10 @@ void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **la
     }
   }
 
-  list_node *prev = head_;
-  if (list_node *node = get_next(prev)) {
-    for (list_node *next = get_next(node); next; next = get_next(node)) {
-      if (reinterpret_cast<char *>(node) == reinterpret_cast<char *>(next) + next->chunk_size_) {
+  list_node* prev = head_;
+  if (list_node* node = get_next(prev)) {
+    for (list_node* next = get_next(node); next; next = get_next(node)) {
+      if (reinterpret_cast<char*>(node) == reinterpret_cast<char*>(next) + next->chunk_size_) {
         next->chunk_size_ += node->chunk_size_;
       } else {
         save_next(prev, node);
@@ -94,4 +94,4 @@ void memory_ordered_chunk_list::add_from_array(list_node **first, list_node **la
 }
 
 } // namespace details
-} //namespace memory_resource
+} // namespace memory_resource

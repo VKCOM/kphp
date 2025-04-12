@@ -31,7 +31,6 @@ STATS_PROVIDER(tl, 2000) {
   stats->add_histogram_stat("rpc_sent_errors", rpc_sent_errors);
 }
 
-
 struct tl_state {
   std::unique_ptr<tl_in_methods> in_methods;
   std::unique_ptr<tl_out_methods> out_methods;
@@ -51,14 +50,14 @@ struct tl_state {
 };
 
 thread_local std::vector<tl_state> tlio_v(1);
-thread_local tl_state *tlio = &tlio_v.back();
+thread_local tl_state* tlio = &tlio_v.back();
 
-void tl_fetch_set_error_format(int errnum, const char *format, ...) {
+void tl_fetch_set_error_format(int errnum, const char* format, ...) {
   if (!tlio->error) {
-    assert (format);
+    assert(format);
     static char s[10000];
     va_list l;
-    va_start (l, format);
+    va_start(l, format);
     vsnprintf(s, sizeof(s) - 1, format, l);
     va_end(l);
     vkprintf(2, "Error %s\n", s);
@@ -66,7 +65,7 @@ void tl_fetch_set_error_format(int errnum, const char *format, ...) {
   }
 }
 
-int tl_store_stats(const char *s, int raw, const std::optional<std::vector<std::string>> &sorted_filter_keys) {
+int tl_store_stats(const char* s, int raw, const std::optional<std::vector<std::string>>& sorted_filter_keys) {
   std::vector<std::pair<vk::string_view, vk::string_view>> stats;
   int key_start = 0;
   int value_start = -1;
@@ -105,9 +104,8 @@ void tl_fetch_set_error(int errnum, std::string error) {
   }
 }
 
-
-void tl_fetch_set_error(int errnum, const char *s) {
-  assert (s);
+void tl_fetch_set_error(int errnum, const char* s) {
+  assert(s);
   return tl_fetch_set_error(errnum, std::string(s));
 }
 
@@ -121,7 +119,7 @@ void tl_fetch_init(std::unique_ptr<tl_in_methods> methods, int64_t size) {
   tlio->errnum = 0;
 }
 
-void tl_setup_result_header(const tl_query_header_t *header) {
+void tl_setup_result_header(const tl_query_header_t* header) {
   tlio->header_settings.header_flags = header->flags;
   tlio->header_settings.compression_version = header->supported_compression_version;
   // TODO: use another?
@@ -129,7 +127,6 @@ void tl_setup_result_header(const tl_query_header_t *header) {
     tlio->header_settings.compression_version = COMPRESSION_VERSION_MAX;
   }
 }
-
 
 void tl_store_init(std::unique_ptr<tl_out_methods> methods, int64_t size) {
   tlio->out_methods = std::move(methods);
@@ -140,9 +137,8 @@ void tl_store_init(std::unique_ptr<tl_out_methods> methods, int64_t size) {
   tlio->out_remaining = size;
 }
 
-
 static int tl_store_end_impl(int op, bool noheader) {
-  auto *out_methods = dynamic_cast<tl_out_methods_network*>(tlio->out_methods.get());
+  auto* out_methods = dynamic_cast<tl_out_methods_network*>(tlio->out_methods.get());
   if (!out_methods) {
     return 0;
   }
@@ -172,7 +168,7 @@ static int tl_store_end_impl(int op, bool noheader) {
         }
       }
     }
-    assert (!(tlio->out_pos & 3));
+    assert(!(tlio->out_pos & 3));
     static thread_local char buffer[1000000];
     int size = vk::tl::save_to_buffer(buffer, sizeof(buffer), [op, &header, qid = tlio->qid] {
       tl_store_int(op);
@@ -201,7 +197,7 @@ void tlio_pop() {
 }
 
 void tl_compress_written(int version) {
-  auto *methods = dynamic_cast<tl_out_methods_network*>(tlio->out_methods.get());
+  auto* methods = dynamic_cast<tl_out_methods_network*>(tlio->out_methods.get());
   assert(methods);
   int new_size = methods->compress(version);
   assert(new_size % 4 == 0);
@@ -215,7 +211,7 @@ void tl_decompress_remaining(int version) {
   tlio->in_remaining = new_size;
 }
 
-void tl_fetch_raw_data(void *buf, int size) {
+void tl_fetch_raw_data(void* buf, int size) {
   tlio->in_methods->fetch_raw_data(buf, size);
   tlio->in_pos += size;
   tlio->in_remaining -= size;
@@ -230,7 +226,7 @@ int tl_fetch_lookup_int() {
   return x;
 }
 
-int tl_fetch_lookup_data(char *data, int len) {
+int tl_fetch_lookup_data(char* data, int len) {
   if (tl_fetch_check(len) < 0) {
     return -1;
   }
@@ -293,7 +289,7 @@ int tl_fetch_pad() {
   return pad;
 }
 
-int tl_fetch_data(void *buf, int len) {
+int tl_fetch_data(void* buf, int len) {
   if (tl_fetch_check(len) < 0) {
     return -1;
   }
@@ -301,7 +297,7 @@ int tl_fetch_data(void *buf, int len) {
   return len;
 }
 
-int tl_fetch_string_data(char *buf, int len) {
+int tl_fetch_string_data(char* buf, int len) {
   if (tl_fetch_check(len) < 0) {
     return -1;
   }
@@ -312,7 +308,7 @@ int tl_fetch_string_data(char *buf, int len) {
   return len;
 }
 
-int tl_fetch_string(char *buf, int max_len) {
+int tl_fetch_string(char* buf, int max_len) {
   int l = tl_fetch_string_len(max_len);
   if (l < 0) {
     return -1;
@@ -323,7 +319,7 @@ int tl_fetch_string(char *buf, int max_len) {
   return l;
 }
 
-int tl_fetch_string0(char *buf, int max_len) {
+int tl_fetch_string0(char* buf, int max_len) {
   int l = tl_fetch_string_len(max_len);
   if (l < 0) {
     return -1;
@@ -335,19 +331,19 @@ int tl_fetch_string0(char *buf, int max_len) {
   return l;
 }
 
-void tl_store_raw_data_nopad(const void *buf, int len) {
+void tl_store_raw_data_nopad(const void* buf, int len) {
   tlio->out_methods->store_raw_data(buf, len);
   tlio->out_pos += len;
   tlio->out_remaining -= len;
 }
 
-void *tl_store_get_ptr(int size) {
-  assert (tl_store_check(size) >= 0);
+void* tl_store_get_ptr(int size) {
+  assert(tl_store_check(size) >= 0);
   if (!size) {
     return 0;
   }
-  assert (size >= 0);
-  void *x = tlio->out_methods->store_get_ptr(size);
+  assert(size >= 0);
+  void* x = tlio->out_methods->store_get_ptr(size);
   tlio->out_pos += size;
   tlio->out_remaining -= size;
   return x;
@@ -435,7 +431,7 @@ int tl_store_end() {
 }
 
 int tl_store_pad() {
-  assert (tl_store_check(0) >= 0);
+  assert(tl_store_check(0) >= 0);
   int x = 0;
   int pad = (-tlio->out_pos) & 3;
   tl_store_raw_data_nopad(&x, pad);
@@ -447,7 +443,7 @@ static int get_tl_string_len(int len) {
 }
 
 static int tl_store_string_len(int len) {
-  assert (len >= 0);
+  assert(len >= 0);
   if (len < 254) {
     assert(tl_store_check(1) >= 0);
     tl_store_raw_data_nopad(&len, 1);
@@ -458,34 +454,34 @@ static int tl_store_string_len(int len) {
   return 0;
 }
 
-void tl_store_string(const char *s, int len) {
+void tl_store_string(const char* s, int len) {
   tl_store_string_len(len);
   tl_store_raw_data(s, len);
 }
 
-void tl_store_raw_data(const void *s, int len) {
-  assert (tl_store_check(len) >= 0);
+void tl_store_raw_data(const void* s, int len) {
+  assert(tl_store_check(len) >= 0);
   tl_store_raw_data_nopad(s, len);
   tl_store_pad();
 }
 
 void tl_store_int(int x) {
-  assert (tl_store_check(4) >= 0);
+  assert(tl_store_check(4) >= 0);
   tl_store_raw_data_nopad(&x, 4);
 }
 
 void tl_store_long(long long x) {
-  assert (tl_store_check(8) >= 0);
+  assert(tl_store_check(8) >= 0);
   tl_store_raw_data_nopad(&x, 8);
 }
 
 void tl_store_double(double x) {
-  assert (tl_store_check(8) >= 0);
+  assert(tl_store_check(8) >= 0);
   tl_store_raw_data_nopad(&x, 8);
 }
 
 void tl_store_float(float x) {
-  assert (tl_store_check(sizeof(x)) >= 0);
+  assert(tl_store_check(sizeof(x)) >= 0);
   tl_store_raw_data_nopad(&x, sizeof(x));
 }
 
@@ -528,7 +524,6 @@ const char* tl_fetch_error_string() {
   return tlio->error.has_value() ? tlio->error->c_str() : nullptr;
 }
 
-
 int tl_fetch_check(int nbytes) {
   if (!tl_is_fetch_inited()) {
     tl_fetch_set_error(TL_ERROR_INTERNAL, "Trying to read from unitialized in buffer");
@@ -536,12 +531,14 @@ int tl_fetch_check(int nbytes) {
   }
   if (nbytes >= 0) {
     if (tlio->in_remaining < nbytes) {
-      tl_fetch_set_error_format(TL_ERROR_SYNTAX, "Trying to read %d bytes at position %" PRIi64 " (size = %" PRIi64 ")", nbytes, tlio->in_pos, tlio->in_pos + tlio->in_remaining);
+      tl_fetch_set_error_format(TL_ERROR_SYNTAX, "Trying to read %d bytes at position %" PRIi64 " (size = %" PRIi64 ")", nbytes, tlio->in_pos,
+                                tlio->in_pos + tlio->in_remaining);
       return -1;
     }
   } else {
     if (tlio->in_pos < -nbytes) {
-      tl_fetch_set_error_format(TL_ERROR_SYNTAX, "Trying to read %d bytes at position %" PRIi64 " (size = %" PRIi64 ")", nbytes, tlio->in_pos, tlio->in_pos + tlio->in_remaining);
+      tl_fetch_set_error_format(TL_ERROR_SYNTAX, "Trying to read %d bytes at position %" PRIi64 " (size = %" PRIi64 ")", nbytes, tlio->in_pos,
+                                tlio->in_pos + tlio->in_remaining);
       return -1;
     }
   }
@@ -583,7 +580,7 @@ int tl_fetch_int_range(int min, int max) {
   return x;
 }
 
-void tl_store_string0(const char *s) {
+void tl_store_string0(const char* s) {
   if (!s) {
     return tl_store_string(nullptr, 0);
   }

@@ -7,7 +7,7 @@
 template class array<int64_t>;
 template class array<string>;
 template class array<mixed>;
-//template class array<double>; // see the header for comments
+// template class array<double>; // see the header for comments
 template class array<bool>;
 
 template class array<Optional<int64_t>>;

@@ -11,7 +11,7 @@
 #define BUFF_LEN (1 << 16)
 static char buff[BUFF_LEN];
 
-string f$vk_flex(const string &name, const string &case_name, int64_t sex, const string &type, int64_t lang_id) noexcept {
+string f$vk_flex(const string& name, const string& case_name, int64_t sex, const string& type, int64_t lang_id) noexcept {
   constexpr size_t ERROR_MSG_BUG_SIZE = 1000;
   static char ERROR_MSG_BUF[ERROR_MSG_BUG_SIZE] = {'\0'};
   ERROR_MSG_BUF[0] = '\0';

@@ -5,7 +5,7 @@
 #include "runtime/resumable.h"
 
 Storage::Storage() noexcept
-  : tag(0) {
+    : tag(0) {
   std::memset(storage_.storage_.data(), 0, sizeof(mixed));
 }
 
