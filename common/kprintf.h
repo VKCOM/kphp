@@ -28,14 +28,14 @@ void vkprintf(int verbosity, const char* format, ...) __attribute__((format(prin
 #else
 // print message with timestamp
 void kprintf_(const char* file, int line, const char* format, ...) __attribute__((format(printf, 3, 4)));
-#define kprintf(...) kprintf_(__FILE__, __LINE__, __VA_ARGS__)
-#define vkprintf(verbosity_level, format, ...)                                                                                                                 \
-  do {                                                                                                                                                         \
-    if ((verbosity_level) > verbosity) {                                                                                                                       \
-      break;                                                                                                                                                   \
-    }                                                                                                                                                          \
-    kprintf((format), ##__VA_ARGS__);                                                                                                                          \
-  } while (0)
+  #define kprintf(...) kprintf_(__FILE__, __LINE__, __VA_ARGS__)
+  #define vkprintf(verbosity_level, format, ...)                                                                                                               \
+    do {                                                                                                                                                       \
+      if ((verbosity_level) > verbosity) {                                                                                                                     \
+        break;                                                                                                                                                 \
+      }                                                                                                                                                        \
+      kprintf((format), ##__VA_ARGS__);                                                                                                                        \
+    } while (0)
 #endif
 
 // If n errors occurred, log_2 (n) messages will be written

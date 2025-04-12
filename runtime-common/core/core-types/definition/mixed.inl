@@ -11,7 +11,7 @@
 #include "runtime-common/core/utils/migration-php8.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-#error "this file must be included only from runtime-core.h"
+  #error "this file must be included only from runtime-core.h"
 #endif
 
 static_assert(vk::all_of_equal(sizeof(string), sizeof(double), sizeof(array<mixed>)), "sizeof of array<mixed>, string and double must be equal");

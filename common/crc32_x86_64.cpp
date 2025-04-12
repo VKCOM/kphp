@@ -24,20 +24,20 @@ __attribute__((constructor(101))) void crc32_init() {
 // mu(65-bit): 01001110000111110010001100110110000010111001010010110001111010101
 constexpr long long CRC64_REFLECTED_MU = 0x9c3e466c172963d5;
 
-#define DO_FOUR(p)                                                                                                                                             \
-  DO_ONE((p)[0]);                                                                                                                                              \
-  DO_ONE((p)[1]);                                                                                                                                              \
-  DO_ONE((p)[2]);                                                                                                                                              \
-  DO_ONE((p)[3]);
-#define DO_ONE(v)                                                                                                                                              \
-  crc ^= v;                                                                                                                                                    \
-  crc = crc32_table0[crc & 0xff] ^ crc32_table1[(crc & 0xff00) >> 8] ^ crc32_table2[(crc & 0xff0000) >> 16] ^ crc32_table[crc >> 24];
+  #define DO_FOUR(p)                                                                                                                                           \
+    DO_ONE((p)[0]);                                                                                                                                            \
+    DO_ONE((p)[1]);                                                                                                                                            \
+    DO_ONE((p)[2]);                                                                                                                                            \
+    DO_ONE((p)[3]);
+  #define DO_ONE(v)                                                                                                                                            \
+    crc ^= v;                                                                                                                                                  \
+    crc = crc32_table0[crc & 0xff] ^ crc32_table1[(crc & 0xff00) >> 8] ^ crc32_table2[(crc & 0xff0000) >> 16] ^ crc32_table[crc >> 24];
 
-#ifdef __SANITIZE_ADDRESS__
-#define attribute_no_sanitize_address __attribute__((no_sanitize_address))
-#else
-#define attribute_no_sanitize_address
-#endif
+  #ifdef __SANITIZE_ADDRESS__
+    #define attribute_no_sanitize_address __attribute__((no_sanitize_address))
+  #else
+    #define attribute_no_sanitize_address
+  #endif
 
 static const char mask[64] __attribute__((aligned(16))) = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -131,7 +131,7 @@ static unsigned attribute_no_sanitize_address crc32_partial_clmul(const void* da
   D ^= (v2di)__builtin_ia32_pclmulqdq128(K64, D, 0x01);
 
   int tmp[4] __attribute__((aligned(16)));
-#ifdef BARRETT_REDUCTION
+  #ifdef BARRETT_REDUCTION
   static const v2di MU = {CRC32_REFLECTED_MU, CRC32_REFLECTED_POLY_33_BIT};
   H = (v2di)__builtin_ia32_punpckhdq128((v4si)(C ^ C), (v4si)D);
   G = (v2di)__builtin_ia32_pclmulqdq128(MU, H, 0x00);
@@ -139,15 +139,15 @@ static unsigned attribute_no_sanitize_address crc32_partial_clmul(const void* da
   D ^= __builtin_ia32_pslldqi128(H, 32);
   asm volatile("movdqa %1, (%0)\n\t" : : "r"(&tmp), "x"(D) : "memory");
   return tmp[3];
-#else
+  #else
   asm volatile("movdqa %1, (%0)\n\t" : : "r"(&tmp), "x"(D) : "memory");
   crc = tmp[2];
   return crc32_table0[crc & 0xff] ^ crc32_table1[(crc & 0xff00) >> 8] ^ crc32_table2[(crc & 0xff0000) >> 16] ^ crc32_table[crc >> 24] ^ tmp[3];
-#endif
+  #endif
 }
 
-#undef DO_ONE
-#undef DO_FOUR
+  #undef DO_ONE
+  #undef DO_FOUR
 
 uint64_t crc64_barrett_reduction(v2di D) {
   static const v2di MU = {CRC64_REFLECTED_MU, CRC64_REFLECTED_POLY_65_BIT};

@@ -11,14 +11,14 @@
 /* if a KFS header is present, first four bytes will contain KFS_FILE_MAGIC; then 4Kbytes have to be skipped */
 
 #ifndef KFS_FILE_MAGIC
-#define KFS_FILE_MAGIC 0x0473664b
+  #define KFS_FILE_MAGIC 0x0473664b
 #endif
 
 #define DEFAULT_MAX_BINLOG_SIZE ((1LL << 30) - (1LL << 20))
 
 #ifndef hash_t
 typedef unsigned long long hash_t;
-#define hash_t hash_t
+  #define hash_t hash_t
 #endif
 
 typedef unsigned int lev_type_t;

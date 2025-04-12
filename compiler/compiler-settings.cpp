@@ -147,22 +147,22 @@ void append_if_doesnt_contain(std::string& ld_flags, const T& libs, vk::string_v
 
 void append_apple_options(std::string& cxx_flags, std::string& ld_flags) noexcept {
 #if defined(__APPLE__)
-#ifdef __arm64__
+  #ifdef __arm64__
   std::string common_path = "/opt/homebrew";
-#else
+  #else
   std::string common_path = "/usr/local";
-#endif
+  #endif
   cxx_flags += " -I" + common_path + "/include";
   ld_flags += " -liconv"
               " -lepoll-shim"
               " -L" EPOLL_SHIM_LIB_DIR " -L" +
               common_path +
               "/lib"
-#ifdef PDO_DRIVER_PGSQL
+  #ifdef PDO_DRIVER_PGSQL
               " -L" +
               common_path +
               "/opt/libpq/lib"
-#endif
+  #endif
               " -undefined dynamic_lookup";
 
 #else
@@ -324,7 +324,7 @@ void CompilerSettings::init() {
 #elif __cplusplus <= 202302L
   ss << " -std=c++23";
 #else
-#error unsupported __cplusplus value
+  #error unsupported __cplusplus value
 #endif
 
   ss << " -I" << kphp_src_path.get() + "objs/include ";
@@ -349,15 +349,15 @@ void CompilerSettings::init() {
   std::vector<vk::string_view> system_installed_dynamic_libs{"pthread", "m", "dl"};
 
 #ifdef PDO_DRIVER_MYSQL
-#ifdef PDO_LIBS_STATIC_LINKING
+  #ifdef PDO_LIBS_STATIC_LINKING
   system_installed_static_libs.emplace_back("mysqlclient");
-#else
+  #else
   system_installed_dynamic_libs.emplace_back("mysqlclient");
-#endif
+  #endif
 #endif
 
 #ifdef PDO_DRIVER_PGSQL
-#ifdef PDO_LIBS_STATIC_LINKING
+  #ifdef PDO_LIBS_STATIC_LINKING
   ld_flags.value_ += fmt_format(" -L /usr/lib/postgresql/{}/lib/ ", PDO_DRIVER_PGSQL_VERSION);
   system_installed_static_libs.emplace_back("pq");
   system_installed_static_libs.emplace_back("pgcommon");
@@ -365,9 +365,9 @@ void CompilerSettings::init() {
   // following common libraries are required for libpq.a
   system_installed_dynamic_libs.emplace_back("ldap");
   system_installed_dynamic_libs.emplace_back("gssapi_krb5");
-#else
+  #else
   system_installed_dynamic_libs.emplace_back("pq");
-#endif
+  #endif
 #endif
 
 #if defined(__APPLE__)

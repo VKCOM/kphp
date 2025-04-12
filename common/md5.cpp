@@ -31,28 +31,28 @@
 
 #if !defined(XYSSL_MD5_C)
 
-#include "common/md5.h"
+  #include "common/md5.h"
 
-#include <stdio.h>
-#include <string.h>
+  #include <stdio.h>
+  #include <string.h>
 
-/*
- * 32-bit integer manipulation macros (little endian)
- */
-#ifndef GET_ULONG_LE
-#define GET_ULONG_LE(n, b, i)                                                                                                                                  \
-  { (n) = ((unsigned long)(b)[(i)]) | ((unsigned long)(b)[(i) + 1] << 8) | ((unsigned long)(b)[(i) + 2] << 16) | ((unsigned long)(b)[(i) + 3] << 24); }
-#endif
+  /*
+   * 32-bit integer manipulation macros (little endian)
+   */
+  #ifndef GET_ULONG_LE
+    #define GET_ULONG_LE(n, b, i)                                                                                                                              \
+      { (n) = ((unsigned long)(b)[(i)]) | ((unsigned long)(b)[(i) + 1] << 8) | ((unsigned long)(b)[(i) + 2] << 16) | ((unsigned long)(b)[(i) + 3] << 24); }
+  #endif
 
-#ifndef PUT_ULONG_LE
-#define PUT_ULONG_LE(n, b, i)                                                                                                                                  \
-  {                                                                                                                                                            \
-    (b)[(i)] = (unsigned char)((n));                                                                                                                           \
-    (b)[(i) + 1] = (unsigned char)((n) >> 8);                                                                                                                  \
-    (b)[(i) + 2] = (unsigned char)((n) >> 16);                                                                                                                 \
-    (b)[(i) + 3] = (unsigned char)((n) >> 24);                                                                                                                 \
-  }
-#endif
+  #ifndef PUT_ULONG_LE
+    #define PUT_ULONG_LE(n, b, i)                                                                                                                              \
+      {                                                                                                                                                        \
+        (b)[(i)] = (unsigned char)((n));                                                                                                                       \
+        (b)[(i) + 1] = (unsigned char)((n) >> 8);                                                                                                              \
+        (b)[(i) + 2] = (unsigned char)((n) >> 16);                                                                                                             \
+        (b)[(i) + 3] = (unsigned char)((n) >> 24);                                                                                                             \
+      }
+  #endif
 
 /*
  * MD5 context setup
@@ -87,20 +87,20 @@ static void md5_process(md5_context* ctx, const unsigned char data[64]) {
   GET_ULONG_LE(X[14], data, 56);
   GET_ULONG_LE(X[15], data, 60);
 
-#define S(x, n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
+  #define S(x, n) ((x << n) | ((x & 0xFFFFFFFF) >> (32 - n)))
 
-#define P(a, b, c, d, k, s, t)                                                                                                                                 \
-  {                                                                                                                                                            \
-    a += F(b, c, d) + X[k] + t;                                                                                                                                \
-    a = S(a, s) + b;                                                                                                                                           \
-  }
+  #define P(a, b, c, d, k, s, t)                                                                                                                               \
+    {                                                                                                                                                          \
+      a += F(b, c, d) + X[k] + t;                                                                                                                              \
+      a = S(a, s) + b;                                                                                                                                         \
+    }
 
   A = ctx->state[0];
   B = ctx->state[1];
   C = ctx->state[2];
   D = ctx->state[3];
 
-#define F(x, y, z) (z ^ (x & (y ^ z)))
+  #define F(x, y, z) (z ^ (x & (y ^ z)))
 
   P(A, B, C, D, 0, 7, 0xD76AA478);
   P(D, A, B, C, 1, 12, 0xE8C7B756);
@@ -119,9 +119,9 @@ static void md5_process(md5_context* ctx, const unsigned char data[64]) {
   P(C, D, A, B, 14, 17, 0xA679438E);
   P(B, C, D, A, 15, 22, 0x49B40821);
 
-#undef F
+  #undef F
 
-#define F(x, y, z) (y ^ (z & (x ^ y)))
+  #define F(x, y, z) (y ^ (z & (x ^ y)))
 
   P(A, B, C, D, 1, 5, 0xF61E2562);
   P(D, A, B, C, 6, 9, 0xC040B340);
@@ -140,9 +140,9 @@ static void md5_process(md5_context* ctx, const unsigned char data[64]) {
   P(C, D, A, B, 7, 14, 0x676F02D9);
   P(B, C, D, A, 12, 20, 0x8D2A4C8A);
 
-#undef F
+  #undef F
 
-#define F(x, y, z) (x ^ y ^ z)
+  #define F(x, y, z) (x ^ y ^ z)
 
   P(A, B, C, D, 5, 4, 0xFFFA3942);
   P(D, A, B, C, 8, 11, 0x8771F681);
@@ -161,9 +161,9 @@ static void md5_process(md5_context* ctx, const unsigned char data[64]) {
   P(C, D, A, B, 15, 16, 0x1FA27CF8);
   P(B, C, D, A, 2, 23, 0xC4AC5665);
 
-#undef F
+  #undef F
 
-#define F(x, y, z) (y ^ (x | ~z))
+  #define F(x, y, z) (y ^ (x | ~z))
 
   P(A, B, C, D, 0, 6, 0xF4292244);
   P(D, A, B, C, 7, 10, 0x432AFF97);
@@ -182,7 +182,7 @@ static void md5_process(md5_context* ctx, const unsigned char data[64]) {
   P(C, D, A, B, 2, 15, 0x2AD7D2BB);
   P(B, C, D, A, 9, 21, 0xEB86D391);
 
-#undef F
+  #undef F
 
   ctx->state[0] += A;
   ctx->state[1] += B;
@@ -270,7 +270,7 @@ void md5(const unsigned char* input, int ilen, unsigned char output[16]) {
   memset(&ctx, 0, sizeof(md5_context));
 }
 
-#if defined(XYSSL_SELF_TEST)
+  #if defined(XYSSL_SELF_TEST)
 
 /*
  * RFC 1321 test vectors
@@ -322,6 +322,6 @@ int md5_self_test(int verbose) {
   return (0);
 }
 
-#endif
+  #endif
 
 #endif

@@ -8,16 +8,16 @@
 #include <time.h>
 
 #ifndef VKEXT
-#include "common/options.h"
-#include "common/stats/provider.h"
+  #include "common/options.h"
+  #include "common/stats/provider.h"
 #endif
 
 #ifndef COMMIT
-#define COMMIT "unknown"
+  #define COMMIT "unknown"
 #endif
 
 #ifndef BUILD_TIMESTAMP
-#define BUILD_TIMESTAMP 0
+  #define BUILD_TIMESTAMP 0
 #endif
 
 static char FullVersionStr[400];

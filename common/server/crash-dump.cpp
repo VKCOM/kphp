@@ -69,7 +69,7 @@ static inline void crash_dump_write_uint64(uint64_t value, crash_dump_buffer_t* 
 //  * `ucontext_t` -- using in signal handlers for machine state extracting in debug purposes.
 static inline void crash_dump_prepare_registers([[maybe_unused]] crash_dump_buffer_t* buffer, [[maybe_unused]] void* ucontext) {
 #ifdef __x86_64__
-#ifdef __APPLE__
+  #ifdef __APPLE__
   const auto* uc = static_cast<ucontext_t*>(ucontext);
 
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RIP=0x"), uc->uc_mcontext->__ss.__rip, buffer);
@@ -92,7 +92,7 @@ static inline void crash_dump_prepare_registers([[maybe_unused]] crash_dump_buff
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R13=0x"), uc->uc_mcontext->__ss.__r13, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R14=0x"), uc->uc_mcontext->__ss.__r14, buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext->__ss.__r15, buffer);
-#else
+  #else
   const auto* uc = static_cast<ucontext_t*>(ucontext);
 
   crash_dump_write_reg(LITERAL_WITH_LENGTH("RIP=0x"), uc->uc_mcontext.gregs[REG_RIP], buffer);
@@ -117,11 +117,11 @@ static inline void crash_dump_prepare_registers([[maybe_unused]] crash_dump_buff
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R13=0x"), uc->uc_mcontext.gregs[REG_R13], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R14=0x"), uc->uc_mcontext.gregs[REG_R14], buffer);
   crash_dump_write_reg(LITERAL_WITH_LENGTH("R15=0x"), uc->uc_mcontext.gregs[REG_R15], buffer);
-#endif
+  #endif
 #elif defined(__arm64__) || defined(__aarch64__)
   // TODO: need to examine `ucontext_t` layout from glibc for aarch64/linux and aarch64/darwin
 #else
-#error "Unsupported arch"
+  #error "Unsupported arch"
 #endif
 }
 

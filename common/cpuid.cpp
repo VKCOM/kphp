@@ -32,7 +32,7 @@ const kdb_cpuid_t* kdb_cpuid() {
 
   cached.type = KDB_CPUID_AARCH64;
 #else
-#error "Unsupported arch"
+  #error "Unsupported arch"
 #endif
 
   return &cached;

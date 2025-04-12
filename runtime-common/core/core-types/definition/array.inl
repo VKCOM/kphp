@@ -9,7 +9,7 @@
 #include "common/algorithms/fastmod.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-#error "this file must be included only from runtime-core.h"
+  #error "this file must be included only from runtime-core.h"
 #endif
 
 array_size::array_size(int64_t int_size, bool is_vector) noexcept

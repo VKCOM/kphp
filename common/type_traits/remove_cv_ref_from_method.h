@@ -7,7 +7,7 @@
 namespace vk {
 
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
-#define VK_GCC_SUPPORTS_REF
+  #define VK_GCC_SUPPORTS_REF
 #endif
 
 template<typename T>

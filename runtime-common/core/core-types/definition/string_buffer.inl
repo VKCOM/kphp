@@ -3,7 +3,7 @@
 #include "common/algorithms/simd-int-to-string.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-#error "this file must be included only from runtime-core.h"
+  #error "this file must be included only from runtime-core.h"
 #endif
 
 inline void string_buffer::resize(string::size_type new_buffer_len) noexcept {

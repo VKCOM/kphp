@@ -13,9 +13,9 @@ enum { SP_OFFSET = 432, PC_OFFSET = 440, PSTATE_OFFSET = 448, FPSIMD_CONTEXT_OFF
 
 #define STR(x) #x
 #ifdef __APPLE__
-#define NAME(x) STR(_##x)
+  #define NAME(x) STR(_##x)
 #else
-#define NAME(x) #x
+  #define NAME(x) #x
 #endif
 
 #define R0_OFFSET REG_OFFSET(0)

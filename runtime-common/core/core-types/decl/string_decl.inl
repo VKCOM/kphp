@@ -1,7 +1,7 @@
 #pragma once
 
 #ifndef INCLUDED_FROM_KPHP_CORE
-#error "this file must be included only from runtime-core.h"
+  #error "this file must be included only from runtime-core.h"
 #endif
 
 using string_size_type = uint32_t;

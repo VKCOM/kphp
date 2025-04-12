@@ -13,7 +13,7 @@
 #include <string>
 
 #if __cplusplus > 201703
-#include <string_view>
+  #include <string_view>
 namespace vk {
 using std::string_view;
 }
@@ -47,10 +47,10 @@ public:
   string_view(const std::basic_string<char, std::char_traits<char>, Alloc>& s)
       : string_view{s.data(), s.size()} {}
 
-#if __cplusplus >= 201703
+  #if __cplusplus >= 201703
   string_view(std::string_view sv)
       : string_view{sv.data(), sv.size()} {}
-#endif
+  #endif
 
   string_view()
       : string_view{nullptr, nullptr} {}
@@ -113,11 +113,11 @@ public:
     return {data(), size()};
   }
 
-#if __cplusplus >= 201703
+  #if __cplusplus >= 201703
   operator std::string_view() const {
     return {data(), size()};
   }
-#endif
+  #endif
 
   bool operator<(string_view other) const noexcept {
     auto cmp = memcmp(data(), other.data(), std::min(size(), other.size()));
@@ -139,13 +139,13 @@ public:
   }
 
   size_t hash_code() const noexcept {
-#if defined __GLIBCXX__
+  #if defined __GLIBCXX__
     return std::_Hash_impl::hash(data(), size());
-#elif defined _LIBCPP_VERSION
+  #elif defined _LIBCPP_VERSION
     return std::__do_string_hash(begin(), end());
-#else
-#error only libc++ and libstdc++ are supported
-#endif
+  #else
+    #error only libc++ and libstdc++ are supported
+  #endif
   }
 
   string_view substr(size_t pos, size_t count = npos) const noexcept {

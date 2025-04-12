@@ -5,37 +5,37 @@
 #pragma once
 
 #if defined(__APPLE__)
-#include <cassert>
-#include <cerrno>
-#include <fcntl.h>
-#include <libgen.h>
-#include <libkern/OSByteOrder.h>
-#include <malloc/malloc.h>
-#include <sys/socket.h>
-#include <sys/syscall.h>
-#include <unistd.h>
+  #include <cassert>
+  #include <cerrno>
+  #include <fcntl.h>
+  #include <libgen.h>
+  #include <libkern/OSByteOrder.h>
+  #include <malloc/malloc.h>
+  #include <sys/socket.h>
+  #include <sys/syscall.h>
+  #include <unistd.h>
 
-#define htobe64(x) OSSwapHostToBigInt64(x)
-#define htole64(x) OSSwapHostToLittleInt64(x)
-#define be64toh(x) OSSwapBigToHostInt64(x)
-#define le64toh(x) OSSwapLittleToHostInt64(x)
+  #define htobe64(x) OSSwapHostToBigInt64(x)
+  #define htole64(x) OSSwapHostToLittleInt64(x)
+  #define be64toh(x) OSSwapBigToHostInt64(x)
+  #define le64toh(x) OSSwapLittleToHostInt64(x)
 
-#define SIGPOLL SIGIO
+  #define SIGPOLL SIGIO
 
-#define AF_FILE AF_LOCAL
+  #define AF_FILE AF_LOCAL
 
-#define POLLRDHUP 0x2000
+  #define POLLRDHUP 0x2000
 
-#define SO_PEERCRED 0x1017
+  #define SO_PEERCRED 0x1017
 
-#define SCM_CREDENTIALS 0x02
+  #define SCM_CREDENTIALS 0x02
 
-#define st_mtim st_mtimespec
+  #define st_mtim st_mtimespec
 
-#define FUTEX_LOCK_PI 6
-#define FUTEX_UNLOCK_PI 7
-#define FUTEX_TRYLOCK_PI 8
-#define FUTEX_WAITERS 0x80000000
+  #define FUTEX_LOCK_PI 6
+  #define FUTEX_UNLOCK_PI 7
+  #define FUTEX_TRYLOCK_PI 8
+  #define FUTEX_WAITERS 0x80000000
 
 extern char** environ;
 
@@ -93,7 +93,7 @@ inline ssize_t sendfile(int out_fd, int in_fd, off_t* offset, size_t) noexcept {
   return s;
 }
 
-#define SOCK_CLOEXEC FD_CLOEXEC
+  #define SOCK_CLOEXEC FD_CLOEXEC
 
 inline int accept4(int sockfd, struct sockaddr* addr, socklen_t* addrlen, int flags) noexcept {
   assert((!flags || flags == SOCK_CLOEXEC) && "only SOCK_CLOEXEC is supported");
@@ -105,15 +105,15 @@ inline int accept4(int sockfd, struct sockaddr* addr, socklen_t* addrlen, int fl
   return fd;
 }
 
-#define PR_SET_PDEATHSIG 1
-#define PR_SET_DUMPABLE 4
+  #define PR_SET_PDEATHSIG 1
+  #define PR_SET_DUMPABLE 4
 
 inline int prctl(int, unsigned long) noexcept {
   errno = EINVAL;
   return -1;
 }
 
-#define PTHREAD_MUTEX_ROBUST_NP 2
+  #define PTHREAD_MUTEX_ROBUST_NP 2
 
 inline int pthread_mutexattr_setrobust(const pthread_mutexattr_t*, int) noexcept {
   return 0;
@@ -139,9 +139,9 @@ inline size_t malloc_usable_size(void* ptr) noexcept {
 
 #else
 
-#include <linux/futex.h>
-#include <malloc.h>
-#include <sys/prctl.h>
-#include <sys/sendfile.h>
+  #include <linux/futex.h>
+  #include <malloc.h>
+  #include <sys/prctl.h>
+  #include <sys/sendfile.h>
 
 #endif
