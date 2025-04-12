@@ -1,9 +1,10 @@
 name: macos
 
 on:
+  push:
+    branches: [ master ]
   pull_request:
-    branches:
-    - master
+    branches: [ master ]
 
 env:
   HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: true

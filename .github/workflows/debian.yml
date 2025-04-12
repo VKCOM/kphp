@@ -1,9 +1,10 @@
 name: debian
 
 on:
+  push:
+    branches: [ master ]
   pull_request:
-    branches:
-    - master
+    branches: [ master ]
 
 env:
   kphp_root_dir: /home/kitten/kphp
