@@ -1,0 +1,41 @@
+name: "Check code formatting"
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  code_formatter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install clang-format
+        run: sudo apt install -y clang-format-18
+
+      - name: Run clang-format on changed files
+        run: |
+          # Get list of changed files
+          CHANGED_FILES=$(git diff --name-only --diff-filter=ACM origin/master...HEAD --)
+          CHANGED_CPP_FILES=$(echo "$CHANGED_FILES" | grep -E '^(common|runtime|runtime-common|runtime-light)/.*\.(cpp|hpp|h|inl)$')
+          
+          # Apply clang-format to each changed source file
+          echo "$CHANGED_CPP_FILES" | xargs -r clang-format-18 -i
+
+      - name: Check for formatting changes
+        run: |
+          # Check if any files were modified by clang-format
+          git diff --exit-code
+          if [ $? -ne 0 ]; then
+              echo "Code is not formatted. Please run clang-format."
+              exit 1
+          fi
