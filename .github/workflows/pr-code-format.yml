@@ -26,7 +26,7 @@ jobs:
         run: |
           # Get list of changed files
           CHANGED_FILES=$(git diff --name-only --diff-filter=ACM origin/master...HEAD --)
-          CHANGED_CPP_FILES=$(echo "$CHANGED_FILES" | grep -E '^(common|runtime|runtime-common|runtime-light)/.*\.(cpp|hpp|h|inl)$')
+          CHANGED_CPP_FILES=$(echo "$CHANGED_FILES" | (grep -E '^(common|runtime|runtime-common|runtime-light)/.*\.(cpp|hpp|h|inl)$' || :; ))
           
           # Apply clang-format to each changed source file
           echo "$CHANGED_CPP_FILES" | xargs -r clang-format-18 -i
