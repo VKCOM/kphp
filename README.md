@@ -1,6 +1,6 @@
-[![macos](https://github.com/VKCOM/kphp/actions/workflows/macos.yml/badge.svg)](https://github.com/VKCOM/kphp/actions/workflows/macos.yml)
-[![debian](https://github.com/VKCOM/kphp/actions/workflows/debian.yml/badge.svg)](https://github.com/VKCOM/kphp/actions/workflows/debian.yml)
-[![ubuntu](https://github.com/VKCOM/kphp/actions/workflows/ubuntu.yml/badge.svg)](https://github.com/VKCOM/kphp/actions/workflows/ubuntu.yml)
+[![macos](https://github.com/VKCOM/kphp/actions/workflows/macos.yml/badge.svg?branch=master)](https://github.com/VKCOM/kphp/actions/workflows/macos.yml)
+[![debian](https://github.com/VKCOM/kphp/actions/workflows/debian.yml/badge.svg?branch=master)](https://github.com/VKCOM/kphp/actions/workflows/debian.yml)
+[![ubuntu](https://github.com/VKCOM/kphp/actions/workflows/ubuntu.yml/badge.svg?branch=master)](https://github.com/VKCOM/kphp/actions/workflows/ubuntu.yml)
 
 # KPHP — a PHP compiler
 
