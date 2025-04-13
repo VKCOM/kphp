@@ -19,7 +19,7 @@ void monotonic_buffer_resource::critical_dump(void* mem, size_t size) const noex
     dl::write_last_malloc_replacement_stacktrace(malloc_replacement_stacktrace_buf.data() + strlen(descr),
                                                  malloc_replacement_stacktrace_buf.size() - strlen(descr));
   }
-  php_critical_error("Found unexpected memory piece:\n"
+  php_runtime_critical("Found unexpected memory piece:\n"
                      "ptr:                  %p\n"
                      "size:                 %zu\n"
                      "memory_begin:         %p\n"
