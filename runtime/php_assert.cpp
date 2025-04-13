@@ -31,6 +31,7 @@
 
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
+#include <server/server-log.h>
 
 const char* engine_tag = "[";
 long long engine_tag_number = 0;
@@ -203,6 +204,14 @@ void php_out_of_memory_warning(char const* message, ...) {
   va_start(args, message);
   php_warning_impl(true, E_ERROR, message, args);
   va_end(args);
+}
+
+void php_runtime_critical(char const* message, ...) {
+  va_list args;
+  va_start(args, message);
+  php_warning_impl(true, static_cast<int>(ServerLog::Critical), message, args);
+  va_end(args);
+  critical_error_handler();
 }
 
 const char* php_uncaught_exception_error(const class_instance<C$Throwable>& ex) noexcept {
