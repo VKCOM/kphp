@@ -70,6 +70,7 @@ void StatsHouseManager::set_common_tags() {
   }
   client.set_tag_cluster(config.get_cluster_name());
   client.set_tag_host(kdb_gethostname());
+  client.set_tag_dc_name(config.get_dc_name());
 }
 
 void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
@@ -196,8 +197,7 @@ void StatsHouseManager::add_common_master_stats(const workers_stats_t &workers_s
     client.metric("kphp_by_host_version", true).tag(std::to_string(engine_tag_number)).write_count(1);
   }
 
-  static const auto dc_name = vk::singleton<ServerConfig>::get().get_dc_name();
-  client.metric("kphp_uptime").tag(dc_name).write_value(get_uptime());
+  client.metric("kphp_uptime").write_value(get_uptime());
 
   const auto general_worker_group = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
   client.metric("kphp_workers_general_processes").tag("working").write_value(general_worker_group.running_workers);

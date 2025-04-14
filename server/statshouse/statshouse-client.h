@@ -27,6 +27,10 @@ public:
     tag_host = host;
   }
 
+  void set_tag_dc_name(const std::string &dc_name) {
+    tag_dc_name = dc_name;
+  }
+
   void enable_tag_host() {
     host_enabled = true;
   }
@@ -39,5 +43,6 @@ private:
   statshouse::TransportUDP transport;
   std::string tag_cluster;
   std::string tag_host;
+  std::string tag_dc_name;
   bool host_enabled{false};
 };

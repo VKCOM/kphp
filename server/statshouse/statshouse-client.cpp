@@ -7,6 +7,7 @@
 statshouse::TransportUDPBase::MetricBuilder StatsHouseClient::metric(std::string_view name, bool force_tag_host) {
   auto builder = transport.metric(name);
   builder.tag(tag_cluster);
+  builder.tag(tag_dc_name);
   if (host_enabled || force_tag_host) {
     builder.tag("host", tag_host);
   }
