@@ -70,6 +70,7 @@ void StatsHouseManager::set_common_tags() {
   }
   client.set_tag_cluster(config.get_cluster_name());
   client.set_tag_host(kdb_gethostname());
+  client.set_tag_dc_name(config.get_dc_name());
 }
 
 void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
