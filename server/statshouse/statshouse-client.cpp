@@ -10,6 +10,6 @@ statshouse::TransportUDPBase::MetricBuilder StatsHouseClient::metric(std::string
   if (host_enabled || force_tag_host) {
     builder.tag("host", tag_host);
   }
-  builder.tag("dc_name", tag_dc_name);
+  builder.tag("dc", tag_dc_name);
   return builder;
 }
