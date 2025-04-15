@@ -134,7 +134,7 @@ kphp::coro::task<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> time
 
   // create response extra info
   if (collect_responses_extra_info) {
-    rpc_ctx.rpc_responses_extra_info.emplace(query_id, std::make_pair(rpc_response_extra_info_status_t::NOT_READY, rpc_response_extra_info_t{0, timestamp}));
+    rpc_ctx.rpc_responses_extra_info.emplace(query_id, std::make_pair(response_extra_info_status::not_ready, response_extra_info{0, timestamp}));
   }
   // normalize timeout
   const auto timeout_ns{timeout.has_value() && timeout.val() > 0 && timeout.val() <= MAX_TIMEOUT_S
@@ -152,7 +152,7 @@ kphp::coro::task<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> time
           if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) {
             const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
             it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
-            it_extra_info->second.first = rpc_response_extra_info_status_t::READY;
+            it_extra_info->second.first = response_extra_info_status::ready;
           } else {
             php_warning("can't find extra info for RPC query %" PRId64, query_id);
           }
@@ -384,12 +384,12 @@ kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> 
 
   bool collect_resp_extra_info = !ignore_answer && need_responses_extra_info;
   array<int64_t> query_ids{tl_objects.size()};
-  array<kphp::rpc::rpc_request_extra_info_t> req_extra_info_arr{tl_objects.size()};
+  array<kphp::rpc::request_extra_info> req_extra_info_arr{tl_objects.size()};
 
   for (const auto& it : tl_objects) {
     const auto query_info{co_await kphp::rpc::rpc_impl::rpc_tl_query_one_impl(actor, it.get_value(), timeout, collect_resp_extra_info, ignore_answer)};
     query_ids.set_value(it.get_key(), query_info.id);
-    req_extra_info_arr.set_value(it.get_key(), kphp::rpc::rpc_request_extra_info_t{query_info.request_size});
+    req_extra_info_arr.set_value(it.get_key(), kphp::rpc::request_extra_info{query_info.request_size});
   }
 
   if (!requests_extra_info.is_null()) {
