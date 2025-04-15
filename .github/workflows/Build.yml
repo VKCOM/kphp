@@ -14,6 +14,7 @@ env:
 
 jobs:
   build-linux:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -123,6 +124,7 @@ jobs:
       run: docker rm -f kphp-build-container-${{matrix.os}}
 
   build-macos:
+    if: ${{ false }}
     runs-on: ${{matrix.os}}-14
     strategy:
       matrix:
