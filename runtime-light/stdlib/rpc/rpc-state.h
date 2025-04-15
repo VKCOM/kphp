@@ -34,7 +34,7 @@ struct RpcInstanceState final : private vk::not_copyable {
   bool fail_rpc_on_int32_overflow{};
   unordered_map<int64_t, int64_t> response_waiter_forks;
   unordered_map<int64_t, class_instance<RpcTlQuery>> response_fetcher_instances;
-  unordered_map<int64_t, std::pair<rpc_response_extra_info_status_t, rpc_response_extra_info_t>> rpc_responses_extra_info;
+  unordered_map<int64_t, std::pair<kphp::rpc::rpc_response_extra_info_status_t, kphp::rpc::rpc_response_extra_info_t>> rpc_responses_extra_info;
 
   RpcInstanceState() noexcept = default;
 

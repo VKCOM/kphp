@@ -384,12 +384,12 @@ kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<mixed> 
 
   bool collect_resp_extra_info = !ignore_answer && need_responses_extra_info;
   array<int64_t> query_ids{tl_objects.size()};
-  array<rpc_request_extra_info_t> req_extra_info_arr{tl_objects.size()};
+  array<kphp::rpc::rpc_request_extra_info_t> req_extra_info_arr{tl_objects.size()};
 
   for (const auto& it : tl_objects) {
     const auto query_info{co_await kphp::rpc::rpc_impl::rpc_tl_query_one_impl(actor, it.get_value(), timeout, collect_resp_extra_info, ignore_answer)};
     query_ids.set_value(it.get_key(), query_info.id);
-    req_extra_info_arr.set_value(it.get_key(), rpc_request_extra_info_t{query_info.request_size});
+    req_extra_info_arr.set_value(it.get_key(), kphp::rpc::rpc_request_extra_info_t{query_info.request_size});
   }
 
   if (!requests_extra_info.is_null()) {

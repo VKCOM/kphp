@@ -13,14 +13,18 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
+namespace kphp::rpc {
+
 using rpc_request_extra_info_t = std::tuple<int64_t>;          // tuple(request_size)
 using rpc_response_extra_info_t = std::tuple<int64_t, double>; // tuple(response_size, response_time)
 enum class rpc_response_extra_info_status_t : uint8_t { NOT_READY, READY };
 
+} // namespace kphp::rpc
+
 struct C$KphpRpcRequestsExtraInfo final : public refcountable_php_classes<C$KphpRpcRequestsExtraInfo>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  array<rpc_request_extra_info_t> extra_info_arr;
+  array<kphp::rpc::rpc_request_extra_info_t> extra_info_arr;
 
   C$KphpRpcRequestsExtraInfo() = default;
 
@@ -34,8 +38,8 @@ struct C$KphpRpcRequestsExtraInfo final : public refcountable_php_classes<C$Kphp
   }
 };
 
-inline array<rpc_request_extra_info_t> f$KphpRpcRequestsExtraInfo$$get(const class_instance<C$KphpRpcRequestsExtraInfo>& v$this) noexcept {
+inline array<kphp::rpc::rpc_request_extra_info_t> f$KphpRpcRequestsExtraInfo$$get(const class_instance<C$KphpRpcRequestsExtraInfo>& v$this) noexcept {
   return v$this.get()->extra_info_arr;
 }
 
-Optional<rpc_response_extra_info_t> f$extract_kphp_rpc_response_extra_info(int64_t query_id) noexcept;
+Optional<kphp::rpc::rpc_response_extra_info_t> f$extract_kphp_rpc_response_extra_info(int64_t query_id) noexcept;
