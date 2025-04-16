@@ -19,14 +19,14 @@ namespace kphp::rpc {
 
 namespace rpc_impl {
 
-struct RpcQueryInfo {
+struct query_info {
   int64_t id{kphp::rpc::INVALID_QUERY_ID};
   size_t request_size{0};
   double timestamp{0.0};
 };
 
-kphp::coro::task<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest& rpc_request, Optional<double> timeout,
-                                                           bool collect_responses_extra_info, bool ignore_answer) noexcept;
+kphp::coro::task<query_info> typed_rpc_tl_query_one_impl(string actor, const RpcRequest& rpc_request, Optional<double> timeout,
+                                                         bool collect_responses_extra_info, bool ignore_answer) noexcept;
 
 kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory& error_factory) noexcept;
 

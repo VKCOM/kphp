@@ -105,7 +105,7 @@ class_instance<RpcTlQuery> store_function(const mixed& tl_object) noexcept {
   return rpc_tl_query;
 }
 
-kphp::coro::task<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
+kphp::coro::task<query_info> rpc_send_impl(string actor, Optional<double> timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept {
   auto& rpc_ctx{RpcInstanceState::get()};
   // prepare RPC request
   string request_buf{};
@@ -129,7 +129,7 @@ kphp::coro::task<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> time
   auto comp_query{co_await f$component_client_send_request(actor, request_buf)};
   if (comp_query.is_null()) {
     php_warning("can't send rpc query to %s", actor.c_str());
-    co_return RpcQueryInfo{.id = kphp::rpc::INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
+    co_return query_info{.id = kphp::rpc::INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
 
   // create response extra info
@@ -163,25 +163,25 @@ kphp::coro::task<RpcQueryInfo> rpc_send_impl(string actor, Optional<double> time
   const auto waiter_fork_id{co_await start_fork_t{std::move(waiter_task)}};
 
   if (ignore_answer) {
-    co_return RpcQueryInfo{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
+    co_return query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
   rpc_ctx.response_waiter_forks.emplace(query_id, waiter_fork_id);
-  co_return RpcQueryInfo{.id = query_id, .request_size = request_size, .timestamp = timestamp};
+  co_return query_info{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 
-kphp::coro::task<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_object, Optional<double> timeout, bool collect_resp_extra_info,
-                                                     bool ignore_answer) noexcept {
+kphp::coro::task<query_info> rpc_tl_query_one_impl(string actor, mixed tl_object, Optional<double> timeout, bool collect_resp_extra_info,
+                                                   bool ignore_answer) noexcept {
   auto& rpc_ctx{RpcInstanceState::get()};
 
   if (!tl_object.is_array()) {
     rpc_ctx.current_query.raise_storing_error("not an array passed to function rpc_tl_query");
-    co_return RpcQueryInfo{};
+    co_return query_info{};
   }
 
   rpc_ctx.rpc_buffer.clean();
   auto rpc_tl_query{store_function(tl_object)}; // TODO: exception handling
   if (rpc_tl_query.is_null()) {
-    co_return RpcQueryInfo{};
+    co_return query_info{};
   }
 
   const auto query_info{co_await rpc_send_impl(actor, timeout, ignore_answer, collect_resp_extra_info)};
@@ -191,20 +191,20 @@ kphp::coro::task<RpcQueryInfo> rpc_tl_query_one_impl(string actor, mixed tl_obje
   co_return query_info;
 }
 
-kphp::coro::task<RpcQueryInfo> typed_rpc_tl_query_one_impl(string actor, const RpcRequest& rpc_request, Optional<double> timeout,
-                                                           bool collect_responses_extra_info, bool ignore_answer) noexcept {
+kphp::coro::task<query_info> typed_rpc_tl_query_one_impl(string actor, const RpcRequest& rpc_request, Optional<double> timeout,
+                                                         bool collect_responses_extra_info, bool ignore_answer) noexcept {
   auto& rpc_ctx{RpcInstanceState::get()};
 
   if (rpc_request.empty()) {
     rpc_ctx.current_query.raise_storing_error("query function is null");
-    co_return RpcQueryInfo{};
+    co_return query_info{};
   }
 
   rpc_ctx.rpc_buffer.clean();
   auto fetcher{rpc_request.store_request()};
   if (!static_cast<bool>(fetcher)) {
     rpc_ctx.current_query.raise_storing_error("could not store rpc request");
-    co_return RpcQueryInfo{};
+    co_return query_info{};
   }
 
   const auto query_info{co_await rpc_send_impl(actor, timeout, ignore_answer, collect_responses_extra_info)};
