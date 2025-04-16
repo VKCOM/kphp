@@ -82,7 +82,7 @@ void t_Int::typed_fetch_to(t_Int::PhpType& out) {
 
 int32_t t_Int::prepare_int_for_storing(int64_t v) {
   auto v32 = static_cast<int32_t>(v);
-  if (is_int32_overflow(v)) [[unlikely]] {
+  if (kphp::rpc::is_int32_overflow(v)) [[unlikely]] {
     if (RpcInstanceState::get().fail_rpc_on_int32_overflow) {
       CurrentTlQuery::get().raise_storing_error("Got int32 overflow with value '%" PRIi64 "'. Serialization will fail.", v);
     } else {
