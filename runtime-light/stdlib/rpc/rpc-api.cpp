@@ -282,7 +282,7 @@ kphp::coro::task<kphp::rpc::query_info> send(string actor, Optional<double> time
   // send RPC request
   const auto query_id{rpc_instance_st.current_query_id++};
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-  auto comp_query{co_await f$component_client_send_request(actor, request_buf)};
+  auto comp_query{co_await f$component_client_send_request(actor, std::move(request_buf))};
   if (comp_query.is_null()) [[unlikely]] {
     php_warning("can't send rpc query to %s", actor.c_str());
     co_return kphp::rpc::query_info{.id = kphp::rpc::INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
