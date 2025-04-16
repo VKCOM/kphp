@@ -80,8 +80,7 @@ public:
   }
 
   void store_bytes(std::string_view bytes_view) noexcept {
-    // TODO: use std::vector::append_range after switch to C++-23
-    m_buffer.insert(m_buffer.end(), bytes_view.cbegin(), bytes_view.cend());
+    m_buffer.append_range(bytes_view);
     m_remaining += bytes_view.size();
   }
 
