@@ -87,8 +87,8 @@ allow_deprecated_declarations_for_apple(${BASE_DIR}/server/php-runner.cpp)
 
 vk_add_library_no_pic(kphp-server-no-pic OBJECT ${KPHP_SERVER_ALL_SOURCES})
 add_dependencies(kphp-server-no-pic OpenSSL::no-pic::Crypto RE2::no-pic::re2 YAML_CPP::no-pic::yaml-cpp ${NUMA_LIB_NO_PIC})
-target_include_directories(kphp-server-no-pic PUBLIC ${OPENSSL_NO_PIC_INCLUDE_DIRS} ${RE2_NO_PIC_INCLUDE_DIRS} ${YAML_CPP_NO_PIC_INCLUDE_DIRS} ${NUMACTL_NO_PIC_INCLUDE_DIRS})
+target_include_directories(kphp-server-no-pic PUBLIC ${OPENSSL_NO_PIC_INCLUDE_DIR} ${RE2_NO_PIC_INCLUDE_DIRS} ${YAML_CPP_NO_PIC_INCLUDE_DIRS} ${NUMACTL_NO_PIC_INCLUDE_DIRS})
 
 vk_add_library_pic(kphp-server-pic OBJECT ${KPHP_SERVER_ALL_SOURCES})
 add_dependencies(kphp-server-pic OpenSSL::pic::Crypto RE2::pic::re2 YAML_CPP::pic::yaml-cpp ${NUMA_LIB_NO_PIC})
-target_include_directories(kphp-server-pic PUBLIC ${OPENSSL_PIC_INCLUDE_DIRS} ${RE2_PIC_INCLUDE_DIRS} ${YAML_CPP_PIC_INCLUDE_DIRS} ${NUMACTL_PIC_INCLUDE_DIRS})
+target_include_directories(kphp-server-pic PUBLIC ${OPENSSL_PIC_INCLUDE_DIR} ${RE2_PIC_INCLUDE_DIRS} ${YAML_CPP_PIC_INCLUDE_DIRS} ${NUMACTL_PIC_INCLUDE_DIRS})
