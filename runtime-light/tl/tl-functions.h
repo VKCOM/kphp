@@ -182,5 +182,38 @@ struct K2InvokeRpc final {
     return ok;
   }
 };
+// ===== CACHE =====
+
+inline constexpr uint32_t CACHE_STORE_MAGIC = 0x41e9'38a8;
+inline constexpr uint32_t CACHE_UPDATE_TTL_MAGIC = 0x52cb'905c;
+inline constexpr uint32_t CACHE_DELETE_MAGIC = 0x71a9'5f2b;
+inline constexpr uint32_t CACHE_FETCH_MAGIC = 0xbd29'd526;
+
+struct CacheStore final {
+  string key;
+  string value;
+  uint32_t ttl{};
+
+  void store(TLBuffer& tlb) const noexcept;
+};
+
+struct CacheUpdateTtl final {
+  string key;
+  uint32_t ttl{};
+
+  void store(TLBuffer& tlb) const noexcept;
+};
+
+struct CacheDelete final {
+  string key;
+
+  void store(TLBuffer& tlb) const noexcept;
+};
+
+struct CacheFetch final {
+  string key;
+
+  void store(TLBuffer& tlb) const noexcept;
+};
 
 } // namespace tl
