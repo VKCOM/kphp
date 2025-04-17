@@ -11,6 +11,7 @@
 #include <memory>
 #include <utility>
 
+#include "common/containers/final_action.h"
 #include "common/rpc-error-codes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
@@ -18,12 +19,14 @@
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/component-api.h"
+#include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
-#include "runtime-light/tl/tl-core.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-error.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 
 namespace kphp::rpc {
 
@@ -54,50 +57,48 @@ mixed mixed_array_get_value(const mixed& arr, const string& str_key, int64_t num
   return {};
 }
 
-array<mixed> make_fetch_error(string error_msg, int32_t error_code) {
-  array<mixed> res;
-  res.set_value(string{"__error", 7}, std::move(error_msg));
-  res.set_value(string{"__error_code", 12}, error_code);
-  return res;
-}
-
+// THROWING
 array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery>& rpc_query) noexcept {
   php_assert(!rpc_query.is_null());
-  if (TlRpcError error{}; error.try_fetch()) [[unlikely]] {
-    return make_fetch_error(std::move(error.error_msg), error.error_code);
+  if (TlRpcError err{}; TRY_CALL(decltype(err.try_fetch()), array<mixed>, err.try_fetch())) [[unlikely]] {
+    return err.make_error();
   }
 
-  CurrentTlQuery::get().set_current_tl_function(rpc_query);
+  auto& cur_query{CurrentTlQuery::get()};
+  cur_query.set_current_tl_function(rpc_query);
   auto fetcher{rpc_query.get()->result_fetcher->extract_untyped_fetcher()};
   php_assert(fetcher);
 
-  const auto res{RpcImageState::get().tl_fetch_wrapper(std::move(fetcher))};
-  // TODO: exception handling
+  auto res{RpcImageState::get().tl_fetch_wrapper(std::move(fetcher))};
+  cur_query.reset();
   // TODO: EOF handling
   return res;
 }
 
+// THROWING
 class_instance<C$VK$TL$RpcResponse> fetch_function_typed(const class_instance<RpcTlQuery>& rpc_query, const RpcErrorFactory& error_factory) noexcept {
   php_assert(!rpc_query.is_null());
-  CurrentTlQuery::get().set_current_tl_function(rpc_query);
-  if (const auto rpc_error{error_factory.fetch_error_if_possible()}; !rpc_error.is_null()) [[unlikely]] { // check if the response is error
-    return rpc_error;
+
+  auto& cur_query{CurrentTlQuery::get()};
+  cur_query.set_current_tl_function(rpc_query);
+  if (TlRpcError err{}; TRY_CALL(decltype(err.try_fetch()), class_instance<C$VK$TL$RpcResponse>, err.try_fetch())) [[unlikely]] {
+    return error_factory.make_error(std::move(err));
   }
 
-  const auto res{rpc_query.get()->result_fetcher->fetch_typed_response()};
-  // TODO: exception handling
+  auto res{rpc_query.get()->result_fetcher->fetch_typed_response()};
+  cur_query.reset();
   // TODO: EOF handling
   return res;
 }
 
+// THROWING
 class_instance<RpcTlQuery> store_function(const mixed& tl_object) noexcept {
   auto& cur_query{CurrentTlQuery::get()};
   const auto& rpc_image_state{RpcImageState::get()};
 
   const auto fun_name{mixed_array_get_value(tl_object, string{"_"}, 0).to_string()};
   if (!rpc_image_state.tl_storers_ht.has_key(fun_name)) [[unlikely]] {
-    cur_query.raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str());
-    return {};
+    TRY_CALL_VOID(class_instance<RpcTlQuery>, cur_query.raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str()));
   }
 
   auto rpc_tl_query{make_instance<RpcTlQuery>()};
@@ -112,16 +113,21 @@ class_instance<RpcTlQuery> store_function(const mixed& tl_object) noexcept {
 
 kphp::coro::task<kphp::rpc::query_info> rpc_tl_query_one_impl(string actor, mixed tl_object, Optional<double> timeout, bool collect_resp_extra_info,
                                                               bool ignore_answer) noexcept {
-  auto& rpc_instance_st{RpcInstanceState::get()};
-
   if (!tl_object.is_array()) [[unlikely]] {
-    rpc_instance_st.current_query.raise_storing_error("not an array passed to function rpc_tl_query");
+    php_warning("not an array passed to function rpc_tl_query");
     co_return kphp::rpc::query_info{};
   }
 
+  auto& rpc_instance_st{RpcInstanceState::get()};
+
   rpc_instance_st.rpc_buffer.clean();
-  auto rpc_tl_query{store_function(tl_object)}; // TODO: exception handling
+  auto rpc_tl_query{store_function(tl_object)}; // THROWING
+  // get rid of possible exceptions
+  if (!TlRpcError::transform_exception_into_error_if_possible().empty()) [[unlikely]] {
+    co_return kphp::rpc::query_info{};
+  }
   if (rpc_tl_query.is_null()) [[unlikely]] {
+    php_warning("could not store rpc request");
     co_return kphp::rpc::query_info{};
   }
 
@@ -134,17 +140,21 @@ kphp::coro::task<kphp::rpc::query_info> rpc_tl_query_one_impl(string actor, mixe
 
 kphp::coro::task<kphp::rpc::query_info> typed_rpc_tl_query_one_impl(string actor, const RpcRequest& rpc_request, Optional<double> timeout,
                                                                     bool collect_responses_extra_info, bool ignore_answer) noexcept {
-  auto& rpc_instance_st{RpcInstanceState::get()};
-
   if (rpc_request.empty()) [[unlikely]] {
-    rpc_instance_st.current_query.raise_storing_error("query function is null");
+    php_warning("query function is null");
     co_return kphp::rpc::query_info{};
   }
 
+  auto& rpc_instance_st{RpcInstanceState::get()};
+
   rpc_instance_st.rpc_buffer.clean();
-  auto fetcher{rpc_request.store_request()};
+  auto fetcher{rpc_request.store_request()}; // THROWING
+  // get rid of possible exceptions
+  if (!TlRpcError::transform_exception_into_error_if_possible().empty()) [[unlikely]] {
+    co_return kphp::rpc::query_info{};
+  }
   if (!static_cast<bool>(fetcher)) [[unlikely]] {
-    rpc_instance_st.current_query.raise_storing_error("could not store rpc request");
+    php_warning("could not store rpc request");
     co_return kphp::rpc::query_info{};
   }
 
@@ -159,9 +169,10 @@ kphp::coro::task<kphp::rpc::query_info> typed_rpc_tl_query_one_impl(string actor
   co_return query_info;
 }
 
+// THROWING
 kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
   if (query_id < kphp::rpc::VALID_QUERY_ID_RANGE_START) [[unlikely]] {
-    co_return make_fetch_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
+    co_return TlRpcError::make_error(TL_ERROR_WRONG_QUERY_ID, string{"wrong query_id"});
   }
 
   auto& rpc_instance_st{RpcInstanceState::get()};
@@ -177,39 +188,44 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
     }};
 
     if (it_query == rpc_instance_st.response_fetcher_instances.end() || it_fork_id == rpc_instance_st.response_waiter_forks.end()) [[unlikely]] {
-      co_return make_fetch_error(string{"unexpectedly could not find query in pending queries"}, TL_ERROR_INTERNAL);
+      co_return TlRpcError::make_error(TL_ERROR_INTERNAL, string{"unexpectedly could not find query in pending queries"});
     }
     rpc_query = std::move(it_query->second);
     response_waiter_fork_id = it_fork_id->second;
   }
 
   if (rpc_query.is_null()) [[unlikely]] {
-    co_return make_fetch_error(string{"can't use rpc_tl_query_result for non-TL query"}, TL_ERROR_INTERNAL);
+    co_return TlRpcError::make_error(TL_ERROR_INTERNAL, string{"can't use rpc_tl_query_result for non-TL query"});
   }
   if (!rpc_query.get()->result_fetcher || rpc_query.get()->result_fetcher->empty()) [[unlikely]] {
-    co_return make_fetch_error(string{"rpc query has empty result fetcher"}, TL_ERROR_INTERNAL);
+    co_return TlRpcError::make_error(TL_ERROR_INTERNAL, string{"rpc query has empty result fetcher"});
   }
   if (rpc_query.get()->result_fetcher->is_typed) [[unlikely]] {
-    co_return make_fetch_error(string{"can't get untyped result from typed TL query. Use consistent API for that"}, TL_ERROR_INTERNAL);
+    co_return TlRpcError::make_error(TL_ERROR_INTERNAL, string{"can't get untyped result from typed TL query. Use consistent API for that"});
   }
 
   auto opt_data{co_await f$wait<Optional<string>>(response_waiter_fork_id, MAX_TIMEOUT_S)};
   if (!opt_data.has_value()) [[unlikely]] {
-    co_return make_fetch_error(string{"can't find waiter fork"}, TL_ERROR_INTERNAL);
+    co_return TlRpcError::make_error(TL_ERROR_INTERNAL, string{"can't find waiter fork"});
   }
   if (opt_data.val().empty()) [[unlikely]] {
-    co_return make_fetch_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
+    co_return TlRpcError::make_error(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"});
   }
 
   auto data{std::move(opt_data.val())};
   rpc_instance_st.rpc_buffer.clean();
   rpc_instance_st.rpc_buffer.store_bytes({data.c_str(), static_cast<size_t>(data.size())});
-  co_return fetch_function_untyped(rpc_query);
+  auto res{fetch_function_untyped(rpc_query)}; // THROWING
+  // get rid of possible exceptions
+  if (auto err{TlRpcError::transform_exception_into_error_if_possible()}; !err.empty()) [[unlikely]] {
+    res = std::move(err);
+  }
+  co_return std::move(res);
 }
 
 kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory& error_factory) noexcept {
   if (query_id < kphp::rpc::VALID_QUERY_ID_RANGE_START) [[unlikely]] {
-    co_return error_factory.make_error(string{"wrong query_id"}, TL_ERROR_WRONG_QUERY_ID);
+    co_return error_factory.make_error(TL_ERROR_WRONG_QUERY_ID, string{"wrong query_id"});
   }
 
   auto& rpc_instance_st{RpcInstanceState::get()};
@@ -225,34 +241,39 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
     }};
 
     if (it_query == rpc_instance_st.response_fetcher_instances.end() || it_fork_id == rpc_instance_st.response_waiter_forks.end()) [[unlikely]] {
-      co_return error_factory.make_error(string{"unexpectedly could not find query in pending queries"}, TL_ERROR_INTERNAL);
+      co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"unexpectedly could not find query in pending queries"});
     }
     rpc_query = std::move(it_query->second);
     response_waiter_fork_id = it_fork_id->second;
   }
 
   if (rpc_query.is_null()) [[unlikely]] {
-    co_return error_factory.make_error(string{"can't use rpc_tl_query_result for non-TL query"}, TL_ERROR_INTERNAL);
+    co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"can't use rpc_tl_query_result for non-TL query"});
   }
   if (!rpc_query.get()->result_fetcher || rpc_query.get()->result_fetcher->empty()) [[unlikely]] {
-    co_return error_factory.make_error(string{"rpc query has empty result fetcher"}, TL_ERROR_INTERNAL);
+    co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"rpc query has empty result fetcher"});
   }
   if (!rpc_query.get()->result_fetcher->is_typed) [[unlikely]] {
-    co_return error_factory.make_error(string{"can't get typed result from untyped TL query. Use consistent API for that"}, TL_ERROR_INTERNAL);
+    co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"can't get typed result from untyped TL query. Use consistent API for that"});
   }
 
   auto opt_data{co_await f$wait<Optional<string>>(response_waiter_fork_id, MAX_TIMEOUT_S)};
   if (!opt_data.has_value()) [[unlikely]] {
-    co_return error_factory.make_error(string{"can't find waiter fork"}, TL_ERROR_INTERNAL);
+    co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"can't find waiter fork"});
   }
   if (opt_data.val().empty()) [[unlikely]] {
-    co_return error_factory.make_error(string{"rpc response timeout"}, TL_ERROR_QUERY_TIMEOUT);
+    co_return error_factory.make_error(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"});
   }
 
   auto data{std::move(opt_data.val())};
   rpc_instance_st.rpc_buffer.clean();
   rpc_instance_st.rpc_buffer.store_bytes({data.c_str(), static_cast<size_t>(data.size())});
-  co_return fetch_function_typed(rpc_query, error_factory);
+  auto res{fetch_function_typed(rpc_query, error_factory)}; // THROWING
+  // get rid of possible exceptions
+  if (auto err{error_factory.transform_exception_into_error_if_possible()}; !err.is_null()) [[unlikely]] {
+    res = std::move(err);
+  }
+  co_return std::move(res);
 }
 
 } // namespace rpc_impl
