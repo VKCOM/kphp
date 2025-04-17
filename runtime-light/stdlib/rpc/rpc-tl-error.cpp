@@ -8,7 +8,7 @@
 
 #include "common/tl/constants/common.h"
 #include "runtime-light/stdlib/rpc/rpc-api.h"
-#include "runtime-light/tl/tl-builtins.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-builtins.h"
 
 bool TlRpcError::try_fetch() noexcept {
   const auto backup_pos{tl_parse_save_pos()};

@@ -18,6 +18,7 @@ prepend(
   rpc/rpc-state.cpp
   rpc/rpc-extra-headers.cpp
   rpc/rpc-extra-info.cpp
+  rpc/rpc-tl-builtins.cpp
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp
   rpc/rpc-tl-request.cpp
