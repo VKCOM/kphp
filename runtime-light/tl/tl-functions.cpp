@@ -133,4 +133,29 @@ bool K2InvokeHttp::fetch(TLBuffer& tlb) noexcept {
   return ok;
 }
 
+// ===== Cache =====
+
+void CacheStore::store(TLBuffer& tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(CACHE_STORE_MAGIC);
+  key.store(tlb);
+  value.store(tlb);
+  tlb.store_trivial<uint32_t>(ttl);
+}
+
+void CacheUpdateTtl::store(TLBuffer& tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(CACHE_UPDATE_TTL_MAGIC);
+  key.store(tlb);
+  tlb.store_trivial<uint32_t>(ttl);
+}
+
+void CacheDelete::store(TLBuffer& tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(CACHE_DELETE_MAGIC);
+  key.store(tlb);
+}
+
+void CacheFetch::store(TLBuffer& tlb) const noexcept {
+  tlb.store_trivial<uint32_t>(CACHE_FETCH_MAGIC);
+  key.store(tlb);
+}
+
 } // namespace tl
