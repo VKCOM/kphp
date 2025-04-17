@@ -27,7 +27,7 @@ inline constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::n
 inline constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT_S});
 
 inline std::chrono::nanoseconds normalize_timeout(double timeout_s) noexcept {
-  if (timeout_s < 0 || timeout_s > MAX_TIMEOUT_S) [[unlikely]] {
+  if (timeout_s <= 0 || timeout_s > MAX_TIMEOUT_S) {
     return DEFAULT_TIMEOUT_NS;
   }
   return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout_s});

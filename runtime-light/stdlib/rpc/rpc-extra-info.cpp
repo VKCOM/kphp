@@ -9,9 +9,9 @@
 
 #include "runtime-light/stdlib/rpc/rpc-state.h"
 
-Optional<rpc_response_extra_info_t> f$extract_kphp_rpc_response_extra_info(int64_t query_id) noexcept {
+Optional<kphp::rpc::response_extra_info> f$extract_kphp_rpc_response_extra_info(int64_t query_id) noexcept {
   auto& extra_info_map{RpcInstanceState::get().rpc_responses_extra_info};
-  if (const auto it{extra_info_map.find(query_id)}; it != extra_info_map.end() && it->second.first == rpc_response_extra_info_status_t::READY) {
+  if (const auto it{extra_info_map.find(query_id)}; it != extra_info_map.end() && it->second.first == kphp::rpc::response_extra_info_status::ready) {
     const auto extra_info{it->second.second};
     extra_info_map.erase(it);
     return extra_info;

@@ -2,10 +2,11 @@
 //  Copyright (c) 2024 LLC «V Kontakte»
 //  Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/tl/tl-builtins.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-builtins.h"
 
 #include "common/php-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
+#include "runtime-light/tl/tl-core.h"
 
 void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr>& gen$ht, tl_fetch_wrapper_ptr gen$t_ReqResult_fetch) {
   auto& rpc_mutable_image_state{RpcImageState::get_mutable()};
@@ -82,7 +83,7 @@ void t_Int::typed_fetch_to(t_Int::PhpType& out) {
 
 int32_t t_Int::prepare_int_for_storing(int64_t v) {
   auto v32 = static_cast<int32_t>(v);
-  if (is_int32_overflow(v)) [[unlikely]] {
+  if (tl::is_int32_overflow(v)) [[unlikely]] {
     if (RpcInstanceState::get().fail_rpc_on_int32_overflow) {
       CurrentTlQuery::get().raise_storing_error("Got int32 overflow with value '%" PRIi64 "'. Serialization will fail.", v);
     } else {

@@ -33,7 +33,7 @@ inline void fetch_raw_vector_T(array<T>& out __attribute__((unused)), int64_t n_
 
 template<>
 inline void fetch_raw_vector_T<double>(array<double>& out, int64_t n_elems) {
-  fetch_raw_vector_double(out, n_elems);
+  f$fetch_raw_vector_double(out, n_elems);
 }
 
 template<class T>
@@ -43,7 +43,7 @@ inline void store_raw_vector_T(const array<T>& v __attribute__((unused))) {
 
 template<>
 inline void store_raw_vector_T<double>(const array<double>& v) {
-  store_raw_vector_double(v);
+  f$store_raw_vector_double(v);
 }
 
 // Wrap into Optional that TL types which PhpType is:

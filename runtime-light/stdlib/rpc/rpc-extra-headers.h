@@ -4,24 +4,28 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <utility>
+
+namespace kphp::rpc {
 
 #pragma pack(push, 1)
 
-struct RpcDestActorFlagsHeaders {
+struct dest_actor_flags_header {
   uint32_t op;
   int64_t actor_id;
   uint32_t flags;
 };
 
-struct RpcDestActorHeaders {
+struct dest_actor_header {
   uint32_t op;
   int64_t actor_id;
 };
 
-struct RpcDestFlagsHeaders {
+struct dest_flags_header {
   uint32_t op;
   uint32_t flags;
 };
@@ -35,4 +39,6 @@ struct RpcDestFlagsHeaders {
  * 3) return \<RpcDestActorFlagsHeaders instance, current extra header's size\> pair.
  * Otherwise, return \<std::nullopt, current extra header's size\>.
  * */
-std::pair<std::optional<RpcDestActorFlagsHeaders>, uint32_t> regularize_extra_headers(const char* rpc_payload, bool ignore_result) noexcept;
+std::pair<std::optional<dest_actor_flags_header>, uint32_t> regularize_extra_headers(std::span<const std::byte> payload, bool ignore_result) noexcept;
+
+} // namespace kphp::rpc
