@@ -21,15 +21,16 @@ class WebServer(Engine):
         super(WebServer, self).__init__(web_server_bin, working_dir, options)
         self._http_port = get_port()
         self._json_log_file_read_fd = None
-        self._json_log_file = self._log_file + ".json"
+        self._json_log_file = None
         self._json_logs = []
 
 
     def start(self, start_msgs=None):
         super(WebServer, self).start(start_msgs)
-        wait_for_file(self._json_log_file, 1, 0.1)
         self._json_logs = []
-        self._json_log_file_read_fd = open(self._json_log_file, 'r')
+        if (self._json_log_file is not None):
+            time.sleep(1)
+            self._json_log_file_read_fd = open(self._json_log_file, 'r')
 
     def stop(self):
         super(WebServer, self).stop()

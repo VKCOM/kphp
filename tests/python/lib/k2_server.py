@@ -16,13 +16,14 @@ class K2Server(WebServer):
         """
         super(K2Server, self).__init__(k2_server_bin, working_dir, options)
         self._images_dir = kphp_build_dir
+        self._working_dir = working_dir
         self._linking_file = os.path.join(working_dir, "data/component-config.yaml")
+        self._json_log_file = None
         self._options = {"start-node": True,
                          "--host": "127.0.0.1",
                          "--port": self.http_port,
                          "--images-dir": self._images_dir,
-                         "--linking": self._linking_file,
-                         "--log-file": self._json_log_file}
+                         "--linking": self._linking_file}
 
         if options:
             self.update_options(options)
@@ -30,16 +31,14 @@ class K2Server(WebServer):
             self.start()
 
     def start(self, start_msgs=None):
+        if "--log-file" in self._options:
+            self._json_log_file = os.path.join(self._working_dir, self._options["--log-file"])
+        else:
+            if start_msgs is None:
+                start_msgs = []
+            start_msgs.append("Starting to accept clients.")
         super(K2Server, self).start(start_msgs)
 
     def stop(self):
         super(K2Server, self).stop()
-
-    def set_error_tag(self, tag):
-        error_tag_file = None
-        if tag is not None:
-            error_tag_file = os.path.join(self._working_dir, "error_tag_file")
-            with open(error_tag_file, 'w') as f:
-                f.write(str(tag))
-        self.update_options({"--error-tag": error_tag_file})
 

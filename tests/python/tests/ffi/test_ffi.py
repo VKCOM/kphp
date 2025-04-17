@@ -5,6 +5,7 @@ import re
 
 from python.lib.testcase import KphpCompilerAutoTestCase
 
+@pytest.mark.k2_skip_suite
 class TestFFI(KphpCompilerAutoTestCase):
     def should_use_nocc(self):
         # compiling FFI tests needs special libs to be installed, whey aren't installed on nocc agents

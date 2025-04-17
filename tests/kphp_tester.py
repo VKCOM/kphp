@@ -63,7 +63,7 @@ class TestFile:
             k2_bin=None if k2_bin is None else os.path.abspath(k2_bin)
         )
 
-    def set_up_env_for_k2(self, cxx_name="clang++"):
+    def set_up_env_for_k2(self):
         self.env_vars["KPHP_MODE"] = "k2-cli"
         self.env_vars["KPHP_USER_BINARY_PATH"] = "component.so"
         self.env_vars["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "0"

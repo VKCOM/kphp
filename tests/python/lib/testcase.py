@@ -206,11 +206,7 @@ class WebServerAutoTestCase(BaseTestCase):
                 kphp_env["KPHP_TL_SCHEMA"] = search_combined_tlo(cls.kphp_build_working_dir)
 
             if cls.should_use_k2():
-                kphp_env["KPHP_CXX"] = "clang++"
-                kphp_env["KPHP_MODE"] = "k2-server"
-                kphp_env["KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE"] = "0"
-                kphp_env["KPHP_PROFILER"] = "0"
-                kphp_env["KPHP_USER_BINARY_PATH"] = "component.so"
+                kphp_env = cls.add_k2_options(kphp_env)
 
             print("\nCompiling kphp")
             if not cls.kphp_builder.compile_with_kphp(kphp_env):
@@ -282,6 +278,20 @@ class WebServerAutoTestCase(BaseTestCase):
     def should_use_k2(cls):
         return os.getenv("K2_BIN") is not None
 
+    @classmethod
+    def add_k2_options(cls, kphp_env):
+        if kphp_env is None:
+            kphp_env = {}
+
+        kphp_env["KPHP_CXX"] = "clang++"
+        kphp_env["KPHP_MODE"] = "k2-server"
+        kphp_env["KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE"] = "0"
+        kphp_env["KPHP_PROFILER"] = "0"
+        kphp_env["KPHP_USER_BINARY_PATH"] = "component.so"
+        kphp_env["KPHP_FORCE_LINK_RUNTIME"] = "1"
+        return kphp_env
+
+
     def assertKphpNoTerminatedRequests(self):
         """
         Проверяем что в статах kphp сервер нет terminated requests
@@ -340,18 +350,39 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     def should_use_nocc(cls):
         return nocc_env("NOCC_SERVERS_FILENAME", None) is not None
 
+    @classmethod
+    def should_use_k2(cls):
+        return os.getenv("K2_BIN") is not None
+
+    @classmethod
+    def add_k2_options(cls, kphp_env):
+        if kphp_env is None:
+            kphp_env = {}
+
+        kphp_env["KPHP_CXX"] = "clang++"
+        kphp_env["KPHP_MODE"] = "k2-cli"
+        kphp_env["KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE"] = "0"
+        kphp_env["KPHP_PROFILER"] = "0"
+        kphp_env["KPHP_USER_BINARY_PATH"] = "component.so"
+        kphp_env["KPHP_FORCE_LINK_RUNTIME"] = "1"
+        return kphp_env
+
     def make_kphp_once_runner(self, php_script_path):
+        k2_bin = os.getenv("K2_BIN")
         once_runner = KphpRunOnce(
             php_script_path=os.path.join(self.test_dir, php_script_path),
             artifacts_dir=self.web_server_working_dir,
             working_dir=self.kphp_build_working_dir,
             php_bin=search_php_bin(php_version=self.php_version),
             use_nocc=self.should_use_nocc(),
+            k2_bin=os.path.abspath(k2_bin) if k2_bin is not None else None,
         )
         self.once_runner_trash_bin.append(once_runner)
         return once_runner
 
     def build_and_compare_with_php(self, php_script_path, kphp_env=None):
+        if self.should_use_k2():
+            kphp_env = self.add_k2_options(kphp_env)
         once_runner = self.make_kphp_once_runner(php_script_path)
         self.assertTrue(once_runner.run_with_php(), "Got PHP error")
         self.assertTrue(once_runner.compile_with_kphp(kphp_env), "Got KPHP build error")

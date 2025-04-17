@@ -26,6 +26,7 @@ class KphpServer(WebServer):
         self._options["--workers-num"] = 1
         self._options["--allow-loopback"] = None
         self._options["--dump-next-queries"] = None
+        self._json_log_file = self._log_file + ".json"
         if options:
             self.update_options(options)
         if auto_start:
