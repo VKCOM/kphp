@@ -10,7 +10,6 @@
 #include <string_view>
 #include <utility>
 
-#include "common/algorithms/find.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
@@ -18,6 +17,7 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-kphp-request.h"
+#include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
 
 namespace kphp::rpc {
@@ -27,14 +27,6 @@ struct query_info {
   size_t request_size{0};
   double timestamp{0.0};
 };
-
-inline bool is_int32_overflow(int64_t v) noexcept {
-  // f$store_int function is used for int and 'magic' storing,
-  // 'magic' can be assigned via hex literals which may set the 32nd bit,
-  // this is why we additionally check for the uint32_t here
-  const auto v32{static_cast<int32_t>(v)};
-  return vk::none_of_equal(v, int64_t{v32}, int64_t{static_cast<uint32_t>(v32)});
-}
 
 kphp::coro::task<kphp::rpc::query_info> send(string actor, Optional<double> timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept;
 
@@ -57,7 +49,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 // === server =====================================================================================
 
 inline bool f$store_int(int64_t v) noexcept {
-  if (kphp::rpc::is_int32_overflow(v)) [[unlikely]] {
+  if (tl::is_int32_overflow(v)) [[unlikely]] {
     php_warning("Got int32 overflow on storing '%" PRIi64 "', the value will be casted to '%d'", v, static_cast<int32_t>(v));
   }
   RpcInstanceState::get().rpc_buffer.store_trivial<int32_t>(v);

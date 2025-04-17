@@ -11,14 +11,18 @@
 #include <string_view>
 #include <utility>
 
-#include "common/mixin/not_copyable.h"
+#include "common/algorithms/find.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/utils/concepts.h"
 
 namespace tl {
+
+inline bool is_int32_overflow(int64_t v) noexcept {
+  const auto v32{static_cast<int32_t>(v)};
+  return vk::none_of_equal(v, int64_t{v32}, int64_t{static_cast<uint32_t>(v32)});
+}
 
 class TLBuffer final {
   static constexpr auto INIT_BUFFER_SIZE = 1024;
