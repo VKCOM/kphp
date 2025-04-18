@@ -52,7 +52,8 @@ include(${RUNTIME_LIGHT_DIR}/allocator-wrapper/allocator-wrapper.cmake)
 
 vk_add_library_pic(runtime-light-pic OBJECT ${RUNTIME_LIGHT_SRC})
 target_compile_options(runtime-light-pic PUBLIC ${RUNTIME_LIGHT_COMPILE_FLAGS})
-target_link_libraries(runtime-light-pic PUBLIC vk::pic::libc-alloc-wrapper) # alloc wrapper
+target_link_libraries(runtime-light-pic PUBLIC vk::pic::libc-alloc-wrapper) # it's mandatory to have alloc-wrapper first in the list of link libraries since we
+                                                                            # want to use it's symbols in all other libraries
 target_link_libraries(runtime-light-pic PUBLIC PCRE2::pic::pcre2 ZLIB::pic::zlib) # third parties
 
 set(RUNTIME_LIGHT_LINK_LIBS "${PCRE2_PIC_LIBRARIES} ${ZLIB_PIC_LIBRARIES}")
