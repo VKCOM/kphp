@@ -284,7 +284,6 @@ class WebServerAutoTestCase(BaseTestCase):
                "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1"}
         return env
 
-
     def assertKphpNoTerminatedRequests(self):
         """
         Проверяем что в статах kphp сервер нет terminated requests
@@ -354,14 +353,13 @@ class KphpCompilerAutoTestCase(BaseTestCase):
         return env
 
     def make_kphp_once_runner(self, php_script_path):
-        k2_bin = os.getenv("K2_BIN")
         once_runner = KphpRunOnce(
             php_script_path=os.path.join(self.test_dir, php_script_path),
             artifacts_dir=self.web_server_working_dir,
             working_dir=self.kphp_build_working_dir,
             php_bin=search_php_bin(php_version=self.php_version),
             use_nocc=self.should_use_nocc(),
-            k2_bin=os.path.abspath(k2_bin) if k2_bin is not None else None,
+            k2_bin=os.path.abspath(os.getenv("K2_BIN")) if self.should_use_k2() else None,
         )
         self.once_runner_trash_bin.append(once_runner)
         return once_runner
