@@ -6,16 +6,16 @@ from .web_server import WebServer
 
 
 class KphpServer(WebServer):
-    def __init__(self, engine_bin, working_dir, options=None, auto_start=False):
+    def __init__(self, kphp_server_bin, working_dir, options=None, auto_start=False):
         """
-        :param engine_bin: Путь до бинарника kphp сервера
-        :param working_dir: Рабочая папка где будет запущен kphp сервер
-        :param options: Словарь с дополнительными опциями, которые будут использоваться при запуске kphp сервера
-            Специальная значения:
-                option: True - передавать опцию без значения
-                option: None - удалить дефолтно проставляемую опцию
+        :param kphp_server_bin: Path to the kphp server binary
+        :param working_dir: Working directory where the kphp server will be started
+        :param options: Dictionary with additional options that will be used when starting the kphp server
+            Special values:
+                option: True - pass the option without a value
+                option: None - remove the default option
         """
-        super(KphpServer, self).__init__(engine_bin, working_dir, options)
+        super(KphpServer, self).__init__(kphp_server_bin, working_dir, options)
         self._options["--port"] = None
         self._master_port = get_port()
         self._options["--http-port"] = self._http_port
@@ -40,12 +40,8 @@ class KphpServer(WebServer):
 
     def stop(self):
         super(KphpServer, self).stop()
-        try:
-            if os.path.exists(self.get_server_config_path()):
-                os.remove(self.get_server_config_path())
-            os.remove(self._engine_bin)
-        except OSError:
-            pass
+        if os.path.exists(self.get_server_config_path()):
+            os.remove(self.get_server_config_path())
 
     def set_error_tag(self, tag):
         error_tag_file = None

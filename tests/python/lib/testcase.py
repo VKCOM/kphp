@@ -229,7 +229,7 @@ class WebServerAutoTestCase(BaseTestCase):
                 kphp_build_dir=cls.kphp_builder.kphp_build_tmp_dir)
         else:
             cls.web_server = KphpServer(
-                engine_bin=cls.web_server_bin,
+                kphp_server_bin=cls.web_server_bin,
                 working_dir=cls.web_server_working_dir)
 
         cls.extra_class_setup()
@@ -240,6 +240,10 @@ class WebServerAutoTestCase(BaseTestCase):
     def custom_teardown(cls):
         cls.web_server.stop()
         cls.extra_class_teardown()
+        try:
+            os.remove(cls.web_server_bin)
+        except OSError:
+            pass
         for sanitizer_log in glob.glob(cls.sanitizer_pattern + ".*"):
             if not can_ignore_sanitizer_log(sanitizer_log):
                 raise RuntimeError("Got unexpected sanitizer log '{}'".format(sanitizer_log))
