@@ -59,14 +59,16 @@ inline ResultType f$msgpack_deserialize(const string& buffer, string* out_err_ms
 
     if (unpacker.has_error()) {
       err_msg = unpacker.get_error_msg();
-    } else {
-      return obj.as<ResultType>();
     }
-  } catch (vk::msgpack::type_error& e) {
-    err_msg = string("Unknown type found during deserialization");
-  } catch (vk::msgpack::unpack_error& e) {
-    err_msg = string(e.what());
+
+    auto res = obj.as<ResultType>();
+    if (unpacker.has_error()) {
+      err_msg = unpacker.get_error_msg();
+    } else {
+      return res;
+    }
   } catch (...) {
+    assert(false && "must be unreachable");
     err_msg = string("something went wrong in deserialization, pass it to KPHP|Team");
   }
 

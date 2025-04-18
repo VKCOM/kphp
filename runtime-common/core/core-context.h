@@ -6,8 +6,10 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 #include "common/mixin/not_copyable.h"
+#include "common/wrappers/string_view.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
 #error "this file must be included only from runtime-core.h"
@@ -21,6 +23,7 @@ struct RuntimeContext final : vk::not_copyable {
   string_buffer_lib_context sb_lib_context{};
   string_buffer static_SB{};
   string_buffer static_SB_spare{};
+  std::optional<vk::string_view> msgpack_error; 
 
   void init() noexcept;
   void free() noexcept;
