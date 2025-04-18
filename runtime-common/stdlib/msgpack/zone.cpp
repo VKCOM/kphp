@@ -13,7 +13,9 @@ namespace vk::msgpack {
 zone::chunk_list::chunk_list(size_t chunk_size) {
   auto* c = static_cast<chunk*>(kphp::memory::script::alloc(sizeof(chunk) + chunk_size));
   if (!c) {
-    throw std::bad_alloc{};
+    m_error = true;
+    return;
+    // throw std::bad_alloc{};
   }
 
   m_head = c;
@@ -33,7 +35,8 @@ zone::chunk_list::~chunk_list() {
 
 zone::zone(size_t chunk_size)
     : m_chunk_size(chunk_size),
-      m_chunk_list(m_chunk_size) {}
+      m_chunk_list(m_chunk_size),
+      m_error(m_chunk_list.m_error) {}
 
 static char* get_aligned(const char* ptr, size_t align) noexcept {
   return reinterpret_cast<char*>(reinterpret_cast<size_t>((ptr + (align - 1))) / align * align);
@@ -45,6 +48,9 @@ void* zone::allocate_align(size_t size, size_t align) {
   if (m_chunk_list.m_free < adjusted_size) {
     size_t enough_size = size + align - 1;
     char* ptr = allocate_expand(enough_size);
+    if (m_error) {
+      return nullptr;
+    }
     aligned = get_aligned(ptr, align);
     adjusted_size = size + (aligned - m_chunk_list.m_ptr);
   }
@@ -68,7 +74,9 @@ char* zone::allocate_expand(size_t size) {
   }
   auto* c = static_cast<chunk*>(kphp::memory::script::alloc(sizeof(chunk) + sz));
   if (!c) {
-    throw std::bad_alloc{};
+    m_error = true;
+    return nullptr;
+    // throw std::bad_alloc{};
   }
 
   char* ptr = reinterpret_cast<char*>(c) + sizeof(chunk);

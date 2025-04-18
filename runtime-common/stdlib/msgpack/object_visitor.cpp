@@ -71,6 +71,10 @@ bool object_visitor::visit_str(const char* v, uint32_t size) {
   obj->type = stored_type::STR;
   if (v) {
     char* tmp = static_cast<char*>(m_zone.allocate_align(size, alignof(char)));
+    if (m_zone.has_error()) {
+      error = "cannot allocate";
+      return false;
+    }
     std::memcpy(tmp, v, size);
     obj->via.str.ptr = tmp;
     obj->via.str.size = size;
@@ -90,9 +94,16 @@ bool object_visitor::start_array(uint32_t num_elements) {
   } else {
     size_t size = num_elements * sizeof(msgpack::object);
     if (size / sizeof(msgpack::object) != num_elements) {
-      throw msgpack::array_size_overflow("array size overflow");
+      error = "array size overflow";
+      return false;
+      // throw msgpack::array_size_overflow("array size overflow");
     }
-    obj->via.array.ptr = static_cast<msgpack::object*>(m_zone.allocate_align(size, alignof(msgpack::object)));
+    auto* ptr = m_zone.allocate_align(size, alignof(msgpack::object));
+    if (m_zone.has_error()) {
+      error = "cannot allocate";
+      return false;
+    }
+    obj->via.array.ptr = static_cast<msgpack::object*>(ptr);
   }
   m_stack.push_back(obj->via.array.ptr);
   return true;
@@ -107,19 +118,28 @@ bool object_visitor::start_map(uint32_t num_kv_pairs) {
   } else {
     size_t size = num_kv_pairs * sizeof(msgpack::object_kv);
     if (size / sizeof(msgpack::object_kv) != num_kv_pairs) {
-      throw msgpack::map_size_overflow("map size overflow");
+      error = "map size overflow";
+      return false;
+      // throw msgpack::map_size_overflow("map size overflow");
     }
-    obj->via.map.ptr = static_cast<msgpack::object_kv*>(m_zone.allocate_align(size, alignof(msgpack::object_kv)));
+    auto* ptr = m_zone.allocate_align(size, alignof(msgpack::object_kv));
+    if (m_zone.has_error()) {
+      error = "cannot allocate";
+      return false;
+    }
+    obj->via.map.ptr = static_cast<msgpack::object_kv*>(ptr);
   }
   m_stack.push_back(reinterpret_cast<msgpack::object*>(obj->via.map.ptr));
   return true;
 }
 
 void object_visitor::parse_error(size_t /*parsed_offset*/, size_t /*error_offset*/) const {
-  throw msgpack::parse_error("parse error");
+  error = "parse error";
+  // throw msgpack::parse_error("parse error");
 }
 void object_visitor::insufficient_bytes(size_t /*parsed_offset*/, size_t /*error_offset*/) const {
-  throw msgpack::insufficient_bytes("insufficient bytes");
+  error = "insufficient bytes";
+  // throw msgpack::insufficient_bytes("insufficient bytes");
 }
 
 } // namespace vk::msgpack

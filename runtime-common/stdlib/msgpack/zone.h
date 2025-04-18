@@ -15,7 +15,9 @@ class zone : private vk::not_copyable {
 public:
   explicit zone(size_t chunk_size = 8192);
   void* allocate_align(size_t size, size_t align);
-
+  bool has_error() const {
+    return m_error;
+  }
 private:
   struct chunk {
     chunk* m_next{nullptr};
@@ -27,12 +29,14 @@ private:
     size_t m_free{0};
     char* m_ptr{nullptr};
     chunk* m_head{nullptr};
+    bool m_error{false};
   };
 
   char* allocate_expand(size_t size);
 
   size_t m_chunk_size{0};
   chunk_list m_chunk_list;
+  bool m_error{false};
 };
 
 } // namespace vk::msgpack

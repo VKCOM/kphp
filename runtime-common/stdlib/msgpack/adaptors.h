@@ -18,6 +18,8 @@ namespace vk::msgpack {
 
 class type_error : public std::exception {};
 
+inline constexpr const char* TYPE_ERROR = "type error";
+
 namespace detail {
 
 template<typename T, bool Signed>
@@ -28,16 +30,22 @@ struct convert_integer_sign<T, true> {
   static T convert(const msgpack::object& o) {
     if (o.type == stored_type::POSITIVE_INTEGER) {
       if (o.via.u64 > static_cast<uint64_t>(std::numeric_limits<T>::max())) {
-        throw type_error{};
+        RuntimeContext::get().msgpack_error = TYPE_ERROR;
+        return T{};
+        // throw type_error{};
       }
       return static_cast<T>(o.via.u64);
     } else if (o.type == stored_type::NEGATIVE_INTEGER) {
       if (o.via.i64 < static_cast<int64_t>(std::numeric_limits<T>::min())) {
-        throw type_error{};
+        RuntimeContext::get().msgpack_error = TYPE_ERROR;
+        return T{};
+        // throw type_error{};
       }
       return static_cast<T>(o.via.i64);
     }
-    throw type_error{};
+    RuntimeContext::get().msgpack_error = TYPE_ERROR;
+    return T{};
+    // throw type_error{};
   }
 };
 
@@ -46,11 +54,15 @@ struct convert_integer_sign<T, false> {
   static T convert(const msgpack::object& o) {
     if (o.type == stored_type::POSITIVE_INTEGER) {
       if (o.via.u64 > static_cast<uint64_t>(std::numeric_limits<T>::max())) {
-        throw type_error{};
+        RuntimeContext::get().msgpack_error = TYPE_ERROR;
+        return T{};
+        // throw type_error{};
       }
       return static_cast<T>(o.via.u64);
     }
-    throw type_error{};
+    RuntimeContext::get().msgpack_error = TYPE_ERROR;
+    return T{};
+    // throw type_error{};
   }
 };
 
@@ -147,7 +159,9 @@ template<>
 struct convert<bool> {
   void operator()(const msgpack::object& o, bool& v) const {
     if (o.type != stored_type::BOOLEAN) {
-      throw type_error{};
+      RuntimeContext::get().msgpack_error = TYPE_ERROR;
+      return;
+      // throw type_error{};
     }
     v = o.via.boolean;
   }
@@ -175,7 +189,9 @@ struct convert<float> {
     } else if (o.type == stored_type::NEGATIVE_INTEGER) {
       v = static_cast<float>(o.via.i64);
     } else {
-      throw type_error{};
+      RuntimeContext::get().msgpack_error = TYPE_ERROR;
+      return;
+      // throw type_error{};
     }
   }
 };
@@ -198,7 +214,9 @@ struct convert<double> {
     } else if (o.type == stored_type::NEGATIVE_INTEGER) {
       v = static_cast<double>(o.via.i64);
     } else {
-      throw type_error{};
+      RuntimeContext::get().msgpack_error = TYPE_ERROR;
+      return;
+      // throw type_error{};
     }
   }
 };
@@ -228,8 +246,9 @@ struct convert<array<T>> {
       fill_array_as_map(obj.via.map, res_arr);
       return obj;
     }
-
-    throw msgpack::unpack_error("couldn't recognize type of unpacking array");
+    RuntimeContext::get().msgpack_error = "couldn't recognize type of unpacking array";
+    return obj;
+    // throw msgpack::unpack_error("couldn't recognize type of unpacking array");
   }
 
 private:
@@ -253,7 +272,9 @@ private:
         break;
       }
       default:
-        throw msgpack::unpack_error("expected string or integer in array unpacking");
+        RuntimeContext::get().msgpack_error = "expected string or integer in array unpacking";
+        return;
+        // throw msgpack::unpack_error("expected string or integer in array unpacking");
       }
     }
   }
@@ -297,7 +318,9 @@ struct convert<class_instance<T>> {
       obj.convert(*instance.get());
       break;
     default:
-      throw msgpack::unpack_error("Expected NIL or ARRAY type for unpacking class_instance");
+      RuntimeContext::get().msgpack_error = "Expected NIL or ARRAY type for unpacking class_instance";
+      return obj;
+      // throw msgpack::unpack_error("Expected NIL or ARRAY type for unpacking class_instance");
     }
 
     return obj;
@@ -326,7 +349,9 @@ template<>
 struct convert<string> {
   const msgpack::object& operator()(const msgpack::object& obj, string& res_s) const {
     if (obj.type != stored_type::STR) {
-      throw type_error{};
+      RuntimeContext::get().msgpack_error = TYPE_ERROR;
+      return obj;
+      // throw type_error{};
     }
     res_s = string(obj.via.str.ptr, obj.via.str.size);
 
@@ -377,7 +402,9 @@ template<typename... Args>
 struct convert<std::tuple<Args...>> {
   void operator()(const msgpack::object& o, std::tuple<Args...>& v) const {
     if (o.type != stored_type::ARRAY) {
-      throw type_error{};
+      RuntimeContext::get().msgpack_error = TYPE_ERROR;
+      return;
+      // throw type_error{};
     }
     StdTupleConverter<decltype(v), sizeof...(Args)>::convert(o, v);
   }
@@ -399,9 +426,12 @@ struct convert<Optional<T>> {
     case stored_type::BOOLEAN: {
       bool value = obj.as<bool>();
       if (!std::is_same<T, bool>{} && value) {
-        char err_msg[256];
-        snprintf(err_msg, 256, "Expected false for type `%s|false` but true was given", typeid(T).name());
-        throw msgpack::unpack_error(err_msg);
+        // TODO find out how to print type name, gonna be hard %(
+        RuntimeContext::get().msgpack_error = "Expected false for type `T|false` but true was given";
+        return obj;
+        // char err_msg[256];
+        // snprintf(err_msg, 256, "Expected false for type `%s|false` but true was given", typeid(T).name());
+        // throw msgpack::unpack_error(err_msg);
       }
       v = value;
       break;
@@ -468,7 +498,9 @@ struct convert<mixed> {
       v = mixed{};
       break;
     default:
-      throw type_error{};
+      // throw type_error{};
+      RuntimeContext::get().msgpack_error = TYPE_ERROR;
+      return obj;
     }
 
     return obj;
