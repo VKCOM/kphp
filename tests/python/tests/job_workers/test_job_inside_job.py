@@ -1,4 +1,7 @@
+import typing
 import pytest
+
+from python.lib.kphp_server import KphpServer
 from python.lib.testcase import WebServerAutoTestCase
 
 
@@ -61,7 +64,7 @@ class TestJobInsideJob(WebServerAutoTestCase):
             uri="/test_simple_cpu_job",
             json={"data": data,
                   "tag": "self_lock_job",
-                  "master-port": self.web_server.master_port
+                  "master-port": typing.cast(KphpServer, self.web_server).master_port
                   })
 
         self.assertEqual(resp.status_code, 200)

@@ -1,4 +1,7 @@
+import typing
 import pytest
+
+from python.lib.kphp_server import KphpServer
 from python.lib.testcase import WebServerAutoTestCase
 
 @pytest.mark.k2_skip_suite
@@ -17,7 +20,7 @@ class TestShutdownFunctionsTimeouts(WebServerAutoTestCase):
                 {"op": "register_shutdown_function", "msg": "shutdown_simple"},
                 {"op": "register_shutdown_function", "msg": "shutdown_send_rpc"},
                 {"op": "sleep", "duration": 1.2},
-                {"op": "send_long_rpc", "duration": 0.1, "master_port": self.web_server.master_port},
+                {"op": "send_long_rpc", "duration": 0.1, "master_port": typing.cast(KphpServer, self.web_server).master_port},
                 {"op": "critical_error"},
             ])
         self.assertEqual(resp.text, "ERROR")

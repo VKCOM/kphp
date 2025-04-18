@@ -233,6 +233,7 @@ class WebServerAutoTestCase(BaseTestCase):
                 working_dir=cls.web_server_working_dir)
 
         cls.extra_class_setup()
+        print("\nStarting web-server")
         cls.web_server.start()
 
     @classmethod

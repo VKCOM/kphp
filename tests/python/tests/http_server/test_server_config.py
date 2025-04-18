@@ -1,4 +1,6 @@
+import typing
 import pytest
+
 from python.lib.testcase import WebServerAutoTestCase
 from python.lib.kphp_server import KphpServer
 
@@ -12,9 +14,6 @@ class TestServerConfig(WebServerAutoTestCase):
         })
 
     def test_cluster_name_from_config(self):
-        web_server = self.web_server
-        resp = None
-        if isinstance(web_server, KphpServer):
-            resp = web_server.http_request("/server-status", http_port=web_server.master_port)
+        resp = self.web_server.http_request("/server-status", http_port=typing.cast(KphpServer, self.web_server).master_port)
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.content.decode("utf-8").split('\n')[0].split("\t")[1], "custom_cluster_name")

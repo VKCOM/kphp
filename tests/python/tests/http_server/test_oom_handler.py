@@ -1,5 +1,6 @@
 import requests.exceptions
 import pytest
+import typing
 
 from python.lib.testcase import WebServerAutoTestCase
 from python.lib.kphp_server import KphpServer
@@ -16,9 +17,6 @@ class TestOomHandler(WebServerAutoTestCase):
             "--oom-handling-memory-ratio": 0.1,
             "--time-limit": 1,
         })
-        cls.rpc_test_port = 0
-        if isinstance(cls.web_server, KphpServer):
-            cls.rpc_test_port = cls.web_server.master_port
 
     def _generic_test(self, params: str):
         resp = self.web_server.http_get("/test_oom_handler?" + params)
@@ -33,7 +31,7 @@ class TestOomHandler(WebServerAutoTestCase):
         self._generic_test("test_case=basic")
 
     def test_with_rpc_request(self):
-        self._generic_test("test_case=with_rpc_request&master_port={}".format(self.rpc_test_port))
+        self._generic_test("test_case=with_rpc_request&master_port={}".format(typing.cast(KphpServer, self.web_server).master_port))
         self.web_server.assert_log(["rpc_request_succeeded=1"], timeout=5)
 
     def test_oom_inside_oom_handler(self):
@@ -62,17 +60,17 @@ class TestOomHandler(WebServerAutoTestCase):
         self.web_server.assert_log(["instance_cache_store_succeeded=1"], timeout=5)
 
     def test_resume_yielded_script_fork_from_oom_handler(self):
-        self._generic_test("test_case=resume_yielded_script_fork_from_oom_handler&master_port={}".format(self.rpc_test_port))
+        self._generic_test("test_case=resume_yielded_script_fork_from_oom_handler&master_port={}".format(typing.cast(KphpServer, self.web_server).master_port))
         self.web_server.assert_log(["fork_started_succesfully=1",
                                      "start OOM handler from fork_id=0"], timeout=5)
 
     def test_resume_suspended_script_fork_from_oom_handler(self):
-        self._generic_test("test_case=resume_suspended_script_fork_from_oom_handler&master_port={}".format(self.rpc_test_port))
+        self._generic_test("test_case=resume_suspended_script_fork_from_oom_handler&master_port={}".format(typing.cast(KphpServer, self.web_server).master_port))
         self.web_server.assert_log(["fork_started_succesfully=1",
                                      "start OOM handler from fork_id=0"], timeout=5)
 
     def test_oom_from_fork(self):
-        self._generic_test("test_case=oom_from_fork".format(self.rpc_test_port))
+        self._generic_test("test_case=oom_from_fork".format(typing.cast(KphpServer, self.web_server).master_port))
         self.web_server.assert_log(["fork_started_succesfully=1",
                                      "start OOM handler from fork_id=0"], timeout=5)
 

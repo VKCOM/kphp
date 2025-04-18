@@ -1,6 +1,9 @@
+import typing
 import pytest
+
 from multiprocessing.dummy import Pool as ThreadPool
 
+from python.lib.kphp_server import KphpServer
 from python.lib.testcase import WebServerAutoTestCase
 
 
@@ -25,7 +28,7 @@ class TestComplexScenarioJob(WebServerAutoTestCase):
     def do_no_filter_scenario(self):
         resp = self.web_server.http_post(
             uri="/test_complex_scenario",
-            json={"master-port": self.web_server.master_port}
+            json={"master-port": typing.cast(KphpServer, self.web_server).master_port}
         )
         self.assertEqual(resp.status_code, 200)
         self.assert_stats_count(resp.json())
@@ -34,7 +37,7 @@ class TestComplexScenarioJob(WebServerAutoTestCase):
         resp = self.web_server.http_post(
             uri="/test_complex_scenario",
             json={
-                "master-port": self.web_server.master_port,
+                "master-port": typing.cast(KphpServer, self.web_server).master_port,
                 "stat-names": [
                     "kphp_version", "hostname", "uptime", "RSS", "VM", "tot_idle_time",
                     "terminated_requests.memory_limit_exceeded",

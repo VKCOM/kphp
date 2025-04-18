@@ -1,4 +1,7 @@
+import typing
 import pytest
+
+from python.lib.kphp_server import KphpServer
 from python.lib.testcase import WebServerAutoTestCase
 
 
@@ -66,7 +69,7 @@ class TestCpuJob(WebServerAutoTestCase):
             uri="/test_cpu_job_and_rpc_usage_between",
             json={
                 "data": [[1, 2, 3, 4], [7, 9, 12]],
-                "master-port": self.web_server.master_port
+                "master-port": typing.cast(KphpServer, self.web_server).master_port
             })
 
         self.assertEqual(resp.status_code, 200)
@@ -91,7 +94,7 @@ class TestCpuJob(WebServerAutoTestCase):
             uri="/test_cpu_job_and_mc_usage_between",
             json={
                 "data": [[1, 2, 3, 4], [7, 9, 12]],
-                "master-port": self.web_server.master_port
+                "master-port": typing.cast(KphpServer, self.web_server).master_port
             })
 
         self.assertEqual(resp.status_code, 200)

@@ -1,4 +1,7 @@
+import typing
 import pytest
+
+from python.lib.kphp_server import KphpServer
 from python.lib.testcase import WebServerAutoTestCase
 
 
@@ -17,7 +20,7 @@ class TestJobWithRpcRequests(WebServerAutoTestCase):
             uri="/test_simple_cpu_job",
             json={
                 "tag": "x2_with_rpc_request",
-                "master-port": self.web_server.master_port,
+                "master-port": typing.cast(KphpServer, self.web_server).master_port,
                 "data": [[1, 2, 3, 4], [7, 9, 12]]
             })
 
@@ -38,7 +41,7 @@ class TestJobWithRpcRequests(WebServerAutoTestCase):
             json={
                 "tag": "x2_with_rpc_request",
                 "data": [[1, 2, 3, 4], [7, 9, 12]],
-                "master-port": self.web_server.master_port
+                "master-port": typing.cast(KphpServer, self.web_server).master_port
             })
 
         self.assertEqual(resp.status_code, 200)
@@ -62,7 +65,7 @@ class TestJobWithRpcRequests(WebServerAutoTestCase):
             json={
                 "tag": "x2_with_rpc_request",
                 "data": [[1, 2, 3, 4], [7, 9, 12]],
-                "master-port": self.web_server.master_port
+                "master-port": typing.cast(KphpServer, self.web_server).master_port
             })
 
         self.assertEqual(resp.status_code, 200)

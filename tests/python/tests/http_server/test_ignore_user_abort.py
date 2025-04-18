@@ -1,5 +1,5 @@
 import time
-
+import typing
 import pytest
 
 from python.lib.kphp_server import KphpServer
@@ -8,11 +8,6 @@ from python.lib.testcase import WebServerAutoTestCase
 
 @pytest.mark.k2_skip_suite
 class TestIgnoreUserAbort(WebServerAutoTestCase):
-    @classmethod
-    def extra_class_setup(cls):
-        cls.rpc_test_port = 0
-        if isinstance(cls.web_server, KphpServer):
-            cls.rpc_test_port = cls.web_server.master_port
 
     def _send_request(self, uri="/", timeout=0.05):
         try:
@@ -26,7 +21,7 @@ class TestIgnoreUserAbort(WebServerAutoTestCase):
     Old name was - "test_user_abort_rpc_work"
     """
     def test_user_abort_of_rpc_work(self):
-        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=no_ignore&port={}'.format(str(self.rpc_test_port)))
+        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=no_ignore&port={}'.format(str(typing.cast(KphpServer, self.web_server).master_port)))
         self.web_server.assert_log(['Critical error during script execution: http connection close'], timeout=10)
         error = False
         try:
