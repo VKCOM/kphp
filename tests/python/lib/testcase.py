@@ -206,7 +206,7 @@ class WebServerAutoTestCase(BaseTestCase):
                 kphp_env["KPHP_TL_SCHEMA"] = search_combined_tlo(cls.kphp_build_working_dir)
 
             if cls.should_use_k2():
-                kphp_env = cls.add_k2_options(kphp_env)
+                kphp_env.update(cls.k2_server_env())
 
             print("\nCompiling kphp")
             if not cls.kphp_builder.compile_with_kphp(kphp_env):
@@ -279,17 +279,10 @@ class WebServerAutoTestCase(BaseTestCase):
         return os.getenv("K2_BIN") is not None
 
     @classmethod
-    def add_k2_options(cls, kphp_env):
-        if kphp_env is None:
-            kphp_env = {}
-
-        kphp_env["KPHP_CXX"] = "clang++"
-        kphp_env["KPHP_MODE"] = "k2-server"
-        kphp_env["KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE"] = "0"
-        kphp_env["KPHP_PROFILER"] = "0"
-        kphp_env["KPHP_USER_BINARY_PATH"] = "component.so"
-        kphp_env["KPHP_FORCE_LINK_RUNTIME"] = "1"
-        return kphp_env
+    def k2_server_env(cls):
+        env = {"KPHP_CXX": "clang++", "KPHP_MODE": "k2-server", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
+               "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1"}
+        return env
 
 
     def assertKphpNoTerminatedRequests(self):
@@ -355,17 +348,10 @@ class KphpCompilerAutoTestCase(BaseTestCase):
         return os.getenv("K2_BIN") is not None
 
     @classmethod
-    def add_k2_options(cls, kphp_env):
-        if kphp_env is None:
-            kphp_env = {}
-
-        kphp_env["KPHP_CXX"] = "clang++"
-        kphp_env["KPHP_MODE"] = "k2-cli"
-        kphp_env["KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE"] = "0"
-        kphp_env["KPHP_PROFILER"] = "0"
-        kphp_env["KPHP_USER_BINARY_PATH"] = "component.so"
-        kphp_env["KPHP_FORCE_LINK_RUNTIME"] = "1"
-        return kphp_env
+    def k2_cli_env(cls):
+        env = {"KPHP_CXX": "clang++", "KPHP_MODE": "k2-cli", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
+               "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1"}
+        return env
 
     def make_kphp_once_runner(self, php_script_path):
         k2_bin = os.getenv("K2_BIN")
@@ -382,7 +368,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
 
     def build_and_compare_with_php(self, php_script_path, kphp_env=None):
         if self.should_use_k2():
-            kphp_env = self.add_k2_options(kphp_env)
+            kphp_env.update(self.k2_cli_env())
         once_runner = self.make_kphp_once_runner(php_script_path)
         self.assertTrue(once_runner.run_with_php(), "Got PHP error")
         self.assertTrue(once_runner.compile_with_kphp(kphp_env), "Got KPHP build error")
