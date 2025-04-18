@@ -28,7 +28,6 @@ class WebServer(Engine):
         super(WebServer, self).start(start_msgs)
         self._json_logs = []
         if (self._json_log_file is not None):
-            time.sleep(1)
             self._json_log_file_read_fd = open(self._json_log_file, 'r')
 
     def stop(self):
@@ -39,7 +38,7 @@ class WebServer(Engine):
     @property
     def http_port(self):
         """
-        :return: http port listened by workers
+        :return: http port listened by web server
         """
         return self._http_port
 
