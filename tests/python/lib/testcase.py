@@ -213,7 +213,7 @@ class WebServerAutoTestCase(BaseTestCase):
                 raise RuntimeError("Can't compile php script")
 
             if cls.should_use_k2():
-                cls.web_server_bin = os.getenv("K2_BIN")
+                cls.web_server_bin = os.path.abspath(os.getenv("K2_BIN"))
             else:
                 cls.web_server_bin = os.path.join(cls.web_server_working_dir, "kphp_server")
                 os.link(cls.kphp_builder.kphp_runtime_bin, cls.web_server_bin)
