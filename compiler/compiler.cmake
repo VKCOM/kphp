@@ -246,7 +246,7 @@ list(APPEND KPHP_COMPILER_SOURCES
 
 vk_add_library_no_pic(kphp2cpp_src-no-pic OBJECT ${KPHP_COMPILER_SOURCES})
 add_dependencies(kphp2cpp_src-no-pic OpenSSL::no-pic::Crypto RE2::no-pic::re2 YAML_CPP::no-pic::yaml-cpp)
-target_include_directories(kphp2cpp_src-no-pic PUBLIC ${OPENSSL_NO_PIC_INCLUDE_DIRS} ${RE2_NO_PIC_INCLUDE_DIRS} ${YAML_CPP_NO_PIC_INCLUDE_DIRS})
+target_include_directories(kphp2cpp_src-no-pic PUBLIC ${OPENSSL_NO_PIC_INCLUDE_DIR} ${RE2_NO_PIC_INCLUDE_DIRS} ${YAML_CPP_NO_PIC_INCLUDE_DIRS})
 
 file(MAKE_DIRECTORY ${KPHP_COMPILER_AUTO_DIR})
 add_custom_command(OUTPUT ${KEYWORDS_SET}

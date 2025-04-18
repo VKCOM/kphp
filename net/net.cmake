@@ -25,9 +25,9 @@ prepend(NET_SOURCES ${BASE_DIR}/net/
 
 vk_add_library_no_pic(net-src-no-pic OBJECT ${NET_SOURCES})
 add_dependencies(net-src-no-pic OpenSSL::no-pic::Crypto)
-target_include_directories(net-src-no-pic PUBLIC ${OPENSSL_NO_PIC_INCLUDE_DIRS})
+target_include_directories(net-src-no-pic PUBLIC ${OPENSSL_NO_PIC_INCLUDE_DIR})
 
 vk_add_library_pic(net-src-pic OBJECT ${NET_SOURCES})
 add_dependencies(net-src-pic OpenSSL::pic::Crypto)
-target_include_directories(net-src-pic PUBLIC ${OPENSSL_PIC_INCLUDE_DIRS})
+target_include_directories(net-src-pic PUBLIC ${OPENSSL_PIC_INCLUDE_DIR})
 
