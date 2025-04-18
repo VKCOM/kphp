@@ -46,6 +46,7 @@ function is_object ($v ::: any) ::: bool;
 function get_class ($v ::: any) ::: string;
 function get_hash_of_class (object $klass) ::: int;
 
+function get_reference_counter ($v) ::: int;
 
 /** defined in runtime-core.h **/
 function likely ($x ::: bool) ::: bool;

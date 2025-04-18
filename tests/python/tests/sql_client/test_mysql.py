@@ -3,13 +3,14 @@ import re
 import pytest
 
 from pytest_mysql.factories import mysql, mysql_proc
-from python.lib.testcase import KphpServerAutoTestCase
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestMysql(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestMysql(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--verbosity-mysql=2": True,
             "-t": 10,
         })
@@ -43,7 +44,7 @@ class TestMysql(KphpServerAutoTestCase):
         self.mysql_proc = mysql_proc
 
     def _sql_query_impl(self, query, expected_res, uri="/?name=mysql"):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri=uri,
             json={
                 "dbname": 'test',
@@ -81,7 +82,7 @@ class TestMysql(KphpServerAutoTestCase):
         self._sql_query_impl(query='SELECT sleep(0.5)',
                              expected_res=[{'0': '0', 'sleep(0.5)': '0'}],
                              uri="/resumable_test?name=mysql")
-        server_log = self.kphp_server.get_log()
+        server_log = self.web_server.get_log()
         pattern = "start_resumable_function(.|\n)*start_query(.|\n)*end_resumable_function(.|\n)*end_query"
         if not re.search(pattern, ''.join(server_log)):
             raise RuntimeError("cannot find match for pattern \"" + pattern + "\n")

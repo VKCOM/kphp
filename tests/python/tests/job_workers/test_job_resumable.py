@@ -1,10 +1,12 @@
-from python.lib.testcase import KphpServerAutoTestCase
+import pytest
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestJobResumable(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestJobResumable(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--workers-num": 4,
             "--job-workers-ratio": 0.5,
             "--verbosity-job-workers=2": True,
@@ -12,8 +14,8 @@ class TestJobResumable(KphpServerAutoTestCase):
         })
 
     def _do_test(self, *, uri, job_sleep_time, data):
-        stats_before = self.kphp_server.get_stats()
-        resp = self.kphp_server.http_post(
+        stats_before = self.web_server.get_stats()
+        resp = self.web_server.http_post(
             uri=uri,
             json={
                 "tag": "x2_with_sleep",
@@ -26,7 +28,7 @@ class TestJobResumable(KphpServerAutoTestCase):
                 {"data": [x ** 2 for x in cur_data], "stats": []}
                 for cur_data in data
             ]})
-        self.kphp_server.assert_stats(
+        self.web_server.assert_stats(
             initial_stats=stats_before,
             expected_added_stats={
                 "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": len(data) * 2,

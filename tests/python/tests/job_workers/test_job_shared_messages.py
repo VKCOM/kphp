@@ -1,13 +1,15 @@
-from python.lib.testcase import KphpServerAutoTestCase
+import pytest
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestJobSharedMessages(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestJobSharedMessages(WebServerAutoTestCase):
     DEFAULT_DISTRIBUTION_STR = " \n 2 ,2, 2,\t 2, 1,\n  1, \n1,1 ,1  , 1 \n"
 
     def _do_test(self, kphp_options, reserved):
-        self.kphp_server.update_options(kphp_options)
-        self.kphp_server.restart()
-        self.kphp_server.assert_stats(
+        self.web_server.update_options(kphp_options)
+        self.web_server.restart()
+        self.web_server.assert_stats(
             timeout=10,
             prefix="kphp_server.workers_job_memory_messages_",
             expected_added_stats={

@@ -147,6 +147,10 @@ function base_convert ($number ::: string, $frombase ::: int, $tobase ::: int) :
 function zstd_compress(string $data, int $level = 3) ::: string | false;
 /** @kphp-extern-func-info stub generation-required */
 function zstd_uncompress(string $data) ::: string | false;
+/** @kphp-extern-func-info stub generation-required */
+function zstd_compress_dict(string $data, string $dict) ::: string | false;
+/** @kphp-extern-func-info stub generation-required */
+function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
 
 /** @kphp-extern-func-info stub generation-required */
 function getimagesize ($name ::: string) ::: mixed;

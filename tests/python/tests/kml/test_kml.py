@@ -1,8 +1,10 @@
 import os
+import pytest
 
 from python.lib.testcase import KphpCompilerAutoTestCase
 
 
+@pytest.mark.k2_skip_suite
 class TestKML(KphpCompilerAutoTestCase):
     def compile_and_check_success(self, php_script_path, kml_dir):
         kml_dir = os.path.join(self.test_dir, kml_dir)

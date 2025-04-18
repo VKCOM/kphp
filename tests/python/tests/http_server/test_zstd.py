@@ -3,11 +3,13 @@ import random
 import string
 import os
 import gzip
+import pytest
 
-from python.lib.testcase import KphpServerAutoTestCase
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestZstd(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestZstd(WebServerAutoTestCase):
     # size of this string is 460
     some_string = """
         KPHP is a PHP compiler. It compiles a limited subset of PHP to a native binary running faster than PHP.
@@ -19,7 +21,7 @@ class TestZstd(KphpServerAutoTestCase):
 
     @classmethod
     def _make_name(cls, file_name):
-        return os.path.join(cls.kphp_server_working_dir, file_name)
+        return os.path.join(cls.web_server_working_dir, file_name)
 
     @classmethod
     def make_dict(cls, file_name, samples):
@@ -31,7 +33,7 @@ class TestZstd(KphpServerAutoTestCase):
 
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--hard-memory-limit": "350m"
         })
         cls.dict = cls.make_dict("dict", (cls.some_string, b"is", b"PHP", b"KPHP", b"call"))
@@ -56,7 +58,7 @@ class TestZstd(KphpServerAutoTestCase):
                 pass
 
     def _call_php(self, test_type, expected_code=200, expected_msg="OK", level=0, dictionary="dict"):
-        resp = self.kphp_server.http_get("/test_zstd?type={}&level={}&dict={}".format(test_type, level, dictionary))
+        resp = self.web_server.http_get("/test_zstd?type={}&level={}&dict={}".format(test_type, level, dictionary))
         self.assertEqual(resp.status_code, expected_code)
         self.assertEqual(resp.text, expected_msg)
 
@@ -79,20 +81,20 @@ class TestZstd(KphpServerAutoTestCase):
     def test_uncompress_data_compressed_by_other_algo(self):
         self._write_in_file(gzip.compress(self.some_string))
         self._call_php("uncompress")
-        self.kphp_server.assert_log(["Warning: zstd_uncompress: it was not compressed by zstd"])
+        self.web_server.assert_log(["Warning: zstd_uncompress: it was not compressed by zstd"])
         self.assertEqual(self._read_out_file(), b"false")
 
     def test_uncompress_non_compressed_data(self):
         self._write_in_file(self.some_string)
         self._call_php("uncompress")
-        self.kphp_server.assert_log(["Warning: zstd_uncompress: it was not compressed by zstd"])
+        self.web_server.assert_log(["Warning: zstd_uncompress: it was not compressed by zstd"])
         self.assertEqual(self._read_out_file(), b"false")
 
     def test_uncompress_compressed_data_with_dict(self):
         ctx = zstandard.ZstdCompressor(dict_data=self.dict)
         self._write_in_file(ctx.compress(self.some_string))
         self._call_php("uncompress")
-        self.kphp_server.assert_log(["Warning: zstd_uncompress: got zstd error: Dictionary mismatch"])
+        self.web_server.assert_log(["Warning: zstd_uncompress: got zstd error: Dictionary mismatch"])
         self.assertEqual(self._read_out_file(), b"false")
 
     def test_compress(self):
@@ -106,7 +108,7 @@ class TestZstd(KphpServerAutoTestCase):
     def test_compress_oom(self):
         self._write_in_file(self.huge_random_string)
         self._call_php("compress", 500, "ERROR", zstandard.MAX_COMPRESSION_LEVEL)
-        self.kphp_server.assert_log([
+        self.web_server.assert_log([
             "Warning: Can't allocate \\d+ bytes",
             "Critical error during script execution: memory limit exit"
         ])
@@ -115,7 +117,7 @@ class TestZstd(KphpServerAutoTestCase):
         self._write_in_file(self.some_string)
         bad_level = zstandard.MAX_COMPRESSION_LEVEL+1
         self._call_php("compress", level=bad_level)
-        self.kphp_server.assert_log([
+        self.web_server.assert_log([
             "zstd_compress: compression level \\({}\\) must be within -\\d*..22 or equal to 0".format(bad_level),
         ])
         self.assertEqual(self._read_out_file(), b"false")
@@ -132,7 +134,7 @@ class TestZstd(KphpServerAutoTestCase):
         ctx = zstandard.ZstdCompressor(dict_data=self.dict_other)
         self._write_in_file(ctx.compress(self.some_string))
         self._call_php("uncompress_dict")
-        self.kphp_server.assert_log(["Warning: zstd_uncompress: got zstd error: Dictionary mismatch"])
+        self.web_server.assert_log(["Warning: zstd_uncompress: got zstd error: Dictionary mismatch"])
         self.assertEqual(self._read_out_file(), b"false")
 
     def test_uncompress_dict_compressed_without_dict(self):

@@ -1,5 +1,30 @@
 <?php
 
+$RPC_CONFIG = [];
+
+#ifndef K2
+function rpc_send_requests(
+    string $actor,
+    array $arr,
+    ?float $timeout,
+    bool $ignore_answer,
+    ?KphpRpcRequestsExtraInfo $requests_extra_info,
+    bool $need_responses_extra_info
+    ) : array {
+      global $RPC_CONFIG;
+      $port = $RPC_CONFIG[$actor];
+      $conn = new_rpc_connection($actor, $port, 0, 5);
+      $reqs_id = rpc_tl_query($conn, $arr, $timeout, $ignore_answer, $requests_extra_info, $need_responses_extra_info);
+      return $reqs_id;
+    }
+
+function rpc_fetch_responses(array $query_ids): array {
+  return rpc_tl_query_result($query_ids);
+}
+
+#endif
+
+
 /**
  * @kphp-required
  */
@@ -43,10 +68,11 @@ class RpcWorker implements I {
     }
 
     public function work(string $output) {
-        $conn = new_rpc_connection('localhost', $this->port, 0, 5);
-        $req_id = rpc_tl_query_one($conn, ["_" => "engine.sleep",
-                                                    "time_ms" => 120]);
-        $resp = rpc_tl_query_result_one($req_id);
+        global $RPC_CONFIG;
+        $RPC_CONFIG["localhost"] = $this->port;
+        $reqs_id = rpc_send_requests("localhost", [["_" => "engine.sleep",
+                                                    "time_ms" => 120]], null, false, null, false);
+        $resp = rpc_fetch_responses($reqs_id)[0];
         assert($resp['result']);
         fwrite(STDERR, $output);
    }
@@ -269,7 +295,9 @@ if (isset($_SERVER["JOB_ID"])) {
 } else if ($_SERVER["PHP_SELF"] === "/test_script_errors") {
     critical_error("Test error");
 } else if ($_SERVER["PHP_SELF"] === "/test_oom_handler") {
+#ifndef K2
     require_once "test_oom_handler.php";
+#endif
 } else if ($_SERVER["PHP_SELF"] === "/test_header_register_callback") {
     header_register_callback(function () {
         global $_GET;

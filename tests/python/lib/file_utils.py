@@ -119,3 +119,6 @@ def search_php_bin(php_version: str):
             return exe_path
 
     return None
+
+def search_k2_bin():
+    return os.getenv("K2_BIN")

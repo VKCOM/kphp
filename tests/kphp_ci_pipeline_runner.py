@@ -413,6 +413,23 @@ if __name__ == "__main__":
         skip=args.steps and "functional-tests" not in args.steps,
     )
 
+    runner.add_test_group(
+        name="k2-functional-tests",
+        description="run k2-kphp functional tests with cxx={}".format("gcc"),
+        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} K2_BIN={k2_bin} python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
+            kphp_polyfills_repo=kphp_polyfills_repo,
+            k2_bin=args.k2_bin,
+            jobs=n_cpu,
+            functional_tests_dir=functional_tests_dir,
+            base_tempdir=os.path.expanduser(
+                "~/_tmp"
+            ),  # Workaround to make unix socket paths needed by pytest-mysql have length < 108 symbols
+            # 108 is Linux limit for some reason, see https://blog.8-p.info/en/2020/06/11/unix-domain-socket-length/
+            # nocc will be automatically used if NOCC_SERVERS_FILENAME is set
+        ),
+        skip=not args.k2_bin or (args.steps and "k2-functional-tests" not in args.steps),
+    )
+
     if args.engine_repo and args.kphp_tests_repo:
         runner.add_test_group(
             name="integration-tests",

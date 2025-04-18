@@ -3,13 +3,14 @@ import re
 import pytest
 
 import pytest_postgresql
-from python.lib.testcase import KphpServerAutoTestCase
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestPgsql(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestPgsql(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--verbosity-pgsql=2": True,
             "-t": 10,
         })
@@ -42,7 +43,7 @@ class TestPgsql(KphpServerAutoTestCase):
         self.pgsql_proc = postgresql_proc
 
     def _sql_query_impl(self, query, expected_res, uri="/?name=pgsql"):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri=uri,
             json={
                 "dbname": self.pgsql_proc.dbname,
@@ -80,7 +81,7 @@ class TestPgsql(KphpServerAutoTestCase):
         self._sql_query_impl(query='SELECT pg_sleep(0.5)',
                              expected_res=[{'0': '', 'pg_sleep': ''}],
                              uri="/resumable_test?name=pgsql")
-        server_log = self.kphp_server.get_log()
+        server_log = self.web_server.get_log()
         pattern = "start_resumable_function(.|\n)*start_query(.|\n)*end_resumable_function(.|\n)*end_query"
         if not re.search(pattern, ''.join(server_log)):
             raise RuntimeError("cannot find match for pattern \"" + pattern + "\n")

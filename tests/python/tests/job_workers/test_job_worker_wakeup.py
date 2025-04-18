@@ -1,17 +1,19 @@
-from python.lib.testcase import KphpServerAutoTestCase
+import pytest
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestJobWorkerWakeup(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestJobWorkerWakeup(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--workers-num": 8,
             "--job-workers-ratio": 0.25,
             "--verbosity-job-workers=2": True,
         })
 
     def test_job_worker_wakeup_on_merged_events(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri="/test_job_worker_wakeup_on_merged_events",
             json={
                 "data": [[1, 2, 3, 4], [7, 9, 12], [13, 14, 15]],

@@ -1,19 +1,21 @@
+import pytest
 from multiprocessing.dummy import Pool as ThreadPool
 
-from python.lib.testcase import KphpServerAutoTestCase
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestMessagesReferences(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestMessagesReferences(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--workers-num": 18,
             "--job-workers-ratio": 0.16,
             "--verbosity-job-workers=2": True,
         })
 
     def do_test(self, it):
-        resp = self.kphp_server.http_get("/test_reference_invariant")
+        resp = self.web_server.http_get("/test_reference_invariant")
         self.assertEqual(resp.status_code, 200)
 
     def test_reference_invariant(self):
@@ -22,7 +24,7 @@ class TestMessagesReferences(KphpServerAutoTestCase):
             for _ in pool.imap_unordered(self.do_test, range(requests_count)):
                 pass
 
-        self.kphp_server.assert_stats(
+        self.web_server.assert_stats(
             prefix="kphp_server.workers_job_",
             expected_added_stats={
                 "memory_messages_shared_messages_buffers_acquired": requests_count * 2,

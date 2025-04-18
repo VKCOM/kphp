@@ -1,12 +1,15 @@
-from python.lib.testcase import KphpServerAutoTestCase
-from concurrent.futures import ThreadPoolExecutor
+import pytest
 import time
 
+from python.lib.testcase import WebServerAutoTestCase
+from concurrent.futures import ThreadPoolExecutor
 
-class TestShutdownFunctionsCaptureSharedMem(KphpServerAutoTestCase):
+
+@pytest.mark.k2_skip_suite
+class TestShutdownFunctionsCaptureSharedMem(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--workers-num": 4,
         })
 
@@ -29,7 +32,7 @@ class TestShutdownFunctionsCaptureSharedMem(KphpServerAutoTestCase):
             with ThreadPoolExecutor(max_workers=16) as async_executor:
                 for _ in range(16):
                     responses.append(
-                        async_executor.submit(self.kphp_server.http_post, json=[{"op": "capture_instance_cache_element"}])
+                        async_executor.submit(self.web_server.http_post, json=[{"op": "capture_instance_cache_element"}])
                     )
 
             for r in responses:

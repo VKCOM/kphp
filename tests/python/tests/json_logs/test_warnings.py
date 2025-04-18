@@ -1,106 +1,109 @@
 import socket
+import pytest
 
-from python.lib.testcase import KphpServerAutoTestCase
+from python.lib.testcase import WebServerAutoTestCase
+from python.lib.kphp_server import KphpServer
 
 
-class TestJsonLogsWarnings(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestJsonLogsWarnings(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.ignore_log_errors()
+        cls.web_server.ignore_log_errors()
 
     def test_warning_no_context(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             json=[
                 {"op": "warning", "msg": "hello"},
                 {"op": "warning", "msg": "world"}
             ])
         self.assertEqual(resp.text, "ok")
-        self.kphp_server.assert_json_log(
+        self.web_server.assert_json_log(
             expect=[
                 {"version": 0, "hostname": socket.gethostname(), "type": 2, "env": "", "msg": "hello", "tags": {"uncaught": False}},
                 {"version": 0, "hostname": socket.gethostname(), "type": 2, "env": "", "msg": "world", "tags": {"uncaught": False}}
             ])
 
     def test_warning_with_special_chars(self):
-        resp = self.kphp_server.http_post(json=[{"op": "warning", "msg": 'aaa"bbb"\nccc'}])
+        resp = self.web_server.http_post(json=[{"op": "warning", "msg": 'aaa"bbb"\nccc'}])
         self.assertEqual(resp.text, "ok")
-        self.kphp_server.assert_json_log(
+        self.web_server.assert_json_log(
             expect=[{
                 "version": 0, "hostname": socket.gethostname(), "type": 2, "env": "", "msg": "aaa\"bbb\" ccc",
                 "tags": {"uncaught": False}
             }])
 
     def test_warning_with_tags(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             json=[
                 {"op": "set_context", "env": "", "tags": {"a": "b"}, "extra_info": {}},
                 {"op": "warning", "msg": "aaa"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.kphp_server.assert_json_log(
+        self.web_server.assert_json_log(
             expect=[{
                 "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "",
                 "tags": {"uncaught": False, "a": "b"}
             }])
 
     def test_warning_with_extra_info(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             json=[
                 {"op": "set_context", "env": "", "tags": {}, "extra_info": {"a": "b"}},
                 {"op": "warning", "msg": "aaa"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.kphp_server.assert_json_log(
+        self.web_server.assert_json_log(
             expect=[{
                 "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "",
                 "tags": {"uncaught": False}, "extra_info": {"a": "b"}
             }])
 
     def test_warning_with_env(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             json=[
                 {"op": "set_context", "env": "abc", "tags": {}, "extra_info": {}},
                 {"op": "warning", "msg": "aaa"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.kphp_server.assert_json_log(
+        self.web_server.assert_json_log(
             expect=[{"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "abc", "tags": {"uncaught": False}}])
 
     def test_warning_with_env_special_chars(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             json=[
                 {"op": "set_context", "env": "a\tb\nc/d\\e\x06f", "tags": {}, "extra_info": {}},
                 {"op": "warning", "msg": "aaa"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.kphp_server.assert_json_log(
+        self.web_server.assert_json_log(
             expect=[{"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "a b c/d\\e?f", "tags": {"uncaught": False}}])
 
     def test_warning_with_long_env(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             json=[
                 {"op": "set_context", "env": "x" * 128, "tags": {}, "extra_info": {}},
                 {"op": "warning", "msg": "aaa"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.kphp_server.assert_json_log(
+        self.web_server.assert_json_log(
             expect=[{"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "", "tags": {"uncaught": False}}])
 
     def test_warning_with_full_context(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             json=[
                 {"op": "set_context", "env": "efg", "tags": {"a": "b"}, "extra_info": {"c": "d"}},
                 {"op": "warning", "msg": "aaa"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.kphp_server.assert_json_log(
+        self.web_server.assert_json_log(
             expect=[{
                 "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "efg",
                 "tags": {"uncaught": False, "a": "b"}, "extra_info": {"c": "d"}
             }])
 
     def test_warning_override_context(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             json=[
                 {"op": "set_context", "env": "efg", "tags": {"a": "b"}, "extra_info": {"c": "d"}},
                 {"op": "warning", "msg": "aaa"},
@@ -114,7 +117,7 @@ class TestJsonLogsWarnings(KphpServerAutoTestCase):
                 {"op": "warning", "msg": "eee"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.kphp_server.assert_json_log(
+        self.web_server.assert_json_log(
             expect=[
                 {
                     "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "efg",
@@ -130,26 +133,28 @@ class TestJsonLogsWarnings(KphpServerAutoTestCase):
             ])
 
     def test_warning_vector_context(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             json=[
                 {"op": "set_context", "env": "efg", "tags": ["a", "b"], "extra_info": ["c", "d"]},
                 {"op": "warning", "msg": "aaa"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.kphp_server.assert_json_log(
+        self.web_server.assert_json_log(
             expect=[{
                 "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "efg",
                 "tags": {"uncaught": False, "0": "a", "1": "b"}, "extra_info": {"0": "c", "1": "d"}
             }], timeout=1)
 
     def test_error_tag_context(self):
-        self.kphp_server.set_error_tag(100500)
-        self.kphp_server.restart()
-        resp = self.kphp_server.http_post(json=[{"op": "warning", "msg": "hello"}])
+        if isinstance(self.web_server, KphpServer):
+            self.web_server.set_error_tag(100500)
+        self.web_server.restart()
+        resp = self.web_server.http_post(json=[{"op": "warning", "msg": "hello"}])
         self.assertEqual(resp.text, "ok")
-        self.kphp_server.assert_json_log(
+        self.web_server.assert_json_log(
             expect=[{
                 "version": 100500, "hostname": socket.gethostname(), "type": 2, "env": "", "msg": "hello", "tags": {"uncaught": False}
             }])
-        self.kphp_server.set_error_tag(None)
-        self.kphp_server.restart()
+        if isinstance(self.web_server, KphpServer):
+            self.web_server.set_error_tag(None)
+        self.web_server.restart()

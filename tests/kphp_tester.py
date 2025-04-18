@@ -63,7 +63,7 @@ class TestFile:
             k2_bin=None if k2_bin is None else os.path.abspath(k2_bin)
         )
 
-    def set_up_env_for_k2(self, cxx_name="clang++"):
+    def set_up_env_for_k2(self):
         self.env_vars["KPHP_MODE"] = "k2-cli"
         self.env_vars["KPHP_USER_BINARY_PATH"] = "component.so"
         self.env_vars["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "0"
@@ -350,7 +350,7 @@ def run_test(use_nocc, cxx_name, k2_bin, test: TestFile):
     runner = test.make_kphp_once_runner(use_nocc, cxx_name, k2_bin)
     runner.remove_artifacts_dir()
     if k2_bin is not None:
-        test.set_up_env_for_k2(cxx_name)
+        test.set_up_env_for_k2()
 
     if k2_bin is not None and not test.is_available_for_k2():
         test_result = TestResult.k2_skipped(test)

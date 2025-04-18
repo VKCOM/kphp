@@ -1,6 +1,8 @@
+import pytest
 from python.tests.curl.curl_test_case import CurlTestCase
 
 
+@pytest.mark.k2_skip_suite
 class TestCurl(CurlTestCase):
     test_case_uri="/test_curl"
 
