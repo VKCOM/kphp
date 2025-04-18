@@ -40,8 +40,12 @@ class KphpServer(WebServer):
 
     def stop(self):
         super(KphpServer, self).stop()
-        if os.path.exists(self.get_server_config_path()):
-            os.remove(self.get_server_config_path())
+        try:
+            if os.path.exists(self.get_server_config_path()):
+                os.remove(self.get_server_config_path())
+            os.remove(self._engine_bin)
+        except OSError:
+            pass
 
     def set_error_tag(self, tag):
         error_tag_file = None
