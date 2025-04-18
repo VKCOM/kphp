@@ -12,7 +12,7 @@ from .kphp_server import KphpServer
 from .k2_server import K2Server
 from .kphp_builder import KphpBuilder
 from .kphp_run_once import KphpRunOnce
-from .file_utils import search_combined_tlo, can_ignore_sanitizer_log, search_php_bin
+from .file_utils import search_combined_tlo, can_ignore_sanitizer_log, search_php_bin, search_k2_bin
 from .nocc_for_kphp_tester import nocc_env, nocc_start_daemon_in_background
 from .web_server import WebServer
 
@@ -213,7 +213,7 @@ class WebServerAutoTestCase(BaseTestCase):
                 raise RuntimeError("Can't compile php script")
 
             if cls.should_use_k2():
-                cls.web_server_bin = os.path.abspath(os.getenv("K2_BIN"))
+                cls.web_server_bin = os.path.abspath(search_k2_bin())
             else:
                 cls.web_server_bin = os.path.join(cls.web_server_working_dir, "kphp_server")
                 os.link(cls.kphp_builder.kphp_runtime_bin, cls.web_server_bin)
@@ -277,7 +277,7 @@ class WebServerAutoTestCase(BaseTestCase):
 
     @classmethod
     def should_use_k2(cls):
-        return os.getenv("K2_BIN") is not None
+        return search_k2_bin() is not None
 
     @classmethod
     def k2_server_env(cls):
@@ -345,7 +345,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
 
     @classmethod
     def should_use_k2(cls):
-        return os.getenv("K2_BIN") is not None
+        return search_k2_bin() is not None
 
     @classmethod
     def k2_cli_env(cls):
@@ -360,7 +360,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
             working_dir=self.kphp_build_working_dir,
             php_bin=search_php_bin(php_version=self.php_version),
             use_nocc=self.should_use_nocc(),
-            k2_bin=os.path.abspath(os.getenv("K2_BIN")) if self.should_use_k2() else None,
+            k2_bin=os.path.abspath(search_k2_bin()) if self.should_use_k2() else None,
         )
         self.once_runner_trash_bin.append(once_runner)
         return once_runner

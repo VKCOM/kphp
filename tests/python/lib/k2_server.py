@@ -32,7 +32,7 @@ class K2Server(WebServer):
             self.start()
 
     def start(self, start_msgs=None):
-        if "--log-file" in self._options:
+        if self._is_json_log_enabled():
             self._json_log_file = os.path.join(self._working_dir, self._options["--log-file"])
         else:
             start_msgs = start_msgs or []
@@ -41,4 +41,7 @@ class K2Server(WebServer):
 
     def stop(self):
         super(K2Server, self).stop()
+
+    def _is_json_log_enabled(self):
+        return "--log-file" in self._options
 
