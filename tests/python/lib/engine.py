@@ -147,7 +147,7 @@ class Engine:
         if os.waitpid(self._engine_process.pid, os.WNOHANG)[1] != 0:
             raise RuntimeError("Can't start the engine process")
 
-        if "--statsd-port" in self._options.keys():
+        if self._statsd_enabled():
             self.assert_log(["Connected to statsd"], message="Can't find statsd connection message")
             self._stats_receiver.wait_next_stats()
         if start_msgs:
@@ -321,6 +321,9 @@ class Engine:
         :return: Словарь с rpc ответом
         """
         return send_rpc_request(request, self._rpc_port, timeout)
+
+    def _statsd_enabled(self):
+        return "--statsd-port" in self._options.keys()
 
     def _assert_availability(self):
         _, status = os.waitpid(self._engine_process.pid, os.WNOHANG)
