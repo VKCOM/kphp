@@ -350,7 +350,7 @@ def run_test(use_nocc, cxx_name, k2_bin, test: TestFile):
     runner = test.make_kphp_once_runner(use_nocc, cxx_name, k2_bin)
     runner.remove_artifacts_dir()
     if k2_bin is not None:
-        test.set_up_env_for_k2(cxx_name)
+        test.set_up_env_for_k2()
 
     if k2_bin is not None and not test.is_available_for_k2():
         test_result = TestResult.k2_skipped(test)
