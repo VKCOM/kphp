@@ -32,5 +32,5 @@ struct CurrentTlQuery {
 
 private:
   string current_tl_function_name;
-  uint32_t last_stored_tl_function_magic{0};
+  uint32_t last_stored_tl_function_magic{};
 };

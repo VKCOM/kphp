@@ -12,6 +12,9 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/fork/fork-state.h" // it's actually used by exception handling stuff
+#include "runtime-light/stdlib/rpc/rpc-exceptions.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
@@ -82,24 +85,47 @@ inline void f$store_raw_vector_double(const array<double>& vector) noexcept {
 }
 
 inline int64_t f$fetch_int() noexcept {
-  return static_cast<int64_t>(RpcInstanceState::get().rpc_buffer.fetch_trivial<int32_t>().value_or(0));
+  static constexpr auto DEFAULT_VALUE = 0;
+  if (auto opt_val{RpcInstanceState::get().rpc_buffer.fetch_trivial<int32_t>()}; opt_val.has_value()) [[likely]] {
+    return *opt_val;
+  }
+  THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+  return DEFAULT_VALUE;
 }
 
 inline int64_t f$fetch_long() noexcept {
-  return RpcInstanceState::get().rpc_buffer.fetch_trivial<int64_t>().value_or(0);
+  static constexpr int64_t DEFAULT_VALUE = 0;
+  if (auto opt_val{RpcInstanceState::get().rpc_buffer.fetch_trivial<int64_t>()}; opt_val.has_value()) [[likely]] {
+    return *opt_val;
+  }
+  THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+  return DEFAULT_VALUE;
 }
 
 inline double f$fetch_double() noexcept {
-  return RpcInstanceState::get().rpc_buffer.fetch_trivial<double>().value_or(0.0);
+  static constexpr double DEFAULT_VALUE = 0.0;
+  if (auto opt_val{RpcInstanceState::get().rpc_buffer.fetch_trivial<double>()}; opt_val.has_value()) [[likely]] {
+    return *opt_val;
+  }
+  THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+  return DEFAULT_VALUE;
 }
 
 inline double f$fetch_float() noexcept {
-  return static_cast<double>(RpcInstanceState::get().rpc_buffer.fetch_trivial<float>().value_or(0));
+  static constexpr double DEFAULT_VALUE = 0.0;
+  if (auto opt_val{RpcInstanceState::get().rpc_buffer.fetch_trivial<float>()}; opt_val.has_value()) [[likely]] {
+    return static_cast<double>(*opt_val);
+  }
+  THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+  return DEFAULT_VALUE;
 }
 
 inline string f$fetch_string() noexcept {
   tl::string str{};
-  str.fetch(RpcInstanceState::get().rpc_buffer);
+  if (!str.fetch(RpcInstanceState::get().rpc_buffer)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_string::make());
+    return {};
+  }
   return {str.value.data(), static_cast<string::size_type>(str.value.size())};
 }
 
@@ -107,7 +133,8 @@ inline void f$fetch_raw_vector_double(array<double>& vector, int64_t num_elems) 
   auto& rpc_buf{RpcInstanceState::get().rpc_buffer};
   const auto len_bytes{sizeof(double) * num_elems};
   if (rpc_buf.remaining() < len_bytes) [[unlikely]] {
-    return; // TODO: error handling
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return;
   }
   vector.memcpy_vector(num_elems, std::next(rpc_buf.data(), rpc_buf.pos()));
   rpc_buf.adjust(len_bytes);

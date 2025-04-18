@@ -60,7 +60,7 @@
 
 // ================================================================================================
 
-namespace kphp::exceptions {
+namespace kphp::exception {
 
 template<std::derived_from<C$Throwable> T>
 class_instance<T> make_throwable(const string& file, int64_t line, int64_t code, const string& desc) noexcept {
@@ -74,7 +74,7 @@ class_instance<T> make_throwable(const string& file, int64_t line, int64_t code,
   return instance;
 }
 
-} // namespace kphp::exceptions
+} // namespace kphp::exception
 
 // ================================================================================================
 
@@ -86,5 +86,5 @@ T f$_exception_set_location(const T& e, const string& file, int64_t line) noexce
 }
 
 inline Exception f$err(const string& file, int64_t line, const string& code, const string& desc = {}) noexcept {
-  return kphp::exceptions::make_throwable<C$Exception>(file, line, 0, (RuntimeContext::get().static_SB.clean() << "ERR_" << code << ": " << desc).str());
+  return kphp::exception::make_throwable<C$Exception>(file, line, 0, (RuntimeContext::get().static_SB.clean() << "ERR_" << code << ": " << desc).str());
 }
