@@ -7,13 +7,13 @@ from .web_server import WebServer
 class K2Server(WebServer):
     def __init__(self, k2_server_bin, working_dir, kphp_build_dir, options=None, auto_start=False):
         """
-        :param k2_server_bin: Путь до бинарника k2 сервера
-        :param working_dir: Рабочая папка где будет запущен k2 сервер
-        :param kphp_build_dir: Директория с кодом компонент
-        :param options: Словарь с дополнительными опциями, которые будут использоваться при запуске kphp сервера
-            Специальная значения:
-                option: True - передавать опцию без значения
-                option: None - удалить дефолтно проставляемую опцию
+        :param k2_server_bin: Path to k2 binary
+        :param working_dir: Working dir where k2 will be launch
+        :param kphp_build_dir: Dir with components
+        :param options: Dict with extra options
+            Special values:
+                option: True - pass option without value
+                option: None - delete default option
         """
         super(K2Server, self).__init__(k2_server_bin, working_dir, options)
         self._images_dir = kphp_build_dir
