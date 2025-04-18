@@ -366,6 +366,8 @@ class KphpCompilerAutoTestCase(BaseTestCase):
 
     def build_and_compare_with_php(self, php_script_path, kphp_env=None):
         if self.should_use_k2():
+            if kphp_env is None:
+                kphp_env = {}
             kphp_env.update(self.k2_cli_env())
         once_runner = self.make_kphp_once_runner(php_script_path)
         self.assertTrue(once_runner.run_with_php(), "Got PHP error")
