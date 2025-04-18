@@ -276,7 +276,7 @@ class WebServerAutoTestCase(BaseTestCase):
 
     @classmethod
     def k2_server_env(cls):
-        env = {"KPHP_CXX": "clang++", "KPHP_MODE": "k2-server", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
+        env = {"KPHP_MODE": "k2-server", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
                "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1"}
         return env
 
@@ -344,7 +344,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
 
     @classmethod
     def k2_cli_env(cls):
-        env = {"KPHP_CXX": "clang++", "KPHP_MODE": "k2-cli", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
+        env = {"KPHP_MODE": "k2-cli", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
                "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1"}
         return env
 
