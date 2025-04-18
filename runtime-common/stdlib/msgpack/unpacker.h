@@ -24,6 +24,7 @@ public:
 private:
   const string& input_;
   std::size_t bytes_consumed_{0};
+  bool visitor_error_ = false;
   msgpack::zone zone_;
 };
 

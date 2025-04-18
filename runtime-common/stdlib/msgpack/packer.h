@@ -64,6 +64,7 @@ private:
   void append_buffer(const char* buf, size_t len) noexcept;
 
   Stream& stream_;
+  bool has_error = false;
 };
 
 class packer_float32_decorator {
