@@ -5,7 +5,6 @@ import time
 from .engine import Engine
 from .http_client import send_http_request, send_http_request_raw
 from .port_generator import get_port
-from .file_utils import wait_for_file
 
 
 class WebServer(Engine):

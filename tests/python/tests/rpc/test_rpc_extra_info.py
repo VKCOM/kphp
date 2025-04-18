@@ -1,12 +1,14 @@
 import json
+import pytest
 
-from python.lib.testcase import KphpServerAutoTestCase
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestRpcExtraInfo(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestRpcExtraInfo(WebServerAutoTestCase):
     def test_untyped_rpc_extra_info(self):
-        rpc_extra_info = self.kphp_server.http_get(
-            "/test_kphp_untyped_rpc_extra_info?master-port={}".format(self.kphp_server.master_port))
+        rpc_extra_info = self.web_server.http_get(
+            "/test_kphp_untyped_rpc_extra_info?master-port={}".format(self.web_server.master_port))
 
         self.assertEqual(rpc_extra_info.status_code, 200)
         self.assertNotEqual(rpc_extra_info.text, "")
@@ -32,8 +34,8 @@ class TestRpcExtraInfo(KphpServerAutoTestCase):
         self.assertTrue(resp_extra_info_arr[-1][1] > 0.2)
 
     def test_typed_rpc_extra_info(self):
-        rpc_extra_info = self.kphp_server.http_get(
-            "/test_kphp_typed_rpc_extra_info?master-port={}".format(self.kphp_server.master_port))
+        rpc_extra_info = self.web_server.http_get(
+            "/test_kphp_typed_rpc_extra_info?master-port={}".format(self.web_server.master_port))
 
         self.assertEqual(rpc_extra_info.status_code, 200)
         self.assertNotEqual(rpc_extra_info.text, "")

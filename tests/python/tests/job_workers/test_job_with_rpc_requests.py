@@ -1,21 +1,23 @@
-from python.lib.testcase import KphpServerAutoTestCase
+import pytest
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestJobWithRpcRequests(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestJobWithRpcRequests(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--workers-num": 4,
             "--job-workers-ratio": 0.5,
             "--verbosity-job-workers=2": True,
         })
 
     def test_job_with_rpc_query(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri="/test_simple_cpu_job",
             json={
                 "tag": "x2_with_rpc_request",
-                "master-port": self.kphp_server.master_port,
+                "master-port": self.web_server.master_port,
                 "data": [[1, 2, 3, 4], [7, 9, 12]]
             })
 
@@ -31,12 +33,12 @@ class TestJobWithRpcRequests(KphpServerAutoTestCase):
         self.assertGreater(len(job_result[1]["stats"]["result"]), 5)
 
     def test_job_with_rpc_query_and_rpc_request_between(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri="/test_cpu_job_and_rpc_usage_between",
             json={
                 "tag": "x2_with_rpc_request",
                 "data": [[1, 2, 3, 4], [7, 9, 12]],
-                "master-port": self.kphp_server.master_port
+                "master-port": self.web_server.master_port
             })
 
         self.assertEqual(resp.status_code, 200)
@@ -55,12 +57,12 @@ class TestJobWithRpcRequests(KphpServerAutoTestCase):
         self.assertGreater(len(result["stats"]["result"]), 5)
 
     def test_job_with_rpc_query_and_mc_request_between(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri="/test_cpu_job_and_mc_usage_between",
             json={
                 "tag": "x2_with_rpc_request",
                 "data": [[1, 2, 3, 4], [7, 9, 12]],
-                "master-port": self.kphp_server.master_port
+                "master-port": self.web_server.master_port
             })
 
         self.assertEqual(resp.status_code, 200)
