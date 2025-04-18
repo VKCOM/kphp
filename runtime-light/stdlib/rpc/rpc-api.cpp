@@ -60,19 +60,18 @@ mixed mixed_array_get_value(const mixed& arr, const string& str_key, int64_t num
 // THROWING
 array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery>& rpc_query) noexcept {
   php_assert(!rpc_query.is_null());
-  if (TlRpcError err{}; TRY_CALL(decltype(err.try_fetch()), array<mixed>, err.try_fetch())) [[unlikely]] {
+  if (TlRpcError err{}; TRY_CALL(bool, array<mixed>, err.try_fetch())) {
     return err.make_error();
   }
 
   auto& cur_query{CurrentTlQuery::get()};
+  const vk::final_action finalizer{[&cur_query] noexcept { cur_query.reset(); }};
   cur_query.set_current_tl_function(rpc_query);
   auto fetcher{rpc_query.get()->result_fetcher->extract_untyped_fetcher()};
   php_assert(fetcher);
 
-  auto res{RpcImageState::get().tl_fetch_wrapper(std::move(fetcher))};
-  cur_query.reset();
   // TODO: EOF handling
-  return res;
+  return TRY_CALL(array<mixed>, array<mixed>, RpcImageState::get().tl_fetch_wrapper(std::move(fetcher)));
 }
 
 // THROWING
@@ -80,25 +79,25 @@ class_instance<C$VK$TL$RpcResponse> fetch_function_typed(const class_instance<Rp
   php_assert(!rpc_query.is_null());
 
   auto& cur_query{CurrentTlQuery::get()};
+  const vk::final_action finalizer{[&cur_query] noexcept { cur_query.reset(); }};
   cur_query.set_current_tl_function(rpc_query);
-  if (TlRpcError err{}; TRY_CALL(decltype(err.try_fetch()), class_instance<C$VK$TL$RpcResponse>, err.try_fetch())) [[unlikely]] {
+  if (TlRpcError err{}; TRY_CALL(bool, class_instance<C$VK$TL$RpcResponse>, err.try_fetch())) {
     return error_factory.make_error(std::move(err));
   }
 
-  auto res{rpc_query.get()->result_fetcher->fetch_typed_response()};
-  cur_query.reset();
   // TODO: EOF handling
-  return res;
+  return TRY_CALL(class_instance<C$VK$TL$RpcResponse>, class_instance<C$VK$TL$RpcResponse>, rpc_query.get()->result_fetcher->fetch_typed_response());
 }
 
 // THROWING
 class_instance<RpcTlQuery> store_function(const mixed& tl_object) noexcept {
   auto& cur_query{CurrentTlQuery::get()};
+  const vk::final_action finalizer{[&cur_query] noexcept { cur_query.reset(); }};
   const auto& rpc_image_state{RpcImageState::get()};
 
   const auto fun_name{mixed_array_get_value(tl_object, string{"_"}, 0).to_string()};
   if (!rpc_image_state.tl_storers_ht.has_key(fun_name)) [[unlikely]] {
-    TRY_CALL_VOID(class_instance<RpcTlQuery>, cur_query.raise_storing_error("Function \"%s\" not found in tl-scheme", fun_name.c_str()));
+    return cur_query.raise_storing_error("function \"%s\" not found in tl-scheme", fun_name.c_str()), class_instance<RpcTlQuery>{};
   }
 
   auto rpc_tl_query{make_instance<RpcTlQuery>()};
@@ -107,7 +106,7 @@ class_instance<RpcTlQuery> store_function(const mixed& tl_object) noexcept {
 
   const auto& untyped_storer{rpc_image_state.tl_storers_ht.get_value(fun_name)};
   rpc_tl_query.get()->result_fetcher = make_unique_on_script_memory<RpcRequestResultUntyped>(untyped_storer(tl_object));
-  cur_query.reset();
+  CHECK_EXCEPTION(return class_instance<RpcTlQuery>{});
   return rpc_tl_query;
 }
 
@@ -122,12 +121,8 @@ kphp::coro::task<kphp::rpc::query_info> rpc_tl_query_one_impl(string actor, mixe
 
   rpc_instance_st.rpc_buffer.clean();
   auto rpc_tl_query{store_function(tl_object)}; // THROWING
-  // get rid of possible exceptions
-  if (!TlRpcError::transform_exception_into_error_if_possible().empty()) [[unlikely]] {
-    co_return kphp::rpc::query_info{};
-  }
-  if (rpc_tl_query.is_null()) [[unlikely]] {
-    php_warning("could not store rpc request");
+  // handle exceptions that could arise during store_function
+  if (!TlRpcError::transform_exception_into_error_if_possible().empty() || rpc_tl_query.is_null()) [[unlikely]] {
     co_return kphp::rpc::query_info{};
   }
 
@@ -146,15 +141,11 @@ kphp::coro::task<kphp::rpc::query_info> typed_rpc_tl_query_one_impl(string actor
   }
 
   auto& rpc_instance_st{RpcInstanceState::get()};
-
   rpc_instance_st.rpc_buffer.clean();
+
   auto fetcher{rpc_request.store_request()}; // THROWING
-  // get rid of possible exceptions
-  if (!TlRpcError::transform_exception_into_error_if_possible().empty()) [[unlikely]] {
-    co_return kphp::rpc::query_info{};
-  }
-  if (!static_cast<bool>(fetcher)) [[unlikely]] {
-    php_warning("could not store rpc request");
+  // handle exceptions that could arise during store_request
+  if (!TlRpcError::transform_exception_into_error_if_possible().empty() || !static_cast<bool>(fetcher)) [[unlikely]] {
     co_return kphp::rpc::query_info{};
   }
 
@@ -169,7 +160,6 @@ kphp::coro::task<kphp::rpc::query_info> typed_rpc_tl_query_one_impl(string actor
   co_return query_info;
 }
 
-// THROWING
 kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) noexcept {
   if (query_id < kphp::rpc::VALID_QUERY_ID_RANGE_START) [[unlikely]] {
     co_return TlRpcError::make_error(TL_ERROR_WRONG_QUERY_ID, string{"wrong query_id"});
@@ -216,9 +206,9 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   rpc_instance_st.rpc_buffer.clean();
   rpc_instance_st.rpc_buffer.store_bytes({data.c_str(), static_cast<size_t>(data.size())});
   auto res{fetch_function_untyped(rpc_query)}; // THROWING
-  // get rid of possible exceptions
+  // handle exceptions that could arise during fetch_function_untyped
   if (auto err{TlRpcError::transform_exception_into_error_if_possible()}; !err.empty()) [[unlikely]] {
-    res = std::move(err);
+    co_return std::move(err);
   }
   co_return std::move(res);
 }
@@ -269,9 +259,9 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   rpc_instance_st.rpc_buffer.clean();
   rpc_instance_st.rpc_buffer.store_bytes({data.c_str(), static_cast<size_t>(data.size())});
   auto res{fetch_function_typed(rpc_query, error_factory)}; // THROWING
-  // get rid of possible exceptions
+  // handle exceptions that could arise during fetch_function_typed
   if (auto err{error_factory.transform_exception_into_error_if_possible()}; !err.is_null()) [[unlikely]] {
-    res = std::move(err);
+    co_return std::move(err);
   }
   co_return std::move(res);
 }
