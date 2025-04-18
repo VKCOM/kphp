@@ -35,8 +35,7 @@ class K2Server(WebServer):
         if "--log-file" in self._options:
             self._json_log_file = os.path.join(self._working_dir, self._options["--log-file"])
         else:
-            if start_msgs is None:
-                start_msgs = []
+            start_msgs = start_msgs or []
             start_msgs.append("Starting to accept clients.")
         super(K2Server, self).start(start_msgs)
 
