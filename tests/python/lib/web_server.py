@@ -10,12 +10,12 @@ from .port_generator import get_port
 class WebServer(Engine):
     def __init__(self, web_server_bin, working_dir, options=None):
         """
-        :param engine_bin: Путь до бинарника http сервера
-        :param working_dir: Рабочая папка где будет запущен kphp сервер
-        :param options: Словарь с дополнительными опциями, которые будут использоваться при запуске http сервера
-            Специальная значения:
-                option: True - передавать опцию без значения
-                option: None - удалить дефолтно проставляемую опцию
+        :param web_server_bin: Path to web-server bin
+        :param working_dir: Working dir where web-server will be launch
+        :param options: Dict with extra options
+            Special values:
+                option: True - pass option without value
+                option: None - delete default option
         """
         super(WebServer, self).__init__(web_server_bin, working_dir, options)
         self._http_port = get_port()
@@ -45,38 +45,38 @@ class WebServer(Engine):
 
     def http_request(self, uri='/', method='GET', http_port=None, timeout=30, **kwargs):
         """
-        Послать запрос в kphp сервер
-        :param http_port: порт в который посылать, если их несколько
-        :param uri: uri запроса
-        :param method: метод запроса
-        :param kwargs: дополнительные параметры, передаваемые в request
-        :return: ответ на запрос
+        Send a request to the web server
+        :param http_port: the port to send to, if there are multiple
+        :param uri: the URI of the request
+        :param method: the HTTP method of the request
+        :param kwargs: additional parameters passed to the request
+        :return: the response to the request
         """
         return send_http_request(self._http_port if http_port is None else http_port, uri, method, timeout, **kwargs)
 
     def http_post(self, uri='/', **kwargs):
         """
-        Послать POST запрос в kphp сервер
-        :param uri: uri запроса
-        :param kwargs: дополнительные параметры, передаваемые в request
-        :return: ответ на запрос
+        Send a POST request to the web server
+        :param uri: the URI of the request
+        :param kwargs: additional parameters passed to the request
+        :return: the response to the request
         """
         return self.http_request(uri=uri, method='POST', **kwargs)
 
     def http_get(self, uri='/', **kwargs):
         """
-        Послать GET запрос в kphp сервер
-        :param uri: uri запроса
-        :param kwargs: дополнительные параметры, передаваемые в request
-        :return: ответ на запрос
+        Send a GET request to the web server
+        :param uri: the URI of the request
+        :param kwargs: additional parameters passed to the request
+        :return: the response to the request
         """
         return self.http_request(uri=uri, method='GET', **kwargs)
 
     def http_request_raw(self, request):
         """
-        Послать сырой запрос в kphp сервер
-        :param request: список сырых байтовых строк, которые будут сконкатеннированных в запрос
-        :return: ответ на запрос
+        Send a raw request to the kphp server
+        :param request: a list of raw byte strings that will be concatenated into the request
+        :return: the response to the request
         """
         return send_http_request_raw(self._http_port, request)
 
