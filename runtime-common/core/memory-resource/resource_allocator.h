@@ -37,7 +37,7 @@ public:
     static_assert(sizeof(value_type) <= max_value_type_size(), "memory limit");
     auto result = static_cast<value_type*>(memory_resource_.allocate(sizeof(value_type) * size));
     if (unlikely(!result)) {
-      php_critical_error("not enough memory to continue");
+      php_runtime_critical("not enough memory to continue");
     }
     return result;
   }
