@@ -18,6 +18,7 @@ public:
   bool has_error() const {
     return m_error;
   }
+
 private:
   struct chunk {
     chunk* m_next{nullptr};
