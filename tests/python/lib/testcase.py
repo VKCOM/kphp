@@ -206,7 +206,7 @@ class WebServerAutoTestCase(BaseTestCase):
                 kphp_env["KPHP_TL_SCHEMA"] = search_combined_tlo(cls.kphp_build_working_dir)
 
             if cls.should_use_k2():
-                kphp_env.update(cls.k2_server_env())
+                kphp_env.update(cls.kphp_env_for_k2_server_component())
 
             print("\nCompiling kphp")
             if not cls.kphp_builder.compile_with_kphp(kphp_env):
@@ -280,7 +280,7 @@ class WebServerAutoTestCase(BaseTestCase):
         return search_k2_bin() is not None
 
     @classmethod
-    def k2_server_env(cls):
+    def kphp_env_for_k2_server_component(cls):
         env = {"KPHP_MODE": "k2-server", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
                "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1"}
         return env
@@ -348,7 +348,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
         return search_k2_bin() is not None
 
     @classmethod
-    def k2_cli_env(cls):
+    def kphp_env_for_k2_cli_component(cls):
         env = {"KPHP_MODE": "k2-cli", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
                "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1"}
         return env
@@ -368,7 +368,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     def build_and_compare_with_php(self, php_script_path, kphp_env=None):
         if self.should_use_k2():
             kphp_env = kphp_env or {}
-            kphp_env.update(self.k2_cli_env())
+            kphp_env.update(self.kphp_env_for_k2_cli_component())
         once_runner = self.make_kphp_once_runner(php_script_path)
         self.assertTrue(once_runner.run_with_php(), "Got PHP error")
         self.assertTrue(once_runner.compile_with_kphp(kphp_env), "Got KPHP build error")
