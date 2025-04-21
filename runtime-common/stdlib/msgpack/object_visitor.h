@@ -9,10 +9,10 @@
 #include <vector>
 
 #include "common/mixin/not_copyable.h"
+#include "common/wrappers/string_view.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/msgpack/object.h"
-#include "common/wrappers/string_view.h"
 
 namespace vk::msgpack {
 
