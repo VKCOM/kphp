@@ -33,8 +33,7 @@ bool http_status_header(std::string_view header) noexcept {
 
 bool http_location_header(std::string_view header) noexcept {
   {
-    const std::pair<std::string_view, std::string_view> parts{vk::split_string_view(header, ':')};
-    auto [name_view, value_view]{parts};
+    auto [name_view, value_view]{vk::split_string_view(header, ':')};
     if (name_view.size() + value_view.size() + 1 != header.size()) [[unlikely]] {
       return false;
     }
@@ -117,8 +116,7 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
     }
   }
 
-  const std::pair<std::string_view, std::string_view> parts{vk::split_string_view(header_view, ':')};
-  auto [name_view, value_view]{parts};
+  auto [name_view, value_view]{vk::split_string_view(header_view, ':')};
   if (name_view.size() + value_view.size() + 1 != header_view.size()) [[unlikely]] {
     return php_warning("invalid header: %s", header_view.data());
   }

@@ -105,8 +105,7 @@ void process_cookie_header(std::string_view header, PhpScriptBuiltInSuperGlobals
 // Header example:
 //  Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
 void process_authorization_header(std::string_view header, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
-  std::pair<std::string_view, std::string_view> parts{vk::split_string_view(header, ' ')};
-  const auto [auth_scheme, auth_credentials]{parts};
+  const auto [auth_scheme, auth_credentials]{vk::split_string_view(header, ' ')};
   if (auth_scheme.size() + auth_credentials.size() + 1 != header.size() || auth_scheme != AUTHORIZATION_BASIC) [[unlikely]] {
     return;
   }
@@ -117,8 +116,7 @@ void process_authorization_header(std::string_view header, PhpScriptBuiltInSuper
   }
 
   const std::string_view decoded_login_pass_view{decoded_login_pass.val().c_str(), decoded_login_pass.val().size()};
-  parts = vk::split_string_view(decoded_login_pass_view, ':');
-  const auto [login, pass]{parts};
+  const auto [login, pass]{vk::split_string_view(decoded_login_pass_view, ':')};
   if (login.size() + pass.size() + 1 != decoded_login_pass_view.size()) [[unlikely]] {
     return;
   }
