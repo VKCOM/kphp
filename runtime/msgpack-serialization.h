@@ -51,25 +51,23 @@ inline ResultType f$msgpack_deserialize(const string& buffer, string* out_err_ms
     return {};
   }
 
+  RuntimeContext::get().msgpack_error = std::nullopt;
   const auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator();
   string err_msg;
-  try {
-    vk::msgpack::unpacker unpacker{buffer};
-    vk::msgpack::object obj = unpacker.unpack();
+  vk::msgpack::unpacker unpacker{buffer};
+  vk::msgpack::object obj = unpacker.unpack();
 
-    if (unpacker.has_error()) {
-      err_msg = unpacker.get_error_msg();
-    }
-
+  if (unpacker.has_error()) {
+    // parsing or allocation errors
+    err_msg = unpacker.get_error_msg();
+  } else {
     auto res = obj.as<ResultType>();
     if (unpacker.has_error()) {
+      // scheme compliance errors
       err_msg = unpacker.get_error_msg();
     } else {
       return res;
     }
-  } catch (...) {
-    assert(false && "must be unreachable");
-    err_msg = string("something went wrong in deserialization, pass it to KPHP|Team");
   }
 
   if (!err_msg.empty()) {

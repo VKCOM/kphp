@@ -12,22 +12,22 @@ ResultType f$msgpack_deserialize(const string& buffer, string* out_err_msg = nul
     return {};
   }
 
+  RuntimeContext::get().msgpack_error = std::nullopt;
   string err_msg;
-  try {
-    vk::msgpack::unpacker unpacker{buffer};
-    vk::msgpack::object obj{unpacker.unpack()};
+  vk::msgpack::unpacker unpacker{buffer};
+  vk::msgpack::object obj{unpacker.unpack()};
 
+  if (unpacker.has_error()) {
+    // parsing or allocation errors
+    err_msg = unpacker.get_error_msg();
+  } else {
+    auto res = obj.as<ResultType>();
     if (unpacker.has_error()) {
+      // scheme compliance errors
       err_msg = unpacker.get_error_msg();
     } else {
-      return obj.as<ResultType>();
+      return res;
     }
-  } catch (vk::msgpack::type_error& e) {
-    err_msg = string("Unknown type found during deserialization");
-  } catch (vk::msgpack::unpack_error& e) {
-    err_msg = string(e.what());
-  } catch (...) {
-    err_msg = string("something went wrong in deserialization, pass it to KPHP|Team");
   }
 
   if (!err_msg.empty()) {

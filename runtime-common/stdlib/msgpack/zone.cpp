@@ -15,7 +15,6 @@ zone::chunk_list::chunk_list(size_t chunk_size) {
   if (!c) {
     m_error = true;
     return;
-    // throw std::bad_alloc{};
   }
 
   m_head = c;
@@ -76,7 +75,6 @@ char* zone::allocate_expand(size_t size) {
   if (!c) {
     m_error = true;
     return nullptr;
-    // throw std::bad_alloc{};
   }
 
   char* ptr = reinterpret_cast<char*>(c) + sizeof(chunk);

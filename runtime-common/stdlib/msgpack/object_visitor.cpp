@@ -6,8 +6,6 @@
 #include <cstring>
 
 #include "runtime-common/stdlib/msgpack/object_visitor.h"
-
-#include "runtime-common/stdlib/msgpack/unpack_exception.h"
 #include "runtime-common/stdlib/msgpack/zone.h"
 
 namespace vk::msgpack {
@@ -96,7 +94,6 @@ bool object_visitor::start_array(uint32_t num_elements) {
     if (size / sizeof(msgpack::object) != num_elements) {
       error = "array size overflow";
       return false;
-      // throw msgpack::array_size_overflow("array size overflow");
     }
     auto* ptr = m_zone.allocate_align(size, alignof(msgpack::object));
     if (m_zone.has_error()) {
@@ -120,7 +117,6 @@ bool object_visitor::start_map(uint32_t num_kv_pairs) {
     if (size / sizeof(msgpack::object_kv) != num_kv_pairs) {
       error = "map size overflow";
       return false;
-      // throw msgpack::map_size_overflow("map size overflow");
     }
     auto* ptr = m_zone.allocate_align(size, alignof(msgpack::object_kv));
     if (m_zone.has_error()) {
@@ -135,11 +131,9 @@ bool object_visitor::start_map(uint32_t num_kv_pairs) {
 
 void object_visitor::parse_error(size_t /*parsed_offset*/, size_t /*error_offset*/) const {
   error = "parse error";
-  // throw msgpack::parse_error("parse error");
 }
 void object_visitor::insufficient_bytes(size_t /*parsed_offset*/, size_t /*error_offset*/) const {
   error = "insufficient bytes";
-  // throw msgpack::insufficient_bytes("insufficient bytes");
 }
 
 } // namespace vk::msgpack

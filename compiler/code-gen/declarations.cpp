@@ -1176,7 +1176,7 @@ void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, Class
     return;
   }
 
-  //if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { RuntimeContext::get().msgpack_error = "todo: type error"; }
+  //if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { RuntimeContext::get().set_msgpack_error("Unknown type found during deserialization"); return; }
   //auto arr = msgpack_o.via.array;
   //for (size_t i = 0; i < arr.size; i += 2) {
   //  auto tag = arr.ptr[i].as<uint8_t>();
@@ -1212,7 +1212,7 @@ void ClassMembersDefinition::compile_msgpack_deserialize(CodeGenerator &W, Class
   cases.emplace_back("default: break;");
 
   W << "void " << klass->src_name << "::msgpack_unpack(const vk::msgpack::object &msgpack_o) " << BEGIN
-    << "if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { RuntimeContext::get().msgpack_error = \"todo: type error\"; }" << NL
+    << "if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) { RuntimeContext::get().set_msgpack_error(\"Unknown type found during deserialization\"); return; }" << NL
     << "auto arr = msgpack_o.via.array;" << NL
     << "for (size_t i = 0; i < arr.size; i += 2)" << BEGIN
     << "auto tag = arr.ptr[i].as<uint8_t>();" << NL

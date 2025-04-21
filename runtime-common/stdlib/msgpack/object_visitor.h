@@ -71,6 +71,10 @@ public:
     return error.has_value();
   }
 
+  std::optional<vk::string_view> get_error() const {
+    return error;
+  }
+
 private:
   msgpack::object m_obj;
   kphp::stl::vector<msgpack::object*, kphp::memory::script_allocator> m_stack{};

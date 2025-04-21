@@ -24,8 +24,11 @@ public:
 private:
   const string& input_;
   std::size_t bytes_consumed_{0};
-  bool visitor_error_ = false;
   msgpack::zone zone_;
+
+  // It's awful because unpacker and visitor are strongly logically connected,
+  // but there is no aggregation or composition. Should be fixed some day.
+  std::optional<vk::string_view> visitor_error_{std::nullopt};
 };
 
 } // namespace vk::msgpack

@@ -17,35 +17,29 @@ msgpack::object unpacker::unpack() {
     return {};
   }
   parse_return ret = parser<object_visitor>::parse(input_.c_str(), input_.size(), bytes_consumed_, visitor);
-  if (visitor.has_error()) {
-    visitor_error_ = true;
-    return {};
-  }
-  // TODO visitor may store error, should check here
+  visitor_error_ = visitor.get_error();
 
   switch (ret) {
   case parse_return::SUCCESS:
   case parse_return::EXTRA_BYTES:
     return std::move(visitor).flush();
   default:
-    // For no it's assumed as unreachable because of throwing exception mechanism
-    // Good place to load error and store it somewhere
-    // Looks like store right in unpacker
-    assert(false && "unreachable");
+    // Error happened
     return {};
   }
 }
 
 bool unpacker::has_error() const noexcept {
-  return RuntimeContext::get().msgpack_error.has_value() || visitor_error_ || zone_.has_error() || bytes_consumed_ != input_.size();
+  return RuntimeContext::get().msgpack_error.has_value() || visitor_error_.has_value() || zone_.has_error() || bytes_consumed_ != input_.size();
 }
 
 string unpacker::get_error_msg() const noexcept {
-  if (RuntimeContext::get().msgpack_error.has_value()) {
-    return string(RuntimeContext::get().msgpack_error->data());
+  auto& rt_context = RuntimeContext::get();
+  if (rt_context.msgpack_error.has_value()) {
+    return {rt_context.msgpack_error->data(), static_cast<uint32_t>(rt_context.msgpack_error->size())};
   }
-  if (visitor_error_) {
-    return string("visitor error");
+  if (visitor_error_.has_value()) {
+    return {visitor_error_->data(), static_cast<uint32_t>(visitor_error_->size())};
   }
   if (zone_.has_error()) {
     return string("cannot allocate");

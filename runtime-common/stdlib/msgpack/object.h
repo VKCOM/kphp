@@ -68,7 +68,9 @@ struct object {
    */
   template<typename T>
   T as() const {
-    T v;
+    // Without initializationg we have maybe-uninitialized warning.
+    // Assume that default constructor is cheap.
+    T v{};
     convert(v);
     return v;
   }

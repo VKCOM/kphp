@@ -4,8 +4,9 @@
 
 #pragma once
 
-#include <cstddef>
+#include <array>
 #include <cstdint>
+#include <cstring>
 #include <optional>
 
 #include "common/mixin/not_copyable.h"
@@ -23,7 +24,11 @@ struct RuntimeContext final : vk::not_copyable {
   string_buffer_lib_context sb_lib_context{};
   string_buffer static_SB{};
   string_buffer static_SB_spare{};
-  std::optional<vk::string_view> msgpack_error; 
+  std::optional<std::array<char, 256>> msgpack_error;
+  void set_msgpack_error(const char* msg) noexcept {
+    msgpack_error = std::array<char, 256>();
+    strncpy(msgpack_error->begin(), msg, 256);
+  }
 
   void init() noexcept;
   void free() noexcept;
