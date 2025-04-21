@@ -10,7 +10,7 @@ from .port_generator import get_port
 class WebServer(Engine):
     def __init__(self, web_server_bin, working_dir, options=None):
         """
-        :param web_server_bin:  Path to the web server binary
+        :param web_server_bin: Path to the web server binary
         :param working_dir: Working directory where the web server will be started
         :param options: Dictionary with additional options that will be used when starting the web server
             Special values:
