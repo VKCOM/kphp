@@ -240,10 +240,11 @@ class WebServerAutoTestCase(BaseTestCase):
     def custom_teardown(cls):
         cls.web_server.stop()
         cls.extra_class_teardown()
-        try:
-            os.remove(cls.web_server_bin)
-        except OSError:
-            pass
+        if not cls.should_use_k2():
+            try:
+                os.remove(cls.web_server_bin)
+            except OSError:
+                pass
         for sanitizer_log in glob.glob(cls.sanitizer_pattern + ".*"):
             if not can_ignore_sanitizer_log(sanitizer_log):
                 raise RuntimeError("Got unexpected sanitizer log '{}'".format(sanitizer_log))
