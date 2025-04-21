@@ -17,7 +17,7 @@
 
 using ServerQuery = std::variant<tl::K2InvokeHttp, tl::K2InvokeJobWorker>;
 
-inline void init_server(ServerQuery&& query) noexcept {
+inline void init_server(ServerQuery query) noexcept {
   static constexpr std::string_view SERVER_SOFTWARE_VALUE = "K2/KPHP";
   static constexpr std::string_view SERVER_SIGNATURE_VALUE = "K2/KPHP Server v0.0.1";
 

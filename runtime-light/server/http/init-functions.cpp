@@ -195,7 +195,7 @@ namespace kphp {
 
 namespace http {
 
-void init_server(tl::K2InvokeHttp&& invoke_http) noexcept {
+void init_server(tl::K2InvokeHttp invoke_http) noexcept {
   auto& superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
   auto& server{superglobals.v$_SERVER};
   auto& http_server_instance_st{HttpServerInstanceState::get()};

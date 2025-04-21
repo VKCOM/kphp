@@ -9,7 +9,7 @@
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/tl/tl-functions.h"
 
-inline void init_job_server(tl::K2InvokeJobWorker&& invoke_jw) noexcept {
+inline void init_job_server(tl::K2InvokeJobWorker invoke_jw) noexcept {
   auto& jw_server_ctx{JobWorkerServerInstanceState::get()};
   jw_server_ctx.kind = invoke_jw.ignore_answer ? JobWorkerServerInstanceState::Kind::NoReply : JobWorkerServerInstanceState::Kind::Regular;
   jw_server_ctx.state = JobWorkerServerInstanceState::State::Working;
