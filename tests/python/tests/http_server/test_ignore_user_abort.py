@@ -41,7 +41,7 @@ class TestIgnoreUserAbort(WebServerAutoTestCase):
         self.assertTrue(error)
 
     def test_ignore_user_abort_rpc_work(self):
-        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=ignore&port={}'.format(str(self.rpc_test_port)))
+        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=ignore&port={}'.format(str(typing.cast(KphpServer, self.web_server).master_port)))
         self.web_server.assert_log(["test_ignore_user_abort/finish_rpc_work_" + "ignore"], timeout=5)
         self.web_server.assert_log(["test_ignore_user_abort/finish_ignore_" + "rpc"], timeout=5)
         self.web_server.assert_log(["shutdown_function was called"], timeout=5)
@@ -53,7 +53,7 @@ class TestIgnoreUserAbort(WebServerAutoTestCase):
         self.web_server.assert_log(["shutdown_function was called"], timeout=5)
 
     def test_nested_ignore_user_abort_rpc_work(self):
-        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=nested_ignore&port={}'.format(str(self.rpc_test_port)))
+        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=nested_ignore&port={}'.format(str(typing.cast(KphpServer, self.web_server).master_port)))
         self.web_server.assert_log(["test_ignore_user_abort/finish_rpc_work_" + "nested_ignore"], timeout=5)
         self.web_server.assert_log(["test_ignore_user_abort/finish_nested_ignore_" + "rpc"], timeout=5)
         self.web_server.assert_log(["shutdown_function was called"], timeout=5)
@@ -65,7 +65,7 @@ class TestIgnoreUserAbort(WebServerAutoTestCase):
         self.web_server.assert_log(["shutdown_function was called"], timeout=5)
 
     def test_multi_ignore_user_abort_rpc_work(self):
-        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=multi_ignore&port={}'.format(str(self.rpc_test_port)))
+        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=multi_ignore&port={}'.format(str(typing.cast(KphpServer, self.web_server).master_port)))
         self.web_server.assert_log(["test_ignore_user_abort/finish_rpc_work_" + "multi_ignore"], timeout=5)
         self.web_server.assert_log(["test_ignore_user_abort/finish_multi_ignore_" + "rpc"], timeout=5)
         self.web_server.assert_log(["shutdown_function was called"], timeout=5)
@@ -77,7 +77,7 @@ class TestIgnoreUserAbort(WebServerAutoTestCase):
         self.web_server.assert_log(["shutdown_function was called"], timeout=5)
 
     def test_idempotence_ignore_user_abort(self):
-        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=ignore&port={}'.format(str(self.rpc_test_port)))
+        self._send_request(uri='/test_ignore_user_abort?type=rpc&level=ignore&port={}'.format(str(typing.cast(KphpServer, self.web_server).master_port)))
         self.web_server.assert_log(["test_ignore_user_abort/finish_rpc_work_" + "ignore"], timeout=5)
         self.web_server.assert_log(["test_ignore_user_abort/finish_ignore_" + "rpc"], timeout=5)
         self.web_server.assert_log(["shutdown_function was called"], timeout=5)
