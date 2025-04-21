@@ -415,7 +415,7 @@ if __name__ == "__main__":
 
     runner.add_test_group(
         name="k2-functional-tests",
-        description="run k2-kphp functional tests with cxx={}".format("gcc"),
+        description="run k2-kphp functional tests with cxx={}".format(args.cxx_name),
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} K2_BIN={k2_bin} python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
             kphp_polyfills_repo=kphp_polyfills_repo,
             k2_bin=args.k2_bin,

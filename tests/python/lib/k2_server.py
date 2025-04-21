@@ -7,10 +7,10 @@ from .web_server import WebServer
 class K2Server(WebServer):
     def __init__(self, k2_server_bin, working_dir, kphp_build_dir, options=None, auto_start=False):
         """
-        :param k2_server_bin: Path to k2 binary
-        :param working_dir: Working dir where k2 will be launch
-        :param kphp_build_dir: Dir with components
-        :param options: Dict with extra options
+        :param k2_server_bin: Path to the k2 server binary
+        :param working_dir: Working directory where the k2 server will be started
+        :param kphp_build_dir: Directory with compiled k2-components
+        :param options: Dictionary with additional options that will be used when starting the k2 server
             Special values:
                 option: True - pass option without value
                 option: None - delete default option
