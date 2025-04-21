@@ -22,9 +22,8 @@ class Y {
 
 function test() {
     $serialized = instance_serialize(new X("stroka"));
-    // var_dump($serialized);
-    // $failed_deser = instance_deserialize($serialized, Y::class);
-    // assert_true($failed_deser === null);
+    $failed_deser = instance_deserialize($serialized, Y::class);
+    assert_true($failed_deser === null);
     $succ_deser = instance_deserialize($serialized, X::class);
     assert_true($succ_deser !== null);
 }
