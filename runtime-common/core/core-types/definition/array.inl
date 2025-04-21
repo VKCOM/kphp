@@ -103,19 +103,21 @@ bool array<T>::is_int_key(const typename array<T>::key_type& key) {
   return key.is_int();
 }
 
+static uint8_t empty_array_raw_mem[2 * sizeof(array_inner_control)];
+
 template<>
 inline typename array<Unknown>::array_inner* array<Unknown>::array_inner::empty_array() {
   // need this hack because gcc10 and newer complains about
-  // "array subscript is outside array bounds of array<Unknown>::array_inner"
-  static array_inner_control empty_array[1]{{
+  // "array subscript is outside array bounds of array<Unknown>::array_inner
+  new (&empty_array_raw_mem) array_inner_control{
       true,
       ExtraRefCnt::for_global_const,
       -1,
       {0, 0},
       0,
       2,
-  }};
-  return static_cast<array<Unknown>::array_inner*>(&empty_array[0]);
+  };
+  return reinterpret_cast<array<Unknown>::array_inner*>(&empty_array_raw_mem);
 }
 
 template<class T>

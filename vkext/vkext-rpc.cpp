@@ -154,8 +154,11 @@ void update_precise_now() {
   }
 }
 
+static rpc_connection dummy_rpc_connection{};
+
 rpc_connection *rpc_connection_get(int fd) {
-  rpc_connection **T = tree_lookup_value_connection(rpc_connection_tree, reinterpret_cast<rpc_connection *>(&fd));
+  dummy_rpc_connection.fd = fd;
+  rpc_connection **T = tree_lookup_value_connection(rpc_connection_tree, reinterpret_cast<rpc_connection *>(&dummy_rpc_connection));
   return T ? *T : 0;
 }
 
