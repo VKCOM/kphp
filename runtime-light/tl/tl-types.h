@@ -34,6 +34,126 @@ struct Bool final {
   }
 };
 
+struct int_ final {
+  int32_t value{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    const auto opt_value{tlb.fetch_trivial<int32_t>()};
+    value = opt_value.value_or(0);
+    return opt_value.has_value();
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tlb.store_trivial<int32_t>(value);
+  }
+};
+
+class Int final {
+  static constexpr uint32_t MAGIC = 0xa850'9bda;
+
+public:
+  tl::int_ inner{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == MAGIC && inner.fetch(tlb);
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tlb.store_trivial<uint32_t>(MAGIC);
+    inner.store(tlb);
+  }
+};
+
+struct long_ final {
+  int64_t value{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    const auto opt_value{tlb.fetch_trivial<int64_t>()};
+    value = opt_value.value_or(0);
+    return opt_value.has_value();
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tlb.store_trivial<int64_t>(value);
+  }
+};
+
+class Long final {
+  static constexpr uint32_t MAGIC = 0x2207'6cba;
+
+public:
+  tl::long_ inner{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == MAGIC && inner.fetch(tlb);
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tlb.store_trivial<uint32_t>(MAGIC);
+    inner.store(tlb);
+  }
+};
+
+struct float_ final {
+  float value{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    const auto opt_value{tlb.fetch_trivial<float>()};
+    value = opt_value.value_or(0.0);
+    return opt_value.has_value();
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tlb.store_trivial<float>(value);
+  }
+};
+
+class Float final {
+  static constexpr uint32_t MAGIC = 0x824d'ab22;
+
+public:
+  tl::float_ inner{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == MAGIC && inner.fetch(tlb);
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tlb.store_trivial<uint32_t>(MAGIC);
+    inner.store(tlb);
+  }
+};
+
+struct double_ final {
+  double value{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    const auto opt_value{tlb.fetch_trivial<double>()};
+    value = opt_value.value_or(0.0);
+    return opt_value.has_value();
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tlb.store_trivial<double>(value);
+  }
+};
+
+class Double final {
+  static constexpr uint32_t MAGIC = 0x2210'c154;
+
+public:
+  tl::double_ inner{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == MAGIC && inner.fetch(tlb);
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tlb.store_trivial<uint32_t>(MAGIC);
+    inner.store(tlb);
+  }
+};
+
 template<typename T>
 struct Maybe final {
   std::optional<T> opt_value{};
