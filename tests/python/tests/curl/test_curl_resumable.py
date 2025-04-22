@@ -1,12 +1,14 @@
 import re
+import pytest
 from python.tests.curl.curl_test_case import CurlTestCase
 
 
+@pytest.mark.k2_skip_suite
 class TestCurlResumable(CurlTestCase):
     test_case_uri="/test_curl_resumable"
 
     def _assert_resumable_logs(self):
-        server_log = self.kphp_server.get_log()
+        server_log = self.web_server.get_log()
         pattern = "start_resumable_function(.|\n)*start_curl_query(.|\n)*end_resumable_function(.|\n)*end_curl_query"
         if not re.search(pattern, ''.join(server_log)):
             raise RuntimeError("cannot find match for pattern \"" + pattern + "\n")

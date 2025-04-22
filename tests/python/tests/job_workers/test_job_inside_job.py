@@ -1,22 +1,27 @@
-from python.lib.testcase import KphpServerAutoTestCase
+import typing
+import pytest
+
+from python.lib.kphp_server import KphpServer
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestJobInsideJob(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestJobInsideJob(WebServerAutoTestCase):
     WORKERS_NUM = 12
     JOB_WORKERS_RATIO = 0.5
     JOB_WORKERS_NUM = WORKERS_NUM * JOB_WORKERS_RATIO
 
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--workers-num": cls.WORKERS_NUM,
             "--job-workers-ratio": cls.JOB_WORKERS_RATIO,
             "--verbosity-job-workers=2": True,
         })
 
     def _test_job_redirect_chain(self, *, data, redirect_chain_len, timeout_error=False):
-        stats_before = self.kphp_server.get_stats()
-        resp = self.kphp_server.http_post(
+        stats_before = self.web_server.get_stats()
+        resp = self.web_server.http_post(
             uri="/test_simple_cpu_job",
             json={"data": data,
                   "tag": "redirect_to_job_worker",
@@ -33,7 +38,7 @@ class TestJobInsideJob(KphpServerAutoTestCase):
         messages_cnt = len(data) * 2 * (redirect_chain_len + 1)
         if redirect_chain_len >= self.JOB_WORKERS_NUM:
             messages_cnt -= 1
-        self.kphp_server.assert_stats(
+        self.web_server.assert_stats(
             initial_stats=stats_before,
             timeout=10,
             expected_added_stats={
@@ -55,11 +60,11 @@ class TestJobInsideJob(KphpServerAutoTestCase):
 
     def test_job_worker_self_lock_freedom(self):
         data = [[i for i in range(10)]]
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri="/test_simple_cpu_job",
             json={"data": data,
                   "tag": "self_lock_job",
-                  "master-port": self.kphp_server.master_port
+                  "master-port": typing.cast(KphpServer, self.web_server).master_port
                   })
 
         self.assertEqual(resp.status_code, 200)

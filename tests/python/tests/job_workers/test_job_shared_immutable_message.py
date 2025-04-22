@@ -1,12 +1,14 @@
-from python.lib.testcase import KphpServerAutoTestCase
+import pytest
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestJobSharedImmutableMessage(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestJobSharedImmutableMessage(WebServerAutoTestCase):
     JOB_PHP_ASSERT_ERROR = -105
 
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--workers-num": 10,
             "--job-workers-ratio": 0.8,
             "--verbosity-job-workers=2": True,
@@ -15,7 +17,7 @@ class TestJobSharedImmutableMessage(KphpServerAutoTestCase):
         })
 
     def test_error_different_shared_memory_pieces(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri="/test_error_different_shared_memory_pieces",
             json={
                 "shared_data": (0, 100, 1),
@@ -24,7 +26,7 @@ class TestJobSharedImmutableMessage(KphpServerAutoTestCase):
             })
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json(), {'job-ids': []})
-        self.kphp_server.assert_log(["Warning: Can't extract common shared memory piece in multiple jobs request: requests\\[0\\] and requests\\[1\\] have different shared memory pieces"])
+        self.web_server.assert_log(["Warning: Can't extract common shared memory piece in multiple jobs request: requests\\[0\\] and requests\\[1\\] have different shared memory pieces"])
 
     def test_job_worker_start_multi_with_shared_data(self):
         self._test_job_worker_start_multi(uri='/test_job_worker_start_multi_with_shared_data',
@@ -39,7 +41,7 @@ class TestJobSharedImmutableMessage(KphpServerAutoTestCase):
                                           jobs_cnt=10, errors_cnt=5, with_shared_data=True)
 
     def _test_job_worker_start_multi(self, *, uri, with_shared_data, jobs_cnt, errors_cnt=0):
-        stats_before = self.kphp_server.get_stats()
+        stats_before = self.web_server.get_stats()
 
         start, end, step = 0, 2000000, 1
         cnt = (end - start) / step
@@ -52,7 +54,7 @@ class TestJobSharedImmutableMessage(KphpServerAutoTestCase):
         batch_count = int(jobs_cnt)
         batch_size = len(shared_data) // batch_count
         error_indices = [2 * i for i in range(errors_cnt)]
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri=uri,
             json={
                 "shared_data": (start, end, step),
@@ -68,14 +70,14 @@ class TestJobSharedImmutableMessage(KphpServerAutoTestCase):
         })
 
         if errors_cnt > 0:
-            self.kphp_server.assert_log(errors_cnt * [
+            self.web_server.assert_log(errors_cnt * [
                 'Warning: Critical error "Test php_assert" in file',
                 "Critical error during script execution: php assert error"
             ])
 
         array_copies_cnt = 1 if with_shared_data else batch_count
         job_messages_cnt = 2 * batch_count + int(with_shared_data)
-        self.kphp_server.assert_stats(
+        self.web_server.assert_stats(
             timeout=10,
             initial_stats=stats_before,
             expected_added_stats={
@@ -95,7 +97,7 @@ class TestJobSharedImmutableMessage(KphpServerAutoTestCase):
 
     def _test_shared_memory_piece_copying_impl(self, label):
         for i in range(50):
-            resp = self.kphp_server.http_post(uri="/test_shared_memory_piece_in_response", json={
+            resp = self.web_server.http_post(uri="/test_shared_memory_piece_in_response", json={
                 "label": label,
             })
             self.assertEqual(resp.status_code, 200)

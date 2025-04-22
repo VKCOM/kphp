@@ -1,11 +1,15 @@
 import json
+import typing
+import pytest
 
-from python.lib.testcase import KphpServerAutoTestCase
+from python.lib.kphp_server import KphpServer
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestMasterStats(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestMasterStats(WebServerAutoTestCase):
     def test_smoke_mc_stats(self):
-        mc_stats = self.kphp_server.http_get("/get_stats_by_mc?master-port={}".format(self.kphp_server.master_port))
+        mc_stats = self.web_server.http_get("/get_stats_by_mc?master-port={}".format(typing.cast(KphpServer, self.web_server).master_port))
         self.assertEqual(mc_stats.status_code, 200)
         self.assertNotEqual(mc_stats.text, "")
         stats_dict = {}
@@ -22,7 +26,7 @@ class TestMasterStats(KphpServerAutoTestCase):
         self.assertIn("running_workers_avg(1m,10m,1h)", stats_dict)
 
     def test_smoke_rpc_stats(self):
-        mc_stats = self.kphp_server.http_get("/get_stats_by_rpc?master-port={}".format(self.kphp_server.master_port))
+        mc_stats = self.web_server.http_get("/get_stats_by_rpc?master-port={}".format(typing.cast(KphpServer, self.web_server).master_port))
         self.assertEqual(mc_stats.status_code, 200)
         self.assertNotEqual(mc_stats.text, "")
 

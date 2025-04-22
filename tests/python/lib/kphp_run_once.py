@@ -95,7 +95,7 @@ class KphpRunOnce(KphpBuilder):
         return php_proc.returncode == 0
 
     def run_with_kphp(self, runs_cnt=1, args=[]):
-        if self.k2_bin is not None:
+        if self.should_use_k2():
             return self.run_with_kphp_and_k2(runs_cnt=runs_cnt, args=args)
         else:
             return self.run_with_kphp_server(runs_cnt=runs_cnt, args=args)
@@ -184,3 +184,6 @@ class KphpRunOnce(KphpBuilder):
             print(f.read())
 
         return False
+
+    def should_use_k2(self):
+        return self.k2_bin is not None

@@ -4,6 +4,8 @@
 
 function ini_get ($s ::: string): string | false;
 
+function kphp_get_runtime_config() ::: mixed;
+
 // === Handlers ===================================================================================
 
 function register_shutdown_function (callable():void $callback) ::: void;
@@ -92,11 +94,6 @@ function thread_pool_test_load($size ::: int, $n ::: int, $a ::: float, $b ::: f
 function gethostbynamel ($name ::: string) ::: string[] | false;
 /** @kphp-extern-func-info stub generation-required */
 function inet_pton ($address ::: string) ::: string | false;
-
-
-
-/** @kphp-extern-func-info stub generation-required */
-function kphp_get_runtime_config() ::: mixed;
 
 
 /** @kphp-extern-func-info stub generation-required */

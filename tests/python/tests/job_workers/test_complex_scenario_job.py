@@ -1,12 +1,17 @@
+import typing
+import pytest
+
 from multiprocessing.dummy import Pool as ThreadPool
 
-from python.lib.testcase import KphpServerAutoTestCase
+from python.lib.kphp_server import KphpServer
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestComplexScenarioJob(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestComplexScenarioJob(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--workers-num": 18,
             "--job-workers-shared-memory-distribution-weights": '2,2,2,2,1,1,1,1,1,1',
             "--job-workers-ratio": 0.16,
@@ -21,18 +26,18 @@ class TestComplexScenarioJob(KphpServerAutoTestCase):
         self.assertGreaterEqual(stats["rpc_filtered_stats"], 0)
 
     def do_no_filter_scenario(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri="/test_complex_scenario",
-            json={"master-port": self.kphp_server.master_port}
+            json={"master-port": typing.cast(KphpServer, self.web_server).master_port}
         )
         self.assertEqual(resp.status_code, 200)
         self.assert_stats_count(resp.json())
 
     def do_filter_scenario(self):
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri="/test_complex_scenario",
             json={
-                "master-port": self.kphp_server.master_port,
+                "master-port": typing.cast(KphpServer, self.web_server).master_port,
                 "stat-names": [
                     "kphp_version", "hostname", "uptime", "RSS", "VM", "tot_idle_time",
                     "terminated_requests.memory_limit_exceeded",
@@ -62,7 +67,7 @@ class TestComplexScenarioJob(KphpServerAutoTestCase):
         with ThreadPool(5) as pool:
             for _ in pool.imap_unordered(self.do_test, range(requests_count)):
                 pass
-        self.kphp_server.assert_stats(
+        self.web_server.assert_stats(
             timeout=10,
             prefix="kphp_server.workers_job_",
             expected_added_stats={

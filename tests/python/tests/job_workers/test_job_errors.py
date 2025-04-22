@@ -1,9 +1,11 @@
 import os
+import pytest
 
-from python.lib.testcase import KphpServerAutoTestCase
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestJobErrors(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestJobErrors(WebServerAutoTestCase):
     JOB_MEMORY_LIMIT_ERROR = -101
     JOB_TIMEOUT_ERROR = -102
     JOB_EXCEPTION_ERROR = -103
@@ -13,7 +15,7 @@ class TestJobErrors(KphpServerAutoTestCase):
 
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--workers-num": 4,
             "--job-workers-ratio": 0.5,
             "--job-workers-shared-memory-distribution-weights": '2,2,2,2,1,1,1,1,1,1',
@@ -26,7 +28,7 @@ class TestJobErrors(KphpServerAutoTestCase):
         job_result = resp.json()["jobs-result"]
         for i in range(results):
             self.assertEqual(job_result[i]["error_code"], error_code)
-        self.kphp_server.assert_stats(
+        self.web_server.assert_stats(
             initial_stats=stats_before,
             expected_added_stats={
                 "kphp_server.workers_job_memory_messages_shared_messages_buffers_acquired": buffers,
@@ -38,8 +40,8 @@ class TestJobErrors(KphpServerAutoTestCase):
         if not data:
             data = [[1, 2, 3, 4], [7, 9, 12]]
 
-        stats_before = self.kphp_server.get_stats()
-        resp = self.kphp_server.http_post(
+        stats_before = self.web_server.get_stats()
+        resp = self.web_server.http_post(
             uri="/test_job_errors",
             json={
                 "tag": "x2_with_error",
@@ -49,9 +51,9 @@ class TestJobErrors(KphpServerAutoTestCase):
         self._assert_result(stats_before, resp, error_code, buffers, len(data))
 
     def test_job_script_timeout_error(self):
-        stats_before = self.kphp_server.get_stats()
+        stats_before = self.web_server.get_stats()
         script_timeout_sec = 1
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri="/test_job_script_timeout_error",
             json={
                 "tag": "x2_with_sleep",
@@ -60,53 +62,53 @@ class TestJobErrors(KphpServerAutoTestCase):
                 "data": [[1, 2, 3, 4]]
             })
         self._assert_result(stats_before, resp, self.JOB_TIMEOUT_ERROR, self.cmpGeAndLe(1, 2), results=1)
-        self.kphp_server.assert_log(["Critical error during script execution: timeout exit"])
+        self.web_server.assert_log(["Critical error during script execution: timeout exit"])
 
     def test_job_memory_limit_error(self):
         self.job_error_test_impl("memory_limit", self.JOB_MEMORY_LIMIT_ERROR)
-        self.kphp_server.assert_log(2 * [
+        self.web_server.assert_log(2 * [
             "Critical error during script execution: memory limit exit",
             "Warning: Can't allocate \\d+ bytes"
         ])
 
     def test_job_exception_error(self):
         self.job_error_test_impl("exception", self.JOB_EXCEPTION_ERROR)
-        self.kphp_server.assert_log(2 * [
+        self.web_server.assert_log(2 * [
             "Critical error during script execution",
             "Error 0: Test exception"
         ])
 
     def test_job_php_assert_error(self):
         self.job_error_test_impl("php_assert", self.JOB_PHP_ASSERT_ERROR)
-        self.kphp_server.assert_log(2 * [
+        self.web_server.assert_log(2 * [
             'Warning: Critical error "Test php_assert" in file',
             "Critical error during script execution: php assert error"
         ])
 
     def test_job_sigsegv(self):
         self.job_error_test_impl("sigsegv", self.JOB_TIMEOUT_ERROR, 1, [[1, 2, 3, 4, 5]])
-        self.kphp_server.assert_log([
+        self.web_server.assert_log([
             "Error -2: Segmentation fault"
         ])
         try:
-            os.remove(os.path.join(self.kphp_server_working_dir, "core"))
+            os.remove(os.path.join(self.web_server_working_dir, "core"))
         except:
             pass
 
     def test_job_client_oom(self):
-        stats_messages_before = self.kphp_server.get_stats("kphp_server.workers_job_memory_messages_shared_messages_")
-        stats_extra_buffers_before = self.kphp_server.get_stats("kphp_server.workers_job_memory_messages_extra_buffers_")
+        stats_messages_before = self.web_server.get_stats("kphp_server.workers_job_memory_messages_shared_messages_")
+        stats_extra_buffers_before = self.web_server.get_stats("kphp_server.workers_job_memory_messages_extra_buffers_")
 
-        resp = self.kphp_server.http_get("/test_client_too_big_request")
+        resp = self.web_server.http_get("/test_client_too_big_request")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json(), {"job-id": False})
 
-        self.kphp_server.assert_log(["Warning: Can't send job X2Request: too big request"])
-        self.kphp_server.assert_stats(
+        self.web_server.assert_log(["Warning: Can't send job X2Request: too big request"])
+        self.web_server.assert_stats(
             prefix="kphp_server.workers_job_memory_messages_shared_messages_",
             initial_stats=stats_messages_before,
             expected_added_stats={"buffers_acquired": 1, "buffers_released": 1, "buffer_acquire_fails": 0})
-        self.kphp_server.assert_stats(
+        self.web_server.assert_stats(
             prefix="kphp_server.workers_job_memory_messages_extra_buffers_",
             initial_stats=stats_extra_buffers_before,
             expected_added_stats={
@@ -122,12 +124,12 @@ class TestJobErrors(KphpServerAutoTestCase):
             })
 
     def test_big_response(self):
-        stats_extra_buffers_before = self.kphp_server.get_stats("kphp_server.workers_job_memory_messages_extra_buffers_")
+        stats_extra_buffers_before = self.web_server.get_stats("kphp_server.workers_job_memory_messages_extra_buffers_")
         self.job_error_test_impl("big_response", self.JOB_NO_REPLY, 6)
-        self.kphp_server.assert_log(2 * [
+        self.web_server.assert_log(2 * [
             "Warning: Can't store job response X2Response: too big response"
         ])
-        self.kphp_server.assert_stats(
+        self.web_server.assert_stats(
             timeout=10,
             prefix="kphp_server.workers_job_memory_messages_extra_buffers_",
             initial_stats=stats_extra_buffers_before,
@@ -144,6 +146,6 @@ class TestJobErrors(KphpServerAutoTestCase):
             })
 
     def test_client_wait_false(self):
-        resp = self.kphp_server.http_get("/test_client_wait_false")
+        resp = self.web_server.http_get("/test_client_wait_false")
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json(), {"jobs-result": "null"})

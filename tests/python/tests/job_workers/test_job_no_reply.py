@@ -1,19 +1,21 @@
-from python.lib.testcase import KphpServerAutoTestCase
+import pytest
+from python.lib.testcase import WebServerAutoTestCase
 
 
-class TestJobNoReply(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestJobNoReply(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--workers-num": 4,
             "--job-workers-ratio": 0.5,
             "--verbosity-job-workers=2": True,
         })
 
     def _test_send_job_no_reply_impl(self, *, data, send_timeout, job_sleep_time):
-        stats_before = self.kphp_server.get_stats()
+        stats_before = self.web_server.get_stats()
 
-        resp = self.kphp_server.http_post(
+        resp = self.web_server.http_post(
             uri="/test_send_job_no_reply",
             json={
                 "data": data,
@@ -24,9 +26,9 @@ class TestJobNoReply(KphpServerAutoTestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json(), "Success")
         if job_sleep_time < send_timeout:
-            self.kphp_server.assert_log(["Finish no reply job: sum = {}".format(sum(arr)) for arr in data],
+            self.web_server.assert_log(["Finish no reply job: sum = {}".format(sum(arr)) for arr in data],
                                         "Some no-reply jobs weren't completed", timeout=10)
-        self.kphp_server.assert_stats(
+        self.web_server.assert_stats(
             initial_stats=stats_before,
             timeout=10,
             expected_added_stats={
@@ -40,4 +42,4 @@ class TestJobNoReply(KphpServerAutoTestCase):
 
     def test_job_no_reply_timeout_exceeded(self):
         self._test_send_job_no_reply_impl(data=[[101, 102, 103], [201, 202, 203]], send_timeout=1, job_sleep_time=2)
-        self.kphp_server.assert_log(2 * ["Critical error during script execution: timeout exit"])
+        self.web_server.assert_log(2 * ["Critical error during script execution: timeout exit"])

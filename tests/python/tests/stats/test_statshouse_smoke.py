@@ -1,17 +1,19 @@
 import time
+import pytest
 
-from python.lib.testcase import KphpServerAutoTestCase
+from python.lib.testcase import WebServerAutoTestCase
 from python.lib.stats_receiver import StatsReceiver, StatsType
 
 
-class TestStatshouseSmoke(KphpServerAutoTestCase):
+@pytest.mark.k2_skip_suite
+class TestStatshouseSmoke(WebServerAutoTestCase):
     WORKERS_NUM = 2
 
     @classmethod
     def extra_class_setup(cls):
-        cls.statshouse = StatsReceiver("kphp_server", cls.kphp_server_working_dir, StatsType.STATSHOUSE)
+        cls.statshouse = StatsReceiver("kphp_server", cls.web_server_working_dir, StatsType.STATSHOUSE)
         cls.statshouse.start()
-        cls.kphp_server.update_options({
+        cls.web_server.update_options({
             "--workers-num": cls.WORKERS_NUM,
             "--statshouse-client": "localhost:" + str(cls.statshouse.port),
         })
@@ -21,7 +23,7 @@ class TestStatshouseSmoke(KphpServerAutoTestCase):
         cls.statshouse.stop()
 
     def _send_request(self):
-        resp = self.kphp_server.http_get()
+        resp = self.web_server.http_get()
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.text, "Hello world!")
 
