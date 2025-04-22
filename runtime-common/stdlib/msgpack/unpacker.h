@@ -6,6 +6,7 @@
 #pragma once
 
 #include "common/mixin/not_copyable.h"
+#include "common/wrappers/string_view.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/msgpack/object.h"
 #include "runtime-common/stdlib/msgpack/zone.h"

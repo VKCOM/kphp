@@ -12,7 +12,7 @@ ResultType f$msgpack_deserialize(const string& buffer, string* out_err_msg = nul
     return {};
   }
 
-  RuntimeContext::get().msgpack_error = std::nullopt;
+  SerializationLibContext::get().clear_msgpack_error();
   string err_msg;
   vk::msgpack::unpacker unpacker{buffer};
   vk::msgpack::object obj{unpacker.unpack()};

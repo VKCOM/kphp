@@ -15,8 +15,6 @@
 
 namespace vk::msgpack {
 
-class type_error : public std::exception {};
-
 inline constexpr const char* TYPE_ERROR = "Unknown type found during deserialization";
 
 namespace detail {
@@ -29,18 +27,18 @@ struct convert_integer_sign<T, true> {
   static T convert(const msgpack::object& o) {
     if (o.type == stored_type::POSITIVE_INTEGER) {
       if (o.via.u64 > static_cast<uint64_t>(std::numeric_limits<T>::max())) {
-        RuntimeContext::get().set_msgpack_error(TYPE_ERROR);
+        SerializationLibContext::get().set_msgpack_error(TYPE_ERROR);
         return T{};
       }
       return static_cast<T>(o.via.u64);
     } else if (o.type == stored_type::NEGATIVE_INTEGER) {
       if (o.via.i64 < static_cast<int64_t>(std::numeric_limits<T>::min())) {
-        RuntimeContext::get().set_msgpack_error(TYPE_ERROR);
+        SerializationLibContext::get().set_msgpack_error(TYPE_ERROR);
         return T{};
       }
       return static_cast<T>(o.via.i64);
     }
-    RuntimeContext::get().set_msgpack_error(TYPE_ERROR);
+    SerializationLibContext::get().set_msgpack_error(TYPE_ERROR);
     return T{};
   }
 };
@@ -50,12 +48,12 @@ struct convert_integer_sign<T, false> {
   static T convert(const msgpack::object& o) {
     if (o.type == stored_type::POSITIVE_INTEGER) {
       if (o.via.u64 > static_cast<uint64_t>(std::numeric_limits<T>::max())) {
-        RuntimeContext::get().set_msgpack_error(TYPE_ERROR);
+        SerializationLibContext::get().set_msgpack_error(TYPE_ERROR);
         return T{};
       }
       return static_cast<T>(o.via.u64);
     }
-    RuntimeContext::get().set_msgpack_error(TYPE_ERROR);
+    SerializationLibContext::get().set_msgpack_error(TYPE_ERROR);
     return T{};
   }
 };
@@ -153,7 +151,7 @@ template<>
 struct convert<bool> {
   void operator()(const msgpack::object& o, bool& v) const {
     if (o.type != stored_type::BOOLEAN) {
-      RuntimeContext::get().set_msgpack_error(TYPE_ERROR);
+      SerializationLibContext::get().set_msgpack_error(TYPE_ERROR);
       return;
     }
     v = o.via.boolean;
@@ -182,7 +180,7 @@ struct convert<float> {
     } else if (o.type == stored_type::NEGATIVE_INTEGER) {
       v = static_cast<float>(o.via.i64);
     } else {
-      RuntimeContext::get().set_msgpack_error(TYPE_ERROR);
+      SerializationLibContext::get().set_msgpack_error(TYPE_ERROR);
       return;
     }
   }
@@ -206,7 +204,7 @@ struct convert<double> {
     } else if (o.type == stored_type::NEGATIVE_INTEGER) {
       v = static_cast<double>(o.via.i64);
     } else {
-      RuntimeContext::get().set_msgpack_error(TYPE_ERROR);
+      SerializationLibContext::get().set_msgpack_error(TYPE_ERROR);
       return;
     }
   }
@@ -237,7 +235,7 @@ struct convert<array<T>> {
       fill_array_as_map(obj.via.map, res_arr);
       return obj;
     }
-    RuntimeContext::get().set_msgpack_error("couldn't recognize type of unpacking array");
+    SerializationLibContext::get().set_msgpack_error("couldn't recognize type of unpacking array");
     return obj;
   }
 
@@ -262,7 +260,7 @@ private:
         break;
       }
       default:
-        RuntimeContext::get().set_msgpack_error("expected string or integer in array unpacking");
+        SerializationLibContext::get().set_msgpack_error("expected string or integer in array unpacking");
         return;
       }
     }
@@ -307,7 +305,7 @@ struct convert<class_instance<T>> {
       obj.convert(*instance.get());
       break;
     default:
-      RuntimeContext::get().set_msgpack_error("Expected NIL or ARRAY type for unpacking class_instance");
+      SerializationLibContext::get().set_msgpack_error("Expected NIL or ARRAY type for unpacking class_instance");
       return obj;
     }
 
@@ -337,7 +335,7 @@ template<>
 struct convert<string> {
   const msgpack::object& operator()(const msgpack::object& obj, string& res_s) const {
     if (obj.type != stored_type::STR) {
-      RuntimeContext::get().set_msgpack_error(TYPE_ERROR);
+      SerializationLibContext::get().set_msgpack_error(TYPE_ERROR);
       return obj;
     }
     res_s = string(obj.via.str.ptr, obj.via.str.size);
@@ -389,7 +387,7 @@ template<typename... Args>
 struct convert<std::tuple<Args...>> {
   void operator()(const msgpack::object& o, std::tuple<Args...>& v) const {
     if (o.type != stored_type::ARRAY) {
-      RuntimeContext::get().set_msgpack_error(TYPE_ERROR);
+      SerializationLibContext::get().set_msgpack_error(TYPE_ERROR);
       return;
     }
     StdTupleConverter<decltype(v), sizeof...(Args)>::convert(o, v);
@@ -414,7 +412,7 @@ struct convert<Optional<T>> {
       if (!std::is_same<T, bool>{} && value) {
         char err_msg[256];
         snprintf(err_msg, 256, "Expected false for type `%s|false` but true was given", typeid(T).name());
-        RuntimeContext::get().set_msgpack_error(err_msg);
+        SerializationLibContext::get().set_msgpack_error(err_msg);
         return obj;
       }
       v = value;
@@ -483,7 +481,7 @@ struct convert<mixed> {
       break;
     default:
 
-      RuntimeContext::get().set_msgpack_error(TYPE_ERROR);
+      SerializationLibContext::get().set_msgpack_error(TYPE_ERROR);
       return obj;
     }
 

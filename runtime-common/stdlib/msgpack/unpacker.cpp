@@ -8,6 +8,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/msgpack/object_visitor.h"
 #include "runtime-common/stdlib/msgpack/parser.h"
+#include "runtime-common/stdlib/serialization/serialization-context.h"
 
 namespace vk::msgpack {
 
@@ -30,13 +31,13 @@ msgpack::object unpacker::unpack() {
 }
 
 bool unpacker::has_error() const noexcept {
-  return RuntimeContext::get().msgpack_error.has_value() || visitor_error_.has_value() || zone_.has_error() || bytes_consumed_ != input_.size();
+  return SerializationLibContext::get().msgpack_error.has_value() || visitor_error_.has_value() || zone_.has_error() || bytes_consumed_ != input_.size();
 }
 
 string unpacker::get_error_msg() const noexcept {
-  auto& rt_context = RuntimeContext::get();
-  if (rt_context.msgpack_error.has_value()) {
-    return {rt_context.msgpack_error->data(), static_cast<uint32_t>(rt_context.msgpack_error->size())};
+  const auto& serialization_ctx = SerializationLibContext::get();
+  if (serialization_ctx.msgpack_error.has_value()) {
+    return {serialization_ctx.msgpack_error->data(), static_cast<uint32_t>(serialization_ctx.msgpack_error->size())};
   }
   if (visitor_error_.has_value()) {
     return {visitor_error_->data(), static_cast<uint32_t>(visitor_error_->size())};

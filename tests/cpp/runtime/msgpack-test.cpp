@@ -141,7 +141,7 @@ struct Stub : public refcountable_php_classes<Stub> {
   }
   void msgpack_unpack(const vk::msgpack::object &msgpack_o) {
     if (msgpack_o.type != vk::msgpack::stored_type::ARRAY) {
-      throw vk::msgpack::type_error{};
+      return;
     }
     auto arr = msgpack_o.via.array;
     for (size_t counter = 0; counter < arr.size; counter += 2) {

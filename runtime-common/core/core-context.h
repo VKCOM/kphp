@@ -4,13 +4,10 @@
 
 #pragma once
 
-#include <array>
 #include <cstdint>
 #include <cstring>
-#include <optional>
 
 #include "common/mixin/not_copyable.h"
-#include "common/wrappers/string_view.h"
 
 #ifndef INCLUDED_FROM_KPHP_CORE
 #error "this file must be included only from runtime-core.h"
@@ -24,11 +21,7 @@ struct RuntimeContext final : vk::not_copyable {
   string_buffer_lib_context sb_lib_context{};
   string_buffer static_SB{};
   string_buffer static_SB_spare{};
-  std::optional<std::array<char, 256>> msgpack_error;
-  void set_msgpack_error(const char* msg) noexcept {
-    msgpack_error = std::array<char, 256>();
-    strncpy(msgpack_error->begin(), msg, 256);
-  }
+
 
   void init() noexcept;
   void free() noexcept;

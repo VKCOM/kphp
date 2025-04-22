@@ -51,7 +51,7 @@ inline ResultType f$msgpack_deserialize(const string& buffer, string* out_err_ms
     return {};
   }
 
-  RuntimeContext::get().msgpack_error = std::nullopt;
+  SerializationLibContext::get().clear_msgpack_error();
   const auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator();
   string err_msg;
   vk::msgpack::unpacker unpacker{buffer};
