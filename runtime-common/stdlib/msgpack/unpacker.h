@@ -29,7 +29,7 @@ private:
 
   // It's awful because unpacker and visitor are strongly logically connected,
   // but there is no aggregation or composition. Should be fixed some day.
-  std::optional<vk::string_view> visitor_error_{std::nullopt};
+  std::optional<vk::string_view> visitor_error_;
 };
 
 } // namespace vk::msgpack

@@ -75,7 +75,7 @@ private:
   msgpack::object m_obj;
   kphp::stl::vector<msgpack::object*, kphp::memory::script_allocator> m_stack{};
   msgpack::zone& m_zone;
-  mutable std::optional<vk::string_view> error = std::nullopt;
+  mutable std::optional<vk::string_view> error;
 };
 
 } // namespace vk::msgpack
