@@ -48,10 +48,10 @@ kphp::coro::task<int64_t> kphp_job_worker_start_impl(string request, double time
   const auto timeout_ns{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(std::clamp(timeout, MIN_TIMEOUT_S, MAX_TIMEOUT_S)))};
   // prepare JW component request
   tl::TLBuffer tlb{};
-  const tl::K2InvokeJobWorker invoke_jw{.image_id = k2::describe()->build_timestamp,
-                                        .job_id = jw_client_st.current_job_id++,
+  const tl::K2InvokeJobWorker invoke_jw{.image_id = {.value = static_cast<int64_t>(k2::describe()->build_timestamp)},
+                                        .job_id = {.value = jw_client_st.current_job_id++},
                                         .ignore_answer = ignore_answer,
-                                        .timeout_ns = static_cast<uint64_t>(timeout_ns.count()),
+                                        .timeout_ns = {.value = timeout_ns.count()},
                                         .body = {.value = {request.c_str(), request.size()}}};
   invoke_jw.store(tlb);
 
@@ -139,7 +139,7 @@ kphp::coro::task<int64_t> f$job_worker_store_response(string response) noexcept 
   }
 
   tl::TLBuffer tlb{};
-  tl::K2JobWorkerResponse{.job_id = jw_server_st.job_id, .body = {.value = {response.c_str(), response.size()}}}.store(tlb);
+  tl::K2JobWorkerResponse{.job_id = {.value = jw_server_st.job_id}, .body = {.value = {response.c_str(), response.size()}}}.store(tlb);
   if ((co_await write_all_to_stream(instance_st.standard_stream(), tlb.data(), tlb.size())) != tlb.size()) {
     php_warning("couldn't store job worker response");
     co_return static_cast<int64_t>(JobWorkerError::store_response_cant_send_error);

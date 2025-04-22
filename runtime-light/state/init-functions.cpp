@@ -33,7 +33,7 @@ void process_k2_invoke_job_worker(tl::TLBuffer& tlb) noexcept {
   if (!invoke_jw.fetch(tlb)) {
     php_error("erroneous job worker request");
   }
-  php_assert(invoke_jw.image_id == k2::describe()->build_timestamp); // ensure that we got the request from ourselves
+  php_assert(invoke_jw.image_id.value == static_cast<int64_t>(k2::describe()->build_timestamp)); // ensure that we got the request from ourselves
   init_server(ServerQuery{invoke_jw});
 }
 

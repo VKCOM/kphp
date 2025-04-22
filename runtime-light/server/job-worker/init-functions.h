@@ -13,12 +13,12 @@ inline void init_job_server(tl::K2InvokeJobWorker invoke_jw) noexcept {
   auto& jw_server_ctx{JobWorkerServerInstanceState::get()};
   jw_server_ctx.kind = invoke_jw.ignore_answer ? JobWorkerServerInstanceState::Kind::NoReply : JobWorkerServerInstanceState::Kind::Regular;
   jw_server_ctx.state = JobWorkerServerInstanceState::State::Working;
-  jw_server_ctx.job_id = invoke_jw.job_id;
+  jw_server_ctx.job_id = invoke_jw.job_id.value;
   jw_server_ctx.body = {invoke_jw.body.value.data(), static_cast<string::size_type>(invoke_jw.body.value.size())};
 
   {
     using namespace PhpServerSuperGlobalIndices;
     auto& server{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals().v$_SERVER};
-    server.set_value(string{JOB_ID.data(), JOB_ID.size()}, invoke_jw.job_id);
+    server.set_value(string{JOB_ID.data(), JOB_ID.size()}, invoke_jw.job_id.value);
   }
 }

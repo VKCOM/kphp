@@ -20,15 +20,15 @@ class K2InvokeJobWorker final {
   static constexpr auto IGNORE_ANSWER_FLAG = static_cast<uint32_t>(1U << 0U);
 
 public:
-  uint64_t image_id{};
-  int64_t job_id{};
+  tl::i64 image_id{};
+  tl::i64 job_id{};
   bool ignore_answer{};
-  uint64_t timeout_ns{};
-  string body;
+  tl::i64 timeout_ns{};
+  tl::string body;
 
-  bool fetch(TLBuffer& tlb) noexcept;
+  bool fetch(tl::TLBuffer& tlb) noexcept;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(tl::TLBuffer& tlb) const noexcept;
 };
 
 // ===== CRYPTO =====
@@ -43,68 +43,68 @@ inline constexpr uint32_t HASH_MAGIC = 0x5073'2a27;
 inline constexpr uint32_t HASH_HMAC_MAGIC = 0x8dcb'3d9d;
 
 struct GetCryptosecurePseudorandomBytes final {
-  int32_t size{};
+  tl::i32 size{};
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(tl::TLBuffer& tlb) const noexcept;
 };
 
 struct GetPemCertInfo final {
   bool is_short{true};
-  string bytes;
+  tl::string bytes;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(tl::TLBuffer& tlb) const noexcept;
 };
 
 struct DigestSign final {
-  string data;
-  string private_key;
-  HashAlgorithm algorithm{};
+  tl::string data;
+  tl::string private_key;
+  tl::HashAlgorithm algorithm{};
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(tl::TLBuffer& tlb) const noexcept;
 };
 
 struct DigestVerify final {
-  string data;
-  string public_key;
-  HashAlgorithm algorithm{};
-  string signature;
+  tl::string data;
+  tl::string public_key;
+  tl::HashAlgorithm algorithm{};
+  tl::string signature;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(tl::TLBuffer& tlb) const noexcept;
 };
 
 struct CbcDecrypt final {
-  CipherAlgorithm algorithm{};
-  BlockPadding padding{};
-  string passphrase;
-  string iv;
-  string data;
+  tl::CipherAlgorithm algorithm{};
+  tl::BlockPadding padding{};
+  tl::string passphrase;
+  tl::string iv;
+  tl::string data;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(tl::TLBuffer& tlb) const noexcept;
 };
 
 struct CbcEncrypt final {
-  CipherAlgorithm algorithm{};
-  BlockPadding padding{};
-  string passphrase;
-  string iv;
-  string data;
+  tl::CipherAlgorithm algorithm{};
+  tl::BlockPadding padding{};
+  tl::string passphrase;
+  tl::string iv;
+  tl::string data;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(tl::TLBuffer& tlb) const noexcept;
 };
 
 struct Hash final {
-  HashAlgorithm algorithm{};
-  string data;
+  tl::HashAlgorithm algorithm{};
+  tl::string data;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(tl::TLBuffer& tlb) const noexcept;
 };
 
 struct HashHmac final {
-  HashAlgorithm algorithm{};
-  string data;
-  string secret_key;
+  tl::HashAlgorithm algorithm{};
+  tl::string data;
+  tl::string secret_key;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(tl::TLBuffer& tlb) const noexcept;
 };
 
 // ===== CONFDATA =====
@@ -113,15 +113,15 @@ inline constexpr uint32_t CONFDATA_GET_MAGIC = 0xf0eb'cd89;
 inline constexpr uint32_t CONFDATA_GET_WILDCARD_MAGIC = 0x5759'bd9e;
 
 struct ConfdataGet final {
-  string key;
+  tl::string key;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(tl::TLBuffer& tlb) const noexcept;
 };
 
 struct ConfdataGetWildcard final {
-  string wildcard;
+  tl::string wildcard;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(tl::TLBuffer& tlb) const noexcept;
 };
 
 // ===== HTTP =====
@@ -134,14 +134,14 @@ class K2InvokeHttp final {
   static constexpr auto QUERY_FLAG = static_cast<uint32_t>(1U << 2U);
 
 public:
-  httpConnection connection{};
-  HttpVersion version{};
-  string method;
-  httpUri uri{};
-  vector<httpHeaderEntry> headers{};
+  tl::httpConnection connection{};
+  tl::HttpVersion version{};
+  tl::string method;
+  tl::httpUri uri{};
+  tl::vector<tl::httpHeaderEntry> headers{};
   std::string_view body;
 
-  bool fetch(TLBuffer& tlb) noexcept;
+  bool fetch(tl::TLBuffer& tlb) noexcept;
 };
 
 } // namespace tl

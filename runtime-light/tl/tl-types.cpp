@@ -106,19 +106,15 @@ void string::store(TLBuffer& tlb) const noexcept {
 bool K2JobWorkerResponse::fetch(TLBuffer& tlb) noexcept {
   bool ok{tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == MAGIC};
   ok &= tlb.fetch_trivial<uint32_t>().has_value(); // flags
-  const auto opt_job_id{tlb.fetch_trivial<int64_t>()};
-  ok &= opt_job_id.has_value();
+  ok &= job_id.fetch(tlb);
   ok &= body.fetch(tlb);
-
-  job_id = opt_job_id.value_or(0);
-
   return ok;
 }
 
 void K2JobWorkerResponse::store(TLBuffer& tlb) const noexcept {
   tlb.store_trivial<uint32_t>(MAGIC);
   tlb.store_trivial<uint32_t>(0x0); // flags
-  tlb.store_trivial<int64_t>(job_id);
+  job_id.store(tlb);
   body.store(tlb);
 }
 
@@ -130,21 +126,21 @@ bool CertInfoItem::fetch(TLBuffer& tlb) noexcept {
 
   switch (*opt_magic) {
   case Magic::LONG: {
-    if (const auto opt_val{tlb.fetch_trivial<int64_t>()}; opt_val.has_value()) [[likely]] {
-      data = *opt_val;
+    if (tl::i64 val{}; val.fetch(tlb)) [[likely]] {
+      data = val;
       break;
     }
     return false;
   }
   case Magic::STR: {
-    if (string val{}; val.fetch(tlb)) [[unlikely]] {
+    if (tl::string val{}; val.fetch(tlb)) [[likely]] {
       data = val;
       break;
     }
     return false;
   }
   case Magic::DICT: {
-    if (dictionary<string> val{}; val.fetch(tlb)) [[likely]] {
+    if (tl::dictionary<tl::string> val{}; val.fetch(tlb)) [[likely]] {
       data = std::move(val);
       break;
     }
