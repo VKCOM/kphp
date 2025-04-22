@@ -67,7 +67,7 @@ void ComponentState::parse_command_line_arg(std::string_view value_view) noexcep
     return;
   }
 
-  const auto & main_file_view{kphp::compiler_interface::get_main_file_name()};
+  const auto& main_file_view{kphp::compiler_interface::get_main_file_name()};
   command_line_argv.push_back(string(main_file_view.data()));
 
   bool in_quote{};
