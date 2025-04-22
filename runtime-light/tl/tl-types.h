@@ -32,7 +32,7 @@ struct Bool final {
   }
 };
 
-struct int_ final {
+struct i32 final {
   int32_t value{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
@@ -46,8 +46,8 @@ struct int_ final {
   }
 };
 
-struct Int final {
-  tl::int_ inner{};
+struct I32 final {
+  tl::i32 inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_INT && inner.fetch(tlb);
@@ -59,7 +59,7 @@ struct Int final {
   }
 };
 
-struct long_ final {
+struct i64 final {
   int64_t value{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
@@ -73,8 +73,8 @@ struct long_ final {
   }
 };
 
-struct Long final {
-  tl::long_ inner{};
+struct I64 final {
+  tl::i64 inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_LONG && inner.fetch(tlb);
@@ -86,7 +86,7 @@ struct Long final {
   }
 };
 
-struct float_ final {
+struct f32 final {
   float value{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
@@ -100,8 +100,8 @@ struct float_ final {
   }
 };
 
-struct Float final {
-  tl::float_ inner{};
+struct F32 final {
+  tl::f32 inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_FLOAT && inner.fetch(tlb);
@@ -113,7 +113,7 @@ struct Float final {
   }
 };
 
-struct double_ final {
+struct f64 final {
   double value{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
@@ -127,8 +127,8 @@ struct double_ final {
   }
 };
 
-struct Double final {
-  tl::double_ inner{};
+struct F64 final {
+  tl::f64 inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_DOUBLE && inner.fetch(tlb);
@@ -419,7 +419,7 @@ class K2JobWorkerResponse final {
   static constexpr uint32_t MAGIC = 0x3afb'3a08;
 
 public:
-  tl::long_ job_id{};
+  tl::i64 job_id{};
   tl::string body;
 
   bool fetch(tl::TLBuffer& tlb) noexcept;
@@ -433,7 +433,7 @@ class CertInfoItem final {
   enum Magic : uint32_t { LONG = 0x533f'f89f, STR = 0xc427'feef, DICT = 0x1ea8'a774 };
 
 public:
-  std::variant<tl::long_, tl::string, tl::dictionary<tl::string>> data;
+  std::variant<tl::i64, tl::string, tl::dictionary<tl::string>> data;
 
   bool fetch(tl::TLBuffer& tlb) noexcept;
 
@@ -606,9 +606,9 @@ struct httpHeaderEntry final {
 
 struct httpConnection final {
   tl::string server_addr;
-  tl::int_ server_port{};
+  tl::i32 server_port{};
   tl::string remote_addr;
-  tl::int_ remote_port{};
+  tl::i32 remote_port{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     bool ok{server_addr.fetch(tlb)};
@@ -621,7 +621,7 @@ struct httpConnection final {
 
 struct httpResponse final {
   tl::HttpVersion version{};
-  tl::int_ status_code{};
+  tl::i32 status_code{};
   tl::vector<tl::httpHeaderEntry> headers{};
   std::string_view body;
 

@@ -82,7 +82,7 @@ kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool 
   array<mixed> response;
   response.reserve(cert_items.opt_value->size(), false);
 
-  auto item_to_mixed = tl::CertInfoItem::MakeVisitor{[](tl::long_ val) -> mixed { return val.value; },
+  auto item_to_mixed = tl::CertInfoItem::MakeVisitor{[](tl::i64 val) -> mixed { return val.value; },
                                                      [](tl::string val) -> mixed { return string(val.value.data(), val.value.size()); },
                                                      [](const tl::dictionary<tl::string>& sub_dict) -> mixed {
                                                        array<mixed> resp;

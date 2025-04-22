@@ -126,7 +126,7 @@ bool CertInfoItem::fetch(TLBuffer& tlb) noexcept {
 
   switch (*opt_magic) {
   case Magic::LONG: {
-    if (tl::long_ val{}; val.fetch(tlb)) [[likely]] {
+    if (tl::i64 val{}; val.fetch(tlb)) [[likely]] {
       data = val;
       break;
     }

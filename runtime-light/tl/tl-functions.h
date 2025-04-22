@@ -20,10 +20,10 @@ class K2InvokeJobWorker final {
   static constexpr auto IGNORE_ANSWER_FLAG = static_cast<uint32_t>(1U << 0U);
 
 public:
-  tl::long_ image_id{};
-  tl::long_ job_id{};
+  tl::i64 image_id{};
+  tl::i64 job_id{};
   bool ignore_answer{};
-  tl::long_ timeout_ns{};
+  tl::i64 timeout_ns{};
   tl::string body;
 
   bool fetch(tl::TLBuffer& tlb) noexcept;
@@ -43,7 +43,7 @@ inline constexpr uint32_t HASH_MAGIC = 0x5073'2a27;
 inline constexpr uint32_t HASH_HMAC_MAGIC = 0x8dcb'3d9d;
 
 struct GetCryptosecurePseudorandomBytes final {
-  tl::int_ size{};
+  tl::i32 size{};
 
   void store(tl::TLBuffer& tlb) const noexcept;
 };
