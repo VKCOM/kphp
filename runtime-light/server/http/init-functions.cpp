@@ -223,11 +223,11 @@ void init_server(tl::K2InvokeHttp invoke_http) noexcept {
 
   server.set_value(string{SERVER_ADDR.data(), SERVER_ADDR.size()},
                    string{invoke_http.connection.server_addr.value.data(), static_cast<string::size_type>(invoke_http.connection.server_addr.value.size())});
-  server.set_value(string{SERVER_PORT.data(), SERVER_PORT.size()}, static_cast<int64_t>(invoke_http.connection.server_port));
+  server.set_value(string{SERVER_PORT.data(), SERVER_PORT.size()}, static_cast<int64_t>(invoke_http.connection.server_port.value));
   server.set_value(string{SERVER_PROTOCOL.data(), SERVER_PROTOCOL.size()}, get_server_protocol(invoke_http.version, invoke_http.uri.opt_scheme));
   server.set_value(string{REMOTE_ADDR.data(), REMOTE_ADDR.size()},
                    string{invoke_http.connection.remote_addr.value.data(), static_cast<string::size_type>(invoke_http.connection.remote_addr.value.size())});
-  server.set_value(string{REMOTE_PORT.data(), REMOTE_PORT.size()}, static_cast<int64_t>(invoke_http.connection.remote_port));
+  server.set_value(string{REMOTE_PORT.data(), REMOTE_PORT.size()}, static_cast<int64_t>(invoke_http.connection.remote_port.value));
 
   server.set_value(string{REQUEST_METHOD.data(), REQUEST_METHOD.size()},
                    string{invoke_http.method.value.data(), static_cast<string::size_type>(invoke_http.method.value.size())});
@@ -330,7 +330,7 @@ kphp::coro::task<> finalize_server(const string_buffer& output) noexcept {
 
   const auto status_code{http_server_instance_st.status_code == status::NO_STATUS ? status::OK : http_server_instance_st.status_code};
   tl::httpResponse http_response{.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11},
-                                 .status_code = static_cast<int32_t>(status_code),
+                                 .status_code = {.value = static_cast<int32_t>(status_code)},
                                  .headers = {},
                                  .body = {body.c_str(), body.size()}};
   // fill headers

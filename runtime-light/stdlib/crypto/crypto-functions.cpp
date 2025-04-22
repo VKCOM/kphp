@@ -35,7 +35,7 @@ kphp::coro::task<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length)
 
   // TODO think about performance when transferring data
 
-  tl::GetCryptosecurePseudorandomBytes request{.size = static_cast<int32_t>(length)};
+  tl::GetCryptosecurePseudorandomBytes request{.size = {.value = static_cast<int32_t>(length)}};
 
   tl::TLBuffer buffer;
   request.store(buffer);
@@ -82,7 +82,7 @@ kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool 
   array<mixed> response;
   response.reserve(cert_items.opt_value->size(), false);
 
-  auto item_to_mixed = tl::CertInfoItem::MakeVisitor{[](int64_t val) -> mixed { return val; },
+  auto item_to_mixed = tl::CertInfoItem::MakeVisitor{[](tl::long_ val) -> mixed { return val.value; },
                                                      [](tl::string val) -> mixed { return string(val.value.data(), val.value.size()); },
                                                      [](const tl::dictionary<tl::string>& sub_dict) -> mixed {
                                                        array<mixed> resp;

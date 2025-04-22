@@ -124,12 +124,12 @@ public:
 };
 
 template<typename T>
-concept tl_serializable = std::default_initializable<T> && requires(T t, TLBuffer tlb) {
+concept serializable = std::default_initializable<T> && requires(T t, TLBuffer tlb) {
   { t.store(tlb) } noexcept -> std::same_as<void>;
 };
 
 template<typename T>
-concept tl_deserializable = std::default_initializable<T> && requires(T t, TLBuffer tlb) {
+concept deserializable = std::default_initializable<T> && requires(T t, TLBuffer tlb) {
   { t.fetch(tlb) } noexcept -> std::convertible_to<bool>;
 };
 
