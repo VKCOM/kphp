@@ -46,18 +46,15 @@ struct int_ final {
   }
 };
 
-class Int final {
-  static constexpr uint32_t MAGIC = 0xa850'9bda;
-
-public:
+struct Int final {
   tl::int_ inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == MAGIC && inner.fetch(tlb);
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_INT && inner.fetch(tlb);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(MAGIC);
+    tlb.store_trivial<uint32_t>(TL_INT);
     inner.store(tlb);
   }
 };
@@ -76,18 +73,15 @@ struct long_ final {
   }
 };
 
-class Long final {
-  static constexpr uint32_t MAGIC = 0x2207'6cba;
-
-public:
+struct Long final {
   tl::long_ inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == MAGIC && inner.fetch(tlb);
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_LONG && inner.fetch(tlb);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(MAGIC);
+    tlb.store_trivial<uint32_t>(TL_LONG);
     inner.store(tlb);
   }
 };
@@ -106,18 +100,15 @@ struct float_ final {
   }
 };
 
-class Float final {
-  static constexpr uint32_t MAGIC = 0x824d'ab22;
-
-public:
+struct Float final {
   tl::float_ inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == MAGIC && inner.fetch(tlb);
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_FLOAT && inner.fetch(tlb);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(MAGIC);
+    tlb.store_trivial<uint32_t>(TL_FLOAT);
     inner.store(tlb);
   }
 };
@@ -136,18 +127,15 @@ struct double_ final {
   }
 };
 
-class Double final {
-  static constexpr uint32_t MAGIC = 0x2210'c154;
-
-public:
+struct Double final {
   tl::double_ inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == MAGIC && inner.fetch(tlb);
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_DOUBLE && inner.fetch(tlb);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(MAGIC);
+    tlb.store_trivial<uint32_t>(TL_DOUBLE);
     inner.store(tlb);
   }
 };
