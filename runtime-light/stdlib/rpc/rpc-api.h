@@ -55,22 +55,22 @@ inline bool f$store_int(int64_t v) noexcept {
   if (tl::is_int32_overflow(v)) [[unlikely]] {
     php_warning("Got int32 overflow on storing '%" PRIi64 "', the value will be casted to '%d'", v, static_cast<int32_t>(v));
   }
-  RpcInstanceState::get().rpc_buffer.store_trivial<int32_t>(v);
+  tl::i32{.value = static_cast<int32_t>(v)}.store(RpcInstanceState::get().rpc_buffer);
   return true;
 }
 
 inline bool f$store_long(int64_t v) noexcept {
-  RpcInstanceState::get().rpc_buffer.store_trivial<int64_t>(v);
+  tl::i64{.value = v}.store(RpcInstanceState::get().rpc_buffer);
   return true;
 }
 
 inline bool f$store_float(double v) noexcept {
-  RpcInstanceState::get().rpc_buffer.store_trivial<float>(v);
+  tl::f32{.value = static_cast<float>(v)}.store(RpcInstanceState::get().rpc_buffer);
   return true;
 }
 
 inline bool f$store_double(double v) noexcept {
-  RpcInstanceState::get().rpc_buffer.store_trivial<double>(v);
+  tl::f64{.value = v}.store(RpcInstanceState::get().rpc_buffer);
   return true;
 }
 
@@ -86,8 +86,8 @@ inline void f$store_raw_vector_double(const array<double>& vector) noexcept {
 
 inline int64_t f$fetch_int() noexcept {
   static constexpr auto DEFAULT_VALUE = 0;
-  if (auto opt_val{RpcInstanceState::get().rpc_buffer.fetch_trivial<int32_t>()}; opt_val.has_value()) [[likely]] {
-    return *opt_val;
+  if (tl::i32 val{}; val.fetch(RpcInstanceState::get().rpc_buffer)) [[likely]] {
+    return static_cast<int64_t>(val.value);
   }
   THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
   return DEFAULT_VALUE;
@@ -95,8 +95,8 @@ inline int64_t f$fetch_int() noexcept {
 
 inline int64_t f$fetch_long() noexcept {
   static constexpr int64_t DEFAULT_VALUE = 0;
-  if (auto opt_val{RpcInstanceState::get().rpc_buffer.fetch_trivial<int64_t>()}; opt_val.has_value()) [[likely]] {
-    return *opt_val;
+  if (tl::i64 val{}; val.fetch(RpcInstanceState::get().rpc_buffer)) [[likely]] {
+    return val.value;
   }
   THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
   return DEFAULT_VALUE;
@@ -104,8 +104,8 @@ inline int64_t f$fetch_long() noexcept {
 
 inline double f$fetch_double() noexcept {
   static constexpr double DEFAULT_VALUE = 0.0;
-  if (auto opt_val{RpcInstanceState::get().rpc_buffer.fetch_trivial<double>()}; opt_val.has_value()) [[likely]] {
-    return *opt_val;
+  if (tl::f32 val{}; val.fetch(RpcInstanceState::get().rpc_buffer)) [[likely]] {
+    return static_cast<double>(val.value);
   }
   THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
   return DEFAULT_VALUE;
@@ -113,20 +113,19 @@ inline double f$fetch_double() noexcept {
 
 inline double f$fetch_float() noexcept {
   static constexpr double DEFAULT_VALUE = 0.0;
-  if (auto opt_val{RpcInstanceState::get().rpc_buffer.fetch_trivial<float>()}; opt_val.has_value()) [[likely]] {
-    return static_cast<double>(*opt_val);
+  if (tl::f64 val{}; val.fetch(RpcInstanceState::get().rpc_buffer)) [[likely]] {
+    return val.value;
   }
   THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
   return DEFAULT_VALUE;
 }
 
 inline string f$fetch_string() noexcept {
-  tl::string str{};
-  if (!str.fetch(RpcInstanceState::get().rpc_buffer)) [[unlikely]] {
-    THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_string::make());
-    return {};
+  if (tl::string val{}; val.fetch(RpcInstanceState::get().rpc_buffer)) [[likely]] {
+    return {val.value.data(), static_cast<string::size_type>(val.value.size())};
   }
-  return {str.value.data(), static_cast<string::size_type>(str.value.size())};
+  THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_string::make());
+  return {};
 }
 
 inline void f$fetch_raw_vector_double(array<double>& vector, int64_t num_elems) noexcept {
