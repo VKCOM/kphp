@@ -17,7 +17,7 @@ struct SerializationLibContext final : private vk::not_copyable {
   size_t instance_depth{0};
   uint32_t serialize_as_float32_{0};
   std::optional<std::array<char, 256>> msgpack_error{std::nullopt};
-  
+
   void set_msgpack_error(const char* msg) noexcept {
     msgpack_error = std::array<char, 256>();
     strncpy(msgpack_error->begin(), msg, 256);

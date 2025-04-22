@@ -22,7 +22,6 @@ struct RuntimeContext final : vk::not_copyable {
   string_buffer static_SB{};
   string_buffer static_SB_spare{};
 
-
   void init() noexcept;
   void free() noexcept;
 
