@@ -21,11 +21,11 @@ struct SerializationLibContext final : private vk::not_copyable {
 
   size_t instance_depth{0};
   uint32_t serialize_as_float32_{0};
-  std::optional<std::array<char, MSGPACK_ERROR_BUFFER_SIZE>> msgpack_error{std::nullopt};
+  std::optional<std::array<char, MSGPACK_ERROR_BUFFER_SIZE>> msgpack_error;
 
   void set_msgpack_error(vk::string_view msg) noexcept {
-    msgpack_error = std::array<char, MSGPACK_ERROR_BUFFER_SIZE>();
-    std::strncpy(msgpack_error->begin(), msg.data(), MSGPACK_ERROR_BUFFER_SIZE);
+    msgpack_error = std::array<char, MSGPACK_ERROR_BUFFER_SIZE>{};
+    std::strncpy((*msgpack_error).begin(), msg.data(), MSGPACK_ERROR_BUFFER_SIZE);
   }
 
   void clear_msgpack_error() noexcept {
