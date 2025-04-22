@@ -4,7 +4,7 @@ import pytest
 
 import pytest_postgresql
 from python.lib.testcase import WebServerAutoTestCase
-
+from python.lib.file_utils import search_k2_bin
 
 @pytest.mark.k2_skip_suite
 class TestPgsql(WebServerAutoTestCase):
@@ -16,6 +16,7 @@ class TestPgsql(WebServerAutoTestCase):
         })
 
     @pytest.fixture(autouse=True)
+    @pytest.mark.skipif(search_k2_bin() is not None, reason="DB tests are unsupported in K2")
     def _setup_pgsql_db(self, postgresql, postgresql_proc):
         cursor = postgresql.cursor()
         cursor.execute(

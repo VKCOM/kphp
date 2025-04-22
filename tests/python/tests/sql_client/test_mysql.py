@@ -2,9 +2,8 @@ import re
 
 import pytest
 
-from pytest_mysql.factories import mysql, mysql_proc
 from python.lib.testcase import WebServerAutoTestCase
-
+from python.lib.file_utils import search_k2_bin
 
 @pytest.mark.k2_skip_suite
 class TestMysql(WebServerAutoTestCase):
@@ -16,7 +15,7 @@ class TestMysql(WebServerAutoTestCase):
         })
 
     @pytest.fixture(autouse=True)
-    def _setup_mysql_db(self, mysql, mysql_proc):
+    def _setup_mysql_db(self, mysql,  mysql_proc):
         cursor = mysql.cursor()
         cursor.execute(
             '''
