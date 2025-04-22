@@ -569,20 +569,14 @@ public:
 
     const auto flags{opt_flags.value_or(0x0)};
     if (ok && static_cast<bool>(flags & SCHEME_FLAG)) [[likely]] {
-      tl::string scheme{};
-      ok &= scheme.fetch(tlb);
-      opt_scheme.emplace(scheme);
+      ok &= opt_scheme.emplace().fetch(tlb);
     }
     if (ok && static_cast<bool>(flags & HOST_FLAG)) {
-      tl::string host{};
-      ok &= host.fetch(tlb);
-      opt_host.emplace(host);
+      ok &= opt_host.emplace().fetch(tlb);
     }
     ok &= path.fetch(tlb);
     if (ok && static_cast<bool>(flags & QUERY_FLAG)) {
-      tl::string query{};
-      ok &= query.fetch(tlb);
-      opt_query.emplace(query);
+      ok &= opt_query.emplace().fetch(tlb);
     }
     return ok;
   }
