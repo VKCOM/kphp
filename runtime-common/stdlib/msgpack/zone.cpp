@@ -13,7 +13,6 @@ namespace vk::msgpack {
 zone::chunk_list::chunk_list(size_t chunk_size) {
   auto* c = static_cast<chunk*>(kphp::memory::script::alloc(sizeof(chunk) + chunk_size));
   if (!c) {
-    m_error = true;
     return;
   }
 
@@ -35,7 +34,7 @@ zone::chunk_list::~chunk_list() {
 zone::zone(size_t chunk_size)
     : m_chunk_size(chunk_size),
       m_chunk_list(m_chunk_size),
-      m_error(m_chunk_list.m_error) {}
+      m_error(m_chunk_list.m_head == nullptr) {}
 
 static char* get_aligned(const char* ptr, size_t align) noexcept {
   return reinterpret_cast<char*>(reinterpret_cast<size_t>((ptr + (align - 1))) / align * align);

@@ -30,7 +30,6 @@ private:
     size_t m_free{0};
     char* m_ptr{nullptr};
     chunk* m_head{nullptr};
-    bool m_error{false};
   };
 
   char* allocate_expand(size_t size);

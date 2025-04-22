@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include <stdexcept>
-
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/msgpack/adaptor_base.h"
 #include "runtime-common/stdlib/msgpack/check_instance_depth.h"
@@ -15,7 +13,7 @@
 
 namespace vk::msgpack {
 
-inline constexpr const char* TYPE_ERROR = "Unknown type found during deserialization";
+inline constexpr vk::string_view TYPE_ERROR = "Unknown type found during deserialization";
 
 namespace detail {
 

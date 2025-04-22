@@ -67,10 +67,6 @@ public:
   void parse_error(size_t /*parsed_offset*/, size_t /*error_offset*/) const;
   void insufficient_bytes(size_t /*parsed_offset*/, size_t /*error_offset*/) const;
 
-  bool has_error() const {
-    return error.has_value();
-  }
-
   std::optional<vk::string_view> get_error() const {
     return error;
   }

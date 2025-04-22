@@ -32,27 +32,27 @@ public:
 
   static constexpr auto npos = std::string::npos;
 
-  string_view(const char* data, size_t count)
+  constexpr string_view(const char* data, size_t count)
       : _data{data},
         _count{count} {}
 
-  string_view(const char* data, const char* data_end)
+  constexpr string_view(const char* data, const char* data_end)
       : _data{data},
         _count{static_cast<size_t>(data_end - data)} {}
 
-  string_view(const char* data)
-      : string_view{data, strlen(data)} {}
+  constexpr string_view(const char* data)
+      : string_view{data, std::char_traits<char>::length(data)} {}
 
   template<class Alloc>
-  string_view(const std::basic_string<char, std::char_traits<char>, Alloc>& s)
+  constexpr string_view(const std::basic_string<char, std::char_traits<char>, Alloc>& s)
       : string_view{s.data(), s.size()} {}
 
 #if __cplusplus >= 201703
-  string_view(std::string_view sv)
+  constexpr string_view(std::string_view sv)
       : string_view{sv.data(), sv.size()} {}
 #endif
 
-  string_view()
+  constexpr string_view()
       : string_view{nullptr, nullptr} {}
 
   const_iterator data() const noexcept {
