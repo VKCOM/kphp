@@ -14,6 +14,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
+#include "runtime-light/core/compiler-info/compiler_interface.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
 void ComponentState::parse_env() noexcept {
@@ -57,9 +58,17 @@ void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexc
 
 void ComponentState::parse_command_line_arg(std::string_view value_view) noexcept {
   if (value_view.empty()) [[unlikely]] {
-    php_warning("command line arg is empty");
+    php_warning("command line argument is empty");
     return;
   }
+
+  if (!command_line_argv.empty()) [[unlikely]] {
+    php_warning("command line argument support no more one usage");
+    return;
+  }
+
+  const auto & main_file_view{kphp::compiler_interface::get_main_file_name()};
+  command_line_argv.push_back(string(main_file_view.data()));
 
   bool in_quote{};
   string current_arg{};

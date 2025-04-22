@@ -65,6 +65,14 @@ void StaticInit::compile(CodeGenerator &W) const {
     W << END << NL << NL;
   }
 
+  if (G->is_output_mode_k2()) {
+    W << "namespace kphp::compiler_interface {" << NL;
+    FunctionSignatureGenerator(W) << ("std::string_view get_main_file_name() ") << BEGIN;
+    W << "return {\"" << G->get_main_file()->short_file_name << ".php\"};";
+    W << END << NL;
+    W << "}" << NL;
+  }
+
   FunctionSignatureGenerator(W) << ("void init_php_scripts_once_in_master() ") << BEGIN;
 
   if (!G->settings().tl_schema_file.get().empty()) {
