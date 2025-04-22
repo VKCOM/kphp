@@ -4,8 +4,8 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
-#include <cstring>
 
 #include "common/mixin/not_copyable.h"
 
