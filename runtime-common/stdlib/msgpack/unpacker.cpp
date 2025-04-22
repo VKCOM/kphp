@@ -14,9 +14,6 @@ namespace vk::msgpack {
 
 msgpack::object unpacker::unpack() {
   object_visitor visitor{zone_};
-  if (zone_.has_error()) {
-    return {};
-  }
   parse_return ret = parser<object_visitor>::parse(input_.c_str(), input_.size(), bytes_consumed_, visitor);
   visitor_error_ = visitor.get_error();
 
@@ -31,7 +28,7 @@ msgpack::object unpacker::unpack() {
 }
 
 bool unpacker::has_error() const noexcept {
-  return SerializationLibContext::get().msgpack_error.has_value() || visitor_error_.has_value() || zone_.has_error() || bytes_consumed_ != input_.size();
+  return SerializationLibContext::get().msgpack_error.has_value() || visitor_error_.has_value() || bytes_consumed_ != input_.size();
 }
 
 string unpacker::get_error_msg() const noexcept {
@@ -41,9 +38,6 @@ string unpacker::get_error_msg() const noexcept {
   }
   if (visitor_error_.has_value()) {
     return {visitor_error_->data(), static_cast<uint32_t>(visitor_error_->size())};
-  }
-  if (zone_.has_error()) {
-    return string("cannot allocate");
   }
   string error;
   if (bytes_consumed_ != input_.size()) {

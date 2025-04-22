@@ -33,8 +33,7 @@ zone::chunk_list::~chunk_list() {
 
 zone::zone(size_t chunk_size)
     : m_chunk_size(chunk_size),
-      m_chunk_list(m_chunk_size),
-      m_error(m_chunk_list.m_head == nullptr) {}
+      m_chunk_list(m_chunk_size) {}
 
 static char* get_aligned(const char* ptr, size_t align) noexcept {
   return reinterpret_cast<char*>(reinterpret_cast<size_t>((ptr + (align - 1))) / align * align);
@@ -46,7 +45,7 @@ void* zone::allocate_align(size_t size, size_t align) {
   if (m_chunk_list.m_free < adjusted_size) {
     size_t enough_size = size + align - 1;
     char* ptr = allocate_expand(enough_size);
-    if (m_error) {
+    if (!ptr) {
       return nullptr;
     }
     aligned = get_aligned(ptr, align);
@@ -72,7 +71,6 @@ char* zone::allocate_expand(size_t size) {
   }
   auto* c = static_cast<chunk*>(kphp::memory::script::alloc(sizeof(chunk) + sz));
   if (!c) {
-    m_error = true;
     return nullptr;
   }
 

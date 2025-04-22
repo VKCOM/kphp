@@ -69,7 +69,7 @@ bool object_visitor::visit_str(const char* v, uint32_t size) {
   obj->type = stored_type::STR;
   if (v) {
     char* tmp = static_cast<char*>(m_zone.allocate_align(size, alignof(char)));
-    if (m_zone.has_error()) {
+    if (!tmp) {
       error = "cannot allocate";
       return false;
     }
@@ -96,7 +96,7 @@ bool object_visitor::start_array(uint32_t num_elements) {
       return false;
     }
     auto* ptr = m_zone.allocate_align(size, alignof(msgpack::object));
-    if (m_zone.has_error()) {
+    if (!ptr) {
       error = "cannot allocate";
       return false;
     }
@@ -119,7 +119,7 @@ bool object_visitor::start_map(uint32_t num_kv_pairs) {
       return false;
     }
     auto* ptr = m_zone.allocate_align(size, alignof(msgpack::object_kv));
-    if (m_zone.has_error()) {
+    if (!ptr) {
       error = "cannot allocate";
       return false;
     }
