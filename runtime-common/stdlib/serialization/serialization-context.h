@@ -5,6 +5,8 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <optional>
 
 #include "common/mixin/not_copyable.h"
