@@ -151,4 +151,48 @@ bool CertInfoItem::fetch(TLBuffer& tlb) noexcept {
   return true;
 }
 
+// ===== RPC =====
+
+bool rpcInvokeReqExtra::fetch(tl::TLBuffer& tlb) noexcept {
+  const auto opt_flags{tlb.fetch_trivial<uint32_t>()};
+  bool ok{opt_flags.has_value()};
+
+  flags = opt_flags.value_or(0x0);
+  return_binlog_pos = static_cast<bool>(flags & RETURN_BINLOG_POS_FLAG);
+  return_binlog_time = static_cast<bool>(flags & RETURN_BINLOG_TIME_FLAG);
+  return_pid = static_cast<bool>(flags & RETURN_PID_FLAG);
+  return_request_sizes = static_cast<bool>(flags & RETURN_REQUEST_SIZES_FLAG);
+  return_failed_subqueries = static_cast<bool>(flags & RETURN_FAILED_SUBQUERIES_FLAG);
+  return_query_stats = static_cast<bool>(flags & RETURN_QUERY_STATS_FLAG);
+  no_result = static_cast<bool>(flags & NORESULT_FLAG);
+
+  if (ok && static_cast<bool>(flags & WAIT_BINLOG_POS_FLAG)) {
+    ok &= opt_wait_binlog_pos.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags & STRING_FORWARD_KEYS_FLAG)) {
+    ok &= opt_string_forward_keys.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags & INT_FORWARD_KEYS_FLAG)) {
+    ok &= opt_int_forward_keys.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags & STRING_FORWARD_FLAG)) {
+    ok &= opt_string_forward.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags & INT_FORWARD_FLAG)) {
+    ok &= opt_int_forward.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags & CUSTOM_TIMEOUT_MS_FLAG)) {
+    ok &= opt_custom_timeout_ms.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags & SUPPORTED_COMPRESSION_VERSION_FLAG)) {
+    ok &= opt_supported_compression_version.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags & RANDOM_DELAY_FLAG)) {
+    ok &= opt_random_delay.emplace().fetch(tlb);
+  }
+  return_view_number = static_cast<bool>(flags & RETURN_VIEW_NUMBER_FLAG);
+
+  return ok;
+}
+
 } // namespace tl

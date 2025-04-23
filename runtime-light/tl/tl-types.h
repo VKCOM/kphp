@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <optional>
 #include <string_view>
+#include <tuple>
 #include <utility>
 #include <variant>
 
@@ -637,6 +638,119 @@ public:
   void store(tl::TLBuffer& tlb) const noexcept {
     tlb.store_trivial<uint32_t>(MAGIC);
     http_response.store(tlb);
+  }
+};
+
+// ===== RPC =====
+
+class rpcInvokeReqExtra final {
+  static constexpr auto RETURN_BINLOG_POS_FLAG = static_cast<uint32_t>(1U << 0U);
+  static constexpr auto RETURN_BINLOG_TIME_FLAG = static_cast<uint32_t>(1U << 1U);
+  static constexpr auto RETURN_PID_FLAG = static_cast<uint32_t>(1U << 2U);
+  static constexpr auto RETURN_REQUEST_SIZES_FLAG = static_cast<uint32_t>(1U << 3U);
+  static constexpr auto RETURN_FAILED_SUBQUERIES_FLAG = static_cast<uint32_t>(1U << 4U);
+  static constexpr auto RETURN_QUERY_STATS_FLAG = static_cast<uint32_t>(1U << 6U);
+  static constexpr auto NORESULT_FLAG = static_cast<uint32_t>(1U << 7U);
+  static constexpr auto WAIT_BINLOG_POS_FLAG = static_cast<uint32_t>(1U << 16U);
+  static constexpr auto STRING_FORWARD_KEYS_FLAG = static_cast<uint32_t>(1U << 18U);
+  static constexpr auto INT_FORWARD_KEYS_FLAG = static_cast<uint32_t>(1U << 19U);
+  static constexpr auto STRING_FORWARD_FLAG = static_cast<uint32_t>(1U << 20U);
+  static constexpr auto INT_FORWARD_FLAG = static_cast<uint32_t>(1U << 21U);
+  static constexpr auto CUSTOM_TIMEOUT_MS_FLAG = static_cast<uint32_t>(1U << 23U);
+  static constexpr auto SUPPORTED_COMPRESSION_VERSION_FLAG = static_cast<uint32_t>(1U << 25U);
+  static constexpr auto RANDOM_DELAY_FLAG = static_cast<uint32_t>(1U << 26U);
+  static constexpr auto RETURN_VIEW_NUMBER_FLAG = static_cast<uint32_t>(1U << 27U);
+
+public:
+  uint32_t flags{};
+  bool return_binlog_pos{};
+  bool return_binlog_time{};
+  bool return_pid{};
+  bool return_request_sizes{};
+  bool return_failed_subqueries{};
+  bool return_query_stats{};
+  bool no_result{};
+  std::optional<tl::i64> opt_wait_binlog_pos;
+  std::optional<tl::vector<tl::string>> opt_string_forward_keys;
+  std::optional<tl::vector<tl::i64>> opt_int_forward_keys;
+  std::optional<tl::string> opt_string_forward;
+  std::optional<tl::i64> opt_int_forward;
+  std::optional<tl::i32> opt_custom_timeout_ms;
+  std::optional<tl::i32> opt_supported_compression_version;
+  std::optional<tl::f64> opt_random_delay;
+  bool return_view_number{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept;
+};
+
+struct RpcInvokeReqExtra final {
+  tl::rpcInvokeReqExtra inner{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_RPC_INVOKE_REQ_EXTRA && inner.fetch(tlb);
+  }
+};
+
+struct rpcDestActor final {
+  tl::i64 actor_id{};
+  std::string_view query;
+
+  bool fetch(TLBuffer& tlb) noexcept {
+    bool ok{actor_id.fetch(tlb)};
+    const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
+    query = opt_query.value_or(std::string_view{});
+    return ok && opt_query.has_value();
+  }
+};
+
+struct RpcDestActor final {
+  tl::rpcDestActor inner{};
+
+  bool fetch(TLBuffer& tlb) noexcept {
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_RPC_DEST_ACTOR && inner.fetch(tlb);
+  }
+};
+
+struct rpcDestFlags final {
+  tl::rpcInvokeReqExtra extra{};
+  std::string_view query;
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    bool ok{extra.fetch(tlb)};
+    const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
+    query = opt_query.value_or(std::string_view{});
+    return ok && opt_query.has_value();
+  }
+};
+
+struct RpcDestFlags final {
+  tl::rpcDestFlags inner{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_RPC_DEST_FLAGS && inner.fetch(tlb);
+  }
+};
+
+struct rpcDestActorFlags final {
+  tl::i64 actor_id{};
+  tl::rpcInvokeReqExtra extra{};
+  std::string_view query;
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    bool ok{actor_id.fetch(tlb)};
+    std::ignore = tlb.fetch_trivial<uint32_t>(); // skip flags
+    ok &= extra.fetch(tlb);
+    const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
+    query = opt_query.value_or(std::string_view{});
+    return ok && opt_query.has_value();
+  }
+};
+
+struct RpcDestActorFlags final {
+  tl::rpcDestActorFlags inner{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_RPC_DEST_ACTOR_FLAGS && inner.fetch(tlb);
   }
 };
 

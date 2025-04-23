@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <string_view>
 
+#include "common/tl/constants/common.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
 
@@ -142,6 +143,56 @@ public:
   std::string_view body;
 
   bool fetch(tl::TLBuffer& tlb) noexcept;
+};
+
+// ===== RPC =====
+
+struct rpcInvokeReq final {
+  tl::i64 query_id{};
+  std::variant<std::string_view, tl::RpcDestActor, tl::RpcDestFlags, tl::RpcDestActorFlags> query;
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    bool ok{query_id.fetch(tlb)};
+    switch (tlb.lookup_trivial<uint32_t>().value_or(TL_ZERO)) {
+    case TL_RPC_DEST_ACTOR: {
+      ok &= query.emplace<tl::RpcDestActor>().fetch(tlb);
+      break;
+    }
+    case TL_RPC_DEST_FLAGS: {
+      ok &= query.emplace<tl::RpcDestFlags>().fetch(tlb);
+      break;
+    }
+    case TL_RPC_DEST_ACTOR_FLAGS: {
+      ok &= query.emplace<tl::RpcDestActorFlags>().fetch(tlb);
+      break;
+    }
+    default: {
+      const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
+      query.emplace<std::string_view>(opt_query.value_or(std::string_view{}));
+      ok &= opt_query.has_value();
+      break;
+    }
+    }
+    return ok;
+  }
+};
+
+struct RpcInvokeReq final {
+  tl::rpcInvokeReq inner{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_RPC_INVOKE_REQ && inner.fetch(tlb);
+  }
+};
+
+inline constexpr uint32_t K2_INVOKE_RPC_MAGIC = 0xdead'beef;
+
+struct K2InvokeRpc final {
+  tl::RpcInvokeReq rpc_invoke_req{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == K2_INVOKE_RPC_MAGIC && rpc_invoke_req.fetch(tlb);
+  }
 };
 
 } // namespace tl

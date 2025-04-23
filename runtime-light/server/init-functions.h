@@ -12,12 +12,11 @@
 
 #include "runtime-light/server/http/init-functions.h"
 #include "runtime-light/server/job-worker/init-functions.h"
+#include "runtime-light/server/rpc/init-functions.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/tl/tl-functions.h"
 
-using ServerQuery = std::variant<tl::K2InvokeHttp, tl::K2InvokeJobWorker>;
-
-inline void init_server(ServerQuery query) noexcept {
+inline void init_server(std::variant<tl::K2InvokeHttp, tl::K2InvokeRpc, tl::K2InvokeJobWorker> query) noexcept {
   static constexpr std::string_view SERVER_SOFTWARE_VALUE = "K2/KPHP";
   static constexpr std::string_view SERVER_SIGNATURE_VALUE = "K2/KPHP Server v0.0.1";
 
@@ -35,6 +34,8 @@ inline void init_server(ServerQuery query) noexcept {
 
         if constexpr (std::same_as<query_t, tl::K2InvokeHttp>) {
           kphp::http::init_server(std::forward<decltype(query)>(query));
+        } else if constexpr (std::same_as<query_t, tl::K2InvokeRpc>) {
+          kphp::rpc::init_server(std::forward<decltype(query)>(query));
         } else if constexpr (std::same_as<query_t, tl::K2InvokeJobWorker>) {
           init_job_server(std::forward<decltype(query)>(query));
         } else {
