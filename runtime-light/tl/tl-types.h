@@ -428,16 +428,16 @@ public:
     return *reinterpret_cast<const uint32_t*>(std::addressof(ip.value));
   }
 
-  int16_t get_port() const noexcept {
-    return static_cast<int16_t>(port_pid.value & PORT_MASK);
+  uint16_t get_port() const noexcept {
+    return static_cast<uint16_t>(*reinterpret_cast<const uint32_t*>(std::addressof(port_pid.value)) & PORT_MASK);
   }
 
-  int16_t get_pid() const noexcept {
-    return static_cast<int16_t>((port_pid.value & PID_MASK) >> 16);
+  uint16_t get_pid() const noexcept {
+    return static_cast<uint16_t>((*reinterpret_cast<const uint32_t*>(std::addressof(port_pid.value)) & PID_MASK) >> 16);
   }
 
-  int32_t get_utime() const noexcept {
-    return utime.value;
+  uint32_t get_utime() const noexcept {
+    return *reinterpret_cast<const uint32_t*>(std::addressof(utime.value));
   }
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
