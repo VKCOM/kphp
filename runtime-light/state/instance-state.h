@@ -109,7 +109,7 @@ struct InstanceState final : vk::not_copyable {
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
   RuntimeContext runtime_context;
-  RpcInstanceState rpc_instance_state;
+  RpcClientInstanceState rpc_client_instance_state;
   SerializationInstanceState serialization_instance_state;
   HttpServerInstanceState http_server_instance_state;
   JobWorkerClientInstanceState job_worker_client_instance_state{};

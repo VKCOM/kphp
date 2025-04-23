@@ -27,11 +27,11 @@ inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr>& ge
 }
 
 inline int32_t tl_parse_save_pos() noexcept {
-  return static_cast<int32_t>(RpcInstanceState::get().rpc_buffer.pos());
+  return static_cast<int32_t>(RpcClientInstanceState::get().rpc_buffer.pos());
 }
 
 inline bool tl_parse_restore_pos(int32_t pos) noexcept {
-  auto& rpc_buf{RpcInstanceState::get().rpc_buffer};
+  auto& rpc_buf{RpcClientInstanceState::get().rpc_buffer};
   if (pos < 0 || pos > rpc_buf.pos()) [[unlikely]] {
     return false;
   }

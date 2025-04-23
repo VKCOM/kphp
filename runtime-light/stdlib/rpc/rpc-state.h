@@ -24,7 +24,7 @@ inline constexpr int64_t IGNORED_ANSWER_QUERY_ID = -1;
 
 } // namespace kphp::rpc
 
-struct RpcInstanceState final : private vk::not_copyable {
+struct RpcClientInstanceState final : private vk::not_copyable {
   template<typename Key, typename Value>
   using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
@@ -36,9 +36,9 @@ struct RpcInstanceState final : private vk::not_copyable {
   unordered_map<int64_t, class_instance<RpcTlQuery>> response_fetcher_instances;
   unordered_map<int64_t, std::pair<kphp::rpc::response_extra_info_status, kphp::rpc::response_extra_info>> rpc_responses_extra_info;
 
-  RpcInstanceState() noexcept = default;
+  RpcClientInstanceState() noexcept = default;
 
-  static RpcInstanceState& get() noexcept;
+  static RpcClientInstanceState& get() noexcept;
 };
 
 // ================================================================================================

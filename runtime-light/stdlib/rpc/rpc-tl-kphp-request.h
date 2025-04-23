@@ -40,10 +40,10 @@ public:
 
   std::unique_ptr<RpcRequestResult> store_request() const final {
     //    php_assert(CurException.is_null());
-    auto& rpc_ctx{RpcInstanceState::get()};
-    rpc_ctx.current_query.set_current_tl_function(tl_function_name());
+    auto& rpc_client_instance_st{RpcClientInstanceState::get()};
+    rpc_client_instance_st.current_query.set_current_tl_function(tl_function_name());
     std::unique_ptr<tl_func_base> stored_fetcher = storing_function.get()->store();
-    rpc_ctx.current_query.reset();
+    rpc_client_instance_st.current_query.reset();
     //    if (!CurException.is_null()) {
     //      CurException = Optional<bool>{};
     //      return {};

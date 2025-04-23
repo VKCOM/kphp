@@ -85,5 +85,5 @@ const string& CurrentTlQuery::get_current_tl_function_name() const noexcept {
 }
 
 CurrentTlQuery& CurrentTlQuery::get() noexcept {
-  return RpcInstanceState::get().current_query;
+  return RpcClientInstanceState::get().current_query;
 }

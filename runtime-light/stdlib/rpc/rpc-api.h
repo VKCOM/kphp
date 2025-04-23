@@ -55,38 +55,38 @@ inline bool f$store_int(int64_t v) noexcept {
   if (tl::is_int32_overflow(v)) [[unlikely]] {
     php_warning("Got int32 overflow on storing '%" PRIi64 "', the value will be casted to '%d'", v, static_cast<int32_t>(v));
   }
-  tl::i32{.value = static_cast<int32_t>(v)}.store(RpcInstanceState::get().rpc_buffer);
+  tl::i32{.value = static_cast<int32_t>(v)}.store(RpcClientInstanceState::get().rpc_buffer);
   return true;
 }
 
 inline bool f$store_long(int64_t v) noexcept {
-  tl::i64{.value = v}.store(RpcInstanceState::get().rpc_buffer);
+  tl::i64{.value = v}.store(RpcClientInstanceState::get().rpc_buffer);
   return true;
 }
 
 inline bool f$store_float(double v) noexcept {
-  tl::f32{.value = static_cast<float>(v)}.store(RpcInstanceState::get().rpc_buffer);
+  tl::f32{.value = static_cast<float>(v)}.store(RpcClientInstanceState::get().rpc_buffer);
   return true;
 }
 
 inline bool f$store_double(double v) noexcept {
-  tl::f64{.value = v}.store(RpcInstanceState::get().rpc_buffer);
+  tl::f64{.value = v}.store(RpcClientInstanceState::get().rpc_buffer);
   return true;
 }
 
 inline bool f$store_string(const string& v) noexcept {
-  tl::string{.value = {v.c_str(), v.size()}}.store(RpcInstanceState::get().rpc_buffer);
+  tl::string{.value = {v.c_str(), v.size()}}.store(RpcClientInstanceState::get().rpc_buffer);
   return true;
 }
 
 inline void f$store_raw_vector_double(const array<double>& vector) noexcept {
   const std::string_view vector_view{reinterpret_cast<const char*>(vector.get_const_vector_pointer()), sizeof(double) * vector.count()};
-  RpcInstanceState::get().rpc_buffer.store_bytes(vector_view);
+  RpcClientInstanceState::get().rpc_buffer.store_bytes(vector_view);
 }
 
 inline int64_t f$fetch_int() noexcept {
   static constexpr auto DEFAULT_VALUE = 0;
-  if (tl::i32 val{}; val.fetch(RpcInstanceState::get().rpc_buffer)) [[likely]] {
+  if (tl::i32 val{}; val.fetch(RpcClientInstanceState::get().rpc_buffer)) [[likely]] {
     return static_cast<int64_t>(val.value);
   }
   THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
@@ -95,7 +95,7 @@ inline int64_t f$fetch_int() noexcept {
 
 inline int64_t f$fetch_long() noexcept {
   static constexpr int64_t DEFAULT_VALUE = 0;
-  if (tl::i64 val{}; val.fetch(RpcInstanceState::get().rpc_buffer)) [[likely]] {
+  if (tl::i64 val{}; val.fetch(RpcClientInstanceState::get().rpc_buffer)) [[likely]] {
     return val.value;
   }
   THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
@@ -104,7 +104,7 @@ inline int64_t f$fetch_long() noexcept {
 
 inline double f$fetch_double() noexcept {
   static constexpr double DEFAULT_VALUE = 0.0;
-  if (tl::f32 val{}; val.fetch(RpcInstanceState::get().rpc_buffer)) [[likely]] {
+  if (tl::f32 val{}; val.fetch(RpcClientInstanceState::get().rpc_buffer)) [[likely]] {
     return static_cast<double>(val.value);
   }
   THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
@@ -113,7 +113,7 @@ inline double f$fetch_double() noexcept {
 
 inline double f$fetch_float() noexcept {
   static constexpr double DEFAULT_VALUE = 0.0;
-  if (tl::f64 val{}; val.fetch(RpcInstanceState::get().rpc_buffer)) [[likely]] {
+  if (tl::f64 val{}; val.fetch(RpcClientInstanceState::get().rpc_buffer)) [[likely]] {
     return val.value;
   }
   THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
@@ -121,7 +121,7 @@ inline double f$fetch_float() noexcept {
 }
 
 inline string f$fetch_string() noexcept {
-  if (tl::string val{}; val.fetch(RpcInstanceState::get().rpc_buffer)) [[likely]] {
+  if (tl::string val{}; val.fetch(RpcClientInstanceState::get().rpc_buffer)) [[likely]] {
     return {val.value.data(), static_cast<string::size_type>(val.value.size())};
   }
   THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_string::make());
@@ -129,7 +129,7 @@ inline string f$fetch_string() noexcept {
 }
 
 inline void f$fetch_raw_vector_double(array<double>& vector, int64_t num_elems) noexcept {
-  auto& rpc_buf{RpcInstanceState::get().rpc_buffer};
+  auto& rpc_buf{RpcClientInstanceState::get().rpc_buffer};
   const auto len_bytes{sizeof(double) * num_elems};
   if (rpc_buf.remaining() < len_bytes) [[unlikely]] {
     THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
@@ -140,7 +140,7 @@ inline void f$fetch_raw_vector_double(array<double>& vector, int64_t num_elems) 
 }
 
 inline void f$rpc_clean() noexcept {
-  RpcInstanceState::get().rpc_buffer.clean();
+  RpcClientInstanceState::get().rpc_buffer.clean();
 }
 
 template<typename T>
@@ -151,7 +151,7 @@ bool f$rpc_parse(T /*unused*/) {
 // === client =====================================================================================
 
 inline int64_t f$rpc_tl_pending_queries_count() noexcept {
-  return RpcInstanceState::get().response_waiter_forks.size();
+  return RpcClientInstanceState::get().response_waiter_forks.size();
 }
 
 // === client untyped =============================================================================
@@ -247,6 +247,6 @@ kphp::coro::task<array<class_instance<C$VK$TL$RpcResponse>>> f$rpc_fetch_typed_r
 // === misc =======================================================================================
 
 inline bool f$set_fail_rpc_on_int32_overflow(bool fail_rpc) noexcept {
-  RpcInstanceState::get().fail_rpc_on_int32_overflow = fail_rpc;
+  RpcClientInstanceState::get().fail_rpc_on_int32_overflow = fail_rpc;
   return true;
 }
