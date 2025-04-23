@@ -14,7 +14,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/core/globals/php-script-globals.h"
-#include "runtime-light/server/rpc/rpc-server-instance-state.h"
+#include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 

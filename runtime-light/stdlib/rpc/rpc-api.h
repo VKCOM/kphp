@@ -12,7 +12,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/server/rpc/rpc-server-instance-state.h"
+#include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-exceptions.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"

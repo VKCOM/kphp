@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/rpc/rpc-tl-builtins.h"
 
-#include "runtime-light/server/rpc/rpc-server-instance-state.h"
+#include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/tl/tl-core.h"
 
 mixed tl_arr_get(const mixed& arr, const string& str_key, int64_t num_key, int64_t precomputed_hash) noexcept {
