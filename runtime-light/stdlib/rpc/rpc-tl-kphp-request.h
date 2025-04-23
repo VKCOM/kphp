@@ -11,8 +11,8 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
-#include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"
 
 namespace kphp::rpc::rpc_impl {
@@ -44,7 +44,7 @@ public:
 
   std::unique_ptr<RpcRequestResult> store_request() const noexcept final {
     CHECK_EXCEPTION(php_assert(false));
-    auto& cur_query{RpcClientInstanceState::get().current_query};
+    auto& cur_query{CurrentTlQuery::get()};
     cur_query.set_current_tl_function(tl_function_name());
     const vk::final_action finalizer{[&cur_query] noexcept { cur_query.reset(); }};
 
