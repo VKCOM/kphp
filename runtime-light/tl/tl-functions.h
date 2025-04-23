@@ -188,10 +188,12 @@ struct RpcInvokeReq final {
 inline constexpr uint32_t K2_INVOKE_RPC_MAGIC = 0xdead'beef;
 
 struct K2InvokeRpc final {
+  tl::netPid net_pid{};
   tl::RpcInvokeReq rpc_invoke_req{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == K2_INVOKE_RPC_MAGIC && rpc_invoke_req.fetch(tlb);
+    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == K2_INVOKE_RPC_MAGIC && /* skip flags */ tlb.fetch_trivial<uint32_t>().has_value() &&
+           net_pid.fetch(tlb) && rpc_invoke_req.fetch(tlb);
   }
 };
 

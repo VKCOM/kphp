@@ -22,6 +22,11 @@ namespace {
 
 constexpr std::string_view RPC_REQUEST_ID = "RPC_REQUEST_ID";
 constexpr std::string_view RPC_ACTOR_ID = "RPC_ACTOR_ID";
+constexpr std::string_view RPC_REMOTE_IP = "RPC_REMOTE_IP";
+constexpr std::string_view RPC_REMOTE_PORT = "RPC_REMOTE_PORT";
+constexpr std::string_view RPC_REMOTE_PID = "RPC_REMOTE_PID";
+constexpr std::string_view RPC_REMOTE_UTIME = "RPC_REMOTE_UTIME";
+
 constexpr std::string_view RPC_EXTRA_FLAGS = "RPC_EXTRA_FLAGS";
 constexpr std::string_view RPC_EXTRA_WAIT_BINLOG_POS = "RPC_EXTRA_WAIT_BINLOG_POS";
 constexpr std::string_view RPC_EXTRA_STRING_FORWARD_KEYS = "RPC_EXTRA_STRING_FORWARD_KEYS";
@@ -122,14 +127,18 @@ void process_rpc_invoke_req(const tl::rpcInvokeReq& rpc_invoke_req, PhpScriptBui
 namespace kphp::rpc {
 
 void init_server(tl::K2InvokeRpc invoke_rpc) noexcept {
+  auto& net_pid{invoke_rpc.net_pid};
   auto& rpc_invoke_req{invoke_rpc.rpc_invoke_req.inner};
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
   auto& superglobals{PhpScriptMutableGlobals::current().get_superglobals()};
 
   rpc_server_instance_st.query_id = rpc_invoke_req.query_id.value;
 
-  // TODO: rpc remote info
   superglobals.v$_SERVER.set_value(string{RPC_REQUEST_ID.data(), RPC_REQUEST_ID.size()}, rpc_invoke_req.query_id.value);
+  superglobals.v$_SERVER.set_value(string{RPC_REMOTE_IP.data(), RPC_REMOTE_IP.size()}, static_cast<int64_t>(net_pid.get_ip()));
+  superglobals.v$_SERVER.set_value(string{RPC_REMOTE_PORT.data(), RPC_REMOTE_PORT.size()}, static_cast<int64_t>(net_pid.get_port()));
+  superglobals.v$_SERVER.set_value(string{RPC_REMOTE_PID.data(), RPC_REMOTE_PID.size()}, static_cast<int64_t>(net_pid.get_pid()));
+  superglobals.v$_SERVER.set_value(string{RPC_REMOTE_UTIME.data(), RPC_REMOTE_UTIME.size()}, static_cast<int64_t>(net_pid.get_utime()));
   process_rpc_invoke_req(rpc_invoke_req, superglobals);
 }
 
