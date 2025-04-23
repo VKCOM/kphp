@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string_view>
 #include <tuple>
@@ -411,6 +412,36 @@ struct Dictionary final {
   {
     tlb.store_trivial<uint32_t>(TL_DICTIONARY);
     inner.store(tlb);
+  }
+};
+
+class netPid final {
+  static constexpr uint32_t PORT_MASK = 0x0000'ffff;
+  static constexpr uint32_t PID_MASK = 0xffff'0000;
+
+public:
+  tl::i32 ip{};
+  tl::i32 port_pid{};
+  tl::i32 utime{};
+
+  uint32_t get_ip() const noexcept {
+    return *reinterpret_cast<const uint32_t*>(std::addressof(ip.value));
+  }
+
+  int16_t get_port() const noexcept {
+    return static_cast<int16_t>(port_pid.value & PORT_MASK);
+  }
+
+  int16_t get_pid() const noexcept {
+    return static_cast<int16_t>((port_pid.value & PID_MASK) >> 16);
+  }
+
+  int32_t get_utime() const noexcept {
+    return utime.value;
+  }
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    return ip.fetch(tlb) && port_pid.fetch(tlb) && utime.fetch(tlb);
   }
 };
 
