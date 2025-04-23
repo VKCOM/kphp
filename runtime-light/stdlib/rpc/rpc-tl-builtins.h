@@ -12,6 +12,7 @@
 #include "common/tl/constants/common.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-api.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
@@ -26,11 +27,11 @@ inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr>& ge
 }
 
 inline int32_t tl_parse_save_pos() noexcept {
-  return static_cast<int32_t>(RpcClientInstanceState::get().rpc_buffer.pos());
+  return static_cast<int32_t>(RpcServerInstanceState::get().buffer.pos());
 }
 
 inline bool tl_parse_restore_pos(int32_t pos) noexcept {
-  auto& rpc_buf{RpcClientInstanceState::get().rpc_buffer};
+  auto& rpc_buf{RpcServerInstanceState::get().buffer};
   if (pos < 0 || pos > rpc_buf.pos()) [[unlikely]] {
     return false;
   }

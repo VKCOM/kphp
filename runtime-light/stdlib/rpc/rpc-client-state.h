@@ -14,7 +14,6 @@
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
-#include "runtime-light/tl/tl-core.h"
 
 namespace kphp::rpc {
 
@@ -28,7 +27,6 @@ struct RpcClientInstanceState final : private vk::not_copyable {
   template<typename Key, typename Value>
   using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
-  tl::TLBuffer rpc_buffer;
   int64_t current_query_id{kphp::rpc::VALID_QUERY_ID_RANGE_START};
   unordered_map<int64_t, int64_t> response_waiter_forks;
   unordered_map<int64_t, class_instance<RpcTlQuery>> response_fetcher_instances;
