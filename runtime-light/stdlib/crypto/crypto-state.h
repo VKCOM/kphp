@@ -9,5 +9,7 @@
 struct CryptoInstanceState final : private vk::not_copyable {
   string default_tag_dummy;
 
+  CryptoInstanceState() noexcept = default;
+
   static CryptoInstanceState& get() noexcept;
 };

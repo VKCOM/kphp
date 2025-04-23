@@ -114,17 +114,17 @@ struct InstanceState final : vk::not_copyable {
   RpcServerInstanceState rpc_server_instance_state;
   SerializationInstanceState serialization_instance_state;
   HttpServerInstanceState http_server_instance_state;
-  JobWorkerClientInstanceState job_worker_client_instance_state{};
-  JobWorkerServerInstanceState job_worker_server_instance_state{};
+  JobWorkerClientInstanceState job_worker_client_instance_state;
+  JobWorkerServerInstanceState job_worker_server_instance_state;
 
   MathInstanceState math_instance_state;
   RandomInstanceState random_instance_state;
   RegexInstanceState regex_instance_state;
-  CurlInstanceState curl_instance_state{};
-  CryptoInstanceState crypto_instance_state{};
+  CurlInstanceState curl_instance_state;
+  CryptoInstanceState crypto_instance_state;
   StringInstanceState string_instance_state;
-  SystemInstanceState system_instance_state{};
-  FileSystemInstanceState file_system_instance_state{};
+  SystemInstanceState system_instance_state;
+  FileSystemInstanceState file_system_instance_state;
 
   list<kphp::coro::task<>> shutdown_functions;
 
