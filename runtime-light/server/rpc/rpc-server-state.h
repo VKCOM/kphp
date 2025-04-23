@@ -18,5 +18,7 @@ public:
   CurrentTlQuery current_query{};
   bool fail_rpc_on_int32_overflow{};
 
+  RpcServerInstanceState() noexcept = default;
+
   static RpcServerInstanceState& get() noexcept;
 };

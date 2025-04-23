@@ -20,6 +20,7 @@
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
+#include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/file/file-system-state.h"
@@ -110,6 +111,7 @@ struct InstanceState final : vk::not_copyable {
 
   RuntimeContext runtime_context;
   RpcClientInstanceState rpc_client_instance_state;
+  RpcServerInstanceState rpc_server_instance_state;
   SerializationInstanceState serialization_instance_state;
   HttpServerInstanceState http_server_instance_state;
   JobWorkerClientInstanceState job_worker_client_instance_state{};
