@@ -8,8 +8,8 @@
 #include <string_view>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
-#include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-exceptions.h"
 
 void CurrentTlQuery::reset() noexcept {
@@ -84,5 +84,5 @@ const string& CurrentTlQuery::get_current_tl_function_name() const noexcept {
 }
 
 CurrentTlQuery& CurrentTlQuery::get() noexcept {
-  return RpcClientInstanceState::get().current_query;
+  return RpcServerInstanceState::get().current_query;
 }
