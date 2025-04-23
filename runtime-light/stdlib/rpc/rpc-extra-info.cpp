@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <tuple>
 
-#include "runtime-light/stdlib/rpc/rpc-state.h"
+#include "runtime-light/stdlib/rpc/rpc-client-state.h"
 
 Optional<kphp::rpc::response_extra_info> f$extract_kphp_rpc_response_extra_info(int64_t query_id) noexcept {
   auto& extra_info_map{RpcClientInstanceState::get().rpc_responses_extra_info};

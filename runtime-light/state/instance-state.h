@@ -28,7 +28,7 @@
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/math/random-state.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
-#include "runtime-light/stdlib/rpc/rpc-state.h"
+#include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/serialization/serialization-state.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 #include "runtime-light/stdlib/string/string-state.h"

@@ -15,7 +15,7 @@ prepend(
   output/output-buffer.cpp
   output/print-functions.cpp
   rpc/rpc-api.cpp
-  rpc/rpc-state.cpp
+  rpc/rpc-client-state.cpp
   rpc/rpc-extra-headers.cpp
   rpc/rpc-extra-info.cpp
   rpc/rpc-tl-builtins.cpp

@@ -14,7 +14,7 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-api.h"
-#include "runtime-light/stdlib/rpc/rpc-state.h"
+#include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/tl/tl-core.h"
 

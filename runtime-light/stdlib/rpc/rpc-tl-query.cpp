@@ -9,8 +9,8 @@
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-exceptions.h"
-#include "runtime-light/stdlib/rpc/rpc-state.h"
 
 void CurrentTlQuery::reset() noexcept {
   current_tl_function_name = string{};
