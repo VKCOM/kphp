@@ -13,7 +13,6 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
-#include "runtime-light/stdlib/fork/fork-state.h" // it's actually used by exception handling stuff
 #include "runtime-light/stdlib/rpc/rpc-api.h"
 #include "runtime-light/stdlib/rpc/rpc-state.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
