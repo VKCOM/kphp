@@ -10,7 +10,6 @@
 #include "runtime-common/stdlib/msgpack/adaptors.h"
 #include "runtime-common/stdlib/msgpack/check_instance_depth.h"
 #include "runtime-common/stdlib/msgpack/packer.h"
-#include "runtime-common/stdlib/msgpack/unpack_exception.h"
 #include "runtime-common/stdlib/msgpack/unpacker.h"
 
 template<class T>

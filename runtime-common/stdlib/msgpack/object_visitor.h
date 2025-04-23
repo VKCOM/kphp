@@ -5,9 +5,11 @@
 
 #pragma once
 
+#include <optional>
 #include <vector>
 
 #include "common/mixin/not_copyable.h"
+#include "common/wrappers/string_view.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/msgpack/object.h"
@@ -65,10 +67,15 @@ public:
   void parse_error(size_t /*parsed_offset*/, size_t /*error_offset*/) const;
   void insufficient_bytes(size_t /*parsed_offset*/, size_t /*error_offset*/) const;
 
+  std::optional<vk::string_view> get_error() const {
+    return error;
+  }
+
 private:
   msgpack::object m_obj;
   kphp::stl::vector<msgpack::object*, kphp::memory::script_allocator> m_stack{};
   msgpack::zone& m_zone;
+  mutable std::optional<vk::string_view> error;
 };
 
 } // namespace vk::msgpack
