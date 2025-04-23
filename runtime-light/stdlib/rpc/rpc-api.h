@@ -12,6 +12,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/server/rpc/rpc-server-instance-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-exceptions.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
@@ -246,6 +247,6 @@ kphp::coro::task<array<class_instance<C$VK$TL$RpcResponse>>> f$rpc_fetch_typed_r
 // === misc =======================================================================================
 
 inline bool f$set_fail_rpc_on_int32_overflow(bool fail_rpc) noexcept {
-  RpcClientInstanceState::get().fail_rpc_on_int32_overflow = fail_rpc;
+  RpcServerInstanceState::get().fail_rpc_on_int32_overflow = fail_rpc;
   return true;
 }

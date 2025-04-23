@@ -12,7 +12,9 @@
 class RpcServerInstanceState final : vk::not_copyable {
 public:
   int64_t query_id{};
+
   tl::TLBuffer buffer;
+  bool fail_rpc_on_int32_overflow{};
 
   static RpcServerInstanceState& get() noexcept;
 };
