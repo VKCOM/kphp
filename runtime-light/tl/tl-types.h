@@ -885,4 +885,44 @@ public:
   }
 };
 
+struct rpcReqError final {
+  tl::i64 query_id{};
+  tl::i32 error_code{};
+  tl::string error{};
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    query_id.store(tlb), error_code.store(tlb), error.store(tlb);
+  }
+};
+
+struct rpcReqResult final {
+  tl::i64 query_id{};
+  tl::ReqResult result{};
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    query_id.store(tlb), result.store(tlb);
+  }
+};
+
+struct RpcReqResult final {
+  std::variant<tl::rpcReqError, tl::rpcReqResult> value;
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    std::visit(
+        [&tlb](const auto& value) noexcept {
+          using value_t = std::remove_cvref_t<decltype(value)>;
+
+          if constexpr (std::same_as<value_t, tl::rpcReqError>) {
+            tl::details::magic{.value = TL_RPC_REQ_ERROR}.store(tlb);
+          } else if constexpr (std::same_as<value_t, tl::rpcReqResult>) {
+            tl::details::magic{.value = TL_RPC_REQ_RESULT}.store(tlb);
+          } else {
+            static_assert(false, "non-exhaustive visitor!");
+          }
+          value.store(tlb);
+        },
+        value);
+  }
+};
+
 } // namespace tl
