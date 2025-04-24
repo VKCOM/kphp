@@ -4,33 +4,72 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string_view>
-#include <tuple>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
 #include "common/tl/constants/common.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {
+
+namespace details {
+
+struct magic final {
+  uint32_t value{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    const auto opt_value{tlb.fetch_trivial<uint32_t>()};
+    value = opt_value.value_or(0);
+    return opt_value.has_value();
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tlb.store_trivial<uint32_t>(value);
+  }
+
+  bool expect(uint32_t expected) const noexcept {
+    return expected == value;
+  }
+};
+
+struct mask final {
+  uint32_t value{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    const auto opt_value{tlb.fetch_trivial<uint32_t>()};
+    value = opt_value.value_or(0);
+    return opt_value.has_value();
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tlb.store_trivial<uint32_t>(value);
+  }
+};
+
+} // namespace details
 
 struct Bool final {
   bool value{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto magic{tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO)};
-    value = magic == TL_BOOL_TRUE;
-    return magic == TL_BOOL_TRUE || magic == TL_BOOL_FALSE;
+    tl::details::magic magic{};
+    bool ok{magic.fetch(tlb)};
+    value = magic.expect(TL_BOOL_TRUE);
+    return ok && (magic.expect(TL_BOOL_TRUE) || magic.expect(TL_BOOL_FALSE));
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(value ? TL_BOOL_TRUE : TL_BOOL_FALSE);
+    tl::details::magic{.value = value ? TL_BOOL_TRUE : TL_BOOL_FALSE}.store(tlb);
   }
 };
 
@@ -52,11 +91,12 @@ struct I32 final {
   tl::i32 inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_INT && inner.fetch(tlb);
+    tl::details::magic magic{};
+    return magic.fetch(tlb) && magic.expect(TL_INT) && inner.fetch(tlb);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(TL_INT);
+    tl::details::magic{.value = TL_INT}.store(tlb);
     inner.store(tlb);
   }
 };
@@ -79,11 +119,12 @@ struct I64 final {
   tl::i64 inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_LONG && inner.fetch(tlb);
+    tl::details::magic magic{};
+    return magic.fetch(tlb) && magic.expect(TL_LONG) && inner.fetch(tlb);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(TL_LONG);
+    tl::details::magic{.value = TL_LONG}.store(tlb);
     inner.store(tlb);
   }
 };
@@ -106,11 +147,12 @@ struct F32 final {
   tl::f32 inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_FLOAT && inner.fetch(tlb);
+    tl::details::magic magic{};
+    return magic.fetch(tlb) && magic.expect(TL_FLOAT) && inner.fetch(tlb);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(TL_FLOAT);
+    tl::details::magic{.value = TL_FLOAT}.store(tlb);
     inner.store(tlb);
   }
 };
@@ -133,11 +175,12 @@ struct F64 final {
   tl::f64 inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_DOUBLE && inner.fetch(tlb);
+    tl::details::magic magic{};
+    return magic.fetch(tlb) && magic.expect(TL_DOUBLE) && inner.fetch(tlb);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(TL_DOUBLE);
+    tl::details::magic{.value = TL_DOUBLE}.store(tlb);
     inner.store(tlb);
   }
 };
@@ -149,25 +192,28 @@ struct Maybe final {
   bool fetch(tl::TLBuffer& tlb) noexcept
   requires tl::deserializable<T>
   {
-    const auto magic{tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO)};
-    if (magic == TL_MAYBE_TRUE) {
-      opt_value.emplace();
-      return (*opt_value).fetch(tlb);
-    } else if (magic == TL_MAYBE_FALSE) {
+    tl::details::magic magic{};
+    if (!magic.fetch(tlb)) [[unlikely]] {
+      return false;
+    }
+
+    if (magic.expect(TL_MAYBE_TRUE)) {
+      return opt_value.emplace().fetch(tlb);
+    } else if (magic.expect(TL_MAYBE_FALSE)) {
       opt_value = std::nullopt;
       return true;
     }
-    return false;
+    php_critical_error("unexpected magic");
   }
 
   void store(tl::TLBuffer& tlb) const noexcept
   requires tl::serializable<T>
   {
     if (opt_value.has_value()) {
-      tlb.store_trivial<uint32_t>(TL_MAYBE_TRUE);
+      tl::details::magic{.value = TL_MAYBE_TRUE}.store(tlb);
       (*opt_value).store(tlb);
     } else {
-      tlb.store_trivial<uint32_t>(TL_MAYBE_FALSE);
+      tl::details::magic{.value = TL_MAYBE_FALSE}.store(tlb);
     }
   }
 };
@@ -196,11 +242,12 @@ struct String final {
   tl::string inner;
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_STRING && inner.fetch(tlb);
+    tl::details::magic magic{};
+    return magic.fetch(tlb) && magic.expect(TL_STRING) && inner.fetch(tlb);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(TL_STRING);
+    tl::details::magic{.value = TL_STRING}.store(tlb);
     inner.store(tlb);
   }
 };
@@ -260,7 +307,7 @@ struct vector final {
   void store(tl::TLBuffer& tlb) const noexcept
   requires tl::serializable<T>
   {
-    tlb.store_trivial<int32_t>(static_cast<int32_t>(value.size()));
+    tlb.store_trivial<uint32_t>(static_cast<uint32_t>(value.size()));
     std::for_each(value.cbegin(), value.cend(), [&tlb](const auto& elem) noexcept { elem.store(tlb); });
   }
 };
@@ -298,13 +345,14 @@ struct Vector final {
   bool fetch(tl::TLBuffer& tlb) noexcept
   requires tl::deserializable<T>
   {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_VECTOR && inner.fetch(tlb);
+    tl::details::magic magic{};
+    return magic.fetch(tlb) && magic.expect(TL_VECTOR) && inner.fetch(tlb);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept
   requires tl::serializable<T>
   {
-    tlb.store_trivial<uint32_t>(TL_VECTOR);
+    tl::details::magic{.value = TL_VECTOR}.store(tlb);
     inner.store(tlb);
   }
 };
@@ -404,13 +452,14 @@ struct Dictionary final {
   bool fetch(tl::TLBuffer& tlb) noexcept
   requires tl::deserializable<T>
   {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_DICTIONARY && inner.fetch(tlb);
+    tl::details::magic magic{};
+    return magic.fetch(tlb) && magic.expect(TL_DICTIONARY) && inner.fetch(tlb);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept
   requires tl::serializable<T>
   {
-    tlb.store_trivial<uint32_t>(TL_DICTIONARY);
+    tl::details::magic{.value = TL_DICTIONARY}.store(tlb);
     inner.store(tlb);
   }
 };
@@ -549,7 +598,12 @@ public:
   }
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    switch (tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO)) {
+    tl::details::magic magic{};
+    if (!magic.fetch(tlb)) [[unlikely]] {
+      return false;
+    }
+
+    switch (magic.value) {
     case std::to_underlying(Version::V09): {
       version = Version::V09;
       break;
@@ -580,7 +634,7 @@ public:
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(std::to_underlying(version));
+    tl::details::magic{.value = std::to_underlying(version)}.store(tlb);
   }
 };
 
@@ -596,18 +650,17 @@ public:
   std::optional<tl::string> opt_query;
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_flags{tlb.fetch_trivial<uint32_t>()};
-    bool ok{opt_flags.has_value()};
+    tl::details::mask flags{};
+    bool ok{flags.fetch(tlb)};
 
-    const auto flags{opt_flags.value_or(0x0)};
-    if (ok && static_cast<bool>(flags & SCHEME_FLAG)) [[likely]] {
+    if (ok && static_cast<bool>(flags.value & SCHEME_FLAG)) [[likely]] {
       ok &= opt_scheme.emplace().fetch(tlb);
     }
-    if (ok && static_cast<bool>(flags & HOST_FLAG)) {
+    if (ok && static_cast<bool>(flags.value & HOST_FLAG)) {
       ok &= opt_host.emplace().fetch(tlb);
     }
     ok &= path.fetch(tlb);
-    if (ok && static_cast<bool>(flags & QUERY_FLAG)) {
+    if (ok && static_cast<bool>(flags.value & QUERY_FLAG)) {
       ok &= opt_query.emplace().fetch(tlb);
     }
     return ok;
@@ -652,7 +705,7 @@ struct httpResponse final {
   std::string_view body;
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(0x0); // flags
+    tl::details::mask{}.store(tlb);
     version.store(tlb);
     status_code.store(tlb);
     headers.store(tlb);
@@ -667,7 +720,7 @@ public:
   tl::httpResponse http_response{};
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(MAGIC);
+    tl::details::magic{.value = MAGIC}.store(tlb);
     http_response.store(tlb);
   }
 };
@@ -718,7 +771,8 @@ struct RpcInvokeReqExtra final {
   tl::rpcInvokeReqExtra inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_RPC_INVOKE_REQ_EXTRA && inner.fetch(tlb);
+    tl::details::magic magic{};
+    return magic.fetch(tlb) && magic.expect(TL_RPC_INVOKE_REQ_EXTRA) && inner.fetch(tlb);
   }
 };
 
@@ -738,7 +792,8 @@ struct RpcDestActor final {
   tl::rpcDestActor inner{};
 
   bool fetch(TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_RPC_DEST_ACTOR && inner.fetch(tlb);
+    tl::details::magic magic{};
+    return magic.fetch(tlb) && magic.expect(TL_RPC_DEST_ACTOR) && inner.fetch(tlb);
   }
 };
 
@@ -758,7 +813,8 @@ struct RpcDestFlags final {
   tl::rpcDestFlags inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_RPC_DEST_FLAGS && inner.fetch(tlb);
+    tl::details::magic magic{};
+    return magic.fetch(tlb) && magic.expect(TL_RPC_DEST_FLAGS) && inner.fetch(tlb);
   }
 };
 
@@ -769,7 +825,7 @@ struct rpcDestActorFlags final {
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     bool ok{actor_id.fetch(tlb)};
-    std::ignore = tlb.fetch_trivial<uint32_t>(); // skip flags
+    ok &= tl::details::mask{}.fetch(tlb);
     ok &= extra.fetch(tlb);
     const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
     query = opt_query.value_or(std::string_view{});
@@ -781,7 +837,51 @@ struct RpcDestActorFlags final {
   tl::rpcDestActorFlags inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    return tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == TL_RPC_DEST_ACTOR_FLAGS && inner.fetch(tlb);
+    tl::details::magic magic{};
+    return magic.fetch(tlb) && magic.expect(TL_RPC_DEST_ACTOR_FLAGS) && inner.fetch(tlb);
+  }
+};
+
+struct reqError final {
+  tl::i32 error_code{};
+  tl::string error{};
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    error_code.store(tlb), error.store(tlb);
+  }
+};
+
+struct reqResultHeader final {
+  tl::details::mask flags{};
+  std::string_view result;
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    flags.store(tlb), tlb.store_bytes(result);
+  }
+};
+
+class ReqResult final {
+  static constexpr uint32_t REQ_ERROR_MAGIC = 0xb527'877d;
+  static constexpr uint32_t REQ_RESULT_MAGIC = 0x8cc8'4ce1;
+
+public:
+  std::variant<tl::reqError, tl::reqResultHeader> value;
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    std::visit(
+        [&tlb](const auto& value) noexcept {
+          using value_t = std::remove_cvref_t<decltype(value)>;
+
+          if constexpr (std::same_as<value_t, tl::reqError>) {
+            tl::details::magic{.value = REQ_ERROR_MAGIC}.store(tlb);
+          } else if constexpr (std::same_as<value_t, tl::reqResultHeader>) {
+            tl::details::magic{.value = REQ_RESULT_MAGIC}.store(tlb);
+          } else {
+            static_assert(false, "non-exhaustive visitor!");
+          }
+          value.store(tlb);
+        },
+        value);
   }
 };
 
