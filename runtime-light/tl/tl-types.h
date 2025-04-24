@@ -63,9 +63,9 @@ struct Bool final {
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     tl::details::magic magic{};
-    bool ok{magic.fetch(tlb)};
+    bool ok{magic.fetch(tlb) && (magic.expect(TL_BOOL_TRUE) || magic.expect(TL_BOOL_FALSE))};
     value = magic.expect(TL_BOOL_TRUE);
-    return ok && (magic.expect(TL_BOOL_TRUE) || magic.expect(TL_BOOL_FALSE));
+    return ok;
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
