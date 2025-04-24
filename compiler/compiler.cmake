@@ -225,9 +225,36 @@ prepend(KPHP_COMPILER_SOURCES ${KPHP_COMPILER_DIR}/
         utils/string-utils.cpp)
 
 # Suppress YAML-cpp-related warnings
-if(COMPILER_CLANG)
-    allow_deprecated_declarations(${KPHP_COMPILER_DIR}/data/composer-json-data.cpp)
-    allow_deprecated_declarations(${KPHP_COMPILER_DIR}/data/modulite-data.cpp)
+if(COMPILER_CLANG OR (COMPILER_GCC AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "12.0.0")))
+    allow_deprecated_declarations(
+            ${KPHP_COMPILER_DIR}/data/composer-json-data.cpp
+            ${KPHP_COMPILER_DIR}/data/modulite-data.cpp
+    )
+endif()
+
+if(COMPILER_GCC AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "12.0.0"))
+    allow_stringop_overflow(
+            ${KPHP_COMPILER_DIR}/code-gen/vertex-compiler.cpp
+            ${KPHP_COMPILER_DIR}/data/class-data.cpp
+            ${KPHP_COMPILER_DIR}/data/kphp-json-tags.cpp
+            ${KPHP_COMPILER_DIR}/data/generics-mixins.cpp
+            ${KPHP_COMPILER_DIR}/data/kphp-tracing-tags.cpp
+            ${KPHP_COMPILER_DIR}/data/modulite-data.cpp
+            ${KPHP_COMPILER_DIR}/code-gen/files/tracing-autogen.cpp
+            ${KPHP_COMPILER_DIR}/pipes/analyze-performance.cpp
+            ${KPHP_COMPILER_DIR}/pipes/check-access-modifiers.cpp
+            ${KPHP_COMPILER_DIR}/pipes/check-classes.cpp
+            ${KPHP_COMPILER_DIR}/pipes/check-tl-classes.cpp
+            ${KPHP_COMPILER_DIR}/pipes/code-gen.cpp
+            ${KPHP_COMPILER_DIR}/pipes/filter-only-actually-used.cpp
+            ${KPHP_COMPILER_DIR}/pipes/final-check.cpp
+            ${KPHP_COMPILER_DIR}/pipes/parse-and-apply-phpdoc.cpp
+            ${KPHP_COMPILER_DIR}/pipes/sort-and-inherit-classes.cpp
+            ${KPHP_COMPILER_DIR}/pipes/register-kphp-configuration.cpp
+            ${KPHP_COMPILER_DIR}/phpdoc.cpp
+            ${KPHP_COMPILER_DIR}/gentree.cpp
+            ${KPHP_COMPILER_DIR}/make/make.cpp
+    )
 endif()
 
 if(APPLE)

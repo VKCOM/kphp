@@ -4,10 +4,8 @@
 
 #include "compiler/compiler-settings.h"
 
-#include <chrono>
 #include <fstream>
 #include <sstream>
-#include <string>
 #include <string_view>
 #include <unistd.h>
 
@@ -222,8 +220,6 @@ void CompilerSettings::init() {
   option_as_dir(kphp_src_path);
   functions_file.value_ = get_full_path(functions_file.get());
   runtime_sha256_file.value_ = get_full_path(runtime_sha256_file.get());
-  const auto now{std::chrono::system_clock::now()};
-  build_timestamp.value_ = std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
 
   bool is_k2_mode = mode.get().substr(0, 3) == "k2-";
   if (link_file.value_.empty()) {
@@ -251,7 +247,7 @@ void CompilerSettings::init() {
     kphp_error(is_k2_mode, "Option \"k2-component-name\" is only available for k2 component modes");
   }
 
-  if (mode.get() == "lib" || mode.get() == "k2-lib") {
+  if (mode.get() == "lib") {
     if (!tl_schema_file.get().empty()) {
       throw std::runtime_error{"Option " + tl_schema_file.get_env_var() + " is forbidden for static lib mode"};
     }
@@ -348,15 +344,7 @@ void CompilerSettings::init() {
   std::string cxx_default_flags = ss.str();
 
   cxx_toolchain_option.value_ = !cxx_toolchain_dir.value_.empty() ? ("-B" + cxx_toolchain_dir.value_) : "";
-
-  if (dynamic_incremental_linkage.get()) {
-    incremental_linker_flags.value_ = "-shared";
-    if (is_k2_mode) {
-      incremental_linker_flags.value_ += " -stdlib=libc++ -static-libstdc++";
-    }
-  } else {
-    incremental_linker_flags.value_ = "-r -nostdlib";
-  }
+  incremental_linker_flags.value_ = dynamic_incremental_linkage.get() ? "-shared" : "-r -nostdlib -gdwarf64 -gdwarf-5 -mcmodel=large -flto -Wl,-flto -flinker-output=rel";
 
   remove_extra_spaces(extra_ld_flags.value_);
 

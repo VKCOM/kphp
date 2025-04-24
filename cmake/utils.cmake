@@ -69,7 +69,13 @@ endfunction()
 
 function(allow_deprecated_declarations)
     foreach(src_file ${ARGN})
-        set_source_files_properties(${src_file} PROPERTIES COMPILE_FLAGS -Wno-deprecated-declarations)
+        set_property(SOURCE ${src_file} APPEND PROPERTY COMPILE_OPTIONS -Wno-deprecated-declarations)
+    endforeach()
+endfunction()
+
+function(allow_stringop_overflow)
+    foreach(src_file ${ARGN})
+        set_property(SOURCE ${src_file} APPEND PROPERTY COMPILE_OPTIONS -Wno-stringop-overflow)
     endforeach()
 endfunction()
 
