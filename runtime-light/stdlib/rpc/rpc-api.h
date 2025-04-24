@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
@@ -20,6 +21,7 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-kphp-request.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
 
@@ -146,6 +148,17 @@ inline void f$rpc_clean() noexcept {
 template<typename T>
 bool f$rpc_parse(T /*unused*/) {
   php_critical_error("call to unsupported function");
+}
+
+inline void f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult>& response) noexcept {
+  f$rpc_clean();
+  auto tl_func_base{CurrentRpcServerQuery::get().extract()};
+  if (!static_cast<bool>(tl_func_base)) [[unlikely]] {
+    return php_warning("can't store RPC response: no pending requests");
+  }
+
+  TRY_CALL_VOID(void, tl_func_base->rpc_server_typed_store(response));
+  // TODO: store_finish
 }
 
 // === client =====================================================================================
