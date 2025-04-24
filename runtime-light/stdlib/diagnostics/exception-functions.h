@@ -9,6 +9,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
+#include "runtime-light/stdlib/fork/fork-state.h" // it's actually used by exception handling stuff
 
 #define THROW_EXCEPTION(e)                                                                                                                                     \
   {                                                                                                                                                            \

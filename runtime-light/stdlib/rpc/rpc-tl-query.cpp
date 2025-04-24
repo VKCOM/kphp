@@ -8,27 +8,9 @@
 #include <string_view>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
-#include "runtime-light/stdlib/fork/fork-state.h" // it's actually used by exception handling stuff
 #include "runtime-light/stdlib/rpc/rpc-exceptions.h"
-#include "runtime-light/stdlib/rpc/rpc-state.h"
-
-void CurrentTlQuery::reset() noexcept {
-  current_tl_function_name = string{};
-}
-
-void CurrentTlQuery::set_current_tl_function(const string& tl_function_name) noexcept {
-  // It can be not empty in the following case:
-  // 1. Timeout is raised in the middle of serialization (when current TL function is still not reset).
-  // 2. Then shutdown functions called from timeout.
-  // 3. They use RPC which finally call set_current_tl_function.
-  // It will be rewritten by another tl_function_name and work fine
-  current_tl_function_name = tl_function_name;
-}
-
-void CurrentTlQuery::set_current_tl_function(const class_instance<RpcTlQuery>& current_query) noexcept {
-  current_tl_function_name = current_query.get()->tl_function_name;
-}
 
 void CurrentTlQuery::raise_fetching_error(const char* format, ...) const noexcept {
   php_assert(!current_tl_function_name.empty());
@@ -72,18 +54,12 @@ void CurrentTlQuery::raise_storing_error(const char* format, ...) const noexcept
   THROW_EXCEPTION(kphp::rpc::exception::cant_store_function::make(func_name));
 }
 
-void CurrentTlQuery::set_last_stored_tl_function_magic(uint32_t tl_magic) noexcept {
-  last_stored_tl_function_magic = tl_magic;
-}
-
-uint32_t CurrentTlQuery::get_last_stored_tl_function_magic() const noexcept {
-  return last_stored_tl_function_magic;
-}
-
-const string& CurrentTlQuery::get_current_tl_function_name() const noexcept {
-  return current_tl_function_name;
-}
-
 CurrentTlQuery& CurrentTlQuery::get() noexcept {
-  return RpcInstanceState::get().current_query;
+  return RpcServerInstanceState::get().current_client_query;
+}
+
+// ================================================================================================
+
+CurrentRpcServerQuery& CurrentRpcServerQuery::get() noexcept {
+  return RpcServerInstanceState::get().current_server_query;
 }

@@ -11,5 +11,7 @@ struct FileSystemInstanceState final : private vk::not_copyable {
   mixed error_number_dummy;
   mixed error_description_dummy;
 
+  FileSystemInstanceState() noexcept = default;
+
   static FileSystemInstanceState& get() noexcept;
 };

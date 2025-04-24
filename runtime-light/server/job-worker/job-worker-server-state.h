@@ -19,5 +19,7 @@ struct JobWorkerServerInstanceState final : private vk::not_copyable {
   int64_t job_id{JOB_WORKER_INVALID_JOB_ID};
   string body;
 
+  JobWorkerServerInstanceState() noexcept = default;
+
   static JobWorkerServerInstanceState& get() noexcept;
 };

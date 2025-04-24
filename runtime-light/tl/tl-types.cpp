@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <utility>
 
-#include "common/tl/constants/common.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {
@@ -104,27 +103,28 @@ void string::store(TLBuffer& tlb) const noexcept {
 }
 
 bool K2JobWorkerResponse::fetch(TLBuffer& tlb) noexcept {
-  bool ok{tlb.fetch_trivial<uint32_t>().value_or(TL_ZERO) == MAGIC};
-  ok &= tlb.fetch_trivial<uint32_t>().has_value(); // flags
+  tl::details::magic magic{};
+  bool ok{magic.fetch(tlb) && magic.expect(MAGIC)};
+  ok &= tl::details::mask{}.fetch(tlb);
   ok &= job_id.fetch(tlb);
   ok &= body.fetch(tlb);
   return ok;
 }
 
 void K2JobWorkerResponse::store(TLBuffer& tlb) const noexcept {
-  tlb.store_trivial<uint32_t>(MAGIC);
-  tlb.store_trivial<uint32_t>(0x0); // flags
+  tl::details::magic{.value = MAGIC}.store(tlb);
+  tl::details::mask{}.store(tlb);
   job_id.store(tlb);
   body.store(tlb);
 }
 
 bool CertInfoItem::fetch(TLBuffer& tlb) noexcept {
-  const auto opt_magic{tlb.fetch_trivial<uint32_t>()};
-  if (!opt_magic.has_value()) {
+  tl::details::magic magic{};
+  if (!magic.fetch(tlb)) [[unlikely]] {
     return false;
   }
 
-  switch (*opt_magic) {
+  switch (magic.value) {
   case Magic::LONG: {
     if (tl::i64 val{}; val.fetch(tlb)) [[likely]] {
       data = val;
@@ -149,6 +149,49 @@ bool CertInfoItem::fetch(TLBuffer& tlb) noexcept {
   }
 
   return true;
+}
+
+// ===== RPC =====
+
+bool rpcInvokeReqExtra::fetch(tl::TLBuffer& tlb) noexcept {
+  tl::details::mask flags{};
+  bool ok{flags.fetch(tlb)};
+
+  return_binlog_pos = static_cast<bool>(flags.value & RETURN_BINLOG_POS_FLAG);
+  return_binlog_time = static_cast<bool>(flags.value & RETURN_BINLOG_TIME_FLAG);
+  return_pid = static_cast<bool>(flags.value & RETURN_PID_FLAG);
+  return_request_sizes = static_cast<bool>(flags.value & RETURN_REQUEST_SIZES_FLAG);
+  return_failed_subqueries = static_cast<bool>(flags.value & RETURN_FAILED_SUBQUERIES_FLAG);
+  return_query_stats = static_cast<bool>(flags.value & RETURN_QUERY_STATS_FLAG);
+  no_result = static_cast<bool>(flags.value & NORESULT_FLAG);
+
+  if (ok && static_cast<bool>(flags.value & WAIT_BINLOG_POS_FLAG)) {
+    ok &= opt_wait_binlog_pos.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags.value & STRING_FORWARD_KEYS_FLAG)) {
+    ok &= opt_string_forward_keys.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags.value & INT_FORWARD_KEYS_FLAG)) {
+    ok &= opt_int_forward_keys.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags.value & STRING_FORWARD_FLAG)) {
+    ok &= opt_string_forward.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags.value & INT_FORWARD_FLAG)) {
+    ok &= opt_int_forward.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags.value & CUSTOM_TIMEOUT_MS_FLAG)) {
+    ok &= opt_custom_timeout_ms.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags.value & SUPPORTED_COMPRESSION_VERSION_FLAG)) {
+    ok &= opt_supported_compression_version.emplace().fetch(tlb);
+  }
+  if (ok && static_cast<bool>(flags.value & RANDOM_DELAY_FLAG)) {
+    ok &= opt_random_delay.emplace().fetch(tlb);
+  }
+  return_view_number = static_cast<bool>(flags.value & RETURN_VIEW_NUMBER_FLAG);
+
+  return ok;
 }
 
 } // namespace tl

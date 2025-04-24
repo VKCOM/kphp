@@ -20,6 +20,7 @@
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
+#include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/file/file-system-state.h"
@@ -28,7 +29,7 @@
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/math/random-state.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
-#include "runtime-light/stdlib/rpc/rpc-state.h"
+#include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/serialization/serialization-state.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
@@ -109,20 +110,21 @@ struct InstanceState final : vk::not_copyable {
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
   RuntimeContext runtime_context;
-  RpcInstanceState rpc_instance_state;
+  RpcClientInstanceState rpc_client_instance_state;
+  RpcServerInstanceState rpc_server_instance_state;
   SerializationInstanceState serialization_instance_state;
   HttpServerInstanceState http_server_instance_state;
-  JobWorkerClientInstanceState job_worker_client_instance_state{};
-  JobWorkerServerInstanceState job_worker_server_instance_state{};
+  JobWorkerClientInstanceState job_worker_client_instance_state;
+  JobWorkerServerInstanceState job_worker_server_instance_state;
 
   MathInstanceState math_instance_state;
   RandomInstanceState random_instance_state;
   RegexInstanceState regex_instance_state;
-  CurlInstanceState curl_instance_state{};
-  CryptoInstanceState crypto_instance_state{};
+  CurlInstanceState curl_instance_state;
+  CryptoInstanceState crypto_instance_state;
   StringInstanceState string_instance_state;
-  SystemInstanceState system_instance_state{};
-  FileSystemInstanceState file_system_instance_state{};
+  SystemInstanceState system_instance_state;
+  FileSystemInstanceState file_system_instance_state;
 
   list<kphp::coro::task<>> shutdown_functions;
 

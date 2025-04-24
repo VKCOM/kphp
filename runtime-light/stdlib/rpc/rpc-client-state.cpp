@@ -2,13 +2,13 @@
 //  Copyright (c) 2024 LLC «V Kontakte»
 //  Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/stdlib/rpc/rpc-state.h"
+#include "runtime-light/stdlib/rpc/rpc-client-state.h"
 
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
 
-RpcInstanceState& RpcInstanceState::get() noexcept {
-  return InstanceState::get().rpc_instance_state;
+RpcClientInstanceState& RpcClientInstanceState::get() noexcept {
+  return InstanceState::get().rpc_client_instance_state;
 }
 
 const RpcImageState& RpcImageState::get() noexcept {

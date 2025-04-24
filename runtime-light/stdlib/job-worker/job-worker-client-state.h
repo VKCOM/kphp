@@ -12,5 +12,7 @@
 struct JobWorkerClientInstanceState final : private vk::not_copyable {
   int64_t current_job_id{JOB_WORKER_VALID_JOB_ID_RANGE_START};
 
+  JobWorkerClientInstanceState() noexcept = default;
+
   static JobWorkerClientInstanceState& get() noexcept;
 };

@@ -22,19 +22,27 @@ namespace {
 
 void process_k2_invoke_http(tl::TLBuffer& tlb) noexcept {
   tl::K2InvokeHttp invoke_http{};
-  if (!invoke_http.fetch(tlb)) {
+  if (!invoke_http.fetch(tlb)) [[unlikely]] {
     php_error("erroneous http request");
   }
-  init_server(ServerQuery{std::move(invoke_http)});
+  init_server(std::move(invoke_http));
+}
+
+void process_k2_invoke_rpc(tl::TLBuffer& tlb) noexcept {
+  tl::K2InvokeRpc invoke_rpc{};
+  if (!invoke_rpc.fetch(tlb)) [[unlikely]] {
+    php_error("erroneous rpc request");
+  }
+  init_server(std::move(invoke_rpc));
 }
 
 void process_k2_invoke_job_worker(tl::TLBuffer& tlb) noexcept {
   tl::K2InvokeJobWorker invoke_jw{};
-  if (!invoke_jw.fetch(tlb)) {
+  if (!invoke_jw.fetch(tlb)) [[unlikely]] {
     php_error("erroneous job worker request");
   }
   php_assert(invoke_jw.image_id.value == static_cast<int64_t>(k2::describe()->build_timestamp)); // ensure that we got the request from ourselves
-  init_server(ServerQuery{invoke_jw});
+  init_server(std::move(invoke_jw));
 }
 
 } // namespace
@@ -71,6 +79,10 @@ kphp::coro::task<uint64_t> init_kphp_server_component() noexcept {
   switch (const auto magic{*tlb.lookup_trivial<uint32_t>()}) { // lookup magic
   case tl::K2_INVOKE_HTTP_MAGIC: {
     process_k2_invoke_http(tlb);
+    break;
+  }
+  case tl::K2_INVOKE_RPC_MAGIC: {
+    process_k2_invoke_rpc(tlb);
     break;
   }
   case tl::K2_INVOKE_JOB_WORKER_MAGIC: {
