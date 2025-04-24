@@ -7,7 +7,7 @@ prepend(SERVER_TESTS_SOURCES ${BASE_DIR}/tests/cpp/server/
         workers-control-test.cpp)
 
 # Suppress YAML-cpp-related warnings
-if(COMPILER_CLANG)
+if(COMPILER_CLANG OR (COMPILER_GCC AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "12.0.0")))
     allow_deprecated_declarations(${BASE_DIR}/tests/cpp/server/server-config-test.cpp)
 endif()
 

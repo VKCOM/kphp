@@ -36,7 +36,7 @@ if(APPLE)
     add_definitions(-D_XOPEN_SOURCE)
 else()
     # Since Ubuntu 22.04 lto is enabled by default; breaks some builds
-    add_link_options(-fno-lto)
+    #add_link_options(-fno-lto)
 endif()
 
 
@@ -73,7 +73,7 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL ${DEFAULT_BUILD_TYPE})
             list(APPEND COMPILE_LTO_OPTIONS -ffat-lto-objects)
         endif()
         if(COMPILER_GCC)
-            list(APPEND COMPILE_LTO_OPTIONS -fuse-linker-plugin -Wl,-flto)
+            list(APPEND COMPILE_LTO_OPTIONS -Wl,-flto)
         endif()
         add_compile_options(${COMPILE_LTO_OPTIONS})
         add_link_options(${LINK_LTO_OPTIONS})
