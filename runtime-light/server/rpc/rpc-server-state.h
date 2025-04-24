@@ -16,6 +16,7 @@ public:
 
   tl::TLBuffer buffer;
   CurrentTlQuery current_query{};
+  CurrentRpcServerQuery current_server_query{};
   bool fail_rpc_on_int32_overflow{};
 
   RpcServerInstanceState() noexcept = default;
