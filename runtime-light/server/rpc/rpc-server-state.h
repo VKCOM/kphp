@@ -15,7 +15,7 @@ public:
   int64_t query_id{};
 
   tl::TLBuffer buffer;
-  CurrentTlQuery current_query{};
+  CurrentTlQuery current_client_query{};
   CurrentRpcServerQuery current_server_query{};
   bool fail_rpc_on_int32_overflow{};
 

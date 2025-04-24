@@ -55,7 +55,7 @@ void CurrentTlQuery::raise_storing_error(const char* format, ...) const noexcept
 }
 
 CurrentTlQuery& CurrentTlQuery::get() noexcept {
-  return RpcServerInstanceState::get().current_query;
+  return RpcServerInstanceState::get().current_client_query;
 }
 
 // ================================================================================================
