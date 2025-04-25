@@ -4,6 +4,18 @@ import pytest
 
 from pytest_mysql.factories import mysql, mysql_proc
 from python.lib.testcase import WebServerAutoTestCase
+from python.lib.file_utils import search_k2_bin
+
+"""
+Force disable mysql_proc fixture for K2 tests. 
+Because of issue in CI with mysql on shutdown 
+"""
+@pytest.fixture(scope="session")
+def mysql_proc_wrapper(request):
+    if search_k2_bin() is not None:
+        pytest.skip("Skipping mysql_proc in K2 mode")
+    yield request.getfixturevalue("mysql_proc")
+    request.getfixturevalue("mysql_proc")
 
 
 @pytest.mark.k2_skip_suite
@@ -16,7 +28,8 @@ class TestMysql(WebServerAutoTestCase):
         })
 
     @pytest.fixture(autouse=True)
-    def _setup_mysql_db(self, mysql, mysql_proc):
+    def _setup_mysql_db(self, mysql, mysql_proc_wrapper):
+        mysql_proc = mysql_proc_wrapper
         cursor = mysql.cursor()
         cursor.execute(
             '''
