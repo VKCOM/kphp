@@ -4,9 +4,13 @@
 
 #pragma once
 
+#include <cinttypes>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <iterator>
+#include <span>
 #include <string_view>
 #include <utility>
 
@@ -33,7 +37,11 @@ struct query_info {
   double timestamp{0.0};
 };
 
-kphp::coro::task<kphp::rpc::query_info> send(string actor, Optional<double> timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept;
+enum class error {};
+
+kphp::coro::task<kphp::rpc::query_info> send_request(string actor, Optional<double> timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept;
+
+kphp::coro::task<std::expected<void, kphp::rpc::error>> send_response(std::span<const std::byte> response) noexcept;
 
 namespace rpc_impl {
 
@@ -150,15 +158,44 @@ bool f$rpc_parse(T /*unused*/) {
   php_critical_error("call to unsupported function");
 }
 
-inline void f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult>& response) noexcept {
+inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg) noexcept {
+  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+
   f$rpc_clean();
+  tl::TLBuffer tlb{}; // FIXME reserve exact size
+  tl::RpcReqResult{.inner = tl::rpcReqError{.query_id = {.value = rpc_server_instance_st.query_id},
+                                            .error_code = {.value = static_cast<int32_t>(error_code)},
+                                            .error = {.value = {error_msg.c_str(), error_msg.size()}}}}
+      .store(tlb);
+  auto res{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})};
+  if (!res) [[unlikely]] {
+    php_warning("couldn't store RPC error: query_id %" PRIi64, rpc_server_instance_st.query_id);
+  }
+  co_return res.has_value();
+}
+
+inline kphp::coro::task<> f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult>& response) noexcept {
   auto tl_func_base{CurrentRpcServerQuery::get().extract()};
   if (!static_cast<bool>(tl_func_base)) [[unlikely]] {
-    return php_warning("can't store RPC response: no pending requests");
+    co_return php_warning("can't store RPC response: no pending requests");
   }
 
-  TRY_CALL_VOID(void, tl_func_base->rpc_server_typed_store(response));
-  // TODO: store_finish
+  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  // serialize response
+  f$rpc_clean();
+  TRY_CALL_VOID_CORO(void, tl_func_base->rpc_server_typed_store(response));
+  // serialize header with response
+  // FIXME reserve exact size
+  tl::TLBuffer tlb{sizeof(tl::RpcReqResult) + rpc_server_instance_st.buffer.size()};
+  tl::RpcReqResult{
+      .inner = tl::rpcReqResult{.query_id = {.value = rpc_server_instance_st.query_id},
+                                .result = tl::ReqResult{.inner = tl::reqResultHeader{.flags = {.value = 0x0},
+                                                                                     .result = std::string_view{rpc_server_instance_st.buffer.data(),
+                                                                                                                rpc_server_instance_st.buffer.size()}}}}}
+      .store(tlb);
+  if (auto res{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})}; !res) [[unlikely]] {
+    php_warning("couldn't store RPC response: query_id %" PRIi64, rpc_server_instance_st.query_id);
+  }
 }
 
 // === client =====================================================================================
