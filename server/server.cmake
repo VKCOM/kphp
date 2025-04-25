@@ -31,12 +31,14 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         signal-handlers.cpp)
 
 # Suppress YAML-cpp-related warnings
-if(COMPILER_CLANG)
-    allow_deprecated_declarations(${BASE_DIR}/server/json-logger.cpp)
-    allow_deprecated_declarations(${BASE_DIR}/server/lease-config-parser.cpp)
-    allow_deprecated_declarations(${BASE_DIR}/server/php-engine.cpp)
-    allow_deprecated_declarations(${BASE_DIR}/server/php-master.cpp)
-    allow_deprecated_declarations(${BASE_DIR}/server/server-config.cpp)
+if(COMPILER_CLANG OR (COMPILER_GCC AND (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "12.0.0")))
+    allow_deprecated_declarations(
+            ${BASE_DIR}/server/json-logger.cpp
+            ${BASE_DIR}/server/lease-config-parser.cpp
+            ${BASE_DIR}/server/php-engine.cpp
+            ${BASE_DIR}/server/php-master.cpp
+            ${BASE_DIR}/server/server-config.cpp
+    )
 endif()
 
 prepend(KPHP_JOB_WORKERS_SOURCES ${BASE_DIR}/server/job-workers/
