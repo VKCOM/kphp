@@ -865,7 +865,7 @@ class ReqResult final {
   static constexpr uint32_t REQ_RESULT_MAGIC = 0x8cc8'4ce1;
 
 public:
-  std::variant<tl::reqError, tl::reqResultHeader> value;
+  std::variant<tl::reqError, tl::reqResultHeader> inner;
 
   void store(tl::TLBuffer& tlb) const noexcept {
     std::visit(
@@ -881,7 +881,7 @@ public:
           }
           value.store(tlb);
         },
-        value);
+        inner);
   }
 };
 
@@ -905,7 +905,7 @@ struct rpcReqResult final {
 };
 
 struct RpcReqResult final {
-  std::variant<tl::rpcReqError, tl::rpcReqResult> value;
+  std::variant<tl::rpcReqError, tl::rpcReqResult> inner;
 
   void store(tl::TLBuffer& tlb) const noexcept {
     std::visit(
@@ -921,7 +921,7 @@ struct RpcReqResult final {
           }
           value.store(tlb);
         },
-        value);
+        inner);
   }
 };
 
