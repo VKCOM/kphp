@@ -32,8 +32,8 @@ class TLBuffer final {
   size_t m_remaining{0};
 
 public:
-  TLBuffer() noexcept {
-    m_buffer.reserve(INIT_BUFFER_SIZE);
+  explicit TLBuffer(size_t capacity = INIT_BUFFER_SIZE) noexcept {
+    m_buffer.reserve(capacity);
   }
 
   TLBuffer(const TLBuffer&) = delete;
