@@ -170,7 +170,7 @@ inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg
       .store(tlb);
   auto res{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})};
   if (!res) [[unlikely]] {
-    php_warning("couldn't store RPC error: query_id %" PRIi64, rpc_server_instance_st.query_id);
+    php_warning("can't store RPC error: query_id %" PRIi64, rpc_server_instance_st.query_id);
   }
   co_return res.has_value();
 }
@@ -195,7 +195,7 @@ inline kphp::coro::task<> f$rpc_server_store_response(const class_instance<C$VK$
                                                                                                                 rpc_server_instance_st.buffer.size()}}}}}
       .store(tlb);
   if (auto res{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})}; !res) [[unlikely]] {
-    php_warning("couldn't store RPC response: query_id %" PRIi64, rpc_server_instance_st.query_id);
+    php_warning("can't store RPC response: query_id %" PRIi64, rpc_server_instance_st.query_id);
   }
 }
 
