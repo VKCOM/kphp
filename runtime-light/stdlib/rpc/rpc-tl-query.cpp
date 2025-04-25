@@ -10,6 +10,7 @@
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-exceptions.h"
 
 void CurrentTlQuery::raise_fetching_error(const char* format, ...) const noexcept {
@@ -55,7 +56,7 @@ void CurrentTlQuery::raise_storing_error(const char* format, ...) const noexcept
 }
 
 CurrentTlQuery& CurrentTlQuery::get() noexcept {
-  return RpcServerInstanceState::get().current_client_query;
+  return RpcClientInstanceState::get().current_client_query;
 }
 
 // ================================================================================================
