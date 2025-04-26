@@ -341,13 +341,15 @@ kphp::coro::task<kphp::rpc::query_info> send_request(string actor, Optional<doub
 }
 
 kphp::coro::task<std::expected<void, kphp::rpc::error>> send_response(std::span<const std::byte> response) noexcept {
-  const auto stream_d{InstanceState::get().standard_stream()};
+  auto& instance_st{InstanceState::get()};
+  const auto stream_d{instance_st.standard_stream()};
   if (stream_d == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
     co_return std::unexpected(kphp::rpc::error::invalid_stream); // TODO check that the stream is an RPC one
   }
   if (co_await write_all_to_stream(stream_d, reinterpret_cast<const char*>(response.data()), response.size()) != response.size()) [[unlikely]] {
     co_return std::unexpected(kphp::rpc::error::write_failed);
   }
+  instance_st.release_stream(stream_d);
   co_return std::expected<void, kphp::rpc::error>{};
 }
 
