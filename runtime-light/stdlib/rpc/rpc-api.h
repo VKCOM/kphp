@@ -179,7 +179,7 @@ inline kphp::coro::task<bool> f$store_error(int64_t error_code, const string& er
     php_warning("can't store RPC error: %d", std::to_underlying(expected.error()));
   }
   php_error("store_error called. error_code: %" PRIi64 ", error_msg: %s", error_code, error_msg.c_str());
-  co_return expected.has_value();
+  std::unreachable();
 }
 
 inline kphp::coro::task<> f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult>& response) noexcept {
