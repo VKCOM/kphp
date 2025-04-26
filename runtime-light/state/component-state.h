@@ -19,6 +19,7 @@ struct ComponentState final : private vk::not_copyable {
   const uint32_t argc;
   const uint32_t envc;
   mixed runtime_config;
+  array<string> command_line_argv;
   array<string> ini_opts;
   array<mixed> env;
 
@@ -43,6 +44,7 @@ struct ComponentState final : private vk::not_copyable {
 
 private:
   static constexpr std::string_view INI_ARG_PREFIX = "ini ";
+  static constexpr std::string_view COMMAND_LINE_ARG = "command-line";
   static constexpr std::string_view RUNTIME_CONFIG_ARG = "runtime-config";
   static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(512U * 1024U); // 512KB
 
@@ -53,4 +55,6 @@ private:
   void parse_ini_arg(std::string_view, std::string_view) noexcept;
 
   void parse_runtime_config_arg(std::string_view) noexcept;
+
+  void parse_command_line_arg(std::string_view) noexcept;
 };

@@ -4,6 +4,7 @@
 
 #include "runtime-light/state/component-state.h"
 
+#include <cctype>
 #include <cstring>
 #include <iterator>
 #include <string_view>
@@ -13,6 +14,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
+#include "runtime-light/core/compiler-info/compiler_interface.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
 void ComponentState::parse_env() noexcept {
@@ -54,6 +56,40 @@ void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexc
   }
 }
 
+void ComponentState::parse_command_line_arg(std::string_view value_view) noexcept {
+  if (value_view.empty()) [[unlikely]] {
+    php_warning("command line argument is empty");
+    return;
+  }
+
+  if (!command_line_argv.empty()) [[unlikely]] {
+    php_warning("command line argument support no more one usage");
+    return;
+  }
+
+  const auto& main_file_view{kphp::compiler_interface::get_main_file_name()};
+  command_line_argv.push_back(string(main_file_view.data(), main_file_view.size()));
+
+  bool in_quote{};
+  string current_arg{};
+  for (char letter : value_view) {
+    if (std::isspace(letter) && !in_quote && !current_arg.empty()) {
+      command_line_argv.push_back(std::move(current_arg));
+      current_arg = string();
+    } else if (letter == '"') {
+      in_quote = !in_quote;
+    } else if (letter == '\'') {
+      php_warning("in command line arg supported only \" quote");
+    } else {
+      current_arg.push_back(letter);
+    }
+  }
+
+  if (!current_arg.empty()) {
+    command_line_argv.push_back(std::move(current_arg));
+  }
+}
+
 void ComponentState::parse_args() noexcept {
   for (auto i = 0; i < argc; ++i) {
     const auto [arg_key, arg_value]{k2::arg_fetch(i)};
@@ -64,10 +100,13 @@ void ComponentState::parse_args() noexcept {
       parse_ini_arg(key_view, value_view);
     } else if (key_view == RUNTIME_CONFIG_ARG) {
       parse_runtime_config_arg(value_view);
+    } else if (key_view == COMMAND_LINE_ARG) {
+      parse_command_line_arg(value_view);
     } else {
       php_warning("unknown argument: %s", key_view.data());
     }
   }
+  command_line_argv.set_reference_counter_to(ExtraRefCnt::for_global_const);
   runtime_config.set_reference_counter_to(ExtraRefCnt::for_global_const);
   ini_opts.set_reference_counter_to(ExtraRefCnt::for_global_const);
 }
