@@ -148,14 +148,23 @@ inline void f$fetch_raw_vector_double(array<double>& vector, int64_t num_elems) 
   rpc_buf.adjust(len_bytes);
 }
 
-inline void f$rpc_clean() noexcept {
+inline bool f$rpc_clean() noexcept {
   RpcServerInstanceState::get().buffer.clean();
+  return true;
 }
 
 template<typename T>
 bool f$rpc_parse(T /*unused*/) {
   php_critical_error("call to unsupported function");
 }
+
+// f$rpc_server_fetch_request() definition is generated into the tl/rpc_server_fetch_request.cpp file.
+// It's composed of:
+//    1. fetching magic
+//    2. switch over all @kphp functions
+//    3. tl_func_state storing inside the CurrentRpcServerQuery
+
+class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() noexcept;
 
 inline kphp::coro::task<bool> f$store_error(int64_t error_code, const string& error_msg) noexcept {
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
