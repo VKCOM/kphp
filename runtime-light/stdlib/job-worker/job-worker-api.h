@@ -27,7 +27,7 @@ kphp::coro::task<int64_t> f$job_worker_store_response(string response) noexcept;
 // === Misc =======================================================================================
 
 inline bool f$is_kphp_job_workers_enabled() noexcept {
-  return InstanceState::get().image_kind() == ImageKind::Server;
+  return InstanceState::get().image_kind() == image_kind::server;
 }
 
 inline int64_t f$get_job_workers_number() noexcept {

@@ -28,15 +28,15 @@
 
 namespace {
 
-template<ImageKind kind>
+template<image_kind kind>
 consteval std::string_view resolve_sapi_name() noexcept {
-  if constexpr (kind == ImageKind::CLI) {
+  if constexpr (kind == image_kind::cli) {
     return "cli";
-  } else if constexpr (kind == ImageKind::Server) {
+  } else if constexpr (kind == image_kind::server) {
     return "server";
-  } else if constexpr (kind == ImageKind::Oneshot) {
+  } else if constexpr (kind == image_kind::oneshot) {
     return "oneshot";
-  } else if constexpr (kind == ImageKind::Multishot) {
+  } else if constexpr (kind == image_kind::multishot) {
     return "multishot";
   } else {
     return "invalid interface";
@@ -83,9 +83,9 @@ void InstanceState::init_script_execution() noexcept {
   main_task_ = std::move(main_task);
 }
 
-template<ImageKind kind>
+template<image_kind kind>
 kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
-  static_assert(kind != ImageKind::Invalid);
+  static_assert(kind != image_kind::invalid);
   image_kind_ = kind;
 
   // common initialization
@@ -103,17 +103,17 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
   }
 
   // specific initialization
-  if constexpr (kind == ImageKind::CLI) {
+  if constexpr (kind == image_kind::cli) {
     standard_stream_ = co_await init_kphp_cli_component();
-  } else if constexpr (kind == ImageKind::Server) {
+  } else if constexpr (kind == image_kind::server) {
     standard_stream_ = co_await init_kphp_server_component();
   }
 }
 
-template kphp::coro::task<> InstanceState::run_instance_prologue<ImageKind::CLI>();
-template kphp::coro::task<> InstanceState::run_instance_prologue<ImageKind::Server>();
-template kphp::coro::task<> InstanceState::run_instance_prologue<ImageKind::Oneshot>();
-template kphp::coro::task<> InstanceState::run_instance_prologue<ImageKind::Multishot>();
+template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::cli>();
+template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::server>();
+template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::oneshot>();
+template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::multishot>();
 
 kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   if (std::exchange(shutdown_state_, shutdown_state::in_progress) == shutdown_state::not_started) [[likely]] {
@@ -128,21 +128,21 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   }
 
   switch (image_kind_) {
-  case ImageKind::Oneshot:
-  case ImageKind::Multishot:
+  case image_kind::oneshot:
+  case image_kind::multishot:
     break;
-  case ImageKind::CLI: {
+  case image_kind::cli: {
     const auto& buffer{response.output_buffers[merge_output_buffers()]};
     co_await finalize_kphp_cli_component(buffer);
     break;
   }
-  case ImageKind::Server: {
+  case image_kind::server: {
     const auto& buffer{response.output_buffers[merge_output_buffers()]};
     co_await finalize_kphp_server_component(buffer);
     break;
   }
   default: {
-    php_error("unexpected ImageKind");
+    php_error("unexpected image_kind");
   }
   }
   release_all_streams();
