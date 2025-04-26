@@ -492,6 +492,10 @@ public:
   bool fetch(tl::TLBuffer& tlb) noexcept {
     return ip.fetch(tlb) && port_pid.fetch(tlb) && utime.fetch(tlb);
   }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    ip.store(tlb), port_pid.store(tlb), utime.store(tlb);
+  }
 };
 
 // ===== JOB WORKERS =====
@@ -746,7 +750,8 @@ class rpcInvokeReqExtra final {
   static constexpr auto RETURN_VIEW_NUMBER_FLAG = static_cast<uint32_t>(1U << 27U);
 
 public:
-  uint32_t flags{};
+  tl::details::mask flags{};
+
   bool return_binlog_pos{};
   bool return_binlog_time{};
   bool return_pid{};
@@ -776,6 +781,43 @@ struct RpcInvokeReqExtra final {
   }
 };
 
+class rpcReqResultExtra final {
+  static constexpr auto BINLOG_POS_FLAG = static_cast<uint32_t>(1U << 0U);
+  static constexpr auto BINLOG_TIME_FLAG = static_cast<uint32_t>(1U << 1U);
+  static constexpr auto ENGINE_PID_FLAG = static_cast<uint32_t>(1U << 2U);
+  static constexpr auto REQUEST_SIZE_FLAG = static_cast<uint32_t>(1U << 3U);
+  static constexpr auto RESPONSE_SIZE_FLAG = static_cast<uint32_t>(1U << 3U);
+  static constexpr auto FAILED_SUBQUERIES_FLAG = static_cast<uint32_t>(1U << 4U);
+  static constexpr auto COMPRESSION_VERSION_FLAG = static_cast<uint32_t>(1U << 5U);
+  static constexpr auto STATS_FLAG = static_cast<uint32_t>(1U << 6U);
+  static constexpr auto EPOCH_NUMBER_FLAG = static_cast<uint32_t>(1U << 27U);
+  static constexpr auto VIEW_NUMBER_FLAG = static_cast<uint32_t>(1U << 27U);
+
+public:
+  tl::details::mask flags{};
+
+  tl::i64 binlog_pos{};
+  tl::i64 binlog_time{};
+  tl::netPid engine_pid{};
+  tl::i32 request_size{};
+  tl::i32 response_size{};
+  tl::i32 failed_subqueries{};
+  tl::i32 compression_version{};
+  tl::dictionary<tl::string> stats{};
+  tl::i64 epoch_number{};
+  tl::i64 view_number{};
+
+  void store(tl::TLBuffer& tlb) const noexcept;
+};
+
+struct RpcReqResultExtra final {
+  tl::rpcReqResultExtra inner{};
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tl::details::magic{.value = TL_RPC_REQ_RESULT_EXTRA}.store(tlb), inner.store(tlb);
+  }
+};
+
 struct rpcDestActor final {
   tl::i64 actor_id{};
   std::string_view query;
@@ -798,11 +840,13 @@ struct RpcDestActor final {
 };
 
 struct rpcDestFlags final {
+  tl::details::mask flags{};
   tl::rpcInvokeReqExtra extra{};
   std::string_view query;
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    bool ok{extra.fetch(tlb)};
+    bool ok{flags.fetch(tlb)};
+    ok &= (extra.flags = flags, extra.fetch(tlb));
     const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
     query = opt_query.value_or(std::string_view{});
     return ok && opt_query.has_value();
@@ -820,13 +864,14 @@ struct RpcDestFlags final {
 
 struct rpcDestActorFlags final {
   tl::i64 actor_id{};
+  tl::details::mask flags{};
   tl::rpcInvokeReqExtra extra{};
   std::string_view query;
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     bool ok{actor_id.fetch(tlb)};
-    ok &= tl::details::mask{}.fetch(tlb);
-    ok &= extra.fetch(tlb);
+    ok &= flags.fetch(tlb);
+    ok &= (extra.flags = flags, extra.fetch(tlb));
     const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
     query = opt_query.value_or(std::string_view{});
     return ok && opt_query.has_value();
@@ -853,10 +898,12 @@ struct reqError final {
 
 struct reqResultHeader final {
   tl::details::mask flags{};
+  tl::rpcReqResultExtra extra{};
   std::string_view result;
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    flags.store(tlb), tlb.store_bytes(result);
+  void store(tl::TLBuffer& tlb) noexcept {
+    extra.flags = flags;
+    flags.store(tlb), extra.store(tlb), tlb.store_bytes(result);
   }
 };
 
@@ -867,9 +914,9 @@ class ReqResult final {
 public:
   std::variant<tl::reqError, tl::reqResultHeader> inner;
 
-  void store(tl::TLBuffer& tlb) const noexcept {
+  void store(tl::TLBuffer& tlb) noexcept {
     std::visit(
-        [&tlb](const auto& value) noexcept {
+        [&tlb](auto& value) noexcept {
           using value_t = std::remove_cvref_t<decltype(value)>;
 
           if constexpr (std::same_as<value_t, tl::reqError>) {
@@ -899,7 +946,7 @@ struct rpcReqResult final {
   tl::i64 query_id{};
   tl::ReqResult result{};
 
-  void store(tl::TLBuffer& tlb) const noexcept {
+  void store(tl::TLBuffer& tlb) noexcept {
     query_id.store(tlb), result.store(tlb);
   }
 };
@@ -907,9 +954,9 @@ struct rpcReqResult final {
 struct RpcReqResult final {
   std::variant<tl::rpcReqError, tl::rpcReqResult> inner;
 
-  void store(tl::TLBuffer& tlb) const noexcept {
+  void store(tl::TLBuffer& tlb) noexcept {
     std::visit(
-        [&tlb](const auto& value) noexcept {
+        [&tlb](auto& value) noexcept {
           using value_t = std::remove_cvref_t<decltype(value)>;
 
           if constexpr (std::same_as<value_t, tl::rpcReqError>) {
