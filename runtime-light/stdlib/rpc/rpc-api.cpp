@@ -20,6 +20,7 @@
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
@@ -340,9 +341,12 @@ kphp::coro::task<kphp::rpc::query_info> send_request(string actor, Optional<doub
 }
 
 kphp::coro::task<std::expected<void, kphp::rpc::error>> send_response(std::span<const std::byte> response) noexcept {
-  if (co_await write_all_to_stream(InstanceState::get().standard_stream(), reinterpret_cast<const char*>(response.data()), response.size()) != response.size())
-      [[unlikely]] {
-    co_return std::unexpected(kphp::rpc::error{});
+  const auto stream_d{InstanceState::get().standard_stream()};
+  if (stream_d == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    co_return std::unexpected(kphp::rpc::error::invalid_stream); // TODO check that the stream is an RPC one
+  }
+  if (co_await write_all_to_stream(stream_d, reinterpret_cast<const char*>(response.data()), response.size()) != response.size()) [[unlikely]] {
+    co_return std::unexpected(kphp::rpc::error::write_failed);
   }
   co_return std::expected<void, kphp::rpc::error>{};
 }

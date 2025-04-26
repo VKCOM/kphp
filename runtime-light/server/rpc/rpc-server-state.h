@@ -11,13 +11,12 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/tl/tl-core.h"
 
-class RpcServerInstanceState final : vk::not_copyable {
-public:
+struct RpcServerInstanceState final : vk::not_copyable {
+  tl::TLBuffer buffer;
   int64_t query_id{kphp::rpc::INVALID_QUERY_ID};
 
-  tl::TLBuffer buffer;
-  CurrentRpcServerQuery current_server_query{};
   bool fail_rpc_on_int32_overflow{};
+  CurrentRpcServerQuery current_server_query{};
 
   RpcServerInstanceState() noexcept = default;
 
