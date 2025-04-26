@@ -127,4 +127,36 @@ bool K2InvokeHttp::fetch(tl::TLBuffer& tlb) noexcept {
   return ok;
 }
 
+// ===== RPC =====
+
+bool rpcInvokeReq::fetch(tl::TLBuffer& tlb) noexcept {
+  bool ok{query_id.fetch(tlb)};
+  bool fetched{};
+  while (ok && !fetched) {
+    const auto magic{tlb.lookup_trivial<uint32_t>().value_or(TL_ZERO)};
+    switch (magic) {
+    case TL_RPC_DEST_ACTOR: {
+      ok &= !opt_dest_actor.has_value() && opt_dest_actor.emplace().fetch(tlb);
+      break;
+    }
+    case TL_RPC_DEST_FLAGS: {
+      ok &= !opt_dest_flags.has_value() && opt_dest_flags.emplace().fetch(tlb);
+      break;
+    }
+    case TL_RPC_DEST_ACTOR_FLAGS: {
+      ok &= !opt_dest_actor_flags.has_value() && opt_dest_actor_flags.emplace().fetch(tlb);
+      break;
+    }
+    default: {
+      const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
+      query = opt_query.value_or(std::string_view{});
+      ok &= opt_query.has_value();
+      fetched = true;
+      break;
+    }
+    }
+  }
+  return ok;
+}
+
 } // namespace tl

@@ -820,13 +820,9 @@ struct RpcReqResultExtra final {
 
 struct rpcDestActor final {
   tl::i64 actor_id{};
-  std::string_view query;
 
   bool fetch(TLBuffer& tlb) noexcept {
-    bool ok{actor_id.fetch(tlb)};
-    const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
-    query = opt_query.value_or(std::string_view{});
-    return ok && opt_query.has_value();
+    return actor_id.fetch(tlb);
   }
 };
 
@@ -842,14 +838,9 @@ struct RpcDestActor final {
 struct rpcDestFlags final {
   tl::details::mask flags{};
   tl::rpcInvokeReqExtra extra{};
-  std::string_view query;
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    bool ok{flags.fetch(tlb)};
-    ok &= (extra.flags = flags, extra.fetch(tlb));
-    const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
-    query = opt_query.value_or(std::string_view{});
-    return ok && opt_query.has_value();
+    return flags.fetch(tlb) && (extra.flags = flags, extra.fetch(tlb));
   }
 };
 
@@ -866,15 +857,9 @@ struct rpcDestActorFlags final {
   tl::i64 actor_id{};
   tl::details::mask flags{};
   tl::rpcInvokeReqExtra extra{};
-  std::string_view query;
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    bool ok{actor_id.fetch(tlb)};
-    ok &= flags.fetch(tlb);
-    ok &= (extra.flags = flags, extra.fetch(tlb));
-    const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
-    query = opt_query.value_or(std::string_view{});
-    return ok && opt_query.has_value();
+    return actor_id.fetch(tlb) && flags.fetch(tlb) && (extra.flags = flags, extra.fetch(tlb));
   }
 };
 
