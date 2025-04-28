@@ -745,22 +745,22 @@ public:
 // ===== RPC =====
 
 class rpcInvokeReqExtra final {
-  static constexpr auto RETURN_BINLOG_POS_FLAG = static_cast<uint32_t>(1U << 0U);
-  static constexpr auto RETURN_BINLOG_TIME_FLAG = static_cast<uint32_t>(1U << 1U);
-  static constexpr auto RETURN_PID_FLAG = static_cast<uint32_t>(1U << 2U);
-  static constexpr auto RETURN_REQUEST_SIZES_FLAG = static_cast<uint32_t>(1U << 3U);
-  static constexpr auto RETURN_FAILED_SUBQUERIES_FLAG = static_cast<uint32_t>(1U << 4U);
-  static constexpr auto RETURN_QUERY_STATS_FLAG = static_cast<uint32_t>(1U << 6U);
-  static constexpr auto NORESULT_FLAG = static_cast<uint32_t>(1U << 7U);
-  static constexpr auto WAIT_BINLOG_POS_FLAG = static_cast<uint32_t>(1U << 16U);
-  static constexpr auto STRING_FORWARD_KEYS_FLAG = static_cast<uint32_t>(1U << 18U);
-  static constexpr auto INT_FORWARD_KEYS_FLAG = static_cast<uint32_t>(1U << 19U);
-  static constexpr auto STRING_FORWARD_FLAG = static_cast<uint32_t>(1U << 20U);
-  static constexpr auto INT_FORWARD_FLAG = static_cast<uint32_t>(1U << 21U);
-  static constexpr auto CUSTOM_TIMEOUT_MS_FLAG = static_cast<uint32_t>(1U << 23U);
-  static constexpr auto SUPPORTED_COMPRESSION_VERSION_FLAG = static_cast<uint32_t>(1U << 25U);
-  static constexpr auto RANDOM_DELAY_FLAG = static_cast<uint32_t>(1U << 26U);
-  static constexpr auto RETURN_VIEW_NUMBER_FLAG = static_cast<uint32_t>(1U << 27U);
+  static constexpr uint32_t RETURN_BINLOG_POS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_binlog_pos;
+  static constexpr uint32_t RETURN_BINLOG_TIME_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_binlog_time;
+  static constexpr uint32_t RETURN_PID_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_pid;
+  static constexpr uint32_t RETURN_REQUEST_SIZES_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_request_sizes;
+  static constexpr uint32_t RETURN_FAILED_SUBQUERIES_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_failed_subqueries;
+  static constexpr uint32_t RETURN_QUERY_STATS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_query_stats;
+  static constexpr uint32_t NORESULT_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::no_result;
+  static constexpr uint32_t WAIT_BINLOG_POS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::wait_binlog_pos;
+  static constexpr uint32_t STRING_FORWARD_KEYS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::string_forward_keys;
+  static constexpr uint32_t INT_FORWARD_KEYS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::int_forward_keys;
+  static constexpr uint32_t STRING_FORWARD_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::string_forward;
+  static constexpr uint32_t INT_FORWARD_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::int_forward;
+  static constexpr uint32_t CUSTOM_TIMEOUT_MS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::custom_timeout_ms;
+  static constexpr uint32_t SUPPORTED_COMPRESSION_VERSION_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::supported_compression_version;
+  static constexpr uint32_t RANDOM_DELAY_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::random_delay;
+  static constexpr uint32_t RETURN_VIEW_NUMBER_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_view_number;
 
 public:
   tl::details::mask flags{};
@@ -795,16 +795,16 @@ struct RpcInvokeReqExtra final {
 };
 
 class rpcReqResultExtra final {
-  static constexpr auto BINLOG_POS_FLAG = static_cast<uint32_t>(1U << 0U);
-  static constexpr auto BINLOG_TIME_FLAG = static_cast<uint32_t>(1U << 1U);
-  static constexpr auto ENGINE_PID_FLAG = static_cast<uint32_t>(1U << 2U);
-  static constexpr auto REQUEST_SIZE_FLAG = static_cast<uint32_t>(1U << 3U);
-  static constexpr auto RESPONSE_SIZE_FLAG = static_cast<uint32_t>(1U << 3U);
-  static constexpr auto FAILED_SUBQUERIES_FLAG = static_cast<uint32_t>(1U << 4U);
-  static constexpr auto COMPRESSION_VERSION_FLAG = static_cast<uint32_t>(1U << 5U);
-  static constexpr auto STATS_FLAG = static_cast<uint32_t>(1U << 6U);
-  static constexpr auto EPOCH_NUMBER_FLAG = static_cast<uint32_t>(1U << 27U);
-  static constexpr auto VIEW_NUMBER_FLAG = static_cast<uint32_t>(1U << 27U);
+  static constexpr uint32_t BINLOG_POS_FLAG = vk::tl::common::rpc_req_result_extra_flags::binlog_pos;
+  static constexpr uint32_t BINLOG_TIME_FLAG = vk::tl::common::rpc_req_result_extra_flags::binlog_time;
+  static constexpr uint32_t ENGINE_PID_FLAG = vk::tl::common::rpc_req_result_extra_flags::engine_pid;
+  static constexpr uint32_t REQUEST_SIZE_FLAG = vk::tl::common::rpc_req_result_extra_flags::request_size;
+  static constexpr uint32_t RESPONSE_SIZE_FLAG = vk::tl::common::rpc_req_result_extra_flags::response_size;
+  static constexpr uint32_t FAILED_SUBQUERIES_FLAG = vk::tl::common::rpc_req_result_extra_flags::failed_subqueries;
+  static constexpr uint32_t COMPRESSION_VERSION_FLAG = vk::tl::common::rpc_req_result_extra_flags::compression_version;
+  static constexpr uint32_t STATS_FLAG = vk::tl::common::rpc_req_result_extra_flags::stats;
+  static constexpr uint32_t EPOCH_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::epoch_number;
+  static constexpr uint32_t VIEW_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::view_number;
 
 public:
   tl::details::mask flags{};
