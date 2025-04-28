@@ -7,7 +7,6 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <string_view>
 #include <type_traits>
@@ -98,6 +97,20 @@ struct I32 final {
   void store(tl::TLBuffer& tlb) const noexcept {
     tl::details::magic{.value = TL_INT}.store(tlb);
     inner.store(tlb);
+  }
+};
+
+struct u32 final {
+  uint32_t value{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    const auto opt_value{tlb.fetch_trivial<uint32_t>()};
+    value = opt_value.value_or(0);
+    return opt_value.has_value();
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tlb.store_trivial<uint32_t>(value);
   }
 };
 
@@ -286,14 +299,14 @@ struct vector final {
   bool fetch(tl::TLBuffer& tlb) noexcept
   requires tl::deserializable<T>
   {
-    int64_t size{tlb.fetch_trivial<uint32_t>().value_or(-1)};
-    if (size < 0) [[unlikely]] {
+    tl::u32 size{};
+    if (!size.fetch(tlb)) [[unlikely]] {
       return false;
     }
 
     value.clear();
-    value.reserve(static_cast<size_t>(size));
-    for (auto i = 0; i < size; ++i) {
+    value.reserve(static_cast<size_t>(size.value));
+    for (auto i = 0; i < size.value; ++i) {
       if (T t{}; t.fetch(tlb)) [[likely]] {
         value.emplace_back(std::move(t));
         continue;
@@ -307,7 +320,7 @@ struct vector final {
   void store(tl::TLBuffer& tlb) const noexcept
   requires tl::serializable<T>
   {
-    tlb.store_trivial<uint32_t>(static_cast<uint32_t>(value.size()));
+    tl::u32{.value = static_cast<uint32_t>(value.size())}.store(tlb);
     std::for_each(value.cbegin(), value.cend(), [&tlb](const auto& elem) noexcept { elem.store(tlb); });
   }
 };
@@ -469,24 +482,24 @@ class netPid final {
   static constexpr uint32_t PID_MASK = 0xffff'0000;
 
 public:
-  tl::i32 ip{};
-  tl::i32 port_pid{};
-  tl::i32 utime{};
+  tl::u32 ip{};
+  tl::u32 port_pid{};
+  tl::u32 utime{};
 
   uint32_t get_ip() const noexcept {
-    return *reinterpret_cast<const uint32_t*>(std::addressof(ip.value));
+    return ip.value;
   }
 
   uint16_t get_port() const noexcept {
-    return static_cast<uint16_t>(*reinterpret_cast<const uint32_t*>(std::addressof(port_pid.value)) & PORT_MASK);
+    return static_cast<uint16_t>(port_pid.value & PORT_MASK);
   }
 
   uint16_t get_pid() const noexcept {
-    return static_cast<uint16_t>((*reinterpret_cast<const uint32_t*>(std::addressof(port_pid.value)) & PID_MASK) >> 16);
+    return static_cast<uint16_t>((port_pid.value & PID_MASK) >> 16);
   }
 
   uint32_t get_utime() const noexcept {
-    return *reinterpret_cast<const uint32_t*>(std::addressof(utime.value));
+    return utime.value;
   }
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
