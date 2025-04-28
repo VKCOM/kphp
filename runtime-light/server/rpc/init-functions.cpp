@@ -35,7 +35,6 @@ constexpr std::string_view RPC_EXTRA_SUPPORTED_COMPRESSION_VERSION = "RPC_EXTRA_
 constexpr std::string_view RPC_EXTRA_RANDOM_DELAY = "RPC_EXTRA_RANDOM_DELAY";
 
 void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
-  superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>(extra.flags.value));
   if (extra.opt_wait_binlog_pos.has_value()) {
     auto wait_binlog_pos{*extra.opt_wait_binlog_pos};
     superglobals.v$_SERVER.set_value(string{RPC_EXTRA_WAIT_BINLOG_POS.data(), RPC_EXTRA_WAIT_BINLOG_POS.size()}, wait_binlog_pos.value);
@@ -84,11 +83,13 @@ void process_dest_actor(const tl::rpcDestActor& dest_actor, PhpScriptBuiltInSupe
 }
 
 void process_dest_flags(const tl::rpcDestFlags& dest_flags, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
+  superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>(dest_flags.flags.value));
   process_rpc_invoke_req_extra(dest_flags.extra, superglobals);
 }
 
 void process_dest_actor_flags(const tl::rpcDestActorFlags& dest_actor_flags, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
   superglobals.v$_SERVER.set_value(string{RPC_ACTOR_ID.data(), RPC_ACTOR_ID.size()}, dest_actor_flags.actor_id.value);
+  superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>(dest_actor_flags.flags.value));
   process_rpc_invoke_req_extra(dest_actor_flags.extra, superglobals);
 }
 

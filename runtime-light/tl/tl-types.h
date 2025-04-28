@@ -762,9 +762,12 @@ class rpcInvokeReqExtra final {
   static constexpr uint32_t RANDOM_DELAY_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::random_delay;
   static constexpr uint32_t RETURN_VIEW_NUMBER_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_view_number;
 
-public:
   tl::details::mask flags{};
+  friend struct RpcInvokeReqExtra;
+  friend struct rpcDestActorFlags;
+  friend struct rpcDestFlags;
 
+public:
   bool return_binlog_pos{};
   bool return_binlog_time{};
   bool return_pid{};
@@ -786,11 +789,12 @@ public:
 };
 
 struct RpcInvokeReqExtra final {
+  tl::details::mask flags{};
   tl::rpcInvokeReqExtra inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     tl::details::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_RPC_INVOKE_REQ_EXTRA) && inner.fetch(tlb);
+    return magic.fetch(tlb) && magic.expect(TL_RPC_INVOKE_REQ_EXTRA) && flags.fetch(tlb) && (inner.flags = flags, inner.fetch(tlb));
   }
 };
 
@@ -806,9 +810,11 @@ class rpcReqResultExtra final {
   static constexpr uint32_t EPOCH_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::epoch_number;
   static constexpr uint32_t VIEW_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::view_number;
 
-public:
   tl::details::mask flags{};
+  friend struct RpcReqResultExtra;
+  friend struct reqResultHeader;
 
+public:
   tl::i64 binlog_pos{};
   tl::i64 binlog_time{};
   tl::netPid engine_pid{};
@@ -824,10 +830,11 @@ public:
 };
 
 struct RpcReqResultExtra final {
+  tl::details::mask flags{};
   tl::rpcReqResultExtra inner{};
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tl::details::magic{.value = TL_RPC_REQ_RESULT_EXTRA}.store(tlb), inner.store(tlb);
+  void store(tl::TLBuffer& tlb) noexcept {
+    tl::details::magic{.value = TL_RPC_REQ_RESULT_EXTRA}.store(tlb), flags.store(tlb), (inner.flags = flags, inner.store(tlb));
   }
 };
 
@@ -900,8 +907,7 @@ struct reqResultHeader final {
   std::string_view result;
 
   void store(tl::TLBuffer& tlb) noexcept {
-    extra.flags = flags;
-    flags.store(tlb), extra.store(tlb), tlb.store_bytes(result);
+    flags.store(tlb), (extra.flags = flags, extra.store(tlb)), tlb.store_bytes(result);
   }
 };
 
