@@ -145,4 +145,9 @@ concept deserializable = std::default_initializable<T> && requires(T t, TLBuffer
   { t.fetch(tlb) } noexcept -> std::convertible_to<bool>;
 };
 
+template<typename T>
+concept footprintable = std::default_initializable<T> && requires(T t) {
+  { t.footprint() } noexcept -> std::same_as<size_t>;
+};
+
 } // namespace tl
