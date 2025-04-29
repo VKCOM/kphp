@@ -976,4 +976,16 @@ struct RpcReqResult final {
   }
 };
 
+class K2RpcResponse final {
+  static constexpr uint32_t MAGIC = 0x8466'24dd;
+
+public:
+  tl::details::mask flags{};
+  tl::RpcReqResult rpc_req_result{};
+
+  void store(tl::TLBuffer& tlb) noexcept {
+    tl::details::magic{.value = MAGIC}.store(tlb), flags.store(tlb), rpc_req_result.store(tlb);
+  }
+};
+
 } // namespace tl
