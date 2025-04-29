@@ -65,6 +65,10 @@ public:
     return m_buffer.size();
   }
 
+  size_t capacity() const noexcept {
+    return m_buffer.capacity();
+  }
+
   bool empty() const noexcept {
     return m_buffer.empty();
   }
