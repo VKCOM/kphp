@@ -166,8 +166,12 @@ bool f$rpc_parse(T /*unused*/) {
 
 class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() noexcept;
 
-inline kphp::coro::task<bool> f$store_error(int64_t error_code, const string& error_msg) noexcept {
+inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg) noexcept {
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+
+  if (tl::is_int32_overflow(error_code)) [[unlikely]] {
+    php_warning("error_code overflows int32, %d will be stored", static_cast<int32_t>(error_code));
+  }
 
   tl::TLBuffer tlb; // FIXME reserve exact size
   tl::ReqResult rpc_result{.inner = tl::reqError{.error_code = tl::i32{.value = static_cast<int32_t>(error_code)},
