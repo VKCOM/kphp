@@ -167,7 +167,7 @@ struct RpcInvokeReq final {
   }
 };
 
-inline constexpr uint32_t K2_INVOKE_RPC_MAGIC = 0xdead'beef;
+inline constexpr uint32_t K2_INVOKE_RPC_MAGIC = 0xd909'efe9;
 
 struct K2InvokeRpc final {
   tl::netPid net_pid{};
