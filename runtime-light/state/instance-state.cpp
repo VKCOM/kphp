@@ -12,6 +12,7 @@
 #include <string_view>
 #include <utility>
 
+#include "common/tl/constants/common.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
@@ -20,11 +21,16 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
+#include "runtime-light/server/http/init-functions.h"
+#include "runtime-light/server/job-worker/init-functions.h"
+#include "runtime-light/server/rpc/init-functions.h"
 #include "runtime-light/state/component-state.h"
-#include "runtime-light/state/init-functions.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/time/time-functions.h"
+#include "runtime-light/streams/streams.h"
+#include "runtime-light/tl/tl-core.h"
+#include "runtime-light/tl/tl-functions.h"
 
 namespace {
 
@@ -60,6 +66,8 @@ int32_t merge_output_buffers() noexcept {
 
 } // namespace
 
+// === initialization =============================================================================
+
 void InstanceState::init_script_execution() noexcept {
   runtime_context.init();
   kphp::coro::task<> script_task;
@@ -83,6 +91,79 @@ void InstanceState::init_script_execution() noexcept {
   main_task_ = std::move(main_task);
 }
 
+kphp::coro::task<> InstanceState::init_cli_instance() noexcept {
+  instance_kind_ = instance_kind::cli;
+
+  auto& superglobals{php_script_mutable_globals_singleton.get_superglobals()};
+  using namespace PhpServerSuperGlobalIndices;
+  superglobals.v$argc = static_cast<int64_t>(0);
+  superglobals.v$argv = array<mixed>{};
+  superglobals.v$_SERVER.set_value(string{ARGC.data(), ARGC.size()}, superglobals.v$argc);
+  superglobals.v$_SERVER.set_value(string{ARGV.data(), ARGV.size()}, superglobals.v$argv);
+  superglobals.v$_SERVER.set_value(string{PHP_SELF.data(), PHP_SELF.size()}, string{});
+  superglobals.v$_SERVER.set_value(string{SCRIPT_NAME.data(), SCRIPT_NAME.size()}, string{});
+  standard_stream_ = co_await wait_for_incoming_stream_t{};
+}
+
+kphp::coro::task<> InstanceState::init_server_instance() noexcept {
+  auto init_k2_invoke_http{[](tl::TLBuffer& tlb) noexcept {
+    tl::K2InvokeHttp invoke_http{};
+    if (!invoke_http.fetch(tlb)) [[unlikely]] {
+      php_error("erroneous http request");
+    }
+    kphp::http::init_server(std::move(invoke_http));
+  }};
+  auto init_k2_invoke_rpc{[](tl::TLBuffer& tlb) noexcept {
+    tl::K2InvokeRpc invoke_rpc{};
+    if (!invoke_rpc.fetch(tlb)) [[unlikely]] {
+      php_error("erroneous rpc request");
+    }
+    kphp::rpc::init_server(std::move(invoke_rpc));
+  }};
+  auto init_k2_invoke_jw{[](tl::TLBuffer& tlb) noexcept {
+    tl::K2InvokeJobWorker invoke_jw{};
+    if (!invoke_jw.fetch(tlb)) [[unlikely]] {
+      php_error("erroneous job worker request");
+    }
+    init_job_server(invoke_jw);
+  }};
+
+  const auto stream_d{co_await wait_for_incoming_stream_t{}};
+  const auto [buffer, size]{co_await read_all_from_stream(stream_d)};
+
+  tl::TLBuffer tlb;
+  tlb.store_bytes({buffer.get(), static_cast<size_t>(size)});
+
+  switch (const auto magic{tlb.lookup_trivial<uint32_t>().value_or(TL_ZERO)}) { // lookup magic
+  case tl::K2_INVOKE_HTTP_MAGIC: {
+    instance_kind_ = instance_kind::http_server;
+    standard_stream_ = stream_d;
+    init_k2_invoke_http(tlb);
+    break;
+  }
+  case tl::K2_INVOKE_RPC_MAGIC: {
+    instance_kind_ = instance_kind::rpc_server;
+    standard_stream_ = stream_d;
+    init_k2_invoke_rpc(tlb);
+    break;
+  }
+  case tl::K2_INVOKE_JOB_WORKER_MAGIC: {
+    instance_kind_ = instance_kind::job_server;
+    standard_stream_ = stream_d;
+    init_k2_invoke_jw(tlb);
+    // release standard stream in case of a no reply job worker since we don't need that stream anymore
+    if (JobWorkerServerInstanceState::get().kind == JobWorkerServerInstanceState::Kind::NoReply) {
+      release_stream(standard_stream_);
+      standard_stream_ = k2::INVALID_PLATFORM_DESCRIPTOR;
+    }
+    break;
+  }
+  default: {
+    php_error("unexpected server request magic: 0x%x", magic);
+  }
+  }
+}
+
 template<image_kind kind>
 kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
   static_assert(kind != image_kind::invalid);
@@ -104,9 +185,9 @@ kphp::coro::task<> InstanceState::run_instance_prologue() noexcept {
 
   // specific initialization
   if constexpr (kind == image_kind::cli) {
-    standard_stream_ = co_await init_kphp_cli_component();
+    co_await init_cli_instance();
   } else if constexpr (kind == image_kind::server) {
-    standard_stream_ = co_await init_kphp_server_component();
+    co_await init_server_instance();
   }
 }
 
@@ -114,6 +195,31 @@ template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::cli
 template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::server>();
 template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::oneshot>();
 template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::multishot>();
+
+// === finalization ===============================================================================
+
+kphp::coro::task<> InstanceState::finalize_cli_instance() noexcept {
+  const auto& output{response.output_buffers[merge_output_buffers()]};
+  if (co_await write_all_to_stream(standard_stream(), output.buffer(), output.size()) != output.size()) [[unlikely]] {
+    poll_status = k2::PollStatus::PollFinishedError;
+    php_warning("can't write component result to stream %" PRIu64, standard_stream());
+  }
+}
+
+kphp::coro::task<> InstanceState::finalize_server_instance() noexcept {
+  switch (instance_kind()) {
+  case instance_kind::http_server: {
+    kphp::http::finalize_server(response.output_buffers[merge_output_buffers()]);
+    break;
+  }
+  case instance_kind::rpc_server:
+  case instance_kind::job_server:
+    break;
+  default:
+    php_critical_error("unexpected instance kind: %u", std::to_underlying(instance_kind()));
+  }
+  co_return;
+}
 
 kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   if (std::exchange(shutdown_state_, shutdown_state::in_progress) == shutdown_state::not_started) [[likely]] {
@@ -132,13 +238,11 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   case image_kind::multishot:
     break;
   case image_kind::cli: {
-    const auto& buffer{response.output_buffers[merge_output_buffers()]};
-    co_await finalize_kphp_cli_component(buffer);
+    co_await finalize_cli_instance();
     break;
   }
   case image_kind::server: {
-    const auto& buffer{response.output_buffers[merge_output_buffers()]};
-    co_await finalize_kphp_server_component(buffer);
+    co_await finalize_server_instance();
     break;
   }
   default: {
@@ -148,6 +252,8 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   release_all_streams();
   shutdown_state_ = shutdown_state::finished;
 }
+
+// ================================================================================================
 
 void InstanceState::process_platform_updates() noexcept {
   for (;;) {

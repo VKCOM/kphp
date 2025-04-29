@@ -48,6 +48,8 @@ static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
  */
 enum class image_kind : uint8_t { invalid, cli, server, oneshot, multishot };
 
+enum class instance_kind : uint8_t { invalid, cli, http_server, rpc_server, job_server, oneshot, multishot };
+
 struct InstanceState final : vk::not_copyable {
   template<typename T>
   using unordered_set = kphp::stl::unordered_set<T, kphp::memory::script_allocator>;
@@ -76,6 +78,9 @@ struct InstanceState final : vk::not_copyable {
 
   image_kind image_kind() const noexcept {
     return image_kind_;
+  }
+  instance_kind instance_kind() const noexcept {
+    return instance_kind_;
   }
 
   void process_platform_updates() noexcept;
@@ -129,11 +134,17 @@ struct InstanceState final : vk::not_copyable {
   list<kphp::coro::task<>> shutdown_functions;
 
 private:
+  kphp::coro::task<> init_cli_instance() noexcept;
+  kphp::coro::task<> init_server_instance() noexcept;
+  kphp::coro::task<> finalize_cli_instance() noexcept;
+  kphp::coro::task<> finalize_server_instance() noexcept;
+
   kphp::coro::task<> main_task_;
   enum class shutdown_state : uint8_t { not_started, in_progress, finished };
   shutdown_state shutdown_state_{shutdown_state::not_started};
 
   enum image_kind image_kind_ { image_kind::invalid };
+  enum instance_kind instance_kind_ { instance_kind::invalid };
   uint64_t standard_stream_{k2::INVALID_PLATFORM_DESCRIPTOR};
   deque<uint64_t> incoming_streams_;
   unordered_set<uint64_t> opened_streams_;
