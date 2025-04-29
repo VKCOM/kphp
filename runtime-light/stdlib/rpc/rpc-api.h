@@ -170,7 +170,7 @@ class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() noexcept;
 inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg) noexcept {
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
 
-  if (tl::is_int32_overflow(error_code)) [[unlikely]] {
+  if (rpc_server_instance_st.fail_rpc_on_int32_overflow && tl::is_int32_overflow(error_code)) [[unlikely]] {
     php_warning("error_code overflows int32, %d will be stored", static_cast<int32_t>(error_code));
   }
 
