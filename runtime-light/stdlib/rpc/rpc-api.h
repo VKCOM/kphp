@@ -14,6 +14,7 @@
 #include <string_view>
 #include <utility>
 
+#include "common/tl/constants/common.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/task.h"
@@ -186,33 +187,31 @@ inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg
   std::unreachable();
 }
 
-inline kphp::coro::task<> f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult>& response) noexcept {
+inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$RpcFunctionReturnResult> response) noexcept {
   auto tl_func_base{CurrentRpcServerQuery::get().extract()};
   if (!static_cast<bool>(tl_func_base)) [[unlikely]] {
     co_return php_warning("can't store RPC response: %d", std::to_underlying(kphp::rpc::error::no_pending_request));
   }
 
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
-  // as we are in a coroutine, we must own the data to prevent it from being overwritten by another coroutine,
-  // so create a TLBuffer owned by this coroutine.
-  //
-  // alternative approach: serialize header and response into RPC buffer, and then make it owned by this
-  // coroutine exclusively, e.g. auto tlb{std::exchange(rpc_server_instance_st.buffer, tl::TLBuffer{})};
-  tl::TLBuffer tlb; // FIXME reserve exact size
 
   // serialize response
   f$rpc_clean();
+  f$store_int(TL_RPC_REQ_RESULT);
+  f$store_long(rpc_server_instance_st.query_id);
   TRY_CALL_VOID_CORO(void, tl_func_base->rpc_server_typed_store(response));
-  // TODO deal with extra
-  // serialize header with response
-  tl::ReqResult rpc_result{.inner = tl::reqResultHeader{.flags = tl::details::mask{},
-                                                        .extra = tl::rpcReqResultExtra{},
-                                                        .result = {rpc_server_instance_st.buffer.data(), rpc_server_instance_st.buffer.size()}}};
-  tl::RpcReqResult{.inner = tl::rpcReqResult{.query_id = tl::i64{.value = rpc_server_instance_st.query_id}, .result = std::move(rpc_result)}}.store(tlb);
-
+  // as we are in a coroutine, we must own the data to prevent it from being overwritten by another coroutine,
+  // so create a TLBuffer owned by this coroutine.
+  auto tlb{std::exchange(rpc_server_instance_st.buffer, tl::TLBuffer{})};
   auto expected{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})};
   if (!expected) [[unlikely]] {
     php_warning("can't store RPC response: %d", std::to_underlying(expected.error()));
+  }
+  // attempt to return 'tlb' to the RPC server's instance state unless:
+  // 1. it already contains data written by another coroutine;
+  // 2. 'tlb's capacity is less than the current buffer capacity of the RPC server.
+  if (rpc_server_instance_st.buffer.empty() && rpc_server_instance_st.buffer.capacity() < tlb.capacity()) {
+    rpc_server_instance_st.buffer = std::move(tlb);
   }
 }
 
