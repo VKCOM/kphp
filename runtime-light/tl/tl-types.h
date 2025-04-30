@@ -916,61 +916,24 @@ class ReqResult final {
   static constexpr uint32_t REQ_RESULT_MAGIC = 0x8cc8'4ce1;
 
 public:
-  std::variant<tl::reqError, tl::reqResultHeader> inner;
+  std::variant<std::string_view, tl::reqError, tl::reqResultHeader> inner;
 
   void store(tl::TLBuffer& tlb) noexcept {
     std::visit(
         [&tlb](auto& value) noexcept {
           using value_t = std::remove_cvref_t<decltype(value)>;
 
-          if constexpr (std::same_as<value_t, tl::reqError>) {
+          if constexpr (std::same_as<value_t, std::string_view>) {
+            tlb.store_bytes(value);
+          } else if constexpr (std::same_as<value_t, tl::reqError>) {
             tl::details::magic{.value = REQ_ERROR_MAGIC}.store(tlb);
+            value.store(tlb);
           } else if constexpr (std::same_as<value_t, tl::reqResultHeader>) {
             tl::details::magic{.value = REQ_RESULT_MAGIC}.store(tlb);
+            value.store(tlb);
           } else {
             static_assert(false, "non-exhaustive visitor!");
           }
-          value.store(tlb);
-        },
-        inner);
-  }
-};
-
-struct rpcReqError final {
-  tl::i64 query_id{};
-  tl::i32 error_code{};
-  tl::string error{};
-
-  void store(tl::TLBuffer& tlb) const noexcept {
-    query_id.store(tlb), error_code.store(tlb), error.store(tlb);
-  }
-};
-
-struct rpcReqResult final {
-  tl::i64 query_id{};
-  tl::ReqResult result{};
-
-  void store(tl::TLBuffer& tlb) noexcept {
-    query_id.store(tlb), result.store(tlb);
-  }
-};
-
-struct RpcReqResult final {
-  std::variant<tl::rpcReqError, tl::rpcReqResult> inner;
-
-  void store(tl::TLBuffer& tlb) noexcept {
-    std::visit(
-        [&tlb](auto& value) noexcept {
-          using value_t = std::remove_cvref_t<decltype(value)>;
-
-          if constexpr (std::same_as<value_t, tl::rpcReqError>) {
-            tl::details::magic{.value = TL_RPC_REQ_ERROR}.store(tlb);
-          } else if constexpr (std::same_as<value_t, tl::rpcReqResult>) {
-            tl::details::magic{.value = TL_RPC_REQ_RESULT}.store(tlb);
-          } else {
-            static_assert(false, "non-exhaustive visitor!");
-          }
-          value.store(tlb);
         },
         inner);
   }
@@ -981,10 +944,10 @@ class K2RpcResponse final {
 
 public:
   tl::details::mask flags{};
-  tl::RpcReqResult rpc_req_result{};
+  tl::ReqResult req_result{};
 
   void store(tl::TLBuffer& tlb) noexcept {
-    tl::details::magic{.value = MAGIC}.store(tlb), flags.store(tlb), rpc_req_result.store(tlb);
+    tl::details::magic{.value = MAGIC}.store(tlb), flags.store(tlb), req_result.store(tlb);
   }
 };
 
