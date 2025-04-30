@@ -7,6 +7,7 @@
 #include <concepts>
 #include <cstddef>
 #include <iterator>
+#include <memory>
 #include <optional>
 #include <string_view>
 #include <utility>
@@ -27,13 +28,13 @@ inline bool is_int32_overflow(int64_t v) noexcept {
 class TLBuffer final {
   static constexpr auto INIT_BUFFER_SIZE = 1024;
 
-  kphp::stl::vector<char, kphp::memory::script_allocator> m_buffer;
   size_t m_pos{0};
   size_t m_remaining{0};
+  kphp::stl::vector<char, kphp::memory::script_allocator> m_buffer;
 
 public:
-  TLBuffer() noexcept {
-    m_buffer.reserve(INIT_BUFFER_SIZE);
+  explicit TLBuffer(size_t capacity = INIT_BUFFER_SIZE) noexcept {
+    m_buffer.reserve(capacity);
   }
 
   TLBuffer(const TLBuffer&) = delete;
@@ -41,11 +42,18 @@ public:
   TLBuffer& operator=(const TLBuffer&) = delete;
 
   TLBuffer(TLBuffer&& oth) noexcept
-      : m_buffer(std::exchange(oth.m_buffer, {})),
-        m_pos(std::exchange(oth.m_pos, 0)),
-        m_remaining(std::exchange(oth.m_pos, 0)) {}
+      : m_pos(std::exchange(oth.m_pos, 0)),
+        m_remaining(std::exchange(oth.m_pos, 0)),
+        m_buffer(std::exchange(oth.m_buffer, {})) {}
 
-  TLBuffer& operator=(TLBuffer&&) = delete;
+  TLBuffer& operator=(TLBuffer&& oth) noexcept {
+    if (this != std::addressof(oth)) [[likely]] {
+      m_pos = std::exchange(oth.m_pos, 0);
+      m_remaining = std::exchange(oth.m_remaining, 0);
+      m_buffer = std::exchange(oth.m_buffer, {});
+    }
+    return *this;
+  }
 
   ~TLBuffer() = default;
 
@@ -55,6 +63,14 @@ public:
 
   size_t size() const noexcept {
     return m_buffer.size();
+  }
+
+  size_t capacity() const noexcept {
+    return m_buffer.capacity();
+  }
+
+  bool empty() const noexcept {
+    return m_buffer.empty();
   }
 
   size_t pos() const noexcept {
@@ -131,6 +147,11 @@ concept serializable = std::default_initializable<T> && requires(T t, TLBuffer t
 template<typename T>
 concept deserializable = std::default_initializable<T> && requires(T t, TLBuffer tlb) {
   { t.fetch(tlb) } noexcept -> std::convertible_to<bool>;
+};
+
+template<typename T>
+concept footprintable = std::default_initializable<T> && requires(T t) {
+  { t.footprint() } noexcept -> std::same_as<size_t>;
 };
 
 } // namespace tl

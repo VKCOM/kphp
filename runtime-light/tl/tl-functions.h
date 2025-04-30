@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string_view>
 
 #include "common/tl/constants/common.h"
@@ -149,32 +150,12 @@ public:
 
 struct rpcInvokeReq final {
   tl::i64 query_id{};
-  std::variant<std::string_view, tl::RpcDestActor, tl::RpcDestFlags, tl::RpcDestActorFlags> query;
+  std::optional<tl::RpcDestActor> opt_dest_actor;
+  std::optional<tl::RpcDestFlags> opt_dest_flags;
+  std::optional<tl::RpcDestActorFlags> opt_dest_actor_flags;
+  std::string_view query;
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    bool ok{query_id.fetch(tlb)};
-    switch (tlb.lookup_trivial<uint32_t>().value_or(TL_ZERO)) {
-    case TL_RPC_DEST_ACTOR: {
-      ok &= query.emplace<tl::RpcDestActor>().fetch(tlb);
-      break;
-    }
-    case TL_RPC_DEST_FLAGS: {
-      ok &= query.emplace<tl::RpcDestFlags>().fetch(tlb);
-      break;
-    }
-    case TL_RPC_DEST_ACTOR_FLAGS: {
-      ok &= query.emplace<tl::RpcDestActorFlags>().fetch(tlb);
-      break;
-    }
-    default: {
-      const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
-      query.emplace<std::string_view>(opt_query.value_or(std::string_view{}));
-      ok &= opt_query.has_value();
-      break;
-    }
-    }
-    return ok;
-  }
+  bool fetch(tl::TLBuffer& tlb) noexcept;
 };
 
 struct RpcInvokeReq final {
@@ -186,7 +167,7 @@ struct RpcInvokeReq final {
   }
 };
 
-inline constexpr uint32_t K2_INVOKE_RPC_MAGIC = 0xdead'beef;
+inline constexpr uint32_t K2_INVOKE_RPC_MAGIC = 0xd909'efe9;
 
 struct K2InvokeRpc final {
   tl::netPid net_pid{};

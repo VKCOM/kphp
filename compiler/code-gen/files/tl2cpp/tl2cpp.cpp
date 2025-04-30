@@ -71,9 +71,6 @@ static void collect_target_objects() {
 }
 
 void write_rpc_server_functions(CodeGenerator &W) {
-  if (G->is_output_mode_k2()) {
-    return;
-  }
   W << OpenFile("rpc_server_fetch_request.cpp", "tl", false);
   W << ExternInclude(G->settings().runtime_headers.get());
   std::vector<vk::tlo_parsing::combinator *> kphp_functions;

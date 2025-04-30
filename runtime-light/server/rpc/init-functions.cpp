@@ -5,12 +5,9 @@
 #include "runtime-light/server/rpc/init-functions.h"
 
 #include <algorithm>
-#include <concepts>
 #include <cstdint>
 #include <string_view>
-#include <type_traits>
 #include <utility>
-#include <variant>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/core/globals/php-script-globals.h"
@@ -38,7 +35,6 @@ constexpr std::string_view RPC_EXTRA_SUPPORTED_COMPRESSION_VERSION = "RPC_EXTRA_
 constexpr std::string_view RPC_EXTRA_RANDOM_DELAY = "RPC_EXTRA_RANDOM_DELAY";
 
 void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
-  superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>(extra.flags));
   if (extra.opt_wait_binlog_pos.has_value()) {
     auto wait_binlog_pos{*extra.opt_wait_binlog_pos};
     superglobals.v$_SERVER.set_value(string{RPC_EXTRA_WAIT_BINLOG_POS.data(), RPC_EXTRA_WAIT_BINLOG_POS.size()}, wait_binlog_pos.value);
@@ -84,42 +80,30 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
 
 void process_dest_actor(const tl::rpcDestActor& dest_actor, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
   superglobals.v$_SERVER.set_value(string{RPC_ACTOR_ID.data(), RPC_ACTOR_ID.size()}, dest_actor.actor_id.value);
-  RpcServerInstanceState::get().buffer.store_bytes(dest_actor.query);
 }
 
 void process_dest_flags(const tl::rpcDestFlags& dest_flags, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
+  superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>(dest_flags.flags.value));
   process_rpc_invoke_req_extra(dest_flags.extra, superglobals);
-  RpcServerInstanceState::get().buffer.store_bytes(dest_flags.query);
 }
 
 void process_dest_actor_flags(const tl::rpcDestActorFlags& dest_actor_flags, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
   superglobals.v$_SERVER.set_value(string{RPC_ACTOR_ID.data(), RPC_ACTOR_ID.size()}, dest_actor_flags.actor_id.value);
+  superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>(dest_actor_flags.flags.value));
   process_rpc_invoke_req_extra(dest_actor_flags.extra, superglobals);
-  RpcServerInstanceState::get().buffer.store_bytes(dest_actor_flags.query);
-}
-
-void process_no_headers(std::string_view query) noexcept {
-  RpcServerInstanceState::get().buffer.store_bytes(query);
 }
 
 void process_rpc_invoke_req(const tl::rpcInvokeReq& rpc_invoke_req, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
-  std::visit(
-      [&superglobals](const auto& header) noexcept {
-        using header_t = std::remove_cvref_t<decltype(header)>;
-
-        if constexpr (std::same_as<header_t, tl::RpcDestActor>) {
-          process_dest_actor(header.inner, superglobals);
-        } else if constexpr (std::same_as<header_t, tl::RpcDestFlags>) {
-          process_dest_flags(header.inner, superglobals);
-        } else if constexpr (std::same_as<header_t, tl::RpcDestActorFlags>) {
-          process_dest_actor_flags(header.inner, superglobals);
-        } else if constexpr (std::same_as<header_t, std::string_view>) {
-          process_no_headers(header);
-        } else {
-          static_assert(false, "non-exhaustive visitor!");
-        }
-      },
-      rpc_invoke_req.query);
+  if (rpc_invoke_req.opt_dest_actor) {
+    process_dest_actor((*rpc_invoke_req.opt_dest_actor).inner, superglobals);
+  }
+  if (rpc_invoke_req.opt_dest_flags) {
+    process_dest_flags((*rpc_invoke_req.opt_dest_flags).inner, superglobals);
+  }
+  if (rpc_invoke_req.opt_dest_actor_flags) {
+    process_dest_actor_flags((*rpc_invoke_req.opt_dest_actor_flags).inner, superglobals);
+  }
+  RpcServerInstanceState::get().buffer.store_bytes(rpc_invoke_req.query);
 }
 
 } // namespace

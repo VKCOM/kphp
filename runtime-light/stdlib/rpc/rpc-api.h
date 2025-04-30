@@ -4,9 +4,13 @@
 
 #pragma once
 
+#include <cinttypes>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <iterator>
+#include <span>
 #include <string_view>
 #include <utility>
 
@@ -16,6 +20,7 @@
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
+#include "runtime-light/stdlib/rpc/rpc-constants.h"
 #include "runtime-light/stdlib/rpc/rpc-exceptions.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
@@ -33,7 +38,9 @@ struct query_info {
   double timestamp{0.0};
 };
 
-kphp::coro::task<kphp::rpc::query_info> send(string actor, Optional<double> timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept;
+kphp::coro::task<kphp::rpc::query_info> send_request(string actor, Optional<double> timeout, bool ignore_answer, bool collect_responses_extra_info) noexcept;
+
+kphp::coro::task<std::expected<void, kphp::rpc::error>> send_response(std::span<const std::byte> response) noexcept;
 
 namespace rpc_impl {
 
@@ -55,7 +62,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 
 inline bool f$store_int(int64_t v) noexcept {
   if (tl::is_int32_overflow(v)) [[unlikely]] {
-    php_warning("Got int32 overflow on storing '%" PRIi64 "', the value will be casted to '%d'", v, static_cast<int32_t>(v));
+    php_warning("integer %" PRIi64 " overflows int32, it will be casted to %d", v, static_cast<int32_t>(v));
   }
   tl::i32{.value = static_cast<int32_t>(v)}.store(RpcServerInstanceState::get().buffer);
   return true;
@@ -141,8 +148,9 @@ inline void f$fetch_raw_vector_double(array<double>& vector, int64_t num_elems) 
   rpc_buf.adjust(len_bytes);
 }
 
-inline void f$rpc_clean() noexcept {
+inline bool f$rpc_clean() noexcept {
   RpcServerInstanceState::get().buffer.clean();
+  return true;
 }
 
 template<typename T>
@@ -150,15 +158,51 @@ bool f$rpc_parse(T /*unused*/) {
   php_critical_error("call to unsupported function");
 }
 
-inline void f$rpc_server_store_response(const class_instance<C$VK$TL$RpcFunctionReturnResult>& response) noexcept {
-  f$rpc_clean();
-  auto tl_func_base{CurrentRpcServerQuery::get().extract()};
-  if (!static_cast<bool>(tl_func_base)) [[unlikely]] {
-    return php_warning("can't store RPC response: no pending requests");
+// f$rpc_server_fetch_request() definition is generated into the tl/rpc_server_fetch_request.cpp file.
+// It's composed of:
+//    1. fetching magic
+//    2. switch over all @kphp functions
+//    3. tl_func_state storing inside the CurrentRpcServerQuery
+class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() noexcept;
+
+inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg) noexcept {
+  if (tl::is_int32_overflow(error_code)) [[unlikely]] {
+    php_warning("error_code overflows int32, %d will be stored", static_cast<int32_t>(error_code));
   }
 
-  TRY_CALL_VOID(void, tl_func_base->rpc_server_typed_store(response));
-  // TODO: store_finish
+  tl::TLBuffer tlb; // FIXME reserve exact size
+  tl::K2RpcResponse{.flags = {.value = 0x0},
+                    .req_result = {.inner = tl::reqError{.error_code = {.value = static_cast<int32_t>(error_code)},
+                                                         .error = {.value = {error_msg.c_str(), error_msg.size()}}}}}
+      .store(tlb);
+
+  auto expected{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})};
+  if (!expected) [[unlikely]] {
+    php_warning("can't store RPC error: %d", std::to_underlying(expected.error()));
+  }
+  php_error("store_error called. error_code: %" PRIi64 ", error_msg: %s", error_code, error_msg.c_str());
+  std::unreachable();
+}
+
+inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$RpcFunctionReturnResult> response) noexcept {
+  auto tl_func_base{CurrentRpcServerQuery::get().extract()};
+  if (!static_cast<bool>(tl_func_base)) [[unlikely]] {
+    co_return php_warning("can't store RPC response: %d", std::to_underlying(kphp::rpc::error::no_pending_request));
+  }
+
+  f$rpc_clean();
+  TRY_CALL_VOID_CORO(void, tl_func_base->rpc_server_typed_store(response));
+  // as we are in a coroutine, we must own the data to prevent it from being overwritten by another coroutine,
+  // so create a TLBuffer owned by this coroutine
+  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  tl::TLBuffer tlb; // FIXME reserve exact size
+  tl::K2RpcResponse{.flags = {.value = 0x0},
+                    .req_result = {.inner = std::string_view{rpc_server_instance_st.buffer.data(), rpc_server_instance_st.buffer.size()}}}
+      .store(tlb);
+  auto expected{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})};
+  if (!expected) [[unlikely]] {
+    php_warning("can't store RPC response: %d", std::to_underlying(expected.error()));
+  }
 }
 
 // === client =====================================================================================

@@ -26,7 +26,7 @@ underlying_resource_t::underlying_resource_t(std::string_view scheme) noexcept
     break;
   }
   case resource_kind::STDOUT: {
-    if (instance_st.image_kind() == ImageKind::CLI) {
+    if (instance_st.image_kind() == image_kind::cli) {
       stream_d_ = instance_st.standard_stream();
     } else {
       last_errc = k2::errno_einval;
@@ -34,7 +34,7 @@ underlying_resource_t::underlying_resource_t(std::string_view scheme) noexcept
     break;
   }
   case resource_kind::INPUT: {
-    last_errc = instance_st.image_kind() == ImageKind::Server ? k2::errno_ok : k2::errno_einval;
+    last_errc = instance_st.image_kind() == image_kind::server ? k2::errno_ok : k2::errno_einval;
     break;
   }
   case resource_kind::UDP: {

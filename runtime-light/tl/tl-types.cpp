@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <utility>
 
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {
@@ -154,9 +155,6 @@ bool CertInfoItem::fetch(TLBuffer& tlb) noexcept {
 // ===== RPC =====
 
 bool rpcInvokeReqExtra::fetch(tl::TLBuffer& tlb) noexcept {
-  tl::details::mask flags{};
-  bool ok{flags.fetch(tlb)};
-
   return_binlog_pos = static_cast<bool>(flags.value & RETURN_BINLOG_POS_FLAG);
   return_binlog_time = static_cast<bool>(flags.value & RETURN_BINLOG_TIME_FLAG);
   return_pid = static_cast<bool>(flags.value & RETURN_PID_FLAG);
@@ -164,7 +162,9 @@ bool rpcInvokeReqExtra::fetch(tl::TLBuffer& tlb) noexcept {
   return_failed_subqueries = static_cast<bool>(flags.value & RETURN_FAILED_SUBQUERIES_FLAG);
   return_query_stats = static_cast<bool>(flags.value & RETURN_QUERY_STATS_FLAG);
   no_result = static_cast<bool>(flags.value & NORESULT_FLAG);
+  return_view_number = static_cast<bool>(flags.value & RETURN_VIEW_NUMBER_FLAG);
 
+  bool ok{true};
   if (ok && static_cast<bool>(flags.value & WAIT_BINLOG_POS_FLAG)) {
     ok &= opt_wait_binlog_pos.emplace().fetch(tlb);
   }
@@ -189,9 +189,37 @@ bool rpcInvokeReqExtra::fetch(tl::TLBuffer& tlb) noexcept {
   if (ok && static_cast<bool>(flags.value & RANDOM_DELAY_FLAG)) {
     ok &= opt_random_delay.emplace().fetch(tlb);
   }
-  return_view_number = static_cast<bool>(flags.value & RETURN_VIEW_NUMBER_FLAG);
 
   return ok;
+}
+
+void rpcReqResultExtra::store(tl::TLBuffer& tlb) const noexcept {
+  if (static_cast<bool>(flags.value & BINLOG_POS_FLAG)) {
+    binlog_pos.store(tlb);
+  }
+  if (static_cast<bool>(flags.value & BINLOG_TIME_FLAG)) {
+    binlog_time.store(tlb);
+  }
+  if (static_cast<bool>(flags.value) & ENGINE_PID_FLAG) {
+    engine_pid.store(tlb);
+  }
+  if (static_cast<bool>(flags.value & REQUEST_SIZE_FLAG)) {
+    php_assert(static_cast<bool>(flags.value & RESPONSE_SIZE_FLAG));
+    request_size.store(tlb), response_size.store(tlb);
+  }
+  if (static_cast<bool>(flags.value & FAILED_SUBQUERIES_FLAG)) {
+    failed_subqueries.store(tlb);
+  }
+  if (static_cast<bool>(flags.value & COMPRESSION_VERSION_FLAG)) {
+    compression_version.store(tlb);
+  }
+  if (static_cast<bool>(flags.value & STATS_FLAG)) {
+    stats.store(tlb);
+  }
+  if (static_cast<bool>(flags.value & EPOCH_NUMBER_FLAG)) {
+    php_assert(static_cast<bool>(flags.value & VIEW_NUMBER_FLAG));
+    epoch_number.store(tlb), view_number.store(tlb);
+  }
 }
 
 } // namespace tl

@@ -7,7 +7,6 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <string_view>
 #include <type_traits>
@@ -98,6 +97,20 @@ struct I32 final {
   void store(tl::TLBuffer& tlb) const noexcept {
     tl::details::magic{.value = TL_INT}.store(tlb);
     inner.store(tlb);
+  }
+};
+
+struct u32 final {
+  uint32_t value{};
+
+  bool fetch(tl::TLBuffer& tlb) noexcept {
+    const auto opt_value{tlb.fetch_trivial<uint32_t>()};
+    value = opt_value.value_or(0);
+    return opt_value.has_value();
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tlb.store_trivial<uint32_t>(value);
   }
 };
 
@@ -286,14 +299,14 @@ struct vector final {
   bool fetch(tl::TLBuffer& tlb) noexcept
   requires tl::deserializable<T>
   {
-    int64_t size{tlb.fetch_trivial<uint32_t>().value_or(-1)};
-    if (size < 0) [[unlikely]] {
+    tl::u32 size{};
+    if (!size.fetch(tlb)) [[unlikely]] {
       return false;
     }
 
     value.clear();
-    value.reserve(static_cast<size_t>(size));
-    for (auto i = 0; i < size; ++i) {
+    value.reserve(static_cast<size_t>(size.value));
+    for (auto i = 0; i < size.value; ++i) {
       if (T t{}; t.fetch(tlb)) [[likely]] {
         value.emplace_back(std::move(t));
         continue;
@@ -307,7 +320,7 @@ struct vector final {
   void store(tl::TLBuffer& tlb) const noexcept
   requires tl::serializable<T>
   {
-    tlb.store_trivial<uint32_t>(static_cast<uint32_t>(value.size()));
+    tl::u32{.value = static_cast<uint32_t>(value.size())}.store(tlb);
     std::for_each(value.cbegin(), value.cend(), [&tlb](const auto& elem) noexcept { elem.store(tlb); });
   }
 };
@@ -469,28 +482,32 @@ class netPid final {
   static constexpr uint32_t PID_MASK = 0xffff'0000;
 
 public:
-  tl::i32 ip{};
-  tl::i32 port_pid{};
-  tl::i32 utime{};
+  tl::u32 ip{};
+  tl::u32 port_pid{};
+  tl::u32 utime{};
 
   uint32_t get_ip() const noexcept {
-    return *reinterpret_cast<const uint32_t*>(std::addressof(ip.value));
+    return ip.value;
   }
 
   uint16_t get_port() const noexcept {
-    return static_cast<uint16_t>(*reinterpret_cast<const uint32_t*>(std::addressof(port_pid.value)) & PORT_MASK);
+    return static_cast<uint16_t>(port_pid.value & PORT_MASK);
   }
 
   uint16_t get_pid() const noexcept {
-    return static_cast<uint16_t>((*reinterpret_cast<const uint32_t*>(std::addressof(port_pid.value)) & PID_MASK) >> 16);
+    return static_cast<uint16_t>((port_pid.value & PID_MASK) >> 16);
   }
 
   uint32_t get_utime() const noexcept {
-    return *reinterpret_cast<const uint32_t*>(std::addressof(utime.value));
+    return utime.value;
   }
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     return ip.fetch(tlb) && port_pid.fetch(tlb) && utime.fetch(tlb);
+  }
+
+  void store(tl::TLBuffer& tlb) const noexcept {
+    ip.store(tlb), port_pid.store(tlb), utime.store(tlb);
   }
 };
 
@@ -728,25 +745,29 @@ public:
 // ===== RPC =====
 
 class rpcInvokeReqExtra final {
-  static constexpr auto RETURN_BINLOG_POS_FLAG = static_cast<uint32_t>(1U << 0U);
-  static constexpr auto RETURN_BINLOG_TIME_FLAG = static_cast<uint32_t>(1U << 1U);
-  static constexpr auto RETURN_PID_FLAG = static_cast<uint32_t>(1U << 2U);
-  static constexpr auto RETURN_REQUEST_SIZES_FLAG = static_cast<uint32_t>(1U << 3U);
-  static constexpr auto RETURN_FAILED_SUBQUERIES_FLAG = static_cast<uint32_t>(1U << 4U);
-  static constexpr auto RETURN_QUERY_STATS_FLAG = static_cast<uint32_t>(1U << 6U);
-  static constexpr auto NORESULT_FLAG = static_cast<uint32_t>(1U << 7U);
-  static constexpr auto WAIT_BINLOG_POS_FLAG = static_cast<uint32_t>(1U << 16U);
-  static constexpr auto STRING_FORWARD_KEYS_FLAG = static_cast<uint32_t>(1U << 18U);
-  static constexpr auto INT_FORWARD_KEYS_FLAG = static_cast<uint32_t>(1U << 19U);
-  static constexpr auto STRING_FORWARD_FLAG = static_cast<uint32_t>(1U << 20U);
-  static constexpr auto INT_FORWARD_FLAG = static_cast<uint32_t>(1U << 21U);
-  static constexpr auto CUSTOM_TIMEOUT_MS_FLAG = static_cast<uint32_t>(1U << 23U);
-  static constexpr auto SUPPORTED_COMPRESSION_VERSION_FLAG = static_cast<uint32_t>(1U << 25U);
-  static constexpr auto RANDOM_DELAY_FLAG = static_cast<uint32_t>(1U << 26U);
-  static constexpr auto RETURN_VIEW_NUMBER_FLAG = static_cast<uint32_t>(1U << 27U);
+  static constexpr uint32_t RETURN_BINLOG_POS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_binlog_pos;
+  static constexpr uint32_t RETURN_BINLOG_TIME_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_binlog_time;
+  static constexpr uint32_t RETURN_PID_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_pid;
+  static constexpr uint32_t RETURN_REQUEST_SIZES_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_request_sizes;
+  static constexpr uint32_t RETURN_FAILED_SUBQUERIES_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_failed_subqueries;
+  static constexpr uint32_t RETURN_QUERY_STATS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_query_stats;
+  static constexpr uint32_t NORESULT_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::no_result;
+  static constexpr uint32_t WAIT_BINLOG_POS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::wait_binlog_pos;
+  static constexpr uint32_t STRING_FORWARD_KEYS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::string_forward_keys;
+  static constexpr uint32_t INT_FORWARD_KEYS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::int_forward_keys;
+  static constexpr uint32_t STRING_FORWARD_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::string_forward;
+  static constexpr uint32_t INT_FORWARD_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::int_forward;
+  static constexpr uint32_t CUSTOM_TIMEOUT_MS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::custom_timeout_ms;
+  static constexpr uint32_t SUPPORTED_COMPRESSION_VERSION_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::supported_compression_version;
+  static constexpr uint32_t RANDOM_DELAY_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::random_delay;
+  static constexpr uint32_t RETURN_VIEW_NUMBER_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_view_number;
+
+  tl::details::mask flags{};
+  friend struct RpcInvokeReqExtra;
+  friend struct rpcDestActorFlags;
+  friend struct rpcDestFlags;
 
 public:
-  uint32_t flags{};
   bool return_binlog_pos{};
   bool return_binlog_time{};
   bool return_pid{};
@@ -768,23 +789,60 @@ public:
 };
 
 struct RpcInvokeReqExtra final {
+  tl::details::mask flags{};
   tl::rpcInvokeReqExtra inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     tl::details::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_RPC_INVOKE_REQ_EXTRA) && inner.fetch(tlb);
+    return magic.fetch(tlb) && magic.expect(TL_RPC_INVOKE_REQ_EXTRA) && flags.fetch(tlb) && (inner.flags = flags, inner.fetch(tlb));
+  }
+};
+
+class rpcReqResultExtra final {
+  static constexpr uint32_t BINLOG_POS_FLAG = vk::tl::common::rpc_req_result_extra_flags::binlog_pos;
+  static constexpr uint32_t BINLOG_TIME_FLAG = vk::tl::common::rpc_req_result_extra_flags::binlog_time;
+  static constexpr uint32_t ENGINE_PID_FLAG = vk::tl::common::rpc_req_result_extra_flags::engine_pid;
+  static constexpr uint32_t REQUEST_SIZE_FLAG = vk::tl::common::rpc_req_result_extra_flags::request_size;
+  static constexpr uint32_t RESPONSE_SIZE_FLAG = vk::tl::common::rpc_req_result_extra_flags::response_size;
+  static constexpr uint32_t FAILED_SUBQUERIES_FLAG = vk::tl::common::rpc_req_result_extra_flags::failed_subqueries;
+  static constexpr uint32_t COMPRESSION_VERSION_FLAG = vk::tl::common::rpc_req_result_extra_flags::compression_version;
+  static constexpr uint32_t STATS_FLAG = vk::tl::common::rpc_req_result_extra_flags::stats;
+  static constexpr uint32_t EPOCH_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::epoch_number;
+  static constexpr uint32_t VIEW_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::view_number;
+
+  tl::details::mask flags{};
+  friend struct RpcReqResultExtra;
+  friend struct reqResultHeader;
+
+public:
+  tl::i64 binlog_pos{};
+  tl::i64 binlog_time{};
+  tl::netPid engine_pid{};
+  tl::i32 request_size{};
+  tl::i32 response_size{};
+  tl::i32 failed_subqueries{};
+  tl::i32 compression_version{};
+  tl::dictionary<tl::string> stats{};
+  tl::i64 epoch_number{};
+  tl::i64 view_number{};
+
+  void store(tl::TLBuffer& tlb) const noexcept;
+};
+
+struct RpcReqResultExtra final {
+  tl::details::mask flags{};
+  tl::rpcReqResultExtra inner{};
+
+  void store(tl::TLBuffer& tlb) noexcept {
+    tl::details::magic{.value = TL_RPC_REQ_RESULT_EXTRA}.store(tlb), flags.store(tlb), (inner.flags = flags, inner.store(tlb));
   }
 };
 
 struct rpcDestActor final {
   tl::i64 actor_id{};
-  std::string_view query;
 
   bool fetch(TLBuffer& tlb) noexcept {
-    bool ok{actor_id.fetch(tlb)};
-    const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
-    query = opt_query.value_or(std::string_view{});
-    return ok && opt_query.has_value();
+    return actor_id.fetch(tlb);
   }
 };
 
@@ -798,14 +856,11 @@ struct RpcDestActor final {
 };
 
 struct rpcDestFlags final {
+  tl::details::mask flags{};
   tl::rpcInvokeReqExtra extra{};
-  std::string_view query;
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    bool ok{extra.fetch(tlb)};
-    const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
-    query = opt_query.value_or(std::string_view{});
-    return ok && opt_query.has_value();
+    return flags.fetch(tlb) && (extra.flags = flags, extra.fetch(tlb));
   }
 };
 
@@ -820,16 +875,11 @@ struct RpcDestFlags final {
 
 struct rpcDestActorFlags final {
   tl::i64 actor_id{};
+  tl::details::mask flags{};
   tl::rpcInvokeReqExtra extra{};
-  std::string_view query;
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    bool ok{actor_id.fetch(tlb)};
-    ok &= tl::details::mask{}.fetch(tlb);
-    ok &= extra.fetch(tlb);
-    const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
-    query = opt_query.value_or(std::string_view{});
-    return ok && opt_query.has_value();
+    return actor_id.fetch(tlb) && flags.fetch(tlb) && (extra.flags = flags, extra.fetch(tlb));
   }
 };
 
@@ -853,10 +903,11 @@ struct reqError final {
 
 struct reqResultHeader final {
   tl::details::mask flags{};
+  tl::rpcReqResultExtra extra{};
   std::string_view result;
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    flags.store(tlb), tlb.store_bytes(result);
+  void store(tl::TLBuffer& tlb) noexcept {
+    flags.store(tlb), (extra.flags = flags, extra.store(tlb)), tlb.store_bytes(result);
   }
 };
 
@@ -865,63 +916,38 @@ class ReqResult final {
   static constexpr uint32_t REQ_RESULT_MAGIC = 0x8cc8'4ce1;
 
 public:
-  std::variant<tl::reqError, tl::reqResultHeader> value;
+  std::variant<std::string_view, tl::reqError, tl::reqResultHeader> inner;
 
-  void store(tl::TLBuffer& tlb) const noexcept {
+  void store(tl::TLBuffer& tlb) noexcept {
     std::visit(
-        [&tlb](const auto& value) noexcept {
+        [&tlb](auto& value) noexcept {
           using value_t = std::remove_cvref_t<decltype(value)>;
 
-          if constexpr (std::same_as<value_t, tl::reqError>) {
+          if constexpr (std::same_as<value_t, std::string_view>) {
+            tlb.store_bytes(value);
+          } else if constexpr (std::same_as<value_t, tl::reqError>) {
             tl::details::magic{.value = REQ_ERROR_MAGIC}.store(tlb);
+            value.store(tlb);
           } else if constexpr (std::same_as<value_t, tl::reqResultHeader>) {
             tl::details::magic{.value = REQ_RESULT_MAGIC}.store(tlb);
+            value.store(tlb);
           } else {
             static_assert(false, "non-exhaustive visitor!");
           }
-          value.store(tlb);
         },
-        value);
+        inner);
   }
 };
 
-struct rpcReqError final {
-  tl::i64 query_id{};
-  tl::i32 error_code{};
-  tl::string error{};
+class K2RpcResponse final {
+  static constexpr uint32_t MAGIC = 0x8466'24dd;
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    query_id.store(tlb), error_code.store(tlb), error.store(tlb);
-  }
-};
+public:
+  tl::details::mask flags{};
+  tl::ReqResult req_result{};
 
-struct rpcReqResult final {
-  tl::i64 query_id{};
-  tl::ReqResult result{};
-
-  void store(tl::TLBuffer& tlb) const noexcept {
-    query_id.store(tlb), result.store(tlb);
-  }
-};
-
-struct RpcReqResult final {
-  std::variant<tl::rpcReqError, tl::rpcReqResult> value;
-
-  void store(tl::TLBuffer& tlb) const noexcept {
-    std::visit(
-        [&tlb](const auto& value) noexcept {
-          using value_t = std::remove_cvref_t<decltype(value)>;
-
-          if constexpr (std::same_as<value_t, tl::rpcReqError>) {
-            tl::details::magic{.value = TL_RPC_REQ_ERROR}.store(tlb);
-          } else if constexpr (std::same_as<value_t, tl::rpcReqResult>) {
-            tl::details::magic{.value = TL_RPC_REQ_RESULT}.store(tlb);
-          } else {
-            static_assert(false, "non-exhaustive visitor!");
-          }
-          value.store(tlb);
-        },
-        value);
+  void store(tl::TLBuffer& tlb) noexcept {
+    tl::details::magic{.value = MAGIC}.store(tlb), flags.store(tlb), req_result.store(tlb);
   }
 };
 

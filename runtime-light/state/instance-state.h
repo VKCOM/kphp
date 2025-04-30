@@ -41,12 +41,14 @@ static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
 
 /**
  * Supported kinds of KPHP images:
- * 1. CLI — works the same way as regular PHP script does
- * 2. Server — automatically accepts a stream and expects it to contain either http or job worker request
- * 3. Oneshot — can only accept one incoming stream
- * 4. Multishot — can accept any number of incoming streams
+ * 1. cli — works the same way as regular PHP script does
+ * 2. server — automatically accepts a stream and expects it to contain either http or job worker request
+ * 3. oneshot — can only accept one incoming stream
+ * 4. multishot — can accept any number of incoming streams
  */
-enum class ImageKind : uint8_t { Invalid, CLI, Server, Oneshot, Multishot };
+enum class image_kind : uint8_t { invalid, cli, server, oneshot, multishot };
+
+enum class instance_kind : uint8_t { invalid, cli, http_server, rpc_server, job_server, oneshot, multishot };
 
 struct InstanceState final : vk::not_copyable {
   template<typename T>
@@ -69,13 +71,16 @@ struct InstanceState final : vk::not_copyable {
 
   void init_script_execution() noexcept;
 
-  template<ImageKind>
+  template<image_kind>
   kphp::coro::task<> run_instance_prologue() noexcept;
 
   kphp::coro::task<> run_instance_epilogue() noexcept;
 
-  ImageKind image_kind() const noexcept {
+  image_kind image_kind() const noexcept {
     return image_kind_;
+  }
+  instance_kind instance_kind() const noexcept {
+    return instance_kind_;
   }
 
   void process_platform_updates() noexcept;
@@ -129,11 +134,17 @@ struct InstanceState final : vk::not_copyable {
   list<kphp::coro::task<>> shutdown_functions;
 
 private:
+  kphp::coro::task<> init_cli_instance() noexcept;
+  kphp::coro::task<> init_server_instance() noexcept;
+  kphp::coro::task<> finalize_cli_instance() noexcept;
+  kphp::coro::task<> finalize_server_instance() noexcept;
+
   kphp::coro::task<> main_task_;
   enum class shutdown_state : uint8_t { not_started, in_progress, finished };
   shutdown_state shutdown_state_{shutdown_state::not_started};
 
-  ImageKind image_kind_{ImageKind::Invalid};
+  enum image_kind image_kind_ { image_kind::invalid };
+  enum instance_kind instance_kind_ { instance_kind::invalid };
   uint64_t standard_stream_{k2::INVALID_PLATFORM_DESCRIPTOR};
   deque<uint64_t> incoming_streams_;
   unordered_set<uint64_t> opened_streams_;
