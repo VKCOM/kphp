@@ -219,7 +219,7 @@ kphp::coro::task<> InstanceState::finalize_cli_instance() noexcept {
 kphp::coro::task<> InstanceState::finalize_server_instance() noexcept {
   switch (instance_kind()) {
   case instance_kind::http_server: {
-    kphp::http::finalize_server(response.output_buffers[merge_output_buffers()]);
+    co_await kphp::http::finalize_server(response.output_buffers[merge_output_buffers()]);
     break;
   }
   case instance_kind::rpc_server:
