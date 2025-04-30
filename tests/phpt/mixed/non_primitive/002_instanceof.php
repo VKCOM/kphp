@@ -41,7 +41,8 @@ function foo() {
     /** @var mixed */
     $int_as_mixed = 42;
     check_instance_of($int_as_mixed);
-    
+
+    check_instance_of(to_mixed(new C));    
 }
 
 foo();
