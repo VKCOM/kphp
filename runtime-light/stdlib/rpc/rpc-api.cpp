@@ -344,7 +344,10 @@ kphp::coro::task<std::expected<void, kphp::rpc::error>> send_response(std::span<
   auto& instance_st{InstanceState::get()};
   const auto stream_d{instance_st.standard_stream()};
   if (stream_d == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
-    co_return std::unexpected(kphp::rpc::error::invalid_stream); // TODO check that the stream is an RPC one
+    co_return std::unexpected(kphp::rpc::error::invalid_stream);
+  }
+  if (instance_st.instance_kind() != instance_kind::rpc_server) [[unlikely]] {
+    co_return std::unexpected(kphp::rpc::error::not_rpc_stream);
   }
   if (co_await write_all_to_stream(stream_d, reinterpret_cast<const char*>(response.data()), response.size()) != response.size()) [[unlikely]] {
     co_return std::unexpected(kphp::rpc::error::write_failed);
