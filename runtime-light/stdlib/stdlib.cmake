@@ -8,6 +8,7 @@ prepend(
   curl/curl-state.cpp
   exit/exit-functions.cpp
   fork/fork-state.cpp
+  instance-cache/instance-cache-state.cpp
   job-worker/job-worker-api.cpp
   job-worker/job-worker-client-state.cpp
   math/random-state.cpp

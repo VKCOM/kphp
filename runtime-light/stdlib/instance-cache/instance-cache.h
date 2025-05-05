@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2024 LLC «V Kontakte»
+// Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
@@ -10,8 +10,10 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/serialization/msgpack-functions.h"
+#include "runtime-common/stdlib/visitors/memory-visitors.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/component-api.h"
+#include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
 #include "runtime-light/stdlib/serialization/msgpack-functions.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -20,7 +22,7 @@
 template<typename ClassInstanceType>
 kphp::coro::task<bool> f$instance_cache_store(const string& key, const ClassInstanceType& instance, int64_t ttl = 0) noexcept {
   constexpr std::string_view IC_COMPONENT_NAME = "instance_cache";
-
+  constexpr size_t MAX_KV_SIZE = 15ZU * 1024 * 1024; // 15 Mb because of string buffer restriction
   tl::TLBuffer buffer;
 
   if (ttl < 0) [[unlikely]] {
@@ -33,12 +35,22 @@ kphp::coro::task<bool> f$instance_cache_store(const string& key, const ClassInst
     ttl = 0;
   }
 
+  // `f$estimate_memory_usage()` is not entirely accurate, it takes into account the amount of memory of objects,
+  // not serialized strings, but it is better than serialization and decision-making after serialization.
+  if (auto kv_size = f$estimate_memory_usage(key) + f$estimate_memory_usage(instance); kv_size > MAX_KV_SIZE) {
+    php_warning("Instance cache entry limit exceeded (%zu/%zu)", kv_size, MAX_KV_SIZE);
+    co_return false;
+  } else {
+    php_warning("Storing value (%zu/%zu)", kv_size, MAX_KV_SIZE);
+  }
+
   auto tl_key = tl::string(std::string_view{key.c_str(), key.size()});
   auto serialized_instance = f$instance_serialize(instance);
   if (!serialized_instance.has_value()) {
     php_warning("Cannot serialize instance");
     co_return false;
   }
+
   auto tl_value = tl::string(std::string_view{serialized_instance.val().c_str(), serialized_instance.val().size()});
 
   auto tl_cache_store = tl::CacheStore{.key = tl_key, .value = tl_value, .ttl = static_cast<uint32_t>(ttl)};
@@ -56,12 +68,18 @@ kphp::coro::task<bool> f$instance_cache_store(const string& key, const ClassInst
     co_return false;
   }
 
+  InstanceCacheState::get().request_cache.store(key, instance);
   co_return tl_resp.value;
 }
 
 template<typename ClassInstanceType>
 kphp::coro::task<ClassInstanceType> f$instance_cache_fetch(const string& /*class_name*/, const string& key, bool /*even_if_expired*/ = false) noexcept {
   constexpr std::string_view IC_COMPONENT_NAME = "instance_cache";
+
+  auto& request_cache = InstanceCacheState::get().request_cache;
+  if (auto cached = request_cache.fetch<ClassInstanceType>(key); !cached.is_null()) {
+    co_return cached;
+  }
 
   tl::TLBuffer buffer;
   auto tl_key = tl::string(std::string_view{key.c_str(), key.size()});
@@ -83,7 +101,10 @@ kphp::coro::task<ClassInstanceType> f$instance_cache_fetch(const string& /*class
   if (!tl_resp.opt_value.has_value()) {
     co_return ClassInstanceType{};
   }
-  co_return f$instance_deserialize<ClassInstanceType>(string(tl_resp.opt_value->value.data(), tl_resp.opt_value->value.size()), {});
+
+  auto response = f$instance_deserialize<ClassInstanceType>(string(tl_resp.opt_value->value.data(), tl_resp.opt_value->value.size()), {});
+  request_cache.store(key, response);
+  co_return response;
 }
 
 inline kphp::coro::task<bool> f$instance_cache_update_ttl(const string& key, int64_t ttl = 0) noexcept {
@@ -119,6 +140,9 @@ inline kphp::coro::task<bool> f$instance_cache_update_ttl(const string& key, int
 
 inline kphp::coro::task<bool> f$instance_cache_delete(const string& key) noexcept {
   constexpr std::string_view IC_COMPONENT_NAME = "instance_cache";
+
+  InstanceCacheState::get().request_cache.del(key);
+
   tl::TLBuffer buffer;
   auto tl_key = tl::string(std::string_view{key.c_str(), key.size()});
   auto tl_cache_delete = tl::CacheDelete{.key = tl_key};

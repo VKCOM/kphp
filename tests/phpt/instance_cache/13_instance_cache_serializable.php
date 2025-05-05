@@ -215,13 +215,71 @@ function test_same_instance_in_array() {
   var_dump(to_array_debug($cached_vector));
 }
 
+function test_request_cache() {
+  // Should work without request cache
+  // Just ensure that it works if present
+  var_dump(instance_cache_store("key_x4", new X));
+  var_dump(to_array_debug(instance_cache_fetch(X::class, "key_x4")));
+  var_dump(to_array_debug(instance_cache_fetch(X::class, "key_x4")));
+  var_dump(to_array_debug(instance_cache_fetch(Y::class, "key_x4")));
+
+  var_dump(instance_cache_delete("key_x_test_update_ttl"));
+  var_dump(to_array_debug(instance_cache_fetch(X::class, "key_x4")));
+  var_dump(to_array_debug(instance_cache_fetch(X::class, "key_x4")));
+  var_dump(to_array_debug(instance_cache_fetch(Y::class, "key_x4")));
+
+  var_dump(instance_cache_store("key_x4", new X));
+  var_dump(to_array_debug(instance_cache_fetch(X::class, "key_x4")));
+  var_dump(to_array_debug(instance_cache_fetch(Y::class, "key_x4")));
+  var_dump(to_array_debug(instance_cache_fetch(X::class, "key_x4")));
+}
+
+/** @kphp-immutable-class
+ *  @kphp-serializable
+*/
+class VectorInt {
+  /** @var int[][] 
+   *  @kphp-serialized-field 0
+  */
+  public $elements = [];
+
+  public function __construct(int $elements_count) {
+    $s = intval(1 + sqrt($elements_count));
+
+    for ($i = 0; $i < $s; ++$i) {
+      $this->elements[] = [];
+      for ($j = 0; $j < $s; ++$j) {
+        $this->elements[$i][] = $i + $j;
+      }
+    }
+  }
+}
+
+function test_memory_limit_exceed() {
+  $cnt = 100_000;
+
+#ifndef K2
+  $cnt = 1_000_000;
+#endif
+
+  $vector = new VectorY($cnt);
+
+#ifndef KPHP
+  var_dump(false);
+  if (false)
+#endif
+  var_dump(instance_cache_store("large_vector", $vector));
+  var_dump(instance_cache_fetch(VectorY::class, "large_vector") ? false : true);
+}
 
 // test_empty_fetch();
-// test_store_fetch() ;
+// test_store_fetch();
 // test_mismatch_classes();
 // test_update_ttl();
 // test_delete();
 // test_tree();
-// test_loop_in_tree();
-test_same_instance_in_array();
+// test_same_instance_in_array();
+// test_request_cache();
+
+test_memory_limit_exceed();
 
