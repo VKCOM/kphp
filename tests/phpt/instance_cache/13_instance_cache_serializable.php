@@ -234,34 +234,13 @@ function test_request_cache() {
   var_dump(to_array_debug(instance_cache_fetch(X::class, "key_x4")));
 }
 
-/** @kphp-immutable-class
- *  @kphp-serializable
-*/
-class VectorInt {
-  /** @var int[][] 
-   *  @kphp-serialized-field 0
-  */
-  public $elements = [];
-
-  public function __construct(int $elements_count) {
-    $s = intval(1 + sqrt($elements_count));
-
-    for ($i = 0; $i < $s; ++$i) {
-      $this->elements[] = [];
-      for ($j = 0; $j < $s; ++$j) {
-        $this->elements[$i][] = $i + $j;
-      }
-    }
-  }
-}
-
 function test_memory_limit_exceed() {
-  $cnt = 100_000;
+  $cnt = 200_000;
 
 #ifndef K2
+  // In K2 mode it takes much more time to deallocate so huge object, so the limit is lower
   $cnt = 1_000_000;
 #endif
-
   $vector = new VectorY($cnt);
 
 #ifndef KPHP
@@ -272,14 +251,13 @@ function test_memory_limit_exceed() {
   var_dump(instance_cache_fetch(VectorY::class, "large_vector") ? false : true);
 }
 
-// test_empty_fetch();
-// test_store_fetch();
-// test_mismatch_classes();
-// test_update_ttl();
-// test_delete();
-// test_tree();
-// test_same_instance_in_array();
-// test_request_cache();
-
+test_empty_fetch();
+test_store_fetch();
+test_mismatch_classes();
+test_update_ttl();
+test_delete();
+test_tree();
+test_same_instance_in_array();
+test_request_cache();
 test_memory_limit_exceed();
 
