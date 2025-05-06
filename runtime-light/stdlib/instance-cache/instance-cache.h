@@ -22,7 +22,6 @@
 template<typename ClassInstanceType>
 kphp::coro::task<bool> f$instance_cache_store(const string& key, const ClassInstanceType& instance, int64_t ttl = 0) noexcept {
   constexpr std::string_view IC_COMPONENT_NAME = "instance_cache";
-  constexpr size_t MAX_KV_SIZE = 15ZU * 1024 * 1024; // 15 Mb because of string buffer restriction
   tl::TLBuffer buffer;
 
   if (ttl < 0) [[unlikely]] {
@@ -33,15 +32,6 @@ kphp::coro::task<bool> f$instance_cache_store(const string& key, const ClassInst
   if (ttl > std::numeric_limits<uint32_t>::max()) [[unlikely]] {
     php_warning("ttl is too big, will store forever");
     ttl = 0;
-  }
-
-  // `f$estimate_memory_usage()` is not entirely accurate, it takes into account the amount of memory of objects,
-  // not serialized strings, but it is better than serialization and decision-making after serialization.
-  if (auto kv_size = f$estimate_memory_usage(key) + f$estimate_memory_usage(instance); kv_size > MAX_KV_SIZE) {
-    php_warning("Instance cache entry limit exceeded (%zu/%zu)", kv_size, MAX_KV_SIZE);
-    co_return false;
-  } else {
-    php_warning("Storing value (%zu/%zu)", kv_size, MAX_KV_SIZE);
   }
 
   auto tl_key = tl::string(std::string_view{key.c_str(), key.size()});
