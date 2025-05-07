@@ -10,7 +10,6 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/serialization/msgpack-functions.h"
-#include "runtime-common/stdlib/visitors/memory-visitors.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
@@ -19,9 +18,12 @@
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 
+namespace kphp::instance_cache {
+constexpr std::string_view COMPONENT_NAME = "instance_cache";
+} // namespace kphp::instance_cache
+
 template<typename ClassInstanceType>
 kphp::coro::task<bool> f$instance_cache_store(const string& key, const ClassInstanceType& instance, int64_t ttl = 0) noexcept {
-  constexpr std::string_view IC_COMPONENT_NAME = "instance_cache";
   tl::TLBuffer buffer;
 
   if (ttl < 0) [[unlikely]] {
@@ -46,8 +48,9 @@ kphp::coro::task<bool> f$instance_cache_store(const string& key, const ClassInst
   auto tl_cache_store = tl::CacheStore{.key = tl_key, .value = tl_value, .ttl = static_cast<uint32_t>(ttl)};
   tl_cache_store.store(buffer);
 
-  auto query = f$component_client_send_request(string{IC_COMPONENT_NAME.data(), static_cast<string::size_type>(IC_COMPONENT_NAME.size())},
-                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(
+      string{kphp::instance_cache::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::COMPONENT_NAME.size())},
+      string{buffer.data(), static_cast<string::size_type>(buffer.size())});
 
   auto resp = co_await f$component_client_fetch_response(co_await query);
   buffer.clean();
@@ -64,8 +67,6 @@ kphp::coro::task<bool> f$instance_cache_store(const string& key, const ClassInst
 
 template<typename ClassInstanceType>
 kphp::coro::task<ClassInstanceType> f$instance_cache_fetch(const string& /*class_name*/, const string& key, bool /*even_if_expired*/ = false) noexcept {
-  constexpr std::string_view IC_COMPONENT_NAME = "instance_cache";
-
   auto& request_cache = InstanceCacheState::get().request_cache;
   if (auto cached = request_cache.fetch<ClassInstanceType>(key); !cached.is_null()) {
     co_return cached;
@@ -76,8 +77,9 @@ kphp::coro::task<ClassInstanceType> f$instance_cache_fetch(const string& /*class
   auto tl_cache_fetch = tl::CacheFetch{.key = tl_key};
   tl_cache_fetch.store(buffer);
 
-  auto query = f$component_client_send_request(string{IC_COMPONENT_NAME.data(), static_cast<string::size_type>(IC_COMPONENT_NAME.size())},
-                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(
+      string{kphp::instance_cache::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::COMPONENT_NAME.size())},
+      string{buffer.data(), static_cast<string::size_type>(buffer.size())});
 
   auto resp = co_await f$component_client_fetch_response(co_await query);
   buffer.clean();
@@ -98,7 +100,6 @@ kphp::coro::task<ClassInstanceType> f$instance_cache_fetch(const string& /*class
 }
 
 inline kphp::coro::task<bool> f$instance_cache_update_ttl(const string& key, int64_t ttl = 0) noexcept {
-  constexpr std::string_view IC_COMPONENT_NAME = "instance_cache";
   if (ttl < 0) [[unlikely]] {
     php_warning("ttl < 0 is noop");
     co_return false;
@@ -113,8 +114,9 @@ inline kphp::coro::task<bool> f$instance_cache_update_ttl(const string& key, int
   auto tl_update_ttl = tl::CacheUpdateTtl{.key = tl_key, .ttl = static_cast<uint32_t>(ttl)};
   tl_update_ttl.store(buffer);
 
-  auto query = f$component_client_send_request(string{IC_COMPONENT_NAME.data(), static_cast<string::size_type>(IC_COMPONENT_NAME.size())},
-                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(
+      string{kphp::instance_cache::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::COMPONENT_NAME.size())},
+      string{buffer.data(), static_cast<string::size_type>(buffer.size())});
 
   auto resp = co_await f$component_client_fetch_response(co_await query);
   buffer.clean();
@@ -129,8 +131,6 @@ inline kphp::coro::task<bool> f$instance_cache_update_ttl(const string& key, int
 }
 
 inline kphp::coro::task<bool> f$instance_cache_delete(const string& key) noexcept {
-  constexpr std::string_view IC_COMPONENT_NAME = "instance_cache";
-
   InstanceCacheState::get().request_cache.del(key);
 
   tl::TLBuffer buffer;
@@ -138,8 +138,9 @@ inline kphp::coro::task<bool> f$instance_cache_delete(const string& key) noexcep
   auto tl_cache_delete = tl::CacheDelete{.key = tl_key};
   tl_cache_delete.store(buffer);
 
-  auto query = f$component_client_send_request(string{IC_COMPONENT_NAME.data(), static_cast<string::size_type>(IC_COMPONENT_NAME.size())},
-                                               string{buffer.data(), static_cast<string::size_type>(buffer.size())});
+  auto query = f$component_client_send_request(
+      string{kphp::instance_cache::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::COMPONENT_NAME.size())},
+      string{buffer.data(), static_cast<string::size_type>(buffer.size())});
 
   auto resp = co_await f$component_client_fetch_response(co_await query);
   buffer.clean();

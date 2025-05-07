@@ -2,6 +2,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 
+namespace kphp {
 namespace instance_cache {
 
 // Assume that components are not long-living,
@@ -25,3 +26,4 @@ struct RequestCache final : private vk::not_copyable {
   }
 };
 } // namespace instance_cache
+} // namespace kphp

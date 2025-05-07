@@ -5,6 +5,6 @@
 #include "runtime-light/stdlib/instance-cache/request-cache.h"
 
 struct InstanceCacheState : private vk::not_copyable {
-  instance_cache::RequestCache request_cache;
+  kphp::instance_cache::RequestCache request_cache;
   static InstanceCacheState& get() noexcept;
 };
