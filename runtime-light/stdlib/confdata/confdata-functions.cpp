@@ -57,6 +57,9 @@ kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
 
   auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME.data(), static_cast<string::size_type>(CONFDATA_COMPONENT_NAME.size())},
                                                       {tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  if (query.is_null()) [[unlikely]] {
+    co_return mixed{};
+  }
   const auto response{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
@@ -76,6 +79,9 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
 
   auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME.data(), static_cast<string::size_type>(CONFDATA_COMPONENT_NAME.size())},
                                                       {tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  if (query.is_null()) [[unlikely]] {
+    co_return array<mixed>{};
+  }
   const auto response{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();

@@ -39,9 +39,10 @@ kphp::coro::task<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length)
   tl::TLBuffer tlb;
   tl::GetCryptosecurePseudorandomBytes{.size = {.value = static_cast<int32_t>(length)}}.store(tlb);
 
-  auto query{f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
-                                             string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  string response{co_await f$component_client_fetch_response(co_await query)};
+  auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                                      string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  kphp::log::assertion(!query.is_null());
+  string response{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
   tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
@@ -61,45 +62,39 @@ kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool 
   tl::TLBuffer tlb;
   tl::GetPemCertInfo{.is_short = shortnames, .bytes = {.value = {data.c_str(), data.size()}}}.store(tlb);
 
-  auto query{f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
-                                             string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  string resp{co_await f$component_client_fetch_response(co_await query)};
+  auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                                      string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  kphp::log::assertion(!query.is_null());
+  string resp{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
   tlb.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
 
-  tl::Maybe<tl::Dictionary<tl::CertInfoItem>> cert_items;
-  if (!cert_items.fetch(tlb)) {
+  tl::Maybe<tl::Dictionary<tl::CertInfoItem>> cert_items{};
+  kphp::log::assertion(cert_items.fetch(tlb));
+  if (!cert_items.opt_value) {
     co_return false;
   }
-  if (!cert_items.opt_value.has_value()) {
-    co_return false;
-  }
 
-  array<mixed> response;
-  response.reserve(cert_items.opt_value->size(), false);
-
-  auto item_to_mixed{tl::CertInfoItem::MakeVisitor{[](tl::i64 val) -> mixed { return val.value; },
-                                                   [](tl::string val) -> mixed { return string(val.value.data(), val.value.size()); },
-                                                   [](const tl::dictionary<tl::string>& sub_dict) -> mixed {
-                                                     array<mixed> resp;
-                                                     resp.reserve(sub_dict.size(), false);
-                                                     for (auto sub_item : sub_dict) {
-                                                       auto key = string(sub_item.key.value.data(), sub_item.key.value.size());
-                                                       auto value = string(sub_item.value.value.data(), sub_item.value.value.size());
-                                                       resp[key] = value;
-                                                     }
-
-                                                     return resp;
-                                                   }}};
+  array<mixed> response{array_size{static_cast<int64_t>((*cert_items.opt_value).size()), false}};
+  auto item_to_mixed{tl::CertInfoItem::MakeVisitor{
+      [](tl::i64 val) noexcept -> mixed { return val.value; }, [](tl::string val) noexcept -> mixed { return string(val.value.data(), val.value.size()); },
+      [](const tl::dictionary<tl::string>& sub_dict) noexcept -> mixed {
+        array<mixed> resp{array_size{static_cast<int64_t>(sub_dict.size()), false}};
+        for (auto sub_item : sub_dict) {
+          auto key{string{sub_item.key.value.data(), static_cast<string::size_type>(sub_item.key.value.size())}};
+          auto value{string{sub_item.value.value.data(), static_cast<string::size_type>(sub_item.value.value.size())}};
+          resp[key] = std::move(value);
+        }
+        return resp;
+      }}};
 
   for (auto cert_kv : std::move(*cert_items.opt_value)) {
     auto key{string{cert_kv.key.value.data(), static_cast<string::size_type>(cert_kv.key.value.size())}};
     tl::CertInfoItem val{std::move(cert_kv.value)};
     response[string{cert_kv.key.value.data(), static_cast<string::size_type>(cert_kv.key.value.size())}] = std::visit(item_to_mixed, val.data);
   }
-
-  co_return response;
+  co_return std::move(response);
 }
 
 // FIXME it isn't safe to accept signature by reference
@@ -111,9 +106,10 @@ kphp::coro::task<bool> f$openssl_sign(string data, string& signature, string pri
                  .algorithm = static_cast<tl::HashAlgorithm>(algo)}
       .store(tlb);
 
-  auto query{f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
-                                             string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  string response{co_await f$component_client_fetch_response(co_await query)};
+  auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                                      string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  kphp::log::assertion(!query.is_null());
+  string response{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
   tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
@@ -136,9 +132,10 @@ kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string
                    .signature = {.value = {signature.c_str(), signature.size()}}}
       .store(tlb);
 
-  auto query{f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
-                                             string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  string response{co_await f$component_client_fetch_response(co_await query)};
+  auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                                      string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  kphp::log::assertion(!query.is_null());
+  string response{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
   tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
@@ -239,8 +236,8 @@ array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexce
 }
 
 Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept {
-  auto algorithm = parse_cipher_algorithm(method);
-  if (!algorithm.has_value()) {
+  auto algorithm{parse_cipher_algorithm(method)};
+  if (!algorithm) {
     kphp::log::warning("Unknown cipher algorithm");
     return false;
   }
@@ -250,7 +247,7 @@ Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept {
 kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method, string source_key, int64_t options, string source_iv, string& tag, string aad,
                                                      [[maybe_unused]] int64_t tag_length) noexcept {
   auto algorithm{parse_cipher_algorithm(method)};
-  if (!algorithm.has_value()) {
+  if (!algorithm) {
     kphp::log::warning("Unknown cipher algorithm");
     co_return false;
   }
@@ -278,9 +275,10 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
                  .data = {.value = {data.c_str(), data.size()}}}
       .store(tlb);
 
-  auto query{f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
-                                             string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  string resp{co_await f$component_client_fetch_response(co_await query)};
+  auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                                      string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  kphp::log::assertion(!query.is_null());
+  string resp{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
   tlb.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
@@ -327,9 +325,10 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
                  .data = {.value = {data.c_str(), data.size()}}}
       .store(tlb);
 
-  auto query{f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
-                                             string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  string resp{co_await f$component_client_fetch_response(co_await query)};
+  auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                                      string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  kphp::log::assertion(!query.is_null());
+  string resp{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
   tlb.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
@@ -360,9 +359,10 @@ std::optional<tl::HashAlgorithm> parse_hash_algorithm(std::string_view user_algo
 }
 
 kphp::coro::task<string> send_and_get_string(tl::TLBuffer tlb, bool raw_output) noexcept {
-  auto query{f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
-                                             string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  string resp{co_await f$component_client_fetch_response(co_await query)};
+  auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
+                                                      string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  kphp::log::assertion(!query.is_null());
+  string resp{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
   tlb.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
@@ -400,7 +400,7 @@ array<string> f$hash_hmac_algos() noexcept {
 
 kphp::coro::task<string> f$hash(string algo_str, string s, bool raw_output) noexcept {
   const auto algo{parse_hash_algorithm({algo_str.c_str(), algo_str.size()})};
-  if (!algo.has_value()) [[unlikely]] {
+  if (!algo) [[unlikely]] {
     kphp::log::error("algo {} not supported in function hash", algo_str.c_str());
   }
   co_return co_await hash_impl(*algo, s, raw_output);
@@ -408,7 +408,7 @@ kphp::coro::task<string> f$hash(string algo_str, string s, bool raw_output) noex
 
 kphp::coro::task<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output) noexcept {
   const auto algo{parse_hash_algorithm({algo_str.c_str(), algo_str.size()})};
-  if (!algo.has_value()) [[unlikely]] {
+  if (!algo) [[unlikely]] {
     kphp::log::error("algo {} not supported in function hash", algo_str.c_str());
   }
 
