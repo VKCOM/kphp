@@ -908,7 +908,7 @@ void ClassDeclaration::compile_accept_json_visitor(CodeGenerator &W, ClassPtr kl
 
 void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr klass) {
   bool need_generic_accept =
-    klass->need_to_array_debug_visitor || klass->need_instance_cache_visitors || (klass->need_instance_memory_estimate_visitor);
+      klass->need_to_array_debug_visitor || (klass->need_instance_cache_visitors && !G->is_output_mode_k2()) || (klass->need_instance_memory_estimate_visitor);
 
   if (!need_generic_accept && klass->json_encoders.empty()) {
     return;
@@ -926,7 +926,7 @@ void ClassDeclaration::compile_accept_visitor_methods(CodeGenerator &W, ClassPtr
 
   if (klass->need_instance_memory_estimate_visitor ||
       // for kphp_instance_cache_value_size statshouse metrics
-      (klass->need_instance_cache_visitors)) {
+      (klass->need_instance_cache_visitors && !G->is_output_mode_k2())) {
     W << NL;
     compile_accept_visitor(W, klass, "CommonMemoryEstimateVisitor");
   }
@@ -1060,7 +1060,7 @@ void ClassDeclaration::compile_job_worker_shared_memory_piece_methods(CodeGenera
 
 void ClassMembersDefinition::compile(CodeGenerator &W) const {
   bool need_generic_accept =
-    klass->need_to_array_debug_visitor || (klass->need_instance_cache_visitors) || (klass->need_instance_memory_estimate_visitor);
+    klass->need_to_array_debug_visitor || (klass->need_instance_cache_visitors && !G->is_output_mode_k2()) || (klass->need_instance_memory_estimate_visitor);
 
   if (!need_generic_accept && !klass->is_serializable && klass->json_encoders.empty()) {
     return;
@@ -1087,7 +1087,7 @@ void ClassMembersDefinition::compile(CodeGenerator &W) const {
 
   if (klass->need_instance_memory_estimate_visitor ||
       // for kphp_instance_cache_value_size statshouse metrics
-      (klass->need_instance_cache_visitors)) {
+      (klass->need_instance_cache_visitors && !G->is_output_mode_k2())) {
     W << NL;
     compile_generic_accept_instantiations(W, klass, "CommonMemoryEstimateVisitor");
   }
