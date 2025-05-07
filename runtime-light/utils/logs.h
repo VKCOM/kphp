@@ -42,14 +42,14 @@ void log(level level, const std::format_string<Args...>& fmt, Args&&... args) no
 } // namespace impl
 
 template<typename... Args>
-[[noreturn]] void fatal(const std::format_string<Args...>& fmt, Args&&... args) noexcept {
+[[noreturn]] void error(const std::format_string<Args...>& fmt, Args&&... args) noexcept {
   impl::log(impl::level::error, fmt, std::forward<Args>(args)...);
   k2::exit(1);
 }
 
 inline void assertion(bool condition, const std::source_location& location = std::source_location::current()) noexcept {
   if (!condition) [[unlikely]] {
-    kphp::log::fatal("assertion failed at {}:{}", location.file_name(), location.line());
+    kphp::log::error("assertion failed at {}:{}", location.file_name(), location.line());
   }
 }
 

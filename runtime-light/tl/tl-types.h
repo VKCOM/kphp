@@ -216,7 +216,7 @@ struct Maybe final {
       opt_value = std::nullopt;
       return true;
     } else {
-      kphp::log::fatal("unexpected magic: {:x}", magic.value);
+      kphp::log::error("unexpected magic: {:x}", magic.value);
     }
   }
 

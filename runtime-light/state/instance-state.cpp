@@ -79,7 +79,7 @@ void InstanceState::init_script_execution() noexcept {
             [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
               co_await script_task;
               if (auto exception{std::move(ForkInstanceState::get().current_info().get().thrown_exception)}; !exception.is_null()) [[unlikely]] {
-                kphp::log::fatal("unhandled exception '{}' at {}:{}", exception.get_class(), exception.get()->$file.c_str(), exception.get()->$line);
+                kphp::log::error("unhandled exception '{}' at {}:{}", exception.get_class(), exception.get()->$file.c_str(), exception.get()->$line);
               }
             },
             std::move(script_task));
@@ -108,21 +108,21 @@ kphp::coro::task<> InstanceState::init_server_instance() noexcept {
   auto init_k2_invoke_http{[](tl::TLBuffer& tlb) noexcept {
     tl::K2InvokeHttp invoke_http{};
     if (!invoke_http.fetch(tlb)) [[unlikely]] {
-      kphp::log::fatal("erroneous http request");
+      kphp::log::error("erroneous http request");
     }
     kphp::http::init_server(std::move(invoke_http));
   }};
   auto init_k2_invoke_rpc{[](tl::TLBuffer& tlb) noexcept {
     tl::K2InvokeRpc invoke_rpc{};
     if (!invoke_rpc.fetch(tlb)) [[unlikely]] {
-      kphp::log::fatal("erroneous rpc request");
+      kphp::log::error("erroneous rpc request");
     }
     kphp::rpc::init_server(std::move(invoke_rpc));
   }};
   auto init_k2_invoke_jw{[](tl::TLBuffer& tlb) noexcept {
     tl::K2InvokeJobWorker invoke_jw{};
     if (!invoke_jw.fetch(tlb)) [[unlikely]] {
-      kphp::log::fatal("erroneous job worker request");
+      kphp::log::error("erroneous job worker request");
     }
     init_job_server(invoke_jw);
   }};
@@ -168,7 +168,7 @@ kphp::coro::task<> InstanceState::init_server_instance() noexcept {
     break;
   }
   default:
-    kphp::log::fatal("unexpected server request with magic: {:x}", magic);
+    kphp::log::error("unexpected server request with magic: {:x}", magic);
   }
 }
 
@@ -209,7 +209,7 @@ template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::mul
 kphp::coro::task<> InstanceState::finalize_cli_instance() noexcept {
   const auto& output{response.output_buffers[merge_output_buffers()]};
   if (co_await write_all_to_stream(standard_stream(), output.buffer(), output.size()) != output.size()) [[unlikely]] {
-    kphp::log::fatal("can't write output to stream {}", standard_stream());
+    kphp::log::error("can't write output to stream {}", standard_stream());
   }
 }
 
@@ -223,7 +223,7 @@ kphp::coro::task<> InstanceState::finalize_server_instance() noexcept {
   case instance_kind::job_server:
     break;
   default:
-    kphp::log::fatal("unexpected instance kind: {}", std::to_underlying(instance_kind()));
+    kphp::log::error("unexpected instance kind: {}", std::to_underlying(instance_kind()));
   }
   co_return;
 }
@@ -253,7 +253,7 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     break;
   }
   default: {
-    kphp::log::fatal("unexpected image kind: {}", std::to_underlying(image_kind()));
+    kphp::log::error("unexpected image kind: {}", std::to_underlying(image_kind()));
   }
   }
   release_all_streams();

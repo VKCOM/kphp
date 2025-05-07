@@ -16,13 +16,13 @@ struct tl_func_base : ScriptAllocatorManaged {
     // all functions that are called in a typed way override this method with the generated code;
     // functions that are not called in a typed way will never call this method
     // (it's not a pure virtual method so it's not necessary to generate "return {};" for the untyped functions)
-    kphp::log::fatal("This function should never be called. Should be overridden in every TL function used in typed mode");
+    kphp::log::error("This function should never be called. Should be overridden in every TL function used in typed mode");
     return {};
   }
 
   virtual void rpc_server_typed_store([[maybe_unused]] const class_instance<C$VK$TL$RpcFunctionReturnResult>& res) {
     // all functions annotated with @kphp will override this method with the generated code
-    kphp::log::fatal("This function should never be called. Should be overridden in every @kphp TL function");
+    kphp::log::error("This function should never be called. Should be overridden in every @kphp TL function");
   }
 
   // every TL function in C++ also has:

@@ -155,7 +155,7 @@ inline bool f$rpc_clean() noexcept {
 
 template<typename T>
 bool f$rpc_parse(T /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 // f$rpc_server_fetch_request() definition is generated into the tl/rpc_server_fetch_request.cpp file.
@@ -180,7 +180,7 @@ inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg
   if (!expected) [[unlikely]] {
     kphp::log::warning("can't store RPC error: {}", std::to_underlying(expected.error()));
   }
-  kphp::log::fatal("store_error called. error_code: %" PRIi64 ", error_msg: %s", error_code, error_msg.c_str());
+  kphp::log::error("store_error called. error_code: %" PRIi64 ", error_msg: %s", error_code, error_msg.c_str());
   std::unreachable();
 }
 

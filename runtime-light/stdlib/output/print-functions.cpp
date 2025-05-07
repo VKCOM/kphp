@@ -59,7 +59,7 @@ void do_print_r(const mixed& v, int32_t depth) noexcept {
     break;
   }
   default:
-    kphp::log::fatal("non-exhaustive switch");
+    kphp::log::error("non-exhaustive switch");
   }
 }
 
@@ -112,7 +112,7 @@ void do_var_dump(const mixed& v, int32_t depth) noexcept {
     break;
   }
   default:
-    kphp::log::fatal("non-exhaustive switch");
+    kphp::log::error("non-exhaustive switch");
   }
   coub << '\n';
 }
@@ -194,7 +194,7 @@ void do_var_export(const mixed& v, int32_t depth, char endc = 0) noexcept {
     break;
   }
   default:
-    kphp::log::fatal("non-exhaustive switch");
+    kphp::log::error("non-exhaustive switch");
   }
   if (endc != 0) {
     coub << endc;

@@ -19,7 +19,7 @@ string f$vk_json_encode_safe(const T& v, bool simple_encode = true) noexcept {
   if (rt_ctx.sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) [[unlikely]] {
     rt_ctx.static_SB.clean();
     rt_ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
-    kphp::log::fatal("vk_json_encode_safe tried to throw exception but it unsupported in runtime light");
+    kphp::log::error("vk_json_encode_safe tried to throw exception but it unsupported in runtime light");
     return {};
   }
   rt_ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_OFF;

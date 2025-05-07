@@ -29,7 +29,7 @@ void f$ob_start(const string& callback) noexcept {
     if (httpResponse.current_buffer == 0 && std::string_view{callback.c_str(), callback.size()} == ob_gzhandler_name) {
       kphp::log::warning("ob_gzhandler temporarily unsupported at buffering level {}", httpResponse.current_buffer + 1);
     } else {
-      kphp::log::fatal("unsupported callback {} at buffering level {}", callback.c_str(), httpResponse.current_buffer + 1);
+      kphp::log::error("unsupported callback {} at buffering level {}", callback.c_str(), httpResponse.current_buffer + 1);
     }
   }
   ++httpResponse.current_buffer;

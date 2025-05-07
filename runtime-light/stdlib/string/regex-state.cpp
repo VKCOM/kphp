@@ -34,13 +34,13 @@ RegexInstanceState::RegexInstanceState() noexcept
       match_context(pcre2_match_context_create_8(regex_pcre2_general_context.get()), pcre2_match_context_free_8),
       regex_pcre2_match_data(pcre2_match_data_create_8(MATCH_DATA_SIZE, regex_pcre2_general_context.get()), pcre2_match_data_free_8) {
   if (!regex_pcre2_general_context) [[unlikely]] {
-    kphp::log::fatal("can't create pcre2_general_context");
+    kphp::log::error("can't create pcre2_general_context");
   }
   if (!compile_context) [[unlikely]] {
-    kphp::log::fatal("can't create pcre2_compile_context");
+    kphp::log::error("can't create pcre2_compile_context");
   }
   if (!match_context) [[unlikely]] {
-    kphp::log::fatal("can't create pcre2_match_context");
+    kphp::log::error("can't create pcre2_match_context");
   }
 }
 

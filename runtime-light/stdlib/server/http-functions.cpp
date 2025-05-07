@@ -109,7 +109,7 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
       http_server_instance_st.status_code = *opt_status_code;
       return;
     } else {
-      kphp::log::fatal("invalid HTTP status header: {}", header_view);
+      kphp::log::error("invalid HTTP status header: {}", header_view);
     }
   }
 

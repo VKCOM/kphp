@@ -52,10 +52,10 @@ ResultClass f$instance_deserialize(const string& buffer, const string& /*unused*
 
 template<class InstanceClass>
 string f$instance_serialize_safe(const class_instance<InstanceClass>& /*instance*/) noexcept {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class ResultClass>
 ResultClass f$instance_deserialize_safe(const string& /*buffer*/, const string& /*unused*/) noexcept {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }

@@ -32,7 +32,7 @@ public:
   }
 
   std::unique_ptr<tl_func_base> extract_untyped_fetcher() noexcept final {
-    kphp::log::fatal("Forbidden to call for typed rpc requests");
+    kphp::log::error("Forbidden to call for typed rpc requests");
   }
 };
 

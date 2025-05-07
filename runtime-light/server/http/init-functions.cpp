@@ -67,7 +67,7 @@ string get_server_protocol(tl::HttpVersion http_version, const std::optional<tl:
     if (scheme == HTTPS_SCHEME) {
       protocol_name = HTTPS;
     } else if (scheme != HTTP_SCHEME) [[unlikely]] {
-      kphp::log::fatal("unexpected http scheme: {}", scheme);
+      kphp::log::error("unexpected http scheme: {}", scheme);
     }
   }
   string protocol{};
@@ -155,7 +155,7 @@ std::string_view process_headers(tl::K2InvokeHttp& invoke_http, PhpScriptBuiltIn
       } else if (h_value == CONNECTION_CLOSE) [[likely]] {
         http_server_instance_st.connection_kind = kphp::http::connection_kind::close;
       } else {
-        kphp::log::fatal("unexpected connection header: {}", h_value);
+        kphp::log::error("unexpected connection header: {}", h_value);
       }
     } else if (h_name == kphp::http::headers::COOKIE) {
       process_cookie_header(h_value, superglobals);
@@ -170,7 +170,7 @@ std::string_view process_headers(tl::K2InvokeHttp& invoke_http, PhpScriptBuiltIn
       int32_t content_length{};
       const auto [_, ec]{std::from_chars(h_value.data(), std::next(h_value.data(), h_value.size()), content_length)};
       if (ec != std::errc{} || content_length != invoke_http.body.size()) [[unlikely]] {
-        kphp::log::fatal("content-length expected to be {}, but it's {}", content_length, invoke_http.body.size());
+        kphp::log::error("content-length expected to be {}, but it's {}", content_length, invoke_http.body.size());
       }
       continue;
     }
@@ -277,7 +277,7 @@ void init_server(tl::K2InvokeHttp invoke_http) noexcept {
     if (content_type == CONTENT_TYPE_APP_FORM_URLENCODED) {
       f$parse_str(body_str, superglobals.v$_POST);
     } else if (content_type.starts_with(CONTENT_TYPE_MULTIPART_FORM_DATA)) {
-      kphp::log::fatal("unsupported content-type: {}", CONTENT_TYPE_MULTIPART_FORM_DATA);
+      kphp::log::error("unsupported content-type: {}", CONTENT_TYPE_MULTIPART_FORM_DATA);
     } else {
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body_str));
     }
@@ -346,10 +346,10 @@ kphp::coro::task<> finalize_server(const string_buffer& output) noexcept {
 
   auto& instance_st{InstanceState::get()};
   if (instance_st.standard_stream() == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
-    kphp::log::fatal("can't send HTTP response due to invalid stream");
+    kphp::log::error("can't send HTTP response due to invalid stream");
   }
   if (instance_st.instance_kind() != instance_kind::http_server) [[unlikely]] {
-    kphp::log::fatal("can't send HTTP response from instance kind {}", std::to_underlying(instance_st.instance_kind()));
+    kphp::log::error("can't send HTTP response from instance kind {}", std::to_underlying(instance_st.instance_kind()));
   }
   if ((co_await write_all_to_stream(instance_st.standard_stream(), tlb.data(), tlb.size())) != tlb.size()) [[unlikely]] {
     instance_st.poll_status = k2::PollStatus::PollFinishedError;

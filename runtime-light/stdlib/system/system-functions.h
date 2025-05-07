@@ -17,21 +17,21 @@
 
 template<typename F>
 bool f$register_kphp_on_oom_callback(F&& /*callback*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<typename F>
 void f$kphp_extended_instance_cache_metrics_init(F&& /*callback*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline int64_t f$system(const string& /*command*/, int64_t& /*result_code*/ = SystemInstanceState::get().result_code_dummy) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline Optional<array<mixed>> f$getopt(const string& /*options*/, const array<string>& /*longopts*/ = {},
                                        Optional<int64_t>& /*rest_index*/ = SystemInstanceState::get().rest_index_dummy) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline int64_t f$numa_get_bound_node() noexcept {
@@ -95,12 +95,12 @@ inline int64_t f$error_reporting() noexcept {
 }
 
 inline Optional<string> f$exec([[maybe_unused]] const string& command) noexcept {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline Optional<string> f$exec([[maybe_unused]] const string& command, [[maybe_unused]] mixed& output,
                                [[maybe_unused]] int64_t& result_code = SystemInstanceState::get().result_code_dummy) noexcept {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline string f$get_engine_version() noexcept {

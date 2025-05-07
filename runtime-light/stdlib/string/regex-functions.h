@@ -210,9 +210,9 @@ auto f$preg_replace_callback(T1&& pattern, T2&& callback, T3&& subject, int64_t 
 // === preg_split =================================================================================
 
 inline Optional<array<mixed>> f$preg_split(const string& /*unused*/, const string& /*unused*/, int64_t /*unused*/ = -1, int64_t /*unused*/ = 0) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline Optional<array<mixed>> f$preg_split(const mixed& /*unused*/, const string& /*unused*/, int64_t /*unused*/ = -1, int64_t /*unused*/ = 0) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }

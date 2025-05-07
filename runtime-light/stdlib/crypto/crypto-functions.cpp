@@ -401,7 +401,7 @@ array<string> f$hash_hmac_algos() noexcept {
 kphp::coro::task<string> f$hash(string algo_str, string s, bool raw_output) noexcept {
   const auto algo{parse_hash_algorithm({algo_str.c_str(), algo_str.size()})};
   if (!algo.has_value()) [[unlikely]] {
-    kphp::log::fatal("algo {} not supported in function hash", algo_str.c_str());
+    kphp::log::error("algo {} not supported in function hash", algo_str.c_str());
   }
   co_return co_await hash_impl(*algo, s, raw_output);
 }
@@ -409,7 +409,7 @@ kphp::coro::task<string> f$hash(string algo_str, string s, bool raw_output) noex
 kphp::coro::task<string> f$hash_hmac(string algo_str, string s, string key, bool raw_output) noexcept {
   const auto algo{parse_hash_algorithm({algo_str.c_str(), algo_str.size()})};
   if (!algo.has_value()) [[unlikely]] {
-    kphp::log::fatal("algo {} not supported in function hash", algo_str.c_str());
+    kphp::log::error("algo {} not supported in function hash", algo_str.c_str());
   }
 
   tl::TLBuffer tlb;

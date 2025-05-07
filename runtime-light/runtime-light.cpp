@@ -15,7 +15,7 @@ ImageState* k2_create_image() {
   kphp::log::debug("start image state creation");
   auto* image_state_ptr{static_cast<ImageState*>(k2::alloc(sizeof(ImageState)))};
   if (image_state_ptr == nullptr) [[unlikely]] {
-    kphp::log::fatal("can't allocate enough memory for image state");
+    kphp::log::error("can't allocate enough memory for image state");
     return nullptr;
   }
   kphp::log::debug("finish image state creation");
@@ -33,7 +33,7 @@ ComponentState* k2_create_component() {
   kphp::log::debug("start component state creation");
   auto* component_state_ptr{static_cast<ComponentState*>(k2::alloc(sizeof(ComponentState)))};
   if (component_state_ptr == nullptr) [[unlikely]] {
-    kphp::log::fatal("can't allocate enough memory for component state");
+    kphp::log::error("can't allocate enough memory for component state");
     return nullptr;
   }
   kphp::log::debug("finish component state creation");
@@ -50,7 +50,7 @@ InstanceState* k2_create_instance() {
   kphp::log::debug("start instance state creation");
   auto* instance_state_ptr{static_cast<InstanceState*>(k2::alloc(sizeof(InstanceState)))};
   if (instance_state_ptr == nullptr) [[unlikely]] {
-    kphp::log::fatal("can't allocate enough memory for instance state");
+    kphp::log::error("can't allocate enough memory for instance state");
     return nullptr;
   }
   kphp::log::debug("finish instance state creation");

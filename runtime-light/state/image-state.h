@@ -43,7 +43,7 @@ struct ImageState final : private vk::not_copyable {
         pid(k2::getpid()) {
     utsname uname_info{};
     if (const auto errc{k2::uname(std::addressof(uname_info))}; errc != k2::errno_ok) [[unlikely]] {
-      kphp::log::fatal("can't get uname, error code: {}", errc);
+      kphp::log::error("can't get uname, error code: {}", errc);
     }
     uname_info_s = string{uname_info.sysname};
     uname_info_n = string{uname_info.nodename};

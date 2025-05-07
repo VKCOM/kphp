@@ -127,21 +127,21 @@ inline int64_t f$get_running_fork_id() noexcept {
 }
 
 inline int64_t f$wait_queue_create() {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline int64_t f$wait_queue_create(const mixed& /*resumable_ids*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline int64_t f$wait_queue_push(int64_t /*queue_id*/, const mixed& /*resumable_ids*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline bool f$wait_queue_empty(int64_t /*queue_id*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline Optional<int64_t> f$wait_queue_next(int64_t /*queue_id*/, double /*timeout*/ = -1.0) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }

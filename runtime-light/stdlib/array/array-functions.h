@@ -309,23 +309,23 @@ mixed f$array_rand(const array<T>& a, int64_t num) noexcept {
 
 template<class T>
 array<T> f$array_splice(array<T>& /*unused*/, int64_t /*unused*/, int64_t /*unused*/, const array<Unknown>& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T, class T1 = T>
 array<T> f$array_splice(array<T>& /*unused*/, int64_t /*unused*/, int64_t /*unused*/ = std::numeric_limits<int64_t>::max(),
                         const array<T1>& /*unused*/ = array<T1>()) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class ReturnT, class InputArrayT, class DefaultValueT>
 ReturnT f$array_pad(const array<InputArrayT>& /*unused*/, int64_t /*unused*/, const DefaultValueT& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class ReturnT, class DefaultValueT>
 ReturnT f$array_pad(const array<Unknown>& /*unused*/, int64_t /*unused*/, const DefaultValueT& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 /**
@@ -362,64 +362,64 @@ kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
 
 template<class T>
 T f$array_merge_spread(const T& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
 T f$array_merge_spread(const T& /*unused*/, const T& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
 T f$array_merge_spread(const T& /*unused*/, const T& /*unused*/, const T& /*unused*/, const T& /*unused*/ = T(), const T& /*unused*/ = T(),
                        const T& /*unused*/ = T(), const T& /*unused*/ = T(), const T& /*unused*/ = T(), const T& /*unused*/ = T(), const T& /*unused*/ = T(),
                        const T& /*unused*/ = T(), const T& /*unused*/ = T()) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class ReturnT, class... Args>
 ReturnT f$array_merge_recursive(const Args&... /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T, class T1>
 array<T> f$array_intersect_assoc(const array<T>& /*unused*/, const array<T1>& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T, class T1, class T2>
 array<T> f$array_intersect_assoc(const array<T>& /*unused*/, const array<T1>& /*unused*/, const array<T2>& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T, class T1>
 array<T> f$array_diff_key(const array<T>& /*unused*/, const array<T1>& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T, class T1>
 array<T> f$array_diff_assoc(const array<T>& /*unused*/, const array<T1>& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T, class T1, class T2>
 array<T> f$array_diff_assoc(const array<T>& /*unused*/, const array<T1>& /*unused*/, const array<T2>& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
 array<int64_t> f$array_count_values(const array<T>& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T1, class T>
 array<T> f$array_fill_keys(const array<T1>& /*unused*/, const T& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T1, class T>
 array<T> f$array_combine(const array<T1>& /*unused*/, const array<T>& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T, class Comparator>
@@ -464,60 +464,60 @@ kphp::coro::task<> f$uksort(array<T>& a, Comparator compare) {
 
 template<class T>
 mixed f$getKeyByPos(const array<T>& /*unused*/, int64_t /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
 T f$getValueByPos(const array<T>& /*unused*/, int64_t /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
 array<T> f$create_vector(int64_t /*unused*/, const T& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
 void f$array_swap_int_keys(array<T>& /*unused*/, int64_t /*unused*/, int64_t /*unused*/) noexcept {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
 Optional<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>>& /*unused*/, const mixed& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
 Optional<array<class_instance<T>>> f$array_column(const array<Optional<array<class_instance<T>>>>& /*unused*/, const mixed& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
 Optional<array<T>> f$array_column(const array<array<T>>& /*unused*/, const mixed& /*unused*/, const mixed& /*unused*/ = {}) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
 Optional<array<T>> f$array_column(const array<Optional<array<T>>>& /*unused*/, const mixed& /*unused*/, const mixed& /*unused*/ = {}) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline Optional<array<mixed>> f$array_column(const array<mixed>& /*unused*/, const mixed& /*unused*/, const mixed& /*unused*/ = {}) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
 auto f$array_column(const Optional<T>& /*unused*/, const mixed& column_key, const mixed& index_key = {})
     -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T, class T1>
 std::tuple<typename array<T>::key_type, T> f$array_find(const array<T>& /*unused*/, const T1& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
 T f$vk_dot_product(const array<T>& /*unused*/, const array<T>& /*unused*/) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }

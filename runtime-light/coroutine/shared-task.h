@@ -63,7 +63,7 @@ struct promise_base {
   }
 
   auto unhandled_exception() const noexcept -> void {
-    kphp::log::fatal("internal unhandled exception");
+    kphp::log::error("internal unhandled exception");
   }
 
   auto done() const noexcept -> bool {
@@ -269,7 +269,7 @@ struct shared_task final {
     }
 
     static auto get_return_object_on_allocation_failure() noexcept -> shared_task {
-      kphp::log::fatal("cannot allocate memory for shared_task");
+      kphp::log::error("cannot allocate memory for shared_task");
     }
   };
 

@@ -55,7 +55,7 @@ std::pair<std::optional<dest_actor_flags_header>, uint32_t> regularize_extra_hea
     break;
   }
   default:
-    kphp::log::fatal("unreachable");
+    kphp::log::error("unreachable");
   }
 
   if (cur_extra_header_actor_id != EXPECTED_ACTOR_ID) [[unlikely]] {

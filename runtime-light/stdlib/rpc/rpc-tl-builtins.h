@@ -59,7 +59,7 @@ inline void fetch_magic_if_not_bare(uint32_t inner_magic, const char* error_msg)
 
 template<class T>
 inline void fetch_raw_vector_T(array<T>& /*out*/, int64_t /*n_elems*/) noexcept {
-  kphp::log::fatal("never called in runtime");
+  kphp::log::error("never called in runtime");
 }
 
 template<>
@@ -69,7 +69,7 @@ inline void fetch_raw_vector_T<double>(array<double>& out, int64_t n_elems) noex
 
 template<class T>
 inline void store_raw_vector_T(const array<T>& /*v*/) noexcept {
-  kphp::log::fatal("never called in runtime");
+  kphp::log::error("never called in runtime");
 }
 
 template<>

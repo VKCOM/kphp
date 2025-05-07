@@ -60,5 +60,5 @@ bool f$header_register_callback(F&& /*unused*/) noexcept {
 
 template<class T>
 string f$http_build_query(const array<T>& /*a*/, const string& /*numeric_prefix*/ = {}, const string& /*arg_separator*/ = string(), int64_t /*enc_type*/ = 1) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }

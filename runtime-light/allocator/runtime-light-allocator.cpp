@@ -34,7 +34,7 @@ RuntimeAllocator& RuntimeAllocator::get() noexcept {
   } else if (k2::image_state() != nullptr) {
     return ImageState::get_mutable().allocator;
   }
-  kphp::log::fatal("no available allocators");
+  kphp::log::error("no available allocators");
 }
 
 RuntimeAllocator::RuntimeAllocator(size_t script_mem_size, size_t oom_handling_mem_size) {

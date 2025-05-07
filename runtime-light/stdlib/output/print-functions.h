@@ -78,9 +78,9 @@ inline int64_t f$printf(const string& format, const array<mixed>& a) noexcept {
 }
 
 inline Optional<int64_t> f$fprintf(const mixed&, const string&, const array<mixed>&) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline Optional<int64_t> f$fputcsv(const mixed&, const array<mixed>&, string = string(",", 1), string = string("\"", 1), string = string("\\", 1)) {
-  kphp::log::fatal("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
