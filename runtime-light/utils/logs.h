@@ -48,10 +48,9 @@ template<typename... Args>
 }
 
 inline void assertion(bool condition, const std::source_location& location = std::source_location::current()) noexcept {
-  if (condition) [[likely]] {
-    return;
+  if (!condition) [[unlikely]] {
+    kphp::log::fatal("assertion failed at {}:{}", location.file_name(), location.line());
   }
-  kphp::log::fatal("assertion failed at {}:{}", location.file_name(), location.line());
 }
 
 template<typename... Args>
