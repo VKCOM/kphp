@@ -90,9 +90,9 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
   kphp::log::assertion(dict_confdata_value.fetch(tlb));
 
   array<mixed> result{array_size{static_cast<int64_t>(dict_confdata_value.size()), false}};
-  std::for_each(dict_confdata_value.begin(), dict_confdata_value.end(), [&result](auto&& dict_field) {
+  std::for_each(dict_confdata_value.begin(), dict_confdata_value.end(), [&result](const auto& dict_field) noexcept {
     result.set_value(string{dict_field.key.value.data(), static_cast<string::size_type>(dict_field.key.value.size())},
-                     extract_confdata_value(std::move(dict_field.value)));
+                     extract_confdata_value(dict_field.value));
   });
   co_return std::move(result);
 }
