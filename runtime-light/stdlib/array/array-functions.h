@@ -14,6 +14,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/math/random-functions.h"
+#include "runtime-light/utils/logs.h"
 
 namespace array_functions_impl_ {
 template<typename T, typename Comparator>
@@ -291,7 +292,7 @@ mixed f$array_rand(const array<T>& a, int64_t num) noexcept {
   int64_t size{a.count()};
 
   if (num <= 0 || num > size) [[unlikely]] {
-    php_warning("Second argument has to be between 1 and the number of elements in the array");
+    kphp::log::warning("Second argument has to be between 1 and the number of elements in the array");
     return {};
   }
 
@@ -506,8 +507,8 @@ inline Optional<array<mixed>> f$array_column(const array<mixed>& /*unused*/, con
 }
 
 template<class T>
-auto f$array_column(const Optional<T>& /*unused*/, const mixed& column_key,
-                    const mixed& index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
+auto f$array_column(const Optional<T>& /*unused*/, const mixed& column_key, const mixed& index_key = {})
+    -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
   php_critical_error("call to unsupported function");
 }
 

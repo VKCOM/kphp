@@ -11,8 +11,8 @@
 #include <utility>
 
 #include "common/containers/final_action.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/utils/logs.h"
 
 namespace kphp::coro {
 
@@ -43,7 +43,7 @@ struct promise_base {
   }
 
   auto unhandled_exception() const noexcept -> void {
-    php_critical_error("internal unhandled exception");
+    kphp::log::fatal("internal unhandled exception");
   }
 
   auto done() const noexcept -> bool {
@@ -91,7 +91,7 @@ public:
   }
 
   constexpr auto await_ready() const noexcept -> bool {
-    php_assert(m_state == state::init && m_coro);
+    kphp::log::assertion(m_state == state::init && m_coro);
     return false;
   }
 
@@ -160,7 +160,7 @@ struct task {
     }
 
     static auto get_return_object_on_allocation_failure() noexcept -> task {
-      php_critical_error("cannot allocate memory for task");
+      kphp::log::fatal("cannot allocate memory for task");
     }
   };
 

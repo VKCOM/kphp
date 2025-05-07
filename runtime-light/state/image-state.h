@@ -13,12 +13,12 @@
 #include "common/php-functions.h"
 #include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/visitors/shape-visitors.h"
+#include "runtime-light/utils/logs.h"
 
 struct ImageState final : private vk::not_copyable {
   RuntimeAllocator allocator;
@@ -42,8 +42,8 @@ struct ImageState final : private vk::not_copyable {
       : allocator(INIT_IMAGE_ALLOCATOR_SIZE, 0),
         pid(k2::getpid()) {
     utsname uname_info{};
-    if (const auto err{k2::uname(std::addressof(uname_info))}; err != k2::errno_ok) [[unlikely]] {
-      php_error("can't get uname, error '%d'", err);
+    if (const auto errc{k2::uname(std::addressof(uname_info))}; errc != k2::errno_ok) [[unlikely]] {
+      kphp::log::fatal("can't get uname, error code: {}", errc);
     }
     uname_info_s = string{uname_info.sysname};
     uname_info_n = string{uname_info.nodename};

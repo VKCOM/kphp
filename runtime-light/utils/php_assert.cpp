@@ -19,6 +19,10 @@
 #include "runtime-light/utils/logs.h"
 
 static void php_warning_impl(bool out_of_memory, int error_type, char const* message, va_list args) {
+  if (error_type > k2::log_level_enabled()) {
+    return;
+  }
+
   (void)out_of_memory;
   const int BUF_SIZE = 1000;
   char buf[BUF_SIZE];

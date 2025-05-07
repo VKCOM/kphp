@@ -2,74 +2,73 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-common/core/utils/kphp-assert-core.h"
+#include <utility>
+
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
+#include "runtime-light/utils/logs.h"
 
 ImageState* k2_create_image() {
-  // Note that in k2_create_image most of K2 functionality is not yet available
-  php_debug("create image state of \"%s\"", k2::describe()->image_name);
+  kphp::log::debug("start image state creation");
   auto* image_state_ptr{static_cast<ImageState*>(k2::alloc(sizeof(ImageState)))};
-  if (image_state_ptr == nullptr) {
-    php_warning("can't allocate enough memory for ImageState");
+  if (image_state_ptr == nullptr) [[unlikely]] {
+    kphp::log::fatal("can't allocate enough memory for image state");
     return nullptr;
   }
-  php_debug("finish image state creation of \"%s\"", k2::describe()->image_name);
+  kphp::log::debug("finish image state creation");
   return image_state_ptr;
 }
 
 void k2_init_image() {
-  php_debug("start image state init");
+  kphp::log::debug("start image state init");
   new (const_cast<ImageState*>(k2::image_state())) ImageState{};
   init_php_scripts_once_in_master();
-  php_debug("end image state init");
+  kphp::log::debug("finish image state init");
 }
 
 ComponentState* k2_create_component() {
-  // Note that in k2_create_component most of K2 functionality is not yet available
-  php_debug("create component state of \"%s\"", k2::describe()->image_name);
+  kphp::log::debug("start component state creation");
   auto* component_state_ptr{static_cast<ComponentState*>(k2::alloc(sizeof(ComponentState)))};
-  if (component_state_ptr == nullptr) {
-    php_warning("can't allocate enough memory for ImageState");
+  if (component_state_ptr == nullptr) [[unlikely]] {
+    kphp::log::fatal("can't allocate enough memory for component state");
     return nullptr;
   }
-  php_debug("finish component state creation of \"%s\"", k2::describe()->image_name);
+  kphp::log::debug("finish component state creation");
   return component_state_ptr;
 }
 
 void k2_init_component() {
-  php_debug("start component state init");
+  kphp::log::debug("start component state init");
   new (const_cast<ComponentState*>(k2::component_state())) ComponentState{};
-  php_debug("end component state init");
+  kphp::log::debug("finish component state init");
 }
 
 InstanceState* k2_create_instance() {
-  // Note that in k2_create_instance most of K2 functionality is not yet available
-  php_debug("create instance state of \"%s\"", k2::describe()->image_name);
+  kphp::log::debug("start instance state creation");
   auto* instance_state_ptr{static_cast<InstanceState*>(k2::alloc(sizeof(InstanceState)))};
-  if (instance_state_ptr == nullptr) {
-    php_warning("cannot allocate enough memory for ComponentState");
+  if (instance_state_ptr == nullptr) [[unlikely]] {
+    kphp::log::fatal("can't allocate enough memory for instance state");
     return nullptr;
   }
-  php_debug("finish instance state creation of \"%s\"", k2::describe()->image_name);
+  kphp::log::debug("finish instance state creation");
   return instance_state_ptr;
 }
 
 void k2_init_instance() {
-  php_debug("start instance state init");
+  kphp::log::debug("start instance state init");
   new (k2::instance_state()) InstanceState{};
   k2::instance_state()->init_script_execution();
-  php_debug("end instance state init");
+  kphp::log::debug("finish instance state init");
 }
 
 k2::PollStatus k2_poll() {
-  php_debug("k2_poll started...");
+  kphp::log::debug("k2_poll started");
   auto& instance_state{InstanceState::get()};
   instance_state.process_platform_updates();
   const auto poll_status{instance_state.poll_status};
-  php_debug("k2_poll finished with status: %d", poll_status);
+  kphp::log::debug("k2_poll finished: {}", std::to_underlying(poll_status));
   return poll_status;
 }
