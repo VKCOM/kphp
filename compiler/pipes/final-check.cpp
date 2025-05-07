@@ -44,6 +44,7 @@ void check_class_immutableness(ClassPtr klass) {
 std::vector<ClassPtr> find_not_ic_compatibility_derivatives(ClassPtr klass);
 
 void check_fields_ic_compatibility(ClassPtr klass) {
+  // In case of K2 mode, all checks about serializability have already done
   bool flag = false;
   if (!klass->process_fields_ic_compatibility.compare_exchange_strong(flag, true, std::memory_order_acq_rel)) {
     return;
@@ -68,6 +69,7 @@ void check_fields_ic_compatibility(ClassPtr klass) {
 }
 
 void check_derivatives_ic_compatibility(ClassPtr klass) {
+  // In case of K2 mode, all checks about serializability have already done
   std::vector<ClassPtr> descendants = find_not_ic_compatibility_derivatives(klass);
   for (const auto &element : descendants) {
     kphp_error(false, fmt_format("Can not store polymorphic type {} with mutable derived class {}", klass->name, element->name));
@@ -129,9 +131,16 @@ void process_job_worker_class(ClassPtr klass) {
 void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
   auto klass = tinf::get_type(call)->class_type();
   kphp_assert(klass);
-  kphp_error(klass->is_immutable || klass->is_interface(),
-             fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
-  klass->deeply_require_instance_cache_visitor();
+  if (G->is_output_mode_k2()) {
+    kphp_error(klass->is_immutable,
+               fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
+    kphp_error(klass->is_serializable,
+               fmt_format("Can not fetch instance of non-serializable class {} with instance_cache_fetch call", klass->name));
+  } else {
+    kphp_error(klass->is_immutable || klass->is_interface(),
+               fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
+    klass->deeply_require_instance_cache_visitor();
+  }
 }
 
 void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
@@ -139,8 +148,15 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
   kphp_error_return(type->ptype() == tp_Class, "Called instance_cache_store() with a non-instance argument");
   auto klass = type->class_type();
   kphp_error(!klass->is_empty_class(), fmt_format("Can not store instance of empty class {} with instance_cache_store call", klass->name));
-  kphp_error_return(klass->is_immutable || klass->is_interface(),
-             fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
+
+  if (G->is_output_mode_k2()) {
+    kphp_error_return(klass->is_immutable, fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
+    kphp_error_return(klass->is_serializable, fmt_format("Can not store instance of non-serializable class {} with instance_cache_store call", klass->name));
+  } else {
+    kphp_error_return(klass->is_immutable || klass->is_interface(),
+                      fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
+  }
+
   check_fields_ic_compatibility(klass);
   check_derivatives_ic_compatibility(klass);
   klass->deeply_require_instance_cache_visitor();
