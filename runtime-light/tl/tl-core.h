@@ -15,8 +15,8 @@
 #include "common/algorithms/find.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/utils/concepts.h"
+#include "runtime-light/utils/logs.h"
 
 namespace tl {
 
@@ -88,13 +88,13 @@ public:
   }
 
   void reset(size_t pos) noexcept {
-    php_assert(pos <= size());
+    kphp::log::assertion(pos <= size());
     m_pos = pos;
     m_remaining = size() - m_pos;
   }
 
   void adjust(size_t len) noexcept {
-    php_assert(m_pos + len <= size());
+    kphp::log::assertion(m_pos + len <= size());
     m_pos += len;
     m_remaining -= len;
   }

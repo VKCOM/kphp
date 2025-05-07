@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cinttypes>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -22,10 +21,10 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/string/mbstring-functions.h"
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/stdlib/string/regex-state.h"
+#include "runtime-light/utils/logs.h"
 
 namespace {
 
@@ -76,7 +75,7 @@ requires((std::is_same_v<Args, int64_t> && ...) && sizeof...(Args) > 0)
 bool valid_regex_flags(int64_t flags, Args... supported_flags) noexcept {
   const bool valid{(flags & ~(supported_flags | ...)) == kphp::regex::PREG_NO_FLAGS};
   if (!valid) [[unlikely]] {
-    php_warning("invalid flags: %" PRIi64, flags);
+    kphp::log::warning("invalid flags: {}", flags);
   }
   return valid;
 }
@@ -104,7 +103,7 @@ int64_t skip_utf8_subsequent_bytes(int64_t offset, const std::string_view subjec
 
 bool parse_regex(RegexInfo& regex_info) noexcept {
   if (regex_info.regex.empty()) {
-    php_warning("empty regex");
+    kphp::log::warning("empty regex");
     return false;
   }
 
@@ -143,7 +142,7 @@ bool parse_regex(RegexInfo& regex_info) noexcept {
     break;
   }
   default: {
-    php_warning("wrong regex delimiter %c", start_delim);
+    kphp::log::warning("wrong regex delimiter {}", start_delim);
     return false;
   }
   }
@@ -202,24 +201,24 @@ bool parse_regex(RegexInfo& regex_info) noexcept {
       break;
     }
     default: {
-      php_warning("unsupported regex modifier %c", regex_info.regex_body.back());
+      kphp::log::warning("unsupported regex modifier {}", regex_info.regex_body.back());
       break;
     }
     }
   }
 
   if (regex_info.regex_body.empty()) {
-    php_warning("no ending regex delimiter");
+    kphp::log::warning("no ending regex delimiter: {}", regex_info.regex);
     return false;
   }
   // UTF-8 validation
   if (static_cast<bool>(compile_options & PCRE2_UTF)) {
     if (!mb_UTF8_check(regex_info.regex.data())) [[unlikely]] {
-      php_warning("invalid UTF-8 pattern");
+      kphp::log::warning("invalid UTF-8 pattern: {}", regex_info.regex);
       return false;
     }
     if (!mb_UTF8_check(regex_info.subject.data())) [[unlikely]] {
-      php_warning("invalid UTF-8 subject");
+      kphp::log::warning("invalid UTF-8 subject: {}", regex_info.subject);
       return false;
     }
   }
@@ -259,7 +258,7 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
   if (!regex_code) [[unlikely]] {
     std::array<char, ERROR_BUFFER_LENGTH> buffer{};
     pcre2_get_error_message_8(error_number, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
-    php_warning("can't compile pcre2 regex due to error at offset %zu: %s", error_offset, buffer.data());
+    kphp::log::warning("can't compile pcre2 regex due to error at offset {}: {}", error_offset, buffer.data());
     return false;
   }
 
@@ -315,7 +314,7 @@ bool match_regex(RegexInfo& regex_info, size_t offset) noexcept {
   if (match_count < 0 && match_count != PCRE2_ERROR_NOMATCH) [[unlikely]] {
     std::array<char, ERROR_BUFFER_LENGTH> buffer{};
     pcre2_get_error_message_8(match_count, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
-    php_warning("can't match pcre2 regex due to error: %s", buffer.data());
+    kphp::log::warning("can't match pcre2 regex due to error: {}", buffer.data());
     return false;
   }
   regex_info.match_count = match_count != PCRE2_ERROR_NOMATCH ? match_count : 0;
@@ -444,7 +443,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
     if (regex_info.replace_count < 0) [[unlikely]] {
       std::array<char, ERROR_BUFFER_LENGTH> buffer{};
       pcre2_get_error_message_8(regex_info.replace_count, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
-      php_warning("pcre2_substitute error %s", buffer.data());
+      kphp::log::warning("pcre2_substitute error {}", buffer.data());
       return false;
     }
   } else { // replace only 'limit' times
@@ -472,7 +471,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
                                               reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
                                               reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(length_after_replace))};
           replace_one != 1) [[unlikely]] {
-        php_warning("pcre2_substitute error %d", replace_one);
+        kphp::log::warning("pcre2_substitute error {}", replace_one);
         return false;
       }
 
@@ -511,7 +510,7 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
 
   std::optional<std::reference_wrapper<mixed>> matches{};
   if (opt_matches.has_value()) {
-    php_assert(std::holds_alternative<std::reference_wrapper<mixed>>(opt_matches.val()));
+    kphp::log::assertion(std::holds_alternative<std::reference_wrapper<mixed>>(opt_matches.val()));
     auto& inner_ref{std::get<std::reference_wrapper<mixed>>(opt_matches.val()).get()};
     inner_ref = array<mixed>{};
     matches.emplace(inner_ref);
@@ -534,7 +533,7 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
 
   std::optional<std::reference_wrapper<mixed>> matches{};
   if (opt_matches.has_value()) {
-    php_assert(std::holds_alternative<std::reference_wrapper<mixed>>(opt_matches.val()));
+    kphp::log::assertion(std::holds_alternative<std::reference_wrapper<mixed>>(opt_matches.val()));
     auto& inner_ref{std::get<std::reference_wrapper<mixed>>(opt_matches.val()).get()};
     inner_ref = array<mixed>{};
     matches.emplace(inner_ref);
@@ -580,14 +579,14 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
   int64_t count{};
   vk::final_action count_finalizer{[&count, &opt_count]() noexcept {
     if (opt_count.has_value()) {
-      php_assert(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
+      kphp::log::assertion(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
       auto& inner_ref{std::get<std::reference_wrapper<int64_t>>(opt_count.val()).get()};
       inner_ref = count;
     }
   }};
 
   if (limit < 0 && limit != kphp::regex::PREG_REPLACE_NOLIMIT) [[unlikely]] {
-    php_warning("invalid limit %" PRIi64 " in preg_replace", limit);
+    kphp::log::warning("invalid limit {} in preg_replace", limit);
     return {};
   }
 
@@ -601,7 +600,7 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
     success &= compile_regex(regex_info);
     success &= replace_regex(regex_info, std::numeric_limits<uint64_t>::max());
     if (!success) [[unlikely]] {
-      php_warning("can't replace PHP back references with PCRE2 ones");
+      kphp::log::warning("can't replace PHP back references with PCRE2 ones");
       return {};
     }
     pcre2_replacement = regex_info.opt_replace_result.has_value() ? *std::move(regex_info.opt_replace_result) : replacement;
@@ -624,7 +623,7 @@ Optional<string> f$preg_replace(const mixed& pattern, const string& replacement,
   int64_t count{};
   vk::final_action count_finalizer{[&count, &opt_count]() noexcept {
     if (opt_count.has_value()) {
-      php_assert(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
+      kphp::log::assertion(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
       auto& inner_ref{std::get<std::reference_wrapper<int64_t>>(opt_count.val()).get()};
       inner_ref = count;
     }
@@ -659,7 +658,7 @@ Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, 
   int64_t count{};
   vk::final_action count_finalizer{[&count, &opt_count]() noexcept {
     if (opt_count.has_value()) {
-      php_assert(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
+      kphp::log::assertion(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
       auto& inner_ref{std::get<std::reference_wrapper<int64_t>>(opt_count.val()).get()};
       inner_ref = count;
     }
@@ -673,7 +672,7 @@ Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, 
     return f$preg_replace(pattern, replacement.as_string(), subject, limit, count);
   }
   if (pattern.is_string()) [[unlikely]] {
-    php_warning("parameter mismatch: replacement is an array while pattern is string");
+    kphp::log::warning("parameter mismatch: replacement is an array while pattern is string");
     return {};
   }
 
@@ -707,7 +706,7 @@ mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed
   int64_t count{};
   vk::final_action count_finalizer{[&count, &opt_count]() noexcept {
     if (opt_count.has_value()) {
-      php_assert(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
+      kphp::log::assertion(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
       auto& inner_ref{std::get<std::reference_wrapper<int64_t>>(opt_count.val()).get()};
       inner_ref = count;
     }

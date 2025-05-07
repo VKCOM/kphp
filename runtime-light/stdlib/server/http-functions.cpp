@@ -5,7 +5,6 @@
 #include "runtime-light/stdlib/server/http-functions.h"
 
 #include <algorithm>
-#include <cinttypes>
 #include <cstddef>
 #include <cstdint>
 #include <locale>
@@ -16,9 +15,9 @@
 
 #include "common/algorithms/string-algorithms.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/stdlib/time/time-functions.h"
+#include "runtime-light/utils/logs.h"
 
 namespace {
 
@@ -96,13 +95,11 @@ std::optional<uint64_t> valid_http_status_header(std::string_view header) noexce
 
 } // namespace
 
-namespace kphp {
-
-namespace http {
+namespace kphp::http {
 
 void header(std::string_view header_view, bool replace, int64_t response_code) noexcept {
   if (response_code < 0) [[unlikely]] {
-    return php_warning("http response code can't be negative: %" PRIi64, response_code);
+    return kphp::log::warning("http response code can't be negative: {}", response_code);
   }
 
   auto& http_server_instance_st{HttpServerInstanceState::get()};
@@ -112,24 +109,24 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
       http_server_instance_st.status_code = *opt_status_code;
       return;
     } else {
-      php_error("invalid HTTP status header: %s", header_view.data());
+      kphp::log::fatal("invalid HTTP status header: {}", header_view);
     }
   }
 
   auto [name_view, value_view]{vk::split_string_view(header_view, ':')};
   if (name_view.size() + value_view.size() + 1 != header_view.size()) [[unlikely]] {
-    return php_warning("invalid header: %s", header_view.data());
+    return kphp::log::warning("invalid header: {}", header_view);
   }
 
   // validate header name
   name_view = vk::strip_ascii_whitespace(name_view);
   if (!std::ranges::all_of(name_view, [](char c) noexcept { return std::isalnum(c, std::locale::classic()) || c == '-' || c == '_'; })) [[unlikely]] {
-    return php_warning("invalid header name: %s", name_view.data());
+    return kphp::log::warning("invalid header name: {}", name_view);
   }
   // validate header value
   value_view = vk::strip_ascii_whitespace(value_view);
   if (!std::ranges::all_of(value_view, [](char c) noexcept { return std::isprint(c, std::locale::classic()); })) [[unlikely]] {
-    return php_warning("invalid header value: %s", value_view.data());
+    return kphp::log::warning("invalid header value: {}", value_view);
   }
 
   http_server_instance_st.add_header(name_view, value_view, replace);
@@ -147,9 +144,7 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
   }
 }
 
-} // namespace http
-
-} // namespace kphp
+} // namespace kphp::http
 
 void f$setrawcookie(const string& name, const string& value, int64_t expire_or_options, const string& path, const string& domain, bool secure,
                     bool http_only) noexcept {

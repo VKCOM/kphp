@@ -7,9 +7,9 @@
 #include <memory>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-func-base.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
+#include "runtime-light/utils/logs.h"
 
 using tl_undefined_php_type = std::nullptr_t;
 using tl_storer_ptr = std::unique_ptr<tl_func_base> (*)(const mixed&);
@@ -35,7 +35,7 @@ struct tl_exclamation_fetch_wrapper {
   using PhpType = class_instance<C$VK$TL$RpcFunctionReturnResult>;
 
   void typed_fetch_to(PhpType& out) const {
-    php_assert(fetcher);
+    kphp::log::assertion(static_cast<bool>(fetcher));
     out = fetcher->typed_fetch();
   }
 };

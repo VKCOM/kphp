@@ -10,10 +10,10 @@
 #include <utility>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/utils/logs.h"
 
 namespace {
 
@@ -33,7 +33,7 @@ read_all_from_stream(uint64_t stream_d) noexcept {
   do {
     k2::stream_status(stream_d, std::addressof(status));
     if (status.libc_errno != k2::errno_ok) {
-      php_warning("get stream status returned status %d", status.libc_errno);
+      kphp::log::warning("get stream status returned status {}", status.libc_errno);
       co_return std::make_pair(byte_pointer_t{nullptr, kphp::memory::script::free}, 0);
     }
 
@@ -63,7 +63,7 @@ std::pair<std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::fr
   do {
     k2::stream_status(stream_d, std::addressof(status));
     if (status.libc_errno != k2::errno_ok) {
-      php_warning("get stream status returned status %d", status.libc_errno);
+      kphp::log::warning("get stream status returned status {}", status.libc_errno);
       return std::make_pair(byte_pointer_t{nullptr, kphp::memory::script::free}, 0);
     }
 
@@ -89,7 +89,7 @@ kphp::coro::task<int32_t> read_exact_from_stream(uint64_t stream_d, char* buffer
   while (read != len && status.read_status != k2::IOStatus::IOClosed) {
     k2::stream_status(stream_d, std::addressof(status));
     if (status.libc_errno != k2::errno_ok) {
-      php_warning("get stream status returned status %d", status.libc_errno);
+      kphp::log::warning("get stream status returned status {}", status.libc_errno);
       co_return 0;
     }
 
@@ -112,24 +112,24 @@ kphp::coro::task<int32_t> write_all_to_stream(uint64_t stream_d, const char* buf
   do {
     k2::stream_status(stream_d, std::addressof(status));
     if (status.libc_errno != k2::errno_ok) {
-      php_warning("get stream status returned status %d", status.libc_errno);
+      kphp::log::warning("get stream status returned status {}", status.libc_errno);
       co_return written;
     }
 
     if (status.please_shutdown_write) {
-      php_debug("stream %" PRIu64 " set please_shutdown_write. Stop writing", stream_d);
+      kphp::log::debug("stream {} set please_shutdown_write. Stop writing", stream_d);
       co_return written;
     } else if (status.write_status == k2::IOStatus::IOAvailable) {
       written += k2::write(stream_d, len - written, buffer + written);
     } else if (status.write_status == k2::IOStatus::IOBlocked) {
       co_await wait_for_update_t{stream_d};
     } else {
-      php_warning("stream closed while writing. Wrote %d. Size %d. Stream %" PRIu64, written, len, stream_d);
+      kphp::log::warning("stream closed while writing. Wrote {}. Size {}. Stream {}", written, len, stream_d);
       co_return written;
     }
   } while (written != len);
 
-  php_debug("wrote %d bytes to stream %" PRIu64, len, stream_d);
+  kphp::log::debug("wrote {} bytes to stream {}", len, stream_d);
   co_return written;
 }
 
@@ -140,7 +140,7 @@ int32_t write_nonblock_to_stream(uint64_t stream_d, const char* buffer, int32_t 
   do {
     k2::stream_status(stream_d, std::addressof(status));
     if (status.libc_errno != k2::errno_ok) {
-      php_warning("get stream status returned status %d", status.libc_errno);
+      kphp::log::warning("get stream status returned status {}", status.libc_errno);
       return 0;
     }
 
@@ -151,7 +151,7 @@ int32_t write_nonblock_to_stream(uint64_t stream_d, const char* buffer, int32_t 
     }
   } while (written != len);
 
-  php_debug("write %d bytes from %d to stream %" PRIu64, written, len, stream_d);
+  kphp::log::debug("write {} bytes from {} to stream {}", written, len, stream_d);
   return written;
 }
 
@@ -163,12 +163,12 @@ kphp::coro::task<int32_t> write_exact_to_stream(uint64_t stream_d, const char* b
   while (written != len && status.write_status != k2::IOStatus::IOClosed) {
     k2::stream_status(stream_d, std::addressof(status));
     if (status.libc_errno != k2::errno_ok) {
-      php_warning("get stream status returned status %d", status.libc_errno);
+      kphp::log::warning("get stream status returned status {}", status.libc_errno);
       co_return written;
     }
 
     if (status.please_shutdown_write) {
-      php_debug("stream %" PRIu64 " set please_shutdown_write. Stop writing", stream_d);
+      kphp::log::debug("stream {} set please_shutdown_write. Stop writing", stream_d);
       co_return written;
     } else if (status.write_status == k2::IOStatus::IOAvailable) {
       written += k2::write(stream_d, len - written, buffer + written);

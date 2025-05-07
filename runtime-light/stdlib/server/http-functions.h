@@ -11,16 +11,13 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-light/server/http/http-server-state.h"
+#include "runtime-light/utils/logs.h"
 
-namespace kphp {
-
-namespace http {
+namespace kphp::http {
 
 void header(std::string_view header, bool replace, int64_t response_code) noexcept;
 
-} // namespace http
-
-} // namespace kphp
+} // namespace kphp::http
 
 inline void f$header(const string& str, bool replace = true, int64_t response_code = kphp::http::status::NO_STATUS) noexcept {
   kphp::http::header({str.c_str(), str.size()}, replace, response_code);
@@ -51,17 +48,17 @@ inline array<string> f$headers_list() noexcept {
 
 inline bool f$headers_sent([[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> filename = {},
                            [[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> line = {}) noexcept {
-  php_warning("called stub headers_sent");
+  kphp::log::warning("called stub headers_sent");
   return false;
 }
 
 template<typename F>
-bool f$header_register_callback(F&&) noexcept {
-  php_warning("called stub header_register_callback");
+bool f$header_register_callback(F&& /*unused*/) noexcept {
+  kphp::log::warning("called stub header_register_callback");
   return true;
 }
 
 template<class T>
 string f$http_build_query(const array<T>& /*a*/, const string& /*numeric_prefix*/ = {}, const string& /*arg_separator*/ = string(), int64_t /*enc_type*/ = 1) {
-  php_critical_error("call to unsupported function");
+  kphp::log::fatal("call to unsupported function");
 }

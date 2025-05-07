@@ -10,7 +10,6 @@
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-common/stdlib/serialization/serialize-functions.h"
 #include "runtime-light/coroutine/task.h"
@@ -20,14 +19,15 @@
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
+#include "runtime-light/utils/logs.h"
 
 namespace {
 
 constexpr std::string_view CONFDATA_COMPONENT_NAME = "confdata"; // TODO: it may actually have an alias specified in linking config
 
 mixed extract_confdata_value(const tl::confdataValue& confdata_value) noexcept {
-  if (confdata_value.is_php_serialized.value && confdata_value.is_json_serialized.value) { // check that we don't have both flags set
-    php_warning("confdata value has both php_serialized and json_serialized flags set");
+  if (confdata_value.is_php_serialized.value && confdata_value.is_json_serialized.value) [[unlikely]] { // check that we don't have both flags set
+    kphp::log::warning("confdata value has both php_serialized and json_serialized flags set");
     return {};
   }
   if (confdata_value.is_php_serialized.value) {
@@ -62,10 +62,7 @@ kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
   tlb.clean();
   tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
   tl::Maybe<tl::confdataValue> maybe_confdata_value{};
-  if (!maybe_confdata_value.fetch(tlb)) {
-    php_warning("couldn't fetch response");
-    co_return mixed{};
-  }
+  kphp::log::assertion(maybe_confdata_value.fetch(tlb));
 
   if (!maybe_confdata_value.opt_value.has_value()) { // no such key
     co_return mixed{};
@@ -84,10 +81,7 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
   tlb.clean();
   tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
   tl::Dictionary<tl::confdataValue> dict_confdata_value{};
-  if (!dict_confdata_value.fetch(tlb)) {
-    php_warning("couldn't fetch response");
-    co_return array<mixed>{};
-  }
+  kphp::log::assertion(dict_confdata_value.fetch(tlb));
 
   array<mixed> result{array_size{static_cast<int64_t>(dict_confdata_value.size()), false}};
   std::for_each(dict_confdata_value.begin(), dict_confdata_value.end(), [&result](auto&& dict_field) {

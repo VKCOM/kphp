@@ -8,8 +8,8 @@
 #include <cstdint>
 #include <utility>
 
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/tl/tl-core.h"
+#include "runtime-light/utils/logs.h"
 
 namespace tl {
 
@@ -40,7 +40,7 @@ bool string::fetch(TLBuffer& tlb) noexcept {
 
     const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
     tlb.adjust(total_len_with_padding - size_len);
-    php_warning("large strings aren't supported");
+    kphp::log::warning("large strings aren't supported (length = {})", string_len);
     return false;
   }
   case MEDIUM_STRING_MAGIC: {
@@ -54,7 +54,7 @@ bool string::fetch(TLBuffer& tlb) noexcept {
     string_len = first | second | third;
 
     if (string_len <= SMALL_STRING_MAX_LEN) [[unlikely]] {
-      php_warning("long string's length is less than 254");
+      kphp::log::warning("long string's length is less than 254 (length = {})", string_len);
     }
     break;
   }
@@ -88,7 +88,7 @@ void string::store(TLBuffer& tlb) const noexcept {
     tlb.store_trivial<uint8_t>((str_len >> 8) & 0xff);
     tlb.store_trivial<uint8_t>((str_len >> 16) & 0xff);
   } else {
-    php_warning("large strings aren't supported");
+    kphp::log::warning("large strings aren't supported");
     size_len = SMALL_STRING_SIZE_LEN;
     str_len = 0;
     tlb.store_trivial<uint8_t>(str_len);
@@ -204,7 +204,7 @@ void rpcReqResultExtra::store(tl::TLBuffer& tlb) const noexcept {
     engine_pid.store(tlb);
   }
   if (static_cast<bool>(flags.value & REQUEST_SIZE_FLAG)) {
-    php_assert(static_cast<bool>(flags.value & RESPONSE_SIZE_FLAG));
+    kphp::log::assertion(static_cast<bool>(flags.value & RESPONSE_SIZE_FLAG));
     request_size.store(tlb), response_size.store(tlb);
   }
   if (static_cast<bool>(flags.value & FAILED_SUBQUERIES_FLAG)) {
@@ -217,7 +217,7 @@ void rpcReqResultExtra::store(tl::TLBuffer& tlb) const noexcept {
     stats.store(tlb);
   }
   if (static_cast<bool>(flags.value & EPOCH_NUMBER_FLAG)) {
-    php_assert(static_cast<bool>(flags.value & VIEW_NUMBER_FLAG));
+    kphp::log::assertion(static_cast<bool>(flags.value & VIEW_NUMBER_FLAG));
     epoch_number.store(tlb), view_number.store(tlb);
   }
 }

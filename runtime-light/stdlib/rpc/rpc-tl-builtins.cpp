@@ -6,6 +6,7 @@
 
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/tl/tl-core.h"
+#include "runtime-light/utils/logs.h"
 
 mixed tl_arr_get(const mixed& arr, const string& str_key, int64_t num_key, int64_t precomputed_hash) noexcept {
   auto& cur_query{CurrentTlQuery::get()};
@@ -31,8 +32,8 @@ int32_t t_Int::prepare_int_for_storing(int64_t v) noexcept {
     if (RpcServerInstanceState::get().fail_rpc_on_int32_overflow) {
       CurrentTlQuery::get().raise_storing_error("Got int32 overflow with value '%" PRIi64 "'. Serialization will fail.", v);
     } else {
-      php_warning("Got int32 overflow on storing %s: the value '%" PRIi64 "' will be casted to '%d'. Serialization will succeed.",
-                  CurrentTlQuery::get().get_current_tl_function_name().c_str(), v, v32);
+      kphp::log::warning("got int32 overflow on storing {}: the value '{}' will be casted to '{}'. Serialization will succeed.",
+                         CurrentTlQuery::get().get_current_tl_function_name().c_str(), v, v32);
     }
   }
   return v32;

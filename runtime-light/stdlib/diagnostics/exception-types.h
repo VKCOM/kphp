@@ -12,9 +12,9 @@
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/visitors/memory-visitors.h"
 #include "runtime-light/stdlib/visitors/array-visitors.h"
+#include "runtime-light/utils/logs.h"
 
 class InstanceDeepCopyVisitor;
 class InstanceDeepDestroyVisitor;
@@ -89,7 +89,7 @@ inline string exception_trace_as_string(const Throwable& e) noexcept {
 inline void exception_initialize(const Throwable& e, const string& message, int64_t code) noexcept {
   e->$message = message;
   e->$code = code;
-  php_warning("exception backtrace is not yet supported"); // TODO
+  kphp::log::warning("exception backtrace is not yet supported"); // TODO
 }
 
 } // namespace exception_impl_

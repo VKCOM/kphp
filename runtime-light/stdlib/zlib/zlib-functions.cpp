@@ -4,7 +4,6 @@
 
 #include "runtime-light/stdlib/zlib/zlib-functions.h"
 
-#include <cinttypes>
 #include <cstddef>
 #include <cstdint>
 #include <iterator>
@@ -17,8 +16,8 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/stdlib/string/string-state.h"
+#include "runtime-light/utils/logs.h"
 
 namespace {
 
@@ -26,7 +25,7 @@ voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) noexcept {
   auto* buf_pos_ptr{reinterpret_cast<size_t*>(opaque)};
   auto required_mem{static_cast<size_t>(items * size)};
   if (items == 0 || StringInstanceState::STATIC_BUFFER_LENGTH - *buf_pos_ptr < required_mem) [[unlikely]] {
-    php_warning("zlib static alloc: can't allocate %zu bytes", required_mem);
+    kphp::log::warning("zlib static alloc: can't allocate {} bytes", required_mem);
     return Z_NULL;
   }
 
@@ -45,11 +44,11 @@ namespace zlib {
 
 std::optional<string> encode(std::span<const char> data, int64_t level, int64_t encoding) noexcept {
   if (level < MIN_COMPRESSION_LEVEL || level > MAX_COMPRESSION_LEVEL) [[unlikely]] {
-    php_warning("incorrect compression level: %" PRIi64, level);
+    kphp::log::warning("incorrect compression level: {}", level);
     return {};
   }
   if (encoding != ENCODING_RAW && encoding != ENCODING_DEFLATE && encoding != ENCODING_GZIP) [[unlikely]] {
-    php_warning("incorrect encoding: %" PRIi64, encoding);
+    kphp::log::warning("incorrect encoding: {}", encoding);
     return {};
   }
 
@@ -63,7 +62,7 @@ std::optional<string> encode(std::span<const char> data, int64_t level, int64_t 
   zstrm.opaque = std::addressof(buf_pos);
 
   if (deflateInit2(std::addressof(zstrm), level, Z_DEFLATED, encoding, MAX_MEM_LEVEL, Z_DEFAULT_STRATEGY) != Z_OK) [[unlikely]] {
-    php_warning("can't initialize zlib encode for data of length %zu", data.size());
+    kphp::log::warning("can't initialize zlib encode for data of length {}", data.size());
     return {};
   }
 
@@ -78,7 +77,7 @@ std::optional<string> encode(std::span<const char> data, int64_t level, int64_t 
 
   const auto deflate_res{deflate(std::addressof(zstrm), Z_FINISH)};
   if (deflate_res != Z_STREAM_END) [[unlikely]] {
-    php_warning("can't encode data of length %zu due to zlib error %d", data.size(), deflate_res);
+    kphp::log::warning("can't encode data of length {} due to zlib error {}", data.size(), deflate_res);
     return {};
   }
 
@@ -99,7 +98,7 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
   zstrm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(data.data()));
 
   if (inflateInit2(std::addressof(zstrm), encoding) != Z_OK) [[unlikely]] {
-    php_warning("can't initialize zlib decode for data of length %zu", data.size());
+    kphp::log::warning("can't initialize zlib decode for data of length {}", data.size());
     return {};
   }
 
@@ -110,7 +109,7 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
   const auto inflate_res{inflate(std::addressof(zstrm), Z_NO_FLUSH)};
 
   if (inflate_res != Z_STREAM_END) [[unlikely]] {
-    php_warning("can't decode data of length %zu due to zlib error %d", data.size(), inflate_res);
+    kphp::log::warning("can't decode data of length {} due to zlib error {}", data.size(), inflate_res);
     return {};
   }
 

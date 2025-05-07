@@ -8,6 +8,7 @@
 
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/output/print-functions.h"
+#include "runtime-light/utils/logs.h"
 
 namespace {
 
@@ -20,15 +21,15 @@ constexpr std::string_view ob_gzhandler_name = "ob_gzhandler";
 void f$ob_start(const string& callback) noexcept {
   Response& httpResponse{InstanceState::get().response};
   if (httpResponse.current_buffer + 1 == Response::ob_max_buffers) {
-    php_warning("Maximum nested level of output buffering reached. Can't do ob_start(%s)", callback.c_str());
+    kphp::log::warning("Maximum nested level of output buffering reached. Can't do ob_start({})", callback.c_str());
     return;
   }
 
   if (!callback.empty()) {
     if (httpResponse.current_buffer == 0 && std::string_view{callback.c_str(), callback.size()} == ob_gzhandler_name) {
-      php_warning("ob_gzhandler temporarily unsupported at buffering level %d", httpResponse.current_buffer + 1);
+      kphp::log::warning("ob_gzhandler temporarily unsupported at buffering level {}", httpResponse.current_buffer + 1);
     } else {
-      php_critical_error("unsupported callback %s at buffering level %d", callback.c_str(), httpResponse.current_buffer + 1);
+      kphp::log::fatal("unsupported callback {} at buffering level {}", callback.c_str(), httpResponse.current_buffer + 1);
     }
   }
   ++httpResponse.current_buffer;
@@ -77,7 +78,7 @@ string f$ob_get_contents() noexcept {
 void f$ob_flush() noexcept {
   Response& httpResponse{InstanceState::get().response};
   if (httpResponse.current_buffer == 0) {
-    php_warning("ob_flush with no buffer opented");
+    kphp::log::warning("ob_flush with no buffer opented");
     return;
   }
   --httpResponse.current_buffer;

@@ -4,7 +4,7 @@
 
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"
 
-#include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-light/utils/logs.h"
 
 RpcRequestResult::RpcRequestResult(bool is_typed, std::unique_ptr<tl_func_base>&& result_fetcher)
     : is_typed(is_typed),
@@ -39,7 +39,7 @@ RpcRequestResultUntyped::RpcRequestResultUntyped(std::unique_ptr<tl_func_base>&&
     : RpcRequestResult(false, std::move(result_fetcher)) {}
 
 class_instance<C$VK$TL$RpcResponse> RpcRequestResultUntyped::fetch_typed_response() {
-  php_assert(!"Forbidden to call for non typed rpc requests");
+  kphp::log::fatal("Forbidden to call for non typed rpc requests");
 }
 
 std::unique_ptr<tl_func_base> RpcRequestResultUntyped::extract_untyped_fetcher() {

@@ -9,15 +9,15 @@
 #include <cstdint>
 #include <utility>
 
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/utils/logs.h"
 
 template<std::invocable T>
 kphp::coro::task<> f$set_timer(int64_t timeout_ms, T on_timer_callback) noexcept {
-  if (timeout_ms < 0) {
-    php_warning("can't set timer for negative duration %" PRId64 "ms", timeout_ms);
+  if (timeout_ms < 0) [[unlikely]] {
+    kphp::log::warning("can't set timer for negative duration {} ms", timeout_ms);
     co_return;
   }
   const auto fork_f{[](std::chrono::nanoseconds duration, T&& on_timer_callback) -> kphp::coro::shared_task<> {

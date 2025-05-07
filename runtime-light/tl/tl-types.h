@@ -16,8 +16,8 @@
 #include "common/tl/constants/common.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/tl/tl-core.h"
+#include "runtime-light/utils/logs.h"
 
 namespace tl {
 
@@ -215,8 +215,9 @@ struct Maybe final {
     } else if (magic.expect(TL_MAYBE_FALSE)) {
       opt_value = std::nullopt;
       return true;
+    } else {
+      kphp::log::fatal("unexpected magic: {:x}", magic.value);
     }
-    php_critical_error("unexpected magic");
   }
 
   void store(tl::TLBuffer& tlb) const noexcept

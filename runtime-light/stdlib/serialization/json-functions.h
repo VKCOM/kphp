@@ -6,6 +6,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
+#include "runtime-light/utils/logs.h"
 
 inline void f$set_json_log_on_timeout_mode([[maybe_unused]] bool enabled) noexcept {}
 
@@ -18,7 +19,7 @@ string f$vk_json_encode_safe(const T& v, bool simple_encode = true) noexcept {
   if (rt_ctx.sb_lib_context.error_flag == STRING_BUFFER_ERROR_FLAG_FAILED) [[unlikely]] {
     rt_ctx.static_SB.clean();
     rt_ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_OFF;
-    php_critical_error("vk_json_encode_safe tried to throw exception but it unsupported in runtime light");
+    kphp::log::fatal("vk_json_encode_safe tried to throw exception but it unsupported in runtime light");
     return {};
   }
   rt_ctx.sb_lib_context.error_flag = STRING_BUFFER_ERROR_FLAG_OFF;

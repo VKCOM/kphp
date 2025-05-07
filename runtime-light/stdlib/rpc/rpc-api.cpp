@@ -16,7 +16,6 @@
 #include "common/containers/final_action.h"
 #include "common/rpc-error-codes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
@@ -34,6 +33,7 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/streams/streams.h"
+#include "runtime-light/utils/logs.h"
 
 namespace kphp::rpc {
 
@@ -66,7 +66,7 @@ mixed mixed_array_get_value(const mixed& arr, const string& str_key, int64_t num
 
 // THROWING
 array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery>& rpc_query) noexcept {
-  php_assert(!rpc_query.is_null());
+  kphp::log::assertion(!rpc_query.is_null());
   if (TlRpcError err{}; TRY_CALL(bool, array<mixed>, err.try_fetch())) {
     return err.make_error();
   }
@@ -75,7 +75,7 @@ array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery>& rpc_query)
   const vk::final_action finalizer{[&cur_query] noexcept { cur_query.reset(); }};
   cur_query.set_current_tl_function(rpc_query);
   auto fetcher{rpc_query.get()->result_fetcher->extract_untyped_fetcher()};
-  php_assert(fetcher);
+  kphp::log::assertion(static_cast<bool>(fetcher));
 
   // TODO: EOF handling
   return TRY_CALL(array<mixed>, array<mixed>, RpcImageState::get().tl_fetch_wrapper(std::move(fetcher)));
@@ -83,7 +83,7 @@ array<mixed> fetch_function_untyped(const class_instance<RpcTlQuery>& rpc_query)
 
 // THROWING
 class_instance<C$VK$TL$RpcResponse> fetch_function_typed(const class_instance<RpcTlQuery>& rpc_query, const RpcErrorFactory& error_factory) noexcept {
-  php_assert(!rpc_query.is_null());
+  kphp::log::assertion(!rpc_query.is_null());
 
   auto& cur_query{CurrentTlQuery::get()};
   const vk::final_action finalizer{[&cur_query] noexcept { cur_query.reset(); }};
@@ -120,7 +120,7 @@ class_instance<RpcTlQuery> store_function(const mixed& tl_object) noexcept {
 kphp::coro::task<kphp::rpc::query_info> rpc_tl_query_one_impl(string actor, mixed tl_object, Optional<double> timeout, bool collect_resp_extra_info,
                                                               bool ignore_answer) noexcept {
   if (!tl_object.is_array()) [[unlikely]] {
-    php_warning("not an array passed to function rpc_tl_query");
+    kphp::log::warning("not an array passed to function rpc_tl_query");
     co_return kphp::rpc::query_info{};
   }
 
@@ -141,7 +141,7 @@ kphp::coro::task<kphp::rpc::query_info> rpc_tl_query_one_impl(string actor, mixe
 kphp::coro::task<kphp::rpc::query_info> typed_rpc_tl_query_one_impl(string actor, const RpcRequest& rpc_request, Optional<double> timeout,
                                                                     bool collect_responses_extra_info, bool ignore_answer) noexcept {
   if (rpc_request.empty()) [[unlikely]] {
-    php_warning("query function is null");
+    kphp::log::warning("query function is null");
     co_return kphp::rpc::query_info{};
   }
 
@@ -299,7 +299,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(string actor, Optional<doub
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
   auto comp_query{co_await f$component_client_send_request(actor, std::move(request_buf))};
   if (comp_query.is_null()) [[unlikely]] {
-    php_warning("can't send rpc query to %s", actor.c_str());
+    kphp::log::warning("can't send rpc query to {}", actor.c_str());
     co_return kphp::rpc::query_info{.id = kphp::rpc::INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
 
@@ -324,7 +324,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(string actor, Optional<doub
             it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
             it_extra_info->second.first = response_extra_info_status::ready;
           } else {
-            php_warning("can't find extra info for RPC query %" PRId64, query_id);
+            kphp::log::warning("can't find extra info for RPC query {}", query_id);
           }
         }
         co_return std::move(response);

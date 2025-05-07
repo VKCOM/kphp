@@ -7,15 +7,15 @@
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
+#include "runtime-light/utils/logs.h"
 
 namespace {
 
 void do_print_r(const mixed& v, int32_t depth) noexcept {
   if (depth == 10) {
-    php_warning("Depth %d reached. Recursion?", depth);
+    kphp::log::warning("Depth {} reached. Recursion?", depth);
     return;
   }
 
@@ -54,18 +54,18 @@ void do_print_r(const mixed& v, int32_t depth) noexcept {
     break;
   }
   case mixed::type::OBJECT: {
-    php_warning("print_r used on object");
+    kphp::log::warning("print_r used on object");
     coub << v.as_object()->get_class();
     break;
   }
   default:
-    php_critical_error("non-exhaustive switch");
+    kphp::log::fatal("non-exhaustive switch");
   }
 }
 
 void do_var_dump(const mixed& v, int32_t depth) noexcept {
   if (depth == 10) {
-    php_warning("Depth %d reached. Recursion?", depth);
+    kphp::log::warning("Depth {} reached. Recursion?", depth);
     return;
   }
 
@@ -106,13 +106,13 @@ void do_var_dump(const mixed& v, int32_t depth) noexcept {
     break;
   }
   case mixed::type::OBJECT: {
-    php_warning("var_dump used on object");
+    kphp::log::warning("var_dump used on object");
     auto s = string(v.as_object()->get_class(), static_cast<string::size_type>(strlen(v.as_object()->get_class())));
     coub << shift << "string(" << static_cast<int32_t>(s.size()) << ") \"" << s << '"';
     break;
   }
   default:
-    php_critical_error("non-exhaustive switch");
+    kphp::log::fatal("non-exhaustive switch");
   }
   coub << '\n';
 }
@@ -137,7 +137,7 @@ void var_export_escaped_string(const string& s) noexcept {
 
 void do_var_export(const mixed& v, int32_t depth, char endc = 0) noexcept {
   if (depth == 10) {
-    php_warning("Depth %d reached. Recursion?", depth);
+    kphp::log::warning("Depth {} reached. Recursion?", depth);
     return;
   }
 
@@ -194,7 +194,7 @@ void do_var_export(const mixed& v, int32_t depth, char endc = 0) noexcept {
     break;
   }
   default:
-    php_critical_error("non-exhaustive switch");
+    kphp::log::fatal("non-exhaustive switch");
   }
   if (endc != 0) {
     coub << endc;

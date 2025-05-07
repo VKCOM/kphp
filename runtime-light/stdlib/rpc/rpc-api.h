@@ -15,7 +15,6 @@
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
@@ -29,6 +28,7 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
+#include "runtime-light/utils/logs.h"
 
 namespace kphp::rpc {
 
@@ -62,7 +62,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 
 inline bool f$store_int(int64_t v) noexcept {
   if (tl::is_int32_overflow(v)) [[unlikely]] {
-    php_warning("integer %" PRIi64 " overflows int32, it will be casted to %d", v, static_cast<int32_t>(v));
+    kphp::log::warning("integer {} overflows int32, it will be casted to {}", v, static_cast<int32_t>(v));
   }
   tl::i32{.value = static_cast<int32_t>(v)}.store(RpcServerInstanceState::get().buffer);
   return true;
@@ -155,7 +155,7 @@ inline bool f$rpc_clean() noexcept {
 
 template<typename T>
 bool f$rpc_parse(T /*unused*/) {
-  php_critical_error("call to unsupported function");
+  kphp::log::fatal("call to unsupported function");
 }
 
 // f$rpc_server_fetch_request() definition is generated into the tl/rpc_server_fetch_request.cpp file.
@@ -167,7 +167,7 @@ class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() noexcept;
 
 inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg) noexcept {
   if (tl::is_int32_overflow(error_code)) [[unlikely]] {
-    php_warning("error_code overflows int32, %d will be stored", static_cast<int32_t>(error_code));
+    kphp::log::warning("error_code overflows int32, {} will be stored", static_cast<int32_t>(error_code));
   }
 
   tl::TLBuffer tlb; // FIXME reserve exact size
@@ -178,16 +178,16 @@ inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg
 
   auto expected{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})};
   if (!expected) [[unlikely]] {
-    php_warning("can't store RPC error: %d", std::to_underlying(expected.error()));
+    kphp::log::warning("can't store RPC error: {}", std::to_underlying(expected.error()));
   }
-  php_error("store_error called. error_code: %" PRIi64 ", error_msg: %s", error_code, error_msg.c_str());
+  kphp::log::fatal("store_error called. error_code: %" PRIi64 ", error_msg: %s", error_code, error_msg.c_str());
   std::unreachable();
 }
 
 inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$RpcFunctionReturnResult> response) noexcept {
   auto tl_func_base{CurrentRpcServerQuery::get().extract()};
   if (!static_cast<bool>(tl_func_base)) [[unlikely]] {
-    co_return php_warning("can't store RPC response: %d", std::to_underlying(kphp::rpc::error::no_pending_request));
+    co_return kphp::log::warning("can't store RPC response: {}", std::to_underlying(kphp::rpc::error::no_pending_request));
   }
 
   f$rpc_clean();
@@ -201,7 +201,7 @@ inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$Rpc
       .store(tlb);
   auto expected{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})};
   if (!expected) [[unlikely]] {
-    php_warning("can't store RPC response: %d", std::to_underlying(expected.error()));
+    kphp::log::warning("can't store RPC response: {}", std::to_underlying(expected.error()));
   }
 }
 
@@ -217,7 +217,7 @@ inline kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<
                                                             class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info,
                                                             bool need_responses_extra_info) noexcept {
   if (ignore_answer && need_responses_extra_info) [[unlikely]] {
-    php_warning("Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
+    kphp::log::warning("both $ignore_answer and $need_responses_extra_info are 'true'. Metrics won't be collected");
   }
 
   const bool collect_resp_extra_info{!ignore_answer && need_responses_extra_info};
@@ -265,7 +265,7 @@ kphp::coro::task<array<int64_t>> f$rpc_send_typed_query_requests(string actor, a
                                                                  bool ignore_answer, class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info,
                                                                  bool need_responses_extra_info) noexcept {
   if (ignore_answer && need_responses_extra_info) [[unlikely]] {
-    php_warning("Both $ignore_answer and $need_responses_extra_info are 'true'. Can't collect metrics for ignored answers");
+    kphp::log::warning("both $ignore_answer and $need_responses_extra_info are 'true'. Metrics won't be collected");
   }
 
   const bool collect_resp_extra_info{!ignore_answer && need_responses_extra_info};

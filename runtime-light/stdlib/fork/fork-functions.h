@@ -5,7 +5,6 @@
 #pragma once
 
 #include <chrono>
-#include <cinttypes>
 #include <concepts>
 #include <cstdint>
 #include <optional>
@@ -13,11 +12,11 @@
 
 #include "runtime-common/core/core-types/decl/optional.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
+#include "runtime-light/utils/logs.h"
 
 namespace forks_impl_ {
 
@@ -41,7 +40,7 @@ kphp::coro::task<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
   auto& fork_instance_st{ForkInstanceState::get()};
   auto opt_fork_info{fork_instance_st.get_info(fork_id)};
   if (!opt_fork_info.has_value() || !(*opt_fork_info).get().opt_handle.has_value() || (*opt_fork_info).get().awaited) [[unlikely]] {
-    php_warning("fork with ID %" PRId64 " does not exist or has already been awaited by another fork", fork_id);
+    kphp::log::warning("fork with ID {} does not exist or has already been awaited by another fork", fork_id);
     co_return T{};
   }
 
@@ -54,7 +53,7 @@ kphp::coro::task<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
   // 1. Check for any exceptions that may have occurred during the fork execution. If an exception is found, propagate it to the current fork.
   //    Clean fork_info's exception state.
   auto current_fork_info{fork_instance_st.current_info()};
-  php_assert(std::exchange(current_fork_info.get().thrown_exception, std::move(fork_info.thrown_exception)).is_null());
+  kphp::log::assertion(std::exchange(current_fork_info.get().thrown_exception, std::move(fork_info.thrown_exception)).is_null());
   // 2. Detach the shared_task from fork_info to prevent further associations, ensuring that resources are released.
   fork_info.opt_handle.reset();
 
@@ -115,7 +114,7 @@ inline kphp::coro::task<> f$sched_yield() noexcept {
 
 inline kphp::coro::task<> f$sched_yield_sleep(double duration) noexcept {
   if (duration <= 0) {
-    php_warning("can't sleep for negative or zero duration %.9f", duration);
+    kphp::log::warning("can't sleep for negative or zero duration {}", duration);
     co_return;
   }
   co_await wait_for_timer_t{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{duration})};
@@ -128,21 +127,21 @@ inline int64_t f$get_running_fork_id() noexcept {
 }
 
 inline int64_t f$wait_queue_create() {
-  php_critical_error("call to unsupported function");
+  kphp::log::fatal("call to unsupported function");
 }
 
 inline int64_t f$wait_queue_create(const mixed& /*resumable_ids*/) {
-  php_critical_error("call to unsupported function");
+  kphp::log::fatal("call to unsupported function");
 }
 
 inline int64_t f$wait_queue_push(int64_t /*queue_id*/, const mixed& /*resumable_ids*/) {
-  php_critical_error("call to unsupported function");
+  kphp::log::fatal("call to unsupported function");
 }
 
 inline bool f$wait_queue_empty(int64_t /*queue_id*/) {
-  php_critical_error("call to unsupported function");
+  kphp::log::fatal("call to unsupported function");
 }
 
 inline Optional<int64_t> f$wait_queue_next(int64_t /*queue_id*/, double /*timeout*/ = -1.0) {
-  php_critical_error("call to unsupported function");
+  kphp::log::fatal("call to unsupported function");
 }
