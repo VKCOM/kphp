@@ -2,9 +2,10 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include <atomic>
 
 #include "compiler/gentree.h"
+
+#include <atomic>
 
 #include "common/algorithms/contains.h"
 #include "common/algorithms/find.h"
@@ -1725,7 +1726,7 @@ VertexPtr GenTree::get_class(const PhpDocComment *phpdoc, ClassType class_type) 
   cur_class->is_immutable = phpdoc && phpdoc->has_tag(PhpDocType::kphp_immutable_class);
   if (G->is_output_mode_k2()) {
     // To be able to store instances in request cache
-    cur_class->may_be_mixed.store(cur_class->is_immutable, std::memory_order::relaxed);
+    cur_class->may_be_mixed.store(cur_class->is_immutable, std::memory_order_relaxed);
   }
   cur_class->need_generated_stub = phpdoc && phpdoc->has_tag(PhpDocType::kphp_generated_stub_class);
   cur_class->is_required_interface = phpdoc && phpdoc->has_tag(PhpDocType::kphp_required) && class_type == ClassType::interface;
