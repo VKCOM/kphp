@@ -130,8 +130,8 @@ void init_server(tl::K2InvokeRpc invoke_rpc) noexcept {
                   "remote port -> {}, "
                   "query_id -> {}, "
                   "dest_actor -> {}, "
-                  "dest_flags -> {:#0b}, "
-                  "dest_actor_flags -> actor_id {}, flags {:#0b}",
+                  "dest_flags -> {:#b}, "
+                  "dest_actor_flags -> actor_id {}, flags {:#b}",
                   net_pid.get_pid(), net_pid.get_port(), rpc_invoke_req.query_id.value,
                   rpc_invoke_req.opt_dest_actor.has_value() ? (*rpc_invoke_req.opt_dest_actor).inner.actor_id.value : 0,
                   rpc_invoke_req.opt_dest_flags.has_value() ? (*rpc_invoke_req.opt_dest_flags).inner.flags.value : 0,
