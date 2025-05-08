@@ -168,7 +168,7 @@ kphp::coro::task<> InstanceState::init_server_instance() noexcept {
     break;
   }
   default:
-    kphp::log::error("unexpected server request with magic: {:x}", magic);
+    kphp::log::error("unexpected server request with magic: {:#x}", magic);
   }
 }
 
