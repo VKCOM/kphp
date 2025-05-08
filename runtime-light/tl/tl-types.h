@@ -17,7 +17,6 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/tl/tl-core.h"
-#include "runtime-light/utils/logs.h"
 
 namespace tl {
 
@@ -206,18 +205,10 @@ struct Maybe final {
   requires tl::deserializable<T>
   {
     tl::details::magic magic{};
-    if (!magic.fetch(tlb)) [[unlikely]] {
+    if (!magic.fetch(tlb) || (!magic.expect(TL_MAYBE_TRUE) && !magic.expect(TL_MAYBE_FALSE))) [[unlikely]] {
       return false;
     }
-
-    if (magic.expect(TL_MAYBE_TRUE)) {
-      return opt_value.emplace().fetch(tlb);
-    } else if (magic.expect(TL_MAYBE_FALSE)) {
-      opt_value = std::nullopt;
-      return true;
-    } else {
-      kphp::log::error("unexpected magic: {:x}", magic.value);
-    }
+    return magic.expect(TL_MAYBE_TRUE) ? opt_value.emplace().fetch(tlb) : (opt_value = std::nullopt, true);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept
