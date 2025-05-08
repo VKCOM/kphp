@@ -34,6 +34,8 @@
 
 namespace {
 
+constexpr std::string_view EMPTY = "<empty>";
+
 constexpr std::string_view HTTP = "HTTP";
 constexpr std::string_view HTTPS = "HTTPS";
 constexpr std::string_view HTTP_SCHEME = "http";
@@ -59,7 +61,7 @@ constexpr std::string_view GET_METHOD = "GET";
 constexpr std::string_view POST_METHOD = "POST";
 constexpr std::string_view HEAD_METHOD = "HEAD";
 
-string get_server_protocol(tl::HttpVersion http_version, const std::optional<tl::string>& opt_scheme) noexcept {
+string get_server_protocol(const tl::HttpVersion& http_version, const std::optional<tl::string>& opt_scheme) noexcept {
   std::string_view protocol_name{HTTP};
   const auto protocol_version{http_version.string_view()};
   if (opt_scheme.has_value()) {
@@ -129,7 +131,7 @@ void process_authorization_header(std::string_view header, PhpScriptBuiltInSuper
 }
 
 // returns content type
-std::string_view process_headers(tl::K2InvokeHttp& invoke_http, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
+std::string_view process_headers(const tl::K2InvokeHttp& invoke_http, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
   auto& server{superglobals.v$_SERVER};
   auto& http_server_instance_st{HttpServerInstanceState::get()};
   const auto header_entry_proj{[](const tl::httpHeaderEntry& header_entry) noexcept {
@@ -299,10 +301,28 @@ void init_server(tl::K2InvokeHttp invoke_http) noexcept {
   // add content-type header
   auto& static_SB{RuntimeContext::get().static_SB};
   static_SB.clean() << headers::CONTENT_TYPE.data() << ": " << CONTENT_TYPE_TEXT_WIN1251.data();
-  header({static_SB.c_str(), static_SB.size()}, true, status::NO_STATUS);
+  kphp::http::header({static_SB.c_str(), static_SB.size()}, true, status::NO_STATUS);
   // add connection kind header
   const auto connection_kind{http_server_instance_st.connection_kind == connection_kind::keep_alive ? CONNECTION_KEEP_ALIVE : CONNECTION_CLOSE};
   static_SB.clean() << headers::CONNECTION.data() << ": " << connection_kind.data();
+  kphp::http::header({static_SB.c_str(), static_SB.size()}, true, status::NO_STATUS);
+
+  kphp::log::info("http server initialized with: "
+                  "server addr -> {}, "
+                  "server port -> {}, "
+                  "remote addr -> {}, "
+                  "remote port -> {}, "
+                  "version -> {}, "
+                  "method -> {}, "
+                  "scheme -> {}, "
+                  "host -> {}, "
+                  "path -> {}, "
+                  "query -> {}",
+                  invoke_http.connection.server_addr.value, invoke_http.connection.server_port.value, invoke_http.connection.remote_addr.value,
+                  invoke_http.connection.remote_port.value, invoke_http.version.string_view(), invoke_http.method.value,
+                  invoke_http.uri.opt_scheme.has_value() ? (*invoke_http.uri.opt_scheme).value : EMPTY,
+                  invoke_http.uri.opt_host.has_value() ? (*invoke_http.uri.opt_host).value : EMPTY, invoke_http.uri.path.value,
+                  invoke_http.uri.opt_query.has_value() ? (*invoke_http.uri.opt_query).value : EMPTY);
 }
 
 kphp::coro::task<> finalize_server(const string_buffer& output) noexcept {
@@ -322,7 +342,7 @@ kphp::coro::task<> finalize_server(const string_buffer& output) noexcept {
 
         auto& static_SB{RuntimeContext::get().static_SB};
         static_SB.clean() << headers::CONTENT_ENCODING.data() << ": " << (gzip_encoded ? ENCODING_GZIP.data() : ENCODING_DEFLATE.data());
-        header({static_SB.c_str(), static_SB.size()}, true, status::NO_STATUS);
+        kphp::http::header({static_SB.c_str(), static_SB.size()}, true, status::NO_STATUS);
       }
     }
   }
@@ -352,8 +372,7 @@ kphp::coro::task<> finalize_server(const string_buffer& output) noexcept {
     kphp::log::error("can't send HTTP response from instance kind {}", std::to_underlying(instance_st.instance_kind()));
   }
   if ((co_await write_all_to_stream(instance_st.standard_stream(), tlb.data(), tlb.size())) != tlb.size()) [[unlikely]] {
-    instance_st.poll_status = k2::PollStatus::PollFinishedError;
-    kphp::log::warning("can't write HTTP response to stream {}", instance_st.standard_stream());
+    kphp::log::error("can't write HTTP response to stream {}", instance_st.standard_stream());
   }
 }
 
