@@ -41,7 +41,9 @@ kphp::coro::task<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length)
 
   auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
                                                       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  kphp::log::assertion(!query.is_null());
+  if (query.is_null()) [[unlikely]] {
+    co_return false;
+  }
   string response{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
@@ -64,7 +66,9 @@ kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool 
 
   auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
                                                       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  kphp::log::assertion(!query.is_null());
+  if (query.is_null()) [[unlikely]] {
+    co_return false;
+  }
   string resp{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
@@ -108,7 +112,9 @@ kphp::coro::task<bool> f$openssl_sign(string data, string& signature, string pri
 
   auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
                                                       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  kphp::log::assertion(!query.is_null());
+  if (query.is_null()) [[unlikely]] {
+    co_return false;
+  }
   string response{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
@@ -134,7 +140,9 @@ kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string
 
   auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
                                                       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  kphp::log::assertion(!query.is_null());
+  if (query.is_null()) [[unlikely]] {
+    co_return -1;
+  }
   string response{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
@@ -277,7 +285,9 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
 
   auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
                                                       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  kphp::log::assertion(!query.is_null());
+  if (query.is_null()) [[unlikely]] {
+    co_return false;
+  }
   string resp{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
@@ -327,7 +337,9 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
 
   auto query{co_await f$component_client_send_request(string{CRYPTO_COMPONENT_NAME.data(), static_cast<string::size_type>(CRYPTO_COMPONENT_NAME.size())},
                                                       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  kphp::log::assertion(!query.is_null());
+  if (query.is_null()) [[unlikely]] {
+    co_return false;
+  }
   string resp{co_await f$component_client_fetch_response(std::move(query))};
 
   tlb.clean();
