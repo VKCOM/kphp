@@ -67,7 +67,7 @@ kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
   tl::Maybe<tl::confdataValue> maybe_confdata_value{};
   kphp::log::assertion(maybe_confdata_value.fetch(tlb));
 
-  if (!maybe_confdata_value.opt_value.has_value()) { // no such key
+  if (!maybe_confdata_value.opt_value) { // no such key
     co_return mixed{};
   }
   co_return extract_confdata_value(*maybe_confdata_value.opt_value); // the key exists
