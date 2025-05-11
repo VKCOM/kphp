@@ -15,5 +15,6 @@ AlwaysBreakTemplateDeclarations:  Yes
 IndentRequiresClause:             false
 RequiresClausePosition:           OwnLine
 IndentPPDirectives:               None
+InsertNewlineAtEOF:               true
 ...
 
