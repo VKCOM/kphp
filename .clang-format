@@ -6,13 +6,13 @@ PointerAlignment:                 Left
 ReferenceAlignment:               Pointer
 Standard:                         c++20
 UseTab:                           Never
-SortIncludes:                     true
+SortIncludes:                     CaseSensitive
 RemoveSemicolon:                  true
 AllowShortFunctionsOnASingleLine: Empty
 PackConstructorInitializers:      Never
 SpaceAfterTemplateKeyword:        false
 AlwaysBreakTemplateDeclarations:  Yes
-IndentRequiresClause:             No
+IndentRequiresClause:             false
 RequiresClausePosition:           OwnLine
 IndentPPDirectives:               None
 ...
