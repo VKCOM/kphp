@@ -63,6 +63,7 @@ void RuntimeAllocator::free() {
 }
 
 void* RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
+  kphp::log::assertion(size != 0);
   void* mem{memory_resource.allocate(size)};
   if (mem == nullptr) [[unlikely]] {
     request_extra_memory(size);
@@ -73,6 +74,7 @@ void* RuntimeAllocator::alloc_script_memory(size_t size) noexcept {
 }
 
 void* RuntimeAllocator::alloc0_script_memory(size_t size) noexcept {
+  kphp::log::assertion(size != 0);
   void* mem{memory_resource.allocate0(size)};
   if (mem == nullptr) [[unlikely]] {
     request_extra_memory(size);
@@ -94,6 +96,7 @@ void* RuntimeAllocator::realloc_script_memory(void* old_mem, size_t new_size, si
 }
 
 void RuntimeAllocator::free_script_memory(void* mem, size_t size) noexcept {
+  kphp::log::assertion(size != 0);
   memory_resource.deallocate(mem, size);
 }
 
