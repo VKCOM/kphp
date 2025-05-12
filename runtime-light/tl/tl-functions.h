@@ -190,28 +190,28 @@ inline constexpr uint32_t CACHE_DELETE_MAGIC = 0x71a9'5f2b;
 inline constexpr uint32_t CACHE_FETCH_MAGIC = 0xbd29'd526;
 
 struct CacheStore final {
-  string key;
-  string value;
-  uint32_t ttl{};
+  tl::string key;
+  tl::string value;
+  tl::u32 ttl;
 
   void store(TLBuffer& tlb) const noexcept;
 };
 
 struct CacheUpdateTtl final {
-  string key;
-  uint32_t ttl{};
+  tl::string key;
+  tl::u32 ttl;
 
   void store(TLBuffer& tlb) const noexcept;
 };
 
 struct CacheDelete final {
-  string key;
+  tl::string key;
 
   void store(TLBuffer& tlb) const noexcept;
 };
 
 struct CacheFetch final {
-  string key;
+  tl::string key;
 
   void store(TLBuffer& tlb) const noexcept;
 };

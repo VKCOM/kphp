@@ -6,6 +6,6 @@
 
 #include "runtime-light/state/instance-state.h"
 
-InstanceCacheState& InstanceCacheState::get() noexcept {
+InstanceCacheInstanceState& InstanceCacheInstanceState::get() noexcept {
   return InstanceState::get().instance_cache_state;
 }
