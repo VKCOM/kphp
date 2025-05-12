@@ -28,7 +28,7 @@ jobs:
       # because of https://github.com/orgs/Homebrew/discussions/4612
       - name: Check Environment
         run: |
-          export HOMEBREW_NO_INSTALL_FROM_API=0
+          export HOMEBREW_NO_INSTALL_FROM_API=
           brew untap --force homebrew/cask
 
       - name: Setup Environment
