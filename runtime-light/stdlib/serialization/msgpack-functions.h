@@ -4,7 +4,10 @@
 
 #pragma once
 
-#include "runtime-common/stdlib/serialization/msgpack-functions.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/msgpack/unpacker.h"
+#include "runtime-light/stdlib/serialization/serialization-state.h"
+#include "runtime-light/utils/logs.h"
 
 template<class ResultType = mixed>
 ResultType f$msgpack_deserialize(const string& buffer, string* out_err_msg = nullptr) noexcept {
@@ -12,7 +15,7 @@ ResultType f$msgpack_deserialize(const string& buffer, string* out_err_msg = nul
     return {};
   }
 
-  SerializationLibContext::get().clear_msgpack_error();
+  SerializationInstanceState::get().clear_msgpack_error();
   string err_msg;
   vk::msgpack::unpacker unpacker{buffer};
   vk::msgpack::object obj{unpacker.unpack()};
@@ -43,16 +46,16 @@ ResultType f$msgpack_deserialize(const string& buffer, string* out_err_msg = nul
 }
 
 template<class ResultClass>
-ResultClass f$instance_deserialize(const string& buffer, const string&) noexcept {
+ResultClass f$instance_deserialize(const string& buffer, const string& /*unused*/) noexcept {
   return f$msgpack_deserialize<ResultClass>(buffer);
 }
 
 template<class InstanceClass>
-string f$instance_serialize_safe(const class_instance<InstanceClass>& instance) noexcept {
-  php_critical_error("call to unsupported function");
+string f$instance_serialize_safe(const class_instance<InstanceClass>& /*instance*/) noexcept {
+  kphp::log::error("call to unsupported function");
 }
 
 template<class ResultClass>
-ResultClass f$instance_deserialize_safe(const string& buffer, const string&) noexcept {
-  php_critical_error("call to unsupported function");
+ResultClass f$instance_deserialize_safe(const string& /*buffer*/, const string& /*unused*/) noexcept {
+  kphp::log::error("call to unsupported function");
 }

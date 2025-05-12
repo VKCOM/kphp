@@ -16,7 +16,6 @@
 #include "common/tl/constants/common.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {
@@ -206,17 +205,10 @@ struct Maybe final {
   requires tl::deserializable<T>
   {
     tl::details::magic magic{};
-    if (!magic.fetch(tlb)) [[unlikely]] {
+    if (!magic.fetch(tlb) || (!magic.expect(TL_MAYBE_TRUE) && !magic.expect(TL_MAYBE_FALSE))) [[unlikely]] {
       return false;
     }
-
-    if (magic.expect(TL_MAYBE_TRUE)) {
-      return opt_value.emplace().fetch(tlb);
-    } else if (magic.expect(TL_MAYBE_FALSE)) {
-      opt_value = std::nullopt;
-      return true;
-    }
-    php_critical_error("unexpected magic");
+    return magic.expect(TL_MAYBE_TRUE) ? opt_value.emplace().fetch(tlb) : (opt_value = std::nullopt, true);
   }
 
   void store(tl::TLBuffer& tlb) const noexcept

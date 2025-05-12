@@ -7,14 +7,14 @@
 #include <memory>
 
 #include "common/containers/final_action.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/system/system-functions.h"
+#include "runtime-light/utils/logs.h"
 
 Optional<string> f$iconv(const string& input_encoding, const string& output_encoding, const string& input_str) noexcept {
   iconv_t cd{};
   if (k2::iconv_open(std::addressof(cd), output_encoding.c_str(), input_encoding.c_str()) != k2::errno_ok) [[unlikely]] {
-    php_warning(R"(unsupported iconv from "%s" to "%s")", input_encoding.c_str(), output_encoding.c_str());
+    kphp::log::warning("unsupported iconv from '{}' to '{}'", input_encoding.c_str(), output_encoding.c_str());
     return false;
   }
 

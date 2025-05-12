@@ -9,12 +9,13 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
-#include "runtime-light/stdlib/fork/fork-state.h" // it's actually used by exception handling stuff
+#include "runtime-light/stdlib/fork/fork-state.h" // it's actually used in macros
+#include "runtime-light/utils/logs.h"             // it's actually used in macros
 
 #define THROW_EXCEPTION(e)                                                                                                                                     \
   {                                                                                                                                                            \
     Throwable x_tmp___ = e;                                                                                                                                    \
-    php_assert(std::exchange(ForkInstanceState::get().current_info().get().thrown_exception, std::move(x_tmp___)).is_null());                                  \
+    kphp::log::assertion(std::exchange(ForkInstanceState::get().current_info().get().thrown_exception, std::move(x_tmp___)).is_null());                        \
   }
 
 #define CHECK_EXCEPTION(action)                                                                                                                                \
@@ -56,8 +57,8 @@
 
 // ================================================================================================
 
-#define TRY_CALL_EXIT(CallT, message, call) TRY_CALL_(CallT, call, php_critical_error(message))
-#define TRY_CALL_VOID_EXIT(message, call) TRY_CALL_VOID_(call, php_critical_error(message))
+#define TRY_CALL_EXIT(CallT, message, call) TRY_CALL_(CallT, call, kphp::log::fatal(message))
+#define TRY_CALL_VOID_EXIT(message, call) TRY_CALL_VOID_(call, kphp::log::fatal(message))
 
 // ================================================================================================
 

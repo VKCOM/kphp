@@ -8,15 +8,15 @@
 #include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/file/resource.h"
+#include "runtime-light/utils/logs.h"
 
 resource f$fopen(const string& filename, [[maybe_unused]] const string& mode, [[maybe_unused]] bool use_include_path,
                  [[maybe_unused]] const resource& context) noexcept {
   underlying_resource_t rsrc{{filename.c_str(), filename.size()}};
   if (rsrc.last_errc != k2::errno_ok) [[unlikely]] {
-    php_warning("cannot fopen %s", filename.c_str());
+    kphp::log::warning("fopen failed: {}", filename.c_str());
     return {};
   }
 
@@ -54,17 +54,16 @@ Optional<string> f$file_get_contents(const string& stream) noexcept {
 kphp::coro::task<Optional<int64_t>> f$fwrite(resource stream, string text) noexcept {
   auto rsrc{from_mixed<class_instance<underlying_resource_t>>(stream, {})};
   if (rsrc.is_null()) [[unlikely]] {
-    php_warning("wrong resource in fwrite %s", stream.to_string().c_str());
+    kphp::log::warning("unexpected resource in fwrite: {}", stream.to_string().c_str());
     co_return false;
   }
-
   co_return co_await rsrc.get()->write({text.c_str(), text.size()});
 }
 
 bool f$fflush(const resource& stream) noexcept {
   auto rsrc{from_mixed<class_instance<underlying_resource_t>>(stream, {})};
   if (rsrc.is_null()) [[unlikely]] {
-    php_warning("wrong resource in fflush %s", stream.to_string().c_str());
+    kphp::log::warning("unexpected resource in fflush: {}", stream.to_string().c_str());
     return false;
   }
 
@@ -75,7 +74,7 @@ bool f$fflush(const resource& stream) noexcept {
 bool f$fclose(const resource& stream) noexcept {
   auto rsrc{from_mixed<class_instance<underlying_resource_t>>(stream, {})};
   if (rsrc.is_null()) [[unlikely]] {
-    php_warning("wrong resource in fclose: %s", stream.to_string().c_str());
+    kphp::log::warning("unexpected resource in fclose: {}", stream.to_string().c_str());
     return false;
   }
 

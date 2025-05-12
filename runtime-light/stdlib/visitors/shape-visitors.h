@@ -10,6 +10,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/utils/logs.h"
 
 struct ShapeKeyDemangle final : vk::not_copyable {
   ShapeKeyDemangle() = default;
@@ -20,9 +21,9 @@ struct ShapeKeyDemangle final : vk::not_copyable {
   }
 
   std::string_view get_key_by(int64_t tag) const noexcept {
-    php_assert(inited_);
-    auto key_it = shape_keys_storage_.find(tag);
-    php_assert(key_it != shape_keys_storage_.end());
+    kphp::log::assertion(inited_);
+    auto key_it{shape_keys_storage_.find(tag)};
+    kphp::log::assertion(key_it != shape_keys_storage_.end());
     return key_it->second;
   }
 

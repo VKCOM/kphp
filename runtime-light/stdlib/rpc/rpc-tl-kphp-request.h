@@ -8,12 +8,12 @@
 #include <memory>
 
 #include "common/containers/final_action.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"
+#include "runtime-light/utils/logs.h"
 
 namespace kphp::rpc::rpc_impl {
 // use template, because t_ReqResult_ is unknown on runtime compilation
@@ -32,7 +32,7 @@ public:
   }
 
   std::unique_ptr<tl_func_base> extract_untyped_fetcher() noexcept final {
-    php_assert(!"Forbidden to call for typed rpc requests");
+    kphp::log::error("Forbidden to call for typed rpc requests");
   }
 };
 
@@ -43,7 +43,7 @@ public:
   using RpcRequest::RpcRequest;
 
   std::unique_ptr<RpcRequestResult> store_request() const noexcept final {
-    CHECK_EXCEPTION(php_assert(false));
+    CHECK_EXCEPTION(kphp::log::assertion(false));
     auto& cur_query{CurrentTlQuery::get()};
     cur_query.set_current_tl_function(tl_function_name());
     const vk::final_action finalizer{[&cur_query] noexcept { cur_query.reset(); }};

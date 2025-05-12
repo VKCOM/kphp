@@ -12,9 +12,9 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
+#include "runtime-light/utils/logs.h"
 
 namespace kphp::forks {
 
@@ -62,9 +62,8 @@ public:
   }
 
   std::reference_wrapper<fork_info> current_info() noexcept {
-    if (auto opt_fork_info{get_info(current_id)}; opt_fork_info.has_value()) [[likely]] {
-      return *opt_fork_info;
-    }
-    php_critical_error("can't find info for current fork");
+    auto opt_fork_info{get_info(current_id)};
+    kphp::log::assertion(opt_fork_info.has_value());
+    return *opt_fork_info;
   }
 };

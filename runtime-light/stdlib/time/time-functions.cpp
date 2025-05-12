@@ -10,6 +10,8 @@
 #include <ctime>
 #include <string_view>
 
+#include "runtime-light/utils/logs.h"
+
 namespace {
 constexpr std::string_view PHP_TIMELIB_TZ_MOSCOW = "Europe/Moscow";
 constexpr std::string_view PHP_TIMELIB_TZ_GMT3 = "Etc/GMT-3";
@@ -343,7 +345,7 @@ string f$date(const string& format, Optional<int64_t> timestamp) noexcept {
 bool f$date_default_timezone_set(const string& s) noexcept {
   const std::string_view timezone_view{s.c_str(), s.size()};
   if (timezone_view != PHP_TIMELIB_TZ_GMT3 && timezone_view != PHP_TIMELIB_TZ_MOSCOW) {
-    php_warning("unsupported default timezone \"%s\"", s.c_str());
+    kphp::log::warning("unsupported default timezone '{}'", s.c_str());
     return false;
   }
   return true;

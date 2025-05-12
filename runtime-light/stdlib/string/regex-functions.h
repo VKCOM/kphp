@@ -14,6 +14,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
+#include "runtime-light/utils/logs.h"
 
 namespace kphp::regex {
 
@@ -41,7 +42,7 @@ namespace regex_impl_ {
 
 inline bool valid_preg_replace_mixed(const mixed& param) noexcept {
   if (!param.is_array() && !param.is_string()) [[unlikely]] {
-    php_warning("invalid parameter: expected to be string or array");
+    kphp::log::warning("invalid parameter: expected to be string or array");
     return false;
   }
   return true;
@@ -137,7 +138,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(mixed pattern, F call
     if (!opt_count.has_value()) {
       return;
     }
-    php_assert(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
+    kphp::log::assertion(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
     auto& inner_ref{std::get<std::reference_wrapper<int64_t>>(opt_count.val()).get()};
     inner_ref = count;
   }};
@@ -176,7 +177,7 @@ kphp::coro::task<mixed> f$preg_replace_callback(mixed pattern, F callback, mixed
     if (!opt_count.has_value()) {
       return;
     }
-    php_assert(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
+    kphp::log::assertion(std::holds_alternative<std::reference_wrapper<int64_t>>(opt_count.val()));
     auto& inner_ref{std::get<std::reference_wrapper<int64_t>>(opt_count.val()).get()};
     inner_ref = count;
   }};
@@ -209,9 +210,9 @@ auto f$preg_replace_callback(T1&& pattern, T2&& callback, T3&& subject, int64_t 
 // === preg_split =================================================================================
 
 inline Optional<array<mixed>> f$preg_split(const string& /*unused*/, const string& /*unused*/, int64_t /*unused*/ = -1, int64_t /*unused*/ = 0) {
-  php_critical_error("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline Optional<array<mixed>> f$preg_split(const mixed& /*unused*/, const string& /*unused*/, int64_t /*unused*/ = -1, int64_t /*unused*/ = 0) {
-  php_critical_error("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }

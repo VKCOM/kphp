@@ -10,6 +10,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
+#include "runtime-light/utils/logs.h"
 
 namespace null_coalesce_impl_ {
 
@@ -129,7 +130,7 @@ private:
     using is_bool_inside = std::is_same<typename std::decay_t<OptionalValueType>::InnerType, bool>;
     using false_cast_immposible = std::integral_constant<bool, is_bool_inside{} && !result_can_be_false{}>;
 
-    php_assert((result_can_be_false{} || !value.is_false()));
+    kphp::log::assertion((result_can_be_false{} || !value.is_false()));
     set_result_resolve_or_false(false_cast_immposible{}, std::forward<OptionalValueType>(value));
   }
 
@@ -142,8 +143,8 @@ private:
   }
 
   template<class ValueType>
-  void set_result_resolve_or_false(std::true_type, const Optional<ValueType>& value) noexcept {
-    php_assert(value.value_state() == OptionalState::null_value);
+  void set_result_resolve_or_false(std::true_type /*unused*/, const Optional<ValueType>& value) noexcept {
+    kphp::log::assertion(value.value_state() == OptionalState::null_value);
   }
 
   template<class ValueType>

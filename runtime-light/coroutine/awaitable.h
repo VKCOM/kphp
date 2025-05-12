@@ -13,13 +13,13 @@
 #include <type_traits>
 #include <utility>
 
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
+#include "runtime-light/utils/logs.h"
 
 template<class T>
 concept Awaitable = requires(T awaitable, std::coroutine_handle<> coro) {
@@ -83,7 +83,7 @@ public:
   }
 
   bool await_ready() noexcept {
-    php_assert(state == awaitable_impl_::state::init);
+    kphp::log::assertion(state == awaitable_impl_::state::init);
     state = InstanceState::get().stream_updated(stream_d) ? awaitable_impl_::state::ready : awaitable_impl_::state::init;
     return state == awaitable_impl_::state::ready;
   }
@@ -133,7 +133,7 @@ public:
   }
 
   bool await_ready() noexcept {
-    php_assert(state == awaitable_impl_::state::init);
+    kphp::log::assertion(state == awaitable_impl_::state::init);
     state = !InstanceState::get().incoming_streams().empty() ? awaitable_impl_::state::ready : awaitable_impl_::state::init;
     return state == awaitable_impl_::state::ready;
   }
@@ -148,7 +148,7 @@ public:
     state = awaitable_impl_::state::end;
     fork_id_watcher_t::await_resume();
     const auto incoming_stream_d{InstanceState::get().take_incoming_stream()};
-    php_assert(incoming_stream_d != k2::INVALID_PLATFORM_DESCRIPTOR);
+    kphp::log::assertion(incoming_stream_d != k2::INVALID_PLATFORM_DESCRIPTOR);
     return incoming_stream_d;
   }
 
@@ -186,7 +186,7 @@ public:
   }
 
   constexpr bool await_ready() const noexcept {
-    php_assert(state == awaitable_impl_::state::init);
+    kphp::log::assertion(state == awaitable_impl_::state::init);
     return false;
   }
 
@@ -243,7 +243,7 @@ public:
   }
 
   constexpr bool await_ready() const noexcept {
-    php_assert(state == awaitable_impl_::state::init);
+    kphp::log::assertion(state == awaitable_impl_::state::init);
     return false;
   }
 
@@ -300,7 +300,7 @@ public:
   ~start_fork_t() = default;
 
   constexpr bool await_ready() const noexcept {
-    php_assert(state == awaitable_impl_::state::init);
+    kphp::log::assertion(state == awaitable_impl_::state::init);
     return fork_awaiter.await_ready();
   }
 
@@ -359,7 +359,7 @@ public:
   }
 
   bool await_ready() noexcept {
-    php_assert(state == awaitable_impl_::state::init);
+    kphp::log::assertion(state == awaitable_impl_::state::init);
     state = fork_awaiter.await_ready() ? awaitable_impl_::state::ready : awaitable_impl_::state::init;
     return state == awaitable_impl_::state::ready;
   }
@@ -420,7 +420,7 @@ public:
   ~wait_with_timeout_t() = default;
 
   constexpr bool await_ready() noexcept {
-    php_assert(state == awaitable_impl_::state::init);
+    kphp::log::assertion(state == awaitable_impl_::state::init);
     state = awaitable.await_ready() || timer_awaitable.await_ready() ? awaitable_impl_::state::ready : awaitable_impl_::state::init;
     return state == awaitable_impl_::state::ready;
   }

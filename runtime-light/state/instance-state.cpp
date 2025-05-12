@@ -5,7 +5,6 @@
 #include "runtime-light/state/instance-state.h"
 
 #include <chrono>
-#include <cinttypes>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -14,7 +13,6 @@
 
 #include "common/tl/constants/common.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/awaitable.h"
@@ -31,6 +29,7 @@
 #include "runtime-light/streams/streams.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
+#include "runtime-light/utils/logs.h"
 
 namespace {
 
@@ -52,7 +51,7 @@ consteval std::string_view resolve_sapi_name() noexcept {
 int32_t merge_output_buffers() noexcept {
   auto& instance_st{InstanceState::get()};
   Response& response{instance_st.response};
-  php_assert(response.current_buffer >= 0);
+  kphp::log::assertion(response.current_buffer >= 0);
 
   int32_t ob_first_not_empty{};
   while (ob_first_not_empty < response.current_buffer && response.output_buffers[ob_first_not_empty].size() == 0) {
@@ -80,11 +79,11 @@ void InstanceState::init_script_execution() noexcept {
             [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
               co_await script_task;
               if (auto exception{std::move(ForkInstanceState::get().current_info().get().thrown_exception)}; !exception.is_null()) [[unlikely]] {
-                php_error("unhandled exception '%s' at %s:%" PRId64, exception.get_class(), exception->$file.c_str(), exception->$line);
+                kphp::log::error("unhandled exception '{}' at {}:{}", exception.get_class(), exception.get()->$file.c_str(), exception.get()->$line);
               }
             },
             std::move(script_task));
-        php_assert(co_await f$wait_concurrently(co_await start_fork_t{std::move(script_task)}));
+        kphp::log::assertion(co_await f$wait_concurrently(co_await start_fork_t{std::move(script_task)}));
       },
       std::move(script_task))};
   scheduler.suspend({main_task.get_handle(), WaitEvent::Rechedule{}});
@@ -109,21 +108,21 @@ kphp::coro::task<> InstanceState::init_server_instance() noexcept {
   auto init_k2_invoke_http{[](tl::TLBuffer& tlb) noexcept {
     tl::K2InvokeHttp invoke_http{};
     if (!invoke_http.fetch(tlb)) [[unlikely]] {
-      php_error("erroneous http request");
+      kphp::log::error("erroneous http request");
     }
     kphp::http::init_server(std::move(invoke_http));
   }};
   auto init_k2_invoke_rpc{[](tl::TLBuffer& tlb) noexcept {
     tl::K2InvokeRpc invoke_rpc{};
     if (!invoke_rpc.fetch(tlb)) [[unlikely]] {
-      php_error("erroneous rpc request");
+      kphp::log::error("erroneous rpc request");
     }
     kphp::rpc::init_server(std::move(invoke_rpc));
   }};
   auto init_k2_invoke_jw{[](tl::TLBuffer& tlb) noexcept {
     tl::K2InvokeJobWorker invoke_jw{};
     if (!invoke_jw.fetch(tlb)) [[unlikely]] {
-      php_error("erroneous job worker request");
+      kphp::log::error("erroneous job worker request");
     }
     init_job_server(invoke_jw);
   }};
@@ -168,9 +167,8 @@ kphp::coro::task<> InstanceState::init_server_instance() noexcept {
     }
     break;
   }
-  default: {
-    php_error("unexpected server request magic: 0x%x", magic);
-  }
+  default:
+    kphp::log::error("unexpected server request with magic: {:#x}", magic);
   }
 }
 
@@ -211,8 +209,7 @@ template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::mul
 kphp::coro::task<> InstanceState::finalize_cli_instance() noexcept {
   const auto& output{response.output_buffers[merge_output_buffers()]};
   if (co_await write_all_to_stream(standard_stream(), output.buffer(), output.size()) != output.size()) [[unlikely]] {
-    poll_status = k2::PollStatus::PollFinishedError;
-    php_warning("can't write component result to stream %" PRIu64, standard_stream());
+    kphp::log::error("can't write output to stream {}", standard_stream());
   }
 }
 
@@ -226,7 +223,7 @@ kphp::coro::task<> InstanceState::finalize_server_instance() noexcept {
   case instance_kind::job_server:
     break;
   default:
-    php_critical_error("unexpected instance kind: %u", std::to_underlying(instance_kind()));
+    kphp::log::error("unexpected instance kind: {}", std::to_underlying(instance_kind()));
   }
   co_return;
 }
@@ -243,7 +240,7 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     co_return;
   }
 
-  switch (image_kind_) {
+  switch (image_kind()) {
   case image_kind::oneshot:
   case image_kind::multishot:
     break;
@@ -256,7 +253,7 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     break;
   }
   default: {
-    php_error("unexpected image_kind");
+    kphp::log::error("unexpected image kind: {}", std::to_underlying(image_kind()));
   }
   }
   release_all_streams();
@@ -269,7 +266,7 @@ void InstanceState::process_platform_updates() noexcept {
   for (;;) {
     // check if platform asked for yield
     if (static_cast<bool>(k2::control_flags()->please_yield.load())) { // tell the scheduler that we are about to yield
-      php_debug("platform asked for yield");
+      kphp::log::debug("platform set 'please_yield=true'");
       const auto schedule_status{scheduler.schedule(ScheduleEvent::Yield{})};
       poll_status = schedule_status == ScheduleStatus::Error ? k2::PollStatus::PollFinishedError : k2::PollStatus::PollReschedule;
       return;
@@ -278,7 +275,7 @@ void InstanceState::process_platform_updates() noexcept {
     // try taking update from the platform
     if (uint64_t stream_d{}; static_cast<bool>(k2::take_update(std::addressof(stream_d)))) {
       if (opened_streams_.contains(stream_d)) { // update on opened stream
-        php_debug("took update on stream %" PRIu64, stream_d);
+        kphp::log::debug("got update on stream {}", stream_d);
         switch (scheduler.schedule(ScheduleEvent::UpdateOnStream{.stream_d = stream_d})) {
         case ScheduleStatus::Resumed: { // scheduler's resumed a coroutine waiting for update
           break;
@@ -293,7 +290,7 @@ void InstanceState::process_platform_updates() noexcept {
         }
         }
       } else { // update on incoming stream
-        php_debug("got new incoming stream %" PRIu64, stream_d);
+        kphp::log::debug("got incoming stream {}", stream_d);
         incoming_streams_.push_back(stream_d);
         opened_streams_.insert(stream_d);
         if (const auto schedule_status{scheduler.schedule(ScheduleEvent::IncomingStream{.stream_d = stream_d})}; schedule_status == ScheduleStatus::Error) {
@@ -302,6 +299,7 @@ void InstanceState::process_platform_updates() noexcept {
         }
       }
     } else { // we'are out of updates so let the scheduler do whatever it wants
+      kphp::log::debug("got no events from platform");
       switch (scheduler.schedule(ScheduleEvent::NoEvent{})) {
       case ScheduleStatus::Resumed: { // scheduler's resumed some coroutine, so let's continue scheduling
         break;
@@ -317,18 +315,17 @@ void InstanceState::process_platform_updates() noexcept {
       }
     }
   }
-  // unreachable code
-  poll_status = k2::PollStatus::PollFinishedError;
+  std::unreachable();
 }
 
 uint64_t InstanceState::take_incoming_stream() noexcept {
-  if (incoming_streams_.empty()) {
-    php_warning("can't take incoming stream cause we don't have them");
+  if (incoming_streams_.empty()) [[unlikely]] {
+    kphp::log::warning("can't take incoming stream since there is not one");
     return k2::INVALID_PLATFORM_DESCRIPTOR;
   }
   const auto stream_d{incoming_streams_.front()};
   incoming_streams_.pop_front();
-  php_debug("take incoming stream %" PRIu64, stream_d);
+  kphp::log::debug("take incoming stream {}", stream_d);
   return stream_d;
 }
 
@@ -352,9 +349,9 @@ std::pair<uint64_t, int32_t> InstanceState::open_stream(std::string_view compone
 
   if (error_code == k2::errno_ok) [[likely]] {
     opened_streams_.insert(stream_d);
-    php_debug("opened a stream %" PRIu64 " to %s", stream_d, component_name.data());
+    kphp::log::debug("opened a stream {} to {}", stream_d, component_name);
   } else {
-    php_warning("can't open stream to %s", component_name.data());
+    kphp::log::warning("can't open a stream to {}", component_name);
   }
   return {stream_d, error_code};
 }
@@ -365,9 +362,9 @@ std::pair<uint64_t, int32_t> InstanceState::set_timer(std::chrono::nanoseconds d
 
   if (error_code == k2::errno_ok) [[likely]] {
     opened_streams_.insert(timer_d);
-    php_debug("set timer %" PRIu64 " for %.9f sec", timer_d, std::chrono::duration<double>(duration).count());
+    kphp::log::debug("set timer {} for {} seconds", timer_d, std::chrono::duration<double>(duration).count());
   } else {
-    php_warning("can't set timer for %.9f sec", std::chrono::duration<double>(duration).count());
+    kphp::log::warning("can't set a timer for {} seconds", std::chrono::duration<double>(duration).count());
   }
   return {timer_d, error_code};
 }
@@ -379,14 +376,14 @@ void InstanceState::release_stream(uint64_t stream_d) noexcept {
   opened_streams_.erase(stream_d);
   pending_updates_.erase(stream_d); // also erase pending updates if exists
   k2::free_descriptor(stream_d);
-  php_debug("released a stream %" PRIu64, stream_d);
+  kphp::log::debug("released a stream {}", stream_d);
 }
 
 void InstanceState::release_all_streams() noexcept {
   standard_stream_ = k2::INVALID_PLATFORM_DESCRIPTOR;
   for (const auto stream_d : opened_streams_) {
     k2::free_descriptor(stream_d);
-    php_debug("released a stream %" PRIu64, stream_d);
+    kphp::log::debug("released a stream {}", stream_d);
   }
   opened_streams_.clear();
   pending_updates_.clear();

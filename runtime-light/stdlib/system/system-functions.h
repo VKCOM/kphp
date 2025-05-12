@@ -8,30 +8,30 @@
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
+#include "runtime-light/utils/logs.h"
 
 template<typename F>
 bool f$register_kphp_on_oom_callback(F&& /*callback*/) {
-  php_critical_error("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 template<typename F>
 void f$kphp_extended_instance_cache_metrics_init(F&& /*callback*/) {
-  php_critical_error("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline int64_t f$system(const string& /*command*/, int64_t& /*result_code*/ = SystemInstanceState::get().result_code_dummy) {
-  php_critical_error("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline Optional<array<mixed>> f$getopt(const string& /*options*/, const array<string>& /*longopts*/ = {},
                                        Optional<int64_t>& /*rest_index*/ = SystemInstanceState::get().rest_index_dummy) {
-  php_critical_error("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline int64_t f$numa_get_bound_node() noexcept {
@@ -72,7 +72,7 @@ Optional<string> f$iconv(const string& input_encoding, const string& output_enco
 
 inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
   if (microseconds <= 0) [[unlikely]] {
-    php_warning("Value of microseconds (%" PRIi64 ") must be positive", microseconds);
+    kphp::log::warning("value of microseconds ({}) must be positive", microseconds);
     co_return;
   }
   const std::chrono::milliseconds sleep_time{microseconds * 1000};
@@ -80,35 +80,35 @@ inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
 }
 
 inline array<array<string>> f$debug_backtrace() noexcept {
-  php_warning("called stub debug_backtrace");
+  kphp::log::warning("called stub debug_backtrace");
   return {};
 }
 
 inline int64_t f$error_reporting([[maybe_unused]] int64_t level) noexcept {
-  php_warning("called stub error_reporting");
+  kphp::log::warning("called stub error_reporting");
   return 0;
 }
 
 inline int64_t f$error_reporting() noexcept {
-  php_warning("called stub error_reporting");
+  kphp::log::warning("called stub error_reporting");
   return 0;
 }
 
 inline Optional<string> f$exec([[maybe_unused]] const string& command) noexcept {
-  php_critical_error("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline Optional<string> f$exec([[maybe_unused]] const string& command, [[maybe_unused]] mixed& output,
                                [[maybe_unused]] int64_t& result_code = SystemInstanceState::get().result_code_dummy) noexcept {
-  php_critical_error("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline string f$get_engine_version() noexcept {
-  php_warning("called stub get_engine_version");
+  kphp::log::warning("called stub get_engine_version");
   return {};
 }
 
 inline string f$get_kphp_cluster_name() noexcept {
-  php_warning("called stub get_kphp_cluster_name");
-  return string("adm512");
+  kphp::log::warning("called stub get_kphp_cluster_name");
+  return string{"adm512"};
 }

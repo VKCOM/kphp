@@ -11,6 +11,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/state/instance-state.h"
+#include "runtime-light/utils/logs.h"
 
 template<typename F, typename... Args>
 requires(std::invocable<F, Args...>)
@@ -32,5 +33,5 @@ void f$register_shutdown_function(F&& f, Args&&... args) noexcept {
 
 template<typename F>
 void f$register_kphp_on_warning_callback(F&& /*callback*/) {
-  php_warning("called stub register_kphp_on_warning_callback");
+  kphp::log::warning("called stub register_kphp_on_warning_callback");
 }

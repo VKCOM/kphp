@@ -5,16 +5,16 @@
 #include "runtime-light/stdlib/string/regex-state.h"
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/string/regex-include.h"
+#include "runtime-light/utils/logs.h"
 
 namespace {
 
 void* regex_malloc(PCRE2_SIZE size, [[maybe_unused]] void* memory_data) noexcept {
   auto* mem{kphp::memory::script::alloc(size)};
   if (mem == nullptr) [[unlikely]] {
-    php_warning("regex malloc: can't allocate %zu bytes", size);
+    kphp::log::warning("regex malloc: can't allocate {} bytes", size);
   }
   return mem;
 }
@@ -34,13 +34,13 @@ RegexInstanceState::RegexInstanceState() noexcept
       match_context(pcre2_match_context_create_8(regex_pcre2_general_context.get()), pcre2_match_context_free_8),
       regex_pcre2_match_data(pcre2_match_data_create_8(MATCH_DATA_SIZE, regex_pcre2_general_context.get()), pcre2_match_data_free_8) {
   if (!regex_pcre2_general_context) [[unlikely]] {
-    php_error("can't create pcre2_general_context");
+    kphp::log::error("can't create pcre2_general_context");
   }
   if (!compile_context) [[unlikely]] {
-    php_warning("can't create pcre2_compile_context");
+    kphp::log::error("can't create pcre2_compile_context");
   }
   if (!match_context) [[unlikely]] {
-    php_warning("can't create pcre2_match_context");
+    kphp::log::error("can't create pcre2_match_context");
   }
 }
 

@@ -15,9 +15,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 
-namespace kphp {
-
-namespace http {
+namespace kphp::http {
 
 enum class method : uint8_t { get, post, head, other };
 
@@ -47,9 +45,7 @@ inline constexpr std::string_view CONTENT_ENCODING = "content-encoding";
 
 } // namespace headers
 
-} // namespace http
-
-} // namespace kphp
+} // namespace kphp::http
 
 struct HttpServerInstanceState final : private vk::not_copyable {
   using header_t = kphp::stl::string<kphp::memory::script_allocator>;

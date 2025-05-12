@@ -9,6 +9,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/state/instance-state.h"
+#include "runtime-light/utils/logs.h"
 
 // === print ======================================================================================
 
@@ -40,7 +41,7 @@ string f$print_r(const mixed& v, bool buffered = false) noexcept;
 
 template<class T>
 string f$print_r(const class_instance<T>& v, bool buffered = false) noexcept {
-  php_warning("print_r used on object");
+  kphp::log::warning("print_r used on object");
   return f$print_r(string{v.get_class(), static_cast<string::size_type>(strlen(v.get_class()))}, buffered);
 }
 
@@ -50,7 +51,7 @@ string f$var_export(const mixed& v, bool buffered = false) noexcept;
 
 template<class T>
 string f$var_export(const class_instance<T>& v, bool buffered = false) noexcept {
-  php_warning("print_r used on object");
+  kphp::log::warning("print_r used on object");
   return f$var_export(string{v.get_class(), static_cast<string::size_type>(strlen(v.get_class()))}, buffered);
 }
 
@@ -60,7 +61,7 @@ void f$var_dump(const mixed& v) noexcept;
 
 template<class T>
 void f$var_dump(const class_instance<T>& v) noexcept {
-  php_warning("print_r used on object");
+  kphp::log::warning("print_r used on object");
   return f$var_dump(string{v.get_class(), static_cast<string::size_type>(strlen(v.get_class()))});
 }
 
@@ -77,9 +78,9 @@ inline int64_t f$printf(const string& format, const array<mixed>& a) noexcept {
 }
 
 inline Optional<int64_t> f$fprintf(const mixed&, const string&, const array<mixed>&) {
-  php_critical_error("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }
 
 inline Optional<int64_t> f$fputcsv(const mixed&, const array<mixed>&, string = string(",", 1), string = string("\"", 1), string = string("\\", 1)) {
-  php_critical_error("call to unsupported function");
+  kphp::log::error("call to unsupported function");
 }

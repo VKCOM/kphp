@@ -14,6 +14,7 @@
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
+#include "runtime-light/utils/logs.h"
 
 namespace {
 
@@ -124,6 +125,18 @@ void init_server(tl::K2InvokeRpc invoke_rpc) noexcept {
   superglobals.v$_SERVER.set_value(string{RPC_REMOTE_PID.data(), RPC_REMOTE_PID.size()}, static_cast<int64_t>(net_pid.get_pid()));
   superglobals.v$_SERVER.set_value(string{RPC_REMOTE_UTIME.data(), RPC_REMOTE_UTIME.size()}, static_cast<int64_t>(net_pid.get_utime()));
   process_rpc_invoke_req(rpc_invoke_req, superglobals);
+  kphp::log::info("rpc server initialized with: "
+                  "remote pid -> {}, "
+                  "remote port -> {}, "
+                  "query_id -> {}, "
+                  "dest_actor -> {}, "
+                  "dest_flags -> {:#b}, "
+                  "dest_actor_flags -> actor_id {}, flags {:#b}",
+                  net_pid.get_pid(), net_pid.get_port(), rpc_invoke_req.query_id.value,
+                  rpc_invoke_req.opt_dest_actor.has_value() ? (*rpc_invoke_req.opt_dest_actor).inner.actor_id.value : 0,
+                  rpc_invoke_req.opt_dest_flags.has_value() ? (*rpc_invoke_req.opt_dest_flags).inner.flags.value : 0,
+                  rpc_invoke_req.opt_dest_actor_flags.has_value() ? (*rpc_invoke_req.opt_dest_actor_flags).inner.actor_id.value : 0,
+                  rpc_invoke_req.opt_dest_actor_flags.has_value() ? (*rpc_invoke_req.opt_dest_actor_flags).inner.flags.value : 0);
 }
 
 } // namespace kphp::rpc
