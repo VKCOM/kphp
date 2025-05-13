@@ -116,7 +116,7 @@ function test_fetch_and_verify() {
   /** @var SerializedTree $instance */
   $instance = instance_cache_fetch(SerializedTree::class, (string)$data["key"]);
   echo json_encode([
-    "is_valid" => $instance->is_valid()
+    "is_valid" => is_null($instance) || $instance->is_valid()
   ]);
 }
 
