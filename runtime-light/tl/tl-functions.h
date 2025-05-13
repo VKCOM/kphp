@@ -182,6 +182,7 @@ struct K2InvokeRpc final {
     return ok;
   }
 };
+
 // ===== CACHE =====
 
 inline constexpr uint32_t CACHE_STORE_MAGIC = 0x41e9'38a8;
