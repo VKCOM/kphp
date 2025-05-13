@@ -38,9 +38,7 @@ void zlib_static_free([[maybe_unused]] voidpf opaque, [[maybe_unused]] voidpf ad
 
 } // namespace
 
-namespace kphp {
-
-namespace zlib {
+namespace kphp::zlib {
 
 std::optional<string> encode(std::span<const char> data, int64_t level, int64_t encoding) noexcept {
   if (level < MIN_COMPRESSION_LEVEL || level > MAX_COMPRESSION_LEVEL) [[unlikely]] {
@@ -116,6 +114,4 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
   return string{runtime_ctx.static_SB.buffer(), StringInstanceState::STATIC_BUFFER_LENGTH - zstrm.avail_out};
 }
 
-} // namespace zlib
-
-} // namespace kphp
+} // namespace kphp::zlib

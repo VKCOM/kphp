@@ -11,9 +11,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 
-namespace kphp {
-
-namespace zlib {
+namespace kphp::zlib {
 
 inline constexpr int64_t ENCODING_RAW = -0x0f;
 inline constexpr int64_t ENCODING_DEFLATE = 0x0f;
@@ -27,9 +25,7 @@ std::optional<string> encode(std::span<const char> data, int64_t level, int64_t 
 
 std::optional<string> decode(std::span<const char> data, int64_t encoding) noexcept;
 
-} // namespace zlib
-
-} // namespace kphp
+} // namespace kphp::zlib
 
 inline string f$gzcompress(const string& data, int64_t level = kphp::zlib::MIN_COMPRESSION_LEVEL) noexcept {
   level = level == kphp::zlib::MIN_COMPRESSION_LEVEL ? kphp::zlib::DEFAULT_COMPRESSION_LEVEL : level;
@@ -38,4 +34,22 @@ inline string f$gzcompress(const string& data, int64_t level = kphp::zlib::MIN_C
 
 inline string f$gzuncompress(const string& data) noexcept {
   return kphp::zlib::decode({data.c_str(), static_cast<size_t>(data.size())}, kphp::zlib::ENCODING_DEFLATE).value_or(string{});
+}
+
+inline string f$gzencode(const string& data, int64_t level = kphp::zlib::MIN_COMPRESSION_LEVEL) noexcept {
+  level = level == kphp::zlib::MIN_COMPRESSION_LEVEL ? kphp::zlib::DEFAULT_COMPRESSION_LEVEL : level;
+  return kphp::zlib::encode({data.c_str(), static_cast<size_t>(data.size())}, level, kphp::zlib::ENCODING_GZIP).value_or(string{});
+}
+
+inline string f$gzdecode(const string& data) noexcept {
+  return kphp::zlib::decode({data.c_str(), static_cast<size_t>(data.size())}, kphp::zlib::ENCODING_GZIP).value_or(string{});
+}
+
+inline string f$gzdeflate(const string& data, int64_t level = kphp::zlib::DEFAULT_COMPRESSION_LEVEL) noexcept {
+  level = level == kphp::zlib::MIN_COMPRESSION_LEVEL ? kphp::zlib::DEFAULT_COMPRESSION_LEVEL : level;
+  return kphp::zlib::encode({data.c_str(), static_cast<size_t>(data.size())}, level, kphp::zlib::ENCODING_RAW).value_or(string{});
+}
+
+inline string f$gzinflate(const string& data) noexcept {
+  return kphp::zlib::decode({data.c_str(), static_cast<size_t>(data.size())}, kphp::zlib::ENCODING_RAW).value_or(string{});
 }
