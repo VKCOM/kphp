@@ -12,6 +12,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
+#include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 #include "runtime-light/utils/logs.h"
@@ -79,64 +80,42 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
   }
 }
 
-void process_dest_actor(const tl::rpcDestActor& dest_actor, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
-  superglobals.v$_SERVER.set_value(string{RPC_ACTOR_ID.data(), RPC_ACTOR_ID.size()}, dest_actor.actor_id.value);
-}
-
-void process_dest_flags(const tl::rpcDestFlags& dest_flags, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
-  superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>(dest_flags.flags.value));
-  process_rpc_invoke_req_extra(dest_flags.extra, superglobals);
-}
-
-void process_dest_actor_flags(const tl::rpcDestActorFlags& dest_actor_flags, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
-  superglobals.v$_SERVER.set_value(string{RPC_ACTOR_ID.data(), RPC_ACTOR_ID.size()}, dest_actor_flags.actor_id.value);
-  superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>(dest_actor_flags.flags.value));
-  process_rpc_invoke_req_extra(dest_actor_flags.extra, superglobals);
-}
-
-void process_rpc_invoke_req(const tl::rpcInvokeReq& rpc_invoke_req, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
-  if (rpc_invoke_req.opt_dest_actor) {
-    process_dest_actor((*rpc_invoke_req.opt_dest_actor).inner, superglobals);
-  }
-  if (rpc_invoke_req.opt_dest_flags) {
-    process_dest_flags((*rpc_invoke_req.opt_dest_flags).inner, superglobals);
-  }
-  if (rpc_invoke_req.opt_dest_actor_flags) {
-    process_dest_actor_flags((*rpc_invoke_req.opt_dest_actor_flags).inner, superglobals);
-  }
-  RpcServerInstanceState::get().buffer.store_bytes(rpc_invoke_req.query);
-}
-
 } // namespace
 
 namespace kphp::rpc {
 
-void init_server(tl::K2InvokeRpc invoke_rpc) noexcept {
-  auto& net_pid{invoke_rpc.net_pid};
-  auto& rpc_invoke_req{invoke_rpc.rpc_invoke_req.inner};
+void init_server(tl::TLBuffer& tlb) noexcept {
+  tl::K2InvokeRpc invoke_rpc{};
+  if (!invoke_rpc.fetch(tlb)) [[unlikely]] {
+    kphp::log::error("erroneous rpc request");
+  }
+
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  rpc_server_instance_st.query_id = invoke_rpc.query_id.value;
+  rpc_server_instance_st.buffer.store_bytes(invoke_rpc.query);
+
   auto& superglobals{PhpScriptMutableGlobals::current().get_superglobals()};
-
-  rpc_server_instance_st.query_id = rpc_invoke_req.query_id.value;
-
-  superglobals.v$_SERVER.set_value(string{RPC_REQUEST_ID.data(), RPC_REQUEST_ID.size()}, rpc_invoke_req.query_id.value);
-  superglobals.v$_SERVER.set_value(string{RPC_REMOTE_IP.data(), RPC_REMOTE_IP.size()}, static_cast<int64_t>(net_pid.get_ip()));
-  superglobals.v$_SERVER.set_value(string{RPC_REMOTE_PORT.data(), RPC_REMOTE_PORT.size()}, static_cast<int64_t>(net_pid.get_port()));
-  superglobals.v$_SERVER.set_value(string{RPC_REMOTE_PID.data(), RPC_REMOTE_PID.size()}, static_cast<int64_t>(net_pid.get_pid()));
-  superglobals.v$_SERVER.set_value(string{RPC_REMOTE_UTIME.data(), RPC_REMOTE_UTIME.size()}, static_cast<int64_t>(net_pid.get_utime()));
-  process_rpc_invoke_req(rpc_invoke_req, superglobals);
+  superglobals.v$_SERVER.set_value(string{RPC_REQUEST_ID.data(), RPC_REQUEST_ID.size()}, invoke_rpc.query_id.value);
+  superglobals.v$_SERVER.set_value(string{RPC_REMOTE_IP.data(), RPC_REMOTE_IP.size()}, static_cast<int64_t>(invoke_rpc.net_pid.get_ip()));
+  superglobals.v$_SERVER.set_value(string{RPC_REMOTE_PORT.data(), RPC_REMOTE_PORT.size()}, static_cast<int64_t>(invoke_rpc.net_pid.get_port()));
+  superglobals.v$_SERVER.set_value(string{RPC_REMOTE_PID.data(), RPC_REMOTE_PID.size()}, static_cast<int64_t>(invoke_rpc.net_pid.get_pid()));
+  superglobals.v$_SERVER.set_value(string{RPC_REMOTE_UTIME.data(), RPC_REMOTE_UTIME.size()}, static_cast<int64_t>(invoke_rpc.net_pid.get_utime()));
+  if (invoke_rpc.opt_actor_id) {
+    superglobals.v$_SERVER.set_value(string{RPC_ACTOR_ID.data(), RPC_ACTOR_ID.size()}, (*invoke_rpc.opt_actor_id).value);
+  }
+  if (invoke_rpc.opt_extra) {
+    superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>((*invoke_rpc.opt_extra).flags.value));
+    process_rpc_invoke_req_extra(*invoke_rpc.opt_extra, superglobals);
+  }
   kphp::log::info("rpc server initialized with: "
                   "remote pid -> {}, "
                   "remote port -> {}, "
                   "query_id -> {}, "
-                  "dest_actor -> {}, "
-                  "dest_flags -> {:#b}, "
-                  "dest_actor_flags -> actor_id {}, flags {:#b}",
-                  net_pid.get_pid(), net_pid.get_port(), rpc_invoke_req.query_id.value,
-                  rpc_invoke_req.opt_dest_actor.has_value() ? (*rpc_invoke_req.opt_dest_actor).inner.actor_id.value : 0,
-                  rpc_invoke_req.opt_dest_flags.has_value() ? (*rpc_invoke_req.opt_dest_flags).inner.flags.value : 0,
-                  rpc_invoke_req.opt_dest_actor_flags.has_value() ? (*rpc_invoke_req.opt_dest_actor_flags).inner.actor_id.value : 0,
-                  rpc_invoke_req.opt_dest_actor_flags.has_value() ? (*rpc_invoke_req.opt_dest_actor_flags).inner.flags.value : 0);
+                  "actor_id -> {}, "
+                  "extra -> {:#b}",
+                  invoke_rpc.net_pid.get_pid(), invoke_rpc.net_pid.get_port(), invoke_rpc.query_id.value,
+                  invoke_rpc.opt_actor_id.has_value() ? (*invoke_rpc.opt_actor_id).value : 0,
+                  invoke_rpc.opt_extra.has_value() ? (*invoke_rpc.opt_extra).flags.value : 0);
 }
 
 } // namespace kphp::rpc

@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <cinttypes>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -171,16 +170,15 @@ inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg
   }
 
   tl::TLBuffer tlb; // FIXME reserve exact size
-  tl::K2RpcResponse{.flags = {.value = 0x0},
-                    .req_result = {.inner = tl::reqError{.error_code = {.value = static_cast<int32_t>(error_code)},
-                                                         .error = {.value = {error_msg.c_str(), error_msg.size()}}}}}
+  tl::K2RpcResponse{.value = tl::k2RpcResponseError{.error_code = tl::i32{.value = static_cast<int32_t>(error_code)},
+                                                    .error = tl::string{.value = {error_msg.c_str(), error_msg.size()}}}}
       .store(tlb);
 
   auto expected{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})};
   if (!expected) [[unlikely]] {
     kphp::log::warning("can't store RPC error: {}", std::to_underlying(expected.error()));
   }
-  kphp::log::error("store_error called. error_code: %" PRIi64 ", error_msg: %s", error_code, error_msg.c_str());
+  kphp::log::error("store_error called. error_code: {}, error_msg: {}", error_code, error_msg.c_str());
   std::unreachable();
 }
 
@@ -196,8 +194,8 @@ inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$Rpc
   // so create a TLBuffer owned by this coroutine
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
   tl::TLBuffer tlb; // FIXME reserve exact size
-  tl::K2RpcResponse{.flags = {.value = 0x0},
-                    .req_result = {.inner = std::string_view{rpc_server_instance_st.buffer.data(), rpc_server_instance_st.buffer.size()}}}
+  tl::K2RpcResponse{
+      .value = tl::k2RpcResponseHeader{.flags = {}, .extra = {}, .result = {rpc_server_instance_st.buffer.data(), rpc_server_instance_st.buffer.size()}}}
       .store(tlb);
   auto expected{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})};
   if (!expected) [[unlikely]] {

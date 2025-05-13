@@ -754,12 +754,8 @@ class rpcInvokeReqExtra final {
   static constexpr uint32_t RANDOM_DELAY_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::random_delay;
   static constexpr uint32_t RETURN_VIEW_NUMBER_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_view_number;
 
-  tl::details::mask flags{};
-  friend struct RpcInvokeReqExtra;
-  friend struct rpcDestActorFlags;
-  friend struct rpcDestFlags;
-
 public:
+  tl::details::mask flags{};
   bool return_binlog_pos{};
   bool return_binlog_time{};
   bool return_pid{};
@@ -781,12 +777,11 @@ public:
 };
 
 struct RpcInvokeReqExtra final {
-  tl::details::mask flags{};
   tl::rpcInvokeReqExtra inner{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     tl::details::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_RPC_INVOKE_REQ_EXTRA) && flags.fetch(tlb) && (inner.flags = flags, inner.fetch(tlb));
+    return magic.fetch(tlb) && magic.expect(TL_RPC_INVOKE_REQ_EXTRA) && inner.fetch(tlb);
   }
 };
 
@@ -802,11 +797,8 @@ class rpcReqResultExtra final {
   static constexpr uint32_t EPOCH_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::epoch_number;
   static constexpr uint32_t VIEW_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::view_number;
 
-  tl::details::mask flags{};
-  friend struct RpcReqResultExtra;
-  friend struct reqResultHeader;
-
 public:
+  tl::details::mask flags{};
   tl::i64 binlog_pos{};
   tl::i64 binlog_time{};
   tl::netPid engine_pid{};
@@ -822,69 +814,14 @@ public:
 };
 
 struct RpcReqResultExtra final {
-  tl::details::mask flags{};
   tl::rpcReqResultExtra inner{};
 
-  void store(tl::TLBuffer& tlb) noexcept {
-    tl::details::magic{.value = TL_RPC_REQ_RESULT_EXTRA}.store(tlb), flags.store(tlb), (inner.flags = flags, inner.store(tlb));
+  void store(tl::TLBuffer& tlb) const noexcept {
+    tl::details::magic{.value = TL_RPC_REQ_RESULT_EXTRA}.store(tlb), inner.store(tlb);
   }
 };
 
-struct rpcDestActor final {
-  tl::i64 actor_id{};
-
-  bool fetch(TLBuffer& tlb) noexcept {
-    return actor_id.fetch(tlb);
-  }
-};
-
-struct RpcDestActor final {
-  tl::rpcDestActor inner{};
-
-  bool fetch(TLBuffer& tlb) noexcept {
-    tl::details::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_RPC_DEST_ACTOR) && inner.fetch(tlb);
-  }
-};
-
-struct rpcDestFlags final {
-  tl::details::mask flags{};
-  tl::rpcInvokeReqExtra extra{};
-
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    return flags.fetch(tlb) && (extra.flags = flags, extra.fetch(tlb));
-  }
-};
-
-struct RpcDestFlags final {
-  tl::rpcDestFlags inner{};
-
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    tl::details::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_RPC_DEST_FLAGS) && inner.fetch(tlb);
-  }
-};
-
-struct rpcDestActorFlags final {
-  tl::i64 actor_id{};
-  tl::details::mask flags{};
-  tl::rpcInvokeReqExtra extra{};
-
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    return actor_id.fetch(tlb) && flags.fetch(tlb) && (extra.flags = flags, extra.fetch(tlb));
-  }
-};
-
-struct RpcDestActorFlags final {
-  tl::rpcDestActorFlags inner{};
-
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    tl::details::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_RPC_DEST_ACTOR_FLAGS) && inner.fetch(tlb);
-  }
-};
-
-struct reqError final {
+struct k2RpcResponseError final {
   tl::i32 error_code{};
   tl::string error{};
 
@@ -893,53 +830,37 @@ struct reqError final {
   }
 };
 
-struct reqResultHeader final {
+struct k2RpcResponseHeader final {
   tl::details::mask flags{};
   tl::rpcReqResultExtra extra{};
   std::string_view result;
 
-  void store(tl::TLBuffer& tlb) noexcept {
-    flags.store(tlb), (extra.flags = flags, extra.store(tlb)), tlb.store_bytes(result);
-  }
-};
-
-class ReqResult final {
-  static constexpr uint32_t REQ_ERROR_MAGIC = 0xb527'877d;
-  static constexpr uint32_t REQ_RESULT_MAGIC = 0x8cc8'4ce1;
-
-public:
-  std::variant<std::string_view, tl::reqError, tl::reqResultHeader> inner;
-
-  void store(tl::TLBuffer& tlb) noexcept {
-    std::visit(
-        [&tlb](auto& value) noexcept {
-          using value_t = std::remove_cvref_t<decltype(value)>;
-
-          if constexpr (std::same_as<value_t, std::string_view>) {
-            tlb.store_bytes(value);
-          } else if constexpr (std::same_as<value_t, tl::reqError>) {
-            tl::details::magic{.value = REQ_ERROR_MAGIC}.store(tlb);
-            value.store(tlb);
-          } else if constexpr (std::same_as<value_t, tl::reqResultHeader>) {
-            tl::details::magic{.value = REQ_RESULT_MAGIC}.store(tlb);
-            value.store(tlb);
-          } else {
-            static_assert(false, "non-exhaustive visitor!");
-          }
-        },
-        inner);
+  void store(tl::TLBuffer& tlb) const noexcept {
+    flags.store(tlb), extra.store(tlb), tlb.store_bytes(result);
   }
 };
 
 class K2RpcResponse final {
-  static constexpr uint32_t MAGIC = 0x8466'24dd;
+  static constexpr uint32_t K2_RPC_RESPONSE_ERROR_MAGIC = 0xaaaa'bbbb;
+  static constexpr uint32_t K2_RPC_RESPONSE_HEADER_MAGIC = 0xbbbb'aaaa;
 
 public:
-  tl::details::mask flags{};
-  tl::ReqResult req_result{};
+  std::variant<tl::k2RpcResponseError, tl::k2RpcResponseHeader> value;
 
-  void store(tl::TLBuffer& tlb) noexcept {
-    tl::details::magic{.value = MAGIC}.store(tlb), flags.store(tlb), req_result.store(tlb);
+  void store(tl::TLBuffer& tlb) const noexcept {
+    std::visit(
+        [&tlb](const auto& value) noexcept {
+          using value_t = std::remove_cvref_t<decltype(value)>;
+          if constexpr (std::same_as<value_t, tl::k2RpcResponseError>) {
+            tl::details::magic{.value = K2_RPC_RESPONSE_ERROR_MAGIC}.store(tlb);
+          } else if constexpr (std::same_as<value_t, tl::k2RpcResponseHeader>) {
+            tl::details::magic{.value = K2_RPC_RESPONSE_HEADER_MAGIC}.store(tlb);
+          } else {
+            static_assert(false, "non-exhaustive visitor!");
+          }
+          value.store(tlb);
+        },
+        value);
   }
 };
 
