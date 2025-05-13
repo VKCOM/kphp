@@ -54,6 +54,14 @@ inline void assertion(bool condition, const std::source_location& location = std
 }
 
 template<typename... Args>
+inline void assertion(bool condition, const std::format_string<Args...>& fmt, Args&&... args,
+                      const std::source_location& location = std::source_location::current()) noexcept {
+  if (!condition) [[unlikely]] {
+    kphp::log::error("assertion failed at {}:{} - {}", location.file_name(), location.line(), std::format(fmt, std::forward<Args>(args)...));
+  }
+}
+
+template<typename... Args>
 void warning(const std::format_string<Args...>& fmt, Args&&... args) noexcept {
   impl::log(impl::level::warn, fmt, std::forward<Args>(args)...);
 }
