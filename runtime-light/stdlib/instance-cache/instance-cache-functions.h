@@ -72,7 +72,6 @@ kphp::coro::task<InstanceType> f$instance_cache_fetch(string /*class_name*/, str
   auto& request_cache{InstanceCacheInstanceState::get().request_cache};
   if (auto it{request_cache.find(key)}; it != request_cache.end()) {
     auto cached_instance{from_mixed<InstanceType>(it->second, {})};
-    kphp::log::assertion(!cached_instance.is_null());
     co_return std::move(cached_instance);
   }
 
