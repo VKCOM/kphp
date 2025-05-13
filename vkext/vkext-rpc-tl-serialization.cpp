@@ -440,7 +440,7 @@ int get_full_tree_type_name(char *dst, struct tl_tree_type *tree, const char *co
       } else if (cur_type->name == TL_LONG || !strcmp(cur_type->id, "#")) {
         dst += make_tl_class_name(dst, "", "int", "", '\0');
       } else if (!strcmp(cur_type->id, "Bool")) {
-        dst += make_tl_class_name(dst, "", "bool", "", '\0');
+        dst += make_tl_class_name(dst, "", "boolean", "", '\0');
       } else {
         php_error_docref(NULL, E_ERROR,
                          "Unexpected type %s during creating instance", cur_type->id);
