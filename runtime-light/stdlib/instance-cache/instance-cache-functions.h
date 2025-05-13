@@ -19,24 +19,24 @@
 #include "runtime-light/utils/logs.h"
 
 namespace kphp::instance_cache::details {
-constexpr std::string_view COMPONENT_NAME{"instance_cache"};
+inline constexpr std::string_view COMPONENT_NAME{"instance_cache"};
 } // namespace kphp::instance_cache::details
 
 template<typename ClassInstanceType>
 kphp::coro::task<bool> f$instance_cache_store(string key, ClassInstanceType instance, int64_t ttl = 0) noexcept {
   if (ttl < 0) [[unlikely]] {
-    kphp::log::warning("ttl < 0 is noop (key: {})", key.c_str());
+    kphp::log::warning("ttl value '{}' < 0 is noop for key '{}'", ttl, key.c_str());
     co_return false;
   }
 
   if (ttl > std::numeric_limits<uint32_t>::max()) [[unlikely]] {
-    kphp::log::warning("ttl is too big, will store forever (key: {})", key.c_str());
+    kphp::log::warning("ttl value '{}' exceeds maximum allowed value '{}', it will be stored forever for key: {}", ttl, std::numeric_limits<uint32_t>::max(),  key.c_str());
     ttl = 0;
   }
 
   auto serialized_instance{f$instance_serialize(instance)};
   if (!serialized_instance.has_value()) [[unlikely]] {
-    kphp::log::warning("cannot serialize instance (key: {})", key.c_str());
+    kphp::log::warning("cannot serialize instance for key: {}", key.c_str());
     co_return false;
   }
 
@@ -52,7 +52,6 @@ kphp::coro::task<bool> f$instance_cache_store(string key, ClassInstanceType inst
       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
 
   if (query.is_null()) [[unlikely]] {
-    kphp::log::warning("cannot send instance_cache_store() request to platform (key: {})", key.c_str());
     co_return false;
   }
 
@@ -80,7 +79,6 @@ kphp::coro::task<ClassInstanceType> f$instance_cache_fetch(string /*class_name*/
       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
 
   if (query.is_null()) [[unlikely]] {
-    kphp::log::warning("cannot send instance_cache_fetch() request to platform (key: {})", key.c_str());
     co_return ClassInstanceType{};
   }
 
@@ -101,12 +99,13 @@ kphp::coro::task<ClassInstanceType> f$instance_cache_fetch(string /*class_name*/
 
 inline kphp::coro::task<bool> f$instance_cache_update_ttl(string key, int64_t ttl = 0) noexcept {
   if (ttl < 0) [[unlikely]] {
-    kphp::log::warning("ttl < 0 is noop (key: {})", key.c_str());
+    kphp::log::warning("ttl value '{}' < 0 is noop for key '{}'", ttl, key.c_str());
     co_return false;
   }
 
   if (ttl > std::numeric_limits<uint32_t>::max()) [[unlikely]] {
-    kphp::log::warning("ttl is too big, will store forever (key: {})", key.c_str());
+    kphp::log::warning("ttl value '{}' exceeds maximum allowed value '{}', it will be stored forever for key: {}", ttl, std::numeric_limits<uint32_t>::max(),
+                       key.c_str());
     ttl = 0;
   }
   tl::TLBuffer tlb;
@@ -117,7 +116,6 @@ inline kphp::coro::task<bool> f$instance_cache_update_ttl(string key, int64_t tt
       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
 
   if (query.is_null()) [[unlikely]] {
-    kphp::log::warning("cannot send instance_cache_update_ttl() request to platform (key: {})", key.c_str());
     co_return false;
   }
 
@@ -141,7 +139,6 @@ inline kphp::coro::task<bool> f$instance_cache_delete(string key) noexcept {
       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
 
   if (query.is_null()) [[unlikely]] {
-    kphp::log::warning("cannot send instance_cache_update_ttl() request to platform (key: {})", key.c_str());
     co_return false;
   }
 

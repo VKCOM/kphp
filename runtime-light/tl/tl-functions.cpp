@@ -162,25 +162,25 @@ bool rpcInvokeReq::fetch(tl::TLBuffer& tlb) noexcept {
 // ===== CACHE =====
 
 void CacheStore::store(TLBuffer& tlb) const noexcept {
-  tlb.store_trivial<uint32_t>(CACHE_STORE_MAGIC);
+  tl::details::magic{.value = CACHE_STORE_MAGIC}.store(tlb);
   key.store(tlb);
   value.store(tlb);
   ttl.store(tlb);
 }
 
 void CacheUpdateTtl::store(TLBuffer& tlb) const noexcept {
-  tlb.store_trivial<uint32_t>(CACHE_UPDATE_TTL_MAGIC);
+  tl::details::magic{.value = CACHE_UPDATE_TTL_MAGIC}.store(tlb);
   key.store(tlb);
   ttl.store(tlb);
 }
 
 void CacheDelete::store(TLBuffer& tlb) const noexcept {
-  tlb.store_trivial<uint32_t>(CACHE_DELETE_MAGIC);
+  tl::details::magic{.value = CACHE_DELETE_MAGIC}.store(tlb);
   key.store(tlb);
 }
 
 void CacheFetch::store(TLBuffer& tlb) const noexcept {
-  tlb.store_trivial<uint32_t>(CACHE_FETCH_MAGIC);
+  tl::details::magic{.value = CACHE_FETCH_MAGIC}.store(tlb);
   key.store(tlb);
 }
 
