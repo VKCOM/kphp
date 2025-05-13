@@ -14,6 +14,7 @@ require_once __DIR__ . '/stdlib/diagnostic.txt';
 require_once __DIR__ . '/stdlib/error.txt';
 require_once __DIR__ . '/stdlib/file-functions.txt';
 require_once __DIR__ . '/stdlib/fork-functions.txt';
+require_once __DIR__ . '/stdlib/instance-cache.txt';
 require_once __DIR__ . '/stdlib/job-workers.txt';
 require_once __DIR__ . '/stdlib/kml-functions.txt';
 require_once __DIR__ . '/stdlib/kphp-toggles.txt';

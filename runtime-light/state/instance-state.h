@@ -25,6 +25,7 @@
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/file/file-system-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
+#include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/math/random-state.h"
@@ -121,6 +122,7 @@ struct InstanceState final : vk::not_copyable {
   HttpServerInstanceState http_server_instance_state;
   JobWorkerClientInstanceState job_worker_client_instance_state;
   JobWorkerServerInstanceState job_worker_server_instance_state;
+  InstanceCacheInstanceState instance_cache_instance_state;
 
   MathInstanceState math_instance_state;
   RandomInstanceState random_instance_state;

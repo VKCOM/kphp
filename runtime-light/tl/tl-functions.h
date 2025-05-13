@@ -183,4 +183,53 @@ struct K2InvokeRpc final {
   }
 };
 
+// ===== CACHE =====
+
+inline constexpr uint32_t CACHE_STORE_MAGIC = 0x41e9'38a8;
+inline constexpr uint32_t CACHE_UPDATE_TTL_MAGIC = 0x52cb'905c;
+inline constexpr uint32_t CACHE_DELETE_MAGIC = 0x71a9'5f2b;
+inline constexpr uint32_t CACHE_FETCH_MAGIC = 0xbd29'd526;
+
+struct CacheStore final {
+  tl::string key;
+  tl::string value;
+  tl::u32 ttl;
+
+  void store(TLBuffer& tlb) const noexcept {
+    tl::details::magic{.value = CACHE_STORE_MAGIC}.store(tlb);
+    key.store(tlb);
+    value.store(tlb);
+    ttl.store(tlb);
+  }
+};
+
+struct CacheUpdateTtl final {
+  tl::string key;
+  tl::u32 ttl;
+
+  void store(TLBuffer& tlb) const noexcept {
+    tl::details::magic{.value = CACHE_UPDATE_TTL_MAGIC}.store(tlb);
+    key.store(tlb);
+    ttl.store(tlb);
+  }
+};
+
+struct CacheDelete final {
+  tl::string key;
+
+  void store(TLBuffer& tlb) const noexcept {
+    tl::details::magic{.value = CACHE_DELETE_MAGIC}.store(tlb);
+    key.store(tlb);
+  }
+};
+
+struct CacheFetch final {
+  tl::string key;
+
+  void store(TLBuffer& tlb) const noexcept {
+    tl::details::magic{.value = CACHE_FETCH_MAGIC}.store(tlb);
+    key.store(tlb);
+  }
+};
+
 } // namespace tl
