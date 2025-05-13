@@ -45,7 +45,7 @@ inline string f$gzdecode(const string& data) noexcept {
   return kphp::zlib::decode({data.c_str(), static_cast<size_t>(data.size())}, kphp::zlib::ENCODING_GZIP).value_or(string{});
 }
 
-inline string f$gzdeflate(const string& data, int64_t level = kphp::zlib::DEFAULT_COMPRESSION_LEVEL) noexcept {
+inline string f$gzdeflate(const string& data, int64_t level = kphp::zlib::MIN_COMPRESSION_LEVEL) noexcept {
   level = level == kphp::zlib::MIN_COMPRESSION_LEVEL ? kphp::zlib::DEFAULT_COMPRESSION_LEVEL : level;
   return kphp::zlib::encode({data.c_str(), static_cast<size_t>(data.size())}, level, kphp::zlib::ENCODING_RAW).value_or(string{});
 }
