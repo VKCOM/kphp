@@ -8,6 +8,7 @@ void php_debug(char const* message, ...) __attribute__((format(printf, 1, 2)));
 void php_notice(char const* message, ...) __attribute__((format(printf, 1, 2)));
 void php_warning(char const* message, ...) __attribute__((format(printf, 1, 2)));
 void php_error(char const* message, ...) __attribute__((format(printf, 1, 2)));
+void php_runtime_critical(char const* message, ...) __attribute__((format(printf, 1, 2)));
 
 [[noreturn]] void php_assert__(const char* msg, const char* file, int line);
 [[noreturn]] void critical_error_handler();
