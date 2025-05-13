@@ -30,7 +30,8 @@ kphp::coro::task<bool> f$instance_cache_store(string key, ClassInstanceType inst
   }
 
   if (ttl > std::numeric_limits<uint32_t>::max()) [[unlikely]] {
-    kphp::log::warning("ttl value '{}' exceeds maximum allowed value '{}', it will be stored forever for key: {}", ttl, std::numeric_limits<uint32_t>::max(),  key.c_str());
+    kphp::log::warning("ttl value '{}' exceeds maximum allowed value '{}', it will be stored forever for key: {}", ttl, std::numeric_limits<uint32_t>::max(),
+                       key.c_str());
     ttl = 0;
   }
 
