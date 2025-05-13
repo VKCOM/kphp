@@ -195,26 +195,41 @@ struct CacheStore final {
   tl::string value;
   tl::u32 ttl;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept {
+    tl::details::magic{.value = CACHE_STORE_MAGIC}.store(tlb);
+    key.store(tlb);
+    value.store(tlb);
+    ttl.store(tlb);
+  }
 };
 
 struct CacheUpdateTtl final {
   tl::string key;
   tl::u32 ttl;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept {
+    tl::details::magic{.value = CACHE_UPDATE_TTL_MAGIC}.store(tlb);
+    key.store(tlb);
+    ttl.store(tlb);
+  }
 };
 
 struct CacheDelete final {
   tl::string key;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept {
+    tl::details::magic{.value = CACHE_DELETE_MAGIC}.store(tlb);
+    key.store(tlb);
+  }
 };
 
 struct CacheFetch final {
   tl::string key;
 
-  void store(TLBuffer& tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept {
+    tl::details::magic{.value = CACHE_FETCH_MAGIC}.store(tlb);
+    key.store(tlb);
+  }
 };
 
 } // namespace tl

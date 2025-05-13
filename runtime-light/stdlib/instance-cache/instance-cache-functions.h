@@ -6,6 +6,8 @@
 
 #include <cstdint>
 #include <limits>
+#include <string_view>
+#include <utility>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/msgpack-functions.h"
@@ -19,135 +21,135 @@
 #include "runtime-light/utils/logs.h"
 
 namespace kphp::instance_cache::details {
+
 inline constexpr std::string_view COMPONENT_NAME{"instance_cache"};
+
 } // namespace kphp::instance_cache::details
 
-template<typename ClassInstanceType>
-kphp::coro::task<bool> f$instance_cache_store(string key, ClassInstanceType instance, int64_t ttl = 0) noexcept {
+template<typename InstanceType>
+kphp::coro::task<bool> f$instance_cache_store(string key, InstanceType instance, int64_t ttl = 0) noexcept {
   if (ttl < 0) [[unlikely]] {
-    kphp::log::warning("ttl value '{}' < 0 is noop for key '{}'", ttl, key.c_str());
+    kphp::log::warning("ttl can't be negative: ttl -> {}, key -> {}", ttl, key.c_str());
     co_return false;
   }
-
   if (ttl > std::numeric_limits<uint32_t>::max()) [[unlikely]] {
-    kphp::log::warning("ttl value '{}' exceeds maximum allowed value '{}', it will be stored forever for key: {}", ttl, std::numeric_limits<uint32_t>::max(),
-                       key.c_str());
+    kphp::log::warning("ttl exceeds maximum allowed value, key will be stored forever: ttl -> {}, max -> {}, key -> {}", ttl,
+                       std::numeric_limits<uint32_t>::max(), key.c_str());
     ttl = 0;
   }
 
   auto serialized_instance{f$instance_serialize(instance)};
   if (!serialized_instance.has_value()) [[unlikely]] {
-    kphp::log::warning("cannot serialize instance for key: {}", key.c_str());
+    kphp::log::warning("can't serialize instance: key -> {}", key.c_str());
     co_return false;
   }
 
   tl::TLBuffer tlb;
-
-  tl::CacheStore{.key{tl::string{std::string_view{key.c_str(), key.size()}}},
-                 .value{tl::string{std::string_view{serialized_instance.val().c_str(), serialized_instance.val().size()}}},
-                 .ttl{tl::u32{static_cast<uint32_t>(ttl)}}}
+  tl::CacheStore{.key = tl::string{.value = {key.c_str(), key.size()}},
+                 .value = tl::string{.value = {serialized_instance.val().c_str(), serialized_instance.val().size()}},
+                 .ttl = tl::u32{.value = static_cast<uint32_t>(ttl)}}
       .store(tlb);
 
   auto query{co_await f$component_client_send_request(
       string{kphp::instance_cache::details::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::details::COMPONENT_NAME.size())},
       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-
   if (query.is_null()) [[unlikely]] {
     co_return false;
   }
 
-  auto resp{co_await f$component_client_fetch_response(query)};
+  auto response{co_await f$component_client_fetch_response(std::move(query))};
   tlb.clean();
-  tlb.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
-  tl::Bool tl_resp;
-  kphp::log::assertion(tl_resp.fetch(tlb));
-  InstanceCacheInstanceState::get().request_cache[key] = f$to_mixed(instance);
-  co_return tl_resp.value;
+  tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
+
+  tl::Bool tl_bool{};
+  kphp::log::assertion(tl_bool.fetch(tlb));
+  InstanceCacheInstanceState::get().request_cache.emplace(std::move(key), std::move(instance));
+  co_return tl_bool.value;
 }
 
-template<typename ClassInstanceType>
-kphp::coro::task<ClassInstanceType> f$instance_cache_fetch(string /*class_name*/, string key, bool /*even_if_expired*/ = false) noexcept {
+template<typename InstanceType>
+kphp::coro::task<InstanceType> f$instance_cache_fetch(string /*class_name*/, string key, bool /*even_if_expired*/ = false) noexcept {
   auto& request_cache{InstanceCacheInstanceState::get().request_cache};
-  if (auto cached{from_mixed<ClassInstanceType>(request_cache[key], string())}; !cached.is_null()) {
-    co_return std::move(cached);
+  if (auto it{request_cache.find(key)}; it != request_cache.end()) {
+    auto cached_instance{from_mixed<InstanceType>(it->second, {})};
+    kphp::log::assertion(!cached_instance.is_null());
+    co_return std::move(cached_instance);
   }
 
   tl::TLBuffer tlb;
-  tl::CacheFetch{.key{tl::string{std::string_view{key.c_str(), key.size()}}}}.store(tlb);
+  tl::CacheFetch{.key = tl::string{.value = {key.c_str(), key.size()}}}.store(tlb);
 
   auto query{co_await f$component_client_send_request(
       string{kphp::instance_cache::details::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::details::COMPONENT_NAME.size())},
       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-
   if (query.is_null()) [[unlikely]] {
-    co_return ClassInstanceType{};
+    co_return InstanceType{};
   }
 
-  auto resp{co_await f$component_client_fetch_response(query)};
+  auto response{co_await f$component_client_fetch_response(std::move(query))};
   tlb.clean();
-  tlb.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
+  tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
 
-  tl::Maybe<tl::string> tl_resp;
-  kphp::log::assertion(tl_resp.fetch(tlb));
-  if (!tl_resp.opt_value.has_value()) [[unlikely]] {
-    co_return ClassInstanceType{};
+  tl::Maybe<tl::string> maybe_string{};
+  kphp::log::assertion(maybe_string.fetch(tlb));
+  if (!maybe_string.opt_value) [[unlikely]] {
+    co_return InstanceType{};
   }
 
-  auto response{f$instance_deserialize<ClassInstanceType>(string(tl_resp.opt_value->value.data(), tl_resp.opt_value->value.size()), {})};
-  request_cache[key] = response;
-  co_return std::move(response);
+  auto cached_instance{f$instance_deserialize<InstanceType>(
+      string{(*maybe_string.opt_value).value.data(), static_cast<string::size_type>((*maybe_string.opt_value).value.size())}, {})};
+  request_cache.emplace(std::move(key), cached_instance);
+  co_return std::move(cached_instance);
 }
 
 inline kphp::coro::task<bool> f$instance_cache_update_ttl(string key, int64_t ttl = 0) noexcept {
   if (ttl < 0) [[unlikely]] {
-    kphp::log::warning("ttl value '{}' < 0 is noop for key '{}'", ttl, key.c_str());
+    kphp::log::warning("ttl can't be negative: ttl -> {}, key -> {}", ttl, key.c_str());
     co_return false;
   }
-
   if (ttl > std::numeric_limits<uint32_t>::max()) [[unlikely]] {
-    kphp::log::warning("ttl value '{}' exceeds maximum allowed value '{}', it will be stored forever for key: {}", ttl, std::numeric_limits<uint32_t>::max(),
-                       key.c_str());
+    kphp::log::warning("ttl exceeds maximum allowed value, key will be stored forever: ttl -> {}, max -> {}, key -> {}", ttl,
+                       std::numeric_limits<uint32_t>::max(), key.c_str());
     ttl = 0;
   }
+
   tl::TLBuffer tlb;
-  tl::CacheUpdateTtl{.key{tl::string{std::string_view{key.c_str(), key.size()}}}, .ttl{tl::u32{static_cast<uint32_t>(ttl)}}}.store(tlb);
+  tl::CacheUpdateTtl{.key = tl::string{.value = {key.c_str(), key.size()}}, .ttl = tl::u32{.value = static_cast<uint32_t>(ttl)}}.store(tlb);
 
   auto query{co_await f$component_client_send_request(
       string{kphp::instance_cache::details::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::details::COMPONENT_NAME.size())},
       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-
   if (query.is_null()) [[unlikely]] {
     co_return false;
   }
 
-  auto resp{co_await f$component_client_fetch_response(query)};
+  auto response{co_await f$component_client_fetch_response(std::move(query))};
   tlb.clean();
-  tlb.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
-  tl::Bool tl_resp;
-  kphp::log::assertion(tl_resp.fetch(tlb));
+  tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
 
-  co_return tl_resp.value;
+  tl::Bool tl_bool{};
+  kphp::log::assertion(tl_bool.fetch(tlb));
+  co_return tl_bool.value;
 }
 
 inline kphp::coro::task<bool> f$instance_cache_delete(string key) noexcept {
   InstanceCacheInstanceState::get().request_cache.erase(key);
 
   tl::TLBuffer tlb;
-  tl::CacheDelete{.key{tl::string{std::string_view{key.c_str(), key.size()}}}}.store(tlb);
+  tl::CacheDelete{.key = tl::string{.value = {key.c_str(), key.size()}}}.store(tlb);
 
   auto query{co_await f$component_client_send_request(
       string{kphp::instance_cache::details::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::details::COMPONENT_NAME.size())},
       string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-
   if (query.is_null()) [[unlikely]] {
     co_return false;
   }
 
-  auto resp{co_await f$component_client_fetch_response(query)};
+  auto response{co_await f$component_client_fetch_response(std::move(query))};
   tlb.clean();
-  tlb.store_bytes({resp.c_str(), static_cast<size_t>(resp.size())});
-  tl::Bool tl_resp;
-  kphp::log::assertion(tl_resp.fetch(tlb));
+  tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
 
-  co_return tl_resp.value;
+  tl::Bool tl_bool{};
+  kphp::log::assertion(tl_bool.fetch(tlb));
+  co_return tl_bool.value;
 }

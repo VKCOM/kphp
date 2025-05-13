@@ -159,29 +159,4 @@ bool rpcInvokeReq::fetch(tl::TLBuffer& tlb) noexcept {
   return ok;
 }
 
-// ===== CACHE =====
-
-void CacheStore::store(TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = CACHE_STORE_MAGIC}.store(tlb);
-  key.store(tlb);
-  value.store(tlb);
-  ttl.store(tlb);
-}
-
-void CacheUpdateTtl::store(TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = CACHE_UPDATE_TTL_MAGIC}.store(tlb);
-  key.store(tlb);
-  ttl.store(tlb);
-}
-
-void CacheDelete::store(TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = CACHE_DELETE_MAGIC}.store(tlb);
-  key.store(tlb);
-}
-
-void CacheFetch::store(TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = CACHE_FETCH_MAGIC}.store(tlb);
-  key.store(tlb);
-}
-
 } // namespace tl

@@ -122,7 +122,7 @@ struct InstanceState final : vk::not_copyable {
   HttpServerInstanceState http_server_instance_state;
   JobWorkerClientInstanceState job_worker_client_instance_state;
   JobWorkerServerInstanceState job_worker_server_instance_state;
-  InstanceCacheInstanceState instance_cache_state;
+  InstanceCacheInstanceState instance_cache_instance_state;
 
   MathInstanceState math_instance_state;
   RandomInstanceState random_instance_state;

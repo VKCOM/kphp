@@ -4,16 +4,17 @@
 
 #pragma once
 
-#include "common/mixin/not_copyable.h"
+#include <cstddef>
 
+#include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 
 struct InstanceCacheInstanceState final : private vk::not_copyable {
-  InstanceCacheInstanceState() noexcept = default;
-
-  kphp::stl::unordered_map<string, mixed, kphp::memory::script_allocator, decltype([](const string& s) { return static_cast<size_t>(s.hash()); })>
+  kphp::stl::unordered_map<string, mixed, kphp::memory::script_allocator, decltype([](const string& s) noexcept { return static_cast<size_t>(s.hash()); })>
       request_cache;
+
+  InstanceCacheInstanceState() noexcept = default;
   static InstanceCacheInstanceState& get() noexcept;
 };
