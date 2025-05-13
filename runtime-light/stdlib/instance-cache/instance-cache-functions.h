@@ -43,8 +43,8 @@ kphp::coro::task<bool> f$instance_cache_store(string key, ClassInstanceType inst
 
   tl::TLBuffer tlb;
 
-  tl::CacheStore{.key{tl::string(std::string_view{key.c_str(), key.size()})},
-                 .value{tl::string(std::string_view{serialized_instance.val().c_str(), serialized_instance.val().size()})},
+  tl::CacheStore{.key{tl::string{std::string_view{key.c_str(), key.size()}}},
+                 .value{tl::string{std::string_view{serialized_instance.val().c_str(), serialized_instance.val().size()}}},
                  .ttl{tl::u32{static_cast<uint32_t>(ttl)}}}
       .store(tlb);
 
@@ -73,7 +73,7 @@ kphp::coro::task<ClassInstanceType> f$instance_cache_fetch(string /*class_name*/
   }
 
   tl::TLBuffer tlb;
-  tl::CacheFetch{.key{tl::string(std::string_view{key.c_str(), key.size()})}}.store(tlb);
+  tl::CacheFetch{.key{tl::string{std::string_view{key.c_str(), key.size()}}}}.store(tlb);
 
   auto query{co_await f$component_client_send_request(
       string{kphp::instance_cache::details::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::details::COMPONENT_NAME.size())},
@@ -110,7 +110,7 @@ inline kphp::coro::task<bool> f$instance_cache_update_ttl(string key, int64_t tt
     ttl = 0;
   }
   tl::TLBuffer tlb;
-  tl::CacheUpdateTtl{.key{tl::string(std::string_view{key.c_str(), key.size()})}, .ttl{tl::u32{static_cast<uint32_t>(ttl)}}}.store(tlb);
+  tl::CacheUpdateTtl{.key{tl::string{std::string_view{key.c_str(), key.size()}}}, .ttl{tl::u32{static_cast<uint32_t>(ttl)}}}.store(tlb);
 
   auto query{co_await f$component_client_send_request(
       string{kphp::instance_cache::details::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::details::COMPONENT_NAME.size())},
@@ -133,7 +133,7 @@ inline kphp::coro::task<bool> f$instance_cache_delete(string key) noexcept {
   InstanceCacheInstanceState::get().request_cache.erase(key);
 
   tl::TLBuffer tlb;
-  tl::CacheDelete{.key{tl::string(std::string_view{key.c_str(), key.size()})}}.store(tlb);
+  tl::CacheDelete{.key{tl::string{std::string_view{key.c_str(), key.size()}}}}.store(tlb);
 
   auto query{co_await f$component_client_send_request(
       string{kphp::instance_cache::details::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::details::COMPONENT_NAME.size())},
