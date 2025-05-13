@@ -6,11 +6,14 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "runtime-light/stdlib/instance-cache/request-cache.h"
+#include "runtime-common/core/allocator/script-allocator.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 
 struct InstanceCacheInstanceState final : private vk::not_copyable {
   InstanceCacheInstanceState() noexcept = default;
 
-  kphp::instance_cache::RequestCache request_cache;
+  kphp::stl::unordered_map<string, mixed, kphp::memory::script_allocator, decltype([](const string& s) { return static_cast<size_t>(s.hash()); })>
+      request_cache;
   static InstanceCacheInstanceState& get() noexcept;
 };
