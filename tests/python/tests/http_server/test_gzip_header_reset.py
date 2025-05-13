@@ -14,6 +14,7 @@ class TestGzipHeaderReset(WebServerAutoTestCase):
         with self.assertRaises(KeyError):
             _ = response.headers["Content-Encoding"]
 
+    @pytest.mark.k2_skip
     def test_ignore_second_gzip_handler(self):
         response = self.gzip_request("ignore-second-handler")
         with self.assertRaises(KeyError):
