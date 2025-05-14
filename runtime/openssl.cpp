@@ -32,6 +32,7 @@
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/allocator.h"
 #include "runtime/array_functions.h"
+#include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/datetime_functions.h"
 #include "runtime/files.h"
