@@ -22,7 +22,7 @@ class K2Server(WebServer):
         self._json_log_file = None
         self._options = {"start-node": True,
                          "--host": "127.0.0.1",
-                         "--port": self.http_port,
+                         "--http_port": self.http_port,
                          "--rpc_port": self.rpc_port,
                          "--images-dir": self._images_dir,
                          "--linking": self._linking_file}
