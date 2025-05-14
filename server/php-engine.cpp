@@ -60,6 +60,7 @@
 #include "net/net-tcp-rpc-client.h"
 #include "net/net-tcp-rpc-server.h"
 
+#include "runtime-common/core/memory-resource/memory_resource.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime/interface.h"
 #include "runtime/kphp_ml/kphp_ml_init.h"
@@ -1839,8 +1840,8 @@ int main_args_handler(int i, const char *long_option) {
     case 'm': {
       max_memory = parse_memory_limit_default(optarg, 'm');
       const long long min_size = 1 << 20;
-      if (max_memory <= min_size) {
-        kprintf("--%s option: cannot be less than 1 megabyte\n", long_option);
+      if (max_memory <= min_size || max_memory > memory_resource::memory_buffer_limit()) {
+        kprintf("--%s option: cannot be < 1 MB or >= 4 GB\n", long_option);
         return -1;
       }
       return 0;
