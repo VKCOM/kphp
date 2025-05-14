@@ -841,8 +841,8 @@ struct k2RpcResponseHeader final {
 };
 
 class K2RpcResponse final {
-  static constexpr uint32_t K2_RPC_RESPONSE_ERROR_MAGIC = 0xaaaa'bbbb;
-  static constexpr uint32_t K2_RPC_RESPONSE_HEADER_MAGIC = 0xbbbb'aaaa;
+  static constexpr uint32_t K2_RPC_RESPONSE_ERROR_MAGIC = 0x8466'24de;
+  static constexpr uint32_t K2_RPC_RESPONSE_HEADER_MAGIC = 0x8466'24dd;
 
 public:
   std::variant<tl::k2RpcResponseError, tl::k2RpcResponseHeader> value;
