@@ -94,6 +94,11 @@ void init_server(tl::TLBuffer& tlb) noexcept {
   rpc_server_instance_st.query_id = invoke_rpc.query_id.value;
   rpc_server_instance_st.buffer.store_bytes(invoke_rpc.query);
 
+  const auto opt_magic{rpc_server_instance_st.buffer.lookup_trivial<uint32_t>()};
+  if (!opt_magic) [[unlikely]] {
+    kphp::log::error("erroneous rpc request");
+  }
+
   auto& superglobals{PhpScriptMutableGlobals::current().get_superglobals()};
   superglobals.v$_SERVER.set_value(string{RPC_REQUEST_ID.data(), RPC_REQUEST_ID.size()}, invoke_rpc.query_id.value);
   superglobals.v$_SERVER.set_value(string{RPC_REMOTE_IP.data(), RPC_REMOTE_IP.size()}, static_cast<int64_t>(invoke_rpc.net_pid.get_ip()));
@@ -112,10 +117,11 @@ void init_server(tl::TLBuffer& tlb) noexcept {
                   "remote port -> {}, "
                   "query_id -> {}, "
                   "actor_id -> {}, "
-                  "extra -> {:#b}",
+                  "extra -> {:#b}, "
+                  "request -> {:#x}",
                   invoke_rpc.net_pid.get_pid(), invoke_rpc.net_pid.get_port(), invoke_rpc.query_id.value,
                   invoke_rpc.opt_actor_id.has_value() ? (*invoke_rpc.opt_actor_id).value : 0,
-                  invoke_rpc.opt_extra.has_value() ? (*invoke_rpc.opt_extra).flags.value : 0);
+                  invoke_rpc.opt_extra.has_value() ? (*invoke_rpc.opt_extra).flags.value : 0, *opt_magic);
 }
 
 } // namespace kphp::rpc
