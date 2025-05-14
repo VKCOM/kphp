@@ -24,6 +24,7 @@ class K2Server(WebServer):
                          "--host": "127.0.0.1",
                          "--port": self.http_port,
                          "--images-dir": self._images_dir,
+                         "--restart-socket": "/tmp/k2_restart_node_{}".format(hash(self._working_dir)),
                          "--linking": self._linking_file}
 
         if options:
