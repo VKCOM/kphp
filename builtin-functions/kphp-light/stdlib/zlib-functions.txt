@@ -10,16 +10,15 @@ function gzcompress ($str ::: string, $level ::: int = -1): string;
 
 function gzuncompress ($str ::: string): string;
 
-// ===== UNSUPPORTED =====
-
-/** @kphp-extern-func-info stub generation-required */
 function gzencode ($str ::: string, $level ::: int = -1) ::: string;
-/** @kphp-extern-func-info stub generation-required */
+
 function gzdecode ($str ::: string) ::: string;
-/** @kphp-extern-func-info stub generation-required */
+
 function gzdeflate ($str ::: string, $level ::: int = -1) ::: string;
-/** @kphp-extern-func-info stub generation-required */
+
 function gzinflate ($str ::: string) ::: string;
+
+// ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info stub generation-required */
 function md5_file ($s ::: string, $raw_output ::: bool = false) ::: string | false;
