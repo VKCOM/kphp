@@ -51,6 +51,8 @@ function ip2ulong ($ip ::: string) ::: string | false;
 
 function long2ip ($ip ::: int) ::: string;
 
+function http_build_query ($str ::: array, $numeric_prefix ::: string = '', $arg_separator ::: string = '&', $enc_type ::: int = PHP_QUERY_RFC1738) ::: string;
+
 // === Memory =====================================================================================
 
 function estimate_memory_usage($value ::: any) ::: int;
@@ -136,6 +138,4 @@ define('PHP_QUERY_RFC3986', 2);
 
 /** @kphp-extern-func-info stub generation-required */
 function prepare_search_query ($query ::: string) ::: string;
-
-function http_build_query ($str ::: array, $numeric_prefix ::: string = '', $arg_separator ::: string = '&', $enc_type ::: int = PHP_QUERY_RFC1738) ::: string;
 
