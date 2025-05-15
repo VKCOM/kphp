@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cstddef>
+#include <array>
 #include <format>
 
 #include "runtime-common/core/runtime-core.h"

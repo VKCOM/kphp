@@ -6,14 +6,10 @@
 
 #include <array>
 #include <cstddef>
+#include <span>
 
 namespace kphp::diagnostic {
 
-std::size_t get_async_stacktrace(void** data, std::size_t len);
-
-template<std::size_t Len>
-std::size_t get_async_stacktrace(std::array<void*, Len>& addresses) {
-  return get_async_stacktrace(addresses.data(), addresses.size());
-}
+std::size_t get_async_stacktrace(std::span<void*> addresses);
 
 } // namespace kphp::diagnostic

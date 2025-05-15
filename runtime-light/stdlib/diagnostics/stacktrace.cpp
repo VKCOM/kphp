@@ -4,53 +4,51 @@
 
 #include <cstddef>
 #include <iterator>
+#include <span>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-light/coroutine/async-frame.h"
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/stdlib/diagnostics/stacktrace.h"
 
 namespace {
 
-std::size_t get_normal_stack_part(void** addresses, std::size_t max_addresses, kphp::coro::stack_frame* start_frame, kphp::coro::stack_frame* stop_frame) {
+std::size_t get_normal_stack_part(std::span<void*> addresses, kphp::coro::stack_frame* start_frame, kphp::coro::stack_frame* stop_frame) {
   php_assert(stop_frame != nullptr);
-  auto* current_stack_frame{start_frame};
-  std::size_t number{};
-  while (current_stack_frame != stop_frame && number < max_addresses) {
-    addresses[number] = reinterpret_cast<void*>(current_stack_frame->return_address);
-    current_stack_frame = current_stack_frame->caller_frame;
-    number++;
-  }
 
-  return number;
+  auto address{addresses.begin()};
+  for (auto* current_stack_frame{start_frame}; current_stack_frame != stop_frame && address != addresses.end();
+       current_stack_frame = current_stack_frame->caller_frame) {
+    *address = reinterpret_cast<void*>(current_stack_frame->return_address);
+    address = std::next(address);
+  }
+  return std::distance(addresses.begin(), address);
 }
 
-std::size_t get_async_stack_part(void** addresses, size_t max_addresses, kphp::coro::async_stack_frame* stack_frame) {
-  auto* current_async_frame{stack_frame};
-  std::size_t number{};
-  while (current_async_frame != nullptr && number < max_addresses) {
-    addresses[number] = reinterpret_cast<void*>(current_async_frame->return_address);
-    current_async_frame = current_async_frame->caller_async_frame;
-    number++;
+std::size_t get_async_stack_part(std::span<void*> addresses, kphp::coro::async_stack_frame* stack_frame) {
+  php_assert(stack_frame != nullptr);
+
+  auto address{addresses.begin()};
+  for (auto* current_async_frame{stack_frame}; current_async_frame != nullptr && address != addresses.end();
+       current_async_frame = current_async_frame->caller_async_frame) {
+    *address = reinterpret_cast<void*>(current_async_frame->return_address);
+    address = std::next(address);
   }
-  return number;
+  return std::distance(addresses.begin(), address);
 }
 
 } // namespace
 
 namespace kphp::diagnostic {
 
-std::size_t get_async_stacktrace(void** data, std::size_t max_addresses) {
-
-  auto async_stack_root{InstanceState::get().coroutine_stack_root};
+std::size_t get_async_stacktrace(std::span<void*> addresses) {
+  auto& async_stack_root{CoroutineInstanceState::get().get_coroutine_stack_root()};
 
   auto* normal_stack_frame{reinterpret_cast<kphp::coro::stack_frame*>(__builtin_frame_address(0))};
   auto* normal_stack_frame_stop{async_stack_root.stack_frame};
 
-  std::size_t num_frames = get_normal_stack_part(data, max_addresses, normal_stack_frame, normal_stack_frame_stop);
-  std::advance(data, num_frames);
-  std::size_t num_async_frames = get_async_stack_part(data, max_addresses - num_frames, async_stack_root.top_frame);
-
+  std::size_t num_frames{get_normal_stack_part(addresses, normal_stack_frame, normal_stack_frame_stop)};
+  std::size_t num_async_frames{get_async_stack_part(addresses.subspan(num_frames), async_stack_root.top_frame)};
   return num_frames + num_async_frames;
 }
 

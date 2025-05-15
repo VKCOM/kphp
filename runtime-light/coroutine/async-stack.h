@@ -29,15 +29,15 @@ struct async_stack_root {
   stack_frame* stack_frame{};
 };
 
-inline void resume_with_stack_address_record(std::coroutine_handle<> handle, async_stack_root& stack_root) {
+inline void resume_on_async_stack(std::coroutine_handle<> handle, async_stack_root& stack_root) {
   auto* previous_stack_frame{std::exchange(stack_root.stack_frame, reinterpret_cast<stack_frame*>(__builtin_frame_address(0)))};
   handle.resume();
   stack_root.stack_frame = previous_stack_frame;
 }
 
-namespace async_frame_impl {
+namespace async_stack_impl {
 
-struct async_stack_part {
+struct stack_element {
   async_stack_frame& get_async_frame() noexcept {
     return async_frame;
   }
@@ -46,6 +46,6 @@ private:
   async_stack_frame async_frame;
 };
 
-} // namespace async_frame_impl
+} // namespace async_stack_impl
 
 } // namespace kphp::coro
