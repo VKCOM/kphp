@@ -4,20 +4,34 @@
 
 #include <cstddef>
 
+#include "runtime-common/core/allocator/script-malloc-interface.h"
+#include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/utils/logs.h"
 
-extern "C" void* __wrap_malloc([[maybe_unused]] size_t size) noexcept {
-  kphp::log::error("unexpected use of malloc");
+extern "C" void* __wrap_malloc(size_t size) noexcept {
+  if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {
+    kphp::log::error("unexpected use of malloc");
+  }
+  return kphp::memory::script::alloc(size);
 }
 
-extern "C" void __wrap_free([[maybe_unused]] void* ptr) noexcept {
-  kphp::log::error("unexpected use of free");
+extern "C" void __wrap_free(void* ptr) noexcept {
+  if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {
+    kphp::log::error("unexpected use of free");
+  }
+  kphp::memory::script::free(ptr);
 }
 
-extern "C" void* __wrap_calloc([[maybe_unused]] size_t nmemb, [[maybe_unused]] size_t size) noexcept {
-  kphp::log::error("unexpected use of calloc");
+extern "C" void* __wrap_calloc(size_t nmemb, size_t size) noexcept {
+  if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {
+    kphp::log::error("unexpected use of calloc");
+  }
+  return kphp::memory::script::calloc(nmemb, size);
 }
 
 extern "C" void* __wrap_realloc([[maybe_unused]] void* ptr, [[maybe_unused]] size_t size) noexcept {
-  kphp::log::error("unexpected use of realloc");
+  if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {
+    kphp::log::error("unexpected use of realloc");
+  }
+  return kphp::memory::script::realloc(ptr, size);
 }

@@ -6,10 +6,8 @@
 #include <cstddef>
 #include <cstring>
 
+#include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/state/component-state.h"
-#include "runtime-light/state/image-state.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/utils/logs.h"
 
 namespace {
@@ -27,14 +25,7 @@ void request_extra_memory(size_t requested_size) noexcept {
 } // namespace
 
 RuntimeAllocator& RuntimeAllocator::get() noexcept {
-  if (k2::instance_state() != nullptr) [[likely]] {
-    return InstanceState::get().allocator;
-  } else if (k2::component_state() != nullptr) {
-    return ComponentState::get_mutable().allocator;
-  } else if (k2::image_state() != nullptr) {
-    return ImageState::get_mutable().allocator;
-  }
-  kphp::log::error("no available allocators");
+  return AllocatorState::get_mutable().allocator;
 }
 
 RuntimeAllocator::RuntimeAllocator(size_t script_mem_size, size_t oom_handling_mem_size) {

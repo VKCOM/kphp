@@ -9,26 +9,20 @@
 #include <string_view>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
 struct ComponentState final : private vk::not_copyable {
-  RuntimeAllocator allocator;
+  AllocatorState component_allocator_state{INIT_COMPONENT_ALLOCATOR_SIZE, 0};
 
-  const uint32_t argc;
-  const uint32_t envc;
+  const uint32_t argc{k2::args_count()};
+  const uint32_t envc{k2::env_count()};
+  array<string> ini_opts{array_size{argc, false}};
+  array<mixed> env{array_size{envc, false}};
   mixed runtime_config;
-  array<string> ini_opts;
-  array<mixed> env;
 
-  ComponentState() noexcept
-      : allocator(INIT_COMPONENT_ALLOCATOR_SIZE, 0),
-        argc(k2::args_count()),
-        envc(k2::env_count()),
-        ini_opts(array_size{argc, false}) /* overapproximation */
-        ,
-        env(array_size{envc, false}) {
+  ComponentState() noexcept {
     parse_env();
     parse_args();
   }

@@ -11,9 +11,9 @@
 #include <utility>
 
 #include "common/mixin/not_copyable.h"
-#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -62,7 +62,7 @@ struct InstanceState final : vk::not_copyable {
   using list = kphp::stl::list<T, kphp::memory::script_allocator>;
 
   InstanceState() noexcept
-      : allocator(INIT_INSTANCE_ALLOCATOR_SIZE, 0) {}
+      : instance_allocator_state(INIT_INSTANCE_ALLOCATOR_SIZE, 0) {}
 
   ~InstanceState() = default;
 
@@ -106,7 +106,7 @@ struct InstanceState final : vk::not_copyable {
   void release_stream(uint64_t) noexcept;
   void release_all_streams() noexcept;
 
-  RuntimeAllocator allocator;
+  AllocatorState instance_allocator_state;
 
   CoroutineScheduler scheduler;
   ForkInstanceState fork_instance_state;
