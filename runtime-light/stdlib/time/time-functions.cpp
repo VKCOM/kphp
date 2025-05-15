@@ -7,12 +7,16 @@
 #include <array>
 #include <chrono>
 #include <climits>
+#include <cstdint>
 #include <ctime>
+#include <memory>
 #include <string_view>
 
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/utils/logs.h"
 
 namespace {
+
 constexpr std::string_view PHP_TIMELIB_TZ_MOSCOW = "Europe/Moscow";
 constexpr std::string_view PHP_TIMELIB_TZ_GMT3 = "Etc/GMT-3";
 
@@ -326,26 +330,24 @@ int64_t f$mktime(Optional<int64_t> hour, Optional<int64_t> minute, Optional<int6
 
 string f$gmdate(const string& format, Optional<int64_t> timestamp) noexcept {
   namespace chrono = std::chrono;
-
   const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
-  struct tm tm {};
-  gmtime_r(&now, &tm);
+  struct tm tm{};
+  gmtime_r(std::addressof(now), std::addressof(tm));
   return date(format, tm, now, false);
 }
 
 string f$date(const string& format, Optional<int64_t> timestamp) noexcept {
   namespace chrono = std::chrono;
-
   const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
-  struct tm tm {};
-  localtime_r(&now, &tm);
+  struct tm tm{};
+  localtime_r(std::addressof(now), std::addressof(tm));
   return date(format, tm, now, true);
 }
 
 bool f$date_default_timezone_set(const string& s) noexcept {
   const std::string_view timezone_view{s.c_str(), s.size()};
-  if (timezone_view != PHP_TIMELIB_TZ_GMT3 && timezone_view != PHP_TIMELIB_TZ_MOSCOW) {
-    kphp::log::warning("unsupported default timezone '{}'", s.c_str());
+  if (timezone_view != PHP_TIMELIB_TZ_GMT3 && timezone_view != PHP_TIMELIB_TZ_MOSCOW) [[unlikely]] {
+    kphp::log::warning("unsupported timezone '{}', only '{}' and '{}' are supported", timezone_view, PHP_TIMELIB_TZ_GMT3, PHP_TIMELIB_TZ_MOSCOW);
     return false;
   }
   return true;

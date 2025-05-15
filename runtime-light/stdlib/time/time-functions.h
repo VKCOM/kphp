@@ -17,15 +17,12 @@ inline int64_t f$_hrtime_int() noexcept {
 
 inline array<int64_t> f$_hrtime_array() noexcept {
   namespace chrono = std::chrono;
-  const auto since_epoch = chrono::steady_clock::now().time_since_epoch();
+  const auto since_epoch{chrono::steady_clock::now().time_since_epoch()};
   return array<int64_t>::create(duration_cast<chrono::seconds>(since_epoch).count(), chrono::nanoseconds{since_epoch % chrono::seconds{1}}.count());
 }
 
 inline mixed f$hrtime(bool as_number = false) noexcept {
-  if (as_number) {
-    return f$_hrtime_int();
-  }
-  return f$_hrtime_array();
+  return as_number ? mixed{f$_hrtime_int()} : mixed{f$_hrtime_array()};
 }
 
 inline string f$_microtime_string() noexcept {
@@ -34,32 +31,27 @@ inline string f$_microtime_string() noexcept {
   const auto seconds{duration_cast<chrono::seconds>(time_since_epoch).count()};
   const auto nanoseconds{duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000};
 
-  constexpr size_t default_buffer_size = 60;
+  static constexpr size_t default_buffer_size = 60;
   char buf[default_buffer_size];
-  const int len = snprintf(buf, default_buffer_size, "0.%09lld %lld", nanoseconds, seconds);
+  const auto len{snprintf(buf, default_buffer_size, "0.%09lld %lld", nanoseconds, seconds)};
   return {buf, static_cast<string::size_type>(len)};
 }
 
 inline double f$_microtime_float() noexcept {
   namespace chrono = std::chrono;
   const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
-  const double microtime =
-      duration_cast<chrono::seconds>(time_since_epoch).count() + (duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000) * 1e-9;
+  const double microtime{duration_cast<chrono::seconds>(time_since_epoch).count() +
+                         (duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000) * 1e-9};
   return microtime;
 }
 
-inline mixed f$microtime(bool get_as_float = false) noexcept {
-  if (get_as_float) {
-    return f$_microtime_float();
-  } else {
-    return f$_microtime_string();
-  }
+inline mixed f$microtime(bool as_float = false) noexcept {
+  return as_float ? mixed{f$_microtime_float()} : mixed{f$_microtime_string()};
 }
 
 inline int64_t f$time() noexcept {
   namespace chrono = std::chrono;
-  const auto now{chrono::system_clock::now().time_since_epoch()};
-  return duration_cast<chrono::seconds>(now).count();
+  return duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count();
 }
 
 int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
