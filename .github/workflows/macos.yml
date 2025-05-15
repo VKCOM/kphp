@@ -12,13 +12,16 @@ env:
 
 jobs:
   build-macos:
-    runs-on: ${{matrix.os}}-14
+    runs-on: ${{matrix.os}}-15
     strategy:
       matrix:
         include:
           - os: macos
             compiler: clang++
             cpp: 17
+          - os: macos
+            compiler: clang++
+            cpp: 20
 
     name: "${{matrix.os}} / ${{matrix.compiler}} / c++${{matrix.cpp}}"
 
