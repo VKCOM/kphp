@@ -127,7 +127,7 @@ struct ConfdataGetWildcard final {
 
 // ===== HTTP =====
 
-inline constexpr uint32_t K2_INVOKE_HTTP_MAGIC = 0xd909'efe8;
+inline constexpr uint32_t K2_INVOKE_HTTP_MAGIC = 0x80c3'7baa;
 
 class K2InvokeHttp final {
   static constexpr auto SCHEME_FLAG = static_cast<uint32_t>(1U << 0U);
