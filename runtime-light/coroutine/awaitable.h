@@ -304,7 +304,8 @@ public:
     return fork_awaiter.await_ready();
   }
 
-  std::coroutine_handle<> await_suspend(std::coroutine_handle<> current_coro) noexcept {
+  template<typename promise_t>
+  std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_t> current_coro) noexcept {
     state = awaitable_impl_::state::suspend;
     fork_instance_st.current_id = fork_id;
     if (fork_awaiter.await_suspend(current_coro)) [[unlikely]] {
@@ -364,7 +365,8 @@ public:
     return state == awaitable_impl_::state::ready;
   }
 
-  constexpr bool await_suspend(std::coroutine_handle<> coro) noexcept {
+  template<typename promise_t>
+  constexpr bool await_suspend(std::coroutine_handle<promise_t> coro) noexcept {
     state = awaitable_impl_::state::suspend;
     return fork_awaiter.await_suspend(coro);
   }
@@ -431,7 +433,8 @@ public:
   // 3. await_suspend returns std::coroutine_handle<>.
   // we must guarantee that 'co_await wait_with_timeout_t{awaitable, timeout}' behaves like 'co_await awaitable' except
   // it may cancel 'co_await awaitable' if the timeout has elapsed.
-  await_suspend_return_t await_suspend(std::coroutine_handle<> coro) noexcept {
+  template<typename promise_t>
+  await_suspend_return_t await_suspend(std::coroutine_handle<promise_t> coro) noexcept {
     // as we don't rely on coroutine scheduler implementation, let's always suspend awaitable first. in case of some smart scheduler
     // it won't have any effect, but it will have an effect if our scheduler is quite simple.
     state = awaitable_impl_::state::suspend;

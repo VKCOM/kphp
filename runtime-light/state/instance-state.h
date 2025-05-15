@@ -15,6 +15,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/core/globals/php-script-globals.h"
+#include "runtime-light/coroutine/async-frame.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
@@ -135,6 +136,7 @@ struct InstanceState final : vk::not_copyable {
 
   list<kphp::coro::task<>> shutdown_functions;
 
+  kphp::coro::async_stack_root coroutine_stack_root;
 private:
   kphp::coro::task<> init_cli_instance() noexcept;
   kphp::coro::task<> init_server_instance() noexcept;

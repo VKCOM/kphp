@@ -6,11 +6,13 @@
 
 #include <concepts>
 #include <coroutine>
+#include <memory>
 #include <new>
 #include <type_traits>
 #include <utility>
 
 #include "common/containers/final_action.h"
+#include "runtime-light/coroutine/async-frame.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/utils/logs.h"
 
@@ -19,7 +21,7 @@ namespace kphp::coro {
 namespace task_impl {
 
 template<typename promise_type>
-struct promise_base {
+struct promise_base : async_frame_impl::async_stack_part {
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -31,6 +33,14 @@ struct promise_base {
       }
 
       auto await_suspend(std::coroutine_handle<promise_type> coro) const noexcept -> std::coroutine_handle<> {
+        async_stack_frame& callee_frame{coro.promise().get_async_frame()};
+        async_stack_root* stack_root{callee_frame.async_stack_root};
+        async_stack_frame* caller_frame{callee_frame.caller_async_frame};
+        if (caller_frame != nullptr) {
+          caller_frame->async_stack_root = stack_root;
+          stack_root->top_frame = caller_frame;
+        }
+
         if (coro.promise().m_next != nullptr) [[likely]] {
           return std::coroutine_handle<>::from_address(coro.promise().m_next);
         }
@@ -96,8 +106,22 @@ public:
   }
 
   template<typename promise_t>
-  auto await_suspend(std::coroutine_handle<promise_t> coro) noexcept -> std::coroutine_handle<promise_type> {
-    m_state = state::suspend;
+  [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> coro) noexcept -> std::coroutine_handle<promise_type> {
+    /*
+     * Add head to async stack chain
+     * */
+    async_stack_frame& caller_frame{coro.promise().get_async_frame()};
+    async_stack_frame& callee_frame{m_coro.promise().get_async_frame()};
+    callee_frame.caller_async_frame = std::addressof(caller_frame);
+    callee_frame.return_address = __builtin_return_address(0);
+
+    /*
+     * Propagate stack root and save new top frame;
+     * */
+    async_stack_root* stack_root = std::exchange(caller_frame.async_stack_root, nullptr);
+    callee_frame.async_stack_root = stack_root;
+    stack_root->top_frame = std::addressof(callee_frame);
+
     m_coro.promise().m_next = coro.address();
     return m_coro;
   }

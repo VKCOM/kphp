@@ -13,6 +13,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "runtime-light/coroutine/async-frame.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/utils/logs.h"
 
@@ -27,7 +28,7 @@ struct shared_task_waiter final {
 };
 
 template<typename promise_type>
-struct promise_base {
+struct promise_base : async_frame_impl::async_stack_part {
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -50,7 +51,7 @@ struct promise_base {
           // read the m_next pointer before resuming the coroutine
           // since resuming the coroutine may destroy the shared_task_waiter value
           auto* next{waiter->m_next};
-          waiter->m_continuation.resume();
+          resume_with_stack_address_record(waiter->m_continuation, *promise.get_async_frame().async_stack_root);
           waiter = next;
         }
         // return last waiter's coroutine_handle to allow it to potentially be compiled as a tail-call
@@ -96,7 +97,8 @@ struct promise_base {
     // start the coroutine if not yet started
     if (m_waiters == NOT_STARTED_VAL) {
       m_waiters = STARTED_NO_WAITERS_VAL;
-      std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
+      const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
+      resume_with_stack_address_record(handle, *get_async_frame().async_stack_root);
     }
     // coroutine already completed, don't suspend
     if (done()) {
@@ -195,7 +197,17 @@ public:
     return m_coro.promise().done();
   }
 
-  auto await_suspend(std::coroutine_handle<> awaiter) noexcept -> bool {
+  template<typename promise_t>
+  [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> awaiter) noexcept -> bool {
+    async_stack_frame& caller_frame{awaiter.promise().get_async_frame()};
+    async_stack_frame& callee_frame{m_coro.promise().get_async_frame()};
+
+    callee_frame.return_address = __builtin_return_address(0);
+
+    async_stack_root* stack_root = caller_frame.async_stack_root;
+    callee_frame.async_stack_root = stack_root;
+    stack_root->top_frame = std::addressof(callee_frame);
+
     m_state = state::suspend;
     m_waiter.m_continuation = awaiter;
     return m_coro.promise().suspend_awaiter(m_waiter);
