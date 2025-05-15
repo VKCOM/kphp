@@ -281,4 +281,8 @@ inline std::expected<k2::SymbolInfo, int32_t> resolve_symbol(void* addr) noexcep
                         .lineno = symbol_info.lineno};
 }
 
+inline size_t code_segment_offset(uint64_t* offset) noexcept {
+  return k2_code_segment_offset(offset);
+}
+
 } // namespace k2

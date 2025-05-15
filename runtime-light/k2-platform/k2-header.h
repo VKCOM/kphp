@@ -537,6 +537,13 @@ int32_t k2_iconv(size_t* result, void* iconv_cd, char** inbuf, size_t* inbytesle
  */
 size_t k2_stderr_write(size_t data_len, const void* data);
 
+/**
+ * Get code segment offset of instance in virtual memory.
+ * Virtual address minus offset will be equal to insturction offset in dso file
+ * @return: `0` on success, `errno != 0` otherwise
+ */
+size_t k2_code_segment_offset(uint64_t *offset);
+
 #ifdef __cplusplus
 }
 #endif

@@ -6,11 +6,13 @@
 
 #include <concepts>
 #include <coroutine>
+#include <memory>
 #include <new>
 #include <type_traits>
 #include <utility>
 
 #include "common/containers/final_action.h"
+#include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/utils/logs.h"
 
@@ -19,7 +21,7 @@ namespace kphp::coro {
 namespace task_impl {
 
 template<typename promise_type>
-struct promise_base {
+struct promise_base : async_stack_impl::stack_element {
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -31,6 +33,7 @@ struct promise_base {
       }
 
       auto await_suspend(std::coroutine_handle<promise_type> coro) const noexcept -> std::coroutine_handle<> {
+        pop_async_frame(coro.promise().get_async_frame());
         if (coro.promise().m_next != nullptr) [[likely]] {
           return std::coroutine_handle<>::from_address(coro.promise().m_next);
         }
@@ -38,6 +41,15 @@ struct promise_base {
       }
 
       constexpr auto await_resume() const noexcept -> void {}
+
+    public:
+      void pop_async_frame(async_stack_frame& callee_frame) const noexcept {
+        if (auto* caller_frame{callee_frame.caller_async_frame}; caller_frame != nullptr) [[likely]] {
+          async_stack_root* stack_root{std::exchange(callee_frame.async_stack_root, nullptr)};
+          caller_frame->async_stack_root = stack_root;
+          stack_root->top_frame = caller_frame;
+        }
+      }
     };
     return awaiter{};
   }
@@ -69,6 +81,16 @@ class awaiter_base {
   enum class state : uint8_t { init, suspend, end };
   state m_state{state::init};
 
+  void push_async_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
+    async_stack_frame& callee_frame{m_coro.promise().get_async_frame()};
+    callee_frame.caller_async_frame = std::addressof(caller_frame);
+    callee_frame.return_address = return_address;
+
+    async_stack_root* stack_root{std::exchange(caller_frame.async_stack_root, nullptr)};
+    callee_frame.async_stack_root = stack_root;
+    stack_root->top_frame = std::addressof(callee_frame);
+  }
+
 protected:
   std::coroutine_handle<promise_type> m_coro{};
 
@@ -96,8 +118,8 @@ public:
   }
 
   template<typename promise_t>
-  auto await_suspend(std::coroutine_handle<promise_t> coro) noexcept -> std::coroutine_handle<promise_type> {
-    m_state = state::suspend;
+  [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> coro) noexcept -> std::coroutine_handle<promise_type> {
+    push_async_frame(coro.promise().get_async_frame(), __builtin_return_address(0));
     m_coro.promise().m_next = coro.address();
     return m_coro;
   }
