@@ -224,4 +224,8 @@ inline int32_t iconv(size_t* result, void* iconv_cd, char** inbuf, size_t* inbyt
   return k2_iconv(result, iconv_cd, inbuf, inbytesleft, outbuf, outbytesleft);
 }
 
+inline size_t code_segment_offset(uint64_t* offset) noexcept {
+  return k2_code_segment_offset(offset);
+}
+
 } // namespace k2
