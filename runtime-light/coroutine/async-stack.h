@@ -23,9 +23,7 @@ struct async_stack_frame {
 };
 
 struct async_stack_root {
-
   async_stack_frame* top_frame{};
-
   stack_frame* stack_frame{};
 };
 
