@@ -36,7 +36,7 @@ class Objs2K2ComponentTarget : public Target {
 #if defined(__APPLE__)
     return " -Wl,-undefined,dynamic_lookup ";
 #else
-    return " -Wl,--wrap,malloc -Wl,--wrap,free, -Wl,--wrap,calloc -Wl,--wrap,realloc -static-libgcc ";
+    return " -Wl,--wrap,malloc -Wl,--wrap,free, -Wl,--wrap,calloc -Wl,--wrap,realloc -Wl,--wrap,strdup -static-libgcc ";
 #endif
   }
 
