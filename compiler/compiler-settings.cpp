@@ -340,7 +340,7 @@ void CompilerSettings::init() {
   std::string cxx_default_flags = ss.str();
 
   cxx_toolchain_option.value_ = !cxx_toolchain_dir.value_.empty() ? ("-B" + cxx_toolchain_dir.value_) : "";
-  incremental_linker_flags.value_ = dynamic_incremental_linkage.get() ? "-shared" : "-r -nostdlib";
+  incremental_linker_flags.value_ = dynamic_incremental_linkage.get() ? "-shared" : "-r -nostdlib -gdwarf64 -gdwarf-5 -mcmodel=large -flto -Wl,-flto -flinker-output=rel";
 
   remove_extra_spaces(extra_ld_flags.value_);
 
