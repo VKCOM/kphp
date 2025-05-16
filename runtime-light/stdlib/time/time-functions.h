@@ -8,8 +8,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <ctime>
+#include <limits>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/time/time-state.h"
+#include "runtime-light/stdlib/time/timelib-constants.h"
+#include "runtime-light/stdlib/time/timelib-functions.h"
 
 inline int64_t f$_hrtime_int() noexcept {
   return std::chrono::steady_clock::now().time_since_epoch().count();
@@ -61,4 +66,26 @@ string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) noexcept
 
 string f$date(const string& format, Optional<int64_t> timestamp = {}) noexcept;
 
-bool f$date_default_timezone_set(const string& s) noexcept;
+inline string f$date_default_timezone_get() noexcept {
+  return TimeInstanceState::get().default_timezone;
+}
+
+inline bool f$date_default_timezone_set(const string& timezone) noexcept {
+  const std::string_view timezone_view{timezone.c_str(), timezone.size()};
+  if (timezone_view != kphp::timelib::timezones::MOSCOW && timezone_view != kphp::timelib::timezones::GMT3) [[unlikely]] {
+    kphp::log::warning("unsupported timezone '{}', only '{}' and '{}' are supported", timezone_view, kphp::timelib::timezones::MOSCOW,
+                       kphp::timelib::timezones::GMT3);
+    return false;
+  }
+  TimeInstanceState::get().default_timezone = timezone;
+  return true;
+}
+
+inline Optional<int64_t> f$strtotime(const string& datetime, int64_t base_timestamp = std::numeric_limits<int64_t>::min()) noexcept {
+  if (base_timestamp == std::numeric_limits<int64_t>::min()) {
+    base_timestamp = std::time(nullptr);
+  }
+  string default_timezone{f$date_default_timezone_get()};
+  auto opt_timestamp{kphp::timelib::strtotime({default_timezone.c_str(), default_timezone.size()}, {datetime.c_str(), datetime.size()}, base_timestamp)};
+  return opt_timestamp.has_value() ? *opt_timestamp : false;
+}
