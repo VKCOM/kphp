@@ -7,11 +7,15 @@ function mktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int 
 
 function date ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
 
+function date_default_timezone_get() ::: string;
+
 function date_default_timezone_set ($s ::: string) ::: bool;
 
 function gmdate ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
 
 function time() ::: int;
+
+function strtotime ($time ::: string, $timestamp ::: int = PHP_INT_MIN) ::: int | false;
 
 function microtime ($get_as_float ::: bool = false) ::: mixed;
 
@@ -19,7 +23,6 @@ function hrtime (bool $as_number = false): mixed; // int[]|int
 
 /** @kphp-extern-func-info interruptible */
 function set_timer(int $timeout, callable():void $callback) ::: void;
-
 
 // ===== UNSUPPORTED =====
 
@@ -168,8 +171,6 @@ define('DATE_RSS', "D, d M Y H:i:s O");
 define('DATE_W3C', "Y-m-d\TH:i:sP");
 
 /** @kphp-extern-func-info stub generation-required */
-function date_default_timezone_get() ::: string;
-/** @kphp-extern-func-info stub generation-required */
 function getdate ($timestamp ::: int = PHP_INT_MIN) ::: mixed[];
 /** @kphp-extern-func-info stub generation-required */
 function gmmktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int = PHP_INT_MIN, $month ::: int = PHP_INT_MIN, $day ::: int = PHP_INT_MIN, $year ::: int = PHP_INT_MIN) ::: int;
@@ -178,9 +179,6 @@ function gmmktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: in
 function localtime ($timestamp ::: int = PHP_INT_MIN, $is_associative ::: bool = false) ::: mixed[];
 /** @kphp-extern-func-info stub generation-required */
 function strftime ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
-/** @kphp-extern-func-info stub generation-required */
-function strtotime ($time ::: string, $timestamp ::: int = PHP_INT_MIN) ::: int | false;
-
 
 /** @kphp-extern-func-info stub generation-required */
 function checkdate ($month ::: int, $day ::: int, $year ::: int) ::: bool;
