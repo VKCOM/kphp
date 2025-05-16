@@ -1083,6 +1083,10 @@ int php_master_rpc_stats(const std::optional<std::vector<std::string>> &sorted_f
   return 0;
 }
 
+std::string_view get_http_metrics_stats_http() noexcept {
+  return engine_default_char_stats();
+}
+
 std::string get_master_stats_http() {
   const auto worker_stats = vk::singleton<ServerStats>::get().collect_workers_stat(WorkerType::general_worker);
   std::ostringstream ss;
@@ -1192,12 +1196,19 @@ int php_master_http_execute(struct connection *c, int op) {
 
   assert (D->first_line_size > 0 && D->first_line_size <= D->header_size);
 
-  const char *allowed_query = "/server-status";
-  if (D->uri_size == strlen(allowed_query) && strncmp(ReqHdr + D->uri_offset, allowed_query, static_cast<size_t>(D->uri_size)) == 0) {
+  const char *server_stats_query = "/server-status";
+  if (D->uri_size == strlen(server_stats_query) && strncmp(ReqHdr + D->uri_offset, server_stats_query, static_cast<size_t>(D->uri_size)) == 0) {
     std::string stat_html = get_master_stats_http();
     write_basic_http_header(c, 200, 0, static_cast<int>(stat_html.length()), nullptr, "text/plain; charset=UTF-8");
     write_out(&c->Out, stat_html.c_str(), static_cast<int>(stat_html.length()));
     return 0;
+  }
+
+  const char *server_metrics_query = "/server-metrics";
+  if (D->uri_size == strlen(server_metrics_query) && strncmp(ReqHdr + D->uri_offset, server_metrics_query, static_cast<size_t>(D->uri_size)) == 0) {
+    const std::string_view metrics_response = get_http_metrics_stats_http();
+    write_basic_http_header(c, 200, 0, metrics_response.length(), nullptr, "text/plain; charset=UTF-8");
+    write_out(&c->Out, metrics_response.data(), metrics_response.length());
   }
 
   D->query_flags |= QF_ERROR;
