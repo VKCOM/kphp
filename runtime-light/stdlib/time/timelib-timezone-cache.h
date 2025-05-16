@@ -21,16 +21,18 @@
 namespace kphp::timelib {
 
 class timezone_cache final {
-  kphp::stl::unordered_set<timelib_tzinfo*, kphp::memory::script_allocator, decltype([](const timelib_tzinfo* tzinfo) noexcept {
-                             return tzinfo != nullptr ? std::hash<std::string_view>{}({tzinfo->name}) : 0;
-                           }),
-                           decltype([](const timelib_tzinfo* lhs, const timelib_tzinfo* rhs) noexcept {
-                             if (lhs == nullptr || rhs == nullptr) [[unlikely]] {
-                               return lhs == rhs;
-                             }
-                             return std::strcmp(lhs->name, rhs->name) == 0;
-                           })>
-      m_cache;
+  using tzinfo_hash_t = decltype([](const timelib_tzinfo* tzinfo) noexcept {
+    kphp::log::assertion(tzinfo != nullptr);
+    return tzinfo->name != nullptr ? std::hash<std::string_view>{}({tzinfo->name}) : 0;
+  });
+  using tzinfo_comparator_t = decltype([](const timelib_tzinfo* lhs, const timelib_tzinfo* rhs) noexcept {
+    if (lhs == nullptr || lhs->name == nullptr || rhs == nullptr || rhs->name == nullptr) [[unlikely]] {
+      return false;
+    }
+    return std::strcmp(lhs->name, rhs->name) == 0;
+  });
+
+  kphp::stl::unordered_set<timelib_tzinfo*, kphp::memory::script_allocator, tzinfo_hash_t, tzinfo_comparator_t> m_cache;
 
 public:
   timelib_tzinfo* get(std::string_view tzname) const noexcept {
@@ -40,8 +42,7 @@ public:
   }
 
   void put(timelib_tzinfo* tzinfo) noexcept {
-    if (tzinfo == nullptr) [[unlikely]] {
-      kphp::log::warning("nullptr timelib_tzinfo detected in timezone_cache");
+    if (tzinfo == nullptr || tzinfo->name == nullptr) [[unlikely]] {
       return;
     }
     m_cache.emplace(tzinfo);
@@ -58,7 +59,7 @@ public:
         kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", tz, timelib_get_error_message(errc));
         return;
       }
-      m_cache.emplace(tzinfo);
+      put(tzinfo);
     });
   }
 
