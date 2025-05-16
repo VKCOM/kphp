@@ -11,8 +11,8 @@
 
 #include "common/mixin/not_copyable.h"
 #include "common/php-functions.h"
-#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
@@ -21,10 +21,10 @@
 #include "runtime-light/utils/logs.h"
 
 struct ImageState final : private vk::not_copyable {
-  RuntimeAllocator allocator;
+  AllocatorState image_allocator_state{INIT_IMAGE_ALLOCATOR_SIZE, 0};
 
   char* c_linear_mem{nullptr};
-  uint32_t pid{};
+  uint32_t pid{k2::getpid()};
   string uname_info_s;
   string uname_info_n;
   string uname_info_r;
@@ -38,9 +38,7 @@ struct ImageState final : private vk::not_copyable {
   StringImageState string_image_state;
   MathImageState math_image_state;
 
-  ImageState() noexcept
-      : allocator(INIT_IMAGE_ALLOCATOR_SIZE, 0),
-        pid(k2::getpid()) {
+  ImageState() noexcept {
     utsname uname_info{};
     if (const auto errc{k2::uname(std::addressof(uname_info))}; errc != k2::errno_ok) [[unlikely]] {
       kphp::log::error("can't get uname, error code: {}", errc);
