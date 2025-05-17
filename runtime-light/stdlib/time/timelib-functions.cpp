@@ -5,7 +5,6 @@
 #include "runtime-light/stdlib/time/timelib-functions.h"
 
 #include <cstdint>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -31,13 +30,7 @@ timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb
     return tzinfo;
   }
 
-  // we don't have this timezone cached, so create and add it to the cache
-  tzinfo = std::invoke(
-      [](const char* tzname, const timelib_tzdb* tzdb, int* errc) noexcept {
-        kphp::memory::libc_alloc_guard _{};
-        return timelib_parse_tzfile(tzname, tzdb, errc);
-      },
-      timezone, tzdb, errc);
+  tzinfo = (kphp::memory::libc_alloc_guard{}, timelib_parse_tzfile(timezone, tzdb, errc));
   instance_timelib_zone_cache.put(tzinfo);
   return tzinfo;
 }
