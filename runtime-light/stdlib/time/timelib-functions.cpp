@@ -55,7 +55,7 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view dat
     return {};
   }
 
-  kphp::memory::libc_alloc_guard _{}; // ENABLE LIBC ALLOC
+  kphp::memory::libc_alloc_guard _{};
 
   timelib_time* now{timelib_time_ctor()};
   const vk::final_action now_deleter{[now] noexcept { timelib_time_dtor(now); }};

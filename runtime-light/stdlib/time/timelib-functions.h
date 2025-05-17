@@ -17,7 +17,7 @@ namespace kphp::timelib {
  *
  * @param timezone The name of the time zone to retrieve.
  * @param tzdb The time zone database to search.
- * @param errc The address of a variable to store error code into.
+ * @param errc The pointer to a variable to store error code into.
  * @return `timelib_tzinfo*` pointing to the time zone information, or `nullptr` if not found.
  *
  * @note
