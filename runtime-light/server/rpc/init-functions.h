@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "runtime-light/tl/tl-functions.h"
+#include "runtime-light/tl/tl-core.h"
 
 namespace kphp::rpc {
 
-void init_server(tl::K2InvokeRpc invoke_rpc) noexcept;
+void init_server(tl::TLBuffer& tlb) noexcept;
 
 } // namespace kphp::rpc

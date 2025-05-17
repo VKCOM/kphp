@@ -196,7 +196,12 @@ std::string_view process_headers(const tl::K2InvokeHttp& invoke_http, PhpScriptB
 
 namespace kphp::http {
 
-void init_server(tl::K2InvokeHttp invoke_http) noexcept {
+void init_server(tl::TLBuffer& tlb) noexcept {
+  tl::K2InvokeHttp invoke_http{};
+  if (!invoke_http.fetch(tlb)) [[unlikely]] {
+    kphp::log::error("erroneous http request");
+  }
+
   auto& superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
   auto& server{superglobals.v$_SERVER};
   auto& http_server_instance_st{HttpServerInstanceState::get()};
@@ -306,7 +311,6 @@ void init_server(tl::K2InvokeHttp invoke_http) noexcept {
   const auto connection_kind{http_server_instance_st.connection_kind == connection_kind::keep_alive ? CONNECTION_KEEP_ALIVE : CONNECTION_CLOSE};
   static_SB.clean() << headers::CONNECTION.data() << ": " << connection_kind.data();
   kphp::http::header({static_SB.c_str(), static_SB.size()}, true, status::NO_STATUS);
-
   kphp::log::info("http server initialized with: "
                   "server addr -> {}, "
                   "server port -> {}, "
