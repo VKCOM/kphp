@@ -57,7 +57,7 @@ target_link_libraries(runtime-light-pic PUBLIC vk::pic::libc-alloc-wrapper) # it
                                                                             # want to use its symbols in all other libraries
 target_link_libraries(runtime-light-pic PUBLIC KPHP_TIMELIB::pic::timelib PCRE2::pic::pcre2 ZLIB::pic::zlib) # third parties
 
-set(RUNTIME_LIGHT_LINK_LIBS "${PCRE2_PIC_LIBRARIES} ${ZLIB_PIC_LIBRARIES}")
+set(RUNTIME_LIGHT_LINK_LIBS "${KPHP_TIMELIB_PIC_LIBRARIES} ${PCRE2_PIC_LIBRARIES} ${ZLIB_PIC_LIBRARIES}")
 
 # =================================================================================================
 
