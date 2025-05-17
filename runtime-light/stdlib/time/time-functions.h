@@ -8,8 +8,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <ctime>
+#include <limits>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/time/time-state.h"
+#include "runtime-light/stdlib/time/timelib-constants.h"
+#include "runtime-light/stdlib/time/timelib-functions.h"
 
 inline int64_t f$_hrtime_int() noexcept {
   return std::chrono::steady_clock::now().time_since_epoch().count();
@@ -17,15 +22,12 @@ inline int64_t f$_hrtime_int() noexcept {
 
 inline array<int64_t> f$_hrtime_array() noexcept {
   namespace chrono = std::chrono;
-  const auto since_epoch = chrono::steady_clock::now().time_since_epoch();
+  const auto since_epoch{chrono::steady_clock::now().time_since_epoch()};
   return array<int64_t>::create(duration_cast<chrono::seconds>(since_epoch).count(), chrono::nanoseconds{since_epoch % chrono::seconds{1}}.count());
 }
 
 inline mixed f$hrtime(bool as_number = false) noexcept {
-  if (as_number) {
-    return f$_hrtime_int();
-  }
-  return f$_hrtime_array();
+  return as_number ? mixed{f$_hrtime_int()} : mixed{f$_hrtime_array()};
 }
 
 inline string f$_microtime_string() noexcept {
@@ -34,32 +36,27 @@ inline string f$_microtime_string() noexcept {
   const auto seconds{duration_cast<chrono::seconds>(time_since_epoch).count()};
   const auto nanoseconds{duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000};
 
-  constexpr size_t default_buffer_size = 60;
+  static constexpr size_t default_buffer_size = 60;
   char buf[default_buffer_size];
-  const int len = snprintf(buf, default_buffer_size, "0.%09lld %lld", nanoseconds, seconds);
+  const auto len{snprintf(buf, default_buffer_size, "0.%09lld %lld", nanoseconds, seconds)};
   return {buf, static_cast<string::size_type>(len)};
 }
 
 inline double f$_microtime_float() noexcept {
   namespace chrono = std::chrono;
   const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
-  const double microtime =
-      duration_cast<chrono::seconds>(time_since_epoch).count() + (duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000) * 1e-9;
+  const double microtime{duration_cast<chrono::seconds>(time_since_epoch).count() +
+                         (duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000) * 1e-9};
   return microtime;
 }
 
-inline mixed f$microtime(bool get_as_float = false) noexcept {
-  if (get_as_float) {
-    return f$_microtime_float();
-  } else {
-    return f$_microtime_string();
-  }
+inline mixed f$microtime(bool as_float = false) noexcept {
+  return as_float ? mixed{f$_microtime_float()} : mixed{f$_microtime_string()};
 }
 
 inline int64_t f$time() noexcept {
   namespace chrono = std::chrono;
-  const auto now{chrono::system_clock::now().time_since_epoch()};
-  return duration_cast<chrono::seconds>(now).count();
+  return duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count();
 }
 
 int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
@@ -69,4 +66,26 @@ string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) noexcept
 
 string f$date(const string& format, Optional<int64_t> timestamp = {}) noexcept;
 
-bool f$date_default_timezone_set(const string& s) noexcept;
+inline string f$date_default_timezone_get() noexcept {
+  return TimeInstanceState::get().default_timezone;
+}
+
+inline bool f$date_default_timezone_set(const string& timezone) noexcept {
+  const std::string_view timezone_view{timezone.c_str(), timezone.size()};
+  if (timezone_view != kphp::timelib::timezones::MOSCOW && timezone_view != kphp::timelib::timezones::GMT3) [[unlikely]] {
+    kphp::log::warning("unsupported timezone '{}', only '{}' and '{}' are supported", timezone_view, kphp::timelib::timezones::MOSCOW,
+                       kphp::timelib::timezones::GMT3);
+    return false;
+  }
+  TimeInstanceState::get().default_timezone = timezone;
+  return true;
+}
+
+inline Optional<int64_t> f$strtotime(const string& datetime, int64_t base_timestamp = std::numeric_limits<int64_t>::min()) noexcept {
+  if (base_timestamp == std::numeric_limits<int64_t>::min()) {
+    base_timestamp = std::time(nullptr);
+  }
+  string default_timezone{f$date_default_timezone_get()};
+  auto opt_timestamp{kphp::timelib::strtotime({default_timezone.c_str(), default_timezone.size()}, {datetime.c_str(), datetime.size()}, base_timestamp)};
+  return opt_timestamp.has_value() ? *opt_timestamp : false;
+}

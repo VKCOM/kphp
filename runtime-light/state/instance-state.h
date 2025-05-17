@@ -35,6 +35,7 @@
 #include "runtime-light/stdlib/string/regex-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
+#include "runtime-light/stdlib/time/time-state.h"
 
 // Coroutine scheduler type. Change it here if you want to use another scheduler
 using CoroutineScheduler = SimpleCoroutineScheduler;
@@ -61,10 +62,7 @@ struct InstanceState final : vk::not_copyable {
   template<typename T>
   using list = kphp::stl::list<T, kphp::memory::script_allocator>;
 
-  InstanceState() noexcept
-      : instance_allocator_state(INIT_INSTANCE_ALLOCATOR_SIZE, 0) {}
-
-  ~InstanceState() = default;
+  InstanceState() noexcept = default;
 
   static InstanceState& get() noexcept {
     return *k2::instance_state();
@@ -106,7 +104,7 @@ struct InstanceState final : vk::not_copyable {
   void release_stream(uint64_t) noexcept;
   void release_all_streams() noexcept;
 
-  AllocatorState instance_allocator_state;
+  AllocatorState instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0};
 
   CoroutineScheduler scheduler;
   ForkInstanceState fork_instance_state;
@@ -124,6 +122,7 @@ struct InstanceState final : vk::not_copyable {
   JobWorkerServerInstanceState job_worker_server_instance_state;
   InstanceCacheInstanceState instance_cache_instance_state;
 
+  TimeInstanceState time_instance_state;
   MathInstanceState math_instance_state;
   RandomInstanceState random_instance_state;
   RegexInstanceState regex_instance_state;

@@ -1,3 +1,4 @@
+include(${THIRD_PARTY_DIR}/timelib-cmake/timelib.cmake)
 include(${THIRD_PARTY_DIR}/pcre2-cmake/pcre2.cmake)
 
 # =================================================================================================
@@ -54,9 +55,9 @@ vk_add_library_pic(runtime-light-pic OBJECT ${RUNTIME_LIGHT_SRC})
 target_compile_options(runtime-light-pic PUBLIC ${RUNTIME_LIGHT_COMPILE_FLAGS})
 target_link_libraries(runtime-light-pic PUBLIC vk::pic::libc-alloc-wrapper) # it's mandatory to have alloc-wrapper first in the list of link libraries since we
                                                                             # want to use its symbols in all other libraries
-target_link_libraries(runtime-light-pic PUBLIC PCRE2::pic::pcre2 ZLIB::pic::zlib) # third parties
+target_link_libraries(runtime-light-pic PUBLIC KPHP_TIMELIB::pic::timelib PCRE2::pic::pcre2 ZLIB::pic::zlib) # third parties
 
-set(RUNTIME_LIGHT_LINK_LIBS "${PCRE2_PIC_LIBRARIES} ${ZLIB_PIC_LIBRARIES}")
+set(RUNTIME_LIGHT_LINK_LIBS "${KPHP_TIMELIB_PIC_LIBRARIES} ${PCRE2_PIC_LIBRARIES} ${ZLIB_PIC_LIBRARIES}")
 
 # =================================================================================================
 
