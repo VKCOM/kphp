@@ -8,13 +8,13 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
-#include <ctime>
 #include <limits>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/time/timelib-constants.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"
+#include "runtime-light/utils/logs.h"
 
 inline int64_t f$_hrtime_int() noexcept {
   return std::chrono::steady_clock::now().time_since_epoch().count();
@@ -83,7 +83,8 @@ inline bool f$date_default_timezone_set(const string& timezone) noexcept {
 
 inline Optional<int64_t> f$strtotime(const string& datetime, int64_t base_timestamp = std::numeric_limits<int64_t>::min()) noexcept {
   if (base_timestamp == std::numeric_limits<int64_t>::min()) {
-    base_timestamp = std::time(nullptr);
+    namespace chrono = std::chrono;
+    base_timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
   }
   string default_timezone{f$date_default_timezone_get()};
   auto opt_timestamp{kphp::timelib::strtotime({default_timezone.c_str(), default_timezone.size()}, {datetime.c_str(), datetime.size()}, base_timestamp)};
