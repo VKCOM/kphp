@@ -454,6 +454,28 @@ if __name__ == "__main__":
             skip=args.steps and "integration-tests" not in args.steps,
         )
 
+        runner.add_test_group(
+            name="k2-integration-tests",
+            description="run k2-kphp integration tests with cxx={}".format(args.cxx_name),
+            cmd="PYTHONPATH={lib_dir} "
+            "KPHP_TESTS_KPHP_REPO={kphp_repo_root} "
+            "KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
+            "KPHP_TESTS_INTERGRATION_TESTS_ENABLED=1 "
+            "KPHP_CXX={cxx_name} "
+            "K2_BIN={k2_bin} "
+            "python3 -m pytest --tb=native -n{jobs} {tests_dir}".format(
+                jobs=n_cpu,
+                lib_dir=os.path.join(runner_dir, "python"),
+                engine_repo=args.engine_repo,
+                kphp_repo_root=kphp_repo_root,
+                kphp_polyfills_repo=kphp_polyfills_repo,
+                cxx_name=args.cxx_name,
+                k2_bin=args.k2_bin,
+                tests_dir=os.path.join(args.kphp_tests_repo, "python/tests/k2_rpc_server/"),
+            ),
+            skip=not args.k2_bin or (args.steps and "k2-integration-tests" not in args.steps),
+        )
+
     runner.setup(args)
     runner.run_tests()
     runner.print_report()
