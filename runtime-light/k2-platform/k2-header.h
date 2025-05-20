@@ -542,7 +542,7 @@ size_t k2_stderr_write(size_t data_len, const void* data);
  * Virtual address minus offset will be equal to insturction offset in dso file
  * @return: `0` on success, `errno != 0` otherwise
  */
-size_t k2_code_segment_offset(uint64_t *offset);
+size_t k2_code_segment_offset(uint64_t* offset);
 
 #ifdef __cplusplus
 }
