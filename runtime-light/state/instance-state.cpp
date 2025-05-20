@@ -105,21 +105,7 @@ kphp::coro::task<> InstanceState::init_cli_instance() noexcept {
 }
 
 kphp::coro::task<> InstanceState::init_server_instance() noexcept {
-  auto init_k2_invoke_http{[](tl::TLBuffer& tlb) noexcept {
-    tl::K2InvokeHttp invoke_http{};
-    if (!invoke_http.fetch(tlb)) [[unlikely]] {
-      kphp::log::error("erroneous http request");
-    }
-    kphp::http::init_server(std::move(invoke_http));
-  }};
-  auto init_k2_invoke_rpc{[](tl::TLBuffer& tlb) noexcept {
-    tl::K2InvokeRpc invoke_rpc{};
-    if (!invoke_rpc.fetch(tlb)) [[unlikely]] {
-      kphp::log::error("erroneous rpc request");
-    }
-    kphp::rpc::init_server(std::move(invoke_rpc));
-  }};
-  auto init_k2_invoke_jw{[](tl::TLBuffer& tlb) noexcept {
+  auto init_k2_invoke_jw{[](tl::TLBuffer& tlb) noexcept { // TODO rework
     tl::K2InvokeJobWorker invoke_jw{};
     if (!invoke_jw.fetch(tlb)) [[unlikely]] {
       kphp::log::error("erroneous job worker request");
@@ -147,13 +133,13 @@ kphp::coro::task<> InstanceState::init_server_instance() noexcept {
   case tl::K2_INVOKE_HTTP_MAGIC: {
     instance_kind_ = instance_kind::http_server;
     standard_stream_ = stream_d;
-    init_k2_invoke_http(tlb);
+    kphp::http::init_server(tlb);
     break;
   }
   case tl::K2_INVOKE_RPC_MAGIC: {
     instance_kind_ = instance_kind::rpc_server;
     standard_stream_ = stream_d;
-    init_k2_invoke_rpc(tlb);
+    kphp::rpc::init_server(tlb);
     break;
   }
   case tl::K2_INVOKE_JOB_WORKER_MAGIC: {

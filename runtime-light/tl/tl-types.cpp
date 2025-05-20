@@ -155,16 +155,7 @@ bool CertInfoItem::fetch(TLBuffer& tlb) noexcept {
 // ===== RPC =====
 
 bool rpcInvokeReqExtra::fetch(tl::TLBuffer& tlb) noexcept {
-  return_binlog_pos = static_cast<bool>(flags.value & RETURN_BINLOG_POS_FLAG);
-  return_binlog_time = static_cast<bool>(flags.value & RETURN_BINLOG_TIME_FLAG);
-  return_pid = static_cast<bool>(flags.value & RETURN_PID_FLAG);
-  return_request_sizes = static_cast<bool>(flags.value & RETURN_REQUEST_SIZES_FLAG);
-  return_failed_subqueries = static_cast<bool>(flags.value & RETURN_FAILED_SUBQUERIES_FLAG);
-  return_query_stats = static_cast<bool>(flags.value & RETURN_QUERY_STATS_FLAG);
-  no_result = static_cast<bool>(flags.value & NORESULT_FLAG);
-  return_view_number = static_cast<bool>(flags.value & RETURN_VIEW_NUMBER_FLAG);
-
-  bool ok{true};
+  bool ok{flags.fetch(tlb)};
   if (ok && static_cast<bool>(flags.value & WAIT_BINLOG_POS_FLAG)) {
     ok &= opt_wait_binlog_pos.emplace().fetch(tlb);
   }
@@ -190,10 +181,19 @@ bool rpcInvokeReqExtra::fetch(tl::TLBuffer& tlb) noexcept {
     ok &= opt_random_delay.emplace().fetch(tlb);
   }
 
+  return_binlog_pos = static_cast<bool>(flags.value & RETURN_BINLOG_POS_FLAG);
+  return_binlog_time = static_cast<bool>(flags.value & RETURN_BINLOG_TIME_FLAG);
+  return_pid = static_cast<bool>(flags.value & RETURN_PID_FLAG);
+  return_request_sizes = static_cast<bool>(flags.value & RETURN_REQUEST_SIZES_FLAG);
+  return_failed_subqueries = static_cast<bool>(flags.value & RETURN_FAILED_SUBQUERIES_FLAG);
+  return_query_stats = static_cast<bool>(flags.value & RETURN_QUERY_STATS_FLAG);
+  no_result = static_cast<bool>(flags.value & NORESULT_FLAG);
+  return_view_number = static_cast<bool>(flags.value & RETURN_VIEW_NUMBER_FLAG);
   return ok;
 }
 
 void rpcReqResultExtra::store(tl::TLBuffer& tlb) const noexcept {
+  flags.store(tlb);
   if (static_cast<bool>(flags.value & BINLOG_POS_FLAG)) {
     binlog_pos.store(tlb);
   }

@@ -8,7 +8,6 @@
 #include <optional>
 #include <string_view>
 
-#include "common/tl/constants/common.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
 
@@ -128,7 +127,7 @@ struct ConfdataGetWildcard final {
 
 // ===== HTTP =====
 
-inline constexpr uint32_t K2_INVOKE_HTTP_MAGIC = 0xd909'efe8;
+inline constexpr uint32_t K2_INVOKE_HTTP_MAGIC = 0x80c3'7baa;
 
 class K2InvokeHttp final {
   static constexpr auto SCHEME_FLAG = static_cast<uint32_t>(1U << 0U);
@@ -148,38 +147,35 @@ public:
 
 // ===== RPC =====
 
-struct rpcInvokeReq final {
-  tl::i64 query_id{};
-  std::optional<tl::RpcDestActor> opt_dest_actor;
-  std::optional<tl::RpcDestFlags> opt_dest_flags;
-  std::optional<tl::RpcDestActorFlags> opt_dest_actor_flags;
-  std::string_view query;
-
-  bool fetch(tl::TLBuffer& tlb) noexcept;
-};
-
-struct RpcInvokeReq final {
-  tl::rpcInvokeReq inner{};
-
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    tl::details::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_RPC_INVOKE_REQ) && inner.fetch(tlb);
-  }
-};
-
 inline constexpr uint32_t K2_INVOKE_RPC_MAGIC = 0xd909'efe9;
 
-struct K2InvokeRpc final {
+class K2InvokeRpc final {
+  static constexpr auto ACTOR_ID_FLAG = static_cast<uint32_t>(1U << 0U);
+  static constexpr auto EXTRA_FLAG = static_cast<uint32_t>(1U << 1U);
+
+public:
+  tl::details::mask flags{};
+  tl::i64 query_id{};
   tl::netPid net_pid{};
-  tl::RpcInvokeReq rpc_invoke_req{};
+  std::optional<tl::i64> opt_actor_id;
+  std::optional<tl::rpcInvokeReqExtra> opt_extra;
+  std::string_view query;
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
     tl::details::magic magic{};
     bool ok{magic.fetch(tlb) && magic.expect(K2_INVOKE_RPC_MAGIC)};
-    ok &= tl::details::mask{}.fetch(tlb);
+    ok &= flags.fetch(tlb);
+    ok &= query_id.fetch(tlb);
     ok &= net_pid.fetch(tlb);
-    ok &= rpc_invoke_req.fetch(tlb);
-    return ok;
+    if (static_cast<bool>(flags.value & ACTOR_ID_FLAG)) {
+      ok &= opt_actor_id.emplace().fetch(tlb);
+    }
+    if (static_cast<bool>(flags.value & EXTRA_FLAG)) {
+      ok &= opt_extra.emplace().fetch(tlb);
+    }
+    const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
+    query = opt_query.value_or(std::string_view{});
+    return ok && opt_query.has_value();
   }
 };
 
