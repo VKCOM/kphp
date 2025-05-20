@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <cstddef>
 #include <array>
+#include <cstddef>
 #include <format>
 
 #include "runtime-common/core/runtime-core.h"
@@ -14,7 +14,7 @@
 inline array<array<string>> f$debug_backtrace() {
   constexpr std::size_t buffer_size{64};
 
-  std::array<void *, buffer_size> raw_trace{};
+  std::array<void*, buffer_size> raw_trace{};
   std::size_t num_frames{kphp::diagnostic::get_async_stacktrace(raw_trace)};
 
   array<array<string>> backtrace{array_size{static_cast<int64_t>(num_frames), true}};
