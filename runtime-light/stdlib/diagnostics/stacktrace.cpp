@@ -3,9 +3,7 @@
 //  Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cstddef>
-#include <cstdint>
 #include <iterator>
-#include <optional>
 #include <span>
 
 #include "runtime-common/core/utils/kphp-assert-core.h"
