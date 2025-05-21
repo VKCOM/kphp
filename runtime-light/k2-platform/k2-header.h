@@ -14,10 +14,12 @@
 #include <atomic>
 #include <cstdint>
 #include <cstring>
+#include <ctime>
 #else
 #include <stdatomic.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 #endif
 
 #define K2_PLATFORM_HEADER_H_VERSION 11
@@ -435,6 +437,20 @@ uint32_t k2_env_value_len(uint32_t env_num);
 void k2_env_fetch(uint32_t env_num, char* key, char* value);
 
 // ---- libc analogues, designed to work instance-local ----
+
+/**
+ * Works instance-local.
+ * Analogue of tzset(), but accept locale explicitly.
+ * @return: `0` on success, non-zero otherwise
+ */
+int32_t k2_set_timezone(const char* timezone);
+
+/**
+ * Works instance-local.
+ * Analogue of localtime_r().
+ * @return: `result` on success, `NULL` otherwise
+ */
+struct tm* k2_localtime_r(const time_t* timer, struct tm* result);
 
 /**
  * Works instance-local.
