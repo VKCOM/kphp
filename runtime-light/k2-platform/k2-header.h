@@ -3,6 +3,10 @@
 
 #pragma once
 
+#ifndef K2_API_HEADER_H
+#error "should not be directly included"
+#endif // K2_API_HEADER_H
+
 #include <sys/socket.h>
 #include <sys/utsname.h>
 
