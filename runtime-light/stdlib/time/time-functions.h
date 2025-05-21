@@ -88,7 +88,7 @@ inline int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = 
 inline string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) noexcept {
   namespace chrono = std::chrono;
   const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
-  struct tm tm{};
+  struct tm tm {};
   gmtime_r(std::addressof(now), std::addressof(tm));
   return kphp::time::impl::date(format, tm, now, false);
 }
@@ -96,7 +96,7 @@ inline string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) n
 inline string f$date(const string& format, Optional<int64_t> timestamp = {}) noexcept {
   namespace chrono = std::chrono;
   const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
-  struct tm tm{};
+  struct tm tm {};
   if (auto* res{k2::localtime_r(std::addressof(now), std::addressof(tm))}; res != std::addressof(tm)) [[unlikely]] {
     kphp::log::warning("can't get local time");
     return {};
