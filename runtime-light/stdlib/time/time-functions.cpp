@@ -9,7 +9,6 @@
 #include <climits>
 #include <cstdint>
 #include <ctime>
-#include <memory>
 #include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
@@ -64,6 +63,21 @@ void iso_week_number(int y, int doy, int weekday, int& iw, int& iy) noexcept {
       iw -= 1;
     }
   }
+}
+
+} // namespace
+
+namespace kphp::time::impl {
+
+int64_t fix_year(int64_t year) noexcept {
+  if (year <= 100U) {
+    if (year <= 69) {
+      year += 2000;
+    } else {
+      year += 1900;
+    }
+  }
+  return year;
 }
 
 string date(const string& format, const tm& t, int64_t timestamp, bool local) noexcept {
@@ -295,48 +309,4 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
   return SB.str();
 }
 
-int64_t fix_year(int64_t year) noexcept {
-  if (year <= 100U) {
-    if (year <= 69) {
-      year += 2000;
-    } else {
-      year += 1900;
-    }
-  }
-  return year;
-}
-
-} // namespace
-
-int64_t f$mktime(Optional<int64_t> hour, Optional<int64_t> minute, Optional<int64_t> second, Optional<int64_t> month, Optional<int64_t> day,
-                 Optional<int64_t> year) noexcept {
-  namespace chrono = std::chrono;
-  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
-  chrono::year_month_day current_date{chrono::sys_days{duration_cast<chrono::days>(time_since_epoch)}};
-
-  const auto hours{chrono::hours(hour.has_value() ? hour.val() : duration_cast<chrono::hours>(time_since_epoch).count() % 24)};
-  const auto minutes{chrono::minutes(minute.has_value() ? minute.val() : duration_cast<chrono::minutes>(time_since_epoch).count() % 60)};
-  const auto seconds{chrono::seconds(second.has_value() ? second.val() : duration_cast<chrono::seconds>(time_since_epoch).count() % 60)};
-  const auto months{chrono::months(month.has_value() ? month.val() : static_cast<unsigned>(current_date.month()))};
-  const auto days{chrono::days(day.has_value() ? day.val() : static_cast<unsigned>(current_date.day()))};
-  const auto years{chrono::years(year.has_value() ? fix_year(year.val()) : static_cast<int>(current_date.year()) - 1970)};
-
-  const auto result{hours + minutes + seconds + months + days + years};
-  return duration_cast<chrono::seconds>(result).count();
-}
-
-string f$gmdate(const string& format, Optional<int64_t> timestamp) noexcept {
-  namespace chrono = std::chrono;
-  const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
-  struct tm tm {};
-  gmtime_r(std::addressof(now), std::addressof(tm));
-  return date(format, tm, now, false);
-}
-
-string f$date(const string& format, Optional<int64_t> timestamp) noexcept {
-  namespace chrono = std::chrono;
-  const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
-  struct tm tm {};
-  localtime_r(std::addressof(now), std::addressof(tm));
-  return date(format, tm, now, true);
-}
+} // namespace kphp::time::impl

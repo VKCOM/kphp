@@ -11,10 +11,19 @@
 #include <limits>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/time/timelib-constants.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"
 #include "runtime-light/utils/logs.h"
+
+namespace kphp::time::impl {
+
+int64_t fix_year(int64_t year) noexcept;
+
+string date(const string& format, const tm& t, int64_t timestamp, bool local) noexcept;
+
+} // namespace kphp::time::impl
 
 inline int64_t f$_hrtime_int() noexcept {
   return std::chrono::steady_clock::now().time_since_epoch().count();
@@ -59,12 +68,41 @@ inline int64_t f$time() noexcept {
   return duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count();
 }
 
-int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
-                 Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept;
+inline int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
+                        Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
+  namespace chrono = std::chrono;
+  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
+  chrono::year_month_day current_date{chrono::sys_days{duration_cast<chrono::days>(time_since_epoch)}};
 
-string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) noexcept;
+  const auto hours{chrono::hours(hour.has_value() ? hour.val() : duration_cast<chrono::hours>(time_since_epoch).count() % 24)};
+  const auto minutes{chrono::minutes(minute.has_value() ? minute.val() : duration_cast<chrono::minutes>(time_since_epoch).count() % 60)};
+  const auto seconds{chrono::seconds(second.has_value() ? second.val() : duration_cast<chrono::seconds>(time_since_epoch).count() % 60)};
+  const auto months{chrono::months(month.has_value() ? month.val() : static_cast<unsigned>(current_date.month()))};
+  const auto days{chrono::days(day.has_value() ? day.val() : static_cast<unsigned>(current_date.day()))};
+  const auto years{chrono::years(year.has_value() ? kphp::time::impl::fix_year(year.val()) : static_cast<int>(current_date.year()) - 1970)};
 
-string f$date(const string& format, Optional<int64_t> timestamp = {}) noexcept;
+  const auto result{hours + minutes + seconds + months + days + years};
+  return duration_cast<chrono::seconds>(result).count();
+}
+
+inline string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) noexcept {
+  namespace chrono = std::chrono;
+  const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
+  struct tm tm{};
+  gmtime_r(std::addressof(now), std::addressof(tm));
+  return kphp::time::impl::date(format, tm, now, false);
+}
+
+inline string f$date(const string& format, Optional<int64_t> timestamp = {}) noexcept {
+  namespace chrono = std::chrono;
+  const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
+  struct tm tm{};
+  if (auto* res{k2::localtime_r(std::addressof(now), std::addressof(tm))}; res != std::addressof(tm)) [[unlikely]] {
+    kphp::log::warning("can't get local time");
+    return {};
+  }
+  return kphp::time::impl::date(format, tm, now, true);
+}
 
 inline string f$date_default_timezone_get() noexcept {
   return TimeInstanceState::get().default_timezone;
@@ -75,6 +113,10 @@ inline bool f$date_default_timezone_set(const string& timezone) noexcept {
   if (timezone_view != kphp::timelib::timezones::MOSCOW && timezone_view != kphp::timelib::timezones::GMT3) [[unlikely]] {
     kphp::log::warning("unsupported timezone '{}', only '{}' and '{}' are supported", timezone_view, kphp::timelib::timezones::MOSCOW,
                        kphp::timelib::timezones::GMT3);
+    return false;
+  }
+  if (auto errc{k2::set_timezone(timezone_view)}; errc != k2::errno_ok) [[unlikely]] {
+    kphp::log::warning("can't set timezone '{}'", timezone_view);
     return false;
   }
   TimeInstanceState::get().default_timezone = timezone;
