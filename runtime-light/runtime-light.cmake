@@ -3,7 +3,7 @@ include(${THIRD_PARTY_DIR}/pcre2-cmake/pcre2.cmake)
 
 # =================================================================================================
 
-set(RUNTIME_LIGHT_COMPILE_FLAGS -O3 -stdlib=libc++)
+set(RUNTIME_LIGHT_COMPILE_FLAGS -O0 -g -stdlib=libc++)
 
 set(RUNTIME_LIGHT_PLATFORM_SPECIFIC_LINK_FLAGS)
 if(APPLE)
@@ -18,6 +18,7 @@ set(RUNTIME_LIGHT_LINK_FLAGS -stdlib=libc++ -static-libstdc++ -static-libgcc ${R
 
 include(${RUNTIME_LIGHT_DIR}/allocator/allocator.cmake)
 include(${RUNTIME_LIGHT_DIR}/core/core.cmake)
+include(${RUNTIME_LIGHT_DIR}/coroutine/coroutine.cmake)
 include(${RUNTIME_LIGHT_DIR}/scheduler/scheduler.cmake)
 include(${RUNTIME_LIGHT_DIR}/server/server.cmake)
 include(${RUNTIME_LIGHT_DIR}/stdlib/stdlib.cmake)
@@ -29,6 +30,7 @@ include(${RUNTIME_LIGHT_DIR}/memory-resource-impl/memory-resource-impl.cmake)
 
 set(RUNTIME_LIGHT_SRC
     ${RUNTIME_LIGHT_CORE_SRC}
+    ${RUNTIME_LIGHT_COROUTINE_SRC}
     ${RUNTIME_LIGHT_STDLIB_SRC}
     ${RUNTIME_LIGHT_SCHEDULER_SRC}
     ${RUNTIME_LIGHT_SERVER_SRC}
