@@ -14,26 +14,29 @@ public:
 
 protected:
   void add_stat([[maybe_unused]] char type, const char* key, double value) noexcept final {
-    sb_printf(&sb, "%s\t", normalize_key(key, "%s", ""));
+    sb_printf(&sb, "%s%s\t", normalize_key(key, "%s", ""), stats_suffix);
     sb_printf(&sb, "%.3f", value);
     sb_printf(&sb, "\n");
   }
 
   void add_stat([[maybe_unused]] char type, const char* key, long long value) noexcept final {
-    sb_printf(&sb, "%s\t", normalize_key(key, "%s", ""));
+    sb_printf(&sb, "%s%s\t", normalize_key(key, "%s", ""), stats_suffix);
     sb_printf(&sb, "%lld", value);
     sb_printf(&sb, "\n");
   }
 
   void add_stat_with_tag_type([[maybe_unused]] char type, const char* key, const char* type_tag, double value) noexcept override {
-    sb_printf(&sb, "%s_%s\t", normalize_key(key, "%s", ""), type_tag);
+    sb_printf(&sb, "%s_%s%s\t", normalize_key(key, "%s", ""), type_tag, stats_suffix);
     sb_printf(&sb, "%.3f", value);
     sb_printf(&sb, "\n");
   }
 
   void add_stat_with_tag_type([[maybe_unused]] char type, const char* key, const char* type_tag, long long int value) noexcept override {
-    sb_printf(&sb, "%s_%s\t", normalize_key(key, "%s", ""), type_tag);
+    sb_printf(&sb, "%s_%s%s\t", normalize_key(key, "%s", ""), type_tag, stats_suffix);
     sb_printf(&sb, "%lld", value);
     sb_printf(&sb, "\n");
   }
+
+private:
+  const char* stats_suffix{"{family=\"gauges\",dimension=\"gauge\"}"};
 };
