@@ -1084,7 +1084,7 @@ int php_master_rpc_stats(const std::optional<std::vector<std::string>> &sorted_f
 }
 
 std::string_view get_http_metrics_stats_http() noexcept {
-  return engine_default_char_stats();
+  return engine_default_http_stat_stats();
 }
 
 std::string get_master_stats_http() {
