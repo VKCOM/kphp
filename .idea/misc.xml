@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="Black">
+    <option name="sdkName" value="Python 3.9" />
+  </component>
   <component name="CMakePythonSetting">
     <option name="pythonIntegrationState" value="YES" />
   </component>
   <component name="CMakeWorkspace" PROJECT_DIR="$PROJECT_DIR$" />
   <component name="CidrRootsConfiguration">
     <sourceRoots>
-      <file path="$PROJECT_DIR$/tests" />
+      <file path="$PROJECT_DIR$/tests/benchmarks" />
     </sourceRoots>
     <libraryRoots>
       <file path="$PROJECT_DIR$/third_party" />
@@ -23,6 +26,7 @@
       <file path="$PROJECT_DIR$/tests/kphp_out" />
       <file path="$PROJECT_DIR$/tests/kphp_tester_tmp" />
       <file path="$PROJECT_DIR$/tests/python/_tmp" />
+      <file path="$PROJECT_DIR$/third-party" />
     </excludeRoots>
   </component>
   <component name="JavaScriptSettings">
