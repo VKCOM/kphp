@@ -11,6 +11,7 @@
 #include <memory>
 #include <string_view>
 #include <sys/utsname.h>
+#include <tuple>
 #include <utility>
 
 #define K2_API_HEADER_H
@@ -27,6 +28,7 @@ inline constexpr size_t DEFAULT_MEMORY_ALIGN = 16;
 
 inline constexpr int32_t errno_ok = 0;
 inline constexpr int32_t errno_einval = EINVAL;
+inline constexpr int32_t errno_enodata = ENODATA;
 
 inline constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
 
@@ -232,6 +234,34 @@ inline void iconv_close(void* iconv_cd) noexcept {
 
 inline int32_t iconv(size_t* result, void* iconv_cd, char** inbuf, size_t* inbytesleft, char** outbuf, size_t* outbytesleft) noexcept {
   return k2_iconv(result, iconv_cd, inbuf, inbytesleft, outbuf, outbytesleft);
+}
+
+inline auto resolve_symbol(void* addr) {
+  using return_type =
+      std::optional<std::tuple<std::unique_ptr<char, decltype(std::addressof(k2::free))>, std::unique_ptr<char, decltype(std::addressof(k2::free))>, uint32_t>>;
+  size_t name_len{};
+  if (auto error_code{k2_symbol_name_len(addr, &name_len)}; error_code != k2::errno_ok) {
+    return return_type{};
+  }
+  size_t filename_len{};
+  if (auto error_code{k2_symbol_filename_len(addr, &filename_len)}; error_code != k2::errno_ok) {
+    return return_type{};
+  }
+
+  // +1 since we get non-null-terminated strings from platform and we want to null-terminate them on our side
+  auto* name{static_cast<char*>(k2::alloc(name_len + 1))};
+  auto* filename{static_cast<char*>(k2::alloc(filename_len + 1))};
+
+  SymbolInfo symbolInfo{.name = name, .filename = filename, .lineno = 0};
+  if (auto error_code{k2_resolve_symbol(addr, &symbolInfo)}; error_code != k2::errno_ok) {
+    return return_type{};
+  }
+
+  // null-terminate
+  name[name_len] = '\0';
+  filename[filename_len] = '\0';
+  return return_type{std::make_tuple(std::unique_ptr<char, decltype(std::addressof(k2::free))>{name, k2::free},
+                                     std::unique_ptr<char, decltype(std::addressof(k2::free))>{filename, k2::free}, symbolInfo.lineno)};
 }
 
 } // namespace k2
