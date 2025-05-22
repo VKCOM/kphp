@@ -17,35 +17,61 @@ public:
   }
 
 protected:
-  void add_stat([[maybe_unused]] char type, const char* key, const double value) noexcept override {
-    sb_printf(&sb, "%s%s\t", normalize_key(key, "%s", ""), stats_suffix);
+  void add_stat(const char type, const char* key, const double value) noexcept override {
+    const auto normalized_key = normalize_key(key, "%s", "");
+    const auto normalized_type = to_open_metrics_type(type);
+
+    sb_printf(&sb, "# TYPE %s %s\n", normalized_key, normalized_type);
+    sb_printf(&sb, "%s\t", normalized_key);
     sb_printf(&sb, "%.3f\t", value);
     sb_printf(&sb, "%ld", now_time);
     sb_printf(&sb, "\n");
   }
 
-  void add_stat([[maybe_unused]] char type, const char* key, const long long value) noexcept override {
-    sb_printf(&sb, "%s%s\t", normalize_key(key, "%s", ""), stats_suffix);
+  void add_stat(const char type, const char* key, const long long value) noexcept override {
+    const auto normalized_key = normalize_key(key, "%s", "");
+    const auto normalized_type = to_open_metrics_type(type);
+
+    sb_printf(&sb, "# TYPE %s %s\n", normalized_key, normalized_type);
+    sb_printf(&sb, "%s\t", normalized_key);
     sb_printf(&sb, "%lld\t", value);
     sb_printf(&sb, "%ld", now_time);
     sb_printf(&sb, "\n");
   }
 
-  void add_stat_with_tag_type([[maybe_unused]] char type, const char* key, const char* type_tag, const double value) noexcept override {
-    sb_printf(&sb, "%s_%s%s\t", normalize_key(key, "%s", ""), type_tag, stats_suffix);
+  void add_stat_with_tag_type(const char type, const char* key, const char* type_tag, const double value) noexcept override {
+    const auto normalized_key = normalize_key(key, "%s", "");
+    const auto normalized_type = to_open_metrics_type(type);
+
+    sb_printf(&sb, "# TYPE %s %s\n", normalized_key, normalized_type);
+    sb_printf(&sb, "%s_%s\t", normalized_key, type_tag);
     sb_printf(&sb, "%.3f\t", value);
     sb_printf(&sb, "%ld", now_time);
     sb_printf(&sb, "\n");
   }
 
-  void add_stat_with_tag_type([[maybe_unused]] char type, const char* key, const char* type_tag, const long long int value) noexcept override {
-    sb_printf(&sb, "%s_%s%s\t", normalize_key(key, "%s", ""), type_tag, stats_suffix);
+  void add_stat_with_tag_type(const char type, const char* key, const char* type_tag, const long long int value) noexcept override {
+    const auto normalized_key = normalize_key(key, "%s", "");
+    const auto normalized_type = to_open_metrics_type(type);
+
+    sb_printf(&sb, "# TYPE %s %s\n", normalized_key, normalized_type);
+    sb_printf(&sb, "%s_%s\t", normalized_key, type_tag);
     sb_printf(&sb, "%lld\t", value);
     sb_printf(&sb, "%ld", now_time);
     sb_printf(&sb, "\n");
   }
 
 private:
-  const char* stats_suffix{"{family=\"gauges\",dimension=\"gauge\"}"};
   time_t now_time;
+
+  static const char* to_open_metrics_type(const char type) noexcept {
+    switch (type) {
+    case 'g':
+      return "gauge";
+    case 'h':
+      return "histogram";
+    default:
+      return "unknown";
+    }
+  }
 };
