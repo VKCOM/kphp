@@ -251,6 +251,7 @@ inline auto resolve_symbol(void* addr) {
   // +1 since we get non-null-terminated strings from platform and we want to null-terminate them on our side
   auto* name{static_cast<char*>(k2::alloc(name_len + 1))};
   auto* filename{static_cast<char*>(k2::alloc(filename_len + 1))};
+  php_assert(name != nullptr && filename != nullptr);
 
   SymbolInfo symbolInfo{.name = name, .filename = filename, .lineno = 0};
   if (auto error_code{k2_resolve_symbol(addr, &symbolInfo)}; error_code != k2::errno_ok) {
