@@ -5,7 +5,7 @@
 #include "common/server/stats.h"
 
 #include "common/server/engine-settings.h"
-#include "common/server/http-stats-t.h"
+#include "common/server/open-metrics-stats-t.h"
 #include "common/server/tl-stats-t.h"
 #include "common/stats/buffer.h"
 #include "common/tl/parse.h"
@@ -41,7 +41,7 @@ const char* engine_default_char_stats() {
 
 const char* engine_default_http_stat_stats() {
   // TODO: also return the size
-  return engine_default_prepare_stats(http_stats_t{}, nullptr);
+  return engine_default_prepare_stats(open_metrics_stats_t{}, nullptr);
 }
 
 __attribute__((constructor)) static void register_char_stats() {

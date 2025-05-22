@@ -1196,16 +1196,18 @@ int php_master_http_execute(struct connection *c, int op) {
 
   assert (D->first_line_size > 0 && D->first_line_size <= D->header_size);
 
-  const char *server_stats_query = "/server-status";
-  if (D->uri_size == strlen(server_stats_query) && strncmp(ReqHdr + D->uri_offset, server_stats_query, static_cast<size_t>(D->uri_size)) == 0) {
+  const size_t url_size = static_cast<size_t>(D->uri_size);
+
+  const char *server_status_query = "/server-status";
+  if (url_size == strlen(server_status_query) && strncmp(ReqHdr + D->uri_offset, server_status_query, url_size) == 0) {
     std::string stat_html = get_master_stats_http();
     write_basic_http_header(c, 200, 0, static_cast<int>(stat_html.length()), nullptr, "text/plain; charset=UTF-8");
     write_out(&c->Out, stat_html.c_str(), static_cast<int>(stat_html.length()));
     return 0;
   }
 
-  const char *server_metrics_query = "/server-metrics";
-  if (D->uri_size == strlen(server_metrics_query) && strncmp(ReqHdr + D->uri_offset, server_metrics_query, static_cast<size_t>(D->uri_size)) == 0) {
+  constexpr std::string_view server_metrics_query = "/get-open-metrics-stats";
+  if (url_size == server_metrics_query.size() && strncmp(ReqHdr + D->uri_offset, server_metrics_query.data(), url_size) == 0) {
     const std::string_view metrics_response = get_http_metrics_stats_http();
     write_basic_http_header(c, 200, 0, metrics_response.length(), nullptr, "text/plain; charset=UTF-8");
     write_out(&c->Out, metrics_response.data(), metrics_response.length());

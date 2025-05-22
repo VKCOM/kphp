@@ -5,10 +5,11 @@
 #pragma once
 
 #include "common/stats/provider.h"
+#include <time.h>
 
-class http_stats_t final : public stats_t {
+class open_metrics_stats_t final : public stats_t {
 public:
-  http_stats_t() noexcept {
+  open_metrics_stats_t() noexcept {
     now_time = time(nullptr);
   }
 
