@@ -7,14 +7,14 @@
 #include <array>
 #include <chrono>
 #include <climits>
+#include <cstdint>
 #include <ctime>
 #include <string_view>
 
-#include "runtime-light/utils/logs.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/time/timelib-constants.h"
 
 namespace {
-constexpr std::string_view PHP_TIMELIB_TZ_MOSCOW = "Europe/Moscow";
-constexpr std::string_view PHP_TIMELIB_TZ_GMT3 = "Etc/GMT-3";
 
 constexpr std::array<std::string_view, 12> PHP_TIMELIB_MON_FULL_NAMES = {"January", "February", "March",     "April",   "May",      "June",
                                                                          "July",    "August",   "September", "October", "November", "December"};
@@ -63,6 +63,21 @@ void iso_week_number(int y, int doy, int weekday, int& iw, int& iy) noexcept {
       iw -= 1;
     }
   }
+}
+
+} // namespace
+
+namespace kphp::time::impl {
+
+int64_t fix_year(int64_t year) noexcept {
+  if (year <= 100U) {
+    if (year <= 69) {
+      year += 2000;
+    } else {
+      year += 1900;
+    }
+  }
+  return year;
 }
 
 string date(const string& format, const tm& t, int64_t timestamp, bool local) noexcept {
@@ -196,7 +211,7 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       break;
     case 'e':
       if (local) {
-        SB << PHP_TIMELIB_TZ_MOSCOW.data();
+        SB << kphp::timelib::timezones::MOSCOW.data();
       } else {
         SB << "UTC";
       }
@@ -294,59 +309,4 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
   return SB.str();
 }
 
-int64_t fix_year(int64_t year) noexcept {
-  if (year <= 100U) {
-    if (year <= 69) {
-      year += 2000;
-    } else {
-      year += 1900;
-    }
-  }
-  return year;
-}
-
-} // namespace
-
-int64_t f$mktime(Optional<int64_t> hour, Optional<int64_t> minute, Optional<int64_t> second, Optional<int64_t> month, Optional<int64_t> day,
-                 Optional<int64_t> year) noexcept {
-  namespace chrono = std::chrono;
-  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
-  chrono::year_month_day current_date{chrono::sys_days{duration_cast<chrono::days>(time_since_epoch)}};
-
-  const auto hours{chrono::hours(hour.has_value() ? hour.val() : duration_cast<chrono::hours>(time_since_epoch).count() % 24)};
-  const auto minutes{chrono::minutes(minute.has_value() ? minute.val() : duration_cast<chrono::minutes>(time_since_epoch).count() % 60)};
-  const auto seconds{chrono::seconds(second.has_value() ? second.val() : duration_cast<chrono::seconds>(time_since_epoch).count() % 60)};
-  const auto months{chrono::months(month.has_value() ? month.val() : static_cast<unsigned>(current_date.month()))};
-  const auto days{chrono::days(day.has_value() ? day.val() : static_cast<unsigned>(current_date.day()))};
-  const auto years{chrono::years(year.has_value() ? fix_year(year.val()) : static_cast<int>(current_date.year()) - 1970)};
-
-  const auto result{hours + minutes + seconds + months + days + years};
-  return duration_cast<chrono::seconds>(result).count();
-}
-
-string f$gmdate(const string& format, Optional<int64_t> timestamp) noexcept {
-  namespace chrono = std::chrono;
-
-  const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
-  struct tm tm {};
-  gmtime_r(&now, &tm);
-  return date(format, tm, now, false);
-}
-
-string f$date(const string& format, Optional<int64_t> timestamp) noexcept {
-  namespace chrono = std::chrono;
-
-  const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
-  struct tm tm {};
-  localtime_r(&now, &tm);
-  return date(format, tm, now, true);
-}
-
-bool f$date_default_timezone_set(const string& s) noexcept {
-  const std::string_view timezone_view{s.c_str(), s.size()};
-  if (timezone_view != PHP_TIMELIB_TZ_GMT3 && timezone_view != PHP_TIMELIB_TZ_MOSCOW) {
-    kphp::log::warning("unsupported default timezone '{}'", s.c_str());
-    return false;
-  }
-  return true;
-}
+} // namespace kphp::time::impl

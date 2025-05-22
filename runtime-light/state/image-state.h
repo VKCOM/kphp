@@ -17,13 +17,13 @@
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
+#include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/visitors/shape-visitors.h"
 #include "runtime-light/utils/logs.h"
 
 struct ImageState final : private vk::not_copyable {
   AllocatorState image_allocator_state{INIT_IMAGE_ALLOCATOR_SIZE, 0};
 
-  char* c_linear_mem{nullptr};
   uint32_t pid{k2::getpid()};
   string uname_info_s;
   string uname_info_n;
@@ -34,9 +34,10 @@ struct ImageState final : private vk::not_copyable {
 
   ShapeKeyDemangle shape_key_demangler;
 
-  RpcImageState rpc_image_state;
   StringImageState string_image_state;
+  TimeImageState time_image_state;
   MathImageState math_image_state;
+  RpcImageState rpc_image_state;
 
   ImageState() noexcept {
     utsname uname_info{};

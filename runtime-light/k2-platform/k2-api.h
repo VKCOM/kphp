@@ -7,7 +7,9 @@
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>
+#include <ctime>
 #include <memory>
+#include <string_view>
 #include <sys/utsname.h>
 #include <utility>
 
@@ -202,6 +204,14 @@ inline auto env_fetch(uint32_t arg_num) noexcept {
 
   return std::make_pair(std::unique_ptr<char, decltype(std::addressof(k2::free))>{key_buffer, k2::free},
                         std::unique_ptr<char, decltype(std::addressof(k2::free))>{value_buffer, k2::free});
+}
+
+inline int32_t set_timezone(std::string_view timezone) noexcept {
+  return k2_set_timezone(timezone.data());
+}
+
+inline struct tm* localtime_r(const time_t* timer, struct tm* result) noexcept {
+  return k2_localtime_r(timer, result);
 }
 
 inline int32_t udp_connect(uint64_t* socket_d, const char* host, size_t host_len) noexcept {

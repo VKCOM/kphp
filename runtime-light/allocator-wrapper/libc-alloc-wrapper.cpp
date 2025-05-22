@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cstddef>
+#include <cstring>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/allocator/allocator-state.h"
@@ -29,9 +30,17 @@ extern "C" void* __wrap_calloc(size_t nmemb, size_t size) noexcept {
   return kphp::memory::script::calloc(nmemb, size);
 }
 
-extern "C" void* __wrap_realloc([[maybe_unused]] void* ptr, [[maybe_unused]] size_t size) noexcept {
+extern "C" void* __wrap_realloc(void* ptr, size_t size) noexcept {
   if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {
     kphp::log::error("unexpected use of realloc");
   }
   return kphp::memory::script::realloc(ptr, size);
+}
+
+extern "C" char* __wrap_strdup(const char* str1) noexcept {
+  if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {
+    kphp::log::error("unexpected use of strdup");
+  }
+  auto* str2{static_cast<char*>(kphp::memory::script::alloc(std::strlen(str1) + 1))};
+  return std::strcpy(str2, str1);
 }
