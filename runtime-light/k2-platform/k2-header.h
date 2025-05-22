@@ -444,17 +444,19 @@ void k2_env_fetch(uint32_t env_num, char* key, char* value);
  * `errno` options:
  * `EINVAL`  => `addr` symbol can't be resolved
  * `ENODATA` => there is no debug information for the image
+ * `EFAULT`  => attempt to dereference a nullptr
  */
 int32_t k2_symbol_name_len(const void* addr, size_t* name_len);
 
 /**
- * Return symbol filename's
+ * Return symbol filename's len
  * @param `addr` pointer to code instruction
  * @param `filename_len` buffer where symbol filename's will be written
  * @return: `0` on success, `errno != 0` otherwise
  * `errno` options:
  * `EINVAL`  => `addr` symbol can't be resolved
  * `ENODATA` => there is no debug information for the image
+ * `EFAULT`  => attempt to dereference a nullptr
  */
 int32_t k2_symbol_filename_len(const void* addr, size_t* filename_len);
 
@@ -467,12 +469,13 @@ struct SymbolInfo {
 /**
  * Returns information about the symbol that overlaps addr and it's position in source code.
  * Note: name and filename in symbol_info are **not** null-terminated.
- * @param `addr` address to code instruction
+ * @param `addr` pointer to code instruction
  * @param `symbol_info` structure stores buffers where the name and file name will be written. The buffer
  *        lens must staisfy `name_len >= k2_symbol_name_len and filename_len >= k2_symbol_filename_len`
  * `errno` options:
  * `EINVAL`  => `addr` symbol can't be resolved
  * `ENODATA` => there is no debug information for the image
+ * `EFAULT`  => attempt to dereference a nullptr
  */
 int32_t k2_resolve_symbol(const void* addr, struct SymbolInfo* symbol_info);
 

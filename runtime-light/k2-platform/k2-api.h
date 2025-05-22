@@ -31,6 +31,7 @@ inline constexpr size_t DEFAULT_MEMORY_ALIGN = 16;
 inline constexpr int32_t errno_ok = 0;
 inline constexpr int32_t errno_einval = EINVAL;
 inline constexpr int32_t errno_enodata = ENODATA;
+inline constexpr int32_t errno_efault = EFAULT;
 
 inline constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
 
