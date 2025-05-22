@@ -18,6 +18,8 @@
 #include "runtime-light/k2-platform/k2-header.h"
 #undef K2_API_HEADER_H
 
+#include "runtime-common/core/utils/kphp-assert-core.h"
+
 namespace k2 {
 
 namespace k2_impl_ {
@@ -237,15 +239,16 @@ inline int32_t iconv(size_t* result, void* iconv_cd, char** inbuf, size_t* inbyt
 }
 
 inline auto resolve_symbol(void* addr) {
-  using return_type =
-      std::optional<std::tuple<std::unique_ptr<char, decltype(std::addressof(k2::free))>, std::unique_ptr<char, decltype(std::addressof(k2::free))>, uint32_t>>;
+  using symbol_info_t =
+      std::tuple<std::unique_ptr<char, decltype(std::addressof(k2::free))>, std::unique_ptr<char, decltype(std::addressof(k2::free))>, uint32_t>;
+  using return_type = std::expected<symbol_info_t, int32_t>;
   size_t name_len{};
   if (auto error_code{k2_symbol_name_len(addr, &name_len)}; error_code != k2::errno_ok) {
-    return return_type{};
+    return return_type{std::unexpected{error_code}};
   }
   size_t filename_len{};
   if (auto error_code{k2_symbol_filename_len(addr, &filename_len)}; error_code != k2::errno_ok) {
-    return return_type{};
+    return return_type{std::unexpected{error_code}};
   }
 
   // +1 since we get non-null-terminated strings from platform and we want to null-terminate them on our side
@@ -255,7 +258,7 @@ inline auto resolve_symbol(void* addr) {
 
   SymbolInfo symbolInfo{.name = name, .filename = filename, .lineno = 0};
   if (auto error_code{k2_resolve_symbol(addr, &symbolInfo)}; error_code != k2::errno_ok) {
-    return return_type{};
+    return return_type{std::unexpected{error_code}};
   }
 
   // null-terminate
