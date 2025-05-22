@@ -17,7 +17,7 @@
 #include "common/precise-time.h"
 #include "common/resolver.h"
 
-char* stats_t::normalize_key(const char* key, const char* format, const char* prefix) noexcept {
+const char* stats_t::normalize_key(const char* key, const char* format, const char* prefix) noexcept {
   const size_t result_start_size = 1 << 10;
   static char result_start[result_start_size];
   char* result = result_start;

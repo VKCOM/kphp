@@ -22,7 +22,7 @@ protected:
     const auto normalized_type = to_open_metrics_type(type);
 
     sb_printf(&sb, "# TYPE %s %s\n", normalized_key, normalized_type);
-    sb_printf(&sb, "%s\t", normalized_key);
+    sb_printf(&sb, "%s%s\t", normalized_key, stats_suffix);
     sb_printf(&sb, "%.3f\t", value);
     sb_printf(&sb, "%ld", now_time);
     sb_printf(&sb, "\n");
@@ -33,7 +33,7 @@ protected:
     const auto normalized_type = to_open_metrics_type(type);
 
     sb_printf(&sb, "# TYPE %s %s\n", normalized_key, normalized_type);
-    sb_printf(&sb, "%s\t", normalized_key);
+    sb_printf(&sb, "%s%s\t", normalized_key, stats_suffix);
     sb_printf(&sb, "%lld\t", value);
     sb_printf(&sb, "%ld", now_time);
     sb_printf(&sb, "\n");
@@ -44,7 +44,7 @@ protected:
     const auto normalized_type = to_open_metrics_type(type);
 
     sb_printf(&sb, "# TYPE %s %s\n", normalized_key, normalized_type);
-    sb_printf(&sb, "%s_%s\t", normalized_key, type_tag);
+    sb_printf(&sb, "%s_%s%s\t", normalized_key, type_tag, stats_suffix);
     sb_printf(&sb, "%.3f\t", value);
     sb_printf(&sb, "%ld", now_time);
     sb_printf(&sb, "\n");
@@ -55,13 +55,14 @@ protected:
     const auto normalized_type = to_open_metrics_type(type);
 
     sb_printf(&sb, "# TYPE %s %s\n", normalized_key, normalized_type);
-    sb_printf(&sb, "%s_%s\t", normalized_key, type_tag);
+    sb_printf(&sb, "%s_%s%s\t", normalized_key, type_tag, stats_suffix);
     sb_printf(&sb, "%lld\t", value);
     sb_printf(&sb, "%ld", now_time);
     sb_printf(&sb, "\n");
   }
 
 private:
+  const char* stats_suffix{"{job=\"kphp_metrics\"}"};
   time_t now_time;
 
   static const char* to_open_metrics_type(const char type) noexcept {

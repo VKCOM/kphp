@@ -49,6 +49,7 @@ OPTION_PARSER(OPT_GENERIC, "statsd-prefix", required_argument,
 FLAG_OPTION_PARSER(OPT_GENERIC, "disable-statsd", disable_statsd, "disable sending stats to default statsd ports");
 
 namespace {
+// TODO: delete it after moving to OpenMetrics
 class statsd_stats_t : public stats_t {
 public:
   void add_general_stat(const char*, const char*, ...) noexcept final {
