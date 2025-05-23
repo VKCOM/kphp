@@ -315,6 +315,11 @@ void check_to_mixed_call(VertexAdaptor<op_func_call> call) {
   to_mixed_on_class(type->class_type());
 }
 
+void check_rand_call(VertexAdaptor<op_func_call> call) {
+  const auto args_size = call->args().size();
+  kphp_error(args_size == 0 || args_size == 2, fmt_format("{}() should have 0 or 2 arguments", call->func_id->name));
+}
+
 void check_estimate_memory_usage_call(VertexAdaptor<op_func_call> call) {
   const auto *type = tinf::get_type(call->args()[0]);
   std::unordered_set<ClassPtr> classes_inside;
@@ -898,6 +903,8 @@ void FinalCheckPass::check_op_func_call(VertexAdaptor<op_func_call> call) {
       check_header_register_callback(call);
     } else if (function_name == "to_mixed") {
       check_to_mixed_call(call);
+    } else if (function_name == "mt_rand" || function_name == "rand") {
+      check_rand_call(call);
     } else if (vk::string_view{function_name}.starts_with("rpc_tl_query") || vk::string_view{function_name}.starts_with("rpc_send_request")) {
       G->set_untyped_rpc_tl_used();
     } else if (vk::string_view{function_name}.starts_with("FFI$$")) {
