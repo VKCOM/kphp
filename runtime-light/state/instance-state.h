@@ -15,6 +15,7 @@
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/core/globals/php-script-globals.h"
+#include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/scheduler/scheduler.h"
@@ -107,6 +108,7 @@ struct InstanceState final : vk::not_copyable {
   AllocatorState instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0};
 
   CoroutineScheduler scheduler;
+  CoroutineInstanceState coroutine_instance_state;
   ForkInstanceState fork_instance_state;
   k2::PollStatus poll_status{k2::PollStatus::PollReschedule};
 
