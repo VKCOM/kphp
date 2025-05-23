@@ -10,22 +10,42 @@
 /*
  * This header defines data-structures used to represent a coroutine async stack.
  *
- * In general terms, the picture looks as follows:
+ * A diagram showing what normal and asynchronous stacks look like:
  *
- * Register Base Pointer
- *         |
- *         V
- *    stack_frame     coroutine_stack_root (CoroutineInstanceState)
- *         |                   |
- *         V                   V
- *    stack_frame   <- async_stack_root -> async_stack_frame -> async_stack_frame -> ...
- *        ...
+ *  Base Pointer (%rbp)              async_stack_root (CoroutineInstanceState::coroutine_stack_root)
+ *         |                                 |
+ *         V                                 V
+ *    stack_frame                    async_stack_frame
+ *         |                                 |
+ *         V                                 V
+ *    stack_frame                    async_stack_frame
+ *        ...                               ...
+ *         |                                 |
+ *         V                                 V
+ *    stack_frame                    async_stack_frame
+ *         |                                 |
+ *         V                                 V
+ *
+ *
+ * A diagram of how backtrace work.
+ *
+ *  Base Pointer (%rbp)
  *         |
  *         V
  *    stack_frame
  *         |
  *         V
- *
+ *   stop_stack_frame  <- async_stack_root
+ *                               |
+ *                               V
+ *                       async_stack_frame (top_frame)
+ *                               |
+ *                               V
+ *                       async_stack_frame
+ *                              ...
+ *                               |
+ *                               V
+ *                       async_stack_frame
  *
  * Since coroutine_stack_root needs to know the pointer to one of the regular frames in the call stack,
  * The resumption of coroutines occurs through the resume_on_async_stack function,
@@ -56,7 +76,12 @@ struct async_stack_root {
   stack_frame* stack_frame{};
 };
 
-inline void resume_on_async_stack(std::coroutine_handle<> handle, async_stack_root& stack_root) {
+/*
+ * Since the algorithm needs to know the pointer to one of the stack frames in order to switch
+ * to the asynchronous stack upon reaching it, it is necessary to remember one of the frames.
+ * Calling std::coroutine_handle<>::resume() through this function allows the current stack frame to be remembered for later use.
+ * */
+inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root) noexcept {
   auto* previous_stack_frame{std::exchange(stack_root.stack_frame, reinterpret_cast<stack_frame*>(__builtin_frame_address(0)))};
   handle.resume();
   stack_root.stack_frame = previous_stack_frame;
