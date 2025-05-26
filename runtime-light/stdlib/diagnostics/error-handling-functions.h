@@ -10,17 +10,21 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/diagnostics/stacktrace.h"
+#include "runtime-light/utils/logs.h"
 
-inline array<array<string>> f$debug_backtrace() {
+inline array<array<string>> f$debug_backtrace() noexcept {
   static constexpr uint32_t MAX_STACKTRACE_DEPTH = 64;
 
   std::array<void*, MAX_STACKTRACE_DEPTH> raw_trace{};
-  std::size_t num_frames{kphp::diagnostic::get_async_stacktrace(raw_trace)};
+  size_t num_frames{kphp::diagnostic::async_backtrace(raw_trace)};
+  if (!kphp::diagnostic::resolve_static_offsets(raw_trace)) [[unlikely]] {
+    kphp::log::warning("Cannot resolve virtual addresses to static offsets");
+  }
 
   array<array<string>> backtrace{array_size{static_cast<int64_t>(num_frames), true}};
   const string function_key{"function"};
 
-  for (std::size_t frame = 0; frame < num_frames; ++frame) {
+  for (size_t frame = 0; frame < num_frames; ++frame) {
     std::array<char, MAX_STACKTRACE_DEPTH> trace_record_buffer{};
     const auto [_, recorded]{std::format_to_n(trace_record_buffer.data(), trace_record_buffer.size() - 1, "{}", raw_trace[frame])};
     array<string> frame_info{array_size{1, false}};

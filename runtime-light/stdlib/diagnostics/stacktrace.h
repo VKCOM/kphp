@@ -4,12 +4,25 @@
 
 #pragma once
 
-#include <array>
 #include <cstddef>
+#include <cstdint>
 #include <span>
+
+#include "runtime-light/k2-platform/k2-api.h"
 
 namespace kphp::diagnostic {
 
-std::size_t get_async_stacktrace(std::span<void*> addresses);
+size_t async_backtrace(std::span<void*> addresses) noexcept;
+
+inline bool resolve_static_offsets(std::span<void*> addresses) noexcept {
+  uint64_t code_segment_offset{};
+  if (auto error_code{k2::code_segment_offset(&code_segment_offset)}; error_code != k2::errno_ok) {
+    return false;
+  }
+  for (auto& address : addresses) {
+    address = reinterpret_cast<std::byte*>(address) - code_segment_offset;
+  }
+  return true;
+}
 
 } // namespace kphp::diagnostic
