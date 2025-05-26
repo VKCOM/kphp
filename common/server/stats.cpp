@@ -5,6 +5,7 @@
 #include "common/server/stats.h"
 
 #include "common/server/engine-settings.h"
+#include "common/server/http-stats-t.h"
 #include "common/server/tl-stats-t.h"
 #include "common/stats/buffer.h"
 #include "common/tl/parse.h"
@@ -36,6 +37,11 @@ void engine_default_tl_stat_function(const std::optional<std::vector<std::string
 
 const char* engine_default_char_stats() {
   return engine_default_prepare_stats(tl_stats_t{}, NULL);
+}
+
+const char* engine_default_http_stat_stats() {
+  // TODO: also return the size
+  return engine_default_prepare_stats(http_stats_t{}, nullptr);
 }
 
 __attribute__((constructor)) static void register_char_stats() {
