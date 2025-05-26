@@ -91,7 +91,7 @@ void InstanceState::init_script_execution() noexcept {
   auto& main_task_frame{main_task_.get_handle().promise().get_async_frame()};
   auto& coroutine_stack_root{coroutine_instance_state.coroutine_stack_root};
   main_task_frame.async_stack_root = std::addressof(coroutine_stack_root);
-  coroutine_stack_root.top_frame = std::addressof(main_task_frame);
+  coroutine_stack_root.top_async_frame = std::addressof(main_task_frame);
 }
 
 kphp::coro::task<> InstanceState::init_cli_instance() noexcept {

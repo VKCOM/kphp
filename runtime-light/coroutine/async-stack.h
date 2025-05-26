@@ -72,8 +72,8 @@ struct async_stack_frame {
 };
 
 struct async_stack_root {
-  async_stack_frame* top_frame{};
-  stack_frame* stack_frame{};
+  async_stack_frame* top_async_frame{};
+  stack_frame* stop_sync_frame{};
 };
 
 /*
@@ -82,22 +82,18 @@ struct async_stack_root {
  * Calling std::coroutine_handle<>::resume() through this function allows the current stack frame to be remembered for later use.
  * */
 inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root) noexcept {
-  auto* previous_stack_frame{std::exchange(stack_root.stack_frame, reinterpret_cast<stack_frame*>(__builtin_frame_address(0)))};
+  auto* previous_stack_frame{std::exchange(stack_root.stop_sync_frame, reinterpret_cast<stack_frame*>(__builtin_frame_address(0)))};
   handle.resume();
-  stack_root.stack_frame = previous_stack_frame;
+  stack_root.stop_sync_frame = previous_stack_frame;
 }
 
-namespace async_stack_impl {
-
-struct stack_element {
+struct async_stack_element {
   async_stack_frame& get_async_frame() noexcept {
-    return async_frame;
+    return async_stack_frame_;
   }
 
 private:
-  async_stack_frame async_frame;
+  async_stack_frame async_stack_frame_;
 };
-
-} // namespace async_stack_impl
 
 } // namespace kphp::coro

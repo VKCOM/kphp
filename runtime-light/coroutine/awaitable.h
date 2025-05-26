@@ -64,13 +64,13 @@ class async_stack_watcher_t {
 
 protected:
   void await_resume() const noexcept {
-    stack_root->top_frame = suspended_async_stack_frame;
+    stack_root->top_async_frame = suspended_async_stack_frame;
   }
 
 public:
   async_stack_watcher_t() noexcept
       : stack_root(std::addressof(CoroutineInstanceState::get().coroutine_stack_root)),
-        suspended_async_stack_frame(stack_root->top_frame) {}
+        suspended_async_stack_frame(stack_root->top_async_frame) {}
 };
 
 } // namespace awaitable_impl_

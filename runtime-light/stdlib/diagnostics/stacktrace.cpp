@@ -56,10 +56,10 @@ std::size_t get_async_stacktrace(std::span<void*> addresses) {
   auto& async_stack_root{CoroutineInstanceState::get().get_coroutine_stack_root()};
 
   auto* const normal_stack_frame{reinterpret_cast<kphp::coro::stack_frame*>(__builtin_frame_address(0))};
-  auto* const normal_stack_frame_stop{async_stack_root.stack_frame};
+  auto* const normal_stack_frame_stop{async_stack_root.stop_sync_frame};
 
   const std::size_t num_frames{normal_frames(addresses, normal_stack_frame, normal_stack_frame_stop)};
-  const std::size_t num_async_frames{coroutine_frames(addresses.subspan(num_frames), async_stack_root.top_frame)};
+  const std::size_t num_async_frames{coroutine_frames(addresses.subspan(num_frames), async_stack_root.top_async_frame)};
   return num_frames + num_async_frames;
 }
 

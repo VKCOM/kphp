@@ -28,7 +28,7 @@ struct shared_task_waiter final {
 };
 
 template<typename promise_type>
-struct promise_base : async_stack_impl::stack_element {
+struct promise_base : async_stack_element {
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -177,7 +177,7 @@ class awaiter_base {
     callee_frame.return_address = return_address;
     async_stack_root* stack_root = caller_frame.async_stack_root;
     callee_frame.async_stack_root = stack_root;
-    stack_root->top_frame = std::addressof(callee_frame);
+    stack_root->top_async_frame = std::addressof(callee_frame);
   }
 
 protected:

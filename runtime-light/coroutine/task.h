@@ -21,7 +21,7 @@ namespace kphp::coro {
 namespace task_impl {
 
 template<typename promise_type>
-struct promise_base : async_stack_impl::stack_element {
+struct promise_base : async_stack_element {
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -47,7 +47,7 @@ struct promise_base : async_stack_impl::stack_element {
         if (auto* caller_frame{callee_frame.caller_async_frame}; caller_frame != nullptr) [[likely]] {
           async_stack_root* stack_root{std::exchange(callee_frame.async_stack_root, nullptr)};
           caller_frame->async_stack_root = stack_root;
-          stack_root->top_frame = caller_frame;
+          stack_root->top_async_frame = caller_frame;
         }
       }
     };
@@ -88,7 +88,7 @@ class awaiter_base {
 
     async_stack_root* stack_root{std::exchange(caller_frame.async_stack_root, nullptr)};
     callee_frame.async_stack_root = stack_root;
-    stack_root->top_frame = std::addressof(callee_frame);
+    stack_root->top_async_frame = std::addressof(callee_frame);
   }
 
 protected:
