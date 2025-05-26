@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <format>
 #include <source_location>
+#include <type_traits>
 #include <utility>
 
 #include "runtime-light/k2-platform/k2-api.h"
@@ -24,17 +25,36 @@ namespace kphp::log {
 
 namespace impl {
 
+template<typename T>
+requires std::is_floating_point_v<std::remove_cvref_t<T>>
+struct floating_wrapper final {
+  T value{};
+};
+
+template<typename T>
+constexpr auto wrap_log_argument(T&& t) noexcept -> decltype(auto) {
+  if constexpr (std::is_floating_point_v<std::remove_cvref_t<T>>) {
+    return impl::floating_wrapper<std::remove_cvref_t<T>>{.value = std::forward<T>(t)};
+  } else {
+    return std::forward<T>(t);
+  }
+}
+
+template<typename T>
+using wrapped_arg_t = std::invoke_result_t<decltype(impl::wrap_log_argument<T>), T>;
+
 enum class level : size_t { error = 1, warn, info, debug, trace };
 
 template<typename... Args>
-void log(level level, const std::format_string<Args...>& fmt, Args&&... args) noexcept {
+void log(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   if (std::to_underlying(level) > k2::log_level_enabled()) {
     return;
   }
 
   static constexpr size_t LOG_BUFFER_SIZE = 512;
   std::array<char, LOG_BUFFER_SIZE> log_buffer{};
-  const auto [out, size]{std::format_to_n(log_buffer.data(), log_buffer.size() - 1, fmt, std::forward<Args>(args)...)};
+  const auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
+                                                                                                     impl::wrap_log_argument(std::forward<Args>(args))...)};
   *out = '\0';
   k2::log(std::to_underlying(level), size, log_buffer.data());
 }
@@ -42,7 +62,7 @@ void log(level level, const std::format_string<Args...>& fmt, Args&&... args) no
 } // namespace impl
 
 template<typename... Args>
-[[noreturn]] void error(const std::format_string<Args...>& fmt, Args&&... args) noexcept {
+[[noreturn]] void error(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   impl::log(impl::level::error, fmt, std::forward<Args>(args)...);
   k2::exit(1);
 }
@@ -54,23 +74,35 @@ inline void assertion(bool condition, const std::source_location& location = std
 }
 
 template<typename... Args>
-void warning(const std::format_string<Args...>& fmt, Args&&... args) noexcept {
+void warning(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   impl::log(impl::level::warn, fmt, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
-void info(const std::format_string<Args...>& fmt, Args&&... args) noexcept {
+void info(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   impl::log(impl::level::info, fmt, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
-void debug(const std::format_string<Args...>& fmt, Args&&... args) noexcept {
+void debug(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   impl::log(impl::level::debug, fmt, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
-void trace(const std::format_string<Args...>& fmt, Args&&... args) noexcept {
+void trace(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   impl::log(impl::level::trace, fmt, std::forward<Args>(args)...);
 }
 
 } // namespace kphp::log
+
+template<typename T>
+struct std::formatter<kphp::log::impl::floating_wrapper<T>> {
+  constexpr auto parse(std::format_parse_context& ctx) const noexcept {
+    return ctx.begin();
+  }
+
+  template<typename FormatContext>
+  auto format(const kphp::log::impl::floating_wrapper<T>& wrapper, FormatContext& ctx) const noexcept {
+    return std::format_to(ctx.out(), "{:.4f}", wrapper.value);
+  }
+};
