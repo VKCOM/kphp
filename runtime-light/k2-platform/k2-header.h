@@ -463,8 +463,8 @@ int32_t k2_symbol_name_len(const void* addr, size_t* name_len);
 int32_t k2_symbol_filename_len(const void* addr, size_t* filename_len);
 
 struct SymbolInfo {
-  uint8_t* name;
-  uint8_t* filename;
+  char* name;
+  char* filename;
   uint32_t lineno;
 };
 

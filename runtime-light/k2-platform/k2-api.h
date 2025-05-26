@@ -246,27 +246,27 @@ struct SymbolInfo {
 
 inline std::expected<k2::SymbolInfo, int32_t> resolve_symbol(void* addr) noexcept {
   size_t name_len{};
-  if (auto error_code{k2_symbol_name_len(addr, &name_len)}; error_code != k2::errno_ok) [[unlikely]] {
+  if (auto error_code{k2_symbol_name_len(addr, std::addressof(name_len))}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
   size_t filename_len{};
-  if (auto error_code{k2_symbol_filename_len(addr, &filename_len)}; error_code != k2::errno_ok) [[unlikely]] {
+  if (auto error_code{k2_symbol_filename_len(addr, std::addressof(filename_len))}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
 
   // +1 since we get non-null-terminated strings from platform and we want to null-terminate them on our side
-  auto* name{static_cast<uint8_t*>(k2::alloc(name_len + 1))};
+  auto* name{static_cast<char*>(k2::alloc(name_len + 1))};
   if (name == nullptr) [[unlikely]] {
     return std::unexpected{k2::errno_enomem};
   }
 
-  auto* filename{static_cast<uint8_t*>(k2::alloc(filename_len + 1))};
+  auto* filename{static_cast<char*>(k2::alloc(filename_len + 1))};
   if (filename == nullptr) [[unlikely]] {
     return std::unexpected{k2::errno_enomem};
   }
 
-  ::SymbolInfo symbolInfo{.name = name, .filename = filename, .lineno = 0};
-  if (auto error_code{k2_resolve_symbol(addr, &symbolInfo)}; error_code != k2::errno_ok) [[unlikely]] {
+  ::SymbolInfo symbol_info{.name = name, .filename = filename, .lineno = 0};
+  if (auto error_code{k2_resolve_symbol(addr, std::addressof(symbol_info))}; error_code != k2::errno_ok) [[unlikely]] {
     k2::free(filename);
     k2::free(name);
     return std::unexpected{error_code};
@@ -276,9 +276,9 @@ inline std::expected<k2::SymbolInfo, int32_t> resolve_symbol(void* addr) noexcep
   name[name_len] = '\0';
   filename[filename_len] = '\0';
 
-  return k2::SymbolInfo{.name = std::unique_ptr<char, decltype(std::addressof(k2::free))>{reinterpret_cast<char*>(name), k2::free},
-                        .filename = std::unique_ptr<char, decltype(std::addressof(k2::free))>{reinterpret_cast<char*>(filename), k2::free},
-                        .lineno = symbolInfo.lineno};
+  return k2::SymbolInfo{.name = std::unique_ptr<char, decltype(std::addressof(k2::free))>{name, k2::free},
+                        .filename = std::unique_ptr<char, decltype(std::addressof(k2::free))>{filename, k2::free},
+                        .lineno = symbol_info.lineno};
 }
 
 } // namespace k2
