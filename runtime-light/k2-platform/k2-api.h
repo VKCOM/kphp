@@ -295,9 +295,8 @@ inline auto resolve_symbol(void* addr) noexcept {
   name[name_len] = '\0';
   filename[filename_len] = '\0';
 
-  return return_type{ImageSymbolInfo(std::unique_ptr<char, decltype(std::addressof(k2::free))>{reinterpret_cast<char*>(name), k2::free},
-                                     std::unique_ptr<char, decltype(std::addressof(k2::free))>{reinterpret_cast<char*>(filename), k2::free},
-                                     symbolInfo.lineno)};
+  return return_type{std::in_place, std::unique_ptr<char, decltype(std::addressof(k2::free))>{reinterpret_cast<char*>(name), k2::free},
+                     std::unique_ptr<char, decltype(std::addressof(k2::free))>{reinterpret_cast<char*>(filename), k2::free}, symbolInfo.lineno};
 }
 
 } // namespace k2
