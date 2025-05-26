@@ -7,10 +7,14 @@
 #include <coroutine>
 #include <utility>
 
-/*
- * This header defines data-structures used to represent a coroutine async stack.
+/**
+ * This header defines the data structures used to represent a coroutine asynchronous stack.
  *
- * A diagram showing what normal and asynchronous stacks look like:
+ * Overview:
+ * The asynchronous stack is used to manage the execution state of coroutines, allowing for
+ * efficient context switching and stack management.
+ *
+ * Diagram: Normal and Asynchronous Stacks
  *
  *  Base Pointer (%rbp)              async_stack_root (CoroutineInstanceState::coroutine_stack_root)
  *         |                                 |
@@ -26,8 +30,11 @@
  *         |                                 |
  *         V                                 V
  *
+ * In the diagram above, the left side represents a typical call stack with stack frames linked by
+ * the base pointer (%rbp). The right side illustrates an asynchronous stack where `async_stack_frame`
+ * structures are linked by `async_stack_root`.
  *
- * A diagram of how backtrace work.
+ * Diagram: Backtrace Mechanism
  *
  *  Base Pointer (%rbp)
  *         |
@@ -35,26 +42,26 @@
  *    stack_frame
  *         |
  *         V
- *   stop_stack_frame  <- async_stack_root
- *                               |
- *                               V
- *                       async_stack_frame (top_frame)
- *                               |
- *                               V
- *                       async_stack_frame
- *                              ...
- *                               |
- *                               V
- *                       async_stack_frame
+ *    stack_frame (stop_sync_frame)  <- async_stack_root
+ *                                             |
+ *                                             V
+ *                                     async_stack_frame (top_async_frame)
+ *                                             |
+ *                                             V
+ *                                     async_stack_frame
+ *                                            ...
+ *                                             |
+ *                                             V
+ *                                     async_stack_frame
  *
- * Since coroutine_stack_root needs to know the pointer to one of the regular frames in the call stack,
- * The resumption of coroutines occurs through the resume_on_async_stack function,
- * whose frame is stored in async_stack_root.
- *
- *
- * async stack frames are stored in coroutines promise type by inheriting from a class stack_element
- *
- * */
+ * The backtrace mechanism involves traversing the stack frames to capture the call stack.
+ * The `stop_sync_frame` serves as a marker where the transition to the asynchronous stack occurs,
+ * allowing the backtrace to continue through the `async_stack_frame` structures.
+ */
+
+#define RETURN_ADDRESS __builtin_return_address(0)
+
+#define CURRENT_FRAME_ADDRESS __builtin_frame_address(0)
 
 namespace kphp::coro {
 
@@ -76,17 +83,21 @@ struct async_stack_root {
   stack_frame* stop_sync_frame{};
 };
 
-/*
- * Since the algorithm needs to know the pointer to one of the stack frames in order to switch
- * to the asynchronous stack upon reaching it, it is necessary to remember one of the sync frames.
- * Calling std::coroutine_handle<>::resume() through this function allows the current stack frame to be remembered for later use.
- * */
+/**
+ * The `resume` function is responsible for storing the current synchronous stack frame
+ * in async_stack_root::stop_sync_frame before resuming the coroutine. This allows
+ * capturing one of the stack frames in the synchronous stack trace.
+ */
 inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root) noexcept {
-  auto* previous_stack_frame{std::exchange(stack_root.stop_sync_frame, reinterpret_cast<stack_frame*>(__builtin_frame_address(0)))};
+  auto* previous_stack_frame{std::exchange(stack_root.stop_sync_frame, reinterpret_cast<stack_frame*>(CURRENT_FRAME_ADDRESS))};
   handle.resume();
   stack_root.stop_sync_frame = previous_stack_frame;
 }
 
+/**
+ * The async_stack_element class facilitates working with asynchronous traces in templated code.
+ * This allows for uniform handling of any coroutines in places where async frames are pushed or popped.
+ */
 struct async_stack_element {
   async_stack_frame& get_async_frame() noexcept {
     return async_stack_frame_;

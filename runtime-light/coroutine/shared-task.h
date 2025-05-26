@@ -210,7 +210,7 @@ public:
 
   template<typename promise_t>
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> awaiter) noexcept -> bool {
-    push_async_frame(awaiter.promise().get_async_frame(), __builtin_return_address(0));
+    push_async_frame(awaiter.promise().get_async_frame(), RETURN_ADDRESS);
 
     m_state = state::suspend;
     m_waiter.m_continuation = awaiter;
