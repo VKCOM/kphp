@@ -446,7 +446,7 @@ void k2_env_fetch(uint32_t env_num, char* key, char* value);
  * `ENODATA` => there is no code segment offset for the image
  * `EFAULT`  => attempt to dereference a nullptr
  */
-int32_t k2_code_segment_offset(uint64_t *offset);
+int32_t k2_code_segment_offset(uint64_t* offset);
 
 /**
  * Return symbol name's len that overlaps address
