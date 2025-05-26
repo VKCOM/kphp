@@ -247,8 +247,8 @@ struct ImageSymbolInfo {
         filename_(std::move(filename)),
         lineno_(lineno) {}
 
-  ImageSymbolInfo(const SymbolInfo&) = delete;
-  ImageSymbolInfo& operator=(const SymbolInfo&) = delete;
+  ImageSymbolInfo(const ImageSymbolInfo&) = delete;
+  ImageSymbolInfo& operator=(const ImageSymbolInfo&) = delete;
 
   const char* get_name() const noexcept {
     return name_.get();
