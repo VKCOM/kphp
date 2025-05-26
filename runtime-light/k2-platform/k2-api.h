@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <ctime>
+#include <expected>
 #include <memory>
 #include <string_view>
 #include <sys/utsname.h>
