@@ -267,7 +267,7 @@ private:
   uint32_t lineno_;
 };
 
-inline auto resolve_symbol(void* addr) {
+inline auto resolve_symbol(void* addr) noexcept {
   using return_type = std::expected<ImageSymbolInfo, int32_t>;
   size_t name_len{};
   if (auto error_code{k2_symbol_name_len(addr, &name_len)}; error_code != k2::errno_ok) {
