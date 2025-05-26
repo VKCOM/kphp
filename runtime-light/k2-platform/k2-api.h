@@ -239,10 +239,37 @@ inline int32_t iconv(size_t* result, void* iconv_cd, char** inbuf, size_t* inbyt
   return k2_iconv(result, iconv_cd, inbuf, inbytesleft, outbuf, outbytesleft);
 }
 
+struct ImageSymbolInfo {
+  using char_unique_ptr = std::unique_ptr<char, decltype(std::addressof(k2::free))>;
+
+  ImageSymbolInfo(char_unique_ptr n, char_unique_ptr f, uint32_t l) noexcept
+      : name(std::move(n)),
+        filename(std::move(f)),
+        lineno(l) {}
+
+  ImageSymbolInfo(const SymbolInfo&) = delete;
+  ImageSymbolInfo& operator=(const SymbolInfo&) = delete;
+
+  const char* get_name() const noexcept {
+    return name.get();
+  }
+
+  const char* get_filename() const noexcept {
+    return filename.get();
+  }
+
+  uint32_t get_lineno() const noexcept {
+    return lineno;
+  }
+
+private:
+  std::unique_ptr<char, decltype(std::addressof(k2::free))> name;
+  std::unique_ptr<char, decltype(std::addressof(k2::free))> filename;
+  uint32_t lineno;
+};
+
 inline auto resolve_symbol(void* addr) {
-  using symbol_info_t =
-      std::tuple<std::unique_ptr<char, decltype(std::addressof(k2::free))>, std::unique_ptr<char, decltype(std::addressof(k2::free))>, uint32_t>;
-  using return_type = std::expected<symbol_info_t, int32_t>;
+  using return_type = std::expected<ImageSymbolInfo, int32_t>;
   size_t name_len{};
   if (auto error_code{k2_symbol_name_len(addr, &name_len)}; error_code != k2::errno_ok) {
     return return_type{std::unexpected{error_code}};
@@ -253,8 +280,8 @@ inline auto resolve_symbol(void* addr) {
   }
 
   // +1 since we get non-null-terminated strings from platform and we want to null-terminate them on our side
-  auto* name{static_cast<char*>(k2::alloc(name_len + 1))};
-  auto* filename{static_cast<char*>(k2::alloc(filename_len + 1))};
+  auto* name{static_cast<uint8_t*>(k2::alloc(name_len + 1))};
+  auto* filename{static_cast<uint8_t*>(k2::alloc(filename_len + 1))};
   php_assert(name != nullptr && filename != nullptr);
 
   SymbolInfo symbolInfo{.name = name, .filename = filename, .lineno = 0};
@@ -265,8 +292,10 @@ inline auto resolve_symbol(void* addr) {
   // null-terminate
   name[name_len] = '\0';
   filename[filename_len] = '\0';
-  return return_type{std::make_tuple(std::unique_ptr<char, decltype(std::addressof(k2::free))>{name, k2::free},
-                                     std::unique_ptr<char, decltype(std::addressof(k2::free))>{filename, k2::free}, symbolInfo.lineno)};
+
+  return return_type{ImageSymbolInfo(std::unique_ptr<char, decltype(std::addressof(k2::free))>{reinterpret_cast<char*>(name), k2::free},
+                                     std::unique_ptr<char, decltype(std::addressof(k2::free))>{reinterpret_cast<char*>(filename), k2::free},
+                                     symbolInfo.lineno)};
 }
 
 } // namespace k2

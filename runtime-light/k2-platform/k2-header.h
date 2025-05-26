@@ -436,6 +436,8 @@ uint32_t k2_env_value_len(uint32_t env_num);
  */
 void k2_env_fetch(uint32_t env_num, char* key, char* value);
 
+// diagnostic functions for instance debugging
+
 /**
  * Return symbol name's len that overlaps address
  * @param `addr` pointer to code instruction
@@ -461,8 +463,8 @@ int32_t k2_symbol_name_len(const void* addr, size_t* name_len);
 int32_t k2_symbol_filename_len(const void* addr, size_t* filename_len);
 
 struct SymbolInfo {
-  char* name;
-  char* filename;
+  uint8_t* name;
+  uint8_t* filename;
   uint32_t lineno;
 };
 
