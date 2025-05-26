@@ -285,6 +285,8 @@ inline auto resolve_symbol(void* addr) {
 
   SymbolInfo symbolInfo{.name = name, .filename = filename, .lineno = 0};
   if (auto error_code{k2_resolve_symbol(addr, &symbolInfo)}; error_code != k2::errno_ok) {
+    k2::free(filename);
+    k2::free(name);
     return return_type{std::unexpected{error_code}};
   }
 
