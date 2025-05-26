@@ -1031,7 +1031,6 @@ int rpcx_execute(connection *c, int op, raw_message *raw) {
       assert(result_len >= 0);
 
       if (result_len == 0) {
-        log_server_warning("Got empty RPC result from %s, op = 0x%08x", pid_to_print(&remote_pid), static_cast<unsigned>(op));
         return 0;
       }
 
