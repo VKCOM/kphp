@@ -11,14 +11,13 @@
 #include <memory>
 #include <string_view>
 #include <sys/utsname.h>
-#include <tuple>
 #include <utility>
+
+#include "runtime-common/core/utils/kphp-assert-core.h"
 
 #define K2_API_HEADER_H
 #include "runtime-light/k2-platform/k2-header.h"
 #undef K2_API_HEADER_H
-
-#include "runtime-common/core/utils/kphp-assert-core.h"
 
 namespace k2 {
 
@@ -242,30 +241,30 @@ inline int32_t iconv(size_t* result, void* iconv_cd, char** inbuf, size_t* inbyt
 struct ImageSymbolInfo {
   using char_unique_ptr = std::unique_ptr<char, decltype(std::addressof(k2::free))>;
 
-  ImageSymbolInfo(char_unique_ptr n, char_unique_ptr f, uint32_t l) noexcept
-      : name(std::move(n)),
-        filename(std::move(f)),
-        lineno(l) {}
+  ImageSymbolInfo(char_unique_ptr name, char_unique_ptr filename, uint32_t lineno) noexcept
+      : name_(std::move(name)),
+        filename_(std::move(filename)),
+        lineno_(lineno) {}
 
   ImageSymbolInfo(const SymbolInfo&) = delete;
   ImageSymbolInfo& operator=(const SymbolInfo&) = delete;
 
   const char* get_name() const noexcept {
-    return name.get();
+    return name_.get();
   }
 
   const char* get_filename() const noexcept {
-    return filename.get();
+    return filename_.get();
   }
 
   uint32_t get_lineno() const noexcept {
-    return lineno;
+    return lineno_;
   }
 
 private:
-  std::unique_ptr<char, decltype(std::addressof(k2::free))> name;
-  std::unique_ptr<char, decltype(std::addressof(k2::free))> filename;
-  uint32_t lineno;
+  std::unique_ptr<char, decltype(std::addressof(k2::free))> name_;
+  std::unique_ptr<char, decltype(std::addressof(k2::free))> filename_;
+  uint32_t lineno_;
 };
 
 inline auto resolve_symbol(void* addr) {
