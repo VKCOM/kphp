@@ -60,17 +60,17 @@ protected:
 
 class async_stack_watcher_t {
   kphp::coro::async_stack_root* const stack_root;
-  kphp::coro::async_stack_frame* const suspended_coroutine_frame;
+  kphp::coro::async_stack_frame* const suspended_async_stack_frame;
 
 protected:
   void await_resume() const noexcept {
-    stack_root->top_frame = suspended_coroutine_frame;
+    stack_root->top_frame = suspended_async_stack_frame;
   }
 
 public:
   async_stack_watcher_t() noexcept
       : stack_root(std::addressof(CoroutineInstanceState::get().coroutine_stack_root)),
-        suspended_coroutine_frame(stack_root->top_frame) {}
+        suspended_async_stack_frame(stack_root->top_frame) {}
 };
 
 } // namespace awaitable_impl_
@@ -114,8 +114,8 @@ public:
 
   constexpr void await_resume() noexcept {
     state = awaitable_impl_::state::end;
-    fork_id_watcher_t::await_resume();
     async_stack_watcher_t::await_resume();
+    fork_id_watcher_t::await_resume();
   }
 
   bool resumable() const noexcept {
@@ -165,8 +165,8 @@ public:
 
   uint64_t await_resume() noexcept {
     state = awaitable_impl_::state::end;
-    fork_id_watcher_t::await_resume();
     async_stack_watcher_t::await_resume();
+    fork_id_watcher_t::await_resume();
     const auto incoming_stream_d{InstanceState::get().take_incoming_stream()};
     kphp::log::assertion(incoming_stream_d != k2::INVALID_PLATFORM_DESCRIPTOR);
     return incoming_stream_d;
@@ -218,8 +218,8 @@ public:
 
   constexpr void await_resume() noexcept {
     state = awaitable_impl_::state::end;
-    fork_id_watcher_t::await_resume();
     async_stack_watcher_t::await_resume();
+    fork_id_watcher_t::await_resume();
   }
 
   bool resumable() const noexcept {
@@ -280,8 +280,8 @@ public:
 
   constexpr void await_resume() noexcept {
     state = awaitable_impl_::state::end;
-    fork_id_watcher_t::await_resume();
     async_stack_watcher_t::await_resume();
+    fork_id_watcher_t::await_resume();
   }
 
   bool resumable() const noexcept {
@@ -341,8 +341,8 @@ public:
 
   int64_t await_resume() noexcept {
     state = awaitable_impl_::state::end;
-    fork_id_watcher_t::await_resume();
     async_stack_watcher_t::await_resume();
+    fork_id_watcher_t::await_resume();
     fork_awaiter.await_resume();
     return fork_id;
   }
@@ -396,8 +396,8 @@ public:
 
   await_resume_t await_resume() noexcept {
     state = awaitable_impl_::state::end;
-    fork_id_watcher_t::await_resume();
     async_stack_watcher_t::await_resume();
+    fork_id_watcher_t::await_resume();
     if constexpr (std::is_void_v<await_resume_t>) {
       fork_awaiter.await_resume();
     } else {

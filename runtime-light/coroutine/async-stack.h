@@ -78,7 +78,7 @@ struct async_stack_root {
 
 /*
  * Since the algorithm needs to know the pointer to one of the stack frames in order to switch
- * to the asynchronous stack upon reaching it, it is necessary to remember one of the frames.
+ * to the asynchronous stack upon reaching it, it is necessary to remember one of the sync frames.
  * Calling std::coroutine_handle<>::resume() through this function allows the current stack frame to be remembered for later use.
  * */
 inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root) noexcept {

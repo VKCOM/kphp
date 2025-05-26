@@ -10,7 +10,7 @@
 
 struct CoroutineInstanceState final : private vk::not_copyable {
 
-  CoroutineInstanceState() = default;
+  CoroutineInstanceState() noexcept = default;
 
   static CoroutineInstanceState& get() noexcept;
 
