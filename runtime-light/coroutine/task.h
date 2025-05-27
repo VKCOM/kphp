@@ -119,7 +119,7 @@ public:
 
   template<typename promise_t>
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> coro) noexcept -> std::coroutine_handle<promise_type> {
-    push_async_frame(coro.promise().get_async_stack_frame(), RETURN_ADDRESS);
+    push_async_frame(coro.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
     m_coro.promise().m_next = coro.address();
     return m_coro;
   }
