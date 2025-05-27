@@ -14,7 +14,7 @@
 
 inline array<array<string>> f$debug_backtrace() noexcept {
   static constexpr size_t MAX_STACKTRACE_DEPTH = 64;
-  static constexpr size_t LOG_BUFFER_SIZE = 512;
+  static constexpr size_t LOG_BUFFER_SIZE = 32;
 
   std::array<void*, MAX_STACKTRACE_DEPTH> raw_trace{};
   size_t num_frames{kphp::diagnostic::backtrace(raw_trace)};
