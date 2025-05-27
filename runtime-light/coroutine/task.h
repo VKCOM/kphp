@@ -42,7 +42,7 @@ struct promise_base : async_stack_element {
 
       constexpr auto await_resume() const noexcept -> void {}
 
-    public:
+    private:
       void pop_async_frame(async_stack_frame& callee_frame) const noexcept {
         if (auto* caller_frame{callee_frame.caller_async_frame}; caller_frame != nullptr) [[likely]] {
           async_stack_root* stack_root{std::exchange(callee_frame.async_stack_root, nullptr)};
