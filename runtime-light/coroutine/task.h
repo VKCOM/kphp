@@ -33,9 +33,9 @@ struct promise_base : async_stack_element {
       }
 
       auto await_suspend(std::coroutine_handle<promise_type> coro) const noexcept -> std::coroutine_handle<> {
-        pop_async_frame(coro.promise().get_async_stack_frame());
-        if (coro.promise().m_next != nullptr) [[likely]] {
-          return std::coroutine_handle<>::from_address(coro.promise().m_next);
+        if (auto& promise{coro.promise()}; promise.m_next != nullptr) [[likely]] {
+          pop_async_frame(promise.get_async_stack_frame());
+          return std::coroutine_handle<>::from_address(promise.m_next);
         }
         return std::noop_coroutine();
       }
@@ -44,11 +44,11 @@ struct promise_base : async_stack_element {
 
     private:
       void pop_async_frame(async_stack_frame& callee_frame) const noexcept {
-        if (auto* caller_frame{callee_frame.caller_async_stack_frame}; caller_frame != nullptr) [[likely]] {
-          async_stack_root* stack_root{std::exchange(callee_frame.async_stack_root, nullptr)};
-          caller_frame->async_stack_root = stack_root;
-          stack_root->top_async_stack_frame = caller_frame;
-        }
+        auto* caller_frame{callee_frame.caller_async_stack_frame};
+        kphp::log::assertion(caller_frame != nullptr);
+        async_stack_root* stack_root{std::exchange(callee_frame.async_stack_root, nullptr)};
+        caller_frame->async_stack_root = stack_root;
+        stack_root->top_async_stack_frame = caller_frame;
       }
     };
     return awaiter{};
@@ -89,6 +89,11 @@ class awaiter_base {
     async_stack_root* stack_root{std::exchange(caller_frame.async_stack_root, nullptr)};
     callee_frame.async_stack_root = stack_root;
     stack_root->top_async_stack_frame = std::addressof(callee_frame);
+  }
+
+  void detach_from_async_stack() noexcept {
+    async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
+    callee_frame.caller_async_stack_frame = nullptr;
   }
 
 protected:
@@ -135,6 +140,7 @@ public:
   auto cancel() noexcept -> void {
     m_state = state::end;
     m_coro.promise().m_next = nullptr;
+    detach_from_async_stack();
   }
 };
 

@@ -171,7 +171,7 @@ class awaiter_base {
   enum class state : uint8_t { init, suspend, end };
   state m_state{state::init};
 
-  void push_async_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
+  void set_async_top_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
     // shared_task's awaiter doesn't store caller_frame, but it save `await_suspend()` return address
     async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
 
@@ -179,6 +179,10 @@ class awaiter_base {
     async_stack_root* stack_root = caller_frame.async_stack_root;
     callee_frame.async_stack_root = stack_root;
     stack_root->top_async_stack_frame = std::addressof(callee_frame);
+  }
+
+  void reset_async_top_frame(async_stack_frame& caller_frame) noexcept {
+    caller_frame.async_stack_root->top_async_stack_frame = std::addressof(caller_frame);
   }
 
 protected:
@@ -211,11 +215,12 @@ public:
 
   template<typename promise_t>
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> awaiter) noexcept -> bool {
-    push_async_frame(awaiter.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
-
+    set_async_top_frame(awaiter.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
     m_state = state::suspend;
     m_waiter.m_continuation = awaiter;
-    return m_coro.promise().suspend_awaiter(m_waiter);
+    bool should_be_suspended{m_coro.promise().suspend_awaiter(m_waiter)};
+    reset_async_top_frame(awaiter.promise().get_async_stack_frame());
+    return should_be_suspended;
   }
 
   auto await_resume() noexcept -> void {
