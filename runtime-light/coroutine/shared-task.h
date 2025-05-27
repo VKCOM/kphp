@@ -172,6 +172,7 @@ class awaiter_base {
   state m_state{state::init};
 
   void push_async_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
+    // shared_task's awaiter doesn't store caller_frame, but it save `await_suspend()` return address
     async_stack_frame& callee_frame{m_coro.promise().get_async_frame()};
 
     callee_frame.return_address = return_address;

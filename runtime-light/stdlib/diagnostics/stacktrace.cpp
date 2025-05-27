@@ -42,7 +42,7 @@ size_t async_frames(std::span<void*> addresses, kphp::coro::async_stack_frame* t
 
 namespace kphp::diagnostic {
 
-size_t async_backtrace(std::span<void*> addresses) noexcept {
+size_t backtrace(std::span<void*> addresses) noexcept {
   auto& async_stack_root{CoroutineInstanceState::get().get_coroutine_stack_root()};
 
   auto* const stack_frame{reinterpret_cast<kphp::coro::stack_frame*>(FRAME_ADDRESS)};
