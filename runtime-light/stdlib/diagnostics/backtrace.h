@@ -15,7 +15,7 @@ namespace kphp::diagnostic {
 
 size_t backtrace(std::span<void*> addresses) noexcept;
 
-inline auto backtrace_code_address(std::span<void* const> addresses) noexcept {
+inline auto backtrace_code_addresses(std::span<void* const> addresses) noexcept {
   static constexpr std::span<void* const> empty_span{};
   uint64_t code_segment_offset{};
   auto error_code{k2::code_segment_offset(&code_segment_offset)};
