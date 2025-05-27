@@ -52,7 +52,7 @@ struct promise_base : async_stack_element {
           // since resuming the coroutine may destroy the shared_task_waiter value
           auto* next{waiter->m_next};
           auto& async_stack_root{*promise.get_async_stack_frame().async_stack_root};
-          resume(waiter->m_continuation, async_stack_root);
+          kphp::coro::resume(waiter->m_continuation, async_stack_root);
           waiter = next;
         }
         // return last waiter's coroutine_handle to allow it to potentially be compiled as a tail-call
@@ -100,7 +100,7 @@ struct promise_base : async_stack_element {
       m_waiters = STARTED_NO_WAITERS_VAL;
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
       auto& async_stack_root{*get_async_stack_frame().async_stack_root};
-      resume(handle, async_stack_root);
+      kphp::coro::resume(handle, async_stack_root);
     }
     // coroutine already completed, don't suspend
     if (done()) {

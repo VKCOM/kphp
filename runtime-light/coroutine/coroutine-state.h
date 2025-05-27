@@ -14,9 +14,5 @@ struct CoroutineInstanceState final : private vk::not_copyable {
 
   static CoroutineInstanceState& get() noexcept;
 
-  kphp::coro::async_stack_root& get_coroutine_stack_root() noexcept {
-    return coroutine_stack_root;
-  }
-
   kphp::coro::async_stack_root coroutine_stack_root;
 };
