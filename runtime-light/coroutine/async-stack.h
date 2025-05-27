@@ -61,7 +61,7 @@
 
 #define RETURN_ADDRESS __builtin_return_address(0)
 
-#define CURRENT_FRAME_ADDRESS __builtin_frame_address(0)
+#define FRAME_ADDRESS __builtin_frame_address(0)
 
 namespace kphp::coro {
 
@@ -89,7 +89,7 @@ struct async_stack_root {
  * capturing one of the stack frames in the synchronous stack trace.
  */
 inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root) noexcept {
-  auto* previous_stack_frame{std::exchange(stack_root.stop_sync_frame, reinterpret_cast<stack_frame*>(CURRENT_FRAME_ADDRESS))};
+  auto* previous_stack_frame{std::exchange(stack_root.stop_sync_frame, reinterpret_cast<stack_frame*>(FRAME_ADDRESS))};
   handle.resume();
   stack_root.stop_sync_frame = previous_stack_frame;
 }
