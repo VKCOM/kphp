@@ -75,7 +75,7 @@ inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
     kphp::log::warning("value of microseconds ({}) must be positive", microseconds);
     co_return;
   }
-  const std::chrono::milliseconds sleep_time{microseconds * 1000};
+  const std::chrono::microseconds sleep_time{microseconds};
   co_await wait_for_timer_t{sleep_time};
 }
 
