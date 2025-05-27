@@ -16,7 +16,7 @@
  *
  * Diagram: Normal and Asynchronous Stacks
  *
- *  Base Pointer (%rbp)              async_stack_root (CoroutineInstanceState::coroutine_stack_root)
+ *  Base Pointer (%rbp)              async_stack_root
  *         |                                 |
  *         V                                 V
  *    stack_frame                    async_stack_frame
