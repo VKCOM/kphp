@@ -19,7 +19,7 @@ inline auto resolve_symbol_address(std::span<void*> addresses) noexcept {
   static constexpr std::span<void*> empty_span{};
   uint64_t code_segment_offset{};
   auto error_code{k2::code_segment_offset(&code_segment_offset)};
-  auto address_transform = [code_segment_offset](void* address) noexcept { return static_cast<void*>(static_cast<std::byte*>(address) - code_segment_offset); };
+  auto address_transform{[code_segment_offset](void* address) noexcept { return static_cast<void*>(static_cast<std::byte*>(address) - code_segment_offset); }};
   if (error_code != k2::errno_ok) [[unlikely]] {
     return std::views::transform(empty_span, address_transform);
   }
