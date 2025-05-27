@@ -9,7 +9,7 @@
 
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/coroutine-state.h"
-#include "runtime-light/stdlib/diagnostics/stacktrace.h"
+#include "runtime-light/stdlib/diagnostics/backtrace.h"
 #include "runtime-light/utils/logs.h"
 
 namespace {

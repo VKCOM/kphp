@@ -9,7 +9,7 @@
 #include <format>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/diagnostics/stacktrace.h"
+#include "runtime-light/stdlib/diagnostics/backtrace.h"
 #include "runtime-light/utils/logs.h"
 
 inline array<array<string>> f$debug_backtrace() noexcept {
