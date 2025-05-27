@@ -51,7 +51,7 @@ struct promise_base : async_stack_element {
           // read the m_next pointer before resuming the coroutine
           // since resuming the coroutine may destroy the shared_task_waiter value
           auto* next{waiter->m_next};
-          auto& async_stack_root{*promise.get_async_frame().async_stack_root};
+          auto& async_stack_root{*promise.get_async_stack_frame().async_stack_root};
           resume(waiter->m_continuation, async_stack_root);
           waiter = next;
         }
@@ -99,7 +99,7 @@ struct promise_base : async_stack_element {
     if (m_waiters == NOT_STARTED_VAL) {
       m_waiters = STARTED_NO_WAITERS_VAL;
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
-      auto& async_stack_root{*get_async_frame().async_stack_root};
+      auto& async_stack_root{*get_async_stack_frame().async_stack_root};
       resume(handle, async_stack_root);
     }
     // coroutine already completed, don't suspend
@@ -173,7 +173,7 @@ class awaiter_base {
 
   void push_async_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
     // shared_task's awaiter doesn't store caller_frame, but it save `await_suspend()` return address
-    async_stack_frame& callee_frame{m_coro.promise().get_async_frame()};
+    async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
 
     callee_frame.return_address = return_address;
     async_stack_root* stack_root = caller_frame.async_stack_root;
@@ -211,7 +211,7 @@ public:
 
   template<typename promise_t>
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> awaiter) noexcept -> bool {
-    push_async_frame(awaiter.promise().get_async_frame(), RETURN_ADDRESS);
+    push_async_frame(awaiter.promise().get_async_stack_frame(), RETURN_ADDRESS);
 
     m_state = state::suspend;
     m_waiter.m_continuation = awaiter;

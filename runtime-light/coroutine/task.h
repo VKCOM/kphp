@@ -33,7 +33,7 @@ struct promise_base : async_stack_element {
       }
 
       auto await_suspend(std::coroutine_handle<promise_type> coro) const noexcept -> std::coroutine_handle<> {
-        pop_async_frame(coro.promise().get_async_frame());
+        pop_async_frame(coro.promise().get_async_stack_frame());
         if (coro.promise().m_next != nullptr) [[likely]] {
           return std::coroutine_handle<>::from_address(coro.promise().m_next);
         }
@@ -82,7 +82,7 @@ class awaiter_base {
   state m_state{state::init};
 
   void push_async_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
-    async_stack_frame& callee_frame{m_coro.promise().get_async_frame()};
+    async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
     callee_frame.caller_async_frame = std::addressof(caller_frame);
     callee_frame.return_address = return_address;
 
@@ -119,7 +119,7 @@ public:
 
   template<typename promise_t>
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> coro) noexcept -> std::coroutine_handle<promise_type> {
-    push_async_frame(coro.promise().get_async_frame(), RETURN_ADDRESS);
+    push_async_frame(coro.promise().get_async_stack_frame(), RETURN_ADDRESS);
     m_coro.promise().m_next = coro.address();
     return m_coro;
   }

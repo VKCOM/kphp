@@ -89,7 +89,7 @@ void InstanceState::init_script_execution() noexcept {
   scheduler.suspend({main_task.get_handle(), WaitEvent::Rechedule{}});
   main_task_ = std::move(main_task);
   // Push main_task_ frame to async stack
-  auto& main_task_frame{main_task_.get_handle().promise().get_async_frame()};
+  auto& main_task_frame{main_task_.get_handle().promise().get_async_stack_frame()};
   auto& coroutine_stack_root{coroutine_instance_state.coroutine_stack_root};
   main_task_frame.async_stack_root = std::addressof(coroutine_stack_root);
   coroutine_stack_root.top_async_frame = std::addressof(main_task_frame);

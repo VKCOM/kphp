@@ -99,7 +99,7 @@ inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root)
  * This allows for uniform handling of any coroutines in places where async frames are pushed or popped.
  */
 struct async_stack_element {
-  async_stack_frame& get_async_frame() noexcept {
+  async_stack_frame& get_async_stack_frame() noexcept {
     return async_stack_frame_;
   }
 
