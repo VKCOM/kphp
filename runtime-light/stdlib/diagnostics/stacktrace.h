@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <ranges>
 #include <span>
 
 #include "runtime-light/k2-platform/k2-api.h"
@@ -14,15 +15,15 @@ namespace kphp::diagnostic {
 
 size_t async_backtrace(std::span<void*> addresses) noexcept;
 
-inline bool resolve_static_offsets(std::span<void*> addresses) noexcept {
+inline decltype(auto) resolve_static_offsets(std::span<void*> addresses) noexcept {
+  static constexpr std::span<void*> empty_span{};
   uint64_t code_segment_offset{};
-  if (auto error_code{k2::code_segment_offset(&code_segment_offset)}; error_code != k2::errno_ok) [[unlikely]] {
-    return false;
+  auto error_code{k2::code_segment_offset(&code_segment_offset)};
+  auto address_transform = [code_segment_offset](void* address) noexcept { return static_cast<void*>(static_cast<std::byte*>(address) - code_segment_offset); };
+  if (error_code != k2::errno_ok) [[unlikely]] {
+    return std::views::transform(empty_span, address_transform);
   }
-  for (auto& address : addresses) {
-    address = reinterpret_cast<std::byte*>(address) - code_segment_offset;
-  }
-  return true;
+  return addresses | std::views::transform(address_transform);
 }
 
 } // namespace kphp::diagnostic

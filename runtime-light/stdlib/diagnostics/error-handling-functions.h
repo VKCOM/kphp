@@ -13,22 +13,24 @@
 #include "runtime-light/utils/logs.h"
 
 inline array<array<string>> f$debug_backtrace() noexcept {
-  static constexpr uint32_t MAX_STACKTRACE_DEPTH = 64;
+  static constexpr size_t MAX_STACKTRACE_DEPTH = 64;
+  static constexpr size_t LOG_BUFFER_SIZE = 512;
 
   std::array<void*, MAX_STACKTRACE_DEPTH> raw_trace{};
   size_t num_frames{kphp::diagnostic::async_backtrace(raw_trace)};
-  if (!kphp::diagnostic::resolve_static_offsets(raw_trace)) [[unlikely]] {
+  auto resolved_backtrace{kphp::diagnostic::resolve_static_offsets(std::span<void*>(raw_trace.data(), num_frames))};
+  if (resolved_backtrace.empty()) [[unlikely]] {
     kphp::log::warning("Cannot resolve virtual addresses to static offsets");
   }
 
   array<array<string>> backtrace{array_size{static_cast<int64_t>(num_frames), true}};
   const string function_key{"function"};
 
-  for (size_t frame = 0; frame < num_frames; ++frame) {
-    std::array<char, MAX_STACKTRACE_DEPTH> trace_record_buffer{};
-    const auto [_, recorded]{std::format_to_n(trace_record_buffer.data(), trace_record_buffer.size() - 1, "{}", raw_trace[frame])};
+  for (const auto& address : resolved_backtrace) {
+    std::array<char, LOG_BUFFER_SIZE> log_buffer{};
+    const auto [_, recorded]{std::format_to_n(log_buffer.data(), log_buffer.size() - 1, "{}", address)};
     array<string> frame_info{array_size{1, false}};
-    frame_info.set_value(function_key, string{trace_record_buffer.data(), static_cast<string::size_type>(recorded)});
+    frame_info.set_value(function_key, string{log_buffer.data(), static_cast<string::size_type>(recorded)});
     backtrace.emplace_back(std::move(frame_info));
   }
 
