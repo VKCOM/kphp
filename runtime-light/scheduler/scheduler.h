@@ -15,6 +15,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/core/utils/hash.h"
+#include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/utils/concepts.h"
 
 /**
@@ -177,6 +178,7 @@ class SimpleCoroutineScheduler {
   deque<SuspendToken> awaiting_for_stream_tokens;
   unordered_map<uint64_t, SuspendToken> awaiting_for_update_tokens;
   unordered_set<SuspendToken> suspend_tokens;
+  CoroutineInstanceState& coroutine_instance_state;
 
   ScheduleStatus scheduleOnNoEvent() noexcept;
   ScheduleStatus scheduleOnIncomingStream() noexcept;
@@ -184,7 +186,8 @@ class SimpleCoroutineScheduler {
   ScheduleStatus scheduleOnYield() noexcept;
 
 public:
-  SimpleCoroutineScheduler() noexcept = default;
+  SimpleCoroutineScheduler() noexcept
+      : coroutine_instance_state(CoroutineInstanceState::get()) {}
 
   static SimpleCoroutineScheduler& get() noexcept;
 
