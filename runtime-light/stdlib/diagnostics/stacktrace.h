@@ -16,7 +16,7 @@ size_t async_backtrace(std::span<void*> addresses) noexcept;
 
 inline bool resolve_static_offsets(std::span<void*> addresses) noexcept {
   uint64_t code_segment_offset{};
-  if (auto error_code{k2::code_segment_offset(&code_segment_offset)}; error_code != k2::errno_ok) {
+  if (auto error_code{k2::code_segment_offset(&code_segment_offset)}; error_code != k2::errno_ok) [[unlikely]] {
     return false;
   }
   for (auto& address : addresses) {
