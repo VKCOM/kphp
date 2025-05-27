@@ -178,7 +178,7 @@ class awaiter_base {
     callee_frame.return_address = return_address;
     async_stack_root* stack_root = caller_frame.async_stack_root;
     callee_frame.async_stack_root = stack_root;
-    stack_root->top_async_frame = std::addressof(callee_frame);
+    stack_root->top_async_stack_frame = std::addressof(callee_frame);
   }
 
 protected:

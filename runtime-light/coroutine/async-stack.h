@@ -66,21 +66,21 @@
 namespace kphp::coro {
 
 struct stack_frame {
-  stack_frame* caller_frame{};
+  stack_frame* caller_stack_frame{};
   void* return_address{};
 };
 
 struct async_stack_root;
 
 struct async_stack_frame {
-  async_stack_frame* caller_async_frame{};
+  async_stack_frame* caller_async_stack_frame{};
   async_stack_root* async_stack_root{};
   void* return_address{};
 };
 
 struct async_stack_root {
-  async_stack_frame* top_async_frame{};
-  stack_frame* stop_sync_frame{};
+  async_stack_frame* top_async_stack_frame{};
+  stack_frame* stop_sync_stack_frame{};
 };
 
 /**
@@ -89,9 +89,9 @@ struct async_stack_root {
  * capturing one of the stack frames in the synchronous stack trace.
  */
 inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root) noexcept {
-  auto* previous_stack_frame{std::exchange(stack_root.stop_sync_frame, reinterpret_cast<stack_frame*>(STACK_FRAME_ADDRESS))};
+  auto* previous_stack_frame{std::exchange(stack_root.stop_sync_stack_frame, reinterpret_cast<stack_frame*>(STACK_FRAME_ADDRESS))};
   handle.resume();
-  stack_root.stop_sync_frame = previous_stack_frame;
+  stack_root.stop_sync_stack_frame = previous_stack_frame;
 }
 
 /**

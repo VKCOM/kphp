@@ -44,10 +44,10 @@ struct promise_base : async_stack_element {
 
     private:
       void pop_async_frame(async_stack_frame& callee_frame) const noexcept {
-        if (auto* caller_frame{callee_frame.caller_async_frame}; caller_frame != nullptr) [[likely]] {
+        if (auto* caller_frame{callee_frame.caller_async_stack_frame}; caller_frame != nullptr) [[likely]] {
           async_stack_root* stack_root{std::exchange(callee_frame.async_stack_root, nullptr)};
           caller_frame->async_stack_root = stack_root;
-          stack_root->top_async_frame = caller_frame;
+          stack_root->top_async_stack_frame = caller_frame;
         }
       }
     };
@@ -83,12 +83,12 @@ class awaiter_base {
 
   void push_async_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
     async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
-    callee_frame.caller_async_frame = std::addressof(caller_frame);
+    callee_frame.caller_async_stack_frame = std::addressof(caller_frame);
     callee_frame.return_address = return_address;
 
     async_stack_root* stack_root{std::exchange(caller_frame.async_stack_root, nullptr)};
     callee_frame.async_stack_root = stack_root;
-    stack_root->top_async_frame = std::addressof(callee_frame);
+    stack_root->top_async_stack_frame = std::addressof(callee_frame);
   }
 
 protected:
