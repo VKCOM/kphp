@@ -8,11 +8,14 @@
 #include <concepts>
 #include <coroutine>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
+#include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -55,9 +58,24 @@ protected:
   }
 };
 
+class async_stack_watcher_t {
+  kphp::coro::async_stack_root* const async_stack_root;
+  kphp::coro::async_stack_frame* const suspended_async_stack_frame;
+
+protected:
+  void await_resume() const noexcept {
+    async_stack_root->top_async_stack_frame = suspended_async_stack_frame;
+  }
+
+public:
+  async_stack_watcher_t() noexcept
+      : async_stack_root(std::addressof(CoroutineInstanceState::get().coroutine_stack_root)),
+        suspended_async_stack_frame(async_stack_root->top_async_stack_frame) {}
+};
+
 } // namespace awaitable_impl_
 
-class wait_for_update_t : public awaitable_impl_::fork_id_watcher_t {
+class wait_for_update_t : awaitable_impl_::fork_id_watcher_t, awaitable_impl_::async_stack_watcher_t {
   uint64_t stream_d;
   SuspendToken suspend_token;
   awaitable_impl_::state state{awaitable_impl_::state::init};
@@ -96,6 +114,7 @@ public:
 
   constexpr void await_resume() noexcept {
     state = awaitable_impl_::state::end;
+    async_stack_watcher_t::await_resume();
     fork_id_watcher_t::await_resume();
   }
 
@@ -111,7 +130,7 @@ public:
 
 // ================================================================================================
 
-class wait_for_incoming_stream_t : awaitable_impl_::fork_id_watcher_t {
+class wait_for_incoming_stream_t : awaitable_impl_::fork_id_watcher_t, awaitable_impl_::async_stack_watcher_t {
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::IncomingStream{}};
   awaitable_impl_::state state{awaitable_impl_::state::init};
 
@@ -146,6 +165,7 @@ public:
 
   uint64_t await_resume() noexcept {
     state = awaitable_impl_::state::end;
+    async_stack_watcher_t::await_resume();
     fork_id_watcher_t::await_resume();
     const auto incoming_stream_d{InstanceState::get().take_incoming_stream()};
     kphp::log::assertion(incoming_stream_d != k2::INVALID_PLATFORM_DESCRIPTOR);
@@ -164,7 +184,7 @@ public:
 
 // ================================================================================================
 
-class wait_for_reschedule_t : awaitable_impl_::fork_id_watcher_t {
+class wait_for_reschedule_t : awaitable_impl_::fork_id_watcher_t, awaitable_impl_::async_stack_watcher_t {
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
   awaitable_impl_::state state{awaitable_impl_::state::init};
 
@@ -198,6 +218,7 @@ public:
 
   constexpr void await_resume() noexcept {
     state = awaitable_impl_::state::end;
+    async_stack_watcher_t::await_resume();
     fork_id_watcher_t::await_resume();
   }
 
@@ -213,7 +234,7 @@ public:
 
 // ================================================================================================
 
-class wait_for_timer_t : awaitable_impl_::fork_id_watcher_t {
+class wait_for_timer_t : awaitable_impl_::fork_id_watcher_t, awaitable_impl_::async_stack_watcher_t {
   std::chrono::nanoseconds duration;
   uint64_t timer_d{k2::INVALID_PLATFORM_DESCRIPTOR};
   SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
@@ -259,6 +280,7 @@ public:
 
   constexpr void await_resume() noexcept {
     state = awaitable_impl_::state::end;
+    async_stack_watcher_t::await_resume();
     fork_id_watcher_t::await_resume();
   }
 
@@ -275,7 +297,7 @@ public:
 // ================================================================================================
 
 template<typename T>
-class start_fork_t : awaitable_impl_::fork_id_watcher_t {
+class start_fork_t : awaitable_impl_::fork_id_watcher_t, awaitable_impl_::async_stack_watcher_t {
   ForkInstanceState& fork_instance_st{ForkInstanceState::get()};
 
   int64_t fork_id{};
@@ -304,7 +326,8 @@ public:
     return fork_awaiter.await_ready();
   }
 
-  std::coroutine_handle<> await_suspend(std::coroutine_handle<> current_coro) noexcept {
+  template<typename promise_t>
+  std::coroutine_handle<> await_suspend(std::coroutine_handle<promise_t> current_coro) noexcept {
     state = awaitable_impl_::state::suspend;
     fork_instance_st.current_id = fork_id;
     if (fork_awaiter.await_suspend(current_coro)) [[unlikely]] {
@@ -318,6 +341,7 @@ public:
 
   int64_t await_resume() noexcept {
     state = awaitable_impl_::state::end;
+    async_stack_watcher_t::await_resume();
     fork_id_watcher_t::await_resume();
     fork_awaiter.await_resume();
     return fork_id;
@@ -330,7 +354,7 @@ public:
 // The main difference between them is that wait_fork_t can use shared_task::when_ready as an awaiter,
 // whereas wait_fork_result_t can use shared_task::operator co_await.
 template<typename T>
-class wait_fork_t : awaitable_impl_::fork_id_watcher_t {
+class wait_fork_t : awaitable_impl_::fork_id_watcher_t, awaitable_impl_::async_stack_watcher_t {
   kphp::coro::shared_task<T> fork_task;
   std::remove_cvref_t<decltype(std::declval<kphp::coro::shared_task<T>>().operator co_await())> fork_awaiter;
   awaitable_impl_::state state{awaitable_impl_::state::init};
@@ -364,13 +388,15 @@ public:
     return state == awaitable_impl_::state::ready;
   }
 
-  constexpr bool await_suspend(std::coroutine_handle<> coro) noexcept {
+  template<typename promise_t>
+  constexpr bool await_suspend(std::coroutine_handle<promise_t> coro) noexcept {
     state = awaitable_impl_::state::suspend;
     return fork_awaiter.await_suspend(coro);
   }
 
   await_resume_t await_resume() noexcept {
     state = awaitable_impl_::state::end;
+    async_stack_watcher_t::await_resume();
     fork_id_watcher_t::await_resume();
     if constexpr (std::is_void_v<await_resume_t>) {
       fork_awaiter.await_resume();
@@ -431,7 +457,8 @@ public:
   // 3. await_suspend returns std::coroutine_handle<>.
   // we must guarantee that 'co_await wait_with_timeout_t{awaitable, timeout}' behaves like 'co_await awaitable' except
   // it may cancel 'co_await awaitable' if the timeout has elapsed.
-  await_suspend_return_t await_suspend(std::coroutine_handle<> coro) noexcept {
+  template<typename promise_t>
+  await_suspend_return_t await_suspend(std::coroutine_handle<promise_t> coro) noexcept {
     // as we don't rely on coroutine scheduler implementation, let's always suspend awaitable first. in case of some smart scheduler
     // it won't have any effect, but it will have an effect if our scheduler is quite simple.
     state = awaitable_impl_::state::suspend;

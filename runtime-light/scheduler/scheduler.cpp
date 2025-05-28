@@ -11,6 +11,7 @@
 #include <utility>
 #include <variant>
 
+#include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/instance-state.h"
 
@@ -27,7 +28,7 @@ ScheduleStatus SimpleCoroutineScheduler::scheduleOnNoEvent() noexcept {
   const auto token{yield_tokens.front()};
   yield_tokens.pop_front();
   suspend_tokens.erase(token);
-  token.first.resume();
+  kphp::coro::resume(token.first, coroutine_instance_state.coroutine_stack_root);
   return ScheduleStatus::Resumed;
 }
 
@@ -38,7 +39,7 @@ ScheduleStatus SimpleCoroutineScheduler::scheduleOnIncomingStream() noexcept {
   const auto token{awaiting_for_stream_tokens.front()};
   awaiting_for_stream_tokens.pop_front();
   suspend_tokens.erase(token);
-  token.first.resume();
+  kphp::coro::resume(token.first, coroutine_instance_state.coroutine_stack_root);
   return ScheduleStatus::Resumed;
 }
 
@@ -49,7 +50,7 @@ ScheduleStatus SimpleCoroutineScheduler::scheduleOnStreamUpdate(uint64_t stream_
     const auto token{it_token->second};
     awaiting_for_update_tokens.erase(it_token);
     suspend_tokens.erase(token);
-    token.first.resume();
+    kphp::coro::resume(token.first, coroutine_instance_state.coroutine_stack_root);
     return ScheduleStatus::Resumed;
   } else {
     return ScheduleStatus::Skipped;

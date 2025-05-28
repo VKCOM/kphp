@@ -79,11 +79,6 @@ inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
   co_await wait_for_timer_t{sleep_time};
 }
 
-inline array<array<string>> f$debug_backtrace() noexcept {
-  kphp::log::warning("called stub debug_backtrace");
-  return {};
-}
-
 inline int64_t f$error_reporting([[maybe_unused]] int64_t level) noexcept {
   kphp::log::warning("called stub error_reporting");
   return 0;

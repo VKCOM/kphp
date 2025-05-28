@@ -439,6 +439,16 @@ void k2_env_fetch(uint32_t env_num, char* key, char* value);
 // diagnostic functions for instance debugging
 
 /**
+ * Get code segment offset of instance in virtual memory.
+ * Virtual address minus offset will be equal to insturction offset in dso file
+ * @return: `0` on success, `errno != 0` otherwise
+ * `errno` options:
+ * `ENODATA` => there is no code segment offset for the image
+ * `EFAULT`  => attempt to dereference a nullptr
+ */
+int32_t k2_code_segment_offset(uint64_t* offset);
+
+/**
  * Return symbol name's len that overlaps address
  * @param `addr` pointer to code instruction
  * @param `name_len` buffer where symbol name's len will be written

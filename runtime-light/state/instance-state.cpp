@@ -88,6 +88,11 @@ void InstanceState::init_script_execution() noexcept {
       std::move(script_task))};
   scheduler.suspend({main_task.get_handle(), WaitEvent::Rechedule{}});
   main_task_ = std::move(main_task);
+  // Push main_task_ frame to async stack
+  auto& main_task_frame{main_task_.get_handle().promise().get_async_stack_frame()};
+  auto& coroutine_stack_root{coroutine_instance_state.coroutine_stack_root};
+  main_task_frame.async_stack_root = std::addressof(coroutine_stack_root);
+  coroutine_stack_root.top_async_stack_frame = std::addressof(main_task_frame);
 }
 
 kphp::coro::task<> InstanceState::init_cli_instance() noexcept {
