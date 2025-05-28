@@ -179,9 +179,9 @@ class awaiter_base {
     async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
 
     callee_frame.return_address = return_address;
-    async_stack_root* stack_root{caller_frame.async_stack_root};
-    callee_frame.async_stack_root = stack_root;
-    stack_root->top_async_stack_frame = std::addressof(callee_frame);
+    auto* async_stack_root{caller_frame.async_stack_root};
+    callee_frame.async_stack_root = async_stack_root;
+    async_stack_root->top_async_stack_frame = std::addressof(callee_frame);
   }
 
   void reset_async_top_frame(async_stack_frame& caller_frame) noexcept {
