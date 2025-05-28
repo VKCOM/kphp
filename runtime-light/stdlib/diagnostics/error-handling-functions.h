@@ -20,7 +20,8 @@ inline array<array<string>> f$debug_backtrace() noexcept {
   size_t num_frames{kphp::diagnostic::backtrace(raw_trace)};
   auto resolved_backtrace{kphp::diagnostic::backtrace_code_addresses(std::span<void*>(raw_trace.data(), num_frames))};
   if (resolved_backtrace.empty()) [[unlikely]] {
-    kphp::log::warning("Cannot resolve virtual addresses to static offsets");
+    kphp::log::warning("cannot resolve virtual addresses to static offsets");
+    return {};
   }
 
   array<array<string>> backtrace{array_size{static_cast<int64_t>(num_frames), true}};
