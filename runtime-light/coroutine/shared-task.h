@@ -172,7 +172,10 @@ class awaiter_base {
   state m_state{state::init};
 
   void set_async_top_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
-    // shared_task's awaiter doesn't store caller_frame, but it save `await_suspend()` return address
+    /**
+     * shared_task is the top of the stack for calls from it.
+     * Therefore, it's awaiter doesn't store caller_frame, but it save `await_suspend()` return address
+     * */
     async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
 
     callee_frame.return_address = return_address;

@@ -34,7 +34,7 @@ struct promise_base : async_stack_element {
 
       auto await_suspend(std::coroutine_handle<promise_type> coro) const noexcept -> std::coroutine_handle<> {
         if (auto& promise{coro.promise()}; promise.m_next != nullptr) [[likely]] {
-          pop_async_frame(promise.get_async_stack_frame());
+          pop_async_stack_frame(promise.get_async_stack_frame());
           return std::coroutine_handle<>::from_address(promise.m_next);
         }
         return std::noop_coroutine();
@@ -43,7 +43,7 @@ struct promise_base : async_stack_element {
       constexpr auto await_resume() const noexcept -> void {}
 
     private:
-      void pop_async_frame(async_stack_frame& callee_frame) const noexcept {
+      void pop_async_stack_frame(async_stack_frame& callee_frame) const noexcept {
         auto* caller_frame{callee_frame.caller_async_stack_frame};
         kphp::log::assertion(caller_frame != nullptr);
         async_stack_root* stack_root{std::exchange(callee_frame.async_stack_root, nullptr)};
@@ -81,7 +81,7 @@ class awaiter_base {
   enum class state : uint8_t { init, suspend, end };
   state m_state{state::init};
 
-  void push_async_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
+  void push_async_stack_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
     async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
     callee_frame.caller_async_stack_frame = std::addressof(caller_frame);
     callee_frame.return_address = return_address;
@@ -124,7 +124,7 @@ public:
 
   template<typename promise_t>
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> coro) noexcept -> std::coroutine_handle<promise_type> {
-    push_async_frame(coro.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
+    push_async_stack_frame(coro.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
     m_coro.promise().m_next = coro.address();
     return m_coro;
   }
