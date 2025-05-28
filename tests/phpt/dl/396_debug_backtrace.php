@@ -1,4 +1,5 @@
 @ok
+KPHP_EXTRA_CXXFLAGS=-O0
 <?php
 
 require_once 'kphp_tester_include.php';
