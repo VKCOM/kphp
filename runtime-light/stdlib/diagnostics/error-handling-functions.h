@@ -38,15 +38,15 @@ inline array<array<string>> format_backtrace_symbols(std::span<void* const> back
   return backtrace_symbols;
 }
 
-inline array<array<string>> format_backtrace_code_addresses(std::span<void* const> backtrace) noexcept {
+inline array<array<string>> format_backtrace_addresses(std::span<void* const> backtrace) noexcept {
   static constexpr size_t LOG_BUFFER_SIZE = 32;
 
-  auto resolved_backtrace{kphp::diagnostic::backtrace_code_addresses(backtrace)};
+  auto resolved_backtrace{kphp::diagnostic::backtrace_addresses(backtrace)};
   if (resolved_backtrace.empty()) {
     return {};
   }
 
-  array<array<string>> backtrace_code_addresses{array_size{static_cast<int64_t>(backtrace.size()), true}};
+  array<array<string>> backtrace_addresses{array_size{static_cast<int64_t>(backtrace.size()), true}};
   const string function_key{"function"};
 
   for (const auto& address : resolved_backtrace) {
@@ -55,10 +55,10 @@ inline array<array<string>> format_backtrace_code_addresses(std::span<void* cons
     array<string> frame_info{array_size{1, false}};
     frame_info.set_value(function_key, string{log_buffer.data(), static_cast<string::size_type>(recorded)});
 
-    backtrace_code_addresses.emplace_back(std::move(frame_info));
+    backtrace_addresses.emplace_back(std::move(frame_info));
   }
 
-  return backtrace_code_addresses;
+  return backtrace_addresses;
 }
 } // namespace error_handling_impl_
 
@@ -72,7 +72,7 @@ inline array<array<string>> f$debug_backtrace() noexcept {
   if (!backtrace_symbols.empty()) {
     return backtrace_symbols;
   }
-  auto backtrace_code_addresses{error_handling_impl_::format_backtrace_code_addresses(backtrace_view)};
+  auto backtrace_code_addresses{error_handling_impl_::format_backtrace_addresses(backtrace_view)};
   if (!backtrace_code_addresses.empty()) {
     return backtrace_code_addresses;
   }
