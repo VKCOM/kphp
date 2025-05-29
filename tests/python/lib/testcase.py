@@ -263,6 +263,7 @@ class WebServerAutoTestCase(BaseTestCase):
         The result should be a dictionary that will be added as environment variables in kphp2cpp
         """
         return {}
+
     @classmethod
     def extra_class_setup(cls):
         """

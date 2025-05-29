@@ -16,6 +16,10 @@ function capture_backtrace() {
     foreach($trace as $function) {
         $backtrace[] = ["function" => $function];
     }
+    // kphp_backtrace doesn't capture coro trace after coroutine suspending
+    $backtrace[] = ["function" => "coro_fun3"];
+    $backtrace[] = ["function" => "coro_fun2"];
+    $backtrace[] = ["function" => "coro_fun1"];
     return $backtrace;
 #endif
     return debug_backtrace();
@@ -53,7 +57,8 @@ function sync_fun1(int $x) {
 function coro_fun3(?array $x) {
     while(0);
     sched_yield_sleep(0.01);
-    return sync_fun1($x ? count($x) : -1);
+    $res = sync_fun1($x ? count($x) : -1);
+    return $res;
 }
 
 function coro_fun2(array $x) {
