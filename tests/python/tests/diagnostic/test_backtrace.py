@@ -5,7 +5,7 @@ from python.lib.testcase import WebServerAutoTestCase
 class TestBacktrace(WebServerAutoTestCase):
     @classmethod
     def extra_kphp2cpp_options(cls):
-        return {"KPHP_EXTRA_CXXFLAGS" : "-O0"}
+        return {"KPHP_EXTRA_CXXFLAGS" : "-O0 -g"}
 
     def test_main_fork_trace(self):
         resp = self.web_server.http_post(
