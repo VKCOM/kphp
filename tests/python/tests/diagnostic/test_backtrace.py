@@ -7,7 +7,7 @@ class TestBacktrace(WebServerAutoTestCase):
     def extra_kphp2cpp_options(cls):
         return {"KPHP_EXTRA_CXXFLAGS" : "-O0"}
 
-    def test_main_backtrace(self):
+    def test_main_fork_trace(self):
         resp = self.web_server.http_post(
             json=[
                 {"op": "check_main_trace"},

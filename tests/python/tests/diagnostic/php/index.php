@@ -90,7 +90,7 @@ function main() {
                 break;
             case "check_fork_switch_trace":
                 $f_1 = fork(coro_fun1());
-                $f_2 = fork(coro_fun1());
+                $f_2 = fork(coro_fun3([]));
 
                 $res_1 = wait($f_1);
                 $_ = wait($f_2);
