@@ -50,7 +50,6 @@ function check_backtrace($backtrace) {
 class ClassB {
   public function func_b(ClassB $x) {
     while(0);
-    sched_yield();
     $backtrace = capture_backtrace();
     check_backtrace($backtrace);
   }
@@ -59,6 +58,7 @@ class ClassB {
 class ClassA extends ClassB  {
   public function func_a(int $x) {
     while(0);
+    sched_yield();
     self::func_b(new ClassB);
   }
 }
