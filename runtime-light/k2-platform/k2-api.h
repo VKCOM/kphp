@@ -31,8 +31,11 @@ inline constexpr int32_t errno_einval = EINVAL;
 inline constexpr int32_t errno_enodata = ENODATA;
 inline constexpr int32_t errno_efault = EFAULT;
 inline constexpr int32_t errno_enomem = ENOMEM;
+inline constexpr int32_t errno_eshutdown = ESHUTDOWN;
+inline constexpr int32_t errno_ecanceled = ECANCELED;
 
-inline constexpr uint64_t INVALID_PLATFORM_DESCRIPTOR = 0;
+using descriptor = uint64_t;
+inline constexpr k2::descriptor INVALID_PLATFORM_DESCRIPTOR = 0;
 
 enum class stream_kind : uint8_t { component, udp, tcp };
 
@@ -106,52 +109,52 @@ inline int32_t uname(struct utsname* addr) noexcept {
   return k2_uname(addr);
 }
 
-inline int32_t open(uint64_t* stream_d, size_t name_len, const char* name) noexcept {
-  return k2_open(stream_d, name_len, name);
+inline int32_t open(k2::descriptor* descriptor, size_t name_len, const char* name) noexcept {
+  return k2_open(descriptor, name_len, name);
 }
 
-inline void stream_status(uint64_t stream_d, StreamStatus* status) noexcept {
-  k2_stream_status(stream_d, status);
+inline void stream_status(k2::descriptor descriptor, StreamStatus* status) noexcept {
+  k2_stream_status(descriptor, status);
 }
 
-inline size_t write(uint64_t stream_d, size_t data_len, const void* data) noexcept {
-  return k2_write(stream_d, data_len, data);
+inline size_t write(k2::descriptor descriptor, size_t data_len, const void* data) noexcept {
+  return k2_write(descriptor, data_len, data);
 }
 
 inline size_t stderr_write(size_t data_len, const void* data) noexcept {
   return k2_stderr_write(data_len, data);
 }
 
-inline size_t read(uint64_t stream_d, size_t buf_len, void* buf) noexcept {
-  return k2_read(stream_d, buf_len, buf);
+inline size_t read(k2::descriptor descriptor, size_t buf_len, void* buf) noexcept {
+  return k2_read(descriptor, buf_len, buf);
 }
 
-inline void please_shutdown(uint64_t stream_d) noexcept {
-  k2_please_shutdown(stream_d);
+inline void please_shutdown(k2::descriptor descriptor) noexcept {
+  k2_please_shutdown(descriptor);
 }
 
-inline void shutdown_write(uint64_t stream_d) noexcept {
-  k2_shutdown_write(stream_d);
+inline void shutdown_write(k2::descriptor descriptor) noexcept {
+  k2_shutdown_write(descriptor);
 }
 
 inline void instant(TimePoint* time_point) noexcept {
   k2_instant(time_point);
 }
 
-inline int32_t new_timer(uint64_t* descriptor, uint64_t duration_ns) noexcept {
+inline int32_t new_timer(k2::descriptor* descriptor, uint64_t duration_ns) noexcept {
   return k2_new_timer(descriptor, duration_ns);
 }
 
-inline int32_t timer_deadline(uint64_t d, TimePoint* deadline) noexcept {
-  return k2_timer_deadline(d, deadline);
+inline int32_t timer_deadline(k2::descriptor descriptor, TimePoint* deadline) noexcept {
+  return k2_timer_deadline(descriptor, deadline);
 }
 
-inline void free_descriptor(uint64_t descriptor) noexcept {
+inline void free_descriptor(k2::descriptor descriptor) noexcept {
   k2_free_descriptor(descriptor);
 }
 
-inline uint8_t take_update(uint64_t* update_d) noexcept {
-  return k2_take_update(update_d);
+inline uint8_t take_update(k2::descriptor* descriptor) noexcept {
+  return k2_take_update(descriptor);
 }
 
 inline void log(size_t level, size_t len, const char* str) noexcept {
@@ -218,12 +221,12 @@ inline struct tm* localtime_r(const time_t* timer, struct tm* result) noexcept {
   return k2_localtime_r(timer, result);
 }
 
-inline int32_t udp_connect(uint64_t* socket_d, const char* host, size_t host_len) noexcept {
-  return k2_udp_connect(socket_d, host, host_len);
+inline int32_t udp_connect(k2::descriptor* descriptor, const char* host, size_t host_len) noexcept {
+  return k2_udp_connect(descriptor, host, host_len);
 }
 
-inline int32_t tcp_connect(uint64_t* socket_d, const char* host, size_t host_len) noexcept {
-  return k2_tcp_connect(socket_d, host, host_len);
+inline int32_t tcp_connect(k2::descriptor* descriptor, const char* host, size_t host_len) noexcept {
+  return k2_tcp_connect(descriptor, host, host_len);
 }
 
 inline int32_t iconv_open(void** iconv_cd, const char* tocode, const char* fromcode) noexcept {
