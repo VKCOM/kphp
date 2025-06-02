@@ -458,7 +458,7 @@ int32_t k2_code_segment_offset(uint64_t* offset);
  * `ENODATA` => there is no debug information for the image
  * `EFAULT`  => attempt to dereference a nullptr
  */
-int32_t k2_symbol_name_len(const void* addr, size_t* name_len);
+int32_t k2_symbol_name_len(void* addr, size_t* name_len);
 
 /**
  * Return symbol filename's len
@@ -470,7 +470,7 @@ int32_t k2_symbol_name_len(const void* addr, size_t* name_len);
  * `ENODATA` => there is no debug information for the image
  * `EFAULT`  => attempt to dereference a nullptr
  */
-int32_t k2_symbol_filename_len(const void* addr, size_t* filename_len);
+int32_t k2_symbol_filename_len(void* addr, size_t* filename_len);
 
 struct SymbolInfo {
   char* name;
@@ -489,7 +489,7 @@ struct SymbolInfo {
  * `ENODATA` => there is no debug information for the image
  * `EFAULT`  => attempt to dereference a nullptr
  */
-int32_t k2_resolve_symbol(const void* addr, struct SymbolInfo* symbol_info);
+int32_t k2_resolve_symbol(void* addr, struct SymbolInfo* symbol_info);
 
 // ---- libc analogues, designed to work instance-local ----
 
