@@ -6,17 +6,18 @@
 #include <iterator>
 #include <span>
 
+// backtrace use php_assert since it doesn't call backtrace
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
-#include "runtime-light/utils/logs.h"
 
 namespace {
 
 size_t sync_frames(std::span<void*> addresses, kphp::coro::stack_frame* start_frame, kphp::coro::stack_frame* stop_frame) noexcept {
-  kphp::log::assertion(start_frame != nullptr && stop_frame != nullptr);
+  php_assert(start_frame != nullptr && stop_frame != nullptr);
 
   auto address{addresses.begin()};
   for (auto* current_stack_frame{start_frame}; current_stack_frame != stop_frame && address != addresses.end();
@@ -28,7 +29,7 @@ size_t sync_frames(std::span<void*> addresses, kphp::coro::stack_frame* start_fr
 }
 
 size_t async_frames(std::span<void*> addresses, kphp::coro::async_stack_frame* top_async_frame) noexcept {
-  kphp::log::assertion(top_async_frame != nullptr);
+  php_assert(top_async_frame != nullptr);
 
   auto address{addresses.begin()};
   for (auto* current_async_frame{top_async_frame}; current_async_frame != nullptr && address != addresses.end();

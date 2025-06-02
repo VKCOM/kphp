@@ -8,10 +8,12 @@
 #include <cstddef>
 #include <format>
 #include <source_location>
+#include <span>
 #include <type_traits>
 #include <utility>
 
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/diagnostics/backtrace.h"
 
 enum class LogLevel : size_t {
   Error = 1,
@@ -45,20 +47,44 @@ using wrapped_arg_t = std::invoke_result_t<decltype(impl::wrap_log_argument<T>),
 
 enum class level : size_t { error = 1, warn, info, debug, trace };
 
+template<size_t LOG_BUFFER_SIZE, typename BACKTRACE_T, typename... Args>
+void write_log(level level, BACKTRACE_T backtrace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) {
+  std::array<char, LOG_BUFFER_SIZE> log_buffer{};
+  auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
+                                                                                               impl::wrap_log_argument(std::forward<Args>(args))...)};
+
+  if (level < level::debug) {
+    const auto res{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace)};
+    out = res.out;
+    size += res.size;
+  }
+  *out = '\0';
+  k2::log(std::to_underlying(level), size, log_buffer.data());
+}
+
 template<typename... Args>
 void log(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   if (std::to_underlying(level) > k2::log_level_enabled()) {
     return;
   }
 
-  static constexpr size_t LOG_BUFFER_SIZE = 512;
-  std::array<char, LOG_BUFFER_SIZE> log_buffer{};
-  const auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
-                                                                                                     impl::wrap_log_argument(std::forward<Args>(args))...)};
-  *out = '\0';
-  k2::log(std::to_underlying(level), size, log_buffer.data());
-}
+  static constexpr size_t MAX_BACKTRACE_SIZE = 64;
 
+  std::array<void*, MAX_BACKTRACE_SIZE> backtrace{};
+  const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
+  std::span<void* const> backtrace_view{backtrace.data(), num_frames};
+
+  static constexpr size_t SMALL_BUFFER_SIZE = 512;
+  static constexpr size_t BIG_BUFFER_SIZE = 512 * 16;
+
+  auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(backtrace_view)};
+  if (!backtrace_symbols.empty()) {
+    write_log<BIG_BUFFER_SIZE>(level, backtrace_symbols, fmt, std::forward<Args>(args)...);
+  } else {
+    auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(backtrace_view)};
+    write_log<SMALL_BUFFER_SIZE>(level, backtrace_addresses, fmt, std::forward<Args>(args)...);
+  }
+}
 } // namespace impl
 
 template<typename... Args>
@@ -104,5 +130,58 @@ struct std::formatter<kphp::log::impl::floating_wrapper<T>> {
   template<typename FormatContext>
   auto format(const kphp::log::impl::floating_wrapper<T>& wrapper, FormatContext& ctx) const noexcept {
     return std::format_to(ctx.out(), "{:.4f}", wrapper.value);
+  }
+};
+
+template<>
+struct std::formatter<decltype(kphp::diagnostic::backtrace_addresses({})), char> {
+  using addresses_t = decltype(kphp::diagnostic::backtrace_addresses({}));
+  template<typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) const noexcept {
+    return ctx.begin();
+  }
+
+  template<typename FmtContext>
+  auto format(const addresses_t& addresses, FmtContext& ctx) const noexcept {
+    auto out{ctx.out()};
+    size_t level{};
+    for (const auto& addr : addresses) {
+      out = format_to(out, "# {} : {}\n", level++, addr);
+    }
+
+    return out;
+  }
+};
+
+template<>
+struct std::formatter<decltype(kphp::diagnostic::backtrace_symbols({})), char> {
+  using symbols_t = decltype(kphp::diagnostic::backtrace_symbols({}));
+  template<typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) const noexcept {
+    return ctx.begin();
+  }
+
+  template<typename FmtContext>
+  auto format(const symbols_t& symbols, FmtContext& ctx) const noexcept {
+    auto out{ctx.out()};
+    size_t level{};
+    for (const auto& symbol : symbols) {
+      out = format_to(out, "# {} : {}\n", level++, symbol);
+    }
+
+    return out;
+  }
+};
+
+template<>
+struct std::formatter<k2::SymbolInfo, char> {
+  template<typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) const noexcept {
+    return ctx.begin();
+  }
+
+  template<typename FmtContext>
+  auto format(const k2::SymbolInfo& info, FmtContext& ctx) const noexcept {
+    return std::format_to(ctx.out(), "{}\n{}:{}", info.name.get(), info.filename.get(), info.lineno);
   }
 };

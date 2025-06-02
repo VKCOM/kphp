@@ -18,7 +18,10 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/utils/logs.h"
 
-static void php_warning_impl(bool out_of_memory, int error_type, char const* message, va_list args) {
+namespace {
+// The backtrace algorithm relies on the fact that php_warning_impl does not call backtrace.
+// If php_warning_impl is modified, the backtrace algorithm should be updated accordingly
+void php_warning_impl(bool out_of_memory, int error_type, char const* message, va_list args) {
   if (error_type > k2::log_level_enabled()) {
     return;
   }
@@ -33,6 +36,7 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const* mes
     critical_error_handler();
   }
 }
+} // namespace
 
 void php_debug(char const* message, ...) {
   va_list args;
