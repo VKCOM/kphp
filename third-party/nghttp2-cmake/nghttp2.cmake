@@ -30,7 +30,7 @@ function(build_nghttp2 PIC_ENABLED)
     file(MAKE_DIRECTORY ${install_dir})
     file(MAKE_DIRECTORY ${include_dirs})
 
-    set(compile_flags "$ENV{CFLAGS} -g0 ${extra_compile_flags}")
+    set(compile_flags "-B/opt/binutils-2-35/bin/ $ENV{CFLAGS} -g0 ${extra_compile_flags}")
 
     message(STATUS "NGHTTP2 Summary:
 
@@ -43,6 +43,7 @@ function(build_nghttp2 PIC_ENABLED)
         Compiler:
           C compiler:   ${CMAKE_C_COMPILER}
           CFLAGS:       ${compile_flags}
+          Assembler:    ${CMAKE_ASM_COMPILER}
     ")
 
     # The configuration has been based on:
@@ -52,6 +53,7 @@ function(build_nghttp2 PIC_ENABLED)
             -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
             -DCMAKE_CXX_FLAGS=${compile_flags}
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+            -DCMAKE_ASM_COMPILER=${CMAKE_ASM_COMPILER}
             -DCMAKE_POSITION_INDEPENDENT_CODE=${PIC_ENABLED}
             -DENABLE_WERROR=ON
             -DENABLE_THREADS=OFF
