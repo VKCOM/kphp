@@ -48,18 +48,18 @@ public:
     m_cache.emplace(tzinfo);
   }
 
+  void clear() noexcept {
+    (kphp::memory::libc_alloc_guard{}, std::ranges::for_each(m_cache, [](timelib_tzinfo* tzinfo) noexcept { timelib_tzinfo_dtor(tzinfo); }));
+    m_cache.clear();
+  }
+
   timezone_cache() noexcept = default;
 
   timezone_cache(std::initializer_list<std::string_view> tzs) noexcept {
     kphp::memory::libc_alloc_guard _{};
     std::ranges::for_each(tzs, [this](std::string_view tz) noexcept {
       int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-      auto* tzinfo{timelib_parse_tzfile(tz.data(), timelib_builtin_db(), std::addressof(errc))};
-      if (tzinfo == nullptr) [[unlikely]] {
-        kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", tz, timelib_get_error_message(errc));
-        return;
-      }
-      put(tzinfo);
+      put(timelib_parse_tzfile(tz.data(), timelib_builtin_db(), std::addressof(errc)));
     });
   }
 
@@ -68,6 +68,7 @@ public:
 
   timezone_cache& operator=(timezone_cache&& other) noexcept {
     if (this != std::addressof(other)) {
+      clear();
       m_cache = std::move(other.m_cache);
     }
     return *this;
@@ -77,8 +78,9 @@ public:
   timezone_cache& operator=(const timezone_cache&) = delete;
 
   ~timezone_cache() {
-    kphp::memory::libc_alloc_guard _{};
-    std::ranges::for_each(m_cache, [](timelib_tzinfo* tzinfo) noexcept { timelib_tzinfo_dtor(tzinfo); });
+    if (!m_cache.empty()) {
+      clear();
+    }
   }
 };
 
