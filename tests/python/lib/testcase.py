@@ -207,6 +207,7 @@ class WebServerAutoTestCase(BaseTestCase):
 
             if cls.should_use_k2():
                 kphp_env.update(cls.kphp_env_for_k2_server_component())
+            kphp_env.update(cls.extra_kphp2cpp_options())
 
             print("\nCompiling kphp")
             if not cls.kphp_builder.compile_with_kphp(kphp_env):
@@ -254,6 +255,14 @@ class WebServerAutoTestCase(BaseTestCase):
 
     def custom_teardown_method(self, method):
         self.web_server._engine_logs = []
+
+    @classmethod
+    def extra_kphp2cpp_options(cls):
+        """
+        This method can be overloaded in a test case.
+        The result should be a dictionary that will be added as environment variables in kphp2cpp
+        """
+        return {}
 
     @classmethod
     def extra_class_setup(cls):
