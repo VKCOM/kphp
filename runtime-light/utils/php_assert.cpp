@@ -19,8 +19,6 @@
 #include "runtime-light/utils/logs.h"
 
 namespace {
-// The backtrace algorithm relies on the fact that php_warning_impl does not call backtrace.
-// If php_warning_impl is modified, the backtrace algorithm should be updated accordingly
 void php_warning_impl(bool out_of_memory, int error_type, char const* message, va_list args) {
   if (error_type > k2::log_level_enabled()) {
     return;

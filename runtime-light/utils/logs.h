@@ -93,9 +93,16 @@ template<typename... Args>
   k2::exit(1);
 }
 
+// The backtrace algorithm relies on the fact that assertion does not call backtrace.
+// If assertion is modified, the backtrace algorithm should be updated accordingly
 inline void assertion(bool condition, const std::source_location& location = std::source_location::current()) noexcept {
   if (!condition) [[unlikely]] {
-    kphp::log::error("assertion failed at {}:{}", location.file_name(), location.line());
+    static constexpr size_t LOG_BUFFER_SIZE = 512;
+    std::array<char, LOG_BUFFER_SIZE> log_buffer;
+    auto [out, size]{std::format_to_n(log_buffer.data(), log_buffer.size() - 1, "assertion failed at {}:{}", location.file_name(), location.line())};
+    *out = '\0';
+    k2::log(std::to_underlying(impl::level::error), size, log_buffer.data());
+    k2::exit(1);
   }
 }
 
@@ -130,58 +137,5 @@ struct std::formatter<kphp::log::impl::floating_wrapper<T>> {
   template<typename FormatContext>
   auto format(const kphp::log::impl::floating_wrapper<T>& wrapper, FormatContext& ctx) const noexcept {
     return std::format_to(ctx.out(), "{:.4f}", wrapper.value);
-  }
-};
-
-template<>
-struct std::formatter<decltype(kphp::diagnostic::backtrace_addresses({})), char> {
-  using addresses_t = decltype(kphp::diagnostic::backtrace_addresses({}));
-  template<typename ParseContext>
-  constexpr auto parse(ParseContext& ctx) const noexcept {
-    return ctx.begin();
-  }
-
-  template<typename FmtContext>
-  auto format(const addresses_t& addresses, FmtContext& ctx) const noexcept {
-    auto out{ctx.out()};
-    size_t level{};
-    for (const auto& addr : addresses) {
-      out = format_to(out, "# {} : {}\n", level++, addr);
-    }
-
-    return out;
-  }
-};
-
-template<>
-struct std::formatter<decltype(kphp::diagnostic::backtrace_symbols({})), char> {
-  using symbols_t = decltype(kphp::diagnostic::backtrace_symbols({}));
-  template<typename ParseContext>
-  constexpr auto parse(ParseContext& ctx) const noexcept {
-    return ctx.begin();
-  }
-
-  template<typename FmtContext>
-  auto format(const symbols_t& symbols, FmtContext& ctx) const noexcept {
-    auto out{ctx.out()};
-    size_t level{};
-    for (const auto& symbol : symbols) {
-      out = format_to(out, "# {} : {}\n", level++, symbol);
-    }
-
-    return out;
-  }
-};
-
-template<>
-struct std::formatter<k2::SymbolInfo, char> {
-  template<typename ParseContext>
-  constexpr auto parse(ParseContext& ctx) const noexcept {
-    return ctx.begin();
-  }
-
-  template<typename FmtContext>
-  auto format(const k2::SymbolInfo& info, FmtContext& ctx) const noexcept {
-    return std::format_to(ctx.out(), "{}\n{}:{}", info.name.get(), info.filename.get(), info.lineno);
   }
 };
