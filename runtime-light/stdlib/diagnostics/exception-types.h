@@ -4,15 +4,21 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <format>
+#include <span>
 #include <string_view>
+#include <utility>
 
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/memory-visitors.h"
+#include "runtime-light/stdlib/diagnostics/backtrace.h"
+#include "runtime-light/stdlib/diagnostics/error-handling-functions.h"
 #include "runtime-light/stdlib/visitors/array-visitors.h"
 #include "runtime-light/utils/logs.h"
 
@@ -35,16 +41,13 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
-  template<class Visitor, bool process_raw_trace = true>
+  template<class Visitor>
   void generic_accept(Visitor&& visitor) noexcept {
     visitor("message", $message);
     visitor("code", $code);
     visitor("file", $file);
     visitor("line", $line);
     visitor("__trace", trace);
-    if constexpr (process_raw_trace) {
-      visitor("__raw_trace", raw_trace);
-    }
   }
 
   virtual void accept(CommonMemoryEstimateVisitor& visitor) noexcept {
@@ -58,24 +61,42 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
   virtual void accept(InstanceReferencesCountingVisitor& /*unused*/) noexcept {}
 
   virtual void accept(ToArrayVisitor& visitor) noexcept {
-    generic_accept<decltype(visitor), false>(visitor); // don't process raw_trace because `mixed` can't store `void *` (to_array_debug returns array<mixed>)
+    generic_accept<decltype(visitor)>(visitor); // don't process raw_trace because `mixed` can't store `void *` (to_array_debug returns array<mixed>)
   }
 
   string $message;
   int64_t $code{};
   string $file;
   int64_t $line{};
-  array<void*> raw_trace;
   array<array<string>> trace;
 };
 
 using Throwable = class_instance<C$Throwable>;
 
+template<>
+struct std::formatter<Throwable, char> {
+  template<typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) const noexcept {
+    return ctx.begin();
+  }
+
+  template<typename FmtContext>
+  auto format(const Throwable& e, FmtContext& ctx) const noexcept {
+    auto out{ctx.out()};
+    out = format_to(out, "'{}' at {}:{}\n", e->$message.c_str(), e->$file.c_str(), e->$line);
+    out = format_to(out, "Backtrace:\n");
+
+    for (int64_t i = 0; i < e->trace.count(); ++i) {
+      const auto& current{e->trace.get_value(i)};
+      out = format_to(out, "#{} {}: {}\n", i, current.get_value(::string{"file", 4}).c_str(), current.get_value(::string{"function", 8}).c_str());
+    }
+    return out;
+  }
+};
+
 // ================================================================================================
 
 namespace exception_impl_ {
-
-inline constexpr int32_t backtrace_size_limit = 64;
 
 inline string exception_trace_as_string(const Throwable& e) noexcept {
   auto& static_SB{RuntimeContext::get().static_SB.clean()};
@@ -89,7 +110,21 @@ inline string exception_trace_as_string(const Throwable& e) noexcept {
 inline void exception_initialize(const Throwable& e, const string& message, int64_t code) noexcept {
   e->$message = message;
   e->$code = code;
-  kphp::log::warning("exception backtrace is not yet supported"); // TODO
+
+  constexpr size_t MAX_BACKTRACE_SIZE = 64;
+  std::array<void*, MAX_BACKTRACE_SIZE> backtrace;
+  const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
+  std::span<void*> backtrace_view{backtrace.data(), num_frames};
+
+  auto backtrace_symbols{error_handling_impl_::format_backtrace_symbols(backtrace_view)};
+  if (!backtrace_symbols.empty()) {
+    e->trace = std::move(backtrace_symbols);
+  }
+  auto backtrace_code_addresses{error_handling_impl_::format_backtrace_addresses(backtrace_view)};
+  if (!backtrace_code_addresses.empty()) {
+    e->trace = std::move(backtrace_code_addresses);
+  }
+  kphp::log::warning("cannot resolve virtual addresses to debug information");
 }
 
 } // namespace exception_impl_
