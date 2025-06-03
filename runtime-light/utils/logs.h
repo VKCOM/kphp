@@ -49,7 +49,7 @@ enum class level : size_t { error = 1, warn, info, debug, trace };
 
 template<size_t LOG_BUFFER_SIZE, typename BACKTRACE_T, typename... Args>
 void write_log(level level, BACKTRACE_T backtrace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) {
-  std::array<char, LOG_BUFFER_SIZE> log_buffer{};
+  std::array<char, LOG_BUFFER_SIZE> log_buffer;
   auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
                                                                                                impl::wrap_log_argument(std::forward<Args>(args))...)};
 
