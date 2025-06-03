@@ -47,43 +47,52 @@ using wrapped_arg_t = std::invoke_result_t<decltype(impl::wrap_log_argument<T>),
 
 enum class level : size_t { error = 1, warn, info, debug, trace };
 
-template<size_t LOG_BUFFER_SIZE, typename BACKTRACE_T, typename... Args>
-void write_log(level level, BACKTRACE_T backtrace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) {
-  std::array<char, LOG_BUFFER_SIZE> log_buffer;
-  auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
-                                                                                               impl::wrap_log_argument(std::forward<Args>(args))...)};
-
-  if (level < level::debug) {
-    const auto res{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace)};
-    out = res.out;
-    size += res.size;
-  }
-  *out = '\0';
-  k2::log(std::to_underlying(level), size, log_buffer.data());
-}
-
 template<typename... Args>
 void log(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
+  static constexpr size_t SMALL_BUFFER_SIZE = 512;
+  static constexpr size_t LARGE_BUFFER_SIZE = 1024 * 4;
+  static constexpr size_t MAX_BACKTRACE_SIZE = 64;
+
+  const auto write_log_with_backtrace = [&]<typename BACKTRACE_T>(std::span<char> dest, const BACKTRACE_T& backtrace) noexcept {
+    auto [out, size]{std::format_to_n<decltype(dest.begin()), impl::wrapped_arg_t<Args>...>(dest.begin(), dest.size() - 1, fmt,
+                                                                                            impl::wrap_log_argument(std::forward<Args>(args))...)};
+    const auto res{std::format_to_n(out, std::distance(out, dest.end()) - 1, "\nBacktrace\n{}", backtrace)};
+    out = res.out;
+    size += res.size;
+    *out = '\0';
+    k2::log(std::to_underlying(level), size, dest.data());
+  };
+
   if (std::to_underlying(level) > k2::log_level_enabled()) {
     return;
   }
 
-  static constexpr size_t MAX_BACKTRACE_SIZE = 64;
+  if (level > impl::level::debug) {
+    std::array<char, SMALL_BUFFER_SIZE> log_buffer;
+    auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
+                                                                                                 impl::wrap_log_argument(std::forward<Args>(args))...)};
+    *out = '\0';
+    k2::log(std::to_underlying(level), size, log_buffer.data());
+    return;
+  }
 
-  std::array<void*, MAX_BACKTRACE_SIZE> backtrace{};
+  std::array<void*, MAX_BACKTRACE_SIZE> backtrace;
   const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
   std::span<void* const> backtrace_view{backtrace.data(), num_frames};
 
-  static constexpr size_t SMALL_BUFFER_SIZE = 512;
-  static constexpr size_t BIG_BUFFER_SIZE = 1024 * 4;
-
   if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(backtrace_view)}; !backtrace_symbols.empty()) {
-    return write_log<BIG_BUFFER_SIZE>(level, backtrace_symbols, fmt, std::forward<Args>(args)...);
+    std::array<char, LARGE_BUFFER_SIZE> log_buffer;
+    write_log_with_backtrace(log_buffer, backtrace_symbols);
+    return;
+  } else if (auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(backtrace_view)}; !backtrace_addresses.empty()) {
+    std::array<char, SMALL_BUFFER_SIZE> log_buffer;
+    write_log_with_backtrace(log_buffer, backtrace_addresses);
+    return;
+  } else {
+    std::array<char, SMALL_BUFFER_SIZE> log_buffer;
+    write_log_with_backtrace(log_buffer, "cannot resolve virtual addresses to debug information");
+    return;
   }
-  if (auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(backtrace_view)}; !backtrace_addresses.empty()) {
-    return write_log<SMALL_BUFFER_SIZE>(level, backtrace_addresses, fmt, std::forward<Args>(args)...);
-  }
-  return write_log<SMALL_BUFFER_SIZE>(level, "cannot resolve virtual addresses to debug information", fmt, std::forward<Args>(args)...);
 }
 } // namespace impl
 
