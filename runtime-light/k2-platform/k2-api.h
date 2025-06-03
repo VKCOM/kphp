@@ -297,7 +297,7 @@ inline size_t backtrace(std::span<void*> buffer) noexcept {
 } // namespace k2
 
 template<>
-struct std::formatter<k2::SymbolInfo, char> {
+struct std::formatter<k2::SymbolInfo> {
   template<typename ParseContext>
   constexpr auto parse(ParseContext& ctx) const noexcept {
     return ctx.begin();
@@ -305,6 +305,6 @@ struct std::formatter<k2::SymbolInfo, char> {
 
   template<typename FmtContext>
   auto format(const k2::SymbolInfo& info, FmtContext& ctx) const noexcept {
-    return std::format_to(ctx.out(), "{}\n{}:{}", info.name.get(), info.filename.get(), info.lineno);
+    return std::format_to(ctx.out(), "{}\n\tat {}:{}", info.name.get(), info.filename.get(), info.lineno);
   }
 };

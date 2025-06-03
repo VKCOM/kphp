@@ -69,8 +69,8 @@ struct std::formatter<std::invoke_result_t<decltype(kphp::diagnostic::backtrace_
   auto format(const addresses_t& addresses, FmtContext& ctx) const noexcept {
     auto out{ctx.out()};
     size_t level{};
-    for (const auto& addr : addresses) {
-      out = format_to(out, "# {} : {}\n", level++, addr);
+    for (const auto* addr : addresses) {
+      out = format_to(out, "# {} : {:p}\n", level++, addr);
     }
 
     return out;
@@ -79,18 +79,18 @@ struct std::formatter<std::invoke_result_t<decltype(kphp::diagnostic::backtrace_
 
 template<>
 struct std::formatter<std::invoke_result_t<decltype(kphp::diagnostic::backtrace_symbols), std::span<void* const>>> {
-  using symbols_t = std::invoke_result_t<decltype(kphp::diagnostic::backtrace_symbols), std::span<void* const>>;
+  using symbols_info_t = std::invoke_result_t<decltype(kphp::diagnostic::backtrace_symbols), std::span<void* const>>;
   template<typename ParseContext>
   constexpr auto parse(ParseContext& ctx) const noexcept {
     return ctx.begin();
   }
 
   template<typename FmtContext>
-  auto format(const symbols_t& symbols, FmtContext& ctx) const noexcept {
+  auto format(const symbols_info_t& symbols_info, FmtContext& ctx) const noexcept {
     auto out{ctx.out()};
     size_t level{};
-    for (const auto& symbol : symbols) {
-      out = format_to(out, "# {} : {}\n", level++, symbol);
+    for (const auto& symbol_info : symbols_info) {
+      out = format_to(out, "# {} : {}\n", level++, symbol_info);
     }
 
     return out;
