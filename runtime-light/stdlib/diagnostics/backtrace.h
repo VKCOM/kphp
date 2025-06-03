@@ -67,13 +67,12 @@ struct std::formatter<std::invoke_result_t<decltype(kphp::diagnostic::backtrace_
 
   template<typename FmtContext>
   auto format(const addresses_t& addresses, FmtContext& ctx) const noexcept {
-    auto out{ctx.out()};
     size_t level{};
     for (const auto* addr : addresses) {
-      out = format_to(out, "# {} : {:p}\n", level++, addr);
+      format_to(ctx.out(), "# {} : {:p}\n", level++, addr);
     }
 
-    return out;
+    return ctx.out();
   }
 };
 
@@ -87,12 +86,11 @@ struct std::formatter<std::invoke_result_t<decltype(kphp::diagnostic::backtrace_
 
   template<typename FmtContext>
   auto format(const symbols_info_t& symbols_info, FmtContext& ctx) const noexcept {
-    auto out{ctx.out()};
     size_t level{};
     for (const auto& symbol_info : symbols_info) {
-      out = format_to(out, "# {} : {}\n", level++, symbol_info);
+      format_to(ctx.out(), "# {} : {}\n", level++, symbol_info);
     }
 
-    return out;
+    return ctx.out();
   }
 };
