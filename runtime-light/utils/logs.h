@@ -77,13 +77,13 @@ void log(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args
   static constexpr size_t SMALL_BUFFER_SIZE = 512;
   static constexpr size_t BIG_BUFFER_SIZE = 512 * 16;
 
-  auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(backtrace_view)};
-  if (!backtrace_symbols.empty()) {
-    write_log<BIG_BUFFER_SIZE>(level, backtrace_symbols, fmt, std::forward<Args>(args)...);
-  } else {
-    auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(backtrace_view)};
-    write_log<SMALL_BUFFER_SIZE>(level, backtrace_addresses, fmt, std::forward<Args>(args)...);
+  if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(backtrace_view)}; !backtrace_symbols.empty()) {
+    return write_log<BIG_BUFFER_SIZE>(level, backtrace_symbols, fmt, std::forward<Args>(args)...);
   }
+  if (auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(backtrace_view)}; !backtrace_addresses.empty()) {
+    return write_log<SMALL_BUFFER_SIZE>(level, backtrace_addresses, fmt, std::forward<Args>(args)...);
+  }
+  return write_log<SMALL_BUFFER_SIZE>(level, "cannot resolve virtual addresses to debug information", fmt, std::forward<Args>(args)...);
 }
 } // namespace impl
 
