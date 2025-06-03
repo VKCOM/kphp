@@ -75,7 +75,7 @@ void log(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args
   std::span<void* const> backtrace_view{backtrace.data(), num_frames};
 
   static constexpr size_t SMALL_BUFFER_SIZE = 512;
-  static constexpr size_t BIG_BUFFER_SIZE = 512 * 16;
+  static constexpr size_t BIG_BUFFER_SIZE = 1024 * 4;
 
   if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(backtrace_view)}; !backtrace_symbols.empty()) {
     return write_log<BIG_BUFFER_SIZE>(level, backtrace_symbols, fmt, std::forward<Args>(args)...);
