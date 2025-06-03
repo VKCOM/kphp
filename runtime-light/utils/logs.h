@@ -15,14 +15,6 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
 
-enum class LogLevel : size_t {
-  Error = 1,
-  Warn = 2,
-  Info = 3,
-  Debug = 4,
-  Trace = 5,
-};
-
 namespace kphp::log {
 
 namespace impl {
@@ -78,12 +70,6 @@ void log(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args
 }
 } // namespace impl
 
-template<typename... Args>
-[[noreturn]] void error(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  impl::log(impl::level::error, fmt, std::forward<Args>(args)...);
-  k2::exit(1);
-}
-
 // The backtrace algorithm relies on the fact that assertion does not call backtrace.
 // If assertion is modified, the backtrace algorithm should be updated accordingly
 inline void assertion(bool condition, const std::source_location& location = std::source_location::current()) noexcept {
@@ -95,6 +81,12 @@ inline void assertion(bool condition, const std::source_location& location = std
     k2::log(std::to_underlying(impl::level::error), size, log_buffer.data());
     k2::exit(1);
   }
+}
+
+template<typename... Args>
+[[noreturn]] void error(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
+  impl::log(impl::level::error, fmt, std::forward<Args>(args)...);
+  k2::exit(1);
 }
 
 template<typename... Args>
