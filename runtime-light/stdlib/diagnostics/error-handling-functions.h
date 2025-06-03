@@ -6,7 +6,10 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <format>
+#include <span>
+#include <utility>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/k2-platform/k2-api.h"

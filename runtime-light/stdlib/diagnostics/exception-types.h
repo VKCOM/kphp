@@ -4,15 +4,21 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <format>
+#include <span>
 #include <string_view>
+#include <utility>
 
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/memory-visitors.h"
+#include "runtime-light/stdlib/diagnostics/backtrace.h"
+#include "runtime-light/stdlib/diagnostics/error-handling-functions.h"
 #include "runtime-light/stdlib/visitors/array-visitors.h"
 #include "runtime-light/utils/logs.h"
 
@@ -71,11 +77,23 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
 
 using Throwable = class_instance<C$Throwable>;
 
+template<>
+struct std::formatter<Throwable> {
+  template<typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) const noexcept {
+    return ctx.begin();
+  }
+
+  template<typename FmtContext>
+  auto format(const Throwable& e, FmtContext& ctx) const noexcept {
+    format_to(ctx.out(), "'{}' at {}:{}\n", e->$message.c_str(), e->$file.c_str(), e->$line);
+    return ctx.out();
+  }
+};
+
 // ================================================================================================
 
 namespace exception_impl_ {
-
-inline constexpr int32_t backtrace_size_limit = 64;
 
 inline string exception_trace_as_string(const Throwable& e) noexcept {
   auto& static_SB{RuntimeContext::get().static_SB.clean()};
@@ -89,7 +107,20 @@ inline string exception_trace_as_string(const Throwable& e) noexcept {
 inline void exception_initialize(const Throwable& e, const string& message, int64_t code) noexcept {
   e->$message = message;
   e->$code = code;
-  kphp::log::warning("exception backtrace is not yet supported"); // TODO
+
+  // For now, raw_trace is not used
+  static constexpr size_t MAX_BACKTRACE_SIZE = 64;
+  std::array<void*, MAX_BACKTRACE_SIZE> backtrace{};
+  const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
+  std::span<void* const> backtrace_view{backtrace.begin(), num_frames};
+
+  if (auto backtrace_symbols{error_handling_impl_::format_backtrace_symbols(backtrace_view)}; !backtrace_symbols.empty()) {
+    e->trace = std::move(backtrace_symbols);
+  } else if (auto backtrace_code_addresses{error_handling_impl_::format_backtrace_addresses(backtrace_view)}; !backtrace_code_addresses.empty()) {
+    e->trace = std::move(backtrace_code_addresses);
+  } else {
+    kphp::log::warning("cannot resolve virtual addresses to debug information");
+  }
 }
 
 } // namespace exception_impl_

@@ -79,7 +79,7 @@ void InstanceState::init_script_execution() noexcept {
             [](kphp::coro::task<> script_task) noexcept -> kphp::coro::task<> {
               co_await script_task;
               if (auto exception{std::move(ForkInstanceState::get().current_info().get().thrown_exception)}; !exception.is_null()) [[unlikely]] {
-                kphp::log::error("unhandled exception '{}' at {}:{}", exception.get_class(), exception.get()->$file.c_str(), exception.get()->$line);
+                kphp::log::error("unhandled exception {}", exception);
               }
             },
             std::move(script_task));
