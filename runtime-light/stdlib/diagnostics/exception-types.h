@@ -85,9 +85,13 @@ struct std::formatter<Throwable> {
     format_to(ctx.out(), "'{}' at {}:{}\n", e->$message.c_str(), e->$file.c_str(), e->$line);
     format_to(ctx.out(), "Backtrace:\n");
 
+    const ::string function_key{"function", 8};
+    const ::string filename_key{"file", 4};
+    const ::string lineno_key{"line", 4};
+
     for (int64_t i = 0; i < e->trace.count(); ++i) {
       const auto& current{e->trace.get_value(i)};
-      format_to(ctx.out(), "#{} {}: {}\n", i, current.get_value(::string{"file", 4}).c_str(), current.get_value(::string{"function", 8}).c_str());
+      format_to(ctx.out(), "#{} {}\n\tat {}:{}\n", i, current.get_value(function_key).c_str(), current.get_value(filename_key).c_str(), current.get_value(lineno_key).to_int());
     }
     return ctx.out();
   }
