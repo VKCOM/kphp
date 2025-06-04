@@ -26,7 +26,6 @@ void php_warning_impl(kphp::log::impl::level level, char const* message, va_list
   }
 
   if (const auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
-    log_buffer[recorded] = '\0';
     kphp::log::impl::log(level, "{}", log_buffer.data());
   } else {
     k2::log(std::to_underlying(level), recorded, log_buffer.data());
