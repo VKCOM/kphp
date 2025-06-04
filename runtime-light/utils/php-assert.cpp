@@ -20,10 +20,16 @@ void php_warning_impl(kphp::log::impl::level level, char const* message, va_list
 
   constexpr size_t LOG_BUFFER_SIZE = 512;
   std::array<char, LOG_BUFFER_SIZE> log_buffer;
+  const auto recorded{std::vsnprintf(log_buffer.data(), log_buffer.size(), message, args)};
+  if (recorded <= 0) {
+    return;
+  }
 
-  if (const auto recorded{std::vsnprintf(log_buffer.data(), log_buffer.size(), message, args)}; recorded > 0) {
+  if (const auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
     log_buffer[recorded] = '\0';
     kphp::log::impl::log(level, "{}", log_buffer.data());
+  } else {
+    k2::log(std::to_underlying(level), recorded, log_buffer.data());
   }
 }
 } // namespace
