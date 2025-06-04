@@ -25,7 +25,11 @@ void php_warning_impl(kphp::log::impl::level level, char const* message, va_list
     return;
   }
 
-  kphp::log::impl::write_log(level, "{}", log_buffer.data());
+  if (const auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
+    kphp::log::impl::write_log_with_backtrace(level, "{}", log_buffer.data());
+  } else {
+    kphp::log::impl::write_log(level, "{}", log_buffer.data());
+  }
 }
 } // namespace
 
