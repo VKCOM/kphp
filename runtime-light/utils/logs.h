@@ -56,13 +56,13 @@ void log(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args
     std::span<void* const> backtrace_view{backtrace.data(), num_frames};
 
     if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(backtrace_view)}; !backtrace_symbols.empty()) {
-      const auto res{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace_symbols)};
-      out = res.out;
-      size += res.size;
+      const auto [trace_out, trace_size]{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace_symbols)};
+      out = trace_out;
+      size += trace_size;
     } else if (auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(backtrace_view)}; !backtrace_addresses.empty()) {
-      const auto res{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace_addresses)};
-      out = res.out;
-      size += res.size;
+      const auto [trace_out, trace_size]{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace_addresses)};
+      out = trace_out;
+      size += trace_size;
     }
   }
   *out = '\0';
