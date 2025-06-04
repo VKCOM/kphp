@@ -74,7 +74,7 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
 using Throwable = class_instance<C$Throwable>;
 
 template<>
-struct std::formatter<Throwable, char> {
+struct std::formatter<Throwable> {
   template<typename ParseContext>
   constexpr auto parse(ParseContext& ctx) const noexcept {
     return ctx.begin();
@@ -82,15 +82,14 @@ struct std::formatter<Throwable, char> {
 
   template<typename FmtContext>
   auto format(const Throwable& e, FmtContext& ctx) const noexcept {
-    auto out{ctx.out()};
-    out = format_to(out, "'{}' at {}:{}\n", e->$message.c_str(), e->$file.c_str(), e->$line);
-    out = format_to(out, "Backtrace:\n");
+    format_to(ctx.out(), "'{}' at {}:{}\n", e->$message.c_str(), e->$file.c_str(), e->$line);
+    format_to(ctx.out(), "Backtrace:\n");
 
     for (int64_t i = 0; i < e->trace.count(); ++i) {
       const auto& current{e->trace.get_value(i)};
-      out = format_to(out, "#{} {}: {}\n", i, current.get_value(::string{"file", 4}).c_str(), current.get_value(::string{"function", 8}).c_str());
+      format_to(ctx.out(), "#{} {}: {}\n", i, current.get_value(::string{"file", 4}).c_str(), current.get_value(::string{"function", 8}).c_str());
     }
-    return out;
+    return ctx.out();
   }
 };
 
