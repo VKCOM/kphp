@@ -271,8 +271,7 @@ void InstanceState::process_platform_updates() noexcept {
         case ScheduleStatus::Resumed: { // scheduler's resumed a coroutine waiting for update
           break;
         }
-        case ScheduleStatus::Skipped: { // no one is waiting for the event yet, so just save it
-          pending_updates_.insert(stream_d);
+        case ScheduleStatus::Skipped: { // no one is waiting for the event yet
           break;
         }
         case ScheduleStatus::Error: { // something bad's happened, stop execution
@@ -365,7 +364,6 @@ void InstanceState::release_stream(uint64_t stream_d) noexcept {
     standard_stream_ = k2::INVALID_PLATFORM_DESCRIPTOR;
   }
   opened_streams_.erase(stream_d);
-  pending_updates_.erase(stream_d); // also erase pending updates if exists
   k2::free_descriptor(stream_d);
   kphp::log::debug("released a stream {}", stream_d);
 }
@@ -377,6 +375,5 @@ void InstanceState::release_all_streams() noexcept {
     kphp::log::debug("released a stream {}", stream_d);
   }
   opened_streams_.clear();
-  pending_updates_.clear();
   incoming_streams_.clear();
 }
