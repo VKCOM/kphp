@@ -91,7 +91,8 @@ struct std::formatter<Throwable> {
 
     for (int64_t i = 0; i < e->trace.count(); ++i) {
       const auto& current{e->trace.get_value(i)};
-      format_to(ctx.out(), "#{} {}\n\tat {}:{}\n", i, current.get_value(function_key).c_str(), current.get_value(filename_key).c_str(), current.get_value(lineno_key).to_int());
+      format_to(ctx.out(), "#{} {}\n\tat {}:{}\n", i, current.get_value(function_key).c_str(), current.get_value(filename_key).c_str(),
+                current.get_value(lineno_key).to_int());
     }
     return ctx.out();
   }
