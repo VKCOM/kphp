@@ -43,7 +43,7 @@ void handle_lock_error(pid_t* lock, const char* what) noexcept {
       }
     }
   } else if (errno != EAGAIN) {
-    php_runtime_critical("Got unexpected error from futex %s: %s", what, std::strerror(errno));
+    runtime_critical_error("Got unexpected error from futex %s: %s", what, std::strerror(errno));
   }
 }
 
@@ -95,7 +95,7 @@ void inter_process_mutex::unlock() noexcept {
   const pid_t tid = get_main_thread_id();
   if (!__sync_bool_compare_and_swap(&lock_, tid, 0)) {
     if (futex(&lock_, FUTEX_UNLOCK_PI)) {
-      php_runtime_critical("Got unexpected error from futex unlock: %s", std::strerror(errno));
+      runtime_critical_error("Got unexpected error from futex unlock: %s", std::strerror(errno));
     }
   }
   dl::leave_critical_section();
