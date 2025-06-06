@@ -85,9 +85,6 @@ struct InstanceState final : vk::not_copyable {
 
   void process_platform_updates() noexcept;
 
-  bool stream_updated(uint64_t stream_d) const noexcept {
-    return pending_updates_.contains(stream_d);
-  }
   const unordered_set<uint64_t>& opened_streams() const noexcept {
     return opened_streams_;
   }
@@ -151,7 +148,6 @@ private:
   uint64_t standard_stream_{k2::INVALID_PLATFORM_DESCRIPTOR};
   deque<uint64_t> incoming_streams_;
   unordered_set<uint64_t> opened_streams_;
-  unordered_set<uint64_t> pending_updates_;
 
   static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(16U * 1024U * 1024U); // 16MB
 };

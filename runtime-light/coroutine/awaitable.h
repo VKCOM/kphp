@@ -76,17 +76,24 @@ public:
 } // namespace awaitable_impl_
 
 class wait_for_update_t : awaitable_impl_::fork_id_watcher_t, awaitable_impl_::async_stack_watcher_t {
+public:
+  enum class update_kind : uint8_t { read, write };
+
+private:
   uint64_t stream_d;
+  update_kind upd_kind;
   SuspendToken suspend_token;
   awaitable_impl_::state state{awaitable_impl_::state::init};
 
 public:
-  explicit wait_for_update_t(uint64_t stream_d_) noexcept
+  explicit wait_for_update_t(uint64_t stream_d_, update_kind kind_) noexcept
       : stream_d(stream_d_),
+        upd_kind(kind_),
         suspend_token(std::noop_coroutine(), WaitEvent::UpdateOnStream{.stream_d = stream_d}) {}
 
   wait_for_update_t(wait_for_update_t&& other) noexcept
       : stream_d(std::exchange(other.stream_d, k2::INVALID_PLATFORM_DESCRIPTOR)),
+        upd_kind(other.upd_kind),
         suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{}))),
         state(std::exchange(other.state, awaitable_impl_::state::end)) {}
 
@@ -102,7 +109,12 @@ public:
 
   bool await_ready() noexcept {
     kphp::log::assertion(state == awaitable_impl_::state::init);
-    state = InstanceState::get().stream_updated(stream_d) ? awaitable_impl_::state::ready : awaitable_impl_::state::init;
+    k2::StreamStatus status{};
+    k2::stream_status(stream_d, std::addressof(status));
+    state = (upd_kind == update_kind::read && status.read_status == k2::IOStatus::IOAvailable) ||
+                    (upd_kind == update_kind::write && status.write_status == k2::IOStatus::IOAvailable)
+                ? awaitable_impl_::state::ready
+                : awaitable_impl_::state::init;
     return state == awaitable_impl_::state::ready;
   }
 

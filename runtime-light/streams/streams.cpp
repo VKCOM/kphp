@@ -44,7 +44,7 @@ read_all_from_stream(uint64_t stream_d) noexcept {
       }
       buffer_size += k2::read(stream_d, STREAM_BATCH_SIZE, buffer + buffer_size);
     } else if (status.read_status == k2::IOStatus::IOBlocked) {
-      co_await wait_for_update_t{stream_d};
+      co_await wait_for_update_t{stream_d, wait_for_update_t::update_kind::read};
     }
 
   } while (status.read_status != k2::IOStatus::IOClosed);
@@ -96,7 +96,7 @@ kphp::coro::task<int32_t> read_exact_from_stream(uint64_t stream_d, char* buffer
     if (status.read_status == k2::IOStatus::IOAvailable) {
       read += k2::read(stream_d, len - read, buffer + read);
     } else if (status.read_status == k2::IOStatus::IOBlocked) {
-      co_await wait_for_update_t{stream_d};
+      co_await wait_for_update_t{stream_d, wait_for_update_t::update_kind::read};
     } else {
       co_return read;
     }
@@ -122,7 +122,7 @@ kphp::coro::task<int32_t> write_all_to_stream(uint64_t stream_d, const char* buf
     } else if (status.write_status == k2::IOStatus::IOAvailable) {
       written += k2::write(stream_d, len - written, buffer + written);
     } else if (status.write_status == k2::IOStatus::IOBlocked) {
-      co_await wait_for_update_t{stream_d};
+      co_await wait_for_update_t{stream_d, wait_for_update_t::update_kind::write};
     } else {
       kphp::log::warning("stream closed while writing. Wrote {}. Size {}. Stream {}", written, len, stream_d);
       co_return written;
@@ -173,7 +173,7 @@ kphp::coro::task<int32_t> write_exact_to_stream(uint64_t stream_d, const char* b
     } else if (status.write_status == k2::IOStatus::IOAvailable) {
       written += k2::write(stream_d, len - written, buffer + written);
     } else if (status.write_status == k2::IOStatus::IOBlocked) {
-      co_await wait_for_update_t{stream_d};
+      co_await wait_for_update_t{stream_d, wait_for_update_t::update_kind::write};
     } else {
       co_return written;
     }
