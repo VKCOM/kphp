@@ -31,7 +31,7 @@
 
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
-#include <server/server-log.h>
+#include "server/server-log.h"
 
 const char* engine_tag = "[";
 long long engine_tag_number = 0;
@@ -165,10 +165,11 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const* mes
   }
 
   if (is_demangled_stacktrace_logs_enabled) {
-    vk::singleton<JsonLogger>::get().write_log_with_demangled_backtrace(buf, error_type, cur_time, buffer, nptrs,
-                                                                        out_of_memory || die_on_fail || error_type == E_ERROR);
+    vk::singleton<JsonLogger>::get().write_log_with_demangled_backtrace(
+        buf, error_type, cur_time, buffer, nptrs, out_of_memory || die_on_fail || error_type == E_ERROR || error_type == static_cast<int>(ServerLog::Critical));
   } else {
-    vk::singleton<JsonLogger>::get().write_log(buf, error_type, cur_time, buffer, nptrs, out_of_memory || die_on_fail || error_type == E_ERROR);
+    vk::singleton<JsonLogger>::get().write_log(buf, error_type, cur_time, buffer, nptrs,
+                                               out_of_memory || die_on_fail || error_type == E_ERROR || error_type == static_cast<int>(ServerLog::Critical));
   }
 
   if (die_on_fail) {
@@ -206,12 +207,11 @@ void php_out_of_memory_warning(char const* message, ...) {
   va_end(args);
 }
 
-void php_runtime_critical(char const* message, ...) {
+void runtime_error(char const* message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(true, static_cast<int>(ServerLog::Critical), message, args);
+  php_warning_impl(false, static_cast<int>(ServerLog::Critical), message, args);
   va_end(args);
-  critical_error_handler();
 }
 
 const char* php_uncaught_exception_error(const class_instance<C$Throwable>& ex) noexcept {
