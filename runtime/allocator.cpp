@@ -104,7 +104,7 @@ void* allocate(size_t size) noexcept {
     return heap_replacer->allocate(size);
   }
   if (unlikely(!script_allocator_enabled)) {
-    php_critical_error("Trying to call allocate for non runned script, n = %zu", size);
+    runtime_critical_error("Trying to call allocate for non runned script, n = %zu", size);
     return nullptr;
   }
 
@@ -118,7 +118,7 @@ void* allocate0(size_t size) noexcept {
     return heap_replacer->allocate0(size);
   }
   if (unlikely(!script_allocator_enabled)) {
-    php_critical_error("Trying to call allocate0 for non runned script, n = %zu", size);
+    runtime_critical_error("Trying to call allocate0 for non runned script, n = %zu", size);
     return nullptr;
   }
 
@@ -132,7 +132,7 @@ void* reallocate(void* mem, size_t new_size, size_t old_size) noexcept {
     return heap_replacer->reallocate(mem, new_size, old_size);
   }
   if (unlikely(!script_allocator_enabled)) {
-    php_critical_error("Trying to call reallocate for non runned script, p = %p, new_size = %zu, old_size = %zu", mem, new_size, old_size);
+    runtime_critical_error("Trying to call reallocate for non runned script, p = %p, new_size = %zu, old_size = %zu", mem, new_size, old_size);
     return mem;
   }
 
@@ -277,7 +277,7 @@ void* memalign(size_t alignment, size_t size) {
 void* operator new(size_t size) {
   auto* res = std::malloc(size);
   if (!res) {
-    php_critical_error("nullptr from malloc");
+    runtime_critical_error("nullptr from malloc");
   }
   return res;
 }
