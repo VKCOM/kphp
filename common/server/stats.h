@@ -16,6 +16,7 @@ char* get_engine_default_prepare_stats_buffer();
 std::pair<char*, int> engine_default_prepare_stats_with_tag_mask(stats_t&& stats, const char* stats_prefix, unsigned int tag_mask);
 char* engine_default_prepare_stats(stats_t&& stats, const char* stats_prefix);
 const char* engine_default_char_stats();
+const char* engine_default_http_stat_stats();
 
 void engine_default_tl_stat_function(const std::optional<std::vector<std::string>>& sorted_filter_keys);
 extern int (*tl_stat_function)(const std::optional<std::vector<std::string>>& sorted_filter_keys);
