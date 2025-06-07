@@ -314,7 +314,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(string actor, Optional<doub
   auto waiter_task{std::invoke(
       [](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> kphp::coro::task<string> {
         auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
-        const auto response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
+        auto response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
         // update response extra info if needed
         if (collect_responses_extra_info) {
           auto& extra_info_map{RpcClientInstanceState::get().rpc_responses_extra_info};
@@ -343,13 +343,13 @@ kphp::coro::task<std::expected<void, kphp::rpc::error>> send_response(std::span<
   auto& instance_st{InstanceState::get()};
   const auto stream_d{instance_st.standard_stream()};
   if (stream_d == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
-    co_return std::unexpected(kphp::rpc::error::invalid_stream);
+    co_return std::unexpected{kphp::rpc::error::invalid_stream};
   }
   if (instance_st.instance_kind() != instance_kind::rpc_server) [[unlikely]] {
-    co_return std::unexpected(kphp::rpc::error::not_rpc_stream);
+    co_return std::unexpected{kphp::rpc::error::not_rpc_stream};
   }
   if (co_await write_all_to_stream(stream_d, reinterpret_cast<const char*>(response.data()), response.size()) != response.size()) [[unlikely]] {
-    co_return std::unexpected(kphp::rpc::error::write_failed);
+    co_return std::unexpected{kphp::rpc::error::write_failed};
   }
   instance_st.release_stream(stream_d);
   co_return std::expected<void, kphp::rpc::error>{};
