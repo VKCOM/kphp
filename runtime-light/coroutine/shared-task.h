@@ -180,12 +180,15 @@ class awaiter_base {
 
     callee_frame.return_address = return_address;
     auto* async_stack_root{caller_frame.async_stack_root};
+    kphp::log::assertion(async_stack_root != nullptr);
     callee_frame.async_stack_root = async_stack_root;
     async_stack_root->top_async_stack_frame = std::addressof(callee_frame);
   }
 
   void reset_async_top_frame(async_stack_frame& caller_frame) noexcept {
-    caller_frame.async_stack_root->top_async_stack_frame = std::addressof(caller_frame);
+    auto* async_stack_root{caller_frame.async_stack_root};
+    kphp::log::assertion(async_stack_root != nullptr);
+    async_stack_root->top_async_stack_frame = std::addressof(caller_frame);
   }
 
 protected:
