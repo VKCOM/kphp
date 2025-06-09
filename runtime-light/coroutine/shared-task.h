@@ -186,7 +186,7 @@ class awaiter_base {
   }
 
   void reset_async_top_frame(async_stack_frame& caller_frame) noexcept {
-    auto& async_stack_root{caller_frame.async_stack_root};
+    auto* async_stack_root{caller_frame.async_stack_root};
     kphp::log::assertion(async_stack_root != nullptr);
     async_stack_root->top_async_stack_frame = std::addressof(caller_frame);
   }
