@@ -129,7 +129,7 @@ kphp_event_timer* allocate_event_timer(double wakeup_time, int wakeup_callback_i
         dl::reallocate(event_timers_heap, sizeof(kphp_event_timer*) * 2 * event_timers_max_heap_size, sizeof(kphp_event_timer*) * event_timers_max_heap_size));
     event_timers_max_heap_size *= 2;
     if (event_timers_max_heap_size > EVENT_TIMERS_HEAP_INDEX_MASK) {
-      php_critical_error("maximum number of event timers exceeded");
+      runtime_critical_error("maximum number of event timers exceeded");
     }
   }
   i = event_timer_heap_move_up(et->wakeup_time, i);
