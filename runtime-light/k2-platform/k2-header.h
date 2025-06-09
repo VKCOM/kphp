@@ -483,7 +483,7 @@ struct SymbolInfo {
  * Note: name and filename in symbol_info are **not** null-terminated.
  * @param `addr` pointer to code instruction
  * @param `symbol_info` structure stores buffers where the name and file name will be written. The buffer
- *        lens must staisfy `name_len >= k2_symbol_name_len and filename_len >= k2_symbol_filename_len`
+ *        lens must satisfy `name_len >= k2_symbol_name_len and filename_len >= k2_symbol_filename_len`
  * `errno` options:
  * `EINVAL`  => `addr` symbol can't be resolved
  * `ENODATA` => there is no debug information for the image
@@ -546,6 +546,13 @@ int32_t k2_iconv(size_t* result, void* iconv_cd, char** inbuf, size_t* inbytesle
  * @return `data_len` on success, `0` otherwise
  */
 size_t k2_stderr_write(size_t data_len, const void* data);
+
+/**
+ * Returns a backtrace of the calling component
+ *
+ * @return backtrace size on success, `0` otherwise
+ */
+size_t k2_backtrace(void **buffer, size_t size);
 
 #ifdef __cplusplus
 }
