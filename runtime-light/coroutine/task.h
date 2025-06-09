@@ -47,7 +47,7 @@ struct promise_base : async_stack_element {
         auto* caller_frame{callee_frame.caller_async_stack_frame};
         kphp::log::assertion(caller_frame != nullptr);
 
-        auto* async_stack_root{std::exchange(callee_frame.async_stack_root, nullptr)};
+        auto* async_stack_root{callee_frame.async_stack_root};
         kphp::log::assertion(async_stack_root != nullptr);
 
         caller_frame->async_stack_root = async_stack_root;
@@ -89,8 +89,7 @@ class awaiter_base {
     callee_frame.caller_async_stack_frame = std::addressof(caller_frame);
     callee_frame.return_address = return_address;
 
-    // To identify potential logic errors, caller.async_stack_root is set to null.
-    auto* async_stack_root{std::exchange(caller_frame.async_stack_root, nullptr)};
+    auto* async_stack_root{caller_frame.async_stack_root};
     kphp::log::assertion(async_stack_root != nullptr);
     callee_frame.async_stack_root = async_stack_root;
     async_stack_root->top_async_stack_frame = std::addressof(callee_frame);
@@ -98,10 +97,7 @@ class awaiter_base {
 
   void detach_from_async_stack() noexcept {
     async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
-    if (auto* caller_frame{callee_frame.caller_async_stack_frame}; caller_frame != nullptr) {
-      caller_frame->async_stack_root = std::exchange(callee_frame.async_stack_root, nullptr);
-      callee_frame.caller_async_stack_frame = nullptr;
-    }
+    callee_frame.caller_async_stack_frame = nullptr;
   }
 
 protected:
