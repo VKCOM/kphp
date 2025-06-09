@@ -98,7 +98,7 @@ class awaiter_base {
 
   void detach_from_async_stack() noexcept {
     async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
-    if (async_stack_frame * caller_frame{callee_frame.caller_async_stack_frame}; caller_frame != nullptr) {
+    if (auto* caller_frame{callee_frame.caller_async_stack_frame}; caller_frame != nullptr) {
       caller_frame->async_stack_root = std::exchange(callee_frame.async_stack_root, nullptr);
       callee_frame.caller_async_stack_frame = nullptr;
     }
