@@ -552,7 +552,7 @@ size_t k2_stderr_write(size_t data_len, const void* data);
  *
  * @return backtrace size on success, `0` otherwise
  */
-size_t k2_backtrace(void **buffer, size_t size);
+size_t k2_backtrace(void** buffer, size_t size);
 
 #ifdef __cplusplus
 }
