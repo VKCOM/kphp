@@ -66,7 +66,7 @@ inline array<array<string>> f$debug_backtrace() noexcept {
   static constexpr size_t MAX_STACKTRACE_DEPTH = 64;
 
   std::array<void*, MAX_STACKTRACE_DEPTH> backtrace{};
-  size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
+  size_t num_frames{kphp::diagnostic::async_backtrace(backtrace)};
   std::span<void*> backtrace_view{backtrace.data(), num_frames};
   auto backtrace_symbols{error_handling_impl_::format_backtrace_symbols(backtrace_view)};
   if (!backtrace_symbols.empty()) {
