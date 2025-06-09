@@ -10,6 +10,7 @@
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/utils/logs.h"
 
 namespace {
