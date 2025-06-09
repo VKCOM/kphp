@@ -45,9 +45,11 @@ struct promise_base : async_stack_element {
     private:
       void pop_async_stack_frame(async_stack_frame& callee_frame) const noexcept {
         auto* caller_frame{callee_frame.caller_async_stack_frame};
-        auto* async_stack_root{std::exchange(callee_frame.async_stack_root, nullptr)};
         kphp::log::assertion(caller_frame != nullptr);
+
+        auto* async_stack_root{std::exchange(callee_frame.async_stack_root, nullptr)};
         kphp::log::assertion(async_stack_root != nullptr);
+
         caller_frame->async_stack_root = async_stack_root;
         async_stack_root->top_async_stack_frame = caller_frame;
       }
