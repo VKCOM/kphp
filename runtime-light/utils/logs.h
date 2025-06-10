@@ -73,7 +73,10 @@ void log_with_backtrace(level level, std::format_string<impl::wrapped_arg_t<Args
   }
 
   std::array<void*, MAX_BACKTRACE_SIZE> backtrace;
-  const size_t num_frames{kphp::diagnostic::sync_backtrace(backtrace)};
+  size_t num_frames{kphp::diagnostic::async_backtrace(backtrace)};
+  if (num_frames == 0) {
+    num_frames = kphp::diagnostic::sync_backtrace(backtrace);
+  }
   const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
   impl::log(level, backtrace_view, fmt, std::forward<Args>(args)...);
 }
