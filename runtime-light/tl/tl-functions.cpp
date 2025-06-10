@@ -15,8 +15,8 @@ namespace tl {
 // ===== JOB WORKERS =====
 
 bool K2InvokeJobWorker::fetch(tl::TLBuffer& tlb) noexcept {
-  tl::details::magic magic{};
-  tl::details::mask flags{};
+  tl::magic magic{};
+  tl::mask flags{};
   bool ok{magic.fetch(tlb) && magic.expect(K2_INVOKE_JOB_WORKER_MAGIC)};
   ok &= flags.fetch(tlb);
   ok &= image_id.fetch(tlb);
@@ -28,8 +28,8 @@ bool K2InvokeJobWorker::fetch(tl::TLBuffer& tlb) noexcept {
 }
 
 void K2InvokeJobWorker::store(tl::TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = K2_INVOKE_JOB_WORKER_MAGIC}.store(tlb);
-  tl::details::mask{.value = ignore_answer ? IGNORE_ANSWER_FLAG : 0x0}.store(tlb);
+  tl::magic{.value = K2_INVOKE_JOB_WORKER_MAGIC}.store(tlb);
+  tl::mask{.value = ignore_answer ? IGNORE_ANSWER_FLAG : 0x0}.store(tlb);
   image_id.store(tlb);
   job_id.store(tlb);
   timeout_ns.store(tlb);
@@ -39,25 +39,25 @@ void K2InvokeJobWorker::store(tl::TLBuffer& tlb) const noexcept {
 // ===== CRYPTO =====
 
 void GetCryptosecurePseudorandomBytes::store(tl::TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = GET_CRYPTOSECURE_PSEUDORANDOM_BYTES_MAGIC}.store(tlb);
+  tl::magic{.value = GET_CRYPTOSECURE_PSEUDORANDOM_BYTES_MAGIC}.store(tlb);
   size.store(tlb);
 }
 
 void GetPemCertInfo::store(tl::TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = GET_PEM_CERT_INFO_MAGIC}.store(tlb);
+  tl::magic{.value = GET_PEM_CERT_INFO_MAGIC}.store(tlb);
   tl::Bool{.value = is_short}.store(tlb);
   bytes.store(tlb);
 }
 
 void DigestSign::store(tl::TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = DIGEST_SIGN_MAGIC}.store(tlb);
+  tl::magic{.value = DIGEST_SIGN_MAGIC}.store(tlb);
   data.store(tlb);
   private_key.store(tlb);
   tlb.store_trivial<uint32_t>(algorithm);
 }
 
 void DigestVerify::store(tl::TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = DIGEST_VERIFY_MAGIC}.store(tlb);
+  tl::magic{.value = DIGEST_VERIFY_MAGIC}.store(tlb);
   data.store(tlb);
   public_key.store(tlb);
   tlb.store_trivial<uint32_t>(algorithm);
@@ -65,7 +65,7 @@ void DigestVerify::store(tl::TLBuffer& tlb) const noexcept {
 }
 
 void CbcDecrypt::store(tl::TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = CBC_DECRYPT_MAGIC}.store(tlb);
+  tl::magic{.value = CBC_DECRYPT_MAGIC}.store(tlb);
   tlb.store_trivial<uint32_t>(algorithm);
   tlb.store_trivial<uint32_t>(padding);
   passphrase.store(tlb);
@@ -74,7 +74,7 @@ void CbcDecrypt::store(tl::TLBuffer& tlb) const noexcept {
 }
 
 void CbcEncrypt::store(tl::TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = CBC_ENCRYPT_MAGIC}.store(tlb);
+  tl::magic{.value = CBC_ENCRYPT_MAGIC}.store(tlb);
   tlb.store_trivial<uint32_t>(algorithm);
   tlb.store_trivial<uint32_t>(padding);
   passphrase.store(tlb);
@@ -83,13 +83,13 @@ void CbcEncrypt::store(tl::TLBuffer& tlb) const noexcept {
 }
 
 void Hash::store(tl::TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = HASH_MAGIC}.store(tlb);
+  tl::magic{.value = HASH_MAGIC}.store(tlb);
   tlb.store_trivial<uint32_t>(algorithm);
   data.store(tlb);
 }
 
 void HashHmac::store(tl::TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = HASH_HMAC_MAGIC}.store(tlb);
+  tl::magic{.value = HASH_HMAC_MAGIC}.store(tlb);
   tlb.store_trivial<uint32_t>(algorithm);
   data.store(tlb);
   secret_key.store(tlb);
@@ -98,20 +98,20 @@ void HashHmac::store(tl::TLBuffer& tlb) const noexcept {
 // ===== CONFDATA =====
 
 void ConfdataGet::store(tl::TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = CONFDATA_GET_MAGIC}.store(tlb);
+  tl::magic{.value = CONFDATA_GET_MAGIC}.store(tlb);
   key.store(tlb);
 }
 
 void ConfdataGetWildcard::store(tl::TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = CONFDATA_GET_WILDCARD_MAGIC}.store(tlb);
+  tl::magic{.value = CONFDATA_GET_WILDCARD_MAGIC}.store(tlb);
   wildcard.store(tlb);
 }
 
 // ===== HTTP =====
 
 bool K2InvokeHttp::fetch(tl::TLBuffer& tlb) noexcept {
-  tl::details::magic magic{};
-  tl::details::mask flags{};
+  tl::magic magic{};
+  tl::mask flags{};
   bool ok{magic.fetch(tlb) && magic.expect(K2_INVOKE_HTTP_MAGIC)};
   ok &= flags.fetch(tlb);
   ok &= connection.fetch(tlb);

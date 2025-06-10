@@ -50,7 +50,7 @@ kphp::coro::task<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length)
   tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
 
   // Maybe better to do this in some structure, but there's not much work to do with TL here
-  if (tl::details::magic magic{}; !magic.fetch(tlb) || !magic.expect(TL_MAYBE_TRUE)) {
+  if (tl::magic magic{}; !magic.fetch(tlb) || !magic.expect(TL_MAYBE_TRUE)) {
     co_return false;
   }
 
@@ -120,7 +120,7 @@ kphp::coro::task<bool> f$openssl_sign(string data, string& signature, string pri
   tlb.clean();
   tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
 
-  if (tl::details::magic magic{}; !magic.fetch(tlb) || !magic.expect(TL_MAYBE_TRUE)) {
+  if (tl::magic magic{}; !magic.fetch(tlb) || !magic.expect(TL_MAYBE_TRUE)) {
     co_return false;
   }
 
@@ -150,7 +150,7 @@ kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string
 
   // For now returns only 1 or 0, -1 is never returned
   // Because it's currently impossible to distiguish error from negative verification
-  if (tl::details::magic magic{}; !magic.fetch(tlb) || !magic.expect(TL_BOOL_TRUE)) {
+  if (tl::magic magic{}; !magic.fetch(tlb) || !magic.expect(TL_BOOL_TRUE)) {
     co_return 0;
   }
   co_return 1;

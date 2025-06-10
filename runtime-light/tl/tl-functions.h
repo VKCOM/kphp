@@ -154,7 +154,7 @@ class K2InvokeRpc final {
   static constexpr auto EXTRA_FLAG = static_cast<uint32_t>(1U << 1U);
 
 public:
-  tl::details::mask flags{};
+  tl::mask flags{};
   tl::i64 query_id{};
   tl::netPid net_pid{};
   std::optional<tl::i64> opt_actor_id;
@@ -162,7 +162,7 @@ public:
   std::string_view query;
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    tl::details::magic magic{};
+    tl::magic magic{};
     bool ok{magic.fetch(tlb) && magic.expect(K2_INVOKE_RPC_MAGIC)};
     ok &= flags.fetch(tlb);
     ok &= query_id.fetch(tlb);
@@ -192,7 +192,7 @@ struct CacheStore final {
   tl::u32 ttl;
 
   void store(TLBuffer& tlb) const noexcept {
-    tl::details::magic{.value = CACHE_STORE_MAGIC}.store(tlb);
+    tl::magic{.value = CACHE_STORE_MAGIC}.store(tlb);
     key.store(tlb);
     value.store(tlb);
     ttl.store(tlb);
@@ -204,7 +204,7 @@ struct CacheUpdateTtl final {
   tl::u32 ttl;
 
   void store(TLBuffer& tlb) const noexcept {
-    tl::details::magic{.value = CACHE_UPDATE_TTL_MAGIC}.store(tlb);
+    tl::magic{.value = CACHE_UPDATE_TTL_MAGIC}.store(tlb);
     key.store(tlb);
     ttl.store(tlb);
   }
@@ -214,7 +214,7 @@ struct CacheDelete final {
   tl::string key;
 
   void store(TLBuffer& tlb) const noexcept {
-    tl::details::magic{.value = CACHE_DELETE_MAGIC}.store(tlb);
+    tl::magic{.value = CACHE_DELETE_MAGIC}.store(tlb);
     key.store(tlb);
   }
 };
@@ -223,7 +223,7 @@ struct CacheFetch final {
   tl::string key;
 
   void store(TLBuffer& tlb) const noexcept {
-    tl::details::magic{.value = CACHE_FETCH_MAGIC}.store(tlb);
+    tl::magic{.value = CACHE_FETCH_MAGIC}.store(tlb);
     key.store(tlb);
   }
 };
