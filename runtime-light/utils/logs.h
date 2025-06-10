@@ -42,7 +42,6 @@ enum class level : size_t { error = 1, warn, info, debug, trace };
 template<typename... Args>
 void log(level level, std::span<void* const> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   static constexpr size_t LOG_BUFFER_SIZE = 1024UZ * 4UZ;
-
   if (std::to_underlying(level) > k2::log_level_enabled()) {
     return;
   }
@@ -50,7 +49,6 @@ void log(level level, std::span<void* const> trace, std::format_string<impl::wra
   std::array<char, LOG_BUFFER_SIZE> log_buffer;
   auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
                                                                                                impl::wrap_log_argument(std::forward<Args>(args))...)};
-
   if (!trace.empty()) {
     if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(trace)}; !backtrace_symbols.empty()) {
       const auto [trace_out, trace_size]{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace_symbols)};
@@ -68,14 +66,14 @@ void log(level level, std::span<void* const> trace, std::format_string<impl::wra
 }
 
 template<typename... Args>
-void write_log_with_backtrace(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
+void log_with_backtrace(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   static constexpr size_t MAX_BACKTRACE_SIZE = 64;
-
   if (std::to_underlying(level) > k2::log_level_enabled()) {
     return;
   }
+
   std::array<void*, MAX_BACKTRACE_SIZE> backtrace;
-  const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
+  const size_t num_frames{kphp::diagnostic::sync_backtrace(backtrace)};
   const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
   impl::log(level, backtrace_view, fmt, std::forward<Args>(args)...);
 }
@@ -92,13 +90,13 @@ inline void assertion(bool condition, const std::source_location& location = std
 
 template<typename... Args>
 [[noreturn]] void error(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  impl::write_log_with_backtrace(impl::level::error, fmt, std::forward<Args>(args)...);
+  impl::log_with_backtrace(impl::level::error, fmt, std::forward<Args>(args)...);
   k2::exit(1);
 }
 
 template<typename... Args>
 void warning(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  impl::write_log_with_backtrace(impl::level::warn, fmt, std::forward<Args>(args)...);
+  impl::log_with_backtrace(impl::level::warn, fmt, std::forward<Args>(args)...);
 }
 
 template<typename... Args>

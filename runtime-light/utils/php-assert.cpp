@@ -13,7 +13,10 @@
 #include "runtime-light/utils/logs.h"
 
 namespace {
-void php_warning_impl(kphp::log::impl::level level, char const* message, va_list args) noexcept {
+
+enum class php_log_level : size_t { error = 1, warn, info, debug };
+
+void php_warning_impl(php_log_level level, char const* message, va_list args) noexcept {
   if (std::to_underlying(level) > k2::log_level_enabled()) {
     return;
   }
@@ -26,19 +29,16 @@ void php_warning_impl(kphp::log::impl::level level, char const* message, va_list
   }
 
   switch (level) {
-  case kphp::log::impl::level::trace:
-    kphp::log::trace("{}", log_buffer.data());
-    break;
-  case kphp::log::impl::level::debug:
+  case php_log_level::debug:
     kphp::log::debug("{}", log_buffer.data());
     break;
-  case kphp::log::impl::level::info:
+  case php_log_level::info:
     kphp::log::info("{}", log_buffer.data());
     break;
-  case kphp::log::impl::level::warn:
+  case php_log_level::warn:
     kphp::log::warning("{}", log_buffer.data());
     break;
-  case kphp::log::impl::level::error:
+  case php_log_level::error:
     kphp::log::error("{}", log_buffer.data());
     break;
   }
@@ -48,28 +48,28 @@ void php_warning_impl(kphp::log::impl::level level, char const* message, va_list
 void php_debug(char const* message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(kphp::log::impl::level::debug, message, args);
+  php_warning_impl(php_log_level::debug, message, args);
   va_end(args);
 }
 
 void php_notice(char const* message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(kphp::log::impl::level::info, message, args);
+  php_warning_impl(php_log_level::info, message, args);
   va_end(args);
 }
 
 void php_warning(char const* message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(kphp::log::impl::level::warn, message, args);
+  php_warning_impl(php_log_level::warn, message, args);
   va_end(args);
 }
 
 void php_error(char const* message, ...) {
   va_list args;
   va_start(args, message);
-  php_warning_impl(kphp::log::impl::level::error, message, args);
+  php_warning_impl(php_log_level::error, message, args);
   va_end(args);
 }
 
