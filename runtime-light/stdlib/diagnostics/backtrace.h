@@ -15,10 +15,18 @@
 
 namespace kphp::diagnostic {
 
+namespace impl {
+
 size_t async_backtrace(std::span<void*> addresses) noexcept;
 
 inline size_t sync_backtrace(std::span<void*> addresses) noexcept {
   return k2::backtrace(addresses);
+}
+} // namespace impl
+
+inline size_t backtrace(std::span<void*> addresses) noexcept {
+  size_t async_num_frames{impl::async_backtrace(addresses)};
+  return async_num_frames != 0 ? async_num_frames : impl::sync_backtrace(addresses);
 }
 
 inline auto backtrace_addresses(std::span<void* const> addresses) noexcept {
