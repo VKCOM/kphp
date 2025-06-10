@@ -25,10 +25,22 @@ void php_warning_impl(kphp::log::impl::level level, char const* message, va_list
     return;
   }
 
-  if (const auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
-    kphp::log::impl::write_log_with_backtrace(level, "{}", log_buffer.data());
-  } else {
-    kphp::log::impl::write_log(level, "{}", log_buffer.data());
+  switch (level) {
+  case kphp::log::impl::level::trace:
+    kphp::log::trace("{}", log_buffer.data());
+    break;
+  case kphp::log::impl::level::debug:
+    kphp::log::debug("{}", log_buffer.data());
+    break;
+  case kphp::log::impl::level::info:
+    kphp::log::info("{}", log_buffer.data());
+    break;
+  case kphp::log::impl::level::warn:
+    kphp::log::warning("{}", log_buffer.data());
+    break;
+  case kphp::log::impl::level::error:
+    kphp::log::error("{}", log_buffer.data());
+    break;
   }
 }
 } // namespace

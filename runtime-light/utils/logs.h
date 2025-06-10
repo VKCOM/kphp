@@ -40,8 +40,8 @@ using wrapped_arg_t = std::invoke_result_t<decltype(impl::wrap_log_argument<T>),
 enum class level : size_t { error = 1, warn, info, debug, trace };
 
 template<typename... Args>
-void write_log(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  static constexpr size_t LOG_BUFFER_SIZE = 512;
+void log(level level, std::span<void* const> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
+  static constexpr size_t LOG_BUFFER_SIZE = 1024UZ * 4UZ;
 
   if (std::to_underlying(level) > k2::log_level_enabled()) {
     return;
@@ -50,36 +50,34 @@ void write_log(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt
   std::array<char, LOG_BUFFER_SIZE> log_buffer;
   auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
                                                                                                impl::wrap_log_argument(std::forward<Args>(args))...)};
+
+  if (!trace.empty()) {
+    if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(trace)}; !backtrace_symbols.empty()) {
+      const auto [trace_out, trace_size]{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace_symbols)};
+      out = trace_out;
+      size += trace_size;
+    } else if (auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(trace)}; !backtrace_addresses.empty()) {
+      const auto [trace_out, trace_size]{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace_addresses)};
+      out = trace_out;
+      size += trace_size;
+    }
+  }
+
   *out = '\0';
   k2::log(std::to_underlying(level), size, log_buffer.data());
 }
 
 template<typename... Args>
 void write_log_with_backtrace(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  static constexpr size_t LOG_BUFFER_SIZE = 1024UZ * 4UZ;
   static constexpr size_t MAX_BACKTRACE_SIZE = 64;
 
   if (std::to_underlying(level) > k2::log_level_enabled()) {
     return;
   }
-  std::array<char, LOG_BUFFER_SIZE> log_buffer;
-  auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
-                                                                                               impl::wrap_log_argument(std::forward<Args>(args))...)};
   std::array<void*, MAX_BACKTRACE_SIZE> backtrace;
   const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
-  std::span<void* const> backtrace_view{backtrace.data(), num_frames};
-
-  if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(backtrace_view)}; !backtrace_symbols.empty()) {
-    const auto [trace_out, trace_size]{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace_symbols)};
-    out = trace_out;
-    size += trace_size;
-  } else if (auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(backtrace_view)}; !backtrace_addresses.empty()) {
-    const auto [trace_out, trace_size]{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace_addresses)};
-    out = trace_out;
-    size += trace_size;
-  }
-  *out = '\0';
-  k2::log(std::to_underlying(level), size, log_buffer.data());
+  const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
+  impl::log(level, backtrace_view, fmt, std::forward<Args>(args)...);
 }
 } // namespace impl
 
@@ -87,7 +85,7 @@ void write_log_with_backtrace(level level, std::format_string<impl::wrapped_arg_
 // If assertion is modified, the backtrace algorithm should be updated accordingly
 inline void assertion(bool condition, const std::source_location& location = std::source_location::current()) noexcept {
   if (!condition) [[unlikely]] {
-    impl::write_log(impl::level::error, "assertion failed at {}:{}", location.file_name(), location.line());
+    impl::log(impl::level::error, {}, "assertion failed at {}:{}", location.file_name(), location.line());
     k2::exit(1);
   }
 }
@@ -105,17 +103,17 @@ void warning(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... arg
 
 template<typename... Args>
 void info(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  impl::write_log(impl::level::info, fmt, std::forward<Args>(args)...);
+  impl::log(impl::level::info, {}, fmt, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 void debug(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  impl::write_log(impl::level::debug, fmt, std::forward<Args>(args)...);
+  impl::log(impl::level::debug, {}, fmt, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 void trace(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  impl::write_log(impl::level::trace, fmt, std::forward<Args>(args)...);
+  impl::log(impl::level::trace, {}, fmt, std::forward<Args>(args)...);
 }
 
 } // namespace kphp::log
