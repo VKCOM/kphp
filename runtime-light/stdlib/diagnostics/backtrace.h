@@ -22,6 +22,7 @@ size_t async_backtrace(std::span<void*> addresses) noexcept;
 inline size_t sync_backtrace(std::span<void*> addresses) noexcept {
   return k2::backtrace(addresses);
 }
+
 } // namespace impl
 
 inline size_t backtrace(std::span<void*> addresses) noexcept {
