@@ -82,7 +82,7 @@ string build_query_get_param(const string& key, const T& param, const string& ar
 } // namespace kphp::http::impl
 
 template<class T>
-string f$http_build_query(const array<T>& data, const string& numeric_prefix = {}, const string& arg_separator = string{"&"},
+string f$http_build_query(const array<T>& data, const string& numeric_prefix = {}, const string& arg_separator = string{1, '&'},
                           int64_t encoding_type = kphp::http::PHP_QUERY_RFC1738) noexcept {
   if (!vk::any_of_equal(encoding_type, kphp::http::PHP_QUERY_RFC1738, kphp::http::PHP_QUERY_RFC3986)) {
     php_warning("unexpected encoding type %ld in http_build_query, RFC1738 will be used instead", encoding_type);
