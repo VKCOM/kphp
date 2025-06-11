@@ -3,7 +3,6 @@
 //  Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cstddef>
-#include <cstdint>
 #include <iterator>
 #include <span>
 

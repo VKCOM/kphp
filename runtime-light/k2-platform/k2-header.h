@@ -548,7 +548,7 @@ int32_t k2_iconv(size_t* result, void* iconv_cd, char** inbuf, size_t* inbytesle
 size_t k2_stderr_write(size_t data_len, const void* data);
 
 /**
- * Returns a backtrace of the calling component
+ * Analogue for libc backtrace. Returns a backtrace of the calling component
  *
  * @return backtrace size on success, `0` otherwise
  */
