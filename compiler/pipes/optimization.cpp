@@ -405,7 +405,6 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   return root;
 }
 
-
 bool OptimizationPass::user_recursion(VertexPtr root) {
   if (auto var_vertex = root.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
