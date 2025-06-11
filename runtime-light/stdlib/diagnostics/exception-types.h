@@ -86,7 +86,7 @@ struct std::formatter<Throwable> {
 
   template<typename FmtContext>
   auto format(const Throwable& e, FmtContext& ctx) const noexcept {
-    format_to(ctx.out(), "'{}' at {}:{}\n", e->$message.c_str(), e->$file.c_str(), e->$line);
+    format_to(ctx.out(), "'{}' at {}:{}", e->$message.c_str(), e->$file.c_str(), e->$line);
     return ctx.out();
   }
 };
