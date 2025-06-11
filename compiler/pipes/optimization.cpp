@@ -367,7 +367,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
       }
     }
   } else if (auto op_array_vertex = root.try_as<op_array>()) {
-    if (!var_init_expression_optimization_depth_) {
+    if (var_init_expression_optimization_depth_ == 0 || op_array_vertex->const_type == ConstValueType::cnst_const_val) {
       for (auto &array_element : *op_array_vertex) {
         const auto *required_type = tinf::get_type(op_array_vertex)->lookup_at_any_key();
         if (vk::any_of_equal(array_element->type(), op_var, op_array)) {
