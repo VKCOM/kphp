@@ -104,23 +104,23 @@ void string::store(TLBuffer& tlb) const noexcept {
 }
 
 bool K2JobWorkerResponse::fetch(TLBuffer& tlb) noexcept {
-  tl::details::magic magic{};
+  tl::magic magic{};
   bool ok{magic.fetch(tlb) && magic.expect(MAGIC)};
-  ok &= tl::details::mask{}.fetch(tlb);
+  ok &= tl::mask{}.fetch(tlb);
   ok &= job_id.fetch(tlb);
   ok &= body.fetch(tlb);
   return ok;
 }
 
 void K2JobWorkerResponse::store(TLBuffer& tlb) const noexcept {
-  tl::details::magic{.value = MAGIC}.store(tlb);
-  tl::details::mask{}.store(tlb);
+  tl::magic{.value = MAGIC}.store(tlb);
+  tl::mask{}.store(tlb);
   job_id.store(tlb);
   body.store(tlb);
 }
 
 bool CertInfoItem::fetch(TLBuffer& tlb) noexcept {
-  tl::details::magic magic{};
+  tl::magic magic{};
   if (!magic.fetch(tlb)) [[unlikely]] {
     return false;
   }
