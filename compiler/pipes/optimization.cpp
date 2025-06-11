@@ -392,6 +392,17 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
   return root;
 }
 
+static int get_expr_dep_level(VertexPtr vertex) {
+  if (auto var = vertex.try_as<op_var>()) {
+    return var->var_id->dependency_level;
+  }
+  int max_dependency_level = 0;
+  for (const auto &child: *vertex) {
+    max_dependency_level = std::max(max_dependency_level, get_expr_dep_level(child));
+  }
+  return max_dependency_level;
+}
+
 bool OptimizationPass::user_recursion(VertexPtr root) {
   if (auto var_vertex = root.try_as<op_var>()) {
     VarPtr var = var_vertex->var_id;
@@ -400,6 +411,7 @@ bool OptimizationPass::user_recursion(VertexPtr root) {
       if (__sync_bool_compare_and_swap(&var->optimize_flag, false, true)) {
         ++var_init_expression_optimization_depth_;
         run_function_pass(var->init_val, this);
+        var->dependency_level = std::max(var->dependency_level, 1 + get_expr_dep_level(var->init_val));
         kphp_assert(var_init_expression_optimization_depth_ > 0);
         --var_init_expression_optimization_depth_;
         if (!var->is_constant()) {
