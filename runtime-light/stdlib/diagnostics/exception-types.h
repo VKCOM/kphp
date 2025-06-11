@@ -4,15 +4,21 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <format>
+#include <span>
 #include <string_view>
+#include <utility>
 
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/memory-visitors.h"
+#include "runtime-light/stdlib/diagnostics/backtrace.h"
+#include "runtime-light/stdlib/diagnostics/error-handling-functions.h"
 #include "runtime-light/stdlib/visitors/array-visitors.h"
 #include "runtime-light/utils/logs.h"
 
@@ -71,11 +77,23 @@ struct C$Throwable : public refcountable_polymorphic_php_classes_virt<> {
 
 using Throwable = class_instance<C$Throwable>;
 
+template<>
+struct std::formatter<Throwable> {
+  template<typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) const noexcept {
+    return ctx.begin();
+  }
+
+  template<typename FmtContext>
+  auto format(const Throwable& e, FmtContext& ctx) const noexcept {
+    format_to(ctx.out(), "'{}' at {}:{}", e->$message.c_str(), e->$file.c_str(), e->$line);
+    return ctx.out();
+  }
+};
+
 // ================================================================================================
 
 namespace exception_impl_ {
-
-inline constexpr int32_t backtrace_size_limit = 64;
 
 inline string exception_trace_as_string(const Throwable& e) noexcept {
   auto& static_SB{RuntimeContext::get().static_SB.clean()};
@@ -89,7 +107,7 @@ inline string exception_trace_as_string(const Throwable& e) noexcept {
 inline void exception_initialize(const Throwable& e, const string& message, int64_t code) noexcept {
   e->$message = message;
   e->$code = code;
-  kphp::log::warning("exception backtrace is not yet supported"); // TODO
+  e->trace = f$debug_backtrace();
 }
 
 } // namespace exception_impl_
