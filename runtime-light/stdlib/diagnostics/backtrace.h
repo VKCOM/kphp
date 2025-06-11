@@ -7,8 +7,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <format>
 #include <ranges>
 #include <span>
+#include <type_traits>
 #include <utility>
 
 #include "runtime-light/k2-platform/k2-api.h"
@@ -54,3 +56,41 @@ inline auto backtrace_symbols(std::span<void* const> addresses) noexcept {
 }
 
 } // namespace kphp::diagnostic
+
+template<>
+struct std::formatter<std::invoke_result_t<decltype(kphp::diagnostic::backtrace_addresses), std::span<void* const>>> {
+  using addresses_t = std::invoke_result_t<decltype(kphp::diagnostic::backtrace_addresses), std::span<void* const>>;
+  template<typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) const noexcept {
+    return ctx.begin();
+  }
+
+  template<typename FmtContext>
+  auto format(const addresses_t& addresses, FmtContext& ctx) const noexcept {
+    size_t level{};
+    for (const auto* addr : addresses) {
+      format_to(ctx.out(), "# {} : {:p}\n", level++, addr);
+    }
+
+    return ctx.out();
+  }
+};
+
+template<>
+struct std::formatter<std::invoke_result_t<decltype(kphp::diagnostic::backtrace_symbols), std::span<void* const>>> {
+  using symbols_info_t = std::invoke_result_t<decltype(kphp::diagnostic::backtrace_symbols), std::span<void* const>>;
+  template<typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) const noexcept {
+    return ctx.begin();
+  }
+
+  template<typename FmtContext>
+  auto format(const symbols_info_t& symbols_info, FmtContext& ctx) const noexcept {
+    size_t level{};
+    for (const auto& symbol_info : symbols_info) {
+      format_to(ctx.out(), "# {} : {}\n", level++, symbol_info);
+    }
+
+    return ctx.out();
+  }
+};
