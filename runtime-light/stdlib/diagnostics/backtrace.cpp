@@ -57,4 +57,4 @@ size_t async_backtrace(std::span<void*> addresses) noexcept {
   }
   return 0;
 }
-} // namespace kphp::diagnostic
+} // namespace kphp::diagnostic::impl
