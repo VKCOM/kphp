@@ -17,17 +17,21 @@
 #include "runtime-light/utils/logs.h"
 
 namespace error_handling_impl_ {
+static constexpr std::string_view FUNCTION_KEY = "function";
+static constexpr std::string_view FILENAME_KEY = "file";
+static constexpr std::string_view LINE_KEY = "line";
 
 inline array<array<string>> format_backtrace_symbols(std::span<void* const> backtrace) noexcept {
+
   auto resolved_backtrace{kphp::diagnostic::backtrace_symbols(backtrace)};
   if (resolved_backtrace.empty()) {
     return {};
   }
 
   array<array<string>> backtrace_symbols{array_size{static_cast<int64_t>(backtrace.size()), true}};
-  const string function_key{"function"};
-  const string filename_key{"file"};
-  const string line_key{"line"};
+  const string function_key{FUNCTION_KEY.begin(), FUNCTION_KEY.size()};
+  const string filename_key{FILENAME_KEY.begin(), FILENAME_KEY.size()};
+  const string line_key{LINE_KEY.begin(), LINE_KEY.size()};
 
   for (const k2::SymbolInfo& symbol_info : resolved_backtrace) {
     array<string> frame_info{array_size{3, false}};
@@ -50,11 +54,12 @@ inline array<array<string>> format_backtrace_addresses(std::span<void* const> ba
   }
 
   array<array<string>> backtrace_addresses{array_size{static_cast<int64_t>(backtrace.size()), true}};
-  const string function_key{"function"};
+  const string function_key{FUNCTION_KEY.begin(), FUNCTION_KEY.size()};
 
   for (const auto& address : resolved_backtrace) {
     std::array<char, LOG_BUFFER_SIZE> log_buffer{};
-    const auto [_, recorded]{std::format_to_n(log_buffer.data(), log_buffer.size() - 1, "{}", address)};
+    const auto [out, recorded]{std::format_to_n(log_buffer.data(), log_buffer.size() - 1, "{}", address)};
+    *out = '\0';
     array<string> frame_info{array_size{1, false}};
     frame_info.set_value(function_key, string{log_buffer.data(), static_cast<string::size_type>(recorded)});
 

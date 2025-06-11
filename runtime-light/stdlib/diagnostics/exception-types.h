@@ -107,20 +107,7 @@ inline string exception_trace_as_string(const Throwable& e) noexcept {
 inline void exception_initialize(const Throwable& e, const string& message, int64_t code) noexcept {
   e->$message = message;
   e->$code = code;
-
-  // For now, raw_trace is not used
-  static constexpr size_t MAX_BACKTRACE_SIZE = 64;
-  std::array<void*, MAX_BACKTRACE_SIZE> backtrace{};
-  const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
-  std::span<void* const> backtrace_view{backtrace.begin(), num_frames};
-
-  if (auto backtrace_symbols{error_handling_impl_::format_backtrace_symbols(backtrace_view)}; !backtrace_symbols.empty()) {
-    e->trace = std::move(backtrace_symbols);
-  } else if (auto backtrace_code_addresses{error_handling_impl_::format_backtrace_addresses(backtrace_view)}; !backtrace_code_addresses.empty()) {
-    e->trace = std::move(backtrace_code_addresses);
-  } else {
-    kphp::log::warning("cannot resolve virtual addresses to debug information");
-  }
+  e->trace = f$debug_backtrace();
 }
 
 } // namespace exception_impl_
