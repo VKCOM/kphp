@@ -42,7 +42,7 @@ size_t async_frames(std::span<void*> addresses, kphp::coro::async_stack_frame* t
 
 } // namespace
 
-namespace kphp::diagnostic {
+namespace kphp::diagnostic::impl {
 
 size_t async_backtrace(std::span<void*> addresses) noexcept {
   if (const auto* instance_state{k2::instance_state()}; instance_state != nullptr) [[likely]] {
