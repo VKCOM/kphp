@@ -3,12 +3,13 @@
 //  Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <cstddef>
-#include <cstdint>
 #include <iterator>
 #include <span>
 
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/coroutine-state.h"
+#include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
 #include "runtime-light/utils/logs.h"
 
@@ -40,17 +41,19 @@ size_t async_frames(std::span<void*> addresses, kphp::coro::async_stack_frame* t
 
 } // namespace
 
-namespace kphp::diagnostic {
+namespace kphp::diagnostic::impl {
 
-size_t backtrace(std::span<void*> addresses) noexcept {
-  auto& async_stack_root{CoroutineInstanceState::get().coroutine_stack_root};
+size_t async_backtrace(std::span<void*> addresses) noexcept {
+  if (const auto* instance_state{k2::instance_state()}; instance_state != nullptr) [[likely]] {
+    const auto& async_stack_root{instance_state->coroutine_instance_state.coroutine_stack_root};
 
-  auto* const start_sync_frame{reinterpret_cast<kphp::coro::stack_frame*>(STACK_FRAME_ADDRESS)};
-  auto* const stop_sync_frame{async_stack_root.stop_sync_stack_frame};
+    auto* const start_sync_frame{reinterpret_cast<kphp::coro::stack_frame*>(STACK_FRAME_ADDRESS)};
+    auto* const stop_sync_frame{async_stack_root.stop_sync_stack_frame};
 
-  const size_t num_sync_frames{sync_frames(addresses, start_sync_frame, stop_sync_frame)};
-  const size_t num_async_frames{async_frames(addresses.subspan(num_sync_frames), async_stack_root.top_async_stack_frame)};
-  return num_sync_frames + num_async_frames;
+    const size_t num_sync_frames{sync_frames(addresses, start_sync_frame, stop_sync_frame)};
+    const size_t num_async_frames{async_frames(addresses.subspan(num_sync_frames), async_stack_root.top_async_stack_frame)};
+    return num_sync_frames + num_async_frames;
+  }
+  return 0;
 }
-
-} // namespace kphp::diagnostic
+} // namespace kphp::diagnostic::impl

@@ -10,6 +10,7 @@
 #include <ctime>
 #include <expected>
 #include <memory>
+#include <span>
 #include <string_view>
 #include <sys/utsname.h>
 #include <utility>
@@ -286,6 +287,10 @@ inline std::expected<k2::SymbolInfo, int32_t> resolve_symbol(void* addr) noexcep
 
 inline int32_t code_segment_offset(uint64_t* offset) noexcept {
   return k2_code_segment_offset(offset);
+}
+
+inline size_t backtrace(std::span<void*> buffer) noexcept {
+  return k2_backtrace(buffer.data(), buffer.size());
 }
 
 } // namespace k2
