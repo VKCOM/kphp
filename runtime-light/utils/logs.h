@@ -51,11 +51,11 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
   auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
                                                                                                impl::wrap_log_argument(std::forward<Args>(args))...)};
   if (trace.has_value()) {
-    if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(trace.value())}; !backtrace_symbols.empty()) {
+    if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(*trace)}; !backtrace_symbols.empty()) {
       const auto [trace_out, trace_size]{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace_symbols)};
       out = trace_out;
       size += trace_size;
-    } else if (auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(trace.value())}; !backtrace_addresses.empty()) {
+    } else if (auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(*trace)}; !backtrace_addresses.empty()) {
       const auto [trace_out, trace_size]{std::format_to_n(out, std::distance(out, log_buffer.end()) - 1, "\nBacktrace\n{}", backtrace_addresses)};
       out = trace_out;
       size += trace_size;
