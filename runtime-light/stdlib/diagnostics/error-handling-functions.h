@@ -17,9 +17,9 @@
 #include "runtime-light/utils/logs.h"
 
 namespace error_handling_impl_ {
-static constexpr std::string_view FUNCTION_KEY = "function";
-static constexpr std::string_view FILENAME_KEY = "file";
-static constexpr std::string_view LINE_KEY = "line";
+inline constexpr std::string_view FUNCTION_KEY = "function";
+inline constexpr std::string_view FILENAME_KEY = "file";
+inline constexpr std::string_view LINE_KEY = "line";
 
 inline array<array<string>> format_backtrace_symbols(std::span<void* const> backtrace) noexcept {
 
@@ -29,9 +29,9 @@ inline array<array<string>> format_backtrace_symbols(std::span<void* const> back
   }
 
   array<array<string>> backtrace_symbols{array_size{static_cast<int64_t>(backtrace.size()), true}};
-  const string function_key{FUNCTION_KEY.begin(), FUNCTION_KEY.size()};
-  const string filename_key{FILENAME_KEY.begin(), FILENAME_KEY.size()};
-  const string line_key{LINE_KEY.begin(), LINE_KEY.size()};
+  const string function_key{FUNCTION_KEY.data(), FUNCTION_KEY.size()};
+  const string filename_key{FILENAME_KEY.data(), FILENAME_KEY.size()};
+  const string line_key{LINE_KEY.data(), LINE_KEY.size()};
 
   for (const k2::SymbolInfo& symbol_info : resolved_backtrace) {
     array<string> frame_info{array_size{3, false}};
@@ -54,7 +54,7 @@ inline array<array<string>> format_backtrace_addresses(std::span<void* const> ba
   }
 
   array<array<string>> backtrace_addresses{array_size{static_cast<int64_t>(backtrace.size()), true}};
-  const string function_key{FUNCTION_KEY.begin(), FUNCTION_KEY.size()};
+  const string function_key{FUNCTION_KEY.data(), FUNCTION_KEY.size()};
 
   for (const auto& address : resolved_backtrace) {
     std::array<char, LOG_BUFFER_SIZE> log_buffer{};
