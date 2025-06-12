@@ -20,6 +20,19 @@
 
 namespace {
 
+// This function is copypasted from CollectConstVars pass
+// Should be united in a common part someday
+int get_expr_dep_level(VertexPtr vertex) {
+  if (auto var = vertex.try_as<op_var>()) {
+    return var->var_id->dependency_level;
+  }
+  int max_dependency_level = 0;
+  for (const auto &child: *vertex) {
+    max_dependency_level = std::max(max_dependency_level, get_expr_dep_level(child));
+  }
+  return max_dependency_level;
+}
+
 bool can_init_value_be_removed(VertexPtr init_value, const VarPtr &variable) {
   const auto *variable_type = tinf::get_type(variable);
   if (variable_type->use_optional() ||
@@ -367,7 +380,7 @@ VertexPtr OptimizationPass::on_enter_vertex(VertexPtr root) {
       }
     }
   } else if (auto op_array_vertex = root.try_as<op_array>()) {
-    if (!var_init_expression_optimization_depth_) {
+    if (var_init_expression_optimization_depth_ == 0 || op_array_vertex->const_type == ConstValueType::cnst_const_val) {
       for (auto &array_element : *op_array_vertex) {
         const auto *required_type = tinf::get_type(op_array_vertex)->lookup_at_any_key();
         if (vk::any_of_equal(array_element->type(), op_var, op_array)) {
@@ -400,6 +413,7 @@ bool OptimizationPass::user_recursion(VertexPtr root) {
       if (__sync_bool_compare_and_swap(&var->optimize_flag, false, true)) {
         ++var_init_expression_optimization_depth_;
         run_function_pass(var->init_val, this);
+        var->dependency_level = std::max(var->dependency_level, 1 + get_expr_dep_level(var->init_val));
         kphp_assert(var_init_expression_optimization_depth_ > 0);
         --var_init_expression_optimization_depth_;
         if (!var->is_constant()) {
