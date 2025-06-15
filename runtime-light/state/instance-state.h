@@ -63,7 +63,7 @@ struct InstanceState final : vk::not_copyable {
   template<typename T>
   using list = kphp::stl::list<T, kphp::memory::script_allocator>;
 
-  InstanceState() noexcept = default;
+  InstanceState() noexcept : instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0} {}
 
   static InstanceState& get() noexcept {
     return *k2::instance_state();
@@ -102,7 +102,7 @@ struct InstanceState final : vk::not_copyable {
   void release_stream(uint64_t) noexcept;
   void release_all_streams() noexcept;
 
-  AllocatorState instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0};
+  AllocatorState instance_allocator_state;
 
   CoroutineScheduler scheduler;
   CoroutineInstanceState coroutine_instance_state;
