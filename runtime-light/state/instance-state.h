@@ -63,7 +63,10 @@ struct InstanceState final : vk::not_copyable {
   template<typename T>
   using list = kphp::stl::list<T, kphp::memory::script_allocator>;
 
-  InstanceState() noexcept = default;
+  // It's important to use `{}` instead of `= default` here.
+  // In the second case clang++ zeroes the whole structure.
+  // It drastically ruins performance. Be careful!
+  InstanceState() noexcept {} // NOLINT
 
   static InstanceState& get() noexcept {
     return *k2::instance_state();
