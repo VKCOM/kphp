@@ -66,7 +66,8 @@ struct InstanceState final : vk::not_copyable {
   // It's important to initialize `instance_allocator_state` in initializer list.
   // In case of initialization at the place of definition, clang++ zeroes the whole structure.
   // It drastically ruins performance. Be careful with future fields!
-  InstanceState() noexcept : instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0} {}
+  InstanceState() noexcept
+      : instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0} {}
 
   static InstanceState& get() noexcept {
     return *k2::instance_state();
