@@ -63,6 +63,9 @@ struct InstanceState final : vk::not_copyable {
   template<typename T>
   using list = kphp::stl::list<T, kphp::memory::script_allocator>;
 
+  // It's important to initialize `instance_allocator_state` in initializer list.
+  // In case of initialization at the place of definition, clang++ zeroes the whole structure.
+  // It drastically ruins performance. Be careful with future fields!
   InstanceState() noexcept : instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0} {}
 
   static InstanceState& get() noexcept {
