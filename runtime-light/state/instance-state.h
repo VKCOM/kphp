@@ -63,11 +63,10 @@ struct InstanceState final : vk::not_copyable {
   template<typename T>
   using list = kphp::stl::list<T, kphp::memory::script_allocator>;
 
-  // It's important to initialize `instance_allocator_state` in initializer list.
-  // In case of initialization at the place of definition, clang++ zeroes the whole structure.
-  // It drastically ruins performance. Be careful with future fields!
-  InstanceState() noexcept
-      : instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0} {}
+  // It's important to use `{}` instead of `= default` here.
+  // In the second case clang++ zeroes the whole structure.
+  // It drastically ruins performance. Be careful!
+  InstanceState() noexcept {} // NOLINT
 
   static InstanceState& get() noexcept {
     return *k2::instance_state();
@@ -106,7 +105,7 @@ struct InstanceState final : vk::not_copyable {
   void release_stream(uint64_t) noexcept;
   void release_all_streams() noexcept;
 
-  AllocatorState instance_allocator_state;
+  AllocatorState instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0};
 
   CoroutineScheduler scheduler;
   CoroutineInstanceState coroutine_instance_state;
