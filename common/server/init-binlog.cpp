@@ -67,7 +67,8 @@ static void engine_read_binlog_new() {
   binlog_load_time = -get_utime_monotonic();
   bb_buffer_open_to_replay(&BinlogBuffer, &BinlogBufferWriter, &BinlogBufferReader, engine_replica, replay_logevent);
 
-  bb_buffer_set_flags(&BinlogBuffer, 1, 0, 0, 0);
+  // IMPORTANT! Configure as a replica, not a master
+  bb_buffer_set_flags(&BinlogBuffer, &BinlogBufferReader, 1, 0, 0, 0);
 
   bb_buffer_seek(&BinlogBuffer, jump_log_pos, jump_log_ts, jump_log_crc32);
 
