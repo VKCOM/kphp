@@ -60,6 +60,7 @@
 #include "runtime/udp.h"
 #include "runtime/url.h"
 #include "runtime/zlib.h"
+#include "runtime/runtime-builtin-stats.h"
 #include "server/curl-adaptor.h"
 #include "server/database-drivers/adaptor.h"
 #include "server/database-drivers/mysql/mysql.h"
@@ -2296,6 +2297,7 @@ static void init_interface_lib() {
 
 static void init_runtime_libs() {
   // init_curl_lib() lazy called in runtime
+  runtime_builtins_stats::init_request_stats();
   init_instance_cache_lib();
   init_confdata_functions_lib();
 
@@ -2363,6 +2365,7 @@ static void free_runtime_libs() {
   OnKphpWarningCallback::get().reset();
   kphp_tracing::free_tracing_lib();
   free_slot_factories();
+  runtime_builtins_stats::reset_request_stats();
 
   free_job_client_interface_lib();
   free_job_server_interface_lib();
