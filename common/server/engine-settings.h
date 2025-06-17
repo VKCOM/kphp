@@ -5,6 +5,7 @@
 #pragma once
 
 #include <arpa/inet.h>
+#include <chrono>
 #include <stdbool.h>
 
 #include "common/crc32c.h"
@@ -43,6 +44,11 @@ typedef struct {
    * engine name displayed in version in logs and stats
    */
   const char* name;
+
+  /**
+   * Time in seconds to wait before starting to alert if the next binlog part is not found
+   */
+  std::chrono::seconds next_binlog_part_not_found_alert_timeout;
 
 } engine_settings_t;
 

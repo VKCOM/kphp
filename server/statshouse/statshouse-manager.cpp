@@ -373,6 +373,10 @@ void StatsHouseManager::add_confdata_master_stats(const ConfdataStats &confdata_
   }
 }
 
+void StatsHouseManager::add_confdata_read_binlog_stats(const ConfdataStats& confdata_stats) {
+  client.metric("kphp_confdata_next_binlog_wait_time").tag("binlog_name", confdata_stats.next_binlog_expectator_name).write_value(confdata_stats.next_binlog_wait_time.count());
+}
+
 void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::stats_t &stats) noexcept {
   std::visit(overloaded{[this](const slow_net_event_stats::slow_rpc_response_stats &rpc_query_stat) noexcept {
                           // FIXME: it's enough to have it equal 10, but due to bug in GCC we are forced to use a length > 253

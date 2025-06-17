@@ -91,6 +91,8 @@ public:
 
   void add_confdata_master_stats(const ConfdataStats &confdata_stats);
 
+  void add_confdata_read_binlog_stats(const ConfdataStats& confdata_stats);
+
   void add_slow_net_event_stats(const slow_net_event_stats::stats_t &stats) noexcept;
 
 private:
