@@ -6,6 +6,7 @@
 
 #include <cstdlib>
 #include <fcntl.h>
+#include <limits>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -19,8 +20,6 @@
 #include "common/binlog/kdb-binlog-common.h"
 
 DECLARE_VERBOSITY(binlog_buffers);
-
-#define UPDATE_OLD_BINLOG_VARS
 
 typedef struct {
   bool need_to_free;
@@ -283,20 +282,36 @@ static int bb_process_phash_miss(bb_buffer_t* B, const lev_generic* E, int size)
 }
 
 static int bb_buffer_replay_logevent(bb_buffer_t* B, const lev_generic* E, int size) {
-  static const struct {
-    int (*process)(bb_buffer_t* B, const lev_generic* E, int size);
-    unsigned magic;
-  } tbl[8] = {{bb_process_lev_timestamp, LEV_TIMESTAMP},
-              {bb_process_phash_miss, static_cast<unsigned>(-1)},
-              {bb_process_lev_tag, LEV_TAG},
-              {bb_process_lev_noop, LEV_NOOP},
-              {bb_process_lev_start, LEV_START},
-              {bb_process_lev_rotate_from, LEV_ROTATE_FROM},
-              {bb_process_lev_crc32, LEV_CRC32},
-              {bb_process_lev_rotate_to, LEV_ROTATE_TO}};
-  const unsigned idx = (((unsigned int)E->type) * 1611680321u) >> 29;
-  if (tbl[idx].magic == E->type) {
-    return tbl[idx].process(B, E, size);
+  struct replayer_t {
+    int32_t (*process)(bb_buffer_t* B, const lev_generic* E, int32_t size);
+    uint32_t magic;
+  };
+  constexpr std::array replayers{replayer_t{.process = bb_process_lev_timestamp, .magic = LEV_TIMESTAMP},
+                                 replayer_t{.process = bb_process_phash_miss, .magic = static_cast<unsigned>(-1)},
+                                 replayer_t{.process = bb_process_lev_tag, .magic = LEV_TAG},
+                                 replayer_t{.process = bb_process_lev_noop, .magic = LEV_NOOP},
+                                 replayer_t{.process = bb_process_lev_start, .magic = LEV_START},
+                                 replayer_t{.process = bb_process_lev_rotate_from, .magic = LEV_ROTATE_FROM},
+                                 replayer_t{.process = bb_process_lev_crc32, .magic = LEV_CRC32},
+                                 replayer_t{.process = bb_process_lev_rotate_to, .magic = LEV_ROTATE_TO}};
+
+  // Perfect hashing
+  constexpr auto idx_by_magic = [](const uint32_t magic) -> uint32_t {
+    // Assert that even maximal possible hash value produces valid index in the replayers array
+    static_assert((std::numeric_limits<uint32_t>::max() >> 29) < std::tuple_size<decltype(replayers)>::value);
+    return (magic * 1611680321u) >> 29;
+  };
+  static_assert(replayers[idx_by_magic(LEV_TIMESTAMP)].magic == LEV_TIMESTAMP);
+  static_assert(replayers[idx_by_magic(LEV_TAG)].magic == LEV_TAG);
+  static_assert(replayers[idx_by_magic(LEV_NOOP)].magic == LEV_NOOP);
+  static_assert(replayers[idx_by_magic(LEV_START)].magic == LEV_START);
+  static_assert(replayers[idx_by_magic(LEV_ROTATE_FROM)].magic == LEV_ROTATE_FROM);
+  static_assert(replayers[idx_by_magic(LEV_CRC32)].magic == LEV_CRC32);
+  static_assert(replayers[idx_by_magic(LEV_ROTATE_TO)].magic == LEV_ROTATE_TO);
+
+  const uint32_t idx = idx_by_magic(E->type);
+  if (replayers[idx].magic == E->type) {
+    return replayers[idx].process(B, E, size);
   }
   assert(B->replay_func);
   return (*B->replay_func)(E, size);
