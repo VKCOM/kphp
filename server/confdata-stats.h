@@ -7,6 +7,7 @@
 #include <chrono>
 
 #include "common/stats/provider.h"
+#include "common/wrappers/string_view.h"
 #include "runtime/confdata-global-manager.h"
 
 struct ConfdataStats : private vk::not_copyable {
@@ -14,6 +15,9 @@ struct ConfdataStats : private vk::not_copyable {
     static ConfdataStats confdata_stats;
     return confdata_stats;
   }
+
+  std::chrono::seconds next_binlog_wait_time{std::chrono::seconds::zero()};
+  vk::string_view next_binlog_expectator_name;
 
   std::chrono::nanoseconds initial_loading_time{std::chrono::nanoseconds::zero()};
   std::chrono::nanoseconds total_updating_time{std::chrono::nanoseconds::zero()};

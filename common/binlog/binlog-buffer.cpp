@@ -60,7 +60,7 @@ void bb_buffer_init(bb_buffer_t* B, bb_writer_t* W, bb_reader_t* R, std::functio
   bb_buffer_set_reader(B, R);
 }
 
-void bb_buffer_set_flags(bb_buffer_t* B, int binlog_disabled, int disable_crc32, int disable_ts, int flush_rarely) {
+void bb_buffer_set_flags(bb_buffer_t* B, bb_reader_t* R, int binlog_disabled, int disable_crc32, int disable_ts, int flush_rarely) {
   B->flags &= ~(BB_FLAG_BINLOG_DISABLED | BB_FLAG_DISABLE_CRC32_WRITE | BB_FLAG_DISABLE_CRC32_EVAL | BB_FLAG_DISABLE_TS_WRITE | BB_FLAG_FLUSH_RARELY);
   if (binlog_disabled) {
     B->flags |= BB_FLAG_BINLOG_DISABLED;
@@ -80,6 +80,8 @@ void bb_buffer_set_flags(bb_buffer_t* B, int binlog_disabled, int disable_crc32,
   if (flush_rarely) {
     B->flags |= BB_FLAG_FLUSH_RARELY;
   }
+  // For coherence with engines in replica mode
+  R->flags |= BBR_FLAG_EXIT_AFTER_WRONG_LOGEVENT;
 }
 
 void bb_buffer_seek(bb_buffer_t* B, long long log_pos, int timestamp, unsigned log_crc32) {

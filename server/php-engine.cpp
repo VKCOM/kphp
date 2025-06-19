@@ -2227,6 +2227,11 @@ int main_args_handler(int i, const char *long_option) {
       return res;
     }
     case 2040: {
+      return parse_numeric_option<uint32_t>(long_option, 0, std::numeric_limits<uint32_t>::max(), [](uint32_t t) {
+        set_how_long_wait_until_alert(std::chrono::seconds{t});
+      });
+    }
+    case 2041: {
       static auto is_directory = [](const char* s) {
         struct stat st;
         return stat(s, &st) == 0 && S_ISDIR(st.st_mode);
@@ -2351,7 +2356,8 @@ void parse_main_args(int argc, char *argv[]) {
                                                                    "Initial binlog is readed with x10 times larger timeout");
   parse_option("confdata-soft-oom-ratio", required_argument, 2039, "Memory limit ratio to start ignoring new keys related events (default: 0.85)."
                                                                    "Can't be > hard oom ratio (0.95)");
-  parse_option("kml-dir", required_argument, 2040, "Directory that contains .kml files");
+  parse_option("confdata-how-long-wait-binlog-until-alert", required_argument, 2040, "Time in seconds to wait before starting to alert if the next binlog part is not found");
+  parse_option("kml-dir", required_argument, 2041, "Directory that contains .kml files");
 
 
   parse_engine_options_long(argc, argv, main_args_handler);

@@ -65,9 +65,9 @@ if(COMPILER_CLANG)
 endif()
 
 vk_add_library_no_pic(common-src-no-pic OBJECT ${COMMON_ALL_SOURCES})
-add_dependencies(common-src-no-pic OpenSSL::no-pic::Crypto ZLIB::no-pic::zlib ZSTD::no-pic::zstd)
-target_include_directories(common-src-no-pic PUBLIC ${OPENSSL_NO_PIC_INCLUDE_DIR} ${ZLIB_NO_PIC_INCLUDE_DIRS} ${ZSTD_NO_PIC_INCLUDE_DIRS})
+add_dependencies(common-src-no-pic OpenSSL::no-pic::Crypto RE2::no-pic::re2 ZLIB::no-pic::zlib ZSTD::no-pic::zstd)
+target_include_directories(common-src-no-pic PUBLIC ${OPENSSL_NO_PIC_INCLUDE_DIR} ${RE2_NO_PIC_INCLUDE_DIRS} ${ZLIB_NO_PIC_INCLUDE_DIRS} ${ZSTD_NO_PIC_INCLUDE_DIRS})
 
 vk_add_library_pic(common-src-pic OBJECT ${COMMON_ALL_SOURCES})
-add_dependencies(common-src-pic OpenSSL::pic::Crypto ZLIB::pic::zlib ZSTD::pic::zstd)
-target_include_directories(common-src-pic PUBLIC ${OPENSSL_PIC_INCLUDE_DIR} ${ZLIB_PIC_INCLUDE_DIRS} ${ZSTD_PIC_INCLUDE_DIRS})
+add_dependencies(common-src-pic OpenSSL::pic::Crypto RE2::pic::re2 ZLIB::pic::zlib ZSTD::pic::zstd)
+target_include_directories(common-src-pic PUBLIC ${OPENSSL_PIC_INCLUDE_DIR} ${RE2_PIC_INCLUDE_DIRS} ${ZLIB_PIC_INCLUDE_DIRS} ${ZSTD_PIC_INCLUDE_DIRS})
