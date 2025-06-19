@@ -282,6 +282,10 @@ static int bb_process_phash_miss(bb_buffer_t* B, const lev_generic* E, int size)
 }
 
 static int bb_buffer_replay_logevent(bb_buffer_t* B, const lev_generic* E, int size) {
+  if (size < sizeof(lev_generic::type)) {
+    // Not enough data to parse log event magic, fetch more data and retry
+    return REPLAY_BINLOG_NOT_ENOUGH_DATA;
+  }
   struct replayer_t {
     int32_t (*process)(bb_buffer_t* B, const lev_generic* E, int32_t size);
     uint32_t magic;
