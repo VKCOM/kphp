@@ -342,7 +342,6 @@ static int process_replay_work(void* extra, const void* data, int len) {
       if (l > s) {
         l = s;
       }
-      l &= -4;
       memcpy(e->buf + e->wptr, data, l);
       e->log_last_processed_pos += l;
       e->wptr += l;
