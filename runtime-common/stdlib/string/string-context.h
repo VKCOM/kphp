@@ -11,6 +11,16 @@
 #include "common/mixin/not_copyable.h"
 #include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
+
+#ifdef RUNTIME_LIGHT_MODE
+#include "runtime-common/core/allocator/script-allocator.h"
+#define BUFFER_ALLOCATOR kphp::memory::script_allocator
+#else
+#include "runtime-common/core/allocator/platform-allocator.h"
+#define BUFFER_ALLOCATOR kphp::memory::platform_allocator
+#endif // RUNTIME_LIGHT_MODE
 
 namespace string_context_impl_ {
 
@@ -37,14 +47,17 @@ struct StringLibContext final : private vk::not_copyable {
   int64_t str_replace_count_dummy{};
   double default_similar_text_percent_stub{};
 
-  // Do not initialize these arrays. Initializing it would zero out the memory,
+  // Do not initialize this array. Initializing it would zero out the memory,
   // which significantly impacts K2's performance due to the large size of the buffer.
   // The buffer is intended to be used as raw storage, and its contents will be
   // explicitly managed elsewhere in the code.
-  std::array<char, STATIC_BUFFER_LENGTH + 1> static_buf; // FIXME: so large static array causes too many page faults in k2 mode
   std::array<char, MASK_BUFFER_LENGTH> mask_buf;
+  kphp::stl::string<BUFFER_ALLOCATOR> static_buf;
 
-  StringLibContext() noexcept = default;
+  StringLibContext() noexcept {
+    static_buf.reserve(STATIC_BUFFER_LENGTH + 1);
+    php_assert(static_buf.capacity() >= STATIC_BUFFER_LENGTH + 1);
+  }
 
   static StringLibContext& get() noexcept;
 };

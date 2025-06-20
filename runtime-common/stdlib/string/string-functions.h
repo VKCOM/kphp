@@ -6,7 +6,9 @@
 
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <limits>
+#include <optional>
 #include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
@@ -20,9 +22,10 @@ inline string bin2hex(std::string_view str) noexcept {
   int len = str.size();
   string result(2 * len, false);
 
+  const auto& string_lib_constants{StringLibConstants::get()};
   for (int i = 0; i < len; i++) {
-    result[2 * i] = StringLibConstants::get().lhex_digits[(str[i] >> 4) & 15];
-    result[2 * i + 1] = StringLibConstants::get().lhex_digits[str[i] & 15];
+    result[2 * i] = string_lib_constants.lhex_digits[(str[i] >> 4) & 15];
+    result[2 * i + 1] = string_lib_constants.lhex_digits[str[i] & 15];
   }
 
   return result;
@@ -208,17 +211,20 @@ string f$str_pad(const string& input, int64_t len, const string& pad_str = Strin
 string f$str_repeat(const string& s, int64_t multiplier) noexcept;
 
 string f$str_replace(const string& search, const string& replace, const string& subject,
-                     int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
+                     Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count = {}) noexcept;
 
 string f$str_ireplace(const string& search, const string& replace, const string& subject,
-                      int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
+                      Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count = {}) noexcept;
 
-void str_replace_inplace(const string& search, const string& replace, string& subject, int64_t& replace_count, bool with_case) noexcept;
+void str_replace_inplace(const string& search, const string& replace, string& subject, Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count,
+                         bool with_case) noexcept;
 
-string str_replace(const string& search, const string& replace, const string& subject, int64_t& replace_count, bool with_case) noexcept;
+string str_replace(const string& search, const string& replace, const string& subject, Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count,
+                   bool with_case) noexcept;
 
 template<typename T1, typename T2>
-string str_replace_string_array(const array<T1>& search, const array<T2>& replace, const string& subject, int64_t& replace_count, bool with_case) noexcept {
+string str_replace_string_array(const array<T1>& search, const array<T2>& replace, const string& subject,
+                                Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count, bool with_case) noexcept {
   string result = subject;
   string replace_value;
   typename array<T2>::const_iterator cur_replace_val = replace.begin();
@@ -244,41 +250,39 @@ string str_replace_string_array(const array<T1>& search, const array<T2>& replac
 
 template<typename T1, typename T2>
 string f$str_replace(const array<T1>& search, const array<T2>& replace, const string& subject,
-                     int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept {
-  replace_count = 0;
+                     Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count = {}) noexcept {
   return str_replace_string_array(search, replace, subject, replace_count, true);
 }
 
 template<typename T1, typename T2>
 string f$str_ireplace(const array<T1>& search, const array<T2>& replace, const string& subject,
-                      int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept {
-  replace_count = 0;
+                      Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count = {}) noexcept {
   return str_replace_string_array(search, replace, subject, replace_count, false);
 }
 
 string f$str_replace(const mixed& search, const mixed& replace, const string& subject,
-                     int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
+                     Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count = {}) noexcept;
 
 string f$str_ireplace(const mixed& search, const mixed& replace, const string& subject,
-                      int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
+                      Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count = {}) noexcept;
 
 template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT>>
 SubjectT f$str_replace(const T1& search, const T2& replace, const SubjectT& subject,
-                       int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept {
+                       Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count = {}) noexcept {
   return f$str_replace(search, replace, subject.val(), replace_count);
 }
 
 template<class T1, class T2, class SubjectT, class = enable_if_t_is_optional_string<SubjectT>>
 SubjectT f$str_ireplace(const T1& search, const T2& replace, const SubjectT& subject,
-                        int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept {
+                        Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count = {}) noexcept {
   return f$str_ireplace(search, replace, subject.val(), replace_count);
 }
 
 mixed f$str_replace(const mixed& search, const mixed& replace, const mixed& subject,
-                    int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
+                    Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count = {}) noexcept;
 
 mixed f$str_ireplace(const mixed& search, const mixed& replace, const mixed& subject,
-                     int64_t& replace_count = StringLibContext::get().str_replace_count_dummy) noexcept;
+                     Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count = {}) noexcept;
 
 array<string> f$str_split(const string& str, int64_t split_length = 1) noexcept;
 
@@ -384,7 +388,8 @@ inline uint8_t hex_to_int(char c) noexcept {
 }
 
 inline string f$number_format(double number, int64_t decimals = 0) noexcept {
-  return f$number_format(number, decimals, StringLibConstants::get().DOT_STR, StringLibConstants::get().COLON_STR);
+  const auto& string_lib_constants{StringLibConstants::get()};
+  return f$number_format(number, decimals, string_lib_constants.DOT_STR, string_lib_constants.COLON_STR);
 }
 
 inline string f$number_format(double number, int64_t decimals, const string& dec_point) noexcept {
@@ -392,8 +397,8 @@ inline string f$number_format(double number, int64_t decimals, const string& dec
 }
 
 inline string f$number_format(double number, int64_t decimals, const mixed& dec_point) noexcept {
-  return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT_STR : dec_point.to_string(),
-                         StringLibConstants::get().COLON_STR);
+  const auto& string_lib_constants{StringLibConstants::get()};
+  return f$number_format(number, decimals, dec_point.is_null() ? string_lib_constants.DOT_STR : dec_point.to_string(), string_lib_constants.COLON_STR);
 }
 
 inline string f$number_format(double number, int64_t decimals, const string& dec_point, const mixed& thousands_sep) noexcept {
@@ -405,8 +410,9 @@ inline string f$number_format(double number, int64_t decimals, const mixed& dec_
 }
 
 inline string f$number_format(double number, int64_t decimals, const mixed& dec_point, const mixed& thousands_sep) noexcept {
-  return f$number_format(number, decimals, dec_point.is_null() ? StringLibConstants::get().DOT_STR : dec_point.to_string(),
-                         thousands_sep.is_null() ? StringLibConstants::get().COLON_STR : thousands_sep.to_string());
+  const auto& string_lib_constants{StringLibConstants::get()};
+  return f$number_format(number, decimals, dec_point.is_null() ? string_lib_constants.DOT_STR : dec_point.to_string(),
+                         thousands_sep.is_null() ? string_lib_constants.COLON_STR : thousands_sep.to_string());
 }
 
 inline int64_t f$strlen(const string& s) noexcept {
@@ -492,7 +498,7 @@ inline string f$strtr(const string& subject, const mixed& replace_pairs) noexcep
 
 string f$xor_strings(const string& s, const string& t) noexcept;
 
-int64_t f$similar_text(const string& first, const string& second, double& percent = StringLibContext::get().default_similar_text_percent_stub) noexcept;
+int64_t f$similar_text(const string& first, const string& second, Optional<std::optional<std::reference_wrapper<double>>> percent = {}) noexcept;
 
 // similar_text ( string $first , string $second [, float &$percent ] ) : int
 
