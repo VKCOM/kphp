@@ -114,6 +114,7 @@ public:
 
   KphpOption<std::string> kphp_src_path;
   KphpOption<std::string> functions_file;
+  KphpOption<std::string> tracked_builtins_file;
   KphpOption<std::string> runtime_sha256_file;
   KphpOption<std::string> mode;
   KphpOption<std::string> link_file;

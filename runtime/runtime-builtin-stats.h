@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string_view>
 
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -23,7 +24,7 @@ inline bool is_request_stats_enabled = false;
 inline bool is_server_option_enabled = false;
 
 struct request_stats_t {
-  std::optional<kphp::stl::unordered_map<std::string_view, int64_t, kphp::memory::script_allocator>> stats;
+  std::optional<kphp::stl::unordered_map<std::string_view, int64_t, kphp::memory::script_allocator>> stats{};
 };
 
 inline request_stats_t request_stats;
