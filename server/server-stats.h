@@ -13,6 +13,7 @@
 #include "common/stats/provider.h"
 
 #include "runtime-common/core/memory-resource/memory_resource.h"
+#include "runtime/runtime-builtin-stats.h"
 #include "server/php-runner.h"
 #include "server/workers-control.h"
 
@@ -22,8 +23,8 @@ public:
 
   void add_request_stats(double script_time_sec, double net_time_sec, double script_max_running_interval_sec, double script_init_time_sec, double connection_process_time_sec,
                          int64_t script_queries, int64_t long_script_queries,
-                         const memory_resource::MemoryStats &script_memory_stats, int64_t curl_total_allocated,
-                         process_rusage_t script_rusage, script_error_t error) noexcept;
+                         const memory_resource::MemoryStats &script_memory_stats, const runtime_builtins_stats::request_stats_t &builtin_stats,
+                         int64_t curl_total_allocated, process_rusage_t script_rusage, script_error_t error) noexcept;
   void add_job_stats(double job_wait_time_sec, int64_t request_memory_used, int64_t request_real_memory_used, int64_t response_memory_used,
                      int64_t response_real_memory_used) noexcept;
   void add_job_common_memory_stats(int64_t common_request_memory_used, int64_t common_request_real_memory_used) noexcept;

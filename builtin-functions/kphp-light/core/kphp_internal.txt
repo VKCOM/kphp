@@ -40,6 +40,17 @@ function _explode_tuple4($delimiter ::: string, $str ::: string, int $mask, $lim
 
 function _exception_set_location($e, string $filename, int $line): ^1;
 
+/**
+ * @kphp-internal-param-readonly $str
+ */
+function _tmp_substr($str ::: string, $start ::: int, $length ::: int = PHP_INT_MAX): _tmp_string;
+
+/**
+ * @kphp-internal-param-readonly $str
+ */
+function _tmp_trim($str ::: string, $what ::: string = " \n\r\t\v\0"): _tmp_string;
+
+
 // ===== UNSUPPORTED =====
 
 // `new $c(...)` => `_by_name_construct($c, ...)`
@@ -55,14 +66,3 @@ function _by_name_get_const(string $class_name, string $constant);
 /** @kphp-extern-func-info stub */
 function _by_name_get_field(string $class_name, string $field);
 
-/**
- * @kphp-internal-param-readonly $str
- * @kphp-extern-func-info stub
- */
-function _tmp_substr($str ::: string, $start ::: int, $length ::: int = PHP_INT_MAX): _tmp_string;
-
-/**
- * @kphp-internal-param-readonly $str
- * @kphp-extern-func-info stub
- */
-function _tmp_trim($str ::: string, $what ::: string = " \n\r\t\v\0"): _tmp_string;

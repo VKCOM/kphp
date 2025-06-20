@@ -23,6 +23,8 @@ function die($code = 0) ::: void;
 /** @kphp-extern-func-info interruptible */
 function usleep ($micro_seconds ::: int) ::: void;
 
+function function_exists ($func_name ::: mixed) ::: bool;
+
 // === UNSUPPORTED ===
 
 /** @kphp-extern-func-info stub */
@@ -45,9 +47,6 @@ function raise_sigsegv () ::: void;
 /** @kphp-extern-func-info stub */
 function system($command ::: string, int &$result_code = 0): int;
 
-
-/** @kphp-extern-func-info stub generation-required */
-function function_exists ($func_name ::: mixed) ::: bool;
 
 /** @kphp-extern-func-info stub generation-required */
 function ctype_alnum(mixed $text): bool;

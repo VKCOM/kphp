@@ -892,6 +892,10 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   }
 
   FunctionPtr func;
+  constexpr auto is_function_call_should_be_tracked = [](FunctionPtr func) {
+    const auto & tracked_functions = G->get_tracked_builtins();
+    return func->is_extern() && tracked_functions.find(func->name) != tracked_functions.end();
+  };
   if (root->extra_type == op_ex_internal_func) {
     W << root->str_val;
   } else {
@@ -910,6 +914,10 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
                                   "{}",
                                   func->as_human_readable(), func->get_resumable_path()));
       }
+    }
+
+    if (is_function_call_should_be_tracked(func)) {
+      W << "SAVE_BUILTIN_CALL_STATS(\"" << func->name << "\", (";
     }
 
 
@@ -946,6 +954,9 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   }
 
   W << JoinValues(args, ", ");
+  if (is_function_call_should_be_tracked(func)) {
+    W << "))";
+  }
   W << ")";
   if (func->is_interruptible) {
     if (mode == func_call_mode::fork_call) {

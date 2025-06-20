@@ -63,6 +63,7 @@ private:
   bool is_untyped_rpc_tl_used{false};
   bool is_functions_txt_parsed{false};
   function_palette::Palette function_palette;
+  std::unordered_set<std::string> tracked_builtins;
 
   inline bool try_require_file(SrcFilePtr file);
 
@@ -140,6 +141,11 @@ public:
   std::vector<SrcDirPtr> get_dirs();
   std::vector<ModulitePtr> get_modulites();
   const ComposerAutoloader &get_composer_autoloader() const;
+
+  void parse_tracked_builtins(const std::string& file_name);
+  auto & get_tracked_builtins() const noexcept {
+    return tracked_builtins;
+  }
 
   void load_index();
   void save_index();
