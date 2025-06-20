@@ -37,7 +37,7 @@ extern int master_pid;
 extern ProcessType process_type;
 
 extern int master_flag;
-
+extern bool run_once_prefork_mode;
 extern bool run_once;
 extern int run_once_return_code;
 
