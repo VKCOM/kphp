@@ -108,6 +108,8 @@ function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) 
 
 function is_nan ($v ::: float) ::: bool;
 
+function levenshtein ($str1 ::: string, $str2 ::: string) ::: int;
+
 // === UNSUPPORTED ===
 
 /**
@@ -153,8 +155,6 @@ function rad2deg ($v ::: float) ::: float;
 
 /** @kphp-extern-func-info stub generation-required */
 function lcg_value() ::: float;
-/** @kphp-extern-func-info stub generation-required */
-function levenshtein ($str1 ::: string, $str2 ::: string) ::: int;
 
 /** @kphp-extern-func-info stub generation-required */
 function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
