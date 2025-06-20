@@ -10,10 +10,17 @@
 
 #include "common/mixin/not_copyable.h"
 #include "common/php-functions.h"
-#include "runtime-common/core/allocator/platform-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
+
+#ifdef RUNTIME_LIGHT_MODE
+#include "runtime-common/core/allocator/script-allocator.h"
+#define BUFFER_ALLOCATOR kphp::memory::script_allocator
+#else
+#include "runtime-common/core/allocator/platform-allocator.h"
+#define BUFFER_ALLOCATOR kphp::memory::platform_allocator
+#endif // RUNTIME_LIGHT_MODE
 
 namespace string_context_impl_ {
 
@@ -45,8 +52,7 @@ struct StringLibContext final : private vk::not_copyable {
   // The buffer is intended to be used as raw storage, and its contents will be
   // explicitly managed elsewhere in the code.
   std::array<char, MASK_BUFFER_LENGTH> mask_buf;
-  // TODO In case of K2 it's actually more efficient to use script allocator.
-  kphp::stl::string<kphp::memory::platform_allocator> static_buf;
+  kphp::stl::string<BUFFER_ALLOCATOR> static_buf;
 
   StringLibContext() noexcept {
     static_buf.reserve(STATIC_BUFFER_LENGTH + 1);
