@@ -16,8 +16,14 @@
 #include "server/statshouse/statshouse-manager.h"
 #include "server/workers-control.h"
 
+struct C$RpcFunctionFetcher;
+struct C$VK$TL$RpcFunction;
+struct C$VK$TL$RpcFunctionReturnResult;
+
 extern string_buffer* coub; // TODO static
 using shutdown_function_type = std::function<void()>;
+using custom_fetcher_wrapper_1_function_type = std::function<class_instance<C$RpcFunctionFetcher>(class_instance<C$VK$TL$RpcFunction> const & )>;
+using custom_fetcher_wrapper_2_function_type = std::function<class_instance<C$VK$TL$RpcFunctionReturnResult>(class_instance<C$RpcFunctionFetcher> const & )>;
 using headers_custom_handler_function_type = std::function<void()>;
 
 enum class shutdown_functions_status {
@@ -86,6 +92,20 @@ void f$register_shutdown_function(F&& f) {
   // std::function sometimes uses heap, when constructed from captured lambda. So it must be constructed under critical section only.
   dl::CriticalSectionGuard heap_guard;
   register_shutdown_function_impl(shutdown_function_type{std::forward<F>(f)});
+}
+
+void register_custom_fetcher_wrapper_1_impl(custom_fetcher_wrapper_1_function_type && f);
+void register_custom_fetcher_wrapper_2_impl(custom_fetcher_wrapper_2_function_type && f);
+class_instance<C$RpcFunctionFetcher> call_custom_fetcher_wrapper_1_impl(class_instance<C$VK$TL$RpcFunction> const & arg);
+class_instance<C$VK$TL$RpcFunctionReturnResult> call_custom_fetcher_wrapper_2_impl(class_instance<C$RpcFunctionFetcher> const & arg);
+
+template<typename F>
+void f$register_custom_fetcher_wrapper_1(F&& f) {
+  register_custom_fetcher_wrapper_1_impl(custom_fetcher_wrapper_1_function_type{std::forward<F>(f)});
+}
+template<typename F>
+void f$register_custom_fetcher_wrapper_2(F&& f) {
+  register_custom_fetcher_wrapper_2_impl(custom_fetcher_wrapper_2_function_type{std::forward<F>(f)});
 }
 
 void register_header_handler_impl(headers_custom_handler_function_type&& f);

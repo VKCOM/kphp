@@ -990,12 +990,20 @@ function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
 function rpc_tl_pending_queries_count () ::: int;
 
 /** @kphp-tl-class */
-interface RpcFunction {
-  public function getTLFunctionName() : string;
+interface RpcFunctionReturnResult {}
+
+interface RpcFunctionFetcher {
+  public function typed_fetch() : @tl\RpcFunctionReturnResult;
 }
 
 /** @kphp-tl-class */
-interface RpcFunctionReturnResult {}
+interface RpcFunction {
+  public function getTLFunctionName() : string;
+  public function custom_fetcher() : RpcFunctionFetcher;
+}
+
+function register_custom_fetcher_wrapper_1(callable(@tl\RpcFunction $f):RpcFunctionFetcher $callback) ::: void;
+function register_custom_fetcher_wrapper_2(callable(RpcFunctionFetcher $f):@tl\RpcFunctionReturnResult $callback) ::: void;
 
 // type ReqResult <=> RpcResponse
 /** @kphp-tl-class */

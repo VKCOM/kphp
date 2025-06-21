@@ -49,6 +49,11 @@ struct C$VK$TL$RpcFunction : abstract_refcountable_php_interface {
 
   virtual ~C$VK$TL$RpcFunction() = default;
   virtual std::unique_ptr<tl_func_base> store() const = 0;
+
+//  virtual class_instance<C$RpcFunctionFetcher> custom_fetcher() const {
+//    php_warning("C$VK$TL$RpcFunction::custom_fetcher()");
+//    return class_instance<C$RpcFunctionFetcher>{}; // null means no custom store was defined
+//  }
 };
 
 // every TL function has a class for the result that implements RpcFunctionReturnResult;
@@ -76,6 +81,25 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   }
 
   virtual ~C$VK$TL$RpcFunctionReturnResult() = default;
+};
+
+struct C$RpcFunctionFetcher : abstract_refcountable_php_interface {
+  virtual const char* get_class() const {
+    return "RpcFunctionFetcher";
+  }
+  virtual int32_t get_hash() const {
+    std::string_view name_view{C$RpcFunctionFetcher::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
+  }
+  virtual C$RpcFunctionFetcher* virtual_builtin_clone() const noexcept {
+    return nullptr;
+  }
+
+  virtual class_instance<C$VK$TL$RpcFunctionReturnResult> typed_fetch() {
+    php_warning("C$RpcFunctionFetcher::typed_fetch should never be called. Should be overridden in every @kphp TL function fetcher");
+    return class_instance<C$VK$TL$RpcFunctionReturnResult>{};
+  }
+  virtual ~C$RpcFunctionFetcher() = default;
 };
 
 // function call response — ReqResult from the TL scheme — is a rpcResponseOk|rpcResponseHeader|rpcResponseError;

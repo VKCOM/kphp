@@ -20,6 +20,7 @@
       <file path="$PROJECT_DIR$/objs/generated/auto/common" />
       <file path="$PROJECT_DIR$/objs/generated/auto/flex" />
       <file path="$PROJECT_DIR$/objs/vkext" />
+      <file path="$PROJECT_DIR$/runtime-light" />
       <file path="$PROJECT_DIR$/tests/kphp_out" />
       <file path="$PROJECT_DIR$/tests/kphp_tester_tmp" />
       <file path="$PROJECT_DIR$/tests/python/_tmp" />

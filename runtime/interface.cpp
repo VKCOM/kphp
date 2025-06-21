@@ -715,6 +715,30 @@ void register_shutdown_function_impl(shutdown_function_type&& f) {
   new (&shutdown_functions[shutdown_functions_count++]) shutdown_function_type{std::move(f)};
 }
 
+namespace {
+  custom_fetcher_wrapper_1_function_type custom_fetcher_wrapper_1{};
+  custom_fetcher_wrapper_2_function_type custom_fetcher_wrapper_2{};
+}
+
+void register_custom_fetcher_wrapper_1_impl(custom_fetcher_wrapper_1_function_type && f) {
+  php_warning("register_custom_fetcher_wrapper_1_impl called\n");
+  custom_fetcher_wrapper_1 = std::move(f);
+}
+
+void register_custom_fetcher_wrapper_2_impl(custom_fetcher_wrapper_2_function_type && f) {
+  php_warning("register_custom_fetcher_wrapper_2_impl called\n");
+  custom_fetcher_wrapper_2 = std::move(f);
+}
+
+class_instance<C$RpcFunctionFetcher> call_custom_fetcher_wrapper_1_impl(class_instance<C$VK$TL$RpcFunction> const & arg) {
+  return custom_fetcher_wrapper_1 ? custom_fetcher_wrapper_1(arg) : class_instance<C$RpcFunctionFetcher>{};
+}
+
+class_instance<C$VK$TL$RpcFunctionReturnResult> call_custom_fetcher_wrapper_2_impl(class_instance<C$RpcFunctionFetcher> const & arg) {
+  return custom_fetcher_wrapper_2 ? custom_fetcher_wrapper_2(arg) : class_instance<C$VK$TL$RpcFunctionReturnResult>{};
+}
+
+
 void register_header_handler_impl(headers_custom_handler_function_type&& f) {
   dl::CriticalSectionGuard critical_section;
   // Move assignment leads to lhs object invalidation and fires memory releasing mechanism

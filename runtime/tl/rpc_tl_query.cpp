@@ -8,6 +8,7 @@
 
 #include "runtime/exception.h"
 #include "runtime/tl/rpc_request.h"
+#include "runtime/tl/tl_func_base.h"
 
 void RpcPendingQueries::save(const class_instance<RpcTlQuery>& query) {
   php_assert(!queries_.has_key(query.get()->query_id));
@@ -72,4 +73,30 @@ void CurrentTlQuery::raise_storing_error(const char* format, ...) {
     php_warning("Storing error:\n%s\nIn %s serializing TL object", msg.c_str(), function_name);
     THROW_EXCEPTION(new_Exception(string{}, 0, msg, -1));
   }
+}
+
+struct tl_func_base_simple_wrapper : public tl_func_base {
+  explicit tl_func_base_simple_wrapper(class_instance<C$RpcFunctionFetcher> && wrapped):wrapped_(std::move(wrapped)) {}
+
+  virtual mixed fetch() {
+    // all functions annotated with @kphp will override this method with the generated code
+    php_critical_error("hrissan TODO: This function should never be called. Should be overridden in every @kphp TL function");
+    return mixed{};
+  }
+
+  virtual class_instance<C$VK$TL$RpcFunctionReturnResult> typed_fetch() {
+    return call_custom_fetcher_wrapper_2_impl(wrapped_);
+  }
+
+  virtual void rpc_server_typed_store(const class_instance<C$VK$TL$RpcFunctionReturnResult>&) {
+    // all functions annotated with @kphp will override this method with the generated code
+    php_critical_error("hrissan TODO: This function should never be called. Should be overridden in every @kphp TL function");
+  }
+
+private:
+  class_instance<C$RpcFunctionFetcher> wrapped_;
+};
+
+std::unique_ptr<tl_func_base> make_tl_func_base_simple_wrapper(class_instance<C$RpcFunctionFetcher> && wrapped) {
+  return std::unique_ptr<tl_func_base>{new tl_func_base_simple_wrapper(std::move(wrapped))};
 }

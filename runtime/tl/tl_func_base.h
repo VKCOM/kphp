@@ -31,3 +31,5 @@ struct tl_func_base : ManagedThroughDlAllocator {
 
   virtual ~tl_func_base() = default;
 };
+
+std::unique_ptr<tl_func_base> make_tl_func_base_simple_wrapper(class_instance<C$RpcFunctionFetcher> && wrapped);
