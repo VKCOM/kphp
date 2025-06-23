@@ -27,8 +27,8 @@
 #include "common/tl/methods/string.h"
 #include "common/wrappers/string_view.h"
 #include "common/kfs/kfs.h"
-
 #include "common/binlog/binlog-buffer.h"
+#include "common/binlog/binlog-stats.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime/allocator.h"
 #include "runtime/confdata-global-manager.h"
@@ -45,7 +45,7 @@ struct {
   double hard_oom_threshold_ratio{CONFDATA_DEFAULT_HARD_OOM_RATIO};
   double confdata_update_timeout_sec {0.3};
   struct {
-    std::chrono::seconds how_long_wait_until_alert{120};
+    std::chrono::seconds how_long_wait_for_next_binlog_until_alert{120};
     const char *mask{nullptr};
   } binlog_reader;
   std::unique_ptr<re2::RE2> key_blacklist_pattern;
@@ -1020,7 +1020,7 @@ void set_confdata_update_timeout(double timeout_sec) noexcept {
 }
 
 void set_how_long_wait_until_alert(std::chrono::seconds t) noexcept {
-  confdata_settings.binlog_reader.how_long_wait_until_alert = t;
+  confdata_settings.binlog_reader.how_long_wait_for_next_binlog_until_alert = t;
 }
 
 void add_confdata_force_ignore_prefix(const char *key_ignore_prefix) noexcept {
@@ -1061,7 +1061,7 @@ void init_confdata_binlog_reader() noexcept {
     log_split_max = E->split_max;
     log_split_mod = E->split_mod;
   };
-  settings.next_binlog_part_not_found_alert_timeout = confdata_settings.binlog_reader.how_long_wait_until_alert;
+  settings.next_binlog_part_not_found_alert_timeout = confdata_settings.binlog_reader.how_long_wait_for_next_binlog_until_alert;
   set_engine_settings(&settings);
 
   vkprintf(1, "start confdata loading\n");
@@ -1115,9 +1115,13 @@ void confdata_binlog_update_cron() noexcept {
 
   // Force statistics update if binlog hasn't been rotated successfully in specific time
   if (BinlogBufferWriter.unsuccessful_rotation_attempts > 0) {
-    std::chrono::seconds wait_rotation_time {time(NULL) - BinlogBufferWriter.unsuccessful_rotation_first_ts};
-    if (wait_rotation_time > confdata_settings.binlog_reader.how_long_wait_until_alert) {
-      StatsHouseManager::get().add_confdata_read_binlog_stats(ConfdataStats::get());
+    std::chrono::seconds wait_rotation_time{std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() -
+                                            BinlogBufferWriter.unsuccessful_rotation_first_ts};
+    if (wait_rotation_time > confdata_settings.binlog_reader.how_long_wait_for_next_binlog_until_alert) {
+      const auto& stats = binlog_reader_stats::get();
+      log_server_error("Waiting for the next binlog part for too long: %" PRIu64 " seconds, binlog name %s", stats.next_binlog_wait_time.count(),
+                       stats.next_binlog_expectator_name.data());
+      StatsHouseManager::get().add_confdata_binlog_reader_stats(stats);
     }
   }
 

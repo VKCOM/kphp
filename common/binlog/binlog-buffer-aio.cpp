@@ -14,12 +14,11 @@
 #include <unistd.h>
 
 #include "common/binlog/binlog-buffer.h"
+#include "common/binlog/binlog-stats.h"
 #include "common/kfs/kfs-binlog.h"
-#include "common/kprintf.h"
 #include "common/precise-time.h"
 #include "common/server/engine-settings.h"
 #include "common/server/signals.h"
-#include "server/confdata-stats.h"
 
 DECLARE_VERBOSITY(binlog_buffers);
 
@@ -62,7 +61,7 @@ static int bbw_local_replica_rotate(bb_writer_t* W, bb_rotation_point_t* P) {
   assert(Q->log_pos < P->log_pos);
   kfs_file_handle_t Binlog = Q->Binlog;
   P->Binlog = next_binlog(Binlog);
-  auto& confdata_stats = ConfdataStats::get();
+  auto& binlog_reader_stats = binlog_reader_stats::get();
 
   if (P->Binlog == NULL) {
     update_replica(Binlog->info->replica, 0);
@@ -74,16 +73,14 @@ static int bbw_local_replica_rotate(bb_writer_t* W, bb_rotation_point_t* P) {
       W->unsuccessful_rotation_first_ts = time(NULL);
     }
     W->unsuccessful_rotation_attempts++;
-    std::chrono::seconds elapsed_time{time(NULL) - W->unsuccessful_rotation_first_ts};
+    std::chrono::seconds elapsed_time{std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() -
+                                      W->unsuccessful_rotation_first_ts};
     kprintf("attempt #%d (%" PRIu64 " secs): cannot find next binlog file after %s, log position %lld\n", W->unsuccessful_rotation_attempts,
             elapsed_time.count(), Binlog->info->filename, P->log_pos);
 
-    const auto timeout = get_engine_settings()->next_binlog_part_not_found_alert_timeout;
-    if (elapsed_time > timeout) {
-      send_not_too_much_messages_to_assertion_chat("Waiting for the next binlog part for too long: %d attempts, %" PRIu64 " seconds, binlog name %s",
-                                                   W->unsuccessful_rotation_attempts, elapsed_time.count(), Binlog->info->filename);
-      confdata_stats.next_binlog_wait_time = elapsed_time;
-      confdata_stats.next_binlog_expectator_name = Binlog->info->filename;
+    if (elapsed_time > get_engine_settings()->next_binlog_part_not_found_alert_timeout) {
+      binlog_reader_stats.next_binlog_wait_time = elapsed_time;
+      binlog_reader_stats.next_binlog_expectator_name = Binlog->info->filename;
     }
 
     return REPLAY_BINLOG_STOP_READING;
@@ -103,8 +100,8 @@ static int bbw_local_replica_rotate(bb_writer_t* W, bb_rotation_point_t* P) {
   assert(bb_buffer_log_cur_pos(B) + 36 == P->RT.next_log_pos);
 
   W->unsuccessful_rotation_attempts = 0;
-  confdata_stats.next_binlog_wait_time = {0s};
-  confdata_stats.next_binlog_expectator_name = "";
+  binlog_reader_stats.next_binlog_wait_time = {0s};
+  binlog_reader_stats.next_binlog_expectator_name = "";
   return 0;
 }
 
