@@ -15,7 +15,7 @@ kphp::coro::task<> f$exit(mixed v) noexcept { // TODO: make it synchronous
   int64_t exit_code{};
   if (v.is_string()) {
     Response& response{instance_st.response};
-    response.output_buffers[response.current_buffer] << v;
+    response.current_buffer() << v;
   } else if (v.is_int()) {
     int64_t v_code{v.to_int()};
     // valid PHP exit codes: [0..254]

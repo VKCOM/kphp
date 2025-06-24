@@ -20,76 +20,76 @@ constexpr std::string_view ob_gzhandler_name = "ob_gzhandler";
 
 void f$ob_start(const string& callback) noexcept {
   Response& httpResponse{InstanceState::get().response};
-  if (httpResponse.current_buffer + 1 == Response::ob_max_buffers) {
+  if (!httpResponse.can_allocate_new_buffer()) {
     kphp::log::warning("Maximum nested level of output buffering reached. Can't do ob_start({})", callback.c_str());
     return;
   }
 
   if (!callback.empty()) {
-    if (httpResponse.current_buffer == 0 && std::string_view{callback.c_str(), callback.size()} == ob_gzhandler_name) {
-      kphp::log::warning("ob_gzhandler temporarily unsupported at buffering level {}", httpResponse.current_buffer + 1);
+    if (httpResponse.current_buffer_id() == 0 && std::string_view{callback.c_str(), callback.size()} == ob_gzhandler_name) {
+      kphp::log::warning("ob_gzhandler temporarily unsupported at buffering level {}", httpResponse.current_buffer_id() + 1);
     } else {
-      kphp::log::error("unsupported callback {} at buffering level {}", callback.c_str(), httpResponse.current_buffer + 1);
+      kphp::log::error("unsupported callback {} at buffering level {}", callback.c_str(), httpResponse.current_buffer_id() + 1);
     }
   }
-  ++httpResponse.current_buffer;
+  httpResponse.next_buffer();
 }
 
 Optional<int64_t> f$ob_get_length() noexcept {
   Response& httpResponse{InstanceState::get().response};
-  if (httpResponse.current_buffer == 0) {
+  if (httpResponse.current_buffer_id() == 0) {
     return false;
   }
-  return httpResponse.output_buffers[httpResponse.current_buffer].size();
+  return httpResponse.current_buffer().size();
 }
 
 int64_t f$ob_get_level() noexcept {
-  return InstanceState::get().response.current_buffer;
+  return InstanceState::get().response.current_buffer_id();
 }
 
 void f$ob_clean() noexcept {
   Response& httpResponse{InstanceState::get().response};
-  httpResponse.output_buffers[httpResponse.current_buffer].clean();
+  httpResponse.current_buffer().clean();
 }
 
 bool f$ob_end_clean() noexcept {
   Response& httpResponse{InstanceState::get().response};
-  if (httpResponse.current_buffer == system_level_buffer) {
+  if (httpResponse.current_buffer_id() == system_level_buffer) {
     return false;
   }
 
-  --httpResponse.current_buffer;
+  httpResponse.prev_buffer();
   return true;
 }
 
 Optional<string> f$ob_get_clean() noexcept {
   Response& httpResponse{InstanceState::get().response};
-  if (httpResponse.current_buffer == system_level_buffer) {
+  if (httpResponse.current_buffer_id() == system_level_buffer) {
     return false;
   }
-  return httpResponse.output_buffers[httpResponse.current_buffer].str();
+  return httpResponse.current_buffer().str();
 }
 
 string f$ob_get_contents() noexcept {
   Response& httpResponse{InstanceState::get().response};
-  return httpResponse.output_buffers[httpResponse.current_buffer].str();
+  return httpResponse.current_buffer().str();
 }
 
 void f$ob_flush() noexcept {
   Response& httpResponse{InstanceState::get().response};
-  if (httpResponse.current_buffer == 0) {
+  if (httpResponse.current_buffer_id() == 0) {
     kphp::log::warning("ob_flush with no buffer opented");
     return;
   }
-  --httpResponse.current_buffer;
-  print(httpResponse.output_buffers[httpResponse.current_buffer + 1]);
-  ++httpResponse.current_buffer;
+  httpResponse.prev_buffer();
+  print(httpResponse.output_buffers()[httpResponse.current_buffer_id() + 1]);
+  httpResponse.next_buffer();
   f$ob_clean();
 }
 
 bool f$ob_end_flush() noexcept {
   Response& httpResponse{InstanceState::get().response};
-  if (httpResponse.current_buffer == 0) {
+  if (httpResponse.current_buffer_id() == 0) {
     return false;
   }
   f$ob_flush();
@@ -98,10 +98,10 @@ bool f$ob_end_flush() noexcept {
 
 Optional<string> f$ob_get_flush() noexcept {
   Response& httpResponse{InstanceState::get().response};
-  if (httpResponse.current_buffer == 0) {
+  if (httpResponse.current_buffer_id() == 0) {
     return false;
   }
-  string result{httpResponse.output_buffers[httpResponse.current_buffer].str()};
+  string result{httpResponse.current_buffer().str()};
   f$ob_flush();
   f$ob_end_clean();
   return result;

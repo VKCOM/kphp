@@ -15,7 +15,7 @@
 
 inline void print(const char* s, size_t len) noexcept {
   Response& response{InstanceState::get().response};
-  response.output_buffers[response.current_buffer].append(s, len);
+  response.current_buffer().append(s, len);
 }
 
 inline void print(const char* s) noexcept {
