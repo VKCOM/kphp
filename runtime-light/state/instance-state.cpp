@@ -57,7 +57,7 @@ int32_t merge_output_buffers() noexcept {
   while (ob_first_not_empty < response.current_buffer_id() && response.output_buffers()[ob_first_not_empty].size() == 0) {
     ++ob_first_not_empty; // TODO: optimize by precomputing final buffer's size to reserve enough space
   }
-  
+
   for (auto i = ob_first_not_empty + 1; i <= response.current_buffer_id(); i++) {
     response.output_buffers()[ob_first_not_empty].append(response.output_buffers()[i].c_str(), response.output_buffers()[i].size());
   }

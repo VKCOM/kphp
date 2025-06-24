@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <cstdint>
 
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -11,7 +12,11 @@
 #include "runtime-common/core/std/containers.h"
 
 struct Response {
-  static constexpr int32_t ob_max_buffers{50};
+  // TODO default constructor
+  Response() noexcept
+      : output_buffers_(1) {
+    output_buffers_.reserve(ob_max_buffers);
+  }
 
   int32_t current_buffer_id() const noexcept {
     return current_buffer_;
@@ -26,6 +31,11 @@ struct Response {
   }
 
   void next_buffer() noexcept {
+    assert(current_buffer_ + 1 != ob_max_buffers);
+
+    if (current_buffer_ + 1 == output_buffers_.size()) {
+      output_buffers_.resize(next_size(output_buffers_.size()));
+    }
     ++current_buffer_;
   }
 
@@ -34,12 +44,18 @@ struct Response {
   }
 
   auto& output_buffers() noexcept {
-    return output_buffers_; 
+    return output_buffers_;
   }
 
 private:
-  // kphp::stl::vector<string_buffer, kphp::memory::script_allocator> b;
-  string_buffer output_buffers_[ob_max_buffers];
+  static constexpr int32_t ob_max_buffers{50};
+
+  static size_t next_size(size_t old) noexcept {
+    assert(old != 0);
+    return std::min(old * 2, static_cast<size_t>(ob_max_buffers));
+  }
+
+  kphp::stl::vector<string_buffer, kphp::memory::script_allocator> output_buffers_;
   int32_t current_buffer_{};
 };
 
