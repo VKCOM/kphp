@@ -39,7 +39,7 @@ const char* engine_default_char_stats() {
   return engine_default_prepare_stats(tl_stats_t{}, NULL);
 }
 
-const char* engine_default_http_stat_stats() {
+const char* engine_default_open_metrics_stat_stats() {
   // TODO: also return the size
   return engine_default_prepare_stats(open_metrics_stats_t{}, nullptr);
 }

@@ -1083,8 +1083,8 @@ int php_master_rpc_stats(const std::optional<std::vector<std::string>> &sorted_f
   return 0;
 }
 
-std::string_view get_http_metrics_stats_http() noexcept {
-  return engine_default_http_stat_stats();
+std::string_view get_http_open_metrics_stats_http() noexcept {
+  return engine_default_open_metrics_stat_stats();
 }
 
 std::string get_master_stats_http() {
@@ -1208,7 +1208,7 @@ int php_master_http_execute(struct connection *c, int op) {
 
   constexpr std::string_view server_metrics_query = "/get-open-metrics-stats";
   if (url_size == server_metrics_query.size() && strncmp(ReqHdr + D->uri_offset, server_metrics_query.data(), url_size) == 0) {
-    const std::string_view metrics_response = get_http_metrics_stats_http();
+    const std::string_view metrics_response = get_http_open_metrics_stats_http();
     write_basic_http_header(c, 200, 0, metrics_response.length(), nullptr, "text/plain; charset=UTF-8");
     write_out(&c->Out, metrics_response.data(), metrics_response.length());
   }
