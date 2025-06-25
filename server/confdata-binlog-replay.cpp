@@ -53,7 +53,7 @@ struct {
   std::unordered_set<vk::string_view> predefined_wildcards;
 
   bool is_enabled() const noexcept {
-    return binlog_reader.mask;
+    return binlog_reader.mask != nullptr;
   }
 } confdata_settings;
 
