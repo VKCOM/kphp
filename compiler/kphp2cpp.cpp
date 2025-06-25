@@ -213,8 +213,8 @@ int main(int argc, char *argv[]) {
              's', "source-path", "KPHP_PATH", get_default_kphp_path());
   parser.add("Internal file with the list of supported PHP functions", settings->functions_file,
              'f', "functions-file", "KPHP_FUNCTIONS");
-  parser.add("Internal file containing a set of functions whose calls need to be tracked", settings->tracked_builtins_file,
-             "tracked-builtins-file", "KPHP_TRACKED_BUILTINS_FILE");
+  parser.add("List of builtins whose calls need to be tracked", settings->tracked_builtins_list,
+             "tracked-builtins-list", "KPHP_TRACKED_BUILTINS_LIST");
   parser.add("File with kphp runtime sha256 hash", settings->runtime_sha256_file,
              "runtime-sha256", "KPHP_RUNTIME_SHA256", "${KPHP_PATH}/objs/php_lib_version.sha256");
   parser.add("The output binary type: server, cli, lib, k2-cli, k2-server, k2-oneshot, k2-multishot", settings->mode, 'M', "mode", "KPHP_MODE", "server",

@@ -243,12 +243,6 @@ void CompilerSettings::init() {
   }
   functions_file.value_ = get_full_path(functions_file.get());
 
-  if (tracked_builtins_file.value_.empty()) {
-    if (!is_k2_mode) {
-      tracked_builtins_file.value_ = kphp_src_path.get() + "builtin-functions/tracked/k2-unsupported.txt";
-    }
-  }
-
   if (k2_component_name.get() != "KPHP") {
     kphp_error(is_k2_mode, "Option \"k2-component-name\" is only available for k2 component modes");
   }

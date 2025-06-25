@@ -6,7 +6,8 @@
 
 #include <atomic>
 #include <dirent.h>
-#include <fstream>
+#include <ios>
+#include <sstream>
 
 #include "common/algorithms/contains.h"
 #include "common/wrappers/mkdir_recursive.h"
@@ -336,12 +337,10 @@ void CompilerCore::require_function(FunctionPtr function, DataStream<FunctionPtr
   }
 }
 
-void CompilerCore::parse_tracked_builtins(const std::string& file_name) {
-  std::ifstream tracked_builtins_file(file_name);
-  kphp_error(tracked_builtins_file.is_open(), "Cannot open file with list of tracked builtins");
-
+void CompilerCore::parse_tracked_builtins(const std::string& builtins_list) noexcept {
+  std::stringstream tracked_builtins_list(builtins_list, std::ios_base::in);
   std::string function_name;
-  while (tracked_builtins_file >> function_name) {
+  while (tracked_builtins_list >> function_name) {
     tracked_builtins.emplace(std::move(function_name));
   }
 }

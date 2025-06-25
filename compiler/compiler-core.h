@@ -142,8 +142,8 @@ public:
   std::vector<ModulitePtr> get_modulites();
   const ComposerAutoloader &get_composer_autoloader() const;
 
-  void parse_tracked_builtins(const std::string& file_name);
-  auto & get_tracked_builtins() const noexcept {
+  void parse_tracked_builtins(const std::string& builtin_list) noexcept;
+  const auto & get_tracked_builtins() const noexcept {
     return tracked_builtins;
   }
 
