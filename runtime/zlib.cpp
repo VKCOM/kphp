@@ -17,7 +17,7 @@ voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) {
   int pos = *buf_pos;
   *buf_pos += items * size;
   php_assert(*buf_pos <= StringLibContext::STATIC_BUFFER_LENGTH);
-  return StringLibContext::get().static_buf.data() + pos;
+  return StringLibContext::get().static_buf.get() + pos;
 }
 
 void zlib_static_free(voidpf opaque __attribute__((unused)), voidpf address __attribute__((unused))) {}
@@ -251,7 +251,7 @@ static string::size_type zlib_decode_raw(vk::string_view s, int encoding) {
   strm.avail_in = s.size();
   strm.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(s.data()));
   strm.avail_out = StringLibContext::STATIC_BUFFER_LENGTH;
-  strm.next_out = reinterpret_cast<Bytef*>(StringLibContext::get().static_buf.data());
+  strm.next_out = reinterpret_cast<Bytef*>(StringLibContext::get().static_buf.get());
 
   int ret = inflateInit2(&strm, encoding);
   if (ret != Z_OK) {
@@ -294,7 +294,7 @@ const char* gzuncompress_raw(vk::string_view s, string::size_type* result_len) {
     return "";
   }
   *result_len = len;
-  return StringLibContext::get().static_buf.data();
+  return StringLibContext::get().static_buf.get();
 }
 
 string zlib_decode(const string& s, int encoding) {
@@ -302,7 +302,7 @@ string zlib_decode(const string& s, int encoding) {
   if (len == -1u) {
     return {};
   }
-  return {StringLibContext::get().static_buf.data(), static_cast<string::size_type>(len)};
+  return {StringLibContext::get().static_buf.get(), static_cast<string::size_type>(len)};
 }
 
 string f$gzdecode(const string& s) {
