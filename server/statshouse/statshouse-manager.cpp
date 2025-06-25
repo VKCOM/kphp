@@ -373,7 +373,7 @@ void StatsHouseManager::add_confdata_master_stats(const ConfdataStats &confdata_
   }
 }
 
-void StatsHouseManager::add_confdata_binlog_reader_stats(const binlog_reader_stats& confdata_stats) {
+void StatsHouseManager::add_confdata_binlog_reader_stats(const binlog_reader_stats& confdata_stats) noexcept {
   client.metric("kphp_confdata_next_binlog_wait_time").tag("binlog_name", confdata_stats.next_binlog_expectator_name).write_value(confdata_stats.next_binlog_wait_time.count());
 }
 
