@@ -47,13 +47,18 @@ struct {
   struct {
     std::chrono::seconds how_long_wait_for_next_binlog_until_alert{120};
     const char *mask{nullptr};
+    bool is_loaded{false};
   } binlog_reader;
   std::unique_ptr<re2::RE2> key_blacklist_pattern;
   std::forward_list<vk::string_view> force_ignore_prefixes;
   std::unordered_set<vk::string_view> predefined_wildcards;
 
-  bool is_enabled() const noexcept {
+  bool is_binlog_mask_provided() const noexcept {
     return binlog_reader.mask != nullptr;
+  }
+
+  bool is_enabled() const noexcept {
+    return is_binlog_mask_provided() && binlog_reader.is_loaded;
   }
 } confdata_settings;
 
@@ -1044,9 +1049,15 @@ void clear_confdata_predefined_wildcards() noexcept {
 }
 
 void init_confdata_binlog_reader() noexcept {
-  if (!confdata_settings.is_enabled()) {
+  if (!confdata_settings.is_binlog_mask_provided()) {
     return;
   }
+  if (engine_preload_filelist(confdata_settings.binlog_reader.mask, nullptr) < 0) {
+    log_server_error("Cannot open binlog and/or snapshot files for mask: %s\n. Confdata is not available", confdata_settings.binlog_reader.mask);
+    return;
+  }
+  confdata_settings.binlog_reader.is_loaded = true;
+  vkprintf(3, "engine_preload_filelist done\n");
 
   static engine_settings_t settings = {};
   settings.name = NAME_VERSION;
@@ -1086,7 +1097,7 @@ void init_confdata_binlog_reader() noexcept {
 
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
   confdata_binlog_replayer.init(confdata_manager.get_resource());
-  engine_default_load_index(confdata_settings.binlog_reader.mask);
+  engine_default_load_index();
 
   update_confdata_state_from_binlog(true, 10 * confdata_settings.confdata_update_timeout_sec);
   if (confdata_binlog_replayer.current_memory_status() != ConfdataBinlogReplayer::MemoryStatus::NORMAL) {

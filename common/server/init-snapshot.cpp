@@ -20,14 +20,7 @@
 
 static double index_load_time;
 
-void engine_default_load_index(const char* name) {
-  if (engine_preload_filelist(name, nullptr) < 0) {
-    kprintf("cannot open binlog files for %s\n", name);
-    exit(1);
-  }
-
-  vkprintf(3, "engine_preload_filelist done\n");
-
+void engine_default_load_index() {
   // Snapshot reading
   SnapshotDiff = NULL;
   Snapshot = open_recent_snapshot(engine_snapshot_replica);
