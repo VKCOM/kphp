@@ -350,7 +350,7 @@ void CompilerCore::parse_tracked_builtins(const std::string& builtins_list) noex
     return start_pos;
   };
 
-  for (size_t index = 0; index < builtins_list.size(); ++index) {
+  for (size_t index = 0; index < builtins_list.size();) {
     const size_t builtin_name_start = skip_whitespace(builtins_list, index);
     const size_t builtin_name_end = read_builtin(builtins_list, builtin_name_start);
 
