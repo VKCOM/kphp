@@ -6,12 +6,16 @@
 
 #include <cctype>
 #include <cstdint>
-#include <sys/types.h>
+#include <functional>
+#include <iterator>
+#include <optional>
 
+#include "common/containers/final_action.h"
 #include "common/macos-ports.h"
 #include "common/unicode/unicode-utils.h"
 #include "common/wrappers/string_view.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/string/string-context.h"
 
 const char* get_mask(const string& what) noexcept {
@@ -583,7 +587,8 @@ string f$nl2br(const string& str, bool is_xhtml) noexcept {
 }
 
 string f$number_format(double number, int64_t decimals, const string& dec_point, const string& thousands_sep) noexcept {
-  char* result_begin = StringLibContext::get().static_buf.data() + StringLibContext::STATIC_BUFFER_LENGTH;
+  auto& string_lib_ctx{StringLibContext::get()};
+  char* result_begin = string_lib_ctx.static_buf.get() + StringLibContext::STATIC_BUFFER_LENGTH;
 
   if (decimals < 0 || decimals > 100) {
     php_warning("Wrong parameter decimals (%" PRIi64 ") in function number_format", decimals);
@@ -602,7 +607,7 @@ string f$number_format(double number, int64_t decimals, const string& dec_point,
   frac = round(frac * mul + 1e-9);
 
   int64_t old_decimals = decimals;
-  while (result_begin > StringLibContext::get().static_buf.data() && decimals--) {
+  while (result_begin > string_lib_ctx.static_buf.get() && decimals--) {
     double x = floor(frac * 0.1 + 0.05);
     auto y = static_cast<int32_t>(frac - x * 10 + 0.05);
     if (static_cast<unsigned int>(y) >= 10U) {
@@ -616,7 +621,7 @@ string f$number_format(double number, int64_t decimals, const string& dec_point,
 
   if (old_decimals > 0) {
     string::size_type i = dec_point.size();
-    while (result_begin > StringLibContext::get().static_buf.data() && i > 0) {
+    while (result_begin > string_lib_ctx.static_buf.get() && i > 0) {
       *--result_begin = dec_point[--i];
     }
   }
@@ -625,13 +630,13 @@ string f$number_format(double number, int64_t decimals, const string& dec_point,
   do {
     if (digits && digits % 3 == 0) {
       string::size_type i = thousands_sep.size();
-      while (result_begin > StringLibContext::get().static_buf.data() && i > 0) {
+      while (result_begin > string_lib_ctx.static_buf.get() && i > 0) {
         *--result_begin = thousands_sep[--i];
       }
     }
     digits++;
 
-    if (result_begin > StringLibContext::get().static_buf.data()) {
+    if (result_begin > string_lib_ctx.static_buf.get()) {
       double x = floor(number * 0.1 + 0.05);
       auto y = static_cast<int32_t>((number - x * 10 + 0.05));
       if (static_cast<unsigned int>(y) >= 10U) {
@@ -641,18 +646,18 @@ string f$number_format(double number, int64_t decimals, const string& dec_point,
 
       *--result_begin = static_cast<char>(y + '0');
     }
-  } while (result_begin > StringLibContext::get().static_buf.data() && number > 0.5);
+  } while (result_begin > string_lib_ctx.static_buf.get() && number > 0.5);
 
-  if (result_begin > StringLibContext::get().static_buf.data() && negative) {
+  if (result_begin > string_lib_ctx.static_buf.get() && negative) {
     *--result_begin = '-';
   }
 
-  if (result_begin <= StringLibContext::get().static_buf.data()) {
+  if (result_begin <= string_lib_ctx.static_buf.get()) {
     php_critical_error("maximum length of result (%d) exceeded", StringLibContext::STATIC_BUFFER_LENGTH);
     return {};
   }
 
-  return {result_begin, static_cast<string::size_type>(StringLibContext::get().static_buf.data() + StringLibContext::STATIC_BUFFER_LENGTH - result_begin)};
+  return {result_begin, static_cast<string::size_type>(string_lib_ctx.static_buf.get() + StringLibContext::STATIC_BUFFER_LENGTH - result_begin)};
 }
 
 static uint64_t float64_bits(double f) {
@@ -962,9 +967,12 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
       break;
     }
 
+    auto& string_lib_ctx{StringLibContext::get()};
+    const auto& string_lib_constants{StringLibConstants::get()};
+
     string piece;
     if (format[i] == '%') {
-      piece = StringLibConstants::get().PERCENT_STR;
+      piece = string_lib_constants.PERCENT_STR;
     } else {
       if (arg_num == -2) {
         arg_num = cur_arg++;
@@ -992,10 +1000,10 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
         auto arg_int = static_cast<uint64_t>(arg.to_int());
         int cur_pos = 70;
         do {
-          StringLibContext::get().static_buf[--cur_pos] = static_cast<char>((arg_int & 1) + '0');
+          *(std::next(string_lib_ctx.static_buf.get(), --cur_pos)) = static_cast<char>((arg_int & 1) + '0');
           arg_int >>= 1;
         } while (arg_int > 0);
-        piece.assign(StringLibContext::get().static_buf.data() + cur_pos, 70 - cur_pos);
+        piece.assign(string_lib_ctx.static_buf.get() + cur_pos, 70 - cur_pos);
         break;
       }
       case 'c': {
@@ -1019,10 +1027,10 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
         auto arg_int = static_cast<uint64_t>(arg.to_int());
         int cur_pos = 70;
         do {
-          StringLibContext::get().static_buf[--cur_pos] = static_cast<char>(arg_int % 10 + '0');
+          *(std::next(string_lib_ctx.static_buf.get(), --cur_pos)) = static_cast<char>(arg_int % 10 + '0');
           arg_int /= 10;
         } while (arg_int > 0);
-        piece.assign(StringLibContext::get().static_buf.data() + cur_pos, 70 - cur_pos);
+        piece.assign(string_lib_ctx.static_buf.get() + cur_pos, 70 - cur_pos);
         break;
       }
       case 'e':
@@ -1042,23 +1050,23 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
         }
         static_SB << format[i];
 
-        int len = snprintf(StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, static_SB.c_str(), arg_float);
+        int len = snprintf(string_lib_ctx.static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, static_SB.c_str(), arg_float);
         if (len >= StringLibContext::STATIC_BUFFER_LENGTH) {
           error_too_big = true;
           break;
         }
 
-        piece.assign(StringLibContext::get().static_buf.data(), len);
+        piece.assign(string_lib_ctx.static_buf.get(), len);
         break;
       }
       case 'o': {
         auto arg_int = static_cast<uint64_t>(arg.to_int());
         int cur_pos = 70;
         do {
-          StringLibContext::get().static_buf[--cur_pos] = static_cast<char>((arg_int & 7) + '0');
+          *(std::next(string_lib_ctx.static_buf.get(), --cur_pos)) = static_cast<char>((arg_int & 7) + '0');
           arg_int >>= 3;
         } while (arg_int > 0);
-        piece.assign(StringLibContext::get().static_buf.data() + cur_pos, 70 - cur_pos);
+        piece.assign(string_lib_ctx.static_buf.get() + cur_pos, 70 - cur_pos);
         break;
       }
       case 's': {
@@ -1070,26 +1078,26 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
         }
         static_SB << 's';
 
-        int len = snprintf(StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, static_SB.c_str(), arg_string.c_str());
+        int len = snprintf(string_lib_ctx.static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, static_SB.c_str(), arg_string.c_str());
         if (len >= StringLibContext::STATIC_BUFFER_LENGTH) {
           error_too_big = true;
           break;
         }
 
-        piece.assign(StringLibContext::get().static_buf.data(), len);
+        piece.assign(string_lib_ctx.static_buf.get(), len);
         break;
       }
       case 'x':
       case 'X': {
-        const char* hex_digits = (format[i] == 'x' ? StringLibConstants::get().lhex_digits : StringLibConstants::get().uhex_digits);
+        const char* hex_digits = (format[i] == 'x' ? string_lib_constants.lhex_digits : string_lib_constants.uhex_digits);
         auto arg_int = static_cast<uint64_t>(arg.to_int());
 
         int cur_pos = 70;
         do {
-          StringLibContext::get().static_buf[--cur_pos] = hex_digits[arg_int & 15];
+          *std::next(string_lib_ctx.static_buf.get(), --cur_pos) = hex_digits[arg_int & 15];
           arg_int >>= 4;
         } while (arg_int > 0);
-        piece.assign(StringLibContext::get().static_buf.data() + cur_pos, 70 - cur_pos);
+        piece.assign(string_lib_ctx.static_buf.get() + cur_pos, 70 - cur_pos);
         break;
       }
       default:
@@ -1959,8 +1967,18 @@ string f$str_repeat(const string& s, int64_t multiplier) noexcept {
   return result;
 }
 
-static string str_replace_char(char c, const string& replace, const string& subject, int64_t& replace_count, bool with_case) {
+static string str_replace_char(char c, const string& replace, const string& subject, Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count,
+                               bool with_case) {
   int count = 0;
+  vk::final_action count_finalizer{[&count, &replace_count]() noexcept {
+    if (!replace_count.has_value()) {
+      return;
+    }
+    php_assert(replace_count.val().has_value());
+    auto& inner_ref{(*replace_count.val()).get()};
+    inner_ref = count;
+  }};
+
   const char* piece = subject.c_str();
   const char* piece_end = subject.c_str() + subject.size();
 
@@ -1982,7 +2000,6 @@ static string str_replace_char(char c, const string& replace, const string& subj
       if (count == 0) {
         return subject;
       }
-      replace_count += count;
       result.append(piece, static_cast<string::size_type>(piece_end - piece));
       return result;
     }
@@ -2006,7 +2023,8 @@ static const char* find_substr(const char* where, const char* where_end, const s
   return strcasestr(where, what.c_str());
 }
 
-void str_replace_inplace(const string& search, const string& replace, string& subject, int64_t& replace_count, bool with_case) noexcept {
+void str_replace_inplace(const string& search, const string& replace, string& subject, Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count,
+                         bool with_case) noexcept {
   if (search.empty()) {
     php_warning("Parameter search is empty in function str_replace");
     return;
@@ -2015,6 +2033,15 @@ void str_replace_inplace(const string& search, const string& replace, string& su
   subject.make_not_shared();
 
   int count = 0;
+  vk::final_action count_finalizer{[&count, &replace_count]() noexcept {
+    if (!replace_count.has_value()) {
+      return;
+    }
+    php_assert(replace_count.val().has_value());
+    auto& inner_ref{(*replace_count.val()).get()};
+    inner_ref = count;
+  }};
+
   const char* piece = subject.c_str();
   const char* piece_end = subject.c_str() + subject.size();
 
@@ -2027,7 +2054,6 @@ void str_replace_inplace(const string& search, const string& replace, string& su
       if (count == 0) {
         return;
       }
-      replace_count += count;
       if (!length_no_change) {
         memmove(output, piece, piece_end - piece);
       }
@@ -2052,15 +2078,25 @@ void str_replace_inplace(const string& search, const string& replace, string& su
   php_assert(0); // unreachable
 }
 
-string str_replace(const string& search, const string& replace, const string& subject, int64_t& replace_count, bool with_case) noexcept {
+string str_replace(const string& search, const string& replace, const string& subject, Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count,
+                   bool with_case) noexcept {
   if (search.empty()) {
     php_warning("Parameter search is empty in function str_replace");
     return subject;
   }
 
-  int count = 0;
   const char* piece = subject.c_str();
   const char* piece_end = subject.c_str() + subject.size();
+
+  int count = 0;
+  vk::final_action count_finalizer{[&count, &replace_count]() noexcept {
+    if (!replace_count.has_value()) {
+      return;
+    }
+    php_assert(replace_count.val().has_value());
+    auto& inner_ref{(*replace_count.val()).get()};
+    inner_ref = count;
+  }};
 
   string result;
   while (true) {
@@ -2069,7 +2105,6 @@ string str_replace(const string& search, const string& replace, const string& su
       if (count == 0) {
         return subject;
       }
-      replace_count += count;
       result.append(piece, static_cast<string::size_type>(piece_end - piece));
       return result;
     }
@@ -2086,9 +2121,11 @@ string str_replace(const string& search, const string& replace, const string& su
 }
 
 // common for f$str_replace(string) and f$str_ireplace(string)
-string str_replace_gen(const string& search, const string& replace, const string& subject, int64_t& replace_count, bool with_case);
+string str_replace_gen(const string& search, const string& replace, const string& subject,
+                       Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count, bool with_case);
 
-string str_replace_string(const mixed& search, const mixed& replace, const string& subject, int64_t& replace_count, bool with_case) {
+string str_replace_string(const mixed& search, const mixed& replace, const string& subject,
+                          Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count, bool with_case) {
   if (search.is_array() && replace.is_array()) {
     return str_replace_string_array(search.as_array(""), replace.as_array(""), subject, replace_count, with_case);
   } else if (search.is_array()) {
@@ -2115,8 +2152,8 @@ string str_replace_string(const mixed& search, const mixed& replace, const strin
 }
 
 // common for f$str_replace(string) and f$str_ireplace(string)
-string str_replace_gen(const string& search, const string& replace, const string& subject, int64_t& replace_count, bool with_case) {
-  replace_count = 0;
+string str_replace_gen(const string& search, const string& replace, const string& subject,
+                       Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count, bool with_case) {
   if (search.size() == 1) {
     return str_replace_char(search[0], replace, subject, replace_count, with_case);
   } else {
@@ -2124,25 +2161,29 @@ string str_replace_gen(const string& search, const string& replace, const string
   }
 }
 
-string f$str_replace(const string& search, const string& replace, const string& subject, int64_t& replace_count) noexcept {
+string f$str_replace(const string& search, const string& replace, const string& subject,
+                     Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count) noexcept {
   return str_replace_gen(search, replace, subject, replace_count, true);
 }
 
-string f$str_ireplace(const string& search, const string& replace, const string& subject, int64_t& replace_count) noexcept {
+string f$str_ireplace(const string& search, const string& replace, const string& subject,
+                      Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count) noexcept {
   return str_replace_gen(search, replace, subject, replace_count, false);
 }
 
-string f$str_replace(const mixed& search, const mixed& replace, const string& subject, int64_t& replace_count) noexcept {
+string f$str_replace(const mixed& search, const mixed& replace, const string& subject,
+                     Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count) noexcept {
   return str_replace_string(search, replace, subject, replace_count, true);
 }
 
-string f$str_ireplace(const mixed& search, const mixed& replace, const string& subject, int64_t& replace_count) noexcept {
+string f$str_ireplace(const mixed& search, const mixed& replace, const string& subject,
+                      Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count) noexcept {
   return str_replace_string(search, replace, subject, replace_count, false);
 }
 
 // common for f$str_replace(mixed) and f$str_ireplace(mixed)
-mixed str_replace_gen(const mixed& search, const mixed& replace, const mixed& subject, int64_t& replace_count, bool with_case) {
-  replace_count = 0;
+mixed str_replace_gen(const mixed& search, const mixed& replace, const mixed& subject, Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count,
+                      bool with_case) {
   if (subject.is_array()) {
     array<mixed> result;
     for (array<mixed>::const_iterator it = subject.begin(); it != subject.end(); ++it) {
@@ -2157,11 +2198,13 @@ mixed str_replace_gen(const mixed& search, const mixed& replace, const mixed& su
   }
 }
 
-mixed f$str_replace(const mixed& search, const mixed& replace, const mixed& subject, int64_t& replace_count) noexcept {
+mixed f$str_replace(const mixed& search, const mixed& replace, const mixed& subject,
+                    Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count) noexcept {
   return str_replace_gen(search, replace, subject, replace_count, true);
 }
 
-mixed f$str_ireplace(const mixed& search, const mixed& replace, const mixed& subject, int64_t& replace_count) noexcept {
+mixed f$str_ireplace(const mixed& search, const mixed& replace, const mixed& subject,
+                     Optional<std::optional<std::reference_wrapper<int64_t>>> replace_count) noexcept {
   return str_replace_gen(search, replace, subject, replace_count, false);
 }
 
@@ -2371,6 +2414,8 @@ Optional<array<mixed>> f$unpack(const string& pattern, const string& data) noexc
       return false;
     }
 
+    const auto& string_lib_constants{StringLibConstants::get()};
+
     char filler = 0;
     switch (format) {
     case 'A':
@@ -2392,7 +2437,7 @@ Optional<array<mixed>> f$unpack(const string& pattern, const string& data) noexc
       }
 
       if (key_prefix.empty()) {
-        key_prefix = StringLibConstants::get().ONE_STR;
+        key_prefix = string_lib_constants.ONE_STR;
       }
 
       result.set_value(key_prefix, string(data.c_str() + data_pos, cnt));
@@ -2417,8 +2462,8 @@ Optional<array<mixed>> f$unpack(const string& pattern, const string& data) noexc
       string value(cnt, false);
       for (int j = data_pos; cnt > 0; j++, cnt -= 2) {
         unsigned char ch = data[j];
-        char num_high = StringLibConstants::get().lhex_digits[ch >> 4];
-        char num_low = StringLibConstants::get().lhex_digits[ch & 15];
+        char num_high = string_lib_constants.lhex_digits[ch >> 4];
+        char num_low = string_lib_constants.lhex_digits[ch & 15];
         if (format == 'h') {
           swap(num_high, num_low);
         }
@@ -2431,7 +2476,7 @@ Optional<array<mixed>> f$unpack(const string& pattern, const string& data) noexc
       php_assert(cnt == 0 || cnt == -1);
 
       if (key_prefix.empty()) {
-        key_prefix = StringLibConstants::get().ONE_STR;
+        key_prefix = string_lib_constants.ONE_STR;
       }
 
       result.set_value(key_prefix, value);
@@ -2442,7 +2487,7 @@ Optional<array<mixed>> f$unpack(const string& pattern, const string& data) noexc
 
     default: {
       if (key_prefix.empty() && cnt == -1) {
-        key_prefix = StringLibConstants::get().ONE_STR;
+        key_prefix = string_lib_constants.ONE_STR;
       }
       int counter = 1;
       do {
@@ -2689,13 +2734,15 @@ size_t php_similar_char(vk::string_view first, vk::string_view second) {
 
 } // namespace impl_
 
-int64_t f$similar_text(const string& first, const string& second, double& percent) noexcept {
+int64_t f$similar_text(const string& first, const string& second, Optional<std::optional<std::reference_wrapper<double>>> percent) noexcept {
   if (first.empty() && second.empty()) {
-    percent = 0.0;
     return 0;
   }
   const size_t sim = impl_::php_similar_char(vk::string_view{first.c_str(), first.size()}, vk::string_view{second.c_str(), second.size()});
-  percent = static_cast<double>(sim) * 200.0 / (first.size() + second.size());
+  if (percent.has_value()) {
+    php_assert(percent.val().has_value());
+    (*percent.val()).get() = static_cast<double>(sim) * 200.0 / (first.size() + second.size());
+  }
   return static_cast<int64_t>(sim);
 }
 

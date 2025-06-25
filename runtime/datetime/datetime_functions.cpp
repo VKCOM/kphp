@@ -577,11 +577,11 @@ string f$strftime(const string& format, int64_t timestamp) {
   time_t timestamp_t = timestamp;
   localtime_r(&timestamp_t, &t);
 
-  if (!strftime(StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, format.c_str(), &t)) {
+  if (!strftime(StringLibContext::get().static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, format.c_str(), &t)) {
     return {};
   }
 
-  return string(StringLibContext::get().static_buf.data());
+  return string(StringLibContext::get().static_buf.get());
 }
 
 Optional<int64_t> f$strtotime(const string& time_str, int64_t timestamp) {

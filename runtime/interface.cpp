@@ -915,7 +915,7 @@ public:
         buf_pos(0),
         boundary(boundary) {
     if (post == nullptr) {
-      buf = StringLibContext::get().static_buf.data();
+      buf = StringLibContext::get().static_buf.get();
       buf_len = 0;
     } else {
       buf = (char*)post;
@@ -1686,7 +1686,7 @@ static void init_superglobals_impl(const http_query_data& http_data, const rpc_q
       int loaded = 0;
       while (loaded < http_data.post_len) {
         int to_load = min(StringLibContext::STATIC_BUFFER_LENGTH, http_data.post_len - loaded);
-        http_load_long_query(StringLibContext::get().static_buf.data(), to_load, to_load);
+        http_load_long_query(StringLibContext::get().static_buf.get(), to_load, to_load);
         loaded += to_load;
       }
     }

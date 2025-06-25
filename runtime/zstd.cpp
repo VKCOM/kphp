@@ -48,7 +48,7 @@ Optional<string> zstd_compress_impl(const string& data, int64_t level = DEFAULT_
   }
 
   php_assert(ZSTD_CStreamOutSize() <= StringLibContext::STATIC_BUFFER_LENGTH);
-  ZSTD_outBuffer out{StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, 0};
+  ZSTD_outBuffer out{StringLibContext::get().static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, 0};
   ZSTD_inBuffer in{data.c_str(), data.size(), 0};
 
   string encoded_string;
@@ -104,7 +104,7 @@ Optional<string> zstd_uncompress_impl(const string& data, const string& dict = s
 
   php_assert(ZSTD_DStreamOutSize() <= StringLibContext::STATIC_BUFFER_LENGTH);
   ZSTD_inBuffer in{data.c_str(), data.size(), 0};
-  ZSTD_outBuffer out{StringLibContext::get().static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, 0};
+  ZSTD_outBuffer out{StringLibContext::get().static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, 0};
 
   string decoded_string;
   while (in.pos < in.size) {

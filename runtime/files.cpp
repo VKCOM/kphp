@@ -175,10 +175,10 @@ bool f$copy(const string& from, const string& to) {
   size_t size = stat_buf.st_size;
   while (size > 0) {
     size_t len = min(size, (size_t)StringLibContext::STATIC_BUFFER_LENGTH);
-    if (read_safe(read_fd, StringLibContext::get().static_buf.data(), len, from) < (ssize_t)len) {
+    if (read_safe(read_fd, StringLibContext::get().static_buf.get(), len, from) < (ssize_t)len) {
       break;
     }
-    if (write_safe(write_fd, StringLibContext::get().static_buf.data(), len, to) < (ssize_t)len) {
+    if (write_safe(write_fd, StringLibContext::get().static_buf.get(), len, to) < (ssize_t)len) {
       break;
     }
     size -= len;
@@ -772,13 +772,13 @@ static Optional<int64_t> file_fpassthru(const Stream& stream) {
   dl::enter_critical_section(); // OK
   while (!feof(f)) {
     clearerr(f);
-    size_t res_size = fread(StringLibContext::get().static_buf.data(), 1, StringLibContext::STATIC_BUFFER_LENGTH, f);
+    size_t res_size = fread(StringLibContext::get().static_buf.get(), 1, StringLibContext::STATIC_BUFFER_LENGTH, f);
     if (ferror(f)) {
       dl::leave_critical_section();
       php_warning("Error happened during fpassthru from file \"%s\"", stream.to_string().c_str());
       return false;
     }
-    print(StringLibContext::get().static_buf.data(), res_size);
+    print(StringLibContext::get().static_buf.get(), res_size);
     result += static_cast<int64_t>(res_size);
   }
   dl::leave_critical_section();

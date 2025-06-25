@@ -152,5 +152,5 @@ private:
   deque<uint64_t> incoming_streams_;
   unordered_set<uint64_t> opened_streams_;
 
-  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(16U * 1024U * 1024U); // 16MB
+  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(16U * 1024U * 1024U);
 };
