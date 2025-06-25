@@ -37,15 +37,12 @@ struct StringLibContext final : private vk::not_copyable {
   static constexpr int32_t MASK_BUFFER_LENGTH = 256;
   static constexpr int32_t STATIC_BUFFER_LENGTH = 1U << 23U;
 
-  int64_t str_replace_count_dummy{};
-  double default_similar_text_percent_stub{};
-
   // Do not initialize this array. Initializing it would zero out the memory,
   // which significantly impacts K2's performance due to the large size of the buffer.
   // The buffer is intended to be used as raw storage, and its contents will be
   // explicitly managed elsewhere in the code.
   std::array<char, MASK_BUFFER_LENGTH> mask_buf;
-  // TODO In case of K2 it's actually more efficient to use script allocator.
+  // TODO In case of K2 it can actually be more efficient to use script allocator.
   kphp::stl::string<kphp::memory::platform_allocator> static_buf;
 
   StringLibContext() noexcept {

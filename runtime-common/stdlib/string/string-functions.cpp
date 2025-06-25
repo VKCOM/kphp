@@ -7,6 +7,7 @@
 #include <cctype>
 #include <cstdint>
 #include <functional>
+#include <optional>
 
 #include "common/containers/final_action.h"
 #include "common/macos-ports.h"
@@ -2732,13 +2733,15 @@ size_t php_similar_char(vk::string_view first, vk::string_view second) {
 
 } // namespace impl_
 
-int64_t f$similar_text(const string& first, const string& second, double& percent) noexcept {
+int64_t f$similar_text(const string& first, const string& second, Optional<std::optional<std::reference_wrapper<double>>> percent) noexcept {
   if (first.empty() && second.empty()) {
-    percent = 0.0;
     return 0;
   }
   const size_t sim = impl_::php_similar_char(vk::string_view{first.c_str(), first.size()}, vk::string_view{second.c_str(), second.size()});
-  percent = static_cast<double>(sim) * 200.0 / (first.size() + second.size());
+  if (percent.has_value()) {
+    php_assert(percent.val().has_value());
+    (*percent.val()).get() = static_cast<double>(sim) * 200.0 / (first.size() + second.size());
+  }
   return static_cast<int64_t>(sim);
 }
 
