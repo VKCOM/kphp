@@ -62,6 +62,7 @@
 
 #include "runtime-common/core/memory-resource/memory_resource.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
+#include "runtime/runtime-builtin-stats.h"
 #include "runtime/interface.h"
 #include "runtime/kphp_ml/kphp_ml_init.h"
 #include "runtime/profiler.h"
@@ -2239,6 +2240,10 @@ int main_args_handler(int i, const char *long_option) {
       kml_directory = optarg;
       return 0;
     }
+    case 2041: {
+      runtime_builtins_stats::is_server_option_enabled = true;
+      return 0;
+    }
     default:
       return -1;
   }
@@ -2352,6 +2357,7 @@ void parse_main_args(int argc, char *argv[]) {
   parse_option("confdata-soft-oom-ratio", required_argument, 2039, "Memory limit ratio to start ignoring new keys related events (default: 0.85)."
                                                                    "Can't be > hard oom ratio (0.95)");
   parse_option("kml-dir", required_argument, 2040, "Directory that contains .kml files");
+  parse_option("enable-request-builtin-stats", no_argument, 2041, "Enables the recording of statistics for built-in function calls during request processing");
 
 
   parse_engine_options_long(argc, argv, main_args_handler);

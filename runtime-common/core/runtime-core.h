@@ -571,7 +571,9 @@ inline mixed f$error_get_last();
 
 inline void f$warning(const string& message);
 
-#define f$critical_error(message) php_critical_error("%s", message.c_str());
+[[noreturn]] inline void f$critical_error(const string& message) {
+  php_critical_error("%s", message.c_str());
+}
 
 template<class T>
 inline int64_t f$get_reference_counter(const array<T>& v);

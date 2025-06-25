@@ -14,6 +14,7 @@
 #include "net/net-events.h"
 
 #include "runtime/curl.h"
+#include "runtime/runtime-builtin-stats.h"
 
 #include "server/workers-control.h"
 
@@ -636,7 +637,8 @@ void ServerStats::after_fork(pid_t worker_pid, uint64_t active_connections, uint
 }
 
 void ServerStats::add_request_stats(double script_time_sec, double net_time_sec, double script_max_running_interval_sec, double script_init_time_sec, double connection_process_time_sec,
-                                    int64_t script_queries, int64_t long_script_queries, const memory_resource::MemoryStats &script_memory_stats, int64_t curl_total_allocated, process_rusage_t script_rusage, script_error_t error) noexcept {
+                                    int64_t script_queries, int64_t long_script_queries, const memory_resource::MemoryStats &script_memory_stats, const runtime_builtins_stats::request_stats_t &builtin_stats,
+                                    int64_t curl_total_allocated, process_rusage_t script_rusage, script_error_t error) noexcept {
   auto &stats = worker_type_ == WorkerType::job_worker ? shared_stats_->job_workers : shared_stats_->general_workers;
   const auto script_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(script_time_sec));
   const auto net_time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(net_time_sec));
@@ -654,7 +656,7 @@ void ServerStats::add_request_stats(double script_time_sec, double net_time_sec,
   stats.add_request_stats(queries_stat, error, script_memory_stats, curl_total_allocated);
   shared_stats_->workers.add_worker_stats(queries_stat, worker_process_id_);
 
-  StatsHouseManager::get().add_request_stats(script_time.count(), net_time.count(), script_max_running_interval.count(), error, script_memory_stats, script_queries, long_script_queries,
+  StatsHouseManager::get().add_request_stats(script_time.count(), net_time.count(), script_max_running_interval.count(), error, script_memory_stats, builtin_stats, script_queries, long_script_queries,
                                              script_user_time.count(), script_system_time.count(),
                                              script_init_time.count(), http_connection_process_time.count(),
                                              script_rusage.voluntary_context_switches, script_rusage.involuntary_context_switches);

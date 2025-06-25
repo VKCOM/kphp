@@ -6,6 +6,7 @@
 
 #include <atomic>
 #include <dirent.h>
+#include <cctype>
 
 #include "common/algorithms/contains.h"
 #include "common/wrappers/mkdir_recursive.h"
@@ -332,6 +333,29 @@ void CompilerCore::require_function(FunctionPtr function, DataStream<FunctionPtr
   if (!function->is_required) {
     function->is_required = true;
     os << function;
+  }
+}
+
+void CompilerCore::parse_tracked_builtins(const std::string& builtins_list) noexcept {
+  constexpr auto skip_whitespace = [](const std::string & str, size_t start_pos) noexcept {
+    while (start_pos < str.size() && std::isspace(str[start_pos]) != 0) {
+      start_pos++;
+    }
+    return start_pos;
+  };
+  constexpr auto read_builtin = [](const std::string & str, size_t start_pos) noexcept {
+    while (start_pos < str.size() && std::isspace(str[start_pos]) == 0) {
+      start_pos++;
+    }
+    return start_pos;
+  };
+
+  for (size_t index = 0; index < builtins_list.size();) {
+    const size_t builtin_name_start = skip_whitespace(builtins_list, index);
+    const size_t builtin_name_end = read_builtin(builtins_list, builtin_name_start);
+
+    tracked_builtins.emplace(builtins_list.substr(builtin_name_start, builtin_name_end - builtin_name_start));
+    index = builtin_name_end;
   }
 }
 

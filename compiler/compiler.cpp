@@ -194,6 +194,9 @@ bool compiler_execute(CompilerSettings *settings) {
     }
     stage::set_warning_file(f);
   }
+  if (const auto &tracked_builtins_list = settings->tracked_builtins_list.get(); !tracked_builtins_list.empty()) {
+    G->parse_tracked_builtins(tracked_builtins_list);
+  }
 
   //TODO: call it with pthread_once on need
   lexer_init();
