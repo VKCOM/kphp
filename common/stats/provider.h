@@ -84,7 +84,7 @@ protected:
   virtual void add_stat_with_tag_type(char type, const char* key, const char* type_tag, double value) noexcept = 0;
   virtual void add_stat_with_tag_type(char type, const char* key, const char* type_tag, long long value) noexcept = 0;
 
-  char* normalize_key(const char* key, const char* format, const char* prefix) noexcept;
+  const char* normalize_key(const char* key, const char* format, const char* prefix) noexcept;
 };
 
 char* stat_temp_format(const char* format, ...) __attribute__((format(printf, 1, 2)));
