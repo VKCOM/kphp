@@ -1437,7 +1437,7 @@ void reopen_json_log() {
   }
 }
 
-void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) noexcept {
+void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port, bool invoke_dummy_self_rpc_request) noexcept {
   if (master_flag && logname_pattern != nullptr) {
     reopen_logs();
     reopen_json_log();
@@ -1468,24 +1468,24 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port) n
         if (rpc_sfd >= 0) {
           init_listening_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods);
         }
+      }
 
-        if (run_once) {
-          int pipe_fd[2];
-          pipe(pipe_fd);
+      if (invoke_dummy_self_rpc_request) {
+        int pipe_fd[2];
+        pipe(pipe_fd);
 
-          int read_fd = pipe_fd[0];
-          int write_fd = pipe_fd[1];
+        int read_fd = pipe_fd[0];
+        int write_fd = pipe_fd[1];
 
-          rpc_client_methods.rpc_ready = nullptr;
-          epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
+        rpc_client_methods.rpc_ready = nullptr;
+        epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
 
-          int q[6];
-          int qsize = 6 * sizeof(int);
-          q[2] = TL_RPC_INVOKE_REQ;
-          for (int i = 0; i < run_once_count; i++) {
-            prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
-            assert (write(write_fd, q, (size_t)qsize) == qsize);
-          }
+        int q[6];
+        int qsize = 6 * sizeof(int);
+        q[2] = TL_RPC_INVOKE_REQ;
+        for (int i = 0; i < run_once_count; i++) {
+          prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
+          assert(write(write_fd, q, (size_t)qsize) == qsize);
         }
       }
 
@@ -1633,7 +1633,7 @@ void start_server() {
   }
 
   worker_global_init(worker_type);
-  generic_event_loop(worker_type, !master_flag);
+  generic_event_loop(worker_type, !master_flag, run_once || run_once_prefork_mode);
 }
 
 void set_instance_cache_memory_limit(size_t limit);
@@ -2454,9 +2454,14 @@ int run_main(int argc, char **argv, php_mode mode) {
   parse_main_args(argc, argv);
 
   if (run_once) {
-    master_flag = 0;
-    rpc_port = -1;
-    setvbuf(stdout, nullptr, _IONBF, 0);
+    if (master_flag) {
+      kprintf("running in special run once pre-fork mode\n");
+      run_once_prefork_mode = true;
+    } else {
+      master_flag = 0;
+      rpc_port = -1;
+      setvbuf(stdout, nullptr, _IONBF, 0);
+    }
   }
 
   if (!master_flag && vk::singleton<HttpServerContext>::get().http_server_enabled()) {

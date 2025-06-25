@@ -27,7 +27,7 @@ int master_pid = -1;
 ProcessType process_type = ProcessType::master;
 
 int master_flag = 0; // 1 -- master, 0 -- single process, -1 -- child
-
+bool run_once_prefork_mode = false;
 bool run_once = false;
 int run_once_return_code = 0;
 
