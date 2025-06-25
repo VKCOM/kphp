@@ -16,10 +16,10 @@ template<typename T>
 struct script_allocator {
   using value_type = T;
 
-  script_allocator() = default;
+  script_allocator() noexcept = default;
 
   template<typename U>
-  script_allocator(const script_allocator<U>&) {}
+  script_allocator(const script_allocator<U>&) noexcept {}
 
   constexpr value_type* allocate(size_t n) noexcept {
     return static_cast<value_type*>(RuntimeAllocator::get().alloc_script_memory(n * sizeof(T)));
