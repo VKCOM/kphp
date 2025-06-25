@@ -23,14 +23,15 @@
 #include "common/server/engine-settings.h"
 #include "common/server/init-binlog.h"
 #include "common/server/init-snapshot.h"
+#include "common/server/main-binlog.h"
 #include "common/tl/methods/string.h"
 #include "common/wrappers/string_view.h"
 #include "common/kfs/kfs.h"
-
+#include "common/binlog/binlog-buffer.h"
+#include "common/binlog/binlog-stats.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime/allocator.h"
 #include "runtime/confdata-global-manager.h"
-#include "runtime-common/core/runtime-core.h"
 #include "server/confdata-binlog-events.h"
 #include "server/confdata-stats.h"
 #include "server/server-log.h"
@@ -39,17 +40,20 @@
 namespace {
 
 struct {
-  const char *binlog_mask{nullptr};
   size_t memory_limit{2u * 1024u * 1024u * 1024u};
   double soft_oom_threshold_ratio{CONFDATA_DEFAULT_SOFT_OOM_RATIO};
   double hard_oom_threshold_ratio{CONFDATA_DEFAULT_HARD_OOM_RATIO};
-  double confdata_update_timeout_sec = 0.3;
+  double confdata_update_timeout_sec {0.3};
+  struct {
+    std::chrono::seconds how_long_wait_for_next_binlog_until_alert{120};
+    const char *mask{nullptr};
+  } binlog_reader;
   std::unique_ptr<re2::RE2> key_blacklist_pattern;
   std::forward_list<vk::string_view> force_ignore_prefixes;
   std::unordered_set<vk::string_view> predefined_wildcards;
 
   bool is_enabled() const noexcept {
-    return binlog_mask;
+    return binlog_reader.mask != nullptr;
   }
 } confdata_settings;
 
@@ -1000,7 +1004,7 @@ void set_confdata_hard_oom_ratio(double hard_oom_ratio) noexcept {
 }
 
 void set_confdata_binlog_mask(const char *mask) noexcept {
-  confdata_settings.binlog_mask = mask;
+  confdata_settings.binlog_reader.mask = mask;
 }
 
 void set_confdata_memory_limit(size_t memory_limit) noexcept {
@@ -1013,6 +1017,10 @@ void set_confdata_blacklist_pattern(std::unique_ptr<re2::RE2> &&key_blacklist_pa
 
 void set_confdata_update_timeout(double timeout_sec) noexcept {
   confdata_settings.confdata_update_timeout_sec = timeout_sec;
+}
+
+void set_how_long_wait_until_alert(std::chrono::seconds t) noexcept {
+  confdata_settings.binlog_reader.how_long_wait_for_next_binlog_until_alert = t;
 }
 
 void add_confdata_force_ignore_prefix(const char *key_ignore_prefix) noexcept {
@@ -1053,6 +1061,7 @@ void init_confdata_binlog_reader() noexcept {
     log_split_max = E->split_max;
     log_split_mod = E->split_mod;
   };
+  settings.next_binlog_part_not_found_alert_timeout = confdata_settings.binlog_reader.how_long_wait_for_next_binlog_until_alert;
   set_engine_settings(&settings);
 
   vkprintf(1, "start confdata loading\n");
@@ -1077,7 +1086,7 @@ void init_confdata_binlog_reader() noexcept {
 
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();
   confdata_binlog_replayer.init(confdata_manager.get_resource());
-  engine_default_load_index(confdata_settings.binlog_mask);
+  engine_default_load_index(confdata_settings.binlog_reader.mask);
 
   update_confdata_state_from_binlog(true, 10 * confdata_settings.confdata_update_timeout_sec);
   if (confdata_binlog_replayer.current_memory_status() != ConfdataBinlogReplayer::MemoryStatus::NORMAL) {
@@ -1102,6 +1111,18 @@ void init_confdata_binlog_reader() noexcept {
 void confdata_binlog_update_cron() noexcept {
   if (!confdata_settings.is_enabled()) {
     return;
+  }
+
+  // Force statistics update if binlog hasn't been rotated successfully in specific time
+  if (BinlogBufferWriter.unsuccessful_rotation_attempts > 0) {
+    std::chrono::seconds wait_rotation_time{std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() -
+                                            BinlogBufferWriter.unsuccessful_rotation_first_ts};
+    if (wait_rotation_time > confdata_settings.binlog_reader.how_long_wait_for_next_binlog_until_alert) {
+      const auto& stats = binlog_reader_stats::get();
+      log_server_error("Waiting for the next binlog part for too long: %" PRIu64 " seconds, binlog name %s", stats.next_binlog_wait_time.count(),
+                       stats.next_binlog_expectator_name.data());
+      StatsHouseManager::get().add_confdata_binlog_reader_stats(stats);
+    }
   }
 
   auto &confdata_binlog_replayer = ConfdataBinlogReplayer::get();

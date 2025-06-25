@@ -143,7 +143,7 @@ int bb_buffer_set_reader(bb_buffer_t* B, bb_reader_t* R);
 void bb_buffer_seek(bb_buffer_t* B, long long log_pos, int timestamp, unsigned log_crc32);
 int bb_buffer_replay_log(bb_buffer_t* B, int set_now);
 int bb_buffer_work(bb_buffer_t* B);
-void bb_buffer_set_flags(bb_buffer_t* B, int binlog_disabled, int disable_crc32, int disable_ts, int flush_rarely);
+void bb_buffer_set_flags(bb_buffer_t* B, bb_reader_t* R, int binlog_disabled, int disable_crc32, int disable_ts, int flush_rarely);
 
 void bbr_default_rotate(bb_reader_t* R, bb_rotation_point_t* P);
 

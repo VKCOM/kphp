@@ -199,8 +199,8 @@ static int process_first36_bytes(struct kfs_file_info* FI, int fd, int r, const 
   case LEV_ROTATE_FROM:
     if (r < sizeof(struct lev_rotate_from)) {
       kprintf("error reading %d bytes from %s (read only %d bytes)\n", (int)sizeof(struct lev_rotate_from), FI->filename, r);
+      return -2;
     }
-    assert(r >= sizeof(struct lev_rotate_from));
     FI->log_pos = ((struct lev_rotate_from*)E)->cur_log_pos;
     if (!FI->file_hash) {
       FI->file_hash = ((struct lev_rotate_from*)E)->cur_log_hash;
