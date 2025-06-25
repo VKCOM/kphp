@@ -1,6 +1,6 @@
-//
-// Created by p-shumilov on 23.06.25.
-//
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #ifndef KPHP_BINLOG_STATS_H
 #define KPHP_BINLOG_STATS_H
