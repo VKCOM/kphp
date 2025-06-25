@@ -6,13 +6,12 @@
 
 #include <array>
 #include <cstdint>
-#include <string_view>
+#include <memory>
 
 #include "common/mixin/not_copyable.h"
 #include "common/php-functions.h"
-#include "runtime-common/core/allocator/platform-allocator.h"
+#include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/std/containers.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 
 namespace string_context_impl_ {
@@ -43,11 +42,11 @@ struct StringLibContext final : private vk::not_copyable {
   // explicitly managed elsewhere in the code.
   std::array<char, MASK_BUFFER_LENGTH> mask_buf;
   // TODO In case of K2 it can actually be more efficient to use script allocator.
-  kphp::stl::string<kphp::memory::platform_allocator> static_buf;
+  std::unique_ptr<char, decltype(std::addressof(kphp::memory::platform::free))> static_buf;
 
-  StringLibContext() noexcept {
-    static_buf.reserve(STATIC_BUFFER_LENGTH + 1);
-    php_assert(static_buf.capacity() >= STATIC_BUFFER_LENGTH + 1);
+  StringLibContext() noexcept
+      : static_buf(static_cast<char*>(kphp::memory::platform::alloc(STATIC_BUFFER_LENGTH + 1)), kphp::memory::platform::free) {
+    php_assert(static_buf != nullptr);
   }
 
   static StringLibContext& get() noexcept;

@@ -29,7 +29,7 @@ voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) noexcept {
     return Z_NULL;
   }
 
-  auto* mem{std::next(StringInstanceState::get().static_buf.data(), *buf_pos_ptr)};
+  auto* mem{std::next(StringInstanceState::get().static_buf.get(), *buf_pos_ptr)};
   *buf_pos_ptr += required_mem;
   return mem;
 }

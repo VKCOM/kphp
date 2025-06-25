@@ -7,6 +7,7 @@
 #include <cctype>
 #include <cstdint>
 #include <functional>
+#include <iterator>
 #include <optional>
 
 #include "common/containers/final_action.h"
@@ -587,7 +588,7 @@ string f$nl2br(const string& str, bool is_xhtml) noexcept {
 
 string f$number_format(double number, int64_t decimals, const string& dec_point, const string& thousands_sep) noexcept {
   auto& string_lib_ctx{StringLibContext::get()};
-  char* result_begin = string_lib_ctx.static_buf.data() + StringLibContext::STATIC_BUFFER_LENGTH;
+  char* result_begin = string_lib_ctx.static_buf.get() + StringLibContext::STATIC_BUFFER_LENGTH;
 
   if (decimals < 0 || decimals > 100) {
     php_warning("Wrong parameter decimals (%" PRIi64 ") in function number_format", decimals);
@@ -606,7 +607,7 @@ string f$number_format(double number, int64_t decimals, const string& dec_point,
   frac = round(frac * mul + 1e-9);
 
   int64_t old_decimals = decimals;
-  while (result_begin > string_lib_ctx.static_buf.data() && decimals--) {
+  while (result_begin > string_lib_ctx.static_buf.get() && decimals--) {
     double x = floor(frac * 0.1 + 0.05);
     auto y = static_cast<int32_t>(frac - x * 10 + 0.05);
     if (static_cast<unsigned int>(y) >= 10U) {
@@ -620,7 +621,7 @@ string f$number_format(double number, int64_t decimals, const string& dec_point,
 
   if (old_decimals > 0) {
     string::size_type i = dec_point.size();
-    while (result_begin > string_lib_ctx.static_buf.data() && i > 0) {
+    while (result_begin > string_lib_ctx.static_buf.get() && i > 0) {
       *--result_begin = dec_point[--i];
     }
   }
@@ -629,13 +630,13 @@ string f$number_format(double number, int64_t decimals, const string& dec_point,
   do {
     if (digits && digits % 3 == 0) {
       string::size_type i = thousands_sep.size();
-      while (result_begin > string_lib_ctx.static_buf.data() && i > 0) {
+      while (result_begin > string_lib_ctx.static_buf.get() && i > 0) {
         *--result_begin = thousands_sep[--i];
       }
     }
     digits++;
 
-    if (result_begin > string_lib_ctx.static_buf.data()) {
+    if (result_begin > string_lib_ctx.static_buf.get()) {
       double x = floor(number * 0.1 + 0.05);
       auto y = static_cast<int32_t>((number - x * 10 + 0.05));
       if (static_cast<unsigned int>(y) >= 10U) {
@@ -645,18 +646,18 @@ string f$number_format(double number, int64_t decimals, const string& dec_point,
 
       *--result_begin = static_cast<char>(y + '0');
     }
-  } while (result_begin > string_lib_ctx.static_buf.data() && number > 0.5);
+  } while (result_begin > string_lib_ctx.static_buf.get() && number > 0.5);
 
-  if (result_begin > string_lib_ctx.static_buf.data() && negative) {
+  if (result_begin > string_lib_ctx.static_buf.get() && negative) {
     *--result_begin = '-';
   }
 
-  if (result_begin <= string_lib_ctx.static_buf.data()) {
+  if (result_begin <= string_lib_ctx.static_buf.get()) {
     php_critical_error("maximum length of result (%d) exceeded", StringLibContext::STATIC_BUFFER_LENGTH);
     return {};
   }
 
-  return {result_begin, static_cast<string::size_type>(string_lib_ctx.static_buf.data() + StringLibContext::STATIC_BUFFER_LENGTH - result_begin)};
+  return {result_begin, static_cast<string::size_type>(string_lib_ctx.static_buf.get() + StringLibContext::STATIC_BUFFER_LENGTH - result_begin)};
 }
 
 static uint64_t float64_bits(double f) {
@@ -999,10 +1000,10 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
         auto arg_int = static_cast<uint64_t>(arg.to_int());
         int cur_pos = 70;
         do {
-          string_lib_ctx.static_buf[--cur_pos] = static_cast<char>((arg_int & 1) + '0');
+          *(std::next(string_lib_ctx.static_buf.get(), --cur_pos)) = static_cast<char>((arg_int & 1) + '0');
           arg_int >>= 1;
         } while (arg_int > 0);
-        piece.assign(string_lib_ctx.static_buf.data() + cur_pos, 70 - cur_pos);
+        piece.assign(string_lib_ctx.static_buf.get() + cur_pos, 70 - cur_pos);
         break;
       }
       case 'c': {
@@ -1026,10 +1027,10 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
         auto arg_int = static_cast<uint64_t>(arg.to_int());
         int cur_pos = 70;
         do {
-          string_lib_ctx.static_buf[--cur_pos] = static_cast<char>(arg_int % 10 + '0');
+          *(std::next(string_lib_ctx.static_buf.get(), --cur_pos)) = static_cast<char>(arg_int % 10 + '0');
           arg_int /= 10;
         } while (arg_int > 0);
-        piece.assign(string_lib_ctx.static_buf.data() + cur_pos, 70 - cur_pos);
+        piece.assign(string_lib_ctx.static_buf.get() + cur_pos, 70 - cur_pos);
         break;
       }
       case 'e':
@@ -1049,23 +1050,23 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
         }
         static_SB << format[i];
 
-        int len = snprintf(string_lib_ctx.static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, static_SB.c_str(), arg_float);
+        int len = snprintf(string_lib_ctx.static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, static_SB.c_str(), arg_float);
         if (len >= StringLibContext::STATIC_BUFFER_LENGTH) {
           error_too_big = true;
           break;
         }
 
-        piece.assign(string_lib_ctx.static_buf.data(), len);
+        piece.assign(string_lib_ctx.static_buf.get(), len);
         break;
       }
       case 'o': {
         auto arg_int = static_cast<uint64_t>(arg.to_int());
         int cur_pos = 70;
         do {
-          string_lib_ctx.static_buf[--cur_pos] = static_cast<char>((arg_int & 7) + '0');
+          *(std::next(string_lib_ctx.static_buf.get(), --cur_pos)) = static_cast<char>((arg_int & 7) + '0');
           arg_int >>= 3;
         } while (arg_int > 0);
-        piece.assign(string_lib_ctx.static_buf.data() + cur_pos, 70 - cur_pos);
+        piece.assign(string_lib_ctx.static_buf.get() + cur_pos, 70 - cur_pos);
         break;
       }
       case 's': {
@@ -1077,13 +1078,13 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
         }
         static_SB << 's';
 
-        int len = snprintf(string_lib_ctx.static_buf.data(), StringLibContext::STATIC_BUFFER_LENGTH, static_SB.c_str(), arg_string.c_str());
+        int len = snprintf(string_lib_ctx.static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, static_SB.c_str(), arg_string.c_str());
         if (len >= StringLibContext::STATIC_BUFFER_LENGTH) {
           error_too_big = true;
           break;
         }
 
-        piece.assign(string_lib_ctx.static_buf.data(), len);
+        piece.assign(string_lib_ctx.static_buf.get(), len);
         break;
       }
       case 'x':
@@ -1093,10 +1094,10 @@ string f$sprintf(const string& format, const array<mixed>& a) noexcept {
 
         int cur_pos = 70;
         do {
-          string_lib_ctx.static_buf[--cur_pos] = hex_digits[arg_int & 15];
+          *std::next(string_lib_ctx.static_buf.get(), --cur_pos) = hex_digits[arg_int & 15];
           arg_int >>= 4;
         } while (arg_int > 0);
-        piece.assign(string_lib_ctx.static_buf.data() + cur_pos, 70 - cur_pos);
+        piece.assign(string_lib_ctx.static_buf.get() + cur_pos, 70 - cur_pos);
         break;
       }
       default:
