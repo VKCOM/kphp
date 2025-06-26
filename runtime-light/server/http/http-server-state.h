@@ -48,9 +48,6 @@ inline constexpr std::string_view CONTENT_ENCODING = "content-encoding";
 } // namespace kphp::http
 
 struct HttpServerInstanceState final : private vk::not_copyable {
-  using header_t = kphp::stl::string<kphp::memory::script_allocator>;
-  using headers_map_t = kphp::stl::multimap<header_t, header_t, kphp::memory::script_allocator>;
-
   static constexpr auto ENCODING_GZIP = static_cast<uint32_t>(1U << 0U);
   static constexpr auto ENCODING_DEFLATE = static_cast<uint32_t>(1U << 1U);
 
@@ -62,22 +59,23 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   kphp::http::connection_kind connection_kind{kphp::http::connection_kind::close};
 
 private:
-  headers_map_t headers_;
+  kphp::stl::multimap<kphp::stl::string<kphp::memory::script_allocator>, kphp::stl::string<kphp::memory::script_allocator>, kphp::memory::script_allocator>
+      headers_;
 
 public:
   HttpServerInstanceState() noexcept = default;
 
-  const headers_map_t& headers() const noexcept {
+  const auto& headers() const noexcept {
     return headers_;
   }
 
   void add_header(std::string_view name_view, std::string_view value_view, bool replace) noexcept {
-    header_t name{name_view};
+    kphp::stl::string<kphp::memory::script_allocator> name{name_view};
     std::ranges::for_each(name, [](auto& c) noexcept { c = std::tolower(c, std::locale::classic()); });
     if (const auto it{headers_.find(name)}; replace && it != headers_.end()) [[unlikely]] {
       headers_.erase(name);
     }
-    headers_.emplace(std::move(name), header_t{value_view});
+    headers_.emplace(std::move(name), kphp::stl::string<kphp::memory::script_allocator>{value_view});
   }
 
   static HttpServerInstanceState& get() noexcept;
