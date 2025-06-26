@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <ranges>
 #include <string_view>
 #include <utility>
 
@@ -46,21 +47,6 @@ consteval std::string_view resolve_sapi_name() noexcept {
   } else {
     return "invalid interface";
   }
-}
-
-int32_t merge_output_buffers() noexcept {
-  auto& instance_st{InstanceState::get()};
-  Response& response{instance_st.response};
-  kphp::log::assertion(response.current_buffer >= 0);
-
-  int32_t ob_first_not_empty{};
-  while (ob_first_not_empty < response.current_buffer && response.output_buffers[ob_first_not_empty].size() == 0) {
-    ++ob_first_not_empty; // TODO: optimize by precomputing final buffer's size to reserve enough space
-  }
-  for (auto i = ob_first_not_empty + 1; i <= response.current_buffer; i++) {
-    response.output_buffers[ob_first_not_empty].append(response.output_buffers[i].c_str(), response.output_buffers[i].size());
-  }
-  return ob_first_not_empty;
 }
 
 } // namespace
@@ -197,17 +183,19 @@ template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::mul
 
 // === finalization ===============================================================================
 
-kphp::coro::task<> InstanceState::finalize_cli_instance() noexcept {
-  const auto& output{response.output_buffers[merge_output_buffers()]};
-  if (co_await write_all_to_stream(standard_stream(), output.buffer(), output.size()) != output.size()) [[unlikely]] {
-    kphp::log::error("can't write output to stream {}", standard_stream());
+kphp::coro::task<> InstanceState::finalize_cli_instance() const noexcept {
+  auto filtered_buffers{output_instance_state.output_buffers.buffers() | std::views::filter([](const auto& buffer) noexcept { return buffer.size() > 0; })};
+  for (const auto& buffer : filtered_buffers) {
+    if (co_await write_all_to_stream(standard_stream(), buffer.buffer(), buffer.size()) != buffer.size()) [[unlikely]] {
+      kphp::log::error("can't write output to stream {}", standard_stream());
+    }
   }
 }
 
-kphp::coro::task<> InstanceState::finalize_server_instance() noexcept {
+kphp::coro::task<> InstanceState::finalize_server_instance() const noexcept {
   switch (instance_kind()) {
   case instance_kind::http_server: {
-    co_await kphp::http::finalize_server(response.output_buffers[merge_output_buffers()]);
+    co_await kphp::http::finalize_server();
     break;
   }
   case instance_kind::rpc_server:

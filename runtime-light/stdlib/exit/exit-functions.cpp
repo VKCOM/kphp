@@ -8,14 +8,14 @@
 
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/instance-state.h"
+#include "runtime-light/stdlib/output/output-state.h"
 
 kphp::coro::task<> f$exit(mixed v) noexcept { // TODO: make it synchronous
   auto& instance_st{InstanceState::get()};
 
   int64_t exit_code{};
   if (v.is_string()) {
-    Response& response{instance_st.response};
-    response.output_buffers[response.current_buffer] << v;
+    OutputInstanceState::get().output_buffers.current_buffer().get() << v;
   } else if (v.is_int()) {
     int64_t v_code{v.to_int()};
     // valid PHP exit codes: [0..254]

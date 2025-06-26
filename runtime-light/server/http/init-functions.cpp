@@ -9,6 +9,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <iterator>
 #include <locale>
 #include <optional>
@@ -24,6 +25,7 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/state/instance-state.h"
+#include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/server/http-functions.h"
 #include "runtime-light/stdlib/zlib/zlib-functions.h"
 #include "runtime-light/streams/streams.h"
@@ -329,12 +331,21 @@ void init_server(tl::TLBuffer& tlb) noexcept {
                   invoke_http.uri.opt_query.has_value() ? (*invoke_http.uri.opt_query).value : EMPTY);
 }
 
-kphp::coro::task<> finalize_server(const string_buffer& output) noexcept {
+kphp::coro::task<> finalize_server() noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
 
   string body{};
   if (http_server_instance_st.http_method != method::head) {
-    body = output.str();
+    const auto& output_instance_st{OutputInstanceState::get()};
+
+    auto transform_to_size_f{[](const auto& buffer) noexcept { return buffer.size(); }};
+    const auto body_size{std::ranges::fold_left(output_instance_st.output_buffers.buffers() | std::views::transform(std::move(transform_to_size_f)),
+                                                string::size_type{}, std::plus<string::size_type>{})};
+    body.reserve_at_least(body_size);
+    auto filter_f{[](const auto& buffer) noexcept { return buffer.size() > 0; }};
+    const auto append_f{[&body](const auto& buffer) noexcept { body.append(buffer.buffer(), buffer.size()); }};
+    std::ranges::for_each(output_instance_st.output_buffers.buffers() | std::views::filter(std::move(filter_f)), append_f);
+
     const bool gzip_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)};
     const bool deflate_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};
     // compress body if needed

@@ -7,8 +7,8 @@
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
+#include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/utils/logs.h"
 
 namespace {
@@ -19,8 +19,7 @@ void do_print_r(const mixed& v, int32_t depth) noexcept {
     return;
   }
 
-  Response& httpResponse{InstanceState::get().response};
-  string_buffer& coub{httpResponse.output_buffers[httpResponse.current_buffer]};
+  string_buffer& coub{OutputInstanceState::get().output_buffers.current_buffer().get()};
   switch (v.get_type()) {
   case mixed::type::NUL:
     break;
@@ -70,8 +69,7 @@ void do_var_dump(const mixed& v, int32_t depth) noexcept {
   }
 
   string shift(depth * 2, ' ');
-  Response& httpResponse{InstanceState::get().response};
-  string_buffer& coub{httpResponse.output_buffers[httpResponse.current_buffer]};
+  string_buffer& coub{OutputInstanceState::get().output_buffers.current_buffer().get()};
   switch (v.get_type()) {
   case mixed::type::NUL:
     coub << shift << "NULL";
@@ -118,8 +116,7 @@ void do_var_dump(const mixed& v, int32_t depth) noexcept {
 }
 
 void var_export_escaped_string(const string& s) noexcept {
-  Response& httpResponse{InstanceState::get().response};
-  string_buffer& coub{httpResponse.output_buffers[httpResponse.current_buffer]};
+  string_buffer& coub{OutputInstanceState::get().output_buffers.current_buffer().get()};
   for (string::size_type i = 0; i < s.size(); i++) {
     switch (s[i]) {
     case '\'':
@@ -142,8 +139,7 @@ void do_var_export(const mixed& v, int32_t depth, char endc = 0) noexcept {
   }
 
   string shift(depth * 2, ' ');
-  Response& httpResponse{InstanceState::get().response};
-  string_buffer& coub{httpResponse.output_buffers[httpResponse.current_buffer]};
+  string_buffer& coub{OutputInstanceState::get().output_buffers.current_buffer().get()};
   switch (v.get_type()) {
   case mixed::type::NUL:
     coub << shift << "NULL";
