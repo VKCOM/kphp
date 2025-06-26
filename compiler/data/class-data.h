@@ -179,9 +179,7 @@ public:
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name.data(), name.size()));
   }
 
-  std::string get_subdir() const {
-    return is_lambda ? "cl_l" : "cl";
-  }
+  std::string get_subdir() const;
 
   const std::string *get_parent_class_name() const {
     // this method returns string name from the extends;

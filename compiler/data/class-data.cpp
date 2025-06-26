@@ -134,6 +134,11 @@ void ClassData::add_class_constant() {
   members.add_constant("class", VertexUtil::create_string_const(get_self()->name), AccessModifiers::public_);
 }
 
+std::string ClassData::get_subdir() const {
+  int bucket = vk::std_hash(name) % 10;
+  return (is_lambda ? "cl_l_" : "cl_") + std::to_string(bucket);
+}
+
 void ClassData::create_constructor_with_parent_call(DataStream<FunctionPtr> &os) {
   auto parent_constructor = parent_class->construct_function;
   auto list = parent_constructor->root->param_list().clone();
