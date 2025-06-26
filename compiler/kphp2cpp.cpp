@@ -240,6 +240,8 @@ int main(int argc, char *argv[]) {
              "no-make", "KPHP_NO_MAKE");
   parser.add("Processes number for the compilation", settings->jobs_count,
              'j', "jobs-num", "KPHP_JOBS_COUNT", std::to_string(get_default_threads_count()));
+  parser.add("Number of file buckets", settings->file_buckets_count,
+             "file-buckets-count", "KPHP_FILE_BUCKETS_COUNT", "120");
   parser.add("Threads number for the transpilation", settings->threads_count,
              't', "threads-count", "KPHP_THREADS_COUNT", std::to_string(get_default_threads_count()));
   parser.add("Builtin tl schema. Incompatible with lib mode", settings->tl_schema_file,

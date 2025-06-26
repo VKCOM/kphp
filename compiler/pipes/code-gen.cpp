@@ -214,7 +214,7 @@ std::string CodeGenF::calc_subdir_for_function(FunctionPtr func) {
     return "o_l";
   }
 
-  int bucket = vk::std_hash(func->file_id->short_file_name) % 100;
+  int bucket = vk::std_hash(func->file_id->short_file_name) % G->settings().file_buckets_count.get();
   return "o_" + std::to_string(bucket);
 }
 

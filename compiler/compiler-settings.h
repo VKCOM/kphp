@@ -134,6 +134,7 @@ public:
   KphpOption<bool> no_make;
   KphpOption<uint64_t> jobs_count;
   KphpOption<uint64_t> threads_count;
+  KphpOption<uint64_t> file_buckets_count;
 
   KphpOption<bool> require_functions_typing;
   KphpOption<bool> require_class_typing;
