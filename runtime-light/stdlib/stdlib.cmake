@@ -15,6 +15,7 @@ prepend(
   math/random-state.cpp
   math/math-state.cpp
   output/output-buffer.cpp
+  output/output-state.cpp
   output/print-functions.cpp
   rpc/rpc-api.cpp
   rpc/rpc-client-state.cpp

@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/tl/tl-core.h"
 
@@ -12,6 +11,6 @@ namespace kphp::http {
 
 void init_server(tl::TLBuffer& tlb) noexcept;
 
-kphp::coro::task<> finalize_server(const string_buffer& output) noexcept;
+kphp::coro::task<> finalize_server() noexcept;
 
 } // namespace kphp::http

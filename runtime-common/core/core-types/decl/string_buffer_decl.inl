@@ -20,6 +20,8 @@ class string_buffer {
 
 public:
   explicit string_buffer(string::size_type buffer_len = 4000) noexcept;
+  string_buffer(string_buffer&& other) noexcept;
+  string_buffer& operator=(string_buffer&&) noexcept;
 
   inline string_buffer& clean() noexcept;
 

@@ -7,29 +7,91 @@
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/server/http/http-server-state.h"
+#include "runtime-light/stdlib/output/output-state.h"
+#include "runtime-light/stdlib/output/print-functions.h"
+#include "runtime-light/utils/logs.h"
 
-struct Response {
-  static constexpr int32_t ob_max_buffers{50};
-  string_buffer output_buffers[ob_max_buffers];
-  int32_t current_buffer{};
-};
+void f$ob_start(const string& callback = {}) noexcept;
 
-void f$ob_start(const string& callback = string()) noexcept;
+inline Optional<int64_t> f$ob_get_length() noexcept {
+  auto& output_instance_st{OutputInstanceState::get()};
+  const auto opt_user_buffer{output_instance_st.output_buffers.user_buffer()};
+  if (!opt_user_buffer.has_value()) {
+    return false;
+  }
+  return (*opt_user_buffer).get().size();
+}
 
-Optional<int64_t> f$ob_get_length() noexcept;
+inline int64_t f$ob_get_level() noexcept {
+  const auto& output_instance_st{OutputInstanceState::get()};
+  return output_instance_st.output_buffers.user_level();
+}
 
-int64_t f$ob_get_level() noexcept;
+inline void f$ob_clean() noexcept {
+  auto& output_instance_st{OutputInstanceState::get()};
+  output_instance_st.output_buffers.current_buffer().get().clean();
+}
 
-void f$ob_clean() noexcept;
+inline bool f$ob_end_clean() noexcept {
+  auto& output_instance_st{OutputInstanceState::get()};
+  const auto opt_user_buffer{output_instance_st.output_buffers.user_buffer()};
+  if (!opt_user_buffer.has_value()) [[unlikely]] {
+    return false;
+  }
 
-bool f$ob_end_clean() noexcept;
+  output_instance_st.output_buffers.prev_user_buffer();
+  auto& http_server_instance_st{HttpServerInstanceState::get()};
+  http_server_instance_st.encoding &= ~HttpServerInstanceState::ENCODING_GZIP;
+  return true;
+}
 
-Optional<string> f$ob_get_clean() noexcept;
+inline Optional<string> f$ob_get_clean() noexcept {
+  auto& output_instance_st{OutputInstanceState::get()};
+  const auto opt_user_buffer{output_instance_st.output_buffers.user_buffer()};
+  if (!opt_user_buffer.has_value()) [[unlikely]] {
+    return false;
+  }
 
-string f$ob_get_contents() noexcept;
+  string result{(*opt_user_buffer).get().str()};
+  output_instance_st.output_buffers.prev_user_buffer();
+  auto& http_server_instance_st{HttpServerInstanceState::get()};
+  http_server_instance_st.encoding &= ~HttpServerInstanceState::ENCODING_GZIP;
+  return result;
+}
 
-void f$ob_flush() noexcept;
+inline string f$ob_get_contents() noexcept {
+  auto& output_instance_st{OutputInstanceState::get()};
+  return output_instance_st.output_buffers.current_buffer().get().str();
+}
 
-bool f$ob_end_flush() noexcept;
+inline void f$ob_flush() noexcept {
+  auto& output_instance_st{OutputInstanceState::get()};
+  const auto opt_user_buffer{output_instance_st.output_buffers.user_buffer()};
+  if (!opt_user_buffer.has_value()) [[unlikely]] {
+    kphp::log::warning("ob_flush called without opened buffers");
+    return;
+  }
 
-Optional<string> f$ob_get_flush() noexcept;
+  output_instance_st.output_buffers.prev_user_buffer();
+  print((*opt_user_buffer).get());
+  kphp::log::assertion(output_instance_st.output_buffers.next_user_buffer().has_value());
+}
+
+inline bool f$ob_end_flush() noexcept {
+  f$ob_flush();
+  return f$ob_end_clean();
+}
+
+inline Optional<string> f$ob_get_flush() noexcept {
+  auto& output_instance_st{OutputInstanceState::get()};
+  const auto opt_user_buffer{output_instance_st.output_buffers.user_buffer()};
+  if (!opt_user_buffer.has_value()) [[unlikely]] {
+    return false;
+  }
+
+  string result{(*opt_user_buffer).get().str()};
+  f$ob_flush();
+  f$ob_end_clean();
+  return result;
+}

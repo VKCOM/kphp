@@ -8,14 +8,14 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-functions.h"
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/utils/logs.h"
 
 // === print ======================================================================================
 
 inline void print(const char* s, size_t len) noexcept {
-  Response& response{InstanceState::get().response};
-  response.output_buffers[response.current_buffer].append(s, len);
+  auto& output_instance_st{OutputInstanceState::get()};
+  output_instance_st.output_buffers.current_buffer().get().append(s, len);
 }
 
 inline void print(const char* s) noexcept {
@@ -77,10 +77,11 @@ inline int64_t f$printf(const string& format, const array<mixed>& a) noexcept {
   return to_print.size();
 }
 
-inline Optional<int64_t> f$fprintf(const mixed&, const string&, const array<mixed>&) {
+inline Optional<int64_t> f$fprintf(const mixed& /*unused*/, const string& /*unused*/, const array<mixed>& /*unused*/) {
   kphp::log::error("call to unsupported function");
 }
 
-inline Optional<int64_t> f$fputcsv(const mixed&, const array<mixed>&, string = string(",", 1), string = string("\"", 1), string = string("\\", 1)) {
+inline Optional<int64_t> f$fputcsv(const mixed& /*unused*/, const array<mixed>& /*unused*/, const string& /*unused*/ = string(",", 1),
+                                   const string& /*unused*/ = string("\"", 1), const string& /*unused*/ = string("\\", 1)) {
   kphp::log::error("call to unsupported function");
 }

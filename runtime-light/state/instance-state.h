@@ -30,7 +30,7 @@
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/math/random-state.h"
-#include "runtime-light/stdlib/output/output-buffer.h"
+#include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/serialization/serialization-state.h"
 #include "runtime-light/stdlib/string/regex-state.h"
@@ -110,12 +110,11 @@ struct InstanceState final : vk::not_copyable {
   CoroutineScheduler scheduler;
   CoroutineInstanceState coroutine_instance_state;
   ForkInstanceState fork_instance_state;
+  PhpScriptMutableGlobals php_script_mutable_globals_singleton;
   k2::PollStatus poll_status{k2::PollStatus::PollReschedule};
 
-  Response response;
-  PhpScriptMutableGlobals php_script_mutable_globals_singleton;
-
   RuntimeContext runtime_context;
+  OutputInstanceState output_instance_state;
   RpcClientInstanceState rpc_client_instance_state;
   RpcServerInstanceState rpc_server_instance_state;
   SerializationInstanceState serialization_instance_state;
@@ -140,7 +139,7 @@ private:
   kphp::coro::task<> init_cli_instance() noexcept;
   kphp::coro::task<> init_server_instance() noexcept;
   kphp::coro::task<> finalize_cli_instance() noexcept;
-  kphp::coro::task<> finalize_server_instance() noexcept;
+  kphp::coro::task<> finalize_server_instance() const noexcept;
 
   kphp::coro::task<> main_task_;
   enum class shutdown_state : uint8_t { not_started, in_progress, finished };
