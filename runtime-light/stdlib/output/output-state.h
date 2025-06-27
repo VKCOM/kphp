@@ -4,39 +4,40 @@
 
 #pragma once
 
-#include <array>
 #include <cstddef>
 #include <functional>
-#include <iterator>
 #include <optional>
-#include <ranges>
 #include <span>
 
 #include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/script-allocator.h"
+#include "runtime-common/core/core-types/decl/declarations.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 
 namespace kphp::output {
 
 class output_buffers {
-  static constexpr size_t MAX_BUFFERS = 50;
+  static constexpr size_t MAX_USER_BUFFERS = 50;
+  static constexpr size_t NO_BUFFERS_IDX = MAX_USER_BUFFERS + 1;
 
   std::optional<string_buffer> m_system_buffer;
-  std::array<std::optional<string_buffer>, MAX_BUFFERS> m_user_buffers{};
-  decltype(m_user_buffers)::iterator m_user_buffer_iterator{m_user_buffers.end()};
+
+  size_t m_inited_user_buffers{};
+  size_t m_user_buffer_idx{NO_BUFFERS_IDX};
+  kphp::stl::vector<string_buffer, kphp::memory::script_allocator> m_user_buffers;
 
 public:
-  output_buffers() noexcept = default;
+  output_buffers() noexcept {
+    m_user_buffers.reserve(MAX_USER_BUFFERS);
+  }
 
-  auto user_level() const noexcept {
-    return m_user_buffer_iterator != m_user_buffers.end()
-               ? std::distance(m_user_buffers.cbegin(), decltype(m_user_buffers)::const_iterator{m_user_buffer_iterator}) + 1
-               : 0;
+  size_t user_level() const noexcept {
+    return m_user_buffer_idx == NO_BUFFERS_IDX ? 0 : m_user_buffer_idx + 1;
   }
 
   auto user_buffers() const noexcept {
-    const auto* const end_iterator{user_level() != 0 ? std::next(decltype(m_user_buffers)::const_iterator{m_user_buffer_iterator}) : m_user_buffers.cbegin()};
-    return std::views::transform(std::span{m_user_buffers.cbegin(), end_iterator},
-                                 [](const auto& opt_buffer) noexcept -> decltype(auto) { return *opt_buffer; });
+    return std::span<const string_buffer>{m_user_buffers.cbegin(), user_level()};
   }
 
   std::reference_wrapper<string_buffer> system_buffer() noexcept {
@@ -47,7 +48,7 @@ public:
     if (user_level() == 0) [[unlikely]] {
       return {};
     }
-    return **m_user_buffer_iterator;
+    return m_user_buffers[m_user_buffer_idx];
   }
 
   std::reference_wrapper<string_buffer> current_buffer() noexcept {
@@ -56,20 +57,24 @@ public:
   }
 
   std::optional<std::reference_wrapper<string_buffer>> next_user_buffer() noexcept {
-    if (user_level() == MAX_BUFFERS) [[unlikely]] {
+    if (user_level() == MAX_USER_BUFFERS) [[unlikely]] {
       return {};
     }
-    m_user_buffer_iterator = user_level() != 0 ? std::next(m_user_buffer_iterator) : m_user_buffers.begin();
-    return m_user_buffer_iterator->has_value() ? (**m_user_buffer_iterator).clean() : m_user_buffer_iterator->emplace();
+
+    m_user_buffer_idx = user_level() == 0 ? 0 : m_user_buffer_idx + 1;
+    if (user_level() > m_inited_user_buffers) {
+      m_user_buffers.emplace_back();
+      ++m_inited_user_buffers;
+    }
+    return m_user_buffers[m_user_buffer_idx].clean();
   }
 
   std::optional<std::reference_wrapper<string_buffer>> prev_user_buffer() noexcept {
-    if (user_level() == 0 || m_user_buffer_iterator == m_user_buffers.begin()) [[unlikely]] {
-      m_user_buffer_iterator = m_user_buffers.end();
+    if (user_level() <= 1) [[unlikely]] {
+      m_user_buffer_idx = NO_BUFFERS_IDX;
       return {};
     }
-    m_user_buffer_iterator = std::prev(m_user_buffer_iterator);
-    return **m_user_buffer_iterator;
+    return m_user_buffers[--m_user_buffer_idx];
   }
 };
 
