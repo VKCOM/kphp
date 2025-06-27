@@ -336,15 +336,17 @@ kphp::coro::task<> finalize_server() noexcept {
 
   string body{};
   if (http_server_instance_st.http_method != method::head) {
-    const auto& output_instance_st{OutputInstanceState::get()};
+    auto& output_instance_st{OutputInstanceState::get()};
+    const auto system_buffer{output_instance_st.output_buffers.system_buffer()};
+    const auto user_buffers{output_instance_st.output_buffers.user_buffers()};
 
-    auto transform_to_size_f{[](const auto& buffer) noexcept { return buffer.size(); }};
-    const auto body_size{std::ranges::fold_left(output_instance_st.output_buffers.buffers() | std::views::transform(std::move(transform_to_size_f)),
-                                                string::size_type{}, std::plus<string::size_type>{})};
+    const auto body_size{std::ranges::fold_left(user_buffers | std::views::transform([](const auto& buffer) noexcept { return buffer.size(); }),
+                                                system_buffer.get().size(), std::plus<string::size_type>{})};
     body.reserve_at_least(body_size);
-    auto filter_f{[](const auto& buffer) noexcept { return buffer.size() > 0; }};
-    const auto append_f{[&body](const auto& buffer) noexcept { body.append(buffer.buffer(), buffer.size()); }};
-    std::ranges::for_each(output_instance_st.output_buffers.buffers() | std::views::filter(std::move(filter_f)), append_f);
+
+    body.append(system_buffer.get().buffer(), system_buffer.get().size());
+    const auto appender{[&body](const auto& buffer) noexcept { body.append(buffer.buffer(), buffer.size()); }};
+    std::ranges::for_each(user_buffers | std::views::filter([](const auto& buffer) noexcept { return buffer.size() > 0; }), appender);
 
     const bool gzip_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)};
     const bool deflate_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};

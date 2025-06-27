@@ -183,9 +183,14 @@ template kphp::coro::task<> InstanceState::run_instance_prologue<image_kind::mul
 
 // === finalization ===============================================================================
 
-kphp::coro::task<> InstanceState::finalize_cli_instance() const noexcept {
-  auto filtered_buffers{output_instance_state.output_buffers.buffers() | std::views::filter([](const auto& buffer) noexcept { return buffer.size() > 0; })};
-  for (const auto& buffer : filtered_buffers) {
+kphp::coro::task<> InstanceState::finalize_cli_instance() noexcept {
+  const auto system_buffer{output_instance_state.output_buffers.system_buffer()};
+  if (co_await write_all_to_stream(standard_stream(), system_buffer.get().c_str(), system_buffer.get().size()) != system_buffer.get().size()) [[unlikely]] {
+    kphp::log::error("can't write output to stream {}", standard_stream());
+  }
+
+  auto user_buffers{output_instance_state.output_buffers.user_buffers() | std::views::filter([](const auto& buffer) noexcept { return buffer.size() > 0; })};
+  for (const auto& buffer : user_buffers) {
     if (co_await write_all_to_stream(standard_stream(), buffer.buffer(), buffer.size()) != buffer.size()) [[unlikely]] {
       kphp::log::error("can't write output to stream {}", standard_stream());
     }

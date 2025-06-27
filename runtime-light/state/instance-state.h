@@ -138,7 +138,7 @@ struct InstanceState final : vk::not_copyable {
 private:
   kphp::coro::task<> init_cli_instance() noexcept;
   kphp::coro::task<> init_server_instance() noexcept;
-  kphp::coro::task<> finalize_cli_instance() const noexcept;
+  kphp::coro::task<> finalize_cli_instance() noexcept;
   kphp::coro::task<> finalize_server_instance() const noexcept;
 
   kphp::coro::task<> main_task_;

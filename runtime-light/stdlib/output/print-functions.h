@@ -14,7 +14,7 @@
 // === print ======================================================================================
 
 inline void print(const char* s, size_t len) noexcept {
-  const auto& output_instance_st{OutputInstanceState::get()};
+  auto& output_instance_st{OutputInstanceState::get()};
   output_instance_st.output_buffers.current_buffer().get().append(s, len);
 }
 

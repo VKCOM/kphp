@@ -14,9 +14,9 @@ void f$ob_start(const string& callback) noexcept {
   static constexpr std::string_view ob_gzhandler_name{"ob_gzhandler"};
 
   auto& output_instance_st{OutputInstanceState::get()};
-  const auto current_buffering_level{output_instance_st.output_buffers.level()};
+  const auto current_buffering_level{output_instance_st.output_buffers.user_level()};
 
-  if (!output_instance_st.output_buffers.next_buffer().has_value()) [[unlikely]] {
+  if (!output_instance_st.output_buffers.next_user_buffer().has_value()) [[unlikely]] {
     kphp::log::warning("maximum level of output buffering reached, can't do ob_start({})", callback.c_str());
     return;
   }
@@ -26,7 +26,7 @@ void f$ob_start(const string& callback) noexcept {
       auto& http_server_instance_st{HttpServerInstanceState::get()};
       http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_GZIP;
     } else {
-      kphp::log::error("unsupported callback {} at buffering level {}", callback.c_str(), output_instance_st.output_buffers.level());
+      kphp::log::error("unsupported callback {} at buffering level {}", callback.c_str(), output_instance_st.output_buffers.user_level());
     }
   }
 }
