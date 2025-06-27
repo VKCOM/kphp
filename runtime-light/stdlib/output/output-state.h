@@ -20,7 +20,7 @@ namespace kphp::output {
 class output_buffers {
   static constexpr size_t MAX_BUFFERS = 50;
 
-  string_buffer m_system_buffer;
+  std::optional<string_buffer> m_system_buffer;
   std::array<std::optional<string_buffer>, MAX_BUFFERS> m_user_buffers{};
   decltype(m_user_buffers)::iterator m_user_buffer_iterator{m_user_buffers.end()};
 
@@ -40,7 +40,7 @@ public:
   }
 
   std::reference_wrapper<string_buffer> system_buffer() noexcept {
-    return m_system_buffer;
+    return m_system_buffer.has_value() ? *m_system_buffer : m_system_buffer.emplace();
   }
 
   std::optional<std::reference_wrapper<string_buffer>> user_buffer() noexcept {
