@@ -9,6 +9,10 @@
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_response.h"
 #include "runtime/tl/tl_builtins.h"
+#include "runtime/tl/tl_func_base.h"
+
+class_instance<C$RpcFunctionFetcher> f$VK$TL$RpcFunction$$custom_fetcher(class_instance<C$VK$TL$RpcFunction> const & arg) noexcept;
+class_instance<C$VK$TL$RpcFunctionReturnResult> f$RpcFunctionFetcher$$typed_fetch(class_instance<C$RpcFunctionFetcher> const &v$this) noexcept;
 
 class RpcRequestResult;
 
@@ -101,6 +105,28 @@ public:
   }
 };
 
+struct tl_func_base_simple_wrapper : public tl_func_base {
+  explicit tl_func_base_simple_wrapper(class_instance<C$RpcFunctionFetcher> && wrapped):wrapped_(std::move(wrapped)) {}
+
+  virtual mixed fetch() {
+    // all functions annotated with @kphp will override this method with the generated code
+    php_critical_error("hrissan TODO: This function should never be called. Should be overridden in every @kphp TL function");
+    return mixed{};
+  }
+
+  virtual class_instance<C$VK$TL$RpcFunctionReturnResult> typed_fetch() {
+    return f$RpcFunctionFetcher$$typed_fetch(wrapped_); // call_custom_fetcher_wrapper_2_impl(wrapped_);
+  }
+
+  virtual void rpc_server_typed_store(const class_instance<C$VK$TL$RpcFunctionReturnResult>&) {
+    // all functions annotated with @kphp will override this method with the generated code
+    php_critical_error("hrissan TODO: This function should never be called. Should be overridden in every @kphp TL function");
+  }
+
+private:
+  class_instance<C$RpcFunctionFetcher> wrapped_;
+};
+
 // use template, because t_ReqResult_ is unknown on runtime compilation
 template<template<typename, unsigned int> class t_ReqResult_>
 class KphpRpcRequest final : public RpcRequest {
@@ -110,7 +136,13 @@ public:
   std::unique_ptr<RpcRequestResult> store_request() const final {
     php_assert(CurException.is_null());
     CurrentTlQuery::get().set_current_tl_function(tl_function_name());
-    std::unique_ptr<tl_func_base> stored_fetcher = storing_function_.get()->store();
+    std::unique_ptr<tl_func_base> stored_fetcher;
+    auto custom_fetcher = f$VK$TL$RpcFunction$$custom_fetcher(storing_function_);
+    if (custom_fetcher.is_null()) {
+      stored_fetcher = storing_function_.get()->store();
+    } else {
+      stored_fetcher = std::make_unique<tl_func_base_simple_wrapper>(std::move(custom_fetcher));
+    }
     CurrentTlQuery::get().reset();
     if (!CurException.is_null()) {
       CurException = Optional<bool>{};
