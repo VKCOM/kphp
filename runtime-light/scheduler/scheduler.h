@@ -168,6 +168,12 @@ class SimpleCoroutineScheduler {
   template<hashable Key, typename Value>
   using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
+  template<typename Key, typename Value>
+  using map = kphp::stl::map<Key, Value, kphp::memory::script_allocator>;
+
+  template<typename T>
+  using set = kphp::stl::set<T, kphp::memory::script_allocator>;
+
   template<hashable T>
   using unordered_set = kphp::stl::unordered_set<T, kphp::memory::script_allocator>;
 
@@ -176,7 +182,7 @@ class SimpleCoroutineScheduler {
 
   deque<SuspendToken> yield_tokens;
   deque<SuspendToken> awaiting_for_stream_tokens;
-  unordered_map<uint64_t, SuspendToken> awaiting_for_update_tokens;
+  map<uint64_t, SuspendToken> awaiting_for_update_tokens;
   unordered_set<SuspendToken> suspend_tokens;
   CoroutineInstanceState& coroutine_instance_state;
 
