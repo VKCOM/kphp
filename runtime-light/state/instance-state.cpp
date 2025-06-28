@@ -72,7 +72,7 @@ void InstanceState::init_script_execution() noexcept {
         kphp::log::assertion(co_await f$wait_concurrently(co_await start_fork_t{std::move(script_task)}));
       },
       std::move(script_task))};
-  scheduler.suspend({main_task.get_handle(), WaitEvent::Rechedule{}});
+  scheduler.suspend({main_task.get_handle(), WaitEvent::Reschedule{}});
   main_task_ = std::move(main_task);
   // Push main_task_ frame to async stack
   auto& main_task_frame{main_task_.get_handle().promise().get_async_stack_frame()};
