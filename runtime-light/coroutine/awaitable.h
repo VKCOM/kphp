@@ -94,7 +94,7 @@ public:
   wait_for_update_t(wait_for_update_t&& other) noexcept
       : stream_d(std::exchange(other.stream_d, k2::INVALID_PLATFORM_DESCRIPTOR)),
         upd_kind(other.upd_kind),
-        suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{}))),
+        suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Reschedule{}))),
         state(std::exchange(other.state, awaitable_impl_::state::end)) {}
 
   wait_for_update_t(const wait_for_update_t&) = delete;
@@ -150,7 +150,7 @@ public:
   wait_for_incoming_stream_t() noexcept = default;
 
   wait_for_incoming_stream_t(wait_for_incoming_stream_t&& other) noexcept
-      : suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{}))),
+      : suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Reschedule{}))),
         state(std::exchange(other.state, awaitable_impl_::state::end)) {}
 
   wait_for_incoming_stream_t(const wait_for_incoming_stream_t&) = delete;
@@ -197,14 +197,14 @@ public:
 // ================================================================================================
 
 class wait_for_reschedule_t : awaitable_impl_::fork_id_watcher_t, awaitable_impl_::async_stack_watcher_t {
-  SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
+  SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Reschedule{}};
   awaitable_impl_::state state{awaitable_impl_::state::init};
 
 public:
   wait_for_reschedule_t() noexcept = default;
 
   wait_for_reschedule_t(wait_for_reschedule_t&& other) noexcept
-      : suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{}))),
+      : suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Reschedule{}))),
         state(std::exchange(other.state, awaitable_impl_::state::end)) {}
 
   wait_for_reschedule_t(const wait_for_reschedule_t&) = delete;
@@ -249,7 +249,7 @@ public:
 class wait_for_timer_t : awaitable_impl_::fork_id_watcher_t, awaitable_impl_::async_stack_watcher_t {
   std::chrono::nanoseconds duration;
   uint64_t timer_d{k2::INVALID_PLATFORM_DESCRIPTOR};
-  SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Rechedule{}};
+  SuspendToken suspend_token{std::noop_coroutine(), WaitEvent::Reschedule{}};
   awaitable_impl_::state state{awaitable_impl_::state::init};
 
 public:
@@ -259,7 +259,7 @@ public:
   wait_for_timer_t(wait_for_timer_t&& other) noexcept
       : duration(std::exchange(other.duration, std::chrono::nanoseconds{0})),
         timer_d(std::exchange(other.timer_d, k2::INVALID_PLATFORM_DESCRIPTOR)),
-        suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Rechedule{}))),
+        suspend_token(std::exchange(other.suspend_token, std::make_pair(std::noop_coroutine(), WaitEvent::Reschedule{}))),
         state(std::exchange(other.state, awaitable_impl_::state::end)) {}
 
   wait_for_timer_t(const wait_for_timer_t&) = delete;

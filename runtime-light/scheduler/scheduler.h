@@ -59,11 +59,13 @@ enum class ScheduleStatus : uint8_t { Resumed, Skipped, Error };
  */
 namespace WaitEvent {
 
-struct Rechedule {
+struct Reschedule {
   static constexpr size_t HASH_VALUE = 4001;
-  bool operator==([[maybe_unused]] const Rechedule& other) const noexcept {
+  constexpr bool operator==([[maybe_unused]] const Reschedule& other) const noexcept {
     return true;
   }
+
+  constexpr auto operator<=>(const Reschedule&) const noexcept = default;
 };
 
 struct IncomingStream {
@@ -71,34 +73,40 @@ struct IncomingStream {
   bool operator==([[maybe_unused]] const IncomingStream& other) const noexcept {
     return true;
   }
+
+  constexpr auto operator<=>(const IncomingStream&) const noexcept = default;
 };
 
 struct UpdateOnStream {
   uint64_t stream_d{};
 
-  bool operator==(const UpdateOnStream& other) const noexcept {
+  constexpr bool operator==(const UpdateOnStream& other) const noexcept {
     return stream_d == other.stream_d;
   }
+
+  constexpr auto operator<=>(const UpdateOnStream&) const noexcept = default;
 };
 
 struct UpdateOnTimer {
   uint64_t timer_d{};
 
-  bool operator==(const UpdateOnTimer& other) const noexcept {
+  constexpr bool operator==(const UpdateOnTimer& other) const noexcept {
     return timer_d == other.timer_d;
   }
+
+  constexpr auto operator<=>(const UpdateOnTimer&) const noexcept = default;
 };
 
-using EventT = std::variant<Rechedule, IncomingStream, UpdateOnStream, UpdateOnTimer>;
+using EventT = std::variant<Reschedule, IncomingStream, UpdateOnStream, UpdateOnTimer>;
 
 }; // namespace WaitEvent
 
 // std::hash specializations for WaitEvent types
 
 template<>
-struct std::hash<WaitEvent::Rechedule> {
-  size_t operator()([[maybe_unused]] const WaitEvent::Rechedule& v) const noexcept {
-    return WaitEvent::Rechedule::HASH_VALUE;
+struct std::hash<WaitEvent::Reschedule> {
+  size_t operator()([[maybe_unused]] const WaitEvent::Reschedule& v) const noexcept {
+    return WaitEvent::Reschedule::HASH_VALUE;
   }
 };
 
@@ -168,6 +176,12 @@ class SimpleCoroutineScheduler {
   template<hashable Key, typename Value>
   using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
+  template<typename Key, typename Value>
+  using map = kphp::stl::map<Key, Value, kphp::memory::script_allocator>;
+
+  template<typename T>
+  using set = kphp::stl::set<T, kphp::memory::script_allocator>;
+
   template<hashable T>
   using unordered_set = kphp::stl::unordered_set<T, kphp::memory::script_allocator>;
 
@@ -176,8 +190,8 @@ class SimpleCoroutineScheduler {
 
   deque<SuspendToken> yield_tokens;
   deque<SuspendToken> awaiting_for_stream_tokens;
-  unordered_map<uint64_t, SuspendToken> awaiting_for_update_tokens;
-  unordered_set<SuspendToken> suspend_tokens;
+  map<uint64_t, SuspendToken> awaiting_for_update_tokens;
+  set<SuspendToken> suspend_tokens;
   CoroutineInstanceState& coroutine_instance_state;
 
   ScheduleStatus scheduleOnNoEvent() noexcept;

@@ -9,6 +9,7 @@
 #include <list>
 #include <map>
 #include <queue>
+#include <set>
 #include <stack>
 #include <string>
 #include <unordered_map>
@@ -28,6 +29,9 @@ using unordered_set = std::unordered_set<T, Hash, KeyEqual, Allocator<T>>;
 
 template<class Key, class Value, template<class> class Allocator, class Cmp = std::less<Key>>
 using map = std::map<Key, Value, Cmp, Allocator<std::pair<const Key, Value>>>;
+
+template<class T, template<class> class Allocator, class Cmp = std::less<T>>
+using set = std::set<T, Cmp, Allocator<T>>;
 
 template<class Key, class Value, template<class> class Allocator, class Cmp = std::less<Key>>
 using multimap = std::multimap<Key, Value, Cmp, Allocator<std::pair<const Key, Value>>>;

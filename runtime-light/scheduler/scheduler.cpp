@@ -87,7 +87,7 @@ void SimpleCoroutineScheduler::suspend(SuspendToken token) noexcept {
   std::visit(
       [this, token](auto&& event) noexcept {
         using event_t = std::remove_cvref_t<decltype(event)>;
-        if constexpr (std::is_same_v<event_t, WaitEvent::Rechedule>) {
+        if constexpr (std::is_same_v<event_t, WaitEvent::Reschedule>) {
           yield_tokens.push_back(token);
         } else if constexpr (std::is_same_v<event_t, WaitEvent::IncomingStream>) {
           awaiting_for_stream_tokens.push_back(token);
@@ -113,7 +113,7 @@ void SimpleCoroutineScheduler::cancel(SuspendToken token) noexcept {
   std::visit(
       [this, token](auto&& event) noexcept {
         using event_t = std::remove_cvref_t<decltype(event)>;
-        if constexpr (std::is_same_v<event_t, WaitEvent::Rechedule>) {
+        if constexpr (std::is_same_v<event_t, WaitEvent::Reschedule>) {
           const auto it_token{std::find(yield_tokens.cbegin(), yield_tokens.cend(), token)};
           if (it_token != yield_tokens.cend()) {
             yield_tokens.erase(it_token);
