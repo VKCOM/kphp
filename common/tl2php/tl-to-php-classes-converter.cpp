@@ -140,6 +140,9 @@ void TlToPhpClassesConverter::register_builtin_classes() {
   PhpName function_return_result_interface_name{PhpClasses::rpc_function_return_result()};
   function_repr.function_result = make_and_register_new_interface(function_return_result_interface_name, 0, true);
   rpc_function_return_result_interface_ = function_repr.function_result.get();
+
+  PhpName function_fetcher_interface_name{PhpClasses::rpc_function_fetcher()};
+  function_repr.function_fetcher = make_and_register_new_interface(function_fetcher_interface_name, 0, true);
 }
 
 std::unique_ptr<PhpClassRepresentation> TlToPhpClassesConverter::make_and_register_new_class(const PhpName& name, std::vector<PhpClassField> fields,

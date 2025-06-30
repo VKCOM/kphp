@@ -13,7 +13,7 @@ namespace {
 
 void verify_class_against_repr(ClassPtr class_id, const vk::tl::PhpClassRepresentation &repr) {
   kphp_error_return(repr.is_builtin == class_id->is_builtin(),
-                    fmt_format("Tl-class '{}' is{} expected to be builtin", class_id->name, repr.is_builtin ? "" : "not"));
+                    fmt_format("Tl-class '{}' is{} expected to be builtin", class_id->name, repr.is_builtin ? "" : " not"));
   kphp_error_return(class_id->is_interface() == repr.is_interface,
                     fmt_format("Tl-class '{}' is{} expected to be an interface", class_id->name, repr.is_interface ? "" : " not"));
 

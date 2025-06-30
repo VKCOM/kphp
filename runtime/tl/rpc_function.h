@@ -78,15 +78,15 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual ~C$VK$TL$RpcFunctionReturnResult() = default;
 };
 
-struct C$RpcFunctionFetcher : abstract_refcountable_php_interface {
+struct C$VK$TL$RpcFunctionFetcher : abstract_refcountable_php_interface {
   virtual const char* get_class() const {
-    return "RpcFunctionFetcher";
+    return "VK\\TL\\RpcFunctionFetcher";
   }
   virtual int32_t get_hash() const {
-    std::string_view name_view{C$RpcFunctionFetcher::get_class()};
+    std::string_view name_view{C$VK$TL$RpcFunctionFetcher::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
-  virtual C$RpcFunctionFetcher* virtual_builtin_clone() const noexcept {
+  virtual C$VK$TL$RpcFunctionFetcher* virtual_builtin_clone() const noexcept {
     return nullptr;
   }
 
@@ -94,7 +94,7 @@ struct C$RpcFunctionFetcher : abstract_refcountable_php_interface {
     php_warning("C$RpcFunctionFetcher::typed_fetch should never be called. Should be overridden in every @kphp TL function fetcher");
     return class_instance<C$VK$TL$RpcFunctionReturnResult>{};
   }
-  virtual ~C$RpcFunctionFetcher() = default;
+  virtual ~C$VK$TL$RpcFunctionFetcher() = default;
 };
 
 // function call response — ReqResult from the TL scheme — is a rpcResponseOk|rpcResponseHeader|rpcResponseError;

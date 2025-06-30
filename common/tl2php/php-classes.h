@@ -46,6 +46,7 @@ struct PhpClassRepresentation {
 struct TlFunctionPhpRepresentation {
   std::unique_ptr<const PhpClassRepresentation> function_args;
   std::unique_ptr<const PhpClassRepresentation> function_result;
+  std::unique_ptr<const PhpClassRepresentation> function_fetcher;
   bool is_kphp_rpc_server_function{false};
 };
 
@@ -131,6 +132,10 @@ struct PhpClasses {
   }
   static const char* rpc_function_return_result_with_tl_namespace() {
     return R"(TL\RpcFunctionReturnResult)";
+  }
+
+  static const char* rpc_function_fetcher() {
+    return "RpcFunctionFetcher";
   }
 };
 

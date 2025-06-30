@@ -11,8 +11,8 @@
 #include "runtime/tl/tl_builtins.h"
 #include "runtime/tl/tl_func_base.h"
 
-class_instance<C$RpcFunctionFetcher> f$VK$TL$RpcFunction$$custom_fetcher(class_instance<C$VK$TL$RpcFunction> const & arg) noexcept;
-class_instance<C$VK$TL$RpcFunctionReturnResult> f$RpcFunctionFetcher$$typed_fetch(class_instance<C$RpcFunctionFetcher> const &v$this) noexcept;
+class_instance<C$VK$TL$RpcFunctionFetcher> f$VK$TL$RpcFunction$$custom_fetcher(class_instance<C$VK$TL$RpcFunction> const & arg) noexcept;
+class_instance<C$VK$TL$RpcFunctionReturnResult> f$RpcFunctionFetcher$$typed_fetch(class_instance<C$VK$TL$RpcFunctionFetcher> const &v$this) noexcept;
 
 class RpcRequestResult;
 
@@ -106,7 +106,7 @@ public:
 };
 
 struct tl_func_base_simple_wrapper : public tl_func_base {
-  explicit tl_func_base_simple_wrapper(class_instance<C$RpcFunctionFetcher> && wrapped):wrapped_(std::move(wrapped)) {}
+  explicit tl_func_base_simple_wrapper(class_instance<C$VK$TL$RpcFunctionFetcher> && wrapped):wrapped_(std::move(wrapped)) {}
 
   virtual mixed fetch() {
     // all functions annotated with @kphp will override this method with the generated code
@@ -124,7 +124,7 @@ struct tl_func_base_simple_wrapper : public tl_func_base {
   }
 
 private:
-  class_instance<C$RpcFunctionFetcher> wrapped_;
+  class_instance<C$VK$TL$RpcFunctionFetcher> wrapped_;
 };
 
 // use template, because t_ReqResult_ is unknown on runtime compilation
