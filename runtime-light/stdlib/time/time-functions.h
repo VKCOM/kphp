@@ -129,6 +129,9 @@ inline Optional<int64_t> f$strtotime(const string& datetime, int64_t base_timest
     base_timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
   }
   string default_timezone{f$date_default_timezone_get()};
-  auto opt_timestamp{kphp::timelib::strtotime({default_timezone.c_str(), default_timezone.size()}, {datetime.c_str(), datetime.size()}, base_timestamp)};
-  return opt_timestamp.has_value() ? *opt_timestamp : false;
+  const auto opt_timestamp{kphp::timelib::strtotime({default_timezone.c_str(), default_timezone.size()}, {datetime.c_str(), datetime.size()}, base_timestamp)};
+  if (!opt_timestamp.has_value()) [[unlikely]] {
+    return false;
+  }
+  return *opt_timestamp;
 }
