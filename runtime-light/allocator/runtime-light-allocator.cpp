@@ -12,7 +12,7 @@
 
 namespace {
 // TODO: make it depend on max chunk size, e.g. MIN_EXTRA_MEM_SIZE = f(MAX_CHUNK_SIZE);
-constexpr auto MIN_EXTRA_MEM_SIZE = static_cast<size_t>(32U * 1024U); // extra mem size should be greater than max chunk block size
+constexpr auto MIN_EXTRA_MEM_SIZE = static_cast<size_t>(1024U * 1024U); // extra mem size should be greater than max chunk block size
 constexpr auto EXTRA_MEMORY_MULTIPLIER = 2;
 
 void request_extra_memory(size_t requested_size) noexcept {

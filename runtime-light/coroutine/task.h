@@ -12,8 +12,8 @@
 #include <utility>
 
 #include "common/containers/final_action.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/utils/logs.h"
 
 namespace kphp::coro {
@@ -67,13 +67,11 @@ struct promise_base : async_stack_element {
 
   template<typename... Args>
   auto operator new(std::size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
-    // todo:k2 think about args in new
-    // todo:k2 make coroutine allocator
-    return k2::alloc(n);
+    return kphp::memory::script::alloc(n);
   }
 
   auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
-    k2::free(ptr);
+    kphp::memory::script::free(ptr);
   }
 
   void* m_next{};
