@@ -115,6 +115,10 @@ inline int32_t open(k2::descriptor* descriptor, size_t name_len, const char* nam
   return k2_open(descriptor, name_len, name);
 }
 
+inline int32_t access(std::string_view component_name) noexcept {
+  return k2_access(component_name.size(), component_name.data());
+}
+
 inline void stream_status(k2::descriptor descriptor, StreamStatus* status) noexcept {
   k2_stream_status(descriptor, status);
 }
