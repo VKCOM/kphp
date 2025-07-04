@@ -13,17 +13,14 @@
 #include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-common/stdlib/serialization/serialize-functions.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
+#include "runtime-light/stdlib/confdata/confdata-constants.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 #include "runtime-light/utils/logs.h"
 
 namespace {
-
-constexpr std::string_view CONFDATA_COMPONENT_NAME = "confdata"; // TODO: it may actually have an alias specified in linking config
 
 mixed extract_confdata_value(const tl::confdataValue& confdata_value) noexcept {
   if (confdata_value.is_php_serialized.value && confdata_value.is_json_serialized.value) [[unlikely]] { // check that we don't have both flags set
@@ -41,22 +38,13 @@ mixed extract_confdata_value(const tl::confdataValue& confdata_value) noexcept {
 
 } // namespace
 
-// TODO: the performance of this implementation can be enhanced. rework it when the platform has specific API for that
-bool f$is_confdata_loaded() noexcept {
-  auto& instance_st{InstanceState::get()};
-  if (const auto [stream_d, errc]{instance_st.open_stream(CONFDATA_COMPONENT_NAME, k2::stream_kind::component)}; errc == k2::errno_ok) {
-    instance_st.release_stream(stream_d);
-    return true;
-  }
-  return false;
-}
-
 kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
   tl::TLBuffer tlb{};
   tl::ConfdataGet{.key = {.value = {key.c_str(), key.size()}}}.store(tlb);
 
-  auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME.data(), static_cast<string::size_type>(CONFDATA_COMPONENT_NAME.size())},
-                                                      {tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  auto query{
+      co_await f$component_client_send_request({kphp::confdata::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::confdata::COMPONENT_NAME.size())},
+                                               {tlb.data(), static_cast<string::size_type>(tlb.size())})};
   if (query.is_null()) [[unlikely]] {
     co_return mixed{};
   }
@@ -77,8 +65,9 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
   tl::TLBuffer tlb{};
   tl::ConfdataGetWildcard{.wildcard = {.value = {wildcard.c_str(), wildcard.size()}}}.store(tlb);
 
-  auto query{co_await f$component_client_send_request({CONFDATA_COMPONENT_NAME.data(), static_cast<string::size_type>(CONFDATA_COMPONENT_NAME.size())},
-                                                      {tlb.data(), static_cast<string::size_type>(tlb.size())})};
+  auto query{
+      co_await f$component_client_send_request({kphp::confdata::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::confdata::COMPONENT_NAME.size())},
+                                               {tlb.data(), static_cast<string::size_type>(tlb.size())})};
   if (query.is_null()) [[unlikely]] {
     co_return array<mixed>{};
   }

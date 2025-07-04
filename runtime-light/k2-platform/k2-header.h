@@ -179,6 +179,15 @@ int32_t k2_uname(struct utsname* buf);
 int32_t k2_open(uint64_t* stream_d, size_t name_len, const char* name);
 
 /**
+ * @return return `0` on success. libc-like `errno` otherwise
+ *
+ *  Some `errno` examples:
+ * `EINVAL` => `name` has invalid format (empty, non ascii, too long, etc..)
+ * `EACCES` => permission denied
+ */
+int32_t k2_access(size_t name_len, const char* name);
+
+/**
  * If the write or read status is `Blocked` - then the platform ensures that
  * the component receives this `stream_d` via `k2_take_update` when the status is
  * no longer `Blocked` ("edge-triggered epoll"-like behaviour).
@@ -548,7 +557,7 @@ int32_t k2_iconv(size_t* result, void* iconv_cd, char** inbuf, size_t* inbytesle
 size_t k2_stderr_write(size_t data_len, const void* data);
 
 /**
- * Analogue for libc backtrace. Returns a backtrace of the calling component
+ * Returns a backtrace of the calling component
  *
  * @return backtrace size on success, `0` otherwise
  */
