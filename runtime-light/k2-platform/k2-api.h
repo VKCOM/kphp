@@ -11,6 +11,7 @@
 #include <expected>
 #include <format>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <sys/utsname.h>
@@ -159,8 +160,10 @@ inline uint8_t take_update(k2::descriptor* descriptor) noexcept {
   return k2_take_update(descriptor);
 }
 
-inline void log(size_t level, size_t len, const char* str) noexcept {
-  k2_log(level, len, str);
+using LogKeyValuePair = ::LogKeyValuePair;
+
+inline void log(size_t level, std::span<char> msg, std::optional<std::span<LogKeyValuePair>> kv_pairs) noexcept {
+  k2_log(level, msg.size(), msg.data(), kv_pairs.has_value() ? (*kv_pairs).size() : 0, kv_pairs.has_value() ? (*kv_pairs).data() : nullptr);
 }
 
 inline size_t log_level_enabled() noexcept {
