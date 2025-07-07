@@ -305,8 +305,8 @@ void k2_free_descriptor(uint64_t descriptor);
 uint8_t k2_take_update(uint64_t* update_d);
 
 struct LogKeyValuePair {
-  const char * key;
-  const char * value;
+  const char* key;
+  const char* value;
   size_t key_len;
   size_t value_len;
 };
@@ -328,9 +328,7 @@ struct LogKeyValuePair {
  * @param `kv_pairs` An array of key-value pairs.
  */
 
-void k2_log(size_t level,
-            size_t len, const char * msg,
-            size_t kv_count, const struct LogKeyValuePair * kv_pairs);
+void k2_log(size_t level, size_t len, const char* msg, size_t kv_count, const struct LogKeyValuePair* kv_pairs);
 
 // Use for optimization, see `k2_log`
 size_t k2_log_level_enabled();
