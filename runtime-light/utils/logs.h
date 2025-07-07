@@ -73,8 +73,8 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
   } else {
     backtrace = "can't resolve trace";
   }
-  std::array<k2::LogKeyValuePair, 1> kv_pairs = {{
-      k2::LogKeyValuePair{.key = backtrace_key.data(), .value = backtrace.data(), .key_len = backtrace_key.size(), .value_len = backtrace.size()}}};
+  std::array<k2::LogKeyValuePair, 1> kv_pairs = {
+      {k2::LogKeyValuePair{.key = backtrace_key.data(), .value = backtrace.data(), .key_len = backtrace_key.size(), .value_len = backtrace.size()}}};
   k2::log(std::to_underlying(level), message, std::span(kv_pairs.data(), kv_pairs.size()));
 }
 
