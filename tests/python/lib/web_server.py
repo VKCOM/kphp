@@ -28,7 +28,7 @@ class WebServer(Engine):
         super(WebServer, self).start(start_msgs)
         self._json_logs = []
         if (self._json_log_file is not None):
-            time.sleep(1.0 / 1e1)
+            time.sleep(0.1)
             self._json_log_file_read_fd = open(self._json_log_file, 'r')
 
     def stop(self):
@@ -137,7 +137,6 @@ class WebServer(Engine):
         """
         start = time.time()
         expected_records = expect[:]
-        print(expected_records)
 
         while expected_records:
             self._assert_availability()
@@ -154,7 +153,6 @@ class WebServer(Engine):
                     expected_record_copy["msg"] = ""
                     json_log_record_copy = json_log_record.copy()
                     json_log_record_copy["msg"] = ""
-                    print("match")
                     if expected_record_copy == json_log_record_copy:
                         expected_records.pop(0)
                         self._json_logs[index] = None
