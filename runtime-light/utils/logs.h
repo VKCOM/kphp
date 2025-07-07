@@ -52,7 +52,7 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
   auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
                                                                                                impl::wrap_log_argument(std::forward<Args>(args))...)};
   *out = '\0';
-  auto message{std::span(log_buffer.data(), size + 1)};
+  auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(size + 1)}};
   if (!trace.has_value()) {
     k2::log(std::to_underlying(level), message, std::nullopt);
     return;
