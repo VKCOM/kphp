@@ -58,25 +58,6 @@ inline auto backtrace_symbols(std::span<void* const> addresses) noexcept {
 } // namespace kphp::diagnostic
 
 template<>
-struct std::formatter<std::invoke_result_t<decltype(kphp::diagnostic::backtrace_addresses), std::span<void* const>>> {
-  using addresses_t = std::invoke_result_t<decltype(kphp::diagnostic::backtrace_addresses), std::span<void* const>>;
-  template<typename ParseContext>
-  constexpr auto parse(ParseContext& ctx) const noexcept {
-    return ctx.begin();
-  }
-
-  template<typename FmtContext>
-  auto format(const addresses_t& addresses, FmtContext& ctx) const noexcept {
-    size_t level{};
-    for (const auto* addr : addresses) {
-      format_to(ctx.out(), "# {} : {:p}\n", level++, addr);
-    }
-
-    return ctx.out();
-  }
-};
-
-template<>
 struct std::formatter<std::invoke_result_t<decltype(kphp::diagnostic::backtrace_symbols), std::span<void* const>>> {
   using symbols_info_t = std::invoke_result_t<decltype(kphp::diagnostic::backtrace_symbols), std::span<void* const>>;
   template<typename ParseContext>

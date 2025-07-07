@@ -313,6 +313,13 @@ void k2_free_descriptor(uint64_t descriptor);
  */
 uint8_t k2_take_update(uint64_t* update_d);
 
+struct LogKeyValuePair {
+  const char * key;
+  const char * value;
+  size_t key_len;
+  size_t value_len;
+};
+
 /**
  * Represents a key-value pair that can be added to a log.
  * Each instance of this struct must contain valid, non-null pointers for both the key and the value.
