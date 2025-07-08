@@ -114,12 +114,7 @@ class WebServer(Engine):
                 expected_msg = expected_record["msg"]
                 got_msg = json_log_record["msg"]
                 if re.search(expected_msg, got_msg):
-                    expected_record_copy = expected_record.copy()
-                    expected_record_copy["msg"] = ""
-                    json_log_record_copy = json_log_record.copy()
-                    json_log_record_copy["msg"] = ""
-                    print("match")
-                    if set(expected_record_copy.keys()).issubset(json_log_record_copy.keys()):
+                    if expected_record["tags"].issubset(json_log_record.keys()):
                         expected_records.pop(0)
                         self._json_logs[index] = None
 

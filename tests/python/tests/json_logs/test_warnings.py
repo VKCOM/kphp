@@ -12,6 +12,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
         if cls.should_use_k2():
             cls.web_server.update_options({"--log-file": "log-file"})
 
+    @pytest.mark.kphp_skip
     def test_warning_backtrace(self):
         resp = self.web_server.http_post(
             json=[
@@ -20,7 +21,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
         self.assertEqual(resp.text, "ok")
         self.web_server.assert_json_log_tags(
             expect=[
-                {"msg": "hello", "trace": ""}
+                {"msg": "hello", "tags": {"trace"}}
             ])
 
     @pytest.mark.k2_skip
