@@ -5,6 +5,7 @@ import time
 from .engine import Engine
 from .http_client import send_http_request, send_http_request_raw
 from .port_generator import get_port
+from .file_utils import wait_for_file_creation
 
 
 class WebServer(Engine):
@@ -23,12 +24,11 @@ class WebServer(Engine):
         self._json_log_file = None
         self._json_logs = []
 
-
     def start(self, start_msgs=None):
         super(WebServer, self).start(start_msgs)
         self._json_logs = []
         if (self._json_log_file is not None):
-            time.sleep(0.1)
+            wait_for_file_creation(self._json_log_file)
             self._json_log_file_read_fd = open(self._json_log_file, 'r')
 
     def stop(self):
