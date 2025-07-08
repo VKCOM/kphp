@@ -304,6 +304,14 @@ void k2_free_descriptor(uint64_t descriptor);
  */
 uint8_t k2_take_update(uint64_t* update_d);
 
+/**
+ * Represents a key-value pair that can be added to a log.
+ * Each instance of this struct must contain valid, non-null pointers for both the key and the value.
+ * The lengths of the key and value are specified by `key_len` and `value_len`, respectively.
+ *
+ * If an instance is intended to represent only a key without an associated value,
+ * the `value` pointer should point to an empty string (""), and `value_len` should be set to zero.
+ */
 struct LogKeyValuePair {
   const char* key;
   const char* value;
@@ -323,7 +331,8 @@ struct LogKeyValuePair {
  *    5 => Trace
  * Any other value will cause the log to be skipped
  * if `level` > `log_level_enabled()` log will be skipped
- * @param `message` A pointer to the log message.до
+ * @param `len` length of msg in bytes
+ * @param `msg` A pointer to the log message
  * @param `kv_count` The number of key-value pairs.
  * @param `kv_pairs` An array of key-value pairs.
  */
