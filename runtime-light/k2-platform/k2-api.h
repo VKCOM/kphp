@@ -163,7 +163,11 @@ inline uint8_t take_update(k2::descriptor* descriptor) noexcept {
 using LogKeyValuePair = ::LogKeyValuePair;
 
 inline void log(size_t level, std::string_view msg, std::optional<std::span<LogKeyValuePair>> kv_pairs) noexcept {
-  k2_log(level, msg.size(), msg.data(), kv_pairs.has_value() ? (*kv_pairs).size() : 0, kv_pairs.has_value() ? (*kv_pairs).data() : nullptr);
+  if (kv_pairs.has_value()) {
+    k2_log(level, msg.size(), msg.data(), (*kv_pairs).size(), (*kv_pairs).data());
+  } else {
+    k2_log(level, msg.size(), msg.data(), 0, nullptr);
+  }
 }
 
 inline size_t log_level_enabled() noexcept {
