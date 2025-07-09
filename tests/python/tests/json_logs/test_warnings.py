@@ -15,6 +15,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
 
     @pytest.mark.kphp_skip
     def test_warning_backtrace(self):
+        print("start test")
         resp = self.web_server.http_post(
             json=[
                 {"op": "warning", "msg": "hello"},
