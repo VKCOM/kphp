@@ -318,16 +318,6 @@ array<T> f$array_splice(array<T>& /*unused*/, int64_t /*unused*/, int64_t /*unus
   kphp::log::error("call to unsupported function");
 }
 
-template<class ReturnT, class InputArrayT, class DefaultValueT>
-ReturnT f$array_pad(const array<InputArrayT>& /*unused*/, int64_t /*unused*/, const DefaultValueT& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class ReturnT, class DefaultValueT>
-ReturnT f$array_pad(const array<Unknown>& /*unused*/, int64_t /*unused*/, const DefaultValueT& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
 /**
  * Currently, array_map is always considered async. Despite we rely on symmetric transfer optimization,
  * we need to be careful with such functions. We may want to split such functions into sync and async

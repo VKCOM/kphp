@@ -141,6 +141,8 @@ function usort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: v
 /** @kphp-extern-func-info interruptible */
 function uasort (&$a ::: array, callable(^1[*] $x, ^1[*] $y):int $callback) ::: void;
 
+/** @kphp-extern-func-info cpp_template_call */
+function array_pad ($a ::: array, $size ::: int, $value ::: any) ::: array< ^1[*] | ^3 >;
 
 // ===== UNSUPPORTED =====
 
@@ -185,8 +187,6 @@ function array_count_values ($a ::: array) ::: int[];
 function array_fill_keys ($a ::: array, $value ::: any) ::: ^2[];
 /** @kphp-extern-func-info stub */
 function array_combine ($keys ::: array, $values ::: array) ::: ^2;
-/** @kphp-extern-func-info stub cpp_template_call */
-function array_pad ($a ::: array, $size ::: int, $value ::: any) ::: array< ^1[*] | ^3 >;
 /** @kphp-extern-func-info stub */
 function array_column ($a ::: array, $column_key, $index_key = null) ::: array< ^1[*][*] > | false;
 
