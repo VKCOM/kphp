@@ -39,7 +39,9 @@ class K2Server(WebServer):
         else:
             start_msgs = start_msgs or []
             start_msgs.append("Starting to accept clients.")
+        print("before start K2Server")
         super(K2Server, self).start(start_msgs)
+        print("start K2Server")
 
     def stop(self):
         super(K2Server, self).stop()
