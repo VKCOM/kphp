@@ -43,6 +43,12 @@ struct StreamStatus {
   int32_t libc_errno;
 };
 
+enum EventKind {
+  StreamUpdate = 0,
+  StreamConnect = 1,
+  Nothing = 2,
+};
+
 /*
  * This time point is valid only within the component.
  * Similar to c++ `std::chrono::steady_clock::time_point`
