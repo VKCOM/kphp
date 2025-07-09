@@ -240,6 +240,23 @@ kphp::coro::task<array<T>> array_filter_by_key_impl(array<T> a, F f) noexcept {
   co_return std::move(result);
 }
 
+template<class T, class F>
+requires convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, typename array<T>::const_iterator::value_type>>
+kphp::coro::task<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>> array_find_impl(array<T> a, F f) {
+  for (const auto& it : a) {
+    bool condition{};
+    if constexpr (kphp::coro::is_async_function_v<F, typename array<T>::const_iterator::value_type>) {
+      condition = co_await std::invoke(f, it.get_value());
+    } else {
+      condition = std::invoke(f, it.get_value());
+    }
+    if (condition) {
+      co_return std::tuple{it.get_key(), it.get_value()};
+    }
+  }
+  co_return std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>{};
+}
+
 } // namespace array_functions_impl_
 
 template<class T>
@@ -273,6 +290,11 @@ kphp::coro::task<array<T>> f$array_filter(array<T> a, F f) noexcept {
 template<class T, std::invocable<typename array<T>::const_iterator::key_type> F>
 kphp::coro::task<array<T>> f$array_filter_by_key(array<T> a, F f) noexcept {
   co_return co_await array_functions_impl_::array_filter_by_key_impl(std::move(a), std::move(f));
+}
+
+template<class T, std::invocable<T> F>
+kphp::coro::task<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>> f$array_find(array<T> a, F f) {
+  co_return co_await array_functions_impl_::array_find_impl(std::move(a), std::move(f));
 }
 
 template<class T>
@@ -499,11 +521,6 @@ inline Optional<array<mixed>> f$array_column(const array<mixed>& /*unused*/, con
 template<class T>
 auto f$array_column(const Optional<T>& /*unused*/, const mixed& column_key,
                     const mixed& index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T, class T1>
-std::tuple<typename array<T>::key_type, T> f$array_find(const array<T>& /*unused*/, const T1& /*unused*/) {
   kphp::log::error("call to unsupported function");
 }
 
