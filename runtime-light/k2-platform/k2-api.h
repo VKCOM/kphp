@@ -46,6 +46,8 @@ using IOStatus = IOStatus;
 
 using StreamStatus = StreamStatus;
 
+using EventKind = EventKind;
+
 using TimePoint = TimePoint;
 
 using SystemTime = SystemTime;
@@ -160,8 +162,8 @@ inline void free_descriptor(k2::descriptor descriptor) noexcept {
   k2_free_descriptor(descriptor);
 }
 
-inline uint8_t take_update(k2::descriptor* descriptor) noexcept {
-  return k2_take_update(descriptor);
+inline k2::EventKind take_update(k2::descriptor* /*descriptor*/) noexcept {
+  return k2::EventKind::Nothing;
 }
 
 using LogTaggedEntry = ::LogKeyValuePair;
