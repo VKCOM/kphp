@@ -1,3 +1,4 @@
+import os
 import socket
 import pytest
 
@@ -10,7 +11,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
     def extra_class_setup(cls):
         cls.web_server.ignore_log_errors()
         if cls.should_use_k2():
-            cls.web_server.update_options({"--log-file": "log-file"})
+            cls.web_server.update_options({"--log-file": os.path.join(cls.web_server._working_dir, "data/log-file")})
 
     @pytest.mark.kphp_skip
     def test_warning_backtrace(self):
