@@ -9,6 +9,7 @@ function kml_catboost_predict_vectors_multi(string $model_name, float[] $float_f
 function kml_catboost_predict_ht_multi(string $model_name, float[] $features_map): ?float[];
 
 function kml_model_exists(string $model_name): bool;
+function kml_available_models(): string[];
 
 function kml_get_feature_names(string $model_name): ?string[];
 function kml_get_custom_property(string $model_name, string $property_name): ?string;
