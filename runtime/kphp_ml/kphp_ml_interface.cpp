@@ -125,6 +125,15 @@ bool f$kml_model_exists(const string& model_name) {
   return kphp_ml_find_loaded_model_by_name(model_name) != nullptr;
 }
 
+array<string> f$kml_available_models() {
+  array<string> response;
+  response.reserve(loaded_models.size(), true);
+  for (const auto& [_, model] : loaded_models) {
+    response.push_back(string(model.model_name.c_str()));
+  }
+  return response;
+}
+
 Optional<array<string>> f$kml_get_feature_names(const string& model_name) {
   const kphp_ml::MLModel* p_kml = kphp_ml_find_loaded_model_by_name(model_name);
   if (p_kml == nullptr) {
