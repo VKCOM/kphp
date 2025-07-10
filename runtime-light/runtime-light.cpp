@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "runtime-light/core/globals/php-init-scripts.h"
+#include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/image-state.h"
@@ -63,9 +64,7 @@ void k2_init_instance() {
 
 k2::PollStatus k2_poll() {
   kphp::log::debug("k2_poll started");
-  auto& instance_state{InstanceState::get()};
-  instance_state.process_platform_updates();
-  const auto poll_status{instance_state.poll_status};
+  const auto poll_status{kphp::coro::io_scheduler::get().process_events()};
   kphp::log::debug("k2_poll finished: {}", std::to_underlying(poll_status));
   return poll_status;
 }

@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <chrono>
 #include <coroutine>
 #include <cstddef>
@@ -11,10 +13,12 @@
 #include <iterator>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <utility>
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/detail/poll-info.h"
 #include "runtime-light/coroutine/detail/timer-handle.h"
@@ -26,26 +30,28 @@
 namespace kphp::coro {
 
 class io_scheduler {
+  static constexpr auto MAX_EVENTS_TO_PROCESS = static_cast<size_t>(16);
+
   kphp::coro::detail::timer_handle m_timer_handle;
   kphp::coro::detail::poll_info::timed_events m_timed_events;
   kphp::stl::vector<k2::descriptor, kphp::memory::script_allocator> m_connections;
-  CoroutineInstanceState& m_coro_instance_state{CoroutineInstanceState::get()};
+  CoroutineInstanceState& m_coroutine_instance_state{CoroutineInstanceState::get()};
 
   kphp::coro::detail::poll_info::awaiting_polls m_awaiting_polls;
   kphp::stl::vector<std::coroutine_handle<>, kphp::memory::script_allocator> m_scheduled_tasks;
+  kphp::stl::vector<std::coroutine_handle<>, kphp::memory::script_allocator> m_scheduled_tasks_tmp;
 
   auto process_timeout() noexcept -> void;
   auto process_update(k2::descriptor descriptor) noexcept -> void;
   auto process_connect(k2::descriptor descriptor) noexcept -> void;
 
+  auto update_timer() noexcept -> void;
   [[nodiscard]] auto add_timer_token(k2::TimePoint time_point, kphp::coro::detail::poll_info& poll_info) noexcept
       -> kphp::coro::detail::poll_info::timed_events::iterator;
   template<typename rep_type, typename period_type>
   [[nodiscard]] auto add_timer_token(std::chrono::duration<rep_type, period_type> timeout, kphp::coro::detail::poll_info& poll_info) noexcept
       -> kphp::coro::detail::poll_info::timed_events::iterator;
   auto remove_timer_token(kphp::coro::detail::poll_info::timed_events::iterator pos) noexcept -> void;
-
-  auto update_timeout() noexcept -> void;
 
 public:
   io_scheduler() noexcept = default;
@@ -58,17 +64,16 @@ public:
 
   static auto get() noexcept -> io_scheduler&;
 
+  auto empty() const noexcept -> bool;
   auto size() const noexcept -> size_t;
 
-  auto process_events() noexcept -> void;
+  auto process_events() noexcept -> k2::PollStatus;
 
   [[nodiscard]] auto schedule() noexcept;
-
   template<typename return_type>
   [[nodiscard]] auto schedule(kphp::coro::task<return_type> task) noexcept -> kphp::coro::task<return_type>;
 
   [[nodiscard]] auto yield() noexcept;
-
   template<typename rep_type, typename period_type>
   [[nodiscard]] auto yield_for(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<>;
 
@@ -106,10 +111,14 @@ inline auto io_scheduler::process_timeout() noexcept -> void {
     m_scheduled_tasks.emplace_back(poll_info.m_awaiting_coroutine);
   }
 
-  update_timeout();
+  update_timer();
 }
 
 inline auto io_scheduler::process_update(k2::descriptor descriptor) noexcept -> void {
+  if (descriptor == m_timer_handle.descriptor()) [[unlikely]] {
+    return process_timeout();
+  }
+
   k2::StreamStatus stream_status{};
   k2::stream_status(descriptor, std::addressof(stream_status));
   if (stream_status.libc_errno != k2::errno_ok) [[unlikely]] {
@@ -202,7 +211,7 @@ inline auto io_scheduler::process_connect(k2::descriptor descriptor) noexcept ->
   m_scheduled_tasks.emplace_back(poll_info.m_awaiting_coroutine);
 }
 
-inline auto io_scheduler::update_timeout() noexcept -> void { // TODO rework negative timeout
+inline auto io_scheduler::update_timer() noexcept -> void {
   // if the list of timed events is empty, clear the timer handle as there are no timeouts to manage
   if (m_timed_events.empty()) {
     m_timer_handle.clear();
@@ -220,7 +229,7 @@ inline auto io_scheduler::add_timer_token(k2::TimePoint time_point, kphp::coro::
     -> kphp::coro::detail::poll_info::timed_events::iterator {
   const auto pos{m_timed_events.emplace(time_point, poll_info)};
   if (pos == m_timed_events.begin()) {
-    update_timeout();
+    update_timer();
   }
   return pos;
 }
@@ -238,37 +247,60 @@ inline auto io_scheduler::remove_timer_token(kphp::coro::detail::poll_info::time
   const bool is_first{pos == m_timed_events.begin()};
   m_timed_events.erase(pos);
   if (is_first) {
-    update_timeout();
+    update_timer();
   }
+}
+
+inline auto io_scheduler::empty() const noexcept -> bool {
+  return size() != 0;
 }
 
 inline auto io_scheduler::size() const noexcept -> size_t {
   return m_scheduled_tasks.size() + m_awaiting_polls.size();
 }
 
-inline auto io_scheduler::process_events() noexcept -> void {
-  for (;;) {
-    k2::descriptor descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
-    const auto event_kind{k2::take_update(std::addressof(descriptor))};
-    switch (event_kind) {
-    case k2::EventKind::StreamUpdate:
-      [[likely]] {
-        if (m_timer_handle.handle() != k2::INVALID_PLATFORM_DESCRIPTOR && m_timer_handle.handle() == descriptor) [[unlikely]] {
-          process_timeout();
-        } else {
-          process_update(descriptor);
-        }
+inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
+  // process events as long as the scheduler is allowed to work and there is work to do
+  for (bool keep_working{true}; keep_working; keep_working = !static_cast<bool>(k2::control_flags()->please_yield.load())) {
+    size_t num_events{};
+    std::array<std::pair<k2::descriptor, k2::UpdateStatus>, MAX_EVENTS_TO_PROCESS> recent_events{};
+    for (; num_events < recent_events.size(); ++num_events) {
+      auto descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
+      auto event_kind{k2::take_update(std::addressof(descriptor))};
+      if (event_kind == k2::UpdateStatus::NoUpdates) {
         break;
       }
-    case k2::EventKind::StreamConnect: {
-      process_connect(descriptor);
-      break;
+      recent_events[num_events] = {descriptor, event_kind};
     }
-    case k2::EventKind::Nothing: {
-      break;
+
+    for (const auto& [descriptor, event_kind] : recent_events | std::views::take(num_events)) {
+      switch (event_kind) {
+      case k2::UpdateStatus::UpdateExisted:
+        process_update(descriptor);
+        break;
+      case k2::UpdateStatus::NewDescriptor:
+        process_connect(descriptor);
+        break;
+      case k2::UpdateStatus::NoUpdates:
+        [[fallthrough]];
+      default:
+        std::unreachable();
+      }
     }
+
+    if (m_scheduled_tasks.empty()) {
+      return m_awaiting_polls.empty() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollBlocked;
     }
+
+    kphp::log::assertion(m_scheduled_tasks_tmp.empty());
+    std::swap(m_scheduled_tasks, m_scheduled_tasks_tmp);
+    std::ranges::for_each(m_scheduled_tasks_tmp, [&coroutine_stack_root = m_coroutine_instance_state.coroutine_stack_root](const auto& coroutine) noexcept {
+      kphp::coro::resume(coroutine, coroutine_stack_root);
+    });
+    m_scheduled_tasks_tmp.clear();
   }
+
+  return empty() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollReschedule;
 }
 
 inline auto io_scheduler::schedule() noexcept {

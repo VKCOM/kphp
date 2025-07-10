@@ -19,7 +19,6 @@
 #include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/server/http/init-functions.h"
 #include "runtime-light/server/job-worker/init-functions.h"
 #include "runtime-light/server/rpc/init-functions.h"
@@ -72,7 +71,7 @@ void InstanceState::init_script_execution() noexcept {
         kphp::log::assertion(co_await f$wait_concurrently(co_await start_fork_t{std::move(script_task)}));
       },
       std::move(script_task))};
-  scheduler.suspend({main_task.get_handle(), WaitEvent::Rechedule{}});
+  // scheduler.suspend({main_task.get_handle(), WaitEvent::Rechedule{}}); TODO
   main_task_ = std::move(main_task);
   // Push main_task_ frame to async stack
   auto& main_task_frame{main_task_.get_handle().promise().get_async_stack_frame()};
@@ -245,61 +244,6 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
 }
 
 // ================================================================================================
-
-void InstanceState::process_platform_updates() noexcept {
-  for (;;) {
-    // check if platform asked for yield
-    if (static_cast<bool>(k2::control_flags()->please_yield.load())) { // tell the scheduler that we are about to yield
-      kphp::log::debug("platform set 'please_yield=true'");
-      const auto schedule_status{scheduler.schedule(ScheduleEvent::Yield{})};
-      poll_status = schedule_status == ScheduleStatus::Error ? k2::PollStatus::PollFinishedError : k2::PollStatus::PollReschedule;
-      return;
-    }
-
-    // try taking update from the platform
-    if (uint64_t stream_d{}; static_cast<bool>(k2::take_update(std::addressof(stream_d)))) {
-      if (opened_streams_.contains(stream_d)) { // update on opened stream
-        kphp::log::debug("got update on stream {}", stream_d);
-        switch (scheduler.schedule(ScheduleEvent::UpdateOnStream{.stream_d = stream_d})) {
-        case ScheduleStatus::Resumed: { // scheduler's resumed a coroutine waiting for update
-          break;
-        }
-        case ScheduleStatus::Skipped: { // no one is waiting for the event yet
-          break;
-        }
-        case ScheduleStatus::Error: { // something bad's happened, stop execution
-          poll_status = k2::PollStatus::PollFinishedError;
-          return;
-        }
-        }
-      } else { // update on incoming stream
-        kphp::log::debug("got incoming stream {}", stream_d);
-        incoming_streams_.push_back(stream_d);
-        opened_streams_.insert(stream_d);
-        if (const auto schedule_status{scheduler.schedule(ScheduleEvent::IncomingStream{.stream_d = stream_d})}; schedule_status == ScheduleStatus::Error) {
-          poll_status = k2::PollStatus::PollFinishedError;
-          return;
-        }
-      }
-    } else { // we'are out of updates so let the scheduler do whatever it wants
-      kphp::log::debug("got no events from platform");
-      switch (scheduler.schedule(ScheduleEvent::NoEvent{})) {
-      case ScheduleStatus::Resumed: { // scheduler's resumed some coroutine, so let's continue scheduling
-        break;
-      }
-      case ScheduleStatus::Skipped: { // scheduler's done nothing, so it's either scheduled all coroutines or is waiting for events
-        poll_status = scheduler.done() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollBlocked;
-        return;
-      }
-      case ScheduleStatus::Error: { // something bad's happened, stop execution
-        poll_status = k2::PollStatus::PollFinishedError;
-        return;
-      }
-      }
-    }
-  }
-  std::unreachable();
-}
 
 uint64_t InstanceState::take_incoming_stream() noexcept {
   if (incoming_streams_.empty()) [[unlikely]] {
