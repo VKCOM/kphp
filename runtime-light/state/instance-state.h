@@ -16,9 +16,9 @@
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/coroutine-state.h"
+#include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/scheduler/scheduler.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
@@ -37,10 +37,6 @@
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 #include "runtime-light/stdlib/time/time-state.h"
-
-// Coroutine scheduler type. Change it here if you want to use another scheduler
-using CoroutineScheduler = SimpleCoroutineScheduler;
-static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
 
 /**
  * Supported kinds of KPHP images:
@@ -86,8 +82,6 @@ struct InstanceState final : vk::not_copyable {
     return instance_kind_;
   }
 
-  void process_platform_updates() noexcept;
-
   const unordered_set<uint64_t>& opened_streams() const noexcept {
     return opened_streams_;
   }
@@ -107,7 +101,7 @@ struct InstanceState final : vk::not_copyable {
 
   AllocatorState instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0};
 
-  CoroutineScheduler scheduler;
+  kphp::coro::io_scheduler io_scheduler;
   CoroutineInstanceState coroutine_instance_state;
   ForkInstanceState fork_instance_state;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;

@@ -52,7 +52,7 @@ public:
     return std::expected<void, int32_t>{};
   }
 
-  auto handle() const noexcept -> k2::descriptor {
+  auto descriptor() const noexcept -> k2::descriptor {
     return m_descriptor;
   }
 
