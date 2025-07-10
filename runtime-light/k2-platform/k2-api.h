@@ -45,7 +45,7 @@ using IOStatus = IOStatus;
 
 using StreamStatus = StreamStatus;
 
-using EventKind = EventKind;
+using UpdateStatus = UpdateStatus;
 
 using TimePoint = TimePoint;
 
@@ -161,8 +161,8 @@ inline void free_descriptor(k2::descriptor descriptor) noexcept {
   k2_free_descriptor(descriptor);
 }
 
-inline k2::EventKind take_update(k2::descriptor* /*descriptor*/) noexcept {
-  return k2::EventKind::Nothing;
+inline k2::UpdateStatus take_update(k2::descriptor* descriptor) noexcept {
+  return k2_take_update(descriptor);
 }
 
 inline void log(size_t level, size_t len, const char* str) noexcept {
