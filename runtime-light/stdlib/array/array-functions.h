@@ -475,16 +475,6 @@ kphp::coro::task<> f$uksort(array<T>& a, Comparator compare) {
 }
 
 template<class T>
-mixed f$getKeyByPos(const array<T>& /*unused*/, int64_t /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-T f$getValueByPos(const array<T>& /*unused*/, int64_t /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
 array<T> f$create_vector(int64_t /*unused*/, const T& /*unused*/) {
   kphp::log::error("call to unsupported function");
 }
