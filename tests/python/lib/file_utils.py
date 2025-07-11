@@ -121,9 +121,13 @@ def search_php_bin(php_version: str):
 
     return None
 
+
 def search_k2_bin():
     return os.getenv("K2_BIN")
 
-def wait_for_file_creation(file_path, check_interval=0.1):
-    while not os.path.exists(file_path):
+
+def wait_for_file_creation(file_path, check_interval=0.1, attempts=20):
+    for i in range(attempts):
+        if os.path.exists(file_path):
+            break
         time.sleep(check_interval)

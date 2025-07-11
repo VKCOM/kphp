@@ -329,21 +329,6 @@ struct LogKeyValuePair {
 };
 
 /**
- * Represents a key-value pair that can be added to a log.
- * Each instance of this struct must contain valid, non-null pointers for both the key and the value.
- * The lengths of the key and value are specified by `key_len` and `value_len`, respectively.
- *
- * If an instance is intended to represent only a key without an associated value,
- * the `value` pointer should point to an empty string (""), and `value_len` should be set to zero.
- */
-struct LogKeyValuePair {
-  const char* key;
-  const char* value;
-  size_t key_len;
-  size_t value_len;
-};
-
-/**
  * Writes a structured log message. Only UTF-8 encoded strings are supported.
  *
  * @param `level` The severity level of the log message.
