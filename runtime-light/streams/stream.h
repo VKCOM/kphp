@@ -26,7 +26,6 @@ namespace kphp::component {
 
 class stream {
   using storage_type = std::unique_ptr<std::byte, decltype(std::addressof(kphp::memory::script::free))>;
-  static constexpr auto BATCH_SIZE = static_cast<size_t>(2 * 1024);
 
   storage_type m_storage;
   size_t m_storage_size{};
@@ -43,7 +42,7 @@ class stream {
   }
 
 public:
-  static constexpr auto DEFAULT_STORAGE_CAPACITY = BATCH_SIZE;
+  static constexpr auto DEFAULT_STORAGE_CAPACITY = static_cast<size_t>(2 * 1024);
 
   stream(stream&& other) noexcept
       : m_storage(std::move(other.m_storage)),
@@ -76,11 +75,10 @@ public:
 
   auto clear() noexcept -> void;
   auto reset(k2::descriptor descriptor) noexcept -> void;
+  auto reserve(size_t capacity) noexcept -> std::expected<void, int32_t>;
 
   auto size() const noexcept -> size_t;
   auto capacity() const noexcept -> size_t;
-
-  auto reserve(size_t capacity) noexcept -> std::expected<void, int32_t>;
   auto data() const noexcept -> std::span<const std::byte>;
 
   auto read() noexcept -> kphp::coro::task<std::expected<void, int32_t>>;
@@ -175,15 +173,14 @@ inline auto stream::read() noexcept -> kphp::coro::task<std::expected<void, int3
   auto& io_scheduler{kphp::coro::io_scheduler::get()};
 
   for (;;) {
-    if (m_storage_capacity - m_storage_size < BATCH_SIZE) {
-      if (auto expected{reserve(m_storage_capacity * 2)}; !expected) [[unlikely]] {
-        co_return std::move(expected);
-      }
-    }
-
     const auto poll_status{co_await io_scheduler.poll(m_descriptor, kphp::coro::poll_op::read)};
     switch (poll_status) {
     case kphp::coro::poll_status::event:
+      if (m_storage_capacity == m_storage_size) {
+        if (auto expected{reserve(m_storage_capacity * 2)}; !expected) [[unlikely]] {
+          co_return std::move(expected);
+        }
+      }
       [[likely]] m_storage_size += k2::read(m_descriptor, m_storage_capacity - m_storage_size, static_cast<void*>(std::next(m_storage.get(), m_storage_size)));
       break;
     case kphp::coro::poll_status::closed:
