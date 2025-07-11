@@ -39,7 +39,14 @@ class K2Server(WebServer):
         else:
             start_msgs = start_msgs or []
             start_msgs.append("Starting to accept clients.")
+
         super(K2Server, self).start(start_msgs)
+
+        if self._is_json_log_enabled():
+            self.assert_json_log_tags(expect=[
+                {"msg": "Starting to accept clients.", "tags": set()}
+            ])
+
 
     def stop(self):
         super(K2Server, self).stop()

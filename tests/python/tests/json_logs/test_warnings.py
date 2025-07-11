@@ -1,3 +1,4 @@
+import os
 import socket
 import pytest
 
@@ -5,12 +6,26 @@ from python.lib.testcase import WebServerAutoTestCase
 from python.lib.kphp_server import KphpServer
 
 
-@pytest.mark.k2_skip_suite
 class TestJsonLogsWarnings(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
         cls.web_server.ignore_log_errors()
+        if cls.should_use_k2():
+            cls.web_server.update_options({"--log-file": os.path.join(cls.web_server._working_dir, "data/log-file")})
 
+    @pytest.mark.kphp_skip
+    def test_warning_backtrace(self):
+        resp = self.web_server.http_post(
+            json=[
+                {"op": "warning", "msg": "hello"},
+            ])
+        self.assertEqual(resp.text, "ok")
+        self.web_server.assert_json_log_tags(
+            expect=[
+                {"msg": "hello", "tags": {"trace"}}
+            ])
+
+    @pytest.mark.k2_skip
     def test_warning_no_context(self):
         resp = self.web_server.http_post(
             json=[
@@ -24,6 +39,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 {"version": 0, "hostname": socket.gethostname(), "type": 2, "env": "", "msg": "world", "tags": {"uncaught": False}}
             ])
 
+    @pytest.mark.k2_skip
     def test_warning_with_special_chars(self):
         resp = self.web_server.http_post(json=[{"op": "warning", "msg": 'aaa"bbb"\nccc'}])
         self.assertEqual(resp.text, "ok")
@@ -33,6 +49,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 "tags": {"uncaught": False}
             }])
 
+    @pytest.mark.k2_skip
     def test_warning_with_tags(self):
         resp = self.web_server.http_post(
             json=[
@@ -46,6 +63,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 "tags": {"uncaught": False, "a": "b"}
             }])
 
+    @pytest.mark.k2_skip
     def test_warning_with_extra_info(self):
         resp = self.web_server.http_post(
             json=[
@@ -59,6 +77,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 "tags": {"uncaught": False}, "extra_info": {"a": "b"}
             }])
 
+    @pytest.mark.k2_skip
     def test_warning_with_env(self):
         resp = self.web_server.http_post(
             json=[
@@ -69,6 +88,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
         self.web_server.assert_json_log(
             expect=[{"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "abc", "tags": {"uncaught": False}}])
 
+    @pytest.mark.k2_skip
     def test_warning_with_env_special_chars(self):
         resp = self.web_server.http_post(
             json=[
@@ -79,6 +99,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
         self.web_server.assert_json_log(
             expect=[{"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "a b c/d\\e?f", "tags": {"uncaught": False}}])
 
+    @pytest.mark.k2_skip
     def test_warning_with_long_env(self):
         resp = self.web_server.http_post(
             json=[
@@ -89,6 +110,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
         self.web_server.assert_json_log(
             expect=[{"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "", "tags": {"uncaught": False}}])
 
+    @pytest.mark.k2_skip
     def test_warning_with_full_context(self):
         resp = self.web_server.http_post(
             json=[
@@ -102,6 +124,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 "tags": {"uncaught": False, "a": "b"}, "extra_info": {"c": "d"}
             }])
 
+    @pytest.mark.k2_skip
     def test_warning_override_context(self):
         resp = self.web_server.http_post(
             json=[
@@ -132,6 +155,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 }
             ])
 
+    @pytest.mark.k2_skip
     def test_warning_vector_context(self):
         resp = self.web_server.http_post(
             json=[
@@ -145,6 +169,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 "tags": {"uncaught": False, "0": "a", "1": "b"}, "extra_info": {"0": "c", "1": "d"}
             }], timeout=1)
 
+    @pytest.mark.k2_skip
     def test_error_tag_context(self):
         if isinstance(self.web_server, KphpServer):
             self.web_server.set_error_tag(100500)
