@@ -160,14 +160,12 @@ inline uint8_t take_update(k2::descriptor* descriptor) noexcept {
   return k2_take_update(descriptor);
 }
 
-using LogTagEntry = ::LogKeyValuePair;
+using LogTaggedEntry = ::LogKeyValuePair;
 
-inline void log(size_t level, std::string_view msg, std::optional<std::span<LogTagEntry>> tags) noexcept {
-  if (tags.has_value()) {
-    k2_log(level, msg.size(), msg.data(), (*tags).size(), (*tags).data());
-  } else {
-    k2_log(level, msg.size(), msg.data(), 0, nullptr);
-  }
+inline void log(size_t level, std::string_view msg, std::optional<std::span<LogTaggedEntry>> tags) noexcept {
+  const auto tags_count{tags.value_or(std::span<LogTaggedEntry>{}).size()};
+  const auto* tags_data{tags.value_or(std::span<LogTaggedEntry>{}).data()};
+  k2_log(level, msg.size(), msg.data(), tags_count, tags_data);
 }
 
 inline size_t log_level_enabled() noexcept {
