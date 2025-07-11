@@ -63,7 +63,7 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
   }
 
   *out = '\0';
-  k2::log(std::to_underlying(level), size, log_buffer.data());
+  k2::log(std::to_underlying(level), std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(size)}, std::nullopt);
 }
 
 template<typename... Args>

@@ -314,7 +314,24 @@ void k2_free_descriptor(uint64_t descriptor);
 uint8_t k2_take_update(uint64_t* update_d);
 
 /**
- * Only utf-8 string supported.
+ * Represents a key-value pair that can be added to a log.
+ * Each instance of this struct must contain valid, non-null pointers for both the key and the value.
+ * The lengths of the key and value are specified by `key_len` and `value_len`, respectively.
+ *
+ * If an instance is intended to represent only a key without an associated value,
+ * the `value` pointer should point to an empty string (""), and `value_len` should be set to zero.
+ */
+struct LogKeyValuePair {
+  const char* key;
+  const char* value;
+  size_t key_len;
+  size_t value_len;
+};
+
+/**
+ * Writes a structured log message. Only UTF-8 encoded strings are supported.
+ *
+ * @param `level` The severity level of the log message.
  * Possible `level` values:
  *    1 => Error
  *    2 => Warn
@@ -323,8 +340,13 @@ uint8_t k2_take_update(uint64_t* update_d);
  *    5 => Trace
  * Any other value will cause the log to be skipped
  * if `level` > `log_level_enabled()` log will be skipped
+ * @param `len` length of msg in bytes
+ * @param `msg` A pointer to the log message
+ * @param `kv_count` The number of key-value pairs.
+ * @param `kv_pairs` An array of key-value pairs.
  */
-void k2_log(size_t level, size_t len, const char* str);
+
+void k2_log(size_t level, size_t len, const char* msg, size_t kv_count, const struct LogKeyValuePair* kv_pairs);
 
 // Use for optimization, see `k2_log`
 size_t k2_log_level_enabled();
