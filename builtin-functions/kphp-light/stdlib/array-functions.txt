@@ -147,16 +147,17 @@ function array_pad ($a ::: array, $size ::: int, $value ::: any) ::: array< ^1[*
 /** @kphp-extern-func-info interruptible */
 function array_find ($val ::: array, callable(^1[*] $x):bool $callback) ::: tuple(mixed, ^1[*]);
 
+/** @kphp-extern-func-info */
+function getKeyByPos ($a ::: array, $n ::: int) ::: mixed;
+
+/** @kphp-extern-func-info */
+function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
+
 // ===== UNSUPPORTED =====
 
 
 /** @kphp-extern-func-info stub */
 function create_vector ($n ::: int, $x ::: any) ::: ^2[];
-
-/** @kphp-extern-func-info stub */
-function getKeyByPos ($a ::: array, $n ::: int) ::: mixed;
-/** @kphp-extern-func-info stub */
-function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
 
 /** @kphp-extern-func-info stub */
 function array_swap_int_keys (&$a ::: array, $idx1 ::: int, $idx2 ::: int) ::: void;

@@ -825,3 +825,15 @@ ReturnT f$array_pad(const array<Unknown>&, int64_t size, const DefaultValueT& de
 
   return f$array_fill(0, std::abs(size), default_value);
 }
+
+template<class T>
+mixed f$getKeyByPos(const array<T>& a, int64_t pos) {
+  auto it = a.middle(pos);
+  return it == a.end() ? mixed{} : it.get_key();
+}
+
+template<class T>
+T f$getValueByPos(const array<T>& a, int64_t pos) {
+  auto it = a.middle(pos);
+  return it == a.end() ? T{} : it.get_value();
+}

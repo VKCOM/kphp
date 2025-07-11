@@ -86,12 +86,6 @@ void f$uksort(array<T>& a, const T1& compare) {
 }
 
 template<class T>
-mixed f$getKeyByPos(const array<T>& a, int64_t pos);
-
-template<class T>
-T f$getValueByPos(const array<T>& a, int64_t pos);
-
-template<class T>
 inline array<T> f$create_vector(int64_t n, const T& default_value);
 
 template<class T>
@@ -537,18 +531,6 @@ void f$shuffle(array<T>& a) {
   }
 
   a = std::move(result);
-}
-
-template<class T>
-mixed f$getKeyByPos(const array<T>& a, int64_t pos) {
-  auto it = a.middle(pos);
-  return it == a.end() ? mixed{} : it.get_key();
-}
-
-template<class T>
-T f$getValueByPos(const array<T>& a, int64_t pos) {
-  auto it = a.middle(pos);
-  return it == a.end() ? T{} : it.get_value();
 }
 
 template<class T>
