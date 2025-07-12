@@ -42,7 +42,7 @@ class stream {
   }
 
 public:
-  static constexpr auto DEFAULT_STORAGE_CAPACITY = static_cast<size_t>(2 * 1024);
+  static constexpr auto DEFAULT_STORAGE_CAPACITY = static_cast<size_t>(1 << 11);
 
   stream(stream&& other) noexcept
       : m_storage(std::move(other.m_storage)),
@@ -65,7 +65,7 @@ public:
   stream& operator=(const stream&) = delete;
 
   ~stream() {
-    clear();
+    reset(k2::INVALID_PLATFORM_DESCRIPTOR);
   }
 
   static auto open(std::string_view component_name, k2::stream_kind stream_kind, size_t capacity = DEFAULT_STORAGE_CAPACITY) noexcept
@@ -79,6 +79,7 @@ public:
 
   auto size() const noexcept -> size_t;
   auto capacity() const noexcept -> size_t;
+  auto descriptor() const noexcept -> k2::descriptor;
   auto data() const noexcept -> std::span<const std::byte>;
 
   auto read() noexcept -> kphp::coro::task<std::expected<void, int32_t>>;
@@ -104,7 +105,7 @@ inline auto stream::open(std::string_view name, k2::stream_kind stream_kind, siz
   }
 
   if (errc != k2::errno_ok) [[unlikely]] {
-    kphp::log::warning("failed to open a stream: name -> {}, error code -> {}", name, errc);
+    kphp::log::warning("failed to open a stream: name -> {}, stream kind -> {}, error code -> {}", name, std::to_underlying(stream_kind), errc);
     return std::nullopt;
   }
 
@@ -117,6 +118,7 @@ inline auto stream::open(std::string_view name, k2::stream_kind stream_kind, siz
 inline auto stream::accept(size_t capacity, std::chrono::milliseconds timeout) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>> {
   const auto descriptor{co_await kphp::coro::io_scheduler::get().accept(timeout)};
   if (descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    kphp::log::warning("failed to accept a stream within a specified timeout: {}", timeout);
     co_return std::nullopt;
   }
 
@@ -128,17 +130,17 @@ inline auto stream::accept(size_t capacity, std::chrono::milliseconds timeout) n
 
 inline auto stream::clear() noexcept -> void {
   m_storage_size = 0;
-  if (m_descriptor != k2::INVALID_PLATFORM_DESCRIPTOR) {
-    k2::free_descriptor(std::exchange(m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR));
-  }
 }
 
 inline auto stream::reset(k2::descriptor descriptor) noexcept -> void {
   if (descriptor == m_descriptor) [[unlikely]] {
     return;
   }
+
   clear();
-  m_descriptor = descriptor;
+  if (m_descriptor != k2::INVALID_PLATFORM_DESCRIPTOR) {
+    k2::free_descriptor(std::exchange(m_descriptor, descriptor));
+  }
 }
 
 inline auto stream::size() const noexcept -> size_t {
@@ -163,6 +165,10 @@ inline auto stream::reserve(size_t capacity) noexcept -> std::expected<void, int
   m_storage.reset(new_mem);
   m_storage_capacity = capacity;
   return std::expected<void, int32_t>{};
+}
+
+inline auto stream::descriptor() const noexcept -> k2::descriptor {
+  return m_descriptor;
 }
 
 inline auto stream::data() const noexcept -> std::span<const std::byte> {

@@ -4,14 +4,16 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/streams/streams.h"
+#include "runtime-light/streams/stream.h"
 
 using resource = mixed;
 
@@ -44,7 +46,7 @@ inline resource_kind uri_to_resource_kind(std::string_view uri) noexcept {
 } // namespace resource_impl_
 
 class underlying_resource_t : public refcountable_polymorphic_php_classes<may_be_mixed_base> {
-  uint64_t stream_d_{k2::INVALID_PLATFORM_DESCRIPTOR};
+  std::optional<kphp::component::stream> m_opt_stream;
 
 public:
   resource_kind kind{resource_kind::UNKNOWN};
@@ -62,12 +64,20 @@ public:
     return R"(resource)";
   }
 
-  kphp::coro::task<int64_t> write(std::string_view text) const noexcept {
+  kphp::coro::task<int64_t> write(std::string_view text) noexcept {
     if (kind == resource_kind::STDERR) {
       co_return k2::stderr_write(text.size(), text.data());
-    } else {
-      co_return co_await write_all_to_stream(stream_d_, text.data(), text.size());
     }
+
+    if (!m_opt_stream.has_value()) [[unlikely]] {
+      co_return (last_errc = k2::errno_einval, 0);
+    }
+
+    const auto& stream{*m_opt_stream};
+    if (auto expected{co_await stream.write({reinterpret_cast<const std::byte*>(text.data()), text.size()})}; !expected) {
+      co_return (last_errc = expected.error(), 0);
+    }
+    co_return text.size();
   }
 
   Optional<string> get_contents() const noexcept {
