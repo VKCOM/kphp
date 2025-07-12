@@ -12,6 +12,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
+#include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
@@ -84,13 +85,14 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
 
 namespace kphp::rpc {
 
-void init_server(tl::TLBuffer& tlb) noexcept {
+void init_server(kphp::component::stream request_stream, tl::TLBuffer& tlb) noexcept {
   tl::K2InvokeRpc invoke_rpc{};
   if (!invoke_rpc.fetch(tlb)) [[unlikely]] {
     kphp::log::error("erroneous rpc request");
   }
 
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  rpc_server_instance_st.request_stream = std::move(request_stream);
   rpc_server_instance_st.query_id = invoke_rpc.query_id.value;
   rpc_server_instance_st.buffer.store_bytes(invoke_rpc.query);
 

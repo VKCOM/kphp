@@ -9,6 +9,8 @@
 #include <chrono>
 #include <coroutine>
 #include <cstddef>
+#include <cstdint>
+#include <expected>
 #include <functional>
 #include <iterator>
 #include <memory>
@@ -16,11 +18,13 @@
 #include <ranges>
 #include <utility>
 
+#include "common/containers/final_action.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/detail/poll-info.h"
+#include "runtime-light/coroutine/detail/task-self-deleting.h"
 #include "runtime-light/coroutine/detail/timer-handle.h"
 #include "runtime-light/coroutine/poll.h"
 #include "runtime-light/coroutine/task.h"
@@ -29,21 +33,30 @@
 
 namespace kphp::coro {
 
+enum class timeout_status : uint8_t {
+  timeout,
+};
+
 class io_scheduler {
   static constexpr auto MAX_EVENTS_TO_PROCESS = static_cast<size_t>(16);
 
   kphp::coro::detail::timer_handle m_timer_handle;
   kphp::coro::detail::poll_info::timed_events m_timed_events;
-  kphp::stl::vector<k2::descriptor, kphp::memory::script_allocator> m_connections;
-  CoroutineInstanceState& m_coroutine_instance_state{CoroutineInstanceState::get()};
+  kphp::stl::vector<k2::descriptor, kphp::memory::script_allocator> m_accepted_descriptors;
 
   kphp::coro::detail::poll_info::awaiting_polls m_awaiting_polls;
   kphp::stl::vector<std::coroutine_handle<>, kphp::memory::script_allocator> m_scheduled_tasks;
   kphp::stl::vector<std::coroutine_handle<>, kphp::memory::script_allocator> m_scheduled_tasks_tmp;
 
+  CoroutineInstanceState& m_coroutine_instance_state{CoroutineInstanceState::get()};
+
+  auto make_cancellation_handler(kphp::coro::detail::poll_info& poll_info) noexcept;
+  template<typename rep_type, typename period_type>
+  auto make_timeout_task(std::chrono::duration<rep_type, period_type> timeout) noexcept -> kphp::coro::task<timeout_status>;
+
   auto process_timeout() noexcept -> void;
   auto process_update(k2::descriptor descriptor) noexcept -> void;
-  auto process_connect(k2::descriptor descriptor) noexcept -> void;
+  auto process_accept(k2::descriptor descriptor) noexcept -> void;
 
   auto update_timer() noexcept -> void;
   [[nodiscard]] auto add_timer_token(k2::TimePoint time_point, kphp::coro::detail::poll_info& poll_info) noexcept
@@ -69,9 +82,16 @@ public:
 
   auto process_events() noexcept -> k2::PollStatus;
 
+  auto spawn(kphp::coro::task<> task) noexcept -> bool;
+
   [[nodiscard]] auto schedule() noexcept;
   template<typename return_type>
   [[nodiscard]] auto schedule(kphp::coro::task<return_type> task) noexcept -> kphp::coro::task<return_type>;
+  template<typename return_type, typename rep_type, typename period_type>
+  [[nodiscard]] auto schedule(kphp::coro::task<return_type> task, std::chrono::duration<rep_type, period_type> timeout) noexcept
+      -> kphp::coro::task<std::expected<return_type, timeout_status>>;
+  template<typename rep_type, typename period_type>
+  [[nodiscard]] auto schedule_after(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<>;
 
   [[nodiscard]] auto yield() noexcept;
   template<typename rep_type, typename period_type>
@@ -84,6 +104,23 @@ public:
 };
 
 // ================================================================================================
+
+inline auto io_scheduler::make_cancellation_handler(kphp::coro::detail::poll_info& poll_info) noexcept {
+  return vk::final_action{[this, &poll_info] noexcept {
+    if (poll_info.m_awaiting_pos.has_value()) [[unlikely]] {
+      m_awaiting_polls.erase(*std::exchange(poll_info.m_awaiting_pos, std::nullopt));
+    }
+    if (poll_info.m_timer_pos.has_value()) [[unlikely]] {
+      m_timed_events.erase(*std::exchange(poll_info.m_timer_pos, std::nullopt));
+    }
+  }};
+}
+
+template<typename rep_type, typename period_type>
+auto io_scheduler::make_timeout_task(std::chrono::duration<rep_type, period_type> timeout) noexcept -> kphp::coro::task<timeout_status> {
+  co_await schedule_after(timeout);
+  co_return timeout_status::timeout;
+}
 
 inline auto io_scheduler::process_timeout() noexcept -> void {
   k2::TimePoint now{};
@@ -188,10 +225,10 @@ inline auto io_scheduler::process_update(k2::descriptor descriptor) noexcept -> 
   }
 }
 
-inline auto io_scheduler::process_connect(k2::descriptor descriptor) noexcept -> void {
+inline auto io_scheduler::process_accept(k2::descriptor descriptor) noexcept -> void {
   const auto pos{m_awaiting_polls.find(k2::INVALID_PLATFORM_DESCRIPTOR)};
   if (pos == m_awaiting_polls.end()) { // no one is waiting for new connection
-    m_connections.emplace_back(descriptor);
+    m_accepted_descriptors.emplace_back(descriptor);
     return;
   }
 
@@ -279,7 +316,7 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
         process_update(descriptor);
         break;
       case k2::UpdateStatus::NewDescriptor:
-        process_connect(descriptor);
+        process_accept(descriptor);
         break;
       case k2::UpdateStatus::NoUpdates:
         [[fallthrough]];
@@ -301,6 +338,16 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
   }
 
   return empty() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollReschedule;
+}
+
+inline auto io_scheduler::spawn(kphp::coro::task<> task) noexcept -> bool {
+  auto owned_task{kphp::coro::detail::make_task_self_deleting(std::move(task))};
+  auto h{owned_task.get_handle()};
+  if (!h || h.done()) [[unlikely]] {
+    return false;
+  }
+  m_scheduled_tasks.emplace_back(h);
+  return true;
 }
 
 inline auto io_scheduler::schedule() noexcept {
@@ -331,20 +378,35 @@ auto io_scheduler::schedule(kphp::coro::task<return_type> task) noexcept -> kphp
   co_return co_await task;
 }
 
-inline auto io_scheduler::yield() noexcept {
-  return schedule();
+template<typename return_type, typename rep_type, typename period_type>
+auto io_scheduler::schedule(kphp::coro::task<return_type> task, std::chrono::duration<rep_type, period_type> timeout) noexcept
+    -> kphp::coro::task<std::expected<return_type, timeout_status>> {
+  if (timeout <= std::chrono::duration<rep_type, period_type>{0}) [[unlikely]] {
+    co_return std::expected<return_type, timeout_status>{co_await schedule(std::move(task))};
+  }
+  co_return std::unexpected{timeout_status::timeout};
 }
 
 template<typename rep_type, typename period_type>
-auto io_scheduler::yield_for(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<> {
+auto io_scheduler::schedule_after(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<> {
   if (amount <= std::chrono::duration<rep_type, period_type>{0}) [[unlikely]] {
     co_return co_await schedule();
   }
 
   // poll_op is not actually used here
   kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read};
+  const auto cancellation_handler{make_cancellation_handler(poll_info)};
   poll_info.m_timer_pos = add_timer_token(amount, poll_info);
   co_await poll_info;
+}
+
+inline auto io_scheduler::yield() noexcept {
+  return schedule();
+}
+
+template<typename rep_type, typename period_type>
+auto io_scheduler::yield_for(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<> {
+  co_await schedule_after(amount);
 }
 
 inline auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op, std::chrono::milliseconds timeout) noexcept
@@ -385,6 +447,7 @@ inline auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op po
 
   using namespace std::chrono_literals;
   kphp::coro::detail::poll_info poll_info{descriptor, poll_op};
+  const auto cancellation_handler{make_cancellation_handler(poll_info)};
   if (timeout > 0ms) {
     poll_info.m_timer_pos = add_timer_token(timeout, poll_info);
   }
@@ -393,15 +456,16 @@ inline auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op po
 }
 
 inline auto io_scheduler::accept(std::chrono::milliseconds timeout) noexcept -> kphp::coro::task<k2::descriptor> {
-  if (!m_connections.empty()) { // don't suspend if there is a connection
-    const auto descriptor{m_connections.back()};
-    m_connections.pop_back();
+  if (!m_accepted_descriptors.empty()) { // don't suspend if there is a connection
+    const auto descriptor{m_accepted_descriptors.back()};
+    m_accepted_descriptors.pop_back();
     co_return descriptor;
   }
 
   using namespace std::chrono_literals;
   // poll_op is not actually used here
   kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read};
+  const auto cancellation_handler{make_cancellation_handler(poll_info)};
   if (timeout > 0ms) {
     poll_info.m_timer_pos = add_timer_token(timeout, poll_info);
   }

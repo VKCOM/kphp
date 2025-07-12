@@ -166,8 +166,7 @@ private:
 
 template<typename promise_type>
 class awaiter_base {
-  enum class state : uint8_t { init, suspend, end };
-  state m_state{state::init};
+  bool m_suspended{};
 
   void set_async_top_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
     /**
@@ -198,8 +197,7 @@ public:
       : m_coro(coro) {}
 
   awaiter_base(awaiter_base&& other) noexcept
-      : m_state(std::exchange(other.m_state, state::end)),
-        m_coro(std::exchange(other.m_coro, {})),
+      : m_coro(std::exchange(other.m_coro, {})),
         m_waiter(std::exchange(other.m_waiter, {})) {}
 
   awaiter_base(const awaiter_base& other) = delete;
@@ -207,37 +205,26 @@ public:
   awaiter_base& operator=(awaiter_base&& other) = delete;
 
   ~awaiter_base() {
-    if (m_state == state::suspend) {
-      cancel();
+    if (m_suspended) {
+      m_coro.promise().cancel_awaiter(m_waiter);
     }
   }
 
   auto await_ready() const noexcept -> bool {
-    kphp::log::assertion(m_state == state::init && m_coro);
     return m_coro.promise().done();
   }
 
   template<typename promise_t>
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> awaiter) noexcept -> bool {
     set_async_top_frame(awaiter.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
-    m_state = state::suspend;
     m_waiter.m_continuation = awaiter;
-    bool should_be_suspended{m_coro.promise().suspend_awaiter(m_waiter)};
+    m_suspended = m_coro.promise().suspend_awaiter(m_waiter);
     reset_async_top_frame(awaiter.promise().get_async_stack_frame());
-    return should_be_suspended;
+    return m_suspended;
   }
 
   auto await_resume() noexcept -> void {
-    m_state = state::end;
-  }
-
-  auto resumable() const noexcept -> bool {
-    return m_coro.promise().done();
-  }
-
-  auto cancel() noexcept -> void {
-    m_state = state::end;
-    m_coro.promise().cancel_awaiter(m_waiter);
+    m_suspended = false;
   }
 };
 

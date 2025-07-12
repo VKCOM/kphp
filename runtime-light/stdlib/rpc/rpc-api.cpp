@@ -17,11 +17,8 @@
 #include "common/rpc-error-codes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator.h"
-#include "runtime-light/coroutine/awaitable.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
@@ -32,7 +29,6 @@
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
-#include "runtime-light/streams/streams.h"
 #include "runtime-light/utils/logs.h"
 
 namespace kphp::rpc {
@@ -340,18 +336,14 @@ kphp::coro::task<kphp::rpc::query_info> send_request(string actor, Optional<doub
 }
 
 kphp::coro::task<std::expected<void, kphp::rpc::error>> send_response(std::span<const std::byte> response) noexcept {
-  auto& instance_st{InstanceState::get()};
-  const auto stream_d{instance_st.standard_stream()};
-  if (stream_d == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  if (!rpc_server_instance_st.request_stream.has_value()) [[unlikely]] {
     co_return std::unexpected{kphp::rpc::error::invalid_stream};
   }
-  if (instance_st.instance_kind() != instance_kind::rpc_server) [[unlikely]] {
-    co_return std::unexpected{kphp::rpc::error::not_rpc_stream};
-  }
-  if (co_await write_all_to_stream(stream_d, reinterpret_cast<const char*>(response.data()), response.size()) != response.size()) [[unlikely]] {
+  if (auto expected{co_await (*rpc_server_instance_st.request_stream).write(response)}; !expected) [[unlikely]] {
     co_return std::unexpected{kphp::rpc::error::write_failed};
   }
-  instance_st.release_stream(stream_d);
+  (*rpc_server_instance_st.request_stream).clear();
   co_return std::expected<void, kphp::rpc::error>{};
 }
 

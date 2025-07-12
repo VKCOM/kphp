@@ -12,7 +12,7 @@
 
 #include "runtime-common/core/core-types/decl/optional.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
@@ -109,7 +109,7 @@ kphp::coro::task<T> f$wait_multi(array<Optional<int64_t>> fork_ids) noexcept {
 // ================================================================================================
 
 inline kphp::coro::task<> f$sched_yield() noexcept {
-  co_await wait_for_reschedule_t{};
+  co_await kphp::coro::io_scheduler::get().yield();
 }
 
 inline kphp::coro::task<> f$sched_yield_sleep(double duration) noexcept {
