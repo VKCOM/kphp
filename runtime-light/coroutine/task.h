@@ -7,7 +7,6 @@
 #include <concepts>
 #include <coroutine>
 #include <memory>
-#include <new>
 #include <type_traits>
 #include <utility>
 
@@ -66,7 +65,7 @@ struct promise_base : async_stack_element {
   }
 
   template<typename... Args>
-  auto operator new(std::size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
+  auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
     return kphp::memory::script::alloc(n);
   }
 
@@ -79,9 +78,6 @@ struct promise_base : async_stack_element {
 
 template<typename promise_type>
 class awaiter_base {
-  enum class state : uint8_t { init, suspend, end };
-  state m_state{state::init};
-
   void push_async_stack_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
     async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
     callee_frame.caller_async_stack_frame = std::addressof(caller_frame);
@@ -106,21 +102,17 @@ public:
       : m_coro(coro) {}
 
   awaiter_base(awaiter_base&& other) noexcept
-      : m_state(std::exchange(other.m_state, state::end)),
-        m_coro(std::exchange(other.m_coro, {})) {}
+      : m_coro(std::exchange(other.m_coro, {})) {}
 
   awaiter_base(const awaiter_base& other) = delete;
   awaiter_base& operator=(const awaiter_base& other) = delete;
   awaiter_base& operator=(awaiter_base&& other) = delete;
 
   ~awaiter_base() {
-    if (m_state == state::suspend) {
-      cancel();
-    }
+    detach_from_async_stack();
   }
 
   constexpr auto await_ready() const noexcept -> bool {
-    kphp::log::assertion(m_state == state::init && m_coro);
     return false;
   }
 
@@ -131,19 +123,7 @@ public:
     return m_coro;
   }
 
-  auto await_resume() noexcept -> void {
-    m_state = state::end;
-  }
-
-  auto resumable() const noexcept -> bool {
-    return m_coro.promise().done();
-  }
-
-  auto cancel() noexcept -> void {
-    m_state = state::end;
-    m_coro.promise().m_next = nullptr;
-    detach_from_async_stack();
-  }
+  constexpr auto await_resume() noexcept -> void {}
 };
 
 } // namespace task_impl
