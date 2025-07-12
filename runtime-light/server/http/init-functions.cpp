@@ -28,7 +28,7 @@
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/server/http-functions.h"
 #include "runtime-light/stdlib/zlib/zlib-functions.h"
-#include "runtime-light/streams/streams.h"
+#include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
@@ -198,7 +198,7 @@ std::string_view process_headers(const tl::K2InvokeHttp& invoke_http, PhpScriptB
 
 namespace kphp::http {
 
-void init_server(tl::TLBuffer& tlb) noexcept {
+void init_server(kphp::component::stream request_stream, tl::TLBuffer& tlb) noexcept {
   tl::K2InvokeHttp invoke_http{};
   if (!invoke_http.fetch(tlb)) [[unlikely]] {
     kphp::log::error("erroneous http request");
@@ -207,6 +207,7 @@ void init_server(tl::TLBuffer& tlb) noexcept {
   auto& superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
   auto& server{superglobals.v$_SERVER};
   auto& http_server_instance_st{HttpServerInstanceState::get()};
+  http_server_instance_st.request_stream = std::move(request_stream);
 
   // determine HTTP method
   if (invoke_http.method.value == GET_METHOD) {
@@ -381,15 +382,12 @@ kphp::coro::task<> finalize_server() noexcept {
   tl::TLBuffer tlb{};
   tl::HttpResponse{.http_response = std::move(http_response)}.store(tlb);
 
-  auto& instance_st{InstanceState::get()};
-  if (instance_st.standard_stream() == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
-    kphp::log::error("can't send HTTP response due to invalid stream");
+  if (!http_server_instance_st.request_stream.has_value()) [[unlikely]] {
+    kphp::log::error("can't send HTTP response since there is no available stream");
   }
-  if (instance_st.instance_kind() != instance_kind::http_server) [[unlikely]] {
-    kphp::log::error("can't send HTTP response from instance kind {}", std::to_underlying(instance_st.instance_kind()));
-  }
-  if ((co_await write_all_to_stream(instance_st.standard_stream(), tlb.data(), tlb.size())) != tlb.size()) [[unlikely]] {
-    kphp::log::error("can't write HTTP response to stream {}", instance_st.standard_stream());
+  const auto& request_stream{*http_server_instance_st.request_stream};
+  if (auto expected{co_await request_stream.write({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})}; !expected) [[unlikely]] {
+    kphp::log::error("can't write HTTP response: stream -> {}, error code -> {}", request_stream.descriptor(), expected.error());
   }
 }
 

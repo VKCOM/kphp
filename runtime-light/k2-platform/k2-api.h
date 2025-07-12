@@ -319,3 +319,7 @@ struct std::formatter<k2::SymbolInfo> {
     return std::format_to(ctx.out(), "{}\n\tat {}:{}", info.name.get(), info.filename.get(), info.lineno);
   }
 };
+
+inline constexpr bool operator<(const k2::TimePoint& lhs, const k2::TimePoint& rhs) noexcept {
+  return lhs.time_point_ns < rhs.time_point_ns;
+}
