@@ -18,6 +18,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
@@ -343,7 +344,7 @@ kphp::coro::task<std::expected<void, kphp::rpc::error>> send_response(std::span<
   if (auto expected{co_await (*rpc_server_instance_st.request_stream).write(response)}; !expected) [[unlikely]] {
     co_return std::unexpected{kphp::rpc::error::write_failed};
   }
-  (*rpc_server_instance_st.request_stream).clear();
+  (*rpc_server_instance_st.request_stream).reset(k2::INVALID_PLATFORM_DESCRIPTOR);
   co_return std::expected<void, kphp::rpc::error>{};
 }
 
