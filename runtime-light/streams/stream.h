@@ -52,7 +52,7 @@ public:
 
   stream& operator=(stream&& other) noexcept {
     if (this != std::addressof(other)) {
-      clear();
+      reset(k2::INVALID_PLATFORM_DESCRIPTOR);
       m_storage = std::move(other.m_storage);
       m_storage_size = std::exchange(other.m_storage_size, 0);
       m_storage_capacity = std::exchange(other.m_storage_capacity, 0);
