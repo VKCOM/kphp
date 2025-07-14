@@ -947,3 +947,24 @@ ReturnT f$array_merge_recursive(const Args&... args) noexcept {
   (result.merge_with_recursive(args), ...);
   return result;
 }
+
+template<class T, class T1>
+array<T> f$array_intersect_assoc(const array<T>& a1, const array<T1>& a2) noexcept {
+  array<T> result(a1.size().min(a2.size()));
+
+  if (!a2.empty()) {
+    for (const auto& it : a1) {
+      auto key1 = it.get_key();
+      if (a2.has_key(key1) && f$strval(a2.get_var(key1)) == f$strval(it.get_value())) {
+        result.set_value(it);
+      }
+    }
+  }
+
+  return result;
+}
+
+template<class T, class T1, class T2>
+array<T> f$array_intersect_assoc(const array<T>& a1, const array<T1>& a2, const array<T2>& a3) noexcept {
+  return f$array_intersect_assoc(f$array_intersect_assoc(a1, a2), a3);
+}

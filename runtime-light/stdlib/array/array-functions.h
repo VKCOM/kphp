@@ -362,16 +362,6 @@ kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
 }
 
 template<class T, class T1>
-array<T> f$array_intersect_assoc(const array<T>& /*unused*/, const array<T1>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T, class T1, class T2>
-array<T> f$array_intersect_assoc(const array<T>& /*unused*/, const array<T1>& /*unused*/, const array<T2>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T, class T1>
 array<T> f$array_diff_key(const array<T>& /*unused*/, const array<T1>& /*unused*/) {
   kphp::log::error("call to unsupported function");
 }
