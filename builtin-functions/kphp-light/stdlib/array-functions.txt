@@ -162,6 +162,13 @@ function array_swap_int_keys (&$a ::: array, $idx1 ::: int, $idx2 ::: int) ::: v
 /** @kphp-extern-func-info */
 function array_splice (&$a ::: array, $offset ::: int, $length ::: int, $replacement ::: array = array()) ::: ^1;
 
+/** @kphp-extern-func-info cpp_template_call */
+function array_merge_spread ($a1 ::: array, $a2  ::: array = array(), $a3  ::: array = array(),
+            $a4 ::: array = array(), $a5  ::: array = array(), $a6  ::: array = array(),
+            $a7 ::: array = array(), $a8  ::: array = array(), $a9  ::: array = array(),
+           $a10 ::: array = array(), $a11 ::: array = array(), $a12 ::: array = array())
+                ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
+
 // ===== UNSUPPORTED =====
 
 /**
@@ -169,12 +176,6 @@ function array_splice (&$a ::: array, $offset ::: int, $length ::: int, $replace
  * @kphp-pure-function
  */
 function array_merge_recursive (...$a) ::: mixed[];
-/** @kphp-extern-func-info stub cpp_template_call */
-function array_merge_spread ($a1 ::: array, $a2  ::: array = array(), $a3  ::: array = array(),
-            $a4 ::: array = array(), $a5  ::: array = array(), $a6  ::: array = array(),
-            $a7 ::: array = array(), $a8  ::: array = array(), $a9  ::: array = array(),
-           $a10 ::: array = array(), $a11 ::: array = array(), $a12 ::: array = array())
-                ::: ^1 | ^2 | ^3 | ^4 | ^5 | ^6 | ^7 | ^8 | ^9 | ^10 | ^11 | ^12;
 
 /** @kphp-extern-func-info stub */
 function array_intersect_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
