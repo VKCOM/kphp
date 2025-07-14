@@ -17,6 +17,7 @@
 #include <optional>
 #include <ranges>
 #include <utility>
+#include <variant>
 
 #include "common/containers/final_action.h"
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -28,6 +29,7 @@
 #include "runtime-light/coroutine/detail/timer-handle.h"
 #include "runtime-light/coroutine/poll.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/when-any.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/utils/logs.h"
 
@@ -384,7 +386,11 @@ auto io_scheduler::schedule(kphp::coro::task<return_type> task, std::chrono::dur
   if (timeout <= std::chrono::duration<rep_type, period_type>{0}) [[unlikely]] {
     co_return std::expected<return_type, timeout_status>{co_await schedule(std::move(task))};
   }
-  co_return std::unexpected{timeout_status::timeout};
+  auto result{co_await kphp::coro::when_any(std::move(task), make_timeout_task(timeout))};
+  if (std::holds_alternative<timeout_status>(result)) [[unlikely]] {
+    co_return std::unexpected{std::move(std::get<1>(result))};
+  }
+  co_return std::expected<return_type, timeout_status>{std::move(std::get<0>(result))};
 }
 
 template<typename rep_type, typename period_type>
