@@ -837,3 +837,13 @@ T f$getValueByPos(const array<T>& a, int64_t pos) {
   auto it = a.middle(pos);
   return it == a.end() ? T{} : it.get_value();
 }
+
+
+template<class T>
+inline array<T> f$create_vector(int64_t n, const T& default_value) {
+  array<T> res(array_size(n, true));
+  for (int64_t i = 0; i < n; i++) {
+    res.push_back(default_value);
+  }
+  return res;
+}
