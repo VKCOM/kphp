@@ -237,13 +237,6 @@ R f$array_reduce(const array<T>& a, const CallbackT& callback, InitialT initial)
   return result;
 }
 
-template<class ReturnT, class... Args>
-ReturnT f$array_merge_recursive(const Args&... args) {
-  array<mixed> result{(args.size() + ... + array_size{})};
-  (result.merge_with_recursive(args), ...);
-  return result;
-}
-
 template<class T, class T1>
 array<T> f$array_intersect_assoc(const array<T>& a1, const array<T1>& a2) {
   array<T> result(a1.size().min(a2.size()));
