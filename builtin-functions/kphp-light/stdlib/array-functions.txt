@@ -175,10 +175,11 @@ function array_merge_spread ($a1 ::: array, $a2  ::: array = array(), $a3  ::: a
  */
 function array_merge_recursive (...$a) ::: mixed[];
 
+/** @kphp-extern-func-info */
+function array_intersect_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
+
 // ===== UNSUPPORTED =====
 
-/** @kphp-extern-func-info stub */
-function array_intersect_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
 /** @kphp-extern-func-info stub */
 function array_diff_key ($a1 ::: array, $a2 ::: array) ::: ^1;
 /** @kphp-extern-func-info stub */
