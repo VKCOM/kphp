@@ -329,17 +329,6 @@ mixed f$array_rand(const array<T>& a, int64_t num) noexcept {
   return result;
 }
 
-template<class T>
-array<T> f$array_splice(array<T>& /*unused*/, int64_t /*unused*/, int64_t /*unused*/, const array<Unknown>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T, class T1 = T>
-array<T> f$array_splice(array<T>& /*unused*/, int64_t /*unused*/, int64_t /*unused*/ = std::numeric_limits<int64_t>::max(),
-                        const array<T1>& /*unused*/ = array<T1>()) {
-  kphp::log::error("call to unsupported function");
-}
-
 /**
  * Currently, array_map is always considered async. Despite we rely on symmetric transfer optimization,
  * we need to be careful with such functions. We may want to split such functions into sync and async

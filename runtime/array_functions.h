@@ -13,12 +13,6 @@
 #include "runtime/math_functions.h"
 
 template<class T>
-array<T> f$array_splice(array<T>& a, int64_t offset, int64_t length, const array<Unknown>&);
-
-template<class T, class T1 = T>
-array<T> f$array_splice(array<T>& a, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(), const array<T1>& replacement = array<T1>());
-
-template<class T>
 array<T> f$array_filter(const array<T>& a) noexcept;
 
 template<class T, class T1>
@@ -90,62 +84,6 @@ void f$uksort(array<T>& a, const T1& compare) {
  *     IMPLEMENTATION
  *
  */
-
-template<class T>
-array<T> f$array_splice(array<T>& a, int64_t offset, int64_t length, const array<Unknown>&) {
-  return f$array_splice(a, offset, length, array<T>());
-}
-
-template<class T, class T1>
-array<T> f$array_splice(array<T>& a, int64_t offset, int64_t length, const array<T1>& replacement) {
-  int64_t size = a.count();
-  if (offset < 0) {
-    offset += size;
-
-    if (offset < 0) {
-      offset = 0;
-    }
-  } else if (offset > size) {
-    offset = size;
-  }
-
-  if (length < 0) {
-    length = size - offset + length;
-
-    if (length <= 0) {
-      length = 0;
-    }
-  }
-  if (size - offset < length) {
-    length = size - offset;
-  }
-
-  if (offset == size) {
-    a.merge_with(replacement);
-    return array<T>();
-  }
-
-  array<T> result(a.size().cut(length));
-  array<T> new_a(a.size().cut(size - length) + replacement.size());
-  int64_t i = 0;
-  const auto& const_arr = a;
-  for (const auto& it : const_arr) {
-    if (i == offset) {
-      for (const auto& it_r : replacement) {
-        new_a.push_back(it_r.get_value());
-      }
-    }
-    if (i < offset || i >= offset + length) {
-      new_a.push_back(it);
-    } else {
-      result.push_back(it);
-    }
-    ++i;
-  }
-  a = std::move(new_a);
-
-  return result;
-}
 
 template<class T>
 inline void extract_array_column(array<T>& dest, const array<T>& source, const mixed& column_key, const mixed& index_key) {

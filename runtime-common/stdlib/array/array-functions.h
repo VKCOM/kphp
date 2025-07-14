@@ -827,19 +827,19 @@ ReturnT f$array_pad(const array<Unknown>&, int64_t size, const DefaultValueT& de
 }
 
 template<class T>
-mixed f$getKeyByPos(const array<T>& a, int64_t pos) {
+mixed f$getKeyByPos(const array<T>& a, int64_t pos) noexcept {
   auto it = a.middle(pos);
   return it == a.end() ? mixed{} : it.get_key();
 }
 
 template<class T>
-T f$getValueByPos(const array<T>& a, int64_t pos) {
+T f$getValueByPos(const array<T>& a, int64_t pos) noexcept {
   auto it = a.middle(pos);
   return it == a.end() ? T{} : it.get_value();
 }
 
 template<class T>
-inline array<T> f$create_vector(int64_t n, const T& default_value) {
+array<T> f$create_vector(int64_t n, const T& default_value) noexcept {
   array<T> res(array_size(n, true));
   for (int64_t i = 0; i < n; i++) {
     res.push_back(default_value);
@@ -848,6 +848,65 @@ inline array<T> f$create_vector(int64_t n, const T& default_value) {
 }
 
 template<class T>
-inline void f$array_swap_int_keys(array<T>& a, int64_t idx1, int64_t idx2) noexcept {
+void f$array_swap_int_keys(array<T>& a, int64_t idx1, int64_t idx2) noexcept {
   a.swap_int_keys(idx1, idx2);
+}
+
+template<class T, class T1 = T>
+array<T> f$array_splice(array<T>& a, int64_t offset, int64_t length = std::numeric_limits<int64_t>::max(), const array<T1>& replacement = array<T1>()) noexcept;
+
+template<class T>
+array<T> f$array_splice(array<T>& a, int64_t offset, int64_t length, const array<Unknown>&) noexcept {
+  return f$array_splice(a, offset, length, array<T>());
+}
+
+template<class T, class T1>
+array<T> f$array_splice(array<T>& a, int64_t offset, int64_t length, const array<T1>& replacement) noexcept {
+  int64_t size = a.count();
+  if (offset < 0) {
+    offset += size;
+
+    if (offset < 0) {
+      offset = 0;
+    }
+  } else if (offset > size) {
+    offset = size;
+  }
+
+  if (length < 0) {
+    length = size - offset + length;
+
+    if (length <= 0) {
+      length = 0;
+    }
+  }
+  if (size - offset < length) {
+    length = size - offset;
+  }
+
+  if (offset == size) {
+    a.merge_with(replacement);
+    return array<T>();
+  }
+
+  array<T> result(a.size().cut(length));
+  array<T> new_a(a.size().cut(size - length) + replacement.size());
+  int64_t i = 0;
+  const auto& const_arr = a;
+  for (const auto& it : const_arr) {
+    if (i == offset) {
+      for (const auto& it_r : replacement) {
+        new_a.push_back(it_r.get_value());
+      }
+    }
+    if (i < offset || i >= offset + length) {
+      new_a.push_back(it);
+    } else {
+      result.push_back(it);
+    }
+    ++i;
+  }
+  a = std::move(new_a);
+
+  return result;
 }
