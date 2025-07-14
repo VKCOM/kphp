@@ -71,7 +71,7 @@ struct std::formatter<std::invoke_result_t<decltype(kphp::diagnostic::backtrace_
   auto format(const addresses_t& addresses, FmtContext& ctx) const noexcept {
     format_to(ctx.out(), "[");
     if (!addresses.empty()) {
-      std::for_each(addresses.begin(), std::prev(addresses.end()), [&](void* addr) { format_to(ctx.out(), "\"{:p}\", ", addr); });
+      std::ranges::for_each(addresses | std::views::take(addresses.size() - 1), [&ctx](void* addr) noexcept { format_to(ctx.out(), "\"{:p}\", ", addr); });
       format_to(ctx.out(), "\"{:p}\"", *std::prev(addresses.end()));
     }
     format_to(ctx.out(), "]");

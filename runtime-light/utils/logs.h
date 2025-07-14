@@ -47,7 +47,7 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
     return;
   }
 
-  static constexpr size_t LOG_BUFFER_SIZE = 512;
+  static constexpr size_t LOG_BUFFER_SIZE = 512UZ;
   std::array<char, LOG_BUFFER_SIZE> log_buffer;
   auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
                                                                                                impl::wrap_log_argument(std::forward<Args>(args))...)};
@@ -73,9 +73,9 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
   } else {
     backtrace = "can't resolve trace";
   }
-  std::array<k2::LogTaggedEntry, 1> kv_pairs = {
+  std::array<k2::LogTaggedEntry, 1> tagged_entries{
       {k2::LogTaggedEntry{.key = backtrace_key.data(), .value = backtrace.data(), .key_len = backtrace_key.size(), .value_len = backtrace.size()}}};
-  k2::log(std::to_underlying(level), message, std::span(kv_pairs.data(), kv_pairs.size()));
+  k2::log(std::to_underlying(level), message, std::span(tagged_entries.data(), tagged_entries.size()));
 }
 
 template<typename... Args>
