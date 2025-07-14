@@ -206,9 +206,9 @@ private:
       return when_all_task_promise_common::final_suspend();
     }
 
-    template<typename Self>
-    auto&& result(this Self&& self) noexcept {
-      return std::forward<Self>(self).m_return_value; // TODO check deducing this validity
+    template<typename S>
+    auto&& result(this S&& self) noexcept {
+      return *std::forward<S>(self).m_return_value;
     }
 
     auto return_void() const noexcept -> void {
@@ -246,13 +246,13 @@ public:
   when_all_task& operator=(const when_all_task&) = delete;
   when_all_task& operator=(when_all_task&&) = delete;
 
-  template<typename Self>
-  auto&& return_value(this Self&& self) noexcept {
+  template<typename S>
+  auto&& return_value(this S&& self) noexcept {
     if constexpr (std::is_void_v<return_type>) {
-      std::forward<Self>(self).m_coroutine.promise().result();
+      std::forward<S>(self).m_coroutine.promise().result();
       return kphp::coro::void_value{};
     } else {
-      return std::forward<Self>(self).m_coroutine.promise().result();
+      return std::forward<S>(self).m_coroutine.promise().result();
     }
   }
 };
