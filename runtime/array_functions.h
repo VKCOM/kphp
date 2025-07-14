@@ -85,9 +85,6 @@ void f$uksort(array<T>& a, const T1& compare) {
   return a.ksort(compare);
 }
 
-template<class T>
-inline void f$array_swap_int_keys(array<T>& a, int64_t idx1, int64_t idx2) noexcept;
-
 /*
  *
  *     IMPLEMENTATION
@@ -528,11 +525,6 @@ void f$shuffle(array<T>& a) {
   }
 
   a = std::move(result);
-}
-
-template<class T>
-void f$array_swap_int_keys(array<T>& a, int64_t idx1, int64_t idx2) noexcept {
-  a.swap_int_keys(idx1, idx2);
 }
 
 template<class T>

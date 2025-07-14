@@ -156,11 +156,10 @@ function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
 /** @kphp-extern-func-info */
 function create_vector ($n ::: int, $x ::: any) ::: ^2[];
 
-// ===== UNSUPPORTED =====
-
-
-/** @kphp-extern-func-info stub */
+/** @kphp-extern-func-info */
 function array_swap_int_keys (&$a ::: array, $idx1 ::: int, $idx2 ::: int) ::: void;
+
+// ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info stub */
 function array_splice (&$a ::: array, $offset ::: int, $length ::: int, $replacement ::: array = array()) ::: ^1;

@@ -838,7 +838,6 @@ T f$getValueByPos(const array<T>& a, int64_t pos) {
   return it == a.end() ? T{} : it.get_value();
 }
 
-
 template<class T>
 inline array<T> f$create_vector(int64_t n, const T& default_value) {
   array<T> res(array_size(n, true));
@@ -846,4 +845,9 @@ inline array<T> f$create_vector(int64_t n, const T& default_value) {
     res.push_back(default_value);
   }
   return res;
+}
+
+template<class T>
+inline void f$array_swap_int_keys(array<T>& a, int64_t idx1, int64_t idx2) noexcept {
+  a.swap_int_keys(idx1, idx2);
 }
