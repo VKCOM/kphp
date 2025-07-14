@@ -14,9 +14,9 @@
 
 namespace kphp::coro::detail {
 
-class task_self_deleting;
+namespace task_self_deleting {
 
-namespace task_self_deleting_impl {
+class task_self_deleting;
 
 struct promise_self_deleting : kphp::coro::async_stack_element { // TODO async stack support
   promise_self_deleting() noexcept = default;
@@ -44,15 +44,13 @@ struct promise_self_deleting : kphp::coro::async_stack_element { // TODO async s
   auto unhandled_exception() const noexcept -> void;
 };
 
-}; // namespace task_self_deleting_impl
-
 class task_self_deleting {
-  task_self_deleting_impl::promise_self_deleting& m_promise;
+  promise_self_deleting& m_promise;
 
 public:
-  using promise_type = task_self_deleting_impl::promise_self_deleting;
+  using promise_type = promise_self_deleting;
 
-  explicit task_self_deleting(task_self_deleting_impl::promise_self_deleting& promise) noexcept
+  explicit task_self_deleting(promise_self_deleting& promise) noexcept
       : m_promise(promise) {}
   ~task_self_deleting() noexcept = default;
 
@@ -62,34 +60,36 @@ public:
   task_self_deleting& operator=(const task_self_deleting&) = delete;
   task_self_deleting& operator=(task_self_deleting&&) = delete;
 
-  auto get_handle() noexcept -> std::coroutine_handle<task_self_deleting_impl::promise_self_deleting>;
+  auto get_handle() noexcept -> std::coroutine_handle<promise_self_deleting>;
 };
 
-inline auto task_self_deleting_impl::promise_self_deleting::get_return_object() noexcept -> task_self_deleting {
+inline auto promise_self_deleting::get_return_object() noexcept -> task_self_deleting {
   return task_self_deleting{*this};
 }
 
-inline auto task_self_deleting_impl::promise_self_deleting::initial_suspend() const noexcept -> std::suspend_always {
+inline auto promise_self_deleting::initial_suspend() const noexcept -> std::suspend_always {
   return {};
 }
 
-inline auto task_self_deleting_impl::promise_self_deleting::final_suspend() const noexcept -> std::suspend_never {
+inline auto promise_self_deleting::final_suspend() const noexcept -> std::suspend_never {
   return {};
 }
 
-inline auto task_self_deleting_impl::promise_self_deleting::return_void() const noexcept -> void {}
+inline auto promise_self_deleting::return_void() const noexcept -> void {}
 
-inline auto task_self_deleting_impl::promise_self_deleting::unhandled_exception() const noexcept -> void {
+inline auto promise_self_deleting::unhandled_exception() const noexcept -> void {
   kphp::log::error("internal unhandled exception");
 }
 
-inline auto task_self_deleting::get_handle() noexcept -> std::coroutine_handle<task_self_deleting_impl::promise_self_deleting> {
-  return std::coroutine_handle<task_self_deleting_impl::promise_self_deleting>::from_promise(m_promise);
+inline auto task_self_deleting::get_handle() noexcept -> std::coroutine_handle<promise_self_deleting> {
+  return std::coroutine_handle<promise_self_deleting>::from_promise(m_promise);
 }
+
+} // namespace task_self_deleting
 
 // ================================================================================================
 
-inline auto make_task_self_deleting(kphp::coro::task<> task) noexcept -> task_self_deleting {
+inline auto make_task_self_deleting(kphp::coro::task<> task) noexcept -> task_self_deleting::task_self_deleting {
   co_await task;
   co_return;
 }
