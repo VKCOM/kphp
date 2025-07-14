@@ -22,9 +22,6 @@ template<class T, class T1>
 array<T> f$array_filter_by_key(const array<T>& a, const T1& callback) noexcept;
 
 template<class T, class T1>
-array<T> f$array_diff_key(const array<T>& a1, const array<T1>& a2);
-
-template<class T, class T1>
 array<T> f$array_diff_assoc(const array<T>& a1, const array<T1>& a2);
 
 template<class T, class T1, class T2>
@@ -225,17 +222,6 @@ R f$array_reduce(const array<T>& a, const CallbackT& callback, InitialT initial)
     result = callback(result, it.get_value());
   }
 
-  return result;
-}
-
-template<class T, class T1>
-array<T> f$array_diff_key(const array<T>& a1, const array<T1>& a2) {
-  array<T> result(a1.size());
-  for (const auto& it : a1) {
-    if (!a2.has_key(it.get_key())) {
-      result.set_value(it);
-    }
-  }
   return result;
 }
 

@@ -181,10 +181,11 @@ function array_intersect_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TO
 /** @kphp-extern-func-info */
 function array_fill_keys ($a ::: array, $value ::: any) ::: ^2[];
 
+/** @kphp-extern-func-info  */
+function array_diff_key ($a1 ::: array, $a2 ::: array) ::: ^1;
+
 // ===== UNSUPPORTED =====
 
-/** @kphp-extern-func-info stub */
-function array_diff_key ($a1 ::: array, $a2 ::: array) ::: ^1;
 /** @kphp-extern-func-info stub */
 function array_diff_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
 /** @kphp-extern-func-info stub */
