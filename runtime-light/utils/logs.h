@@ -52,7 +52,7 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
   auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
                                                                                                impl::wrap_log_argument(std::forward<Args>(args))...)};
   *out = '\0';
-  auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(size + 1)}};
+  auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(size)}};
   if (!trace.has_value()) {
     k2::log(std::to_underlying(level), message, std::nullopt);
     return;
@@ -65,11 +65,11 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
   if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(*trace)}; !backtrace_symbols.empty()) {
     const auto [trace_out, trace_size]{std::format_to_n(backtrace_buffer.data(), backtrace_buffer.size() - 1, "\n{}", backtrace_symbols)};
     *trace_out = '\0';
-    backtrace = std::string_view{backtrace_buffer.data(), static_cast<std::string_view::size_type>(trace_size + 1)};
+    backtrace = std::string_view{backtrace_buffer.data(), static_cast<std::string_view::size_type>(trace_size)};
   } else if (auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(*trace)}; !backtrace_addresses.empty()) {
     const auto [trace_out, trace_size]{std::format_to_n(backtrace_buffer.data(), backtrace_buffer.size() - 1, "{}", backtrace_addresses)};
     *trace_out = '\0';
-    backtrace = std::string_view{backtrace_buffer.data(), static_cast<std::string_view::size_type>(trace_size + 1)};
+    backtrace = std::string_view{backtrace_buffer.data(), static_cast<std::string_view::size_type>(trace_size)};
   } else {
     backtrace = "can't resolve trace";
   }
