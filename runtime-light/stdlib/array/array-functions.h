@@ -475,11 +475,6 @@ kphp::coro::task<> f$uksort(array<T>& a, Comparator compare) {
 }
 
 template<class T>
-void f$array_swap_int_keys(array<T>& /*unused*/, int64_t /*unused*/, int64_t /*unused*/) noexcept {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
 Optional<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>>& /*unused*/, const mixed& /*unused*/) {
   kphp::log::error("call to unsupported function");
 }
