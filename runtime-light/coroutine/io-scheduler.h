@@ -69,7 +69,11 @@ class io_scheduler {
   auto remove_timer_token(kphp::coro::detail::poll_info::timed_events::iterator pos) noexcept -> void;
 
 public:
-  io_scheduler() noexcept = default;
+  io_scheduler() noexcept {
+    m_scheduled_tasks.reserve(MAX_EVENTS_TO_PROCESS);
+    m_scheduled_tasks_tmp.reserve(MAX_EVENTS_TO_PROCESS);
+  }
+
   ~io_scheduler() = default;
 
   io_scheduler(const io_scheduler&) = delete;
