@@ -153,11 +153,11 @@ function getKeyByPos ($a ::: array, $n ::: int) ::: mixed;
 /** @kphp-extern-func-info */
 function getValueByPos ($a ::: array, $n ::: int) ::: ^1[*];
 
+/** @kphp-extern-func-info */
+function create_vector ($n ::: int, $x ::: any) ::: ^2[];
+
 // ===== UNSUPPORTED =====
 
-
-/** @kphp-extern-func-info stub */
-function create_vector ($n ::: int, $x ::: any) ::: ^2[];
 
 /** @kphp-extern-func-info stub */
 function array_swap_int_keys (&$a ::: array, $idx1 ::: int, $idx2 ::: int) ::: void;

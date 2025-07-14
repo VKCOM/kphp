@@ -86,9 +86,6 @@ void f$uksort(array<T>& a, const T1& compare) {
 }
 
 template<class T>
-inline array<T> f$create_vector(int64_t n, const T& default_value);
-
-template<class T>
 inline void f$array_swap_int_keys(array<T>& a, int64_t idx1, int64_t idx2) noexcept;
 
 /*
@@ -531,15 +528,6 @@ void f$shuffle(array<T>& a) {
   }
 
   a = std::move(result);
-}
-
-template<class T>
-array<T> f$create_vector(int64_t n, const T& default_value) {
-  array<T> res(array_size(n, true));
-  for (int64_t i = 0; i < n; i++) {
-    res.push_back(default_value);
-  }
-  return res;
 }
 
 template<class T>
