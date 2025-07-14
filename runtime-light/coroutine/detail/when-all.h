@@ -105,7 +105,7 @@ public:
   when_all_ready_awaitable& operator=(const when_all_ready_awaitable&) = delete;
   when_all_ready_awaitable& operator=(when_all_ready_awaitable&&) = delete;
 
-  auto operator co_await() noexcept {
+  auto operator co_await() && noexcept {
     struct awaiter {
       when_all_ready_awaitable& m_awaitable;
 
@@ -122,7 +122,8 @@ public:
       }
 
       auto await_resume() noexcept {
-        return std::apply([this](auto&&... tasks) noexcept { return std::make_tuple(std::move(tasks).return_value()...); }, std::move(m_awaitable.m_tasks));
+        return std::apply([this](task_types&&... tasks) noexcept { return std::make_tuple(std::move(tasks).return_value()...); },
+                          std::move(m_awaitable.m_tasks));
       }
     };
     return awaiter{*this};
@@ -199,16 +200,15 @@ private:
 
   template<std::same_as<return_type> T>
   struct when_all_task_promise_non_void : public when_all_task_promise_common {
-    std::add_pointer_t<return_type> m_return_value;
+    return_type m_return_value;
 
     auto yield_value(return_type&& return_value) noexcept {
-      m_return_value = std::addressof(return_value);
+      m_return_value = std::move(return_value);
       return when_all_task_promise_common::final_suspend();
     }
 
-    template<typename S>
-    auto&& result(this S&& self) noexcept {
-      return *std::forward<S>(self).m_return_value;
+    return_type&& result() noexcept {
+      return m_return_value;
     }
 
     auto return_void() const noexcept -> void {
@@ -246,13 +246,12 @@ public:
   when_all_task& operator=(const when_all_task&) = delete;
   when_all_task& operator=(when_all_task&&) = delete;
 
-  template<typename S>
-  auto&& return_value(this S&& self) noexcept {
+  return_type return_value() && noexcept {
     if constexpr (std::is_void_v<return_type>) {
-      std::forward<S>(self).m_coroutine.promise().result();
+      m_coroutine.promise().result();
       return kphp::coro::void_value{};
     } else {
-      return std::forward<S>(self).m_coroutine.promise().result();
+      return m_coroutine.promise().result();
     }
   }
 };
