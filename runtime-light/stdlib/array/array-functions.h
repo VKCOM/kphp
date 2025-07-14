@@ -361,11 +361,6 @@ kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
   co_return std::move(result);
 }
 
-template<class ReturnT, class... Args>
-ReturnT f$array_merge_recursive(const Args&... /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
 template<class T, class T1>
 array<T> f$array_intersect_assoc(const array<T>& /*unused*/, const array<T1>& /*unused*/) {
   kphp::log::error("call to unsupported function");

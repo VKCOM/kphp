@@ -940,3 +940,10 @@ T f$array_merge_spread(const T& a1, const T& a2, const T& a3, const T& a4, const
   }
   return f$array_merge(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
 }
+
+template<class ReturnT, class... Args>
+ReturnT f$array_merge_recursive(const Args&... args) noexcept {
+  array<mixed> result{(args.size() + ... + array_size{})};
+  (result.merge_with_recursive(args), ...);
+  return result;
+}
