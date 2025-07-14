@@ -21,16 +21,6 @@ array<T> f$array_filter(const array<T>& a, const T1& callback) noexcept;
 template<class T, class T1>
 array<T> f$array_filter_by_key(const array<T>& a, const T1& callback) noexcept;
 
-template<class T>
-T f$array_merge_spread(const T& a1);
-
-template<class T>
-T f$array_merge_spread(const T& a1, const T& a2);
-
-template<class T>
-T f$array_merge_spread(const T& a1, const T& a2, const T& a3, const T& a4 = T(), const T& a5 = T(), const T& a6 = T(), const T& a7 = T(), const T& a8 = T(),
-                       const T& a9 = T(), const T& a10 = T(), const T& a11 = T(), const T& a12 = T());
-
 template<class T, class T1>
 array<T> f$array_intersect_assoc(const array<T>& a1, const array<T1>& a2);
 
@@ -245,32 +235,6 @@ R f$array_reduce(const array<T>& a, const CallbackT& callback, InitialT initial)
   }
 
   return result;
-}
-
-template<class T>
-T f$array_merge_spread(const T& a1) {
-  if (!a1.is_vector()) {
-    php_warning("Cannot unpack array with string keys");
-  }
-  return f$array_merge(a1);
-}
-
-template<class T>
-T f$array_merge_spread(const T& a1, const T& a2) {
-  if (!a1.is_vector() || !a2.is_vector()) {
-    php_warning("Cannot unpack array with string keys");
-  }
-  return f$array_merge(a1, a2);
-}
-
-template<class T>
-T f$array_merge_spread(const T& a1, const T& a2, const T& a3, const T& a4, const T& a5, const T& a6, const T& a7, const T& a8, const T& a9, const T& a10,
-                       const T& a11, const T& a12) {
-  if (!a1.is_vector() || !a2.is_vector() || !a3.is_vector() || !a4.is_vector() || !a5.is_vector() || !a6.is_vector() || !a7.is_vector() || !a8.is_vector() ||
-      !a9.is_vector() || !a10.is_vector() || !a11.is_vector() || !a12.is_vector()) {
-    php_warning("Cannot unpack array with string keys");
-  }
-  return f$array_merge(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12);
 }
 
 template<class ReturnT, class... Args>
