@@ -13,6 +13,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "common/containers/final_action.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/utils/logs.h"
 
@@ -105,14 +106,16 @@ public:
   when_all_ready_awaitable& operator=(const when_all_ready_awaitable&) = delete;
   when_all_ready_awaitable& operator=(when_all_ready_awaitable&&) = delete;
 
-  auto operator co_await() && noexcept {
+  auto operator co_await() noexcept {
     struct awaiter {
+      bool m_started{};
       when_all_ready_awaitable& m_awaitable;
 
       explicit awaiter(when_all_ready_awaitable& awaitable) noexcept
           : m_awaitable(awaitable) {}
 
-      auto await_ready() const noexcept -> bool {
+      auto await_ready() noexcept -> bool {
+        kphp::log::assertion(!std::exchange(m_started, true)); // to make sure it's not co_awaited more than once
         return m_awaitable.m_latch.is_ready();
       }
 
@@ -122,8 +125,7 @@ public:
       }
 
       auto await_resume() noexcept {
-        return std::apply([this](task_types&&... tasks) noexcept { return std::make_tuple(std::move(tasks).return_value()...); },
-                          std::move(m_awaitable.m_tasks));
+        return std::apply([this](task_types&&... tasks) noexcept { return std::make_tuple(std::move(tasks).result()...); }, std::move(m_awaitable.m_tasks));
       }
     };
     return awaiter{*this};
@@ -157,8 +159,7 @@ public:
       }
 
       auto await_suspend(std::coroutine_handle<promise_type> coroutine) noexcept -> void {
-        kphp::log::assertion(coroutine.promise().m_latch != nullptr);
-        coroutine.promise().m_latch.notify_awaitable_completed();
+        coroutine.promise().m_latch->notify_awaitable_completed();
       }
 
       constexpr auto await_resume() const noexcept -> void {}
@@ -200,15 +201,17 @@ private:
 
   template<std::same_as<return_type> T>
   struct when_all_task_promise_non_void : public when_all_task_promise_common {
-    return_type m_return_value;
+    alignas(T) std::byte bytes[sizeof(T)]{};
 
     auto yield_value(return_type&& return_value) noexcept {
-      m_return_value = std::move(return_value);
+      ::new (bytes) T(std::move(return_value));
       return when_all_task_promise_common::final_suspend();
     }
 
-    return_type&& result() noexcept {
-      return m_return_value;
+    auto result() noexcept -> T {
+      auto* t{std::launder(reinterpret_cast<T*>(bytes))};
+      const auto finalizer{vk::finally([t] noexcept { t->~T(); })};
+      return std::move(*t);
     }
 
     auto return_void() const noexcept -> void {
@@ -246,7 +249,7 @@ public:
   when_all_task& operator=(const when_all_task&) = delete;
   when_all_task& operator=(when_all_task&&) = delete;
 
-  return_type return_value() && noexcept {
+  return_type result() && noexcept {
     if constexpr (std::is_void_v<return_type>) {
       m_coroutine.promise().result();
       return kphp::coro::void_value{};

@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <tuple>
+
 #include "runtime-light/coroutine/detail/when-all.h"
 #include "runtime-light/coroutine/task.h"
 
