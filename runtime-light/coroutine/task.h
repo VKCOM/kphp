@@ -95,6 +95,7 @@ class awaiter_base {
   }
 
 protected:
+  bool m_started{};
   std::coroutine_handle<promise_type> m_coro{};
 
 public:
@@ -112,7 +113,8 @@ public:
     detach_from_async_stack();
   }
 
-  constexpr auto await_ready() const noexcept -> bool {
+  auto await_ready() noexcept -> bool {
+    kphp::log::assertion(!std::exchange(m_started, true)); // to make sure it's not co_awaited more than once
     return false;
   }
 
