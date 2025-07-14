@@ -40,9 +40,6 @@ template<class T>
 array<int64_t> f$array_count_values(const array<T>& a);
 
 template<class T1, class T>
-array<T> f$array_fill_keys(const array<T1>& keys, const T& value);
-
-template<class T1, class T>
 array<T> f$array_combine(const array<T1>& keys, const array<T>& values);
 
 template<class T>
@@ -332,22 +329,6 @@ array<int64_t> f$array_count_values(const array<T>& a) {
   for (const auto& it : a) {
     ++result[f$strval(it.get_value())];
   }
-  return result;
-}
-
-template<class T1, class T>
-array<T> f$array_fill_keys(const array<T1>& keys, const T& value) {
-  static_assert(!std::is_same<T1, int>{}, "int is forbidden");
-  array<T> result{array_size{keys.count(), false}};
-  for (const auto& it : keys) {
-    const auto& key = it.get_value();
-    if (vk::is_type_in_list<T1, string, int64_t>{} || f$is_int(key)) {
-      result.set_value(key, value);
-    } else {
-      result.set_value(f$strval(key), value);
-    }
-  }
-
   return result;
 }
 

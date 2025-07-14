@@ -968,3 +968,19 @@ template<class T, class T1, class T2>
 array<T> f$array_intersect_assoc(const array<T>& a1, const array<T1>& a2, const array<T2>& a3) noexcept {
   return f$array_intersect_assoc(f$array_intersect_assoc(a1, a2), a3);
 }
+
+template<class T1, class T>
+array<T> f$array_fill_keys(const array<T1>& keys, const T& value) noexcept {
+  static_assert(!std::is_same<T1, int>{}, "int is forbidden");
+  array<T> result{array_size{keys.count(), false}};
+  for (const auto& it : keys) {
+    const auto& key = it.get_value();
+    if (vk::is_type_in_list<T1, string, int64_t>{} || f$is_int(key)) {
+      result.set_value(key, value);
+    } else {
+      result.set_value(f$strval(key), value);
+    }
+  }
+
+  return result;
+}

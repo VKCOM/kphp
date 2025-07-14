@@ -382,11 +382,6 @@ array<int64_t> f$array_count_values(const array<T>& /*unused*/) {
 }
 
 template<class T1, class T>
-array<T> f$array_fill_keys(const array<T1>& /*unused*/, const T& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T1, class T>
 array<T> f$array_combine(const array<T1>& /*unused*/, const array<T>& /*unused*/) {
   kphp::log::error("call to unsupported function");
 }
