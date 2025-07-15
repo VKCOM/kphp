@@ -61,7 +61,7 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
   static constexpr std::string_view backtrace_key = "trace";
   static constexpr size_t BACKTRACE_BUFFER_SIZE = 1024UZ * 4UZ;
   std::array<char, BACKTRACE_BUFFER_SIZE> backtrace_buffer;
-  std::string_view backtrace;
+  std::string_view backtrace = "[]";
   if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(*trace)}; !backtrace_symbols.empty()) {
     const auto [trace_out, trace_size]{std::format_to_n(backtrace_buffer.data(), backtrace_buffer.size() - 1, "\n{}", backtrace_symbols)};
     *trace_out = '\0';
@@ -70,8 +70,6 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
     const auto [trace_out, trace_size]{std::format_to_n(backtrace_buffer.data(), backtrace_buffer.size() - 1, "{}", backtrace_addresses)};
     *trace_out = '\0';
     backtrace = std::string_view{backtrace_buffer.data(), static_cast<std::string_view::size_type>(trace_size)};
-  } else {
-    backtrace = "can't resolve trace";
   }
   std::array<k2::LogTaggedEntry, 1> tagged_entries{
       {k2::LogTaggedEntry{.key = backtrace_key.data(), .value = backtrace.data(), .key_len = backtrace_key.size(), .value_len = backtrace.size()}}};
