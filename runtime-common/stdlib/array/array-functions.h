@@ -1051,3 +1051,119 @@ array<T> f$array_combine(const array<T1>& keys, const array<T>& values) noexcept
 
   return result;
 }
+
+template<class T>
+inline void extract_array_column(array<T>& dest, const array<T>& source, const mixed& column_key, const mixed& index_key) {
+  static_assert(!is_class_instance<T>{}, "using index_key is prohibited with array of class_instances");
+  if (!source.has_key(column_key)) {
+    return;
+  }
+
+  auto column = source.get_value(column_key);
+  if (!index_key.is_null() && source.has_key(index_key)) {
+    auto index = source.get_var(index_key);
+    if (index.is_bool() || index.is_numeric()) {
+      index.convert_to_int();
+    } else if (index.is_null()) {
+      php_warning("index_key is null behaviour depends on php version");
+      index = string{};
+    }
+
+    if (!index.is_array()) {
+      dest.set_value(index, column);
+      return;
+    }
+  }
+
+  dest.push_back(column);
+}
+
+template<class T>
+void extract_array_column_instance(array<class_instance<T>>& dest, const array<class_instance<T>>& source, const mixed& column_key, const mixed&) {
+  if (source.has_key(column_key)) {
+    dest.push_back(source.get_value(column_key));
+  }
+}
+
+template<class T, class FunT, class ResT = vk::decay_function_arg_t<FunT, 0>>
+Optional<ResT> array_column_helper(const array<T>& a, mixed column_key, mixed index_key, FunT&& element_transformer) noexcept {
+  ResT result;
+
+  if (unlikely(!column_key.is_string() && !column_key.is_numeric())) {
+    php_warning("Parameter column_key must be string or number");
+    return false;
+  }
+
+  if (unlikely(!index_key.is_null() && !index_key.is_string() && !index_key.is_numeric())) {
+    php_warning("Parameter index_key must be string or number or null");
+    return false;
+  }
+
+  if (column_key.is_float()) {
+    column_key.convert_to_int();
+  }
+
+  if (index_key.is_float()) {
+    index_key.convert_to_int();
+  }
+
+  for (const auto& it : a) {
+    element_transformer(result, it.get_value(), column_key, index_key);
+  }
+
+  return result;
+}
+
+template<class T>
+Optional<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>>& a, const mixed& column_key) noexcept {
+  return array_column_helper(a, column_key, {}, extract_array_column_instance<T>);
+}
+
+template<class T>
+Optional<array<class_instance<T>>> f$array_column(const array<Optional<array<class_instance<T>>>>& a, const mixed& column_key) noexcept {
+  auto element_transformer = [](array<class_instance<T>>& dest, const Optional<array<class_instance<T>>>& source, const mixed& column_key,
+                                const mixed& index_key) {
+    if (source.has_value()) {
+      extract_array_column_instance(dest, source.val(), column_key, index_key);
+    }
+  };
+
+  return array_column_helper(a, column_key, {}, std::move(element_transformer));
+}
+
+template<class T>
+Optional<array<T>> f$array_column(const array<array<T>>& a, const mixed& column_key, const mixed& index_key = {}) noexcept {
+  return array_column_helper(a, column_key, index_key, extract_array_column<T>);
+}
+
+template<class T>
+Optional<array<T>> f$array_column(const array<Optional<array<T>>>& a, const mixed& column_key, const mixed& index_key = {}) noexcept {
+  auto element_transformer = [](array<T>& dest, const Optional<array<T>>& source, const mixed& column_key, const mixed& index_key) {
+    if (source.has_value()) {
+      extract_array_column(dest, source.val(), column_key, index_key);
+    }
+  };
+
+  return array_column_helper(a, column_key, index_key, std::move(element_transformer));
+}
+
+inline Optional<array<mixed>> f$array_column(const array<mixed>& a, const mixed& column_key, const mixed& index_key = {}) noexcept {
+  auto element_transformer = [](array<mixed>& dest, const mixed& source, const mixed& column_key, const mixed& index_key) {
+    if (source.is_array()) {
+      extract_array_column(dest, source.as_array(), column_key, index_key);
+    }
+  };
+
+  return array_column_helper(a, column_key, index_key, std::move(element_transformer));
+}
+
+template<class T>
+inline auto f$array_column(const Optional<T>& a, const mixed& column_key,
+                           const mixed& index_key = {}) noexcept -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
+  if (!a.has_value()) {
+    php_warning("first parameter of array_column must be array");
+    return false;
+  }
+
+  return f$array_column(a.val(), column_key, index_key);
+}

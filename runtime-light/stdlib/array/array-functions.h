@@ -402,36 +402,6 @@ kphp::coro::task<> f$uksort(array<T>& a, Comparator compare) {
 }
 
 template<class T>
-Optional<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>>& /*unused*/, const mixed& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-Optional<array<class_instance<T>>> f$array_column(const array<Optional<array<class_instance<T>>>>& /*unused*/, const mixed& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-Optional<array<T>> f$array_column(const array<array<T>>& /*unused*/, const mixed& /*unused*/, const mixed& /*unused*/ = {}) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-Optional<array<T>> f$array_column(const array<Optional<array<T>>>& /*unused*/, const mixed& /*unused*/, const mixed& /*unused*/ = {}) {
-  kphp::log::error("call to unsupported function");
-}
-
-inline Optional<array<mixed>> f$array_column(const array<mixed>& /*unused*/, const mixed& /*unused*/, const mixed& /*unused*/ = {}) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-auto f$array_column(const Optional<T>& /*unused*/, const mixed& column_key,
-                    const mixed& index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
 T f$vk_dot_product(const array<T>& /*unused*/, const array<T>& /*unused*/) {
   kphp::log::error("call to unsupported function");
 }
