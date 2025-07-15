@@ -1005,7 +1005,7 @@ array<T> f$array_diff_assoc(const array<T>& a1, const array<T1>& a2) noexcept {
     result = array<T>(a1.size());
     for (const auto& it : a1) {
       auto key1 = it.get_key();
-      if (!a2.has_key(key1) || f$strval(a2.get_var(key1)) != f$strval(it.get_value()))  {
+      if (!a2.has_key(key1) || f$strval(a2.get_var(key1)) != f$strval(it.get_value())) {
         result.set_value(it);
       }
     }
@@ -1016,4 +1016,14 @@ array<T> f$array_diff_assoc(const array<T>& a1, const array<T1>& a2) noexcept {
 template<class T, class T1, class T2>
 array<T> f$array_diff_assoc(const array<T>& a1, const array<T1>& a2, const array<T2>& a3) noexcept {
   return f$array_diff_assoc(f$array_diff_assoc(a1, a2), a3);
+}
+
+template<class T>
+array<int64_t> f$array_count_values(const array<T>& a) noexcept {
+  array<int64_t> result(array_size(a.count(), false));
+
+  for (const auto& it : a) {
+    ++result[f$strval(it.get_value())];
+  }
+  return result;
 }

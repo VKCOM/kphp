@@ -361,11 +361,6 @@ kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
   co_return std::move(result);
 }
 
-template<class T>
-array<int64_t> f$array_count_values(const array<T>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
 template<class T1, class T>
 array<T> f$array_combine(const array<T1>& /*unused*/, const array<T>& /*unused*/) {
   kphp::log::error("call to unsupported function");

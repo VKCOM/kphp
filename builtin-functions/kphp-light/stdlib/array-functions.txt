@@ -187,10 +187,11 @@ function array_diff_key ($a1 ::: array, $a2 ::: array) ::: ^1;
 /** @kphp-extern-func-info */
 function array_diff_assoc ($a1 ::: array, $a2 ::: array, $a3 ::: array = TODO) ::: ^1;
 
+/** @kphp-extern-func-info */
+function array_count_values ($a ::: array) ::: int[];
+
 // ===== UNSUPPORTED =====
 
-/** @kphp-extern-func-info stub */
-function array_count_values ($a ::: array) ::: int[];
 /** @kphp-extern-func-info stub */
 function array_combine ($keys ::: array, $values ::: array) ::: ^2;
 /** @kphp-extern-func-info stub */
