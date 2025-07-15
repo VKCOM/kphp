@@ -193,11 +193,10 @@ function array_count_values ($a ::: array) ::: int[];
 /** @kphp-extern-func-info */
 function array_combine ($keys ::: array, $values ::: array) ::: ^2;
 
-// ===== UNSUPPORTED =====
-
-/** @kphp-extern-func-info stub */
+/** @kphp-extern-func-info */
 function array_column ($a ::: array, $column_key, $index_key = null) ::: array< ^1[*][*] > | false;
 
+// ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info stub cpp_template_call */
 function vk_dot_product ($a ::: array, $b ::: array) ::: ^1[*] | ^2[*];
