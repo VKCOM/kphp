@@ -1,0 +1,65 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2025 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+#pragma once
+
+#include <concepts>
+#include <coroutine>
+#include <utility>
+
+namespace kphp::coro::concepts {
+
+namespace detail {
+
+template<typename T, typename... Ts>
+concept in_types = (std::same_as<T, Ts> || ...);
+
+template<typename T>
+concept awaiter = requires(T t, std::coroutine_handle<> coro) {
+  { t.await_ready() } -> std::same_as<bool>;
+  { t.await_suspend(coro) } -> in_types<void, bool, std::coroutine_handle<>>;
+  { t.await_resume() };
+};
+
+// FIXME currently kphp::coro::task::awaiter doesn't conform to awaiter concept, fix and then add -> awaiter condition
+template<typename T>
+concept member_co_await_awaitable = requires(T t) {
+  { t.operator co_await() };
+};
+
+template<typename T>
+concept global_co_await_awaitable = requires(T t) {
+  { operator co_await(t) };
+};
+
+} // namespace detail
+
+template<typename T>
+concept awaitable = detail::member_co_await_awaitable<T> || detail::global_co_await_awaitable<T> || detail::awaiter<T>;
+
+template<awaitable awaitable, typename = void>
+struct awaitable_traits {};
+
+namespace detail {
+
+template<awaitable awaitable>
+auto get_awaiter(awaitable&& value) noexcept {
+  if constexpr (member_co_await_awaitable<awaitable>) {
+    return std::forward<awaitable>(value).operator co_await();
+  } else if constexpr (global_co_await_awaitable<awaitable>) {
+    return operator co_await(std::forward<awaitable>(value));
+  } else if constexpr (awaiter<awaitable>) {
+    return std::forward<awaitable>(value);
+  }
+}
+
+} // namespace detail
+
+template<awaitable awaitable>
+struct awaitable_traits<awaitable> {
+  using awaiter_type = decltype(detail::get_awaiter(std::declval<awaitable>()));
+  using awaiter_return_type = decltype(std::declval<awaiter_type>().await_resume());
+};
+
+} // namespace kphp::coro::concepts
