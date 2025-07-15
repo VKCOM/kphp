@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <expected>
 #include <format>
+#include <iterator>
 #include <ranges>
 #include <span>
 #include <type_traits>
@@ -67,11 +68,12 @@ struct std::formatter<std::invoke_result_t<decltype(kphp::diagnostic::backtrace_
 
   template<typename FmtContext>
   auto format(const addresses_t& addresses, FmtContext& ctx) const noexcept {
-    size_t level{};
-    for (const auto* addr : addresses) {
-      format_to(ctx.out(), "# {} : {:p}\n", level++, addr);
+    format_to(ctx.out(), "[");
+    if (!addresses.empty()) {
+      std::ranges::for_each(addresses | std::views::take(addresses.size() - 1), [&ctx](void* addr) noexcept { format_to(ctx.out(), "\"{:p}\", ", addr); });
+      format_to(ctx.out(), "\"{:p}\"", *std::prev(addresses.end()));
     }
-
+    format_to(ctx.out(), "]");
     return ctx.out();
   }
 };

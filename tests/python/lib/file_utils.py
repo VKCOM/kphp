@@ -3,6 +3,7 @@ import subprocess
 import re
 import sys
 import shutil
+import time
 
 _SUPPORTED_PHP_VERSIONS = ["php7.4", "php8", "php8.1", "php8.2", "php8.3"]
 
@@ -120,5 +121,13 @@ def search_php_bin(php_version: str):
 
     return None
 
+
 def search_k2_bin():
     return os.getenv("K2_BIN")
+
+
+def wait_for_file_creation(file_path, check_interval=0.1, attempts=20):
+    for i in range(attempts):
+        if os.path.exists(file_path):
+            break
+        time.sleep(check_interval)
