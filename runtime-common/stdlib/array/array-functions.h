@@ -1027,3 +1027,27 @@ array<int64_t> f$array_count_values(const array<T>& a) noexcept {
   }
   return result;
 }
+
+template<class T1, class T>
+array<T> f$array_combine(const array<T1>& keys, const array<T>& values) noexcept {
+  if (unlikely(keys.count() != values.count())) {
+    php_warning("Size of arrays keys and values must be the same in function array_combine");
+    return {};
+  }
+
+  static_assert(!std::is_same<T1, int>{}, "int is forbidden");
+  array<T> result{array_size{keys.count(), false}};
+  auto it_values = values.begin();
+  auto it_keys = keys.begin();
+  const auto it_keys_last = keys.end();
+  for (; it_keys != it_keys_last; ++it_keys, ++it_values) {
+    const auto& key = it_keys.get_value();
+    if (vk::is_type_in_list<T1, string, int64_t>{} || f$is_int(key)) {
+      result.set_value(key, it_values.get_value());
+    } else {
+      result.set_value(f$strval(key), it_values.get_value());
+    }
+  }
+
+  return result;
+}

@@ -27,9 +27,6 @@ typename array<T>::key_type f$array_rand(const array<T>& a);
 template<class T>
 mixed f$array_rand(const array<T>& a, int64_t num);
 
-template<class T1, class T>
-array<T> f$array_combine(const array<T1>& keys, const array<T>& values);
-
 template<class T>
 void f$shuffle(array<T>& a);
 
@@ -271,30 +268,6 @@ mixed f$array_rand(const array<T>& a, int64_t num) {
     if (f$mt_rand(0, --size) < num) {
       result.push_back(it.get_key());
       --num;
-    }
-  }
-
-  return result;
-}
-
-template<class T1, class T>
-array<T> f$array_combine(const array<T1>& keys, const array<T>& values) {
-  if (unlikely(keys.count() != values.count())) {
-    php_warning("Size of arrays keys and values must be the same in function array_combine");
-    return {};
-  }
-
-  static_assert(!std::is_same<T1, int>{}, "int is forbidden");
-  array<T> result{array_size{keys.count(), false}};
-  auto it_values = values.begin();
-  auto it_keys = keys.begin();
-  const auto it_keys_last = keys.end();
-  for (; it_keys != it_keys_last; ++it_keys, ++it_values) {
-    const auto& key = it_keys.get_value();
-    if (vk::is_type_in_list<T1, string, int64_t>{} || f$is_int(key)) {
-      result.set_value(key, it_values.get_value());
-    } else {
-      result.set_value(f$strval(key), it_values.get_value());
     }
   }
 

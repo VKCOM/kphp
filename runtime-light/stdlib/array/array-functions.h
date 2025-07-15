@@ -361,11 +361,6 @@ kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
   co_return std::move(result);
 }
 
-template<class T1, class T>
-array<T> f$array_combine(const array<T1>& /*unused*/, const array<T>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
 template<class T, class Comparator>
 requires(std::invocable<Comparator, T, T>)
 kphp::coro::task<> f$usort(array<T>& a, Comparator compare) {
