@@ -101,7 +101,6 @@ class WebServer(Engine):
         """
         start = time.time()
         expected_records = expect[:]
-        print(expected_records)
 
         while expected_records:
             self._assert_availability()
