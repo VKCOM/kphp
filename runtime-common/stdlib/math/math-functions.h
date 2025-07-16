@@ -198,3 +198,5 @@ inline double f$sqrt(double v) noexcept {
 int64_t f$hexdec(const string& number) noexcept;
 
 string f$dechex(int64_t number) noexcept;
+
+string f$base_convert(const string& number, int64_t frombase, int64_t tobase) noexcept;

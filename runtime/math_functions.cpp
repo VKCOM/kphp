@@ -223,67 +223,6 @@ Optional<string> f$random_bytes(int64_t length) noexcept {
   return str;
 }
 
-string f$base_convert(const string& number, int64_t frombase, int64_t tobase) {
-  if (frombase < 2 || frombase > 36) {
-    php_warning("Wrong parameter frombase (%" PRIi64 ") in function base_convert", frombase);
-    return number;
-  }
-  if (tobase < 2 || tobase > 36) {
-    php_warning("Wrong parameter tobase (%" PRIi64 ") in function base_convert", tobase);
-    return number;
-  }
-
-  string::size_type len = number.size();
-  string::size_type f = 0;
-  string result;
-  if (number[0] == '-' || number[0] == '+') {
-    f++;
-    len--;
-    if (number[0] == '-') {
-      result.push_back('-');
-    }
-  }
-  if (len == 0) {
-    php_warning("Wrong parameter number (%s) in function base_convert", number.c_str());
-    return number;
-  }
-
-  const char* digits = "0123456789abcdefghijklmnopqrstuvwxyz";
-
-  string n(len, false);
-  for (string::size_type i = 0; i < len; i++) {
-    const char* s = (const char*)memchr(digits, tolower(number[i + f]), 36);
-    if (s == nullptr || s - digits >= frombase) {
-      php_warning("Wrong character '%c' at position %u in parameter number (%s) in function base_convert", number[i + f], i + f, number.c_str());
-      return number;
-    }
-    n[i] = (char)(s - digits);
-  }
-
-  int64_t um = 0;
-  string::size_type st = 0;
-  while (st < len) {
-    um = 0;
-    for (string::size_type i = st; i < len; i++) {
-      um = um * frombase + n[i];
-      n[i] = (char)(um / tobase);
-      um %= tobase;
-    }
-    while (st < len && n[st] == 0) {
-      st++;
-    }
-    result.push_back(digits[um]);
-  }
-
-  string::size_type i = f;
-  int64_t j = int64_t{result.size()} - 1;
-  while (i < j) {
-    swap(result[i++], result[static_cast<string::size_type>(j--)]);
-  }
-
-  return result;
-}
-
 void init_math_functions() noexcept {
   MTRandGenerator::get().lazy_init();
 }

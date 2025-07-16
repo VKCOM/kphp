@@ -43,8 +43,6 @@ inline double f$atan(double v);
 
 inline double f$atan2(double y, double x);
 
-string f$base_convert(const string& number, int64_t frombase, int64_t tobase);
-
 inline double f$cosh(double v);
 
 inline double f$acosh(double v);
