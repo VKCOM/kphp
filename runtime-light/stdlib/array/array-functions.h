@@ -243,7 +243,8 @@ kphp::coro::task<array<T>> array_filter_by_key_impl(array<T> a, F f) noexcept {
 
 template<class T, class F>
 requires convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, typename array<T>::const_iterator::value_type>>
-kphp::coro::task<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>> array_find_impl(array<T> a, F f) {
+kphp::coro::task<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>> array_find_impl(array<T> a,
+                                                                                                                                         F f) noexcept {
   for (const auto& it : a) {
     bool condition{};
     if constexpr (kphp::coro::is_async_function_v<F, typename array<T>::const_iterator::value_type>) {
