@@ -28,7 +28,7 @@ struct shared_task_waiter final {
 };
 
 template<typename promise_type>
-struct promise_base : async_stack_element {
+struct promise_base : kphp::coro::async_stack_element {
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -214,12 +214,12 @@ public:
     return m_coro.promise().done();
   }
 
-  template<typename promise_t>
-  [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> awaiter) noexcept -> bool {
-    set_async_top_frame(awaiter.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
-    m_waiter.m_continuation = awaiter;
+  template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
+  [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> bool {
+    set_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
+    m_waiter.m_continuation = awaiting_coroutine;
     m_suspended = m_coro.promise().suspend_awaiter(m_waiter);
-    reset_async_top_frame(awaiter.promise().get_async_stack_frame());
+    reset_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame());
     return m_suspended;
   }
 
