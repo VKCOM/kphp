@@ -20,7 +20,7 @@ namespace kphp::coro {
 namespace task_impl {
 
 template<typename promise_type>
-struct promise_base : async_stack_element {
+struct promise_base : kphp::coro::async_stack_element {
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -118,10 +118,10 @@ public:
     return false;
   }
 
-  template<typename promise_t>
-  [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> coro) noexcept -> std::coroutine_handle<promise_type> {
-    push_async_stack_frame(coro.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
-    m_coro.promise().m_next = coro.address();
+  template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
+  [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> std::coroutine_handle<promise_type> {
+    push_async_stack_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
+    m_coro.promise().m_next = awaiting_coroutine.address();
     return m_coro;
   }
 
