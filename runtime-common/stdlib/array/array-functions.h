@@ -769,7 +769,7 @@ array<T> f$array_fill(int64_t start_index, int64_t num, const T& value) noexcept
 }
 
 template<class ReturnT, class InputArrayT, class DefaultValueT>
-ReturnT f$array_pad(const array<InputArrayT>& a, int64_t size, const DefaultValueT& default_value) {
+ReturnT f$array_pad(const array<InputArrayT>& a, int64_t size, const DefaultValueT& default_value) noexcept {
   auto mod_size = static_cast<size_t>(std::abs(size));
 
   if (mod_size <= static_cast<size_t>(a.count())) {
@@ -818,7 +818,7 @@ ReturnT f$array_pad(const array<InputArrayT>& a, int64_t size, const DefaultValu
 }
 
 template<class ReturnT, class DefaultValueT>
-ReturnT f$array_pad(const array<Unknown>&, int64_t size, const DefaultValueT& default_value) {
+ReturnT f$array_pad(const array<Unknown>&, int64_t size, const DefaultValueT& default_value) noexcept {
   if (size == 0) {
     return {};
   }
@@ -1158,8 +1158,8 @@ inline Optional<array<mixed>> f$array_column(const array<mixed>& a, const mixed&
 }
 
 template<class T>
-inline auto f$array_column(const Optional<T>& a, const mixed& column_key,
-                           const mixed& index_key = {}) noexcept -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
+auto f$array_column(const Optional<T>& a, const mixed& column_key,
+                    const mixed& index_key = {}) noexcept -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
   if (!a.has_value()) {
     php_warning("first parameter of array_column must be array");
     return false;
