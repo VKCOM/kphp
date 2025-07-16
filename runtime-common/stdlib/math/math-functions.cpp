@@ -4,7 +4,10 @@
 
 #include "runtime-common/stdlib/math/math-functions.h"
 
+#include <cctype>
 #include <cstdint>
+#include <cstring>
+#include <utility>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-context.h"
@@ -47,4 +50,65 @@ int64_t f$hexdec(const string& number) noexcept {
                 number.c_str());
   }
   return v;
+}
+
+string f$base_convert(const string& number, int64_t frombase, int64_t tobase) noexcept {
+  if (frombase < 2 || frombase > 36) {
+    php_warning("Wrong parameter frombase (%" PRIi64 ") in function base_convert", frombase);
+    return number;
+  }
+  if (tobase < 2 || tobase > 36) {
+    php_warning("Wrong parameter tobase (%" PRIi64 ") in function base_convert", tobase);
+    return number;
+  }
+
+  string::size_type len = number.size();
+  string::size_type f = 0;
+  string result;
+  if (number[0] == '-' || number[0] == '+') {
+    f++;
+    len--;
+    if (number[0] == '-') {
+      result.push_back('-');
+    }
+  }
+  if (len == 0) {
+    php_warning("Wrong parameter number (%s) in function base_convert", number.c_str());
+    return number;
+  }
+
+  const char* digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+  string n(len, false);
+  for (string::size_type i = 0; i < len; i++) {
+    const char* s = static_cast<const char*>(std::memchr(digits, std::tolower(number[i + f]), 36));
+    if (s == nullptr || s - digits >= frombase) {
+      php_warning("Wrong character '%c' at position %u in parameter number (%s) in function base_convert", number[i + f], i + f, number.c_str());
+      return number;
+    }
+    n[i] = static_cast<char>(s - digits);
+  }
+
+  int64_t um = 0;
+  string::size_type st = 0;
+  while (st < len) {
+    um = 0;
+    for (string::size_type i = st; i < len; i++) {
+      um = um * frombase + n[i];
+      n[i] = static_cast<char>(um / tobase);
+      um %= tobase;
+    }
+    while (st < len && n[st] == 0) {
+      st++;
+    }
+    result.push_back(digits[um]);
+  }
+
+  string::size_type i = f;
+  int64_t j = int64_t{result.size()} - 1;
+  while (i < j) {
+    std::swap(result[i++], result[static_cast<string::size_type>(j--)]);
+  }
+
+  return result;
 }
