@@ -8,6 +8,8 @@
 #include <coroutine>
 #include <utility>
 
+#include "runtime-light/coroutine/async-stack.h"
+
 namespace kphp::coro::concepts {
 
 namespace detail {
@@ -16,21 +18,23 @@ template<typename T, typename... Ts>
 concept in_types = (std::same_as<T, Ts> || ...);
 
 template<typename T>
-concept awaiter = requires(T t, std::coroutine_handle<> coro) {
-  { t.await_ready() } -> std::same_as<bool>;
-  { t.await_suspend(coro) } -> in_types<void, bool, std::coroutine_handle<>>;
-  { t.await_resume() };
+concept valid_await_suspend_return_type = in_types<T, void, bool> || std::convertible_to<T, std::coroutine_handle<>>;
+
+template<typename T>
+concept awaiter = requires(T t, std::coroutine_handle<kphp::coro::async_stack_element> coro) {
+  { t.await_ready() } noexcept -> std::same_as<bool>;
+  { t.await_suspend(coro) } noexcept -> valid_await_suspend_return_type;
+  { t.await_resume() } noexcept;
 };
 
-// FIXME currently kphp::coro::task::awaiter doesn't conform to awaiter concept, fix and then add -> awaiter condition
 template<typename T>
 concept member_co_await_awaitable = requires(T t) {
-  { t.operator co_await() };
+  { t.operator co_await() } -> awaiter;
 };
 
 template<typename T>
 concept global_co_await_awaitable = requires(T t) {
-  { operator co_await(t) };
+  { operator co_await(t) } -> awaiter;
 };
 
 } // namespace detail
