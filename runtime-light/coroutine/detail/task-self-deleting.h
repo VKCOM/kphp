@@ -9,7 +9,7 @@
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/utils/logs.h"
 
 namespace kphp::coro::detail {
@@ -81,8 +81,9 @@ inline auto promise_self_deleting::get_return_object() noexcept -> task_self_del
 
 } // namespace task_self_deleting
 
-inline auto make_task_self_deleting(kphp::coro::task<> task) noexcept -> task_self_deleting::task_self_deleting {
-  co_await task;
+template<kphp::coro::concepts::awaitable awaitable_type>
+auto make_task_self_deleting(awaitable_type awaitable) noexcept -> task_self_deleting::task_self_deleting {
+  co_await std::move(awaitable);
   co_return;
 }
 

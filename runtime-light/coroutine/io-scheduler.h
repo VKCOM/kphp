@@ -23,6 +23,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/detail/poll-info.h"
 #include "runtime-light/coroutine/detail/task-self-deleting.h"
@@ -88,7 +89,8 @@ public:
 
   auto process_events() noexcept -> k2::PollStatus;
 
-  auto spawn(kphp::coro::task<> task) noexcept -> bool;
+  template<kphp::coro::concepts::awaitable awaitable_type>
+  auto spawn(awaitable_type awaitable) noexcept -> bool;
 
   [[nodiscard]] auto schedule() noexcept;
   template<typename return_type>
@@ -346,8 +348,9 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
   return empty() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollReschedule;
 }
 
-inline auto io_scheduler::spawn(kphp::coro::task<> task) noexcept -> bool {
-  auto owned_task{kphp::coro::detail::make_task_self_deleting(std::move(task))};
+template<kphp::coro::concepts::awaitable awaitable_type>
+auto io_scheduler::spawn(awaitable_type awaitable) noexcept -> bool {
+  auto owned_task{kphp::coro::detail::make_task_self_deleting(std::move(awaitable))};
   auto h{owned_task.get_handle()};
   if (!h || h.done()) [[unlikely]] {
     return false;
