@@ -70,7 +70,7 @@ public:
 
   static auto open(std::string_view component_name, k2::stream_kind stream_kind, size_t capacity = DEFAULT_STORAGE_CAPACITY) noexcept
       -> std::optional<kphp::component::stream>;
-  static auto accept(size_t capacity = DEFAULT_STORAGE_CAPACITY, std::chrono::milliseconds timeout = std::chrono::milliseconds{0}) noexcept
+  static auto accept(size_t capacity = DEFAULT_STORAGE_CAPACITY, std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept
       -> kphp::coro::task<std::optional<kphp::component::stream>>;
 
   auto clear() noexcept -> void;
@@ -115,7 +115,7 @@ inline auto stream::open(std::string_view name, k2::stream_kind stream_kind, siz
   return stream{{static_cast<std::byte*>(mem), kphp::memory::script::free}, capacity, descriptor};
 }
 
-inline auto stream::accept(size_t capacity, std::chrono::milliseconds timeout) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>> {
+inline auto stream::accept(size_t capacity, std::chrono::nanoseconds timeout) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>> {
   const auto descriptor{co_await kphp::coro::io_scheduler::get().accept(timeout)};
   if (descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
     kphp::log::warning("failed to accept a stream within a specified timeout: {}", timeout);
