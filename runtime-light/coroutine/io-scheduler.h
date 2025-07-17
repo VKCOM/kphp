@@ -195,41 +195,39 @@ inline auto io_scheduler::process_update(k2::descriptor descriptor) noexcept -> 
     // verify that the poll_info corresponds to the current update event
     kphp::log::assertion(poll_info.m_awaiting_pos.has_value() && *poll_info.m_awaiting_pos == std::exchange(first, std::next(first)));
     switch (poll_info.m_poll_op) {
-    case kphp::coro::poll_op::read: {
+    case kphp::coro::poll_op::read:
       switch (stream_status.read_status) {
-      case k2::IOStatus::IOAvailable: {
+      case k2::IOStatus::IOAvailable:
         std::invoke(complete_poll_on_update, *this, poll_info, kphp::coro::poll_status::event);
         break;
-      }
-      case k2::IOStatus::IOClosed: {
+
+      case k2::IOStatus::IOClosed:
         std::invoke(complete_poll_on_update, *this, poll_info, kphp::coro::poll_status::closed);
         break;
-      }
-      case k2::IOStatus::IOBlocked: {
+
+      case k2::IOStatus::IOBlocked:
         break;
       }
-      }
-    }
-    case kphp::coro::poll_op::write: {
+      break;
+    case kphp::coro::poll_op::write:
       if (static_cast<bool>(stream_status.please_shutdown_write)) {
         std::invoke(complete_poll_on_update, *this, poll_info, kphp::coro::poll_status::closed);
         break;
       }
 
       switch (stream_status.write_status) {
-      case k2::IOStatus::IOAvailable: {
+      case k2::IOStatus::IOAvailable:
         std::invoke(complete_poll_on_update, *this, poll_info, kphp::coro::poll_status::event);
         break;
-      }
-      case k2::IOStatus::IOClosed: {
+
+      case k2::IOStatus::IOClosed:
         std::invoke(complete_poll_on_update, *this, poll_info, kphp::coro::poll_status::closed);
         break;
-      }
-      case k2::IOStatus::IOBlocked: {
+
+      case k2::IOStatus::IOBlocked:
         break;
       }
-      }
-    }
+      break;
     }
   }
 }
