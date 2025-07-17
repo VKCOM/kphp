@@ -86,7 +86,6 @@ public:
   static auto get() noexcept -> io_scheduler&;
 
   auto empty() const noexcept -> bool;
-  auto size() const noexcept -> size_t;
 
   auto process_events() noexcept -> k2::PollStatus;
 
@@ -296,11 +295,7 @@ inline auto io_scheduler::remove_timer_token(kphp::coro::detail::poll_info::time
 }
 
 inline auto io_scheduler::empty() const noexcept -> bool {
-  return size() != 0;
-}
-
-inline auto io_scheduler::size() const noexcept -> size_t {
-  return m_scheduled_tasks.size() + m_awaiting_polls.size();
+  return m_scheduled_tasks.empty() && m_awaiting_polls.empty() && m_timed_events.empty();
 }
 
 inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
@@ -333,7 +328,7 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
     }
 
     if (m_scheduled_tasks.empty()) {
-      return m_awaiting_polls.empty() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollBlocked;
+      return empty() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollBlocked;
     }
 
     kphp::log::assertion(m_scheduled_tasks_tmp.empty());
