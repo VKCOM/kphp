@@ -6,7 +6,6 @@
 
 #include <cstdint>
 #include <functional>
-#include <memory>
 #include <string_view>
 #include <utility>
 
@@ -65,7 +64,7 @@ void InstanceState::init_script_execution() noexcept {
               }
             },
             std::move(script_task));
-        kphp::log::assertion(co_await f$wait_concurrently(co_await start_fork_t{std::move(script_task)}));
+        kphp::log::assertion(co_await f$wait_concurrently(kphp::forks::start(std::move(script_task))));
       },
       std::move(script_task))};
   // spawn main task onto the scheduler
