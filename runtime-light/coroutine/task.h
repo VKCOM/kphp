@@ -110,6 +110,7 @@ public:
   awaiter_base& operator=(awaiter_base&& other) = delete;
 
   ~awaiter_base() {
+    m_coro.promise().m_next = nullptr;
     detach_from_async_stack();
   }
 
