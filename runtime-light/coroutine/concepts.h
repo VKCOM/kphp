@@ -8,6 +8,7 @@
 #include <coroutine>
 #include <utility>
 
+#include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 
@@ -15,21 +16,21 @@ namespace kphp::coro::concepts {
 
 namespace detail {
 
-template<typename T, typename... Ts>
-concept in_types = (std::same_as<T, Ts> || ...);
+template<typename type, typename... types>
+concept in_types = (std::same_as<type, types> || ...);
 
-template<typename T>
-concept valid_await_suspend_return_type = in_types<void, bool> || std::convertible_to<T, std::coroutine_handle<>>;
-
-template<typename T>
-concept awaiter = requires(T t) {
+template<typename type>
+concept awaiter_base = requires(type t) {
   { t.await_ready() } noexcept -> std::same_as<bool>;
-  // TODO find a way to add 'await_suspend' here. for now there is a problem that we have two kinds of await_suspend:
-  // 1. one that accepts type erase coroutine handle: std::coroutine_handle<>
-  // 2. one that accepts generic coroutine handle: std::coroutine_handle<promise_type> where promise_type
-  //    is inherited from kphp::coro::async_stack_element
   { t.await_resume() } noexcept;
 };
+
+template<typename type>
+concept awaiter = awaiter_base<type> && (requires(type t, std::coroutine_handle<> coroutine) {
+  { t.await_suspend(coroutine) } noexcept;
+} || requires(type t, std::coroutine_handle<kphp::coro::async_stack_element> coroutine) {
+  { t.await_suspend(coroutine) } noexcept;
+});
 
 template<typename T>
 concept member_co_await_awaitable = requires(T t) {
