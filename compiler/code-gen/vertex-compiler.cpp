@@ -923,7 +923,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
 
     if (mode == func_call_mode::fork_call) {
       if (func->is_interruptible) {
-        W << "(co_await start_fork_t{" << FunctionName(func);
+        W << "(kphp::forks::start(" << FunctionName(func);
       } else {
         W << FunctionForkName(func);
       }
