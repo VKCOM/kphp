@@ -10,20 +10,23 @@
 #include <functional>
 #include <utility>
 
-#include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/utils/logs.h"
 
 template<std::invocable T>
-kphp::coro::task<> f$set_timer(int64_t timeout_ms, T on_timer_callback) noexcept {
+void f$set_timer(int64_t timeout_ms, T on_timer_callback) noexcept {
   if (timeout_ms < 0) [[unlikely]] {
-    kphp::log::warning("can't set timer for negative duration {} ms", timeout_ms);
-    co_return;
+    kphp::log::warning("can't set timer for negative duration {}ms", timeout_ms);
+    return;
   }
-  const auto timer_f{[](std::chrono::nanoseconds duration, T on_timer_callback) noexcept -> kphp::coro::task<> {
-    co_await wait_for_timer_t{duration};
-    std::invoke(std::move(on_timer_callback));
-  }}; // TODO: someone should pop that fork from ForkComponentContext since it will stay there unless we perform f$wait on fork
-  const auto duration_ms{std::chrono::milliseconds{static_cast<uint64_t>(timeout_ms)}};
-  co_await start_fork_t{std::invoke(timer_f, std::chrono::duration_cast<std::chrono::nanoseconds>(duration_ms), std::move(on_timer_callback))};
+
+  auto timer_task{std::invoke(
+      [](std::chrono::milliseconds duration, T on_timer_callback) noexcept -> kphp::coro::task<> {
+        co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule_after(duration));
+        std::invoke(std::move(on_timer_callback));
+      },
+      std::chrono::milliseconds{timeout_ms}, std::move(on_timer_callback))};
+  kphp::forks::start(std::move(timer_task));
 }
