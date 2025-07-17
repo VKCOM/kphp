@@ -30,6 +30,7 @@
 #include "runtime-light/coroutine/detail/timer-handle.h"
 #include "runtime-light/coroutine/poll.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/when-any.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/utils/logs.h"
@@ -89,15 +90,15 @@ public:
 
   auto process_events() noexcept -> k2::PollStatus;
 
-  template<kphp::coro::concepts::awaitable awaitable_type>
-  auto spawn(awaitable_type awaitable) noexcept -> bool;
+  template<kphp::coro::concepts::coroutine coroutine_type>
+  auto spawn(coroutine_type coroutine) noexcept -> bool;
 
   [[nodiscard]] auto schedule() noexcept;
-  template<typename return_type>
-  [[nodiscard]] auto schedule(kphp::coro::task<return_type> task) noexcept -> kphp::coro::task<return_type>;
-  template<typename return_type, typename rep_type, typename period_type>
-  [[nodiscard]] auto schedule(kphp::coro::task<return_type> task, std::chrono::duration<rep_type, period_type> timeout) noexcept
-      -> kphp::coro::task<std::expected<return_type, timeout_status>>;
+  template<kphp::coro::concepts::coroutine coroutine_type>
+  [[nodiscard]] auto schedule(coroutine_type coroutine) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<coroutine_type>::return_type>;
+  template<kphp::coro::concepts::coroutine coroutine_type, typename rep_type, typename period_type>
+  [[nodiscard]] auto schedule(coroutine_type coroutine, std::chrono::duration<rep_type, period_type> timeout) noexcept
+      -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<coroutine_type>::return_type, timeout_status>>;
   template<typename rep_type, typename period_type>
   [[nodiscard]] auto schedule_after(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<>;
 
@@ -348,9 +349,9 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
   return empty() ? k2::PollStatus::PollFinishedOk : k2::PollStatus::PollReschedule;
 }
 
-template<kphp::coro::concepts::awaitable awaitable_type>
-auto io_scheduler::spawn(awaitable_type awaitable) noexcept -> bool {
-  auto owned_task{kphp::coro::detail::make_task_self_deleting(std::move(awaitable))};
+template<kphp::coro::concepts::coroutine coroutine_type>
+auto io_scheduler::spawn(coroutine_type coroutine) noexcept -> bool {
+  auto owned_task{kphp::coro::detail::make_task_self_deleting(std::move(coroutine))};
   auto h{owned_task.get_handle()};
   if (!h || h.done()) [[unlikely]] {
     return false;
@@ -363,9 +364,11 @@ inline auto io_scheduler::schedule() noexcept {
   class schedule_operation {
     friend class io_scheduler;
     io_scheduler& m_scheduler;
+    kphp::coro::async_stack_frame* const m_async_stack_frame{};
 
     explicit schedule_operation(io_scheduler& scheduler) noexcept
-        : m_scheduler(scheduler) {}
+        : m_scheduler(scheduler),
+          m_async_stack_frame(m_scheduler.m_coroutine_instance_state.coroutine_stack_root.top_async_stack_frame) {}
 
   public:
     constexpr auto await_ready() const noexcept -> bool {
@@ -376,28 +379,32 @@ inline auto io_scheduler::schedule() noexcept {
       m_scheduler.m_scheduled_tasks.emplace_back(coro);
     }
 
-    constexpr auto await_resume() const noexcept -> void {}
+    auto await_resume() const noexcept -> void {
+      m_scheduler.m_coroutine_instance_state.coroutine_stack_root.top_async_stack_frame = m_async_stack_frame;
+    }
   };
   return schedule_operation{*this};
 }
 
-template<typename return_type>
-auto io_scheduler::schedule(kphp::coro::task<return_type> task) noexcept -> kphp::coro::task<return_type> {
+template<kphp::coro::concepts::coroutine coroutine_type>
+auto io_scheduler::schedule(coroutine_type coroutine) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<coroutine_type>::return_type> {
   co_await schedule();
-  co_return co_await task;
+  co_return co_await std::move(coroutine);
 }
 
-template<typename return_type, typename rep_type, typename period_type>
-auto io_scheduler::schedule(kphp::coro::task<return_type> task, std::chrono::duration<rep_type, period_type> timeout) noexcept
-    -> kphp::coro::task<std::expected<return_type, timeout_status>> {
+template<kphp::coro::concepts::coroutine coroutine_type, typename rep_type, typename period_type>
+auto io_scheduler::schedule(coroutine_type coroutine, std::chrono::duration<rep_type, period_type> timeout) noexcept
+    -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<coroutine_type>::return_type, timeout_status>> {
+  using expected_return_type = typename kphp::coro::coroutine_traits<coroutine_type>::return_type;
+
   if (timeout <= std::chrono::duration<rep_type, period_type>{0}) [[unlikely]] {
-    co_return std::expected<return_type, timeout_status>{co_await schedule(std::move(task))};
+    co_return std::expected<expected_return_type, timeout_status>{co_await schedule(std::move(coroutine))};
   }
-  auto result{co_await kphp::coro::when_any(std::move(task), make_timeout_task(timeout))};
+  auto result{co_await kphp::coro::when_any(std::move(coroutine), make_timeout_task(timeout))};
   if (std::holds_alternative<timeout_status>(result)) [[unlikely]] {
     co_return std::unexpected{std::move(std::get<1>(result))};
   }
-  co_return std::expected<return_type, timeout_status>{std::move(std::get<0>(result))};
+  co_return std::expected<expected_return_type, timeout_status>{std::move(std::get<0>(result))};
 }
 
 template<typename rep_type, typename period_type>
