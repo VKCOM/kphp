@@ -6,10 +6,12 @@
 
 #include <coroutine>
 #include <cstddef>
+#include <memory>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
+#include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/utils/logs.h"
 
 namespace kphp::coro::detail {
@@ -18,7 +20,7 @@ namespace task_self_deleting {
 
 class task_self_deleting;
 
-struct promise_self_deleting : kphp::coro::async_stack_element { // TODO async stack support
+struct promise_self_deleting : kphp::coro::async_stack_element {
   promise_self_deleting() noexcept = default;
   ~promise_self_deleting() = default;
 
@@ -61,7 +63,12 @@ public:
   using promise_type = promise_self_deleting;
 
   explicit task_self_deleting(promise_self_deleting& promise) noexcept
-      : m_promise(promise) {}
+      : m_promise(promise) {
+    // make task_self_deleting's frame current top async stack frame
+    auto& coroutine_instance_st{CoroutineInstanceState::get()};
+    m_promise.get_async_stack_frame().async_stack_root = std::addressof(coroutine_instance_st.coroutine_stack_root);
+    coroutine_instance_st.coroutine_stack_root.top_async_stack_frame = std::addressof(m_promise.get_async_stack_frame());
+  }
   ~task_self_deleting() noexcept = default;
 
   task_self_deleting(const task_self_deleting&) = delete;
