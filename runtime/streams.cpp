@@ -13,6 +13,7 @@
 #include "runtime/allocator.h"
 #include "runtime/array_functions.h"
 #include "runtime/critical_section.h"
+#include "runtime/runtime-builtin-stats.h"
 
 DEFINE_VERBOSITY(streams);
 
@@ -54,12 +55,18 @@ static const stream_functions* get_stream_functions_from_url(const string& url, 
   tvkprintf(streams, 2, "PHP streams: %s is processing stream %.200s\n", invoker_name, url.c_str());
 
   void* res = memmem(static_cast<const void*>(url.c_str()), url.size(), static_cast<const void*>("://"), 3);
+
+  const stream_functions* functions_table{default_stream_functions};
   if (res != nullptr) {
     const char* wrapper_end = static_cast<const char*>(res);
-    return get_stream_functions(string(url.c_str(), static_cast<string::size_type>(wrapper_end - url.c_str())));
+    functions_table = get_stream_functions(string(url.c_str(), static_cast<string::size_type>(wrapper_end - url.c_str())));
   }
 
-  return default_stream_functions;
+  string builtin_name = functions_table->name;
+  builtin_name.append('_').append(invoker_name);
+  runtime_builtins_stats::save_virtual_builtin_call_stats(builtin_name);
+
+  return functions_table;
 }
 
 mixed f$stream_context_create(const mixed& options) {
@@ -353,7 +360,19 @@ Optional<int64_t> f$stream_select(mixed& read, mixed& write, mixed& except, cons
   return functions->function_name
 
 Stream f$fopen(const string& stream, const string& mode) {
-  STREAM_FUNCTION_BODY(fopen, false)(url, mode);
+  const string& url = stream.to_string();
+  const stream_functions* functions = get_stream_functions_from_url(url, "fopen");
+  if (functions == nullptr) {
+    php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
+    return false;
+  }
+  if (functions->fopen == nullptr) {
+    php_warning("Wrapper \"%s\" doesn't support function "
+                "fopen",
+                functions->name.c_str());
+    return false;
+  }
+  return functions->fopen(url, mode);
 }
 
 Optional<int64_t> f$fwrite(const Stream& stream, const string& text) {

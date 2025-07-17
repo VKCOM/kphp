@@ -109,7 +109,7 @@ void StatsHouseManager::generic_cron_check_if_tag_host_needed() {
 }
 
 void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, uint64_t script_max_running_interval_ns,  script_error_t error,
-                                          const memory_resource::MemoryStats &script_memory_stats, const runtime_builtins_stats::request_stats_t &builtin_stats,
+                                          const memory_resource::MemoryStats &script_memory_stats, const std::optional<runtime_builtins_stats::request_stats_t> &builtin_stats,
                                           uint64_t script_queries, uint64_t long_script_queries,
                                           uint64_t script_user_time_ns, uint64_t script_system_time_ns,
                                           uint64_t script_init_time, uint64_t http_connection_process_time,
@@ -141,9 +141,12 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
     client.metric("kphp_by_host_request_errors", true).tag(status).tag(worker_type).write_count(1);
   }
 
-  if (builtin_stats.stats.has_value()) {
-    for (const auto& [builtin_name, call_number] : *builtin_stats.stats) {
+  if (builtin_stats.has_value()) {
+    for (const auto& [builtin_name, call_number] : (*builtin_stats).builtin_stats) {
       client.metric("kphp_request_builtin_stats").tag(builtin_name).write_value(call_number);
+    }
+    for (const auto& it : (*builtin_stats).virtual_builtin_stats) {
+      client.metric("kphp_request_builtin_stats").tag(it.get_string_key().c_str()).write_value(it.get_value());
     }
   }
 

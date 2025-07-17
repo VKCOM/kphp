@@ -37,6 +37,7 @@
 #include "runtime/datetime/datetime_functions.h"
 #include "runtime/files.h"
 #include "runtime/net_events.h"
+#include "runtime/runtime-builtin-stats.h"
 #include "runtime/streams.h"
 #include "runtime/string_functions.h"
 #include "runtime/url.h"
@@ -1774,6 +1775,10 @@ string default_tag_stub;
 } // namespace impl_
 Optional<string> f$openssl_encrypt(const string& data, const string& method, const string& key, int64_t options, const string& iv, string& tag,
                                    const string& aad, int64_t tag_length) {
+  string builtin_name = data;
+  builtin_name.append('_').append(method);
+  runtime_builtins_stats::save_virtual_builtin_call_stats(builtin_name);
+
   string out_tag;
   if (&tag != &impl_::default_tag_stub) {
     out_tag.assign(static_cast<std::uint32_t>(tag_length), '\0');
@@ -1789,6 +1794,10 @@ Optional<string> f$openssl_encrypt(const string& data, const string& method, con
 }
 
 Optional<string> f$openssl_decrypt(string data, const string& method, const string& key, int64_t options, const string& iv, string tag, const string& aad) {
+  string builtin_name = data;
+  builtin_name.append('_').append(method);
+  runtime_builtins_stats::save_virtual_builtin_call_stats(builtin_name);
+
   if (!(options & OPENSSL_RAW_DATA)) {
     Optional<string> decoding_data = f$base64_decode(data, true);
     if (!decoding_data.has_value()) {
