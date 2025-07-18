@@ -9,7 +9,6 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 
-
 string f$escapeshellarg(const string& arg) noexcept {
   php_assert(std::strlen(arg.c_str()) == arg.size() && "Input string contains NULL bytes");
 
