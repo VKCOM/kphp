@@ -59,7 +59,7 @@ public:
   }
 
   void add_request_stats(uint64_t script_time_ns, uint64_t net_time_ns, uint64_t script_max_running_interval_ns, script_error_t error,
-                         const memory_resource::MemoryStats &script_memory_stats, const runtime_builtins_stats::request_stats_t &builtin_stats,
+                         const memory_resource::MemoryStats &script_memory_stats, const std::optional<runtime_builtins_stats::request_stats_t> &builtin_stats,
                          uint64_t script_queries, uint64_t long_script_queries,
                          uint64_t script_user_time_ns, uint64_t script_system_time_ns,
                          uint64_t script_init_time, uint64_t http_connection_process_time,
