@@ -64,10 +64,10 @@ public:
 
   explicit task_self_deleting(promise_self_deleting& promise) noexcept
       : m_promise(promise) {
-    // make task_self_deleting's frame current top async stack frame
-    auto& coroutine_instance_st{CoroutineInstanceState::get()};
-    m_promise.get_async_stack_frame().async_stack_root = std::addressof(coroutine_instance_st.coroutine_stack_root);
-    coroutine_instance_st.coroutine_stack_root.top_async_stack_frame = std::addressof(m_promise.get_async_stack_frame());
+    // initialize task_self_deleting's frame as top async stack frame
+    auto& async_stack_frame{m_promise.get_async_stack_frame()};
+    async_stack_frame.return_address = STACK_RETURN_ADDRESS;
+    async_stack_frame.async_stack_root = std::addressof(CoroutineInstanceState::get().coroutine_stack_root);
   }
   ~task_self_deleting() noexcept = default;
 
