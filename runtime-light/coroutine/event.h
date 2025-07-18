@@ -24,7 +24,7 @@ class event {
     event& m_event;
     bool m_suspended{};
     std::coroutine_handle<> m_awaiting_coroutine;
-    kphp::coro::async_stack_frame* const m_caller_async_stack_frame{};
+    kphp::coro::async_stack_frame* m_caller_async_stack_frame{};
 
     awaiter* m_next{};
     awaiter* m_prev{};
