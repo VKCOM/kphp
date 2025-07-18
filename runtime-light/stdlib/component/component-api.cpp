@@ -9,6 +9,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/utils/logs.h"
 
@@ -21,7 +22,8 @@ kphp::coro::task<class_instance<C$ComponentQuery>> f$component_client_send_reque
   }
 
   auto stream{std::move(*opt_stream)};
-  if (auto expected{co_await stream.write({reinterpret_cast<const std::byte*>(message.c_str()), message.size()})}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::forks::id_managed(stream.write({reinterpret_cast<const std::byte*>(message.c_str()), message.size()}))}; !expected)
+      [[unlikely]] {
     co_return class_instance<C$ComponentQuery>{};
   }
   stream.shutdown_write();
@@ -36,7 +38,7 @@ kphp::coro::task<string> f$component_client_fetch_response(class_instance<C$Comp
 
   auto& stream{query.get()->stream()};
   stream.clear();
-  if (auto expected{co_await stream.read()}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::forks::id_managed(stream.read())}; !expected) [[unlikely]] {
     co_return string{};
   }
   co_return string{reinterpret_cast<const char*>(stream.data().data()), static_cast<string::size_type>(stream.data().size())};
@@ -45,7 +47,7 @@ kphp::coro::task<string> f$component_client_fetch_response(class_instance<C$Comp
 // === component query server interface ===========================================================
 
 kphp::coro::task<class_instance<C$ComponentQuery>> f$component_server_accept_query() noexcept {
-  auto opt_stream{co_await kphp::component::stream::accept()};
+  auto opt_stream{co_await kphp::forks::id_managed(kphp::component::stream::accept())};
   if (!opt_stream) [[unlikely]] {
     co_return class_instance<C$ComponentQuery>{};
   }
@@ -60,7 +62,7 @@ kphp::coro::task<string> f$component_server_fetch_request(class_instance<C$Compo
 
   auto& stream{query.get()->stream()};
   stream.clear();
-  if (auto expected{co_await stream.read()}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::forks::id_managed(stream.read())}; !expected) [[unlikely]] {
     co_return string{};
   }
   co_return string{reinterpret_cast<const char*>(stream.data().data()), static_cast<string::size_type>(stream.data().size())};
@@ -73,5 +75,5 @@ kphp::coro::task<> f$component_server_send_response(class_instance<C$ComponentQu
   }
 
   auto& stream{query.get()->stream()};
-  co_await stream.write({reinterpret_cast<const std::byte*>(message.c_str()), message.size()});
+  co_await kphp::forks::id_managed(stream.write({reinterpret_cast<const std::byte*>(message.c_str()), message.size()}));
 }
