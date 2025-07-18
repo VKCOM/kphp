@@ -10,6 +10,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/instance-state.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/output/output-state.h"
 
 inline kphp::coro::task<> f$exit(mixed v) noexcept { // TODO: make it synchronous
@@ -24,7 +25,7 @@ inline kphp::coro::task<> f$exit(mixed v) noexcept { // TODO: make it synchronou
   } else {
     exit_code = 1;
   }
-  co_await instance_st.run_instance_epilogue();
+  co_await kphp::forks::id_managed(instance_st.run_instance_epilogue());
   k2::exit(static_cast<int32_t>(exit_code));
 }
 
