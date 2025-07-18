@@ -7,7 +7,6 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/system/system-functions.h"
 
-
 int64_t& get_dummy_result_code() noexcept;
 
 Optional<string> f$exec(const string& command);
