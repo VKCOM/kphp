@@ -5,16 +5,19 @@
 #pragma once
 
 #include <tuple>
+#include <utility>
 
+#include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/detail/when-all.h"
-#include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/type-traits.h"
 
 namespace kphp::coro {
 
-template<typename... return_types>
-[[nodiscard]] auto when_all(kphp::coro::task<return_types>... tasks) noexcept {
-  return detail::when_all::when_all_ready_awaitable<std::tuple<detail::when_all::when_all_task<return_types>...>>{
-      detail::when_all::make_when_all_task(tasks)...};
+template<kphp::coro::concepts::awaitable... awaitable_types>
+[[nodiscard]] auto when_all(awaitable_types... awaitables) noexcept {
+  return detail::when_all::when_all_ready_awaitable<
+      std::tuple<detail::when_all::when_all_task<typename kphp::coro::awaitable_traits<awaitable_types>::awaiter_return_type>...>>{
+      detail::when_all::make_when_all_task(std::move(awaitables))...};
 }
 
 } // namespace kphp::coro
