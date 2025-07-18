@@ -39,20 +39,19 @@ private:
   // type erased tasks that represent forks
   kphp::stl::unordered_map<int64_t, fork_info, kphp::memory::script_allocator> forks;
 
-  int64_t push_fork(kphp::coro::shared_task<> fork_task) noexcept {
-    forks.emplace(next_fork_id, fork_info{.awaited = false, .thrown_exception = {}, .opt_handle = std::move(fork_task)});
-    return next_fork_id++;
-  }
-
-  template<typename T>
-  friend class start_fork_t;
-
 public:
   int64_t current_id{FORK_ID_INIT};
 
   ForkInstanceState() noexcept = default;
 
   static ForkInstanceState& get() noexcept;
+
+  template<typename return_type>
+  int64_t push_fork(kphp::coro::shared_task<return_type> fork_task) noexcept {
+    forks.emplace(next_fork_id,
+                  fork_info{.awaited = false, .thrown_exception = {}, .opt_handle = static_cast<kphp::coro::shared_task<>>(std::move(fork_task))});
+    return next_fork_id++;
+  }
 
   std::optional<std::reference_wrapper<fork_info>> get_info(int64_t fork_id) noexcept {
     if (auto it{forks.find(fork_id)}; it != forks.end()) [[likely]] {
