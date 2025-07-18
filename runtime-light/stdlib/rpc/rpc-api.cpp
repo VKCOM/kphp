@@ -17,6 +17,7 @@
 #include "common/rpc-error-codes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
@@ -310,8 +311,8 @@ kphp::coro::task<kphp::rpc::query_info> send_request(string actor, Optional<doub
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
   auto waiter_task{std::invoke(
       [](int64_t query_id, auto comp_query, std::chrono::nanoseconds timeout, bool collect_responses_extra_info) noexcept -> kphp::coro::task<string> {
-        auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
-        auto response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
+        auto expected{co_await kphp::coro::io_scheduler::get().schedule(f$component_client_fetch_response(std::move(comp_query)), timeout)};
+        string response{expected ? std::move(*expected) : string{}};
         // update response extra info if needed
         if (collect_responses_extra_info) {
           auto& extra_info_map{RpcClientInstanceState::get().rpc_responses_extra_info};
@@ -327,7 +328,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(string actor, Optional<doub
       },
       query_id, std::move(comp_query), timeout_ns, collect_responses_extra_info)};
   // start waiter fork
-  const auto waiter_fork_id{co_await start_fork_t{std::move(waiter_task)}};
+  const auto waiter_fork_id{kphp::forks::start(std::move(waiter_task))};
 
   if (ignore_answer) {
     co_return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
@@ -338,13 +339,15 @@ kphp::coro::task<kphp::rpc::query_info> send_request(string actor, Optional<doub
 
 kphp::coro::task<std::expected<void, kphp::rpc::error>> send_response(std::span<const std::byte> response) noexcept {
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
-  if (!rpc_server_instance_st.request_stream.has_value()) [[unlikely]] {
+  if (!rpc_server_instance_st.request_stream) [[unlikely]] {
     co_return std::unexpected{kphp::rpc::error::invalid_stream};
   }
-  if (auto expected{co_await (*rpc_server_instance_st.request_stream).write(response)}; !expected) [[unlikely]] {
+
+  auto& request_stream{*rpc_server_instance_st.request_stream};
+  if (auto expected{co_await request_stream.write(response)}; !expected) [[unlikely]] {
     co_return std::unexpected{kphp::rpc::error::write_failed};
   }
-  (*rpc_server_instance_st.request_stream).reset(k2::INVALID_PLATFORM_DESCRIPTOR);
+  request_stream.reset(k2::INVALID_PLATFORM_DESCRIPTOR);
   co_return std::expected<void, kphp::rpc::error>{};
 }
 
