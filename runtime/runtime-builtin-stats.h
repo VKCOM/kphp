@@ -4,7 +4,9 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string_view>
 
@@ -12,12 +14,19 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 
+template<>
+struct std::hash<string> {
+  std::size_t operator()(const ::string& s) const noexcept {
+    return static_cast<std::size_t>(s.hash());
+  }
+};
+
 namespace runtime_builtins_stats {
 inline bool is_server_option_enabled = false;
 
 struct request_stats_t {
   kphp::stl::unordered_map<std::string_view, int64_t, kphp::memory::script_allocator> builtin_stats{};
-  array<int64_t> virtual_builtin_stats{};
+  kphp::stl::unordered_map<string, int64_t, kphp::memory::script_allocator> virtual_builtin_stats{};
 };
 
 inline std::optional<request_stats_t> request_stats;
@@ -43,4 +52,3 @@ inline void save_virtual_builtin_call_stats(const string& builtin_call) noexcept
 #define SAVE_BUILTIN_CALL_STATS(builtin_name, builtin_call)                                                                                                    \
   (!runtime_builtins_stats::request_stats.has_value() ? 0 : (*runtime_builtins_stats::request_stats).builtin_stats[std::string_view(builtin_name)]++,          \
    builtin_call)
-

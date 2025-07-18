@@ -145,8 +145,8 @@ void StatsHouseManager::add_request_stats(uint64_t script_time_ns, uint64_t net_
     for (const auto& [builtin_name, call_number] : (*builtin_stats).builtin_stats) {
       client.metric("kphp_request_builtin_stats").tag(builtin_name).write_value(call_number);
     }
-    for (const auto& it : (*builtin_stats).virtual_builtin_stats) {
-      client.metric("kphp_request_builtin_stats").tag(it.get_string_key().c_str()).write_value(it.get_value());
+    for (const auto& [virtual_builtin_name, call_number] : (*builtin_stats).virtual_builtin_stats) {
+      client.metric("kphp_request_builtin_stats").tag(virtual_builtin_name.c_str()).write_value(call_number);
     }
   }
 
