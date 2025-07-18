@@ -8,7 +8,6 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/state/instance-state.h"
 
 // === Client =====================================================================================
 
@@ -27,7 +26,8 @@ kphp::coro::task<int64_t> f$job_worker_store_response(string response) noexcept;
 // === Misc =======================================================================================
 
 inline bool f$is_kphp_job_workers_enabled() noexcept {
-  return InstanceState::get().image_kind() == image_kind::server;
+  return false;
+  // return InstanceState::get().image_kind() == image_kind::server;
 }
 
 inline int64_t f$get_job_workers_number() noexcept {
