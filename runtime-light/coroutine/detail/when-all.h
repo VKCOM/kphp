@@ -14,7 +14,9 @@
 #include <utility>
 
 #include "common/containers/final_action.h"
-#include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/concepts.h"
+#include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/utils/logs.h"
 
 namespace kphp::coro {
@@ -61,7 +63,7 @@ public:
 
   auto notify_awaitable_completed() noexcept -> void {
     if (--m_count == 1) {
-      m_awaiting_coroutine.resume(); // TODO async stack?
+      m_awaiting_coroutine.resume();
     }
   }
 };
@@ -91,6 +93,41 @@ class when_all_ready_awaitable<std::tuple<task_types...>> {
   when_all_latch m_latch;
   std::tuple<task_types...> m_tasks;
 
+  struct awaiter {
+    bool m_started{};
+    when_all_ready_awaitable& m_awaitable;
+    kphp::coro::async_stack_frame* m_caller_async_stack_frame{};
+
+    explicit awaiter(when_all_ready_awaitable& awaitable) noexcept
+        : m_awaitable(awaitable) {}
+
+    auto await_ready() noexcept -> bool {
+      kphp::log::assertion(!std::exchange(m_started, true)); // to make sure it's not co_awaited more than once
+      return m_awaitable.m_latch.is_ready();
+    }
+
+    template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
+    [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> bool {
+      // async stack frame handling
+      void* const return_address{STACK_RETURN_ADDRESS};
+      m_caller_async_stack_frame = std::addressof(awaiting_coroutine.promise().get_async_stack_frame());
+
+      std::apply([&latch = m_awaitable.m_latch, &caller_async_stack_frame = *m_caller_async_stack_frame,
+                  return_address](auto&... tasks) noexcept { (tasks.start(latch, caller_async_stack_frame, return_address), ...); },
+                 m_awaitable.m_tasks);
+      return m_awaitable.m_latch.try_await(awaiting_coroutine);
+    }
+
+    auto await_resume() noexcept {
+      // restore caller's async_stack_frame unless it's not set which could happen in case no suspension occured
+      if (m_caller_async_stack_frame != nullptr) {
+        kphp::log::assertion(m_caller_async_stack_frame->async_stack_root != nullptr);
+        m_caller_async_stack_frame->async_stack_root->top_async_stack_frame = m_caller_async_stack_frame;
+      }
+      return std::apply([](task_types&&... tasks) noexcept { return std::make_tuple(std::move(tasks).result()...); }, std::move(m_awaitable.m_tasks));
+    }
+  };
+
 public:
   explicit when_all_ready_awaitable(task_types&&... tasks) noexcept
       : m_latch(sizeof...(task_types)),
@@ -107,33 +144,12 @@ public:
   when_all_ready_awaitable& operator=(when_all_ready_awaitable&&) = delete;
 
   auto operator co_await() noexcept {
-    struct awaiter {
-      bool m_started{};
-      when_all_ready_awaitable& m_awaitable;
-
-      explicit awaiter(when_all_ready_awaitable& awaitable) noexcept
-          : m_awaitable(awaitable) {}
-
-      auto await_ready() noexcept -> bool {
-        kphp::log::assertion(!std::exchange(m_started, true)); // to make sure it's not co_awaited more than once
-        return m_awaitable.m_latch.is_ready();
-      }
-
-      auto await_suspend(std::coroutine_handle<> awaiting_coroutine) noexcept -> bool {
-        std::apply([&latch = m_awaitable.m_latch](auto&... tasks) noexcept { (tasks.start(latch), ...); }, m_awaitable.m_tasks);
-        return m_awaitable.m_latch.try_await(awaiting_coroutine);
-      }
-
-      auto await_resume() noexcept {
-        return std::apply([this](task_types&&... tasks) noexcept { return std::make_tuple(std::move(tasks).result()...); }, std::move(m_awaitable.m_tasks));
-      }
-    };
     return awaiter{*this};
   }
 };
 
 template<typename return_type, typename promise_type>
-class when_all_task_promise_base {
+class when_all_task_promise_base : public kphp::coro::async_stack_element {
   when_all_latch* m_latch{};
 
 public:
@@ -171,9 +187,17 @@ public:
     kphp::log::error("internal unhandled exception");
   }
 
-  auto start(when_all_latch& latch) noexcept {
+  auto start(when_all_latch& latch, kphp::coro::async_stack_frame& caller_async_stack_frame, void* return_address) noexcept {
     m_latch = std::addressof(latch);
-    std::coroutine_handle<promise_type>::from_promise(*this).resume(); // TODO async stack
+
+    auto& async_stack_frame{get_async_stack_frame()};
+    kphp::log::assertion(caller_async_stack_frame.async_stack_root != nullptr);
+    // initialize when_all_task's async stack frame and make it the top frame
+    async_stack_frame.caller_async_stack_frame = std::addressof(caller_async_stack_frame);
+    async_stack_frame.async_stack_root = caller_async_stack_frame.async_stack_root;
+    async_stack_frame.return_address = return_address;
+    async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
+    std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
   }
 };
 
@@ -184,14 +208,14 @@ class when_all_task {
   struct when_all_task_promise_void;
 
 public:
-  using when_all_task_promise = std::conditional_t<!std::is_void_v<return_type>, when_all_task_promise_non_void<return_type>, when_all_task_promise_void>;
+  using promise_type = std::conditional_t<!std::is_void_v<return_type>, when_all_task_promise_non_void<return_type>, when_all_task_promise_void>;
 
 private:
-  std::coroutine_handle<when_all_task_promise> m_coroutine;
+  std::coroutine_handle<promise_type> m_coroutine;
 
-  struct when_all_task_promise_common : public when_all_task_promise_base<return_type, when_all_task_promise> {
+  struct when_all_task_promise_common : public when_all_task_promise_base<return_type, promise_type> {
     auto get_return_object() noexcept {
-      return std::coroutine_handle<when_all_task_promise>::from_promise(*this);
+      return when_all_task{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
     }
 
     static auto get_return_object_on_allocation_failure() noexcept -> when_all_task {
@@ -224,8 +248,8 @@ private:
     constexpr auto return_void() const noexcept -> void {}
   };
 
-  auto start(when_all_latch& latch) noexcept -> void {
-    m_coroutine.promise().start(latch);
+  auto start(when_all_latch& latch, kphp::coro::async_stack_frame& caller_async_stack_frame, void* return_address) noexcept -> void {
+    m_coroutine.promise().start(latch, caller_async_stack_frame, return_address);
   }
 
 public:
@@ -233,7 +257,7 @@ public:
   template<typename task_container_type>
   friend class when_all_ready_awaitable;
 
-  explicit when_all_task(std::coroutine_handle<when_all_task_promise> coroutine) noexcept
+  explicit when_all_task(std::coroutine_handle<promise_type> coroutine) noexcept
       : m_coroutine(coroutine) {}
 
   when_all_task(when_all_task&& other) noexcept
@@ -249,7 +273,7 @@ public:
   when_all_task& operator=(const when_all_task&) = delete;
   when_all_task& operator=(when_all_task&&) = delete;
 
-  return_type result() && noexcept {
+  auto result() && noexcept {
     if constexpr (std::is_void_v<return_type>) {
       m_coroutine.promise().result();
       return kphp::coro::void_value{};
@@ -259,13 +283,13 @@ public:
   }
 };
 
-template<typename return_type>
-inline auto make_when_all_task(kphp::coro::task<return_type> task) noexcept -> when_all_task<return_type> {
-  if constexpr (std::is_void_v<return_type>) {
-    co_await task;
+template<kphp::coro::concepts::awaitable awaitable_type>
+auto make_when_all_task(awaitable_type awaitable) noexcept -> when_all_task<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type> {
+  if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type>) {
+    co_await std::move(awaitable);
     co_return;
   } else {
-    co_yield co_await task;
+    co_yield co_await std::move(awaitable);
   }
 }
 
