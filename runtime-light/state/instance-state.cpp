@@ -6,6 +6,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <string_view>
 #include <utility>
 
@@ -67,6 +68,10 @@ void InstanceState::init_script_execution() noexcept {
         kphp::log::assertion(co_await f$wait_concurrently(kphp::forks::start(std::move(script_task))));
       },
       std::move(script_task))};
+  // initialize async stack
+  auto& main_task_async_stack_frame{main_task.get_handle().promise().get_async_stack_frame()};
+  main_task_async_stack_frame.async_stack_root = std::addressof(coroutine_instance_state.coroutine_stack_root);
+  coroutine_instance_state.coroutine_stack_root.top_async_stack_frame = std::addressof(main_task_async_stack_frame);
   // spawn main task onto the scheduler
   kphp::log::assertion(io_scheduler.spawn(std::move(main_task)));
 }
