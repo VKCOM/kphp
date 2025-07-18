@@ -7,7 +7,6 @@
 #include <concepts>
 #include <coroutine>
 #include <memory>
-#include <new>
 #include <type_traits>
 #include <utility>
 
@@ -21,7 +20,7 @@ namespace kphp::coro {
 namespace task_impl {
 
 template<typename promise_type>
-struct promise_base : async_stack_element {
+struct promise_base : kphp::coro::async_stack_element {
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -66,7 +65,7 @@ struct promise_base : async_stack_element {
   }
 
   template<typename... Args>
-  auto operator new(std::size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
+  auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
     return kphp::memory::script::alloc(n);
   }
 
@@ -79,9 +78,6 @@ struct promise_base : async_stack_element {
 
 template<typename promise_type>
 class awaiter_base {
-  enum class state : uint8_t { init, suspend, end };
-  state m_state{state::init};
-
   void push_async_stack_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
     async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
     callee_frame.caller_async_stack_frame = std::addressof(caller_frame);
@@ -99,6 +95,7 @@ class awaiter_base {
   }
 
 protected:
+  bool m_started{};
   std::coroutine_handle<promise_type> m_coro{};
 
 public:
@@ -106,44 +103,30 @@ public:
       : m_coro(coro) {}
 
   awaiter_base(awaiter_base&& other) noexcept
-      : m_state(std::exchange(other.m_state, state::end)),
-        m_coro(std::exchange(other.m_coro, {})) {}
+      : m_coro(std::exchange(other.m_coro, {})) {}
 
   awaiter_base(const awaiter_base& other) = delete;
   awaiter_base& operator=(const awaiter_base& other) = delete;
   awaiter_base& operator=(awaiter_base&& other) = delete;
 
   ~awaiter_base() {
-    if (m_state == state::suspend) {
-      cancel();
-    }
-  }
-
-  constexpr auto await_ready() const noexcept -> bool {
-    kphp::log::assertion(m_state == state::init && m_coro);
-    return false;
-  }
-
-  template<typename promise_t>
-  [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> coro) noexcept -> std::coroutine_handle<promise_type> {
-    push_async_stack_frame(coro.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
-    m_coro.promise().m_next = coro.address();
-    return m_coro;
-  }
-
-  auto await_resume() noexcept -> void {
-    m_state = state::end;
-  }
-
-  auto resumable() const noexcept -> bool {
-    return m_coro.promise().done();
-  }
-
-  auto cancel() noexcept -> void {
-    m_state = state::end;
     m_coro.promise().m_next = nullptr;
     detach_from_async_stack();
   }
+
+  auto await_ready() noexcept -> bool {
+    kphp::log::assertion(!std::exchange(m_started, true)); // to make sure it's not co_awaited more than once
+    return false;
+  }
+
+  template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
+  [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> std::coroutine_handle<promise_type> {
+    push_async_stack_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
+    m_coro.promise().m_next = awaiting_coroutine.address();
+    return m_coro;
+  }
+
+  constexpr auto await_resume() noexcept -> void {}
 };
 
 } // namespace task_impl

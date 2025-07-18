@@ -1,1 +1,2 @@
-prepend(RUNTIME_LIGHT_COROUTINE_SRC coroutine/ coroutine-state.cpp)
+prepend(RUNTIME_LIGHT_COROUTINE_SRC coroutine/ coroutine-state.cpp
+        io-scheduler.cpp)

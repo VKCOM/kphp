@@ -9,9 +9,10 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/core/globals/php-script-globals.h"
-#include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/state/image-state.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/system/system-state.h"
 #include "runtime-light/utils/logs.h"
 
@@ -75,8 +76,7 @@ inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
     kphp::log::warning("value of microseconds ({}) must be positive", microseconds);
     co_return;
   }
-  const std::chrono::microseconds sleep_time{microseconds};
-  co_await wait_for_timer_t{sleep_time};
+  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield_for(std::chrono::microseconds{microseconds}));
 }
 
 inline int64_t f$error_reporting([[maybe_unused]] int64_t level) noexcept {

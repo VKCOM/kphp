@@ -46,6 +46,8 @@ using IOStatus = IOStatus;
 
 using StreamStatus = StreamStatus;
 
+using UpdateStatus = UpdateStatus;
+
 using TimePoint = TimePoint;
 
 using SystemTime = SystemTime;
@@ -160,7 +162,7 @@ inline void free_descriptor(k2::descriptor descriptor) noexcept {
   k2_free_descriptor(descriptor);
 }
 
-inline uint8_t take_update(k2::descriptor* descriptor) noexcept {
+inline k2::UpdateStatus take_update(k2::descriptor* descriptor) noexcept {
   return k2_take_update(descriptor);
 }
 
@@ -317,3 +319,7 @@ struct std::formatter<k2::SymbolInfo> {
     return std::format_to(ctx.out(), "{}\n\tat {}:{}", info.name.get(), info.filename.get(), info.lineno);
   }
 };
+
+inline constexpr bool operator<(const k2::TimePoint& lhs, const k2::TimePoint& rhs) noexcept {
+  return lhs.time_point_ns < rhs.time_point_ns;
+}
