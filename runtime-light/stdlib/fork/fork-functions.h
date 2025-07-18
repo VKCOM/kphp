@@ -5,59 +5,93 @@
 #pragma once
 
 #include <chrono>
-#include <concepts>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <utility>
 
+#include "common/containers/final_action.h"
 #include "runtime-common/core/core-types/decl/optional.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/utils/logs.h"
 
-namespace forks_impl_ {
+namespace kphp::forks {
 
-inline constexpr double MAX_TIMEOUT_S = 86400.0;
-inline constexpr double DEFAULT_TIMEOUT_S = MAX_TIMEOUT_S;
-inline constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT_S});
-inline constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT_S});
+namespace detail {
 
-inline std::chrono::nanoseconds normalize_timeout(double timeout_s) noexcept {
-  if (timeout_s <= 0 || timeout_s > MAX_TIMEOUT_S) {
+inline constexpr double MAX_TIMEOUT = 86400.0;
+inline constexpr double DEFAULT_TIMEOUT = MAX_TIMEOUT;
+
+inline constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT});
+inline constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT});
+
+inline std::chrono::nanoseconds normalize_timeout(std::chrono::nanoseconds timeout) noexcept {
+  using namespace std::chrono_literals;
+  if (timeout <= 0ns || timeout > MAX_TIMEOUT_NS) {
     return DEFAULT_TIMEOUT_NS;
   }
-  return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout_s});
+  return timeout;
 }
 
-} // namespace forks_impl_
+} // namespace detail
+
+template<kphp::coro::concepts::awaitable awaitable_type>
+auto id_managed(awaitable_type awaitable) noexcept -> kphp::coro::task<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type> {
+  auto& fork_instance_st{ForkInstanceState::get()};
+  const auto saved_fork_id{fork_instance_st.current_id};
+  const vk::final_action finalizer{[&fork_instance_st, saved_fork_id] noexcept { fork_instance_st.current_id = saved_fork_id; }};
+  co_return co_await std::move(awaitable);
+}
+
+template<typename return_type>
+auto start(kphp::coro::task<return_type> task) noexcept -> int64_t {
+  auto shared_task{std::invoke([](kphp::coro::task<return_type> task) noexcept -> kphp::coro::shared_task<return_type> { co_return co_await std::move(task); },
+                               std::move(task))};
+
+  auto fork_id{ForkInstanceState::get().push_fork(shared_task)};
+  auto spawner_task{std::invoke(
+      [](kphp::coro::shared_task<return_type> shared_task, int64_t fork_id) noexcept -> kphp::coro::task<> {
+        ForkInstanceState::get().current_id = fork_id;
+        co_await std::move(shared_task).when_ready();
+      },
+      std::move(shared_task), fork_id)};
+  kphp::log::assertion(kphp::coro::io_scheduler::get().spawn(std::move(spawner_task)));
+  return fork_id;
+}
+
+} // namespace kphp::forks
 
 template<typename T>
 requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value)
 kphp::coro::task<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
   auto& fork_instance_st{ForkInstanceState::get()};
-  auto opt_fork_info{fork_instance_st.get_info(fork_id)};
-  if (!opt_fork_info.has_value() || !(*opt_fork_info).get().opt_handle.has_value() || (*opt_fork_info).get().awaited) [[unlikely]] {
-    kphp::log::warning("fork with ID {} does not exist or has already been awaited by another fork", fork_id);
+  auto opt_info{fork_instance_st.get_info(fork_id)};
+  if (!opt_info || !(*opt_info).get().opt_handle || (*opt_info).get().awaited) [[unlikely]] {
+    kphp::log::warning("fork does not exist or has already been awaited by another fork: id -> {}", fork_id);
     co_return T{};
   }
 
-  auto& fork_info{(*opt_fork_info).get()};
-  auto fork_task{*fork_info.opt_handle};
-  fork_info.awaited = true; // prevent further f$wait from awaiting on the same fork
-  auto opt_result{co_await wait_with_timeout_t{wait_fork_t{static_cast<kphp::coro::shared_task<internal_optional_type_t<T>>>(std::move(fork_task))},
-                                               forks_impl_::normalize_timeout(timeout)}};
+  auto fork_info{(*opt_info)};
+  auto fork_task{*fork_info.get().opt_handle};
+  fork_info.get().awaited = true; // prevent further f$wait from awaiting on the same fork
+  auto expected{co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule(
+      static_cast<kphp::coro::shared_task<internal_optional_type_t<T>>>(std::move(fork_task)),
+      kphp::forks::detail::normalize_timeout(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout}))))};
   // Execute essential housekeeping tasks to maintain proper state management.
   // 1. Check for any exceptions that may have occurred during the fork execution. If an exception is found, propagate it to the current fork.
   //    Clean fork_info's exception state.
   auto current_fork_info{fork_instance_st.current_info()};
-  kphp::log::assertion(std::exchange(current_fork_info.get().thrown_exception, std::move(fork_info.thrown_exception)).is_null());
+  kphp::log::assertion(std::exchange(current_fork_info.get().thrown_exception, std::move(fork_info.get().thrown_exception)).is_null());
   // 2. Detach the shared_task from fork_info to prevent further associations, ensuring that resources are released.
-  fork_info.opt_handle.reset();
+  fork_info.get().opt_handle.reset();
 
-  co_return opt_result.has_value() ? T{std::move(opt_result.value())} : T{};
+  co_return expected ? T{std::move(*expected)} : T{};
 }
 
 template<typename T>
@@ -70,15 +104,15 @@ kphp::coro::task<T> f$wait(Optional<int64_t> opt_fork_id, double timeout = -1.0)
 
 inline kphp::coro::task<bool> f$wait_concurrently(int64_t fork_id) noexcept {
   auto& fork_instance_st{ForkInstanceState::get()};
-  auto opt_fork_info{fork_instance_st.get_info(fork_id)};
-  if (!opt_fork_info.has_value()) [[unlikely]] {
+  auto opt_info{fork_instance_st.get_info(fork_id)};
+  if (!opt_info) [[unlikely]] {
     co_return false;
   }
 
-  const auto& fork_info{(*opt_fork_info).get()};
-  if (fork_info.opt_handle.has_value()) {
-    auto fork_task{*fork_info.opt_handle};
-    co_await wait_fork_t{std::move(fork_task)};
+  const auto fork_info{*opt_info};
+  if (fork_info.get().opt_handle) {
+    auto fork_task{*fork_info.get().opt_handle};
+    co_await kphp::forks::id_managed(fork_task.when_ready());
   }
   co_return true;
 }
@@ -109,15 +143,12 @@ kphp::coro::task<T> f$wait_multi(array<Optional<int64_t>> fork_ids) noexcept {
 // ================================================================================================
 
 inline kphp::coro::task<> f$sched_yield() noexcept {
-  co_await kphp::coro::io_scheduler::get().yield();
+  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield());
 }
 
 inline kphp::coro::task<> f$sched_yield_sleep(double duration) noexcept {
-  if (duration <= 0) {
-    kphp::log::warning("can't sleep for negative or zero duration {}", duration);
-    co_return;
-  }
-  co_await wait_for_timer_t{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{duration})};
+  const auto timeout{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{duration})};
+  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield_for(kphp::forks::detail::normalize_timeout(timeout)));
 }
 
 // ================================================================================================
