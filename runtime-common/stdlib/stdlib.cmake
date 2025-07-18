@@ -8,6 +8,7 @@ prepend(STDLIB_SERIALIZATION stdlib/serialization/ json-functions.cpp
         json-writer.cpp serialize-functions.cpp)
 prepend(STDLIB_STRING stdlib/string/ mbstring-functions.cpp
         regex-functions.cpp string-functions.cpp)
+prepend(STDLIB_SYSTEM stdlib/system/ system-functions.cpp)
 prepend(STDLIB_SERVER stdlib/server/ url-functions.cpp
         net-functions.cpp)
 prepend(STDLIB_VKEXT stdlib/vkext/ string-processing.cpp
@@ -18,4 +19,4 @@ if(COMPILER_CLANG)
 endif()
 
 set(STDLIB_SRC ${STDLIB_ARRAY} ${STDLIB_CRYPTO} ${STDLIB_MATH} ${STDLIB_MSGPACK} ${STDLIB_SERIALIZATION}
-               ${STDLIB_STRING} ${STDLIB_SERVER} ${STDLIB_VKEXT})
+               ${STDLIB_STRING} ${STDLIB_SYSTEM} ${STDLIB_SERVER} ${STDLIB_VKEXT})

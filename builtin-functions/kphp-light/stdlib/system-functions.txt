@@ -25,6 +25,10 @@ function usleep ($micro_seconds ::: int) ::: void;
 
 function function_exists ($func_name ::: mixed) ::: bool;
 
+function escapeshellarg($arg ::: string): string;
+
+function escapeshellcmd($cmd ::: string): string;
+
 // === UNSUPPORTED ===
 
 /** @kphp-extern-func-info stub */
