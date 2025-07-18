@@ -91,7 +91,10 @@ auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> aw
 }
 
 inline auto event::awaiter::await_resume() noexcept -> void {
-  m_suspended = false;
+  // restore caller's async stack frame if it was suspended
+  if (std::exchange(m_suspended, false)) {
+    CoroutineInstanceState::get().coroutine_stack_root.top_async_stack_frame = std::exchange(m_caller_async_stack_frame, nullptr);
+  }
 }
 
 inline auto event::set() noexcept -> void {
@@ -100,10 +103,7 @@ inline auto event::set() noexcept -> void {
     return;
   }
 
-  auto& coroutine_instance_st{CoroutineInstanceState::get()};
   for (auto* awaiter{static_cast<event::awaiter*>(prev_value)}; awaiter != nullptr; awaiter = awaiter->m_next) {
-    // restore caller's async stack frame and resume
-    coroutine_instance_st.coroutine_stack_root.top_async_stack_frame = awaiter->m_caller_async_stack_frame;
     awaiter->m_awaiting_coroutine.resume();
   }
 }
