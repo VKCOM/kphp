@@ -12,6 +12,7 @@
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/state/image-state.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/system/system-state.h"
 #include "runtime-light/utils/logs.h"
 
@@ -75,7 +76,7 @@ inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
     kphp::log::warning("value of microseconds ({}) must be positive", microseconds);
     co_return;
   }
-  co_await kphp::coro::io_scheduler::get().yield_for(std::chrono::microseconds{microseconds});
+  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield_for(std::chrono::microseconds{microseconds}));
 }
 
 inline int64_t f$error_reporting([[maybe_unused]] int64_t level) noexcept {
