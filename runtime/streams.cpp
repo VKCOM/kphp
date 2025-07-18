@@ -360,19 +360,7 @@ Optional<int64_t> f$stream_select(mixed& read, mixed& write, mixed& except, cons
   return functions->function_name
 
 Stream f$fopen(const string& stream, const string& mode) {
-  const string& url = stream.to_string();
-  const stream_functions* functions = get_stream_functions_from_url(url, "fopen");
-  if (functions == nullptr) {
-    php_warning("Can't find appropriate wrapper for \"%s\"", url.c_str());
-    return false;
-  }
-  if (functions->fopen == nullptr) {
-    php_warning("Wrapper \"%s\" doesn't support function "
-                "fopen",
-                functions->name.c_str());
-    return false;
-  }
-  return functions->fopen(url, mode);
+  STREAM_FUNCTION_BODY(fopen, false)(url, mode);
 }
 
 Optional<int64_t> f$fwrite(const Stream& stream, const string& text) {
