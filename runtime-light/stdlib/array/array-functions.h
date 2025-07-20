@@ -7,6 +7,7 @@
 #include <concepts>
 #include <cstdint>
 #include <functional>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -240,6 +241,24 @@ kphp::coro::task<array<T>> array_filter_by_key_impl(array<T> a, F f) noexcept {
   co_return std::move(result);
 }
 
+template<class T, class F>
+requires convertible_to_php_bool<kphp::coro::async_function_return_type_t<F, typename array<T>::const_iterator::value_type>>
+kphp::coro::task<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>> array_find_impl(array<T> a,
+                                                                                                                                         F f) noexcept {
+  for (const auto& it : a) {
+    bool condition{};
+    if constexpr (kphp::coro::is_async_function_v<F, typename array<T>::const_iterator::value_type>) {
+      condition = co_await std::invoke(f, it.get_value());
+    } else {
+      condition = std::invoke(f, it.get_value());
+    }
+    if (condition) {
+      co_return std::tuple{it.get_key(), it.get_value()};
+    }
+  }
+  co_return std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>{};
+}
+
 } // namespace array_functions_impl_
 
 template<class T>
@@ -275,6 +294,11 @@ kphp::coro::task<array<T>> f$array_filter_by_key(array<T> a, F f) noexcept {
   co_return co_await array_functions_impl_::array_filter_by_key_impl(std::move(a), std::move(f));
 }
 
+template<class T, std::invocable<T> F>
+kphp::coro::task<std::tuple<typename array<T>::const_iterator::key_type, typename array<T>::const_iterator::value_type>> f$array_find(array<T> a, F f) {
+  co_return co_await array_functions_impl_::array_find_impl(std::move(a), std::move(f));
+}
+
 template<class T>
 typename array<T>::key_type f$array_rand(const array<T>& a) noexcept {
   if (int64_t size{a.count()}) {
@@ -307,27 +331,6 @@ mixed f$array_rand(const array<T>& a, int64_t num) noexcept {
   return result;
 }
 
-template<class T>
-array<T> f$array_splice(array<T>& /*unused*/, int64_t /*unused*/, int64_t /*unused*/, const array<Unknown>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T, class T1 = T>
-array<T> f$array_splice(array<T>& /*unused*/, int64_t /*unused*/, int64_t /*unused*/ = std::numeric_limits<int64_t>::max(),
-                        const array<T1>& /*unused*/ = array<T1>()) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class ReturnT, class InputArrayT, class DefaultValueT>
-ReturnT f$array_pad(const array<InputArrayT>& /*unused*/, int64_t /*unused*/, const DefaultValueT& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class ReturnT, class DefaultValueT>
-ReturnT f$array_pad(const array<Unknown>& /*unused*/, int64_t /*unused*/, const DefaultValueT& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
 /**
  * Currently, array_map is always considered async. Despite we rely on symmetric transfer optimization,
  * we need to be careful with such functions. We may want to split such functions into sync and async
@@ -358,68 +361,6 @@ kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
     }
   }
   co_return std::move(result);
-}
-
-template<class T>
-T f$array_merge_spread(const T& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-T f$array_merge_spread(const T& /*unused*/, const T& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-T f$array_merge_spread(const T& /*unused*/, const T& /*unused*/, const T& /*unused*/, const T& /*unused*/ = T(), const T& /*unused*/ = T(),
-                       const T& /*unused*/ = T(), const T& /*unused*/ = T(), const T& /*unused*/ = T(), const T& /*unused*/ = T(), const T& /*unused*/ = T(),
-                       const T& /*unused*/ = T(), const T& /*unused*/ = T()) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class ReturnT, class... Args>
-ReturnT f$array_merge_recursive(const Args&... /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T, class T1>
-array<T> f$array_intersect_assoc(const array<T>& /*unused*/, const array<T1>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T, class T1, class T2>
-array<T> f$array_intersect_assoc(const array<T>& /*unused*/, const array<T1>& /*unused*/, const array<T2>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T, class T1>
-array<T> f$array_diff_key(const array<T>& /*unused*/, const array<T1>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T, class T1>
-array<T> f$array_diff_assoc(const array<T>& /*unused*/, const array<T1>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T, class T1, class T2>
-array<T> f$array_diff_assoc(const array<T>& /*unused*/, const array<T1>& /*unused*/, const array<T2>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-array<int64_t> f$array_count_values(const array<T>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T1, class T>
-array<T> f$array_fill_keys(const array<T1>& /*unused*/, const T& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T1, class T>
-array<T> f$array_combine(const array<T1>& /*unused*/, const array<T>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
 }
 
 template<class T, class Comparator>
@@ -460,61 +401,6 @@ kphp::coro::task<> f$uksort(array<T>& a, Comparator compare) {
   } else {
     co_return a.ksort(std::move(compare));
   }
-}
-
-template<class T>
-mixed f$getKeyByPos(const array<T>& /*unused*/, int64_t /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-T f$getValueByPos(const array<T>& /*unused*/, int64_t /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-array<T> f$create_vector(int64_t /*unused*/, const T& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-void f$array_swap_int_keys(array<T>& /*unused*/, int64_t /*unused*/, int64_t /*unused*/) noexcept {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-Optional<array<class_instance<T>>> f$array_column(const array<array<class_instance<T>>>& /*unused*/, const mixed& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-Optional<array<class_instance<T>>> f$array_column(const array<Optional<array<class_instance<T>>>>& /*unused*/, const mixed& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-Optional<array<T>> f$array_column(const array<array<T>>& /*unused*/, const mixed& /*unused*/, const mixed& /*unused*/ = {}) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-Optional<array<T>> f$array_column(const array<Optional<array<T>>>& /*unused*/, const mixed& /*unused*/, const mixed& /*unused*/ = {}) {
-  kphp::log::error("call to unsupported function");
-}
-
-inline Optional<array<mixed>> f$array_column(const array<mixed>& /*unused*/, const mixed& /*unused*/, const mixed& /*unused*/ = {}) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T>
-auto f$array_column(const Optional<T>& /*unused*/, const mixed& column_key,
-                    const mixed& index_key = {}) -> decltype(f$array_column(std::declval<T>(), column_key, index_key)) {
-  kphp::log::error("call to unsupported function");
-}
-
-template<class T, class T1>
-std::tuple<typename array<T>::key_type, T> f$array_find(const array<T>& /*unused*/, const T1& /*unused*/) {
-  kphp::log::error("call to unsupported function");
 }
 
 template<class T>
