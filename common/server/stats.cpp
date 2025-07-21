@@ -39,8 +39,8 @@ const char* engine_default_char_stats() {
   return engine_default_prepare_stats(tl_stats_t{}, NULL);
 }
 
-std::pair<std::string_view, std::size_t> engine_default_open_metrics_stat_stats() {
-  return engine_default_prepare_stats_with_tag_mask(open_metrics_stats_t{}, nullptr, stats_tag_mask_full);
+std::string_view engine_default_open_metrics_stat_stats() noexcept {
+  return engine_default_prepare_stats(open_metrics_stats_t{}, nullptr);
 }
 
 __attribute__((constructor)) static void register_char_stats() {
