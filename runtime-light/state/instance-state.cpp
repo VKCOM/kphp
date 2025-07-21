@@ -189,17 +189,14 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   case image_kind::oneshot:
   case image_kind::multishot:
     break;
-  case image_kind::cli: {
+  case image_kind::cli:
     co_await finalize_cli_instance();
     break;
-  }
-  case image_kind::server: {
+  case image_kind::server:
     co_await finalize_server_instance();
     break;
-  }
-  default: {
+  default:
     kphp::log::error("unexpected image kind: {}", std::to_underlying(image_kind()));
-  }
   }
   shutdown_state_ = shutdown_state::finished;
 }

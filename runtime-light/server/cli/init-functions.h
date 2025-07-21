@@ -34,7 +34,7 @@ inline void init_cli_server(kphp::component::stream output_stream) noexcept {
 
 inline kphp::coro::task<> finalize_cli_server() noexcept {
   const auto& cli_instance_state{CLIInstanceInstance::get()};
-  if (!cli_instance_state.output_stream.has_value()) [[unlikely]] {
+  if (!cli_instance_state.output_stream) [[unlikely]] {
     kphp::log::error("tried to write output to unset CLI output stream");
   }
 
