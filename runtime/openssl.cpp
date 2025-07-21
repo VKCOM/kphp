@@ -1750,10 +1750,11 @@ Optional<string> eval_cipher(CipherCtx::cipher_action action, const string& data
 
   CipherCtx cipher{method, options, action};
   if (cipher && cipher.init(key, iv, tag) && cipher.update(data, aad) && cipher.finalize()) {
-    record_openssl_builtin_call(action, method);
     if (action == CipherCtx::cipher_action::encrypt && !cipher.make_tag(tag)) {
       return false;
     }
+    // record only success calls
+    record_openssl_builtin_call(action, method);
     return cipher.flush_result();
   }
   return false;
