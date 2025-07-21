@@ -45,6 +45,7 @@ function test_json ($options) {
   var_dump (json_encode (11231, $options));
   var_dump (json_encode ("", $options));
   var_dump (json_encode ("12312312", $options));
+  var_dump (json_encode ("/a/b/\c//d\/e", $options));
   var_dump (json_encode (array(), $options));
   var_dump (json_encode (array(1, 2, 3), $options));
   var_dump (json_encode (array(-1 => 1, 2, 3), $options));
@@ -131,4 +132,5 @@ function test_json ($options) {
 
 test_json (0);
 test_json (JSON_UNESCAPED_UNICODE);
+test_json (JSON_UNESCAPED_SLASHES);
 test_json (JSON_PARTIAL_OUTPUT_ON_ERROR);
