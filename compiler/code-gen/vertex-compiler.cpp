@@ -960,7 +960,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
   W << ")";
   if (func->is_interruptible) {
     if (mode == func_call_mode::fork_call) {
-      W << "})";
+      W << "))";
     } else {
       W << ")";
     }
