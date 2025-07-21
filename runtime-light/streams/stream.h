@@ -69,7 +69,7 @@ public:
   }
 
   static auto open(std::string_view component_name, k2::stream_kind stream_kind, size_t capacity = DEFAULT_STORAGE_CAPACITY) noexcept
-      -> std::optional<kphp::component::stream>;
+      -> std::expected<kphp::component::stream, int32_t>;
   static auto accept(size_t capacity = DEFAULT_STORAGE_CAPACITY, std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept
       -> kphp::coro::task<std::optional<kphp::component::stream>>;
 
@@ -89,7 +89,7 @@ public:
 
 // ================================================================================================
 
-inline auto stream::open(std::string_view name, k2::stream_kind stream_kind, size_t capacity) noexcept -> std::optional<kphp::component::stream> {
+inline auto stream::open(std::string_view name, k2::stream_kind stream_kind, size_t capacity) noexcept -> std::expected<kphp::component::stream, int32_t> {
   int32_t errc{};
   k2::descriptor descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
   switch (stream_kind) {
@@ -106,13 +106,13 @@ inline auto stream::open(std::string_view name, k2::stream_kind stream_kind, siz
 
   if (errc != k2::errno_ok) [[unlikely]] {
     kphp::log::warning("failed to open a stream: name -> {}, stream kind -> {}, error code -> {}", name, std::to_underlying(stream_kind), errc);
-    return std::nullopt;
+    return std::unexpected{errc};
   }
 
   auto* mem{kphp::memory::script::alloc(capacity)};
   kphp::log::assertion(mem != nullptr);
   kphp::log::debug("opened a stream: name -> {}, descriptor -> {}", name, descriptor);
-  return stream{{static_cast<std::byte*>(mem), kphp::memory::script::free}, capacity, descriptor};
+  return std::expected<kphp::component::stream, int32_t>{stream{{static_cast<std::byte*>(mem), kphp::memory::script::free}, capacity, descriptor}};
 }
 
 inline auto stream::accept(size_t capacity, std::chrono::nanoseconds timeout) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>> {

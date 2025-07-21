@@ -16,12 +16,12 @@
 // === component query client interface ===========================================================
 
 kphp::coro::task<class_instance<C$ComponentQuery>> f$component_client_send_request(string name, string message) noexcept {
-  auto opt_stream{kphp::component::stream::open({name.c_str(), name.size()}, k2::stream_kind::component)};
-  if (!opt_stream.has_value()) [[unlikely]] {
+  auto expected{kphp::component::stream::open({name.c_str(), name.size()}, k2::stream_kind::component)};
+  if (!expected) [[unlikely]] {
     co_return class_instance<C$ComponentQuery>{};
   }
 
-  auto stream{std::move(*opt_stream)};
+  auto stream{std::move(*expected)};
   if (auto expected{co_await kphp::forks::id_managed(stream.write({reinterpret_cast<const std::byte*>(message.c_str()), message.size()}))}; !expected)
       [[unlikely]] {
     co_return class_instance<C$ComponentQuery>{};
