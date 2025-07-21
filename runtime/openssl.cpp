@@ -1744,7 +1744,7 @@ Optional<string> eval_cipher(CipherCtx::cipher_action action, const string& data
     const std::string_view builtin_name = action == CipherCtx::encrypt ? encrypt_builtin_name : decrypt_builtin_name;
     string virtual_builtin_name;
     virtual_builtin_name.reserve_at_least(builtin_name.size() + 1 + method.size());
-    virtual_builtin_name.append(builtin_name.data()).append('_').append(method);
+    virtual_builtin_name.append(builtin_name.data()).append("_").append(method);
     runtime_builtins_stats::save_virtual_builtin_call_stats(virtual_builtin_name);
   }};
 
