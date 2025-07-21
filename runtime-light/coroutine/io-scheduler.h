@@ -115,10 +115,10 @@ public:
 
 inline auto io_scheduler::make_cancellation_handler(kphp::coro::detail::poll_info& poll_info) noexcept {
   return vk::final_action{[this, &poll_info] noexcept {
-    if (poll_info.m_awaiting_pos.has_value()) [[unlikely]] {
+    if (poll_info.m_awaiting_pos) [[unlikely]] {
       m_awaiting_polls.erase(*std::exchange(poll_info.m_awaiting_pos, std::nullopt));
     }
-    if (poll_info.m_timer_pos.has_value()) [[unlikely]] {
+    if (poll_info.m_timer_pos) [[unlikely]] {
       m_timed_events.erase(*std::exchange(poll_info.m_timer_pos, std::nullopt));
     }
   }};

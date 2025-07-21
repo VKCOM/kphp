@@ -41,6 +41,8 @@ struct promise_self_deleting : kphp::coro::async_stack_element {
 
   auto get_return_object() noexcept -> task_self_deleting;
 
+  static auto get_return_object_on_allocation_failure() noexcept -> task_self_deleting;
+
   auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -84,6 +86,10 @@ public:
 
 inline auto promise_self_deleting::get_return_object() noexcept -> task_self_deleting {
   return task_self_deleting{*this};
+}
+
+inline auto promise_self_deleting::get_return_object_on_allocation_failure() noexcept -> task_self_deleting {
+  kphp::log::error("cannot allocate memory for task_self_deleting");
 }
 
 } // namespace task_self_deleting
