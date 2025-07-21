@@ -1738,7 +1738,7 @@ void openssl_add_method(const OBJ_NAME* name, void* arg) {
 
 Optional<string> eval_cipher(CipherCtx::cipher_action action, const string& data, const string& method, const string& key, int64_t options, const string& iv,
                              string& tag, const string& aad) {
-  auto record_openssl_builtin_call = [](CipherCtx::cipher_action action, const string& method) noexcept {
+  constexpr static auto record_openssl_builtin_call{[](CipherCtx::cipher_action action, const string& method) noexcept {
     constexpr static std::string_view encrypt_builtin_name = "openssl_encrypt";
     constexpr static std::string_view decrypt_builtin_name = "openssl_decrypt";
     const std::string_view builtin_name = action == CipherCtx::encrypt ? encrypt_builtin_name : decrypt_builtin_name;
@@ -1746,7 +1746,7 @@ Optional<string> eval_cipher(CipherCtx::cipher_action action, const string& data
     virtual_builtin_name.reserve_at_least(builtin_name.size() + 1 + method.size());
     virtual_builtin_name.append(builtin_name.data()).append('_').append(method);
     runtime_builtins_stats::save_virtual_builtin_call_stats(virtual_builtin_name);
-  };
+  }};
 
   CipherCtx cipher{method, options, action};
   if (cipher && cipher.init(key, iv, tag) && cipher.update(data, aad) && cipher.finalize()) {
