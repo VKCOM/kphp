@@ -9,6 +9,7 @@
 #include <utility>
 #include <variant>
 
+#include "common/containers/final_action.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/detail/when-any.h"
 #include "runtime-light/coroutine/event.h"
@@ -24,8 +25,12 @@ template<kphp::coro::concepts::awaitable... awaitable_types>
   kphp::coro::event notify{};
   std::optional<std::variant<std::remove_cvref_t<typename kphp::coro::awaitable_traits<awaitable_types>::awaiter_return_type>...>> opt_result{};
   auto controller_task{detail::when_any::make_when_any_controller_task(notify, opt_result, std::move(awaitables)...)};
-  controller_task.get_handle().resume();
 
+  // after successfully awaiting any of the provided awaitables, we need to destroy the controller task since
+  // we don't want it to wait for remaining awaitable
+  vk::final_action finalizer{[controller_task_handle = controller_task.get_handle()] noexcept { controller_task_handle.destroy(); }};
+
+  controller_task.get_handle().resume();
   co_await notify;
   kphp::log::assertion(opt_result.has_value());
   co_return std::move(*opt_result);

@@ -58,7 +58,7 @@ public:
 
   auto try_await(std::coroutine_handle<> awaiting_coroutine) noexcept -> bool {
     m_awaiting_coroutine = awaiting_coroutine;
-    return m_count == 1;
+    return m_count != 1;
   }
 
   auto notify_awaitable_completed() noexcept -> void {
