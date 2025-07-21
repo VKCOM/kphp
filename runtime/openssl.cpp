@@ -1738,8 +1738,19 @@ void openssl_add_method(const OBJ_NAME* name, void* arg) {
 
 Optional<string> eval_cipher(CipherCtx::cipher_action action, const string& data, const string& method, const string& key, int64_t options, const string& iv,
                              string& tag, const string& aad) {
+  auto record_openssl_builtin_call = [](CipherCtx::cipher_action action, const string& method) noexcept {
+    constexpr static std::string_view encrypt_builtin_name = "openssl_encrypt";
+    constexpr static std::string_view decrypt_builtin_name = "openssl_decrypt";
+    const std::string_view builtin_name = action == CipherCtx::encrypt ? encrypt_builtin_name : decrypt_builtin_name;
+    string virtual_builtin_name;
+    virtual_builtin_name.reserve_at_least(builtin_name.size() + 1 + method.size());
+    virtual_builtin_name.append(builtin_name.data()).append('_').append(method);
+    runtime_builtins_stats::save_virtual_builtin_call_stats(virtual_builtin_name);
+  };
+
   CipherCtx cipher{method, options, action};
   if (cipher && cipher.init(key, iv, tag) && cipher.update(data, aad) && cipher.finalize()) {
+    record_openssl_builtin_call(action, method);
     if (action == CipherCtx::cipher_action::encrypt && !cipher.make_tag(tag)) {
       return false;
     }
@@ -1775,12 +1786,6 @@ string default_tag_stub;
 } // namespace impl_
 Optional<string> f$openssl_encrypt(const string& data, const string& method, const string& key, int64_t options, const string& iv, string& tag,
                                    const string& aad, int64_t tag_length) {
-  constexpr static std::string_view current_builtin_name = "openssl_encrypt";
-  string builtin_name;
-  builtin_name.reserve_at_least(current_builtin_name.size() + 1 + method.size());
-  builtin_name.append(current_builtin_name.data()).append('_').append(method);
-  runtime_builtins_stats::save_virtual_builtin_call_stats(builtin_name);
-
   string out_tag;
   if (&tag != &impl_::default_tag_stub) {
     out_tag.assign(static_cast<std::uint32_t>(tag_length), '\0');
@@ -1796,12 +1801,6 @@ Optional<string> f$openssl_encrypt(const string& data, const string& method, con
 }
 
 Optional<string> f$openssl_decrypt(string data, const string& method, const string& key, int64_t options, const string& iv, string tag, const string& aad) {
-  constexpr static std::string_view current_builtin_name = "openssl_decrypt";
-  string builtin_name;
-  builtin_name.reserve_at_least(current_builtin_name.size() + 1 + method.size());
-  builtin_name.append(current_builtin_name.data()).append('_').append(method);
-  runtime_builtins_stats::save_virtual_builtin_call_stats(builtin_name);
-
   if (!(options & OPENSSL_RAW_DATA)) {
     Optional<string> decoding_data = f$base64_decode(data, true);
     if (!decoding_data.has_value()) {
