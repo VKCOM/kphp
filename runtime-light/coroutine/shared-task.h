@@ -197,7 +197,8 @@ public:
       : m_coro(coro) {}
 
   awaiter_base(awaiter_base&& other) noexcept
-      : m_coro(std::exchange(other.m_coro, {})),
+      : m_suspended(std::exchange(other.m_suspended, false)),
+        m_coro(std::exchange(other.m_coro, {})),
         m_waiter(std::exchange(other.m_waiter, {})) {}
 
   awaiter_base(const awaiter_base& other) = delete;
