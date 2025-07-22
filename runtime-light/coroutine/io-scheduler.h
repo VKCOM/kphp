@@ -119,7 +119,7 @@ inline auto io_scheduler::make_cancellation_handler(kphp::coro::detail::poll_inf
       m_awaiting_polls.erase(*std::exchange(poll_info.m_awaiting_pos, std::nullopt));
     }
     if (poll_info.m_timer_pos) [[unlikely]] {
-      m_timed_events.erase(*std::exchange(poll_info.m_timer_pos, std::nullopt));
+      remove_timer_token(*std::exchange(poll_info.m_timer_pos, std::nullopt));
     }
   }};
 }
@@ -146,7 +146,7 @@ inline auto io_scheduler::process_timeout() noexcept -> void {
     // ensure that this poll has not been processed yet
     kphp::log::assertion(!std::exchange(poll_info.m_processed, true));
 
-    m_timed_events.erase(*std::exchange(poll_info.m_timer_pos, std::nullopt));
+    remove_timer_token(*std::exchange(poll_info.m_timer_pos, std::nullopt));
     // timeout's occured, so we can safely remove the awaiting task from the awaiting tasks list
     if (poll_info.m_awaiting_pos.has_value()) {
       m_awaiting_polls.erase(*std::exchange(poll_info.m_awaiting_pos, std::nullopt));
