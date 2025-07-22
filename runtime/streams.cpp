@@ -320,9 +320,15 @@ Optional<int64_t> f$stream_select(mixed& read, mixed& write, mixed& except, cons
     return false;
   }
 
-  // TODO use pselect
+  struct timespec ts, *timeout_ts = nullptr;
+  if (timeout) {
+    ts.tv_sec = timeout->tv_sec;
+    ts.tv_nsec = static_cast<long>(timeout->tv_usec) * 1000;
+    timeout_ts = &ts;
+  }
+
   dl::enter_critical_section(); // OK
-  int32_t select_result = select(nfds + 1, &rfds, &wfds, &efds, timeout);
+  int32_t select_result = pselect(nfds + 1, &rfds, &wfds, &efds, timeout_ts, nullptr);
   dl::leave_critical_section();
 
   if (select_result == -1) {
