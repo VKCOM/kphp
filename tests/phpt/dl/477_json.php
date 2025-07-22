@@ -1,4 +1,4 @@
-@ok benchmark k2_skip
+@ok benchmark
 <?php
 
 function test_json ($options) {
