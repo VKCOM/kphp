@@ -344,7 +344,7 @@ void CompilerSettings::init() {
   if (dynamic_incremental_linkage.get()) {
     incremental_linker_flags.value_ = "-shared";
     if (is_k2_mode) {
-      incremental_linker_flags.value_ += " -stdlib=libc++";
+      incremental_linker_flags.value_ += " -stdlib=libc++ -static-libstdc++";
     }
   } else {
     incremental_linker_flags.value_ = "-r -nostdlib";
