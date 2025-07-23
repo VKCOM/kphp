@@ -136,6 +136,9 @@ void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
                fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
     kphp_error(klass->is_serializable,
                fmt_format("Can not fetch instance of non-serializable class {} with instance_cache_fetch call", klass->name));
+
+    // To be able to store instances in request cache
+    klass->deeply_require_may_be_mixed_base();
   } else {
     kphp_error(klass->is_immutable || klass->is_interface(),
                fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
@@ -152,6 +155,9 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
   if (G->is_output_mode_k2()) {
     kphp_error_return(klass->is_immutable, fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
     kphp_error_return(klass->is_serializable, fmt_format("Can not store instance of non-serializable class {} with instance_cache_store call", klass->name));
+
+    // To be able to store instances in request cache
+    klass->deeply_require_may_be_mixed_base();
   } else {
     kphp_error_return(klass->is_immutable || klass->is_interface(),
                       fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
