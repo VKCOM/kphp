@@ -85,29 +85,82 @@ public:
 
   static auto get() noexcept -> io_scheduler&;
 
+  /**
+   * @return True if the task queue is empty and zero tasks are scheduled for execution.
+   */
   auto empty() const noexcept -> bool;
 
+  /**
+   * @brief Processes pending I/O events and scheduled tasks.
+   * @return k2::PollStatus indicating whether tasks were processed or if polling should continue.
+   */
   auto process_events() noexcept -> k2::PollStatus;
 
+  /**
+   * @brief Spawns a new coroutine to be executed by the scheduler.
+   * @param coroutine The coroutine to spawn.
+   * @return True if the coroutine was successfully spawned, false otherwise.
+   */
   template<kphp::coro::concepts::coroutine coroutine_type>
   auto spawn(coroutine_type coroutine) noexcept -> bool;
 
+  /**
+   * @brief Schedules the current coroutine to be resumed later.
+   * @return A task that needs to be co_awaited to schedule the coroutine.
+   */
   [[nodiscard]] auto schedule() noexcept;
+  /**
+   * @brief Schedules a coroutine for execution.
+   * @param coroutine The coroutine to schedule.
+   * @return A task that will yield the coroutine's return value when completed.
+   */
   template<kphp::coro::concepts::coroutine coroutine_type>
   [[nodiscard]] auto schedule(coroutine_type coroutine) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<coroutine_type>::return_type>;
+  /**
+   * @brief Schedules a coroutine with a timeout.
+   * @param coroutine The coroutine to schedule.
+   * @param timeout Maximum duration to wait for the coroutine to complete. Given zero or negative timeout this behaves identical to schedule(coroutine).
+   * @return A task that yields either the coroutine's result or a timeout status.
+   */
   template<kphp::coro::concepts::coroutine coroutine_type, typename rep_type, typename period_type>
   [[nodiscard]] auto schedule(coroutine_type coroutine, std::chrono::duration<rep_type, period_type> timeout) noexcept
       -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<coroutine_type>::return_type, timeout_status>>;
+  /**
+   * @brief Schedules a delay before continuing execution.
+   * @param amount Duration to wait before resuming. Given zero or negative amount of time this behaves identical to schedule().
+   * @return A task that completes after the specified duration.
+   */
   template<typename rep_type, typename period_type>
   [[nodiscard]] auto schedule_after(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<>;
 
+  /**
+   * @brief Yields execution to allow other tasks to run.
+   * @return A task that represents the yield operation.
+   */
   [[nodiscard]] auto yield() noexcept;
   template<typename rep_type, typename period_type>
+  /**
+   * @brief Yields execution for a specified duration.
+   * @param amount Duration to yield for. Given zero or negative amount of time this behaves identical to yield().
+   * @return A task that completes after the specified duration.
+   */
   [[nodiscard]] auto yield_for(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<>;
 
-  [[nodiscard]] auto poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op,
-                          std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept -> kphp::coro::task<poll_status>;
+  /**
+   * @brief Polls a descriptor for I/O events.
+   * @param descriptor The descriptor to poll.
+   * @param poll_op The operation to poll for (read/write).
+   * @param timeout Maximum duration to wait for the event (0 means no timeout).
+   * @return A task that yields the poll status when completed.
+   */
+  [[nodiscard]] auto poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op, std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept
+      -> kphp::coro::task<poll_status>;
 
+  /**
+   * @brief Accepts an incoming connection with optional timeout.
+   * @param timeout Maximum duration to wait for a connection (0 means no timeout).
+   * @return A task that yields the new connection descriptor when completed.
+   */
   [[nodiscard]] auto accept(std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept -> kphp::coro::task<k2::descriptor>;
 };
 
