@@ -62,8 +62,8 @@ static const stream_functions* get_stream_functions_from_url(const string& url, 
     functions_table = get_stream_functions(string(url.c_str(), static_cast<string::size_type>(wrapper_end - url.c_str())));
   }
 
-  string builtin_name{invoker_name};
-  builtin_name.append("_").append(functions_table->name);
+  kphp::stl::string<kphp::memory::script_allocator> builtin_name{invoker_name};
+  builtin_name.append("_").append(functions_table->name.c_str());
   runtime_builtins_stats::save_virtual_builtin_call_stats(builtin_name);
 
   return functions_table;

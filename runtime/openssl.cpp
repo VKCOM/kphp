@@ -1742,9 +1742,9 @@ Optional<string> eval_cipher(CipherCtx::cipher_action action, const string& data
     constexpr static std::string_view encrypt_builtin_name = "openssl_encrypt";
     constexpr static std::string_view decrypt_builtin_name = "openssl_decrypt";
     const std::string_view builtin_name = action == CipherCtx::encrypt ? encrypt_builtin_name : decrypt_builtin_name;
-    string virtual_builtin_name;
-    virtual_builtin_name.reserve_at_least(builtin_name.size() + 1 + method.size());
-    virtual_builtin_name.append(builtin_name.data()).append("_").append(method);
+    kphp::stl::string<kphp::memory::script_allocator> virtual_builtin_name;
+    virtual_builtin_name.reserve(builtin_name.size() + 1 + method.size());
+    virtual_builtin_name.append(builtin_name.data()).append("_").append(method.c_str());
     runtime_builtins_stats::save_virtual_builtin_call_stats(virtual_builtin_name);
   }};
 

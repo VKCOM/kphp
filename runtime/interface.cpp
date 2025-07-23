@@ -2297,9 +2297,9 @@ static void init_interface_lib() {
 
 static void init_runtime_libs() {
   // init_curl_lib() lazy called in runtime
-  runtime_builtins_stats::init_request_stats();
   init_instance_cache_lib();
   init_confdata_functions_lib();
+  runtime_builtins_stats::init_request_stats();
 
   init_memcache_lib();
   init_mysql_lib();
