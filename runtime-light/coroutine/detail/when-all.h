@@ -9,21 +9,16 @@
 #include <coroutine>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
-#include "common/containers/final_action.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/type-traits.h"
+#include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/utils/logs.h"
-
-namespace kphp::coro {
-
-struct void_value {};
-
-} // namespace kphp::coro
 
 namespace kphp::coro::detail::when_all {
 
@@ -39,7 +34,7 @@ public:
       : m_count(std::exchange(other.m_count, 1)),
         m_awaiting_coroutine(std::exchange(other.m_awaiting_coroutine, {})) {}
 
-  when_all_latch& operator=(when_all_latch&& other) noexcept {
+  auto operator=(when_all_latch&& other) noexcept -> when_all_latch& {
     if (this != std::addressof(other)) {
       m_count = std::exchange(other.m_count, 1);
       m_awaiting_coroutine = std::exchange(other.m_awaiting_coroutine, {});
@@ -47,10 +42,10 @@ public:
     return *this;
   }
 
+  ~when_all_latch() = default;
+
   when_all_latch(const when_all_latch&) = delete;
   when_all_latch& operator=(const when_all_latch&) = delete;
-
-  ~when_all_latch() = default;
 
   auto is_ready() const noexcept -> bool {
     return m_awaiting_coroutine != nullptr && m_count == 1;
@@ -62,7 +57,7 @@ public:
   }
 
   auto notify_awaitable_completed() noexcept -> void {
-    if (--m_count == 1) {
+    if (--m_count == 1 && m_awaiting_coroutine != nullptr) {
       m_awaiting_coroutine.resume();
     }
   }
@@ -143,7 +138,7 @@ public:
   when_all_ready_awaitable& operator=(const when_all_ready_awaitable&) = delete;
   when_all_ready_awaitable& operator=(when_all_ready_awaitable&&) = delete;
 
-  auto operator co_await() noexcept {
+  auto operator co_await() && noexcept {
     return awaiter{*this};
   }
 };
@@ -208,7 +203,7 @@ class when_all_task {
   struct when_all_task_promise_void;
 
 public:
-  using promise_type = std::conditional_t<!std::is_void_v<return_type>, when_all_task_promise_non_void<return_type>, when_all_task_promise_void>;
+  using promise_type = std::conditional_t<std::is_void_v<return_type>, when_all_task_promise_void, when_all_task_promise_non_void<return_type>>;
 
 private:
   std::coroutine_handle<promise_type> m_coroutine;
@@ -225,17 +220,18 @@ private:
 
   template<std::same_as<return_type> T>
   struct when_all_task_promise_non_void : public when_all_task_promise_common {
-    alignas(T) std::byte bytes[sizeof(T)]{};
+  private:
+    std::optional<T> m_result;
 
+  public:
     auto yield_value(return_type&& return_value) noexcept {
-      ::new (bytes) T(std::move(return_value));
+      m_result = std::move(return_value);
       return when_all_task_promise_common::final_suspend();
     }
 
     auto result() noexcept -> T {
-      auto* t{std::launder(reinterpret_cast<T*>(bytes))};
-      const auto finalizer{vk::finally([t] noexcept { t->~T(); })};
-      return std::move(*t);
+      kphp::log::assertion(m_result);
+      return std::move(*m_result);
     }
 
     auto return_void() const noexcept -> void {
@@ -244,7 +240,10 @@ private:
   };
 
   struct when_all_task_promise_void : public when_all_task_promise_common {
-    constexpr auto result() const noexcept -> void {}
+    constexpr auto result() const noexcept -> kphp::coro::void_value {
+      return {};
+    }
+
     constexpr auto return_void() const noexcept -> void {}
   };
 
@@ -274,12 +273,7 @@ public:
   when_all_task& operator=(when_all_task&&) = delete;
 
   auto result() && noexcept {
-    if constexpr (std::is_void_v<return_type>) {
-      m_coroutine.promise().result();
-      return kphp::coro::void_value{};
-    } else {
-      return m_coroutine.promise().result();
-    }
+    return m_coroutine.promise().result();
   }
 };
 
