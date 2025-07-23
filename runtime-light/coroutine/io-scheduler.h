@@ -159,7 +159,7 @@ public:
   /**
    * @brief Accepts an incoming connection with optional timeout.
    * @param timeout Maximum duration to wait for a connection (0 means no timeout).
-   * @return A task that yields the new connection descriptor when completed.
+   * @return A task that yields the new connection descriptor when completed or k2::INVALID_PLATFORM_DESCRIPTOR on timeout.
    */
   [[nodiscard]] auto accept(std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept -> kphp::coro::task<k2::descriptor>;
 };
