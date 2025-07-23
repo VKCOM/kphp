@@ -20,16 +20,9 @@ extern long long engine_tag_number;
 
 extern const char* engine_pid;
 
-extern int php_warning_level;
-extern int php_warning_minimum_level;
-
 void php_out_of_memory_warning(char const* message, ...) __attribute__((format(printf, 1, 2)));
 
 template<class T>
 class class_instance;
 struct C$Throwable;
 const char* php_uncaught_exception_error(const class_instance<C$Throwable>& ex) noexcept;
-
-int64_t f$error_reporting(int64_t level);
-
-int64_t f$error_reporting();

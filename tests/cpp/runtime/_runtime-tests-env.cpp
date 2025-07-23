@@ -10,6 +10,7 @@
 #include "runtime/php_assert.h"
 #include "runtime/tl/rpc_response.h"
 #include "runtime-common/core/array_access.h"
+#include "runtime-common/stdlib/error-handling/error-handling-context.h"
 #include "server/php-engine-vars.h"
 #include "server/workers-control.h"
 
@@ -34,7 +35,7 @@ public:
 
     init_runtime_environment(null_query_data{}, PhpScriptMutableGlobals::current().get_superglobals(), script_memory, script_memory_size);
     RuntimeContext::get().php_disable_warnings = true;
-    php_warning_level = 0;
+    ErrorHandlingContext::get().php_warning_level = 0;
   }
 
   void TearDown() final {
