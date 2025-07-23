@@ -340,7 +340,15 @@ void CompilerSettings::init() {
   std::string cxx_default_flags = ss.str();
 
   cxx_toolchain_option.value_ = !cxx_toolchain_dir.value_.empty() ? ("-B" + cxx_toolchain_dir.value_) : "";
-  incremental_linker_flags.value_ = dynamic_incremental_linkage.get() ? "-shared" : "-r -nostdlib";
+
+  if (dynamic_incremental_linkage.get()) {
+    incremental_linker_flags.value_ = "-shared";
+    if (is_k2_mode) {
+      incremental_linker_flags.value_ += " -stdlib=libc++ -static-libstdc++";
+    }
+  } else {
+    incremental_linker_flags.value_ = "-r -nostdlib";
+  }
 
   remove_extra_spaces(extra_ld_flags.value_);
 
