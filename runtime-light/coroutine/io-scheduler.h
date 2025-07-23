@@ -153,8 +153,8 @@ public:
    * @param timeout Maximum duration to wait for the event (0 means no timeout).
    * @return A task that yields the poll status when completed.
    */
-  [[nodiscard]] auto poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op, std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept
-      -> kphp::coro::task<poll_status>;
+  [[nodiscard]] auto poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op,
+                          std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept -> kphp::coro::task<poll_status>;
 
   /**
    * @brief Accepts an incoming connection with optional timeout.
