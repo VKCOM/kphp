@@ -96,6 +96,7 @@ class awaiter_base {
 
 protected:
   bool m_started{};
+  bool m_suspended{};
   std::coroutine_handle<promise_type> m_coro{};
 
 public:
@@ -104,6 +105,7 @@ public:
 
   awaiter_base(awaiter_base&& other) noexcept
       : m_started(other.m_started),
+        m_suspended(std::exchange(other.m_suspended, false)),
         m_coro(std::exchange(other.m_coro, {})) {}
 
   awaiter_base(const awaiter_base& other) = delete;
@@ -111,7 +113,7 @@ public:
   awaiter_base& operator=(awaiter_base&& other) = delete;
 
   ~awaiter_base() {
-    if (m_coro != nullptr) {
+    if (m_coro != nullptr && m_suspended) {
       m_coro.promise().m_next = nullptr;
       detach_from_async_stack();
     }
@@ -126,10 +128,13 @@ public:
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> std::coroutine_handle<promise_type> {
     push_async_stack_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
     m_coro.promise().m_next = awaiting_coroutine.address();
+    m_suspended = true;
     return m_coro;
   }
 
-  constexpr auto await_resume() noexcept -> void {}
+  auto await_resume() noexcept -> void {
+    m_suspended = false;
+  }
 };
 
 } // namespace task_impl
