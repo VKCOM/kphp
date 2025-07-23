@@ -68,10 +68,10 @@ public:
     reset(k2::INVALID_PLATFORM_DESCRIPTOR);
   }
 
-  static auto open(std::string_view component_name, k2::stream_kind stream_kind, size_t capacity = DEFAULT_STORAGE_CAPACITY) noexcept
-      -> std::expected<kphp::component::stream, int32_t>;
-  static auto accept(size_t capacity = DEFAULT_STORAGE_CAPACITY, std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept
-      -> kphp::coro::task<std::optional<kphp::component::stream>>;
+  static auto open(std::string_view component_name, k2::stream_kind stream_kind,
+                   size_t capacity = DEFAULT_STORAGE_CAPACITY) noexcept -> std::expected<kphp::component::stream, int32_t>;
+  static auto accept(size_t capacity = DEFAULT_STORAGE_CAPACITY,
+                     std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>>;
 
   auto clear() noexcept -> void;
   auto reset(k2::descriptor descriptor) noexcept -> void;
