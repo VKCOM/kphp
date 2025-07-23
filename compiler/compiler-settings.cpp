@@ -347,7 +347,7 @@ void CompilerSettings::init() {
       incremental_linker_flags.value_ += " -stdlib=libc++";
     }
   } else {
-    incremental_linker_flags.value_ = "-r nostdlib";
+    incremental_linker_flags.value_ = "-r -nostdlib";
   }
 
   remove_extra_spaces(extra_ld_flags.value_);
