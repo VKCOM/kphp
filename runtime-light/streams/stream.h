@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
@@ -50,7 +51,7 @@ public:
         m_storage_capacity(std::exchange(other.m_storage_capacity, 0)),
         m_descriptor(std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)) {}
 
-  stream& operator=(stream&& other) noexcept {
+  auto operator=(stream&& other) noexcept -> stream& {
     if (this != std::addressof(other)) {
       reset(k2::INVALID_PLATFORM_DESCRIPTOR);
       m_storage = std::move(other.m_storage);
@@ -61,12 +62,12 @@ public:
     return *this;
   }
 
-  stream(const stream&) = delete;
-  stream& operator=(const stream&) = delete;
-
   ~stream() {
     reset(k2::INVALID_PLATFORM_DESCRIPTOR);
   }
+
+  stream(const stream&) = delete;
+  auto operator=(const stream&) -> stream& = delete;
 
   static auto open(std::string_view component_name, k2::stream_kind stream_kind,
                    size_t capacity = DEFAULT_STORAGE_CAPACITY) noexcept -> std::expected<kphp::component::stream, int32_t>;
@@ -183,7 +184,7 @@ inline auto stream::read() noexcept -> kphp::coro::task<std::expected<void, int3
     switch (poll_status) {
     case kphp::coro::poll_status::event:
       if (m_storage_capacity == m_storage_size) {
-        if (auto expected{reserve(m_storage_capacity * 2)}; !expected) [[unlikely]] {
+        if (auto expected{reserve(std::max(DEFAULT_STORAGE_CAPACITY, m_storage_capacity * 2))}; !expected) [[unlikely]] {
           co_return std::move(expected);
         }
       }
