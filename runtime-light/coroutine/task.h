@@ -103,15 +103,18 @@ public:
       : m_coro(coro) {}
 
   awaiter_base(awaiter_base&& other) noexcept
-      : m_coro(std::exchange(other.m_coro, {})) {}
+      : m_started(other.m_started),
+        m_coro(std::exchange(other.m_coro, {})) {}
 
   awaiter_base(const awaiter_base& other) = delete;
   awaiter_base& operator=(const awaiter_base& other) = delete;
   awaiter_base& operator=(awaiter_base&& other) = delete;
 
   ~awaiter_base() {
-    m_coro.promise().m_next = nullptr;
-    detach_from_async_stack();
+    if (m_coro != nullptr) {
+      m_coro.promise().m_next = nullptr;
+      detach_from_async_stack();
+    }
   }
 
   auto await_ready() noexcept -> bool {
