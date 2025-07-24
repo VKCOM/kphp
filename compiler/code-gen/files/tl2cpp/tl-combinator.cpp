@@ -143,13 +143,12 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
 
 void CombinatorStore::gen_result_expr_processing(CodeGenerator &W) const {
   kphp_assert(typed_mode);
-  if (!combinator->original_result_constructor_id) {
-    const auto &magic_storing = tl2cpp::get_magic_storing(combinator->result.get());
-    if (!magic_storing.empty()) {
-      W << magic_storing << NL;
-    }
-  } else {
+  if (combinator->original_result_constructor_id) {
     W << fmt_format("f$store_int({:#010x});", combinator->original_result_constructor_id) << NL;
+  }
+  const auto& magic_storing = tl2cpp::get_magic_storing(combinator->result.get());
+  if (!magic_storing.empty()) {
+    W << magic_storing << NL;
   }
   W << tl2cpp::get_full_value(combinator->result.get(), var_num_access) << ".typed_store(tl_object->$value);" << NL;
 }
@@ -210,16 +209,15 @@ void CombinatorFetch::gen_result_expr_processing(CodeGenerator &W) const {
   // if function returns a flattable type, then after the perform_flat_optimization() it's contents are inlined;
   // although, during the function fetching we need a magic value of the original type (even if it was flattened).
   // To handle this, there is an original_result_constructor_id function field that stores a real type 'magic' if the type is flattened and 0 otherwise.
-  if (!combinator->original_result_constructor_id) {
-    const auto &magic_fetching = tl2cpp::get_magic_fetching(combinator->result.get(),
-                                                            fmt_format("Incorrect magic in result of function: {}", tl2cpp::cur_combinator->name));
-    if (!magic_fetching.empty()) {
-      W << magic_fetching << NL;
-    }
-  } else {
+  if (combinator->original_result_constructor_id)  {
     W << fmt_format(R"(fetch_magic_if_not_bare({:#010x}, "Incorrect magic in result of function: {}");)",
                     static_cast<uint32_t>(combinator->original_result_constructor_id), tl2cpp::cur_combinator->name)
       << NL;
+  }
+  const auto& magic_fetching =
+      tl2cpp::get_magic_fetching(combinator->result.get(), fmt_format("Incorrect magic in result of function: {}", tl2cpp::cur_combinator->name));
+  if (!magic_fetching.empty()) {
+    W << magic_fetching << NL;
   }
   if (!typed_mode) {
     W << "return " << tl2cpp::get_full_value(combinator->result.get(), "") << ".fetch();" << NL;
