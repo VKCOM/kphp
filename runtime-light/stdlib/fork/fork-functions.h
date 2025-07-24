@@ -29,7 +29,7 @@ inline constexpr double MAX_TIMEOUT = 86400.0;
 inline constexpr double DEFAULT_TIMEOUT = MAX_TIMEOUT;
 
 inline constexpr auto MAX_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT});
-inline constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT});
+inline constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT});
 
 inline std::chrono::nanoseconds normalize_timeout(std::chrono::nanoseconds timeout) noexcept {
   using namespace std::chrono_literals;
