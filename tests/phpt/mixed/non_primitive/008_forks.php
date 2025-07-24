@@ -28,8 +28,8 @@ function print_and_get(int $x) {
 
 function check(int $x) {
     $fut = fork(print_and_get($x));
-    echo "Waiting...\n";
     $res = wait($fut);
+    echo "Waiting...\n";
     if ($res instanceof IntWrapper) {
         echo "IntWrapper!\n";
     }
