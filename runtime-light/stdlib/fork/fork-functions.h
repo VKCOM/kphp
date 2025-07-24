@@ -8,9 +8,9 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <type_traits>
 #include <utility>
 
-#include "common/containers/final_action.h"
 #include "runtime-common/core/core-types/decl/optional.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/concepts.h"
@@ -45,23 +45,21 @@ template<kphp::coro::concepts::awaitable awaitable_type>
 auto id_managed(awaitable_type awaitable) noexcept -> kphp::coro::task<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type> {
   auto& fork_instance_st{ForkInstanceState::get()};
   const auto saved_fork_id{fork_instance_st.current_id};
-  const vk::final_action finalizer{[&fork_instance_st, saved_fork_id] noexcept { fork_instance_st.current_id = saved_fork_id; }};
-  co_return co_await std::move(awaitable);
+  if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type>) {
+    co_await std::move(awaitable);
+    fork_instance_st.current_id = saved_fork_id;
+    co_return;
+  } else {
+    auto value{co_await std::move(awaitable)};
+    fork_instance_st.current_id = saved_fork_id;
+    co_return std::move(value);
+  }
 }
 
 template<typename return_type>
 auto start(kphp::coro::task<return_type> task) noexcept -> int64_t {
-  auto shared_task{std::invoke([](kphp::coro::task<return_type> task) noexcept -> kphp::coro::shared_task<return_type> { co_return co_await std::move(task); },
-                               std::move(task))};
-
-  auto fork_id{ForkInstanceState::get().push_fork(shared_task)};
-  auto spawner_task{std::invoke(
-      [](kphp::coro::shared_task<return_type> shared_task, int64_t fork_id) noexcept -> kphp::coro::task<> {
-        ForkInstanceState::get().current_id = fork_id;
-        co_await std::move(shared_task).when_ready();
-      },
-      std::move(shared_task), fork_id)};
-  kphp::log::assertion(kphp::coro::io_scheduler::get().spawn(std::move(spawner_task)));
+  auto [fork_id, fork_task]{ForkInstanceState::get().create_fork(std::move(task))};
+  kphp::log::assertion(kphp::coro::io_scheduler::get().spawn(std::move(fork_task)));
   return fork_id;
 }
 
