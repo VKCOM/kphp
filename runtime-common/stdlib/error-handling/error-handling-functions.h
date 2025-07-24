@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <algorithm>
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
@@ -16,8 +15,8 @@ inline int64_t f$error_reporting(int64_t level) noexcept {
   if ((level & E_ALL) == E_ALL) {
     error_handling_st.php_warning_level = php_warning_levels::PHP_WARNING_MAXIMUM_LEVEL;
   }
-  if (0 <= level && level <= php_warning_levels::PHP_WARNING_MAXIMUM_LEVEL) {
-    error_handling_st.php_warning_level = std::max(error_handling_st.php_warning_minimum_level, static_cast<int32_t>(level));
+  if (error_handling_st.php_warning_minimum_level < level && level <= php_warning_levels::PHP_WARNING_MAXIMUM_LEVEL) {
+    error_handling_st.php_warning_level = static_cast<int32_t>(level);
   }
   return prev;
 }
