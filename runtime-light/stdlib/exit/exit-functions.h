@@ -13,7 +13,7 @@
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/output/output-state.h"
 
-inline kphp::coro::task<> f$exit(mixed v) noexcept { // TODO: make it synchronous
+inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchronous
   auto& instance_st{InstanceState::get()};
 
   int64_t exit_code{};
