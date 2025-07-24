@@ -348,11 +348,24 @@ struct shared_task final {
   explicit operator shared_task<>() && noexcept {
     return shared_task<>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
   }
+
+  explicit operator shared_task<>() & noexcept {
+    shared_task<T> task_copy{*this};
+    return static_cast<shared_task<>>(std::move(task_copy));
+  }
+
   // restore erased type
   template<typename U>
   requires(std::same_as<void, T>)
   explicit operator shared_task<U>() && noexcept {
     return shared_task<U>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
+  }
+
+  template<typename U>
+  requires(std::same_as<void, T>)
+  explicit operator shared_task<U>() & noexcept {
+    shared_task<T> task_copy{*this};
+    return static_cast<shared_task<U>>(std::move(task_copy));
   }
 
 private:
