@@ -10,9 +10,7 @@
 #include <optional>
 #include <string_view>
 
-#include "common/algorithms/hashes.h"
 #include "runtime-common/core/allocator/script-allocator.h"
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 
 template<>
