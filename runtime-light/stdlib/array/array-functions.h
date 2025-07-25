@@ -352,7 +352,7 @@ kphp::coro::task<array<R>> f$array_map(F f, array<A> a) noexcept {
 template<class R, class T, std::invocable<R, T> F, class I>
 requires std::constructible_from<R, std::add_rvalue_reference_t<I>>
 kphp::coro::task<R> f$array_reduce(array<T> a, F f, I init) noexcept {
-  R result{std::move(init)};
+  R result{R(std::move(init))}; // explicit constructor call to avoid implicit cast
   for (const auto& it : a) {
     if constexpr (kphp::coro::is_async_function_v<F, R, T>) {
       result = co_await std::invoke(f, result, it.get_value());
