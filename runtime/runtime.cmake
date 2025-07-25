@@ -85,6 +85,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         env.cpp
         exception.cpp
         exec.cpp
+        error-handling-context.cpp
         files.cpp
         instance-cache.cpp
         instance-copy-processor.cpp

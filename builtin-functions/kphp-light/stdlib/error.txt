@@ -72,6 +72,8 @@ function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: strin
 
 function error_get_last() ::: mixed;
 
+function error_reporting ($e ::: int = TODO) ::: int;
+
 class ArithmeticError extends Error {}
 class DivisionByZeroError extends ArithmeticError {}
 class AssertionError extends Error {}
@@ -101,7 +103,5 @@ class Random\RandomException extends Exception {}
 
 // === UNSUPPORTED ===
 
-/** @kphp-extern-func-info stub */
-function error_reporting ($e ::: int = TODO) ::: int;
 /** @kphp-extern-func-info stub generation-required */
 function kphp_backtrace($pretty ::: bool = true) ::: string[];
