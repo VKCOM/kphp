@@ -1211,6 +1211,7 @@ int php_master_http_execute(struct connection *c, int op) {
     const std::string_view metrics_response = get_open_metrics_stats_http();
     write_basic_http_header(c, 200, 0, metrics_response.length(), nullptr, "text/plain; charset=UTF-8");
     write_out(&c->Out, metrics_response.data(), metrics_response.length());
+    return 0;
   }
 
   D->query_flags |= QF_ERROR;
