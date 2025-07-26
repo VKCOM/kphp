@@ -4,6 +4,7 @@
 
 #include "runtime-light/state/instance-state.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -77,8 +78,10 @@ void InstanceState::init_script_execution() noexcept {
 }
 
 kphp::coro::task<> InstanceState::init_cli_instance() noexcept {
+  static constexpr size_t OUTPUT_STREAM_CAPACITY = 0;
+
   instance_kind_ = instance_kind::cli;
-  auto opt_output_stream{co_await kphp::component::stream::accept()};
+  auto opt_output_stream{co_await kphp::component::stream::accept(OUTPUT_STREAM_CAPACITY)};
   kphp::log::assertion(opt_output_stream.has_value());
   kphp::cli::init_cli_server(std::move(*opt_output_stream));
 }
