@@ -105,6 +105,14 @@ public:
   auto spawn(coroutine_type coroutine) noexcept -> bool;
 
   /**
+   * @brief Spawns a new coroutine that immediately starts the passed coroutine.
+   * @param corotuine The coroutine to start.
+   * @return True if the coroutine was successfully started, false otherwise.
+   */
+  template<kphp::coro::concepts::coroutine coroutine_type>
+  auto start(coroutine_type coroutine) noexcept -> bool;
+
+  /**
    * @brief Schedules the current coroutine to be resumed later.
    * @return A task that needs to be co_awaited to schedule the coroutine.
    */
@@ -403,6 +411,17 @@ auto io_scheduler::spawn(coroutine_type coroutine) noexcept -> bool {
     return false;
   }
   m_scheduled_tasks.emplace_back(h);
+  return true;
+}
+
+template<kphp::coro::concepts::coroutine coroutine_type>
+auto io_scheduler::start(coroutine_type coroutine) noexcept -> bool {
+  auto owned_task{kphp::coro::detail::make_task_self_deleting(std::move(coroutine))};
+  auto handle{owned_task.get_handle()};
+  if (!handle || handle.done()) [[unlikely]] {
+    return false;
+  }
+  kphp::coro::resume(handle, m_coroutine_instance_state.coroutine_stack_root);
   return true;
 }
 
