@@ -4,6 +4,7 @@
 
 #include "runtime-light/stdlib/file/resource.h"
 
+#include <cstddef>
 #include <string_view>
 #include <utility>
 
@@ -11,7 +12,7 @@
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/streams/stream.h"
 
-namespace kphp::fs {
+namespace kphp::resource {
 
 underlying_resource::underlying_resource(std::string_view scheme) noexcept {
   const auto kind{uri_to_resource_kind(scheme)};
@@ -30,8 +31,10 @@ underlying_resource::underlying_resource(std::string_view scheme) noexcept {
     m_errc = InstanceState::get().image_kind() == image_kind::server ? k2::errno_ok : k2::errno_einval;
     break;
   case resource_kind::UDP: {
+    static constexpr size_t UDP_STREAM_CAPCITY = 0;
+
     const auto url{scheme.substr(detail::UDP_SCHEME_PREFIX.size(), scheme.size() - detail::UDP_SCHEME_PREFIX.size())};
-    auto expected{kphp::component::stream::open(url, k2::stream_kind::udp)};
+    auto expected{kphp::component::stream::open(url, k2::stream_kind::udp, UDP_STREAM_CAPCITY)};
     if (!expected) [[unlikely]] {
       m_errc = expected.error();
       break;
@@ -48,4 +51,4 @@ underlying_resource::underlying_resource(std::string_view scheme) noexcept {
   m_kind = m_errc == k2::errno_ok ? kind : resource_kind::UNKNOWN;
 }
 
-} // namespace kphp::fs
+} // namespace kphp::resource

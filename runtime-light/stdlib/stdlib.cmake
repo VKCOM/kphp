@@ -31,8 +31,6 @@ prepend(
   string/string-state.cpp
   system/system-functions.cpp
   system/system-state.cpp
-  file/file-system-functions.cpp
-  file/file-system-state.cpp
   file/resource.cpp
   time/time-functions.cpp
   time/time-state.cpp

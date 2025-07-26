@@ -20,7 +20,7 @@
 
 using resource = mixed;
 
-namespace kphp::fs {
+namespace kphp::resource {
 
 namespace detail {
 
@@ -128,4 +128,4 @@ public:
   }
 };
 
-} // namespace kphp::fs
+} // namespace kphp::resource
