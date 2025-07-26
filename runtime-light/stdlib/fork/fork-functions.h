@@ -58,8 +58,11 @@ auto id_managed(awaitable_type awaitable) noexcept -> kphp::coro::task<typename 
 
 template<typename return_type>
 auto start(kphp::coro::task<return_type> task) noexcept -> int64_t {
-  auto [fork_id, fork_task]{ForkInstanceState::get().create_fork(std::move(task))};
-  kphp::log::assertion(kphp::coro::io_scheduler::get().spawn(std::move(fork_task)));
+  auto& fork_instance_st{ForkInstanceState::get()};
+  auto [fork_id, fork_task]{fork_instance_st.create_fork(std::move(task))};
+  auto saved_fork_id{fork_instance_st.current_id};
+  kphp::log::assertion(kphp::coro::io_scheduler::get().start(std::move(fork_task)));
+  fork_instance_st.current_id = saved_fork_id;
   return fork_id;
 }
 
