@@ -7,7 +7,6 @@ prepend(
   crypto/crypto-state.cpp
   curl/curl-state.cpp
   diagnostics/backtrace.cpp
-  exit/exit-functions.cpp
   fork/fork-state.cpp
   instance-cache/instance-cache-state.cpp
   job-worker/job-worker-api.cpp
@@ -32,8 +31,6 @@ prepend(
   string/string-state.cpp
   system/system-functions.cpp
   system/system-state.cpp
-  file/file-system-functions.cpp
-  file/file-system-state.cpp
   file/resource.cpp
   time/time-functions.cpp
   time/time-state.cpp

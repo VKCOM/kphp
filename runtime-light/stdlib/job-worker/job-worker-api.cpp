@@ -11,16 +11,16 @@
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/coroutine/awaitable.h"
+#include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker.h"
-#include "runtime-light/streams/streams.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
@@ -64,8 +64,8 @@ kphp::coro::task<int64_t> kphp_job_worker_start_impl(string request, double time
   // create fork to wait for job worker response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send job worker request
   auto waiter_task{[](auto comp_query, std::chrono::nanoseconds timeout) noexcept -> kphp::coro::task<string> {
-    auto fetch_task{f$component_client_fetch_response(std::move(comp_query))};
-    const string response{(co_await wait_with_timeout_t{fetch_task.operator co_await(), timeout}).value_or(string{})};
+    auto expected{co_await kphp::coro::io_scheduler::get().schedule(f$component_client_fetch_response(std::move(comp_query)), timeout)};
+    string response{expected ? std::move(*expected) : string{}};
 
     tl::TLBuffer tlb{};
     tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
@@ -76,7 +76,7 @@ kphp::coro::task<int64_t> kphp_job_worker_start_impl(string request, double time
     co_return string{jw_response.body.value.data(), static_cast<string::size_type>(jw_response.body.value.size())};
   }(std::move(comp_query), timeout_ns)};
   // start waiter fork and return its ID
-  co_return (co_await start_fork_t{std::move(waiter_task)});
+  co_return kphp::forks::start(std::move(waiter_task));
 }
 
 } // namespace
@@ -119,31 +119,31 @@ kphp::coro::task<string> f$job_worker_fetch_request() noexcept {
 }
 
 kphp::coro::task<int64_t> f$job_worker_store_response(string response) noexcept {
-  auto& instance_st{InstanceState::get()};
-  auto& jw_server_st{JobWorkerServerInstanceState::get()};
-  if (!f$is_kphp_job_workers_enabled()) { // workers are enabled
-    kphp::log::warning("couldn't store job worker response: job workers are disabled");
-    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (jw_server_st.kind != JobWorkerServerInstanceState::Kind::Regular) { // we're in regular worker
-    kphp::log::warning("couldn't store job worker response: we are either in no reply job worker or not in a job worker at all");
-    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (jw_server_st.state == JobWorkerServerInstanceState::State::Replied) { // it's the first attempt to reply
-    kphp::log::warning("couldn't store job worker response: multiple stores are forbidden");
-    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (instance_st.standard_stream() == k2::INVALID_PLATFORM_DESCRIPTOR) { // we have a stream to write into
-    kphp::log::warning("couldn't store job worker response: no standard stream");
-    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  } else if (response.empty()) { // we have a response to reply
-    kphp::log::warning("couldn't store job worker response: it shouldn't be empty");
-    co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
-  }
-
-  tl::TLBuffer tlb{};
-  tl::K2JobWorkerResponse{.job_id = {.value = jw_server_st.job_id}, .body = {.value = {response.c_str(), response.size()}}}.store(tlb);
-  if ((co_await write_all_to_stream(instance_st.standard_stream(), tlb.data(), tlb.size())) != tlb.size()) {
-    kphp::log::warning("couldn't store job worker response");
-    co_return static_cast<int64_t>(JobWorkerError::store_response_cant_send_error);
-  }
-  jw_server_st.state = JobWorkerServerInstanceState::State::Replied;
+  // auto& instance_st{InstanceState::get()};
+  // auto& jw_server_st{JobWorkerServerInstanceState::get()};
+  // if (!f$is_kphp_job_workers_enabled()) { // workers are enabled
+  //   kphp::log::warning("couldn't store job worker response: job workers are disabled");
+  //   co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
+  // } else if (jw_server_st.kind != JobWorkerServerInstanceState::Kind::Regular) { // we're in regular worker
+  //   kphp::log::warning("couldn't store job worker response: we are either in no reply job worker or not in a job worker at all");
+  //   co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
+  // } else if (jw_server_st.state == JobWorkerServerInstanceState::State::Replied) { // it's the first attempt to reply
+  //   kphp::log::warning("couldn't store job worker response: multiple stores are forbidden");
+  //   co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
+  // } else if (instance_st.standard_stream() == k2::INVALID_PLATFORM_DESCRIPTOR) { // we have a stream to write into
+  //   kphp::log::warning("couldn't store job worker response: no standard stream");
+  //   co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
+  // } else if (response.empty()) { // we have a response to reply
+  //   kphp::log::warning("couldn't store job worker response: it shouldn't be empty");
+  //   co_return static_cast<int64_t>(JobWorkerError::store_response_incorrect_call_error);
+  // }
+  //
+  // tl::TLBuffer tlb{};
+  // tl::K2JobWorkerResponse{.job_id = {.value = jw_server_st.job_id}, .body = {.value = {response.c_str(), response.size()}}}.store(tlb);
+  // if ((co_await write_all_to_stream(instance_st.standard_stream(), tlb.data(), tlb.size())) != tlb.size()) {
+  //   kphp::log::warning("couldn't store job worker response");
+  //   co_return static_cast<int64_t>(JobWorkerError::store_response_cant_send_error);
+  // }
+  // jw_server_st.state = JobWorkerServerInstanceState::State::Replied;
   co_return 0;
 }

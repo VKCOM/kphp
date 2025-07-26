@@ -12,18 +12,19 @@
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/state/instance-state.h"
+#include "runtime-light/streams/stream.h"
 
 // === ComponentQuery =============================================================================
 
-struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery> {
-  uint64_t stream_d{k2::INVALID_PLATFORM_DESCRIPTOR};
+class C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery> {
+  kphp::component::stream m_stream;
 
-  explicit constexpr C$ComponentQuery(uint64_t stream_d_) noexcept
-      : stream_d(stream_d_) {}
-  constexpr C$ComponentQuery(C$ComponentQuery&& other) noexcept
-      : stream_d(std::exchange(other.stream_d, k2::INVALID_PLATFORM_DESCRIPTOR)) {};
+public:
+  explicit C$ComponentQuery(kphp::component::stream stream) noexcept
+      : m_stream(std::move(stream)) {}
+  C$ComponentQuery(C$ComponentQuery&& other) noexcept
+      : m_stream(std::move(other.m_stream)) {}
+  ~C$ComponentQuery() = default;
 
   C$ComponentQuery(const C$ComponentQuery&) = delete;
   C$ComponentQuery& operator=(const C$ComponentQuery&) = delete;
@@ -38,11 +39,8 @@ struct C$ComponentQuery final : public refcountable_php_classes<C$ComponentQuery
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
 
-  ~C$ComponentQuery() {
-    auto& instance_st{InstanceState::get()};
-    if (instance_st.opened_streams().contains(stream_d)) {
-      instance_st.release_stream(stream_d);
-    }
+  auto stream() noexcept -> kphp::component::stream& {
+    return m_stream;
   }
 };
 

@@ -28,7 +28,7 @@ struct shared_task_waiter final {
 };
 
 template<typename promise_type>
-struct promise_base : async_stack_element {
+struct promise_base : kphp::coro::async_stack_element {
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
@@ -166,8 +166,7 @@ private:
 
 template<typename promise_type>
 class awaiter_base {
-  enum class state : uint8_t { init, suspend, end };
-  state m_state{state::init};
+  bool m_suspended{};
 
   void set_async_top_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
     /**
@@ -198,7 +197,7 @@ public:
       : m_coro(coro) {}
 
   awaiter_base(awaiter_base&& other) noexcept
-      : m_state(std::exchange(other.m_state, state::end)),
+      : m_suspended(std::exchange(other.m_suspended, false)),
         m_coro(std::exchange(other.m_coro, {})),
         m_waiter(std::exchange(other.m_waiter, {})) {}
 
@@ -207,37 +206,26 @@ public:
   awaiter_base& operator=(awaiter_base&& other) = delete;
 
   ~awaiter_base() {
-    if (m_state == state::suspend) {
-      cancel();
+    if (m_suspended) {
+      m_coro.promise().cancel_awaiter(m_waiter);
     }
   }
 
   auto await_ready() const noexcept -> bool {
-    kphp::log::assertion(m_state == state::init && m_coro);
     return m_coro.promise().done();
   }
 
-  template<typename promise_t>
-  [[clang::noinline]] auto await_suspend(std::coroutine_handle<promise_t> awaiter) noexcept -> bool {
-    set_async_top_frame(awaiter.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
-    m_state = state::suspend;
-    m_waiter.m_continuation = awaiter;
-    bool should_be_suspended{m_coro.promise().suspend_awaiter(m_waiter)};
-    reset_async_top_frame(awaiter.promise().get_async_stack_frame());
-    return should_be_suspended;
+  template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
+  [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> bool {
+    set_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
+    m_waiter.m_continuation = awaiting_coroutine;
+    m_suspended = m_coro.promise().suspend_awaiter(m_waiter);
+    reset_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame());
+    return m_suspended;
   }
 
   auto await_resume() noexcept -> void {
-    m_state = state::end;
-  }
-
-  auto resumable() const noexcept -> bool {
-    return m_coro.promise().done();
-  }
-
-  auto cancel() noexcept -> void {
-    m_state = state::end;
-    m_coro.promise().cancel_awaiter(m_waiter);
+    m_suspended = false;
   }
 };
 
@@ -360,11 +348,24 @@ struct shared_task final {
   explicit operator shared_task<>() && noexcept {
     return shared_task<>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
   }
+
+  explicit operator shared_task<>() & noexcept {
+    shared_task<T> task_copy{*this};
+    return static_cast<shared_task<>>(std::move(task_copy));
+  }
+
   // restore erased type
   template<typename U>
   requires(std::same_as<void, T>)
   explicit operator shared_task<U>() && noexcept {
     return shared_task<U>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
+  }
+
+  template<typename U>
+  requires(std::same_as<void, T>)
+  explicit operator shared_task<U>() & noexcept {
+    shared_task<T> task_copy{*this};
+    return static_cast<shared_task<U>>(std::move(task_copy));
   }
 
 private:

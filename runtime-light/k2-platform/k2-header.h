@@ -83,6 +83,15 @@ enum PollStatus {
   PollFinishedError = 3,
 };
 
+enum UpdateStatus {
+  // no updates to take, provided descriptor will be assigned to 0
+  NoUpdates = 0,
+  // platform has update on existed stream
+  UpdateExisted = 1,
+  // new connection has installed, new descriptor is provided
+  NewDescriptor = 2,
+};
+
 struct ImageInfo {
   // TODO: null terminated string is OK?
   // TODO: namespaces?
@@ -295,23 +304,12 @@ int32_t k2_timer_deadline(uint64_t d, struct TimePoint* deadline);
 void k2_free_descriptor(uint64_t descriptor);
 
 /**
- * `update_d` might be either a stream or a timer.
- * `update_d` can be a new stream installed for this component.
- * Therefore, component should keep track of all active descriptors to
- * distinguish new stream from existing one.
- *
- * `update_d` may be an elapsed timer.
- * `k2_timer_deadline` for this timer will be a valid call and will allow you
- * to get its deadline (which is guaranteed to be in the past).
- * But you must call `free_descriptor` to release the associated descriptor.
+ * Get any updates from platform.
  *
  * If a component has not take all updates during a `poll` iteration, the
  * platform is guaranteed to reschedule it.
- *
- * @return: `1` if update is successfully taken. `descriptor` will be assigned to updated descriptor.
- * @return: `1` if there is no updates to take. `descriptor` will be assigned to `0`.
  */
-uint8_t k2_take_update(uint64_t* update_d);
+enum UpdateStatus k2_take_update(uint64_t* update_d);
 
 /**
  * Represents a key-value pair that can be added to a log.

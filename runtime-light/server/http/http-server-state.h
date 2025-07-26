@@ -14,6 +14,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/streams/stream.h"
 
 namespace kphp::http {
 
@@ -50,6 +51,8 @@ inline constexpr std::string_view CONTENT_ENCODING = "content-encoding";
 struct HttpServerInstanceState final : private vk::not_copyable {
   static constexpr auto ENCODING_GZIP = static_cast<uint32_t>(1U << 0U);
   static constexpr auto ENCODING_DEFLATE = static_cast<uint32_t>(1U << 1U);
+
+  std::optional<kphp::component::stream> request_stream;
 
   std::optional<string> opt_raw_post_data;
 
