@@ -406,11 +406,11 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
 template<kphp::coro::concepts::coroutine coroutine_type>
 auto io_scheduler::spawn(coroutine_type coroutine) noexcept -> bool {
   auto owned_task{kphp::coro::detail::make_task_self_deleting(std::move(coroutine))};
-  auto h{owned_task.get_handle()};
-  if (!h || h.done()) [[unlikely]] {
+  auto handle{owned_task.get_handle()};
+  if (!handle || handle.done()) [[unlikely]] {
     return false;
   }
-  m_scheduled_tasks.emplace_back(h);
+  m_scheduled_tasks.emplace_back(handle);
   return true;
 }
 
