@@ -2262,7 +2262,7 @@ static void init_interface_lib() {
   finished = false;
 
   auto& error_handling_st{ErrorHandlingContext::get()};
-  error_handling_st.php_warning_level = std::max(2L, error_handling_st.php_warning_minimum_level);
+  error_handling_st.php_warning_level = std::max(static_cast<int64_t>(2), error_handling_st.php_warning_minimum_level);
   RuntimeContext::get().php_disable_warnings = 0;
   is_json_log_on_timeout_enabled = true;
   is_demangled_stacktrace_logs_enabled = false;
