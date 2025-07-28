@@ -1978,7 +1978,7 @@ int main_args_handler(int i, const char *long_option) {
       exit(0);
     }
     case 2009: {
-      return read_option_to(long_option, 0, 3, ErrorHandlingContext::get().php_warning_minimum_level);
+      return read_option_to(long_option, static_cast<int64_t>(0), static_cast<int64_t>(3), ErrorHandlingContext::get().php_warning_minimum_level);
     }
     case 2010: {
       if (set_profiler_log_path(optarg)) {
