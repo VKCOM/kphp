@@ -9,6 +9,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -81,8 +82,8 @@ void send_slow_net_event_stats(const net_event_t& event, double time_sec) noexce
                  [](const database_drivers::Response*) {},
                  [time_sec](const curl_async::CurlResponse* curl_response) noexcept {
                    if (curl_response != nullptr) {
-                     StatsHouseManager::get().add_slow_net_event_stats(
-                         slow_net_event_stats::slow_curl_response_stats{slow_net_event_stats::slow_curl_response_stats::curl_kind::async, time_sec});
+                     StatsHouseManager::get().add_slow_net_event_stats(slow_net_event_stats::slow_curl_response_stats{
+                         slow_net_event_stats::slow_curl_response_stats::curl_kind::async, std::nullopt, time_sec});
                    }
                  },
 

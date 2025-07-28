@@ -408,7 +408,10 @@ void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::sta
                             curl_kind = "async";
                             break;
                           }
-                          client.metric("kphp_slow_curl_response").tag(curl_kind).write_value(curl_response_stat.response_time);
+                          client.metric("kphp_slow_curl_response")
+                              .tag(curl_kind)
+                              .tag(curl_response_stat.opt_url.value_or(std::string_view{"unknown"}))
+                              .write_value(curl_response_stat.response_time);
                         }},
              stats);
 }
