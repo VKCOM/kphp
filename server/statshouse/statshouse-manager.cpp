@@ -4,6 +4,7 @@
 
 #include "server/statshouse/statshouse-manager.h"
 
+#include <algorithm>
 #include <array>
 #include <charconv>
 #include <chrono>
@@ -408,9 +409,13 @@ void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::sta
                             curl_kind = "async";
                             break;
                           }
+
+                          static constexpr size_t CURL_URL_MAX_LEN = 100;
+                          std::string_view curl_url = curl_response_stat.opt_url.value_or(std::string_view{"unknown"});
+
                           client.metric("kphp_slow_curl_response")
                               .tag(curl_kind)
-                              .tag(curl_response_stat.opt_url.value_or(std::string_view{"unknown"}))
+                              .tag(std::string_view{curl_url.data(), std::min(curl_url.size(), CURL_URL_MAX_LEN)})
                               .write_value(curl_response_stat.response_time);
                         }},
              stats);
