@@ -16,9 +16,6 @@ namespace kphp::coro::concepts {
 
 namespace detail {
 
-template<typename type, typename... types>
-concept in_types = (std::same_as<type, types> || ...);
-
 template<typename type>
 concept awaiter_base = requires(type t) {
   { t.await_ready() } noexcept -> std::same_as<bool>;
