@@ -91,7 +91,18 @@ struct slow_job_worker_response_stats final {
   double response_time{};
 };
 
-using stats_t = std::variant<slow_rpc_response_stats, slow_job_worker_response_stats>;
+struct slow_curl_response_stats final {
+  enum class curl_kind : uint8_t { sync, async };
+
+  curl_kind kind;
+  double response_time;
+
+  slow_curl_response_stats(curl_kind kind_, double response_time_) noexcept
+      : kind(kind_),
+        response_time(response_time_) {}
+};
+
+using stats_t = std::variant<slow_rpc_response_stats, slow_job_worker_response_stats, slow_curl_response_stats>;
 
 }; // namespace slow_net_event_stats
 
