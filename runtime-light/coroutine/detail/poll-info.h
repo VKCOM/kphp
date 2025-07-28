@@ -20,13 +20,12 @@ struct poll_info {
 
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
   std::coroutine_handle<> m_awaiting_coroutine;
-  kphp::coro::poll_op m_poll_op;
-
   std::optional<timed_events::iterator> m_timer_pos;
   std::optional<awaiting_polls::iterator> m_awaiting_pos;
 
-  bool m_processed{};
   kphp::coro::poll_status m_poll_status{kphp::coro::poll_status::error};
+  kphp::coro::poll_op m_poll_op;
+  bool m_processed{};
 
   poll_info(k2::descriptor descriptor, kphp::coro::poll_op poll_op) noexcept
       : m_descriptor(descriptor),
