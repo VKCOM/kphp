@@ -20,6 +20,7 @@
 #include "common/fast-backtrace.h"
 #include "common/wrappers/pathname.h"
 
+#include "runtime-common/stdlib/diagnostics/error-handling-context.h"
 #include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
@@ -38,9 +39,6 @@ long long engine_tag_number = 0;
 
 const char* engine_pid = "] ";
 
-int php_warning_level = 2;
-int php_warning_minimum_level = 0;
-
 // linker magic: run_scheduler function is declared in separate section.
 // their addresses could be used to check if address is inside run_scheduler
 struct nothing {};
@@ -51,11 +49,12 @@ static bool is_address_inside_run_scheduler(void* address) {
 }
 
 static void print_demangled_adresses(void** buffer, int nptrs, int num_shift, bool allow_gdb) {
-  if (php_warning_level == 1) {
+  const auto& error_handling_st{ErrorHandlingContext::get()};
+  if (error_handling_st.php_warning_level == 1) {
     for (int i = 0; i < nptrs; i++) {
       fprintf(stderr, "%p\n", buffer[i]);
     }
-  } else if (php_warning_level == 2) {
+  } else if (error_handling_st.php_warning_level == 2) {
     KphpBacktrace demangler{buffer, nptrs};
     int32_t index = num_shift;
     auto demangled_range = demangler.make_demangled_backtrace_range(true);
@@ -67,7 +66,7 @@ static void print_demangled_adresses(void** buffer, int nptrs, int num_shift, bo
     if (index == num_shift) {
       backtrace_symbols_fd(buffer, nptrs, 2);
     }
-  } else if (php_warning_level == 3 && allow_gdb) {
+  } else if (error_handling_st.php_warning_level == 3 && allow_gdb) {
     const size_t pid_buf_size = 30;
     char pid_buf[pid_buf_size];
     snprintf(pid_buf, pid_buf_size, "%d", getpid());
@@ -94,7 +93,8 @@ static void print_demangled_adresses(void** buffer, int nptrs, int num_shift, bo
 }
 
 static void php_warning_impl(bool out_of_memory, int error_type, char const* message, va_list args) {
-  if (php_warning_level == 0 || RuntimeContext::get().php_disable_warnings) {
+  const auto& error_handling_st{ErrorHandlingContext::get()};
+  if (error_handling_st.php_warning_level == 0 || RuntimeContext::get().php_disable_warnings) {
     return;
   }
 
@@ -138,7 +138,7 @@ static void php_warning_impl(bool out_of_memory, int error_type, char const* mes
   void* buffer[64];
   fprintf(stderr, "------- Stack Backtrace -------\n");
   nptrs = fast_backtrace(buffer, sizeof(buffer) / sizeof(buffer[0]));
-  if (php_warning_level == 1) {
+  if (error_handling_st.php_warning_level == 1) {
     nptrs = std::max(nptrs - 2, 0);
   }
 
@@ -247,19 +247,4 @@ void critical_error_handler() {
   raise(SIGPHPASSERT);
   vk::singleton<JsonLogger>::get().fsync_log_file();
   _exit(1);
-}
-
-int64_t f$error_reporting(int64_t level) {
-  int32_t prev = php_warning_level;
-  if ((level & E_ALL) == E_ALL) {
-    php_warning_level = 3;
-  }
-  if (0 <= level && level <= 3) {
-    php_warning_level = std::max(php_warning_minimum_level, static_cast<int32_t>(level));
-  }
-  return prev;
-}
-
-int64_t f$error_reporting() {
-  return php_warning_level;
 }

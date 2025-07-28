@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 error_reporting(0);

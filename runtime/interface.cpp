@@ -21,6 +21,8 @@
 #include "common/wrappers/overloaded.h"
 
 #include "net/net-connections.h"
+#include "runtime-common/stdlib/diagnostics/error-handling-context.h"
+#include "runtime-common/stdlib/diagnostics/error-handling-functions.h"
 #include "runtime-common/stdlib/serialization/serialization-context.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-context.h"
@@ -2259,7 +2261,8 @@ static void init_interface_lib() {
   shutdown_functions_status_value = shutdown_functions_status::not_executed;
   finished = false;
 
-  php_warning_level = std::max(2, php_warning_minimum_level);
+  auto& error_handling_st{ErrorHandlingContext::get()};
+  error_handling_st.php_warning_level = std::max(static_cast<int64_t>(2), error_handling_st.php_warning_minimum_level);
   RuntimeContext::get().php_disable_warnings = 0;
   is_json_log_on_timeout_enabled = true;
   is_demangled_stacktrace_logs_enabled = false;
