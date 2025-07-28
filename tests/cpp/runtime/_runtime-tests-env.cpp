@@ -10,7 +10,7 @@
 #include "runtime/php_assert.h"
 #include "runtime/tl/rpc_response.h"
 #include "runtime-common/core/array_access.h"
-#include "runtime-common/stdlib/error-handling/error-handling-context.h"
+#include "runtime-common/stdlib/diagnostics/error-handling-context.h"
 #include "server/php-engine-vars.h"
 #include "server/workers-control.h"
 

@@ -14,7 +14,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "runtime-common/stdlib/error-handling/error-handling-context.h"
+#include "runtime-common/stdlib/diagnostics/error-handling-context.h" // include common header instead of light wrapper to avoid dependencies cycle
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
 
@@ -44,8 +44,10 @@ enum class level : size_t { error = 1, warn, info, debug, trace };
 
 template<typename... Args>
 void log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  if (k2::is_instance_state_available() && ErrorHandlingContext::get().php_warning_level == php_warning_levels::PHP_WARNING_MINIMUM_LEVEL) {
-    return;
+  if (auto* instance_ptr{k2::instance_state()}; instance_ptr != nullptr) {
+    if (ErrorHandlingContext::get().php_warning_level == php_warning_levels::PHP_WARNING_MINIMUM_LEVEL) {
+      return;
+    }
   }
   if (std::to_underlying(level) > k2::log_level_enabled()) {
     return;

@@ -2,7 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-common/stdlib/error-handling/error-handling-context.h"
+#include "runtime-common/stdlib/diagnostics/error-handling-context.h"
 
 namespace {
 ErrorHandlingContext error_handling_context{};

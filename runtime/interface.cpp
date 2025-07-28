@@ -21,8 +21,8 @@
 #include "common/wrappers/overloaded.h"
 
 #include "net/net-connections.h"
-#include "runtime-common/stdlib/error-handling/error-handling-context.h"
-#include "runtime-common/stdlib/error-handling/error-handling-functions.h"
+#include "runtime-common/stdlib/diagnostics/error-handling-context.h"
+#include "runtime-common/stdlib/diagnostics/error-handling-functions.h"
 #include "runtime-common/stdlib/serialization/serialization-context.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-context.h"

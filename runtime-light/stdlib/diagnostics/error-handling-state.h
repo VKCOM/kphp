@@ -4,6 +4,6 @@
 
 #pragma once
 
-#include "runtime-common/stdlib/error-handling/error-handling-context.h"
+#include "runtime-common/stdlib/diagnostics/error-handling-context.h"
 
 using ErrorHandlingInstanceState = ErrorHandlingContext;

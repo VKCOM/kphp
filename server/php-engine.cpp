@@ -62,7 +62,7 @@
 
 #include "runtime-common/core/memory-resource/memory_resource.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
-#include "runtime-common/stdlib/error-handling/error-handling-context.h"
+#include "runtime-common/stdlib/diagnostics/error-handling-context.h"
 #include "runtime/runtime-builtin-stats.h"
 #include "runtime/interface.h"
 #include "runtime/kphp_ml/kphp_ml_init.h"

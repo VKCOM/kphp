@@ -4,8 +4,6 @@
 
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
 
-#include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
 
 ErrorHandlingInstanceState& ErrorHandlingInstanceState::get() noexcept {

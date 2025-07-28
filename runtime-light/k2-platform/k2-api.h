@@ -303,10 +303,6 @@ inline size_t backtrace(std::span<void*> buffer) noexcept {
   return k2_backtrace(buffer.data(), buffer.size());
 }
 
-inline bool is_instance_state_available() noexcept {
-  return instance_state() != nullptr;
-}
-
 } // namespace k2
 
 template<>

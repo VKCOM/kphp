@@ -20,7 +20,7 @@
 #include "common/fast-backtrace.h"
 #include "common/wrappers/pathname.h"
 
-#include "runtime-common/stdlib/error-handling/error-handling-context.h"
+#include "runtime-common/stdlib/diagnostics/error-handling-context.h"
 #include "runtime-common/stdlib/tracing/tracing-functions.h"
 #include "runtime/critical_section.h"
 #include "runtime/exception.h"
