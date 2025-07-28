@@ -384,7 +384,7 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
       case k2::UpdateStatus::NoUpdates:
         [[fallthrough]];
       default:
-        std::unreachable();
+        kphp::log::assertion(false);
       }
     }
 

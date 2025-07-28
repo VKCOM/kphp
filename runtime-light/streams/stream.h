@@ -198,7 +198,7 @@ inline auto stream::read() noexcept -> kphp::coro::task<std::expected<void, int3
       co_return std::unexpected{k2::errno_ecanceled};
     }
   }
-  std::unreachable();
+  kphp::log::assertion(false);
 }
 
 inline auto stream::write(std::span<const std::byte> data) const noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
