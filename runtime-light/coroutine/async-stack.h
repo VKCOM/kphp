@@ -100,11 +100,11 @@ inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root)
  */
 struct async_stack_element {
   async_stack_frame& get_async_stack_frame() noexcept {
-    return async_stack_frame_;
+    return m_async_stack_frame;
   }
 
 private:
-  async_stack_frame async_stack_frame_;
+  async_stack_frame m_async_stack_frame;
 };
 
 } // namespace kphp::coro

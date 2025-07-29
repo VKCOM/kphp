@@ -13,6 +13,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/shared-task.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
 #include "runtime-light/utils/logs.h"
 
@@ -39,20 +40,25 @@ private:
   // type erased tasks that represent forks
   kphp::stl::unordered_map<int64_t, fork_info, kphp::memory::script_allocator> forks;
 
-  int64_t push_fork(kphp::coro::shared_task<> fork_task) noexcept {
-    forks.emplace(next_fork_id, fork_info{.awaited = false, .thrown_exception = {}, .opt_handle = std::move(fork_task)});
-    return next_fork_id++;
-  }
-
-  template<typename T>
-  friend class start_fork_t;
-
 public:
   int64_t current_id{FORK_ID_INIT};
 
   ForkInstanceState() noexcept = default;
 
   static ForkInstanceState& get() noexcept;
+
+  template<typename return_type>
+  std::pair<int64_t, kphp::coro::shared_task<return_type>> create_fork(kphp::coro::task<return_type> task) noexcept {
+    const int64_t fork_id{next_fork_id++};
+    auto fork_task{std::invoke(
+        [](kphp::coro::task<return_type> task, int64_t fork_id) noexcept -> kphp::coro::shared_task<return_type> {
+          ForkInstanceState::get().current_id = fork_id;
+          co_return co_await std::move(task);
+        },
+        std::move(task), fork_id)};
+    forks.emplace(fork_id, fork_info{.awaited = {}, .thrown_exception = {}, .opt_handle = static_cast<kphp::coro::shared_task<>>(fork_task)});
+    return std::make_pair(fork_id, std::move(fork_task));
+  }
 
   std::optional<std::reference_wrapper<fork_info>> get_info(int64_t fork_id) noexcept {
     if (auto it{forks.find(fork_id)}; it != forks.end()) [[likely]] {

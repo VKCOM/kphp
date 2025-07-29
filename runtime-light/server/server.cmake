@@ -1,6 +1,7 @@
 prepend(
   RUNTIME_LIGHT_SERVER_SRC
   server/
+  cli/cli-instance-state.cpp
   http/init-functions.cpp
   http/http-server-state.cpp
   job-worker/job-worker-server-state.cpp

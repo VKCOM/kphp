@@ -21,7 +21,6 @@ function microtime ($get_as_float ::: bool = false) ::: mixed;
 
 function hrtime (bool $as_number = false): mixed; // int[]|int
 
-/** @kphp-extern-func-info interruptible */
 function set_timer(int $timeout, callable():void $callback) ::: void;
 
 // ===== UNSUPPORTED =====

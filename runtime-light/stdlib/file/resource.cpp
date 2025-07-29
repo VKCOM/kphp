@@ -4,88 +4,51 @@
 
 #include "runtime-light/stdlib/file/resource.h"
 
+#include <cstddef>
 #include <string_view>
-#include <tuple>
 #include <utility>
 
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/instance-state.h"
+#include "runtime-light/streams/stream.h"
 
-underlying_resource_t::underlying_resource_t(std::string_view scheme) noexcept
-    : kind(resource_impl_::uri_to_resource_kind(scheme)) {
-  auto& instance_st{InstanceState::get()};
-  switch (kind) {
-  case resource_kind::STDIN: {
-    last_errc = k2::errno_einval;
-    break;
-  }
-  case resource_kind::STDERR: {
-    // Later, we want to have a specific descriptor for stderr and use k2 stream api
-    // For now, we have k2_stderr_write function for writing
-    last_errc = k2::errno_ok;
-    break;
-  }
-  case resource_kind::STDOUT: {
-    if (instance_st.image_kind() == image_kind::cli) {
-      stream_d_ = instance_st.standard_stream();
-    } else {
-      last_errc = k2::errno_einval;
-    }
-    break;
-  }
-  case resource_kind::INPUT: {
-    last_errc = instance_st.image_kind() == image_kind::server ? k2::errno_ok : k2::errno_einval;
-    break;
-  }
-  case resource_kind::UDP: {
-    const auto url{scheme.substr(resource_impl_::UDP_SCHEME_PREFIX.size(), scheme.size() - resource_impl_::UDP_SCHEME_PREFIX.size())};
-    std::tie(stream_d_, last_errc) = instance_st.open_stream(url, k2::stream_kind::udp);
-    kind = last_errc == k2::errno_ok ? resource_kind::UDP : resource_kind::UNKNOWN;
-    break;
-  }
-  case resource_kind::UNKNOWN: {
-    last_errc = k2::errno_einval;
-    break;
-  }
-  }
-}
+namespace kphp::resource {
 
-underlying_resource_t::underlying_resource_t(underlying_resource_t&& other) noexcept
-    : stream_d_(std::exchange(other.stream_d_, k2::INVALID_PLATFORM_DESCRIPTOR)),
-      kind(std::exchange(other.kind, resource_kind::UNKNOWN)),
-      last_errc(std::exchange(other.last_errc, k2::errno_ok)) {}
-
-underlying_resource_t::~underlying_resource_t() {
-  if (stream_d_ == k2::INVALID_PLATFORM_DESCRIPTOR) {
-    return;
-  }
-  close();
-}
-
-void underlying_resource_t::close() noexcept {
-  if (stream_d_ == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
-    return;
-  }
-
+underlying_resource::underlying_resource(std::string_view scheme) noexcept {
+  const auto kind{uri_to_resource_kind(scheme)};
   switch (kind) {
   case resource_kind::STDIN:
-    [[fallthrough]];
-  case resource_kind::STDOUT:
-    [[fallthrough]];
+    m_errc = k2::errno_einval;
+    break;
   case resource_kind::STDERR:
-    [[fallthrough]];
-  case resource_kind::INPUT: {
-    // PHP supports multiple opening/closing operations on standard IO streams.
-    stream_d_ = k2::INVALID_PLATFORM_DESCRIPTOR;
+    // Later, we want to have a specific descriptor for stderr and use k2 stream api
+    // For now, we have k2_stderr_write function for writing
     break;
-  }
+  case resource_kind::STDOUT:
+    m_errc = InstanceState::get().image_kind() == image_kind::cli ? k2::errno_ok : k2::errno_einval;
+    break;
+  case resource_kind::INPUT:
+    m_errc = InstanceState::get().image_kind() == image_kind::server ? k2::errno_ok : k2::errno_einval;
+    break;
   case resource_kind::UDP: {
-    InstanceState::get().release_stream(stream_d_);
-    stream_d_ = k2::INVALID_PLATFORM_DESCRIPTOR;
+    static constexpr size_t UDP_STREAM_CAPCITY = 0;
+
+    const auto url{scheme.substr(detail::UDP_SCHEME_PREFIX.size(), scheme.size() - detail::UDP_SCHEME_PREFIX.size())};
+    auto expected{kphp::component::stream::open(url, k2::stream_kind::udp, UDP_STREAM_CAPCITY)};
+    if (!expected) [[unlikely]] {
+      m_errc = expected.error();
+      break;
+    }
+
+    m_stream.emplace<kphp::component::stream>(std::move(*expected));
     break;
   }
-  case resource_kind::UNKNOWN: {
+  case resource_kind::UNKNOWN:
+    m_errc = k2::errno_einval;
     break;
   }
-  }
+
+  m_kind = m_errc == k2::errno_ok ? kind : resource_kind::UNKNOWN;
 }
+
+} // namespace kphp::resource

@@ -15,3 +15,6 @@ template<typename T>
 concept hashable = requires(T t) {
   { std::hash<T>{}(t) } -> std::convertible_to<size_t>;
 };
+
+template<typename type, typename... types>
+concept in_types = (std::same_as<type, types> || ...);

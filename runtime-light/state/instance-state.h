@@ -4,11 +4,8 @@
 
 #pragma once
 
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <string_view>
-#include <utility>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
@@ -16,15 +13,15 @@
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/coroutine-state.h"
+#include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/scheduler/scheduler.h"
+#include "runtime-light/server/cli/cli-instance-state.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
-#include "runtime-light/stdlib/file/file-system-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
@@ -37,10 +34,6 @@
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 #include "runtime-light/stdlib/time/time-state.h"
-
-// Coroutine scheduler type. Change it here if you want to use another scheduler
-using CoroutineScheduler = SimpleCoroutineScheduler;
-static_assert(CoroutineSchedulerConcept<CoroutineScheduler>);
 
 /**
  * Supported kinds of KPHP images:
@@ -86,34 +79,15 @@ struct InstanceState final : vk::not_copyable {
     return instance_kind_;
   }
 
-  void process_platform_updates() noexcept;
-
-  const unordered_set<uint64_t>& opened_streams() const noexcept {
-    return opened_streams_;
-  }
-  const deque<uint64_t>& incoming_streams() const noexcept {
-    return incoming_streams_;
-  }
-  uint64_t standard_stream() const noexcept {
-    return standard_stream_;
-  }
-  uint64_t take_incoming_stream() noexcept;
-
-  std::pair<uint64_t, int32_t> open_stream(std::string_view, k2::stream_kind) noexcept;
-  std::pair<uint64_t, int32_t> set_timer(std::chrono::nanoseconds) noexcept;
-
-  void release_stream(uint64_t) noexcept;
-  void release_all_streams() noexcept;
-
   AllocatorState instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0};
 
-  CoroutineScheduler scheduler;
+  kphp::coro::io_scheduler io_scheduler;
   CoroutineInstanceState coroutine_instance_state;
   ForkInstanceState fork_instance_state;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
-  k2::PollStatus poll_status{k2::PollStatus::PollReschedule};
 
   RuntimeContext runtime_context;
+  CLIInstanceInstance cli_instance_instate;
   OutputInstanceState output_instance_state;
   RpcClientInstanceState rpc_client_instance_state;
   RpcServerInstanceState rpc_server_instance_state;
@@ -131,7 +105,6 @@ struct InstanceState final : vk::not_copyable {
   CryptoInstanceState crypto_instance_state;
   StringInstanceState string_instance_state;
   SystemInstanceState system_instance_state;
-  FileSystemInstanceState file_system_instance_state;
 
   list<kphp::coro::task<>> shutdown_functions;
 
@@ -141,15 +114,11 @@ private:
   kphp::coro::task<> finalize_cli_instance() noexcept;
   kphp::coro::task<> finalize_server_instance() const noexcept;
 
-  kphp::coro::task<> main_task_;
   enum class shutdown_state : uint8_t { not_started, in_progress, finished };
   shutdown_state shutdown_state_{shutdown_state::not_started};
 
   enum image_kind image_kind_ { image_kind::invalid };
   enum instance_kind instance_kind_ { instance_kind::invalid };
-  uint64_t standard_stream_{k2::INVALID_PLATFORM_DESCRIPTOR};
-  deque<uint64_t> incoming_streams_;
-  unordered_set<uint64_t> opened_streams_;
 
   static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(16U * 1024U * 1024U);
 };

@@ -4,12 +4,16 @@
 
 #pragma once
 
+#include <cstdint>
+#include <functional>
+#include <optional>
 #include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/stdlib/file/file-system-state.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/file/resource.h"
+#include "runtime-light/utils/logs.h"
 
 namespace file_system_impl_ {
 
@@ -44,16 +48,73 @@ inline string f$basename(const string& path, const string& suffix = {}) noexcept
   return {filename_view.data(), static_cast<string::size_type>(filename_view.size())};
 }
 
-resource f$fopen(const string& filename, const string& mode, bool use_include_path = false, const resource& context = {}) noexcept;
+inline resource f$fopen(const string& filename, [[maybe_unused]] const string& mode, [[maybe_unused]] bool use_include_path,
+                        [[maybe_unused]] const resource& context) noexcept {
+  kphp::resource::underlying_resource rsrc{{filename.c_str(), filename.size()}};
+  if (rsrc.error_code() != k2::errno_ok) [[unlikely]] {
+    kphp::log::warning("fopen failed: {}", filename.c_str());
+    return {};
+  }
 
-kphp::coro::task<Optional<int64_t>> f$fwrite(resource stream, string text) noexcept;
+  return f$to_mixed(make_instance<kphp::resource::underlying_resource>(std::move(rsrc)));
+}
 
-bool f$fflush(const resource& stream) noexcept;
+inline bool f$fclose(const resource& stream) noexcept {
+  auto rsrc{from_mixed<class_instance<kphp::resource::underlying_resource>>(stream, {})};
+  if (rsrc.is_null()) [[unlikely]] {
+    kphp::log::warning("unexpected resource in fclose: {}", stream.to_string().c_str());
+    return false;
+  }
 
-bool f$fclose(const resource& stream) noexcept;
+  rsrc.get()->close();
+  return true;
+}
 
-resource f$stream_socket_client(const string& address, mixed& error_code = FileSystemInstanceState::get().error_number_dummy,
-                                mixed& error_message = FileSystemInstanceState::get().error_description_dummy, double timeout = DEFAULT_SOCKET_TIMEOUT,
-                                int64_t flags = STREAM_CLIENT_CONNECT, const resource& context = {}) noexcept;
+inline kphp::coro::task<Optional<int64_t>> f$fwrite(resource stream, string text) noexcept {
+  auto rsrc{from_mixed<class_instance<kphp::resource::underlying_resource>>(stream, {})};
+  if (rsrc.is_null()) [[unlikely]] {
+    kphp::log::warning("unexpected resource in fwrite: {}", stream.to_string().c_str());
+    co_return false;
+  }
+  co_return co_await rsrc.get()->write({text.c_str(), text.size()});
+}
 
-Optional<string> f$file_get_contents(const string& stream) noexcept;
+inline bool f$fflush(const resource& stream) noexcept {
+  auto rsrc{from_mixed<class_instance<kphp::resource::underlying_resource>>(stream, {})};
+  if (rsrc.is_null()) [[unlikely]] {
+    kphp::log::warning("unexpected resource in fflush: {}", stream.to_string().c_str());
+    return false;
+  }
+
+  rsrc.get()->flush();
+  return true;
+}
+
+inline resource f$stream_socket_client(const string& address, std::optional<std::reference_wrapper<mixed>> error_code = {},
+                                       std::optional<std::reference_wrapper<mixed>> /*error_message*/ = {}, double /*timeout*/ = DEFAULT_SOCKET_TIMEOUT,
+                                       int64_t /*flags*/ = STREAM_CLIENT_CONNECT, const resource& /*context*/ = {}) noexcept {
+  /*
+   * TODO: Here should be waiting with timeout,
+   *       but it can't be expressed simple ways by awaitables since we blocked inside k2
+   * */
+  const std::string_view address_view{address.c_str(), address.size()};
+  const auto address_kind{kphp::resource::uri_to_resource_kind(address_view)};
+  if (address_kind != kphp::resource::resource_kind::UDP) [[unlikely]] {
+    return static_cast<int64_t>(k2::errno_einval);
+  }
+
+  kphp::resource::underlying_resource rsrc{address_view};
+  if (rsrc.error_code() != k2::errno_ok && error_code.has_value()) [[unlikely]] {
+    (*error_code).get() = static_cast<int64_t>(rsrc.error_code());
+    return {};
+  }
+  return f$to_mixed(make_instance<kphp::resource::underlying_resource>(std::move(rsrc)));
+}
+
+inline Optional<string> f$file_get_contents(const string& stream) noexcept {
+  kphp::resource::underlying_resource rsrc{{stream.c_str(), stream.size()}};
+  if (rsrc.error_code() != k2::errno_ok) [[unlikely]] {
+    return false;
+  }
+  return rsrc.get_contents();
+}

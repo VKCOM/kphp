@@ -17,6 +17,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-constants.h"
 #include "runtime-light/stdlib/rpc/rpc-exceptions.h"
@@ -174,7 +175,7 @@ inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg
                                                     .error = tl::string{.value = {error_msg.c_str(), error_msg.size()}}}}
       .store(tlb);
 
-  auto expected{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})};
+  auto expected{co_await kphp::forks::id_managed(kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()}))};
   if (!expected) [[unlikely]] {
     kphp::log::warning("can't store RPC error: {}", std::to_underlying(expected.error()));
   }
@@ -197,7 +198,7 @@ inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$Rpc
   tl::K2RpcResponse{
       .value = tl::k2RpcResponseHeader{.flags = {}, .extra = {}, .result = {rpc_server_instance_st.buffer.data(), rpc_server_instance_st.buffer.size()}}}
       .store(tlb);
-  auto expected{co_await kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})};
+  auto expected{co_await kphp::forks::id_managed(kphp::rpc::send_response({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()}))};
   if (!expected) [[unlikely]] {
     kphp::log::warning("can't store RPC response: {}", std::to_underlying(expected.error()));
   }
