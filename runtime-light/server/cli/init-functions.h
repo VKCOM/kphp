@@ -14,9 +14,9 @@
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/server/cli/cli-instance-state.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/streams/stream.h"
-#include "runtime-light/utils/logs.h"
 
 namespace kphp::cli {
 
