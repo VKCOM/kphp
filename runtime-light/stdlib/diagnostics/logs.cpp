@@ -22,7 +22,7 @@ void log(level level, std::optional<std::span<void* const>> trace, std::string_v
 
   static constexpr std::string_view version_key = "version";
   std::string_view version_value{
-      ImageState::try_get().transform([](const ImageState& image_st) { return std::string_view{image_st.image_version}; }).value_or("1000")};
+      ImageState::try_get().transform([](const ImageState& image_st) { return std::string_view{image_st.image_version}; }).value_or("0")};
   tagged_entries[0] =
       k2::LogTaggedEntry{.key = version_key.data(), .value = version_value.data(), .key_len = version_key.size(), .value_len = version_value.size()};
 
