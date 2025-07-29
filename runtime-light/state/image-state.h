@@ -7,6 +7,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
+#include <string>
 #include <sys/utsname.h>
 
 #include "common/mixin/not_copyable.h"
@@ -14,12 +16,12 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/visitors/shape-visitors.h"
-#include "runtime-light/utils/logs.h"
 
 struct ImageState final : private vk::not_copyable {
   AllocatorState image_allocator_state{INIT_IMAGE_ALLOCATOR_SIZE, 0};
@@ -31,6 +33,8 @@ struct ImageState final : private vk::not_copyable {
   string uname_info_v;
   string uname_info_m;
   string uname_info_a;
+
+  kphp::stl::string<kphp::memory::script_allocator> image_version;
 
   ShapeKeyDemangle shape_key_demangler;
 
@@ -67,10 +71,21 @@ struct ImageState final : private vk::not_copyable {
     uname_info_v.set_reference_counter_to(ExtraRefCnt::for_global_const);
     uname_info_m.set_reference_counter_to(ExtraRefCnt::for_global_const);
     uname_info_a.set_reference_counter_to(ExtraRefCnt::for_global_const);
+
+    kphp::memory::libc_alloc_guard guard;
+    image_version = std::to_string(k2_describe()->build_timestamp);
   }
 
   static const ImageState& get() noexcept {
     return *k2::image_state();
+  }
+
+  static std::optional<std::reference_wrapper<const ImageState>> try_get() noexcept {
+    if (const auto* image_ptr{k2::image_state()}; image_ptr != nullptr) {
+      return *image_ptr;
+    } else {
+      return std::nullopt;
+    }
   }
 
   static ImageState& get_mutable() noexcept {

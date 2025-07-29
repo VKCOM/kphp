@@ -5,7 +5,7 @@
 #include "php-script-globals.h"
 
 #include "runtime-light/state/instance-state.h"
-#include "runtime-light/utils/logs.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 PhpScriptMutableGlobals& PhpScriptMutableGlobals::current() noexcept {
   return InstanceState::get().php_script_mutable_globals_singleton;

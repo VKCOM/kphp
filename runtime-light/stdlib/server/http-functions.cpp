@@ -16,8 +16,8 @@
 #include "common/algorithms/string-algorithms.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/server/http/http-server-state.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/time-functions.h"
-#include "runtime-light/utils/logs.h"
 
 namespace {
 

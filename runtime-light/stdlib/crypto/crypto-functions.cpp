@@ -18,10 +18,10 @@
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/stdlib/component/component-api.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
-#include "runtime-light/utils/logs.h"
 
 namespace {
 

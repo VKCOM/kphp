@@ -10,7 +10,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/utils/logs.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 struct ShapeKeyDemangle final : vk::not_copyable {
   ShapeKeyDemangle() = default;

@@ -4,6 +4,7 @@
 
 #include "compiler/make/make.h"
 
+#include <chrono>
 #include <dirent.h>
 #include <forward_list>
 #include <ftw.h>
@@ -609,6 +610,14 @@ void run_make() {
 
   if (!settings.user_binary_path.get().empty()) {
     hard_link_or_copy(bin_file.path, settings.user_binary_path.get());
+  } else if (G->is_output_mode_k2()) {
+    std::string k2_binary_name;
+    k2_binary_name.append("k2.")
+        .append(G->settings().k2_component_name.get())
+        .append(".")
+        .append(std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(G->get_build_timestamp().time_since_epoch()).count()))
+        .append(".so");
+    hard_link_or_copy(bin_file.path, k2_binary_name);
   }
   if (output_mode == OutputMode::lib) {
     copy_static_lib_to_out_dir(std::move(bin_file));

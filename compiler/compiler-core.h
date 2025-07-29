@@ -8,6 +8,7 @@
 /*** Core ***/
 //Consists mostly of functions that require synchronization
 
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -64,6 +65,7 @@ private:
   bool is_functions_txt_parsed{false};
   function_palette::Palette function_palette;
   std::unordered_set<std::string> tracked_builtins;
+  std::chrono::time_point<std::chrono::system_clock> build_timestamp{};
 
   inline bool try_require_file(SrcFilePtr file);
 
@@ -145,6 +147,10 @@ public:
   void parse_tracked_builtins(const std::string& builtin_list) noexcept;
   const auto & get_tracked_builtins() const noexcept {
     return tracked_builtins;
+  }
+
+  auto get_build_timestamp() const noexcept {
+    return build_timestamp;
   }
 
   void load_index();

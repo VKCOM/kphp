@@ -28,7 +28,6 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
-#include "runtime-light/utils/logs.h"
 
 namespace kphp::rpc {
 

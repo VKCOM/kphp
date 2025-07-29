@@ -15,10 +15,10 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/confdata/confdata-constants.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
-#include "runtime-light/utils/logs.h"
 
 namespace {
 

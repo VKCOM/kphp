@@ -10,10 +10,10 @@
 #include "common/containers/final_action.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"
-#include "runtime-light/utils/logs.h"
 
 namespace kphp::rpc::rpc_impl {
 // use template, because t_ReqResult_ is unknown on runtime compilation

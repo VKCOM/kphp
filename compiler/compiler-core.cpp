@@ -106,6 +106,7 @@ CompilerCore::CompilerCore() :
 }
 
 void CompilerCore::start() {
+  build_timestamp = std::chrono::system_clock::now();
   stage::die_if_global_errors();
 }
 

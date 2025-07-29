@@ -8,8 +8,8 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-functions.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
-#include "runtime-light/utils/logs.h"
 
 // === print ======================================================================================
 
