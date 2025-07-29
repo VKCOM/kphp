@@ -13,8 +13,8 @@ url_github_issues: https://github.com/VKCOM/kphp/issues
 url_github_nocolor: https://github.com/VKCOM/nocolor
 url_github_nocc: https://github.com/VKCOM/nocc
 url_telegram_chat: https://t.me/kphp_chat
-url_functions_txt: https://github.com/VKCOM/kphp/blob/master/builtin-functions/_functions.txt
-url_PDO: https://github.com/VKCOM/kphp/blob/master/builtin-functions/PDO/PDO.php
+url_functions_txt: https://github.com/VKCOM/kphp/blob/master/builtin-functions/kphp-full/_functions.txt
+url_PDO: https://github.com/VKCOM/kphp/blob/master/builtin-functions/kphp-full/pdo/PDO.php
 url_dockerfile: https://github.com/VKCOM/kphp/blob/master/Dockerfile
 url_license_file: https://github.com/VKCOM/kphp/blob/master/LICENSE
 url_vertex_desc_json: https://github.com/VKCOM/kphp/blob/master/compiler/vertex-desc.json
@@ -44,5 +44,6 @@ exclude:
   - Gemfile
   - Gemfile.lock
   - .idea
+  - .git
 
 plugins: []
