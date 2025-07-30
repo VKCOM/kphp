@@ -7,7 +7,10 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <numeric>
 #include <optional>
+#include <ranges>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -21,34 +24,44 @@
 namespace tl {
 
 struct magic final {
-  uint32_t value{};
+  using underlying_type = uint32_t;
+  underlying_type value{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<uint32_t>()};
+    const auto opt_value{tlb.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0);
     return opt_value.has_value();
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(value);
+    tlb.store_trivial<underlying_type>(value);
   }
 
-  bool expect(uint32_t expected) const noexcept {
+  bool expect(underlying_type expected) const noexcept {
     return expected == value;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
 struct mask final {
-  uint32_t value{};
+  using underlying_type = uint32_t;
+  underlying_type value{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<uint32_t>()};
+    const auto opt_value{tlb.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0);
     return opt_value.has_value();
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(value);
+    tlb.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
@@ -65,19 +78,28 @@ struct Bool final {
   void store(tl::TLBuffer& tlb) const noexcept {
     tl::magic{.value = value ? TL_BOOL_TRUE : TL_BOOL_FALSE}.store(tlb);
   }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = value ? TL_BOOL_TRUE : TL_BOOL_FALSE}.footprint();
+  }
 };
 
 struct i32 final {
-  int32_t value{};
+  using underlying_type = int32_t;
+  underlying_type value{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<int32_t>()};
+    const auto opt_value{tlb.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0);
     return opt_value.has_value();
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<int32_t>(value);
+    tlb.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
@@ -93,33 +115,47 @@ struct I32 final {
     tl::magic{.value = TL_INT}.store(tlb);
     inner.store(tlb);
   }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = TL_INT}.footprint() + inner.footprint();
+  }
 };
 
 struct u32 final {
-  uint32_t value{};
+  using underlying_type = uint32_t;
+  underlying_type value{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<uint32_t>()};
+    const auto opt_value{tlb.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0);
     return opt_value.has_value();
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(value);
+    tlb.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
 struct i64 final {
-  int64_t value{};
+  using underlying_type = int64_t;
+  underlying_type value{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<int64_t>()};
+    const auto opt_value{tlb.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0);
     return opt_value.has_value();
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<int64_t>(value);
+    tlb.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
@@ -135,19 +171,28 @@ struct I64 final {
     tl::magic{.value = TL_LONG}.store(tlb);
     inner.store(tlb);
   }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = TL_LONG}.footprint() + inner.footprint();
+  }
 };
 
 struct f32 final {
-  float value{};
+  using underlying_type = float;
+  underlying_type value{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<float>()};
+    const auto opt_value{tlb.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0.0);
     return opt_value.has_value();
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<float>(value);
+    tlb.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
@@ -163,19 +208,28 @@ struct F32 final {
     tl::magic{.value = TL_FLOAT}.store(tlb);
     inner.store(tlb);
   }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = TL_FLOAT}.footprint() + inner.footprint();
+  }
 };
 
 struct f64 final {
-  double value{};
+  using underlying_type = double;
+  underlying_type value{};
 
   bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<double>()};
+    const auto opt_value{tlb.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0.0);
     return opt_value.has_value();
   }
 
   void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<double>(value);
+    tlb.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
@@ -190,6 +244,10 @@ struct F64 final {
   void store(tl::TLBuffer& tlb) const noexcept {
     tl::magic{.value = TL_DOUBLE}.store(tlb);
     inner.store(tlb);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = TL_DOUBLE}.footprint() + inner.footprint();
   }
 };
 
@@ -217,6 +275,12 @@ struct Maybe final {
       tl::magic{.value = TL_MAYBE_FALSE}.store(tlb);
     }
   }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    return opt_value ? tl::magic{.value = TL_MAYBE_TRUE}.footprint() + (*opt_value).footprint() : tl::magic{.value = TL_MAYBE_FALSE}.footprint();
+  }
 };
 
 class string final {
@@ -237,6 +301,8 @@ public:
   bool fetch(tl::TLBuffer& tlb) noexcept;
 
   void store(tl::TLBuffer& tlb) const noexcept;
+
+  size_t footprint() const noexcept;
 };
 
 struct String final {
@@ -250,6 +316,10 @@ struct String final {
   void store(tl::TLBuffer& tlb) const noexcept {
     tl::magic{.value = TL_STRING}.store(tlb);
     inner.store(tlb);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = TL_STRING}.footprint() + inner.footprint();
   }
 };
 
@@ -311,6 +381,13 @@ struct vector final {
     tl::u32{.value = static_cast<uint32_t>(value.size())}.store(tlb);
     std::for_each(value.cbegin(), value.cend(), [&tlb](const auto& elem) noexcept { elem.store(tlb); });
   }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    auto footprint_view{value | std::views::transform([](const auto& elem) noexcept { return elem.footprint(); })};
+    return std::accumulate(footprint_view.begin(), footprint_view.end(), value.size(), std::plus<>{});
+  }
 };
 
 template<typename T>
@@ -356,6 +433,12 @@ struct Vector final {
     tl::magic{.value = TL_VECTOR}.store(tlb);
     inner.store(tlb);
   }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    return tl::magic{.value = TL_VECTOR}.footprint() + inner.footprint();
+  }
 };
 
 template<typename T>
@@ -374,6 +457,12 @@ struct dictionaryField final {
   {
     key.store(tlb);
     value.store(tlb);
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    return key.footprint() + value.footprint();
   }
 };
 
@@ -417,6 +506,12 @@ struct dictionary final {
   requires tl::serializable<T>
   {
     value.store(tlb);
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    return value.footprint();
   }
 };
 
@@ -463,6 +558,12 @@ struct Dictionary final {
     tl::magic{.value = TL_DICTIONARY}.store(tlb);
     inner.store(tlb);
   }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    return tl::magic{.value = TL_DICTIONARY}.footprint() + inner.footprint();
+  }
 };
 
 class netPid final {
@@ -497,6 +598,10 @@ public:
   void store(tl::TLBuffer& tlb) const noexcept {
     ip.store(tlb), port_pid.store(tlb), utime.store(tlb);
   }
+
+  constexpr size_t footprint() const noexcept {
+    return ip.footprint() + port_pid.footprint() + utime.footprint();
+  }
 };
 
 // ===== JOB WORKERS =====
@@ -508,9 +613,25 @@ public:
   tl::i64 job_id{};
   tl::string body;
 
-  bool fetch(tl::TLBuffer& tlb) noexcept;
+  bool fetch(TLBuffer& tlb) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlb) && magic.expect(MAGIC)};
+    ok &= tl::mask{}.fetch(tlb);
+    ok &= job_id.fetch(tlb);
+    ok &= body.fetch(tlb);
+    return ok;
+  }
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(TLBuffer& tlb) const noexcept {
+    tl::magic{.value = MAGIC}.store(tlb);
+    tl::mask{}.store(tlb);
+    job_id.store(tlb);
+    body.store(tlb);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = MAGIC}.footprint() + tl::mask{}.footprint() + job_id.footprint() + body.footprint();
+  }
 };
 
 // ===== CRYPTO =====
@@ -641,6 +762,10 @@ public:
   void store(tl::TLBuffer& tlb) const noexcept {
     tl::magic{.value = std::to_underlying(version)}.store(tlb);
   }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = std::to_underlying(version)}.footprint();
+  }
 };
 
 class httpUri final {
@@ -686,6 +811,10 @@ struct httpHeaderEntry final {
     name.store(tlb);
     value.store(tlb);
   }
+
+  constexpr size_t footprint() const noexcept {
+    return is_sensitive.footprint() + name.footprint() + value.footprint();
+  }
 };
 
 struct httpConnection final {
@@ -716,6 +845,10 @@ struct httpResponse final {
     headers.store(tlb);
     tlb.store_bytes(body);
   }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::mask{}.footprint() + version.footprint() + status_code.footprint() + headers.footprint() + body.size();
+  }
 };
 
 class HttpResponse final {
@@ -727,6 +860,10 @@ public:
   void store(tl::TLBuffer& tlb) const noexcept {
     tl::magic{.value = MAGIC}.store(tlb);
     http_response.store(tlb);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = MAGIC}.footprint() + http_response.footprint();
   }
 };
 
