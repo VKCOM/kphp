@@ -4,8 +4,10 @@
 
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <memory>
 #include <optional>
 #include <string>
@@ -72,8 +74,12 @@ struct ImageState final : private vk::not_copyable {
     uname_info_m.set_reference_counter_to(ExtraRefCnt::for_global_const);
     uname_info_a.set_reference_counter_to(ExtraRefCnt::for_global_const);
 
-    kphp::memory::libc_alloc_guard guard;
-    image_version = std::to_string(k2_describe()->build_timestamp);
+    static constexpr int64_t BUFFER_SIZE = 64;
+    std::array<char, BUFFER_SIZE> buffer;
+    auto [out, size]{std::format_to_n(buffer.begin(), buffer.size() - 1, "{}", k2_describe()->build_timestamp)};
+    *out = '\0';
+
+    image_version = buffer.data();
   }
 
   static const ImageState& get() noexcept {
