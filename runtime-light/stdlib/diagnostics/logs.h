@@ -41,7 +41,9 @@ using wrapped_arg_t = std::invoke_result_t<decltype(impl::wrap_log_argument<T>),
 
 enum class level : size_t { error = 1, warn, info, debug, trace };
 
+namespace details {
 void log(level level, std::optional<std::span<void* const>> trace, std::string_view message) noexcept;
+} // namespace details
 
 template<typename... Args>
 void format_log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
@@ -50,25 +52,12 @@ void format_log(level level, std::optional<std::span<void* const>> trace, std::f
   }
 
   static constexpr size_t LOG_BUFFER_SIZE = 512UZ;
-  std::array<char, LOG_BUFFER_SIZE> log_buffer;
+  std::array<char, LOG_BUFFER_SIZE> log_buffer; // NOLINT
   auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
                                                                                                impl::wrap_log_argument(std::forward<Args>(args))...)};
   *out = '\0';
   auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(size)}};
-  log(level, trace, message);
-}
-
-template<typename... Args>
-void format_log_with_backtrace(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  static constexpr size_t MAX_BACKTRACE_SIZE = 64;
-  if (std::to_underlying(level) > k2::log_level_enabled()) {
-    return;
-  }
-
-  std::array<void*, MAX_BACKTRACE_SIZE> backtrace{};
-  const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
-  const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
-  impl::format_log(level, backtrace_view, fmt, std::forward<Args>(args)...);
+  details::log(level, trace, message);
 }
 } // namespace impl
 
@@ -83,13 +72,19 @@ inline void assertion(bool condition, const std::source_location& location = std
 
 template<typename... Args>
 [[noreturn]] void error(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  impl::format_log_with_backtrace(impl::level::error, fmt, std::forward<Args>(args)...);
+  std::array<void*, kphp::diagnostic::DEFAULT_BACKTRACE_MAX_SIZE> backtrace{};
+  const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
+  const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
+  impl::format_log(impl::level::error, backtrace_view, fmt, std::forward<Args>(args)...);
   k2::exit(1);
 }
 
 template<typename... Args>
 void warning(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  impl::format_log_with_backtrace(impl::level::warn, fmt, std::forward<Args>(args)...);
+  std::array<void*, kphp::diagnostic::DEFAULT_BACKTRACE_MAX_SIZE> backtrace{};
+  const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
+  const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
+  impl::format_log(impl::level::warn, backtrace_view, fmt, std::forward<Args>(args)...);
 }
 
 template<typename... Args>

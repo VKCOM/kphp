@@ -8,14 +8,16 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <functional>
 #include <memory>
 #include <optional>
-#include <string>
 #include <sys/utsname.h>
 
 #include "common/mixin/not_copyable.h"
 #include "common/php-functions.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -75,7 +77,7 @@ struct ImageState final : private vk::not_copyable {
     uname_info_a.set_reference_counter_to(ExtraRefCnt::for_global_const);
 
     static constexpr int64_t BUFFER_SIZE = 64;
-    std::array<char, BUFFER_SIZE> buffer;
+    std::array<char, BUFFER_SIZE> buffer; // NOLINT
     auto [out, size]{std::format_to_n(buffer.begin(), buffer.size() - 1, "{}", k2_describe()->build_timestamp)};
     *out = '\0';
 
@@ -87,11 +89,10 @@ struct ImageState final : private vk::not_copyable {
   }
 
   static std::optional<std::reference_wrapper<const ImageState>> try_get() noexcept {
-    if (const auto* image_ptr{k2::image_state()}; image_ptr != nullptr) {
+    if (const auto* image_ptr{k2::image_state()}; image_ptr != nullptr) [[likely]] {
       return *image_ptr;
-    } else {
-      return std::nullopt;
     }
+    return std::nullopt;
   }
 
   static ImageState& get_mutable() noexcept {

@@ -18,6 +18,8 @@
 
 namespace kphp::diagnostic {
 
+static constexpr int64_t DEFAULT_BACKTRACE_MAX_SIZE = 64;
+
 namespace impl {
 
 size_t async_backtrace(std::span<void*> addresses) noexcept;
