@@ -37,9 +37,7 @@ class stream {
       : m_storage(std::move(storage)),
         m_storage_capacity(capacity),
         m_descriptor(descriptor) {
-    if (m_storage_capacity != 0) {
-      kphp::log::assertion(static_cast<bool>(m_storage));
-    }
+    kphp::log::assertion(static_cast<bool>(m_storage_capacity == 0 || m_storage));
   }
 
 public:
@@ -110,8 +108,7 @@ inline auto stream::open(std::string_view name, k2::stream_kind stream_kind, siz
     return std::unexpected{errc};
   }
 
-  auto* mem{kphp::memory::script::alloc(capacity)};
-  kphp::log::assertion(mem != nullptr);
+  void* mem{capacity > 0 ? kphp::memory::script::alloc(capacity) : nullptr};
   kphp::log::debug("opened a stream: name -> {}, descriptor -> {}", name, descriptor);
   return std::expected<kphp::component::stream, int32_t>{stream{{static_cast<std::byte*>(mem), kphp::memory::script::free}, capacity, descriptor}};
 }
@@ -123,8 +120,7 @@ inline auto stream::accept(size_t capacity, std::chrono::nanoseconds timeout) no
     co_return std::nullopt;
   }
 
-  auto* mem{kphp::memory::script::alloc(capacity)};
-  kphp::log::assertion(mem != nullptr);
+  auto* mem{capacity > 0 ? kphp::memory::script::alloc(capacity) : nullptr};
   kphp::log::debug("accepted a stream: descriptor -> {}", descriptor);
   co_return stream{{static_cast<std::byte*>(mem), kphp::memory::script::free}, capacity, descriptor};
 }
