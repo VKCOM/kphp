@@ -4,8 +4,10 @@
 
 #include "compiler/compiler-settings.h"
 
+#include <chrono>
 #include <fstream>
 #include <sstream>
+#include <string>
 #include <string_view>
 #include <unistd.h>
 
@@ -220,6 +222,8 @@ void CompilerSettings::init() {
   option_as_dir(kphp_src_path);
   functions_file.value_ = get_full_path(functions_file.get());
   runtime_sha256_file.value_ = get_full_path(runtime_sha256_file.get());
+  const auto now{std::chrono::system_clock::now()};
+  build_timestamp.value_ = std::to_string(std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count());
 
   bool is_k2_mode = mode.get().substr(0, 3) == "k2-";
   if (link_file.value_.empty()) {
@@ -412,7 +416,7 @@ void CompilerSettings::init() {
   dest_cpp_dir.value_ = dest_dir.get() + "kphp/";
   dest_objs_dir.value_ = dest_dir.get() + "objs/";
   if (is_k2_mode) {
-    binary_path.value_ = dest_dir.get() + k2_component_name.get() + ".so";
+    binary_path.value_ = dest_dir.get() + "k2." + k2_component_name.get() + "." + build_timestamp.value_ + ".so";
   } else {
     binary_path.value_ = dest_dir.get() + mode.get();
   }

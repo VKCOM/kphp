@@ -188,6 +188,7 @@ public:
   KphpImplicitOption generated_runtime_path;
   KphpImplicitOption performance_analyze_report_path;
   KphpImplicitOption cxx_toolchain_option;
+  KphpImplicitOption build_timestamp;
 
   KphpImplicitOption runtime_headers;
   KphpImplicitOption runtime_sha256;

@@ -317,6 +317,7 @@ int main(int argc, char *argv[]) {
   parser.add_implicit_option("Objs destination directory", settings->dest_objs_dir);
   parser.add_implicit_option("Binary path", settings->binary_path);
   parser.add_implicit_option("Static lib name", settings->static_lib_name);
+  parser.add_implicit_option("Build timestamp", settings->build_timestamp);
   parser.add_implicit_option("Runtime SHA256", settings->runtime_sha256);
   parser.add_implicit_option("Runtime headers", settings->runtime_headers);
   parser.add_implicit_option("C++ compiler flags default", settings->cxx_flags_default.flags);
