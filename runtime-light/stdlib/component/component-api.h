@@ -48,6 +48,16 @@ inline auto send_response(const kphp::component::stream& stream, std::span<const
   co_return std::expected<void, int32_t>{};
 }
 
+inline auto query(kphp::component::stream& stream, std::span<const std::byte> request) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
+  if (auto expected{co_await send_request(stream, request)}; !expected) [[unlikely]] {
+    co_return std::move(expected);
+  }
+  if (auto expected{co_await fetch_response(stream)}; !expected) [[unlikely]] {
+    co_return std::move(expected);
+  }
+  co_return std::expected<void, int32_t>{};
+}
+
 } // namespace kphp::component
 
 // === ComponentQuery =============================================================================

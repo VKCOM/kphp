@@ -5,10 +5,9 @@
 #pragma once
 
 #include "runtime-light/streams/stream.h"
-#include "runtime-light/tl/tl-core.h"
 
 namespace kphp::rpc {
 
-void init_server(kphp::component::stream request_stream, tl::TLBuffer& tlb) noexcept;
+void init_server(kphp::component::stream request_stream) noexcept;
 
 } // namespace kphp::rpc

@@ -84,19 +84,21 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
 
 namespace kphp::rpc {
 
-void init_server(kphp::component::stream request_stream, tl::TLBuffer& tlb) noexcept {
+void init_server(kphp::component::stream request_stream) noexcept {
+  tl::fetcher tlf{request_stream.data()};
   tl::K2InvokeRpc invoke_rpc{};
-  if (!invoke_rpc.fetch(tlb)) [[unlikely]] {
+  if (!invoke_rpc.fetch(tlf)) [[unlikely]] {
     kphp::log::error("erroneous rpc request");
   }
 
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
   rpc_server_instance_st.request_stream = std::move(request_stream);
   rpc_server_instance_st.query_id = invoke_rpc.query_id.value;
-  rpc_server_instance_st.buffer.store_bytes(invoke_rpc.query);
+  rpc_server_instance_st.tl_storer.store_bytes(invoke_rpc.query);
+  rpc_server_instance_st.tl_fetcher = tl::fetcher{rpc_server_instance_st.tl_storer.view()};
 
-  const auto opt_magic{rpc_server_instance_st.buffer.lookup_trivial<uint32_t>()};
-  if (!opt_magic) [[unlikely]] {
+  tl::magic request_magic{};
+  if (tl::fetcher tlf{rpc_server_instance_st.tl_storer.view()}; !request_magic.fetch(tlf)) [[unlikely]] {
     kphp::log::error("erroneous rpc request");
   }
 
@@ -122,7 +124,7 @@ void init_server(kphp::component::stream request_stream, tl::TLBuffer& tlb) noex
                   "request -> {:#x}",
                   invoke_rpc.net_pid.get_pid(), invoke_rpc.net_pid.get_port(), invoke_rpc.query_id.value,
                   invoke_rpc.opt_actor_id.has_value() ? (*invoke_rpc.opt_actor_id).value : 0,
-                  invoke_rpc.opt_extra.has_value() ? (*invoke_rpc.opt_extra).flags.value : 0, *opt_magic);
+                  invoke_rpc.opt_extra.has_value() ? (*invoke_rpc.opt_extra).flags.value : 0, request_magic.value);
 }
 
 } // namespace kphp::rpc

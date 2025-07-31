@@ -11,7 +11,6 @@
 #include <string_view>
 #include <utility>
 
-#include "common/tl/constants/common.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/core/globals/php-script-globals.h"
@@ -21,6 +20,7 @@
 #include "runtime-light/server/http/init-functions.h"
 #include "runtime-light/server/rpc/init-functions.h"
 #include "runtime-light/state/component-state.h"
+#include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
@@ -28,6 +28,7 @@
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
+#include "runtime-light/tl/tl-types.h"
 
 namespace {
 
@@ -100,26 +101,25 @@ kphp::coro::task<> InstanceState::init_server_instance() noexcept {
   auto opt_request_stream{co_await kphp::component::stream::accept()};
   kphp::log::assertion(opt_request_stream.has_value());
   auto request_stream{std::move(*opt_request_stream)};
-  if (auto expected{co_await request_stream.read()}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::component::fetch_request(request_stream)}; !expected) [[unlikely]] {
     kphp::log::error("failed to read a request: stream -> {}", request_stream.descriptor());
   }
 
-  tl::TLBuffer tlb;
-  tlb.store_bytes({reinterpret_cast<const char*>(request_stream.data().data()), request_stream.data().size()});
-
-  switch (const auto magic{tlb.lookup_trivial<uint32_t>().value_or(TL_ZERO)}) { // lookup magic
+  tl::magic request_magic{};
+  tl::fetcher tlf{request_stream.data()};
+  switch ((kphp::log::assertion(request_magic.fetch(tlf)), request_magic.value)) {
   case tl::K2_INVOKE_HTTP_MAGIC:
     instance_kind_ = instance_kind::http_server;
-    kphp::http::init_server(std::move(request_stream), tlb);
+    kphp::http::init_server(std::move(request_stream));
     break;
   case tl::K2_INVOKE_RPC_MAGIC:
     instance_kind_ = instance_kind::rpc_server;
-    kphp::rpc::init_server(std::move(request_stream), tlb);
+    kphp::rpc::init_server(std::move(request_stream));
     break;
   case tl::K2_INVOKE_JOB_WORKER_MAGIC:
     kphp::log::error("job worker server is currently not supported");
   default:
-    kphp::log::error("unexpected server request with magic: {:#x}", magic);
+    kphp::log::error("unexpected server request with magic: {:#x}", request_magic.value);
   }
 }
 

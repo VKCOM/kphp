@@ -5,11 +5,12 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <optional>
 
 #include "common/md5.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
-#include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/tl/tl-types.h"
 
@@ -26,7 +27,7 @@ array<string> f$openssl_get_cipher_methods(bool aliases = false) noexcept;
 Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept;
 
 kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method, string key, int64_t options = 0, string iv = string{},
-                                                     string& tag = CryptoInstanceState::get().default_tag_dummy, string aad = string{},
+                                                     std::optional<std::reference_wrapper<string>> tag = {}, string aad = string{},
                                                      int64_t tag_length = 16) noexcept;
 kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method, string key, int64_t options = 0, string iv = string{}, string tag = string{},
                                                      string aad = string{}) noexcept;

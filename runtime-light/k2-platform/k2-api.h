@@ -30,10 +30,12 @@ inline constexpr size_t DEFAULT_MEMORY_ALIGN = 16;
 } // namespace k2_impl_
 
 inline constexpr int32_t errno_ok = 0;
+inline constexpr int32_t errno_enodev = ENODEV;
 inline constexpr int32_t errno_einval = EINVAL;
 inline constexpr int32_t errno_enodata = ENODATA;
 inline constexpr int32_t errno_efault = EFAULT;
 inline constexpr int32_t errno_enomem = ENOMEM;
+inline constexpr int32_t errno_etimedout = ETIMEDOUT;
 inline constexpr int32_t errno_eshutdown = ESHUTDOWN;
 inline constexpr int32_t errno_ecanceled = ECANCELED;
 
