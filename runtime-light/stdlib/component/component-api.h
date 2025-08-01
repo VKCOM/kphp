@@ -39,8 +39,8 @@ inline auto fetch_request(kphp::component::stream& stream) noexcept -> kphp::cor
   co_return co_await stream.read();
 }
 
-inline auto send_response(const kphp::component::stream& stream, std::span<const std::byte> response) noexcept
-    -> kphp::coro::task<std::expected<void, int32_t>> {
+inline auto send_response(const kphp::component::stream& stream,
+                          std::span<const std::byte> response) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
   if (auto expected{co_await stream.write(response)}; !expected) [[unlikely]] {
     co_return std::move(expected);
   }
