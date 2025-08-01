@@ -7,6 +7,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
+#include <string_view>
+#include <utility>
 #include <variant>
 
 #include "common/sanitizer.h"
@@ -91,7 +94,20 @@ struct slow_job_worker_response_stats final {
   double response_time{};
 };
 
-using stats_t = std::variant<slow_rpc_response_stats, slow_job_worker_response_stats>;
+struct slow_curl_response_stats final {
+  enum class curl_kind : uint8_t { sync, async };
+
+  curl_kind kind;
+  std::optional<std::string_view> opt_url;
+  double response_time;
+
+  slow_curl_response_stats(curl_kind kind_, std::optional<std::string_view> url_, double response_time_) noexcept
+      : kind(kind_),
+        opt_url(url_),
+        response_time(response_time_) {}
+};
+
+using stats_t = std::variant<slow_rpc_response_stats, slow_job_worker_response_stats, slow_curl_response_stats>;
 
 }; // namespace slow_net_event_stats
 

@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <string_view>
 
 #include "curl/curl.h"
 #include "curl/easy.h"
@@ -25,7 +26,9 @@
 #include "net/net-events.h"
 #include "net/net-reactor.h"
 #include "server/curl-adaptor.h"
+#include "server/php-queries.h"
 #include "server/slot-ids-factory.h"
+#include "server/statshouse/statshouse-manager.h"
 
 static_assert(LIBCURL_VERSION_NUM >= 0x071c00, "Outdated libcurl");
 static_assert(CURL_MAX_WRITE_SIZE <= (1 << 30), "CURL_MAX_WRITE_SIZE expected to be less than (1 << 30)");
@@ -667,8 +670,11 @@ mixed f$curl_exec(curl_easy easy_id) noexcept {
   easy_context->error_num = dl::critical_section_call(curl_easy_perform, easy_context->easy_handle);
   double request_finish_time = dl_time();
   if (request_finish_time - request_start_time >= long_curl_query) {
-    kprintf("LONG curl query : %f. Curl id = %d, url = %.100s\n", request_finish_time - request_start_time, easy_context->uniq_id,
-            easy_context->get_info(CURLINFO_EFFECTIVE_URL).as_string().c_str());
+    string curl_url = easy_context->get_info(CURLINFO_EFFECTIVE_URL).as_string();
+    StatsHouseManager::get().add_slow_net_event_stats(
+        slow_net_event_stats::slow_curl_response_stats{slow_net_event_stats::slow_curl_response_stats::curl_kind::sync,
+                                                       std::string_view{curl_url.c_str(), curl_url.size()}, request_finish_time - request_start_time});
+    kprintf("LONG curl query : %f. Curl id = %d, url = %.100s\n", request_finish_time - request_start_time, easy_context->uniq_id, curl_url.c_str());
   }
   if (easy_context->error_num != CURLE_OK && easy_context->error_num != CURLE_PARTIAL_FILE) {
     if (kphp_tracing::is_turned_on()) {

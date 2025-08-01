@@ -9,6 +9,7 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <optional>
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <unistd.h>
@@ -60,26 +61,31 @@ namespace {
 [[maybe_unused]] const void *main_thread_stack = nullptr;
 [[maybe_unused]] size_t main_thread_stacksize = 0;
 
-void send_slow_net_event_stats(const net_event_t &event, double time_sec) noexcept {
+void send_slow_net_event_stats(const net_event_t& event, double time_sec) noexcept {
   std::visit(overloaded{
-               [&event, time_sec](const net_events_data::rpc_answer &) noexcept {
-                 const auto *rpc_req = get_rpc_request(event.slot_id);
-                 StatsHouseManager::get().add_slow_net_event_stats(
-                   slow_net_event_stats::slow_rpc_response_stats{tl_magic_convert_to_name(rpc_req->function_magic), rpc_req->actor_or_port, time_sec, false});
-               },
-               [&event, time_sec](const net_events_data::rpc_error &) noexcept {
-                 const auto *rpc_req = get_rpc_request(event.slot_id);
-                 StatsHouseManager::get().add_slow_net_event_stats(
-                   slow_net_event_stats::slow_rpc_response_stats{tl_magic_convert_to_name(rpc_req->function_magic), rpc_req->actor_or_port, time_sec, true});
-               },
-               [time_sec](const net_events_data::job_worker_answer &jw_answer) noexcept {
-                 if (jw_answer.job_result != nullptr) {
-                   StatsHouseManager::get().add_slow_net_event_stats(
-                     slow_net_event_stats::slow_job_worker_response_stats{jw_answer.job_result->response.get_class(), time_sec});
-                 }
-               },
-               [](const database_drivers::Response *) {},
-               [](const curl_async::CurlResponse *) {},
+                 [&event, time_sec](const net_events_data::rpc_answer&) noexcept {
+                   const auto* rpc_req = get_rpc_request(event.slot_id);
+                   StatsHouseManager::get().add_slow_net_event_stats(slow_net_event_stats::slow_rpc_response_stats{
+                       tl_magic_convert_to_name(rpc_req->function_magic), rpc_req->actor_or_port, time_sec, false});
+                 },
+                 [&event, time_sec](const net_events_data::rpc_error&) noexcept {
+                   const auto* rpc_req = get_rpc_request(event.slot_id);
+                   StatsHouseManager::get().add_slow_net_event_stats(slow_net_event_stats::slow_rpc_response_stats{
+                       tl_magic_convert_to_name(rpc_req->function_magic), rpc_req->actor_or_port, time_sec, true});
+                 },
+                 [time_sec](const net_events_data::job_worker_answer& jw_answer) noexcept {
+                   if (jw_answer.job_result != nullptr) {
+                     StatsHouseManager::get().add_slow_net_event_stats(
+                         slow_net_event_stats::slow_job_worker_response_stats{jw_answer.job_result->response.get_class(), time_sec});
+                   }
+                 },
+                 [](const database_drivers::Response*) {},
+                 [time_sec](const curl_async::CurlResponse* curl_response) noexcept {
+                   if (curl_response != nullptr) {
+                     StatsHouseManager::get().add_slow_net_event_stats(slow_net_event_stats::slow_curl_response_stats{
+                         slow_net_event_stats::slow_curl_response_stats::curl_kind::async, std::nullopt, time_sec});
+                   }
+                 },
 
              },
              event.data);

@@ -4,11 +4,13 @@
 
 #include "server/statshouse/statshouse-manager.h"
 
+#include <algorithm>
 #include <array>
 #include <charconv>
 #include <chrono>
 #include <cstddef>
 #include <string>
+#include <string_view>
 #include <variant>
 
 #include "common/precise-time.h"
@@ -380,22 +382,41 @@ void StatsHouseManager::add_confdata_binlog_reader_stats(const binlog_reader_sta
   client.metric("kphp_confdata_next_binlog_wait_time").tag("binlog_name", confdata_stats.next_binlog_expectator_name).write_value(confdata_stats.next_binlog_wait_time.count());
 }
 
-void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::stats_t &stats) noexcept {
-  std::visit(overloaded{[this](const slow_net_event_stats::slow_rpc_response_stats &rpc_query_stat) noexcept {
+void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::stats_t& stats) noexcept {
+  std::visit(overloaded{[this](const slow_net_event_stats::slow_rpc_response_stats& rpc_query_stat) noexcept {
                           // FIXME: it's enough to have it equal 10, but due to bug in GCC we are forced to use a length > 253
                           constexpr auto MAX_INT_STRING_LENGTH = 254;
                           std::array<char, MAX_INT_STRING_LENGTH> buf{};
                           const auto chars{std::to_chars(buf.data(), buf.data() + buf.size(), rpc_query_stat.actor_or_port)};
                           client.metric("kphp_slow_rpc_response")
-                            .tag(rpc_query_stat.tl_function_name != nullptr ? rpc_query_stat.tl_function_name : "unknown")
-                            .tag({buf.data(), static_cast<size_t>(chars.ptr - buf.data())})
-                            .tag(rpc_query_stat.is_error ? "error" : "success")
-                            .write_value(rpc_query_stat.response_time);
+                              .tag(rpc_query_stat.tl_function_name != nullptr ? rpc_query_stat.tl_function_name : "unknown")
+                              .tag({buf.data(), static_cast<size_t>(chars.ptr - buf.data())})
+                              .tag(rpc_query_stat.is_error ? "error" : "success")
+                              .write_value(rpc_query_stat.response_time);
                         },
-                        [this](const slow_net_event_stats::slow_job_worker_response_stats &jw_response_stat) noexcept {
+                        [this](const slow_net_event_stats::slow_job_worker_response_stats& jw_response_stat) noexcept {
                           client.metric("kphp_slow_job_worker_response")
-                            .tag(jw_response_stat.class_name != nullptr ? jw_response_stat.class_name : "unknown")
-                            .write_value(jw_response_stat.response_time);
+                              .tag(jw_response_stat.class_name != nullptr ? jw_response_stat.class_name : "unknown")
+                              .write_value(jw_response_stat.response_time);
+                        },
+                        [this](const slow_net_event_stats::slow_curl_response_stats& curl_response_stat) noexcept {
+                          std::string_view curl_kind = "unknown";
+                          switch (curl_response_stat.kind) {
+                          case slow_net_event_stats::slow_curl_response_stats::curl_kind::sync:
+                            curl_kind = "sync";
+                            break;
+                          case slow_net_event_stats::slow_curl_response_stats::curl_kind::async:
+                            curl_kind = "async";
+                            break;
+                          }
+
+                          static constexpr size_t CURL_URL_MAX_LEN = 100;
+                          std::string_view curl_url = curl_response_stat.opt_url.value_or(std::string_view{"unknown"});
+
+                          client.metric("kphp_slow_curl_response")
+                              .tag(curl_kind)
+                              .tag(std::string_view{curl_url.data(), std::min(curl_url.size(), CURL_URL_MAX_LEN)})
+                              .write_value(curl_response_stat.response_time);
                         }},
              stats);
 }
