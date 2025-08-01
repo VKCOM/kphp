@@ -4,20 +4,14 @@
 
 #pragma once
 
-#include <array>
 #include <cstddef>
 #include <cstdint>
-#include <format>
-#include <functional>
 #include <memory>
-#include <optional>
 #include <sys/utsname.h>
 
 #include "common/mixin/not_copyable.h"
 #include "common/php-functions.h"
-#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -37,8 +31,6 @@ struct ImageState final : private vk::not_copyable {
   string uname_info_v;
   string uname_info_m;
   string uname_info_a;
-
-  kphp::stl::string<kphp::memory::script_allocator> image_version;
 
   ShapeKeyDemangle shape_key_demangler;
 
@@ -75,24 +67,10 @@ struct ImageState final : private vk::not_copyable {
     uname_info_v.set_reference_counter_to(ExtraRefCnt::for_global_const);
     uname_info_m.set_reference_counter_to(ExtraRefCnt::for_global_const);
     uname_info_a.set_reference_counter_to(ExtraRefCnt::for_global_const);
-
-    static constexpr int64_t BUFFER_SIZE = 64;
-    std::array<char, BUFFER_SIZE> buffer; // NOLINT
-    auto [out, size]{std::format_to_n(buffer.begin(), buffer.size() - 1, "{}", k2_describe()->build_timestamp)};
-    *out = '\0';
-
-    image_version = buffer.data();
   }
 
   static const ImageState& get() noexcept {
     return *k2::image_state();
-  }
-
-  static std::optional<std::reference_wrapper<const ImageState>> try_get() noexcept {
-    if (const auto* image_ptr{k2::image_state()}; image_ptr != nullptr) [[likely]] {
-      return *image_ptr;
-    }
-    return std::nullopt;
   }
 
   static ImageState& get_mutable() noexcept {
