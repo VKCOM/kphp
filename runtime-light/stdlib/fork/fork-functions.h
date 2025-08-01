@@ -103,8 +103,8 @@ auto wait(int64_t fork_id, std::chrono::nanoseconds timeout) noexcept -> kphp::c
 template<typename T>
 requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value)
 kphp::coro::task<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
-  auto opt_result{co_await kphp::forks::wait<internal_optional_type_t<T>>(
-      fork_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout}))};
+  auto opt_result{co_await kphp::forks::id_managed(
+      kphp::forks::wait<internal_optional_type_t<T>>(fork_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})))};
   co_return opt_result ? T{*std::move(opt_result)} : T{};
 }
 

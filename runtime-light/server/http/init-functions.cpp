@@ -368,21 +368,21 @@ kphp::coro::task<> finalize_server() noexcept {
   }
 
   const auto status_code{http_server_instance_st.status_code == status::NO_STATUS ? status::OK : http_server_instance_st.status_code};
-  tl::httpResponse http_response{.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11},
-                                 .status_code = {.value = static_cast<int32_t>(status_code)},
-                                 .headers = {},
-                                 .body = {reinterpret_cast<const std::byte*>(body.c_str()), body.size()}};
+
+  tl::HttpResponse http_response{.http_response = tl::httpResponse{.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11},
+                                                                   .status_code = {.value = static_cast<int32_t>(status_code)},
+                                                                   .headers = {},
+                                                                   .body = {reinterpret_cast<const std::byte*>(body.c_str()), body.size()}}};
   // fill headers
-  http_response.headers.value.reserve(http_server_instance_st.headers().size());
-  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.value),
-                 [](const auto& header_entry) noexcept {
+  http_response.http_response.headers.value.reserve(http_server_instance_st.headers().size());
+  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(),
+                 std::back_inserter(http_response.http_response.headers.value), [](const auto& header_entry) noexcept {
                    const auto& [name, value]{header_entry};
                    return tl::httpHeaderEntry{
                        .is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
                  });
 
-  tl::HttpResponse response{.http_response = std::move(http_response)};
-  tl::storer tls{response.footprint()};
+  tl::storer tls{http_response.footprint()};
   http_response.store(tls);
 
   if (!http_server_instance_st.request_stream.has_value()) [[unlikely]] {
