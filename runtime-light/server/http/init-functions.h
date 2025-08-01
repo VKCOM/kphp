@@ -6,11 +6,10 @@
 
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/streams/stream.h"
-#include "runtime-light/tl/tl-core.h"
 
 namespace kphp::http {
 
-void init_server(kphp::component::stream request_stream, tl::TLBuffer& tlb) noexcept;
+void init_server(kphp::component::stream request_stream) noexcept;
 
 kphp::coro::task<> finalize_server() noexcept;
 

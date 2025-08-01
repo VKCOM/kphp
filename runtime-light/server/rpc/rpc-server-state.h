@@ -14,7 +14,8 @@
 #include "runtime-light/tl/tl-core.h"
 
 struct RpcServerInstanceState final : vk::not_copyable {
-  tl::TLBuffer buffer;
+  tl::storer tl_storer;
+  tl::fetcher tl_fetcher{tl_storer.view()};
   std::optional<kphp::component::stream> request_stream;
 
   bool fail_rpc_on_int32_overflow{};

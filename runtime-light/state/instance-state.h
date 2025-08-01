@@ -20,7 +20,6 @@
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
-#include "runtime-light/stdlib/crypto/crypto-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
@@ -102,7 +101,6 @@ struct InstanceState final : vk::not_copyable {
   RandomInstanceState random_instance_state;
   RegexInstanceState regex_instance_state;
   CurlInstanceState curl_instance_state;
-  CryptoInstanceState crypto_instance_state;
   StringInstanceState string_instance_state;
   SystemInstanceState system_instance_state;
 

@@ -4,9 +4,10 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
-#include <string_view>
+#include <span>
 
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
@@ -27,9 +28,9 @@ public:
   tl::i64 timeout_ns{};
   tl::string body;
 
-  bool fetch(tl::TLBuffer& tlb) noexcept;
+  bool fetch(tl::fetcher& tlf) noexcept;
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept;
 };
 
 // ===== CRYPTO =====
@@ -46,14 +47,29 @@ inline constexpr uint32_t HASH_HMAC_MAGIC = 0x8dcb'3d9d;
 struct GetCryptosecurePseudorandomBytes final {
   tl::i32 size{};
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = GET_CRYPTOSECURE_PSEUDORANDOM_BYTES_MAGIC}.store(tls);
+    size.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = GET_CRYPTOSECURE_PSEUDORANDOM_BYTES_MAGIC}.footprint() + size.footprint();
+  }
 };
 
 struct GetPemCertInfo final {
   bool is_short{true};
   tl::string bytes;
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = GET_PEM_CERT_INFO_MAGIC}.store(tls);
+    tl::Bool{.value = is_short}.store(tls);
+    bytes.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = GET_PEM_CERT_INFO_MAGIC}.footprint() + tl::Bool{.value = is_short}.footprint() + bytes.footprint();
+  }
 };
 
 struct DigestSign final {
@@ -61,7 +77,16 @@ struct DigestSign final {
   tl::string private_key;
   tl::HashAlgorithm algorithm{};
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = DIGEST_SIGN_MAGIC}.store(tls);
+    data.store(tls);
+    private_key.store(tls);
+    tls.store_trivial<uint32_t>(algorithm);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = DIGEST_SIGN_MAGIC}.footprint() + data.footprint() + private_key.footprint() + sizeof(uint32_t);
+  }
 };
 
 struct DigestVerify final {
@@ -70,7 +95,17 @@ struct DigestVerify final {
   tl::HashAlgorithm algorithm{};
   tl::string signature;
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = DIGEST_VERIFY_MAGIC}.store(tls);
+    data.store(tls);
+    public_key.store(tls);
+    tls.store_trivial<uint32_t>(algorithm);
+    signature.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = DIGEST_VERIFY_MAGIC}.footprint() + data.footprint() + public_key.footprint() + sizeof(uint32_t) + signature.footprint();
+  }
 };
 
 struct CbcDecrypt final {
@@ -80,7 +115,18 @@ struct CbcDecrypt final {
   tl::string iv;
   tl::string data;
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = CBC_DECRYPT_MAGIC}.store(tls);
+    tls.store_trivial<uint32_t>(algorithm);
+    tls.store_trivial<uint32_t>(padding);
+    passphrase.store(tls);
+    iv.store(tls);
+    data.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = CBC_DECRYPT_MAGIC}.footprint() + sizeof(uint32_t) + sizeof(uint32_t) + passphrase.footprint() + iv.footprint() + data.footprint();
+  }
 };
 
 struct CbcEncrypt final {
@@ -90,14 +136,33 @@ struct CbcEncrypt final {
   tl::string iv;
   tl::string data;
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = CBC_ENCRYPT_MAGIC}.store(tls);
+    tls.store_trivial<uint32_t>(algorithm);
+    tls.store_trivial<uint32_t>(padding);
+    passphrase.store(tls);
+    iv.store(tls);
+    data.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = CBC_ENCRYPT_MAGIC}.footprint() + sizeof(uint32_t) + sizeof(uint32_t) + passphrase.footprint() + iv.footprint() + data.footprint();
+  }
 };
 
 struct Hash final {
   tl::HashAlgorithm algorithm{};
   tl::string data;
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = HASH_MAGIC}.store(tls);
+    tls.store_trivial<uint32_t>(algorithm);
+    data.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = HASH_MAGIC}.footprint() + sizeof(uint32_t) + data.footprint();
+  }
 };
 
 struct HashHmac final {
@@ -105,7 +170,16 @@ struct HashHmac final {
   tl::string data;
   tl::string secret_key;
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = HASH_HMAC_MAGIC}.store(tls);
+    tls.store_trivial<uint32_t>(algorithm);
+    data.store(tls);
+    secret_key.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = HASH_HMAC_MAGIC}.footprint() + sizeof(uint32_t) + data.footprint() + secret_key.footprint();
+  }
 };
 
 // ===== CONFDATA =====
@@ -116,13 +190,27 @@ inline constexpr uint32_t CONFDATA_GET_WILDCARD_MAGIC = 0x5759'bd9e;
 struct ConfdataGet final {
   tl::string key;
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = CONFDATA_GET_MAGIC}.store(tls);
+    key.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = CONFDATA_GET_MAGIC}.footprint() + key.footprint();
+  }
 };
 
 struct ConfdataGetWildcard final {
   tl::string wildcard;
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = CONFDATA_GET_WILDCARD_MAGIC}.store(tls);
+    wildcard.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = CONFDATA_GET_WILDCARD_MAGIC}.footprint() + wildcard.footprint();
+  }
 };
 
 // ===== HTTP =====
@@ -140,9 +228,9 @@ public:
   tl::string method;
   tl::httpUri uri{};
   tl::vector<tl::httpHeaderEntry> headers{};
-  std::string_view body;
+  std::span<const std::byte> body;
 
-  bool fetch(tl::TLBuffer& tlb) noexcept;
+  bool fetch(tl::fetcher& tlf) noexcept;
 };
 
 // ===== RPC =====
@@ -159,22 +247,22 @@ public:
   tl::netPid net_pid{};
   std::optional<tl::i64> opt_actor_id;
   std::optional<tl::rpcInvokeReqExtra> opt_extra;
-  std::string_view query;
+  std::span<const std::byte> query;
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
+  bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlb) && magic.expect(K2_INVOKE_RPC_MAGIC)};
-    ok &= flags.fetch(tlb);
-    ok &= query_id.fetch(tlb);
-    ok &= net_pid.fetch(tlb);
+    bool ok{magic.fetch(tlf) && magic.expect(K2_INVOKE_RPC_MAGIC)};
+    ok &= flags.fetch(tlf);
+    ok &= query_id.fetch(tlf);
+    ok &= net_pid.fetch(tlf);
     if (static_cast<bool>(flags.value & ACTOR_ID_FLAG)) {
-      ok &= opt_actor_id.emplace().fetch(tlb);
+      ok &= opt_actor_id.emplace().fetch(tlf);
     }
     if (static_cast<bool>(flags.value & EXTRA_FLAG)) {
-      ok &= opt_extra.emplace().fetch(tlb);
+      ok &= opt_extra.emplace().fetch(tlf);
     }
-    const auto opt_query{tlb.fetch_bytes(tlb.remaining())};
-    query = opt_query.value_or(std::string_view{});
+    const auto opt_query{tlf.fetch_bytes(tlf.remaining())};
+    query = opt_query.value_or(std::span<const std::byte>{});
     return ok && opt_query.has_value();
   }
 };
@@ -191,11 +279,15 @@ struct CacheStore final {
   tl::string value;
   tl::u32 ttl;
 
-  void store(TLBuffer& tlb) const noexcept {
-    tl::magic{.value = CACHE_STORE_MAGIC}.store(tlb);
-    key.store(tlb);
-    value.store(tlb);
-    ttl.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = CACHE_STORE_MAGIC}.store(tls);
+    key.store(tls);
+    value.store(tls);
+    ttl.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = CACHE_STORE_MAGIC}.footprint() + key.footprint() + value.footprint() + ttl.footprint();
   }
 };
 
@@ -203,28 +295,40 @@ struct CacheUpdateTtl final {
   tl::string key;
   tl::u32 ttl;
 
-  void store(TLBuffer& tlb) const noexcept {
-    tl::magic{.value = CACHE_UPDATE_TTL_MAGIC}.store(tlb);
-    key.store(tlb);
-    ttl.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = CACHE_UPDATE_TTL_MAGIC}.store(tls);
+    key.store(tls);
+    ttl.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = CACHE_UPDATE_TTL_MAGIC}.footprint() + key.footprint() + ttl.footprint();
   }
 };
 
 struct CacheDelete final {
   tl::string key;
 
-  void store(TLBuffer& tlb) const noexcept {
-    tl::magic{.value = CACHE_DELETE_MAGIC}.store(tlb);
-    key.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = CACHE_DELETE_MAGIC}.store(tls);
+    key.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = CACHE_DELETE_MAGIC}.footprint() + key.footprint();
   }
 };
 
 struct CacheFetch final {
   tl::string key;
 
-  void store(TLBuffer& tlb) const noexcept {
-    tl::magic{.value = CACHE_FETCH_MAGIC}.store(tlb);
-    key.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = CACHE_FETCH_MAGIC}.store(tls);
+    key.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = CACHE_FETCH_MAGIC}.footprint() + key.footprint();
   }
 };
 

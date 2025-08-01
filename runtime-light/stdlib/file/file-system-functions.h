@@ -48,8 +48,8 @@ inline string f$basename(const string& path, const string& suffix = {}) noexcept
   return {filename_view.data(), static_cast<string::size_type>(filename_view.size())};
 }
 
-inline resource f$fopen(const string& filename, [[maybe_unused]] const string& mode, [[maybe_unused]] bool use_include_path,
-                        [[maybe_unused]] const resource& context) noexcept {
+inline resource f$fopen(const string& filename, [[maybe_unused]] const string& mode, [[maybe_unused]] bool use_include_path = false,
+                        [[maybe_unused]] const resource& context = {}) noexcept {
   kphp::resource::underlying_resource rsrc{{filename.c_str(), filename.size()}};
   if (rsrc.error_code() != k2::errno_ok) [[unlikely]] {
     kphp::log::warning("fopen failed: {}", filename.c_str());

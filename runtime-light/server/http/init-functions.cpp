@@ -25,6 +25,7 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/state/instance-state.h"
+#include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/server/http-functions.h"
@@ -198,9 +199,10 @@ std::string_view process_headers(const tl::K2InvokeHttp& invoke_http, PhpScriptB
 
 namespace kphp::http {
 
-void init_server(kphp::component::stream request_stream, tl::TLBuffer& tlb) noexcept {
+void init_server(kphp::component::stream request_stream) noexcept {
+  tl::fetcher tlf{request_stream.data()};
   tl::K2InvokeHttp invoke_http{};
-  if (!invoke_http.fetch(tlb)) [[unlikely]] {
+  if (!invoke_http.fetch(tlf)) [[unlikely]] {
     kphp::log::error("erroneous http request");
   }
 
@@ -283,7 +285,7 @@ void init_server(kphp::component::stream request_stream, tl::TLBuffer& tlb) noex
     server.set_value(string{ARGC.data(), ARGC.size()}, static_cast<int64_t>(1));
     server.set_value(string{ARGV.data(), ARGV.size()}, uri_query);
   } else if (http_server_instance_st.http_method == method::post) {
-    string body_str{invoke_http.body.data(), static_cast<string::size_type>(invoke_http.body.size())};
+    string body_str{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
     if (content_type == CONTENT_TYPE_APP_FORM_URLENCODED) {
       f$parse_str(body_str, superglobals.v$_POST);
     } else if (content_type.starts_with(CONTENT_TYPE_MULTIPART_FORM_DATA)) {
@@ -366,27 +368,28 @@ kphp::coro::task<> finalize_server() noexcept {
   }
 
   const auto status_code{http_server_instance_st.status_code == status::NO_STATUS ? status::OK : http_server_instance_st.status_code};
-  tl::httpResponse http_response{.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11},
-                                 .status_code = {.value = static_cast<int32_t>(status_code)},
-                                 .headers = {},
-                                 .body = {body.c_str(), body.size()}};
+
+  tl::HttpResponse http_response{.http_response = tl::httpResponse{.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11},
+                                                                   .status_code = {.value = static_cast<int32_t>(status_code)},
+                                                                   .headers = {},
+                                                                   .body = {reinterpret_cast<const std::byte*>(body.c_str()), body.size()}}};
   // fill headers
-  http_response.headers.value.reserve(http_server_instance_st.headers().size());
-  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.headers.value),
-                 [](const auto& header_entry) noexcept {
+  http_response.http_response.headers.value.reserve(http_server_instance_st.headers().size());
+  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(),
+                 std::back_inserter(http_response.http_response.headers.value), [](const auto& header_entry) noexcept {
                    const auto& [name, value]{header_entry};
                    return tl::httpHeaderEntry{
                        .is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
                  });
 
-  tl::TLBuffer tlb{};
-  tl::HttpResponse{.http_response = std::move(http_response)}.store(tlb);
+  tl::storer tls{http_response.footprint()};
+  http_response.store(tls);
 
   if (!http_server_instance_st.request_stream.has_value()) [[unlikely]] {
     kphp::log::error("can't send HTTP response since there is no available stream");
   }
   const auto& request_stream{*http_server_instance_st.request_stream};
-  if (auto expected{co_await request_stream.write({reinterpret_cast<const std::byte*>(tlb.data()), tlb.size()})}; !expected) [[unlikely]] {
+  if (auto expected{co_await kphp::component::send_response(request_stream, tls.view())}; !expected) [[unlikely]] {
     kphp::log::error("can't write HTTP response: stream -> {}, error code -> {}", request_stream.descriptor(), expected.error());
   }
 }

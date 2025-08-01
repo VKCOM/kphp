@@ -1,10 +1,8 @@
 prepend(
   RUNTIME_LIGHT_STDLIB_SRC
   stdlib/
-  component/component-api.cpp
   confdata/confdata-functions.cpp
   crypto/crypto-functions.cpp
-  crypto/crypto-state.cpp
   curl/curl-state.cpp
   diagnostics/backtrace.cpp
   diagnostics/logs.cpp

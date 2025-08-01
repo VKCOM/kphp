@@ -56,6 +56,7 @@ inline kphp::coro::task<> finalize_cli_server() noexcept {
       kphp::log::error("can't write user buffer to output: stream -> {}, error code -> {}", output_stream.descriptor(), expected.error());
     }
   }
+  output_stream.shutdown_write();
 }
 
 } // namespace kphp::cli

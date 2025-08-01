@@ -16,6 +16,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
 #include "runtime-light/stdlib/serialization/msgpack-functions.h"
+#include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
@@ -44,25 +45,25 @@ kphp::coro::task<bool> f$instance_cache_store(string key, InstanceType instance,
     co_return false;
   }
 
-  tl::TLBuffer tlb;
-  tl::CacheStore{.key = tl::string{.value = {key.c_str(), key.size()}},
-                 .value = tl::string{.value = {serialized_instance.val().c_str(), serialized_instance.val().size()}},
-                 .ttl = tl::u32{.value = static_cast<uint32_t>(ttl)}}
-      .store(tlb);
+  tl::CacheStore cache_store{.key = tl::string{.value = {key.c_str(), key.size()}},
+                             .value = tl::string{.value = {serialized_instance.val().c_str(), serialized_instance.val().size()}},
+                             .ttl = tl::u32{.value = static_cast<uint32_t>(ttl)}};
+  tl::storer tls{cache_store.footprint()};
+  cache_store.store(tls);
 
-  auto query{co_await f$component_client_send_request(
-      string{kphp::instance_cache::details::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::details::COMPONENT_NAME.size())},
-      string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  if (query.is_null()) [[unlikely]] {
+  auto expected_stream{kphp::component::stream::open(kphp::instance_cache::details::COMPONENT_NAME, k2::stream_kind::component, tl::Bool{}.footprint())};
+  if (!expected_stream) [[unlikely]] {
     co_return false;
   }
 
-  auto response{co_await f$component_client_fetch_response(std::move(query))};
-  tlb.clean();
-  tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
+  auto stream{*std::move(expected_stream)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+    co_return false;
+  }
 
   tl::Bool tl_bool{};
-  kphp::log::assertion(tl_bool.fetch(tlb));
+  tl::fetcher tlf{stream.data()};
+  kphp::log::assertion(tl_bool.fetch(tlf));
   InstanceCacheInstanceState::get().request_cache.emplace(std::move(key), std::move(instance));
   co_return tl_bool.value;
 }
@@ -75,22 +76,23 @@ kphp::coro::task<InstanceType> f$instance_cache_fetch(string /*class_name*/, str
     co_return std::move(cached_instance);
   }
 
-  tl::TLBuffer tlb;
-  tl::CacheFetch{.key = tl::string{.value = {key.c_str(), key.size()}}}.store(tlb);
+  tl::CacheFetch cache_fetch{.key = tl::string{.value = {key.c_str(), key.size()}}};
+  tl::storer tls{cache_fetch.footprint()};
+  cache_fetch.store(tls);
 
-  auto query{co_await f$component_client_send_request(
-      string{kphp::instance_cache::details::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::details::COMPONENT_NAME.size())},
-      string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  if (query.is_null()) [[unlikely]] {
+  auto expected_stream{kphp::component::stream::open(kphp::instance_cache::details::COMPONENT_NAME, k2::stream_kind::component)};
+  if (!expected_stream) [[unlikely]] {
     co_return InstanceType{};
   }
 
-  auto response{co_await f$component_client_fetch_response(std::move(query))};
-  tlb.clean();
-  tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
+  auto stream{*std::move(expected_stream)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+    co_return InstanceType{};
+  }
 
   tl::Maybe<tl::string> maybe_string{};
-  kphp::log::assertion(maybe_string.fetch(tlb));
+  tl::fetcher tlf{stream.data()};
+  kphp::log::assertion(maybe_string.fetch(tlf));
   if (!maybe_string.opt_value) [[unlikely]] {
     co_return InstanceType{};
   }
@@ -112,43 +114,45 @@ inline kphp::coro::task<bool> f$instance_cache_update_ttl(string key, int64_t tt
     ttl = 0;
   }
 
-  tl::TLBuffer tlb;
-  tl::CacheUpdateTtl{.key = tl::string{.value = {key.c_str(), key.size()}}, .ttl = tl::u32{.value = static_cast<uint32_t>(ttl)}}.store(tlb);
+  tl::CacheUpdateTtl cache_update_tll{.key = tl::string{.value = {key.c_str(), key.size()}}, .ttl = tl::u32{.value = static_cast<uint32_t>(ttl)}};
+  tl::storer tls{cache_update_tll.footprint()};
+  cache_update_tll.store(tls);
 
-  auto query{co_await f$component_client_send_request(
-      string{kphp::instance_cache::details::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::details::COMPONENT_NAME.size())},
-      string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  if (query.is_null()) [[unlikely]] {
+  auto expected_stream{kphp::component::stream::open(kphp::instance_cache::details::COMPONENT_NAME, k2::stream_kind::component, tl::Bool{}.footprint())};
+  if (!expected_stream) [[unlikely]] {
     co_return false;
   }
 
-  auto response{co_await f$component_client_fetch_response(std::move(query))};
-  tlb.clean();
-  tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
+  auto stream{*std::move(expected_stream)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+    co_return false;
+  }
 
   tl::Bool tl_bool{};
-  kphp::log::assertion(tl_bool.fetch(tlb));
+  tl::fetcher tlf{stream.data()};
+  kphp::log::assertion(tl_bool.fetch(tlf));
   co_return tl_bool.value;
 }
 
 inline kphp::coro::task<bool> f$instance_cache_delete(string key) noexcept {
   InstanceCacheInstanceState::get().request_cache.erase(key);
 
-  tl::TLBuffer tlb;
-  tl::CacheDelete{.key = tl::string{.value = {key.c_str(), key.size()}}}.store(tlb);
+  tl::CacheDelete cache_delete{.key = tl::string{.value = {key.c_str(), key.size()}}};
+  tl::storer tls{cache_delete.footprint()};
+  cache_delete.store(tls);
 
-  auto query{co_await f$component_client_send_request(
-      string{kphp::instance_cache::details::COMPONENT_NAME.data(), static_cast<string::size_type>(kphp::instance_cache::details::COMPONENT_NAME.size())},
-      string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  if (query.is_null()) [[unlikely]] {
+  auto expected_stream{kphp::component::stream::open(kphp::instance_cache::details::COMPONENT_NAME, k2::stream_kind::component, tl::Bool{}.footprint())};
+  if (!expected_stream) [[unlikely]] {
     co_return false;
   }
 
-  auto response{co_await f$component_client_fetch_response(std::move(query))};
-  tlb.clean();
-  tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
+  auto stream{*std::move(expected_stream)};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+    co_return false;
+  }
 
   tl::Bool tl_bool{};
-  kphp::log::assertion(tl_bool.fetch(tlb));
+  tl::fetcher tlf{stream.data()};
+  kphp::log::assertion(tl_bool.fetch(tlf));
   co_return tl_bool.value;
 }

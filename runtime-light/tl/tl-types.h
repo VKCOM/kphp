@@ -7,7 +7,11 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <numeric>
 #include <optional>
+#include <ranges>
+#include <span>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -21,175 +25,230 @@
 namespace tl {
 
 struct magic final {
-  uint32_t value{};
+  using underlying_type = uint32_t;
+  underlying_type value{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<uint32_t>()};
+  bool fetch(tl::fetcher& tlf) noexcept {
+    const auto opt_value{tlf.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0);
     return opt_value.has_value();
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(value);
+  void store(tl::storer& tls) const noexcept {
+    tls.store_trivial<underlying_type>(value);
   }
 
-  bool expect(uint32_t expected) const noexcept {
+  bool expect(underlying_type expected) const noexcept {
     return expected == value;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
 struct mask final {
-  uint32_t value{};
+  using underlying_type = uint32_t;
+  underlying_type value{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<uint32_t>()};
+  bool fetch(tl::fetcher& tlf) noexcept {
+    const auto opt_value{tlf.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0);
     return opt_value.has_value();
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(value);
+  void store(tl::storer& tls) const noexcept {
+    tls.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
 struct Bool final {
   bool value{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
+  bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlb) && (magic.expect(TL_BOOL_TRUE) || magic.expect(TL_BOOL_FALSE))};
+    bool ok{magic.fetch(tlf) && (magic.expect(TL_BOOL_TRUE) || magic.expect(TL_BOOL_FALSE))};
     value = magic.expect(TL_BOOL_TRUE);
     return ok;
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tl::magic{.value = value ? TL_BOOL_TRUE : TL_BOOL_FALSE}.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = value ? TL_BOOL_TRUE : TL_BOOL_FALSE}.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = value ? TL_BOOL_TRUE : TL_BOOL_FALSE}.footprint();
   }
 };
 
 struct i32 final {
-  int32_t value{};
+  using underlying_type = int32_t;
+  underlying_type value{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<int32_t>()};
+  bool fetch(tl::fetcher& tlf) noexcept {
+    const auto opt_value{tlf.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0);
     return opt_value.has_value();
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<int32_t>(value);
+  void store(tl::storer& tls) const noexcept {
+    tls.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
 struct I32 final {
   tl::i32 inner{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
+  bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_INT) && inner.fetch(tlb);
+    return magic.fetch(tlf) && magic.expect(TL_INT) && inner.fetch(tlf);
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tl::magic{.value = TL_INT}.store(tlb);
-    inner.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = TL_INT}.store(tls);
+    inner.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = TL_INT}.footprint() + inner.footprint();
   }
 };
 
 struct u32 final {
-  uint32_t value{};
+  using underlying_type = uint32_t;
+  underlying_type value{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<uint32_t>()};
+  bool fetch(tl::fetcher& tlf) noexcept {
+    const auto opt_value{tlf.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0);
     return opt_value.has_value();
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<uint32_t>(value);
+  void store(tl::storer& tls) const noexcept {
+    tls.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
 struct i64 final {
-  int64_t value{};
+  using underlying_type = int64_t;
+  underlying_type value{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<int64_t>()};
+  bool fetch(tl::fetcher& tlf) noexcept {
+    const auto opt_value{tlf.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0);
     return opt_value.has_value();
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<int64_t>(value);
+  void store(tl::storer& tls) const noexcept {
+    tls.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
 struct I64 final {
   tl::i64 inner{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
+  bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_LONG) && inner.fetch(tlb);
+    return magic.fetch(tlf) && magic.expect(TL_LONG) && inner.fetch(tlf);
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tl::magic{.value = TL_LONG}.store(tlb);
-    inner.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = TL_LONG}.store(tls);
+    inner.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = TL_LONG}.footprint() + inner.footprint();
   }
 };
 
 struct f32 final {
-  float value{};
+  using underlying_type = float;
+  underlying_type value{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<float>()};
+  bool fetch(tl::fetcher& tlf) noexcept {
+    const auto opt_value{tlf.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0.0);
     return opt_value.has_value();
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<float>(value);
+  void store(tl::storer& tls) const noexcept {
+    tls.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
 struct F32 final {
   tl::f32 inner{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
+  bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_FLOAT) && inner.fetch(tlb);
+    return magic.fetch(tlf) && magic.expect(TL_FLOAT) && inner.fetch(tlf);
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tl::magic{.value = TL_FLOAT}.store(tlb);
-    inner.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = TL_FLOAT}.store(tls);
+    inner.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = TL_FLOAT}.footprint() + inner.footprint();
   }
 };
 
 struct f64 final {
-  double value{};
+  using underlying_type = double;
+  underlying_type value{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    const auto opt_value{tlb.fetch_trivial<double>()};
+  bool fetch(tl::fetcher& tlf) noexcept {
+    const auto opt_value{tlf.fetch_trivial<underlying_type>()};
     value = opt_value.value_or(0.0);
     return opt_value.has_value();
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tlb.store_trivial<double>(value);
+  void store(tl::storer& tls) const noexcept {
+    tls.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
   }
 };
 
 struct F64 final {
   tl::f64 inner{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
+  bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_DOUBLE) && inner.fetch(tlb);
+    return magic.fetch(tlf) && magic.expect(TL_DOUBLE) && inner.fetch(tlf);
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tl::magic{.value = TL_DOUBLE}.store(tlb);
-    inner.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = TL_DOUBLE}.store(tls);
+    inner.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = TL_DOUBLE}.footprint() + inner.footprint();
   }
 };
 
@@ -197,25 +256,26 @@ template<typename T>
 struct Maybe final {
   std::optional<T> opt_value{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept
+  bool fetch(tl::fetcher& tlf) noexcept
   requires tl::deserializable<T>
   {
     tl::magic magic{};
-    if (!magic.fetch(tlb) || (!magic.expect(TL_MAYBE_TRUE) && !magic.expect(TL_MAYBE_FALSE))) [[unlikely]] {
+    if (!magic.fetch(tlf) || (!magic.expect(TL_MAYBE_TRUE) && !magic.expect(TL_MAYBE_FALSE))) [[unlikely]] {
       return false;
     }
-    return magic.expect(TL_MAYBE_TRUE) ? opt_value.emplace().fetch(tlb) : (opt_value = std::nullopt, true);
+    return magic.expect(TL_MAYBE_TRUE) ? opt_value.emplace().fetch(tlf) : (opt_value = std::nullopt, true);
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept
+  void store(tl::storer& tls) const noexcept
   requires tl::serializable<T>
   {
-    if (opt_value.has_value()) {
-      tl::magic{.value = TL_MAYBE_TRUE}.store(tlb);
-      (*opt_value).store(tlb);
-    } else {
-      tl::magic{.value = TL_MAYBE_FALSE}.store(tlb);
-    }
+    opt_value ? tl::magic{.value = TL_MAYBE_TRUE}.store(tls), (*opt_value).store(tls) : tl::magic{.value = TL_MAYBE_FALSE}.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    return opt_value ? tl::magic{.value = TL_MAYBE_TRUE}.footprint() + (*opt_value).footprint() : tl::magic{.value = TL_MAYBE_FALSE}.footprint();
   }
 };
 
@@ -234,22 +294,42 @@ class string final {
 public:
   std::string_view value;
 
-  bool fetch(tl::TLBuffer& tlb) noexcept;
+  bool fetch(tl::fetcher& tlf) noexcept;
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept;
+
+  constexpr size_t footprint() const noexcept {
+    size_t str_len{value.size()};
+    size_t size_len{};
+    if (str_len <= SMALL_STRING_MAX_LEN) {
+      size_len = SMALL_STRING_SIZE_LEN;
+    } else if (str_len <= MEDIUM_STRING_MAX_LEN) {
+      size_len = MEDIUM_STRING_SIZE_LEN + 1;
+    } else {
+      size_len = LARGE_STRING_SIZE_LEN + 1;
+    }
+
+    const auto total_len{size_len + str_len};
+    const auto total_len_with_padding{(total_len + 3) & ~3};
+    return total_len_with_padding;
+  }
 };
 
 struct String final {
   tl::string inner;
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
+  bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_STRING) && inner.fetch(tlb);
+    return magic.fetch(tlf) && magic.expect(TL_STRING) && inner.fetch(tlf);
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tl::magic{.value = TL_STRING}.store(tlb);
-    inner.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = TL_STRING}.store(tls);
+    inner.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = TL_STRING}.footprint() + inner.footprint();
   }
 };
 
@@ -284,18 +364,18 @@ struct vector final {
     return value.size();
   }
 
-  bool fetch(tl::TLBuffer& tlb) noexcept
+  bool fetch(tl::fetcher& tlf) noexcept
   requires tl::deserializable<T>
   {
     tl::u32 size{};
-    if (!size.fetch(tlb)) [[unlikely]] {
+    if (!size.fetch(tlf)) [[unlikely]] {
       return false;
     }
 
     value.clear();
     value.reserve(static_cast<size_t>(size.value));
     for (auto i = 0; i < size.value; ++i) {
-      if (T t{}; t.fetch(tlb)) [[likely]] {
+      if (T t{}; t.fetch(tlf)) [[likely]] {
         value.emplace_back(std::move(t));
         continue;
       }
@@ -305,11 +385,18 @@ struct vector final {
     return true;
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept
+  void store(tl::storer& tls) const noexcept
   requires tl::serializable<T>
   {
-    tl::u32{.value = static_cast<uint32_t>(value.size())}.store(tlb);
-    std::for_each(value.cbegin(), value.cend(), [&tlb](const auto& elem) noexcept { elem.store(tlb); });
+    tl::u32{.value = static_cast<uint32_t>(value.size())}.store(tls);
+    std::for_each(value.cbegin(), value.cend(), [&tls](const auto& elem) noexcept { elem.store(tls); });
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    auto footprint_view{value | std::views::transform([](const auto& elem) noexcept { return elem.footprint(); })};
+    return std::accumulate(footprint_view.begin(), footprint_view.end(), tl::u32{.value = static_cast<uint32_t>(value.size())}.footprint(), std::plus<>{});
   }
 };
 
@@ -343,18 +430,24 @@ struct Vector final {
     return inner.size();
   }
 
-  bool fetch(tl::TLBuffer& tlb) noexcept
+  bool fetch(tl::fetcher& tlf) noexcept
   requires tl::deserializable<T>
   {
     tl::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_VECTOR) && inner.fetch(tlb);
+    return magic.fetch(tlf) && magic.expect(TL_VECTOR) && inner.fetch(tlf);
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept
+  void store(tl::storer& tls) const noexcept
   requires tl::serializable<T>
   {
-    tl::magic{.value = TL_VECTOR}.store(tlb);
-    inner.store(tlb);
+    tl::magic{.value = TL_VECTOR}.store(tls);
+    inner.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    return tl::magic{.value = TL_VECTOR}.footprint() + inner.footprint();
   }
 };
 
@@ -363,17 +456,23 @@ struct dictionaryField final {
   tl::string key;
   T value{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept
+  bool fetch(tl::fetcher& tlf) noexcept
   requires tl::deserializable<T>
   {
-    return key.fetch(tlb) && value.fetch(tlb);
+    return key.fetch(tlf) && value.fetch(tlf);
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept
+  void store(tl::storer& tls) const noexcept
   requires tl::serializable<T>
   {
-    key.store(tlb);
-    value.store(tlb);
+    key.store(tls);
+    value.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    return key.footprint() + value.footprint();
   }
 };
 
@@ -407,16 +506,22 @@ struct dictionary final {
     return value.size();
   }
 
-  bool fetch(tl::TLBuffer& tlb) noexcept
+  bool fetch(tl::fetcher& tlf) noexcept
   requires tl::deserializable<T>
   {
-    return value.fetch(tlb);
+    return value.fetch(tlf);
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept
+  void store(tl::storer& tls) const noexcept
   requires tl::serializable<T>
   {
-    value.store(tlb);
+    value.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    return value.footprint();
   }
 };
 
@@ -450,18 +555,24 @@ struct Dictionary final {
     return inner.size();
   }
 
-  bool fetch(tl::TLBuffer& tlb) noexcept
+  bool fetch(tl::fetcher& tlf) noexcept
   requires tl::deserializable<T>
   {
     tl::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_DICTIONARY) && inner.fetch(tlb);
+    return magic.fetch(tlf) && magic.expect(TL_DICTIONARY) && inner.fetch(tlf);
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept
+  void store(tl::storer& tls) const noexcept
   requires tl::serializable<T>
   {
-    tl::magic{.value = TL_DICTIONARY}.store(tlb);
-    inner.store(tlb);
+    tl::magic{.value = TL_DICTIONARY}.store(tls);
+    inner.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    return tl::magic{.value = TL_DICTIONARY}.footprint() + inner.footprint();
   }
 };
 
@@ -490,12 +601,16 @@ public:
     return utime.value;
   }
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    return ip.fetch(tlb) && port_pid.fetch(tlb) && utime.fetch(tlb);
+  bool fetch(tl::fetcher& tlf) noexcept {
+    return ip.fetch(tlf) && port_pid.fetch(tlf) && utime.fetch(tlf);
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    ip.store(tlb), port_pid.store(tlb), utime.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    ip.store(tls), port_pid.store(tls), utime.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return ip.footprint() + port_pid.footprint() + utime.footprint();
   }
 };
 
@@ -508,9 +623,21 @@ public:
   tl::i64 job_id{};
   tl::string body;
 
-  bool fetch(tl::TLBuffer& tlb) noexcept;
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(MAGIC)};
+    ok &= tl::mask{}.fetch(tlf);
+    ok &= job_id.fetch(tlf);
+    ok &= body.fetch(tlf);
+    return ok;
+  }
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = MAGIC}.store(tls);
+    tl::mask{}.store(tls);
+    job_id.store(tls);
+    body.store(tls);
+  }
 };
 
 // ===== CRYPTO =====
@@ -521,7 +648,7 @@ class CertInfoItem final {
 public:
   std::variant<tl::i64, tl::string, tl::dictionary<tl::string>> data;
 
-  bool fetch(tl::TLBuffer& tlb) noexcept;
+  bool fetch(tl::fetcher& tlf) noexcept;
 
   template<class... Ts>
   struct MakeVisitor : Ts... {
@@ -558,8 +685,8 @@ struct confdataValue final {
   tl::Bool is_php_serialized{};
   tl::Bool is_json_serialized{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    return value.fetch(tlb) && is_php_serialized.fetch(tlb) && is_json_serialized.fetch(tlb);
+  bool fetch(tl::fetcher& tlf) noexcept {
+    return value.fetch(tlf) && is_php_serialized.fetch(tlf) && is_json_serialized.fetch(tlf);
   }
 };
 
@@ -602,9 +729,9 @@ public:
     }
   }
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
+  bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    if (!magic.fetch(tlb)) [[unlikely]] {
+    if (!magic.fetch(tlf)) [[unlikely]] {
       return false;
     }
 
@@ -638,8 +765,12 @@ public:
     return version != Version::Invalid;
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tl::magic{.value = std::to_underlying(version)}.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = std::to_underlying(version)}.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = std::to_underlying(version)}.footprint();
   }
 };
 
@@ -654,19 +785,19 @@ public:
   tl::string path;
   std::optional<tl::string> opt_query;
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
+  bool fetch(tl::fetcher& tlf) noexcept {
     tl::mask flags{};
-    bool ok{flags.fetch(tlb)};
+    bool ok{flags.fetch(tlf)};
 
     if (ok && static_cast<bool>(flags.value & SCHEME_FLAG)) [[likely]] {
-      ok &= opt_scheme.emplace().fetch(tlb);
+      ok &= opt_scheme.emplace().fetch(tlf);
     }
     if (ok && static_cast<bool>(flags.value & HOST_FLAG)) {
-      ok &= opt_host.emplace().fetch(tlb);
+      ok &= opt_host.emplace().fetch(tlf);
     }
-    ok &= path.fetch(tlb);
+    ok &= path.fetch(tlf);
     if (ok && static_cast<bool>(flags.value & QUERY_FLAG)) {
-      ok &= opt_query.emplace().fetch(tlb);
+      ok &= opt_query.emplace().fetch(tlf);
     }
     return ok;
   }
@@ -677,14 +808,18 @@ struct httpHeaderEntry final {
   tl::string name;
   tl::string value;
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    return is_sensitive.fetch(tlb) && name.fetch(tlb) && value.fetch(tlb);
+  bool fetch(tl::fetcher& tlf) noexcept {
+    return is_sensitive.fetch(tlf) && name.fetch(tlf) && value.fetch(tlf);
   }
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    is_sensitive.store(tlb);
-    name.store(tlb);
-    value.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    is_sensitive.store(tls);
+    name.store(tls);
+    value.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return is_sensitive.footprint() + name.footprint() + value.footprint();
   }
 };
 
@@ -694,11 +829,11 @@ struct httpConnection final {
   tl::string remote_addr;
   tl::i32 remote_port{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
-    bool ok{server_addr.fetch(tlb)};
-    ok &= server_port.fetch(tlb);
-    ok &= remote_addr.fetch(tlb);
-    ok &= remote_port.fetch(tlb);
+  bool fetch(tl::fetcher& tlf) noexcept {
+    bool ok{server_addr.fetch(tlf)};
+    ok &= server_port.fetch(tlf);
+    ok &= remote_addr.fetch(tlf);
+    ok &= remote_port.fetch(tlf);
     return ok;
   }
 };
@@ -707,14 +842,18 @@ struct httpResponse final {
   tl::HttpVersion version{};
   tl::i32 status_code{};
   tl::vector<tl::httpHeaderEntry> headers{};
-  std::string_view body;
+  std::span<const std::byte> body;
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tl::mask{}.store(tlb);
-    version.store(tlb);
-    status_code.store(tlb);
-    headers.store(tlb);
-    tlb.store_bytes(body);
+  void store(tl::storer& tls) const noexcept {
+    tl::mask{}.store(tls);
+    version.store(tls);
+    status_code.store(tls);
+    headers.store(tls);
+    tls.store_bytes(body);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::mask{}.footprint() + version.footprint() + status_code.footprint() + headers.footprint() + body.size();
   }
 };
 
@@ -724,9 +863,13 @@ class HttpResponse final {
 public:
   tl::httpResponse http_response{};
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tl::magic{.value = MAGIC}.store(tlb);
-    http_response.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = MAGIC}.store(tls);
+    http_response.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = MAGIC}.footprint() + http_response.footprint();
   }
 };
 
@@ -769,15 +912,15 @@ public:
   std::optional<tl::f64> opt_random_delay;
   bool return_view_number{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept;
+  bool fetch(tl::fetcher& tlf) noexcept;
 };
 
 struct RpcInvokeReqExtra final {
   tl::rpcInvokeReqExtra inner{};
 
-  bool fetch(tl::TLBuffer& tlb) noexcept {
+  bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    return magic.fetch(tlb) && magic.expect(TL_RPC_INVOKE_REQ_EXTRA) && inner.fetch(tlb);
+    return magic.fetch(tlf) && magic.expect(TL_RPC_INVOKE_REQ_EXTRA) && inner.fetch(tlf);
   }
 };
 
@@ -806,14 +949,16 @@ public:
   tl::i64 epoch_number{};
   tl::i64 view_number{};
 
-  void store(tl::TLBuffer& tlb) const noexcept;
+  void store(tl::storer& tls) const noexcept;
+
+  size_t footprint() const noexcept;
 };
 
 struct RpcReqResultExtra final {
   tl::rpcReqResultExtra inner{};
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    tl::magic{.value = TL_RPC_REQ_RESULT_EXTRA}.store(tlb), inner.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = TL_RPC_REQ_RESULT_EXTRA}.store(tls), inner.store(tls);
   }
 };
 
@@ -821,18 +966,26 @@ struct k2RpcResponseError final {
   tl::i32 error_code{};
   tl::string error{};
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    error_code.store(tlb), error.store(tlb);
+  void store(tl::storer& tls) const noexcept {
+    error_code.store(tls), error.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return error_code.footprint() + error.footprint();
   }
 };
 
 struct k2RpcResponseHeader final {
   tl::mask flags{};
   tl::rpcReqResultExtra extra{};
-  std::string_view result;
+  std::span<const std::byte> result;
 
-  void store(tl::TLBuffer& tlb) const noexcept {
-    flags.store(tlb), extra.store(tlb), tlb.store_bytes(result);
+  void store(tl::storer& tls) const noexcept {
+    flags.store(tls), extra.store(tls), tls.store_bytes(result);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return flags.footprint() + extra.footprint() + result.size();
   }
 };
 
@@ -843,18 +996,33 @@ class K2RpcResponse final {
 public:
   std::variant<tl::k2RpcResponseError, tl::k2RpcResponseHeader> value;
 
-  void store(tl::TLBuffer& tlb) const noexcept {
+  void store(tl::storer& tls) const noexcept {
     std::visit(
-        [&tlb](const auto& value) noexcept {
+        [&tls](const auto& value) noexcept {
           using value_t = std::remove_cvref_t<decltype(value)>;
           if constexpr (std::same_as<value_t, tl::k2RpcResponseError>) {
-            tl::magic{.value = K2_RPC_RESPONSE_ERROR_MAGIC}.store(tlb);
+            tl::magic{.value = K2_RPC_RESPONSE_ERROR_MAGIC}.store(tls);
           } else if constexpr (std::same_as<value_t, tl::k2RpcResponseHeader>) {
-            tl::magic{.value = K2_RPC_RESPONSE_HEADER_MAGIC}.store(tlb);
+            tl::magic{.value = K2_RPC_RESPONSE_HEADER_MAGIC}.store(tls);
           } else {
             static_assert(false, "non-exhaustive visitor!");
           }
-          value.store(tlb);
+          value.store(tls);
+        },
+        value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return std::visit(
+        [](const auto& value) noexcept {
+          using value_t = std::remove_cvref_t<decltype(value)>;
+          if constexpr (std::same_as<value_t, tl::k2RpcResponseError>) {
+            return tl::magic{.value = K2_RPC_RESPONSE_ERROR_MAGIC}.footprint() + value.footprint();
+          } else if constexpr (std::same_as<value_t, tl::k2RpcResponseHeader>) {
+            return tl::magic{.value = K2_RPC_RESPONSE_HEADER_MAGIC}.footprint() + value.footprint();
+          } else {
+            static_assert(false, "non-exhaustive visitor!");
+          }
         },
         value);
   }

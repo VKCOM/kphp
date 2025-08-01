@@ -27,55 +27,57 @@
 
 namespace {
 
-constexpr const char* JOB_WORKER_COMPONENT_NAME = "_self";
+[[maybe_unused]] constexpr const char* JOB_WORKER_COMPONENT_NAME = "_self";
 
-constexpr double MIN_TIMEOUT_S = 0.05;
-constexpr double MAX_TIMEOUT_S = 86400.0;
+[[maybe_unused]] constexpr double MIN_TIMEOUT_S = 0.05;
+[[maybe_unused]] constexpr double MAX_TIMEOUT_S = 86400.0;
 
 kphp::coro::task<int64_t> kphp_job_worker_start_impl(string request, double timeout, bool ignore_answer) noexcept {
-  if (!f$is_kphp_job_workers_enabled()) {
-    kphp::log::warning("can't start job worker: job workers are disabled");
-    co_return kphp::forks::INVALID_ID;
-  }
-  if (request.empty()) {
-    kphp::log::warning("job worker request is empty");
-    co_return kphp::forks::INVALID_ID;
-  }
-
-  auto& jw_client_st{JobWorkerClientInstanceState::get()};
-  // normalize timeout
-  const auto timeout_ns{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(std::clamp(timeout, MIN_TIMEOUT_S, MAX_TIMEOUT_S)))};
-  // prepare JW component request
-  tl::TLBuffer tlb{};
-  const tl::K2InvokeJobWorker invoke_jw{.image_id = {.value = static_cast<int64_t>(k2::describe()->build_timestamp)},
-                                        .job_id = {.value = jw_client_st.current_job_id++},
-                                        .ignore_answer = ignore_answer,
-                                        .timeout_ns = {.value = timeout_ns.count()},
-                                        .body = {.value = {request.c_str(), request.size()}}};
-  invoke_jw.store(tlb);
-
-  // send JW request
-  auto comp_query{co_await f$component_client_send_request(string{JOB_WORKER_COMPONENT_NAME}, string{tlb.data(), static_cast<string::size_type>(tlb.size())})};
-  if (comp_query.is_null()) {
-    kphp::log::warning("couldn't start job worker");
-    co_return kphp::forks::INVALID_ID;
-  }
-  // create fork to wait for job worker response. we need to do it even if 'ignore_answer' is 'true' to make sure
-  // that the stream will not be closed too early. otherwise, platform may even not send job worker request
-  auto waiter_task{[](auto comp_query, std::chrono::nanoseconds timeout) noexcept -> kphp::coro::task<string> {
-    auto expected{co_await kphp::coro::io_scheduler::get().schedule(f$component_client_fetch_response(std::move(comp_query)), timeout)};
-    string response{expected ? std::move(*expected) : string{}};
-
-    tl::TLBuffer tlb{};
-    tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
-    tl::K2JobWorkerResponse jw_response{};
-    if (!jw_response.fetch(tlb)) {
-      co_return string{};
-    }
-    co_return string{jw_response.body.value.data(), static_cast<string::size_type>(jw_response.body.value.size())};
-  }(std::move(comp_query), timeout_ns)};
-  // start waiter fork and return its ID
-  co_return kphp::forks::start(std::move(waiter_task));
+  co_return kphp::forks::INVALID_ID;
+  // if (!f$is_kphp_job_workers_enabled()) {
+  //   kphp::log::warning("can't start job worker: job workers are disabled");
+  //   co_return kphp::forks::INVALID_ID;
+  // }
+  // if (request.empty()) {
+  //   kphp::log::warning("job worker request is empty");
+  //   co_return kphp::forks::INVALID_ID;
+  // }
+  //
+  // auto& jw_client_st{JobWorkerClientInstanceState::get()};
+  // // normalize timeout
+  // const auto timeout_ns{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(std::clamp(timeout, MIN_TIMEOUT_S,
+  // MAX_TIMEOUT_S)))};
+  // // prepare JW component request
+  // tl::TLBuffer tlb{};
+  // const tl::K2InvokeJobWorker invoke_jw{.image_id = {.value = static_cast<int64_t>(k2::describe()->build_timestamp)},
+  //                                       .job_id = {.value = jw_client_st.current_job_id++},
+  //                                       .ignore_answer = ignore_answer,
+  //                                       .timeout_ns = {.value = timeout_ns.count()},
+  //                                       .body = {.value = {request.c_str(), request.size()}}};
+  // // invoke_jw.store(tlb);
+  //
+  // // send JW request
+  // auto comp_query{co_await f$component_client_send_request(string{JOB_WORKER_COMPONENT_NAME}, string{tlb.data(),
+  // static_cast<string::size_type>(tlb.size())})}; if (comp_query.is_null()) {
+  //   kphp::log::warning("couldn't start job worker");
+  //   co_return kphp::forks::INVALID_ID;
+  // }
+  // // create fork to wait for job worker response. we need to do it even if 'ignore_answer' is 'true' to make sure
+  // // that the stream will not be closed too early. otherwise, platform may even not send job worker request
+  // auto waiter_task{[](auto comp_query, std::chrono::nanoseconds timeout) noexcept -> kphp::coro::task<string> {
+  //   auto expected{co_await kphp::coro::io_scheduler::get().schedule(f$component_client_fetch_response(std::move(comp_query)), timeout)};
+  //   string response{expected ? std::move(*expected) : string{}};
+  //
+  //   tl::TLBuffer tlb{};
+  //   tlb.store_bytes({response.c_str(), static_cast<size_t>(response.size())});
+  //   tl::K2JobWorkerResponse jw_response{};
+  //   if (!jw_response.fetch(tlb)) {
+  //     co_return string{};
+  //   }
+  //   co_return string{jw_response.body.value.data(), static_cast<string::size_type>(jw_response.body.value.size())};
+  // }(std::move(comp_query), timeout_ns)};
+  // // start waiter fork and return its ID
+  // co_return kphp::forks::start(std::move(waiter_task));
 }
 
 } // namespace
