@@ -8,7 +8,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/confdata/confdata-constants.h"
-#include "runtime-light/utils/logs.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 inline bool f$is_confdata_loaded() noexcept {
   return k2::access(kphp::confdata::COMPONENT_NAME) == k2::errno_ok;

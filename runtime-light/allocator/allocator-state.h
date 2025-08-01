@@ -9,7 +9,7 @@
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/runtime-allocator.h"
-#include "runtime-light/utils/logs.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 class AllocatorState final : private vk::not_copyable {
   uint32_t m_libc_alloc_allowed{};

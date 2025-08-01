@@ -23,6 +23,7 @@
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
@@ -31,7 +32,6 @@
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
-#include "runtime-light/utils/logs.h"
 
 namespace kphp::rpc {
 

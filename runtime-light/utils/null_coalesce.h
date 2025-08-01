@@ -10,7 +10,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
-#include "runtime-light/utils/logs.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace null_coalesce_impl_ {
 

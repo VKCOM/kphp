@@ -15,7 +15,7 @@
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
-#include "runtime-light/utils/logs.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::forks {
 

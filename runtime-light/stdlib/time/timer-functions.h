@@ -12,8 +12,8 @@
 
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
-#include "runtime-light/utils/logs.h"
 
 template<std::invocable T>
 void f$set_timer(int64_t timeout_ms, T&& on_timer_callback) noexcept {

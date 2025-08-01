@@ -8,8 +8,8 @@
 #include <cstdint>
 #include <utility>
 
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/tl/tl-core.h"
-#include "runtime-light/utils/logs.h"
 
 namespace tl {
 

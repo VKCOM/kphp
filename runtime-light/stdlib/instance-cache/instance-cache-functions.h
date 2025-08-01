@@ -13,12 +13,12 @@
 #include "runtime-common/stdlib/serialization/msgpack-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/component-api.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
 #include "runtime-light/stdlib/serialization/msgpack-functions.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
-#include "runtime-light/utils/logs.h"
 
 namespace kphp::instance_cache::details {
 

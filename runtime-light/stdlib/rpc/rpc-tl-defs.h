@@ -7,9 +7,9 @@
 #include <memory>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-func-base.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
-#include "runtime-light/utils/logs.h"
 
 using tl_undefined_php_type = std::nullptr_t;
 using tl_storer_ptr = std::unique_ptr<tl_func_base> (*)(const mixed&);

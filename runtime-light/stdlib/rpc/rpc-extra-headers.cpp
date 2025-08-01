@@ -10,7 +10,7 @@
 
 #include "common/algorithms/find.h"
 #include "common/tl/constants/common.h"
-#include "runtime-light/utils/logs.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace {
 

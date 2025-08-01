@@ -11,7 +11,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/utils/logs.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::http {
 

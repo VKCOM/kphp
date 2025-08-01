@@ -19,8 +19,8 @@
 #include "runtime-common/stdlib/visitors/memory-visitors.h"
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-functions.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/visitors/array-visitors.h"
-#include "runtime-light/utils/logs.h"
 
 class InstanceDeepCopyVisitor;
 class InstanceDeepDestroyVisitor;

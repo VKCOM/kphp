@@ -7,8 +7,8 @@
 #include <string_view>
 
 #include "runtime-light/server/http/http-server-state.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
-#include "runtime-light/utils/logs.h"
 
 void f$ob_start(const string& callback) noexcept {
   static constexpr std::string_view ob_gzhandler_name{"ob_gzhandler"};

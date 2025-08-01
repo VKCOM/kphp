@@ -5,9 +5,9 @@
 #pragma once
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/tracing/tracing-div.h"
 #include "runtime-light/stdlib/tracing/tracing-span.h"
-#include "runtime-light/utils/logs.h"
 
 inline class_instance<C$KphpSpan> f$kphp_tracing_get_current_active_span() noexcept {
   kphp::log::warning("called stub kphp_tracing_get_current_active_span");

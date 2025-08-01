@@ -7,6 +7,7 @@ prepend(
   crypto/crypto-state.cpp
   curl/curl-state.cpp
   diagnostics/backtrace.cpp
+  diagnostics/logs.cpp
   fork/fork-state.cpp
   instance-cache/instance-cache-state.cpp
   job-worker/job-worker-api.cpp

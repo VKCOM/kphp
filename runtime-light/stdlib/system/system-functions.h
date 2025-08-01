@@ -12,9 +12,9 @@
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/state/image-state.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/system/system-state.h"
-#include "runtime-light/utils/logs.h"
 
 template<typename F>
 bool f$register_kphp_on_oom_callback(F&& /*callback*/) {

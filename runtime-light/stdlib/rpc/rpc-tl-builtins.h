@@ -13,11 +13,11 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/rpc/rpc-api.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/tl/tl-core.h"
-#include "runtime-light/utils/logs.h"
 
 inline void register_tl_storers_table_and_fetcher(const array<tl_storer_ptr>& gen$ht, tl_fetch_wrapper_ptr gen$t_ReqResult_fetch) noexcept {
   auto& rpc_mutable_image_state{RpcImageState::get_mutable()};

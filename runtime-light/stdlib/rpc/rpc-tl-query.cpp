@@ -9,9 +9,9 @@
 
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-exceptions.h"
-#include "runtime-light/utils/logs.h"
 
 void CurrentTlQuery::raise_fetching_error(const char* format, ...) const noexcept {
   kphp::log::assertion(!current_tl_function_name.empty());

@@ -14,8 +14,8 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/math/random-functions.h"
-#include "runtime-light/utils/logs.h"
 
 namespace array_functions_impl_ {
 template<typename T, typename Comparator>

@@ -16,8 +16,8 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/string/string-state.h"
-#include "runtime-light/utils/logs.h"
 
 namespace {
 
