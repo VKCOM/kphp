@@ -104,22 +104,6 @@ void string::store(tl::storer& tls) const noexcept {
   tls.store_bytes({reinterpret_cast<const std::byte*>(padding_array.data()), padding});
 }
 
-size_t string::footprint() const noexcept {
-  size_t str_len{value.size()};
-  size_t size_len{};
-  if (str_len <= SMALL_STRING_MAX_LEN) {
-    size_len = SMALL_STRING_SIZE_LEN;
-  } else if (str_len <= MEDIUM_STRING_MAX_LEN) {
-    size_len = MEDIUM_STRING_SIZE_LEN + 1;
-  } else {
-    size_len = LARGE_STRING_SIZE_LEN + 1;
-  }
-
-  const auto total_len{size_len + str_len};
-  const auto total_len_with_padding{(total_len + 3) & ~3};
-  return total_len_with_padding;
-}
-
 bool CertInfoItem::fetch(tl::fetcher& tlf) noexcept {
   tl::magic magic{};
   if (!magic.fetch(tlf)) [[unlikely]] {

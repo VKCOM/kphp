@@ -206,16 +206,17 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
     co_return TlRpcError::make_error(TL_ERROR_INTERNAL, string{"can't get untyped result from typed TL query. Use consistent API for that"});
   }
 
-  auto opt_response{co_await f$wait<Optional<kphp::stl::vector<std::byte, kphp::memory::script_allocator>>>(response_waiter_fork_id, MAX_TIMEOUT)};
-  if (!opt_response.has_value()) [[unlikely]] {
+  auto opt_response{co_await kphp::forks::wait<kphp::stl::vector<std::byte, kphp::memory::script_allocator>>(response_waiter_fork_id, MAX_TIMEOUT_NS)};
+  if (!opt_response) [[unlikely]] {
     co_return TlRpcError::make_error(TL_ERROR_INTERNAL, string{"can't find waiter fork"});
   }
-  if (opt_response.val().empty()) [[unlikely]] {
+  auto response{*std::move(opt_response)};
+  if (response.empty()) [[unlikely]] {
     co_return TlRpcError::make_error(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"});
   }
 
   f$rpc_clean();
-  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{opt_response.val()};
+  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{response};
   auto res{fetch_function_untyped(rpc_query)}; // THROWING
   // handle exceptions that could arise during fetch_function_untyped
   if (auto err{TlRpcError::transform_exception_into_error_if_possible()}; !err.empty()) [[unlikely]] {
@@ -258,16 +259,17 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
     co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"can't get typed result from untyped TL query. Use consistent API for that"});
   }
 
-  auto opt_response{co_await f$wait<Optional<kphp::stl::vector<std::byte, kphp::memory::script_allocator>>>(response_waiter_fork_id, MAX_TIMEOUT)};
-  if (!opt_response.has_value()) [[unlikely]] {
+  auto opt_response{co_await kphp::forks::wait<kphp::stl::vector<std::byte, kphp::memory::script_allocator>>(response_waiter_fork_id, MAX_TIMEOUT_NS)};
+  if (!opt_response) [[unlikely]] {
     co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"can't find waiter fork"});
   }
-  if (opt_response.val().empty()) [[unlikely]] {
+  auto response{*std::move(opt_response)};
+  if (response.empty()) [[unlikely]] {
     co_return error_factory.make_error(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"});
   }
 
   f$rpc_clean();
-  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{opt_response.val()};
+  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{response};
   auto res{fetch_function_typed(rpc_query, error_factory)}; // THROWING
   // handle exceptions that could arise during fetch_function_typed
   if (auto err{error_factory.transform_exception_into_error_if_possible()}; !err.is_null()) [[unlikely]] {

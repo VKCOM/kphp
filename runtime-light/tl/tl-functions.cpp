@@ -5,7 +5,6 @@
 #include "runtime-light/tl/tl-functions.h"
 
 #include <cstddef>
-#include <cstdint>
 #include <span>
 
 #include "runtime-light/tl/tl-core.h"
@@ -36,20 +35,6 @@ void K2InvokeJobWorker::store(tl::storer& tls) const noexcept {
   timeout_ns.store(tls);
   body.store(tls);
 }
-
-// ===== CRYPTO =====
-
-
-
-
-
-
-
-
-
-
-
-// ===== CONFDATA =====
 
 // ===== HTTP =====
 

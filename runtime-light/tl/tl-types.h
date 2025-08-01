@@ -269,12 +269,7 @@ struct Maybe final {
   void store(tl::storer& tls) const noexcept
   requires tl::serializable<T>
   {
-    if (opt_value.has_value()) {
-      tl::magic{.value = TL_MAYBE_TRUE}.store(tls);
-      (*opt_value).store(tls);
-    } else {
-      tl::magic{.value = TL_MAYBE_FALSE}.store(tls);
-    }
+    opt_value ? tl::magic{.value = TL_MAYBE_TRUE}.store(tls), (*opt_value).store(tls) : tl::magic{.value = TL_MAYBE_FALSE}.store(tls);
   }
 
   constexpr size_t footprint() const noexcept
@@ -303,7 +298,21 @@ public:
 
   void store(tl::storer& tls) const noexcept;
 
-  size_t footprint() const noexcept;
+  constexpr size_t footprint() const noexcept {
+    size_t str_len{value.size()};
+    size_t size_len{};
+    if (str_len <= SMALL_STRING_MAX_LEN) {
+      size_len = SMALL_STRING_SIZE_LEN;
+    } else if (str_len <= MEDIUM_STRING_MAX_LEN) {
+      size_len = MEDIUM_STRING_SIZE_LEN + 1;
+    } else {
+      size_len = LARGE_STRING_SIZE_LEN + 1;
+    }
+
+    const auto total_len{size_len + str_len};
+    const auto total_len_with_padding{(total_len + 3) & ~3};
+    return total_len_with_padding;
+  }
 };
 
 struct String final {
@@ -387,7 +396,7 @@ struct vector final {
   requires tl::footprintable<T>
   {
     auto footprint_view{value | std::views::transform([](const auto& elem) noexcept { return elem.footprint(); })};
-    return std::accumulate(footprint_view.begin(), footprint_view.end(), value.size(), std::plus<>{});
+    return std::accumulate(footprint_view.begin(), footprint_view.end(), tl::u32{.value = static_cast<uint32_t>(value.size())}.footprint(), std::plus<>{});
   }
 };
 
@@ -628,10 +637,6 @@ public:
     tl::mask{}.store(tls);
     job_id.store(tls);
     body.store(tls);
-  }
-
-  constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = MAGIC}.footprint() + tl::mask{}.footprint() + job_id.footprint() + body.footprint();
   }
 };
 
