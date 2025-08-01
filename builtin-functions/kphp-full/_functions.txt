@@ -393,6 +393,7 @@ function unpack ($pattern ::: string, $data ::: string) ::: mixed[] | false;
 
 define('JSON_UNESCAPED_UNICODE', 1);
 define('JSON_FORCE_OBJECT', 16);
+define('JSON_UNESCAPED_SLASHES', 64);
 define('JSON_PRETTY_PRINT', 128); // TODO: add actual support
 define('JSON_PARTIAL_OUTPUT_ON_ERROR', 512);
 define('JSON_PRESERVE_ZERO_FRACTION', 1024);

@@ -65,8 +65,12 @@ bool do_json_encode_string_php(const JsonPath& json_path, const char* s, int len
       sb.append_char('\\');
       break;
     case '/':
-      sb.append_char('\\');
-      sb.append_char('/');
+      if (options & JSON_UNESCAPED_SLASHES) {
+        sb.append_char('/');
+      } else {
+        sb.append_char('\\');
+        sb.append_char('/');
+      }
       break;
     case '\b':
       sb.append_char('\\');
