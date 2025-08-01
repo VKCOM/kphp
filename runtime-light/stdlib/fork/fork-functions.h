@@ -79,15 +79,15 @@ auto wait(int64_t fork_id, std::chrono::nanoseconds timeout) noexcept -> kphp::c
   auto fork_task{*fork_info.get().opt_handle};
   fork_info.get().awaited = true; // prevent further f$wait from awaiting on the same fork
 
-  const auto saved_fork_id{fork_instance_st.current_id};
+  // Important: capture current fork's info pre-co_await.
+  // Fork ID is not automatically preserved across suspension points
+  auto current_fork_info{fork_instance_st.current_info()};
   auto expected{co_await kphp::coro::io_scheduler::get().schedule(static_cast<kphp::coro::shared_task<return_type>>(std::move(fork_task)),
                                                                   detail::normalize_timeout(timeout))};
-  fork_instance_st.current_id = saved_fork_id;
 
   // Execute essential housekeeping tasks to maintain proper state management.
   // 1. Check for any exceptions that may have occurred during the fork execution. If an exception is found, propagate it to the current fork.
   //    Clean fork_info's exception state.
-  auto current_fork_info{fork_instance_st.current_info()};
   kphp::log::assertion(std::exchange(current_fork_info.get().thrown_exception, std::move(fork_info.get().thrown_exception)).is_null());
   // 2. Detach the shared_task from fork_info to prevent further associations, ensuring that resources are released.
   fork_info.get().opt_handle.reset();

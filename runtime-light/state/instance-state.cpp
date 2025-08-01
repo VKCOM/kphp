@@ -107,7 +107,9 @@ kphp::coro::task<> InstanceState::init_server_instance() noexcept {
 
   tl::magic request_magic{};
   tl::fetcher tlf{request_stream.data()};
-  switch ((kphp::log::assertion(request_magic.fetch(tlf)), request_magic.value)) {
+  kphp::log::assertion(request_magic.fetch(tlf));
+
+  switch (request_magic.value) {
   case tl::K2_INVOKE_HTTP_MAGIC:
     instance_kind_ = instance_kind::http_server;
     kphp::http::init_server(std::move(request_stream));

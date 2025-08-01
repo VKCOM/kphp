@@ -37,7 +37,7 @@ class stream {
       : m_storage(std::move(storage)),
         m_storage_capacity(capacity),
         m_descriptor(descriptor) {
-    kphp::log::assertion(static_cast<bool>(m_storage_capacity == 0 || m_storage));
+    kphp::log::assertion(m_storage_capacity == 0 || static_cast<bool>(m_storage));
   }
 
 public:

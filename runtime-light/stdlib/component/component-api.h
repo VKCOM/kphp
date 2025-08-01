@@ -15,6 +15,7 @@
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/utils/logs.h"

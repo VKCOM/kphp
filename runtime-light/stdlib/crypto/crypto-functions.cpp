@@ -12,12 +12,14 @@
 #include <optional>
 #include <ranges>
 #include <string_view>
+#include <utility>
 
 #include "common/crc32_generic.h"
 #include "common/tl/constants/common.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/streams/stream.h"
