@@ -35,7 +35,7 @@ function(build_openssl PIC_ENABLED)
     file(MAKE_DIRECTORY ${install_dir})
     file(MAKE_DIRECTORY ${include_dirs})
 
-    set(compile_flags "$ENV{CFLAGS} -g0 ${extra_compile_flags}")
+    set(compile_flags "$ENV{CFLAGS} -march=broadwell -g0 ${extra_compile_flags}")
 
     # The configuration has been based on:
     # https://packages.debian.org/buster/libssl1.1

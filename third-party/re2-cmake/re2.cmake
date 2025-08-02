@@ -37,7 +37,7 @@ function(build_re2 PIC_ENABLED)
 
     # The configuration has been based on:
     # https://sources.debian.org/src/re2/20190101%2Bdfsg-2/debian/rules/#L5
-    set(compile_flags "$ENV{CFLAGS} -g0 -Wall -std=c++11 -O3 ${extra_compile_flags}")
+    set(compile_flags "$ENV{CFLAGS} -march=broadwell -g0 -Wall -std=c++11 -O3 ${extra_compile_flags}")
 
     message(STATUS "RE2 Summary:
 
