@@ -36,7 +36,7 @@ function(build_timelib PIC_ENABLED)
     file(MAKE_DIRECTORY ${install_dir})
     file(MAKE_DIRECTORY ${include_dirs})
 
-    set(compile_flags "$ENV{CFLAGS} -g0 ${extra_compile_flags}")
+    set(compile_flags "$ENV{CFLAGS} -march=icelake-server -g0 ${extra_compile_flags}")
 
     message(STATUS "Timelib Summary:
 
