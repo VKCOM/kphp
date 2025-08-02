@@ -30,7 +30,7 @@ function(build_zstd PIC_ENABLED)
 
     # The configuration has been based on:
     # https://sources.debian.org/src/libzstd/1.4.8%2Bdfsg-2.1/debian/rules/
-    set(compile_flags "$ENV{CFLAGS} -g0 -Wno-unused-but-set-variable ${extra_compile_flags}")
+    set(compile_flags "$ENV{CFLAGS} -march=cascadelake -g0 -Wno-unused-but-set-variable ${extra_compile_flags}")
 
     message(STATUS "ZSTD Summary:
 

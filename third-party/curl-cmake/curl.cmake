@@ -25,7 +25,7 @@ function(build_curl PIC_ENABLED)
     file(MAKE_DIRECTORY ${install_dir})
     file(MAKE_DIRECTORY ${include_dirs})
 
-    set(compile_flags "$ENV{CFLAGS} -g0 -Wno-deprecated-declarations ${extra_compile_flags}")
+    set(compile_flags "$ENV{CFLAGS} -march=cascadelake -g0 -Wno-deprecated-declarations ${extra_compile_flags}")
 
     # Suppress compiler-specific warnings caused by -O3
     if(COMPILER_CLANG)

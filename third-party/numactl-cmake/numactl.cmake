@@ -27,7 +27,7 @@ function(build_numactl PIC_ENABLED)
 
     # The configuration has been based on:
     # https://sources.debian.org/src/numactl/2.0.12-1/debian/rules/
-    set(compile_flags "$ENV{CFLAGS} -Wno-unused-but-set-variable -g0 ${extra_compile_flags}")
+    set(compile_flags "$ENV{CFLAGS} -march=cascadelake -Wno-unused-but-set-variable -g0 ${extra_compile_flags}")
 
     message(STATUS "NUMA Summary:
 

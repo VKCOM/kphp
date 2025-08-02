@@ -30,7 +30,7 @@ function(build_pcre PIC_ENABLED)
     file(MAKE_DIRECTORY ${install_dir})
     file(MAKE_DIRECTORY ${include_dirs})
 
-    set(compile_flags "$ENV{CFLAGS} -g0 -Wall ${extra_compile_flags}")
+    set(compile_flags "$ENV{CFLAGS} -march=cascadelake -g0 -Wall ${extra_compile_flags}")
 
     message(STATUS "PCRE Summary:
 

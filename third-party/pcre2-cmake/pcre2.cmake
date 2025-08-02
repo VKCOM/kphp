@@ -28,7 +28,7 @@ function(build_pcre2 PIC_ENABLED)
     file(MAKE_DIRECTORY ${install_dir})
     file(MAKE_DIRECTORY ${include_dirs})
 
-    set(compile_flags "$ENV{CFLAGS} -O3 ${extra_compile_flags}")
+    set(compile_flags "$ENV{CFLAGS} -march=cascadelake -O3 ${extra_compile_flags}")
 
     message(STATUS "PCRE2 Summary:
 
