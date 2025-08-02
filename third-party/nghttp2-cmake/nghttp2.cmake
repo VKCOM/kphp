@@ -30,7 +30,7 @@ function(build_nghttp2 PIC_ENABLED)
     file(MAKE_DIRECTORY ${install_dir})
     file(MAKE_DIRECTORY ${include_dirs})
 
-    set(compile_flags "$ENV{CFLAGS} -g0 ${extra_compile_flags}")
+    set(compile_flags "$ENV{CFLAGS} -march=haswell -g0 ${extra_compile_flags}")
 
     message(STATUS "NGHTTP2 Summary:
 

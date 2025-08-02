@@ -27,7 +27,7 @@ function(build_zlib PIC_ENABLED)
 
     # The configuration has been based on:
     # https://sources.debian.org/src/zlib/1%3A1.3.dfsg%2Breally1.3.1-1/debian/rules/#L20
-    set(compile_flags "$ENV{CFLAGS} -g0 -Wall -O3 -D_REENTRANT ${extra_compile_flags}")
+    set(compile_flags "$ENV{CFLAGS} -march=haswell -g0 -Wall -O3 -D_REENTRANT ${extra_compile_flags}")
 
     message(STATUS "Zlib Summary:
 

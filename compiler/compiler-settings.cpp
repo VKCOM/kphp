@@ -305,7 +305,7 @@ void CompilerSettings::init() {
      << " -fwrapv -Wno-parentheses -Wno-trigraphs"
      << " -fno-strict-aliasing -fno-omit-frame-pointer";
 #ifdef __x86_64__
-  ss << " -march=sandybridge";
+  ss << " -march=haswell";
 #elif __aarch64__
   ss << " -march=armv8.2-a+crypto";
 #endif
