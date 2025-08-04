@@ -416,7 +416,7 @@ void CompilerSettings::init() {
   dest_cpp_dir.value_ = dest_dir.get() + "kphp/";
   dest_objs_dir.value_ = dest_dir.get() + "objs/";
   if (is_k2_mode) {
-    binary_path.value_ = dest_dir.get() + "k2." + k2_component_name.get() + "." + build_timestamp.value_ + ".so";
+    binary_path.value_ = dest_dir.get() + k2_component_name.get() + ".so";
   } else {
     binary_path.value_ = dest_dir.get() + mode.get();
   }
