@@ -10,6 +10,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -48,12 +49,33 @@ inline array<string> f$headers_list() noexcept {
 
 inline bool f$headers_sent([[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> filename = {},
                            [[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> line = {}) noexcept {
-  kphp::log::warning("called stub headers_sent");
-  return false;
+  return HttpServerInstanceState::get().response_state >= kphp::http::response_state::headers_sent;
 }
 
 template<typename F>
-bool f$header_register_callback(F&& /*unused*/) noexcept {
-  kphp::log::warning("called stub header_register_callback");
+bool f$header_register_callback(F&& f) noexcept {
+  auto& http_server_instance_st{HttpServerInstanceState::get()};
+  if (http_server_instance_st.response_state >= kphp::http::response_state::headers_sent) [[unlikely]] {
+    // don't save handler since it will not be called
+    return false;
+  } else if (http_server_instance_st.headers_custom_handler_invoked) [[unlikely]] {
+    return false;
+  }
+
+  auto custom_header_handler_task{std::invoke(
+      [](F f) noexcept -> kphp::coro::task<> {
+        if constexpr (kphp::coro::is_async_function_v<F>) {
+          co_await std::invoke(std::move(f));
+        } else {
+          std::invoke(std::move(f));
+        }
+      },
+      std::forward<F>(f))};
+
+  http_server_instance_st.headers_custom_handler_function = std::move(custom_header_handler_task);
   return true;
+}
+
+inline void f$send_http_103_early_hints([[maybe_unused]] const array<string>& headers) noexcept {
+  // noop
 }

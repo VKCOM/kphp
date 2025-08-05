@@ -103,6 +103,10 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
   }
 
   auto& http_server_instance_st{HttpServerInstanceState::get()};
+  if (http_server_instance_st.response_state >= kphp::http::response_state::body_sent) [[unlikely]] {
+    // don't add header since it will not be sent
+    return;
+  }
   // HTTP status special case
   if (http_status_header(header_view)) {
     if (const auto opt_status_code{valid_http_status_header(header_view)}; opt_status_code.has_value()) [[likely]] {
@@ -142,6 +146,7 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
   if (!header_view.empty() && response_code != status::NO_STATUS) {
     http_server_instance_st.status_code = response_code;
   }
+  http_server_instance_st.response_state = kphp::http::response_state::default_state;
 }
 
 } // namespace kphp::http

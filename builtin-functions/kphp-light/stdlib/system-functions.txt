@@ -34,9 +34,6 @@ function escapeshellcmd($cmd ::: string): string;
 /** @kphp-extern-func-info stub */
 function exec($command ::: string, &$output ::: mixed = [], int &$result_code = 0): string|false;
 
-/** @kphp-extern-func-info stub */
-function header_register_callback (callable():void $callback) ::: bool;
-
 /** @kphp-extern-func-info stub generation-required */
 function getenv(string $varname = '', bool $local_only = false): mixed;
 

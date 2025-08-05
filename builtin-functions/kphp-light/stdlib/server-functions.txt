@@ -45,6 +45,10 @@ function setrawcookie ($name ::: string, $value ::: string, $expire_or_options :
 
 function headers_list () ::: string[];
 
+function headers_sent (?string &$filename = null, ?int &$line = null) ::: bool;
+
+function header_register_callback (callable():void $callback) ::: bool;
+
 function ip2long ($ip ::: string) ::: int | false;
 
 function ip2ulong ($ip ::: string) ::: string | false;
@@ -64,8 +68,7 @@ function memory_get_peak_usage ($real_usage ::: bool = false) ::: int;
 // ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info stub */
-function headers_sent (?string &$filename = null, ?int &$line = null) ::: bool;
-
+function send_http_103_early_hints($headers ::: string[]) ::: void;
 
 function get_engine_version() ::: string;
 
@@ -125,8 +128,6 @@ function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
 function debug_backtrace() ::: string[][];
 
-/** @kphp-extern-func-info stub generation-required */
-function send_http_103_early_hints($headers ::: string[]) ::: void;
 /** @kphp-extern-func-info stub generation-required */
 function ignore_user_abort ($enable ::: ?bool = null) ::: int;
 /** @kphp-extern-func-info stub generation-required */

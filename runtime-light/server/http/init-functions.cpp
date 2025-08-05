@@ -336,6 +336,14 @@ void init_server(kphp::component::stream request_stream) noexcept {
 
 kphp::coro::task<> finalize_server() noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
+  if (http_server_instance_st.response_state == response_state::response_sent) [[unlikely]] {
+    co_return;
+  }
+
+  if (!http_server_instance_st.headers_custom_handler_invoked && http_server_instance_st.headers_custom_handler_function) {
+    http_server_instance_st.headers_custom_handler_invoked = true;
+    co_await http_server_instance_st.headers_custom_handler_function;
+  }
 
   string body{};
   if (http_server_instance_st.http_method != method::head) {
@@ -375,12 +383,12 @@ kphp::coro::task<> finalize_server() noexcept {
                                                                    .body = {reinterpret_cast<const std::byte*>(body.c_str()), body.size()}}};
   // fill headers
   http_response.http_response.headers.value.reserve(http_server_instance_st.headers().size());
-  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(),
-                 std::back_inserter(http_response.http_response.headers.value), [](const auto& header_entry) noexcept {
-                   const auto& [name, value]{header_entry};
-                   return tl::httpHeaderEntry{
-                       .is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
-                 });
+  std::transform(
+      http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.http_response.headers.value),
+      [](const auto& header_entry) noexcept {
+        const auto& [name, value]{header_entry};
+        return tl::httpHeaderEntry{.is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
+      });
 
   tl::storer tls{http_response.footprint()};
   http_response.store(tls);
@@ -392,6 +400,7 @@ kphp::coro::task<> finalize_server() noexcept {
   if (auto expected{co_await kphp::component::send_response(request_stream, tls.view())}; !expected) [[unlikely]] {
     kphp::log::error("can't write HTTP response: stream -> {}, error code -> {}", request_stream.descriptor(), expected.error());
   }
+  http_server_instance_st.response_state = kphp::http::response_state::response_sent;
 }
 
 } // namespace kphp::http
