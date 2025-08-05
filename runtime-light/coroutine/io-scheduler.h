@@ -48,7 +48,7 @@ class io_scheduler {
   kphp::coro::detail::poll_info::timed_events m_timed_events;
   kphp::stl::vector<k2::descriptor, kphp::memory::script_allocator> m_accepted_descriptors;
 
-  kphp::coro::detail::poll_info::awaiting_polls m_awaiting_polls;
+  kphp::coro::detail::poll_info::parked_polls m_parked_polls;
   kphp::stl::vector<std::coroutine_handle<>, kphp::memory::script_allocator> m_scheduled_tasks;
   kphp::stl::vector<std::coroutine_handle<>, kphp::memory::script_allocator> m_scheduled_tasks_tmp;
 
@@ -146,12 +146,12 @@ public:
    * @return A task that represents the yield operation.
    */
   [[nodiscard]] auto yield() noexcept;
-  template<typename rep_type, typename period_type>
   /**
    * @brief Yields execution for a specified duration.
    * @param amount Duration to yield for. Given zero or negative amount of time this behaves identical to yield().
    * @return A task that completes after the specified duration.
    */
+  template<typename rep_type, typename period_type>
   [[nodiscard]] auto yield_for(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<>;
 
   /**
@@ -176,8 +176,8 @@ public:
 
 inline auto io_scheduler::make_cancellation_handler(kphp::coro::detail::poll_info& poll_info) noexcept {
   return vk::final_action{[this, &poll_info] noexcept {
-    if (poll_info.m_awaiting_pos) [[unlikely]] {
-      m_awaiting_polls.erase(*std::exchange(poll_info.m_awaiting_pos, std::nullopt));
+    if (poll_info.m_parking_pos) [[unlikely]] {
+      m_parked_polls.erase(*std::exchange(poll_info.m_parking_pos, std::nullopt));
     }
     if (poll_info.m_timer_pos) [[unlikely]] {
       remove_timer_token(*std::exchange(poll_info.m_timer_pos, std::nullopt));
@@ -209,8 +209,8 @@ inline auto io_scheduler::process_timeout() noexcept -> void {
 
     remove_timer_token(*std::exchange(poll_info.m_timer_pos, std::nullopt));
     // timeout's occured, so we can safely remove the awaiting task from the awaiting tasks list
-    if (poll_info.m_awaiting_pos.has_value()) {
-      m_awaiting_polls.erase(*std::exchange(poll_info.m_awaiting_pos, std::nullopt));
+    if (poll_info.m_parking_pos.has_value()) {
+      m_parked_polls.erase(*std::exchange(poll_info.m_parking_pos, std::nullopt));
     }
     // mark the poll status as a timeout and schedule the awaiting coroutine for execution
     poll_info.m_poll_status = kphp::coro::poll_status::timeout;
@@ -231,7 +231,7 @@ inline auto io_scheduler::process_update(k2::descriptor descriptor) noexcept -> 
     return kphp::log::warning("error retrieving stream status: error code -> {}, stream descriptor -> {}", stream_status.libc_errno, descriptor);
   }
 
-  auto [first, last]{m_awaiting_polls.equal_range(descriptor)};
+  auto [first, last]{m_parked_polls.equal_range(descriptor)};
   if (first == last) { // no tasks waiting for updates on this descriptor
     return;
   }
@@ -240,7 +240,7 @@ inline auto io_scheduler::process_update(k2::descriptor descriptor) noexcept -> 
       [](io_scheduler& io_scheduler, kphp::coro::detail::poll_info& poll_info, kphp::coro::poll_status poll_status) noexcept {
         // ensure that this poll has not been processed yet
         kphp::log::assertion(!std::exchange(poll_info.m_processed, true));
-        io_scheduler.m_awaiting_polls.erase(*std::exchange(poll_info.m_awaiting_pos, std::nullopt));
+        io_scheduler.m_parked_polls.erase(*std::exchange(poll_info.m_parking_pos, std::nullopt));
         // if a timer was set for this poll, remove it as the poll is now complete
         if (poll_info.m_timer_pos.has_value()) {
           io_scheduler.remove_timer_token(*std::exchange(poll_info.m_timer_pos, std::nullopt));
@@ -253,7 +253,7 @@ inline auto io_scheduler::process_update(k2::descriptor descriptor) noexcept -> 
   while (first != last) {
     auto& [_, poll_info]{*first};
     // verify that the poll_info corresponds to the current update event
-    kphp::log::assertion(poll_info.m_awaiting_pos.has_value() && *poll_info.m_awaiting_pos == std::exchange(first, std::next(first)));
+    kphp::log::assertion(poll_info.m_parking_pos.has_value() && *poll_info.m_parking_pos == std::exchange(first, std::next(first)));
     switch (poll_info.m_poll_op) {
     case kphp::coro::poll_op::read:
       switch (stream_status.read_status) {
@@ -293,18 +293,18 @@ inline auto io_scheduler::process_update(k2::descriptor descriptor) noexcept -> 
 }
 
 inline auto io_scheduler::process_accept(k2::descriptor descriptor) noexcept -> void {
-  const auto pos{m_awaiting_polls.find(k2::INVALID_PLATFORM_DESCRIPTOR)};
-  if (pos == m_awaiting_polls.end()) { // no one is waiting for new connection
+  const auto pos{m_parked_polls.find(k2::INVALID_PLATFORM_DESCRIPTOR)};
+  if (pos == m_parked_polls.end()) { // no one is waiting for new connection
     m_accepted_descriptors.emplace_back(descriptor);
     return;
   }
 
   auto& [_, poll_info]{*pos};
   // verify that the poll_info corresponds to the new connect event
-  kphp::log::assertion(poll_info.m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR && poll_info.m_awaiting_pos.has_value() && *poll_info.m_awaiting_pos == pos);
+  kphp::log::assertion(poll_info.m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR && poll_info.m_parking_pos.has_value() && *poll_info.m_parking_pos == pos);
   // ensure that this poll has not been processed yet
   kphp::log::assertion(!std::exchange(poll_info.m_processed, true));
-  m_awaiting_polls.erase(*std::exchange(poll_info.m_awaiting_pos, std::nullopt));
+  m_parked_polls.erase(*std::exchange(poll_info.m_parking_pos, std::nullopt));
   // if a timer was set for this poll, remove it as the poll is now complete
   if (poll_info.m_timer_pos.has_value()) {
     remove_timer_token(*std::exchange(poll_info.m_timer_pos, std::nullopt));
@@ -356,7 +356,7 @@ inline auto io_scheduler::remove_timer_token(kphp::coro::detail::poll_info::time
 }
 
 inline auto io_scheduler::empty() const noexcept -> bool {
-  return m_scheduled_tasks.empty() && m_awaiting_polls.empty() && m_timed_events.empty();
+  return m_scheduled_tasks.empty() && m_parked_polls.empty() && m_timed_events.empty();
 }
 
 inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
@@ -536,7 +536,7 @@ inline auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op po
   if (timeout > 0ns) {
     poll_info.m_timer_pos = add_timer_token(timeout, poll_info);
   }
-  poll_info.m_awaiting_pos = m_awaiting_polls.emplace(poll_info.m_descriptor, poll_info);
+  poll_info.m_parking_pos = m_parked_polls.emplace(poll_info.m_descriptor, poll_info);
   co_return co_await poll_info;
 }
 
@@ -554,7 +554,7 @@ inline auto io_scheduler::accept(std::chrono::nanoseconds timeout) noexcept -> k
   if (timeout > 0ns) {
     poll_info.m_timer_pos = add_timer_token(timeout, poll_info);
   }
-  poll_info.m_awaiting_pos = m_awaiting_polls.emplace(poll_info.m_descriptor, poll_info);
+  poll_info.m_parking_pos = m_parked_polls.emplace(poll_info.m_descriptor, poll_info);
   co_await poll_info;
   co_return poll_info.m_descriptor;
 }
