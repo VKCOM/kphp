@@ -347,9 +347,10 @@ kphp::coro::task<> finalize_server() noexcept {
     co_return;
   }
 
-  if (http_server_instance_st.response_state == kphp::http::response_state::before_send && http_server_instance_st.headers_custom_handler_function) {
+  if (http_server_instance_st.response_state == kphp::http::response_state::before_send &&
+      http_server_instance_st.headers_custom_handler_function.has_value()) {
     http_server_instance_st.response_state = kphp::http::response_state::start_headers_send;
-    co_await http_server_instance_st.headers_custom_handler_function;
+    co_await *std::exchange(http_server_instance_st.headers_custom_handler_function, std::nullopt);
   }
 
   string body{};

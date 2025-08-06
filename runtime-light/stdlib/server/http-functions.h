@@ -84,7 +84,7 @@ bool f$header_register_callback(F&& f) noexcept {
       },
       std::forward<F>(f))};
 
-  http_server_instance_st.headers_custom_handler_function = std::move(custom_header_handler_task);
+  http_server_instance_st.headers_custom_handler_function.emplace(std::move(custom_header_handler_task));
   return true;
 }
 

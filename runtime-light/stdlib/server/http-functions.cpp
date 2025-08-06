@@ -153,7 +153,6 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
   if (!header_view.empty() && response_code != status::NO_STATUS) {
     http_server_instance_st.status_code = response_code;
   }
-  http_server_instance_st.response_state = kphp::http::response_state::default_state;
 }
 
 } // namespace kphp::http

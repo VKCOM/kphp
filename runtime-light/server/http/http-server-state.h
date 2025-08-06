@@ -65,7 +65,7 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   kphp::http::connection_kind connection_kind{kphp::http::connection_kind::close};
   kphp::http::response_state response_state{kphp::http::response_state::before_send};
 
-  kphp::coro::task<> headers_custom_handler_function;
+  std::optional<kphp::coro::task<>> headers_custom_handler_function;
 
 private:
   kphp::stl::multimap<kphp::stl::string<kphp::memory::script_allocator>, kphp::stl::string<kphp::memory::script_allocator>, kphp::memory::script_allocator>

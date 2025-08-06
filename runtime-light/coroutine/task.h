@@ -237,10 +237,6 @@ struct task {
     return task<U>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
   }
 
-  operator bool() const noexcept {
-    return m_haddress != nullptr;
-  }
-
 private:
   void* m_haddress{};
 };
