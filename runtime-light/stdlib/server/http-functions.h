@@ -49,7 +49,7 @@ inline array<string> f$headers_list() noexcept {
 
 inline bool f$headers_sent([[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> filename = {},
                            [[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> line = {}) noexcept {
-  auto& http_server_instance_st{HttpServerInstanceState::get()};
+  const auto& http_server_instance_st{HttpServerInstanceState::get()};
   switch (http_server_instance_st.response_state) {
   case kphp::http::response_state::before_send:
   case kphp::http::response_state::start_headers_send:
