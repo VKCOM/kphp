@@ -391,12 +391,12 @@ kphp::coro::task<> finalize_server() noexcept {
                                                                    .body = {reinterpret_cast<const std::byte*>(body.c_str()), body.size()}}};
   // fill headers
   http_response.http_response.headers.value.reserve(http_server_instance_st.headers().size());
-  std::transform(
-      http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.http_response.headers.value),
-      [](const auto& header_entry) noexcept {
-        const auto& [name, value]{header_entry};
-        return tl::httpHeaderEntry{.is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
-      });
+  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(),
+                 std::back_inserter(http_response.http_response.headers.value), [](const auto& header_entry) noexcept {
+                   const auto& [name, value]{header_entry};
+                   return tl::httpHeaderEntry{
+                       .is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
+                 });
 
   tl::storer tls{http_response.footprint()};
   http_response.store(tls);
