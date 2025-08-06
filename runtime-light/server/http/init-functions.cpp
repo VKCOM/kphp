@@ -336,12 +336,19 @@ void init_server(kphp::component::stream request_stream) noexcept {
 
 kphp::coro::task<> finalize_server() noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
-  if (http_server_instance_st.response_state == response_state::response_sent) [[unlikely]] {
+
+  switch (http_server_instance_st.response_state) {
+  case kphp::http::response_state::before_send:
+  case kphp::http::response_state::start_headers_send:
+  case kphp::http::response_state::headers_sent:
+  case kphp::http::response_state::body_sent:
+    break;
+  case kphp::http::response_state::response_sent:
     co_return;
   }
 
-  if (!http_server_instance_st.headers_custom_handler_invoked && http_server_instance_st.headers_custom_handler_function) {
-    http_server_instance_st.headers_custom_handler_invoked = true;
+  if (http_server_instance_st.response_state == kphp::http::response_state::before_send && http_server_instance_st.headers_custom_handler_function) {
+    http_server_instance_st.response_state = kphp::http::response_state::start_headers_send;
     co_await http_server_instance_st.headers_custom_handler_function;
   }
 

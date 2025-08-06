@@ -49,16 +49,28 @@ inline array<string> f$headers_list() noexcept {
 
 inline bool f$headers_sent([[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> filename = {},
                            [[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> line = {}) noexcept {
-  return HttpServerInstanceState::get().response_state >= kphp::http::response_state::headers_sent;
+  auto& http_server_instance_st{HttpServerInstanceState::get()};
+  switch (http_server_instance_st.response_state) {
+  case kphp::http::response_state::before_send:
+  case kphp::http::response_state::start_headers_send:
+    return false;
+  case kphp::http::response_state::headers_sent:
+  case kphp::http::response_state::body_sent:
+  case kphp::http::response_state::response_sent:
+    return true;
+  }
 }
 
 template<typename F>
 bool f$header_register_callback(F&& f) noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
-  if (http_server_instance_st.response_state >= kphp::http::response_state::headers_sent) [[unlikely]] {
-    // don't save handler since it will not be called
-    return false;
-  } else if (http_server_instance_st.headers_custom_handler_invoked) [[unlikely]] {
+  switch (http_server_instance_st.response_state) {
+  case kphp::http::response_state::before_send:
+    break;
+  case kphp::http::response_state::start_headers_send:
+  case kphp::http::response_state::headers_sent:
+  case kphp::http::response_state::body_sent:
+  case kphp::http::response_state::response_sent:
     return false;
   }
 
