@@ -4,14 +4,15 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstdint>
 #include <string_view>
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::http {
 
@@ -48,12 +49,45 @@ inline array<string> f$headers_list() noexcept {
 
 inline bool f$headers_sent([[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> filename = {},
                            [[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> line = {}) noexcept {
-  kphp::log::warning("called stub headers_sent");
-  return false;
+  const auto& http_server_instance_st{HttpServerInstanceState::get()};
+  switch (http_server_instance_st.response_state) {
+  case kphp::http::response_state::not_started:
+  case kphp::http::response_state::sending_headers:
+    return false;
+  case kphp::http::response_state::headers_sent:
+  case kphp::http::response_state::sending_body:
+  case kphp::http::response_state::completed:
+    return true;
+  }
 }
 
-template<typename F>
-bool f$header_register_callback(F&& /*unused*/) noexcept {
-  kphp::log::warning("called stub header_register_callback");
+template<std::invocable F>
+bool f$header_register_callback(F&& f) noexcept {
+  auto& http_server_instance_st{HttpServerInstanceState::get()};
+  switch (http_server_instance_st.response_state) {
+  case kphp::http::response_state::not_started:
+    break;
+  case kphp::http::response_state::sending_headers:
+  case kphp::http::response_state::headers_sent:
+  case kphp::http::response_state::sending_body:
+  case kphp::http::response_state::completed:
+    return false;
+  }
+
+  auto headers_callback_task{std::invoke(
+      [](F f) noexcept -> kphp::coro::task<> {
+        if constexpr (kphp::coro::is_async_function_v<F>) {
+          co_await std::invoke(std::move(f));
+        } else {
+          std::invoke(std::move(f));
+        }
+      },
+      std::forward<F>(f))};
+
+  http_server_instance_st.headers_registered_callback.emplace(std::move(headers_callback_task));
   return true;
+}
+
+inline void f$send_http_103_early_hints([[maybe_unused]] const array<string>& headers) noexcept {
+  // noop
 }

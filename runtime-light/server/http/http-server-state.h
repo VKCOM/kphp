@@ -14,6 +14,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/streams/stream.h"
 
 namespace kphp::http {
@@ -30,6 +31,8 @@ enum status : uint16_t {
   FOUND = 302,
   BAD_REQUEST = 400,
 };
+
+enum class response_state : uint8_t { not_started, sending_headers, headers_sent, sending_body, completed };
 
 namespace headers {
 
@@ -60,6 +63,10 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   uint64_t status_code{kphp::http::status::NO_STATUS};
   kphp::http::method http_method{kphp::http::method::other};
   kphp::http::connection_kind connection_kind{kphp::http::connection_kind::close};
+  kphp::http::response_state response_state{kphp::http::response_state::not_started};
+
+  // The headers_registered_callback function should only be invoked once
+  std::optional<kphp::coro::task<>> headers_registered_callback;
 
 private:
   kphp::stl::multimap<kphp::stl::string<kphp::memory::script_allocator>, kphp::stl::string<kphp::memory::script_allocator>, kphp::memory::script_allocator>

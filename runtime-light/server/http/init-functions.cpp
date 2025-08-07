@@ -195,6 +195,35 @@ std::string_view process_headers(const tl::K2InvokeHttp& invoke_http, PhpScriptB
   return content_type;
 }
 
+string get_http_response_body(HttpServerInstanceState& http_server_instance_st) noexcept {
+  string body{};
+  if (http_server_instance_st.http_method != kphp::http::method::head) {
+    auto& output_instance_st{OutputInstanceState::get()};
+    const auto system_buffer{output_instance_st.output_buffers.system_buffer()};
+    const auto user_buffers{output_instance_st.output_buffers.user_buffers()};
+
+    const auto body_size{std::ranges::fold_left(user_buffers | std::views::transform([](const auto& buffer) noexcept { return buffer.size(); }),
+                                                system_buffer.get().size(), std::plus<string::size_type>{})};
+    body.reserve_at_least(body_size);
+
+    body.append(system_buffer.get().buffer(), system_buffer.get().size());
+    const auto appender{[&body](const auto& buffer) noexcept { body.append(buffer.buffer(), buffer.size()); }};
+    std::ranges::for_each(user_buffers | std::views::filter([](const auto& buffer) noexcept { return buffer.size() > 0; }), appender);
+
+    const bool gzip_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)};
+    const bool deflate_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};
+    // compress body if needed
+    if (gzip_encoded || deflate_encoded) {
+      auto encoded_body{kphp::zlib::encode({body.c_str(), static_cast<size_t>(body.size())}, kphp::zlib::DEFAULT_COMPRESSION_LEVEL,
+                                           gzip_encoded ? kphp::zlib::ENCODING_GZIP : kphp::zlib::ENCODING_DEFLATE)};
+      if (encoded_body.has_value()) [[likely]] {
+        body = std::move(*encoded_body);
+      }
+    }
+  }
+  return body;
+}
+
 } // namespace
 
 namespace kphp::http {
@@ -337,60 +366,59 @@ void init_server(kphp::component::stream request_stream) noexcept {
 kphp::coro::task<> finalize_server() noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
 
-  string body{};
-  if (http_server_instance_st.http_method != method::head) {
-    auto& output_instance_st{OutputInstanceState::get()};
-    const auto system_buffer{output_instance_st.output_buffers.system_buffer()};
-    const auto user_buffers{output_instance_st.output_buffers.user_buffers()};
-
-    const auto body_size{std::ranges::fold_left(user_buffers | std::views::transform([](const auto& buffer) noexcept { return buffer.size(); }),
-                                                system_buffer.get().size(), std::plus<string::size_type>{})};
-    body.reserve_at_least(body_size);
-
-    body.append(system_buffer.get().buffer(), system_buffer.get().size());
-    const auto appender{[&body](const auto& buffer) noexcept { body.append(buffer.buffer(), buffer.size()); }};
-    std::ranges::for_each(user_buffers | std::views::filter([](const auto& buffer) noexcept { return buffer.size() > 0; }), appender);
-
+  string response_body{};
+  tl::HttpResponse http_response{};
+  switch (http_server_instance_st.response_state) {
+  case kphp::http::response_state::not_started:
+    http_server_instance_st.response_state = kphp::http::response_state::sending_headers;
+    if (http_server_instance_st.headers_registered_callback.has_value()) {
+      co_await *std::exchange(http_server_instance_st.headers_registered_callback, std::nullopt);
+    }
+    [[fallthrough]];
+  case kphp::http::response_state::sending_headers: {
     const bool gzip_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)};
     const bool deflate_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};
-    // compress body if needed
     if (gzip_encoded || deflate_encoded) {
-      auto encoded_body{kphp::zlib::encode({body.c_str(), static_cast<size_t>(body.size())}, kphp::zlib::DEFAULT_COMPRESSION_LEVEL,
-                                           gzip_encoded ? kphp::zlib::ENCODING_GZIP : kphp::zlib::ENCODING_DEFLATE)};
-      if (encoded_body.has_value()) [[likely]] {
-        body = std::move(*encoded_body);
-
-        auto& static_SB{RuntimeContext::get().static_SB};
-        static_SB.clean() << headers::CONTENT_ENCODING.data() << ": " << (gzip_encoded ? ENCODING_GZIP.data() : ENCODING_DEFLATE.data());
-        kphp::http::header({static_SB.c_str(), static_SB.size()}, true, status::NO_STATUS);
-      }
+      auto& static_SB{RuntimeContext::get().static_SB};
+      static_SB.clean() << kphp::http::headers::CONTENT_ENCODING.data() << ": " << (gzip_encoded ? ENCODING_GZIP.data() : ENCODING_DEFLATE.data());
+      kphp::http::header({static_SB.c_str(), static_SB.size()}, true, kphp::http::status::NO_STATUS);
     }
+    // fill headers
+    http_response.http_response.headers.value.reserve(http_server_instance_st.headers().size());
+    std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(),
+                   std::back_inserter(http_response.http_response.headers.value), [](const auto& header_entry) noexcept {
+                     const auto& [name, value]{header_entry};
+                     return tl::httpHeaderEntry{
+                         .is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
+                   });
+    http_server_instance_st.response_state = kphp::http::response_state::headers_sent;
+    [[fallthrough]];
   }
-
-  const auto status_code{http_server_instance_st.status_code == status::NO_STATUS ? status::OK : http_server_instance_st.status_code};
-
-  tl::HttpResponse http_response{.http_response = tl::httpResponse{.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11},
-                                                                   .status_code = {.value = static_cast<int32_t>(status_code)},
-                                                                   .headers = {},
-                                                                   .body = {reinterpret_cast<const std::byte*>(body.c_str()), body.size()}}};
-  // fill headers
-  http_response.http_response.headers.value.reserve(http_server_instance_st.headers().size());
-  std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(),
-                 std::back_inserter(http_response.http_response.headers.value), [](const auto& header_entry) noexcept {
-                   const auto& [name, value]{header_entry};
-                   return tl::httpHeaderEntry{
-                       .is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
-                 });
-
-  tl::storer tls{http_response.footprint()};
-  http_response.store(tls);
-
-  if (!http_server_instance_st.request_stream.has_value()) [[unlikely]] {
-    kphp::log::error("can't send HTTP response since there is no available stream");
+  case kphp::http::response_state::headers_sent: {
+    response_body = get_http_response_body(http_server_instance_st);
+    const auto status_code{http_server_instance_st.status_code == status::NO_STATUS ? status::OK : http_server_instance_st.status_code};
+    http_response.http_response.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11};
+    http_response.http_response.status_code = {.value = static_cast<int32_t>(status_code)};
+    http_response.http_response.body = {reinterpret_cast<const std::byte*>(response_body.c_str()), response_body.size()};
+    http_server_instance_st.response_state = kphp::http::response_state::sending_body;
+    [[fallthrough]];
   }
-  const auto& request_stream{*http_server_instance_st.request_stream};
-  if (auto expected{co_await kphp::component::send_response(request_stream, tls.view())}; !expected) [[unlikely]] {
-    kphp::log::error("can't write HTTP response: stream -> {}, error code -> {}", request_stream.descriptor(), expected.error());
+  case kphp::http::response_state::sending_body: {
+    tl::storer tls{http_response.footprint()};
+    http_response.store(tls);
+
+    if (!http_server_instance_st.request_stream.has_value()) [[unlikely]] {
+      kphp::log::error("can't send HTTP response since there is no available stream");
+    }
+    const auto& request_stream{*http_server_instance_st.request_stream};
+    if (auto expected{co_await kphp::component::send_response(request_stream, tls.view())}; !expected) [[unlikely]] {
+      kphp::log::error("can't write HTTP response: stream -> {}, error code -> {}", request_stream.descriptor(), expected.error());
+    }
+    http_server_instance_st.response_state = kphp::http::response_state::completed;
+    [[fallthrough]];
+  }
+  case kphp::http::response_state::completed:
+    co_return;
   }
 }
 
