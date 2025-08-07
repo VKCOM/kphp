@@ -10,16 +10,21 @@ class TestLibs(KphpCompilerAutoTestCase):
     def test_raw_php_libs(self):
         self.build_and_compare_with_php("php/lib_user.php")
 
-    @pytest.mark.k2_skip
     def test_compiled_libs(self):
+        lib_build_env = {
+            "KPHP_MODE": "lib",
+            "KPHP_DYNAMIC_INCREMENTAL_LINKAGE": "0",
+        }
+        
+        if self.should_use_k2():
+            lib_build_env.update(self.kphp_env_for_k2_lib())
+        
         for lib_name in ("example1", "example2"):
             lib_out_dir = os.path.join(self.web_server_working_dir, "lib_examples/{}/lib".format(lib_name))
+            lib_build_env.update({"KPHP_OUT_LIB_DIR": lib_out_dir})
             lib_builder = self.make_kphp_once_runner("php/lib_examples/{}".format(lib_name))
-            self.assertTrue(lib_builder.compile_with_kphp({
-                "KPHP_MODE": "lib",
-                "KPHP_DYNAMIC_INCREMENTAL_LINKAGE": "0",
-                "KPHP_OUT_LIB_DIR": lib_out_dir
-            }), "Got {} KPHP build error".format(lib_name))
+            self.assertTrue(lib_builder.compile_with_kphp(lib_build_env),
+                            "Got {} KPHP build error".format(lib_name))
 
         kphp_runner = self.build_and_compare_with_php("php/lib_user.php", kphp_env={
             "KPHP_INCLUDE_DIR": self.web_server_working_dir,

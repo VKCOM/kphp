@@ -538,9 +538,10 @@ static std::vector<File *> run_pre_make(OutputMode output_mode, const CompilerSe
   }
 
   auto lib_header_dirs = collect_imported_headers();
-  auto targets = output_mode == OutputMode::lib ? kphp_make_static_lib_target(obj_index, G->get_index(), lib_header_dirs, make)
-                                                : kphp_make_target(obj_index, G->get_index(), lib_header_dirs, make);
-  for (File * file : targets) {
+  auto targets = vk::any_of_equal(output_mode, OutputMode::lib, OutputMode::k2_lib)
+                     ? kphp_make_static_lib_target(obj_index, G->get_index(), lib_header_dirs, make)
+                     : kphp_make_target(obj_index, G->get_index(), lib_header_dirs, make);
+  for (File* file : targets) {
     response.push_back(file);
   }
 
@@ -583,8 +584,10 @@ void run_make() {
   }
   stage::die_if_global_errors();
 
-  const std::string build_stage{output_mode == OutputMode::lib ? "Compiling" : "Linking"};
-  stage::set_exit_code(output_mode == OutputMode::lib ? ExitCode::CPP_TO_OBJS_STAGE : ExitCode::OBJS_TO_BINARY_STAGE);
+  const bool is_lib = vk::any_of_equal(output_mode, OutputMode::lib, OutputMode::k2_lib);
+
+  const std::string build_stage{is_lib ? "Compiling" : "Linking"};
+  stage::set_exit_code(is_lib ? ExitCode::CPP_TO_OBJS_STAGE : ExitCode::OBJS_TO_BINARY_STAGE);
   AutoProfiler profiler{get_profiler(build_stage)};
 
   bool ok = make.make_target(&bin_file, build_stage, settings.jobs_count.get());
@@ -609,7 +612,7 @@ void run_make() {
   if (!settings.user_binary_path.get().empty()) {
     hard_link_or_copy(bin_file.path, settings.user_binary_path.get());
   }
-  if (output_mode == OutputMode::lib) {
+  if (vk::any_of_equal(output_mode, OutputMode::lib, OutputMode::k2_lib)) {
     copy_static_lib_to_out_dir(std::move(bin_file));
   }
 }

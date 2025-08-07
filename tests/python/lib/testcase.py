@@ -357,10 +357,23 @@ class KphpCompilerAutoTestCase(BaseTestCase):
         return search_k2_bin() is not None
 
     @classmethod
-    def kphp_env_for_k2_cli_component(cls):
-        env = {"KPHP_MODE": "k2-cli", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
+    def kphp_env_for_k2_common(cls):
+        env = {"KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
                "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1"}
         return env
+
+    @classmethod
+    def kphp_env_for_k2_cli_component(cls):
+        env = cls.kphp_env_for_k2_common()
+        env["KPHP_MODE"] = "k2-cli"
+        return env
+
+    @classmethod
+    def kphp_env_for_k2_lib(cls):
+        env = cls.kphp_env_for_k2_common()
+        env["KPHP_MODE"] = "k2-lib"
+        return env
+
 
     def make_kphp_once_runner(self, php_script_path):
         once_runner = KphpRunOnce(
