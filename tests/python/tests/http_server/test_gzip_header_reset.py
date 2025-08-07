@@ -8,7 +8,6 @@ class TestGzipHeaderReset(WebServerAutoTestCase):
         response = self.gzip_request("gzip")
         self.assertEqual(response.headers["Content-Encoding"], "gzip")
 
-    @pytest.mark.k2_skip
     def test_single_gzip_buffer_closed(self):
         response = self.gzip_request("reset")
         with self.assertRaises(KeyError):
