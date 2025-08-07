@@ -95,14 +95,14 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
     }
   }
 
-  if (G->settings().enable_global_vars_memory_stats.get() && !G->is_output_mode_lib()) {
+  if (G->settings().enable_global_vars_memory_stats.get() && !G->is_output_mode_lib() && !G->is_output_mode_k2_lib()) {
     code_gen_start_root_task(os, std::make_unique<GlobalVarsMemoryStats>(all_globals));
   }
   code_gen_start_root_task(os, std::make_unique<InitScriptsCpp>(G->get_main_file()));
   code_gen_start_root_task(os, std::make_unique<ConstVarsInit>(all_constants_in_mem));
   code_gen_start_root_task(os, std::make_unique<GlobalVarsReset>(all_globals_in_mem));
 
-  if (G->is_output_mode_lib()) {
+  if (G->is_output_mode_lib() || G->is_output_mode_k2_lib()) {
     std::vector<FunctionPtr> exported_functions;
     for (FunctionPtr f : all_functions) {
       if (f->kphp_lib_export) {
@@ -116,7 +116,7 @@ void CodeGenF::on_finish(DataStream<std::unique_ptr<CodeGenRootCmd>> &os) {
   }
 
   // TODO: should be done in lib mode also, but in some other way
-  if (!G->is_output_mode_lib()) {
+  if (!G->is_output_mode_lib() && !G->is_output_mode_k2_lib()) {
     if (!G->is_output_mode_k2()) {
       code_gen_start_root_task(os, std::make_unique<TypeTagger>(vk::singleton<ForkableTypeStorage>::get().flush_forkable_types(),
                                                                 vk::singleton<ForkableTypeStorage>::get().flush_waitable_types()));

@@ -90,7 +90,7 @@ void CalcEmptyFunctions::execute(FunctionPtr f, DataStream<FunctionPtr> &os) {
   stage::set_function(f);
   f->body_seq = calc_function_body_type(f);
 
-  if (f->is_main_function() && G->is_output_mode_lib() && G->get_main_file()->main_function == f) {
+  if (f->is_main_function() && (G->is_output_mode_lib() || G->is_output_mode_k2_lib()) && G->get_main_file()->main_function == f) {
     kphp_error(f->body_seq == FunctionData::body_value::empty, "main php file of a lib mustn't contain code, only declarations");
   }
 

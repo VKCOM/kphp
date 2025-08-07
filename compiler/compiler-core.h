@@ -28,6 +28,7 @@ enum class OutputMode {
   server,       // -M server
   cli,          // -M cli
   lib,          // -M lib
+  k2_lib,       // -M k2-lib
   k2_cli,       // -M k2-cli
   k2_server,    // -M k2-server
   k2_oneshot,   // -M k2-oneshot
@@ -202,6 +203,10 @@ public:
     return output_mode == OutputMode::lib;
   }
 
+  bool is_output_mode_k2_lib() const {
+    return output_mode == OutputMode::k2_lib;
+  }
+
   bool is_output_mode_k2_cli() const {
     return output_mode == OutputMode::k2_cli;
   }
@@ -219,7 +224,7 @@ public:
   }
 
   bool is_output_mode_k2() const {
-    return is_output_mode_k2_cli() || is_output_mode_k2_server() || is_output_mode_k2_oneshot() || is_output_mode_k2_multishot();
+    return is_output_mode_k2_cli() || is_output_mode_k2_server() || is_output_mode_k2_oneshot() || is_output_mode_k2_multishot() || is_output_mode_k2_lib();
   }
 
   void set_exclude_namespaces(std::vector<std::string> &&excludes) {

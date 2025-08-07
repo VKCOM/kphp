@@ -2,6 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <iostream>
+
 #include "compiler/make/make.h"
 
 #include <dirent.h>
@@ -162,6 +164,7 @@ static std::forward_list<File *> collect_imported_libs() {
 
   std::forward_list<File *> imported_libs;
   if (G->settings().force_link_runtime.get()) {
+    std::cout << "Add link file: " << G->settings().link_file.get() << "\n";
     imported_libs.emplace_front(new File{G->settings().link_file.get()});
   }
   for (const auto &lib: G->get_libs()) {
@@ -172,6 +175,7 @@ static std::forward_list<File *> collect_imported_libs() {
                      fmt_format("Mismatching between sha256 of binary runtime '{}' and lib runtime '{}'",
                                 G->settings().runtime_sha256_file.get(), lib->runtime_lib_sha256_file()),
                      continue);
+      std::cout << "Add lib: " << lib->static_archive_path() << "\n";
       imported_libs.emplace_front(new File{lib->static_archive_path()});
     }
   }
@@ -538,6 +542,7 @@ static std::vector<File *> run_pre_make(OutputMode output_mode, const CompilerSe
   }
 
   auto lib_header_dirs = collect_imported_headers();
+  // TODO from here
   auto targets = output_mode == OutputMode::lib ? kphp_make_static_lib_target(obj_index, G->get_index(), lib_header_dirs, make)
                                                 : kphp_make_target(obj_index, G->get_index(), lib_header_dirs, make);
   for (File * file : targets) {
@@ -569,8 +574,7 @@ void run_make() {
   auto objs = run_pre_make(output_mode, settings, make_stats_file, make, obj_index, bin_file, obj_rt_index);
   stage::die_if_global_errors();
 
-  if (G->is_output_mode_lib()) {
-    // todo:k2 think about kphp libraries
+  if (G->is_output_mode_lib() || G->is_output_mode_k2_lib()) {
     make.create_objs2static_lib_target(objs, &bin_file);
   } else if (G->is_output_mode_k2()) {
     make.create_objs2k2_component_target(objs, &bin_file);

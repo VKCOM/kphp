@@ -301,7 +301,7 @@ void GlobalsMemAllocation::compile(CodeGenerator &W) const {
   W << "// count(php global scope) = " << mem.count_of_php_global_scope << NL;
   W << "// n_batches = " << mem.batches.size() << NL;
 
-  if (!G->is_output_mode_lib()) {
+  if (!G->is_output_mode_lib() && !G->is_output_mode_k2_lib()) {
     W << "php_globals.once_alloc_linear_mem(" << mem.total_mem_size << ");" << NL;
   } else {
     W << "php_globals.once_alloc_linear_mem(\"" << G->settings().static_lib_name.get() << "\", " << mem.total_mem_size << ");" << NL;
@@ -331,7 +331,7 @@ void PhpMutableGlobalsConstRefArgument::compile(CodeGenerator &W) const {
 void GlobalVarInPhpGlobals::compile(CodeGenerator &W) const {
   if (global_var->is_builtin_runtime) {
     W << "php_globals.get_superglobals().v$" << global_var->name;
-  } else if (!G->is_output_mode_lib()) {
+  } else if (!G->is_output_mode_lib() && !G->is_output_mode_k2_lib()) {
     W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(php_globals.mem()+" << global_var->offset_in_linear_mem << "))";
   } else {
     W << "(*reinterpret_cast<" << type_out(tinf::get_type(global_var)) << "*>(php_globals.mem_for_lib(\"" << G->settings().static_lib_name.get() << "\")+" << global_var->offset_in_linear_mem << "))";
