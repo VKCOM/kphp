@@ -232,7 +232,6 @@ public:
   inline int64_t get_correct_offset_clamped(int64_t offset) const;
   inline const string get_value(int64_t int_key) const;
   inline const string get_value(const string& string_key) const;
-  inline const string get_value2(const string& string_key) const { return get_value(string_key); }
   inline const string get_value(const mixed& v) const;
 
   inline int64_t get_reference_counter() const;
