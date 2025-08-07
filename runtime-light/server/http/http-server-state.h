@@ -32,7 +32,7 @@ enum status : uint16_t {
   BAD_REQUEST = 400,
 };
 
-enum class response_state : uint8_t { before_send, start_headers_send, headers_sent, body_sent, response_sent };
+enum class response_state : uint8_t { not_started, sending_headers, headers_sent, sending_body, completed };
 
 namespace headers {
 
@@ -63,9 +63,9 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   uint64_t status_code{kphp::http::status::NO_STATUS};
   kphp::http::method http_method{kphp::http::method::other};
   kphp::http::connection_kind connection_kind{kphp::http::connection_kind::close};
-  kphp::http::response_state response_state{kphp::http::response_state::before_send};
+  kphp::http::response_state response_state{kphp::http::response_state::not_started};
 
-  std::optional<kphp::coro::task<>> headers_custom_handler_function;
+  std::optional<kphp::coro::task<>> headers_registered_callback;
 
 private:
   kphp::stl::multimap<kphp::stl::string<kphp::memory::script_allocator>, kphp::stl::string<kphp::memory::script_allocator>, kphp::memory::script_allocator>

@@ -51,12 +51,12 @@ inline bool f$headers_sent([[maybe_unused]] Optional<std::optional<std::referenc
                            [[maybe_unused]] Optional<std::optional<std::reference_wrapper<string>>> line = {}) noexcept {
   const auto& http_server_instance_st{HttpServerInstanceState::get()};
   switch (http_server_instance_st.response_state) {
-  case kphp::http::response_state::before_send:
-  case kphp::http::response_state::start_headers_send:
+  case kphp::http::response_state::not_started:
+  case kphp::http::response_state::sending_headers:
     return false;
   case kphp::http::response_state::headers_sent:
-  case kphp::http::response_state::body_sent:
-  case kphp::http::response_state::response_sent:
+  case kphp::http::response_state::sending_body:
+  case kphp::http::response_state::completed:
     return true;
   }
 }
@@ -65,12 +65,12 @@ template<typename F>
 bool f$header_register_callback(F&& f) noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
   switch (http_server_instance_st.response_state) {
-  case kphp::http::response_state::before_send:
+  case kphp::http::response_state::not_started:
     break;
-  case kphp::http::response_state::start_headers_send:
+  case kphp::http::response_state::sending_headers:
   case kphp::http::response_state::headers_sent:
-  case kphp::http::response_state::body_sent:
-  case kphp::http::response_state::response_sent:
+  case kphp::http::response_state::sending_body:
+  case kphp::http::response_state::completed:
     return false;
   }
 
@@ -84,7 +84,7 @@ bool f$header_register_callback(F&& f) noexcept {
       },
       std::forward<F>(f))};
 
-  http_server_instance_st.headers_custom_handler_function.emplace(std::move(custom_header_handler_task));
+  http_server_instance_st.headers_registered_callback.emplace(std::move(custom_header_handler_task));
   return true;
 }
 

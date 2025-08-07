@@ -104,12 +104,12 @@ void header(std::string_view header_view, bool replace, int64_t response_code) n
 
   auto& http_server_instance_st{HttpServerInstanceState::get()};
   switch (http_server_instance_st.response_state) {
-  case kphp::http::response_state::before_send:
-  case kphp::http::response_state::start_headers_send:
+  case kphp::http::response_state::not_started:
+  case kphp::http::response_state::sending_headers:
     break;
   case kphp::http::response_state::headers_sent:
-  case kphp::http::response_state::body_sent:
-  case kphp::http::response_state::response_sent:
+  case kphp::http::response_state::sending_body:
+  case kphp::http::response_state::completed:
     // don't add header since it will not be sent
     return;
   }
