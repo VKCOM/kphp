@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstdint>
 #include <string_view>
 #include <utility>
@@ -12,7 +13,6 @@
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::http {
 
@@ -61,7 +61,7 @@ inline bool f$headers_sent([[maybe_unused]] Optional<std::optional<std::referenc
   }
 }
 
-template<typename F>
+template<std::invocable F>
 bool f$header_register_callback(F&& f) noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
   switch (http_server_instance_st.response_state) {
@@ -74,7 +74,7 @@ bool f$header_register_callback(F&& f) noexcept {
     return false;
   }
 
-  auto custom_header_handler_task{std::invoke(
+  auto headers_callback_task{std::invoke(
       [](F f) noexcept -> kphp::coro::task<> {
         if constexpr (kphp::coro::is_async_function_v<F>) {
           co_await std::invoke(std::move(f));
@@ -84,7 +84,7 @@ bool f$header_register_callback(F&& f) noexcept {
       },
       std::forward<F>(f))};
 
-  http_server_instance_st.headers_registered_callback.emplace(std::move(custom_header_handler_task));
+  http_server_instance_st.headers_registered_callback.emplace(std::move(headers_callback_task));
   return true;
 }
 

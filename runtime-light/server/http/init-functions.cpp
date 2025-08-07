@@ -195,7 +195,7 @@ std::string_view process_headers(const tl::K2InvokeHttp& invoke_http, PhpScriptB
   return content_type;
 }
 
-string format_http_response_body() noexcept {
+string get_http_response_body() noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
 
   string body{};
@@ -385,7 +385,6 @@ kphp::coro::task<> finalize_server() noexcept {
       static_SB.clean() << kphp::http::headers::CONTENT_ENCODING.data() << ": " << (gzip_encoded ? ENCODING_GZIP.data() : ENCODING_DEFLATE.data());
       kphp::http::header({static_SB.c_str(), static_SB.size()}, true, kphp::http::status::NO_STATUS);
     }
-  }
     // fill headers
     http_response.http_response.headers.value.reserve(http_server_instance_st.headers().size());
     std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(),
@@ -396,8 +395,9 @@ kphp::coro::task<> finalize_server() noexcept {
                    });
     http_server_instance_st.response_state = kphp::http::response_state::headers_sent;
     [[fallthrough]];
+  }
   case kphp::http::response_state::headers_sent: {
-    response_body = format_http_response_body();
+    response_body = get_http_response_body();
     const auto status_code{http_server_instance_st.status_code == status::NO_STATUS ? status::OK : http_server_instance_st.status_code};
     http_response.http_response.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11};
     http_response.http_response.status_code = {.value = static_cast<int32_t>(status_code)};
@@ -416,9 +416,9 @@ kphp::coro::task<> finalize_server() noexcept {
     if (auto expected{co_await kphp::component::send_response(request_stream, tls.view())}; !expected) [[unlikely]] {
       kphp::log::error("can't write HTTP response: stream -> {}, error code -> {}", request_stream.descriptor(), expected.error());
     }
-  }
     http_server_instance_st.response_state = kphp::http::response_state::completed;
     [[fallthrough]];
+  }
   case kphp::http::response_state::completed:
     co_return;
   }

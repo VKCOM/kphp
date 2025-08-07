@@ -65,6 +65,7 @@ struct HttpServerInstanceState final : private vk::not_copyable {
   kphp::http::connection_kind connection_kind{kphp::http::connection_kind::close};
   kphp::http::response_state response_state{kphp::http::response_state::not_started};
 
+  // The headers_registered_callback function should be invoked only a single time.
   std::optional<kphp::coro::task<>> headers_registered_callback;
 
 private:
