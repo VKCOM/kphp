@@ -195,9 +195,7 @@ std::string_view process_headers(const tl::K2InvokeHttp& invoke_http, PhpScriptB
   return content_type;
 }
 
-string get_http_response_body() noexcept {
-  auto& http_server_instance_st{HttpServerInstanceState::get()};
-
+string get_http_response_body(HttpServerInstanceState& http_server_instance_st) noexcept {
   string body{};
   if (http_server_instance_st.http_method != kphp::http::method::head) {
     auto& output_instance_st{OutputInstanceState::get()};
@@ -397,7 +395,7 @@ kphp::coro::task<> finalize_server() noexcept {
     [[fallthrough]];
   }
   case kphp::http::response_state::headers_sent: {
-    response_body = get_http_response_body();
+    response_body = get_http_response_body(http_server_instance_st);
     const auto status_code{http_server_instance_st.status_code == status::NO_STATUS ? status::OK : http_server_instance_st.status_code};
     http_response.http_response.version = tl::HttpVersion{.version = tl::HttpVersion::Version::V11};
     http_response.http_response.status_code = {.value = static_cast<int32_t>(status_code)};
