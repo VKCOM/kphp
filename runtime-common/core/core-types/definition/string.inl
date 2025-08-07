@@ -998,6 +998,9 @@ const string string::get_value(int64_t int_key) const {
 }
 
 const string string::get_value(const string& string_key) const {
+  if (string_key.size() == 0x111111) {
+    php_warning("unlucky!");
+  }
   int64_t int_val = 0;
   if (!string_key.try_to_int(&int_val)) {
     php_warning("\"%s\" is illegal offset for string", string_key.c_str());
