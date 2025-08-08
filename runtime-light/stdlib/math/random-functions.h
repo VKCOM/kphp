@@ -38,3 +38,7 @@ inline int64_t f$rand() noexcept {
 inline int64_t f$rand(int64_t l, int64_t r) noexcept {
   return f$mt_rand(l, r);
 }
+
+inline void f$srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexcept {
+  return f$mt_srand(seed);
+}

@@ -25,8 +25,6 @@ int64_t f$rand(int64_t l, int64_t r) noexcept;
 
 int64_t f$rand() noexcept;
 
-int64_t f$getrandmax() noexcept;
-
 Optional<int64_t> f$random_int(int64_t l, int64_t r) noexcept;
 
 Optional<string> f$random_bytes(int64_t length) noexcept;
