@@ -15,7 +15,7 @@
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/diagnostics.h"
 
 namespace kphp::coro {
 

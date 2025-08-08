@@ -9,8 +9,8 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/stdlib/diagnostics/diagnostics.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"

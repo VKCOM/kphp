@@ -7,7 +7,7 @@
 #include <memory>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/diagnostics.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-func-base.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-function.h"
 

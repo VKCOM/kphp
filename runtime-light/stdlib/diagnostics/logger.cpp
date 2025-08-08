@@ -2,8 +2,12 @@
 // Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "runtime-light/stdlib/diagnostics/logger.h"
+
+#include <cstddef>
 #include <format>
 #include <optional>
+#include <type_traits>
 #include <utility>
 
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -13,7 +17,6 @@
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
-#include "runtime-light/stdlib/diagnostics/logger.h"
 
 namespace kphp::log {
 

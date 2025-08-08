@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <utility>
 
-#include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/diagnostics.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {
