@@ -76,7 +76,7 @@ private:
   kphp::stl::string<kphp::memory::script_allocator> environment;
 };
 
-void Logger::log(kphp::log::Record record) noexcept {
+inline void Logger::log(kphp::log::Record record) noexcept {
   if (!enabled(record.level)) {
     return;
   }
@@ -105,21 +105,21 @@ void Logger::format_log(kphp::log::Level level, std::optional<std::span<void* co
   log({.level = level, .message = message, .backtrace = trace});
 }
 
-bool Logger::enabled(kphp::log::Level level) noexcept {
+inline bool Logger::enabled(kphp::log::Level level) noexcept {
   return std::to_underlying(level) <= k2::log_level_enabled();
 }
 
-Logger& Logger::set_extra_tags(std::string_view extra_tags_view) noexcept {
+inline Logger& Logger::set_extra_tags(std::string_view extra_tags_view) noexcept {
   extra_tags_str = extra_tags_view;
   return *this;
 }
 
-Logger& Logger::set_extra_info(std::string_view extra_info_view) noexcept {
+inline Logger& Logger::set_extra_info(std::string_view extra_info_view) noexcept {
   extra_info_str = extra_info_view;
   return *this;
 }
 
-Logger& Logger::set_environment(std::string_view environment_view) noexcept {
+inline Logger& Logger::set_environment(std::string_view environment_view) noexcept {
   environment = environment_view;
   return *this;
 }

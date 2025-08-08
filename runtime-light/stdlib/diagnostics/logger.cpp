@@ -41,7 +41,7 @@ void Logger::statefull_log(Record record) const noexcept {
 
   static constexpr std::string_view EXTRA_TAGS_KEY = "tags";
   static constexpr std::string_view EXTRA_INFO_KEY = "extra_info";
-  static constexpr std::string_view ENVIRONMENT_KEY = "extra_info";
+  static constexpr std::string_view ENVIRONMENT_KEY = "env";
 
   kphp::stl::vector<k2::LogTaggedEntry, kphp::memory::script_allocator> tagged_entries{};
   tagged_entries.reserve(4);

@@ -6,12 +6,15 @@
 
 #include <chrono>
 #include <cstdint>
+#include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/state/image-state.h"
+#include "runtime-light/stdlib/diagnostics/logger.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/system/system-state.h"
@@ -40,7 +43,26 @@ inline int64_t f$numa_get_bound_node() noexcept {
 }
 
 inline void f$kphp_set_context_on_error([[maybe_unused]] const array<mixed>& tags, [[maybe_unused]] const array<mixed>& extra_info,
-                                        [[maybe_unused]] const string& env = {}) noexcept {}
+                                        [[maybe_unused]] const string& env = {}) noexcept {
+  auto logger{kphp::log::Logger::try_get()};
+  if (!logger.has_value()) [[unlikely]] {
+    return;
+  }
+
+  auto& static_SB{RuntimeContext::get().static_SB.clean()};
+
+  if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags, static_SB)) [[likely]] {
+    (*logger).get().set_extra_tags({static_SB.buffer(), static_SB.size()});
+  }
+  static_SB.clean();
+
+  if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info, static_SB)) [[likely]] {
+    (*logger).get().set_extra_info({static_SB.buffer(), static_SB.size()});
+  }
+  static_SB.clean();
+
+  (*logger).get().set_environment({env.c_str(), env.size()});
+}
 
 inline int64_t f$posix_getpid() noexcept {
   return static_cast<int64_t>(ImageState::get().pid);
