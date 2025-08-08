@@ -59,7 +59,7 @@ void ConstVarsInit::compile_const_init_part(CodeGenerator &W, const ConstantsBat
   IncludesCollector includes;
   ConstantsExternCollector c_mem_extern;
   for (VarPtr var : batch.constants) {
-    if (!G->is_output_mode_lib()) {
+    if (!G->is_output_mode_lib() && !G->is_output_mode_k2_lib()) {
       includes.add_var_signature_depends(var);
       includes.add_vertex_depends(var->init_val);
     }

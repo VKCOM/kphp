@@ -251,7 +251,7 @@ void CompilerSettings::init() {
     kphp_error(is_k2_mode, "Option \"k2-component-name\" is only available for k2 component modes");
   }
 
-  if (mode.get() == "lib") {
+  if (mode.get() == "lib" || mode.get() == "k2-lib") {
     if (!tl_schema_file.get().empty()) {
       throw std::runtime_error{"Option " + tl_schema_file.get_env_var() + " is forbidden for static lib mode"};
     }

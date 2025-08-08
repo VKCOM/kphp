@@ -20,7 +20,7 @@ struct StaticInit {
 };
 
 void StaticInit::compile(CodeGenerator &W) const {
-  if (G->is_output_mode_lib()) {
+  if (G->is_output_mode_lib() || G->is_output_mode_k2_lib()) {
     return;
   }
 
@@ -220,7 +220,7 @@ void InitScriptsCpp::compile(CodeGenerator &W) const {
 
   W << NL << StaticInit() << NL;
 
-  if (G->is_output_mode_lib()) {
+  if (G->is_output_mode_lib() || G->is_output_mode_k2_lib()) {
     W << LibRunFunction(main_file_id->main_function);
     W << CloseFile();
     return;

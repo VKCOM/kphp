@@ -628,7 +628,7 @@ class CalcBadVars {
       function->dep = std::move(call_graph.graph[function]);
     }
 
-    if (!G->is_output_mode_lib()) {
+    if (!G->is_output_mode_lib() && !G->is_output_mode_k2_lib()) {
       return;
     }
 

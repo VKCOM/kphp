@@ -217,8 +217,8 @@ int main(int argc, char *argv[]) {
              "tracked-builtins-list", "KPHP_TRACKED_BUILTINS_LIST");
   parser.add("File with kphp runtime sha256 hash", settings->runtime_sha256_file,
              "runtime-sha256", "KPHP_RUNTIME_SHA256", "${KPHP_PATH}/objs/php_lib_version.sha256");
-  parser.add("The output binary type: server, cli, lib, k2-cli, k2-server, k2-oneshot, k2-multishot", settings->mode, 'M', "mode", "KPHP_MODE", "server",
-             {"server", "cli", "lib", "k2-cli", "k2-server", "k2-oneshot", "k2-multishot"});
+  parser.add("The output binary type: server, cli, lib, k2-lib, k2-cli, k2-server, k2-oneshot, k2-multishot", settings->mode, 'M', "mode", "KPHP_MODE", "server",
+             {"server", "cli", "lib", "k2-lib", "k2-cli", "k2-server", "k2-oneshot", "k2-multishot"});
   parser.add("A runtime library for building the output binary", settings->link_file,
              'l', "link-with", "KPHP_LINK_FILE");
   parser.add("Build runtime from sources", settings->force_link_runtime,

@@ -139,6 +139,8 @@ void CompilerCore::register_settings(CompilerSettings *settings) {
     output_mode = OutputMode::k2_oneshot;
   } else if (mode == "k2-multishot") {
     output_mode = OutputMode::k2_multishot;
+  } else if (mode == "k2-lib") {
+    output_mode = OutputMode::k2_lib;
   } else {
     output_mode = OutputMode::server;
   }

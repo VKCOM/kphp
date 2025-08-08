@@ -90,7 +90,7 @@ VertexAdaptor<op_require> make_require_once_call(SrcFilePtr lib_main_file, Verte
 }
 
 VertexPtr process_require_lib(VertexAdaptor<op_func_call> require_lib_call) {
-  kphp_error_act (!G->is_output_mode_lib(), "require_lib is forbidden to use for compiling libs", return require_lib_call);
+  kphp_error_act (!G->is_output_mode_lib() && !G->is_output_mode_k2_lib(), "require_lib is forbidden to use for compiling libs", return require_lib_call);
   VertexRange args = require_lib_call->args();
   kphp_error_act (args.size() == 1, fmt_format("require_lib expected 1 arguments, got {}", args.size()), return require_lib_call);
   auto lib_name_node = args[0];
