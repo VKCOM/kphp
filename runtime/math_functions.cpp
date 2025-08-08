@@ -180,10 +180,6 @@ int64_t f$rand(int64_t l, int64_t r) noexcept {
   return f$mt_rand(l, r);
 }
 
-int64_t f$getrandmax() noexcept {
-  return f$mt_getrandmax();
-}
-
 Optional<int64_t> f$random_int(int64_t l, int64_t r) noexcept {
   if (unlikely(l > r)) {
     php_warning("Argument #1 ($min) must be less than or equal to argument #2 ($max)");
