@@ -14,6 +14,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/diagnostics/logger.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
@@ -23,6 +24,7 @@
 
 struct ImageState final : private vk::not_copyable {
   AllocatorState image_allocator_state{INIT_IMAGE_ALLOCATOR_SIZE, 0};
+  kphp::log::Logger image_logger;
 
   uint32_t pid{k2::getpid()};
   string uname_info_s;
@@ -67,6 +69,13 @@ struct ImageState final : private vk::not_copyable {
     uname_info_v.set_reference_counter_to(ExtraRefCnt::for_global_const);
     uname_info_m.set_reference_counter_to(ExtraRefCnt::for_global_const);
     uname_info_a.set_reference_counter_to(ExtraRefCnt::for_global_const);
+  }
+
+  static std::optional<std::reference_wrapper<const ImageState>> try_get() noexcept {
+    if (auto* image_ptr = k2::image_state(); image_ptr != nullptr) [[likely]] {
+      return *image_ptr;
+    }
+    return std::nullopt;
   }
 
   static const ImageState& get() noexcept {
