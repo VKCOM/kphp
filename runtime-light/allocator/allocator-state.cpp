@@ -8,7 +8,7 @@
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/diagnostics.h"
 
 const AllocatorState& AllocatorState::get() noexcept {
   if (const auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {

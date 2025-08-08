@@ -18,7 +18,7 @@
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/diagnostics.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 
 namespace kphp::forks {

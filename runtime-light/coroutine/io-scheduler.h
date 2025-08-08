@@ -33,7 +33,7 @@
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/when-any.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/diagnostics.h"
 
 namespace kphp::coro {
 

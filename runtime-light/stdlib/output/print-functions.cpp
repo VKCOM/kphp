@@ -7,7 +7,7 @@
 #include <cstdint>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/diagnostics.h"
 #include "runtime-light/stdlib/output/output-buffer.h"
 #include "runtime-light/stdlib/output/output-state.h"
 

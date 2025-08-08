@@ -8,7 +8,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/diagnostics.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/output/print-functions.h"
 

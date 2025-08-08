@@ -14,7 +14,7 @@
 #include "runtime-common/core/core-types/decl/declarations.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/diagnostics/diagnostics.h"
 
 namespace kphp::output {
 
