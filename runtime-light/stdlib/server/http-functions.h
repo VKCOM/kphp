@@ -13,7 +13,7 @@
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::http {
 

@@ -14,8 +14,8 @@
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/state/image-state.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
 #include "runtime-light/stdlib/diagnostics/logger.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/system/system-state.h"
 
@@ -44,27 +44,33 @@ inline int64_t f$numa_get_bound_node() noexcept {
 
 inline void f$kphp_set_context_on_error([[maybe_unused]] const array<mixed>& tags, [[maybe_unused]] const array<mixed>& extra_info,
                                         [[maybe_unused]] const string& env = {}) noexcept {
-  auto logger{kphp::log::Logger::try_get()};
-  if (!logger.has_value()) [[unlikely]] {
+  auto logger_opt{kphp::log::logger::try_get()};
+  if (!logger_opt.has_value()) [[unlikely]] {
     return;
   }
+  auto &logger{(*logger_opt).get()};
+
+  static constexpr std::string_view EXTRA_TAGS_KEY = "tags";
+  static constexpr std::string_view EXTRA_INFO_KEY = "extra_info";
+  static constexpr std::string_view ENVIRONMENT_KEY = "env";
 
   auto& static_SB{RuntimeContext::get().static_SB.clean()};
-  if (tags.empty()) {
-    (*logger).get().set_extra_tags(std::string_view{});
-  } else if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags, static_SB)) [[likely]] {
-    (*logger).get().set_extra_tags({static_SB.buffer(), static_SB.size()});
+  logger.remove_extra_tag(EXTRA_TAGS_KEY);
+  if (!tags.empty() && impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags, static_SB)) [[likely]] {
+    logger.add_extra_tag(EXTRA_TAGS_KEY, {static_SB.buffer(), static_SB.size()});
   }
   static_SB.clean();
 
-  if (extra_info.empty()) {
-    (*logger).get().set_extra_info(std::string_view{});
-  } else if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info, static_SB)) [[likely]] {
-    (*logger).get().set_extra_info({static_SB.buffer(), static_SB.size()});
+  logger.remove_extra_tag(EXTRA_INFO_KEY);
+ if (!extra_info.empty() && impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info, static_SB)) [[likely]] {
+    logger.add_extra_tag(EXTRA_INFO_KEY, {static_SB.buffer(), static_SB.size()});
   }
   static_SB.clean();
 
-  (*logger).get().set_environment({env.c_str(), env.size()});
+  logger.remove_extra_tag(ENVIRONMENT_KEY);
+  if (!env.empty()) {
+    logger.add_extra_tag(ENVIRONMENT_KEY, {env.c_str(), env.size()});
+  }
 }
 
 inline int64_t f$posix_getpid() noexcept {

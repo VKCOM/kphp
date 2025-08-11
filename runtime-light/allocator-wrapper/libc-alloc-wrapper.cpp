@@ -7,7 +7,7 @@
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/allocator/allocator-state.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 extern "C" void* __wrap_malloc(size_t size) noexcept {
   if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {

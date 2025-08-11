@@ -21,7 +21,7 @@
 #include "runtime-light/server/rpc/init-functions.h"
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/time/time-functions.h"

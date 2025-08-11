@@ -6,7 +6,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/msgpack/unpacker.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/serialization/serialization-state.h"
 
 template<class ResultType = mixed>

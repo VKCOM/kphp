@@ -20,7 +20,7 @@ namespace kphp::log {
 // If assertion is modified, the backtrace algorithm should be updated accordingly
 inline void assertion(bool condition, const std::source_location& location = std::source_location::current()) noexcept {
   if (!condition) [[unlikely]] {
-    Logger::format_log(Level::error, std::nullopt, "assertion failed at {}:{}", location.file_name(), location.line());
+    logger::format_log(Level::error, std::nullopt, "assertion failed at {}:{}", location.file_name(), location.line());
     k2::exit(1);
   }
 }
@@ -30,7 +30,7 @@ template<typename... Args>
   std::array<void*, kphp::diagnostic::DEFAULT_BACKTRACE_MAX_SIZE> backtrace{};
   const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
   const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
-  Logger::format_log(Level::error, backtrace_view, fmt, std::forward<Args>(args)...);
+  logger::format_log(Level::error, backtrace_view, fmt, std::forward<Args>(args)...);
   k2::exit(1);
 }
 
@@ -39,22 +39,22 @@ void warning(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... arg
   std::array<void*, kphp::diagnostic::DEFAULT_BACKTRACE_MAX_SIZE> backtrace{};
   const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
   const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
-  Logger::format_log(Level::warn, backtrace_view, fmt, std::forward<Args>(args)...);
+  logger::format_log(Level::warn, backtrace_view, fmt, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 void info(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  Logger::format_log(Level::info, std::nullopt, fmt, std::forward<Args>(args)...);
+  logger::format_log(Level::info, std::nullopt, fmt, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 void debug(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  Logger::format_log(Level::debug, std::nullopt, fmt, std::forward<Args>(args)...);
+  logger::format_log(Level::debug, std::nullopt, fmt, std::forward<Args>(args)...);
 }
 
 template<typename... Args>
 void trace(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  Logger::format_log(Level::trace, std::nullopt, fmt, std::forward<Args>(args)...);
+  logger::format_log(Level::trace, std::nullopt, fmt, std::forward<Args>(args)...);
 }
 
 } // namespace kphp::log

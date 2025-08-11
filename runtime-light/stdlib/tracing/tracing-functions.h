@@ -5,7 +5,7 @@
 #pragma once
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/tracing/tracing-div.h"
 #include "runtime-light/stdlib/tracing/tracing-span.h"
 

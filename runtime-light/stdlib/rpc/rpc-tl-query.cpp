@@ -8,8 +8,8 @@
 #include <string_view>
 
 #include "runtime-light/server/rpc/rpc-server-state.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-exceptions.h"
 

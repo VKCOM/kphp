@@ -13,7 +13,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 void ComponentState::parse_env() noexcept {
   for (auto i = 0; i < envc; ++i) {

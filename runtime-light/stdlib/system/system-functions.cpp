@@ -8,7 +8,7 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/system/system-functions.h"
 
 Optional<string> f$iconv(const string& input_encoding, const string& output_encoding, const string& input_str) noexcept {

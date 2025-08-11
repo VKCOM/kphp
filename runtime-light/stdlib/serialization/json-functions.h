@@ -6,7 +6,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 inline void f$set_json_log_on_timeout_mode([[maybe_unused]] bool enabled) noexcept {}
 

@@ -15,7 +15,7 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/confdata/confdata-constants.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"

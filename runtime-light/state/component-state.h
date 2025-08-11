@@ -16,7 +16,7 @@
 
 struct ComponentState final : private vk::not_copyable {
   AllocatorState component_allocator_state{INIT_COMPONENT_ALLOCATOR_SIZE, 0};
-  kphp::log::Logger component_logger;
+  kphp::log::logger component_logger;
 
   const uint32_t argc{k2::args_count()};
   const uint32_t envc{k2::env_count()};

@@ -12,7 +12,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/time/timelib-constants.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"

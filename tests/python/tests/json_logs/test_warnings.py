@@ -21,8 +21,8 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
             ])
         self.assertEqual(resp.text, "ok")
         expect_log = [
-            {"msg": "hello", "env": ""},
-            {"msg": "world", "env": ""}
+            {"msg": "hello"},
+            {"msg": "world"}
         ] if self.should_use_k2() else [
             {"version": 0, "hostname": socket.gethostname(), "type": 2, "env": "", "msg": "hello", "tags": {"uncaught": False}},
             {"version": 0, "hostname": socket.gethostname(), "type": 2, "env": "", "msg": "world", "tags": {"uncaught": False}}

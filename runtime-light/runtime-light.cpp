@@ -10,7 +10,7 @@
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 ImageState* k2_create_image() {
   kphp::log::debug("start image state creation");

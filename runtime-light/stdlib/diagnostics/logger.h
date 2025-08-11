@@ -42,46 +42,46 @@ using wrapped_arg_t = std::invoke_result_t<decltype(impl::wrap_log_argument<T>),
 
 enum class Level : size_t { error = 1, warn, info, debug, trace }; // NOLINT
 
-struct Record {
+struct record {
   Level level;
   std::string_view message;
   std::optional<std::span<void* const>> backtrace;
 };
 
-struct Logger final : vk::not_copyable {
+struct logger final : vk::not_copyable {
 
-  static void log(Record record) noexcept;
+  static void log(record record) noexcept;
 
   template<typename... Args>
   static void format_log(Level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
                          Args&&... args) noexcept;
 
-  static bool enabled(Level level) noexcept;
+  void add_extra_tag(std::string_view key, std::string_view value) noexcept;
+  void remove_extra_tag(std::string_view key) noexcept;
+  void clear_extra_tag() noexcept;
 
-  Logger& set_extra_tags(std::string_view extra_tags_view) noexcept;
-  Logger& set_extra_info(std::string_view extra_info_view) noexcept;
-  Logger& set_environment(std::string_view environment_view) noexcept;
-
-  static std::optional<std::reference_wrapper<Logger>> try_get() noexcept;
+  static std::optional<std::reference_wrapper<logger>> try_get() noexcept;
 
 private:
-  static void stateless_log(Record record) noexcept {
+  using tag_key_t = kphp::stl::string<kphp::memory::script_allocator>;
+  using tag_value_t = kphp::stl::string<kphp::memory::script_allocator>;
+  kphp::stl::unordered_map<tag_key_t, tag_value_t, kphp::memory::script_allocator> extra_tags{};
+
+  static bool enabled(Level level) noexcept;
+
+  static void stateless_log(record record) noexcept {
     k2::log(std::to_underlying(record.level), record.message, std::nullopt);
   }
 
-  void statefull_log(Record record) const noexcept;
-
-  kphp::stl::string<kphp::memory::script_allocator> extra_tags_str;
-  kphp::stl::string<kphp::memory::script_allocator> extra_info_str;
-  kphp::stl::string<kphp::memory::script_allocator> environment;
+  void statefull_log(record record) const noexcept;
 };
 
-inline void Logger::log(kphp::log::Record record) noexcept {
+inline void logger::log(kphp::log::record record) noexcept {
   if (!enabled(record.level)) {
     return;
   }
 
-  if (auto logger{Logger::try_get()}; logger.has_value()) [[likely]] {
+  if (auto logger{logger::try_get()}; logger.has_value()) [[likely]] {
     (*logger).get().statefull_log(std::move(record));
   } else {
     stateless_log(std::move(record));
@@ -89,7 +89,7 @@ inline void Logger::log(kphp::log::Record record) noexcept {
 }
 
 template<typename... Args>
-void Logger::format_log(kphp::log::Level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
+void logger::format_log(kphp::log::Level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
                         Args&&... args) noexcept {
   if (!enabled(level)) {
     return;
@@ -105,23 +105,20 @@ void Logger::format_log(kphp::log::Level level, std::optional<std::span<void* co
   log({.level = level, .message = message, .backtrace = trace});
 }
 
-inline bool Logger::enabled(kphp::log::Level level) noexcept {
+inline bool logger::enabled(kphp::log::Level level) noexcept {
   return std::to_underlying(level) <= k2::log_level_enabled();
 }
 
-inline Logger& Logger::set_extra_tags(std::string_view extra_tags_view) noexcept {
-  extra_tags_str = extra_tags_view;
-  return *this;
+inline void logger::add_extra_tag(std::string_view key, std::string_view value) noexcept {
+  extra_tags.insert_or_assign(kphp::stl::string<kphp::memory::script_allocator>{key}, value);
 }
 
-inline Logger& Logger::set_extra_info(std::string_view extra_info_view) noexcept {
-  extra_info_str = extra_info_view;
-  return *this;
+inline void logger::remove_extra_tag([[maybe_unused]] std::string_view key) noexcept {
+  extra_tags.erase(kphp::stl::string<kphp::memory::script_allocator>{key});
 }
 
-inline Logger& Logger::set_environment(std::string_view environment_view) noexcept {
-  environment = environment_view;
-  return *this;
+inline void logger::clear_extra_tag() noexcept {
+  extra_tags.clear();
 }
 
 } // namespace kphp::log

@@ -20,18 +20,18 @@
 
 namespace kphp::log {
 
-std::optional<std::reference_wrapper<Logger>> Logger::try_get() noexcept {
+std::optional<std::reference_wrapper<logger>> logger::try_get() noexcept {
   if (const auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
-    return const_cast<Logger&>(instance_state_ptr->instance_logger);
+    return const_cast<logger&>(instance_state_ptr->instance_logger);
   } else if (const auto* component_state_ptr{k2::component_state()}; component_state_ptr != nullptr) {
-    return const_cast<Logger&>(component_state_ptr->component_logger);
+    return const_cast<logger&>(component_state_ptr->component_logger);
   } else if (const auto* image_state_ptr{k2::image_state()}; image_state_ptr != nullptr) {
-    return const_cast<Logger&>(image_state_ptr->image_logger);
+    return const_cast<logger&>(image_state_ptr->image_logger);
   }
   return std::nullopt;
 }
 
-void Logger::statefull_log(Record record) const noexcept {
+void logger::statefull_log(record record) const noexcept {
   if (!enabled(record.level)) {
     return;
   }
@@ -44,21 +44,11 @@ void Logger::statefull_log(Record record) const noexcept {
 
   kphp::stl::vector<k2::LogTaggedEntry, kphp::memory::script_allocator> tagged_entries{};
   if (record.level == Level::warn || record.level == Level::error) {
-    static constexpr std::string_view EXTRA_TAGS_KEY = "tags";
-    static constexpr std::string_view EXTRA_INFO_KEY = "extra_info";
-    static constexpr std::string_view ENVIRONMENT_KEY = "env";
-
-    tagged_entries.reserve(3);
-    if (!extra_tags_str.empty()) {
+    tagged_entries.reserve(extra_tags.size());
+    for (const auto &[key, value] : extra_tags) {
       tagged_entries.push_back(k2::LogTaggedEntry{
-          .key = EXTRA_TAGS_KEY.data(), .value = extra_tags_str.data(), .key_len = EXTRA_TAGS_KEY.size(), .value_len = extra_tags_str.size()});
+          .key = key.data(), .value = value.data(), .key_len = key.size(), .value_len = value.size()});
     }
-    if (!extra_info_str.empty()) {
-      tagged_entries.push_back(k2::LogTaggedEntry{
-          .key = EXTRA_INFO_KEY.data(), .value = extra_info_str.data(), .key_len = EXTRA_INFO_KEY.size(), .value_len = extra_info_str.size()});
-    }
-    tagged_entries.push_back(
-        k2::LogTaggedEntry{.key = ENVIRONMENT_KEY.data(), .value = environment.data(), .key_len = ENVIRONMENT_KEY.size(), .value_len = environment.size()});
   }
   if (record.backtrace.has_value()) {
     static constexpr std::string_view BACKTRACE_KEY = "trace";

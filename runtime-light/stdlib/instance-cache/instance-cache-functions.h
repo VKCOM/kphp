@@ -13,7 +13,7 @@
 #include "runtime-common/stdlib/serialization/msgpack-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/component-api.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
 #include "runtime-light/stdlib/serialization/msgpack-functions.h"
 #include "runtime-light/streams/stream.h"

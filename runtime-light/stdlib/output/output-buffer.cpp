@@ -7,7 +7,7 @@
 #include <string_view>
 
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/stdlib/diagnostics/diagnostics.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
 
 void f$ob_start(const string& callback) noexcept {
