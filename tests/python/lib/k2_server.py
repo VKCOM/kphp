@@ -1,3 +1,4 @@
+import json
 import os
 import time
 
@@ -43,8 +44,8 @@ class K2Server(WebServer):
         super(K2Server, self).start(start_msgs)
 
         if self._is_json_log_enabled():
-            self.assert_json_log_tags(expect=[
-                {"msg": "Starting to accept clients.", "tags": set()}
+            self.assert_json_log(expect=[
+                {"msg": "Starting to accept clients."}
             ])
 
 
@@ -54,3 +55,26 @@ class K2Server(WebServer):
     def _is_json_log_enabled(self):
         return "--log-file" in self._options
 
+    def _process_json_log(self, log_record):
+        # remove K2-specific tags from logs and save only tags from KPHP
+        log_record.pop("time", "")
+        log_record.pop("thread_id", "")
+        log_record.pop("component_name", "")
+        log_record.pop("level", "")
+        log_record.pop("target", "")
+        log_record.pop("instance_id", "")
+        log_record.pop("file", "")
+        log_record.pop("line", "")
+
+        # convert raw string to python dict
+        tags = log_record.get("tags")
+        if tags is not None:
+            log_record["tags"] = json.loads(tags)
+        extra_info = log_record.get("extra_info")
+        if extra_info is not None:
+            log_record["extra_info"] = json.loads(extra_info)
+        print(log_record)
+
+        # remove trace
+        log_record.pop("trace", "")
+        return log_record

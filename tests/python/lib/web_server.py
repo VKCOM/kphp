@@ -92,36 +92,6 @@ class WebServer(Engine):
     def _process_json_log(self, log_record):
         return log_record
 
-    def assert_json_log_tags(self, expect, message="Can't wait expected json log", timeout=60):
-        """
-        Check web server json log contains tags
-        :param expect: Expected json record
-        :param message: Error message in case of failure
-        :param timeout: Json records waiting time
-        """
-        start = time.time()
-        expected_records = expect[:]
-
-        while expected_records:
-            self._assert_availability()
-            self._read_new_json_logs()
-            self._json_logs = list(filter(None, self._json_logs))
-            for index, json_log_record in enumerate(self._json_logs):
-                if not expected_records:
-                    return
-                expected_record = expected_records[0]
-                expected_msg = expected_record["msg"]
-                got_msg = json_log_record["msg"]
-                if re.search(expected_msg, got_msg):
-                    if expected_record["tags"].issubset(json_log_record.keys()):
-                        expected_records.pop(0)
-                        self._json_logs[index] = None
-
-            time.sleep(0.05)
-            if time.time() - start > timeout:
-                expected_str = json.dumps(obj=expected_records, indent=2)
-                raise RuntimeError("{}; Missed messages: {}".format(message, expected_str))
-
     def assert_json_log(self, expect, message="Can't wait expected json log", timeout=60):
         """
         Check kphp server json log
