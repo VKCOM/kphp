@@ -42,23 +42,24 @@ void Logger::statefull_log(Record record) const noexcept {
     return;
   }
 
-  static constexpr std::string_view EXTRA_TAGS_KEY = "tags";
-  static constexpr std::string_view EXTRA_INFO_KEY = "extra_info";
-  static constexpr std::string_view ENVIRONMENT_KEY = "env";
-
   kphp::stl::vector<k2::LogTaggedEntry, kphp::memory::script_allocator> tagged_entries{};
-  tagged_entries.reserve(4);
-  if (!extra_tags_str.empty()) {
-    tagged_entries.push_back(
-        k2::LogTaggedEntry{.key = EXTRA_TAGS_KEY.data(), .value = extra_tags_str.data(), .key_len = EXTRA_TAGS_KEY.size(), .value_len = extra_tags_str.size()});
-  }
-  if (!extra_info_str.empty()) {
-    tagged_entries.push_back(
-        k2::LogTaggedEntry{.key = EXTRA_INFO_KEY.data(), .value = extra_info_str.data(), .key_len = EXTRA_INFO_KEY.size(), .value_len = extra_info_str.size()});
-  }
-  tagged_entries.push_back(
-      k2::LogTaggedEntry{.key = ENVIRONMENT_KEY.data(), .value = environment.data(), .key_len = ENVIRONMENT_KEY.size(), .value_len = environment.size()});
+  if (record.level == Level::warn || record.level == Level::error) {
+    static constexpr std::string_view EXTRA_TAGS_KEY = "tags";
+    static constexpr std::string_view EXTRA_INFO_KEY = "extra_info";
+    static constexpr std::string_view ENVIRONMENT_KEY = "env";
 
+    tagged_entries.reserve(3);
+    if (!extra_tags_str.empty()) {
+      tagged_entries.push_back(k2::LogTaggedEntry{
+          .key = EXTRA_TAGS_KEY.data(), .value = extra_tags_str.data(), .key_len = EXTRA_TAGS_KEY.size(), .value_len = extra_tags_str.size()});
+    }
+    if (!extra_info_str.empty()) {
+      tagged_entries.push_back(k2::LogTaggedEntry{
+          .key = EXTRA_INFO_KEY.data(), .value = extra_info_str.data(), .key_len = EXTRA_INFO_KEY.size(), .value_len = extra_info_str.size()});
+    }
+    tagged_entries.push_back(
+        k2::LogTaggedEntry{.key = ENVIRONMENT_KEY.data(), .value = environment.data(), .key_len = ENVIRONMENT_KEY.size(), .value_len = environment.size()});
+  }
   if (record.backtrace.has_value()) {
     static constexpr std::string_view BACKTRACE_KEY = "trace";
     static constexpr size_t BACKTRACE_BUFFER_SIZE = 1024UZ * 4UZ;
