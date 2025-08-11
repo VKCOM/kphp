@@ -50,12 +50,16 @@ inline void f$kphp_set_context_on_error([[maybe_unused]] const array<mixed>& tag
   }
 
   auto& static_SB{RuntimeContext::get().static_SB.clean()};
-  if (!tags.empty() && impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags, static_SB)) [[likely]] {
+  if (tags.empty()) {
+    (*logger).get().set_extra_tags(std::string_view{});
+  } else if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags, static_SB)) [[likely]] {
     (*logger).get().set_extra_tags({static_SB.buffer(), static_SB.size()});
   }
   static_SB.clean();
 
-  if (!extra_info.empty() && impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info, static_SB)) [[likely]] {
+  if (extra_info.empty()) {
+    (*logger).get().set_extra_info(std::string_view{});
+  } else if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info, static_SB)) [[likely]] {
     (*logger).get().set_extra_info({static_SB.buffer(), static_SB.size()});
   }
   static_SB.clean();

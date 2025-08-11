@@ -56,10 +56,8 @@ void Logger::statefull_log(Record record) const noexcept {
     tagged_entries.push_back(
         k2::LogTaggedEntry{.key = EXTRA_INFO_KEY.data(), .value = extra_info_str.data(), .key_len = EXTRA_INFO_KEY.size(), .value_len = extra_info_str.size()});
   }
-  if (!environment.empty()) {
-    tagged_entries.push_back(
-        k2::LogTaggedEntry{.key = ENVIRONMENT_KEY.data(), .value = environment.data(), .key_len = ENVIRONMENT_KEY.size(), .value_len = environment.size()});
-  }
+  tagged_entries.push_back(
+      k2::LogTaggedEntry{.key = ENVIRONMENT_KEY.data(), .value = environment.data(), .key_len = ENVIRONMENT_KEY.size(), .value_len = environment.size()});
 
   if (record.backtrace.has_value()) {
     static constexpr std::string_view BACKTRACE_KEY = "trace";
