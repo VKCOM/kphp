@@ -47,7 +47,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
             ])
         self.assertEqual(resp.text, "ok")
         expect_log = [{
-            "msg": "aaa", "env": "", "tags": {"a": "b"}
+            "msg": "aaa", "tags": {"a": "b"}
         }] if self.should_use_k2() else [{
             "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "",
             "tags": {"uncaught": False, "a": "b"}
@@ -62,7 +62,7 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
             ])
         self.assertEqual(resp.text, "ok")
         expect_log = [{
-            "msg": "aaa", "env": "", "extra_info": {"a": "b"}
+            "msg": "aaa", "extra_info": {"a": "b"}
         }] if self.should_use_k2() else [{
             "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "",
             "tags": {"uncaught": False}, "extra_info": {"a": "b"}
@@ -139,10 +139,10 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
         self.assertEqual(resp.text, "ok")
         expect_log = [
             {"msg": "aaa", "env": "efg", "tags": {"a": "b"}, "extra_info": {"c": "d"}},
-            {"msg": "bbb", "env": ""},
+            {"msg": "bbb"},
             {"msg": "ccc", "env": "xxx"},
-            {"msg": "ddd", "env": "", "tags": {"aa": "bb"}},
-            {"msg": "eee", "env": "", "extra_info": {"cc": "dd"}}
+            {"msg": "ddd", "tags": {"aa": "bb"}},
+            {"msg": "eee", "extra_info": {"cc": "dd"}}
         ] if self.should_use_k2() else [
             {
                 "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "efg",
