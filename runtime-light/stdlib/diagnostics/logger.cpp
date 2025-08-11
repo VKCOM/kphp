@@ -31,7 +31,7 @@ std::optional<std::reference_wrapper<logger>> logger::try_get() noexcept {
   return std::nullopt;
 }
 
-void logger::statefull_log(record record) const noexcept {
+void logger::log_with_tags(record record) const noexcept {
   if (!enabled(record.level)) {
     return;
   }

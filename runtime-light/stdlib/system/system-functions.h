@@ -55,21 +55,21 @@ inline void f$kphp_set_context_on_error([[maybe_unused]] const array<mixed>& tag
   static constexpr std::string_view ENVIRONMENT_KEY = "env";
 
   auto& static_SB{RuntimeContext::get().static_SB.clean()};
-  logger.remove_extra_tag(EXTRA_TAGS_KEY);
+  logger.remove_extra_tag(kphp::log::logger::tag_key_t{EXTRA_TAGS_KEY});
   if (!tags.empty() && impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags, static_SB)) [[likely]] {
-    logger.add_extra_tag(EXTRA_TAGS_KEY, {static_SB.buffer(), static_SB.size()});
+    logger.add_extra_tag(kphp::log::logger::tag_key_t{EXTRA_TAGS_KEY}, {static_SB.buffer(), static_SB.size()});
   }
   static_SB.clean();
 
-  logger.remove_extra_tag(EXTRA_INFO_KEY);
+  logger.remove_extra_tag(kphp::log::logger::tag_key_t{EXTRA_INFO_KEY});
  if (!extra_info.empty() && impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info, static_SB)) [[likely]] {
-    logger.add_extra_tag(EXTRA_INFO_KEY, {static_SB.buffer(), static_SB.size()});
+    logger.add_extra_tag(kphp::log::logger::tag_key_t{EXTRA_INFO_KEY}, {static_SB.buffer(), static_SB.size()});
   }
   static_SB.clean();
 
-  logger.remove_extra_tag(ENVIRONMENT_KEY);
+  logger.remove_extra_tag(kphp::log::logger::tag_key_t{ENVIRONMENT_KEY});
   if (!env.empty()) {
-    logger.add_extra_tag(ENVIRONMENT_KEY, {env.c_str(), env.size()});
+    logger.add_extra_tag(kphp::log::logger::tag_key_t{ENVIRONMENT_KEY}, {env.c_str(), env.size()});
   }
 }
 

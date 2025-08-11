@@ -49,6 +49,8 @@ struct record {
 };
 
 struct logger final : vk::not_copyable {
+  using tag_key_t = kphp::stl::string<kphp::memory::script_allocator>;
+  using tag_value_t = kphp::stl::string<kphp::memory::script_allocator>;
 
   static void log(record record) noexcept;
 
@@ -56,24 +58,22 @@ struct logger final : vk::not_copyable {
   static void format_log(Level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
                          Args&&... args) noexcept;
 
-  void add_extra_tag(std::string_view key, std::string_view value) noexcept;
-  void remove_extra_tag(std::string_view key) noexcept;
+  void add_extra_tag(tag_key_t key, tag_value_t value) noexcept;
+  void remove_extra_tag(tag_key_t key) noexcept;
   void clear_extra_tag() noexcept;
 
   static std::optional<std::reference_wrapper<logger>> try_get() noexcept;
 
 private:
-  using tag_key_t = kphp::stl::string<kphp::memory::script_allocator>;
-  using tag_value_t = kphp::stl::string<kphp::memory::script_allocator>;
   kphp::stl::unordered_map<tag_key_t, tag_value_t, kphp::memory::script_allocator> extra_tags{};
 
   static bool enabled(Level level) noexcept;
 
-  static void stateless_log(record record) noexcept {
+  static void log_without_tags(record record) noexcept {
     k2::log(std::to_underlying(record.level), record.message, std::nullopt);
   }
 
-  void statefull_log(record record) const noexcept;
+  void log_with_tags(record record) const noexcept;
 };
 
 inline void logger::log(kphp::log::record record) noexcept {
@@ -82,9 +82,9 @@ inline void logger::log(kphp::log::record record) noexcept {
   }
 
   if (auto logger{logger::try_get()}; logger.has_value()) [[likely]] {
-    (*logger).get().statefull_log(std::move(record));
+    (*logger).get().log_with_tags(std::move(record));
   } else {
-    stateless_log(std::move(record));
+    log_without_tags(std::move(record));
   }
 }
 
@@ -109,12 +109,12 @@ inline bool logger::enabled(kphp::log::Level level) noexcept {
   return std::to_underlying(level) <= k2::log_level_enabled();
 }
 
-inline void logger::add_extra_tag(std::string_view key, std::string_view value) noexcept {
-  extra_tags.insert_or_assign(kphp::stl::string<kphp::memory::script_allocator>{key}, value);
+inline void logger::add_extra_tag(tag_key_t key, tag_key_t value) noexcept {
+  extra_tags.insert_or_assign(std::move(key), std::move(value));
 }
 
-inline void logger::remove_extra_tag([[maybe_unused]] std::string_view key) noexcept {
-  extra_tags.erase(kphp::stl::string<kphp::memory::script_allocator>{key});
+inline void logger::remove_extra_tag(tag_key_t key) noexcept {
+  extra_tags.erase(std::move(key));
 }
 
 inline void logger::clear_extra_tag() noexcept {
