@@ -40,10 +40,10 @@ using wrapped_arg_t = std::invoke_result_t<decltype(impl::wrap_log_argument<T>),
 
 } // namespace impl
 
-enum class Level : size_t { error = 1, warn, info, debug, trace }; // NOLINT
+enum class level : size_t { error = 1, warn, info, debug, trace }; // NOLINT
 
 struct record {
-  Level level;
+  level level;
   std::string_view message;
   std::optional<std::span<void* const>> backtrace;
 };
@@ -55,7 +55,7 @@ struct logger final : vk::not_copyable {
   static void log(record record) noexcept;
 
   template<typename... Args>
-  static void format_log(Level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
+  static void format_log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
                          Args&&... args) noexcept;
 
   void add_extra_tag(tag_key_t key, tag_value_t value) noexcept;
@@ -67,7 +67,7 @@ struct logger final : vk::not_copyable {
 private:
   kphp::stl::unordered_map<tag_key_t, tag_value_t, kphp::memory::script_allocator> extra_tags{};
 
-  static bool enabled(Level level) noexcept;
+  static bool enabled(level level) noexcept;
 
   static void log_without_tags(record record) noexcept {
     k2::log(std::to_underlying(record.level), record.message, std::nullopt);
@@ -89,7 +89,7 @@ inline void logger::log(kphp::log::record record) noexcept {
 }
 
 template<typename... Args>
-void logger::format_log(kphp::log::Level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
+void logger::format_log(kphp::log::level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
                         Args&&... args) noexcept {
   if (!enabled(level)) {
     return;
@@ -105,7 +105,7 @@ void logger::format_log(kphp::log::Level level, std::optional<std::span<void* co
   log({.level = level, .message = message, .backtrace = trace});
 }
 
-inline bool logger::enabled(kphp::log::Level level) noexcept {
+inline bool logger::enabled(kphp::log::level level) noexcept {
   return std::to_underlying(level) <= k2::log_level_enabled();
 }
 

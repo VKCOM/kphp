@@ -43,7 +43,7 @@ void logger::log_with_tags(record record) const noexcept {
   }
 
   kphp::stl::vector<k2::LogTaggedEntry, kphp::memory::script_allocator> tagged_entries{};
-  if (record.level == Level::warn || record.level == Level::error) {
+  if (record.level == level::warn || record.level == level::error) {
     tagged_entries.reserve(extra_tags.size());
     for (const auto &[key, value] : extra_tags) {
       tagged_entries.push_back(k2::LogTaggedEntry{
