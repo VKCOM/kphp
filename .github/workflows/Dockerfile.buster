@@ -3,9 +3,10 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 COPY tests/python/requirements.txt /tmp/
 
-RUN echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.list && \
-    echo "deb http://archive.debian.org/debian-security buster/updates main" >> /etc/apt/sources.list && \
-    echo "deb http://archive.debian.org/debian buster-updates main" >> /etc/apt/sources.list
+RUN echo "deb https://archive.debian.org/debian buster main" > /etc/apt/sources.list && \
+    echo "deb https://archive.debian.org/debian-security buster/updates main" >> /etc/apt/sources.list && \
+    echo "deb https://archive.debian.org/debian buster-updates main" >> /etc/apt/sources.list && \
+    echo "deb https://archive.debian.org/debian buster-backports main" >> /etc/apt/sources.list
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget lsb-release && \
