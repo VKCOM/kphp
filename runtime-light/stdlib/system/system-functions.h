@@ -42,7 +42,7 @@ inline int64_t f$numa_get_bound_node() noexcept {
   return -1;
 }
 
-inline void f$kphp_set_context_on_error(const array<mixed>& tags, const array<mixed>& extra_info, const string& env = {}) noexcept {
+inline void f$kphp_set_context_on_error(const array<mixed>& tags, const Optional<array<mixed>>& extra_info = {}, const Optional<string>& env = {}) noexcept {
   auto logger_opt{kphp::log::contextual_logger::try_get()};
   if (!logger_opt.has_value()) [[unlikely]] {
     return;
@@ -55,20 +55,20 @@ inline void f$kphp_set_context_on_error(const array<mixed>& tags, const array<mi
 
   auto& static_SB{RuntimeContext::get().static_SB.clean()};
   logger.remove_extra_tag(EXTRA_TAGS_KEY);
-  if (!tags.empty() && impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags, static_SB)) [[likely]] {
+  if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags, static_SB)) [[likely]] {
     logger.add_extra_tag(EXTRA_TAGS_KEY, {static_SB.buffer(), static_SB.size()});
   }
   static_SB.clean();
 
   logger.remove_extra_tag(EXTRA_INFO_KEY);
-  if (!extra_info.empty() && impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info, static_SB)) [[likely]] {
+  if (extra_info.has_value() && impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info.val(), static_SB)) [[likely]] {
     logger.add_extra_tag(EXTRA_INFO_KEY, {static_SB.buffer(), static_SB.size()});
   }
   static_SB.clean();
 
   logger.remove_extra_tag(ENVIRONMENT_KEY);
-  if (!env.empty()) {
-    logger.add_extra_tag(ENVIRONMENT_KEY, {env.c_str(), env.size()});
+  if (env.has_value()) {
+    logger.add_extra_tag(ENVIRONMENT_KEY, {env.val().c_str(), env.val().size()});
   }
 }
 
