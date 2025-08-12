@@ -17,7 +17,7 @@ RUN apt update && \
     apt update && \
     apt install -y --no-install-recommends \
       build-essential devscripts fakeroot git cmake make g++ lld gperf netcat patch re2c \
-      python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-setuptools && \
+      python3.7 python3-pip python3.7-distutils python3.7-dev libpython3.7-dev python3-jsonschema python3-setuptools && \
     apt install -y --no-install-recommends libfmt-dev libgtest-dev libgmock-dev libpcre3-dev \
       zlib1g-dev php7.4-dev unzip  && \
     # Install MySQL-related and PostgreSQL-related libraries from the Ubuntu 20.04 (Focal Fossa) repository.
