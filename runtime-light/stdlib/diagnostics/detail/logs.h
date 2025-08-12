@@ -5,8 +5,10 @@
 #pragma once
 
 #include <cstddef>
+#include <cstring>
 #include <format>
 #include <span>
+#include <string_view>
 #include <type_traits>
 
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
@@ -49,8 +51,11 @@ inline size_t resolve_log_trace(std::span<char> trace_buffer, std::span<void* co
     const auto [trace_out, trace_size]{std::format_to_n(trace_buffer.data(), trace_buffer.size() - 1, "{}", backtrace_addresses)};
     *trace_out = '\0';
     return trace_size;
+  } else {
+    static constexpr std::string_view DEFAULT_TRACE = "[]\0";
+    std::memcpy(trace_buffer.data(), DEFAULT_TRACE.data(), DEFAULT_TRACE.size() - 1); // ignore last \0
+    return DEFAULT_TRACE.size();
   }
-  return 0;
 }
 
 } // namespace impl
