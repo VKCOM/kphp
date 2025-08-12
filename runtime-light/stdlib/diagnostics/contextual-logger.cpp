@@ -2,7 +2,7 @@
 // Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/stdlib/diagnostics/tagged-logger.h"
+#include "runtime-light/stdlib/diagnostics/contextual-logger.h"
 
 #include <cstddef>
 #include <format>
@@ -18,22 +18,22 @@
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
-#include "runtime-light/stdlib/diagnostics/detail/logs-impl.h"
+#include "runtime-light/stdlib/diagnostics/detail/logs.h"
 
 namespace kphp::log {
 
-std::optional<std::reference_wrapper<tagged_logger>> tagged_logger::try_get() noexcept {
+std::optional<std::reference_wrapper<contextual_logger>> contextual_logger::try_get() noexcept {
   if (const auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
-    return const_cast<tagged_logger&>(instance_state_ptr->instance_logger);
+    return const_cast<contextual_logger&>(instance_state_ptr->instance_logger);
   } else if (const auto* component_state_ptr{k2::component_state()}; component_state_ptr != nullptr) {
-    return const_cast<tagged_logger&>(component_state_ptr->component_logger);
+    return const_cast<contextual_logger&>(component_state_ptr->component_logger);
   } else if (const auto* image_state_ptr{k2::image_state()}; image_state_ptr != nullptr) {
-    return const_cast<tagged_logger&>(image_state_ptr->image_logger);
+    return const_cast<contextual_logger&>(image_state_ptr->image_logger);
   }
   return std::nullopt;
 }
 
-void tagged_logger::log_with_tags(kphp::log::level level, std::optional<std::span<void* const>> trace, std::string_view message) const noexcept {
+void contextual_logger::log_with_tags(kphp::log::level level, std::optional<std::span<void* const>> trace, std::string_view message) const noexcept {
   kphp::stl::vector<k2::LogTaggedEntry, kphp::memory::script_allocator> tagged_entries{};
   if (level == level::warn || level == level::error) {
     tagged_entries.reserve(extra_tags.size());

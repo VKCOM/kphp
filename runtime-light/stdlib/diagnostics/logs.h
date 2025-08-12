@@ -13,8 +13,8 @@
 
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
+#include "runtime-light/stdlib/diagnostics/contextual-logger.h"
 #include "runtime-light/stdlib/diagnostics/raw-logger.h"
-#include "runtime-light/stdlib/diagnostics/tagged-logger.h"
 
 namespace kphp::log {
 
@@ -23,7 +23,7 @@ namespace impl {
 template<typename... Args>
 void select_logger_and_log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
                            Args&&... args) noexcept {
-  if (auto logger{tagged_logger::try_get()}; logger.has_value()) [[likely]] {
+  if (auto logger{contextual_logger::try_get()}; logger.has_value()) [[likely]] {
     (*logger).get().log(level, trace, fmt, std::forward<Args>(args)...);
   } else {
     raw_logger::log(level, fmt, std::forward<Args>(args)...);

@@ -6,15 +6,17 @@
 
 #include <format>
 #include <optional>
-#include <span>
 #include <utility>
+#include <cstddef>
 
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/diagnostics/detail/logs-impl.h"
+#include "runtime-light/stdlib/diagnostics/detail/logs.h"
 
 namespace kphp::log {
 
 struct raw_logger {
+  raw_logger() noexcept = delete;
+
   template<typename... Args>
   static void log(level level, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
     if (std::to_underlying(level) > k2::log_level_enabled()) {

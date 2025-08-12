@@ -8,16 +8,17 @@
 #include <format>
 #include <optional>
 #include <span>
+#include <string_view>
 #include <utility>
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/diagnostics/detail/logs-impl.h"
+#include "runtime-light/stdlib/diagnostics/detail/logs.h"
 
 namespace kphp::log {
 
-struct tagged_logger {
+struct contextual_logger {
   using tag_key_t = kphp::stl::string<kphp::memory::script_allocator>;
   using tag_value_t = kphp::stl::string<kphp::memory::script_allocator>;
 
@@ -28,7 +29,7 @@ struct tagged_logger {
   void remove_extra_tag(tag_key_t key) noexcept;
   void clear_extra_tag() noexcept;
 
-  static std::optional<std::reference_wrapper<tagged_logger>> try_get() noexcept;
+  static std::optional<std::reference_wrapper<contextual_logger>> try_get() noexcept;
 
 private:
   kphp::stl::unordered_map<tag_key_t, tag_value_t, kphp::memory::script_allocator> extra_tags{};
@@ -37,8 +38,8 @@ private:
 };
 
 template<typename... Args>
-void tagged_logger::log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
-                        Args&&... args) const noexcept {
+void contextual_logger::log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
+                            Args&&... args) const noexcept {
   if (std::to_underlying(level) > k2::log_level_enabled()) {
     return;
   }
@@ -52,15 +53,15 @@ void tagged_logger::log(level level, std::optional<std::span<void* const>> trace
   log_with_tags(level, trace, message);
 }
 
-inline void tagged_logger::add_extra_tag(tag_key_t key, tag_key_t value) noexcept {
+inline void contextual_logger::add_extra_tag(tag_key_t key, tag_key_t value) noexcept {
   extra_tags.insert_or_assign(std::move(key), std::move(value));
 }
 
-inline void tagged_logger::remove_extra_tag(tag_key_t key) noexcept {
+inline void contextual_logger::remove_extra_tag(tag_key_t key) noexcept {
   extra_tags.erase(std::move(key));
 }
 
-inline void tagged_logger::clear_extra_tag() noexcept {
+inline void contextual_logger::clear_extra_tag() noexcept {
   extra_tags.clear();
 }
 } // namespace kphp::log

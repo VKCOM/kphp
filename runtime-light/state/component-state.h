@@ -12,11 +12,11 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/diagnostics/tagged-logger.h"
+#include "runtime-light/stdlib/diagnostics/contextual-logger.h"
 
 struct ComponentState final : private vk::not_copyable {
   AllocatorState component_allocator_state{INIT_COMPONENT_ALLOCATOR_SIZE, 0};
-  kphp::log::tagged_logger component_logger;
+  kphp::log::contextual_logger component_logger;
 
   const uint32_t argc{k2::args_count()};
   const uint32_t envc{k2::env_count()};

@@ -14,8 +14,8 @@
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/state/image-state.h"
+#include "runtime-light/stdlib/diagnostics/contextual-logger.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/stdlib/diagnostics/tagged-logger.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/system/system-state.h"
 
@@ -44,7 +44,7 @@ inline int64_t f$numa_get_bound_node() noexcept {
 
 inline void f$kphp_set_context_on_error([[maybe_unused]] const array<mixed>& tags, [[maybe_unused]] const array<mixed>& extra_info,
                                         [[maybe_unused]] const string& env = {}) noexcept {
-  auto logger_opt{kphp::log::tagged_logger::try_get()};
+  auto logger_opt{kphp::log::contextual_logger::try_get()};
   if (!logger_opt.has_value()) [[unlikely]] {
     return;
   }
@@ -55,21 +55,21 @@ inline void f$kphp_set_context_on_error([[maybe_unused]] const array<mixed>& tag
   static constexpr std::string_view ENVIRONMENT_KEY = "env";
 
   auto& static_SB{RuntimeContext::get().static_SB.clean()};
-  logger.remove_extra_tag(kphp::log::tagged_logger::tag_key_t{EXTRA_TAGS_KEY});
+  logger.remove_extra_tag(kphp::log::contextual_logger::tag_key_t{EXTRA_TAGS_KEY});
   if (!tags.empty() && impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags, static_SB)) [[likely]] {
-    logger.add_extra_tag(kphp::log::tagged_logger::tag_key_t{EXTRA_TAGS_KEY}, {static_SB.buffer(), static_SB.size()});
+    logger.add_extra_tag(kphp::log::contextual_logger::tag_key_t{EXTRA_TAGS_KEY}, {static_SB.buffer(), static_SB.size()});
   }
   static_SB.clean();
 
-  logger.remove_extra_tag(kphp::log::tagged_logger::tag_key_t{EXTRA_INFO_KEY});
+  logger.remove_extra_tag(kphp::log::contextual_logger::tag_key_t{EXTRA_INFO_KEY});
   if (!extra_info.empty() && impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info, static_SB)) [[likely]] {
-    logger.add_extra_tag(kphp::log::tagged_logger::tag_key_t{EXTRA_INFO_KEY}, {static_SB.buffer(), static_SB.size()});
+    logger.add_extra_tag(kphp::log::contextual_logger::tag_key_t{EXTRA_INFO_KEY}, {static_SB.buffer(), static_SB.size()});
   }
   static_SB.clean();
 
-  logger.remove_extra_tag(kphp::log::tagged_logger::tag_key_t{ENVIRONMENT_KEY});
+  logger.remove_extra_tag(kphp::log::contextual_logger::tag_key_t{ENVIRONMENT_KEY});
   if (!env.empty()) {
-    logger.add_extra_tag(kphp::log::tagged_logger::tag_key_t{ENVIRONMENT_KEY}, {env.c_str(), env.size()});
+    logger.add_extra_tag(kphp::log::contextual_logger::tag_key_t{ENVIRONMENT_KEY}, {env.c_str(), env.size()});
   }
 }
 
