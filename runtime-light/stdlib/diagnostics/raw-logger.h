@@ -4,10 +4,12 @@
 
 #pragma once
 
+#include <array>
+#include <cstddef>
 #include <format>
 #include <optional>
+#include <string_view>
 #include <utility>
-#include <cstddef>
 
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/detail/logs.h"
