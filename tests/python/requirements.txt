@@ -6,6 +6,7 @@ requests==2.31.0
 urllib3==1.26.12
 requests-toolbelt==0.9.1
 pytest==7.3.1
+pytest-durations==1.5.2
 pytest-mysql==2.3.1
 pytest-postgresql==4.1.1
 psycopg==3.1.9
