@@ -53,8 +53,8 @@ inline size_t resolve_log_trace(std::span<char> trace_buffer, std::span<void* co
     return trace_size;
   } else {
     static constexpr std::string_view DEFAULT_TRACE = "[]\0";
-    std::memcpy(trace_buffer.data(), DEFAULT_TRACE.data(), DEFAULT_TRACE.size() - 1); // ignore last \0
-    return DEFAULT_TRACE.size();
+    std::memcpy(trace_buffer.data(), DEFAULT_TRACE.data(), DEFAULT_TRACE.size());
+    return DEFAULT_TRACE.size() - 1; // ignore last \0
   }
 }
 
