@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -14,6 +15,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
+#include "runtime-light/stdlib/diagnostics/error-handling-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace error_handling_impl_ {
@@ -86,4 +88,34 @@ inline array<array<string>> f$debug_backtrace() noexcept {
   }
   kphp::log::warning("cannot resolve virtual addresses to debug information");
   return {};
+}
+
+inline int64_t f$error_reporting(int64_t level) noexcept {
+  auto& error_handling_st{ErrorHandlingState::get()};
+  int64_t prev{error_handling_st.minimum_log_level};
+  if (level != 0 && (level & ErrorHandlingState::SUPPORTED_ERROR_LEVELS) == 0) {
+    // if level is unsupported error level, set it as E_ALL
+    level = E_ALL;
+  }
+  error_handling_st.minimum_log_level = 0;
+  if ((level & E_ALL) == E_ALL) {
+    error_handling_st.minimum_log_level |= static_cast<int64_t>(E_ALL);
+  }
+  if ((level & E_NOTICE) == E_NOTICE) {
+    error_handling_st.minimum_log_level |= static_cast<int64_t>(E_NOTICE);
+  }
+  if ((level & E_WARNING) == E_WARNING) {
+    error_handling_st.minimum_log_level |= static_cast<int64_t>(E_WARNING);
+  }
+  if ((level & E_ERROR) == E_ERROR) {
+    error_handling_st.minimum_log_level |= static_cast<int64_t>(E_ERROR);
+  }
+  if (level == 0) {
+    error_handling_st.minimum_log_level = 0;
+  }
+  return prev;
+}
+
+inline int64_t f$error_reporting() noexcept {
+  return ErrorHandlingState::get().minimum_log_level;
 }

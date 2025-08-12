@@ -14,6 +14,7 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
 #include "runtime-light/stdlib/diagnostics/contextual-logger.h"
+#include "runtime-light/stdlib/diagnostics/error-handling-state.h"
 #include "runtime-light/stdlib/diagnostics/raw-logger.h"
 
 namespace kphp::log {
