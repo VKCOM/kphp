@@ -95,7 +95,7 @@ inline void contextual_logger::add_extra_tag(std::string_view key, std::string_v
   }
 }
 
-inline void contextual_logger::remove_extra_tag([[maybe_unused]] std::string_view key) noexcept {
+inline void contextual_logger::remove_extra_tag(std::string_view key) noexcept {
   if (auto it{extra_tags.find(key)}; it != extra_tags.end()) {
     extra_tags.erase(it);
   }
