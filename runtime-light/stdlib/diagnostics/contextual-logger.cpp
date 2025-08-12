@@ -9,7 +9,6 @@
 #include <optional>
 #include <span>
 #include <string_view>
-#include <type_traits>
 #include <utility>
 
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -18,6 +17,7 @@
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
+#include "runtime-light/stdlib/diagnostics/backtrace.h"
 #include "runtime-light/stdlib/diagnostics/detail/logs.h"
 
 namespace kphp::log {
