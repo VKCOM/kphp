@@ -31,7 +31,7 @@ They perform complex scenarios like: compile and start HTTP server, send request
 
 Before running them, you should once perform a setup:
 ```bash
-pip3 install --user -r PHP/tests/python/requirements.txt
+pip3 install --user -r tests/requirements.txt
 ```
 
 To run, use just one-line command:

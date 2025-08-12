@@ -1,7 +1,7 @@
 FROM debian:buster
 ARG DEBIAN_FRONTEND=noninteractive
 
-COPY tests/python/requirements.txt /tmp/
+COPY tests/requirements.txt /tmp/
 
 RUN echo "deb http://archive.debian.org/debian buster main contrib non-free" > /etc/apt/sources.list && \
     echo "deb http://archive.debian.org/debian-security buster/updates main contrib non-free" >> /etc/apt/sources.list && \

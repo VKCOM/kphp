@@ -2,8 +2,8 @@ wheel==0.38.1
 jsonschema==4.17.3
 portalocker==2.7.0
 psutil==5.9.5
-requests==2.32.2
-urllib3==2.0.2
+requests==2.31.0
+urllib3==1.26.12
 requests-toolbelt==0.9.1
 pytest==7.3.1
 pytest-durations==1.2.0
