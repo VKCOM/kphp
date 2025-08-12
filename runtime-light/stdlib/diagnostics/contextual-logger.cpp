@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <format>
+#include <functional>
 #include <optional>
 #include <span>
 #include <string_view>
