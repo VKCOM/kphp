@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <format>
 #include <span>
+#include <string_view>
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
