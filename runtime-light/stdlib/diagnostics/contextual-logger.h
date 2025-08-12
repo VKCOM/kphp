@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <format>
+#include <functional>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -18,21 +19,54 @@
 
 namespace kphp::log {
 
-struct contextual_logger {
+class contextual_logger {
   using tag_key_t = kphp::stl::string<kphp::memory::script_allocator>;
   using tag_value_t = kphp::stl::string<kphp::memory::script_allocator>;
 
+  struct extra_tags_hash final {
+    using is_transparent = void;
+
+    size_t operator()(std::string_view sv) const noexcept {
+      return std::hash<std::string_view>{}(sv);
+    }
+
+    size_t operator()(const tag_key_t& s) const noexcept {
+      return std::hash<tag_key_t>{}(s);
+    }
+  };
+
+  struct extra_tags_equal final {
+    using is_transparent = void;
+
+    constexpr bool operator()(std::string_view lhs, std::string_view rhs) const noexcept {
+      return lhs == rhs;
+    }
+
+    constexpr bool operator()(const tag_key_t& lhs, const tag_key_t& rhs) const noexcept {
+      return lhs == rhs;
+    }
+
+    constexpr bool operator()(std::string_view lhs, const tag_key_t& rhs) const noexcept {
+      return lhs == rhs;
+    }
+
+    constexpr bool operator()(const tag_key_t& lhs, std::string_view rhs) const noexcept {
+      return lhs == rhs;
+    }
+  };
+
+public:
   template<typename... Args>
   void log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) const noexcept;
 
-  void add_extra_tag(tag_key_t key, tag_value_t value) noexcept;
-  void remove_extra_tag(tag_key_t key) noexcept;
+  void add_extra_tag(std::string_view key, std::string_view value) noexcept;
+  void remove_extra_tag(std::string_view key) noexcept;
   void clear_extra_tag() noexcept;
 
   static std::optional<std::reference_wrapper<contextual_logger>> try_get() noexcept;
 
 private:
-  kphp::stl::unordered_map<tag_key_t, tag_value_t, kphp::memory::script_allocator> extra_tags{};
+  kphp::stl::unordered_map<tag_key_t, tag_value_t, kphp::memory::script_allocator, extra_tags_hash, extra_tags_equal> extra_tags{};
 
   void log_with_tags(level level, std::optional<std::span<void* const>> trace, std::string_view message) const noexcept;
 };
@@ -53,12 +87,18 @@ void contextual_logger::log(level level, std::optional<std::span<void* const>> t
   log_with_tags(level, trace, message);
 }
 
-inline void contextual_logger::add_extra_tag(tag_key_t key, tag_key_t value) noexcept {
-  extra_tags.insert_or_assign(std::move(key), std::move(value));
+inline void contextual_logger::add_extra_tag(std::string_view key, std::string_view value) noexcept {
+  if (auto it{extra_tags.find(key)}; it == extra_tags.end()) {
+    extra_tags.emplace(key, value);
+  } else {
+    it->second = value;
+  }
 }
 
-inline void contextual_logger::remove_extra_tag(tag_key_t key) noexcept {
-  extra_tags.erase(std::move(key));
+inline void contextual_logger::remove_extra_tag([[maybe_unused]] std::string_view key) noexcept {
+  if (auto it{extra_tags.find(key)}; it != extra_tags.end()) {
+    extra_tags.erase(it);
+  }
 }
 
 inline void contextual_logger::clear_extra_tag() noexcept {
