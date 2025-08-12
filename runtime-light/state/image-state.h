@@ -14,6 +14,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
