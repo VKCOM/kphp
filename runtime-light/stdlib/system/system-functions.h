@@ -42,8 +42,7 @@ inline int64_t f$numa_get_bound_node() noexcept {
   return -1;
 }
 
-inline void f$kphp_set_context_on_error([[maybe_unused]] const array<mixed>& tags, [[maybe_unused]] const array<mixed>& extra_info,
-                                        [[maybe_unused]] const string& env = {}) noexcept {
+inline void f$kphp_set_context_on_error(const array<mixed>& tags, const array<mixed>& extra_info, const string& env = {}) noexcept {
   auto logger_opt{kphp::log::contextual_logger::try_get()};
   if (!logger_opt.has_value()) [[unlikely]] {
     return;
