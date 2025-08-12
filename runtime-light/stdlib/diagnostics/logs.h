@@ -26,7 +26,7 @@ void select_logger_and_log(level level, std::optional<std::span<void* const>> tr
   if (auto logger{contextual_logger::try_get()}; logger.has_value()) [[likely]] {
     (*logger).get().log(level, trace, fmt, std::forward<Args>(args)...);
   } else {
-    raw_logger::log(level, fmt, std::forward<Args>(args)...);
+    raw_logger::log(level, trace, fmt, std::forward<Args>(args)...);
   }
 }
 } // namespace impl

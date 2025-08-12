@@ -81,10 +81,8 @@ void contextual_logger::log(level level, std::optional<std::span<void* const>> t
 
   static constexpr size_t LOG_BUFFER_SIZE = 512UZ;
   std::array<char, LOG_BUFFER_SIZE> log_buffer; // NOLINT
-  auto [out, size]{std::format_to_n<decltype(log_buffer.data()), impl::wrapped_arg_t<Args>...>(log_buffer.data(), log_buffer.size() - 1, fmt,
-                                                                                               impl::wrap_log_argument(std::forward<Args>(args))...)};
-  *out = '\0';
-  auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(size)}};
+  size_t message_size{impl::format_log_message(log_buffer, fmt, std::forward<Args>(args)...)};
+  auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(message_size)}};
   log_with_tags(level, trace, message);
 }
 

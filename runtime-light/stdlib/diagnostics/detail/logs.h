@@ -4,7 +4,12 @@
 
 #pragma once
 
+#include <cstddef>
+#include <format>
+#include <span>
 #include <type_traits>
+
+#include "runtime-light/stdlib/diagnostics/backtrace.h"
 
 namespace kphp::log {
 
@@ -26,6 +31,27 @@ constexpr auto wrap_log_argument(T&& t) noexcept -> decltype(auto) {
 
 template<typename T>
 using wrapped_arg_t = std::invoke_result_t<decltype(impl::wrap_log_argument<T>), T>;
+
+template<typename... Args>
+size_t format_log_message(std::span<char> message_buffer, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
+  auto [out, size]{std::format_to_n<decltype(message_buffer.data()), impl::wrapped_arg_t<Args>...>(message_buffer.data(), message_buffer.size() - 1, fmt,
+                                                                                                   impl::wrap_log_argument(std::forward<Args>(args))...)};
+  *out = '\0';
+  return size;
+}
+
+inline size_t resolve_log_trace(std::span<char> trace_buffer, std::span<void* const> raw_trace) noexcept {
+  if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(raw_trace)}; !backtrace_symbols.empty()) {
+    const auto [trace_out, trace_size]{std::format_to_n(trace_buffer.data(), trace_buffer.size() - 1, "\n{}", backtrace_symbols)};
+    *trace_out = '\0';
+    return trace_size;
+  } else if (auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(raw_trace)}; !backtrace_addresses.empty()) {
+    const auto [trace_out, trace_size]{std::format_to_n(trace_buffer.data(), trace_buffer.size() - 1, "{}", backtrace_addresses)};
+    *trace_out = '\0';
+    return trace_size;
+  }
+  return 0;
+}
 
 } // namespace impl
 
