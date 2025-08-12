@@ -2,11 +2,13 @@
 // Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/stdlib/diagnostics/logger.h"
+#include "runtime-light/stdlib/diagnostics/tagged-logger.h"
 
 #include <cstddef>
 #include <format>
 #include <optional>
+#include <span>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 
@@ -16,44 +18,33 @@
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/state/instance-state.h"
-#include "runtime-light/stdlib/diagnostics/backtrace.h"
+#include "runtime-light/stdlib/diagnostics/detail/logs-impl.h"
 
 namespace kphp::log {
 
-std::optional<std::reference_wrapper<logger>> logger::try_get() noexcept {
+std::optional<std::reference_wrapper<tagged_logger>> tagged_logger::try_get() noexcept {
   if (const auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
-    return const_cast<logger&>(instance_state_ptr->instance_logger);
+    return const_cast<tagged_logger&>(instance_state_ptr->instance_logger);
   } else if (const auto* component_state_ptr{k2::component_state()}; component_state_ptr != nullptr) {
-    return const_cast<logger&>(component_state_ptr->component_logger);
+    return const_cast<tagged_logger&>(component_state_ptr->component_logger);
   } else if (const auto* image_state_ptr{k2::image_state()}; image_state_ptr != nullptr) {
-    return const_cast<logger&>(image_state_ptr->image_logger);
+    return const_cast<tagged_logger&>(image_state_ptr->image_logger);
   }
   return std::nullopt;
 }
 
-void logger::log_with_tags(record record) const noexcept {
-  if (!enabled(record.level)) {
-    return;
-  }
-
-  if (auto image_st{ImageState::try_get()}; !image_st.has_value()) [[unlikely]] {
-    // If allocator isn't available
-    k2::log(std::to_underlying(record.level), record.message, std::nullopt);
-    return;
-  }
-
+void tagged_logger::log_with_tags(kphp::log::level level, std::optional<std::span<void* const>> trace, std::string_view message) const noexcept {
   kphp::stl::vector<k2::LogTaggedEntry, kphp::memory::script_allocator> tagged_entries{};
-  if (record.level == level::warn || record.level == level::error) {
+  if (level == level::warn || level == level::error) {
     tagged_entries.reserve(extra_tags.size());
-    for (const auto &[key, value] : extra_tags) {
-      tagged_entries.push_back(k2::LogTaggedEntry{
-          .key = key.data(), .value = value.data(), .key_len = key.size(), .value_len = value.size()});
+    for (const auto& [key, value] : extra_tags) {
+      tagged_entries.push_back(k2::LogTaggedEntry{.key = key.data(), .value = value.data(), .key_len = key.size(), .value_len = value.size()});
     }
   }
-  if (record.backtrace.has_value()) {
+  if (trace.has_value()) {
     static constexpr std::string_view BACKTRACE_KEY = "trace";
     static constexpr size_t BACKTRACE_BUFFER_SIZE = 1024UZ * 4UZ;
-    const auto& raw_backtrace{*record.backtrace};
+    const auto& raw_backtrace{*trace};
     std::array<char, BACKTRACE_BUFFER_SIZE> backtrace_buffer; // NOLINT
     std::string_view backtrace{"[]"};
     if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(raw_backtrace)}; !backtrace_symbols.empty()) {
@@ -67,9 +58,9 @@ void logger::log_with_tags(record record) const noexcept {
     }
     tagged_entries.push_back(
         k2::LogTaggedEntry{.key = BACKTRACE_KEY.data(), .value = backtrace.data(), .key_len = BACKTRACE_KEY.size(), .value_len = backtrace.size()});
-    k2::log(std::to_underlying(record.level), record.message, tagged_entries);
+    k2::log(std::to_underlying(level), message, tagged_entries);
     return;
   }
-  k2::log(std::to_underlying(record.level), record.message, tagged_entries);
+  k2::log(std::to_underlying(level), message, tagged_entries);
 }
 } // namespace kphp::log
