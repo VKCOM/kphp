@@ -12,6 +12,7 @@
 #include <string_view>
 #include <utility>
 
+#include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -19,7 +20,7 @@
 
 namespace kphp::log {
 
-class contextual_logger {
+class contextual_logger final : vk::not_copyable {
   using tag_key_t = kphp::stl::string<kphp::memory::script_allocator>;
   using tag_value_t = kphp::stl::string<kphp::memory::script_allocator>;
 

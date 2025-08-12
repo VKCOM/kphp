@@ -16,7 +16,7 @@
 
 namespace kphp::log {
 
-struct raw_logger {
+struct raw_logger final {
   raw_logger() noexcept = delete;
 
   template<typename... Args>
