@@ -12,3 +12,7 @@ inline int64_t f$mt_getrandmax() noexcept {
   // a number that exceeds this limit into mt_rand()
   return std::numeric_limits<int32_t>::max();
 }
+
+inline int64_t f$getrandmax() noexcept {
+  return f$mt_getrandmax();
+}
