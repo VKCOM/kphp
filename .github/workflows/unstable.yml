@@ -23,7 +23,7 @@ jobs:
       matrix:
         include:
           - os: trixie
-            compiler: g++-13
+            compiler: g++-12
             cpp: 20
             asan: off
             ubsan: off

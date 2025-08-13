@@ -2674,7 +2674,7 @@ int uniformize(struct tl_combinator_tree* L, struct tl_combinator_tree* R, tree_
   return 0;
 }
 
-#if __GNUC__ >= 13
+#if __GNUC__ >= 12
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdangling-pointer"
 #endif
