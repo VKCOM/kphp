@@ -49,7 +49,7 @@ jobs:
         id: docker-image-cache
         with:
           path: kphp-build-env-${{matrix.os}}.tar
-          key: docker-image-cache-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*', 'tests/requirements.txt') }}
+          key: docker-image-cache-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*', 'tests/python/requirements.txt') }}
 
       - name: Build and save docker image
         if: steps.docker-image-cache.outputs.cache-hit != 'true'

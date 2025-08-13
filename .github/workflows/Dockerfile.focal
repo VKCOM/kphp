@@ -1,7 +1,7 @@
 FROM ubuntu:20.04
 ARG DEBIAN_FRONTEND=noninteractive
 
-COPY tests/requirements.txt /tmp/
+COPY tests/python/requirements.txt /tmp/
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends apt-utils ca-certificates gnupg wget pkg-config software-properties-common && \
