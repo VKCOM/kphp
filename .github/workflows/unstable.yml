@@ -27,15 +27,15 @@ jobs:
             cpp: 20
             asan: off
             ubsan: off
-            mysql: off
-            pgsql: off
+            mysql: on
+            pgsql: on
           - os: trixie
             compiler: clang++-19
             cpp: 20
             asan: off
             ubsan: off
-            mysql: off
-            pgsql: off
+            mysql: on
+            pgsql: on
 
     name: "${{matrix.os}} / ${{matrix.compiler}} / c++${{matrix.cpp}} / asan=${{matrix.asan}} / ubsan=${{matrix.ubsan}}"
 
@@ -111,6 +111,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: steps.python_tests.outcome == 'failure'
         with:
+          name: pytest-result-${{ matrix.os }}-${{matrix.compiler}}
           path: ${{runner.temp}}/_tmp/
 
       - name: Fail pipeline if python tests failed

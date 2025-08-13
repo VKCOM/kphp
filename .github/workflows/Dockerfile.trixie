@@ -9,19 +9,27 @@ ARG CLANG_VERSION=19
 RUN apt-get update
 
 RUN apt-get install -y --no-install-recommends \
-    git cmake-data cmake make \
+    git cmake-data cmake make pkg-config \
     g++ g++-${GPP_VERSION} clang-${CLANG_VERSION} \
     gperf netcat-openbsd patch re2c wget \
     libfmt-dev libgtest-dev libgmock-dev zlib1g-dev
 
-COPY tests/python/requirements-trixie.txt /tmp/requirements.txt
-
-# Python
 RUN apt-get install -y --no-install-recommends \
     python${PYTHON_VERSION}  \
     python${PYTHON_VERSION}-dev  \
-    python3-pip \
-    && python${PYTHON_VERSION} -m pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
+    python3-pip
+
+# PostgreSQL
+RUN wget -O /etc/apt/trusted.gpg.d/pgdg-key.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    && echo "deb https://apt.postgresql.org/pub/repos/apt trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update && apt-get install -y --no-install-recommends postgresql-14 libpq-dev
+
+# MySQL
+RUN apt-get install -y --no-install-recommends default-mysql-server default-libmysqlclient-dev
+
+# Python
+COPY tests/python/requirements-trixie.txt /tmp/requirements.txt
+RUN python${PYTHON_VERSION} -m pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
 
 # PHP
 RUN wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg \
