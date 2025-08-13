@@ -53,9 +53,9 @@ static int bb_writer_rotate(bb_writer_t* W, bb_rotation_point_t* p) {
 
 /******************** replay binlog ********************/
 void bbr_replay_init(bb_reader_t* R) {
-  bbr_replay_extra_t* e = static_cast<bbr_replay_extra_t*>(calloc(sizeof(*e), 1));
+  bbr_replay_extra_t* e = static_cast<bbr_replay_extra_t*>(calloc( 1, sizeof(*e)));
   assert(e);
-  e->wait_job_cb = static_cast<bb_wait_job_cb_t*>(calloc(sizeof(*e->wait_job_cb), 1));
+  e->wait_job_cb = static_cast<bb_wait_job_cb_t*>(calloc(1, sizeof(*e->wait_job_cb)));
   R->extra = e;
 }
 

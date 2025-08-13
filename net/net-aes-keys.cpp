@@ -31,7 +31,7 @@ static size_t aes_loaded_keys_size;
 aes_key_t *default_aes_key;
 
 aes_key_t *create_aes_key() {
-  aes_key_t *key = static_cast<aes_key_t*>(calloc(sizeof(*key), 1));
+  aes_key_t *key = static_cast<aes_key_t*>(calloc( 1, sizeof(*key)));
   assert(!posix_memalign((void **) &key->key, 4096, AES_KEY_MAX_LEN));
 
   our_madvise(key->key, AES_KEY_MAX_LEN, MADV_DONTDUMP);
