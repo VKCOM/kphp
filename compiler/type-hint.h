@@ -429,7 +429,7 @@ public:
   const TypeHint *replace_children_custom(const ReplacerCallbackT &callback) const final;
   void recalc_type_data_in_context_of_call(TypeData *dst, VertexPtr func_call) const final;
 
-  ClassPtr resolve() const { return klass ?: resolve_and_set_klass(); }
+  ClassPtr resolve() const { return klass ? klass : resolve_and_set_klass(); }
 };
 
 /**
