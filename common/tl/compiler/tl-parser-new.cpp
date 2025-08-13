@@ -2674,6 +2674,10 @@ int uniformize(struct tl_combinator_tree* L, struct tl_combinator_tree* R, tree_
   return 0;
 }
 
+#if __GNUC__ >= 13
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdangling-pointer"
+#endif
 void tl_type_check(struct tl_type* t) {
   if (!__ok) {
     return;
