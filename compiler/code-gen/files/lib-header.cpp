@@ -34,6 +34,9 @@ void LibHeaderTxt::compile(CodeGenerator &W) const {
   W << StaticLibraryRunGlobal(gen_out_style::txt) << ';' << NL << NL;
 
   for (const auto &function: exported_functions) {
+    if (function->is_interruptible) {
+      W << "/** @kphp-extern-func-info interruptible */" << NL;
+    }
     W << FunctionDeclaration(function, true, gen_out_style::txt) << ";" << NL;
   }
 
