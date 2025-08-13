@@ -19,7 +19,14 @@ jobs:
         include:
           - os: trixie
             compiler: g++-14
-            cpp: 17
+            cpp: 20
+            asan: off
+            ubsan: off
+            mysql: off
+            pgsql: off
+          - os: trixie
+            compiler: clang++-19
+            cpp: 20
             asan: off
             ubsan: off
             mysql: off

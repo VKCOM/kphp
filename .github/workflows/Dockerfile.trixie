@@ -7,25 +7,24 @@ ARG PYTHON_VERSION=3.13
 RUN apt-get update
 
 RUN apt-get install -y --no-install-recommends \
-      git cmake-data cmake make g++ gperf netcat-openbsd patch re2c wget
+      git cmake-data cmake make g++ clang gperf netcat-openbsd patch re2c wget
+
+COPY tests/python/requirements-trixie.txt /tmp/requirements.txt
 
 # Python
 RUN apt-get install -y --no-install-recommends \
     python${PYTHON_VERSION}  \
     python${PYTHON_VERSION}-dev  \
-    python3-pip
-
-COPY tests/python/requirements-trixie.txt /tmp/requirements.txt
-
-RUN python${PYTHON_VERSION} -m pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
+    python3-pip \
+    && python${PYTHON_VERSION} -m pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
 
 RUN apt-get install -y --no-install-recommends \
       libfmt-dev libgtest-dev libgmock-dev zlib1g-dev
 
+# PHP
 RUN wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg \
-    && echo "deb https://packages.sury.org/php trixie main" > /etc/apt/sources.list.d/php.list
-
-RUN apt-get update && apt-get install -y --no-install-recommends php${PHP_VERSION}-dev \
+    && echo "deb https://packages.sury.org/php trixie main" > /etc/apt/sources.list.d/php.list \
+    && apt-get update && apt-get install -y --no-install-recommends php${PHP_VERSION}-dev \
     && update-alternatives --set php /usr/bin/php${PHP_VERSION}
 
 RUN rm -rf /var/lib/apt/lists/*
