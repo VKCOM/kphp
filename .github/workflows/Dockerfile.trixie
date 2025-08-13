@@ -14,6 +14,7 @@ RUN apt-get install -y --no-install-recommends \
     gperf netcat-openbsd patch re2c wget \
     libfmt-dev libgtest-dev libgmock-dev zlib1g-dev
 
+# Python
 RUN apt-get install -y --no-install-recommends \
     python${PYTHON_VERSION}  \
     python${PYTHON_VERSION}-dev  \
@@ -27,7 +28,7 @@ RUN wget -O /etc/apt/trusted.gpg.d/pgdg-key.asc https://www.postgresql.org/media
 # MySQL
 RUN apt-get install -y --no-install-recommends default-mysql-server default-libmysqlclient-dev
 
-# Python
+# Python package
 COPY tests/python/requirements-trixie.txt /tmp/requirements.txt
 RUN python${PYTHON_VERSION} -m pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
 
