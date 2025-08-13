@@ -30,7 +30,7 @@ jobs:
             mysql: off
             pgsql: on
           - os: trixie
-            compiler: clang++-18
+            compiler: clang++-17
             cpp: 20
             asan: off
             ubsan: off
