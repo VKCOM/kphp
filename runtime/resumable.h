@@ -144,7 +144,7 @@ private:
     ready_ = wait_without_result(resumable_id_, timeout_);
     TRY_WAIT(wait_result_resumable_label_1, ready_, bool);
     if (!ready_) {
-      last_wait_error = last_wait_error ? last_wait_error : "Timeout in wait";
+      last_wait_error = last_wait_error ?: "Timeout in wait";
       return on_return(nullptr);
     }
 

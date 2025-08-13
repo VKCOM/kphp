@@ -7,7 +7,9 @@ ARG PYTHON_VERSION=3.13
 RUN apt-get update
 
 RUN apt-get install -y --no-install-recommends \
-    git cmake-data cmake make g++ clang gperf netcat-openbsd patch re2c wget \
+    git cmake-data cmake make \
+    g++ g++-13 clang \
+    gperf netcat-openbsd patch re2c wget \
     libfmt-dev libgtest-dev libgmock-dev zlib1g-dev
 
 COPY tests/python/requirements-trixie.txt /tmp/requirements.txt
