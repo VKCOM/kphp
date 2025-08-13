@@ -7,7 +7,8 @@ ARG PYTHON_VERSION=3.13
 RUN apt-get update
 
 RUN apt-get install -y --no-install-recommends \
-      git cmake-data cmake make g++ clang gperf netcat-openbsd patch re2c wget
+    git cmake-data cmake make g++ clang gperf netcat-openbsd patch re2c wget \
+    libfmt-dev libgtest-dev libgmock-dev zlib1g-dev
 
 COPY tests/python/requirements-trixie.txt /tmp/requirements.txt
 
@@ -18,14 +19,17 @@ RUN apt-get install -y --no-install-recommends \
     python3-pip \
     && python${PYTHON_VERSION} -m pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
 
-RUN apt-get install -y --no-install-recommends \
-      libfmt-dev libgtest-dev libgmock-dev zlib1g-dev
-
 # PHP
 RUN wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg \
     && echo "deb https://packages.sury.org/php trixie main" > /etc/apt/sources.list.d/php.list \
     && apt-get update && apt-get install -y --no-install-recommends php${PHP_VERSION}-dev \
     && update-alternatives --set php /usr/bin/php${PHP_VERSION}
+
+# Composer
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+  && php -r "if (hash_file('sha384', 'composer-setup.php') === 'dac665fdc30fdd8ec78b38b9800061b4150413ff2e3b6f88543c636f7cd84f6db9189d43a81e5503cda447da73c7e5b6') { echo 'Installer verified'.PHP_EOL; } else { echo 'Installer corrupt'.PHP_EOL; unlink('composer-setup.php'); exit(1); }" \
+  && php composer-setup.php --install-dir=/usr/bin --version=2.8.10 --filename=composer \
+  && php -r "unlink('composer-setup.php');"
 
 RUN rm -rf /var/lib/apt/lists/*
 
