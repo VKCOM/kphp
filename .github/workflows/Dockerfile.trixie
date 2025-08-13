@@ -1,0 +1,30 @@
+FROM debian:trixie
+ARG DEBIAN_FRONTEND=noninteractive
+
+ARG PHP_VERSION=7.4
+ARG PYTHON_VERSION=3.13
+
+COPY tests/python/requirements-trixie.txt /tmp/requirements.txt
+
+RUN apt-get update
+
+RUN apt-get install -y --no-install-recommends \
+      git cmake-data cmake make g++ gperf netcat-openbsd patch re2c wget
+
+# Python
+RUN apt-get install -y --no-install-recommends python${PYTHON_VERSION}-full python${PYTHON_VERSION}-dev
+RUN python${PYTHON_VERSION} -m venv /venv \
+    && /venv/bin/pip install --no-cache-dir -r /tmp/requirements.txt
+
+RUN apt-get install -y --no-install-recommends \
+      libfmt-dev libgtest-dev libgmock-dev zlib1g-dev
+
+RUN wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg \
+    && echo "deb https://packages.sury.org/php trixie main" > /etc/apt/sources.list.d/php.list
+
+RUN apt-get update && apt-get install -y --no-install-recommends php${PHP_VERSION}-dev \
+    && update-alternatives --set php /usr/bin/php${PHP_VERSION}
+
+RUN rm -rf /var/lib/apt/lists/*
+
+RUN useradd -ms /bin/bash kitten

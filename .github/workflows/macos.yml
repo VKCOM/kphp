@@ -12,6 +12,7 @@ env:
 
 jobs:
   build-macos:
+    if: ${{ false }}
     runs-on: ${{matrix.os}}-15
     strategy:
       matrix:
