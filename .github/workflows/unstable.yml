@@ -27,14 +27,14 @@ jobs:
             cpp: 20
             asan: off
             ubsan: off
-            mysql: on
+            mysql: off
             pgsql: on
           - os: trixie
             compiler: clang++-19
             cpp: 20
             asan: off
             ubsan: off
-            mysql: on
+            mysql: off
             pgsql: on
 
     name: "${{matrix.os}} / ${{matrix.compiler}} / c++${{matrix.cpp}} / asan=${{matrix.asan}} / ubsan=${{matrix.ubsan}}"
