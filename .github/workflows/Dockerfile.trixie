@@ -4,12 +4,13 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG PHP_VERSION=7.4
 ARG PYTHON_VERSION=3.13
 ARG GPP_VERSION=12
+ARG CLANG_VERSION=19
 
 RUN apt-get update
 
 RUN apt-get install -y --no-install-recommends \
     git cmake-data cmake make \
-    g++-${GPP_VERSION} clang \
+    g++ g++-${GPP_VERSION} clang-${CLANG_VERSION} \
     gperf netcat-openbsd patch re2c wget \
     libfmt-dev libgtest-dev libgmock-dev zlib1g-dev
 
