@@ -21,7 +21,7 @@ struct raw_logger final {
   raw_logger() noexcept = delete;
 
   template<typename... Args>
-  static void log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
+  static void log(kphp::log::level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
     if (std::to_underlying(level) > k2::log_level_enabled()) {
       return;
     }

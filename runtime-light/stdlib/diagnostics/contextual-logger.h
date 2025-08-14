@@ -58,7 +58,7 @@ class contextual_logger final : vk::not_copyable {
 
 public:
   template<typename... Args>
-  void log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) const noexcept;
+  void log(kphp::log::level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) const noexcept;
 
   void add_extra_tag(std::string_view key, std::string_view value) noexcept;
   void remove_extra_tag(std::string_view key) noexcept;
@@ -71,11 +71,11 @@ private:
 
   kphp::stl::unordered_map<tag_key_t, tag_value_t, kphp::memory::script_allocator, extra_tags_hash, extra_tags_equal> extra_tags{};
 
-  void log_with_tags(level level, std::optional<std::span<void* const>> trace, std::string_view message) const noexcept;
+  void log_with_tags(kphp::log::level level, std::optional<std::span<void* const>> trace, std::string_view message) const noexcept;
 };
 
 template<typename... Args>
-void contextual_logger::log(level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
+void contextual_logger::log(kphp::log::level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
                             Args&&... args) const noexcept {
   if (std::to_underlying(level) > k2::log_level_enabled()) {
     return;
