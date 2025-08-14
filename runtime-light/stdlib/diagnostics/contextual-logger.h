@@ -56,6 +56,12 @@ class contextual_logger final : vk::not_copyable {
     }
   };
 
+  static constexpr std::string_view BACKTRACE_KEY = "trace";
+
+  kphp::stl::unordered_map<tag_key_t, tag_value_t, kphp::memory::script_allocator, extra_tags_hash, extra_tags_equal> extra_tags;
+
+  void log_with_tags(kphp::log::level level, std::optional<std::span<void* const>> trace, std::string_view message) const noexcept;
+
 public:
   template<typename... Args>
   void log(kphp::log::level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
@@ -66,22 +72,11 @@ public:
   void clear_extra_tags() noexcept;
 
   static std::optional<std::reference_wrapper<contextual_logger>> try_get() noexcept;
-
-private:
-  static constexpr std::string_view BACKTRACE_KEY = "trace";
-
-  kphp::stl::unordered_map<tag_key_t, tag_value_t, kphp::memory::script_allocator, extra_tags_hash, extra_tags_equal> extra_tags{};
-
-  void log_with_tags(kphp::log::level level, std::optional<std::span<void* const>> trace, std::string_view message) const noexcept;
 };
 
 template<typename... Args>
 void contextual_logger::log(kphp::log::level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
                             Args&&... args) const noexcept {
-  if (std::to_underlying(level) > k2::log_level_enabled()) {
-    return;
-  }
-
   static constexpr size_t LOG_BUFFER_SIZE = 512UZ;
   std::array<char, LOG_BUFFER_SIZE> log_buffer; // NOLINT
   size_t message_size{impl::format_log_message(log_buffer, fmt, std::forward<Args>(args)...)};

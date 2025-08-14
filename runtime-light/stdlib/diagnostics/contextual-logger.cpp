@@ -28,10 +28,10 @@ std::optional<std::reference_wrapper<contextual_logger>> contextual_logger::try_
 
 void contextual_logger::log_with_tags(kphp::log::level level, std::optional<std::span<void* const>> trace, std::string_view message) const noexcept {
   kphp::stl::vector<k2::LogTaggedEntry, kphp::memory::script_allocator> tagged_entries{};
-  const bool log_is_error_level{level == level::warn || level == level::error};
-  const size_t tagged_entries_size{static_cast<size_t>((trace.has_value() ? 1 : 0) + (log_is_error_level ? extra_tags.size() : 0))};
+  const bool is_extra_tags_enabled{level == level::warn || level == level::error};
+  const size_t tagged_entries_size{static_cast<size_t>((trace.has_value() ? 1 : 0) + (is_extra_tags_enabled ? extra_tags.size() : 0))};
   tagged_entries.reserve(tagged_entries_size);
-  if (log_is_error_level) {
+  if (is_extra_tags_enabled) {
     for (const auto& [key, value] : extra_tags) {
       tagged_entries.push_back(k2::LogTaggedEntry{.key = key.data(), .value = value.data(), .key_len = key.size(), .value_len = value.size()});
     }
