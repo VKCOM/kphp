@@ -105,7 +105,7 @@ inline Optional<array<mixed>> f$posix_getpwuid(int64_t user_id) noexcept {
     return false;
   }
 
-  array<mixed> result(array_size(7, false));
+  array<mixed> result{array_size{7, false}};
   result.set_value(string(posix_impl::NAME_PWUID_KEY.data(), posix_impl::NAME_PWUID_KEY.size()), string(pwd.pw_name));
   result.set_value(string(posix_impl::PASSWD_PWUID_KEY.data(), posix_impl::NAME_PWUID_KEY.size()), string(pwd.pw_passwd));
   result.set_value(string(posix_impl::UID_PWUID_KEY.data(), posix_impl::UID_PWUID_KEY.size()), static_cast<int64_t>(pwd.pw_uid));
