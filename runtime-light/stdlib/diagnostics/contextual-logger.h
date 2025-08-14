@@ -62,11 +62,13 @@ public:
 
   void add_extra_tag(std::string_view key, std::string_view value) noexcept;
   void remove_extra_tag(std::string_view key) noexcept;
-  void clear_extra_tag() noexcept;
+  void clear_extra_tags() noexcept;
 
   static std::optional<std::reference_wrapper<contextual_logger>> try_get() noexcept;
 
 private:
+  static constexpr std::string_view BACKTRACE_KEY = "trace";
+
   kphp::stl::unordered_map<tag_key_t, tag_value_t, kphp::memory::script_allocator, extra_tags_hash, extra_tags_equal> extra_tags{};
 
   void log_with_tags(level level, std::optional<std::span<void* const>> trace, std::string_view message) const noexcept;
@@ -100,7 +102,7 @@ inline void contextual_logger::remove_extra_tag(std::string_view key) noexcept {
   }
 }
 
-inline void contextual_logger::clear_extra_tag() noexcept {
+inline void contextual_logger::clear_extra_tags() noexcept {
   extra_tags.clear();
 }
 } // namespace kphp::log
