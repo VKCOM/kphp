@@ -29,6 +29,7 @@ void select_logger_and_log(level level, std::optional<std::span<void* const>> tr
     raw_logger::log(level, trace, fmt, std::forward<Args>(args)...);
   }
 }
+
 } // namespace impl
 
 // The backtrace algorithm relies on the fact that assertion does not call backtrace.

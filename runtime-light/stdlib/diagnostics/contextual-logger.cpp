@@ -47,4 +47,5 @@ void contextual_logger::log_with_tags(kphp::log::level level, std::optional<std:
   }
   k2::log(std::to_underlying(level), message, tagged_entries);
 }
+
 } // namespace kphp::log

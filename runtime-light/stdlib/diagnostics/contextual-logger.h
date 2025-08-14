@@ -15,7 +15,6 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/detail/logs.h"
 
 namespace kphp::log {
@@ -101,4 +100,5 @@ inline void contextual_logger::remove_extra_tag(std::string_view key) noexcept {
 inline void contextual_logger::clear_extra_tags() noexcept {
   extra_tags.clear();
 }
+
 } // namespace kphp::log

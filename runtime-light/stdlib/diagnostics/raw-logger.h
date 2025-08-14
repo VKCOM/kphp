@@ -46,4 +46,5 @@ struct raw_logger final {
 private:
   static constexpr std::string_view BACKTRACE_KEY = "trace";
 };
+
 } // namespace kphp::log
