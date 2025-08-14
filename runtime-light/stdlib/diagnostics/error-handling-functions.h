@@ -120,7 +120,3 @@ inline int64_t f$error_reporting(Optional<int64_t> error_level_opt = {}) noexcep
   }
   return prev;
 }
-
-inline int64_t f$error_reporting() noexcept {
-  return ErrorHandlingState::get().minimum_log_level;
-}
