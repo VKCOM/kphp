@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <sys/types.h>
 #include <sys/utsname.h>
 
 #include "common/mixin/not_copyable.h"
@@ -25,6 +26,7 @@ struct ImageState final : private vk::not_copyable {
   AllocatorState image_allocator_state{INIT_IMAGE_ALLOCATOR_SIZE, 0};
 
   uint32_t pid{k2::getpid()};
+  uid_t uid{k2::getuid()};
   string uname_info_s;
   string uname_info_n;
   string uname_info_r;
