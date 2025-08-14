@@ -58,7 +58,8 @@ class contextual_logger final : vk::not_copyable {
 
 public:
   template<typename... Args>
-  void log(kphp::log::level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) const noexcept;
+  void log(kphp::log::level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
+           Args&&... args) const noexcept;
 
   void add_extra_tag(std::string_view key, std::string_view value) noexcept;
   void remove_extra_tag(std::string_view key) noexcept;
