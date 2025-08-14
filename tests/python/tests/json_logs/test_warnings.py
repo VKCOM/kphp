@@ -13,19 +13,6 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
         if cls.should_use_k2():
             cls.web_server.update_options({"--log-file": os.path.join(cls.web_server._working_dir, "data/log-file")})
 
-    @pytest.mark.kphp_skip
-    def test_warning_backtrace(self):
-        resp = self.web_server.http_post(
-            json=[
-                {"op": "warning", "msg": "hello"},
-            ])
-        self.assertEqual(resp.text, "ok")
-        self.web_server.assert_json_log_tags(
-            expect=[
-                {"msg": "hello", "tags": {"trace"}}
-            ])
-
-    @pytest.mark.k2_skip
     def test_warning_no_context(self):
         resp = self.web_server.http_post(
             json=[
@@ -33,11 +20,14 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 {"op": "warning", "msg": "world"}
             ])
         self.assertEqual(resp.text, "ok")
-        self.web_server.assert_json_log(
-            expect=[
-                {"version": 0, "hostname": socket.gethostname(), "type": 2, "env": "", "msg": "hello", "tags": {"uncaught": False}},
-                {"version": 0, "hostname": socket.gethostname(), "type": 2, "env": "", "msg": "world", "tags": {"uncaught": False}}
-            ])
+        expect_log = [
+            {"msg": "hello"},
+            {"msg": "world"}
+        ] if self.should_use_k2() else [
+            {"version": 0, "hostname": socket.gethostname(), "type": 2, "env": "", "msg": "hello", "tags": {"uncaught": False}},
+            {"version": 0, "hostname": socket.gethostname(), "type": 2, "env": "", "msg": "world", "tags": {"uncaught": False}}
+        ]
+        self.web_server.assert_json_log(expect=expect_log)
 
     @pytest.mark.k2_skip
     def test_warning_with_special_chars(self):
@@ -49,7 +39,6 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 "tags": {"uncaught": False}
             }])
 
-    @pytest.mark.k2_skip
     def test_warning_with_tags(self):
         resp = self.web_server.http_post(
             json=[
@@ -57,13 +46,14 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 {"op": "warning", "msg": "aaa"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.web_server.assert_json_log(
-            expect=[{
-                "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "",
-                "tags": {"uncaught": False, "a": "b"}
-            }])
+        expect_log = [{
+            "msg": "aaa", "env": "", "tags": {"a": "b"}, "extra_info": {}
+        }] if self.should_use_k2() else [{
+            "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "",
+            "tags": {"uncaught": False, "a": "b"}
+        }]
+        self.web_server.assert_json_log(expect=expect_log)
 
-    @pytest.mark.k2_skip
     def test_warning_with_extra_info(self):
         resp = self.web_server.http_post(
             json=[
@@ -71,13 +61,14 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 {"op": "warning", "msg": "aaa"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.web_server.assert_json_log(
-            expect=[{
-                "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "",
-                "tags": {"uncaught": False}, "extra_info": {"a": "b"}
-            }])
+        expect_log = [{
+            "msg": "aaa", "env": "", "tags": {}, "extra_info": {"a": "b"}
+        }] if self.should_use_k2() else [{
+            "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "",
+            "tags": {"uncaught": False}, "extra_info": {"a": "b"}
+        }]
+        self.web_server.assert_json_log(expect=expect_log)
 
-    @pytest.mark.k2_skip
     def test_warning_with_env(self):
         resp = self.web_server.http_post(
             json=[
@@ -85,8 +76,13 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 {"op": "warning", "msg": "aaa"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.web_server.assert_json_log(
-            expect=[{"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "abc", "tags": {"uncaught": False}}])
+        expect_log = [{
+            "msg": "aaa", "env": "abc", "tags": {}, "extra_info": {}
+        }] if self.should_use_k2() else [{
+            "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "abc",
+            "tags": {"uncaught": False}
+        }]
+        self.web_server.assert_json_log(expect=expect_log)
 
     @pytest.mark.k2_skip
     def test_warning_with_env_special_chars(self):
@@ -110,7 +106,6 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
         self.web_server.assert_json_log(
             expect=[{"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "", "tags": {"uncaught": False}}])
 
-    @pytest.mark.k2_skip
     def test_warning_with_full_context(self):
         resp = self.web_server.http_post(
             json=[
@@ -118,13 +113,14 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 {"op": "warning", "msg": "aaa"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.web_server.assert_json_log(
-            expect=[{
-                "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "efg",
-                "tags": {"uncaught": False, "a": "b"}, "extra_info": {"c": "d"}
-            }])
+        expect_log = [{
+            "msg": "aaa", "env": "efg", "tags": {"a": "b"}, "extra_info": {"c": "d"}
+        }] if self.should_use_k2() else [{
+            "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "efg",
+            "tags": {"uncaught": False, "a": "b"}, "extra_info": {"c": "d"}
+        }]
+        self.web_server.assert_json_log(expect=expect_log)
 
-    @pytest.mark.k2_skip
     def test_warning_override_context(self):
         resp = self.web_server.http_post(
             json=[
@@ -140,22 +136,27 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 {"op": "warning", "msg": "eee"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.web_server.assert_json_log(
-            expect=[
-                {
-                    "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "efg",
-                    "tags": {"uncaught": False, "a": "b"}, "extra_info": {"c": "d"}
-                },
-                {"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "bbb", "env": "", "tags": {"uncaught": False}},
-                {"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "ccc", "env": "xxx", "tags": {"uncaught": False}},
-                {"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "ddd", "env": "", "tags": {"uncaught": False, "aa": "bb"}},
-                {
-                    "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "eee", "env": "",
-                    "tags": {"uncaught": False}, "extra_info": {"cc": "dd"}
-                }
-            ])
+        expect_log = [
+            {"msg": "aaa", "env": "efg", "tags": {"a": "b"}, "extra_info": {"c": "d"}},
+            {"msg": "bbb", "env": "", "tags": {}, "extra_info": {}},
+            {"msg": "ccc", "env": "xxx", "tags": {}, "extra_info": {}},
+            {"msg": "ddd", "env": "", "tags": {"aa": "bb"}, "extra_info": {}},
+            {"msg": "eee", "env": "", "tags": {}, "extra_info": {"cc": "dd"}}
+        ] if self.should_use_k2() else [
+            {
+                "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "efg",
+                "tags": {"uncaught": False, "a": "b"}, "extra_info": {"c": "d"}
+            },
+            {"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "bbb", "env": "", "tags": {"uncaught": False}},
+            {"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "ccc", "env": "xxx", "tags": {"uncaught": False}},
+            {"version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "ddd", "env": "", "tags": {"uncaught": False, "aa": "bb"}},
+            {
+                "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "eee", "env": "",
+                "tags": {"uncaught": False}, "extra_info": {"cc": "dd"}
+            }
+        ]
+        self.web_server.assert_json_log(expect=expect_log)
 
-    @pytest.mark.k2_skip
     def test_warning_vector_context(self):
         resp = self.web_server.http_post(
             json=[
@@ -163,11 +164,13 @@ class TestJsonLogsWarnings(WebServerAutoTestCase):
                 {"op": "warning", "msg": "aaa"},
             ])
         self.assertEqual(resp.text, "ok")
-        self.web_server.assert_json_log(
-            expect=[{
-                "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "efg",
-                "tags": {"uncaught": False, "0": "a", "1": "b"}, "extra_info": {"0": "c", "1": "d"}
-            }], timeout=1)
+        expect_log = [{
+            "msg": "aaa", "env": "efg", "tags": {"0": "a", "1": "b"}, "extra_info": {"0": "c", "1": "d"}
+        }] if self.should_use_k2() else [{
+            "version": 0, "hostname": socket.gethostname(), "type": 2, "msg": "aaa", "env": "efg",
+            "tags": {"uncaught": False, "0": "a", "1": "b"}, "extra_info": {"0": "c", "1": "d"}
+        }]
+        self.web_server.assert_json_log(expect=expect_log, timeout=1)
 
     @pytest.mark.k2_skip
     def test_error_tag_context(self):

@@ -6,12 +6,15 @@
 
 #include <chrono>
 #include <cstdint>
+#include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/state/image-state.h"
+#include "runtime-light/stdlib/diagnostics/contextual-logger.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/system/system-state.h"
@@ -39,8 +42,35 @@ inline int64_t f$numa_get_bound_node() noexcept {
   return -1;
 }
 
-inline void f$kphp_set_context_on_error([[maybe_unused]] const array<mixed>& tags, [[maybe_unused]] const array<mixed>& extra_info,
-                                        [[maybe_unused]] const string& env = {}) noexcept {}
+inline void f$kphp_set_context_on_error(const array<mixed>& tags, const Optional<array<mixed>>& extra_info = {}, const Optional<string>& env = {}) noexcept {
+  auto logger_opt{kphp::log::contextual_logger::try_get()};
+  if (!logger_opt.has_value()) [[unlikely]] {
+    return;
+  }
+  auto& logger{(*logger_opt).get()};
+
+  static constexpr std::string_view EXTRA_TAGS_KEY = "tags";
+  static constexpr std::string_view EXTRA_INFO_KEY = "extra_info";
+  static constexpr std::string_view ENVIRONMENT_KEY = "env";
+
+  auto& static_SB{RuntimeContext::get().static_SB.clean()};
+  logger.remove_extra_tag(EXTRA_TAGS_KEY);
+  if (impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(tags, static_SB)) [[likely]] {
+    logger.add_extra_tag(EXTRA_TAGS_KEY, {static_SB.buffer(), static_SB.size()});
+  }
+  static_SB.clean();
+
+  logger.remove_extra_tag(EXTRA_INFO_KEY);
+  if (extra_info.has_value() && impl_::JsonEncoder(JSON_FORCE_OBJECT, false).encode(extra_info.val(), static_SB)) [[likely]] {
+    logger.add_extra_tag(EXTRA_INFO_KEY, {static_SB.buffer(), static_SB.size()});
+  }
+  static_SB.clean();
+
+  logger.remove_extra_tag(ENVIRONMENT_KEY);
+  if (env.has_value()) {
+    logger.add_extra_tag(ENVIRONMENT_KEY, {env.val().c_str(), env.val().size()});
+  }
+}
 
 inline int64_t f$posix_getpid() noexcept {
   return static_cast<int64_t>(ImageState::get().pid);
