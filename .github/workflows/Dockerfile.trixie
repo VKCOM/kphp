@@ -4,19 +4,24 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG PHP_VERSION=7.4
 ARG PYTHON_VERSION=3.13
 ARG GPP_VERSION=12
-ARG CLANG_VERSION=17
+ARG CLANG_VERSION=16
 
 RUN apt-get update
 
 RUN apt-get install -y --no-install-recommends \
     git cmake-data cmake make pkg-config \
-    g++ g++-${GPP_VERSION} clang-${CLANG_VERSION} \
+    g++ g++-${GPP_VERSION} \
     gperf netcat-openbsd patch re2c wget \
     libfmt-dev libgtest-dev libgmock-dev zlib1g-dev
 
+# Clang
+RUN wget https://apt.llvm.org/llvm.sh -O /tmp/llvm.sh \
+    && chmod +x /tmp/llvm.sh \
+    && /tmp/llvm.sh ${CLANG_VERSION}
+
 # Python
 RUN apt-get install -y --no-install-recommends \
-    python${PYTHON_VERSION}  \
+    python${PYTHON_VERSION}-minimal  \
     python${PYTHON_VERSION}-dev  \
     python3-pip
 
