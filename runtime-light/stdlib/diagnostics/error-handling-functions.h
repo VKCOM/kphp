@@ -99,8 +99,8 @@ inline int64_t f$error_reporting(Optional<int64_t> error_level_opt = {}) noexcep
 
   int64_t error_level{error_level_opt.val()};
   if (error_level != 0 && (error_level & ErrorHandlingState::SUPPORTED_ERROR_LEVELS) == 0) {
-    // if error_level is unsupported level, set it as E_ALL
-    error_level = E_ALL;
+    // if error_level is unsupported level, ignore it and return current level
+    return prev;
   }
   error_handling_st.minimum_log_level = 0;
   if ((error_level & E_ALL) == E_ALL) {
