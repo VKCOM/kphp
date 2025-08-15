@@ -90,33 +90,34 @@ inline array<array<string>> f$debug_backtrace() noexcept {
   return {};
 }
 
-inline int64_t f$error_reporting(Optional<int64_t> error_level_opt = {}) noexcept {
+inline int64_t f$error_reporting(Optional<int64_t> new_error_level_opt = {}) noexcept {
   auto& error_handling_st{ErrorHandlingState::get()};
-  const int64_t prev{error_handling_st.minimum_log_level};
-  if (!error_level_opt.has_value()) {
-    return prev;
+  const int64_t current_error_level{error_handling_st.minimum_log_level};
+  if (!new_error_level_opt.has_value()) {
+    return current_error_level;
   }
 
-  int64_t error_level{error_level_opt.val()};
-  if (error_level != 0 && (error_level & ErrorHandlingState::SUPPORTED_ERROR_LEVELS) == 0) {
-    // if error_level is unsupported level, ignore it and return current level
-    return prev;
+  int64_t new_error_level{new_error_level_opt.val()};
+  if (new_error_level != 0 && (new_error_level & ErrorHandlingState::SUPPORTED_ERROR_LEVELS) == 0) {
+    // if new_error_level is unsupported level, ignore it and return current level
+    return current_error_level;
   }
   error_handling_st.minimum_log_level = 0;
-  if ((error_level & E_ALL) == E_ALL) {
+  if (new_error_level == 0) {
+    return current_error_level;
+  } else if ((new_error_level & E_ALL) == E_ALL) {
     error_handling_st.minimum_log_level |= static_cast<int64_t>(E_ALL);
+    return current_error_level;
   }
-  if ((error_level & E_NOTICE) == E_NOTICE) {
+
+  if ((new_error_level & E_NOTICE) == E_NOTICE) {
     error_handling_st.minimum_log_level |= static_cast<int64_t>(E_NOTICE);
   }
-  if ((error_level & E_WARNING) == E_WARNING) {
+  if ((new_error_level & E_WARNING) == E_WARNING) {
     error_handling_st.minimum_log_level |= static_cast<int64_t>(E_WARNING);
   }
-  if ((error_level & E_ERROR) == E_ERROR) {
+  if ((new_error_level & E_ERROR) == E_ERROR) {
     error_handling_st.minimum_log_level |= static_cast<int64_t>(E_ERROR);
   }
-  if (error_level == 0) {
-    error_handling_st.minimum_log_level = 0;
-  }
-  return prev;
+  return current_error_level;
 }
