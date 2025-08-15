@@ -5,6 +5,8 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <string_view>
 
 #include "common/mixin/not_copyable.h"
@@ -23,4 +25,6 @@ struct ErrorHandlingState final : vk::not_copyable {
   }
 
   static ErrorHandlingState& get() noexcept;
+
+  static std::optional<std::reference_wrapper<ErrorHandlingState>> try_get() noexcept;
 };

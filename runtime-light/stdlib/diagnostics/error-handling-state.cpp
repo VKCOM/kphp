@@ -5,6 +5,8 @@
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
 
 #include <cstdint>
+#include <functional>
+#include <optional>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/state/component-state.h"
@@ -23,4 +25,11 @@ ErrorHandlingState::ErrorHandlingState() noexcept {
 
 ErrorHandlingState& ErrorHandlingState::get() noexcept {
   return InstanceState::get().error_handling_instance_state;
+}
+
+std::optional<std::reference_wrapper<ErrorHandlingState>> ErrorHandlingState::try_get() noexcept {
+  if (auto* instance_state_ptr{k2::instance_state()}; instance_state_ptr != nullptr) [[likely]] {
+    return instance_state_ptr->error_handling_instance_state;
+  }
+  return std::nullopt;
 }
