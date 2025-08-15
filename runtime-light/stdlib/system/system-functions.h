@@ -5,6 +5,7 @@
 #pragma once
 
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <pwd.h>
@@ -12,7 +13,9 @@
 #include <string_view>
 #include <sys/types.h>
 
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/io-scheduler.h"
@@ -105,7 +108,7 @@ inline Optional<array<mixed>> f$posix_getpwuid(int64_t user_id) noexcept {
 
   passwd pwd{};
   passwd* pwd_pointer{std::addressof(pwd)};
-  kphp::stl::vector<char, kphp::memory::script_allocator> buffer(passwd_max_buffer_size);
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> buffer(passwd_max_buffer_size);
   if (int32_t error_code{k2::getpwuid_r(static_cast<uid_t>(user_id), pwd_pointer, buffer, std::addressof(pwd_pointer))};
       error_code != k2::errno_ok || pwd_pointer != std::addressof(pwd)) [[unlikely]] {
     return false;
