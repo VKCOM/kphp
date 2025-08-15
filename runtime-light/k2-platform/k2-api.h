@@ -12,8 +12,10 @@
 #include <format>
 #include <memory>
 #include <optional>
+#include <pwd.h>
 #include <span>
 #include <string_view>
+#include <sys/types.h>
 #include <sys/utsname.h>
 #include <utility>
 
@@ -110,6 +112,18 @@ inline void free_checked(void* ptr, size_t size, size_t align) noexcept {
 
 inline uint32_t getpid() noexcept {
   return k2_getpid();
+}
+
+inline uid_t getuid() noexcept {
+  return k2_getuid();
+}
+
+inline int32_t getpwuid_r(uid_t uid, struct passwd* pwd, std::span<std::byte> buffer, struct passwd** result) noexcept {
+  return k2_getpwuid_r(uid, pwd, reinterpret_cast<char*>(buffer.data()), buffer.size(), result);
+}
+
+inline int64_t sysconf(int32_t name) noexcept {
+  return k2_sysconf(name);
 }
 
 inline int32_t uname(struct utsname* addr) noexcept {
