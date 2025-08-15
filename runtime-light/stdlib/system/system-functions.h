@@ -101,9 +101,10 @@ inline int64_t f$posix_getuid() noexcept {
 }
 
 inline Optional<array<mixed>> f$posix_getpwuid(int64_t user_id) noexcept {
-  const int64_t passwd_max_buffer_size{ImageState::get().passwd_max_buffer_size};
+  static constexpr int64_t DEFAULT_PASSWD_MAX_BUFFER_SIZE = 1024;
+  int64_t passwd_max_buffer_size{ImageState::get().passwd_max_buffer_size};
   if (passwd_max_buffer_size == -1) [[unlikely]] {
-    return false;
+    passwd_max_buffer_size = DEFAULT_PASSWD_MAX_BUFFER_SIZE;
   }
 
   passwd pwd{};
