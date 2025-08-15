@@ -18,7 +18,7 @@ struct ErrorHandlingState final : vk::not_copyable {
 
   ErrorHandlingState() noexcept;
 
-  bool is_log_level_enabled(int64_t level) const noexcept {
+  bool log_level_enabled(int64_t level) const noexcept {
     return (minimum_log_level & level) != 0;
   }
 

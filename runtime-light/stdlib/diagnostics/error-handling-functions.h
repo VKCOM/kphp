@@ -99,7 +99,7 @@ inline int64_t f$error_reporting(Optional<int64_t> new_error_level_opt = {}) noe
 
   int64_t new_error_level{new_error_level_opt.val()};
   if (new_error_level != 0 && (new_error_level & ErrorHandlingState::SUPPORTED_ERROR_LEVELS) == 0) {
-    // if new_error_level is unsupported level, ignore it and return current level
+    // ignore error_level if it's unsupported
     return current_error_level;
   }
   error_handling_st.minimum_log_level = 0;
