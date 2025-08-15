@@ -7,16 +7,21 @@
 #error "should not be directly included"
 #endif // K2_API_HEADER_H
 
+#include <pwd.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/utsname.h>
 
 #ifdef __cplusplus
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <ctime>
 #else
 #include <stdatomic.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
@@ -156,21 +161,45 @@ void k2_free_checked(void* ptr, size_t size, size_t align);
  * Immediately abort component execution.
  * Function is `[[noreturn]]`
  * Note: `exit_code` used just as indicator for now.
- * `exit_code` == 0 => FinishedOk,
- * `exit_code` != 0 => FinishedError,
+ * `exit_code` == 0 => `FinishedOk`,
+ * `exit_code` != 0 => `FinishedError`,
  */
 [[noreturn]] void k2_exit(int32_t exit_code);
 
 /**
- * 'k2_getpid' returns the process ID (PID) of the calling process.
+ * Semantically equivalent to libc's `sysconf` function.
+ *
+ * Possible 'errno':
+ * `EINVAL` => name is invalid.
+ */
+int64_t k2_sysconf(int32_t name);
+
+/**
+ * `k2_getpid` returns the process ID (PID) of the calling process.
  */
 uint32_t k2_getpid();
 
 /**
- * Semantically equivalent to libc's 'uname' function.
+ *  Semantically equivalent to libc's `getuid` function.
+ */
+uid_t k2_getuid();
+
+/**
+ * Semantically equivalent to libc's `getpwuid_r` function.
  *
- * Possible 'errno':
- * 'EFAULT' => buf is not valid
+ * Possible `errno`:
+ * `EIO` => An I/O error has occurred.
+ * `EINTR` => A signal was caught during `getpwuid()`.
+ * `EMFILE` => All file descriptors available to the process are currently open.
+ * `ERANGE` => Insufficient storage was supplied via buffer and bufsize to contain the data to be referenced by the resulting passwd structure.
+ */
+int32_t k2_getpwuid_r(uid_t uid, struct passwd* pwd, char* buf, size_t buflen, struct passwd** result);
+
+/**
+ * Semantically equivalent to libc's `uname` function.
+ *
+ * Possible `errno`:
+ * `EFAULT` => buf is not valid
  */
 int32_t k2_uname(struct utsname* buf);
 
@@ -390,8 +419,8 @@ struct SockAddr {
 /**
  * Optimistically tries to parse `hostport` as `ip` + `port`.
  * Examples:
- * IpV4 `hostport` format: `"123.123.123.123:8080"`.
- * IpV6 `hostport` format: `"[2001:db8::1]:8080"`.
+ * `IpV4` `hostport` format: `"123.123.123.123:8080"`.
+ * `IpV6` `hostport` format: `"[2001:db8::1]:8080"`.
  *
  * Then performs a DNS resolution with `man 3 getaddrinfo` (implementation depends on the host machine settings).
  * Examples:
@@ -439,7 +468,7 @@ uint32_t k2_args_value_len(uint32_t arg_num);
 void k2_args_fetch(uint32_t arg_num, char* key, char* value);
 
 /**
- * Even if env is available at any point, try to cache and parse it as soon as possible (during k2_create_component or even k2_create_image).
+ * Even if env is available at any point, try to cache and parse it as soon as possible (during` k2_create_component` or even `k2_create_image`).
  * Environment are constant and do not change during the component lifetime.
  * @return number of env key-value pairs available for fetching.
  */
@@ -509,7 +538,7 @@ struct SymbolInfo {
 
 /**
  * Returns information about the symbol that overlaps addr and it's position in source code.
- * Note: name and filename in symbol_info are **not** null-terminated.
+ * Note: name and filename in `symbol_info` are **not** null-terminated.
  * @param `addr` pointer to code instruction
  * @param `symbol_info` structure stores buffers where the name and file name will be written. The buffer
  *        lens must satisfy `name_len >= k2_symbol_name_len and filename_len >= k2_symbol_filename_len`
@@ -524,14 +553,14 @@ int32_t k2_resolve_symbol(void* addr, struct SymbolInfo* symbol_info);
 
 /**
  * Works instance-local.
- * Analogue of tzset(), but accept locale explicitly.
+ * Analogue of `tzset()`, but accept locale explicitly.
  * @return: `0` on success, non-zero otherwise
  */
 int32_t k2_set_timezone(const char* timezone);
 
 /**
  * Works instance-local.
- * Analogue of localtime_r().
+ * Analogue of `localtime_r()`.
  * @return: `result` on success, `NULL` otherwise
  */
 struct tm* k2_localtime_r(const time_t* timer, struct tm* result);
@@ -547,9 +576,9 @@ int32_t k2_uselocale(int32_t category, const char* locale);
  * Works instance-local.
  * Synonym for libc `nl_langinfo(NL_LOCALE_NAME(category))`
  *
- * The returned string is read-only and will be valid until k2_uselocale is called;
+ * The returned string is read-only and will be valid until `k2_uselocale` is called;
  *
- * Note: LC_ALL is not supported for now :(
+ * Note: `LC_ALL` is not supported for now :(
  *
  * @return: current locale name.
  * if `category` is invalid, as empty string returned.
@@ -582,6 +611,43 @@ size_t k2_stderr_write(size_t data_len, const void* data);
  * @return backtrace size on success, `0` otherwise
  */
 size_t k2_backtrace(void** buffer, size_t size);
+
+/**
+ * Resolves a path to its canonical, absolute form with:
+ * - All intermediate components normalized
+ * - All symbolic links resolved
+ *
+ * Memory management:
+ * The resolved path is **not** null-terminated and should be manually freed using `k2_free` or `k2_free_checked`.
+ *
+ * Possible `errno`:
+ * `EINVAL` => any of passed pointers is `NULL`.
+ * `ENOMEM` => Out of memory.
+ * `ENOSYS` => Internal error.
+ * Other => Any `errno` from libc's `realpath`.
+ */
+int32_t k2_canonicalize(const char* path, size_t pathlen, char* const* resolved_path, size_t* resolved_pathlen, size_t* resolved_path_align);
+
+/**
+ * Semantically equivalent to libc's `stat`.
+ *
+ * Possible `errno`:
+ * `EACCES` => Search permission is denied for one of the directories in the path prefix of `pathname`.
+ * `EINVAL` => `pathname` or `statbuf` is `NULL`.
+ * `EFAULT` => Bad address.
+ * `ELOOP` => Too many symbolic links encountered while traversing the path.
+ * `ENAMETOOLONG` => `pathname` is too long.
+ * `ENOENT` => A component of `pathname` does not exist or is a dangling symbolic link.
+ * `ENOMEM` => Out of memory (i.e., kernel memory).
+ * `ENOTDIR` => A component of the path prefix of `pathname` is not a directory.
+ * `EOVERFLOW` => `pathname` refers to a file whose size, inode number,
+ *                or number of blocks cannot be represented in, respectively,
+ *                the types `off_t`, `ino_t`, or `blkcnt_t`.  This error can occur
+ *                when, for example, an application compiled on a 32-bit
+ *                platform without `-D_FILE_OFFSET_BITS=64` calls `stat()` on a
+ *                file whose size exceeds `(1<<31)-1` bytes.
+ */
+int32_t k2_stat(const char* pathname, struct stat* statbuf);
 
 #ifdef __cplusplus
 }
