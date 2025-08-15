@@ -97,11 +97,6 @@ function memory_get_static_usage() ::: int;
 /** @kphp-extern-func-info stub generation-required */
 function memory_get_detailed_stats() ::: int[];
 
-/** @kphp-extern-func-info stub generation-required */
-function posix_getuid() ::: int;
-/** @kphp-extern-func-info stub generation-required */
-function posix_getpwuid($uid ::: int) ::: mixed[] | false;
-
 /** @kphp-extern-func-info stub */
 function kphp_extended_instance_cache_metrics_init(callable(string $key):string $normalization_function) ::: void;
 
