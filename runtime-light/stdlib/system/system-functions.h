@@ -24,7 +24,8 @@
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/system/system-state.h"
 
-namespace posix_impl {
+namespace kphp::posix::impl {
+
 constexpr std::string_view NAME_PWUID_KEY = "name";
 constexpr std::string_view PASSWD_PWUID_KEY = "passwd";
 constexpr std::string_view UID_PWUID_KEY = "uid";
@@ -32,7 +33,8 @@ constexpr std::string_view GID_PWUID_KEY = "gid";
 constexpr std::string_view GECOS_PWUID_KEY = "gecos";
 constexpr std::string_view DIR_PWUID_KEY = "dir";
 constexpr std::string_view SHELL_PWUID_KEY = "shell";
-} // namespace posix_impl
+
+} // namespace kphp::posix::impl
 
 template<typename F>
 bool f$register_kphp_on_oom_callback(F&& /*callback*/) {
@@ -96,23 +98,27 @@ inline int64_t f$posix_getuid() noexcept {
 }
 
 inline Optional<array<mixed>> f$posix_getpwuid(int64_t user_id) noexcept {
+  const int64_t passwd_max_buffer_size{ImageState::get().passwd_max_buffer_size};
+  if (passwd_max_buffer_size == -1) [[unlikely]] {
+    return false;
+  }
+
   passwd pwd{};
   passwd* pwd_pointer{std::addressof(pwd)};
-  kphp::stl::vector<char, kphp::memory::script_allocator> buffer(k2::sysconf(_SC_GETPW_R_SIZE_MAX));
-
+  kphp::stl::vector<char, kphp::memory::script_allocator> buffer(passwd_max_buffer_size);
   if (int32_t error_code{k2::getpwuid_r(static_cast<uid_t>(user_id), pwd_pointer, buffer, std::addressof(pwd_pointer))};
       error_code != k2::errno_ok || pwd_pointer != std::addressof(pwd)) [[unlikely]] {
     return false;
   }
 
   array<mixed> result{array_size{7, false}};
-  result.set_value(string(posix_impl::NAME_PWUID_KEY.data(), posix_impl::NAME_PWUID_KEY.size()), string(pwd.pw_name));
-  result.set_value(string(posix_impl::PASSWD_PWUID_KEY.data(), posix_impl::NAME_PWUID_KEY.size()), string(pwd.pw_passwd));
-  result.set_value(string(posix_impl::UID_PWUID_KEY.data(), posix_impl::UID_PWUID_KEY.size()), static_cast<int64_t>(pwd.pw_uid));
-  result.set_value(string(posix_impl::GID_PWUID_KEY.data(), posix_impl::GID_PWUID_KEY.size()), static_cast<int64_t>(pwd.pw_gid));
-  result.set_value(string(posix_impl::GECOS_PWUID_KEY.data(), posix_impl::GECOS_PWUID_KEY.size()), string(pwd.pw_gecos));
-  result.set_value(string(posix_impl::DIR_PWUID_KEY.data(), posix_impl::DIR_PWUID_KEY.size()), string(pwd.pw_dir));
-  result.set_value(string(posix_impl::SHELL_PWUID_KEY.data(), posix_impl::SHELL_PWUID_KEY.size()), string(pwd.pw_shell));
+  result.set_value(string{kphp::posix::impl::NAME_PWUID_KEY.data(), kphp::posix::impl::NAME_PWUID_KEY.size()}, string{pwd.pw_name});
+  result.set_value(string{kphp::posix::impl::PASSWD_PWUID_KEY.data(), kphp::posix::impl::NAME_PWUID_KEY.size()}, string{pwd.pw_passwd});
+  result.set_value(string{kphp::posix::impl::UID_PWUID_KEY.data(), kphp::posix::impl::UID_PWUID_KEY.size()}, static_cast<int64_t>(pwd.pw_uid));
+  result.set_value(string{kphp::posix::impl::GID_PWUID_KEY.data(), kphp::posix::impl::GID_PWUID_KEY.size()}, static_cast<int64_t>(pwd.pw_gid));
+  result.set_value(string{kphp::posix::impl::GECOS_PWUID_KEY.data(), kphp::posix::impl::GECOS_PWUID_KEY.size()}, string{pwd.pw_gecos});
+  result.set_value(string{kphp::posix::impl::DIR_PWUID_KEY.data(), kphp::posix::impl::DIR_PWUID_KEY.size()}, string{pwd.pw_dir});
+  result.set_value(string{kphp::posix::impl::SHELL_PWUID_KEY.data(), kphp::posix::impl::SHELL_PWUID_KEY.size()}, string{pwd.pw_shell});
   return result;
 }
 
