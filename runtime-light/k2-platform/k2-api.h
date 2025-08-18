@@ -40,6 +40,7 @@ inline constexpr int32_t errno_enomem = ENOMEM;
 inline constexpr int32_t errno_etimedout = ETIMEDOUT;
 inline constexpr int32_t errno_eshutdown = ESHUTDOWN;
 inline constexpr int32_t errno_ecanceled = ECANCELED;
+inline constexpr int32_t errno_erange = ERANGE;
 
 using descriptor = uint64_t;
 inline constexpr k2::descriptor INVALID_PLATFORM_DESCRIPTOR = 0;
