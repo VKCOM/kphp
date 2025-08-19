@@ -22,6 +22,7 @@
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/diagnostics/contextual-logger.h"
+#include "runtime-light/stdlib/diagnostics/error-handling-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
@@ -105,6 +106,7 @@ struct InstanceState final : vk::not_copyable {
   CurlInstanceState curl_instance_state;
   StringInstanceState string_instance_state;
   SystemInstanceState system_instance_state;
+  ErrorHandlingState error_handling_instance_state;
 
   list<kphp::coro::task<>> shutdown_functions;
 

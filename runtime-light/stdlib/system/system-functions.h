@@ -109,16 +109,6 @@ inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
   co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield_for(std::chrono::microseconds{microseconds}));
 }
 
-inline int64_t f$error_reporting([[maybe_unused]] int64_t level) noexcept {
-  kphp::log::warning("called stub error_reporting");
-  return 0;
-}
-
-inline int64_t f$error_reporting() noexcept {
-  kphp::log::warning("called stub error_reporting");
-  return 0;
-}
-
 inline Optional<string> f$exec([[maybe_unused]] const string& command) noexcept {
   kphp::log::error("call to unsupported function");
 }
