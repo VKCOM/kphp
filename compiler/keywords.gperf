@@ -91,6 +91,7 @@ new, tok_new
 throw, tok_throw
 try, tok_try
 catch, tok_catch
+finally, tok_finally
 namespace, tok_namespace
 public, tok_public
 private, tok_private
