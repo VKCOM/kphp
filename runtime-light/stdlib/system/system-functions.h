@@ -13,8 +13,7 @@
 #include <string_view>
 #include <sys/types.h>
 
-#include "common/containers/final_action.h"
-#include "runtime-common/core/allocator/script-allocator.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-light/core/globals/php-script-globals.h"
@@ -101,24 +100,16 @@ inline int64_t f$posix_getuid() noexcept {
 }
 
 inline Optional<array<mixed>> f$posix_getpwuid(int64_t user_id) noexcept {
-  static constexpr int64_t DEFAULT_PASSWD_BUFFER_SIZE = 1024;
-  static constexpr int64_t LIMIT_PASSWD_BUFFER_SIZE = 4096;
+  static constexpr int64_t DEFAULT_PASSWD_BUFFER_SIZE = 4096;
 
   int64_t passwd_max_buffer_size{ImageState::get().passwd_max_buffer_size.value_or(DEFAULT_PASSWD_BUFFER_SIZE)};
   passwd pwd{};
   passwd* pwd_result{nullptr};
-  std::byte* buffer{static_cast<std::byte*>(RuntimeAllocator::get().alloc_script_memory(passwd_max_buffer_size))};
-  vk::final_action finalizer{[&buffer, &passwd_max_buffer_size]() noexcept { RuntimeAllocator::get().free_script_memory(buffer, passwd_max_buffer_size); }};
+  std::unique_ptr<std::byte, decltype(std::addressof(kphp::memory::script::free))> buffer{
+      static_cast<std::byte*>(kphp::memory::script::alloc(passwd_max_buffer_size)), kphp::memory::script::free};
 
-  int32_t error_code{};
-  for (; (error_code = k2::getpwuid_r(static_cast<uid_t>(user_id), std::addressof(pwd), std::span{buffer, static_cast<size_t>(passwd_max_buffer_size)},
-                                      std::addressof(pwd_result))) == k2::errno_erange &&
-         passwd_max_buffer_size <= LIMIT_PASSWD_BUFFER_SIZE;) {
-
-    buffer =
-        static_cast<std::byte*>(RuntimeAllocator::get().realloc_script_memory(static_cast<void*>(buffer), passwd_max_buffer_size * 2, passwd_max_buffer_size));
-    passwd_max_buffer_size = passwd_max_buffer_size * 2;
-  }
+  int32_t error_code{k2::getpwuid_r(static_cast<uid_t>(user_id), std::addressof(pwd), std::span{buffer.get(), static_cast<size_t>(passwd_max_buffer_size)},
+                                    std::addressof(pwd_result))};
 
   if (error_code != k2::errno_ok || pwd_result != std::addressof(pwd)) [[unlikely]] {
     return false;
