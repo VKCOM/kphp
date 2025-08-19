@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <unistd.h>
@@ -28,7 +29,7 @@ struct ImageState final : private vk::not_copyable {
 
   uint32_t pid{k2::getpid()};
   uid_t uid{k2::getuid()};
-  int64_t passwd_max_buffer_size{k2::sysconf(_SC_GETPW_R_SIZE_MAX)};
+  std::optional<int64_t> passwd_max_buffer_size;
   string uname_info_s;
   string uname_info_n;
   string uname_info_r;
@@ -44,6 +45,10 @@ struct ImageState final : private vk::not_copyable {
   RpcImageState rpc_image_state;
 
   ImageState() noexcept {
+    if (const int64_t sysconf_max_buffer_size{k2::sysconf(_SC_GETPW_R_SIZE_MAX)}; sysconf_max_buffer_size != -1) {
+      passwd_max_buffer_size.emplace(sysconf_max_buffer_size);
+    }
+
     utsname uname_info{};
     if (const auto errc{k2::uname(std::addressof(uname_info))}; errc != k2::errno_ok) [[unlikely]] {
       kphp::log::error("can't get uname, error code: {}", errc);
