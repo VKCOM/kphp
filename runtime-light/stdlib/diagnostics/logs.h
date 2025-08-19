@@ -45,13 +45,12 @@ inline void assertion(bool condition, const std::source_location& location = std
 template<typename... Args>
 [[noreturn]] void error(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   if (const auto& error_handling_state_opt{ErrorHandlingState::try_get()};
-      !error_handling_state_opt.has_value() || (*error_handling_state_opt).get().log_level_enabled(E_ERROR)) {
-    if (std::to_underlying(level::error) <= k2::log_level_enabled()) {
-      std::array<void*, kphp::diagnostic::DEFAULT_BACKTRACE_MAX_SIZE> backtrace{};
-      const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
-      const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
-      impl::select_logger_and_log(level::error, backtrace_view, fmt, std::forward<Args>(args)...);
-    }
+      error_handling_state_opt.has_value() && !(*error_handling_state_opt).get().log_level_enabled(E_ERROR)) {
+  } else if (std::to_underlying(level::error) <= k2::log_level_enabled()) {
+    std::array<void*, kphp::diagnostic::DEFAULT_BACKTRACE_MAX_SIZE> backtrace{};
+    const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
+    const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
+    impl::select_logger_and_log(level::error, backtrace_view, fmt, std::forward<Args>(args)...);
   }
   k2::exit(1);
 }
@@ -59,23 +58,25 @@ template<typename... Args>
 template<typename... Args>
 void warning(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   if (const auto& error_handling_state_opt{ErrorHandlingState::try_get()};
-      !error_handling_state_opt.has_value() || (*error_handling_state_opt).get().log_level_enabled(E_WARNING)) {
-    if (std::to_underlying(level::warn) <= k2::log_level_enabled()) {
-      std::array<void*, kphp::diagnostic::DEFAULT_BACKTRACE_MAX_SIZE> backtrace{};
-      const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
-      const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
-      impl::select_logger_and_log(level::warn, backtrace_view, fmt, std::forward<Args>(args)...);
-    }
+      error_handling_state_opt.has_value() && !(*error_handling_state_opt).get().log_level_enabled(E_WARNING)) {
+    return;
+  }
+  if (std::to_underlying(level::warn) <= k2::log_level_enabled()) {
+    std::array<void*, kphp::diagnostic::DEFAULT_BACKTRACE_MAX_SIZE> backtrace{};
+    const size_t num_frames{kphp::diagnostic::backtrace(backtrace)};
+    const std::span<void* const> backtrace_view{backtrace.data(), num_frames};
+    impl::select_logger_and_log(level::warn, backtrace_view, fmt, std::forward<Args>(args)...);
   }
 }
 
 template<typename... Args>
 void info(std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   if (const auto& error_handling_state_opt{ErrorHandlingState::try_get()};
-      !error_handling_state_opt.has_value() || (*error_handling_state_opt).get().log_level_enabled(E_NOTICE)) {
-    if (std::to_underlying(level::info) <= k2::log_level_enabled()) {
-      impl::select_logger_and_log(level::info, std::nullopt, fmt, std::forward<Args>(args)...);
-    }
+      error_handling_state_opt.has_value() && !(*error_handling_state_opt).get().log_level_enabled(E_NOTICE)) {
+    return;
+  }
+  if (std::to_underlying(level::info) <= k2::log_level_enabled()) {
+    impl::select_logger_and_log(level::info, std::nullopt, fmt, std::forward<Args>(args)...);
   }
 }
 
