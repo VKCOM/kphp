@@ -172,12 +172,12 @@ inline int64_t f$get_running_fork_id() noexcept {
 }
 
 inline int64_t f$wait_queue_create() {
-  kphp::log::info("wait_queue_create() is noop");
+  kphp::log::info("called stub wait_queue_create()");
   return 0;
 }
 
 inline int64_t f$wait_queue_create(const mixed& /*resumable_ids*/) {
-  kphp::log::info("wait_queue_create(ids) is noop");
+  kphp::log::info("called stub wait_queue_create(ids)");
   return 0;
 }
 
