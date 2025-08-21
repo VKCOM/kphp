@@ -10,6 +10,7 @@
 #include <optional>
 #include <string_view>
 #include <sys/stat.h>
+#include <utility>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
@@ -56,6 +57,18 @@ inline Optional<int64_t> f$filesize(const string& filename) noexcept {
     return false;
   }
   return static_cast<int64_t>(stat.st_size);
+}
+
+inline Optional<string> f$realpath(const string& path) noexcept {
+  auto expected_path{k2::canonicalize({path.c_str(), path.size()})};
+  if (!expected_path) [[unlikely]] {
+    return false;
+  }
+
+  // *** important ***
+  // canonicalized_path is **not** null-terminated
+  auto [canonicalized_path, size]{*std::move(expected_path)};
+  return string{canonicalized_path.get(), static_cast<string::size_type>(size)};
 }
 
 inline resource f$fopen(const string& filename, [[maybe_unused]] const string& mode, [[maybe_unused]] bool use_include_path = false,
