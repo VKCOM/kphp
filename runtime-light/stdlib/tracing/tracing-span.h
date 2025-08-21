@@ -45,3 +45,8 @@ inline void f$KphpSpan$$updateName([[maybe_unused]] const class_instance<C$KphpS
                                    [[maybe_unused]] const string& short_desc) noexcept {
   kphp::log::warning("called stub KphpSpan::updateName");
 }
+
+inline void f$KphpSpan$$finishWithError([[maybe_unused]] const class_instance<C$KphpSpan>& v$this, [[maybe_unused]] int64_t error_code,
+                                        [[maybe_unused]] const string& error_msg, [[maybe_unused]] const Optional<float>& manual_timestamp = {}) {
+  kphp::log::warning("called stub KphpSpan::finishWithError");
+}

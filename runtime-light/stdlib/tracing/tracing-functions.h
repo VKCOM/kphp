@@ -28,6 +28,11 @@ inline class_instance<C$KphpDiv> f$kphp_tracing_init([[maybe_unused]] const stri
   return {};
 }
 
+inline int64_t f$kphp_tracing_get_level() {
+  kphp::log::warning("called stub kphp_tracing_get_level");
+  return -1; // Not initialized
+}
+
 inline class_instance<C$KphpSpan> f$kphp_tracing_start_span([[maybe_unused]] const string& title, [[maybe_unused]] const string& short_desc,
                                                             [[maybe_unused]] double start_timestamp) noexcept {
   kphp::log::warning("called stub kphp_tracing_start_span");
