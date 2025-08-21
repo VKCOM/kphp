@@ -27,7 +27,7 @@
 #include <time.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 11
+#define K2_PLATFORM_HEADER_H_VERSION 12
 
 // Always check that enum value is a valid value!
 
@@ -215,6 +215,20 @@ int32_t k2_uname(struct utsname* buf);
  * `EACCES` => permission denied
  */
 int32_t k2_open(uint64_t* stream_d, size_t name_len, const char* name);
+
+/**
+ * Open a file with specified `mode`.
+ *
+ * @return return `0` on success. libc-like `errno` otherwise.
+ * `fd` will be assigned new descriptor on success.
+ * `fd` will be assigned `0` on error. However, `fd=0` itself is not an error marker.
+ *
+ * Some `errno` examples:
+ * `EINVAL` => `pathname` or `mode` has invalid format (empty, too long, etc...).
+ * `EILSEC` => `mode` is not a valid UTF-8 string.
+ * Other => any error returned by libc's `fopen` function.
+ */
+int32_t k2_fopen(uint64_t* fd, const char* pathname, size_t pathname_len, const char* mode, size_t mode_len);
 
 /**
  * @return return `0` on success. libc-like `errno` otherwise
@@ -646,8 +660,10 @@ int32_t k2_canonicalize(const char* path, size_t pathlen, char* const* resolved_
  *                when, for example, an application compiled on a 32-bit
  *                platform without `-D_FILE_OFFSET_BITS=64` calls `stat()` on a
  *                file whose size exceeds `(1<<31)-1` bytes.
+ * `ERANGE` => Failed to convert `st_size`, `st_blksize`, or `st_blocks` to `int64_t`.
+ * `ENOSYS` => Internal error.
  */
-int32_t k2_stat(const char* pathname, struct stat* statbuf);
+int32_t k2_stat(const char* pathname, size_t pathname_len, struct stat* statbuf);
 
 #ifdef __cplusplus
 }
