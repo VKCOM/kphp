@@ -10,6 +10,7 @@ define('STDERR', 'php://stderr');
 
 function basename ($name ::: string, $suffix ::: string = ''): string;
 
+function filesize ($name ::: string): int | false;
 
 define('STREAM_CLIENT_CONNECT', 1);
 define('DEFAULT_SOCKET_TIMEOUT', 60);
@@ -43,8 +44,6 @@ function file ($name ::: string) ::: string[] | false;
 function file_put_contents ($name ::: string, $content ::: mixed, $flags ::: int = 0) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */
 function file_exists ($name ::: string) ::: bool;
-/** @kphp-extern-func-info stub generation-required */
-function filesize ($name ::: string) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */
 function filectime ($name ::: string) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */
