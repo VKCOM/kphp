@@ -329,7 +329,7 @@ inline auto canonicalize(std::string_view path) noexcept {
   char* resolved_path{};
   size_t resolved_path_len{};
   size_t resolved_path_align{};
-  auto deleter_creator{[](size_t resolved_path_len, size_t resolved_path_align) noexcept {
+  static constexpr auto deleter_creator{[](size_t resolved_path_len, size_t resolved_path_align) noexcept {
     return [resolved_path_len, resolved_path_align](void* ptr) noexcept { k2::free_checked(ptr, resolved_path_len, resolved_path_align); };
   }};
 
@@ -342,7 +342,7 @@ inline auto canonicalize(std::string_view path) noexcept {
       error_code != k2::errno_ok) [[unlikely]] {
     return return_type{std::unexpected{error_code}};
   }
-  return return_type{{unique_ptr_type{resolved_path, std::invoke(std::move(deleter_creator), resolved_path_len, resolved_path_align)}, resolved_path_len}};
+  return return_type{{unique_ptr_type{resolved_path, std::invoke(deleter_creator, resolved_path_len, resolved_path_align)}, resolved_path_len}};
 }
 
 inline int32_t stat(std::string_view path, struct stat* stat) noexcept {

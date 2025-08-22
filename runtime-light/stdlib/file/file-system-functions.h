@@ -52,7 +52,7 @@ inline string f$basename(const string& path, const string& suffix = {}) noexcept
 }
 
 inline Optional<int64_t> f$filesize(const string& filename) noexcept {
-  struct stat stat{};
+  struct stat stat {};
   if (auto errc{k2::stat({filename.c_str(), filename.size()}, std::addressof(stat))}; errc != k2::errno_ok) [[unlikely]] {
     return false;
   }
