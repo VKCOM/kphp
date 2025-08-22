@@ -172,11 +172,13 @@ inline int64_t f$get_running_fork_id() noexcept {
 }
 
 inline int64_t f$wait_queue_create() {
-  kphp::log::error("call to unsupported function");
+  kphp::log::info("called stub wait_queue_create()");
+  return 0;
 }
 
 inline int64_t f$wait_queue_create(const mixed& /*resumable_ids*/) {
-  kphp::log::error("call to unsupported function");
+  kphp::log::info("called stub wait_queue_create(ids)");
+  return 0;
 }
 
 inline int64_t f$wait_queue_push(int64_t /*queue_id*/, const mixed& /*resumable_ids*/) {

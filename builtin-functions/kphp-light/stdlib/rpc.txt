@@ -116,20 +116,8 @@ function rpc_queue_push ($queue_id ::: int, $request_ids ::: mixed) ::: int;
 /** @kphp-extern-func-info interruptible stub generation-required */
 function store_finish() ::: bool;
 
-/** @kphp-extern-func-info interruptible stub generation-required */
-function rpc_tl_query_one (\RpcConnection $rpc_conn, $arr ::: mixed, $timeout ::: float = -1.0) ::: int;
-
-/** @kphp-extern-func-info tl_common_h_dep interruptible stub */
-function typed_rpc_tl_query_result_synchronously (int[] $query_ids) ::: @tl\RpcResponse[];
-
-/** @kphp-extern-func-info tl_common_h_dep interruptible stub generation-required */
-function typed_rpc_tl_query_result_one (int $query_id) ::: @tl\RpcResponse;
-
 /** @kphp-extern-func-info interruptible stub generation-required can_throw */
 function fetch_lookup_int () ::: int;
-
-/** @kphp-extern-func-info interruptible stub generation-required */
-function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
 
 /** @kphp-generate-stub-class */
 final class RpcConnection {
