@@ -6,8 +6,11 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <string_view>
+#include <sys/stat.h>
+#include <utility>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/coroutine/task.h"
@@ -46,6 +49,26 @@ inline string f$basename(const string& path, const string& suffix = {}) noexcept
   }
 
   return {filename_view.data(), static_cast<string::size_type>(filename_view.size())};
+}
+
+inline Optional<int64_t> f$filesize(const string& filename) noexcept {
+  struct stat stat {};
+  if (auto errc{k2::stat({filename.c_str(), filename.size()}, std::addressof(stat))}; errc != k2::errno_ok) [[unlikely]] {
+    return false;
+  }
+  return static_cast<int64_t>(stat.st_size);
+}
+
+inline Optional<string> f$realpath(const string& path) noexcept {
+  auto expected_path{k2::canonicalize({path.c_str(), path.size()})};
+  if (!expected_path) [[unlikely]] {
+    return false;
+  }
+
+  // *** important ***
+  // canonicalized_path is **not** null-terminated
+  auto [canonicalized_path, size]{*std::move(expected_path)};
+  return string{canonicalized_path.get(), static_cast<string::size_type>(size)};
 }
 
 inline resource f$fopen(const string& filename, [[maybe_unused]] const string& mode, [[maybe_unused]] bool use_include_path = false,

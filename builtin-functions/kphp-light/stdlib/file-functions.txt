@@ -10,6 +10,9 @@ define('STDERR', 'php://stderr');
 
 function basename ($name ::: string, $suffix ::: string = ''): string;
 
+function filesize ($name ::: string): int | false;
+
+function realpath ($path ::: string): string | false;
 
 define('STREAM_CLIENT_CONNECT', 1);
 define('DEFAULT_SOCKET_TIMEOUT', 60);
@@ -44,8 +47,6 @@ function file_put_contents ($name ::: string, $content ::: mixed, $flags ::: int
 /** @kphp-extern-func-info stub generation-required */
 function file_exists ($name ::: string) ::: bool;
 /** @kphp-extern-func-info stub generation-required */
-function filesize ($name ::: string) ::: int | false;
-/** @kphp-extern-func-info stub generation-required */
 function filectime ($name ::: string) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */
 function filemtime ($name ::: string) ::: int | false;
@@ -57,8 +58,6 @@ function is_file ($name ::: string) ::: bool;
 function is_readable ($name ::: string) ::: bool;
 /** @kphp-extern-func-info stub generation-required */
 function mkdir ($name ::: string, $mode ::: int = 0777, $recursive ::: bool = false) ::: bool;
-/** @kphp-extern-func-info stub generation-required */
-function realpath ($path ::: string) ::: string | false;
 /** @kphp-extern-func-info stub generation-required */
 function rename ($oldname ::: string, $newname ::: string) ::: bool;
 /** @kphp-extern-func-info stub generation-required */

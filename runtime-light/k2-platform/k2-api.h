@@ -10,13 +10,16 @@
 #include <ctime>
 #include <expected>
 #include <format>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <pwd.h>
 #include <span>
 #include <string_view>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <type_traits>
 #include <utility>
 
 #define K2_API_HEADER_H
@@ -320,6 +323,33 @@ inline int32_t code_segment_offset(uint64_t* offset) noexcept {
 
 inline size_t backtrace(std::span<void*> buffer) noexcept {
   return k2_backtrace(buffer.data(), buffer.size());
+}
+
+inline auto canonicalize(std::string_view path) noexcept {
+  char* resolved_path{};
+  size_t resolved_path_len{};
+  size_t resolved_path_align{};
+  static constexpr auto deleter_creator{[](size_t resolved_path_len, size_t resolved_path_align) noexcept {
+    return [resolved_path_len, resolved_path_align](void* ptr) noexcept { k2::free_checked(ptr, resolved_path_len, resolved_path_align); };
+  }};
+
+  using deleter_type = std::invoke_result_t<decltype(deleter_creator), size_t, size_t>;
+  using unique_ptr_type = std::unique_ptr<char, deleter_type>;
+  using return_type = std::expected<std::pair<unique_ptr_type, size_t>, int32_t>;
+
+  if (auto error_code{
+          k2_canonicalize(path.data(), path.size(), std::addressof(resolved_path), std::addressof(resolved_path_len), std::addressof(resolved_path_align))};
+      error_code != k2::errno_ok) [[unlikely]] {
+    return return_type{std::unexpected{error_code}};
+  }
+  return return_type{{unique_ptr_type{resolved_path, std::invoke(deleter_creator, resolved_path_len, resolved_path_align)}, resolved_path_len}};
+}
+
+inline int32_t stat(std::string_view path, struct stat* stat) noexcept {
+  if (auto error_code{k2_stat(path.data(), path.size(), stat)}; error_code != k2::errno_ok) [[unlikely]] {
+    return error_code;
+  }
+  return k2::errno_ok;
 }
 
 } // namespace k2
