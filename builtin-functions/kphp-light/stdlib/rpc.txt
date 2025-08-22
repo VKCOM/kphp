@@ -118,3 +118,9 @@ function store_finish() ::: bool;
 
 /** @kphp-extern-func-info interruptible stub generation-required can_throw */
 function fetch_lookup_int () ::: int;
+
+/** @kphp-generate-stub-class */
+final class RpcConnection {
+    /** @kphp-extern-func-info stub generation-required */
+    private function __construct();
+}
