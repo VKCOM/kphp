@@ -58,8 +58,8 @@ inline auto send_response(kphp::component::stream& stream, std::span<const std::
   co_return std::expected<void, int32_t>{};
 }
 
-inline auto query(kphp::component::stream& stream, std::span<const std::byte> request, std::span<std::byte> response) noexcept
-    -> kphp::coro::task<std::expected<size_t, int32_t>> {
+inline auto query(kphp::component::stream& stream, std::span<const std::byte> request,
+                  std::span<std::byte> response) noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
   if (auto expected{co_await send_request(stream, request)}; !expected) [[unlikely]] {
     co_return std::unexpected{expected.error()};
   }
