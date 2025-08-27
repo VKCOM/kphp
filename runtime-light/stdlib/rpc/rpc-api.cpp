@@ -326,10 +326,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
   auto waiter{[](int64_t query_id, kphp::component::stream stream, std::chrono::nanoseconds timeout,
                  bool collect_responses_extra_info) noexcept -> kphp::coro::task<kphp::stl::vector<std::byte, kphp::memory::script_allocator>> {
-    static constexpr size_t DEFAULT_RESPONSE_CAPACITY = 1 << 17; // 128KB
     kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
-    response.reserve(DEFAULT_RESPONSE_CAPACITY);
-
     auto fetch_task{kphp::component::fetch_response(stream, kphp::component::read_ext::append(response))};
     if (auto expected{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task), timeout)}; !expected) [[unlikely]] {
       response.clear();
