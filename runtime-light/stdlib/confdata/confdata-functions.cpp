@@ -6,9 +6,12 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <span>
 #include <utility>
 
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-common/stdlib/serialization/serialize-functions.h"
 #include "runtime-light/coroutine/task.h"
@@ -17,6 +20,7 @@
 #include "runtime-light/stdlib/confdata/confdata-constants.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
+#include "runtime-light/streams/read-ext.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -51,11 +55,12 @@ kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
     co_return mixed{};
   }
 
-  tl::fetcher tlf{stream.data()};
+  tl::fetcher tlf{response};
   tl::Maybe<tl::confdataValue> maybe_confdata_value{};
   kphp::log::assertion(maybe_confdata_value.fetch(tlf));
 
@@ -72,17 +77,19 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
   tl::storer tls{confdata_get_wildcard.footprint()};
   confdata_get_wildcard.store(tls);
 
-  auto expected_stream{kphp::component::stream::open(kphp::confdata::COMPONENT_NAME, k2::stream_kind::component, CONFDATA_GET_WILDCARD_STREAM_CAPACITY)};
+  auto expected_stream{kphp::component::stream::open(kphp::confdata::COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
     co_return array<mixed>{};
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
+  response.reserve(CONFDATA_GET_WILDCARD_STREAM_CAPACITY);
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
     co_return array<mixed>{};
   }
 
-  tl::fetcher tlf{stream.data()};
+  tl::fetcher tlf{response};
   tl::Dictionary<tl::confdataValue> dict_confdata_value{};
   kphp::log::assertion(dict_confdata_value.fetch(tlf));
 

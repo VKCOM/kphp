@@ -5,11 +5,14 @@
 #include "runtime-light/server/rpc/init-functions.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 #include <utility>
 
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/streams/stream.h"
@@ -84,8 +87,8 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
 
 namespace kphp::rpc {
 
-void init_server(kphp::component::stream request_stream) noexcept {
-  tl::fetcher tlf{request_stream.data()};
+void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std::byte, kphp::memory::script_allocator>&& request) noexcept {
+  tl::fetcher tlf{request};
   tl::K2InvokeRpc invoke_rpc{};
   if (!invoke_rpc.fetch(tlf)) [[unlikely]] {
     kphp::log::error("erroneous rpc request");

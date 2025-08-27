@@ -38,6 +38,7 @@
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
+#include "runtime-light/streams/read-ext.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 
@@ -311,7 +312,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
   const auto query_id{rpc_client_instance_st.current_query_id++};
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
 
-  auto expected_stream{kphp::component::stream::open(actor, k2::stream_kind::component, 0)};
+  auto expected_stream{kphp::component::stream::open(actor, k2::stream_kind::component)};
   if (!expected_stream || !co_await kphp::component::send_request(*expected_stream, {request.get(), request_size})) [[unlikely]] {
     co_return kphp::rpc::query_info{.id = kphp::rpc::INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
@@ -325,24 +326,27 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
   auto waiter{[](int64_t query_id, kphp::component::stream stream, std::chrono::nanoseconds timeout,
                  bool collect_responses_extra_info) noexcept -> kphp::coro::task<kphp::stl::vector<std::byte, kphp::memory::script_allocator>> {
-    auto expected_notimeout{co_await kphp::coro::io_scheduler::get().schedule(kphp::component::fetch_response(stream), timeout)};
-    auto expected_response{expected_notimeout ? *std::move(expected_notimeout) : std::unexpected{k2::errno_etimedout}};
+    static constexpr size_t DEFAULT_RESPONSE_CAPACITY = 1 << 17; // 128KB
+    kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
+    response.reserve(DEFAULT_RESPONSE_CAPACITY);
+
+    auto fetch_task{kphp::component::fetch_response(stream, kphp::component::read_ext::append(response))};
+    if (auto expected{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task), timeout)}; !expected) [[unlikely]] {
+      response.clear();
+    }
+
     // update response extra info if needed
     if (collect_responses_extra_info) {
       auto& extra_info_map{RpcClientInstanceState::get().rpc_responses_extra_info};
       if (const auto it_extra_info{extra_info_map.find(query_id)}; it_extra_info != extra_info_map.end()) [[likely]] {
         const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
-        it_extra_info->second.second = std::make_tuple(stream.size(), timestamp - std::get<1>(it_extra_info->second.second));
+        it_extra_info->second.second = std::make_tuple(response.size(), timestamp - std::get<1>(it_extra_info->second.second));
         it_extra_info->second.first = response_extra_info_status::ready;
       } else {
         kphp::log::warning("can't find extra info for RPC query {}", query_id);
       }
     }
 
-    kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
-    if (expected_response) [[likely]] {
-      response.append_range(stream.data());
-    }
     co_return std::move(response);
   }};
   // normalize timeout
