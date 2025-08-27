@@ -139,7 +139,7 @@ inline auto f$component_client_fetch_response(class_instance<C$ComponentQuery> q
   co_return std::move(response);
 }
 
-// // === component query server interface ===========================================================
+// === component query server interface ===========================================================
 
 inline auto f$component_server_accept_query() noexcept -> kphp::coro::task<class_instance<C$ComponentQuery>> {
   auto opt_stream{co_await kphp::forks::id_managed(kphp::component::stream::accept())};
