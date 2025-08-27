@@ -115,16 +115,16 @@ inline kphp::coro::task<bool> f$fclose(resource stream) noexcept {
 }
 
 inline kphp::coro::task<Optional<int64_t>> f$fwrite(resource stream, string data) noexcept {
-  std::span<const std::byte> data_bytes{reinterpret_cast<const std::byte*>(data.c_str()), data.size()};
+  std::span<const char> data_span{data.c_str(), data.size()};
   if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(stream, {})}; !sync_resource.is_null()) {
-    auto expected{sync_resource.get()->write(data_bytes)};
+    auto expected{sync_resource.get()->write(std::as_bytes(data_span))};
     co_return expected ? Optional<int64_t>{static_cast<int64_t>(*std::move(expected))} : Optional<int64_t>{false};
   } else if (auto async_resource{from_mixed<class_instance<kphp::fs::async_resource>>(stream, {})}; !async_resource.is_null()) {
-    auto expected{co_await kphp::forks::id_managed(async_resource.get()->write(data_bytes))};
+    auto expected{co_await kphp::forks::id_managed(async_resource.get()->write(std::as_bytes(data_span)))};
     co_return expected ? Optional<int64_t>{static_cast<int64_t>(*std::move(expected))} : Optional<int64_t>{false};
   }
 
-  kphp::log::warning("unexpected resource in fclose -> {}", stream.to_string().c_str());
+  kphp::log::warning("unexpected resource in fwrite -> {}", stream.to_string().c_str());
   co_return false;
 }
 
@@ -134,12 +134,12 @@ inline kphp::coro::task<Optional<string>> f$fread(resource stream, int64_t lengt
   }
 
   string data{static_cast<string::size_type>(length), false};
-  std::span<std::byte> buf{reinterpret_cast<std::byte*>(data.buffer()), data.size()};
+  std::span<char> buf{data.buffer(), data.size()};
   std::expected<size_t, int32_t> expected{std::unexpected{k2::errno_einval}};
   if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(stream, {})}; !sync_resource.is_null()) {
-    expected = sync_resource.get()->read(buf);
+    expected = sync_resource.get()->read(std::as_writable_bytes(buf));
   } else if (auto async_resource{from_mixed<class_instance<kphp::fs::async_resource>>(stream, {})}; !async_resource.is_null()) {
-    expected = co_await kphp::forks::id_managed(async_resource.get()->read(buf));
+    expected = co_await kphp::forks::id_managed(async_resource.get()->read(std::as_writable_bytes(buf)));
   } else {
     kphp::log::warning("unexpected resource in fread -> {}", stream.to_string().c_str());
     co_return false;
