@@ -176,7 +176,7 @@ inline resource f$stream_socket_client(const string& address, std::optional<std:
     }
     return {};
   }
-  return make_instance<kphp::fs::resource>(*std::move(expected));
+  return make_instance<kphp::fs::socket>(*std::move(expected));
 }
 
 inline Optional<string> f$file_get_contents(const string& stream) noexcept {
