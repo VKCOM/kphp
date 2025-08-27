@@ -4,11 +4,13 @@
 
 #pragma once
 
-#include <algorithm>
+#include <array>
 #include <chrono>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
+#include <functional>
 #include <iterator>
 #include <memory>
 #include <optional>
@@ -16,7 +18,6 @@
 #include <string_view>
 #include <utility>
 
-#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/poll.h"
 #include "runtime-light/coroutine/task.h"
@@ -26,36 +27,19 @@
 namespace kphp::component {
 
 class stream {
-  using storage_type = std::unique_ptr<std::byte, decltype(std::addressof(kphp::memory::script::free))>;
-
-  storage_type m_storage;
-  size_t m_storage_size{};
-  size_t m_storage_capacity{};
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
+  kphp::coro::io_scheduler& m_scheduler{kphp::coro::io_scheduler::get()};
 
-  stream(storage_type storage, size_t capacity, k2::descriptor descriptor) noexcept
-      : m_storage(std::move(storage)),
-        m_storage_capacity(capacity),
-        m_descriptor(descriptor) {
-    kphp::log::assertion(m_storage_capacity == 0 || static_cast<bool>(m_storage));
-  }
+  explicit stream(k2::descriptor descriptor) noexcept
+      : m_descriptor(descriptor) {}
 
 public:
-  static constexpr auto DEFAULT_STORAGE_CAPACITY = static_cast<size_t>(1 << 11);
-
   stream(stream&& other) noexcept
-      : m_storage(std::move(other.m_storage)),
-        m_storage_size(std::exchange(other.m_storage_size, 0)),
-        m_storage_capacity(std::exchange(other.m_storage_capacity, 0)),
-        m_descriptor(std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)) {}
+      : m_descriptor(std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)) {}
 
   auto operator=(stream&& other) noexcept -> stream& {
     if (this != std::addressof(other)) {
-      reset(k2::INVALID_PLATFORM_DESCRIPTOR);
-      m_storage = std::move(other.m_storage);
-      m_storage_size = std::exchange(other.m_storage_size, 0);
-      m_storage_capacity = std::exchange(other.m_storage_capacity, 0);
-      m_descriptor = std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
+      reset(std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR));
     }
     return *this;
   }
@@ -67,158 +51,131 @@ public:
   stream(const stream&) = delete;
   auto operator=(const stream&) -> stream& = delete;
 
-  static auto open(std::string_view component_name, k2::stream_kind stream_kind,
-                   size_t capacity = DEFAULT_STORAGE_CAPACITY) noexcept -> std::expected<kphp::component::stream, int32_t>;
-  static auto accept(size_t capacity = DEFAULT_STORAGE_CAPACITY,
-                     std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>>;
+  static auto open(std::string_view target, k2::stream_kind stream_kind) noexcept -> std::expected<kphp::component::stream, int32_t>;
+  static auto accept(std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>>;
 
-  auto clear() noexcept -> void;
-  auto reset(k2::descriptor descriptor) noexcept -> void;
-  auto reserve(size_t capacity) noexcept -> std::expected<void, int32_t>;
-
-  auto size() const noexcept -> size_t;
-  auto capacity() const noexcept -> size_t;
   auto descriptor() const noexcept -> k2::descriptor;
-  auto data() const noexcept -> std::span<const std::byte>;
+  auto reset(k2::descriptor descriptor) noexcept -> void;
 
-  auto read() noexcept -> kphp::coro::task<std::expected<void, int32_t>>;
-  auto write(std::span<const std::byte> data) const noexcept -> kphp::coro::task<std::expected<void, int32_t>>;
-  auto shutdown_write() const noexcept -> void;
+  auto read(std::span<std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>>;
+  template<std::invocable<std::span<const std::byte>> F>
+  auto read_all(F f) const noexcept -> kphp::coro::task<std::expected<void, int32_t>>;
+
+  auto write(std::span<const std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>>;
+  auto write_all(std::span<const std::byte> buf) const noexcept -> kphp::coro::task<std::expected<void, int32_t>>;
+  auto shutdown_write() noexcept -> void; // mark it non-const to indicate that it actually changes the stream's state
 };
 
 // ================================================================================================
 
-inline auto stream::open(std::string_view name, k2::stream_kind stream_kind, size_t capacity) noexcept -> std::expected<kphp::component::stream, int32_t> {
+inline auto stream::open(std::string_view target, k2::stream_kind stream_kind) noexcept -> std::expected<kphp::component::stream, int32_t> {
   int32_t errc{};
   k2::descriptor descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
   switch (stream_kind) {
   case k2::stream_kind::component:
-    errc = k2::open(std::addressof(descriptor), name.size(), name.data());
+    errc = k2::open(std::addressof(descriptor), target.size(), target.data());
     break;
   case k2::stream_kind::tcp:
-    errc = k2::tcp_connect(std::addressof(descriptor), name.data(), name.size());
+    errc = k2::tcp_connect(std::addressof(descriptor), target.data(), target.size());
     break;
   case k2::stream_kind::udp:
-    errc = k2::udp_connect(std::addressof(descriptor), name.data(), name.size());
+    errc = k2::udp_connect(std::addressof(descriptor), target.data(), target.size());
     break;
   }
 
   if (errc != k2::errno_ok) [[unlikely]] {
-    kphp::log::warning("failed to open a stream: name -> {}, stream kind -> {}, error code -> {}", name, std::to_underlying(stream_kind), errc);
+    kphp::log::warning("failed to open a stream: name -> {}, stream kind -> {}, error code -> {}", target, std::to_underlying(stream_kind), errc);
     return std::unexpected{errc};
   }
 
-  void* mem{capacity > 0 ? kphp::memory::script::alloc(capacity) : nullptr};
-  kphp::log::debug("opened a stream: name -> {}, descriptor -> {}", name, descriptor);
-  return std::expected<kphp::component::stream, int32_t>{stream{{static_cast<std::byte*>(mem), kphp::memory::script::free}, capacity, descriptor}};
+  kphp::log::debug("opened a stream: name -> {}, descriptor -> {}", target, descriptor);
+  return std::expected<kphp::component::stream, int32_t>{stream{descriptor}};
 }
 
-inline auto stream::accept(size_t capacity, std::chrono::nanoseconds timeout) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>> {
+inline auto stream::accept(std::chrono::nanoseconds timeout) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>> {
   const auto descriptor{co_await kphp::coro::io_scheduler::get().accept(timeout)};
   if (descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
     kphp::log::warning("failed to accept a stream within a specified timeout: {}", timeout);
     co_return std::nullopt;
   }
 
-  auto* mem{capacity > 0 ? kphp::memory::script::alloc(capacity) : nullptr};
   kphp::log::debug("accepted a stream: descriptor -> {}", descriptor);
-  co_return stream{{static_cast<std::byte*>(mem), kphp::memory::script::free}, capacity, descriptor};
-}
-
-inline auto stream::clear() noexcept -> void {
-  m_storage_size = 0;
+  co_return stream{descriptor};
 }
 
 inline auto stream::reset(k2::descriptor descriptor) noexcept -> void {
   if (descriptor == m_descriptor) [[unlikely]] {
     return;
   }
-
-  clear();
-  if (m_descriptor != k2::INVALID_PLATFORM_DESCRIPTOR) {
-    k2::free_descriptor(std::exchange(m_descriptor, descriptor));
-  }
-}
-
-inline auto stream::size() const noexcept -> size_t {
-  return m_storage_size;
-}
-
-inline auto stream::capacity() const noexcept -> size_t {
-  return m_storage_capacity;
-}
-
-inline auto stream::reserve(size_t capacity) noexcept -> std::expected<void, int32_t> {
-  if (capacity <= m_storage_capacity) [[unlikely]] {
-    return std::expected<void, int32_t>{};
-  }
-
-  auto* cur_mem{m_storage.release()};
-  auto* new_mem{static_cast<std::byte*>(kphp::memory::script::realloc(cur_mem, capacity))};
-  if (new_mem == nullptr) [[unlikely]] {
-    m_storage.reset(cur_mem);
-    return std::unexpected{k2::errno_enomem};
-  }
-  m_storage.reset(new_mem);
-  m_storage_capacity = capacity;
-  return std::expected<void, int32_t>{};
+  k2::free_descriptor(std::exchange(m_descriptor, descriptor));
 }
 
 inline auto stream::descriptor() const noexcept -> k2::descriptor {
   return m_descriptor;
 }
 
-inline auto stream::data() const noexcept -> std::span<const std::byte> {
-  return {m_storage.get(), m_storage_size};
+inline auto stream::read(std::span<std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
+  for (size_t read{}; read < buf.size();) {
+    switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::read)) {
+    case kphp::coro::poll_status::event:
+      [[likely]] read += k2::read(m_descriptor, buf.size() - read, static_cast<void*>(std::next(buf.data(), read)));
+      break;
+    case kphp::coro::poll_status::closed:
+      [[likely]] co_return std::expected<size_t, int32_t>{read};
+    case kphp::coro::poll_status::error:
+      co_return std::unexpected{k2::errno_efault};
+    case kphp::coro::poll_status::timeout:
+      co_return std::unexpected{k2::errno_ecanceled};
+    }
+  }
+  co_return std::expected<size_t, int32_t>{buf.size()};
 }
 
-inline auto stream::read() noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
-  auto& io_scheduler{kphp::coro::io_scheduler::get()};
+template<std::invocable<std::span<const std::byte>> F>
+auto stream::read_all(F f) const noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
+  static constexpr size_t CHUNK_SIZE = 2048;
+  std::array<std::byte, CHUNK_SIZE> chunk; // NOLINT
 
   for (;;) {
-    const auto poll_status{co_await io_scheduler.poll(m_descriptor, kphp::coro::poll_op::read)};
-    switch (poll_status) {
-    case kphp::coro::poll_status::event:
-      if (m_storage_capacity == m_storage_size) {
-        if (auto expected{reserve(std::max(DEFAULT_STORAGE_CAPACITY, m_storage_capacity * 2))}; !expected) [[unlikely]] {
-          co_return std::move(expected);
-        }
-      }
-      [[likely]] m_storage_size += k2::read(m_descriptor, m_storage_capacity - m_storage_size, static_cast<void*>(std::next(m_storage.get(), m_storage_size)));
-      break;
-    case kphp::coro::poll_status::closed:
-      [[likely]] co_return std::expected<void, int32_t>{};
-    case kphp::coro::poll_status::error:
-      co_return std::unexpected{k2::errno_efault};
-    case kphp::coro::poll_status::timeout:
-      co_return std::unexpected{k2::errno_ecanceled};
+    auto expected{co_await read(chunk)};
+    if (!expected || *expected == 0) {
+      co_return expected.transform([](auto) noexcept {});
     }
+    kphp::log::assertion(*expected <= CHUNK_SIZE);
+    std::invoke(f, std::span<const std::byte>{chunk}.first(*expected));
   }
-  kphp::log::assertion(false);
 }
 
-inline auto stream::write(std::span<const std::byte> data) const noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
-  auto& io_scheduler{kphp::coro::io_scheduler::get()};
-
-  size_t written{};
-  for (; written < data.size();) {
-    switch (co_await io_scheduler.poll(m_descriptor, kphp::coro::poll_op::write)) {
+inline auto stream::write(std::span<const std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
+  for (size_t written{}; written < buf.size();) {
+    switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::write)) {
     case kphp::coro::poll_status::event:
-      [[likely]] written += k2::write(m_descriptor, data.size() - written, static_cast<const void*>(std::next(data.data(), written)));
+      [[likely]] written += k2::write(m_descriptor, buf.size() - written, static_cast<const void*>(std::next(buf.data(), written)));
       break;
     case kphp::coro::poll_status::closed:
-      co_return std::unexpected{k2::errno_eshutdown};
+      [[likely]] co_return std::expected<size_t, int32_t>{written};
     case kphp::coro::poll_status::error:
       co_return std::unexpected{k2::errno_efault};
     case kphp::coro::poll_status::timeout:
       co_return std::unexpected{k2::errno_ecanceled};
     }
   }
-  kphp::log::assertion(written == data.size());
+  co_return std::expected<size_t, int32_t>{buf.size()};
+}
+
+inline auto stream::write_all(std::span<const std::byte> buf) const noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
+  auto expected{co_await write(buf)};
+  if (!expected) [[unlikely]] {
+    co_return std::unexpected{expected.error()};
+  }
+
+  if (*expected != buf.size()) [[unlikely]] {
+    co_return std::unexpected{k2::errno_eshutdown};
+  }
   co_return std::expected<void, int32_t>{};
 }
 
-inline auto stream::shutdown_write() const noexcept -> void {
+inline auto stream::shutdown_write() noexcept -> void { // NOLINT
   k2::shutdown_write(m_descriptor);
 }
 

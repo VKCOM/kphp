@@ -4,18 +4,25 @@
 
 #pragma once
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <span>
 #include <string_view>
 #include <utility>
 
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/serialization/msgpack-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
 #include "runtime-light/stdlib/serialization/msgpack-functions.h"
+#include "runtime-light/streams/read-ext.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -51,18 +58,19 @@ kphp::coro::task<bool> f$instance_cache_store(string key, InstanceType instance,
   tl::storer tls{cache_store.footprint()};
   cache_store.store(tls);
 
-  auto expected_stream{kphp::component::stream::open(kphp::instance_cache::details::COMPONENT_NAME, k2::stream_kind::component, tl::Bool{}.footprint())};
+  auto expected_stream{kphp::component::stream::open(kphp::instance_cache::details::COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
     co_return false;
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  std::array<std::byte, tl::Bool{}.footprint()> response{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response))) [[unlikely]] {
     co_return false;
   }
 
   tl::Bool tl_bool{};
-  tl::fetcher tlf{stream.data()};
+  tl::fetcher tlf{response};
   kphp::log::assertion(tl_bool.fetch(tlf));
   InstanceCacheInstanceState::get().request_cache.emplace(std::move(key), std::move(instance));
   co_return tl_bool.value;
@@ -86,12 +94,13 @@ kphp::coro::task<InstanceType> f$instance_cache_fetch(string /*class_name*/, str
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
     co_return InstanceType{};
   }
 
+  tl::fetcher tlf{response};
   tl::Maybe<tl::string> maybe_string{};
-  tl::fetcher tlf{stream.data()};
   kphp::log::assertion(maybe_string.fetch(tlf));
   if (!maybe_string.opt_value) [[unlikely]] {
     co_return InstanceType{};
@@ -118,18 +127,19 @@ inline kphp::coro::task<bool> f$instance_cache_update_ttl(string key, int64_t tt
   tl::storer tls{cache_update_tll.footprint()};
   cache_update_tll.store(tls);
 
-  auto expected_stream{kphp::component::stream::open(kphp::instance_cache::details::COMPONENT_NAME, k2::stream_kind::component, tl::Bool{}.footprint())};
+  auto expected_stream{kphp::component::stream::open(kphp::instance_cache::details::COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
     co_return false;
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  std::array<std::byte, tl::Bool{}.footprint()> response{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response))) [[unlikely]] {
     co_return false;
   }
 
   tl::Bool tl_bool{};
-  tl::fetcher tlf{stream.data()};
+  tl::fetcher tlf{response};
   kphp::log::assertion(tl_bool.fetch(tlf));
   co_return tl_bool.value;
 }
@@ -141,18 +151,19 @@ inline kphp::coro::task<bool> f$instance_cache_delete(string key) noexcept {
   tl::storer tls{cache_delete.footprint()};
   cache_delete.store(tls);
 
-  auto expected_stream{kphp::component::stream::open(kphp::instance_cache::details::COMPONENT_NAME, k2::stream_kind::component, tl::Bool{}.footprint())};
+  auto expected_stream{kphp::component::stream::open(kphp::instance_cache::details::COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
     co_return false;
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  std::array<std::byte, tl::Bool{}.footprint()> response{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response))) [[unlikely]] {
     co_return false;
   }
 
   tl::Bool tl_bool{};
-  tl::fetcher tlf{stream.data()};
+  tl::fetcher tlf{response};
   kphp::log::assertion(tl_bool.fetch(tlf));
   co_return tl_bool.value;
 }

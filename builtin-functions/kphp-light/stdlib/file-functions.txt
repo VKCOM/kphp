@@ -18,11 +18,16 @@ define('STREAM_CLIENT_CONNECT', 1);
 define('DEFAULT_SOCKET_TIMEOUT', 60);
 
 function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO, &$error_description ::: mixed = TODO, $timeout ::: float = DEFAULT_SOCKET_TIMEOUT, $flags ::: int = STREAM_CLIENT_CONNECT, $context ::: mixed = null) ::: mixed;
-function fopen ($filename ::: string, $mode ::: string) ::: mixed;
+
+function fopen ($filename ::: string, $mode ::: string): mixed;
 /** @kphp-extern-func-info interruptible */
-function fwrite ($stream ::: mixed, $text ::: string) ::: int | false;
-function fflush ($stream ::: mixed) ::: bool;
-function fclose ($stream ::: mixed) ::: bool;
+function fwrite ($stream ::: mixed, $text ::: string): int | false;
+ /** @kphp-extern-func-info interruptible */
+function fread ($stream ::: mixed, $length ::: int): string | false;
+/** @kphp-extern-func-info interruptible */
+function fflush ($stream ::: mixed): bool;
+/** @kphp-extern-func-info interruptible */
+function fclose ($stream ::: mixed): bool;
 
 function file_get_contents ($name ::: string) ::: string | false;
 
@@ -81,8 +86,6 @@ function fseek ($stream ::: mixed, $offset ::: int, $whence ::: int = SEEK_SET) 
 function rewind ($stream ::: mixed) ::: bool;
  /** @kphp-extern-func-info stub generation-required */
 function ftell ($stream ::: mixed) ::: int | false;
- /** @kphp-extern-func-info stub generation-required */
-function fread ($stream ::: mixed, $length ::: int) ::: string | false;
  /** @kphp-extern-func-info stub generation-required */
 function fgetc ($stream ::: mixed) ::: string | false;
  /** @kphp-extern-func-info stub generation-required */

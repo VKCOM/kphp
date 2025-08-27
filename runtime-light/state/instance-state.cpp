@@ -8,10 +8,13 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <span>
 #include <string_view>
 #include <utility>
 
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/task.h"
@@ -25,6 +28,7 @@
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/time/time-functions.h"
+#include "runtime-light/streams/read-ext.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -79,10 +83,8 @@ void InstanceState::init_script_execution() noexcept {
 }
 
 kphp::coro::task<> InstanceState::init_cli_instance() noexcept {
-  static constexpr size_t OUTPUT_STREAM_CAPACITY = 0;
-
   instance_kind_ = instance_kind::cli;
-  auto opt_output_stream{co_await kphp::component::stream::accept(OUTPUT_STREAM_CAPACITY)};
+  auto opt_output_stream{co_await kphp::component::stream::accept()};
   kphp::log::assertion(opt_output_stream.has_value());
   kphp::cli::init_cli_server(std::move(*opt_output_stream));
 }
@@ -101,22 +103,24 @@ kphp::coro::task<> InstanceState::init_server_instance() noexcept {
   auto opt_request_stream{co_await kphp::component::stream::accept()};
   kphp::log::assertion(opt_request_stream.has_value());
   auto request_stream{std::move(*opt_request_stream)};
-  if (auto expected{co_await kphp::component::fetch_request(request_stream)}; !expected) [[unlikely]] {
+
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> request{};
+  if (auto expected{co_await kphp::component::fetch_request(request_stream, kphp::component::read_ext::append(request))}; !expected) [[unlikely]] {
     kphp::log::error("failed to read a request: stream -> {}", request_stream.descriptor());
   }
 
   tl::magic request_magic{};
-  tl::fetcher tlf{request_stream.data()};
+  tl::fetcher tlf{request};
   kphp::log::assertion(request_magic.fetch(tlf));
 
   switch (request_magic.value) {
   case tl::K2_INVOKE_HTTP_MAGIC:
     instance_kind_ = instance_kind::http_server;
-    kphp::http::init_server(std::move(request_stream));
+    kphp::http::init_server(std::move(request_stream), std::move(request));
     break;
   case tl::K2_INVOKE_RPC_MAGIC:
     instance_kind_ = instance_kind::rpc_server;
-    kphp::rpc::init_server(std::move(request_stream));
+    kphp::rpc::init_server(std::move(request_stream), std::move(request));
     break;
   case tl::K2_INVOKE_JOB_WORKER_MAGIC:
     kphp::log::error("job worker server is currently not supported");

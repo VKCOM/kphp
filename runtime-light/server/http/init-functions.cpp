@@ -19,7 +19,9 @@
 #include <utility>
 
 #include "common/algorithms/string-algorithms.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -228,8 +230,8 @@ string get_http_response_body(HttpServerInstanceState& http_server_instance_st) 
 
 namespace kphp::http {
 
-void init_server(kphp::component::stream request_stream) noexcept {
-  tl::fetcher tlf{request_stream.data()};
+void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std::byte, kphp::memory::script_allocator>&& request) noexcept {
+  tl::fetcher tlf{request};
   tl::K2InvokeHttp invoke_http{};
   if (!invoke_http.fetch(tlf)) [[unlikely]] {
     kphp::log::error("erroneous http request");
@@ -410,7 +412,7 @@ kphp::coro::task<> finalize_server() noexcept {
     if (!http_server_instance_st.request_stream.has_value()) [[unlikely]] {
       kphp::log::error("can't send HTTP response since there is no available stream");
     }
-    const auto& request_stream{*http_server_instance_st.request_stream};
+    auto& request_stream{*http_server_instance_st.request_stream};
     if (auto expected{co_await kphp::component::send_response(request_stream, tls.view())}; !expected) [[unlikely]] {
       kphp::log::error("can't write HTTP response: stream -> {}, error code -> {}", request_stream.descriptor(), expected.error());
     }

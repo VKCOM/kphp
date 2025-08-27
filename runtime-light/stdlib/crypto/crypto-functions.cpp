@@ -16,12 +16,15 @@
 
 #include "common/crc32_generic.h"
 #include "common/tl/constants/common.h"
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/streams/read-ext.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -48,11 +51,12 @@ kphp::coro::task<Optional<string>> f$openssl_random_pseudo_bytes(int64_t length)
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
     co_return false;
   }
 
-  tl::fetcher tlf{stream.data()};
+  tl::fetcher tlf{response};
   tl::magic magic{};
   tl::string str{};
   kphp::log::assertion(magic.fetch(tlf) && magic.expect(TL_MAYBE_TRUE) && str.fetch(tlf));
@@ -70,11 +74,12 @@ kphp::coro::task<Optional<array<mixed>>> f$openssl_x509_parse(string data, bool 
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
-  tl::fetcher tlf{stream.data()};
+  tl::fetcher tlf{response_bytes};
   tl::Maybe<tl::Dictionary<tl::CertInfoItem>> cert_items{};
   kphp::log::assertion(cert_items.fetch(tlf));
   if (!cert_items.opt_value) {
@@ -116,11 +121,12 @@ kphp::coro::task<bool> f$openssl_sign(string data, string& signature, string pri
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
-  tl::fetcher tlf{stream.data()};
+  tl::fetcher tlf{response_bytes};
   tl::magic magic{};
   tl::string str{};
   kphp::log::assertion(magic.fetch(tlf) && magic.expect(TL_MAYBE_TRUE) && str.fetch(tlf));
@@ -142,11 +148,12 @@ kphp::coro::task<int64_t> f$openssl_verify(string data, string signature, string
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  std::array<std::byte, tl::magic{}.footprint()> response{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), response))) [[unlikely]] {
     co_return false;
   }
 
-  tl::fetcher tlf{stream.data()};
+  tl::fetcher tlf{response};
   // For now returns only 1 or 0, -1 is never returned
   // Because it's currently impossible to distiguish error from negative verification
   if (tl::magic magic{}; !magic.fetch(tlf) || !magic.expect(TL_BOOL_TRUE)) {
@@ -289,11 +296,12 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
-  tl::fetcher tlf{stream.data()};
+  tl::fetcher tlf{response_bytes};
   tl::String response{};
   kphp::log::assertion(response.fetch(tlf));
   string result{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
@@ -343,11 +351,12 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
-  tl::fetcher tlf{stream.data()};
+  tl::fetcher tlf{response_bytes};
   tl::String response{};
   kphp::log::assertion(response.fetch(tlf));
   co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
@@ -380,11 +389,12 @@ kphp::coro::task<string> send_and_get_string(tl::storer tls, bool raw_output) no
   }
 
   auto stream{*std::move(expected_stream)};
-  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view()))) [[unlikely]] {
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
     co_return false;
   }
 
-  tl::fetcher tlf{stream.data()};
+  tl::fetcher tlf{response_bytes};
   tl::String response{};
   kphp::log::assertion(response.fetch(tlf));
 
