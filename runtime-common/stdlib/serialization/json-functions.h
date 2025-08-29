@@ -5,6 +5,8 @@
 #pragma once
 
 #include <array>
+#include <optional>
+#include <string_view>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
@@ -174,5 +176,6 @@ inline Optional<string> f$vk_json_encode(const T& v) noexcept {
   return f$json_encode(v, 0, true);
 }
 
-std::pair<mixed, bool> json_decode(const string& v, const char* json_obj_magic_key = nullptr) noexcept;
+std::optional<mixed> json_decode(std::string_view v, std::string_view json_obj_magic_key = {}) noexcept;
+
 mixed f$json_decode(const string& v, bool assoc = false) noexcept;
