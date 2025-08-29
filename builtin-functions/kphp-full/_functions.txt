@@ -990,9 +990,25 @@ function rpc_tl_query_result ($query_ids ::: array) ::: mixed[][];
 function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
 function rpc_tl_pending_queries_count () ::: int;
 
-/** @kphp-tl-class */
+function set_last_stored_tl_function_magic ($magic ::: int);
+function set_current_tl_function($name ::: string);
+function raise_fetching_error($text ::: string);
+function raise_storing_error($text ::: string);
+
+/** @kphp-required */
+interface RpcFunctionFetcher {
+  public function typedFetch() : @tl\RpcFunctionReturnResult;
+  public function typedStore($result ::: @tl\RpcFunctionReturnResult);
+}
+
+/**
+ * @kphp-required
+ * @kphp-tl-class
+ */
 interface RpcFunction {
   public function getTLFunctionName() : string;
+  public function customStore() : RpcFunctionFetcher;
+  public function customFetch() : RpcFunctionFetcher;
 }
 
 /** @kphp-tl-class */
@@ -1006,6 +1022,13 @@ interface RpcResponse {
   public function getError() : @tl\_common\Types\rpcResponseError;
   public function isError() : bool;
 }
+
+/** @kphp-extern-func-info tl_common_h_dep */
+function tests_typed_rpc_tl_query_store (@tl\RpcFunction $query_function) ::: string;
+/** @kphp-extern-func-info can_throw */
+function tests_typed_rpc_tl_query_result_store(@tl\RpcFunctionReturnResult $response) ::: string;
+/** @kphp-extern-func-info tl_common_h_dep */
+function tests_typed_rpc_tl_query_result_fetch(string $data) ::: @tl\RpcFunctionReturnResult;
 
 /** @kphp-extern-func-info tl_common_h_dep */
 function typed_rpc_tl_query_one (\RpcConnection $connection, @tl\RpcFunction $query_function, $timeout ::: float = -1.0) ::: int;

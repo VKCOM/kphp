@@ -18,6 +18,18 @@ interface RpcFunction {
   /**
    * @kphp-inline
    *
+   * @return \RpcFunctionFetcher
+   */
+  public function customStore();
+  /**
+   * @kphp-inline
+   *
+   * @return \RpcFunctionFetcher
+   */
+  public function customFetch();
+  /**
+   * @kphp-inline
+   *
    * @return string
    */
   public function getTLFunctionName();

@@ -2,9 +2,25 @@
 
 // ===== SUPPORTED =====
 
-/** @kphp-tl-class */
+function set_last_stored_tl_function_magic ($magic ::: int);
+function set_current_tl_function($name ::: string);
+function raise_fetching_error($text ::: string);
+function raise_storing_error($text ::: string);
+
+/** @kphp-required */
+interface RpcFunctionFetcher {
+  public function typedFetch() : @tl\RpcFunctionReturnResult;
+  public function typedStore($result ::: @tl\RpcFunctionReturnResult);
+}
+
+/**
+ * @kphp-required
+ * @kphp-tl-class
+ */
 interface RpcFunction {
   public function getTLFunctionName() : string;
+  public function customStore() : RpcFunctionFetcher;
+  public function customFetch() : RpcFunctionFetcher;
 }
 
 /** @kphp-tl-class */

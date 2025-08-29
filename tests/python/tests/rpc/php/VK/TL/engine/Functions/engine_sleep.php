@@ -53,6 +53,24 @@ class engine_sleep implements TL\RpcFunction {
   /**
    * @kphp-inline
    *
+   * @return \RpcFunctionFetcher
+   */
+  public function customStore(){
+    return null;
+  }
+
+  /**
+   * @kphp-inline
+   *
+   * @return \RpcFunctionFetcher
+   */
+  public function customFetch(){
+    return null;
+  }
+
+  /**
+   * @kphp-inline
+   *
    * @return string
    */
   public function getTLFunctionName() {

@@ -168,6 +168,8 @@ bool f$store_error(int64_t error_code, const string& error_text);
 
 bool f$store_raw(const string& data);
 
+string get_stored_tl_buffer();
+
 void f$store_raw_vector_double(const array<double>& vector);
 
 bool f$set_fail_rpc_on_int32_overflow(bool fail_rpc); // TODO: remove when all RPC errors will be fixed
@@ -260,6 +262,10 @@ array<int64_t> f$rpc_tl_query(const class_instance<C$RpcConnection>& c, const ar
                               class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info = {}, bool need_responses_extra_info = false);
 
 array<mixed> f$rpc_tl_query_result_one(int64_t query_id);
+void f$set_last_stored_tl_function_magic(int64_t magic);
+void f$set_current_tl_function(const string& name);
+void f$raise_fetching_error(const string& text);
+void f$raise_storing_error(const string& text);
 
 array<array<mixed>> f$rpc_tl_query_result(const array<int64_t>& query_ids);
 
