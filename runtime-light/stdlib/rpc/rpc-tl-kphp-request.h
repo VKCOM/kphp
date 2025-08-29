@@ -14,6 +14,39 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"
+#include "runtime-light/stdlib/rpc/rpc-tl-func-base.h"
+
+class_instance<C$RpcFunctionFetcher> f$VK$TL$RpcFunction$$customStore(class_instance<C$VK$TL$RpcFunction> const& arg) noexcept;
+class_instance<C$RpcFunctionFetcher> f$VK$TL$RpcFunction$$customFetch(class_instance<C$VK$TL$RpcFunction> const& arg) noexcept;
+class_instance<C$VK$TL$RpcFunctionReturnResult> f$RpcFunctionFetcher$$typedFetch(class_instance<C$RpcFunctionFetcher> const& fetcher) noexcept;
+void f$RpcFunctionFetcher$$typedStore(class_instance<C$RpcFunctionFetcher> const& fetcher,
+                                      class_instance<C$VK$TL$RpcFunctionReturnResult> const& result) noexcept;
+
+// should be in header, because C$VK$TL$* classes are unknown on runtime compilation
+struct tl_func_base_simple_wrapper : public tl_func_base {
+  explicit tl_func_base_simple_wrapper(class_instance<C$RpcFunctionFetcher>&& wrapped)
+      : wrapped_(std::move(wrapped)) {}
+
+  virtual mixed fetch() {
+    php_critical_error("this function should never be called for typed RPC function.");
+    return mixed{};
+  }
+
+  virtual class_instance<C$VK$TL$RpcFunctionReturnResult> typed_fetch() {
+    return f$RpcFunctionFetcher$$typedFetch(wrapped_);
+  }
+
+  virtual void rpc_server_typed_store(const class_instance<C$VK$TL$RpcFunctionReturnResult>& result) {
+    return f$RpcFunctionFetcher$$typedStore(wrapped_, result);
+  }
+
+private:
+  class_instance<C$RpcFunctionFetcher> wrapped_;
+};
+
+inline std::unique_ptr<tl_func_base> make_tl_func_base_simple_wrapper(class_instance<C$RpcFunctionFetcher>&& wrapped) {
+  return std::make_unique<tl_func_base_simple_wrapper>(std::move(wrapped));
+}
 
 namespace kphp::rpc::rpc_impl {
 // use template, because t_ReqResult_ is unknown on runtime compilation
@@ -47,8 +80,13 @@ public:
     auto& cur_query{CurrentTlQuery::get()};
     cur_query.set_current_tl_function(tl_function_name());
     const vk::final_action finalizer{[&cur_query] noexcept { cur_query.reset(); }};
-
-    std::unique_ptr<tl_func_base> stored_fetcher{storing_function.get()->store()};
+    std::unique_ptr<tl_func_base> stored_fetcher;
+    auto custom_fetcher = f$VK$TL$RpcFunction$$customStore(storing_function);
+    if (custom_fetcher.is_null()) {
+      stored_fetcher = storing_function.get()->store();
+    } else {
+      stored_fetcher = make_tl_func_base_simple_wrapper(std::move(custom_fetcher));
+    }
     CHECK_EXCEPTION(return {});
     return make_unique_on_script_memory<KphpRpcRequestResult<t_ReqResult_>>(std::move(stored_fetcher));
   }

@@ -407,6 +407,13 @@ bool f$store_raw(const string& data) {
   return true;
 }
 
+string get_stored_tl_buffer() {
+  if (data_buf.size() < static_cast<string::size_type>(sizeof(RpcHeaders))) {
+    return string{};
+  }
+  return string{data_buf.c_str() + sizeof(RpcHeaders), data_buf.size() - static_cast<string::size_type>(sizeof(RpcHeaders))};
+}
+
 void f$store_raw_vector_double(const array<double>& vector) {
   data_buf.append(reinterpret_cast<const char*>(vector.get_const_vector_pointer()), sizeof(double) * vector.count());
 }
@@ -1329,6 +1336,22 @@ array<mixed> f$rpc_tl_query_result_one(int64_t query_id) {
 
   resumable_finalizer.disable();
   return start_resumable<array<mixed>>(new rpc_tl_query_result_one_resumable(query_id, std::move(rpc_query)));
+}
+
+void f$set_last_stored_tl_function_magic(int64_t magic) {
+  CurrentTlQuery::get().set_last_stored_tl_function_magic(magic);
+}
+
+void f$set_current_tl_function(const string& name) {
+  CurrentTlQuery::get().set_current_tl_function(name);
+}
+
+void f$raise_fetching_error(const string& text) {
+  CurrentTlQuery::get().raise_fetching_error("%s", text.c_str());
+}
+
+void f$raise_storing_error(const string& text) {
+  CurrentTlQuery::get().raise_storing_error("%s", text.c_str());
 }
 
 class rpc_tl_query_result_resumable : public Resumable {

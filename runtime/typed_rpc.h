@@ -8,19 +8,56 @@
 #include "runtime/tl/rpc_function.h"
 #include "runtime/tl/rpc_request.h"
 #include "runtime/tl/rpc_response.h"
+#include "runtime/tl/rpc_server.h"
 #include "runtime/tl/rpc_tl_query.h"
 
 struct C$RpcConnection;
 
+inline string tests_typed_rpc_tl_query_store_impl(const RpcRequest& req) {
+  f$rpc_clean();
+  if (req.empty()) {
+    php_warning("Writing rpc query error: query function is null");
+    return string{};
+  }
+
+  std::unique_ptr<RpcRequestResult> stored_fetcher = req.store_request();
+  if (!stored_fetcher) {
+    return string{};
+  }
+
+  return get_stored_tl_buffer();
+}
+
+inline string f$tests_typed_rpc_tl_query_result_store(const class_instance<C$VK$TL$RpcFunctionReturnResult>& response) noexcept {
+  f$rpc_clean();
+  std::unique_ptr<tl_func_base> tl_func_state = CurrentRpcServerQuery::get().extract();
+  if (!tl_func_state) {
+    php_warning("There is no pending rpc server request. Unable to store response.");
+    return string{};
+  }
+  tl_func_state->rpc_server_typed_store(response);
+  return get_stored_tl_buffer();
+}
+
+inline class_instance<C$VK$TL$RpcFunctionReturnResult> f$tests_typed_rpc_tl_query_result_fetch(string) {
+  auto result_fetcher = CurrentRpcServerQuery::get().extract();
+  if (!result_fetcher) {
+    return class_instance<C$VK$TL$RpcFunctionReturnResult>{};
+  }
+  return result_fetcher->typed_fetch();
+}
+
+template<typename F, typename R = KphpRpcRequest>
+string f$tests_typed_rpc_tl_query_store(const class_instance<F>& query_function) {
+  static_assert(std::is_base_of_v<C$VK$TL$RpcFunction, F>, "Unexpected type");
+  static_assert(std::is_same_v<KphpRpcRequest, R>, "Unexpected type");
+
+  return tests_typed_rpc_tl_query_store_impl(R{query_function});
+}
+
 int64_t typed_rpc_tl_query_impl(const class_instance<C$RpcConnection>& connection, const RpcRequest& req, double timeout,
                                 rpc_request_extra_info_t& req_extra_info, bool collect_resp_extra_info, bool ignore_answer, bool bytes_estimating,
                                 size_t& bytes_sent, bool flush);
-
-class_instance<C$VK$TL$RpcResponse> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory& error_factory);
-
-array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_impl(const array<int64_t>& query_ids, const RpcErrorFactory& error_factory);
-
-array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronously_impl(const array<int64_t>& query_ids, const RpcErrorFactory& error_factory);
 
 template<typename F, typename R = KphpRpcRequest>
 int64_t f$typed_rpc_tl_query_one(const class_instance<C$RpcConnection>& connection, const class_instance<F>& query_function, double timeout = -1.0) {
@@ -69,6 +106,8 @@ array<int64_t> f$typed_rpc_tl_query(const class_instance<C$RpcConnection>& conne
   return queries;
 }
 
+class_instance<C$VK$TL$RpcResponse> typed_rpc_tl_query_result_one_impl(int64_t query_id, const RpcErrorFactory& error_factory);
+
 template<typename I, typename F = rpcResponseErrorFactory>
 class_instance<C$VK$TL$RpcResponse> f$typed_rpc_tl_query_result_one(I query_id) {
   static_assert(std::is_same_v<int64_t, I>, "Unexpected type");
@@ -76,12 +115,16 @@ class_instance<C$VK$TL$RpcResponse> f$typed_rpc_tl_query_result_one(I query_id) 
   return typed_rpc_tl_query_result_one_impl(query_id, F::get());
 }
 
+array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_impl(const array<int64_t>& query_ids, const RpcErrorFactory& error_factory);
+
 template<typename I, typename F = rpcResponseErrorFactory>
 array<class_instance<C$VK$TL$RpcResponse>> f$typed_rpc_tl_query_result(const array<I>& query_ids) {
   static_assert(std::is_same_v<int64_t, I>, "Unexpected type");
   static_assert(std::is_same_v<rpcResponseErrorFactory, F>, "Unexpected type");
   return typed_rpc_tl_query_result_impl(query_ids, F::get());
 }
+
+array<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_synchronously_impl(const array<int64_t>& query_ids, const RpcErrorFactory& error_factory);
 
 template<typename I, typename F = rpcResponseErrorFactory>
 array<class_instance<C$VK$TL$RpcResponse>> f$typed_rpc_tl_query_result_synchronously(const array<I>& query_ids) {

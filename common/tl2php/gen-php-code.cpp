@@ -326,6 +326,36 @@ struct FunctionGetTLFunctionName {
   const PhpClassRepresentation& class_repr;
 
   friend std::ostream& operator<<(std::ostream& os, const FunctionGetTLFunctionName& self) {
+    // we will remove ALL tl2php code soon, so we added a bit hackish code here
+    const char* header1 = R"(  /**
+   * @kphp-inline
+   *
+   * @return \RpcFunctionFetcher
+   */
+  public function customStore())";
+    const char* header2 = R"(  /**
+   * @kphp-inline
+   *
+   * @return \RpcFunctionFetcher
+   */
+  public function customFetch())";
+    const char* body = R"({
+    return null;
+  }
+
+)";
+    os << header1;
+    if (self.class_repr.is_interface) {
+      os << ";" << std::endl;
+    } else {
+      os << body;
+    }
+    os << header2;
+    if (self.class_repr.is_interface) {
+      os << ";" << std::endl;
+    } else {
+      os << body;
+    }
     os << FunctionDeclaration{"getTLFunctionName", {}, "string", has_kphp_inline};
     if (self.class_repr.is_interface) {
       return os << ";" << std::endl;
