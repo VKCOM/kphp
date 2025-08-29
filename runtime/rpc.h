@@ -63,7 +63,7 @@ int32_t last_rpc_error_code_get();
 
 void last_rpc_error_reset();
 
-void rpc_parse(const int32_t* new_rpc_data, int32_t new_rpc_data_len);
+void rpc_parse(const char* new_rpc_data, int new_rpc_data_len);
 
 bool f$rpc_parse(const string& new_rpc_data);
 
@@ -73,9 +73,9 @@ bool f$rpc_parse(bool new_rpc_data);
 
 bool f$rpc_parse(const Optional<string>& new_rpc_data);
 
-int32_t rpc_get_pos();
+int rpc_get_pos();
 
-bool rpc_set_pos(int32_t pos);
+bool rpc_set_pos(int pos);
 
 int32_t rpc_lookup_int();
 
@@ -84,8 +84,6 @@ int32_t rpc_fetch_int();
 int64_t f$fetch_int();
 
 int64_t f$fetch_lookup_int();
-
-string f$fetch_lookup_data(int64_t x4_bytes_length);
 
 int64_t f$fetch_long();
 
