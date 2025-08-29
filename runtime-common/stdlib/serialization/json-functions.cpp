@@ -4,6 +4,10 @@
 
 #include "runtime-common/stdlib/serialization/json-functions.h"
 
+#include <cstddef>
+#include <optional>
+#include <string_view>
+
 #include "common/algorithms/find.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-functions.h"
@@ -316,17 +320,17 @@ bool JsonEncoder::encode(const mixed& v, string_buffer& sb) noexcept {
 
 namespace {
 
-void json_skip_blanks(const char* s, int& i) noexcept {
+void json_skip_blanks(const char* s, size_t& i) noexcept {
   while (vk::any_of_equal(s[i], ' ', '\t', '\r', '\n')) {
     i++;
   }
 }
 
-bool do_json_decode(const char* s, int s_len, int& i, mixed& v, const char* json_obj_magic_key) noexcept {
+bool do_json_decode(std::string_view s, size_t& i, mixed& v, std::string_view json_obj_magic_key) noexcept {
   if (!v.is_null()) {
     v.destroy();
   }
-  json_skip_blanks(s, i);
+  json_skip_blanks(s.data(), i);
   switch (s[i]) {
   case 'n':
     if (s[i + 1] == 'u' && s[i + 2] == 'l' && s[i + 3] == 'l') {
@@ -351,14 +355,14 @@ bool do_json_decode(const char* s, int s_len, int& i, mixed& v, const char* json
   case '"': {
     int j = i + 1;
     int slashes = 0;
-    while (j < s_len && s[j] != '"') {
+    while (j < s.size() && s[j] != '"') {
       if (s[j] == '\\') {
         slashes++;
         j++;
       }
       j++;
     }
-    if (j < s_len) {
+    if (j < s.size()) {
       int len = j - i - 1 - slashes;
 
       string value(len, false);
@@ -469,15 +473,15 @@ bool do_json_decode(const char* s, int s_len, int& i, mixed& v, const char* json
   case '[': {
     array<mixed> res;
     i++;
-    json_skip_blanks(s, i);
+    json_skip_blanks(s.data(), i);
     if (s[i] != ']') {
       do {
         mixed value;
-        if (!do_json_decode(s, s_len, i, value, json_obj_magic_key)) {
+        if (!do_json_decode(s, i, value, json_obj_magic_key)) {
           return false;
         }
         res.push_back(value);
-        json_skip_blanks(s, i);
+        json_skip_blanks(s.data(), i);
       } while (s[i++] == ',');
 
       if (s[i - 1] != ']') {
@@ -493,22 +497,22 @@ bool do_json_decode(const char* s, int s_len, int& i, mixed& v, const char* json
   case '{': {
     array<mixed> res;
     i++;
-    json_skip_blanks(s, i);
+    json_skip_blanks(s.data(), i);
     if (s[i] != '}') {
       do {
         mixed key;
-        if (!do_json_decode(s, s_len, i, key, json_obj_magic_key) || !key.is_string()) {
+        if (!do_json_decode(s, i, key, json_obj_magic_key) || !key.is_string()) {
           return false;
         }
-        json_skip_blanks(s, i);
+        json_skip_blanks(s.data(), i);
         if (s[i++] != ':') {
           return false;
         }
 
-        if (!do_json_decode(s, s_len, i, res[key], json_obj_magic_key)) {
+        if (!do_json_decode(s, i, res[key], json_obj_magic_key)) {
           return false;
         }
-        json_skip_blanks(s, i);
+        json_skip_blanks(s.data(), i);
       } while (s[i++] == ',');
 
       if (s[i - 1] != '}') {
@@ -520,8 +524,8 @@ bool do_json_decode(const char* s, int s_len, int& i, mixed& v, const char* json
 
     // it's impossible to distinguish whether empty php array was an json array or json object;
     // to overcome it we add dummy key to php array that make array::is_vector() returning false, so we have difference
-    if (json_obj_magic_key && res.empty()) {
-      res[string{json_obj_magic_key}] = true;
+    if (!json_obj_magic_key.empty() && res.empty()) {
+      res[string{json_obj_magic_key.data(), static_cast<string::size_type>(json_obj_magic_key.size())}] = true;
     }
 
     new (&v) mixed(res);
@@ -534,15 +538,15 @@ bool do_json_decode(const char* s, int s_len, int& i, mixed& v, const char* json
     }
     if (j > i) {
       int64_t intval = 0;
-      if (php_try_to_int(s + i, j - i, &intval)) {
+      if (php_try_to_int(s.data() + i, j - i, &intval)) {
         i = j;
         new (&v) mixed(intval);
         return true;
       }
 
       char* end_ptr;
-      double floatval = strtod(s + i, &end_ptr);
-      if (end_ptr == s + j) {
+      double floatval = strtod(s.data() + i, &end_ptr);
+      if (end_ptr == s.data() + j) {
         i = j;
         new (&v) mixed(floatval);
         return true;
@@ -557,22 +561,20 @@ bool do_json_decode(const char* s, int s_len, int& i, mixed& v, const char* json
 
 } // namespace
 
-std::pair<mixed, bool> json_decode(const string& v, const char* json_obj_magic_key) noexcept {
-  mixed result;
-  int i = 0;
-  if (do_json_decode(v.c_str(), v.size(), i, result, json_obj_magic_key)) {
-    json_skip_blanks(v.c_str(), i);
-    if (i == static_cast<int>(v.size())) {
-      bool success = true;
-      return {result, success};
+std::optional<mixed> json_decode(std::string_view v, std::string_view json_obj_magic_key) noexcept {
+  mixed result{};
+  size_t i{};
+  if (do_json_decode(v, i, result, json_obj_magic_key)) {
+    json_skip_blanks(v.data(), i);
+    if (i == v.size()) {
+      return result;
     }
   }
-
   return {};
 }
 
 mixed f$json_decode(const string& v, bool assoc) noexcept {
   // TODO It was a warning before (in case if assoc is false), but then it was disabled, should we enable it again?
   static_cast<void>(assoc);
-  return json_decode(v).first;
+  return json_decode({v.c_str(), v.size()}, {}).value_or(mixed{});
 }
