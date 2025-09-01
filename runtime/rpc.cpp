@@ -217,7 +217,7 @@ int64_t f$fetch_lookup_int() {
 }
 
 string f$fetch_lookup_data(int64_t x4_bytes_length) {
-  TRY_CALL_VOID(string, (check_rpc_data_len(x4_bytes_length*4)));
+  TRY_CALL_VOID(string, (check_rpc_data_len(x4_bytes_length * 4)));
   return {rpc_data, static_cast<string::size_type>(x4_bytes_length * 4)};
 }
 
