@@ -46,9 +46,9 @@ void check_class(ClassPtr class_id) {
     std::string tl_class_name = class_id->name.substr(pos);
     const auto &tl_php_classes = G->get_tl_classes().get_php_classes();
     auto tl_class_php_repr_it = tl_php_classes.all_classes.find(tl_class_name);
-    kphp_error_return(tl_class_php_repr_it != tl_php_classes.all_classes.end(),
-                      fmt_format("Can't find tl-class '{}' in schema", class_id->name));
-    verify_class_against_repr(class_id, tl_class_php_repr_it->second.get());
+    if(tl_class_php_repr_it != tl_php_classes.all_classes.end()) {
+      verify_class_against_repr(class_id, tl_class_php_repr_it->second.get());
+    }
   }
 }
 

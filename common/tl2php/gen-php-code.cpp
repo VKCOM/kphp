@@ -330,13 +330,13 @@ struct FunctionGetTLFunctionName {
     const char* header1 = R"(  /**
    * @kphp-inline
    *
-   * @return \RpcFunctionFetcher
+   * @return TL\RpcFunctionFetcher
    */
   public function customStore())";
     const char* header2 = R"(  /**
    * @kphp-inline
    *
-   * @return \RpcFunctionFetcher
+   * @return TL\RpcFunctionFetcher
    */
   public function customFetch())";
     const char* body = R"({

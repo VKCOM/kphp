@@ -16,15 +16,15 @@
 #include "runtime-light/stdlib/rpc/rpc-tl-query.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-request.h"
 
-class_instance<C$RpcFunctionFetcher> f$VK$TL$RpcFunction$$customStore(class_instance<C$VK$TL$RpcFunction> const& arg) noexcept;
-class_instance<C$RpcFunctionFetcher> f$VK$TL$RpcFunction$$customFetch(class_instance<C$VK$TL$RpcFunction> const& arg) noexcept;
-class_instance<C$VK$TL$RpcFunctionReturnResult> f$RpcFunctionFetcher$$typedFetch(class_instance<C$RpcFunctionFetcher> const& fetcher) noexcept;
-void f$RpcFunctionFetcher$$typedStore(class_instance<C$RpcFunctionFetcher> const& fetcher,
+class_instance<C$VK$TL$RpcFunctionFetcher> f$VK$TL$RpcFunction$$customStore(class_instance<C$VK$TL$RpcFunction> const& arg) noexcept;
+class_instance<C$VK$TL$RpcFunctionFetcher> f$VK$TL$RpcFunction$$customFetch(class_instance<C$VK$TL$RpcFunction> const& arg) noexcept;
+class_instance<C$VK$TL$RpcFunctionReturnResult> f$RpcFunctionFetcher$$typedFetch(class_instance<C$VK$TL$RpcFunctionFetcher> const& fetcher) noexcept;
+void f$RpcFunctionFetcher$$typedStore(class_instance<C$VK$TL$RpcFunctionFetcher> const& fetcher,
                                       class_instance<C$VK$TL$RpcFunctionReturnResult> const& result) noexcept;
 
 // should be in header, because C$VK$TL$* classes are unknown on runtime compilation
 struct tl_func_base_simple_wrapper : public tl_func_base {
-  explicit tl_func_base_simple_wrapper(class_instance<C$RpcFunctionFetcher>&& wrapped)
+  explicit tl_func_base_simple_wrapper(class_instance<C$VK$TL$RpcFunctionFetcher>&& wrapped)
       : wrapped_(std::move(wrapped)) {}
 
   virtual mixed fetch() {
@@ -41,10 +41,10 @@ struct tl_func_base_simple_wrapper : public tl_func_base {
   }
 
 private:
-  class_instance<C$RpcFunctionFetcher> wrapped_;
+  class_instance<C$VK$TL$RpcFunctionFetcher> wrapped_;
 };
 
-inline std::unique_ptr<tl_func_base> make_tl_func_base_simple_wrapper(class_instance<C$RpcFunctionFetcher>&& wrapped) {
+inline std::unique_ptr<tl_func_base> make_tl_func_base_simple_wrapper(class_instance<C$VK$TL$RpcFunctionFetcher>&& wrapped) {
   return std::make_unique<tl_func_base_simple_wrapper>(std::move(wrapped));
 }
 
