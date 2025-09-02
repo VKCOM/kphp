@@ -68,7 +68,7 @@ jobs:
 
       - name: Add git safe directory
         run: docker exec kphp-build-container-${{matrix.os}} bash -c
-          "git config --global --add safe.directory '*'"
+          "git config --global --add safe.directory '${{env.kphp_root_dir}}'"
         # This command is used to address potential issues with Git's safe directory feature.
         # By setting '*' as a safe directory, we allow Git operations to proceed without errors
         # related to directory safety, ensuring smooth execution of the submodules updating.

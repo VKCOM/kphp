@@ -10,9 +10,12 @@ RUN apt-get update
 RUN apt-get install -y --no-install-recommends \
     ca-certificates pkg-config lsb-release wget gnupg \
     git cmake-data cmake make \
-    g++ g++-${GPP_VERSION} \
+    g++-${GPP_VERSION} \
     gperf netcat-openbsd patch re2c \
     libfmt-dev libgtest-dev libgmock-dev zlib1g-dev
+
+# GCC
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GPP_VERSION} 100
 
 # Python
 RUN apt-get install -y --no-install-recommends \
@@ -27,6 +30,9 @@ RUN wget -O /etc/apt/trusted.gpg.d/pgdg-key.asc https://www.postgresql.org/media
 
 # MySQL
 RUN apt-get install -y --no-install-recommends default-mysql-server default-libmysqlclient-dev
+RUN wget -O /tmp/mysql-apt-config.deb 'https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb' \
+    && apt-get install -y /tmp/mysql-apt-config.deb && apt-get update \
+    && apt-get install -y --no-install-recommends mysql-server libmysqlclient-dev
 
 # Python package
 COPY tests/python/requirements-trixie.txt /tmp/requirements.txt
