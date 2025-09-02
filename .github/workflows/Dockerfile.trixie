@@ -9,7 +9,7 @@ ARG GCC_VERSION=12
 RUN apt-get update
 
 RUN apt-get install -y --no-install-recommends \
-    ca-certificates pkg-config lsb-release wget gnupg \
+    ca-certificates pkg-config lsb-release build-essential wget gnupg \
     git cmake-data cmake make \
     gcc-${GCC_VERSION} g++-${GPP_VERSION} \
     gperf netcat-openbsd patch re2c \
