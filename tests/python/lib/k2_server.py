@@ -29,6 +29,8 @@ class K2Server(WebServer):
                          "--restart-socket": "/tmp/k2_restart_node_{}".format(hash(self._working_dir)),
                          "--linking": self._linking_file}
 
+        os.environ["RUNTIME_CONFIG_PATH"] = os.path.join(working_dir, "data/runtime_configuration.json")
+
         if options:
             self.update_options(options)
         if auto_start:

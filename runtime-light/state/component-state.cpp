@@ -4,16 +4,41 @@
 
 #include "runtime-light/state/component-state.h"
 
+#include <cstddef>
 #include <cstring>
 #include <iterator>
+#include <memory>
+#include <span>
 #include <string_view>
+#include <sys/stat.h>
 #include <utility>
 
 #include "common/php-functions.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/file/resource.h"
+
+namespace {
+
+void set_reference_counter_recursive(mixed obj, ExtraRefCnt rc) noexcept {
+  switch (obj.get_type()) {
+  case mixed::type::ARRAY:
+    obj.set_reference_counter_to(rc);
+    for (const auto& it : obj.as_array()) {
+      set_reference_counter_recursive(it.get_key(), rc);
+      set_reference_counter_recursive(it.get_value(), rc);
+    }
+    break;
+  default:
+    obj.set_reference_counter_to(rc);
+    break;
+  }
+}
+
+} // namespace
 
 void ComponentState::parse_env() noexcept {
   for (auto i = 0; i < envc; ++i) {
@@ -45,11 +70,37 @@ void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view v
 }
 
 void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexcept {
-  if (auto opt_config{json_decode(value_view)}; opt_config) [[likely]] {
-    runtime_config = *std::move(opt_config);
-  } else {
-    kphp::log::warning("runtime config isn't a valid JSON");
+  auto expected_canonicalized_path{k2::canonicalize(value_view)};
+  if (!expected_canonicalized_path) [[unlikely]] {
+    return kphp::log::warning("error canonicalizing runtime-config path: error_code -> {}, path -> '{}'", expected_canonicalized_path.error(), value_view);
   }
+
+  const auto [runtime_config_path, runtime_config_path_size]{*std::move(expected_canonicalized_path)};
+  auto expected_runtime_config_file{kphp::fs::file::open({runtime_config_path.get(), runtime_config_path_size}, "r")};
+  if (!expected_runtime_config_file) [[unlikely]] {
+    return kphp::log::warning("error opening runtime-config: error code -> {}", expected_runtime_config_file.error());
+  }
+
+  struct stat stat {};
+  if (auto error_code{k2::stat({runtime_config_path.get(), runtime_config_path_size}, std::addressof(stat))}; error_code != k2::errno_ok) [[unlikely]] {
+    return kphp::log::warning("error getting runtime-config stat: error code -> {}", error_code);
+  }
+
+  const auto runtime_config_mem{std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>{
+      reinterpret_cast<char*>(kphp::memory::script::alloc(static_cast<size_t>(stat.st_size))), kphp::memory::script::free}};
+  kphp::log::assertion(runtime_config_mem != nullptr);
+  auto runtime_config_buf{std::span<char>{runtime_config_mem.get(), static_cast<size_t>(stat.st_size)}};
+  if (auto expected_read{(*expected_runtime_config_file).read(std::as_writable_bytes(runtime_config_buf))}; !expected_read || *expected_read != stat.st_size)
+      [[unlikely]] {
+    return kphp::log::warning("error reading runtime-config: error code -> {}, read bytes -> {}", expected_read.error_or(k2::errno_ok),
+                              expected_read.value_or(0));
+  }
+
+  auto opt_config{json_decode({runtime_config_buf.data(), runtime_config_buf.size()})};
+  if (!opt_config) [[unlikely]] {
+    return kphp::log::warning("error decoding runtime-config");
+  }
+  runtime_config = *std::move(opt_config);
 }
 
 void ComponentState::parse_args() noexcept {
@@ -66,6 +117,6 @@ void ComponentState::parse_args() noexcept {
       kphp::log::warning("unexpected argument format: {}", key_view);
     }
   }
-  runtime_config.set_reference_counter_to(ExtraRefCnt::for_global_const);
   ini_opts.set_reference_counter_to(ExtraRefCnt::for_global_const);
+  set_reference_counter_recursive(runtime_config, ExtraRefCnt::for_global_const);
 }

@@ -5,5 +5,5 @@ components:
     scope: Request
     args:
       ini hello: "world"
-      runtime-config: "{\"name\": \"simple configuration\", \"version\": \"1.0.0\"}"
+      runtime-config: ${RUNTIME_CONFIG_PATH}
     links: {}
