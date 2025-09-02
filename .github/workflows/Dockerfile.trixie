@@ -29,9 +29,7 @@ RUN wget -O /etc/apt/trusted.gpg.d/pgdg-key.asc https://www.postgresql.org/media
     && apt-get update && apt-get install -y --no-install-recommends postgresql-14 libpq-dev
 
 # MySQL
-RUN wget -O /tmp/mysql-apt-config.deb 'https://dev.mysql.com/get/mysql-apt-config_0.8.29-1_all.deb' \
-    && apt-get install -y /tmp/mysql-apt-config.deb && apt-get update \
-    && apt-get install -y --no-install-recommends mysql-server libmysqlclient-dev
+RUN apt-get install -y --no-install-recommends default-mysql-server default-libmysqlclient-dev
 
 # Python package
 COPY tests/python/requirements-trixie.txt /tmp/requirements.txt
