@@ -138,6 +138,10 @@ inline int32_t open(k2::descriptor* descriptor, size_t name_len, const char* nam
   return k2_open(descriptor, name_len, name);
 }
 
+inline int32_t fopen(k2::descriptor* descriptor, std::string_view path, std::string_view mode) noexcept {
+  return k2_fopen(descriptor, path.data(), path.size(), mode.data(), mode.size());
+}
+
 inline int32_t access(std::string_view component_name) noexcept {
   return k2_access(component_name.size(), component_name.data());
 }
