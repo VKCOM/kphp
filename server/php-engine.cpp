@@ -2188,7 +2188,7 @@ int main_args_handler(int i, const char *long_option) {
       std::stringstream stringstream;
       stringstream << file.rdbuf();
       auto opt_config = json_decode(stringstream.str());
-      if (!opt_config) {
+      if (!opt_config.has_value()) {
         kprintf("--%s option : file is not JSON\n", long_option);
         return -1;
       }
