@@ -36,7 +36,7 @@ mixed extract_confdata_value(const tl::confdataValue& confdata_value) noexcept {
   if (confdata_value.is_php_serialized.value) {
     return unserialize_raw(confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size()));
   } else if (confdata_value.is_json_serialized.value) {
-    return f$json_decode(string{confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size())});
+    return json_decode(confdata_value.value.value).value_or(mixed{});
   } else {
     return string{confdata_value.value.value.data(), static_cast<string::size_type>(confdata_value.value.value.size())};
   }

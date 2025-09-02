@@ -204,12 +204,14 @@ ClassName f$JsonEncoder$$from_json_impl(Tag /*tag*/, const string& json_string, 
   auto& msg = SerializationLibContext::get().last_json_processor_error;
   msg = {};
 
-  auto [json, success] = json_decode(json_string, FromJsonVisitor<Tag>::get_json_obj_magic_key());
+  auto opt_json = json_decode({json_string.c_str(), json_string.size()}, {FromJsonVisitor<Tag>::get_json_obj_magic_key()});
 
-  if (!success) {
+  if (!opt_json.has_value()) {
     msg.append(json_string.empty() ? "provided empty json string" : "failed to parse json string");
     return {};
   }
+
+  auto json = *std::move(opt_json);
   if constexpr (!impl_::IsJsonFlattenClass<typename ClassName::ClassType>::value) {
     if (!json.is_array() || json.as_array().is_vector()) {
       msg.append("root element of json string must be an object type, got ");

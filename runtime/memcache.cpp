@@ -4,6 +4,8 @@
 
 #include "runtime/memcache.h"
 
+#include <cstddef>
+
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
 #include "runtime-common/stdlib/serialization/serialize-functions.h"
@@ -163,7 +165,7 @@ mixed mc_get_value(const char* result_str, int32_t result_str_len, int64_t flags
     result = unserialize_raw(result_str, result_str_len);
   } else if (flags & MEMCACHE_JSON_SERIALIZED) {
     flags ^= MEMCACHE_JSON_SERIALIZED;
-    result = json_decode({result_str, static_cast<string::size_type>(result_str_len)}).first;
+    result = json_decode({result_str, static_cast<size_t>(result_str_len)}).value_or(mixed{});
   } else {
     result = string(result_str, result_str_len);
   }

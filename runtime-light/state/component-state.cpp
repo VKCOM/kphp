@@ -45,9 +45,8 @@ void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view v
 }
 
 void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexcept {
-  // FIXME: actually no need to allocate string here
-  if (auto [config, ok]{json_decode(string{value_view.data(), static_cast<string::size_type>(value_view.size())})}; ok) [[likely]] {
-    runtime_config = std::move(config);
+  if (auto opt_config{json_decode(value_view)}; opt_config) [[likely]] {
+    runtime_config = *std::move(opt_config);
   } else {
     kphp::log::warning("runtime config isn't a valid JSON");
   }
