@@ -4,18 +4,20 @@ ARG DEBIAN_FRONTEND=noninteractive
 ARG PHP_VERSION=7.4
 ARG PYTHON_VERSION=3.13
 ARG GPP_VERSION=12
+ARG GCC_VERSION=12
 
 RUN apt-get update
 
 RUN apt-get install -y --no-install-recommends \
     ca-certificates pkg-config lsb-release wget gnupg \
     git cmake-data cmake make \
-    g++-${GPP_VERSION} \
+    gcc-${GCC_VERSION} g++-${GPP_VERSION} \
     gperf netcat-openbsd patch re2c \
     libfmt-dev libgtest-dev libgmock-dev zlib1g-dev
 
 # GCC
-RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GPP_VERSION} 100
+RUN update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GPP_VERSION} 100 \
+    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION}} 100
 
 # Python
 RUN apt-get install -y --no-install-recommends \
