@@ -8,7 +8,7 @@ ARG GPP_VERSION=12
 RUN apt-get update
 
 RUN apt-get install -y --no-install-recommends \
-    ca-certificates pkg-config lsb-release wget software-properties-common gnupg \
+    ca-certificates pkg-config lsb-release wget gnupg \
     git cmake-data cmake make \
     g++ g++-${GPP_VERSION} \
     gperf netcat-openbsd patch re2c \
