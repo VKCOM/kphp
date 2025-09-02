@@ -52,3 +52,5 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
 RUN rm -rf /var/lib/apt/lists/*
 
 RUN useradd -ms /bin/bash kitten
+
+USER kitten
