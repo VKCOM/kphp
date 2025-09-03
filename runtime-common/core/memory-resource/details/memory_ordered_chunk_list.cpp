@@ -31,14 +31,18 @@ void memory_ordered_chunk_list::save_next(list_node* node, const list_node* next
 }
 
 void memory_ordered_chunk_list::add_from_array(list_node** first, list_node** last) noexcept {
-  if (first == last) {
-    return;
-  }
-
+  // There may be memory blocks in the range [first, last) that do not belong to
+  // this memory resource's main arena, such as those from extra allocations.
+  // For now, simply skip these blocks.
   last = std::partition(first, last, [this](const auto* mem) {
     return reinterpret_cast<uintptr_t>(mem) >= reinterpret_cast<uintptr_t>(this->memory_resource_begin_) &&
            reinterpret_cast<uintptr_t>(mem) < reinterpret_cast<uintptr_t>(this->memory_resource_end_);
   });
+
+  if (first == last) {
+    return;
+  }
+
   std::sort(first, last, std::greater<>{});
 
   if (!head_) {
