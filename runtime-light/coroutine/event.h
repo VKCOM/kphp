@@ -15,9 +15,9 @@
 namespace kphp::coro {
 
 class event {
-  // 1) nullptr == not set
-  // 2) awaiter* == linked list of awaiters waiting for the event to trigger
-  // 3) this == The event is triggered and all awaiters are resumed
+  // 1) nullptr => not set
+  // 2) awaiter* => linked list of awaiters waiting for the event to trigger
+  // 3) this => The event is triggered and all awaiters are resumed
   void* m_state{};
 
   struct awaiter {
@@ -56,6 +56,8 @@ class event {
 
 public:
   auto set() noexcept -> void;
+
+  auto unset() noexcept -> void;
 
   auto is_set() const noexcept -> bool;
 
@@ -108,6 +110,12 @@ inline auto event::set() noexcept -> void {
 
   for (auto* awaiter{static_cast<event::awaiter*>(prev_value)}; awaiter != nullptr; awaiter = awaiter->m_next) {
     awaiter->m_awaiting_coroutine.resume();
+  }
+}
+
+inline auto event::unset() noexcept -> void {
+  if (m_state == this) {
+    m_state = nullptr;
   }
 }
 

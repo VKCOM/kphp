@@ -178,6 +178,25 @@ struct I64 final {
   }
 };
 
+struct u64 final {
+  using underlying_type = uint64_t;
+  underlying_type value{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    const auto opt_value{tlf.fetch_trivial<underlying_type>()};
+    value = opt_value.value_or(0);
+    return opt_value.has_value();
+  }
+
+  void store(tl::storer& tls) const noexcept {
+    tls.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
+  }
+};
+
 struct f32 final {
   using underlying_type = float;
   underlying_type value{};

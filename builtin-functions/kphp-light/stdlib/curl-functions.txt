@@ -257,8 +257,10 @@ function curl_setopt ($curl_handle ::: int, $option ::: int, $value ::: mixed) :
 
 /** @kphp-extern-func-info stub */
 function curl_setopt_array ($curl_handle ::: int, $options ::: array) ::: bool;
-/** @kphp-extern-func-info stub generation-required */
+
+/** @kphp-extern-func-info interruptible */
 function curl_exec ($curl_handle ::: int) ::: mixed;
+
 /** @kphp-extern-func-info stub generation-required */
 function curl_getinfo ($curl_handle ::: int, $option ::: int = 0) ::: mixed;
 /** @kphp-extern-func-info stub generation-required */

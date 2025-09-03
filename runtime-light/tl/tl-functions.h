@@ -394,4 +394,42 @@ struct CacheFetch final {
   }
 };
 
+
+// ===== INTER COMPONENT SESSION PROTOCOL =====
+
+inline constexpr uint32_t INTER_COMPONENT_SESSION_REQUEST_HEADER_MAGIC = 0x24A3'16FF;
+
+struct InterComponentSessionRequestHeader final {
+  tl::u64 size;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = INTER_COMPONENT_SESSION_REQUEST_HEADER_MAGIC}.store(tls);
+    size.store(tls);
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = INTER_COMPONENT_SESSION_REQUEST_HEADER_MAGIC}.footprint() + size.footprint();
+  }
+};
+
+
+inline constexpr uint32_t INTER_COMPONENT_SESSION_RESPONSE_HEADER_MAGIC = 0x24A3'16EE;
+
+struct InterComponentSessionResponseHeader final {
+  tl::u64 id;
+  tl::u64 size;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(INTER_COMPONENT_SESSION_RESPONSE_HEADER_MAGIC)};
+    ok &= id.fetch(tlf);
+    ok &= size.fetch(tlf);
+    return ok;
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = INTER_COMPONENT_SESSION_RESPONSE_HEADER_MAGIC}.footprint() + id.footprint() + size.footprint();
+  }
+};
+
 } // namespace tl
