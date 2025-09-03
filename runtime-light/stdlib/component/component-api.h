@@ -21,6 +21,7 @@
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/streams/read-ext.h"
 #include "runtime-light/streams/stream.h"
+#include "runtime-light/stdlib/component/inter-component-session.h"
 
 namespace kphp::component {
 
