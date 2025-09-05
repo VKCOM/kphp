@@ -13,15 +13,19 @@ use VK\TL;
 /**
  * @kphp-tl-class
  */
-class engine_stat implements TL\RpcFunction {
+class engine_filteredStat implements TL\RpcFunction {
+
+  /** @var string[] */
+  public $stat_names = [];
 
   /** Allows kphp implicitly load function result class */
-  private const RESULT = TL\engine\Functions\engine_stat_result::class;
+  private const RESULT = TL\engine\Functions\engine_filteredStat_result::class;
 
   /**
-   * @kphp-inline
+   * @param string[] $stat_names
    */
-  public function __construct() {
+  public function __construct($stat_names = []) {
+    $this->stat_names = $stat_names;
   }
 
   /**
@@ -29,11 +33,11 @@ class engine_stat implements TL\RpcFunction {
    * @return string[]
    */
   public static function functionReturnValue($function_return_result) {
-    if ($function_return_result instanceof engine_stat_result) {
+    if ($function_return_result instanceof engine_filteredStat_result) {
       return $function_return_result->value;
     }
     warning('Unexpected result type in functionReturnValue: ' . ($function_return_result ? get_class($function_return_result) : 'null'));
-    return (new engine_stat_result())->value;
+    return (new engine_filteredStat_result())->value;
   }
 
   /**
@@ -52,7 +56,7 @@ class engine_stat implements TL\RpcFunction {
    * @return int
    */
   public function getTLFunctionMagic() {
-    return 0xefb3c36b;
+    return 0x594870d6;
   }
 
   /**
@@ -61,7 +65,7 @@ class engine_stat implements TL\RpcFunction {
    * @return string
    */
   public function getTLFunctionName() {
-    return 'engine.stat';
+    return 'engine.filteredStat';
   }
 
   /**
@@ -87,7 +91,7 @@ class engine_stat implements TL\RpcFunction {
 /**
  * @kphp-tl-class
  */
-class engine_stat_result implements TL\RpcFunctionReturnResult {
+class engine_filteredStat_result implements TL\RpcFunctionReturnResult {
 
   /** @var string[] */
   public $value = [];
