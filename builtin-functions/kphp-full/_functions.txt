@@ -18,6 +18,7 @@ require_once __DIR__ . '/kphp_toggles.txt';
 require_once __DIR__ . '/kphp_tracing.txt';
 require_once __DIR__ . '/uberh3.txt';
 require_once __DIR__ . '/spl.txt';
+require_once __DIR__ . '/rpc_fetcher.txt';
 require_once __DIR__ . '/ffi.txt';
 require_once __DIR__ . '/kml.txt';
 require_once __DIR__ . '/pdo/PDO.php';
@@ -990,9 +991,15 @@ function rpc_tl_query_result ($query_ids ::: array) ::: mixed[][];
 function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
 function rpc_tl_pending_queries_count () ::: int;
 
-/** @kphp-tl-class */
+/**
+ * @kphp-required
+ * @kphp-tl-class
+ */
 interface RpcFunction {
+  public function getTLFunctionMagic() : int;
   public function getTLFunctionName() : string;
+  public function typedStore() : @tl\RpcFunctionFetcher;
+  public function typedFetch() : @tl\RpcFunctionFetcher;
 }
 
 /** @kphp-tl-class */
