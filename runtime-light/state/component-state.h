@@ -38,8 +38,7 @@ struct ComponentState final : private vk::not_copyable {
 private:
   static constexpr std::string_view INI_ARG_PREFIX = "ini ";
   static constexpr std::string_view RUNTIME_CONFIG_ARG = "runtime-config";
-  // FIXME: Temporary workaround (increased INIT_COMPONENT_ALLOCATOR_SIZE) to prevent segmentation fault during defragmentation
-  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(128U * 1024U * 1024U); // 128MB
+  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U); // 1MB
 
   void parse_env() noexcept;
 
