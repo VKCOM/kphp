@@ -54,16 +54,26 @@ static const string STR_ERROR_CODE("__error_code", 12);
 static const char* last_rpc_error;
 static int32_t last_rpc_error_code;
 
-static const int32_t* rpc_data_begin;
-static const int32_t* rpc_data;
-static int32_t rpc_data_len;
+static const char* rpc_data_begin;
+static const char* rpc_data;
+static int rpc_data_len;
 static string rpc_data_copy;
 static string rpc_filename;
 
-static const int* rpc_data_begin_backup;
-static const int* rpc_data_backup;
+static const char* rpc_data_begin_backup;
+static const char* rpc_data_backup;
 static int rpc_data_len_backup;
 static string rpc_data_copy_backup;
+static bool rpc_data_backup_set = false;
+
+// we use mirror testing, will remove second copy later
+static const int32_t* rpc_data_begin_old;
+static const int32_t* rpc_data_old;
+static int rpc_data_len_old;
+
+static const int* rpc_data_begin_backup_old;
+static const int* rpc_data_backup_old;
+static int rpc_data_len_backup_old;
 
 tl_fetch_wrapper_ptr tl_fetch_wrapper;
 array<tl_storer_ptr> tl_storers_ht;
@@ -95,22 +105,32 @@ static inline T store_parse_number(const mixed& v) {
 }
 
 static void rpc_parse_save_backup() {
+  rpc_data_backup_set = true;
+
   dl::enter_critical_section(); // OK
   rpc_data_copy_backup = rpc_data_copy;
   dl::leave_critical_section();
 
+  rpc_data_begin_backup_old = rpc_data_begin_old;
+  rpc_data_backup_old = rpc_data_old;
+  rpc_data_len_backup_old = rpc_data_len_old;
   rpc_data_begin_backup = rpc_data_begin;
   rpc_data_backup = rpc_data;
   rpc_data_len_backup = rpc_data_len;
 }
 
 void rpc_parse_restore_previous() {
-  php_assert((rpc_data_copy_backup.size() & 3) == 0);
+  php_assert(rpc_data_backup_set);
+  rpc_data_backup_set = false;
 
   dl::enter_critical_section(); // OK
-  rpc_data_copy = rpc_data_copy_backup;
-  rpc_data_copy_backup = tl_str_underscore; // for assert
+  rpc_data_copy = std::move(rpc_data_copy_backup);
+  rpc_data_copy_backup = string{};
   dl::leave_critical_section();
+
+  rpc_data_begin_old = rpc_data_begin_backup_old;
+  rpc_data_old = rpc_data_backup_old;
+  rpc_data_len_old = rpc_data_len_backup_old;
 
   rpc_data_begin = rpc_data_begin_backup;
   rpc_data = rpc_data_backup;
@@ -130,12 +150,24 @@ void last_rpc_error_reset() {
   last_rpc_error_code = TL_ERROR_UNKNOWN;
 }
 
-void rpc_parse(const int32_t* new_rpc_data, int32_t new_rpc_data_len) {
+void check_mirror() {
+  php_assert(rpc_data_len_old*4 == rpc_data_len);
+  php_assert((rpc_data_old - rpc_data_begin_old)*4 == rpc_data - rpc_data_begin);
+// uncomment this heavy check if some unpredictable behavior happens again
+// remove this function once we are sure new code works
+// php_assert(memcmp(rpc_data_old, rpc_data, rpc_data_len) == 0);
+}
+
+void rpc_parse(const char* new_rpc_data, int new_rpc_data_len) {
   rpc_parse_save_backup();
 
-  rpc_data_begin = new_rpc_data;
-  rpc_data = new_rpc_data;
+  rpc_data_begin_old = rpc_data_old = reinterpret_cast<const int*>(new_rpc_data);
+  rpc_data_len_old = static_cast<int>(new_rpc_data_len / sizeof(int));
+
+  rpc_data_begin = rpc_data = new_rpc_data;
   rpc_data_len = new_rpc_data_len;
+
+  check_mirror();
 }
 
 bool f$rpc_parse(const string& new_rpc_data) {
@@ -152,8 +184,13 @@ bool f$rpc_parse(const string& new_rpc_data) {
   rpc_data_copy = new_rpc_data;
   dl::leave_critical_section();
 
-  rpc_data_begin = rpc_data = reinterpret_cast<const int*>(rpc_data_copy.c_str());
-  rpc_data_len = static_cast<int>(rpc_data_copy.size() / sizeof(int));
+  rpc_data_begin_old = rpc_data_old = reinterpret_cast<const int*>(rpc_data_copy.c_str());
+  rpc_data_len_old = static_cast<int>(rpc_data_copy.size() / sizeof(int));
+
+  rpc_data_begin = rpc_data = rpc_data_copy.c_str();
+  rpc_data_len = static_cast<int>(rpc_data_copy.size());
+
+  check_mirror();
   return true;
 }
 
@@ -175,37 +212,59 @@ bool f$rpc_parse(const Optional<string>& new_rpc_data) {
   return call_fun_on_optional_value(rpc_parse_lambda, new_rpc_data);
 }
 
-int32_t rpc_get_pos() {
-  return static_cast<int32_t>(rpc_data - rpc_data_begin);
+int rpc_get_pos() {
+  auto pos2 = static_cast<int>(rpc_data - rpc_data_begin);
+  auto pos = static_cast<int>(rpc_data_old - rpc_data_begin_old)*4;
+  php_assert(pos == pos2);
+  return pos;
 }
 
-bool rpc_set_pos(int32_t pos) {
-  if (pos < 0 || rpc_data_begin + pos > rpc_data) {
+bool rpc_set_pos(int pos) {
+  if (pos < 0 || rpc_data_begin_old + pos/4 > rpc_data_old) {
     return false;
   }
 
-  rpc_data_len += static_cast<int32_t>(rpc_data - rpc_data_begin - pos);
+  rpc_data_len_old += static_cast<int>(rpc_data_old - rpc_data_begin_old - pos/4);
+  rpc_data_old = rpc_data_begin_old + pos/4;
+  rpc_data_len += static_cast<int>(rpc_data - rpc_data_begin - pos);
   rpc_data = rpc_data_begin + pos;
+  check_mirror();
   return true;
 }
 
-static inline void check_rpc_data_len(int64_t len) {
+static inline void check_rpc_data_len(int len) {
+  php_assert(rpc_data_len_old*4 == rpc_data_len);
   if (rpc_data_len < len) {
     THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Not enough data to fetch", 24), -1));
     return;
   }
-  rpc_data_len -= static_cast<int32_t>(len);
+  rpc_data_len_old -= len/4;
+  rpc_data_len -= len;
 }
 
 int32_t rpc_lookup_int() {
-  TRY_CALL_VOID(int32_t, (check_rpc_data_len(1)));
-  rpc_data_len++;
-  return *rpc_data;
+  TRY_CALL_VOID(int32_t, (check_rpc_data_len(4)));
+
+  int32_t result = *reinterpret_cast<const int32_t*>(rpc_data);
+  rpc_data_len += 4; // because check_rpc_data_len reduced it by 4
+
+  rpc_data_len_old++;
+  auto result_old = *rpc_data_old;
+  php_assert(result == result_old);
+  check_mirror();
+  return result;
 }
 
 int32_t rpc_fetch_int() {
-  TRY_CALL_VOID(int32_t, (check_rpc_data_len(1)));
-  return *rpc_data++;
+  TRY_CALL_VOID(int32_t, (check_rpc_data_len(4)));
+
+  int32_t result = *reinterpret_cast<const int32_t*>(rpc_data);
+  rpc_data += 4;
+
+  auto result_old = *rpc_data_old++;
+  php_assert(result == result_old);
+  check_mirror();
+  return result;
 }
 
 int64_t f$fetch_int() {
@@ -217,54 +276,73 @@ int64_t f$fetch_lookup_int() {
 }
 
 string f$fetch_lookup_data(int64_t x4_bytes_length) {
-  TRY_CALL_VOID(string, (check_rpc_data_len(x4_bytes_length)));
-  rpc_data_len += static_cast<int32_t>(x4_bytes_length);
-  return {reinterpret_cast<const char*>(rpc_data), static_cast<string::size_type>(x4_bytes_length * 4)};
+  TRY_CALL_VOID(string, (check_rpc_data_len(x4_bytes_length * 4)));
+  rpc_data_len_old += static_cast<int32_t>(x4_bytes_length);
+  string result{reinterpret_cast<const char*>(rpc_data_old), static_cast<string::size_type>(x4_bytes_length * 4)};
+  rpc_data_len += static_cast<int>(x4_bytes_length * 4);
+  string result2{rpc_data, static_cast<string::size_type>(x4_bytes_length * 4)};
+  php_assert(result == result2);
+  check_mirror();
+  return result;
 }
 
 int64_t f$fetch_long() {
-  TRY_CALL_VOID(int64_t, (check_rpc_data_len(2)));
+  TRY_CALL_VOID(int64_t, (check_rpc_data_len(8)));
+  long long result_old = *reinterpret_cast<const long long*>(rpc_data_old);
+  rpc_data_old += 2;
   long long result = *reinterpret_cast<const long long*>(rpc_data);
-  rpc_data += 2;
-
+  rpc_data += 8;
+  php_assert(result == result_old);
+  check_mirror();
   return result;
 }
 
 double f$fetch_double() {
-  TRY_CALL_VOID(double, (check_rpc_data_len(2)));
+  TRY_CALL_VOID(double, (check_rpc_data_len(8)));
+  double result_old = *reinterpret_cast<const double*>(rpc_data_old);
+  rpc_data_old += 2;
   double result = *reinterpret_cast<const double*>(rpc_data);
-  rpc_data += 2;
-
+  rpc_data += 8;
+  php_assert(result == result_old);
+  check_mirror();
   return result;
 }
 
 double f$fetch_float() {
-  TRY_CALL_VOID(float, (check_rpc_data_len(1)));
+  TRY_CALL_VOID(float, (check_rpc_data_len(4)));
+  float result_old = *reinterpret_cast<const float*>(rpc_data_old);
+  rpc_data_old += 1;
   float result = *reinterpret_cast<const float*>(rpc_data);
-  rpc_data += 1;
-
+  rpc_data += 4;
+  php_assert(result == result_old);
+  check_mirror();
   return result;
 }
 
 void f$fetch_raw_vector_double(array<double>& out, int64_t n_elems) {
-  int64_t rpc_data_buf_offset = static_cast<int64_t>(sizeof(double) * n_elems / 4);
+  int rpc_data_buf_offset = static_cast<int>(sizeof(double) * n_elems);
   TRY_CALL_VOID(void, (check_rpc_data_len(rpc_data_buf_offset)));
-  out.memcpy_vector(n_elems, rpc_data);
+  out.memcpy_vector(n_elems, rpc_data_old);
+  rpc_data_old += rpc_data_buf_offset/4;
   rpc_data += rpc_data_buf_offset;
+  check_mirror();
 }
 
 static inline const char* f$fetch_string_raw(int* string_len) {
-  TRY_CALL_VOID_(check_rpc_data_len(1), return nullptr);
-  const char* str = reinterpret_cast<const char*>(rpc_data);
+  TRY_CALL_VOID_(check_rpc_data_len(4), return nullptr);
+  const char* str = reinterpret_cast<const char*>(rpc_data_old);
+  php_assert(*str == *rpc_data);
   int result_len = (unsigned char)*str++;
   if (result_len < 254) {
-    TRY_CALL_VOID_(check_rpc_data_len(result_len >> 2), return nullptr);
-    rpc_data += (result_len >> 2) + 1;
+    TRY_CALL_VOID_(check_rpc_data_len((result_len >> 2)<<2), return nullptr);
+    rpc_data_old += (result_len >> 2) + 1;
+    rpc_data += ((result_len >> 2) + 1) << 2;
   } else if (result_len == 254) {
     result_len = (unsigned char)str[0] + ((unsigned char)str[1] << 8) + ((unsigned char)str[2] << 16);
     str += 3;
-    TRY_CALL_VOID_(check_rpc_data_len((result_len + 3) >> 2), return nullptr);
-    rpc_data += ((result_len + 7) >> 2);
+    TRY_CALL_VOID_(check_rpc_data_len(((result_len + 3) >> 2) << 2), return nullptr);
+    rpc_data_old += ((result_len + 7) >> 2);
+    rpc_data += ((result_len + 7) >> 2) << 2;
   } else {
     THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Can't fetch string, 255 found", 29), -3));
     return nullptr;
@@ -321,11 +399,11 @@ mixed f$fetch_memcache_value() {
 }
 
 bool f$fetch_eof() {
-  return rpc_data_len == 0;
+  return rpc_data_len_old == 0;
 }
 
 bool f$fetch_end() {
-  if (rpc_data_len) {
+  if (rpc_data_len_old) {
     THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Too much data to fetch"), -2));
     return false;
   }
@@ -1044,11 +1122,7 @@ int32_t tl_parse_int() {
 
 long long tl_parse_long() {
   CHECK_EXCEPTION(return 0);
-  TRY_CALL_VOID(int, check_rpc_data_len(2));
-  long long result = *reinterpret_cast<const long long*>(rpc_data);
-  rpc_data += 2;
-
-  return result;
+  return f$fetch_long();
 }
 
 double tl_parse_double() {
@@ -1448,6 +1522,7 @@ static void reset_rpc_global_vars() {
   hard_reset_var(rpc_request_need_timer);
   fail_rpc_on_int32_overflow = false;
   hard_reset_var(rpc_responses_extra_info_map);
+  rpc_data_backup_set = false;
 }
 
 void init_rpc_lib() {
