@@ -101,6 +101,9 @@ function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple
 
 // ===== UNSUPPORTED =====
 
+/** @kphp-extern-func-info interruptible stub generation-required */
+function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
+
 /** @kphp-extern-func-info stub */
 function rpc_parse ($data) ::: bool;
 
