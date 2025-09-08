@@ -151,11 +151,11 @@ void last_rpc_error_reset() {
 }
 
 void check_mirror() {
-  php_assert(rpc_data_len_old*4 == rpc_data_len);
-  php_assert((rpc_data_old - rpc_data_begin_old)*4 == rpc_data - rpc_data_begin);
-// uncomment this heavy check if some unpredictable behavior happens again
-// remove this function once we are sure new code works
-// php_assert(memcmp(rpc_data_old, rpc_data, rpc_data_len) == 0);
+  php_assert(rpc_data_len_old * 4 == rpc_data_len);
+  php_assert((rpc_data_old - rpc_data_begin_old) * 4 == rpc_data - rpc_data_begin);
+  // uncomment this heavy check if some unpredictable behavior happens again
+  // remove this function once we are sure new code works
+  // php_assert(memcmp(rpc_data_old, rpc_data, rpc_data_len) == 0);
 }
 
 void rpc_parse(const char* new_rpc_data, int new_rpc_data_len) {
@@ -214,18 +214,18 @@ bool f$rpc_parse(const Optional<string>& new_rpc_data) {
 
 int rpc_get_pos() {
   auto pos2 = static_cast<int>(rpc_data - rpc_data_begin);
-  auto pos = static_cast<int>(rpc_data_old - rpc_data_begin_old)*4;
+  auto pos = static_cast<int>(rpc_data_old - rpc_data_begin_old) * 4;
   php_assert(pos == pos2);
   return pos;
 }
 
 bool rpc_set_pos(int pos) {
-  if (pos < 0 || rpc_data_begin_old + pos/4 > rpc_data_old) {
+  if (pos < 0 || rpc_data_begin_old + pos / 4 > rpc_data_old) {
     return false;
   }
 
-  rpc_data_len_old += static_cast<int>(rpc_data_old - rpc_data_begin_old - pos/4);
-  rpc_data_old = rpc_data_begin_old + pos/4;
+  rpc_data_len_old += static_cast<int>(rpc_data_old - rpc_data_begin_old - pos / 4);
+  rpc_data_old = rpc_data_begin_old + pos / 4;
   rpc_data_len += static_cast<int>(rpc_data - rpc_data_begin - pos);
   rpc_data = rpc_data_begin + pos;
   check_mirror();
@@ -233,12 +233,12 @@ bool rpc_set_pos(int pos) {
 }
 
 static inline void check_rpc_data_len(int len) {
-  php_assert(rpc_data_len_old*4 == rpc_data_len);
+  php_assert(rpc_data_len_old * 4 == rpc_data_len);
   if (rpc_data_len < len) {
     THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Not enough data to fetch", 24), -1));
     return;
   }
-  rpc_data_len_old -= len/4;
+  rpc_data_len_old -= len / 4;
   rpc_data_len -= len;
 }
 
@@ -323,7 +323,7 @@ void f$fetch_raw_vector_double(array<double>& out, int64_t n_elems) {
   int rpc_data_buf_offset = static_cast<int>(sizeof(double) * n_elems);
   TRY_CALL_VOID(void, (check_rpc_data_len(rpc_data_buf_offset)));
   out.memcpy_vector(n_elems, rpc_data_old);
-  rpc_data_old += rpc_data_buf_offset/4;
+  rpc_data_old += rpc_data_buf_offset / 4;
   rpc_data += rpc_data_buf_offset;
   check_mirror();
 }
@@ -334,7 +334,7 @@ static inline const char* f$fetch_string_raw(int* string_len) {
   php_assert(*str == *rpc_data);
   int result_len = (unsigned char)*str++;
   if (result_len < 254) {
-    TRY_CALL_VOID_(check_rpc_data_len((result_len >> 2)<<2), return nullptr);
+    TRY_CALL_VOID_(check_rpc_data_len((result_len >> 2) << 2), return nullptr);
     rpc_data_old += (result_len >> 2) + 1;
     rpc_data += ((result_len >> 2) + 1) << 2;
   } else if (result_len == 254) {
