@@ -363,6 +363,15 @@ int tl_fetch_int() {
   return x;
 }
 
+int tl_fetch_byte() {
+  if (__builtin_expect(tl_fetch_check(1) < 0, 0)) {
+    return -1;
+  }
+  unsigned char x;
+  tl_fetch_raw_data(&x, 1);
+  return static_cast<int>(x);
+}
+
 bool tl_fetch_bool() {
   int x = tl_fetch_int();
   if (x == TL_BOOL_TRUE) {
@@ -468,6 +477,12 @@ void tl_store_raw_data(const void* s, int len) {
 void tl_store_int(int x) {
   assert(tl_store_check(4) >= 0);
   tl_store_raw_data_nopad(&x, 4);
+}
+
+void tl_store_byte(int x) {
+  assert(tl_store_check(1) >= 0);
+  auto b = static_cast<unsigned char>(x);
+  tl_store_raw_data_nopad(&b, 1);
 }
 
 void tl_store_long(long long x) {

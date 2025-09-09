@@ -137,6 +137,25 @@ struct t_Int {
   static int32_t prepare_int_for_storing(int64_t v) noexcept;
 };
 
+struct t_Byte {
+  void store(const mixed& tl_object) noexcept {
+    f$store_byte(f$intval(tl_object));
+  }
+  int fetch() noexcept {
+    CHECK_EXCEPTION(return {});
+    return f$fetch_byte();
+  }
+
+  using PhpType = int64_t;
+  void typed_store(const t_Byte::PhpType& v) noexcept {
+    f$store_byte(v);
+  }
+  void typed_fetch_to(t_Byte::PhpType& out) noexcept {
+    CHECK_EXCEPTION(return);
+    out = f$fetch_byte();
+  }
+};
+
 struct t_Long {
   void store(const mixed& tl_object) noexcept {
     int64_t v64{f$intval(tl_object)};

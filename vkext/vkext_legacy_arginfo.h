@@ -77,6 +77,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_store_int, 0, 0, 1)
 	ZEND_ARG_INFO(0, v)
 ZEND_END_ARG_INFO()
 
+#define arginfo_store_byte arginfo_store_int
+
 #define arginfo_store_long arginfo_store_int
 
 #define arginfo_store_string arginfo_store_int
@@ -95,6 +97,8 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_store_header, 0, 0, 1)
 ZEND_END_ARG_INFO()
 
 #define arginfo_fetch_int arginfo_vk_hello_world
+
+#define arginfo_fetch_byte arginfo_vk_hello_world
 
 #define arginfo_fetch_long arginfo_vk_hello_world
 
@@ -251,6 +255,7 @@ ZEND_FUNCTION(rpc_get);
 ZEND_FUNCTION(rpc_parse);
 ZEND_FUNCTION(set_fail_rpc_on_int32_overflow);
 ZEND_FUNCTION(store_int);
+ZEND_FUNCTION(store_byte);
 ZEND_FUNCTION(store_long);
 ZEND_FUNCTION(store_string);
 ZEND_FUNCTION(store_double);
@@ -258,6 +263,7 @@ ZEND_FUNCTION(store_float);
 ZEND_FUNCTION(store_many);
 ZEND_FUNCTION(store_header);
 ZEND_FUNCTION(fetch_int);
+ZEND_FUNCTION(fetch_byte);
 ZEND_FUNCTION(fetch_long);
 ZEND_FUNCTION(fetch_double);
 ZEND_FUNCTION(fetch_float);
@@ -324,6 +330,7 @@ static const zend_function_entry ext_functions[] = {
 	ZEND_FE(rpc_parse, arginfo_rpc_parse)
 	ZEND_FE(set_fail_rpc_on_int32_overflow, arginfo_set_fail_rpc_on_int32_overflow)
 	ZEND_FE(store_int, arginfo_store_int)
+	ZEND_FE(store_byte, arginfo_store_byte)
 	ZEND_FE(store_long, arginfo_store_long)
 	ZEND_FE(store_string, arginfo_store_string)
 	ZEND_FE(store_double, arginfo_store_double)
@@ -331,6 +338,7 @@ static const zend_function_entry ext_functions[] = {
 	ZEND_FE(store_many, arginfo_store_many)
 	ZEND_FE(store_header, arginfo_store_header)
 	ZEND_FE(fetch_int, arginfo_fetch_int)
+	ZEND_FE(fetch_byte, arginfo_fetch_byte)
 	ZEND_FE(fetch_long, arginfo_fetch_long)
 	ZEND_FE(fetch_double, arginfo_fetch_double)
 	ZEND_FE(fetch_float, arginfo_fetch_float)

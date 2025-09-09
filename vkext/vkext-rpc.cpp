@@ -2267,6 +2267,28 @@ int do_rpc_fetch_int(char **error) { /* {{{ */
   }
 }
 
+
+int do_rpc_fetch_byte(char **error) { /* {{{ */
+  ADD_CNT (fetch);
+  START_TIMER (fetch);
+  if (!inbuf) {
+    *error = strdup("Trying to fetch from empty buffer\n");
+    return 0;
+  }
+  assert (inbuf->magic == RPC_BUFFER_MAGIC);
+
+  int value;
+  if (buffer_read_byte(inbuf, &value) < 0) {
+    *error = strdup("Can not fetch byte from inbuf\n");
+    END_TIMER (fetch);
+    return 0;
+  } else {
+    END_TIMER (fetch);
+    *error = 0;
+    return value;
+  }
+}
+
 /* }}} */
 
 int do_rpc_lookup_int(char **error) { /* {{{ */
@@ -2728,6 +2750,21 @@ void php_rpc_store_int(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 
 /* }}} */
 
+void php_rpc_store_byte(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
+  ADD_CNT (parse);
+  START_TIMER (parse);
+  VK_ZVAL_API_ARRAY z;
+  if (zend_get_parameters_array_ex (1, &z) == FAILURE) {
+    END_TIMER (parse);
+    RETURN_FALSE;
+  }
+  END_TIMER (parse);
+  do_rpc_store_byte(parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z)));
+  RETURN_TRUE;
+}
+
+/* }}} */
+
 void php_rpc_store_long(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   ADD_CNT (parse);
   START_TIMER (parse);
@@ -2870,6 +2907,20 @@ void php_rpc_store_many(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 void php_rpc_fetch_int(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   char *t;
   int value = do_rpc_fetch_int(&t);
+  if (!t) {
+    RETURN_LONG (value);
+  } else {
+    php_error_docref(NULL, E_WARNING, t);
+    free(t);
+    RETURN_FALSE;
+  }
+}
+
+/* }}} */
+
+void php_rpc_fetch_byte(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
+  char *t;
+  int value = do_rpc_fetch_byte(&t);
   if (!t) {
     RETURN_LONG (value);
   } else {

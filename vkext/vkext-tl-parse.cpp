@@ -27,6 +27,13 @@ int tl_parse_int() {
   return do_rpc_fetch_int(&tl.error);
 }
 
+int tl_parse_byte() {
+  if (tl.error) {
+    return -1;
+  }
+  return do_rpc_fetch_byte(&tl.error);
+}
+
 long long tl_parse_long() {
   if (tl.error) {
     return -1;

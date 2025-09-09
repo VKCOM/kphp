@@ -235,6 +235,13 @@ static inline void buffer_write_int(struct rpc_buffer *buf, int x) {
   buf->wptr += 4;
 }
 
+static inline void buffer_write_byte(struct rpc_buffer *buf, int x) UNUSED;
+static inline void buffer_write_byte(struct rpc_buffer *buf, int x) {
+  buffer_check_len_wptr(buf, 1);
+  *(unsigned char *)(buf->wptr) = x;
+  buf->wptr += 1;
+}
+
 static inline void buffer_write_long(struct rpc_buffer *buf, long long x) UNUSED;
 static inline void buffer_write_long(struct rpc_buffer *buf, long long x) {
   buffer_check_len_wptr(buf, 8);
@@ -314,6 +321,17 @@ static inline int buffer_read_int(struct rpc_buffer *buf, int *x) {
   } else {
     *x = *(int *)buf->rptr;
     buf->rptr += 4;
+    return 1;
+  }
+}
+
+static inline int buffer_read_byte(struct rpc_buffer *buf, int *x) UNUSED;
+static inline int buffer_read_byte(struct rpc_buffer *buf, int *x) {
+  if (!buffer_check_len_rptr(buf, 1)) {
+    return -1;
+  } else {
+    *x = static_cast<int>(*(unsigned char *)buf->rptr);
+    buf->rptr += 1;
     return 1;
   }
 }
@@ -422,6 +440,19 @@ static void do_rpc_store_int(int value) { /* {{{ */
   buffer_write_int(outbuf, value);
 #ifdef STORE_DEBUG
   fprintf (stderr, "int: %x\n", value);
+#endif
+  END_TIMER (store);
+}
+/* }}} */
+
+static void do_rpc_store_byte(int value) UNUSED;
+static void do_rpc_store_byte(int value) { /* {{{ */
+  ADD_CNT (store);
+  START_TIMER (store);
+  assert (outbuf && outbuf->magic == RPC_BUFFER_MAGIC);
+  buffer_write_byte(outbuf, value);
+#ifdef STORE_DEBUG
+  fprintf (stderr, "byte: %x\n", value);
 #endif
   END_TIMER (store);
 }

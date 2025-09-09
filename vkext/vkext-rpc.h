@@ -136,6 +136,7 @@ extern int allow_internal_rpc_queries;
 extern bool fail_rpc_on_int32_overflow;
 
 int do_rpc_fetch_int(char **error);
+int do_rpc_fetch_byte(char **error);
 long long do_rpc_fetch_long(char **error);
 double do_rpc_fetch_double(char **error);
 float do_rpc_fetch_float(char **error);
@@ -173,6 +174,7 @@ void php_rpc_send_noflush(INTERNAL_FUNCTION_PARAMETERS);
 void php_rpc_flush(INTERNAL_FUNCTION_PARAMETERS);
 
 void php_rpc_fetch_int(INTERNAL_FUNCTION_PARAMETERS);
+void php_rpc_fetch_byte(INTERNAL_FUNCTION_PARAMETERS);
 void php_rpc_fetch_long(INTERNAL_FUNCTION_PARAMETERS);
 void php_rpc_fetch_double(INTERNAL_FUNCTION_PARAMETERS);
 void php_rpc_fetch_float(INTERNAL_FUNCTION_PARAMETERS);
@@ -183,6 +185,7 @@ void php_rpc_fetch_lookup_int(INTERNAL_FUNCTION_PARAMETERS);
 void php_rpc_fetch_lookup_data(INTERNAL_FUNCTION_PARAMETERS);
 
 void php_rpc_store_int(INTERNAL_FUNCTION_PARAMETERS);
+void php_rpc_store_byte(INTERNAL_FUNCTION_PARAMETERS);
 void php_rpc_store_long(INTERNAL_FUNCTION_PARAMETERS);
 void php_rpc_store_string(INTERNAL_FUNCTION_PARAMETERS);
 void php_rpc_store_double(INTERNAL_FUNCTION_PARAMETERS);

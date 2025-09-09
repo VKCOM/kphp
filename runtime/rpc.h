@@ -83,6 +83,8 @@ int32_t rpc_fetch_int();
 
 int64_t f$fetch_int();
 
+int64_t f$fetch_byte();
+
 int64_t f$fetch_lookup_int();
 
 string f$fetch_lookup_data(int64_t x4_bytes_length);
@@ -176,6 +178,8 @@ bool is_int32_overflow(int64_t v);
 bool store_int(int32_t v);
 bool f$store_int(int64_t v);
 
+bool f$store_byte(int64_t v);
+
 bool f$store_unsigned_int(const string& v);
 
 bool store_long(long long v);
@@ -242,6 +246,8 @@ bool f$store_long(int64_t v);
 bool f$store_unsigned_long(const mixed& v);
 
 int32_t tl_parse_int();
+
+int32_t tl_parse_byte();
 
 long long tl_parse_long();
 

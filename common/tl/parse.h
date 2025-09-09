@@ -39,6 +39,7 @@ int tl_fetch_lookup_int();
 int tl_fetch_lookup_data(char* data, int len);
 
 int tl_fetch_int();
+int tl_fetch_byte();
 bool tl_fetch_bool();
 double tl_fetch_double();
 double tl_fetch_double_in_range(double min, double max);
@@ -73,6 +74,7 @@ int tl_store_check(int size);
 void* tl_store_get_ptr(int size);
 
 void tl_store_int(int x);
+void tl_store_byte(int x);
 void tl_store_long(long long x);
 void tl_store_double(double x);
 void tl_store_float(float x);

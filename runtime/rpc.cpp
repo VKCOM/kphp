@@ -271,6 +271,13 @@ int64_t f$fetch_int() {
   return rpc_fetch_int();
 }
 
+int64_t f$fetch_byte() {
+  TRY_CALL_VOID(int64_t, (check_rpc_data_len(1)));
+  unsigned char result = *reinterpret_cast<const unsigned char*>(rpc_data);
+  rpc_data += 1;
+  return static_cast<int64_t>(result);
+}
+
 int64_t f$fetch_lookup_int() {
   return rpc_lookup_int();
 }
@@ -541,6 +548,14 @@ bool f$store_int(int64_t v) {
     php_warning("Got int32 overflow on storing '%" PRIi64 "', the value will be casted to '%d'", v, v32);
   }
   return store_int(v32);
+}
+
+bool f$store_byte(int64_t v) {
+  const auto v8 = static_cast<unsigned char>(v);
+  if (unlikely(int64_t(v8) != v)) {
+    php_warning("Got overflow on storing '%" PRIi64 "'", v);
+  }
+  return store_raw(v8);
 }
 
 bool store_long(long long v) {
@@ -1118,6 +1133,11 @@ bool f$store_long(int64_t v) {
 int32_t tl_parse_int() {
   CHECK_EXCEPTION(return 0);
   return rpc_fetch_int();
+}
+
+int tl_parse_byte() {
+  CHECK_EXCEPTION(return 0);
+  return f$fetch_byte();
 }
 
 long long tl_parse_long() {

@@ -896,6 +896,8 @@ function err ($file ::: string, $line ::: int, $code ::: string, $desc ::: strin
 /** @kphp-extern-func-info can_throw */
 function fetch_int () ::: int;
 /** @kphp-extern-func-info can_throw */
+function fetch_byte () ::: int;
+/** @kphp-extern-func-info can_throw */
 function fetch_long () ::: int;
 /** @kphp-extern-func-info can_throw */
 function fetch_double () ::: float;
@@ -954,6 +956,7 @@ function store_error ($error_code ::: int, $error_text ::: string) ::: bool;
 function store_raw ($v ::: string) ::: bool;
 function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool) ::: bool;
 function store_int ($v ::: int) ::: bool;
+function store_byte ($v ::: int) ::: bool;
 function store_long ($v ::: int) ::: bool;
 function store_double ($v ::: float) ::: bool;
 function store_float ($v ::: float) ::: bool;

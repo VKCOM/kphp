@@ -102,6 +102,10 @@ function store_int(mixed $v) : bool {
   return false;
 }
 
+function store_byte(mixed $v) : bool {
+  return false;
+}
+
 function store_long(mixed $v) : bool {
   return false;
 }
@@ -130,6 +134,13 @@ function store_header(mixed $actor_id, int $flags = 0) : bool {
  * @return int|false
  */
 function fetch_int() {
+  return 0;
+}
+
+/**
+ * @return int|false
+ */
+function fetch_byte() {
   return 0;
 }
 
