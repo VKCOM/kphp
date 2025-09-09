@@ -78,6 +78,33 @@ struct C$VK$TL$RpcFunctionReturnResult : abstract_refcountable_php_interface {
   virtual ~C$VK$TL$RpcFunctionReturnResult() = default;
 };
 
+// Every TL function has a corresponding Fetcher, which captures nat parameters,
+// required to fetch/store function result.
+struct C$VK$TL$RpcFunctionFetcher : abstract_refcountable_php_interface {
+  virtual const char* get_class() const {
+    return "VK\\TL\\RpcFunctionFetcher";
+  }
+  virtual int32_t get_hash() const {
+    std::string_view name_view{C$VK$TL$RpcFunctionFetcher::get_class()};
+    return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
+  }
+
+  virtual void accept(ToArrayVisitor&) noexcept {}
+  virtual void accept(CommonMemoryEstimateVisitor&) noexcept {}
+  virtual void accept(InstanceReferencesCountingVisitor&) noexcept {}
+  virtual void accept(InstanceDeepCopyVisitor&) noexcept {}
+  virtual void accept(InstanceDeepDestroyVisitor&) noexcept {}
+
+  virtual size_t virtual_builtin_sizeof() const noexcept {
+    return 0;
+  }
+  virtual C$VK$TL$RpcFunctionFetcher* virtual_builtin_clone() const noexcept {
+    return nullptr;
+  }
+
+  virtual ~C$VK$TL$RpcFunctionFetcher() = default;
+};
+
 // function call response — ReqResult from the TL scheme — is a rpcResponseOk|rpcResponseHeader|rpcResponseError;
 // if it's rpcResponseOk or rpcResponseHeader, then their bodies can be retrieved by a fetcher that was returned by a store
 struct C$VK$TL$RpcResponse : abstract_refcountable_php_interface {

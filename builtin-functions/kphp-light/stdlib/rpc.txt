@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/rpc_fetcher.txt';
+
 // ===== SUPPORTED =====
 
 /** @kphp-tl-class */
