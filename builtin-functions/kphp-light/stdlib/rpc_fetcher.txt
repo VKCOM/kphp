@@ -1,0 +1,9 @@
+<?php
+
+namespace VK\TL;
+
+/** @kphp-required */
+interface RpcFunctionFetcher {
+  public function typedStore($result ::: RpcFunctionReturnResult);
+  public function typedFetch() : RpcFunctionReturnResult;
+}
