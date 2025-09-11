@@ -19,6 +19,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 
@@ -354,6 +355,38 @@ inline int32_t stat(std::string_view path, struct stat* stat) noexcept {
     return error_code;
   }
   return k2::errno_ok;
+}
+
+using CommandArg = CommandArg;
+
+enum class CommandStdoutPolicy : uint8_t { NoCapture, Capture };
+
+inline auto command(std::string_view cmd, std::span<const k2::CommandArg> args, k2::CommandStdoutPolicy policy) noexcept {
+  char* output{};
+  size_t output_len{};
+  size_t output_align{};
+  int32_t exit_code{};
+  static constexpr auto deleter_creator{[](size_t output_len, size_t output_align) noexcept {
+    return [output_len, output_align](void* ptr) noexcept { k2::free_checked(ptr, output_len, output_align); };
+  }};
+
+  using deleter_type = std::invoke_result_t<decltype(deleter_creator), size_t, size_t>;
+  using unique_ptr_type = std::unique_ptr<std::byte, deleter_type>;
+  using return_type = std::expected<std::tuple<int32_t, unique_ptr_type, size_t>, int32_t>;
+
+  if (auto error_code{k2_command(cmd.data(), cmd.size(), args.data(), args.size(), std::addressof(exit_code),
+                                 policy == k2::CommandStdoutPolicy::Capture ? std::addressof(output) : nullptr,
+                                 policy == k2::CommandStdoutPolicy::Capture ? std::addressof(output_len) : nullptr,
+                                 policy == k2::CommandStdoutPolicy::Capture ? std::addressof(output_align) : nullptr)};
+      error_code != k2::errno_ok) [[unlikely]] {
+    return return_type{std::unexpected{error_code}};
+  }
+
+  auto output_deleter{std::invoke(deleter_creator, output_len, output_align)};
+  return return_type{{exit_code,
+                      policy == k2::CommandStdoutPolicy::Capture ? unique_ptr_type{reinterpret_cast<std::byte*>(output), std::move(output_deleter)}
+                                                                 : unique_ptr_type{nullptr, std::move(output_deleter)},
+                      output_len}};
 }
 
 } // namespace k2
