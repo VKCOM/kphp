@@ -104,7 +104,7 @@ inline auto event::awaiter::await_resume() noexcept -> void {
 
 inline auto event::set() noexcept -> void {
   void* prev_value{std::exchange(m_state, this)};
-  if (prev_value == this) [[unlikely]] {
+  if (prev_value == this || prev_value == nullptr) [[unlikely]] {
     return;
   }
 
