@@ -162,6 +162,17 @@ class KphpBuilder:
         print("\n!Ccompile_with_kphp step 3: cwd", self._kphp_build_tmp_dir)
         print("\n!Ccompile_with_kphp step 3: env", env)
 
+        print("\n!Ccompile_with_kphp step 3: ls")
+        print(os.path.exists(args[0]), os.path.exists(args[1]))
+
+        print("\n!Ccompile_with_kphp step 3: start tmp")
+        subprocess.Popen(
+            args,
+            cwd=self._kphp_build_tmp_dir,
+            env=env,
+        )
+        print("\n!Ccompile_with_kphp step 3: end tmp")
+
         kphp_build_stderr, fake_stderr = self._wait_proc(kphp_compilation_proc, timeout=1200)
         if fake_stderr:
             kphp_build_stderr = (kphp_build_stderr or b'') + fake_stderr
