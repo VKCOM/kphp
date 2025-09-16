@@ -15,7 +15,7 @@ if(NOT fmt_FOUND)
     FetchContent_Declare(
             fmt
             GIT_REPOSITORY https://github.com/fmtlib/fmt
-            GIT_TAG        7.1.0
+            GIT_TAG        7.0.3
     )
     FetchContent_MakeAvailable(fmt)
     include_directories(${fmt_SOURCE_DIR}/include)
