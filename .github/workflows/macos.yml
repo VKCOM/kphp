@@ -40,7 +40,7 @@ jobs:
           brew update
           brew install python@3.13 re2c coreutils libiconv googletest shivammathur/php/php@7.4
           brew link --overwrite --force shivammathur/php/php@7.4
-          /opt/homebrew/opt/python@3.13/libexec/bin/python -m pip install --upgrade pip --user --break-system-packages && /opt/homebrew/opt/python@3.13/libexec/bin/pip install --break-system-packages jsonschema six
+          /opt/homebrew/opt/python@3.13/libexec/bin/python -m pip install --upgrade pip --user --break-system-packages && /opt/homebrew/opt/python@3.13/libexec/bin/pip install --break-system-packages jsonschema six cmake==3.31.6
 
       - name: Run cmake
         run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
