@@ -119,7 +119,7 @@ class KphpBuilder:
 
     def compile_with_kphp(self, kphp_env=None):
         os.makedirs(self._kphp_build_tmp_dir, exist_ok=True)
-        print("\n!Ccompile_with_kphp step 1")
+        print("\n!Compile_with_kphp step 1")
 
         sanitizer_log_name = "kphp_build_sanitizer_log"
         env, sanitizer_glob_mask = self._prepare_sanitizer_env(self._kphp_build_tmp_dir, sanitizer_log_name, detect_leaks=0)
@@ -140,16 +140,29 @@ class KphpBuilder:
         env["KPHP_DEST_DIR"] = os.path.abspath(self._kphp_build_tmp_dir)
         env.setdefault("KPHP_WARNINGS_LEVEL", "2")
         if self._use_nocc:
-            print("\n!Ccompile_with_kphp step 2 (use nocc)")
+            print("\n!Compile_with_kphp step 2 (use nocc)")
             env.setdefault("KPHP_JOBS_COUNT", "16")
             env.setdefault("KPHP_CXX", nocc_prepend_to_cxx(self._cxx_name))
             env.update(nocc_make_env())
         else:
-            print("\n!Ccompile_with_kphp step 2 (not use nocc)")
+            print("\n!Compile_with_kphp step 2 (not use nocc)")
             env.setdefault("KPHP_CXX", self._cxx_name)
             env.setdefault("KPHP_JOBS_COUNT", "2")
 
         args = [self._kphp_path, self._test_file_path]
+
+        print("\n!Compile_with_kphp step 3: start tmp")
+        tmp_proc = subprocess.run(
+            args,
+            cwd=self._kphp_build_tmp_dir,
+            env=env, 
+            capture_output=True,
+            text=True
+        )
+        print("\n!Compile_with_kphp step 3: return code tmp", tmp_proc.returncode)
+        print("\n!Compile_with_kphp step 3: stdout", tmp_proc.stdout)
+        print("\n!Compile_with_kphp step 3: stderr", tmp_proc.stderr)
+        print("\n!Compile_with_kphp step 3: end tmp")
 
         # TODO kphp writes error into stdout and info into stderr
         kphp_compilation_proc = subprocess.Popen(
@@ -159,20 +172,20 @@ class KphpBuilder:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
         )
-        print("\n!Ccompile_with_kphp step 3: args", args)
-        print("\n!Ccompile_with_kphp step 3: cwd", self._kphp_build_tmp_dir)
-        print("\n!Ccompile_with_kphp step 3: env", env)
+        print("\n!Compile_with_kphp step 3: args", args)
+        print("\n!Compile_with_kphp step 3: cwd", self._kphp_build_tmp_dir)
+        print("\n!Compile_with_kphp step 3: env", env)
 
         kphp_build_stderr, fake_stderr = self._wait_proc(kphp_compilation_proc, timeout=1200)
         if fake_stderr:
             kphp_build_stderr = (kphp_build_stderr or b'') + fake_stderr
 
-        print("\n!Ccompile_with_kphp step 4")
+        print("\n!Compile_with_kphp step 4", str(kphp_build_stderr), str(fake_stderr))
 
         self._kphp_build_sanitizer_log_artifact = self._move_sanitizer_logs_to_artifacts(
             sanitizer_glob_mask, kphp_compilation_proc, sanitizer_log_name)
 
-        print("\n!Ccompile_with_kphp step 5")
+        print("\n!Compile_with_kphp step 5")
 
         ignore_stderr = error_can_be_ignored(
             ignore_patterns=[
@@ -188,7 +201,7 @@ class KphpBuilder:
             ],
             binary_error_text=kphp_build_stderr)
 
-        print("\n!Ccompile_with_kphp step 6")
+        print("\n!Compile_with_kphp step 6")
 
         if not ignore_stderr:
             return_code = kphp_compilation_proc.returncode
@@ -198,7 +211,7 @@ class KphpBuilder:
                 content=kphp_build_stderr
             )
 
-        print("\n!Ccompile_with_kphp step 7")
+        print("\n!Compile_with_kphp step 7")
 
-        print("\n!Ccompile_with_kphp returncode", kphp_compilation_proc.returncode)
+        print("\n!Compile_with_kphp returncode", kphp_compilation_proc.returncode)
         return kphp_compilation_proc.returncode == 0
