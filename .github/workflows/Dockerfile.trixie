@@ -1,10 +1,13 @@
 FROM debian:trixie
 ARG DEBIAN_FRONTEND=noninteractive
 
-ARG PHP_VERSION=7.4
-ARG PYTHON_VERSION=3.13
+# Compilers
 ARG GPP_VERSION=12
 ARG GCC_VERSION=12
+
+# Languages
+ARG PHP_VERSION=7.4
+ARG PYTHON_VERSION=3.13
 
 RUN apt-get update
 
@@ -45,10 +48,11 @@ RUN wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
 
 # Composer
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
-  && php -r "if (hash_file('sha384', 'composer-setup.php') === 'dac665fdc30fdd8ec78b38b9800061b4150413ff2e3b6f88543c636f7cd84f6db9189d43a81e5503cda447da73c7e5b6') { echo 'Installer verified'.PHP_EOL; } else { echo 'Installer corrupt'.PHP_EOL; unlink('composer-setup.php'); exit(1); }" \
-  && php composer-setup.php --install-dir=/usr/bin --version=2.8.10 --filename=composer \
-  && php -r "unlink('composer-setup.php');"
+    && php -r "if (hash_file('sha384', 'composer-setup.php') === 'dac665fdc30fdd8ec78b38b9800061b4150413ff2e3b6f88543c636f7cd84f6db9189d43a81e5503cda447da73c7e5b6') { echo 'Installer verified'.PHP_EOL; } else { echo 'Installer corrupt'.PHP_EOL; unlink('composer-setup.php'); exit(1); }" \
+    && php composer-setup.php --install-dir=/usr/bin --version=2.8.10 --filename=composer \
+    && php -r "unlink('composer-setup.php');"
 
-RUN rm -rf /var/lib/apt/lists/*
+RUN rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/*
 
 RUN useradd -ms /bin/bash kitten
