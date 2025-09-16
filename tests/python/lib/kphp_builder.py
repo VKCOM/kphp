@@ -156,7 +156,7 @@ class KphpBuilder:
             args,
             cwd=self._kphp_build_tmp_dir,
             env=env, 
-            capture_output=True,
+            capture_output=False,
             text=True
         )
         print("\n!Compile_with_kphp step 3: return code tmp", tmp_proc.returncode)
