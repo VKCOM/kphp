@@ -150,14 +150,25 @@ class KphpBuilder:
             env.setdefault("KPHP_JOBS_COUNT", "2")
 
         args = [self._kphp_path, self._test_file_path]
+
+        print("\n!Ccompile_with_kphp step 3: start tmp")
+        subprocess.Popen(
+            args,
+            cwd=self._kphp_build_tmp_dir,
+            env=env,
+        )
+        print("\n!Ccompile_with_kphp step 3: end tmp")
+
+
+
+
         # TODO kphp writes error into stdout and info into stderr
         kphp_compilation_proc = subprocess.Popen(
             args,
             cwd=self._kphp_build_tmp_dir,
             env=env,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True
+            stderr=subprocess.STDOUT
         )
         print("\n!Ccompile_with_kphp step 3: args", args)
         print("\n!Ccompile_with_kphp step 3: cwd", self._kphp_build_tmp_dir)
