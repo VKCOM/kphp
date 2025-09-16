@@ -410,14 +410,14 @@ void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::sta
                             break;
                           }
 
-                          static constexpr size_t DEFAULT_CURL_URL_MAX_LEN = 100;
-                          const std::string_view curl_url = curl_response_stat.opt_url.value_or(std::string_view{"unknown"});
-                          size_t curl_url_max_len = curl_url.find_first_of("?"); // query parameters are not of interest to us
-                          if (curl_url_max_len == std::string::npos) {
-                            curl_url_max_len = DEFAULT_CURL_URL_MAX_LEN;
+                          std::string_view slow_url = "unknown";
+                          if (curl_response_stat.opt_url.has_value()) {
+                            slow_url = curl_response_stat.opt_url.value();
+                            if (const size_t pos = slow_url.find_first_of('?'); pos != std::string_view::npos) {
+                              slow_url.remove_suffix(slow_url.size() - pos);
+                            }
                           }
 
-                          const std::string_view slow_url = std::string_view{curl_url.data(), std::min(curl_url.size(), curl_url_max_len)};
                           client.metric("kphp_slow_curl_response").tag(curl_kind).tag(slow_url).write_value(curl_response_stat.response_time);
                         }},
              stats);
