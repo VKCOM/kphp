@@ -147,7 +147,7 @@ class KphpBuilder:
         else:
             n_cpu = multiprocessing.cpu_count()
             env.setdefault("KPHP_CXX", self._cxx_name)
-            env.setdefault("KPHP_JOBS_COUNT", str(math.ceil(n_cpu * (1 - 80 / 100))))
+            env.setdefault("KPHP_JOBS_COUNT", str(math.ceil(n_cpu * (1 - 50 / 100))))
 
         args = [self._kphp_path, self._test_file_path]
 
