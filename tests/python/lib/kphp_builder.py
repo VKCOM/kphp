@@ -119,6 +119,7 @@ class KphpBuilder:
 
     def compile_with_kphp(self, kphp_env=None):
         os.makedirs(self._kphp_build_tmp_dir, exist_ok=True)
+        print("\n!Ccompile_with_kphp step 1")
 
         sanitizer_log_name = "kphp_build_sanitizer_log"
         env, sanitizer_glob_mask = self._prepare_sanitizer_env(self._kphp_build_tmp_dir, sanitizer_log_name, detect_leaks=0)
@@ -139,10 +140,12 @@ class KphpBuilder:
         env["KPHP_DEST_DIR"] = os.path.abspath(self._kphp_build_tmp_dir)
         env.setdefault("KPHP_WARNINGS_LEVEL", "2")
         if self._use_nocc:
+            print("\n!Ccompile_with_kphp step 2 (use nocc)")
             env.setdefault("KPHP_JOBS_COUNT", "16")
             env.setdefault("KPHP_CXX", nocc_prepend_to_cxx(self._cxx_name))
             env.update(nocc_make_env())
         else:
+            print("\n!Ccompile_with_kphp step 2 (not use nocc)")
             env.setdefault("KPHP_CXX", self._cxx_name)
             env.setdefault("KPHP_JOBS_COUNT", "2")
 
@@ -154,12 +157,19 @@ class KphpBuilder:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
         )
+        print("\n!Ccompile_with_kphp step 3")
+
         kphp_build_stderr, fake_stderr = self._wait_proc(kphp_compilation_proc, timeout=1200)
         if fake_stderr:
             kphp_build_stderr = (kphp_build_stderr or b'') + fake_stderr
 
+        print("\n!Ccompile_with_kphp step 4")
+
         self._kphp_build_sanitizer_log_artifact = self._move_sanitizer_logs_to_artifacts(
             sanitizer_glob_mask, kphp_compilation_proc, sanitizer_log_name)
+
+        print("\n!Ccompile_with_kphp step 5")
+
         ignore_stderr = error_can_be_ignored(
             ignore_patterns=[
                 "^Starting php to cpp transpiling\\.\\.\\.$",
@@ -173,6 +183,9 @@ class KphpBuilder:
                 "^\\s*\\d+\\% \\[total jobs \\d+\\] \\[left jobs \\d+\\] \\[running jobs \\d+\\] \\[waiting jobs \\d+\\]$"
             ],
             binary_error_text=kphp_build_stderr)
+
+        print("\n!Ccompile_with_kphp step 6")
+
         if not ignore_stderr:
             return_code = kphp_compilation_proc.returncode
             self._kphp_build_stderr_artifact = self._move_to_artifacts(
@@ -180,5 +193,7 @@ class KphpBuilder:
                 return_code=1 if return_code is None else return_code,
                 content=kphp_build_stderr
             )
+
+        print("\n!Ccompile_with_kphp step 7")
 
         return kphp_compilation_proc.returncode == 0

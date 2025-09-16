@@ -209,9 +209,11 @@ class WebServerAutoTestCase(BaseTestCase):
                 kphp_env.update(cls.kphp_env_for_k2_server_component())
             kphp_env.update(cls.extra_kphp2cpp_options())
 
-            print("\nCompiling kphp")
+            print("\n!Compiling kphp starting")
             if not cls.kphp_builder.compile_with_kphp(kphp_env):
                 raise RuntimeError("Can't compile php script")
+
+            print("\n!Compiling kphp finished")
 
             if cls.should_use_k2():
                 cls.web_server_bin = os.path.abspath(search_k2_bin())
@@ -222,6 +224,8 @@ class WebServerAutoTestCase(BaseTestCase):
         cls.sanitizer_pattern = os.path.join(cls.web_server_working_dir, "engine_sanitizer_log")
         os.environ["ASAN_OPTIONS"] = "log_path=" + cls.sanitizer_pattern
         os.environ["UBSAN_OPTIONS"] = f"print_stacktrace=1:allow_addr2line=1:log_path={cls.sanitizer_pattern}"
+
+        print("\n!Find web-server")
 
         if cls.should_use_k2():
             cls.web_server = K2Server(
