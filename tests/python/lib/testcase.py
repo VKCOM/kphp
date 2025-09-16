@@ -181,6 +181,7 @@ class WebServerAutoTestCase(BaseTestCase):
 
     @classmethod
     def custom_setup(cls):
+        print("\n!Start custom_setup")
         if cls.should_use_nocc():
             nocc_start_daemon_in_background()
 
@@ -240,11 +241,15 @@ class WebServerAutoTestCase(BaseTestCase):
         cls.extra_class_setup()
         print("\nStarting web-server")
         cls.web_server.start()
+        print("\n!Finish custom_setup")
 
     @classmethod
     def custom_teardown(cls):
+        print("\n!Start custom_teardown")
         cls.web_server.stop()
+        print("\n!web-server stopped")
         cls.extra_class_teardown()
+        print("\n!web-server extra_class_teardown finish")
         if not cls.should_use_k2():
             try:
                 os.remove(cls.web_server_bin)
@@ -253,6 +258,7 @@ class WebServerAutoTestCase(BaseTestCase):
         for sanitizer_log in glob.glob(cls.sanitizer_pattern + ".*"):
             if not can_ignore_sanitizer_log(sanitizer_log):
                 raise RuntimeError("Got unexpected sanitizer log '{}'".format(sanitizer_log))
+        print("\n!Finish custom_teardown")
 
     def custom_setup_method(self, method):
         pass
