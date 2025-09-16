@@ -410,7 +410,7 @@ void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::sta
                             break;
                           }
 
-                          static constexpr size_t CURL_URL_MAX_LEN = 100;
+                          static constexpr size_t CURL_URL_MAX_LEN = 128;
                           std::string_view slow_url = "unknown";
                           if (curl_response_stat.opt_url.has_value()) {
                             slow_url = curl_response_stat.opt_url.value();
