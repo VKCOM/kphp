@@ -151,17 +151,6 @@ class KphpBuilder:
 
         args = [self._kphp_path, self._test_file_path]
 
-        # print("\n!Ccompile_with_kphp step 3: start tmp")
-        # subprocess.Popen(
-        #     args,
-        #     cwd=self._kphp_build_tmp_dir,
-        #     env=env,
-        # )
-        # print("\n!Ccompile_with_kphp step 3: end tmp")
-
-
-
-
         # TODO kphp writes error into stdout and info into stderr
         kphp_compilation_proc = subprocess.Popen(
             args,
@@ -211,4 +200,5 @@ class KphpBuilder:
 
         print("\n!Ccompile_with_kphp step 7")
 
+        print("\n!Ccompile_with_kphp returncode", kphp_compilation_proc.returncode)
         return kphp_compilation_proc.returncode == 0
