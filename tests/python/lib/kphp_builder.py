@@ -149,9 +149,24 @@ class KphpBuilder:
             env.setdefault("KPHP_CXX", self._cxx_name)
             env.setdefault("KPHP_JOBS_COUNT", str(math.ceil(n_cpu * (1 - 80 / 100))))
 
+        args = [self._kphp_path, self._test_file_path]
+
+        print("\n!Compile_with_kphp step 3: start tmp")
+        tmp_proc = subprocess.run(
+            args,
+            cwd=self._kphp_build_tmp_dir,
+            env=env,
+            capture_output=False,
+            text=True
+        )
+        print("\n!Compile_with_kphp step 3: return code tmp", tmp_proc.returncode)
+        print("\n!Compile_with_kphp step 3: stdout", tmp_proc.stdout)
+        print("\n!Compile_with_kphp step 3: stderr", tmp_proc.stderr)
+        print("\n!Compile_with_kphp step 3: end tmp")
+
         # TODO kphp writes error into stdout and info into stderr
         kphp_compilation_proc = subprocess.Popen(
-            [self._kphp_path, self._test_file_path],
+            args,
             cwd=self._kphp_build_tmp_dir,
             env=env,
             stdout=subprocess.PIPE,
