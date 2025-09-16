@@ -1,4 +1,6 @@
 import glob
+import math
+import multiprocessing
 import os
 import subprocess
 import shutil
@@ -145,9 +147,11 @@ class KphpBuilder:
             env.setdefault("KPHP_CXX", nocc_prepend_to_cxx(self._cxx_name))
             env.update(nocc_make_env())
         else:
+            n_cpu = multiprocessing.cpu_count()
+
             print("\n!Compile_with_kphp step 2 (not use nocc)")
             env.setdefault("KPHP_CXX", self._cxx_name)
-            env.setdefault("KPHP_JOBS_COUNT", "2")
+            env.setdefault("KPHP_JOBS_COUNT", math.ceil(n_cpu * (1 - 80 / 100)))
 
         args = [self._kphp_path, self._test_file_path]
 

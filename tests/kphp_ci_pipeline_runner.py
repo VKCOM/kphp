@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import curses
+import math
 import multiprocessing
 import os
 import signal
@@ -440,7 +441,7 @@ if __name__ == "__main__":
             "KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
             "KPHP_TESTS_INTERGRATION_TESTS_ENABLED=1 "
             "python3 -m pytest --tb=native -n{jobs} -k '{exclude_pattern}' {tests_dir}".format(
-                jobs=n_cpu,
+                jobs=math.floor(n_cpu * (1 - 20 / 100)),
                 lib_dir=os.path.join(runner_dir, "python"),
                 engine_repo=args.engine_repo,
                 kphp_repo_root=kphp_repo_root,
