@@ -9,7 +9,6 @@ on:
 env:
   HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: true
   HOMEBREW_NO_INSTALL_FROM_API: ""
-  CMAKE_POLICY_VERSION_MINIMUM: 3.5
 
 jobs:
   build-macos:
@@ -42,6 +41,11 @@ jobs:
           brew install python@3.13 re2c coreutils libiconv googletest shivammathur/php/php@7.4
           brew link --overwrite --force shivammathur/php/php@7.4
           /opt/homebrew/opt/python@3.13/libexec/bin/python -m pip install --upgrade pip --user --break-system-packages && /opt/homebrew/opt/python@3.13/libexec/bin/pip install --break-system-packages jsonschema six
+
+      - name: Setup cmake
+        run: |
+          curl -O https://raw.githubusercontent.com/Homebrew/homebrew-core/b4e46db74e74a8c1650b38b1da222284ce1ec5ce/Formula/c/cmake.rb
+          brew install ./cmake.rb
 
       - name: Run cmake
         run: cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DDOWNLOAD_MISSING_LIBRARIES=On -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
