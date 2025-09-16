@@ -383,7 +383,7 @@ void StatsHouseManager::add_confdata_binlog_reader_stats(const binlog_reader_sta
 }
 
 void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::stats_t& stats) noexcept {
-  std::visit(overloaded{[this](const slow_net_event_stats::slow_rpc_response_stats& rpc_query_stat) noexcept {
+  std::visit(overloaded{[this](const slow_net_event_stats::slow_rpc_response_stats& rpc_query_stat) noexcept -> void {
                           // FIXME: it's enough to have it equal 10, but due to bug in GCC we are forced to use a length > 253
                           constexpr auto MAX_INT_STRING_LENGTH = 254;
                           std::array<char, MAX_INT_STRING_LENGTH> buf{};
@@ -410,13 +410,18 @@ void StatsHouseManager::add_slow_net_event_stats(const slow_net_event_stats::sta
                             break;
                           }
 
-                          static constexpr size_t CURL_URL_MAX_LEN = 100;
-                          std::string_view curl_url = curl_response_stat.opt_url.value_or(std::string_view{"unknown"});
+                          static constexpr size_t CURL_URL_MAX_LEN = 128;
+                          std::string_view slow_url = "unknown";
+                          if (curl_response_stat.opt_url.has_value()) {
+                            slow_url = curl_response_stat.opt_url.value();
+                            if (const size_t pos = slow_url.find_first_of('?'); pos != std::string_view::npos) {
+                              slow_url.remove_suffix(slow_url.size() - pos);
+                            }
 
-                          client.metric("kphp_slow_curl_response")
-                              .tag(curl_kind)
-                              .tag(std::string_view{curl_url.data(), std::min(curl_url.size(), CURL_URL_MAX_LEN)})
-                              .write_value(curl_response_stat.response_time);
+                            slow_url = slow_url.substr(0, std::min(slow_url.size(), CURL_URL_MAX_LEN));
+                          }
+
+                          client.metric("kphp_slow_curl_response").tag(curl_kind).tag(slow_url).write_value(curl_response_stat.response_time);
                         }},
              stats);
 }
