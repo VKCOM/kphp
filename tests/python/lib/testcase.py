@@ -181,7 +181,6 @@ class WebServerAutoTestCase(BaseTestCase):
 
     @classmethod
     def custom_setup(cls):
-        print("\n!Start custom_setup")
         if cls.should_use_nocc():
             nocc_start_daemon_in_background()
 
@@ -210,11 +209,9 @@ class WebServerAutoTestCase(BaseTestCase):
                 kphp_env.update(cls.kphp_env_for_k2_server_component())
             kphp_env.update(cls.extra_kphp2cpp_options())
 
-            print("\n!Compiling kphp starting")
+            print("\nCompiling kphp")
             if not cls.kphp_builder.compile_with_kphp(kphp_env):
                 raise RuntimeError("Can't compile php script")
-
-            print("\n!Compiling kphp finished")
 
             if cls.should_use_k2():
                 cls.web_server_bin = os.path.abspath(search_k2_bin())
@@ -225,8 +222,6 @@ class WebServerAutoTestCase(BaseTestCase):
         cls.sanitizer_pattern = os.path.join(cls.web_server_working_dir, "engine_sanitizer_log")
         os.environ["ASAN_OPTIONS"] = "log_path=" + cls.sanitizer_pattern
         os.environ["UBSAN_OPTIONS"] = f"print_stacktrace=1:allow_addr2line=1:log_path={cls.sanitizer_pattern}"
-
-        print("\n!Find web-server")
 
         if cls.should_use_k2():
             cls.web_server = K2Server(
@@ -241,15 +236,11 @@ class WebServerAutoTestCase(BaseTestCase):
         cls.extra_class_setup()
         print("\nStarting web-server")
         cls.web_server.start()
-        print("\n!Finish custom_setup")
 
     @classmethod
     def custom_teardown(cls):
-        print("\n!Start custom_teardown")
         cls.web_server.stop()
-        print("\n!web-server stopped")
         cls.extra_class_teardown()
-        print("\n!web-server extra_class_teardown finish")
         if not cls.should_use_k2():
             try:
                 os.remove(cls.web_server_bin)
@@ -258,7 +249,6 @@ class WebServerAutoTestCase(BaseTestCase):
         for sanitizer_log in glob.glob(cls.sanitizer_pattern + ".*"):
             if not can_ignore_sanitizer_log(sanitizer_log):
                 raise RuntimeError("Got unexpected sanitizer log '{}'".format(sanitizer_log))
-        print("\n!Finish custom_teardown")
 
     def custom_setup_method(self, method):
         pass
