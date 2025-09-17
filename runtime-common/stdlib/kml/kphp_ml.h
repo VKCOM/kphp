@@ -174,8 +174,8 @@ In the future, the following points might be considered as areas of investigatio
 #include <string>
 #include <variant>
 
-#include "runtime/kphp_ml/kphp_ml_catboost.h"
-#include "runtime/kphp_ml/kphp_ml_xgboost.h"
+#include "runtime-common/stdlib/kml/kphp_ml_catboost.h"
+#include "runtime-common/stdlib/kml/kphp_ml_xgboost.h"
 
 namespace kphp_ml {
 

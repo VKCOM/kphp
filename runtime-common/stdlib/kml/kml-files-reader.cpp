@@ -6,9 +6,10 @@
 // This file exists both in KPHP and in a private vkcom repo "ml_experiments".
 // They are almost identical, besides include paths and input types (`array` vs `unordered_map`).
 
-#include "runtime/kphp_ml/kml-files-reader.h"
+#include "runtime-common/stdlib/kml/kml-files-reader.h"
+#include "common/mixin/not_copyable.h"
 
-#include <fstream>
+#include <cstdio>
 
 /*
  * .kml files unite xgboost and catboost (prediction only, not learning).
@@ -44,58 +45,50 @@ public:
   }
 };
 
-class KmlFileReader {
-  std::ifstream fi;
+class KmlReader final : public vk::not_copyable {
+  FileReader reader;
 
 public:
-  explicit KmlFileReader(const std::string& kml_filename) {
-    fi = std::ifstream(kml_filename, std::ios::binary);
-    if (!fi.is_open()) {
-      throw std::invalid_argument("can't open " + kml_filename + " for reading");
-    }
-  }
-
-  ~KmlFileReader() {
-    fi.close();
-  }
+  explicit KmlReader(vk::string_view kml_filename)
+      : reader{kml_filename} {}
 
   int read_int() noexcept {
     int v;
-    fi.read((char*)&v, sizeof(int));
+    reader.read((char*)&v, sizeof(int));
     return v;
   }
 
   void read_int(int& v) noexcept {
-    fi.read((char*)&v, sizeof(int));
+    reader.read((char*)&v, sizeof(int));
   }
 
   void read_uint32(uint32_t& v) noexcept {
-    fi.read((char*)&v, sizeof(uint32_t));
+    reader.read((char*)&v, sizeof(uint32_t));
   }
 
   void read_uint64(uint64_t& v) noexcept {
-    fi.read((char*)&v, sizeof(uint64_t));
+    reader.read((char*)&v, sizeof(uint64_t));
   }
 
   void read_float(float& v) noexcept {
-    fi.read((char*)&v, sizeof(float));
+    reader.read((char*)&v, sizeof(float));
   }
 
   void read_double(double& v) noexcept {
-    fi.read((char*)&v, sizeof(double));
+    reader.read((char*)&v, sizeof(double));
   }
 
   template<class T>
   void read_enum(T& v) noexcept {
     static_assert(sizeof(T) == sizeof(int));
-    fi.read((char*)&v, sizeof(int));
+    reader.read((char*)&v, sizeof(int));
   }
 
   void read_string(std::string& v) noexcept {
     int len;
-    fi.read((char*)&len, sizeof(int));
+    reader.read((char*)&len, sizeof(int));
     v.resize(len);
-    fi.read(v.data(), len);
+    reader.read(v.data(), len);
   }
 
   void read_bool(bool& v) noexcept {
@@ -103,7 +96,7 @@ public:
   }
 
   void read_bytes(void* v, size_t len) noexcept {
-    fi.read((char*)v, static_cast<std::streamsize>(len));
+    reader.read((char*)v, static_cast<std::streamsize>(len));
   }
 
   template<class T>
@@ -126,14 +119,14 @@ public:
   }
 
   void check_not_eof() const {
-    if (fi.is_open() && fi.eof()) {
+    if (reader.is_eof()) {
       throw std::invalid_argument("unexpected eof");
     }
   }
 };
 
 template<>
-void KmlFileReader::read_vec<std::string>(std::vector<std::string>& v) {
+void KmlReader::read_vec<std::string>(std::vector<std::string>& v) {
   int sz = read_int();
   v.resize(sz);
   for (auto& str : v) {
@@ -141,12 +134,12 @@ void KmlFileReader::read_vec<std::string>(std::vector<std::string>& v) {
   }
 }
 
-void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostProjection& v) {
+void kml_read_catboost_field(KmlReader& f, kphp_ml_catboost::CatboostProjection& v) {
   f.read_vec(v.transposed_cat_feature_indexes);
   f.read_vec(v.binarized_indexes);
 }
 
-void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostModelCtr& v) {
+void kml_read_catboost_field(KmlReader& f, kphp_ml_catboost::CatboostModelCtr& v) {
   f.read_uint64(v.base_hash);
   f.read_enum(v.base_ctr_type);
   f.read_int(v.target_border_idx);
@@ -156,7 +149,7 @@ void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostModelCt
   f.read_float(v.scale);
 }
 
-void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostCompressedModelCtr& v) {
+void kml_read_catboost_field(KmlReader& f, kphp_ml_catboost::CatboostCompressedModelCtr& v) {
   kml_read_catboost_field(f, v.projection);
 
   int sz = f.read_int();
@@ -166,7 +159,7 @@ void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostCompres
   }
 }
 
-void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostCtrValueTable& v) {
+void kml_read_catboost_field(KmlReader& f, kphp_ml_catboost::CatboostCtrValueTable& v) {
   int sz = f.read_int();
   v.index_hash_viewer.reserve(sz);
   for (int i = 0; i < sz; ++i) {
@@ -181,7 +174,7 @@ void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostCtrValu
   f.read_vec(v.ctr_total);
 }
 
-void kml_write_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostCtrData& v) {
+void kml_write_catboost_field(KmlReader& f, kphp_ml_catboost::CatboostCtrData& v) {
   int sz = f.read_int();
   v.learn_ctrs.reserve(sz);
   for (int i = 0; i < sz; ++i) {
@@ -191,7 +184,7 @@ void kml_write_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostCtrDat
   }
 }
 
-void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostModelCtrsContainer& v) {
+void kml_read_catboost_field(KmlReader& f, kphp_ml_catboost::CatboostModelCtrsContainer& v) {
   bool has;
   f.read_bool(has);
 
@@ -210,7 +203,7 @@ void kml_read_catboost_field(KmlFileReader& f, kphp_ml_catboost::CatboostModelCt
 
 // -------------
 
-void kml_file_read_xgboost_trees_no_cat(KmlFileReader& f, [[maybe_unused]] int version, kphp_ml_xgboost::XgboostModel& xgb) {
+void kml_file_read_xgboost_trees_no_cat(KmlReader& f, [[maybe_unused]] int version, kphp_ml_xgboost::XgboostModel& xgb) {
   f.read_enum(xgb.tparam_objective);
   f.read_bytes(&xgb.calibration, sizeof(kphp_ml_xgboost::CalibrationMethod));
   f.read_float(xgb.base_score);
@@ -261,7 +254,7 @@ void kml_file_read_xgboost_trees_no_cat(KmlFileReader& f, [[maybe_unused]] int v
   f.read_float(xgb.default_missing_value);
 }
 
-void kml_file_read_catboost_trees(KmlFileReader& f, [[maybe_unused]] int version, kphp_ml_catboost::CatboostModel& cbm) {
+void kml_file_read_catboost_trees(KmlReader& f, [[maybe_unused]] int version, kphp_ml_catboost::CatboostModel& cbm) {
   f.read_int(cbm.float_feature_count);
   f.read_int(cbm.cat_feature_count);
   f.read_int(cbm.binary_feature_count);
@@ -311,7 +304,7 @@ void kml_file_read_catboost_trees(KmlFileReader& f, [[maybe_unused]] int version
 
 kphp_ml::MLModel kml_file_read(const std::string& kml_filename) {
   kphp_ml::MLModel kml;
-  KmlFileReader f(kml_filename);
+  KmlReader f(kml_filename);
 
   if (f.read_int() != kphp_ml::KML_FILE_PREFIX) {
     throw std::invalid_argument("wrong .kml file prefix");

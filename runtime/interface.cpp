@@ -40,7 +40,7 @@
 #include "runtime/job-workers/client-functions.h"
 #include "runtime/job-workers/server-functions.h"
 #include "runtime/kphp-backtrace.h"
-#include "runtime/kphp_ml/kphp_ml_init.h"
+#include "runtime-common/stdlib/kml/kphp_ml_init.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"

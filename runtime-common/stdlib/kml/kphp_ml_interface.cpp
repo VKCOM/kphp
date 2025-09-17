@@ -2,13 +2,15 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/kphp_ml/kphp_ml_interface.h"
+#include "runtime-common/stdlib/kml/kphp_ml_interface.h"
 
 #include "runtime/critical_section.h"
-#include "runtime/kphp_ml/kphp_ml.h"
-#include "runtime/kphp_ml/kphp_ml_catboost.h"
-#include "runtime/kphp_ml/kphp_ml_init.h"
-#include "runtime/kphp_ml/kphp_ml_xgboost.h"
+#include "runtime-common/stdlib/kml/kphp_ml.h"
+#include "runtime-common/stdlib/kml/kphp_ml_catboost.h"
+#include "runtime-common/stdlib/kml/kphp_ml_init.h"
+#include "runtime-common/stdlib/kml/kphp_ml_xgboost.h"
+#include "runtime-common/stdlib/kml/kml-models-context.h"
+
 
 Optional<array<double>> f$kml_xgboost_predict_matrix(const string& model_name, const array<array<double>>& features_map_matrix) {
   const kphp_ml::MLModel* p_kml = kphp_ml_find_loaded_model_by_name(model_name);
@@ -126,9 +128,11 @@ bool f$kml_model_exists(const string& model_name) {
 }
 
 array<string> f$kml_available_models() {
+  auto &kml_models_context = KmlModelsContext::get();
+
   array<string> response;
-  response.reserve(loaded_models.size(), true);
-  for (const auto& [_, model] : loaded_models) {
+  response.reserve(kml_models_context.loaded_models.size(), true);
+  for (const auto& [_, model] : kml_models_context.loaded_models) {
     response.push_back(string(model.model_name.c_str()));
   }
   return response;

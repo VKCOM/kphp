@@ -10,8 +10,6 @@ namespace kphp_ml {
 struct MLModel;
 }
 
-extern const char* kml_directory;
-extern std::unordered_map<uint64_t, kphp_ml::MLModel> loaded_models;
 
 void init_kphp_ml_runtime_in_master();
 void init_kphp_ml_runtime_in_worker();
