@@ -9,6 +9,7 @@
 #include "runtime-common/stdlib/kml/kml-files-reader.h"
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/overloaded.h"
+#include "runtime-common/core/allocator/platform-allocator.h"
 
 #include <cstdio>
 #include <variant>
@@ -42,27 +43,6 @@ template<typename T>
                                [](const std::string& error) -> std::optional<std::string> { return error; }},
                     result);
 }
-
-// This class is used to free memory in the end of the program
-// It is utilized to allocate memory for 'offset_in_vec' and 'reindex_map_int2int'
-template<typename T>
-class GlobalLifetimeResource {
-  std::vector<T*> managed_resources;
-
-  ~GlobalLifetimeResource() {
-    for (T* ptr : managed_resources) {
-      delete[] ptr;
-    }
-  }
-
-public:
-  static T* acquire(size_t size) {
-    static GlobalLifetimeResource data;
-
-    data.managed_resources.push_back(new T[size]);
-    return data.managed_resources.back();
-  }
-};
 
 class KmlReader final : public vk::not_copyable {
   FileReader reader;
@@ -258,13 +238,13 @@ void kml_read_catboost_field(KmlReader& f, kphp_ml_catboost::CatboostModelCtrsCo
     return *err;
   }
 
-  xgb.offset_in_vec = GlobalLifetimeResource<int>::acquire(xgb.max_required_features);
+  xgb.offset_in_vec = kphp::memory::platform_allocator<int>{}.allocate(xgb.max_required_features);
   f.read_bytes(xgb.offset_in_vec, xgb.max_required_features * sizeof(int));
   if (auto err = get_error(f.check_not_eof()); err.has_value()) {
     return *err;
   }
 
-  xgb.reindex_map_int2int = GlobalLifetimeResource<int>::acquire(xgb.max_required_features);
+  xgb.reindex_map_int2int = kphp::memory::platform_allocator<int>{}.allocate(xgb.max_required_features);
   f.read_bytes(xgb.reindex_map_int2int, xgb.max_required_features * sizeof(int));
   if (auto err = get_error(f.check_not_eof()); err.has_value()) {
     return *err;
