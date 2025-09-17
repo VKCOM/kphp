@@ -8,8 +8,10 @@
 
 #include "runtime-common/stdlib/kml/kml-files-reader.h"
 #include "common/mixin/not_copyable.h"
+#include "common/wrappers/overloaded.h"
 
 #include <cstdio>
+#include <variant>
 
 /*
  * .kml files unite xgboost and catboost (prediction only, not learning).
@@ -23,6 +25,23 @@
  */
 
 namespace {
+
+// Not really efficient, but it's OK as reading ML models once at start
+template<typename T>
+using Result = std::variant<T, std::string>;
+
+template<typename T>
+[[nodiscard]] std::optional<T> get_value(const Result<T>& result) {
+  return std::visit(overloaded{[](const T& value) -> std::optional<T> { return value; }, [](const std::string&) -> std::optional<T> { return std::nullopt; }},
+                    result);
+}
+
+template<typename T>
+[[nodiscard]] std::optional<std::string> get_error(const Result<T>& result) {
+  return std::visit(overloaded{[](const T&) -> std::optional<std::string> { return std::nullopt; },
+                               [](const std::string& error) -> std::optional<std::string> { return error; }},
+                    result);
+}
 
 // This class is used to free memory in the end of the program
 // It is utilized to allocate memory for 'offset_in_vec' and 'reindex_map_int2int'
@@ -118,10 +137,11 @@ public:
     }
   }
 
-  void check_not_eof() const {
+  [[nodiscard]] Result<std::monostate> check_not_eof() const {
     if (reader.is_eof()) {
-      throw std::invalid_argument("unexpected eof");
+      return "unexpected eof";
     }
+    return std::monostate{};
   }
 };
 
@@ -203,7 +223,7 @@ void kml_read_catboost_field(KmlReader& f, kphp_ml_catboost::CatboostModelCtrsCo
 
 // -------------
 
-void kml_file_read_xgboost_trees_no_cat(KmlReader& f, [[maybe_unused]] int version, kphp_ml_xgboost::XgboostModel& xgb) {
+[[nodiscard]] Result<std::monostate> kml_file_read_xgboost_trees_no_cat(KmlReader& f, [[maybe_unused]] int version, kphp_ml_xgboost::XgboostModel& xgb) {
   f.read_enum(xgb.tparam_objective);
   f.read_bytes(&xgb.calibration, sizeof(kphp_ml_xgboost::CalibrationMethod));
   f.read_float(xgb.base_score);
@@ -211,55 +231,72 @@ void kml_file_read_xgboost_trees_no_cat(KmlReader& f, [[maybe_unused]] int versi
   f.read_int(xgb.num_features_present);
   f.read_int(xgb.max_required_features);
 
-  f.check_not_eof();
+  if (auto err = get_error(f.check_not_eof()); err.has_value()) {
+    return *err;
+  }
+
   if (xgb.num_features_present <= 0 || xgb.num_features_present > xgb.max_required_features) {
-    throw std::invalid_argument("wrong num_features_present");
+    return "wrong num_features_present";
   }
 
   int num_trees = f.read_int();
   if (num_trees <= 0 || num_trees > 10000) {
-    throw std::invalid_argument("wrong num_trees");
+    return "wrong num_trees";
   }
 
   xgb.trees.resize(num_trees);
   for (kphp_ml_xgboost::XgbTree& tree : xgb.trees) {
     int num_nodes = f.read_int();
     if (num_nodes <= 0 || num_nodes > 10000) {
-      throw std::invalid_argument("wrong num_nodes");
+      return "wrong num_nodes";
     }
     tree.nodes.resize(num_nodes);
     f.read_bytes(tree.nodes.data(), sizeof(kphp_ml_xgboost::XgbTreeNode) * num_nodes);
   }
 
-  f.check_not_eof();
+  if (auto err = get_error(f.check_not_eof()); err.has_value()) {
+    return *err;
+  }
+
   xgb.offset_in_vec = GlobalLifetimeResource<int>::acquire(xgb.max_required_features);
   f.read_bytes(xgb.offset_in_vec, xgb.max_required_features * sizeof(int));
-  f.check_not_eof();
+  if (auto err = get_error(f.check_not_eof()); err.has_value()) {
+    return *err;
+  }
+
   xgb.reindex_map_int2int = GlobalLifetimeResource<int>::acquire(xgb.max_required_features);
   f.read_bytes(xgb.reindex_map_int2int, xgb.max_required_features * sizeof(int));
-  f.check_not_eof();
+  if (auto err = get_error(f.check_not_eof()); err.has_value()) {
+    return *err;
+  }
 
   int num_reindex_str2int = f.read_int();
   if (num_reindex_str2int < 0 || num_reindex_str2int > xgb.max_required_features) {
-    throw std::invalid_argument("wrong num_reindex_str2int");
+    return "wrong num_reindex_str2int";
   }
   for (int i = 0; i < num_reindex_str2int; ++i) {
     uint64_t hash;
     f.read_uint64(hash);
     f.read_int(xgb.reindex_map_str2int[hash]);
   }
-  f.check_not_eof();
+  if (auto err = get_error(f.check_not_eof()); err.has_value()) {
+    return *err;
+  }
 
   f.read_bool(xgb.skip_zeroes);
   f.read_float(xgb.default_missing_value);
+
+  return std::monostate{};
 }
 
-void kml_file_read_catboost_trees(KmlReader& f, [[maybe_unused]] int version, kphp_ml_catboost::CatboostModel& cbm) {
+[[nodiscard]] Result<std::monostate> kml_file_read_catboost_trees(KmlReader& f, [[maybe_unused]] int version, kphp_ml_catboost::CatboostModel& cbm) {
   f.read_int(cbm.float_feature_count);
   f.read_int(cbm.cat_feature_count);
   f.read_int(cbm.binary_feature_count);
   f.read_int(cbm.tree_count);
-  f.check_not_eof();
+  if (auto err = get_error(f.check_not_eof()); err.has_value()) {
+    return *err;
+  }
 
   f.read_vec(cbm.float_features_index);
   f.read_2d_vec(cbm.float_feature_borders);
@@ -267,18 +304,24 @@ void kml_file_read_catboost_trees(KmlReader& f, [[maybe_unused]] int version, kp
   f.read_vec(cbm.one_hot_cat_feature_index);
   f.read_2d_vec(cbm.one_hot_hash_values);
   f.read_2d_vec(cbm.ctr_feature_borders);
-  f.check_not_eof();
+  if (auto err = get_error(f.check_not_eof()); err.has_value()) {
+    return *err;
+  }
 
   f.read_vec(cbm.tree_split);
   f.read_vec(cbm.leaf_values);
   f.read_2d_vec(cbm.leaf_values_vec);
-  f.check_not_eof();
+  if (auto err = get_error(f.check_not_eof()); err.has_value()) {
+    return *err;
+  }
 
   f.read_double(cbm.scale);
   f.read_double(cbm.bias);
   f.read_vec(cbm.biases);
   f.read_int(cbm.dimension);
-  f.check_not_eof();
+  if (auto err = get_error(f.check_not_eof()); err.has_value()) {
+    return *err;
+  }
 
   int cat_hashes_sz = f.read_int();
   cbm.cat_features_hashes.reserve(cat_hashes_sz);
@@ -288,7 +331,10 @@ void kml_file_read_catboost_trees(KmlReader& f, [[maybe_unused]] int version, kp
     f.read_int(cbm.cat_features_hashes[key_hash]);
   }
 
-  f.check_not_eof();
+  if (auto err = get_error(f.check_not_eof()); err.has_value()) {
+    return *err;
+  }
+
   kml_read_catboost_field(f, cbm.model_ctrs);
 
   int reindex_sz = f.read_int();
@@ -298,20 +344,22 @@ void kml_file_read_catboost_trees(KmlReader& f, [[maybe_unused]] int version, kp
     f.read_uint64(hash);
     f.read_int(cbm.reindex_map_floats_and_cat[hash]);
   }
+
+  return std::monostate{};
 }
 
 } // namespace
 
-kphp_ml::MLModel kml_file_read(const std::string& kml_filename) {
+[[nodiscard]] std::variant<kphp_ml::MLModel, std::string> kml_file_read(const std::string& kml_filename) {
   kphp_ml::MLModel kml;
   KmlReader f(kml_filename);
 
   if (f.read_int() != kphp_ml::KML_FILE_PREFIX) {
-    throw std::invalid_argument("wrong .kml file prefix");
+    return "wrong .kml file prefix";
   }
   int version = f.read_int();
   if (version != kphp_ml::KML_FILE_VERSION_100) {
-    throw std::invalid_argument("wrong .kml file version");
+    return "wrong .kml file version";
   }
 
   f.read_enum(kml.model_kind);
@@ -327,19 +375,29 @@ kphp_ml::MLModel kml_file_read(const std::string& kml_filename) {
     f.read_string(kml.custom_properties[property_name]);
   }
 
-  f.check_not_eof();
+  if (auto err = get_error(f.check_not_eof()); err.has_value()) {
+    return *err;
+  }
 
   switch (kml.model_kind) {
-  case kphp_ml::ModelKind::xgboost_trees_no_cat:
+  case kphp_ml::ModelKind::xgboost_trees_no_cat: {
     kml.impl = kphp_ml_xgboost::XgboostModel();
-    kml_file_read_xgboost_trees_no_cat(f, version, std::get<kphp_ml_xgboost::XgboostModel>(kml.impl));
+    auto res = kml_file_read_xgboost_trees_no_cat(f, version, std::get<kphp_ml_xgboost::XgboostModel>(kml.impl));
+    if (auto err = get_error(res); err.has_value()) {
+      return *err;
+    }
     break;
-  case kphp_ml::ModelKind::catboost_trees:
+  }
+  case kphp_ml::ModelKind::catboost_trees: {
     kml.impl = kphp_ml_catboost::CatboostModel();
-    kml_file_read_catboost_trees(f, version, std::get<kphp_ml_catboost::CatboostModel>(kml.impl));
+    auto res = kml_file_read_catboost_trees(f, version, std::get<kphp_ml_catboost::CatboostModel>(kml.impl));
+    if (auto err = get_error(res); err.has_value()) {
+      return *err;
+    }
     break;
+  }
   default:
-    throw std::invalid_argument("unsupported model_kind");
+    return "unsupported model_kind";
   }
 
   return kml;
