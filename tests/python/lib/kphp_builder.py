@@ -133,8 +133,8 @@ class KphpBuilder:
         env.setdefault("KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS", "1")
         env.setdefault("KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE", "1")
         env.setdefault("KPHP_PROFILER", "2")
-        if sys.platform != "darwin":
-            env.setdefault("KPHP_DYNAMIC_INCREMENTAL_LINKAGE", "1")
+        # if sys.platform != "darwin":
+        #     env.setdefault("KPHP_DYNAMIC_INCREMENTAL_LINKAGE", "1")
         if "KPHP_INCLUDE_DIR" in env:
             self._include_dirs = [env["KPHP_INCLUDE_DIR"]] + self._include_dirs
         env["KPHP_INCLUDE_DIR"] = ":".join(self._include_dirs)
