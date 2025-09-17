@@ -336,6 +336,9 @@ void CompilerSettings::init() {
   if (is_k2_mode) {
     // for now k2-component must be compiled with clang and statically linked libc++
     ss << " -stdlib=libc++";
+    if (!dynamic_incremental_linkage.get()) {
+      ss << " -fvisibility=hidden";
+    }
   } else {
     // default value is false
     // when we build using full runtime, we should force to use runtime as static lib

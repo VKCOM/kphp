@@ -36,3 +36,8 @@ cmake_print_variables(KPHP_CUSTOM_CMAKE)
 
 option(COMPILE_RUNTIME_LIGHT "Compile runtime-light (it require c++20)" OFF)
 cmake_print_variables(COMPILE_RUNTIME_LIGHT)
+
+include(CMakeDependentOption)
+
+cmake_dependent_option(RUNTIME_LIGHT_HIDDEN_VISIBILITY "Enable -fvisibility=hidden for runtime-light" OFF COMPILE_RUNTIME_LIGHT OFF)
+cmake_print_variables(RUNTIME_LIGHT_HIDDEN_VISIBILITY)
