@@ -33,10 +33,9 @@ function escapeshellarg($arg ::: string): string;
 
 function escapeshellcmd($cmd ::: string): string;
 
-// === UNSUPPORTED ===
+function exec($command ::: string, &$output ::: mixed = [], int &$result_code = TODO): string|false;
 
-/** @kphp-extern-func-info stub */
-function exec($command ::: string, &$output ::: mixed = [], int &$result_code = 0): string|false;
+// === UNSUPPORTED ===
 
 /** @kphp-extern-func-info stub generation-required */
 function getenv(string $varname = '', bool $local_only = false): mixed;
@@ -48,10 +47,8 @@ function sleep ($seconds ::: int) ::: void;
 /** @kphp-extern-func-info stub generation-required */
 function raise_sigsegv () ::: void;
 
-
 /** @kphp-extern-func-info stub */
 function system($command ::: string, int &$result_code = 0): int;
-
 
 /** @kphp-extern-func-info stub generation-required */
 function ctype_alnum(mixed $text): bool;
