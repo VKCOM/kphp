@@ -4,15 +4,25 @@
 
 #pragma once
 
+#include <algorithm>
+#include <array>
 #include <chrono>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <expected>
+#include <functional>
 #include <memory>
+#include <optional>
 #include <pwd.h>
+#include <ranges>
 #include <span>
 #include <string_view>
 #include <sys/types.h>
+#include <type_traits>
+#include <utility>
 
+#include "common/algorithms/string-algorithms.h"
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
@@ -37,6 +47,35 @@ constexpr std::string_view DIR_PWUID_KEY = "dir";
 constexpr std::string_view SHELL_PWUID_KEY = "shell";
 
 } // namespace kphp::posix::impl
+
+namespace kphp::system {
+
+template<std::invocable<std::span<std::byte>> output_handler_type = std::identity>
+auto exec(std::string_view cmd, const output_handler_type& output_handler = {}) noexcept -> std::expected<int32_t, int32_t> {
+  static constexpr std::string_view program{"sh"};
+  static constexpr std::string_view arg1{"-c"};
+
+  if (cmd.empty()) [[unlikely]] {
+    kphp::log::warning("exec command must not be empty");
+    return std::unexpected{k2::errno_einval};
+  }
+
+  std::array args{k2::CommandArg{.arg = arg1.data(), .arg_len = arg1.size()}, k2::CommandArg{.arg = cmd.data(), .arg_len = cmd.size()}};
+  auto expected{
+      k2::command(program, args, std::is_same_v<output_handler_type, std::identity> ? k2::CommandStdoutPolicy::NoCapture : k2::CommandStdoutPolicy::Capture)};
+  if (!expected) [[unlikely]] {
+    kphp::log::warning("error executing command: error code -> {}, cmd -> '{}'", expected.error(), cmd);
+    return std::unexpected{expected.error()};
+  }
+
+  const auto [exit_code, output, output_len]{*std::move(expected)};
+  if constexpr (!std::is_same_v<output_handler_type, std::identity>) {
+    std::invoke(output_handler, std::span<std::byte>{output.get(), output_len});
+  }
+  return std::expected<int32_t, int32_t>{exit_code};
+}
+
+} // namespace kphp::system
 
 template<typename F>
 bool f$register_kphp_on_oom_callback(F&& /*callback*/) {
@@ -159,13 +198,42 @@ inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
   co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield_for(std::chrono::microseconds{microseconds}));
 }
 
-inline Optional<string> f$exec([[maybe_unused]] const string& command) noexcept {
-  kphp::log::error("call to unsupported function");
+inline Optional<string> f$exec(const string& cmd, mixed& output, std::optional<std::reference_wrapper<int64_t>> exit_code = {}) noexcept {
+  string last_line{};
+  const auto output_handler{[&last_line, &output_mixed = output](std::span<std::byte> output_bytes) noexcept {
+    std::string_view output{reinterpret_cast<const char*>(output_bytes.data()), output_bytes.size()};
+    // PHP doesn't include trailing whitespace
+    if (!output.empty() && vk::is_ascii_whitespace(output.back())) {
+      output.remove_suffix(1);
+    }
+
+    const auto pos{output.rfind('\n')};
+    const auto last_line_view{vk::rstrip_ascii_whitespace(output.substr(pos == std::string_view::npos ? 0 : (pos + 1)))};
+    last_line = {last_line_view.data(), static_cast<string::size_type>(last_line_view.size())};
+
+    if (output_mixed.is_array()) {
+      std::ranges::for_each(output | std::views::split('\n'), [&output_arr = output_mixed.as_array()](auto rng) noexcept {
+        const auto line_view{vk::rstrip_ascii_whitespace(std::string_view{rng})};
+        output_arr.emplace_back(string{line_view.data(), static_cast<string::size_type>(line_view.size())});
+      });
+    }
+  }};
+
+  auto expected{kphp::system::exec({cmd.c_str(), cmd.size()}, output_handler)};
+  if (!expected) [[unlikely]] {
+    return false;
+  }
+
+  if (exit_code) {
+    (*exit_code).get() = static_cast<int64_t>(*expected);
+  }
+
+  return last_line;
 }
 
-inline Optional<string> f$exec([[maybe_unused]] const string& command, [[maybe_unused]] mixed& output,
-                               [[maybe_unused]] int64_t& result_code = SystemInstanceState::get().result_code_dummy) noexcept {
-  kphp::log::error("call to unsupported function");
+inline Optional<string> f$exec(const string& cmd) noexcept {
+  mixed output_arr{};
+  return f$exec(cmd, output_arr);
 }
 
 inline string f$get_engine_version() noexcept {

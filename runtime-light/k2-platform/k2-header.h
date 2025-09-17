@@ -665,6 +665,54 @@ int32_t k2_canonicalize(const char* path, size_t pathlen, char* const* resolved_
  */
 int32_t k2_stat(const char* pathname, size_t pathname_len, struct stat* statbuf);
 
+struct CommandArg {
+  const char* arg;
+  size_t arg_len;
+};
+
+/**
+ * Executes a specified command as a child process, waits for it to complete, and optionally captures
+ * its exit code and output.
+ *
+ * This function allocates memory for the output buffer and returns a pointer to this memory, the size and
+ * alignment of the memory.The caller is responsible for freeing the allocated memory when it is no longer needed.
+ *
+ * @param `cmd` The command to be executed.
+ * @param `cmd_len` The length of the command.
+ * @param `args` A pointer to an array of `CommandArg` structures representing the command-line
+ *               arguments to be passed to the command.
+ * @param `args_len` The number of elements in the `args` array.
+ * @param `exit_code` A pointer to a memory where the exit code of the command will be stored.
+ *                    If you do not need the exit code, you can pass `nullptr`.
+ * @param `output` A pointer to a memory where the address of the allocated output
+ *                 buffer will be stored. The buffer will contain the command's output. If you
+ *                 pass `nullptr`, the function will skip capturing the command's output.
+ * @param `output_len` A pointer to a memory where the total length of the command's output will be
+ *                     stored. If you pass `nullptr`, the function will skip capturing the command's
+ *                     output.
+ * @param `output_align` A pointer to a memory where the alignment of the output will be stored. If
+ *                       you pass `nullptr`, the function will skip capturing the command's output.
+ *
+ * @return The status of the command execution. A return value of 0 indicates success, while a non-zero
+ * value indicates an error.
+ *
+ * @note This function is more likely to be temporary and may be replaced by a more generic one
+ *       in the future. Consider this when integrating it into your application.
+ *
+ * @note The function blocks until the command has finished executing.
+ *
+ * @note The caller is responsible for freeing the allocated output buffer using `k2_free` or `k2_free_checked`
+ * to prevent memory leaks.
+ *
+ * Possible `errno`:
+ * `EINVAL` => `cmd` or `args.arg` is `NULL`.
+ * `ENOMEM` => Out of memory (i.e., kernel memory).
+ * `ENOSYS` => Internal error.
+ *
+ */
+int32_t k2_command(const char* cmd, size_t cmd_len, const struct CommandArg* args, size_t args_len, int32_t* exit_code, char* const* output, size_t* output_len,
+                   size_t* output_align);
+
 #ifdef __cplusplus
 }
 #endif

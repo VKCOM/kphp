@@ -75,6 +75,10 @@ inline bool is_ascii_whitespace(char c) noexcept {
   return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
 }
 
+inline vk::string_view rstrip_ascii_whitespace(vk::string_view view) noexcept {
+  return vk::string_view{view.begin(), std::find_if_not(view.rbegin(), view.rend(), is_ascii_whitespace).base()};
+}
+
 inline vk::string_view strip_ascii_whitespace(vk::string_view view) noexcept {
   const auto* not_space = std::find_if_not(view.begin(), view.end(), is_ascii_whitespace);
   view = vk::string_view{not_space, view.end()};
