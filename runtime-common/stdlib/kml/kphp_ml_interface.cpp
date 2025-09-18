@@ -128,7 +128,7 @@ bool f$kml_model_exists(const string& model_name) {
 }
 
 array<string> f$kml_available_models() {
-  auto &kml_models_context = KmlModelsContext::get();
+  const auto &kml_models_context = KmlModelsContext::get();
 
   array<string> response;
   response.reserve(kml_models_context.loaded_models.size(), true);

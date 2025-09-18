@@ -2243,7 +2243,7 @@ int main_args_handler(int i, const char *long_option) {
         kprintf("--%s option: is not a directory\n", long_option);
         return -1;
       }
-      KmlModelsContext::get().kml_directory = optarg;
+      KmlModelsContext::get_mutable().kml_directory = optarg;
       return 0;
     }
     case 2042: {

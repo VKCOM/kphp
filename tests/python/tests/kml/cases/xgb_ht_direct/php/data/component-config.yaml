@@ -1,0 +1,14 @@
+entry: script
+components:
+  script:
+    image: KPHP
+    scope: Request
+    args: {}
+    links:
+      instance_cache: instance_cache
+  
+  instance_cache:
+    image: internal/cache
+    scope: Global
+    args: {}
+    links: {}

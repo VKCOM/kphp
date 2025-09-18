@@ -10,6 +10,10 @@ KmlInferenceContext& KmlInferenceContext::get() noexcept {
   return kml_inference_context;
 }
 
-KmlModelsContext& KmlModelsContext::get() noexcept {
+const KmlModelsContext& KmlModelsContext::get() noexcept {
+  return kml_models_context;
+}
+
+KmlModelsContext& KmlModelsContext::get_mutable() noexcept {
   return kml_models_context;
 }

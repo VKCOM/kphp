@@ -4,6 +4,7 @@ const eps = 1e-5;
 function ensure($x)
 {
     if (!$x) {
+        header('HTTP/1.1 500 KML assertion failed', true, 500);
         die(1);
     }
 }

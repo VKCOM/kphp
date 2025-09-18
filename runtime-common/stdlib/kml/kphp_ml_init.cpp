@@ -34,7 +34,7 @@ static void load_kml_file(const std::string& path) {
   }
   kml = std::get<kphp_ml::MLModel>(res);
 
-  auto& kml_models_context = KmlModelsContext::get();
+  auto& kml_models_context = KmlModelsContext::get_mutable();
 
   unsigned int buffer_size = kml.calculate_mutable_buffer_size();
   kml_models_context.max_mutable_buffer_size = std::max(kml_models_context.max_mutable_buffer_size, (buffer_size + 3) & -4);
@@ -73,8 +73,13 @@ static void traverse_kml_dir(const std::string& path) {
   }
 }
 
+// TODO list for K2
+// 1. initialize kml_directory
+// 2. Call init_kphp_ml_runtime_in_master() in initialization of ComponentState
+// 3. Call init_kphp_ml_runtime_in_worker() in initialization of InstanceState
+
 void init_kphp_ml_runtime_in_master() {
-  auto& kml_models_context = KmlModelsContext::get();
+  const auto& kml_models_context = KmlModelsContext::get();
 
   if (kml_models_context.kml_directory == nullptr || kml_models_context.kml_directory[0] == '\0') {
     return;
@@ -96,7 +101,7 @@ char* kphp_ml_get_mutable_buffer_in_current_worker() {
 const kphp_ml::MLModel* kphp_ml_find_loaded_model_by_name(const string& model_name) {
   uint64_t key_hash = string_hash(model_name.c_str(), model_name.size());
 
-  auto& kml_models_context = KmlModelsContext::get();
+  const auto& kml_models_context = KmlModelsContext::get();
 
   auto found_it = kml_models_context.loaded_models.find(key_hash);
   return found_it == kml_models_context.loaded_models.end() ? nullptr : &found_it->second;
