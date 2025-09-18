@@ -1,4 +1,6 @@
 import glob
+import math
+import multiprocessing
 import os
 import subprocess
 import shutil
@@ -117,6 +119,15 @@ class KphpBuilder:
                 return self._move_to_artifacts(sanitizer_log_name, proc.returncode, file=sanitizer_log)
         return None
 
+    def _calculate_kphp_jobs_count(self, percent: int = 75) -> int:
+        """
+        What percentage of the total number of cores do we use to run parallel kphp compilation.
+        You don't want to give more than 1/4 of the number of cores, or you will starvation.
+        """
+
+        cpu_count = multiprocessing.cpu_count()
+        return math.ceil(cpu_count * (1 - percent / 100))
+
     def compile_with_kphp(self, kphp_env=None):
         os.makedirs(self._kphp_build_tmp_dir, exist_ok=True)
 
@@ -144,7 +155,7 @@ class KphpBuilder:
             env.update(nocc_make_env())
         else:
             env.setdefault("KPHP_CXX", self._cxx_name)
-            env.setdefault("KPHP_JOBS_COUNT", "2")
+            env.setdefault("KPHP_JOBS_COUNT", str(self._calculate_kphp_jobs_count()))
 
         # TODO kphp writes error into stdout and info into stderr
         kphp_compilation_proc = subprocess.Popen(
