@@ -11,6 +11,8 @@ prepend(
   instance-cache/instance-cache-state.cpp
   job-worker/job-worker-api.cpp
   job-worker/job-worker-client-state.cpp
+  kml/kml-component-state.cpp
+  kml/kml-instance-state.cpp
   math/random-state.cpp
   math/math-state.cpp
   output/output-buffer.cpp

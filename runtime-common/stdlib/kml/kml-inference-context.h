@@ -9,5 +9,4 @@ struct KmlInferenceContext final : vk::not_copyable {
   char* mutable_buffer_in_worker = nullptr;
 
   static KmlInferenceContext& get() noexcept;
-  
 };

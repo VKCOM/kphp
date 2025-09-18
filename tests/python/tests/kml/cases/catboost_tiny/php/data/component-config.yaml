@@ -3,7 +3,8 @@ components:
   script:
     image: KPHP
     scope: Request
-    args: {}
+    args:
+      ini kml_dir: ${KPHP_KML_DIR}
     links:
       instance_cache: instance_cache
   

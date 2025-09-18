@@ -4,7 +4,6 @@
 
 #include "runtime-common/stdlib/kml/kphp_ml_interface.h"
 
-#include "runtime/critical_section.h"
 #include "runtime-common/stdlib/kml/kphp_ml.h"
 #include "runtime-common/stdlib/kml/kphp_ml_catboost.h"
 #include "runtime-common/stdlib/kml/kphp_ml_init.h"
@@ -163,7 +162,8 @@ Optional<string> f$kml_get_custom_property(const string& model_name, const strin
     return {};
   }
 
-  auto guard = dl::CriticalSectionGuard();
+  // TODO: why is it needed?
+  // auto guard = dl::CriticalSectionGuard();
 
   auto inner_result = p_kml->get_custom_property(std::string(property_name.c_str()));
   if (!inner_result.has_value()) {
