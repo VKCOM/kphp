@@ -286,8 +286,8 @@ void ComponentInfoFile::compile(CodeGenerator &W) const {
   G->settings().get_version();
   W << OpenFile("image_info.cpp");
   W << ExternInclude(G->settings().runtime_headers.get());
-  W << "const ImageInfo *k2_describe() " << BEGIN << "static ImageInfo imageInfo {\"" << G->settings().k2_component_name.get() << "\"" << ","
-    << G->settings().build_timestamp.get() << ","
+  W << "__attribute__((visibility(\"default\"))) const ImageInfo *k2_describe() " << BEGIN << "static ImageInfo imageInfo {\""
+    << G->settings().k2_component_name.get() << "\"" << "," << G->settings().build_timestamp.get() << ","
     << "K2_PLATFORM_HEADER_H_VERSION, "
     << "{}," // todo:k2 add commit hash
     << "{}," // todo:k2 add compiler hash?
