@@ -193,7 +193,7 @@ class WebServerAutoTestCase(BaseTestCase):
 
         tl_schema_required = _check_if_tl_required(os.path.join(cls.test_dir, "php/"))
         kphp_build_lock_file = os.path.join(cls.kphp_build_working_dir, "kphp_build_lock")
-        pathlib.Path(kphp_build_lock_file, exist_ok=True).touch()
+        pathlib.Path(kphp_build_lock_file).touch(exist_ok=True)
         with open(kphp_build_lock_file, "r+") as lock:
             portalocker.lock(lock, portalocker.LOCK_EX)
             kphp_env = {
