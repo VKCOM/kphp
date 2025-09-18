@@ -336,7 +336,8 @@ void CompilerSettings::init() {
   if (is_k2_mode) {
     // for now k2-component must be compiled with clang and statically linked libc++
     ss << " -stdlib=libc++";
-    if (!dynamic_incremental_linkage.get()) {
+    // TODO support hidden visibility for k2-lib
+    if (!dynamic_incremental_linkage.get() && mode.get() != "k2-lib") {
       ss << " -fvisibility=hidden";
     }
   } else {
