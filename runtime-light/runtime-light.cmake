@@ -3,7 +3,7 @@ include(${THIRD_PARTY_DIR}/pcre2-cmake/pcre2.cmake)
 
 # =================================================================================================
 
-set(RUNTIME_LIGHT_COMPILE_FLAGS -O3 -stdlib=libc++)
+set(RUNTIME_LIGHT_COMPILE_FLAGS -stdlib=libc++ ${RUNTIME_LIGHT_VISIBILITY})
 
 set(RUNTIME_LIGHT_PLATFORM_SPECIFIC_LINK_FLAGS)
 if(APPLE)

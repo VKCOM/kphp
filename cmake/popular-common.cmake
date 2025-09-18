@@ -48,7 +48,7 @@ endif()
 
 if(COMPILE_RUNTIME_LIGHT)
   vk_add_library_pic(light-common-pic OBJECT ${LIGHT_COMMON_SOURCES})
-  target_compile_options(light-common-pic PUBLIC -stdlib=libc++)
+  target_compile_options(light-common-pic PUBLIC -stdlib=libc++ ${RUNTIME_LIGHT_VISIBILITY})
   target_link_options(light-common-pic PUBLIC -stdlib=libc++)
 endif()
 

@@ -12,7 +12,9 @@
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-ImageState* k2_create_image() {
+#define VISIBILITY_DEFAULT __attribute__((visibility("default")))
+
+VISIBILITY_DEFAULT ImageState* k2_create_image() {
   kphp::log::debug("start image state creation");
   auto* image_state_ptr{static_cast<ImageState*>(k2::alloc(sizeof(ImageState)))};
   if (image_state_ptr == nullptr) [[unlikely]] {
@@ -22,14 +24,14 @@ ImageState* k2_create_image() {
   return image_state_ptr;
 }
 
-void k2_init_image() {
+VISIBILITY_DEFAULT void k2_init_image() {
   kphp::log::debug("start image state init");
   new (const_cast<ImageState*>(k2::image_state())) ImageState{};
   init_php_scripts_once_in_master();
   kphp::log::debug("finish image state init");
 }
 
-ComponentState* k2_create_component() {
+VISIBILITY_DEFAULT ComponentState* k2_create_component() {
   kphp::log::debug("start component state creation");
   auto* component_state_ptr{static_cast<ComponentState*>(k2::alloc(sizeof(ComponentState)))};
   if (component_state_ptr == nullptr) [[unlikely]] {
@@ -39,13 +41,13 @@ ComponentState* k2_create_component() {
   return component_state_ptr;
 }
 
-void k2_init_component() {
+VISIBILITY_DEFAULT void k2_init_component() {
   kphp::log::debug("start component state init");
   new (const_cast<ComponentState*>(k2::component_state())) ComponentState{};
   kphp::log::debug("finish component state init");
 }
 
-InstanceState* k2_create_instance() {
+VISIBILITY_DEFAULT InstanceState* k2_create_instance() {
   kphp::log::debug("start instance state creation");
   auto* instance_state_ptr{static_cast<InstanceState*>(k2::alloc(sizeof(InstanceState)))};
   if (instance_state_ptr == nullptr) [[unlikely]] {
@@ -55,14 +57,14 @@ InstanceState* k2_create_instance() {
   return instance_state_ptr;
 }
 
-void k2_init_instance() {
+VISIBILITY_DEFAULT void k2_init_instance() {
   kphp::log::debug("start instance state init");
   new (k2::instance_state()) InstanceState{};
   k2::instance_state()->init_script_execution();
   kphp::log::debug("finish instance state init");
 }
 
-k2::PollStatus k2_poll() {
+VISIBILITY_DEFAULT k2::PollStatus k2_poll() {
   kphp::log::debug("k2_poll started");
   const auto poll_status{kphp::coro::io_scheduler::get().process_events()};
   kphp::log::debug("k2_poll finished: {}", std::to_underlying(poll_status));

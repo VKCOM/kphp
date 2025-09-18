@@ -46,7 +46,7 @@ vk_add_library_no_pic(unicode-no-pic OBJECT ${UNICODE_SOURCES} ${AUTO_DIR}/commo
 vk_add_library_pic(unicode-pic OBJECT ${UNICODE_SOURCES} ${AUTO_DIR}/common/unicode-utils-auto.h)
 
 if (COMPILE_RUNTIME_LIGHT)
-    target_compile_options(unicode-pic PUBLIC -stdlib=libc++)
+    target_compile_options(unicode-pic PUBLIC -stdlib=libc++ ${RUNTIME_LIGHT_VISIBILITY})
     target_link_options(unicode-pic PUBLIC -stdlib=libc++)
 endif()
 
