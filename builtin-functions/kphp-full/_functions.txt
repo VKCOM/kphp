@@ -991,9 +991,15 @@ function rpc_tl_query_result ($query_ids ::: array) ::: mixed[][];
 function rpc_tl_query_result_synchronously ($query_ids ::: array) ::: mixed[][];
 function rpc_tl_pending_queries_count () ::: int;
 
-/** @kphp-tl-class */
+/**
+ * @kphp-required
+ * @kphp-tl-class
+ */
 interface RpcFunction {
+  public function getTLFunctionMagic() : int;
   public function getTLFunctionName() : string;
+  public function typedStore() : @tl\RpcFunctionFetcher;
+  public function typedFetch() : @tl\RpcFunctionFetcher;
 }
 
 /** @kphp-tl-class */

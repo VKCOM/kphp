@@ -4,9 +4,15 @@ require_once __DIR__ . '/rpc_fetcher.txt';
 
 // ===== SUPPORTED =====
 
-/** @kphp-tl-class */
+/**
+ * @kphp-required
+ * @kphp-tl-class
+ */
 interface RpcFunction {
+  public function getTLFunctionMagic() : int;
   public function getTLFunctionName() : string;
+  public function typedStore() : @tl\RpcFunctionFetcher;
+  public function typedFetch() : @tl\RpcFunctionFetcher;
 }
 
 /** @kphp-tl-class */
