@@ -1351,7 +1351,7 @@ protected:
       queue_id = wait_queue_create(query_ids);
 
       while (true) {
-        query_id = f$wait_queue_next(queue_id, -1);
+        query_id = f$wait_queue_next_impl(queue_id, -1);
         TRY_WAIT(rpc_tl_query_result_resumable_label_1, query_id, decltype(query_id));
         if (query_id.val() <= 0) {
           break;
@@ -1477,23 +1477,23 @@ void free_rpc_lib() {
 }
 
 int64_t f$rpc_queue_create() {
-  return f$wait_queue_create();
+  return f$wait_queue_create_impl();
 }
 
 int64_t f$rpc_queue_create(const mixed& request_ids) {
-  return f$wait_queue_create(request_ids);
+  return f$wait_queue_create_impl(request_ids);
 }
 
 int64_t f$rpc_queue_push(int64_t queue_id, const mixed& request_ids) {
-  return f$wait_queue_push(queue_id, request_ids);
+  return f$wait_queue_push_impl(queue_id, request_ids);
 }
 
 bool f$rpc_queue_empty(int64_t queue_id) {
-  return f$wait_queue_empty(queue_id);
+  return f$wait_queue_empty_impl(queue_id);
 }
 
 Optional<int64_t> f$rpc_queue_next(int64_t queue_id, double timeout) {
-  return f$wait_queue_next(queue_id, timeout);
+  return f$wait_queue_next_impl(queue_id, timeout);
 }
 
 Optional<int64_t> f$rpc_queue_next_synchronously(int64_t queue_id) {

@@ -917,7 +917,7 @@ static int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id) {
   }
 
   if (queue_id == -1) {
-    queue_id = f$wait_queue_create();
+    queue_id = f$wait_queue_create_impl();
   } else if (!is_wait_queue_id(queue_id)) {
     php_warning("Wrong queue_id %" PRIi64, queue_id);
     return queue_id;
@@ -939,7 +939,7 @@ static int64_t wait_queue_push(int64_t queue_id, int64_t resumable_id) {
 
 int64_t wait_queue_push_unsafe(int64_t queue_id, int64_t resumable_id) {
   if (queue_id == -1) {
-    queue_id = f$wait_queue_create();
+    queue_id = f$wait_queue_create_impl();
   }
 
   forked_resumable_info* resumable = get_forked_resumable_info(resumable_id);
@@ -964,7 +964,7 @@ void unregister_wait_queue(int64_t queue_id) {
   }
 }
 
-int64_t f$wait_queue_create() {
+int64_t f$wait_queue_create_impl() {
   int64_t res_id;
   if (first_free_queue_id != 0) {
     res_id = first_free_queue_id;
@@ -990,13 +990,13 @@ int64_t f$wait_queue_create() {
   return res_id;
 }
 
-int64_t f$wait_queue_create(const mixed& resumable_ids) {
-  return f$wait_queue_push(-1, resumable_ids);
+int64_t f$wait_queue_create_impl(const mixed& resumable_ids) {
+  return f$wait_queue_push_impl(-1, resumable_ids);
 }
 
-int64_t f$wait_queue_push(int64_t queue_id, const mixed& resumable_ids) {
+int64_t f$wait_queue_push_impl(int64_t queue_id, const mixed& resumable_ids) {
   if (queue_id == -1) {
-    queue_id = f$wait_queue_create();
+    queue_id = f$wait_queue_create_impl();
   }
 
   if (resumable_ids.is_array()) {
@@ -1013,7 +1013,7 @@ int64_t wait_queue_create(const array<int64_t>& resumable_ids) {
     return -1;
   }
 
-  const int64_t queue_id = f$wait_queue_create();
+  const int64_t queue_id = f$wait_queue_create_impl();
   for (auto p : resumable_ids) {
     wait_queue_push(queue_id, p.get_value());
   }
@@ -1032,7 +1032,7 @@ static void wait_queue_skip_gotten(wait_queue* q) {
   }
 }
 
-bool f$wait_queue_empty(int64_t queue_id) {
+bool f$wait_queue_empty_impl(int64_t queue_id) {
   if (!is_wait_queue_id(queue_id)) {
     if (queue_id != -1) {
       php_warning("Wrong queue_id %" PRIi64 " in function wait_queue_empty", queue_id);
@@ -1137,7 +1137,7 @@ static void process_wait_queue_timeout(kphp_event_timer* timer) {
   resumable_run_ready(wait_queue_resumable_id);
 }
 
-Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout) {
+Optional<int64_t> f$wait_queue_next_impl(int64_t queue_id, double timeout) {
   resumable_finished = true;
 
   tvkprintf(resumable, 3, "Waiting for queue %" PRIi64 "\n", queue_id);

@@ -106,7 +106,7 @@ private:
       queue_id_ = wait_queue_create(query_ids_);
 
       while (true) {
-        query_id_ = f$wait_queue_next(queue_id_, -1);
+        query_id_ = f$wait_queue_next_impl(queue_id_, -1);
         TRY_WAIT(rpc_tl_query_result_resumable_label_1, query_id_, decltype(query_id_));
         if (query_id_.val() <= 0) {
           break;

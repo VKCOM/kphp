@@ -119,12 +119,39 @@ inline bool f$wait_concurrently(const mixed& resumable_id) {
 void f$sched_yield();
 void f$sched_yield_sleep(double timeout);
 
-int64_t f$wait_queue_create();
-int64_t f$wait_queue_create(const mixed& resumable_ids);
-int64_t f$wait_queue_push(int64_t queue_id, const mixed& resumable_ids);
-bool f$wait_queue_empty(int64_t queue_id);
-Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1.0);
+
+int64_t f$wait_queue_create_impl();
+int64_t f$wait_queue_create_impl(const mixed& resumable_ids);
+int64_t f$wait_queue_push_impl(int64_t queue_id, const mixed& resumable_ids);
+bool f$wait_queue_empty_impl(int64_t queue_id);
+Optional<int64_t> f$wait_queue_next_impl(int64_t queue_id, double timeout = -1.0);
 Optional<int64_t> f$wait_queue_next_synchronously(int64_t queue_id);
+
+template<typename T>
+int64_t f$wait_queue_create() {
+  return f$wait_queue_create_impl();
+}
+
+template<typename T>
+int64_t f$wait_queue_create(const mixed& resumable_ids) {
+  return f$wait_queue_create_impl(resumable_ids);
+}
+
+template<typename T>
+int64_t f$wait_queue_push(int64_t queue_id, const mixed& resumable_ids) {
+  return f$wait_queue_push_impl(queue_id, resumable_ids);
+}
+
+template<typename T>
+bool f$wait_queue_empty(int64_t queue_id) {
+  return f$wait_queue_empty_impl(queue_id);
+}
+
+template<typename T>
+Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1.0) {
+    return f$wait_queue_next_impl(queue_id, timeout);
+}
+
 
 int64_t f$get_running_fork_id();
 Optional<array<mixed>> f$get_fork_stat(int64_t fork_id);
