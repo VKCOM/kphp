@@ -31,9 +31,9 @@ public:
     assert(read_cnt == sz);
   }
 
-  bool is_eof() const noexcept  {
+  bool is_eof() const noexcept {
     return file_ ? feof(file_) != 0 : true;
   }
 };
 
-std::variant<kphp_ml::MLModel, std::string>  kml_file_read(const std::string& kml_filename);
+std::variant<kphp_ml::MLModel, std::string> kml_file_read(const std::string& kml_filename);

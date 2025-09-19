@@ -187,7 +187,7 @@ void php_notice(char const* message, ...) {
   va_end(args);
 }
 
-#define eprintf(...) fprintf (stderr, __VA_ARGS__)
+#define eprintf(...) fprintf(stderr, __VA_ARGS__)
 
 void php_info(char const* message, ...) {
   va_list args;

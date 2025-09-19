@@ -21,6 +21,7 @@
 #include "common/wrappers/overloaded.h"
 
 #include "net/net-connections.h"
+#include "runtime-common/stdlib/kml/kphp_ml_init.h"
 #include "runtime-common/stdlib/serialization/serialization-context.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-context.h"
@@ -40,7 +41,6 @@
 #include "runtime/job-workers/client-functions.h"
 #include "runtime/job-workers/server-functions.h"
 #include "runtime/kphp-backtrace.h"
-#include "runtime-common/stdlib/kml/kphp_ml_init.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
