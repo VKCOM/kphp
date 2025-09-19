@@ -10,6 +10,7 @@
 #include <exception>
 #include <fstream>
 #include <ftw.h>
+#include <iomanip>
 #include <iterator>
 #include <map>
 #include <sstream>
@@ -326,12 +327,57 @@ struct FunctionGetTLFunctionName {
   const PhpClassRepresentation& class_repr;
 
   friend std::ostream& operator<<(std::ostream& os, const FunctionGetTLFunctionName& self) {
+    // we will remove ALL tl2php code soon, so we added a bit hackish code here
+    const char* header1 = R"(  /**
+   * @kphp-inline
+   *
+   * @return TL\RpcFunctionFetcher
+   */
+  public function typedStore())";
+    const char* header2 = R"(  /**
+   * @kphp-inline
+   *
+   * @return TL\RpcFunctionFetcher
+   */
+  public function typedFetch())";
+    const char* header_magic = R"(  /**
+   * @kphp-inline
+   *
+   * @return int
+   */
+  public function getTLFunctionMagic())";
+    const char* body_null = R"({
+    return null;
+  }
+
+)";
+    os << header_magic;
+    if (self.class_repr.is_interface) {
+      os << ";" << std::endl;
+    } else {
+      std::stringstream ss;
+      ss << std::hex << std::setw(8) << std::setfill('0') << self.class_repr.magic_id;
+      os << " {" << std::endl << "    return 0x" << ss.str() << ";" << std::endl << "  }" << SkipLine{};
+    }
     os << FunctionDeclaration{"getTLFunctionName", {}, "string", has_kphp_inline};
     if (self.class_repr.is_interface) {
-      return os << ";" << std::endl;
+      os << ";" << std::endl;
+    } else {
+      os << " {" << std::endl << "    return '" << self.class_repr.tl_name << "';" << std::endl << "  }" << SkipLine{};
     }
-
-    return os << " {" << std::endl << "    return '" << self.class_repr.tl_name << "';" << std::endl << "  }" << SkipLine{};
+    os << header1;
+    if (self.class_repr.is_interface) {
+      os << ";" << std::endl;
+    } else {
+      os << body_null;
+    }
+    os << header2;
+    if (self.class_repr.is_interface) {
+      os << ";" << std::endl;
+    } else {
+      os << body_null;
+    }
+    return os;
   }
 };
 

@@ -33,6 +33,7 @@ struct PhpClassField {
 
 struct PhpClassRepresentation {
   std::string tl_name;
+  int magic_id{};
   std::string php_class_namespace;
   std::string php_class_name;
   const PhpClassRepresentation* parent{nullptr};
