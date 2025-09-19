@@ -26,6 +26,7 @@
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
+#include "runtime-light/stdlib/kml/kml-instance-state.h"
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/math/random-state.h"
 #include "runtime-light/stdlib/output/output-state.h"
@@ -107,6 +108,7 @@ struct InstanceState final : vk::not_copyable {
   StringInstanceState string_instance_state;
   SystemInstanceState system_instance_state;
   ErrorHandlingState error_handling_instance_state;
+  KmlInstanceState kml_instance_state;
 
   list<kphp::coro::task<>> shutdown_functions;
 

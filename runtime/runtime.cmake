@@ -31,14 +31,6 @@ prepend(KPHP_RUNTIME_JOB_WORKERS_SOURCES job-workers/
         processing-jobs.cpp
         server-functions.cpp)
 
-prepend(KPHP_RUNTIME_ML_SOURCES kphp_ml/
-        kphp_ml.cpp
-        kphp_ml_catboost.cpp
-        kphp_ml_xgboost.cpp
-        kphp_ml_init.cpp
-        kphp_ml_interface.cpp
-        kml-files-reader.cpp)
-
 prepend(KPHP_RUNTIME_SPL_SOURCES spl/
         array_iterator.cpp)
 
@@ -64,7 +56,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         ${KPHP_RUNTIME_MEMORY_IMPL_RESOURCE_SOURCES}
         ${KPHP_RUNTIME_JOB_WORKERS_SOURCES}
         ${KPHP_RUNTIME_SPL_SOURCES}
-        ${KPHP_RUNTIME_ML_SOURCES}
         ${KPHP_RUNTIME_PDO_SOURCES}
         ${KPHP_RUNTIME_PDO_MYSQL_SOURCES}
         ${KPHP_RUNTIME_PDO_PGSQL_SOURCES}
@@ -90,6 +81,7 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         instance-copy-processor.cpp
         inter-process-mutex.cpp
         interface.cpp
+        kml.cpp
         kphp-backtrace.cpp
         kphp_tracing.cpp
         kphp_tracing_binlog.cpp
