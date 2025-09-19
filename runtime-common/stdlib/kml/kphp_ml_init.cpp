@@ -18,9 +18,6 @@
 #include "runtime-common/stdlib/kml/kml-models-context.h"
 #include "runtime-common/stdlib/kml/kphp_ml.h"
 
-
-// TODO get rid of kprintf/printf and use some other log
-
 static bool ends_with(const char* str, const char* suffix) {
   size_t len_str = strlen(str);
   size_t len_suffix = strlen(suffix);
@@ -33,7 +30,7 @@ static void load_kml_file(const std::string& path) {
 
   auto res = kml_file_read(path);
   if (std::holds_alternative<std::string>(res)) {
-    printf("error reading %s: %s\n", path.c_str(), std::get<std::string>(res).c_str());
+    php_warning("cannot read %s: %s\n", path.c_str(), std::get<std::string>(res).c_str());
     return;
   }
   kml = std::get<kphp_ml::MLModel>(res);
@@ -45,7 +42,7 @@ static void load_kml_file(const std::string& path) {
 
   uint64_t key_hash = string_hash(kml.model_name.c_str(), kml.model_name.size());
   if (auto dup_it = kml_models_context.loaded_models.find(key_hash); dup_it != kml_models_context.loaded_models.end()) {
-    printf("warning: model_name '%s' is duplicated\n", kml.model_name.c_str());
+    php_warning("model_name '%s' is duplicated\n", kml.model_name.c_str());
   }
 
   kml_models_context.loaded_models[key_hash] = std::move(kml);
@@ -63,7 +60,6 @@ static void traverse_kml_dir(const std::string& path) {
   }
 
   if (is_directory) {
-    // TODO OPENDIR USES MALLOC
     if (std::unique_ptr<DIR, int (*)(DIR*)> dir{opendir(path.c_str()), closedir}) {
       struct dirent* iter = nullptr;
       while ((iter = readdir(dir.get()))) {
@@ -73,27 +69,22 @@ static void traverse_kml_dir(const std::string& path) {
         traverse_kml_dir(path + "/" + iter->d_name);
       }
     } else {
-      printf("warning: cannot read %s (%s)\n", path.c_str(), std::strerror(errno));
+      php_warning("cannot read %s (%s)\n", path.c_str(), std::strerror(errno));
     }
   }
 }
-
-// TODO list for K2
-// 1. initialize kml_directory
-// 2. Call init_kphp_ml_runtime_in_master() in initialization of ComponentState
-// 3. Call init_kphp_ml_runtime_in_worker() in initialization of InstanceState
 
 void init_kphp_ml_runtime_in_master() {
   const auto& kml_models_context = KmlModelsContext::get();
 
   if (kml_models_context.kml_directory == nullptr || kml_models_context.kml_directory[0] == '\0') {
-    php_notice("empty kml dir");
+    php_info("empty kml dir");
     return;
   }
 
   traverse_kml_dir(kml_models_context.kml_directory);
 
-  php_notice("loaded %d kml models from %s\n", static_cast<int>(kml_models_context.loaded_models.size()), kml_models_context.kml_directory);
+  php_info("loaded %d kml models from %s\n", static_cast<int>(kml_models_context.loaded_models.size()), kml_models_context.kml_directory);
 }
 
 void init_kphp_ml_runtime_in_worker() {
@@ -108,12 +99,6 @@ const kphp_ml::MLModel* kphp_ml_find_loaded_model_by_name(const string& model_na
   uint64_t key_hash = string_hash(model_name.c_str(), model_name.size());
 
   const auto& kml_models_context = KmlModelsContext::get();
-
-
-  php_notice("Listing models...\n");
-  for (const auto &[_, model] : kml_models_context.loaded_models) {
-    php_notice("Model: %s\n", model.model_name.c_str());
-  }
 
   auto found_it = kml_models_context.loaded_models.find(key_hash);
   return found_it == kml_models_context.loaded_models.end() ? nullptr : &found_it->second;

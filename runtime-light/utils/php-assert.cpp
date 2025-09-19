@@ -59,6 +59,13 @@ void php_notice(char const* message, ...) {
   va_end(args);
 }
 
+void php_info(char const* message, ...) {
+  va_list args;
+  va_start(args, message);
+  php_warning_impl(php_log_level::info, message, args);
+  va_end(args);
+}
+
 void php_warning(char const* message, ...) {
   va_list args;
   va_start(args, message);

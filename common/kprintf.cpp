@@ -176,7 +176,7 @@ void kprintf_multiprocessing_mode_enable() {
   kprintf_multiprocessing_mode = 1;
 }
 
-void kprintf_(const char* file, int line, const char* format, ...) {
+void kvprintf_(const char* file, int line, const char* format, va_list ap) {
   const int old_errno = errno;
   struct tm t;
   struct timeval tv;
@@ -201,10 +201,7 @@ void kprintf_(const char* file, int line, const char* format, ...) {
                      t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec, (int)tv.tv_usec, file, line);
     if (n < sizeof(mp_kprintf_buf) - 1) {
       errno = old_errno;
-      va_list ap;
-      va_start(ap, format);
       n += vsnprintf(mp_kprintf_buf + n, sizeof(mp_kprintf_buf) - n, format, ap);
-      va_end(ap);
     }
     if (n >= sizeof(mp_kprintf_buf)) {
       n = sizeof(mp_kprintf_buf) - 1;
@@ -221,11 +218,15 @@ void kprintf_(const char* file, int line, const char* format, ...) {
     fprintf(stderr, "[%d][%4d-%02d-%02d %02d:%02d:%02d.%06d %s %4d] ", getpid(), t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec,
             (int)tv.tv_usec, file, line);
     errno = old_errno;
-    va_list ap;
-    va_start(ap, format);
     vfprintf(stderr, format, ap);
-    va_end(ap);
   }
+}
+
+void kprintf_(const char* file, int line, const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  kvprintf_(file, line, format, args);
+  va_end(args);
 }
 
 void send_message_to_assertion_chat_va_list(const char* message, va_list arg_ptr) {

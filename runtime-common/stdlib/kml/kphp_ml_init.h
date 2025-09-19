@@ -10,9 +10,10 @@ namespace kphp_ml {
 struct MLModel;
 }
 
-
 void init_kphp_ml_runtime_in_master();
 void init_kphp_ml_runtime_in_worker();
+void enable_malloc_in_inference();
+void disable_malloc_in_inference();
 
 char* kphp_ml_get_mutable_buffer_in_current_worker();
 const kphp_ml::MLModel* kphp_ml_find_loaded_model_by_name(const string& model_name);

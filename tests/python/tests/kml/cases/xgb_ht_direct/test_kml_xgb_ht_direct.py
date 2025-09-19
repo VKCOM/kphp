@@ -10,6 +10,6 @@ class TestKmlHtDirect(WebServerAutoTestCase):
             cls.web_server.update_options({
                 "--kml-dir": cls.test_dir + "/../../models",
             })
-    def test_foo4(self):
+    def test(self):
         resp = self.web_server.http_get(uri="/")
         self.assertEqual(200, resp.status_code)

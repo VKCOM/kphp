@@ -4,12 +4,11 @@
 
 #include "runtime-common/stdlib/kml/kphp_ml_interface.h"
 
+#include "runtime-common/stdlib/kml/kml-models-context.h"
 #include "runtime-common/stdlib/kml/kphp_ml.h"
 #include "runtime-common/stdlib/kml/kphp_ml_catboost.h"
 #include "runtime-common/stdlib/kml/kphp_ml_init.h"
 #include "runtime-common/stdlib/kml/kphp_ml_xgboost.h"
-#include "runtime-common/stdlib/kml/kml-models-context.h"
-
 
 Optional<array<double>> f$kml_xgboost_predict_matrix(const string& model_name, const array<array<double>>& features_map_matrix) {
   const kphp_ml::MLModel* p_kml = kphp_ml_find_loaded_model_by_name(model_name);
@@ -127,7 +126,7 @@ bool f$kml_model_exists(const string& model_name) {
 }
 
 array<string> f$kml_available_models() {
-  const auto &kml_models_context = KmlModelsContext::get();
+  const auto& kml_models_context = KmlModelsContext::get();
 
   array<string> response;
   response.reserve(kml_models_context.loaded_models.size(), true);
@@ -162,10 +161,10 @@ Optional<string> f$kml_get_custom_property(const string& model_name, const strin
     return {};
   }
 
-  // TODO: why is it needed?
-  // auto guard = dl::CriticalSectionGuard();
-
+  enable_malloc_in_inference();
   auto inner_result = p_kml->get_custom_property(std::string(property_name.c_str()));
+  disable_malloc_in_inference();
+
   if (!inner_result.has_value()) {
     return {};
   }
