@@ -152,6 +152,7 @@ std::unique_ptr<PhpClassRepresentation> TlToPhpClassesConverter::make_and_regist
   php_repr->class_fields = std::move(fields);
   php_repr->is_interface = false;
   php_repr->tl_name = name.tl_name;
+  php_repr->magic_id = magic_id;
   const auto emplaced = php_classes_.all_classes.emplace(name.class_full_name, *php_repr).second;
   assert(emplaced);
   php_classes_.magic_to_classes.emplace(magic_id, *php_repr);

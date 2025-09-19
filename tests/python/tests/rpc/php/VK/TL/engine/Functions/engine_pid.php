@@ -49,10 +49,37 @@ class engine_pid implements TL\RpcFunction {
   /**
    * @kphp-inline
    *
+   * @return int
+   */
+  public function getTLFunctionMagic() {
+    return 0x559d6e36;
+  }
+
+  /**
+   * @kphp-inline
+   *
    * @return string
    */
   public function getTLFunctionName() {
     return 'engine.pid';
+  }
+
+  /**
+   * @kphp-inline
+   *
+   * @return TL\RpcFunctionFetcher
+   */
+  public function typedStore(){
+    return null;
+  }
+
+  /**
+   * @kphp-inline
+   *
+   * @return TL\RpcFunctionFetcher
+   */
+  public function typedFetch(){
+    return null;
   }
 
 }

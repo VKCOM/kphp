@@ -13,10 +13,10 @@ use VK\TL;
 /**
  * @kphp-tl-class
  */
-class engine_stat implements TL\RpcFunction {
+class engine_count implements TL\RpcFunction {
 
   /** Allows kphp implicitly load function result class */
-  private const RESULT = TL\engine\Functions\engine_stat_result::class;
+  private const RESULT = TL\engine\Functions\engine_count_result::class;
 
   /**
    * @kphp-inline
@@ -26,21 +26,21 @@ class engine_stat implements TL\RpcFunction {
 
   /**
    * @param TL\RpcFunctionReturnResult $function_return_result
-   * @return string[]
+   * @return TL\_common\Types\boolStat
    */
   public static function functionReturnValue($function_return_result) {
-    if ($function_return_result instanceof engine_stat_result) {
+    if ($function_return_result instanceof engine_count_result) {
       return $function_return_result->value;
     }
     warning('Unexpected result type in functionReturnValue: ' . ($function_return_result ? get_class($function_return_result) : 'null'));
-    return (new engine_stat_result())->value;
+    return (new engine_count_result())->value;
   }
 
   /**
    * @kphp-inline
    *
    * @param TL\RpcResponse $response
-   * @return string[]
+   * @return TL\_common\Types\boolStat
    */
   public static function result(TL\RpcResponse $response) {
     return self::functionReturnValue($response->getResult());
@@ -52,7 +52,7 @@ class engine_stat implements TL\RpcFunction {
    * @return int
    */
   public function getTLFunctionMagic() {
-    return 0xefb3c36b;
+    return 0x19d0f020;
   }
 
   /**
@@ -61,7 +61,7 @@ class engine_stat implements TL\RpcFunction {
    * @return string
    */
   public function getTLFunctionName() {
-    return 'engine.stat';
+    return 'engine.count';
   }
 
   /**
@@ -87,9 +87,9 @@ class engine_stat implements TL\RpcFunction {
 /**
  * @kphp-tl-class
  */
-class engine_stat_result implements TL\RpcFunctionReturnResult {
+class engine_count_result implements TL\RpcFunctionReturnResult {
 
-  /** @var string[] */
-  public $value = [];
+  /** @var TL\_common\Types\boolStat */
+  public $value = null;
 
 }
