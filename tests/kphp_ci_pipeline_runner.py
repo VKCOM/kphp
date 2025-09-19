@@ -233,14 +233,14 @@ def parse_args():
 
     return parser.parse_args()
 
-def _calculate_pytest_jobs_count(percent: int = 5) -> int:
+def _calculate_pytest_jobs_count(percent: int = 95) -> int:
     """
     What percentage of the total number of cores do we use to run parallel tests.
     If you set a large value, the cores may start to idle.
     """
 
     cpu_count = multiprocessing.cpu_count()
-    return math.floor(cpu_count * (1 - percent / 100))
+    return math.floor(cpu_count * percent / 100)
 
 if __name__ == "__main__":
     curses.setupterm()
