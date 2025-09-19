@@ -78,7 +78,6 @@ void init_kphp_ml_runtime_in_master() {
   const auto& kml_models_context = KmlModelsContext::get();
 
   if (kml_models_context.kml_directory == nullptr || kml_models_context.kml_directory[0] == '\0') {
-    php_info("empty kml dir");
     return;
   }
 
