@@ -1580,5 +1580,15 @@ inline decltype(auto) check_not_false(T&& val) {
 
 template<typename T>
 using future = int64_t;
+
+
 template<typename T>
-using future_queue = int64_t;
+struct future_queue {
+  future_queue(int64_t v) : value(v) {}
+
+  future_queue() = default;
+  template<typename U>
+  future_queue(const future_queue<U> & other) : value(other.value) {}
+
+  int64_t value;
+};

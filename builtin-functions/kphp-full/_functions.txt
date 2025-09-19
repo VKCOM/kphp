@@ -1033,13 +1033,13 @@ function wait_synchronously (future<any> | false $id) ::: ^1[*] | null;
 /** @kphp-extern-func-info resumable */
 function wait_concurrently ($id ::: future<any>) ::: bool;
 
-/** @kphp-extern-func-info cpp_template_call */
+
+/** @kphp-extern-func-info cpp_template_call*/
 function wait_queue_create (array< future<any> | false > $request_ids = []) ::: future_queue<^1[*][*]>;
 
-/** @kphp-extern-func-info cpp_template_call */
+
 function wait_queue_push (future_queue<any> &$queue_id, future<any> | false $request_ids) ::: void;
 
-/** @kphp-extern-func-info cpp_template_call */
 function wait_queue_empty (future_queue<any> $queue_id) ::: bool;
 
 

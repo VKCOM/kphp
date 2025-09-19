@@ -128,28 +128,28 @@ Optional<int64_t> f$wait_queue_next_impl(int64_t queue_id, double timeout = -1.0
 Optional<int64_t> f$wait_queue_next_synchronously(int64_t queue_id);
 
 template<typename T>
-int64_t f$wait_queue_create() {
+T f$wait_queue_create() {
   return f$wait_queue_create_impl();
 }
 
-template<typename T>
-int64_t f$wait_queue_create(const mixed& resumable_ids) {
+template<typename T = void>
+T f$wait_queue_create(const mixed& resumable_ids) {
   return f$wait_queue_create_impl(resumable_ids);
 }
 
 template<typename T>
-int64_t f$wait_queue_push(int64_t queue_id, const mixed& resumable_ids) {
-  return f$wait_queue_push_impl(queue_id, resumable_ids);
+void f$wait_queue_push(future_queue<T> &queue_id, const mixed& resumable_ids) {
+  f$wait_queue_push_impl(queue_id.value, resumable_ids);
+}
+
+template<typename T = void>
+bool f$wait_queue_empty(future_queue<T> queue_id) {
+  return f$wait_queue_empty_impl(queue_id.value);
 }
 
 template<typename T>
-bool f$wait_queue_empty(int64_t queue_id) {
-  return f$wait_queue_empty_impl(queue_id);
-}
-
-template<typename T>
-Optional<int64_t> f$wait_queue_next(int64_t queue_id, double timeout = -1.0) {
-    return f$wait_queue_next_impl(queue_id, timeout);
+Optional<int64_t> f$wait_queue_next(future_queue<T> queue_id, double timeout = -1.0) {
+    return f$wait_queue_next_impl(queue_id.value, timeout);
 }
 
 
