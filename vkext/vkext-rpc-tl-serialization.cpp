@@ -923,6 +923,42 @@ inline void tl_debug(const char *s __attribute__((unused)), int n __attribute__(
 
 /* {{{ Interface functions */
 
+// returns 0 if no typedStore was found, otherwise returns allocated ZVAL with fetcher
+zval *store_function2(VK_ZVAL_API_P arr) {
+  ADD_CNT(store_function2)
+  START_TIMER(store_function2)
+  assert(arr);
+  if (Z_TYPE_P(arr) != IS_OBJECT) {
+    END_TIMER(store_function2)
+    return NULL;
+  }
+  zend_object* zobj = Z_OBJ_P(arr);
+
+  zend_string* method_name = zend_string_init("typedStore", strlen("typedStore"), 0);
+  zend_function* typedStore = Z_OBJ_HANDLER_P(arr, get_method)(&zobj, method_name, 0);
+  zend_string_release(method_name);
+
+  if (!typedStore) {
+    fprintf(stderr, "typedStore is not found\n");
+    END_TIMER(store_function2)
+    return NULL;
+  }
+  fprintf(stderr, "typedStore is found\n");
+  zval* return_value;
+  VK_ALLOC_INIT_ZVAL(return_value);
+  ZVAL_UNDEF(return_value);
+  zend_call_known_function(typedStore, zobj,
+                           NULL,         // called_scope (NULL for a free function)
+                           return_value, // Where to store the return value
+                           0,            // Number of parameters (0 in this case)
+                           NULL,         // Parameter array (NULL if no parameters)
+                           NULL          // Named parameters (NULL for no named parameters)
+  );
+  fprintf(stderr, "return_value type is %d (objects is %d)\n", Z_TYPE_P(return_value), IS_OBJECT);
+  END_TIMER(store_function2)
+  return return_value;
+}
+
 struct tl_tree *store_function(VK_ZVAL_API_P arr) {
   ADD_CNT(store_function)
   START_TIMER(store_function)
@@ -1098,6 +1134,26 @@ void _extra_dec_ref(struct rpc_query *q) {
 
 struct rpc_query *vk_rpc_tl_query_one_impl(struct rpc_connection *c, double timeout, VK_ZVAL_API_P arr, int ignore_answer) {
   do_rpc_clean();
+  START_TIMER (tmp);
+  zval *fetcher = store_function2(arr);
+  END_TIMER (tmp);
+  if (fetcher) {
+    struct rpc_query *q;
+    if (!(q = do_rpc_send_noflush(c, timeout, ignore_answer))) {
+      zval_ptr_dtor(fetcher);
+      vkext_error(VKEXT_ERROR_NETWORK, "Can't send packet");
+      return 0;
+    }
+    if (q == (struct rpc_query *)1) { // answer is ignored
+      assert (ignore_answer);
+      zval_ptr_dtor(fetcher);
+      return q;
+    }
+    assert (!ignore_answer);
+    q->fetcher = fetcher;
+    total_tl_working++;
+    return q;
+  }
   START_TIMER (tmp);
   void *res = store_function(arr);
   END_TIMER (tmp);

@@ -114,6 +114,7 @@ struct rpc_query {
   enum query_status status;
   void *extra;
   void (*extra_free)(struct rpc_query *);
+  zval *fetcher;
   const char *fun_name;
 };
 
@@ -294,6 +295,7 @@ struct stats {
   DECLARE_STAT(store);
   DECLARE_STAT(fetch);
   DECLARE_STAT(store_function);
+  DECLARE_STAT(store_function2);
   DECLARE_STAT(fetch_function);
   DECLARE_STAT(crc32);
   DECLARE_STAT(tree_insert);
