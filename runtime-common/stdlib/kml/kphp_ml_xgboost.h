@@ -114,6 +114,6 @@ struct XgboostModel {
   double transform_prediction(double score) const noexcept;
 };
 
-array<double> kml_predict_xgboost(const kphp_ml::MLModel& kml, const array<array<double>>& in, char* mutable_buffer);
+array<double> kml_predict_xgboost(const kphp_ml::MLModel& kml, const array<array<double>>& in, std::byte* mutable_buffer);
 
 } // namespace kphp_ml_xgboost

@@ -108,8 +108,8 @@ static int get_hash(const string& cat_feature, const std::unordered_map<uint64_t
 }
 
 template<class FloatOrDouble>
-static double predict_one(const CatboostModel& cbm, const FloatOrDouble* float_features, const string* cat_features, char* mutable_buffer) {
-  char* p_buffer = mutable_buffer;
+static double predict_one(const CatboostModel& cbm, const FloatOrDouble* float_features, const string* cat_features, std::byte* mutable_buffer) {
+  std::byte* p_buffer = mutable_buffer;
 
   // Binarise features
   auto* binary_features = reinterpret_cast<unsigned char*>(mutable_buffer);
@@ -181,8 +181,8 @@ static double predict_one(const CatboostModel& cbm, const FloatOrDouble* float_f
 }
 
 template<class FloatOrDouble>
-static array<double> predict_one_multi(const CatboostModel& cbm, const FloatOrDouble* float_features, const string* cat_features, char* mutable_buffer) {
-  char* p_buffer = mutable_buffer;
+static array<double> predict_one_multi(const CatboostModel& cbm, const FloatOrDouble* float_features, const string* cat_features, std::byte* mutable_buffer) {
+  std::byte* p_buffer = mutable_buffer;
 
   // Binarise features
   auto* binary_features = reinterpret_cast<unsigned char*>(mutable_buffer);
@@ -263,7 +263,7 @@ static array<double> predict_one_multi(const CatboostModel& cbm, const FloatOrDo
 }
 
 double kml_predict_catboost_by_vectors(const kphp_ml::MLModel& kml, const array<double>& float_features, const array<string>& cat_features,
-                                       char* mutable_buffer) {
+                                       std::byte* mutable_buffer) {
   const auto& cbm = std::get<CatboostModel>(kml.impl);
 
   if (!float_features.is_vector() || float_features.count() < cbm.float_feature_count) {
@@ -278,7 +278,7 @@ double kml_predict_catboost_by_vectors(const kphp_ml::MLModel& kml, const array<
   return predict_one<double>(cbm, float_features.get_const_vector_pointer(), cat_features.get_const_vector_pointer(), mutable_buffer);
 }
 
-double kml_predict_catboost_by_ht_remap_str_keys(const kphp_ml::MLModel& kml, const array<double>& features_map, char* mutable_buffer) {
+double kml_predict_catboost_by_ht_remap_str_keys(const kphp_ml::MLModel& kml, const array<double>& features_map, std::byte* mutable_buffer) {
   const auto& cbm = std::get<CatboostModel>(kml.impl);
 
   auto* float_features = reinterpret_cast<float*>(mutable_buffer);
@@ -313,7 +313,7 @@ double kml_predict_catboost_by_ht_remap_str_keys(const kphp_ml::MLModel& kml, co
 }
 
 array<double> kml_predict_catboost_by_vectors_multi(const kphp_ml::MLModel& kml, const array<double>& float_features, const array<string>& cat_features,
-                                                    char* mutable_buffer) {
+                                                    std::byte* mutable_buffer) {
   const auto& cbm = std::get<CatboostModel>(kml.impl);
 
   if (!float_features.is_vector() || float_features.count() < cbm.float_feature_count) {
@@ -328,7 +328,7 @@ array<double> kml_predict_catboost_by_vectors_multi(const kphp_ml::MLModel& kml,
   return predict_one_multi<double>(cbm, float_features.get_const_vector_pointer(), cat_features.get_const_vector_pointer(), mutable_buffer);
 }
 
-array<double> kml_predict_catboost_by_ht_remap_str_keys_multi(const kphp_ml::MLModel& kml, const array<double>& features_map, char* mutable_buffer) {
+array<double> kml_predict_catboost_by_ht_remap_str_keys_multi(const kphp_ml::MLModel& kml, const array<double>& features_map, std::byte* mutable_buffer) {
   const auto& cbm = std::get<CatboostModel>(kml.impl);
 
   auto* float_features = reinterpret_cast<float*>(mutable_buffer);

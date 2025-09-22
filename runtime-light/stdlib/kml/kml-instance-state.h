@@ -14,7 +14,7 @@ struct KmlInstanceState final : private vk::not_copyable {
   }
 
   ~KmlInstanceState() noexcept {
-    kphp::memory::platform_allocator<char>{}.deallocate(kml_inference_context.mutable_buffer_in_worker, KmlModelsContext::get().max_mutable_buffer_size);
+    kphp::memory::platform_allocator<std::byte>{}.deallocate(kml_inference_context.mutable_buffer_in_worker, KmlModelsContext::get().max_mutable_buffer_size);
   }
 
   static KmlInstanceState& get() noexcept;

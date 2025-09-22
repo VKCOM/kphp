@@ -87,10 +87,10 @@ void init_kphp_ml_runtime_in_master() {
 }
 
 void init_kphp_ml_runtime_in_worker() {
-  KmlInferenceContext::get().mutable_buffer_in_worker = kphp::memory::platform_allocator<char>{}.allocate(KmlModelsContext::get().max_mutable_buffer_size);
+  KmlInferenceContext::get().mutable_buffer_in_worker = kphp::memory::platform_allocator<std::byte>{}.allocate(KmlModelsContext::get().max_mutable_buffer_size);
 }
 
-char* kphp_ml_get_mutable_buffer_in_current_worker() {
+std::byte* kphp_ml_get_mutable_buffer_in_current_worker() {
   return KmlInferenceContext::get().mutable_buffer_in_worker;
 }
 

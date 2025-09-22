@@ -25,7 +25,7 @@ Optional<array<double>> f$kml_xgboost_predict_matrix(const string& model_name, c
     return {};
   }
 
-  char* mutable_buffer = kphp_ml_get_mutable_buffer_in_current_worker();
+  std::byte* mutable_buffer = kphp_ml_get_mutable_buffer_in_current_worker();
   return kphp_ml_xgboost::kml_predict_xgboost(*p_kml, features_map_matrix, mutable_buffer);
 }
 
@@ -48,7 +48,7 @@ Optional<double> f$kml_catboost_predict_vectors(const string& model_name, const 
     return {};
   }
 
-  char* mutable_buffer = kphp_ml_get_mutable_buffer_in_current_worker();
+  std::byte* mutable_buffer = kphp_ml_get_mutable_buffer_in_current_worker();
   return kphp_ml_catboost::kml_predict_catboost_by_vectors(*p_kml, float_features, cat_features, mutable_buffer);
 }
 
@@ -71,7 +71,7 @@ Optional<double> f$kml_catboost_predict_ht(const string& model_name, const array
     return {};
   }
 
-  char* mutable_buffer = kphp_ml_get_mutable_buffer_in_current_worker();
+  std::byte* mutable_buffer = kphp_ml_get_mutable_buffer_in_current_worker();
   return kphp_ml_catboost::kml_predict_catboost_by_ht_remap_str_keys(*p_kml, features_map, mutable_buffer);
 }
 
@@ -94,7 +94,7 @@ Optional<array<double>> f$kml_catboost_predict_vectors_multi(const string& model
     return {};
   }
 
-  char* mutable_buffer = kphp_ml_get_mutable_buffer_in_current_worker();
+  std::byte* mutable_buffer = kphp_ml_get_mutable_buffer_in_current_worker();
   return kphp_ml_catboost::kml_predict_catboost_by_vectors_multi(*p_kml, float_features, cat_features, mutable_buffer);
 }
 
@@ -117,7 +117,7 @@ Optional<array<double>> f$kml_catboost_predict_ht_multi(const string& model_name
     return {};
   }
 
-  char* mutable_buffer = kphp_ml_get_mutable_buffer_in_current_worker();
+  std::byte* mutable_buffer = kphp_ml_get_mutable_buffer_in_current_worker();
   return kphp_ml_catboost::kml_predict_catboost_by_ht_remap_str_keys_multi(*p_kml, features_map, mutable_buffer);
 }
 
