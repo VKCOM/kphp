@@ -923,7 +923,7 @@ inline void tl_debug(const char *s __attribute__((unused)), int n __attribute__(
 
 /* {{{ Interface functions */
 
-// returns 0 if no typedStore was found, otherwise returns allocated ZVAL with fetcher
+// returns 0 if no typedStore was found, otherwise returns allocated ZVAL with fetcher instance
 zval *store_function2(VK_ZVAL_API_P arr) {
   ADD_CNT(store_function2)
   START_TIMER(store_function2)
@@ -944,6 +944,7 @@ zval *store_function2(VK_ZVAL_API_P arr) {
     return NULL;
   }
   fprintf(stderr, "typedStore is found\n");
+  tl_current_function_name = "typedStore"; // TODO - add getFunctionName() to fetcher?
   zval* return_value;
   VK_ALLOC_INIT_ZVAL(return_value);
   ZVAL_UNDEF(return_value);
@@ -954,7 +955,12 @@ zval *store_function2(VK_ZVAL_API_P arr) {
                            NULL,         // Parameter array (NULL if no parameters)
                            NULL          // Named parameters (NULL for no named parameters)
   );
-  fprintf(stderr, "return_value type is %d (objects is %d)\n", Z_TYPE_P(return_value), IS_OBJECT);
+  if (Z_TYPE_P(return_value) == IS_NULL) {
+    zval_ptr_dtor(return_value);
+    END_TIMER(store_function2)
+    return NULL;
+  }
+  assert(Z_TYPE_P(return_value) == IS_OBJECT);
   END_TIMER(store_function2)
   return return_value;
 }
@@ -1092,10 +1098,10 @@ zval *fetch_function(struct tl_tree *T) {
   vkext_rpc::RpcError rpc_error;
   rpc_error.try_fetch();
   if (rpc_error.error.has_value()) {
-    *_arr = make_query_result_or_error(NULL, rpc_error.error.value(), rpc_error.header.has_value() ? &rpc_error.header.value() : nullptr, rpc_error.flags);
+    zval *ret = make_query_result_or_error(NULL, rpc_error.error.value(), rpc_error.header.has_value() ? &rpc_error.header.value() : nullptr, rpc_error.flags);
     DEC_REF (T);
     END_TIMER(fetch_function)
-    return *_arr;
+    return ret;
   }
   tl_parse_restore_pos(pos);
 
@@ -1124,11 +1130,17 @@ zval *fetch_function(struct tl_tree *T) {
 }
 
 void _extra_dec_ref(struct rpc_query *q) {
-  if (q->extra) {
+  if (q->extra || q->fetcher) {
     total_tl_working--;
   }
-  DEC_REF (q->extra);
-  q->extra = 0;
+  if (q->extra) {
+    DEC_REF (q->extra);
+    q->extra = 0;
+  }
+  if (q->fetcher) {
+    zval_ptr_dtor(q->fetcher);
+    q->fetcher = NULL;
+  }
   q->extra_free = 0;
 }
 
@@ -1151,6 +1163,7 @@ struct rpc_query *vk_rpc_tl_query_one_impl(struct rpc_connection *c, double time
     }
     assert (!ignore_answer);
     q->fetcher = fetcher;
+    q->extra_free = _extra_dec_ref;
     total_tl_working++;
     return q;
   }
@@ -1178,10 +1191,18 @@ struct rpc_query *vk_rpc_tl_query_one_impl(struct rpc_connection *c, double time
   return q;
 }
 
-zval *vk_rpc_tl_query_result_one_impl(struct tl_tree *T) {
+zval *fetch_function2(zval *fetcher);
+
+zval *vk_rpc_tl_query_result_one_impl(struct tl_tree *T, zval *fetcher) {
   tl_parse_init();
   START_TIMER (tmp);
-  zval *r = fetch_function(T);
+  zval *r = NULL;
+  if (fetcher) {
+    r = fetch_function2(fetcher);
+    zval_ptr_dtor(fetcher);
+  }else{
+    r = fetch_function(T);
+  }
   //fprintf(stderr, "~~~~ after fetch:\n");
   //php_debug_zval_dump(*r, 1);
   END_TIMER (tmp);
@@ -1397,6 +1418,55 @@ static zval *convert_rpc_extra_header_to_php_repr(const vkext_rpc::tl::RpcReqRes
   return res;
 }
 
+zval *fetch_function2(zval *fetcher) {
+  ADD_CNT(fetch_function2)
+  START_TIMER(fetch_function2)
+
+  assert(fetcher);
+  assert(Z_TYPE_P(fetcher) == IS_OBJECT);
+
+  vkext_rpc::RpcError rpc_error;
+  rpc_error.try_fetch();
+  if (rpc_error.error.has_value()) {
+    zval *ret = make_query_result_or_error(NULL, rpc_error.error.value(), rpc_error.header.has_value() ? &rpc_error.header.value() : nullptr, rpc_error.flags);
+    END_TIMER(fetch_function2)
+    return ret;
+  }
+
+  zend_object* zobj = Z_OBJ_P(fetcher);
+
+  zend_string* method_name = zend_string_init("typedFetch", strlen("typedFetch"), 0);
+  zend_function* typedFetch = Z_OBJ_HANDLER_P(fetcher, get_method)(&zobj, method_name, 0);
+  zend_string_release(method_name);
+  assert(typedFetch);
+  fprintf(stderr, "typedFetch is found\n");
+  zval* return_value;
+  VK_ALLOC_INIT_ZVAL(return_value);
+  ZVAL_UNDEF(return_value);
+  zend_call_known_function(typedFetch, zobj,
+                           NULL,         // called_scope (NULL for a free function)
+                           return_value, // Where to store the return value
+                           0,            // Number of parameters (0 in this case)
+                           NULL,         // Parameter array (NULL if no parameters)
+                           NULL          // Named parameters (NULL for no named parameters)
+  );
+  assert(Z_TYPE_P(return_value) == IS_OBJECT);
+  if (rpc_error.header.has_value()) {
+    zval *wrapped_err = create_php_instance(reqResult_header_class_name);
+    zval *header_php_repr = convert_rpc_extra_header_to_php_repr(rpc_error.header.value());
+
+    set_field_int(&wrapped_err, rpc_error.flags, "flags", -1);
+    set_field(&wrapped_err, header_php_repr, "extra", -1);
+    set_field(&wrapped_err, return_value, "result", -1);
+    END_TIMER(fetch_function2)
+    return wrapped_err;
+  }
+  zval *wrapped_err = create_php_instance(reqResult_underscore_class_name);
+  set_field(&wrapped_err, return_value, "result", -1);
+  END_TIMER(fetch_function2)
+  return wrapped_err;
+}
+
 static zval *make_query_result_or_error(zval *r, const vkext_rpc::tl::RpcReqError &error, const vkext_rpc::tl::RpcReqResultExtra *header, int extra_flags) {
   if (r) {
     return r;
@@ -1449,13 +1519,19 @@ void vk_rpc_tl_query_result_impl(struct rpc_queue *Q, double timeout, zval **r) 
     }
     struct rpc_query *q = rpc_query_get(qid);
     tl_tree *T = reinterpret_cast<tl_tree *>(q->extra);
+    zval *fetcher = q->fetcher;
     tl_current_function_name = q->fun_name;
-    INC_REF (T);
+    if (T) {
+      INC_REF (T);
+    }
+    if (fetcher) {
+      Z_TRY_ADDREF_P(fetcher);
+    }
 
     if (do_rpc_get_and_parse(qid, timeout - precise_now) < 0) {
       continue;
     }
-    zval *res = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
+    zval *res = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T, fetcher), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
     vk_add_index_zval_nod (*r, qid, res);
   }
 }
@@ -1486,14 +1562,20 @@ void vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAMETERS) {
   double timeout = (argc < 2) ? q->timeout : precise_now + parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z[1]));
   END_TIMER (parse);
   auto *T = reinterpret_cast<tl_tree *>(q->extra);
-  INC_REF (T);
+  zval *fetcher = q->fetcher;
+  if (T) {
+    INC_REF (T);
+  }
+  if (fetcher) {
+    Z_TRY_ADDREF_P(fetcher);
+  }
   if (do_rpc_get_and_parse(qid, timeout - precise_now) < 0) {
     zval *r = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
     RETVAL_ZVAL(r, false, true);
     efree(r);
     return;
   }
-  zval *r = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
+  zval *r = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T, fetcher), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
   RETVAL_ZVAL(r, false, true);
   efree(r);
 }

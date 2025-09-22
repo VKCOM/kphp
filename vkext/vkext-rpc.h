@@ -297,6 +297,7 @@ struct stats {
   DECLARE_STAT(store_function);
   DECLARE_STAT(store_function2);
   DECLARE_STAT(fetch_function);
+  DECLARE_STAT(fetch_function2);
   DECLARE_STAT(crc32);
   DECLARE_STAT(tree_insert);
   DECLARE_STAT(total);
