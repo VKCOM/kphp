@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <iterator>
 #include <span>
 #include <string_view>
 #include <utility>
@@ -60,8 +61,9 @@ inline array<array<string>> format_backtrace_addresses(std::span<void* const> ba
 
   for (const auto& address : resolved_backtrace) {
     std::array<char, LOG_BUFFER_SIZE> log_buffer{};
-    const auto [out, recorded]{std::format_to_n(log_buffer.data(), log_buffer.size() - 1, "{}", address)};
+    const auto [out, _]{std::format_to_n(log_buffer.data(), log_buffer.size() - 1, "{}", address)};
     *out = '\0';
+    const auto recorded{std::distance(log_buffer.data(), out)};
     array<string> frame_info{array_size{1, false}};
     frame_info.set_value(function_key, string{log_buffer.data(), static_cast<string::size_type>(recorded)});
 
