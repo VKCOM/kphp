@@ -18,11 +18,3 @@ const KmlModelsContext& KmlModelsContext::get() noexcept {
 KmlModelsContext& KmlModelsContext::get_mutable() noexcept {
   return kml_models_context;
 }
-
-void enable_malloc_in_inference() {
-  dl::enter_critical_section();
-}
-
-void disable_malloc_in_inference() {
-  dl::leave_critical_section();
-}

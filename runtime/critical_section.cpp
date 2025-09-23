@@ -6,6 +6,7 @@
 
 #include <signal.h>
 
+#include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime/php_assert.h"
 
 void check_stack_overflow() __attribute__((weak));
@@ -43,3 +44,13 @@ void init_critical_section() noexcept {
 }
 
 } // namespace dl
+
+namespace kphp::memory {
+libc_alloc_guard::libc_alloc_guard() noexcept {
+  dl::enter_critical_section();
+}
+
+libc_alloc_guard::~libc_alloc_guard() {
+  dl::leave_critical_section();
+}
+} // namespace kphp::memory

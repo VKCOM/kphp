@@ -8,11 +8,3 @@ KmlInstanceState& KmlInstanceState::get() noexcept {
 KmlInferenceContext& KmlInferenceContext::get() noexcept {
   return KmlInstanceState::get().kml_inference_context;
 }
-
-void enable_malloc_in_inference() {
-  InstanceState::get().instance_allocator_state.enable_libc_alloc();
-}
-
-void disable_malloc_in_inference() {
-  InstanceState::get().instance_allocator_state.disable_libc_alloc();
-}

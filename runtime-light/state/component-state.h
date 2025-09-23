@@ -10,6 +10,7 @@
 #include <string_view>
 
 #include "common/mixin/not_copyable.h"
+#include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/kml/kphp_ml_init.h"
 #include "runtime-light/allocator/allocator-state.h"

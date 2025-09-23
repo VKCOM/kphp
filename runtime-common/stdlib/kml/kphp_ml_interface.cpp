@@ -4,6 +4,7 @@
 
 #include "runtime-common/stdlib/kml/kphp_ml_interface.h"
 
+#include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-common/stdlib/kml/kml-models-context.h"
 #include "runtime-common/stdlib/kml/kphp_ml.h"
 #include "runtime-common/stdlib/kml/kphp_ml_catboost.h"
@@ -161,9 +162,8 @@ Optional<string> f$kml_get_custom_property(const string& model_name, const strin
     return {};
   }
 
-  enable_malloc_in_inference();
+  auto guard = kphp::memory::libc_alloc_guard{};
   auto inner_result = p_kml->get_custom_property(std::string(property_name.c_str()));
-  disable_malloc_in_inference();
 
   if (!inner_result.has_value()) {
     return {};

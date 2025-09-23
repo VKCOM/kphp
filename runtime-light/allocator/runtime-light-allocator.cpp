@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstring>
 
+#include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -113,3 +114,16 @@ void* RuntimeAllocator::realloc_global_memory(void* old_mem, size_t new_size, si
 void RuntimeAllocator::free_global_memory(void* mem, size_t /*unused*/) noexcept {
   k2::free(mem);
 }
+
+
+namespace kphp::memory {
+
+libc_alloc_guard::libc_alloc_guard() noexcept {
+  AllocatorState::get_mutable().enable_libc_alloc();
+}
+
+libc_alloc_guard::~libc_alloc_guard() {
+  AllocatorState::get_mutable().disable_libc_alloc();
+}
+
+} // namespace kphp::memory
