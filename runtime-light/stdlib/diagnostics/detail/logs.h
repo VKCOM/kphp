@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstring>
 #include <format>
+#include <iterator>
 #include <span>
 #include <string_view>
 #include <type_traits>
@@ -36,10 +37,10 @@ using wrapped_arg_t = std::invoke_result_t<decltype(impl::wrap_log_argument<T>),
 
 template<typename... Args>
 size_t format_log_message(std::span<char> message_buffer, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
-  auto [out, size]{std::format_to_n<decltype(message_buffer.data()), impl::wrapped_arg_t<Args>...>(message_buffer.data(), message_buffer.size() - 1, fmt,
+  auto [out, _]{std::format_to_n<decltype(message_buffer.data()), impl::wrapped_arg_t<Args>...>(message_buffer.data(), message_buffer.size() - 1, fmt,
                                                                                                    impl::wrap_log_argument(std::forward<Args>(args))...)};
   *out = '\0';
-  return size;
+  return std::distance(message_buffer.data(), out);
 }
 
 inline size_t resolve_log_trace(std::span<char> trace_buffer, std::span<void* const> raw_trace) noexcept {
@@ -48,18 +49,19 @@ inline size_t resolve_log_trace(std::span<char> trace_buffer, std::span<void* co
   }
 
   if (auto backtrace_symbols{kphp::diagnostic::backtrace_symbols(raw_trace)}; !backtrace_symbols.empty()) {
-    const auto [trace_out, trace_size]{std::format_to_n(trace_buffer.data(), trace_buffer.size() - 1, "\n{}", backtrace_symbols)};
+    const auto [trace_out, _]{std::format_to_n(trace_buffer.data(), trace_buffer.size() - 1, "\n{}", backtrace_symbols)};
     *trace_out = '\0';
-    return trace_size;
+    return std::distance(trace_buffer.data(), trace_out);
   } else if (auto backtrace_addresses{kphp::diagnostic::backtrace_addresses(raw_trace)}; !backtrace_addresses.empty()) {
-    const auto [trace_out, trace_size]{std::format_to_n(trace_buffer.data(), trace_buffer.size() - 1, "{}", backtrace_addresses)};
+    const auto [trace_out, _]{std::format_to_n(trace_buffer.data(), trace_buffer.size() - 1, "{}", backtrace_addresses)};
     *trace_out = '\0';
-    return trace_size;
+    return std::distance(trace_buffer.data(), trace_out);
+    ;
   } else {
     static constexpr std::string_view DEFAULT_TRACE = "[]";
-    const auto [trace_out, trace_size]{std::format_to_n(trace_buffer.data(), trace_buffer.size() - 1, "{}", DEFAULT_TRACE)};
+    const auto [trace_out, _]{std::format_to_n(trace_buffer.data(), trace_buffer.size() - 1, "{}", DEFAULT_TRACE)};
     *trace_out = '\0';
-    return trace_size;
+    return std::distance(trace_buffer.data(), trace_out);
   }
 }
 
