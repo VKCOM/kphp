@@ -56,7 +56,6 @@ inline size_t resolve_log_trace(std::span<char> trace_buffer, std::span<void* co
     const auto [trace_out, _]{std::format_to_n(trace_buffer.data(), trace_buffer.size() - 1, "{}", backtrace_addresses)};
     *trace_out = '\0';
     return std::distance(trace_buffer.data(), trace_out);
-    ;
   } else {
     static constexpr std::string_view DEFAULT_TRACE = "[]";
     const auto [trace_out, _]{std::format_to_n(trace_buffer.data(), trace_buffer.size() - 1, "{}", DEFAULT_TRACE)};
