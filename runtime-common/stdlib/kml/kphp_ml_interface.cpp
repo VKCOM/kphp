@@ -162,7 +162,6 @@ Optional<string> f$kml_get_custom_property(const string& model_name, const strin
     return {};
   }
 
-  auto guard = kphp::memory::libc_alloc_guard{};
   auto inner_result = p_kml->get_custom_property(kphp_ml::stl::string(property_name.c_str()));
 
   if (!inner_result.has_value()) {

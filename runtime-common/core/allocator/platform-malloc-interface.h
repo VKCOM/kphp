@@ -13,22 +13,8 @@
 #include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 
-namespace kphp::memory {
+namespace kphp::memory::platform {
 
-struct libc_alloc_guard final {
-  libc_alloc_guard() noexcept;
-  // AllocatorState::get_mutable().enable_libc_alloc();
-
-  ~libc_alloc_guard();
-  // AllocatorState::get_mutable().disable_libc_alloc();
-
-  libc_alloc_guard(const libc_alloc_guard&) = delete;
-  libc_alloc_guard(libc_alloc_guard&&) = delete;
-  libc_alloc_guard& operator=(const libc_alloc_guard&) = delete;
-  libc_alloc_guard& operator=(libc_alloc_guard&&) = delete;
-};
-
-namespace platform {
 constexpr int64_t MALLOC_REPLACER_SIZE_OFFSET = sizeof(size_t);
 constexpr uint64_t MALLOC_REPLACER_MAX_ALLOC = 0xFFFFFF00;
 
@@ -83,6 +69,4 @@ inline void* realloc(void* ptr, size_t new_size) noexcept {
   }
   return new_ptr;
 }
-} // namespace platform
-
-} // namespace kphp::memory
+} // namespace kphp::memory::platform

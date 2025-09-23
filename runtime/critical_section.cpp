@@ -44,13 +44,3 @@ void init_critical_section() noexcept {
 }
 
 } // namespace dl
-
-namespace kphp::memory {
-libc_alloc_guard::libc_alloc_guard() noexcept {
-  dl::enter_critical_section();
-}
-
-libc_alloc_guard::~libc_alloc_guard() {
-  dl::leave_critical_section();
-}
-} // namespace kphp::memory
