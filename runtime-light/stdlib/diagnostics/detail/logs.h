@@ -38,7 +38,7 @@ using wrapped_arg_t = std::invoke_result_t<decltype(impl::wrap_log_argument<T>),
 template<typename... Args>
 size_t format_log_message(std::span<char> message_buffer, std::format_string<impl::wrapped_arg_t<Args>...> fmt, Args&&... args) noexcept {
   auto [out, _]{std::format_to_n<decltype(message_buffer.data()), impl::wrapped_arg_t<Args>...>(message_buffer.data(), message_buffer.size() - 1, fmt,
-                                                                                                   impl::wrap_log_argument(std::forward<Args>(args))...)};
+                                                                                                impl::wrap_log_argument(std::forward<Args>(args))...)};
   *out = '\0';
   return std::distance(message_buffer.data(), out);
 }
