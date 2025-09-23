@@ -115,7 +115,6 @@ void RuntimeAllocator::free_global_memory(void* mem, size_t /*unused*/) noexcept
   k2::free(mem);
 }
 
-
 namespace kphp::memory {
 
 libc_alloc_guard::libc_alloc_guard() noexcept {

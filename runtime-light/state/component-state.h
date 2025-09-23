@@ -38,7 +38,7 @@ struct ComponentState final : private vk::not_copyable {
     kml_component_state.kml_models_context.kml_directory = buffer;
 
     kphp::memory::libc_alloc_guard guard;
-    init_kphp_ml_runtime_in_master();
+    kml_init_models();
   }
 
   static const ComponentState& get() noexcept {

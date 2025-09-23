@@ -10,7 +10,7 @@ struct KmlInstanceState final : private vk::not_copyable {
   KmlInferenceContext kml_inference_context;
 
   KmlInstanceState() noexcept {
-    init_kphp_ml_runtime_in_worker();
+    kml_init_buffer();
   }
 
   ~KmlInstanceState() noexcept {
