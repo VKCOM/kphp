@@ -1684,7 +1684,7 @@ void init_all() {
   worker_id = (int)lrand48();
 
   // TODO: In the future, we want to parallelize it
-  init_kphp_ml_runtime_in_master();
+  kml_init_models();
 
   init_confdata_binlog_reader();
 

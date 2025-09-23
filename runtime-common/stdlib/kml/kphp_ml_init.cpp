@@ -74,7 +74,7 @@ static void traverse_kml_dir(const std::string& path) {
   }
 }
 
-void init_kphp_ml_runtime_in_master() {
+void kml_init_models() {
   const auto& kml_models_context = KmlModelsContext::get();
 
   if (kml_models_context.kml_directory == nullptr || kml_models_context.kml_directory[0] == '\0') {
@@ -86,7 +86,7 @@ void init_kphp_ml_runtime_in_master() {
   php_info("loaded %d kml models from %s\n", static_cast<int>(kml_models_context.loaded_models.size()), kml_models_context.kml_directory);
 }
 
-void init_kphp_ml_runtime_in_worker() {
+void kml_init_buffer() {
   KmlInferenceContext::get().mutable_buffer_in_worker = kphp::memory::platform_allocator<std::byte>{}.allocate(KmlModelsContext::get().max_mutable_buffer_size);
 }
 

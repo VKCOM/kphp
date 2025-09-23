@@ -2430,7 +2430,7 @@ void worker_global_init(WorkerType worker_type) noexcept {
   worker_global_init_slot_factories();
   vk::singleton<JsonLogger>::get().reset_json_logs_count();
   worker_global_init_handlers(worker_type);
-  init_kphp_ml_runtime_in_worker();
+  kml_init_buffer();
   init_php_scripts_in_each_worker(PhpScriptMutableGlobals::current());
 }
 
