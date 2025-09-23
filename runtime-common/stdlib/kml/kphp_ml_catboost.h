@@ -9,14 +9,13 @@
 #pragma once
 
 #include <cstdint>
-#include <unordered_map>
-#include <vector>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/kml/kphp_ml_stl.h"
 
 namespace kphp_ml {
 struct MLModel;
-}
+} // namespace kphp_ml
 
 namespace kphp_ml_catboost {
 
@@ -61,11 +60,11 @@ struct CatboostCtrMeanHistory {
 };
 
 struct CatboostCtrValueTable {
-  std::unordered_map<uint64_t, uint32_t> index_hash_viewer;
+  kphp_ml::stl::unordered_map<uint64_t, uint32_t> index_hash_viewer;
   int target_classes_count;
   int counter_denominator;
-  std::vector<CatboostCtrMeanHistory> ctr_mean_history;
-  std::vector<int> ctr_total;
+  kphp_ml::stl::vector<CatboostCtrMeanHistory> ctr_mean_history;
+  kphp_ml::stl::vector<int> ctr_total;
 
   const unsigned int* resolve_hash_index(uint64_t hash) const noexcept {
     auto found_it = index_hash_viewer.find(hash);
@@ -74,22 +73,22 @@ struct CatboostCtrValueTable {
 };
 
 struct CatboostCtrData {
-  std::unordered_map<uint64_t, CatboostCtrValueTable> learn_ctrs;
+  kphp_ml::stl::unordered_map<uint64_t, CatboostCtrValueTable> learn_ctrs;
 };
 
 struct CatboostProjection {
-  std::vector<int> transposed_cat_feature_indexes;
-  std::vector<CatboostBinFeatureIndexValue> binarized_indexes;
+  kphp_ml::stl::vector<int> transposed_cat_feature_indexes;
+  kphp_ml::stl::vector<CatboostBinFeatureIndexValue> binarized_indexes;
 };
 
 struct CatboostCompressedModelCtr {
   CatboostProjection projection;
-  std::vector<CatboostModelCtr> model_ctrs;
+  kphp_ml::stl::vector<CatboostModelCtr> model_ctrs;
 };
 
 struct CatboostModelCtrsContainer {
   int used_model_ctrs_count{0};
-  std::vector<CatboostCompressedModelCtr> compressed_model_ctrs;
+  kphp_ml::stl::vector<CatboostCompressedModelCtr> compressed_model_ctrs;
   CatboostCtrData ctr_data;
 };
 
@@ -105,24 +104,24 @@ struct CatboostModel {
   int cat_feature_count;
   int binary_feature_count;
   int tree_count;
-  std::vector<int> float_features_index;
-  std::vector<std::vector<float>> float_feature_borders;
-  std::vector<int> tree_depth;
-  std::vector<int> one_hot_cat_feature_index;
-  std::vector<std::vector<int>> one_hot_hash_values;
-  std::vector<std::vector<float>> ctr_feature_borders;
+  kphp_ml::stl::vector<int> float_features_index;
+  kphp_ml::stl::vector<kphp_ml::stl::vector<float>> float_feature_borders;
+  kphp_ml::stl::vector<int> tree_depth;
+  kphp_ml::stl::vector<int> one_hot_cat_feature_index;
+  kphp_ml::stl::vector<kphp_ml::stl::vector<int>> one_hot_hash_values;
+  kphp_ml::stl::vector<kphp_ml::stl::vector<float>> ctr_feature_borders;
 
-  std::vector<Split> tree_split;
-  std::vector<float> leaf_values; // this and below are like a union
-  std::vector<std::vector<float>> leaf_values_vec;
+  kphp_ml::stl::vector<Split> tree_split;
+  kphp_ml::stl::vector<float> leaf_values; // this and below are like a union
+  kphp_ml::stl::vector<kphp_ml::stl::vector<float>> leaf_values_vec;
 
   double scale;
 
   double bias; // this and below are like a union
-  std::vector<double> biases;
+  kphp_ml::stl::vector<double> biases;
 
   int dimension = -1; // absent in case of NON-multiclass classification
-  std::unordered_map<uint64_t, int> cat_features_hashes;
+  kphp_ml::stl::unordered_map<uint64_t, int> cat_features_hashes;
 
   CatboostModelCtrsContainer model_ctrs;
   // todo there are also embedded and text features, we may want to add them later
@@ -133,7 +132,7 @@ struct CatboostModel {
   //    [ 'emb_7' => 7, ..., 'user_age_group' => 1000001, 'user_os' => 1000002 ]
   //    the purpose of storing two maps in one is to use a single hashtable lookup when remapping
   // todo this ht is filled once (on .kml loading) and used many-many times for lookup; maybe, find smth faster than std
-  std::unordered_map<uint64_t, int> reindex_map_floats_and_cat;
+  kphp_ml::stl::unordered_map<uint64_t, int> reindex_map_floats_and_cat;
   static constexpr int REINDEX_MAP_CATEGORIAL_SHIFT = 1000000;
 };
 

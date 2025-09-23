@@ -10,6 +10,7 @@
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/overloaded.h"
 #include "runtime-common/core/allocator/platform-allocator.h"
+#include "runtime-common/stdlib/kml/kphp_ml.h"
 
 #include <cstdio>
 #include <variant>
@@ -29,18 +30,19 @@ namespace {
 
 // Not really efficient, but it's OK as reading ML models once at start
 template<typename T>
-using Result = std::variant<T, std::string>;
+using Result = std::variant<T, kphp_ml::stl::string>;
 
 template<typename T>
 [[nodiscard]] std::optional<T> get_value(const Result<T>& result) {
-  return std::visit(overloaded{[](const T& value) -> std::optional<T> { return value; }, [](const std::string&) -> std::optional<T> { return std::nullopt; }},
-                    result);
+  return std::visit(
+      overloaded{[](const T& value) -> std::optional<T> { return value; }, [](const kphp_ml::stl::string&) -> std::optional<T> { return std::nullopt; }},
+      result);
 }
 
 template<typename T>
-[[nodiscard]] std::optional<std::string> get_error(const Result<T>& result) {
-  return std::visit(overloaded{[](const T&) -> std::optional<std::string> { return std::nullopt; },
-                               [](const std::string& error) -> std::optional<std::string> { return error; }},
+[[nodiscard]] std::optional<kphp_ml::stl::string> get_error(const Result<T>& result) {
+  return std::visit(overloaded{[](const T&) -> std::optional<kphp_ml::stl::string> { return std::nullopt; },
+                               [](const kphp_ml::stl::string& error) -> std::optional<kphp_ml::stl::string> { return error; }},
                     result);
 }
 
@@ -83,7 +85,7 @@ public:
     reader.read((char*)&v, sizeof(int));
   }
 
-  void read_string(std::string& v) noexcept {
+  void read_string(kphp_ml::stl::string& v) noexcept {
     int len;
     reader.read((char*)&len, sizeof(int));
     v.resize(len);
@@ -95,11 +97,11 @@ public:
   }
 
   void read_bytes(void* v, size_t len) noexcept {
-    reader.read((char*)v, static_cast<std::streamsize>(len));
+    reader.read((char*)v, static_cast<size_t>(len));
   }
 
   template<class T>
-  void read_vec(std::vector<T>& v) {
+  void read_vec(kphp_ml::stl::vector<T>& v) {
     static_assert(std::is_standard_layout_v<T> && std::is_trivial_v<T>);
     int sz;
     read_int(sz);
@@ -108,11 +110,11 @@ public:
   }
 
   template<class T>
-  void read_2d_vec(std::vector<std::vector<T>>& v) {
+  void read_2d_vec(kphp_ml::stl::vector<kphp_ml::stl::vector<T>>& v) {
     int sz;
     read_int(sz);
     v.resize(sz);
-    for (std::vector<T>& elem : v) {
+    for (kphp_ml::stl::vector<T>& elem : v) {
       read_vec(elem);
     }
   }
@@ -126,7 +128,7 @@ public:
 };
 
 template<>
-void KmlReader::read_vec<std::string>(std::vector<std::string>& v) {
+void KmlReader::read_vec<kphp_ml::stl::string>(kphp_ml::stl::vector<kphp_ml::stl::string>& v) {
   int sz = read_int();
   v.resize(sz);
   for (auto& str : v) {
@@ -330,7 +332,7 @@ void kml_read_catboost_field(KmlReader& f, kphp_ml_catboost::CatboostModelCtrsCo
 
 } // namespace
 
-[[nodiscard]] std::variant<kphp_ml::MLModel, std::string> kml_file_read(const std::string& kml_filename) {
+[[nodiscard]] std::variant<kphp_ml::MLModel, kphp_ml::stl::string> kml_file_read(const kphp_ml::stl::string& kml_filename) {
   kphp_ml::MLModel kml;
   KmlReader f(kml_filename);
 
@@ -350,7 +352,7 @@ void kml_read_catboost_field(KmlReader& f, kphp_ml_catboost::CatboostModelCtrsCo
   int custom_props_sz = f.read_int();
   kml.custom_properties.reserve(custom_props_sz);
   for (int i = 0; i < custom_props_sz; ++i) {
-    std::string property_name;
+    kphp_ml::stl::string property_name;
     f.read_string(property_name);
     f.read_string(kml.custom_properties[property_name]);
   }

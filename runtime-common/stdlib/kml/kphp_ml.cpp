@@ -7,7 +7,9 @@
 // They are almost identical, besides include paths and input types (`array` vs `unordered_map`).
 
 #include "runtime-common/stdlib/kml/kphp_ml.h"
+
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/kml/kphp_ml_stl.h"
 
 // for detailed comments about KML, see kphp_ml.h
 
@@ -37,11 +39,11 @@ unsigned int kphp_ml::MLModel::calculate_mutable_buffer_size() const {
   }
 }
 
-const std::vector<std::string>& kphp_ml::MLModel::get_feature_names() const {
+const kphp_ml::stl::vector<kphp_ml::stl::string>& kphp_ml::MLModel::get_feature_names() const {
   return feature_names;
 }
 
-std::optional<std::string> kphp_ml::MLModel::get_custom_property(const std::string& property_name) const {
+std::optional<kphp_ml::stl::string> kphp_ml::MLModel::get_custom_property(const kphp_ml::stl::string& property_name) const {
   auto it = custom_properties.find(property_name);
   if (it == custom_properties.end()) {
     return std::nullopt;

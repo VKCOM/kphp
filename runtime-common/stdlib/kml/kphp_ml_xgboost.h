@@ -8,10 +8,8 @@
 
 #pragma once
 
-#include <unordered_map>
-#include <vector>
-
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/kml/kphp_ml_stl.h"
 
 /*
  * For detailed comments about KML, see kphp_ml.h.
@@ -78,7 +76,7 @@ struct XgbTreeNode {
 };
 
 struct XgbTree {
-  std::vector<XgbTreeNode> nodes;
+  kphp_ml::stl::vector<XgbTreeNode> nodes;
 };
 
 struct XgboostModel {
@@ -89,13 +87,13 @@ struct XgboostModel {
   int num_features_present{0};
   int max_required_features{0};
 
-  std::vector<XgbTree> trees;
+  kphp_ml::stl::vector<XgbTree> trees;
 
   // to accept input_kind = ht_remap_str_keys_to_fvalue
   // note, that the main optimization is in storing
   // [hash => vec_offset] instead of [string => vec_offset], we don't expect collisions
   // todo this ht is filled once (on .kml loading) and used many-many times for lookup; maybe, find smth faster than std
-  std::unordered_map<uint64_t, int> reindex_map_str2int;
+  kphp_ml::stl::unordered_map<uint64_t, int> reindex_map_str2int;
   // to accept input_kind = ht_remap_int_keys_to_fvalue
   // see below, same format
   int* reindex_map_int2int;

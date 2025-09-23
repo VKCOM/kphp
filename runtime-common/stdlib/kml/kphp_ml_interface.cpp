@@ -148,7 +148,7 @@ Optional<array<string>> f$kml_get_feature_names(const string& model_name) {
   array<string> response;
   response.reserve(feature_names.size(), true);
 
-  for (const std::string& feature_name : feature_names) {
+  for (const kphp_ml::stl::string& feature_name : feature_names) {
     response.emplace_back(feature_name.c_str());
   }
 
@@ -163,7 +163,7 @@ Optional<string> f$kml_get_custom_property(const string& model_name, const strin
   }
 
   auto guard = kphp::memory::libc_alloc_guard{};
-  auto inner_result = p_kml->get_custom_property(std::string(property_name.c_str()));
+  auto inner_result = p_kml->get_custom_property(kphp_ml::stl::string(property_name.c_str()));
 
   if (!inner_result.has_value()) {
     return {};

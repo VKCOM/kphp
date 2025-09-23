@@ -31,8 +31,9 @@ static inline uint64_t calc_hash(uint64_t a, uint64_t b) {
   return MAGIC_MULT * (a + MAGIC_MULT * b);
 }
 
-static uint64_t calc_hashes(const unsigned char* binarized_features, const int* hashed_cat_features, const std::vector<int>& transposed_cat_feature_indexes,
-                            const std::vector<CatboostBinFeatureIndexValue>& binarized_feature_indexes) {
+static uint64_t calc_hashes(const unsigned char* binarized_features, const int* hashed_cat_features,
+                            const kphp_ml::stl::vector<int>& transposed_cat_feature_indexes,
+                            const kphp_ml::stl::vector<CatboostBinFeatureIndexValue>& binarized_feature_indexes) {
   uint64_t result = 0;
   for (int cat_feature_index : transposed_cat_feature_indexes) {
     result = calc_hash(result, static_cast<uint64_t>(hashed_cat_features[cat_feature_index]));
@@ -68,10 +69,10 @@ static void calc_ctrs(const CatboostModelCtrsContainer& model_ctrs, const unsign
           const CatboostCtrMeanHistory& ctr_mean_history = learn_ctr.ctr_mean_history[bucket];
           result[result_index] = ctr.calc(ctr_mean_history.sum, static_cast<float>(ctr_mean_history.count));
         } else if (ctr_type == CatboostModelCtrType::Counter || ctr_type == CatboostModelCtrType::FeatureFreq) {
-          const std::vector<int>& ctr_total = learn_ctr.ctr_total;
+          const kphp_ml::stl::vector<int>& ctr_total = learn_ctr.ctr_total;
           result[result_index] = ctr.calc(ctr_total[bucket], learn_ctr.counter_denominator);
         } else if (ctr_type == CatboostModelCtrType::Buckets) {
-          const std::vector<int>& ctr_history = learn_ctr.ctr_total;
+          const kphp_ml::stl::vector<int>& ctr_history = learn_ctr.ctr_total;
           int target_classes_count = learn_ctr.target_classes_count;
           int good_count = ctr_history[bucket * target_classes_count + ctr.target_border_idx];
           int total_count = 0;
@@ -80,7 +81,7 @@ static void calc_ctrs(const CatboostModelCtrsContainer& model_ctrs, const unsign
           }
           result[result_index] = ctr.calc(good_count, total_count);
         } else {
-          const std::vector<int>& ctr_history = learn_ctr.ctr_total;
+          const kphp_ml::stl::vector<int>& ctr_history = learn_ctr.ctr_total;
           int target_classes_count = learn_ctr.target_classes_count;
           if (target_classes_count > 2) {
             int good_count = 0;
@@ -102,7 +103,7 @@ static void calc_ctrs(const CatboostModelCtrsContainer& model_ctrs, const unsign
   }
 }
 
-static int get_hash(const string& cat_feature, const std::unordered_map<uint64_t, int>& cat_feature_hashes) {
+static int get_hash(const string& cat_feature, const kphp_ml::stl::unordered_map<uint64_t, int>& cat_feature_hashes) {
   auto found_it = cat_feature_hashes.find(string_hash(cat_feature.c_str(), cat_feature.size()));
   return found_it == cat_feature_hashes.end() ? 0x7fffffff : found_it->second;
 }
@@ -239,7 +240,7 @@ static array<double> predict_one_multi(const CatboostModel& cbm, const FloatOrDo
     results[i] = 0.0;
   }
 
-  const std::vector<float>* leaf_values_ptr = cbm.leaf_values_vec.data();
+  const kphp_ml::stl::vector<float>* leaf_values_ptr = cbm.leaf_values_vec.data();
   int tree_ptr = 0;
 
   for (int tree_id = 0; tree_id < cbm.tree_count; ++tree_id) {

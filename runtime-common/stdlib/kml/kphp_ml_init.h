@@ -8,7 +8,7 @@
 
 namespace kphp_ml {
 struct MLModel;
-}
+} // namespace kphp_ml
 
 void kml_init_models();
 void kml_init_buffer();

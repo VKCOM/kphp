@@ -25,12 +25,12 @@ static bool ends_with(const char* str, const char* suffix) {
   return len_suffix <= len_str && strncmp(str + len_str - len_suffix, suffix, len_suffix) == 0;
 }
 
-static void load_kml_file(const std::string& path) {
+static void load_kml_file(const kphp_ml::stl::string& path) {
   kphp_ml::MLModel kml;
 
   auto res = kml_file_read(path);
-  if (std::holds_alternative<std::string>(res)) {
-    php_warning("cannot read %s: %s\n", path.c_str(), std::get<std::string>(res).c_str());
+  if (std::holds_alternative<kphp_ml::stl::string>(res)) {
+    php_warning("cannot read %s: %s\n", path.c_str(), std::get<kphp_ml::stl::string>(res).c_str());
     return;
   }
   kml = std::get<kphp_ml::MLModel>(res);
@@ -48,7 +48,7 @@ static void load_kml_file(const std::string& path) {
   kml_models_context.loaded_models[key_hash] = std::move(kml);
 }
 
-static void traverse_kml_dir(const std::string& path) {
+static void traverse_kml_dir(const kphp_ml::stl::string& path) {
   struct stat st {};
   if (stat(path.c_str(), &st) != 0) {
     return;

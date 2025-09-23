@@ -36,4 +36,4 @@ public:
   }
 };
 
-std::variant<kphp_ml::MLModel, std::string> kml_file_read(const std::string& kml_filename);
+std::variant<kphp_ml::MLModel, kphp_ml::stl::string> kml_file_read(const kphp_ml::stl::string& kml_filename);

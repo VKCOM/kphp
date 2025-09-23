@@ -175,6 +175,7 @@ In the future, the following points might be considered as areas of investigatio
 #include <variant>
 
 #include "runtime-common/stdlib/kml/kphp_ml_catboost.h"
+#include "runtime-common/stdlib/kml/kphp_ml_stl.h"
 #include "runtime-common/stdlib/kml/kphp_ml_xgboost.h"
 
 namespace kphp_ml {
@@ -209,9 +210,9 @@ enum class InputKind {
 struct MLModel {
   ModelKind model_kind;
   InputKind input_kind;
-  std::string model_name;
-  std::vector<std::string> feature_names;
-  std::unordered_map<std::string, std::string> custom_properties;
+  kphp_ml::stl::string model_name;
+  kphp_ml::stl::vector<kphp_ml::stl::string> feature_names;
+  kphp_ml::stl::unordered_map<kphp_ml::stl::string, kphp_ml::stl::string> custom_properties;
 
   std::variant<kphp_ml_xgboost::XgboostModel, kphp_ml_catboost::CatboostModel> impl;
 
@@ -222,8 +223,8 @@ struct MLModel {
     return model_kind == ModelKind::catboost_trees;
   }
   bool is_catboost_multi_classification() const;
-  const std::vector<std::string>& get_feature_names() const;
-  std::optional<std::string> get_custom_property(const std::string& property_name) const;
+  const kphp_ml::stl::vector<kphp_ml::stl::string>& get_feature_names() const;
+  std::optional<kphp_ml::stl::string> get_custom_property(const kphp_ml::stl::string& property_name) const;
 
   unsigned int calculate_mutable_buffer_size() const;
 };
