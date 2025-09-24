@@ -48,12 +48,12 @@ template<typename T>
 }
 
 class KmlReader final : public vk::not_copyable {
-  kphp_ml::stl::unique_ptr_platform<IFileReader> reader;
+  kphp_ml::stl::unique_ptr_platform<kphp_ml::IFileReader> reader;
   // LibcFileReader reader;
 
 public:
   explicit KmlReader(vk::string_view kml_filename)
-      : reader{get_file_reader(kml_filename)} {}
+      : reader{kphp_ml::get_file_reader(kml_filename)} {}
 
   int read_int() noexcept {
     int v;
@@ -334,7 +334,7 @@ void kml_read_catboost_field(KmlReader& f, kphp_ml_catboost::CatboostModelCtrsCo
 
 } // namespace
 
-[[nodiscard]] std::variant<kphp_ml::MLModel, kphp_ml::stl::string> kml_file_read(const kphp_ml::stl::string& kml_filename) {
+[[nodiscard]] std::variant<kphp_ml::MLModel, kphp_ml::stl::string> kphp_ml::kml_file_read(const kphp_ml::stl::string& kml_filename) {
   kphp_ml::MLModel kml;
   KmlReader f(kml_filename);
 

@@ -13,6 +13,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/kml/kphp_ml_init.h"
 #include "runtime-light/allocator/allocator-state.h"
+#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/kml/kml-component-state.h"
 
@@ -35,6 +36,8 @@ struct ComponentState final : private vk::not_copyable {
     strncpy(buffer, kml_dir.c_str(), kml_dir.size() + 1); // Copy null terminator, too
     kml_component_state.kml_models_context.kml_directory = buffer;
 
+    // Required because of LibcFileReader, LibcDirTraverser
+    auto guard = kphp::memory::libc_alloc_guard{};
     kml_init_models();
   }
 

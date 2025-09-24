@@ -29,7 +29,7 @@ static bool ends_with(const char* str, const char* suffix) {
 static void load_kml_file(const kphp_ml::stl::string& path) {
   kphp_ml::MLModel kml;
 
-  auto res = kml_file_read(path);
+  auto res = kphp_ml::kml_file_read(path);
   if (std::holds_alternative<kphp_ml::stl::string>(res)) {
     php_warning("cannot read %s: %s\n", path.c_str(), std::get<kphp_ml::stl::string>(res).c_str());
     return;
@@ -96,9 +96,7 @@ void kml_init_models() {
   }
 
 
-  // TODO use smth like get_dir_traverser()
-  auto traverser = get_dir_traverser(&check_and_load_kml);
-  // auto traverser = LibcDirTraverser(kml_models_context.kml_directory, &check_and_load_kml);
+  auto traverser = kphp_ml::get_dir_traverser(&check_and_load_kml);
   traverser->traverse(kml_models_context.kml_directory);
 
   php_info("loaded %d kml models from %s\n", static_cast<int>(kml_models_context.loaded_models.size()), kml_models_context.kml_directory);
