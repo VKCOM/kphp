@@ -16,13 +16,6 @@ using unordered_map = kphp::stl::unordered_map<Key, T, kphp::memory::platform_al
 template<typename T, typename Deleter>
 using unique_ptr = std::unique_ptr<T, Deleter>;
 
-
-// template<typename T>
-// void platform_allocator_deleter (T* ptr) {
-// ptr->~T();
-//   kphp::memory::platform_allocator<T>{}.deallocate(ptr, sizeof(T)); 
-// }
-
 template<typename T>
 struct platform_allocator_deleter_t {
   void operator()(T* ptr) {

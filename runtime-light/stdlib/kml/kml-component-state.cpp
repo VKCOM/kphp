@@ -50,7 +50,6 @@ public:
   }
 };
 
-
 struct LibcDirTraverser final : public kphp_ml::IDirTraverser, private vk::not_copyable {
   callback_t callback;
 

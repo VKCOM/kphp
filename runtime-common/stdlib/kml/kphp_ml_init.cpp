@@ -49,39 +49,6 @@ static void load_kml_file(const kphp_ml::stl::string& path) {
   kml_models_context.loaded_models[key_hash] = std::move(kml);
 }
 
-
-// TODO: provide k2_* symbols for the following used functions:
-// *  int stat(const char*, struct stat*)
-// *  struct DIR* opendir(const char*)
-// *  int closedir(struct DIR*)
-// *  struct dirent* (struct DIR*)
-// or just whe whole traverse_kml_dir(const kphp_ml::stl::string&)
-// static void traverse_kml_dir(const kphp_ml::stl::string& path) {
-//   struct stat st {};
-//   if (stat(path.c_str(), &st) != 0) {
-//     return;
-//   }
-//   const bool is_directory = S_ISDIR(st.st_mode);
-//   if (!is_directory && ends_with(path.c_str(), ".kml")) {
-//     load_kml_file(path);
-//     return;
-//   }
-
-//   if (is_directory) {
-//     if (std::unique_ptr<DIR, int (*)(DIR*)> dir{opendir(path.c_str()), closedir}) {
-//       struct dirent* iter = nullptr;
-//       while ((iter = readdir(dir.get()))) {
-//         if (strcmp(iter->d_name, ".") == 0 || strcmp(iter->d_name, "..") == 0) {
-//           continue;
-//         }
-//         traverse_kml_dir(path + "/" + iter->d_name);
-//       }
-//     } else {
-//       php_warning("cannot read %s (%s)\n", path.c_str(), std::strerror(errno));
-//     }
-//   }
-// }
-
 void check_and_load_kml(const kphp_ml::stl::string& path) {
   if (ends_with(path.c_str(), ".kml")) {
     load_kml_file(path);
@@ -94,7 +61,6 @@ void kml_init_models() {
   if (kml_models_context.kml_directory == nullptr || kml_models_context.kml_directory[0] == '\0') {
     return;
   }
-
 
   auto traverser = kphp_ml::get_dir_traverser(&check_and_load_kml);
   traverser->traverse(kml_models_context.kml_directory);
