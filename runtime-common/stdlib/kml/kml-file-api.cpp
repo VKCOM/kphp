@@ -6,11 +6,12 @@
 // This file exists both in KPHP and in a private vkcom repo "ml_experiments".
 // They are almost identical, besides include paths and input types (`array` vs `unordered_map`).
 
-#include "runtime-common/stdlib/kml/kml-files-reader.h"
+#include "runtime-common/stdlib/kml/kml-file-api.h"
 #include "common/mixin/not_copyable.h"
 #include "common/wrappers/overloaded.h"
 #include "runtime-common/core/allocator/platform-allocator.h"
 #include "runtime-common/stdlib/kml/kphp_ml.h"
+#include "runtime-common/stdlib/kml/kphp_ml_stl.h"
 
 #include <cstdio>
 #include <variant>
@@ -47,49 +48,50 @@ template<typename T>
 }
 
 class KmlReader final : public vk::not_copyable {
-  FileReader reader;
+  kphp_ml::stl::unique_ptr_platform<IFileReader> reader;
+  // LibcFileReader reader;
 
 public:
   explicit KmlReader(vk::string_view kml_filename)
-      : reader{kml_filename} {}
+      : reader{get_file_reader(kml_filename)} {}
 
   int read_int() noexcept {
     int v;
-    reader.read((char*)&v, sizeof(int));
+    reader->read((char*)&v, sizeof(int));
     return v;
   }
 
   void read_int(int& v) noexcept {
-    reader.read((char*)&v, sizeof(int));
+    reader->read((char*)&v, sizeof(int));
   }
 
   void read_uint32(uint32_t& v) noexcept {
-    reader.read((char*)&v, sizeof(uint32_t));
+    reader->read((char*)&v, sizeof(uint32_t));
   }
 
   void read_uint64(uint64_t& v) noexcept {
-    reader.read((char*)&v, sizeof(uint64_t));
+    reader->read((char*)&v, sizeof(uint64_t));
   }
 
   void read_float(float& v) noexcept {
-    reader.read((char*)&v, sizeof(float));
+    reader->read((char*)&v, sizeof(float));
   }
 
   void read_double(double& v) noexcept {
-    reader.read((char*)&v, sizeof(double));
+    reader->read((char*)&v, sizeof(double));
   }
 
   template<class T>
   void read_enum(T& v) noexcept {
     static_assert(sizeof(T) == sizeof(int));
-    reader.read((char*)&v, sizeof(int));
+    reader->read((char*)&v, sizeof(int));
   }
 
   void read_string(kphp_ml::stl::string& v) noexcept {
     int len;
-    reader.read((char*)&len, sizeof(int));
+    reader->read((char*)&len, sizeof(int));
     v.resize(len);
-    reader.read(v.data(), len);
+    reader->read(v.data(), len);
   }
 
   void read_bool(bool& v) noexcept {
@@ -97,7 +99,7 @@ public:
   }
 
   void read_bytes(void* v, size_t len) noexcept {
-    reader.read((char*)v, static_cast<size_t>(len));
+    reader->read((char*)v, static_cast<size_t>(len));
   }
 
   template<class T>
@@ -120,7 +122,7 @@ public:
   }
 
   [[nodiscard]] Result<std::monostate> check_not_eof() const {
-    if (reader.is_eof()) {
+    if (reader->is_eof()) {
       return "unexpected eof";
     }
     return std::monostate{};

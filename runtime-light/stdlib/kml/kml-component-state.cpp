@@ -15,3 +15,4 @@ const KmlModelsContext& KmlModelsContext::get() noexcept {
 KmlModelsContext& KmlModelsContext::get_mutable() noexcept {
   return KmlComponentState::get_mutable().kml_models_context;
 }
+

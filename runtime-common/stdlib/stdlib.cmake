@@ -1,6 +1,6 @@
 prepend(STDLIB_ARRAY stdlib/array/ array-functions.cpp)
 prepend(STDLIB_CRYPTO stdlib/crypto/ crypto-functions.cpp)
-prepend(STDLIB_KML stdlib/kml/ kml-files-reader.cpp kphp_ml_catboost.cpp kphp_ml_init.cpp kphp_ml_interface.cpp kphp_ml_xgboost.cpp kphp_ml.cpp)
+prepend(STDLIB_KML stdlib/kml/ kml-file-api.cpp kphp_ml_catboost.cpp kphp_ml_init.cpp kphp_ml_interface.cpp kphp_ml_xgboost.cpp kphp_ml.cpp)
 prepend(STDLIB_MATH stdlib/math/ math-functions.cpp
         bcmath-functions.cpp math-context.cpp)
 prepend(STDLIB_MSGPACK stdlib/msgpack/ object_visitor.cpp
