@@ -131,17 +131,16 @@ void process_job_worker_class(ClassPtr klass) {
 void check_instance_cache_fetch_call(VertexAdaptor<op_func_call> call) {
   auto klass = tinf::get_type(call)->class_type();
   kphp_assert(klass);
-  if (G->is_output_mode_k2()) {
-    kphp_error(klass->is_immutable,
-               fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
-    kphp_error(klass->is_serializable,
-               fmt_format("Can not fetch instance of non-serializable class {} with instance_cache_fetch call", klass->name));
 
+  kphp_error(klass->is_immutable || klass->is_interface(),
+             fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
+  kphp_error(klass->is_serializable,
+             fmt_format("Can not fetch instance of non-serializable class {} with instance_cache_fetch call", klass->name));
+
+  if (G->is_output_mode_k2()) {
     // To be able to store instances in request cache
     klass->deeply_require_may_be_mixed_base();
   } else {
-    kphp_error(klass->is_immutable || klass->is_interface(),
-               fmt_format("Can not fetch instance of mutable class {} with instance_cache_fetch call", klass->name));
     klass->deeply_require_instance_cache_visitor();
   }
 }
@@ -152,15 +151,13 @@ void check_instance_cache_store_call(VertexAdaptor<op_func_call> call) {
   auto klass = type->class_type();
   kphp_error(!klass->is_empty_class(), fmt_format("Can not store instance of empty class {} with instance_cache_store call", klass->name));
 
-  if (G->is_output_mode_k2()) {
-    kphp_error_return(klass->is_immutable, fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
-    kphp_error_return(klass->is_serializable, fmt_format("Can not store instance of non-serializable class {} with instance_cache_store call", klass->name));
+  kphp_error_return(klass->is_immutable || klass->is_interface(),
+                    fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
+  kphp_error_return(klass->is_serializable, fmt_format("Can not store instance of non-serializable class {} with instance_cache_store call", klass->name));
 
+  if (G->is_output_mode_k2()) {
     // To be able to store instances in request cache
     klass->deeply_require_may_be_mixed_base();
-  } else {
-    kphp_error_return(klass->is_immutable || klass->is_interface(),
-                      fmt_format("Can not store instance of mutable class {} with instance_cache_store call", klass->name));
   }
 
   check_fields_ic_compatibility(klass);
