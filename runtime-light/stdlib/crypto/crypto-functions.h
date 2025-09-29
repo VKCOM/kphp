@@ -32,9 +32,9 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
 kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method, string key, int64_t options = 0, string iv = string{}, string tag = string{},
                                                      string aad = string{}) noexcept;
 
-kphp::coro::task<bool> f$openssl_public_encrypt(string $data, string& $encrypted_data, string $public_key, int $padding) noexcept;
+kphp::coro::task<bool> f$openssl_public_encrypt(string $data, mixed& $encrypted_data, string $public_key) noexcept;
 
-kphp::coro::task<bool> f$openssl_private_decrypt(string $data, string& $decrypted_data, string $private_key, int $padding) noexcept;
+kphp::coro::task<bool> f$openssl_private_decrypt(string $data, mixed& $decrypted_data, string $private_key) noexcept;
 
 array<string> f$hash_algos() noexcept;
 
