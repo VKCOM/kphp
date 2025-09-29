@@ -362,6 +362,58 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
   co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
 }
 
+kphp::coro::task<bool> f$openssl_public_encrypt(string $data, string& $encrypted_data, string $public_key, int $padding) noexcept {
+  tl::PublicEncrypt public_encrypt{
+      .key = {.value = {$public_key.c_str(), $public_key.size()}},
+      .data = {.value = {$data.c_str(), $data.size()}},
+  };
+  tl::storer tls{public_encrypt.footprint()};
+  public_encrypt.store(tls);
+
+  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
+  if (!expected_stream) [[unlikely]] {
+    co_return false;
+  }
+
+  auto stream{*std::move(expected_stream)};
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+    co_return false;
+  }
+
+  tl::fetcher tlf{response_bytes};
+  tl::String response{};
+  kphp::log::assertion(response.fetch(tlf));
+  $encrypted_data = { response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size()) } co_return true;
+  co_return true;
+}
+
+kphp::coro::task<bool> f$openssl_private_decrypt(string $data, string& $decrypted_data, string $private_key, int $padding) noexcept {
+  tl::PublicEncrypt public_encrypt{
+      .key = {.value = {$public_key.c_str(), $public_key.size()}},
+      .data = {.value = {$data.c_str(), $data.size()}},
+  };
+  tl::storer tls{public_encrypt.footprint()};
+  public_encrypt.store(tls);
+
+  auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
+  if (!expected_stream) [[unlikely]] {
+    co_return false;
+  }
+
+  auto stream{*std::move(expected_stream)};
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
+  if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
+    co_return false;
+  }
+
+  tl::fetcher tlf{response_bytes};
+  tl::String response{};
+  kphp::log::assertion(response.fetch(tlf));
+  $encrypted_data = { response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size()) } co_return true;
+  co_return true;
+}
+
 namespace {
 
 constexpr std::array<std::pair<std::string_view, tl::HashAlgorithm>, 6> HASH_ALGOS = {{{"md5", tl::HashAlgorithm::MD5},
