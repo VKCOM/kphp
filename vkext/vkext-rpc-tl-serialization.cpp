@@ -924,13 +924,13 @@ inline void tl_debug(const char *s __attribute__((unused)), int n __attribute__(
 /* {{{ Interface functions */
 
 // returns 0 if no typedStore was found, otherwise returns allocated ZVAL with fetcher instance
-zval *store_function2(VK_ZVAL_API_P arr) {
+bool store_function2(VK_ZVAL_API_P arr, zval *fetcher) {
   ADD_CNT(store_function2)
   START_TIMER(store_function2)
   assert(arr);
   if (Z_TYPE_P(arr) != IS_OBJECT) {
     END_TIMER(store_function2)
-    return NULL;
+    return false;
   }
   zend_object* zobj = Z_OBJ_P(arr);
 
@@ -941,28 +941,24 @@ zval *store_function2(VK_ZVAL_API_P arr) {
   if (!typedStore) {
     fprintf(stderr, "typedStore is not found\n");
     END_TIMER(store_function2)
-    return NULL;
+    return false;
   }
   fprintf(stderr, "typedStore is found\n");
   tl_current_function_name = "typedStore"; // TODO - add getFunctionName() to fetcher?
-  zval* return_value;
-  VK_ALLOC_INIT_ZVAL(return_value);
-  ZVAL_UNDEF(return_value);
   zend_call_known_function(typedStore, zobj,
                            NULL,         // called_scope (NULL for a free function)
-                           return_value, // Where to store the return value
+                           fetcher, // Where to store the return value
                            0,            // Number of parameters (0 in this case)
                            NULL,         // Parameter array (NULL if no parameters)
                            NULL          // Named parameters (NULL for no named parameters)
   );
-  if (Z_TYPE_P(return_value) == IS_NULL) {
-    zval_ptr_dtor(return_value);
+  if (Z_TYPE_P(fetcher) == IS_NULL) {
     END_TIMER(store_function2)
-    return NULL;
+    return false;
   }
-  assert(Z_TYPE_P(return_value) == IS_OBJECT);
+  assert(Z_TYPE_P(fetcher) == IS_OBJECT);
   END_TIMER(store_function2)
-  return return_value;
+  return true;
 }
 
 struct tl_tree *store_function(VK_ZVAL_API_P arr) {
@@ -1130,39 +1126,39 @@ zval *fetch_function(struct tl_tree *T) {
 }
 
 void _extra_dec_ref(struct rpc_query *q) {
-  if (q->extra || q->fetcher) {
-    total_tl_working--;
+  if (!q->extra_free) {
+    return;
   }
+  q->extra_free = 0;
+  total_tl_working--;
   if (q->extra) {
     DEC_REF (q->extra);
     q->extra = 0;
   }
-  if (q->fetcher) {
-    zval_ptr_dtor(q->fetcher);
-    q->fetcher = NULL;
-  }
-  q->extra_free = 0;
+  zval_ptr_dtor(&q->fetcher);
 }
 
 struct rpc_query *vk_rpc_tl_query_one_impl(struct rpc_connection *c, double timeout, VK_ZVAL_API_P arr, int ignore_answer) {
   do_rpc_clean();
   START_TIMER (tmp);
-  zval *fetcher = store_function2(arr);
+  zval fetcher;
+  ZVAL_NULL(&fetcher);
+  bool fetcher_found = store_function2(arr, &fetcher);
   END_TIMER (tmp);
-  if (fetcher) {
+  if (fetcher_found) {
     struct rpc_query *q;
     if (!(q = do_rpc_send_noflush(c, timeout, ignore_answer))) {
-      zval_ptr_dtor(fetcher);
+      zval_ptr_dtor(&fetcher);
       vkext_error(VKEXT_ERROR_NETWORK, "Can't send packet");
       return 0;
     }
     if (q == (struct rpc_query *)1) { // answer is ignored
       assert (ignore_answer);
-      zval_ptr_dtor(fetcher);
+      zval_ptr_dtor(&fetcher);
       return q;
     }
     assert (!ignore_answer);
-    q->fetcher = fetcher;
+    ZVAL_COPY_VALUE(&q->fetcher, &fetcher);
     q->extra_free = _extra_dec_ref;
     total_tl_working++;
     return q;
@@ -1186,6 +1182,7 @@ struct rpc_query *vk_rpc_tl_query_one_impl(struct rpc_connection *c, double time
   }
   assert (!ignore_answer);
   q->extra = res;
+  ZVAL_NULL(&q->fetcher);
   q->extra_free = _extra_dec_ref;
   total_tl_working++;
   return q;
@@ -1197,11 +1194,10 @@ zval *vk_rpc_tl_query_result_one_impl(struct tl_tree *T, zval *fetcher) {
   tl_parse_init();
   START_TIMER (tmp);
   zval *r = NULL;
-  if (fetcher) {
-    r = fetch_function2(fetcher);
-    zval_ptr_dtor(fetcher);
-  }else{
+  if (T) {
     r = fetch_function(T);
+  }else{
+    r = fetch_function2(fetcher);
   }
   //fprintf(stderr, "~~~~ after fetch:\n");
   //php_debug_zval_dump(*r, 1);
@@ -1519,19 +1515,18 @@ void vk_rpc_tl_query_result_impl(struct rpc_queue *Q, double timeout, zval **r) 
     }
     struct rpc_query *q = rpc_query_get(qid);
     tl_tree *T = reinterpret_cast<tl_tree *>(q->extra);
-    zval *fetcher = q->fetcher;
+    zval fetcher;
+    ZVAL_COPY(&fetcher, &q->fetcher);
     tl_current_function_name = q->fun_name;
     if (T) {
       INC_REF (T);
-    }
-    if (fetcher) {
-      Z_TRY_ADDREF_P(fetcher);
     }
 
     if (do_rpc_get_and_parse(qid, timeout - precise_now) < 0) {
       continue;
     }
-    zval *res = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T, fetcher), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
+    zval *res = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T, &fetcher), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
+    zval_ptr_dtor(&fetcher);
     vk_add_index_zval_nod (*r, qid, res);
   }
 }
@@ -1562,12 +1557,10 @@ void vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAMETERS) {
   double timeout = (argc < 2) ? q->timeout : precise_now + parse_zend_double(VK_ZVAL_ARRAY_TO_API_P(z[1]));
   END_TIMER (parse);
   auto *T = reinterpret_cast<tl_tree *>(q->extra);
-  zval *fetcher = q->fetcher;
+  zval fetcher;
+  ZVAL_COPY(&fetcher, &q->fetcher);
   if (T) {
     INC_REF (T);
-  }
-  if (fetcher) {
-    Z_TRY_ADDREF_P(fetcher);
   }
   if (do_rpc_get_and_parse(qid, timeout - precise_now) < 0) {
     zval *r = make_query_result_or_error(NULL, {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
@@ -1575,7 +1568,8 @@ void vk_rpc_tl_query_result_one(INTERNAL_FUNCTION_PARAMETERS) {
     efree(r);
     return;
   }
-  zval *r = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T, fetcher), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
+  zval *r = make_query_result_or_error(vk_rpc_tl_query_result_one_impl(T, &fetcher), {TL_ERROR_RESPONSE_NOT_FOUND, "Response not found, probably timed out"});
+  zval_ptr_dtor(&fetcher);
   RETVAL_ZVAL(r, false, true);
   efree(r);
 }

@@ -113,8 +113,8 @@ struct rpc_query {
   int answer_len;
   enum query_status status;
   void *extra;
+  zval fetcher; // set if extra == NULL
   void (*extra_free)(struct rpc_query *);
-  zval *fetcher;
   const char *fun_name;
 };
 
