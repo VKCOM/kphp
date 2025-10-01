@@ -94,6 +94,14 @@ Optional<int64_t> connect_to_address(const string& host, int64_t port, double en
     close(socket_fd);
     return {};
   } else {
+    int error;
+    socklen_t error_size = sizeof(error);
+    getsockopt(socket_fd, SOL_SOCKET, SO_ERROR, &error, &error_size);
+    if (error != 0) {
+      faulter(-3, string("Can't connect to tcp socket. Socket got error: %s"), string(error));
+      close(socket_fd);
+      return {};
+    }
     int old_flags = fcntl(socket_fd, F_GETFL);
     fcntl(socket_fd, F_SETFL, old_flags & ~O_NONBLOCK);
     return socket_fd;
@@ -221,8 +229,8 @@ Optional<string> tcp_fgets(const Stream& stream, int64_t length) {
   if (res == nullptr) {
     return {};
   }
-  string::size_type end_pos = data.find(string("\n")) + 1;
-  return data.substr(0, end_pos);
+  data.shrink(strlen(res));
+  return data;
 }
 
 Optional<string> tcp_fgetc(const Stream& stream) {

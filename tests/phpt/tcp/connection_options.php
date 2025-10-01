@@ -1,4 +1,4 @@
-@
+@ok k2_skip
 <?php
 
 function test_non_blocking_connection($address, $request) {
