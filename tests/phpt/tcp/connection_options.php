@@ -23,4 +23,4 @@ function test_non_blocking_connection($address, $request) {
     }
 }
 
-test_non_blocking_connection("tcp://127.0.0.1:48092", "GET / HTTP/1.0\r\nHost: 127.0.0.1:48092\r\nAccept: */*\r\n\r\n");
+test_non_blocking_connection("tcp://localhost:48092", "GET / HTTP/1.0\r\nHost: localhost:48092\r\nAccept: */*\r\n\r\n");

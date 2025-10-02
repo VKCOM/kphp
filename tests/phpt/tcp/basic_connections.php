@@ -37,13 +37,13 @@ function test_no_close($address, $request) {
 }
 
 
-test_simple_connection("tcp://bad_address", "GET / HTTP/1.0\r\nHost: 127.0.0.1:48091\r\nAccept: */*\r\n\r\n");
-test_simple_connection("tcp://wrong_address:80", "GET / HTTP/1.0\r\nHost: 127.0.0.1:48091\r\nAccept: */*\r\n\r\n");
-test_simple_connection("tcp://example.com:wrong_port", "GET / HTTP/1.0\r\nHost: 127.0.0.1:48091\r\nAccept: */*\r\n\r\n");
-test_simple_connection("tcp://127.0.0.1:48091", "GET / HTTP/1.0\r\nHost: 127.0.0.1:48091\r\nAccept: */*\r\n\r\n");
-test_simple_connection("tcp://127.0.0.1:48091", "GET / HTTP/1.0\r\nHost: not_working.com:1111\r\nAccept: */*\r\n\r\n");
+test_simple_connection("tcp://bad_address", "GET / HTTP/1.0\r\nHost: localhost:48091\r\nAccept: */*\r\n\r\n");
+test_simple_connection("tcp://wrong_address:80", "GET / HTTP/1.0\r\nHost: localhost:48091\r\nAccept: */*\r\n\r\n");
+test_simple_connection("tcp://example.com:wrong_port", "GET / HTTP/1.0\r\nHost: localhost:48091\r\nAccept: */*\r\n\r\n");
+test_simple_connection("tcp://localhost:48091", "GET / HTTP/1.0\r\nHost: localhost:48091\r\nAccept: */*\r\n\r\n");
+test_simple_connection("tcp://localhost:48091", "GET / HTTP/1.0\r\nHost: not_working.com:1111\r\nAccept: */*\r\n\r\n");
 
-test_full_response("tcp://127.0.0.1:48091", "GET / HTTP/1.0\r\nHost: 127.0.0.1:48091\r\nAccept: */*\r\n\r\n");
-test_full_response("tcp://127.0.0.1:48091", "GET / HTTP/1.0\r\nHost: not_working.com:80\r\nAccept: */*\r\n\r\n");
+test_full_response("tcp://localhost:48091", "GET / HTTP/1.0\r\nHost: localhost:48091\r\nAccept: */*\r\n\r\n");
+test_full_response("tcp://localhost:48091", "GET / HTTP/1.0\r\nHost: not_working.com:80\r\nAccept: */*\r\n\r\n");
 
-test_no_close("tcp://127.0.0.1:48091", "GET / HTTP/1.0\r\nHost: 127.0.0.1:48091\r\nAccept: */*\r\n\r\n");
+test_no_close("tcp://localhost:48091", "GET / HTTP/1.0\r\nHost: localhost:48091\r\nAccept: */*\r\n\r\n");

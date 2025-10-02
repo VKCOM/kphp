@@ -17,7 +17,7 @@ def serving(port: typing.Optional[int]) -> typing.Generator[typing.Optional[sock
     if not port:
         yield
         return
-    server = socketserver.TCPServer(('127.0.0.1', port), HelloHandler)
+    server = socketserver.TCPServer(('localhost', port), HelloHandler)
     try:
         server_thread = threading.Thread(target=server.serve_forever)
         server_thread.start()
