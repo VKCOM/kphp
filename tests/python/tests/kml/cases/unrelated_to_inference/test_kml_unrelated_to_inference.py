@@ -13,6 +13,6 @@ class TestKmlUnrelatedToInference(WebServerAutoTestCase):
     def test(self):
         resp = self.web_server.http_get(uri="/")
         self.assertEqual(200, resp.status_code)
-        self.web_server.assert_log(["kml model absent_model not found"],
+        self.web_server.assert_log(["kml model not found: absent_model"],
                                    "Can't find kml \"model not found\" error message")
         

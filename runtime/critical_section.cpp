@@ -6,7 +6,6 @@
 
 #include <signal.h>
 
-#include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime/php_assert.h"
 
 void check_stack_overflow() __attribute__((weak));

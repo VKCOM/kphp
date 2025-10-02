@@ -11,15 +11,13 @@
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/kml/kphp_ml_init.h"
 #include "runtime-light/allocator/allocator-state.h"
-#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/kml/kml-component-state.h"
+#include "runtime-light/stdlib/kml/kml-state.h"
 
 struct ComponentState final : private vk::not_copyable {
   AllocatorState component_allocator_state{INIT_COMPONENT_ALLOCATOR_SIZE, 0};
-  KmlComponentState kml_component_state;
+  KmlComponentState kml_component_state; // This member does not hold any KPHP types, so setting a reference counter is unnecessary.
 
   const uint32_t argc{k2::args_count()};
   const uint32_t envc{k2::env_count()};
@@ -30,15 +28,6 @@ struct ComponentState final : private vk::not_copyable {
   ComponentState() noexcept {
     parse_env();
     parse_args();
-
-    auto kml_dir = ini_opts[string("kml_dir")];
-    char* buffer = static_cast<char*>(k2::alloc(kml_dir.size() + 1));
-    strncpy(buffer, kml_dir.c_str(), kml_dir.size() + 1); // Copy null terminator, too
-    kml_component_state.kml_models_context.kml_directory = buffer;
-
-    // Required because of LibcFileReader, LibcDirTraverser
-    auto guard = kphp::memory::libc_alloc_guard{};
-    kml_init_models();
   }
 
   static const ComponentState& get() noexcept {
@@ -51,6 +40,7 @@ struct ComponentState final : private vk::not_copyable {
 
 private:
   static constexpr std::string_view INI_ARG_PREFIX = "ini ";
+  static constexpr std::string_view KML_DIR_ARG = "kml_dir";
   static constexpr std::string_view RUNTIME_CONFIG_ARG = "runtime-config";
   static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U); // 1MB
 
@@ -59,6 +49,8 @@ private:
   void parse_args() noexcept;
 
   void parse_ini_arg(std::string_view, std::string_view) noexcept;
+
+  void parse_kml_arg(std::string_view) noexcept;
 
   void parse_runtime_config_arg(std::string_view) noexcept;
 };

@@ -142,6 +142,39 @@ inline int32_t fopen(k2::descriptor* descriptor, std::string_view path, std::str
   return k2_fopen(descriptor, path.data(), path.size(), mode.data(), mode.size());
 }
 
+inline auto opendir(std::string_view path) noexcept -> std::expected<k2::descriptor, int32_t> {
+  k2::descriptor descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
+  if (auto error_code{k2_opendir(std::addressof(descriptor), path.data(), path.size())}; error_code != k2::errno_ok) [[unlikely]] {
+    return std::unexpected{error_code};
+  }
+  return descriptor;
+}
+
+inline auto readdir(k2::descriptor descriptor) noexcept {
+  static constexpr auto deleter_creator{
+      [](size_t size, size_t align) noexcept { return [size, align](void* ptr) noexcept { k2::free_checked(ptr, size, align); }; }};
+
+  using deleter_type = std::invoke_result_t<decltype(deleter_creator), size_t, size_t>;
+  using unique_ptr_type = std::unique_ptr<char, deleter_type>;
+  struct dirent {
+    std::pair<unique_ptr_type, size_t> filename;
+    std::pair<unique_ptr_type, size_t> path;
+  };
+  using return_type = std::optional<std::expected<dirent, int32_t>>;
+
+  DirEntry entry{};
+  DirEntry* result{};
+  if (auto error_code{k2_readdir(descriptor, std::addressof(entry), std::addressof(result))}; error_code != k2::errno_ok) [[unlikely]] {
+    return return_type{std::unexpected{error_code}};
+  }
+
+  return result == std::addressof(entry)
+             ? return_type{dirent{
+                   .filename = {unique_ptr_type{entry.filename, std::invoke(deleter_creator, entry.filename_len, entry.filename_align)}, entry.filename_len},
+                   .path = {{entry.path, std::invoke(deleter_creator, entry.path_len, entry.path_align)}, entry.path_len}}}
+             : return_type{std::nullopt};
+}
+
 inline int32_t access(std::string_view component_name) noexcept {
   return k2_access(component_name.size(), component_name.data());
 }

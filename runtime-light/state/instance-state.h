@@ -20,13 +20,14 @@
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/job-worker/job-worker-server-state.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
+#include "runtime-light/state/component-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/diagnostics/contextual-logger.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
-#include "runtime-light/stdlib/kml/kml-instance-state.h"
+#include "runtime-light/stdlib/kml/kml-state.h"
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/math/random-state.h"
 #include "runtime-light/stdlib/output/output-state.h"
@@ -61,7 +62,9 @@ struct InstanceState final : vk::not_copyable {
   // It's important to use `{}` instead of `= default` here.
   // In the second case clang++ zeroes the whole structure.
   // It drastically ruins performance. Be careful!
-  InstanceState() noexcept {} // NOLINT
+  InstanceState() noexcept {
+    kml_instance_state.init(ComponentState::get().kml_component_state.max_buffer_size());
+  }
 
   static InstanceState& get() noexcept {
     return *k2::instance_state();

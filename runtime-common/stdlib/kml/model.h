@@ -170,63 +170,151 @@ In the future, the following points might be considered as areas of investigatio
 
 #pragma once
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
 #include <optional>
-#include <string>
+#include <string_view>
+#include <utility>
 #include <variant>
 
-#include "runtime-common/stdlib/kml/kphp_ml_catboost.h"
-#include "runtime-common/stdlib/kml/kphp_ml_stl.h"
-#include "runtime-common/stdlib/kml/kphp_ml_xgboost.h"
+#include "runtime-common/core/std/containers.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-common/stdlib/kml/catboost.h"
+#include "runtime-common/stdlib/kml/file-api.h"
+#include "runtime-common/stdlib/kml/input_kind.h"
+#include "runtime-common/stdlib/kml/xgboost.h"
 
-namespace kphp_ml {
+namespace kphp::kml {
 
-constexpr int KML_FILE_PREFIX = 0x718249F0;
-constexpr int KML_FILE_VERSION_100 = 100;
+inline constexpr int32_t KML_FILE_PREFIX = 0x718249F0;
+inline constexpr int32_t KML_FILE_VERSION_100 = 100;
 
-enum class ModelKind {
+namespace detail {
+
+enum class model_kind {
   invalid_kind,
   xgboost_trees_no_cat,
   catboost_trees,
 };
 
-enum class InputKind {
-  // [ 'user_city_99' => 1, 'user_topic_weights_17' => 7.42, ...], uses reindex_map
-  ht_remap_str_keys_to_fvalue,
-  // [ 12934 => 1, 8923 => 7.42, ... ], uses reindex_map
-  ht_remap_int_keys_to_fvalue,
-  // [ 70 => 1, 23 => 7.42, ... ], no keys reindex, pass directly
-  ht_direct_int_keys_to_fvalue,
+} // namespace detail
 
-  // [ 1.23, 4.56, ... ] and [ "red", "small" ]: floats and cat separately, pass directly
-  vectors_fvalue_and_catstr,
-  // the same, but a model is a catboost multiclassificator (returns an array of predictions, not one)
-  vectors_fvalue_and_catstr_multi,
-  // [ 'emb_7' => 19.98, ..., 'user_os' => 2, ... ]: in one ht, but categorials are numbers also (to avoid `mixed`)
-  ht_remap_str_keys_to_fvalue_or_catnum,
-  // the same, but multiclassificator (returns an array of predictions, not one)
-  ht_remap_str_keys_to_fvalue_or_catnum_multi,
+template<template<class> class Allocator>
+class model {
+  kphp::kml::input_kind m_input_kind;
+  kphp::stl::string<Allocator> m_name;
+  kphp::stl::vector<kphp::stl::string<Allocator>, Allocator> m_feature_names;
+  kphp::stl::unordered_map<kphp::stl::string<Allocator>, kphp::stl::string<Allocator>, Allocator> m_custom_properties;
+
+  std::variant<std::monostate, kphp::kml::xgboost::model<Allocator>, kphp::kml::catboost::model<Allocator>> m_impl;
+
+public:
+  std::string_view name() const noexcept {
+    return m_name;
+  }
+
+  kphp::kml::input_kind input_kind() const noexcept {
+    return m_input_kind;
+  }
+
+  const auto& feature_names() const noexcept {
+    return m_feature_names;
+  }
+
+  std::optional<std::string_view> custom_property(const kphp::stl::string<Allocator>& property_name) const noexcept {
+    if (auto it{m_custom_properties.find(property_name)}; it != m_custom_properties.end()) {
+      return it->second;
+    }
+    return std::nullopt;
+  }
+
+  size_t mutable_buffer_size() const noexcept {
+    if (auto xgb{as_xgboost()}; xgb) {
+      return (*xgb).get().mutable_buffer_size();
+    } else if (auto cbm{as_catboost()}; cbm) {
+      return (*cbm).get().mutable_buffer_size();
+    }
+    return 0;
+  }
+
+  std::optional<std::reference_wrapper<const kphp::kml::xgboost::model<Allocator>>> as_xgboost() const noexcept {
+    if (auto* xgb{std::get_if<kphp::kml::xgboost::model<Allocator>>(std::addressof(m_impl))}; xgb != nullptr) {
+      return *xgb;
+    }
+    return std::nullopt;
+  }
+
+  std::optional<std::reference_wrapper<const kphp::kml::catboost::model<Allocator>>> as_catboost() const noexcept {
+    if (auto* cbm{std::get_if<kphp::kml::catboost::model<Allocator>>(std::addressof(m_impl))}; cbm != nullptr) {
+      return *cbm;
+    }
+    return std::nullopt;
+  }
+
+  template<class FileReader>
+  static std::optional<model<Allocator>> load(FileReader file_reader) noexcept {
+    detail::reader<FileReader, Allocator> kml_reader{std::move(file_reader)};
+
+    if (kml_reader.read_int32() != KML_FILE_PREFIX) {
+      php_warning("failed to load KML model: bad .kml file prefix");
+      return std::nullopt;
+    }
+
+    auto version = kml_reader.read_int32();
+    if (version != KML_FILE_VERSION_100) {
+      php_warning("failed to load KML model: bad version");
+      return std::nullopt;
+    }
+
+    model<Allocator> kml{};
+
+    detail::model_kind model_kind{};
+    kml_reader.read_enum(model_kind);
+
+    kml_reader.read_enum(kml.m_input_kind);
+    kml_reader.read_string(kml.m_name);
+    kml_reader.read_vec(kml.m_feature_names);
+
+    auto custom_props_sz = kml_reader.read_int32();
+    kml.m_custom_properties.reserve(custom_props_sz);
+    for (auto i = 0; i < custom_props_sz; ++i) {
+      kphp::stl::string<Allocator> property_name;
+      kml_reader.read_string(property_name);
+      kml_reader.read_string(kml.m_custom_properties[property_name]);
+    }
+
+    if (kml_reader.is_eof()) {
+      php_warning("failed to load KML model: unexpected EOF");
+      return std::nullopt;
+    }
+
+    switch (model_kind) {
+    case detail::model_kind::xgboost_trees_no_cat: {
+      auto opt_xgb = kphp::kml::xgboost::model<Allocator>::load(kml_reader);
+      if (!opt_xgb) {
+        return std::nullopt;
+      }
+      kml.m_impl = *std::move(opt_xgb);
+      break;
+    }
+    case detail::model_kind::catboost_trees: {
+      auto opt_catboost = kphp::kml::catboost::model<Allocator>::load(kml_reader);
+      if (!opt_catboost) {
+        return std::nullopt;
+      }
+      kml.m_impl = *std::move(opt_catboost);
+      break;
+    }
+    default:
+      php_warning("failed to load KML model: unsupported model kind");
+      return std::nullopt;
+    }
+
+    return kml;
+  }
 };
 
-struct MLModel {
-  ModelKind model_kind;
-  InputKind input_kind;
-  kphp_ml::stl::string model_name;
-  kphp_ml::stl::vector<kphp_ml::stl::string> feature_names;
-  kphp_ml::stl::unordered_map<kphp_ml::stl::string, kphp_ml::stl::string> custom_properties;
-
-  std::variant<kphp_ml_xgboost::XgboostModel, kphp_ml_catboost::CatboostModel> impl;
-
-  bool is_xgboost() const {
-    return model_kind == ModelKind::xgboost_trees_no_cat;
-  }
-  bool is_catboost() const {
-    return model_kind == ModelKind::catboost_trees;
-  }
-  bool is_catboost_multi_classification() const;
-  const kphp_ml::stl::vector<kphp_ml::stl::string>& get_feature_names() const;
-  std::optional<kphp_ml::stl::string> get_custom_property(const kphp_ml::stl::string& property_name) const;
-
-  unsigned int calculate_mutable_buffer_size() const;
-};
-
-} // namespace kphp_ml
+} // namespace kphp::kml
