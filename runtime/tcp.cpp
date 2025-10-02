@@ -7,6 +7,7 @@
 #include <netdb.h>
 #include <sys/poll.h>
 
+#include "common/kprintf.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
@@ -14,8 +15,6 @@
 #include "runtime/net_events.h"
 #include "runtime/streams.h"
 #include "runtime/tcp.h"
-
-#include <common/kprintf.h>
 
 namespace {
 
