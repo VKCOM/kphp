@@ -65,7 +65,8 @@ Optional<int64_t> connect_to_address(const string& host, int64_t port, double en
     return {};
   }
 
-#ifndef NDEBUG
+  // The following code block prints the host resolving result for debugging.
+#if 0
   string ai_host(NI_MAXHOST, false);
   string ai_port(NI_MAXSERV, false);
   for (auto ai = result; ai != nullptr; ai = ai->ai_next) {
