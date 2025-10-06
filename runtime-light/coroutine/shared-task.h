@@ -51,9 +51,8 @@ struct promise_base : kphp::coro::async_stack_element {
           // read the m_next pointer before resuming the coroutine
           // since resuming the coroutine may destroy the shared_task_waiter value
           auto* next{waiter->m_next};
-//          auto& async_stack_root{*promise.get_async_stack_frame().async_stack_root};
-          waiter->m_continuation.resume();
-//          kphp::coro::resume(waiter->m_continuation, async_stack_root);
+          auto& async_stack_root{*promise.get_async_stack_frame().async_stack_root};
+          kphp::coro::resume(waiter->m_continuation, async_stack_root);
           waiter = next;
         }
         // return last waiter's coroutine_handle to allow it to potentially be compiled as a tail-call
@@ -100,9 +99,8 @@ struct promise_base : kphp::coro::async_stack_element {
     if (m_waiters == NOT_STARTED_VAL) {
       m_waiters = STARTED_NO_WAITERS_VAL;
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
-//      auto& async_stack_root{*get_async_stack_frame().async_stack_root};
-      handle.resume();
-      //kphp::coro::resume(handle, async_stack_root);
+      auto& async_stack_root{*get_async_stack_frame().async_stack_root};
+      kphp::coro::resume(handle, async_stack_root);
     }
     // coroutine already completed, don't suspend
     if (done()) {
@@ -219,10 +217,10 @@ public:
 
   template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> bool {
-    //set_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
+    set_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
     m_waiter.m_continuation = awaiting_coroutine;
     m_suspended = m_coro.promise().suspend_awaiter(m_waiter);
-    //reset_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame());
+    reset_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame());
     return m_suspended;
   }
 

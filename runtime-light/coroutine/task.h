@@ -33,7 +33,7 @@ struct promise_base : kphp::coro::async_stack_element {
 
       auto await_suspend(std::coroutine_handle<promise_type> coro) const noexcept -> std::coroutine_handle<> {
         if (auto& promise{coro.promise()}; promise.m_next != nullptr) [[likely]] {
-//          pop_async_stack_frame(promise.get_async_stack_frame());
+          pop_async_stack_frame(promise.get_async_stack_frame());
           return std::coroutine_handle<>::from_address(promise.m_next);
         }
         return std::noop_coroutine();
@@ -115,7 +115,7 @@ public:
   ~awaiter_base() {
     if (m_coro != nullptr && m_suspended) {
       m_coro.promise().m_next = nullptr;
-//      detach_from_async_stack();
+      detach_from_async_stack();
     }
   }
 
@@ -124,9 +124,9 @@ public:
     return false;
   }
 
-  template<typename caller_promise_type>
+  template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> std::coroutine_handle<promise_type> {
-//    push_async_stack_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
+    push_async_stack_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
     m_coro.promise().m_next = awaiting_coroutine.address();
     m_suspended = true;
     return m_coro;
