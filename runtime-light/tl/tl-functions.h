@@ -41,6 +41,8 @@ inline constexpr uint32_t DIGEST_SIGN_MAGIC = 0xd345'f658;
 inline constexpr uint32_t DIGEST_VERIFY_MAGIC = 0x5760'bd0e;
 inline constexpr uint32_t CBC_DECRYPT_MAGIC = 0x7f2e'e1e4;
 inline constexpr uint32_t CBC_ENCRYPT_MAGIC = 0x6d4e'e36a;
+inline constexpr uint32_t GET_PUBLIC_KEY_MAGIC = 0x4b1e'7d3d;
+inline constexpr uint32_t GET_PRIVATE_KEY_MAGIC = 0x34ea'dfdb;
 inline constexpr uint32_t PUBLIC_ENCRYPT_MAGIC = 0x7612'f4ad;
 inline constexpr uint32_t PRIVATE_DECRYPT_MAGIC = 0xc6e9'1d4d;
 inline constexpr uint32_t HASH_MAGIC = 0x5073'2a27;
@@ -149,6 +151,34 @@ struct CbcEncrypt final {
 
   constexpr size_t footprint() const noexcept {
     return tl::magic{.value = CBC_ENCRYPT_MAGIC}.footprint() + sizeof(uint32_t) + sizeof(uint32_t) + passphrase.footprint() + iv.footprint() + data.footprint();
+  }
+};
+
+struct GetPublicKey final {
+  tl::string key;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = GET_PUBLIC_KEY_MAGIC}.store(tls);
+    key.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = GET_PUBLIC_KEY_MAGIC}.footprint() + key.footprint();
+  }
+};
+
+struct GetPrivateKey final {
+  tl::string key;
+  tl::string passphrase;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = GET_PRIVATE_KEY_MAGIC}.store(tls);
+    key.store(tls);
+    passphrase.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = GET_PRIVATE_KEY_MAGIC}.footprint() + key.footprint() + passphrase.footprint();
   }
 };
 

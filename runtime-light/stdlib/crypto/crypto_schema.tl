@@ -78,15 +78,24 @@ cbcEncrypt#6d4ee36a
    data         : string
    = String;
 
+getPublicKey#4b1e7d3d
+   key : string
+   = Maybe string;
+
+getPrivateKey#34eadfdb
+   key        : string
+   passphrase : string
+   = Maybe string;
+
 publicEncrypt#7612f4ad
    key  : string
    data : string
-   = String
+   = String;
 
 privateDecrypt#c6e91d4d
    key  : string
    data : string
-   = String
+   = String;
 
 hash#50732a27
     algorithm : HashAlgorithm
