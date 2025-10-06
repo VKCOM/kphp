@@ -15,6 +15,7 @@
 static uint32_t force_ipv4_mask = 0xff000000;
 static uint32_t force_ipv4_ip = 10 << 24;
 static char *force_ipv4_interface = NULL;
+bool allow_loopback = false;
 
 int parse_ipv4(const char *str, uint32_t *ip, uint32_t *mask) {
   int ip4[4], subnet;
@@ -55,6 +56,11 @@ OPTION_PARSER(OPT_NETWORK, "force-ipv4", required_argument, "in form [iface:]ip[
   return parse_ipv4(str, &force_ipv4_ip, &force_ipv4_mask);
 }
 
+OPTION_PARSER(OPT_NETWORK, "allow-loopback", no_argument, "тудушка") {
+  allow_loopback = true;
+  return 0;
+}
+
 unsigned get_my_ipv4() {
   struct ifaddrs *ifa_first, *ifa;
   unsigned my_ip = 0, my_netmask = -1;
@@ -67,7 +73,7 @@ unsigned get_my_ipv4() {
     if (ifa->ifa_addr == NULL || ifa->ifa_addr->sa_family != AF_INET) {
       continue;
     }
-    if (!strncmp(ifa->ifa_name, "lo", 2)) {
+    if (!allow_loopback && !strcmp(ifa->ifa_name, "lo")) {
       continue;
     }
     if (force_ipv4_interface != NULL && strcmp(ifa->ifa_name, force_ipv4_interface)) {
@@ -82,6 +88,13 @@ unsigned get_my_ipv4() {
       my_iface = ifa->ifa_name;
     }
   }
+
+  if (allow_loopback && !my_ip) {
+    my_ip = LOCALHOST;
+    my_netmask = 0xFFFFFF00;
+    my_iface = "lo";
+  }
+
   if (force_ipv4_mask != 0xff000000 || force_ipv4_ip != (10 << 24)) {
     assert(my_ip != 0 && "can't choose ip in given subnet");
   }
