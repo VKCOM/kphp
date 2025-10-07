@@ -56,7 +56,7 @@ OPTION_PARSER(OPT_NETWORK, "force-ipv4", required_argument, "in form [iface:]ip[
   return parse_ipv4(str, &force_ipv4_ip, &force_ipv4_mask);
 }
 
-OPTION_PARSER(OPT_NETWORK, "allow-loopback", no_argument, "тудушка") {
+OPTION_PARSER(OPT_NETWORK, "allow-loopback", no_argument, "allow use loopback with address 127.0.0.1") {
   allow_loopback = true;
   return 0;
 }
