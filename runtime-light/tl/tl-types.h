@@ -85,6 +85,25 @@ struct Bool final {
   }
 };
 
+struct u8 final {
+  using underlying_type = uint8_t;
+  underlying_type value{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    const auto opt_value{tlf.fetch_trivial<underlying_type>()};
+    value = opt_value.value_or(0);
+    return opt_value.has_value();
+  }
+
+  void store(tl::storer& tls) const noexcept {
+    tls.store_trivial<underlying_type>(value);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return sizeof(underlying_type);
+  }
+};
+
 struct i32 final {
   using underlying_type = int32_t;
   underlying_type value{};
@@ -1044,6 +1063,146 @@ public:
           }
         },
         value);
+  }
+};
+
+// ===== WEB TRANSFER LIB =====
+
+class WebError final {
+  static constexpr uint32_t WEB_ERROR_MAGIC = 0x99A3'16EE;
+
+public:
+  tl::i64 code;
+  tl::string description;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(WEB_ERROR_MAGIC)};
+    ok &= code.fetch(tlf);
+    ok &= description.fetch(tlf);
+    return ok;
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = WEB_ERROR_MAGIC}.footprint() + code.footprint() + description.footprint();
+  }
+};
+
+class SimpleWebTransferOpenResultOk final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC = 0x24A8'98FF;
+
+public:
+  tl::u64 desc;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC)};
+    ok &= desc.fetch(tlf);
+    return ok;
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC}.footprint() + desc.footprint();
+  }
+};
+
+class SimpleWebTransferOpenResponse final {
+
+public:
+  std::variant<tl::SimpleWebTransferOpenResultOk, tl::WebError> value;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::SimpleWebTransferOpenResultOk ok{};
+    tl::WebError error{};
+    if (ok.fetch(tlf)) {
+      value.emplace<tl::SimpleWebTransferOpenResultOk>(std::move(ok));
+      return true;
+    } else if (tlf.reset(0); error.fetch(tlf)) {
+      value.emplace<tl::WebError>(std::move(error));
+      return true;
+    }
+    return false;
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
+  }
+};
+
+class SimpleWebTransferPerformResultOk final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC = 0x77A8'98FF;
+
+public:
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC)};
+    return ok;
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC}.footprint();
+  }
+};
+
+class SimpleWebTransferPerformResponse final {
+
+public:
+  std::variant<tl::SimpleWebTransferPerformResultOk, tl::WebError> value;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::SimpleWebTransferPerformResultOk ok{};
+    tl::WebError error{};
+    if (ok.fetch(tlf)) {
+      value.emplace<tl::SimpleWebTransferPerformResultOk>(std::move(ok));
+      return true;
+    } else if (tlf.reset(0); error.fetch(tlf)) {
+      value.emplace<tl::WebError>(std::move(error));
+      return true;
+    }
+    return false;
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
+  }
+};
+
+struct WebPropertyValue final {
+  using value_type = std::variant<tl::Bool, tl::I64, tl::String, tl::Vector<tl::WebPropertyValue>, tl::Dictionary<tl::WebPropertyValue>>;
+  value_type value;
+
+  void store(tl::storer& tls) const noexcept {
+    std::visit([&tls](const auto& v) noexcept { v.store(tls); }, value);
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
+  }
+};
+
+struct WebProperty final {
+  tl::u64 id;
+  WebPropertyValue value;
+
+  void store(tl::storer& tls) const noexcept {
+    id.store(tls);
+    value.store(tls);
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return id.footprint() + value.footprint();
+  }
+};
+
+struct SimpleWebTransferConfig final {
+  tl::vector<tl::WebProperty> properties;
+
+  void store(tl::storer& tls) const noexcept {
+    properties.store(tls);
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return properties.footprint();
   }
 };
 
