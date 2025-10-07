@@ -15,3 +15,4 @@ constexpr uint32_t ip2uint(uint8_t a, uint8_t b, uint8_t c, uint8_t d) {
 }
 
 constexpr uint32_t LOCALHOST = ip2uint(127, 0, 0, 1);
+constexpr uint32_t PRIVATE_A_NETWORK = ip2uint(10, 0, 0, 0);

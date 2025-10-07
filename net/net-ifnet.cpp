@@ -13,7 +13,7 @@
 #include "common/options.h"
 
 static uint32_t force_ipv4_mask = 0xff000000;
-static uint32_t force_ipv4_ip = 10 << 24;
+static uint32_t force_ipv4_ip = PRIVATE_A_NETWORK;
 static char *force_ipv4_interface = NULL;
 bool allow_loopback = false;
 
