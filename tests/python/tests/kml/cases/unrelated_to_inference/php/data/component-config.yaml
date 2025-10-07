@@ -4,7 +4,7 @@ components:
     image: KPHP
     scope: Request
     args:
-      kml_dir: ${KPHP_KML_DIR}
+      kml-dir: ${KPHP_KML_DIR}
     links:
       instance_cache: instance_cache
   
