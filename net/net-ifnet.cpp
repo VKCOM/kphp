@@ -73,10 +73,10 @@ unsigned get_my_ipv4() {
     if (ifa->ifa_addr == NULL || ifa->ifa_addr->sa_family != AF_INET) {
       continue;
     }
-    if (!allow_loopback && !strcmp(ifa->ifa_name, "lo")) {
+    if (!allow_loopback && strcmp(ifa->ifa_name, "lo") == 0) {
       continue;
     }
-    if (force_ipv4_interface != NULL && strcmp(ifa->ifa_name, force_ipv4_interface)) {
+    if (force_ipv4_interface != NULL && strcmp(ifa->ifa_name, force_ipv4_interface) != 0) {
       continue;
     }
     unsigned ip = ntohl(((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr);
