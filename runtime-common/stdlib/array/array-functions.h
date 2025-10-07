@@ -6,10 +6,12 @@
 
 #include <cstdint>
 #include <limits>
+#include <numeric>
 #include <tuple>
 
 #include "common/type_traits/function_traits.h"
 #include "common/type_traits/list_of_types.h"
+#include "common/vector-product.h"
 #include "runtime-common/core/runtime-core.h"
 
 inline constexpr int64_t SORT_REGULAR = 0;
@@ -1166,4 +1168,53 @@ auto f$array_column(const Optional<T>& a, const mixed& column_key,
   }
 
   return f$array_column(a.val(), column_key, index_key);
+}
+
+template<class T>
+T vk_dot_product_sparse(const array<T>& a, const array<T>& b) noexcept(noexcept(std::declval<T&>() += std::declval<const T&>() * T())) {
+  T result = T();
+  for (const auto& it : a) {
+    const auto* b_val = b.find_value(it);
+    if (b_val && !f$is_null(*b_val)) {
+      result += it.get_value() * (*b_val);
+    }
+  }
+  return result;
+}
+
+template<class T>
+T vk_dot_product_dense(const array<T>& a, const array<T>& b) {
+  static_assert(!std::is_same<T, int>{}, "int is forbidden");
+
+  T result = T();
+  int64_t size = min(a.count(), b.count());
+  for (int64_t i = 0; i < size; i++) {
+    result += a.get_value(i) * b.get_value(i);
+  }
+  return result;
+}
+
+template<>
+inline int64_t vk_dot_product_dense<int64_t>(const array<int64_t>& a, const array<int64_t>& b) {
+  const int64_t size = min(a.count(), b.count());
+  const int64_t* ap = a.get_const_vector_pointer();
+  const int64_t* bp = b.get_const_vector_pointer();
+  return std::inner_product(ap, ap + size, bp, 0L);
+}
+
+template<>
+inline double vk_dot_product_dense<double>(const array<double>& a, const array<double>& b) {
+  int64_t size = min(a.count(), b.count());
+  const double* ap = a.get_const_vector_pointer();
+  const double* bp = b.get_const_vector_pointer();
+  return __dot_product(ap, bp, static_cast<int>(size));
+}
+
+template<class T>
+T f$vk_dot_product(const array<T>& a,
+                   const array<T>& b) noexcept(noexcept(std::declval<T&>() += std::declval<const T&>() * T()) && noexcept(std::declval<T&>() += T() * T())) {
+  if (a.is_vector() && b.is_vector()) {
+    return vk_dot_product_dense<T>(a, b);
+  }
+  return vk_dot_product_sparse<T>(a, b);
 }
