@@ -95,9 +95,8 @@ unsigned get_my_ipv4() {
     my_iface = "lo";
   }
 
-  if (force_ipv4_mask != 0xff000000 || force_ipv4_ip != (10 << 24)) {
-    assert(my_ip != 0 && "can't choose ip in given subnet");
-  }
+  assert(my_ip != 0 && "can't choose ip in given subnet");
+
   vkprintf (2, "using main IP %d.%d.%d.%d/%d at interface %s\n", (my_ip >> 24), (my_ip >> 16) & 255, (my_ip >> 8) & 255, my_ip & 255,
             __builtin_clz(~my_netmask), my_iface ?: "(none)");
   freeifaddrs(ifa_first);
