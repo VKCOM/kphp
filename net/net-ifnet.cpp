@@ -12,7 +12,7 @@
 #include "common/kprintf.h"
 #include "common/options.h"
 
-static uint32_t force_ipv4_mask = 0xff000000;
+static uint32_t force_ipv4_mask = PRIVATE_A_MASK;
 static uint32_t force_ipv4_ip = PRIVATE_A_NETWORK;
 static char *force_ipv4_interface = NULL;
 bool allow_loopback = false;
@@ -90,8 +90,8 @@ unsigned get_my_ipv4() {
   }
 
   if (allow_loopback && !my_ip) {
-    my_ip = LOCALHOST;
-    my_netmask = 0xFFFFFF00;
+    my_ip = LOCALHOST_NETWORK;
+    my_netmask = LOCALHOST_MASK;
     my_iface = "lo";
   }
 

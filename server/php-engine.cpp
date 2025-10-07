@@ -855,7 +855,7 @@ int rpcx_func_close(connection *c, int who __attribute__((unused))) {
 
 static bool check_tasks_invoker_pid(process_id_t tasks_invoker_pid) {
   if (tasks_invoker_pid.ip == 0) {
-    tasks_invoker_pid.ip = LOCALHOST;
+    tasks_invoker_pid.ip = LOCALHOST_NETWORK;
   }
   process_id_t lease_pid = get_lease_pid();
   return matches_pid(&tasks_invoker_pid, &lease_pid) != no_pid_match;
@@ -863,7 +863,7 @@ static bool check_tasks_invoker_pid(process_id_t tasks_invoker_pid) {
 
 static bool check_tasks_manager_pid(process_id_t tasks_manager_pid) {
   if (tasks_manager_pid.ip == 0) {
-    tasks_manager_pid.ip = LOCALHOST;
+    tasks_manager_pid.ip = LOCALHOST_NETWORK;
   }
   process_id_t rpc_main_target_pid = get_rpc_main_target_pid();
   return matches_pid(&tasks_manager_pid, &rpc_main_target_pid) != no_pid_match;

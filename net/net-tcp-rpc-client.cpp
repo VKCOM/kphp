@@ -154,7 +154,7 @@ static int tcp_rpcc_send_handshake_packet (struct connection *c) {
   P.flags = default_rpc_flags & RPC_CRYPTO_USE_CRC32C;
   if (!D->remote_pid.port) {
     const uint32_t remote_ip = inet_sockaddr_address(&c->remote_endpoint);
-    D->remote_pid.ip = (remote_ip == LOCALHOST ? 0 : remote_ip);
+    D->remote_pid.ip = (remote_ip == LOCALHOST_NETWORK ? 0 : remote_ip);
     D->remote_pid.port = inet_sockaddr_port(&c->remote_endpoint);
   }
   memcpy (&P.sender_pid, &PID, sizeof (struct process_id));
