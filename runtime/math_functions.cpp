@@ -34,44 +34,6 @@ int64_t secure_rand_buf(char* const buf, int64_t length) noexcept {
 }
 } // namespace
 
-int64_t f$bindec(const string& number) noexcept {
-  uint64_t v = 0;
-  bool bad_str_param = number.empty();
-  bool overflow = false;
-  for (string::size_type i = 0; i < number.size(); i++) {
-    const char c = number[i];
-    if (likely(vk::any_of_equal(c, '0', '1'))) {
-      v = math_functions_impl_::mult_and_add<2>(v, static_cast<uint8_t>(c - '0'), overflow);
-    } else {
-      bad_str_param = true;
-    }
-  }
-
-  if (unlikely(bad_str_param)) {
-    php_warning("Wrong parameter '%s' in function bindec", number.c_str());
-  }
-  if (unlikely(overflow)) {
-    php_warning("Integer overflow on converting '%s' in function bindec, "
-                "the result will be different from PHP",
-                number.c_str());
-  }
-  return static_cast<int64_t>(v);
-}
-
-string f$decbin(int64_t number) noexcept {
-  auto v = static_cast<uint64_t>(number);
-
-  char s[66];
-  int i = 65;
-
-  do {
-    s[--i] = static_cast<char>((v & 1) + '0');
-    v >>= 1;
-  } while (v > 0);
-
-  return {s + i, static_cast<string::size_type>(65 - i)};
-}
-
 double f$lcg_value() {
   dl::enter_critical_section(); // OK
 
