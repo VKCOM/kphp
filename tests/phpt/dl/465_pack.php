@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
   var_dump (pack ("A5a4Ah2H5H2H3h", "h h", 'q q', 't t', 345, "ABCDE", "ABCDE", "ABCDEF", "A1"));
   var_dump (pack ("A5a4Ah3H5H4H6", "h h", 'q q', 't t', 345, "ABCDE", "ABCDE", "ABCDEF"));
