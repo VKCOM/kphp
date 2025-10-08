@@ -13,6 +13,9 @@ from python.lib.colors import red, green, yellow, blue, cyan
 from python.lib.file_utils import search_php_bin
 from python.lib.nocc_for_kphp_tester import nocc_start_daemon_in_background
 from python.lib.kphp_run_once import KphpRunOnce
+from python.lib import tcp
+
+TCP_SERVER_TAG_PREFIX = "tcp_server:"
 
 
 class TestFile:
@@ -24,6 +27,9 @@ class TestFile:
         self.out_regexps = out_regexps
         self.forbidden_regexps = forbidden_regexps
         self.php_version = next((tag for tag in tags if tag.startswith("php")), "php7.4")
+        self.tcp_port = next(
+            (int(tag[len(TCP_SERVER_TAG_PREFIX):]) for tag in tags if tag.startswith(TCP_SERVER_TAG_PREFIX)), None
+        )
 
     def is_ok(self):
         return "ok" in self.tags
@@ -352,22 +358,23 @@ def run_test(use_nocc, cxx_name, k2_bin, test: TestFile):
     if k2_bin is not None:
         test.set_up_env_for_k2()
 
-    if k2_bin is not None and not test.is_available_for_k2():
-        test_result = TestResult.k2_skipped(test)
-    elif test.is_php8() and runner._php_bin is None:  # if php8 doesn't exist on a machine
-        test_result = TestResult.skipped(test)
-    elif test.is_kphp_should_fail():
-        test_result = run_fail_test(test, runner)
-    elif test.is_kphp_should_warn():
-        test_result = run_warn_test(test, runner)
-    elif test.is_kphp_runtime_should_warn():
-        test_result = run_runtime_warn_test(test, runner)
-    elif test.is_kphp_runtime_should_not_warn():
-        test_result = run_runtime_not_warn_test(test, runner)
-    elif test.is_ok():
-        test_result = run_ok_test(test, runner)
-    else:
-        test_result = TestResult.skipped(test)
+    with tcp.serving(test.tcp_port):
+        if k2_bin is not None and not test.is_available_for_k2():
+            test_result = TestResult.k2_skipped(test)
+        elif test.is_php8() and runner._php_bin is None:  # if php8 doesn't exist on a machine
+            test_result = TestResult.skipped(test)
+        elif test.is_kphp_should_fail():
+            test_result = run_fail_test(test, runner)
+        elif test.is_kphp_should_warn():
+            test_result = run_warn_test(test, runner)
+        elif test.is_kphp_runtime_should_warn():
+            test_result = run_runtime_warn_test(test, runner)
+        elif test.is_kphp_runtime_should_not_warn():
+            test_result = run_runtime_not_warn_test(test, runner)
+        elif test.is_ok():
+            test_result = run_ok_test(test, runner)
+        else:
+            test_result = TestResult.skipped(test)
 
     runner.try_remove_kphp_build_trash()
 
