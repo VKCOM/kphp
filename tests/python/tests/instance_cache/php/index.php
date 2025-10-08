@@ -1,7 +1,5 @@
 <?php
 
-require_once('polymorphic_classes.php');
-
 function main() {
   switch ($_SERVER["PHP_SELF"]) {
     case "/store": {
@@ -16,21 +14,14 @@ function main() {
       test_delete();
       return;
     }
-    case "/polymorphic_store": {
-      test_polymorphic_store();
-      return;
-    }
-    case "/polymorphic_store_and_verify": {
-      test_polymorphic_fetch_and_modify();
-      return;
-    }
   }
 
   critical_error("unknown test " . $_SERVER["PHP_SELF"]);
 }
 
 
-/** @kphp-immutable-class */
+/** @kphp-immutable-class
+ *  @kphp-serializable */
 class TestClassA {
   function __construct(TestClassA $a1 = null, TestClassA $a2 = null,
                        TestClassB $b1 = null, TestClassB $b2 = null,
@@ -48,28 +39,30 @@ class TestClassA {
       array_push($this->a, $this);
     }
     $this->b = tuple([$b1, $b2, $b1, $b1, $b2], 100);
-    $this->ab = shape([
-      'b' => tuple(10, $b2),
-      'c' => shape([
-        'arr' => [$c1, $c1, $c2, $c2, $c2, $c2]
-      ])
-    ]);
+// shape is not serializable. So it is temporary commented
+//     $this->ab = shape([
+//       'b' => tuple(10, $b2),
+//       'c' => shape([
+//         'arr' => [$c1, $c1, $c2, $c2, $c2, $c2]
+//       ])
+//     ]);
   }
 
-  /** @var TestClassA[] */
+  /** @var TestClassA[]
+   *  @kphp-serialized-field 0 */
   public $a = [];
 
-  /** @var tuple(TestClassB[]|null, int) */
+  /** @var tuple(TestClassB[]|null, int)
+   *  @kphp-serialized-field 1 */
   public $b;
 
-  /** @var shape(b:tuple(int, TestClassB), c:shape(arr:TestClassC[]|false)) */
-  public $ab;
-
-  /** @var string[] */
+  /** @var string[]
+   *  @kphp-serialized-field 3 */
   public $huge_arr = [];
 }
 
-/** @kphp-immutable-class */
+/** @kphp-immutable-class
+ *  @kphp-serializable */
 class TestClassB {
   function __construct(int $size, TestClassA $a = null) {
     while (--$size > 0) {
@@ -80,14 +73,17 @@ class TestClassB {
     }
   }
 
-  /** @var string[] */
+  /** @var string[]
+   *  @kphp-serialized-field 0 */
   public $arr = [];
 
-  /** @var tuple(string, TestClassA)|null */
+  /** @var tuple(string, TestClassA)|null
+   *  @kphp-serialized-field 1 */
   public $a = null;
 }
 
-/** @kphp-immutable-class */
+/** @kphp-immutable-class
+ *  @kphp-serializable */
 class TestClassC {
   function __construct(int $size, TestClassB $b = null) {
     while (--$size > 0) {
@@ -95,21 +91,23 @@ class TestClassC {
     }
 
     if ($b) {
-      $this->b = shape([
-        'key' => TestClassB::class,
-        'value' => tuple(0.1, [$b, $b, $b, $b])
-      ]);
+//       $this->b = shape([
+//         'key' => TestClassB::class,
+//         'value' => tuple(0.1, [$b, $b, $b, $b])
+//       ]);
     }
   }
 
-  /** @var string[] */
+  /** @var string[]
+   *  @kphp-serialized-field 0 */
   public $arr = [];
 
-  /** @var shape(key:string, value:tuple(double, TestClassB[]|null)|false)|null */
-  public $b = null;
+//   /** @var shape(key:string, value:tuple(double, TestClassB[]|null)|false)|null */
+//   public $b = null;
 }
 
-/** @kphp-immutable-class */
+/** @kphp-immutable-class
+ *  @kphp-serializable */
 class TestClassABC {
   function __construct() {
     $a1 = new TestClassA();
@@ -126,11 +124,14 @@ class TestClassABC {
     $this->c = [$c1, new TestClassC(15, $this->b[1])];
   }
 
-  /** @var TestClassA[] */
+  /** @var TestClassA[]
+   *  @kphp-serialized-field 0 */
   public $a = [];
-  /** @var TestClassB[] */
+  /** @var TestClassB[]
+   *  @kphp-serialized-field 1 */
   public $b = [];
-  /** @var TestClassC[] */
+  /** @var TestClassC[]
+   *  @kphp-serialized-field 2 */
   public $c = [];
 }
 
@@ -146,7 +147,7 @@ function test_fetch_and_verify() {
   echo json_encode([
     "a" => $instance->a[0] === $instance->a[2]->a[0],
     "b" => $instance->b[0] === $instance->b[1]->a[1]->b[0][0],
-    "c" => $instance->c[0] === $instance->a[2]->a[1]->ab["c"]["arr"][1],
+//     "c" => $instance->c[0] === $instance->a[2]->a[1]->ab["c"]["arr"][1],
   ]);
 }
 

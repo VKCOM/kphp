@@ -1,5 +1,5 @@
 @kphp_should_fail k2_skip
-/Field ix of immutable class Y has mutable derived X12/
+/Can not store instance of non-serializable class Y with instance_cache_store call/
 <?php
 
 require_once 'kphp_tester_include.php';

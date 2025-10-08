@@ -1,4 +1,5 @@
-@ok non-idempotent k2_skip
+@kphp_should_fail
+/Can not store instance of non-serializable class Y with instance_cache_store call/
 <?php
 
 require_once 'kphp_tester_include.php';

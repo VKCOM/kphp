@@ -2,8 +2,10 @@
 
 namespace Classes;
 
-/** @kphp-immutable-class */
+/** @kphp-immutable-class
+ *  @kphp-serializable */
 class AAA {
+    /** @kphp-serialized-field 0 */
     public $x = 1;
 
     /**

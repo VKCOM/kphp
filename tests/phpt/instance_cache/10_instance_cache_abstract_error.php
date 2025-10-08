@@ -4,7 +4,8 @@
 
 require_once 'kphp_tester_include.php';
 
-/** @kphp-immutable-class */
+/** @kphp-immutable-class
+ *  @kphp-serializable */
 abstract class AbstractClass {
     abstract protected function getValue();
 
