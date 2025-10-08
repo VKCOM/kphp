@@ -10,7 +10,6 @@
 #include <dirent.h>
 #include <memory>
 #include <optional>
-#include <stack>
 #include <string_view>
 #include <sys/stat.h>
 #include <tuple>
@@ -119,7 +118,7 @@ inline bool ends_with(const char* str, const char* suffix) noexcept {
 }
 
 class dir_traverser final : public kphp::kml::dir_traverser_interface<dir_traverser, file_reader> {
-  std::stack<std::pair<DIR*, kphp::stl::string<kphp::memory::platform_allocator>>> m_dirs;
+  kphp::stl::stack<std::pair<DIR*, kphp::stl::string<kphp::memory::platform_allocator>>, kphp::memory::platform_allocator> m_dirs;
 
   void close() noexcept {
     while (!m_dirs.empty()) {
