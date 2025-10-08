@@ -31,7 +31,7 @@ void init_version_string(const char* version) {
     strcpy(date_str, "unknown time");
   }
   snprintf(FullVersionStr, sizeof(FullVersionStr) - 1,
-           "%s compiled at %s by gcc " __VERSION__ " "
+           "%s compiled at %s by " CMAKE_CXX_COMPILER_ID_STR " " CMAKE_CXX_COMPILER_VERSION_STR " "
 #ifdef __LP64__
            "64-bit"
 #else
