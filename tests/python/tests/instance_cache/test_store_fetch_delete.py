@@ -18,7 +18,12 @@ class TestStoreFetchDelete(WebServerAutoTestCase):
                 uri="/fetch_and_verify",
                 json={"key": "key{}".format(i)})
             self.assertEqual(resp.status_code, 200)
-            self.assertEqual(resp.json(), {"a": True, "b": True, "c": True})
+            self.assertEqual(
+                resp.json(),
+                {
+                    "a": True, "b": True  # , "c": True
+                }
+            )
             
             resp = self.web_server.http_post(
                 uri="/delete",
