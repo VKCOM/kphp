@@ -7,6 +7,7 @@
 #include <netdb.h>
 #include <sys/poll.h>
 
+#include "common/kprintf.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/allocator.h"
 #include "runtime/critical_section.h"
@@ -63,6 +64,23 @@ Optional<int64_t> connect_to_address(const string& host, int64_t port, double en
     faulter(-3, string("Can't resolve host \"%s\""), host);
     return {};
   }
+
+  // The following code block prints the host resolving result for debugging.
+#if 0
+  string ai_host(NI_MAXHOST, false);
+  string ai_port(NI_MAXSERV, false);
+  for (auto ai = result; ai != nullptr; ai = ai->ai_next) {
+    if (getnameinfo(ai->ai_addr, ai->ai_addrlen, ai_host.buffer(), ai_host.capacity(), ai_port.buffer(), ai_port.capacity(), NI_NUMERICHOST | NI_NUMERICSERV) ==
+        0) {
+      kprintf("found address info: %s:%s\n", ai_host.buffer(), ai_port.buffer());
+    }
+  }
+  if (getnameinfo(result->ai_addr, result->ai_addrlen, ai_host.buffer(), ai_host.capacity(), ai_port.buffer(), ai_port.capacity(),
+                  NI_NUMERICHOST | NI_NUMERICSERV) == 0) {
+    kprintf("will use %s:%s\n", ai_host.buffer(), ai_port.buffer());
+  }
+#endif
+
   /* result points to an allocated dynamically linked list of
    * addrinfo structures linked by the ai_next component.
    * There are several reasons for this. We will use the first element */
@@ -94,6 +112,17 @@ Optional<int64_t> connect_to_address(const string& host, int64_t port, double en
     close(socket_fd);
     return {};
   } else {
+    int error;
+    socklen_t error_size = sizeof(error);
+    if (getsockopt(socket_fd, SOL_SOCKET, SO_ERROR, &error, &error_size) != 0) {
+      faulter(-3, string("Can't connect to tcp socket. System call 'getsockopt(...)' got error: %s"), string(errno));
+      close(socket_fd);
+      return {};
+    } else if (error != 0) {
+      faulter(-3, string("Can't connect to tcp socket. Socket got error: %s"), string(error));
+      close(socket_fd);
+      return {};
+    }
     int old_flags = fcntl(socket_fd, F_GETFL);
     fcntl(socket_fd, F_SETFL, old_flags & ~O_NONBLOCK);
     return socket_fd;
@@ -221,8 +250,8 @@ Optional<string> tcp_fgets(const Stream& stream, int64_t length) {
   if (res == nullptr) {
     return {};
   }
-  string::size_type end_pos = data.find(string("\n")) + 1;
-  return data.substr(0, end_pos);
+  data.shrink(strlen(res));
+  return data;
 }
 
 Optional<string> tcp_fgetc(const Stream& stream) {
