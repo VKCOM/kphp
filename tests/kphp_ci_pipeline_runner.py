@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import curses
+import math
 import multiprocessing
 import os
 import signal
@@ -232,6 +233,16 @@ def parse_args():
 
     return parser.parse_args()
 
+def _calculate_pytest_jobs_count(default_percent: int = 95) -> int:
+    """
+    What percentage of the total number of cores do we use to run parallel tests.
+    If you set a large value, the cores may start to idle.
+    """
+
+    cpu_count = multiprocessing.cpu_count()
+    percent = int(os.getenv("FORCE_PYTEST_JOBS_PERCENT", default_percent))
+
+    return math.floor(cpu_count * percent / 100)
 
 if __name__ == "__main__":
     curses.setupterm()
@@ -252,7 +263,7 @@ if __name__ == "__main__":
     )
 
     use_nocc_option = "--use-nocc" if args.use_nocc else ""
-    n_cpu = multiprocessing.cpu_count()
+    n_cpu = _calculate_pytest_jobs_count()
 
     cmake_options = []
     env_vars = []
