@@ -362,7 +362,7 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
   co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
 }
 
-kphp::coro::task<Optional<string>> f$openssl_pkey_get_public(const string& key) noexcept {
+kphp::coro::task<Optional<string>> f$openssl_pkey_get_public(string key) noexcept {
   tl::GetPublicKey get_public_key{.key = {.value = {key.c_str(), key.size()}}};
   tl::storer tls{get_public_key.footprint()};
   get_public_key.store(tls);
@@ -388,23 +388,23 @@ kphp::coro::task<Optional<string>> f$openssl_pkey_get_public(const string& key) 
   co_return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
 }
 
-kphp::coro::task<Optional<string>> f$openssl_pkey_get_private(const string& key, const string& passphrase) noexcept {
+kphp::coro::task<Optional<string>> f$openssl_pkey_get_private(string key, string passphrase) noexcept {
   tl::GetPrivateKey get_private_key{
-    .key = {.value = {key.c_str(), key.size()}},
-    .passphrase = {.value = {passphrase.c_str(), passphrase.size()}},
+      .key = {.value = {key.c_str(), key.size()}},
+      .passphrase = {.value = {passphrase.c_str(), passphrase.size()}},
   };
   tl::storer tls{get_private_key.footprint()};
   get_private_key.store(tls);
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
-  co_return false;
+    co_return false;
   }
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response_bytes{};
   if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response_bytes)))) [[unlikely]] {
-  co_return false;
+    co_return false;
   }
 
   tl::fetcher tlf{response_bytes};
@@ -417,11 +417,10 @@ kphp::coro::task<Optional<string>> f$openssl_pkey_get_private(const string& key,
   co_return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
 }
 
-// TODO remove '$' from var names
-kphp::coro::task<bool> f$openssl_public_encrypt(string $data, string& $encrypted_data, string $public_key) noexcept {
+kphp::coro::task<bool> f$openssl_public_encrypt(string data, string& encrypted_data, string public_key) noexcept {
   tl::PublicEncrypt public_encrypt{
-      .key = {.value = {$public_key.c_str(), $public_key.size()}},
-      .data = {.value = {$data.c_str(), $data.size()}},
+      .key = {.value = {public_key.c_str(), public_key.size()}},
+      .data = {.value = {data.c_str(), data.size()}},
   };
   tl::storer tls{public_encrypt.footprint()};
   public_encrypt.store(tls);
@@ -440,24 +439,24 @@ kphp::coro::task<bool> f$openssl_public_encrypt(string $data, string& $encrypted
   tl::fetcher tlf{response_bytes};
   tl::String response{};
   kphp::log::assertion(response.fetch(tlf));
-  $encrypted_data = {response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
+  encrypted_data = {response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
   co_return true;
 }
 
 kphp::coro::task<bool> f$openssl_public_encrypt(string data, mixed& result, string key) noexcept {
   string result_string;
   if (co_await f$openssl_public_encrypt(data, result_string, key)) {
-    result = result_string;
+    result = std::move(result_string);
     co_return true;
   }
-  result = mixed();
+  result = mixed{};
   co_return false;
 }
 
-kphp::coro::task<bool> f$openssl_private_decrypt(string $data, string& $decrypted_data, string $private_key) noexcept {
+kphp::coro::task<bool> f$openssl_private_decrypt(string data, string& decrypted_data, string private_key) noexcept {
   tl::PrivateDecrypt private_decrypt{
-      .key = {.value = {$private_key.c_str(), $private_key.size()}},
-      .data = {.value = {$data.c_str(), $data.size()}},
+      .key = {.value = {private_key.c_str(), private_key.size()}},
+      .data = {.value = {data.c_str(), data.size()}},
   };
   tl::storer tls{private_decrypt.footprint()};
   private_decrypt.store(tls);
@@ -476,17 +475,17 @@ kphp::coro::task<bool> f$openssl_private_decrypt(string $data, string& $decrypte
   tl::fetcher tlf{response_bytes};
   tl::String response{};
   kphp::log::assertion(response.fetch(tlf));
-  $decrypted_data = {response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
+  decrypted_data = {response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
   co_return true;
 }
 
-kphp::coro::task<bool> f$openssl_private_decrypt(string data, mixed& result, string key) noexcept {
+kphp::coro::task<bool>  f$openssl_private_decrypt(string data, mixed& result, string key) noexcept {
   string result_string;
   if (co_await f$openssl_private_decrypt(data, result_string, key)) {
-    result = result_string;
+    result = std::move(result_string);
     co_return true;
   }
-  result = mixed();
+  result = mixed{};
   co_return false;
 }
 
