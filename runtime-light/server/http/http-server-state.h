@@ -47,6 +47,7 @@ inline constexpr std::string_view CONTENT_LENGTH = "content-length";
 inline constexpr std::string_view AUTHORIZATION = "authorization";
 inline constexpr std::string_view ACCEPT_ENCODING = "accept-encoding";
 inline constexpr std::string_view CONTENT_ENCODING = "content-encoding";
+inline constexpr std::string_view CONTENT_DISPOSITION = "content-disposition";
 
 } // namespace headers
 
