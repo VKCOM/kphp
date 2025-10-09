@@ -7,6 +7,7 @@
 #include <concepts>
 #include <coroutine>
 #include <cstdint>
+#include <memory>
 #include <optional>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
