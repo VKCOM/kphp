@@ -231,22 +231,6 @@ int32_t k2_open(uint64_t* stream_d, size_t name_len, const char* name);
 int32_t k2_fopen(uint64_t* fd, const char* pathname, size_t pathname_len, const char* mode, size_t mode_len);
 
 /**
- * Determines whether the file associated with the given file descriptor `fd` is at the end-of-file (EOF) position.
- *
- * @param fd The file descriptor of the file to check.
- * @param result A pointer to an integer where the result will be stored:
- *               `0` => The file is not at the end-of-file position.
- *               `1` => The file is at the end-of-file position.
- *
- * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
- *
- * Possible `errno` values:
- * `EINVAL` => The provided `fd` is not a valid file descriptor, or `result` is `NULL`.
- * `ENOSYS` => Internal error.
- */
-int32_t k2_feof(uint64_t fd, int32_t* result);
-
-/**
  * Opens a directory stream corresponding to the directory named by the given path.
  *
  * @param `dd` A pointer to a `uint64_t` where the directory descriptor will be stored upon success.
