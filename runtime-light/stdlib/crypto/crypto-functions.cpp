@@ -479,7 +479,7 @@ kphp::coro::task<bool> f$openssl_private_decrypt(string data, string& decrypted_
   co_return true;
 }
 
-kphp::coro::task<bool>  f$openssl_private_decrypt(string data, mixed& result, string key) noexcept {
+kphp::coro::task<bool> f$openssl_private_decrypt(string data, mixed& result, string key) noexcept {
   string result_string;
   if (co_await f$openssl_private_decrypt(data, result_string, key)) {
     result = std::move(result_string);
