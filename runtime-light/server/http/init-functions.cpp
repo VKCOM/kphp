@@ -26,6 +26,7 @@
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
+#include "runtime-light/server/http/multipart.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -320,7 +321,10 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
     if (content_type == CONTENT_TYPE_APP_FORM_URLENCODED) {
       f$parse_str(body_str, superglobals.v$_POST);
     } else if (content_type.starts_with(CONTENT_TYPE_MULTIPART_FORM_DATA)) {
-      kphp::log::error("unsupported content-type: {}", CONTENT_TYPE_MULTIPART_FORM_DATA);
+      std::string_view boundary{parse_boundary(content_type)};
+      if (!boundary.empty()) {
+        kphp::http::parse_multipart({body_str.c_str(), body_str.size()}, boundary, superglobals.v$_POST, superglobals.v$_FILES);
+      }      
     } else {
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body_str));
     }
