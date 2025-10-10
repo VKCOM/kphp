@@ -12,7 +12,7 @@ prepend(STDLIB_SYSTEM stdlib/system/ system-functions.cpp)
 prepend(STDLIB_SERVER stdlib/server/ url-functions.cpp
         net-functions.cpp)
 prepend(STDLIB_VKEXT stdlib/vkext/ string-processing.cpp
-        vkext-functions.cpp)
+        vkext-functions.cpp vkext-stats.cpp)
 
 if(COMPILER_CLANG)
     set_source_files_properties(${RUNTIME_COMMON_DIR}/stdlib/vkext/string-processing.cpp PROPERTIES COMPILE_FLAGS -Wno-invalid-source-encoding)
