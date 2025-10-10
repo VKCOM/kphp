@@ -402,8 +402,3 @@ kphp::coro::task<> f$uksort(array<T>& a, Comparator compare) {
     co_return a.ksort(std::move(compare));
   }
 }
-
-template<class T>
-T f$vk_dot_product(const array<T>& /*unused*/, const array<T>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
-}
