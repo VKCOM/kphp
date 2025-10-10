@@ -69,6 +69,10 @@ void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view v
   ini_opts.set_value(key_str, value_str);
 }
 
+void ComponentState::parse_kml_arg(std::string_view kml_dir) noexcept {
+  kml_component_state.init(kml_dir);
+}
+
 void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexcept {
   auto expected_canonicalized_path{k2::canonicalize(value_view)};
   if (!expected_canonicalized_path) [[unlikely]] {
@@ -111,6 +115,8 @@ void ComponentState::parse_args() noexcept {
 
     if (key_view.starts_with(INI_ARG_PREFIX)) {
       parse_ini_arg(key_view, value_view);
+    } else if (key_view == KML_DIR_ARG) {
+      parse_kml_arg(value_view);
     } else if (key_view == RUNTIME_CONFIG_ARG) [[likely]] {
       parse_runtime_config_arg(value_view);
     } else {
