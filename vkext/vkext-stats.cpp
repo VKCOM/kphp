@@ -224,7 +224,7 @@ PHP_FUNCTION (vk_stats_hll_count) {
 
 /**
  * Do not change implementation of this hash function, because hashes may be saved in a permanent storage.
- * A full copy of the same function exists in vkext_stats.cpp in KPHP.
+ * A full copy of the same function exists in vkext-stats.cpp in KPHP.
  */
 long long dl_murmur64a_hash(const void *data, size_t len) {
   assert ((len & 7) == 0);
