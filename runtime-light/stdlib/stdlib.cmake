@@ -8,6 +8,7 @@ prepend(
   diagnostics/contextual-logger.cpp
   diagnostics/error-handling-state.cpp
   fork/fork-state.cpp
+  fork/wait-queue-state.cpp
   instance-cache/instance-cache-state.cpp
   job-worker/job-worker-api.cpp
   job-worker/job-worker-client-state.cpp

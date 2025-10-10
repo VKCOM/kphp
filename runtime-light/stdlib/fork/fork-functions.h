@@ -170,25 +170,3 @@ inline kphp::coro::task<> f$sched_yield_sleep(double duration) noexcept {
 inline int64_t f$get_running_fork_id() noexcept {
   return ForkInstanceState::get().current_id;
 }
-
-inline int64_t f$wait_queue_create() {
-  kphp::log::info("called stub wait_queue_create()");
-  return 0;
-}
-
-inline int64_t f$wait_queue_create(const mixed& /*resumable_ids*/) {
-  kphp::log::info("called stub wait_queue_create(ids)");
-  return 0;
-}
-
-inline int64_t f$wait_queue_push(int64_t /*queue_id*/, const mixed& /*resumable_ids*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-inline bool f$wait_queue_empty(int64_t /*queue_id*/) {
-  kphp::log::error("call to unsupported function");
-}
-
-inline Optional<int64_t> f$wait_queue_next(int64_t /*queue_id*/, double /*timeout*/ = -1.0) {
-  kphp::log::error("call to unsupported function");
-}
