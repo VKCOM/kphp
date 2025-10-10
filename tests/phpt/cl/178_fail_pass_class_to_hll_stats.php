@@ -1,4 +1,4 @@
-@kphp_should_fail k2_skip
+@kphp_should_fail
 /conversion from A to mixed is forbidden/
 <?php
 class A {}
