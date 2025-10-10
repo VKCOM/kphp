@@ -6,6 +6,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/state/image-state.h"
+#include "runtime-light/stdlib/fork/wait-queue-future.h"
 #include "runtime-light/stdlib/visitors/shape-visitors.h"
 
 class ToArrayVisitor {
@@ -54,6 +55,11 @@ private:
     }
 
     add_value(field_name, converted_value);
+  }
+
+  template<typename T>
+  void process_impl(const char* field_name, const kphp::forks::wait_queue_future<T>& value) noexcept {
+    add_value(field_name, value.m_future_id);
   }
 
   template<class I>

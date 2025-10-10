@@ -119,6 +119,9 @@ inline bool f$wait_concurrently(const mixed& resumable_id) {
 void f$sched_yield();
 void f$sched_yield_sleep(double timeout);
 
+template<typename T>
+using future_queue = int64_t;
+
 int64_t f$wait_queue_create();
 int64_t f$wait_queue_create(const mixed& resumable_ids);
 int64_t f$wait_queue_push(int64_t queue_id, const mixed& resumable_ids);
