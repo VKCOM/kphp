@@ -21,18 +21,18 @@
 
 namespace {
 
-bool is_hll_unpacked(const string& hll) {
+bool is_hll_unpacked(const string& hll) noexcept {
   return hll.empty() || (hll[0] != HLL_PACK_CHAR && hll[0] != HLL_PACK_CHAR_V2);
 }
 
-int get_hll_size(const string& hll) {
+int get_hll_size(const string& hll) noexcept {
   if (is_hll_unpacked(hll)) {
     return hll.size();
   }
   return hll[0] == HLL_PACK_CHAR ? (1 << 8) : (1 << (hll[1] - '0'));
 }
 
-int unpack_hll(const string& hll, char* res) {
+int unpack_hll(const string& hll, char* res) noexcept {
   assert(!is_hll_unpacked(hll));
   int m = get_hll_size(hll);
   int pos = 1 + (hll[0] == HLL_PACK_CHAR_V2);
@@ -58,7 +58,7 @@ int unpack_hll(const string& hll, char* res) {
   return m;
 }
 
-Optional<double> hll_count(const string& hll, int m) {
+Optional<double> hll_count(const string& hll, int m) noexcept {
   char hll_buf[HLL_BUF_SIZE];
 
   double pow_2_32 = (1LL << 32);
@@ -103,7 +103,7 @@ Optional<double> hll_count(const string& hll, int m) {
  * Do not change implementation of this hash function, because hashes may be saved in a permanent storage.
  * A full copy of the same function exists in vkext-stats.c in vkext.
  */
-long long dl_murmur64a_hash(const void* data, size_t len) {
+long long dl_murmur64a_hash(const void* data, size_t len) noexcept {
   assert((len & 7) == 0);
   unsigned long long m = 0xc6a4a7935bd1e995;
   int r = 47;
@@ -148,7 +148,7 @@ long long dl_murmur64a_hash(const void* data, size_t len) {
   return h;
 }
 
-void hll_add_shifted(unsigned char* hll, int hll_size, long long value) {
+void hll_add_shifted(unsigned char* hll, int hll_size, long long value) noexcept {
   unsigned long long hash = dl_murmur64a_hash(&(value), sizeof(long long));
   unsigned int idx = hash >> (64LL - hll_size);
   unsigned char rank = (hash == 0) ? 0 : (unsigned char)fmin(__builtin_ctzll(hash) + 1, 64 - hll_size);
@@ -159,7 +159,7 @@ void hll_add_shifted(unsigned char* hll, int hll_size, long long value) {
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ copypaste from common/statistics.c
-string hll_pack(const string& s, int len) {
+string hll_pack(const string& s, int len) noexcept {
   if (len > MAX_HLL_SIZE || len == 0 || s[0] == HLL_PACK_CHAR || s[0] == HLL_PACK_CHAR_V2) {
     return s;
   }
@@ -185,7 +185,7 @@ string hll_pack(const string& s, int len) {
 
 }
 
-Optional<string> f$vk_stats_hll_merge(const array<mixed>& a) {
+Optional<string> f$vk_stats_hll_merge(const array<mixed>& a) noexcept {
   string result;
   char* result_buff = nullptr;
   int result_len = -1;
@@ -231,7 +231,7 @@ Optional<string> f$vk_stats_hll_merge(const array<mixed>& a) {
   return result;
 }
 
-Optional<string> f$vk_stats_hll_add(const string& hll, const array<mixed>& a) {
+Optional<string> f$vk_stats_hll_add(const string& hll, const array<mixed>& a) noexcept {
   auto res = string(HLL_BUF_SIZE, false);
   auto hll_buf = res.buffer();
 
@@ -251,14 +251,14 @@ Optional<string> f$vk_stats_hll_add(const string& hll, const array<mixed>& a) {
   return res;
 }
 
-Optional<string> f$vk_stats_hll_create(const array<mixed>& a, int64_t size) {
+Optional<string> f$vk_stats_hll_create(const array<mixed>& a, int64_t size) noexcept {
   if (size != (1 << 8) && size != (1 << 14)) {
     return false;
   }
   return f$vk_stats_hll_add(string((string::size_type)size, (char)HLL_FIRST_RANK_CHAR), a);
 }
 
-Optional<double> f$vk_stats_hll_count(const string& hll) {
+Optional<double> f$vk_stats_hll_count(const string& hll) noexcept {
   int size = get_hll_size(hll);
   if (size == (1 << 8) || size == (1 << 14)) {
     return hll_count(hll, size);
@@ -267,14 +267,14 @@ Optional<double> f$vk_stats_hll_count(const string& hll) {
   }
 }
 
-Optional<string> f$vk_stats_hll_pack(const string& hll) {
+Optional<string> f$vk_stats_hll_pack(const string& hll) noexcept {
   if (!is_hll_unpacked(hll)) {
     return false;
   }
   return hll_pack(hll, hll.size());
 }
 
-Optional<string> f$vk_stats_hll_unpack(const string& hll) {
+Optional<string> f$vk_stats_hll_unpack(const string& hll) noexcept {
   if (is_hll_unpacked(hll)) {
     return false;
   }
@@ -286,6 +286,6 @@ Optional<string> f$vk_stats_hll_unpack(const string& hll) {
   return string(res, m);
 }
 
-bool f$vk_stats_hll_is_packed(const string& hll) {
+bool f$vk_stats_hll_is_packed(const string& hll) noexcept {
   return !is_hll_unpacked(hll);
 }
