@@ -26,6 +26,7 @@
 #include "runtime-light/stdlib/diagnostics/contextual-logger.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
+#include "runtime-light/stdlib/fork/wait-queue-state.h"
 #include "runtime-light/stdlib/instance-cache/instance-cache-state.h"
 #include "runtime-light/stdlib/job-worker/job-worker-client-state.h"
 #include "runtime-light/stdlib/kml/kml-state.h"
@@ -91,6 +92,7 @@ struct InstanceState final : vk::not_copyable {
   kphp::coro::io_scheduler io_scheduler;
   CoroutineInstanceState coroutine_instance_state;
   ForkInstanceState fork_instance_state;
+  WaitQueueInstanceState wait_queue_instance_state;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
   RuntimeContext runtime_context;
