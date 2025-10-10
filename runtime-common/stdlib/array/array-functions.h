@@ -1211,8 +1211,7 @@ inline double vk_dot_product_dense<double>(const array<double>& a, const array<d
 }
 
 template<class T>
-T f$vk_dot_product(const array<T>& a,
-                   const array<T>& b) noexcept {
+T f$vk_dot_product(const array<T>& a, const array<T>& b) noexcept {
   if (a.is_vector() && b.is_vector()) {
     return vk_dot_product_dense<T>(a, b);
   }
