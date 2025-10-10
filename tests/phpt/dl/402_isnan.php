@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
   $a[] = acos (5);
   $a[] = acos (0);
