@@ -1171,7 +1171,7 @@ auto f$array_column(const Optional<T>& a, const mixed& column_key,
 }
 
 template<class T>
-T vk_dot_product_sparse(const array<T>& a, const array<T>& b) noexcept(noexcept(std::declval<T&>() += std::declval<const T&>() * T())) {
+T vk_dot_product_sparse(const array<T>& a, const array<T>& b) noexcept {
   T result = T();
   for (const auto& it : a) {
     const auto* b_val = b.find_value(it);
@@ -1183,7 +1183,7 @@ T vk_dot_product_sparse(const array<T>& a, const array<T>& b) noexcept(noexcept(
 }
 
 template<class T>
-T vk_dot_product_dense(const array<T>& a, const array<T>& b) {
+T vk_dot_product_dense(const array<T>& a, const array<T>& b) noexcept {
   static_assert(!std::is_same<T, int>{}, "int is forbidden");
 
   T result = T();
@@ -1195,7 +1195,7 @@ T vk_dot_product_dense(const array<T>& a, const array<T>& b) {
 }
 
 template<>
-inline int64_t vk_dot_product_dense<int64_t>(const array<int64_t>& a, const array<int64_t>& b) {
+inline int64_t vk_dot_product_dense<int64_t>(const array<int64_t>& a, const array<int64_t>& b) noexcept {
   const int64_t size = min(a.count(), b.count());
   const int64_t* ap = a.get_const_vector_pointer();
   const int64_t* bp = b.get_const_vector_pointer();
@@ -1203,7 +1203,7 @@ inline int64_t vk_dot_product_dense<int64_t>(const array<int64_t>& a, const arra
 }
 
 template<>
-inline double vk_dot_product_dense<double>(const array<double>& a, const array<double>& b) {
+inline double vk_dot_product_dense<double>(const array<double>& a, const array<double>& b) noexcept {
   int64_t size = min(a.count(), b.count());
   const double* ap = a.get_const_vector_pointer();
   const double* bp = b.get_const_vector_pointer();
@@ -1212,7 +1212,7 @@ inline double vk_dot_product_dense<double>(const array<double>& a, const array<d
 
 template<class T>
 T f$vk_dot_product(const array<T>& a,
-                   const array<T>& b) noexcept(noexcept(std::declval<T&>() += std::declval<const T&>() * T()) && noexcept(std::declval<T&>() += T() * T())) {
+                   const array<T>& b) noexcept {
   if (a.is_vector() && b.is_vector()) {
     return vk_dot_product_dense<T>(a, b);
   }
