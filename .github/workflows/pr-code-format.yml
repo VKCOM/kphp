@@ -19,6 +19,21 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check Newline at End of File
+        run: |
+          EXIT_CODE=0
+          for file in $(git grep --cached -I --files-with-matches ''); do
+            if [[ $(tail -c 1 "$file") ]]; then
+              echo "Missing new line at end of file '$file'"
+              EXIT_CODE=1
+            fi
+          done
+
+          if [[ $EXIT_CODE -ne 0 ]]; then
+            echo "Code is not formatted. Please fix the errors.";
+            exit 1
+          fi
+
       - name: Install clang-format
         run: sudo apt install -y clang-format-18
 
