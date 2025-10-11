@@ -35,7 +35,7 @@ jobs:
           fi
 
       - name: Install clang-format
-        run: sudo apt install -y clang-format-18
+        run: sudo apt-get install -y clang-format-18
 
       - name: Run clang-format on changed files
         run: |
