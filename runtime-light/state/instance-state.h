@@ -23,7 +23,6 @@
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/stdlib/confdata/confdata-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
-#include "runtime-light/stdlib/web/web-state.h"
 #include "runtime-light/stdlib/diagnostics/contextual-logger.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
@@ -40,6 +39,7 @@
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 #include "runtime-light/stdlib/time/time-state.h"
+#include "runtime-light/stdlib/web/web-state.h"
 
 /**
  * Supported kinds of KPHP images:
