@@ -394,7 +394,6 @@ struct CacheFetch final {
   }
 };
 
-
 // ===== INTER COMPONENT SESSION PROTOCOL =====
 
 class InterComponentSessionRequestHeader final {

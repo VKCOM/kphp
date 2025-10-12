@@ -1182,7 +1182,7 @@ struct WebPropertyValue final {
 
 struct WebProperty final {
   tl::u64 id;
-  WebPropertyValue value;
+  tl::WebPropertyValue value;
 
   void store(tl::storer& tls) const noexcept {
     id.store(tls);
