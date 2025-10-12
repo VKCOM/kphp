@@ -278,13 +278,12 @@ inline auto Client::query(std::span<const std::byte> request, BufferProvider&& r
 inline auto Client::query(std::span<const std::byte> request,
                           BufferProvider&& response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
   std::span<std::byte> response{};
-  if (auto expected{co_await query(request, std::move(response_buffer_provider),
-                                   [&response](std::span<std::byte> resp) -> kphp::coro::task<bool> {
-                                     response = resp;
-                                     co_return false;
-                                   })};
-      !expected) [[unlikely]] {
-    co_return std::unexpected{expected.error()};
+  auto res{co_await query(request, std::move(response_buffer_provider), [&response](std::span<std::byte> resp) -> kphp::coro::task<bool> {
+    response = resp;
+    co_return false;
+  })};
+  if (!res.has_value()) [[unlikely]] {
+    co_return std::unexpected{res.error()};
   }
   co_return std::expected<std::span<std::byte>, int32_t>{response};
 }
