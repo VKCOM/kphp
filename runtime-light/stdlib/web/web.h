@@ -159,7 +159,7 @@ inline auto simple_transfer_perform(SimpleTransfer st) noexcept -> kphp::coro::t
     co_return false;
   }};
 
-  if (auto res{co_await session.value().get()->client.query(tls.view(), std::move(response_buffer_provider), response_handler)}; !res)  [[unlikely]] {
+  if (auto res{co_await session.value().get()->client.query(tls.view(), std::move(response_buffer_provider), response_handler)}; !res) [[unlikely]] {
     kphp::log::error("Failed to send request of Simple descriptor performing");
   }
   if (error.has_value()) {
