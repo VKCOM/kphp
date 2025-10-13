@@ -469,4 +469,20 @@ public:
   }
 };
 
+class SimpleWebTransferClose final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_CLOSE_MAGIC = 0x36F7'16BB;
+
+public:
+  tl::u64 desc;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = SIMPLE_WEB_TRANSFER_CLOSE_MAGIC}.store(tls);
+    desc.store(tls);
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_CLOSE_MAGIC}.footprint() + desc.footprint();
+  }
+};
+
 } // namespace tl
