@@ -261,3 +261,11 @@ inline auto f$curl_exec(int64_t easy_id) noexcept -> kphp::coro::task<mixed> {
   print(res.value().body);
   co_return true;
 }
+
+inline auto f$curl_close(curl_easy easy_id) noexcept -> kphp::coro::task<void> {
+  auto res{co_await kphp::web::simple_transfer_close(easy_id)};
+  if (!res.has_value()) {
+    set_error(res.error().code, res.error().description);
+    print_error("Could not close curl easy handle", std::move(res.error()));
+  }
+}

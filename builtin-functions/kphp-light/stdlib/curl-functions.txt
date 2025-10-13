@@ -256,7 +256,7 @@ function curl_getinfo ($curl_handle ::: int, $option ::: int = 0) ::: mixed;
 function curl_error ($curl_handle ::: int) ::: string;
 /** @kphp-extern-func-info stub generation-required */
 function curl_errno ($curl_handle ::: int) ::: int;
-/** @kphp-extern-func-info stub generation-required */
+/** @kphp-extern-func-info */
 function curl_close ($curl_handle ::: int) ::: void;
 /** @kphp-extern-func-info stub generation-required */
 function curl_exec_concurrently($curl_handle ::: int, $timeout ::: float = 1.0): string|false;

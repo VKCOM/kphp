@@ -1167,6 +1167,44 @@ public:
   }
 };
 
+class SimpleWebTransferCloseResultOk final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC = 0x63A7'16FF;
+
+public:
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC)};
+    return ok;
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC}.footprint();
+  }
+};
+
+class SimpleWebTransferCloseResponse final {
+
+public:
+  std::variant<tl::SimpleWebTransferCloseResultOk, tl::WebError> value;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::SimpleWebTransferCloseResultOk ok{};
+    tl::WebError error{};
+    if (ok.fetch(tlf)) {
+      value.emplace<tl::SimpleWebTransferCloseResultOk>(std::move(ok));
+      return true;
+    } else if (tlf.reset(0); error.fetch(tlf)) {
+      value.emplace<tl::WebError>(std::move(error));
+      return true;
+    }
+    return false;
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
+  }
+};
+
 struct WebPropertyValue final {
   using value_type = std::variant<tl::Bool, tl::I64, tl::String, tl::Vector<tl::WebPropertyValue>, tl::Dictionary<tl::WebPropertyValue>>;
   value_type value;
