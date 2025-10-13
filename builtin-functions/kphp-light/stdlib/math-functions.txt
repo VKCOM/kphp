@@ -42,24 +42,24 @@ function hexdec ($number ::: string): int;
 function abs ($v ::: mixed) ::: ^1 | int;
 
 /**
- * @kphp-extern-func-info stub
+ * @kphp-extern-func-info
  * @kphp-pure-function
  */
 function acos ($v ::: float) ::: float;
 
 /**
- * @kphp-extern-func-info stub
+ * @kphp-extern-func-info
  * @kphp-pure-function
  */
 function atan ($v ::: float) ::: float;
 
 /**
- * @kphp-extern-func-info stub
+ * @kphp-extern-func-info
  * @kphp-pure-function
  */
 function atan2 ($y ::: float, $x ::: float) ::: float;
 
-/** @kphp-extern-func-info stub */
+/** @kphp-extern-func-info */
 function bindec ($number ::: string) ::: int;
 
 /**
@@ -72,7 +72,7 @@ function ceil ($v ::: float) ::: float;
  */
 function cos ($v ::: float) ::: float;
 
-/** @kphp-extern-func-info stub */
+/** @kphp-extern-func-info */
 function decbin ($number ::: int) ::: string;
 
 /**
@@ -81,7 +81,7 @@ function decbin ($number ::: int) ::: string;
 function deg2rad ($v ::: float) ::: float;
 
 /**
- * @kphp-extern-func-info stub
+ * @kphp-extern-func-info
  * @kphp-pure-function
  */
 function exp ($v ::: float) ::: float;
@@ -91,10 +91,10 @@ function exp ($v ::: float) ::: float;
  */
 function floor ($v ::: float) ::: float;
 
-/** @kphp-extern-func-info stub */
+/** @kphp-extern-func-info */
 function is_finite ($v ::: float) ::: bool;
 
-/** @kphp-extern-func-info stub */
+/** @kphp-extern-func-info */
 function is_infinite ($v ::: float) ::: bool;
 
 /**
@@ -108,7 +108,7 @@ function log ($v ::: float, $base ::: float = 2.7182818284590452353602874713527)
 function round ($v ::: float, $precision ::: int = 0) ::: float;
 
 /**
- * @kphp-extern-func-info stub
+ * @kphp-extern-func-info
  * @kphp-pure-function
  */
 function sin ($v ::: float) ::: float;
@@ -119,7 +119,7 @@ function sin ($v ::: float) ::: float;
 function sqrt ($v ::: float) ::: float;
 
 /**
- * @kphp-extern-func-info stub
+ * @kphp-extern-func-info
  * @kphp-pure-function
  */
 function tan ($v ::: float) ::: float;
