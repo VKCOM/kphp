@@ -96,7 +96,7 @@ unsigned get_my_ipv4() {
   }
 
   // if removed, it can break local development, since not everyone has the `10.0.0.0/8` network on their computer
-  if (force_ipv4_mask != 0xff000000 || force_ipv4_ip != (10 << 24)) {
+  if (force_ipv4_mask != PRIVATE_A_MASK || force_ipv4_ip != PRIVATE_A_NETWORK) {
     assert(my_ip != 0 && "can't choose ip in given subnet");
   }
   vkprintf (2, "using main IP %d.%d.%d.%d/%d at interface %s\n", (my_ip >> 24), (my_ip >> 16) & 255, (my_ip >> 8) & 255, my_ip & 255,
