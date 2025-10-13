@@ -95,6 +95,7 @@ unsigned get_my_ipv4() {
     my_iface = "lo";
   }
 
+  // if removed, it can break local development, since not everyone has the `10.0.0.0/8` network on their computer
   if (force_ipv4_mask != 0xff000000 || force_ipv4_ip != (10 << 24)) {
     assert(my_ip != 0 && "can't choose ip in given subnet");
   }
