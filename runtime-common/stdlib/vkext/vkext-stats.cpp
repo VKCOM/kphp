@@ -4,7 +4,6 @@
 
 #include "runtime-common/stdlib/vkext/vkext-stats.h"
 
-#include <assert.h>
 #include <limits.h>
 #include <string.h>
 
@@ -33,7 +32,7 @@ int get_hll_size(const string& hll) noexcept {
 }
 
 int unpack_hll(const string& hll, char* res) noexcept {
-  assert(!is_hll_unpacked(hll));
+  php_assert(!is_hll_unpacked(hll));
   int m = get_hll_size(hll);
   int pos = 1 + (hll[0] == HLL_PACK_CHAR_V2);
   memset(res, HLL_FIRST_RANK_CHAR, (size_t)m);
@@ -93,7 +92,7 @@ Optional<double> hll_count(const string& hll, int m) noexcept {
         e -= e * (bias / 100.0);
       }
     } else {
-      assert(0);
+      php_assert(0);
     }
   }
   return e;
@@ -104,7 +103,7 @@ Optional<double> hll_count(const string& hll, int m) noexcept {
  * A full copy of the same function exists in vkext-stats.c in vkext.
  */
 long long dl_murmur64a_hash(const void* data, size_t len) noexcept {
-  assert((len & 7) == 0);
+  php_assert((len & 7) == 0);
   unsigned long long m = 0xc6a4a7935bd1e995;
   int r = 47;
   unsigned long long h = 0xcafebabeull ^ (m * len);
@@ -167,7 +166,7 @@ string hll_pack(const string& s, int len) noexcept {
   int p = 0;
   buf[p++] = HLL_PACK_CHAR_V2;
   buf[p++] = (unsigned char)('0' + (unsigned char)(__builtin_ctz(len)));
-  assert(__builtin_popcount(len) == 1);
+  php_assert(__builtin_popcount(len) == 1);
   for (int i = 0; i < len; i++) {
     if (s[i] > HLL_FIRST_RANK_CHAR) {
       if (p + 2 >= len) {
@@ -177,7 +176,7 @@ string hll_pack(const string& s, int len) noexcept {
       buf[p++] = (unsigned char)((i >> 7) + 1);
       buf[p++] = (unsigned char)s[i];
     }
-    assert(p < HLL_BUF_SIZE);
+    php_assert(p < HLL_BUF_SIZE);
   }
   return {(char*)buf, static_cast<string::size_type>(p)};
 }
