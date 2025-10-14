@@ -34,12 +34,6 @@ struct future_queue final : public refcountable_php_classes<C$ComponentQuery> {
   int64_t future_id() noexcept {
     return m_future_id;
   }
-
-  ~future_queue() {
-    if (m_future_id != kphp::forks::INVALID_ID) {
-      WaitQueueInstanceState::get().erase_queue(m_future_id);
-    }
-  }
 };
 
 template<class T>

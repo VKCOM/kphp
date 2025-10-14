@@ -53,7 +53,7 @@ inline void wait_queue_push(int64_t queue_id, int64_t fork_id) noexcept {
   auto& wait_queue_instance_st{WaitQueueInstanceState::get()};
   auto opt_await_set{wait_queue_instance_st.get_queue(queue_id)};
   if (!opt_await_set.has_value()) [[unlikely]] {
-    kphp::log::warning("future doesn't associated with wait queue");
+    kphp::log::warning("future with id {} doesn't associated with wait queue", queue_id);
     return;
   }
 
