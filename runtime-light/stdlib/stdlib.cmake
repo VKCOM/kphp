@@ -7,6 +7,7 @@ prepend(
   diagnostics/backtrace.cpp
   diagnostics/contextual-logger.cpp
   diagnostics/error-handling-state.cpp
+  file/resource.cpp
   fork/fork-state.cpp
   instance-cache/instance-cache-state.cpp
   job-worker/job-worker-api.cpp
