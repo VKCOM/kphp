@@ -1580,4 +1580,3 @@ inline decltype(auto) check_not_false(T&& val) {
 
 template<typename T>
 using future = int64_t;
-
