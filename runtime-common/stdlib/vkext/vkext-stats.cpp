@@ -186,7 +186,7 @@ string hll_pack(const string& s, int len) noexcept {
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-}
+} // namespace
 
 Optional<string> f$vk_stats_hll_merge(const array<mixed>& a) noexcept {
   string result;
