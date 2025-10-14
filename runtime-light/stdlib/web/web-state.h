@@ -20,7 +20,6 @@ struct WebInstanceState final : private vk::not_copyable {
   };
   using shared_session_type = class_instance<WebComponentSession>;
 
-  shared_session_type session_daemon;
   std::optional<shared_session_type> session{};
   kphp::stl::unordered_map<kphp::web::SimpleTransfer, kphp::web::SimpleTransferConfig, kphp::memory::script_allocator> simple_transfer2config{};
 
