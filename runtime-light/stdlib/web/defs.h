@@ -150,6 +150,8 @@ struct Response {
   string body;
 };
 
+constexpr auto WEB_INTERNAL_ERROR_CODE = -1;
+
 struct Error {
   int64_t code;
   std::optional<string> description;
