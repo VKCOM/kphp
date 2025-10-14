@@ -103,8 +103,6 @@ define('CURLOPT_SSLVERSION', 32);
 define('CURLOPT_HTTPAUTH', 107);
 define('CURLOPT_PROXYAUTH', 111);
 define('CURLOPT_IPRESOLVE', 113);
-define('CURLOPT_FTPSSLAUTH', 129);
-define('CURLOPT_FTP_FILEMETHOD', 138);
 define('CURLOPT_CAINFO', 10065);
 define('CURLOPT_CAPATH', 10097);
 define('CURLOPT_COOKIE', 10022);
@@ -246,7 +244,7 @@ function curl_reset ($curl_handle ::: int) ::: void;
 /** @kphp-extern-func-info */
 function curl_setopt ($curl_handle ::: int, $option ::: int, $value ::: mixed) ::: bool;
 
-/** @kphp-extern-func-info stub */
+/** @kphp-extern-func-info */
 function curl_setopt_array ($curl_handle ::: int, $options ::: array) ::: bool;
 
 /** @kphp-extern-func-info interruptible */
