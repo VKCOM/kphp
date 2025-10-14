@@ -44,7 +44,7 @@ mixed extract_confdata_value(const tl::confdataValue& confdata_value) noexcept {
 
 } // namespace
 
-kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
+kphp::coro::task<mixed> f$confdata_get_value(const string& key) noexcept {
   tl::ConfdataGet confdata_get{.key = {.value = {key.c_str(), key.size()}}};
   tl::storer tls{confdata_get.footprint()};
   confdata_get.store(tls);
@@ -70,7 +70,7 @@ kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
   co_return extract_confdata_value(*maybe_confdata_value.opt_value); // the key exists
 }
 
-kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
+kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(const string& wildcard) noexcept {
   static constexpr size_t CONFDATA_GET_WILDCARD_STREAM_CAPACITY = 1 << 20;
 
   tl::ConfdataGetWildcard confdata_get_wildcard{.wildcard = {.value = {wildcard.c_str(), wildcard.size()}}};

@@ -116,8 +116,7 @@ void FunctionParams::declare_cpp_param(CodeGenerator &W, VertexAdaptor<op_var> v
   auto var_ptr = var->var_id;
   if (var->ref_flag) {
     W << "&";
-  } else if (!function->is_interruptible && (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only))) {
-    // interruptible function must take arguments by value (see C++ avoid reference parameters in coroutines)
+  } else if (!function->is_k2_fork && (var_ptr->marked_as_const || (!function->has_variadic_param && var_ptr->is_read_only))) {
     W << (!type.type->is_primitive_type() ? "const &" : "");
   }
   W << VarName(var_ptr);

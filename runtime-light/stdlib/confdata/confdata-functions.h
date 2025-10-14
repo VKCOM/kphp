@@ -14,11 +14,14 @@ inline bool f$is_confdata_loaded() noexcept {
   return k2::access(kphp::confdata::COMPONENT_NAME) == k2::errno_ok;
 }
 
-kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept;
+// SAFETY: `key` is only used before await point
+kphp::coro::task<mixed> f$confdata_get_value(const string& key) noexcept;
 
-kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept;
+// SAFETY: `wildcard` is only used before await point
+kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(const string& wildcard) noexcept;
 
-inline kphp::coro::task<array<mixed>> f$confdata_get_values_by_predefined_wildcard(string wildcard) noexcept {
+// SAFETY: `f$confdata_get_values_by_any_wildcard` is coro-pass-by-ref safe
+inline kphp::coro::task<array<mixed>> f$confdata_get_values_by_predefined_wildcard(const string& wildcard) noexcept {
   kphp::log::info("k2-confdata doesn't support predefined wildcard optimization. wildcard: {}", wildcard.c_str());
-  co_return co_await f$confdata_get_values_by_any_wildcard(std::move(wildcard));
+  co_return co_await f$confdata_get_values_by_any_wildcard(wildcard);
 }
