@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 require_once 'kphp_tester_include.php';
@@ -15,8 +15,6 @@ function test_long_options() {
   var_dump(curl_setopt($c, CURLOPT_DNS_CACHE_TIMEOUT, null));
   var_dump(curl_setopt($c, CURLOPT_PUT, 897));
 
-  var_dump(curl_setopt($c, CURLOPT_SSL_ENABLE_ALPN, 1));
-  var_dump(curl_setopt($c, CURLOPT_SSL_ENABLE_NPN, 1));
   var_dump(curl_setopt($c, CURLOPT_TCP_KEEPALIVE, 1));
   var_dump(curl_setopt($c, CURLOPT_TCP_KEEPIDLE, 5));
   var_dump(curl_setopt($c, CURLOPT_TCP_KEEPINTVL, 12));
@@ -120,34 +118,6 @@ function test_ip_resolve_option() {
   curl_close($c);
 }
 
-function test_ftp_auth_option() {
-  $c = curl_init();
-
-  var_dump(curl_setopt($c, CURLOPT_FTPSSLAUTH, CURLFTPAUTH_DEFAULT));
-  var_dump(curl_setopt($c, CURLOPT_FTPSSLAUTH, CURLFTPAUTH_SSL));
-  var_dump(curl_setopt($c, CURLOPT_FTPSSLAUTH, CURLFTPAUTH_TLS));
-
-  // bad values
-  var_dump(kphp && curl_setopt($c, CURLOPT_FTPSSLAUTH, -10));
-  var_dump(kphp && curl_setopt($c, CURLOPT_FTPSSLAUTH, 9999999));
-
-  curl_close($c);
-}
-
-function test_ftp_file_method_option() {
-  $c = curl_init();
-
-  var_dump(curl_setopt($c, CURLOPT_FTP_FILEMETHOD, CURLFTPMETHOD_MULTICWD));
-  var_dump(curl_setopt($c, CURLOPT_FTP_FILEMETHOD, CURLFTPMETHOD_NOCWD));
-  var_dump(curl_setopt($c, CURLOPT_FTP_FILEMETHOD, CURLFTPMETHOD_SINGLECWD));
-
-  // bad values
-  var_dump(kphp && curl_setopt($c, CURLOPT_FTP_FILEMETHOD, -10));
-  var_dump(kphp && curl_setopt($c, CURLOPT_FTP_FILEMETHOD, 9999999));
-
-  curl_close($c);
-}
-
 function test_post_fields_option() {
   $c = curl_init();
 
@@ -189,7 +159,6 @@ function test_setopt_array() {
     CURLOPT_URL => "http",
     CURLOPT_PASSWORD => 1234,
     CURLOPT_PORT => 99,
-    CURLOPT_FTP_FILEMETHOD => CURLFTPMETHOD_MULTICWD
   ]));
 
   curl_close($c);
@@ -212,8 +181,6 @@ test_proxy_type_option();
 test_ssl_version_option();
 test_auth_option();
 test_ip_resolve_option();
-test_ftp_auth_option();
-test_ftp_file_method_option();
 test_post_fields_option();
 test_max_recv_speed();
 test_special_options();

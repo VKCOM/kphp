@@ -81,9 +81,8 @@ enum CURLOPT : uint64_t {
 
   IPRESOLVE = 113,
 
-  FTPSSLAUTH = 129,
-
-  FTP_FILEMETHOD = 138,
+  // CURLOPT_FTPSSLAUTH  -- isn't supported by curl-rust 0.4.49 and curl-sys 0.4.83
+  // CURLOPT_FTP_FILEMETHOD -- isn't supported by curl-rust 0.4.49 and curl-sys 0.4.83
 
   CAINFO = 10065,
   CAPATH = 10097,
@@ -124,7 +123,7 @@ enum CURLOPT : uint64_t {
   SSLENGINE = 10089,
   SSLENGINE_DEFAULT = 90,
   SSLKEY = 10087,
-  // # define CURLOPT_SSLKEYPASSWD = -- name changed in new versions of curl
+  // CURLOPT_SSLKEYPASSWD = -- name changed in new versions of curl
   SSLKEYTYPE = 10088,
   SSL_CIPHER_LIST = 10083,
   URL = 10002,
@@ -146,8 +145,8 @@ enum CURLOPT : uint64_t {
 
   RESOLVE = 10203,
 
-  // # define CURLOPT_SSL_ENABLE_ALPN -- not supported by curl-rust 0.4.49 and curl-sys 0.4.83
-  // # define CURLOPT_SSL_ENABLE_NPN -- deprecated
+  // CURLOPT_SSL_ENABLE_ALPN -- isn't supported by curl-rust 0.4.49 and curl-sys 0.4.83
+  // CURLOPT_SSL_ENABLE_NPN -- deprecated
   TCP_KEEPALIVE = 213,
   TCP_KEEPIDLE = 214,
   TCP_KEEPINTVL = 215,
