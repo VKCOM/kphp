@@ -17,7 +17,8 @@ inline auto process_error(tl::WebError&& error) noexcept -> Error {
   case InternalErrorCode::UnknownMethod:
   case InternalErrorCode::UnknownTransfer:
   case BackendInternalError::CannotTakeHandlerOwnership:
-    return Error{.code = -1, .description = string(error.description.value.data(), error.description.value.size())};
+  case BackendInternalError::PostFieldValueNotString:
+    return Error{.code = WEB_INTERNAL_ERROR_CODE, .description = string(error.description.value.data(), error.description.value.size())};
   default:
     // BackendError
     return Error{.code = error.code.value, .description = string(error.description.value.data(), error.description.value.size())};
@@ -68,13 +69,22 @@ inline auto simple_transfer_open(TransferBackend backend) noexcept -> kphp::coro
         }
       },
       simple_web_transfer_resp.value);
-  co_return result;
+
+  if (!result.has_value()) {
+    co_return std::move(result);
+  }
+
+  auto& simple2config{WebInstanceState::get().simple_transfer2config};
+  kphp::log::assertion(simple2config.contains(result.value()) == false);
+  simple2config.emplace(result.value(), SimpleTransferConfig{});
+
+  co_return std::move(result);
 }
 
 inline auto set_transfer_prop(SimpleTransfer st, PropertyId prop_id, PropertyValue prop_value) -> std::expected<void, Error> {
   auto& simple2config{WebInstanceState::get().simple_transfer2config};
   if (!simple2config.contains(st)) {
-    simple2config.emplace(st, SimpleTransferConfig{});
+    return std::unexpected{Error{.code = WEB_INTERNAL_ERROR_CODE, .description = string("Unknown transfer id")}};
   }
   simple2config[st].properties.insert({prop_id, prop_value});
   return std::expected<void, Error>{};
@@ -216,7 +226,7 @@ inline auto simple_transfer_close(SimpleTransfer st) noexcept -> kphp::coro::tas
         }
       },
       simple_web_transfer_resp.value);
-  co_return result;
+  co_return std::move(result);
 }
 
 } // namespace kphp::web
