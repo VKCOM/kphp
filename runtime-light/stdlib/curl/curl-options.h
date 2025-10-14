@@ -6,6 +6,12 @@
 
 #include <cstdint>
 
+enum CURLE : uint16_t {
+  OK = 0,
+  BAD_FUNCTION_ARGUMENT = 43,
+  UNKNOWN_OPTION = 48,
+};
+
 enum CURLOPT : uint64_t {
   ADDRESS_SCOPE = 171,
   APPEND = 50,
@@ -149,13 +155,41 @@ enum CURLOPT : uint64_t {
   PRIVATE = 10103,
   ACCEPT_ENCODING = 10102,
 
-  // PHP specific
-  RETURNTRANSFER = 1234567,
-
   HTTPPOST = 10024,
   COPYPOSTFIELDS = 10165,
 };
 
-enum CURLINFO : uint64_t {
-  HEADER_OUT = 7654321,
+// PHP specific
+enum PHPCURL : uint64_t {
+  OPT_RETURNTRANSFER = 1234567,
+  INFO_HEADER_OUT = 7654321,
+};
+
+enum CURLPROXY : uint8_t {
+  HTTP = 0,
+  HTTP_1_0 = 1,
+  SOCKS4 = 4,
+  SOCKS5 = 5,
+  SOCKS4A = 6,
+  SOCKS5_HOSTNAME = 7,
+};
+
+enum CURL_SSLVERSION : uint8_t {
+  DEFAULT = 0,
+  TLSv1 = 1,
+  // From https://www.php.net/manual/en/curl.constants.php
+  // It is better to not set this option and leave the defaults.
+  // As setting this to CURL_SSLVERSION_SSLv2 or CURL_SSLVERSION_SSLv3 is very dangerous, given the known vulnerabilities in SSLv2 and SSLv3.
+  SSLv2 = 2,
+  SSLv3 = 3,
+  TLSv1_0 = 4,
+  TLSv1_1 = 5,
+  TLSv1_2 = 6,
+  TLSv1_3 = 7,
+};
+
+enum CURL_IPRESOLVE : uint8_t {
+  WHATEVER = 0,
+  V4 = 1,
+  V6 = 2,
 };

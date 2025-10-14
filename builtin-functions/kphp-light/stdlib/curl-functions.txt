@@ -175,6 +175,9 @@ define('CURLPROXY_SOCKS5_HOSTNAME', 7);
 
 define('CURL_SSLVERSION_DEFAULT', 0);
 define('CURL_SSLVERSION_TLSv1', 1);
+// From https://www.php.net/manual/en/curl.constants.php
+// It is better to not set this option and leave the defaults.
+// As setting this to CURL_SSLVERSION_SSLv2 or CURL_SSLVERSION_SSLv3 is very dangerous, given the known vulnerabilities in SSLv2 and SSLv3.
 define('CURL_SSLVERSION_SSLv2', 2);
 define('CURL_SSLVERSION_SSLv3', 3);
 define('CURL_SSLVERSION_TLSv1_0', 4);
@@ -187,8 +190,7 @@ define('CURLAUTH_BASIC', 1);
 define('CURLAUTH_DIGEST', 2);
 define('CURLAUTH_GSSNEGOTIATE', 4);
 define('CURLAUTH_NTLM', 8);
-// rust-curl doesn't support this function
-// define('CURLAUTH_ANYSAFE', 14);
+define('CURLAUTH_ANYSAFE', 14);
 define('CURLAUTH_ANY', 15);
 
 define('CURL_IPRESOLVE_WHATEVER', 0);
