@@ -56,6 +56,12 @@ function test_curl($curl_resumable = false) {
   curl_setopt($ch, CURLOPT_URL, (string)$params["url"]);
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, (int)$params["return_transfer"]);
 
+  $headers = ["Content-Type: application/json"];
+#ifndef K2
+  $headers = [];
+#endif
+  curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
   if ($post = $params["post"]) {
     curl_setopt($ch, CURLOPT_POST, 1);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($post));
@@ -77,9 +83,10 @@ function test_curl($curl_resumable = false) {
 
   ob_start();
 
-  fwrite(STDERR, "start_curl_query\n");
+  $stderr = fopen("php://stderr", "w");
+  fwrite($stderr, "start_curl_query\n");
   $output = $curl_resumable ? curl_exec_concurrently($ch, $timeout_s ?? -1) : curl_exec($ch);
-  fwrite(STDERR, "end_curl_query\n");
+  fwrite($stderr, "end_curl_query\n");
   curl_close($ch);
 
   $resp = ["exec_result" => to_json_safe($output)];
