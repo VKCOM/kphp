@@ -22,11 +22,19 @@ function vk_sp_full_simplify ($str ::: string) ::: string;
 
 function vk_json_encode_safe ($v ::: mixed) ::: string;
 
-/** @kphp-extern-func-info stub */
 function vk_stats_hll_merge($str ::: mixed) ::: string | false;
 
-/** @kphp-extern-func-info stub */
 function vk_stats_hll_count($hll ::: string) ::: float | false;
+
+function vk_stats_hll_create($a ::: array = array(), $size ::: int = 256) ::: string | false;
+
+function vk_stats_hll_add($hll ::: string, $a ::: array) ::: string | false;
+
+function vk_stats_hll_pack($hll ::: string) ::: string | false;
+
+function vk_stats_hll_unpack($hll ::: string) ::: string | false;
+
+function vk_stats_hll_is_packed($hll ::: string) ::: bool;
 
 // ===== UNSUPPORTED =====
 
