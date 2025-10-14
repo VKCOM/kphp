@@ -86,7 +86,11 @@ inline auto set_transfer_prop(SimpleTransfer st, PropertyId prop_id, PropertyVal
   if (!simple2config.contains(st)) {
     return std::unexpected{Error{.code = WEB_INTERNAL_ERROR_CODE, .description = string("Unknown transfer id")}};
   }
-  simple2config[st].properties.insert({prop_id, prop_value});
+  if (!simple2config[st].properties.contains(prop_id)) {
+    simple2config[st].properties.insert({prop_id, std::move(prop_value)});
+  } else {
+    simple2config[st].properties.at(prop_id) = std::move(prop_value);
+  }
   return std::expected<void, Error>{};
 }
 
