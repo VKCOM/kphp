@@ -4,21 +4,24 @@
 
 #include "runtime-common/stdlib/vkext/vkext-stats.h"
 
-#include <limits.h>
-#include <string.h>
+#include <climits>
+#include <cstring>
 
-#define HLL_FIRST_RANK_CHAR 0x30
-#define HLL_PACK_CHAR '!'
-#define HLL_PACK_CHAR_V2 '$'
-#define TO_HALF_BYTE(c) ((int)(((c > '9') ? (c - 7) : c) - '0'))
-#define MAX_HLL_SIZE (1 << 14)
-#define HLL_BUF_SIZE (MAX_HLL_SIZE + 1000)
+namespace {
+
+constexpr auto HLL_FIRST_RANK_CHAR = 0x30;
+constexpr auto HLL_PACK_CHAR = '!';
+constexpr auto HLL_PACK_CHAR_V2 = '$';
+constexpr auto MAX_HLL_SIZE = (1 << 14);
+constexpr auto HLL_BUF_SIZE = (MAX_HLL_SIZE + 1000);
+
+auto to_half_byte(auto c) {
+  return (((c > '9') ? (c - 7) : c) - '0');
+}
 
 //////
 //    hll fuctions
 //////
-
-namespace {
 
 bool is_hll_unpacked(const string& hll) noexcept {
   return hll.empty() || (hll[0] != HLL_PACK_CHAR && hll[0] != HLL_PACK_CHAR_V2);
@@ -35,13 +38,13 @@ int unpack_hll(const string& hll, char* res) noexcept {
   php_assert(!is_hll_unpacked(hll));
   int m = get_hll_size(hll);
   int pos = 1 + (hll[0] == HLL_PACK_CHAR_V2);
-  memset(res, HLL_FIRST_RANK_CHAR, (size_t)m);
+  memset(res, HLL_FIRST_RANK_CHAR, m);
   while (pos + 2 < hll.size()) {
     int p;
     if (hll[0] == HLL_PACK_CHAR) {
-      p = (TO_HALF_BYTE(hll[pos]) << 4) + TO_HALF_BYTE(hll[pos + 1]);
+      p = (to_half_byte(hll[pos]) << 4) + to_half_byte(hll[pos + 1]);
     } else {
-      p = (((int)hll[pos] - 1) & 0x7f) + (((int)hll[pos + 1] - 1) << 7);
+      p = ((hll[pos] - 1) & 0x7f) + ((hll[pos + 1] - 1) << 7);
     }
     if (p >= m) {
       return -1;
@@ -108,11 +111,11 @@ long long dl_murmur64a_hash(const void* data, size_t len) noexcept {
   int r = 47;
   unsigned long long h = 0xcafebabeull ^ (m * len);
 
-  const unsigned char* start = (const unsigned char*)data;
+  const unsigned char* start = static_cast<const unsigned char*>(data);
   const unsigned char* end = start + len;
 
   while (start != end) {
-    unsigned long long k = *(unsigned long long*)start;
+    unsigned long long k = *reinterpret_cast<const unsigned long long*>(start);
     k *= m;
     k ^= k >> r;
     k *= m;
@@ -120,26 +123,6 @@ long long dl_murmur64a_hash(const void* data, size_t len) noexcept {
     h *= m;
     start += 8;
   }
-
-  start = (const unsigned char*)data;
-
-  switch (len & 7) {
-  case 7:
-    h ^= (unsigned long long)start[6] << 48; /* fallthrough */
-  case 6:
-    h ^= (unsigned long long)start[5] << 40; /* fallthrough */
-  case 5:
-    h ^= (unsigned long long)start[4] << 32; /* fallthrough */
-  case 4:
-    h ^= (unsigned long long)start[3] << 24; /* fallthrough */
-  case 3:
-    h ^= (unsigned long long)start[2] << 16; /* fallthrough */
-  case 2:
-    h ^= (unsigned long long)start[1] << 8; /* fallthrough */
-  case 1:
-    h ^= (unsigned long long)start[0];
-    h *= m;
-  };
 
   h ^= h >> r;
   h *= m;
@@ -150,7 +133,7 @@ long long dl_murmur64a_hash(const void* data, size_t len) noexcept {
 void hll_add_shifted(unsigned char* hll, int hll_size, long long value) noexcept {
   unsigned long long hash = dl_murmur64a_hash(&(value), sizeof(long long));
   unsigned int idx = hash >> (64LL - hll_size);
-  unsigned char rank = (hash == 0) ? 0 : (unsigned char)fmin(__builtin_ctzll(hash) + 1, 64 - hll_size);
+  unsigned char rank = (hash == 0) ? 0 : static_cast<unsigned char>(fmin(__builtin_ctzll(hash) + 1, 64 - hll_size));
   rank += HLL_FIRST_RANK_CHAR;
   if (hll[idx] < rank) {
     hll[idx] = rank;
@@ -165,20 +148,20 @@ string hll_pack(const string& s, int len) noexcept {
   unsigned char buf[HLL_BUF_SIZE];
   int p = 0;
   buf[p++] = HLL_PACK_CHAR_V2;
-  buf[p++] = (unsigned char)('0' + (unsigned char)(__builtin_ctz(len)));
+  buf[p++] = '0' + __builtin_ctz(len);
   php_assert(__builtin_popcount(len) == 1);
   for (int i = 0; i < len; i++) {
     if (s[i] > HLL_FIRST_RANK_CHAR) {
       if (p + 2 >= len) {
         return s;
       }
-      buf[p++] = (unsigned char)((i & 0x7f) + 1);
-      buf[p++] = (unsigned char)((i >> 7) + 1);
-      buf[p++] = (unsigned char)s[i];
+      buf[p++] = static_cast<unsigned char>((i & 0x7f) + 1);
+      buf[p++] = (i >> 7) + 1;
+      buf[p++] = s[i];
     }
     php_assert(p < HLL_BUF_SIZE);
   }
-  return {(char*)buf, static_cast<string::size_type>(p)};
+  return {reinterpret_cast<char*>(buf), static_cast<string::size_type>(p)};
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -195,7 +178,7 @@ Optional<string> f$vk_stats_hll_merge(const array<mixed>& a) noexcept {
     string cur = it.get_value().to_string();
     if (result_len == -1) {
       result_len = get_hll_size(cur);
-      result.assign((string::size_type)result_len, (char)HLL_FIRST_RANK_CHAR);
+      result.assign(result_len, static_cast<char>(HLL_FIRST_RANK_CHAR));
       result_buff = result.buffer();
     }
     if (is_hll_unpacked(cur)) {
@@ -213,9 +196,9 @@ Optional<string> f$vk_stats_hll_merge(const array<mixed>& a) noexcept {
       while (i + 2 < cur.size()) {
         int p;
         if (cur[0] == HLL_PACK_CHAR) {
-          p = (TO_HALF_BYTE(cur[i]) << 4) + TO_HALF_BYTE(cur[i + 1]);
+          p = (to_half_byte(cur[i]) << 4) + to_half_byte(cur[i + 1]);
         } else {
-          p = (((int)cur[i] - 1) & 0x7f) + (((int)cur[i + 1] - 1) << 7);
+          p = ((cur[i] - 1) & 0x7f) + ((cur[i + 1] - 1) << 7);
         }
         if (p >= result_len) {
           return false;
@@ -243,7 +226,7 @@ Optional<string> f$vk_stats_hll_add(const string& hll, const array<mixed>& a) no
   int hll_size = __builtin_ctz(get_hll_size(hll));
   memcpy(hll_buf, hll.c_str(), hll.size());
   for (array<mixed>::const_iterator it = a.begin(); it != a.end(); ++it) {
-    hll_add_shifted((unsigned char*)hll_buf, hll_size, it.get_value().to_int());
+    hll_add_shifted(reinterpret_cast<unsigned char*>(hll_buf), hll_size, it.get_value().to_int());
   }
 
   res.shrink(hll.size());
@@ -254,7 +237,7 @@ Optional<string> f$vk_stats_hll_create(const array<mixed>& a, int64_t size) noex
   if (size != (1 << 8) && size != (1 << 14)) {
     return false;
   }
-  return f$vk_stats_hll_add(string((string::size_type)size, (char)HLL_FIRST_RANK_CHAR), a);
+  return f$vk_stats_hll_add(string(size, static_cast<char>(HLL_FIRST_RANK_CHAR)), a);
 }
 
 Optional<double> f$vk_stats_hll_count(const string& hll) noexcept {
