@@ -124,6 +124,27 @@ long long dl_murmur64a_hash(const void* data, size_t len) noexcept {
     start += 8;
   }
 
+  start = static_cast<const unsigned char*>(data);
+
+  // It looks like `len & 7 == 0` here
+  switch (len & 7) {
+  case 7:
+    h ^= static_cast<unsigned long long>(start[6]) << 48; /* fallthrough */
+  case 6:
+    h ^= static_cast<unsigned long long>(start[5]) << 40; /* fallthrough */
+  case 5:
+    h ^= static_cast<unsigned long long>(start[4]) << 32; /* fallthrough */
+  case 4:
+    h ^= static_cast<unsigned long long>(start[3]) << 24; /* fallthrough */
+  case 3:
+    h ^= static_cast<unsigned long long>(start[2]) << 16; /* fallthrough */
+  case 2:
+    h ^= static_cast<unsigned long long>(start[1]) << 8; /* fallthrough */
+  case 1:
+    h ^= static_cast<unsigned long long>(start[0]);
+    h *= m;
+  };
+
   h ^= h >> r;
   h *= m;
   h ^= h >> r;
