@@ -375,6 +375,15 @@ inline auto f$curl_setopt(curl_easy easy_id, int64_t option, const mixed& value)
   }
 }
 
+inline auto f$curl_setopt_array(curl_easy easy_id, const array<mixed>& options) noexcept -> bool {
+    for (auto p : options) {
+      if (!f$curl_setopt(easy_id, p.get_key().to_int(), p.get_value())) {
+        return false;
+      }
+    }
+    return true;
+}
+
 inline auto f$curl_exec(int64_t easy_id) noexcept -> kphp::coro::task<mixed> {
   auto res{co_await kphp::web::simple_transfer_perform(easy_id)};
   if (!res.has_value()) [[unlikely]] {
