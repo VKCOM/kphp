@@ -920,7 +920,6 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
       W << "SAVE_BUILTIN_CALL_STATS(\"" << func->name << "\", (";
     }
 
-
     if (mode == func_call_mode::fork_call) {
       if (func->is_interruptible) {
         W << "(kphp::forks::start(" << FunctionName(func);

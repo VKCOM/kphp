@@ -118,6 +118,7 @@ public:
   bool cpp_variadic_call = false;
   bool is_resumable = false;
   bool is_interruptible = false;
+  bool is_k2_fork = false;
   bool is_stub = false;
   bool need_generated_stub = false;
   bool can_be_implicitly_interrupted_by_other_resumable = false;
