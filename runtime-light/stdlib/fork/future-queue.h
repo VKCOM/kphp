@@ -13,7 +13,7 @@
 #include "runtime-light/stdlib/fork/wait-queue-state.h"
 
 template<typename T>
-struct future_queue final : public refcountable_php_classes<C$ComponentQuery> {
+struct future_queue final {
   using result_type = T;
   int64_t m_future_id;
 
