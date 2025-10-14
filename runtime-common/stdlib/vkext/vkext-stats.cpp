@@ -15,7 +15,7 @@ constexpr auto HLL_PACK_CHAR_V2 = '$';
 constexpr auto MAX_HLL_SIZE = (1 << 14);
 constexpr auto HLL_BUF_SIZE = (MAX_HLL_SIZE + 1000);
 
-auto to_half_byte(char c) {
+int to_half_byte(char c) {
   return (((c > '9') ? (c - 7) : c) - '0');
 }
 
