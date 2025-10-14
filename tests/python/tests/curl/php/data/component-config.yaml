@@ -1,7 +1,14 @@
 entry: script
 components:
+  web:
+    type: Web
+    scope: Global
+    image: internal/web
+    args: { }
+    links: { }
   script:
     image: KPHP
     scope: Request
     args: {}
-    links: {}
+    links:
+      web: web
