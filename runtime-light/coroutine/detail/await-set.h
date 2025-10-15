@@ -128,6 +128,11 @@ public:
     }
   }
 
+  void abort_all() noexcept {
+    detach_awaiters();
+    m_ready_tasks = nullptr;
+  }
+
   ~await_broker() {
     detach_awaiters();
   }

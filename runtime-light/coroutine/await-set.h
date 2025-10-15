@@ -61,13 +61,17 @@ public:
     return detail::await_set::await_set_awaitable<return_type, waiting_policy>{m_await_broker};
   }
 
-  void shutdown() noexcept {
+  void abort_all() noexcept {
     if (m_running_state == running_state_t::stopped) {
       return;
     }
     m_running_state = running_state_t::stopped;
-    m_await_broker.detach_awaiters();
+    m_await_broker.abort_all();
     m_tasks_storage.clear();
+    // Since the abort_all function has successfully completed,
+    // it means that no one is waiting for the await set.
+    // We switch the await set to the running state to continue working.
+    m_running_state = running_state_t::running;
   }
 
   bool empty() const noexcept {
@@ -79,7 +83,7 @@ public:
   }
 
   ~await_set() {
-    shutdown();
+    abort_all();
   }
 };
 
