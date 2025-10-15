@@ -309,4 +309,72 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
   return SB.str();
 }
 
+array<mixed> f$getdate(int64_t timestamp) {
+  if (timestamp == std::numeric_limits<int64_t>::min()) {
+    timestamp = std::time(nullptr);
+  }
+  tm t;
+  time_t timestamp_t = timestamp;
+  tm* tp = k2::localtime_r(&timestamp_t, &t);
+  if (tp == nullptr) {
+    char buff[256];
+    php_warning("Error \"%s\" in getdate with timestamp %" PRId64, strerror_r(errno, buff, sizeof(buff)), timestamp);
+    memset(&t, 0, sizeof(tm));
+  }
+
+  array<mixed> result(array_size(11, false));
+
+  result.set_value(string("seconds", 7), t.tm_sec);
+  result.set_value(string("minutes", 7), t.tm_min);
+  result.set_value(string("hours", 5), t.tm_hour);
+  result.set_value(string("mday", 4), t.tm_mday);
+  result.set_value(string("wday", 4), t.tm_wday);
+  result.set_value(string("mon", 3), t.tm_mon + 1);
+  result.set_value(string("year", 4), t.tm_year + 1900);
+  result.set_value(string("yday", 4), t.tm_yday);
+  result.set_value(string("weekday", 7), string(PHP_TIMELIB_DAY_FULL_NAMES[t.tm_wday]));
+  result.set_value(string("month", 5), string(PHP_TIMELIB_MON_FULL_NAMES[t.tm_mon]));
+  result.set_value(string("0", 1), timestamp);
+
+  return result;
+}
+
+int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) {
+  tm t;
+  time_t timestamp_t = std::time(nullptr);
+  gmtime_r(&timestamp_t, &t);
+
+  if (h != std::numeric_limits<int64_t>::min()) {
+    t.tm_hour = static_cast<int32_t>(h);
+  }
+
+  if (m != std::numeric_limits<int64_t>::min()) {
+    t.tm_min = static_cast<int32_t>(m);
+  }
+
+  if (s != std::numeric_limits<int64_t>::min()) {
+    t.tm_sec = static_cast<int32_t>(s);
+  }
+
+  if (month != std::numeric_limits<int64_t>::min()) {
+    t.tm_mon = static_cast<int32_t>(month - 1);
+  }
+
+  if (day != std::numeric_limits<int64_t>::min()) {
+    t.tm_mday = static_cast<int32_t>(day);
+  }
+
+  if (year != std::numeric_limits<int64_t>::min()) {
+    t.tm_year = fix_year(static_cast<int32_t>(year)) - 1900;
+  }
+
+  t.tm_isdst = -1;
+
+  return timegm(&t);
+}
+
+bool f$checkdate(int64_t month, int64_t day, int64_t year) noexcept {
+  return year >= 1 && year <= 32767 && timelib_valid_date(year, month, day);
+}
+
 } // namespace kphp::time::impl

@@ -85,6 +85,8 @@ inline int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = 
   return duration_cast<chrono::seconds>(result).count();
 }
 
+array<mixed> f$getdate(int64_t timestamp = std::numeric_limits<int64_t>::min()) noexcept;
+
 inline string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) noexcept {
   namespace chrono = std::chrono;
   const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
@@ -92,6 +94,10 @@ inline string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) n
   gmtime_r(std::addressof(now), std::addressof(tm));
   return kphp::time::impl::date(format, tm, now, false);
 }
+
+int64_t f$gmmktime(int64_t h = std::numeric_limits<int64_t>::min(), int64_t m = std::numeric_limits<int64_t>::min(),
+                   int64_t s = std::numeric_limits<int64_t>::min(), int64_t month = std::numeric_limits<int64_t>::min(),
+                   int64_t day = std::numeric_limits<int64_t>::min(), int64_t year = std::numeric_limits<int64_t>::min());
 
 inline string f$date(const string& format, Optional<int64_t> timestamp = {}) noexcept {
   namespace chrono = std::chrono;
@@ -135,3 +141,5 @@ inline Optional<int64_t> f$strtotime(const string& datetime, int64_t base_timest
   }
   return *opt_timestamp;
 }
+
+bool f$checkdate(int64_t month, int64_t day, int64_t year) noexcept;
