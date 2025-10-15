@@ -1,0 +1,15 @@
+entry: script
+components:
+  script:
+    image: KPHP
+    scope: Request
+    args:
+      kml-dir: ${KPHP_KML_DIR}
+    links:
+      instance_cache: instance_cache
+  
+  instance_cache:
+    image: internal/cache
+    scope: Global
+    args: {}
+    links: {}

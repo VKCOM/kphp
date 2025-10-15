@@ -28,7 +28,9 @@ void vkprintf(int verbosity, const char* format, ...) __attribute__((format(prin
 #else
 // print message with timestamp
 void kprintf_(const char* file, int line, const char* format, ...) __attribute__((format(printf, 3, 4)));
+void kvprintf_(const char* file, int line, const char* format, va_list ap);
 #define kprintf(...) kprintf_(__FILE__, __LINE__, __VA_ARGS__)
+#define kvprintf(format, ap) kvprintf_(__FILE__, __LINE__, format, ap)
 #define vkprintf(verbosity_level, format, ...)                                                                                                                 \
   do {                                                                                                                                                         \
     if ((verbosity_level) > verbosity) {                                                                                                                       \

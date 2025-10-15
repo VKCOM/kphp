@@ -39,8 +39,8 @@
 #include "runtime/instance-cache.h"
 #include "runtime/job-workers/client-functions.h"
 #include "runtime/job-workers/server-functions.h"
+#include "runtime/kml.h"
 #include "runtime/kphp-backtrace.h"
-#include "runtime/kphp_ml/kphp_ml_init.h"
 #include "runtime/kphp_tracing.h"
 #include "runtime/math_functions.h"
 #include "runtime/memcache.h"
@@ -2426,11 +2426,21 @@ void free_runtime_environment(PhpScriptBuiltInSuperGlobals& superglobals) {
   runtime_allocator.free();
 }
 
+namespace {
+
+void worker_global_init_kml_buffer() noexcept {
+  const auto& kml_models_state = KmlModelsState::get();
+  auto& kml_inference_state = KmlInferenceState::get();
+  kml_inference_state.init(kml_models_state.max_buffer_size());
+}
+
+} // namespace
+
 void worker_global_init(WorkerType worker_type) noexcept {
   worker_global_init_slot_factories();
   vk::singleton<JsonLogger>::get().reset_json_logs_count();
   worker_global_init_handlers(worker_type);
-  init_kphp_ml_runtime_in_worker();
+  worker_global_init_kml_buffer();
   init_php_scripts_in_each_worker(PhpScriptMutableGlobals::current());
 }
 

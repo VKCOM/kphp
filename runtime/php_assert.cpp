@@ -18,6 +18,7 @@
 
 #include "common/dl-utils-lite.h"
 #include "common/fast-backtrace.h"
+#include "common/kprintf.h"
 #include "common/wrappers/pathname.h"
 
 #include "runtime-common/stdlib/tracing/tracing-functions.h"
@@ -183,6 +184,15 @@ void php_notice(char const* message, ...) {
   va_list args;
   va_start(args, message);
   php_warning_impl(false, E_NOTICE, message, args);
+  va_end(args);
+}
+
+#define eprintf(...) fprintf(stderr, __VA_ARGS__)
+
+void php_info(char const* message, ...) {
+  va_list args;
+  va_start(args, message);
+  kvprintf(message, args);
   va_end(args);
 }
 

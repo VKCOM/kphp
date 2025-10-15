@@ -231,6 +231,56 @@ int32_t k2_open(uint64_t* stream_d, size_t name_len, const char* name);
 int32_t k2_fopen(uint64_t* fd, const char* pathname, size_t pathname_len, const char* mode, size_t mode_len);
 
 /**
+ * Opens a directory stream corresponding to the directory named by the given path.
+ *
+ * @param `dd` A pointer to a `uint64_t` where the directory descriptor will be stored upon success.
+ * @param `path` A pointer to a character array containing the path of the directory to open.
+ * @param `path_len` The length of the path string.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `ENOENT` => The directory specified by `path` does not exist.
+ * `EACCES` => Permission denied to open the directory.
+ * `EINVAL` => The provided `dd` is `nullptr`, or `path` is `nullptr`.
+ * `ENAMETOOLONG` => The length of `path` exceeds the maximum allowed.
+ * `ENOSYS` => Internal error.
+ */
+int32_t k2_opendir(uint64_t* dd, const char* path, size_t path_len);
+
+struct DirEntry {
+  char* filename;
+  size_t filename_len;
+  size_t filename_align;
+  char* path;
+  size_t path_len;
+  size_t path_align;
+};
+
+/**
+ * Reads the next directory entry from the directory stream associated with the given directory descriptor.
+ *
+ * Memory management:
+ * The `filename` and `path` members of `DirEntry` struct are **not** null-terminated and should be manually
+ * freed using `k2_free` or `k2_free_checked`.
+
+ * @param `dd` The directory descriptor.
+ * @param `entry` A pointer to a `DirEntry` structure where the details of the directory entry will be stored.
+ * @param `result` A pointer to a `DirEntry*` where the address of the `entry` will be stored if a directory entry is read.
+ *                 If the end of the directory stream is reached, `*result` will be set to `NULL`.
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ * Possible `errno` values:
+ * `EINVAL` => The `dd` is not a valid descriptor, `entry` or `result` is `NULL`.
+ * `EBADF` => The `dd` is not a valid directory descriptor.
+ * `EIO` => An I/O error occurred while reading from the directory stream.
+ * `ENOMEM` => Not enough memory to create members of the `DirEntry` struct.
+ * `ENOSYS` => Internal error.
+ */
+int32_t k2_readdir(uint64_t dd, struct DirEntry* entry, struct DirEntry** result);
+
+/**
  * @return return `0` on success. libc-like `errno` otherwise
  *
  *  Some `errno` examples:

@@ -6,6 +6,7 @@
 
 // For reporting php logic related errors happened during script execution
 void php_debug(char const* message, ...) __attribute__((format(printf, 1, 2)));
+void php_info(char const* message, ...) __attribute__((format(printf, 1, 2)));
 void php_notice(char const* message, ...) __attribute__((format(printf, 1, 2)));
 void php_warning(char const* message, ...) __attribute__((format(printf, 1, 2)));
 void php_error(char const* message, ...) __attribute__((format(printf, 1, 2)));
