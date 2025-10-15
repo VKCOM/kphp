@@ -309,7 +309,9 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
   return SB.str();
 }
 
-array<mixed> f$getdate(int64_t timestamp) {
+} // namespace kphp::time::impl
+
+array<mixed> f$getdate(int64_t timestamp) noexcept {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = std::time(nullptr);
   }
@@ -339,7 +341,7 @@ array<mixed> f$getdate(int64_t timestamp) {
   return result;
 }
 
-int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) {
+int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) noexcept {
   tm t;
   time_t timestamp_t = std::time(nullptr);
   gmtime_r(&timestamp_t, &t);
@@ -365,7 +367,7 @@ int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, 
   }
 
   if (year != std::numeric_limits<int64_t>::min()) {
-    t.tm_year = fix_year(static_cast<int32_t>(year)) - 1900;
+    t.tm_year = kphp::time::impl::fix_year(static_cast<int32_t>(year)) - 1900;
   }
 
   t.tm_isdst = -1;
@@ -376,5 +378,3 @@ int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, 
 bool f$checkdate(int64_t month, int64_t day, int64_t year) noexcept {
   return year >= 1 && year <= 32767 && timelib_valid_date(year, month, day);
 }
-
-} // namespace kphp::time::impl
