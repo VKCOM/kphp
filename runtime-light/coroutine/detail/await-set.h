@@ -28,16 +28,16 @@ struct await_set_waiter {
   std::coroutine_handle<> m_continuation;
 };
 
-template<typename return_type, await_set_waiting_policy waiting_policy>
+template<typename return_type, kphp::coro::await_set_waiting_policy waiting_policy>
 class await_set_task;
 
-template<typename return_type, await_set_waiting_policy waiting_policy>
+template<typename return_type, kphp::coro::await_set_waiting_policy waiting_policy>
 struct await_set_ready_task_element {
   await_set_ready_task_element* m_next{};
   kphp::stl::list<await_set_task<return_type, waiting_policy>, kphp::memory::script_allocator>::iterator m_storage_location{};
 };
 
-template<typename return_type, await_set_waiting_policy waiting_policy>
+template<typename return_type, kphp::coro::await_set_waiting_policy waiting_policy>
 class await_broker {
   using await_set_t = kphp::coro::await_set<return_type, waiting_policy>;
   await_set_t& m_await_set;
@@ -61,7 +61,7 @@ public:
       resume_first_awaiter();
     }
 
-    if constexpr (waiting_policy == await_set_waiting_policy::resume_on_empty) {
+    if constexpr (waiting_policy == kphp::coro::await_set_waiting_policy::resume_on_empty) {
       if (m_await_set.empty()) {
         // Release everyone else who was waiting for the task to be completed
         detach_awaiters();
@@ -90,7 +90,7 @@ public:
       // await_set is shutting down
       return false;
     }
-    if constexpr (waiting_policy == await_set_waiting_policy::resume_on_empty) {
+    if constexpr (waiting_policy == kphp::coro::await_set_waiting_policy::resume_on_empty) {
       if (m_await_set.empty()) {
         return false;
       }
@@ -150,7 +150,7 @@ private:
   }
 };
 
-template<typename return_type, await_set_waiting_policy waiting_policy, typename promise_type>
+template<typename return_type, kphp::coro::await_set_waiting_policy waiting_policy, typename promise_type>
 class await_set_task_promise_base : public kphp::coro::async_stack_element {
   await_broker<return_type, waiting_policy>* m_await_broker{};
   await_set_ready_task_element<return_type, waiting_policy> m_ready_task_element{};
@@ -213,7 +213,7 @@ public:
   }
 };
 
-template<typename return_type, await_set_waiting_policy waiting_policy>
+template<typename return_type, kphp::coro::await_set_waiting_policy waiting_policy>
 class await_set_task {
   template<std::same_as<return_type> T>
   struct await_set_task_promise_non_void;
@@ -270,7 +270,7 @@ private:
   }
 
 public:
-  template<typename T, await_set_waiting_policy>
+  template<typename T, kphp::coro::await_set_waiting_policy>
   friend class kphp::coro::await_set;
 
   explicit await_set_task(std::coroutine_handle<promise_type> coroutine) noexcept
@@ -294,7 +294,7 @@ public:
   }
 };
 
-template<typename return_type, await_set_waiting_policy waiting_policy>
+template<typename return_type, kphp::coro::await_set_waiting_policy waiting_policy>
 class await_set_awaitable {
 public:
   using result_type = std::conditional_t<std::is_void_v<return_type>, kphp::coro::void_value, std::remove_cvref_t<return_type>>;
@@ -364,7 +364,7 @@ public:
   }
 };
 
-template<await_set_waiting_policy waiting_policy, kphp::coro::concepts::awaitable awaitable_type>
+template<kphp::coro::await_set_waiting_policy waiting_policy, kphp::coro::concepts::awaitable awaitable_type>
 auto make_await_set_task(awaitable_type coroutine) noexcept
     -> await_set_task<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type, waiting_policy> {
   if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type>) {
