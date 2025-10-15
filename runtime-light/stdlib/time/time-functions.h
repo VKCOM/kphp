@@ -97,7 +97,7 @@ inline string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) n
 
 int64_t f$gmmktime(int64_t h = std::numeric_limits<int64_t>::min(), int64_t m = std::numeric_limits<int64_t>::min(),
                    int64_t s = std::numeric_limits<int64_t>::min(), int64_t month = std::numeric_limits<int64_t>::min(),
-                   int64_t day = std::numeric_limits<int64_t>::min(), int64_t year = std::numeric_limits<int64_t>::min());
+                   int64_t day = std::numeric_limits<int64_t>::min(), int64_t year = std::numeric_limits<int64_t>::min()) noexcept;
 
 inline string f$date(const string& format, Optional<int64_t> timestamp = {}) noexcept {
   namespace chrono = std::chrono;
