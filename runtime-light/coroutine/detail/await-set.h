@@ -14,7 +14,7 @@
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/coroutine/await-set-policy.h"
+#include "runtime-light/coroutine/await-set-enums.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
@@ -134,7 +134,7 @@ public:
   }
 
   ~await_broker() {
-    detach_awaiters();
+    abort_all();
   }
 
 private:
@@ -223,7 +223,7 @@ public:
   using promise_type = std::conditional_t<std::is_void_v<return_type>, await_set_task_promise_void, await_set_task_promise_non_void<return_type>>;
 
 private:
-  std::coroutine_handle<promise_type> m_coroutine{};
+  std::coroutine_handle<promise_type> m_coroutine;
 
   struct await_set_task_promise_common : public await_set_task_promise_base<return_type, waiting_policy, promise_type> {
     auto get_return_object() noexcept {
