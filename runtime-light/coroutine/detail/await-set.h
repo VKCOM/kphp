@@ -359,7 +359,7 @@ public:
   await_set_awaitable& operator=(const await_set_awaitable&) = delete;
   await_set_awaitable& operator=(await_set_awaitable&& other) = delete;
 
-  auto operator co_await() && noexcept {
+  auto operator co_await() noexcept {
     return awaiter{m_await_broker};
   }
 };
