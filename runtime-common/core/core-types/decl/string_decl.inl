@@ -111,8 +111,8 @@ public:
   inline explicit string(int32_t i)
       : string(static_cast<int64_t>(i)) {}
   inline explicit string(double f);
-  explicit string(const std::string_view string_view)
-      : string(string_view.data(), string_view.size()) {}
+  explicit string(const std::string_view& sv)
+      : string(sv.data(), sv.size()) {}
 
   ~string() noexcept;
 
