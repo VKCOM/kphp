@@ -188,8 +188,8 @@ public:
   }
 
   auto start(detail::await_set::await_broker<return_type, waiting_policy>& await_broker,
-             kphp::stl::list<await_set_task<return_type, waiting_policy>, kphp::memory::script_allocator>::iterator storage_location, kphp::coro::async_stack_root& async_stack_root,
-             void* return_address) noexcept {
+             kphp::stl::list<await_set_task<return_type, waiting_policy>, kphp::memory::script_allocator>::iterator storage_location,
+             kphp::coro::async_stack_root& async_stack_root, void* return_address) noexcept {
     m_await_broker = std::addressof(await_broker);
     m_ready_task_element.m_storage_location = storage_location;
 
