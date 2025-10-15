@@ -114,8 +114,7 @@ public:
       return result_t{std::unexpected{kphp::coro::await_set_next_result_t::stopped}};
     }
 
-    auto* ready_task{m_ready_tasks};
-    m_ready_tasks = m_ready_tasks->m_next;
+    auto* ready_task{std::exchange(m_ready_tasks, m_ready_tasks->m_next)};
     auto task_iterator{ready_task->m_storage_location};
     auto result{task_iterator->result()};
     m_await_set.m_tasks_storage.erase(task_iterator);
