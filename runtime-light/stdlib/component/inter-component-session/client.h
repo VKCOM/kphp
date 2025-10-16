@@ -282,10 +282,9 @@ inline auto Client::query(std::span<const std::byte> request,
     response = resp;
     co_return false;
   })};
-  if (!res.has_value()) [[unlikely]]
-    [[unlikely]] {
-      co_return std::unexpected{res.error()};
-    }
+  if (!res.has_value()) [[unlikely]] {
+    co_return std::unexpected{res.error()};
+  }
   co_return std::expected<std::span<std::byte>, int32_t>{response};
 }
 
