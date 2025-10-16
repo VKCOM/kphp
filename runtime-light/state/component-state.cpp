@@ -27,7 +27,7 @@ void set_reference_counter_recursive(mixed obj, ExtraRefCnt rc) noexcept {
   switch (obj.get_type()) {
   case mixed::type::ARRAY:
     obj.set_reference_counter_to(rc);
-    for (const auto& it : obj.as_array()) {
+    for (const auto& it : std::as_const(obj.as_array())) {
       set_reference_counter_recursive(it.get_key(), rc);
       set_reference_counter_recursive(it.get_value(), rc);
     }

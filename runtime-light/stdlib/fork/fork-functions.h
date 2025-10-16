@@ -142,7 +142,7 @@ inline kphp::coro::task<bool> f$wait_concurrently(const mixed& fork_id) noexcept
 template<typename T>
 kphp::coro::task<T> f$wait_multi(array<int64_t> fork_ids) noexcept {
   T res{};
-  for (const auto& it : fork_ids) {
+  for (const auto& it : std::as_const(fork_ids)) {
     res.set_value(it.get_key(), co_await f$wait<typename T::value_type>(it.get_value()));
   }
   co_return std::move(res);
