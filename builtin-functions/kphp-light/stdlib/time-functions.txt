@@ -2,8 +2,9 @@
 
 // ===== SUPPORTED =====
 
-function mktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int = PHP_INT_MIN,
-                $month ::: int = PHP_INT_MIN, $day ::: int = PHP_INT_MIN, $year ::: int = PHP_INT_MIN) ::: int;
+function mktime (
+    $h ::: ?int = null, $m ::: ?int = null, $s ::: ?int = null, $month ::: ?int = null, $day ::: ?int = null, $year ::: ?int = null
+) ::: ?int;
 
 function date ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
 
@@ -15,7 +16,9 @@ function getdate ($timestamp ::: int = PHP_INT_MIN) ::: mixed[];
 
 function gmdate ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
 
-function gmmktime ($h ::: int = PHP_INT_MIN, $m ::: int = PHP_INT_MIN, $s ::: int = PHP_INT_MIN, $month ::: int = PHP_INT_MIN, $day ::: int = PHP_INT_MIN, $year ::: int = PHP_INT_MIN) ::: int;
+function gmmktime (
+    $h ::: ?int = null, $m ::: ?int = null, $s ::: ?int = null, $month ::: ?int = null, $day ::: ?int = null, $year ::: ?int = null
+) ::: int;
 
 function time() ::: int;
 

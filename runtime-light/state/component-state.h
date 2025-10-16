@@ -10,11 +10,13 @@
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/allocator-wrapper/libc-alloc-registrator.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
 
 struct ComponentState final : private vk::not_copyable {
   AllocatorState component_allocator_state{INIT_COMPONENT_ALLOCATOR_SIZE, 0};
+  AllocationsStorage component_allocations_storage;
 
   const uint32_t argc{k2::args_count()};
   const uint32_t envc{k2::env_count()};

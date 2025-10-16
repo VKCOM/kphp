@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <optional>
 #include <string_view>
@@ -11,6 +12,14 @@
 #include "kphp/timelib/timelib.h"
 
 namespace kphp::timelib {
+
+constexpr std::array<std::string_view, 12> MON_FULL_NAMES = {"January", "February", "March",     "April",   "May",      "June",
+                                                             "July",    "August",   "September", "October", "November", "December"};
+constexpr std::array<std::string_view, 12> MON_SHORT_NAMES = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+constexpr std::array<std::string_view, 7> DAY_FULL_NAMES = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+constexpr std::array<std::string_view, 7> DAY_SHORT_NAMES = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+
+timelib_tzinfo* get_timezone_info() noexcept;
 
 /**
  * @brief Retrieves a pointer to a `timelib_tzinfo` structure for a given time zone name.
@@ -26,6 +35,17 @@ namespace kphp::timelib {
  */
 timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb, int* errc) noexcept;
 
-std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime, int64_t timestamp) noexcept;
+std::tuple<std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::string_view, std::string_view>
+getdate(std::int64_t timestamp, timelib_tzinfo& tzinfo) noexcept;
+
+int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,
+                 std::optional<int64_t> yea) noexcept;
+
+std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
+                              std::optional<int64_t> day, std::optional<int64_t> yea) noexcept;
+
+std::optional<int64_t> strtotime(timelib_tzinfo& tzinfo, std::string_view datetime, int64_t timestamp) noexcept;
+
+bool valid_date(int64_t year, int64_t month, int64_t day) noexcept;
 
 } // namespace kphp::timelib
