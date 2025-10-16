@@ -1439,7 +1439,7 @@ void reopen_json_log() {
   }
 }
 
-void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port, bool invoke_dummy_self_rpc_request) noexcept {
+void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_request) noexcept {
   if (master_flag && logname_pattern != nullptr) {
     reopen_logs();
     reopen_json_log();
@@ -1456,20 +1456,6 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port, b
       if (http_server_ctx.http_server_enabled()) {
         http_port = http_server_ctx.worker_http_port();
         http_sfd = http_server_ctx.worker_http_socket_fd();
-      }
-
-      if (init_and_listen_rpc_port) {
-        if (rpc_port > 0 && rpc_sfd < 0) {
-          rpc_sfd = server_socket(rpc_port, settings_addr, backlog, 0);
-          if (rpc_sfd < 0) {
-            vkprintf(-1, "cannot open rpc server socket at port %d: %m\n", rpc_port);
-            exit(1);
-          }
-        }
-
-        if (rpc_sfd >= 0) {
-          init_listening_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods);
-        }
       }
 
       if (invoke_dummy_self_rpc_request) {
@@ -1499,6 +1485,10 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port, b
         init_listening_tcpv6_connection(http_sfd, &ct_php_engine_http_server, &http_methods, SM_SPECIAL);
       }
 
+      if (rpc_sfd >= 0) {
+        init_listening_tcpv6_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods, SM_SPECIAL);
+      }
+
       auto &rpc_clients = RpcClients::get().rpc_clients;
       std::for_each(rpc_clients.begin(), rpc_clients.end(),[](LeaseRpcClient &rpc_client) {
         vkprintf(-1, "create rpc client target: %s:%d\n", rpc_client.host.c_str(), rpc_client.port);
@@ -1511,7 +1501,6 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port, b
       break;
     }
     case WorkerType::job_worker: {
-      assert(!init_and_listen_rpc_port);
       vk::singleton<JobWorkerServer>::get().init();
       break;
     }
@@ -1635,7 +1624,7 @@ void start_server() {
   }
 
   worker_global_init(worker_type);
-  generic_event_loop(worker_type, !master_flag, run_once || run_once_prefork_mode);
+  generic_event_loop(worker_type, run_once || run_once_prefork_mode);
 }
 
 void set_instance_cache_memory_limit(size_t limit);
@@ -2471,6 +2460,18 @@ int run_main(int argc, char **argv, php_mode mode) {
       master_flag = 0;
       rpc_port = -1;
       setvbuf(stdout, nullptr, _IONBF, 0);
+    }
+  }
+
+  if (rpc_port > 0) {
+    if (!master_flag) {
+      kprintf("Using single process RPC server mode is forbidden, you must specify --workers-num / -f <n>\n");
+      exit(1);
+    }
+    rpc_sfd = server_socket(rpc_port, settings_addr, backlog, 0);
+    if (rpc_sfd < 0) {
+      kprintf("cannot open rpc server socket at port %d: %m\n", rpc_port);
+      exit(1);
     }
   }
 
