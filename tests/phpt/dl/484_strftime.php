@@ -1,4 +1,3 @@
-@ok fixme k2_skip
 <?php
 
 function test() {
@@ -63,6 +62,7 @@ function test() {
     // Results.
     $strftimeValues = array();
 
+#ifndef K2
     // Evaluate the formats whilst suppressing any errors.
     foreach($strftimeFormats as $format => $description){
       if (false !== ($value = strftime(strval ("%{$format}"), $time))){
@@ -82,6 +82,7 @@ function test() {
     foreach(array_diff_key($strftimeFormats, $strftimeValues) as $format => $description){
         echo "Unknown format : '{$format}'   ", str_pad(' ', $maxValueLength), ($description ? " ( {$description} )" : ''), "\n";
     }
+#endif
 
     var_dump (mktime(14, 59, 38, 2, 29, 2012));
     var_dump (gmmktime(14, 59, 38, 2, 29, 2012));
@@ -107,16 +108,20 @@ function test() {
     var_dump (checkdate(2, 29, 2004));
 
     #var_dump (strftime('%r'));
+#ifndef K2
     var_dump (strftime('%r', $time));
+#endif
 
     #var_dump (getdate());
     var_dump (getdate($time));
 
     #var_dump (localtime());
+#ifndef K2
     var_dump (localtime($time));
 
     #var_dump (localtime(time(), true));
     var_dump (localtime($time, true));
+#endif
 }
 
 date_default_timezone_set ("Etc/GMT-3");

@@ -19,9 +19,14 @@
 
 namespace kphp::time::impl {
 
+constexpr auto CHECKDATE_YEAR_MIN = 1;
+constexpr auto CHECKDATE_YEAR_MAX = 32767;
+
 int64_t fix_year(int64_t year) noexcept;
 
 string date(const string& format, const tm& t, int64_t timestamp, bool local) noexcept;
+
+string to_string(const std::string_view& sv) noexcept;
 
 } // namespace kphp::time::impl
 
@@ -68,24 +73,50 @@ inline int64_t f$time() noexcept {
   return duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count();
 }
 
-inline int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
-                        Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
-  namespace chrono = std::chrono;
-  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
-  chrono::year_month_day current_date{chrono::sys_days{duration_cast<chrono::days>(time_since_epoch)}};
-
-  const auto hours{chrono::hours(hour.has_value() ? hour.val() : duration_cast<chrono::hours>(time_since_epoch).count() % 24)};
-  const auto minutes{chrono::minutes(minute.has_value() ? minute.val() : duration_cast<chrono::minutes>(time_since_epoch).count() % 60)};
-  const auto seconds{chrono::seconds(second.has_value() ? second.val() : duration_cast<chrono::seconds>(time_since_epoch).count() % 60)};
-  const auto months{chrono::months(month.has_value() ? month.val() : static_cast<unsigned>(current_date.month()))};
-  const auto days{chrono::days(day.has_value() ? day.val() : static_cast<unsigned>(current_date.day()))};
-  const auto years{chrono::years(year.has_value() ? kphp::time::impl::fix_year(year.val()) : static_cast<int>(current_date.year()) - 1970)};
-
-  const auto result{hours + minutes + seconds + months + days + years};
-  return duration_cast<chrono::seconds>(result).count();
+inline Optional<int64_t> f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
+                                  Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
+  return value_or_false(kphp::timelib::mktime(hour, minute, second, month, day, year));
 }
 
-array<mixed> f$getdate(int64_t timestamp = std::numeric_limits<int64_t>::min()) noexcept;
+inline array<mixed> f$getdate(int64_t timestamp) noexcept {
+  if (timestamp == std::numeric_limits<int64_t>::min()) {
+    namespace chrono = std::chrono;
+    timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
+  }
+  auto tzi = kphp::timelib::get_timezone_info();
+  array<mixed> result(array_size(11, false));
+  result.set_value(string{"0", 1}, timestamp);
+  if (tzi == nullptr) [[unlikely]] {
+    result.set_value(string{"seconds", 7}, 0);
+    result.set_value(string{"minutes", 7}, 0);
+    result.set_value(string{"hours", 5}, 0);
+    result.set_value(string{"mday", 4}, 0);
+    result.set_value(string{"wday", 4}, 0);
+    result.set_value(string{"mon", 3}, 1);
+    result.set_value(string{"year", 4}, 1900);
+    result.set_value(string{"yday", 4}, 0);
+    result.set_value(string{"weekday", 7}, kphp::time::impl::to_string(kphp::timelib::DAY_FULL_NAMES[0]));
+    result.set_value(string{"month", 5}, kphp::time::impl::to_string(kphp::timelib::MON_FULL_NAMES[0]));
+
+    return result;
+  }
+
+  auto [seconds, minutes, hours, mday, wday, mon, year, yday, weekday, month] = kphp::timelib::getdate(timestamp, *tzi);
+
+  result.set_value(string{"seconds", 7}, seconds);
+  result.set_value(string{"minutes", 7}, minutes);
+  result.set_value(string{"hours", 5}, hours);
+  result.set_value(string{"mday", 4}, mday);
+  result.set_value(string{"wday", 4}, wday);
+  result.set_value(string{"mon", 3}, mon);
+  result.set_value(string{"year", 4}, year);
+  result.set_value(string{"yday", 4}, yday);
+  result.set_value(string{"weekday", 7}, kphp::time::impl::to_string(weekday));
+  result.set_value(string{"month", 5}, kphp::time::impl::to_string(month));
+  result.set_value(string{"0", 1}, timestamp);
+
+  return result;
+}
 
 inline string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) noexcept {
   namespace chrono = std::chrono;
@@ -95,9 +126,10 @@ inline string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) n
   return kphp::time::impl::date(format, tm, now, false);
 }
 
-int64_t f$gmmktime(int64_t h = std::numeric_limits<int64_t>::min(), int64_t m = std::numeric_limits<int64_t>::min(),
-                   int64_t s = std::numeric_limits<int64_t>::min(), int64_t month = std::numeric_limits<int64_t>::min(),
-                   int64_t day = std::numeric_limits<int64_t>::min(), int64_t year = std::numeric_limits<int64_t>::min()) noexcept;
+inline int64_t f$gmmktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
+                          Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
+  return kphp::timelib::gmmktime(hour, minute, second, month, day, year);
+}
 
 inline string f$date(const string& format, Optional<int64_t> timestamp = {}) noexcept {
   namespace chrono = std::chrono;
@@ -134,12 +166,17 @@ inline Optional<int64_t> f$strtotime(const string& datetime, int64_t base_timest
     namespace chrono = std::chrono;
     base_timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
   }
-  string default_timezone{f$date_default_timezone_get()};
-  const auto opt_timestamp{kphp::timelib::strtotime({default_timezone.c_str(), default_timezone.size()}, {datetime.c_str(), datetime.size()}, base_timestamp)};
+  auto* tzinfo = kphp::timelib::get_timezone_info();
+  if (!tzinfo) [[unlikely]] {
+    return false;
+  }
+  const auto opt_timestamp{kphp::timelib::strtotime(*tzinfo, {datetime.c_str(), datetime.size()}, base_timestamp)};
   if (!opt_timestamp.has_value()) [[unlikely]] {
     return false;
   }
   return *opt_timestamp;
 }
 
-bool f$checkdate(int64_t month, int64_t day, int64_t year) noexcept;
+inline bool f$checkdate(int64_t month, int64_t day, int64_t year) noexcept {
+  return year >= kphp::time::impl::CHECKDATE_YEAR_MIN && year <= kphp::time::impl::CHECKDATE_YEAR_MAX && kphp::timelib::valid_date(year, month, day);
+}

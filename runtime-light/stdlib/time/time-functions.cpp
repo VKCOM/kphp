@@ -16,12 +16,6 @@
 
 namespace {
 
-constexpr std::array<std::string_view, 12> PHP_TIMELIB_MON_FULL_NAMES = {"January", "February", "March",     "April",   "May",      "June",
-                                                                         "July",    "August",   "September", "October", "November", "December"};
-constexpr std::array<std::string_view, 12> PHP_TIMELIB_MON_SHORT_NAMES = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-constexpr std::array<std::string_view, 7> PHP_TIMELIB_DAY_FULL_NAMES = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-constexpr std::array<std::string_view, 7> PHP_TIMELIB_DAY_SHORT_NAMES = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-
 constexpr std::array<std::string_view, 4> suffix = {"st", "nd", "rd", "th"};
 
 void iso_week_number(int y, int doy, int weekday, int& iw, int& iy) noexcept {
@@ -103,13 +97,13 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       SB << static_cast<char>(day / 10 + '0') << static_cast<char>(day % 10 + '0');
       break;
     case 'D':
-      SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week].data();
+      SB << timelib::DAY_SHORT_NAMES[day_of_week].data();
       break;
     case 'j':
       SB << day;
       break;
     case 'l':
-      SB << PHP_TIMELIB_DAY_FULL_NAMES[day_of_week].data();
+      SB << timelib::DAY_FULL_NAMES[day_of_week].data();
       break;
     case 'N':
       SB << (day_of_week == 0 ? '7' : static_cast<char>(day_of_week + '0'));
@@ -147,13 +141,13 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       SB << static_cast<char>('0' + iso_week / 10) << static_cast<char>('0' + iso_week % 10);
       break;
     case 'F':
-      SB << PHP_TIMELIB_MON_FULL_NAMES[month - 1].data();
+      SB << timelib::MON_FULL_NAMES[month - 1].data();
       break;
     case 'm':
       SB << static_cast<char>(month / 10 + '0') << static_cast<char>(month % 10 + '0');
       break;
     case 'M':
-      SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1].data();
+      SB << timelib::MON_SHORT_NAMES[month - 1].data();
       break;
     case 'n':
       SB << month;
@@ -271,12 +265,12 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       }
       break;
     case 'r':
-      SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week].data();
+      SB << timelib::DAY_SHORT_NAMES[day_of_week].data();
       SB << ", ";
       SB << static_cast<char>(day / 10 + '0');
       SB << static_cast<char>(day % 10 + '0');
       SB << ' ';
-      SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1].data();
+      SB << timelib::MON_SHORT_NAMES[month - 1].data();
       SB << ' ';
       SB << year;
       SB << ' ';
@@ -309,76 +303,8 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
   return SB.str();
 }
 
+string to_string(const std::string_view& sv) noexcept {
+  return {sv.data(), static_cast<string::size_type>(sv.size())};
+}
+
 } // namespace kphp::time::impl
-
-array<mixed> f$getdate(int64_t timestamp) noexcept {
-  if (timestamp == std::numeric_limits<int64_t>::min()) {
-    k2::SystemTime st{};
-    k2::system_time(std::addressof(st));
-    timestamp = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::nanoseconds{st.since_epoch_ns}).count();
-  }
-  tm t{};
-  time_t timestamp_t = timestamp;
-  tm* tp = k2::localtime_r(std::addressof(timestamp_t), std::addressof(t));
-  if (tp == nullptr) {
-    std::array<char, 256> buff{};
-    kphp::log::warning("Error \"{}\" in getdate with timestamp {}", strerror_r(errno, buff.data(), buff.size()), timestamp);
-    std::memset(std::addressof(t), 0, sizeof(tm));
-  }
-
-  array<mixed> result(array_size(11, false));
-
-  result.set_value(string{"seconds", 7}, t.tm_sec);
-  result.set_value(string{"minutes", 7}, t.tm_min);
-  result.set_value(string{"hours", 5}, t.tm_hour);
-  result.set_value(string{"mday", 4}, t.tm_mday);
-  result.set_value(string{"wday", 4}, t.tm_wday);
-  result.set_value(string{"mon", 3}, t.tm_mon + 1);
-  result.set_value(string{"year", 4}, t.tm_year + 1900);
-  result.set_value(string{"yday", 4}, t.tm_yday);
-  result.set_value(string{"weekday", 7}, string{PHP_TIMELIB_DAY_FULL_NAMES[t.tm_wday]});
-  result.set_value(string{"month", 5}, string{PHP_TIMELIB_MON_FULL_NAMES[t.tm_mon]});
-  result.set_value(string{"0", 1}, timestamp);
-
-  return result;
-}
-
-int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) noexcept {
-  tm t{};
-  k2::SystemTime st{};
-  k2::system_time(std::addressof(st));
-  time_t timestamp_t = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::nanoseconds{st.since_epoch_ns}).count();
-  gmtime_r(std::addressof(timestamp_t), std::addressof(t));
-
-  if (h != std::numeric_limits<int64_t>::min()) {
-    t.tm_hour = static_cast<int32_t>(h);
-  }
-
-  if (m != std::numeric_limits<int64_t>::min()) {
-    t.tm_min = static_cast<int32_t>(m);
-  }
-
-  if (s != std::numeric_limits<int64_t>::min()) {
-    t.tm_sec = static_cast<int32_t>(s);
-  }
-
-  if (month != std::numeric_limits<int64_t>::min()) {
-    t.tm_mon = static_cast<int32_t>(month - 1);
-  }
-
-  if (day != std::numeric_limits<int64_t>::min()) {
-    t.tm_mday = static_cast<int32_t>(day);
-  }
-
-  if (year != std::numeric_limits<int64_t>::min()) {
-    t.tm_year = kphp::time::impl::fix_year(static_cast<int32_t>(year)) - 1900;
-  }
-
-  t.tm_isdst = -1;
-
-  return timegm(std::addressof(t));
-}
-
-bool f$checkdate(int64_t month, int64_t day, int64_t year) noexcept {
-  return year >= 1 && year <= 32767 && timelib_valid_date(year, month, day);
-}

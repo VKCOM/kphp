@@ -10,6 +10,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/allocator-wrapper/libc-alloc-registrator.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/coroutine-state.h"
@@ -87,6 +88,7 @@ struct InstanceState final : vk::not_copyable {
   }
 
   AllocatorState instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0};
+  AllocationsStorage instance_allocations_storage;
   kphp::log::contextual_logger instance_logger;
 
   kphp::coro::io_scheduler io_scheduler;

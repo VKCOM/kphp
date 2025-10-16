@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <utility>
 
 #include "common/type_traits/is_constructible.h"
@@ -62,6 +63,10 @@ public:
 
   OptionalState value_state() const noexcept {
     return value_state_;
+  }
+
+  operator std::optional<T>() const noexcept {
+    return has_value() ? std::make_optional(value_) : std::nullopt;
   }
 
 protected:
@@ -199,3 +204,8 @@ struct InternalOptionalType<Optional<T>> {
 
 template<typename T>
 using internal_optional_type_t = typename InternalOptionalType<T>::type;
+
+template<typename Opt>
+Optional<typename Opt::value_type> value_or_false(Opt&& opt) noexcept {
+  return opt.has_value() ? *opt : false;
+}
