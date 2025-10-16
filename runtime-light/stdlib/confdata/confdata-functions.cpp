@@ -18,6 +18,7 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/confdata/confdata-constants.h"
+#include "runtime-light/stdlib/confdata/confdata-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/streams/read-ext.h"
@@ -45,6 +46,11 @@ mixed extract_confdata_value(const tl::confdataValue& confdata_value) noexcept {
 } // namespace
 
 kphp::coro::task<mixed> f$confdata_get_value(const string& key) noexcept {
+  auto& confdata_key_cache{ConfdataInstanceState::get().key_cache()};
+  if (auto it{confdata_key_cache.find(key)}; it != confdata_key_cache.end()) {
+    co_return it->second;
+  }
+
   tl::ConfdataGet confdata_get{.key = {.value = {key.c_str(), key.size()}}};
   tl::storer tls{confdata_get.footprint()};
   confdata_get.store(tls);
@@ -67,11 +73,19 @@ kphp::coro::task<mixed> f$confdata_get_value(const string& key) noexcept {
   if (!maybe_confdata_value.opt_value) { // no such key
     co_return mixed{};
   }
-  co_return extract_confdata_value(*maybe_confdata_value.opt_value); // the key exists
+
+  auto value{extract_confdata_value(*maybe_confdata_value.opt_value)}; // the key exists
+  confdata_key_cache.emplace(key, value);
+  co_return std::move(value);
 }
 
 kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(const string& wildcard) noexcept {
   static constexpr size_t CONFDATA_GET_WILDCARD_STREAM_CAPACITY = 1 << 20;
+
+  auto& confdata_wildcard_cache{ConfdataInstanceState::get().wildcard_cache()};
+  if (auto it{confdata_wildcard_cache.find(wildcard)}; it != confdata_wildcard_cache.end()) {
+    co_return it->second;
+  }
 
   tl::ConfdataGetWildcard confdata_get_wildcard{.wildcard = {.value = {wildcard.c_str(), wildcard.size()}}};
   tl::storer tls{confdata_get_wildcard.footprint()};
@@ -98,5 +112,6 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(const strin
     result.set_value(string{dict_field.key.value.data(), static_cast<string::size_type>(dict_field.key.value.size())},
                      extract_confdata_value(dict_field.value));
   });
+  confdata_wildcard_cache.emplace(wildcard, result);
   co_return std::move(result);
 }

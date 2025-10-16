@@ -2,6 +2,7 @@ prepend(
   RUNTIME_LIGHT_STDLIB_SRC
   stdlib/
   confdata/confdata-functions.cpp
+  confdata/confdata-state.cpp
   crypto/crypto-functions.cpp
   curl/curl-state.cpp
   diagnostics/backtrace.cpp
