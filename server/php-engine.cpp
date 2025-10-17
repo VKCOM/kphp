@@ -1620,6 +1620,12 @@ void start_server() {
     reopen_json_log();
   }
 
+  bool ok = vk::singleton<RpcServerContext>::get().master_create_server_sockets();
+  if (!ok) {
+    kprintf("Failed to create RPC sockets\n");
+    exit(1);
+  }
+
   init_netbuffers();
 
   init_epoll();
@@ -2419,6 +2425,43 @@ void init_default() {
   }
 }
 
+namespace {
+bool check_options() {
+  const auto& http_server_ctx = vk::singleton<HttpServerContext>::get();
+  const auto& rpc_server_ctx = vk::singleton<RpcServerContext>::get();
+  size_t general_workers_cnt = vk::singleton<WorkersControl>::get().get_count(WorkerType::general_worker);
+
+  if (!master_flag && (http_server_ctx.server_enabled() || rpc_server_ctx.server_enabled())) {
+    kprintf("Server mode is not supported without workers, yo must specify -f/--workers-num <n>\n");
+    return false;
+  }
+
+  if (http_server_ctx.server_enabled() && rpc_server_ctx.server_enabled()) {
+    kprintf("Server can't be both RPC and HTTP server simultaneously, choose only one server type\n");
+    return false;
+  }
+
+  if (http_server_ctx.server_enabled()) {
+    if (http_server_ctx.ports().size() > general_workers_cnt) {
+      kprintf("You create %" PRIu64 " HTTP ports, but have only %" PRIu64 " general workers -- it's useless to have ports > workers\n",
+              http_server_ctx.ports().size(), general_workers_cnt);
+      return false;
+    }
+  }
+
+  if (rpc_server_ctx.server_enabled()) {
+    if (rpc_server_ctx.ports().size() != general_workers_cnt) {
+      kprintf("For prefork RPC server it's highly recommended to have N rpc ports for N general workers. "
+              "But now you have %" PRIu64 " ports and %" PRIu64 " general workers\n",
+              rpc_server_ctx.ports().size(), general_workers_cnt);
+      return false;
+    }
+  }
+
+  return true;
+}
+} // namespace
+
 int run_main(int argc, char **argv, php_mode mode) {
   init_version_string(NAME_VERSION);
   dl_set_default_handlers();
@@ -2467,25 +2510,13 @@ int run_main(int argc, char **argv, php_mode mode) {
     }
   }
 
-  if (vk::singleton<RpcServerContext>::get().server_enabled()) {
-    if (!master_flag) {
-      kprintf("Using single process RPC server mode is forbidden, you must specify --workers-num / -f <n>\n");
-      exit(1);
-    }
-    bool ok = vk::singleton<RpcServerContext>::get().master_create_server_sockets();
-    if (!ok) {
-      kprintf("Failed to create RPC sockets\n");
-      exit(1);
-    }
-  }
-
-  if (!master_flag && vk::singleton<HttpServerContext>::get().server_enabled()) {
-    kprintf("HTTP server mode is not supported without workers, see -f/--workers-num option\n");
-    return 1;
-  }
-
   init_default();
   init_all();
+
+  bool ok = check_options();
+  if (!ok) {
+    exit(1);
+  }
 
   init_uptime();
   preallocate_msg_buffers();
