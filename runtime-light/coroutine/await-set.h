@@ -10,7 +10,6 @@
 #include <type_traits>
 
 #include "runtime-common/core/allocator/script-allocator.h"
-#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
