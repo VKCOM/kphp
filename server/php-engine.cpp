@@ -496,7 +496,7 @@ void hts_stop() {
   if (hts_stopped) {
     return;
   }
-  int http_sfd = vk::singleton<HttpServerContext>::get().worker_http_socket_fd();
+  int http_sfd = vk::singleton<HttpServerContext>::get().worker_socket_fd();
   if (http_sfd != -1) {
     epoll_close(http_sfd);
     close(http_sfd);
@@ -1453,9 +1453,9 @@ void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_reque
     case WorkerType::general_worker: {
       const auto &http_server_ctx = vk::singleton<HttpServerContext>::get();
 
-      if (http_server_ctx.http_server_enabled()) {
-        http_port = http_server_ctx.worker_http_port();
-        http_sfd = http_server_ctx.worker_http_socket_fd();
+      if (http_server_ctx.server_enabled()) {
+        http_port = http_server_ctx.worker_port();
+        http_sfd = http_server_ctx.worker_socket_fd();
       }
 
       if (invoke_dummy_self_rpc_request) {
@@ -2475,7 +2475,7 @@ int run_main(int argc, char **argv, php_mode mode) {
     }
   }
 
-  if (!master_flag && vk::singleton<HttpServerContext>::get().http_server_enabled()) {
+  if (!master_flag && vk::singleton<HttpServerContext>::get().server_enabled()) {
     kprintf("HTTP server mode is not supported without workers, see -f/--workers-num option\n");
     return 1;
   }
