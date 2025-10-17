@@ -96,7 +96,12 @@ void write_rpc_server_functions(CodeGenerator &W) {
     W << fmt_format("case {:#010x}: ", static_cast<unsigned int>(f->id)) << BEGIN;
     W << get_php_runtime_type(f, true) << " request;" << NL
       << "request.alloc();" << NL
+      << "auto custom_fetcher = f$VK$TL$RpcFunction$$typedFetch(request);" << NL
+      << "if (custom_fetcher.is_null()) " << BEGIN
       << "CurrentRpcServerQuery::get().save(" << cpp_tl_struct_name("f_", f->name) << "::rpc_server_typed_fetch(request.get()));" << NL
+      << END << "else" << BEGIN
+      << "CurrentRpcServerQuery::get().save(make_tl_func_base_simple_wrapper(std::move(custom_fetcher)));" << NL
+      << END << NL
       << "return request;" << NL
       << END << NL;
   }
