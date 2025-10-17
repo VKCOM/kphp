@@ -64,20 +64,45 @@ bool ServerContext<MAX_PORTS>::init_from_option(const char* option) {
   std::stringstream ss(option);
   std::string segment;
 
-  while(std::getline(ss, segment, ',')) {
+  while (std::getline(ss, segment, ',')) {
     auto trimmed = vk::trim(segment);
-    int val = std::atoi(trimmed.data());
-    auto port = static_cast<uint16_t>(val);
-    if (port != val) {
-      kprintf("Incorrect port %d\n", val);
-      return false;
+
+    auto dash_pos = trimmed.find('-');
+    if (dash_pos != std::string::npos) {
+      auto start_str = vk::trim(trimmed.substr(0, dash_pos));
+      auto end_str = vk::trim(trimmed.substr(dash_pos + 1));
+      int start_val = std::atoi(start_str.data());
+      int end_val = std::atoi(end_str.data());
+      auto start_port = static_cast<uint16_t>(start_val);
+      auto end_port = static_cast<uint16_t>(end_val);
+
+      if (start_port != start_val || end_port != end_val) {
+        kprintf("Incorrect port range %d-%d\n", start_val, end_val);
+        return false;
+      }
+
+      if (start_port > end_port) {
+        kprintf("Invalid port range: start (%d) > end (%d)\n", start_port, end_port);
+        return false;
+      }
+
+      for (uint16_t port = start_port; port <= end_port; ++port) {
+        ports_.emplace_back(port);
+      }
+    } else {
+      int val = std::atoi(trimmed.data());
+      auto port = static_cast<uint16_t>(val);
+      if (port != val) {
+        kprintf("Incorrect port %d\n", val);
+        return false;
+      }
+      ports_.emplace_back(port);
     }
-    ports_.emplace_back(port);
   }
 
   // sort and remove duplicates:
   std::sort(ports_.begin(), ports_.end());
-  ports_.erase(std::unique(ports_.begin(), ports_.end() ), ports_.end());
+  ports_.erase(std::unique(ports_.begin(), ports_.end()), ports_.end());
 
   if (ports_.size() > MAX_PORTS) {
     kprintf("Can't listen more than %" PRIu64 " ports\n", MAX_PORTS);
@@ -95,6 +120,7 @@ bool ServerContext<MAX_PORTS>::master_create_server_sockets() {
     if (socket == -1) {
       return false;
     }
+    vkprintf(1, "Created and set to LISTEN server socket on port %d\n", port);
     socket_fds_.emplace_back(socket);
   }
   return true;
@@ -118,6 +144,7 @@ void ServerContext<MAX_PORTS>::dedicate_server_socket_to_worker(uint16_t worker_
       close(socket_fds_[i]);
     }
   }
+  vkprintf(1, "Dedicate server socket with fd = %d to this worker\n", socket_fds_[cur_worker_socket_idx_]);
 }
 
 template<size_t MAX_PORTS>
