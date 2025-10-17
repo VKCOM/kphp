@@ -87,63 +87,62 @@ inline auto f$curl_setopt(curl_easy easy_id, int64_t option, const mixed& value)
   switch (option) {
   // "Long" options
   case CURLOPT::ADDRESS_SCOPE:
-  case CURLOPT::APPEND:
+  // case CURLOPT::APPEND:
   case CURLOPT::AUTOREFERER:
   case CURLOPT::BUFFERSIZE:
   case CURLOPT::CONNECT_ONLY:
   case CURLOPT::CONNECTTIMEOUT:
   case CURLOPT::CONNECTTIMEOUT_MS:
   case CURLOPT::COOKIESESSION:
-  case CURLOPT::CRLF:
-  case CURLOPT::DIRLISTONLY:
+  // case CURLOPT::CRLF:
+  // case CURLOPT::DIRLISTONLY:
   case CURLOPT::DNS_CACHE_TIMEOUT:
   case CURLOPT::FAILONERROR:
   case CURLOPT::FILETIME:
   case CURLOPT::FOLLOWLOCATION:
   case CURLOPT::FORBID_REUSE:
   case CURLOPT::FRESH_CONNECT:
-  case CURLOPT::FTP_CREATE_MISSING_DIRS:
-  case CURLOPT::FTP_RESPONSE_TIMEOUT:
-  case CURLOPT::FTP_SKIP_PASV_IP:
-  case CURLOPT::FTP_USE_EPRT:
-  case CURLOPT::FTP_USE_EPSV:
-  case CURLOPT::FTP_USE_PRET:
+  // case CURLOPT::FTP_CREATE_MISSING_DIRS:
+  // case CURLOPT::FTP_RESPONSE_TIMEOUT:
+  // case CURLOPT::FTP_SKIP_PASV_IP:
+  // case CURLOPT::FTP_USE_EPRT:
+  // case CURLOPT::FTP_USE_EPSV:
+  // case CURLOPT::FTP_USE_PRET:
   case CURLOPT::HEADER:
   case CURLOPT::HTTP_CONTENT_DECODING:
   case CURLOPT::HTTP_TRANSFER_DECODING:
   case CURLOPT::HTTPGET:
   case CURLOPT::HTTPPROXYTUNNEL:
   case CURLOPT::IGNORE_CONTENT_LENGTH:
-  case CURLOPT::INFILESIZE:
+  // case CURLOPT::INFILESIZE:
   case CURLOPT::LOW_SPEED_LIMIT:
   case CURLOPT::LOW_SPEED_TIME:
   case CURLOPT::MAXCONNECTS:
   case CURLOPT::MAXFILESIZE:
   case CURLOPT::MAXREDIRS:
-  case CURLOPT::NETRC:
-  case CURLOPT::NEW_DIRECTORY_PERMS:
-  case CURLOPT::NEW_FILE_PERMS:
+  // case CURLOPT::NEW_DIRECTORY_PERMS:
+  // case CURLOPT::NEW_FILE_PERMS:
   case CURLOPT::NOBODY:
   case CURLOPT::PORT:
   case CURLOPT::POST:
-  case CURLOPT::PROXY_TRANSFER_MODE:
+  // case CURLOPT::PROXY_TRANSFER_MODE:
   case CURLOPT::PROXYPORT:
-  case CURLOPT::RESUME_FROM:
-  case CURLOPT::SOCKS5_GSSAPI_NEC:
+  // case CURLOPT::RESUME_FROM:
+  // case CURLOPT::SOCKS5_GSSAPI_NEC:
   case CURLOPT::SSL_SESSIONID_CACHE:
   case CURLOPT::SSL_VERIFYHOST:
   case CURLOPT::SSL_VERIFYPEER:
+  case CURLOPT::SSLENGINE_DEFAULT:
   case CURLOPT::TCP_NODELAY:
-  case CURLOPT::TFTP_BLKSIZE:
+  // case CURLOPT::TFTP_BLKSIZE:
   case CURLOPT::TIMEOUT:
   case CURLOPT::TIMEOUT_MS:
-  case CURLOPT::TRANSFERTEXT:
+  // case CURLOPT::TRANSFERTEXT:
   case CURLOPT::UNRESTRICTED_AUTH:
   case CURLOPT::UPLOAD:
   case CURLOPT::VERBOSE:
   case CURLOPT::WILDCARDMATCH:
   case CURLOPT::PUT:
-  case CURLOPT::HTTP_VERSION:
   case CURLOPT::TCP_KEEPALIVE:
   case CURLOPT::TCP_KEEPIDLE:
   case CURLOPT::TCP_KEEPINTVL: {
@@ -176,42 +175,41 @@ inline auto f$curl_setopt(curl_easy easy_id, int64_t option, const mixed& value)
   case CURLOPT::CRLFILE:
   case CURLOPT::CUSTOMREQUEST:
   case CURLOPT::EGDSOCKET:
-  case CURLOPT::FTP_ACCOUNT:
-  case CURLOPT::FTP_ALTERNATIVE_TO_USER:
-  case CURLOPT::FTPPORT:
+  // case CURLOPT::FTP_ACCOUNT:
+  // case CURLOPT::FTP_ALTERNATIVE_TO_USER:
+  // case CURLOPT::FTPPORT:
   case CURLOPT::INTERFACE:
   case CURLOPT::ISSUERCERT:
-  case CURLOPT::KRBLEVEL:
-  case CURLOPT::MAIL_FROM:
-  case CURLOPT::NETRC_FILE:
+  // case CURLOPT::KRBLEVEL:
+  // case CURLOPT::MAIL_FROM:
+  // case CURLOPT::NETRC_FILE:
   case CURLOPT::NOPROXY:
   case CURLOPT::PASSWORD:
   case CURLOPT::PROXY:
   case CURLOPT::PROXYPASSWORD:
   case CURLOPT::PROXYUSERNAME:
-  case CURLOPT::PROXYUSERPWD:
+  // case CURLOPT::PROXYUSERPWD:
   case CURLOPT::RANDOM_FILE:
   case CURLOPT::RANGE:
   case CURLOPT::REFERER:
-  case CURLOPT::RTSP_SESSION_ID:
-  case CURLOPT::RTSP_STREAM_URI:
-  case CURLOPT::RTSP_TRANSPORT:
-  case CURLOPT::SOCKS5_GSSAPI_SERVICE:
-  case CURLOPT::SSH_HOST_PUBLIC_KEY_MD5:
-  case CURLOPT::SSH_KNOWNHOSTS:
-  case CURLOPT::SSH_PRIVATE_KEYFILE:
-  case CURLOPT::SSH_PUBLIC_KEYFILE:
+  // case CURLOPT::RTSP_SESSION_ID:
+  // case CURLOPT::RTSP_STREAM_URI:
+  // case CURLOPT::RTSP_TRANSPORT:
+  // case CURLOPT::SOCKS5_GSSAPI_SERVICE:
+  // case CURLOPT::SSH_HOST_PUBLIC_KEY_MD5:
+  // case CURLOPT::SSH_KNOWNHOSTS:
+  // case CURLOPT::SSH_PRIVATE_KEYFILE:
+  // case CURLOPT::SSH_PUBLIC_KEYFILE:
   case CURLOPT::SSLCERT:
   case CURLOPT::SSLCERTTYPE:
   case CURLOPT::SSLENGINE:
-  case CURLOPT::SSLENGINE_DEFAULT:
   case CURLOPT::SSLKEY:
   case CURLOPT::SSLKEYTYPE:
   case CURLOPT::SSL_CIPHER_LIST:
   case CURLOPT::URL:
   case CURLOPT::USERAGENT:
   case CURLOPT::USERNAME:
-  case CURLOPT::USERPWD:
+  // case CURLOPT::USERPWD:
   case CURLOPT::ACCEPT_ENCODING: {
     auto res{kphp::web::set_transfer_prop(easy_id, option, kphp::web::PropertyValue::as_string(value.to_string()))};
     if (!res.has_value()) [[unlikely]] {
@@ -222,12 +220,12 @@ inline auto f$curl_setopt(curl_easy easy_id, int64_t option, const mixed& value)
     return true;
   }
   // "linked list" options
-  case CURLOPT::HTTP200ALIASES:
+  // case CURLOPT::HTTP200ALIASES:
   case CURLOPT::HTTPHEADER:
-  case CURLOPT::POSTQUOTE:
-  case CURLOPT::PREQUOTE:
-  case CURLOPT::QUOTE:
-  case CURLOPT::MAIL_RCPT:
+  // case CURLOPT::POSTQUOTE:
+  // case CURLOPT::PREQUOTE:
+  // case CURLOPT::QUOTE:
+  // case CURLOPT::MAIL_RCPT:
   case CURLOPT::RESOLVE: {
     if (unlikely(!value.is_array())) [[unlikely]] {
       bad_option_error("Value must be an array in function curl_setopt\n");
@@ -341,6 +339,47 @@ inline auto f$curl_setopt(curl_easy easy_id, int64_t option, const mixed& value)
     case CURL_IPRESOLVE::V4:
     case CURL_IPRESOLVE::V6: {
       auto res{kphp::web::set_transfer_prop(easy_id, option, kphp::web::PropertyValue::as_long(ip_resolve))};
+      if (!res.has_value()) [[unlikely]] {
+        print_error("Could not set an option", std::move(res.error()));
+        return false;
+      }
+      set_errno(CURLE::OK);
+      return true;
+    }
+    default:
+      set_errno(CURLE::BAD_FUNCTION_ARGUMENT);
+      return false;
+    }
+  }
+  case CURLOPT::NETRC: {
+    auto netrc{value.to_int()};
+    switch (netrc) {
+    case CURL_NETRC::IGNORED:
+    case CURL_NETRC::OPTIONAL:
+    case CURL_NETRC::REQUIRED: {
+      auto res{kphp::web::set_transfer_prop(easy_id, option, kphp::web::PropertyValue::as_long(netrc))};
+      if (!res.has_value()) [[unlikely]] {
+        print_error("Could not set an option", std::move(res.error()));
+        return false;
+      }
+      set_errno(CURLE::OK);
+      return true;
+    }
+    default:
+      set_errno(CURLE::BAD_FUNCTION_ARGUMENT);
+      return false;
+    }
+  }
+  case CURLOPT::HTTP_VERSION: {
+    auto http_version{value.to_int()};
+    switch (http_version) {
+    case CURL_HTTP_VERSION::NONE:
+    case CURL_HTTP_VERSION::_1_0:
+    case CURL_HTTP_VERSION::_1_1:
+    case CURL_HTTP_VERSION::_2_0:
+    case CURL_HTTP_VERSION::_2TLS:
+    case CURL_HTTP_VERSION::_2_PRIOR_KNOWLEDGE: {
+      auto res{kphp::web::set_transfer_prop(easy_id, option, kphp::web::PropertyValue::as_long(http_version))};
       if (!res.has_value()) [[unlikely]] {
         print_error("Could not set an option", std::move(res.error()));
         return false;
