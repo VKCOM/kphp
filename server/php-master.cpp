@@ -54,13 +54,13 @@
 #include "runtime/confdata-global-manager.h"
 #include "runtime/instance-cache.h"
 #include "server/confdata-binlog-replay.h"
-#include "server/http-server-context.h"
 #include "server/lease-rpc-client.h"
 #include "server/master-name.h"
 #include "server/numa-configuration.h"
 #include "server/php-engine-vars.h"
 #include "server/php-engine.h"
 #include "server/php-master-tl-handlers.h"
+#include "server/server-context-http.h"
 #include "server/server-stats.h"
 #include "server/shared-data-worker-cache.h"
 #include "server/shared-data.h"
@@ -622,7 +622,7 @@ int run_worker(WorkerType worker_type) {
       numa.distribute_worker(worker_unique_id);
     }
 
-    vk::singleton<HttpServerContext>::get().dedicate_http_socket_to_worker(worker_unique_id);
+    vk::singleton<HttpServerContext>::get().dedicate_server_socket_to_worker(worker_unique_id);
 
     // TODO should we just use net_reset_after_fork()?
 
@@ -780,7 +780,7 @@ static void send_fds_via_socket(const std::vector<int> &fds) {
     .iov_len = sizeof(int),
   };
 
-  std::aligned_storage_t<CMSG_SPACE(HttpServerContext::MAX_HTTP_PORTS * sizeof(int)), alignof(cmsghdr)> buf;
+  std::aligned_storage_t<CMSG_SPACE(HttpServerContext::MAX_PORTS * sizeof(int)), alignof(cmsghdr)> buf;
 
   msghdr msg = {
     .msg_name = (void *)dest_addr,
@@ -826,7 +826,7 @@ static int sock_dgram(const char *path) {
 static std::vector<int> receive_fds(int unix_socket_fd) {
   tvkprintf(graceful_restart, 1, "Graceful restart: receiving http fds from old master\n");
 
-  std::aligned_storage_t<CMSG_SPACE(HttpServerContext::MAX_HTTP_PORTS * sizeof(int)), alignof(cmsghdr)> buf;
+  std::aligned_storage_t<CMSG_SPACE(HttpServerContext::MAX_PORTS * sizeof(int)), alignof(cmsghdr)> buf;
 
   int iobuf[1];
   iovec iov = {
@@ -1240,7 +1240,7 @@ void run_master_off_in_graceful_restart() {
   tvkprintf(graceful_restart, 2, "other->to_kill_generation > me->generation --- %lld > %lld\n", other->to_kill_generation, me->generation);
 
   if (other->is_alive && other->ask_http_fds_generation > me->generation) {
-    send_fds_via_socket(vk::singleton<HttpServerContext>::get().http_socket_fds());
+    send_fds_via_socket(vk::singleton<HttpServerContext>::get().socket_fds());
     //TODO: process errors
     me->sent_http_fds_generation = static_cast<int>(generation);
     changed = 1;
@@ -1267,7 +1267,7 @@ bool init_http_sockets_if_needed() {
 
   auto &http_ctx = vk::singleton<HttpServerContext>::get();
 
-  if (!http_ctx.http_server_enabled() || http_sockets_inited) {
+  if (!http_ctx.server_enabled() || http_sockets_inited) {
     return true;
   }
 
@@ -1276,7 +1276,7 @@ bool init_http_sockets_if_needed() {
   if (!can_ask_http_fds) {
     tvkprintf(master_process, 1, "master create http sockets\n");
 
-    bool ok = http_ctx.master_create_http_sockets();
+    bool ok = http_ctx.master_create_server_sockets();
     assert(ok && "failed to create HTTP sockets");
     me->own_http_fds = 1;
     http_sockets_inited = true;
@@ -1292,7 +1292,7 @@ bool init_http_sockets_if_needed() {
       }
 
       if (!open_http_sfds.empty()) {
-        http_ctx.master_set_open_http_sockets(std::move(open_http_sfds));
+        http_ctx.master_set_open_sockets(std::move(open_http_sfds));
         me->own_http_fds = 1;
         http_sockets_inited = true;
       } else {
@@ -1508,7 +1508,7 @@ static master_state master_change_state() {
 
 WorkerType run_master() {
   cpu_cnt = (int)sysconf(_SC_NPROCESSORS_ONLN);
-  const auto &http_server_ports = vk::singleton<HttpServerContext>::get().http_ports();
+  const auto &http_server_ports = vk::singleton<HttpServerContext>::get().ports();
 
   me->http_ports_count = http_server_ports.size();
   for (size_t i = 0; i < http_server_ports.size(); ++i) {
