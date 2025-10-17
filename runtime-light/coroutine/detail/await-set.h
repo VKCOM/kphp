@@ -4,9 +4,7 @@
 
 #pragma once
 
-#include <concepts>
 #include <coroutine>
-#include <cstdint>
 #include <expected>
 #include <memory>
 #include <optional>
@@ -14,7 +12,6 @@
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -61,11 +58,11 @@ public:
   await_broker& operator=(await_broker&& other) = delete;
 
   template<typename... Args>
-  auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
+  void* operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept {
     return kphp::memory::script::alloc(n);
   }
 
-  auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
+  void operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept {
     kphp::memory::script::free(ptr);
   }
 
@@ -363,6 +360,8 @@ public:
   auto operator co_await() noexcept {
     return awaiter{m_await_broker};
   }
+
+  ~await_set_awaitable() = default;
 };
 
 template<kphp::coro::concepts::awaitable awaitable_type>

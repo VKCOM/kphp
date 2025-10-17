@@ -5,14 +5,12 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 #include <type_traits>
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/detail/await-set.h"
 #include "runtime-light/coroutine/type-traits.h"
