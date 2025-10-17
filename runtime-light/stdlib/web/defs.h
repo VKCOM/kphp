@@ -170,6 +170,8 @@ enum InternalErrorCode : int64_t {
 enum BackendInternalError : int64_t {
   CannotTakeHandlerOwnership = -512,
   PostFieldValueNotString = -513,
+  HeaderLineNotString = -514,
+  UnsupportedProperty = -515,
 };
 
 } // namespace kphp::web
