@@ -5,6 +5,7 @@ prepend(
   confdata/confdata-state.cpp
   crypto/crypto-functions.cpp
   curl/curl-state.cpp
+  web/web-state.cpp
   diagnostics/backtrace.cpp
   diagnostics/contextual-logger.cpp
   diagnostics/error-handling-state.cpp

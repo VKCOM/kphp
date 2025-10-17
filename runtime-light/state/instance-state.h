@@ -38,6 +38,7 @@
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 #include "runtime-light/stdlib/time/time-state.h"
+#include "runtime-light/stdlib/web/web-state.h"
 
 /**
  * Supported kinds of KPHP images:
@@ -110,6 +111,7 @@ struct InstanceState final : vk::not_copyable {
   RandomInstanceState random_instance_state;
   RegexInstanceState regex_instance_state;
   CurlInstanceState curl_instance_state;
+  WebInstanceState web_instance_state;
   StringInstanceState string_instance_state;
   SystemInstanceState system_instance_state;
   ErrorHandlingState error_handling_instance_state;
