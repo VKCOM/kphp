@@ -1580,5 +1580,3 @@ inline decltype(auto) check_not_false(T&& val) {
 
 template<typename T>
 using future = int64_t;
-template<typename T>
-using future_queue = int64_t;
