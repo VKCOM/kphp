@@ -31,6 +31,7 @@ public:
   const std::vector<int>& socket_fds() const noexcept;
 
   bool master_create_server_sockets();
+  // used only to get open sockets from old master on graceful restart
   void master_set_open_sockets(std::vector<int>&& socket_fds);
 
   void dedicate_server_socket_to_worker(uint16_t worker_unique_id);

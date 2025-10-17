@@ -34,8 +34,6 @@ int run_once_return_code = 0;
 int die_on_fail = 0;
 
 /** rpc **/
-int rpc_port = -1;
-int rpc_sfd = -1;
 long long rpc_client_actor = -1;
 
 /** sigterm **/

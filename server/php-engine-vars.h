@@ -44,8 +44,6 @@ extern int run_once_return_code;
 extern int die_on_fail;
 
 /** rpc **/
-extern int rpc_port;
-extern int rpc_sfd;
 extern long long rpc_client_actor;
 
 /** master **/

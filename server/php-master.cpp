@@ -61,6 +61,7 @@
 #include "server/php-engine.h"
 #include "server/php-master-tl-handlers.h"
 #include "server/server-context-http.h"
+#include "server/server-context-rpc.h"
 #include "server/server-stats.h"
 #include "server/shared-data-worker-cache.h"
 #include "server/shared-data.h"
@@ -623,6 +624,7 @@ int run_worker(WorkerType worker_type) {
     }
 
     vk::singleton<HttpServerContext>::get().dedicate_server_socket_to_worker(worker_unique_id);
+    vk::singleton<RpcServerContext>::get().dedicate_server_socket_to_worker(worker_unique_id);
 
     // TODO should we just use net_reset_after_fork()?
 
