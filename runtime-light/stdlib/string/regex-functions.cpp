@@ -15,6 +15,7 @@
 #include <optional>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 #include <variant>
 
 #include "common/containers/final_action.h"
@@ -406,7 +407,7 @@ PCRE2_SIZE set_all_matches(const RegexInfo& regex_info, int64_t flags, std::opti
 
   mixed& all_matches{(*opt_all_matches).get()};
   if (pattern_order) [[likely]] {
-    for (auto& it : matches) {
+    for (auto& it : std::as_const(matches)) {
       all_matches[it.get_key()].push_back(it.get_value());
     }
   } else {
