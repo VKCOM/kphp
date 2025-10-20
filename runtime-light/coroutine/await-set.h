@@ -27,7 +27,7 @@ class await_set {
   template<typename T>
   friend class kphp::coro::detail::await_set::await_broker;
 
-  void abort_all() noexcept {
+  void clear() noexcept {
     m_await_broker.release();
     m_tasks_storage.clear();
   }
@@ -44,7 +44,7 @@ public:
 
   await_set& operator=(await_set&& other) noexcept {
     if (this != std::addressof(other)) {
-      abort_all();
+      clear();
       m_tasks_storage = std::move(other.m_tasks_storage);
       m_await_broker = std::move(other.m_await_broker);
       m_coroutine_stack_root = other.m_coroutine_stack_root;
@@ -75,7 +75,7 @@ public:
   }
 
   ~await_set() {
-    abort_all();
+    clear();
   }
 };
 
