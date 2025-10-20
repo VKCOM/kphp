@@ -111,7 +111,7 @@ int64_t gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, in
   }
 }
 
-}
+} // namespace
 
 bool f$checkdate(int64_t month, int64_t day, int64_t year) {
   return php_timelib_is_valid_date(month, day, year);
