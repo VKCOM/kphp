@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 KPHP_ERROR_ON_WARNINGS=1
 <?php
 

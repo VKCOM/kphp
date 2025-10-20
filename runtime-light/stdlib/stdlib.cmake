@@ -2,15 +2,18 @@ prepend(
   RUNTIME_LIGHT_STDLIB_SRC
   stdlib/
   confdata/confdata-functions.cpp
+  confdata/confdata-state.cpp
   crypto/crypto-functions.cpp
   curl/curl-state.cpp
   diagnostics/backtrace.cpp
   diagnostics/contextual-logger.cpp
   diagnostics/error-handling-state.cpp
+  file/resource.cpp
   fork/fork-state.cpp
   instance-cache/instance-cache-state.cpp
   job-worker/job-worker-api.cpp
   job-worker/job-worker-client-state.cpp
+  kml/kml-state.cpp
   math/random-state.cpp
   math/math-state.cpp
   output/output-buffer.cpp

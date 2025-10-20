@@ -22,13 +22,29 @@ uint64_t mult_and_add(uint64_t x, uint8_t y, bool& overflow) noexcept {
 
 } // namespace math_functions_impl_
 
+inline double f$acos(double v) noexcept;
+
+inline double f$atan(double v) noexcept;
+
+inline double f$atan2(double y, double x) noexcept;
+
+int64_t f$bindec(const string& number) noexcept;
+
 inline double f$ceil(double v) noexcept;
 
 inline double f$cos(double v) noexcept;
 
+string f$decbin(int64_t number) noexcept;
+
 inline double f$deg2rad(double v) noexcept;
 
+inline double f$exp(double v) noexcept;
+
 inline double f$floor(double v) noexcept;
+
+inline bool f$is_finite(double v) noexcept;
+
+inline bool f$is_infinite(double v) noexcept;
 
 inline double f$log(double v) noexcept;
 
@@ -56,7 +72,11 @@ inline double f$pi() noexcept;
 
 inline double f$round(double v, int64_t precision = 0) noexcept;
 
+inline double f$sin(double v) noexcept;
+
 inline double f$sqrt(double v) noexcept;
+
+inline double f$tan(double v) noexcept;
 
 inline mixed f$abs(const mixed& v) noexcept {
   mixed num = v.to_numeric();
@@ -86,6 +106,18 @@ inline double f$abs(const Optional<double>& v) noexcept {
   return f$abs(val(v));
 }
 
+inline double f$acos(double v) noexcept {
+  return acos(v);
+}
+
+inline double f$atan(double v) noexcept {
+  return atan(v);
+}
+
+inline double f$atan2(double y, double x) noexcept {
+  return atan2(y, x);
+}
+
 inline double f$ceil(double v) noexcept {
   return ceil(v);
 }
@@ -98,8 +130,21 @@ inline double f$deg2rad(double v) noexcept {
   return v * M_PI / 180;
 }
 
+inline double f$exp(double v) noexcept {
+  return exp(v);
+}
+
 inline double f$floor(double v) noexcept {
   return floor(v);
+}
+
+inline bool f$is_finite(double v) noexcept {
+  int v_class = std::fpclassify(v);
+  return (v_class != FP_NAN && v_class != FP_INFINITE);
+}
+
+inline bool f$is_infinite(double v) noexcept {
+  return (std::fpclassify(v) == FP_INFINITE);
 }
 
 inline double f$log(double v) noexcept {
@@ -188,11 +233,19 @@ inline double f$round(double v, int64_t precision) noexcept {
   return round(v * mul) / mul;
 }
 
+inline double f$sin(double v) noexcept {
+  return sin(v);
+}
+
 inline double f$sqrt(double v) noexcept {
   if (v < 0) {
     return 0.0;
   }
   return sqrt(v);
+}
+
+inline double f$tan(double v) noexcept {
+  return tan(v);
 }
 
 int64_t f$hexdec(const string& number) noexcept;

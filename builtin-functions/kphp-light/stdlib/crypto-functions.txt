@@ -42,6 +42,16 @@ function openssl_encrypt($data ::: string, $method ::: string, $key ::: string, 
 function openssl_decrypt($data ::: string, $method ::: string, $key ::: string, $options ::: int = 0, $iv ::: string  = '',
                         $tag ::: string = '', $aad ::: string = '') ::: string | false;
 
+/** @kphp-extern-func-info interruptible */
+function openssl_pkey_get_private ($key ::: string, $passphrase ::: string = '') ::: string | false;
+/** @kphp-extern-func-info interruptible */
+function openssl_pkey_get_public ($key ::: string) ::: string | false;
+
+/** @kphp-extern-func-info interruptible */
+function openssl_public_encrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
+/** @kphp-extern-func-info interruptible */
+function openssl_private_decrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
+
 function hash_algos () ::: string[];
 function hash_hmac_algos () ::: string[];
 
@@ -80,14 +90,6 @@ define('PKCS7_BINARY', 0x80);
 define('PKCS7_DETACHED', 0x40);
 define('PKCS7_NOATTR', 0x100);
 
-/** @kphp-extern-func-info stub generation-required */
-function openssl_public_encrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
-/** @kphp-extern-func-info stub generation-required */
-function openssl_private_decrypt ($data ::: string, &$result ::: mixed, $key ::: string) ::: bool;
-/** @kphp-extern-func-info stub generation-required */
-function openssl_pkey_get_private ($key ::: string, $passphrase ::: string = '') ::: string | false;
-/** @kphp-extern-func-info stub generation-required */
-function openssl_pkey_get_public ($key ::: string) ::: string | false;
 /** @kphp-extern-func-info stub generation-required */
 function openssl_x509_verify ($x509cert ::: string, $public_key ::: string) ::: int;
 

@@ -7,10 +7,6 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/math/math-functions.h"
 
-int64_t f$bindec(const string& number) noexcept;
-
-string f$decbin(int64_t number) noexcept;
-
 double f$lcg_value();
 
 void f$mt_srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexcept;
@@ -35,29 +31,13 @@ constexpr int64_t PHP_ROUND_HALF_DOWN = 123423144;
 constexpr int64_t PHP_ROUND_HALF_EVEN = 123423145;
 constexpr int64_t PHP_ROUND_HALF_ODD = 123423146;
 
-inline double f$acos(double v);
-
-inline double f$atan(double v);
-
-inline double f$atan2(double y, double x);
-
 inline double f$cosh(double v);
 
 inline double f$acosh(double v);
 
-inline double f$exp(double v);
-
 inline double f$fmod(double x, double y);
 
-inline bool f$is_finite(double v);
-
-inline bool f$is_infinite(double v);
-
-inline double f$sin(double v);
-
 inline double f$sinh(double v);
-
-inline double f$tan(double v);
 
 inline double f$asin(double v);
 
@@ -73,28 +53,12 @@ void init_math_functions() noexcept;
  *
  */
 
-double f$acos(double v) {
-  return acos(v);
-}
-
-double f$atan(double v) {
-  return atan(v);
-}
-
-double f$atan2(double y, double x) {
-  return atan2(y, x);
-}
-
 double f$cosh(double v) {
   return cosh(v);
 }
 
 double f$acosh(double v) {
   return acosh(v);
-}
-
-double f$exp(double v) {
-  return exp(v);
 }
 
 double f$fmod(double x, double y) {
@@ -104,25 +68,8 @@ double f$fmod(double x, double y) {
   return fmod(x, y);
 }
 
-bool f$is_finite(double v) {
-  int v_class = std::fpclassify(v);
-  return (v_class != FP_NAN && v_class != FP_INFINITE);
-}
-
-bool f$is_infinite(double v) {
-  return (std::fpclassify(v) == FP_INFINITE);
-}
-
-double f$sin(double v) {
-  return sin(v);
-}
-
 double f$sinh(double v) {
   return sinh(v);
-}
-
-double f$tan(double v) {
-  return tan(v);
 }
 
 double f$asin(double v) {

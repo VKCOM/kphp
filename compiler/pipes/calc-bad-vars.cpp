@@ -6,10 +6,12 @@
 
 #include <algorithm>
 #include <queue>
+#include <utility>
 #include <vector>
 
 #include "compiler/compiler-core.h"
 #include "compiler/data/class-data.h"
+#include "compiler/data/data_ptr.h"
 #include "compiler/data/src-file.h"
 #include "compiler/function-pass.h"
 #include "compiler/kphp_assert.h"
@@ -558,10 +560,16 @@ class CalcBadVars {
     }
   }
 
-  static void calc_k2_fork(const FuncCallGraph &call_graph, const std::vector<DepData> &dep_data) {
+  static void calc_k2_fork(const FuncCallGraph& call_graph, const std::vector<DepData>& dep_data) {
     for (int i = 0; i < call_graph.n; ++i) {
-      for (const auto &fork : dep_data[i].forks) {
+      for (const auto& fork : dep_data[i].forks) {
         fork->is_interruptible = true;
+        if (!std::exchange(fork->is_k2_fork, true)) { // check only once
+          for (VarPtr param : fork->param_ids) {
+            kphp_error(!param->is_reference, fmt_format("Function '{}' cannot be forked since it has a reference parameter '{}'\n", fork->as_human_readable(),
+                                                        param->as_human_readable()));
+          }
+        }
       }
     }
   }

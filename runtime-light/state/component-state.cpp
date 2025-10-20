@@ -27,7 +27,7 @@ void set_reference_counter_recursive(mixed obj, ExtraRefCnt rc) noexcept {
   switch (obj.get_type()) {
   case mixed::type::ARRAY:
     obj.set_reference_counter_to(rc);
-    for (const auto& it : obj.as_array()) {
+    for (const auto& it : std::as_const(obj.as_array())) {
       set_reference_counter_recursive(it.get_key(), rc);
       set_reference_counter_recursive(it.get_value(), rc);
     }
@@ -67,6 +67,10 @@ void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view v
   value_str.set_reference_counter_to(ExtraRefCnt::for_global_const);
 
   ini_opts.set_value(key_str, value_str);
+}
+
+void ComponentState::parse_kml_arg(std::string_view kml_dir) noexcept {
+  kml_component_state.init(kml_dir);
 }
 
 void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexcept {
@@ -111,6 +115,8 @@ void ComponentState::parse_args() noexcept {
 
     if (key_view.starts_with(INI_ARG_PREFIX)) {
       parse_ini_arg(key_view, value_view);
+    } else if (key_view == KML_DIR_ARG) {
+      parse_kml_arg(value_view);
     } else if (key_view == RUNTIME_CONFIG_ARG) [[likely]] {
       parse_runtime_config_arg(value_view);
     } else {

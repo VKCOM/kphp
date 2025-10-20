@@ -106,7 +106,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
     }
 
     matches = array<string>{mixed_matches.as_array().size()};
-    for (auto& elem : mixed_matches.as_array()) {
+    for (auto& elem : std::as_const(mixed_matches.as_array())) {
       matches.set_value(elem.get_key(), std::move(elem.get_value().as_string()));
     }
   }

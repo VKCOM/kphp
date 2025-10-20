@@ -14,6 +14,7 @@
 #include <span>
 #include <string_view>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -24,7 +25,6 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/streams/stream.h"
 
@@ -59,11 +59,13 @@ struct sync_resource : public resource {
   virtual auto get_contents() noexcept -> std::expected<string, int32_t> = 0;
   virtual auto flush() noexcept -> std::expected<void, int32_t> = 0;
   virtual auto close() noexcept -> std::expected<void, int32_t> = 0;
+  virtual auto eof() const noexcept -> std::expected<bool, int32_t> = 0;
 };
 
 // ================================================================================================
 
 class file : public sync_resource {
+  bool m_eof{};
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
 
   explicit file(k2::descriptor descriptor) noexcept
@@ -95,6 +97,7 @@ public:
   auto get_contents() noexcept -> std::expected<string, int32_t> override;
   auto flush() noexcept -> std::expected<void, int32_t> override;
   auto close() noexcept -> std::expected<void, int32_t> override;
+  auto eof() const noexcept -> std::expected<bool, int32_t> override;
 };
 
 inline auto file::open(std::string_view path, std::string_view mode) noexcept -> std::expected<file, int32_t> {
@@ -116,7 +119,13 @@ inline auto file::read(std::span<std::byte> buf) noexcept -> std::expected<size_
   if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
     return std::unexpected{k2::errno_enodev};
   }
-  return {k2::read(m_descriptor, buf.size(), buf.data())};
+
+  const auto read{k2::read(m_descriptor, buf.size(), buf.data())};
+  if (buf.size() != 0) [[likely]] {
+    m_eof = read == 0;
+  }
+
+  return read;
 }
 
 inline auto file::get_contents() noexcept -> std::expected<string, int32_t> {
@@ -138,6 +147,109 @@ inline auto file::close() noexcept -> std::expected<void, int32_t> {
   return {};
 }
 
+inline auto file::eof() const noexcept -> std::expected<bool, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return m_eof;
+}
+
+// ================================================================================================
+
+class directory : public sync_resource {
+  k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
+
+  explicit directory(k2::descriptor descriptor) noexcept
+      : m_descriptor(descriptor) {}
+
+public:
+  directory(directory&& other) noexcept
+      : m_descriptor(std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)) {}
+  directory& operator=(directory&& other) noexcept {
+    if (this != std::addressof(other)) {
+      std::ignore = close();
+      m_descriptor = std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
+    }
+    return *this;
+  }
+
+  ~directory() override {
+    std::ignore = close();
+  }
+
+  directory(const directory&) = delete;
+  directory& operator=(const directory&) = delete;
+
+  static auto open(std::string_view path) noexcept -> std::expected<directory, int32_t>;
+
+  auto write(std::span<const std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
+  auto read(std::span<std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
+  auto get_contents() noexcept -> std::expected<string, int32_t> override;
+  auto flush() noexcept -> std::expected<void, int32_t> override;
+  auto close() noexcept -> std::expected<void, int32_t> override;
+  auto eof() const noexcept -> std::expected<bool, int32_t> override;
+
+  auto readdir() const noexcept -> std::invoke_result_t<decltype(std::addressof(k2::readdir)), k2::descriptor>;
+};
+
+inline auto directory::open(std::string_view path) noexcept -> std::expected<directory, int32_t> {
+  auto expected{k2::opendir(path)};
+  if (!expected) [[unlikely]] {
+    return std::unexpected{expected.error()};
+  }
+  return directory{*expected};
+}
+
+inline auto directory::write(std::span<const std::byte> /*buf*/) noexcept -> std::expected<size_t, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return std::unexpected{k2::errno_einval};
+}
+
+inline auto directory::read(std::span<std::byte> /*buf*/) noexcept -> std::expected<size_t, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return std::unexpected{k2::errno_einval};
+}
+
+inline auto directory::get_contents() noexcept -> std::expected<string, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return std::unexpected{k2::errno_einval};
+}
+
+inline auto directory::flush() noexcept -> std::expected<void, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return std::unexpected{k2::errno_einval};
+}
+
+inline auto directory::close() noexcept -> std::expected<void, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  k2::free_descriptor(std::exchange(m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR));
+  return {};
+}
+
+inline auto directory::eof() const noexcept -> std::expected<bool, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return std::unexpected{k2::errno_einval};
+}
+
+inline auto directory::readdir() const noexcept -> std::invoke_result_t<decltype(std::addressof(k2::readdir)), k2::descriptor> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return k2::readdir(m_descriptor);
+}
+
 // ================================================================================================
 
 class stdinput : public sync_resource {
@@ -149,6 +261,7 @@ public:
   auto get_contents() noexcept -> std::expected<string, int32_t> override;
   auto flush() noexcept -> std::expected<void, int32_t> override;
   auto close() noexcept -> std::expected<void, int32_t> override;
+  auto eof() const noexcept -> std::expected<bool, int32_t> override;
 };
 
 inline auto stdinput::open() noexcept -> std::expected<stdinput, int32_t> {
@@ -175,6 +288,10 @@ inline auto stdinput::close() noexcept -> std::expected<void, int32_t> {
   return std::unexpected{k2::errno_enodev};
 }
 
+inline auto stdinput::eof() const noexcept -> std::expected<bool, int32_t> {
+  return std::unexpected{k2::errno_enodev};
+}
+
 // ================================================================================================
 
 class stdoutput : public sync_resource {
@@ -188,14 +305,8 @@ public:
   auto get_contents() noexcept -> std::expected<string, int32_t> override;
   auto flush() noexcept -> std::expected<void, int32_t> override;
   auto close() noexcept -> std::expected<void, int32_t> override;
+  auto eof() const noexcept -> std::expected<bool, int32_t> override;
 };
-
-inline auto stdoutput::open() noexcept -> std::expected<stdoutput, int32_t> {
-  if (InstanceState::get().instance_kind() != instance_kind::cli) [[unlikely]] {
-    return std::unexpected{k2::errno_einval};
-  }
-  return {stdoutput{}};
-}
 
 inline auto stdoutput::write(std::span<const std::byte> buf) noexcept -> std::expected<size_t, int32_t> {
   if (!m_open) [[unlikely]] {
@@ -229,6 +340,10 @@ inline auto stdoutput::close() noexcept -> std::expected<void, int32_t> {
   return std::expected<void, int32_t>{};
 }
 
+inline auto stdoutput::eof() const noexcept -> std::expected<bool, int32_t> {
+  return std::unexpected{k2::errno_enodev};
+}
+
 // ================================================================================================
 
 class stderror : public sync_resource {
@@ -244,6 +359,7 @@ public:
   auto get_contents() noexcept -> std::expected<string, int32_t> override;
   auto flush() noexcept -> std::expected<void, int32_t> override;
   auto close() noexcept -> std::expected<void, int32_t> override;
+  auto eof() const noexcept -> std::expected<bool, int32_t> override;
 };
 
 inline auto stderror::open() noexcept -> std::expected<stderror, int32_t> {
@@ -279,6 +395,10 @@ inline auto stderror::close() noexcept -> std::expected<void, int32_t> {
   return {};
 }
 
+inline auto stderror::eof() const noexcept -> std::expected<bool, int32_t> {
+  return std::unexpected{k2::errno_enodev};
+}
+
 // ================================================================================================
 
 class input : public sync_resource {
@@ -292,14 +412,8 @@ public:
   auto get_contents() noexcept -> std::expected<string, int32_t> override;
   auto flush() noexcept -> std::expected<void, int32_t> override;
   auto close() noexcept -> std::expected<void, int32_t> override;
+  auto eof() const noexcept -> std::expected<bool, int32_t> override;
 };
-
-inline auto input::open() noexcept -> std::expected<input, int32_t> {
-  if (InstanceState::get().instance_kind() != instance_kind::http_server) [[unlikely]] {
-    return std::unexpected{k2::errno_einval};
-  }
-  return {input{}};
-}
 
 inline auto input::write(std::span<const std::byte> /*buf*/) noexcept -> std::expected<size_t, int32_t> {
   return std::unexpected{m_open ? k2::errno_einval : k2::errno_enodev};
@@ -340,6 +454,10 @@ inline auto input::close() noexcept -> std::expected<void, int32_t> {
     return std::unexpected{k2::errno_enodev};
   }
   return {};
+}
+
+inline auto input::eof() const noexcept -> std::expected<bool, int32_t> {
+  return std::unexpected{k2::errno_enodev};
 }
 
 // ================================================================================================

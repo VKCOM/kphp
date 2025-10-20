@@ -14,6 +14,7 @@
 #include "common/containers/final_action.h"
 #include "runtime-light/allocator-wrapper/libc-alloc-registrator.h"
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/utils/optional.h"

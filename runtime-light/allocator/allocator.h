@@ -17,7 +17,6 @@ auto make_unique_on_script_memory(Args&&... args) noexcept {
 }
 
 namespace kphp::memory {
-
 struct libc_alloc_guard final {
   libc_alloc_guard() noexcept {
     AllocatorState::get_mutable().enable_libc_alloc();
@@ -32,5 +31,4 @@ struct libc_alloc_guard final {
   libc_alloc_guard& operator=(const libc_alloc_guard&) = delete;
   libc_alloc_guard& operator=(libc_alloc_guard&&) = delete;
 };
-
 } // namespace kphp::memory

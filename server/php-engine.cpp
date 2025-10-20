@@ -16,6 +16,7 @@
 #include <poll.h>
 #include "re2/re2.h"
 #include <string>
+#include <string_view>
 #include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -61,10 +62,11 @@
 #include "net/net-tcp-rpc-server.h"
 
 #include "runtime-common/core/memory-resource/memory_resource.h"
+#include "runtime-common/stdlib/kml/models-context.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
+#include "runtime/kml.h"
 #include "runtime/runtime-builtin-stats.h"
 #include "runtime/interface.h"
-#include "runtime/kphp_ml/kphp_ml_init.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
 #include "server/server-config.h"
@@ -1683,7 +1685,9 @@ void init_all() {
   worker_id = (int)lrand48();
 
   // TODO: In the future, we want to parallelize it
-  init_kphp_ml_runtime_in_master();
+  if (kphp::kml::kml_dir != nullptr) {
+    KmlModelsState::get_mutable().init({kphp::kml::kml_dir});
+  }
 
   init_confdata_binlog_reader();
 
@@ -2242,7 +2246,7 @@ int main_args_handler(int i, const char *long_option) {
         kprintf("--%s option: is not a directory\n", long_option);
         return -1;
       }
-      kml_directory = optarg;
+      kphp::kml::kml_dir = optarg;
       return 0;
     }
     case 2042: {

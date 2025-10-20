@@ -238,7 +238,7 @@ inline kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<
   array<kphp::rpc::request_extra_info> req_extra_info_arr{tl_objects.size()};
   auto opt_timeout{timeout.has_value() ? std::optional<double>{timeout.val()} : std::optional<double>{}};
 
-  for (const auto& it : tl_objects) {
+  for (const auto& it : std::as_const(tl_objects)) {
     const auto query_info{co_await kphp::forks::id_managed(
         kphp::rpc::detail::rpc_tl_query_one_impl({actor.c_str(), actor.size()}, it.get_value(), opt_timeout, collect_resp_extra_info, ignore_answer))};
     query_ids.set_value(it.get_key(), query_info.id);
@@ -253,7 +253,7 @@ inline kphp::coro::task<array<int64_t>> f$rpc_send_requests(string actor, array<
 
 inline kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses(array<int64_t> query_ids) noexcept {
   array<array<mixed>> res{query_ids.size()};
-  for (const auto& it : query_ids) {
+  for (const auto& it : std::as_const(query_ids)) {
     res.set_value(it.get_key(), co_await kphp::forks::id_managed(kphp::rpc::detail::rpc_tl_query_result_one_impl(it.get_value())));
   }
   co_return std::move(res);
@@ -288,7 +288,7 @@ kphp::coro::task<array<int64_t>> f$rpc_send_typed_query_requests(string actor, a
   array<kphp::rpc::request_extra_info> req_extra_info_arr{query_functions.size()};
   auto opt_timeout{timeout.has_value() ? std::optional<double>{timeout.val()} : std::optional<double>{}};
 
-  for (const auto& it : query_functions) {
+  for (const auto& it : std::as_const(query_functions)) {
     const auto query_info{co_await kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_one_impl(
         {actor.c_str(), actor.size()}, rpc_request_t{it.get_value()}, opt_timeout, collect_resp_extra_info, ignore_answer))};
     query_ids.set_value(it.get_key(), query_info.id);
@@ -305,7 +305,7 @@ template<std::same_as<int64_t> query_id_t = int64_t, std::same_as<RpcResponseErr
 requires std::default_initializable<error_factory_t>
 kphp::coro::task<array<class_instance<C$VK$TL$RpcResponse>>> f$rpc_fetch_typed_responses(array<query_id_t> query_ids) noexcept {
   array<class_instance<C$VK$TL$RpcResponse>> res{query_ids.size()};
-  for (const auto& it : query_ids) {
+  for (const auto& it : std::as_const(query_ids)) {
     res.set_value(it.get_key(), co_await kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_result_one_impl(it.get_value(), error_factory_t{})));
   }
   co_return std::move(res);

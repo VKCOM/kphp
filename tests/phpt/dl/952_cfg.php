@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?
 function apiWrapObject($key, $fields = array()) {
 return array('_' => $key) + $fields;
