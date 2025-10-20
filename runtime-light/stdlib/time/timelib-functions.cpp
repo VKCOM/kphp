@@ -12,6 +12,7 @@
 #include "kphp/timelib/timelib.h"
 
 #include "common/containers/final_action.h"
+#include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-light/allocator-wrapper/libc-alloc-registrator.h"
 #include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
