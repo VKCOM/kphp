@@ -317,6 +317,41 @@ struct Maybe final {
   }
 };
 
+template<typename T, typename U>
+struct Either final {
+  std::variant<T, U> value;
+
+  bool fetch(tl::fetcher& tlf) noexcept
+  requires tl::deserializable<T> && tl::deserializable<U>
+  {
+    T t{};
+    U u{};
+    const auto initial_pos{tlf.pos()};
+    if (t.fetch(tlf)) {
+      value.template emplace<T>(std::move(t));
+      return true;
+    } else if (tlf.reset(initial_pos); u.fetch(tlf)) {
+      value.template emplace<U>(std::move(u));
+      return true;
+    }
+    return false;
+  }
+
+  void store(tl::storer& tls) const noexcept
+  requires tl::serializable<T> && tl::serializable<U>
+  {
+    if (std::holds_alternative<T>(value)) {
+      static_cast<T>(value).store(tls);
+    } else {
+      static_cast<U>(value).store(tls);
+    }
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
+  }
+};
+
 class string final {
   static constexpr auto SMALL_STRING_SIZE_LEN = 1;
   static constexpr auto MEDIUM_STRING_SIZE_LEN = 3;
@@ -1106,29 +1141,6 @@ public:
   }
 };
 
-class SimpleWebTransferOpenResponse final {
-
-public:
-  std::variant<tl::SimpleWebTransferOpenResultOk, tl::WebError> value;
-
-  bool fetch(tl::fetcher& tlf) noexcept {
-    tl::SimpleWebTransferOpenResultOk ok{};
-    tl::WebError error{};
-    if (ok.fetch(tlf)) {
-      value.emplace<tl::SimpleWebTransferOpenResultOk>(std::move(ok));
-      return true;
-    } else if (tlf.reset(0); error.fetch(tlf)) {
-      value.emplace<tl::WebError>(std::move(error));
-      return true;
-    }
-    return false;
-  }
-
-  [[nodiscard]] constexpr size_t footprint() const noexcept {
-    return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
-  }
-};
-
 class SimpleWebTransferPerformResultOk final {
   static constexpr uint32_t SIMPLE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC = 0x77A8'98FF;
 
@@ -1144,29 +1156,6 @@ public:
   }
 };
 
-class SimpleWebTransferPerformResponse final {
-
-public:
-  std::variant<tl::SimpleWebTransferPerformResultOk, tl::WebError> value;
-
-  bool fetch(tl::fetcher& tlf) noexcept {
-    tl::SimpleWebTransferPerformResultOk ok{};
-    tl::WebError error{};
-    if (ok.fetch(tlf)) {
-      value.emplace<tl::SimpleWebTransferPerformResultOk>(std::move(ok));
-      return true;
-    } else if (tlf.reset(0); error.fetch(tlf)) {
-      value.emplace<tl::WebError>(std::move(error));
-      return true;
-    }
-    return false;
-  }
-
-  [[nodiscard]] constexpr size_t footprint() const noexcept {
-    return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
-  }
-};
-
 class SimpleWebTransferCloseResultOk final {
   static constexpr uint32_t SIMPLE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC = 0x63A7'16FF;
 
@@ -1179,29 +1168,6 @@ public:
 
   [[nodiscard]] constexpr size_t footprint() const noexcept {
     return tl::magic{.value = SIMPLE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC}.footprint();
-  }
-};
-
-class SimpleWebTransferCloseResponse final {
-
-public:
-  std::variant<tl::SimpleWebTransferCloseResultOk, tl::WebError> value;
-
-  bool fetch(tl::fetcher& tlf) noexcept {
-    tl::SimpleWebTransferCloseResultOk ok{};
-    tl::WebError error{};
-    if (ok.fetch(tlf)) {
-      value.emplace<tl::SimpleWebTransferCloseResultOk>(std::move(ok));
-      return true;
-    } else if (tlf.reset(0); error.fetch(tlf)) {
-      value.emplace<tl::WebError>(std::move(error));
-      return true;
-    }
-    return false;
-  }
-
-  [[nodiscard]] constexpr size_t footprint() const noexcept {
-    return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
   }
 };
 
