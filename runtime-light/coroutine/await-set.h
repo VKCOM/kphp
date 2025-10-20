@@ -5,7 +5,6 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <memory>
 #include <type_traits>
 
@@ -35,7 +34,7 @@ class await_set {
 
 public:
   explicit await_set() noexcept
-      : m_await_broker(new detail::await_set::await_broker<return_type>(*this)),
+      : m_await_broker(std::make_unique<detail::await_set::await_broker<return_type>>(*this)),
         m_coroutine_stack_root(CoroutineInstanceState::get().coroutine_stack_root) {}
 
   await_set(await_set&& other) noexcept
@@ -44,10 +43,12 @@ public:
         m_coroutine_stack_root(other.m_coroutine_stack_root) {}
 
   await_set& operator=(await_set&& other) noexcept {
-    abort_all();
-    m_tasks_storage = std::move(other.m_tasks_storage);
-    m_await_broker = std::move(other.m_await_broker);
-    m_coroutine_stack_root = other.m_coroutine_stack_root;
+    if (this != std::addressof(other)) {
+      abort_all();
+      m_tasks_storage = std::move(other.m_tasks_storage);
+      m_await_broker = std::move(other.m_await_broker);
+      m_coroutine_stack_root = other.m_coroutine_stack_root;
+    }
     return *this;
   }
 

@@ -4,9 +4,7 @@
 
 #pragma once
 
-#include <concepts>
 #include <coroutine>
-#include <cstdint>
 #include <expected>
 #include <memory>
 #include <optional>
@@ -14,7 +12,6 @@
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/async-stack.h"
-#include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -28,9 +25,9 @@ class await_set;
 
 namespace kphp::coro::detail::await_set {
 
-struct await_set_waiter {
-  await_set_waiter* m_next{};
-  await_set_waiter* m_prev{};
+struct await_set_awaiter {
+  await_set_awaiter* m_next{};
+  await_set_awaiter* m_prev{};
   std::coroutine_handle<> m_continuation;
 };
 
@@ -45,13 +42,12 @@ struct await_set_ready_task_element {
 
 template<typename return_type>
 class await_broker {
-  using await_set_t = kphp::coro::await_set<return_type>;
-  await_set_t& m_await_set;
-  await_set_waiter* m_waiters{};
+  kphp::coro::await_set<return_type>& m_await_set;
+  await_set_awaiter* m_awaiters{};
   await_set_ready_task_element<return_type>* m_ready_tasks{};
 
 public:
-  explicit await_broker(await_set_t& await_set) noexcept
+  explicit await_broker(kphp::coro::await_set<return_type>& await_set) noexcept
       : m_await_set(await_set) {}
 
   await_broker(const await_broker&) = delete;
@@ -72,41 +68,41 @@ public:
   void push_ready_task(await_set_ready_task_element<return_type>& ready_task) noexcept {
     ready_task.m_next = std::exchange(m_ready_tasks, std::addressof(ready_task));
 
-    if (m_waiters != nullptr) {
+    if (m_awaiters != nullptr) {
       // Resume if someone is waiting
-      auto* waiter{m_waiters};
-      m_waiters = waiter->m_next;
-      if (m_waiters != nullptr) {
-        m_waiters->m_prev = nullptr;
+      auto* awaiter{m_awaiters};
+      m_awaiters = awaiter->m_next;
+      if (m_awaiters != nullptr) {
+        m_awaiters->m_prev = nullptr;
       }
-      waiter->m_continuation.resume();
+      awaiter->m_continuation.resume();
     }
   }
 
-  void cancel_awaiter(await_set_waiter& waiter) noexcept {
-    auto* waiter_ptr{std::addressof(waiter)};
-    if (m_waiters == waiter_ptr) {
-      m_waiters = waiter_ptr->m_next;
-    } else if (waiter_ptr->m_next == nullptr) {
-      waiter_ptr->m_prev->m_next = nullptr;
-    } else if (m_waiters != nullptr) {
-      waiter_ptr->m_prev->m_next = waiter_ptr->m_next;
-      waiter_ptr->m_next->m_prev = waiter_ptr->m_prev;
+  void cancel_awaiter(await_set_awaiter& awaiter) noexcept {
+    auto* awaiter_ptr{std::addressof(awaiter)};
+    if (m_awaiters == awaiter_ptr) {
+      m_awaiters = awaiter_ptr->m_next;
+    } else if (awaiter_ptr->m_next == nullptr) {
+      awaiter_ptr->m_prev->m_next = nullptr;
+    } else if (m_awaiters != nullptr) {
+      awaiter_ptr->m_prev->m_next = awaiter_ptr->m_next;
+      awaiter_ptr->m_next->m_prev = awaiter_ptr->m_prev;
     }
   }
 
-  bool suspend_awaiter(await_set_waiter& waiter) noexcept {
+  bool suspend_awaiter(await_set_awaiter& awaiter) noexcept {
     if (m_ready_tasks != nullptr) {
       // There are completed tasks
       return false;
     }
 
-    waiter.m_prev = nullptr;
-    waiter.m_next = m_waiters;
-    if (m_waiters != nullptr) {
-      m_waiters->m_prev = std::addressof(waiter);
+    awaiter.m_prev = nullptr;
+    awaiter.m_next = m_awaiters;
+    if (m_awaiters != nullptr) {
+      m_awaiters->m_prev = std::addressof(awaiter);
     }
-    m_waiters = std::addressof(waiter);
+    m_awaiters = std::addressof(awaiter);
     return true;
   }
 
@@ -130,12 +126,12 @@ public:
 
   void detach_all() noexcept {
     // Extract the value from m_waiters so as not to resume those who subscribe during the detach_all.
-    await_set_waiter* waiters_to_resume{std::exchange(m_waiters, nullptr)};
-    while (waiters_to_resume != nullptr) {
-      auto* waiter{waiters_to_resume};
-      waiters_to_resume = waiters_to_resume->m_next;
-      if (waiters_to_resume != nullptr) {
-        waiters_to_resume->m_prev = nullptr;
+    await_set_awaiter* awaiters_to_resume{std::exchange(m_awaiters, nullptr)};
+    while (awaiters_to_resume != nullptr) {
+      auto* waiter{awaiters_to_resume};
+      awaiters_to_resume = awaiters_to_resume->m_next;
+      if (awaiters_to_resume != nullptr) {
+        awaiters_to_resume->m_prev = nullptr;
       }
 
       waiter->m_continuation.resume();
@@ -179,9 +175,9 @@ public:
 
       auto await_suspend(std::coroutine_handle<promise_type> coroutine) noexcept -> void {
         auto& promise{coroutine.promise()};
-        auto await_broker{promise.m_await_broker};
-        kphp::log::assertion(await_broker.has_value());
-        (*await_broker).get().push_ready_task(promise.m_ready_task_element);
+        auto opt_await_broker{promise.m_await_broker};
+        kphp::log::assertion(opt_await_broker.has_value());
+        (*opt_await_broker).get().push_ready_task(promise.m_ready_task_element);
       }
 
       constexpr auto await_resume() const noexcept -> void {}
@@ -248,6 +244,7 @@ private:
     }
 
     T result() noexcept {
+      kphp::log::assertion(m_result.has_value());
       return std::move(*m_result);
     }
 
@@ -257,7 +254,7 @@ private:
   };
 
   struct await_set_task_promise_void : public await_set_task_promise_common {
-    constexpr auto result() const noexcept -> kphp::coro::void_value {
+    constexpr kphp::coro::void_value result() const noexcept {
       return {};
     }
 
@@ -306,7 +303,7 @@ private:
   class awaiter {
     bool m_suspended{};
     await_broker<return_type>& m_await_broker;
-    await_set_waiter m_waiter{};
+    await_set_awaiter m_awaiter{};
     kphp::coro::async_stack_frame* caller_frame{};
 
   public:
@@ -327,10 +324,11 @@ private:
       // save caller async stack frame
       caller_frame = std::addressof(awaiting_coroutine.promise().get_async_stack_frame());
 
-      m_waiter.m_continuation = awaiting_coroutine;
-      m_suspended = m_await_broker.suspend_awaiter(m_waiter);
+      m_awaiter.m_continuation = awaiting_coroutine;
+      m_suspended = m_await_broker.suspend_awaiter(m_awaiter);
       return m_suspended;
     }
+
     std::optional<result_type> await_resume() noexcept {
       // restore caller async stack frame
       kphp::log::assertion(caller_frame != nullptr);
@@ -344,7 +342,7 @@ private:
 
     ~awaiter() {
       if (m_suspended) {
-        m_await_broker.cancel_awaiter(m_waiter);
+        m_await_broker.cancel_awaiter(m_awaiter);
       }
     }
   };
@@ -363,6 +361,8 @@ public:
   auto operator co_await() noexcept {
     return awaiter{m_await_broker};
   }
+
+  ~await_set_awaitable() = default;
 };
 
 template<kphp::coro::concepts::awaitable awaitable_type>
