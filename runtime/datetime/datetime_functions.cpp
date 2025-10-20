@@ -56,7 +56,7 @@ static time_t deprecated_gmmktime(struct tm* tm) {
 
 namespace {
 
-int32_t fix_year(int32_t year) {
+int32_t fix_year(int32_t year) noexcept {
   if (static_cast<uint64_t>(year) <= 100u) {
     if (year <= 69) {
       year += 2000;
@@ -68,7 +68,7 @@ int32_t fix_year(int32_t year) {
 }
 
 template<bool UseUpdatedGmmktime>
-int64_t gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) {
+int64_t gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) noexcept {
   dl::CriticalSectionGuard guard;
   tm t;
   time_t timestamp_t = time(nullptr);
