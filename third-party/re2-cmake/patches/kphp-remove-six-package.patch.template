@@ -1,19 +1,26 @@
 Should use Python's native function instead of the six package for unicode.py
 
 ---
- re2/unicode.py | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
 diff --git a/re2/unicode.py b/re2/unicode.py
-index 727bea5f..e3293839 100644
+index e0f33ef..651b7cc 100644
 --- a/re2/unicode.py
 +++ b/re2/unicode.py
-@@ -10,7 +10,7 @@
- 
+@@ -10,7 +10,6 @@
+
  import os
  import re
 -from six.moves import urllib
-+import urllib.request
- 
+
  # Directory or URL where Unicode tables reside.
  _UNICODE_DIR = "${UNICODE_AUTO_RAW_DATA_DIR}"
+@@ -152,10 +151,7 @@
+     raise InputError("invalid number of fields %d" % (nfields,))
+
+   if type(filename) == str:
+-    if filename.startswith("https://"):
+-      fil = urllib.request.urlopen(filename)
+-    else:
+-      fil = open(filename, "rb")
++    fil = open(filename, "rb")
+   else:
+     fil = filename
