@@ -48,6 +48,7 @@ public:
     m_tasks_storage = std::move(other.m_tasks_storage);
     m_await_broker = std::move(other.m_await_broker);
     m_coroutine_stack_root = other.m_coroutine_stack_root;
+    return *this;
   }
 
   await_set(const await_set&) = delete;
