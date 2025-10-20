@@ -28,8 +28,8 @@ class await_set {
   friend class kphp::coro::detail::await_set::await_broker;
 
   void abort_all() noexcept {
-    m_tasks_storage.clear();
     m_await_broker.release();
+    m_tasks_storage.clear();
   }
 
 public:
