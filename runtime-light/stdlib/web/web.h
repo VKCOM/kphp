@@ -52,7 +52,7 @@ inline auto simple_transfer_open(TransferBackend backend) noexcept -> kphp::coro
     kphp::log::error("Failed to send request of Simple descriptor creation");
   }
 
-  tl::SimpleWebTransferOpenResponse simple_web_transfer_resp{};
+  tl::Either<tl::SimpleWebTransferOpenResultOk, tl::WebError> simple_web_transfer_resp{};
   tl::fetcher tlf{resp.value()};
   if (!simple_web_transfer_resp.fetch(tlf)) [[unlikely]] {
     kphp::log::error("Failed to parse response of Simple descriptor creation");
@@ -147,7 +147,7 @@ inline auto simple_transfer_perform(SimpleTransfer st) noexcept -> kphp::coro::t
   const auto& response_handler{[&frame_num, &error, &ok_or_error_buffer](std::span<std::byte> _) -> kphp::coro::task<bool> {
     if (frame_num == 0) {
       frame_num++;
-      tl::SimpleWebTransferPerformResponse simple_web_transfer_perform_resp{};
+      tl::Either<tl::SimpleWebTransferPerformResultOk, tl::WebError> simple_web_transfer_perform_resp{};
       tl::fetcher tlf{ok_or_error_buffer};
       if (!simple_web_transfer_perform_resp.fetch(tlf)) [[unlikely]] {
         kphp::log::error("Failed to parse response of Simple descriptor performing");
@@ -213,7 +213,7 @@ inline auto simple_transfer_close(SimpleTransfer st) noexcept -> kphp::coro::tas
     kphp::log::error("Failed to send request of Simple descriptor closing");
   }
 
-  tl::SimpleWebTransferOpenResponse simple_web_transfer_resp{};
+  tl::Either<tl::SimpleWebTransferCloseResultOk, tl::WebError> simple_web_transfer_resp{};
   tl::fetcher tlf{resp.value()};
   if (!simple_web_transfer_resp.fetch(tlf)) [[unlikely]] {
     kphp::log::error("Failed to parse response of Simple descriptor closing");
