@@ -49,13 +49,13 @@ layout: plugins/compress
     {% if prev %}<link rel="prev" href="{{ prev.url | absolute_url }}">{% endif %}
     {% if next %}<link rel="next" href="{{ next.url | absolute_url }}">{% endif %}
     <!-- theme -->
-    <link rel="stylesheet" href="{{ cdn }}/assets/css/theme.css">
-    <link rel="stylesheet" href="{{ cdn }}/assets/css/rougify/{{ site.rougify | default: 'github' }}.css">
+    <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/theme.css">
+    <link rel="stylesheet" href="{{ site.baseurl }}/assets/css/rougify/{{ site.rougify | default: 'github' }}.css">
     <style>{{ site_scss | scssify | strip_newlines }}</style>
     <!-- icon -->
     <link rel="icon" type="image/png" href="{{ site.baseurl }}/assets/favicon32.png">
     <!-- script -->
-    <script src="{{ cdn }}/assets/js/jquery.min.js"></script>
+    <script src="{{ site.baseurl }}/assets/js/jquery.min.js"></script>
     <script>
         const ui = {
             baseurl: "{{ site.baseurl }}",
@@ -114,7 +114,7 @@ layout: plugins/compress
     {%- if site.addons %}{% include addons.liquid %}{% endif %}
     {% include extra/footer.html %}
     <!-- script -->
-    <script src="{{ cdn }}/assets/js/anchor.min.js"></script>
+    <script src="{{ site.baseurl }}/assets/js/anchor.min.js"></script>
     <script>
         {% include assets/common.js %}
         {% include assets/custom.js %} {{ site.script }}
