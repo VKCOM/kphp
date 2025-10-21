@@ -212,6 +212,10 @@ inline size_t read(k2::descriptor descriptor, size_t buf_len, void* buf) noexcep
   return k2_read(descriptor, buf_len, buf);
 }
 
+inline size_t pread(k2::descriptor descriptor, size_t buf_len, void* buf, off_t offset) noexcept {
+  return k2_pread(descriptor, buf_len, buf, offset);
+}
+
 inline void please_shutdown(k2::descriptor descriptor) noexcept {
   k2_please_shutdown(descriptor);
 }

@@ -350,6 +350,13 @@ size_t k2_write(uint64_t stream_d, size_t data_len, const void* data);
 size_t k2_read(uint64_t stream_d, size_t buf_len, void* buf);
 
 /**
+ * reads at most `buf_len` bytes to `buf` from `offset` position without modifying stream state.
+ *
+ * @return number of read bytes.
+ */
+size_t k2_pread(uint64_t stream_d, size_t buf_len, void* buf, off_t offset);
+
+/**
  * Sets `StreamStatus.please_whutdown_write=true` for the component on the
  * opposite side (does not affect `StreamStatus` on your side).
  * Does not disable the ability to read from the stream.
