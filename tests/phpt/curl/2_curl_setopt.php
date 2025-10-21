@@ -9,9 +9,9 @@ function test_long_options() {
   var_dump(curl_setopt($c, CURLOPT_CONNECTTIMEOUT, 10));
   var_dump(curl_setopt($c, CURLOPT_TIMEOUT, 125.47));
   var_dump(curl_setopt($c, CURLOPT_PORT, "9999"));
-  var_dump(curl_setopt($c, CURLOPT_INFILESIZE, "99 kek"));
+  var_dump(curl_setopt($c, CURLOPT_IGNORE_CONTENT_LENGTH, "99 kek"));
   var_dump(curl_setopt($c, CURLOPT_HTTP_TRANSFER_DECODING, false));
-  var_dump(curl_setopt($c, CURLOPT_FTP_USE_PRET, true));
+  var_dump(curl_setopt($c, CURLOPT_MAXFILESIZE, true));
   var_dump(curl_setopt($c, CURLOPT_DNS_CACHE_TIMEOUT, null));
   var_dump(curl_setopt($c, CURLOPT_PUT, 897));
 
@@ -28,7 +28,7 @@ function test_string_options() {
   var_dump(curl_setopt($c, CURLOPT_URL, "who care"));
   var_dump(curl_setopt($c, CURLOPT_PASSWORD, 123456));
   var_dump(curl_setopt($c, CURLOPT_USERNAME, 123.412));
-  var_dump(curl_setopt($c, CURLOPT_FTP_ACCOUNT, null));
+  var_dump(curl_setopt($c, CURLOPT_COOKIELIST, null));
   var_dump(curl_setopt($c, CURLOPT_PROXY, true));
   var_dump(curl_setopt($c, CURLOPT_RANGE, false));
 
@@ -38,18 +38,18 @@ function test_string_options() {
 function test_linked_list_options() {
   $c = curl_init();
 
-  var_dump(curl_setopt($c, CURLOPT_HTTP200ALIASES, ["who", "care"]));
+  var_dump(curl_setopt($c, CURLOPT_RESOLVE, ["who", "care"]));
   var_dump(curl_setopt($c, CURLOPT_HTTPHEADER, [123, 456, null]));
-  var_dump(curl_setopt($c, CURLOPT_POSTQUOTE, ["sdad", 123.412]));
-  var_dump(curl_setopt($c, CURLOPT_PREQUOTE, ["foo", "bar", "baz"]));
-  var_dump(curl_setopt($c, CURLOPT_QUOTE, [true, false]));
-  var_dump(curl_setopt($c, CURLOPT_MAIL_RCPT, []));
+  var_dump(curl_setopt($c, CURLOPT_RESOLVE, ["sdad", 123.412]));
+  var_dump(curl_setopt($c, CURLOPT_HTTPHEADER, ["foo", "bar", "baz"]));
+  var_dump(curl_setopt($c, CURLOPT_RESOLVE, [true, false]));
+  var_dump(curl_setopt($c, CURLOPT_HTTPHEADER, []));
   var_dump(curl_setopt($c, CURLOPT_RESOLVE, ["www.example.com:8081:127.0.0.1"]));
 
   // bad values
-  var_dump(curl_setopt($c, CURLOPT_MAIL_RCPT, "bad value"));
-  var_dump(curl_setopt($c, CURLOPT_QUOTE, 1));
-  var_dump(curl_setopt($c, CURLOPT_POSTQUOTE, null));
+  var_dump(curl_setopt($c, CURLOPT_RESOLVE, "bad value"));
+  var_dump(curl_setopt($c, CURLOPT_HTTPHEADER, 1));
+  var_dump(curl_setopt($c, CURLOPT_RESOLVE, null));
 
   curl_close($c);
 }
