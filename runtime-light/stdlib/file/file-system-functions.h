@@ -336,7 +336,7 @@ inline mixed f$getimagesize(const string& name) {
   // TODO implement k2_fstat, with fd as parameter !!!
   struct stat stat_buf;
   int32_t res = k2_stat(name.c_str(), name.size(), &stat_buf);
-  if (res != k2::errno_einval) {
+  if (res != k2::errno_ok) {
     return false;
   }
 
