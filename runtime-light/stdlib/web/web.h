@@ -31,6 +31,8 @@ inline auto process_error(tl::WebError&& error) noexcept -> Error {
   case InternalErrorCode::UnknownTransfer:
   case BackendInternalError::CannotTakeHandlerOwnership:
   case BackendInternalError::PostFieldValueNotString:
+  case BackendInternalError::HeaderLineNotString:
+  case BackendInternalError::UnsupportedProperty:
     return Error{.code = WEB_INTERNAL_ERROR_CODE, .description = string(error.description.value.data(), error.description.value.size())};
   default:
     // BackendError
@@ -74,7 +76,7 @@ inline auto simple_transfer_open(TransferBackend backend) noexcept -> kphp::coro
       [&result](const auto& v) noexcept {
         using value_t = std::remove_cvref_t<decltype(v)>;
         if constexpr (std::same_as<value_t, tl::SimpleWebTransferOpenResultOk>) {
-          result = std::expected<SimpleTransfer, Error>{static_cast<tl::SimpleWebTransferOpenResultOk>(v).desc.value};
+          result = std::expected<SimpleTransfer, Error>{static_cast<tl::SimpleWebTransferOpenResultOk>(v).descriptor.value};
         } else {
           result = std::unexpected{process_error(static_cast<tl::WebError>(v))};
         }
