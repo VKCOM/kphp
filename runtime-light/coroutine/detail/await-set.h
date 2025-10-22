@@ -5,6 +5,7 @@
 #pragma once
 
 #include <coroutine>
+#include <cstddef>
 #include <expected>
 #include <memory>
 #include <optional>
@@ -42,13 +43,12 @@ struct await_set_ready_task_element {
 
 template<typename return_type>
 class await_broker {
-  kphp::coro::await_set<return_type>& m_await_set;
+  kphp::stl::list<detail::await_set::await_set_task<return_type>, kphp::memory::script_allocator> m_tasks_storage{};
   await_set_awaiter* m_awaiters{};
   await_set_ready_task_element<return_type>* m_ready_tasks{};
 
 public:
-  explicit await_broker(kphp::coro::await_set<return_type>& await_set) noexcept
-      : m_await_set(await_set) {}
+  await_broker() noexcept = default;
 
   await_broker(const await_broker&) = delete;
   await_broker(await_broker&&) = delete;
@@ -57,15 +57,20 @@ public:
   await_broker& operator=(await_broker&& other) = delete;
 
   template<typename... Args>
-  auto operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept -> void* {
+  void* operator new(size_t n, [[maybe_unused]] Args&&... args) noexcept {
     return kphp::memory::script::alloc(n);
   }
 
-  auto operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept -> void {
+  void operator delete(void* ptr, [[maybe_unused]] size_t n) noexcept {
     kphp::memory::script::free(ptr);
   }
 
-  void push_ready_task(await_set_ready_task_element<return_type>& ready_task) noexcept {
+  void start_task(await_set_task<return_type>&& task, kphp::coro::async_stack_root& coroutine_stack_root, void* return_address) noexcept {
+    auto task_iterator{m_tasks_storage.insert(m_tasks_storage.begin(), std::move(task))};
+    task_iterator->start(*this, task_iterator, coroutine_stack_root, return_address);
+  }
+
+  void record_ready_task(await_set_ready_task_element<return_type>& ready_task) noexcept {
     ready_task.m_next = std::exchange(m_ready_tasks, std::addressof(ready_task));
 
     if (m_awaiters != nullptr) {
@@ -115,13 +120,14 @@ public:
     auto* ready_task{std::exchange(m_ready_tasks, m_ready_tasks->m_next)};
     auto task_iterator{ready_task->m_storage_location};
     auto result{task_iterator->result()};
-    m_await_set.m_tasks_storage.erase(task_iterator);
+    m_tasks_storage.erase(task_iterator);
     return result_t{std::move(result)};
   }
 
   void abort_all() noexcept {
     m_ready_tasks = nullptr;
     detach_all();
+    m_tasks_storage.clear();
   }
 
   void detach_all() noexcept {
@@ -136,6 +142,10 @@ public:
 
       waiter->m_continuation.resume();
     }
+  }
+
+  size_t size() noexcept {
+    return m_tasks_storage.size();
   }
 
   ~await_broker() {
@@ -177,7 +187,7 @@ public:
         auto& promise{coroutine.promise()};
         auto opt_await_broker{promise.m_await_broker};
         kphp::log::assertion(opt_await_broker.has_value());
-        (*opt_await_broker).get().push_ready_task(promise.m_ready_task_element);
+        (*opt_await_broker).get().record_ready_task(promise.m_ready_task_element);
       }
 
       constexpr auto await_resume() const noexcept -> void {}
@@ -269,7 +279,7 @@ private:
 
 public:
   template<typename T>
-  friend class kphp::coro::await_set;
+  friend class detail::await_set::await_broker;
 
   explicit await_set_task(std::coroutine_handle<promise_type> coroutine) noexcept
       : m_coroutine(coroutine) {}
