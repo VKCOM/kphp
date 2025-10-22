@@ -6,6 +6,8 @@
 
 #include <cstdint>
 
+namespace kphp::web::curl {
+
 enum CURLE : uint16_t {
   OK = 0,
   BAD_FUNCTION_ARGUMENT = 43,
@@ -208,3 +210,5 @@ enum CURL_HTTP_VERSION : uint8_t {
   _2TLS = 4,
   _2_PRIOR_KNOWLEDGE = 5,
 };
+
+} // namespace kphp::web::curl

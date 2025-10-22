@@ -28,12 +28,12 @@ struct CurlInstanceState final : private vk::not_copyable {
   CurlInstanceState() noexcept = default;
 
   static CurlInstanceState& get() noexcept;
+  inline auto easyctx_get_or_init(curl_easy_t easy_id) noexcept -> EasyContext&;
 };
 
-inline auto easyctx_get_or_init(curl_easy_t easy_id) noexcept -> EasyContext& {
-  auto& ctx{CurlInstanceState::get()};
-  if (!ctx.easy2ctx.contains(easy_id)) {
-    ctx.easy2ctx[easy_id] = EasyContext{};
+inline auto CurlInstanceState::easyctx_get_or_init(curl_easy_t easy_id) noexcept -> EasyContext& {
+  if (!easy2ctx.contains(easy_id)) {
+    easy2ctx[easy_id] = EasyContext{};
   }
-  return ctx.easy2ctx[easy_id];
+  return easy2ctx[easy_id];
 }
