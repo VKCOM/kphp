@@ -248,10 +248,8 @@ define('UPLOAD_ERR_EXTENSION', 8);
 function curl_init ($url ::: string = "") ::: int;
 /** @kphp-extern-func-info stub generation-required */
 function curl_reset ($curl_handle ::: int) ::: void;
-/** @kphp-extern-func-info */
-function curl_setopt ($curl_handle ::: int, $option ::: int, $value ::: mixed) ::: bool;
 
-/** @kphp-extern-func-info */
+function curl_setopt ($curl_handle ::: int, $option ::: int, $value ::: mixed) ::: bool;
 function curl_setopt_array ($curl_handle ::: int, $options ::: array) ::: bool;
 
 /** @kphp-extern-func-info interruptible */
