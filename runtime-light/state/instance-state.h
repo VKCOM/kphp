@@ -7,10 +7,10 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "runtime-light/allocator/allocator-registrator.h"
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/allocator-wrapper/libc-alloc-registrator.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/coroutine/coroutine-state.h"

@@ -2,7 +2,7 @@
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/allocator-wrapper/libc-alloc-registrator.h"
+#include "runtime-light/allocator/allocator-registrator.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/state/image-state.h"
