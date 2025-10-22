@@ -87,7 +87,7 @@ function(build_openssl PIC_ENABLED)
                 COMMAND make build_libs -j
             INSTALL_COMMAND
                 COMMAND make install_dev
-                COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs} ${INCLUDE_DIR}
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${include_dirs}/openssl ${INCLUDE_DIR}/openssl
             BUILD_IN_SOURCE 0
     )
 
