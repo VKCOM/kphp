@@ -12,10 +12,10 @@
 #include <sys/utsname.h>
 #include <unistd.h>
 
-#include "runtime-light/allocator/allocator-registrator.h"
 #include "common/mixin/not_copyable.h"
 #include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/allocator/allocator-registrator.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
