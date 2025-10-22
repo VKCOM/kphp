@@ -54,10 +54,12 @@ static time_t deprecated_gmmktime(struct tm* tm) {
   return result;
 }
 
-namespace {
+bool f$checkdate(int64_t month, int64_t day, int64_t year) {
+  return php_timelib_is_valid_date(month, day, year);
+}
 
-int32_t fix_year(int32_t year) noexcept {
-  if (static_cast<uint64_t>(year) <= 100u) {
+static inline int32_t fix_year(int32_t year) {
+  if ((uint64_t)year <= 100u) {
     if (year <= 69) {
       year += 2000;
     } else {
@@ -65,56 +67,6 @@ int32_t fix_year(int32_t year) noexcept {
     }
   }
   return year;
-}
-
-template<bool UseUpdatedGmmktime>
-int64_t gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) noexcept {
-  dl::CriticalSectionGuard guard;
-  tm t;
-  time_t timestamp_t = time(nullptr);
-  gmtime_r(&timestamp_t, &t);
-
-  if (h != std::numeric_limits<int64_t>::min()) {
-    t.tm_hour = static_cast<int32_t>(h);
-  }
-
-  if (m != std::numeric_limits<int64_t>::min()) {
-    t.tm_min = static_cast<int32_t>(m);
-  }
-
-  if (s != std::numeric_limits<int64_t>::min()) {
-    if constexpr (UseUpdatedGmmktime) {
-      t.tm_sec = static_cast<int32_t>(s);
-    } else {
-      t.tm_sec = static_cast<int32_t>(s - timezone);
-    }
-  }
-
-  if (month != std::numeric_limits<int64_t>::min()) {
-    t.tm_mon = static_cast<int32_t>(month - 1);
-  }
-
-  if (day != std::numeric_limits<int64_t>::min()) {
-    t.tm_mday = static_cast<int32_t>(day);
-  }
-
-  if (year != std::numeric_limits<int64_t>::min()) {
-    t.tm_year = fix_year(static_cast<int32_t>(year)) - 1900;
-  }
-
-  t.tm_isdst = -1;
-
-  if constexpr (UseUpdatedGmmktime) {
-    return timegm(&t);
-  } else {
-    return deprecated_gmmktime(&t) - 3 * 3600;
-  }
-}
-
-} // namespace
-
-bool f$checkdate(int64_t month, int64_t day, int64_t year) {
-  return php_timelib_is_valid_date(month, day, year);
 }
 
 void iso_week_number(int y, int doy, int weekday, int& iw, int& iy) {
@@ -474,17 +426,45 @@ string f$gmdate(const string& format, int64_t timestamp) {
 }
 
 int64_t f$gmmktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, int64_t year) {
-  auto updated_gmmktime_res = gmmktime<true>(h, m, s, month, day, year);
-  auto deprecated_gmmktime_res = gmmktime<false>(h, m, s, month, day, year);
+  dl::CriticalSectionGuard guard;
+  tm t;
+  time_t timestamp_t = time(nullptr);
+  gmtime_r(&timestamp_t, &t);
 
-  if (updated_gmmktime_res != deprecated_gmmktime_res) {
-    php_warning("updated gmmktime differs from the deprecated gmmktime");
+  if (h != std::numeric_limits<int64_t>::min()) {
+    t.tm_hour = static_cast<int32_t>(h);
   }
 
+  if (m != std::numeric_limits<int64_t>::min()) {
+    t.tm_min = static_cast<int32_t>(m);
+  }
+
+  if (s != std::numeric_limits<int64_t>::min()) {
+    if (use_updated_gmmktime) {
+      t.tm_sec = static_cast<int32_t>(s);
+    } else {
+      t.tm_sec = static_cast<int32_t>(s - timezone);
+    }
+  }
+
+  if (month != std::numeric_limits<int64_t>::min()) {
+    t.tm_mon = static_cast<int32_t>(month - 1);
+  }
+
+  if (day != std::numeric_limits<int64_t>::min()) {
+    t.tm_mday = static_cast<int32_t>(day);
+  }
+
+  if (year != std::numeric_limits<int64_t>::min()) {
+    t.tm_year = fix_year(static_cast<int32_t>(year)) - 1900;
+  }
+
+  t.tm_isdst = -1;
+
   if (use_updated_gmmktime) {
-    return updated_gmmktime_res;
+    return timegm(&t);
   } else {
-    return deprecated_gmmktime_res;
+    return deprecated_gmmktime(&t) - 3 * 3600;
   }
 }
 
