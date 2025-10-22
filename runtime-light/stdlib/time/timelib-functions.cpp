@@ -17,11 +17,17 @@
 #include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/time-state.h"
-#include "runtime-light/utils/optional.h"
 
 namespace kphp::timelib {
 
 namespace {
+
+template<typename Opt, typename Func>
+void apply_if_has_value(Opt&& opt, Func&& fn) noexcept(noexcept(fn(*opt))) {
+  if (opt.has_value()) {
+    fn(*opt);
+  }
+}
 
 void patch_time(timelib_time& time, std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
                 std::optional<int64_t> day, std::optional<int64_t> yea) noexcept {
