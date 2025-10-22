@@ -183,11 +183,6 @@ kphp::coro::task<> InstanceState::finalize_server_instance() const noexcept {
 }
 
 kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
-  // Stop session with internal Web component
-  if (WebInstanceState::get().session.has_value()) {
-    WebInstanceState::get().session.~optional();
-  }
-
   if (std::exchange(shutdown_state_, shutdown_state::in_progress) == shutdown_state::not_started) [[likely]] {
     for (auto& sf : shutdown_functions) {
       co_await sf;
@@ -197,6 +192,11 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   // to prevent performing the finalization twice
   if (shutdown_state_ == shutdown_state::finished) [[unlikely]] {
     co_return;
+  }
+
+  // Stop session with internal Web component
+  if (WebInstanceState::get().session.has_value()) {
+    WebInstanceState::get().session.reset();
   }
 
   switch (image_kind()) {
