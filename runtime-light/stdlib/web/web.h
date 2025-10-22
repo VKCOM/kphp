@@ -4,9 +4,22 @@
 
 #pragma once
 
-#include <variant>
+#include <cstddef>
+#include <cstdint>
+#include <expected>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <span>
+#include <string_view>
+#include <utility>
 
+#include "runtime-light/coroutine/task.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/web/defs.h"
+#include "runtime-light/tl/tl-core.h"
+#include "runtime-light/tl/tl-functions.h"
+#include "runtime-light/tl/tl-types.h"
 
 namespace kphp::web {
 
@@ -40,12 +53,10 @@ inline auto simple_transfer_open(TransferBackend backend) noexcept -> kphp::coro
   web_transfer_open.store(tls);
 
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
-  auto response_buffer_provider{kphp::component::inter_component_session::BufferProvider([&resp_buf]() noexcept {
-    return kphp::component::inter_component_session::BufferProvider::SliceMaker{[&resp_buf](size_t size) -> std::span<std::byte> {
-      resp_buf.resize(size);
-      return {resp_buf.data(), size};
-    }};
-  })};
+  const auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
+    resp_buf.resize(size);
+    return {resp_buf.data(), size};
+  }};
 
   auto resp{co_await session.value().get()->client.query(tls.view(), std::move(response_buffer_provider))};
   if (!resp.has_value()) [[unlikely]] {
@@ -125,34 +136,32 @@ inline auto simple_transfer_perform(SimpleTransfer st) noexcept -> kphp::coro::t
   std::optional<Error> error{};
   auto frame_num{0};
 
-  kphp::component::inter_component_session::BufferProvider response_buffer_provider{[&frame_num, &ok_or_error_buffer, &response]() noexcept {
-    if (frame_num == 0) {
-      return kphp::component::inter_component_session::BufferProvider::SliceMaker{[&ok_or_error_buffer](size_t size) -> std::span<std::byte> {
-        ok_or_error_buffer.resize(size);
-        return {ok_or_error_buffer.data(), size};
-      }};
-    } else if (frame_num == 1) {
-      return kphp::component::inter_component_session::BufferProvider::SliceMaker{[&response](size_t size) -> std::span<std::byte> {
-        response.headers = string(size, false);
-        return {reinterpret_cast<std::byte*>(response.headers.buffer()), size};
-      }};
-    } else {
-      return kphp::component::inter_component_session::BufferProvider::SliceMaker{[&response](size_t size) -> std::span<std::byte> {
-        response.body = string(size, false);
-        return {reinterpret_cast<std::byte*>(response.body.buffer()), size};
-      }};
+  auto response_buffer_provider{[&frame_num, &ok_or_error_buffer, &response](size_t size) noexcept -> std::span<std::byte> {
+    switch (frame_num) {
+    case 0:
+      ok_or_error_buffer.resize(size);
+      return {ok_or_error_buffer.data(), size};
+    case 1:
+      response.headers = string(size, false);
+      return {reinterpret_cast<std::byte*>(response.headers.buffer()), size};
+    case 2:
+      response.body = string(size, false);
+      return {reinterpret_cast<std::byte*>(response.body.buffer()), size};
+    default:
+      kphp::log::assertion(false);
+      return {};
     }
   }};
 
-  const auto& response_handler{[&frame_num, &error, &ok_or_error_buffer](std::span<std::byte> _) -> kphp::coro::task<bool> {
-    if (frame_num == 0) {
-      frame_num++;
+  const auto response_handler{[&frame_num, &error, &ok_or_error_buffer](std::span<std::byte> _) -> bool {
+    switch (frame_num) {
+    case 0: {
+      frame_num += 1;
       tl::Either<tl::SimpleWebTransferPerformResultOk, tl::WebError> simple_web_transfer_perform_resp{};
       tl::fetcher tlf{ok_or_error_buffer};
       if (!simple_web_transfer_perform_resp.fetch(tlf)) [[unlikely]] {
         kphp::log::error("Failed to parse response of Simple descriptor performing");
       }
-
       std::visit(
           [&error](const auto& v) noexcept {
             using value_t = std::remove_cvref_t<decltype(v)>;
@@ -161,16 +170,16 @@ inline auto simple_transfer_perform(SimpleTransfer st) noexcept -> kphp::coro::t
             }
           },
           simple_web_transfer_perform_resp.value);
-
-      if (error.has_value()) {
-        co_return false;
-      }
-      co_return true;
-    } else if (frame_num == 1) {
-      frame_num++;
-      co_return true;
+      return !error.has_value();
     }
-    co_return false;
+    case 1:
+      frame_num += 1;
+      return true;
+    case 2:
+      return false;
+    default:
+      return false;
+    }
   }};
 
   if (auto res{co_await session.value().get()->client.query(tls.view(), std::move(response_buffer_provider), response_handler)}; !res) [[unlikely]] {
@@ -201,12 +210,10 @@ inline auto simple_transfer_close(SimpleTransfer st) noexcept -> kphp::coro::tas
   web_transfer_close.store(tls);
 
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
-  auto response_buffer_provider{kphp::component::inter_component_session::BufferProvider([&resp_buf]() noexcept {
-    return kphp::component::inter_component_session::BufferProvider::SliceMaker{[&resp_buf](size_t size) -> std::span<std::byte> {
-      resp_buf.resize(size);
-      return {resp_buf.data(), size};
-    }};
-  })};
+  auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
+    resp_buf.resize(size);
+    return {resp_buf.data(), size};
+  }};
 
   auto resp{co_await session.value().get()->client.query(tls.view(), std::move(response_buffer_provider))};
   if (!resp.has_value()) [[unlikely]] {
