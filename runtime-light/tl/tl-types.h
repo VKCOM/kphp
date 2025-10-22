@@ -347,7 +347,9 @@ struct Either final {
     }
   }
 
-  [[nodiscard]] constexpr size_t footprint() const noexcept {
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T> && tl::footprintable<U>
+  {
     return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
   }
 };
@@ -1127,17 +1129,17 @@ class SimpleWebTransferOpenResultOk final {
   static constexpr uint32_t SIMPLE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC = 0x24A8'98FF;
 
 public:
-  tl::u64 desc;
+  tl::u64 descriptor;
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
     bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC)};
-    ok &= desc.fetch(tlf);
+    ok &= descriptor.fetch(tlf);
     return ok;
   }
 
-  [[nodiscard]] constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = SIMPLE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC}.footprint() + desc.footprint();
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC}.footprint() + descriptor.footprint();
   }
 };
 
@@ -1151,7 +1153,7 @@ public:
     return ok;
   }
 
-  [[nodiscard]] constexpr size_t footprint() const noexcept {
+  constexpr size_t footprint() const noexcept {
     return tl::magic{.value = SIMPLE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC}.footprint();
   }
 };
@@ -1166,7 +1168,7 @@ public:
     return ok;
   }
 
-  [[nodiscard]] constexpr size_t footprint() const noexcept {
+  constexpr size_t footprint() const noexcept {
     return tl::magic{.value = SIMPLE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC}.footprint();
   }
 };
@@ -1179,7 +1181,7 @@ struct WebPropertyValue final {
     std::visit([&tls](const auto& v) noexcept { v.store(tls); }, value);
   }
 
-  [[nodiscard]] constexpr size_t footprint() const noexcept {
+  constexpr size_t footprint() const noexcept {
     return std::visit([](const auto& v) noexcept { return v.footprint(); }, value);
   }
 };
@@ -1193,7 +1195,7 @@ struct WebProperty final {
     value.store(tls);
   }
 
-  [[nodiscard]] constexpr size_t footprint() const noexcept {
+  constexpr size_t footprint() const noexcept {
     return id.footprint() + value.footprint();
   }
 };
@@ -1205,7 +1207,7 @@ struct SimpleWebTransferConfig final {
     properties.store(tls);
   }
 
-  [[nodiscard]] constexpr size_t footprint() const noexcept {
+  constexpr size_t footprint() const noexcept {
     return properties.footprint();
   }
 };

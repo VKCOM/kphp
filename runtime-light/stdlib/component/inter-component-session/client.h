@@ -96,7 +96,8 @@ class client final {
   struct reader {
     struct refcountable_ctx_type : public refcountable_php_classes<refcountable_ctx_type> {
       query2notifier_type query2notifier{};
-      kphp::stl::unordered_map<query_id_type, details::function_wrapper<std::span<std::byte>, size_t>, kphp::memory::script_allocator> query2resp_buffer_provider{};
+      kphp::stl::unordered_map<query_id_type, details::function_wrapper<std::span<std::byte>, size_t>, kphp::memory::script_allocator>
+          query2resp_buffer_provider{};
       kphp::stl::unordered_map<query_id_type, std::span<std::byte>, kphp::memory::script_allocator> query2resp{};
       bool is_running{true};
       std::optional<int32_t> error{};
@@ -222,7 +223,8 @@ public:
 
   template<std::invocable<size_t> B>
   requires std::convertible_to<kphp::coro::async_function_return_type_t<B, size_t>, std::span<std::byte>>
-  inline auto query(std::span<const std::byte> request, B&& response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>>;
+  inline auto query(std::span<const std::byte> request,
+                    B&& response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>>;
 };
 
 inline auto client::create(std::string_view component_name) noexcept -> std::expected<client, int32_t> {
