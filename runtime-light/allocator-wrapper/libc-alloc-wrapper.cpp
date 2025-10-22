@@ -5,8 +5,8 @@
 #include <cstddef>
 #include <cstring>
 
-#include "runtime-light/allocator/allocator-registrator.h"
 #include "runtime-common/core/allocator/script-malloc-interface.h"
+#include "runtime-light/allocator/allocator-registrator.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
