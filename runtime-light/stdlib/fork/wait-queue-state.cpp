@@ -3,6 +3,7 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-light/stdlib/fork/wait-queue-state.h"
+
 #include "runtime-light/state/instance-state.h"
 
 WaitQueueInstanceState& WaitQueueInstanceState::get() noexcept {

@@ -22,20 +22,21 @@ struct wait_queue_future final {
   wait_queue_future(int64_t id) noexcept // NOLINT
       : m_future_id(id) {}
 
-  template<typename U>
-  wait_queue_future(const wait_queue_future<U>& other) noexcept // NOLINT
+  wait_queue_future(const wait_queue_future<Unknown>& other) noexcept // NOLINT
       : m_future_id(other.m_future_id) {}
 
-  template<typename U>
-  wait_queue_future(wait_queue_future<U>&& other) noexcept // NOLINT
+  wait_queue_future(wait_queue_future<Unknown>&& other) noexcept // NOLINT
       : m_future_id(std::exchange(other.m_future_id, kphp::forks::INVALID_ID)) {}
 };
 
 template<class T>
-struct is_future_queue : std::false_type {};
+struct is_wait_queue_future : std::false_type {};
 
 template<class T>
-struct is_future_queue<wait_queue_future<T>> : std::true_type {};
+struct is_wait_queue_future<wait_queue_future<T>> : std::true_type {};
+
+template<typename T>
+constexpr bool is_wait_queue_future_v = is_wait_queue_future<T>::value;
 
 } // namespace kphp::forks
 
