@@ -20,32 +20,20 @@ namespace kphp::coro {
 
 template<typename return_type>
 class await_set {
-  kphp::stl::list<detail::await_set::await_set_task<return_type>, kphp::memory::script_allocator> m_tasks_storage{};
   std::unique_ptr<detail::await_set::await_broker<return_type>> m_await_broker;
   kphp::coro::async_stack_root& m_coroutine_stack_root;
 
-  template<typename T>
-  friend class kphp::coro::detail::await_set::await_broker;
-
-  void clear() noexcept {
-    m_await_broker.release();
-    m_tasks_storage.clear();
-  }
-
 public:
-  explicit await_set() noexcept
-      : m_await_broker(std::make_unique<detail::await_set::await_broker<return_type>>(*this)),
+  await_set() noexcept
+      : m_await_broker(std::make_unique<detail::await_set::await_broker<return_type>>()),
         m_coroutine_stack_root(CoroutineInstanceState::get().coroutine_stack_root) {}
 
   await_set(await_set&& other) noexcept
-      : m_tasks_storage(std::move(other.m_tasks_storage)),
-        m_await_broker(std::move(other.m_await_broker)),
+      : m_await_broker(std::move(other.m_await_broker)),
         m_coroutine_stack_root(other.m_coroutine_stack_root) {}
 
   await_set& operator=(await_set&& other) noexcept {
     if (this != std::addressof(other)) {
-      clear();
-      m_tasks_storage = std::move(other.m_tasks_storage);
       m_await_broker = std::move(other.m_await_broker);
       m_coroutine_stack_root = other.m_coroutine_stack_root;
     }
@@ -58,8 +46,7 @@ public:
   template<typename awaitable_type>
   requires kphp::coro::concepts::awaitable<awaitable_type> && std::is_same_v<typename awaitable_traits<awaitable_type>::awaiter_return_type, return_type>
   void push(awaitable_type awaitable) noexcept {
-    auto task_iterator{m_tasks_storage.insert(m_tasks_storage.begin(), detail::await_set::make_await_set_task(std::move(awaitable)))};
-    task_iterator->start(*m_await_broker.get(), task_iterator, m_coroutine_stack_root, STACK_RETURN_ADDRESS);
+    m_await_broker->start_task(detail::await_set::make_await_set_task(std::move(awaitable)), m_coroutine_stack_root, STACK_RETURN_ADDRESS);
   }
 
   auto next() noexcept {
@@ -67,15 +54,15 @@ public:
   }
 
   bool empty() const noexcept {
-    return len() == 0;
+    return size() == 0;
   }
 
-  size_t len() const noexcept {
-    return m_tasks_storage.size();
+  size_t size() const noexcept {
+    return m_await_broker->size();
   }
 
   ~await_set() {
-    clear();
+    m_await_broker.release();
   }
 };
 
