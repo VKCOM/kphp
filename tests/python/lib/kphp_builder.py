@@ -121,8 +121,8 @@ class KphpBuilder:
 
     def _calculate_kphp_jobs_count(self, default_percent: int = 25) -> int:
         """
-        What percentage of the total number of cores do we use to run parallel kphp compilation.
-        You don't want to give more than 1/4 of the number of cores, or you will starvation.
+        Determine the percentage of the total number of CPU cores to use for running parallel KPHP compilation.
+        It is recommended not to allocate more than 25% of the available cores to avoid resource starvation.
         """
 
         cpu_count = multiprocessing.cpu_count()

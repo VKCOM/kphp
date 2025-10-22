@@ -235,8 +235,8 @@ def parse_args():
 
 def _calculate_pytest_jobs_count(default_percent: int = 95) -> int:
     """
-    What percentage of the total number of cores do we use to run parallel tests.
-    If you set a large value, the cores may start to idle.
+    Determine the percentage of the total number of CPU cores to use for running parallel Python tests.
+    It is recommended not to allocate more than 95% of available cores to avoid idle time.
     """
 
     cpu_count = multiprocessing.cpu_count()
