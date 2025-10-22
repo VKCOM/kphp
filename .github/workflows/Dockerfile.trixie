@@ -10,11 +10,12 @@ ARG PHP_VERSION=7.4
 ARG PYTHON_VERSION=3.13
 
 ARG POSTGRESQL_VERSION=14
-ARG MYSQL_VERSION=8.4
+ARG MYSQL_VERSION=8.4-lts
 
-# J,yjdkzt
+# Обновляем
 RUN apt-get update
 
+# Ставим свякое для работы
 RUN apt-get install -y --no-install-recommends \
     ca-certificates pkg-config lsb-release build-essential wget gnupg \
     git cmake-data cmake make \
