@@ -40,6 +40,6 @@ constexpr bool is_wait_queue_future_v = is_wait_queue_future<T>::value;
 
 } // namespace kphp::forks
 
-// To make visible for the codegen compiler
+// To make it visible for codegen
 template<typename T>
 using future_queue = kphp::forks::wait_queue_future<T>;

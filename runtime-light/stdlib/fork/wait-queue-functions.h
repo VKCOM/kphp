@@ -28,7 +28,6 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
   }
 
   auto& await_set{(*opt_await_set).get()};
-  // SAFETY: await_set is stored in WaitQueueInstanceState. If it is removed, it will wake up the coroutine
   static constexpr auto wait_queue_next_task{
       [](auto await_set_awaitable) noexcept -> kphp::coro::task<std::optional<int64_t>> { co_return co_await std::move(await_set_awaitable); }};
   auto wait_result{co_await kphp::coro::io_scheduler::get().schedule(wait_queue_next_task(await_set.next()), kphp::forks::detail::normalize_timeout(timeout))};
