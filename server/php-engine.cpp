@@ -2443,7 +2443,7 @@ bool check_options() {
 
   if (http_server_ctx.server_enabled()) {
     if (http_server_ctx.ports().size() > general_workers_cnt) {
-      kprintf("You create %" PRIu64 " HTTP ports, but have only %" PRIu64 " general workers -- it's useless to have ports > workers\n",
+      kprintf("You create %zu HTTP ports, but have only %zu general workers -- it's useless to have ports > workers\n",
               http_server_ctx.ports().size(), general_workers_cnt);
       return false;
     }
@@ -2452,7 +2452,7 @@ bool check_options() {
   if (rpc_server_ctx.server_enabled()) {
     if (rpc_server_ctx.ports().size() != general_workers_cnt) {
       kprintf("For prefork RPC server it's highly recommended to have N rpc ports for N general workers. "
-              "But now you have %" PRIu64 " ports and %" PRIu64 " general workers\n",
+              "But now you have %zu ports and %zu general workers\n",
               rpc_server_ctx.ports().size(), general_workers_cnt);
       return false;
     }

@@ -106,7 +106,7 @@ bool ServerContext<MAX_PORTS>::init_from_option(const char* option) {
   ports_.erase(std::unique(ports_.begin(), ports_.end()), ports_.end());
 
   if (ports_.size() > MAX_PORTS) {
-    kprintf("Can't listen more than %" PRIu64 " ports\n", MAX_PORTS);
+    kprintf("Can't listen more than %zu ports\n", MAX_PORTS);
     return false;
   }
 
