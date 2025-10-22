@@ -12,6 +12,7 @@ ARG PYTHON_VERSION=3.13
 ARG POSTGRESQL_VERSION=14
 ARG MYSQL_VERSION=8.4
 
+# J,yjdkzt
 RUN apt-get update
 
 RUN apt-get install -y --no-install-recommends \
@@ -39,7 +40,7 @@ RUN wget -O /etc/apt/trusted.gpg.d/pgdg-key.asc https://www.postgresql.org/media
 # MySQL
 RUN wget -O /etc/apt/trusted.gpg.d/mysql.asc https://repo.mysql.com/RPM-GPG-KEY-mysql-2023 \
     && echo "deb https://repo.mysql.com/apt/debian/ trixie mysql-${MYSQL_VERSION}" > /etc/apt/sources.list.d/mysql.list \
-    && apt-get install -y --no-install-recommends mysql-server libmysqlclient-dev
+    && apt-get update && apt-get install -y --no-install-recommends mysql-server libmysqlclient-dev
 
 # Python package
 COPY tests/python/requirements-trixie.txt /tmp/requirements.txt
