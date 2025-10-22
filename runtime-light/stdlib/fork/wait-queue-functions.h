@@ -14,7 +14,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
-#include "runtime-light/stdlib/fork/future-queue.h"
+#include "runtime-light/stdlib/fork/wait-queue-future.h"
 #include "runtime-light/stdlib/fork/wait-queue-state.h"
 
 namespace kphp::forks {
@@ -39,7 +39,7 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
   if (auto opt_future{*wait_result}; opt_future.has_value()) {
     auto opt_info{ForkInstanceState::get().get_info(*opt_future)};
     kphp::log::assertion(opt_info.has_value());
-    auto& fork_info{(*opt_info)};
+    auto fork_info{(*opt_info)};
     fork_info.get().awaited = false; // Open access for awaiting the future. See the comment for wait_queue_push.
     co_return *opt_future;
   } else {
