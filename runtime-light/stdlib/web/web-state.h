@@ -16,7 +16,7 @@ inline constexpr std::string_view WEB_COMPONENT_NAME{"web"};
 struct WebInstanceState final : private vk::not_copyable {
 
   struct WebComponentSession : public refcountable_php_classes<WebComponentSession> {
-    kphp::component::inter_component_session::Client client;
+    kphp::component::inter_component_session::client client;
   };
   using shared_session_type = class_instance<WebComponentSession>;
 
@@ -34,7 +34,7 @@ inline auto WebInstanceState::session_get_or_init() noexcept -> std::expected<sh
   if (session.has_value()) {
     return std::expected<shared_session_type, int32_t>{session.value()};
   }
-  auto expected{kphp::component::inter_component_session::Client::create(WEB_COMPONENT_NAME)};
+  auto expected{kphp::component::inter_component_session::client::create(WEB_COMPONENT_NAME)};
   if (!expected) [[unlikely]] {
     return std::unexpected{expected.error()};
   }
