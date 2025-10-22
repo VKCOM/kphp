@@ -23,7 +23,7 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
   auto& wait_queue_instance_st{WaitQueueInstanceState::get()};
   auto opt_await_set{wait_queue_instance_st.get_queue(queue_id)};
   if (!opt_await_set.has_value()) [[unlikely]] {
-    kphp::log::warning("future with id {} doesn't associated with wait queue", queue_id);
+    kphp::log::warning("future with id {} isn't associated with wait queue", queue_id);
     co_return std::nullopt;
   }
 
@@ -42,7 +42,7 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
     fork_info.get().awaited = false; // Open access for awaiting the future. See the comment for wait_queue_push.
     co_return *opt_future;
   } else {
-    kphp::log::warning("await set associated with wait queue was destroyed");
+    kphp::log::warning("await set associated with the wait queue was destroyed");
     co_return kphp::forks::INVALID_ID;
   }
 }
@@ -58,7 +58,7 @@ inline void wait_queue_push(int64_t queue_id, int64_t fork_id) noexcept {
   auto& wait_queue_instance_st{WaitQueueInstanceState::get()};
   auto opt_await_set{wait_queue_instance_st.get_queue(queue_id)};
   if (!opt_await_set.has_value()) [[unlikely]] {
-    kphp::log::warning("future with id {} doesn't associated with wait queue", queue_id);
+    kphp::log::warning("future with id {} isn't associated with wait queue", queue_id);
     return;
   }
 
@@ -90,7 +90,7 @@ bool f$wait_queue_empty(kphp::forks::wait_queue_future<T> future) noexcept {
   auto& wait_queue_instance_st{WaitQueueInstanceState::get()};
   auto opt_await_set{wait_queue_instance_st.get_queue(future.m_future_id)};
   if (!opt_await_set.has_value()) [[unlikely]] {
-    kphp::log::warning("future with id {} doesn't associated with wait queue", future.m_future_id);
+    kphp::log::warning("future with id {} isn't associated with wait queue", future.m_future_id);
     return true;
   }
   const auto& await_set{(*opt_await_set).get()};
