@@ -70,7 +70,7 @@ public:
     task_iterator->start(*this, task_iterator, coroutine_stack_root, return_address);
   }
 
-  void record_ready_task(await_set_ready_task_element<return_type>& ready_task) noexcept {
+  void push_ready_task(await_set_ready_task_element<return_type>& ready_task) noexcept {
     ready_task.m_next = std::exchange(m_ready_tasks, std::addressof(ready_task));
 
     if (m_awaiters != nullptr) {
@@ -187,7 +187,7 @@ public:
         auto& promise{coroutine.promise()};
         auto opt_await_broker{promise.m_await_broker};
         kphp::log::assertion(opt_await_broker.has_value());
-        (*opt_await_broker).get().record_ready_task(promise.m_ready_task_element);
+        (*opt_await_broker).get().push_ready_task(promise.m_ready_task_element);
       }
 
       constexpr auto await_resume() const noexcept -> void {}
