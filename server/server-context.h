@@ -94,7 +94,7 @@ bool ServerContext<MAX_PORTS>::init_from_option(const char* option) {
       int val = std::atoi(trimmed.data());
       auto port = static_cast<uint16_t>(val);
       if (port != val) {
-        kprintf("Incorrect port %d\n", val);
+        kprintf("Incorrect port: %d doesn't fit range [0; 65535]\n", val);
         return false;
       }
       ports_.emplace_back(port);

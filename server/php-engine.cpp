@@ -2426,7 +2426,7 @@ void init_default() {
 }
 
 namespace {
-bool check_options() {
+bool check_server_options() {
   const auto& http_server_ctx = vk::singleton<HttpServerContext>::get();
   const auto& rpc_server_ctx = vk::singleton<RpcServerContext>::get();
   size_t general_workers_cnt = vk::singleton<WorkersControl>::get().get_count(WorkerType::general_worker);
@@ -2513,7 +2513,7 @@ int run_main(int argc, char **argv, php_mode mode) {
   init_default();
   init_all();
 
-  bool ok = check_options();
+  bool ok = check_server_options();
   if (!ok) {
     exit(1);
   }
