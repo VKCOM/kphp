@@ -40,7 +40,11 @@ class TestMysql(WebServerAutoTestCase):
                 val_float FLOAT,
                 PRIMARY KEY (id)
             );
+            '''
+        )
 
+        cursor.execute(
+            '''
             INSERT INTO 
                 TestTable (id, val_str, val_float) 
             VALUES 
