@@ -4,7 +4,7 @@
 
 function mktime (
     $h ::: ?int = null, $m ::: ?int = null, $s ::: ?int = null, $month ::: ?int = null, $day ::: ?int = null, $year ::: ?int = null
-) ::: ?int;
+) ::: int|false;
 
 function date ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
 
