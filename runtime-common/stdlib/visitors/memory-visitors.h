@@ -50,6 +50,9 @@ public:
     estimated_elements_memory_ += value.estimate_memory_usage();
   }
 
+  template<typename T>
+  void process([[maybe_unused]] const kphp::forks::wait_queue_future<T>& value) noexcept {}
+
   void process(const mixed& value) {
     if (value.is_string()) {
       process(value.as_string());
@@ -59,7 +62,7 @@ public:
     }
   }
 
-  template<typename T, typename = vk::enable_if_in_list<T, vk::list_of_types<bool, int64_t, double, Unknown, void*, kphp::forks::wait_queue_future<T>>>>
+  template<typename T, typename = vk::enable_if_in_list<T, vk::list_of_types<bool, int64_t, double, Unknown, void*>>>
   void process(const T& value [[maybe_unused]]) {}
 
   template<typename T>
