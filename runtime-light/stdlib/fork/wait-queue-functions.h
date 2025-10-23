@@ -76,27 +76,27 @@ inline void wait_queue_push(int64_t queue_id, int64_t fork_id) noexcept {
 
 } // namespace kphp::forks
 
-inline void f$wait_queue_push(int64_t future, Optional<int64_t> fork_id) noexcept {
+inline void f$wait_queue_push(int64_t queue_id, Optional<int64_t> fork_id) noexcept {
   if (!fork_id.has_value()) {
     return;
   }
-  kphp::forks::wait_queue_push(future, fork_id.val());
+  kphp::forks::wait_queue_push(queue_id, fork_id.val());
 }
 
-inline bool f$wait_queue_empty(int64_t future) noexcept {
+inline bool f$wait_queue_empty(int64_t queue_id) noexcept {
   auto& wait_queue_instance_st{WaitQueueInstanceState::get()};
-  auto opt_await_set{wait_queue_instance_st.get_queue(future)};
+  auto opt_await_set{wait_queue_instance_st.get_queue(queue_id)};
   if (!opt_await_set.has_value()) [[unlikely]] {
-    kphp::log::warning("future with id {} isn't associated with wait queue", future);
+    kphp::log::warning("future with id {} isn't associated with wait queue", queue_id);
     return true;
   }
   const auto& await_set{(*opt_await_set).get()};
   return await_set.empty();
 }
 
-inline kphp::coro::task<Optional<int64_t>> f$wait_queue_next(int64_t future, double timeout = -1.0) noexcept {
+inline kphp::coro::task<Optional<int64_t>> f$wait_queue_next(int64_t queue_id, double timeout = -1.0) noexcept {
   auto opt_result{co_await kphp::forks::id_managed(
-      kphp::forks::wait_queue_next(future, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})))};
+      kphp::forks::wait_queue_next(queue_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})))};
   co_return opt_result ? *std::move(opt_result) : Optional<int64_t>{};
 }
 
