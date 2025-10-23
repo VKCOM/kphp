@@ -22,10 +22,10 @@ struct wait_queue_future final {
   wait_queue_future(int64_t id) noexcept // NOLINT
       : m_future_id(id) {}
 
-  wait_queue_future(const wait_queue_future& other) noexcept // NOLINT
+  wait_queue_future(const wait_queue_future& other) noexcept
       : m_future_id(other.m_future_id) {}
 
-  wait_queue_future(wait_queue_future&& other) noexcept // NOLINT
+  wait_queue_future(wait_queue_future&& other) noexcept
       : m_future_id(std::exchange(other.m_future_id, kphp::forks::INVALID_ID)) {}
 
   template<typename U>
@@ -51,6 +51,8 @@ struct wait_queue_future final {
     }
     return *this;
   }
+
+  ~wait_queue_future() = default;
 };
 
 template<class T>
