@@ -100,13 +100,13 @@ inline kphp::coro::task<Optional<int64_t>> f$wait_queue_next(int64_t future, dou
   co_return opt_result ? *std::move(opt_result) : Optional<int64_t>{};
 }
 
-int64_t f$wait_queue_create() noexcept {
+inline int64_t f$wait_queue_create() noexcept {
   auto& wait_queue_context{WaitQueueInstanceState::get()};
   const int64_t queue_id{wait_queue_context.create_queue()};
   return queue_id;
 }
 
-int64_t f$wait_queue_create(const mixed& fork_ids) noexcept {
+inline int64_t f$wait_queue_create(const mixed& fork_ids) noexcept {
   auto& wait_queue_context{WaitQueueInstanceState::get()};
   const int64_t queue_id{wait_queue_context.create_queue()};
   auto future{queue_id};
