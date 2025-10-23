@@ -28,14 +28,14 @@ struct wait_queue_future final {
   wait_queue_future(wait_queue_future&& other) noexcept // NOLINT
       : m_future_id(std::exchange(other.m_future_id, kphp::forks::INVALID_ID)) {}
 
-  template<typename Unknown>
-  requires(!std::is_same_v<Unknown, T>)
-  wait_queue_future(const wait_queue_future<Unknown>& other) noexcept // NOLINT
+  template<typename U>
+  requires(!std::is_same_v<T, Unknown> && std::is_same_v<U, Unknown>)
+  wait_queue_future(const wait_queue_future<U>& other) noexcept // NOLINT
       : m_future_id(other.m_future_id) {}
 
-  template<typename Unknown>
-  requires(!std::is_same_v<Unknown, T>)
-  wait_queue_future(wait_queue_future<Unknown>&& other) noexcept // NOLINT
+  template<typename U>
+  requires(!std::is_same_v<T, Unknown> && std::is_same_v<U, Unknown>)
+  wait_queue_future(wait_queue_future<U>&& other) noexcept // NOLINT
       : m_future_id(std::exchange(other.m_future_id, kphp::forks::INVALID_ID)) {}
 
   wait_queue_future& operator=(const wait_queue_future& other) noexcept {
