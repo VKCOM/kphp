@@ -13,7 +13,7 @@
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/print-functions.h"
-#include "runtime-light/stdlib/web/web.h"
+#include "runtime-light/stdlib/web-transfer-lib/web.h"
 
 namespace kphp::web::curl {
 

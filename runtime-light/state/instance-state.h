@@ -39,7 +39,7 @@
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 #include "runtime-light/stdlib/time/time-state.h"
-#include "runtime-light/stdlib/web/web-state.h"
+#include "runtime-light/stdlib/web-transfer-lib/web-state.h"
 
 /**
  * Supported kinds of KPHP images:

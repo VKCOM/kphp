@@ -9,7 +9,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/component/inter-component-session/client.h"
-#include "runtime-light/stdlib/web/defs.h"
+#include "runtime-light/stdlib/web-transfer-lib/defs.h"
 
 inline constexpr std::string_view WEB_COMPONENT_NAME{"web"};
 

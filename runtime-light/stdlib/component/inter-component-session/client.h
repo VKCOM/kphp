@@ -125,7 +125,7 @@ class client final {
         // Read response header or interrupt
         auto read_header_res{co_await kphp::coro::when_any(t.get()->stream.read(resp_header_buf), interrupter)};
         // Interrupt is happened
-        if (std::holds_alternative<int>(read_header_res)) [[unlikely]] {
+        if (std::holds_alternative<int>(read_header_res)) [[unlikely]] { // FIXME: remove `int` after `when_any` fixing
           kphp::log::debug("Reader has been interrupted");
           break;
         } else if (auto res{std::get<std::expected<size_t, int32_t>>(read_header_res)}; !res) [[unlikely]] {

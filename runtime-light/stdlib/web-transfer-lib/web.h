@@ -16,7 +16,7 @@
 
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/stdlib/web/defs.h"
+#include "runtime-light/stdlib/web-transfer-lib/defs.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
