@@ -15,7 +15,6 @@
 #include "common/mixin/not_copyable.h"
 #include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/allocator/allocator-registrator.h"
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -27,7 +26,6 @@
 
 struct ImageState final : private vk::not_copyable {
   AllocatorState image_allocator_state{INIT_IMAGE_ALLOCATOR_SIZE, 0};
-  AllocationsStorage image_allocations_storage;
 
   uint32_t pid{k2::getpid()};
   uid_t uid{k2::getuid()};

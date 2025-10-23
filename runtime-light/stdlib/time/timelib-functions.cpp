@@ -13,7 +13,6 @@
 
 #include "common/containers/final_action.h"
 #include "runtime-common/core/allocator/platform-malloc-interface.h"
-#include "runtime-light/allocator/allocator-registrator.h"
 #include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/time-state.h"
@@ -82,8 +81,6 @@ timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb
 
 std::tuple<std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::string_view, std::string_view>
 getdate(std::int64_t timestamp, timelib_tzinfo& tzinfo) noexcept {
-  auto allocations_span = AllocationsSpan{};
-
   auto ts = (kphp::memory::libc_alloc_guard{}, timelib_time_ctor());
   ts->tz_info = std::addressof(tzinfo);
   ts->zone_type = TIMELIB_ZONETYPE_ID;
@@ -100,8 +97,6 @@ getdate(std::int64_t timestamp, timelib_tzinfo& tzinfo) noexcept {
 
 int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,
                  std::optional<int64_t> yea) noexcept {
-  auto allocations_span = AllocationsSpan{};
-
   auto now = (kphp::memory::libc_alloc_guard{}, timelib_time_ctor());
   namespace chrono = std::chrono;
   timelib_unixtime2gmt(now, chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
@@ -119,8 +114,6 @@ int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::op
 
 std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
                               std::optional<int64_t> day, std::optional<int64_t> yea) noexcept {
-  auto allocations_span = AllocationsSpan{};
-
   auto now = (kphp::memory::libc_alloc_guard{}, timelib_time_ctor());
   auto tzi = get_timezone_info();
   if (!tzi) {
