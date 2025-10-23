@@ -1,0 +1,65 @@
+FROM debian:trixie
+ARG DEBIAN_FRONTEND=noninteractive
+
+# Compilers
+ARG GPP_VERSION=12
+ARG GCC_VERSION=12
+
+# Languages
+ARG PHP_VERSION=7.4
+ARG PYTHON_VERSION=3.13
+
+ARG POSTGRESQL_VERSION=14
+ARG MYSQL_VERSION=8.4-lts
+
+# Обновляем
+RUN apt-get update
+
+# Ставим свякое для работы
+RUN apt-get install -y --no-install-recommends \
+    ca-certificates pkg-config lsb-release build-essential wget gnupg \
+    git cmake-data cmake make \
+    gperf netcat-openbsd patch re2c \
+    libfmt-dev libgtest-dev libgmock-dev zlib1g-dev
+
+# GCC and G++
+RUN apt-get install -y --no-install-recommends gcc-${GCC_VERSION} g++-${GPP_VERSION} \
+    && update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-${GPP_VERSION} 100 \
+    && update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-${GCC_VERSION} 100
+
+# Python
+RUN apt-get install -y --no-install-recommends \
+    python${PYTHON_VERSION}-minimal  \
+    python${PYTHON_VERSION}-dev  \
+    python3-pip
+
+# PostgreSQL
+RUN wget -O /etc/apt/trusted.gpg.d/pgdg-key.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+    && echo "deb https://apt.postgresql.org/pub/repos/apt trixie-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update && apt-get install -y --no-install-recommends postgresql-${POSTGRESQL_VERSION} libpq-dev
+
+# MySQL
+RUN wget -O /etc/apt/trusted.gpg.d/mysql.asc https://repo.mysql.com/RPM-GPG-KEY-mysql-2023 \
+    && echo "deb https://repo.mysql.com/apt/debian/ trixie mysql-${MYSQL_VERSION}" > /etc/apt/sources.list.d/mysql.list \
+    && apt-get update && apt-get install -y --no-install-recommends mysql-server libmysqlclient-dev
+
+# Python package
+COPY tests/python/requirements-trixie.txt /tmp/requirements.txt
+RUN python${PYTHON_VERSION} -m pip install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
+
+# PHP
+RUN wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg \
+    && echo "deb https://packages.sury.org/php trixie main" > /etc/apt/sources.list.d/php.list \
+    && apt-get update && apt-get install -y --no-install-recommends php${PHP_VERSION}-dev \
+    && update-alternatives --set php /usr/bin/php${PHP_VERSION}
+
+# Composer
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+    && php -r "if (hash_file('sha384', 'composer-setup.php') === 'ed0feb545ba87161262f2d45a633e34f591ebb3381f2e0063c345ebea4d228dd0043083717770234ec00c5a9f9593792') { echo 'Installer verified'.PHP_EOL; } else { echo 'Installer corrupt'.PHP_EOL; unlink('composer-setup.php'); exit(1); }" \
+    && php composer-setup.php --install-dir=/usr/bin --version=2.8.12 --filename=composer \
+    && php -r "unlink('composer-setup.php');"
+
+RUN rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/*
+
+RUN useradd -ms /bin/bash kitten
