@@ -328,30 +328,33 @@ struct FunctionGetTLFunctionName {
 
   friend std::ostream& operator<<(std::ostream& os, const FunctionGetTLFunctionName& self) {
     // we will remove ALL tl2php code soon, so we added a bit hackish code here
-    const char* header1 = R"(  /**
+    const char* typed_store_header = R"(  /**
    * @kphp-inline
    *
    * @return TL\RpcFunctionFetcher
    */
   public function typedStore())";
-    const char* header2 = R"(  /**
+
+    const char* typed_fetch_header = R"(  /**
    * @kphp-inline
    *
    * @return TL\RpcFunctionFetcher
    */
   public function typedFetch())";
-    const char* header_magic = R"(  /**
+
+    const char* get_tl_function_magic_header = R"(  /**
    * @kphp-inline
    *
    * @return int
    */
   public function getTLFunctionMagic())";
+
     const char* body_null = R"({
     return null;
   }
 
 )";
-    os << header_magic;
+    os << get_tl_function_magic_header;
     if (self.class_repr.is_interface) {
       os << ";" << std::endl;
     } else {
@@ -365,17 +368,17 @@ struct FunctionGetTLFunctionName {
     } else {
       os << " {" << std::endl << "    return '" << self.class_repr.tl_name << "';" << std::endl << "  }" << SkipLine{};
     }
-    os << header1;
+    os << typed_store_header;
     if (self.class_repr.is_interface) {
       os << ";" << std::endl;
     } else {
-      os << body_null;
+      os << " " << body_null;
     }
-    os << header2;
+    os << typed_fetch_header;
     if (self.class_repr.is_interface) {
       os << ";" << std::endl;
     } else {
-      os << body_null;
+      os << " " << body_null;
     }
     return os;
   }
