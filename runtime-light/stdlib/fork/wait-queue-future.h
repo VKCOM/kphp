@@ -8,16 +8,16 @@
 #include <type_traits>
 #include <utility>
 
-#include "runtime-light/stdlib/fork/fork-state.h"
-
 namespace kphp::forks {
+
+inline constexpr int64_t WAIT_QUEUE_INVALID_ID = -1;
 
 template<typename T>
 struct wait_queue_future final {
   int64_t m_future_id;
 
   wait_queue_future() noexcept
-      : m_future_id(kphp::forks::INVALID_ID) {}
+      : m_future_id(kphp::forks::WAIT_QUEUE_INVALID_ID) {}
 
   wait_queue_future(int64_t id) noexcept // NOLINT
       : m_future_id(id) {}
@@ -26,7 +26,7 @@ struct wait_queue_future final {
       : m_future_id(other.m_future_id) {}
 
   wait_queue_future(wait_queue_future&& other) noexcept
-      : m_future_id(std::exchange(other.m_future_id, kphp::forks::INVALID_ID)) {}
+      : m_future_id(std::exchange(other.m_future_id, kphp::forks::WAIT_QUEUE_INVALID_ID)) {}
 
   template<typename U>
   requires(!std::is_same_v<T, Unknown> && std::is_same_v<U, Unknown>)
@@ -36,7 +36,7 @@ struct wait_queue_future final {
   template<typename U>
   requires(!std::is_same_v<T, Unknown> && std::is_same_v<U, Unknown>)
   wait_queue_future(wait_queue_future<U>&& other) noexcept // NOLINT
-      : m_future_id(std::exchange(other.m_future_id, kphp::forks::INVALID_ID)) {}
+      : m_future_id(std::exchange(other.m_future_id, kphp::forks::WAIT_QUEUE_INVALID_ID)) {}
 
   wait_queue_future& operator=(const wait_queue_future& other) noexcept {
     if (this != std::addressof(other)) {
@@ -47,7 +47,7 @@ struct wait_queue_future final {
 
   wait_queue_future& operator=(wait_queue_future&& other) noexcept {
     if (this != std::addressof(other)) {
-      m_future_id = std::exchange(other.m_future_id, kphp::forks::INVALID_ID);
+      m_future_id = std::exchange(other.m_future_id, kphp::forks::WAIT_QUEUE_INVALID_ID);
     }
     return *this;
   }
