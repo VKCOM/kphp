@@ -23,7 +23,6 @@ function sched_yield() ::: void;
 /** @kphp-extern-func-info interruptible */
 function sched_yield_sleep($duration ::: float) ::: void;
 
-/** @kphp-extern-func-info cpp_template_call*/
 function wait_queue_create (array< future<any> | false > $request_ids = []) ::: future_queue<^1[*][*]>;
 
 function wait_queue_push (future_queue<any> &$queue_id, future<any> | false $request_id) ::: void;
