@@ -13,7 +13,7 @@ Because of issue in CI with mysql on shutdown
 """
 @pytest.fixture(scope="session")
 def mysql_proc_wrapper(request):
-    if 'GITHUB_ACTIONS' in os.environ:
+    if 'SKIP_MYSQL_TESTS' in os.environ:
         pytest.skip("Skipping mysql_proc in unstable environment")
     if search_k2_bin() is not None:
         pytest.skip("Skipping mysql_proc in K2 mode")
