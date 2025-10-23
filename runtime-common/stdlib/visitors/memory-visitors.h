@@ -15,7 +15,6 @@
 #include "runtime-common/core/allocator/platform-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/stdlib/fork/wait-queue-future.h"
 
 template<class T>
 struct CDataPtr;
@@ -49,9 +48,6 @@ public:
     }
     estimated_elements_memory_ += value.estimate_memory_usage();
   }
-
-  template<typename T>
-  void process([[maybe_unused]] const kphp::forks::wait_queue_future<T>& value) noexcept {}
 
   void process(const mixed& value) {
     if (value.is_string()) {

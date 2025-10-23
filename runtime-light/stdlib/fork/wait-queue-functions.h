@@ -14,7 +14,6 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
-#include "runtime-light/stdlib/fork/wait-queue-future.h"
 #include "runtime-light/stdlib/fork/wait-queue-state.h"
 
 namespace kphp::forks {
@@ -77,35 +76,31 @@ inline void wait_queue_push(int64_t queue_id, int64_t fork_id) noexcept {
 
 } // namespace kphp::forks
 
-template<typename T>
-void f$wait_queue_push(kphp::forks::wait_queue_future<T> future, Optional<int64_t> fork_id) noexcept {
+inline void f$wait_queue_push(int64_t future, Optional<int64_t> fork_id) noexcept {
   if (!fork_id.has_value()) {
     return;
   }
-  kphp::forks::wait_queue_push(future.m_future_id, fork_id.val());
+  kphp::forks::wait_queue_push(future, fork_id.val());
 }
 
-template<typename T>
-bool f$wait_queue_empty(kphp::forks::wait_queue_future<T> future) noexcept {
+inline bool f$wait_queue_empty(int64_t future) noexcept {
   auto& wait_queue_instance_st{WaitQueueInstanceState::get()};
-  auto opt_await_set{wait_queue_instance_st.get_queue(future.m_future_id)};
+  auto opt_await_set{wait_queue_instance_st.get_queue(future)};
   if (!opt_await_set.has_value()) [[unlikely]] {
-    kphp::log::warning("future with id {} isn't associated with wait queue", future.m_future_id);
+    kphp::log::warning("future with id {} isn't associated with wait queue", future);
     return true;
   }
   const auto& await_set{(*opt_await_set).get()};
   return await_set.empty();
 }
 
-template<typename T>
-kphp::coro::task<Optional<future<T>>> f$wait_queue_next(kphp::forks::wait_queue_future<T> future, double timeout = -1.0) noexcept {
+inline kphp::coro::task<Optional<int64_t>> f$wait_queue_next(int64_t future, double timeout = -1.0) noexcept {
   auto opt_result{co_await kphp::forks::id_managed(
-      kphp::forks::wait_queue_next(future.m_future_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})))};
+      kphp::forks::wait_queue_next(future, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})))};
   co_return opt_result ? *std::move(opt_result) : Optional<int64_t>{};
 }
 
 template<typename future_queue_type>
-requires(kphp::forks::is_wait_queue_future_v<future_queue_type>)
 future_queue_type f$wait_queue_create() noexcept {
   auto& wait_queue_context{WaitQueueInstanceState::get()};
   const int64_t queue_id{wait_queue_context.create_queue()};
@@ -113,7 +108,6 @@ future_queue_type f$wait_queue_create() noexcept {
 }
 
 template<typename future_queue_type>
-requires(kphp::forks::is_wait_queue_future_v<future_queue_type>)
 future_queue_type f$wait_queue_create(const mixed& fork_ids) noexcept {
   auto& wait_queue_context{WaitQueueInstanceState::get()};
   const int64_t queue_id{wait_queue_context.create_queue()};
