@@ -39,12 +39,16 @@ struct wait_queue_future final {
       : m_future_id(std::exchange(other.m_future_id, kphp::forks::INVALID_ID)) {}
 
   wait_queue_future& operator=(const wait_queue_future& other) noexcept {
-    m_future_id = other.m_future_id;
+    if (this != std::addressof(other)) {
+      m_future_id = other.m_future_id;
+    }
     return *this;
   }
 
   wait_queue_future& operator=(wait_queue_future&& other) noexcept {
-    m_future_id = std::exchange(other.m_future_id, kphp::forks::INVALID_ID);
+    if (this != std::addressof(other)) {
+      m_future_id = std::exchange(other.m_future_id, kphp::forks::INVALID_ID);
+    }
     return *this;
   }
 };
