@@ -100,24 +100,22 @@ inline kphp::coro::task<Optional<int64_t>> f$wait_queue_next(int64_t future, dou
   co_return opt_result ? *std::move(opt_result) : Optional<int64_t>{};
 }
 
-template<typename future_queue_type>
-future_queue_type f$wait_queue_create() noexcept {
+int64_t f$wait_queue_create() noexcept {
   auto& wait_queue_context{WaitQueueInstanceState::get()};
   const int64_t queue_id{wait_queue_context.create_queue()};
-  return future_queue_type{queue_id};
+  return queue_id;
 }
 
-template<typename future_queue_type>
-future_queue_type f$wait_queue_create(const mixed& fork_ids) noexcept {
+int64_t f$wait_queue_create(const mixed& fork_ids) noexcept {
   auto& wait_queue_context{WaitQueueInstanceState::get()};
   const int64_t queue_id{wait_queue_context.create_queue()};
-  auto future{future_queue_type{queue_id}};
+  auto future{queue_id};
   if (!fork_ids.is_array()) {
     return future;
   }
   for (auto fork_id : fork_ids.as_array()) {
     if (fork_id.get_value().is_int()) {
-      kphp::forks::wait_queue_push(future.m_future_id, fork_id.get_value().as_int());
+      kphp::forks::wait_queue_push(future, fork_id.get_value().as_int());
     }
   }
 
