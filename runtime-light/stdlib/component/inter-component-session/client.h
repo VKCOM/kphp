@@ -99,28 +99,37 @@ class client final {
       kphp::stl::unordered_map<query_id_type, details::function_wrapper<std::span<std::byte>, size_t>, kphp::memory::script_allocator>
           query2resp_buffer_provider{};
       kphp::stl::unordered_map<query_id_type, std::span<std::byte>, kphp::memory::script_allocator> query2resp{};
-      bool is_running{true};
+      kphp::coro::event interrupted{};
       std::optional<int32_t> error{};
     };
     using shared_ctx_type = class_instance<refcountable_ctx_type>;
+    using interrupter_type = kphp::coro::shared_task<int>; // FIXME: remove `int` as return type after `when_any` fixing
 
     // The following reader state is intended to be initialized once for a new client.
     // It is assumed that "copying" (ref count increasing) will be the common case, rather than moving.
     shared_ctx_type ctx;
+    interrupter_type interrupter;
     kphp::coro::shared_task<void> runner;
 
     reader(shared_ctx_type _ctx, shared_transport_type _t) noexcept
         : ctx(_ctx),
-          runner(reader::run(_ctx, _t)){};
+          interrupter(reader::wait_until_interrupt(_ctx)),
+          runner(reader::run(_ctx, _t, interrupter)){};
 
-    static inline auto run(shared_ctx_type ctx, shared_transport_type t) noexcept -> kphp::coro::shared_task<void> {
+    static inline auto run(shared_ctx_type ctx, shared_transport_type t, interrupter_type interrupter) noexcept -> kphp::coro::shared_task<void> {
       // Allocate buffer for header
       tl::InterComponentSessionResponseHeader resp_header{};
       std::array<std::byte, resp_header.footprint()> resp_header_buf{};
 
-      while (ctx.get()->is_running) {
-        // Read response header
-        if (auto res{co_await t.get()->stream.read(resp_header_buf)}; !res) [[unlikely]] {
+      while (!ctx.get()->interrupted.is_set()) {
+        // Read response header or interrupt
+        auto read_header_res{co_await kphp::coro::when_any(t.get()->stream.read(resp_header_buf), interrupter)};
+        // Interrupt is happened
+        if (std::holds_alternative<int>(read_header_res)) [[unlikely]] {
+          kphp::log::debug("Reader has been interrupted");
+          break;
+        } else if (auto res{std::get<std::expected<size_t, int32_t>>(read_header_res)}; !res) [[unlikely]] {
+          kphp::log::warning("An error occurred while reading the header from a stream: {}", res.error());
           ctx.get()->error = res.error();
           break;
         }
@@ -144,6 +153,7 @@ class client final {
 
         // Read payload
         if (auto res{co_await t.get()->stream.read(resp)}; !res) [[unlikely]] {
+          kphp::log::warning("An error occurred while reading the payload from a stream: {}", res.error());
           ctx.get()->error = res.error();
           break;
         }
@@ -163,6 +173,12 @@ class client final {
       }
     }
 
+    // Dummy routine for waiting until an interrupting (stopping) event will happen
+    static inline auto wait_until_interrupt(shared_ctx_type ctx) noexcept -> interrupter_type {
+      co_await ctx.get()->interrupted;
+      co_return 0;
+    }
+
     inline auto register_query(query_id_type qid, details::function_wrapper<std::span<std::byte>, size_t>&& buffer_provider) noexcept -> void {
       // We wouldn't read a response twice
       kphp::log::assertion(ctx.get()->query2notifier.contains(qid) == false);
@@ -178,6 +194,8 @@ class client final {
   explicit client(kphp::component::stream&& s)
       : transport(make_instance<refcountable_transport_type>(refcountable_transport_type{.stream = std::move(s)})),
         reader({make_instance<reader::refcountable_ctx_type>(), transport}) {
+    // Interrupter needs for immediately stopping the reader in the of client's life
+    kphp::coro::io_scheduler::get().start(reader.interrupter);
     // Run reader as "service"
     kphp::coro::io_scheduler::get().start(reader.runner);
   }
@@ -187,7 +205,7 @@ public:
     // If client has been moved, skip disabling the reader.
     // Otherwise, shut down the reader.
     if (query_count != std::numeric_limits<query_id_type>::max()) {
-      reader.ctx.get()->is_running = false;
+      reader.ctx.get()->interrupted.set();
     }
   }
 
@@ -216,13 +234,13 @@ public:
   static inline auto create(std::string_view component_name) noexcept -> std::expected<client, int32_t>;
 
   template<std::invocable<size_t> B, std::invocable<std::span<std::byte>> R>
-  requires std::convertible_to<kphp::coro::async_function_return_type_t<B, size_t>, std::span<std::byte>> &&
-               std::convertible_to<kphp::coro::async_function_return_type_t<R, std::span<std::byte>>, bool>
+  requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>> &&
+               std::is_convertible_v<std::invoke_result_t<R, std::span<std::byte>>, bool>
   inline auto query(std::span<const std::byte> request, B&& response_buffer_provider,
                     R response_handler) noexcept -> kphp::coro::task<std::expected<void, int32_t>>;
 
   template<std::invocable<size_t> B>
-  requires std::convertible_to<kphp::coro::async_function_return_type_t<B, size_t>, std::span<std::byte>>
+  requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
   inline auto query(std::span<const std::byte> request,
                     B&& response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>>;
 };
@@ -237,8 +255,8 @@ inline auto client::create(std::string_view component_name) noexcept -> std::exp
 }
 
 template<std::invocable<size_t> B, std::invocable<std::span<std::byte>> R>
-requires std::convertible_to<kphp::coro::async_function_return_type_t<B, size_t>, std::span<std::byte>> &&
-             std::convertible_to<kphp::coro::async_function_return_type_t<R, std::span<std::byte>>, bool>
+requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>> &&
+             std::is_convertible_v<std::invoke_result_t<R, std::span<std::byte>>, bool>
 inline auto client::query(std::span<const std::byte> request, B&& response_buffer_provider,
                           R response_handler) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
   // If previously any readers' error has been occurred
@@ -273,17 +291,13 @@ inline auto client::query(std::span<const std::byte> request, B&& response_buffe
     }
 
     // Invoke handler and pass response slice
-    if constexpr (kphp::coro::is_async_function_v<R, std::span<std::byte>>) {
-      still_wait = co_await std::invoke(response_handler, reader.ctx.get()->query2resp[query_id]);
-    } else {
-      still_wait = std::invoke(response_handler, reader.ctx.get()->query2resp[query_id]);
-    }
+    still_wait = std::invoke(std::forward<R>(response_handler), reader.ctx.get()->query2resp[query_id]);
   }
   co_return std::expected<void, int32_t>{};
 }
 
 template<std::invocable<size_t> B>
-requires std::convertible_to<kphp::coro::async_function_return_type_t<B, size_t>, std::span<std::byte>>
+requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
 inline auto client::query(std::span<const std::byte> request,
                           B&& response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
   std::span<std::byte> response{};

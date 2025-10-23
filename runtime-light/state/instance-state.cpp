@@ -196,6 +196,7 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
 
   // Stop session with internal Web component
   if (WebInstanceState::get().session.has_value()) {
+    WebInstanceState::get().session_is_finished = true;
     WebInstanceState::get().session.reset();
   }
 

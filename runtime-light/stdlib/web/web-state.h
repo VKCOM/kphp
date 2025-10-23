@@ -21,6 +21,7 @@ struct WebInstanceState final : private vk::not_copyable {
   using shared_session_type = class_instance<WebComponentSession>;
 
   std::optional<shared_session_type> session{};
+  bool session_is_finished{false};
   kphp::stl::unordered_map<kphp::web::SimpleTransfer, kphp::web::SimpleTransferConfig, kphp::memory::script_allocator> simple_transfer2config{};
 
   inline auto session_get_or_init() noexcept -> std::expected<shared_session_type, int32_t>;
@@ -31,6 +32,9 @@ struct WebInstanceState final : private vk::not_copyable {
 };
 
 inline auto WebInstanceState::session_get_or_init() noexcept -> std::expected<shared_session_type, int32_t> {
+  if (session_is_finished) {
+    return std::unexpected{k2::errno_eshutdown};
+  }
   if (session.has_value()) {
     return std::expected<shared_session_type, int32_t>{session.value()};
   }
