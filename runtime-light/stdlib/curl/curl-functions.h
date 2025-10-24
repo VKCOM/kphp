@@ -34,7 +34,7 @@ inline auto set_errno(int64_t code, std::optional<string> description = std::nul
     set_errno(code, description.value().c_str());
     return;
   }
-  set_errno(code, string().c_str());
+  set_errno(code, "");
 }
 
 template<size_t N>
