@@ -74,7 +74,7 @@ inline int64_t f$time() noexcept {
 }
 
 inline int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
-                                  Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
+                        Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
   auto res =
       kphp::timelib::mktime(static_cast<std::optional<int64_t>>(hour), static_cast<std::optional<int64_t>>(minute), static_cast<std::optional<int64_t>>(second),
                             static_cast<std::optional<int64_t>>(month), static_cast<std::optional<int64_t>>(day), static_cast<std::optional<int64_t>>(year));
