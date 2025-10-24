@@ -20,26 +20,34 @@ namespace kphp::timelib {
 
 namespace {
 
-template<typename Opt, typename Func>
-void apply_if_has_value(Opt&& opt, Func&& fn) noexcept(noexcept(fn(*opt))) {
-  if (opt.has_value()) {
-    fn(*opt);
-  }
-}
-
 void patch_time(timelib_time& time, std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
                 std::optional<int64_t> day, std::optional<int64_t> yea) noexcept {
-  apply_if_has_value(hou, [&time](auto value) { time.h = value; });
+  hou.transform([&time](auto value) {
+    time.h = value;
+    return 0;
+  });
 
-  apply_if_has_value(min, [&time](auto value) { time.i = value; });
+  min.transform([&time](auto value) {
+    time.i = value;
+    return 0;
+  });
 
-  apply_if_has_value(sec, [&time](auto value) { time.s = value; });
+  sec.transform([&time](auto value) {
+    time.s = value;
+    return 0;
+  });
 
-  apply_if_has_value(mon, [&time](auto value) { time.m = value; });
+  mon.transform([&time](auto value) {
+    time.m = value;
+    return 0;
+  });
 
-  apply_if_has_value(day, [&time](auto value) { time.d = value; });
+  day.transform([&time](auto value) {
+    time.d = value;
+    return 0;
+  });
 
-  apply_if_has_value(yea, [&time](auto value) {
+  yea.transform([&time](auto value) {
     // Copied from https://github.com/php/php-src/blob/eafbc6b3e6b59786601420dfb27c3682d0cfd86c/ext/date/php_date.c#L1195
     if (value >= 0 && value < 70) {
       value += 2000;
@@ -47,6 +55,7 @@ void patch_time(timelib_time& time, std::optional<int64_t> hou, std::optional<in
       value += 1900;
     }
     time.y = value;
+    return 0;
   });
 }
 
