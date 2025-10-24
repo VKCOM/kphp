@@ -281,6 +281,16 @@ struct DirEntry {
 int32_t k2_readdir(uint64_t dd, struct DirEntry* entry, struct DirEntry** result);
 
 /**
+ * Semantically equivalent of libc's unlink
+ *
+ *  Some `errno` examples:
+ * `EACCES` => permission denied.
+ * `EIO` => An I/O error occurred.
+ * `ENOENT` A component in path does not exist or is a dangling symbolic link, or path is empty.
+ */
+int32_t k2_unlink(const char* path, size_t path_len);
+
+/**
  * @return return `0` on success. libc-like `errno` otherwise
  *
  *  Some `errno` examples:
@@ -328,6 +338,13 @@ size_t k2_write(uint64_t stream_d, size_t data_len, const void* data);
  * @return number of read bytes.
  */
 size_t k2_read(uint64_t stream_d, size_t buf_len, void* buf);
+
+/**
+ * reads at most `buf_len` bytes to `buf` from `offset` position without modifying stream state.
+ *
+ * @return number of read bytes.
+ */
+size_t k2_pread(uint64_t stream_d, size_t buf_len, void* buf, off_t offset);
 
 /**
  * Sets `StreamStatus.please_whutdown_write=true` for the component on the
