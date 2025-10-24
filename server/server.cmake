@@ -4,7 +4,6 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         confdata-stats.cpp
         curl-adaptor.cpp
         shared-data.cpp
-        http-server-context.cpp
         json-logger.cpp
         lease-config-parser.cpp
         lease-rpc-client.cpp

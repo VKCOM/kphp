@@ -23,7 +23,7 @@
 class PhpWorker;
 struct net_event_t;
 struct external_driver_connect;
-void generic_event_loop(WorkerType, bool, bool) noexcept;
+void generic_event_loop(WorkerType, bool) noexcept;
 void php_worker_run_net_queue(PhpWorker *);
 bool process_net_event(net_event_t *);
 // endregion
@@ -104,7 +104,7 @@ private:
   friend struct ::external_driver_connect;
 
   void create_outbound_connections() noexcept;
-  friend void ::generic_event_loop(WorkerType, bool, bool) noexcept;
+  friend void ::generic_event_loop(WorkerType, bool) noexcept;
 
   void process_external_db_request_net_query(std::unique_ptr<Request> &&request) noexcept;
   friend void ::php_worker_run_net_queue(PhpWorker *);

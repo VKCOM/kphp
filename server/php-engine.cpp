@@ -60,16 +60,14 @@
 #include "net/net-tcp-connections.h"
 #include "net/net-tcp-rpc-client.h"
 #include "net/net-tcp-rpc-server.h"
-
 #include "runtime-common/core/memory-resource/memory_resource.h"
 #include "runtime-common/stdlib/kml/models-context.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
-#include "runtime/kml.h"
-#include "runtime/runtime-builtin-stats.h"
 #include "runtime/interface.h"
+#include "runtime/kml.h"
 #include "runtime/profiler.h"
 #include "runtime/rpc.h"
-#include "server/server-config.h"
+#include "runtime/runtime-builtin-stats.h"
 #include "server/confdata-binlog-replay.h"
 #include "server/confdata-stats.h"
 #include "server/database-drivers/adaptor.h"
@@ -93,6 +91,9 @@
 #include "server/php-runner.h"
 #include "server/php-sql-connections.h"
 #include "server/php-worker.h"
+#include "server/server-config.h"
+#include "server/server-context-http.h"
+#include "server/server-context-rpc.h"
 #include "server/server-log.h"
 #include "server/server-stats.h"
 #include "server/shared-data-worker-cache.h"
@@ -496,7 +497,7 @@ void hts_stop() {
   if (hts_stopped) {
     return;
   }
-  int http_sfd = vk::singleton<HttpServerContext>::get().worker_http_socket_fd();
+  int http_sfd = vk::singleton<HttpServerContext>::get().worker_socket_fd();
   if (http_sfd != -1) {
     epoll_close(http_sfd);
     close(http_sfd);
@@ -1439,37 +1440,30 @@ void reopen_json_log() {
   }
 }
 
-void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port, bool invoke_dummy_self_rpc_request) noexcept {
+void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_request) noexcept {
   if (master_flag && logname_pattern != nullptr) {
     reopen_logs();
     reopen_json_log();
   }
 
-  int http_port, http_sfd = -1;
+  int http_port = -1, http_sfd = -1;
+  int rpc_port = -1, rpc_sfd = -1;
   double last_cron_time = 0;
   double next_create_outbound = 0;
 
   switch (worker_type) {
     case WorkerType::general_worker: {
       const auto &http_server_ctx = vk::singleton<HttpServerContext>::get();
+      const auto &rpc_server_ctx = vk::singleton<RpcServerContext>::get();
 
-      if (http_server_ctx.http_server_enabled()) {
-        http_port = http_server_ctx.worker_http_port();
-        http_sfd = http_server_ctx.worker_http_socket_fd();
+      if (http_server_ctx.server_enabled()) {
+        http_port = http_server_ctx.worker_port();
+        http_sfd = http_server_ctx.worker_socket_fd();
       }
 
-      if (init_and_listen_rpc_port) {
-        if (rpc_port > 0 && rpc_sfd < 0) {
-          rpc_sfd = server_socket(rpc_port, settings_addr, backlog, 0);
-          if (rpc_sfd < 0) {
-            vkprintf(-1, "cannot open rpc server socket at port %d: %m\n", rpc_port);
-            exit(1);
-          }
-        }
-
-        if (rpc_sfd >= 0) {
-          init_listening_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods);
-        }
+      if (rpc_server_ctx.server_enabled()) {
+        rpc_port = rpc_server_ctx.worker_port();
+        rpc_sfd = rpc_server_ctx.worker_socket_fd();
       }
 
       if (invoke_dummy_self_rpc_request) {
@@ -1491,12 +1485,20 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port, b
         }
       }
 
-      if (verbosity > 0 && http_sfd >= 0) {
-        vkprintf (-1, "created listening socket at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
-      }
-
       if (http_sfd >= 0) {
         init_listening_tcpv6_connection(http_sfd, &ct_php_engine_http_server, &http_methods, SM_SPECIAL);
+      }
+
+      if (rpc_sfd >= 0) {
+        init_listening_tcpv6_connection(rpc_sfd, &ct_php_engine_rpc_server, &rpc_methods, SM_SPECIAL);
+      }
+
+      if (verbosity > 0 && http_sfd >= 0) {
+        vkprintf (-1, "created listening socket for HTTP at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
+      }
+
+      if (verbosity > 0 && rpc_sfd >= 0) {
+        vkprintf (-1, "created listening socket for RPC at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), rpc_port, rpc_sfd);
       }
 
       auto &rpc_clients = RpcClients::get().rpc_clients;
@@ -1511,7 +1513,6 @@ void generic_event_loop(WorkerType worker_type, bool init_and_listen_rpc_port, b
       break;
     }
     case WorkerType::job_worker: {
-      assert(!init_and_listen_rpc_port);
       vk::singleton<JobWorkerServer>::get().init();
       break;
     }
@@ -1618,12 +1619,11 @@ void start_server() {
     reopen_logs();
     reopen_json_log();
   }
-  if (master_flag) {
-    vkprintf (-1, "master\n");
-    if (rpc_port != -1) {
-      vkprintf (-1, "rpc_port is ignored in master mode\n");
-      rpc_port = -1;
-    }
+
+  bool ok = vk::singleton<RpcServerContext>::get().master_create_server_sockets();
+  if (!ok) {
+    kprintf("Failed to create RPC sockets\n");
+    exit(1);
   }
 
   init_netbuffers();
@@ -1635,7 +1635,7 @@ void start_server() {
   }
 
   worker_global_init(worker_type);
-  generic_event_loop(worker_type, !master_flag, run_once || run_once_prefork_mode);
+  generic_event_loop(worker_type, run_once || run_once_prefork_mode);
 }
 
 void set_instance_cache_memory_limit(size_t limit);
@@ -1801,8 +1801,8 @@ int main_args_handler(int i, const char *long_option) {
       return ok ? 0 : -1;
     }
     case 'r': {
-      rpc_port = atoi(optarg);
-      return 0;
+      bool ok = vk::singleton<RpcServerContext>::get().init_from_option(optarg);
+      return ok ? 0 : -1;
     }
     case 'R': {
       force_clear_sql_connection = 1;
@@ -2390,7 +2390,7 @@ void init_default() {
   pid = getpid();
   master_pid = getpid();
   // RPC part
-  PID.port = (short)rpc_port;
+  PID.port = -1; // TODO: get rid of this?
 
   if (!username && maxconn == MAX_CONNECTIONS && geteuid()) {
     maxconn = 1000; //not for root
@@ -2424,6 +2424,43 @@ void init_default() {
     reopen_json_log();
   }
 }
+
+namespace {
+bool check_server_options() {
+  const auto& http_server_ctx = vk::singleton<HttpServerContext>::get();
+  const auto& rpc_server_ctx = vk::singleton<RpcServerContext>::get();
+  size_t general_workers_cnt = vk::singleton<WorkersControl>::get().get_count(WorkerType::general_worker);
+
+  if (!master_flag && (http_server_ctx.server_enabled() || rpc_server_ctx.server_enabled())) {
+    kprintf("Server mode is not supported without workers, yo must specify -f/--workers-num <n>\n");
+    return false;
+  }
+
+  if (http_server_ctx.server_enabled() && rpc_server_ctx.server_enabled()) {
+    kprintf("Server can't be both RPC and HTTP server simultaneously, choose only one server type\n");
+    return false;
+  }
+
+  if (http_server_ctx.server_enabled()) {
+    if (http_server_ctx.ports().size() > general_workers_cnt) {
+      kprintf("You create %zu HTTP ports, but have only %zu general workers -- it's useless to have ports > workers\n",
+              http_server_ctx.ports().size(), general_workers_cnt);
+      return false;
+    }
+  }
+
+  if (rpc_server_ctx.server_enabled()) {
+    if (rpc_server_ctx.ports().size() != general_workers_cnt) {
+      kprintf("For prefork RPC server it's highly recommended to have N rpc ports for N general workers. "
+              "But now you have %zu ports and %zu general workers\n",
+              rpc_server_ctx.ports().size(), general_workers_cnt);
+      return false;
+    }
+  }
+
+  return true;
+}
+} // namespace
 
 int run_main(int argc, char **argv, php_mode mode) {
   init_version_string(NAME_VERSION);
@@ -2469,18 +2506,17 @@ int run_main(int argc, char **argv, php_mode mode) {
       run_once_prefork_mode = true;
     } else {
       master_flag = 0;
-      rpc_port = -1;
       setvbuf(stdout, nullptr, _IONBF, 0);
     }
   }
 
-  if (!master_flag && vk::singleton<HttpServerContext>::get().http_server_enabled()) {
-    kprintf("HTTP server mode is not supported without workers, see -f/--workers-num option\n");
-    return 1;
-  }
-
   init_default();
   init_all();
+
+  bool ok = check_server_options();
+  if (!ok) {
+    exit(1);
+  }
 
   init_uptime();
   preallocate_msg_buffers();

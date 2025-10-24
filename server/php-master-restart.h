@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "server/http-server-context.h"
+#include "server/server-context-http.h"
 
 //ATTENTION: do NOT change this structures without changing the magic
 #define SHARED_DATA_MAGIC 0x3b720002
@@ -35,9 +35,9 @@ struct master_data_t {
 
   uint32_t instance_cache_elements_cached;
 
-  uint16_t http_ports[HttpServerContext::MAX_HTTP_PORTS];
+  uint16_t http_ports[HttpServerContext::MAX_PORTS];
 
-  int reserved[50 - 1 - HttpServerContext::MAX_HTTP_PORTS / 2];
+  int reserved[50 - 1 - HttpServerContext::MAX_PORTS / 2];
 };
 
 struct shared_data_t {
