@@ -73,7 +73,7 @@ inline int64_t f$time() noexcept {
   return duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count();
 }
 
-inline Optional<int64_t> f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
+inline int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
                                   Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
   auto res =
       kphp::timelib::mktime(static_cast<std::optional<int64_t>>(hour), static_cast<std::optional<int64_t>>(minute), static_cast<std::optional<int64_t>>(second),
@@ -81,7 +81,7 @@ inline Optional<int64_t> f$mktime(Optional<int64_t> hour = {}, Optional<int64_t>
   if (res.has_value()) {
     return *res;
   }
-  return false;
+  return std::numeric_limits<int64_t>::min();
 }
 
 inline array<mixed> f$getdate(int64_t timestamp) noexcept {
