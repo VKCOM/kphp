@@ -20,24 +20,24 @@ namespace kphp::timelib {
 
 namespace {
 
-void patch_time(timelib_time& time, std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
-                std::optional<int64_t> day, std::optional<int64_t> yea) noexcept {
-  hou.transform([&time](auto value) {
+void patch_time(timelib_time& time, std::optional<int64_t> hour, std::optional<int64_t> minute, std::optional<int64_t> second, std::optional<int64_t> month,
+                std::optional<int64_t> day, std::optional<int64_t> year) noexcept {
+  hour.transform([&time](auto value) {
     time.h = value;
     return 0;
   });
 
-  min.transform([&time](auto value) {
+  minute.transform([&time](auto value) {
     time.i = value;
     return 0;
   });
 
-  sec.transform([&time](auto value) {
+  second.transform([&time](auto value) {
     time.s = value;
     return 0;
   });
 
-  mon.transform([&time](auto value) {
+  month.transform([&time](auto value) {
     time.m = value;
     return 0;
   });
@@ -47,7 +47,7 @@ void patch_time(timelib_time& time, std::optional<int64_t> hou, std::optional<in
     return 0;
   });
 
-  yea.transform([&time](auto value) {
+  year.transform([&time](auto value) {
     // Copied from https://github.com/php/php-src/blob/eafbc6b3e6b59786601420dfb27c3682d0cfd86c/ext/date/php_date.c#L1195
     if (value >= 0 && value < 70) {
       value += 2000;
