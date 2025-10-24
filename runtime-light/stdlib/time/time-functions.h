@@ -19,8 +19,8 @@
 
 namespace kphp::time::impl {
 
-constexpr inline auto CHECKDATE_YEAR_MIN = 1;
-constexpr inline auto CHECKDATE_YEAR_MAX = 32767;
+constexpr inline int64_t CHECKDATE_YEAR_MIN = 1;
+constexpr inline int64_t CHECKDATE_YEAR_MAX = 32767;
 
 int64_t fix_year(int64_t year) noexcept;
 
