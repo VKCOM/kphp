@@ -155,7 +155,7 @@ inline auto simple_transfer_perform(SimpleTransfer st) noexcept -> kphp::coro::t
     }
   }};
 
-  const auto response_handler{[&frame_num, &error, &ok_or_error_buffer](std::span<std::byte> _) -> bool {
+  const auto response_handler{[&frame_num, &error, &ok_or_error_buffer](std::span<std::byte> _) noexcept -> bool {
     switch (frame_num) {
     case 0: {
       frame_num += 1;
@@ -193,7 +193,7 @@ inline auto simple_transfer_perform(SimpleTransfer st) noexcept -> kphp::coro::t
   co_return std::expected<Response, Error>{std::move(response)};
 }
 
-inline auto simple_transfer_reset(SimpleTransfer st) noexcept -> kphp::coro::task<std::expected<void, Error>> {
+[[maybe_unused]] inline auto simple_transfer_reset(SimpleTransfer st) noexcept -> kphp::coro::task<std::expected<void, Error>> {
   co_return std::unexpected{Error{.code = -1, .description = std::nullopt}};
 }
 
