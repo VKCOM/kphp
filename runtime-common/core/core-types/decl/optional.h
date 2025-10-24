@@ -5,7 +5,6 @@
 #pragma once
 
 #include <cstdint>
-#include <optional>
 #include <utility>
 
 #include "common/type_traits/is_constructible.h"
