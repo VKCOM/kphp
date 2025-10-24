@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 require_once 'kphp_tester_include.php';
 
@@ -46,7 +46,7 @@ function hash3($n) {
   }
   $q = wait_queue_create($ids);
   while (true) {
-    $t = wait_queue_next ($q);
+    $t = wait_queue_next ($q, 0.1);
     if (!$t) {
       break;
     }
@@ -90,17 +90,17 @@ function hash4($n) {
 
 
 
-$id2 = fork(hash2(100));
-$id = fork(hash3(100));
+$id2 = fork(hash2(10));
+$id = fork(hash3(10));
 wait($id);
 wait($id2);
 
 print "{$res}\n";
 
 # $id3 = fork(hash4(100));
-$qid = hash4(100);
+$qid = hash4(10);
 while (true) {
-  $t = wait_queue_next ($qid);
+  $t = wait_queue_next ($qid, 0.1);
   if (!$t) {
     break;
   }

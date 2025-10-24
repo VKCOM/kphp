@@ -23,13 +23,11 @@ function sched_yield() ::: void;
 /** @kphp-extern-func-info interruptible */
 function sched_yield_sleep($duration ::: float) ::: void;
 
-// ===== UNSUPPORTED =====
-
-/** @kphp-extern-func-info stub */
 function wait_queue_create (array< future<any> | false > $request_ids = []) ::: future_queue<^1[*][*]>;
-/** @kphp-extern-func-info stub */
-function wait_queue_push (future_queue<any> &$queue_id, future<any> | false $request_ids) ::: void;
-/** @kphp-extern-func-info stub */
+
+function wait_queue_push (future_queue<any> &$queue_id, future<any> | false $request_id) ::: void;
+
 function wait_queue_empty (future_queue<any> $queue_id) ::: bool;
-/** @kphp-extern-func-info stub */
+
+/** @kphp-extern-func-info interruptible */
 function wait_queue_next (future_queue<any> $queue_id, $timeout ::: float = -1.0) ::: future<^1[*]> | false;
