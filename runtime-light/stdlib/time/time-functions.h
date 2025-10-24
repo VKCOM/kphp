@@ -93,7 +93,7 @@ inline array<mixed> f$getdate(Optional<int64_t> timestamp) noexcept {
     namespace chrono = std::chrono;
     timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
   }
-  auto tzi = kphp::timelib::get_timezone_info();
+  auto tzi{kphp::timelib::get_timezone_info()};
   array<mixed> result(array_size(11, false));
   result.set_value(string{"0", 1}, timestamp.val());
   if (tzi == nullptr) [[unlikely]] {
@@ -176,7 +176,7 @@ inline Optional<int64_t> f$strtotime(const string& datetime, int64_t base_timest
     namespace chrono = std::chrono;
     base_timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
   }
-  auto* tzinfo = kphp::timelib::get_timezone_info();
+  auto* tzinfo{kphp::timelib::get_timezone_info()};
   if (!tzinfo) [[unlikely]] {
     return false;
   }
