@@ -28,6 +28,11 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
 
 string to_string(const std::string_view& sv) noexcept;
 
+template<typename T>
+std::optional<T> to_optional(const Optional<T>& kphp_opt) noexcept {
+  return kphp_opt.has_value() ? std::make_optional(kphp_opt.val()) : std::nullopt;
+}
+
 } // namespace kphp::time::impl
 
 inline int64_t f$_hrtime_int() noexcept {
@@ -75,9 +80,8 @@ inline int64_t f$time() noexcept {
 
 inline int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
                         Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
-  auto res =
-      kphp::timelib::mktime(static_cast<std::optional<int64_t>>(hour), static_cast<std::optional<int64_t>>(minute), static_cast<std::optional<int64_t>>(second),
-                            static_cast<std::optional<int64_t>>(month), static_cast<std::optional<int64_t>>(day), static_cast<std::optional<int64_t>>(year));
+  auto res = kphp::timelib::mktime(kphp::time::impl::to_optional(hour), kphp::time::impl::to_optional(minute), kphp::time::impl::to_optional(second),
+                                   kphp::time::impl::to_optional(month), kphp::time::impl::to_optional(day), kphp::time::impl::to_optional(year));
   if (res.has_value()) {
     return *res;
   }
@@ -133,9 +137,8 @@ inline string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) n
 
 inline int64_t f$gmmktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
                           Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
-  return kphp::timelib::gmmktime(static_cast<std::optional<int64_t>>(hour), static_cast<std::optional<int64_t>>(minute),
-                                 static_cast<std::optional<int64_t>>(second), static_cast<std::optional<int64_t>>(month),
-                                 static_cast<std::optional<int64_t>>(day), static_cast<std::optional<int64_t>>(year));
+  return kphp::timelib::gmmktime(kphp::time::impl::to_optional(hour), kphp::time::impl::to_optional(minute), kphp::time::impl::to_optional(second),
+                                 kphp::time::impl::to_optional(month), kphp::time::impl::to_optional(day), kphp::time::impl::to_optional(year));
 }
 
 inline string f$date(const string& format, Optional<int64_t> timestamp = {}) noexcept {

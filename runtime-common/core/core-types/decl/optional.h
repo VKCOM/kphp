@@ -65,10 +65,6 @@ public:
     return value_state_;
   }
 
-  explicit operator std::optional<T>() const noexcept {
-    return has_value() ? std::make_optional(value_) : std::nullopt;
-  }
-
 protected:
   template<class T1>
   OptionalBase(T1&& value, OptionalState value_state) noexcept
