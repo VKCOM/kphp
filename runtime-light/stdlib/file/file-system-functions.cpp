@@ -8,13 +8,13 @@ static constexpr int64_t IMAGETYPE_UNKNOWN = 0;
 static constexpr int64_t IMAGETYPE_GIF = 1;
 static constexpr int64_t IMAGETYPE_JPEG = 2;
 static constexpr int64_t IMAGETYPE_PNG = 3;
-static constexpr int64_t IMAGETYPE_SWF = 4;
-static constexpr int64_t IMAGETYPE_PSD = 5;
-static constexpr int64_t IMAGETYPE_BMP = 6;
-static constexpr int64_t IMAGETYPE_TIFF_II = 7;
-static constexpr int64_t IMAGETYPE_TIFF_MM = 8;
-static constexpr int64_t IMAGETYPE_JPC = 9;
-static constexpr int64_t IMAGETYPE_JPEG2000 = 9;
+//static constexpr int64_t IMAGETYPE_SWF = 4;
+//static constexpr int64_t IMAGETYPE_PSD = 5;
+//static constexpr int64_t IMAGETYPE_BMP = 6;
+//static constexpr int64_t IMAGETYPE_TIFF_II = 7;
+//static constexpr int64_t IMAGETYPE_TIFF_MM = 8;
+//static constexpr int64_t IMAGETYPE_JPC = 9;
+//static constexpr int64_t IMAGETYPE_JPEG2000 = 9;
 static constexpr int64_t IMAGETYPE_JP2 = 10;
 
 static constexpr std::array<char, 3> php_sig_gif = {'G', 'I', 'F'};
@@ -54,7 +54,8 @@ inline mixed f$getimagesize(const string& name) {
     return false;
   }
 
-  auto sync_res{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(name, READ_MODE), {})};
+  auto sync_res{
+      from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(name, string{READ_MODE.data(), static_cast<string::size_type>(READ_MODE.size())}), {})};
   if (sync_res.is_null()) {
     return false;
   }
