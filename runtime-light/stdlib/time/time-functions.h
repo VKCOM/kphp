@@ -84,14 +84,14 @@ inline int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = 
   return std::numeric_limits<int64_t>::min();
 }
 
-inline array<mixed> f$getdate(int64_t timestamp) noexcept {
-  if (timestamp == std::numeric_limits<int64_t>::min()) {
+inline array<mixed> f$getdate(Optional<int64_t> timestamp) noexcept {
+  if (!timestamp.has_value()) {
     namespace chrono = std::chrono;
     timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
   }
   auto tzi = kphp::timelib::get_timezone_info();
   array<mixed> result(array_size(11, false));
-  result.set_value(string{"0", 1}, timestamp);
+  result.set_value(string{"0", 1}, timestamp.val());
   if (tzi == nullptr) [[unlikely]] {
     result.set_value(string{"seconds", 7}, 0);
     result.set_value(string{"minutes", 7}, 0);
@@ -107,7 +107,7 @@ inline array<mixed> f$getdate(int64_t timestamp) noexcept {
     return result;
   }
 
-  auto [seconds, minutes, hours, mday, wday, mon, year, yday, weekday, month] = kphp::timelib::getdate(timestamp, *tzi);
+  auto [seconds, minutes, hours, mday, wday, mon, year, yday, weekday, month] = kphp::timelib::getdate(timestamp.val(), *tzi);
 
   result.set_value(string{"seconds", 7}, seconds);
   result.set_value(string{"minutes", 7}, minutes);
@@ -119,7 +119,6 @@ inline array<mixed> f$getdate(int64_t timestamp) noexcept {
   result.set_value(string{"yday", 4}, yday);
   result.set_value(string{"weekday", 7}, kphp::time::impl::to_string(weekday));
   result.set_value(string{"month", 5}, kphp::time::impl::to_string(month));
-  result.set_value(string{"0", 1}, timestamp);
 
   return result;
 }
