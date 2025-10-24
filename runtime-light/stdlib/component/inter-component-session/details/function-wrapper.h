@@ -58,11 +58,7 @@ public:
 
   R operator()(ARGS... args) noexcept {
     kphp::log::assertion(func_obj != nullptr);
-    if constexpr (std::is_void_v<R>) {
-      invoker(func_obj, args...);
-    } else {
-      return invoker(func_obj, args...);
-    }
+    return invoker(func_obj, std::forward<ARGS...>(args...));
   }
 
   ~function_wrapper() noexcept {
@@ -76,11 +72,7 @@ public:
 private:
   template<typename F>
   static R typed_invoker(const void* func_obj, ARGS... args) noexcept {
-    if constexpr (std::is_void_v<R>) {
-      std::launder(static_cast<const F*>(func_obj))->operator()(args...);
-    } else {
-      return std::launder(static_cast<const F*>(func_obj))->operator()(args...);
-    }
+    return std::launder(static_cast<const F*>(func_obj))->operator()(std::forward<ARGS...>(args...));
   }
 
   template<typename F>
@@ -90,8 +82,8 @@ private:
 
   template<typename F>
   static void* raw_mem_alloc() noexcept {
-    size_t alignment = alignof(F);
-    size_t size = sizeof(F);
+    constexpr size_t alignment{alignof(F)};
+    constexpr size_t size{sizeof(F)};
     // Allocate more space to ensure alignment can be met
     const auto mem{kphp::memory::script::alloc(size + alignment - 1)};
     kphp::log::assertion(mem != nullptr);

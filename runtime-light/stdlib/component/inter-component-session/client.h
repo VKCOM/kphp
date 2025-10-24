@@ -38,7 +38,7 @@ class client final {
   shared_transport_type transport;
   query_id_type query_count{};
 
-  // WRITER
+  // ======== WRITER ========
   struct writer {
     bool is_occupied{false};
     query_id_type occupied_by{0};
@@ -92,7 +92,7 @@ class client final {
     }
   } writer;
 
-  // READER
+  // ======== READER ========
   struct reader {
     struct refcountable_ctx_type : public refcountable_php_classes<refcountable_ctx_type> {
       query2notifier_type query2notifier{};
@@ -191,7 +191,7 @@ class client final {
     }
   } reader;
 
-  explicit client(kphp::component::stream&& s)
+  explicit client(kphp::component::stream&& s) noexcept
       : transport(make_instance<refcountable_transport_type>(refcountable_transport_type{.stream = std::move(s)})),
         reader({make_instance<reader::refcountable_ctx_type>(), transport}) {
     // Interrupter needs for immediately stopping the reader in the of client's life
@@ -201,7 +201,7 @@ class client final {
   }
 
 public:
-  ~client() {
+  ~client() noexcept {
     // If client has been moved, skip disabling the reader.
     // Otherwise, shut down the reader.
     if (query_count != std::numeric_limits<query_id_type>::max()) {
@@ -268,7 +268,7 @@ inline auto client::query(std::span<const std::byte> request, B&& response_buffe
   auto query_id{query_count++};
 
   // Register a new query and send request
-  reader.register_query(query_id, details::function_wrapper<std::span<std::byte>, size_t>{std::move(response_buffer_provider)});
+  reader.register_query(query_id, details::function_wrapper<std::span<std::byte>, size_t>{std::forward<B>(response_buffer_provider)});
   kphp::log::debug("Client create query #{}", query_id);
   if (auto res{co_await writer.write(transport, query_id, request)}; !res) [[unlikely]] {
     co_return std::move(res);
@@ -301,7 +301,7 @@ requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::b
 inline auto client::query(std::span<const std::byte> request,
                           B&& response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
   std::span<std::byte> response{};
-  auto res{co_await query(request, std::forward<B>(response_buffer_provider), [&response](std::span<std::byte> resp) -> bool {
+  auto res{co_await query(request, std::forward<B>(response_buffer_provider), [&response](std::span<std::byte> resp) noexcept -> bool {
     response = resp;
     return false;
   })};
