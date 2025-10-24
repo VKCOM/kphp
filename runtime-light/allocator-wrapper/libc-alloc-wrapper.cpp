@@ -13,7 +13,6 @@ extern "C" void* __wrap_malloc(size_t size) noexcept {
   if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {
     kphp::log::error("unexpected use of malloc");
   }
-  kphp::log::trace("call malloc");
   return kphp::memory::script::alloc(size);
 }
 
@@ -21,7 +20,6 @@ extern "C" void __wrap_free(void* ptr) noexcept {
   if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {
     kphp::log::error("unexpected use of free");
   }
-  kphp::log::trace("call free");
   kphp::memory::script::free(ptr);
 }
 
@@ -29,7 +27,6 @@ extern "C" void* __wrap_calloc(size_t nmemb, size_t size) noexcept {
   if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {
     kphp::log::error("unexpected use of calloc");
   }
-  kphp::log::trace("call calloc");
   return kphp::memory::script::calloc(nmemb, size);
 }
 
@@ -37,7 +34,6 @@ extern "C" void* __wrap_realloc(void* ptr, size_t size) noexcept {
   if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {
     kphp::log::error("unexpected use of realloc");
   }
-  kphp::log::trace("call realloc");
   return kphp::memory::script::realloc(ptr, size);
 }
 
@@ -45,7 +41,6 @@ extern "C" char* __wrap_strdup(const char* str1) noexcept {
   if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {
     kphp::log::error("unexpected use of strdup");
   }
-  kphp::log::trace("call strdup");
   auto* str2{static_cast<char*>(kphp::memory::script::alloc(std::strlen(str1) + 1))};
   return std::strcpy(str2, str1);
 }
