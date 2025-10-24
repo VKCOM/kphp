@@ -65,7 +65,7 @@ public:
     return value_state_;
   }
 
-  operator std::optional<T>() const noexcept {
+  explicit operator std::optional<T>() const noexcept {
     return has_value() ? std::make_optional(value_) : std::nullopt;
   }
 

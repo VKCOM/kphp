@@ -75,7 +75,9 @@ inline int64_t f$time() noexcept {
 
 inline Optional<int64_t> f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
                                   Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
-  return value_or_false(kphp::timelib::mktime(hour, minute, second, month, day, year));
+  return value_or_false(kphp::timelib::mktime(static_cast<std::optional<int64_t>>(hour), static_cast<std::optional<int64_t>>(minute),
+                                              static_cast<std::optional<int64_t>>(second), static_cast<std::optional<int64_t>>(month),
+                                              static_cast<std::optional<int64_t>>(day), static_cast<std::optional<int64_t>>(year)));
 }
 
 inline array<mixed> f$getdate(int64_t timestamp) noexcept {
@@ -128,7 +130,9 @@ inline string f$gmdate(const string& format, Optional<int64_t> timestamp = {}) n
 
 inline int64_t f$gmmktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
                           Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
-  return kphp::timelib::gmmktime(hour, minute, second, month, day, year);
+  return kphp::timelib::gmmktime(static_cast<std::optional<int64_t>>(hour), static_cast<std::optional<int64_t>>(minute),
+                                 static_cast<std::optional<int64_t>>(second), static_cast<std::optional<int64_t>>(month),
+                                 static_cast<std::optional<int64_t>>(day), static_cast<std::optional<int64_t>>(year));
 }
 
 inline string f$date(const string& format, Optional<int64_t> timestamp = {}) noexcept {
