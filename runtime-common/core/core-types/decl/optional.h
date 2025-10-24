@@ -204,8 +204,3 @@ struct InternalOptionalType<Optional<T>> {
 
 template<typename T>
 using internal_optional_type_t = typename InternalOptionalType<T>::type;
-
-template<typename Opt>
-Optional<typename Opt::value_type> value_or_false(Opt&& opt) noexcept {
-  return opt.has_value() ? *opt : false;
-}

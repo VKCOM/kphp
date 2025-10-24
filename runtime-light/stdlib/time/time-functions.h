@@ -75,9 +75,13 @@ inline int64_t f$time() noexcept {
 
 inline Optional<int64_t> f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
                                   Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
-  return value_or_false(kphp::timelib::mktime(static_cast<std::optional<int64_t>>(hour), static_cast<std::optional<int64_t>>(minute),
+  auto res = kphp::timelib::mktime(static_cast<std::optional<int64_t>>(hour), static_cast<std::optional<int64_t>>(minute),
                                               static_cast<std::optional<int64_t>>(second), static_cast<std::optional<int64_t>>(month),
-                                              static_cast<std::optional<int64_t>>(day), static_cast<std::optional<int64_t>>(year)));
+                                              static_cast<std::optional<int64_t>>(day), static_cast<std::optional<int64_t>>(year));
+  if (res.has_value()) {
+    return *res;
+  }
+  return false;
 }
 
 inline array<mixed> f$getdate(int64_t timestamp) noexcept {
