@@ -53,16 +53,6 @@ void patch_time(timelib_time& time, std::optional<int64_t> hou, std::optional<in
 
 } // namespace
 
-timelib_tzinfo* get_timezone_info() noexcept {
-  string default_timezone{TimeInstanceState::get().default_timezone};
-  int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-  auto* tzinfo{kphp::timelib::get_timezone_info(default_timezone.c_str(), timelib_builtin_db(), std::addressof(errc))};
-  if (tzinfo == nullptr) [[unlikely]] {
-    kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", default_timezone.c_str(), timelib_get_error_message(errc));
-  }
-  return tzinfo;
-}
-
 timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb, int* errc) noexcept {
   std::string_view timezone_view{timezone};
   auto* tzinfo{TimeImageState::get().timelib_zone_cache.get(timezone_view)};
@@ -111,11 +101,16 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
                               std::optional<int64_t> day, std::optional<int64_t> yea) noexcept {
   auto now = (kphp::memory::libc_alloc_guard{}, timelib_time_ctor());
   const vk::final_action now_deleter{[now] noexcept { (kphp::memory::libc_alloc_guard{}, timelib_time_dtor(now)); }};
-  auto tzi = get_timezone_info();
-  if (!tzi) {
+  string default_timezone{TimeInstanceState::get().default_timezone};
+  int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
+  auto* tzinfo{kphp::timelib::get_timezone_info(default_timezone.c_str(), timelib_builtin_db(), std::addressof(errc))};
+  if (tzinfo == nullptr) [[unlikely]] {
+    kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", default_timezone.c_str(), timelib_get_error_message(errc));
+  }
+  if (!tzinfo) {
     return std::nullopt;
   }
-  now->tz_info = tzi;
+  now->tz_info = tzinfo;
   now->zone_type = TIMELIB_ZONETYPE_ID;
   namespace chrono = std::chrono;
   (kphp::memory::libc_alloc_guard{},
@@ -123,7 +118,7 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
 
   patch_time(*now, hou, min, sec, mon, day, yea);
 
-  (kphp::memory::libc_alloc_guard{}, timelib_update_ts(now, tzi));
+  (kphp::memory::libc_alloc_guard{}, timelib_update_ts(now, tzinfo));
 
   return now->sse;
 }
