@@ -41,6 +41,7 @@ void patch_time(timelib_time& time, std::optional<int64_t> hou, std::optional<in
   apply_if_has_value(day, [&time](auto value) { time.d = value; });
 
   apply_if_has_value(yea, [&time](auto value) {
+    // Copied from https://github.com/php/php-src/blob/eafbc6b3e6b59786601420dfb27c3682d0cfd86c/ext/date/php_date.c#L1195
     if (value >= 0 && value < 70) {
       value += 2000;
     } else if (value >= 70 && value <= 100) {
