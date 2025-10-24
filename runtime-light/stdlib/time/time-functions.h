@@ -80,8 +80,8 @@ inline int64_t f$time() noexcept {
 
 inline int64_t f$mktime(Optional<int64_t> hour = {}, Optional<int64_t> minute = {}, Optional<int64_t> second = {}, Optional<int64_t> month = {},
                         Optional<int64_t> day = {}, Optional<int64_t> year = {}) noexcept {
-  auto res = kphp::timelib::mktime(kphp::time::impl::to_optional(hour), kphp::time::impl::to_optional(minute), kphp::time::impl::to_optional(second),
-                                   kphp::time::impl::to_optional(month), kphp::time::impl::to_optional(day), kphp::time::impl::to_optional(year));
+  auto res{kphp::timelib::mktime(kphp::time::impl::to_optional(hour), kphp::time::impl::to_optional(minute), kphp::time::impl::to_optional(second),
+                                 kphp::time::impl::to_optional(month), kphp::time::impl::to_optional(day), kphp::time::impl::to_optional(year))};
   if (res.has_value()) {
     return *res;
   }
