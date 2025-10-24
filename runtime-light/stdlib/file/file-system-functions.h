@@ -191,73 +191,54 @@ inline resource f$stream_socket_client(const string& address, std::optional<std:
   return make_instance<kphp::fs::socket>(*std::move(expected));
 }
 
+const std::string_view READ_MODE = std::string_view{"r"};
+const std::string_view WRITE_MODE = std::string_view("w");
+const std::string_view APPEND_MODE = std::string_view("a");
+
 inline Optional<string> f$file_get_contents(const string& stream) noexcept {
-  // TODO Why is empty `mode` passed here to f$fopen?
-  if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, {}), {})}; !sync_resource.is_null()) {
+  if (auto sync_resource{
+          from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, string{READ_MODE.data(), static_cast<string::size_type>(READ_MODE.size())}), {})};
+      !sync_resource.is_null()) {
     auto expected{sync_resource.get()->get_contents()};
     return expected ? Optional<string>{*std::move(expected)} : Optional<string>{false};
   }
   return false;
 }
 
-// TODO move write_safe() and read_safe() to utils.cpp or leave them here ??
+namespace {
 inline std::expected<size_t, int32_t> write_safe(kphp::fs::sync_resource* resource, std::span<const std::byte> src) {
-  /* TODO need tracing?
-  if (kphp_tracing::is_turned_on()) {
-    kphp_tracing::on_file_io_start(fd, file_name, true);
-  }*/
   size_t full_len = src.size();
   do {
     std::expected<size_t, int32_t> cur_res = resource->write(src);
     if (!cur_res) {
-      /*if (kphp_tracing::is_turned_on()) {
-        kphp_tracing::on_file_io_fail(fd, -errno); // errno is positive, pass negative
-      }*/
       return cur_res;
     }
 
     src = src.subspan(*cur_res);
   } while (!src.empty());
-  /*if (kphp_tracing::is_turned_on()) {
-    kphp_tracing::on_file_io_finish(fd, full_len - len);
-  }*/
 
-  // TODO need '- src.size()' ?
   return std::expected<size_t, int32_t>{full_len - src.size()};
 }
 
 inline std::expected<size_t, int32_t> read_safe(kphp::fs::sync_resource* resource, std::span<std::byte> dst) {
-  /*TODO if (kphp_tracing::is_turned_on()) {
-    kphp_tracing::on_file_io_start(fd, file_name, false);
-  }*/
   size_t full_len = dst.size();
   do {
     std::expected<size_t, int32_t> cur_res = resource->read(dst);
     if (!cur_res) {
-      /*if (kphp_tracing::is_turned_on()) {
-        kphp_tracing::on_file_io_fail(fd, -errno); // errno is positive, pass negative
-      }*/
       return cur_res;
     }
-    // TODO need this ?
     if (*cur_res == 0) {
       break;
     }
 
     dst.subspan(*cur_res);
   } while (!dst.empty());
-  /*if (kphp_tracing::is_turned_on()) {
-    kphp_tracing::on_file_io_finish(fd, full_len - len);
-  }*/
 
-  // TODO need '- dst.size()' ?
   return full_len - dst.size();
 }
+} // namespace
 
 constexpr int64_t FILE_APPEND_FLAG = 1;
-const string READ_MODE = string(1, 'r');
-const string WRITE_MODE = string(1, 'w');
-const string APPEND_MODE = string(1, 'a');
 
 inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& content_var, int64_t flags = 0) noexcept {
   string content;
@@ -269,331 +250,21 @@ inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& 
   std::span<const char> data_span{content.c_str(), content.size()};
 
   if (flags & ~FILE_APPEND_FLAG) {
-    // TODO
-    php_warning("Flags other, than FILE_APPEND are not supported in file_put_contents");
-    // TODO I don't understand why wrong flags forces FILE_APPEND to bet set in old runtime.
+    kphp::log::warning("Flags other, than FILE_APPEND are not supported in file_put_contents");
     flags &= FILE_APPEND_FLAG;
   }
 
-  const string* mode = &WRITE_MODE;
+  const std::string_view* mode = &WRITE_MODE;
   if (flags & FILE_APPEND_FLAG) {
     mode = &APPEND_MODE;
   }
-  if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, *mode), {})}; !sync_resource.is_null()) {
+  if (auto sync_resource{
+          from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, string{mode->data(), static_cast<string::size_type>(mode->size())}), {})};
+      !sync_resource.is_null()) {
     auto expected{write_safe(sync_resource.get(), std::as_bytes(data_span))};
     return expected ? Optional<int64_t>{static_cast<int64_t>(*std::move(expected))} : Optional<int64_t>{false};
   }
   return false;
 }
 
-// TODO think about const types
-constexpr int64_t IMAGETYPE_UNKNOWN = 0;
-constexpr int64_t IMAGETYPE_GIF = 1;
-constexpr int64_t IMAGETYPE_JPEG = 2;
-constexpr int64_t IMAGETYPE_PNG = 3;
-constexpr int64_t IMAGETYPE_SWF = 4;
-constexpr int64_t IMAGETYPE_PSD = 5;
-constexpr int64_t IMAGETYPE_BMP = 6;
-constexpr int64_t IMAGETYPE_TIFF_II = 7;
-constexpr int64_t IMAGETYPE_TIFF_MM = 8;
-constexpr int64_t IMAGETYPE_JPC = 9;
-constexpr int64_t IMAGETYPE_JPEG2000 = 9;
-constexpr int64_t IMAGETYPE_JP2 = 10;
-
-// TODO think about const types
-static const char php_sig_gif[3] = {'G', 'I', 'F'};
-static const char php_sig_jpg[3] = {(char)0xff, (char)0xd8, (char)0xff};
-static const char php_sig_png[8] = {(char)0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
-static const char php_sig_jpc[4] = {(char)0xff, 0x4f, (char)0xff, 0x51};
-static const char php_sig_jp2[12] = {0x00, 0x00, 0x00, 0x0c, 'j', 'P', ' ', ' ', 0x0d, 0x0a, (char)0x87, 0x0a};
-
-static const char* mime_type_string[11] = {"",          "image/gif",      "image/jpeg", "image/png",  "application/x-shockwave-flash",
-                                           "image/psd", "image/x-ms-bmp", "image/tiff", "image/tiff", "application/octet-stream",
-                                           "image/jp2"};
-
-// TODO think about const types
-static const int M_SOF0 = 0xC0;
-static const int M_SOF1 = 0xC1;
-static const int M_SOF2 = 0xC2;
-static const int M_SOF3 = 0xC3;
-static const int M_SOF5 = 0xC5;
-static const int M_SOF6 = 0xC6;
-static const int M_SOF7 = 0xC7;
-static const int M_SOF9 = 0xC9;
-static const int M_SOF10 = 0xCA;
-static const int M_SOF11 = 0xCB;
-static const int M_SOF13 = 0xCD;
-static const int M_SOF14 = 0xCE;
-static const int M_SOF15 = 0xCF;
-static const int M_EOI = 0xD9;
-static const int M_SOS = 0xDA;
-static const int M_COM = 0xFE;
-
-static const int M_PSEUDO = 0xFFD8;
-
-// TODO extract to separate .cpp file?
-inline mixed f$getimagesize(const string& name) {
-  // TODO implement k2_fstat, with fd as parameter !!!
-  struct stat stat_buf;
-  int32_t res = k2_stat(name.c_str(), name.size(), &stat_buf);
-  if (res != k2::errno_ok) {
-    return false;
-  }
-
-  auto sync_res{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(name, READ_MODE), {})};
-  if (sync_res.is_null()) {
-    // TODO what is fucking false?
-    return false;
-  }
-  auto f = sync_res.get();
-
-  if (!S_ISREG(stat_buf.st_mode)) {
-    php_warning("Regular file expected as first argument in function getimagesize, \"%s\" is given", name.c_str());
-    return false;
-  }
-
-  const size_t min_size = 3 * 256 + 64;
-  unsigned char buf[min_size];
-  size_t size = stat_buf.st_size, read_size = min_size;
-  if (size < min_size) {
-    read_size = size;
-  }
-  std::span<unsigned char> buf_span(buf, min_size);
-
-  if (read_size < 12) {
-    return false;
-  }
-  std::expected<size_t, int32_t> read_res = read_safe(f, std::as_writable_bytes(buf_span));
-  if (!read_res || *read_res < read_size) {
-    return false;
-  }
-
-  int width = 0, height = 0, bits = 0, channels = 0, type = IMAGETYPE_UNKNOWN;
-  switch (buf[0]) {
-  case 'G': // gif
-    if (!strncmp((const char*)buf, php_sig_gif, sizeof(php_sig_gif))) {
-      type = IMAGETYPE_GIF;
-      width = buf[6] | (buf[7] << 8);
-      height = buf[8] | (buf[9] << 8);
-      bits = buf[10] & 0x80 ? (buf[10] & 0x07) + 1 : 0;
-      channels = 3;
-    } else {
-      return false;
-    }
-    break;
-  case 0xff: // jpg or jpc
-    if (!strncmp((const char*)buf, php_sig_jpg, sizeof(php_sig_jpg))) {
-      type = IMAGETYPE_JPEG;
-
-      // TODO what allocator to use? script allocator or k2_alloc? + what is the difference between alloc and alloc0?
-      unsigned char* image = (unsigned char*)RuntimeAllocator::get().alloc_script_memory(size);
-      if (image == nullptr) {
-        php_warning("Not enough memory to process file \"%s\" in getimagesize", name.c_str());
-        return false;
-      }
-      memcpy(image, buf, read_size);
-
-      std::span<unsigned char> image_span(image + read_size, size - read_size);
-      read_res = read_safe(f, std::as_writable_bytes(image_span));
-      if (!read_res || *read_res < size - read_size) {
-        // TODO need cast from unsigned char* to void* ?
-        RuntimeAllocator::get().free_script_memory(image, size);
-        return false;
-      }
-
-      int marker = M_PSEUDO;
-      size_t cur_pos = 2;
-
-      while (height == 0 && width == 0 && marker != M_SOS && marker != M_EOI) {
-        int a = 0, comment_correction = 1 + (marker == M_COM), new_marker;
-
-        do {
-          if (cur_pos == size) {
-            new_marker = M_EOI;
-            break;
-          }
-          new_marker = image[cur_pos++];
-          if (marker == M_COM && comment_correction > 0) {
-            if (new_marker != 0xFF) {
-              new_marker = 0xFF;
-              comment_correction--;
-            } else {
-              marker = M_PSEUDO;
-            }
-          }
-          a++;
-        } while (new_marker == 0xff);
-
-        if (a < 2 || (marker == M_COM && comment_correction)) {
-          new_marker = M_EOI;
-        }
-
-        marker = new_marker;
-
-        switch (marker) {
-        case M_SOF0:
-        case M_SOF1:
-        case M_SOF2:
-        case M_SOF3:
-        case M_SOF5:
-        case M_SOF6:
-        case M_SOF7:
-        case M_SOF9:
-        case M_SOF10:
-        case M_SOF11:
-        case M_SOF13:
-        case M_SOF14:
-        case M_SOF15:
-          if (cur_pos + 8 > size) {
-            RuntimeAllocator::get().free_script_memory(image, size);
-            return false;
-          }
-          bits = image[cur_pos + 2];
-          height = (image[cur_pos + 3] << 8) + image[cur_pos + 4];
-          width = (image[cur_pos + 5] << 8) + image[cur_pos + 6];
-          channels = image[cur_pos + 7];
-          cur_pos += 8;
-
-        case M_SOS:
-        case M_EOI:
-          break;
-
-        default: {
-          size_t length = (image[cur_pos] << 8) + image[cur_pos + 1];
-
-          if (length < 2 || cur_pos + length > size) {
-            RuntimeAllocator::get().free_script_memory(image, size);
-            return false;
-          }
-          cur_pos += length;
-          break;
-        }
-        }
-      }
-      RuntimeAllocator::get().free_script_memory(image, size);
-    } else if (!strncmp((const char*)buf, php_sig_jpc, sizeof(php_sig_jpc)) && static_cast<int>(read_size) >= 42) {
-      type = IMAGETYPE_JPEG;
-
-      width = (buf[8] << 24) + (buf[9] << 16) + (buf[10] << 8) + buf[11];
-      height = (buf[12] << 24) + (buf[13] << 16) + (buf[14] << 8) + buf[15];
-      channels = (buf[40] << 8) + buf[41];
-
-      if (channels < 0 || channels > 256 || static_cast<int>(read_size) < 42 + 3 * channels || width <= 0 || height <= 0) {
-        return false;
-      }
-
-      bits = 0;
-      for (int i = 0; i < channels; i++) {
-        int cur_bits = buf[42 + 3 * i];
-        if (cur_bits > bits) {
-          bits = cur_bits;
-        }
-      }
-      bits++;
-    } else {
-      return false;
-    }
-    break;
-  case 0x00: // jp2
-    if (read_size >= 54 && !strncmp((const char*)buf, php_sig_jp2, sizeof(php_sig_jp2))) {
-      type = IMAGETYPE_JP2;
-
-      bool found = false;
-
-      int buf_pos = 12;
-      size_t file_pos = 12;
-      while (static_cast<int>(read_size) >= 42 + buf_pos + 8) {
-        const unsigned char* s = buf + buf_pos;
-        int box_length = (s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3];
-        if (box_length == 1 || box_length > 1000000000) {
-          break;
-        }
-        if (s[4] == 'j' && s[5] == 'p' && s[6] == '2' && s[7] == 'c') {
-          s += 8;
-
-          width = (s[8] << 24) + (s[9] << 16) + (s[10] << 8) + s[11];
-          height = (s[12] << 24) + (s[13] << 16) + (s[14] << 8) + s[15];
-          channels = (s[40] << 8) + s[41];
-
-          if (channels < 0 || channels > 256 || static_cast<int>(read_size) < 42 + buf_pos + 8 + 3 * channels || width <= 0 || height <= 0) {
-            break;
-          }
-
-          bits = 0;
-          for (int i = 0; i < channels; i++) {
-            int cur_bits = s[42 + 3 * i];
-            if (cur_bits > bits) {
-              bits = cur_bits;
-            }
-          }
-          bits++;
-
-          found = true;
-          break;
-        }
-
-        if (box_length <= 8) {
-          break;
-        }
-        file_pos += box_length;
-        if (file_pos >= size || static_cast<off_t>(file_pos) != static_cast<ssize_t>(file_pos) || static_cast<ssize_t>(file_pos) < 0) {
-          break;
-        }
-
-        read_size = min_size;
-        if (size - file_pos < min_size) {
-          read_size = size - file_pos;
-        }
-
-        if (read_size < 50) {
-          break;
-        }
-        std::span<unsigned char> buf_read_span(buf, read_size);
-        read_res = f->pread(std::as_writable_bytes(buf_read_span), static_cast<off_t>(file_pos));
-        if (!read_res || *read_res < read_size) {
-          break;
-        }
-
-        buf_pos = 0;
-      }
-
-      if (!found) {
-        return false;
-      }
-    } else {
-      return false;
-    }
-    break;
-  case 0x89: // png
-    if (read_size >= 25 && !strncmp((const char*)buf, php_sig_png, sizeof(php_sig_png))) {
-      type = IMAGETYPE_PNG;
-      width = (buf[16] << 24) + (buf[17] << 16) + (buf[18] << 8) + buf[19];
-      height = (buf[20] << 24) + (buf[21] << 16) + (buf[22] << 8) + buf[23];
-      bits = buf[24];
-    } else {
-      return false;
-    }
-    break;
-  default:
-    return false;
-  }
-
-  // TODO what allocator is used in these structures (array<mixed>, string) ???
-  array<mixed> result(array_size(7, false));
-  result.push_back(width);
-  result.push_back(height);
-  result.push_back(type);
-
-  // TODO is snpritnf ok?
-  int len = snprintf(reinterpret_cast<char*>(buf), min_size, "width=\"%d\" height=\"%d\"", width, height);
-  result.push_back(string((const char*)buf, len));
-  if (bits != 0) {
-    result.set_value(string("bits", 4), bits);
-  }
-  if (channels != 0) {
-    result.set_value(string("channels", 8), channels);
-  }
-  result.set_value(string("mime", 4), string(mime_type_string[type]));
-
-  return result;
-}
+inline mixed f$getimagesize(const string& name);

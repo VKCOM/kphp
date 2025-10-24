@@ -208,12 +208,12 @@ inline size_t stderr_write(size_t data_len, const void* data) noexcept {
   return k2_stderr_write(data_len, data);
 }
 
-inline size_t read(k2::descriptor descriptor, size_t buf_len, void* buf) noexcept {
-  return k2_read(descriptor, buf_len, buf);
+inline size_t read(k2::descriptor descriptor, std::span<std::byte> buffer) noexcept {
+  return k2_read(descriptor, buffer.size(), static_cast<void*>(buffer.data()));
 }
 
-inline size_t pread(k2::descriptor descriptor, size_t buf_len, void* buf, off_t offset) noexcept {
-  return k2_pread(descriptor, buf_len, buf, offset);
+inline size_t pread(k2::descriptor descriptor, std::span<std::byte> buffer, off_t offset) noexcept {
+  return k2_pread(descriptor, buffer.size(), static_cast<void*>(buffer.data()), offset);
 }
 
 inline void please_shutdown(k2::descriptor descriptor) noexcept {
