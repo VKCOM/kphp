@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <chrono>
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <string_view>
