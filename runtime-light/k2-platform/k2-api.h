@@ -176,6 +176,10 @@ inline auto readdir(k2::descriptor descriptor) noexcept {
              : return_type{std::nullopt};
 }
 
+inline int32_t unlink(std::string_view path) noexcept {
+  return k2_unlink(path.data(), path.size());
+}
+
 inline int32_t access(std::string_view component_name) noexcept {
   return k2_access(component_name.size(), component_name.data());
 }
