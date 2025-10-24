@@ -182,15 +182,7 @@ inline Optional<int64_t> f$strtotime(const string& datetime, int64_t base_timest
     base_timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
   }
   string default_timezone{TimeInstanceState::get().default_timezone};
-  int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-  auto* tzinfo{kphp::timelib::get_timezone_info(default_timezone.c_str(), timelib_builtin_db(), std::addressof(errc))};
-  if (tzinfo == nullptr) [[unlikely]] {
-    kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", default_timezone.c_str(), timelib_get_error_message(errc));
-  }
-  if (!tzinfo) [[unlikely]] {
-    return false;
-  }
-  const auto opt_timestamp{kphp::timelib::strtotime(*tzinfo, {datetime.c_str(), datetime.size()}, base_timestamp)};
+  const auto opt_timestamp{kphp::timelib::strtotime({default_timezone.c_str(), default_timezone.size()}, {datetime.c_str(), datetime.size()}, base_timestamp)};
   if (!opt_timestamp.has_value()) [[unlikely]] {
     return false;
   }
