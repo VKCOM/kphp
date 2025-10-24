@@ -93,10 +93,15 @@ inline array<mixed> f$getdate(Optional<int64_t> timestamp) noexcept {
     namespace chrono = std::chrono;
     timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
   }
-  auto tzi{kphp::timelib::get_timezone_info()};
+  string default_timezone{TimeInstanceState::get().default_timezone};
+  int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
+  auto* tzinfo{kphp::timelib::get_timezone_info(default_timezone.c_str(), timelib_builtin_db(), std::addressof(errc))};
+  if (tzinfo == nullptr) [[unlikely]] {
+    kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", default_timezone.c_str(), timelib_get_error_message(errc));
+  }
   array<mixed> result(array_size(11, false));
   result.set_value(string{"0", 1}, timestamp.val());
-  if (tzi == nullptr) [[unlikely]] {
+  if (tzinfo == nullptr) [[unlikely]] {
     result.set_value(string{"seconds", 7}, 0);
     result.set_value(string{"minutes", 7}, 0);
     result.set_value(string{"hours", 5}, 0);
@@ -111,7 +116,7 @@ inline array<mixed> f$getdate(Optional<int64_t> timestamp) noexcept {
     return result;
   }
 
-  auto [seconds, minutes, hours, mday, wday, mon, year, yday, weekday, month] = kphp::timelib::getdate(timestamp.val(), *tzi);
+  auto [seconds, minutes, hours, mday, wday, mon, year, yday, weekday, month] = kphp::timelib::getdate(timestamp.val(), *tzinfo);
 
   result.set_value(string{"seconds", 7}, seconds);
   result.set_value(string{"minutes", 7}, minutes);
@@ -176,7 +181,12 @@ inline Optional<int64_t> f$strtotime(const string& datetime, int64_t base_timest
     namespace chrono = std::chrono;
     base_timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
   }
-  auto* tzinfo{kphp::timelib::get_timezone_info()};
+  string default_timezone{TimeInstanceState::get().default_timezone};
+  int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
+  auto* tzinfo{kphp::timelib::get_timezone_info(default_timezone.c_str(), timelib_builtin_db(), std::addressof(errc))};
+  if (tzinfo == nullptr) [[unlikely]] {
+    kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", default_timezone.c_str(), timelib_get_error_message(errc));
+  }
   if (!tzinfo) [[unlikely]] {
     return false;
   }
