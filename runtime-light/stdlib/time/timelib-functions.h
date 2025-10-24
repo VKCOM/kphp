@@ -42,7 +42,7 @@ int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::op
 std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
                               std::optional<int64_t> day, std::optional<int64_t> yea) noexcept;
 
-std::optional<int64_t> strtotime(timelib_tzinfo& tzinfo, std::string_view datetime, int64_t timestamp) noexcept;
+std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime, int64_t timestamp) noexcept;
 
 bool valid_date(int64_t year, int64_t month, int64_t day) noexcept;
 

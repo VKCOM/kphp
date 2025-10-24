@@ -131,9 +131,16 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
   return now->sse;
 }
 
-std::optional<int64_t> strtotime(timelib_tzinfo& tzinfo, std::string_view datetime, int64_t timestamp) noexcept {
+std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime, int64_t timestamp) noexcept {
   if (datetime.empty()) [[unlikely]] {
     kphp::log::warning("datetime can't be empty");
+    return {};
+  }
+
+  int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
+  auto* tzinfo{kphp::timelib::get_timezone_info(timezone.data(), timelib_builtin_db(), std::addressof(errc))};
+  if (tzinfo == nullptr) [[unlikely]] {
+    kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", timezone, timelib_get_error_message(errc));
     return {};
   }
 
@@ -141,7 +148,7 @@ std::optional<int64_t> strtotime(timelib_tzinfo& tzinfo, std::string_view dateti
 
   timelib_time* now{timelib_time_ctor()};
   const vk::final_action now_deleter{[now] noexcept { timelib_time_dtor(now); }};
-  now->tz_info = std::addressof(tzinfo);
+  now->tz_info = tzinfo;
   now->zone_type = TIMELIB_ZONETYPE_ID;
   timelib_unixtime2local(now, timestamp);
 
@@ -154,9 +161,9 @@ std::optional<int64_t> strtotime(timelib_tzinfo& tzinfo, std::string_view dateti
     return {};
   }
 
-  int errc{}; // it's intentionally declared as 'int' since timelib_date_to_int accepts 'int'
+  errc = 0;
   timelib_fill_holes(time, now, TIMELIB_NO_CLONE);
-  timelib_update_ts(time, std::addressof(tzinfo));
+  timelib_update_ts(time, tzinfo);
   int64_t result_timestamp{timelib_date_to_int(time, std::addressof(errc))};
   if (errc != 0) [[unlikely]] {
     kphp::log::warning("can't convert date to int: error -> {}", timelib_get_error_message(errc));
