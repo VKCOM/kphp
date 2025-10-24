@@ -122,7 +122,7 @@ inline auto file::read(std::span<std::byte> buf) noexcept -> std::expected<size_
     return std::unexpected{k2::errno_enodev};
   }
 
-  const auto read{k2::read(m_descriptor, buf.size(), buf.data())};
+  const auto read{k2::read(m_descriptor, std::span<std::byte>{buf.data(), buf.size()})};
   if (buf.size() != 0) [[likely]] {
     m_eof = read == 0;
   }
@@ -135,7 +135,7 @@ inline auto file::pread(std::span<std::byte> buf, off_t offset) noexcept -> std:
     return std::unexpected{k2::errno_enodev};
   }
 
-  const auto read{k2::pread(m_descriptor, buf.size(), buf.data(), offset)};
+  const auto read{k2::pread(m_descriptor, buf, offset)};
   // we do not change `m_eof`, because pread is readonly operation
 
   return read;
