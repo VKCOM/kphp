@@ -394,4 +394,95 @@ struct CacheFetch final {
   }
 };
 
+// ===== INTER COMPONENT SESSION PROTOCOL =====
+
+class InterComponentSessionRequestHeader final {
+  static constexpr uint32_t INTER_COMPONENT_SESSION_REQUEST_HEADER_MAGIC = 0x24A3'16FF;
+
+public:
+  tl::u64 size;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = INTER_COMPONENT_SESSION_REQUEST_HEADER_MAGIC}.store(tls);
+    size.store(tls);
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = INTER_COMPONENT_SESSION_REQUEST_HEADER_MAGIC}.footprint() + size.footprint();
+  }
+};
+
+class InterComponentSessionResponseHeader final {
+  static constexpr uint32_t INTER_COMPONENT_SESSION_RESPONSE_HEADER_MAGIC = 0x24A3'16EE;
+
+public:
+  tl::u64 id;
+  tl::u64 size;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(INTER_COMPONENT_SESSION_RESPONSE_HEADER_MAGIC)};
+    ok &= id.fetch(tlf);
+    ok &= size.fetch(tlf);
+    return ok;
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = INTER_COMPONENT_SESSION_RESPONSE_HEADER_MAGIC}.footprint() + id.footprint() + size.footprint();
+  }
+};
+
+// ===== WEB TRANSFER LIB =====
+
+class SimpleWebTransferOpen final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_OPEN_MAGIC = 0x24F8'98AA;
+
+public:
+  using web_backend_type = tl::u8;
+  web_backend_type web_backend;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = SIMPLE_WEB_TRANSFER_OPEN_MAGIC}.store(tls);
+    web_backend.store(tls);
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_OPEN_MAGIC}.footprint() + web_backend.footprint();
+  }
+};
+
+class SimpleWebTransferPerform final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_PERFORM_MAGIC = 0x24B8'98CC;
+
+public:
+  tl::u64 desc;
+  tl::SimpleWebTransferConfig config;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = SIMPLE_WEB_TRANSFER_PERFORM_MAGIC}.store(tls);
+    desc.store(tls);
+    config.store(tls);
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_PERFORM_MAGIC}.footprint() + desc.footprint() + config.footprint();
+  }
+};
+
+class SimpleWebTransferClose final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_CLOSE_MAGIC = 0x36F7'16BB;
+
+public:
+  tl::u64 desc;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = SIMPLE_WEB_TRANSFER_CLOSE_MAGIC}.store(tls);
+    desc.store(tls);
+  }
+
+  [[nodiscard]] constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_CLOSE_MAGIC}.footprint() + desc.footprint();
+  }
+};
+
 } // namespace tl

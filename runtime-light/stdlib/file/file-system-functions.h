@@ -183,6 +183,9 @@ inline Optional<string> f$file_get_contents(const string& stream) noexcept {
   if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, {}), {})}; !sync_resource.is_null()) {
     auto expected{sync_resource.get()->get_contents()};
     return expected ? Optional<string>{*std::move(expected)} : Optional<string>{false};
+  } else if (auto input{from_mixed<class_instance<kphp::fs::input>>(f$fopen(stream, {}), {})}; !input.is_null()) {
+    auto expected{input.get()->get_contents()};
+    return expected ? Optional<string>{*std::move(expected)} : Optional<string>{false};
   }
   return false;
 }

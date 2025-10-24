@@ -194,6 +194,12 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     co_return;
   }
 
+  // Stop session with internal Web component
+  if (WebInstanceState::get().session.has_value()) {
+    WebInstanceState::get().session_is_finished = true;
+    WebInstanceState::get().session.reset();
+  }
+
   switch (image_kind()) {
   case image_kind::oneshot:
   case image_kind::multishot:
