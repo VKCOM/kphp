@@ -565,8 +565,8 @@ int tcp_rpcs_default_check_perm_crypted (struct connection *c) {
 }
 
 int tcp_rpcs_default_check_perm_crypted_localhost(struct connection *c) {
-  if (inet_sockaddr_address(&c->local_endpoint) == LOCALHOST &&
-      inet_sockaddr_address(&c->remote_endpoint) == LOCALHOST) {
+  if (inet_sockaddr_address(&c->local_endpoint) == LOCALHOST_NETWORK &&
+      inet_sockaddr_address(&c->remote_endpoint) == LOCALHOST_NETWORK) {
     return RPC_CRYPTO_ALLOW_UNENCRYPTED | RPC_CRYPTO_ALLOW_ENCRYPTED;
   }
   return tcp_rpcs_default_check_perm(c) & ~RPC_CRYPTO_ALLOW_UNENCRYPTED;
