@@ -24,7 +24,6 @@ prepend(
   rpc/rpc-client-state.cpp
   rpc/rpc-extra-headers.cpp
   rpc/rpc-extra-info.cpp
-  rpc/rpc-queue-state.cpp
   rpc/rpc-tl-builtins.cpp
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp

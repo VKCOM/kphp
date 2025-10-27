@@ -13,7 +13,7 @@
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/fork/wait-queue-functions.h"
-#include "runtime-light/stdlib/rpc/rpc-queue-state.h"
+#include "runtime-light/stdlib/rpc/rpc-client-state.h"
 
 namespace kphp::rpc {
 
@@ -28,8 +28,7 @@ inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
   }
 
   response_waiter_fork_id = it_fork_id->second;
-  auto& rpc_queue_instance_st{RpcQueueInstanceState::get()};
-  rpc_queue_instance_st.m_waiter_forks_to_response.emplace(response_waiter_fork_id, request_id);
+  rpc_client_instance_st.awaiter_forks_to_response.emplace(response_waiter_fork_id, request_id);
   kphp::forks::wait_queue_push(queue_id, response_waiter_fork_id);
 }
 
@@ -39,14 +38,14 @@ inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id,
     co_return std::nullopt;
   }
 
-  auto& rpc_queue_instance_st{RpcQueueInstanceState::get()};
-  const auto it_request_id{rpc_queue_instance_st.m_waiter_forks_to_response.find(*wait_result)};
-  if (it_request_id == rpc_queue_instance_st.m_waiter_forks_to_response.end()) [[unlikely]] {
+  auto& rpc_client_instance_st{RpcClientInstanceState::get()};
+  const auto it_request_id{rpc_client_instance_st.awaiter_forks_to_response.find(*wait_result)};
+  if (it_request_id == rpc_client_instance_st.awaiter_forks_to_response.end()) [[unlikely]] {
     kphp::log::warning("awaiter forks in rpc queue isn't associated with response");
     co_return std::nullopt;
   }
 
-  rpc_queue_instance_st.m_waiter_forks_to_response.erase(it_request_id);
+  rpc_client_instance_st.awaiter_forks_to_response.erase(it_request_id);
   co_return it_request_id->second;
 }
 } // namespace kphp::rpc
