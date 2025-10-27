@@ -11,7 +11,6 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
-#include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/fork/wait-queue-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 
@@ -19,7 +18,6 @@ namespace kphp::rpc {
 
 inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
-  int64_t response_waiter_fork_id{kphp::forks::INVALID_ID};
 
   const auto it_fork_id{rpc_client_instance_st.response_waiter_forks.find(request_id)};
   if (it_fork_id == rpc_client_instance_st.response_waiter_forks.end()) [[unlikely]] {
@@ -27,7 +25,7 @@ inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
     return;
   }
 
-  response_waiter_fork_id = it_fork_id->second;
+  const int64_t response_waiter_fork_id = it_fork_id->second;
   rpc_client_instance_st.awaiter_forks_to_response.emplace(response_waiter_fork_id, request_id);
   kphp::forks::wait_queue_push(queue_id, response_waiter_fork_id);
 }
