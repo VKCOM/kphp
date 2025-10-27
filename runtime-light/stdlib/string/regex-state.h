@@ -13,6 +13,13 @@
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/utils/concepts.h"
 
+struct pcre2_cache_entry {
+  // PCRE compile options of the regex
+  uint32_t compile_options{};
+  // compiled regex
+  regex_pcre2_code_t regex_code{nullptr};
+};
+
 struct RegexInstanceState final : private vk::not_copyable {
   template<hashable Key, typename Value>
   using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
@@ -26,7 +33,7 @@ struct RegexInstanceState final : private vk::not_copyable {
   const regex_pcre2_compile_context_t compile_context;
   const regex_pcre2_match_context_t match_context;
   regex_pcre2_match_data_t regex_pcre2_match_data;
-  unordered_map<std::string_view, regex_pcre2_code_t> regex_pcre2_code_cache;
+  unordered_map<std::string_view, pcre2_cache_entry> regex_pcre2_code_cache;
 
   RegexInstanceState() noexcept;
 
