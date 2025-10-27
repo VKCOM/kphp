@@ -194,12 +194,6 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     co_return;
   }
 
-  // Stop session with internal Web component
-  if (WebInstanceState::get().session.has_value()) {
-    WebInstanceState::get().session_is_finished = true;
-    WebInstanceState::get().session.reset();
-  }
-
   switch (image_kind()) {
   case image_kind::oneshot:
   case image_kind::multishot:
@@ -214,4 +208,10 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
     kphp::log::error("unexpected image kind: {}", std::to_underlying(image_kind()));
   }
   shutdown_state_ = shutdown_state::finished;
+
+  // Stop session with internal Web component
+  if (auto& web_state{WebInstanceState::get()}; web_state.session.has_value()) {
+    web_state.session_is_finished = true;
+    web_state.session.reset();
+  }
 }
