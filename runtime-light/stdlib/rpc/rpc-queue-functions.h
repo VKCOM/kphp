@@ -25,7 +25,7 @@ inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
     return;
   }
 
-  const int64_t response_waiter_fork_id = it_fork_id->second;
+  const int64_t response_waiter_fork_id{it_fork_id->second};
   rpc_client_instance_st.awaiter_forks_to_response.emplace(response_waiter_fork_id, request_id);
   kphp::forks::wait_queue_push(queue_id, response_waiter_fork_id);
 }
