@@ -191,9 +191,9 @@ inline resource f$stream_socket_client(const string& address, std::optional<std:
   return make_instance<kphp::fs::socket>(*std::move(expected));
 }
 
-const std::string_view READ_MODE = std::string_view{"r"};
-const std::string_view WRITE_MODE = std::string_view("w");
-const std::string_view APPEND_MODE = std::string_view("a");
+constexpr std::string_view READ_MODE = std::string_view{"r"};
+constexpr std::string_view WRITE_MODE = std::string_view("w");
+constexpr std::string_view APPEND_MODE = std::string_view("a");
 
 inline Optional<string> f$file_get_contents(const string& stream) noexcept {
   if (auto sync_resource{
@@ -206,7 +206,7 @@ inline Optional<string> f$file_get_contents(const string& stream) noexcept {
 }
 
 namespace {
-inline std::expected<size_t, int32_t> write_safe(kphp::fs::sync_resource* resource, std::span<const std::byte> src) {
+inline std::expected<size_t, int32_t> write_safe(kphp::fs::sync_resource* resource, std::span<const std::byte> src) noexcept {
   size_t full_len = src.size();
   do {
     std::expected<size_t, int32_t> cur_res = resource->write(src);
@@ -220,7 +220,7 @@ inline std::expected<size_t, int32_t> write_safe(kphp::fs::sync_resource* resour
   return std::expected<size_t, int32_t>{full_len - src.size()};
 }
 
-inline std::expected<size_t, int32_t> read_safe(kphp::fs::sync_resource* resource, std::span<std::byte> dst) {
+inline std::expected<size_t, int32_t> read_safe(kphp::fs::sync_resource* resource, std::span<std::byte> dst) noexcept {
   size_t full_len = dst.size();
   do {
     std::expected<size_t, int32_t> cur_res = resource->read(dst);
@@ -267,4 +267,4 @@ inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& 
   return false;
 }
 
-inline mixed f$getimagesize(const string& name);
+inline mixed f$getimagesize(const string& name) noexcept;

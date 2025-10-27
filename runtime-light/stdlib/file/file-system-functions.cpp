@@ -4,52 +4,53 @@
 
 #include "runtime-light/stdlib/file/file-system-functions.h"
 
-static constexpr int64_t IMAGETYPE_UNKNOWN = 0;
-static constexpr int64_t IMAGETYPE_GIF = 1;
-static constexpr int64_t IMAGETYPE_JPEG = 2;
-static constexpr int64_t IMAGETYPE_PNG = 3;
-// static constexpr int64_t IMAGETYPE_SWF = 4;
-// static constexpr int64_t IMAGETYPE_PSD = 5;
-// static constexpr int64_t IMAGETYPE_BMP = 6;
-// static constexpr int64_t IMAGETYPE_TIFF_II = 7;
-// static constexpr int64_t IMAGETYPE_TIFF_MM = 8;
-// static constexpr int64_t IMAGETYPE_JPC = 9;
-// static constexpr int64_t IMAGETYPE_JPEG2000 = 9;
-static constexpr int64_t IMAGETYPE_JP2 = 10;
+namespace {
+constexpr int64_t IMAGETYPE_UNKNOWN = 0;
+constexpr int64_t IMAGETYPE_GIF = 1;
+constexpr int64_t IMAGETYPE_JPEG = 2;
+constexpr int64_t IMAGETYPE_PNG = 3;
+// constexpr int64_t IMAGETYPE_SWF = 4;
+// constexpr int64_t IMAGETYPE_PSD = 5;
+// constexpr int64_t IMAGETYPE_BMP = 6;
+// constexpr int64_t IMAGETYPE_TIFF_II = 7;
+// constexpr int64_t IMAGETYPE_TIFF_MM = 8;
+// constexpr int64_t IMAGETYPE_JPC = 9;
+// constexpr int64_t IMAGETYPE_JPEG2000 = 9;
+constexpr int64_t IMAGETYPE_JP2 = 10;
 
-static constexpr std::array<char, 3> php_sig_gif = {'G', 'I', 'F'};
-static constexpr std::array<char, 3> php_sig_jpg = {(char)0xff, (char)0xd8, (char)0xff};
-static constexpr std::array<char, 8> php_sig_png = {(char)0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
-static constexpr std::array<char, 4> php_sig_jpc = {(char)0xff, 0x4f, (char)0xff, 0x51};
-static constexpr std::array<char, 12> php_sig_jp2 = {0x00, 0x00, 0x00, 0x0c, 'j', 'P', ' ', ' ', 0x0d, 0x0a, (char)0x87, 0x0a};
+constexpr std::array<char, 3> php_sig_gif = {'G', 'I', 'F'};
+constexpr std::array<char, 3> php_sig_jpg = {static_cast<char>(0xff), static_cast<char>(0xd8), static_cast<char>(0xff)};
+constexpr std::array<char, 8> php_sig_png = {static_cast<char>(0x89), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
+constexpr std::array<char, 4> php_sig_jpc = {static_cast<char>(0xff), 0x4f, static_cast<char>(0xff), 0x51};
+constexpr std::array<char, 12> php_sig_jp2 = {0x00, 0x00, 0x00, 0x0c, 'j', 'P', ' ', ' ', 0x0d, 0x0a, static_cast<char>(0x87), 0x0a};
 
-static constexpr std::array<std::string_view, 11> mime_type_string = {
-    "",          "image/gif",      "image/jpeg", "image/png",  "application/x-shockwave-flash",
-    "image/psd", "image/x-ms-bmp", "image/tiff", "image/tiff", "application/octet-stream",
-    "image/jp2"};
+constexpr std::array<std::string_view, 11> mime_type_string = {"",          "image/gif",      "image/jpeg", "image/png",  "application/x-shockwave-flash",
+                                                               "image/psd", "image/x-ms-bmp", "image/tiff", "image/tiff", "application/octet-stream",
+                                                               "image/jp2"};
 
-static constexpr int M_SOF0 = 0xC0;
-static constexpr int M_SOF1 = 0xC1;
-static constexpr int M_SOF2 = 0xC2;
-static constexpr int M_SOF3 = 0xC3;
-static constexpr int M_SOF5 = 0xC5;
-static constexpr int M_SOF6 = 0xC6;
-static constexpr int M_SOF7 = 0xC7;
-static constexpr int M_SOF9 = 0xC9;
-static constexpr int M_SOF10 = 0xCA;
-static constexpr int M_SOF11 = 0xCB;
-static constexpr int M_SOF13 = 0xCD;
-static constexpr int M_SOF14 = 0xCE;
-static constexpr int M_SOF15 = 0xCF;
-static constexpr int M_EOI = 0xD9;
-static constexpr int M_SOS = 0xDA;
-static constexpr int M_COM = 0xFE;
+constexpr int M_SOF0 = 0xC0;
+constexpr int M_SOF1 = 0xC1;
+constexpr int M_SOF2 = 0xC2;
+constexpr int M_SOF3 = 0xC3;
+constexpr int M_SOF5 = 0xC5;
+constexpr int M_SOF6 = 0xC6;
+constexpr int M_SOF7 = 0xC7;
+constexpr int M_SOF9 = 0xC9;
+constexpr int M_SOF10 = 0xCA;
+constexpr int M_SOF11 = 0xCB;
+constexpr int M_SOF13 = 0xCD;
+constexpr int M_SOF14 = 0xCE;
+constexpr int M_SOF15 = 0xCF;
+constexpr int M_EOI = 0xD9;
+constexpr int M_SOS = 0xDA;
+constexpr int M_COM = 0xFE;
 
-static constexpr int M_PSEUDO = 0xFFD8;
+constexpr int M_PSEUDO = 0xFFD8;
+}; // namespace
 
-inline mixed f$getimagesize(const string& name) {
+inline mixed f$getimagesize(const string& name) noexcept {
   // TODO implement k2_fstat, with fd as parameter !!!
-  struct stat stat_buf;
+  struct stat stat_buf {};
   if (k2_stat(name.c_str(), name.size(), &stat_buf) != k2::errno_ok) {
     return false;
   }
@@ -59,7 +60,7 @@ inline mixed f$getimagesize(const string& name) {
   if (sync_res.is_null()) {
     return false;
   }
-  auto f = sync_res.get();
+  auto* f = sync_res.get();
 
   if (!S_ISREG(stat_buf.st_mode)) {
     kphp::log::warning("Regular file expected as first argument in function getimagesize, \"%s\" is given", name.c_str());
@@ -67,7 +68,7 @@ inline mixed f$getimagesize(const string& name) {
   }
 
   constexpr size_t min_size = 3 * 256 + 64;
-  std::array<unsigned char, min_size> buf;
+  std::array<unsigned char, min_size> buf{};
   size_t size = stat_buf.st_size;
   size_t read_size = min_size;
   if (size < min_size) {
@@ -90,7 +91,7 @@ inline mixed f$getimagesize(const string& name) {
   int type = IMAGETYPE_UNKNOWN;
   switch (buf[0]) {
   case 'G': // gif
-    if (!std::strncmp((const char*)buf.begin(), php_sig_gif.begin(), sizeof(php_sig_gif))) {
+    if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_gif.begin(), sizeof(php_sig_gif))) {
       type = IMAGETYPE_GIF;
       width = buf[6] | (buf[7] << 8);
       height = buf[8] | (buf[9] << 8);
@@ -101,15 +102,15 @@ inline mixed f$getimagesize(const string& name) {
     }
     break;
   case 0xff: // jpg or jpc
-    if (!std::strncmp((const char*)buf.begin(), php_sig_jpg.begin(), sizeof(php_sig_jpg))) {
+    if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_jpg.begin(), sizeof(php_sig_jpg))) {
       type = IMAGETYPE_JPEG;
 
-      unsigned char* image = (unsigned char*)RuntimeAllocator::get().alloc_script_memory(size);
+      auto* image = static_cast<unsigned char*>(RuntimeAllocator::get().alloc_script_memory(size));
       if (image == nullptr) {
         kphp::log::warning("Not enough memory to process file \"%s\" in getimagesize", name.c_str());
         return false;
       }
-      memcpy(image, buf.begin(), read_size);
+      std::memcpy(image, buf.begin(), read_size);
 
       std::span<unsigned char> image_span(image + read_size, size - read_size);
       read_res = read_safe(f, std::as_writable_bytes(image_span));
@@ -122,7 +123,9 @@ inline mixed f$getimagesize(const string& name) {
       size_t cur_pos = 2;
 
       while (height == 0 && width == 0 && marker != M_SOS && marker != M_EOI) {
-        int a = 0, comment_correction = 1 + (marker == M_COM), new_marker;
+        int a = 0;
+        int comment_correction = 1 + (marker == M_COM);
+        int new_marker = 0;
 
         do {
           if (cur_pos == size) {
@@ -188,7 +191,7 @@ inline mixed f$getimagesize(const string& name) {
         }
       }
       RuntimeAllocator::get().free_script_memory(image, size);
-    } else if (!std::strncmp((const char*)buf.begin(), php_sig_jpc.begin(), sizeof(php_sig_jpc)) && static_cast<int>(read_size) >= 42) {
+    } else if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_jpc.begin(), sizeof(php_sig_jpc)) && static_cast<int>(read_size) >= 42) {
       type = IMAGETYPE_JPEG;
 
       width = (buf[8] << 24) + (buf[9] << 16) + (buf[10] << 8) + buf[11];
@@ -212,7 +215,7 @@ inline mixed f$getimagesize(const string& name) {
     }
     break;
   case 0x00: // jp2
-    if (read_size >= 54 && !std::strncmp((const char*)buf.begin(), php_sig_jp2.begin(), sizeof(php_sig_jp2))) {
+    if (read_size >= 54 && !std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_jp2.begin(), sizeof(php_sig_jp2))) {
       type = IMAGETYPE_JP2;
 
       bool found = false;
@@ -282,7 +285,7 @@ inline mixed f$getimagesize(const string& name) {
     }
     break;
   case 0x89: // png
-    if (read_size >= 25 && !std::strncmp((const char*)buf.begin(), php_sig_png.begin(), sizeof(php_sig_png))) {
+    if (read_size >= 25 && !std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_png.begin(), sizeof(php_sig_png))) {
       type = IMAGETYPE_PNG;
       width = (buf[16] << 24) + (buf[17] << 16) + (buf[18] << 8) + buf[19];
       height = (buf[20] << 24) + (buf[21] << 16) + (buf[22] << 8) + buf[23];
@@ -300,8 +303,8 @@ inline mixed f$getimagesize(const string& name) {
   result.push_back(height);
   result.push_back(type);
 
-  string::size_type len = std::format_to_n(reinterpret_cast<char*>(buf.data()), min_size, "width=\"%d\" height=\"%d\"", width, height).size;
-  result.push_back(string{(const char*)buf.begin(), len});
+  string::size_type len = std::format_to_n(reinterpret_cast<char*>(buf.data()), min_size, R"(width="{}" height="{}")", width, height).size;
+  result.push_back(string{reinterpret_cast<const char*>(buf.begin()), len});
   if (bits != 0) {
     result.set_value(string{"bits", 4}, bits);
   }
