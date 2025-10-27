@@ -80,7 +80,7 @@ timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb
 
 std::tuple<std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::string_view, std::string_view>
 getdate(std::int64_t timestamp, timelib_tzinfo& tzinfo) noexcept {
-  auto ts = (kphp::memory::libc_alloc_guard{}, timelib_time_ctor());
+  auto* ts = (kphp::memory::libc_alloc_guard{}, timelib_time_ctor());
   const vk::final_action ts_deleter{[ts] noexcept { (kphp::memory::libc_alloc_guard{}, timelib_time_dtor(ts)); }};
   ts->tz_info = std::addressof(tzinfo);
   ts->zone_type = TIMELIB_ZONETYPE_ID;
