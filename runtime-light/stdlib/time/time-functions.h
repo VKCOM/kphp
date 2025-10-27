@@ -26,10 +26,6 @@ int64_t fix_year(int64_t year) noexcept;
 
 string date(const string& format, const tm& t, int64_t timestamp, bool local) noexcept;
 
-string to_string(const std::string_view& sv) noexcept;
-
-std::optional<int64_t> to_optional(int64_t value) noexcept;
-
 } // namespace kphp::time::impl
 
 inline int64_t f$_hrtime_int() noexcept {
@@ -78,8 +74,12 @@ inline int64_t f$time() noexcept {
 inline int64_t f$mktime(int64_t hour = std::numeric_limits<int64_t>::min(), int64_t minute = std::numeric_limits<int64_t>::min(),
                         int64_t second = std::numeric_limits<int64_t>::min(), int64_t month = std::numeric_limits<int64_t>::min(),
                         int64_t day = std::numeric_limits<int64_t>::min(), int64_t year = std::numeric_limits<int64_t>::min()) noexcept {
-  auto res{kphp::timelib::mktime(kphp::time::impl::to_optional(hour), kphp::time::impl::to_optional(minute), kphp::time::impl::to_optional(second),
-                                 kphp::time::impl::to_optional(month), kphp::time::impl::to_optional(day), kphp::time::impl::to_optional(year))};
+  auto res{kphp::timelib::mktime(hour != std::numeric_limits<int64_t>::min() ? std::make_optional(hour) : std::nullopt,
+                                 minute != std::numeric_limits<int64_t>::min() ? std::make_optional(minute) : std::nullopt,
+                                 second != std::numeric_limits<int64_t>::min() ? std::make_optional(second) : std::nullopt,
+                                 month != std::numeric_limits<int64_t>::min() ? std::make_optional(month) : std::nullopt,
+                                 day != std::numeric_limits<int64_t>::min() ? std::make_optional(day) : std::nullopt,
+                                 year != std::numeric_limits<int64_t>::min() ? std::make_optional(year) : std::nullopt)};
   if (res.has_value()) {
     return *res;
   }
@@ -108,8 +108,10 @@ inline array<mixed> f$getdate(int64_t timestamp) noexcept {
     result.set_value(string{"mon", 3}, 1);
     result.set_value(string{"year", 4}, 1900);
     result.set_value(string{"yday", 4}, 0);
-    result.set_value(string{"weekday", 7}, kphp::time::impl::to_string(kphp::timelib::DAY_FULL_NAMES[0]));
-    result.set_value(string{"month", 5}, kphp::time::impl::to_string(kphp::timelib::MON_FULL_NAMES[0]));
+    result.set_value(string{"weekday", 7},
+                     string{kphp::timelib::DAY_FULL_NAMES[0].data(), static_cast<string::size_type>(kphp::timelib::DAY_FULL_NAMES[0].size())});
+    result.set_value(string{"month", 5},
+                     string{kphp::timelib::MON_FULL_NAMES[0].data(), static_cast<string::size_type>(kphp::timelib::MON_FULL_NAMES[0].size())});
 
     return result;
   }
@@ -124,8 +126,8 @@ inline array<mixed> f$getdate(int64_t timestamp) noexcept {
   result.set_value(string{"mon", 3}, mon);
   result.set_value(string{"year", 4}, year);
   result.set_value(string{"yday", 4}, yday);
-  result.set_value(string{"weekday", 7}, kphp::time::impl::to_string(weekday));
-  result.set_value(string{"month", 5}, kphp::time::impl::to_string(month));
+  result.set_value(string{"weekday", 7}, string{weekday.data(), static_cast<string::size_type>(weekday.size())});
+  result.set_value(string{"month", 5}, string{month.data(), static_cast<string::size_type>(month.size())});
 
   return result;
 }
@@ -144,8 +146,12 @@ inline string f$gmdate(const string& format, int64_t timestamp = std::numeric_li
 inline int64_t f$gmmktime(int64_t hour = std::numeric_limits<int64_t>::min(), int64_t minute = std::numeric_limits<int64_t>::min(),
                           int64_t second = std::numeric_limits<int64_t>::min(), int64_t month = std::numeric_limits<int64_t>::min(),
                           int64_t day = std::numeric_limits<int64_t>::min(), int64_t year = std::numeric_limits<int64_t>::min()) noexcept {
-  return kphp::timelib::gmmktime(kphp::time::impl::to_optional(hour), kphp::time::impl::to_optional(minute), kphp::time::impl::to_optional(second),
-                                 kphp::time::impl::to_optional(month), kphp::time::impl::to_optional(day), kphp::time::impl::to_optional(year));
+  return kphp::timelib::gmmktime(hour != std::numeric_limits<int64_t>::min() ? std::make_optional(hour) : std::nullopt,
+                                 minute != std::numeric_limits<int64_t>::min() ? std::make_optional(minute) : std::nullopt,
+                                 second != std::numeric_limits<int64_t>::min() ? std::make_optional(second) : std::nullopt,
+                                 month != std::numeric_limits<int64_t>::min() ? std::make_optional(month) : std::nullopt,
+                                 day != std::numeric_limits<int64_t>::min() ? std::make_optional(day) : std::nullopt,
+                                 year != std::numeric_limits<int64_t>::min() ? std::make_optional(year) : std::nullopt);
 }
 
 inline string f$date(const string& format, int64_t timestamp = std::numeric_limits<int64_t>::min()) noexcept {
