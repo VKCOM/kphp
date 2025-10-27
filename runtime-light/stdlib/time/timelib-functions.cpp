@@ -43,7 +43,7 @@ getdate(std::int64_t timestamp, timelib_tzinfo& tzinfo) noexcept {
   ts->zone_type = TIMELIB_ZONETYPE_ID;
   (kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(ts, timestamp));
 
-  auto day_of_week = timelib_day_of_week(ts->y, ts->m, ts->d);
+  auto day_of_week{timelib_day_of_week(ts->y, ts->m, ts->d)};
   return std::make_tuple(ts->s, ts->i, ts->h, ts->d, day_of_week, ts->m, ts->y, timelib_day_of_year(ts->y, ts->m, ts->d), DAY_FULL_NAMES[day_of_week],
                          MON_FULL_NAMES[ts->m - 1]);
 }
