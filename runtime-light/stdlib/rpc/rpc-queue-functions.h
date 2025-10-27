@@ -54,15 +54,10 @@ inline int64_t f$rpc_queue_create() noexcept {
   return f$wait_queue_create();
 }
 
-inline int64_t f$rpc_queue_create(const mixed& request_ids) noexcept {
+inline int64_t f$rpc_queue_create(const array<int64_t>& request_ids) noexcept {
   int64_t future{f$wait_queue_create()};
-  if (!request_ids.is_array()) {
-    return future;
-  }
-  for (auto request_id : request_ids.as_array()) {
-    if (request_id.get_value().is_int()) {
-      kphp::rpc::rpc_queue_push(future, request_id.get_value().as_int());
-    }
+  for (auto request_id : request_ids) {
+    kphp::rpc::rpc_queue_push(future, request_id.get_value());
   }
 
   return future;
