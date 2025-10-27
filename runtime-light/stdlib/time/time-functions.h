@@ -97,7 +97,7 @@ inline array<mixed> f$getdate(int64_t timestamp) noexcept {
   if (tzinfo == nullptr) [[unlikely]] {
     kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", default_timezone.c_str(), timelib_get_error_message(errc));
   }
-  array<mixed> result(array_size(11, false));
+  array<mixed> result{array_size(11, false)};
   result.set_value(string{"0", 1}, timestamp);
   if (tzinfo == nullptr) [[unlikely]] {
     result.set_value(string{"seconds", 7}, 0);
