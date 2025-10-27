@@ -45,8 +45,9 @@ inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id,
     co_return std::nullopt;
   }
 
+  const int64_t ready_response_id{it_request_id->second};
   rpc_client_instance_st.awaiter_forks_to_response.erase(it_request_id);
-  co_return it_request_id->second;
+  co_return ready_response_id;
 }
 } // namespace kphp::rpc
 
