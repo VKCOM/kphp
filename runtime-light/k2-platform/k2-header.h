@@ -285,8 +285,8 @@ int32_t k2_readdir(uint64_t dd, struct DirEntry* entry, struct DirEntry** result
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
- *  Some `errno` examples:
- * `EACCES` => permission denied.
+ *  Possible errno values:
+ * `EACCES` => Permission denied.
  * `EIO` => An I/O error occurred.
  * `ENOENT` A component in path does not exist or is a dangling symbolic link, or path is empty.
  */
