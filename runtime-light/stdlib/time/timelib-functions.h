@@ -33,8 +33,8 @@ constexpr inline std::array<std::string_view, 7> DAY_SHORT_NAMES = {"Sun", "Mon"
  */
 timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb, int* errc) noexcept;
 
-std::tuple<std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::string_view, std::string_view>
-getdate(std::int64_t timestamp, timelib_tzinfo& tzinfo) noexcept;
+std::tuple<int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, std::string_view, std::string_view> getdate(int64_t timestamp,
+                                                                                                                               timelib_tzinfo& tzinfo) noexcept;
 
 int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,
                  std::optional<int64_t> yea) noexcept;
