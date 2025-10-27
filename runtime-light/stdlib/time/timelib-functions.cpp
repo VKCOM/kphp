@@ -55,31 +55,31 @@ int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::op
   namespace chrono = std::chrono;
   timelib_unixtime2gmt(now, chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
 
-  hou.transform([now](auto value) {
+  hou.transform([now](auto value) noexcept {
     now->h = value;
     return 0;
   });
 
-  min.transform([now](auto value) {
+  min.transform([now](auto value) noexcept {
     now->i = value;
     return 0;
   });
 
-  sec.transform([now](auto value) {
+  sec.transform([now](auto value) noexcept {
     now->s = value;
     return 0;
   });
-  mon.transform([now](auto value) {
+  mon.transform([now](auto value) noexcept {
     now->m = value;
     return 0;
   });
 
-  day.transform([now](auto value) {
+  day.transform([now](auto value) noexcept {
     now->d = value;
     return 0;
   });
 
-  yea.transform([now](auto value) {
+  yea.transform([now](auto value) noexcept {
     now->y = value;
     return 0;
   });
@@ -106,31 +106,31 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
   (kphp::memory::libc_alloc_guard{},
    timelib_unixtime2local(now, chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count()));
 
-  hou.transform([now](auto value) {
+  hou.transform([now](auto value) noexcept {
     now->h = value;
     return 0;
   });
 
-  min.transform([now](auto value) {
+  min.transform([now](auto value) noexcept {
     now->i = value;
     return 0;
   });
 
-  sec.transform([now](auto value) {
+  sec.transform([now](auto value) noexcept {
     now->s = value;
     return 0;
   });
-  mon.transform([now](auto value) {
+  mon.transform([now](auto value) noexcept {
     now->m = value;
     return 0;
   });
 
-  day.transform([now](auto value) {
+  day.transform([now](auto value) noexcept {
     now->d = value;
     return 0;
   });
 
-  yea.transform([now](auto value) {
+  yea.transform([now](auto value) noexcept {
     now->y = value;
     return 0;
   });
