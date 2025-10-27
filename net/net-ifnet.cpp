@@ -12,9 +12,10 @@
 #include "common/kprintf.h"
 #include "common/options.h"
 
-static uint32_t force_ipv4_mask = 0xff000000;
-static uint32_t force_ipv4_ip = 10 << 24;
+static uint32_t force_ipv4_mask = PRIVATE_A_MASK;
+static uint32_t force_ipv4_ip = PRIVATE_A_NETWORK;
 static char *force_ipv4_interface = NULL;
+bool allow_loopback = false;
 
 int parse_ipv4(const char *str, uint32_t *ip, uint32_t *mask) {
   int ip4[4], subnet;
@@ -55,6 +56,11 @@ OPTION_PARSER(OPT_NETWORK, "force-ipv4", required_argument, "in form [iface:]ip[
   return parse_ipv4(str, &force_ipv4_ip, &force_ipv4_mask);
 }
 
+OPTION_PARSER(OPT_NETWORK, "allow-loopback", no_argument, "allow use loopback with address 127.0.0.1") {
+  allow_loopback = true;
+  return 0;
+}
+
 unsigned get_my_ipv4() {
   struct ifaddrs *ifa_first, *ifa;
   unsigned my_ip = 0, my_netmask = -1;
@@ -67,10 +73,10 @@ unsigned get_my_ipv4() {
     if (ifa->ifa_addr == NULL || ifa->ifa_addr->sa_family != AF_INET) {
       continue;
     }
-    if (!strncmp(ifa->ifa_name, "lo", 2)) {
+    if (!allow_loopback && strcmp(ifa->ifa_name, "lo") == 0) {
       continue;
     }
-    if (force_ipv4_interface != NULL && strcmp(ifa->ifa_name, force_ipv4_interface)) {
+    if (force_ipv4_interface != NULL && strcmp(ifa->ifa_name, force_ipv4_interface) != 0) {
       continue;
     }
     unsigned ip = ntohl(((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr);
@@ -82,7 +88,15 @@ unsigned get_my_ipv4() {
       my_iface = ifa->ifa_name;
     }
   }
-  if (force_ipv4_mask != 0xff000000 || force_ipv4_ip != (10 << 24)) {
+
+  if (allow_loopback && !my_ip) {
+    my_ip = LOCALHOST_NETWORK;
+    my_netmask = LOCALHOST_MASK;
+    my_iface = "lo";
+  }
+
+  // if removed, it can break local development, since not everyone has the `10.0.0.0/8` network on their computer
+  if (force_ipv4_mask != PRIVATE_A_MASK || force_ipv4_ip != PRIVATE_A_NETWORK) {
     assert(my_ip != 0 && "can't choose ip in given subnet");
   }
   vkprintf (2, "using main IP %d.%d.%d.%d/%d at interface %s\n", (my_ip >> 24), (my_ip >> 16) & 255, (my_ip >> 8) & 255, my_ip & 255,

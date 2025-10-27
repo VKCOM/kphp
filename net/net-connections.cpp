@@ -1533,7 +1533,7 @@ static inline void insert_target_into_list(conn_target_t *S, conn_target_t *Head
 }
 
 static bool convert_endpoint(const struct sockaddr_storage *from, struct sockaddr_storage *to) {
-  if (from->ss_family == AF_INET && inet_sockaddr_address(from) == LOCALHOST) {
+  if (from->ss_family == AF_INET && inet_sockaddr_address(from) == LOCALHOST_NETWORK) {
     const uint16_t port = inet_sockaddr_port(from);
     const char *path = unix_socket_path(unix_socket_directory, engine_username(), port);
 
@@ -1550,7 +1550,7 @@ static bool convert_endpoint(const struct sockaddr_storage *from, struct sockadd
 }
 
 static void convert_target(const conn_target_t **source, conn_target_t *converted) {
-  if ((*source)->endpoint.ss_family == AF_INET && inet_sockaddr_address(&((*source)->endpoint)) == LOCALHOST) {
+  if ((*source)->endpoint.ss_family == AF_INET && inet_sockaddr_address(&((*source)->endpoint)) == LOCALHOST_NETWORK) {
     *converted = **source;
     if (convert_endpoint(&(*source)->endpoint, &converted->endpoint)) {
       *source = converted;
