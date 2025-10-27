@@ -28,9 +28,7 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
 
 string to_string(const std::string_view& sv) noexcept;
 
-std::optional<int64_t> to_optional(int64_t value) noexcept {
-  return value != std::numeric_limits<int64_t>::min() ? std::make_optional(value) : std::nullopt;
-}
+std::optional<int64_t> to_optional(int64_t value) noexcept;
 
 } // namespace kphp::time::impl
 
