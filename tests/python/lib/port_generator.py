@@ -12,7 +12,7 @@ def get_port():
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    pathlib.Path(port_tracker_path, exist_ok=True).touch()
+    pathlib.Path(port_tracker_path).touch(exist_ok=True)
 
     fh = open(port_tracker_path, "r+")
     portalocker.lock(fh, portalocker.LOCK_EX)
