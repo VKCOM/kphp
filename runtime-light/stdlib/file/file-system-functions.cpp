@@ -1,7 +1,15 @@
-//
-// Created by nsinyachenko on 24.10.25.
-//
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2025 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <array>
+#include <expected>
+#include <span>
+#include <string_view>
+#include <sys/stat.h>
+
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/file/file-system-functions.h"
 
 namespace {
@@ -303,7 +311,8 @@ inline mixed f$getimagesize(const string& name) noexcept {
   result.push_back(height);
   result.push_back(type);
 
-  string::size_type len = std::format_to_n(reinterpret_cast<char*>(buf.data()), min_size, R"(width="{}" height="{}")", width, height).size;
+  string::size_type len = std::distance(reinterpret_cast<char*>(buf.data()),
+                                        std::format_to_n(reinterpret_cast<char*>(buf.data()), min_size, R"(width="{}" height="{}")", width, height).out);
   result.push_back(string{reinterpret_cast<const char*>(buf.begin()), len});
   if (bits != 0) {
     result.set_value(string{"bits", 4}, bits);
