@@ -18,49 +18,6 @@
 
 namespace kphp::timelib {
 
-namespace {
-
-void patch_time(timelib_time& time, std::optional<int64_t> hour, std::optional<int64_t> minute, std::optional<int64_t> second, std::optional<int64_t> month,
-                std::optional<int64_t> day, std::optional<int64_t> year) noexcept {
-  hour.transform([&time](auto value) {
-    time.h = value;
-    return 0;
-  });
-
-  minute.transform([&time](auto value) {
-    time.i = value;
-    return 0;
-  });
-
-  second.transform([&time](auto value) {
-    time.s = value;
-    return 0;
-  });
-
-  month.transform([&time](auto value) {
-    time.m = value;
-    return 0;
-  });
-
-  day.transform([&time](auto value) {
-    time.d = value;
-    return 0;
-  });
-
-  year.transform([&time](auto value) {
-    // Copied from https://github.com/php/php-src/blob/eafbc6b3e6b59786601420dfb27c3682d0cfd86c/ext/date/php_date.c#L1195
-    if (value >= 0 && value < 70) {
-      value += 2000;
-    } else if (value >= 70 && value <= 100) {
-      value += 1900;
-    }
-    time.y = value;
-    return 0;
-  });
-}
-
-} // namespace
-
 timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb, int* errc) noexcept {
   std::string_view timezone_view{timezone};
   auto* tzinfo{TimeImageState::get().timelib_zone_cache.get(timezone_view)};
@@ -98,7 +55,34 @@ int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::op
   namespace chrono = std::chrono;
   timelib_unixtime2gmt(now, chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
 
-  patch_time(*now, hou, min, sec, mon, day, yea);
+  hou.transform([now](auto value) {
+    now->h = value;
+    return 0;
+  });
+
+  min.transform([now](auto value) {
+    now->i = value;
+    return 0;
+  });
+
+  sec.transform([now](auto value) {
+    now->s = value;
+    return 0;
+  });
+  mon.transform([now](auto value) {
+    now->m = value;
+    return 0;
+  });
+
+  day.transform([now](auto value) {
+    now->d = value;
+    return 0;
+  });
+
+  yea.transform([now](auto value) {
+    now->y = value;
+    return 0;
+  });
 
   timelib_update_ts(now, nullptr);
 
@@ -122,7 +106,34 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
   (kphp::memory::libc_alloc_guard{},
    timelib_unixtime2local(now, chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count()));
 
-  patch_time(*now, hou, min, sec, mon, day, yea);
+  hou.transform([now](auto value) {
+    now->h = value;
+    return 0;
+  });
+
+  min.transform([now](auto value) {
+    now->i = value;
+    return 0;
+  });
+
+  sec.transform([now](auto value) {
+    now->s = value;
+    return 0;
+  });
+  mon.transform([now](auto value) {
+    now->m = value;
+    return 0;
+  });
+
+  day.transform([now](auto value) {
+    now->d = value;
+    return 0;
+  });
+
+  yea.transform([now](auto value) {
+    now->y = value;
+    return 0;
+  });
 
   (kphp::memory::libc_alloc_guard{}, timelib_update_ts(now, tzinfo));
 

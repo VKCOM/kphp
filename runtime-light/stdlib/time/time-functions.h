@@ -79,7 +79,7 @@ inline int64_t f$mktime(int64_t hour = std::numeric_limits<int64_t>::min(), int6
                                  second != std::numeric_limits<int64_t>::min() ? std::make_optional(second) : std::nullopt,
                                  month != std::numeric_limits<int64_t>::min() ? std::make_optional(month) : std::nullopt,
                                  day != std::numeric_limits<int64_t>::min() ? std::make_optional(day) : std::nullopt,
-                                 year != std::numeric_limits<int64_t>::min() ? std::make_optional(year) : std::nullopt)};
+                                 year != std::numeric_limits<int64_t>::min() ? std::make_optional(kphp::time::impl::fix_year(year)) : std::nullopt)};
   if (res.has_value()) {
     return *res;
   }
@@ -151,7 +151,7 @@ inline int64_t f$gmmktime(int64_t hour = std::numeric_limits<int64_t>::min(), in
                                  second != std::numeric_limits<int64_t>::min() ? std::make_optional(second) : std::nullopt,
                                  month != std::numeric_limits<int64_t>::min() ? std::make_optional(month) : std::nullopt,
                                  day != std::numeric_limits<int64_t>::min() ? std::make_optional(day) : std::nullopt,
-                                 year != std::numeric_limits<int64_t>::min() ? std::make_optional(year) : std::nullopt);
+                                 year != std::numeric_limits<int64_t>::min() ? std::make_optional(kphp::time::impl::fix_year(year)) : std::nullopt);
 }
 
 inline string f$date(const string& format, int64_t timestamp = std::numeric_limits<int64_t>::min()) noexcept {
