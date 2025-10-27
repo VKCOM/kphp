@@ -50,7 +50,7 @@ getdate(std::int64_t timestamp, timelib_tzinfo& tzinfo) noexcept {
 
 int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,
                  std::optional<int64_t> yea) noexcept {
-  auto now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
+  auto* now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
   const vk::final_action now_deleter{[now] noexcept { (kphp::memory::libc_alloc_guard{}, timelib_time_dtor(now)); }};
   namespace chrono = std::chrono;
   timelib_unixtime2gmt(now, chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
@@ -91,7 +91,7 @@ int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::op
 
 std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
                               std::optional<int64_t> day, std::optional<int64_t> yea) noexcept {
-  auto now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
+  auto* now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
   const vk::final_action now_deleter{[now] noexcept { (kphp::memory::libc_alloc_guard{}, timelib_time_dtor(now)); }};
   string default_timezone{TimeInstanceState::get().default_timezone};
   int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
