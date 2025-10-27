@@ -80,7 +80,7 @@ timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb
 
 std::tuple<std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::string_view, std::string_view>
 getdate(std::int64_t timestamp, timelib_tzinfo& tzinfo) noexcept {
-  auto* ts = (kphp::memory::libc_alloc_guard{}, timelib_time_ctor());
+  auto* ts{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
   const vk::final_action ts_deleter{[ts] noexcept { (kphp::memory::libc_alloc_guard{}, timelib_time_dtor(ts)); }};
   ts->tz_info = std::addressof(tzinfo);
   ts->zone_type = TIMELIB_ZONETYPE_ID;
@@ -93,7 +93,7 @@ getdate(std::int64_t timestamp, timelib_tzinfo& tzinfo) noexcept {
 
 int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,
                  std::optional<int64_t> yea) noexcept {
-  auto now = (kphp::memory::libc_alloc_guard{}, timelib_time_ctor());
+  auto now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
   const vk::final_action now_deleter{[now] noexcept { (kphp::memory::libc_alloc_guard{}, timelib_time_dtor(now)); }};
   namespace chrono = std::chrono;
   timelib_unixtime2gmt(now, chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
@@ -107,7 +107,7 @@ int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::op
 
 std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
                               std::optional<int64_t> day, std::optional<int64_t> yea) noexcept {
-  auto now = (kphp::memory::libc_alloc_guard{}, timelib_time_ctor());
+  auto now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
   const vk::final_action now_deleter{[now] noexcept { (kphp::memory::libc_alloc_guard{}, timelib_time_dtor(now)); }};
   string default_timezone{TimeInstanceState::get().default_timezone};
   int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
