@@ -4,7 +4,9 @@
 
 #pragma once
 
+#include <concepts>
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
@@ -85,7 +87,7 @@ private:
     constexpr size_t alignment{alignof(F)};
     constexpr size_t size{sizeof(F)};
     // Allocate more space to ensure alignment can be met
-    const auto mem{kphp::memory::script::alloc(size + alignment - 1)};
+    auto* const mem{kphp::memory::script::alloc(size + alignment - 1)};
     kphp::log::assertion(mem != nullptr);
     return mem;
   }

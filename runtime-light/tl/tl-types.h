@@ -1103,6 +1103,44 @@ public:
   }
 };
 
+// ===== INTER COMPONENT SESSION PROTOCOL =====
+
+class InterComponentSessionRequestHeader final {
+  static constexpr uint32_t INTER_COMPONENT_SESSION_REQUEST_HEADER_MAGIC = 0x24A3'16FF;
+
+public:
+  tl::u64 size;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = INTER_COMPONENT_SESSION_REQUEST_HEADER_MAGIC}.store(tls);
+    size.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = INTER_COMPONENT_SESSION_REQUEST_HEADER_MAGIC}.footprint() + size.footprint();
+  }
+};
+
+class InterComponentSessionResponseHeader final {
+  static constexpr uint32_t INTER_COMPONENT_SESSION_RESPONSE_HEADER_MAGIC = 0x24A3'16EE;
+
+public:
+  tl::u64 id;
+  tl::u64 size;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(INTER_COMPONENT_SESSION_RESPONSE_HEADER_MAGIC)};
+    ok &= id.fetch(tlf);
+    ok &= size.fetch(tlf);
+    return ok;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = INTER_COMPONENT_SESSION_RESPONSE_HEADER_MAGIC}.footprint() + id.footprint() + size.footprint();
+  }
+};
+
 // ===== WEB TRANSFER LIB =====
 
 class WebError final {
@@ -1120,7 +1158,7 @@ public:
     return ok;
   }
 
-  [[nodiscard]] constexpr size_t footprint() const noexcept {
+  constexpr size_t footprint() const noexcept {
     return tl::magic{.value = WEB_ERROR_MAGIC}.footprint() + code.footprint() + description.footprint();
   }
 };

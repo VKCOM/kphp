@@ -20,7 +20,6 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
-#include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 
 namespace kphp::component::inter_component_session {
@@ -111,10 +110,10 @@ class client final {
     interrupter_type interrupter;
     kphp::coro::shared_task<void> runner;
 
-    reader(shared_ctx_type _ctx, shared_transport_type _t) noexcept
+    reader(const shared_ctx_type& _ctx, shared_transport_type _t) noexcept
         : ctx(_ctx),
           interrupter(reader::wait_until_interrupt(_ctx)),
-          runner(reader::run(_ctx, _t, interrupter)){};
+          runner(reader::run(_ctx, std::move(_t), interrupter)){};
 
     static inline auto run(shared_ctx_type ctx, shared_transport_type t, interrupter_type interrupter) noexcept -> kphp::coro::shared_task<void> {
       // Allocate buffer for header
@@ -126,10 +125,10 @@ class client final {
         auto read_header_res{co_await kphp::coro::when_any(t.get()->stream.read(resp_header_buf), interrupter)};
         // Interrupt is happened
         if (std::holds_alternative<int>(read_header_res)) [[unlikely]] { // FIXME: remove `int` after `when_any` fixing
-          kphp::log::debug("Reader has been interrupted");
+          kphp::log::debug("reader has been interrupted");
           break;
         } else if (auto res{std::get<std::expected<size_t, int32_t>>(read_header_res)}; !res) [[unlikely]] {
-          kphp::log::warning("An error occurred while reading the header from a stream: {}", res.error());
+          kphp::log::warning("an error occurred while reading the header from a stream: {}", res.error());
           ctx.get()->error = res.error();
           break;
         }
@@ -142,7 +141,7 @@ class client final {
         }
         const auto qid{resp_header.id.value};
         const auto size{resp_header.size.value};
-        kphp::log::debug("Read {} bytes for query #{} ", size, qid);
+        kphp::log::debug("read {} bytes for query #{} ", size, qid);
 
         // Ensure that buffer for response can be provided
         kphp::log::assertion(ctx.get()->query2resp_buffer_provider.contains(qid));
@@ -153,11 +152,11 @@ class client final {
 
         // Read payload
         if (auto res{co_await t.get()->stream.read(resp)}; !res) [[unlikely]] {
-          kphp::log::warning("An error occurred while reading the payload from a stream: {}", res.error());
+          kphp::log::warning("an error occurred while reading the payload from a stream: {}", res.error());
           ctx.get()->error = res.error();
           break;
         }
-        kphp::log::debug("Resp buffer first byte: {} Resp buffer last byte: {} ", static_cast<uint8_t>(*std::next(resp.begin(), 0)),
+        kphp::log::debug("resp buffer first byte: {} Resp buffer last byte: {} ", static_cast<uint8_t>(*std::next(resp.begin(), 0)),
                          static_cast<uint8_t>(*std::next(resp.begin(), resp.size() - 1)));
 
         // Ensure that notifier is presented and notify
@@ -179,6 +178,7 @@ class client final {
       co_return 0;
     }
 
+    // Semantics of this method is considering tha state will be changed. That's why it is not marked as `const`
     inline auto register_query(query_id_type qid, details::function_wrapper<std::span<std::byte>, size_t>&& buffer_provider) noexcept -> void {
       // We wouldn't read a response twice
       kphp::log::assertion(ctx.get()->query2notifier.contains(qid) == false);
@@ -194,10 +194,11 @@ class client final {
   explicit client(kphp::component::stream&& s) noexcept
       : transport(make_instance<refcountable_transport_type>(refcountable_transport_type{.stream = std::move(s)})),
         reader({make_instance<reader::refcountable_ctx_type>(), transport}) {
+    auto& scheduler{kphp::coro::io_scheduler::get()};
     // Interrupter needs for immediately stopping the reader in the of client's life
-    kphp::coro::io_scheduler::get().start(reader.interrupter);
+    scheduler.start(reader.interrupter);
     // Run reader as "service"
-    kphp::coro::io_scheduler::get().start(reader.runner);
+    scheduler.start(reader.runner);
   }
 
 public:
@@ -269,16 +270,16 @@ inline auto client::query(std::span<const std::byte> request, B&& response_buffe
 
   // Register a new query and send request
   reader.register_query(query_id, details::function_wrapper<std::span<std::byte>, size_t>{std::forward<B>(response_buffer_provider)});
-  kphp::log::debug("Client create query #{}", query_id);
+  kphp::log::debug("client create query #{}", query_id);
   if (auto res{co_await writer.write(transport, query_id, request)}; !res) [[unlikely]] {
     co_return std::move(res);
   }
-  kphp::log::debug("Client wrote request for query #{}", query_id);
+  kphp::log::debug("client wrote request for query #{}", query_id);
 
   auto still_wait{true};
   auto& response_notifier{reader.ctx.get()->query2notifier[query_id]};
 
-  kphp::log::debug("Client now is reading responses for query #{}", query_id);
+  kphp::log::debug("client now is reading responses for query #{}", query_id);
   // Wait a new response until handler returns false
   while (still_wait) {
     co_await response_notifier;
