@@ -133,8 +133,11 @@ inline array<mixed> f$getdate(int64_t timestamp) noexcept {
 }
 
 inline string f$gmdate(const string& format, int64_t timestamp = std::numeric_limits<int64_t>::min()) noexcept {
-  namespace chrono = std::chrono;
-  const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
+  if (timestamp == std::numeric_limits<int64_t>::min()) {
+    namespace chrono = std::chrono;
+    timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
+  }
+  const time_t now{timestamp};
   struct tm tm {};
   gmtime_r(std::addressof(now), std::addressof(tm));
   return kphp::time::impl::date(format, tm, now, false);
@@ -148,8 +151,11 @@ inline int64_t f$gmmktime(int64_t hour = std::numeric_limits<int64_t>::min(), in
 }
 
 inline string f$date(const string& format, int64_t timestamp = std::numeric_limits<int64_t>::min()) noexcept {
-  namespace chrono = std::chrono;
-  const time_t now{timestamp.has_value() ? timestamp.val() : duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count()};
+  if (timestamp == std::numeric_limits<int64_t>::min()) {
+    namespace chrono = std::chrono;
+    timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
+  }
+  const time_t now{timestamp};
   struct tm tm {};
   if (auto* res{k2::localtime_r(std::addressof(now), std::addressof(tm))}; res != std::addressof(tm)) [[unlikely]] {
     kphp::log::warning("can't get local time");
