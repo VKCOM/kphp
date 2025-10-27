@@ -114,8 +114,6 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
   auto* tzinfo{kphp::timelib::get_timezone_info(default_timezone.c_str(), timelib_builtin_db(), std::addressof(errc))};
   if (tzinfo == nullptr) [[unlikely]] {
     kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", default_timezone.c_str(), timelib_get_error_message(errc));
-  }
-  if (!tzinfo) {
     return std::nullopt;
   }
   now->tz_info = tzinfo;
