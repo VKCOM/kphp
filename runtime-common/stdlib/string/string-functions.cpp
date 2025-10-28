@@ -16,6 +16,7 @@
 #include "common/wrappers/string_view.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-common/stdlib/string/string-context.h"
 
 const char* get_mask(const string& what) noexcept {
@@ -1241,12 +1242,12 @@ string f$stripslashes(const string& str) noexcept {
 
 Optional<int64_t> f$stripos(const string& haystack, const string& needle, int64_t offset) noexcept {
   if (offset < 0) {
-    php_warning("Wrong offset = %" PRIi64 " in function stripos", offset);
+    offset += haystack.size();
+  }
+  if (offset < 0 || offset >= haystack.size()) {
     return false;
   }
-  if (offset >= haystack.size()) {
-    return false;
-  }
+
   if (needle.size() == 0) {
     php_warning("Parameter needle is empty in function stripos");
     return false;
@@ -1726,12 +1727,12 @@ int64_t f$strnatcmp(const string& lhs, const string& rhs) noexcept {
 
 Optional<int64_t> f$strpos(const string& haystack, const string& needle, int64_t offset) noexcept {
   if (offset < 0) {
-    php_warning("Wrong offset = %" PRIi64 " in function strpos", offset);
+    offset += haystack.size();
+  }
+  if (offset < 0 || offset >= haystack.size()) {
     return false;
   }
-  if (offset > int64_t{haystack.size()}) {
-    return false;
-  }
+
   if (needle.size() <= 1) {
     if (needle.size() == 0) {
       php_warning("Parameter needle is empty in function strpos");
