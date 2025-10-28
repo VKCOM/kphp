@@ -36,10 +36,11 @@ inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id,
     co_return std::nullopt;
   }
 
+  const int64_t ready_fork_id{*wait_result};
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
-  const auto it_request_id{rpc_client_instance_st.awaiter_forks_to_response.find(*wait_result)};
+  const auto it_request_id{rpc_client_instance_st.awaiter_forks_to_response.find(ready_fork_id)};
   if (it_request_id == rpc_client_instance_st.awaiter_forks_to_response.end()) [[unlikely]] {
-    kphp::log::warning("awaiter forks {} in rpc queue isn't associated with response", *wait_result);
+    kphp::log::warning("awaiter forks {} in rpc queue isn't associated with response", ready_fork_id);
     co_return std::nullopt;
   }
 
