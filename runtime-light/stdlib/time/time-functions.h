@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <limits>
+#include <memory>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -18,6 +19,12 @@
 #include "runtime-light/stdlib/time/timelib-functions.h"
 
 namespace kphp::time::impl {
+
+constexpr inline std::array<std::string_view, 12> MON_FULL_NAMES = {"January", "February", "March",     "April",   "May",      "June",
+                                                                    "July",    "August",   "September", "October", "November", "December"};
+constexpr inline std::array<std::string_view, 12> MON_SHORT_NAMES = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+constexpr inline std::array<std::string_view, 7> DAY_FULL_NAMES = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+constexpr inline std::array<std::string_view, 7> DAY_SHORT_NAMES = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 constexpr inline int64_t CHECKDATE_YEAR_MIN = 1;
 constexpr inline int64_t CHECKDATE_YEAR_MAX = 32767;
@@ -91,43 +98,31 @@ inline array<mixed> f$getdate(int64_t timestamp) noexcept {
     namespace chrono = std::chrono;
     timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
   }
-  string default_timezone{TimeInstanceState::get().default_timezone};
-  int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-  auto* tzinfo{kphp::timelib::get_timezone_info(default_timezone.c_str(), timelib_builtin_db(), std::addressof(errc))};
-  if (tzinfo == nullptr) [[unlikely]] {
-    kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", default_timezone.c_str(), timelib_get_error_message(errc));
+  tm t{};
+  time_t timestamp_t{timestamp};
+  tm* tp{k2::localtime_r(std::addressof(timestamp_t), std::addressof(t))};
+  if (tp == nullptr) {
+    std::array<char, 256> buff{};
+    kphp::log::warning("Error \"{}\" in getdate with timestamp {}", strerror_r(errno, buff.data(), buff.size()), timestamp);
+    std::memset(std::addressof(t), 0, sizeof(tm));
   }
+
   array<mixed> result{array_size(11, false)};
-  result.set_value(string{"0", 1}, timestamp);
-  if (tzinfo == nullptr) [[unlikely]] {
-    result.set_value(string{"seconds", 7}, 0);
-    result.set_value(string{"minutes", 7}, 0);
-    result.set_value(string{"hours", 5}, 0);
-    result.set_value(string{"mday", 4}, 0);
-    result.set_value(string{"wday", 4}, 0);
-    result.set_value(string{"mon", 3}, 1);
-    result.set_value(string{"year", 4}, 1900);
-    result.set_value(string{"yday", 4}, 0);
-    result.set_value(string{"weekday", 7},
-                     string{kphp::timelib::DAY_FULL_NAMES[0].data(), static_cast<string::size_type>(kphp::timelib::DAY_FULL_NAMES[0].size())});
-    result.set_value(string{"month", 5},
-                     string{kphp::timelib::MON_FULL_NAMES[0].data(), static_cast<string::size_type>(kphp::timelib::MON_FULL_NAMES[0].size())});
 
-    return result;
-  }
+  auto weekday{kphp::time::impl::DAY_FULL_NAMES[t.tm_wday]};
+  auto month{kphp::time::impl::MON_FULL_NAMES[t.tm_mon]};
 
-  auto [seconds, minutes, hours, mday, wday, mon, year, yday, weekday, month] = kphp::timelib::getdate(timestamp, *tzinfo);
-
-  result.set_value(string{"seconds", 7}, seconds);
-  result.set_value(string{"minutes", 7}, minutes);
-  result.set_value(string{"hours", 5}, hours);
-  result.set_value(string{"mday", 4}, mday);
-  result.set_value(string{"wday", 4}, wday);
-  result.set_value(string{"mon", 3}, mon);
-  result.set_value(string{"year", 4}, year);
-  result.set_value(string{"yday", 4}, yday);
+  result.set_value(string{"seconds", 7}, t.tm_sec);
+  result.set_value(string{"minutes", 7}, t.tm_min);
+  result.set_value(string{"hours", 5}, t.tm_hour);
+  result.set_value(string{"mday", 4}, t.tm_mday);
+  result.set_value(string{"wday", 4}, t.tm_wday);
+  result.set_value(string{"mon", 3}, t.tm_mon + 1);
+  result.set_value(string{"year", 4}, t.tm_year + 1900);
+  result.set_value(string{"yday", 4}, t.tm_yday);
   result.set_value(string{"weekday", 7}, string{weekday.data(), static_cast<string::size_type>(weekday.size())});
   result.set_value(string{"month", 5}, string{month.data(), static_cast<string::size_type>(month.size())});
+  result.set_value(string{"0", 1}, timestamp);
 
   return result;
 }

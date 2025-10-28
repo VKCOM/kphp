@@ -35,19 +35,6 @@ timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb
   return tzinfo;
 }
 
-std::tuple<std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::int64_t, std::string_view, std::string_view>
-getdate(std::int64_t timestamp, timelib_tzinfo& tzinfo) noexcept {
-  auto* ts{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
-  const vk::final_action ts_deleter{[ts] noexcept { (kphp::memory::libc_alloc_guard{}, timelib_time_dtor(ts)); }};
-  ts->tz_info = std::addressof(tzinfo);
-  ts->zone_type = TIMELIB_ZONETYPE_ID;
-  (kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(ts, timestamp));
-
-  auto day_of_week{timelib_day_of_week(ts->y, ts->m, ts->d)};
-  return std::make_tuple(ts->s, ts->i, ts->h, ts->d, day_of_week, ts->m, ts->y, timelib_day_of_year(ts->y, ts->m, ts->d), DAY_FULL_NAMES[day_of_week],
-                         MON_FULL_NAMES[ts->m - 1]);
-}
-
 int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,
                  std::optional<int64_t> yea) noexcept {
   auto* now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
