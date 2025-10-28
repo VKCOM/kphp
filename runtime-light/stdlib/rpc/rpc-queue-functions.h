@@ -19,8 +19,8 @@ namespace kphp::rpc {
 inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
 
-  const auto it_fork_id{rpc_client_instance_st.response_waiter_forks.find(request_id)};
-  if (it_fork_id == rpc_client_instance_st.response_waiter_forks.end()) [[unlikely]] {
+  const auto it_fork_id{rpc_client_instance_st.response_awaiter_forks.find(request_id)};
+  if (it_fork_id == rpc_client_instance_st.response_awaiter_forks.end()) [[unlikely]] {
     kphp::log::warning("could not find rpc query with id {} in pending queries", queue_id);
     return;
   }
