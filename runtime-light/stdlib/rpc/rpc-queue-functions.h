@@ -21,7 +21,7 @@ inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
 
   const auto it_fork_id{rpc_client_instance_st.response_waiter_forks.find(request_id)};
   if (it_fork_id == rpc_client_instance_st.response_waiter_forks.end()) [[unlikely]] {
-    kphp::log::warning("unexpectedly could not find query in pending queries");
+    kphp::log::warning("could not find rpc query with id {} in pending queries", queue_id);
     return;
   }
 
@@ -36,10 +36,11 @@ inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id,
     co_return std::nullopt;
   }
 
+  const int64_t ready_fork_id{*wait_result};
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
-  const auto it_request_id{rpc_client_instance_st.awaiter_forks_to_response.find(*wait_result)};
+  const auto it_request_id{rpc_client_instance_st.awaiter_forks_to_response.find(ready_fork_id)};
   if (it_request_id == rpc_client_instance_st.awaiter_forks_to_response.end()) [[unlikely]] {
-    kphp::log::warning("awaiter forks in rpc queue isn't associated with response");
+    kphp::log::warning("awaiter fork {} in the rpc queue isn't associated with any response", ready_fork_id);
     co_return std::nullopt;
   }
 
