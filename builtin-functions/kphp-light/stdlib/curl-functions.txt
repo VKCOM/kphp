@@ -247,7 +247,7 @@ define('UPLOAD_ERR_EXTENSION', 8);
 // ===== SUPPORTED =====
 /** @kphp-extern-func-info interruptible */
 function curl_init ($url ::: string = "") ::: int;
-/** @kphp-extern-func-info stub generation-required */
+/** @kphp-extern-func-info interruptible */
 function curl_reset ($curl_handle ::: int) ::: void;
 
 function curl_setopt ($curl_handle ::: int, $option ::: int, $value ::: mixed) ::: bool;

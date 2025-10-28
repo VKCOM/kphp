@@ -455,3 +455,15 @@ inline auto f$curl_close(kphp::web::curl::easy id) noexcept -> kphp::coro::task<
     kphp::web::curl::details::print_error("Could not close curl easy handle", std::move(res.error()));
   }
 }
+
+inline auto f$curl_reset(kphp::web::curl::easy id) noexcept -> kphp::coro::task<void> {
+  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_reset(id))};
+  auto& ctx{CurlInstanceState::get()};
+  if (!res.has_value()) [[unlikely]] {
+    kphp::web::curl::details::set_errno(res.error().code, res.error().description);
+    kphp::web::curl::details::print_error("Could not reset curl easy handle", std::move(res.error()));
+    co_return;
+  }
+  ctx.easy2ctx[id].return_transfer = false;
+  ctx.easy2ctx[id].private_data = std::nullopt;
+}
