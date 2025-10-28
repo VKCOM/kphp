@@ -13,6 +13,7 @@
 #include <memory>
 #include <span>
 #include <string_view>
+#include <sys/types.h>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -135,10 +136,8 @@ inline auto file::pread(std::span<std::byte> buf, off_t offset) noexcept -> std:
     return std::unexpected{k2::errno_enodev};
   }
 
-  const auto read{k2::pread(m_descriptor, buf, offset)};
   // we do not change `m_eof`, because pread is readonly operation
-
-  return read;
+  return k2::pread(m_descriptor, buf, offset);
 }
 
 inline auto file::get_contents() noexcept -> std::expected<string, int32_t> {

@@ -350,7 +350,8 @@ size_t k2_write(uint64_t stream_d, size_t data_len, const void* data);
 size_t k2_read(uint64_t stream_d, size_t buf_len, void* buf);
 
 /**
- * reads at most `buf_len` bytes to `buf` from `offset` position without modifying stream state.
+ * Reads at most `buf_len` bytes to `buf` from `offset` position without modifying stream state.
+ * Works only with file descriptors.
  *
  * @return number of read bytes.
  */

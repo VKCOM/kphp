@@ -29,6 +29,43 @@ namespace file_system_impl_ {
 
 inline constexpr char SEPARATOR = '/';
 
+constexpr std::string_view READ_MODE = std::string_view{"r"};
+constexpr std::string_view WRITE_MODE = std::string_view("w");
+constexpr std::string_view APPEND_MODE = std::string_view("a");
+constexpr std::string_view READ_PLUS_MODE = std::string_view{"r+"};
+constexpr std::string_view WRITE_PLUS_MODE = std::string_view("w+");
+constexpr std::string_view APPEND_PLUS_MODE = std::string_view("a+");
+
+inline std::expected<size_t, int32_t> write_safe(kphp::fs::sync_resource& resource, std::span<const std::byte> src) noexcept {
+  size_t full_len = src.size();
+  do {
+    std::expected<size_t, int32_t> cur_res = resource.write(src);
+    if (!cur_res) {
+      return cur_res;
+    }
+
+    src = src.subspan(*cur_res);
+  } while (!src.empty());
+
+  return std::expected<size_t, int32_t>{full_len - src.size()};
+}
+
+inline std::expected<size_t, int32_t> read_safe(kphp::fs::sync_resource& resource, std::span<std::byte> dst) noexcept {
+  size_t full_len = dst.size();
+  do {
+    std::expected<size_t, int32_t> cur_res = resource.read(dst);
+    if (!cur_res) {
+      return cur_res;
+    }
+    if (*cur_res == 0) {
+      break;
+    }
+
+    dst.subspan(*cur_res);
+  } while (!dst.empty());
+
+  return full_len - dst.size();
+}
 } // namespace file_system_impl_
 
 inline constexpr int64_t STREAM_CLIENT_CONNECT = 1;
@@ -191,54 +228,15 @@ inline resource f$stream_socket_client(const string& address, std::optional<std:
   return make_instance<kphp::fs::socket>(*std::move(expected));
 }
 
-constexpr std::string_view READ_MODE = std::string_view{"r"};
-constexpr std::string_view WRITE_MODE = std::string_view("w");
-constexpr std::string_view APPEND_MODE = std::string_view("a");
-
 inline Optional<string> f$file_get_contents(const string& stream) noexcept {
-  if (auto sync_resource{
-          from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, string{READ_MODE.data(), static_cast<string::size_type>(READ_MODE.size())}), {})};
+  if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(
+          f$fopen(stream, string{file_system_impl_::READ_MODE.data(), static_cast<string::size_type>(file_system_impl_::READ_MODE.size())}), {})};
       !sync_resource.is_null()) {
     auto expected{sync_resource.get()->get_contents()};
     return expected ? Optional<string>{*std::move(expected)} : Optional<string>{false};
   }
   return false;
 }
-
-namespace {
-inline std::expected<size_t, int32_t> write_safe(kphp::fs::sync_resource* resource, std::span<const std::byte> src) noexcept {
-  size_t full_len = src.size();
-  do {
-    std::expected<size_t, int32_t> cur_res = resource->write(src);
-    if (!cur_res) {
-      return cur_res;
-    }
-
-    src = src.subspan(*cur_res);
-  } while (!src.empty());
-
-  return std::expected<size_t, int32_t>{full_len - src.size()};
-}
-
-inline std::expected<size_t, int32_t> read_safe(kphp::fs::sync_resource* resource, std::span<std::byte> dst) noexcept {
-  size_t full_len = dst.size();
-  do {
-    std::expected<size_t, int32_t> cur_res = resource->read(dst);
-    if (!cur_res) {
-      return cur_res;
-    }
-    if (*cur_res == 0) {
-      break;
-    }
-
-    dst.subspan(*cur_res);
-  } while (!dst.empty());
-
-  return full_len - dst.size();
-}
-} // namespace
-
-constexpr int64_t FILE_APPEND_FLAG = 1;
 
 inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& content_var, int64_t flags = 0) noexcept {
   string content;
@@ -249,22 +247,20 @@ inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& 
   }
   std::span<const char> data_span{content.c_str(), content.size()};
 
+  constexpr int64_t FILE_APPEND_FLAG = 1;
   if (flags & ~FILE_APPEND_FLAG) {
     kphp::log::warning("Flags other, than FILE_APPEND are not supported in file_put_contents");
     flags &= FILE_APPEND_FLAG;
   }
 
-  const std::string_view* mode = &WRITE_MODE;
-  if (flags & FILE_APPEND_FLAG) {
-    mode = &APPEND_MODE;
-  }
+  const std::string_view& mode = ((flags & FILE_APPEND_FLAG) != 0) ? file_system_impl_::APPEND_MODE : file_system_impl_::WRITE_MODE;
   if (auto sync_resource{
-          from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, string{mode->data(), static_cast<string::size_type>(mode->size())}), {})};
+          from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, string{mode.data(), static_cast<string::size_type>(mode.size())}), {})};
       !sync_resource.is_null()) {
-    auto expected{write_safe(sync_resource.get(), std::as_bytes(data_span))};
+    auto expected{file_system_impl_::write_safe(*sync_resource.get(), std::as_bytes(data_span))};
     return expected ? Optional<int64_t>{static_cast<int64_t>(*std::move(expected))} : Optional<int64_t>{false};
   }
   return false;
 }
 
-inline mixed f$getimagesize(const string& name) noexcept;
+mixed f$getimagesize(const string& name) noexcept;
