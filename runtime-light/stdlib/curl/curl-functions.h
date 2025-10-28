@@ -12,6 +12,7 @@
 #include "runtime-light/stdlib/curl/curl-options.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/output/print-functions.h"
 #include "runtime-light/stdlib/web-transfer-lib/web.h"
 
@@ -60,7 +61,7 @@ inline auto print_error(const char (&msg)[N], kphp::web::error&& e) noexcept {
 } // namespace kphp::web::curl::details
 
 inline auto f$curl_init(const string url = string("")) noexcept -> kphp::coro::task<kphp::web::curl::easy> {
-  auto open_res{co_await kphp::web::simple_transfer_open(kphp::web::transfer_backend::CURL)};
+  auto open_res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_open(kphp::web::transfer_backend::CURL))};
   if (!open_res.has_value()) [[unlikely]] {
     kphp::web::curl::details::set_errno(open_res.error().code, open_res.error().description);
     kphp::web::curl::details::print_error("Could not initialize a new curl easy handle", std::move(open_res.error()));
@@ -432,23 +433,23 @@ inline auto f$curl_setopt_array(kphp::web::curl::easy easy_id, const array<mixed
   return true;
 }
 
-inline auto f$curl_exec(int64_t easy_id) noexcept -> kphp::coro::task<mixed> {
-  auto res{co_await kphp::web::simple_transfer_perform(easy_id)};
+inline auto f$curl_exec(kphp::web::curl::easy id) noexcept -> kphp::coro::task<mixed> {
+  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_perform(id))};
   if (!res.has_value()) [[unlikely]] {
     kphp::web::curl::details::set_errno(res.error().code, res.error().description);
     kphp::web::curl::details::print_error("Could not exec curl easy handle", std::move(res.error()));
     co_return false;
   }
   auto& ctx{CurlInstanceState::get()};
-  if (ctx.easy2ctx.contains(easy_id) && ctx.easy2ctx[easy_id].return_transfer) {
+  if (ctx.easy2ctx.contains(id) && ctx.easy2ctx[id].return_transfer) {
     co_return res.value().body;
   }
   print(res.value().body);
   co_return true;
 }
 
-inline auto f$curl_close(kphp::web::curl::easy easy_id) noexcept -> kphp::coro::task<void> {
-  auto res{co_await kphp::web::simple_transfer_close(easy_id)};
+inline auto f$curl_close(kphp::web::curl::easy id) noexcept -> kphp::coro::task<void> {
+  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_close(id))};
   if (!res.has_value()) [[unlikely]] {
     kphp::web::curl::details::set_errno(res.error().code, res.error().description);
     kphp::web::curl::details::print_error("Could not close curl easy handle", std::move(res.error()));
