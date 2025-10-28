@@ -44,27 +44,27 @@ private:
   std::variant<bool, int64_t, string, array<bool>, array<int64_t>, array<string>> value;
 
 public:
-  static inline auto as_boolean(int64_t value) -> property_value {
+  static inline auto as_boolean(bool value) noexcept -> property_value {
     return property_value{value};
   }
 
-  static inline auto as_long(int64_t value) -> property_value {
+  static inline auto as_long(int64_t value) noexcept -> property_value {
     return property_value{value};
   }
 
-  static inline auto as_string(string value) -> property_value {
+  static inline auto as_string(string value) noexcept -> property_value {
     return property_value{std::move(value)};
   }
 
-  static inline auto as_array_of_boolean(array<bool> value) -> property_value {
+  static inline auto as_array_of_boolean(array<bool> value) noexcept -> property_value {
     return property_value{std::move(value)};
   }
 
-  static inline auto as_array_of_long(array<int64_t> value) -> property_value {
+  static inline auto as_array_of_long(array<int64_t> value) noexcept -> property_value {
     return property_value{std::move(value)};
   }
 
-  static inline auto as_array_of_string(array<string> value) -> property_value {
+  static inline auto as_array_of_string(array<string> value) noexcept -> property_value {
     return property_value{std::move(value)};
   }
 
