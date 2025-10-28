@@ -16,7 +16,6 @@
 #include "common/wrappers/string_view.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
-#include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-common/stdlib/string/string-context.h"
 
 const char* get_mask(const string& what) noexcept {
