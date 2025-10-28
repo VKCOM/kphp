@@ -44,7 +44,7 @@ private:
   std::variant<bool, int64_t, string, array<bool>, array<int64_t>, array<string>> value;
 
 public:
-  static inline auto as_boolean(int64_t value) -> property_value {
+  static inline auto as_boolean(bool value) -> property_value {
     return property_value{value};
   }
 
