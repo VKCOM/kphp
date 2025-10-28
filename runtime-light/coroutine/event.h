@@ -70,6 +70,8 @@ inline auto event::awaiter::cancel_awaiter() noexcept -> void {
   }
   if (m_prev != nullptr) {
     m_prev->m_next = m_next;
+  } else {
+    m_event.m_state = nullptr;
   }
   m_next = nullptr;
   m_prev = nullptr;

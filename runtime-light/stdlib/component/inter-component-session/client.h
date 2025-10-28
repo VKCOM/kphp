@@ -44,7 +44,7 @@ class client final {
     query2notifier_type query2notifier{};
     kphp::stl::queue<query_id_type, kphp::memory::script_allocator> queue;
 
-    inline auto write(shared_transport_type t, query_id_type qid,
+    auto write(shared_transport_type t, query_id_type qid,
                       std::span<const std::byte> payload) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
       // Wait until transport will be available
       if (is_occupied) [[unlikely]] {
@@ -115,7 +115,7 @@ class client final {
           interrupter(reader::wait_until_interrupt(_ctx)),
           runner(reader::run(_ctx, std::move(_t), interrupter)){};
 
-    static inline auto run(shared_ctx_type ctx, shared_transport_type t, interrupter_type interrupter) noexcept -> kphp::coro::shared_task<void> {
+    static auto run(shared_ctx_type ctx, shared_transport_type t, interrupter_type interrupter) noexcept -> kphp::coro::shared_task<void> {
       // Allocate buffer for header
       tl::InterComponentSessionResponseHeader resp_header{};
       std::array<std::byte, resp_header.footprint()> resp_header_buf{};
@@ -144,10 +144,12 @@ class client final {
         kphp::log::debug("read {} bytes for query #{} ", size, qid);
 
         // Ensure that buffer for response can be provided
-        kphp::log::assertion(ctx.get()->query2resp_buffer_provider.contains(qid));
+        auto& buffer_providers{ctx.get()->query2resp_buffer_provider};
+        auto buffer_provider{buffer_providers.find(qid)};
+        kphp::log::assertion(buffer_provider != buffer_providers.end());
 
         // Make an appropriate buffer's slice for a response
-        auto resp{ctx.get()->query2resp_buffer_provider.at(qid)(size)};
+        auto resp{buffer_provider->second(size)};
         ctx.get()->query2resp[qid] = resp;
 
         // Read payload
@@ -173,13 +175,13 @@ class client final {
     }
 
     // Dummy routine for waiting until an interrupting (stopping) event will happen
-    static inline auto wait_until_interrupt(shared_ctx_type ctx) noexcept -> interrupter_type {
+    static auto wait_until_interrupt(shared_ctx_type ctx) noexcept -> interrupter_type {
       co_await ctx.get()->interrupted;
       co_return 0;
     }
 
     // Semantics of this method is considering tha state will be changed. That's why it is not marked as `const`
-    inline auto register_query(query_id_type qid, details::function_wrapper<std::span<std::byte>, size_t>&& buffer_provider) noexcept -> void {
+    auto register_query(query_id_type qid, details::function_wrapper<std::span<std::byte>, size_t>&& buffer_provider) noexcept -> void {
       // We wouldn't read a response twice
       kphp::log::assertion(ctx.get()->query2notifier.contains(qid) == false);
 
@@ -237,12 +239,12 @@ public:
   template<std::invocable<size_t> B, std::invocable<std::span<std::byte>> R>
   requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>> &&
                std::is_convertible_v<std::invoke_result_t<R, std::span<std::byte>>, bool>
-  inline auto query(std::span<const std::byte> request, B&& response_buffer_provider,
+  auto query(std::span<const std::byte> request, B&& response_buffer_provider,
                     R response_handler) noexcept -> kphp::coro::task<std::expected<void, int32_t>>;
 
   template<std::invocable<size_t> B>
   requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
-  inline auto query(std::span<const std::byte> request,
+  auto query(std::span<const std::byte> request,
                     B&& response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>>;
 };
 
@@ -258,15 +260,16 @@ inline auto client::create(std::string_view component_name) noexcept -> std::exp
 template<std::invocable<size_t> B, std::invocable<std::span<std::byte>> R>
 requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>> &&
              std::is_convertible_v<std::invoke_result_t<R, std::span<std::byte>>, bool>
-inline auto client::query(std::span<const std::byte> request, B&& response_buffer_provider,
+auto client::query(std::span<const std::byte> request, B&& response_buffer_provider,
                           R response_handler) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
+  auto* reader_ctx{reader.ctx.get()};
   // If previously any readers' error has been occurred
-  if (reader.ctx.get() == nullptr) [[unlikely]] {
+  if (reader_ctx == nullptr) [[unlikely]] {
     co_return std::unexpected(k2::errno_eshutdown);
   }
 
   kphp::log::assertion(query_count < std::numeric_limits<query_id_type>::max());
-  auto query_id{query_count++};
+  const auto query_id{query_count++};
 
   // Register a new query and send request
   reader.register_query(query_id, details::function_wrapper<std::span<std::byte>, size_t>{std::forward<B>(response_buffer_provider)});
@@ -277,7 +280,7 @@ inline auto client::query(std::span<const std::byte> request, B&& response_buffe
   kphp::log::debug("client wrote request for query #{}", query_id);
 
   auto still_wait{true};
-  auto& response_notifier{reader.ctx.get()->query2notifier[query_id]};
+  auto& response_notifier{reader_ctx->query2notifier[query_id]};
 
   kphp::log::debug("client now is reading responses for query #{}", query_id);
   // Wait a new response until handler returns false
@@ -286,20 +289,25 @@ inline auto client::query(std::span<const std::byte> request, B&& response_buffe
     // First of all, turn off notifier
     response_notifier.unset();
 
+    // If reader has been interrupted do not invoke handler and finish normally
+    if (reader_ctx->interrupted.is_set()) {
+      co_return std::expected<void, int32_t>{};
+    }
+
     // If any readers' error has been occurred
-    if (reader.ctx.get()->error) [[unlikely]] {
-      co_return std::unexpected(reader.ctx.get()->error.value());
+    if (reader_ctx->error) [[unlikely]] {
+      co_return std::unexpected(*(reader_ctx->error));
     }
 
     // Invoke handler and pass response slice
-    still_wait = std::invoke(std::forward<R>(response_handler), reader.ctx.get()->query2resp[query_id]);
+    still_wait = std::invoke(std::forward<R>(response_handler), reader_ctx->query2resp[query_id]);
   }
   co_return std::expected<void, int32_t>{};
 }
 
 template<std::invocable<size_t> B>
 requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
-inline auto client::query(std::span<const std::byte> request,
+auto client::query(std::span<const std::byte> request,
                           B&& response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
   std::span<std::byte> response{};
   auto res{co_await query(request, std::forward<B>(response_buffer_provider), [&response](std::span<std::byte> resp) noexcept -> bool {

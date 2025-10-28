@@ -3,7 +3,6 @@ import pytest
 from python.tests.curl.curl_test_case import CurlTestCase
 
 
-@pytest.mark.k2_skip_suite
 class TestCurlResumableReuseHandle(CurlTestCase):
     test_case_uri="/test_curl_resumable_reuse_handle"
 

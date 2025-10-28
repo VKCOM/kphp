@@ -1,44 +1,45 @@
 <?php
 
-define('CURLINFO_EFFECTIVE_URL', 100000);
-define('CURLINFO_RESPONSE_CODE', 100001);
+define('CURLINFO_EFFECTIVE_URL', 1048577);
+define('CURLINFO_RESPONSE_CODE', 2097154);
 define('CURLINFO_HTTP_CODE', CURLINFO_RESPONSE_CODE);
-define('CURLINFO_FILETIME', 100002);
-define('CURLINFO_TOTAL_TIME', 100003);
-define('CURLINFO_NAMELOOKUP_TIME', 100004);
-define('CURLINFO_CONNECT_TIME', 100005);
-define('CURLINFO_PRETRANSFER_TIME', 100006);
-define('CURLINFO_STARTTRANSFER_TIME', 100007);
-define('CURLINFO_REDIRECT_COUNT', 100008);
-define('CURLINFO_REDIRECT_TIME', 100009);
-define('CURLINFO_SIZE_UPLOAD', 100010);
-define('CURLINFO_SIZE_DOWNLOAD', 100011);
-define('CURLINFO_SPEED_UPLOAD', 100012);
-define('CURLINFO_HEADER_SIZE', 100013);
-define('CURLINFO_REQUEST_SIZE', 100014);
-define('CURLINFO_SSL_VERIFYRESULT', 100015);
-define('CURLINFO_CONTENT_LENGTH_DOWNLOAD', 100016);
-define('CURLINFO_CONTENT_LENGTH_UPLOAD', 100017);
-define('CURLINFO_CONTENT_TYPE', 100018);
-define('CURLINFO_PRIVATE', 100019);
-define('CURLINFO_SPEED_DOWNLOAD', 100020);
-define('CURLINFO_REDIRECT_URL', 100021);
-define('CURLINFO_PRIMARY_IP', 100022);
-define('CURLINFO_PRIMARY_PORT', 100023);
-define('CURLINFO_LOCAL_IP', 100024);
-define('CURLINFO_LOCAL_PORT', 100025);
-define('CURLINFO_HTTP_CONNECTCODE', 100026);
-define('CURLINFO_HTTPAUTH_AVAIL', 100027);
-define('CURLINFO_PROXYAUTH_AVAIL', 100028);
-define('CURLINFO_OS_ERRNO', 100029);
-define('CURLINFO_NUM_CONNECTS', 100030);
-define('CURLINFO_FTP_ENTRY_PATH', 100031);
-define('CURLINFO_APPCONNECT_TIME', 100032);
-define('CURLINFO_CONDITION_UNMET', 100033);
-define('CURLINFO_RTSP_CLIENT_CSEQ', 100034);
-define('CURLINFO_RTSP_CSEQ_RECV', 100035);
-define('CURLINFO_RTSP_SERVER_CSEQ', 100036);
-define('CURLINFO_RTSP_SESSION_ID', 100037);
+define('CURLINFO_FILETIME', 2097166);
+define('CURLINFO_TOTAL_TIME', 3145731);
+define('CURLINFO_NAMELOOKUP_TIME', 3145732);
+define('CURLINFO_CONNECT_TIME', 3145733);
+define('CURLINFO_PRETRANSFER_TIME', 3145734);
+define('CURLINFO_STARTTRANSFER_TIME', 3145745);
+define('CURLINFO_REDIRECT_COUNT', 2097172);
+define('CURLINFO_REDIRECT_TIME', 3145747);
+define('CURLINFO_SIZE_UPLOAD', 3145735);
+define('CURLINFO_SIZE_DOWNLOAD', 3145736);
+// define('CURLINFO_SPEED_UPLOAD', 100012);
+define('CURLINFO_HEADER_SIZE', 2097163);
+define('CURLINFO_REQUEST_SIZE', 2097164);
+// define('CURLINFO_SSL_VERIFYRESULT', 100015);
+define('CURLINFO_CONTENT_LENGTH_DOWNLOAD', 3145743);
+// define('CURLINFO_CONTENT_LENGTH_UPLOAD', 100017);
+define('CURLINFO_CONTENT_TYPE', 1048594);
+define('CURLINFO_PRIVATE', 1048597);
+// define('CURLINFO_SPEED_DOWNLOAD', 100020);
+define('CURLINFO_REDIRECT_URL', 1048607);
+define('CURLINFO_PRIMARY_IP', 1048608);
+define('CURLINFO_PRIMARY_PORT', 2097192);
+define('CURLINFO_LOCAL_IP', 1048617);
+define('CURLINFO_LOCAL_PORT', 2097194);
+define('CURLINFO_HTTP_CONNECTCODE', 2097174);
+// define('CURLINFO_HTTPAUTH_AVAIL', 100027);
+// define('CURLINFO_PROXYAUTH_AVAIL', 100028);
+define('CURLINFO_OS_ERRNO', 2097177);
+// define('CURLINFO_NUM_CONNECTS', 100030);
+// define('CURLINFO_FTP_ENTRY_PATH', 100031);
+define('CURLINFO_APPCONNECT_TIME', 3145761);
+define('CURLINFO_CONDITION_UNMET', 2097187);
+// define('CURLINFO_RTSP_CLIENT_CSEQ', 100034);
+// define('CURLINFO_RTSP_CSEQ_RECV', 100035);
+// define('CURLINFO_RTSP_SERVER_CSEQ', 100036);
+// define('CURLINFO_RTSP_SESSION_ID', 100037);
+define('CURLINFO_HEADER_OUT', 2);
 
 define('CURLOPT_ADDRESS_SCOPE', 171);
 // define('CURLOPT_APPEND', 50);
@@ -203,7 +204,6 @@ define('CURL_NETRC_OPTIONAL', 1);
 define('CURL_NETRC_REQUIRED', 2);
 
 define('CURLOPT_RETURNTRANSFER', 1234567);
-define('CURLINFO_HEADER_OUT', 7654321);
 
 define('CURLMOPT_PIPELINING', 1000);
 define('CURLMOPT_MAXCONNECTS', 1001);
@@ -247,7 +247,7 @@ define('UPLOAD_ERR_EXTENSION', 8);
 // ===== SUPPORTED =====
 /** @kphp-extern-func-info interruptible */
 function curl_init ($url ::: string = "") ::: int;
-/** @kphp-extern-func-info stub generation-required */
+/** @kphp-extern-func-info interruptible */
 function curl_reset ($curl_handle ::: int) ::: void;
 
 function curl_setopt ($curl_handle ::: int, $option ::: int, $value ::: mixed) ::: bool;
@@ -259,15 +259,16 @@ function curl_exec ($curl_handle ::: int) ::: mixed;
 /** @kphp-extern-func-info interruptible */
 function curl_close ($curl_handle ::: int) ::: void;
 
-// ===== UNSUPPORTED =====
-/** @kphp-extern-func-info stub generation-required */
-function curl_getinfo ($curl_handle ::: int, $option ::: int = 0) ::: mixed;
-/** @kphp-extern-func-info stub generation-required */
-function curl_error ($curl_handle ::: int) ::: string;
-/** @kphp-extern-func-info stub generation-required */
-function curl_errno ($curl_handle ::: int) ::: int;
-/** @kphp-extern-func-info stub generation-required */
+/** @kphp-extern-func-info interruptible */
 function curl_exec_concurrently($curl_handle ::: int, $timeout ::: float = 1.0): string|false;
+
+function curl_error ($curl_handle ::: int) ::: string;
+function curl_errno ($curl_handle ::: int) ::: int;
+
+/** @kphp-extern-func-info interruptible */
+function curl_getinfo ($curl_handle ::: int, $option ::: int = 0) ::: mixed;
+
+// ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info stub generation-required */
 function curl_multi_init () ::: int;
