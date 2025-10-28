@@ -107,6 +107,15 @@ function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool): bool;
  */
 function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
 
+function rpc_queue_create ($request_ids ::: array<int> = TODO) ::: int;
+
+function rpc_queue_push ($queue_id ::: int, $request_id ::: int) ::: void;
+
+function rpc_queue_empty ($queue_id ::: int) ::: bool;
+
+/** @kphp-extern-func-info interruptible */
+function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int | false;
+
 // ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info interruptible stub generation-required */
@@ -114,15 +123,6 @@ function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed
 
 /** @kphp-extern-func-info stub */
 function rpc_parse ($data) ::: bool;
-
-/** @kphp-extern-func-info interruptible stub generation-required */
-function rpc_queue_create ($request_ids ::: mixed = TODO) ::: int;
-/** @kphp-extern-func-info interruptible stub generation-required */
-function rpc_queue_empty ($queue_id ::: int) ::: bool;
-/** @kphp-extern-func-info interruptible stub generation-required */
-function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int | false;
-/** @kphp-extern-func-info interruptible stub generation-required */
-function rpc_queue_push ($queue_id ::: int, $request_ids ::: mixed) ::: int;
 
 /** @kphp-extern-func-info interruptible stub generation-required */
 function store_finish() ::: bool;

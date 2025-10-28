@@ -27,6 +27,10 @@ struct RpcClientInstanceState final : private vk::not_copyable {
   unordered_map<int64_t, class_instance<RpcTlQuery>> response_fetcher_instances;
   unordered_map<int64_t, std::pair<kphp::rpc::response_extra_info_status, kphp::rpc::response_extra_info>> rpc_responses_extra_info;
 
+  // An analogue of the response_waiter_forks mapping,
+  // which stores mappings from fork_id to response_id for responses awaited in the rpc queue.
+  unordered_map<int64_t, int64_t> awaiter_forks_to_response;
+
   RpcClientInstanceState() noexcept = default;
 
   static RpcClientInstanceState& get() noexcept;

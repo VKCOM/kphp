@@ -97,7 +97,7 @@ inline bool f$wait_queue_empty(int64_t queue_id) noexcept {
 inline kphp::coro::task<Optional<int64_t>> f$wait_queue_next(int64_t queue_id, double timeout = -1.0) noexcept {
   auto opt_result{co_await kphp::forks::id_managed(
       kphp::forks::wait_queue_next(queue_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})))};
-  co_return opt_result ? *std::move(opt_result) : Optional<int64_t>{};
+  co_return opt_result ? *opt_result : Optional<int64_t>{};
 }
 
 inline int64_t f$wait_queue_create() noexcept {
