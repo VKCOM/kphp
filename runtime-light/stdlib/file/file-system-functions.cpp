@@ -36,42 +36,41 @@ constexpr std::array<std::string_view, 11> mime_type_string = {"",          "ima
                                                                "image/psd", "image/x-ms-bmp", "image/tiff", "image/tiff", "application/octet-stream",
                                                                "image/jp2"};
 
-constexpr int M_SOF0 = 0xC0;
-constexpr int M_SOF1 = 0xC1;
-constexpr int M_SOF2 = 0xC2;
-constexpr int M_SOF3 = 0xC3;
-constexpr int M_SOF5 = 0xC5;
-constexpr int M_SOF6 = 0xC6;
-constexpr int M_SOF7 = 0xC7;
-constexpr int M_SOF9 = 0xC9;
-constexpr int M_SOF10 = 0xCA;
-constexpr int M_SOF11 = 0xCB;
-constexpr int M_SOF13 = 0xCD;
-constexpr int M_SOF14 = 0xCE;
-constexpr int M_SOF15 = 0xCF;
-constexpr int M_EOI = 0xD9;
-constexpr int M_SOS = 0xDA;
-constexpr int M_COM = 0xFE;
+constexpr int32_t M_SOF0 = 0xC0;
+constexpr int32_t M_SOF1 = 0xC1;
+constexpr int32_t M_SOF2 = 0xC2;
+constexpr int32_t M_SOF3 = 0xC3;
+constexpr int32_t M_SOF5 = 0xC5;
+constexpr int32_t M_SOF6 = 0xC6;
+constexpr int32_t M_SOF7 = 0xC7;
+constexpr int32_t M_SOF9 = 0xC9;
+constexpr int32_t M_SOF10 = 0xCA;
+constexpr int32_t M_SOF11 = 0xCB;
+constexpr int32_t M_SOF13 = 0xCD;
+constexpr int32_t M_SOF14 = 0xCE;
+constexpr int32_t M_SOF15 = 0xCF;
+constexpr int32_t M_EOI = 0xD9;
+constexpr int32_t M_SOS = 0xDA;
+constexpr int32_t M_COM = 0xFE;
 
-constexpr int M_PSEUDO = 0xFFD8;
+constexpr int32_t M_PSEUDO = 0xFFD8;
 }; // namespace
 
-inline mixed f$getimagesize(const string& name) noexcept {
+mixed f$getimagesize(const string& name) noexcept {
   // TODO implement k2_fstat, with fd as parameter !!!
   struct stat stat_buf {};
   if (k2_stat(name.c_str(), name.size(), &stat_buf) != k2::errno_ok) {
     return false;
   }
 
-  auto sync_res{
-      from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(name, string{READ_MODE.data(), static_cast<string::size_type>(READ_MODE.size())}), {})};
-  if (sync_res.is_null()) {
+  auto open_res{kphp::fs::file::open(std::string_view{name.c_str(), name.size()}, file_system_impl_::READ_MODE)};
+  if (!open_res) {
     return false;
   }
-  auto* f = sync_res.get();
+  auto file{std::move(*open_res)};
 
   if (!S_ISREG(stat_buf.st_mode)) {
-    kphp::log::warning("Regular file expected as first argument in function getimagesize, \"%s\" is given", name.c_str());
+    kphp::log::warning("regular file expected as first argument in function getimagesize, \"{}\" is given", name.c_str());
     return false;
   }
 
@@ -87,16 +86,16 @@ inline mixed f$getimagesize(const string& name) noexcept {
   if (read_size < 12) {
     return false;
   }
-  std::expected<size_t, int32_t> read_res = read_safe(f, std::as_writable_bytes(buf_span));
+  std::expected<size_t, int32_t> read_res = file_system_impl_::read_safe(file, std::as_writable_bytes(buf_span));
   if (!read_res || *read_res < read_size) {
     return false;
   }
 
-  int width = 0;
-  int height = 0;
-  int bits = 0;
-  int channels = 0;
-  int type = IMAGETYPE_UNKNOWN;
+  int32_t width = 0;
+  int32_t height = 0;
+  int32_t bits = 0;
+  int32_t channels = 0;
+  int32_t type = IMAGETYPE_UNKNOWN;
   switch (buf[0]) {
   case 'G': // gif
     if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_gif.begin(), sizeof(php_sig_gif))) {
@@ -115,25 +114,28 @@ inline mixed f$getimagesize(const string& name) noexcept {
 
       auto* image = static_cast<unsigned char*>(RuntimeAllocator::get().alloc_script_memory(size));
       if (image == nullptr) {
-        kphp::log::warning("Not enough memory to process file \"%s\" in getimagesize", name.c_str());
+        kphp::log::warning("not enough memory to process file \"{}\" in getimagesize", name.c_str());
         return false;
       }
+
+      auto image_deleter = [size](void* ptr) { RuntimeAllocator::get().free_script_memory(ptr, size); };
+      std::unique_ptr<void, decltype(image_deleter)> image_unique_ptr{image, std::move(image_deleter)};
+
       std::memcpy(image, buf.begin(), read_size);
 
       std::span<unsigned char> image_span(image + read_size, size - read_size);
-      read_res = read_safe(f, std::as_writable_bytes(image_span));
+      read_res = file_system_impl_::read_safe(file, std::as_writable_bytes(image_span));
       if (!read_res || *read_res < size - read_size) {
-        RuntimeAllocator::get().free_script_memory(image, size);
         return false;
       }
 
-      int marker = M_PSEUDO;
+      int32_t marker = M_PSEUDO;
       size_t cur_pos = 2;
 
       while (height == 0 && width == 0 && marker != M_SOS && marker != M_EOI) {
-        int a = 0;
-        int comment_correction = 1 + (marker == M_COM);
-        int new_marker = 0;
+        int32_t a = 0;
+        int32_t comment_correction = 1 + (marker == M_COM);
+        int32_t new_marker = 0;
 
         do {
           if (cur_pos == size) {
@@ -173,7 +175,6 @@ inline mixed f$getimagesize(const string& name) noexcept {
         case M_SOF14:
         case M_SOF15:
           if (cur_pos + 8 > size) {
-            RuntimeAllocator::get().free_script_memory(image, size);
             return false;
           }
           bits = image[cur_pos + 2];
@@ -190,7 +191,6 @@ inline mixed f$getimagesize(const string& name) noexcept {
           size_t length = (image[cur_pos] << 8) + image[cur_pos + 1];
 
           if (length < 2 || cur_pos + length > size) {
-            RuntimeAllocator::get().free_script_memory(image, size);
             return false;
           }
           cur_pos += length;
@@ -198,7 +198,6 @@ inline mixed f$getimagesize(const string& name) noexcept {
         }
         }
       }
-      RuntimeAllocator::get().free_script_memory(image, size);
     } else if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_jpc.begin(), sizeof(php_sig_jpc)) && static_cast<int>(read_size) >= 42) {
       type = IMAGETYPE_JPEG;
 
@@ -211,8 +210,8 @@ inline mixed f$getimagesize(const string& name) noexcept {
       }
 
       bits = 0;
-      for (int i = 0; i < channels; i++) {
-        int cur_bits = buf[42 + 3 * i];
+      for (int32_t i = 0; i < channels; i++) {
+        int32_t cur_bits = buf[42 + 3 * i];
         if (cur_bits > bits) {
           bits = cur_bits;
         }
@@ -228,11 +227,11 @@ inline mixed f$getimagesize(const string& name) noexcept {
 
       bool found = false;
 
-      int buf_pos = 12;
+      int32_t buf_pos = 12;
       size_t file_pos = 12;
       while (static_cast<int>(read_size) >= 42 + buf_pos + 8) {
         const unsigned char* s = buf.begin() + buf_pos;
-        int box_length = (s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3];
+        int32_t box_length = (s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3];
         if (box_length == 1 || box_length > 1000000000) {
           break;
         }
@@ -248,8 +247,8 @@ inline mixed f$getimagesize(const string& name) noexcept {
           }
 
           bits = 0;
-          for (int i = 0; i < channels; i++) {
-            int cur_bits = s[42 + 3 * i];
+          for (int32_t i = 0; i < channels; i++) {
+            int32_t cur_bits = s[42 + 3 * i];
             if (cur_bits > bits) {
               bits = cur_bits;
             }
@@ -277,7 +276,7 @@ inline mixed f$getimagesize(const string& name) noexcept {
           break;
         }
         std::span<unsigned char> buf_read_span(buf.begin(), read_size);
-        read_res = f->pread(std::as_writable_bytes(buf_read_span), static_cast<off_t>(file_pos));
+        read_res = file.pread(std::as_writable_bytes(buf_read_span), static_cast<off_t>(file_pos));
         if (!read_res || *read_res < read_size) {
           break;
         }
