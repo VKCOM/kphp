@@ -115,7 +115,7 @@ inline kphp::coro::task<bool> f$fclose(resource stream) noexcept {
 }
 
 inline bool f$unlink(const string& name) noexcept {
-  return k2::unlink(std::string_view{name.c_str(), name.size()}) == k2::errno_ok;
+  return k2::unlink(std::string_view{name.c_str(), name.size()});
 }
 
 inline kphp::coro::task<Optional<int64_t>> f$fwrite(resource stream, string data) noexcept {
