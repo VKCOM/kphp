@@ -29,17 +29,17 @@ namespace file_system_impl_ {
 
 inline constexpr char SEPARATOR = '/';
 
-constexpr std::string_view READ_MODE = std::string_view{"r"};
-constexpr std::string_view WRITE_MODE = std::string_view("w");
-constexpr std::string_view APPEND_MODE = std::string_view("a");
-constexpr std::string_view READ_PLUS_MODE = std::string_view{"r+"};
-constexpr std::string_view WRITE_PLUS_MODE = std::string_view("w+");
-constexpr std::string_view APPEND_PLUS_MODE = std::string_view("a+");
+constexpr std::string_view READ_MODE = "r";
+constexpr std::string_view WRITE_MODE = "w";
+constexpr std::string_view APPEND_MODE = "a";
+constexpr std::string_view READ_PLUS_MODE = "r+";
+constexpr std::string_view WRITE_PLUS_MODE = "w+";
+constexpr std::string_view APPEND_PLUS_MODE = "a+";
 
 inline std::expected<size_t, int32_t> write_safe(kphp::fs::sync_resource& resource, std::span<const std::byte> src) noexcept {
-  size_t full_len = src.size();
+  size_t full_len{src.size()};
   do {
-    std::expected<size_t, int32_t> cur_res = resource.write(src);
+    std::expected<size_t, int32_t> cur_res{resource.write(src)};
     if (!cur_res) {
       return cur_res;
     }
@@ -51,9 +51,9 @@ inline std::expected<size_t, int32_t> write_safe(kphp::fs::sync_resource& resour
 }
 
 inline std::expected<size_t, int32_t> read_safe(kphp::fs::sync_resource& resource, std::span<std::byte> dst) noexcept {
-  size_t full_len = dst.size();
+  size_t full_len{dst.size()};
   do {
-    std::expected<size_t, int32_t> cur_res = resource.read(dst);
+    std::expected<size_t, int32_t> cur_res{resource.read(dst)};
     if (!cur_res) {
       return cur_res;
     }
@@ -64,7 +64,7 @@ inline std::expected<size_t, int32_t> read_safe(kphp::fs::sync_resource& resourc
     dst.subspan(*cur_res);
   } while (!dst.empty());
 
-  return full_len - dst.size();
+  return std::expected<size_t, int32_t>{full_len - dst.size()};
 }
 } // namespace file_system_impl_
 
@@ -239,7 +239,7 @@ inline Optional<string> f$file_get_contents(const string& stream) noexcept {
 }
 
 inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& content_var, int64_t flags = 0) noexcept {
-  string content;
+  string content{};
   if (content_var.is_array()) {
     content = f$implode(string(), content_var.to_array());
   } else {
@@ -247,9 +247,9 @@ inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& 
   }
   std::span<const char> data_span{content.c_str(), content.size()};
 
-  constexpr int64_t FILE_APPEND_FLAG = 1;
+  constexpr int64_t FILE_APPEND_FLAG{1};
   if (flags & ~FILE_APPEND_FLAG) {
-    kphp::log::warning("Flags other, than FILE_APPEND are not supported in file_put_contents");
+    kphp::log::warning("flags other, than FILE_APPEND are not supported in file_put_contents");
     flags &= FILE_APPEND_FLAG;
   }
 
