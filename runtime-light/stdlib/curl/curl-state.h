@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -19,7 +20,7 @@ constexpr auto CURL_ERROR_SIZE = 256;
 
 struct EasyContext {
   bool return_transfer{false};
-  string private_data{};
+  std::optional<string> private_data{false};
 };
 
 } // namespace kphp::web::curl

@@ -1211,6 +1211,21 @@ public:
   }
 };
 
+class SimpleWebTransferResetResultOk final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_RESET_RESULT_OK_MAGIC = 0x36C8'98CC;
+
+public:
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_RESET_RESULT_OK_MAGIC)};
+    return ok;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_RESET_RESULT_OK_MAGIC}.footprint();
+  }
+};
+
 struct WebPropertyValue final {
   using value_type = std::variant<tl::Bool, tl::I64, tl::String, tl::Vector<tl::WebPropertyValue>, tl::Dictionary<tl::WebPropertyValue>>;
   value_type value;

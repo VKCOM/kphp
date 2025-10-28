@@ -134,7 +134,7 @@ inline auto simple_transfer_perform(simple_transfer st) noexcept -> kphp::coro::
     tl_props.emplace_back(std::move(p));
   }
   tl::SimpleWebTransferConfig tl_config{tl::vector<tl::WebProperty>{std::move(tl_props)}};
-  tl::SimpleWebTransferPerform tl_perform{.desc = tl::u64{st}, .config = std::move(tl_config)};
+  tl::SimpleWebTransferPerform tl_perform{.descriptor = tl::u64{st}, .config = std::move(tl_config)};
   tl::storer tls{tl_perform.footprint()};
   tl_perform.store(tls);
 
@@ -198,8 +198,54 @@ inline auto simple_transfer_perform(simple_transfer st) noexcept -> kphp::coro::
   co_return std::expected<response, error>{std::move(resp)};
 }
 
-[[maybe_unused]] inline auto simple_transfer_reset(simple_transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
-  co_return std::unexpected{error{.code = -1, .description = std::nullopt}};
+inline auto simple_transfer_reset(simple_transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
+  auto session{WebInstanceState::get().session_get_or_init()};
+  if (!session.has_value()) {
+    kphp::log::error("failed to start or get session with Web component");
+  }
+
+  if (session.value().get() == nullptr) {
+    kphp::log::error("session with Web components has been closed");
+  }
+
+  tl::SimpleWebTransferReset web_transfer_reset{.descriptor = tl::u64{st}};
+  tl::storer tls{web_transfer_reset.footprint()};
+  web_transfer_reset.store(tls);
+
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
+  auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
+    resp_buf.resize(size);
+    return {resp_buf.data(), size};
+  }};
+
+  auto resp{co_await session.value().get()->client.query(tls.view(), std::move(response_buffer_provider))};
+  if (!resp.has_value()) [[unlikely]] {
+    kphp::log::error("failed to send request of Simple descriptor resetting");
+  }
+
+  tl::Either<tl::SimpleWebTransferResetResultOk, tl::WebError> simple_web_transfer_resp{};
+  tl::fetcher tlf{resp.value()};
+  if (!simple_web_transfer_resp.fetch(tlf)) [[unlikely]] {
+    kphp::log::error("failed to parse response of Simple descriptor resetting");
+  }
+
+  std::expected<void, error> result;
+  std::visit(
+      [&result](const auto& v) noexcept {
+        using value_t = std::remove_cvref_t<decltype(v)>;
+        if constexpr (std::same_as<value_t, tl::WebError>) {
+          result = std::unexpected{details::process_error(static_cast<tl::WebError>(v))};
+        } else {
+          result = std::expected<void, error>{};
+        }
+      },
+      simple_web_transfer_resp.value);
+
+  auto& simple2config{WebInstanceState::get().simple_transfer2config};
+  if (simple2config.contains(st)) [[likely]] {
+    simple2config[st] = simple_transfer_config{};
+  }
+  co_return std::move(result);
 }
 
 inline auto simple_transfer_close(simple_transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
@@ -212,7 +258,7 @@ inline auto simple_transfer_close(simple_transfer st) noexcept -> kphp::coro::ta
     kphp::log::error("session with Web components has been closed");
   }
 
-  tl::SimpleWebTransferClose web_transfer_close{.desc = tl::u64{st}};
+  tl::SimpleWebTransferClose web_transfer_close{.descriptor = tl::u64{st}};
   tl::storer tls{web_transfer_close.footprint()};
   web_transfer_close.store(tls);
 
