@@ -102,8 +102,7 @@ inline array<mixed> f$getdate(int64_t timestamp) noexcept {
   time_t timestamp_t{timestamp};
   tm* tp{k2::localtime_r(std::addressof(timestamp_t), std::addressof(t))};
   if (tp == nullptr) {
-    std::array<char, 256> buff{};
-    kphp::log::warning("Error \"{}\" in getdate with timestamp {}", strerror_r(errno, buff.data(), buff.size()), timestamp);
+    kphp::log::warning("unknown error in getdate with timestamp {}", timestamp);
     std::memset(std::addressof(t), 0, sizeof(tm));
   }
 
