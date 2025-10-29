@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "runtime/vkext.h"
+#include "runtime-common/stdlib/vkext/vkext-functions.h"
 
 using casing_table = std::array<std::string, 6>;
 

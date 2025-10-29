@@ -50,3 +50,5 @@ inline string f$vk_sp_to_cyrillic(const string& s) noexcept {
 inline string f$vk_sp_words_only(const string& s) noexcept {
   return vkext_impl_::sp_words_only(s);
 }
+
+string f$vk_flex(const string& name, const string& case_name, int64_t sex, const string& type, int64_t lang_id = 0) noexcept;

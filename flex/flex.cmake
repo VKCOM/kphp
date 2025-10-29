@@ -24,6 +24,11 @@ add_dependencies(flex-data-src-pic flex-data)
 vk_add_library_no_pic(flex-data-src-no-pic OBJECT ${FLEX_SOURCES})
 add_dependencies(flex-data-src-no-pic flex-data)
 
+if (COMPILE_RUNTIME_LIGHT)
+    target_compile_options(flex-data-src-pic PUBLIC -stdlib=libc++ ${RUNTIME_LIGHT_VISIBILITY})
+    target_link_options(flex-data-src-pic PUBLIC -stdlib=libc++)
+endif()
+
 vk_add_library_pic(flex_data_shared-pic SHARED $<TARGET_OBJECTS:flex-data-src-pic>)
 add_dependencies(flex_data_shared-pic flex-data-src-pic)
 
