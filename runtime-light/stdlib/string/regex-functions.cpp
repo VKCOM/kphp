@@ -26,6 +26,8 @@
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 
+#include <c++/12/algorithm>
+
 namespace {
 
 constexpr size_t ERROR_BUFFER_LENGTH = 256;
@@ -50,12 +52,13 @@ struct RegexInfo final {
   regex_pcre2_group_names_t group_names;
 
   int64_t match_count{};
-  uint32_t match_options{PCRE2_NO_UTF_CHECK};
 
   int64_t replace_count{};
   uint32_t replace_options{PCRE2_SUBSTITUTE_UNKNOWN_UNSET | PCRE2_SUBSTITUTE_UNSET_EMPTY};
   // contains a string after replacements if replace_count > 0, nullopt otherwise
   std::optional<string> opt_replace_result;
+
+  array<mixed> output{};
 
   RegexInfo() = delete;
 
@@ -297,7 +300,7 @@ bool collect_group_names(RegexInfo& regex_info) noexcept {
   return true;
 }
 
-bool match_regex(RegexInfo& regex_info, size_t offset) noexcept {
+bool match_regex(RegexInfo& regex_info, size_t offset, int32_t match_options = PCRE2_NO_UTF_CHECK) noexcept {
   regex_info.match_count = 0;
   const auto& regex_state{RegexInstanceState::get()};
   if (regex_info.regex_code == nullptr || !regex_state.match_context) [[unlikely]] {
@@ -305,7 +308,7 @@ bool match_regex(RegexInfo& regex_info, size_t offset) noexcept {
   }
 
   int32_t match_count{pcre2_match_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), offset,
-                                    regex_info.match_options, regex_state.regex_pcre2_match_data.get(), regex_state.match_context.get())};
+                                    match_options, regex_state.regex_pcre2_match_data.get(), regex_state.match_context.get())};
   // From https://www.pcre.org/current/doc/html/pcre2_match.html
   // The return from pcre2_match() is one more than the highest numbered capturing pair that has been set
   // (for example, 1 if there are no captures), zero if the vector of offsets is too small, or a negative error code for no match and other errors.
@@ -490,8 +493,27 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
   return true;
 }
 
-bool split_regex(RegexInfo& regex_info, bool no_empty, bool offset_capture) {
-  auto last_match_offset{0uz};
+void add_output_val(RegexInfo& regex_info, bool offset_capture, std::size_t start_offset, std::size_t end_offset) {
+  const auto size{end_offset - start_offset};
+  auto val = string{std::next(regex_info.subject.data(), start_offset), static_cast<string::size_type>(size)};
+
+  mixed output_val;
+  if (offset_capture) {
+    output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(start_offset), static_cast<int64_t>(end_offset));
+  } else {
+    output_val = std::move(val);
+  }
+
+  regex_info.output.push_back(output_val);
+}
+
+bool split_regex(RegexInfo& regex_info, int64_t limit_val, bool no_empty, bool delim_capture, bool offset_capture) {
+  auto offset{0uz};
+
+  if (limit_val == 0) {
+    limit_val = kphp::regex::PREG_NOLIMIT;
+  }
+
   const auto& regex_state{RegexInstanceState::get()};
   if (regex_info.regex_code == nullptr || !regex_state.match_context) [[unlikely]] {
     return false;
@@ -500,30 +522,66 @@ bool split_regex(RegexInfo& regex_info, bool no_empty, bool offset_capture) {
   auto* match_data{regex_state.regex_pcre2_match_data.get()};
 
   auto* offsets{pcre2_get_ovector_pointer_8(match_data)};
+  while (limit_val == kphp::regex::PREG_NOLIMIT || limit_val > 1) {
+    if (!match_regex(regex_info, offset)) [[unlikely]] {
+      return false;
+    }
 
-  int32_t match_count{pcre2_match_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), 0,
-                                    regex_info.match_options, match_data, regex_state.match_context.get())};
+    if (regex_info.match_count == 0) {
+      break;
+    }
 
-  while (true) {
-    if (match_count >= 0) {
+    if (regex_info.match_count >= 0) {
       if (match_count == 0) [[unlikely]] {
-        match_count = regex_info.capture_count;
+        kphp::log::warning("matched, but too many substrings");
+        return false;
       }
 
-      kphp::log::assertion(offsets[1] < offsets[0]);
+      auto match_start{offsets[0]};
+      auto match_end{offsets[1]};
 
-      if (auto skip_split{no_empty && offsets[0] == last_match_offset}; !skip_split) {
-        if (offset_capture) {
-          add_offset_pair(return_value_ht, subject, last_match_offset, offsets[0], NULL, 0);
-        } else {
-          /* Add the piece to the return value */
-          // populate_match_value_str(&tmp, subject, last_match_offset, offsets[0]);
-          // zend_hash_next_index_insert_new(return_value_ht, &tmp);
-        }
+      kphp::log::assertion(match_end >= match_start);
 
-        /* One less left to do */
-        if (limit_val != -1)
+      if (auto skip_piece{no_empty && match_start == offset}; !skip_piece) {
+        add_output_val(regex_info, offset_capture, offset, match_start);
+
+        if (limit_val != kphp::regex::PREG_NOLIMIT) {
           limit_val--;
+        }
+      }
+
+      if (delim_capture) {
+        size_t i{};
+        for (i = 1; i < match_count; i++) {
+          auto j{2 * i};
+          auto capture_start{offsets[j]};
+          auto capture_end{offsets[j + 1]};
+          if (auto skip_capture{no_empty && capture_start == capture_end}; !skip_capture) {
+            add_output_val(regex_info, offset_capture, capture_start, capture_end);
+          }
+        }
+      }
+
+      offset = match_end;
+
+      if (match_end == match_start) {
+        if (limit_val != kphp::regex::PREG_NOLIMIT && limit_val <= 1) {
+          break;
+        }
+        match_count = pcre2_match_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), match_end,
+                                    PCRE2_NO_UTF_CHECK | PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED, match_data, regex_state.match_context.get());
+        if (match_count >= 0) {
+          // goto matched;
+        } else if (match_count == PCRE2_ERROR_NOMATCH) {
+          if (match_end < regex_info.subject.size()) {
+            ++match_end;
+            match_end = static_cast<bool>(regex_info.compile_options & PCRE2_UTF) ? skip_utf8_subsequent_bytes(match_end, regex_info.subject) : match_end;
+          } else {
+            break;
+          }
+        } else {
+          // goto error;
+        }
       }
     }
   }
@@ -620,7 +678,7 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
     }
   }};
 
-  if (limit < 0 && limit != kphp::regex::PREG_REPLACE_NOLIMIT) [[unlikely]] {
+  if (limit < 0 && limit != kphp::regex::PREG_NOLIMIT) [[unlikely]] {
     kphp::log::warning("invalid limit {} in preg_replace", limit);
     return {};
   }
@@ -643,7 +701,7 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
   RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
 
   bool success{get_compiled_regex_cache(regex_info)};
-  success &= replace_regex(regex_info, limit == kphp::regex::PREG_REPLACE_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit));
+  success &= replace_regex(regex_info, limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit));
   if (!success) [[unlikely]] {
     return {};
   }
@@ -777,5 +835,6 @@ Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject
   bool success{valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_SPLIT_NO_EMPTY, kphp::regex::PREG_SPLIT_DELIM_CAPTURE,
                                  kphp::regex::PREG_SPLIT_OFFSET_CAPTURE)};
   success &= get_compiled_regex_cache(regex_info);
-  success &= split_regex(regex_info, (flags & kphp::regex::PREG_SPLIT_NO_EMPTY) != 0, (flags & kphp::regex::PREG_SPLIT_OFFSET_CAPTURE) != 0);
+  success &= split_regex(regex_info, limit, (flags & kphp::regex::PREG_SPLIT_NO_EMPTY) != 0, (flags & kphp::regex::PREG_SPLIT_DELIM_CAPTURE) != 0,
+                         (flags & kphp::regex::PREG_SPLIT_OFFSET_CAPTURE) != 0);
 }
