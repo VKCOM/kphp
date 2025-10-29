@@ -52,6 +52,27 @@
   var_dump (mb_strtoupper($str, 'UTF-8'));
   // var_dump(strtolower ("»‘€€¿œ¬¿®"));
 
+  var_dump(strpos("abcdABCDefghEFGHefgh", "efgh", -10));
+  var_dump(strpos("abcdABCDefghEFGHefgh", "efgh", -16));
+  var_dump(strpos("abcdABCDefghEFGh_H", "h", -10));
+  var_dump(strpos("abcdABCDefghEFGh_H", "h", -5));
+  var_dump(strpos("abcdABCDefghEFGh_H", "h", -2));
+  var_dump(strpos("0123456789a123456789b123456789c", "7", -5));
+  var_dump(strpos("0123456789a123456789b123456789c", "7", -25));
+  var_dump(strpos("0123456789a123456789b123456789c", "c", -1));
+  var_dump(strpos("0123456789a123456789b123456789c", "9", -1));
+
+  var_dump(stripos("abcdABCDefghEFGHefgh", "efgh", -10));
+  var_dump(stripos("abcdABCDefghEFGHefgh", "efgh", -16));
+  var_dump(stripos("abcdABCDefghEFGh_H", "h", -10));
+  var_dump(stripos("abcdABCDefghEFGh_H", "h", -5));
+  var_dump(stripos("abcdABCDefghEFGh_H", "h", -2));
+  var_dump(stripos("0123456789a123456789b123456789c", "7", -5));
+  var_dump(stripos("0123456789a123456789b123456789c", "7", -25));
+  var_dump(stripos("0123456789a123456789b123456789c", "c", -1));
+  var_dump(stripos("0123456789a123456789b123456789c", "9", -1));
+
+
   $a = array ("                                             ", "The quick brown fox jumped over the lazy dog.", "A very long woooooooooooord.", "A very long wooooooooooooord.", "A very long woooooooooooord.", "", "A   very  long    wooooooooooooord.", "A   very  long    wooooooooooooord        234234234 e r we we r we rwe f  w     ew r wer we                  wer wer we r wer .");
   foreach ($a as $str) {
     var_dump (nl2br (wordwrap ($str, 1, "\n", true)));
