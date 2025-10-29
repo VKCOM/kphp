@@ -6,6 +6,11 @@
 #include <array>
 #include <cstdio>
 
+#include "flex/flex.h"
+
+#include "runtime-common/core/utils/kphp-assert-core.h"
+#include "runtime-common/stdlib/string/string-context.h"
+
 namespace {
 
 constexpr std::array<int, 256> utf8_to_win_convert_0x400 = {
@@ -457,4 +462,20 @@ string f$vk_whitespace_pack(const string& str, bool html_opt) noexcept {
     ctext = text;
   }
   return buffered.result;
+}
+
+string f$vk_flex(const string& name, const string& case_name, int64_t sex, const string& type, int64_t lang_id) noexcept {
+  constexpr size_t ERROR_MSG_BUG_SIZE{1000};
+  std::array<char, ERROR_MSG_BUG_SIZE> error_msg_buffer{'\0'};
+
+  auto* static_buffer{StringLibContext::get().static_buf.get()};
+  std::string_view res = flex(std::string_view{name.c_str(), name.size()}, std::string_view{case_name.c_str(), case_name.size()}, sex == 1,
+                              std::string_view{type.c_str(), type.size()}, lang_id, static_buffer, error_msg_buffer.data(), ERROR_MSG_BUG_SIZE);
+  if (error_msg_buffer[0] != '\0') {
+    php_warning("%s", error_msg_buffer.data());
+  }
+  if (res.data() == name.c_str()) {
+    return name;
+  }
+  return string{res.data(), static_cast<string::size_type>(res.size())};
 }
