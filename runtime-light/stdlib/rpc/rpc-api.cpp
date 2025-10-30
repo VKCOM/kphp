@@ -298,7 +298,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
   size_t request_size{tl_storer.view().size_bytes()};
 
   {
-    const vk::final_action tl_storer_finalizer{[&tl_storer, &rpc_server_instance_st] noexcept {
+    const vk::final_action finalizer{[&tl_storer, &rpc_server_instance_st] noexcept {
       if (tl_storer.capacity() > rpc_server_instance_st.tl_storer.capacity()) {
         std::swap(tl_storer, rpc_server_instance_st.tl_storer);
       }
