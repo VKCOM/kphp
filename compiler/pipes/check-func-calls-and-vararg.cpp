@@ -281,10 +281,11 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
       if (FunctionPtr f_callback = call_arg.as<op_callback_of_builtin>()->func_id) {
         int call_n_params = func_param->type_hint->try_as<TypeHintCallable>()->arg_types.size() + call_arg.as<op_callback_of_builtin>()->args().size();
         int delta_this = f_callback->has_implicit_this_arg() ? 1 : 0;
+        auto expected_callback_signature = func_param->type_hint->try_as<TypeHintCallable>()->as_human_readable();
         kphp_error(call_n_params >= f_callback->get_min_argn(),
-                   fmt_format("Too few arguments in callback, expected {}, have {}", f_callback->get_min_argn() - delta_this, call_n_params - delta_this));
+                   fmt_format("Too many arguments for callback ({}), expected {}, have {}", expected_callback_signature, call_n_params - delta_this, f_callback->get_min_argn() - delta_this));
         kphp_error(f_callback->get_params().size() >= call_n_params,
-                   fmt_format("Too many arguments in callback, expected {}, have {}", f_callback->get_params().size() - delta_this, call_n_params - delta_this));
+                   fmt_format("Too few arguments for callback ({}), expected {}, have {}", expected_callback_signature, call_n_params - delta_this, f_callback->get_params().size() - delta_this));
 
         for (auto p : f_callback->get_params()) {
           kphp_error(!p.as<op_func_param>()->var()->ref_flag, "You can't pass callbacks with &references to built-in functions");
