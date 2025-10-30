@@ -19,6 +19,9 @@
 
 namespace {
 void check_derived_immutableness(const ClassPtr& klass, const ClassPtr& last_immutable_base) {
+  if (klass->is_interface()) {
+    return;
+  }
   for (const auto& chld : klass->derived_classes) {
     kphp_error(chld->is_immutable,
              fmt_format("Class {} with immutable base {} must be immutable",
@@ -33,7 +36,7 @@ void check_class_immutableness(ClassPtr klass) {
   if (!klass->is_immutable) {
     return;
   }
-  
+
   check_derived_immutableness(klass, klass);
 
   klass->members.for_each([klass](const ClassMemberInstanceField &field) {
