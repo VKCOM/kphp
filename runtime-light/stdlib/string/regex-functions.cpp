@@ -288,7 +288,7 @@ bool collect_group_names(RegexInfo& regex_info) noexcept {
   pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMEENTRYSIZE, std::addressof(name_entry_size));
 
   PCRE2_SPTR8 entry{name_table};
-  for (auto i = 0; i < name_count; ++i) {
+  for (auto i{0}; i < name_count; ++i) {
     const auto group_number{static_cast<uint16_t>((entry[0] << 8) | entry[1])};
     PCRE2_SPTR8 group_name{std::next(entry, 2)};
     regex_info.group_names[group_number] = reinterpret_cast<const char*>(group_name);
@@ -341,7 +341,7 @@ PCRE2_SIZE set_matches(const RegexInfo& regex_info, int64_t flags, std::optional
   const auto unmatched_as_null{static_cast<bool>(flags & kphp::regex::PREG_UNMATCHED_AS_NULL)};
   // calculate last matched group
   int64_t last_matched_group{-1};
-  for (auto i = 0; i < regex_info.match_count; ++i) {
+  for (auto i{0}; i < regex_info.match_count; ++i) {
     if (ovector[static_cast<ptrdiff_t>(2 * i)] != PCRE2_UNSET) {
       last_matched_group = i;
     }
@@ -352,7 +352,7 @@ PCRE2_SIZE set_matches(const RegexInfo& regex_info, int64_t flags, std::optional
 
   // reserve enough space for output
   array<mixed> output{array_size{static_cast<int64_t>(regex_info.group_names.size() + named_groups_count), named_groups_count == 0}};
-  for (auto i = 0; i < regex_info.group_names.size(); ++i) {
+  for (auto i{0}; i < regex_info.group_names.size(); ++i) {
     // skip unmatched groups at the end unless unmatched_as_null is set
     if (last_unmatched_policy == trailing_unmatch::skip && i > last_matched_group && !unmatched_as_null) [[unlikely]] {
       break;
@@ -497,7 +497,7 @@ bool add_output_val(RegexInfo& regex_info, bool no_empty, bool offset_capture, s
     return false;
   }
 
-  auto val = string{std::next(regex_info.subject.data(), start_offset), static_cast<string::size_type>(size)};
+  auto val{string{std::next(regex_info.subject.data(), start_offset), static_cast<string::size_type>(size)}};
 
   mixed output_val;
   if (offset_capture) {
