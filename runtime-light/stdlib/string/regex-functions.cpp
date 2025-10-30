@@ -26,8 +26,6 @@
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 
-#include <c++/12/algorithm>
-
 namespace {
 
 constexpr size_t ERROR_BUFFER_LENGTH = 256;
