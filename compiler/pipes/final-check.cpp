@@ -18,10 +18,24 @@
 #include "compiler/vertex-util.h"
 
 namespace {
+void check_derived_immutableness(const ClassPtr& klass, const ClassPtr& last_immutable_base) {
+  for (const auto& chld : klass->derived_classes) {
+    kphp_error(chld->is_immutable,
+             fmt_format("Class {} with immutable base {} must be immutable",
+                        TermStringFormat::paint(chld->name, TermStringFormat::red),
+                        TermStringFormat::paint(last_immutable_base->name, TermStringFormat::red)));
+    check_derived_immutableness(chld, chld->is_immutable ? chld : last_immutable_base);
+  }
+}
+
+
 void check_class_immutableness(ClassPtr klass) {
   if (!klass->is_immutable) {
     return;
   }
+  
+  check_derived_immutableness(klass, klass);
+
   klass->members.for_each([klass](const ClassMemberInstanceField &field) {
     kphp_assert(field.var->marked_as_const);
     std::unordered_set<ClassPtr> sub_classes;
