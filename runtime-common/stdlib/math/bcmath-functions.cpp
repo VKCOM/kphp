@@ -490,22 +490,20 @@ void f$bcscale(int64_t scale) noexcept {
   }
 }
 
-string f$bcdiv(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+string f$bcdiv(const string& lhs_str, const string& rhs_str, Optional<int64_t> scale) noexcept {
   auto& math_lib_context{MathLibContext::get()};
   const auto& math_lib_constants{MathLibConstants::get()};
-  if (scale == std::numeric_limits<int64_t>::min()) {
-    scale = math_lib_context.bc_scale;
-  }
-  if (scale < 0) {
-    php_warning("Wrong parameter scale = %" PRIi64 " in function bcdiv", scale);
-    scale = 0;
+  int64_t scale_val{!scale.has_value() ? math_lib_context.bc_scale : scale.val()};
+  if (scale_val < 0) {
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcdiv", scale_val);
+    scale_val = 0;
   }
   if (lhs_str.empty()) {
-    return bc_zero(static_cast<int>(scale));
+    return bc_zero(static_cast<int>(scale_val));
   }
   if (rhs_str.empty()) {
     php_warning("Division by empty string in function bcdiv");
-    return bc_zero(static_cast<int>(scale));
+    return bc_zero(static_cast<int>(scale_val));
   }
 
   const auto [lhs, lhs_success] = bcmath_impl_::bc_parse_number(lhs_str);
@@ -520,7 +518,7 @@ string f$bcdiv(const string& lhs_str, const string& rhs_str, int64_t scale) noex
     return math_lib_constants.ZERO;
   }
 
-  return bc_div_positive(lhs, rhs, static_cast<int>(scale), lhs.n_sign * rhs.n_sign);
+  return bc_div_positive(lhs, rhs, static_cast<int>(scale_val), lhs.n_sign * rhs.n_sign);
 }
 
 static string scale_num(const string& num, int64_t scale) noexcept {
@@ -533,19 +531,17 @@ static string scale_num(const string& num, int64_t scale) noexcept {
   return num;
 }
 
-string f$bcmod(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+string f$bcmod(const string& lhs_str, const string& rhs_str, Optional<int64_t> scale) noexcept {
   auto& math_lib_context{MathLibContext::get()};
   const auto& math_lib_constants{MathLibConstants::get()};
-  if (scale == std::numeric_limits<int64_t>::min()) {
-    scale = math_lib_context.bc_scale;
-  }
-  if (scale < 0) {
-    php_warning("Wrong parameter scale = %" PRIi64 " in function bcmod", scale);
-    scale = 0;
+  int64_t scale_val{!scale.has_value() ? math_lib_context.bc_scale : scale.val()};
+  if (scale_val < 0) {
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcmod", scale_val);
+    scale_val = 0;
   }
 
   if (lhs_str.empty()) {
-    return bc_zero(scale);
+    return bc_zero(scale_val);
   }
 
   auto [lhs, lhs_success] = bcmath_impl_::bc_parse_number(lhs_str);
@@ -565,7 +561,7 @@ string f$bcmod(const string& lhs_str, const string& rhs_str, int64_t scale) noex
     return {};
   }
 
-  const int rscale = std::max(lhs.n_scale, rhs.n_scale + static_cast<int>(scale));
+  const int rscale = std::max(lhs.n_scale, rhs.n_scale + static_cast<int>(scale_val));
 
   // result should have the same sign as lhs
   const int result_sign = lhs.n_sign;
@@ -581,7 +577,7 @@ string f$bcmod(const string& lhs_str, const string& rhs_str, int64_t scale) noex
   string sub = bc_sub(lhs, x, rscale);
   x = bcmath_impl_::bc_parse_number(sub).first;
 
-  return bc_div_positive(x, math_lib_constants.BC_NUM_ONE, scale, result_sign);
+  return bc_div_positive(x, math_lib_constants.BC_NUM_ONE, scale_val, result_sign);
 }
 
 static std::pair<std::int64_t, bool> bc_num2int(const bcmath_impl_::BcNum& num) noexcept {
@@ -600,27 +596,25 @@ static std::pair<std::int64_t, bool> bc_num2int(const bcmath_impl_::BcNum& num) 
   return {ingeger, true};
 }
 
-string f$bcpow(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+string f$bcpow(const string& lhs_str, const string& rhs_str, Optional<int64_t> scale) noexcept {
   auto& math_lib_context{MathLibContext::get()};
   const auto& math_lib_constants{MathLibConstants::get()};
-  if (scale == std::numeric_limits<int64_t>::min()) {
-    scale = math_lib_context.bc_scale;
-  }
-  if (scale < 0) {
-    php_warning("Wrong parameter scale = %" PRIi64 " in function bcpow", scale);
-    scale = 0;
+  int64_t scale_val{!scale.has_value() ? math_lib_context.bc_scale : scale.val()};
+  if (scale_val < 0) {
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcpow", scale_val);
+    scale_val = 0;
   }
 
   const auto [lhs, lhs_success] = bcmath_impl_::bc_parse_number(lhs_str.empty() ? math_lib_constants.ZERO : lhs_str);
   if (!lhs_success) {
     php_warning("First parameter \"%s\" in function bcpow is not a number", lhs.str.c_str());
-    return scale_num(math_lib_constants.ZERO, scale);
+    return scale_num(math_lib_constants.ZERO, scale_val);
   }
 
   const auto [rhs, rhs_success] = bcmath_impl_::bc_parse_number(rhs_str.empty() ? math_lib_constants.ZERO : rhs_str);
   if (!rhs_success) {
     php_warning("Second parameter \"%s\" in function bcpow is not a number", rhs.str.c_str());
-    return scale_num(math_lib_constants.ONE, scale);
+    return scale_num(math_lib_constants.ONE, scale_val);
   }
   if (rhs.n_scale != 0) {
     php_warning("bcpow(): non-zero scale \"%s\" in exponent", rhs.str.c_str());
@@ -629,21 +623,21 @@ string f$bcpow(const string& lhs_str, const string& rhs_str, int64_t scale) noex
   auto [exponent, exp_success] = bc_num2int(rhs);
   if (!exp_success) {
     php_warning("Second parameter \"%s\" in function bcpow is larger than 1e18", rhs.str.c_str());
-    return scale_num(math_lib_constants.ZERO, scale);
+    return scale_num(math_lib_constants.ZERO, scale_val);
   }
 
   if (exponent == 0) {
-    return scale_num(math_lib_constants.ONE, scale);
+    return scale_num(math_lib_constants.ONE, scale_val);
   }
 
   bool neg = false;
-  int rscale = scale;
+  int rscale = scale_val;
 
   if (exponent < 0) {
     neg = true;
     exponent = -exponent;
   } else {
-    rscale = std::min(static_cast<int>(lhs.n_scale * exponent), std::max(static_cast<int>(scale), lhs.n_scale));
+    rscale = std::min(static_cast<int>(lhs.n_scale * exponent), std::max(static_cast<int>(scale_val), lhs.n_scale));
   }
 
   // set initial value of temp
@@ -681,7 +675,7 @@ string f$bcpow(const string& lhs_str, const string& rhs_str, int64_t scale) noex
   return f$bcadd(result, math_lib_constants.ZERO, scale);
 }
 
-string f$bcadd(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+string f$bcadd(const string& lhs_str, const string& rhs_str, Optional<int64_t> scale) noexcept {
   const auto& math_lib_constants{MathLibConstants::get()};
   if (lhs_str.empty()) {
     return f$bcadd(math_lib_constants.ZERO, rhs_str, scale);
@@ -690,30 +684,29 @@ string f$bcadd(const string& lhs_str, const string& rhs_str, int64_t scale) noex
     return f$bcadd(lhs_str, math_lib_constants.ZERO, scale);
   }
 
-  if (scale == std::numeric_limits<int64_t>::min()) {
-    scale = MathLibContext::get().bc_scale;
-  }
-  if (scale < 0) {
-    php_warning("Wrong parameter scale = %" PRIi64 " in function bcadd", scale);
-    scale = 0;
+  int64_t scale_val{!scale.has_value() ? MathLibContext::get().bc_scale : scale.val()};
+
+  if (scale_val < 0) {
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcadd", scale_val);
+    scale_val = 0;
   }
 
   const auto [lhs, lhs_success] = bcmath_impl_::bc_parse_number(lhs_str);
   if (!lhs_success) {
     php_warning("First parameter \"%s\" in function bcadd is not a number", lhs.str.c_str());
-    return bc_zero(static_cast<int>(scale));
+    return bc_zero(static_cast<int>(scale_val));
   }
 
   const auto [rhs, rhs_success] = bcmath_impl_::bc_parse_number(rhs_str);
   if (!rhs_success) {
     php_warning("Second parameter \"%s\" in function bcadd is not a number", rhs.str.c_str());
-    return bc_zero(static_cast<int>(scale));
+    return bc_zero(static_cast<int>(scale_val));
   }
 
-  return bc_add(lhs, rhs, static_cast<int>(scale));
+  return bc_add(lhs, rhs, static_cast<int>(scale_val));
 }
 
-string f$bcsub(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+string f$bcsub(const string& lhs_str, const string& rhs_str, Optional<int64_t> scale) noexcept {
   const auto& math_lib_constants{MathLibConstants::get()};
   if (lhs_str.empty()) {
     return f$bcsub(math_lib_constants.ZERO, rhs_str, scale);
@@ -721,33 +714,30 @@ string f$bcsub(const string& lhs_str, const string& rhs_str, int64_t scale) noex
   if (rhs_str.empty()) {
     return f$bcsub(lhs_str, math_lib_constants.ZERO, scale);
   }
-
-  if (scale == std::numeric_limits<int64_t>::min()) {
-    scale = MathLibContext::get().bc_scale;
-  }
-  if (scale < 0) {
-    php_warning("Wrong parameter scale = %" PRIi64 " in function bcsub", scale);
-    scale = 0;
+  int64_t scale_val{!scale.has_value() ? MathLibContext::get().bc_scale : scale.val()};
+  if (scale_val < 0) {
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcsub", scale_val);
+    scale_val = 0;
   }
 
   const auto [lhs, lhs_success] = bcmath_impl_::bc_parse_number(lhs_str);
   if (!lhs_success) {
     php_warning("First parameter \"%s\" in function bcsub is not a number", lhs.str.c_str());
-    return bc_zero(static_cast<int>(scale));
+    return bc_zero(static_cast<int>(scale_val));
   }
 
   auto [rhs, rhs_success] = bcmath_impl_::bc_parse_number(rhs_str);
   if (!rhs_success) {
     php_warning("Second parameter \"%s\" in function bcsub is not a number", rhs.str.c_str());
-    return bc_zero(static_cast<int>(scale));
+    return bc_zero(static_cast<int>(scale_val));
   }
 
   rhs.n_sign *= -1;
 
-  return bc_add(lhs, rhs, static_cast<int>(scale));
+  return bc_add(lhs, rhs, static_cast<int>(scale_val));
 }
 
-string f$bcmul(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+string f$bcmul(const string& lhs_str, const string& rhs_str, Optional<int64_t> scale) noexcept {
   const auto& math_lib_constants{MathLibConstants::get()};
   if (lhs_str.empty()) {
     return f$bcmul(math_lib_constants.ZERO, rhs_str, scale);
@@ -755,13 +745,10 @@ string f$bcmul(const string& lhs_str, const string& rhs_str, int64_t scale) noex
   if (rhs_str.empty()) {
     return f$bcmul(lhs_str, math_lib_constants.ZERO, scale);
   }
-
-  if (scale == std::numeric_limits<int64_t>::min()) {
-    scale = MathLibContext::get().bc_scale;
-  }
-  if (scale < 0) {
-    php_warning("Wrong parameter scale = %" PRIi64 " in function bcmul", scale);
-    scale = 0;
+  int64_t scale_val{!scale.has_value() ? MathLibContext::get().bc_scale : scale.val()};
+  if (scale_val < 0) {
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcmul", scale_val);
+    scale_val = 0;
   }
 
   const auto [lhs, lhs_success] = bcmath_impl_::bc_parse_number(lhs_str);
@@ -776,10 +763,10 @@ string f$bcmul(const string& lhs_str, const string& rhs_str, int64_t scale) noex
     return math_lib_constants.ZERO;
   }
 
-  return bc_mul_positive(lhs, rhs, static_cast<int>(scale), lhs.n_sign * rhs.n_sign);
+  return bc_mul_positive(lhs, rhs, static_cast<int>(scale_val), lhs.n_sign * rhs.n_sign);
 }
 
-int64_t f$bccomp(const string& lhs_str, const string& rhs_str, int64_t scale) noexcept {
+int64_t f$bccomp(const string& lhs_str, const string& rhs_str, Optional<int64_t> scale) noexcept {
   const auto& math_lib_constants{MathLibConstants::get()};
   if (lhs_str.empty()) {
     return f$bccomp(math_lib_constants.ZERO, rhs_str, scale);
@@ -788,12 +775,10 @@ int64_t f$bccomp(const string& lhs_str, const string& rhs_str, int64_t scale) no
     return f$bccomp(lhs_str, math_lib_constants.ZERO, scale);
   }
 
-  if (scale == std::numeric_limits<int64_t>::min()) {
-    scale = MathLibContext::get().bc_scale;
-  }
-  if (scale < 0) {
-    php_warning("Wrong parameter scale = %" PRIi64 " in function bccomp", scale);
-    scale = 0;
+  int64_t scale_val{!scale.has_value() ? MathLibContext::get().bc_scale : scale.val()};
+  if (scale_val < 0) {
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bccomp", scale_val);
+    scale_val = 0;
   }
 
   const auto [lhs, lhs_success] = bcmath_impl_::bc_parse_number(lhs_str);
@@ -812,7 +797,7 @@ int64_t f$bccomp(const string& lhs_str, const string& rhs_str, int64_t scale) no
     return (lhs.n_sign - rhs.n_sign) / 2;
   }
 
-  return (1 - 2 * (lhs.n_sign < 0)) * bc_comp(lhs, rhs, static_cast<int>(scale));
+  return (1 - 2 * (lhs.n_sign < 0)) * bc_comp(lhs, rhs, static_cast<int>(scale_val));
 }
 
 // In some places we need to check if the number NUM is almost zero.
@@ -907,30 +892,28 @@ static std::pair<string, bool> bc_sqrt(const bcmath_impl_::BcNum& num, int scale
   return {bc_div_positive(guess, math_lib_constants.BC_NUM_ONE, rscale, 1), true};
 }
 
-string f$bcsqrt(const string& num_str, int64_t scale) noexcept {
-  if (scale == std::numeric_limits<int64_t>::min()) {
-    scale = MathLibContext::get().bc_scale;
-  }
-  if (scale < 0) {
-    php_warning("Wrong parameter scale = %" PRIi64 " in function bcsqrt", scale);
-    scale = 0;
+string f$bcsqrt(const string& num_str, Optional<int64_t> scale) noexcept {
+  int64_t scale_val{!scale.has_value() ? MathLibContext::get().bc_scale : scale.val()};
+  if (scale_val < 0) {
+    php_warning("Wrong parameter scale = %" PRIi64 " in function bcsqrt", scale_val);
+    scale_val = 0;
   }
   if (num_str.empty()) {
-    return bc_zero(static_cast<int>(scale));
+    return bc_zero(static_cast<int>(scale_val));
   }
 
   const auto [num, parse_success] = bcmath_impl_::bc_parse_number(num_str);
   if (!parse_success) {
     php_warning("First parameter \"%s\" in function bcsqrt is not a number", num.str.c_str());
-    return bc_zero(static_cast<int>(scale));
+    return bc_zero(static_cast<int>(scale_val));
   }
 
-  auto [sqrt, sqrt_success] = bc_sqrt(num, scale);
+  auto [sqrt, sqrt_success] = bc_sqrt(num, scale_val);
   if (!sqrt_success) {
     php_warning("bcsqrt(): Square root of negative number");
     return {};
   }
 
   const bcmath_impl_::BcNum& sqrt_bc_num = bcmath_impl_::bc_parse_number(sqrt).first;
-  return bc_div_positive(sqrt_bc_num, MathLibConstants::get().BC_NUM_ONE, scale, 1);
+  return bc_div_positive(sqrt_bc_num, MathLibConstants::get().BC_NUM_ONE, scale_val, 1);
 }
