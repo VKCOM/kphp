@@ -136,7 +136,7 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view dat
   int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
   auto* tzinfo{kphp::timelib::get_timezone_info(timezone.data(), timelib_builtin_db(), std::addressof(errc))};
   if (tzinfo == nullptr) [[unlikely]] {
-    kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", timezone, timelib_get_error_message(errc));
+    kphp::log::warning("can't get timezone info: timezone -> {}, datetime -> {}, error -> {}", timezone, datetime, timelib_get_error_message(errc));
     return {};
   }
 
