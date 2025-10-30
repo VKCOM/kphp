@@ -279,9 +279,10 @@ VertexPtr CheckFuncCallsAndVarargPass::on_func_call(VertexAdaptor<op_func_call> 
 
     if (f->is_extern() && func_param->type_hint && call_arg->type() == op_callback_of_builtin) {
       if (FunctionPtr f_callback = call_arg.as<op_callback_of_builtin>()->func_id) {
-        int call_n_params = func_param->type_hint->try_as<TypeHintCallable>()->arg_types.size() + call_arg.as<op_callback_of_builtin>()->args().size();
+        const auto *typed_callable = func_param->type_hint->try_as<TypeHintCallable>();
+        int call_n_params = typed_callable->arg_types.size() + call_arg.as<op_callback_of_builtin>()->args().size();
         int delta_this = f_callback->has_implicit_this_arg() ? 1 : 0;
-        auto expected_callback_signature = func_param->type_hint->try_as<TypeHintCallable>()->as_human_readable();
+        auto expected_callback_signature = typed_callable->as_human_readable();
         kphp_error(call_n_params >= f_callback->get_min_argn(),
                    fmt_format("Too many arguments for callback ({}), expected {}, have {}", expected_callback_signature, call_n_params - delta_this, f_callback->get_min_argn() - delta_this));
         kphp_error(f_callback->get_params().size() >= call_n_params,
