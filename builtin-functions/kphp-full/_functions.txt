@@ -784,14 +784,14 @@ define('PHP_ROUND_HALF_EVEN', 123423145);
 define('PHP_ROUND_HALF_ODD', 123423146);
 
 function bcscale ($scale ::: int) ::: void;
-function bcdiv ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-function bcmod ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-function bcpow ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-function bcadd ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: int;
-function bcsqrt($num ::: string, $scale ::: int = PHP_INT_MIN): string;
+function bcdiv ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: string;
+function bcmod ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: string;
+function bcpow ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: string;
+function bcadd ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: string;
+function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: string;
+function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: string;
+function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: int;
+function bcsqrt($num ::: string, $scale ::: ?int = null): string;
 
 function mysqli_errno(\mysqli $dn) ::: int;
 function mysqli_error(\mysqli $dn) ::: string;
