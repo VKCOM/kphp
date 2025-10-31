@@ -1,5 +1,5 @@
 @kphp_should_fail k2_skip
-Too few arguments for callback \(callable\(int\): void\), expected 1, have 0
+/Too few arguments for callback \(callable\(int\): void\), expected 1, have 0/
 <?php
 
 function test() {
