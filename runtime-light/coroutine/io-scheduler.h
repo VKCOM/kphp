@@ -16,6 +16,7 @@
 #include <memory>
 #include <optional>
 #include <ranges>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -463,13 +464,24 @@ auto io_scheduler::schedule(coroutine_type coroutine, std::chrono::duration<rep_
   using expected_return_type = typename kphp::coro::coroutine_traits<coroutine_type>::return_type;
 
   if (timeout <= std::chrono::duration<rep_type, period_type>{0}) [[unlikely]] {
-    co_return std::expected<expected_return_type, timeout_status>{co_await schedule(std::move(coroutine))};
+    if constexpr (std::is_void_v<expected_return_type>) {
+      co_await schedule(std::move(coroutine));
+      co_return std::expected<expected_return_type, timeout_status>{};
+    } else {
+      co_return std::expected<expected_return_type, timeout_status>{co_await schedule(std::move(coroutine))};
+    }
   }
+
   auto result{co_await kphp::coro::when_any(std::move(coroutine), make_timeout_task(timeout))};
   if (std::holds_alternative<timeout_status>(result)) [[unlikely]] {
     co_return std::unexpected{std::move(std::get<1>(result))};
   }
-  co_return std::expected<expected_return_type, timeout_status>{std::move(std::get<0>(result))};
+
+  if constexpr (std::is_void_v<expected_return_type>) {
+    co_return std::expected<expected_return_type, timeout_status>{};
+  } else {
+    co_return std::expected<expected_return_type, timeout_status>{std::move(std::get<0>(result))};
+  }
 }
 
 template<typename rep_type, typename period_type>
