@@ -7,10 +7,10 @@
 #include <cstddef>
 #include <variant>
 
-namespace kphp::type_traits {
+namespace kphp::type_functions {
 
 template<typename variant_type, typename T, size_t index = 0>
-constexpr size_t variant_index() noexcept {
+consteval size_t variant_index() noexcept {
   static_assert(index < std::variant_size_v<variant_type>, "Type not found in variant");
   if constexpr (index == std::variant_size_v<variant_type>) {
     // To prevent the error of substituting an index that is too large in variant_alternative_t
@@ -22,4 +22,4 @@ constexpr size_t variant_index() noexcept {
   }
 }
 
-} // namespace kphp::type_traits
+} // namespace kphp::type_functions

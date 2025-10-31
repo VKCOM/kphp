@@ -471,6 +471,7 @@ auto io_scheduler::schedule(coroutine_type coroutine, std::chrono::duration<rep_
       co_return std::expected<expected_return_type, timeout_status>{co_await schedule(std::move(coroutine))};
     }
   }
+
   auto result{co_await kphp::coro::when_any(std::move(coroutine), make_timeout_task(timeout))};
   if (std::holds_alternative<timeout_status>(result)) [[unlikely]] {
     co_return std::unexpected{std::move(std::get<1>(result))};
