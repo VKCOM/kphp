@@ -8,6 +8,7 @@ prepend(
   diagnostics/backtrace.cpp
   diagnostics/contextual-logger.cpp
   diagnostics/error-handling-state.cpp
+  diagnostics/php-assert.cpp
   file/resource.cpp
   fork/fork-state.cpp
   fork/wait-queue-state.cpp

@@ -11,10 +11,10 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/stdlib/string/regex-include.h"
-#include "runtime-light/utils/concepts.h"
+#include "runtime-light/type-traits/concepts.h"
 
 struct RegexInstanceState final : private vk::not_copyable {
-  template<hashable Key, typename Value>
+  template<kphp::type_traits::hashable Key, typename Value>
   using unordered_map = kphp::stl::unordered_map<Key, Value, kphp::memory::script_allocator>;
 
   static constexpr size_t MAX_SUBPATTERNS_COUNT = 512;

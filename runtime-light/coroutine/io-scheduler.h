@@ -16,6 +16,7 @@
 #include <memory>
 #include <optional>
 #include <ranges>
+#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -63,11 +64,11 @@ class io_scheduler {
   auto process_accept(k2::descriptor descriptor) noexcept -> void;
 
   auto update_timer() noexcept -> void;
-  [[nodiscard]] auto add_timer_token(k2::TimePoint time_point,
-                                     kphp::coro::detail::poll_info& poll_info) noexcept -> kphp::coro::detail::poll_info::timed_events::iterator;
+  [[nodiscard]] auto add_timer_token(k2::TimePoint time_point, kphp::coro::detail::poll_info& poll_info) noexcept
+      -> kphp::coro::detail::poll_info::timed_events::iterator;
   template<typename rep_type, typename period_type>
-  [[nodiscard]] auto add_timer_token(std::chrono::duration<rep_type, period_type> timeout,
-                                     kphp::coro::detail::poll_info& poll_info) noexcept -> kphp::coro::detail::poll_info::timed_events::iterator;
+  [[nodiscard]] auto add_timer_token(std::chrono::duration<rep_type, period_type> timeout, kphp::coro::detail::poll_info& poll_info) noexcept
+      -> kphp::coro::detail::poll_info::timed_events::iterator;
   auto remove_timer_token(kphp::coro::detail::poll_info::timed_events::iterator pos) noexcept -> void;
 
 public:
@@ -161,8 +162,8 @@ public:
    * @param timeout Maximum duration to wait for the event (0 means no timeout).
    * @return A task that yields the poll status when completed.
    */
-  [[nodiscard]] auto poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op,
-                          std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept -> kphp::coro::task<poll_status>;
+  [[nodiscard]] auto poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op, std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept
+      -> kphp::coro::task<poll_status>;
 
   /**
    * @brief Accepts an incoming connection with optional timeout.
@@ -329,8 +330,8 @@ inline auto io_scheduler::update_timer() noexcept -> void {
   }
 }
 
-inline auto io_scheduler::add_timer_token(k2::TimePoint time_point,
-                                          kphp::coro::detail::poll_info& poll_info) noexcept -> kphp::coro::detail::poll_info::timed_events::iterator {
+inline auto io_scheduler::add_timer_token(k2::TimePoint time_point, kphp::coro::detail::poll_info& poll_info) noexcept
+    -> kphp::coro::detail::poll_info::timed_events::iterator {
   const auto pos{m_timed_events.emplace(time_point, poll_info)};
   if (pos == m_timed_events.begin()) {
     update_timer();
@@ -339,8 +340,8 @@ inline auto io_scheduler::add_timer_token(k2::TimePoint time_point,
 }
 
 template<typename rep_type, typename period_type>
-auto io_scheduler::add_timer_token(std::chrono::duration<rep_type, period_type> timeout,
-                                   kphp::coro::detail::poll_info& poll_info) noexcept -> kphp::coro::detail::poll_info::timed_events::iterator {
+auto io_scheduler::add_timer_token(std::chrono::duration<rep_type, period_type> timeout, kphp::coro::detail::poll_info& poll_info) noexcept
+    -> kphp::coro::detail::poll_info::timed_events::iterator {
   k2::TimePoint time_point{};
   k2::instant(std::addressof(time_point));
   time_point.time_point_ns += std::chrono::duration_cast<std::chrono::nanoseconds>(timeout).count();
@@ -463,13 +464,23 @@ auto io_scheduler::schedule(coroutine_type coroutine, std::chrono::duration<rep_
   using expected_return_type = typename kphp::coro::coroutine_traits<coroutine_type>::return_type;
 
   if (timeout <= std::chrono::duration<rep_type, period_type>{0}) [[unlikely]] {
-    co_return std::expected<expected_return_type, timeout_status>{co_await schedule(std::move(coroutine))};
+    if constexpr (std::is_void_v<expected_return_type>) {
+      co_await schedule(std::move(coroutine));
+      co_return std::expected<expected_return_type, timeout_status>{};
+    } else {
+      co_return std::expected<expected_return_type, timeout_status>{co_await schedule(std::move(coroutine))};
+    }
   }
   auto result{co_await kphp::coro::when_any(std::move(coroutine), make_timeout_task(timeout))};
   if (std::holds_alternative<timeout_status>(result)) [[unlikely]] {
     co_return std::unexpected{std::move(std::get<1>(result))};
   }
-  co_return std::expected<expected_return_type, timeout_status>{std::move(std::get<0>(result))};
+
+  if constexpr (std::is_void_v<expected_return_type>) {
+    co_return std::expected<expected_return_type, timeout_status>{};
+  } else {
+    co_return std::expected<expected_return_type, timeout_status>{std::move(std::get<0>(result))};
+  }
 }
 
 template<typename rep_type, typename period_type>
@@ -494,8 +505,8 @@ auto io_scheduler::yield_for(std::chrono::duration<rep_type, period_type> amount
   co_await schedule_after(amount);
 }
 
-inline auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op,
-                               std::chrono::nanoseconds timeout) noexcept -> kphp::coro::task<poll_status> {
+inline auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op, std::chrono::nanoseconds timeout) noexcept
+    -> kphp::coro::task<poll_status> {
   k2::StreamStatus stream_status{};
   k2::stream_status(descriptor, std::addressof(stream_status));
   if (stream_status.libc_errno != k2::errno_ok) [[unlikely]] {
