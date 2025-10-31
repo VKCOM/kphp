@@ -4,7 +4,6 @@ from multiprocessing.dummy import Pool as ThreadPool
 from python.lib.testcase import WebServerAutoTestCase
 
 
-@pytest.mark.k2_skip_suite
 class TestMessagesReferences(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):

@@ -4,7 +4,6 @@ import pytest
 from python.lib.testcase import WebServerAutoTestCase
 
 
-@pytest.mark.k2_skip_suite
 class TestJobErrors(WebServerAutoTestCase):
     JOB_MEMORY_LIMIT_ERROR = -101
     JOB_TIMEOUT_ERROR = -102

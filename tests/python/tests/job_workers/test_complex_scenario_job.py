@@ -7,7 +7,6 @@ from python.lib.kphp_server import KphpServer
 from python.lib.testcase import WebServerAutoTestCase
 
 
-@pytest.mark.k2_skip_suite
 class TestComplexScenarioJob(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):

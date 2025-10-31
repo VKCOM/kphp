@@ -2,7 +2,6 @@ import pytest
 from python.lib.testcase import WebServerAutoTestCase
 
 
-@pytest.mark.k2_skip_suite
 class TestJobSharedImmutableMessage(WebServerAutoTestCase):
     JOB_PHP_ASSERT_ERROR = -105
 

@@ -5,7 +5,6 @@ from python.lib.kphp_server import KphpServer
 from python.lib.testcase import WebServerAutoTestCase
 
 
-@pytest.mark.k2_skip_suite
 class TestJobInsideJob(WebServerAutoTestCase):
     WORKERS_NUM = 12
     JOB_WORKERS_RATIO = 0.5
