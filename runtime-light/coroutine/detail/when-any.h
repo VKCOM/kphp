@@ -123,7 +123,8 @@ class when_any_ready_awaitable<std::tuple<task_types...>> {
         if (auto task_result{std::forward<decltype(task)>(task).result()}; !result.has_value() && task_result.has_value()) {
           using result_variant_type = std::remove_cvref<decltype(result)>::type::value_type;
           using task_result_type = decltype(task_result)::value_type;
-          result = result_variant_type{std::in_place_index<kphp::type_functions::variant_index<result_variant_type, task_result_type>()>, *std::move(task_result)};
+          result =
+              result_variant_type{std::in_place_index<kphp::type_functions::variant_index<result_variant_type, task_result_type>()>, *std::move(task_result)};
         }
       }};
       std::apply([&task_result_processor](auto&&... tasks) noexcept { (std::invoke(task_result_processor, std::forward<decltype(tasks)>(tasks)), ...); },
