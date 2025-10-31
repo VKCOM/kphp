@@ -19,9 +19,7 @@
 
 #include "common/containers/final_action.h"
 #include "common/rpc-error-codes.h"
-#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
@@ -207,7 +205,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
     co_return TlRpcError::make_error(TL_ERROR_INTERNAL, string{"can't get untyped result from typed TL query. Use consistent API for that"});
   }
 
-  auto opt_response{co_await kphp::forks::wait<kphp::stl::vector<std::byte, kphp::memory::script_allocator>>(response_waiter_fork_id, MAX_TIMEOUT_NS)};
+  auto opt_response{co_await kphp::forks::wait<string>(response_waiter_fork_id, MAX_TIMEOUT_NS)};
   if (!opt_response) [[unlikely]] {
     co_return TlRpcError::make_error(TL_ERROR_INTERNAL, string{"can't find waiter fork"});
   }
@@ -217,7 +215,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   }
 
   f$rpc_clean();
-  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{response};
+  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{{reinterpret_cast<const std::byte*>(response.c_str()), response.size()}};
   auto res{fetch_function_untyped(rpc_query)}; // THROWING
   // handle exceptions that could arise during fetch_function_untyped
   if (auto err{TlRpcError::transform_exception_into_error_if_possible()}; !err.empty()) [[unlikely]] {
@@ -260,7 +258,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
     co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"can't get typed result from untyped TL query. Use consistent API for that"});
   }
 
-  auto opt_response{co_await kphp::forks::wait<kphp::stl::vector<std::byte, kphp::memory::script_allocator>>(response_waiter_fork_id, MAX_TIMEOUT_NS)};
+  auto opt_response{co_await kphp::forks::wait<string>(response_waiter_fork_id, MAX_TIMEOUT_NS)};
   if (!opt_response) [[unlikely]] {
     co_return error_factory.make_error(TL_ERROR_INTERNAL, string{"can't find waiter fork"});
   }
@@ -270,7 +268,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   }
 
   f$rpc_clean();
-  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{response};
+  RpcServerInstanceState::get().tl_fetcher = tl::fetcher{{reinterpret_cast<const std::byte*>(response.c_str()), response.size()}};
   auto res{fetch_function_typed(rpc_query, error_factory)}; // THROWING
   // handle exceptions that could arise during fetch_function_typed
   if (auto err{error_factory.transform_exception_into_error_if_possible()}; !err.is_null()) [[unlikely]] {
@@ -331,11 +329,11 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
   // create fork to wait for RPC response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
   auto awaiter_task{[](int64_t query_id, kphp::component::stream stream, std::chrono::nanoseconds timeout,
-                       bool collect_responses_extra_info) noexcept -> kphp::coro::task<kphp::stl::vector<std::byte, kphp::memory::script_allocator>> {
-    kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
+                       bool collect_responses_extra_info) noexcept -> kphp::coro::task<string> {
+    string response{};
     auto fetch_task{kphp::component::fetch_response(stream, kphp::component::read_ext::append(response))};
     if (auto expected{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task), timeout)}; !expected) [[unlikely]] {
-      response.clear();
+      response = {};
     }
 
     // update response extra info if needed
