@@ -45,7 +45,9 @@ public:
   }
 
   ~stream() {
-    reset(k2::INVALID_PLATFORM_DESCRIPTOR);
+    if (m_descriptor != k2::INVALID_PLATFORM_DESCRIPTOR) {
+      reset(k2::INVALID_PLATFORM_DESCRIPTOR);
+    }
   }
 
   stream(const stream&) = delete;

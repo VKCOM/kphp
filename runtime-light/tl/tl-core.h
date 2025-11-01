@@ -62,6 +62,10 @@ public:
     m_buffer.reserve(capacity);
   }
 
+  size_t capacity() const noexcept {
+    return m_buffer.capacity();
+  }
+
   void store_bytes(std::span<const std::byte> bytes) noexcept {
     m_buffer.append_range(bytes);
   }

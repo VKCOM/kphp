@@ -21,10 +21,10 @@ namespace kphp::coro {
 
 namespace shared_task_impl {
 
-struct shared_task_waiter final {
+struct shared_task_awaiter final {
   std::coroutine_handle<> m_continuation;
-  shared_task_waiter* m_next{};
-  shared_task_waiter* m_prev{};
+  shared_task_awaiter* m_next{};
+  shared_task_awaiter* m_prev{};
 };
 
 template<typename promise_type>
@@ -42,21 +42,21 @@ struct promise_base : kphp::coro::async_stack_element {
       auto await_suspend(std::coroutine_handle<promise_type> coro) const noexcept -> std::coroutine_handle<> {
         promise_base& promise{coro.promise()};
         // mark promise as ready
-        auto* waiter{static_cast<shared_task_impl::shared_task_waiter*>(std::exchange(promise.m_waiters, std::addressof(promise)))};
-        if (waiter == STARTED_NO_WAITERS_VAL) { // no waiters, so just finish this coroutine
+        auto* awaiter{static_cast<shared_task_impl::shared_task_awaiter*>(std::exchange(promise.m_awaiters, std::addressof(promise)))};
+        if (awaiter == STARTED_NO_WAITERS_VAL) { // no awaiters, so just finish this coroutine
           return std::noop_coroutine();
         }
 
-        while (waiter->m_next != nullptr) {
+        while (awaiter->m_next != nullptr) {
           // read the m_next pointer before resuming the coroutine
           // since resuming the coroutine may destroy the shared_task_waiter value
-          auto* next{waiter->m_next};
+          auto* next{awaiter->m_next};
           auto& async_stack_root{*promise.get_async_stack_frame().async_stack_root};
-          kphp::coro::resume(waiter->m_continuation, async_stack_root);
-          waiter = next;
+          kphp::coro::resume(awaiter->m_continuation, async_stack_root);
+          awaiter = next;
         }
-        // return last waiter's coroutine_handle to allow it to potentially be compiled as a tail-call
-        return waiter->m_continuation;
+        // return last awaiter's coroutine_handle to allow it to potentially be compiled as a tail-call
+        return awaiter->m_continuation;
       }
 
       constexpr auto await_resume() const noexcept -> void {}
@@ -69,35 +69,35 @@ struct promise_base : kphp::coro::async_stack_element {
   }
 
   auto done() const noexcept -> bool {
-    return m_waiters == this;
+    return m_awaiters == this;
   }
 
   auto add_ref() noexcept -> void {
     ++m_refcnt;
   }
 
-  // try to enqueue a waiter to the list of waiters.
+  // try to enqueue a awaiter to the list of awaiters.
   //
-  // return true if the waiter was successfully queued, in which case
-  // waiter->coroutine will be resumed when the task completes.
+  // return true if the awaiter was successfully queued, in which case
+  // awaiter->coroutine will be resumed when the task completes.
   // false if the coroutine was already completed and the awaiting
   // coroutine can continue without suspending.
-  auto suspend_awaiter(shared_task_impl::shared_task_waiter& waiter) noexcept -> bool {
-    const void* const NOT_STARTED_VAL{std::addressof(this->m_waiters)};
+  auto suspend_awaiter(shared_task_impl::shared_task_awaiter& awaiter) noexcept -> bool {
+    const void* const NOT_STARTED_VAL{std::addressof(this->m_awaiters)};
 
-    // NOTE: If the coroutine is not yet started then the first waiter
+    // NOTE: If the coroutine is not yet started then the first awaiter
     // will start the coroutine before enqueuing itself up to the list
-    // of suspended waiters waiting for completion. We split this into
+    // of suspended awaiters waiting for completion. We split this into
     // two steps to allow the first awaiter to return without suspending.
-    // This avoids recursively resuming the first waiter inside the call to
+    // This avoids recursively resuming the first awaiter inside the call to
     // coroutine.resume() in the case that the coroutine completes
     // synchronously, which could otherwise lead to stack-overflow if
     // the awaiting coroutine awaited many synchronously-completing
     // tasks in a row.
 
     // start the coroutine if not yet started
-    if (m_waiters == NOT_STARTED_VAL) {
-      m_waiters = STARTED_NO_WAITERS_VAL;
+    if (m_awaiters == NOT_STARTED_VAL) {
+      m_awaiters = STARTED_NO_WAITERS_VAL;
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
       auto& async_stack_root{*get_async_stack_frame().async_stack_root};
       kphp::coro::resume(handle, async_stack_root);
@@ -107,13 +107,13 @@ struct promise_base : kphp::coro::async_stack_element {
       return false;
     }
 
-    waiter.m_prev = nullptr;
-    waiter.m_next = static_cast<shared_task_impl::shared_task_waiter*>(m_waiters);
+    awaiter.m_prev = nullptr;
+    awaiter.m_next = static_cast<shared_task_impl::shared_task_awaiter*>(m_awaiters);
     // at this point 'm_waiters' can only be 'STARTED_NO_WAITERS_VAL' or 'other'
-    if (m_waiters != STARTED_NO_WAITERS_VAL) {
-      static_cast<shared_task_waiter*>(m_waiters)->m_prev = std::addressof(waiter);
+    if (m_awaiters != STARTED_NO_WAITERS_VAL) {
+      static_cast<shared_task_awaiter*>(m_awaiters)->m_prev = std::addressof(awaiter);
     }
-    m_waiters = static_cast<void*>(std::addressof(waiter));
+    m_awaiters = static_cast<void*>(std::addressof(awaiter));
     return true;
   }
 
@@ -124,20 +124,20 @@ struct promise_base : kphp::coro::async_stack_element {
     return m_refcnt-- != 1;
   }
 
-  auto cancel_awaiter(const shared_task_impl::shared_task_waiter& waiter) noexcept -> void {
-    const void* const NOT_STARTED_VAL{std::addressof(this->m_waiters)};
-    if (m_waiters == NOT_STARTED_VAL || m_waiters == STARTED_NO_WAITERS_VAL) [[unlikely]] {
+  auto cancel_awaiter(const shared_task_impl::shared_task_awaiter& awaiter) noexcept -> void {
+    const void* const NOT_STARTED_VAL{std::addressof(this->m_awaiters)};
+    if (m_awaiters == NOT_STARTED_VAL || m_awaiters == STARTED_NO_WAITERS_VAL) [[unlikely]] {
       return;
     }
 
-    const auto* waiter_ptr{std::addressof(waiter)};
-    if (m_waiters == waiter_ptr) { // waiter is the head of the list
-      m_waiters = waiter_ptr->m_next;
-    } else if (waiter_ptr->m_next == nullptr) { // waiter is the last in the list
-      waiter_ptr->m_prev->m_next = nullptr;
-    } else { // waiter is somewhere in the middle of the list
-      waiter_ptr->m_next->m_prev = waiter_ptr->m_prev;
-      waiter_ptr->m_prev->m_next = waiter_ptr->m_next;
+    const auto* awaiter_ptr{std::addressof(awaiter)};
+    if (m_awaiters == awaiter_ptr) { // awaiter is the head of the list
+      m_awaiters = awaiter_ptr->m_next;
+    } else if (awaiter_ptr->m_next == nullptr) { // awaiter is the last in the list
+      awaiter_ptr->m_prev->m_next = nullptr;
+    } else { // awaiter is somewhere in the middle of the list
+      awaiter_ptr->m_next->m_prev = awaiter_ptr->m_prev;
+      awaiter_ptr->m_prev->m_next = awaiter_ptr->m_next;
     }
   }
 
@@ -155,13 +155,13 @@ private:
 
   uint32_t m_refcnt{1};
   // Value is either
-  // - nullptr          - indicates started, no waiters
-  // - &this->w_waiters - indicates the coroutine is not yet started
-  // - this             - indicates value is ready
-  // - other            - pointer to head item in linked-list of waiters.
-  //                      values are of type 'shared_task_impl_::shared_task_waiter_t'.
-  //                      indicates that the coroutine has been started.
-  void* m_waiters{std::addressof(m_waiters)};
+  // - nullptr           - indicates started, no awaiters
+  // - &this->m_awaiters - indicates the coroutine is not yet started
+  // - this              - indicates value is ready
+  // - other             - pointer to head item in linked-list of awaiters.
+  //                       values are of type 'shared_task_impl_::shared_task_waiter_t'.
+  //                       indicates that the coroutine has been started.
+  void* m_awaiters{std::addressof(m_awaiters)};
 };
 
 template<typename promise_type>
@@ -190,7 +190,7 @@ class awaiter_base {
 
 protected:
   std::coroutine_handle<promise_type> m_coro;
-  shared_task_impl::shared_task_waiter m_waiter{};
+  shared_task_impl::shared_task_awaiter m_awaiter{};
 
 public:
   explicit awaiter_base(std::coroutine_handle<promise_type> coro) noexcept
@@ -199,7 +199,7 @@ public:
   awaiter_base(awaiter_base&& other) noexcept
       : m_suspended(std::exchange(other.m_suspended, false)),
         m_coro(std::exchange(other.m_coro, {})),
-        m_waiter(std::exchange(other.m_waiter, {})) {}
+        m_awaiter(std::exchange(other.m_awaiter, {})) {}
 
   awaiter_base(const awaiter_base& other) = delete;
   awaiter_base& operator=(const awaiter_base& other) = delete;
@@ -207,7 +207,7 @@ public:
 
   ~awaiter_base() {
     if (m_suspended) {
-      m_coro.promise().cancel_awaiter(m_waiter);
+      m_coro.promise().cancel_awaiter(m_awaiter);
     }
   }
 
@@ -218,8 +218,8 @@ public:
   template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> bool {
     set_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
-    m_waiter.m_continuation = awaiting_coroutine;
-    m_suspended = m_coro.promise().suspend_awaiter(m_waiter);
+    m_awaiter.m_continuation = awaiting_coroutine;
+    m_suspended = m_coro.promise().suspend_awaiter(m_awaiter);
     reset_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame());
     return m_suspended;
   }
