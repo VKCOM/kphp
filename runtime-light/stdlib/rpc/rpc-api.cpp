@@ -283,6 +283,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
                                                      bool collect_responses_extra_info) noexcept {
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  const size_t request_size{rpc_server_instance_st.tl_storer.view().size_bytes()};
   const auto timestamp{std::chrono::duration<double>{std::chrono::system_clock::now().time_since_epoch()}.count()};
 
   auto expected_stream{kphp::component::stream::open(actor, k2::stream_kind::component)};
@@ -292,10 +293,8 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
   }
 
   auto stream{*std::move(expected_stream)};
-  auto tl_storer{std::exchange(rpc_server_instance_st.tl_storer, tl::storer{0})};
-  size_t request_size{tl_storer.view().size_bytes()};
-
   {
+    auto tl_storer{std::exchange(rpc_server_instance_st.tl_storer, tl::storer{0})};
     const vk::final_action finalizer{[&tl_storer, &rpc_server_instance_st] noexcept {
       if (tl_storer.capacity() > rpc_server_instance_st.tl_storer.capacity()) {
         std::swap(tl_storer, rpc_server_instance_st.tl_storer);
@@ -310,7 +309,6 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
       std::span<const std::byte> new_header{reinterpret_cast<const std::byte*>(std::addressof(*opt_new_extra_header)),
                                             sizeof(std::remove_cvref_t<decltype(*opt_new_extra_header)>)};
 
-      request_size = new_header.size_bytes() + request_body.size_bytes();
       if (!co_await stream.write_all(new_header) || !co_await kphp::component::send_request(stream, request_body)) [[unlikely]] {
         co_return kphp::rpc::query_info{.id = kphp::rpc::INVALID_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
       }
