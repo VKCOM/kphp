@@ -35,37 +35,6 @@ constexpr std::string_view APPEND_MODE = "a";
 constexpr std::string_view READ_PLUS_MODE = "r+";
 constexpr std::string_view WRITE_PLUS_MODE = "w+";
 constexpr std::string_view APPEND_PLUS_MODE = "a+";
-
-inline std::expected<size_t, int32_t> write_safe(kphp::fs::sync_resource& resource, std::span<const std::byte> src) noexcept {
-  size_t full_len{src.size()};
-  do {
-    std::expected<size_t, int32_t> cur_res{resource.write(src)};
-    if (!cur_res) {
-      return cur_res;
-    }
-
-    src = src.subspan(*cur_res);
-  } while (!src.empty());
-
-  return std::expected<size_t, int32_t>{full_len - src.size()};
-}
-
-inline std::expected<size_t, int32_t> read_safe(kphp::fs::sync_resource& resource, std::span<std::byte> dst) noexcept {
-  size_t full_len{dst.size()};
-  do {
-    std::expected<size_t, int32_t> cur_res{resource.read(dst)};
-    if (!cur_res) {
-      return cur_res;
-    }
-    if (*cur_res == 0) {
-      break;
-    }
-
-    dst = dst.subspan(*cur_res);
-  } while (!dst.empty());
-
-  return std::expected<size_t, int32_t>{full_len - dst.size()};
-}
 } // namespace file_system_impl_
 
 inline constexpr int64_t STREAM_CLIENT_CONNECT = 1;
@@ -257,7 +226,7 @@ inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& 
   if (auto sync_resource{
           from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, string{mode.data(), static_cast<string::size_type>(mode.size())}), {})};
       !sync_resource.is_null()) {
-    auto expected{file_system_impl_::write_safe(*sync_resource.get(), std::as_bytes(data_span))};
+    auto expected{sync_resource.get()->write(std::as_bytes(data_span))};
     return expected ? Optional<int64_t>{static_cast<int64_t>(*std::move(expected))} : Optional<int64_t>{false};
   }
   return false;
