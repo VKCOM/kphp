@@ -61,7 +61,7 @@ inline std::expected<size_t, int32_t> read_safe(kphp::fs::sync_resource& resourc
       break;
     }
 
-    dst.subspan(*cur_res);
+    dst = dst.subspan(*cur_res);
   } while (!dst.empty());
 
   return std::expected<size_t, int32_t>{full_len - dst.size()};
