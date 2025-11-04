@@ -86,7 +86,7 @@ mixed f$getimagesize(const string& name) noexcept {
   if (read_size < 12) {
     return false;
   }
-  std::expected<size_t, int32_t> read_res{file_system_impl_::read_safe(file, std::as_writable_bytes(buf_span))};
+  std::expected<size_t, int32_t> read_res{file.read(std::as_writable_bytes(buf_span))};
   if (!read_res || *read_res < read_size) {
     return false;
   }
@@ -124,7 +124,7 @@ mixed f$getimagesize(const string& name) noexcept {
       std::memcpy(image, buf.begin(), read_size);
 
       std::span<unsigned char> image_span{image + read_size, size - read_size};
-      read_res = file_system_impl_::read_safe(file, std::as_writable_bytes(image_span));
+      read_res = file.read(std::as_writable_bytes(image_span));
       if (!read_res || *read_res < size - read_size) {
         return false;
       }
