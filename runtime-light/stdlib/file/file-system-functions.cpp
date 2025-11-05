@@ -20,6 +20,8 @@
 
 namespace {
 
+constexpr size_t MIN_FILE_SIZE{12};
+
 constexpr int64_t IMAGETYPE_UNKNOWN{0};
 constexpr int64_t IMAGETYPE_GIF{1};
 constexpr int64_t IMAGETYPE_JPEG{2};
@@ -42,6 +44,11 @@ constexpr std::array<char, 12> php_sig_jp2{0x00, 0x00, 0x00, 0x0c, 'j', 'P', ' '
 constexpr std::array<std::string_view, 11> mime_type_string{"",          "image/gif",      "image/jpeg", "image/png",  "application/x-shockwave-flash",
                                                             "image/psd", "image/x-ms-bmp", "image/tiff", "image/tiff", "application/octet-stream",
                                                             "image/jp2"};
+
+constexpr unsigned char GIF_MARKER{'G'};
+constexpr unsigned char JPG_OR_JPC_MARKER{0xff};
+constexpr unsigned char JP2_MARKER{0x00};
+constexpr unsigned char PNG_MARKER{0x89};
 
 constexpr int32_t M_SOF0{0xC0};
 constexpr int32_t M_SOF1{0xC1};
@@ -75,6 +82,10 @@ mixed f$getimagesize(const string& name) noexcept {
     kphp::log::warning("regular file expected as first argument in function getimagesize, \"{}\" is given", name.c_str());
     return false;
   }
+  size_t size{static_cast<size_t>(stat_buf.st_size)};
+  if (size < MIN_FILE_SIZE) {
+    return false;
+  }
 
   auto open_res{kphp::fs::file::open(std::string_view{name.c_str(), name.size()}, file_system_impl_::READ_MODE)};
   if (!open_res) {
@@ -83,13 +94,9 @@ mixed f$getimagesize(const string& name) noexcept {
   auto file{std::move(*open_res)};
 
   constexpr size_t max_size{3 * 256 + 64};
-  size_t size{static_cast<size_t>(stat_buf.st_size)};
   size_t read_size{max_size};
   if (size < max_size) {
     read_size = size;
-  }
-  if (read_size < 12) {
-    return false;
   }
   std::array<unsigned char, max_size> buf{};
   std::span<std::byte> buf_span{reinterpret_cast<std::byte*>(buf.begin()), max_size};
@@ -105,7 +112,7 @@ mixed f$getimagesize(const string& name) noexcept {
   int32_t channels{};
   int32_t type{IMAGETYPE_UNKNOWN};
   switch (buf[0]) {
-  case 'G': // gif
+  case GIF_MARKER: // gif
     if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_gif.begin(), sizeof(php_sig_gif))) {
       type = IMAGETYPE_GIF;
       width = buf[6] | (buf[7] << 8);
@@ -116,7 +123,7 @@ mixed f$getimagesize(const string& name) noexcept {
       return false;
     }
     break;
-  case 0xff: // jpg or jpc
+  case JPG_OR_JPC_MARKER: // jpg or jpc
     if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_jpg.begin(), sizeof(php_sig_jpg))) {
       type = IMAGETYPE_JPEG;
 
@@ -229,7 +236,7 @@ mixed f$getimagesize(const string& name) noexcept {
       return false;
     }
     break;
-  case 0x00: // jp2
+  case JP2_MARKER: // jp2
     if (read_size >= 54 && !std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_jp2.begin(), sizeof(php_sig_jp2))) {
       type = IMAGETYPE_JP2;
 
@@ -299,7 +306,7 @@ mixed f$getimagesize(const string& name) noexcept {
       return false;
     }
     break;
-  case 0x89: // png
+  case PNG_MARKER: // png
     if (read_size >= 25 && !std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_png.begin(), sizeof(php_sig_png))) {
       type = IMAGETYPE_PNG;
       width = (buf[16] << 24) + (buf[17] << 16) + (buf[18] << 8) + buf[19];
