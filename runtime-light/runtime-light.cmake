@@ -22,7 +22,6 @@ include(${RUNTIME_LIGHT_DIR}/coroutine/coroutine.cmake)
 include(${RUNTIME_LIGHT_DIR}/server/server.cmake)
 include(${RUNTIME_LIGHT_DIR}/stdlib/stdlib.cmake)
 include(${RUNTIME_LIGHT_DIR}/tl/tl.cmake)
-include(${RUNTIME_LIGHT_DIR}/utils/utils.cmake)
 include(${RUNTIME_LIGHT_DIR}/state/state.cmake)
 include(${RUNTIME_LIGHT_DIR}/memory-resource-impl/memory-resource-impl.cmake)
 
