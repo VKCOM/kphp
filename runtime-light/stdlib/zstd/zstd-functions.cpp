@@ -5,6 +5,7 @@
 #include "runtime-light/stdlib/zstd/zstd-functions.h"
 
 #include "common/smart_ptrs/unique_ptr_with_delete_function.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -18,8 +19,8 @@ namespace {
 static_assert(2 * ZSTD_BLOCKSIZE_MAX < StringLibContext::STATIC_BUFFER_LENGTH, "double block size is expected to be less then buffer size");
 
 ZSTD_customMem make_custom_alloc() noexcept {
-  auto alloc = [](void*, size_t size) { return RuntimeAllocator::get().alloc_script_memory(size); };
-  auto dealloc = [](void*, void* ptr) { return RuntimeAllocator::get().free_script_memory(ptr, size); };
+  auto alloc = [](void*, size_t size) { return kphp::memory::script::alloc(size); };
+  auto dealloc = [](void*, void* ptr) { return kphp::memory::script::free(ptr); };
   return ZSTD_customMem{alloc, dealloc};
 }
 
@@ -115,7 +116,7 @@ Optional<string> uncompress(const string& data, const string& dict) noexcept {
   ZSTD_inBuffer in{data.c_str(), data.size(), 0};
   ZSTD_outBuffer out{StringLibContext::get().static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, 0};
 
-  string decoded_string;
+  string decoded_string{};
   while (in.pos < in.size) {
     if (out.pos == out.size) {
       decoded_string.append(static_cast<char*>(out.dst), static_cast<string::size_type>(out.pos));
