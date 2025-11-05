@@ -71,16 +71,16 @@ mixed f$getimagesize(const string& name) noexcept {
     return false;
   }
 
+  if (!S_ISREG(stat_buf.st_mode)) {
+    kphp::log::warning("regular file expected as first argument in function getimagesize, \"{}\" is given", name.c_str());
+    return false;
+  }
+
   auto open_res{kphp::fs::file::open(std::string_view{name.c_str(), name.size()}, file_system_impl_::READ_MODE)};
   if (!open_res) {
     return false;
   }
   auto file{std::move(*open_res)};
-
-  if (!S_ISREG(stat_buf.st_mode)) {
-    kphp::log::warning("regular file expected as first argument in function getimagesize, \"{}\" is given", name.c_str());
-    return false;
-  }
 
   constexpr size_t min_size{3 * 256 + 64};
   size_t size{static_cast<size_t>(stat_buf.st_size)};
@@ -283,7 +283,7 @@ mixed f$getimagesize(const string& name) noexcept {
         if (read_size < 50) {
           break;
         }
-        std::span<std::byte> buf_read_span{buf.begin(), read_size};
+        std::span<std::byte> buf_read_span{reinterpret_cast<std::byte*>(buf.begin()), read_size};
         read_res = file.pread(std::as_writable_bytes(buf_read_span), static_cast<off_t>(file_pos));
         if (!read_res || *read_res < read_size) {
           break;
