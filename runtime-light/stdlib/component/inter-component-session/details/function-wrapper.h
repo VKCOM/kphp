@@ -19,7 +19,7 @@ namespace kphp::component::inter_component_session::details {
 // * std::function isn't able to work with custom allocators
 // * kphp::coro::task cannot be invoked more than once
 // * Parametric polymorphism isn't appropriate since different functional objects have to be stored in containers
-template<typename R, typename... ARGS>
+template<typename R, typename... Args>
 class function_wrapper final {
 public:
   function_wrapper() = delete;
@@ -47,7 +47,7 @@ public:
   // Invoker and deleter accumulates typed functional objects as pointers
   // It allows to have no depends on functional or lambda objects layout
   template<typename F>
-  requires std::invocable<F, ARGS...> && std::is_same_v<std::invoke_result_t<F, ARGS...>, R>
+  requires std::invocable<F, Args...> && std::is_same_v<std::invoke_result_t<F, Args...>, R>
   explicit function_wrapper(F&& f) noexcept
       : raw_mem(raw_mem_alloc<F>(), std::addressof(raw_mem_free)),
         func_obj(new(raw_mem.get()) F{std::forward<F>(f)}),
@@ -58,9 +58,11 @@ public:
     return raw_mem != nullptr && func_obj != nullptr && invoker != nullptr && deleter != nullptr;
   }
 
-  R operator()(ARGS... args) noexcept {
+  template<typename... Arguments>
+  R operator()(Arguments&&... args) noexcept {
+    static_assert(std::is_invocable_v<ivoker_type, Arguments...>);
     kphp::log::assertion(func_obj != nullptr);
-    return invoker(func_obj, std::forward<ARGS...>(args...));
+    return invoker(func_obj, std::forward<Arguments...>(args...));
   }
 
   ~function_wrapper() noexcept {
@@ -73,8 +75,8 @@ public:
 
 private:
   template<typename F>
-  static R typed_invoker(const void* func_obj, ARGS... args) noexcept {
-    return std::launder(static_cast<const F*>(func_obj))->operator()(std::forward<ARGS...>(args...));
+  static R typed_invoker(const void* func_obj, Args... args) noexcept {
+    return std::launder(static_cast<const F*>(func_obj))->operator()(std::forward<Args...>(args...));
   }
 
   template<typename F>
@@ -98,7 +100,8 @@ private:
 
   std::unique_ptr<void, decltype(std::addressof(raw_mem_free))> raw_mem;
   const void* func_obj;
-  R (*invoker)(const void*, ARGS...);
+  R (*invoker)(const void*, Args...);
+  using ivoker_type = R (*)(Args...);
   void (*deleter)(const void*);
 };
 
