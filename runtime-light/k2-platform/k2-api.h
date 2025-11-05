@@ -177,11 +177,10 @@ inline auto readdir(k2::descriptor descriptor) noexcept {
 }
 
 inline std::expected<void, int32_t> unlink(std::string_view path) noexcept {
-  int32_t res = k2_unlink(path.data(), path.size());
-  if (res == k2::errno_ok) {
-    return {};
+  if (auto error_code{k2_unlink(path.data(), path.size())}; error_code != k2::errno_ok) [[unlikely]] {
+    return std::unexpected{error_code};
   } else {
-    return std::unexpected{res};
+    return {};
   }
 }
 
