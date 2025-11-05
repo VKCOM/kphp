@@ -3,16 +3,23 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <expected>
+#include <format>
 #include <span>
 #include <string_view>
 #include <sys/stat.h>
 
+#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/file/file-system-functions.h"
+#include "runtime-light/stdlib/file/resource.h"
 
 namespace {
+
 constexpr int64_t IMAGETYPE_UNKNOWN{0};
 constexpr int64_t IMAGETYPE_GIF{1};
 constexpr int64_t IMAGETYPE_JPEG{2};
@@ -54,12 +61,13 @@ constexpr int32_t M_SOS{0xDA};
 constexpr int32_t M_COM{0xFE};
 
 constexpr int32_t M_PSEUDO = 0xFFD8;
+
 }; // namespace
 
 mixed f$getimagesize(const string& name) noexcept {
-  // TODO implement k2_fstat, with fd as parameter !!!
+  // TODO implement k2::fstat, with fd as parameter !!!
   struct stat stat_buf {};
-  if (k2_stat(name.c_str(), name.size(), &stat_buf) != k2::errno_ok) {
+  if (k2::stat({name.c_str(), name.size()}, &stat_buf) != k2::errno_ok) {
     return false;
   }
 
@@ -75,17 +83,17 @@ mixed f$getimagesize(const string& name) noexcept {
   }
 
   constexpr size_t min_size{3 * 256 + 64};
-  std::array<unsigned char, min_size> buf{};
   size_t size{static_cast<size_t>(stat_buf.st_size)};
   size_t read_size{min_size};
   if (size < min_size) {
     read_size = size;
   }
-  std::span<unsigned char> buf_span{buf.begin(), min_size};
-
   if (read_size < 12) {
     return false;
   }
+  std::array<unsigned char, min_size> buf{};
+  std::span<std::byte> buf_span{reinterpret_cast<std::byte*>(buf.begin()), min_size};
+
   std::expected<size_t, int32_t> read_res{file.read(std::as_writable_bytes(buf_span))};
   if (!read_res || *read_res < read_size) {
     return false;
@@ -123,7 +131,7 @@ mixed f$getimagesize(const string& name) noexcept {
 
       std::memcpy(image, buf.begin(), read_size);
 
-      std::span<unsigned char> image_span{image + read_size, size - read_size};
+      std::span<std::byte> image_span{reinterpret_cast<std::byte*>(std::next(image, read_size)), size - read_size};
       read_res = file.read(std::as_writable_bytes(image_span));
       if (!read_res || *read_res < size - read_size) {
         return false;
@@ -275,7 +283,7 @@ mixed f$getimagesize(const string& name) noexcept {
         if (read_size < 50) {
           break;
         }
-        std::span<unsigned char> buf_read_span{buf.begin(), read_size};
+        std::span<std::byte> buf_read_span{buf.begin(), read_size};
         read_res = file.pread(std::as_writable_bytes(buf_read_span), static_cast<off_t>(file_pos));
         if (!read_res || *read_res < read_size) {
           break;
