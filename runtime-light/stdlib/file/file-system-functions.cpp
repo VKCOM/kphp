@@ -82,17 +82,17 @@ mixed f$getimagesize(const string& name) noexcept {
   }
   auto file{std::move(*open_res)};
 
-  constexpr size_t min_size{3 * 256 + 64};
+  constexpr size_t max_size{3 * 256 + 64};
   size_t size{static_cast<size_t>(stat_buf.st_size)};
-  size_t read_size{min_size};
-  if (size < min_size) {
+  size_t read_size{max_size};
+  if (size < max_size) {
     read_size = size;
   }
   if (read_size < 12) {
     return false;
   }
-  std::array<unsigned char, min_size> buf{};
-  std::span<std::byte> buf_span{reinterpret_cast<std::byte*>(buf.begin()), min_size};
+  std::array<unsigned char, max_size> buf{};
+  std::span<std::byte> buf_span{reinterpret_cast<std::byte*>(buf.begin()), max_size};
 
   std::expected<size_t, int32_t> read_res{file.read(std::as_writable_bytes(buf_span))};
   if (!read_res || *read_res < read_size) {
@@ -275,8 +275,8 @@ mixed f$getimagesize(const string& name) noexcept {
           break;
         }
 
-        read_size = min_size;
-        if (size - file_pos < min_size) {
+        read_size = max_size;
+        if (size - file_pos < max_size) {
           read_size = size - file_pos;
         }
 
@@ -319,7 +319,7 @@ mixed f$getimagesize(const string& name) noexcept {
   result.push_back(type);
 
   string::size_type len{static_cast<string::size_type>(std::distance(
-      reinterpret_cast<char*>(buf.data()), std::format_to_n(reinterpret_cast<char*>(buf.data()), min_size, R"(width="{}" height="{}")", width, height).out))};
+      reinterpret_cast<char*>(buf.data()), std::format_to_n(reinterpret_cast<char*>(buf.data()), max_size, R"(width="{}" height="{}")", width, height).out))};
   result.push_back(string{reinterpret_cast<const char*>(buf.begin()), len});
   if (bits != 0) {
     result.set_value(string{"bits", 4}, bits);
