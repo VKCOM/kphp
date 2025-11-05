@@ -281,6 +281,18 @@ struct DirEntry {
 int32_t k2_readdir(uint64_t dd, struct DirEntry* entry, struct DirEntry** result);
 
 /**
+ * Semantically equivalent of libc's unlink
+ *
+ * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ *  Possible errno values:
+ * `EACCES` => Permission denied.
+ * `EIO` => An I/O error occurred.
+ * `ENOENT` A component in path does not exist or is a dangling symbolic link, or path is empty.
+ */
+int32_t k2_unlink(const char* path, size_t path_len);
+
+/**
  * @return return `0` on success. libc-like `errno` otherwise
  *
  *  Some `errno` examples:
