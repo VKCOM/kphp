@@ -6,8 +6,8 @@ prepend(STDLIB_MSGPACK stdlib/msgpack/ object_visitor.cpp
         packer.cpp parser.cpp unpacker.cpp zone.cpp)
 prepend(STDLIB_SERIALIZATION stdlib/serialization/ json-functions.cpp
         json-writer.cpp serialize-functions.cpp)
-prepend(STDLIB_STRING stdlib/string/ mbstring-functions.cpp
-        regex-functions.cpp string-functions.cpp)
+prepend(STDLIB_STRING stdlib/string/ ctype-functions.cpp
+        mbstring-functions.cpp regex-functions.cpp string-functions.cpp)
 prepend(STDLIB_SYSTEM stdlib/system/ system-functions.cpp)
 prepend(STDLIB_SERVER stdlib/server/ url-functions.cpp
         net-functions.cpp)
