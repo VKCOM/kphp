@@ -326,8 +326,8 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
 
   // create fork to wait for RPC response. we need to do it even if 'ignore_answer' is 'true' to make sure
   // that the stream will not be closed too early. otherwise, platform may even not send RPC request
-  auto awaiter_task{[](int64_t query_id, kphp::component::stream stream, std::chrono::nanoseconds timeout,
-                       bool collect_responses_extra_info) noexcept -> kphp::coro::task<string> {
+  static constexpr auto awaiter_coroutine{[](int64_t query_id, kphp::component::stream stream, std::chrono::nanoseconds timeout,
+                                             bool collect_responses_extra_info) noexcept -> kphp::coro::task<string> {
     string response{};
     auto fetch_task{kphp::component::fetch_response(stream, kphp::component::read_ext::append(response))};
     if (auto expected{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task), timeout)}; !expected) [[unlikely]] {
@@ -354,7 +354,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
       std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{opt_timeout.value_or(kphp::rpc::detail::DEFAULT_TIMEOUT)}))};
   // start awaiter fork
   const auto awaiter_fork_id{
-      kphp::forks::start(std::invoke(std::move(awaiter_task), query_id, std::move(stream), normalized_timeout, collect_responses_extra_info))};
+      kphp::forks::start(std::invoke(std::move(awaiter_coroutine), query_id, std::move(stream), normalized_timeout, collect_responses_extra_info))};
 
   if (ignore_answer) {
     co_return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
