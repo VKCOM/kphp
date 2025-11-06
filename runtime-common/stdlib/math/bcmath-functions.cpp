@@ -672,7 +672,7 @@ string f$bcpow(const string& lhs_str, const string& rhs_str, Optional<int64_t> o
     }
   }
   // just scale result
-  return f$bcadd(result, math_lib_constants.ZERO, opt_scale);
+  return f$bcadd(result, math_lib_constants.ZERO, scale);
 }
 
 string f$bcadd(const string& lhs_str, const string& rhs_str, Optional<int64_t> opt_scale) noexcept {
