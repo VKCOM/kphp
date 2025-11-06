@@ -2,18 +2,20 @@
 // Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "ctype-functions.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/string/ctype-functions.h"
 
 #include <algorithm>
 #include <cctype>
 
-static bool ctype_impl(const mixed& text, int (*iswhat)(int), bool allow_digits, bool allow_minus) noexcept {
+namespace {
+bool ctype_impl(const mixed& text, int (*iswhat)(int), bool allow_digits, bool allow_minus) noexcept {
   if (text.is_string()) {
     const string& str = text.as_string();
     if (str.empty()) {
       return false;
     }
-    return std::all_of(str.c_str(), str.c_str() + str.size(), [iswhat](std::uint8_t c) { return iswhat(c); });
+    return std::all_of(str.c_str(), str.c_str() + str.size(), [iswhat](uint8_t c) noexcept { return iswhat(c); });
   }
 
   if (text.is_int()) {
@@ -31,6 +33,7 @@ static bool ctype_impl(const mixed& text, int (*iswhat)(int), bool allow_digits,
 
   return false;
 }
+} // namespace
 
 bool f$ctype_alnum(const mixed& text) noexcept {
   return ctype_impl(text, std::isalnum, true, false);
