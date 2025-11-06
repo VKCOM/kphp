@@ -113,6 +113,7 @@ struct rpc_query {
   int answer_len;
   enum query_status status;
   void *extra;
+  zval fetcher; // set if extra == NULL
   void (*extra_free)(struct rpc_query *);
   const char *fun_name;
 };
@@ -302,7 +303,9 @@ struct stats {
   DECLARE_STAT(store);
   DECLARE_STAT(fetch);
   DECLARE_STAT(store_function);
+  DECLARE_STAT(store_function2);
   DECLARE_STAT(fetch_function);
+  DECLARE_STAT(fetch_function2);
   DECLARE_STAT(crc32);
   DECLARE_STAT(tree_insert);
   DECLARE_STAT(total);
