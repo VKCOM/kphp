@@ -140,23 +140,23 @@ function min (...$a) ::: ^1[*];
  */
 function max (...$a) ::: ^1[*];
 
-function bcadd ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-
-function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: int;
-
-function bcdiv ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-
-function bcmod ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-
-function bcpow ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-
-function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
-
 function bcscale ($scale ::: int) ::: void;
 
-function bcsqrt($num ::: string, $scale ::: int = PHP_INT_MIN): string;
+function bcdiv ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: string;
 
-function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: int = PHP_INT_MIN) ::: string;
+function bcmod ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: string;
+
+function bcpow ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: string;
+
+function bcadd ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: string;
+
+function bcsub ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: string;
+
+function bcmul ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: string;
+
+function bccomp ($lhs ::: string, $rhs ::: string, $scale ::: ?int = null) ::: int;
+
+function bcsqrt($num ::: string, $scale ::: ?int = null): string;
 
 function is_nan ($v ::: float) ::: bool;
 
