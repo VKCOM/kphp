@@ -226,6 +226,24 @@ static zend_always_inline void vk_zend_update_public_property_long(zval *object,
 #endif
 }
 
+static zend_always_inline void vk_zend_call_known_instance_method(zval *object,
+                                                                    const char * name, size_t name_len, zval *retval_ptr,
+                                                                    uint32_t param_count, zval *params) {
+  zend_object* zobj = Z_OBJ_P(object);
+  zend_string* method_name = zend_string_init(name, name_len, 0);
+  zend_function* fun = Z_OBJ_HANDLER_P(object, get_method)(&zobj, method_name, 0);
+  zend_string_release(method_name);
+  if (!fun) {
+    return; // retval stays UNDEF
+  }
+#if PHP_MAJOR_VERSION >= 8
+  zend_call_known_instance_method(fun, zobj, retval_ptr, param_count, params);
+#else
+  // TODO - this branch is not tested yet
+  zend_call_known_instance_method(fun, object, retval_ptr, param_count, params);
+#endif
+}
+
 #define ZAPI_TO_PP(az)          (&(az))
 #define ZP_TO_API_P(az)         (az)
 #define SMART_STRDATA(ss)       ((ss).s)
