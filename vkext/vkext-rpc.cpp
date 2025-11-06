@@ -854,9 +854,7 @@ static struct rpc_query *rpc_query_alloc(double timeout) {
   q->qid = qid;
   q->start_time = precise_now;
   q->timeout = timeout;
-  if (tl_current_function_name) {
-    q->fun_name = tl_current_function_name;
-  }
+  q->fun_name = tl_current_function_name;
 /*  ADD_CNT(tree_insert);
   START_TICKS(tree_insert);
   query_tree = tree_insert_query (query_tree, q, lrand48 ());
