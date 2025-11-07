@@ -16,18 +16,18 @@
 
 namespace kphp::rpc {
 
-inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
-  auto& rpc_client_instance_st{RpcClientInstanceState::get()};
-
-  const auto it_fork_id{rpc_client_instance_st.response_awaiter_forks.find(request_id)};
-  if (it_fork_id == rpc_client_instance_st.response_awaiter_forks.end()) [[unlikely]] {
-    kphp::log::warning("could not find rpc query with id {} in pending queries", queue_id);
-    return;
-  }
-
-  const int64_t response_waiter_fork_id{it_fork_id->second};
-  rpc_client_instance_st.awaiter_forks_to_response.emplace(response_waiter_fork_id, request_id);
-  kphp::forks::wait_queue_push(queue_id, response_waiter_fork_id);
+inline void rpc_queue_push([[maybe_unused]] int64_t queue_id, [[maybe_unused]] int64_t request_id) noexcept {
+  // auto& rpc_client_instance_st{RpcClientInstanceState::get()};
+  //
+  // const auto it_fork_id{rpc_client_instance_st.response_awaiter_forks.find(request_id)};
+  // if (it_fork_id == rpc_client_instance_st.response_awaiter_forks.end()) [[unlikely]] {
+  //   kphp::log::warning("could not find rpc query with id {} in pending queries", queue_id);
+  //   return;
+  // }
+  //
+  // const int64_t response_waiter_fork_id{it_fork_id->second};
+  // rpc_client_instance_st.awaiter_forks_to_response.emplace(response_waiter_fork_id, request_id);
+  // kphp::forks::wait_queue_push(queue_id, response_waiter_fork_id);
 }
 
 inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id, std::chrono::nanoseconds timeout) noexcept {
