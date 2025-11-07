@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "runtime-common/core/runtime-core.h"
+
 bool f$ctype_alnum(const mixed& text) noexcept;
 
 bool f$ctype_alpha(const mixed& text) noexcept;

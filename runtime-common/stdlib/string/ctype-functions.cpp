@@ -2,7 +2,6 @@
 // Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/ctype-functions.h"
 
 #include <algorithm>
