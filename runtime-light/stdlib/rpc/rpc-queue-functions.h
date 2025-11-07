@@ -43,7 +43,7 @@ inline void rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
   await_set.push(rpc_queue_wrapper_task(static_cast<kphp::coro::shared_task<>>(std::move(it_awaiter_task->second)), request_id));
 }
 
-inline int64_t rpc_queue_create(const std::span<int64_t>& range) noexcept {
+inline int64_t rpc_queue_create(std::span<int64_t> range) noexcept {
   const int64_t queue_id{RpcQueueInstanceState::get().create_queue()};
   for (int64_t request_id : range) {
     rpc_queue_push(queue_id, request_id);
