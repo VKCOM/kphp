@@ -29,12 +29,12 @@ namespace file_system_impl_ {
 
 inline constexpr char SEPARATOR = '/';
 
-constexpr std::string_view READ_MODE = "r";
-constexpr std::string_view WRITE_MODE = "w";
-constexpr std::string_view APPEND_MODE = "a";
-constexpr std::string_view READ_PLUS_MODE = "r+";
-constexpr std::string_view WRITE_PLUS_MODE = "w+";
-constexpr std::string_view APPEND_PLUS_MODE = "a+";
+inline constexpr std::string_view READ_MODE = "r";
+inline constexpr std::string_view WRITE_MODE = "w";
+inline constexpr std::string_view APPEND_MODE = "a";
+inline constexpr std::string_view READ_PLUS_MODE = "r+";
+inline constexpr std::string_view WRITE_PLUS_MODE = "w+";
+inline constexpr std::string_view APPEND_PLUS_MODE = "a+";
 } // namespace file_system_impl_
 
 inline constexpr int64_t STREAM_CLIENT_CONNECT = 1;
