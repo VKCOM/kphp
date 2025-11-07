@@ -106,7 +106,7 @@ inline array<mixed> f$getdate(int64_t timestamp) noexcept {
     std::memset(std::addressof(t), 0, sizeof(tm));
   }
 
-  array<mixed> result{array_size(11, false)};
+  array<mixed> result{array_size{11, false}};
 
   auto weekday{kphp::time::impl::DAY_FULL_NAMES[t.tm_wday]};
   auto month{kphp::time::impl::MON_FULL_NAMES[t.tm_mon]};
