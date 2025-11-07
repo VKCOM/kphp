@@ -212,7 +212,7 @@ inline size_t read(k2::descriptor descriptor, std::span<std::byte> buffer) noexc
   return k2_read(descriptor, buffer.size(), static_cast<void*>(buffer.data()));
 }
 
-inline size_t pread(k2::descriptor descriptor, std::span<std::byte> buffer, off_t offset) noexcept {
+inline size_t pread(k2::descriptor descriptor, std::span<std::byte> buffer, uint64_t offset) noexcept {
   return k2_pread(descriptor, buffer.size(), static_cast<void*>(buffer.data()), offset);
 }
 

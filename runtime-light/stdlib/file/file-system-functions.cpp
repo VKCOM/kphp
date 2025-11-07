@@ -291,7 +291,7 @@ mixed f$getimagesize(const string& name) noexcept {
           break;
         }
         std::span<std::byte> buf_read_span{reinterpret_cast<std::byte*>(buf.begin()), read_size};
-        read_res = file.pread(std::as_writable_bytes(buf_read_span), static_cast<off_t>(file_pos));
+        read_res = file.pread(std::as_writable_bytes(buf_read_span), static_cast<uint64_t>(file_pos));
         if (!read_res || *read_res < read_size) {
           break;
         }

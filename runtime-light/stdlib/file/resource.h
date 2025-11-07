@@ -13,7 +13,6 @@
 #include <memory>
 #include <span>
 #include <string_view>
-#include <sys/types.h>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -57,7 +56,7 @@ struct resource : public refcountable_polymorphic_php_classes<may_be_mixed_base>
 struct sync_resource : public resource {
   virtual auto write(std::span<const std::byte>) noexcept -> std::expected<size_t, int32_t> = 0;
   virtual auto read(std::span<std::byte>) noexcept -> std::expected<size_t, int32_t> = 0;
-  virtual auto pread(std::span<std::byte>, off_t) noexcept -> std::expected<size_t, int32_t> = 0;
+  virtual auto pread(std::span<std::byte>, uint64_t) noexcept -> std::expected<size_t, int32_t> = 0;
   virtual auto get_contents() noexcept -> std::expected<string, int32_t> = 0;
   virtual auto flush() noexcept -> std::expected<void, int32_t> = 0;
   virtual auto close() noexcept -> std::expected<void, int32_t> = 0;
@@ -96,7 +95,7 @@ public:
 
   auto write(std::span<const std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
   auto read(std::span<std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
-  auto pread(std::span<std::byte> buf, off_t offset) noexcept -> std::expected<size_t, int32_t> override;
+  auto pread(std::span<std::byte> buf, uint64_t offset) noexcept -> std::expected<size_t, int32_t> override;
   auto get_contents() noexcept -> std::expected<string, int32_t> override;
   auto flush() noexcept -> std::expected<void, int32_t> override;
   auto close() noexcept -> std::expected<void, int32_t> override;
@@ -131,7 +130,7 @@ inline auto file::read(std::span<std::byte> buf) noexcept -> std::expected<size_
   return read;
 }
 
-inline auto file::pread(std::span<std::byte> buf, off_t offset) noexcept -> std::expected<size_t, int32_t> {
+inline auto file::pread(std::span<std::byte> buf, uint64_t offset) noexcept -> std::expected<size_t, int32_t> {
   if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
     return std::unexpected{k2::errno_enodev};
   }
@@ -196,7 +195,7 @@ public:
 
   auto write(std::span<const std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
   auto read(std::span<std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
-  auto pread(std::span<std::byte> buf, off_t offset) noexcept -> std::expected<size_t, int32_t> override;
+  auto pread(std::span<std::byte> buf, uint64_t offset) noexcept -> std::expected<size_t, int32_t> override;
   auto get_contents() noexcept -> std::expected<string, int32_t> override;
   auto flush() noexcept -> std::expected<void, int32_t> override;
   auto close() noexcept -> std::expected<void, int32_t> override;
@@ -227,7 +226,7 @@ inline auto directory::read(std::span<std::byte> /*buf*/) noexcept -> std::expec
   return std::unexpected{k2::errno_einval};
 }
 
-inline auto directory::pread(std::span<std::byte> /*buf*/, off_t /*offset*/) noexcept -> std::expected<size_t, int32_t> {
+inline auto directory::pread(std::span<std::byte> /*buf*/, uint64_t /*offset*/) noexcept -> std::expected<size_t, int32_t> {
   if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
     return std::unexpected{k2::errno_enodev};
   }
@@ -278,7 +277,7 @@ public:
 
   auto write(std::span<const std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
   auto read(std::span<std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
-  auto pread(std::span<std::byte> buf, off_t offset) noexcept -> std::expected<size_t, int32_t> override;
+  auto pread(std::span<std::byte> buf, uint64_t offset) noexcept -> std::expected<size_t, int32_t> override;
   auto get_contents() noexcept -> std::expected<string, int32_t> override;
   auto flush() noexcept -> std::expected<void, int32_t> override;
   auto close() noexcept -> std::expected<void, int32_t> override;
@@ -297,7 +296,7 @@ inline auto stdinput::read(std::span<std::byte> /*buf*/) noexcept -> std::expect
   return std::unexpected{k2::errno_enodev};
 }
 
-inline auto stdinput::pread(std::span<std::byte> /*buf*/, off_t /*offset*/) noexcept -> std::expected<size_t, int32_t> {
+inline auto stdinput::pread(std::span<std::byte> /*buf*/, uint64_t /*offset*/) noexcept -> std::expected<size_t, int32_t> {
   return std::unexpected{k2::errno_enodev};
 }
 
@@ -327,7 +326,7 @@ public:
 
   auto write(std::span<const std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
   auto read(std::span<std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
-  auto pread(std::span<std::byte> buf, off_t offset) noexcept -> std::expected<size_t, int32_t> override;
+  auto pread(std::span<std::byte> buf, uint64_t offset) noexcept -> std::expected<size_t, int32_t> override;
   auto get_contents() noexcept -> std::expected<string, int32_t> override;
   auto flush() noexcept -> std::expected<void, int32_t> override;
   auto close() noexcept -> std::expected<void, int32_t> override;
@@ -348,7 +347,7 @@ inline auto stdoutput::read(std::span<std::byte> /*buf*/) noexcept -> std::expec
   return std::unexpected{m_open ? k2::errno_einval : k2::errno_enodev};
 }
 
-inline auto stdoutput::pread(std::span<std::byte> /*buf*/, off_t /*offset*/) noexcept -> std::expected<size_t, int32_t> {
+inline auto stdoutput::pread(std::span<std::byte> /*buf*/, uint64_t /*offset*/) noexcept -> std::expected<size_t, int32_t> {
   return std::unexpected{m_open ? k2::errno_einval : k2::errno_enodev};
 }
 
@@ -386,7 +385,7 @@ public:
 
   auto write(std::span<const std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
   auto read(std::span<std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
-  auto pread(std::span<std::byte> buf, off_t offset) noexcept -> std::expected<size_t, int32_t> override;
+  auto pread(std::span<std::byte> buf, uint64_t offset) noexcept -> std::expected<size_t, int32_t> override;
   auto get_contents() noexcept -> std::expected<string, int32_t> override;
   auto flush() noexcept -> std::expected<void, int32_t> override;
   auto close() noexcept -> std::expected<void, int32_t> override;
@@ -408,7 +407,7 @@ inline auto stderror::read(std::span<std::byte> /*buf*/) noexcept -> std::expect
   return std::unexpected{m_open ? k2::errno_einval : k2::errno_enodev};
 }
 
-inline auto stderror::pread(std::span<std::byte> /*buf*/, off_t /*offset*/) noexcept -> std::expected<size_t, int32_t> {
+inline auto stderror::pread(std::span<std::byte> /*buf*/, uint64_t /*offset*/) noexcept -> std::expected<size_t, int32_t> {
   return std::unexpected{m_open ? k2::errno_einval : k2::errno_enodev};
 }
 
@@ -444,7 +443,7 @@ public:
 
   auto write(std::span<const std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
   auto read(std::span<std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
-  auto pread(std::span<std::byte> buf, off_t offset) noexcept -> std::expected<size_t, int32_t> override;
+  auto pread(std::span<std::byte> buf, uint64_t offset) noexcept -> std::expected<size_t, int32_t> override;
   auto get_contents() noexcept -> std::expected<string, int32_t> override;
   auto flush() noexcept -> std::expected<void, int32_t> override;
   auto close() noexcept -> std::expected<void, int32_t> override;
@@ -471,7 +470,7 @@ inline auto input::read(std::span<std::byte> buf) noexcept -> std::expected<size
   return {size};
 }
 
-inline auto input::pread(std::span<std::byte> /*buf*/, off_t /*offset*/) noexcept -> std::expected<size_t, int32_t> {
+inline auto input::pread(std::span<std::byte> /*buf*/, uint64_t /*offset*/) noexcept -> std::expected<size_t, int32_t> {
   return std::unexpected{m_open ? k2::errno_einval : k2::errno_enodev};
 }
 
