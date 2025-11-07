@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <cctype>
 
-namespace ctype_impl_{
+namespace ctype_impl_ {
 inline bool ctype_impl(const mixed& text, int (*iswhat)(int), bool allow_digits, bool allow_minus) noexcept {
   if (text.is_string()) {
     const string& str = text.as_string();
