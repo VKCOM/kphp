@@ -72,7 +72,7 @@ constexpr int32_t M_PSEUDO = 0xFFD8;
 }; // namespace
 
 mixed f$getimagesize(const string& name) noexcept {
-  // TODO implement k2::fstat, with fd as parameter !!!
+  // TODO implement k2::fstat, with fd as parameter
   struct stat stat_buf {};
   if (k2::stat({name.c_str(), name.size()}, &stat_buf) != k2::errno_ok) {
     return false;
@@ -213,14 +213,14 @@ mixed f$getimagesize(const string& name) noexcept {
         }
         }
       }
-    } else if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_jpc.begin(), sizeof(php_sig_jpc)) && static_cast<int>(read_size) >= 42) {
+    } else if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_jpc.begin(), sizeof(php_sig_jpc)) && static_cast<int32_t>(read_size) >= 42) {
       type = IMAGETYPE_JPEG;
 
       width = (buf[8] << 24) + (buf[9] << 16) + (buf[10] << 8) + buf[11];
       height = (buf[12] << 24) + (buf[13] << 16) + (buf[14] << 8) + buf[15];
       channels = (buf[40] << 8) + buf[41];
 
-      if (channels < 0 || channels > 256 || static_cast<int>(read_size) < 42 + 3 * channels || width <= 0 || height <= 0) {
+      if (channels < 0 || channels > 256 || static_cast<int32_t>(read_size) < 42 + 3 * channels || width <= 0 || height <= 0) {
         return false;
       }
 
@@ -244,7 +244,7 @@ mixed f$getimagesize(const string& name) noexcept {
 
       int32_t buf_pos{12};
       size_t file_pos{12};
-      while (static_cast<int>(read_size) >= 42 + buf_pos + 8) {
+      while (static_cast<int32_t>(read_size) >= 42 + buf_pos + 8) {
         const unsigned char* s{buf.begin() + buf_pos};
         int32_t box_length{(s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3]};
         if (box_length == 1 || box_length > 1000000000) {
@@ -257,7 +257,7 @@ mixed f$getimagesize(const string& name) noexcept {
           height = (s[12] << 24) + (s[13] << 16) + (s[14] << 8) + s[15];
           channels = (s[40] << 8) + s[41];
 
-          if (channels < 0 || channels > 256 || static_cast<int>(read_size) < 42 + buf_pos + 8 + 3 * channels || width <= 0 || height <= 0) {
+          if (channels < 0 || channels > 256 || static_cast<int32_t>(read_size) < 42 + buf_pos + 8 + 3 * channels || width <= 0 || height <= 0) {
             break;
           }
 
