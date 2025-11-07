@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -64,6 +65,10 @@ struct RegexInfo final {
       : regex(regex_),
         subject(subject_),
         replacement(replacement_) {}
+};
+
+struct backref {
+  std::string_view digits;
 };
 
 template<typename... Args>
@@ -320,10 +325,36 @@ bool match_regex(RegexInfo& regex_info, size_t offset) noexcept {
   return true;
 }
 
+std::optional<backref> try_get_backref(std::string_view preg_replacement) noexcept {
+  if (preg_replacement.empty() || preg_replacement[0] < '0' || preg_replacement[0] > '9') {
+    return std::nullopt;
+  }
+
+  if (preg_replacement.size() == 1 || preg_replacement[1] < '0' || preg_replacement[1] > '9') {
+    return backref{preg_replacement.substr(0, 1)};
+  }
+
+  return backref{preg_replacement.substr(0, 2)};
+}
+
+template<typename T, typename F>
+requires std::convertible_to<std::invoke_result_t<F>, T>
+auto value_or_else(std::optional<T>&& opt, F&& alternative_func) noexcept -> T {
+  if (opt.has_value()) {
+    return std::move(*std::move(opt));
+  } else {
+    return std::forward<F>(alternative_func)();
+  }
+}
+
+using replacement_term = std::variant<char, backref>;
+
 class match_iterator {
   RegexInfo& regex_info;
   const size_t* ovector;
   size_t match_from;
+
+  uint32_t match_options{PCRE2_NO_UTF_CHECK};
 
 public:
   match_iterator(RegexInfo& regex_info, const size_t* ovector, size_t match_from)
@@ -332,17 +363,17 @@ public:
         match_from{match_from} {}
 
   bool match_next() noexcept {
-    if (!match_regex(regex_info, match_from)) [[unlikely]] {
+    if (!match_regex(regex_info, match_from, match_options)) [[unlikely]] {
       return false;
     }
 
     if (regex_info.match_count == 0) {
-      if (regex_info.match_options == PCRE2_NO_UTF_CHECK || match_from == regex_info.subject.size()) {
+      if (match_options == PCRE2_NO_UTF_CHECK || match_from == regex_info.subject.size()) {
         return true;
       }
       ++match_from;
       match_from = static_cast<bool>(regex_info.compile_options & PCRE2_UTF) ? skip_utf8_subsequent_bytes(match_from, regex_info.subject) : match_from;
-      regex_info.match_options = PCRE2_NO_UTF_CHECK;
+      match_options = PCRE2_NO_UTF_CHECK;
       return match_next();
     }
 
@@ -351,11 +382,99 @@ public:
 
     match_from = match_end;
     if (match_end == match_start) {
-      regex_info.match_options = PCRE2_NO_UTF_CHECK | PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
+      match_options = PCRE2_NO_UTF_CHECK | PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
     } else {
-      regex_info.match_options = PCRE2_NO_UTF_CHECK;
+      match_options = PCRE2_NO_UTF_CHECK;
     }
     return true;
+  }
+};
+
+class preg_replacement_unescaper {
+  std::string_view preg_replacement;
+
+public:
+  preg_replacement_unescaper(std::string_view preg_replacement)
+      : preg_replacement{preg_replacement} {}
+
+  bool has_next() const noexcept {
+    return !preg_replacement.empty();
+  }
+
+  replacement_term unescape_term() noexcept {
+    auto first_char{preg_replacement.front()};
+    preg_replacement = preg_replacement.substr(1);
+    if (preg_replacement.empty()) {
+      return first_char;
+    }
+    switch (first_char) {
+    case '$':
+      if (preg_replacement.front() == '{') {
+        return try_get_backref(preg_replacement.substr(1))
+            .and_then([this](auto value) noexcept -> std::optional<replacement_term> {
+              auto digits_end_pos = 1 + value.digits.size();
+              if (digits_end_pos < preg_replacement.size() && preg_replacement[digits_end_pos] == '}') {
+                preg_replacement = preg_replacement.substr(1 + value.digits.size() + 1);
+                return value;
+              }
+
+              return std::nullopt;
+            })
+            .value_or('$');
+      }
+
+      return try_get_backref(preg_replacement)
+          .transform([this](auto value) noexcept -> replacement_term {
+            auto digits_end_pos = value.digits.size();
+            preg_replacement = preg_replacement.substr(digits_end_pos);
+            return value;
+          })
+          .value_or('$');
+
+    case '\\':
+      return value_or_else(try_get_backref(preg_replacement).transform([this](auto value) noexcept -> replacement_term {
+        auto digits_end_pos = value.digits.size();
+        preg_replacement = preg_replacement.substr(digits_end_pos);
+        return value;
+      }),
+                           [this] noexcept {
+                             auto res{preg_replacement.front()};
+                             if (res == '$' || res == '\\') {
+                               preg_replacement = preg_replacement.substr(1);
+                               return res;
+                             }
+                             return '\\';
+                           });
+    default:
+      return first_char;
+    }
+  }
+};
+
+class pcre2_replacement_escaper {
+  kphp::stl::string<kphp::memory::script_allocator> pcre2_replacement{};
+
+public:
+  void operator()(char c) noexcept {
+    pcre2_replacement.push_back(c);
+    if (c == '$') {
+      pcre2_replacement.push_back('$');
+    }
+  }
+
+  void operator()(backref backreference) noexcept {
+    pcre2_replacement.reserve(pcre2_replacement.size() + backreference.digits.size() + 3);
+    pcre2_replacement.append("${");
+    pcre2_replacement.append(backreference.digits);
+    pcre2_replacement.append("}");
+  }
+
+  void escape_term(const replacement_term& term) noexcept {
+    std::visit(*this, term);
+  }
+
+  kphp::stl::string<kphp::memory::script_allocator>& result() noexcept {
+    return pcre2_replacement;
   }
 };
 
@@ -664,20 +783,22 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
     }
   }
 
-  while (offset <= subject.size() && (success &= match_regex(regex_info, offset))) {
+  const auto& regex_state{RegexInstanceState::get()};
+
+  // get the ouput vector from the match data
+  const auto* ovector{pcre2_get_ovector_pointer_8(regex_state.regex_pcre2_match_data.get())};
+
+  auto match_it{match_iterator{regex_info, ovector, static_cast<size_t>(offset)}};
+
+  while (match_it.match_next()) {
     const auto next_offset{set_all_matches(regex_info, flags, matches)};
     if (regex_info.match_count > 0) {
       ++entire_match_count;
       if (next_offset == PCRE2_UNSET) [[unlikely]] {
         break;
-      } else if (next_offset == offset) [[unlikely]] {
-        offset = next_offset + 1;
-      } else {
-        offset = next_offset;
       }
     } else {
-      ++offset;
-      offset = static_cast<bool>(regex_info.compile_options & PCRE2_UTF) ? skip_utf8_subsequent_bytes(offset, regex_info.subject) : offset;
+      break;
     }
   }
   if (!success) [[unlikely]] {
@@ -703,20 +824,13 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
     return {};
   }
 
-  string pcre2_replacement{replacement};
-  { // we need to replace PHP's back references with PCRE2 ones
-    static constexpr std::string_view backreference_pattern = R"(/\\(\d)/)";
-    static constexpr std::string_view backreference_replacement = "$$$1";
-
-    RegexInfo regex_info{backreference_pattern, {replacement.c_str(), replacement.size()}, backreference_replacement};
-    bool success{compile_regex(regex_info)};
-    success &= replace_regex(regex_info, std::numeric_limits<uint64_t>::max());
-    if (!success) [[unlikely]] {
-      kphp::log::warning("can't replace PHP back references with PCRE2 ones");
-      return {};
-    }
-    pcre2_replacement = regex_info.opt_replace_result.has_value() ? *std::move(regex_info.opt_replace_result) : replacement;
+  // we need to replace PHP's back references with PCRE2 ones
+  auto unescaper{preg_replacement_unescaper{{replacement.c_str(), replacement.size()}}};
+  pcre2_replacement_escaper escaper{};
+  while (unescaper.has_next()) {
+    escaper.escape_term(unescaper.unescape_term());
   }
+  auto& pcre2_replacement{escaper.result()};
 
   RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
 
