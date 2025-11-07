@@ -99,8 +99,8 @@ inline array<mixed> f$getdate(int64_t timestamp) noexcept {
     timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
   }
   tm t{};
-  time_t timestamp_t{timestamp};
-  tm* tp{k2::localtime_r(std::addressof(timestamp_t), std::addressof(t))};
+  time_t time{timestamp};
+  tm* tp{k2::localtime_r(std::addressof(time), std::addressof(t))};
   if (tp == nullptr) {
     kphp::log::warning("unknown error in getdate with timestamp {}", timestamp);
     std::memset(std::addressof(t), 0, sizeof(tm));
