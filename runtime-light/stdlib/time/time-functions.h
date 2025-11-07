@@ -93,7 +93,7 @@ inline int64_t f$mktime(int64_t hour = std::numeric_limits<int64_t>::min(), int6
   return std::numeric_limits<int64_t>::min();
 }
 
-inline array<mixed> f$getdate(int64_t timestamp) noexcept {
+inline array<mixed> f$getdate(int64_t timestamp = std::numeric_limits<int64_t>::min()) noexcept {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     namespace chrono = std::chrono;
     timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
