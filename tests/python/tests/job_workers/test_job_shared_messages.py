@@ -2,6 +2,7 @@ import pytest
 from python.lib.testcase import WebServerAutoTestCase
 
 
+@pytest.mark.k2_skip_suite
 class TestJobSharedMessages(WebServerAutoTestCase):
     DEFAULT_DISTRIBUTION_STR = " \n 2 ,2, 2,\t 2, 1,\n  1, \n1,1 ,1  , 1 \n"
 
