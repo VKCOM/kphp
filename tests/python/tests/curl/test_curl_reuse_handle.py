@@ -13,7 +13,6 @@ class TestCurlReuseHandle(CurlTestCase):
             "exec_result2": self._prepare_result("/echo/test_get", "GET")
         })
 
-    @pytest.mark.k2_skip
     def test_curl_reuse_handle_after_timeout(self):
         self.assertEqual(self._curl_request("/echo/test_get", timeout=0.1), {
             "exec_result1": False,

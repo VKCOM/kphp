@@ -5,7 +5,9 @@ class CurlTestCase(WebServerAutoTestCase):
 
     @classmethod
     def extra_class_setup(cls):
-        if not cls.should_use_k2():
+        if cls.should_use_k2():
+            cls.web_server.ignore_log_errors()
+        else:
             cls.web_server.update_options({
                 "--workers-num": 2,
             })

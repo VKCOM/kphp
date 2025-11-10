@@ -1,9 +1,10 @@
 <?php
 
 function simple_function() {
-    fwrite(STDERR, "start_resumable_function\n");
+    $stderr = fopen("php://stderr", "w");
+    fwrite($stderr, "start_resumable_function\n");
     sched_yield_sleep(0.3);
-    fwrite(STDERR, "end_resumable_function\n");
+    fwrite($stderr, "end_resumable_function\n");
     return true;
 }
 
