@@ -709,7 +709,7 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
     static constexpr std::string_view backreference_replacement = "$$$1";
 
     RegexInfo regex_info{backreference_pattern, {replacement.c_str(), replacement.size()}, backreference_replacement};
-    bool success{get_compiled_regex_cache(regex_info)};
+    bool success{compile_regex(regex_info)};
     success &= replace_regex(regex_info, std::numeric_limits<uint64_t>::max());
     if (!success) [[unlikely]] {
       kphp::log::warning("can't replace PHP back references with PCRE2 ones");
