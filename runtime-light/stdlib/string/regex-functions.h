@@ -50,8 +50,6 @@ inline bool valid_preg_replace_mixed(const mixed& param) noexcept {
 
 } // namespace regex_impl_
 
-using regexp = string;
-
 // === preg_match =================================================================================
 
 Optional<int64_t> f$preg_match(const string& pattern, const string& subject,
@@ -209,10 +207,14 @@ auto f$preg_replace_callback(T1&& pattern, T2&& callback, T3&& subject, int64_t 
 
 // === preg_split =================================================================================
 
-Optional<array<mixed>> f$preg_split(const string& regex, const string& subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
+Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
                                     int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept;
 
-inline Optional<array<mixed>> f$preg_split(const mixed& regex, const string& subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
+inline Optional<array<mixed>> f$preg_split(const mixed& pattern, const string& subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
                                            int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
-  return f$preg_split(regexp(regex.to_string()), subject, limit, flags);
+  if (!pattern.is_string()) [[unlikely]] {
+    kphp::log::warning("preg_split() expects parameter 1 to be string, {} given", pattern.get_type_or_class_name());
+    return false;
+  }
+  return f$preg_split(pattern.as_string(), subject, limit, flags);
 }
