@@ -40,6 +40,12 @@ preg_match_all('/(?P<name>\w+): (?P<digit>\d+)/', $str, $matches);
 print_r($matches);
 
 
+$str0 = <<<FOO
+1a: 1
+b: 2
+c: 3a
+FOO;
+
 for ($i = 0; $i < 8000; $i++) {
 //  foreach (array('((?P<abacaba>1)?(?P<name>[a-c]+):() (?P<digit>\d+)(?P<php_bug>a)?)', '=A=i', "/(a)?/") as $pattern) {
   foreach (array('((1)?([a-c]+):() (\d+)(a)?)', '=A=i', "/(a)?/") as $pattern) {

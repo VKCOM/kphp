@@ -16,12 +16,6 @@ $str = 'hypertext language programming';
 $chars = preg_split('/ /', $str, -1, PREG_SPLIT_OFFSET_CAPTURE);
 print_r($chars);
 
-$str0 = <<<FOO
-1a: 1
-b: 2
-c: 3a
-FOO;
-
 foreach (array('2006-05-13', '06-12-12', 'data: "12-Aug-87"') as $s) {
   var_dump(preg_match('~
     (?P<date> 
