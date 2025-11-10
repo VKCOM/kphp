@@ -157,23 +157,6 @@ bool f$rpc_parse(const string& new_rpc_data) {
   return true;
 }
 
-bool f$rpc_parse(const mixed& new_rpc_data) {
-  if (!new_rpc_data.is_string()) {
-    php_warning("Parameter 1 of function rpc_parse must be a string, %s is given", new_rpc_data.get_type_c_str());
-    return false;
-  }
-
-  return f$rpc_parse(new_rpc_data.to_string());
-}
-
-bool f$rpc_parse(bool new_rpc_data) {
-  return f$rpc_parse(mixed{new_rpc_data});
-}
-
-bool f$rpc_parse(const Optional<string>& new_rpc_data) {
-  auto rpc_parse_lambda = [](const auto& v) { return f$rpc_parse(v); };
-  return call_fun_on_optional_value(rpc_parse_lambda, new_rpc_data);
-}
 
 int32_t rpc_get_pos() {
   return static_cast<int32_t>(rpc_data - rpc_data_begin);

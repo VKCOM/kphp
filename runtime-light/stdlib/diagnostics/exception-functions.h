@@ -6,6 +6,7 @@
 
 #include <concepts>
 #include <cstdint>
+#include <source_location>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
@@ -74,6 +75,11 @@ class_instance<T> make_throwable(const string& file, int64_t line, int64_t code,
   instance_ptr->$code = code;
   instance_ptr->$message = desc;
   return instance;
+}
+
+template<std::derived_from<C$Throwable> T>
+class_instance<T> make_throwable(const string& err_msg, int64_t code = 0, std::source_location loc = std::source_location::current()) noexcept {
+  return make_throwable<T>(string{loc.file_name()}, loc.line(), code, err_msg);
 }
 
 } // namespace kphp::exception

@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/rpc/rpc-parse.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
@@ -170,9 +171,15 @@ inline bool f$rpc_clean() noexcept {
   return true;
 }
 
-template<typename T>
-bool f$rpc_parse(T /*unused*/) {
-  kphp::log::error("call to unsupported function");
+bool f$rpc_parse(const string& new_rpc_data) {
+  if (new_rpc_data.size() % sizeof(int) != 0) {
+    php_warning("Wrong parameter \"new_rpc_data\" of len %d passed to function rpc_parse", (int)new_rpc_data.size());
+    return false;
+  }
+
+  const std::span<const std::byte> spn{reinterpret_cast<const std::byte*>(new_rpc_data.c_str()), new_rpc_data.size()};
+  RpcServerInstanceState::get().tl_storer.store_bytes(spn);
+  return true;
 }
 
 // f$rpc_server_fetch_request() definition is generated into the tl/rpc_server_fetch_request.cpp file.
