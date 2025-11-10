@@ -1,45 +1,41 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2024 LLC «V Kontakte»
+// Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+#include <span>
+
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
 
-#define ZSTD_STATIC_LINKING_ONLY
+namespace kphp::zstd {
 
-#include "zstd/zstd.h"
+inline constexpr int64_t DEFAULT_COMPRESS_LEVEL = 3;
 
-constexpr int DEFAULT_COMPRESS_LEVEL = 3;
+// TODO what optional to use? php or std?
+Optional<string> compress(std::span<const std::byte> data, int64_t level = DEFAULT_COMPRESS_LEVEL,
+                          std::span<const std::byte> dict = std::span<const std::byte>{}) noexcept;
 
-namespace zstd_impl_ {
+Optional<string> uncompress(std::span<const std::byte> data, std::span<const std::byte> dict = std::span<const std::byte>{}) noexcept;
 
-Optional<string> compress(const string& data, int64_t level = DEFAULT_COMPRESS_LEVEL, const string& dict = string{}) noexcept;
+} // namespace kphp::zstd
 
-Optional<string> uncompress(const string& data, const string& dict = string{}) noexcept;
-
-} // namespace zstd_impl_
-
-inline Optional<string> f$zstd_compress(const string& data, int64_t level = DEFAULT_COMPRESS_LEVEL) noexcept {
-  const int32_t min_level{ZSTD_minCLevel()};
-  const int32_t max_level{ZSTD_maxCLevel()};
-  if (level < min_level || max_level < level) {
-    kphp::log::warning("zstd_compress: compression level ({}) must be within [{}..{}] or equal to 0", level, min_level, max_level);
-    return false;
-  }
-
-  return zstd_impl_::compress(data, level);
+inline Optional<string> f$zstd_compress(const string& data, int64_t level = kphp::zstd::DEFAULT_COMPRESS_LEVEL) noexcept {
+  return kphp::zstd::compress({reinterpret_cast<const std::byte*>(data.c_str()), static_cast<size_t>(data.size())}, level);
 }
 
 inline Optional<string> f$zstd_uncompress(const string& data) noexcept {
-  return zstd_impl_::uncompress(data);
+  return kphp::zstd::uncompress({reinterpret_cast<const std::byte*>(data.c_str()), static_cast<size_t>(data.size())});
 }
 
 inline Optional<string> f$zstd_compress_dict(const string& data, const string& dict) noexcept {
-  return zstd_impl_::compress(data, DEFAULT_COMPRESS_LEVEL, dict);
+  return kphp::zstd::compress({reinterpret_cast<const std::byte*>(data.c_str()), static_cast<size_t>(data.size())}, kphp::zstd::DEFAULT_COMPRESS_LEVEL,
+                              {reinterpret_cast<const std::byte*>(dict.c_str()), static_cast<size_t>(dict.size())});
 }
 
 inline Optional<string> f$zstd_uncompress_dict(const string& data, const string& dict) noexcept {
-  return zstd_impl_::uncompress(data, dict);
+  return kphp::zstd::uncompress({reinterpret_cast<const std::byte*>(data.c_str()), static_cast<size_t>(data.size())},
+                                {reinterpret_cast<const std::byte*>(dict.c_str()), static_cast<size_t>(dict.size())});
 }

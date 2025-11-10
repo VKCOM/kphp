@@ -135,13 +135,9 @@ function unpack ($pattern ::: string, $data ::: string) ::: mixed[] | false;
  */
 function base_convert ($number ::: string, $frombase ::: int, $tobase ::: int) ::: string;
 
-/** @kphp-extern-func-info */
 function zstd_compress(string $data, int $level = 3) ::: string | false;
-/** @kphp-extern-func-info */
 function zstd_uncompress(string $data) ::: string | false;
-/** @kphp-extern-func-info */
 function zstd_compress_dict(string $data, string $dict) ::: string | false;
-/** @kphp-extern-func-info */
 function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
 
 // === UNSUPPORTED ===
