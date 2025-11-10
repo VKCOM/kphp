@@ -97,13 +97,18 @@ inline int64_t f$rpc_queue_create() noexcept {
   return kphp::rpc::rpc_queue_create({});
 }
 
-inline int64_t f$rpc_queue_create(const array<int64_t>& request_ids) noexcept {
-  int64_t future{kphp::rpc::rpc_queue_create({})};
-  for (auto request_id : request_ids) {
-    kphp::rpc::rpc_queue_push(future, request_id.get_value());
+inline int64_t f$rpc_queue_create(const mixed& request_ids) noexcept {
+  const int64_t queue_id{kphp::rpc::rpc_queue_create({})};
+  if (!request_ids.is_array()) {
+    return queue_id;
+  }
+  for (auto request_id : request_ids.as_array()) {
+    if (request_id.get_value().is_int()) {
+      kphp::rpc::rpc_queue_push(queue_id, request_id.get_value().as_int());
+    }
   }
 
-  return future;
+  return queue_id;
 }
 
 inline void f$rpc_queue_push(int64_t queue_id, int64_t request_id) noexcept {
