@@ -41,6 +41,10 @@ function main() {
         test_curl_reuse_handle(true);
         return;
       }
+      case "/test_curl_reset_handle": {
+        test_curl_reset_handle();
+        return;
+      }
   }
 
   critical_error("unknown test");
@@ -118,6 +122,30 @@ function test_curl_reuse_handle($curl_resumable = false) {
   curl_close($ch);
 
   $resp = ["exec_result1" => to_json_safe($output1), "exec_result2" => to_json_safe($output2)];
+  echo json_encode($resp);
+}
+
+function test_curl_reset_handle() {
+  $params = json_decode(file_get_contents('php://input'));
+
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, (string)$params["url"] . "/before");
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+  $output1 = curl_exec($ch);
+
+  curl_reset($ch);
+
+  $output2 = curl_exec($ch);
+
+  curl_setopt($ch, CURLOPT_URL, (string)$params["url"] . "/after");
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+  $output3 = curl_exec($ch);
+
+  curl_close($ch);
+
+  $resp = ["exec_result1" => to_json_safe($output1), "exec_result2" => to_json_safe($output2), "exec_result3" => to_json_safe($output3)];
   echo json_encode($resp);
 }
 
