@@ -354,8 +354,6 @@ class match_iterator {
   const size_t* ovector;
   size_t match_from;
 
-  uint32_t match_options{PCRE2_NO_UTF_CHECK};
-
 public:
   match_iterator(RegexInfo& regex_info, const size_t* ovector, size_t match_from)
       : regex_info{regex_info},
@@ -363,17 +361,17 @@ public:
         match_from{match_from} {}
 
   bool match_next() noexcept {
-    if (!match_regex(regex_info, match_from, match_options)) [[unlikely]] {
+    if (!match_regex(regex_info, match_from)) [[unlikely]] {
       return false;
     }
 
     if (regex_info.match_count == 0) {
-      if (match_options == PCRE2_NO_UTF_CHECK || match_from == regex_info.subject.size()) {
+      if (regex_info.match_options == PCRE2_NO_UTF_CHECK || match_from == regex_info.subject.size()) {
         return true;
       }
       ++match_from;
       match_from = static_cast<bool>(regex_info.compile_options & PCRE2_UTF) ? skip_utf8_subsequent_bytes(match_from, regex_info.subject) : match_from;
-      match_options = PCRE2_NO_UTF_CHECK;
+      regex_info.match_options = PCRE2_NO_UTF_CHECK;
       return match_next();
     }
 
@@ -382,9 +380,9 @@ public:
 
     match_from = match_end;
     if (match_end == match_start) {
-      match_options = PCRE2_NO_UTF_CHECK | PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
+      regex_info.match_options = PCRE2_NO_UTF_CHECK | PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
     } else {
-      match_options = PCRE2_NO_UTF_CHECK;
+      regex_info.match_options = PCRE2_NO_UTF_CHECK;
     }
     return true;
   }
