@@ -266,7 +266,7 @@ inline auto client::query(std::span<const std::byte> request, B&& response_buffe
   }
 
   kphp::log::assertion(query_count < std::numeric_limits<query_id_type>::max());
-  auto query_id{query_count++};
+  const auto query_id{query_count++};
 
   // Register a new query and send request
   reader.register_query(query_id, details::function_wrapper<std::span<std::byte>, size_t>{std::forward<B>(response_buffer_provider)});
@@ -285,6 +285,11 @@ inline auto client::query(std::span<const std::byte> request, B&& response_buffe
     co_await response_notifier;
     // First of all, turn off notifier
     response_notifier.unset();
+
+    // If reader has been interrupted do not invoke handler and finish normally
+    if (reader.ctx.get()->interrupted.is_set()) {
+      co_return std::expected<void, int32_t>{};
+    }
 
     // If any readers' error has been occurred
     if (reader.ctx.get()->error) [[unlikely]] {
