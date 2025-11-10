@@ -467,3 +467,17 @@ inline auto f$curl_reset(kphp::web::curl::easy id) noexcept -> kphp::coro::task<
   ctx.easy2ctx[id].return_transfer = false;
   ctx.easy2ctx[id].private_data = std::nullopt;
 }
+
+inline auto f$curl_exec_concurrently(kphp::web::curl::easy id, double timeout_s = 1.0) noexcept -> kphp::coro::task<Optional<string>> {
+  f$curl_setopt(id, kphp::web::curl::CURLOPT::TIMEOUT_MS,
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                    kphp::forks::detail::normalize_timeout(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout_s})))
+                    .count());
+  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_perform(id))};
+  if (!res.has_value()) [[unlikely]] {
+    kphp::web::curl::details::set_errno(res.error().code, res.error().description);
+    kphp::web::curl::details::print_error("Could not exec curl easy handle concurrently", std::move(res.error()));
+    co_return false;
+  }
+  co_return res.value().body;
+}
