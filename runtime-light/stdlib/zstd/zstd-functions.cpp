@@ -6,13 +6,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 
 #define ZSTD_STATIC_LINKING_ONLY
 #include "zstd/zstd.h"
 
 #include "common/containers/final_action.h"
-#include "common/smart_ptrs/unique_ptr_with_delete_function.h"
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-context.h"
@@ -29,31 +29,31 @@ constexpr ZSTD_customMem zstd_allocator{[](void*, size_t size) { return kphp::me
 
 namespace kphp::zstd {
 
-Optional<string> compress(std::span<const std::byte> data, int64_t level, std::span<const std::byte> dict) noexcept {
+std::optional<string> compress(std::span<const std::byte> data, int64_t level, std::span<const std::byte> dict) noexcept {
   const int32_t min_level{ZSTD_minCLevel()};
   const int32_t max_level{ZSTD_maxCLevel()};
   if (level < min_level || max_level < level) {
     kphp::log::warning("zstd_compress: compression level ({}) must be within [{}..{}]", level, min_level, max_level);
-    return false;
+    return {};
   }
 
   ZSTD_CCtx* ctx{ZSTD_createCCtx_advanced(zstd_allocator)};
   if (!ctx) {
     kphp::log::warning("zstd_compress: can not create context");
-    return false;
+    return {};
   }
   const auto finalizer{vk::finally([&ctx]() noexcept { ZSTD_freeCCtx(ctx); })};
 
   size_t result{ZSTD_CCtx_setParameter(ctx, ZSTD_c_compressionLevel, static_cast<int>(level))};
   if (ZSTD_isError(result)) {
     kphp::log::warning("zstd_compress: can not init context: {}", ZSTD_getErrorName(result));
-    return false;
+    return {};
   }
 
   result = ZSTD_CCtx_loadDictionary_byReference(ctx, dict.data(), dict.size());
   if (ZSTD_isError(result)) {
     kphp::log::warning("zstd_compress: can not load dict: {}", ZSTD_getErrorName(result));
-    return false;
+    return {};
   }
 
   kphp::log::assertion(ZSTD_CStreamOutSize() <= StringLibContext::STATIC_BUFFER_LENGTH);
@@ -65,7 +65,7 @@ Optional<string> compress(std::span<const std::byte> data, int64_t level, std::s
     result = ZSTD_compressStream2(ctx, &out, &in, ZSTD_e_end);
     if (ZSTD_isError(result)) {
       kphp::log::warning("zstd_compress: got zstd stream compression error: {}", ZSTD_getErrorName(result));
-      return false;
+      return {};
     }
     encoded_string.append(static_cast<char*>(out.dst), out.pos);
     out.pos = 0;
@@ -73,43 +73,43 @@ Optional<string> compress(std::span<const std::byte> data, int64_t level, std::s
   return encoded_string;
 }
 
-Optional<string> uncompress(std::span<const std::byte> data, std::span<const std::byte> dict) noexcept {
+std::optional<string> uncompress(std::span<const std::byte> data, std::span<const std::byte> dict) noexcept {
   auto size{ZSTD_getFrameContentSize(data.data(), data.size())};
   if (size == ZSTD_CONTENTSIZE_ERROR) {
     kphp::log::warning("zstd_uncompress: it was not compressed by zstd");
-    return false;
+    return {};
   }
 
   ZSTD_DCtx* ctx{ZSTD_createDCtx_advanced(zstd_allocator)};
   if (!ctx) {
     kphp::log::warning("zstd_uncompress: can not create context");
-    return false;
+    return {};
   }
   const auto finalizer{vk::finally([&ctx]() noexcept { ZSTD_freeDCtx(ctx); })};
 
   size_t result{ZSTD_DCtx_loadDictionary_byReference(ctx, dict.data(), dict.size())};
   if (ZSTD_isError(result)) {
     kphp::log::warning("zstd_uncompress: can not load dict: {}", ZSTD_getErrorName(result));
-    return false;
+    return {};
   }
 
   if (size != ZSTD_CONTENTSIZE_UNKNOWN) {
     if (size > string::max_size()) {
       kphp::log::warning("zstd_uncompress: trying to uncompress too large data");
-      return false;
+      return {};
     }
     string decompressed{static_cast<string::size_type>(size), false};
     result = ZSTD_decompressDCtx(ctx, decompressed.buffer(), size, data.data(), data.size());
     if (ZSTD_isError(result)) {
       kphp::log::warning("zstd_uncompress: got zstd error: {}", ZSTD_getErrorName(result));
-      return false;
+      return {};
     }
     return decompressed;
   }
 
   if (ZSTD_isError(result)) {
     kphp::log::warning("zstd_uncompress: can not init stream: {}", ZSTD_getErrorName(result));
-    return false;
+    return {};
   }
 
   kphp::log::assertion(ZSTD_DStreamOutSize() <= StringLibContext::STATIC_BUFFER_LENGTH);
@@ -126,7 +126,7 @@ Optional<string> uncompress(std::span<const std::byte> data, std::span<const std
     result = ZSTD_decompressStream(ctx, &out, &in);
     if (ZSTD_isError(result)) {
       kphp::log::warning("zstd_uncompress: can not decompress stream: {}", ZSTD_getErrorName(result));
-      return false;
+      return {};
     }
     if (result == 0) {
       break;

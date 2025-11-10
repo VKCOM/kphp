@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 
 #include "runtime-common/core/runtime-core.h"
@@ -14,28 +15,43 @@ namespace kphp::zstd {
 
 inline constexpr int64_t DEFAULT_COMPRESS_LEVEL = 3;
 
-// TODO what optional to use? php or std?
-Optional<string> compress(std::span<const std::byte> data, int64_t level = DEFAULT_COMPRESS_LEVEL,
-                          std::span<const std::byte> dict = std::span<const std::byte>{}) noexcept;
+std::optional<string> compress(std::span<const std::byte> data, int64_t level = DEFAULT_COMPRESS_LEVEL,
+                               std::span<const std::byte> dict = std::span<const std::byte>{}) noexcept;
 
-Optional<string> uncompress(std::span<const std::byte> data, std::span<const std::byte> dict = std::span<const std::byte>{}) noexcept;
+std::optional<string> uncompress(std::span<const std::byte> data, std::span<const std::byte> dict = std::span<const std::byte>{}) noexcept;
 
 } // namespace kphp::zstd
 
 inline Optional<string> f$zstd_compress(const string& data, int64_t level = kphp::zstd::DEFAULT_COMPRESS_LEVEL) noexcept {
-  return kphp::zstd::compress({reinterpret_cast<const std::byte*>(data.c_str()), static_cast<size_t>(data.size())}, level);
+  auto res{kphp::zstd::compress({reinterpret_cast<const std::byte*>(data.c_str()), static_cast<size_t>(data.size())}, level)};
+  if (!res) [[unlikely]] {
+    return false;
+  }
+  return res.value();
 }
 
 inline Optional<string> f$zstd_uncompress(const string& data) noexcept {
-  return kphp::zstd::uncompress({reinterpret_cast<const std::byte*>(data.c_str()), static_cast<size_t>(data.size())});
+  auto res{kphp::zstd::uncompress({reinterpret_cast<const std::byte*>(data.c_str()), static_cast<size_t>(data.size())})};
+  if (!res) [[unlikely]] {
+    return false;
+  }
+  return res.value();
 }
 
 inline Optional<string> f$zstd_compress_dict(const string& data, const string& dict) noexcept {
-  return kphp::zstd::compress({reinterpret_cast<const std::byte*>(data.c_str()), static_cast<size_t>(data.size())}, kphp::zstd::DEFAULT_COMPRESS_LEVEL,
-                              {reinterpret_cast<const std::byte*>(dict.c_str()), static_cast<size_t>(dict.size())});
+  auto res{kphp::zstd::compress({reinterpret_cast<const std::byte*>(data.c_str()), static_cast<size_t>(data.size())}, kphp::zstd::DEFAULT_COMPRESS_LEVEL,
+                                {reinterpret_cast<const std::byte*>(dict.c_str()), static_cast<size_t>(dict.size())})};
+  if (!res) [[unlikely]] {
+    return false;
+  }
+  return res.value();
 }
 
 inline Optional<string> f$zstd_uncompress_dict(const string& data, const string& dict) noexcept {
-  return kphp::zstd::uncompress({reinterpret_cast<const std::byte*>(data.c_str()), static_cast<size_t>(data.size())},
-                                {reinterpret_cast<const std::byte*>(dict.c_str()), static_cast<size_t>(dict.size())});
+  auto res{kphp::zstd::uncompress({reinterpret_cast<const std::byte*>(data.c_str()), static_cast<size_t>(data.size())},
+                                  {reinterpret_cast<const std::byte*>(dict.c_str()), static_cast<size_t>(dict.size())})};
+  if (!res) [[unlikely]] {
+    return false;
+  }
+  return res.value();
 }
