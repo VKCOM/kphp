@@ -157,7 +157,6 @@ bool f$rpc_parse(const string& new_rpc_data) {
   return true;
 }
 
-
 int32_t rpc_get_pos() {
   return static_cast<int32_t>(rpc_data - rpc_data_begin);
 }
