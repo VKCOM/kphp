@@ -171,7 +171,7 @@ inline bool f$rpc_clean() noexcept {
   return true;
 }
 
-bool f$rpc_parse(const string& new_rpc_data) {
+inline bool f$rpc_parse(const string& new_rpc_data) {
   if (new_rpc_data.size() % sizeof(int) != 0) {
     php_warning("Wrong parameter \"new_rpc_data\" of len %d passed to function rpc_parse", (int)new_rpc_data.size());
     return false;
