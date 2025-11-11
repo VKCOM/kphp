@@ -5,11 +5,10 @@
 #include "runtime-common/stdlib/rpc/rpc-parse.h"
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
 
 bool f$rpc_parse(const mixed& new_rpc_data) noexcept {
   if (!new_rpc_data.is_string()) {
-    kphp::log::warning("Parameter 1 of function rpc_parse must be a string, %s is given", new_rpc_data.get_type_c_str());
+    php_warning("Parameter 1 of function rpc_parse must be a string, %s is given", new_rpc_data.get_type_c_str());
     return false;
   }
 
