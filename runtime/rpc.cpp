@@ -138,7 +138,7 @@ void rpc_parse(const int32_t* new_rpc_data, int32_t new_rpc_data_len) {
   rpc_data_len = new_rpc_data_len;
 }
 
-bool f$rpc_parse(const string& new_rpc_data) {
+bool f$rpc_parse(const string& new_rpc_data) noexcept {
   if (new_rpc_data.size() % sizeof(int) != 0) {
     php_warning("Wrong parameter \"new_rpc_data\" of len %d passed to function rpc_parse", (int)new_rpc_data.size());
     last_rpc_error = "Result's length is not divisible by 4";
