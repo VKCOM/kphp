@@ -20,6 +20,6 @@ bool f$rpc_parse(bool new_rpc_data) noexcept {
 }
 
 bool f$rpc_parse(const Optional<string>& new_rpc_data) noexcept {
-  auto rpc_parse_lambda = [](const auto& v) { return f$rpc_parse(v); };
+  auto rpc_parse_lambda = [](const auto& v) noexcept { return f$rpc_parse(v); };
   return call_fun_on_optional_value(rpc_parse_lambda, new_rpc_data);
 }

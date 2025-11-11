@@ -57,9 +57,10 @@ string f$instance_serialize_safe(const class_instance<InstanceClass>& instance) 
   string err_msg;
   auto result{msgpack_functions_impl_::common_instance_serialize(instance, &err_msg)};
   if (!err_msg.empty()) {
-    THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
+    THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(std::move(err_msg)));
     return {};
   }
+  kphp::log::assertion(result.has_value());
   return result.val();
 }
 
@@ -68,7 +69,7 @@ ResultClass f$instance_deserialize_safe(const string& buffer, const string& /*un
   string err_msg;
   auto res{f$msgpack_deserialize<ResultClass>(buffer, &err_msg)};
   if (!err_msg.empty()) {
-    THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
+    THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(std::move(err_msg)));
     return {};
   }
   return res;

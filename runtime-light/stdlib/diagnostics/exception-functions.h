@@ -66,20 +66,20 @@
 namespace kphp::exception {
 
 template<std::derived_from<C$Throwable> T>
-class_instance<T> make_throwable(const string& file, int64_t line, int64_t code, const string& desc) noexcept {
+class_instance<T> make_throwable(string file, int64_t line, int64_t code, string desc) noexcept {
   auto instance{make_instance<T>()};
 
   auto* instance_ptr{instance.get()};
-  instance_ptr->$file = file;
+  instance_ptr->$file = std::move(file);
   instance_ptr->$line = line;
   instance_ptr->$code = code;
-  instance_ptr->$message = desc;
+  instance_ptr->$message = std::move(desc);
   return instance;
 }
 
 template<std::derived_from<C$Throwable> T>
-class_instance<T> make_throwable(const string& err_msg, int64_t code = 0, std::source_location loc = std::source_location::current()) noexcept {
-  return make_throwable<T>(string{loc.file_name()}, loc.line(), code, err_msg);
+class_instance<T> make_throwable(string err_msg, int64_t code = 0, std::source_location loc = std::source_location::current()) noexcept {
+  return make_throwable<T>(string{loc.file_name()}, loc.line(), code, std::move(err_msg));
 }
 
 } // namespace kphp::exception
@@ -93,6 +93,7 @@ T f$_exception_set_location(const T& e, const string& file, int64_t line) noexce
   return e;
 }
 
-inline Exception f$err(const string& file, int64_t line, const string& code, const string& desc = {}) noexcept {
-  return kphp::exception::make_throwable<C$Exception>(file, line, 0, (RuntimeContext::get().static_SB.clean() << "ERR_" << code << ": " << desc).str());
+inline Exception f$err(string file, int64_t line, const string& code, const string& desc = {}) noexcept {
+  return kphp::exception::make_throwable<C$Exception>(std::move(file), line, 0,
+                                                      (RuntimeContext::get().static_SB.clean() << "ERR_" << code << ": " << desc).str());
 }
