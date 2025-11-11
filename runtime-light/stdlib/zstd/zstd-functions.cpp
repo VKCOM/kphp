@@ -22,8 +22,8 @@ namespace {
 
 static_assert(2 * ZSTD_BLOCKSIZE_MAX < StringLibContext::STATIC_BUFFER_LENGTH, "double block size is expected to be less then buffer size");
 
-constexpr ZSTD_customMem zstd_allocator{[](void*, size_t size) { return kphp::memory::script::alloc(size); },
-                                        [](void*, void* ptr) { return kphp::memory::script::free(ptr); }};
+constexpr ZSTD_customMem zstd_allocator{[](void*, size_t size) noexcept { return kphp::memory::script::alloc(size); },
+                                        [](void*, void* ptr) noexcept { return kphp::memory::script::free(ptr); }};
 
 } // namespace
 
@@ -62,7 +62,7 @@ std::optional<string> compress(std::span<const std::byte> data, int64_t level, s
 
   string encoded_string{};
   do {
-    result = ZSTD_compressStream2(ctx, &out, &in, ZSTD_e_end);
+    result = ZSTD_compressStream2(ctx, std::addressof(out), std::addressof(in), ZSTD_e_end);
     if (ZSTD_isError(result)) {
       kphp::log::warning("zstd_compress: got zstd stream compression error: {}", ZSTD_getErrorName(result));
       return {};
@@ -123,7 +123,7 @@ std::optional<string> uncompress(std::span<const std::byte> data, std::span<cons
       out.pos = 0;
     }
 
-    result = ZSTD_decompressStream(ctx, &out, &in);
+    result = ZSTD_decompressStream(ctx, std::addressof(out), std::addressof(in));
     if (ZSTD_isError(result)) {
       kphp::log::warning("zstd_uncompress: can not decompress stream: {}", ZSTD_getErrorName(result));
       return {};
