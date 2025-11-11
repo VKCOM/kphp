@@ -6,6 +6,7 @@
 
 #include <concepts>
 #include <cstdint>
+#include <memory>
 #include <source_location>
 
 #include "runtime-common/core/runtime-core.h"

@@ -11,9 +11,12 @@
 
 inline Optional<string> f$setlocale(int64_t category, const string& locale) noexcept {
   const int32_t i32category{static_cast<int32_t>(category)};
-  if (k2::uselocale(i32category, locale.c_str()) != k2::errno_ok) {
+  if (k2::uselocale(i32category, {locale.c_str(), locale.size()}) != k2::errno_ok) {
     return false;
   }
-  const auto locale_name{k2::current_locale_name(i32category)};
-  return locale_name.has_value() ? locale_name->data() : false;
+  const auto opt_locale_name{k2::current_locale_name(i32category)};
+  if (!opt_locale_name.has_value()) [[unlikely]] {
+    return false;
+  }
+  return opt_locale_name->data();
 }

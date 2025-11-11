@@ -298,10 +298,10 @@ inline int32_t uselocale(int32_t category, std::string_view locale) noexcept {
 
 inline std::optional<std::string_view> current_locale_name(int32_t category) noexcept {
   auto* name{k2_current_locale_name(category)};
-  if (name) {
-    return name;
+  if (name == nullptr) [[unlikely]] {
+    return std::nullopt;
   }
-  return std::nullopt;
+  return std::string_view{name};
 }
 
 inline int32_t udp_connect(k2::descriptor* descriptor, const char* host, size_t host_len) noexcept {

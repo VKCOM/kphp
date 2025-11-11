@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/msgpack/unpacker.h"
 #include "runtime-common/stdlib/serialization/msgpack-functions.h"
@@ -55,7 +57,7 @@ ResultClass f$instance_deserialize(const string& buffer, const string& /*unused*
 template<class InstanceClass>
 string f$instance_serialize_safe(const class_instance<InstanceClass>& instance) noexcept {
   string err_msg;
-  auto result{msgpack_functions_impl_::common_instance_serialize(instance, &err_msg)};
+  auto result{msgpack_functions_impl_::common_instance_serialize(instance, std::addressof(err_msg))};
   if (!err_msg.empty()) {
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(std::move(err_msg)));
     return {};
@@ -67,7 +69,7 @@ string f$instance_serialize_safe(const class_instance<InstanceClass>& instance) 
 template<class ResultClass>
 ResultClass f$instance_deserialize_safe(const string& buffer, const string& /*unused*/) noexcept {
   string err_msg;
-  auto res{f$msgpack_deserialize<ResultClass>(buffer, &err_msg)};
+  auto res{f$msgpack_deserialize<ResultClass>(buffer, std::addressof(err_msg))};
   if (!err_msg.empty()) {
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(std::move(err_msg)));
     return {};
