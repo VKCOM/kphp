@@ -74,7 +74,7 @@ constexpr int32_t M_PSEUDO = 0xFFD8;
 mixed f$getimagesize(const string& name) noexcept {
   // TODO implement k2::fstat, with fd as parameter
   struct stat stat_buf {};
-  if (k2::stat({name.c_str(), name.size()}, &stat_buf) != k2::errno_ok) {
+  if (k2::stat({name.c_str(), name.size()}, std::addressof(stat_buf)) != k2::errno_ok) {
     return false;
   }
 
@@ -133,7 +133,7 @@ mixed f$getimagesize(const string& name) noexcept {
         return false;
       }
 
-      auto image_deleter = [size](void* ptr) { RuntimeAllocator::get().free_script_memory(ptr, size); };
+      auto image_deleter = [size](void* ptr) noexcept { RuntimeAllocator::get().free_script_memory(ptr, size); };
       std::unique_ptr<void, decltype(image_deleter)> image_unique_ptr{image, std::move(image_deleter)};
 
       std::memcpy(image, buf.begin(), read_size);
