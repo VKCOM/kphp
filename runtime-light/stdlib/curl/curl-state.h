@@ -26,7 +26,7 @@ struct EasyContext {
 } // namespace kphp::web::curl
 
 struct CurlInstanceState final : private vk::not_copyable {
-  uint64_t error_code{0};
+  int64_t error_code{0};
   std::array<std::byte, kphp::web::curl::CURL_ERROR_SIZE> error_description{std::byte{0}};
   kphp::stl::unordered_map<kphp::web::curl::easy_type, kphp::web::curl::EasyContext, kphp::memory::script_allocator> easy2ctx{};
 

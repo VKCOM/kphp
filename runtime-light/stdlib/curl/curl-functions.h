@@ -310,7 +310,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
       return true;
     }
     default:
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT);
+      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT, "A libcurl function was given an incorrect PROXYTYPE kind");
       return false;
     }
   }
@@ -337,7 +337,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
       return true;
     }
     default:
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT);
+      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT, "A libcurl function was given an incorrect SSLVERSION kind");
       return false;
     }
   }
@@ -356,7 +356,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
       return true;
     }
     default:
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT);
+      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT, "A libcurl function was given an incorrect IPRESOLVE kind");
       return false;
     }
   }
@@ -375,7 +375,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
       return true;
     }
     default:
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT);
+      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT, "A libcurl function was given an incorrect NETRC kind");
       return false;
     }
   }
@@ -397,7 +397,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
       return true;
     }
     default:
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT);
+      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT, "A libcurl function was given an incorrect HTTP_VERSION kind");
       return false;
     }
   }
@@ -480,4 +480,16 @@ inline auto f$curl_exec_concurrently(kphp::web::curl::easy id, double timeout_s 
     co_return false;
   }
   co_return res.value().body;
+}
+
+inline auto f$curl_error(kphp::web::curl::easy id) noexcept -> string {
+  auto& ctx{CurlInstanceState::get()};
+  if (ctx.error_code != kphp::web::curl::CURLE::OK) [[likely]] {
+    return string{reinterpret_cast<const char*>(ctx.error_description.data()), static_cast<string::size_type>(ctx.error_description.size())};
+  }
+  return {};
+}
+
+inline auto f$curl_errno(kphp::web::curl::easy id) noexcept -> int64_t {
+  return CurlInstanceState::get().error_code;
 }
