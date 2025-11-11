@@ -4,92 +4,52 @@
 
 #pragma once
 
+#include "runtime-light/stdlib/curl/curl-common.h"
+#include "runtime-light/stdlib/curl/curl-state.h"
+#include "runtime-light/stdlib/curl/defs.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/curl/curl-options.h"
-#include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/output/print-functions.h"
 #include "runtime-light/stdlib/web-transfer-lib/web.h"
 
-namespace kphp::web::curl {
-
-using easy = kphp::web::simple_transfer;
-
-} // namespace kphp::web::curl
-
-namespace kphp::web::curl::details {
-inline auto set_errno(int64_t code, std::string_view description) noexcept {
-  // If Web Transfer Lib specific error
-  if (code == kphp::web::WEB_INTERNAL_ERROR_CODE) [[unlikely]] {
-    return;
-  }
-  auto& ctx{CurlInstanceState::get()};
-  ctx.error_code = code;
-  std::memcpy(ctx.error_description.data(), description.data(), std::min(description.size(), static_cast<size_t>(CURL_ERROR_SIZE)));
-}
-
-inline auto set_errno(int64_t code, std::optional<string> description = std::nullopt) noexcept {
-  if (description.has_value()) {
-    set_errno(code, description.value().c_str());
-    return;
-  }
-  set_errno(code, "");
-}
-
-template<size_t N>
-inline auto bad_option_error(const char (&msg)[N]) noexcept {
-  static_assert(N <= CURL_ERROR_SIZE, "Too long error");
-  kphp::log::warning("{}", msg);
-  set_errno(CURLE::BAD_FUNCTION_ARGUMENT, {{msg, N}});
-}
-
-template<size_t N>
-inline auto print_error(const char (&msg)[N], kphp::web::error&& e) noexcept {
-  static_assert(N <= CURL_ERROR_SIZE, "Too long error");
-  if (e.description.has_value()) {
-    kphp::log::warning("{}\nCode: {}; Description: {}", msg, e.code, e.description.value().c_str());
-  } else {
-    kphp::log::warning("{}: {}", msg, e.code);
-  }
-}
-
-} // namespace kphp::web::curl::details
-
-inline auto f$curl_init(const string url = string("")) noexcept -> kphp::coro::task<kphp::web::curl::easy> {
+inline auto f$curl_init(const string url = string("")) noexcept -> kphp::coro::task<kphp::web::curl::easy_type> {
   auto open_res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_open(kphp::web::transfer_backend::CURL))};
   if (!open_res.has_value()) [[unlikely]] {
-    kphp::web::curl::details::set_errno(open_res.error().code, open_res.error().description);
     kphp::web::curl::details::print_error("Could not initialize a new curl easy handle", std::move(open_res.error()));
     co_return 0;
   }
-  auto setopt_res{kphp::web::set_transfer_prop(open_res.value(), kphp::web::curl::CURLOPT::URL, kphp::web::property_value::as_string(url))};
+  const auto easy_id{open_res.value()};
+  auto setopt_res{kphp::web::set_transfer_prop(easy_id, kphp::web::curl::CURLOPT::URL, kphp::web::property_value::as_string(url))};
   if (!setopt_res.has_value()) [[unlikely]] {
-    kphp::web::curl::details::set_errno(setopt_res.error().code, setopt_res.error().description);
+    auto& curl_state{CurlInstanceState::get()};
+    curl_state.easyctx_get_or_init(easy_id).set_errno(setopt_res.error().code, setopt_res.error().description);
     kphp::web::curl::details::print_error("Could not set URL for a new curl easy handle", std::move(setopt_res.error()));
     co_return 0;
   }
   co_return open_res.value();
 }
 
-inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const mixed& value) noexcept -> bool {
+inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, const mixed& value) noexcept -> bool {
+  auto& curl_state{CurlInstanceState::get()};
+
   if (option == kphp::web::curl::PHPCURL::INFO_HEADER_OUT) {
     auto res{kphp::web::set_transfer_prop(easy_id, kphp::web::curl::CURLOPT::VERBOSE, kphp::web::property_value::as_long(value.to_int()))};
     if (!res.has_value()) [[unlikely]] {
       kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
     }
-    kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+    curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
     return true;
   }
 
   if (option == kphp::web::curl::PHPCURL::OPT_RETURNTRANSFER) {
-    auto& ctx{CurlInstanceState::get()};
-    ctx.easyctx_get_or_init(easy_id).return_transfer = (value.to_int());
-    kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+    curl_state.easyctx_get_or_init(easy_id).return_transfer = (value.to_int());
+    curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
     return true;
   }
 
@@ -160,7 +120,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
       kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
       return false;
     }
-    kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+    curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
     return true;
   }
   // "off_t" options
@@ -171,7 +131,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
       kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
       return false;
     }
-    kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+    curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
     return true;
   }
   // "string" options
@@ -225,7 +185,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
       kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
       return false;
     }
-    kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+    curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
     return true;
   }
   // "linked list" options
@@ -237,12 +197,12 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
   // case kphp::web::curl::CURLOPT::MAIL_RCPT:
   case kphp::web::curl::CURLOPT::RESOLVE: {
     if (unlikely(!value.is_array())) [[unlikely]] {
-      kphp::web::curl::details::bad_option_error("Value must be an array in function curl_setopt\n");
+      curl_state.easyctx_get_or_init(easy_id).bad_option_error("Value must be an array in function curl_setopt\n");
       return false;
     }
     const auto& arr = value.as_array();
     if (arr.empty()) [[unlikely]] {
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
       return true;
     }
     array<string> arr_of_str{arr.size()};
@@ -255,7 +215,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
       kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
       return false;
     }
-    kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+    curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
     return true;
   }
   case kphp::web::curl::CURLOPT::POSTFIELDS: {
@@ -265,12 +225,12 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
         kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
         return false;
       }
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
       return true;
     }
     const auto& arr = value.as_array();
     if (arr.empty()) [[unlikely]] {
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
       return true;
     }
     array<string> arr_of_str{arr.size()};
@@ -278,7 +238,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
       const string k = f$strval(p.get_key());
       const string v = f$strval(p.get_value());
       if (!v.empty() && v[0] == '@') [[unlikely]] {
-        kphp::web::curl::details::bad_option_error("files posting is not supported in curl_setopt with CURLOPT_POSTFIELDS\n");
+        curl_state.easyctx_get_or_init(easy_id).bad_option_error("files posting is not supported in curl_setopt with CURLOPT_POSTFIELDS\n");
         return false;
       }
       arr_of_str[k] = v;
@@ -288,7 +248,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
       kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
       return false;
     }
-    kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+    curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
     return true;
   }
   // "enumeration" options
@@ -306,11 +266,12 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
         kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
         return false;
       }
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
       return true;
     }
     default:
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT, "A libcurl function was given an incorrect PROXYTYPE kind");
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT,
+                                                        "A libcurl function was given an incorrect PROXYTYPE kind");
       return false;
     }
   }
@@ -333,11 +294,12 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
         kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
         return false;
       }
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
       return true;
     }
     default:
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT, "A libcurl function was given an incorrect SSLVERSION kind");
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT,
+                                                        "A libcurl function was given an incorrect SSLVERSION kind");
       return false;
     }
   }
@@ -352,11 +314,12 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
         kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
         return false;
       }
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
       return true;
     }
     default:
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT, "A libcurl function was given an incorrect IPRESOLVE kind");
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT,
+                                                        "A libcurl function was given an incorrect IPRESOLVE kind");
       return false;
     }
   }
@@ -371,11 +334,11 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
         kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
         return false;
       }
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
       return true;
     }
     default:
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT, "A libcurl function was given an incorrect NETRC kind");
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT, "A libcurl function was given an incorrect NETRC kind");
       return false;
     }
   }
@@ -393,11 +356,12 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
         kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
         return false;
       }
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
       return true;
     }
     default:
-      kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT, "A libcurl function was given an incorrect HTTP_VERSION kind");
+      curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::BAD_FUNCTION_ARGUMENT,
+                                                        "A libcurl function was given an incorrect HTTP_VERSION kind");
       return false;
     }
   }
@@ -409,22 +373,21 @@ inline auto f$curl_setopt(kphp::web::curl::easy easy_id, int64_t option, const m
       kphp::web::curl::details::print_error("Could not set an option", std::move(res.error()));
       return false;
     }
-    kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+    curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
     return true;
   }
   case kphp::web::curl::CURLOPT::PRIVATE: {
-    auto& ctx{CurlInstanceState::get()};
-    ctx.easyctx_get_or_init(easy_id).private_data = value.to_string();
-    kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::OK);
+    curl_state.easyctx_get_or_init(easy_id).private_data = value.to_string();
+    curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::OK);
     return true;
   }
   default:
-    kphp::web::curl::details::set_errno(kphp::web::curl::CURLE::UNKNOWN_OPTION);
+    curl_state.easyctx_get_or_init(easy_id).set_errno(kphp::web::curl::CURLE::UNKNOWN_OPTION);
     return false;
   }
 }
 
-inline auto f$curl_setopt_array(kphp::web::curl::easy easy_id, const array<mixed>& options) noexcept -> bool {
+inline auto f$curl_setopt_array(kphp::web::curl::easy_type easy_id, const array<mixed>& options) noexcept -> bool {
   for (auto p : options) {
     if (!f$curl_setopt(easy_id, p.get_key().to_int(), p.get_value())) {
       return false;
@@ -433,63 +396,73 @@ inline auto f$curl_setopt_array(kphp::web::curl::easy easy_id, const array<mixed
   return true;
 }
 
-inline auto f$curl_exec(kphp::web::curl::easy id) noexcept -> kphp::coro::task<mixed> {
-  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_perform(id))};
+inline auto f$curl_exec(kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<mixed> {
+  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_perform(easy_id))};
   if (!res.has_value()) [[unlikely]] {
-    kphp::web::curl::details::set_errno(res.error().code, res.error().description);
+    auto& curl_state{CurlInstanceState::get()};
+    curl_state.easyctx_get_or_init(easy_id).set_errno(res.error().code, res.error().description);
     kphp::web::curl::details::print_error("Could not exec curl easy handle", std::move(res.error()));
     co_return false;
   }
-  auto& ctx{CurlInstanceState::get()};
-  if (ctx.easy2ctx.contains(id) && ctx.easy2ctx[id].return_transfer) {
+  auto& curl_state{CurlInstanceState::get()};
+  if (curl_state.easy2ctx.contains(easy_id) && curl_state.easyctx_get_or_init(easy_id).return_transfer) {
     co_return res.value().body;
   }
   print(res.value().body);
   co_return true;
 }
 
-inline auto f$curl_close(kphp::web::curl::easy id) noexcept -> kphp::coro::task<void> {
-  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_close(id))};
+inline auto f$curl_close(kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<void> {
+  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_close(easy_id))};
   if (!res.has_value()) [[unlikely]] {
-    kphp::web::curl::details::set_errno(res.error().code, res.error().description);
+    auto& curl_state{CurlInstanceState::get()};
+    curl_state.easyctx_get_or_init(easy_id).set_errno(res.error().code, res.error().description);
     kphp::web::curl::details::print_error("Could not close curl easy handle", std::move(res.error()));
   }
 }
 
-inline auto f$curl_reset(kphp::web::curl::easy id) noexcept -> kphp::coro::task<void> {
-  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_reset(id))};
-  auto& ctx{CurlInstanceState::get()};
+inline auto f$curl_reset(kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<void> {
+  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_reset(easy_id))};
   if (!res.has_value()) [[unlikely]] {
-    kphp::web::curl::details::set_errno(res.error().code, res.error().description);
+    auto& curl_state{CurlInstanceState::get()};
+    curl_state.easyctx_get_or_init(easy_id).set_errno(res.error().code, res.error().description);
     kphp::web::curl::details::print_error("Could not reset curl easy handle", std::move(res.error()));
     co_return;
   }
-  ctx.easy2ctx[id].return_transfer = false;
-  ctx.easy2ctx[id].private_data = std::nullopt;
+  auto& curl_state{CurlInstanceState::get()};
+  curl_state.easyctx_get_or_init(easy_id).return_transfer = false;
+  curl_state.easyctx_get_or_init(easy_id).private_data = std::nullopt;
 }
 
-inline auto f$curl_exec_concurrently(kphp::web::curl::easy id, double timeout_s = 1.0) noexcept -> kphp::coro::task<Optional<string>> {
-  f$curl_setopt(id, kphp::web::curl::CURLOPT::TIMEOUT_MS,
+inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double timeout_s = 1.0) noexcept -> kphp::coro::task<Optional<string>> {
+  f$curl_setopt(easy_id, kphp::web::curl::CURLOPT::TIMEOUT_MS,
                 std::chrono::duration_cast<std::chrono::milliseconds>(
                     kphp::forks::detail::normalize_timeout(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout_s})))
                     .count());
-  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_perform(id))};
+  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_perform(easy_id))};
   if (!res.has_value()) [[unlikely]] {
-    kphp::web::curl::details::set_errno(res.error().code, res.error().description);
+    auto& curl_state{CurlInstanceState::get()};
+    curl_state.easyctx_get_or_init(easy_id).set_errno(res.error().code, res.error().description);
     kphp::web::curl::details::print_error("Could not exec curl easy handle concurrently", std::move(res.error()));
     co_return false;
   }
   co_return res.value().body;
 }
 
-inline auto f$curl_error(kphp::web::curl::easy id) noexcept -> string {
-  auto& ctx{CurlInstanceState::get()};
-  if (ctx.error_code != kphp::web::curl::CURLE::OK) [[likely]] {
-    return string{reinterpret_cast<const char*>(ctx.error_description.data()), static_cast<string::size_type>(ctx.error_description.size())};
+inline auto f$curl_error(kphp::web::curl::easy_type easy_id) noexcept -> string {
+  auto& curl_state{CurlInstanceState::get()};
+  if (curl_state.easy2ctx.contains(easy_id) && curl_state.easyctx_get_or_init(easy_id).error_code != kphp::web::curl::CURLE::OK) [[likely]] {
+    const auto desc_data{reinterpret_cast<const char*>(curl_state.easyctx_get_or_init(easy_id).error_description.data())};
+    const auto desc_size{static_cast<string::size_type>(curl_state.easyctx_get_or_init(easy_id).error_description.size())};
+    return string{desc_data, desc_size};
   }
   return {};
 }
 
-inline auto f$curl_errno(kphp::web::curl::easy id) noexcept -> int64_t {
-  return CurlInstanceState::get().error_code;
+inline auto f$curl_errno(kphp::web::curl::easy_type easy_id) noexcept -> int64_t {
+  auto& curl_state{CurlInstanceState::get()};
+  if (curl_state.easy2ctx.contains(easy_id)) {
+    return curl_state.easyctx_get_or_init(easy_id).error_code;
+  }
+  return 0;
 }

@@ -4,9 +4,15 @@
 
 #pragma once
 
+#include "runtime-light/stdlib/web-transfer-lib/defs.h"
+
 #include <cstdint>
 
 namespace kphp::web::curl {
+
+using easy_type = simple_transfer;
+
+constexpr auto CURL_ERROR_SIZE = 256;
 
 enum CURLE : uint16_t {
   OK = 0,
