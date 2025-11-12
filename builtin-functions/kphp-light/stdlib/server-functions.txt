@@ -65,6 +65,10 @@ function memory_get_usage ($real_usage ::: bool = false) ::: int;
 
 function memory_get_peak_usage ($real_usage ::: bool = false) ::: int;
 
+function setlocale ($category ::: int, $locale ::: string) ::: string | false;
+
+function memory_get_detailed_stats() ::: int[];
+
 // ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info stub */
@@ -94,8 +98,6 @@ function inet_pton ($address ::: string) ::: string | false;
 function memory_get_total_usage() ::: int;
 /** @kphp-extern-func-info stub generation-required */
 function memory_get_static_usage() ::: int;
-/** @kphp-extern-func-info stub generation-required */
-function memory_get_detailed_stats() ::: int[];
 
 /** @kphp-extern-func-info stub */
 function kphp_extended_instance_cache_metrics_init(callable(string $key):string $normalization_function) ::: void;
@@ -117,9 +119,6 @@ define('LC_MONETARY', 4);
 define('LC_NUMERIC', 1);
 define('LC_TIME', 2);
 define('LC_MESSAGES', 5);
-
-/** @kphp-extern-func-info stub generation-required */
-function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
 function debug_backtrace() ::: string[][];
 
