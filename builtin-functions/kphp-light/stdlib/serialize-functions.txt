@@ -54,7 +54,7 @@ function msgpack_deserialize($v ::: string) ::: mixed;
 function msgpack_serialize_safe($v ::: mixed) ::: string;
 /** @kphp-extern-func-info can_throw stub generation-required */
 function msgpack_deserialize_safe($v ::: string) ::: mixed;
-/** @kphp-extern-func-info can_throw stub */
+/** @kphp-extern-func-info can_throw */
 function instance_serialize_safe(object $instance) ::: string;
-/** @kphp-extern-func-info cpp_template_call can_throw stub */
+/** @kphp-extern-func-info cpp_template_call can_throw */
 function instance_deserialize_safe($serialized ::: string, $to_type ::: string) ::: instance<^2>;

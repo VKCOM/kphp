@@ -94,7 +94,7 @@ function inet_pton ($address ::: string) ::: string | false;
 function memory_get_total_usage() ::: int;
 /** @kphp-extern-func-info stub generation-required */
 function memory_get_static_usage() ::: int;
-/** @kphp-extern-func-info stub generation-required */
+
 function memory_get_detailed_stats() ::: int[];
 
 /** @kphp-extern-func-info stub */
@@ -118,7 +118,6 @@ define('LC_NUMERIC', 1);
 define('LC_TIME', 2);
 define('LC_MESSAGES', 5);
 
-/** @kphp-extern-func-info stub generation-required */
 function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
 function debug_backtrace() ::: string[][];
