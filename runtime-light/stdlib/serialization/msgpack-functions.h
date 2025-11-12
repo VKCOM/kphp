@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <memory>
+#include <utility>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/msgpack/unpacker.h"
