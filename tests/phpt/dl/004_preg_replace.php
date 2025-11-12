@@ -16,9 +16,9 @@ var_dump (preg_replace ('~|q~', '{\0}', 'ex'));
 var_dump (preg_replace ('~|q~', 'w', 'e'));
 var_dump (preg_replace ('~|q~', 'w', 'q'));
 /* bug in PHP
-var_dump (preg_replace ('~|é~u', 'ï', 'ð'));
+var_dump (preg_replace ('~|Ð¹~u', 'Ð¿', 'Ñ€'));
 */
-var_dump (preg_replace ('~|é~u', 'ï', 'é'));
+var_dump (preg_replace ('~|Ð¹~u', 'Ð¿', 'Ð¹'));
 
 
 $string = 'April 15, 2003';
