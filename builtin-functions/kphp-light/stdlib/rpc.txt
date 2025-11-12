@@ -113,6 +113,8 @@ function rpc_queue_push ($queue_id ::: int, $request_id ::: int) ::: void;
 
 function rpc_queue_empty ($queue_id ::: int) ::: bool;
 
+function rpc_parse ($data) ::: bool;
+
 /** @kphp-extern-func-info interruptible */
 function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int | false;
 
@@ -120,8 +122,6 @@ function rpc_queue_next ($queue_id ::: int, $timeout ::: float = -1.0) ::: int |
 
 /** @kphp-extern-func-info interruptible stub generation-required */
 function new_rpc_connection ($str ::: string, $port ::: int, $actor_id ::: mixed = 0, $timeout ::: float = 0.3, $connect_timeout ::: float = 0.3, $reconnect_timeout ::: float = 17.0) ::: \RpcConnection; // TODO: make actor_id int
-
-function rpc_parse ($data) ::: bool;
 
 /** @kphp-extern-func-info interruptible stub generation-required */
 function store_finish() ::: bool;
