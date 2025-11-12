@@ -37,11 +37,6 @@ using regex_pcre2_group_names_t = kphp::stl::vector<const char*, kphp::memory::s
 
 struct RegexInfo final {
   std::string_view regex;
-  // non-null-terminated regex without delimiters and PCRE modifiers
-  //
-  // regex       ->  ~pattern~im\0
-  // regex_body  ->   pattern
-  std::string_view regex_body;
   std::string_view subject;
   std::string_view replacement;
 
@@ -102,7 +97,30 @@ int64_t skip_utf8_subsequent_bytes(int64_t offset, const std::string_view subjec
   return offset;
 }
 
-bool parse_regex(RegexInfo& regex_info) noexcept {
+bool compile_regex(RegexInfo& regex_info) noexcept {
+  const vk::final_action finalizer{[&regex_info]() noexcept {
+    if (regex_info.regex_code != nullptr) [[likely]] {
+      pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_CAPTURECOUNT, std::addressof(regex_info.capture_count));
+      ++regex_info.capture_count; // to also count entire match
+    } else {
+      regex_info.capture_count = 0;
+    }
+  }};
+
+  auto& regex_state{RegexInstanceState::get()};
+  if (!regex_state.compile_context) [[unlikely]] {
+    return false;
+  }
+
+  // check runtime cache
+  if (const auto it{regex_state.regex_pcre2_code_cache.find({regex_info.regex.data(), static_cast<string::size_type>(regex_info.regex.size())})};
+      it != regex_state.regex_pcre2_code_cache.end()) {
+    auto& [compile_options, regex_code] = it->second;
+    regex_info.compile_options = compile_options;
+    regex_info.regex_code = regex_code;
+    return true;
+  }
+
   if (regex_info.regex.empty()) {
     kphp::log::warning("empty regex");
     return false;
@@ -149,18 +167,22 @@ bool parse_regex(RegexInfo& regex_info) noexcept {
   }
 
   uint32_t compile_options{};
-  regex_info.regex_body = regex_info.regex;
+  // non-null-terminated regex without delimiters and PCRE modifiers
+  //
+  // regex       ->  ~pattern~im\0
+  // regex_body  ->   pattern
+  std::string_view regex_body = regex_info.regex;
 
   // remove start delimiter
-  regex_info.regex_body.remove_prefix(1);
+  regex_body.remove_prefix(1);
   // parse compile options and skip all symbols until the end delimiter
-  for (; !regex_info.regex_body.empty() && regex_info.regex_body.back() != end_delim; regex_info.regex_body.remove_suffix(1)) {
+  for (; !regex_body.empty() && regex_body.back() != end_delim; regex_body.remove_suffix(1)) {
     // spaces and newlines are ignored
-    if (regex_info.regex_body.back() == ' ' || regex_info.regex_body.back() == '\n') {
+    if (regex_body.back() == ' ' || regex_body.back() == '\n') {
       continue;
     }
 
-    switch (regex_info.regex_body.back()) {
+    switch (regex_body.back()) {
     case 'i': {
       compile_options |= PCRE2_CASELESS;
       break;
@@ -202,13 +224,13 @@ bool parse_regex(RegexInfo& regex_info) noexcept {
       break;
     }
     default: {
-      kphp::log::warning("unsupported regex modifier {}", regex_info.regex_body.back());
+      kphp::log::warning("unsupported regex modifier {}", regex_body.back());
       break;
     }
     }
   }
 
-  if (regex_info.regex_body.empty()) {
+  if (regex_body.empty()) {
     kphp::log::warning("no ending regex delimiter: {}", regex_info.regex);
     return false;
   }
@@ -225,37 +247,13 @@ bool parse_regex(RegexInfo& regex_info) noexcept {
   }
 
   // remove the end delimiter
-  regex_info.regex_body.remove_suffix(1);
-  regex_info.compile_options = compile_options;
-  return true;
-}
+  regex_body.remove_suffix(1);
 
-bool compile_regex(RegexInfo& regex_info) noexcept {
-  const vk::final_action finalizer{[&regex_info]() noexcept {
-    if (regex_info.regex_code != nullptr) [[likely]] {
-      pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_CAPTURECOUNT, std::addressof(regex_info.capture_count));
-      ++regex_info.capture_count; // to also count entire match
-    } else {
-      regex_info.capture_count = 0;
-    }
-  }};
-
-  auto& regex_state{RegexInstanceState::get()};
-  if (!regex_state.compile_context) [[unlikely]] {
-    return false;
-  }
-
-  // check runtime cache
-  if (const auto it{regex_state.regex_pcre2_code_cache.find(regex_info.regex)}; it != regex_state.regex_pcre2_code_cache.end()) {
-    regex_info.regex_code = it->second;
-    return true;
-  }
   // compile pcre2_code
   int32_t error_number{};
   PCRE2_SIZE error_offset{};
-  regex_pcre2_code_t regex_code{pcre2_compile_8(reinterpret_cast<PCRE2_SPTR8>(regex_info.regex_body.data()), regex_info.regex_body.size(),
-                                                regex_info.compile_options, std::addressof(error_number), std::addressof(error_offset),
-                                                regex_state.compile_context.get())};
+  regex_pcre2_code_t regex_code{pcre2_compile_8(reinterpret_cast<PCRE2_SPTR8>(regex_body.data()), regex_body.size(), compile_options,
+                                                std::addressof(error_number), std::addressof(error_offset), regex_state.compile_context.get())};
   if (!regex_code) [[unlikely]] {
     std::array<char, ERROR_BUFFER_LENGTH> buffer{};
     pcre2_get_error_message_8(error_number, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
@@ -263,9 +261,9 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
     return false;
   }
 
-  // add compiled code to runtime cache
-  regex_state.regex_pcre2_code_cache.emplace(regex_info.regex, regex_code);
+  regex_state.add_compiled_code(regex_info.regex, compile_options, regex_code);
 
+  regex_info.compile_options = compile_options;
   regex_info.regex_code = regex_code;
   return true;
 }
@@ -290,7 +288,7 @@ bool collect_group_names(RegexInfo& regex_info) noexcept {
   pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMEENTRYSIZE, std::addressof(name_entry_size));
 
   PCRE2_SPTR8 entry{name_table};
-  for (auto i = 0; i < name_count; ++i) {
+  for (auto i{0}; i < name_count; ++i) {
     const auto group_number{static_cast<uint16_t>((entry[0] << 8) | entry[1])};
     PCRE2_SPTR8 group_name{std::next(entry, 2)};
     regex_info.group_names[group_number] = reinterpret_cast<const char*>(group_name);
@@ -322,6 +320,45 @@ bool match_regex(RegexInfo& regex_info, size_t offset) noexcept {
   return true;
 }
 
+class match_iterator {
+  RegexInfo& regex_info;
+  const size_t* ovector;
+  size_t match_from;
+
+public:
+  match_iterator(RegexInfo& regex_info, const size_t* ovector, size_t match_from)
+      : regex_info{regex_info},
+        ovector{ovector},
+        match_from{match_from} {}
+
+  bool match_next() noexcept {
+    if (!match_regex(regex_info, match_from)) [[unlikely]] {
+      return false;
+    }
+
+    if (regex_info.match_count == 0) {
+      if (regex_info.match_options == PCRE2_NO_UTF_CHECK || match_from == regex_info.subject.size()) {
+        return true;
+      }
+      ++match_from;
+      match_from = static_cast<bool>(regex_info.compile_options & PCRE2_UTF) ? skip_utf8_subsequent_bytes(match_from, regex_info.subject) : match_from;
+      regex_info.match_options = PCRE2_NO_UTF_CHECK;
+      return match_next();
+    }
+
+    auto match_start{ovector[0]};
+    auto match_end{ovector[1]};
+
+    match_from = match_end;
+    if (match_end == match_start) {
+      regex_info.match_options = PCRE2_NO_UTF_CHECK | PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
+    } else {
+      regex_info.match_options = PCRE2_NO_UTF_CHECK;
+    }
+    return true;
+  }
+};
+
 // returns the ending offset of the entire match
 PCRE2_SIZE set_matches(const RegexInfo& regex_info, int64_t flags, std::optional<std::reference_wrapper<mixed>> opt_matches,
                        trailing_unmatch last_unmatched_policy) noexcept {
@@ -343,7 +380,7 @@ PCRE2_SIZE set_matches(const RegexInfo& regex_info, int64_t flags, std::optional
   const auto unmatched_as_null{static_cast<bool>(flags & kphp::regex::PREG_UNMATCHED_AS_NULL)};
   // calculate last matched group
   int64_t last_matched_group{-1};
-  for (auto i = 0; i < regex_info.match_count; ++i) {
+  for (auto i{0}; i < regex_info.match_count; ++i) {
     if (ovector[static_cast<ptrdiff_t>(2 * i)] != PCRE2_UNSET) {
       last_matched_group = i;
     }
@@ -354,7 +391,7 @@ PCRE2_SIZE set_matches(const RegexInfo& regex_info, int64_t flags, std::optional
 
   // reserve enough space for output
   array<mixed> output{array_size{static_cast<int64_t>(regex_info.group_names.size() + named_groups_count), named_groups_count == 0}};
-  for (auto i = 0; i < regex_info.group_names.size(); ++i) {
+  for (auto i{0}; i < regex_info.group_names.size(); ++i) {
     // skip unmatched groups at the end unless unmatched_as_null is set
     if (last_unmatched_policy == trailing_unmatch::skip && i > last_matched_group && !unmatched_as_null) [[unlikely]] {
       break;
@@ -493,6 +530,83 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
   return true;
 }
 
+std::optional<mixed> make_output_val(RegexInfo& regex_info, bool no_empty, bool offset_capture, size_t start_offset, size_t end_offset) noexcept {
+  const auto size{end_offset - start_offset};
+  if (no_empty && size == 0) {
+    return std::nullopt;
+  }
+
+  auto val{string{std::next(regex_info.subject.data(), start_offset), static_cast<string::size_type>(size)}};
+
+  mixed output_val;
+  if (offset_capture) {
+    output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(start_offset));
+  } else {
+    output_val = std::move(val);
+  }
+
+  return output_val;
+}
+
+std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val, bool no_empty, bool delim_capture, bool offset_capture) noexcept {
+  auto offset{0uz};
+
+  if (limit_val == 0) {
+    limit_val = kphp::regex::PREG_NOLIMIT;
+  }
+
+  const auto& regex_state{RegexInstanceState::get()};
+  if (regex_info.regex_code == nullptr || !regex_state.match_context) [[unlikely]] {
+    return std::nullopt;
+  }
+
+  auto* const match_data{regex_state.regex_pcre2_match_data.get()};
+  auto* const offsets{pcre2_get_ovector_pointer_8(match_data)};
+
+  auto match_it{match_iterator{regex_info, offsets, {}}};
+
+  array<mixed> output{};
+
+  while (limit_val == kphp::regex::PREG_NOLIMIT || limit_val > 1) {
+    if (!match_it.match_next()) [[unlikely]] {
+      return std::nullopt;
+    }
+
+    if (regex_info.match_count == 0) {
+      break;
+    }
+
+    auto match_start{offsets[0]};
+    auto match_end{offsets[1]};
+
+    make_output_val(regex_info, no_empty, offset_capture, offset, match_start).transform([&output, &limit_val](auto&& output_val) noexcept {
+      output.push_back(std::move(output_val));
+      if (limit_val != kphp::regex::PREG_NOLIMIT) {
+        limit_val--;
+      }
+      return 0;
+    });
+
+    if (delim_capture) {
+      for (auto i{1uz}; i < regex_info.match_count; i++) {
+        auto j{2 * i};
+        make_output_val(regex_info, no_empty, offset_capture, offsets[j], offsets[j + 1]).transform([&output](auto&& output_val) noexcept {
+          output.push_back(std::move(output_val));
+          return 0;
+        });
+      }
+    }
+
+    offset = match_end;
+  }
+
+  make_output_val(regex_info, no_empty, offset_capture, offset, regex_info.subject.size()).transform([&output](auto&& output_val) noexcept {
+    output.push_back(std::move(output_val));
+    return 0;
+  });
+  return output;
+}
+
 } // namespace
 
 Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches,
@@ -501,7 +615,6 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
 
   bool success{valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_OFFSET_CAPTURE, kphp::regex::PREG_UNMATCHED_AS_NULL)};
   success &= correct_offset(offset, regex_info.subject);
-  success &= parse_regex(regex_info);
   success &= compile_regex(regex_info);
   success &= collect_group_names(regex_info);
   success &= match_regex(regex_info, offset);
@@ -528,7 +641,6 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
   bool success{valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_PATTERN_ORDER, kphp::regex::PREG_SET_ORDER,
                                  kphp::regex::PREG_OFFSET_CAPTURE, kphp::regex::PREG_UNMATCHED_AS_NULL)};
   success &= correct_offset(offset, regex_info.subject);
-  success &= parse_regex(regex_info);
   success &= compile_regex(regex_info);
   success &= collect_group_names(regex_info);
 
@@ -586,7 +698,7 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
     }
   }};
 
-  if (limit < 0 && limit != kphp::regex::PREG_REPLACE_NOLIMIT) [[unlikely]] {
+  if (limit < 0 && limit != kphp::regex::PREG_NOLIMIT) [[unlikely]] {
     kphp::log::warning("invalid limit {} in preg_replace", limit);
     return {};
   }
@@ -597,8 +709,7 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
     static constexpr std::string_view backreference_replacement = "$$$1";
 
     RegexInfo regex_info{backreference_pattern, {replacement.c_str(), replacement.size()}, backreference_replacement};
-    bool success{parse_regex(regex_info)};
-    success &= compile_regex(regex_info);
+    bool success{compile_regex(regex_info)};
     success &= replace_regex(regex_info, std::numeric_limits<uint64_t>::max());
     if (!success) [[unlikely]] {
       kphp::log::warning("can't replace PHP back references with PCRE2 ones");
@@ -609,9 +720,8 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
 
   RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
 
-  bool success{parse_regex(regex_info)};
-  success &= compile_regex(regex_info);
-  success &= replace_regex(regex_info, limit == kphp::regex::PREG_REPLACE_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit));
+  bool success{compile_regex(regex_info)};
+  success &= replace_regex(regex_info, limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit));
   if (!success) [[unlikely]] {
     return {};
   }
@@ -737,4 +847,19 @@ mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed
   }
 
   return std::move(result);
+}
+
+Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject, int64_t limit, int64_t flags) noexcept {
+  RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}};
+
+  valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_SPLIT_NO_EMPTY, kphp::regex::PREG_SPLIT_DELIM_CAPTURE,
+                    kphp::regex::PREG_SPLIT_OFFSET_CAPTURE);
+  compile_regex(regex_info);
+  auto output = split_regex(regex_info, limit, (flags & kphp::regex::PREG_SPLIT_NO_EMPTY) != 0, (flags & kphp::regex::PREG_SPLIT_DELIM_CAPTURE) != 0,
+                            (flags & kphp::regex::PREG_SPLIT_OFFSET_CAPTURE) != 0);
+  if (!output.has_value()) [[unlikely]] {
+    return false;
+  }
+
+  return *output;
 }
