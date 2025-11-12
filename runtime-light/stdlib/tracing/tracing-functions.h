@@ -13,8 +13,7 @@ inline class_instance<C$KphpSpan> f$kphp_tracing_get_current_active_span() noexc
   return {};
 }
 
-inline void f$kphp_tracing_func_enter_branch(int /*$branch_num*/) noexcept {
-}
+inline void f$kphp_tracing_func_enter_branch(int /*$branch_num*/) noexcept {}
 
 inline class_instance<C$KphpSpan> f$kphp_tracing_get_root_span() noexcept {
   return {};
@@ -34,16 +33,12 @@ inline class_instance<C$KphpSpan> f$kphp_tracing_start_span([[maybe_unused]] con
 }
 
 template<typename F>
-void f$kphp_tracing_register_enums_provider([[maybe_unused]] F&& cb_custom_enums) noexcept {
-}
+void f$kphp_tracing_register_enums_provider([[maybe_unused]] F&& cb_custom_enums) noexcept {}
 
 template<typename F>
-void f$kphp_tracing_register_on_finish([[maybe_unused]] F&& cb_should_be_flushed) noexcept {
-}
+void f$kphp_tracing_register_on_finish([[maybe_unused]] F&& cb_should_be_flushed) noexcept {}
 
 template<typename F1, typename F2>
-void f$kphp_tracing_register_rpc_details_provider([[maybe_unused]] F1&& cb_for_typed, [[maybe_unused]] F2&& cb_for_untyped) noexcept {
-}
+void f$kphp_tracing_register_rpc_details_provider([[maybe_unused]] F1&& cb_for_typed, [[maybe_unused]] F2&& cb_for_untyped) noexcept {}
 
-inline void f$kphp_tracing_set_level([[maybe_unused]] int64_t trace_level) noexcept {
-}
+inline void f$kphp_tracing_set_level([[maybe_unused]] int64_t trace_level) noexcept {}
