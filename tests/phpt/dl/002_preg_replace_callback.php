@@ -1,4 +1,4 @@
-@ok callback benchmark k2_skip
+@ok callback benchmark
 <?php
 
 define('RE_URL_PATTERN', '(?<![A-Za-z\$0-9À-ßà-ÿ¸¨\-\_])(https?:\/\/)?((?:[A-Za-z\$0-9À-ßà-ÿ¸¨](?:[A-Za-z\$0-9\-\_À-ßà-ÿ¸¨]*[A-Za-z\$0-9À-ßà-ÿ¸¨])?\.){1,5}[A-Za-z\$ðôóêÐÔÓÊ\-\d]{2,22}(?::\d{2,5})?)((?:\/(?:(?:\&amp;|\&#33;|,[_%]|[A-Za-z0-9\xa8\xb8\xc0-\xffºª¥´¯¿²³\-\_#%?+\/\$.~=;:]+|\[[A-Za-z0-9\xa8\xb8\xc0-\xffºª¥´¯¿²³\-\_#%?+\/\$.,~=;:]*\]|\([A-Za-z0-9\xa8\xb8\xc0-\xffºª¥´¯¿²³\-\_#%?+\/\$.,~=;:]*\))*(?:,[_%]|[A-Za-z0-9\xa8\xb8\xc0-\xffºª¥´¯¿\-\_#%?+\/\$.~=;:]*[A-Za-z0-9\xa8\xb8\xc0-\xffºª¥´¯¿²³\_#%?+\/\$~=]|\[[A-Za-z0-9\xa8\xb8\xc0-\xffºª¥´¯¿²³\-\_#%?+\/\$.,~=;:]*\]|\([A-Za-z0-9\xa8\xb8\xc0-\xffºª¥´¯¿²³\-\_#%?+\/\$.,~=;:]*\)))?)?)');
@@ -37,6 +37,7 @@ function parseTagsRecursive($input)
 {
 	global $count;
     $regex = '#\[indent]((?:[^[]|\[(?!/?indent])|(?R))+)\[/indent]#';
+    var_dump ($input);
 
     if (is_array($input)) {
         $input = '<div style="margin-left: 10px">'.$input[1].'</div>';

@@ -1,4 +1,4 @@
-@ok callback benchmark k2_skip
+@ok callback benchmark
 <?php
 
 var_dump (preg_match_all ('~<.*>~', 'This is <something> <something else> <something further> no more', $v)); var_dump ($v);
