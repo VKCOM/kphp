@@ -6,6 +6,7 @@ function set_migration_php8_warning ($mask ::: int) ::: void;
 
 // === UNSUPPORTED ===
 
+/** @kphp-extern-func-info stub */
 function kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() ::: void;
 
 function set_json_log_on_timeout_mode(bool $enabled) ::: void;
