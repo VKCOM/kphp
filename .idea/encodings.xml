@@ -7,7 +7,6 @@
     <file url="file://$PROJECT_DIR$/tests/phpt/dl/002_preg_replace_callback.php" charset="windows-1251" />
     <file url="file://$PROJECT_DIR$/tests/phpt/dl/003_preg_match_all.php" charset="windows-1251" />
     <file url="file://$PROJECT_DIR$/tests/phpt/dl/487_strtr.php" charset="windows-1251" />
-    <file url="file://$PROJECT_DIR$/tests/phpt/dl/496_regex.php" charset="windows-1251" />
     <file url="file://$PROJECT_DIR$/tests/phpt/dl/964_try.php" charset="windows-1251" />
     <file url="file://$PROJECT_DIR$/tests/phpt/json/31_russian_cp1251.php" charset="windows-1251" />
     <file url="file://$PROJECT_DIR$/tests/phpt/msgpack_serialize/011_russian_letters.php" charset="windows-1251" />
