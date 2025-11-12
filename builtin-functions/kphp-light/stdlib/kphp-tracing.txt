@@ -3,17 +3,14 @@
 // ===== UNSUPPORTED =====
 
 final class KphpDiv {
-  /** @kphp-extern-func-info stub generation-required */
   private function __construct();
 
   function generateTraceCtxForChild(int $div_id, int $trace_flags): tuple(int, int);
 
   function assignTraceCtx(int $int1, int $int2, ?int $override_div_id): int;
 
-  /** @kphp-extern-func-info stub generation-required */
   function getStartTimestamp(): float;
 
-  /** @kphp-extern-func-info stub generation-required */
   function getEndTimestamp(): float;
 }
 
@@ -23,15 +20,15 @@ final class KphpSpan {
   function addAttributeString(string $key, string $value) ::: void;
 
   function addAttributeInt(string $key, int $value) ::: void;
-  /** @kphp-extern-func-info stub generation-required */
+
   function addAttributeFloat(string $key, float $value) ::: void;
-  /** @kphp-extern-func-info stub generation-required */
+
   function addAttributeBool(string $key, bool $value) ::: void;
-  /** @kphp-extern-func-info stub generation-required */
+
   function addAttributeEnum(string $key, int $enum_id, int $value) ::: void;
 
   function addEvent(string $name, ?float $timestamp = null): KphpSpanEvent;
-  /** @kphp-extern-func-info stub generation-required */
+
   function addLink(KphpSpan $another) ::: void;
 
 
@@ -40,20 +37,19 @@ final class KphpSpan {
   function finish(?float $end_timestamp = null) ::: void;
 
   function finishWithError(int $error_code, string $error_msg, ?float $end_timestamp = null) ::: void;
-  /** @kphp-extern-func-info stub generation-required */
+
   function exclude() ::: void;
 }
 
 final class KphpSpanEvent {
   private function __construct();
 
-  /** @kphp-extern-func-info stub generation-required */
   function addAttributeString(string $key, string $value) ::: void;
-  /** @kphp-extern-func-info stub generation-required */
+
   function addAttributeInt(string $key, int $value) ::: void;
-  /** @kphp-extern-func-info stub generation-required */
+
   function addAttributeFloat(string $key, float $value) ::: void;
-  /** @kphp-extern-func-info stub generation-required */
+
   function addAttributeBool(string $key, bool $value) ::: void;
 }
 

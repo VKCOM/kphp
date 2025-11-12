@@ -103,5 +103,4 @@ class Random\RandomException extends Exception {}
 
 // === UNSUPPORTED ===
 
-/** @kphp-extern-func-info stub generation-required */
 function kphp_backtrace($pretty ::: bool = true) ::: string[];
