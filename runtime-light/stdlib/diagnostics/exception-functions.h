@@ -6,8 +6,8 @@
 
 #include <concepts>
 #include <cstdint>
-#include <utility>
 #include <source_location>
+#include <utility>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"

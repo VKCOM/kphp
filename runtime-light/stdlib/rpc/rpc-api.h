@@ -183,7 +183,7 @@ inline bool f$rpc_parse(const string& new_rpc_data) noexcept {
 
 inline bool f$rpc_parse(const mixed& new_rpc_data) noexcept {
   if (!new_rpc_data.is_string()) {
-    kphp::log::warning("Parameter 1 of function rpc_parse must be a string, {} is given", new_rpc_data.get_type_c_str());
+    kphp::log::warning("parameter 1 of function rpc_parse must be a string, {} is given", new_rpc_data.get_type_c_str());
     return false;
   }
 
