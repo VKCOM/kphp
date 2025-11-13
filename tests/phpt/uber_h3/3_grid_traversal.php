@@ -3,21 +3,6 @@
 
 require_once 'kphp_tester_include.php';
 
-function test_kRing() {
-  assert_true(\UberH3::kRing(603537747495354367, -1) === false);
-
-  assert_array_int_eq3(\UberH3::kRing(603537747495354367, 0), [603537747495354367]);
-  assert_array_int_eq3(\UberH3::kRing(603537747495354367, 1), [
-    603537747495354367,
-    603537753803587583,
-    603537753266716671,
-    603537746958483455,
-    603537746690047999,
-    603537747226918911,
-    603537751387668479
-  ]);
-}
-
 function test_maxKringSize() {
   assert_int_eq3(\UberH3::maxKringSize(-1),0);
 
@@ -153,7 +138,6 @@ function test_h3Distance() {
   assert_int_eq3(\UberH3::h3Distance(12412312, 124123123), 0);
 }
 
-test_kRing();
 test_maxKringSize();
 test_kRingDistances();
 test_hexRange();

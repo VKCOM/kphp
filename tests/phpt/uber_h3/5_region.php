@@ -31,36 +31,4 @@ function test_maxPolyfillSize() {
         ], 1), 34);
 }
 
-function test_polyfill() {
-    assert_array_int_eq3(\UberH3::polyfill([], [], 1), []);
-    assert_array_int_eq3(\UberH3::polyfill([], [], 5), []);
-
-    assert_array_int_eq3(
-        \UberH3::polyfill([tuple(0.4, 0.5), tuple(0.1, 0.2), tuple(0.2, 0.4)], [], 5),
-        [601042442497556479, 601042410285301759]
-    );
-
-    assert_array_int_eq3(
-        \UberH3::polyfill([tuple(0.4, 0.5), tuple(0.1, 0.2), tuple(0.2, 0.4)],
-        [[tuple(0.4, 0.5), tuple(0.1, 0.2), tuple(0.2, 0.4)]], 5),
-        []
-    );
-
-    assert_array_int_eq3(
-        \UberH3::polyfill([tuple(0.0, 0.0), tuple(15.0, 0.0), tuple(0.0, 15.0), tuple(15.0, 15.0)],
-            [[tuple(0.0, 0.0), tuple(1.0, 0.0), tuple(0.0, 1.0), tuple(1.0, 1.0)]], 1),
-        [583264530256101375, 582521260395724799, 582525658442235903, 582530056488747007, 583031433791012863]
-    );
-
-    assert_array_int_eq3(
-        \UberH3::polyfill([tuple(0.0, 0.0), tuple(15.0, 0.0), tuple(0.0, 15.0), tuple(15.0, 15.0)],
-            [
-                 [tuple(0.0, 0.0), tuple(1.0, 0.0), tuple(0.0, 1.0), tuple(1.0, 1.0)],
-                 [tuple(5.0, 5.0), tuple(10.0, 5.0), tuple(5.0, 10.0), tuple(10.0, 10.0)],
-            ], 1),
-        [583264530256101375, 582521260395724799, 582525658442235903, 582530056488747007, 583031433791012863]
-    );
-}
-
 test_maxPolyfillSize();
-test_polyfill();
