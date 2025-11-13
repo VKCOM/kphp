@@ -20,7 +20,16 @@ namespace kphp::web {
 // DO NOT INTRODUCE ANY CHANGES WITHOUT PLATFORM-SIDE MODIFICATION
 enum class transfer_backend : uint8_t { CURL = 1 };
 
-using simple_transfer = uint64_t;
+struct simple_transfer {
+  using descriptor_type = uint64_t;
+  descriptor_type descriptor;
+};
+
+struct composite_transfer {
+  using descriptor_type = uint64_t;
+  descriptor_type descriptor;
+};
+
 using property_id = uint64_t;
 
 class property_value {
@@ -32,16 +41,20 @@ private:
       : value(v){};
   explicit property_value(int64_t v) noexcept
       : value(v){};
+  explicit property_value(double v) noexcept
+      : value(v){};
   explicit property_value(string v) noexcept
       : value(v){};
   explicit property_value(array<bool> v) noexcept
       : value(v){};
   explicit property_value(array<int64_t> v) noexcept
       : value(v){};
+  explicit property_value(array<double> v) noexcept
+      : value(v){};
   explicit property_value(array<string> v) noexcept
       : value(v){};
 
-  std::variant<bool, int64_t, string, array<bool>, array<int64_t>, array<string>> value;
+  std::variant<bool, int64_t, double, string, array<bool>, array<int64_t>, array<double>, array<string>> value;
 
 public:
   static inline auto as_boolean(bool value) noexcept -> property_value {
@@ -49,6 +62,10 @@ public:
   }
 
   static inline auto as_long(int64_t value) noexcept -> property_value {
+    return property_value{value};
+  }
+
+  static inline auto as_double(double value) noexcept -> property_value {
     return property_value{value};
   }
 
@@ -64,64 +81,24 @@ public:
     return property_value{std::move(value)};
   }
 
+  static inline auto as_array_of_double(array<double> value) noexcept -> property_value {
+    return property_value{std::move(value)};
+  }
+
   static inline auto as_array_of_string(array<string> value) noexcept -> property_value {
     return property_value{std::move(value)};
   }
 
-  inline auto serialize() const noexcept -> tl::WebPropertyValue {
-    return std::visit(
-        [](const auto& v) noexcept -> tl::WebPropertyValue {
-          using value_t = std::remove_cvref_t<decltype(v)>;
-          if constexpr (std::is_same_v<value_t, bool>) {
-            return tl::WebPropertyValue{tl::Bool{v}};
-          } else if constexpr (std::is_same_v<value_t, int64_t>) {
-            return tl::WebPropertyValue{tl::I64{tl::i64{v}}};
-          } else if constexpr (std::is_same_v<value_t, string>) {
-            return tl::WebPropertyValue{tl::String{tl::string{{v.c_str(), v.size()}}}};
-          } else if constexpr (std::is_same_v<value_t, array<bool>> || std::is_same_v<value_t, array<int64_t>> || std::is_same_v<value_t, array<string>>) {
-            if (v.is_vector()) {
-              tl::Vector<tl::WebPropertyValue> res{tl::vector<tl::WebPropertyValue>{.value = {}}};
-              for (const auto& i : v) {
-                if constexpr (std::is_same_v<value_t, array<bool>>) {
-                  res.inner.value.emplace_back(property_value::as_boolean(i.get_value()).serialize());
-                } else if constexpr (std::is_same_v<value_t, array<int64_t>>) {
-                  res.inner.value.emplace_back(property_value::as_long(i.get_value()).serialize());
-                } else if constexpr (std::is_same_v<value_t, array<string>>) {
-                  res.inner.value.emplace_back(property_value::as_string(i.get_value()).serialize());
-                }
-              }
-              return tl::WebPropertyValue{.value = std::move(res)};
-            } else {
-              tl::Dictionary<tl::WebPropertyValue> res{
-                  tl::Dictionary<tl::WebPropertyValue>{tl::vector<tl::dictionaryField<tl::WebPropertyValue>>{.value = {}}}};
-              for (const auto& i : v) {
-                // We cannot convert key into string right here since string which is produced will be destroyed once we occur out of this scope
-                kphp::log::assertion(i.get_key().is_string());
-                const auto& key{i.get_key().as_string()};
-                const auto& val{i.get_value()};
-                if constexpr (std::is_same_v<value_t, array<bool>>) {
-                  res.inner.value.value.emplace_back(
-                      tl::dictionaryField{.key = tl::string{{key.c_str(), key.size()}}, .value = property_value::as_boolean(val).serialize()});
-                } else if constexpr (std::is_same_v<value_t, array<int64_t>>) {
-                  res.inner.value.value.emplace_back(
-                      tl::dictionaryField{.key = tl::string{{key.c_str(), key.size()}}, .value = property_value::as_long(val).serialize()});
-                } else if constexpr (std::is_same_v<value_t, array<string>>) {
-                  res.inner.value.value.emplace_back(
-                      tl::dictionaryField{.key = tl::string{{key.c_str(), key.size()}}, .value = property_value::as_string(val).serialize()});
-                }
-              }
-              return tl::WebPropertyValue{.value = std::move(res)};
-            }
-          } else {
-            static_assert(false);
-          }
-        },
-        this->value);
-  }
+  inline auto serialize() const noexcept -> tl::webPropertyValue;
+  static inline auto deserialize(const tl::webPropertyValue& tl_prop_value) noexcept -> property_value;
+
+  inline auto to_mixed() const noexcept -> mixed;
 };
 
+using properties_type = kphp::stl::unordered_map<property_id, property_value, kphp::memory::script_allocator>;
+
 struct simple_transfer_config {
-  kphp::stl::unordered_map<property_id, property_value, kphp::memory::script_allocator> properties{};
+  properties_type properties{};
 };
 
 struct response {

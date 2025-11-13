@@ -418,7 +418,7 @@ class SimpleWebTransferPerform final {
 
 public:
   tl::u64 descriptor;
-  tl::SimpleWebTransferConfig config;
+  tl::simpleWebTransferConfig config;
 
   void store(tl::storer& tls) const noexcept {
     tl::magic{.value = SIMPLE_WEB_TRANSFER_PERFORM_MAGIC}.store(tls);
@@ -460,6 +460,26 @@ public:
 
   constexpr size_t footprint() const noexcept {
     return tl::magic{.value = SIMPLE_WEB_TRANSFER_RESET_MAGIC}.footprint() + descriptor.footprint();
+  }
+};
+
+class WebTransferGetProperties final {
+  static constexpr uint32_t WEB_TRANSFER_GET_PROPERTIES_MAGIC = 0x72B7'16DD;
+
+public:
+  tl::u8 is_simple;
+  tl::u64 descriptor;
+  tl::Maybe<tl::u64> property_id;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = WEB_TRANSFER_GET_PROPERTIES_MAGIC}.store(tls);
+    is_simple.store(tls);
+    descriptor.store(tls);
+    property_id.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = WEB_TRANSFER_GET_PROPERTIES_MAGIC}.footprint() + is_simple.footprint() + descriptor.footprint() + property_id.footprint();
   }
 };
 
