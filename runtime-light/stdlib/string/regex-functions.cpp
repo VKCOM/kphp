@@ -710,7 +710,7 @@ std::optional<std::pair<string, size_t>> replace_one(regex_pcre2_code_t code, st
   if (auto one{pcre2_substitute_8(code, reinterpret_cast<PCRE2_SPTR8>(subject.data()), subject.size(), offset, options, nullptr,
                                   regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(replacement.data()), replacement.size(),
                                   reinterpret_cast<PCRE2_UCHAR8*>(sb.buffer()), std::addressof(buffer_length))};
-                                  one != 1) [[unlikely]] {
+      one != 1) [[unlikely]] {
 
     std::array<char, ERROR_BUFFER_LENGTH> buffer{};
     pcre2_get_error_message_8(one, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
