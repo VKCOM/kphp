@@ -58,6 +58,24 @@ function test_h3ToCenterChild() {
   assert_int_eq3(\UberH3::h3ToCenterChild(614053082818412543, 9), 618556682443948031);
 }
 
+function test_compact() {
+  assert_array_int_eq3(\UberH3::compact([]), []);
+
+  assert_array_int_eq3(\UberH3::compact([614053082818412543]), [614053082818412543]);
+  assert_array_int_eq3(\UberH3::compact([614053082818412543, 614053082818412543]),
+                       [614053082818412543, 614053082818412543]);
+
+  assert_array_int_eq3(\UberH3::compact([
+    618556682443948031,
+    618556682444210175,
+    618556682444472319,
+    618556682444734463,
+    618556682444996607,
+    618556682445258751,
+    618556682445520895
+  ]), [614053082818412543]);
+}
+
 function test_uncompact() {
   assert_true(\UberH3::uncompact([], -10) === false);
   assert_true(\UberH3::uncompact([], 16) === false);
@@ -95,5 +113,6 @@ test_h3ToParent();
 test_h3ToChildren();
 test_maxH3ToChildrenSize();
 test_h3ToCenterChild();
+test_compact();
 test_uncompact();
 test_maxUncompactSize();

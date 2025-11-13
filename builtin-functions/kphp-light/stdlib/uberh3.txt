@@ -20,6 +20,7 @@ final class UberH3 {
   static public function maxFaceCount(int $h3_index) ::: int;
 
   // Grid traversal functions: https://h3geo.org/docs/api/traversal
+  static public function kRing(int $h3_index_origin, int $k) ::: int[] | false;
   static public function maxKringSize(int $k) ::: int;
   static public function kRingDistances(int $h3_index_origin, int $k) ::: tuple(int, int)[] | false;
   static public function hexRange(int $h3_index_origin, int $k) ::: int[] | false;
@@ -35,17 +36,11 @@ final class UberH3 {
   static public function h3ToChildren(int $h3_index, int $children_resolution) ::: int[] | false;
   static public function maxH3ToChildrenSize(int $h3_index, int $children_resolution) ::: int;
   static public function h3ToCenterChild(int $h3_index, int $children_resolution) ::: int;
+  static public function compact(int[] $h3_indexes) ::: int[] | false;
   static public function uncompact(int[] $h3_indexes, int $resolution) ::: int[] | false;
   static public function maxUncompactSize(int[] $h3_indexes, int $resolution) ::: int;
 
   // Region functions: https://h3geo.org/docs/api/regions
-  static public function maxPolyfillSize(tuple(float, float)[] $polygon_boundary, tuple(float, float)[][] $holes, int $resolution) ::: int;
-
-// ===== UNSUPPORTED =====
-  /** @kphp-extern-func-info stub generation-required */
-  static public function kRing(int $h3_index_origin, int $k) ::: int[] | false;
-  /** @kphp-extern-func-info stub generation-required */
-  static public function compact(int[] $h3_indexes) ::: int[] | false;
-  /** @kphp-extern-func-info stub generation-required */
   static public function polyfill(tuple(float, float)[] $polygon_boundary, tuple(float, float)[][] $holes, int $resolution) ::: int[] | false;
+  static public function maxPolyfillSize(tuple(float, float)[] $polygon_boundary, tuple(float, float)[][] $holes, int $resolution) ::: int;
 }

@@ -118,6 +118,7 @@ bool f$UberH3$$h3IsPentagon(int64_t h3_index) noexcept;
 array<int64_t> f$UberH3$$h3GetFaces(int64_t h3_index) noexcept;
 int64_t f$UberH3$$maxFaceCount(int64_t h3_index) noexcept;
 
+Optional<array<int64_t>> f$UberH3$$kRing(int64_t h3_index_origin, int64_t k) noexcept;
 int64_t f$UberH3$$maxKringSize(int64_t k) noexcept;
 Optional<array<std::tuple<int64_t, int64_t>>> f$UberH3$$kRingDistances(int64_t h3_index_origin, int64_t k) noexcept;
 Optional<array<int64_t>> f$UberH3$$hexRange(int64_t h3_index_origin, int64_t k) noexcept;
@@ -132,9 +133,11 @@ int64_t f$UberH3$$h3ToParent(int64_t h3_index, int64_t parent_resolution) noexce
 Optional<array<int64_t>> f$UberH3$$h3ToChildren(int64_t h3_index, int64_t children_resolution) noexcept;
 int64_t f$UberH3$$maxH3ToChildrenSize(int64_t h3_index, int64_t children_resolution) noexcept;
 int64_t f$UberH3$$h3ToCenterChild(int64_t h3_index, int64_t children_resolution) noexcept;
-
+Optional<array<int64_t>> f$UberH3$$compact(const array<int64_t>& h3_indexes) noexcept;
 Optional<array<int64_t>> f$UberH3$$uncompact(const array<int64_t>& h3_indexes, int64_t resolution) noexcept;
 int64_t f$UberH3$$maxUncompactSize(const array<int64_t>& h3_indexes, int64_t resolution) noexcept;
 
+Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, double>>& polygon_boundary, const array<array<std::tuple<double, double>>>& holes,
+                                            int64_t resolution) noexcept;
 int64_t f$UberH3$$maxPolyfillSize(const array<std::tuple<double, double>>& polygon_boundary, const array<array<std::tuple<double, double>>>& holes,
                                   int64_t resolution) noexcept;

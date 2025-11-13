@@ -38,4 +38,5 @@ prepend(
   time/time-functions.cpp
   time/time-state.cpp
   time/timelib-functions.cpp
+  uber-h3/uber-h3.cpp
   zlib/zlib-functions.cpp)
