@@ -348,7 +348,7 @@ if __name__ == "__main__":
         name="k2-kphp-tests",
         description="run k2-kphp tests with cxx={}".format(args.cxx_name),
         cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} "
-        "{kphp_runner} -j{jobs} --cxx-name {cxx_name} --k2-bin {k2_bin}".format(
+        "{kphp_runner} -j{jobs} --cxx-name {cxx_name} --k2-bin {k2_bin} uber".format(
             jobs=n_cpu,
             kphp_polyfills_repo=kphp_polyfills_repo,
             kphp_runner=kphp_test_runner,
