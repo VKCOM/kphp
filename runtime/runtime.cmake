@@ -162,7 +162,6 @@ set(RUNTIME_LIBS_NO_PIC
         ZSTD::no-pic::zstd
         RE2::no-pic::re2
         PCRE::no-pic::pcre
-        UBER_H3::no-pic::uber-h3
         KPHP_TIMELIB::no-pic::timelib
         YAML_CPP::no-pic::yaml-cpp
         ${NUMA_LIB_NO_PIC}
@@ -171,7 +170,7 @@ set(RUNTIME_LIBS_NO_PIC
 )
 target_link_libraries(kphp-runtime-no-pic PUBLIC ${RUNTIME_LIBS_NO_PIC})
 
-add_dependencies(kphp-runtime-no-pic KPHP_TIMELIB::no-pic::timelib OpenSSL::no-pic::Crypto OpenSSL::no-pic::SSL CURL::no-pic::curl NGHTTP2::no-pic::nghttp2 ZLIB::no-pic::zlib ZSTD::no-pic::zstd RE2::no-pic::re2 PCRE::no-pic::pcre UBER_H3::no-pic::uber-h3 YAML_CPP::no-pic::yaml-cpp ${NUMA_LIB_NO_PIC})
+add_dependencies(kphp-runtime-no-pic KPHP_TIMELIB::no-pic::timelib OpenSSL::no-pic::Crypto OpenSSL::no-pic::SSL CURL::no-pic::curl NGHTTP2::no-pic::nghttp2 ZLIB::no-pic::zlib ZSTD::no-pic::zstd RE2::no-pic::re2 PCRE::no-pic::pcre YAML_CPP::no-pic::yaml-cpp ${NUMA_LIB_NO_PIC})
 combine_static_runtime_library(kphp-runtime-no-pic kphp-full-runtime-no-pic)
 ###
 
@@ -195,7 +194,6 @@ set(RUNTIME_LIBS_PIC
         ZSTD::pic::zstd
         RE2::pic::re2
         PCRE::pic::pcre
-        UBER_H3::pic::uber-h3
         KPHP_TIMELIB::pic::timelib
         YAML_CPP::pic::yaml-cpp
         ${NUMA_LIB_PIC}
@@ -204,7 +202,7 @@ set(RUNTIME_LIBS_PIC
 )
 target_link_libraries(kphp-runtime-pic PUBLIC ${RUNTIME_LIBS_PIC})
 
-add_dependencies(kphp-runtime-pic KPHP_TIMELIB::pic::timelib OpenSSL::pic::Crypto OpenSSL::pic::SSL CURL::pic::curl NGHTTP2::pic::nghttp2 ZLIB::pic::zlib ZSTD::pic::zstd RE2::pic::re2 PCRE::pic::pcre UBER_H3::pic::uber-h3 YAML_CPP::pic::yaml-cpp ${NUMA_LIB_PIC})
+add_dependencies(kphp-runtime-pic KPHP_TIMELIB::pic::timelib OpenSSL::pic::Crypto OpenSSL::pic::SSL CURL::pic::curl NGHTTP2::pic::nghttp2 ZLIB::pic::zlib ZSTD::pic::zstd RE2::pic::re2 PCRE::pic::pcre YAML_CPP::pic::yaml-cpp ${NUMA_LIB_PIC})
 combine_static_runtime_library(kphp-runtime-pic kphp-full-runtime-pic)
 ###
 
