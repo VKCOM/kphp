@@ -159,7 +159,8 @@ coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t limit, 
     length_after_replace = str_after_replace.size();
 
     match_offset = match_end;
-    replacement_diff_acc += str_after_replace.size() - subject.size();
+    replacement_diff_acc += static_cast<int64_t>(str_after_replace.size()) - static_cast<int64_t>(subject.size());
+    log::debug("match_end={}, replacement_diff_acc={}", match_end, replacement_diff_acc);
     substitute_offset = match_end + replacement_diff_acc;
     subject = std::move(str_after_replace);
   }

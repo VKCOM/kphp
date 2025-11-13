@@ -301,7 +301,7 @@ bool replace_regex(kphp::regex::Info& regex_info, uint64_t limit) noexcept {
       length_after_replace = str_after_replace.size();
 
       match_offset = match_end;
-      replacement_diff_acc += str_after_replace.size() - subject.size();
+      replacement_diff_acc += static_cast<int64_t>(str_after_replace.size()) - static_cast<int64_t>(subject.size());
       substitute_offset = match_end + replacement_diff_acc;
       subject = std::move(str_after_replace);
     }
@@ -710,8 +710,12 @@ std::optional<std::pair<string, size_t>> replace_one(regex_pcre2_code_t code, st
   if (auto one{pcre2_substitute_8(code, reinterpret_cast<PCRE2_SPTR8>(subject.data()), subject.size(), offset, options, nullptr,
                                   regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(replacement.data()), replacement.size(),
                                   reinterpret_cast<PCRE2_UCHAR8*>(sb.buffer()), std::addressof(buffer_length))};
-      one != 1) [[unlikely]] {
-    kphp::log::warning("pcre2_substitute error {}", one);
+                                  one != 1) [[unlikely]] {
+
+    std::array<char, ERROR_BUFFER_LENGTH> buffer{};
+    pcre2_get_error_message_8(one, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
+    kphp::log::warning("pcre2_substitute error: {}", buffer.data());
+    kphp::log::info("offset was: {}", offset);
     return std::nullopt;
   }
 
