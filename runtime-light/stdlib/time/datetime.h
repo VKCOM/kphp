@@ -28,5 +28,3 @@ struct C$DateTime : public C$DateTimeInterface, private DummyVisitorMethods {
 };
 
 constexpr std::string_view NOW{"now"};
-
-
