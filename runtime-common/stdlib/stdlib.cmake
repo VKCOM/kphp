@@ -11,6 +11,7 @@ prepend(STDLIB_STRING stdlib/string/ mbstring-functions.cpp
 prepend(STDLIB_SYSTEM stdlib/system/ system-functions.cpp)
 prepend(STDLIB_SERVER stdlib/server/ url-functions.cpp
         net-functions.cpp)
+prepend(STDLIB_UBERH3 stdlib/uber-h3/ uber-h3.cpp)
 prepend(STDLIB_VKEXT stdlib/vkext/ string-processing.cpp
         vkext-functions.cpp vkext-stats.cpp)
 
@@ -19,4 +20,4 @@ if(COMPILER_CLANG)
 endif()
 
 set(STDLIB_SRC ${STDLIB_ARRAY} ${STDLIB_CRYPTO} ${STDLIB_MATH} ${STDLIB_MSGPACK} ${STDLIB_SERIALIZATION}
-               ${STDLIB_STRING} ${STDLIB_SYSTEM} ${STDLIB_SERVER} ${STDLIB_VKEXT})
+               ${STDLIB_STRING} ${STDLIB_SYSTEM} ${STDLIB_SERVER} ${STDLIB_UBERH3} ${STDLIB_VKEXT})

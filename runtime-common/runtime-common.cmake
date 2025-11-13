@@ -1,5 +1,6 @@
 include(${RUNTIME_COMMON_DIR}/core/core.cmake)
 include(${RUNTIME_COMMON_DIR}/stdlib/stdlib.cmake)
+include(${THIRD_PARTY_DIR}/uber-h3-cmake/uber-h3.cmake)
 
 set(RUNTIME_COMMON_SRC "${CORE_SRC}" "${STDLIB_SRC}")
 
