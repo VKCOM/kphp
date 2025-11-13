@@ -12,7 +12,6 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
-#include "runtime-light/coroutine/await-set.h"
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/stdlib/rpc/rpc-constants.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"

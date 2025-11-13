@@ -28,6 +28,7 @@
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/rpc/rpc-constants.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-headers.h"
@@ -205,7 +206,7 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
   }
 
   kphp::log::assertion(opt_awaiter_task.has_value());
-  auto opt_response{co_await *std::exchange(opt_awaiter_task, std::nullopt)};
+  auto opt_response{co_await kphp::forks::id_managed(*std::exchange(opt_awaiter_task, std::nullopt))};
   if (!opt_response) [[unlikely]] {
     co_return TlRpcError::make_error(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"});
   }
@@ -258,7 +259,7 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
   }
 
   kphp::log::assertion(opt_awaiter_task.has_value());
-  auto opt_response{co_await *std::exchange(opt_awaiter_task, std::nullopt)};
+  auto opt_response{co_await kphp::forks::id_managed(*std::exchange(opt_awaiter_task, std::nullopt))};
   if (!opt_response) [[unlikely]] {
     co_return error_factory.make_error(TL_ERROR_QUERY_TIMEOUT, string{"rpc response timeout"});
   }
