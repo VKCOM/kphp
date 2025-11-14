@@ -200,7 +200,7 @@ Optional<array<int64_t>> f$UberH3$$kRing(int64_t h3_index_origin, int64_t k) noe
   const int32_t neighbors_count = maxKringSize(checked_k);
   auto neighbor_indexes = make_zeros_vector<int64_t>(neighbors_count);
   if (neighbors_count) {
-    kRing(h3_index_origin, checked_k, reinterpret_cast<H3Index*>(&neighbor_indexes[0]));
+    kRing(h3_index_origin, checked_k, reinterpret_cast<H3Index*>(std::addressof(neighbor_indexes[0])));
   }
   return std::move(neighbor_indexes);
 }
@@ -350,7 +350,7 @@ Optional<array<int64_t>> f$UberH3$$compact(const array<int64_t>& h3_indexes) noe
   const array<int64_t> h3_set = indexes2vector(h3_indexes);
   auto compacted_h3_set = make_zeros_vector<int64_t>(h3_set.count());
   if (!compacted_h3_set.empty()) {
-    if (unlikely(compact(reinterpret_cast<const H3Index*>(h3_set.get_const_vector_pointer()), reinterpret_cast<H3Index*>(&compacted_h3_set[0]),
+    if (unlikely(compact(reinterpret_cast<const H3Index*>(h3_set.get_const_vector_pointer()), reinterpret_cast<H3Index*>(std::addressof(compacted_h3_set[0])),
                          static_cast<int32_t>(h3_indexes.count())))) {
       return false;
     }
@@ -418,7 +418,7 @@ Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, doubl
   }
   auto hexagon_indexes = make_zeros_vector<int64_t>(max_size);
   if (!hexagon_indexes.empty()) {
-    polyfill(std::addressof(polygon_owner.getPolygon()), checked_resolution, reinterpret_cast<H3Index*>(&hexagon_indexes[0]));
+    polyfill(std::addressof(polygon_owner.getPolygon()), checked_resolution, reinterpret_cast<H3Index*>(std::addressof(hexagon_indexes[0])));
   }
   int64_t indexes_count = 0;
   for (const auto& element : hexagon_indexes) {
