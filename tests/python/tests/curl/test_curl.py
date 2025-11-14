@@ -2,7 +2,6 @@ import pytest
 from python.tests.curl.curl_test_case import CurlTestCase
 
 
-@pytest.mark.k2_skip_suite
 class TestCurl(CurlTestCase):
     test_case_uri="/test_curl"
 
@@ -35,7 +34,6 @@ class TestCurl(CurlTestCase):
                     "HTTP_HELLO": "world",
                     "HTTP_FOO": "bar"
                 })})
-
     def test_curl_timeout(self):
         self.assertEqual(self._curl_request("/echo/test_get", timeout=0.1), {
             "exec_result": False
