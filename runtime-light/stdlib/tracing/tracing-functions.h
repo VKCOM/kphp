@@ -13,7 +13,7 @@ inline class_instance<C$KphpSpan> f$kphp_tracing_get_current_active_span() noexc
   return {};
 }
 
-inline void f$kphp_tracing_func_enter_branch(int /*$branch_num*/) noexcept {}
+inline void f$kphp_tracing_func_enter_branch(int64_t /*$branch_num*/) noexcept {}
 
 inline class_instance<C$KphpSpan> f$kphp_tracing_get_root_span() noexcept {
   return {};
