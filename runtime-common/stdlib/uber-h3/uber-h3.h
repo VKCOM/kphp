@@ -42,7 +42,7 @@ Optional<array<int64_t>> f$UberH3$$compact(const array<int64_t>& h3_indexes) noe
 Optional<array<int64_t>> f$UberH3$$uncompact(const array<int64_t>& h3_indexes, int64_t resolution) noexcept;
 int64_t f$UberH3$$maxUncompactSize(const array<int64_t>& h3_indexes, int64_t resolution) noexcept;
 
-Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, double>>& polygon_boundary, const array<array<std::tuple<double, double>>>& holes,
-                                            int64_t resolution) noexcept;
 int64_t f$UberH3$$maxPolyfillSize(const array<std::tuple<double, double>>& polygon_boundary, const array<array<std::tuple<double, double>>>& holes,
                                   int64_t resolution) noexcept;
+Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, double>>& polygon_boundary, const array<array<std::tuple<double, double>>>& holes,
+                                            int64_t resolution) noexcept;

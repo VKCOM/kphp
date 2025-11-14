@@ -406,27 +406,27 @@ int64_t f$UberH3$$maxPolyfillSize(const array<std::tuple<double, double>>& polyg
 
 Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, double>>& polygon_boundary, const array<array<std::tuple<double, double>>>& holes,
                                             int64_t resolution) noexcept {
-  const int32_t checked_resolution{check_resolution_param(resolution)};
+  const int32_t checked_resolution = check_resolution_param(resolution);
   if (unlikely(checked_resolution != resolution)) {
     return false;
   }
 
   GeoPolygonOwner polygon_owner{polygon_boundary, holes};
-  const int32_t max_size{maxPolyfillSize(std::addressof(polygon_owner.getPolygon()), checked_resolution)};
+  const int32_t max_size = maxPolyfillSize(std::addressof(polygon_owner.getPolygon()), checked_resolution);
   if (max_size < 0) {
     return false;
   }
-  auto hexagon_indexes{make_zeros_vector<int64_t>(max_size)};
+  auto hexagon_indexes = make_zeros_vector<int64_t>(max_size);
   if (!hexagon_indexes.empty()) {
     polyfill(std::addressof(polygon_owner.getPolygon()), checked_resolution, reinterpret_cast<H3Index*>(&hexagon_indexes[0]));
   }
-  int64_t indexes_count{0};
+  int64_t indexes_count = 0;
   for (const auto& element : hexagon_indexes) {
     indexes_count += element.get_value() ? 1 : 0;
   }
   array<int64_t> result_array{array_size{indexes_count, true}};
   for (const auto& element : hexagon_indexes) {
-    if (auto h3_index{element.get_value()}) {
+    if (auto h3_index = element.get_value()) {
       result_array.emplace_back(h3_index);
     }
   }
