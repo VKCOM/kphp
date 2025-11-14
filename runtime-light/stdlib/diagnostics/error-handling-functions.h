@@ -92,6 +92,10 @@ inline array<array<string>> f$debug_backtrace() noexcept {
   return {};
 }
 
+inline array<string> f$kphp_backtrace([[maybe_unused]] bool pretty = true) noexcept {
+  return {};
+}
+
 inline int64_t f$error_reporting(Optional<int64_t> new_error_level_opt = {}) noexcept {
   auto& error_handling_st{ErrorHandlingState::get()};
   const int64_t current_error_level{error_handling_st.minimum_log_level};
