@@ -13,6 +13,12 @@ prepend(RUNTIME_COMMON_SRC ${RUNTIME_COMMON_DIR}/ "${RUNTIME_COMMON_SRC}")
 vk_add_library_no_pic(runtime-common-no-pic OBJECT ${RUNTIME_COMMON_SRC})
 vk_add_library_pic(runtime-common-pic OBJECT ${RUNTIME_COMMON_SRC})
 
+target_link_libraries(runtime-common-pic PUBLIC UBER_H3::pic::uber-h3)
+add_dependencies(runtime-common-pic UBER_H3::pic::uber-h3)
+
+target_link_libraries(runtime-common-no-pic PUBLIC UBER_H3::no-pic::uber-h3)
+add_dependencies(runtime-common-no-pic UBER_H3::no-pic::uber-h3)
+
 if(COMPILE_RUNTIME_LIGHT)
   target_compile_options(runtime-common-pic PUBLIC -stdlib=libc++ ${RUNTIME_LIGHT_VISIBILITY})
 endif()
