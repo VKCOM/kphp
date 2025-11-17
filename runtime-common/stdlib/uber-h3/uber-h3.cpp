@@ -16,6 +16,23 @@
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 
+
+/*
+ * This is necessary to replace the library's allocators.
+ * When building the library, the prefix of the replacement function is specified, for example:
+ * if we want to use the prefix of the replacement function = "my_prefix_", then during assembly we specify
+ *    cmake -DH3_ALLOC_PREFIX=my_prefix_ .
+ * then it will use
+ *   void* my_prefix_malloc(size_t size);
+ *   void* my_prefix_calloc(size_t num, size_t size);
+ *   void* my_prefix_realloc(void* ptr, size_t size);
+ *   void my_prefix_free(void* ptr);
+ * instead of
+ *   void* malloc(size_t size);
+ *   void* calloc(size_t num, size_t size);
+ *   void* realloc(void* ptr, size_t size);
+ *   void free(void* ptr);
+ */
 extern "C" {
 void* uber_h3_malloc(size_t size) {
   return kphp::memory::script::alloc(size);
