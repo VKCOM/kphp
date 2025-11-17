@@ -1,8 +1,8 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2025 LLC «V Kontakte»
+// Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-common/stdlib/uber-h3/uber-h3.h"
+#include "runtime-common/stdlib/uber-h3/uber-h3-functions.h"
 
 #include <array>
 #include <cstdint>

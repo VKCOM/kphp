@@ -11,7 +11,7 @@ prepend(STDLIB_STRING stdlib/string/ mbstring-functions.cpp
 prepend(STDLIB_SYSTEM stdlib/system/ system-functions.cpp)
 prepend(STDLIB_SERVER stdlib/server/ url-functions.cpp
         net-functions.cpp)
-prepend(STDLIB_UBERH3 stdlib/uber-h3/ uber-h3.cpp)
+prepend(STDLIB_UBERH3 stdlib/uber-h3/ uber-h3-functions.cpp)
 prepend(STDLIB_VKEXT stdlib/vkext/ string-processing.cpp
         vkext-functions.cpp vkext-stats.cpp)
 
