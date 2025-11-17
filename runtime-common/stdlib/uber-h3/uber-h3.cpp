@@ -16,7 +16,6 @@
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 
-
 /*
  * This is necessary to replace the library's allocators.
  * When building the library, the prefix of the replacement function is specified, for example:
