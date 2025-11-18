@@ -10,7 +10,7 @@
 #include "runtime-light/k2-platform/k2-api.h"
 
 // Analogue of unix's `gettimeofday`
-// Returns seconds, elapsed since Epoch, and milliseconds from last second.
+// Returns seconds elapsed since Epoch, and milliseconds elapsed from the last second.
 // TODO naming + figure out where to place this util function
 inline std::pair<std::chrono::seconds, std::chrono::microseconds> system_seconds_and_micros() noexcept {
   k2::SystemTime timeval{};

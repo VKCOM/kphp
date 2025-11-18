@@ -52,7 +52,7 @@ inline void f$srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexcept
   return f$mt_srand(seed);
 }
 
-double f$lcg_value() noexcept {
+inline double f$lcg_value() noexcept {
   auto& random_instance_state{RandomInstanceState::get()};
 
   // TODO extract to function in namespace random_impl_ ?
@@ -64,6 +64,7 @@ double f$lcg_value() noexcept {
     }
     return res;
   }};
+  // TODO where to place these magic numbers?
   random_instance_state.lcg1 = modmult(53668, 40014, 12211, 2147483563, random_instance_state.lcg1);
   random_instance_state.lcg2 = modmult(52774, 40692, 3791, 2147483399, random_instance_state.lcg2);
 
@@ -77,11 +78,16 @@ double f$lcg_value() noexcept {
 
 inline string f$uniqid(const string& prefix, bool more_entropy) noexcept {
   if (!more_entropy) {
-    // TODO discuss, do we really need this
+    // As I guess, they sleep for 1 microseconds, because f$uniqid depends on current microseconds value.
+    // TODO discuss, does this sleep guarantees microseconds increment?
+    // I'm sure we should replace it with monotonic clock + incrementing counter instead...
+    // It seems to give more guarantees and reduce scheduler work.
     f$usleep(1);
   }
 
   auto [sec, susec]{system_seconds_and_micros()};
+  auto sec_cnt{static_cast<int32_t>(sec.count() & 0xFFFFFFFF)};  // because we'll use only 8 hex digits
+  auto susec_cnt{static_cast<int32_t>(susec.count() & 0xFFFFF)}; // because we'll use only 5 hex digits
   constexpr size_t buf_size = 30;
   std::array<char, buf_size> buf{};
   RuntimeContext::get().static_SB.clean() << prefix;
@@ -89,12 +95,12 @@ inline string f$uniqid(const string& prefix, bool more_entropy) noexcept {
   if (more_entropy) {
     // we multiply by 10 to get (0..10) value out of (0..1), because we want random digit before the point.
     double lcg_rand_value{f$lcg_value() * 10};
-    std::format_to_n(buf.data(), buf_size, "{:08x}{:05x}{:.8f}", sec.count(), susec.count(), lcg_rand_value);
+    std::format_to_n(buf.data(), buf_size, "{:08x}{:05x}{:.8f}", sec_cnt, susec_cnt, lcg_rand_value);
     // TODO discuss naming and place of this constant
     constexpr size_t rand_len = 23;
     RuntimeContext::get().static_SB.append(buf.data(), rand_len);
   } else {
-    std::format_to_n(buf.data(), buf_size, "{:08x}{:05x}", sec.count(), susec.count());
+    std::format_to_n(buf.data(), buf_size, "{:08x}{:05x}", sec_cnt, susec_cnt);
     // TODO discuss naming and place of this constant
     constexpr size_t rand_len = 13;
     RuntimeContext::get().static_SB.append(buf.data(), rand_len);

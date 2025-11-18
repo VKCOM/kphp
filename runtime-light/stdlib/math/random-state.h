@@ -26,7 +26,9 @@ struct RandomInstanceState final : private vk::not_copyable {
     auto [sec, susec]{system_seconds_and_micros()};
     lcg1 = static_cast<int32_t>(sec.count()) ^ (static_cast<int32_t>(susec.count()) << 11);
     auto [_, susec2]{system_seconds_and_micros()};
-    lcg2 = static_cast<int32_t>(k2::getpid()) ^ (static_cast<int32_t>(susec.count()) << 11);
+    // TODO k2::getpid() will return same value on different instance states,
+    // so we really should replace it with k2::os_rnd
+    lcg2 = static_cast<int32_t>(k2::getpid()) ^ (static_cast<int32_t>(susec2.count()) << 11);
   }
 
   static RandomInstanceState& get() noexcept;
