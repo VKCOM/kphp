@@ -39,4 +39,5 @@ prepend(
   time/time-functions.cpp
   time/time-state.cpp
   time/timelib-functions.cpp
-  zlib/zlib-functions.cpp)
+  zlib/zlib-functions.cpp
+  zstd/zstd-functions.cpp)
