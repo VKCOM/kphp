@@ -41,12 +41,12 @@ inline auto WebInstanceState::session_get_or_init() noexcept -> std::expected<sh
     return std::unexpected{k2::errno_eshutdown};
   }
   if (session.has_value()) {
-    return std::expected<shared_session_type, int32_t>{session.value()};
+    return std::expected<shared_session_type, int32_t>{*session};
   }
   auto expected{kphp::component::inter_component_session::client::create(WEB_COMPONENT_NAME)};
   if (!expected) [[unlikely]] {
     return std::unexpected{expected.error()};
   }
-  session.emplace(make_instance<WebComponentSession>(WebComponentSession{.client = std::move(expected.value())}));
-  return std::expected<shared_session_type, int32_t>{session.value()};
+  session.emplace(make_instance<WebComponentSession>(WebComponentSession{.client = std::move(*expected)}));
+  return std::expected<shared_session_type, int32_t>{*session};
 }

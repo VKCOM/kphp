@@ -219,10 +219,11 @@ inline auto set_transfer_property(std::variant<simple_transfer, composite_transf
     if (!simple2config.contains(simple.descriptor)) {
       return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string("Unknown simple transfer id")}};
     }
-    if (!simple2config[simple.descriptor].properties.contains(prop_id)) {
-      simple2config[simple.descriptor].properties.insert({prop_id, std::move(prop_value)});
+    auto& props{simple2config[simple.descriptor].properties};
+    if (const auto& prop{props.find(prop_id)}; prop != props.end()) {
+      prop->second = std::move(prop_value);
     } else {
-      simple2config[simple.descriptor].properties.at(prop_id) = std::move(prop_value);
+      props.insert({prop_id, std::move(prop_value)});
     }
     return std::expected<void, error>{};
   }
@@ -232,10 +233,11 @@ inline auto set_transfer_property(std::variant<simple_transfer, composite_transf
   if (!composite2config.contains(composite.descriptor)) {
     return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string("Unknown composite transfer id")}};
   }
-  if (!composite2config[composite.descriptor].properties.contains(prop_id)) {
-    composite2config[composite.descriptor].properties.insert({prop_id, std::move(prop_value)});
+  auto& props{composite2config[composite.descriptor].properties};
+  if (const auto& prop{props.find(prop_id)}; prop != props.end()) {
+    prop->second = std::move(prop_value);
   } else {
-    composite2config[composite.descriptor].properties.at(prop_id) = std::move(prop_value);
+    props.insert({prop_id, std::move(prop_value)});
   }
   return std::expected<void, error>{};
 }
@@ -248,17 +250,25 @@ inline auto get_transfer_properties(std::variant<simple_transfer, composite_tran
     const auto& web_state{WebInstanceState::get()};
     if (std::holds_alternative<simple_transfer>(transfer)) {
       auto s{std::get<0>(transfer).descriptor};
-      if (web_state.simple_transfer2config.contains(s) && web_state.simple_transfer2config.at(s).properties.contains(p)) {
-        properties_type res{};
-        res.insert({p, web_state.simple_transfer2config.at(s).properties.at(p)});
-        co_return std::expected<properties_type, error>{std::move(res)};
+      const auto& config{web_state.simple_transfer2config.find(s)};
+      if (config != web_state.simple_transfer2config.end()) {
+        const auto& props{config->second.properties};
+        if (const auto& prop{props.find(p)}; prop != props.end()) {
+          properties_type res{};
+          res.insert({p, prop->second});
+          co_return std::expected<properties_type, error>{std::move(res)};
+        }
       }
     } else {
       auto c{std::get<1>(transfer).descriptor};
-      if (web_state.composite_transfer2config.contains(c) && web_state.composite_transfer2config.at(c).properties.contains(p)) {
-        properties_type res{};
-        res.insert({p, web_state.composite_transfer2config.at(c).properties.at(p)});
-        co_return std::expected<properties_type, error>{std::move(res)};
+      const auto& config{web_state.composite_transfer2config.find(c)};
+      if (config != web_state.composite_transfer2config.end()) {
+        const auto& props{config->second.properties};
+        if (const auto& prop{props.find(p)}; prop != props.end()) {
+          properties_type res{};
+          res.insert({p, prop->second});
+          co_return std::expected<properties_type, error>{std::move(res)};
+        }
       }
     }
   }
@@ -268,14 +278,14 @@ inline auto get_transfer_properties(std::variant<simple_transfer, composite_tran
     kphp::log::error("failed to start or get session with Web component");
   }
 
-  if (session.value().get() == nullptr) {
+  if ((*session).get() == nullptr) {
     kphp::log::error("session with Web components has been closed");
   }
 
   tl::WebTransferGetProperties web_transfer_get_properties_req{
       .is_simple = tl::u8{std::holds_alternative<simple_transfer>(transfer)},
       .descriptor = tl::u64{(std::holds_alternative<simple_transfer>(transfer)) ? std::get<0>(transfer).descriptor : std::get<1>(transfer).descriptor},
-      .property_id = (prop_id.has_value()) ? tl::Maybe<tl::u64>{tl::u64{prop_id.value()}} : tl::Maybe<tl::u64>{std::nullopt}};
+      .property_id = (prop_id.has_value()) ? tl::Maybe<tl::u64>{tl::u64{(*prop_id)}} : tl::Maybe<tl::u64>{std::nullopt}};
   tl::storer tls{web_transfer_get_properties_req.footprint()};
   web_transfer_get_properties_req.store(tls);
 
@@ -285,13 +295,13 @@ inline auto get_transfer_properties(std::variant<simple_transfer, composite_tran
     return {resp_buf.data(), size};
   }};
 
-  auto resp{co_await session.value().get()->client.query(tls.view(), std::move(response_buffer_provider))};
+  auto resp{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider))};
   if (!resp.has_value()) [[unlikely]] {
     kphp::log::error("failed to send request for a getting of web properties");
   }
 
   tl::Either<tl::WebTransferGetPropertiesResultOk, tl::WebError> get_transfer_props_resp{};
-  tl::fetcher tlf{resp.value()};
+  tl::fetcher tlf{*resp};
   if (!get_transfer_props_resp.fetch(tlf)) [[unlikely]] {
     kphp::log::error("failed to parse response with web properties");
   }
@@ -303,7 +313,7 @@ inline auto get_transfer_properties(std::variant<simple_transfer, composite_tran
       const auto v{property_value::deserialize(std::move(p.value))};
       props.insert({k, std::move(v)});
     }
-    if (prop_id.has_value() && !props.contains(prop_id.value())) {
+    if (prop_id.has_value() && !props.contains(*prop_id)) {
       co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string("failed to find a specified property id")}};
     }
     co_return std::expected<properties_type, error>{std::move(props)};

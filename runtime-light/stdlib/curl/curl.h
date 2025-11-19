@@ -33,7 +33,7 @@ struct EasyContext {
 
   inline auto set_errno(int64_t code, std::optional<string> description = std::nullopt) noexcept {
     if (description.has_value()) {
-      set_errno(code, description.value().c_str());
+      set_errno(code, (*description).c_str());
       return;
     }
     set_errno(code, "");
@@ -61,7 +61,7 @@ template<size_t N>
 inline auto print_error(const char (&msg)[N], kphp::web::error&& e) noexcept {
   static_assert(N <= CURL_ERROR_SIZE, "Too long error");
   if (e.description.has_value()) {
-    kphp::log::warning("{}\nCode: {}; Description: {}", msg, e.code, e.description.value().c_str());
+    kphp::log::warning("{}\nCode: {}; Description: {}", msg, e.code, (*e.description).c_str());
   } else {
     kphp::log::warning("{}: {}", msg, e.code);
   }
