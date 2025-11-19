@@ -114,6 +114,10 @@ function store_string(mixed $v) : bool {
   return false;
 }
 
+function store_string2(mixed $v) : bool {
+  return false;
+}
+
 function store_double(mixed $v) : bool {
   return false;
 }
@@ -169,6 +173,13 @@ function fetch_float() {
  * @return string|false
  */
 function fetch_string() {
+  return "";
+}
+
+/**
+ * @return string|false
+ */
+function fetch_string2() {
   return "";
 }
 

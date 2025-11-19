@@ -83,6 +83,8 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_store_string arginfo_store_int
 
+#define arginfo_store_string2 arginfo_store_int
+
 #define arginfo_store_double arginfo_store_int
 
 #define arginfo_store_float arginfo_store_int
@@ -107,6 +109,8 @@ ZEND_END_ARG_INFO()
 #define arginfo_fetch_float arginfo_vk_hello_world
 
 #define arginfo_fetch_string arginfo_vk_hello_world
+
+#define arginfo_fetch_string2 arginfo_vk_hello_world
 
 #define arginfo_fetch_memcache_value arginfo_vk_hello_world
 
@@ -258,6 +262,7 @@ ZEND_FUNCTION(store_int);
 ZEND_FUNCTION(store_byte);
 ZEND_FUNCTION(store_long);
 ZEND_FUNCTION(store_string);
+ZEND_FUNCTION(store_string2);
 ZEND_FUNCTION(store_double);
 ZEND_FUNCTION(store_float);
 ZEND_FUNCTION(store_many);
@@ -268,6 +273,7 @@ ZEND_FUNCTION(fetch_long);
 ZEND_FUNCTION(fetch_double);
 ZEND_FUNCTION(fetch_float);
 ZEND_FUNCTION(fetch_string);
+ZEND_FUNCTION(fetch_string2);
 ZEND_FUNCTION(fetch_memcache_value);
 ZEND_FUNCTION(fetch_end);
 ZEND_FUNCTION(fetch_eof);
@@ -333,6 +339,7 @@ static const zend_function_entry ext_functions[] = {
 	ZEND_FE(store_byte, arginfo_store_byte)
 	ZEND_FE(store_long, arginfo_store_long)
 	ZEND_FE(store_string, arginfo_store_string)
+	ZEND_FE(store_string2, arginfo_store_string2)
 	ZEND_FE(store_double, arginfo_store_double)
 	ZEND_FE(store_float, arginfo_store_float)
 	ZEND_FE(store_many, arginfo_store_many)
@@ -343,6 +350,7 @@ static const zend_function_entry ext_functions[] = {
 	ZEND_FE(fetch_double, arginfo_fetch_double)
 	ZEND_FE(fetch_float, arginfo_fetch_float)
 	ZEND_FE(fetch_string, arginfo_fetch_string)
+	ZEND_FE(fetch_string2, arginfo_fetch_string2)
 	ZEND_FE(fetch_memcache_value, arginfo_fetch_memcache_value)
 	ZEND_FE(fetch_end, arginfo_fetch_end)
 	ZEND_FE(fetch_eof, arginfo_fetch_eof)

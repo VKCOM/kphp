@@ -7,6 +7,7 @@
 #include <cinttypes>
 #include <functional>
 #include <memory>
+#include <limits>
 
 #include "common/binlog/kdb-binlog-common.h"
 
@@ -274,6 +275,43 @@ int tl_fetch_string_len(int max_len) {
   return x;
 }
 
+int tl_fetch_string2_len() {
+  // TODO - sorry for platform-dependent code, this is only 1% more
+  int b0 = tl_fetch_byte();
+  if (b0 < 0) {
+    return -1;
+  }
+  if (b0 < 254) {
+    return b0;
+  }
+  if (b0 == 254) {
+    if (tl_fetch_check(3) < 0) {
+      return -1;
+    }
+    int len = 0;
+    tl_fetch_raw_data(&len, 3);
+    if (len < 254) {
+      tl_fetch_set_error(TL_ERROR_SYNTAX, "TL2 len non-canonical big representation");
+      return -1;
+    }
+    return len;
+  }
+  unsigned long long len = 0;
+  if (tl_fetch_check(7) < 0) {
+    return -1;
+  }
+  tl_fetch_raw_data(&len, 7);
+  if (len < (1 << 24)) {
+    tl_fetch_set_error(TL_ERROR_SYNTAX, "TL2 len non-canonical huge representation");
+    return -1;
+  }
+  if (len > std::numeric_limits<int>::max()) {
+    tl_fetch_set_error(TL_ERROR_SYNTAX, "TL2 len cannot be represented on 32-bit platform");
+    return -1;
+  }
+  return static_cast<int>(len);
+}
+
 int tl_fetch_pad() {
   if (tl_fetch_check(0) < 0) {
     return -1;
@@ -447,10 +485,6 @@ int tl_store_pad() {
   return 0;
 }
 
-static int get_tl_string_len(int len) {
-  return (len << 8) + 0xfe;
-}
-
 static int tl_store_string_len(int len) {
   assert(len >= 0);
   if (len < 254) {
@@ -458,9 +492,21 @@ static int tl_store_string_len(int len) {
     tl_store_raw_data_nopad(&len, 1);
   } else {
     assert(len < (1 << 24));
-    tl_store_int(get_tl_string_len(len));
+    tl_store_int((len << 8) + 0xfe);
   }
   return 0;
+}
+
+void tl_store_string2_len(int len) {
+  assert(len >= 0);
+  if (len < 254) {
+    return tl_store_byte(len);
+  }
+  if (len < (1 << 24)) {
+    return tl_store_int((len << 8) + 0xfe);
+  }
+  assert(int64_t(len) < (int64_t(1) << 56));
+  return tl_store_long((len << 8) + 0xff);
 }
 
 void tl_store_string(const char* s, int len) {

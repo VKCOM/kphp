@@ -97,6 +97,8 @@ double f$fetch_float();
 
 string f$fetch_string();
 
+string f$fetch_string2();
+
 int64_t f$fetch_string_as_int();
 
 mixed f$fetch_memcache_value();
@@ -197,6 +199,7 @@ bool f$store_float(double v);
 
 bool store_string(const char* v, int32_t v_len);
 bool f$store_string(const string& v);
+bool f$store_string2(const string& v);
 
 bool f$store_many(const array<mixed>& a);
 
@@ -247,7 +250,7 @@ bool f$store_unsigned_long(const mixed& v);
 
 int32_t tl_parse_int();
 
-int32_t tl_parse_byte();
+int tl_parse_byte();
 
 long long tl_parse_long();
 

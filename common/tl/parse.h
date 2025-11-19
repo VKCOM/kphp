@@ -51,6 +51,7 @@ void tl_fetch_mark_restore();
 void tl_fetch_mark_delete();
 
 int tl_fetch_string_len(int max_len);
+int tl_fetch_string2_len();
 int tl_fetch_pad();
 int tl_fetch_data(void* buf, int len);
 int tl_fetch_string_data(char* buf, int len);
@@ -88,6 +89,7 @@ void tl_store_raw_data(const void* s, int len);
 void tl_store_raw_data_nopad(const void* s, int len);
 int tl_store_pad();
 void tl_store_string(const char* s, int len);
+void tl_store_string2_len(int len);
 void tl_store_string0(const char* s);
 int tl_store_clear();
 int tl_store_end();

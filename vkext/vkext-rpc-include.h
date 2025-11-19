@@ -5,6 +5,8 @@
 #ifndef __VKEXT_RPC_INCLUDE_H__
 #define __VKEXT_RPC_INCLUDE_H__
 
+#include <limits>
+
 #include "common/tl/constants/common.h"
 #include "common/rpc-headers.h"
 
@@ -413,6 +415,44 @@ static inline int buffer_read_string(struct rpc_buffer *buf, int *len, const cha
   return 1;
 }
 
+static inline int buffer_read_string2(struct rpc_buffer *buf, int *len, const char **x) UNUSED;
+static inline int buffer_read_string2(struct rpc_buffer *buf, int *len, const char **x) {
+  unsigned char c;
+  if (buffer_read_char(buf, (char *)&c) < 0) {
+    return -1;
+  }
+  *len = c;
+  if (c == 254) {
+    const char *t;
+    *len = 0;
+    if (buffer_read_data(buf, 3, &t) < 0) {
+      return -1;
+    }
+    memcpy(len, t, 3);
+    if (*len < 254) { // non-canonical, cannot return proper error here
+      return -1;
+    }
+  } else if (c == 255) {
+    const char *t;
+    if (buffer_read_data(buf, 7, &t) < 0) {
+      return -1;
+    }
+    int64_t len64 = 0;
+    memcpy(&len64, t, 7);
+    if (len64 < (1 << 24)) { // non-canonical, cannot return proper error here
+      return -1;
+    }
+    if (len64 > std::numeric_limits<int>::max()) { // does not fit on 32-bit platform, cannot return proper error here
+      return -1;
+    }
+    *len = static_cast<int>(len64);
+  }
+  if (buffer_read_data(buf, *len, x) < 0) {
+    return -1;
+  }
+  return 1;
+}
+
 /* }}} outbuf */
 
 static constexpr size_t RPC_HEADERS_RESERVED_BYTES = 40;
@@ -532,6 +572,29 @@ static void do_rpc_store_string(const char *s, int len) { /* {{{ */
   } else {
     buffer_write_string(outbuf, len, s);
   }
+#ifdef STORE_DEBUG
+  fprintf (stderr, "string: %.*s\n", len, s);
+#endif
+  END_TIMER (store);
+}
+/* }}} */
+
+static void do_rpc_store_string2(const char *s, int len) UNUSED;
+static void do_rpc_store_string2(const char *s, int len) { /* {{{ */
+  ADD_CNT (store);
+  START_TIMER (store);
+  assert (int64_t(len) < (int64_t(1) << 56));
+  assert (outbuf && outbuf->magic == RPC_BUFFER_MAGIC);
+  if (len <= 253) {
+    buffer_write_char(outbuf, len);
+  } else if (len < (1 << 24)) {
+    buffer_write_char(outbuf, static_cast<char>(254));
+    buffer_write_data(outbuf, &len, 3);
+  } else {
+    buffer_write_char(outbuf, static_cast<char>(255));
+    buffer_write_data(outbuf, &len, 7);
+  }
+  buffer_write_data(outbuf, s, len);
 #ifdef STORE_DEBUG
   fprintf (stderr, "string: %.*s\n", len, s);
 #endif
