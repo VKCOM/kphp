@@ -1462,7 +1462,7 @@ static int rpc_handshake_send(struct rpc_server *server, double timeout) { /* {{
 static int rpc_nonce_send(struct rpc_server *server, double timeout) { /* {{{ */
   struct rpc_nonce S = {
     .key_select = 0,
-    .crypto_schema = 0
+    .crypto_schema = (1 << 8) // declare version 1 of protocol, required for TL2 byte granularity
   };
 
   //server->outbuf = buffer_create (sizeof (S));
@@ -1532,7 +1532,7 @@ static int rpc_read(struct rpc_server *server, int force_block_read, double time
     assert (rpc_read_in(server, (char *)tmp, 12, timeout) == 12);
     int len = tmp[0];
 
-    if (len < 20 || (len & 3) || len > RPC_MAX_QUERY_LEN) {
+    if (len < 20 || len > RPC_MAX_QUERY_LEN) {
       rpc_server_seterror(server, "Invalid length of answer", 0);
       END_TIMER (rpc_read);
       return -1;
