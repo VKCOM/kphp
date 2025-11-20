@@ -20,33 +20,36 @@ struct C$KphpSpan : public refcountable_php_classes<C$KphpSpan>, private DummyVi
       : span_id(span_id) {}
 };
 
-inline void f$KphpSpan$$addAttributeInt([[maybe_unused]] const class_instance<C$KphpSpan>& v$this, [[maybe_unused]] const string& key,
-                                        [[maybe_unused]] int64_t value) noexcept {
-  kphp::log::info("called stub KphpSpan::addAttributeInt");
-}
-
 inline void f$KphpSpan$$addAttributeString([[maybe_unused]] const class_instance<C$KphpSpan>& v$this, [[maybe_unused]] const string& key,
-                                           [[maybe_unused]] const string& value) noexcept {
-  kphp::log::info("called stub KphpSpan::addAttributeString");
-}
+                                           [[maybe_unused]] const string& value) noexcept {}
+
+inline void f$KphpSpan$$addAttributeInt([[maybe_unused]] const class_instance<C$KphpSpan>& v$this, [[maybe_unused]] const string& key,
+                                        [[maybe_unused]] int64_t value) noexcept {}
+
+inline void f$KphpSpan$$addAttributeFloat([[maybe_unused]] const class_instance<C$KphpSpan>& v$this, [[maybe_unused]] const string& key,
+                                          [[maybe_unused]] double value) noexcept {}
+
+inline void f$KphpSpan$$addAttributeBool([[maybe_unused]] const class_instance<C$KphpSpan>& v$this, [[maybe_unused]] const string& key,
+                                         [[maybe_unused]] bool value) noexcept {}
+
+inline void f$KphpSpan$$addAttributeEnum([[maybe_unused]] const class_instance<C$KphpSpan>& v$this, [[maybe_unused]] const string& key,
+                                         [[maybe_unused]] int64_t enum_id, [[maybe_unused]] int64_t value) noexcept {}
 
 inline class_instance<C$KphpSpanEvent> f$KphpSpan$$addEvent([[maybe_unused]] const class_instance<C$KphpSpan>& v$this, [[maybe_unused]] const string& name,
                                                             [[maybe_unused]] const Optional<double>& manual_timestamp = {}) noexcept {
-  kphp::log::info("called stub KphpSpan::addEvent");
   return {};
 }
 
-inline void f$KphpSpan$$finish([[maybe_unused]] const class_instance<C$KphpSpan>& v$this,
-                               [[maybe_unused]] const Optional<double>& manual_timestamp = {}) noexcept {
-  kphp::log::info("called stub KphpSpan::finish");
-}
+inline void f$KphpSpan$$addLink([[maybe_unused]] const class_instance<C$KphpSpan>& v$this,
+                                [[maybe_unused]] const class_instance<C$KphpSpan>& another) noexcept {}
 
 inline void f$KphpSpan$$updateName([[maybe_unused]] const class_instance<C$KphpSpan>& v$this, [[maybe_unused]] const string& title,
-                                   [[maybe_unused]] const string& short_desc) noexcept {
-  kphp::log::info("called stub KphpSpan::updateName");
-}
+                                   [[maybe_unused]] const string& short_desc) noexcept {}
+
+inline void f$KphpSpan$$finish([[maybe_unused]] const class_instance<C$KphpSpan>& v$this,
+                               [[maybe_unused]] const Optional<double>& manual_timestamp = {}) noexcept {}
 
 inline void f$KphpSpan$$finishWithError([[maybe_unused]] const class_instance<C$KphpSpan>& v$this, [[maybe_unused]] int64_t error_code,
-                                        [[maybe_unused]] const string& error_msg, [[maybe_unused]] const Optional<float>& manual_timestamp = {}) {
-  kphp::log::info("called stub KphpSpan::finishWithError");
-}
+                                        [[maybe_unused]] const string& error_msg, [[maybe_unused]] const Optional<float>& manual_timestamp = {}) {}
+
+inline void f$KphpSpan$$exclude([[maybe_unused]] const class_instance<C$KphpSpan>& v$this) noexcept {}

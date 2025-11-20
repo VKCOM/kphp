@@ -11,16 +11,25 @@
 
 struct C$KphpDiv : public refcountable_php_classes<C$KphpDiv>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
+
+  C$KphpDiv() noexcept = default;
 };
 
 inline int64_t f$KphpDiv$$assignTraceCtx([[maybe_unused]] const class_instance<C$KphpDiv>& v$this, [[maybe_unused]] int64_t int1, [[maybe_unused]] int64_t int2,
                                          [[maybe_unused]] const Optional<int64_t>& override_div_id) {
-  kphp::log::info("called stub KphpDiv::assignTraceCtx");
+
   return {};
 }
 
 inline std::tuple<int64_t, int64_t> f$KphpDiv$$generateTraceCtxForChild([[maybe_unused]] const class_instance<C$KphpDiv>& v$this,
                                                                         [[maybe_unused]] int64_t div_id, [[maybe_unused]] int64_t trace_flags) {
-  kphp::log::info("called stub KphpDiv::generateTraceCtxForChild");
+  return {};
+}
+
+inline double f$KphpDiv$$getStartTimestamp([[maybe_unused]] const class_instance<C$KphpDiv>& v$this) noexcept {
+  return {};
+}
+
+inline double f$KphpDiv$$getEndTimestamp([[maybe_unused]] const class_instance<C$KphpDiv>& v$this) noexcept {
   return {};
 }

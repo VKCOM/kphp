@@ -245,3 +245,5 @@ inline string f$get_kphp_cluster_name() noexcept {
   kphp::log::warning("called stub get_kphp_cluster_name");
   return string{"adm512"};
 }
+
+inline void f$kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() noexcept {}
