@@ -101,7 +101,7 @@ class client final {
       std::optional<int32_t> error{};
     };
     using shared_ctx_type = class_instance<refcountable_ctx_type>;
-    using interrupter_type = kphp::coro::shared_task<int>; // FIXME: remove `int` as return type after `when_any` fixing
+    using interrupter_type = kphp::coro::shared_task<void>;
 
     // The following reader state is intended to be initialized once for a new client.
     // It is assumed that "copying" (ref count increasing) will be the common case, rather than moving.
@@ -123,7 +123,7 @@ class client final {
         // Read response header or interrupt
         auto read_header_res{co_await kphp::coro::when_any(t.get()->stream.read(resp_header_buf), interrupter)};
         // Interrupt is happened
-        if (std::holds_alternative<int>(read_header_res)) [[unlikely]] { // FIXME: remove `int` after `when_any` fixing
+        if (std::holds_alternative<kphp::coro::void_value>(read_header_res)) [[unlikely]] {
           kphp::log::debug("reader has been interrupted");
           break;
         } else if (auto res{std::get<std::expected<size_t, int32_t>>(read_header_res)}; !res) [[unlikely]] {
@@ -176,7 +176,7 @@ class client final {
     // Dummy routine for waiting until an interrupting (stopping) event will happen
     static auto wait_until_interrupt(shared_ctx_type ctx) noexcept -> interrupter_type {
       co_await ctx.get()->interrupted;
-      co_return 0;
+      co_return;
     }
 
     // Semantics of this method is considering tha state will be changed. That's why it is not marked as `const`
