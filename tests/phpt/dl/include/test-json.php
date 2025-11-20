@@ -1,4 +1,3 @@
-@ok benchmark
 <?php
 
 function test_json ($options) {
@@ -129,8 +128,3 @@ function test_json ($options) {
 
   var_dump (count($data));
 }
-
-test_json (0);
-test_json (JSON_UNESCAPED_UNICODE);
-test_json (JSON_UNESCAPED_SLASHES);
-test_json (JSON_PARTIAL_OUTPUT_ON_ERROR);
