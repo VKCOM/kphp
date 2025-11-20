@@ -34,6 +34,7 @@
 #include "runtime-light/stdlib/math/random-state.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
+#include "runtime-light/stdlib/rpc/rpc-queue-state.h"
 #include "runtime-light/stdlib/serialization/serialization-state.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
@@ -94,6 +95,7 @@ struct InstanceState final : vk::not_copyable {
   CoroutineInstanceState coroutine_instance_state;
   ForkInstanceState fork_instance_state;
   WaitQueueInstanceState wait_queue_instance_state;
+  RpcQueueInstanceState rpc_queue_instance_state;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
   RuntimeContext runtime_context;
@@ -133,5 +135,5 @@ private:
   enum image_kind image_kind_ { image_kind::invalid };
   enum instance_kind instance_kind_ { instance_kind::invalid };
 
-  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(16U * 1024U * 1024U);
+  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(256U * 1024U * 1024U);
 };

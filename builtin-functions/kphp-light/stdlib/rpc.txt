@@ -107,7 +107,7 @@ function set_fail_rpc_on_int32_overflow ($fail_rpc ::: bool): bool;
  */
 function extract_kphp_rpc_response_extra_info ($resumable_id ::: int) ::: ?tuple(int, float);
 
-function rpc_queue_create ($request_ids ::: array<int> = TODO) ::: int;
+function rpc_queue_create ($request_ids ::: mixed = TODO) ::: int;
 
 function rpc_queue_push ($queue_id ::: int, $request_id ::: int) ::: void;
 

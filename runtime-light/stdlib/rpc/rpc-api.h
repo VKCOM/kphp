@@ -221,7 +221,7 @@ inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$Rpc
 // === client =====================================================================================
 
 inline int64_t f$rpc_tl_pending_queries_count() noexcept {
-  return RpcClientInstanceState::get().response_waiter_forks.size();
+  return RpcClientInstanceState::get().response_awaiter_tasks.size();
 }
 
 // === client untyped =============================================================================
@@ -275,10 +275,10 @@ kphp::coro::task<array<array<mixed>>> f$rpc_fetch_responses_synchronously(array<
 
 // === client typed ===============================================================================
 
-template<std::derived_from<C$VK$TL$RpcFunction> rpc_function_t, std::same_as<KphpRpcRequest> rpc_request_t = KphpRpcRequest>
-kphp::coro::task<array<int64_t>> f$rpc_send_typed_query_requests(string actor, array<class_instance<rpc_function_t>> query_functions, Optional<double> timeout,
-                                                                 bool ignore_answer, class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info,
-                                                                 bool need_responses_extra_info) noexcept {
+template<std::derived_from<C$VK$TL$RpcFunction> rpc_function_type, std::same_as<KphpRpcRequest> rpc_request_type = KphpRpcRequest>
+kphp::coro::task<array<int64_t>>
+f$rpc_send_typed_query_requests(string actor, array<class_instance<rpc_function_type>> query_functions, Optional<double> timeout, bool ignore_answer,
+                                class_instance<C$KphpRpcRequestsExtraInfo> requests_extra_info, bool need_responses_extra_info) noexcept {
   if (ignore_answer && need_responses_extra_info) [[unlikely]] {
     kphp::log::warning("both $ignore_answer and $need_responses_extra_info are 'true'. Metrics won't be collected");
   }
@@ -290,7 +290,7 @@ kphp::coro::task<array<int64_t>> f$rpc_send_typed_query_requests(string actor, a
 
   for (const auto& it : std::as_const(query_functions)) {
     const auto query_info{co_await kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_one_impl(
-        {actor.c_str(), actor.size()}, rpc_request_t{it.get_value()}, opt_timeout, collect_resp_extra_info, ignore_answer))};
+        {actor.c_str(), actor.size()}, rpc_request_type{it.get_value()}, opt_timeout, collect_resp_extra_info, ignore_answer))};
     query_ids.set_value(it.get_key(), query_info.id);
     req_extra_info_arr.set_value(it.get_key(), kphp::rpc::request_extra_info{query_info.request_size});
   }
@@ -301,12 +301,12 @@ kphp::coro::task<array<int64_t>> f$rpc_send_typed_query_requests(string actor, a
   co_return std::move(query_ids);
 }
 
-template<std::same_as<int64_t> query_id_t = int64_t, std::same_as<RpcResponseErrorFactory> error_factory_t = RpcResponseErrorFactory>
-requires std::default_initializable<error_factory_t>
-kphp::coro::task<array<class_instance<C$VK$TL$RpcResponse>>> f$rpc_fetch_typed_responses(array<query_id_t> query_ids) noexcept {
+template<std::same_as<int64_t> query_id_type = int64_t, std::same_as<RpcResponseErrorFactory> error_factory_type = RpcResponseErrorFactory>
+requires std::default_initializable<error_factory_type>
+kphp::coro::task<array<class_instance<C$VK$TL$RpcResponse>>> f$rpc_fetch_typed_responses(array<query_id_type> query_ids) noexcept {
   array<class_instance<C$VK$TL$RpcResponse>> res{query_ids.size()};
   for (const auto& it : std::as_const(query_ids)) {
-    res.set_value(it.get_key(), co_await kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_result_one_impl(it.get_value(), error_factory_t{})));
+    res.set_value(it.get_key(), co_await kphp::forks::id_managed(kphp::rpc::detail::typed_rpc_tl_query_result_one_impl(it.get_value(), error_factory_type{})));
   }
   co_return std::move(res);
 }
