@@ -6,8 +6,8 @@
 
 #include <cinttypes>
 #include <functional>
-#include <memory>
 #include <limits>
+#include <memory>
 
 #include "common/binlog/kdb-binlog-common.h"
 

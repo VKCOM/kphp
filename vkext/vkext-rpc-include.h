@@ -592,7 +592,8 @@ static void do_rpc_store_string2(const char *s, int len) { /* {{{ */
     buffer_write_data(outbuf, &len, 3);
   } else {
     buffer_write_char(outbuf, static_cast<char>(255));
-    buffer_write_data(outbuf, &len, 7);
+    int64_t len64 = len;
+    buffer_write_data(outbuf, &len64, 7);
   }
   buffer_write_data(outbuf, s, len);
 #ifdef STORE_DEBUG

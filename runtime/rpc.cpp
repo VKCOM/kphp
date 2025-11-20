@@ -417,13 +417,13 @@ static inline string::size_type fetch_string2_len() {
   }
   rpc_data_len += 1; // because check_rpc_data_len reduced it by 1
   if (b0 == 254) {
-    int64_t len = TRY_CALL(int64_t, int64_t, (f$fetch_int() >> 8) & ((1<<24) - 1));
+    int64_t len = TRY_CALL(int64_t, int64_t, (f$fetch_int() >> 8) & ((1 << 24) - 1));
     if (len < 254) {
       THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("TL2 len non-canonical big representation", 40), -3));
     }
     return static_cast<string::size_type>(len);
   }
-  int64_t len = TRY_CALL(int64_t, int64_t, (f$fetch_long() >> 8) & ((int64_t(1)<<56) - 1));
+  int64_t len = TRY_CALL(int64_t, int64_t, (f$fetch_long() >> 8) & ((int64_t(1) << 56) - 1));
   if (len < (1 << 24)) {
     THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("TL2 len non-canonical huge representation", 41), -3));
   }
@@ -676,8 +676,8 @@ bool store_string2_len(int64_t v_len) {
   } else if (v_len < (1 << 24)) {
     data_buf << (char)(254) << (char)(v_len & 255) << (char)((v_len >> 8) & 255) << (char)((v_len >> 16) & 255);
   } else if (v_len < (int64_t(1) << 56)) {
-    data_buf << (char)(255) << (char)(v_len & 255) << (char)((v_len >> 8) & 255) << (char)((v_len >> 16) & 255)
-        << (char)((v_len >> 24) & 255) << (char)((v_len >> 32) & 255) << (char)((v_len >> 40) & 255) << (char)((v_len >> 48) & 255);
+    data_buf << (char)(255) << (char)(v_len & 255) << (char)((v_len >> 8) & 255) << (char)((v_len >> 16) & 255) << (char)((v_len >> 24) & 255)
+             << (char)((v_len >> 32) & 255) << (char)((v_len >> 40) & 255) << (char)((v_len >> 48) & 255);
   } else {
     php_critical_error("trying to store too big TL2 string"); // freaking C++ I do not want to figure out how to print v_len portably
   }
