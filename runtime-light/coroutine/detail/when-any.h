@@ -15,6 +15,7 @@
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
+#include "runtime-light/metaprogramming/type-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro::detail::when_any {
@@ -120,7 +121,10 @@ class when_any_ready_awaitable<std::tuple<task_types...>> {
 
       const auto task_result_processor{[&result = m_awaitable.m_result](auto&& task) noexcept {
         if (auto task_result{std::forward<decltype(task)>(task).result()}; !result.has_value() && task_result.has_value()) {
-          result = std::move(task_result);
+          using result_variant_type = std::remove_cvref<decltype(result)>::type::value_type;
+          using task_result_type = decltype(task_result)::value_type;
+          result =
+              result_variant_type{std::in_place_index<kphp::type_functions::variant_index<result_variant_type, task_result_type>()>, *std::move(task_result)};
         }
       }};
       std::apply([&task_result_processor](auto&&... tasks) noexcept { (std::invoke(task_result_processor, std::forward<decltype(tasks)>(tasks)), ...); },
@@ -290,8 +294,11 @@ public:
 
 template<kphp::coro::concepts::awaitable awaitable_type>
 auto make_when_any_task(awaitable_type awaitable) noexcept -> when_any_task<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type> {
-  co_yield co_await std::move(awaitable);
-  co_return;
+  if constexpr (std::is_void_v<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type>) {
+    co_await std::move(awaitable);
+  } else {
+    co_yield co_await std::move(awaitable);
+  }
 }
 
 } // namespace kphp::coro::detail::when_any
