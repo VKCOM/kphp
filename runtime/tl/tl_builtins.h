@@ -165,6 +165,28 @@ struct t_Int {
   }
 };
 
+struct t_Byte {
+  void store(const mixed& tl_object) {
+    f$store_byte(f$intval(tl_object));
+  }
+
+  int fetch() {
+    CHECK_EXCEPTION(return 0);
+    return f$fetch_byte();
+  }
+
+  using PhpType = int64_t;
+
+  void typed_store(const PhpType& v) {
+    f$store_byte(v);
+  }
+
+  void typed_fetch_to(PhpType& out) {
+    CHECK_EXCEPTION(return);
+    out = f$fetch_byte();
+  }
+};
+
 struct t_Long {
   void store(const mixed& tl_object) {
     store_long(tl_object);
