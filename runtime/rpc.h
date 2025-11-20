@@ -65,13 +65,13 @@ void last_rpc_error_reset();
 
 void rpc_parse(const int32_t* new_rpc_data, int32_t new_rpc_data_len);
 
-bool f$rpc_parse(const string& new_rpc_data);
+bool f$rpc_parse(const string& new_rpc_data) noexcept;
 
-bool f$rpc_parse(const mixed& new_rpc_data);
+bool f$rpc_parse(const mixed& new_rpc_data) noexcept;
 
-bool f$rpc_parse(bool new_rpc_data);
+bool f$rpc_parse(bool new_rpc_data) noexcept;
 
-bool f$rpc_parse(const Optional<string>& new_rpc_data);
+bool f$rpc_parse(const Optional<string>& new_rpc_data) noexcept;
 
 int32_t rpc_get_pos();
 
