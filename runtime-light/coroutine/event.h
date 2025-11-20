@@ -71,7 +71,7 @@ inline auto event::awaiter::cancel_awaiter() noexcept -> void {
   if (m_prev != nullptr) {
     m_prev->m_next = m_next;
   } else {
-    m_event.m_state = nullptr;
+    m_event.m_state = m_next;
   }
   m_next = nullptr;
   m_prev = nullptr;
@@ -109,9 +109,11 @@ inline auto event::set() noexcept -> void {
   if (prev_value == this || prev_value == nullptr) [[unlikely]] {
     return;
   }
-
-  for (auto* awaiter{static_cast<event::awaiter*>(prev_value)}; awaiter != nullptr; awaiter = awaiter->m_next) {
+  auto* awaiter{static_cast<event::awaiter*>(prev_value)};
+  while (awaiter != nullptr) {
+    auto* next{awaiter->m_next};
     awaiter->m_awaiting_coroutine.resume();
+    awaiter = next;
   }
 }
 
