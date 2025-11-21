@@ -119,30 +119,31 @@ inline auto simple_transfer_perform(simple_transfer st) noexcept -> kphp::coro::
     }
   }};
 
-  const auto response_handler{[&frame_num, &err, &ok_or_error_buffer](std::span<std::byte> _) noexcept -> bool {
-    switch (frame_num) {
-    case 0: {
-      frame_num += 1;
-      tl::Either<tl::SimpleWebTransferPerformResultOk, tl::WebError> simple_web_transfer_perform_resp{};
-      tl::fetcher tlf{ok_or_error_buffer};
-      if (!simple_web_transfer_perform_resp.fetch(tlf)) [[unlikely]] {
-        kphp::log::error("failed to parse response of Simple descriptor performing");
-      }
-      if (auto r{simple_web_transfer_perform_resp.value}; std::holds_alternative<tl::WebError>(r)) {
-        err.emplace(details::process_error(std::get<1>(std::move(r))));
-        return false;
-      }
-      return true;
-    }
-    case 1:
-      frame_num += 1;
-      return true;
-    case 2:
-      return false;
-    default:
-      return false;
-    }
-  }};
+  const auto response_handler{
+      [&frame_num, &err, &ok_or_error_buffer](std::span<std::byte> _) noexcept -> kphp::component::inter_component_session::client::response_readiness {
+        switch (frame_num) {
+        case 0: {
+          frame_num += 1;
+          tl::Either<tl::SimpleWebTransferPerformResultOk, tl::WebError> simple_web_transfer_perform_resp{};
+          tl::fetcher tlf{ok_or_error_buffer};
+          if (!simple_web_transfer_perform_resp.fetch(tlf)) [[unlikely]] {
+            kphp::log::error("failed to parse response of Simple descriptor performing");
+          }
+          if (auto r{simple_web_transfer_perform_resp.value}; std::holds_alternative<tl::WebError>(r)) {
+            err.emplace(details::process_error(std::get<1>(std::move(r))));
+            return kphp::component::inter_component_session::client::response_readiness::ready;
+          }
+          return kphp::component::inter_component_session::client::response_readiness::pending;
+        }
+        case 1:
+          frame_num += 1;
+          return kphp::component::inter_component_session::client::response_readiness::pending;
+        case 2:
+          return kphp::component::inter_component_session::client::response_readiness::ready;
+        default:
+          return kphp::component::inter_component_session::client::response_readiness::ready;
+        }
+      }};
 
   if (auto res{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider), response_handler)}; !res) [[unlikely]] {
     kphp::log::error("failed to send request of Simple descriptor performing");

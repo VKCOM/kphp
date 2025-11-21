@@ -29,6 +29,13 @@ class client final {
   using query_id_type = uint64_t;
   using query2notifier_type = kphp::stl::map<query_id_type, kphp::coro::event, kphp::memory::script_allocator>;
 
+public:
+  using response_readiness = enum class response_readiness : uint8_t {
+    pending = 1,
+    ready = 0,
+  };
+
+private:
   struct refcountable_transport_type : public refcountable_php_classes<refcountable_transport_type> {
     kphp::component::stream stream;
   };
@@ -229,7 +236,7 @@ class client final {
   }
 
 public:
-  ~client() noexcept {
+  ~client() {
     // If client has been moved, skip disabling the reader.
     // Otherwise, shut down the reader.
     if (query_count != std::numeric_limits<query_id_type>::max()) {
@@ -263,7 +270,7 @@ public:
 
   template<std::invocable<size_t> B, std::invocable<std::span<std::byte>> R>
   requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>> &&
-               std::is_convertible_v<std::invoke_result_t<R, std::span<std::byte>>, bool>
+               std::is_convertible_v<std::invoke_result_t<R, std::span<std::byte>>, client::response_readiness>
   auto query(std::span<const std::byte> request, B response_buffer_provider, R response_handler) noexcept -> kphp::coro::task<std::expected<void, int32_t>>;
 
   template<std::invocable<size_t> B>
@@ -282,7 +289,7 @@ inline auto client::create(std::string_view component_name) noexcept -> std::exp
 
 template<std::invocable<size_t> B, std::invocable<std::span<std::byte>> R>
 requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>> &&
-             std::is_convertible_v<std::invoke_result_t<R, std::span<std::byte>>, bool>
+             std::is_convertible_v<std::invoke_result_t<R, std::span<std::byte>>, client::response_readiness>
 auto client::query(std::span<const std::byte> request, B response_buffer_provider,
                    R response_handler) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
   // If previously any readers' error has been occurred
@@ -301,11 +308,11 @@ auto client::query(std::span<const std::byte> request, B response_buffer_provide
   }
   kphp::log::debug("client wrote request for query #{}", query_id);
 
-  auto still_wait{true};
+  auto response_readiness_status{response_readiness::pending};
 
   kphp::log::debug("client now is reading responses for query #{}", query_id);
   // Wait a new response until handler returns false
-  while (still_wait) {
+  while (response_readiness_status != response_readiness::ready) {
     // Suspend on response notifier
     co_await reader.ctx.get()->resp_finish_notifier[query_id];
 
@@ -323,7 +330,7 @@ auto client::query(std::span<const std::byte> request, B response_buffer_provide
     }
 
     // Invoke handler and pass response slice
-    still_wait = std::invoke(std::move(response_handler), reader.ctx.get()->query2resp[query_id]);
+    response_readiness_status = std::invoke(std::move(response_handler), reader.ctx.get()->query2resp[query_id]);
   }
   co_return std::expected<void, int32_t>{};
 }
@@ -332,9 +339,9 @@ template<std::invocable<size_t> B>
 requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>>
 auto client::query(std::span<const std::byte> request, B response_buffer_provider) noexcept -> kphp::coro::task<std::expected<std::span<std::byte>, int32_t>> {
   std::span<std::byte> response{};
-  auto res{co_await query(request, std::move(response_buffer_provider), [&response](std::span<std::byte> resp) noexcept -> bool {
+  auto res{co_await query(request, std::move(response_buffer_provider), [&response](std::span<std::byte> resp) noexcept -> client::response_readiness {
     response = resp;
-    return false;
+    return response_readiness::ready;
   })};
   if (!res.has_value()) [[unlikely]] {
     co_return std::unexpected{res.error()};
