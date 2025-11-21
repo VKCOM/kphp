@@ -15,9 +15,7 @@
 
 struct RegexInstanceState final : private vk::not_copyable {
 private:
-  template<typename Value>
-  using string_unordered_map =
-      kphp::stl::unordered_map<string, Value, kphp::memory::script_allocator, decltype([](const string& s) noexcept { return static_cast<size_t>(s.hash()); })>;
+  using hasher_type = decltype([](const string& s) noexcept { return static_cast<size_t>(s.hash()); });
 
   static constexpr size_t MAX_SUBPATTERNS_COUNT = 512;
 
@@ -35,7 +33,7 @@ public:
   const regex_pcre2_compile_context_t compile_context;
   const regex_pcre2_match_context_t match_context;
   regex_pcre2_match_data_t regex_pcre2_match_data;
-  string_unordered_map<compiled_regex_cache_entry> regex_pcre2_code_cache;
+  kphp::stl::unordered_map<string, compiled_regex_cache_entry, kphp::memory::script_allocator, hasher_type> regex_pcre2_code_cache;
 
   RegexInstanceState() noexcept;
 
