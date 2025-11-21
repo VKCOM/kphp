@@ -407,7 +407,7 @@ inline auto f$curl_exec(kphp::web::curl::easy_type easy_id) noexcept -> kphp::co
   curl_state.easyctx_get_or_init(easy_id).has_been_executed = true;
   if (!res.has_value()) [[unlikely]] {
     curl_state.easy2ctx[easy_id].set_errno(res.error().code, res.error().description);
-    kphp::web::curl::details::print_error("Could not exec curl easy handle", std::move(res.error()));
+    kphp::web::curl::details::print_error("Could not execute curl easy handle", std::move(res.error()));
     co_return false;
   }
   if (curl_state.easy2ctx.contains(easy_id) && curl_state.easy2ctx[easy_id].return_transfer) {
@@ -439,20 +439,25 @@ inline auto f$curl_reset(kphp::web::curl::easy_type easy_id) noexcept -> kphp::c
   curl_state.easy2ctx[easy_id].private_data = std::nullopt;
 }
 
-inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double timeout_s = 1.0) noexcept -> kphp::coro::task<Optional<string>> {
-  auto& curl_state{CurlInstanceState::get()};
-  f$curl_setopt(easy_id, static_cast<kphp::web::property_id>(kphp::web::curl::CURLOPT::TIMEOUT_MS),
-                std::chrono::duration_cast<std::chrono::milliseconds>(
-                    kphp::forks::detail::normalize_timeout(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout_s})))
-                    .count());
-  auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_perform(kphp::web::simple_transfer{easy_id}))};
-  curl_state.easyctx_get_or_init(easy_id).has_been_executed = true;
-  if (!res.has_value()) [[unlikely]] {
-    curl_state.easy2ctx[easy_id].set_errno(res.error().code, res.error().description);
-    kphp::web::curl::details::print_error("Could not exec curl easy handle concurrently", std::move(res.error()));
+inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double timeout_sec = 1.0) noexcept -> kphp::coro::task<Optional<string>> {
+  auto sched_res{co_await kphp::coro::io_scheduler::get().schedule(
+      kphp::forks::id_managed(kphp::web::simple_transfer_perform(kphp::web::simple_transfer{easy_id})),
+      kphp::forks::detail::normalize_timeout(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout_sec})))};
+  if (!sched_res.has_value()) [[unlikely]] {
+    kphp::web::curl::details::print_error(
+        "Could not execute curl easy handle concurrently",
+        kphp::web::error{.code = kphp::web::WEB_INTERNAL_ERROR_CODE, .description = string{"concurrent transfer has been interrupted due to timeout"}});
     co_return false;
   }
-  co_return (*res).body;
+  auto& perform_res{*sched_res};
+  auto& curl_state{CurlInstanceState::get()};
+  curl_state.easyctx_get_or_init(easy_id).has_been_executed = true;
+  if (!perform_res.has_value()) [[unlikely]] {
+    curl_state.easy2ctx[easy_id].set_errno(perform_res.error().code, perform_res.error().description);
+    kphp::web::curl::details::print_error("Could not execute curl easy handle concurrently", std::move(perform_res.error()));
+    co_return false;
+  }
+  co_return (*perform_res).body;
 }
 
 inline auto f$curl_error(kphp::web::curl::easy_type easy_id) noexcept -> string {
