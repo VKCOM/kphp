@@ -16,12 +16,6 @@
 
 namespace {
 
-constexpr std::array<std::string_view, 12> PHP_TIMELIB_MON_FULL_NAMES = {"January", "February", "March",     "April",   "May",      "June",
-                                                                         "July",    "August",   "September", "October", "November", "December"};
-constexpr std::array<std::string_view, 12> PHP_TIMELIB_MON_SHORT_NAMES = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-constexpr std::array<std::string_view, 7> PHP_TIMELIB_DAY_FULL_NAMES = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-constexpr std::array<std::string_view, 7> PHP_TIMELIB_DAY_SHORT_NAMES = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-
 constexpr std::array<std::string_view, 4> suffix = {"st", "nd", "rd", "th"};
 
 void iso_week_number(int y, int doy, int weekday, int& iw, int& iy) noexcept {
@@ -103,13 +97,13 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       SB << static_cast<char>(day / 10 + '0') << static_cast<char>(day % 10 + '0');
       break;
     case 'D':
-      SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week].data();
+      SB << DAY_SHORT_NAMES[day_of_week].data();
       break;
     case 'j':
       SB << day;
       break;
     case 'l':
-      SB << PHP_TIMELIB_DAY_FULL_NAMES[day_of_week].data();
+      SB << DAY_FULL_NAMES[day_of_week].data();
       break;
     case 'N':
       SB << (day_of_week == 0 ? '7' : static_cast<char>(day_of_week + '0'));
@@ -147,13 +141,13 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       SB << static_cast<char>('0' + iso_week / 10) << static_cast<char>('0' + iso_week % 10);
       break;
     case 'F':
-      SB << PHP_TIMELIB_MON_FULL_NAMES[month - 1].data();
+      SB << MON_FULL_NAMES[month - 1].data();
       break;
     case 'm':
       SB << static_cast<char>(month / 10 + '0') << static_cast<char>(month % 10 + '0');
       break;
     case 'M':
-      SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1].data();
+      SB << MON_SHORT_NAMES[month - 1].data();
       break;
     case 'n':
       SB << month;
@@ -271,12 +265,12 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       }
       break;
     case 'r':
-      SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week].data();
+      SB << DAY_SHORT_NAMES[day_of_week].data();
       SB << ", ";
       SB << static_cast<char>(day / 10 + '0');
       SB << static_cast<char>(day % 10 + '0');
       SB << ' ';
-      SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1].data();
+      SB << MON_SHORT_NAMES[month - 1].data();
       SB << ' ';
       SB << year;
       SB << ' ';

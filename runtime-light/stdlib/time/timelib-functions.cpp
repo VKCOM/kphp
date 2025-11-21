@@ -12,7 +12,6 @@
 #include "kphp/timelib/timelib.h"
 
 #include "common/containers/final_action.h"
-#include "runtime-common/core/allocator/platform-malloc-interface.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/time-state.h"
 
@@ -33,6 +32,98 @@ timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb
   tzinfo = (kphp::memory::libc_alloc_guard{}, timelib_parse_tzfile(timezone, tzdb, errc));
   instance_timelib_zone_cache.put(tzinfo);
   return tzinfo;
+}
+
+int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,
+                 std::optional<int64_t> yea) noexcept {
+  auto* now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
+  const vk::final_action now_deleter{[now] noexcept { (kphp::memory::libc_alloc_guard{}, timelib_time_dtor(now)); }};
+  namespace chrono = std::chrono;
+  timelib_unixtime2gmt(now, chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
+
+  hou.transform([now](auto value) noexcept {
+    now->h = value;
+    return 0;
+  });
+
+  min.transform([now](auto value) noexcept {
+    now->i = value;
+    return 0;
+  });
+
+  sec.transform([now](auto value) noexcept {
+    now->s = value;
+    return 0;
+  });
+  mon.transform([now](auto value) noexcept {
+    now->m = value;
+    return 0;
+  });
+
+  day.transform([now](auto value) noexcept {
+    now->d = value;
+    return 0;
+  });
+
+  yea.transform([now](auto value) noexcept {
+    now->y = value;
+    return 0;
+  });
+
+  timelib_update_ts(now, nullptr);
+
+  return now->sse;
+}
+
+std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
+                              std::optional<int64_t> day, std::optional<int64_t> yea) noexcept {
+  auto* now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
+  const vk::final_action now_deleter{[now] noexcept { (kphp::memory::libc_alloc_guard{}, timelib_time_dtor(now)); }};
+  string default_timezone{TimeInstanceState::get().default_timezone};
+  int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
+  auto* tzinfo{kphp::timelib::get_timezone_info(default_timezone.c_str(), timelib_builtin_db(), std::addressof(errc))};
+  if (tzinfo == nullptr) [[unlikely]] {
+    kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", default_timezone.c_str(), timelib_get_error_message(errc));
+    return std::nullopt;
+  }
+  now->tz_info = tzinfo;
+  now->zone_type = TIMELIB_ZONETYPE_ID;
+  namespace chrono = std::chrono;
+  (kphp::memory::libc_alloc_guard{},
+   timelib_unixtime2local(now, chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count()));
+
+  hou.transform([now](auto value) noexcept {
+    now->h = value;
+    return 0;
+  });
+
+  min.transform([now](auto value) noexcept {
+    now->i = value;
+    return 0;
+  });
+
+  sec.transform([now](auto value) noexcept {
+    now->s = value;
+    return 0;
+  });
+  mon.transform([now](auto value) noexcept {
+    now->m = value;
+    return 0;
+  });
+
+  day.transform([now](auto value) noexcept {
+    now->d = value;
+    return 0;
+  });
+
+  yea.transform([now](auto value) noexcept {
+    now->y = value;
+    return 0;
+  });
+
+  (kphp::memory::libc_alloc_guard{}, timelib_update_ts(now, tzinfo));
+
+  return now->sse;
 }
 
 std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime, int64_t timestamp) noexcept {
@@ -74,6 +165,10 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view dat
     return {};
   }
   return result_timestamp;
+}
+
+bool valid_date(int64_t year, int64_t month, int64_t day) noexcept {
+  return timelib_valid_date(year, month, day);
 }
 
 } // namespace kphp::timelib
