@@ -4,29 +4,20 @@
 
 #pragma once
 
+#include "runtime-light/stdlib/curl/curl.h"
+#include "runtime-light/stdlib/curl/defs.h"
+#include "runtime-light/stdlib/web-transfer-lib/defs.h"
+
 #include <array>
 #include <cstdint>
+#include <optional>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 
-namespace kphp::web::curl {
-using easy_type = uint64_t;
-
-constexpr auto CURL_ERROR_SIZE = 256;
-
-struct EasyContext {
-  bool return_transfer{false};
-  string private_data{};
-};
-
-} // namespace kphp::web::curl
-
 struct CurlInstanceState final : private vk::not_copyable {
-  uint64_t error_code{0};
-  std::array<std::byte, kphp::web::curl::CURL_ERROR_SIZE> error_description{std::byte{0}};
   kphp::stl::unordered_map<kphp::web::curl::easy_type, kphp::web::curl::EasyContext, kphp::memory::script_allocator> easy2ctx{};
 
   CurlInstanceState() noexcept = default;

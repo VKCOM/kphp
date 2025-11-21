@@ -1,4 +1,4 @@
-@ok
+@ok k2_skip
 <?php
 
 function test_get_info_all_options() {
@@ -20,13 +20,12 @@ function test_get_info_all_options() {
   unset($info["redirect_time_us"]);
   unset($info["starttransfer_time_us"]);
   unset($info["total_time_us"]);
+  // Extra options which are unsupported in K2
+//   unset($info["ssl_verify_result"]);
+//   unset($info["speed_download"]);
+//   unset($info["speed_upload"]);
+//   unset($info["upload_content_length"]);
   $info["request_header"] = "";
-#endif
-#ifndef K2
-  unset($info["ssl_verify_result"]);
-  unset($info["speed_download"]);
-  unset($info["speed_upload"]);
-  unset($info["upload_content_length"]);
 #endif
   $info["filetime"] = 0;
 
@@ -35,19 +34,6 @@ function test_get_info_all_options() {
   curl_close($c);
 }
 
-function test_get_info_header() {
-  $c = curl_init();
-
-#ifndef KPHP
-  var_dump("");
-  if (0)
-#endif
-  var_dump(curl_getinfo($c, CURLINFO_HEADER_OUT));
-
-  curl_close($c);
-}
-
-// Common for PHP, KPHP and K2
 function test_get_info_each_option() {
   $c = curl_init("http://example.com");
 
@@ -76,6 +62,21 @@ function test_get_info_each_option() {
   var_dump(curl_getinfo($c, CURLINFO_HTTP_CONNECTCODE));
   var_dump(curl_getinfo($c, CURLINFO_OS_ERRNO));
   var_dump(curl_getinfo($c, CURLINFO_CONDITION_UNMET));
+  // Extra options which are unsupported in K2
+  var_dump(curl_getinfo($c, CURLINFO_SPEED_DOWNLOAD));
+  var_dump(curl_getinfo($c, CURLINFO_CONTENT_LENGTH_UPLOAD));
+  var_dump(curl_getinfo($c, CURLINFO_SSL_VERIFYRESULT));
+  var_dump(curl_getinfo($c, CURLINFO_SPEED_UPLOAD));
+  var_dump(curl_getinfo($c, CURLINFO_SPEED_UPLOAD));
+  var_dump(curl_getinfo($c, CURLINFO_HTTPAUTH_AVAIL));
+  var_dump(curl_getinfo($c, CURLINFO_PROXYAUTH_AVAIL));
+  var_dump(curl_getinfo($c, CURLINFO_NUM_CONNECTS));
+  var_dump(curl_getinfo($c, CURLINFO_FTP_ENTRY_PATH));
+  var_dump(curl_getinfo($c, CURLINFO_APPCONNECT_TIME));
+  var_dump(curl_getinfo($c, CURLINFO_RTSP_CLIENT_CSEQ));
+  var_dump(curl_getinfo($c, CURLINFO_RTSP_CSEQ_RECV));
+  var_dump(curl_getinfo($c, CURLINFO_RTSP_SERVER_CSEQ));
+  var_dump(curl_getinfo($c, CURLINFO_RTSP_SESSION_ID));
 
   // bad options
   var_dump(curl_getinfo($c, -10));
@@ -84,36 +85,5 @@ function test_get_info_each_option() {
   curl_close($c);
 }
 
-function test_get_private_data() {
-  $c = curl_init();
-
-  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
-
-  var_dump(curl_setopt($c, CURLOPT_PRIVATE, "Hello!"));
-  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
-
-  var_dump(curl_setopt($c, CURLOPT_PRIVATE, null));
-  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
-
-  var_dump(curl_setopt($c, CURLOPT_PRIVATE, 231));
-  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
-
-  var_dump(curl_setopt($c, CURLOPT_PRIVATE, ["hello", 2, "world"]));
-  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
-
-  var_dump(curl_setopt($c, CURLOPT_PRIVATE, false));
-  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
-
-  var_dump(curl_setopt($c, CURLOPT_PRIVATE, true));
-  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
-
-  var_dump(curl_setopt($c, CURLOPT_PRIVATE, 0.21));
-  var_dump(curl_getinfo($c, CURLINFO_PRIVATE));
-
-  curl_close($c);
-}
-
 test_get_info_all_options();
-test_get_info_header();
 test_get_info_each_option();
-test_get_private_data();

@@ -4,17 +4,59 @@
 
 #pragma once
 
+#include "runtime-light/stdlib/web-transfer-lib/defs.h"
+
 #include <cstdint>
 
 namespace kphp::web::curl {
 
-enum CURLE : uint16_t {
+// PHP specific
+enum class PHPCURL : uint64_t {
+  RETURNTRANSFER = 1234567,
+};
+
+using easy_type = simple_transfer::descriptor_type;
+
+constexpr auto CURL_ERROR_SIZE = 256;
+
+enum class CURLE : uint16_t {
   OK = 0,
   BAD_FUNCTION_ARGUMENT = 43,
   UNKNOWN_OPTION = 48,
 };
 
-enum CURLOPT : uint64_t {
+enum class CURLINFO : uint64_t {
+  NONE = 0,
+  PRIVATE = 1048597,
+  EFFECTIVE_URL = 1048577,
+  CONTENT_TYPE = 1048594,
+  RESPONSE_CODE = 2097154,
+  HEADER_SIZE = 2097163,
+  REQUEST_SIZE = 2097164,
+  FILETIME = 2097166,
+  REDIRECT_COUNT = 2097172,
+  TOTAL_TIME = 3145731,
+  NAMELOOKUP_TIME = 3145732,
+  CONNECT_TIME = 3145733,
+  PRETRANSFER_TIME = 3145734,
+  SIZE_UPLOAD = 3145735,
+  SIZE_DOWNLOAD = 3145736,
+  CONTENT_LENGTH_DOWNLOAD = 3145743,
+  STARTTRANSFER_TIME = 3145745,
+  REDIRECT_TIME = 3145747,
+  REDIRECT_URL = 1048607,
+  PRIMARY_IP = 1048608,
+  PRIMARY_PORT = 2097192,
+  LOCAL_IP = 1048617,
+  LOCAL_PORT = 2097194,
+  HTTP_CONNECTCODE = 2097174,
+  OS_ERRNO = 2097177,
+  APPCONNECT_TIME = 3145761,
+  CONDITION_UNMET = 2097187,
+  HEADER_OUT = 2,
+};
+
+enum class CURLOPT : uint64_t {
   ADDRESS_SCOPE = 171,
   // APPEND = 50,
   AUTOREFERER = 58,
@@ -160,13 +202,7 @@ enum CURLOPT : uint64_t {
   COPYPOSTFIELDS = 10165,
 };
 
-// PHP specific
-enum PHPCURL : uint64_t {
-  OPT_RETURNTRANSFER = 1234567,
-  INFO_HEADER_OUT = 7654321,
-};
-
-enum CURLPROXY : uint8_t {
+enum class CURLPROXY : uint8_t {
   HTTP = 0,
   HTTP_1_0 = 1,
   SOCKS4 = 4,
@@ -175,7 +211,7 @@ enum CURLPROXY : uint8_t {
   SOCKS5_HOSTNAME = 7,
 };
 
-enum CURL_SSLVERSION : uint8_t {
+enum class CURL_SSLVERSION : uint8_t {
   DEFAULT = 0,
   TLSv1 = 1,
   // From https://www.php.net/manual/en/curl.constants.php
@@ -189,19 +225,19 @@ enum CURL_SSLVERSION : uint8_t {
   TLSv1_3 = 7,
 };
 
-enum CURL_IPRESOLVE : uint8_t {
+enum class CURL_IPRESOLVE : uint8_t {
   WHATEVER = 0,
   V4 = 1,
   V6 = 2,
 };
 
-enum CURL_NETRC : uint8_t {
+enum class CURL_NETRC : uint8_t {
   IGNORED = 0,
   OPTIONAL = 1,
   REQUIRED = 2,
 };
 
-enum CURL_HTTP_VERSION : uint8_t {
+enum class CURL_HTTP_VERSION : uint8_t {
   NONE = 0,
   _1_0 = 1,
   _1_1 = 2,

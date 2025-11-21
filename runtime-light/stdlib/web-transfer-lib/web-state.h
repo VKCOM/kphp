@@ -24,7 +24,10 @@ struct WebInstanceState final : private vk::not_copyable {
 
   std::optional<shared_session_type> session{};
   bool session_is_finished{false};
-  kphp::stl::unordered_map<kphp::web::simple_transfer, kphp::web::simple_transfer_config, kphp::memory::script_allocator> simple_transfer2config{};
+  kphp::stl::unordered_map<kphp::web::simple_transfer::descriptor_type, kphp::web::simple_transfer_config, kphp::memory::script_allocator>
+      simple_transfer2config{};
+  kphp::stl::unordered_map<kphp::web::composite_transfer::descriptor_type, kphp::web::simple_transfer_config, kphp::memory::script_allocator>
+      composite_transfer2config{};
 
   inline auto session_get_or_init() noexcept -> std::expected<shared_session_type, int32_t>;
 
@@ -38,12 +41,12 @@ inline auto WebInstanceState::session_get_or_init() noexcept -> std::expected<sh
     return std::unexpected{k2::errno_eshutdown};
   }
   if (session.has_value()) {
-    return std::expected<shared_session_type, int32_t>{session.value()};
+    return std::expected<shared_session_type, int32_t>{*session};
   }
   auto expected{kphp::component::inter_component_session::client::create(WEB_COMPONENT_NAME)};
   if (!expected) [[unlikely]] {
     return std::unexpected{expected.error()};
   }
-  session.emplace(make_instance<WebComponentSession>(WebComponentSession{.client = std::move(expected.value())}));
-  return std::expected<shared_session_type, int32_t>{session.value()};
+  session.emplace(make_instance<WebComponentSession>(WebComponentSession{.client = std::move(*expected)}));
+  return std::expected<shared_session_type, int32_t>{*session};
 }
