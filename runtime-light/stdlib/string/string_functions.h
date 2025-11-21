@@ -25,13 +25,13 @@ inline constexpr int32_t MAX_UTF8_CODE_POINT{0x10ffff};
 
 /* Search generated ranges for specified character */
 inline int32_t binary_search_ranges(int32_t code) noexcept {
-  size_t r{prepare_table_ranges_size};
   // TODO code points must be uint32_t ?!
   if ((uint32_t)code > MAX_UTF8_CODE_POINT) {
     return 0;
   }
 
   size_t l{0};
+  size_t r{prepare_table_ranges_size};
   while (l < r) {
     // TODO verify this formula
     size_t m{((l + r + 2) >> 2) << 1};
@@ -119,7 +119,7 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
   // looking for the beginnings of the words
   while (i < code_points.size()) {
     word_start_indices[words_count++] = i;
-    while (i < code_points.size() && code_points[i] != ' ') {
+    while (i < code_points.size() && code_points[i] != WHITESPACE) {
       i++;
     }
     i++;
@@ -157,7 +157,7 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
   size_t result_size{};
   // output words with '+' separator
   for (i = 0; i < uniq_words_count; i++) {
-    size_t ind = word_start_indices[i];
+    size_t ind{word_start_indices[i]};
     while (code_points[ind] != WHITESPACE) {
       result[result_size++] = code_points[ind++];
     }
@@ -173,13 +173,11 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
 
 // TODO naming
 inline std::span<const std::byte> clean_str_unicode(std::span<int32_t> code_points) noexcept {
-  // TODO prepare_str_unicode надо переписать для runtime-light
   std::span<int32_t> prepared_code_points{prepare_str_unicode(code_points)};
   // put_string_utf8 можно использовать в runtime-light
   std::span<std::byte> utf8_result{TODO, TODO};
   auto length{static_cast<size_t>(put_string_utf8(prepared_code_points.data(), reinterpret_cast<char*>(utf8_result.data())))};
-  // TODO assert !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  assert(length < utf8_result.size());
+  TODO assert(length < utf8_result.size());
   utf8_result = utf8_result.subspan(length);
 
   size_t i{};
@@ -194,13 +192,11 @@ inline std::span<const std::byte> clean_str_unicode(std::span<int32_t> code_poin
               !std::strncmp(c, "39+", 3) || !std::strncmp(c, "60+", 3) || !std::strncmp(c, "62+", 3) || !std::strncmp(c, "8232+", 5) ||
               !std::strncmp(c, "8233+", 5)};
     do {
-      // TODO почему это присваивание не внутри следующего if'a?
-      // Оно же потом будет перетёрто либо следующим присваиванием, либо в `*s = 0`
-      utf8_result[result_size] = utf8_result[i];
       if (!skip) {
+        utf8_result[result_size] = utf8_result[i];
         ++result_size;
       }
-    } while (i++ != '+');
+    } while (utf8_result[i++] != static_cast<std::byte>('+'));
   }
   utf8_result[result_size] = static_cast<std::byte>(0);
 
