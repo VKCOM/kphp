@@ -1401,7 +1401,7 @@ static int rpc_write(struct rpc_connection *c, long long qid, double timeout, bo
 /* }}} */
 
 static int rpc_nonce_execute(struct rpc_server *server, char *answer, int answer_len) { /* {{{ */
-  if (answer_len != sizeof(struct rpc_nonce) || server->inbound_packet_num != -1) {
+  if (answer_len >= 1024 || answer_len < sizeof(struct rpc_nonce) || server->inbound_packet_num != -1) {
     rpc_server_seterror(server, "Bad nonce packet", 0);
     return -1;
   }
@@ -1409,7 +1409,7 @@ static int rpc_nonce_execute(struct rpc_server *server, char *answer, int answer
 } /* }}} */
 
 static int rpc_handshake_execute(struct rpc_server *server, char *answer, int answer_len) { /* {{{ */
-  if (answer_len != sizeof(struct rpc_handshake) || server->inbound_packet_num != 0) {
+  if (answer_len >= 1024 || answer_len < sizeof(struct rpc_handshake) || server->inbound_packet_num != 0) {
     rpc_server_seterror(server, "Bad handshake packet", 0);
     return -1;
   }
@@ -1462,7 +1462,8 @@ static int rpc_handshake_send(struct rpc_server *server, double timeout) { /* {{
 static int rpc_nonce_send(struct rpc_server *server, double timeout) { /* {{{ */
   struct rpc_nonce S = {
     .key_select = 0,
-    .crypto_schema = (1 << 8) // declare version 1 of protocol, required for TL2 byte granularity
+    .crypto_schema = 0,
+    .protocol_version = 1 // need byte granularity for TL2
   };
 
   //server->outbuf = buffer_create (sizeof (S));

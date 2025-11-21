@@ -27,7 +27,6 @@ OPTION_PARSER(OPT_RPC, "no-crc32c", no_argument, "Force use of CRC32 instead of 
 
 void tcp_rpc_conn_send (struct connection *c, raw_message_t *raw, int flags) {
   tvkprintf(net_connections, 4, "%s: sending message of size %d to conn fd=%d\n", __func__, raw->total_bytes, c->fd);
-  assert (!(raw->total_bytes & 3));
   int Q[2];
   Q[0] = raw->total_bytes + 12;
   Q[1] = TCP_RPC_DATA(c)->out_packet_num ++;
@@ -44,7 +43,6 @@ void tcp_rpc_conn_send (struct connection *c, raw_message_t *raw, int flags) {
 }
 
 void tcp_rpc_conn_send_data (struct connection *c, int len, void *Q) {
-  assert (!(len & 3));
   raw_message_t r;
   assert (rwm_create (&r, Q, len) == len);
   tcp_rpc_conn_send (c, &r, 0);

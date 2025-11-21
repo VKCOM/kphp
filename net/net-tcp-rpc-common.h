@@ -17,7 +17,9 @@
 struct tcp_rpc_nonce_packet {
   int type;
   int key_select;        /* least significant 32 bits of key to use */
-  int crypto_schema;     /* 0 = NONE, 1 = AES */
+  unsigned char crypto_schema;     /* 0 = NONE, 1 = AES */
+  unsigned char protocol_version;
+  unsigned short protocol_flags;
   int crypto_ts;
   char crypto_nonce[16];
 };

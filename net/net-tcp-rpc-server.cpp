@@ -126,7 +126,7 @@ static int tcp_rpcs_process_nonce_packet (struct connection *c, raw_message_t *m
   if (D->packet_num != -2 || D->packet_type != RPC_NONCE) {
     return -2;
   }
-  if (D->packet_len != sizeof(struct tcp_rpc_nonce_packet)) {
+  if (D->packet_len >= 1024 || D->packet_len < sizeof(struct tcp_rpc_nonce_packet)) {
     return -3;
   }
 
@@ -541,7 +541,7 @@ int tcp_rpcs_init_fake_crypto (struct connection *c) {
   memset (&buf, 0, sizeof (buf));
   buf.type = RPC_NONCE;
   buf.crypto_schema = RPC_CRYPTO_NONE;
-
+  buf.protocol_version = 1; // need byte granularity for TL2
   tcp_rpc_conn_send_data (c, sizeof (buf), &buf);
   assert ((TCP_RPC_DATA(c)->crypto_flags & RPC_CRYPTO_ENCRYPTED_MASK) == 0);
   TCP_RPC_DATA(c)->crypto_flags |= RPC_CRYPTO_NONCE_SENT;

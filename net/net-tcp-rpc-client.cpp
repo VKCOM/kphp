@@ -101,7 +101,7 @@ static int tcp_rpcc_process_nonce_packet (struct connection *c, raw_message_t *m
   }
 
   assert (rwm_fetch_data (msg, &P, D->packet_len) == D->packet_len);
-  tvkprintf(net_connections, 4, "Processing nonce packet, crypto schema: %d, key select: %d\n", P.crypto_schema, P.key_select);
+  tvkprintf(net_connections, 4, "Processing nonce packet, crypto schema: %d, version: %d, key select: %d\n", P.crypto_schema, P.protocol_version, P.key_select);
 
   switch (P.crypto_schema) {
   case RPC_CRYPTO_NONE:
@@ -227,7 +227,7 @@ int tcp_rpcc_parse_execute (struct connection *c) {
   int len;
 
   while (true) {
-    len = c->in.total_bytes; 
+    len = c->in.total_bytes;
     if (len <= 0) {
       break;
     }
@@ -237,7 +237,8 @@ int tcp_rpcc_parse_execute (struct connection *c) {
         return 4 - len;
       }
       assert (rwm_fetch_lookup (&c->in, &D->packet_len, 4) == 4);
-      if (D->packet_len <= 0 || (D->packet_len & 3) || (D->packet_len > TCP_RPCC_FUNC(c)->max_packet_len && TCP_RPCC_FUNC(c)->max_packet_len > 0)) {
+      // TODO - better checks making into account protocol version to decide if (D->packet_len & 3) allowed
+      if (D->packet_len <= 0 || (D->packet_len > TCP_RPCC_FUNC(c)->max_packet_len && TCP_RPCC_FUNC(c)->max_packet_len > 0)) {
         tvkprintf(net_connections, 1, "error while parsing packet: bad packet length %d\n", D->packet_len);
         c->status = conn_error;
         c->error = -1;
@@ -425,6 +426,7 @@ int tcp_rpcc_init_fake_crypto (struct connection *c) {
   memset (&buf, 0, sizeof (buf));
   buf.type = RPC_NONCE;
   buf.crypto_schema = RPC_CRYPTO_NONE;
+  buf.protocol_version = 1; // need byte granularity for TL2
 
   tcp_rpc_conn_send_data (c, sizeof (buf), &buf);
 
@@ -484,6 +486,7 @@ int tcp_rpcc_init_crypto (struct connection *c) {
   buf.type = RPC_NONCE;
   buf.key_select = get_crypto_key_id (default_aes_key);
   buf.crypto_schema = (TCP_RPC_DATA(c)->crypto_flags & RPC_CRYPTO_ALLOW_UNENCRYPTED) ? RPC_CRYPTO_NONE_OR_AES : RPC_CRYPTO_AES;
+  buf.protocol_version = 1; // need byte granularity for TL2
 
   tcp_rpc_conn_send_data (c, sizeof (buf), &buf);
 
