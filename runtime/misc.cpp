@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #include "runtime-common/stdlib/serialization/json-functions.h"
+#include "runtime-common/stdlib/vkext/vkext-functions.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/datetime_functions.h"
@@ -20,7 +21,6 @@
 #include "runtime/interface.h"
 #include "runtime/math_functions.h"
 #include "runtime/string_functions.h"
-#include "runtime/vkext.h"
 #include "server/json-logger.h"
 #include "server/php-engine-vars.h"
 
