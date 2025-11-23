@@ -40,7 +40,7 @@ class TestCurl(CurlTestCase):
         })
 
     def test_curl_nonexistent_url(self):
-        self.assertEqual(self._curl_request("nonexistent_url"), {
+        self.assertEqual(self._curl_request("invalid:10", timeout=5), {
             "exec_result": False
         })
 
@@ -50,6 +50,6 @@ class TestCurl(CurlTestCase):
         })
 
     def test_curl_connection_only_fail(self):
-        self.assertEqual(self._curl_request("nonexistent_url", connect_only=True), {
+        self.assertEqual(self._curl_request("invalid:10", connect_only=True, timeout=5), {
             "exec_result": False
         })
