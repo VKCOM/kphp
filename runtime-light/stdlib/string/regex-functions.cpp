@@ -753,7 +753,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
     }
 
     make_output_val(offset, match_start).transform([&output, &limit_val](auto&& output_val) noexcept {
-      output.push_back(std::move(output_val));
+      output.push_back(std::forward<decltype(output_val)>(output_val));
       if (limit_val != kphp::regex::PREG_NOLIMIT) {
         limit_val--;
       }
@@ -764,7 +764,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
       for (auto i{1uz}; i < regex_info.match_count; i++) {
         auto j{2 * i};
         make_output_val(offsets[j], offsets[j + 1]).transform([&output](auto&& output_val) noexcept {
-          output.push_back(std::move(output_val));
+          output.push_back(std::forward<decltype(output_val)>(output_val));
           return 0;
         });
       }
@@ -778,7 +778,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
   }
 
   make_output_val(offset, regex_info.subject.size()).transform([&output](auto&& output_val) noexcept {
-    output.push_back(std::move(output_val));
+    output.push_back(std::forward<decltype(output_val)>(output_val));
     return 0;
   });
   return output;
