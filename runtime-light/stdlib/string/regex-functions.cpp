@@ -668,7 +668,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
 
 Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches,
                                int64_t flags, int64_t offset) noexcept {
-  RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}};
+  RegexInfo regex_info{pattern, {subject.c_str(), subject.size()}, {}};
 
   bool success{valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_OFFSET_CAPTURE, kphp::regex::PREG_UNMATCHED_AS_NULL)};
   success &= correct_offset(offset, regex_info.subject);
@@ -693,7 +693,7 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
 Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
                                    Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches, int64_t flags, int64_t offset) noexcept {
   int64_t entire_match_count{};
-  RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}};
+  RegexInfo regex_info{pattern, {subject.c_str(), subject.size()}, {}};
 
   bool success{valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_PATTERN_ORDER, kphp::regex::PREG_SET_ORDER,
                                  kphp::regex::PREG_OFFSET_CAPTURE, kphp::regex::PREG_UNMATCHED_AS_NULL)};
@@ -774,7 +774,7 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
     pcre2_replacement = regex_info.opt_replace_result.has_value() ? *std::move(regex_info.opt_replace_result) : replacement;
   }
 
-  RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
+  RegexInfo regex_info{pattern, {subject.c_str(), subject.size()}, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
 
   bool success{compile_regex(regex_info)};
   success &= replace_regex(regex_info, limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit));
@@ -906,7 +906,7 @@ mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed
 }
 
 Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject, int64_t limit, int64_t flags) noexcept {
-  RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {}};
+  RegexInfo regex_info{pattern, {subject.c_str(), subject.size()}, {}};
 
   valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_SPLIT_NO_EMPTY, kphp::regex::PREG_SPLIT_DELIM_CAPTURE,
                     kphp::regex::PREG_SPLIT_OFFSET_CAPTURE);
