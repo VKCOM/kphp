@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <memory>
 #include <span>
 
 #include "auto/common/unicode-utils-auto.h"
@@ -191,7 +192,7 @@ inline std::span<const std::byte> clean_str_unicode(std::span<int32_t> code_poin
   size_t i{};
   size_t result_size{};
   while (i < utf8_result.size()) {
-    char* c{reinterpret_cast<char*>(&utf8_result[i])};
+    char* c{reinterpret_cast<char*>(std::addressof(utf8_result[i]))};
     bool skip{!std::strncmp(c, "amp+", 4) || !std::strncmp(c, "gt+", 3) || !std::strncmp(c, "lt+", 3) || !std::strncmp(c, "quot+", 5) ||
               !std::strncmp(c, "ft+", 3) || !std::strncmp(c, "feat+", 5) ||
               // скипаем год ?
