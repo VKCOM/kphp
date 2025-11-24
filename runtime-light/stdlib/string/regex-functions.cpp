@@ -23,6 +23,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/string/mbstring-functions.h"
+#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/stdlib/string/regex-state.h"
