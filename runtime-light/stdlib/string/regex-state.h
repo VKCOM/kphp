@@ -37,8 +37,8 @@ public:
 
   RegexInstanceState() noexcept;
 
-  void add_compiled_code(std::string_view regex, uint32_t compile_options, regex_pcre2_code_t regex_code) noexcept {
-    regex_pcre2_code_cache.emplace(string{regex.data(), static_cast<string::size_type>(regex.size())},
+  void add_compiled_code(string regex, uint32_t compile_options, regex_pcre2_code_t regex_code) noexcept {
+    regex_pcre2_code_cache.emplace(std::move(regex),
                                    compiled_regex_cache_entry{.compile_options = compile_options, .regex_code = regex_code});
   }
 

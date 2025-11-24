@@ -36,7 +36,7 @@ enum class trailing_unmatch : uint8_t { skip, include };
 using regex_pcre2_group_names_t = kphp::stl::vector<const char*, kphp::memory::script_allocator>;
 
 struct RegexInfo final {
-  std::string_view regex;
+  const string& regex;
   std::string_view subject;
   std::string_view replacement;
 
@@ -60,7 +60,7 @@ struct RegexInfo final {
 
   RegexInfo() = delete;
 
-  RegexInfo(std::string_view regex_, std::string_view subject_, std::string_view replacement_) noexcept
+  RegexInfo(const string& regex_, std::string_view subject_, std::string_view replacement_) noexcept
       : regex(regex_),
         subject(subject_),
         replacement(replacement_) {}
@@ -113,8 +113,7 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
   }
 
   // check runtime cache
-  if (const auto it{regex_state.regex_pcre2_code_cache.find({regex_info.regex.data(), static_cast<string::size_type>(regex_info.regex.size())})};
-      it != regex_state.regex_pcre2_code_cache.end()) {
+  if (const auto it{regex_state.regex_pcre2_code_cache.find(regex_info.regex)}; it != regex_state.regex_pcre2_code_cache.end()) {
     auto& [compile_options, regex_code] = it->second;
     regex_info.compile_options = compile_options;
     regex_info.regex_code = regex_code;
@@ -171,7 +170,7 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
   //
   // regex       ->  ~pattern~im\0
   // regex_body  ->   pattern
-  std::string_view regex_body = regex_info.regex;
+  std::string_view regex_body = {regex_info.regex.c_str(), regex_info.regex.size()};
 
   // remove start delimiter
   regex_body.remove_prefix(1);
@@ -231,13 +230,13 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
   }
 
   if (regex_body.empty()) {
-    kphp::log::warning("no ending regex delimiter: {}", regex_info.regex);
+    kphp::log::warning("no ending regex delimiter: {}", regex_info.regex.c_str());
     return false;
   }
   // UTF-8 validation
   if (static_cast<bool>(compile_options & PCRE2_UTF)) {
-    if (!mb_UTF8_check(regex_info.regex.data())) [[unlikely]] {
-      kphp::log::warning("invalid UTF-8 pattern: {}", regex_info.regex);
+    if (!mb_UTF8_check(regex_info.regex.c_str())) [[unlikely]] {
+      kphp::log::warning("invalid UTF-8 pattern: {}", regex_info.regex.c_str());
       return false;
     }
     if (!mb_UTF8_check(regex_info.subject.data())) [[unlikely]] {
@@ -705,10 +704,9 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
 
   string pcre2_replacement{replacement};
   { // we need to replace PHP's back references with PCRE2 ones
-    static constexpr std::string_view backreference_pattern = R"(/\\(\d)/)";
     static constexpr std::string_view backreference_replacement = "$$$1";
 
-    RegexInfo regex_info{backreference_pattern, {replacement.c_str(), replacement.size()}, backreference_replacement};
+    RegexInfo regex_info{StringLibConstants::get().BACKREFERENCE_PATTERN_STR, {replacement.c_str(), replacement.size()}, backreference_replacement};
     bool success{compile_regex(regex_info)};
     success &= replace_regex(regex_info, std::numeric_limits<uint64_t>::max());
     if (!success) [[unlikely]] {
