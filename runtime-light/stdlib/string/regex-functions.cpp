@@ -704,24 +704,6 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
   return true;
 }
 
-std::optional<mixed> make_output_val(RegexInfo& regex_info, bool no_empty, bool offset_capture, size_t start_offset, size_t end_offset) noexcept {
-  const auto size{end_offset - start_offset};
-  if (no_empty && size == 0) {
-    return std::nullopt;
-  }
-
-  auto val{string{std::next(regex_info.subject.data(), start_offset), static_cast<string::size_type>(size)}};
-
-  mixed output_val;
-  if (offset_capture) {
-    output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(start_offset));
-  } else {
-    output_val = std::move(val);
-  }
-
-  return output_val;
-}
-
 std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val, bool no_empty, bool delim_capture, bool offset_capture) noexcept {
   auto offset{0uz};
 
@@ -739,6 +721,24 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
 
   array<mixed> output{};
 
+  auto make_output_val{[&regex_info, no_empty, offset_capture](size_t start_offset, size_t end_offset) noexcept -> std::optional<mixed> {
+    const auto size{end_offset - start_offset};
+    if (no_empty && size == 0) {
+      return std::nullopt;
+    }
+
+    auto val{string{std::next(regex_info.subject.data(), start_offset), static_cast<string::size_type>(size)}};
+
+    mixed output_val;
+    if (offset_capture) {
+      output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(start_offset));
+    } else {
+      output_val = std::move(val);
+    }
+
+    return output_val;
+  }};
+
   for (auto [match_start, match_end] : regex_info) {
     if (regex_info.has_error) [[unlikely]] {
       return std::nullopt;
@@ -748,7 +748,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
       break;
     }
 
-    make_output_val(regex_info, no_empty, offset_capture, offset, match_start).transform([&output, &limit_val](auto&& output_val) noexcept {
+    make_output_val(offset, match_start).transform([&output, &limit_val](auto&& output_val) noexcept {
       output.push_back(std::move(output_val));
       if (limit_val != kphp::regex::PREG_NOLIMIT) {
         limit_val--;
@@ -759,7 +759,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
     if (delim_capture) {
       for (auto i{1uz}; i < regex_info.match_count; i++) {
         auto j{2 * i};
-        make_output_val(regex_info, no_empty, offset_capture, offsets[j], offsets[j + 1]).transform([&output](auto&& output_val) noexcept {
+        make_output_val(offsets[j], offsets[j + 1]).transform([&output](auto&& output_val) noexcept {
           output.push_back(std::move(output_val));
           return 0;
         });
@@ -773,7 +773,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
     return std::nullopt;
   }
 
-  make_output_val(regex_info, no_empty, offset_capture, offset, regex_info.subject.size()).transform([&output](auto&& output_val) noexcept {
+  make_output_val(offset, regex_info.subject.size()).transform([&output](auto&& output_val) noexcept {
     output.push_back(std::move(output_val));
     return 0;
   });
