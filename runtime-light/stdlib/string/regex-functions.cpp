@@ -157,42 +157,42 @@ struct RegexInfo final {
   public:
     iterator() = default;
 
-    iterator(RegexInfo& ri)
+    iterator(RegexInfo& ri) noexcept
         : regex_info_ptr(&ri) {
       find_next_match();
     }
 
-    reference operator*() const {
+    reference operator*() const noexcept {
       return current_offsets;
     }
-    pointer operator->() const {
+    pointer operator->() const noexcept {
       return &current_offsets;
     }
 
-    iterator& operator++() {
+    iterator& operator++() noexcept {
       find_next_match();
       return *this;
     }
 
-    iterator operator++(int) {
+    iterator operator++(int) noexcept {
       iterator temp{*this};
       operator++();
       return temp;
     }
 
-    friend bool operator==(const iterator& a, const iterator& b) {
+    friend bool operator==(const iterator& a, const iterator& b) noexcept {
       return a.regex_info_ptr == b.regex_info_ptr;
     }
 
-    friend bool operator!=(const iterator& a, const iterator& b) {
+    friend bool operator!=(const iterator& a, const iterator& b) noexcept {
       return !(a == b);
     }
   };
 
-  iterator begin() {
+  iterator begin() noexcept {
     return iterator{*this};
   }
-  iterator end() {
+  iterator end() noexcept {
     return iterator{};
   }
 };
