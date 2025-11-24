@@ -17,8 +17,10 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/math/random-functions.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/math/random-state.h"
+#include "runtime-light/stdlib/system/system-functions.h"
 
 inline int64_t f$mt_rand(int64_t l, int64_t r) noexcept {
   if (l > r) [[unlikely]] {
