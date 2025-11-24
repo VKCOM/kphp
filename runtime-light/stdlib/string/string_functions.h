@@ -13,20 +13,28 @@
 #include "auto/common/unicode-utils-auto.h"
 #include "common/unicode/utf8-utils.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace string_functions_impl_ {
 
 // TODO May be better extract MAX_NAME_SIZE to utf8-utils.h instead of copy-pasting it ?
-inline constexpr size_t MAX_NAME_SIZE{65536};
-inline constexpr size_t MAX_BYTES_SPAN_SIZE{MAX_NAME_SIZE * 4 + 4};
-inline constexpr size_t MAX_CODE_POINTS_SPAN_SIZE{MAX_NAME_SIZE + 4};
+inline constexpr size_t MAX_NAME_SIZE = 65536;
+inline constexpr size_t MAX_NAME_INDICES_SIZE = MAX_NAME_SIZE + 4;
+inline constexpr size_t MAX_NAME_CODE_POINTS_SIZE = MAX_NAME_SIZE + 4;
+inline constexpr size_t MAX_NAME_BYTES_SIZE = MAX_NAME_SIZE * 4 + 4;
+
+// TODO как учитывать align ?
+inline constexpr size_t SOURCE_CODE_POINTS_SPAN_BEGIN = 0;
+inline constexpr size_t WORD_INDICES_SPAN_BEGIN = SOURCE_CODE_POINTS_SPAN_BEGIN + sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE;
+inline constexpr size_t RESULT_CODE_POINTS_SPAN_BEGIN = WORD_INDICES_SPAN_BEGIN + sizeof(size_t) * MAX_NAME_INDICES_SIZE;
+inline constexpr size_t RESULT_BYTES_SPAN_BEGIN = RESULT_CODE_POINTS_SPAN_BEGIN + sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE;
+inline constexpr size_t RESULT_BYTES_SPAN_END = RESULT_BYTES_SPAN_BEGIN + sizeof(int32_t) * MAX_NAME_BYTES_SIZE;
 
 inline constexpr int32_t MAX_UTF8_CODE_POINT{0x10ffff};
 
 /* Search generated ranges for specified character */
 inline int32_t binary_search_ranges(int32_t code) noexcept {
-  // TODO code points must be uint32_t ?!
-  if ((uint32_t)code > MAX_UTF8_CODE_POINT) {
+  if (code > MAX_UTF8_CODE_POINT) {
     return 0;
   }
 
@@ -64,9 +72,7 @@ inline int32_t binary_search_ranges(int32_t code) noexcept {
     // TODO ??
     return ((code - 1) | 1);
   default:
-    // TODO тут делаем k2_exit ??
-    assert(0);
-    exit(1);
+    k2::exit(1);
   }
 }
 
@@ -112,8 +118,8 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
   prepare_search_string(code_points);
   code_points[code_points.size()] = WHITESPACE;
 
-  // TODO init
-  std::span<size_t> word_start_indices{TODO_string_buffer_pointer, TODO_size}; // indices of first char of every word in `code_points`.
+  auto* word_indices_begin{reinterpret_cast<size_t*>(RuntimeContext::get().static_SB.buffer()[WORD_INDICES_SPAN_BEGIN])};
+  std::span<size_t> word_start_indices{word_indices_begin, MAX_NAME_INDICES_SIZE}; // indices of first char of every word in `code_points`.
   size_t words_count{};
   size_t i{};
   // looking for the beginnings of the words
@@ -148,12 +154,12 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
     if (uniq_words_count == 0 || word_less_cmp(word_start_indices[uniq_words_count - 1], word_start_indices[i])) {
       word_start_indices[uniq_words_count++] = word_start_indices[i];
     } else {
-      // TODO разобраться, зачем сохранять именно последний элемент из дубликатов?
       word_start_indices[uniq_words_count - 1] = word_start_indices[i];
     }
   }
 
-  std::span<int32_t> result{TODO, TODO};
+  auto* result_begin{reinterpret_cast<int32_t*>(RuntimeContext::get().static_SB.buffer()[RESULT_CODE_POINTS_SPAN_BEGIN])};
+  std::span<int32_t> result{result_begin, MAX_NAME_CODE_POINTS_SIZE};
   size_t result_size{};
   // output words with '+' separator
   for (i = 0; i < uniq_words_count; i++) {
@@ -165,8 +171,7 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
   }
   result[result_size++] = 0;
 
-  // TODO assert !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  assert(result_size < MAX_NAME_SIZE);
+  kphp::log::assertion(result_size < MAX_NAME_SIZE);
   result = result.subspan(result_size);
   return result;
 }
@@ -174,10 +179,12 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
 // TODO naming
 inline std::span<const std::byte> clean_str_unicode(std::span<int32_t> code_points) noexcept {
   std::span<int32_t> prepared_code_points{prepare_str_unicode(code_points)};
+
+  auto* utf8_result_begin{reinterpret_cast<std::byte*>(prepared_code_points.begin()[RESULT_CODE_POINTS_SPAN_BEGIN])};
+  std::span<std::byte> utf8_result{utf8_result_begin, MAX_NAME_BYTES_SIZE};
   // put_string_utf8 можно использовать в runtime-light
-  std::span<std::byte> utf8_result{TODO, TODO};
   auto length{static_cast<size_t>(put_string_utf8(prepared_code_points.data(), reinterpret_cast<char*>(utf8_result.data())))};
-  TODO assert(length < utf8_result.size());
+  kphp::log::assertion(length < utf8_result.size());
   utf8_result = utf8_result.subspan(length);
 
   size_t i{};
@@ -208,15 +215,13 @@ inline std::span<const std::byte> prepare_search_query_impl(std::span<const std:
     return x;
   }
 
-  // TODO what is better, RuntimeContext.static_SB or StringLibContext.static_buf ?
-  RuntimeContext::get().static_SB.clean();
-  RuntimeContext::get().static_SB.reserve(??? + ??? + ???);
+  RuntimeContext::get().static_SB.clean().reserve(RESULT_BYTES_SPAN_END);
 
-  // TODO is int32_t canonical way of representing code points?
-  // May be replace with uint32_t?
+  // TODO провалидировать с ребятами ебучую разметку статик буфера
+  auto* utf8_code_points_begin{reinterpret_cast<int32_t*>(RuntimeContext::get().static_SB.buffer())};
   std::span<int32_t> utf8_code_points{
-      // TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
-      MAX_CODE_POINTS_SPAN_SIZE,
+      utf8_code_points_begin,
+      MAX_NAME_CODE_POINTS_SIZE,
   };
 
   // html_string_to_utf8 можно полностью использовать в runtime-light
