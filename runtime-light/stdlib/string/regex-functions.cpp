@@ -589,7 +589,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
 }
 
 std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val, bool no_empty, bool delim_capture, bool offset_capture) noexcept {
-  auto offset{0uz};
+  size_t offset{};
 
   if (limit_val == 0) {
     limit_val = kphp::regex::PREG_NOLIMIT;
