@@ -108,7 +108,7 @@ inline double f$lcg_value() noexcept {
   return static_cast<double>(z) * random_impl_::lcg_value_coef;
 }
 
-inline kphp::coro::task<string> f$uniqid(const string prefix, bool more_entropy) noexcept {
+inline kphp::coro::task<string> f$uniqid(string prefix, bool more_entropy) noexcept {
   if (!more_entropy) {
     co_await f$usleep(1);
   }
@@ -118,6 +118,8 @@ inline kphp::coro::task<string> f$uniqid(const string prefix, bool more_entropy)
   auto susec_cnt{static_cast<int32_t>(susec.count() & 0xFFFFF)}; // because we'll use only 5 hex digits
   constexpr size_t buf_size = 30;
   std::array<char, buf_size> buf{};
+  // TODO is it correct to move this write to static_SB before f$usleep or not?
+  // Are we allowed to store data in static_SB before co_await and read it after?
   RuntimeContext::get().static_SB.clean() << prefix;
 
   if (more_entropy) {
