@@ -13,6 +13,7 @@
 #include "auto/common/unicode-utils-auto.h"
 #include "common/unicode/utf8-utils.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace string_functions_impl_ {
@@ -28,7 +29,7 @@ inline constexpr size_t SOURCE_CODE_POINTS_SPAN_BEGIN = 0;
 inline constexpr size_t WORD_INDICES_SPAN_BEGIN = SOURCE_CODE_POINTS_SPAN_BEGIN + sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE;
 inline constexpr size_t RESULT_CODE_POINTS_SPAN_BEGIN = WORD_INDICES_SPAN_BEGIN + sizeof(size_t) * MAX_NAME_INDICES_SIZE;
 inline constexpr size_t RESULT_BYTES_SPAN_BEGIN = RESULT_CODE_POINTS_SPAN_BEGIN + sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE;
-inline constexpr size_t RESULT_BYTES_SPAN_END = RESULT_BYTES_SPAN_BEGIN + sizeof(int32_t) * MAX_NAME_BYTES_SIZE;
+inline constexpr size_t RESULT_BYTES_SPAN_END = RESULT_BYTES_SPAN_BEGIN + sizeof(std::byte) * MAX_NAME_BYTES_SIZE;
 
 inline constexpr int32_t MAX_UTF8_CODE_POINT{0x10ffff};
 
@@ -215,10 +216,11 @@ inline std::span<const std::byte> prepare_search_query_impl(std::span<const std:
     return x;
   }
 
-  RuntimeContext::get().static_SB.clean().reserve(RESULT_BYTES_SPAN_END);
+  auto& runtime_context{RuntimeContext::get()};
+  runtime_context.static_SB.clean().reserve(RESULT_BYTES_SPAN_END);
 
   // TODO провалидировать с ребятами ебучую разметку статик буфера
-  auto* utf8_code_points_begin{reinterpret_cast<int32_t*>(RuntimeContext::get().static_SB.buffer())};
+  auto* utf8_code_points_begin{reinterpret_cast<int32_t*>(runtime_context.static_SB.buffer())};
   std::span<int32_t> utf8_code_points{
       utf8_code_points_begin,
       MAX_NAME_CODE_POINTS_SIZE,
