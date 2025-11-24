@@ -705,6 +705,10 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
 }
 
 std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val, bool no_empty, bool delim_capture, bool offset_capture) noexcept {
+  if (regex_info.regex_code == nullptr) {
+    return std::nullopt;
+  }
+
   size_t offset{};
 
   if (limit_val == 0) {
@@ -712,7 +716,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
   }
 
   const auto& regex_state{RegexInstanceState::get()};
-  if (regex_info.regex_code == nullptr || !regex_state.match_context) [[unlikely]] {
+  if (!regex_state.match_context) [[unlikely]] {
     return std::nullopt;
   }
 
