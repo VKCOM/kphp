@@ -1,5 +1,4 @@
 // Compiler for PHP (aka KPHP)
-// TODO change to 2025 ???????????????
 // Copyright (c) 2024 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
@@ -52,37 +51,66 @@ inline void f$srand(int64_t seed = std::numeric_limits<int64_t>::min()) noexcept
   return f$mt_srand(seed);
 }
 
-inline double f$lcg_value() noexcept {
-  auto& random_instance_state{RandomInstanceState::get()};
+namespace random_impl_ {
 
-  // TODO extract to function in namespace random_impl_ ?
-  auto modmult{[](int32_t a, int32_t b, int32_t c, int32_t m, int32_t s) noexcept {
-    int32_t q{s / a};
-    int32_t res{b * (s - a * q) - c * q};
-    if (res < 0) {
-      res += m;
-    }
-    return res;
-  }};
-  // TODO where to place these magic numbers?
-  random_instance_state.lcg1 = modmult(53668, 40014, 12211, 2147483563, random_instance_state.lcg1);
-  random_instance_state.lcg2 = modmult(52774, 40692, 3791, 2147483399, random_instance_state.lcg2);
+inline constexpr int64_t lcg_prime1 = (int64_t(1) << 31) - int64_t(85);
+inline constexpr int64_t a1 = 53668;
+inline constexpr int64_t b1 = 40014;
+inline constexpr int64_t c1 = 12211;
 
-  int32_t z{random_instance_state.lcg1 - random_instance_state.lcg2};
-  if (z < 1) {
-    z += 2147483562;
+inline constexpr int64_t lcg_prime2 = (int64_t(1) << 31) - int64_t(249);
+inline constexpr int64_t a2 = 52774;
+inline constexpr int64_t b2 = 40692;
+inline constexpr int64_t c2 = 3791;
+
+// invariant:   |lcg_modmult(S1)|  \in  (-P1 .. P1)
+static_assert(b1 * (a1 - 1) - c1 * (0) < lcg_prime1);                 // max lcg_modmult(S1) < P1
+static_assert(b1 * 0 - c1 * ((lcg_prime1 - 1) / a1) > (-lcg_prime1)); // min lcg_modmult(S1) > -P1
+
+// invariant:   |lcg_modmult(S2)|  \in  (-P2 .. P2)
+static_assert(b2 * (a2 - 1) - c2 * (0) < lcg_prime2);                 // max lcg_modmult(S2) < P2
+static_assert(b2 * 0 - c2 * ((lcg_prime2 - 1) / a2) > (-lcg_prime2)); // min lcg_modmult(S2) > -P2
+
+inline constexpr double lcg_value_coef = 4.656613e-10;
+
+inline int64_t lcg_modmult(int64_t a, int64_t b, int64_t c, int64_t m, int64_t s) noexcept {
+  int64_t q{s / a};
+  int64_t res{b * (s - a * q) - c * q}; // res := b * (s % a) - c * (s / a)
+  if (res < 0) {
+    res += m;
   }
-
-  return static_cast<double>(z) * 4.656613e-10;
+  return res;
 }
 
-inline string f$uniqid(const string& prefix, bool more_entropy) noexcept {
+} // namespace random_impl_
+
+inline double f$lcg_value() noexcept {
+  auto& random_instance_state{RandomInstanceState::get()};
+  if (!random_instance_state.lcg_initialized) {
+    uint32_t tmp{};
+    k2::os_rnd(sizeof(tmp), std::addressof(tmp));
+    random_instance_state.lcg1 = static_cast<int64_t>(tmp) % random_impl_::lcg_prime1;
+    k2::os_rnd(sizeof(tmp), std::addressof(tmp));
+    random_instance_state.lcg2 = static_cast<int64_t>(tmp) % random_impl_::lcg_prime2;
+    random_instance_state.lcg_initialized = true;
+  }
+
+  random_instance_state.lcg1 =
+      random_impl_::lcg_modmult(random_impl_::a1, random_impl_::b1, random_impl_::c1, random_impl_::lcg_prime1, random_instance_state.lcg1);
+  random_instance_state.lcg2 =
+      random_impl_::lcg_modmult(random_impl_::a2, random_impl_::b2, random_impl_::c2, random_impl_::lcg_prime2, random_instance_state.lcg2);
+
+  int64_t z{random_instance_state.lcg1 - random_instance_state.lcg2};
+  if (z < 1) {
+    z += std::max(random_impl_::lcg_prime1, random_impl_::lcg_prime2) - 1;
+  }
+
+  return static_cast<double>(z) * random_impl_::lcg_value_coef;
+}
+
+inline kphp::coro::task<string> f$uniqid(const string prefix, bool more_entropy) noexcept {
   if (!more_entropy) {
-    // As I guess, they sleep for 1 microseconds, because f$uniqid depends on current microseconds value.
-    // TODO discuss, does this sleep guarantees microseconds increment?
-    // I'm sure we should replace it with monotonic clock + incrementing counter instead...
-    // It seems to give more guarantees and reduce scheduler work.
-    f$usleep(1);
+    co_await f$usleep(1);
   }
 
   auto [sec, susec]{system_seconds_and_micros()};
@@ -96,17 +124,15 @@ inline string f$uniqid(const string& prefix, bool more_entropy) noexcept {
     // we multiply by 10 to get (0..10) value out of (0..1), because we want random digit before the point.
     double lcg_rand_value{f$lcg_value() * 10};
     std::format_to_n(buf.data(), buf_size, "{:08x}{:05x}{:.8f}", sec_cnt, susec_cnt, lcg_rand_value);
-    // TODO discuss naming and place of this constant
     constexpr size_t rand_len = 23;
     RuntimeContext::get().static_SB.append(buf.data(), rand_len);
   } else {
     std::format_to_n(buf.data(), buf_size, "{:08x}{:05x}", sec_cnt, susec_cnt);
-    // TODO discuss naming and place of this constant
     constexpr size_t rand_len = 13;
     RuntimeContext::get().static_SB.append(buf.data(), rand_len);
   }
 
-  return {
+  co_return string{
       RuntimeContext::get().static_SB.c_str(),
       RuntimeContext::get().static_SB.size(),
   };
