@@ -36,6 +36,16 @@ enum class trailing_unmatch : uint8_t { skip, include };
 
 using regex_pcre2_group_names_t = kphp::stl::vector<const char*, kphp::memory::script_allocator>;
 
+int64_t skip_utf8_subsequent_bytes(int64_t offset, const std::string_view subject) noexcept {
+  // all multibyte utf8 runes consist of subsequent bytes,
+  // these subsequent bytes start with 10 bit pattern
+  // 0xc0 selects the two most significant bits, then we compare it to 0x80 (0b10000000)
+  while (offset < static_cast<int64_t>(subject.size()) && ((static_cast<unsigned char>(subject[offset])) & 0xc0) == 0x80) {
+    offset++;
+  }
+  return offset;
+}
+
 struct RegexInfo final {
   const string& regex;
   std::string_view subject;
@@ -58,6 +68,7 @@ struct RegexInfo final {
   uint32_t replace_options{PCRE2_SUBSTITUTE_UNKNOWN_UNSET | PCRE2_SUBSTITUTE_UNSET_EMPTY};
   // contains a string after replacements if replace_count > 0, nullopt otherwise
   std::optional<string> opt_replace_result;
+  bool has_error{false};
 
   RegexInfo() = delete;
 
@@ -65,6 +76,124 @@ struct RegexInfo final {
       : regex(regex_),
         subject(subject_),
         replacement(replacement_) {}
+
+  bool match(size_t offset) noexcept {
+    match_count = 0;
+    const auto& regex_state{RegexInstanceState::get()};
+    if (regex_code == nullptr || !regex_state.match_context) [[unlikely]] {
+      has_error = true;
+      return false;
+    }
+
+    match_count = pcre2_match_8(regex_code, reinterpret_cast<PCRE2_SPTR8>(subject.data()), subject.size(), offset, match_options,
+                                regex_state.regex_pcre2_match_data.get(), regex_state.match_context.get());
+    // From https://www.pcre.org/current/doc/html/pcre2_match.html
+    // The return from pcre2_match() is one more than the highest numbered capturing pair that has been set
+    // (for example, 1 if there are no captures), zero if the vector of offsets is too small, or a negative error code for no match and other errors.
+    if (match_count < 0 && match_count != PCRE2_ERROR_NOMATCH) [[unlikely]] {
+      std::array<char, ERROR_BUFFER_LENGTH> buffer{};
+      pcre2_get_error_message_8(match_count, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
+      kphp::log::warning("can't match pcre2 regex due to error: {}", buffer.data());
+      has_error = true;
+      return false;
+    }
+    match_count = match_count != PCRE2_ERROR_NOMATCH ? match_count : 0;
+    return true;
+  }
+
+  class iterator {
+  public:
+    using iterator_category = std::input_iterator_tag;
+    using value_type = std::pair<size_t, size_t>; // Returns offset pair for easy access
+    using difference_type = std::ptrdiff_t;
+    using pointer = const value_type*;
+    using reference = const value_type&;
+
+  private:
+    RegexInfo* regex_info_ptr{nullptr};
+    size_t match_from{0};
+    value_type current_offsets;
+
+    bool find_next_match() noexcept {
+      if (!regex_info_ptr || regex_info_ptr->has_error) [[unlikely]] {
+        return false;
+      }
+      auto& ri{*regex_info_ptr};
+      const auto& regex_state{RegexInstanceState::get()};
+      auto* const ovector{pcre2_get_ovector_pointer_8(regex_state.regex_pcre2_match_data.get())};
+
+      while (true) {
+        if (!ri.match(match_from)) {
+          regex_info_ptr = nullptr;
+          return false;
+        }
+
+        if (ri.match_count == 0) {
+          if (ri.match_options == PCRE2_NO_UTF_CHECK || match_from == ri.subject.size()) {
+            regex_info_ptr = nullptr;
+            return false;
+          }
+          ++match_from;
+          match_from = static_cast<bool>(ri.compile_options & PCRE2_UTF) ? skip_utf8_subsequent_bytes(match_from, ri.subject) : match_from;
+          ri.match_options = PCRE2_NO_UTF_CHECK;
+          continue;
+        }
+
+        PCRE2_SIZE match_start{ovector[0]};
+        PCRE2_SIZE match_end{ovector[1]};
+        current_offsets = {match_start, match_end};
+
+        match_from = match_end;
+        if (match_end == match_start) {
+          ri.match_options = PCRE2_NO_UTF_CHECK | PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
+        } else {
+          ri.match_options = PCRE2_NO_UTF_CHECK;
+        }
+        return true;
+      }
+    }
+
+  public:
+    iterator() = default;
+
+    iterator(RegexInfo& ri)
+        : regex_info_ptr(&ri) {
+      find_next_match();
+    }
+
+    reference operator*() const {
+      return current_offsets;
+    }
+    pointer operator->() const {
+      return &current_offsets;
+    }
+
+    iterator& operator++() {
+      find_next_match();
+      return *this;
+    }
+
+    iterator operator++(int) {
+      iterator temp{*this};
+      operator++();
+      return temp;
+    }
+
+    friend bool operator==(const iterator& a, const iterator& b) {
+      return a.regex_info_ptr == b.regex_info_ptr;
+    }
+
+    friend bool operator!=(const iterator& a, const iterator& b) {
+      return !(a == b);
+    }
+  };
+
+  iterator begin() {
+    return iterator{*this};
+  }
+  iterator end() {
+    return iterator{};
+  }
 };
 
 template<typename... Args>
@@ -86,16 +215,6 @@ bool correct_offset(int64_t& offset, std::string_view subject) noexcept {
     }
   }
   return offset <= subject.size();
-}
-
-int64_t skip_utf8_subsequent_bytes(int64_t offset, const std::string_view subject) noexcept {
-  // all multibyte utf8 runes consist of subsequent bytes,
-  // these subsequent bytes start with 10 bit pattern
-  // 0xc0 selects the two most significant bits, then we compare it to 0x80 (0b10000000)
-  while (offset < static_cast<int64_t>(subject.size()) && ((static_cast<unsigned char>(subject[offset])) & 0xc0) == 0x80) {
-    offset++;
-  }
-  return offset;
 }
 
 bool compile_regex(RegexInfo& regex_info) noexcept {
@@ -298,67 +417,6 @@ bool collect_group_names(RegexInfo& regex_info) noexcept {
   return true;
 }
 
-bool match_regex(RegexInfo& regex_info, size_t offset) noexcept {
-  regex_info.match_count = 0;
-  const auto& regex_state{RegexInstanceState::get()};
-  if (regex_info.regex_code == nullptr || !regex_state.match_context) [[unlikely]] {
-    return false;
-  }
-
-  int32_t match_count{pcre2_match_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), offset,
-                                    regex_info.match_options, regex_state.regex_pcre2_match_data.get(), regex_state.match_context.get())};
-  // From https://www.pcre.org/current/doc/html/pcre2_match.html
-  // The return from pcre2_match() is one more than the highest numbered capturing pair that has been set
-  // (for example, 1 if there are no captures), zero if the vector of offsets is too small, or a negative error code for no match and other errors.
-  if (match_count < 0 && match_count != PCRE2_ERROR_NOMATCH) [[unlikely]] {
-    std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-    pcre2_get_error_message_8(match_count, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
-    kphp::log::warning("can't match pcre2 regex due to error: {}", buffer.data());
-    return false;
-  }
-  regex_info.match_count = match_count != PCRE2_ERROR_NOMATCH ? match_count : 0;
-  return true;
-}
-
-class match_iterator {
-  RegexInfo& regex_info;
-  const size_t* ovector;
-  size_t match_from;
-
-public:
-  match_iterator(RegexInfo& regex_info, const size_t* ovector, size_t match_from)
-      : regex_info{regex_info},
-        ovector{ovector},
-        match_from{match_from} {}
-
-  bool match_next() noexcept {
-    if (!match_regex(regex_info, match_from)) [[unlikely]] {
-      return false;
-    }
-
-    if (regex_info.match_count == 0) {
-      if (regex_info.match_options == PCRE2_NO_UTF_CHECK || match_from == regex_info.subject.size()) {
-        return true;
-      }
-      ++match_from;
-      match_from = static_cast<bool>(regex_info.compile_options & PCRE2_UTF) ? skip_utf8_subsequent_bytes(match_from, regex_info.subject) : match_from;
-      regex_info.match_options = PCRE2_NO_UTF_CHECK;
-      return match_next();
-    }
-
-    auto match_start{ovector[0]};
-    auto match_end{ovector[1]};
-
-    match_from = match_end;
-    if (match_end == match_start) {
-      regex_info.match_options = PCRE2_NO_UTF_CHECK | PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
-    } else {
-      regex_info.match_options = PCRE2_NO_UTF_CHECK;
-    }
-    return true;
-  }
-};
-
 // returns the ending offset of the entire match
 PCRE2_SIZE set_matches(const RegexInfo& regex_info, int64_t flags, std::optional<std::reference_wrapper<mixed>> opt_matches,
                        trailing_unmatch last_unmatched_policy) noexcept {
@@ -492,7 +550,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
     string str_after_replace{regex_info.subject.data(), static_cast<string::size_type>(regex_info.subject.size())};
 
     for (; regex_info.replace_count < limit; ++regex_info.replace_count) {
-      if (!match_regex(regex_info, match_offset)) [[unlikely]] {
+      if (!regex_info.match(match_offset)) [[unlikely]] {
         return false;
       }
       if (regex_info.match_count == 0) {
@@ -563,21 +621,16 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
   auto* const match_data{regex_state.regex_pcre2_match_data.get()};
   auto* const offsets{pcre2_get_ovector_pointer_8(match_data)};
 
-  auto match_it{match_iterator{regex_info, offsets, {}}};
-
   array<mixed> output{};
 
-  while (limit_val == kphp::regex::PREG_NOLIMIT || limit_val > 1) {
-    if (!match_it.match_next()) [[unlikely]] {
+  for (auto [match_start, match_end] : regex_info) {
+    if (regex_info.has_error) [[unlikely]] {
       return std::nullopt;
     }
 
-    if (regex_info.match_count == 0) {
+    if (!(limit_val == kphp::regex::PREG_NOLIMIT || limit_val > 1)) {
       break;
     }
-
-    auto match_start{offsets[0]};
-    auto match_end{offsets[1]};
 
     make_output_val(regex_info, no_empty, offset_capture, offset, match_start).transform([&output, &limit_val](auto&& output_val) noexcept {
       output.push_back(std::move(output_val));
@@ -600,6 +653,10 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
     offset = match_end;
   }
 
+  if (regex_info.has_error) [[unlikely]] {
+    return std::nullopt;
+  }
+
   make_output_val(regex_info, no_empty, offset_capture, offset, regex_info.subject.size()).transform([&output](auto&& output_val) noexcept {
     output.push_back(std::move(output_val));
     return 0;
@@ -617,7 +674,7 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
   success &= correct_offset(offset, regex_info.subject);
   success &= compile_regex(regex_info);
   success &= collect_group_names(regex_info);
-  success &= match_regex(regex_info, offset);
+  success &= regex_info.match(offset);
   if (!success) [[unlikely]] {
     return false;
   }
@@ -664,7 +721,7 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
     }
   }
 
-  while (offset <= subject.size() && (success &= match_regex(regex_info, offset))) {
+  while (offset <= subject.size() && (success &= regex_info.match(offset))) {
     const auto next_offset{set_all_matches(regex_info, flags, matches)};
     if (regex_info.match_count > 0) {
       ++entire_match_count;
