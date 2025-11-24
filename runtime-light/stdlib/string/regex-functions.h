@@ -50,6 +50,8 @@ inline bool valid_preg_replace_mixed(const mixed& param) noexcept {
 
 } // namespace regex_impl_
 
+using regexp = string;
+
 // === preg_match =================================================================================
 
 Optional<int64_t> f$preg_match(const string& pattern, const string& subject,
