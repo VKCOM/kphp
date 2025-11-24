@@ -58,7 +58,8 @@ struct StringLibConstants final : vk::not_copyable {
   string CP1251_STR{string_context_impl_::CP1251_.data(), static_cast<string::size_type>(string_context_impl_::CP1251_.size())};
   string DOT_STR{string_context_impl_::DOT_.data(), static_cast<string::size_type>(string_context_impl_::DOT_.size())};
   string COMMA_STR{string_context_impl_::COMMA_.data(), static_cast<string::size_type>(string_context_impl_::COMMA_.size())};
-  string BACKREFERENCE_PATTERN_STR{string_context_impl_::BACKREFERENCE_PATTERN_.data(), static_cast<string::size_type>(string_context_impl_::BACKREFERENCE_PATTERN_.size())};
+  string BACKREFERENCE_PATTERN_STR{string_context_impl_::BACKREFERENCE_PATTERN_.data(),
+                                   static_cast<string::size_type>(string_context_impl_::BACKREFERENCE_PATTERN_.size())};
   string BACKSLASH_STR{string_context_impl_::BACKSLASH_.data(), static_cast<string::size_type>(string_context_impl_::BACKSLASH_.size())};
   string QUOTE_STR{string_context_impl_::QUOTE_.data(), static_cast<string::size_type>(string_context_impl_::QUOTE_.size())};
   string NEWLINE_STR{string_context_impl_::NEWLINE_.data(), static_cast<string::size_type>(string_context_impl_::NEWLINE_.size())};
