@@ -104,6 +104,7 @@ inline std::pair<std::chrono::seconds, std::chrono::microseconds> system_seconds
 inline double f$lcg_value() noexcept {
   auto& random_instance_state{RandomInstanceState::get()};
   if (!random_instance_state.lcg_initialized) {
+    // TODO move this init to RandomInstanceState constructor, which requires separate header for lcg_prime1 and lcg_prime2
     uint32_t tmp{};
     k2::os_rnd(sizeof(tmp), std::addressof(tmp));
     random_instance_state.lcg1 = static_cast<int64_t>(tmp) % random_impl_::lcg_prime1;
