@@ -10,7 +10,6 @@
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-light/k2-platform/k2-api.h"
-#include "runtime-light/stdlib/time/util.h"
 
 struct RandomInstanceState final : private vk::not_copyable {
   std::mt19937_64 mt_gen;
