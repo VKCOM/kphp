@@ -21,7 +21,6 @@
 
 namespace string_functions_impl_ {
 
-// TODO naming
 inline constexpr size_t __MAX_SIZEOF = std::max({sizeof(int32_t), sizeof(size_t), sizeof(std::byte)});
 
 inline constexpr size_t __SOURCE_CODE_POINTS_SPAN_SIZE_IN_BYTES = (sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE + __MAX_SIZEOF - 1) & ~(__MAX_SIZEOF - 1);
@@ -81,7 +80,6 @@ inline int32_t binary_search_ranges(int32_t code) noexcept {
 inline constexpr int32_t WHITESPACE{static_cast<int32_t>(' ')};
 inline constexpr int32_t PLUS{static_cast<int32_t>('+')};
 
-// TODO naming
 /* Prepares unicode 0-terminated string input for search,
    leaving only digits and letters with diacritics.
    Length of string can decrease.
@@ -111,23 +109,23 @@ inline void prepare_search_string(std::span<int32_t>& code_points) noexcept {
   code_points = code_points.subspan(output_size);
 }
 
-// TODO naming
 inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) noexcept {
   prepare_search_string(code_points);
   code_points[code_points.size()] = WHITESPACE;
 
   auto& string_lib_ctx{StringLibContext::get()};
   auto* word_indices_begin{reinterpret_cast<size_t*>(std::next(string_lib_ctx.static_buf.get(), WORD_INDICES_SPAN_BEGIN))};
-  std::span<size_t> word_start_indices{word_indices_begin, MAX_NAME_CODE_POINTS_SIZE}; // indices of first char of every word in `code_points`.
+  // indices of first char of every word in `code_points`.
+  std::span<size_t> word_start_indices{word_indices_begin, MAX_NAME_CODE_POINTS_SIZE};
   size_t words_count{};
   size_t i{};
   // looking for the beginnings of the words
   while (i < code_points.size()) {
     word_start_indices[words_count++] = i;
     while (i < code_points.size() && code_points[i] != WHITESPACE) {
-      i++;
+      ++i;
     }
-    i++;
+    ++i;
   }
   word_start_indices = word_start_indices.subspan(words_count);
 
@@ -148,7 +146,7 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
   std::sort(word_start_indices.begin(), word_start_indices.end(), word_less_cmp);
 
   size_t uniq_words_count{};
-  for (i = 0; i < words_count; i++) {
+  for (i = 0; i < words_count; ++i) {
     // drop duplicates
     if (uniq_words_count == 0 || word_less_cmp(word_start_indices[uniq_words_count - 1], word_start_indices[i])) {
       word_start_indices[uniq_words_count++] = word_start_indices[i];
@@ -161,7 +159,7 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
   std::span<int32_t> result{result_begin, MAX_NAME_CODE_POINTS_SIZE};
   size_t result_size{};
   // output words with '+' separator
-  for (i = 0; i < uniq_words_count; i++) {
+  for (i = 0; i < uniq_words_count; ++i) {
     size_t ind{word_start_indices[i]};
     while (code_points[ind] != WHITESPACE) {
       result[result_size++] = code_points[ind++];
@@ -175,7 +173,6 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
   return result;
 }
 
-// TODO naming
 inline std::span<const std::byte> clean_str_unicode(std::span<int32_t> source_code_points) noexcept {
   std::span<int32_t> prepared_code_points{prepare_str_unicode(source_code_points)};
 
@@ -191,8 +188,7 @@ inline std::span<const std::byte> clean_str_unicode(std::span<int32_t> source_co
   while (i < utf8_result.size()) {
     char* c{reinterpret_cast<char*>(std::addressof(utf8_result[i]))};
     bool skip{!std::strncmp(c, "amp+", 4) || !std::strncmp(c, "gt+", 3) || !std::strncmp(c, "lt+", 3) || !std::strncmp(c, "quot+", 5) ||
-              !std::strncmp(c, "ft+", 3) || !std::strncmp(c, "feat+", 5) ||
-              // скипаем год ?
+              !std::strncmp(c, "ft+", 3) || !std::strncmp(c, "feat+", 5) |
               (((c[0] == '1' && c[1] == '9') || (c[0] == '2' && c[1] == '0')) && ('0' <= c[2] && c[2] <= '9') && ('0' <= c[3] && c[3] <= '9') && c[4] == '+') ||
               !std::strncmp(c, "092+", 4) || !std::strncmp(c, "33+", 3) || !std::strncmp(c, "34+", 3) || !std::strncmp(c, "36+", 3) ||
               !std::strncmp(c, "39+", 3) || !std::strncmp(c, "60+", 3) || !std::strncmp(c, "62+", 3) || !std::strncmp(c, "8232+", 5) ||
