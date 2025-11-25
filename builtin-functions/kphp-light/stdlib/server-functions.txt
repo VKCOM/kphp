@@ -69,6 +69,8 @@ function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
 function memory_get_detailed_stats() ::: int[];
 
+function prepare_search_query ($query ::: string) ::: string;
+
 // ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info stub */
@@ -129,8 +131,4 @@ function flush() ::: void;
 
 define('PHP_QUERY_RFC1738', 1);
 define('PHP_QUERY_RFC3986', 2);
-
-
-/** @kphp-extern-func-info stub generation-required */
-function prepare_search_query ($query ::: string) ::: string;
 
