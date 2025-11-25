@@ -12,25 +12,31 @@
 #include <span>
 
 #include "auto/common/unicode-utils-auto.h"
+#include "common/unicode/unicode-utils.h"
 #include "common/unicode/utf8-utils.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace string_functions_impl_ {
 
-// TODO May be better extract MAX_NAME_SIZE to utf8-utils.h instead of copy-pasting it ?
-inline constexpr size_t MAX_NAME_SIZE = 65536;
-inline constexpr size_t MAX_NAME_INDICES_SIZE = MAX_NAME_SIZE + 4;
-inline constexpr size_t MAX_NAME_CODE_POINTS_SIZE = MAX_NAME_SIZE + 4;
-inline constexpr size_t MAX_NAME_BYTES_SIZE = MAX_NAME_SIZE * 4 + 4;
+// TODO naming
+inline constexpr size_t __MAX_SIZEOF = std::max({sizeof(int32_t), sizeof(size_t), sizeof(std::byte)});
 
-// TODO как учитывать align ?
+inline constexpr size_t __SOURCE_CODE_POINTS_SPAN_SIZE_IN_BYTES = (sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE + __MAX_SIZEOF - 1) & ~(__MAX_SIZEOF - 1);
+inline constexpr size_t __WORD_INDICES_SPAN_SIZE_IN_BYTES = (sizeof(size_t) * MAX_NAME_CODE_POINTS_SIZE + __MAX_SIZEOF - 1) & ~(__MAX_SIZEOF - 1);
+inline constexpr size_t __RESULT_CODE_POINTS_SPAN_SIZE_IN_BYTES = (sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE + __MAX_SIZEOF - 1) & ~(__MAX_SIZEOF - 1);
+inline constexpr size_t __RESULT_BYTES_SPAN_SIZE_IN_BYTES = (sizeof(std::byte) * MAX_NAME_BYTES_SIZE + __MAX_SIZEOF - 1) & ~(__MAX_SIZEOF - 1);
+
+static_assert(__SOURCE_CODE_POINTS_SPAN_SIZE_IN_BYTES + __WORD_INDICES_SPAN_SIZE_IN_BYTES + __RESULT_CODE_POINTS_SPAN_SIZE_IN_BYTES +
+                  __RESULT_BYTES_SPAN_SIZE_IN_BYTES <
+              StringLibContext::STATIC_BUFFER_LENGTH);
+
 inline constexpr size_t SOURCE_CODE_POINTS_SPAN_BEGIN = 0;
-inline constexpr size_t WORD_INDICES_SPAN_BEGIN = SOURCE_CODE_POINTS_SPAN_BEGIN + sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE;
-inline constexpr size_t RESULT_CODE_POINTS_SPAN_BEGIN = WORD_INDICES_SPAN_BEGIN + sizeof(size_t) * MAX_NAME_INDICES_SIZE;
-inline constexpr size_t RESULT_BYTES_SPAN_BEGIN = RESULT_CODE_POINTS_SPAN_BEGIN + sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE;
-inline constexpr size_t RESULT_BYTES_SPAN_END = RESULT_BYTES_SPAN_BEGIN + sizeof(std::byte) * MAX_NAME_BYTES_SIZE;
+inline constexpr size_t WORD_INDICES_SPAN_BEGIN = SOURCE_CODE_POINTS_SPAN_BEGIN + __SOURCE_CODE_POINTS_SPAN_SIZE_IN_BYTES;
+inline constexpr size_t RESULT_CODE_POINTS_SPAN_BEGIN = WORD_INDICES_SPAN_BEGIN + __WORD_INDICES_SPAN_SIZE_IN_BYTES;
+inline constexpr size_t RESULT_BYTES_SPAN_BEGIN = RESULT_CODE_POINTS_SPAN_BEGIN + __RESULT_CODE_POINTS_SPAN_SIZE_IN_BYTES;
 
 inline constexpr int32_t MAX_UTF8_CODE_POINT{0x10ffff};
 
@@ -43,12 +49,10 @@ inline int32_t binary_search_ranges(int32_t code) noexcept {
   size_t l{0};
   size_t r{prepare_table_ranges_size};
   while (l < r) {
-    // TODO verify this formula
     size_t m{((l + r + 2) >> 2) << 1};
     if (prepare_table_ranges[m] <= code) {
       l = m;
     } else {
-      // TODO why `- 2` ?
       r = m - 2;
     }
   }
@@ -57,7 +61,6 @@ inline int32_t binary_search_ranges(int32_t code) noexcept {
   // prepare_table_ranges[l + 1] - value
   int32_t t{prepare_table_ranges[l + 1]};
   if (t < 0) {
-    // TODO блять что это ??
     return code - prepare_table_ranges[l] + (~t);
   }
   if (t <= 0x10ffff) {
@@ -65,13 +68,10 @@ inline int32_t binary_search_ranges(int32_t code) noexcept {
   }
   switch (t - 0x200000) {
   case 0:
-    // TODO а это
     return (code & -2);
   case 1:
-    // TODO и это ещё
     return (code | 1);
   case 2:
-    // TODO ??
     return ((code - 1) | 1);
   default:
     k2::exit(1);
@@ -92,15 +92,11 @@ inline void prepare_search_string(std::span<int32_t>& code_points) noexcept {
     int32_t c{code_points[i]};
     int32_t new_c{};
     if (static_cast<size_t>(c) < static_cast<size_t>(TABLE_SIZE)) {
-      // Таблица каких-то преобразований для первых 1280 символов
       new_c = static_cast<int32_t>(prepare_table[c]);
     } else {
-      // Бинпоиск по мапе преобразований сразу целых range'ей
-      // prepare_table_ranges - мапа, закодированная в массиве, ага
       new_c = binary_search_ranges(c);
     }
-    // TODO replace with `new_c != 0` ?
-    if (new_c) {
+    if (new_c != 0) {
       // we forbid 2 whitespaces after each other and starting whitespace
       if (new_c != WHITESPACE || (output_size > 0 && code_points[output_size - 1] != WHITESPACE)) {
         code_points[output_size++] = new_c;
@@ -120,8 +116,9 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
   prepare_search_string(code_points);
   code_points[code_points.size()] = WHITESPACE;
 
-  auto* word_indices_begin{reinterpret_cast<size_t*>(RuntimeContext::get().static_SB.buffer()[WORD_INDICES_SPAN_BEGIN])};
-  std::span<size_t> word_start_indices{word_indices_begin, MAX_NAME_INDICES_SIZE}; // indices of first char of every word in `code_points`.
+  auto& string_lib_ctx{StringLibContext::get()};
+  auto* word_indices_begin{reinterpret_cast<size_t*>(std::next(string_lib_ctx.static_buf.get(), WORD_INDICES_SPAN_BEGIN))};
+  std::span<size_t> word_start_indices{word_indices_begin, MAX_NAME_CODE_POINTS_SIZE}; // indices of first char of every word in `code_points`.
   size_t words_count{};
   size_t i{};
   // looking for the beginnings of the words
@@ -160,7 +157,7 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
     }
   }
 
-  auto* result_begin{reinterpret_cast<int32_t*>(RuntimeContext::get().static_SB.buffer()[RESULT_CODE_POINTS_SPAN_BEGIN])};
+  auto* result_begin{reinterpret_cast<int32_t*>(std::next(string_lib_ctx.static_buf.get(), RESULT_CODE_POINTS_SPAN_BEGIN))};
   std::span<int32_t> result{result_begin, MAX_NAME_CODE_POINTS_SIZE};
   size_t result_size{};
   // output words with '+' separator
@@ -179,12 +176,12 @@ inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) no
 }
 
 // TODO naming
-inline std::span<const std::byte> clean_str_unicode(std::span<int32_t> code_points) noexcept {
-  std::span<int32_t> prepared_code_points{prepare_str_unicode(code_points)};
+inline std::span<const std::byte> clean_str_unicode(std::span<int32_t> source_code_points) noexcept {
+  std::span<int32_t> prepared_code_points{prepare_str_unicode(source_code_points)};
 
-  auto* utf8_result_begin{reinterpret_cast<std::byte*>(prepared_code_points.begin()[RESULT_CODE_POINTS_SPAN_BEGIN])};
+  auto& string_lib_ctx{StringLibContext::get()};
+  auto* utf8_result_begin{reinterpret_cast<std::byte*>(std::next(string_lib_ctx.static_buf.get(), RESULT_BYTES_SPAN_BEGIN))};
   std::span<std::byte> utf8_result{utf8_result_begin, MAX_NAME_BYTES_SIZE};
-  // put_string_utf8 можно использовать в runtime-light
   auto length{static_cast<size_t>(put_string_utf8(prepared_code_points.data(), reinterpret_cast<char*>(utf8_result.data())))};
   kphp::log::assertion(length < utf8_result.size());
   utf8_result = utf8_result.subspan(length);
@@ -217,19 +214,15 @@ inline std::span<const std::byte> prepare_search_query_impl(std::span<const std:
     return x;
   }
 
-  auto& runtime_context{RuntimeContext::get()};
-  runtime_context.static_SB.clean().reserve(RESULT_BYTES_SPAN_END);
-
-  // TODO провалидировать с ребятами ебучую разметку статик буфера
-  auto* utf8_code_points_begin{reinterpret_cast<int32_t*>(runtime_context.static_SB.buffer())};
-  std::span<int32_t> utf8_code_points{
-      utf8_code_points_begin,
+  auto& string_lib_ctx{StringLibContext::get()};
+  auto* source_code_points_begin{reinterpret_cast<int32_t*>((std::next(string_lib_ctx.static_buf.get(), SOURCE_CODE_POINTS_SPAN_BEGIN)))};
+  std::span<int32_t> source_code_points{
+      source_code_points_begin,
       MAX_NAME_CODE_POINTS_SIZE,
   };
 
-  // html_string_to_utf8 можно полностью использовать в runtime-light
-  html_string_to_utf8(reinterpret_cast<const char*>(x.data()), utf8_code_points.data());
-  return clean_str_unicode(utf8_code_points);
+  html_string_to_utf8(reinterpret_cast<const char*>(x.data()), source_code_points.data());
+  return clean_str_unicode(source_code_points);
 }
 
 } // namespace string_functions_impl_
