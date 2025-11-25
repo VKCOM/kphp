@@ -396,6 +396,28 @@ struct CacheFetch final {
 
 // ===== WEB TRANSFER LIB =====
 
+class WebTransferGetProperties final {
+  static constexpr uint32_t WEB_TRANSFER_GET_PROPERTIES_MAGIC = 0x72B7'16DD;
+
+public:
+  tl::u8 is_simple;
+  tl::u64 descriptor;
+  tl::Maybe<tl::u64> property_id;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = WEB_TRANSFER_GET_PROPERTIES_MAGIC}.store(tls);
+    is_simple.store(tls);
+    descriptor.store(tls);
+    property_id.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = WEB_TRANSFER_GET_PROPERTIES_MAGIC}.footprint() + is_simple.footprint() + descriptor.footprint() + property_id.footprint();
+  }
+};
+
+// ===== Simple =====
+
 class SimpleWebTransferOpen final {
   static constexpr uint32_t SIMPLE_WEB_TRANSFER_OPEN_MAGIC = 0x24F8'98AA;
 
@@ -463,23 +485,22 @@ public:
   }
 };
 
-class WebTransferGetProperties final {
-  static constexpr uint32_t WEB_TRANSFER_GET_PROPERTIES_MAGIC = 0x72B7'16DD;
+// ===== Composite =====
+
+class CompositeWebTransferOpen final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_OPEN_MAGIC = 0x428F'89FF;
 
 public:
-  tl::u8 is_simple;
-  tl::u64 descriptor;
-  tl::Maybe<tl::u64> property_id;
+  using web_backend_type = tl::u8;
+  web_backend_type web_backend;
 
   void store(tl::storer& tls) const noexcept {
-    tl::magic{.value = WEB_TRANSFER_GET_PROPERTIES_MAGIC}.store(tls);
-    is_simple.store(tls);
-    descriptor.store(tls);
-    property_id.store(tls);
+    tl::magic{.value = COMPOSITE_WEB_TRANSFER_OPEN_MAGIC}.store(tls);
+    web_backend.store(tls);
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = WEB_TRANSFER_GET_PROPERTIES_MAGIC}.footprint() + is_simple.footprint() + descriptor.footprint() + property_id.footprint();
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_OPEN_MAGIC}.footprint() + web_backend.footprint();
   }
 };
 

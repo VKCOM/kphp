@@ -16,6 +16,7 @@ enum class PHPCURL : uint64_t {
 };
 
 using easy_type = simple_transfer::descriptor_type;
+using multi_type = composite_transfer::descriptor_type;
 
 constexpr auto CURL_ERROR_SIZE = 256;
 
