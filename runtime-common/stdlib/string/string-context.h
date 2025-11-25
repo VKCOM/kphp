@@ -22,7 +22,6 @@ inline constexpr std::string_view COLON_ = ",";
 inline constexpr std::string_view CP1251_ = "cp1251";
 inline constexpr std::string_view DOT_ = ".";
 inline constexpr std::string_view COMMA_ = ",";
-inline constexpr std::string_view BACKREFERENCE_PATTERN_ = R"(/\\(\d)/)";
 inline constexpr std::string_view BACKSLASH_ = "\\";
 inline constexpr std::string_view QUOTE_ = "\"";
 inline constexpr std::string_view NEWLINE_ = "\n";
@@ -58,8 +57,6 @@ struct StringLibConstants final : vk::not_copyable {
   string CP1251_STR{string_context_impl_::CP1251_.data(), static_cast<string::size_type>(string_context_impl_::CP1251_.size())};
   string DOT_STR{string_context_impl_::DOT_.data(), static_cast<string::size_type>(string_context_impl_::DOT_.size())};
   string COMMA_STR{string_context_impl_::COMMA_.data(), static_cast<string::size_type>(string_context_impl_::COMMA_.size())};
-  string BACKREFERENCE_PATTERN_STR{string_context_impl_::BACKREFERENCE_PATTERN_.data(),
-                                   static_cast<string::size_type>(string_context_impl_::BACKREFERENCE_PATTERN_.size())};
   string BACKSLASH_STR{string_context_impl_::BACKSLASH_.data(), static_cast<string::size_type>(string_context_impl_::BACKSLASH_.size())};
   string QUOTE_STR{string_context_impl_::QUOTE_.data(), static_cast<string::size_type>(string_context_impl_::QUOTE_.size())};
   string NEWLINE_STR{string_context_impl_::NEWLINE_.data(), static_cast<string::size_type>(string_context_impl_::NEWLINE_.size())};
@@ -85,7 +82,6 @@ struct StringLibConstants final : vk::not_copyable {
     CP1251_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
     DOT_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
     COMMA_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
-    BACKREFERENCE_PATTERN_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
     BACKSLASH_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
     QUOTE_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
     NEWLINE_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
