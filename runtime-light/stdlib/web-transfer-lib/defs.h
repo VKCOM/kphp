@@ -99,6 +99,10 @@ struct simple_transfer_config {
   properties_type properties{};
 };
 
+struct composite_transfer_config {
+  properties_type properties{};
+};
+
 struct response {
   string headers;
   string body;

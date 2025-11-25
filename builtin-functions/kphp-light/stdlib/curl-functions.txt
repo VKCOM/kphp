@@ -268,10 +268,11 @@ function curl_errno ($curl_handle ::: int) ::: int;
 /** @kphp-extern-func-info interruptible */
 function curl_getinfo ($curl_handle ::: int, $option ::: int = 0) ::: mixed;
 
+/** @kphp-extern-func-info interruptible */
+function curl_multi_init () ::: int;
+
 // ===== UNSUPPORTED =====
 
-/** @kphp-extern-func-info stub generation-required */
-function curl_multi_init () ::: int;
 /** @kphp-extern-func-info stub generation-required */
 function curl_multi_add_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;
 /** @kphp-extern-func-info stub generation-required */
