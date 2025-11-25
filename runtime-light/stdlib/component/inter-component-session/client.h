@@ -178,9 +178,22 @@ private:
         // Ensure that buffer for response can be provided
         auto& buffer_providers{ctx.get()->query2resp_buffer_provider};
         auto buffer_provider{buffer_providers.find(qid)};
-        kphp::log::assertion(buffer_provider != buffer_providers.end());
 
-        // Make an appropriate buffer's slice for a response
+        // Response provider is not presented => read response into dummy buffer, just for keeping of consistency
+        if (buffer_provider == buffer_providers.end()) {
+          kphp::stl::vector<std::byte, kphp::memory::script_allocator> sink_buffer{size};
+          std::span<std::byte> sink_resp{sink_buffer.data(), sink_buffer.size()};
+          kphp::log::debug("response buffer provider hasn't been presented for query #{}, read response into dummy buffer", qid);
+          // Read dummy payload
+          if (auto res{co_await t.get()->stream.read(sink_resp)}; !res) [[unlikely]] {
+            kphp::log::warning("an error occurred while reading the payload from a stream: {}", res.error());
+            ctx.get()->error = res.error();
+            break;
+          }
+          continue;
+        }
+
+        // Response provider is presented => make an appropriate buffer's slice for a response
         auto resp{buffer_provider->second(size)};
         ctx.get()->query2resp[qid] = resp;
 
@@ -299,6 +312,10 @@ auto client::query(std::span<const std::byte> request, B response_buffer_provide
 
   kphp::log::assertion(query_count < std::numeric_limits<query_id_type>::max());
   const auto query_id{query_count++};
+
+  // Ensure that query will be invalidated after occasionally cancellation
+  auto& reader_ctx{reader.ctx};
+  const vk::final_action finalizer{[reader_ctx, &query_id] noexcept { reader_ctx.get()->query2resp_buffer_provider.erase(query_id); }};
 
   // Register a new query and send request
   reader.register_query(query_id, details::function_wrapper<std::span<std::byte>, size_t>{std::move(response_buffer_provider)});
