@@ -118,7 +118,7 @@ function test_curl_reuse_handle($curl_resumable = false) {
     curl_setopt($ch, CURLOPT_TIMEOUT_MS, 0);
   }
 
-  $output2 = $curl_resumable ? curl_exec_concurrently($ch) : curl_exec($ch);
+  $output2 = $curl_resumable ? curl_exec_concurrently($ch, 30) : curl_exec($ch);
   curl_close($ch);
 
   $resp = ["exec_result1" => to_json_safe($output1), "exec_result2" => to_json_safe($output2)];
