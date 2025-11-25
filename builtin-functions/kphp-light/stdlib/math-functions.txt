@@ -162,6 +162,8 @@ function is_nan ($v ::: float) ::: bool;
 
 function levenshtein ($str1 ::: string, $str2 ::: string) ::: int;
 
+function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
+
 // === UNSUPPORTED ===
 
 /**
@@ -177,9 +179,6 @@ function rad2deg ($v ::: float) ::: float;
 
 /** @kphp-extern-func-info stub generation-required */
 function lcg_value() ::: float;
-
-/** @kphp-extern-func-info stub generation-required */
-function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
 
 define('PHP_ROUND_HALF_UP', 123423141);
 define('PHP_ROUND_HALF_DOWN', 123423144);
