@@ -39,6 +39,7 @@ int tl_fetch_lookup_int();
 int tl_fetch_lookup_data(char* data, int len);
 
 int tl_fetch_int();
+int tl_fetch_byte();
 bool tl_fetch_bool();
 double tl_fetch_double();
 double tl_fetch_double_in_range(double min, double max);
@@ -50,6 +51,7 @@ void tl_fetch_mark_restore();
 void tl_fetch_mark_delete();
 
 int tl_fetch_string_len(int max_len);
+int tl_fetch_string2_len();
 int tl_fetch_pad();
 int tl_fetch_data(void* buf, int len);
 int tl_fetch_string_data(char* buf, int len);
@@ -73,6 +75,7 @@ int tl_store_check(int size);
 void* tl_store_get_ptr(int size);
 
 void tl_store_int(int x);
+void tl_store_byte(int x);
 void tl_store_long(long long x);
 void tl_store_double(double x);
 void tl_store_float(float x);
@@ -86,6 +89,7 @@ void tl_store_raw_data(const void* s, int len);
 void tl_store_raw_data_nopad(const void* s, int len);
 int tl_store_pad();
 void tl_store_string(const char* s, int len);
+void tl_store_string2_len(int len);
 void tl_store_string0(const char* s);
 int tl_store_clear();
 int tl_store_end();
