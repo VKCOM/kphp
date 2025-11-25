@@ -93,11 +93,10 @@ int prepare_search_string(int* input) {
   return output - input;
 }
 
-#define MAX_NAME_SIZE 65536
-static char prep_buf[4 * MAX_NAME_SIZE + 4];
-int prep_ibuf[MAX_NAME_SIZE + 4];
-static int prep_ibuf_res[MAX_NAME_SIZE + 4];
-static int* words_ibuf[MAX_NAME_SIZE + 4];
+static char prep_buf[MAX_NAME_BYTES_SIZE];
+int prep_ibuf[MAX_NAME_CODE_POINTS_SIZE];
+static int prep_ibuf_res[MAX_NAME_CODE_POINTS_SIZE];
+static int* words_ibuf[MAX_NAME_CODE_POINTS_SIZE];
 
 int stricmp_void(const void* x, const void* y) {
   const int* s1 = *(const int**)x;
