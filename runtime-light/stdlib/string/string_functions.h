@@ -21,12 +21,10 @@
 
 namespace string_functions_impl_ {
 
-inline constexpr size_t __MAX_SIZEOF = std::max({sizeof(int32_t), sizeof(size_t), sizeof(std::byte)});
-
-inline constexpr size_t __SOURCE_CODE_POINTS_SPAN_SIZE_IN_BYTES = (sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE + __MAX_SIZEOF - 1) & ~(__MAX_SIZEOF - 1);
-inline constexpr size_t __WORD_INDICES_SPAN_SIZE_IN_BYTES = (sizeof(size_t) * MAX_NAME_CODE_POINTS_SIZE + __MAX_SIZEOF - 1) & ~(__MAX_SIZEOF - 1);
-inline constexpr size_t __RESULT_CODE_POINTS_SPAN_SIZE_IN_BYTES = (sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE + __MAX_SIZEOF - 1) & ~(__MAX_SIZEOF - 1);
-inline constexpr size_t __RESULT_BYTES_SPAN_SIZE_IN_BYTES = (sizeof(std::byte) * MAX_NAME_BYTES_SIZE + __MAX_SIZEOF - 1) & ~(__MAX_SIZEOF - 1);
+inline constexpr size_t __SOURCE_CODE_POINTS_SPAN_SIZE_IN_BYTES = sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE;
+inline constexpr size_t __WORD_INDICES_SPAN_SIZE_IN_BYTES = sizeof(size_t) * MAX_NAME_CODE_POINTS_SIZE;
+inline constexpr size_t __RESULT_CODE_POINTS_SPAN_SIZE_IN_BYTES = sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE;
+inline constexpr size_t __RESULT_BYTES_SPAN_SIZE_IN_BYTES = sizeof(std::byte) * MAX_NAME_BYTES_SIZE;
 
 static_assert(__SOURCE_CODE_POINTS_SPAN_SIZE_IN_BYTES + __WORD_INDICES_SPAN_SIZE_IN_BYTES + __RESULT_CODE_POINTS_SPAN_SIZE_IN_BYTES +
                   __RESULT_BYTES_SPAN_SIZE_IN_BYTES <
@@ -188,7 +186,7 @@ inline std::span<const std::byte> clean_str_unicode(std::span<int32_t> source_co
   while (i < utf8_result.size()) {
     char* c{reinterpret_cast<char*>(std::addressof(utf8_result[i]))};
     bool skip{!std::strncmp(c, "amp+", 4) || !std::strncmp(c, "gt+", 3) || !std::strncmp(c, "lt+", 3) || !std::strncmp(c, "quot+", 5) ||
-              !std::strncmp(c, "ft+", 3) || !std::strncmp(c, "feat+", 5) |
+              !std::strncmp(c, "ft+", 3) || !std::strncmp(c, "feat+", 5) ||
               (((c[0] == '1' && c[1] == '9') || (c[0] == '2' && c[1] == '0')) && ('0' <= c[2] && c[2] <= '9') && ('0' <= c[3] && c[3] <= '9') && c[4] == '+') ||
               !std::strncmp(c, "092+", 4) || !std::strncmp(c, "33+", 3) || !std::strncmp(c, "34+", 3) || !std::strncmp(c, "36+", 3) ||
               !std::strncmp(c, "39+", 3) || !std::strncmp(c, "60+", 3) || !std::strncmp(c, "62+", 3) || !std::strncmp(c, "8232+", 5) ||
@@ -211,7 +209,7 @@ inline std::span<const std::byte> prepare_search_query_impl(std::span<const std:
   }
 
   auto& string_lib_ctx{StringLibContext::get()};
-  auto* source_code_points_begin{reinterpret_cast<int32_t*>((std::next(string_lib_ctx.static_buf.get(), SOURCE_CODE_POINTS_SPAN_BEGIN)))};
+  auto* source_code_points_begin{reinterpret_cast<int32_t*>(std::next(string_lib_ctx.static_buf.get(), SOURCE_CODE_POINTS_SPAN_BEGIN))};
   std::span<int32_t> source_code_points{
       source_code_points_begin,
       MAX_NAME_CODE_POINTS_SIZE,
