@@ -4,27 +4,26 @@
 
 #pragma once
 
-#include "runtime-light/stdlib/curl/defs.h"
-#include "runtime-light/stdlib/web-transfer-lib/defs.h"
-
 #include <cstdint>
 #include <optional>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/curl/defs.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/web-transfer-lib/defs.h"
 
 namespace kphp::web::curl {
 
-struct EasyContext {
+struct easy_context {
   bool return_transfer{false};
-  std::optional<string> private_data{false};
+  std::optional<string> private_data{std::nullopt};
   int64_t error_code{0};
   std::array<std::byte, kphp::web::curl::CURL_ERROR_SIZE> error_description{std::byte{0}};
   bool has_been_executed{false}; // Need for providing same as in PHP semantics of curl_getinfo(..., CURLINFO_EFFECTIVE_URL)
 
   inline auto set_errno(int64_t code, std::string_view description) noexcept {
     // If Web Transfer Lib specific error
-    if (static_cast<int64_t>(code) == kphp::web::WEB_INTERNAL_ERROR_CODE) [[unlikely]] {
+    if (code == kphp::web::WEB_INTERNAL_ERROR_CODE) [[unlikely]] {
       return;
     }
     error_code = static_cast<int64_t>(code);
@@ -40,7 +39,7 @@ struct EasyContext {
   }
 
   inline auto set_errno(kphp::web::curl::CURLE code, std::string_view description) noexcept {
-    set_errno(static_cast<int64_t>(code), std::move(description));
+    set_errno(static_cast<int64_t>(code), description);
   }
 
   inline auto set_errno(kphp::web::curl::CURLE code, std::optional<string> description = std::nullopt) noexcept {
@@ -49,24 +48,10 @@ struct EasyContext {
 
   template<size_t N>
   inline auto bad_option_error(const char (&msg)[N]) noexcept {
-    static_assert(N <= CURL_ERROR_SIZE, "Too long error");
+    static_assert(N <= CURL_ERROR_SIZE, "too long error");
     kphp::log::warning("{}", msg);
     set_errno(CURLE::BAD_FUNCTION_ARGUMENT, {{msg, N}});
   }
 };
-
-namespace details {
-
-template<size_t N>
-inline auto print_error(const char (&msg)[N], kphp::web::error&& e) noexcept {
-  static_assert(N <= CURL_ERROR_SIZE, "Too long error");
-  if (e.description.has_value()) {
-    kphp::log::warning("{}\nCode: {}; Description: {}", msg, e.code, (*e.description).c_str());
-  } else {
-    kphp::log::warning("{}: {}", msg, e.code);
-  }
-}
-
-} // namespace details
 
 } // namespace kphp::web::curl

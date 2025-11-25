@@ -1170,22 +1170,22 @@ struct webPropertyValue final {
   bool fetch(tl::fetcher& tlf) noexcept {
     const auto initial_pos{tlf.pos()};
     if (tl::Bool b{}; b.fetch(tlf)) {
-      value.template emplace<tl::Bool>(std::move(b));
+      value.template emplace<tl::Bool>(b);
       return true;
     }
     tlf.reset(initial_pos);
     if (tl::I64 i{}; i.fetch(tlf)) {
-      value.template emplace<tl::I64>(std::move(i));
+      value.template emplace<tl::I64>(i);
       return true;
     }
     tlf.reset(initial_pos);
     if (tl::F64 i{}; i.fetch(tlf)) {
-      value.template emplace<tl::F64>(std::move(i));
+      value.template emplace<tl::F64>(i);
       return true;
     }
     tlf.reset(initial_pos);
     if (tl::String s{}; s.fetch(tlf)) {
-      value.template emplace<tl::String>(std::move(s));
+      value.template emplace<tl::String>(s);
       return true;
     }
     tlf.reset(initial_pos);

@@ -30,10 +30,7 @@ class client final {
   using query2notifier_type = kphp::stl::map<query_id_type, kphp::coro::event, kphp::memory::script_allocator>;
 
 public:
-  using response_readiness = enum class response_readiness : uint8_t {
-    pending = 1,
-    ready = 0,
-  };
+  enum class response_readiness : uint8_t { pending, ready };
 
 private:
   struct refcountable_transport_type : public refcountable_php_classes<refcountable_transport_type> {
@@ -134,12 +131,11 @@ private:
       std::optional<int32_t> error{};
     };
     using shared_ctx_type = class_instance<refcountable_ctx_type>;
-    using interrupter_type = kphp::coro::shared_task<void>;
 
     // The following reader state is intended to be initialized once for a new client.
     // It is assumed that "copying" (ref count increasing) will be the common case, rather than moving.
     shared_ctx_type ctx;
-    interrupter_type interrupter;
+    kphp::coro::shared_task<void> interrupter;
     kphp::coro::shared_task<void> runner;
 
     reader(const shared_ctx_type& _ctx, shared_transport_type _t) noexcept
@@ -147,7 +143,7 @@ private:
           interrupter(reader::wait_until_interrupt(_ctx)),
           runner(reader::run(_ctx, std::move(_t), interrupter)){};
 
-    static auto run(shared_ctx_type ctx, shared_transport_type t, interrupter_type interrupter) noexcept -> kphp::coro::shared_task<void> {
+    static auto run(shared_ctx_type ctx, shared_transport_type t, kphp::coro::shared_task<void> interrupter) noexcept -> kphp::coro::shared_task<void> {
       // Allocate buffer for header
       tl::InterComponentSessionResponseHeader resp_header{};
       std::array<std::byte, resp_header.footprint()> resp_header_buf{};
@@ -177,10 +173,10 @@ private:
 
         // Ensure that buffer for response can be provided
         auto& buffer_providers{ctx.get()->query2resp_buffer_provider};
-        auto buffer_provider{buffer_providers.find(qid)};
+        auto it_buffer_provider{buffer_providers.find(qid)};
 
         // Response provider is not presented => read response into dummy buffer, just for keeping of consistency
-        if (buffer_provider == buffer_providers.end()) {
+        if (it_buffer_provider == buffer_providers.end()) {
           kphp::stl::vector<std::byte, kphp::memory::script_allocator> sink_buffer{size};
           std::span<std::byte> sink_resp{sink_buffer.data(), sink_buffer.size()};
           kphp::log::debug("response buffer provider hasn't been presented for query #{}, read response into dummy buffer", qid);
@@ -194,7 +190,7 @@ private:
         }
 
         // Response provider is presented => make an appropriate buffer's slice for a response
-        auto resp{buffer_provider->second(size)};
+        auto resp{it_buffer_provider->second(size)};
         ctx.get()->query2resp[qid] = resp;
 
         // Read payload
@@ -220,7 +216,7 @@ private:
     }
 
     // Dummy routine for waiting until an interrupting (stopping) event will happen
-    static auto wait_until_interrupt(shared_ctx_type ctx) noexcept -> interrupter_type {
+    static auto wait_until_interrupt(shared_ctx_type ctx) noexcept -> kphp::coro::shared_task<void> {
       co_await ctx.get()->interrupted;
       co_return;
     }
@@ -231,7 +227,7 @@ private:
       kphp::log::assertion(ctx.get()->resp_finish_notifier.contains(qid) == false);
 
       // Register provider of storage for a response
-      ctx.get()->query2resp_buffer_provider.insert({qid, std::move(buffer_provider)});
+      ctx.get()->query2resp_buffer_provider.emplace(qid, std::move(buffer_provider));
 
       // Register notifier
       ctx.get()->resp_finish_notifier.emplace(qid, kphp::coro::event{});
@@ -283,7 +279,7 @@ public:
 
   template<std::invocable<size_t> B, std::invocable<std::span<std::byte>> R>
   requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>> &&
-               std::is_convertible_v<std::invoke_result_t<R, std::span<std::byte>>, client::response_readiness>
+               std::same_as<std::invoke_result_t<R, std::span<std::byte>>, client::response_readiness>
   auto query(std::span<const std::byte> request, B response_buffer_provider, R response_handler) noexcept -> kphp::coro::task<std::expected<void, int32_t>>;
 
   template<std::invocable<size_t> B>
@@ -302,7 +298,7 @@ inline auto client::create(std::string_view component_name) noexcept -> std::exp
 
 template<std::invocable<size_t> B, std::invocable<std::span<std::byte>> R>
 requires std::is_convertible_v<std::invoke_result_t<B, size_t>, std::span<std::byte>> &&
-             std::is_convertible_v<std::invoke_result_t<R, std::span<std::byte>>, client::response_readiness>
+             std::same_as<std::invoke_result_t<R, std::span<std::byte>>, client::response_readiness>
 auto client::query(std::span<const std::byte> request, B response_buffer_provider,
                    R response_handler) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
   // If previously any readers' error has been occurred
@@ -314,8 +310,7 @@ auto client::query(std::span<const std::byte> request, B response_buffer_provide
   const auto query_id{query_count++};
 
   // Ensure that query will be invalidated after occasionally cancellation
-  auto& reader_ctx{reader.ctx};
-  const vk::final_action finalizer{[reader_ctx, &query_id] noexcept { reader_ctx.get()->query2resp_buffer_provider.erase(query_id); }};
+  const vk::final_action finalizer{[reader_ctx = reader.ctx, &query_id] noexcept { reader_ctx.get()->query2resp_buffer_provider.erase(query_id); }};
 
   // Register a new query and send request
   reader.register_query(query_id, details::function_wrapper<std::span<std::byte>, size_t>{std::move(response_buffer_provider)});

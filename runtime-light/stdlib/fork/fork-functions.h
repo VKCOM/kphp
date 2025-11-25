@@ -23,8 +23,6 @@
 
 namespace kphp::forks {
 
-namespace detail {
-
 inline constexpr double MAX_TIMEOUT = 86400.0;
 inline constexpr double DEFAULT_TIMEOUT = MAX_TIMEOUT;
 
@@ -38,8 +36,6 @@ inline std::chrono::nanoseconds normalize_timeout(std::chrono::nanoseconds timeo
   }
   return timeout;
 }
-
-} // namespace detail
 
 template<kphp::coro::concepts::awaitable awaitable_type>
 auto id_managed(awaitable_type awaitable) noexcept -> kphp::coro::task<typename kphp::coro::awaitable_traits<awaitable_type>::awaiter_return_type> {
@@ -82,8 +78,8 @@ auto wait(int64_t fork_id, std::chrono::nanoseconds timeout) noexcept -> kphp::c
   // Important: capture current fork's info pre-co_await.
   // Fork ID is not automatically preserved across suspension points
   auto current_fork_info{fork_instance_st.current_info()};
-  auto expected{co_await kphp::coro::io_scheduler::get().schedule(static_cast<kphp::coro::shared_task<return_type>>(std::move(fork_task)),
-                                                                  detail::normalize_timeout(timeout))};
+  auto expected{
+      co_await kphp::coro::io_scheduler::get().schedule(static_cast<kphp::coro::shared_task<return_type>>(std::move(fork_task)), normalize_timeout(timeout))};
 
   // Execute essential housekeeping tasks to maintain proper state management.
   // 1. Check for any exceptions that may have occurred during the fork execution. If an exception is found, propagate it to the current fork.
@@ -162,7 +158,7 @@ inline kphp::coro::task<> f$sched_yield() noexcept {
 
 inline kphp::coro::task<> f$sched_yield_sleep(double duration) noexcept {
   const auto timeout{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{duration})};
-  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield_for(kphp::forks::detail::normalize_timeout(timeout)));
+  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield_for(kphp::forks::normalize_timeout(timeout)));
 }
 
 // ================================================================================================

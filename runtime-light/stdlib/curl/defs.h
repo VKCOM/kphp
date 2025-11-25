@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "runtime-light/stdlib/web-transfer-lib/defs.h"
-
 #include <cstdint>
+
+#include "runtime-light/stdlib/web-transfer-lib/defs.h"
 
 namespace kphp::web::curl {
 
