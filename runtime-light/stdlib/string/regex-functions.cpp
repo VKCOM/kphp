@@ -912,9 +912,13 @@ mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed
 Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject, int64_t limit, int64_t flags) noexcept {
   RegexInfo regex_info{pattern, {subject.c_str(), subject.size()}, {}};
 
-  valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_SPLIT_NO_EMPTY, kphp::regex::PREG_SPLIT_DELIM_CAPTURE,
-                    kphp::regex::PREG_SPLIT_OFFSET_CAPTURE);
-  compile_regex(regex_info);
+  if (!valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_SPLIT_NO_EMPTY, kphp::regex::PREG_SPLIT_DELIM_CAPTURE,
+                         kphp::regex::PREG_SPLIT_OFFSET_CAPTURE)) {
+    return false;
+  }
+  if (!compile_regex(regex_info)) {
+    return false;
+  }
   auto output = split_regex(regex_info, limit, (flags & kphp::regex::PREG_SPLIT_NO_EMPTY) != 0, (flags & kphp::regex::PREG_SPLIT_DELIM_CAPTURE) != 0,
                             (flags & kphp::regex::PREG_SPLIT_OFFSET_CAPTURE) != 0);
   if (!output.has_value()) [[unlikely]] {
