@@ -8,6 +8,7 @@
 #include <sys/cdefs.h>
 
 #include "net/net-connections.h"
+#include "net/net-tcp-rpc-common.h"
 #include "net/net-msg.h"
 
 struct tcp_rpc_client_functions {
@@ -17,7 +18,7 @@ struct tcp_rpc_client_functions {
   int (*flush_packet)(struct connection *c);		/* execute this to push query to server */
   int (*rpc_check_perm)(struct connection *c);		/* 1 = allow unencrypted, 2 = allow encrypted */
   int (*rpc_init_crypto)(struct connection *c);  	/* 1 = ok; -1 = no crypto */
-  int (*rpc_start_crypto)(struct connection *c, char *nonce, int key_select);  /* 1 = ok; -1 = no crypto */
+  int (*rpc_start_crypto)(struct connection *c, struct tcp_rpc_nonce_packet *P);  /* 1 = ok; -1 = no crypto */
   int (*rpc_wakeup)(struct connection *c);
   int (*rpc_alarm)(struct connection *c);
   int (*rpc_ready)(struct connection *c);
@@ -38,7 +39,7 @@ int tcp_rpcc_flush_packet_later (struct connection *c);
 int tcp_rpcc_default_check_perm (struct connection *c);
 int tcp_rpcc_default_check_perm_crypto (struct connection *c);
 int tcp_rpcc_init_crypto (struct connection *c);
-int tcp_rpcc_start_crypto (struct connection *c, char *nonce, int key_select);
+int tcp_rpcc_start_crypto (struct connection *c, struct tcp_rpc_nonce_packet *P);
 int default_tcp_rpc_client_check_ready(struct connection *c);
 
 #define TCP_RPCC_FUNC(c) ((struct tcp_rpc_client_functions *) ((c)->extra))
