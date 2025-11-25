@@ -126,7 +126,7 @@ inline double f$lcg_value() noexcept {
   return static_cast<double>(z) * random_impl_::lcg_value_coef;
 }
 
-inline kphp::coro::task<string> f$uniqid(string prefix, bool more_entropy) noexcept {
+inline kphp::coro::task<string> f$uniqid(string prefix = string{}, bool more_entropy = false) noexcept {
   if (!more_entropy) {
     co_await f$usleep(1);
   }
