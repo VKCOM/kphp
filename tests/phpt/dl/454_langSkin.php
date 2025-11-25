@@ -25,7 +25,7 @@ EOF;
 var_dump (sLangBecomeTranslatorScript(1));
 var_dump (sLangAlBecomeTranslatorScript(1));
 
-// var_dump (lcg_value());
+// we dump strlen of uniqid result to check, whether seconds, microseconds and lcg_value are outputted to result with the necessary number of symbols
 var_dump (strlen(uniqid()));
 var_dump (strlen(uniqid('aba')));
 var_dump (strlen(uniqid('testtestsetsetsetsetseteest', false)));
