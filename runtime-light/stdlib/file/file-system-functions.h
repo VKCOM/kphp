@@ -114,6 +114,11 @@ inline kphp::coro::task<bool> f$fclose(resource stream) noexcept {
   co_return false;
 }
 
+inline bool f$file_exists(const string& name) noexcept {
+  const auto exists_res{k2::access(std::string_view{name.c_str(), name.size()}, F_OK)};
+  return exists_res.has_value();
+}
+
 inline bool f$unlink(const string& name) noexcept {
   std::expected<void, int32_t> unlink_res{k2::unlink(std::string_view{name.c_str(), name.size()})};
   return unlink_res.has_value();
