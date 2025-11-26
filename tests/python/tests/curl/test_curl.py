@@ -34,25 +34,22 @@ class TestCurl(CurlTestCase):
                     "HTTP_HELLO": "world",
                     "HTTP_FOO": "bar"
                 })})
-
-    @pytest.mark.k2_skip
     def test_curl_timeout(self):
         self.assertEqual(self._curl_request("/echo/test_get", timeout=0.1), {
             "exec_result": False
         })
 
     def test_curl_nonexistent_url(self):
-        self.assertEqual(self._curl_request("nonexistent_url"), {
+        self.assertEqual(self._curl_request("invalid:10", timeout=5), {
             "exec_result": False
         })
 
-    @pytest.mark.k2_skip
     def test_curl_connection_only_success(self):
         self.assertEqual(self._curl_request("/echo/test_get", connect_only=True), {
             "exec_result": ''
         })
 
     def test_curl_connection_only_fail(self):
-        self.assertEqual(self._curl_request("nonexistent_url", connect_only=True), {
+        self.assertEqual(self._curl_request("invalid:10", connect_only=True, timeout=5), {
             "exec_result": False
         })

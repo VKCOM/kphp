@@ -70,6 +70,9 @@ inline auto event::awaiter::cancel_awaiter() noexcept -> void {
   }
   if (m_prev != nullptr) {
     m_prev->m_next = m_next;
+  } else {
+    // we are the head of the awaiters list, so we need to update the head
+    m_event.m_state = m_next;
   }
   m_next = nullptr;
   m_prev = nullptr;
@@ -88,6 +91,10 @@ auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> aw
   m_awaiting_coroutine = awaiting_coroutine;
 
   m_next = static_cast<event::awaiter*>(m_event.m_state);
+
+  // ensure that the event isn't triggered
+  kphp::log::assertion(reinterpret_cast<event*>(m_next) != std::addressof(m_event));
+
   if (m_next != nullptr) {
     m_next->m_prev = this;
   }
@@ -95,8 +102,8 @@ auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> aw
 }
 
 inline auto event::awaiter::await_resume() noexcept -> void {
-  // restore caller's async stack frame if it was suspended
   if (std::exchange(m_suspended, false)) {
+    // restore caller's async stack frame if it was suspended
     kphp::log::assertion(m_caller_async_stack_frame != nullptr);
     m_async_stack_root.top_async_stack_frame = std::exchange(m_caller_async_stack_frame, nullptr);
   }
@@ -107,9 +114,11 @@ inline auto event::set() noexcept -> void {
   if (prev_value == this || prev_value == nullptr) [[unlikely]] {
     return;
   }
-
-  for (auto* awaiter{static_cast<event::awaiter*>(prev_value)}; awaiter != nullptr; awaiter = awaiter->m_next) {
+  auto* awaiter{static_cast<event::awaiter*>(prev_value)};
+  while (awaiter != nullptr) {
+    auto* next{awaiter->m_next};
     awaiter->m_awaiting_coroutine.resume();
+    awaiter = next;
   }
 }
 
