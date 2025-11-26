@@ -5,7 +5,6 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <expected>
 #include <optional>
 #include <span>
@@ -15,7 +14,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/web-transfer-lib/defs.h"
 #include "runtime-light/stdlib/web-transfer-lib/details/web-error.h"
-#include "runtime-light/stdlib/web-transfer-lib/details/web-property.h"
+#include "runtime-light/stdlib/web-transfer-lib/details/web-property.h" // for convenient passing into simple-transfer users
 #include "runtime-light/stdlib/web-transfer-lib/web-state.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -54,15 +53,15 @@ inline auto simple_transfer_open(transfer_backend backend) noexcept -> kphp::cor
     kphp::log::error("failed to parse response of Simple descriptor creation");
   }
 
-  auto result{std::move(transfer_open_resp.value)};
+  auto result{transfer_open_resp.value};
   if (std::holds_alternative<tl::WebError>(result)) {
-    co_return std::unexpected{details::process_error(std::get<tl::WebError>(std::move(result)))};
+    co_return std::unexpected{details::process_error(std::get<tl::WebError>(result))};
   }
 
   const auto descriptor{std::get<tl::SimpleWebTransferOpenResultOk>(result).descriptor.value};
 
   auto& simple2config{WebInstanceState::get().simple_transfer2config};
-  kphp::log::assertion(simple2config.contains(descriptor) == false);
+  kphp::log::assertion(simple2config.contains(descriptor) == false); // NOLINT
   simple2config.emplace(descriptor, simple_transfer_config{});
 
   co_return std::expected<simple_transfer, error>{descriptor};
@@ -117,31 +116,31 @@ inline auto simple_transfer_perform(simple_transfer st) noexcept -> kphp::coro::
     }
   }};
 
-  const auto response_handler{
-      [&frame_num, &err, &ok_or_error_buffer](std::span<std::byte> _) noexcept -> kphp::component::inter_component_session::client::response_readiness {
-        switch (frame_num) {
-        case 0: {
-          frame_num += 1;
-          tl::Either<tl::SimpleWebTransferPerformResultOk, tl::WebError> simple_web_transfer_perform_resp{};
-          tl::fetcher tlf{ok_or_error_buffer};
-          if (!simple_web_transfer_perform_resp.fetch(tlf)) [[unlikely]] {
-            kphp::log::error("failed to parse response of Simple descriptor performing");
-          }
-          if (auto r{simple_web_transfer_perform_resp.value}; std::holds_alternative<tl::WebError>(r)) {
-            err.emplace(details::process_error(std::get<tl::WebError>(std::move(r))));
-            return kphp::component::inter_component_session::client::response_readiness::ready;
-          }
-          return kphp::component::inter_component_session::client::response_readiness::pending;
-        }
-        case 1:
-          frame_num += 1;
-          return kphp::component::inter_component_session::client::response_readiness::pending;
-        case 2:
-          return kphp::component::inter_component_session::client::response_readiness::ready;
-        default:
-          return kphp::component::inter_component_session::client::response_readiness::ready;
-        }
-      }};
+  const auto response_handler{[&frame_num, &err, &ok_or_error_buffer](
+                                  [[maybe_unused]] std::span<std::byte> _) noexcept -> kphp::component::inter_component_session::client::response_readiness {
+    switch (frame_num) {
+    case 0: {
+      frame_num += 1;
+      tl::Either<tl::SimpleWebTransferPerformResultOk, tl::WebError> simple_web_transfer_perform_resp{};
+      tl::fetcher tlf{ok_or_error_buffer};
+      if (!simple_web_transfer_perform_resp.fetch(tlf)) [[unlikely]] {
+        kphp::log::error("failed to parse response of Simple descriptor performing");
+      }
+      if (auto r{simple_web_transfer_perform_resp.value}; std::holds_alternative<tl::WebError>(r)) {
+        err.emplace(details::process_error(std::get<tl::WebError>(r)));
+        return kphp::component::inter_component_session::client::response_readiness::ready;
+      }
+      return kphp::component::inter_component_session::client::response_readiness::pending;
+    }
+    case 1:
+      frame_num += 1;
+      return kphp::component::inter_component_session::client::response_readiness::pending;
+    case 2:
+      return kphp::component::inter_component_session::client::response_readiness::ready;
+    default:
+      return kphp::component::inter_component_session::client::response_readiness::ready;
+    }
+  }};
 
   if (auto res{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider), response_handler)}; !res) [[unlikely]] {
     kphp::log::error("failed to send request of Simple descriptor performing");
@@ -183,8 +182,8 @@ inline auto simple_transfer_reset(simple_transfer st) noexcept -> kphp::coro::ta
     kphp::log::error("failed to parse response of Simple descriptor resetting");
   }
 
-  if (auto& r{transfer_reset_resp.value}; std::holds_alternative<tl::WebError>(r)) {
-    co_return std::unexpected{details::process_error(std::get<tl::WebError>(std::move(r)))};
+  if (auto r{transfer_reset_resp.value}; std::holds_alternative<tl::WebError>(r)) {
+    co_return std::unexpected{details::process_error(std::get<tl::WebError>(r))};
   }
 
   auto& simple2config{WebInstanceState::get().simple_transfer2config};
@@ -227,7 +226,7 @@ inline auto simple_transfer_close(simple_transfer st) noexcept -> kphp::coro::ta
   }
 
   if (auto& r{transfer_close_resp.value}; std::holds_alternative<tl::WebError>(r)) {
-    co_return std::unexpected{details::process_error(std::get<tl::WebError>(std::move(r)))};
+    co_return std::unexpected{details::process_error(std::get<tl::WebError>(r))};
   }
 
   co_return std::expected<void, error>{};

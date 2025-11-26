@@ -4,9 +4,6 @@
 
 #pragma once
 
-#include <cstdint>
-
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/curl/defs.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/web-transfer-lib/defs.h"

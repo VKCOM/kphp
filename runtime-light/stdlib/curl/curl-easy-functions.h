@@ -16,6 +16,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/output/print-functions.h"
+#include "runtime-light/stdlib/web-transfer-lib/details/web-property.h"
 #include "runtime-light/stdlib/web-transfer-lib/web-simple-transfer.h"
 
 inline auto f$curl_init(string url = string{""}) noexcept -> kphp::coro::task<kphp::web::curl::easy_type> {
@@ -36,7 +37,7 @@ inline auto f$curl_init(string url = string{""}) noexcept -> kphp::coro::task<kp
   co_return st.descriptor;
 }
 
-inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, const mixed& value) noexcept -> bool {
+inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, const mixed& value) noexcept -> bool { // NOLINT
   auto& easy_ctx{CurlInstanceState::get().easy_ctx.get_or_init(easy_id)};
   auto st{kphp::web::simple_transfer{.descriptor = easy_id}};
 
@@ -203,7 +204,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
       easy_ctx.bad_option_error("value must be an array in function curl_setopt\n");
       return false;
     }
-    auto& arr{value.as_array()};
+    const auto& arr{value.as_array()};
     if (arr.empty()) [[unlikely]] {
       easy_ctx.set_errno(kphp::web::curl::CURLE::OK);
       return true;
@@ -409,7 +410,7 @@ inline auto f$curl_exec(kphp::web::curl::easy_type easy_id) noexcept -> kphp::co
   if (easy_ctx.return_transfer) {
     co_return std::move((*res).body);
   }
-  print(std::move((*res).body));
+  print((*res).body);
   co_return true;
 }
 
@@ -487,7 +488,7 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
       kphp::log::assertion(v != info.end());
       auto value{v->second.to_mixed()};
       if (!equals(value, false)) {
-        result.set_value(std::move(key), std::move(value));
+        result.set_value(key, std::move(value));
       }
     }};
 

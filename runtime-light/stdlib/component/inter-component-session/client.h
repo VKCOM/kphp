@@ -61,7 +61,7 @@ private:
         co_await transport_readiness_notifier[qid];
       }
       // Ensure that transport is available
-      kphp::log::assertion(is_occupied == false);
+      kphp::log::assertion(is_occupied == false); // NOLINT
       // Capture the transport
       is_occupied = true;
       occupied_by = qid;
@@ -222,9 +222,9 @@ private:
     }
 
     // Semantics of this method is considering tha state will be changed. That's why it is not marked as `const`
-    auto register_query(query_id_type qid, details::function_wrapper<std::span<std::byte>, size_t>&& buffer_provider) noexcept -> void {
+    auto register_query(query_id_type qid, details::function_wrapper<std::span<std::byte>, size_t>&& buffer_provider) noexcept -> void { // NOLINT
       // We wouldn't read a response twice
-      kphp::log::assertion(ctx.get()->resp_finish_notifier.contains(qid) == false);
+      kphp::log::assertion(ctx.get()->resp_finish_notifier.contains(qid) == false); // NOLINT
 
       // Register provider of storage for a response
       ctx.get()->query2resp_buffer_provider.emplace(qid, std::move(buffer_provider));
@@ -257,7 +257,7 @@ public:
   // Moving looks like copying but is simply reference count increasing for 'transport' and 'reader' fields.
   // Such approach motivated by the fact that the "reader-service" cannot be easily moved due to depends on transport and cannot be trivial stopped.
   client(client&& other) noexcept
-      : transport(other.transport), // Intentionally call of copy constructor for shared transport
+      : transport(other.transport), // NOLINT // Intentionally call of copy constructor for shared transport
         query_count(std::exchange(other.query_count, std::numeric_limits<query_id_type>::max())),
         writer(std::move(other.writer)),
         reader(other.reader) /* Intentionally call of copy constructor for shared reader  */ {}

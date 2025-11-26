@@ -130,7 +130,7 @@ enum backend_internal_error : int64_t {
 
 // ----------------------------------
 
-inline auto property_value::serialize() const noexcept -> tl::webPropertyValue {
+inline auto property_value::serialize() const noexcept -> tl::webPropertyValue { // NOLINT
   return std::visit(
       [](const auto& v) noexcept -> tl::webPropertyValue {
         using value_t = std::remove_cvref_t<decltype(v)>;
@@ -188,9 +188,9 @@ inline auto property_value::serialize() const noexcept -> tl::webPropertyValue {
       this->value);
 }
 
-inline auto property_value::deserialize(const tl::webPropertyValue& tl_prop_value) noexcept -> property_value {
+inline auto property_value::deserialize(const tl::webPropertyValue& tl_prop_value) noexcept -> property_value { // NOLINT
   return std::visit(
-      [](const auto& v) noexcept -> property_value {
+      [](const auto& v) noexcept -> property_value { // NOLINT
         using value_t = std::remove_cvref_t<decltype(v)>;
         if constexpr (std::is_same_v<value_t, tl::Bool>) {
           return property_value::as_boolean(v.value);

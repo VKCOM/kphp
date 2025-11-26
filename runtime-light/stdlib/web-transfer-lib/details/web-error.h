@@ -10,7 +10,7 @@
 
 namespace kphp::web::details {
 
-inline auto process_error(tl::WebError&& e) noexcept -> error {
+inline auto process_error(tl::WebError e) noexcept -> error {
   switch (e.code.value) {
   case tl_parse_error_code::server_side:
   case internal_error_code::unknown_backend:
