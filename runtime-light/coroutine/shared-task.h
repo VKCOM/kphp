@@ -53,7 +53,7 @@ struct promise_base : kphp::coro::async_stack_element {
           // since resuming the coroutine may destroy the shared_task_waiter value
           auto* next{awaiter->m_next};
           auto* async_stack_root{promise.get_async_stack_frame().async_stack_root};
-          kphp::coro::resume(waiter->m_continuation, async_stack_root);
+          kphp::coro::resume(awaiter->m_continuation, async_stack_root);
           awaiter = next;
         }
         // return last awaiter's coroutine_handle to allow it to potentially be compiled as a tail-call
