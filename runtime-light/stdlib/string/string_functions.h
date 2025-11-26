@@ -11,7 +11,6 @@
 #include <memory>
 #include <span>
 
-#include "auto/common/unicode-utils-auto.h"
 #include "common/unicode/unicode-utils.h"
 #include "common/unicode/utf8-utils.h"
 #include "runtime-common/core/runtime-core.h"
@@ -37,75 +36,17 @@ inline constexpr size_t RESULT_BYTES_SPAN_BEGIN = RESULT_CODE_POINTS_SPAN_BEGIN 
 
 inline constexpr int32_t MAX_UTF8_CODE_POINT{0x10ffff};
 
-/* Search generated ranges for specified character */
-inline int32_t binary_search_ranges(int32_t code) noexcept {
-  if (code > MAX_UTF8_CODE_POINT) {
-    return 0;
-  }
-
-  size_t l{0};
-  size_t r{prepare_table_ranges_size};
-  while (l < r) {
-    size_t m{((l + r + 2) >> 2) << 1};
-    if (prepare_table_ranges[m] <= code) {
-      l = m;
-    } else {
-      r = m - 2;
-    }
-  }
-
-  // prepare_table_ranges[l]     - key
-  // prepare_table_ranges[l + 1] - value
-  int32_t t{prepare_table_ranges[l + 1]};
-  if (t < 0) {
-    return code - prepare_table_ranges[l] + (~t);
-  }
-  if (t <= 0x10ffff) {
-    return t;
-  }
-  switch (t - 0x200000) {
-  case 0:
-    return (code & -2);
-  case 1:
-    return (code | 1);
-  case 2:
-    return ((code - 1) | 1);
-  default:
-    k2::exit(1);
-  }
-}
-
 inline constexpr int32_t WHITESPACE{static_cast<int32_t>(' ')};
 inline constexpr int32_t PLUS{static_cast<int32_t>('+')};
+
+/* Search generated ranges for specified character */
+int32_t binary_search_ranges(int32_t code) noexcept;
 
 /* Prepares unicode 0-terminated string input for search,
    leaving only digits and letters with diacritics.
    Length of string can decrease.
    Returns length of result. */
-inline void prepare_search_string(std::span<int32_t>& code_points) noexcept {
-  size_t output_size{};
-  for (size_t i{}; i < code_points.size(); ++i) {
-    int32_t c{code_points[i]};
-    int32_t new_c{};
-    if (static_cast<size_t>(c) < static_cast<size_t>(TABLE_SIZE)) {
-      new_c = static_cast<int32_t>(prepare_table[c]);
-    } else {
-      new_c = binary_search_ranges(c);
-    }
-    if (new_c != 0) {
-      // we forbid 2 whitespaces after each other and starting whitespace
-      if (new_c != WHITESPACE || (output_size > 0 && code_points[output_size - 1] != WHITESPACE)) {
-        code_points[output_size++] = new_c;
-      }
-    }
-  }
-  if (output_size > 0 && code_points[output_size - 1] == WHITESPACE) {
-    // throw out terminating whitespace
-    --output_size;
-  }
-  code_points[output_size] = 0;
-  code_points = code_points.subspan(output_size);
-}
+void prepare_search_string(std::span<int32_t>& code_points) noexcept;
 
 inline std::span<int32_t> prepare_str_unicode(std::span<int32_t> code_points) noexcept {
   prepare_search_string(code_points);
