@@ -12,6 +12,8 @@
 #include <utility>
 #include <variant>
 
+#include "runtime-light/coroutine/async-stack-methods.h"
+#include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/concepts.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
@@ -56,7 +58,7 @@ public:
   auto notify_awaitable_completed() noexcept -> void {
     m_toggled = true;
     if (m_awaiting_coroutine != nullptr) {
-      m_awaiting_coroutine.resume();
+      kphp::coro::resume(m_awaiting_coroutine);
     }
   }
 };
@@ -106,9 +108,7 @@ class when_any_ready_awaitable<std::tuple<task_types...>> {
       void* const return_address{STACK_RETURN_ADDRESS};
       m_caller_async_stack_frame = std::addressof(awaiting_coroutine.promise().get_async_stack_frame());
 
-      std::apply([&latch = m_awaitable.m_latch, &caller_async_stack_frame = *m_caller_async_stack_frame,
-                  return_address](auto&... tasks) noexcept { (tasks.start(latch, caller_async_stack_frame, return_address), ...); },
-                 m_awaitable.m_tasks);
+      std::apply([&latch = m_awaitable.m_latch, return_address](auto&... tasks) noexcept { (tasks.start(latch, return_address), ...); }, m_awaitable.m_tasks);
       return m_awaitable.m_latch.try_await(awaiting_coroutine);
     }
 
@@ -191,17 +191,18 @@ public:
     kphp::log::error("internal unhandled exception");
   }
 
-  auto start(when_any_latch& latch, kphp::coro::async_stack_frame& caller_async_stack_frame, void* return_address) noexcept {
+  auto start(when_any_latch& latch, void* return_address) noexcept {
     m_latch = std::addressof(latch);
 
     auto& async_stack_frame{get_async_stack_frame()};
-    kphp::log::assertion(caller_async_stack_frame.async_stack_root != nullptr);
     // initialize when_all_task's async stack frame and make it the top frame
-    async_stack_frame.caller_async_stack_frame = std::addressof(caller_async_stack_frame);
-    async_stack_frame.async_stack_root = caller_async_stack_frame.async_stack_root;
+    async_stack_frame.caller_async_stack_frame = nullptr;
+    async_stack_frame.async_stack_root = CoroutineInstanceState::get_next_root();
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
-    std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
+
+    decltype(auto) handle = std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this));
+    kphp::coro::resume(handle, async_stack_frame.async_stack_root);
   }
 };
 
@@ -260,9 +261,9 @@ private:
     constexpr auto return_void() const noexcept -> void {}
   };
 
-  auto start(when_any_latch& latch, kphp::coro::async_stack_frame& caller_async_stack_frame, void* return_address) noexcept -> void {
+  auto start(when_any_latch& latch, void* return_address) noexcept -> void {
     if (!latch.is_ready()) [[likely]] {
-      m_coroutine.promise().start(latch, caller_async_stack_frame, return_address);
+      m_coroutine.promise().start(latch, return_address);
     }
   }
 

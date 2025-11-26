@@ -4,9 +4,6 @@
 
 #pragma once
 
-#include <coroutine>
-#include <utility>
-
 /**
  * This header defines the data structures used to represent a coroutine asynchronous stack.
  *
@@ -81,18 +78,8 @@ struct async_stack_frame {
 struct async_stack_root {
   async_stack_frame* top_async_stack_frame{};
   stack_frame* stop_sync_stack_frame{};
+  async_stack_root* next_async_stack_root{};
 };
-
-/**
- * The `resume` function is responsible for storing the current synchronous stack frame
- * in async_stack_root::stop_sync_frame before resuming the coroutine. This allows
- * capturing one of the stack frames in the synchronous stack trace.
- */
-inline void resume(std::coroutine_handle<> handle, async_stack_root& stack_root) noexcept {
-  auto* previous_stack_frame{std::exchange(stack_root.stop_sync_stack_frame, reinterpret_cast<stack_frame*>(STACK_FRAME_ADDRESS))};
-  handle.resume();
-  stack_root.stop_sync_stack_frame = previous_stack_frame;
-}
 
 /**
  * The async_stack_element class facilitates working with asynchronous traces in templated code.

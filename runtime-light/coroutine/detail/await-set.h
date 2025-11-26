@@ -12,6 +12,7 @@
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/coroutine/async-stack-methods.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/void-value.h"
@@ -65,7 +66,7 @@ public:
     kphp::memory::script::free(ptr);
   }
 
-  void start_task(await_set_task<return_type>&& task, kphp::coro::async_stack_root& coroutine_stack_root, void* return_address) noexcept {
+  void start_task(await_set_task<return_type>&& task, kphp::coro::async_stack_root* coroutine_stack_root, void* return_address) noexcept {
     auto task_iterator{m_tasks_storage.insert(m_tasks_storage.begin(), std::move(task))};
     task_iterator->start(*this, task_iterator, coroutine_stack_root, return_address);
   }
@@ -80,7 +81,7 @@ public:
       if (m_awaiters != nullptr) {
         m_awaiters->m_prev = nullptr;
       }
-      awaiter->m_continuation.resume();
+      kphp::coro::resume(awaiter->m_continuation);
     }
   }
 
@@ -139,8 +140,7 @@ public:
       if (awaiters_to_resume != nullptr) {
         awaiters_to_resume->m_prev = nullptr;
       }
-
-      waiter->m_continuation.resume();
+      kphp::coro::resume(waiter->m_continuation);
     }
   }
 
@@ -151,8 +151,6 @@ public:
   ~await_broker() {
     abort_all();
   }
-
-private:
 };
 
 template<typename return_type, typename promise_type>
@@ -201,7 +199,7 @@ public:
 
   auto start(detail::await_set::await_broker<return_type>& await_broker,
              kphp::stl::list<await_set_task<return_type>, kphp::memory::script_allocator>::iterator storage_location,
-             kphp::coro::async_stack_root& async_stack_root, void* return_address) noexcept {
+             kphp::coro::async_stack_root* async_stack_root, void* return_address) noexcept {
     m_await_broker = await_broker;
     m_ready_task_element.m_storage_location = storage_location;
 
@@ -212,11 +210,12 @@ public:
      * */
     auto& async_stack_frame{get_async_stack_frame()};
     async_stack_frame.caller_async_stack_frame = nullptr;
-    async_stack_frame.async_stack_root = std::addressof(async_stack_root);
+    async_stack_frame.async_stack_root = async_stack_root;
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
 
-    std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
+    decltype(auto) handle = std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this));
+    kphp::coro::resume(handle, async_stack_root);
   }
 };
 
@@ -273,7 +272,7 @@ private:
 
   auto start(detail::await_set::await_broker<return_type>& await_broker,
              kphp::stl::list<await_set_task<return_type>, kphp::memory::script_allocator>::iterator storage_location,
-             kphp::coro::async_stack_root& async_stack_root, void* return_address) noexcept {
+             kphp::coro::async_stack_root* async_stack_root, void* return_address) noexcept {
     m_coroutine.promise().start(await_broker, storage_location, async_stack_root, return_address);
   }
 

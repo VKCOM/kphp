@@ -19,12 +19,12 @@ namespace kphp::coro {
 template<typename return_type>
 class await_set {
   std::unique_ptr<detail::await_set::await_broker<return_type>> m_await_broker;
-  kphp::coro::async_stack_root& m_coroutine_stack_root;
+  kphp::coro::async_stack_root* m_coroutine_stack_root;
 
 public:
   await_set() noexcept
       : m_await_broker(std::make_unique<detail::await_set::await_broker<return_type>>()),
-        m_coroutine_stack_root(CoroutineInstanceState::get().coroutine_stack_root) {}
+        m_coroutine_stack_root(CoroutineInstanceState::get_next_root()) {}
 
   await_set(await_set&& other) noexcept
       : m_await_broker(std::move(other.m_await_broker)),
