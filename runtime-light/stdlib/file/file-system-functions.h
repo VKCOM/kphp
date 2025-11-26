@@ -13,6 +13,7 @@
 #include <span>
 #include <string_view>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
