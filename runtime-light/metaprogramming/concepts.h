@@ -8,6 +8,8 @@
 #include <cstddef>
 #include <functional>
 
+namespace kphp::concepts {
+
 template<typename T>
 concept standard_layout = std::is_standard_layout_v<T>;
 
@@ -18,3 +20,5 @@ concept hashable = requires(T t) {
 
 template<typename type, typename... types>
 concept in_types = (std::same_as<type, types> || ...);
+
+} // namespace kphp::concepts

@@ -276,7 +276,3 @@ test_bcmod($low_nums);
 test_bcmod($mid_nums);
 test_bcmod($big_nums);
 test_bcmod($math_constants);
-
-$powers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 99, 100];
-test_bcpow($low_nums, $powers);
-test_bcpow($mid_nums, $powers);

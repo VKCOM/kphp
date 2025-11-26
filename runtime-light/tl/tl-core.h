@@ -15,8 +15,8 @@
 #include "common/algorithms/find.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/metaprogramming/concepts.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/utils/concepts.h"
 
 namespace tl {
 
@@ -62,11 +62,15 @@ public:
     m_buffer.reserve(capacity);
   }
 
+  size_t capacity() const noexcept {
+    return m_buffer.capacity();
+  }
+
   void store_bytes(std::span<const std::byte> bytes) noexcept {
     m_buffer.append_range(bytes);
   }
 
-  template<standard_layout T, standard_layout U>
+  template<kphp::concepts::standard_layout T, kphp::concepts::standard_layout U>
   requires std::convertible_to<U, T>
   void store_trivial(const U& t) noexcept {
     store_bytes({reinterpret_cast<const std::byte*>(std::addressof(t)), sizeof(T)});
@@ -136,7 +140,7 @@ public:
     return bytes;
   }
 
-  template<standard_layout T>
+  template<kphp::concepts::standard_layout T>
   std::optional<T> fetch_trivial() noexcept {
     if (m_remaining < sizeof(T)) {
       return std::nullopt;

@@ -1,9 +1,10 @@
 <?php
 
 function simple_function() {
-    fwrite(STDERR, "start_resumable_function\n");
+    $stderr = fopen("php://stderr", "w");
+    fwrite($stderr, "start_resumable_function\n");
     sched_yield_sleep(0.3);
-    fwrite(STDERR, "end_resumable_function\n");
+    fwrite($stderr, "end_resumable_function\n");
     return true;
 }
 
@@ -40,6 +41,10 @@ function main() {
         test_curl_reuse_handle(true);
         return;
       }
+      case "/test_curl_reset_handle": {
+        test_curl_reset_handle();
+        return;
+      }
   }
 
   critical_error("unknown test");
@@ -55,6 +60,12 @@ function test_curl($curl_resumable = false) {
   $ch = curl_init();
   curl_setopt($ch, CURLOPT_URL, (string)$params["url"]);
   curl_setopt($ch, CURLOPT_RETURNTRANSFER, (int)$params["return_transfer"]);
+
+  $headers = ["Content-Type: application/json"];
+#ifndef K2
+  $headers = [];
+#endif
+  curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
   if ($post = $params["post"]) {
     curl_setopt($ch, CURLOPT_POST, 1);
@@ -77,9 +88,10 @@ function test_curl($curl_resumable = false) {
 
   ob_start();
 
-  fwrite(STDERR, "start_curl_query\n");
+  $stderr = fopen("php://stderr", "w");
+  fwrite($stderr, "start_curl_query\n");
   $output = $curl_resumable ? curl_exec_concurrently($ch, $timeout_s ?? -1) : curl_exec($ch);
-  fwrite(STDERR, "end_curl_query\n");
+  fwrite($stderr, "end_curl_query\n");
   curl_close($ch);
 
   $resp = ["exec_result" => to_json_safe($output)];
@@ -106,10 +118,34 @@ function test_curl_reuse_handle($curl_resumable = false) {
     curl_setopt($ch, CURLOPT_TIMEOUT_MS, 0);
   }
 
-  $output2 = $curl_resumable ? curl_exec_concurrently($ch) : curl_exec($ch);
+  $output2 = $curl_resumable ? curl_exec_concurrently($ch, 30) : curl_exec($ch);
   curl_close($ch);
 
   $resp = ["exec_result1" => to_json_safe($output1), "exec_result2" => to_json_safe($output2)];
+  echo json_encode($resp);
+}
+
+function test_curl_reset_handle() {
+  $params = json_decode(file_get_contents('php://input'));
+
+  $ch = curl_init();
+  curl_setopt($ch, CURLOPT_URL, (string)$params["url"] . "/before");
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+  $output1 = curl_exec($ch);
+
+  curl_reset($ch);
+
+  $output2 = curl_exec($ch);
+
+  curl_setopt($ch, CURLOPT_URL, (string)$params["url"] . "/after");
+  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+  $output3 = curl_exec($ch);
+
+  curl_close($ch);
+
+  $resp = ["exec_result1" => to_json_safe($output1), "exec_result2" => to_json_safe($output2), "exec_result3" => to_json_safe($output3)];
   echo json_encode($resp);
 }
 

@@ -76,7 +76,8 @@ jobs:
 
       - name: Compile dummy PHP script
         run: docker exec kphp-build-container-${{matrix.os}} bash -c
-          "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o --user kitten"
+          "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o --user kitten --connections 8"
+        # Manual specifying of `connections` option is caused by some Github internal limitations. Default 65535+16 leads to fail
 
       - name: Polyfills composer install
         run: docker exec kphp-build-container-${{matrix.os}} bash -c

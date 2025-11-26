@@ -13,6 +13,9 @@
 
 struct RandomInstanceState final : private vk::not_copyable {
   std::mt19937_64 mt_gen;
+  int64_t lcg1{};
+  int64_t lcg2{};
+  bool lcg_initialized{false};
 
   RandomInstanceState() noexcept {
     uint64_t seed{};

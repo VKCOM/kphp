@@ -154,24 +154,24 @@ struct task {
 
   task() noexcept = default;
 
-  explicit task(std::coroutine_handle<> coro) noexcept
-      : m_haddress(coro.address()) {}
+  explicit task(std::coroutine_handle<promise_type> coro) noexcept
+      : m_coro(coro) {}
 
   task(const task& other) noexcept = delete;
 
   task(task&& other) noexcept
-      : m_haddress(std::exchange(other.m_haddress, nullptr)) {}
+      : m_coro(std::exchange(other.m_coro, {})) {}
 
   task& operator=(const task& other) noexcept = delete;
 
   task& operator=(task&& other) noexcept {
-    std::swap(m_haddress, other.m_haddress);
+    std::swap(m_coro, other.m_coro);
     return *this;
   }
 
   ~task() {
-    if (m_haddress) {
-      std::coroutine_handle<promise_type>::from_address(m_haddress).destroy();
+    if (m_coro) {
+      m_coro.destroy();
     }
   }
 
@@ -217,28 +217,28 @@ struct task {
         return awaiter_base::m_coro.promise().result();
       }
     };
-    return awaiter{std::coroutine_handle<promise_type>::from_address(m_haddress)};
+    return awaiter{m_coro};
   }
 
   auto get_handle() noexcept -> std::coroutine_handle<promise_type> {
-    return std::coroutine_handle<promise_type>::from_address(m_haddress);
+    return m_coro;
   }
 
   // conversion functions
   //
   // erase type
   explicit operator task<>() && noexcept {
-    return task<>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
+    return task<>{std::exchange(m_coro, {})};
   }
   // restore erased type
   template<typename U>
   requires(std::same_as<void, T>)
   explicit operator task<U>() && noexcept {
-    return task<U>{std::coroutine_handle<>::from_address(std::exchange(m_haddress, nullptr))};
+    return task<U>{std::exchange(m_coro, {})};
   }
 
 private:
-  void* m_haddress{};
+  std::coroutine_handle<promise_type> m_coro{};
 };
 
 } // namespace kphp::coro

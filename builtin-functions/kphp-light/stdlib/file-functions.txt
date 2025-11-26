@@ -28,6 +28,7 @@ function fread ($stream ::: mixed, $length ::: int): string | false;
 function fflush ($stream ::: mixed): bool;
 /** @kphp-extern-func-info interruptible */
 function fclose ($stream ::: mixed): bool;
+function unlink ($name ::: string) ::: bool;
 
 function file_get_contents ($name ::: string) ::: string | false;
 
@@ -69,8 +70,6 @@ function rename ($oldname ::: string, $newname ::: string) ::: bool;
 function scandir ($directory ::: string) ::: string[] | false;
 /** @kphp-extern-func-info stub generation-required */
 function tempnam ($dir ::: string, $prefix ::: string) ::: string | false;
-/** @kphp-extern-func-info stub generation-required */
-function unlink ($name ::: string) ::: bool;
 
 
  /** @kphp-extern-func-info stub generation-required */

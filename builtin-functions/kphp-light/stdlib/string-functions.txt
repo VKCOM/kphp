@@ -135,19 +135,15 @@ function unpack ($pattern ::: string, $data ::: string) ::: mixed[] | false;
  */
 function base_convert ($number ::: string, $frombase ::: int, $tobase ::: int) ::: string;
 
+function zstd_compress(string $data, int $level = 3) ::: string | false;
+function zstd_uncompress(string $data) ::: string | false;
+function zstd_compress_dict(string $data, string $dict) ::: string | false;
+function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
+
 // === UNSUPPORTED ===
 
 /** @kphp-extern-func-info stub generation-required */
 function str_getcsv($str ::: string, string $delimiter ::: string = ",", string $enclosure ::: string = "\"", string $escape ::: string = "\\") ::: mixed[] | false;
-
-/** @kphp-extern-func-info stub generation-required */
-function zstd_compress(string $data, int $level = 3) ::: string | false;
-/** @kphp-extern-func-info stub generation-required */
-function zstd_uncompress(string $data) ::: string | false;
-/** @kphp-extern-func-info stub generation-required */
-function zstd_compress_dict(string $data, string $dict) ::: string | false;
-/** @kphp-extern-func-info stub generation-required */
-function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
 
 /** @kphp-extern-func-info stub generation-required */
 function getimagesize ($name ::: string) ::: mixed;
