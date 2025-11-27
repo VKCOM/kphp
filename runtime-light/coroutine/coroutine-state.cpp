@@ -9,11 +9,3 @@
 CoroutineInstanceState& CoroutineInstanceState::get() noexcept {
   return InstanceState::get().coroutine_instance_state;
 }
-
-kphp::coro::async_stack_root* CoroutineInstanceState::get_next_root() noexcept {
-  return CoroutineInstanceState::get().next_root;
-}
-
-void CoroutineInstanceState::set_next_root(kphp::coro::async_stack_root* new_next_root) noexcept {
-  CoroutineInstanceState::get().next_root = new_next_root;
-}
