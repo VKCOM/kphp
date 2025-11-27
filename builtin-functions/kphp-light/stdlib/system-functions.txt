@@ -1,5 +1,27 @@
 <?php
 
+function ctype_alnum(mixed $text): bool;
+
+function ctype_alpha(mixed $text): bool;
+
+function ctype_cntrl(mixed $text): bool;
+
+function ctype_digit(mixed $text): bool;
+
+function ctype_graph(mixed $text): bool;
+
+function ctype_lower(mixed $text): bool;
+
+function ctype_print(mixed $text): bool;
+
+function ctype_punct(mixed $text): bool;
+
+function ctype_space(mixed $text): bool;
+
+function ctype_upper(mixed $text): bool;
+
+function ctype_xdigit(mixed $text): bool;
+
 function php_uname($mode ::: string = "a"): string;
 
 function posix_getpid(): int;
@@ -49,10 +71,3 @@ function raise_sigsegv () ::: void;
 
 /** @kphp-extern-func-info stub */
 function system($command ::: string, int &$result_code = 0): int;
-
-/** @kphp-extern-func-info stub generation-required */
-function ctype_alnum(mixed $text): bool;
-/** @kphp-extern-func-info stub generation-required */
-function ctype_digit(mixed $text): bool;
-/** @kphp-extern-func-info stub generation-required */
-function ctype_xdigit(mixed $text): bool;

@@ -69,7 +69,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         confdata-global-manager.cpp
         confdata-keys.cpp
         critical_section.cpp
-        ctype.cpp
         curl.cpp
         curl-async.cpp
         env.cpp
