@@ -45,16 +45,13 @@ namespace kphp::diagnostic::impl {
 
 size_t async_backtrace_helper(std::span<void*> addresses, const kphp::coro::stack_frame* start_sync_frame,
                               const kphp::coro::async_stack_root* async_stack_root) noexcept {
-  if (async_stack_root == nullptr) {
-    return 0;
-  }
   const auto* const stop_sync_frame{async_stack_root->stop_sync_stack_frame};
 
   const size_t num_sync_frames{sync_frames(addresses, start_sync_frame, stop_sync_frame)};
   const size_t num_async_frames{async_frames(addresses.subspan(num_sync_frames), async_stack_root->top_async_stack_frame)};
 
   const size_t result{num_sync_frames + num_async_frames};
-  if (addresses.size() < result)
+  if (addresses.size() < result || async_stack_root == async_stack_root->next_async_stack_root)
     return result;
   return result + async_backtrace_helper(addresses.subspan(result), stop_sync_frame, async_stack_root->next_async_stack_root);
 }
@@ -62,7 +59,7 @@ size_t async_backtrace_helper(std::span<void*> addresses, const kphp::coro::stac
 size_t async_backtrace(std::span<void*> addresses) noexcept {
   if (const auto* instance_state{k2::instance_state()}; instance_state != nullptr) [[likely]] {
     return async_backtrace_helper(addresses, reinterpret_cast<kphp::coro::stack_frame*>(STACK_FRAME_ADDRESS),
-                                  instance_state->coroutine_instance_state.next_root->next_async_stack_root);
+                                  instance_state->coroutine_instance_state.current_async_stack_root);
   }
   return 0;
 }

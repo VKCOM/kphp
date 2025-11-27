@@ -66,9 +66,9 @@ public:
     kphp::memory::script::free(ptr);
   }
 
-  void start_task(await_set_task<return_type>&& task, kphp::coro::async_stack_root* coroutine_stack_root, void* return_address) noexcept {
+  void start_task(await_set_task<return_type>&& task, void* return_address) noexcept {
     auto task_iterator{m_tasks_storage.insert(m_tasks_storage.begin(), std::move(task))};
-    task_iterator->start(*this, task_iterator, coroutine_stack_root, return_address);
+    task_iterator->start(*this, task_iterator, return_address);
   }
 
   void push_ready_task(await_set_ready_task_element<return_type>& ready_task) noexcept {
@@ -81,7 +81,7 @@ public:
       if (m_awaiters != nullptr) {
         m_awaiters->m_prev = nullptr;
       }
-      kphp::coro::resume(awaiter->m_continuation);
+      awaiter->m_continuation.resume();
     }
   }
 
@@ -140,7 +140,7 @@ public:
       if (awaiters_to_resume != nullptr) {
         awaiters_to_resume->m_prev = nullptr;
       }
-      kphp::coro::resume(waiter->m_continuation);
+      waiter->m_continuation.resume();
     }
   }
 
@@ -198,8 +198,7 @@ public:
   }
 
   auto start(detail::await_set::await_broker<return_type>& await_broker,
-             kphp::stl::list<await_set_task<return_type>, kphp::memory::script_allocator>::iterator storage_location,
-             kphp::coro::async_stack_root* async_stack_root, void* return_address) noexcept {
+             kphp::stl::list<await_set_task<return_type>, kphp::memory::script_allocator>::iterator storage_location, void* return_address) noexcept {
     m_await_broker = await_broker;
     m_ready_task_element.m_storage_location = storage_location;
 
@@ -208,14 +207,15 @@ public:
      * await_set_task is the top of the stack for calls from it.
      * Therefore, it doesn't store caller_frame, but it save `await_set::push()` return address
      * */
+    kphp::coro::async_stack_root root{};
     auto& async_stack_frame{get_async_stack_frame()};
     async_stack_frame.caller_async_stack_frame = nullptr;
-    async_stack_frame.async_stack_root = async_stack_root;
+    async_stack_frame.async_stack_root = std::addressof(root);
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
 
     decltype(auto) handle = std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this));
-    kphp::coro::resume(handle, async_stack_root);
+    kphp::coro::resume_with_new_root(handle, std::addressof(root));
   }
 };
 
@@ -271,9 +271,8 @@ private:
   };
 
   auto start(detail::await_set::await_broker<return_type>& await_broker,
-             kphp::stl::list<await_set_task<return_type>, kphp::memory::script_allocator>::iterator storage_location,
-             kphp::coro::async_stack_root* async_stack_root, void* return_address) noexcept {
-    m_coroutine.promise().start(await_broker, storage_location, async_stack_root, return_address);
+             kphp::stl::list<await_set_task<return_type>, kphp::memory::script_allocator>::iterator storage_location, void* return_address) noexcept {
+    m_coroutine.promise().start(await_broker, storage_location, return_address);
   }
 
 public:

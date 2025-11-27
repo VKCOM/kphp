@@ -32,7 +32,7 @@ class event {
 
     explicit awaiter(event& event) noexcept
         : m_event(event),
-          m_async_stack_root(CoroutineInstanceState::get().coroutine_stack_root) {}
+          m_async_stack_root(CoroutineInstanceState::get().base_coroutine_stack_root) {}
 
     awaiter(const awaiter&) = delete;
     awaiter(awaiter&&) = delete;

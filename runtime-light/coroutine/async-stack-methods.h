@@ -13,24 +13,19 @@
 
 namespace kphp::coro {
 
-using ::CoroutineInstanceState;
-
 /**
- * The `resume` function is responsible for storing the current synchronous stack frame
- * in async_stack_root::stop_sync_frame before resuming the coroutine and also creates a new async_stack_root. This allows
+ * The `resume_with_new_root` function is responsible for storing the current synchronous stack frame
+ * in async_stack_root::stop_sync_frame before resuming the coroutine. This allows
  * capturing one of the stack frames in the synchronous stack trace and jump between parts of the async_stack.
  */
-[[clang::noinline]] inline void resume(std::coroutine_handle<> handle, async_stack_root* stack_root = nullptr) noexcept {
-  if (stack_root == nullptr) {
-    stack_root = CoroutineInstanceState::get_next_root();
-  }
-  async_stack_root root{};
-  root.next_async_stack_root = stack_root;
-  auto* previous_stack_frame{std::exchange(stack_root->stop_sync_stack_frame, reinterpret_cast<stack_frame*>(STACK_FRAME_ADDRESS))};
+[[clang::noinline]] inline void resume_with_new_root(std::coroutine_handle<> handle, async_stack_root* new_async_stack_root) noexcept {
+  auto& coroutine_st{CoroutineInstanceState::get()};
+  auto* previous_stack_root = coroutine_st.current_async_stack_root;
+  new_async_stack_root->next_async_stack_root = coroutine_st.current_async_stack_root;
 
-  CoroutineInstanceState::set_next_root(std::addressof(root));
+  new_async_stack_root->stop_sync_stack_frame = reinterpret_cast<stack_frame*>(STACK_FRAME_ADDRESS);
+  coroutine_st.current_async_stack_root = new_async_stack_root;
   handle.resume();
-  stack_root->stop_sync_stack_frame = previous_stack_frame;
-  CoroutineInstanceState::set_next_root(stack_root);
+  coroutine_st.current_async_stack_root = previous_stack_root;
 }
 } // namespace kphp::coro

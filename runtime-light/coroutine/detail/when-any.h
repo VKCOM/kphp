@@ -58,7 +58,7 @@ public:
   auto notify_awaitable_completed() noexcept -> void {
     m_toggled = true;
     if (m_awaiting_coroutine != nullptr) {
-      kphp::coro::resume(m_awaiting_coroutine);
+      m_awaiting_coroutine.resume();
     }
   }
 };
@@ -194,15 +194,17 @@ public:
   auto start(when_any_latch& latch, void* return_address) noexcept {
     m_latch = std::addressof(latch);
 
+
+    kphp::coro::async_stack_root root{};
     auto& async_stack_frame{get_async_stack_frame()};
     // initialize when_all_task's async stack frame and make it the top frame
     async_stack_frame.caller_async_stack_frame = nullptr;
-    async_stack_frame.async_stack_root = CoroutineInstanceState::get_next_root();
+    async_stack_frame.async_stack_root = std::addressof(root);
     async_stack_frame.return_address = return_address;
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
 
     decltype(auto) handle = std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this));
-    kphp::coro::resume(handle, async_stack_frame.async_stack_root);
+    kphp::coro::resume_with_new_root(handle, std::addressof(root));
   }
 };
 
