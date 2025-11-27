@@ -15,8 +15,8 @@ class TestPrepareSearchQuery(WebServerAutoTestCase):
                         query = query_file.read()
                         expected_prepared_query = prepared_query_file.read()
 
-                        d = {"post": query}
-                        resp = self.web_server.http_post(json=d)
+                        headers = {"Content-Type": "text/plain; charset=utf-8"}
+                        resp = self.web_server.http_post(headers=headers, data=query.encode("utf-8"))
 
                         self.assertEqual(resp.status_code, 200)
                         result = json.loads(resp.text)["POST_BODY"]
