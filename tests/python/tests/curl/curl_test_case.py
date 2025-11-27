@@ -5,9 +5,12 @@ class CurlTestCase(WebServerAutoTestCase):
 
     @classmethod
     def extra_class_setup(cls):
-        cls.web_server.update_options({
-            "--workers-num": 2,
-        })
+        if cls.should_use_k2():
+            cls.web_server.ignore_log_errors()
+        else:
+            cls.web_server.update_options({
+                "--workers-num": 2,
+            })
 
     def _curl_request(self, uri, return_transfer=1, post=None, headers=None, timeout=None, connect_only=None):
         url = "localhost:{}{}".format(self.web_server.http_port, uri) if uri.startswith('/') else uri

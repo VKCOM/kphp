@@ -5,9 +5,11 @@ prepend(
   confdata/confdata-state.cpp
   crypto/crypto-functions.cpp
   curl/curl-state.cpp
+  web-transfer-lib/web-state.cpp
   diagnostics/backtrace.cpp
   diagnostics/contextual-logger.cpp
   diagnostics/error-handling-state.cpp
+  diagnostics/php-assert.cpp
   file/resource.cpp
   fork/fork-state.cpp
   fork/wait-queue-state.cpp
@@ -24,6 +26,7 @@ prepend(
   rpc/rpc-client-state.cpp
   rpc/rpc-extra-headers.cpp
   rpc/rpc-extra-info.cpp
+  rpc/rpc-queue-state.cpp
   rpc/rpc-tl-builtins.cpp
   rpc/rpc-tl-error.cpp
   rpc/rpc-tl-query.cpp
@@ -38,4 +41,5 @@ prepend(
   time/time-functions.cpp
   time/time-state.cpp
   time/timelib-functions.cpp
-  zlib/zlib-functions.cpp)
+  zlib/zlib-functions.cpp
+  zstd/zstd-functions.cpp)

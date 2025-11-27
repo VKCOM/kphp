@@ -34,11 +34,13 @@
 #include "runtime-light/stdlib/math/random-state.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
+#include "runtime-light/stdlib/rpc/rpc-queue-state.h"
 #include "runtime-light/stdlib/serialization/serialization-state.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
 #include "runtime-light/stdlib/system/system-state.h"
 #include "runtime-light/stdlib/time/time-state.h"
+#include "runtime-light/stdlib/web-transfer-lib/web-state.h"
 
 /**
  * Supported kinds of KPHP images:
@@ -93,6 +95,7 @@ struct InstanceState final : vk::not_copyable {
   CoroutineInstanceState coroutine_instance_state;
   ForkInstanceState fork_instance_state;
   WaitQueueInstanceState wait_queue_instance_state;
+  RpcQueueInstanceState rpc_queue_instance_state;
   PhpScriptMutableGlobals php_script_mutable_globals_singleton;
 
   RuntimeContext runtime_context;
@@ -112,6 +115,7 @@ struct InstanceState final : vk::not_copyable {
   RandomInstanceState random_instance_state;
   RegexInstanceState regex_instance_state;
   CurlInstanceState curl_instance_state;
+  WebInstanceState web_instance_state;
   StringInstanceState string_instance_state;
   SystemInstanceState system_instance_state;
   ErrorHandlingState error_handling_instance_state;
@@ -131,5 +135,5 @@ private:
   enum image_kind image_kind_ { image_kind::invalid };
   enum instance_kind instance_kind_ { instance_kind::invalid };
 
-  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(16U * 1024U * 1024U);
+  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(256U * 1024U * 1024U);
 };

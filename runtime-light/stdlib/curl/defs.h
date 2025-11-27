@@ -1,0 +1,251 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+#pragma once
+
+#include <cstdint>
+
+#include "runtime-light/stdlib/web-transfer-lib/defs.h"
+
+namespace kphp::web::curl {
+
+// PHP specific
+enum class PHPCURL : uint64_t {
+  RETURNTRANSFER = 1234567,
+};
+
+using easy_type = simple_transfer::descriptor_type;
+
+constexpr auto CURL_ERROR_SIZE = 256;
+
+enum class CURLE : uint16_t {
+  OK = 0,
+  BAD_FUNCTION_ARGUMENT = 43,
+  UNKNOWN_OPTION = 48,
+};
+
+enum class CURLINFO : uint64_t {
+  NONE = 0,
+  PRIVATE = 1048597,
+  EFFECTIVE_URL = 1048577,
+  CONTENT_TYPE = 1048594,
+  RESPONSE_CODE = 2097154,
+  HEADER_SIZE = 2097163,
+  REQUEST_SIZE = 2097164,
+  FILETIME = 2097166,
+  REDIRECT_COUNT = 2097172,
+  TOTAL_TIME = 3145731,
+  NAMELOOKUP_TIME = 3145732,
+  CONNECT_TIME = 3145733,
+  PRETRANSFER_TIME = 3145734,
+  SIZE_UPLOAD = 3145735,
+  SIZE_DOWNLOAD = 3145736,
+  CONTENT_LENGTH_DOWNLOAD = 3145743,
+  STARTTRANSFER_TIME = 3145745,
+  REDIRECT_TIME = 3145747,
+  REDIRECT_URL = 1048607,
+  PRIMARY_IP = 1048608,
+  PRIMARY_PORT = 2097192,
+  LOCAL_IP = 1048617,
+  LOCAL_PORT = 2097194,
+  HTTP_CONNECTCODE = 2097174,
+  OS_ERRNO = 2097177,
+  NUM_CONNECTS = 2097178,
+  APPCONNECT_TIME = 3145761,
+  CONDITION_UNMET = 2097187,
+  HEADER_OUT = 2,
+};
+
+enum class CURLOPT : uint64_t {
+  ADDRESS_SCOPE = 171,
+  // APPEND = 50,
+  AUTOREFERER = 58,
+  BUFFERSIZE = 98,
+  CONNECT_ONLY = 141,
+  CONNECTTIMEOUT = 78,
+  CONNECTTIMEOUT_MS = 156,
+  COOKIESESSION = 96,
+  // CRLF = 27,
+  // DIRLISTONLY = 48,
+  DNS_CACHE_TIMEOUT = 92,
+  FAILONERROR = 45,
+  FILETIME = 69,
+  FOLLOWLOCATION = 52,
+  FORBID_REUSE = 75,
+  FRESH_CONNECT = 74,
+  // FTP_CREATE_MISSING_DIRS = 110,
+  // FTP_RESPONSE_TIMEOUT = 112,
+  // FTP_SKIP_PASV_IP = 137,
+  // FTP_USE_EPRT = 106,
+  // FTP_USE_EPSV = 85,
+  // FTP_USE_PRET = 188,
+  HEADER = 42,
+  HTTP_CONTENT_DECODING = 158,
+  HTTP_TRANSFER_DECODING = 157,
+  HTTPGET = 80,
+  HTTPPROXYTUNNEL = 61,
+  IGNORE_CONTENT_LENGTH = 136,
+  // INFILESIZE = 14,
+  LOW_SPEED_LIMIT = 19,
+  LOW_SPEED_TIME = 20,
+  MAXCONNECTS = 71,
+  MAXFILESIZE = 114,
+  MAXREDIRS = 68,
+  NETRC = 51,
+  // NEW_DIRECTORY_PERMS = 160,
+  // NEW_FILE_PERMS = 159,
+  NOBODY = 44,
+  PORT = 3,
+  POST = 47,
+  // PROXY_TRANSFER_MODE = 166,
+  PROXYPORT = 59,
+  // RESUME_FROM = 21,
+  // SOCKS5_GSSAPI_NEC = 180,
+  SSL_SESSIONID_CACHE = 150,
+  SSL_VERIFYHOST = 81,
+  SSL_VERIFYPEER = 64,
+  SSLENGINE_DEFAULT = 90,
+  TCP_NODELAY = 121,
+  // TFTP_BLKSIZE = 178,
+  TIMEOUT = 13,
+  TIMEOUT_MS = 155,
+  // TRANSFERTEXT = 53,
+  UNRESTRICTED_AUTH = 105,
+  UPLOAD = 46,
+  VERBOSE = 41,
+  WILDCARDMATCH = 197,
+  PUT = 54,
+  HTTP_VERSION = 84,
+
+  PROXYTYPE = 101,
+
+  SSLVERSION = 32,
+
+  HTTPAUTH = 107,
+  PROXYAUTH = 111,
+
+  IPRESOLVE = 113,
+
+  // CURLOPT_FTPSSLAUTH  -- isn't supported by curl-rust 0.4.49 and curl-sys 0.4.83
+  // CURLOPT_FTP_FILEMETHOD -- isn't supported by curl-rust 0.4.49 and curl-sys 0.4.83
+
+  CAINFO = 10065,
+  CAPATH = 10097,
+  COOKIE = 10022,
+  COOKIEFILE = 10031,
+  COOKIEJAR = 10082,
+  COOKIELIST = 10135,
+  CRLFILE = 10169,
+  CUSTOMREQUEST = 10036,
+  EGDSOCKET = 10077,
+  // FTP_ACCOUNT = 10134,
+  // FTP_ALTERNATIVE_TO_USER = 10147,
+  // FTPPORT = 10017,
+  INTERFACE = 10062,
+  ISSUERCERT = 10170,
+  // KRBLEVEL = 10063,
+  // MAIL_FROM = 10186,
+  // NETRC_FILE = 10118,
+  NOPROXY = 10177,
+  PASSWORD = 10174,
+  PROXY = 10004,
+  PROXYPASSWORD = 10176,
+  PROXYUSERNAME = 10175,
+  // PROXYUSERPWD = 10006,
+  RANDOM_FILE = 10076,
+  RANGE = 10007,
+  REFERER = 10016,
+  // RTSP_SESSION_ID = 10190,
+  // RTSP_STREAM_URI = 10191,
+  // RTSP_TRANSPORT = 10192,
+  // SOCKS5_GSSAPI_SERVICE = 10179,
+  // SSH_HOST_PUBLIC_KEY_MD5 = 10162,
+  // SSH_KNOWNHOSTS = 10183,
+  // SSH_PRIVATE_KEYFILE = 10153,
+  // SSH_PUBLIC_KEYFILE = 10152,
+  SSLCERT = 10025,
+  SSLCERTTYPE = 10086,
+  SSLENGINE = 10089,
+  SSLKEY = 10087,
+  // CURLOPT_SSLKEYPASSWD = -- name changed in new versions of curl
+  SSLKEYTYPE = 10088,
+  SSL_CIPHER_LIST = 10083,
+  URL = 10002,
+  USERAGENT = 10018,
+  USERNAME = 10173,
+  USERPWD = 10005,
+
+  // HTTP200ALIASES = 10104,
+  HTTPHEADER = 10023,
+  // POSTQUOTE = 10039,
+  // PREQUOTE = 10093,
+  // QUOTE = 10028,
+  // MAIL_RCPT = 10187,
+
+  POSTFIELDS = 10015,
+
+  MAX_RECV_SPEED_LARGE = 30146,
+  MAX_SEND_SPEED_LARGE = 30145,
+
+  RESOLVE = 10203,
+
+  // CURLOPT_SSL_ENABLE_ALPN -- isn't supported by curl-rust 0.4.49 and curl-sys 0.4.83
+  // CURLOPT_SSL_ENABLE_NPN -- deprecated
+  TCP_KEEPALIVE = 213,
+  TCP_KEEPIDLE = 214,
+  TCP_KEEPINTVL = 215,
+
+  PRIVATE = 10103,
+  ACCEPT_ENCODING = 10102,
+
+  HTTPPOST = 10024,
+  COPYPOSTFIELDS = 10165,
+};
+
+enum class CURLPROXY : uint8_t {
+  HTTP = 0,
+  HTTP_1_0 = 1,
+  SOCKS4 = 4,
+  SOCKS5 = 5,
+  SOCKS4A = 6,
+  SOCKS5_HOSTNAME = 7,
+};
+
+enum class CURL_SSLVERSION : uint8_t {
+  DEFAULT = 0,
+  TLSv1 = 1,
+  // From https://www.php.net/manual/en/curl.constants.php
+  // It is better to not set this option and leave the defaults.
+  // As setting this to CURL_SSLVERSION_SSLv2 or CURL_SSLVERSION_SSLv3 is very dangerous, given the known vulnerabilities in SSLv2 and SSLv3.
+  SSLv2 = 2,
+  SSLv3 = 3,
+  TLSv1_0 = 4,
+  TLSv1_1 = 5,
+  TLSv1_2 = 6,
+  TLSv1_3 = 7,
+};
+
+enum class CURL_IPRESOLVE : uint8_t {
+  WHATEVER = 0,
+  V4 = 1,
+  V6 = 2,
+};
+
+enum class CURL_NETRC : uint8_t {
+  IGNORED = 0,
+  OPTIONAL = 1,
+  REQUIRED = 2,
+};
+
+enum class CURL_HTTP_VERSION : uint8_t {
+  NONE = 0,
+  _1_0 = 1,
+  _1_1 = 2,
+  _2_0 = 3,
+  _2 = CURL_HTTP_VERSION::_2_0,
+  _2TLS = 4,
+  _2_PRIOR_KNOWLEDGE = 5,
+};
+
+} // namespace kphp::web::curl

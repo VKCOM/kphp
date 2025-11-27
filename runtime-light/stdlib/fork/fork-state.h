@@ -49,13 +49,13 @@ public:
 
   template<typename return_type>
   std::pair<int64_t, kphp::coro::shared_task<return_type>> create_fork(kphp::coro::task<return_type> task) noexcept {
+    static constexpr auto fork_coroutine{[](kphp::coro::task<return_type> task, int64_t fork_id) noexcept -> kphp::coro::shared_task<return_type> {
+      ForkInstanceState::get().current_id = fork_id;
+      co_return co_await std::move(task);
+    }};
+
     const int64_t fork_id{next_fork_id++};
-    auto fork_task{std::invoke(
-        [](kphp::coro::task<return_type> task, int64_t fork_id) noexcept -> kphp::coro::shared_task<return_type> {
-          ForkInstanceState::get().current_id = fork_id;
-          co_return co_await std::move(task);
-        },
-        std::move(task), fork_id)};
+    auto fork_task{std::invoke(fork_coroutine, std::move(task), fork_id)};
     forks.emplace(fork_id, fork_info{.awaited = {}, .thrown_exception = {}, .opt_handle = static_cast<kphp::coro::shared_task<>>(fork_task)});
     return std::make_pair(fork_id, std::move(fork_task));
   }

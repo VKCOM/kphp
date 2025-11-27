@@ -22,7 +22,6 @@ include(${RUNTIME_LIGHT_DIR}/coroutine/coroutine.cmake)
 include(${RUNTIME_LIGHT_DIR}/server/server.cmake)
 include(${RUNTIME_LIGHT_DIR}/stdlib/stdlib.cmake)
 include(${RUNTIME_LIGHT_DIR}/tl/tl.cmake)
-include(${RUNTIME_LIGHT_DIR}/utils/utils.cmake)
 include(${RUNTIME_LIGHT_DIR}/state/state.cmake)
 include(${RUNTIME_LIGHT_DIR}/memory-resource-impl/memory-resource-impl.cmake)
 
@@ -55,9 +54,9 @@ vk_add_library_pic(runtime-light-pic OBJECT ${RUNTIME_LIGHT_SRC})
 target_compile_options(runtime-light-pic PUBLIC ${RUNTIME_LIGHT_COMPILE_FLAGS})
 target_link_libraries(runtime-light-pic PUBLIC vk::pic::libc-alloc-wrapper) # it's mandatory to have alloc-wrapper first in the list of link libraries since we
                                                                             # want to use its symbols in all other libraries
-target_link_libraries(runtime-light-pic PUBLIC KPHP_TIMELIB::pic::timelib PCRE2::pic::pcre2 ZLIB::pic::zlib) # third parties
+target_link_libraries(runtime-light-pic PUBLIC KPHP_TIMELIB::pic::timelib PCRE2::pic::pcre2 ZLIB::pic::zlib ZSTD::pic::zstd) # third parties
 
-set(RUNTIME_LIGHT_LINK_LIBS "${KPHP_TIMELIB_PIC_LIBRARIES} ${PCRE2_PIC_LIBRARIES} ${ZLIB_PIC_LIBRARIES} ${UBER_H3_PIC_LIBRARIES}")
+set(RUNTIME_LIGHT_LINK_LIBS "${KPHP_TIMELIB_PIC_LIBRARIES} ${PCRE2_PIC_LIBRARIES} ${ZLIB_PIC_LIBRARIES} ${ZSTD_PIC_LIBRARIES} ${UBER_H3_PIC_LIBRARIES}")
 
 # =================================================================================================
 

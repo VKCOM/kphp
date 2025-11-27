@@ -394,4 +394,93 @@ struct CacheFetch final {
   }
 };
 
+// ===== WEB TRANSFER LIB =====
+
+class SimpleWebTransferOpen final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_OPEN_MAGIC = 0x24F8'98AA;
+
+public:
+  using web_backend_type = tl::u8;
+  web_backend_type web_backend;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = SIMPLE_WEB_TRANSFER_OPEN_MAGIC}.store(tls);
+    web_backend.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_OPEN_MAGIC}.footprint() + web_backend.footprint();
+  }
+};
+
+class SimpleWebTransferPerform final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_PERFORM_MAGIC = 0x24B8'98CC;
+
+public:
+  tl::u64 descriptor;
+  tl::simpleWebTransferConfig config;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = SIMPLE_WEB_TRANSFER_PERFORM_MAGIC}.store(tls);
+    descriptor.store(tls);
+    config.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_PERFORM_MAGIC}.footprint() + descriptor.footprint() + config.footprint();
+  }
+};
+
+class SimpleWebTransferClose final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_CLOSE_MAGIC = 0x36F7'16BB;
+
+public:
+  tl::u64 descriptor;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = SIMPLE_WEB_TRANSFER_CLOSE_MAGIC}.store(tls);
+    descriptor.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_CLOSE_MAGIC}.footprint() + descriptor.footprint();
+  }
+};
+
+class SimpleWebTransferReset final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_RESET_MAGIC = 0x36F8'98BB;
+
+public:
+  tl::u64 descriptor;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = SIMPLE_WEB_TRANSFER_RESET_MAGIC}.store(tls);
+    descriptor.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_RESET_MAGIC}.footprint() + descriptor.footprint();
+  }
+};
+
+class WebTransferGetProperties final {
+  static constexpr uint32_t WEB_TRANSFER_GET_PROPERTIES_MAGIC = 0x72B7'16DD;
+
+public:
+  tl::u8 is_simple;
+  tl::u64 descriptor;
+  tl::Maybe<tl::u64> property_id;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = WEB_TRANSFER_GET_PROPERTIES_MAGIC}.store(tls);
+    is_simple.store(tls);
+    descriptor.store(tls);
+    property_id.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = WEB_TRANSFER_GET_PROPERTIES_MAGIC}.footprint() + is_simple.footprint() + descriptor.footprint() + property_id.footprint();
+  }
+};
+
 } // namespace tl

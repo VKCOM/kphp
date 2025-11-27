@@ -25,31 +25,32 @@ void f$VK$TL$RpcFunctionFetcher$$typedStore(class_instance<C$VK$TL$RpcFunctionFe
 
 // should be in header, because C$VK$TL$* classes are unknown on runtime compilation
 struct tl_func_base_simple_wrapper : public tl_func_base {
-  explicit tl_func_base_simple_wrapper(class_instance<C$VK$TL$RpcFunctionFetcher>&& wrapped)
-      : wrapped_(std::move(wrapped)) {}
+  explicit tl_func_base_simple_wrapper(class_instance<C$VK$TL$RpcFunctionFetcher>&& wrapped) noexcept
+      : m_wrapped(std::move(wrapped)) {}
 
-  virtual mixed fetch() {
+  mixed fetch() noexcept override {
     php_critical_error("this function should never be called for typed RPC function.");
     return mixed{};
   }
 
-  virtual class_instance<C$VK$TL$RpcFunctionReturnResult> typed_fetch() {
-    return f$VK$TL$RpcFunctionFetcher$$typedFetch(wrapped_);
+  class_instance<C$VK$TL$RpcFunctionReturnResult> typed_fetch() noexcept override {
+    return f$VK$TL$RpcFunctionFetcher$$typedFetch(m_wrapped);
   }
 
-  virtual void rpc_server_typed_store(const class_instance<C$VK$TL$RpcFunctionReturnResult>& result) {
-    return f$VK$TL$RpcFunctionFetcher$$typedStore(wrapped_, result);
+  void rpc_server_typed_store(const class_instance<C$VK$TL$RpcFunctionReturnResult>& result) noexcept override {
+    return f$VK$TL$RpcFunctionFetcher$$typedStore(m_wrapped, result);
   }
 
 private:
-  class_instance<C$VK$TL$RpcFunctionFetcher> wrapped_;
+  class_instance<C$VK$TL$RpcFunctionFetcher> m_wrapped;
 };
 
-inline std::unique_ptr<tl_func_base> make_tl_func_base_simple_wrapper(class_instance<C$VK$TL$RpcFunctionFetcher>&& wrapped) {
+inline std::unique_ptr<tl_func_base> make_tl_func_base_simple_wrapper(class_instance<C$VK$TL$RpcFunctionFetcher>&& wrapped) noexcept {
   return std::make_unique<tl_func_base_simple_wrapper>(std::move(wrapped));
 }
 
 namespace kphp::rpc::rpc_impl {
+
 // use template, because t_ReqResult_ is unknown on runtime compilation
 template<template<typename, uint32_t> class t_ReqResult_>
 class KphpRpcRequestResult final : public RpcRequestResult {
@@ -66,7 +67,7 @@ public:
   }
 
   std::unique_ptr<tl_func_base> extract_untyped_fetcher() noexcept final {
-    kphp::log::error("Forbidden to call for typed rpc requests");
+    kphp::log::error("forbidden to call for typed rpc requests");
   }
 };
 
@@ -82,18 +83,19 @@ public:
     cur_query.set_current_tl_function(tl_function_name());
     const vk::final_action finalizer{[&cur_query] noexcept { cur_query.reset(); }};
     std::unique_ptr<tl_func_base> stored_fetcher;
-    auto custom_fetcher = f$VK$TL$RpcFunction$$typedStore(storing_function);
+    auto custom_fetcher{f$VK$TL$RpcFunction$$typedStore(storing_function)};
     if (custom_fetcher.is_null()) {
       stored_fetcher = storing_function.get()->store();
     } else {
       stored_fetcher = make_tl_func_base_simple_wrapper(std::move(custom_fetcher));
-      auto magic = f$VK$TL$RpcFunction$$getTLFunctionMagic(storing_function);
-      CurrentTlQuery::get().set_last_stored_tl_function_magic(magic);
+      auto magic{f$VK$TL$RpcFunction$$getTLFunctionMagic(storing_function)};
+      cur_query.set_last_stored_tl_function_magic(magic);
     }
     CHECK_EXCEPTION(return {});
     return make_unique_on_script_memory<KphpRpcRequestResult<t_ReqResult_>>(std::move(stored_fetcher));
   }
 };
+
 } // namespace kphp::rpc::rpc_impl
 
 template<class T0, uint32_t inner_magic0>

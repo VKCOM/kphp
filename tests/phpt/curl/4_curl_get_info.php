@@ -1,7 +1,7 @@
-@ok k2_skip
+@ok
 <?php
 
-function test_get_info_all() {
+function test_get_info_all_options() {
   $c = curl_init();
 
   $info = curl_getinfo($c);
@@ -22,6 +22,12 @@ function test_get_info_all() {
   unset($info["total_time_us"]);
   $info["request_header"] = "";
 #endif
+#ifndef K2
+  unset($info["ssl_verify_result"]);
+  unset($info["speed_download"]);
+  unset($info["speed_upload"]);
+  unset($info["upload_content_length"]);
+#endif
   $info["filetime"] = 0;
 
   var_dump($info);
@@ -41,7 +47,8 @@ function test_get_info_header() {
   curl_close($c);
 }
 
-function test_get_info_options() {
+// Common for PHP, KPHP and K2
+function test_get_info_each_option() {
   $c = curl_init("http://example.com");
 
   var_dump(curl_getinfo($c, CURLINFO_EFFECTIVE_URL));
@@ -56,33 +63,19 @@ function test_get_info_options() {
   var_dump(curl_getinfo($c, CURLINFO_REDIRECT_TIME));
   var_dump(curl_getinfo($c, CURLINFO_SIZE_UPLOAD));
   var_dump(curl_getinfo($c, CURLINFO_SIZE_DOWNLOAD));
-  var_dump(curl_getinfo($c, CURLINFO_SPEED_UPLOAD));
   var_dump(curl_getinfo($c, CURLINFO_HEADER_SIZE));
   var_dump(curl_getinfo($c, CURLINFO_REQUEST_SIZE));
-  var_dump(curl_getinfo($c, CURLINFO_SSL_VERIFYRESULT));
   var_dump(curl_getinfo($c, CURLINFO_REQUEST_SIZE));
-  var_dump(curl_getinfo($c, CURLINFO_SSL_VERIFYRESULT));
   var_dump(curl_getinfo($c, CURLINFO_CONTENT_LENGTH_DOWNLOAD));
-  var_dump(curl_getinfo($c, CURLINFO_CONTENT_LENGTH_UPLOAD));
   var_dump(curl_getinfo($c, CURLINFO_CONTENT_TYPE));
-  var_dump(curl_getinfo($c, CURLINFO_SPEED_DOWNLOAD));
   var_dump(curl_getinfo($c, CURLINFO_REDIRECT_URL));
   var_dump(curl_getinfo($c, CURLINFO_PRIMARY_IP));
   var_dump(curl_getinfo($c, CURLINFO_PRIMARY_PORT));
   var_dump(curl_getinfo($c, CURLINFO_LOCAL_IP));
   var_dump(curl_getinfo($c, CURLINFO_LOCAL_PORT));
   var_dump(curl_getinfo($c, CURLINFO_HTTP_CONNECTCODE));
-  var_dump(curl_getinfo($c, CURLINFO_HTTPAUTH_AVAIL));
-  var_dump(curl_getinfo($c, CURLINFO_PROXYAUTH_AVAIL));
   var_dump(curl_getinfo($c, CURLINFO_OS_ERRNO));
-  var_dump(curl_getinfo($c, CURLINFO_NUM_CONNECTS));
-  var_dump(curl_getinfo($c, CURLINFO_FTP_ENTRY_PATH));
-  var_dump(curl_getinfo($c, CURLINFO_APPCONNECT_TIME));
   var_dump(curl_getinfo($c, CURLINFO_CONDITION_UNMET));
-  var_dump(curl_getinfo($c, CURLINFO_RTSP_CLIENT_CSEQ));
-  var_dump(curl_getinfo($c, CURLINFO_RTSP_CSEQ_RECV));
-  var_dump(curl_getinfo($c, CURLINFO_RTSP_SERVER_CSEQ));
-  var_dump(curl_getinfo($c, CURLINFO_RTSP_SESSION_ID));
 
   // bad options
   var_dump(curl_getinfo($c, -10));
@@ -120,7 +113,7 @@ function test_get_private_data() {
   curl_close($c);
 }
 
-test_get_info_all();
+test_get_info_all_options();
 test_get_info_header();
-test_get_info_options();
+test_get_info_each_option();
 test_get_private_data();

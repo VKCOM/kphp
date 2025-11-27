@@ -114,6 +114,11 @@ inline kphp::coro::task<bool> f$fclose(resource stream) noexcept {
   co_return false;
 }
 
+inline bool f$unlink(const string& name) noexcept {
+  std::expected<void, int32_t> unlink_res{k2::unlink(std::string_view{name.c_str(), name.size()})};
+  return unlink_res.has_value();
+}
+
 inline kphp::coro::task<Optional<int64_t>> f$fwrite(resource stream, string data) noexcept {
   std::span<const char> data_span{data.c_str(), data.size()};
   if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(stream, {})}; !sync_resource.is_null()) {
