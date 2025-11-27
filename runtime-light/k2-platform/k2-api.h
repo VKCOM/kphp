@@ -300,6 +300,18 @@ inline struct tm* localtime_r(const time_t* timer, struct tm* result) noexcept {
   return k2_localtime_r(timer, result);
 }
 
+inline int32_t uselocale(int32_t category, std::string_view locale) noexcept {
+  return k2_uselocale(category, locale.data());
+}
+
+inline std::optional<std::string_view> current_locale_name(int32_t category) noexcept {
+  auto* name{k2_current_locale_name(category)};
+  if (name == nullptr) [[unlikely]] {
+    return std::nullopt;
+  }
+  return std::string_view{name};
+}
+
 inline int32_t udp_connect(k2::descriptor* descriptor, const char* host, size_t host_len) noexcept {
   return k2_udp_connect(descriptor, host, host_len);
 }
