@@ -383,7 +383,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
     return true;
   }
   case kphp::web::curl::CURLOPT::USERPWD: {
-    kphp::log::error("Unsupported CURL options");
+    kphp::log::error("Unsupported CURL option");
   }
   default:
     easy_ctx.set_errno(kphp::web::curl::CURLE::UNKNOWN_OPTION);
@@ -579,6 +579,9 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
     const auto& v{(*res).find(option)};
     kphp::log::assertion(v != (*res).end());
     co_return v->second.to_mixed();
+  }
+  case kphp::web::curl::CURLINFO::NUM_CONNECTS: {
+    kphp::log::error("Unsupported CURL info option");
   }
   default:
     co_return false;
