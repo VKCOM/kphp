@@ -26,10 +26,10 @@ inline auto f$curl_init(string url = string{""}) noexcept -> kphp::coro::task<kp
     co_return 0;
   }
   const auto st{kphp::web::simple_transfer{*open_res}};
+  auto& easy_ctx{CurlInstanceState::get().easy_ctx.get_or_init(st.descriptor)};
   auto setopt_res{
       kphp::web::set_transfer_property(st, static_cast<kphp::web::property_id>(kphp::web::curl::CURLOPT::URL), kphp::web::property_value::as_string(url))};
   if (!setopt_res.has_value()) [[unlikely]] {
-    auto& easy_ctx{CurlInstanceState::get().easy_ctx.get_or_init(st.descriptor)};
     easy_ctx.set_errno(setopt_res.error().code, setopt_res.error().description);
     kphp::web::curl::print_error("could not set URL for a new curl easy handle", std::move(setopt_res.error()));
     co_return 0;
@@ -38,7 +38,11 @@ inline auto f$curl_init(string url = string{""}) noexcept -> kphp::coro::task<kp
 }
 
 inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, const mixed& value) noexcept -> bool { // NOLINT
-  auto& easy_ctx{CurlInstanceState::get().easy_ctx.get_or_init(easy_id)};
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.easy_ctx.has(easy_id)) {
+    return false;
+  }
+  auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   auto st{kphp::web::simple_transfer{.descriptor = easy_id}};
 
   if (option == static_cast<int64_t>(kphp::web::curl::CURLINFO::HEADER_OUT)) {
@@ -399,8 +403,12 @@ inline auto f$curl_setopt_array(kphp::web::curl::easy_type easy_id, const array<
 }
 
 inline auto f$curl_exec(kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<mixed> {
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.easy_ctx.has(easy_id)) {
+    co_return false;
+  }
   auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_perform(kphp::web::simple_transfer{easy_id}))};
-  auto& easy_ctx{CurlInstanceState::get().easy_ctx.get_or_init(easy_id)};
+  auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   easy_ctx.has_been_executed = true;
   if (!res.has_value()) [[unlikely]] {
     easy_ctx.set_errno(res.error().code, res.error().description);
@@ -415,7 +423,11 @@ inline auto f$curl_exec(kphp::web::curl::easy_type easy_id) noexcept -> kphp::co
 }
 
 inline auto f$curl_close(kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<void> {
-  auto& easy_ctx{CurlInstanceState::get().easy_ctx.get_or_init(easy_id)};
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.easy_ctx.has(easy_id)) {
+    co_return;
+  }
+  auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_close(kphp::web::simple_transfer{easy_id}))};
   if (!res.has_value()) [[unlikely]] {
     easy_ctx.set_errno(res.error().code, res.error().description);
@@ -424,7 +436,11 @@ inline auto f$curl_close(kphp::web::curl::easy_type easy_id) noexcept -> kphp::c
 }
 
 inline auto f$curl_reset(kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<void> {
-  auto& easy_ctx{CurlInstanceState::get().easy_ctx.get_or_init(easy_id)};
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.easy_ctx.has(easy_id)) {
+    co_return;
+  }
+  auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_reset(kphp::web::simple_transfer{easy_id}))};
   if (!res.has_value()) [[unlikely]] {
     easy_ctx.set_errno(res.error().code, res.error().description);
@@ -435,7 +451,11 @@ inline auto f$curl_reset(kphp::web::curl::easy_type easy_id) noexcept -> kphp::c
 }
 
 inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double timeout_sec = 1.0) noexcept -> kphp::coro::task<Optional<string>> {
-  auto& easy_ctx{CurlInstanceState::get().easy_ctx.get_or_init(easy_id)};
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.easy_ctx.has(easy_id)) {
+    co_return false;
+  }
+  auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   auto sched_res{co_await kphp::coro::io_scheduler::get().schedule(
       kphp::forks::id_managed(kphp::web::simple_transfer_perform(kphp::web::simple_transfer{easy_id})),
       kphp::web::curl::details::normalize_timeout(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout_sec})))};
@@ -456,7 +476,11 @@ inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double 
 }
 
 inline auto f$curl_error(kphp::web::curl::easy_type easy_id) noexcept -> string {
-  auto& easy_ctx{CurlInstanceState::get().easy_ctx.get_or_init(easy_id)};
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.easy_ctx.has(easy_id)) {
+    return {};
+  }
+  auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   if (easy_ctx.error_code != static_cast<int64_t>(kphp::web::curl::CURLE::OK)) [[likely]] {
     const auto* const desc_data{reinterpret_cast<const char*>(easy_ctx.error_description.data())};
     const auto desc_size{static_cast<string::size_type>(easy_ctx.error_description.size())};
@@ -466,12 +490,20 @@ inline auto f$curl_error(kphp::web::curl::easy_type easy_id) noexcept -> string 
 }
 
 inline auto f$curl_errno(kphp::web::curl::easy_type easy_id) noexcept -> int64_t {
-  auto& easy_ctx{CurlInstanceState::get().easy_ctx.get_or_init(easy_id)};
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.easy_ctx.has(easy_id)) {
+    return 0;
+  }
+  auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   return easy_ctx.error_code;
 }
 
 inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 0) noexcept -> kphp::coro::task<mixed> {
-  auto& easy_ctx{CurlInstanceState::get().easy_ctx.get_or_init(easy_id)};
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.easy_ctx.has(easy_id)) {
+    co_return false;
+  }
+  auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   switch (static_cast<kphp::web::curl::CURLINFO>(option)) {
   case kphp::web::curl::CURLINFO::NONE: {
     auto res{co_await kphp::forks::id_managed(kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, std::nullopt))};

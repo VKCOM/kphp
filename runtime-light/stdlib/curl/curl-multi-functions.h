@@ -24,6 +24,21 @@ inline auto f$curl_multi_init() noexcept -> kphp::coro::task<kphp::web::curl::mu
   co_return (*open_res).descriptor;
 }
 
+//  Optional<int64_t> f$curl_multi_add_handle(kphp::web::curl::multi_type multi_id, kphp::web::curl::easy_type easy_id) noexcept {
+//    if (auto* multi_context = get_context<MultiContext>(multi_id)) {
+//      if (auto* easy_context = get_context<EasyContext>(easy_id)) {
+//        if (kphp_tracing::is_turned_on()) {
+//          string url = easy_context->get_info(CURLINFO_EFFECTIVE_URL).as_string();
+//          kphp_tracing::on_curl_multi_add_handle(multi_context->uniq_id, easy_context->uniq_id, url);
+//        }
+//        easy_context->cleanup_for_next_request();
+//        multi_context->error_num = dl::critical_section_call(curl_multi_add_handle, multi_context->multi_handle, easy_context->easy_handle);
+//        return multi_context->error_num;
+//      }
+//    }
+//    return false;
+//  }
+
 inline Optional<array<int64_t>> f$curl_multi_info_read([[maybe_unused]] int64_t /*unused*/,
                                                        [[maybe_unused]] Optional<std::optional<std::reference_wrapper<int64_t>>> /*unused*/ = {}) {
   kphp::log::error("call to unsupported function : curl_multi_info_read");
