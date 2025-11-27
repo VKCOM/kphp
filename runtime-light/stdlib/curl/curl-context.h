@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <optional>
 
+#include "common/mixin/movable_only.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/curl/defs.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -15,20 +16,9 @@
 
 namespace kphp::web::curl {
 
-struct easy_context {
-  bool return_transfer{false};
-  std::optional<string> private_data{std::nullopt};
+struct curl_context : vk::movable_only {
   int64_t error_code{0};
   std::array<std::byte, kphp::web::curl::CURL_ERROR_SIZE> error_description{std::byte{0}};
-  bool has_been_executed{false}; // Need for providing same as in PHP semantics of curl_getinfo(..., CURLINFO_EFFECTIVE_URL)
-
-  inline auto reset() noexcept {
-    return_transfer = false;
-    private_data = std::nullopt;
-    error_code = 0;
-    error_description.fill(std::byte{0});
-    has_been_executed = false;
-  }
 
   inline auto set_errno(int64_t code, std::string_view description) noexcept {
     // If Web Transfer Lib specific error
@@ -61,6 +51,30 @@ struct easy_context {
     kphp::log::warning("{}", msg);
     set_errno(CURLE::BAD_FUNCTION_ARGUMENT, {{msg, N}});
   }
+
+  inline auto reset() noexcept {
+    error_code = 0;
+    error_description.fill(std::byte{0});
+  }
+};
+
+struct easy_context : curl_context {
+  using curl_context::curl_context;
+
+  bool return_transfer{false};
+  std::optional<string> private_data{std::nullopt};
+  bool has_been_executed{false}; // Need for providing same as in PHP semantics of curl_getinfo(..., CURLINFO_EFFECTIVE_URL)
+
+  inline auto reset() noexcept {
+    curl_context::reset();
+    return_transfer = false;
+    private_data = std::nullopt;
+    has_been_executed = false;
+  }
+};
+
+struct multi_context : curl_context {
+  using curl_context::curl_context;
 };
 
 } // namespace kphp::web::curl
