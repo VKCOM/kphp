@@ -14,6 +14,8 @@ class TestPrepareSearchQuery(WebServerAutoTestCase):
                     with open(os.path.join(directory_path, file + prepared_suffix), "r") as prepared_query_file:
                         query = query_file.read()
                         expected_prepared_query = prepared_query_file.read()
+                        if len(expected_prepared_query) > 0 and expected_prepared_query[-1] == '\n':
+                            expected_prepared_query = expected_prepared_query[:-1]
 
                         headers = {"Content-Type": "text/plain; charset=utf-8"}
                         resp = self.web_server.http_post(headers=headers, data=query.encode("utf-8"))
