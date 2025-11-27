@@ -182,6 +182,7 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
   case kphp::web::curl::CURLOPT::URL:
   case kphp::web::curl::CURLOPT::USERAGENT:
   case kphp::web::curl::CURLOPT::USERNAME:
+  case kphp::web::curl::CURLOPT::USERPWD:
   case kphp::web::curl::CURLOPT::ACCEPT_ENCODING: {
     auto res{kphp::web::set_transfer_property(st, option, kphp::web::property_value::as_string(value.to_string()))};
     if (!res.has_value()) [[unlikely]] {
@@ -381,9 +382,6 @@ inline auto f$curl_setopt(kphp::web::curl::easy_type easy_id, int64_t option, co
     easy_ctx.private_data = value.to_string();
     easy_ctx.set_errno(kphp::web::curl::CURLE::OK);
     return true;
-  }
-  case kphp::web::curl::CURLOPT::USERPWD: {
-    kphp::log::error("unsupported CURL option");
   }
   default:
     easy_ctx.set_errno(kphp::web::curl::CURLE::UNKNOWN_OPTION);
