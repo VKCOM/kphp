@@ -570,6 +570,7 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
   case kphp::web::curl::CURLINFO::OS_ERRNO:
   case kphp::web::curl::CURLINFO::APPCONNECT_TIME:
   case kphp::web::curl::CURLINFO::CONDITION_UNMET:
+  case kphp::web::curl::CURLINFO::NUM_CONNECTS:
   case kphp::web::curl::CURLINFO::HEADER_OUT: {
     auto res{co_await kphp::forks::id_managed(kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, option))};
     if (!res.has_value()) [[unlikely]] {
@@ -579,9 +580,6 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
     const auto& v{(*res).find(option)};
     kphp::log::assertion(v != (*res).end());
     co_return v->second.to_mixed();
-  }
-  case kphp::web::curl::CURLINFO::NUM_CONNECTS: {
-    kphp::log::error("unsupported CURL info option");
   }
   default:
     co_return false;

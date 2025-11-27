@@ -62,6 +62,7 @@ function test_get_info_each_option() {
   var_dump(curl_getinfo($c, CURLINFO_HTTP_CONNECTCODE));
   var_dump(curl_getinfo($c, CURLINFO_OS_ERRNO));
   var_dump(curl_getinfo($c, CURLINFO_CONDITION_UNMET));
+  var_dump(curl_getinfo($c, CURLINFO_NUM_CONNECTS));
   // Extra options which are unsupported in K2
   var_dump(curl_getinfo($c, CURLINFO_SPEED_DOWNLOAD));
   var_dump(curl_getinfo($c, CURLINFO_CONTENT_LENGTH_UPLOAD));
@@ -70,7 +71,6 @@ function test_get_info_each_option() {
   var_dump(curl_getinfo($c, CURLINFO_SPEED_UPLOAD));
   var_dump(curl_getinfo($c, CURLINFO_HTTPAUTH_AVAIL));
   var_dump(curl_getinfo($c, CURLINFO_PROXYAUTH_AVAIL));
-  var_dump(curl_getinfo($c, CURLINFO_NUM_CONNECTS));
   var_dump(curl_getinfo($c, CURLINFO_FTP_ENTRY_PATH));
   var_dump(curl_getinfo($c, CURLINFO_APPCONNECT_TIME));
   var_dump(curl_getinfo($c, CURLINFO_RTSP_CLIENT_CSEQ));
