@@ -2,7 +2,7 @@
 // Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/stdlib/string/string_functions.h"
+#include "runtime-light/stdlib/string/string-functions.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -57,7 +57,7 @@ int32_t binary_search_ranges(int32_t code) noexcept {
    Returns length of result. */
 void prepare_search_string(std::span<int32_t>& code_points) noexcept {
   size_t output_size{};
-  for (size_t i{}; i < code_points.size(); ++i) {
+  for (size_t i{}; code_points[i] != 0; ++i) {
     int32_t c{code_points[i]};
     int32_t new_c{};
     if (static_cast<size_t>(c) < static_cast<size_t>(TABLE_SIZE)) {
@@ -77,7 +77,7 @@ void prepare_search_string(std::span<int32_t>& code_points) noexcept {
     --output_size;
   }
   code_points[output_size] = 0;
-  code_points = code_points.subspan(output_size);
+  code_points = code_points.first(output_size);
 }
 
 } // namespace string_functions_impl_
