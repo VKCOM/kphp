@@ -431,8 +431,7 @@ inline auto f$curl_reset(kphp::web::curl::easy_type easy_id) noexcept -> kphp::c
     kphp::web::curl::print_error("could not reset curl easy handle", std::move(res.error()));
     co_return;
   }
-  easy_ctx.return_transfer = false;
-  easy_ctx.private_data = std::nullopt;
+  easy_ctx.reset();
 }
 
 inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double timeout_sec = 1.0) noexcept -> kphp::coro::task<Optional<string>> {

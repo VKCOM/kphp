@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 
@@ -20,6 +21,14 @@ struct easy_context {
   int64_t error_code{0};
   std::array<std::byte, kphp::web::curl::CURL_ERROR_SIZE> error_description{std::byte{0}};
   bool has_been_executed{false}; // Need for providing same as in PHP semantics of curl_getinfo(..., CURLINFO_EFFECTIVE_URL)
+
+  inline auto reset() noexcept {
+    return_transfer = false;
+    private_data = std::nullopt;
+    error_code = 0;
+    error_description.fill(std::byte{0});
+    has_been_executed = false;
+  }
 
   inline auto set_errno(int64_t code, std::string_view description) noexcept {
     // If Web Transfer Lib specific error
