@@ -38,6 +38,7 @@ include(${COMMON_DIR}/unicode/unicode.cmake)
 # RE2 depends on unicode
 include(${THIRD_PARTY_DIR}/re2-cmake/re2.cmake)
 include(${THIRD_PARTY_DIR}/yaml-cpp-cmake/yaml-cpp.cmake)
+include(${THIRD_PARTY_DIR}/uber-h3-cmake/uber-h3.cmake)
 
 # TODO: use FetchContent_Declare instead of include_directories
 include_directories(.)

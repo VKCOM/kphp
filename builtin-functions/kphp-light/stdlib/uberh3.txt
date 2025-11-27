@@ -1,79 +1,46 @@
 <?php
 
-// ===== UNSUPPORTED =====
 
 // uber h3 bindings https://h3geo.org/docs
-/** @kphp-generate-stub-class */
 final class UberH3 {
   // Indexing functions: https://h3geo.org/docs/api/indexing
-  /** @kphp-extern-func-info stub generation-required */
   static public function geoToH3(float $latitude, float $longitude, int $resolution) ::: int;
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3ToGeo(int $h3_index) ::: tuple(float, float);
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3ToGeoBoundary(int $h3_index) ::: tuple(float, float)[];
 
   // Index inspection functions: https://h3geo.org/docs/api/inspection
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3GetResolution(int $h3_index) ::: int;
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3GetBaseCell(int $h3_index) ::: int;
-  /** @kphp-extern-func-info stub generation-required */
   static public function stringToH3(string $h3_index_str) ::: int;
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3ToString(int $h3_index) ::: string;
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3IsValid(int $h3_index) ::: bool;
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3IsResClassIII(int $h3_index) ::: bool;
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3IsPentagon(int $h3_index) ::: bool;
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3GetFaces(int $h3_index) ::: int[];
-  /** @kphp-extern-func-info stub generation-required */
   static public function maxFaceCount(int $h3_index) ::: int;
 
   // Grid traversal functions: https://h3geo.org/docs/api/traversal
-  /** @kphp-extern-func-info stub generation-required */
   static public function kRing(int $h3_index_origin, int $k) ::: int[] | false;
-  /** @kphp-extern-func-info stub generation-required */
   static public function maxKringSize(int $k) ::: int;
-  /** @kphp-extern-func-info stub generation-required */
   static public function kRingDistances(int $h3_index_origin, int $k) ::: tuple(int, int)[] | false;
-  /** @kphp-extern-func-info stub generation-required */
   static public function hexRange(int $h3_index_origin, int $k) ::: int[] | false;
-  /** @kphp-extern-func-info stub generation-required */
   static public function hexRangeDistances(int $h3_index_origin, int $k) ::: tuple(int, int)[] | false;
-  /** @kphp-extern-func-info stub generation-required */
   static public function hexRanges(int[] $h3_indexes, int $k) ::: int[] | false;
-  /** @kphp-extern-func-info stub generation-required */
   static public function hexRing(int $h3_index_origin, int $k) ::: int[] | false;
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3Line(int $h3_index_start, int $h3_index_end) ::: int[] | false;
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3LineSize(int $h3_index_start, int $h3_index_end) ::: int;
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3Distance(int $h3_index_start, int $h3_index_end) ::: int;
 
   // Hierarchical grid functions: https://h3geo.org/docs/api/hierarchy
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3ToParent(int $h3_index, int $parent_resolution) ::: int;
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3ToChildren(int $h3_index, int $children_resolution) ::: int[] | false;
-  /** @kphp-extern-func-info stub generation-required */
   static public function maxH3ToChildrenSize(int $h3_index, int $children_resolution) ::: int;
-  /** @kphp-extern-func-info stub generation-required */
   static public function h3ToCenterChild(int $h3_index, int $children_resolution) ::: int;
-  /** @kphp-extern-func-info stub generation-required */
   static public function compact(int[] $h3_indexes) ::: int[] | false;
-  /** @kphp-extern-func-info stub generation-required */
   static public function uncompact(int[] $h3_indexes, int $resolution) ::: int[] | false;
-  /** @kphp-extern-func-info stub generation-required */
   static public function maxUncompactSize(int[] $h3_indexes, int $resolution) ::: int;
 
   // Region functions: https://h3geo.org/docs/api/regions
-  /** @kphp-extern-func-info stub generation-required */
   static public function polyfill(tuple(float, float)[] $polygon_boundary, tuple(float, float)[][] $holes, int $resolution) ::: int[] | false;
-  /** @kphp-extern-func-info stub generation-required */
   static public function maxPolyfillSize(tuple(float, float)[] $polygon_boundary, tuple(float, float)[][] $holes, int $resolution) ::: int;
 }

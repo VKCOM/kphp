@@ -2,11 +2,50 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime/uber-h3.h"
+#include "runtime-common/stdlib/uber-h3/uber-h3-functions.h"
+
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 
 #include "h3/h3api.h"
 
-#include "runtime/allocator.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
+#include "runtime-common/core/runtime-core.h"
+
+/*
+ * This is necessary to replace the library's allocators.
+ * When building the library, the prefix of the replacement function is specified, for example:
+ * if we want to use the prefix of the replacement function = "my_prefix_", then during assembly we specify
+ *    cmake -DH3_ALLOC_PREFIX=my_prefix_ .
+ * then it will use
+ *   void* my_prefix_malloc(size_t size);
+ *   void* my_prefix_calloc(size_t num, size_t size);
+ *   void* my_prefix_realloc(void* ptr, size_t size);
+ *   void my_prefix_free(void* ptr);
+ * instead of
+ *   void* malloc(size_t size);
+ *   void* calloc(size_t num, size_t size);
+ *   void* realloc(void* ptr, size_t size);
+ *   void free(void* ptr);
+ */
+extern "C" {
+void* uber_h3_malloc(size_t size) {
+  return kphp::memory::script::alloc(size);
+}
+void* uber_h3_calloc(size_t num, size_t size) {
+  return kphp::memory::script::calloc(num, size);
+}
+void* uber_h3_realloc(void* ptr, size_t size) {
+  return kphp::memory::script::realloc(ptr, size);
+}
+void uber_h3_free(void* ptr) {
+  kphp::memory::script::free(ptr);
+}
+}
 
 namespace {
 
@@ -65,7 +104,7 @@ public:
     for (const auto& boundary_vertex : polygon_boundary) {
       polygon_boundary_.emplace_back(deg2coord(boundary_vertex.get_value()));
     }
-    polygon.geofence.verts = &polygon_boundary_[0];
+    polygon.geofence.verts = std::addressof(polygon_boundary_[0]);
     polygon.geofence.numVerts = static_cast<int32_t>(polygon_boundary_.count());
 
     for (const auto& hole_vertexes : holes) {
@@ -79,11 +118,11 @@ public:
 
     int32_t prev_offset = 0;
     for (auto& hole : holes_) {
-      hole.get_value().verts = &holes_vertexes_[prev_offset];
+      hole.get_value().verts = std::addressof(holes_vertexes_[prev_offset]);
       prev_offset = hole.get_value().numVerts;
     }
     polygon.numHoles = static_cast<int32_t>(holes_.count());
-    polygon.holes = &holes_[0];
+    polygon.holes = std::addressof(holes_[0]);
   }
 
   const GeoPolygon& getPolygon() const noexcept {
@@ -106,18 +145,18 @@ int64_t f$UberH3$$geoToH3(double latitude, double longitude, int64_t resolution)
     return 0;
   }
   const auto geo_cord = deg2coord(std::make_tuple(latitude, longitude));
-  return geoToH3(&geo_cord, checked_resolution);
+  return geoToH3(std::addressof(geo_cord), checked_resolution);
 }
 
 std::tuple<double, double> f$UberH3$$h3ToGeo(int64_t h3_index) noexcept {
   GeoCoord geo_coord{};
-  h3ToGeo(h3_index, &geo_coord);
+  h3ToGeo(h3_index, std::addressof(geo_coord));
   return coord2deg(geo_coord);
 }
 
 array<std::tuple<double, double>> f$UberH3$$h3ToGeoBoundary(int64_t h3_index) noexcept {
   GeoBoundary boundary;
-  h3ToGeoBoundary(h3_index, &boundary);
+  h3ToGeoBoundary(h3_index, std::addressof(boundary));
   array<std::tuple<double, double>> result{array_size{boundary.numVerts, true}};
   for (int i = 0; i < boundary.numVerts; ++i) {
     result.emplace_back(coord2deg(boundary.verts[i]));
@@ -159,7 +198,7 @@ array<int64_t> f$UberH3$$h3GetFaces(int64_t h3_index) noexcept {
   const int64_t face_count = maxFaceCount(static_cast<H3Index>(h3_index));
   auto int32_result = make_zeros_vector<int32_t>(face_count);
   if (face_count) {
-    h3GetFaces(h3_index, &int32_result[0]);
+    h3GetFaces(h3_index, std::addressof(int32_result[0]));
   }
   return array<int64_t>::convert_from(int32_result);
 }
@@ -177,9 +216,7 @@ Optional<array<int64_t>> f$UberH3$$kRing(int64_t h3_index_origin, int64_t k) noe
   const int32_t neighbors_count = maxKringSize(checked_k);
   auto neighbor_indexes = make_zeros_vector<int64_t>(neighbors_count);
   if (neighbors_count) {
-    // kRing() uses malloc
-    auto malloc_replacer = make_malloc_replacement_with_script_allocator();
-    kRing(h3_index_origin, checked_k, reinterpret_cast<H3Index*>(&neighbor_indexes[0]));
+    kRing(h3_index_origin, checked_k, reinterpret_cast<H3Index*>(std::addressof(neighbor_indexes[0])));
   }
   return std::move(neighbor_indexes);
 }
@@ -200,7 +237,7 @@ Optional<array<std::tuple<int64_t, int64_t>>> f$UberH3$$kRingDistances(int64_t h
   if (neighbors_count) {
     auto neighbor_indexes = make_zeros_vector<H3Index>(neighbors_count);
     auto neighbor_distances = make_zeros_vector<int32_t>(neighbors_count);
-    kRingDistances(h3_index_origin, checked_k, &neighbor_indexes[0], &neighbor_distances[0]);
+    kRingDistances(h3_index_origin, checked_k, std::addressof(neighbor_indexes[0]), std::addressof(neighbor_distances[0]));
     for (int i = 0; i < neighbors_count; ++i) {
       result.emplace_back(std::make_tuple(neighbor_indexes[i], neighbor_distances[i]));
     }
@@ -216,7 +253,7 @@ Optional<array<int64_t>> f$UberH3$$hexRange(int64_t h3_index_origin, int64_t k) 
 
   auto neighbors = make_zeros_vector<int64_t>(maxKringSize(checked_k));
   if (!neighbors.empty()) {
-    if (unlikely(hexRange(h3_index_origin, checked_k, reinterpret_cast<H3Index*>(&neighbors[0])))) {
+    if (unlikely(hexRange(h3_index_origin, checked_k, reinterpret_cast<H3Index*>(std::addressof(neighbors[0]))))) {
       return false;
     }
   }
@@ -234,7 +271,7 @@ Optional<array<std::tuple<int64_t, int64_t>>> f$UberH3$$hexRangeDistances(int64_
   if (neighbors_count) {
     auto neighbor_indexes = make_zeros_vector<H3Index>(neighbors_count);
     auto neighbor_distances = make_zeros_vector<int32_t>(neighbors_count);
-    if (unlikely(hexRangeDistances(h3_index_origin, checked_k, &neighbor_indexes[0], &neighbor_distances[0]))) {
+    if (unlikely(hexRangeDistances(h3_index_origin, checked_k, std::addressof(neighbor_indexes[0]), std::addressof(neighbor_distances[0])))) {
       return false;
     }
     for (int i = 0; i < neighbors_count; ++i) {
@@ -253,8 +290,8 @@ Optional<array<int64_t>> f$UberH3$$hexRanges(const array<int64_t>& h3_indexes, i
   auto h3_indexes_set = indexes2vector(h3_indexes, true);
   auto h3_indexes_result = make_zeros_vector<int64_t>(maxKringSize(checked_k) * h3_indexes.count());
   if (!h3_indexes_result.empty()) {
-    if (unlikely(hexRanges(reinterpret_cast<H3Index*>(&h3_indexes_set[0]), static_cast<int32_t>(h3_indexes.count()), checked_k,
-                           reinterpret_cast<H3Index*>(&h3_indexes_result[0])))) {
+    if (unlikely(hexRanges(reinterpret_cast<H3Index*>(std::addressof(h3_indexes_set[0])), static_cast<int32_t>(h3_indexes.count()), checked_k,
+                           reinterpret_cast<H3Index*>(std::addressof(h3_indexes_result[0]))))) {
       return false;
     }
   }
@@ -269,7 +306,7 @@ Optional<array<int64_t>> f$UberH3$$hexRing(int64_t h3_index_origin, int64_t k) n
 
   auto h3_indexes_result = make_zeros_vector<int64_t>(checked_k ? checked_k * 6 : 1);
   if (!h3_indexes_result.empty()) {
-    hexRing(h3_index_origin, checked_k, reinterpret_cast<H3Index*>(&h3_indexes_result[0]));
+    hexRing(h3_index_origin, checked_k, reinterpret_cast<H3Index*>(std::addressof(h3_indexes_result[0])));
   }
   return std::move(h3_indexes_result);
 }
@@ -282,7 +319,7 @@ Optional<array<int64_t>> f$UberH3$$h3Line(int64_t h3_index_start, int64_t h3_ind
 
   auto line = make_zeros_vector<int64_t>(size);
   if (size) {
-    if (unlikely(h3Line(static_cast<H3Index>(h3_index_start), static_cast<H3Index>(h3_index_end), reinterpret_cast<H3Index*>(&line[0])))) {
+    if (unlikely(h3Line(static_cast<H3Index>(h3_index_start), static_cast<H3Index>(h3_index_end), reinterpret_cast<H3Index*>(std::addressof(line[0]))))) {
       return false;
     }
   }
@@ -310,7 +347,7 @@ Optional<array<int64_t>> f$UberH3$$h3ToChildren(int64_t h3_index, int64_t childr
   const int64_t children_count = maxH3ToChildrenSize(static_cast<H3Index>(h3_index), checked_children_resolution);
   auto children = make_zeros_vector<int64_t>(children_count);
   if (children_count) {
-    h3ToChildren(static_cast<H3Index>(h3_index), checked_children_resolution, reinterpret_cast<H3Index*>(&children[0]));
+    h3ToChildren(static_cast<H3Index>(h3_index), checked_children_resolution, reinterpret_cast<H3Index*>(std::addressof(children[0])));
   }
   return std::move(children);
 }
@@ -329,9 +366,7 @@ Optional<array<int64_t>> f$UberH3$$compact(const array<int64_t>& h3_indexes) noe
   const array<int64_t> h3_set = indexes2vector(h3_indexes);
   auto compacted_h3_set = make_zeros_vector<int64_t>(h3_set.count());
   if (!compacted_h3_set.empty()) {
-    // compact() uses malloc
-    auto malloc_replacer = make_malloc_replacement_with_script_allocator();
-    if (unlikely(compact(reinterpret_cast<const H3Index*>(h3_set.get_const_vector_pointer()), reinterpret_cast<H3Index*>(&compacted_h3_set[0]),
+    if (unlikely(compact(reinterpret_cast<const H3Index*>(h3_set.get_const_vector_pointer()), reinterpret_cast<H3Index*>(std::addressof(compacted_h3_set[0])),
                          static_cast<int32_t>(h3_indexes.count())))) {
       return false;
     }
@@ -360,7 +395,7 @@ Optional<array<int64_t>> f$UberH3$$uncompact(const array<int64_t>& h3_indexes, i
   }
   auto uncompacted_h3_indexes = make_zeros_vector<int64_t>(uncompact_size);
   if (unlikely(uncompact(reinterpret_cast<const H3Index*>(h3_set.get_const_vector_pointer()), h3_set_size,
-                         reinterpret_cast<H3Index*>(&uncompacted_h3_indexes[0]), uncompact_size, checked_resolution))) {
+                         reinterpret_cast<H3Index*>(std::addressof(uncompacted_h3_indexes[0])), uncompact_size, checked_resolution))) {
     return false;
   }
   return std::move(uncompacted_h3_indexes);
@@ -382,7 +417,7 @@ int64_t f$UberH3$$maxPolyfillSize(const array<std::tuple<double, double>>& polyg
     return 0;
   }
   GeoPolygonOwner polygon_owner{polygon_boundary, holes};
-  return maxPolyfillSize(&polygon_owner.getPolygon(), checked_resolution);
+  return maxPolyfillSize(std::addressof(polygon_owner.getPolygon()), checked_resolution);
 }
 
 Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, double>>& polygon_boundary, const array<array<std::tuple<double, double>>>& holes,
@@ -393,15 +428,13 @@ Optional<array<int64_t>> f$UberH3$$polyfill(const array<std::tuple<double, doubl
   }
 
   GeoPolygonOwner polygon_owner{polygon_boundary, holes};
-  const int32_t max_size = maxPolyfillSize(&polygon_owner.getPolygon(), checked_resolution);
+  const int32_t max_size = maxPolyfillSize(std::addressof(polygon_owner.getPolygon()), checked_resolution);
   if (max_size < 0) {
     return false;
   }
   auto hexagon_indexes = make_zeros_vector<int64_t>(max_size);
   if (!hexagon_indexes.empty()) {
-    // polyfill() uses malloc
-    auto malloc_replacer = make_malloc_replacement_with_script_allocator();
-    polyfill(&polygon_owner.getPolygon(), checked_resolution, reinterpret_cast<H3Index*>(&hexagon_indexes[0]));
+    polyfill(std::addressof(polygon_owner.getPolygon()), checked_resolution, reinterpret_cast<H3Index*>(std::addressof(hexagon_indexes[0])));
   }
   int64_t indexes_count = 0;
   for (const auto& element : hexagon_indexes) {

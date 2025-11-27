@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <cstdint>
+#include <tuple>
+
 #include "runtime-common/core/runtime-core.h"
 
 int64_t f$UberH3$$geoToH3(double latitude, double longitude, int64_t resolution) noexcept;

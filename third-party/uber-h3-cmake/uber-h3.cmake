@@ -55,6 +55,7 @@ function(build_uber_h3 PIC_ENABLED)
             -DENABLE_FORMAT=OFF
             -DCLANG_FORMAT_PATH=1   # for useless warning prevention
             -DCLANG_TIDY_PATH=1     # for useless warning prevention
+            -DH3_ALLOC_PREFIX=uber_h3_
     )
 
     ExternalProject_Add(
