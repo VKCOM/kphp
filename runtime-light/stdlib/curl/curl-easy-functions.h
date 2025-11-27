@@ -587,3 +587,8 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
     co_return false;
   }
 }
+
+inline Optional<array<int64_t>> f$curl_multi_info_read(int64_t /*unused*/,
+                                                       Optional<std::optional<std::reference_wrapper<int64_t>>>  /*unused*/= {}) {
+  kphp::log::error("call to unsupported function : curl_multi_info_read");
+}
