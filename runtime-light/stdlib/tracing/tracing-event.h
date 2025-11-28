@@ -7,6 +7,7 @@
 #include <cstdint>
 
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/core/runtime-core.h"
 
 struct C$KphpSpanEvent : public refcountable_php_classes<C$KphpSpanEvent> {
   int32_t span_id{0};
