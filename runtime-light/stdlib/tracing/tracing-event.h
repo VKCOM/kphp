@@ -17,7 +17,7 @@ struct C$KphpSpanEvent : public refcountable_php_classes<C$KphpSpanEvent> {
 };
 
 inline void f$KphpSpanEvent$$addAttributeString([[maybe_unused]] const class_instance<C$KphpSpanEvent>& v$this, [[maybe_unused]] const string& key,
-                                                [[maybe_unused]] const string& value) {}
+                                                [[maybe_unused]] const string& value) noexcept {}
 
 inline void f$KphpSpanEvent$$addAttributeInt([[maybe_unused]] const class_instance<C$KphpSpanEvent>& v$this, [[maybe_unused]] const string& key,
                                              [[maybe_unused]] int64_t value) noexcept {}
