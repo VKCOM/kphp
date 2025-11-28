@@ -3,7 +3,4 @@ components:
   script:
     image: KPHP
     scope: Request
-    args:
-      ini hello: "world"
-      runtime-config: ${RUNTIME_CONFIG_PATH}
     links: {}
