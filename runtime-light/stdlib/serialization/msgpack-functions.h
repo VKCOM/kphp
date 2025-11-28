@@ -81,7 +81,7 @@ ResultClass f$instance_deserialize_safe(const string& buffer, const string& /*un
 template<class T>
 string f$msgpack_serialize_safe(const T& value) noexcept {
   string err_msg;
-  auto res = f$msgpack_serialize(value, &err_msg);
+  auto res{f$msgpack_serialize(value, std::addressof(err_msg))};
   if (!err_msg.empty()) {
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(std::move(err_msg)));
     return {};
@@ -93,11 +93,10 @@ string f$msgpack_serialize_safe(const T& value) noexcept {
 template<class ResultType = mixed>
 ResultType f$msgpack_deserialize_safe(const string& buffer) noexcept {
   string err_msg;
-  auto res = f$msgpack_deserialize(buffer, &err_msg);
+  const auto res{f$msgpack_deserialize(buffer, std::addressof(err_msg))};
   if (!err_msg.empty()) {
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(std::move(err_msg)));
     return {};
   }
   return res;
 }
-
