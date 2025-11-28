@@ -15,3 +15,14 @@ struct C$KphpSpanEvent : public refcountable_php_classes<C$KphpSpanEvent> {
   explicit C$KphpSpanEvent(int32_t span_id) noexcept
       : span_id(span_id) {}
 };
+
+inline void f$KphpSpanEvent$$addAttributeString([[maybe_unused]] const string& value) noexcept {}
+
+inline void f$KphpSpanEvent$$addAttributeInt([[maybe_unused]] const class_instance<C$KphpSpanEvent>& v$this, [[maybe_unused]] const string& key,
+                                             [[maybe_unused]] int64_t value) noexcept {}
+
+inline void f$KphpSpanEvent$$addAttributeFloat([[maybe_unused]] const class_instance<C$KphpSpanEvent>& v$this, [[maybe_unused]] const string& key,
+                                               [[maybe_unused]] double value) noexcept {}
+
+inline void f$KphpSpanEvent$$addAttributeBool([[maybe_unused]] const class_instance<C$KphpSpanEvent>& v$this, [[maybe_unused]] const string& key,
+                                              [[maybe_unused]] bool value) noexcept {}
