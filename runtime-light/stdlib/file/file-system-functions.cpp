@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <expected>
 #include <format>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <sys/stat.h>
@@ -22,8 +23,9 @@
 namespace {
 
 constexpr size_t MIN_FILE_SIZE{12};
+constexpr size_t MAX_READ_SIZE{3 * 256 + 64};
 
-constexpr int64_t IMAGETYPE_UNKNOWN{0};
+// constexpr int64_t IMAGETYPE_UNKNOWN{0};
 constexpr int64_t IMAGETYPE_GIF{1};
 constexpr int64_t IMAGETYPE_JPEG{2};
 constexpr int64_t IMAGETYPE_PNG{3};
@@ -70,7 +72,238 @@ constexpr int32_t M_COM{0xFE};
 
 constexpr int32_t M_PSEUDO = 0xFFD8;
 
-}; // namespace
+struct image_info {
+  int32_t type{};
+  int32_t width{};
+  int32_t height{};
+  int32_t bits{};
+  int32_t channels{};
+};
+
+std::optional<image_info> get_gif_info(std::span<unsigned char> buf) noexcept {
+  if (std::strncmp(reinterpret_cast<const char*>(buf.data()), php_sig_gif.begin(), sizeof(php_sig_gif)) != 0) {
+    return std::nullopt;
+  }
+  return {{
+      .type = IMAGETYPE_GIF,
+      .width = buf[6] | (buf[7] << 8),
+      .height = buf[8] | (buf[9] << 8),
+      .bits = buf[10] & 0x80 ? (buf[10] & 0x07) + 1 : 0,
+      .channels = 3,
+  }};
+}
+
+std::optional<image_info> get_jpg_info(size_t file_size, size_t read_size, std::span<unsigned char> buf, const string& name, kphp::fs::file file) noexcept {
+  image_info info{.type = IMAGETYPE_JPEG};
+
+  std::unique_ptr<unsigned char, decltype(std::addressof(kphp::memory::script::free))> image_uniq_ptr{
+      static_cast<unsigned char*>(kphp::memory::script::alloc(file_size)), kphp::memory::script::free};
+  auto* image{image_uniq_ptr.get()};
+  if (image == nullptr) {
+    kphp::log::warning("not enough memory to process file \"{}\" in getimagesize", name.c_str());
+    return std::nullopt;
+  }
+
+  std::memcpy(image, buf.data(), read_size);
+  std::span<std::byte> image_span{std::next(reinterpret_cast<std::byte*>(image), read_size), file_size - read_size};
+  std::expected<size_t, int32_t> read_res{file.read(std::as_writable_bytes(image_span))};
+  if (!read_res || *read_res < file_size - read_size) {
+    return std::nullopt;
+  }
+
+  int32_t marker{M_PSEUDO};
+  size_t cur_pos{2};
+
+  while (info.height == 0 && info.width == 0 && marker != M_SOS && marker != M_EOI) {
+    int32_t a{};
+    int32_t comment_correction{1 + (marker == M_COM)};
+    int32_t new_marker{};
+
+    do {
+      if (cur_pos == file_size) {
+        new_marker = M_EOI;
+        break;
+      }
+      new_marker = image[cur_pos++];
+      if (marker == M_COM && comment_correction > 0) {
+        if (new_marker != 0xFF) {
+          new_marker = 0xFF;
+          comment_correction--;
+        } else {
+          marker = M_PSEUDO;
+        }
+      }
+      a++;
+    } while (new_marker == 0xff);
+
+    if (a < 2 || (marker == M_COM && comment_correction)) {
+      new_marker = M_EOI;
+    }
+
+    marker = new_marker;
+
+    switch (marker) {
+    case M_SOF0:
+    case M_SOF1:
+    case M_SOF2:
+    case M_SOF3:
+    case M_SOF5:
+    case M_SOF6:
+    case M_SOF7:
+    case M_SOF9:
+    case M_SOF10:
+    case M_SOF11:
+    case M_SOF13:
+    case M_SOF14:
+    case M_SOF15:
+      if (cur_pos + 8 > file_size) {
+        return std::nullopt;
+      }
+      info.bits = image[cur_pos + 2];
+      info.height = (image[cur_pos + 3] << 8) + image[cur_pos + 4];
+      info.width = (image[cur_pos + 5] << 8) + image[cur_pos + 6];
+      info.channels = image[cur_pos + 7];
+      cur_pos += 8;
+
+    case M_SOS:
+    case M_EOI:
+      break;
+
+    default:
+      size_t length{static_cast<size_t>((image[cur_pos] << 8) + image[cur_pos + 1])};
+
+      if (length < 2 || cur_pos + length > file_size) {
+        return std::nullopt;
+      }
+      cur_pos += length;
+      break;
+    }
+  }
+
+  return {info};
+}
+
+std::optional<image_info> get_jpc_info(size_t read_size, std::span<unsigned char> buf) noexcept {
+  image_info info{
+      .type = IMAGETYPE_JPEG,
+      .width = (buf[8] << 24) + (buf[9] << 16) + (buf[10] << 8) + buf[11],
+      .height = (buf[12] << 24) + (buf[13] << 16) + (buf[14] << 8) + buf[15],
+      .channels = (buf[40] << 8) + buf[41],
+  };
+
+  if (info.channels < 0 || info.channels > 256 || read_size < 42 + 3 * info.channels || info.width <= 0 || info.height <= 0) {
+    return std::nullopt;
+  }
+
+  info.bits = 0;
+  for (int32_t i = 0; i < info.channels; i++) {
+    int32_t cur_bits{buf[42 + 3 * i]};
+    if (cur_bits > info.bits) {
+      info.bits = cur_bits;
+    }
+  }
+  info.bits++;
+
+  return {info};
+}
+
+std::optional<image_info> get_jpg_or_jpc_info(size_t file_size, size_t read_size, std::span<unsigned char> buf, const string& name,
+                                              kphp::fs::file file) noexcept {
+  if (!std::strncmp(reinterpret_cast<const char*>(buf.data()), php_sig_jpg.begin(), sizeof(php_sig_jpg))) {
+    return get_jpg_info(file_size, read_size, buf, name, std::move(file));
+  } else if (read_size >= 42 && !std::strncmp(reinterpret_cast<const char*>(buf.data()), php_sig_jpc.begin(), sizeof(php_sig_jpc))) {
+    return get_jpc_info(read_size, buf);
+  } else {
+    return std::nullopt;
+  }
+}
+
+std::optional<image_info> get_jp2_info(size_t file_size, size_t read_size, std::span<unsigned char> buf, kphp::fs::file file) noexcept {
+  if (read_size < 54 || std::strncmp(reinterpret_cast<const char*>(buf.data()), php_sig_jp2.begin(), sizeof(php_sig_jp2)) != 0) {
+    return std::nullopt;
+  }
+
+  image_info info{
+      .type = IMAGETYPE_JP2,
+  };
+
+  bool found{false};
+  int32_t buf_pos{12};
+  size_t file_pos{12};
+  while (static_cast<int32_t>(read_size) >= 42 + buf_pos + 8) {
+    const unsigned char* s{buf.data() + buf_pos};
+    int32_t box_length{(s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3]};
+    if (box_length == 1 || box_length > 1000000000) {
+      break;
+    }
+    if (s[4] == 'j' && s[5] == 'p' && s[6] == '2' && s[7] == 'c') {
+      s += 8;
+
+      info.width = (s[8] << 24) + (s[9] << 16) + (s[10] << 8) + s[11];
+      info.height = (s[12] << 24) + (s[13] << 16) + (s[14] << 8) + s[15];
+      info.channels = (s[40] << 8) + s[41];
+
+      if (info.channels < 0 || info.channels > 256 || static_cast<int32_t>(read_size) < 42 + buf_pos + 8 + 3 * info.channels || info.width <= 0 ||
+          info.height <= 0) {
+        break;
+      }
+
+      info.bits = 0;
+      for (int32_t i = 0; i < info.channels; i++) {
+        int32_t cur_bits{s[42 + 3 * i]};
+        if (cur_bits > info.bits) {
+          info.bits = cur_bits;
+        }
+      }
+      info.bits++;
+
+      found = true;
+      break;
+    }
+
+    if (box_length <= 8) {
+      break;
+    }
+    file_pos += box_length;
+    if (file_pos >= file_size || static_cast<off_t>(file_pos) != static_cast<ssize_t>(file_pos) || static_cast<ssize_t>(file_pos) < 0) {
+      break;
+    }
+
+    read_size = MAX_READ_SIZE;
+    if (file_size - file_pos < MAX_READ_SIZE) {
+      read_size = file_size - file_pos;
+    }
+    if (read_size < 50) {
+      break;
+    }
+    std::span<std::byte> buf_read_span{reinterpret_cast<std::byte*>(buf.data()), read_size};
+    std::expected<size_t, int32_t> read_res{file.pread(std::as_writable_bytes(buf_read_span), static_cast<uint64_t>(file_pos))};
+    if (!read_res || *read_res < read_size) {
+      break;
+    }
+
+    buf_pos = 0;
+  }
+
+  if (!found) {
+    return std::nullopt;
+  }
+  return {info};
+}
+
+std::optional<image_info> get_png_info(size_t read_size, std::span<unsigned char> buf) noexcept {
+  if (read_size < 25 || std::strncmp(reinterpret_cast<const char*>(buf.data()), php_sig_png.begin(), sizeof(php_sig_png)) != 0) {
+    return std::nullopt;
+  }
+  return {{
+      .type = IMAGETYPE_PNG,
+      .width = (buf[16] << 24) + (buf[17] << 16) + (buf[18] << 8) + buf[19],
+      .height = (buf[20] << 24) + (buf[21] << 16) + (buf[22] << 8) + buf[23],
+      .bits = buf[24],
+  }};
+}
+
+} // namespace
 
 mixed f$getimagesize(const string& name) noexcept {
   // TODO implement k2::fstat, with fd as parameter
@@ -83,8 +316,8 @@ mixed f$getimagesize(const string& name) noexcept {
     kphp::log::warning("regular file expected as first argument in function getimagesize, \"{}\" is given", name.c_str());
     return false;
   }
-  size_t size{static_cast<size_t>(stat_buf.st_size)};
-  if (size < MIN_FILE_SIZE) {
+  size_t file_size{static_cast<size_t>(stat_buf.st_size)};
+  if (file_size < MIN_FILE_SIZE) {
     return false;
   }
 
@@ -94,246 +327,55 @@ mixed f$getimagesize(const string& name) noexcept {
   }
   auto file{std::move(*open_res)};
 
-  constexpr size_t max_size{3 * 256 + 64};
-  size_t read_size{max_size};
-  if (size < max_size) {
-    read_size = size;
+  size_t read_size{MAX_READ_SIZE};
+  if (file_size < MAX_READ_SIZE) {
+    read_size = file_size;
   }
-  std::array<unsigned char, max_size> buf{};
-  std::span<std::byte> buf_span{reinterpret_cast<std::byte*>(buf.begin()), max_size};
+  std::array<unsigned char, MAX_READ_SIZE> buf{};
+  std::span<std::byte> buf_span{reinterpret_cast<std::byte*>(buf.begin()), MAX_READ_SIZE};
 
   std::expected<size_t, int32_t> read_res{file.read(std::as_writable_bytes(buf_span))};
   if (!read_res || *read_res < read_size) {
     return false;
   }
 
-  int32_t width{};
-  int32_t height{};
-  int32_t bits{};
-  int32_t channels{};
-  int32_t type{IMAGETYPE_UNKNOWN};
+  std::optional<image_info> info_opt{std::nullopt};
   switch (buf[0]) {
   case GIF_MARKER: // gif
-    if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_gif.begin(), sizeof(php_sig_gif))) {
-      type = IMAGETYPE_GIF;
-      width = buf[6] | (buf[7] << 8);
-      height = buf[8] | (buf[9] << 8);
-      bits = buf[10] & 0x80 ? (buf[10] & 0x07) + 1 : 0;
-      channels = 3;
-    } else {
-      return false;
-    }
+    info_opt = get_gif_info(buf);
     break;
   case JPG_OR_JPC_MARKER: // jpg or jpc
-    if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_jpg.begin(), sizeof(php_sig_jpg))) {
-      type = IMAGETYPE_JPEG;
-
-      std::unique_ptr<unsigned char, decltype(std::addressof(kphp::memory::script::free))> image_uniq_ptr{
-          static_cast<unsigned char*>(kphp::memory::script::alloc(size)), kphp::memory::script::free};
-      auto* image{image_uniq_ptr.get()};
-      if (image == nullptr) {
-        kphp::log::warning("not enough memory to process file \"{}\" in getimagesize", name.c_str());
-        return false;
-      }
-
-      std::memcpy(image, buf.begin(), read_size);
-      std::span<std::byte> image_span{std::next(reinterpret_cast<std::byte*>(image), read_size), size - read_size};
-      read_res = file.read(std::as_writable_bytes(image_span));
-      if (!read_res || *read_res < size - read_size) {
-        return false;
-      }
-
-      int32_t marker{M_PSEUDO};
-      size_t cur_pos{2};
-
-      while (height == 0 && width == 0 && marker != M_SOS && marker != M_EOI) {
-        int32_t a{};
-        int32_t comment_correction{1 + (marker == M_COM)};
-        int32_t new_marker{};
-
-        do {
-          if (cur_pos == size) {
-            new_marker = M_EOI;
-            break;
-          }
-          new_marker = image[cur_pos++];
-          if (marker == M_COM && comment_correction > 0) {
-            if (new_marker != 0xFF) {
-              new_marker = 0xFF;
-              comment_correction--;
-            } else {
-              marker = M_PSEUDO;
-            }
-          }
-          a++;
-        } while (new_marker == 0xff);
-
-        if (a < 2 || (marker == M_COM && comment_correction)) {
-          new_marker = M_EOI;
-        }
-
-        marker = new_marker;
-
-        switch (marker) {
-        case M_SOF0:
-        case M_SOF1:
-        case M_SOF2:
-        case M_SOF3:
-        case M_SOF5:
-        case M_SOF6:
-        case M_SOF7:
-        case M_SOF9:
-        case M_SOF10:
-        case M_SOF11:
-        case M_SOF13:
-        case M_SOF14:
-        case M_SOF15:
-          if (cur_pos + 8 > size) {
-            return false;
-          }
-          bits = image[cur_pos + 2];
-          height = (image[cur_pos + 3] << 8) + image[cur_pos + 4];
-          width = (image[cur_pos + 5] << 8) + image[cur_pos + 6];
-          channels = image[cur_pos + 7];
-          cur_pos += 8;
-
-        case M_SOS:
-        case M_EOI:
-          break;
-
-        default: {
-          size_t length{static_cast<size_t>((image[cur_pos] << 8) + image[cur_pos + 1])};
-
-          if (length < 2 || cur_pos + length > size) {
-            return false;
-          }
-          cur_pos += length;
-          break;
-        }
-        }
-      }
-    } else if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_jpc.begin(), sizeof(php_sig_jpc)) && static_cast<int32_t>(read_size) >= 42) {
-      type = IMAGETYPE_JPEG;
-
-      width = (buf[8] << 24) + (buf[9] << 16) + (buf[10] << 8) + buf[11];
-      height = (buf[12] << 24) + (buf[13] << 16) + (buf[14] << 8) + buf[15];
-      channels = (buf[40] << 8) + buf[41];
-
-      if (channels < 0 || channels > 256 || static_cast<int32_t>(read_size) < 42 + 3 * channels || width <= 0 || height <= 0) {
-        return false;
-      }
-
-      bits = 0;
-      for (int32_t i = 0; i < channels; i++) {
-        int32_t cur_bits{buf[42 + 3 * i]};
-        if (cur_bits > bits) {
-          bits = cur_bits;
-        }
-      }
-      bits++;
-    } else {
-      return false;
-    }
+    info_opt = get_jpg_or_jpc_info(file_size, read_size, buf, name, std::move(file));
     break;
   case JP2_MARKER: // jp2
-    if (read_size >= 54 && !std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_jp2.begin(), sizeof(php_sig_jp2))) {
-      type = IMAGETYPE_JP2;
-
-      bool found{false};
-
-      int32_t buf_pos{12};
-      size_t file_pos{12};
-      while (static_cast<int32_t>(read_size) >= 42 + buf_pos + 8) {
-        const unsigned char* s{buf.begin() + buf_pos};
-        int32_t box_length{(s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3]};
-        if (box_length == 1 || box_length > 1000000000) {
-          break;
-        }
-        if (s[4] == 'j' && s[5] == 'p' && s[6] == '2' && s[7] == 'c') {
-          s += 8;
-
-          width = (s[8] << 24) + (s[9] << 16) + (s[10] << 8) + s[11];
-          height = (s[12] << 24) + (s[13] << 16) + (s[14] << 8) + s[15];
-          channels = (s[40] << 8) + s[41];
-
-          if (channels < 0 || channels > 256 || static_cast<int32_t>(read_size) < 42 + buf_pos + 8 + 3 * channels || width <= 0 || height <= 0) {
-            break;
-          }
-
-          bits = 0;
-          for (int32_t i = 0; i < channels; i++) {
-            int32_t cur_bits{s[42 + 3 * i]};
-            if (cur_bits > bits) {
-              bits = cur_bits;
-            }
-          }
-          bits++;
-
-          found = true;
-          break;
-        }
-
-        if (box_length <= 8) {
-          break;
-        }
-        file_pos += box_length;
-        if (file_pos >= size || static_cast<off_t>(file_pos) != static_cast<ssize_t>(file_pos) || static_cast<ssize_t>(file_pos) < 0) {
-          break;
-        }
-
-        read_size = max_size;
-        if (size - file_pos < max_size) {
-          read_size = size - file_pos;
-        }
-
-        if (read_size < 50) {
-          break;
-        }
-        std::span<std::byte> buf_read_span{reinterpret_cast<std::byte*>(buf.begin()), read_size};
-        read_res = file.pread(std::as_writable_bytes(buf_read_span), static_cast<uint64_t>(file_pos));
-        if (!read_res || *read_res < read_size) {
-          break;
-        }
-
-        buf_pos = 0;
-      }
-
-      if (!found) {
-        return false;
-      }
-    } else {
-      return false;
-    }
+    info_opt = get_jp2_info(file_size, read_size, buf, std::move(file));
     break;
   case PNG_MARKER: // png
-    if (read_size >= 25 && !std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_png.begin(), sizeof(php_sig_png))) {
-      type = IMAGETYPE_PNG;
-      width = (buf[16] << 24) + (buf[17] << 16) + (buf[18] << 8) + buf[19];
-      height = (buf[20] << 24) + (buf[21] << 16) + (buf[22] << 8) + buf[23];
-      bits = buf[24];
-    } else {
-      return false;
-    }
+    info_opt = get_png_info(read_size, buf);
     break;
-  default:
+  }
+
+  if (!info_opt) {
     return false;
   }
 
   array<mixed> result{array_size(7, false)};
-  result.push_back(width);
-  result.push_back(height);
-  result.push_back(type);
+  result.push_back(info_opt->width);
+  result.push_back(info_opt->height);
+  result.push_back(info_opt->type);
 
-  string::size_type len{static_cast<string::size_type>(std::distance(
-      reinterpret_cast<char*>(buf.data()), std::format_to_n(reinterpret_cast<char*>(buf.data()), max_size, R"(width="{}" height="{}")", width, height).out))};
+  string::size_type len{static_cast<string::size_type>(
+      std::distance(reinterpret_cast<char*>(buf.data()),
+                    std::format_to_n(reinterpret_cast<char*>(buf.data()), MAX_READ_SIZE, R"(width="{}" height="{}")", info_opt->width, info_opt->height).out))};
   result.push_back(string{reinterpret_cast<const char*>(buf.begin()), len});
-  if (bits != 0) {
-    result.set_value(string{"bits", 4}, bits);
+
+  if (info_opt->bits != 0) {
+    result.set_value(string{"bits", 4}, info_opt->bits);
   }
-  if (channels != 0) {
-    result.set_value(string{"channels", 8}, channels);
+  if (info_opt->channels != 0) {
+    result.set_value(string{"channels", 8}, info_opt->channels);
   }
-  result.set_value(string{"mime", 4}, string{mime_type_string[type].data(), static_cast<string::size_type>(mime_type_string[type].size())});
+  result.set_value(string{"mime", 4}, string{mime_type_string[info_opt->type].data(), static_cast<string::size_type>(mime_type_string[info_opt->type].size())});
 
   return result;
 }

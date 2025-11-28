@@ -223,7 +223,7 @@ inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& 
     flags &= FILE_APPEND_FLAG;
   }
 
-  const std::string_view& mode = ((flags & FILE_APPEND_FLAG) != 0) ? file_system_impl_::APPEND_MODE : file_system_impl_::WRITE_MODE;
+  std::string_view mode{((flags & FILE_APPEND_FLAG) != 0) ? file_system_impl_::APPEND_MODE : file_system_impl_::WRITE_MODE};
   if (auto sync_resource{
           from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, string{mode.data(), static_cast<string::size_type>(mode.size())}), {})};
       !sync_resource.is_null()) {
