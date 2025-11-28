@@ -120,7 +120,7 @@ inline auto stream::read(std::span<std::byte> buf) const noexcept -> kphp::coro:
   for (size_t read{}; read < buf.size();) {
     switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::read)) {
     case kphp::coro::poll_status::event:
-      [[likely]] read += k2::read(m_descriptor, std::span<std::byte>{std::next(buf.data(), read), buf.size() - read});
+      [[likely]] read += k2::read(m_descriptor, buf.subspan(read));
       break;
     case kphp::coro::poll_status::closed:
       [[likely]] co_return std::expected<size_t, int32_t>{read};
