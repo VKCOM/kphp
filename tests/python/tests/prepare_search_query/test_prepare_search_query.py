@@ -2,7 +2,7 @@ import json
 import os
 from python.lib.testcase import WebServerAutoTestCase
 
-directory_path = "kphp/tests/python/tests/prepare_search_query/data"
+directory_path = os.path.join(os.path.dirname(__file__), "data")
 prepared_suffix = "_prepared"
 
 
