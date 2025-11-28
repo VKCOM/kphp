@@ -114,7 +114,7 @@ inline auto file::write(std::span<const std::byte> buf) noexcept -> std::expecte
   if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
     return std::unexpected{k2::errno_enodev};
   }
-  return {k2::write(m_descriptor, buf.size(), buf.data())};
+  return {k2::write(m_descriptor, buf)};
 }
 
 inline auto file::read(std::span<std::byte> buf) noexcept -> std::expected<size_t, int32_t> {
@@ -400,7 +400,7 @@ inline auto stderror::write(std::span<const std::byte> buf) noexcept -> std::exp
   if (!m_open) [[unlikely]] {
     return std::unexpected{k2::errno_enodev};
   }
-  return {k2::stderr_write(buf.size(), buf.data())};
+  return {k2::stderr_write(buf)};
 }
 
 inline auto stderror::read(std::span<std::byte> /*buf*/) noexcept -> std::expected<size_t, int32_t> {

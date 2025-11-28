@@ -200,12 +200,12 @@ inline void stream_status(k2::descriptor descriptor, StreamStatus* status) noexc
   k2_stream_status(descriptor, status);
 }
 
-inline size_t write(k2::descriptor descriptor, size_t data_len, const void* data) noexcept {
-  return k2_write(descriptor, data_len, data);
+inline size_t write(k2::descriptor descriptor, std::span<const std::byte> buffer) noexcept {
+  return k2_write(descriptor, buffer.size(), static_cast<const void*>(buffer.data()));
 }
 
-inline size_t stderr_write(size_t data_len, const void* data) noexcept {
-  return k2_stderr_write(data_len, data);
+inline size_t stderr_write(std::span<const std::byte> buffer) noexcept {
+  return k2_stderr_write(buffer.size(), static_cast<const void*>(buffer.data()));
 }
 
 inline size_t read(k2::descriptor descriptor, std::span<std::byte> buffer) noexcept {
