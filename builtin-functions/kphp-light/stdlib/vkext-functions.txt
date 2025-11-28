@@ -1,7 +1,5 @@
 <?php
 
-// ===== SUPPORTED =====
-
 function vk_utf8_to_win ($text ::: string, $max_len ::: int = 0, $exit_on_error ::: bool = false) ::: string;
 
 function vk_win_to_utf8 ($text ::: string, $escape ::: bool = true) ::: string;
@@ -36,7 +34,4 @@ function vk_stats_hll_unpack($hll ::: string) ::: string | false;
 
 function vk_stats_hll_is_packed($hll ::: string) ::: bool;
 
-// ===== UNSUPPORTED =====
-
-/** @kphp-extern-func-info stub generation-required */
 function vk_flex ($name ::: string, $case_name ::: string, $sex ::: int, $type ::: string, $lang_id ::: int = 0) ::: string;

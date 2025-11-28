@@ -389,11 +389,16 @@ void CompilerSettings::init() {
 
 #if defined(__APPLE__)
   append_if_doesnt_contain(ld_flags.value_, system_installed_static_libs, "-l");
-  auto flex_prefix = kphp_src_path.value_ + "objs/flex/lib";
-  append_if_doesnt_contain(ld_flags.value_, vk::to_array({"vk-flex-data"}), flex_prefix, ".a");
+  if (!is_k2_mode) {
+    auto flex_prefix = kphp_src_path.value_ + "objs/flex/lib";
+    append_if_doesnt_contain(ld_flags.value_, vk::to_array({"vk-flex-data"}), flex_prefix, ".a");
+  }
   system_installed_dynamic_libs.emplace_back("iconv");
 #else
-  system_installed_static_libs.emplace_back("vk-flex-data");
+  if (!is_k2_mode) {
+    // In the case of K2, the vk-flex-data library is compiled into runtime-light
+    system_installed_static_libs.emplace_back("vk-flex-data");
+  }
   append_if_doesnt_contain(ld_flags.value_, system_installed_static_libs, "-l:lib", ".a");
   system_installed_dynamic_libs.emplace_back("rt");
 #endif
