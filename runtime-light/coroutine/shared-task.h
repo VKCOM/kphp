@@ -14,6 +14,7 @@
 #include <utility>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
+#include "runtime-light/coroutine/async-stack-methods.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -51,8 +52,8 @@ struct promise_base : kphp::coro::async_stack_element {
           // read the m_next pointer before resuming the coroutine
           // since resuming the coroutine may destroy the shared_task_waiter value
           auto* next{awaiter->m_next};
-          auto& async_stack_root{*promise.get_async_stack_frame().async_stack_root};
-          kphp::coro::resume(awaiter->m_continuation, async_stack_root);
+          auto* async_stack_root{promise.get_async_stack_frame().async_stack_root};
+          kphp::coro::resume_with_new_root(awaiter->m_continuation, async_stack_root);
           awaiter = next;
         }
         // return last awaiter's coroutine_handle to allow it to potentially be compiled as a tail-call
@@ -99,8 +100,8 @@ struct promise_base : kphp::coro::async_stack_element {
     if (m_awaiters == NOT_STARTED_VAL) {
       m_awaiters = STARTED_NO_WAITERS_VAL;
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
-      auto& async_stack_root{*get_async_stack_frame().async_stack_root};
-      kphp::coro::resume(handle, async_stack_root);
+      auto* async_stack_root{get_async_stack_frame().async_stack_root};
+      kphp::coro::resume_with_new_root(handle, async_stack_root);
     }
     // coroutine already completed, don't suspend
     if (done()) {
