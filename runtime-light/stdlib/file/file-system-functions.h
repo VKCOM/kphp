@@ -13,6 +13,7 @@
 #include <span>
 #include <string_view>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
@@ -112,6 +113,11 @@ inline kphp::coro::task<bool> f$fclose(resource stream) noexcept {
 
   kphp::log::warning("unexpected resource in fclose -> {}", stream.to_string().c_str());
   co_return false;
+}
+
+inline bool f$file_exists(const string& name) noexcept {
+  const auto exists_res{k2::access(std::string_view{name.c_str(), name.size()}, F_OK)};
+  return exists_res.has_value();
 }
 
 inline bool f$unlink(const string& name) noexcept {

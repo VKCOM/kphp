@@ -11,7 +11,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 inline bool f$is_confdata_loaded() noexcept {
-  return k2::access(kphp::confdata::COMPONENT_NAME) == k2::errno_ok;
+  return k2::component_access(kphp::confdata::COMPONENT_NAME) == k2::errno_ok;
 }
 
 // SAFETY: `key` is only used before await point
