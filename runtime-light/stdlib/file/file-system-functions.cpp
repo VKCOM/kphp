@@ -2,22 +2,27 @@
 // Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include "runtime-light/stdlib/file/file-system-functions.h"
+
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <expected>
 #include <format>
+#include <iterator>
+#include <limits>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string_view>
 #include <sys/stat.h>
+#include <utility>
 
-#include "runtime-common/core/allocator/runtime-allocator.h"
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/stdlib/file/file-system-functions.h"
 #include "runtime-light/stdlib/file/resource.h"
 
 namespace {
@@ -93,11 +98,16 @@ std::optional<image_info> get_gif_info(std::span<unsigned char> buf) noexcept {
   }};
 }
 
-std::optional<image_info> get_jpg_info(size_t file_size, size_t read_size, std::span<unsigned char> buf, const string& name, kphp::fs::file file) noexcept {
+std::optional<image_info> get_jpg_info(uint64_t file_size, size_t read_size, std::span<unsigned char> buf, const string& name, kphp::fs::file file) noexcept {
+  if (file_size > static_cast<uint64_t>(std::numeric_limits<size_t>::max())) {
+    kphp::log::warning("size of jpg file \"{}\" is more, than {}", name.c_str(), std::numeric_limits<size_t>::max());
+    return std::nullopt;
+  }
+
   image_info info{.type = IMAGETYPE_JPEG};
 
   std::unique_ptr<unsigned char, decltype(std::addressof(kphp::memory::script::free))> image_uniq_ptr{
-      static_cast<unsigned char*>(kphp::memory::script::alloc(file_size)), kphp::memory::script::free};
+      static_cast<unsigned char*>(kphp::memory::script::alloc(static_cast<size_t>(file_size))), kphp::memory::script::free};
   auto* image{image_uniq_ptr.get()};
   if (image == nullptr) {
     kphp::log::warning("not enough memory to process file \"{}\" in getimagesize", name.c_str());
@@ -105,9 +115,9 @@ std::optional<image_info> get_jpg_info(size_t file_size, size_t read_size, std::
   }
 
   std::memcpy(image, buf.data(), read_size);
-  std::span<std::byte> image_span{std::next(reinterpret_cast<std::byte*>(image), read_size), file_size - read_size};
+  std::span<std::byte> image_span{std::next(reinterpret_cast<std::byte*>(image), read_size), static_cast<size_t>(file_size) - read_size};
   std::expected<size_t, int32_t> read_res{file.read(std::as_writable_bytes(image_span))};
-  if (!read_res || *read_res < file_size - read_size) {
+  if (!read_res || *read_res < static_cast<size_t>(file_size) - read_size) {
     return std::nullopt;
   }
 
@@ -120,7 +130,7 @@ std::optional<image_info> get_jpg_info(size_t file_size, size_t read_size, std::
     int32_t new_marker{};
 
     do {
-      if (cur_pos == file_size) {
+      if (cur_pos == static_cast<size_t>(file_size)) {
         new_marker = M_EOI;
         break;
       }
@@ -156,7 +166,7 @@ std::optional<image_info> get_jpg_info(size_t file_size, size_t read_size, std::
     case M_SOF13:
     case M_SOF14:
     case M_SOF15:
-      if (cur_pos + 8 > file_size) {
+      if (cur_pos + 8 > static_cast<size_t>(file_size)) {
         return std::nullopt;
       }
       info.bits = image[cur_pos + 2];
@@ -172,7 +182,7 @@ std::optional<image_info> get_jpg_info(size_t file_size, size_t read_size, std::
     default:
       size_t length{static_cast<size_t>((image[cur_pos] << 8) + image[cur_pos + 1])};
 
-      if (length < 2 || cur_pos + length > file_size) {
+      if (length < 2 || cur_pos + length > static_cast<size_t>(file_size)) {
         return std::nullopt;
       }
       cur_pos += length;
@@ -195,8 +205,7 @@ std::optional<image_info> get_jpc_info(size_t read_size, std::span<unsigned char
     return std::nullopt;
   }
 
-  info.bits = 0;
-  for (int32_t i = 0; i < info.channels; i++) {
+  for (int32_t i{0}; i < info.channels; i++) {
     int32_t cur_bits{buf[42 + 3 * i]};
     if (cur_bits > info.bits) {
       info.bits = cur_bits;
@@ -207,7 +216,7 @@ std::optional<image_info> get_jpc_info(size_t read_size, std::span<unsigned char
   return {info};
 }
 
-std::optional<image_info> get_jpg_or_jpc_info(size_t file_size, size_t read_size, std::span<unsigned char> buf, const string& name,
+std::optional<image_info> get_jpg_or_jpc_info(uint64_t file_size, size_t read_size, std::span<unsigned char> buf, const string& name,
                                               kphp::fs::file file) noexcept {
   if (!std::strncmp(reinterpret_cast<const char*>(buf.data()), php_sig_jpg.begin(), sizeof(php_sig_jpg))) {
     return get_jpg_info(file_size, read_size, buf, name, std::move(file));
@@ -218,7 +227,7 @@ std::optional<image_info> get_jpg_or_jpc_info(size_t file_size, size_t read_size
   }
 }
 
-std::optional<image_info> get_jp2_info(size_t file_size, size_t read_size, std::span<unsigned char> buf, kphp::fs::file file) noexcept {
+std::optional<image_info> get_jp2_info(uint64_t file_size, size_t read_size, std::span<unsigned char> buf, kphp::fs::file file) noexcept {
   if (read_size < 54 || std::strncmp(reinterpret_cast<const char*>(buf.data()), php_sig_jp2.begin(), sizeof(php_sig_jp2)) != 0) {
     return std::nullopt;
   }
@@ -229,9 +238,9 @@ std::optional<image_info> get_jp2_info(size_t file_size, size_t read_size, std::
 
   bool found{false};
   int32_t buf_pos{12};
-  size_t file_pos{12};
+  uint64_t file_pos{12};
   while (static_cast<int32_t>(read_size) >= 42 + buf_pos + 8) {
-    const unsigned char* s{buf.data() + buf_pos};
+    const unsigned char* s{std::next(buf.data(), buf_pos)};
     int32_t box_length{(s[0] << 24) + (s[1] << 16) + (s[2] << 8) + s[3]};
     if (box_length == 1 || box_length > 1000000000) {
       break;
@@ -248,8 +257,7 @@ std::optional<image_info> get_jp2_info(size_t file_size, size_t read_size, std::
         break;
       }
 
-      info.bits = 0;
-      for (int32_t i = 0; i < info.channels; i++) {
+      for (int32_t i{0}; i < info.channels; i++) {
         int32_t cur_bits{s[42 + 3 * i]};
         if (cur_bits > info.bits) {
           info.bits = cur_bits;
@@ -265,19 +273,19 @@ std::optional<image_info> get_jp2_info(size_t file_size, size_t read_size, std::
       break;
     }
     file_pos += box_length;
-    if (file_pos >= file_size || static_cast<off_t>(file_pos) != static_cast<ssize_t>(file_pos) || static_cast<ssize_t>(file_pos) < 0) {
+    if (file_pos >= file_size) {
       break;
     }
 
     read_size = MAX_READ_SIZE;
-    if (file_size - file_pos < MAX_READ_SIZE) {
-      read_size = file_size - file_pos;
+    if (file_size - file_pos < static_cast<uint64_t>(MAX_READ_SIZE)) {
+      read_size = static_cast<size_t>(file_size - file_pos);
     }
     if (read_size < 50) {
       break;
     }
     std::span<std::byte> buf_read_span{reinterpret_cast<std::byte*>(buf.data()), read_size};
-    std::expected<size_t, int32_t> read_res{file.pread(std::as_writable_bytes(buf_read_span), static_cast<uint64_t>(file_pos))};
+    std::expected<size_t, int32_t> read_res{file.pread(std::as_writable_bytes(buf_read_span), file_pos)};
     if (!read_res || *read_res < read_size) {
       break;
     }
@@ -316,8 +324,8 @@ mixed f$getimagesize(const string& name) noexcept {
     kphp::log::warning("regular file expected as first argument in function getimagesize, \"{}\" is given", name.c_str());
     return false;
   }
-  size_t file_size{static_cast<size_t>(stat_buf.st_size)};
-  if (file_size < MIN_FILE_SIZE) {
+  uint64_t file_size{static_cast<uint64_t>(stat_buf.st_size)};
+  if (file_size < static_cast<uint64_t>(MIN_FILE_SIZE)) {
     return false;
   }
 
@@ -328,8 +336,8 @@ mixed f$getimagesize(const string& name) noexcept {
   auto file{std::move(*open_res)};
 
   size_t read_size{MAX_READ_SIZE};
-  if (file_size < MAX_READ_SIZE) {
-    read_size = file_size;
+  if (file_size < static_cast<uint64_t>(MAX_READ_SIZE)) {
+    read_size = static_cast<size_t>(file_size);
   }
   std::array<unsigned char, MAX_READ_SIZE> buf{};
   std::span<std::byte> buf_span{reinterpret_cast<std::byte*>(buf.begin()), MAX_READ_SIZE};
