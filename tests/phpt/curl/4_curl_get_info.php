@@ -76,7 +76,7 @@ function test_get_info_each_option() {
   var_dump(curl_getinfo($c, CURLINFO_HTTP_CONNECTCODE));
   var_dump(curl_getinfo($c, CURLINFO_OS_ERRNO));
   var_dump(curl_getinfo($c, CURLINFO_CONDITION_UNMET));
-
+  var_dump(curl_getinfo($c, CURLINFO_NUM_CONNECTS));
   // bad options
   var_dump(curl_getinfo($c, -10));
   var_dump(curl_getinfo($c, 89984894));
