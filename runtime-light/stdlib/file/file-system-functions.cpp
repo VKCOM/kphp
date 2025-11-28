@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 
 #include "runtime-common/core/allocator/runtime-allocator.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -127,18 +128,16 @@ mixed f$getimagesize(const string& name) noexcept {
     if (!std::strncmp(reinterpret_cast<const char*>(buf.begin()), php_sig_jpg.begin(), sizeof(php_sig_jpg))) {
       type = IMAGETYPE_JPEG;
 
-      auto* image = static_cast<unsigned char*>(RuntimeAllocator::get().alloc_script_memory(size));
+      std::unique_ptr<unsigned char, decltype(std::addressof(kphp::memory::script::free))> image_uniq_ptr{
+          static_cast<unsigned char*>(kphp::memory::script::alloc(size)), kphp::memory::script::free};
+      auto* image{image_uniq_ptr.get()};
       if (image == nullptr) {
         kphp::log::warning("not enough memory to process file \"{}\" in getimagesize", name.c_str());
         return false;
       }
 
-      auto image_deleter = [size](void* ptr) noexcept { RuntimeAllocator::get().free_script_memory(ptr, size); };
-      std::unique_ptr<void, decltype(image_deleter)> image_unique_ptr{image, std::move(image_deleter)};
-
       std::memcpy(image, buf.begin(), read_size);
-
-      std::span<std::byte> image_span{reinterpret_cast<std::byte*>(std::next(image, read_size)), size - read_size};
+      std::span<std::byte> image_span{std::next(reinterpret_cast<std::byte*>(image), read_size), size - read_size};
       read_res = file.read(std::as_writable_bytes(image_span));
       if (!read_res || *read_res < size - read_size) {
         return false;
