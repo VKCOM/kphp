@@ -504,4 +504,42 @@ public:
   }
 };
 
+class CompositeWebTransferAdd final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_ADD_MAGIC = 0x1223'16CC;
+
+public:
+  tl::u64 composite_descriptor;
+  tl::u64 simple_descriptor;
+  tl::simpleWebTransferConfig simple_config;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = COMPOSITE_WEB_TRANSFER_ADD_MAGIC}.store(tls);
+    composite_descriptor.store(tls);
+    simple_descriptor.store(tls);
+    simple_config.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_ADD_MAGIC}.footprint() + composite_descriptor.footprint() + simple_descriptor.footprint() + simple_config.footprint();
+  }
+};
+
+class CompositeWebTransferRemove final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_REMOVE_MAGIC = 0x8981'22AA;
+
+public:
+  tl::u64 composite_descriptor;
+  tl::u64 simple_descriptor;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = COMPOSITE_WEB_TRANSFER_REMOVE_MAGIC}.store(tls);
+    composite_descriptor.store(tls);
+    simple_descriptor.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_REMOVE_MAGIC}.footprint() + composite_descriptor.footprint() + simple_descriptor.footprint();
+  }
+};
+
 } // namespace tl

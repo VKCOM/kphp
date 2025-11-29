@@ -93,6 +93,8 @@ public:
   inline auto to_mixed() const noexcept -> mixed;
 };
 
+using simple_transfers = kphp::stl::unordered_set<kphp::web::simple_transfer::descriptor_type, kphp::memory::script_allocator>;
+
 using properties_type = kphp::stl::unordered_map<property_id, property_value, kphp::memory::script_allocator>;
 
 struct simple_transfer_config {
