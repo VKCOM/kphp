@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <__expected/unexpected.h>
 #include <cstddef>
 #include <expected>
 #include <optional>
@@ -14,7 +15,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/web-transfer-lib/defs.h"
 #include "runtime-light/stdlib/web-transfer-lib/details/web-error.h"
-#include "runtime-light/stdlib/web-transfer-lib/details/web-property.h" // for convenient passing into simple-transfer users
+#include "runtime-light/stdlib/web-transfer-lib/web-composite-transfer.h"
 #include "runtime-light/stdlib/web-transfer-lib/web-state.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -23,7 +24,8 @@
 namespace kphp::web {
 
 inline auto simple_transfer_open(transfer_backend backend) noexcept -> kphp::coro::task<std::expected<simple_transfer, error>> {
-  auto session{WebInstanceState::get().session_get_or_init()};
+  auto& web_state{WebInstanceState::get()};
+  auto session{web_state.session_get_or_init()};
   if (!session.has_value()) [[unlikely]] {
     kphp::log::error("failed to start or get session with Web component");
   }
@@ -60,9 +62,13 @@ inline auto simple_transfer_open(transfer_backend backend) noexcept -> kphp::cor
 
   const auto descriptor{std::get<tl::SimpleWebTransferOpenResultOk>(result).descriptor.value};
 
-  auto& simple2config{WebInstanceState::get().simple_transfer2config};
+  auto& simple2config{web_state.simple_transfer2config};
   kphp::log::assertion(simple2config.contains(descriptor) == false); // NOLINT
   simple2config.emplace(descriptor, simple_transfer_config{});
+
+  auto& composite_holder{web_state.simple_transfer2holder};
+  kphp::log::assertion(composite_holder.contains(descriptor) == false); // NOLINT
+  composite_holder.emplace(descriptor, std::nullopt);
 
   co_return std::expected<simple_transfer, error>{descriptor};
 }
@@ -135,7 +141,7 @@ inline auto simple_transfer_perform(simple_transfer st) noexcept -> kphp::coro::
     case 1:
       frame_num += 1;
       return kphp::component::inter_component_session::client::response_readiness::pending;
-    case 2:
+    case 2: // NOLINT
       return kphp::component::inter_component_session::client::response_readiness::ready;
     default:
       return kphp::component::inter_component_session::client::response_readiness::ready;
@@ -152,7 +158,13 @@ inline auto simple_transfer_perform(simple_transfer st) noexcept -> kphp::coro::
 }
 
 inline auto simple_transfer_reset(simple_transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
-  auto session{WebInstanceState::get().session_get_or_init()};
+  auto& web_state{WebInstanceState::get()};
+
+  if (!web_state.simple_transfer2config.contains(st.descriptor)) {
+    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"unknown Simple transfer"}}};
+  }
+
+  auto session{web_state.session_get_or_init()};
   if (!session.has_value()) [[unlikely]] {
     kphp::log::error("failed to start or get session with Web component");
   }
@@ -186,7 +198,7 @@ inline auto simple_transfer_reset(simple_transfer st) noexcept -> kphp::coro::ta
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(r))};
   }
 
-  auto& simple2config{WebInstanceState::get().simple_transfer2config};
+  auto& simple2config{web_state.simple_transfer2config};
   if (simple2config.contains(st.descriptor)) [[likely]] {
     simple2config[st.descriptor] = simple_transfer_config{};
   }
@@ -195,13 +207,27 @@ inline auto simple_transfer_reset(simple_transfer st) noexcept -> kphp::coro::ta
 }
 
 inline auto simple_transfer_close(simple_transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {
-  auto session{WebInstanceState::get().session_get_or_init()};
+  auto& web_state{WebInstanceState::get()};
+
+  if (!web_state.simple_transfer2config.contains(st.descriptor)) {
+    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"unknown Simple transfer"}}};
+  }
+
+  auto session{web_state.session_get_or_init()};
   if (!session.has_value()) [[unlikely]] {
     kphp::log::error("failed to start or get session with Web component");
   }
 
   if ((*session).get() == nullptr) [[unlikely]] {
     kphp::log::error("session with Web components has been closed");
+  }
+
+  // Checking that Simple transfer is held by some Composite transfer
+  auto& composite_holder{web_state.simple_transfer2holder[st.descriptor]};
+  if (composite_holder.has_value()) {
+    if (auto close_res{co_await kphp::web::composite_transfer_remove(kphp::web::composite_transfer{*composite_holder}, kphp::web::simple_transfer{st.descriptor})}; !close_res.has_value()) {
+      co_return std::move(close_res);
+    };
   }
 
   tl::SimpleWebTransferClose web_transfer_close{.descriptor = tl::u64{st.descriptor}};

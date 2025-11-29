@@ -52,7 +52,7 @@ struct curl_context : vk::movable_only {
     set_errno(CURLE::BAD_FUNCTION_ARGUMENT, {{msg, N}});
   }
 
-  inline auto reset() noexcept {
+  inline auto errors_reset() noexcept {
     error_code = 0;
     error_description.fill(std::byte{0});
   }
@@ -66,7 +66,7 @@ struct easy_context : curl_context {
   bool has_been_executed{false}; // Need for providing same as in PHP semantics of curl_getinfo(..., CURLINFO_EFFECTIVE_URL)
 
   inline auto reset() noexcept {
-    curl_context::reset();
+    curl_context::errors_reset();
     return_transfer = false;
     private_data = std::nullopt;
     has_been_executed = false;
