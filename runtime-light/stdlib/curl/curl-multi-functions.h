@@ -188,7 +188,7 @@ inline auto f$curl_multi_strerror(kphp::web::curl::multi_type multi_id) noexcept
   return {};
 }
 
-inline auto f$curl_multi_errno(kphp::web::curl::multi_type multi_id) noexcept -> Optional<int64_t>  {
+inline auto f$curl_multi_errno(kphp::web::curl::multi_type multi_id) noexcept -> Optional<int64_t> {
   auto& curl_state{CurlInstanceState::get()};
   if (!curl_state.multi_ctx.has(multi_id)) {
     return false;
@@ -196,7 +196,6 @@ inline auto f$curl_multi_errno(kphp::web::curl::multi_type multi_id) noexcept ->
   auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
   return multi_ctx.error_code;
 }
-
 
 inline Optional<array<int64_t>> f$curl_multi_info_read([[maybe_unused]] int64_t /*unused*/,
                                                        [[maybe_unused]] Optional<std::optional<std::reference_wrapper<int64_t>>> /*unused*/ = {}) {
