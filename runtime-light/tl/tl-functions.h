@@ -593,4 +593,21 @@ public:
   }
 };
 
+class CompositeWebTransferWaitUpdates final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_MAGIC = 0x1212'1997;
+
+public:
+  tl::u64 descriptor;
+  tl::u64 timeout;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_MAGIC}.store(tls);
+    descriptor.store(tls);
+    timeout.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_MAGIC}.footprint() + descriptor.footprint() + timeout.footprint();
+  }
+};
 } // namespace tl

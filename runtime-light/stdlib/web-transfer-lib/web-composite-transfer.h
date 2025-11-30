@@ -5,6 +5,7 @@
 #pragma once
 
 #include <__expected/expected.h>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
@@ -320,6 +321,57 @@ inline auto composite_transfer_close(composite_transfer ct) noexcept -> kphp::co
   }
 
   co_return std::expected<void, error>{};
+}
+
+template<typename rep_type, typename period_type>
+inline auto composite_transfer_wait_updates(composite_transfer ct,
+                                            std::chrono::duration<rep_type, period_type> timeout) noexcept -> kphp::coro::task<std::expected<uint64_t, error>> {
+  auto& web_state{WebInstanceState::get()};
+
+  auto& composite2config{web_state.composite_transfer2config};
+  if (!composite2config.contains(ct.descriptor)) [[unlikely]] {
+    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"unknown Composite transfer"}}};
+  }
+
+  auto session{web_state.session_get_or_init()};
+  if (!session.has_value()) [[unlikely]] {
+    kphp::log::error("failed to start or get session with Web component");
+  }
+
+  if ((*session).get() == nullptr) [[unlikely]] {
+    kphp::log::error("session with Web components has been closed");
+  }
+
+  tl::CompositeWebTransferWaitUpdates tl_wait_updates{
+      .descriptor = tl::u64{ct.descriptor},
+      .timeout = tl::u64{.value = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(timeout).count())}};
+  tl::storer tls{tl_wait_updates.footprint()};
+  tl_wait_updates.store(tls);
+
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
+  auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
+    resp_buf.resize(size);
+    return {resp_buf.data(), size};
+  }};
+
+  auto resp{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider))};
+  if (!resp.has_value()) [[unlikely]] {
+    kphp::log::error("failed to send request of waiting Composite transfer updates");
+  }
+
+  tl::Either<tl::CompositeWebTransferWaitUpdatesResultOk, tl::WebError> composite_wait_resp{};
+  tl::fetcher tlf{*resp};
+  if (!composite_wait_resp.fetch(tlf)) [[unlikely]] {
+    kphp::log::error("failed to parse response of waiting Composite transfer updates");
+  }
+
+  auto result{composite_wait_resp.value};
+  if (std::holds_alternative<tl::WebError>(result)) {
+    co_return std::unexpected{details::process_error(std::get<tl::WebError>(result))};
+  }
+
+  const auto awaiters_num{std::get<tl::CompositeWebTransferWaitUpdatesResultOk>(result).awaiters_num.value};
+  co_return std::expected<uint64_t, error>{awaiters_num};
 }
 
 } // namespace kphp::web

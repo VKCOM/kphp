@@ -1409,4 +1409,21 @@ public:
   }
 };
 
+class CompositeWebTransferWaitUpdatesResultOk final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC = 0x2007'1997;
+
+public:
+  tl::u64 awaiters_num;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC) && awaiters_num.fetch(tlf)};
+    return ok;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC}.footprint() && awaiters_num.footprint();
+  }
+};
+
 } // namespace tl
