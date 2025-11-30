@@ -274,6 +274,8 @@ function curl_multi_init () ::: int;
 function curl_multi_add_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;
 /** @kphp-extern-func-info interruptible */
 function curl_multi_remove_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;
+/** @kphp-extern-func-info interruptible */
+function curl_multi_close ($multi_handle ::: int) ::: void;
 
 // ===== UNSUPPORTED =====
 /** @kphp-extern-func-info stub generation-required */
@@ -289,7 +291,5 @@ function curl_multi_select ($multi_handle ::: int, $timeout ::: float = 1.0) :::
 function curl_multi_info_read ($multi_handle ::: int, &$msgs_in_queue ::: int = TODO) ::: int[]|false;
 /** @kphp-extern-func-info stub generation-required */
 function curl_multi_errno ($multi_handle ::: int) ::: int|false;
-/** @kphp-extern-func-info stub generation-required */
-function curl_multi_close ($multi_handle ::: int) ::: void;
 /** @kphp-extern-func-info stub generation-required */
 function curl_multi_strerror ($errornum ::: int) ::: string|null;

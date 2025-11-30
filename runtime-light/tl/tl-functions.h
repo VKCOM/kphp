@@ -520,7 +520,8 @@ public:
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_ADD_MAGIC}.footprint() + composite_descriptor.footprint() + simple_descriptor.footprint() + simple_config.footprint();
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_ADD_MAGIC}.footprint() + composite_descriptor.footprint() + simple_descriptor.footprint() +
+           simple_config.footprint();
   }
 };
 
@@ -539,6 +540,22 @@ public:
 
   constexpr size_t footprint() const noexcept {
     return tl::magic{.value = COMPOSITE_WEB_TRANSFER_REMOVE_MAGIC}.footprint() + composite_descriptor.footprint() + simple_descriptor.footprint();
+  }
+};
+
+class CompositeWebTransferClose final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_CLOSE_MAGIC = 0x7162'22AB;
+
+public:
+  tl::u64 descriptor;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = COMPOSITE_WEB_TRANSFER_CLOSE_MAGIC}.store(tls);
+    descriptor.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_CLOSE_MAGIC}.footprint() + descriptor.footprint();
   }
 };
 

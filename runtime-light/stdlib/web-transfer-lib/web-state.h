@@ -31,7 +31,8 @@ struct WebInstanceState final : private vk::not_copyable {
 
   kphp::stl::unordered_map<kphp::web::composite_transfer::descriptor_type, kphp::web::composite_transfer_config, kphp::memory::script_allocator>
       composite_transfer2config{};
-  kphp::stl::map<kphp::web::simple_transfer::descriptor_type, kphp::web::simple_transfers, kphp::memory::script_allocator> composite_transfer2simple_transfers{};
+  kphp::stl::map<kphp::web::simple_transfer::descriptor_type, kphp::web::simple_transfers, kphp::memory::script_allocator>
+      composite_transfer2simple_transfers{};
 
   inline auto session_get_or_init() noexcept -> std::expected<shared_session_type, int32_t>;
 

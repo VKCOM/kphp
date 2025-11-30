@@ -96,14 +96,15 @@ inline auto composite_transfer_add(composite_transfer ct, simple_transfer st) no
   // Ensure that simple transfer hasn't been added in some composite yet
   auto& simple_transfers{web_state.composite_transfer2simple_transfers[ct.descriptor]};
   if (simple_transfers.contains(st.descriptor)) {
-    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"a Composite transfer contains this Simple transfer"}}};
+    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"the Composite transfer already includes this Simple transfer"}}};
   }
   simple_transfers.emplace(st.descriptor);
 
   // Set a holder for simple transfer
   auto& composite_holder{web_state.simple_transfer2holder[st.descriptor]};
   if (composite_holder.has_value()) {
-    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"a Simple transfer is held by some Composite transfer already"}}};
+    co_return std::unexpected{
+        error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"this Simple transfer is already part of another Composite transfer"}}};
   }
   composite_holder.emplace(ct.descriptor);
 
@@ -167,17 +168,17 @@ inline auto composite_transfer_remove(composite_transfer ct, simple_transfer st)
     kphp::log::error("session with Web components has been closed");
   }
 
-  // Ensure that simple transfer has been added in some composite yet
+  // Ensure that simple transfer alreadt has been added in some composite
   auto& simple_transfers{web_state.composite_transfer2simple_transfers[ct.descriptor]};
   if (!simple_transfers.contains(st.descriptor)) {
-    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"a Composite transfer doesn't contain this Simple transfer"}}};
+    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"this Composite transfer does not include this Simple transfer"}}};
   }
   simple_transfers.erase(st.descriptor);
 
   // Unset a holder for simple transfer
   auto& composite_holder{web_state.simple_transfer2holder[st.descriptor]};
   if (!composite_holder.has_value()) {
-    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"a Simple transfer isn't held by some Composite transfer yet"}}};
+    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"this Simple transfer is not yet part of any Composite transfer"}}};
   }
   composite_holder.reset();
 
@@ -204,6 +205,60 @@ inline auto composite_transfer_remove(composite_transfer ct, simple_transfer st)
   }
 
   if (auto r{composite_remove_resp.value}; std::holds_alternative<tl::WebError>(r)) {
+    co_return std::unexpected{details::process_error(std::get<tl::WebError>(r))};
+  }
+
+  co_return std::expected<void, error>{};
+}
+
+inline auto composite_transfer_close(composite_transfer ct) noexcept -> kphp::coro::task<std::expected<void, error>> {
+  auto& web_state{WebInstanceState::get()};
+
+  auto& composite2config{web_state.composite_transfer2config};
+  if (!composite2config.contains(ct.descriptor)) [[unlikely]] {
+    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"unknown Composite transfer"}}};
+  }
+
+  auto session{web_state.session_get_or_init()};
+  if (!session.has_value()) [[unlikely]] {
+    kphp::log::error("fastruct composite_transfer_config;iled to start or get session with Web component");
+  }
+
+  if ((*session).get() == nullptr) [[unlikely]] {
+    kphp::log::error("session with Web components has been closed");
+  }
+
+  // Enumerate over all included simple transfers and close them
+  auto& simple_transfers{web_state.composite_transfer2simple_transfers[ct.descriptor]};
+  for (const auto st : simple_transfers) {
+    if (auto remove_res{co_await kphp::web::composite_transfer_remove(ct, kphp::web::simple_transfer{st})}; !remove_res.has_value()) {
+      co_return std::move(remove_res);
+    };
+  }
+  simple_transfers.clear();
+
+  tl::CompositeWebTransferClose tl_close{tl::u64{ct.descriptor}};
+  tl::storer tls{tl_close.footprint()};
+  tl_close.store(tls);
+
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
+  auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
+    resp_buf.resize(size);
+    return {resp_buf.data(), size};
+  }};
+
+  auto resp{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider))};
+  if (!resp.has_value()) [[unlikely]] {
+    kphp::log::error("failed to send request of closing Composite transfer");
+  }
+
+  tl::Either<tl::CompositeWebTransferCloseResultOk, tl::WebError> composite_close_resp{};
+  tl::fetcher tlf{*resp};
+  if (!composite_close_resp.fetch(tlf)) [[unlikely]] {
+    kphp::log::error("failed to parse response of closing Composite transfer");
+  }
+
+  if (auto r{composite_close_resp.value}; std::holds_alternative<tl::WebError>(r)) {
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(r))};
   }
 
