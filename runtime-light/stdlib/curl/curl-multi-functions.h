@@ -174,6 +174,30 @@ inline auto f$curl_multi_close(kphp::web::curl::multi_type multi_id) noexcept ->
   co_return;
 }
 
+inline auto f$curl_multi_strerror(kphp::web::curl::multi_type multi_id) noexcept -> Optional<string> {
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.multi_ctx.has(multi_id)) {
+    return {};
+  }
+  auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
+  if (multi_ctx.error_code != static_cast<int64_t>(kphp::web::curl::CURLMcode::OK)) [[likely]] {
+    const auto* const desc_data{reinterpret_cast<const char*>(multi_ctx.error_description.data())};
+    const auto desc_size{static_cast<string::size_type>(multi_ctx.error_description.size())};
+    return string{desc_data, desc_size};
+  }
+  return {};
+}
+
+inline auto f$curl_multi_errno(kphp::web::curl::multi_type multi_id) noexcept -> Optional<int64_t>  {
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.multi_ctx.has(multi_id)) {
+    return false;
+  }
+  auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
+  return multi_ctx.error_code;
+}
+
+
 inline Optional<array<int64_t>> f$curl_multi_info_read([[maybe_unused]] int64_t /*unused*/,
                                                        [[maybe_unused]] Optional<std::optional<std::reference_wrapper<int64_t>>> /*unused*/ = {}) {
   kphp::log::error("call to unsupported function : curl_multi_info_read");
