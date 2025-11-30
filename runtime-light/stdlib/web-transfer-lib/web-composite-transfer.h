@@ -237,8 +237,7 @@ inline auto composite_transfer_perform(composite_transfer ct) noexcept -> kphp::
   tl::compositeWebTransferConfig tl_composite_config{tl::vector<tl::webProperty>{std::move(tl_composite_props)}};
 
   // Prepare `CompositeWebTransferPerform` method
-  tl::CompositeWebTransferPerform tl_perform{
-      .descriptor = tl::u64{ct.descriptor}, .config = std::move(tl_composite_config)};
+  tl::CompositeWebTransferPerform tl_perform{.descriptor = tl::u64{ct.descriptor}, .config = std::move(tl_composite_config)};
   tl::storer tls{tl_perform.footprint()};
   tl_perform.store(tls);
 

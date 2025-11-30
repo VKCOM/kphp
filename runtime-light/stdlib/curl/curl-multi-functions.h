@@ -19,6 +19,7 @@
 #include "runtime-light/stdlib/web-transfer-lib/defs.h"
 #include "runtime-light/stdlib/web-transfer-lib/details/web-property.h"
 #include "runtime-light/stdlib/web-transfer-lib/web-composite-transfer.h"
+#include "runtime-light/stdlib/web-transfer-lib/web-simple-transfer.h"
 
 inline auto f$curl_multi_init() noexcept -> kphp::coro::task<kphp::web::curl::multi_type> {
   auto open_res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_open(kphp::web::transfer_backend::CURL))};
@@ -122,7 +123,7 @@ inline auto f$curl_multi_setopt(kphp::web::curl::multi_type multi_id, int64_t op
   }
 }
 
-inline auto f$curl_multi_exec(kphp::web::curl::multi_type multi_id, int64_t& still_running) noexcept -> kphp::coro::task<Optional<int64_t>>{
+inline auto f$curl_multi_exec(kphp::web::curl::multi_type multi_id, int64_t& still_running) noexcept -> kphp::coro::task<Optional<int64_t>> {
   auto& curl_state{CurlInstanceState::get()};
   if (!curl_state.multi_ctx.has(multi_id)) [[unlikely]] {
     co_return false;
@@ -137,6 +138,24 @@ inline auto f$curl_multi_exec(kphp::web::curl::multi_type multi_id, int64_t& sti
   still_running = (*res);
   multi_ctx.set_errno(kphp::web::curl::CURLE::OK);
   co_return multi_ctx.error_code;
+}
+
+inline auto f$curl_multi_getcontent(kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<Optional<string>> {
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.easy_ctx.has(easy_id)) [[unlikely]] {
+    co_return false;
+  }
+  auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
+  if (easy_ctx.return_transfer) {
+    auto res{co_await kphp::forks::id_managed(kphp::web::simple_transfer_get_response(kphp::web::simple_transfer{easy_id}))};
+    if (!res.has_value()) [[unlikely]] {
+      easy_ctx.set_errno(res.error().code, res.error().description);
+      kphp::web::curl::print_error("Could not get response of curl easy handle", std::move(res.error()));
+      co_return false;
+    }
+    co_return (*res).body;
+  }
+  co_return Optional<string>{};
 }
 
 inline auto f$curl_multi_close(kphp::web::curl::multi_type multi_id) noexcept -> kphp::coro::task<void> {

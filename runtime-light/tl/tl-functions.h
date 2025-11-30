@@ -453,6 +453,22 @@ public:
   }
 };
 
+class SimpleWebTransferGetResponse final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_GET_RESPONSE_MAGIC = 0xAADD'FF24;
+
+public:
+  tl::u64 descriptor;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = SIMPLE_WEB_TRANSFER_GET_RESPONSE_MAGIC}.store(tls);
+    descriptor.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_GET_RESPONSE_MAGIC}.footprint() + descriptor.footprint();
+  }
+};
+
 class SimpleWebTransferClose final {
   static constexpr uint32_t SIMPLE_WEB_TRANSFER_CLOSE_MAGIC = 0x36F7'16BB;
 

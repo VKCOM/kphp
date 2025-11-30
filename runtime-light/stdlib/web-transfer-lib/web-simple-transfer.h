@@ -15,6 +15,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/web-transfer-lib/defs.h"
 #include "runtime-light/stdlib/web-transfer-lib/details/web-error.h"
+#include "runtime-light/stdlib/web-transfer-lib/details/web-response.h"
 #include "runtime-light/stdlib/web-transfer-lib/web-composite-transfer.h"
 #include "runtime-light/stdlib/web-transfer-lib/web-state.h"
 #include "runtime-light/tl/tl-core.h"
@@ -81,15 +82,6 @@ inline auto simple_transfer_perform(simple_transfer st) noexcept -> kphp::coro::
     co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"unknown Simple transfer"}}};
   }
 
-  auto session{web_state.session_get_or_init()};
-  if (!session.has_value()) [[unlikely]] {
-    kphp::log::error("failed to start or get session with Web component");
-  }
-
-  if ((*session).get() == nullptr) [[unlikely]] {
-    kphp::log::error("session with Web components has been closed");
-  }
-
   kphp::stl::vector<tl::webProperty, kphp::memory::script_allocator> tl_props{};
   auto& props{simple2config[st.descriptor].properties};
   for (const auto& [id, val] : props) {
@@ -101,61 +93,21 @@ inline auto simple_transfer_perform(simple_transfer st) noexcept -> kphp::coro::
   tl::storer tls{tl_perform.footprint()};
   tl_perform.store(tls);
 
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> ok_or_error_buffer{};
-  response resp{};
-  std::optional<error> err{};
-  auto frame_num{0};
+  co_return co_await details::process_simple_response(tls.view());
+}
 
-  auto response_buffer_provider{[&frame_num, &ok_or_error_buffer, &resp](size_t size) noexcept -> std::span<std::byte> {
-    switch (frame_num) {
-    case 0:
-      ok_or_error_buffer.resize(size);
-      return {ok_or_error_buffer.data(), size};
-    case 1:
-      resp.headers = string{static_cast<string::size_type>(size), false};
-      return {reinterpret_cast<std::byte*>(resp.headers.buffer()), size};
-    case 2:
-      resp.body = string{static_cast<string::size_type>(size), false};
-      return {reinterpret_cast<std::byte*>(resp.body.buffer()), size};
-    default:
-      kphp::log::assertion(false);
-      return {};
-    }
-  }};
+inline auto simple_transfer_get_response(simple_transfer st) noexcept -> kphp::coro::task<std::expected<response, error>> {
+  auto& web_state{WebInstanceState::get()};
 
-  const auto response_handler{[&frame_num, &err, &ok_or_error_buffer](
-                                  [[maybe_unused]] std::span<std::byte> _) noexcept -> kphp::component::inter_component_session::client::response_readiness {
-    switch (frame_num) {
-    case 0: {
-      frame_num += 1;
-      tl::Either<tl::SimpleWebTransferPerformResultOk, tl::WebError> simple_web_transfer_perform_resp{};
-      tl::fetcher tlf{ok_or_error_buffer};
-      if (!simple_web_transfer_perform_resp.fetch(tlf)) [[unlikely]] {
-        kphp::log::error("failed to parse response of Simple descriptor performing");
-      }
-      if (auto r{simple_web_transfer_perform_resp.value}; std::holds_alternative<tl::WebError>(r)) {
-        err.emplace(details::process_error(std::get<tl::WebError>(r)));
-        return kphp::component::inter_component_session::client::response_readiness::ready;
-      }
-      return kphp::component::inter_component_session::client::response_readiness::pending;
-    }
-    case 1:
-      frame_num += 1;
-      return kphp::component::inter_component_session::client::response_readiness::pending;
-    case 2: // NOLINT
-      return kphp::component::inter_component_session::client::response_readiness::ready;
-    default:
-      return kphp::component::inter_component_session::client::response_readiness::ready;
-    }
-  }};
-
-  if (auto res{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider), response_handler)}; !res) [[unlikely]] {
-    kphp::log::error("failed to send request of Simple descriptor performing");
+  if (!web_state.simple_transfer2config.contains(st.descriptor)) {
+    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"unknown Simple transfer"}}};
   }
-  if (err.has_value()) [[unlikely]] {
-    co_return std::unexpected{std::move(*err)};
-  }
-  co_return std::expected<response, error>{std::move(resp)};
+
+  tl::SimpleWebTransferGetResponse web_transfer_get_resp{.descriptor = tl::u64{st.descriptor}};
+  tl::storer tls{web_transfer_get_resp.footprint()};
+  web_transfer_get_resp.store(tls);
+
+  co_return co_await details::process_simple_response(tls.view());
 }
 
 inline auto simple_transfer_reset(simple_transfer st) noexcept -> kphp::coro::task<std::expected<void, error>> {

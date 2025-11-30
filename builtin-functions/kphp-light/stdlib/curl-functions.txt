@@ -282,11 +282,12 @@ function curl_multi_setopt ($multi_handle ::: int, $option ::: int, $value ::: i
 function curl_multi_exec ($multi_handle ::: int, &$still_running ::: int) ::: int|false;
 
 /** @kphp-extern-func-info interruptible */
+function curl_multi_getcontent ($curl_handle ::: int ) ::: string|false|null;
+
+/** @kphp-extern-func-info interruptible */
 function curl_multi_close ($multi_handle ::: int) ::: void;
 
 // ===== UNSUPPORTED =====
-/** @kphp-extern-func-info stub generation-required */
-function curl_multi_getcontent ($curl_handle ::: int ) ::: string|false|null;
 /** @kphp-extern-func-info stub generation-required */
 function curl_multi_select ($multi_handle ::: int, $timeout ::: float = 1.0) ::: int|false;
 
