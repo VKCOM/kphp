@@ -75,9 +75,10 @@ inline auto simple_transfer_open(transfer_backend backend) noexcept -> kphp::cor
 
 inline auto simple_transfer_perform(simple_transfer st) noexcept -> kphp::coro::task<std::expected<response, error>> {
   auto& web_state{WebInstanceState::get()};
+
   auto& simple2config{web_state.simple_transfer2config};
   if (!simple2config.contains(st.descriptor)) [[unlikely]] {
-    kphp::log::error("unknown Simple descriptor");
+    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"unknown Simple transfer"}}};
   }
 
   auto session{web_state.session_get_or_init()};
@@ -225,8 +226,10 @@ inline auto simple_transfer_close(simple_transfer st) noexcept -> kphp::coro::ta
   // Checking that Simple transfer is held by some Composite transfer
   auto& composite_holder{web_state.simple_transfer2holder[st.descriptor]};
   if (composite_holder.has_value()) {
-    if (auto close_res{co_await kphp::web::composite_transfer_remove(kphp::web::composite_transfer{*composite_holder}, kphp::web::simple_transfer{st.descriptor})}; !close_res.has_value()) {
-      co_return std::move(close_res);
+    if (auto remove_res{
+            co_await kphp::web::composite_transfer_remove(kphp::web::composite_transfer{*composite_holder}, kphp::web::simple_transfer{st.descriptor})};
+        !remove_res.has_value()) {
+      co_return std::move(remove_res);
     };
   }
 

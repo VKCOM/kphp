@@ -32,12 +32,12 @@ inline auto f$curl_multi_init() noexcept -> kphp::coro::task<kphp::web::curl::mu
 
 inline auto f$curl_multi_add_handle(kphp::web::curl::multi_type multi_id, kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<Optional<int64_t>> {
   auto& curl_state{CurlInstanceState::get()};
-  if (!curl_state.multi_ctx.has(multi_id)) {
+  if (!curl_state.multi_ctx.has(multi_id)) [[unlikely]] {
     co_return false;
   }
   auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
 
-  if (!curl_state.easy_ctx.has(easy_id)) {
+  if (!curl_state.easy_ctx.has(easy_id)) [[unlikely]] {
     co_return false;
   }
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
@@ -53,16 +53,18 @@ inline auto f$curl_multi_add_handle(kphp::web::curl::multi_type multi_id, kphp::
   co_return multi_ctx.error_code;
 }
 
-inline auto f$curl_multi_remove_handle(kphp::web::curl::multi_type multi_id, kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<Optional<int64_t>> {
+inline auto f$curl_multi_remove_handle(kphp::web::curl::multi_type multi_id,
+                                       kphp::web::curl::easy_type easy_id) noexcept -> kphp::coro::task<Optional<int64_t>> {
   auto& curl_state{CurlInstanceState::get()};
-  if (!curl_state.multi_ctx.has(multi_id)) {
+  if (!curl_state.multi_ctx.has(multi_id)) [[unlikely]] {
     co_return false;
   }
   auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
-  if (!curl_state.easy_ctx.has(easy_id)) {
+  if (!curl_state.easy_ctx.has(easy_id)) [[unlikely]] {
     co_return false;
   }
-  auto res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_remove(kphp::web::composite_transfer{multi_id}, kphp::web::simple_transfer{easy_id}))};
+  auto res{
+      co_await kphp::forks::id_managed(kphp::web::composite_transfer_remove(kphp::web::composite_transfer{multi_id}, kphp::web::simple_transfer{easy_id}))};
   if (!res.has_value()) [[unlikely]] {
     multi_ctx.set_errno(res.error().code, res.error().description);
     kphp::web::curl::print_error("Could not remove a curl easy handler from multi handle", std::move(res.error()));
@@ -70,6 +72,22 @@ inline auto f$curl_multi_remove_handle(kphp::web::curl::multi_type multi_id, kph
   }
   multi_ctx.set_errno(kphp::web::curl::CURLE::OK);
   co_return multi_ctx.error_code;
+}
+
+inline auto f$curl_multi_close(kphp::web::curl::multi_type multi_id) noexcept -> kphp::coro::task<void> {
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.multi_ctx.has(multi_id)) [[unlikely]] {
+    co_return;
+  }
+  auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
+  auto res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_close(kphp::web::composite_transfer{multi_id}))};
+  if (!res.has_value()) [[unlikely]] {
+    multi_ctx.set_errno(res.error().code, res.error().description);
+    kphp::web::curl::print_error("Could not close curl multi handle", std::move(res.error()));
+    co_return;
+  }
+  multi_ctx.set_errno(kphp::web::curl::CURLE::OK);
+  co_return;
 }
 
 inline Optional<array<int64_t>> f$curl_multi_info_read([[maybe_unused]] int64_t /*unused*/,

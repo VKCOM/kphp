@@ -1340,7 +1340,6 @@ class CompositeWebTransferAddResultOk final {
   static constexpr uint32_t COMPOSITE_WEB_TRANSFER_ADD_RESULT_OK_MAGIC = 0x3161'22DD;
 
 public:
-
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
     bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_ADD_RESULT_OK_MAGIC)};
@@ -1356,7 +1355,6 @@ class CompositeWebTransferRemoveResultOk final {
   static constexpr uint32_t COMPOSITE_WEB_TRANSFER_REMOVE_RESULT_OK_MAGIC = 0x8981'22FF;
 
 public:
-
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
     bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_REMOVE_RESULT_OK_MAGIC)};
@@ -1365,6 +1363,21 @@ public:
 
   constexpr size_t footprint() const noexcept {
     return tl::magic{.value = COMPOSITE_WEB_TRANSFER_REMOVE_RESULT_OK_MAGIC}.footprint();
+  }
+};
+
+class CompositeWebTransferCloseResultOk final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC = 0xAB71'6222;
+
+public:
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC)};
+    return ok;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC}.footprint();
   }
 };
 
