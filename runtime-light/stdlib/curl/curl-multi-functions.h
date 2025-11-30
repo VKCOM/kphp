@@ -75,22 +75,6 @@ inline auto f$curl_multi_remove_handle(kphp::web::curl::multi_type multi_id,
   co_return multi_ctx.error_code;
 }
 
-inline auto f$curl_multi_close(kphp::web::curl::multi_type multi_id) noexcept -> kphp::coro::task<void> {
-  auto& curl_state{CurlInstanceState::get()};
-  if (!curl_state.multi_ctx.has(multi_id)) [[unlikely]] {
-    co_return;
-  }
-  auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
-  auto res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_close(kphp::web::composite_transfer{multi_id}))};
-  if (!res.has_value()) [[unlikely]] {
-    multi_ctx.set_errno(res.error().code, res.error().description);
-    kphp::web::curl::print_error("Could not close curl multi handle", std::move(res.error()));
-    co_return;
-  }
-  multi_ctx.set_errno(kphp::web::curl::CURLE::OK);
-  co_return;
-}
-
 inline auto f$curl_multi_setopt(kphp::web::curl::multi_type multi_id, int64_t option, int64_t value) noexcept -> bool {
   auto& curl_state{CurlInstanceState::get()};
   if (!curl_state.multi_ctx.has(multi_id)) {
@@ -132,21 +116,43 @@ inline auto f$curl_multi_setopt(kphp::web::curl::multi_type multi_id, int64_t op
     multi_ctx.set_errno(kphp::web::curl::CURLMcode::OK);
     return true;
   }
-  // off_t options
-  case kphp::web::curl::CURMLOPT::CHUNK_LENGTH_PENALTY_SIZE:
-  case kphp::web::curl::CURMLOPT::CONTENT_LENGTH_PENALTY_SIZE: {
-    auto res{kphp::web::set_transfer_property(ct, option, kphp::web::property_value::as_long(value))};
-    if (!res.has_value()) [[unlikely]] {
-      kphp::web::curl::print_error("could not set an multi option", std::move(res.error()));
-      return false;
-    }
-    multi_ctx.set_errno(kphp::web::curl::CURLMcode::OK);
-    return true;
-  }
   default:
     multi_ctx.set_errno(kphp::web::curl::CURLMcode::UNKNOWN_OPTION);
     return false;
   }
+}
+
+inline auto f$curl_multi_exec(kphp::web::curl::multi_type multi_id, int64_t& still_running) noexcept -> kphp::coro::task<Optional<int64_t>>{
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.multi_ctx.has(multi_id)) [[unlikely]] {
+    co_return false;
+  }
+  auto res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_perform(kphp::web::composite_transfer{multi_id}))};
+  auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
+  if (!res.has_value()) [[unlikely]] {
+    multi_ctx.set_errno(res.error().code, res.error().description);
+    kphp::web::curl::print_error("could not execute curl multi handle", std::move(res.error()));
+    co_return multi_ctx.error_code;
+  }
+  still_running = (*res);
+  multi_ctx.set_errno(kphp::web::curl::CURLE::OK);
+  co_return multi_ctx.error_code;
+}
+
+inline auto f$curl_multi_close(kphp::web::curl::multi_type multi_id) noexcept -> kphp::coro::task<void> {
+  auto& curl_state{CurlInstanceState::get()};
+  if (!curl_state.multi_ctx.has(multi_id)) [[unlikely]] {
+    co_return;
+  }
+  auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
+  auto res{co_await kphp::forks::id_managed(kphp::web::composite_transfer_close(kphp::web::composite_transfer{multi_id}))};
+  if (!res.has_value()) [[unlikely]] {
+    multi_ctx.set_errno(res.error().code, res.error().description);
+    kphp::web::curl::print_error("Could not close curl multi handle", std::move(res.error()));
+    co_return;
+  }
+  multi_ctx.set_errno(kphp::web::curl::CURLE::OK);
+  co_return;
 }
 
 inline Optional<array<int64_t>> f$curl_multi_info_read([[maybe_unused]] int64_t /*unused*/,

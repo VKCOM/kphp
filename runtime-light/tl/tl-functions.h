@@ -543,6 +543,24 @@ public:
   }
 };
 
+class CompositeWebTransferPerform final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_PERFORM_MAGIC = 0xAA24'42BB;
+
+public:
+  tl::u64 descriptor;
+  tl::compositeWebTransferConfig config;
+
+  void store(tl::storer& tls) const noexcept {
+    tl::magic{.value = COMPOSITE_WEB_TRANSFER_PERFORM_MAGIC}.store(tls);
+    descriptor.store(tls);
+    config.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_PERFORM_MAGIC}.footprint() + descriptor.footprint() + config.footprint();
+  }
+};
+
 class CompositeWebTransferClose final {
   static constexpr uint32_t COMPOSITE_WEB_TRANSFER_CLOSE_MAGIC = 0x7162'22AB;
 

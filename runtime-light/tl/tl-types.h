@@ -1224,18 +1224,6 @@ struct webProperty final {
   }
 };
 
-struct simpleWebTransferConfig final {
-  tl::vector<tl::webProperty> properties;
-
-  void store(tl::storer& tls) const noexcept {
-    properties.store(tls);
-  }
-
-  constexpr size_t footprint() const noexcept {
-    return properties.footprint();
-  }
-};
-
 class WebTransferGetPropertiesResultOk final {
   static constexpr uint32_t WEB_TRANSFER_GET_PROPERTIES_RESULT_OK_MAGIC = 0x48A7'16CC;
 
@@ -1254,6 +1242,17 @@ public:
 };
 
 // ===== Simple =====
+struct simpleWebTransferConfig final {
+  tl::vector<tl::webProperty> properties;
+
+  void store(tl::storer& tls) const noexcept {
+    properties.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return properties.footprint();
+  }
+};
 
 class SimpleWebTransferOpenResultOk final {
   static constexpr uint32_t SIMPLE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC = 0x24A8'98FF;
@@ -1319,6 +1318,18 @@ public:
 
 // ===== Composite =====
 
+struct compositeWebTransferConfig final {
+  tl::vector<tl::webProperty> properties;
+
+  void store(tl::storer& tls) const noexcept {
+    properties.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return properties.footprint();
+  }
+};
+
 class CompositeWebTransferOpenResultOk final {
   static constexpr uint32_t COMPOSITE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC = 0x428A'89DD;
 
@@ -1363,6 +1374,23 @@ public:
 
   constexpr size_t footprint() const noexcept {
     return tl::magic{.value = COMPOSITE_WEB_TRANSFER_REMOVE_RESULT_OK_MAGIC}.footprint();
+  }
+};
+
+class CompositeWebTransferPerformResultOk final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC = 0xFF42'24DD;
+
+public:
+  tl::u64 remaining;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC) && remaining.fetch(tlf)};
+    return ok;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC}.footprint() + remaining.footprint();
   }
 };
 

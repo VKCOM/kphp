@@ -234,8 +234,8 @@ define("CURLM_ADDED_ALREADY", 7);
 
 define('CURLMOPT_PIPELINING', 3);
 define('CURLMOPT_MAXCONNECTS', 6);
-define('CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE', 30010);
-define('CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE', 30009);
+// define('CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE', 30010);
+// define('CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE', 30009);
 define('CURLMOPT_MAX_HOST_CONNECTIONS', 7);
 define('CURLMOPT_MAX_PIPELINE_LENGTH', 8);
 define('CURLMOPT_MAX_TOTAL_CONNECTIONS', 13);
@@ -279,14 +279,14 @@ function curl_multi_remove_handle ($multi_handle ::: int, $curl_handle ::: int) 
 function curl_multi_setopt ($multi_handle ::: int, $option ::: int, $value ::: int) ::: bool;
 
 /** @kphp-extern-func-info interruptible */
+function curl_multi_exec ($multi_handle ::: int, &$still_running ::: int) ::: int|false;
+
+/** @kphp-extern-func-info interruptible */
 function curl_multi_close ($multi_handle ::: int) ::: void;
 
 // ===== UNSUPPORTED =====
 /** @kphp-extern-func-info stub generation-required */
 function curl_multi_getcontent ($curl_handle ::: int ) ::: string|false|null;
-
-/** @kphp-extern-func-info stub generation-required */
-function curl_multi_exec ($multi_handle ::: int, &$still_running ::: int) ::: int|false;
 /** @kphp-extern-func-info stub generation-required */
 function curl_multi_select ($multi_handle ::: int, $timeout ::: float = 1.0) ::: int|false;
 

@@ -4,7 +4,9 @@
 
 #pragma once
 
+#include <__expected/expected.h>
 #include <cstddef>
+#include <cstdint>
 #include <expected>
 #include <span>
 #include <utility>
@@ -158,7 +160,7 @@ inline auto composite_transfer_remove(composite_transfer ct, simple_transfer st)
 
   auto session{web_state.session_get_or_init()};
   if (!session.has_value()) [[unlikely]] {
-    kphp::log::error("fastruct composite_transfer_config;iled to start or get session with Web component");
+    kphp::log::error("failed to start or get session with Web component");
   }
 
   if ((*session).get() == nullptr) [[unlikely]] {
@@ -206,6 +208,65 @@ inline auto composite_transfer_remove(composite_transfer ct, simple_transfer st)
   }
 
   co_return std::expected<void, error>{};
+}
+
+inline auto composite_transfer_perform(composite_transfer ct) noexcept -> kphp::coro::task<std::expected<uint64_t, error>> {
+  auto& web_state{WebInstanceState::get()};
+
+  auto& composite2config{web_state.composite_transfer2config};
+  if (!composite2config.contains(ct.descriptor)) [[unlikely]] {
+    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"unknown Composite transfer"}}};
+  }
+
+  auto session{web_state.session_get_or_init()};
+  if (!session.has_value()) [[unlikely]] {
+    kphp::log::error("failed to start or get session with Web component");
+  }
+
+  if ((*session).get() == nullptr) [[unlikely]] {
+    kphp::log::error("session with Web components has been closed");
+  }
+
+  // Prepare config
+  kphp::stl::vector<tl::webProperty, kphp::memory::script_allocator> tl_composite_props{};
+  auto& props{composite2config[ct.descriptor].properties};
+  for (const auto& [id, val] : props) {
+    tl::webProperty p{.id = tl::u64{id}, .value = val.serialize()};
+    tl_composite_props.emplace_back(std::move(p));
+  }
+  tl::compositeWebTransferConfig tl_composite_config{tl::vector<tl::webProperty>{std::move(tl_composite_props)}};
+
+  // Prepare `CompositeWebTransferPerform` method
+  tl::CompositeWebTransferPerform tl_perform{
+      .descriptor = tl::u64{ct.descriptor}, .config = std::move(tl_composite_config)};
+  tl::storer tls{tl_perform.footprint()};
+  tl_perform.store(tls);
+
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> resp_buf{};
+  auto response_buffer_provider{[&resp_buf](size_t size) noexcept -> std::span<std::byte> {
+    resp_buf.resize(size);
+    return {resp_buf.data(), size};
+  }};
+
+  auto resp{co_await (*session).get()->client.query(tls.view(), std::move(response_buffer_provider))};
+  if (!resp.has_value()) [[unlikely]] {
+    kphp::log::error("failed to send request of performing Composite transfer");
+  }
+
+  tl::Either<tl::CompositeWebTransferPerformResultOk, tl::WebError> composite_perform_resp{};
+  tl::fetcher tlf{*resp};
+  if (!composite_perform_resp.fetch(tlf)) [[unlikely]] {
+    kphp::log::error("failed to parse response of performing Composite transfer");
+  }
+
+  const auto result{composite_perform_resp.value};
+  if (std::holds_alternative<tl::WebError>(result)) {
+    co_return std::unexpected{details::process_error(std::get<tl::WebError>(result))};
+  }
+
+  const auto remaining{std::get<tl::CompositeWebTransferPerformResultOk>(result).remaining.value};
+
+  co_return std::expected<uint64_t, error>{remaining};
 }
 
 inline auto composite_transfer_close(composite_transfer ct) noexcept -> kphp::coro::task<std::expected<void, error>> {
