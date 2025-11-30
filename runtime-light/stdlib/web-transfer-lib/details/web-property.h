@@ -5,13 +5,9 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdint>
 #include <expected>
-#include <iterator>
-#include <memory>
 #include <optional>
 #include <span>
-#include <string_view>
 #include <utility>
 #include <variant>
 
@@ -127,8 +123,8 @@ inline auto get_transfer_properties(std::variant<simple_transfer, composite_tran
     properties_type props{};
     auto& tl_props{std::get<tl::WebTransferGetPropertiesResultOk>(r).properties};
     for (const auto& p : tl_props) {
-      const auto k{p.id.value};
-      const auto v{property_value::deserialize(std::move(p.value))};
+      auto k{p.id.value};
+      auto v{property_value::deserialize(p.value)};
       props.emplace(k, std::move(v));
     }
     if (prop_id.has_value() && !props.contains(*prop_id)) {
