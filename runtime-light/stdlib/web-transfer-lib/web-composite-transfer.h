@@ -93,21 +93,6 @@ inline auto composite_transfer_add(composite_transfer ct, simple_transfer st) no
     kphp::log::error("session with Web components has been closed");
   }
 
-  // Ensure that simple transfer hasn't been added in some composite yet
-  auto& simple_transfers{web_state.composite_transfer2simple_transfers[ct.descriptor]};
-  if (simple_transfers.contains(st.descriptor)) {
-    co_return std::unexpected{error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"the Composite transfer already includes this Simple transfer"}}};
-  }
-  simple_transfers.emplace(st.descriptor);
-
-  // Set a holder for simple transfer
-  auto& composite_holder{web_state.simple_transfer2holder[st.descriptor]};
-  if (composite_holder.has_value()) {
-    co_return std::unexpected{
-        error{.code = WEB_INTERNAL_ERROR_CODE, .description = string{"this Simple transfer is already part of another Composite transfer"}}};
-  }
-  composite_holder.emplace(ct.descriptor);
-
   // Prepare simple config
   kphp::stl::vector<tl::webProperty, kphp::memory::script_allocator> tl_simple_props{};
   auto& props{simple2config[st.descriptor].properties};
@@ -141,6 +126,18 @@ inline auto composite_transfer_add(composite_transfer ct, simple_transfer st) no
 
   if (auto r{composite_add_resp.value}; std::holds_alternative<tl::WebError>(r)) {
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(r))};
+  }
+
+  // Ensure that simple transfer hasn't been added in some composite yet
+  auto& simple_transfers{web_state.composite_transfer2simple_transfers[ct.descriptor]};
+  if (!simple_transfers.contains(st.descriptor)) {
+    simple_transfers.emplace(st.descriptor);
+  }
+
+  // Set a holder for simple transfer
+  auto& composite_holder{web_state.simple_transfer2holder[st.descriptor]};
+  if (!composite_holder.has_value()) {
+    composite_holder.emplace(ct.descriptor);
   }
 
   co_return std::expected<void, error>{};
@@ -221,7 +218,7 @@ inline auto composite_transfer_close(composite_transfer ct) noexcept -> kphp::co
 
   auto session{web_state.session_get_or_init()};
   if (!session.has_value()) [[unlikely]] {
-    kphp::log::error("fastruct composite_transfer_config;iled to start or get session with Web component");
+    kphp::log::error("failed to start or get session with Web component");
   }
 
   if ((*session).get() == nullptr) [[unlikely]] {

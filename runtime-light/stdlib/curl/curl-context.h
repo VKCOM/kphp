@@ -45,6 +45,14 @@ struct curl_context : vk::movable_only {
     set_errno(static_cast<int64_t>(code), std::move(description));
   }
 
+  inline auto set_errno(kphp::web::curl::CURLMcode code, std::string_view description) noexcept {
+    set_errno(static_cast<int64_t>(code), description);
+  }
+
+  inline auto set_errno(kphp::web::curl::CURLMcode code, std::optional<string> description = std::nullopt) noexcept {
+    set_errno(static_cast<int64_t>(code), std::move(description));
+  }
+
   template<size_t N>
   inline auto bad_option_error(const char (&msg)[N]) noexcept {
     static_assert(N <= CURL_ERROR_SIZE, "too long error");
