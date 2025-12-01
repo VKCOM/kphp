@@ -209,13 +209,7 @@ inline Optional<string> f$file_get_contents(const string& stream) noexcept {
 }
 
 inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& content_var, int64_t flags = 0) noexcept {
-  string content{};
-  if (content_var.is_array()) {
-    content = f$implode(string(), content_var.to_array());
-  } else {
-    content = content_var.to_string();
-  }
-  std::span<const char> data_span{content.c_str(), content.size()};
+  string content{content_var.is_array() ? f$implode(string(), content_var.to_array()) : content_var.to_string()};
 
   constexpr int64_t FILE_APPEND_FLAG{1};
   if (flags & ~FILE_APPEND_FLAG) {
@@ -227,6 +221,7 @@ inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& 
   if (auto sync_resource{
           from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, string{mode.data(), static_cast<string::size_type>(mode.size())}), {})};
       !sync_resource.is_null()) {
+    std::span<const char> data_span{content.c_str(), content.size()};
     auto expected{sync_resource.get()->write(std::as_bytes(data_span))};
     return expected ? Optional<int64_t>{static_cast<int64_t>(*std::move(expected))} : Optional<int64_t>{false};
   }
