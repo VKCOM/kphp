@@ -27,7 +27,7 @@
 #include <time.h>
 #endif
 
-#define K2_PLATFORM_HEADER_H_VERSION 12
+#define K2_PLATFORM_HEADER_H_VERSION 13
 
 // Always check that enum value is a valid value!
 
@@ -281,6 +281,14 @@ struct DirEntry {
 int32_t k2_readdir(uint64_t dd, struct DirEntry* entry, struct DirEntry** result);
 
 /**
+ * Semantically equivalent to libc's `access` function.
+ *
+ * @return On success (all requested permissions granted), zero is returned. On failure, returns a non-zero value corresponding to a libc-like `errno`.
+ *
+ */
+int32_t k2_access(const char* pathname, size_t pathname_len, int32_t mode);
+
+/**
  * Semantically equivalent of libc's unlink
  *
  * @return Returns `0` on success. On failure, returns a non-zero value corresponding to a libc-like `errno`.
@@ -299,7 +307,7 @@ int32_t k2_unlink(const char* path, size_t path_len);
  * `EINVAL` => `name` has invalid format (empty, non ascii, too long, etc..)
  * `EACCES` => permission denied
  */
-int32_t k2_access(size_t name_len, const char* name);
+int32_t k2_component_access(size_t name_len, const char* name);
 
 /**
  * If the write or read status is `Blocked` - then the platform ensures that

@@ -45,6 +45,7 @@ inline constexpr int32_t errno_etimedout = ETIMEDOUT;
 inline constexpr int32_t errno_eshutdown = ESHUTDOWN;
 inline constexpr int32_t errno_ecanceled = ECANCELED;
 inline constexpr int32_t errno_erange = ERANGE;
+inline constexpr int32_t errno_enoent = ENOENT;
 
 using descriptor = uint64_t;
 inline constexpr k2::descriptor INVALID_PLATFORM_DESCRIPTOR = 0;
@@ -176,6 +177,13 @@ inline auto readdir(k2::descriptor descriptor) noexcept {
              : return_type{std::nullopt};
 }
 
+inline std::expected<void, int32_t> access(std::string_view path, int32_t mode) noexcept {
+  if (auto error_code{k2_access(path.data(), path.size(), mode)}; error_code != k2::errno_ok) [[unlikely]] {
+    return std::unexpected{error_code};
+  }
+  return {};
+}
+
 inline std::expected<void, int32_t> unlink(std::string_view path) noexcept {
   if (auto error_code{k2_unlink(path.data(), path.size())}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
@@ -184,8 +192,8 @@ inline std::expected<void, int32_t> unlink(std::string_view path) noexcept {
   }
 }
 
-inline int32_t access(std::string_view component_name) noexcept {
-  return k2_access(component_name.size(), component_name.data());
+inline int32_t component_access(std::string_view component_name) noexcept {
+  return k2_component_access(component_name.size(), component_name.data());
 }
 
 inline void stream_status(k2::descriptor descriptor, StreamStatus* status) noexcept {
