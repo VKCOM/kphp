@@ -4,9 +4,12 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <type_traits>
+#include <variant>
 
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/tl/tl-types.h"
@@ -36,21 +39,21 @@ public:
 
 private:
   explicit property_value(bool v) noexcept
-      : value(v){};
+      : value(v) {};
   explicit property_value(int64_t v) noexcept
-      : value(v){};
+      : value(v) {};
   explicit property_value(double v) noexcept
-      : value(v){};
+      : value(v) {};
   explicit property_value(string v) noexcept
-      : value(v){};
+      : value(v) {};
   explicit property_value(array<bool> v) noexcept
-      : value(v){};
+      : value(v) {};
   explicit property_value(array<int64_t> v) noexcept
-      : value(v){};
+      : value(v) {};
   explicit property_value(array<double> v) noexcept
-      : value(v){};
+      : value(v) {};
   explicit property_value(array<string> v) noexcept
-      : value(v){};
+      : value(v) {};
 
   std::variant<bool, int64_t, double, string, array<bool>, array<int64_t>, array<double>, array<string>> value;
 
@@ -91,6 +94,11 @@ public:
   static inline auto deserialize(const tl::webPropertyValue& tl_prop_value) noexcept -> property_value;
 
   inline auto to_mixed() const noexcept -> mixed;
+
+  template<class T>
+  requires std::same_as<T, bool> || std::same_as<T, int64_t> || std::same_as<T, double> || std::same_as<T, string> || std::same_as<T, array<bool>> ||
+               std::same_as<T, array<int64_t>> || std::same_as<T, array<double>> || std::same_as<T, array<string>>
+  inline auto to() const noexcept -> std::optional<T>;
 };
 
 using simple_transfers = kphp::stl::unordered_set<kphp::web::simple_transfer::descriptor_type, kphp::memory::script_allocator>;
@@ -132,6 +140,7 @@ enum backend_internal_error : int64_t {
   post_field_value_not_string = -513,
   header_line_not_string = -514,
   unsupported_property = -515,
+  cannot_set_transfer_token = -516,
 };
 
 // ----------------------------------
@@ -298,6 +307,16 @@ inline auto property_value::deserialize(const tl::webPropertyValue& tl_prop_valu
 
 inline auto property_value::to_mixed() const noexcept -> mixed {
   return std::visit([](const auto& v) noexcept -> mixed { return mixed{v}; }, this->value);
+}
+
+template<class T>
+requires std::same_as<T, bool> || std::same_as<T, int64_t> || std::same_as<T, double> || std::same_as<T, string> || std::same_as<T, array<bool>> ||
+             std::same_as<T, array<int64_t>> || std::same_as<T, array<double>> || std::same_as<T, array<string>>
+inline auto property_value::to() const noexcept -> std::optional<T> {
+  if (!std::holds_alternative<T>(this->value)) {
+    return {};
+  }
+  return std::get<T>(this->value);
 }
 
 } // namespace kphp::web

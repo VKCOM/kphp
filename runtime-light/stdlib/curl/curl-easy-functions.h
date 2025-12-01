@@ -506,8 +506,10 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   switch (static_cast<kphp::web::curl::CURLINFO>(option)) {
   case kphp::web::curl::CURLINFO::NONE: {
-    auto res{co_await kphp::forks::id_managed(kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, std::nullopt))};
+    auto res{co_await kphp::forks::id_managed(
+        kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, std::nullopt, kphp::web::get_properties_policy::load))};
     if (!res.has_value()) [[unlikely]] {
+      easy_ctx.set_errno(res.error().code, res.error().description);
       kphp::web::curl::print_error("could not get all info options of easy handle", std::move(res.error()));
       co_return false;
     }
@@ -525,7 +527,8 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
 
     if (!easy_ctx.has_been_executed) {
       const auto url_opt_id{static_cast<kphp::web::property_id>(kphp::web::curl::CURLOPT::URL)};
-      const auto url{co_await kphp::forks::id_managed(kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, url_opt_id))};
+      const auto url{co_await kphp::forks::id_managed(
+          kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, url_opt_id, kphp::web::get_properties_policy::cached))};
       if (url.has_value()) {
         const auto& v{(*url).find(url_opt_id)};
         kphp::log::assertion(v != (*url).end());
@@ -569,7 +572,8 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
   case kphp::web::curl::CURLINFO::EFFECTIVE_URL:
     if (!easy_ctx.has_been_executed) {
       const auto url_opt_id{static_cast<kphp::web::property_id>(kphp::web::curl::CURLOPT::URL)};
-      const auto url{co_await kphp::forks::id_managed(kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, url_opt_id))};
+      const auto url{co_await kphp::forks::id_managed(
+          kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, url_opt_id, kphp::web::get_properties_policy::cached))};
       if (url.has_value()) {
         co_return (*url).find(url_opt_id)->second.to_mixed();
       }
@@ -601,8 +605,10 @@ inline auto f$curl_getinfo(kphp::web::curl::easy_type easy_id, int64_t option = 
   case kphp::web::curl::CURLINFO::CONDITION_UNMET:
   case kphp::web::curl::CURLINFO::NUM_CONNECTS:
   case kphp::web::curl::CURLINFO::HEADER_OUT: {
-    auto res{co_await kphp::forks::id_managed(kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, option))};
+    auto res{co_await kphp::forks::id_managed(
+        kphp::web::get_transfer_properties(kphp::web::simple_transfer{easy_id}, option, kphp::web::get_properties_policy::load))};
     if (!res.has_value()) [[unlikely]] {
+      easy_ctx.set_errno(res.error().code, res.error().description);
       kphp::web::curl::print_error("could not get a specific info of easy handle", std::move(res.error()));
       co_return 0;
     }

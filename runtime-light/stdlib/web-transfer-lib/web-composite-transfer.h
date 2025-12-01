@@ -286,14 +286,15 @@ inline auto composite_transfer_close(composite_transfer ct) noexcept -> kphp::co
     kphp::log::error("session with Web components has been closed");
   }
 
-  // Enumerate over all included simple transfers and close them
+  // Enumerate over all included simple transfers, close and remove them
   auto& simple_transfers{web_state.composite_transfer2simple_transfers[ct.descriptor]};
-  for (const auto st : simple_transfers) {
-    if (auto remove_res{co_await kphp::web::composite_transfer_remove(ct, kphp::web::simple_transfer{st})}; !remove_res.has_value()) {
+  auto it_simple_transfer {simple_transfers.begin()};
+  while (simple_transfers.size()) {
+    if (auto remove_res{co_await kphp::web::composite_transfer_remove(ct, kphp::web::simple_transfer{*it_simple_transfer})}; !remove_res.has_value()) {
       co_return std::move(remove_res);
     };
+    it_simple_transfer = simple_transfers.begin();
   }
-  simple_transfers.clear();
 
   tl::CompositeWebTransferClose tl_close{tl::u64{ct.descriptor}};
   tl::storer tls{tl_close.footprint()};
