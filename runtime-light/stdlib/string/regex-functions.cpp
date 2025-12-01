@@ -78,31 +78,31 @@ public:
   pcre2_match_view() = default;
 
   pcre2_match_view(std::string_view subject, PCRE2_SIZE* ovector, int32_t ret_code) noexcept
-      : subject_data_{subject},
-        ovector_ptr_{ovector},
-        num_groups_{ret_code} {}
+      : m_subject_data{subject},
+        m_ovector_ptr{ovector},
+        m_num_groups{ret_code} {}
 
   int32_t size() const noexcept {
-    return num_groups_;
+    return m_num_groups;
   }
 
   std::optional<std::string_view> get_group(size_t i) const noexcept {
-    kphp::log::assertion(i >= 0 && i < num_groups_ && ovector_ptr_);
+    kphp::log::assertion(i >= 0 && i < m_num_groups && m_ovector_ptr);
     // ovector is an array of offset pairs
-    PCRE2_SIZE start{ovector_ptr_[2 * i]};
-    PCRE2_SIZE end{ovector_ptr_[2 * i + 1]};
+    PCRE2_SIZE start{m_ovector_ptr[2 * i]};
+    PCRE2_SIZE end{m_ovector_ptr[2 * i + 1]};
 
     if (start == PCRE2_UNSET) {
       return std::nullopt;
     }
 
-    return subject_data_.substr(start, end - start);
+    return m_subject_data.substr(start, end - start);
   }
 
 private:
-  std::string_view subject_data_;
-  PCRE2_SIZE* ovector_ptr_;
-  int32_t num_groups_;
+  std::string_view m_subject_data;
+  PCRE2_SIZE* m_ovector_ptr;
+  int32_t m_num_groups;
 };
 
 struct backref {
