@@ -121,11 +121,11 @@ std::optional<backref> try_get_backref(std::string_view preg_replacement) noexce
 
 using replacement_term = std::variant<char, backref>;
 
-class preg_replacement_unescaper {
+class preg_replacement_decoder {
   std::string_view preg_replacement;
 
 public:
-  preg_replacement_unescaper(std::string_view preg_replacement)
+  preg_replacement_decoder(std::string_view preg_replacement)
       : preg_replacement{preg_replacement} {}
 
   bool has_next() const noexcept {
@@ -185,7 +185,7 @@ public:
   }
 };
 
-class pcre2_replacement_escaper {
+class pcre2_replacement_encoder {
   kphp::stl::string<kphp::memory::script_allocator> pcre2_replacement{};
 
 public:
@@ -702,12 +702,12 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
   }
 
   // we need to replace PHP's back references with PCRE2 ones
-  auto unescaper{preg_replacement_unescaper{{replacement.c_str(), replacement.size()}}};
-  pcre2_replacement_escaper escaper{};
-  while (unescaper.has_next()) {
-    escaper.escape_term(unescaper.unescape_term());
+  auto decoder{preg_replacement_decoder{{replacement.c_str(), replacement.size()}}};
+  pcre2_replacement_encoder encoder{};
+  while (decoder.has_next()) {
+    encoder.escape_term(decoder.unescape_term());
   }
-  auto& pcre2_replacement{escaper.result()};
+  auto& pcre2_replacement{encoder.result()};
 
   RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
 
