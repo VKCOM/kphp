@@ -132,7 +132,7 @@ public:
     return !preg_replacement.empty();
   }
 
-  replacement_term unescape_term() noexcept {
+  replacement_term decode_term() noexcept {
     auto first_char{preg_replacement.front()};
     preg_replacement = preg_replacement.substr(1);
     if (preg_replacement.empty()) {
@@ -140,6 +140,7 @@ public:
     }
     switch (first_char) {
     case '$':
+      // $1, ${1}
       if (preg_replacement.front() == '{') {
         return try_get_backref(preg_replacement.substr(1))
             .and_then([this](auto value) noexcept -> std::optional<replacement_term> {
@@ -163,6 +164,7 @@ public:
           .value_or('$');
 
     case '\\': {
+      // \1
       auto back_reference_opt{try_get_backref(preg_replacement).transform([this](auto value) noexcept -> replacement_term {
         auto digits_end_pos = value.digits.size();
         preg_replacement = preg_replacement.substr(digits_end_pos);
@@ -189,22 +191,18 @@ class pcre2_replacement_encoder {
   kphp::stl::string<kphp::memory::script_allocator> pcre2_replacement{};
 
 public:
-  void operator()(char c) noexcept {
+  void encode_char(char c) noexcept {
     pcre2_replacement.push_back(c);
     if (c == '$') {
       pcre2_replacement.push_back('$');
     }
   }
 
-  void operator()(backref backreference) noexcept {
+  void encode_backref(backref backreference) noexcept {
     pcre2_replacement.reserve(pcre2_replacement.size() + backreference.digits.size() + 3);
     pcre2_replacement.append("${");
     pcre2_replacement.append(backreference.digits);
     pcre2_replacement.append("}");
-  }
-
-  void escape_term(const replacement_term& term) noexcept {
-    std::visit(*this, term);
   }
 
   kphp::stl::string<kphp::memory::script_allocator>& result() noexcept {
@@ -705,7 +703,11 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
   auto decoder{preg_replacement_decoder{{replacement.c_str(), replacement.size()}}};
   pcre2_replacement_encoder encoder{};
   while (decoder.has_next()) {
-    encoder.escape_term(decoder.unescape_term());
+    if (auto term{decoder.decode_term()}; std::holds_alternative<char>(term)) {
+      encoder.encode_char(std::get<char>(term));
+    } else {
+      encoder.encode_backref(std::get<backref>(term));
+    }
   }
   auto& pcre2_replacement{encoder.result()};
 
