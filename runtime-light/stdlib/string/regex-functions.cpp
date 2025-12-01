@@ -75,10 +75,10 @@ class pcre2_match_view {
 public:
   pcre2_match_view() = default;
 
-  pcre2_match_view(std::string_view subject, PCRE2_SIZE* ovector, int32_t rc) noexcept
+  pcre2_match_view(std::string_view subject, PCRE2_SIZE* ovector, int32_t ret_code) noexcept
       : subject_data_{subject},
         ovector_ptr_{ovector},
-        num_groups_{rc} {}
+        num_groups_{ret_code} {}
 
   int32_t size() const noexcept {
     return num_groups_;
@@ -359,43 +359,43 @@ public:
   using pointer = const value_type*;
 
   pcre2_iterator() noexcept
-      : regex_info_{nullptr},
-        match_data_{nullptr},
-        is_end_{true},
-        is_valid_{true} {}
+      : m_regex_info{nullptr},
+        m_match_data{nullptr},
+        m_is_end{true},
+        m_is_valid{true} {}
 
   pcre2_iterator(const RegexInfo& info, size_t match_from) noexcept
-      : regex_info_{std::addressof(info)},
-        match_options_{info.match_options},
-        current_offset_{match_from},
-        is_end_{true},
-        is_valid_{false} {
+      : m_regex_info{std::addressof(info)},
+        m_match_options{info.match_options},
+        m_current_offset{match_from},
+        m_is_end{true},
+        m_is_valid{false} {
     if (info.regex_code == nullptr) {
       return;
     }
 
     const auto& regex_state{RegexInstanceState::get()};
-    match_data_ = regex_state.regex_pcre2_match_data.get();
-    if (!match_data_) {
+    m_match_data = regex_state.regex_pcre2_match_data.get();
+    if (!m_match_data) {
       return;
     }
 
-    is_valid_ = true;
-    is_end_ = false;
+    m_is_valid = true;
+    m_is_end = false;
     increment();
   }
 
   bool is_terminal() const noexcept {
-    return !is_valid_ || is_end_;
+    return !m_is_valid || m_is_end;
   }
 
   bool is_valid() const noexcept {
-    return is_valid_;
+    return m_is_valid;
   }
 
   reference operator*() const noexcept {
-    PCRE2_SIZE* ovector{pcre2_get_ovector_pointer_8(match_data_)};
-    return pcre2_match_view{regex_info_->subject, ovector, last_rc_};
+    PCRE2_SIZE* ovector{pcre2_get_ovector_pointer_8(m_match_data)};
+    return pcre2_match_view{m_regex_info->subject, ovector, m_last_ret_code};
   }
 
   pcre2_iterator& operator++() noexcept {
@@ -417,51 +417,51 @@ public:
 
 private:
   void increment() noexcept {
-    kphp::log::trace("incrementing pcre2_iterator with offset={}", current_offset_);
-    auto& ri{*regex_info_};
-    auto* const ovector{pcre2_get_ovector_pointer_8(match_data_)};
+    kphp::log::trace("incrementing pcre2_iterator with offset={}", m_current_offset);
+    auto& ri{*m_regex_info};
+    auto* const ovector{pcre2_get_ovector_pointer_8(m_match_data)};
 
     while (true) {
-      auto match_count_opt{match_regex(ri, current_offset_, match_options_)};
+      auto match_count_opt{match_regex(ri, m_current_offset, m_match_options)};
       if (!match_count_opt.has_value()) {
-        is_end_ = true;
-        is_valid_ = false;
+        m_is_end = true;
+        m_is_valid = false;
         return;
       }
 
-      last_rc_ = *match_count_opt;
+      m_last_ret_code = *match_count_opt;
 
-      if (last_rc_ == 0) {
-        if (match_options_ == ri.match_options || current_offset_ == ri.subject.size()) {
-          is_end_ = true;
+      if (m_last_ret_code == 0) {
+        if (m_match_options == ri.match_options || m_current_offset == ri.subject.size()) {
+          m_is_end = true;
           return;
         }
-        ++current_offset_;
-        current_offset_ = static_cast<bool>(ri.compile_options & PCRE2_UTF) ? skip_utf8_subsequent_bytes(current_offset_, ri.subject) : current_offset_;
-        match_options_ = ri.match_options;
+        ++m_current_offset;
+        m_current_offset = static_cast<bool>(ri.compile_options & PCRE2_UTF) ? skip_utf8_subsequent_bytes(m_current_offset, ri.subject) : m_current_offset;
+        m_match_options = ri.match_options;
         continue;
       }
 
       PCRE2_SIZE match_start{ovector[0]};
       PCRE2_SIZE match_end{ovector[1]};
 
-      current_offset_ = match_end;
+      m_current_offset = match_end;
       if (match_end == match_start) {
-        match_options_ |= PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
+        m_match_options |= PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
       } else {
-        match_options_ = ri.match_options;
+        m_match_options = ri.match_options;
       }
       return;
     }
   }
 
-  const RegexInfo* regex_info_{nullptr};
-  uint64_t match_options_;
-  PCRE2_SIZE current_offset_;
-  pcre2_match_data_8* match_data_{nullptr};
-  int32_t last_rc_{};
-  bool is_end_{false};
-  bool is_valid_{false};
+  const RegexInfo* m_regex_info{nullptr};
+  uint64_t m_match_options;
+  PCRE2_SIZE m_current_offset;
+  pcre2_match_data_8* m_match_data{nullptr};
+  int32_t m_last_ret_code{};
+  bool m_is_end{false};
+  bool m_is_valid{false};
 };
 
 // returns the ending offset of the entire match
@@ -611,12 +611,12 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
       const auto match_end_offset{ovector[1]};
 
       length_after_replace = buffer_length;
-      if (auto replace_one_rc{pcre2_substitute_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(str_after_replace.c_str()), str_after_replace.size(),
+      if (auto replace_one_ret_code{pcre2_substitute_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(str_after_replace.c_str()), str_after_replace.size(),
                                                  substitute_offset, regex_info.replace_options, nullptr, regex_state.match_context.get(),
                                                  reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
                                                  reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(length_after_replace))};
-          replace_one_rc != 1) [[unlikely]] {
-        kphp::log::warning("pcre2_substitute error {}", replace_one_rc);
+          replace_one_ret_code != 1) [[unlikely]] {
+        kphp::log::warning("pcre2_substitute error {}", replace_one_ret_code);
         return false;
       }
 
