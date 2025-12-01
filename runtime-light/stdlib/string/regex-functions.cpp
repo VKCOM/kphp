@@ -121,18 +121,18 @@ std::optional<backref> try_get_backref(std::string_view preg_replacement) noexce
 
 using replacement_term = std::variant<char, backref>;
 
-class preg_replacement_decoder {
+class preg_replacement_parser {
   std::string_view preg_replacement;
 
 public:
-  preg_replacement_decoder(std::string_view preg_replacement)
+  preg_replacement_parser(std::string_view preg_replacement)
       : preg_replacement{preg_replacement} {}
 
   bool has_next() const noexcept {
     return !preg_replacement.empty();
   }
 
-  replacement_term decode_term() noexcept {
+  replacement_term parse_term() noexcept {
     auto first_char{preg_replacement.front()};
     preg_replacement = preg_replacement.substr(1);
     if (preg_replacement.empty()) {
@@ -187,18 +187,18 @@ public:
   }
 };
 
-class pcre2_replacement_encoder {
+class pcre2_replacement_formatter {
   kphp::stl::string<kphp::memory::script_allocator> pcre2_replacement{};
 
 public:
-  void encode_char(char c) noexcept {
+  void format_char(char c) noexcept {
     pcre2_replacement.push_back(c);
     if (c == '$') {
       pcre2_replacement.push_back('$');
     }
   }
 
-  void encode_backref(backref backreference) noexcept {
+  void format_backref(backref backreference) noexcept {
     pcre2_replacement.reserve(pcre2_replacement.size() + backreference.digits.size() + 3);
     pcre2_replacement.append("${");
     pcre2_replacement.append(backreference.digits);
@@ -700,16 +700,16 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
   }
 
   // we need to replace PHP's back references with PCRE2 ones
-  auto decoder{preg_replacement_decoder{{replacement.c_str(), replacement.size()}}};
-  pcre2_replacement_encoder encoder{};
-  while (decoder.has_next()) {
-    if (auto term{decoder.decode_term()}; std::holds_alternative<char>(term)) {
-      encoder.encode_char(std::get<char>(term));
+  auto parser{preg_replacement_parser{{replacement.c_str(), replacement.size()}}};
+  pcre2_replacement_formatter formatter{};
+  while (parser.has_next()) {
+    if (auto term{parser.parse_term()}; std::holds_alternative<char>(term)) {
+      formatter.format_char(std::get<char>(term));
     } else {
-      encoder.encode_backref(std::get<backref>(term));
+      formatter.format_backref(std::get<backref>(term));
     }
   }
-  auto& pcre2_replacement{encoder.result()};
+  auto& pcre2_replacement{formatter.result()};
 
   RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
 
