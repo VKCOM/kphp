@@ -623,8 +623,8 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
       length_after_replace = buffer_length;
       if (auto replace_one_ret_code{pcre2_substitute_8(
               regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(str_after_replace.c_str()), str_after_replace.size(), substitute_offset,
-              regex_info.replace_options, nullptr, regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
-                                                 reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(length_after_replace))};
+              regex_info.replace_options, nullptr, regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()),
+              regex_info.replacement.size(), reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(length_after_replace))};
           replace_one_ret_code != 1) [[unlikely]] {
         kphp::log::warning("pcre2_substitute error {}", replace_one_ret_code);
         return false;
