@@ -86,7 +86,7 @@ public:
     return num_groups_;
   }
 
-  std::optional<std::string_view> get_group(int i) const noexcept {
+  std::optional<std::string_view> get_group(size_t i) const noexcept {
     kphp::log::assertion(i >= 0 && i < num_groups_ && ovector_ptr_);
     PCRE2_SIZE start{ovector_ptr_[2 * i]};
     PCRE2_SIZE end{ovector_ptr_[2 * i + 1]};
