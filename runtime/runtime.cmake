@@ -113,7 +113,6 @@ prepend(KPHP_RUNTIME_SOURCES ${BASE_DIR}/runtime/
         typed_rpc.cpp
         udp.cpp
         tcp.cpp
-        vkext.cpp
         ffi.cpp
         zlib.cpp
         zstd.cpp)
