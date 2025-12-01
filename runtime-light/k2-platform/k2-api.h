@@ -180,9 +180,8 @@ inline auto readdir(k2::descriptor descriptor) noexcept {
 inline std::expected<void, int32_t> access(std::string_view path, int32_t mode) noexcept {
   if (auto error_code{k2_access(path.data(), path.size(), mode)}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
-  } else {
-    return {};
   }
+  return {};
 }
 
 inline std::expected<void, int32_t> unlink(std::string_view path) noexcept {
