@@ -286,7 +286,7 @@ int32_t k2_readdir(uint64_t dd, struct DirEntry* entry, struct DirEntry** result
  * @return On success (all requested permissions granted), zero is returned. On failure, returns a non-zero value corresponding to a libc-like `errno`.
  *
  */
-int32_t k2_access(const char *pathname, size_t pathname_len, int32_t mode);
+int32_t k2_access(const char* pathname, size_t pathname_len, int32_t mode);
 
 /**
  * Semantically equivalent of libc's unlink
