@@ -22,19 +22,13 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/file/file-system-context.h"
 #include "runtime-light/stdlib/file/resource.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 
 namespace file_system_impl_ {
 
 inline constexpr char SEPARATOR = '/';
-
-inline constexpr std::string_view READ_MODE = "r";
-inline constexpr std::string_view WRITE_MODE = "w";
-inline constexpr std::string_view APPEND_MODE = "a";
-inline constexpr std::string_view READ_PLUS_MODE = "r+";
-inline constexpr std::string_view WRITE_PLUS_MODE = "w+";
-inline constexpr std::string_view APPEND_PLUS_MODE = "a+";
 
 } // namespace file_system_impl_
 
@@ -199,8 +193,7 @@ inline resource f$stream_socket_client(const string& address, std::optional<std:
 }
 
 inline Optional<string> f$file_get_contents(const string& stream) noexcept {
-  if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(
-          f$fopen(stream, string{file_system_impl_::READ_MODE.data(), static_cast<string::size_type>(file_system_impl_::READ_MODE.size())}), {})};
+  if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, FileSystemLibConstants::get().READ_MODE), {})};
       !sync_resource.is_null()) {
     auto expected{sync_resource.get()->get_contents()};
     return expected ? Optional<string>{*std::move(expected)} : Optional<string>{false};
@@ -217,10 +210,9 @@ inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& 
     flags &= FILE_APPEND_FLAG;
   }
 
-  std::string_view mode{((flags & FILE_APPEND_FLAG) != 0) ? file_system_impl_::APPEND_MODE : file_system_impl_::WRITE_MODE};
-  if (auto sync_resource{
-          from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, string{mode.data(), static_cast<string::size_type>(mode.size())}), {})};
-      !sync_resource.is_null()) {
+  const auto& file_system_lib_constants{FileSystemLibConstants::get()};
+  const string& mode{((flags & FILE_APPEND_FLAG) != 0) ? file_system_lib_constants.APPEND_MODE : file_system_lib_constants.WRITE_MODE};
+  if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, mode), {})}; !sync_resource.is_null()) {
     std::span<const char> data_span{content.c_str(), content.size()};
     auto expected{sync_resource.get()->write(std::as_bytes(data_span))};
     return expected ? Optional<int64_t>{static_cast<int64_t>(*std::move(expected))} : Optional<int64_t>{false};
