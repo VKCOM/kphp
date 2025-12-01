@@ -561,8 +561,10 @@ private:
     auto* const ovector{pcre2_get_ovector_pointer_8(m_match_data)};
 
     while (true) {
+      // Try to find match
       auto match_count_opt{match_regex(ri, m_current_offset, m_match_options)};
       if (!match_count_opt.has_value()) {
+        // std::nullopt means error
         m_is_end = true;
         m_is_valid = false;
         return;
@@ -571,23 +573,30 @@ private:
       m_last_ret_code = *match_count_opt;
 
       if (m_last_ret_code == 0) {
+        // If match is not found
         if (m_match_options == ri.match_options || m_current_offset == ri.subject.size()) {
+          // Here we are sure that there are no more matches here
           m_is_end = true;
           return;
         }
+        // Here we know that we were looking for a non-empty and anchored match,
+        // and we're going to try searching from the next character with the default options.
         ++m_current_offset;
         m_current_offset = static_cast<bool>(ri.compile_options & PCRE2_UTF) ? skip_utf8_subsequent_bytes(m_current_offset, ri.subject) : m_current_offset;
         m_match_options = ri.match_options;
         continue;
       }
 
+      // Match found
       PCRE2_SIZE match_start{ovector[0]};
       PCRE2_SIZE match_end{ovector[1]};
 
       m_current_offset = match_end;
       if (match_end == match_start) {
+        // If an empty match is found, try searching for a non-empty attached match next time.
         m_match_options |= PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
       } else {
+        // Else use default options
         m_match_options = ri.match_options;
       }
       return;
@@ -751,8 +760,8 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
 
       length_after_replace = buffer_length;
       if (auto replace_one_ret_code{pcre2_substitute_8(
-              regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(str_after_replace.c_str()), str_after_replace.size(), substitute_offset, regex_info.replace_options, nullptr, regex_state.match_context.get(),
-                                                 reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
+              regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(str_after_replace.c_str()), str_after_replace.size(), substitute_offset,
+              regex_info.replace_options, nullptr, regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
                                                  reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(length_after_replace))};
           replace_one_ret_code != 1) [[unlikely]] {
         kphp::log::warning("pcre2_substitute error {}", replace_one_ret_code);
