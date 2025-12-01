@@ -119,16 +119,6 @@ std::optional<backref> try_get_backref(std::string_view preg_replacement) noexce
   return backref{preg_replacement.substr(0, 2)};
 }
 
-template<typename T, typename F>
-requires std::convertible_to<std::invoke_result_t<F>, T>
-auto value_or_else(std::optional<T>&& opt, F&& alternative_func) noexcept -> T {
-  if (opt.has_value()) {
-    return std::move(*std::move(opt));
-  } else {
-    return std::forward<F>(alternative_func)();
-  }
-}
-
 using replacement_term = std::variant<char, backref>;
 
 class preg_replacement_unescaper {
@@ -172,20 +162,23 @@ public:
           })
           .value_or('$');
 
-    case '\\':
-      return value_or_else(try_get_backref(preg_replacement).transform([this](auto value) noexcept -> replacement_term {
+    case '\\': {
+      auto back_reference_opt{try_get_backref(preg_replacement).transform([this](auto value) noexcept -> replacement_term {
         auto digits_end_pos = value.digits.size();
         preg_replacement = preg_replacement.substr(digits_end_pos);
         return value;
-      }),
-                           [this] noexcept {
-                             auto res{preg_replacement.front()};
-                             if (res == '$' || res == '\\') {
-                               preg_replacement = preg_replacement.substr(1);
-                               return res;
-                             }
-                             return '\\';
-                           });
+      })};
+      if (back_reference_opt.has_value()) {
+        return *std::move(back_reference_opt);
+      } else {
+        auto res{preg_replacement.front()};
+        if (res == '$' || res == '\\') {
+          preg_replacement = preg_replacement.substr(1);
+          return res;
+        }
+        return '\\';
+      }
+    }
     default:
       return first_char;
     }
