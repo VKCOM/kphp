@@ -25,6 +25,8 @@ vk_add_library_no_pic(flex-data-src-no-pic OBJECT ${FLEX_SOURCES})
 add_dependencies(flex-data-src-no-pic flex-data)
 
 if (COMPILE_RUNTIME_LIGHT)
+    # A new pic library needs to be added because it uses libc++.
+    # vkext is not ready to use a library with libc++.
     vk_add_library_pic(flex-data-src-libcpp-pic OBJECT ${FLEX_SOURCES})
     add_dependencies(flex-data-src-libcpp-pic flex-data)
 
