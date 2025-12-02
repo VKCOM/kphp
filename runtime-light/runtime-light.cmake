@@ -63,7 +63,7 @@ set(RUNTIME_LIGHT_LINK_LIBS "${KPHP_TIMELIB_PIC_LIBRARIES} ${PCRE2_PIC_LIBRARIES
 vk_add_library_pic(kphp-light-runtime-pic STATIC)
 target_compile_options(kphp-light-runtime-pic PUBLIC ${RUNTIME_LIGHT_COMPILE_FLAGS})
 target_link_options(kphp-light-runtime-pic PUBLIC ${RUNTIME_LIGHT_LINK_FLAGS})
-target_link_libraries(kphp-light-runtime-pic PUBLIC vk::pic::flex-data-src vk::pic::light-common vk::pic::unicode vk::pic::runtime-light vk::pic::runtime-common)
+target_link_libraries(kphp-light-runtime-pic PUBLIC vk::pic::flex-data-src-libcpp vk::pic::light-common vk::pic::unicode vk::pic::runtime-light vk::pic::runtime-common)
 
 set_target_properties(kphp-light-runtime-pic PROPERTIES LIBRARY_OUTPUT_NAME libkphp-light-runtime.a)
 
