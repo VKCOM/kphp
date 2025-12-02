@@ -214,7 +214,8 @@ inline auto f$curl_multi_select(kphp::web::curl::multi_type multi_id, double tim
   co_return *res;
 }
 
-inline auto f$curl_multi_info_read(kphp::web::curl::multi_type multi_id, std::optional<std::reference_wrapper<int64_t>> msgs_in_queue = {}) noexcept -> kphp::coro::task<Optional<array<int64_t>>>{
+inline auto f$curl_multi_info_read(kphp::web::curl::multi_type multi_id,
+                                   std::optional<std::reference_wrapper<int64_t>> msgs_in_queue = {}) noexcept -> kphp::coro::task<Optional<array<int64_t>>> {
   auto& curl_state{CurlInstanceState::get()};
   if (!curl_state.multi_ctx.has(multi_id)) {
     co_return false;
@@ -224,7 +225,7 @@ inline auto f$curl_multi_info_read(kphp::web::curl::multi_type multi_id, std::op
   constexpr auto CURL_MULTI_INFO_READ_OPTION = 0;
 
   auto props{co_await kphp::forks::id_managed(
-        kphp::web::get_transfer_properties(kphp::web::composite_transfer{multi_id}, CURL_MULTI_INFO_READ_OPTION, kphp::web::get_properties_policy::load))};
+      kphp::web::get_transfer_properties(kphp::web::composite_transfer{multi_id}, CURL_MULTI_INFO_READ_OPTION, kphp::web::get_properties_policy::load))};
   if (!props.has_value()) [[unlikely]] {
     multi_ctx.set_errno(props.error().code, props.error().description);
     kphp::web::curl::print_error("could not get info message of multi handle", std::move(props.error()));
@@ -245,10 +246,6 @@ inline auto f$curl_multi_info_read(kphp::web::curl::multi_type multi_id, std::op
 
   const auto& optional_info{it_optional_info->second.to<array<int64_t>>()};
   if (!optional_info.has_value()) [[unlikely]] {
-    // Special case: array of bool should be interpreted as empty array, otherwise raise a warning
-    if (it_optional_info->second.to<array<bool>>().has_value() == false) { // NOLINT
-      kphp::log::warning("incorrect format of multi info message: array of options have to be obtained");
-    }
     if (msgs_in_queue.has_value()) {
       (*msgs_in_queue).get() = 0;
     }
@@ -275,17 +272,17 @@ inline auto f$curl_multi_info_read(kphp::web::curl::multi_type multi_id, std::op
   }
 
   if (auto ok{info.has_key(MSG_IDX)}; ok) {
-    result.set_value(string{"msg"},info.get_value(MSG_IDX));
+    result.set_value(string{"msg"}, info.get_value(MSG_IDX));
   }
 
   if (auto ok{info.has_key(RESULT_IDX)}; ok) {
-    result.set_value(string{"result"},info.get_value(RESULT_IDX));
+    result.set_value(string{"result"}, info.get_value(RESULT_IDX));
   }
 
   if (auto ok{info.has_key(HANDLE_IDX)}; ok) {
     auto easy_id{info.get_value(HANDLE_IDX)};
     if (curl_state.easy_ctx.has(easy_id)) {
-      result.set_value(string{"handle"},info.get_value(HANDLE_IDX));
+      result.set_value(string{"handle"}, info.get_value(HANDLE_IDX));
     }
   }
 

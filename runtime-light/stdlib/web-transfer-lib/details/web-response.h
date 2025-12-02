@@ -62,12 +62,12 @@ inline auto process_simple_response(std::span<const std::byte> request) noexcept
     switch (frame_num) {
     case 0: {
       frame_num += 1;
-      tl::Either<tl::SimpleWebTransferPerformResultOk, tl::WebError> simple_web_transfer_perform_resp{};
+      tl::Either<tl::SimpleWebTransferResponseResultOk, tl::WebError> simple_web_transfer_resp{};
       tl::fetcher tlf{ok_or_error_buffer};
-      if (!simple_web_transfer_perform_resp.fetch(tlf)) [[unlikely]] {
+      if (!simple_web_transfer_resp.fetch(tlf)) [[unlikely]] {
         kphp::log::error("failed to parse response of Simple descriptor");
       }
-      if (auto r{simple_web_transfer_perform_resp.value}; std::holds_alternative<tl::WebError>(r)) {
+      if (auto r{simple_web_transfer_resp.value}; std::holds_alternative<tl::WebError>(r)) {
         err.emplace(details::process_error(std::get<tl::WebError>(r)));
         return kphp::component::inter_component_session::client::response_readiness::ready;
       }

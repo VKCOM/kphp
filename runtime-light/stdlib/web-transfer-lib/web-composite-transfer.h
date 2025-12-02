@@ -288,12 +288,11 @@ inline auto composite_transfer_close(composite_transfer ct) noexcept -> kphp::co
 
   // Enumerate over all included simple transfers, close and remove them
   auto& simple_transfers{web_state.composite_transfer2simple_transfers[ct.descriptor]};
-  auto it_simple_transfer {simple_transfers.begin()};
+  auto it_simple_transfer{simple_transfers.begin()};
   while (simple_transfers.size()) {
     if (auto remove_res{co_await kphp::web::composite_transfer_remove(ct, kphp::web::simple_transfer{*it_simple_transfer})}; !remove_res.has_value()) {
       co_return std::move(remove_res);
     };
-    it_simple_transfer = simple_transfers.begin();
   }
 
   tl::CompositeWebTransferClose tl_close{tl::u64{ct.descriptor}};
@@ -371,8 +370,8 @@ inline auto composite_transfer_wait_updates(composite_transfer ct,
     co_return std::unexpected{details::process_error(std::get<tl::WebError>(result))};
   }
 
-  const auto awaiters_num{std::get<tl::CompositeWebTransferWaitUpdatesResultOk>(result).awaiters_num.value};
-  co_return std::expected<uint64_t, error>{awaiters_num};
+  const auto updated_descriptors_num{std::get<tl::CompositeWebTransferWaitUpdatesResultOk>(result).updated_descriptors_num.value};
+  co_return std::expected<uint64_t, error>{updated_descriptors_num};
 }
 
 } // namespace kphp::web

@@ -39,21 +39,21 @@ public:
 
 private:
   explicit property_value(bool v) noexcept
-      : value(v) {};
+      : value(v){};
   explicit property_value(int64_t v) noexcept
-      : value(v) {};
+      : value(v){};
   explicit property_value(double v) noexcept
-      : value(v) {};
+      : value(v){};
   explicit property_value(string v) noexcept
-      : value(v) {};
+      : value(v){};
   explicit property_value(array<bool> v) noexcept
-      : value(v) {};
+      : value(v){};
   explicit property_value(array<int64_t> v) noexcept
-      : value(v) {};
+      : value(v){};
   explicit property_value(array<double> v) noexcept
-      : value(v) {};
+      : value(v){};
   explicit property_value(array<string> v) noexcept
-      : value(v) {};
+      : value(v){};
 
   std::variant<bool, int64_t, double, string, array<bool>, array<int64_t>, array<double>, array<string>> value;
 

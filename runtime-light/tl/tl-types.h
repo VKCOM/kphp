@@ -1271,18 +1271,18 @@ public:
   }
 };
 
-class SimpleWebTransferPerformResultOk final {
-  static constexpr uint32_t SIMPLE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC = 0x77A8'98FF;
+class SimpleWebTransferResponseResultOk final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_RESPONSE_RESULT_OK_MAGIC = 0x77A8'98FF;
 
 public:
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC)};
+    bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_RESPONSE_RESULT_OK_MAGIC)};
     return ok;
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = SIMPLE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC}.footprint();
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_RESPONSE_RESULT_OK_MAGIC}.footprint();
   }
 };
 
@@ -1413,16 +1413,16 @@ class CompositeWebTransferWaitUpdatesResultOk final {
   static constexpr uint32_t COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC = 0x2007'1997;
 
 public:
-  tl::u64 awaiters_num;
+  tl::u64 updated_descriptors_num;
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC) && awaiters_num.fetch(tlf)};
+    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC) && updated_descriptors_num.fetch(tlf)};
     return ok;
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC}.footprint() && awaiters_num.footprint();
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC}.footprint() && updated_descriptors_num.footprint();
   }
 };
 
