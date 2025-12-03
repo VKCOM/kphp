@@ -187,29 +187,6 @@ public:
   }
 };
 
-class pcre2_replacement_formatter {
-  kphp::stl::string<kphp::memory::script_allocator> pcre2_replacement{};
-
-public:
-  void format_char(char c) noexcept {
-    pcre2_replacement.push_back(c);
-    if (c == '$') {
-      pcre2_replacement.push_back('$');
-    }
-  }
-
-  void format_backref(backref backreference) noexcept {
-    pcre2_replacement.reserve(pcre2_replacement.size() + backreference.digits.size() + 3);
-    pcre2_replacement.append("${");
-    pcre2_replacement.append(backreference.digits);
-    pcre2_replacement.append("}");
-  }
-
-  kphp::stl::string<kphp::memory::script_allocator>& result() noexcept {
-    return pcre2_replacement;
-  }
-};
-
 bool parse_regex(RegexInfo& regex_info) noexcept {
   if (regex_info.regex.empty()) {
     kphp::log::warning("empty regex");
@@ -701,15 +678,22 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
 
   // we need to replace PHP's back references with PCRE2 ones
   auto parser{preg_replacement_parser{{replacement.c_str(), replacement.size()}}};
-  pcre2_replacement_formatter formatter{};
+  kphp::stl::string<kphp::memory::script_allocator> pcre2_replacement{};
   while (parser.has_next()) {
     if (auto term{parser.parse_term()}; std::holds_alternative<char>(term)) {
-      formatter.format_char(std::get<char>(term));
+      auto c{std::get<char>(term)};
+      pcre2_replacement.push_back(c);
+      if (c == '$') {
+        pcre2_replacement.push_back('$');
+      }
     } else {
-      formatter.format_backref(std::get<backref>(term));
+      auto backreference{std::get<backref>(term)};
+      pcre2_replacement.reserve(pcre2_replacement.size() + backreference.digits.size() + 3);
+      pcre2_replacement.append("${");
+      pcre2_replacement.append(backreference.digits);
+      pcre2_replacement.append("}");
     }
   }
-  auto& pcre2_replacement{formatter.result()};
 
   RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
 
