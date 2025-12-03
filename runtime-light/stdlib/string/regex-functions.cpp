@@ -337,7 +337,7 @@ bool collect_group_names(RegexInfo& regex_info) noexcept {
 std::optional<int32_t> match_regex(const RegexInfo& regex_info, size_t offset, uint32_t match_options) noexcept {
   const auto& regex_state{RegexInstanceState::get()};
   if (regex_info.regex_code == nullptr || !regex_state.match_context) [[unlikely]] {
-    return false;
+    return std::nullopt;
   }
 
   int32_t match_count{pcre2_match_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), offset,
@@ -349,7 +349,7 @@ std::optional<int32_t> match_regex(const RegexInfo& regex_info, size_t offset, u
     std::array<char, ERROR_BUFFER_LENGTH> buffer{};
     pcre2_get_error_message_8(match_count, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
     kphp::log::warning("can't match pcre2 regex due to error: {}", buffer.data());
-    return false;
+    return std::nullopt;
   }
   return match_count != PCRE2_ERROR_NOMATCH ? match_count : 0;
 }
