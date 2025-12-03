@@ -124,15 +124,7 @@ using replacement_term = std::variant<char, backref>;
 class preg_replacement_parser {
   std::string_view preg_replacement;
 
-public:
-  explicit preg_replacement_parser(std::string_view preg_replacement) noexcept
-      : preg_replacement{preg_replacement} {}
-
-  bool has_next() const noexcept {
-    return !preg_replacement.empty();
-  }
-
-  replacement_term parse_term() noexcept {
+  replacement_term parse_term_internal() noexcept {
     auto first_char{preg_replacement.front()};
     preg_replacement = preg_replacement.substr(1);
     if (preg_replacement.empty()) {
@@ -184,6 +176,66 @@ public:
     default:
       return first_char;
     }
+  }
+
+public:
+  explicit preg_replacement_parser(std::string_view preg_replacement) noexcept
+      : preg_replacement{preg_replacement} {}
+
+  struct iterator {
+    preg_replacement_parser* parser{nullptr};
+    replacement_term current_term{'\0'};
+
+    using difference_type = std::ptrdiff_t;
+    using value_type = replacement_term;
+    using reference = const replacement_term&;
+    using pointer = const replacement_term*;
+    using iterator_category = std::input_iterator_tag;
+
+    iterator() noexcept = default;
+    explicit iterator(preg_replacement_parser* p) noexcept
+        : parser{p} {
+      if (parser->preg_replacement.empty()) {
+        parser = nullptr;
+      } else {
+        current_term = parser->parse_term_internal();
+      }
+    }
+
+    reference operator*() const noexcept {
+      return current_term;
+    }
+    pointer operator->() const noexcept {
+      return std::addressof(current_term);
+    }
+
+    iterator& operator++() noexcept {
+      if (!parser->preg_replacement.empty()) {
+        current_term = parser->parse_term_internal();
+      } else {
+        parser = nullptr;
+      }
+      return *this;
+    }
+    iterator operator++(int) noexcept {
+      iterator temp = *this;
+      ++(*this);
+      return temp;
+    }
+
+    friend bool operator==(const iterator& a, const iterator& b) noexcept {
+      return a.parser == b.parser;
+    }
+    friend bool operator!=(const iterator& a, const iterator& b) noexcept {
+      return !(a == b);
+    }
+  };
+
+  iterator begin() noexcept {
+    return iterator{this};
+  }
+  iterator end() noexcept {
+    return iterator{};
   }
 };
 
@@ -679,8 +731,8 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
   // we need to replace PHP's back references with PCRE2 ones
   auto parser{preg_replacement_parser{{replacement.c_str(), replacement.size()}}};
   kphp::stl::string<kphp::memory::script_allocator> pcre2_replacement{};
-  while (parser.has_next()) {
-    if (auto term{parser.parse_term()}; std::holds_alternative<char>(term)) {
+  for (const auto& term : parser) {
+    if (std::holds_alternative<char>(term)) {
       auto c{std::get<char>(term)};
       pcre2_replacement.push_back(c);
       if (c == '$') {
