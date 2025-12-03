@@ -171,7 +171,7 @@ public:
         return value;
       })};
       if (back_reference_opt.has_value()) {
-        return *std::move(back_reference_opt);
+        return *back_reference_opt;
       } else {
         auto res{preg_replacement.front()};
         if (res == '$' || res == '\\') {
