@@ -75,8 +75,6 @@ struct RegexInfo final {
 
 class pcre2_match_view {
 public:
-  pcre2_match_view() = default;
-
   pcre2_match_view(std::string_view subject, PCRE2_SIZE* ovector, int32_t ret_code) noexcept
       : m_subject_data{subject},
         m_ovector_ptr{ovector},
@@ -87,7 +85,11 @@ public:
   }
 
   std::optional<std::string_view> get_group(size_t i) const noexcept {
-    kphp::log::assertion(i >= 0 && i < m_num_groups && m_ovector_ptr);
+    if (i >= m_num_groups) {
+      return std::nullopt;
+    }
+
+    kphp::log::assertion(m_ovector_ptr);
     // ovector is an array of offset pairs
     PCRE2_SIZE start{m_ovector_ptr[2 * i]};
     PCRE2_SIZE end{m_ovector_ptr[2 * i + 1]};
@@ -100,9 +102,9 @@ public:
   }
 
 private:
-  std::string_view m_subject_data;
-  PCRE2_SIZE* m_ovector_ptr;
-  int32_t m_num_groups;
+  const std::string_view m_subject_data;
+  const PCRE2_SIZE* const m_ovector_ptr;
+  const int32_t m_num_groups;
 };
 
 struct backref {
@@ -460,7 +462,7 @@ bool collect_group_names(RegexInfo& regex_info) noexcept {
   pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMEENTRYSIZE, std::addressof(name_entry_size));
 
   PCRE2_SPTR8 entry{name_table};
-  for (auto i = 0; i < name_count; ++i) {
+  for (auto i{0}; i < name_count; ++i) {
     const auto group_number{static_cast<uint16_t>((entry[0] << 8) | entry[1])};
     PCRE2_SPTR8 group_name{std::next(entry, 2)};
     regex_info.group_names[group_number] = reinterpret_cast<const char*>(group_name);
@@ -473,7 +475,7 @@ bool collect_group_names(RegexInfo& regex_info) noexcept {
 std::optional<int32_t> match_regex(const RegexInfo& regex_info, size_t offset, uint32_t match_options) noexcept {
   const auto& regex_state{RegexInstanceState::get()};
   if (regex_info.regex_code == nullptr || !regex_state.match_context) [[unlikely]] {
-    return false;
+    return std::nullopt;
   }
 
   int32_t match_count{pcre2_match_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), offset,
@@ -485,8 +487,9 @@ std::optional<int32_t> match_regex(const RegexInfo& regex_info, size_t offset, u
     std::array<char, ERROR_BUFFER_LENGTH> buffer{};
     pcre2_get_error_message_8(match_count, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
     kphp::log::warning("can't match pcre2 regex due to error: {}", buffer.data());
-    return false;
+    return std::nullopt;
   }
+  // zero if the vector of offsets is too small
   return match_count != PCRE2_ERROR_NOMATCH ? match_count : 0;
 }
 
@@ -495,20 +498,16 @@ public:
   using value_type = pcre2_match_view;
   using difference_type = std::ptrdiff_t;
   using reference = value_type;
-  using pointer = const value_type*;
+  using pointer = value_type*;
+  using iterator_category = std::forward_iterator_tag;
 
   pcre2_iterator() noexcept
-      : m_regex_info{nullptr},
-        m_match_data{nullptr},
-        m_is_end{true},
-        m_is_valid{true} {}
+      : m_is_valid{true} {}
 
   pcre2_iterator(const RegexInfo& info, size_t match_from) noexcept
       : m_regex_info{std::addressof(info)},
         m_match_options{info.match_options},
-        m_current_offset{match_from},
-        m_is_end{true},
-        m_is_valid{false} {
+        m_current_offset{match_from} {
     if (info.regex_code == nullptr) {
       return;
     }
@@ -521,7 +520,6 @@ public:
 
     m_is_valid = true;
     m_is_end = false;
-    increment();
   }
 
   bool is_terminal() const noexcept {
@@ -556,7 +554,6 @@ public:
 
 private:
   void increment() noexcept {
-    kphp::log::trace("incrementing pcre2_iterator with offset={}", m_current_offset);
     auto& ri{*m_regex_info};
     auto* const ovector{pcre2_get_ovector_pointer_8(m_match_data)};
 
@@ -603,12 +600,12 @@ private:
     }
   }
 
-  const RegexInfo* m_regex_info{nullptr};
+  const RegexInfo* const m_regex_info{nullptr};
   uint64_t m_match_options;
   PCRE2_SIZE m_current_offset;
   pcre2_match_data_8* m_match_data{nullptr};
   int32_t m_last_ret_code{};
-  bool m_is_end{false};
+  bool m_is_end{true};
   bool m_is_valid{false};
 };
 
@@ -633,7 +630,7 @@ PCRE2_SIZE set_matches(const RegexInfo& regex_info, int64_t flags, std::optional
   const auto unmatched_as_null{static_cast<bool>(flags & kphp::regex::PREG_UNMATCHED_AS_NULL)};
   // calculate last matched group
   int64_t last_matched_group{-1};
-  for (auto i = 0; i < regex_info.match_count; ++i) {
+  for (auto i{0}; i < regex_info.match_count; ++i) {
     if (ovector[static_cast<ptrdiff_t>(2 * i)] != PCRE2_UNSET) {
       last_matched_group = i;
     }
@@ -644,7 +641,7 @@ PCRE2_SIZE set_matches(const RegexInfo& regex_info, int64_t flags, std::optional
 
   // reserve enough space for output
   array<mixed> output{array_size{static_cast<int64_t>(regex_info.group_names.size() + named_groups_count), named_groups_count == 0}};
-  for (auto i = 0; i < regex_info.group_names.size(); ++i) {
+  for (auto i{0}; i < regex_info.group_names.size(); ++i) {
     // skip unmatched groups at the end unless unmatched_as_null is set
     if (last_unmatched_policy == trailing_unmatch::skip && i > last_matched_group && !unmatched_as_null) [[unlikely]] {
       break;
@@ -806,7 +803,7 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
   if (!collect_group_names(regex_info)) [[unlikely]] {
     return false;
   }
-  auto match_count_opt = match_regex(regex_info, offset, regex_info.match_options);
+  auto match_count_opt{match_regex(regex_info, offset, regex_info.match_options)};
   if (!match_count_opt.has_value()) [[unlikely]] {
     return false;
   }
