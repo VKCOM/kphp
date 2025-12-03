@@ -125,7 +125,7 @@ class preg_replacement_parser {
   std::string_view preg_replacement;
 
 public:
-  preg_replacement_parser(std::string_view preg_replacement)
+  explicit preg_replacement_parser(std::string_view preg_replacement) noexcept
       : preg_replacement{preg_replacement} {}
 
   bool has_next() const noexcept {
