@@ -98,9 +98,9 @@ public:
   }
 
 private:
-  std::string_view m_subject_data;
-  PCRE2_SIZE* m_ovector_ptr;
-  int32_t m_num_groups;
+  const std::string_view m_subject_data;
+  const PCRE2_SIZE* const m_ovector_ptr{nullptr};
+  const int32_t m_num_groups{};
 };
 
 template<typename... Args>
@@ -465,7 +465,7 @@ private:
     }
   }
 
-  const RegexInfo* m_regex_info{nullptr};
+  const RegexInfo* const m_regex_info{nullptr};
   uint64_t m_match_options;
   PCRE2_SIZE m_current_offset;
   pcre2_match_data_8* m_match_data{nullptr};
