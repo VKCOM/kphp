@@ -83,7 +83,11 @@ public:
   }
 
   std::optional<std::string_view> get_group(size_t i) const noexcept {
-    kphp::log::assertion(i >= 0 && i < m_num_groups && m_ovector_ptr);
+    if (i >= m_num_groups) {
+      return std::nullopt;
+    }
+
+    kphp::log::assertion(m_ovector_ptr);
     // ovector is an array of offset pairs
     PCRE2_SIZE start{m_ovector_ptr[2 * i]};
     PCRE2_SIZE end{m_ovector_ptr[2 * i + 1]};
