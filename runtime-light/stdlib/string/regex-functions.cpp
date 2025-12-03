@@ -416,7 +416,6 @@ public:
 
 private:
   void increment() noexcept {
-    kphp::log::trace("incrementing pcre2_iterator with offset={}", m_current_offset);
     auto& ri{*m_regex_info};
     auto* const ovector{pcre2_get_ovector_pointer_8(m_match_data)};
 
