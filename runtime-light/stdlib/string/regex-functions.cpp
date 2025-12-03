@@ -359,7 +359,7 @@ public:
   using value_type = pcre2_match_view;
   using difference_type = std::ptrdiff_t;
   using reference = value_type;
-  using pointer = const value_type*;
+  using pointer = value_type*;
   using iterator_category = std::forward_iterator_tag;
 
   pcre2_iterator() noexcept
