@@ -360,17 +360,12 @@ public:
   using pointer = const value_type*;
 
   pcre2_iterator() noexcept
-      : m_regex_info{nullptr},
-        m_match_data{nullptr},
-        m_is_end{true},
-        m_is_valid{true} {}
+      : m_is_valid{true} {}
 
   pcre2_iterator(const RegexInfo& info, size_t match_from) noexcept
       : m_regex_info{std::addressof(info)},
         m_match_options{info.match_options},
-        m_current_offset{match_from},
-        m_is_end{true},
-        m_is_valid{false} {
+        m_current_offset{match_from} {
     if (info.regex_code == nullptr) {
       return;
     }
@@ -470,7 +465,7 @@ private:
   PCRE2_SIZE m_current_offset;
   pcre2_match_data_8* m_match_data{nullptr};
   int32_t m_last_ret_code{};
-  bool m_is_end{false};
+  bool m_is_end{true};
   bool m_is_valid{false};
 };
 
