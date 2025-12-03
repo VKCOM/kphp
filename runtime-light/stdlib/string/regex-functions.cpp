@@ -351,6 +351,7 @@ std::optional<int32_t> match_regex(const RegexInfo& regex_info, size_t offset, u
     kphp::log::warning("can't match pcre2 regex due to error: {}", buffer.data());
     return std::nullopt;
   }
+  // zero if the vector of offsets is too small
   return match_count != PCRE2_ERROR_NOMATCH ? match_count : 0;
 }
 
@@ -381,7 +382,6 @@ public:
 
     m_is_valid = true;
     m_is_end = false;
-    increment();
   }
 
   bool is_terminal() const noexcept {
