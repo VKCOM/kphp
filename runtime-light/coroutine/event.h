@@ -24,7 +24,7 @@ class event {
     event& m_event;
     bool m_suspended{};
     std::coroutine_handle<> m_awaiting_coroutine;
-    kphp::coro::async_stack_root& m_async_stack_root;
+    kphp::coro::async_stack_root* m_async_stack_root;
     kphp::coro::async_stack_frame* m_caller_async_stack_frame{};
 
     awaiter* m_next{};
@@ -32,7 +32,7 @@ class event {
 
     explicit awaiter(event& event) noexcept
         : m_event(event),
-          m_async_stack_root(CoroutineInstanceState::get().base_coroutine_stack_root) {}
+          m_async_stack_root(CoroutineInstanceState::get().current_async_stack_root) {}
 
     awaiter(const awaiter&) = delete;
     awaiter(awaiter&&) = delete;
@@ -85,7 +85,7 @@ inline auto event::awaiter::await_ready() const noexcept -> bool {
 template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
 auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> void {
   // save caller's async stack frame
-  m_caller_async_stack_frame = m_async_stack_root.top_async_stack_frame;
+  m_caller_async_stack_frame = m_async_stack_root->top_async_stack_frame;
 
   m_suspended = true;
   m_awaiting_coroutine = awaiting_coroutine;
@@ -105,7 +105,7 @@ inline auto event::awaiter::await_resume() noexcept -> void {
   if (std::exchange(m_suspended, false)) {
     // restore caller's async stack frame if it was suspended
     kphp::log::assertion(m_caller_async_stack_frame != nullptr);
-    m_async_stack_root.top_async_stack_frame = std::exchange(m_caller_async_stack_frame, nullptr);
+    m_async_stack_root->top_async_stack_frame = std::exchange(m_caller_async_stack_frame, nullptr);
   }
 }
 

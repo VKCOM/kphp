@@ -194,7 +194,6 @@ public:
   auto start(when_any_latch& latch, void* return_address) noexcept {
     m_latch = std::addressof(latch);
 
-
     kphp::coro::async_stack_root root{};
     auto& async_stack_frame{get_async_stack_frame()};
     // initialize when_all_task's async stack frame and make it the top frame

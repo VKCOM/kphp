@@ -10,6 +10,7 @@
 #include <utility>
 
 #include "runtime-light/coroutine/coroutine-state.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
 
@@ -19,11 +20,13 @@ namespace kphp::coro {
  * capturing one of the stack frames in the synchronous stack trace and jump between parts of the async_stack.
  */
 [[clang::noinline]] inline void resume_with_new_root(std::coroutine_handle<> handle, async_stack_root* new_async_stack_root) noexcept {
+  kphp::log::assertion(new_async_stack_root != nullptr);
   auto& coroutine_st{CoroutineInstanceState::get()};
-  auto* previous_stack_root = coroutine_st.current_async_stack_root;
-  new_async_stack_root->next_async_stack_root = coroutine_st.current_async_stack_root;
+  auto* previous_stack_root{coroutine_st.current_async_stack_root};
 
+  new_async_stack_root->next_async_stack_root = coroutine_st.current_async_stack_root;
   new_async_stack_root->stop_sync_stack_frame = reinterpret_cast<stack_frame*>(STACK_FRAME_ADDRESS);
+
   coroutine_st.current_async_stack_root = new_async_stack_root;
   handle.resume();
   coroutine_st.current_async_stack_root = previous_stack_root;
