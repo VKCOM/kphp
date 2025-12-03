@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -108,11 +109,11 @@ int64_t skip_utf8_subsequent_bytes(int64_t offset, const std::string_view subjec
 }
 
 std::optional<backref> try_get_backref(std::string_view preg_replacement) noexcept {
-  if (preg_replacement.empty() || preg_replacement[0] < '0' || preg_replacement[0] > '9') {
+  if (preg_replacement.empty() || !std::isdigit(preg_replacement[0])) {
     return std::nullopt;
   }
 
-  if (preg_replacement.size() == 1 || preg_replacement[1] < '0' || preg_replacement[1] > '9') {
+  if (preg_replacement.size() == 1 || !std::isdigit(preg_replacement[1])) {
     return backref{preg_replacement.substr(0, 1)};
   }
 
