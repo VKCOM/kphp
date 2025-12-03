@@ -73,8 +73,6 @@ struct RegexInfo final {
 
 class pcre2_match_view {
 public:
-  pcre2_match_view() noexcept = default;
-
   pcre2_match_view(std::string_view subject, PCRE2_SIZE* ovector, int32_t ret_code) noexcept
       : m_subject_data{subject},
         m_ovector_ptr{ovector},
@@ -99,8 +97,8 @@ public:
 
 private:
   const std::string_view m_subject_data;
-  const PCRE2_SIZE* const m_ovector_ptr{nullptr};
-  const int32_t m_num_groups{};
+  const PCRE2_SIZE* const m_ovector_ptr;
+  const int32_t m_num_groups;
 };
 
 template<typename... Args>
