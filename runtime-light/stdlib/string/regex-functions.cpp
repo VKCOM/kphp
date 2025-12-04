@@ -126,6 +126,7 @@ class preg_replacement_parser {
   std::string_view preg_replacement;
 
   replacement_term parse_term_internal() noexcept {
+    kphp::log::assertion(!preg_replacement.empty());
     auto first_char{preg_replacement.front()};
     preg_replacement = preg_replacement.substr(1);
     if (preg_replacement.empty()) {
