@@ -463,8 +463,8 @@ private:
   }
 
   const RegexInfo* const m_regex_info{nullptr};
-  uint64_t m_match_options;
-  PCRE2_SIZE m_current_offset;
+  uint64_t m_match_options{};
+  PCRE2_SIZE m_current_offset{};
   pcre2_match_data_8* m_match_data{nullptr};
   int32_t m_last_ret_code{};
   bool m_is_end{true};
