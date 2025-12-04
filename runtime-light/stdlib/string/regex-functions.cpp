@@ -373,7 +373,7 @@ std::optional<array<mixed>> split_regex(kphp::regex::Info& regex_info, const kph
 
   pcre2_iterator end_it{};
 
-  for (; it != end_it; ++it) {
+  while (++it != end_it) {
     kphp::pcre2::match_view match_view{*it};
 
     auto entire_pattern_match_opt{match_view.get_group(0)};
