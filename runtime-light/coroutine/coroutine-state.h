@@ -6,7 +6,7 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/async-stack-structs.h"
 
 struct CoroutineInstanceState final : private vk::not_copyable {
 

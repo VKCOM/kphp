@@ -14,7 +14,6 @@
 #include <utility>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
-#include "runtime-light/coroutine/async-stack-methods.h"
 #include "runtime-light/coroutine/async-stack.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -30,12 +29,23 @@ struct shared_task_awaiter final {
 
 template<typename promise_type>
 struct promise_base : kphp::coro::async_stack_element {
+private:
+  mutable kphp::coro::async_stack_root_wrapper root_wrapper_{};
+
+public:
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
 
   constexpr auto final_suspend() const noexcept {
     struct awaiter {
+    private:
+      mutable kphp::coro::async_stack_root* root;
+
+    public:
+      awaiter(kphp::coro::async_stack_root* prt)
+          : root{prt} {}
+
       constexpr auto await_ready() const noexcept -> bool {
         return false;
       }
@@ -54,10 +64,9 @@ struct promise_base : kphp::coro::async_stack_element {
           auto* next{awaiter->m_next};
           auto& async_stack_frame{promise.get_async_stack_frame()};
 
-          kphp::coro::async_stack_root root{};
-          root.top_async_stack_frame = std::addressof(async_stack_frame);
-          async_stack_frame.async_stack_root = std::addressof(root);
-          kphp::coro::resume_with_new_root(awaiter->m_continuation, std::addressof(root));
+          root->top_async_stack_frame = std::addressof(async_stack_frame);
+          async_stack_frame.async_stack_root = root;
+          kphp::coro::resume_with_new_root(awaiter->m_continuation, root);
           awaiter = next;
         }
         // return last awaiter's coroutine_handle to allow it to potentially be compiled as a tail-call
@@ -66,7 +75,7 @@ struct promise_base : kphp::coro::async_stack_element {
 
       constexpr auto await_resume() const noexcept -> void {}
     };
-    return awaiter{};
+    return awaiter{std::addressof(root_wrapper_.root)};
   }
 
   auto unhandled_exception() const noexcept -> void {
@@ -106,10 +115,9 @@ struct promise_base : kphp::coro::async_stack_element {
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
       auto& async_stack_frame{get_async_stack_frame()};
 
-      kphp::coro::async_stack_root root{};
-      root.top_async_stack_frame = std::addressof(async_stack_frame);
-      async_stack_frame.async_stack_root = std::addressof(root);
-      kphp::coro::resume_with_new_root(handle, std::addressof(root));
+      async_stack_frame.async_stack_root = std::addressof(root_wrapper_.root);
+      async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
+      kphp::coro::resume_with_new_root(handle, std::addressof(root_wrapper_.root));
     }
     // coroutine already completed, don't suspend
     if (done()) {
@@ -222,6 +230,8 @@ public:
   }
 
   auto await_resume() noexcept -> void {
+    auto& frame = m_coro.promise().get_async_stack_frame();
+    kphp::coro::preparation_for_resume(frame.async_stack_root, STACK_FRAME_ADDRESS);
     m_suspended = false;
   }
 };

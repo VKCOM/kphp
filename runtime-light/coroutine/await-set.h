@@ -40,7 +40,7 @@ public:
   template<typename awaitable_type>
   requires kphp::coro::concepts::awaitable<awaitable_type> && std::is_same_v<typename awaitable_traits<awaitable_type>::awaiter_return_type, return_type>
   void push(awaitable_type awaitable) noexcept {
-    m_await_broker->start_task(detail::await_set::make_await_set_task(std::move(awaitable)), STACK_RETURN_ADDRESS);
+    m_await_broker->start_task(detail::await_set::make_await_set_task(std::move(awaitable)));
   }
 
   auto next() noexcept {

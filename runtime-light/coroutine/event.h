@@ -19,20 +19,20 @@ class event {
   // 2) awaiter* => linked list of awaiters waiting for the event to trigger
   // 3) this => The event is triggered and all awaiters are resumed
   void* m_state{};
+  kphp::coro::async_stack_root* m_async_stack_root{};
 
   struct awaiter {
     event& m_event;
     bool m_suspended{};
     std::coroutine_handle<> m_awaiting_coroutine;
-    kphp::coro::async_stack_root* m_async_stack_root;
-    kphp::coro::async_stack_frame* m_caller_async_stack_frame{};
+    CoroutineInstanceState& m_coroutine_state;
 
     awaiter* m_next{};
     awaiter* m_prev{};
 
     explicit awaiter(event& event) noexcept
         : m_event(event),
-          m_async_stack_root(CoroutineInstanceState::get().current_async_stack_root) {}
+          m_coroutine_state(CoroutineInstanceState::get()) {}
 
     awaiter(const awaiter&) = delete;
     awaiter(awaiter&&) = delete;
@@ -84,8 +84,7 @@ inline auto event::awaiter::await_ready() const noexcept -> bool {
 
 template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
 auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> void {
-  // save caller's async stack frame
-  m_caller_async_stack_frame = m_async_stack_root->top_async_stack_frame;
+  m_event.m_async_stack_root = m_coroutine_state.current_async_stack_root;
 
   m_suspended = true;
   m_awaiting_coroutine = awaiting_coroutine;
@@ -103,9 +102,7 @@ auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> aw
 
 inline auto event::awaiter::await_resume() noexcept -> void {
   if (std::exchange(m_suspended, false)) {
-    // restore caller's async stack frame if it was suspended
-    kphp::log::assertion(m_caller_async_stack_frame != nullptr);
-    m_async_stack_root->top_async_stack_frame = std::exchange(m_caller_async_stack_frame, nullptr);
+    kphp::coro::preparation_for_resume(m_event.m_async_stack_root, STACK_FRAME_ADDRESS, m_coroutine_state);
   }
 }
 
@@ -118,6 +115,7 @@ inline auto event::set() noexcept -> void {
   while (awaiter != nullptr) {
     auto* next{awaiter->m_next};
     awaiter->m_awaiting_coroutine.resume();
+    m_async_stack_root->stop_sync_stack_frame = nullptr;
     awaiter = next;
   }
 }
