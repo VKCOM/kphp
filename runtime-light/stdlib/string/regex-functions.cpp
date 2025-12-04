@@ -416,7 +416,7 @@ public:
 
 private:
   void increment() noexcept {
-    auto& ri{*m_regex_info};
+    const auto& ri{*m_regex_info};
     auto* const ovector{pcre2_get_ovector_pointer_8(m_match_data)};
 
     while (true) {
@@ -556,7 +556,7 @@ PCRE2_SIZE set_all_matches(const RegexInfo& regex_info, int64_t flags, std::opti
 
   mixed& all_matches{(*opt_all_matches).get()};
   if (pattern_order) [[likely]] {
-    for (auto& it : std::as_const(matches)) {
+    for (const auto& it : std::as_const(matches)) {
       all_matches[it.get_key()].push_back(it.get_value());
     }
   } else {
