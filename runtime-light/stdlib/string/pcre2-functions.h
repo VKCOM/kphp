@@ -63,8 +63,8 @@ public:
   uint32_t named_groups_count() const noexcept;
   std::optional<string> replace(const string& subject, uint32_t replace_options, std::string_view replacement, uint32_t match_options, uint64_t limit,
                                 int64_t& replace_count) const noexcept;
-  std::optional<string> replace_one(std::string_view subject, std::string_view replacement, string_buffer& sb, PCRE2_SIZE buffer_length,
-                                                       size_t offset, uint32_t options) const noexcept;
+  std::optional<string> replace_one(std::string_view subject, std::string_view replacement, string_buffer& sb, PCRE2_SIZE buffer_length, size_t offset,
+                                    uint32_t options) const noexcept;
 
 private:
   compiled_regex(uint32_t compile_options, pcre2_code_8& regex_code) noexcept

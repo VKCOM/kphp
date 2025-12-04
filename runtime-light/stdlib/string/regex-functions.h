@@ -79,9 +79,8 @@ struct count_finalizer : vk::final_action<count_updater> {
 };
 
 // returns the ending offset of the entire match
-PCRE2_SIZE set_matches(const kphp::pcre2::compiled_regex& compiled_regex, const kphp::pcre2::group_names_t& group_names,
-                       const pcre2::match_view& match_view, int64_t flags, std::optional<std::reference_wrapper<mixed>> opt_matches,
-                       trailing_unmatch last_unmatched_policy) noexcept;
+PCRE2_SIZE set_matches(const kphp::pcre2::compiled_regex& compiled_regex, const kphp::pcre2::group_names_t& group_names, const pcre2::match_view& match_view,
+                       int64_t flags, std::optional<std::reference_wrapper<mixed>> opt_matches, trailing_unmatch last_unmatched_policy) noexcept;
 
 std::pair<string_buffer&, const PCRE2_SIZE> reserve_buffer(std::string_view subject) noexcept;
 
@@ -221,8 +220,8 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
   }
   auto group_names{compiled_regex->collect_group_names()};
   if (!co_await kphp::regex::replace_callback(regex_info, *compiled_regex, group_names, std::move(callback),
-                                              limit == kphp::regex::PREG_REPLACE_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit), flags))
-      [[unlikely]] {
+                                              limit == kphp::regex::PREG_REPLACE_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit),
+                                              flags)) [[unlikely]] {
     co_return Optional<string>{};
   }
   cf.count = regex_info.replace_count;
