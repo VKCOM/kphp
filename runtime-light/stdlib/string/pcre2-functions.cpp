@@ -24,6 +24,38 @@ constexpr size_t ERROR_BUFFER_LENGTH{256};
 
 }
 
+std::optional<PCRE2_SIZE> match_view::get_start_offset(size_t i) const noexcept {
+  if (i >= m_num_groups) {
+    return std::nullopt;
+  }
+
+  kphp::log::assertion(m_ovector_ptr);
+  // ovector is an array of offset pairs
+  PCRE2_SIZE start{m_ovector_ptr[2 * i]};
+
+  if (start == PCRE2_UNSET) {
+    return std::nullopt;
+  }
+
+  return start;
+}
+
+std::optional<PCRE2_SIZE> match_view::get_end_offset(size_t i) const noexcept {
+  if (i >= m_num_groups) {
+    return std::nullopt;
+  }
+
+  kphp::log::assertion(m_ovector_ptr);
+  // ovector is an array of offset pairs
+  PCRE2_SIZE end{m_ovector_ptr[2 * i + 1]};
+
+  if (end == PCRE2_UNSET) {
+    return std::nullopt;
+  }
+
+  return end;
+}
+
 std::optional<std::string_view> match_view::get_group(size_t i) const noexcept {
   if (i >= m_num_groups) {
     return std::nullopt;
@@ -327,6 +359,21 @@ std::optional<string> compiled_regex::replace(const string& subject, uint32_t re
   }
 
   return subject;
+}
+
+std::optional<string> compiled_regex::replace_one(std::string_view subject, std::string_view replacement, string_buffer& sb, size_t buffer_length,
+                                                  size_t offset, uint32_t options) const noexcept {
+  const auto& regex_state{RegexInstanceState::get()};
+
+  if (auto replace_one_ret_code{pcre2_substitute_8(std::addressof(regex_code), reinterpret_cast<PCRE2_SPTR8>(subject.data()), subject.size(), offset, options,
+                                                   nullptr, regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(replacement.data()),
+                                                   replacement.size(), reinterpret_cast<PCRE2_UCHAR8*>(sb.buffer()), std::addressof(buffer_length))};
+      replace_one_ret_code != 1) [[unlikely]] {
+    kphp::log::warning("pcre2_substitute error {}", replace_one_ret_code);
+    return std::nullopt;
+  }
+
+  return string{sb.buffer(), static_cast<string::size_type>(buffer_length)};
 }
 
 uint32_t compiled_regex::groups_count() const noexcept {
