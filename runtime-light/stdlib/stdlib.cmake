@@ -33,6 +33,7 @@ prepend(
   rpc/rpc-tl-request.cpp
   serialization/serialization-state.cpp
   server/http-functions.cpp
+  string/pcre2-functions.cpp
   string/regex-functions.cpp
   string/regex-state.cpp
   string/string-state.cpp
