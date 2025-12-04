@@ -231,7 +231,7 @@ public:
 
     while (true) {
       // Try to find match
-      auto match_view_opt {m_compiled_regex->match(m_regex_info->subject, m_current_offset, m_match_options)};
+      auto match_view_opt{m_compiled_regex->match(m_regex_info->subject, m_current_offset, m_match_options)};
       if (!match_view_opt.has_value()) {
         // std::nullopt means error
         m_has_error = true;
