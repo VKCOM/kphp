@@ -208,7 +208,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
 
   auto cf = kphp::regex::count_finalizer{opt_count};
 
-  if (limit < 0 && limit != kphp::regex::PREG_NOLIMIT) [[unlikely]] {
+  if (limit < 0 && limit != kphp::regex::PREG_REPLACE_NOLIMIT) [[unlikely]] {
     kphp::log::warning("invalid limit {} in preg_replace_callback", limit);
     co_return Optional<string>{};
   }
@@ -221,7 +221,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
   }
   auto group_names{compiled_regex->collect_group_names()};
   if (!co_await kphp::regex::replace_callback(regex_info, *compiled_regex, group_names, std::move(callback),
-                                              limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit), flags))
+                                              limit == kphp::regex::PREG_REPLACE_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit), flags))
       [[unlikely]] {
     co_return Optional<string>{};
   }
