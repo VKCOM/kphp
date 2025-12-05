@@ -25,8 +25,13 @@ vk_add_library_no_pic(flex-data-src-no-pic OBJECT ${FLEX_SOURCES})
 add_dependencies(flex-data-src-no-pic flex-data)
 
 if (COMPILE_RUNTIME_LIGHT)
-    target_compile_options(flex-data-src-pic PUBLIC -stdlib=libc++ ${RUNTIME_LIGHT_VISIBILITY})
-    target_link_options(flex-data-src-pic PUBLIC -stdlib=libc++)
+    # A new pic library needs to be added because it uses libc++.
+    # vkext is not ready to use a library with libc++.
+    vk_add_library_pic(flex-libcpp-data-src-pic OBJECT ${FLEX_SOURCES})
+    add_dependencies(flex-libcpp-data-src-pic flex-data)
+
+    target_compile_options(flex-libcpp-data-src-pic PUBLIC -stdlib=libc++ ${RUNTIME_LIGHT_VISIBILITY})
+    target_link_options(flex-libcpp-data-src-pic PUBLIC -stdlib=libc++)
 endif()
 
 vk_add_library_pic(flex_data_shared-pic SHARED $<TARGET_OBJECTS:flex-data-src-pic>)
