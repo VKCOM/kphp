@@ -38,3 +38,25 @@ class CurlTestCase(WebServerAutoTestCase):
         if extra:
             res.update(extra)
         return res
+
+class CurlMultiTestCase(WebServerAutoTestCase):
+    @classmethod
+    def extra_class_setup(cls):
+        if cls.should_use_k2():
+            cls.web_server.ignore_log_errors()
+        else:
+            cls.web_server.update_options({
+                "--workers-num": 3,
+            })
+
+    def _curl_multi_request(self, uri1, uri2):
+        url1 = "localhost:{}{}".format(self.web_server.http_port, uri1) if uri1.startswith('/') else uri1
+        url2 = "localhost:{}{}".format(self.web_server.http_port, uri2) if uri2.startswith('/') else uri2
+        resp = self.web_server.http_post(
+            uri=self.test_case_uri,
+            json={
+                "url1": url1,
+                "url2": url2,
+            })
+        self.assertEqual(resp.status_code, 200)
+        return resp.json()

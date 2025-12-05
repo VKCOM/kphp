@@ -1,13 +1,11 @@
-@ok k2_skip
+@ok
 <?php
 
-function test_curl_multi_setopt() {
+function test_curl_multi_long_setopt() {
   $mh = curl_multi_init();
 
   var_dump(curl_multi_setopt($mh, CURLMOPT_PIPELINING, CURLPIPE_HTTP1));
   var_dump(curl_multi_setopt($mh, CURLMOPT_MAXCONNECTS, 10));
-  var_dump(curl_multi_setopt($mh, CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE, 111));
-  var_dump(curl_multi_setopt($mh, CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE, 222));
   var_dump(curl_multi_setopt($mh, CURLMOPT_MAX_HOST_CONNECTIONS, 123));
   var_dump(curl_multi_setopt($mh, CURLMOPT_MAX_PIPELINE_LENGTH, 777));
   var_dump(curl_multi_setopt($mh, CURLMOPT_MAX_TOTAL_CONNECTIONS, 87));
@@ -18,4 +16,21 @@ function test_curl_multi_setopt() {
   curl_multi_close($mh);
 }
 
-test_curl_multi_setopt();
+function test_curl_multi_off_t_setopt() {
+  $mh = curl_multi_init();
+
+  if (curl_multi_setopt($mh, CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE, 111) === false) {
+    echo "assert_false";
+  }
+  if (curl_multi_setopt($mh, CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE, 222) === false) {
+    echo "assert_false";
+  }
+
+  curl_multi_close($mh);
+}
+
+test_curl_multi_long_setopt();
+
+#ifndef K2
+test_curl_multi_off_t_setopt();
+#endif

@@ -16,6 +16,7 @@ enum class PHPCURL : uint64_t {
 };
 
 using easy_type = simple_transfer::descriptor_type;
+using multi_type = composite_transfer::descriptor_type;
 
 constexpr auto CURL_ERROR_SIZE = 256;
 
@@ -246,6 +247,34 @@ enum class CURL_HTTP_VERSION : uint8_t {
   _2 = CURL_HTTP_VERSION::_2_0,
   _2TLS = 4,
   _2_PRIOR_KNOWLEDGE = 5,
+};
+
+enum class CURLME : int16_t {
+  CALL_MULTI_PERFORM = -1,
+  OK = 0,
+  BAD_HANDLE = 1,
+  BAD_EASY_HANDLE = 2,
+  OUT_OF_MEMORY = 3,
+  INTERNAL_ERROR = 4,
+  BAD_SOCKET = 5,
+  UNKNOWN_OPTION = 6,
+  ADDED_ALREADY = 7,
+};
+
+enum class CURMLOPT : uint64_t {
+  PIPELINING = 3,
+  MAXCONNECTS = 6,
+  // CHUNK_LENGTH_PENALTY_SIZE = 30010,
+  // CONTENT_LENGTH_PENALTY_SIZE = 30009,
+  MAX_HOST_CONNECTIONS = 7,
+  MAX_PIPELINE_LENGTH = 8,
+  MAX_TOTAL_CONNECTIONS = 13,
+};
+
+enum class CURLPIPE : uint8_t {
+  NOTHING = 0,
+  HTTP1 = 1,
+  MULTIPLEX = 2,
 };
 
 } // namespace kphp::web::curl
