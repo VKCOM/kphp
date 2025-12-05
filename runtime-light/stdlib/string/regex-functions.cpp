@@ -31,7 +31,7 @@
 
 namespace {
 
-constexpr size_t ERROR_BUFFER_LENGTH = 256;
+constexpr size_t ERROR_BUFFER_LENGTH{256};
 
 enum class trailing_unmatch : uint8_t { skip, include };
 
@@ -174,7 +174,7 @@ class preg_replacement_parser {
       if (preg_replacement.front() == '{') {
         return try_get_backref(preg_replacement.substr(1))
             .and_then([this](auto value) noexcept -> std::optional<replacement_term> {
-              auto digits_end_pos = 1 + value.size();
+              auto digits_end_pos{1 + value.size()};
               if (digits_end_pos < preg_replacement.size() && preg_replacement[digits_end_pos] == '}') {
                 preg_replacement = preg_replacement.substr(1 + value.size() + 1);
                 return value;
@@ -187,7 +187,7 @@ class preg_replacement_parser {
 
       return try_get_backref(preg_replacement)
           .transform([this](auto value) noexcept -> replacement_term {
-            auto digits_end_pos = value.size();
+            auto digits_end_pos{value.size()};
             preg_replacement = preg_replacement.substr(digits_end_pos);
             return value;
           })
@@ -196,7 +196,7 @@ class preg_replacement_parser {
     case '\\': {
       // \1
       auto back_reference_opt{try_get_backref(preg_replacement).transform([this](auto value) noexcept -> replacement_term {
-        auto digits_end_pos = value.size();
+        auto digits_end_pos{value.size()};
         preg_replacement = preg_replacement.substr(digits_end_pos);
         return value;
       })};
@@ -256,7 +256,7 @@ public:
       return *this;
     }
     iterator operator++(int) noexcept {
-      iterator temp = *this;
+      iterator temp{*this};
       ++(*this);
       return temp;
     }
