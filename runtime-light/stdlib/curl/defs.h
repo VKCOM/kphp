@@ -249,7 +249,7 @@ enum class CURL_HTTP_VERSION : uint8_t {
   _2_PRIOR_KNOWLEDGE = 5,
 };
 
-enum class CURLMcode : int16_t {
+enum class CURLME : int16_t {
   CALL_MULTI_PERFORM = -1,
   OK = 0,
   BAD_HANDLE = 1,

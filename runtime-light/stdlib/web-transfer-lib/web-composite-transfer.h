@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <__expected/expected.h>
 #include <chrono>
 #include <cstddef>
 #include <cstdint>
