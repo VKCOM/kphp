@@ -38,7 +38,6 @@ inline void preparation_for_resume(kphp::coro::async_stack_root* root, void* sta
 [[clang::noinline]] inline void resume_with_new_root(std::coroutine_handle<> handle, async_stack_root* new_async_stack_root) noexcept {
   kphp::log::assertion(new_async_stack_root != nullptr);
   auto& coroutine_st{CoroutineInstanceState::get()};
-  // auto* previous_stack_root{coroutine_st.current_async_stack_root};
 
   new_async_stack_root->next_async_stack_root = coroutine_st.current_async_stack_root;
   new_async_stack_root->stop_sync_stack_frame = reinterpret_cast<stack_frame*>(STACK_FRAME_ADDRESS);
