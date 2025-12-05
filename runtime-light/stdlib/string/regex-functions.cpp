@@ -273,6 +273,15 @@ public:
 };
 
 bool compile_regex(RegexInfo& regex_info) noexcept {
+  const vk::final_action finalizer{[&regex_info]() noexcept {
+    if (regex_info.regex_code != nullptr) [[likely]] {
+      pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_CAPTURECOUNT, std::addressof(regex_info.capture_count));
+      ++regex_info.capture_count; // to also count entire match
+    } else {
+      regex_info.capture_count = 0;
+    }
+  }};
+
   auto& regex_state{RegexInstanceState::get()};
   if (!regex_state.compile_context) [[unlikely]] {
     return false;
@@ -410,15 +419,6 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
   // remove the end delimiter
   regex_body.remove_suffix(1);
   regex_info.compile_options = compile_options;
-
-  const vk::final_action finalizer{[&regex_info]() noexcept {
-    if (regex_info.regex_code != nullptr) [[likely]] {
-      pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_CAPTURECOUNT, std::addressof(regex_info.capture_count));
-      ++regex_info.capture_count; // to also count entire match
-    } else {
-      regex_info.capture_count = 0;
-    }
-  }};
 
   // compile pcre2_code
   int32_t error_number{};
