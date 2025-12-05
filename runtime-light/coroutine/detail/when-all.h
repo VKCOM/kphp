@@ -25,6 +25,7 @@ namespace kphp::coro::detail::when_all {
 class when_all_latch {
   size_t m_count{1};
   std::coroutine_handle<> m_awaiting_coroutine;
+  kphp::coro::async_stack_root* m_async_stack_root{};
 
 public:
   explicit when_all_latch(size_t count) noexcept
@@ -51,14 +52,16 @@ public:
     return m_awaiting_coroutine != nullptr && m_count == 1;
   }
 
-  auto try_await(std::coroutine_handle<> awaiting_coroutine) noexcept -> bool {
+  auto try_await(std::coroutine_handle<> awaiting_coroutine, kphp::coro::async_stack_root* root) noexcept -> bool {
     m_awaiting_coroutine = awaiting_coroutine;
+    m_async_stack_root = root;
     return m_count != 1;
   }
 
   auto notify_awaitable_completed() noexcept -> void {
     if (--m_count == 1 && m_awaiting_coroutine != nullptr) {
       m_awaiting_coroutine.resume();
+      m_async_stack_root->stop_sync_stack_frame = nullptr;
     }
   }
 };
@@ -104,20 +107,20 @@ class when_all_ready_awaitable<std::tuple<task_types...>> {
     template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
     [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> bool {
       // async stack frame handling
-      void* const return_address{STACK_RETURN_ADDRESS};
       m_caller_async_stack_frame = std::addressof(awaiting_coroutine.promise().get_async_stack_frame());
 
-      std::apply([&latch = m_awaitable.m_latch, &caller_async_stack_frame = *m_caller_async_stack_frame,
-                  return_address](auto&... tasks) noexcept { (tasks.start(latch, caller_async_stack_frame, return_address), ...); },
-                 m_awaitable.m_tasks);
-      return m_awaitable.m_latch.try_await(awaiting_coroutine);
+      std::apply([&latch = m_awaitable.m_latch](auto&... tasks) noexcept { (tasks.start(latch), ...); }, m_awaitable.m_tasks);
+      return m_awaitable.m_latch.try_await(awaiting_coroutine, m_caller_async_stack_frame->async_stack_root);
     }
 
     auto await_resume() noexcept {
       // restore caller's async_stack_frame unless it's not set which could happen in case no suspension occured
       if (m_caller_async_stack_frame != nullptr) {
-        kphp::log::assertion(m_caller_async_stack_frame->async_stack_root != nullptr);
-        m_caller_async_stack_frame->async_stack_root->top_async_stack_frame = m_caller_async_stack_frame;
+        auto* root = m_caller_async_stack_frame->async_stack_root;
+        kphp::log::assertion(root != nullptr);
+        root->top_async_stack_frame = m_caller_async_stack_frame;
+
+        kphp::coro::preparation_for_resume(root, STACK_FRAME_ADDRESS);
       }
       return std::apply([](task_types&&... tasks) noexcept { return std::make_tuple(std::move(tasks).result()...); }, std::move(m_awaitable.m_tasks));
     }
@@ -146,6 +149,7 @@ public:
 template<typename return_type, typename promise_type>
 class when_all_task_promise_base : public kphp::coro::async_stack_element {
   when_all_latch* m_latch{};
+  kphp::coro::async_stack_root_wrapper root_wrapper_{};
 
 public:
   when_all_task_promise_base() noexcept = default;
@@ -182,17 +186,18 @@ public:
     kphp::log::error("internal unhandled exception");
   }
 
-  auto start(when_all_latch& latch, kphp::coro::async_stack_frame& caller_async_stack_frame, void* return_address) noexcept {
+  [[clang::noinline]] auto start(when_all_latch& latch) noexcept {
     m_latch = std::addressof(latch);
 
     auto& async_stack_frame{get_async_stack_frame()};
-    kphp::log::assertion(caller_async_stack_frame.async_stack_root != nullptr);
     // initialize when_all_task's async stack frame and make it the top frame
-    async_stack_frame.caller_async_stack_frame = std::addressof(caller_async_stack_frame);
-    async_stack_frame.async_stack_root = caller_async_stack_frame.async_stack_root;
-    async_stack_frame.return_address = return_address;
+    async_stack_frame.caller_async_stack_frame = nullptr;
+    async_stack_frame.async_stack_root = std::addressof(root_wrapper_.root);
+    async_stack_frame.return_address = STACK_RETURN_ADDRESS; // this is necessary to prevent double printing of a coroutine
     async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
-    std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this)).resume();
+
+    decltype(auto) handle = std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this));
+    kphp::coro::resume_with_new_root(handle, std::addressof(root_wrapper_.root));
   }
 };
 
@@ -230,7 +235,7 @@ private:
     }
 
     auto result() noexcept -> T {
-      kphp::log::assertion(m_result);
+      kphp::log::assertion(static_cast<bool>(m_result));
       return std::move(*m_result);
     }
 
@@ -247,8 +252,8 @@ private:
     constexpr auto return_void() const noexcept -> void {}
   };
 
-  auto start(when_all_latch& latch, kphp::coro::async_stack_frame& caller_async_stack_frame, void* return_address) noexcept -> void {
-    m_coroutine.promise().start(latch, caller_async_stack_frame, return_address);
+  auto start(when_all_latch& latch) noexcept -> void {
+    m_coroutine.promise().start(latch);
   }
 
 public:
