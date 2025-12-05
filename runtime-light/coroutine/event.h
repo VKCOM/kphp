@@ -102,7 +102,7 @@ auto event::awaiter::await_suspend(std::coroutine_handle<caller_promise_type> aw
 
 inline auto event::awaiter::await_resume() noexcept -> void {
   if (std::exchange(m_suspended, false)) {
-    kphp::coro::preparation_for_resume(m_event.m_async_stack_root, STACK_FRAME_ADDRESS, m_coroutine_state);
+    kphp::coro::preparation_for_resume(m_event.m_async_stack_root, STACK_FRAME_ADDRESS);
   }
 }
 

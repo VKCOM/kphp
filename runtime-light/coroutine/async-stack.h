@@ -24,8 +24,8 @@ struct async_stack_root_wrapper {
   }
 };
 
-inline void preparation_for_resume(kphp::coro::async_stack_root* root, void* stack_frame_addr,
-                                   CoroutineInstanceState& coroutine_state = CoroutineInstanceState::get()) {
+inline void preparation_for_resume(kphp::coro::async_stack_root* root, void* stack_frame_addr) {
+  static CoroutineInstanceState& coroutine_state = CoroutineInstanceState::get();
   root->stop_sync_stack_frame = reinterpret_cast<stack_frame*>(stack_frame_addr);
   coroutine_state.current_async_stack_root = root;
 }
