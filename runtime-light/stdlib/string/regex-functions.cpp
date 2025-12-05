@@ -6,6 +6,8 @@
 
 #include <algorithm>
 #include <array>
+#include <cctype>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -33,6 +35,7 @@ constexpr size_t ERROR_BUFFER_LENGTH = 256;
 
 enum class trailing_unmatch : uint8_t { skip, include };
 
+using backref = std::string_view;
 using regex_pcre2_group_names_t = kphp::stl::vector<const char*, kphp::memory::script_allocator>;
 
 struct RegexInfo final {
@@ -101,6 +104,139 @@ int64_t skip_utf8_subsequent_bytes(int64_t offset, const std::string_view subjec
   }
   return offset;
 }
+
+std::optional<backref> try_get_backref(std::string_view preg_replacement) noexcept {
+  if (preg_replacement.empty() || !std::isdigit(preg_replacement[0])) {
+    return std::nullopt;
+  }
+
+  if (preg_replacement.size() == 1 || !std::isdigit(preg_replacement[1])) {
+    return backref{preg_replacement.substr(0, 1)};
+  }
+
+  return backref{preg_replacement.substr(0, 2)};
+}
+
+using replacement_term = std::variant<char, backref>;
+
+class preg_replacement_parser {
+  std::string_view preg_replacement;
+
+  replacement_term parse_term_internal() noexcept {
+    kphp::log::assertion(!preg_replacement.empty());
+    auto first_char{preg_replacement.front()};
+    preg_replacement = preg_replacement.substr(1);
+    if (preg_replacement.empty()) {
+      return first_char;
+    }
+    switch (first_char) {
+    case '$':
+      // $1, ${1}
+      if (preg_replacement.front() == '{') {
+        return try_get_backref(preg_replacement.substr(1))
+            .and_then([this](auto value) noexcept -> std::optional<replacement_term> {
+              auto digits_end_pos = 1 + value.size();
+              if (digits_end_pos < preg_replacement.size() && preg_replacement[digits_end_pos] == '}') {
+                preg_replacement = preg_replacement.substr(1 + value.size() + 1);
+                return value;
+              }
+
+              return std::nullopt;
+            })
+            .value_or('$');
+      }
+
+      return try_get_backref(preg_replacement)
+          .transform([this](auto value) noexcept -> replacement_term {
+            auto digits_end_pos = value.size();
+            preg_replacement = preg_replacement.substr(digits_end_pos);
+            return value;
+          })
+          .value_or('$');
+
+    case '\\': {
+      // \1
+      auto back_reference_opt{try_get_backref(preg_replacement).transform([this](auto value) noexcept -> replacement_term {
+        auto digits_end_pos = value.size();
+        preg_replacement = preg_replacement.substr(digits_end_pos);
+        return value;
+      })};
+      if (back_reference_opt.has_value()) {
+        return *back_reference_opt;
+      } else {
+        auto res{preg_replacement.front()};
+        if (res == '$' || res == '\\') {
+          preg_replacement = preg_replacement.substr(1);
+          return res;
+        }
+        return '\\';
+      }
+    }
+    default:
+      return first_char;
+    }
+  }
+
+public:
+  explicit preg_replacement_parser(std::string_view preg_replacement) noexcept
+      : preg_replacement{preg_replacement} {}
+
+  struct iterator {
+    preg_replacement_parser* parser{nullptr};
+    replacement_term current_term{'\0'};
+
+    using difference_type = std::ptrdiff_t;
+    using value_type = replacement_term;
+    using reference = const replacement_term&;
+    using pointer = const replacement_term*;
+    using iterator_category = std::input_iterator_tag;
+
+    iterator() noexcept = default;
+    explicit iterator(preg_replacement_parser* p) noexcept
+        : parser{p} {
+      if (parser->preg_replacement.empty()) {
+        parser = nullptr;
+      } else {
+        current_term = parser->parse_term_internal();
+      }
+    }
+
+    reference operator*() const noexcept {
+      return current_term;
+    }
+    pointer operator->() const noexcept {
+      return std::addressof(current_term);
+    }
+
+    iterator& operator++() noexcept {
+      if (!parser->preg_replacement.empty()) {
+        current_term = parser->parse_term_internal();
+      } else {
+        parser = nullptr;
+      }
+      return *this;
+    }
+    iterator operator++(int) noexcept {
+      iterator temp = *this;
+      ++(*this);
+      return temp;
+    }
+
+    friend bool operator==(const iterator& a, const iterator& b) noexcept {
+      return a.parser == b.parser;
+    }
+    friend bool operator!=(const iterator& a, const iterator& b) noexcept {
+      return !(a == b);
+    }
+  };
+
+  iterator begin() noexcept {
+    return iterator{this};
+  }
+  iterator end() noexcept {
+    return iterator{};
+  }
+};
 
 bool parse_regex(RegexInfo& regex_info) noexcept {
   if (regex_info.regex.empty()) {
@@ -591,20 +727,23 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
     return {};
   }
 
-  string pcre2_replacement{replacement};
-  { // we need to replace PHP's back references with PCRE2 ones
-    static constexpr std::string_view backreference_pattern = R"(/\\(\d)/)";
-    static constexpr std::string_view backreference_replacement = "$$$1";
-
-    RegexInfo regex_info{backreference_pattern, {replacement.c_str(), replacement.size()}, backreference_replacement};
-    bool success{parse_regex(regex_info)};
-    success &= compile_regex(regex_info);
-    success &= replace_regex(regex_info, std::numeric_limits<uint64_t>::max());
-    if (!success) [[unlikely]] {
-      kphp::log::warning("can't replace PHP back references with PCRE2 ones");
-      return {};
+  // we need to replace PHP's back references with PCRE2 ones
+  auto parser{preg_replacement_parser{{replacement.c_str(), replacement.size()}}};
+  kphp::stl::string<kphp::memory::script_allocator> pcre2_replacement{};
+  for (const auto& term : parser) {
+    if (std::holds_alternative<char>(term)) {
+      auto c{std::get<char>(term)};
+      pcre2_replacement.push_back(c);
+      if (c == '$') {
+        pcre2_replacement.push_back('$');
+      }
+    } else {
+      auto backreference{std::get<backref>(term)};
+      pcre2_replacement.reserve(pcre2_replacement.size() + backreference.size() + 3);
+      pcre2_replacement.append("${");
+      pcre2_replacement.append(backreference);
+      pcre2_replacement.append("}");
     }
-    pcre2_replacement = regex_info.opt_replace_result.has_value() ? *std::move(regex_info.opt_replace_result) : replacement;
   }
 
   RegexInfo regex_info{{pattern.c_str(), pattern.size()}, {subject.c_str(), subject.size()}, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
