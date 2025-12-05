@@ -15,7 +15,6 @@
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/curl/defs.h"
 #include "runtime-light/stdlib/curl/details/diagnostics.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/web-transfer-lib/defs.h"
 #include "runtime-light/stdlib/web-transfer-lib/details/web-property.h"
@@ -38,11 +37,10 @@ inline auto f$curl_multi_add_handle(kphp::web::curl::multi_type multi_id, kphp::
   if (!curl_state.multi_ctx.has(multi_id)) [[unlikely]] {
     co_return false;
   }
-  auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
-
   if (!curl_state.easy_ctx.has(easy_id)) [[unlikely]] {
     co_return false;
   }
+  auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   easy_ctx.errors_reset();
 
@@ -98,11 +96,11 @@ inline auto f$curl_multi_setopt(kphp::web::curl::multi_type multi_id, int64_t op
         kphp::web::curl::print_error("could not set an mutli option", std::move(res.error()));
         return false;
       }
-      multi_ctx.set_errno(kphp::web::curl::CURLMcode::OK);
+      multi_ctx.set_errno(kphp::web::curl::CURLME::OK);
       return true;
     }
     default:
-      multi_ctx.set_errno(kphp::web::curl::CURLMcode::UNKNOWN_OPTION, "a libcurl function was given an incorrect PROXYTYPE kind");
+      multi_ctx.set_errno(kphp::web::curl::CURLME::UNKNOWN_OPTION, "a libcurl function was given an incorrect PROXYTYPE kind");
       return false;
     }
   }
@@ -115,11 +113,11 @@ inline auto f$curl_multi_setopt(kphp::web::curl::multi_type multi_id, int64_t op
       kphp::web::curl::print_error("could not set an multi option", std::move(res.error()));
       return false;
     }
-    multi_ctx.set_errno(kphp::web::curl::CURLMcode::OK);
+    multi_ctx.set_errno(kphp::web::curl::CURLME::OK);
     return true;
   }
   default:
-    multi_ctx.set_errno(kphp::web::curl::CURLMcode::UNKNOWN_OPTION);
+    multi_ctx.set_errno(kphp::web::curl::CURLME::UNKNOWN_OPTION);
     return false;
   }
 }
@@ -154,7 +152,7 @@ inline auto f$curl_multi_getcontent(kphp::web::curl::easy_type easy_id) noexcept
       kphp::web::curl::print_error("could not get response of curl easy handle", std::move(res.error()));
       co_return false;
     }
-    co_return (*res).body;
+    co_return std::move((*res).body);
   }
   co_return Optional<string>{};
 }
@@ -181,7 +179,7 @@ inline auto f$curl_multi_strerror(kphp::web::curl::multi_type multi_id) noexcept
     return {};
   }
   auto& multi_ctx{curl_state.multi_ctx.get_or_init(multi_id)};
-  if (multi_ctx.error_code != static_cast<int64_t>(kphp::web::curl::CURLMcode::OK)) [[likely]] {
+  if (multi_ctx.error_code != static_cast<int64_t>(kphp::web::curl::CURLME::OK)) [[likely]] {
     const auto* const desc_data{reinterpret_cast<const char*>(multi_ctx.error_description.data())};
     const auto desc_size{static_cast<string::size_type>(multi_ctx.error_description.size())};
     return string{desc_data, desc_size};
@@ -211,7 +209,7 @@ inline auto f$curl_multi_select(kphp::web::curl::multi_type multi_id, double tim
     kphp::web::curl::print_error("could not select curl multi handle", std::move(res.error()));
     co_return multi_ctx.error_code;
   }
-  co_return *res;
+  co_return std::move(*res_;
 }
 
 inline auto f$curl_multi_info_read(kphp::web::curl::multi_type multi_id,
@@ -267,24 +265,24 @@ inline auto f$curl_multi_info_read(kphp::web::curl::multi_type multi_id,
   constexpr auto HANDLE_IDX = 3;
 
   array<int64_t> result{array_size{3, false}};
-  if (auto ok{info.has_key(MSGS_IN_QUEUE)}; ok && msgs_in_queue.has_value()) {
+  if (info.has_key(MSGS_IN_QUEUE) && msgs_in_queue.has_value()) {
     (*msgs_in_queue).get() = info.get_value(MSGS_IN_QUEUE);
   }
 
-  if (auto ok{info.has_key(MSG_IDX)}; ok) {
+  if (info.has_key(MSG_IDX)) {
     result.set_value(string{"msg"}, info.get_value(MSG_IDX));
   }
 
-  if (auto ok{info.has_key(RESULT_IDX)}; ok) {
+  if (info.has_key(RESULT_IDX)) {
     result.set_value(string{"result"}, info.get_value(RESULT_IDX));
   }
 
-  if (auto ok{info.has_key(HANDLE_IDX)}; ok) {
+  if (info.has_key(HANDLE_IDX)) {
     auto easy_id{info.get_value(HANDLE_IDX)};
     if (curl_state.easy_ctx.has(easy_id)) {
       result.set_value(string{"handle"}, info.get_value(HANDLE_IDX));
     }
   }
 
-  co_return result;
+  co_return std::move(result);
 }
