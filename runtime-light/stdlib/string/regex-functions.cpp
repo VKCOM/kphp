@@ -78,6 +78,11 @@ public:
         m_ovector_ptr{ovector},
         m_num_groups{ret_code} {}
 
+  pcre2_match_view(const pcre2_match_view&) noexcept = default;
+  pcre2_match_view(pcre2_match_view&&) noexcept = default;
+  pcre2_match_view& operator=(const pcre2_match_view&) noexcept = default;
+  pcre2_match_view& operator=(pcre2_match_view&&) noexcept = default;
+
   int32_t size() const noexcept {
     return m_num_groups;
   }
@@ -100,9 +105,9 @@ public:
   }
 
 private:
-  const std::string_view m_subject_data;
-  const PCRE2_SIZE* const m_ovector_ptr;
-  const int32_t m_num_groups;
+  std::string_view m_subject_data;
+  const PCRE2_SIZE* m_ovector_ptr;
+  int32_t m_num_groups;
 };
 
 template<typename... Args>
@@ -355,18 +360,9 @@ std::optional<int32_t> match_regex(const RegexInfo& regex_info, size_t offset, u
   return match_count != PCRE2_ERROR_NOMATCH ? match_count : 0;
 }
 
-class pcre2_iterator {
+class matcher {
 public:
-  using value_type = pcre2_match_view;
-  using difference_type = std::ptrdiff_t;
-  using reference = value_type;
-  using pointer = value_type*;
-  using iterator_category = std::forward_iterator_tag;
-
-  pcre2_iterator() noexcept
-      : m_is_valid{true} {}
-
-  pcre2_iterator(const RegexInfo& info, size_t match_from) noexcept
+  matcher(const RegexInfo& info, size_t match_from) noexcept
       : m_regex_info{std::addressof(info)},
         m_match_options{info.match_options},
         m_current_offset{match_from} {
@@ -380,42 +376,14 @@ public:
       return;
     }
 
-    m_is_valid = true;
-    m_is_end = false;
+    m_has_error = false;
   }
 
-  bool is_terminal() const noexcept {
-    return !m_is_valid || m_is_end;
+  bool has_error() const noexcept {
+    return m_has_error;
   }
 
-  bool is_valid() const noexcept {
-    return m_is_valid;
-  }
-
-  reference operator*() const noexcept {
-    PCRE2_SIZE* ovector{pcre2_get_ovector_pointer_8(m_match_data)};
-    return pcre2_match_view{m_regex_info->subject, ovector, m_last_ret_code};
-  }
-
-  pcre2_iterator& operator++() noexcept {
-    increment();
-    return *this;
-  }
-  pcre2_iterator operator++(int) noexcept {
-    pcre2_iterator temp{*this};
-    increment();
-    return temp;
-  }
-
-  bool operator==(const pcre2_iterator& other) const noexcept {
-    return is_terminal() && other.is_terminal();
-  }
-  bool operator!=(const pcre2_iterator& other) const noexcept {
-    return !(*this == other);
-  }
-
-private:
-  void increment() noexcept {
+  std::optional<pcre2_match_view> next() noexcept {
     const auto& ri{*m_regex_info};
     auto* const ovector{pcre2_get_ovector_pointer_8(m_match_data)};
 
@@ -424,19 +392,17 @@ private:
       auto match_count_opt{match_regex(ri, m_current_offset, m_match_options)};
       if (!match_count_opt.has_value()) {
         // std::nullopt means error
-        m_is_end = true;
-        m_is_valid = false;
-        return;
+        m_has_error = true;
+        return std::nullopt;
       }
 
-      m_last_ret_code = *match_count_opt;
+      auto ret_code{*match_count_opt};
 
-      if (m_last_ret_code == 0) {
+      if (ret_code == 0) {
         // If match is not found
         if (m_match_options == ri.match_options || m_current_offset == ri.subject.size()) {
           // Here we are sure that there are no more matches here
-          m_is_end = true;
-          return;
+          return std::nullopt;
         }
         // Here we know that we were looking for a non-empty and anchored match,
         // and we're going to try searching from the next character with the default options.
@@ -458,17 +424,16 @@ private:
         // Else use default options
         m_match_options = ri.match_options;
       }
-      return;
+      return pcre2_match_view{ri.subject, ovector, ret_code};
     }
   }
 
+private:
   const RegexInfo* const m_regex_info{nullptr};
   uint64_t m_match_options{};
   PCRE2_SIZE m_current_offset{};
   pcre2_match_data_8* m_match_data{nullptr};
-  int32_t m_last_ret_code{};
-  bool m_is_end{true};
-  bool m_is_valid{false};
+  bool m_has_error{true};
 };
 
 // returns the ending offset of the entire match
@@ -724,22 +689,20 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
     }
   }
 
-  pcre2_iterator it{regex_info, static_cast<size_t>(offset)};
-  if (!it.is_valid()) {
+  matcher m{regex_info, static_cast<size_t>(offset)};
+  if (m.has_error()) {
     return false;
   }
 
-  pcre2_iterator end_it{};
-
-  for (; it != end_it; ++it) {
-    pcre2_match_view match_view{*it};
+  for (auto match_view_opt{m.next()}; match_view_opt.has_value(); match_view_opt = m.next()) {
+    pcre2_match_view match_view{*match_view_opt};
     regex_info.match_count = match_view.size();
     set_all_matches(regex_info, flags, matches);
     if (regex_info.match_count > 0) {
       ++entire_match_count;
     }
   }
-  if (!it.is_valid()) [[unlikely]] {
+  if (m.has_error()) [[unlikely]] {
     return false;
   }
 
