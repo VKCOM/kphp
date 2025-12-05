@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 $res = preg_split('/a/', "ac", -1, PREG_SPLIT_NO_EMPTY);

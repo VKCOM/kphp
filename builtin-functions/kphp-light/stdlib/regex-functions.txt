@@ -39,11 +39,10 @@ function preg_replace_callback(
   &$replace_count ::: int = TODO,
   $flags ::: int = 0): string | ^3 | null;
 
+function preg_split ($pattern ::: string, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
+
 // ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info stub generation-required */
 function preg_last_error() ::: int;
-
-/** @kphp-extern-func-info stub */
-function preg_split ($pattern ::: regexp, $subject ::: string, $limit ::: int = -1, $flags ::: int = 0) ::: mixed[] | false;
 
