@@ -62,8 +62,6 @@
 
 namespace kphp::coro {
 
-
-
 struct stack_frame {
   stack_frame* caller_stack_frame{};
   void* return_address{};
