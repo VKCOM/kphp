@@ -4,6 +4,8 @@
 
 #include "runtime-light/stdlib/string/regex-state.h"
 
+#include <memory>
+
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -32,7 +34,7 @@ RegexInstanceState::RegexInstanceState() noexcept
     : regex_pcre2_general_context(pcre2_general_context_create_8(regex_malloc, regex_free, nullptr), pcre2_general_context_free_8),
       compile_context(pcre2_compile_context_create_8(regex_pcre2_general_context.get()), pcre2_compile_context_free_8),
       match_context(pcre2_match_context_create_8(regex_pcre2_general_context.get()), pcre2_match_context_free_8),
-      regex_pcre2_match_data(pcre2_match_data_create_8(MATCH_DATA_SIZE, regex_pcre2_general_context.get()), pcre2_match_data_free_8) {
+      regex_pcre2_match_data(pcre2_match_data_create_8(OVECTOR_SIZE, regex_pcre2_general_context.get()), pcre2_match_data_free_8) {
   if (!regex_pcre2_general_context) [[unlikely]] {
     kphp::log::error("can't create pcre2_general_context");
   }
@@ -42,6 +44,13 @@ RegexInstanceState::RegexInstanceState() noexcept
   if (!match_context) [[unlikely]] {
     kphp::log::error("can't create pcre2_match_context");
   }
+}
+
+const kphp::pcre2::compiled_regex* RegexInstanceState::get_compiled_regex(const string& regex) const noexcept {
+  if (const auto it{regex_pcre2_code_cache.find(regex)}; it != regex_pcre2_code_cache.end()) {
+    return std::addressof(it->second);
+  }
+  return nullptr;
 }
 
 RegexInstanceState& RegexInstanceState::get() noexcept {
