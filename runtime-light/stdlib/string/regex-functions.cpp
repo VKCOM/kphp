@@ -423,9 +423,8 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
   // compile pcre2_code
   int32_t error_number{};
   PCRE2_SIZE error_offset{};
-  regex_pcre2_code_t regex_code{pcre2_compile_8(reinterpret_cast<PCRE2_SPTR8>(regex_body.data()), regex_body.size(),
-                                                regex_info.compile_options, std::addressof(error_number), std::addressof(error_offset),
-                                                regex_state.compile_context.get())};
+  regex_pcre2_code_t regex_code{pcre2_compile_8(reinterpret_cast<PCRE2_SPTR8>(regex_body.data()), regex_body.size(), regex_info.compile_options,
+                                                std::addressof(error_number), std::addressof(error_offset), regex_state.compile_context.get())};
   if (!regex_code) [[unlikely]] {
     std::array<char, ERROR_BUFFER_LENGTH> buffer{};
     pcre2_get_error_message_8(error_number, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
@@ -740,8 +739,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
   return true;
 }
 
-std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val, bool no_empty,
-                                        bool delim_capture, bool offset_capture) noexcept {
+std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val, bool no_empty, bool delim_capture, bool offset_capture) noexcept {
   const char* offset{regex_info.subject.data()};
 
   if (limit_val == 0) {
@@ -1109,8 +1107,8 @@ Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject
   if (!compile_regex(regex_info)) [[unlikely]] {
     return false;
   }
-  auto opt_output{split_regex(regex_info, limit, (flags & kphp::regex::PREG_SPLIT_NO_EMPTY) != 0,
-                              (flags & kphp::regex::PREG_SPLIT_DELIM_CAPTURE) != 0, (flags & kphp::regex::PREG_SPLIT_OFFSET_CAPTURE) != 0)};
+  auto opt_output{split_regex(regex_info, limit, (flags & kphp::regex::PREG_SPLIT_NO_EMPTY) != 0, (flags & kphp::regex::PREG_SPLIT_DELIM_CAPTURE) != 0,
+                              (flags & kphp::regex::PREG_SPLIT_OFFSET_CAPTURE) != 0)};
   if (!opt_output.has_value()) [[unlikely]] {
     return false;
   }
