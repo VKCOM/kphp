@@ -47,12 +47,16 @@ size_t async_backtrace_helper(std::span<void*> addresses, const kphp::coro::stac
                               const kphp::coro::async_stack_root* async_stack_root) noexcept {
   const auto* const stop_sync_frame{async_stack_root->stop_sync_stack_frame};
 
-  const size_t num_sync_frames{sync_frames(addresses, start_sync_frame, stop_sync_frame)};
+  size_t num_sync_frames{0};
+  if (start_sync_frame && stop_sync_frame) {
+    num_sync_frames = sync_frames(addresses, start_sync_frame, stop_sync_frame);
+  }
   const size_t num_async_frames{async_frames(addresses.subspan(num_sync_frames), async_stack_root->top_async_stack_frame)};
 
   const size_t result{num_sync_frames + num_async_frames};
-  if (addresses.size() < result || async_stack_root == async_stack_root->next_async_stack_root)
+  if (async_stack_root == async_stack_root->next_async_stack_root) {
     return result;
+  }
   return result + async_backtrace_helper(addresses.subspan(result), stop_sync_frame, async_stack_root->next_async_stack_root);
 }
 
