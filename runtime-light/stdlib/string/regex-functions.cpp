@@ -35,6 +35,7 @@ constexpr size_t ERROR_BUFFER_LENGTH = 256;
 
 enum class trailing_unmatch : uint8_t { skip, include };
 
+using backref = std::string_view;
 using regex_pcre2_group_names_t = kphp::stl::vector<const char*, kphp::memory::script_allocator>;
 
 struct RegexInfo final {
@@ -71,10 +72,6 @@ struct RegexInfo final {
       : regex(regex_),
         subject(subject_),
         replacement(replacement_) {}
-};
-
-struct backref {
-  std::string_view digits;
 };
 
 template<typename... Args>
@@ -138,9 +135,9 @@ class preg_replacement_parser {
       if (preg_replacement.front() == '{') {
         return try_get_backref(preg_replacement.substr(1))
             .and_then([this](auto value) noexcept -> std::optional<replacement_term> {
-              auto digits_end_pos = 1 + value.digits.size();
+              auto digits_end_pos = 1 + value.size();
               if (digits_end_pos < preg_replacement.size() && preg_replacement[digits_end_pos] == '}') {
-                preg_replacement = preg_replacement.substr(1 + value.digits.size() + 1);
+                preg_replacement = preg_replacement.substr(1 + value.size() + 1);
                 return value;
               }
 
@@ -151,7 +148,7 @@ class preg_replacement_parser {
 
       return try_get_backref(preg_replacement)
           .transform([this](auto value) noexcept -> replacement_term {
-            auto digits_end_pos = value.digits.size();
+            auto digits_end_pos = value.size();
             preg_replacement = preg_replacement.substr(digits_end_pos);
             return value;
           })
@@ -160,7 +157,7 @@ class preg_replacement_parser {
     case '\\': {
       // \1
       auto back_reference_opt{try_get_backref(preg_replacement).transform([this](auto value) noexcept -> replacement_term {
-        auto digits_end_pos = value.digits.size();
+        auto digits_end_pos = value.size();
         preg_replacement = preg_replacement.substr(digits_end_pos);
         return value;
       })};
@@ -742,9 +739,9 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
       }
     } else {
       auto backreference{std::get<backref>(term)};
-      pcre2_replacement.reserve(pcre2_replacement.size() + backreference.digits.size() + 3);
+      pcre2_replacement.reserve(pcre2_replacement.size() + backreference.size() + 3);
       pcre2_replacement.append("${");
-      pcre2_replacement.append(backreference.digits);
+      pcre2_replacement.append(backreference);
       pcre2_replacement.append("}");
     }
   }
