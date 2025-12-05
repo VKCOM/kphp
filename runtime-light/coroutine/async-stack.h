@@ -16,9 +16,12 @@ namespace kphp::coro {
 
 struct async_stack_root_wrapper {
   async_stack_root root;
+
   async_stack_root_wrapper() = default;
-  async_stack_root_wrapper(const async_stack_root_wrapper& other) = default;
-  async_stack_root_wrapper& operator=(const async_stack_root_wrapper& other) = default;
+  async_stack_root_wrapper(const async_stack_root_wrapper& other) = delete;
+  async_stack_root_wrapper& operator=(const async_stack_root_wrapper& other) = delete;
+  async_stack_root_wrapper(async_stack_root_wrapper&& other) = default;
+  async_stack_root_wrapper& operator=(async_stack_root_wrapper&& other) = default;
   ~async_stack_root_wrapper() {
     CoroutineInstanceState::get().current_async_stack_root = root.next_async_stack_root;
   }
