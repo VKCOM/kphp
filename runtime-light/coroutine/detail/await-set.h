@@ -343,6 +343,8 @@ private:
       kphp::log::assertion(async_stack_root != nullptr);
       async_stack_root->top_async_stack_frame = caller_frame;
 
+      kphp::coro::preparation_for_resume(async_stack_root, STACK_FRAME_ADDRESS);
+
       m_suspended = false;
       return m_await_broker.try_get_result();
     }

@@ -113,8 +113,11 @@ class when_all_ready_awaitable<std::tuple<task_types...>> {
     auto await_resume() noexcept {
       // restore caller's async_stack_frame unless it's not set which could happen in case no suspension occured
       if (m_caller_async_stack_frame != nullptr) {
-        kphp::log::assertion(m_caller_async_stack_frame->async_stack_root != nullptr);
-        m_caller_async_stack_frame->async_stack_root->top_async_stack_frame = m_caller_async_stack_frame;
+        auto* root = m_caller_async_stack_frame->async_stack_root;
+        kphp::log::assertion(root != nullptr);
+        root->top_async_stack_frame = m_caller_async_stack_frame;
+
+        kphp::coro::preparation_for_resume(root, STACK_FRAME_ADDRESS);
       }
       return std::apply([](task_types&&... tasks) noexcept { return std::make_tuple(std::move(tasks).result()...); }, std::move(m_awaitable.m_tasks));
     }
