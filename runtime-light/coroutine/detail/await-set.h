@@ -30,6 +30,7 @@ struct await_set_awaiter {
   await_set_awaiter* m_next{};
   await_set_awaiter* m_prev{};
   std::coroutine_handle<> m_continuation;
+  kphp::coro::async_stack_root* m_async_stack_root{};
 };
 
 template<typename return_type>
@@ -81,6 +82,7 @@ public:
         m_awaiters->m_prev = nullptr;
       }
       awaiter->m_continuation.resume();
+      awaiter->m_async_stack_root->stop_sync_stack_frame = nullptr;
     }
   }
 
@@ -140,6 +142,7 @@ public:
         awaiters_to_resume->m_prev = nullptr;
       }
       waiter->m_continuation.resume();
+      waiter->m_async_stack_root->stop_sync_stack_frame = nullptr;
     }
   }
 
@@ -158,6 +161,7 @@ class await_set_task_promise_base : public kphp::coro::async_stack_element {
   await_set_ready_task_element<return_type> m_ready_task_element{};
 
   kphp::coro::async_stack_root_wrapper root_wrapper_{};
+
 public:
   await_set_task_promise_base() noexcept = default;
 
@@ -198,7 +202,7 @@ public:
   }
 
   [[clang::noinline]] auto start(detail::await_set::await_broker<return_type>& await_broker,
-             kphp::stl::list<await_set_task<return_type>, kphp::memory::script_allocator>::iterator storage_location) noexcept {
+                                 kphp::stl::list<await_set_task<return_type>, kphp::memory::script_allocator>::iterator storage_location) noexcept {
     m_await_broker = await_broker;
     m_ready_task_element.m_storage_location = storage_location;
 
@@ -332,6 +336,7 @@ private:
       caller_frame = std::addressof(awaiting_coroutine.promise().get_async_stack_frame());
 
       m_awaiter.m_continuation = awaiting_coroutine;
+      m_awaiter.m_async_stack_root = caller_frame->async_stack_root;
       m_suspended = m_await_broker.suspend_awaiter(m_awaiter);
       return m_suspended;
     }

@@ -24,6 +24,7 @@ namespace kphp::coro::detail::when_any {
 class when_any_latch {
   bool m_toggled{};
   std::coroutine_handle<> m_awaiting_coroutine;
+  kphp::coro::async_stack_root* m_async_stack_root{};
 
 public:
   when_any_latch() noexcept = default;
@@ -49,8 +50,9 @@ public:
     return m_toggled;
   }
 
-  auto try_await(std::coroutine_handle<> awaiting_coroutine) noexcept -> bool {
+  auto try_await(std::coroutine_handle<> awaiting_coroutine, kphp::coro::async_stack_root* root) noexcept -> bool {
     m_awaiting_coroutine = awaiting_coroutine;
+    m_async_stack_root = root;
     return !m_toggled;
   }
 
@@ -58,6 +60,7 @@ public:
     m_toggled = true;
     if (m_awaiting_coroutine != nullptr) {
       m_awaiting_coroutine.resume();
+      m_async_stack_root->stop_sync_stack_frame = nullptr;
     }
   }
 };
@@ -107,7 +110,7 @@ class when_any_ready_awaitable<std::tuple<task_types...>> {
       m_caller_async_stack_frame = std::addressof(awaiting_coroutine.promise().get_async_stack_frame());
 
       std::apply([&latch = m_awaitable.m_latch](auto&... tasks) noexcept { (tasks.start(latch), ...); }, m_awaitable.m_tasks);
-      return m_awaitable.m_latch.try_await(awaiting_coroutine);
+      return m_awaitable.m_latch.try_await(awaiting_coroutine, m_caller_async_stack_frame->async_stack_root);
     }
 
     auto await_resume() noexcept {
