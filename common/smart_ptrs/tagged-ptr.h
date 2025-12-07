@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef KDB_COMMON_SMART_PTRS_TAGGED_PTR_H
-#define KDB_COMMON_SMART_PTRS_TAGGED_PTR_H
+#pragma once
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -69,5 +68,3 @@ static inline uintptr_t tagged_ptr_to_uintptr(tagged_ptr_t* tagged_ptr) {
 static inline bool tagged_ptr_cas(tagged_ptr_t* tagged_ptr, uintptr_t old_value, uintptr_t new_value) {
   return __sync_bool_compare_and_swap(&tagged_ptr->value, old_value, new_value);
 }
-
-#endif // KDB_COMMON_SMART_PTRS_TAGGED_PTR_H

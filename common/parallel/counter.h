@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef KDB_COMMON_PARALLEL_COUNTER_H
-#define KDB_COMMON_PARALLEL_COUNTER_H
+#pragma once
 
 #include <sys/cdefs.h>
 
@@ -69,5 +68,3 @@ uint64_t parallel_counter_read(parallel_counter_t* counter);
 #define PARALLEL_COUNTER_ADD(name, value) parallel_counter_add(&parallel_counter_##name##_tls, value)
 #define PARALLEL_COUNTER_SUB(name, value) parallel_counter_sub(&parallel_counter_##name##_tls, value)
 #define PARALLEL_COUNTER_READ(name) parallel_counter_read(&parallel_counter_##name)
-
-#endif // KDB_COMMON_PARALLEL_COUNTER_H

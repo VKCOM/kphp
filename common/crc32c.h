@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __CRC32C_H__
-#define __CRC32C_H__
+#pragma once
 
 #include <assert.h>
 #include <stddef.h>
@@ -50,5 +49,3 @@ static inline crc32_combine_func_t get_crc32_combine_func(crc32_type_t crc32_typ
 
   return NULL;
 }
-
-#endif

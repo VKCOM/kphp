@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __CRC32_H__
-#define __CRC32_H__
+#pragma once
 
 #include <stdint.h>
 
@@ -71,5 +70,3 @@ static inline uint64_t compute_crc64(const void* data, long len) {
 int crc32_check_and_repair(void* input, int l, unsigned* input_crc32, int force_exit);
 int crc32_find_corrupted_bit(int size, unsigned d);
 int crc32_repair_bit(unsigned char* input, int l, int k);
-
-#endif

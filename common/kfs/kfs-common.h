@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_KFS_COMMON_H
-#define ENGINE_KFS_COMMON_H
+#pragma once
 
 #include <stdbool.h>
 #include <sys/cdefs.h>
@@ -80,5 +79,3 @@ struct kfs_file {
 
 int preload_file_info_ex(struct kfs_file_info* FI) __attribute__((warn_unused_result));
 bool preload_file_info(struct kfs_file_info* FI);
-
-#endif // ENGINE_KFS_COMMON_H

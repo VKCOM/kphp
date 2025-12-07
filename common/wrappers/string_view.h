@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_STRING_VIEW_H
-#define ENGINE_STRING_VIEW_H
+#pragma once
 
 #include <algorithm>
 #include <cassert>
@@ -270,5 +269,3 @@ public:
 };
 } // namespace std
 #endif // __cplusplus > 201703
-
-#endif // ENGINE_STRING_VIEW_H

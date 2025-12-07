@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_COMMON_ALGO_COMPARE_H
-#define ENGINE_COMMON_ALGO_COMPARE_H
+#pragma once
 
 #include <algorithm>
 #include <iterator>
@@ -44,5 +43,3 @@ bool any_of(const Range& range, Predicate p) {
 }
 
 } // namespace vk
-
-#endif // ENGINE_COMMON_ALGO_COMPARE_H

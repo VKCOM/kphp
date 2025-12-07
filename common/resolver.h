@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __KDB_RESOLVER_H__
-#define __KDB_RESOLVER_H__
+#pragma once
 
 #include <netdb.h>
 
@@ -12,5 +11,3 @@ int kdb_load_hosts();
 
 struct hostent* kdb_gethostbyname(const char* name);
 const char* kdb_gethostname();
-
-#endif
