@@ -497,4 +497,3 @@ int ASN1_TIME_diff(int* pday, int* psec, const ASN1_TIME* from, const ASN1_TIME*
 #undef SECS_PER_DAY
 
 #endif
-
