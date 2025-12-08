@@ -183,5 +183,5 @@ function array_combine ($keys ::: array, $values ::: array) ::: ^2;
 
 function array_column ($a ::: array, $column_key, $index_key = null) ::: array< ^1[*][*] > | false;
 
-/** @kphp-extern-func-info stub cpp_template_call */
+/** @kphp-extern-func-info cpp_template_call */
 function vk_dot_product ($a ::: array, $b ::: array) ::: ^1[*] | ^2[*];
