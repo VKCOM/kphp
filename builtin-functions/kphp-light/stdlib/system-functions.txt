@@ -57,6 +57,8 @@ function escapeshellcmd($cmd ::: string): string;
 
 function exec($command ::: string, &$output ::: mixed = [], int &$result_code = TODO): string|false;
 
+function extension_loaded(string $extension): bool;
+
 // === UNSUPPORTED ===
 
 /** @kphp-extern-func-info stub generation-required */

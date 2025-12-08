@@ -240,5 +240,3 @@ inline void f$kphp_extended_instance_cache_metrics_init(F&& callback) {
 }
 
 int64_t f$numa_get_bound_node();
-
-bool f$extension_loaded(const string& extension);

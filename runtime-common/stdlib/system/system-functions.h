@@ -9,3 +9,7 @@
 string f$escapeshellarg(const string& arg) noexcept;
 
 string f$escapeshellcmd(const string& cmd) noexcept;
+
+inline bool f$extension_loaded(const string& /*extension*/) noexcept {
+  return true;
+}
