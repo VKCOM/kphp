@@ -1107,7 +1107,8 @@ Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject
   if (!compile_regex(regex_info)) [[unlikely]] {
     return false;
   }
-  auto opt_output{split_regex(regex_info, limit, (flags & kphp::regex::PREG_SPLIT_NO_EMPTY) != 0, (flags & kphp::regex::PREG_SPLIT_DELIM_CAPTURE) != 0,
+  auto opt_output{split_regex(regex_info, limit, (flags & kphp::regex::PREG_SPLIT_NO_EMPTY) != 0, //
+                              (flags & kphp::regex::PREG_SPLIT_DELIM_CAPTURE) != 0,               //
                               (flags & kphp::regex::PREG_SPLIT_OFFSET_CAPTURE) != 0)};
   if (!opt_output.has_value()) [[unlikely]] {
     return false;
