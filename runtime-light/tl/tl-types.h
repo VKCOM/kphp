@@ -1224,6 +1224,24 @@ struct webProperty final {
   }
 };
 
+class WebTransferGetPropertiesResultOk final {
+  static constexpr uint32_t WEB_TRANSFER_GET_PROPERTIES_RESULT_OK_MAGIC = 0x48A7'16CC;
+
+public:
+  tl::vector<tl::webProperty> properties;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(WEB_TRANSFER_GET_PROPERTIES_RESULT_OK_MAGIC) && properties.fetch(tlf)};
+    return ok;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = WEB_TRANSFER_GET_PROPERTIES_RESULT_OK_MAGIC}.footprint();
+  }
+};
+
+// ===== Simple =====
 struct simpleWebTransferConfig final {
   tl::vector<tl::webProperty> properties;
 
@@ -1253,18 +1271,18 @@ public:
   }
 };
 
-class SimpleWebTransferPerformResultOk final {
-  static constexpr uint32_t SIMPLE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC = 0x77A8'98FF;
+class SimpleWebTransferResponseResultOk final {
+  static constexpr uint32_t SIMPLE_WEB_TRANSFER_RESPONSE_RESULT_OK_MAGIC = 0x77A8'98FF;
 
 public:
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC)};
+    bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_RESPONSE_RESULT_OK_MAGIC)};
     return ok;
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = SIMPLE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC}.footprint();
+    return tl::magic{.value = SIMPLE_WEB_TRANSFER_RESPONSE_RESULT_OK_MAGIC}.footprint();
   }
 };
 
@@ -1298,20 +1316,113 @@ public:
   }
 };
 
-class WebTransferGetPropertiesResultOk final {
-  static constexpr uint32_t WEB_TRANSFER_GET_PROPERTIES_RESULT_OK_MAGIC = 0x48A7'16CC;
+// ===== Composite =====
+
+struct compositeWebTransferConfig final {
+  tl::vector<tl::webProperty> properties;
+
+  void store(tl::storer& tls) const noexcept {
+    properties.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return properties.footprint();
+  }
+};
+
+class CompositeWebTransferOpenResultOk final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC = 0x428A'89DD;
 
 public:
-  tl::vector<tl::webProperty> properties;
+  tl::u64 descriptor;
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(WEB_TRANSFER_GET_PROPERTIES_RESULT_OK_MAGIC) && properties.fetch(tlf)};
+    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC) && descriptor.fetch(tlf)};
     return ok;
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = WEB_TRANSFER_GET_PROPERTIES_RESULT_OK_MAGIC}.footprint();
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC}.footprint() + descriptor.footprint();
+  }
+};
+
+class CompositeWebTransferAddResultOk final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_ADD_RESULT_OK_MAGIC = 0x3161'22DD;
+
+public:
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_ADD_RESULT_OK_MAGIC)};
+    return ok;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_ADD_RESULT_OK_MAGIC}.footprint();
+  }
+};
+
+class CompositeWebTransferRemoveResultOk final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_REMOVE_RESULT_OK_MAGIC = 0x8981'22FF;
+
+public:
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_REMOVE_RESULT_OK_MAGIC)};
+    return ok;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_REMOVE_RESULT_OK_MAGIC}.footprint();
+  }
+};
+
+class CompositeWebTransferPerformResultOk final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC = 0xFF42'24DD;
+
+public:
+  tl::u64 remaining;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC) && remaining.fetch(tlf)};
+    return ok;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC}.footprint() + remaining.footprint();
+  }
+};
+
+class CompositeWebTransferCloseResultOk final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC = 0xAB71'6222;
+
+public:
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC)};
+    return ok;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC}.footprint();
+  }
+};
+
+class CompositeWebTransferWaitUpdatesResultOk final {
+  static constexpr uint32_t COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC = 0x2007'1997;
+
+public:
+  tl::u64 updated_descriptors_num;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC) && updated_descriptors_num.fetch(tlf)};
+    return ok;
+  }
+
+  constexpr size_t footprint() const noexcept {
+    return tl::magic{.value = COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC}.footprint() && updated_descriptors_num.footprint();
   }
 };
 

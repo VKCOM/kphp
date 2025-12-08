@@ -4,9 +4,12 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <type_traits>
+#include <variant>
 
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/tl/tl-types.h"
@@ -91,11 +94,22 @@ public:
   static inline auto deserialize(const tl::webPropertyValue& tl_prop_value) noexcept -> property_value;
 
   inline auto to_mixed() const noexcept -> mixed;
+
+  template<class T>
+  requires std::same_as<T, bool> || std::same_as<T, int64_t> || std::same_as<T, double> || std::same_as<T, string> || std::same_as<T, array<bool>> ||
+               std::same_as<T, array<int64_t>> || std::same_as<T, array<double>> || std::same_as<T, array<string>>
+  inline auto to() const noexcept -> std::optional<T>;
 };
+
+using simple_transfers = kphp::stl::unordered_set<kphp::web::simple_transfer::descriptor_type, kphp::memory::script_allocator>;
 
 using properties_type = kphp::stl::unordered_map<property_id, property_value, kphp::memory::script_allocator>;
 
 struct simple_transfer_config {
+  properties_type properties{};
+};
+
+struct composite_transfer_config {
   properties_type properties{};
 };
 
@@ -126,6 +140,7 @@ enum backend_internal_error : int64_t {
   post_field_value_not_string = -513,
   header_line_not_string = -514,
   unsupported_property = -515,
+  cannot_set_transfer_token = -516,
 };
 
 // ----------------------------------
@@ -292,6 +307,16 @@ inline auto property_value::deserialize(const tl::webPropertyValue& tl_prop_valu
 
 inline auto property_value::to_mixed() const noexcept -> mixed {
   return std::visit([](const auto& v) noexcept -> mixed { return mixed{v}; }, this->value);
+}
+
+template<class T>
+requires std::same_as<T, bool> || std::same_as<T, int64_t> || std::same_as<T, double> || std::same_as<T, string> || std::same_as<T, array<bool>> ||
+             std::same_as<T, array<int64_t>> || std::same_as<T, array<double>> || std::same_as<T, array<string>>
+inline auto property_value::to() const noexcept -> std::optional<T> {
+  if (!std::holds_alternative<T>(this->value)) {
+    return {};
+  }
+  return std::get<T>(this->value);
 }
 
 } // namespace kphp::web

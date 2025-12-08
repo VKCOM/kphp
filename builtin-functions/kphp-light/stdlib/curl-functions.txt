@@ -205,18 +205,6 @@ define('CURL_NETRC_REQUIRED', 2);
 
 define('CURLOPT_RETURNTRANSFER', 1234567);
 
-define('CURLMOPT_PIPELINING', 1000);
-define('CURLMOPT_MAXCONNECTS', 1001);
-define('CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE', 1002);
-define('CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE', 1003);
-define('CURLMOPT_MAX_HOST_CONNECTIONS', 1004);
-define('CURLMOPT_MAX_PIPELINE_LENGTH', 1005);
-define('CURLMOPT_MAX_TOTAL_CONNECTIONS', 1006);
-
-define('CURLPIPE_NOTHING', 0);
-define('CURLPIPE_HTTP1', 1);
-define('CURLPIPE_MULTIPLEX', 2);
-
 define('CURL_HTTP_VERSION_NONE', 0);
 define('CURL_HTTP_VERSION_1_0', 1);
 define('CURL_HTTP_VERSION_1_1', 2);
@@ -224,6 +212,15 @@ define('CURL_HTTP_VERSION_2_0', 3);
 define('CURL_HTTP_VERSION_2', CURL_HTTP_VERSION_2_0);
 define('CURL_HTTP_VERSION_2TLS', 4);
 define('CURL_HTTP_VERSION_2_PRIOR_KNOWLEDGE', 5);
+
+define('UPLOAD_ERR_OK', 0);
+define('UPLOAD_ERR_INI_SIZE', 1);
+define('UPLOAD_ERR_FORM_SIZE', 2);
+define('UPLOAD_ERR_PARTIAL', 3);
+define('UPLOAD_ERR_NO_FILE', 4);
+define('UPLOAD_ERR_NO_TMP_DIR', 6);
+define('UPLOAD_ERR_CANT_WRITE', 7);
+define('UPLOAD_ERR_EXTENSION', 8);
 
 define("CURLM_CALL_MULTI_PERFORM", -1);
 define("CURLM_OK", 0);
@@ -235,61 +232,53 @@ define("CURLM_BAD_SOCKET", 5);
 define("CURLM_UNKNOWN_OPTION", 6);
 define("CURLM_ADDED_ALREADY", 7);
 
-define('UPLOAD_ERR_OK', 0);
-define('UPLOAD_ERR_INI_SIZE', 1);
-define('UPLOAD_ERR_FORM_SIZE', 2);
-define('UPLOAD_ERR_PARTIAL', 3);
-define('UPLOAD_ERR_NO_FILE', 4);
-define('UPLOAD_ERR_NO_TMP_DIR', 6);
-define('UPLOAD_ERR_CANT_WRITE', 7);
-define('UPLOAD_ERR_EXTENSION', 8);
+define('CURLMOPT_PIPELINING', 3);
+define('CURLMOPT_MAXCONNECTS', 6);
+// define('CURLMOPT_CHUNK_LENGTH_PENALTY_SIZE', 30010);
+// define('CURLMOPT_CONTENT_LENGTH_PENALTY_SIZE', 30009);
+define('CURLMOPT_MAX_HOST_CONNECTIONS', 7);
+define('CURLMOPT_MAX_PIPELINE_LENGTH', 8);
+define('CURLMOPT_MAX_TOTAL_CONNECTIONS', 13);
 
-// ===== SUPPORTED =====
+define('CURLPIPE_NOTHING', 0);
+define('CURLPIPE_HTTP1', 1);
+define('CURLPIPE_MULTIPLEX', 2);
+
+// ===== EASY API =====
 /** @kphp-extern-func-info interruptible */
 function curl_init ($url ::: string = "") ::: int;
 /** @kphp-extern-func-info interruptible */
 function curl_reset ($curl_handle ::: int) ::: void;
-
 function curl_setopt ($curl_handle ::: int, $option ::: int, $value ::: mixed) ::: bool;
 function curl_setopt_array ($curl_handle ::: int, $options ::: array) ::: bool;
-
 /** @kphp-extern-func-info interruptible */
 function curl_exec ($curl_handle ::: int) ::: mixed;
-
 /** @kphp-extern-func-info interruptible */
 function curl_close ($curl_handle ::: int) ::: void;
-
 /** @kphp-extern-func-info interruptible */
 function curl_exec_concurrently($curl_handle ::: int, $timeout ::: float = 1.0): string|false;
-
 function curl_error ($curl_handle ::: int) ::: string;
 function curl_errno ($curl_handle ::: int) ::: int;
-
 /** @kphp-extern-func-info interruptible */
 function curl_getinfo ($curl_handle ::: int, $option ::: int = 0) ::: mixed;
 
-// ===== UNSUPPORTED =====
-
-/** @kphp-extern-func-info stub generation-required */
+// ===== MULTI API =====
+/** @kphp-extern-func-info interruptible */
 function curl_multi_init () ::: int;
-/** @kphp-extern-func-info stub generation-required */
+/** @kphp-extern-func-info interruptible */
 function curl_multi_add_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;
-/** @kphp-extern-func-info stub generation-required */
-function curl_multi_getcontent ($curl_handle ::: int ) ::: string|false|null;
-/** @kphp-extern-func-info stub generation-required */
-function curl_multi_setopt ($multi_handle ::: int, $option ::: int, $value ::: int) ::: bool;
-/** @kphp-extern-func-info stub generation-required */
-function curl_multi_exec ($multi_handle ::: int, &$still_running ::: int) ::: int|false;
-/** @kphp-extern-func-info stub generation-required */
-function curl_multi_select ($multi_handle ::: int, $timeout ::: float = 1.0) ::: int|false;
-
-/** @kphp-extern-func-info stub */
-function curl_multi_info_read ($multi_handle ::: int, &$msgs_in_queue ::: int = TODO) ::: int[]|false;
-/** @kphp-extern-func-info stub generation-required */
+/** @kphp-extern-func-info interruptible */
 function curl_multi_remove_handle ($multi_handle ::: int, $curl_handle ::: int) ::: int|false;
-/** @kphp-extern-func-info stub generation-required */
-function curl_multi_errno ($multi_handle ::: int) ::: int|false;
-/** @kphp-extern-func-info stub generation-required */
+function curl_multi_setopt ($multi_handle ::: int, $option ::: int, $value ::: int) ::: bool;
+/** @kphp-extern-func-info interruptible */
+function curl_multi_exec ($multi_handle ::: int, &$still_running ::: int) ::: int|false;
+/** @kphp-extern-func-info interruptible */
+function curl_multi_getcontent ($curl_handle ::: int ) ::: string|false|null;
+/** @kphp-extern-func-info interruptible */
 function curl_multi_close ($multi_handle ::: int) ::: void;
-/** @kphp-extern-func-info stub generation-required */
+function curl_multi_errno ($multi_handle ::: int) ::: int|false;
 function curl_multi_strerror ($errornum ::: int) ::: string|null;
+/** @kphp-extern-func-info interruptible */
+function curl_multi_select ($multi_handle ::: int, $timeout ::: float = 1.0) ::: int|false;
+/** @kphp-extern-func-info interruptible */
+function curl_multi_info_read ($multi_handle ::: int, &$msgs_in_queue ::: int = TODO) ::: int[]|false;
