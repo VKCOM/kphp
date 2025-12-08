@@ -444,7 +444,7 @@ inline auto io_scheduler::schedule() noexcept {
     }
 
     auto await_resume() const noexcept -> void {
-      kphp::coro::preparation_for_resume(m_async_stack_root, STACK_FRAME_ADDRESS);
+      kphp::coro::preparation_for_resume(m_async_stack_root, STACK_FRAME_ADDRESS, m_scheduler.m_coroutine_instance_state);
     }
   };
   return schedule_operation{*this};
