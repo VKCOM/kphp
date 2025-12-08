@@ -819,7 +819,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
     return std::nullopt;
   }
 
-  const auto size{regex_info.subject.size() - (offset - regex_info.subject.data())};
+  const auto size{regex_info.subject.size() - std::distance(regex_info.subject.data(), offset)};
   if (!no_empty || size != 0) {
     auto val{string{offset, static_cast<string::size_type>(size)}};
 
