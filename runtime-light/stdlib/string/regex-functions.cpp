@@ -721,8 +721,8 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
 
   array<mixed> output{};
 
-  size_t offset{};
   matcher pcre2_matcher{regex_info, {}};
+  size_t offset{};
   for (size_t out_parts_count{1}; limit == kphp::regex::PREG_NOLIMIT || out_parts_count < limit;) {
     auto expected_opt_match_view{pcre2_matcher.next()};
     if (!expected_opt_match_view.has_value()) [[unlikely]] {
