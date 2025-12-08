@@ -807,7 +807,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
             output_val = std::move(val);
           }
 
-          output.emplace_back(std::forward<decltype(output_val)>(output_val));
+          output.emplace_back(std::move(output_val));
         }
       }
     }
@@ -830,7 +830,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
       output_val = std::move(val);
     }
 
-    output.emplace_back(std::forward<decltype(output_val)>(output_val));
+    output.emplace_back(std::move(output_val));
   }
 
   return output;
