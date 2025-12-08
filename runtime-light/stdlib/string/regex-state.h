@@ -7,7 +7,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <memory>
 #include <optional>
 
 #include "common/mixin/not_copyable.h"
