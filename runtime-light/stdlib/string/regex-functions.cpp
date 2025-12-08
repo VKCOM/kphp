@@ -71,7 +71,7 @@ struct RegexInfo final {
 
 class pcre2_match_view {
 public:
-  pcre2_match_view(std::string_view subject, PCRE2_SIZE* ovector, int32_t ret_code) noexcept
+  pcre2_match_view(std::string_view subject, const PCRE2_SIZE* ovector, int32_t ret_code) noexcept
       : m_subject_data{subject},
         m_ovector_ptr{ovector},
         m_num_groups{ret_code} {}
@@ -481,7 +481,7 @@ public:
     const auto& regex_state{RegexInstanceState::get()};
     kphp::log::assertion(m_regex_info.regex_code != nullptr && regex_state.match_context);
 
-    auto* const ovector{pcre2_get_ovector_pointer_8(m_match_data)};
+    const auto* const ovector{pcre2_get_ovector_pointer_8(m_match_data)};
 
     while (true) {
       // Try to find match
