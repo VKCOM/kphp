@@ -48,19 +48,6 @@ RegexInstanceState::RegexInstanceState() noexcept
   }
 }
 
-std::optional<std::reference_wrapper<const RegexInstanceState::compiled_regex>> RegexInstanceState::get_compiled_regex(const string& regex) const noexcept {
-  if (const auto it{regex_pcre2_code_cache.find(regex)}; it != regex_pcre2_code_cache.end()) {
-    return it->second;
-  }
-  return std::nullopt;
-}
-
-std::optional<std::reference_wrapper<const RegexInstanceState::compiled_regex>> RegexInstanceState::add_compiled_regex(string regex, uint32_t compile_options,
-                                                                                                                       regex_pcre2_code_t regex_code) noexcept {
-  return regex_pcre2_code_cache.emplace(std::move(regex), compiled_regex{.compile_options = compile_options, .regex_code = std::move(regex_code)})
-      .first->second;
-}
-
 RegexInstanceState& RegexInstanceState::get() noexcept {
   return InstanceState::get().regex_instance_state;
 }
