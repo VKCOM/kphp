@@ -742,12 +742,12 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
     }
     auto entire_pattern_match_string_view{*opt_entire_pattern_match};
 
-    if (const auto size{entire_pattern_match_string_view.data() - offset}; !no_empty || size != 0) {
+    if (const auto size{std::distance(offset, entire_pattern_match_string_view.data())}; !no_empty || size != 0) {
       auto val{string{offset, static_cast<string::size_type>(size)}};
 
       mixed output_val;
       if (offset_capture) {
-        output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(offset - regex_info.subject.data()));
+        output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(std::distance(regex_info.subject.data(), offset)));
       } else {
         output_val = std::move(val);
       }
@@ -771,7 +771,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
           if (offset_capture) {
             output_val = array<mixed>::create(std::move(val), opt_submatch
                                                                   .transform([&regex_info](auto string_view) noexcept {
-                                                                    return static_cast<int64_t>(string_view.data() - regex_info.subject.data());
+                                                                    return static_cast<int64_t>(std::distance(regex_info.subject.data(), string_view.data()));
                                                                   })
                                                                   .value_or(-1));
           } else {
@@ -792,7 +792,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
 
     mixed output_val;
     if (offset_capture) {
-      output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(offset - regex_info.subject.data()));
+      output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(std::distance(regex_info.subject.data(), offset)));
     } else {
       output_val = std::move(val);
     }
