@@ -473,7 +473,7 @@ bool collect_group_names(RegexInfo& regex_info) noexcept {
 class matcher {
 public:
   matcher(const RegexInfo& info, size_t match_from) noexcept
-      : m_regex_info{std::addressof(info)},
+      : m_regex_info{info},
         m_match_options{info.match_options},
         m_current_offset{match_from} {
     kphp::log::assertion(info.regex_code != nullptr);
@@ -484,17 +484,15 @@ public:
   }
 
   std::expected<std::optional<pcre2_match_view>, int32_t> next() noexcept {
-    const auto& ri{*m_regex_info};
-
     const auto& regex_state{RegexInstanceState::get()};
-    kphp::log::assertion(ri.regex_code != nullptr && regex_state.match_context);
+    kphp::log::assertion(m_regex_info.regex_code != nullptr && regex_state.match_context);
 
     auto* const ovector{pcre2_get_ovector_pointer_8(m_match_data)};
 
     while (true) {
       // Try to find match
-      int32_t ret_code{pcre2_match_8(ri.regex_code, reinterpret_cast<PCRE2_SPTR8>(ri.subject.data()), ri.subject.size(), m_current_offset, m_match_options,
-                                     m_match_data, regex_state.match_context.get())};
+      int32_t ret_code{pcre2_match_8(m_regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(m_regex_info.subject.data()), m_regex_info.subject.size(),
+                                     m_current_offset, m_match_options, m_match_data, regex_state.match_context.get())};
       // From https://www.pcre.org/current/doc/html/pcre2_match.html
       // The return from pcre2_match() is one more than the highest numbered capturing pair that has been set
       // (for example, 1 if there are no captures), zero if the vector of offsets is too small, or a negative error code for no match and other errors.
@@ -505,15 +503,16 @@ public:
 
       if (match_count == 0) {
         // If match is not found
-        if (m_match_options == ri.match_options || m_current_offset == ri.subject.size()) {
+        if (m_match_options == m_regex_info.match_options || m_current_offset == m_regex_info.subject.size()) {
           // Here we are sure that there are no more matches here
           return std::nullopt;
         }
         // Here we know that we were looking for a non-empty and anchored match,
         // and we're going to try searching from the next character with the default options.
         ++m_current_offset;
-        m_current_offset = static_cast<bool>(ri.compile_options & PCRE2_UTF) ? skip_utf8_subsequent_bytes(m_current_offset, ri.subject) : m_current_offset;
-        m_match_options = ri.match_options;
+        m_current_offset =
+            static_cast<bool>(m_regex_info.compile_options & PCRE2_UTF) ? skip_utf8_subsequent_bytes(m_current_offset, m_regex_info.subject) : m_current_offset;
+        m_match_options = m_regex_info.match_options;
         continue;
       }
 
@@ -527,14 +526,14 @@ public:
         m_match_options |= PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
       } else {
         // Else use default options
-        m_match_options = ri.match_options;
+        m_match_options = m_regex_info.match_options;
       }
-      return pcre2_match_view{ri.subject, ovector, match_count};
+      return pcre2_match_view{m_regex_info.subject, ovector, match_count};
     }
   }
 
 private:
-  const RegexInfo* const m_regex_info{nullptr};
+  const RegexInfo& m_regex_info;
   uint64_t m_match_options{};
   PCRE2_SIZE m_current_offset{};
   pcre2_match_data_8* m_match_data{nullptr};
@@ -716,8 +715,6 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
 }
 
 std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bool no_empty, bool delim_capture, bool offset_capture) noexcept {
-  const char* offset{regex_info.subject.data()};
-
   if (limit == 0) {
     limit = kphp::regex::PREG_NOLIMIT;
   }
@@ -730,6 +727,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
   array<mixed> output{};
 
   matcher pcre2_matcher{regex_info, {}};
+  const char* offset{regex_info.subject.data()};
   for (size_t out_parts_count{1}; limit == kphp::regex::PREG_NOLIMIT || out_parts_count < limit;) {
     auto expected_opt_match_view{pcre2_matcher.next()};
     if (!expected_opt_match_view.has_value()) [[unlikely]] {
