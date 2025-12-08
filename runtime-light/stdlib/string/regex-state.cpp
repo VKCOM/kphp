@@ -56,8 +56,9 @@ std::optional<std::reference_wrapper<const RegexInstanceState::compiled_regex>> 
 }
 
 std::optional<std::reference_wrapper<const RegexInstanceState::compiled_regex>> RegexInstanceState::add_compiled_regex(string regex, uint32_t compile_options,
-                                                                                                                       pcre2_code_8& regex_code) noexcept {
-  return regex_pcre2_code_cache.emplace(std::move(regex), compiled_regex{.compile_options = compile_options, .regex_code = regex_code}).first->second;
+                                                                                                                       regex_pcre2_code_t regex_code) noexcept {
+  return regex_pcre2_code_cache.emplace(std::move(regex), compiled_regex{.compile_options = compile_options, .regex_code = std::move(regex_code)})
+      .first->second;
 }
 
 RegexInstanceState& RegexInstanceState::get() noexcept {

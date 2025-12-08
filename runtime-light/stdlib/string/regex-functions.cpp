@@ -48,7 +48,7 @@ struct RegexInfo final {
   // number of groups including entire match
   uint32_t capture_count{};
   // compiled regex
-  regex_pcre2_code_t regex_code{nullptr};
+  pcre2_code_8* regex_code{nullptr};
 
   // vector of group names
   regex_pcre2_group_names_t group_names;
@@ -286,7 +286,7 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
   if (auto opt_ref{regex_state.get_compiled_regex(regex_info.regex)}; opt_ref.has_value()) {
     auto& [compile_options, regex_code]{opt_ref->get()};
     regex_info.compile_options = compile_options;
-    regex_info.regex_code = std::addressof(regex_code);
+    regex_info.regex_code = regex_code.get();
     return true;
   }
 
@@ -419,7 +419,8 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
   int32_t error_number{};
   PCRE2_SIZE error_offset{};
   regex_pcre2_code_t regex_code{pcre2_compile_8(reinterpret_cast<PCRE2_SPTR8>(regex_body.data()), regex_body.size(), regex_info.compile_options,
-                                                std::addressof(error_number), std::addressof(error_offset), regex_state.compile_context.get())};
+                                                std::addressof(error_number), std::addressof(error_offset), regex_state.compile_context.get()),
+                                pcre2_code_free_8};
   if (!regex_code) [[unlikely]] {
     std::array<char, ERROR_BUFFER_LENGTH> buffer{};
     pcre2_get_error_message_8(error_number, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
@@ -427,10 +428,10 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
     return false;
   }
 
+  regex_info.regex_code = regex_code.get();
   // add compiled code to runtime cache
-  regex_state.add_compiled_regex(regex_info.regex, compile_options, *regex_code);
+  regex_state.add_compiled_regex(regex_info.regex, compile_options, std::move(regex_code));
 
-  regex_info.regex_code = regex_code;
   return true;
 }
 
