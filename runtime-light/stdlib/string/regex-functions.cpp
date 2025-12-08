@@ -745,7 +745,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
     auto entire_pattern_match_string_view{*opt_entire_pattern_match};
 
     if (const auto size{std::distance(regex_info.subject.data(), entire_pattern_match_string_view.data()) - offset}; !no_empty || size != 0) {
-      auto val{string{std::next(regex_info.subject.data(), offset), static_cast<string::size_type>(size)}};
+      string val{std::next(regex_info.subject.data(), offset), static_cast<string::size_type>(size)};
 
       mixed output_val;
       if (offset_capture) {
