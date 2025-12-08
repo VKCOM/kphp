@@ -76,11 +76,6 @@ public:
         m_ovector_ptr{ovector},
         m_num_groups{ret_code} {}
 
-  pcre2_match_view(const pcre2_match_view&) noexcept = default;
-  pcre2_match_view(pcre2_match_view&&) noexcept = default;
-  pcre2_match_view& operator=(const pcre2_match_view&) noexcept = default;
-  pcre2_match_view& operator=(pcre2_match_view&&) noexcept = default;
-
   int32_t size() const noexcept {
     return m_num_groups;
   }
