@@ -625,7 +625,7 @@ PCRE2_SIZE set_matches(const RegexInfo& regex_info, int64_t flags, std::optional
     if (regex_info.group_names[i] != nullptr) {
       output.set_value(string{regex_info.group_names[i]}, output_val);
     }
-    output.push_back(output_val);
+    output.emplace_back(output_val);
   }
 
   (*opt_matches).get() = std::move(output);
@@ -781,7 +781,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
         output_val = std::move(val);
       }
 
-      output.push_back(std::move(output_val));
+      output.emplace_back(std::move(output_val));
       if (limit_val != kphp::regex::PREG_NOLIMIT) {
         limit_val--;
       }
@@ -807,7 +807,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
             output_val = std::move(val);
           }
 
-          output.push_back(std::forward<decltype(output_val)>(output_val));
+          output.emplace_back(std::forward<decltype(output_val)>(output_val));
         }
       }
     }
@@ -830,7 +830,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit_val
       output_val = std::move(val);
     }
 
-    output.push_back(std::forward<decltype(output_val)>(output_val));
+    output.emplace_back(std::forward<decltype(output_val)>(output_val));
   }
 
   return output;
