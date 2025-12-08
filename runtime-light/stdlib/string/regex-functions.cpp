@@ -1114,5 +1114,5 @@ Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject
     return false;
   }
 
-  return *std::move(opt_output);
+  return std::move(*opt_output);
 }
