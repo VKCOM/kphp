@@ -191,13 +191,13 @@ class preg_replacement_parser {
 
     case '\\': {
       // \1
-      auto back_reference_opt{try_get_backref(preg_replacement).transform([this](auto br) noexcept -> replacement_term {
+      auto opt_back_reference{try_get_backref(preg_replacement).transform([this](auto br) noexcept -> replacement_term {
         auto digits_end_pos{br.size()};
         preg_replacement = preg_replacement.substr(digits_end_pos);
         return br;
       })};
-      if (back_reference_opt.has_value()) {
-        return *back_reference_opt;
+      if (opt_back_reference.has_value()) {
+        return *opt_back_reference;
       } else {
         auto c{preg_replacement.front()};
         if (c == '$' || c == '\\') {
@@ -289,8 +289,8 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
   }
 
   // check runtime cache
-  if (auto ref_opt{regex_state.get_compiled_regex(regex_info.regex)}; ref_opt.has_value()) {
-    auto& [compile_options, regex_code]{ref_opt->get()};
+  if (auto opt_ref{regex_state.get_compiled_regex(regex_info.regex)}; opt_ref.has_value()) {
+    auto& [compile_options, regex_code]{opt_ref->get()};
     regex_info.compile_options = compile_options;
     regex_info.regex_code = std::addressof(regex_code);
     return true;
@@ -744,11 +744,11 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
     }
     pcre2_match_view match_view{*opt_match_view};
 
-    auto entire_pattern_match_opt{match_view.get_group(0)};
-    if (!entire_pattern_match_opt.has_value()) [[unlikely]] {
+    auto opt_entire_pattern_match{match_view.get_group(0)};
+    if (!opt_entire_pattern_match.has_value()) [[unlikely]] {
       return std::nullopt;
     }
-    auto entire_pattern_match_string_view{*entire_pattern_match_opt};
+    auto entire_pattern_match_string_view{*opt_entire_pattern_match};
 
     if (const auto size{entire_pattern_match_string_view.data() - offset}; !no_empty || size != 0) {
       auto val{string{offset, static_cast<string::size_type>(size)}};
@@ -766,20 +766,22 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
 
     if (delim_capture) {
       for (size_t i{1}; i < match_view.size(); i++) {
-        auto submatch_opt{match_view.get_group(i)};
-        auto string_view{submatch_opt.value_or(std::string_view{})};
+        auto opt_submatch{match_view.get_group(i)};
+        auto string_view{opt_submatch.value_or(std::string_view{})};
         const auto size{string_view.size()};
         if (!no_empty || size != 0) {
           string val;
-          if (submatch_opt.has_value()) [[likely]] {
+          if (opt_submatch.has_value()) [[likely]] {
             val = string{string_view.data(), static_cast<string::size_type>(size)};
           }
 
           mixed output_val;
           if (offset_capture) {
-            output_val = array<mixed>::create(
-                std::move(val),
-                submatch_opt.transform([&regex_info](auto string_view) noexcept { return static_cast<int64_t>(string_view.data() - regex_info.subject.data()); }).value_or(-1));
+            output_val = array<mixed>::create(std::move(val), opt_submatch
+                                                                  .transform([&regex_info](auto string_view) noexcept {
+                                                                    return static_cast<int64_t>(string_view.data() - regex_info.subject.data());
+                                                                  })
+                                                                  .value_or(-1));
           } else {
             output_val = std::move(val);
           }
