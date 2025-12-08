@@ -671,9 +671,9 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
     PCRE2_SIZE length_after_replace{buffer_length};
     string str_after_replace{regex_info.subject.data(), static_cast<string::size_type>(regex_info.subject.size())};
 
-    matcher m{regex_info, {}};
+    matcher pcre2_matcher{regex_info, {}};
     for (; regex_info.replace_count < limit; ++regex_info.replace_count) {
-      auto expected_opt_match_view{m.next()};
+      auto expected_opt_match_view{pcre2_matcher.next()};
       if (!expected_opt_match_view.has_value()) [[unlikely]] {
         std::array<char, ERROR_BUFFER_LENGTH> buffer{};
         pcre2_get_error_message_8(expected_opt_match_view.error(), reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
@@ -729,9 +729,9 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
 
   array<mixed> output{};
 
-  matcher m{regex_info, {}};
+  matcher pcre2_matcher{regex_info, {}};
   for (size_t out_parts_count{1}; limit == kphp::regex::PREG_NOLIMIT || out_parts_count < limit;) {
-    auto expected_opt_match_view{m.next()};
+    auto expected_opt_match_view{pcre2_matcher.next()};
     if (!expected_opt_match_view.has_value()) [[unlikely]] {
       std::array<char, ERROR_BUFFER_LENGTH> buffer{};
       pcre2_get_error_message_8(expected_opt_match_view.error(), reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
@@ -748,9 +748,9 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
     if (!entire_pattern_match_opt.has_value()) [[unlikely]] {
       return std::nullopt;
     }
-    auto entire_pattern_match_sv{*entire_pattern_match_opt};
+    auto entire_pattern_match_string_view{*entire_pattern_match_opt};
 
-    if (const auto size{entire_pattern_match_sv.data() - offset}; !no_empty || size != 0) {
+    if (const auto size{entire_pattern_match_string_view.data() - offset}; !no_empty || size != 0) {
       auto val{string{offset, static_cast<string::size_type>(size)}};
 
       mixed output_val;
@@ -766,20 +766,20 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
 
     if (delim_capture) {
       for (size_t i{1}; i < match_view.size(); i++) {
-        auto sv_opt{match_view.get_group(i)};
-        auto sv{sv_opt.value_or(std::string_view{})};
-        const auto size{sv.size()};
+        auto submatch_opt{match_view.get_group(i)};
+        auto string_view{submatch_opt.value_or(std::string_view{})};
+        const auto size{string_view.size()};
         if (!no_empty || size != 0) {
           string val;
-          if (sv_opt.has_value()) [[likely]] {
-            val = string{sv.data(), static_cast<string::size_type>(size)};
+          if (submatch_opt.has_value()) [[likely]] {
+            val = string{string_view.data(), static_cast<string::size_type>(size)};
           }
 
           mixed output_val;
           if (offset_capture) {
             output_val = array<mixed>::create(
                 std::move(val),
-                sv_opt.transform([&regex_info](auto sv) noexcept { return static_cast<int64_t>(sv.data() - regex_info.subject.data()); }).value_or(-1));
+                submatch_opt.transform([&regex_info](auto string_view) noexcept { return static_cast<int64_t>(string_view.data() - regex_info.subject.data()); }).value_or(-1));
           } else {
             output_val = std::move(val);
           }
@@ -789,7 +789,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
       }
     }
 
-    offset = std::next(entire_pattern_match_sv.data(), entire_pattern_match_sv.size());
+    offset = std::next(entire_pattern_match_string_view.data(), entire_pattern_match_string_view.size());
   }
 
   const auto size{regex_info.subject.size() - std::distance(regex_info.subject.data(), offset)};
@@ -894,9 +894,9 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
     }
   }
 
-  matcher m{regex_info, static_cast<size_t>(offset)};
+  matcher pcre2_matcher{regex_info, static_cast<size_t>(offset)};
 
-  auto expected_opt_match_view{m.next()};
+  auto expected_opt_match_view{pcre2_matcher.next()};
   while (expected_opt_match_view.has_value() && expected_opt_match_view->has_value()) {
     pcre2_match_view match_view{**expected_opt_match_view};
     regex_info.match_count = match_view.size();
@@ -904,7 +904,7 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
     if (regex_info.match_count > 0) {
       ++entire_match_count;
     }
-    expected_opt_match_view = m.next();
+    expected_opt_match_view = pcre2_matcher.next();
   }
   if (!expected_opt_match_view.has_value()) [[unlikely]] {
     std::array<char, ERROR_BUFFER_LENGTH> buffer{};
