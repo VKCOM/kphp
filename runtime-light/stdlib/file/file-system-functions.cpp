@@ -23,7 +23,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/stdlib/file/file-system-context.h"
+#include "runtime-light/stdlib/file/file-system-state.h"
 #include "runtime-light/stdlib/file/resource.h"
 
 namespace {
@@ -330,7 +330,7 @@ mixed f$getimagesize(const string& name) noexcept {
     return false;
   }
 
-  const string& read_mode{FileSystemLibConstants::get().READ_MODE};
+  const string& read_mode{FileSystemImageState::get().READ_MODE};
   auto open_res{kphp::fs::file::open({name.c_str(), name.size()}, {read_mode.c_str(), read_mode.size()})};
   if (!open_res) {
     return false;

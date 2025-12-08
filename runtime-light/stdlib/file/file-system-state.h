@@ -4,6 +4,18 @@
 
 #pragma once
 
-#include "runtime-light/stdlib/file/file-system-context.h"
+#include "common/mixin/not_copyable.h"
+#include "runtime-common/core/runtime-core.h"
 
-using FileSystemImageState = FileSystemLibConstants;
+struct FileSystemImageState final : vk::not_copyable {
+  string READ_MODE;
+  string WRITE_MODE;
+  string APPEND_MODE;
+  string READ_PLUS_MODE;
+  string WRITE_PLUS_MODE;
+  string APPEND_PLUS_MODE;
+
+  FileSystemImageState() noexcept;
+
+  static const FileSystemImageState& get() noexcept;
+};

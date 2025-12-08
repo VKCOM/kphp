@@ -22,7 +22,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/stdlib/file/file-system-context.h"
+#include "runtime-light/stdlib/file/file-system-state.h"
 #include "runtime-light/stdlib/file/resource.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 
@@ -193,7 +193,7 @@ inline resource f$stream_socket_client(const string& address, std::optional<std:
 }
 
 inline Optional<string> f$file_get_contents(const string& stream) noexcept {
-  if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, FileSystemLibConstants::get().READ_MODE), {})};
+  if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, FileSystemImageState::get().READ_MODE), {})};
       !sync_resource.is_null()) {
     auto expected{sync_resource.get()->get_contents()};
     return expected ? Optional<string>{*std::move(expected)} : Optional<string>{false};
@@ -202,7 +202,7 @@ inline Optional<string> f$file_get_contents(const string& stream) noexcept {
 }
 
 inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& content_var, int64_t flags = 0) noexcept {
-  string content{content_var.is_array() ? f$implode(string(), content_var.to_array()) : content_var.to_string()};
+  string content{content_var.is_array() ? f$implode(string{}, content_var.to_array()) : content_var.to_string()};
 
   constexpr int64_t FILE_APPEND_FLAG{1};
   if (flags & ~FILE_APPEND_FLAG) {
@@ -210,7 +210,7 @@ inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& 
     flags &= FILE_APPEND_FLAG;
   }
 
-  const auto& file_system_lib_constants{FileSystemLibConstants::get()};
+  const auto& file_system_lib_constants{FileSystemImageState::get()};
   const string& mode{((flags & FILE_APPEND_FLAG) != 0) ? file_system_lib_constants.APPEND_MODE : file_system_lib_constants.WRITE_MODE};
   if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, mode), {})}; !sync_resource.is_null()) {
     std::span<const char> data_span{content.c_str(), content.size()};

@@ -10,7 +10,6 @@ prepend(
   diagnostics/contextual-logger.cpp
   diagnostics/error-handling-state.cpp
   diagnostics/php-assert.cpp
-  file/file-system-context.cpp
   file/file-system-state.cpp
   file/file-system-functions.cpp
   file/resource.cpp
