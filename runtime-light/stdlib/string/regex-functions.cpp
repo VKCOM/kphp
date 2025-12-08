@@ -721,7 +721,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
   array<mixed> output{};
 
   matcher pcre2_matcher{regex_info, {}};
-  const char* offset{regex_info.subject.data()};
+  size_t offset{};
   for (size_t out_parts_count{1}; limit == kphp::regex::PREG_NOLIMIT || out_parts_count < limit;) {
     auto expected_opt_match_view{pcre2_matcher.next()};
     if (!expected_opt_match_view.has_value()) [[unlikely]] {
@@ -742,12 +742,12 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
     }
     auto entire_pattern_match_string_view{*opt_entire_pattern_match};
 
-    if (const auto size{std::distance(offset, entire_pattern_match_string_view.data())}; !no_empty || size != 0) {
-      auto val{string{offset, static_cast<string::size_type>(size)}};
+    if (const auto size{std::distance(regex_info.subject.data(), entire_pattern_match_string_view.data()) - offset}; !no_empty || size != 0) {
+      auto val{string{std::next(regex_info.subject.data(), offset), static_cast<string::size_type>(size)}};
 
       mixed output_val;
       if (offset_capture) {
-        output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(std::distance(regex_info.subject.data(), offset)));
+        output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(offset));
       } else {
         output_val = std::move(val);
       }
@@ -783,16 +783,16 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
       }
     }
 
-    offset = std::next(entire_pattern_match_string_view.data(), entire_pattern_match_string_view.size());
+    offset = std::distance(regex_info.subject.data(), entire_pattern_match_string_view.data()) + entire_pattern_match_string_view.size();
   }
 
-  const auto size{regex_info.subject.size() - std::distance(regex_info.subject.data(), offset)};
+  const auto size{regex_info.subject.size() - offset};
   if (!no_empty || size != 0) {
-    string val{offset, static_cast<string::size_type>(size)};
+    string val{std::next(regex_info.subject.data(), offset), static_cast<string::size_type>(size)};
 
     mixed output_val;
     if (offset_capture) {
-      output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(std::distance(regex_info.subject.data(), offset)));
+      output_val = array<mixed>::create(std::move(val), static_cast<int64_t>(offset));
     } else {
       output_val = std::move(val);
     }
