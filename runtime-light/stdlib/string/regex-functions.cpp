@@ -288,7 +288,7 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
   }
 
   // check runtime cache
-  if (const auto ptr{regex_state.get_compiled_regex(regex_info.regex)}; ptr != nullptr) {
+  if (const auto* ptr{regex_state.get_compiled_regex(regex_info.regex)}; ptr != nullptr) {
     auto& [compile_options, regex_code]{*ptr};
     regex_info.compile_options = compile_options;
     regex_info.regex_code = std::addressof(regex_code);
