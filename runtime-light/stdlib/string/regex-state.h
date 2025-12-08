@@ -5,7 +5,9 @@
 #pragma once
 
 #include <cstddef>
+#include <functional>
 #include <memory>
+#include <optional>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -39,9 +41,9 @@ public:
 
   RegexInstanceState() noexcept;
 
-  const compiled_regex* get_compiled_regex(const string& regex) const noexcept;
+  std::optional<std::reference_wrapper<const compiled_regex>> get_compiled_regex(const string& regex) const noexcept;
 
-  const compiled_regex* add_compiled_regex(string regex, uint32_t compile_options, pcre2_code_8& regex_code) noexcept;
+  std::optional<std::reference_wrapper<const compiled_regex>> add_compiled_regex(string regex, uint32_t compile_options, pcre2_code_8& regex_code) noexcept;
 
   static RegexInstanceState& get() noexcept;
 };

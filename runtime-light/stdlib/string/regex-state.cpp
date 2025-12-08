@@ -48,16 +48,16 @@ RegexInstanceState::RegexInstanceState() noexcept
   }
 }
 
-const RegexInstanceState::compiled_regex* RegexInstanceState::get_compiled_regex(const string& regex) const noexcept {
+std::optional<std::reference_wrapper<const RegexInstanceState::compiled_regex>> RegexInstanceState::get_compiled_regex(const string& regex) const noexcept {
   if (const auto it{regex_pcre2_code_cache.find(regex)}; it != regex_pcre2_code_cache.end()) {
-    return std::addressof(it->second);
+    return it->second;
   }
-  return nullptr;
+  return std::nullopt;
 }
 
-const RegexInstanceState::compiled_regex* RegexInstanceState::add_compiled_regex(string regex, uint32_t compile_options, pcre2_code_8& regex_code) noexcept {
-  return std::addressof(
-      regex_pcre2_code_cache.emplace(std::move(regex), compiled_regex{.compile_options = compile_options, .regex_code = regex_code}).first->second);
+std::optional<std::reference_wrapper<const RegexInstanceState::compiled_regex>> RegexInstanceState::add_compiled_regex(string regex, uint32_t compile_options,
+                                                                                                                       pcre2_code_8& regex_code) noexcept {
+  return regex_pcre2_code_cache.emplace(std::move(regex), compiled_regex{.compile_options = compile_options, .regex_code = regex_code}).first->second;
 }
 
 RegexInstanceState& RegexInstanceState::get() noexcept {
