@@ -343,7 +343,7 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
   }
 
   uint32_t compile_options{};
-  auto regex_body{std::string_view{regex_info.regex.c_str(), regex_info.regex.size()}};
+  std::string_view regex_body{regex_info.regex.c_str(), regex_info.regex.size()};
 
   // remove start delimiter
   regex_body.remove_prefix(1);
