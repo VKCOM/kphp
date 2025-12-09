@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <utility>
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/allocator/script-allocator.h"

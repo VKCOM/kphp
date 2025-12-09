@@ -4,11 +4,7 @@
 
 #include "runtime-light/stdlib/string/regex-state.h"
 
-#include <memory>
-#include <utility>
-
 #include "runtime-common/core/allocator/script-malloc-interface.h"
-#include "runtime-common/core/runtime-core.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/string/regex-include.h"
