@@ -202,10 +202,10 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
   struct stat stat_buf;
   uint64_t file_fd;
 
-  if (k2::fopen(std::addressof(file_fd), name.c_str(), "r")) {
+  if (k2::fopen(std::addressof(file_fd), name.c_str(), "r") != k2::errno_ok) {
     return false;
   }
-  if (k2::stat(name.c_str(), std::addressof(stat_buf))) {
+  if (k2::stat(name.c_str(), std::addressof(stat_buf)) != k2::errno_ok) {
     k2::free_descriptor(file_fd);
     return false;
   }
