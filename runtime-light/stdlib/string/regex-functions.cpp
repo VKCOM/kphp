@@ -700,7 +700,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
     for (; regex_info.replace_count < limit; ++regex_info.replace_count) {
       auto expected_opt_match_view{pcre2_matcher.next()};
       if (!expected_opt_match_view.has_value()) [[unlikely]] {
-        log_regex_error("can't replace by pcre2 regex due to match error:", expected_opt_match_view.error());
+        log_regex_error("can't replace by pcre2 regex due to match error", expected_opt_match_view.error());
         return false;
       }
       auto opt_match_view{*expected_opt_match_view};
@@ -760,7 +760,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
   for (size_t out_parts_count{1}; limit == kphp::regex::PREG_NOLIMIT || out_parts_count < limit;) {
     auto expected_opt_match_view{pcre2_matcher.next()};
     if (!expected_opt_match_view.has_value()) [[unlikely]] {
-      log_regex_error("can't split by pcre2 regex due to match error:", expected_opt_match_view.error());
+      log_regex_error("can't split by pcre2 regex due to match error", expected_opt_match_view.error());
       return std::nullopt;
     }
     auto opt_match_view{*expected_opt_match_view};
@@ -860,16 +860,23 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
   const auto& regex_state{RegexInstanceState::get()};
   kphp::log::assertion(regex_info.regex_code != nullptr && regex_state.match_context);
 
-  int32_t ret_code{pcre2_match_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), offset,
-                                 regex_info.match_options, regex_state.regex_pcre2_match_data.get(), regex_state.match_context.get())};
-  // From https://www.pcre.org/current/doc/html/pcre2_match.html
-  // The return from pcre2_match() is one more than the highest numbered capturing pair that has been set
-  // (for example, 1 if there are no captures), zero if the vector of offsets is too small, or a negative error code for no match and other errors.
-  if (ret_code < 0 && ret_code != PCRE2_ERROR_NOMATCH) [[unlikely]] {
-    log_regex_error("can't match by pcre2 regex due to error:", ret_code);
+  auto expected_opt_match_view{matcher{regex_info, static_cast<size_t>(offset)}.next()};
+  if (!expected_opt_match_view.has_value()) [[unlikely]] {
+    log_regex_error("can't match by pcre2 regex due to error", expected_opt_match_view.error());
     return false;
   }
-  regex_info.match_count = ret_code != PCRE2_ERROR_NOMATCH ? ret_code : 0;
+  auto opt_match_view{*expected_opt_match_view};
+  if (!opt_match_view.has_value()) {
+    return 0;
+  }
+
+  pcre2_match_view match_view{*opt_match_view};
+
+  auto opt_entire_pattern_match{match_view.get_group(0)};
+  if (!opt_entire_pattern_match.has_value()) [[unlikely]] {
+    return false;
+  }
+  regex_info.match_count = opt_entire_pattern_match->size();
 
   std::optional<std::reference_wrapper<mixed>> matches{};
   if (opt_matches.has_value()) {
@@ -934,7 +941,7 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
     expected_opt_match_view = pcre2_matcher.next();
   }
   if (!expected_opt_match_view.has_value()) [[unlikely]] {
-    log_regex_error("can't find all matches due to match error:", expected_opt_match_view.error());
+    log_regex_error("can't find all matches due to match error", expected_opt_match_view.error());
     return false;
   }
 
