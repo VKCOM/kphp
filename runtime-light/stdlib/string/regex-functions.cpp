@@ -71,7 +71,7 @@ struct RegexInfo final {
 
 class pcre2_match_view {
 public:
-  pcre2_match_view(std::string_view subject, const PCRE2_SIZE* ovector, int32_t num_groups) noexcept
+  pcre2_match_view(std::string_view subject, const PCRE2_SIZE* ovector, size_t num_groups) noexcept
       : m_subject_data{subject},
         m_ovector_ptr{ovector},
         m_num_groups{num_groups} {}
@@ -88,7 +88,7 @@ public:
     kphp::log::assertion(m_ovector_ptr);
     // ovector is an array of offset pairs
     PCRE2_SIZE start{m_ovector_ptr[2 * i]};
-    PCRE2_SIZE end{m_ovector_ptr[2 * i + 1]};
+    PCRE2_SIZE end{m_ovector_ptr[(2 * i) + 1]};
 
     if (start == PCRE2_UNSET) {
       return std::nullopt;
@@ -100,7 +100,7 @@ public:
 private:
   std::string_view m_subject_data;
   const PCRE2_SIZE* m_ovector_ptr;
-  int32_t m_num_groups;
+  size_t m_num_groups;
 };
 
 template<typename... Args>
@@ -124,11 +124,11 @@ bool correct_offset(int64_t& offset, std::string_view subject) noexcept {
   return offset <= subject.size();
 }
 
-int64_t skip_utf8_subsequent_bytes(int64_t offset, const std::string_view subject) noexcept {
+int64_t skip_utf8_subsequent_bytes(size_t offset, const std::string_view subject) noexcept {
   // all multibyte utf8 runes consist of subsequent bytes,
   // these subsequent bytes start with 10 bit pattern
   // 0xc0 selects the two most significant bits, then we compare it to 0x80 (0b10000000)
-  while (offset < static_cast<int64_t>(subject.size()) && ((static_cast<unsigned char>(subject[offset])) & 0xc0) == 0x80) {
+  while (offset < subject.size() && ((static_cast<unsigned char>(subject[offset])) & 0xc0) == 0x80) {
     offset++;
   }
   return offset;
@@ -291,7 +291,7 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
 
   // check runtime cache
   if (auto opt_ref{regex_state.get_compiled_regex(regex_info.regex)}; opt_ref.has_value()) {
-    auto& [compile_options, regex_code]{opt_ref->get()};
+    const auto& [compile_options, regex_code]{opt_ref->get()};
     regex_info.compile_options = compile_options;
     regex_info.regex_code = regex_code.get();
     return true;
@@ -682,9 +682,14 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
         break;
       }
 
-      const auto* ovector{pcre2_get_ovector_pointer_8(regex_state.regex_pcre2_match_data.get())};
-      const auto match_start_offset{ovector[0]};
-      const auto match_end_offset{ovector[1]};
+      auto match_view{*opt_match_view};
+      auto opt_entire_pattern_match{match_view.get_group(0)};
+      if (!opt_entire_pattern_match.has_value()) [[unlikely]] {
+        return false;
+      }
+      auto entire_pattern_match_string_view{*opt_entire_pattern_match};
+      const auto match_start_offset{std::distance(regex_info.subject.data(), entire_pattern_match_string_view.data())};
+      const auto match_end_offset{match_start_offset + entire_pattern_match_string_view.size()};
 
       length_after_replace = buffer_length;
       if (auto replace_one_ret_code{pcre2_substitute_8(
