@@ -71,10 +71,10 @@ struct RegexInfo final {
 
 class pcre2_match_view {
 public:
-  pcre2_match_view(std::string_view subject, const PCRE2_SIZE* ovector, int32_t ret_code) noexcept
+  pcre2_match_view(std::string_view subject, const PCRE2_SIZE* ovector, int32_t num_groups) noexcept
       : m_subject_data{subject},
         m_ovector_ptr{ovector},
-        m_num_groups{ret_code} {}
+        m_num_groups{num_groups} {}
 
   int32_t size() const noexcept {
     return m_num_groups;
