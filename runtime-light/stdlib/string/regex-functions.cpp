@@ -687,7 +687,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
                                                   reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(output_length));
 
     if (regex_info.replace_count < 0) [[unlikely]] {
-      log_regex_error("pcre2_substitute error {}", regex_info.replace_count);
+      log_regex_error("pcre2_substitute error", regex_info.replace_count);
       return false;
     }
   } else { // replace only 'limit' times
@@ -700,7 +700,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
     for (; regex_info.replace_count < limit; ++regex_info.replace_count) {
       auto expected_opt_match_view{pcre2_matcher.next()};
       if (!expected_opt_match_view.has_value()) [[unlikely]] {
-        log_regex_error("can't replace by pcre2 regex due to match error: {}", expected_opt_match_view.error());
+        log_regex_error("can't replace by pcre2 regex due to match error:", expected_opt_match_view.error());
         return false;
       }
       auto opt_match_view{*expected_opt_match_view};
@@ -760,7 +760,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
   for (size_t out_parts_count{1}; limit == kphp::regex::PREG_NOLIMIT || out_parts_count < limit;) {
     auto expected_opt_match_view{pcre2_matcher.next()};
     if (!expected_opt_match_view.has_value()) [[unlikely]] {
-      log_regex_error("can't split by pcre2 regex due to match error: {}", expected_opt_match_view.error());
+      log_regex_error("can't split by pcre2 regex due to match error:", expected_opt_match_view.error());
       return std::nullopt;
     }
     auto opt_match_view{*expected_opt_match_view};
@@ -866,7 +866,7 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
   // The return from pcre2_match() is one more than the highest numbered capturing pair that has been set
   // (for example, 1 if there are no captures), zero if the vector of offsets is too small, or a negative error code for no match and other errors.
   if (ret_code < 0 && ret_code != PCRE2_ERROR_NOMATCH) [[unlikely]] {
-    log_regex_error("can't match by pcre2 regex due to error: {}", ret_code);
+    log_regex_error("can't match by pcre2 regex due to error:", ret_code);
     return false;
   }
   regex_info.match_count = ret_code != PCRE2_ERROR_NOMATCH ? ret_code : 0;
@@ -934,7 +934,7 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
     expected_opt_match_view = pcre2_matcher.next();
   }
   if (!expected_opt_match_view.has_value()) [[unlikely]] {
-    log_regex_error("can't find all matches due to match error: {}", expected_opt_match_view.error());
+    log_regex_error("can't find all matches due to match error:", expected_opt_match_view.error());
     return false;
   }
 
