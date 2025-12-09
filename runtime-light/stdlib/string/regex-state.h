@@ -32,7 +32,7 @@ private:
 
 public:
   static constexpr size_t OVECTOR_SIZE{MAX_SUBPATTERNS_COUNT + 1};
-  static constexpr size_t REPLACE_BUFFER_SIZE{16U * 1024U};
+  static constexpr size_t REPLACE_BUFFER_SIZE{size_t{16U} * size_t{1024U}};
 
   const regex_pcre2_general_context_t regex_pcre2_general_context;
   const regex_pcre2_compile_context_t compile_context;
