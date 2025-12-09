@@ -267,6 +267,13 @@ public:
   }
 };
 
+template<size_t N>
+void log_regex_error(const char (&msg)[N], int32_t regex_error) noexcept {
+  std::array<char, ERROR_BUFFER_LENGTH> buffer{};
+  pcre2_get_error_message_8(regex_error, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
+  kphp::log::warning("{}: {}", msg, buffer.data());
+}
+
 bool compile_regex(RegexInfo& regex_info) noexcept {
   const vk::final_action finalizer{[&regex_info]() noexcept {
     if (regex_info.regex_code != nullptr) [[likely]] {
@@ -654,9 +661,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
                                                   reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(output_length));
 
     if (regex_info.replace_count < 0) [[unlikely]] {
-      std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-      pcre2_get_error_message_8(regex_info.replace_count, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
-      kphp::log::warning("pcre2_substitute error {}", buffer.data());
+      log_regex_error("pcre2_substitute error {}", regex_info.replace_count);
       return false;
     }
   } else { // replace only 'limit' times
@@ -669,9 +674,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
     for (; regex_info.replace_count < limit; ++regex_info.replace_count) {
       auto expected_opt_match_view{pcre2_matcher.next()};
       if (!expected_opt_match_view.has_value()) [[unlikely]] {
-        std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-        pcre2_get_error_message_8(expected_opt_match_view.error(), reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
-        kphp::log::warning("can't replace by pcre2 regex due to match error: {}", buffer.data());
+        log_regex_error("can't replace by pcre2 regex due to match error: {}", expected_opt_match_view.error());
         return false;
       }
       auto opt_match_view{*expected_opt_match_view};
@@ -726,9 +729,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
   for (size_t out_parts_count{1}; limit == kphp::regex::PREG_NOLIMIT || out_parts_count < limit;) {
     auto expected_opt_match_view{pcre2_matcher.next()};
     if (!expected_opt_match_view.has_value()) [[unlikely]] {
-      std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-      pcre2_get_error_message_8(expected_opt_match_view.error(), reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
-      kphp::log::warning("can't split by pcre2 regex due to match error: {}", buffer.data());
+      log_regex_error("can't split by pcre2 regex due to match error: {}", expected_opt_match_view.error());
       return std::nullopt;
     }
     auto opt_match_view{*expected_opt_match_view};
@@ -761,21 +762,22 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
     if (delim_capture) {
       for (size_t i{1}; i < match_view.size(); i++) {
         auto opt_submatch{match_view.get_group(i)};
-        auto string_view{opt_submatch.value_or(std::string_view{})};
-        const auto size{string_view.size()};
+        auto submatch_string_view{opt_submatch.value_or(std::string_view{})};
+        const auto size{submatch_string_view.size()};
         if (!no_empty || size != 0) {
           string val;
           if (opt_submatch.has_value()) [[likely]] {
-            val = string{string_view.data(), static_cast<string::size_type>(size)};
+            val = string{submatch_string_view.data(), static_cast<string::size_type>(size)};
           }
 
           mixed output_val;
           if (offset_capture) {
-            output_val = array<mixed>::create(std::move(val), opt_submatch
-                                                                  .transform([&regex_info](auto string_view) noexcept {
-                                                                    return static_cast<int64_t>(std::distance(regex_info.subject.data(), string_view.data()));
-                                                                  })
-                                                                  .value_or(-1));
+            output_val =
+                array<mixed>::create(std::move(val), opt_submatch
+                                                         .transform([&regex_info](auto submatch_string_view) noexcept {
+                                                           return static_cast<int64_t>(std::distance(regex_info.subject.data(), submatch_string_view.data()));
+                                                         })
+                                                         .value_or(-1));
           } else {
             output_val = std::move(val);
           }
@@ -833,9 +835,7 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
   // The return from pcre2_match() is one more than the highest numbered capturing pair that has been set
   // (for example, 1 if there are no captures), zero if the vector of offsets is too small, or a negative error code for no match and other errors.
   if (ret_code < 0 && ret_code != PCRE2_ERROR_NOMATCH) [[unlikely]] {
-    std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-    pcre2_get_error_message_8(ret_code, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
-    kphp::log::warning("can't match by pcre2 regex due to error: {}", buffer.data());
+    log_regex_error("can't match by pcre2 regex due to error: {}", ret_code);
     return false;
   }
   regex_info.match_count = ret_code != PCRE2_ERROR_NOMATCH ? ret_code : 0;
@@ -903,9 +903,7 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
     expected_opt_match_view = pcre2_matcher.next();
   }
   if (!expected_opt_match_view.has_value()) [[unlikely]] {
-    std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-    pcre2_get_error_message_8(expected_opt_match_view.error(), reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
-    kphp::log::warning("can't find all matches due to match error: {}", buffer.data());
+    log_regex_error("can't find all matches due to match error: {}", expected_opt_match_view.error());
     return false;
   }
 
