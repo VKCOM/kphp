@@ -58,7 +58,7 @@ inline string f$basename(const string& path, const string& suffix = {}) noexcept
 }
 
 inline Optional<int64_t> f$filesize(const string& filename) noexcept {
-  struct stat stat {};
+  struct stat stat{};
   if (auto errc{k2::stat({filename.c_str(), filename.size()}, std::addressof(stat))}; errc != k2::errno_ok) [[unlikely]] {
     return false;
   }
@@ -196,4 +196,48 @@ inline Optional<string> f$file_get_contents(const string& stream) noexcept {
     return expected ? Optional<string>{*std::move(expected)} : Optional<string>{false};
   }
   return false;
+}
+
+inline Optional<array<string>> f$file(const string& name) noexcept {
+  struct stat stat_buf;
+  uint64_t file_fd;
+
+  if (!k2::fopen(std::addressof(file_fd), name.c_str(), "r")) {
+    return false;
+  }
+  if (!k2::stat(name.c_str(), std::addressof(stat_buf))) {
+    k2::free_descriptor(file_fd);
+    return false;
+  }
+  if (!S_ISREG(stat_buf.st_mode)) {
+    k2::free_descriptor(file_fd);
+    kphp::log::warning("regular file expected as first argument in function file, \"{}\" is given", name.c_str());
+    return false;
+  }
+
+  const size_t size{static_cast<size_t>(stat_buf.st_size)};
+  if (size > string::max_size()) {
+    k2::free_descriptor(file_fd);
+    kphp::log::warning("file \"{}\" is too large", name.c_str());
+    return false;
+  }
+
+  string res(static_cast<string::size_type>(size), false);
+  char* s{res.buffer()};
+  if (k2::read(file_fd, size, s) < size) {
+    k2::free_descriptor(file_fd);
+    return false;
+  }
+  k2::free_descriptor(file_fd);
+
+  array<string> result;
+  int prev{-1};
+  for (size_t i = 0; i < size; i++) {
+    if (s[i] == '\n' || i + 1 == size) {
+      result.push_back(string(s + prev + 1, i - prev));
+      prev = i;
+    }
+  }
+
+  return result;
 }
