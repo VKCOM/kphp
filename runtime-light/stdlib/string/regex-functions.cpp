@@ -245,7 +245,7 @@ public:
       }
       return *this;
     }
-    iterator operator++(int) noexcept {
+    iterator operator++(int) noexcept { // NOLINT
       iterator temp{*this};
       ++(*this);
       return temp;
