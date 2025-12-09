@@ -40,16 +40,15 @@ function vsprintf ($format ::: string, $args ::: array) ::: string;
 
 function file_exists ($name ::: string) ::: bool;
 
-// === UNSUPPORTED ===
+function file ($name ::: string) ::: string[] | false;
 
+// === UNSUPPORTED ===
 /** @kphp-extern-func-info stub generation-required */
 function chmod ($name ::: string, $mode ::: int) ::: bool;
 /** @kphp-extern-func-info stub generation-required */
 function copy ($from ::: string, $to ::: string) ::: bool;
 /** @kphp-extern-func-info stub generation-required */
 function dirname ($name ::: string) ::: string;
-/** @kphp-extern-func-info stub generation-required */
-function file ($name ::: string) ::: string[] | false;
 /** @kphp-extern-func-info stub generation-required */
 function file_put_contents ($name ::: string, $content ::: mixed, $flags ::: int = 0) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */
