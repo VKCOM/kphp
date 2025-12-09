@@ -270,7 +270,20 @@ public:
 template<size_t N>
 void log_regex_error(const char (&msg)[N], int32_t regex_error) noexcept {
   std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-  pcre2_get_error_message_8(regex_error, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
+  auto ret_code{pcre2_get_error_message_8(regex_error, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size())};
+  if (ret_code < 0) [[unlikely]] {
+    switch (ret_code) {
+    case PCRE2_ERROR_BADDATA:
+      kphp::log::warning("unknown regex error code: {}", regex_error);
+      return;
+    case PCRE2_ERROR_NOMEMORY:
+      kphp::log::warning("[truncated] {}: {}", msg, buffer.data());
+      return;
+    default:
+      kphp::log::warning("unsupported regex error code: {}", ret_code);
+      return;
+    }
+  }
   kphp::log::warning("{}: {}", msg, buffer.data());
 }
 
@@ -430,7 +443,20 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
                                 pcre2_code_free_8};
   if (!regex_code) [[unlikely]] {
     std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-    pcre2_get_error_message_8(error_number, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size());
+    auto ret_code{pcre2_get_error_message_8(error_number, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size())};
+    if (ret_code < 0) [[unlikely]] {
+      switch (ret_code) {
+      case PCRE2_ERROR_BADDATA:
+        kphp::log::warning("unknown regex error code: {}", error_number);
+        return false;
+      case PCRE2_ERROR_NOMEMORY:
+        kphp::log::warning("[truncated] can't compile pcre2 regex due to error at offset {}: {}", error_offset, buffer.data());
+        return false;
+      default:
+        kphp::log::warning("unsupported regex error code: {}", ret_code);
+        return false;
+      }
+    }
     kphp::log::warning("can't compile pcre2 regex due to error at offset {}: {}", error_offset, buffer.data());
     return false;
   }
