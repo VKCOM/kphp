@@ -209,7 +209,7 @@ inline auto f$curl_multi_select(kphp::web::curl::multi_type multi_id, double tim
     kphp::web::curl::print_error("could not select curl multi handle", std::move(res.error()));
     co_return multi_ctx.error_code;
   }
-  co_return std::move(*res);
+  co_return *res;
 }
 
 inline auto f$curl_multi_info_read(kphp::web::curl::multi_type multi_id,
