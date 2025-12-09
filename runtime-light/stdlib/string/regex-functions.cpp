@@ -501,7 +501,7 @@ public:
       if (ret_code < 0 && ret_code != PCRE2_ERROR_NOMATCH) [[unlikely]] {
         return std::unexpected{ret_code};
       }
-      auto match_count{ret_code != PCRE2_ERROR_NOMATCH ? ret_code : 0};
+      size_t match_count{ret_code != PCRE2_ERROR_NOMATCH ? static_cast<size_t>(ret_code) : 0};
 
       if (match_count == 0) {
         // If match is not found
