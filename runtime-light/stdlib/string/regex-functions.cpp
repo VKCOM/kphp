@@ -866,17 +866,8 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
     return false;
   }
   auto opt_match_view{*expected_opt_match_view};
-  if (!opt_match_view.has_value()) {
-    return 0;
-  }
 
-  pcre2_match_view match_view{*opt_match_view};
-
-  auto opt_entire_pattern_match{match_view.get_group(0)};
-  if (!opt_entire_pattern_match.has_value()) [[unlikely]] {
-    return false;
-  }
-  regex_info.match_count = opt_entire_pattern_match->size();
+  regex_info.match_count = opt_match_view.transform(&pcre2_match_view::size).value_or(0);
 
   std::optional<std::reference_wrapper<mixed>> matches{};
   if (opt_matches.has_value()) {
