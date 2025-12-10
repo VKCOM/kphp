@@ -40,6 +40,6 @@ class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string
 
 string f$DateInterval$$format(const class_instance<C$DateInterval>& self, const string& format) noexcept {
   string str;
-  kphp::timelib::date_interval_format_to(std::back_inserter(str), {format.c_str(), format.size()}, *self->rel_time);
+  kphp::timelib::format_to(std::back_inserter(str), {format.c_str(), format.size()}, *self->rel_time);
   return str;
 }
