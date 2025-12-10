@@ -13,13 +13,6 @@
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-C$DateInterval::~C$DateInterval() {
-  if (rel_time != nullptr) {
-    kphp::timelib::destruct(rel_time);
-    rel_time = nullptr;
-  }
-}
-
 class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<C$DateInterval>& self, const string& duration) noexcept {
   auto expected_rel_time{kphp::timelib::construct_interval({duration.c_str(), duration.size()})};
   if (!expected_rel_time.has_value()) [[unlikely]] {
@@ -28,7 +21,7 @@ class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};
   }
-  self->rel_time = *expected_rel_time;
+  self->rel_time = std::move(*expected_rel_time);
   return self;
 }
 
@@ -38,16 +31,15 @@ class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string
     kphp::log::warning("DateInterval::createFromDateString(): failed to parse datetime ({}): {}", datetime.c_str(), expected_time.error());
     return {};
   }
-  timelib_time* time{*expected_time};
-  vk::final_action time_deleter{[time] { kphp::timelib::destruct(time); }};
+  kphp::timelib::time_t time{std::move(*expected_time)};
   class_instance<C$DateInterval> date_interval;
   date_interval.alloc();
-  date_interval->rel_time = kphp::timelib::clone(std::addressof(time->relative));
+  date_interval->rel_time = kphp::timelib::clone(time->relative);
   return date_interval;
 }
 
 string f$DateInterval$$format(const class_instance<C$DateInterval>& self, const string& format) noexcept {
   string str;
-  kphp::timelib::date_interval_format_to(std::back_inserter(str), {format.c_str(), format.size()}, self->rel_time);
+  kphp::timelib::date_interval_format_to(std::back_inserter(str), {format.c_str(), format.size()}, *self->rel_time);
   return str;
 }

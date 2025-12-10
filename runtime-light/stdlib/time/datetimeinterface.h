@@ -13,5 +13,5 @@ struct C$DateTimeInterface : public refcountable_polymorphic_php_classes_virt<> 
   kphp::timelib::time_t time{nullptr};
 
   virtual const char* get_class() const noexcept = 0;
-  virtual int get_hash() const noexcept = 0;
+  virtual int32_t get_hash() const noexcept = 0;
 };

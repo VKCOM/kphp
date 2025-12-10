@@ -27,8 +27,6 @@ struct C$DateTime : public C$DateTimeInterface, private DummyVisitorMethods {
     std::string_view name_view{C$DateTime::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
-
-  ~C$DateTime() override;
 };
 
 class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTime>& self, const string& datetime = StringLibConstants::get().NOW_STR,
