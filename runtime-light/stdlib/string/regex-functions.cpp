@@ -29,9 +29,36 @@
 #include "runtime-light/stdlib/string/regex-include.h"
 #include "runtime-light/stdlib/string/regex-state.h"
 
-namespace {
+namespace std {
 
-constexpr size_t ERROR_BUFFER_LENGTH{256};
+template<>
+struct formatter<kphp::regex::pcre2_error> {
+  template<typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) const noexcept {
+    return ctx.begin();
+  }
+
+  template<typename FmtContext>
+  auto format(kphp::regex::pcre2_error error, FmtContext& ctx) const noexcept {
+    std::array<char, kphp::regex::ERROR_BUFFER_LENGTH> buffer{};
+    auto ret_code{pcre2_get_error_message_8(error.code, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size())};
+    if (ret_code < 0) [[unlikely]] {
+      switch (ret_code) {
+      case PCRE2_ERROR_BADDATA:
+        return format_to(ctx.out(), "unknown error ({})", error.code);
+      case PCRE2_ERROR_NOMEMORY:
+        return format_to(ctx.out(), "[truncated] {}", buffer.data());
+      default:
+        kphp::log::error("unsupported regex error code: {}", ret_code);
+      }
+    }
+    return format_to(ctx.out(), "{}", buffer.data());
+  }
+};
+
+} // namespace std
+
+namespace {
 
 enum class trailing_unmatch : uint8_t { skip, include };
 
@@ -267,24 +294,6 @@ public:
   }
 };
 
-bool regex_error_to_buffer(std::array<char, ERROR_BUFFER_LENGTH>& buffer, int32_t regex_error) noexcept {
-  auto ret_code{pcre2_get_error_message_8(regex_error, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size())};
-  return true;
-  if (ret_code < 0) [[unlikely]] {
-    switch (ret_code) {
-    case PCRE2_ERROR_BADDATA:
-      kphp::log::warning("unknown regex error code: {}", regex_error);
-      return false;
-    case PCRE2_ERROR_NOMEMORY:
-      kphp::log::warning("[truncated]: {}", buffer.data());
-      return false;
-    default:
-      kphp::log::warning("unsupported regex error code: {}", ret_code);
-      return false;
-    }
-  }
-}
-
 bool compile_regex(RegexInfo& regex_info) noexcept {
   const vk::final_action finalizer{[&regex_info]() noexcept {
     if (regex_info.regex_code != nullptr) [[likely]] {
@@ -440,10 +449,7 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
                                                 std::addressof(error_number), std::addressof(error_offset), regex_state.compile_context.get()),
                                 pcre2_code_free_8};
   if (!regex_code) [[unlikely]] {
-    std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-    if (regex_error_to_buffer(buffer, error_number)) {
-      kphp::log::warning("can't compile pcre2 regex due to error at offset {}: {}", error_offset, buffer.data());
-    }
+    kphp::log::warning("can't compile pcre2 regex due to error at offset {}: {}", error_offset, kphp::regex::pcre2_error{.code = error_number});
     return false;
   }
 
@@ -497,7 +503,7 @@ public:
     kphp::log::assertion(m_match_data);
   }
 
-  std::expected<std::optional<pcre2_match_view>, int32_t> next() noexcept {
+  std::expected<std::optional<pcre2_match_view>, kphp::regex::pcre2_error> next() noexcept {
     const auto& regex_state{RegexInstanceState::get()};
     kphp::log::assertion(m_regex_info.regex_code != nullptr && regex_state.match_context);
 
@@ -511,7 +517,7 @@ public:
       // The return from pcre2_match() is one more than the highest numbered capturing pair that has been set
       // (for example, 1 if there are no captures), zero if the vector of offsets is too small, or a negative error code for no match and other errors.
       if (ret_code < 0 && ret_code != PCRE2_ERROR_NOMATCH) [[unlikely]] {
-        return std::unexpected{ret_code};
+        return std::unexpected{kphp::regex::pcre2_error{.code = ret_code}};
       }
       size_t match_count{ret_code != PCRE2_ERROR_NOMATCH ? static_cast<size_t>(ret_code) : 0};
 
@@ -673,10 +679,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
                                                   reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(output_length));
 
     if (regex_info.replace_count < 0) [[unlikely]] {
-      std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-      if (regex_error_to_buffer(buffer, regex_info.replace_count)) {
-        kphp::log::warning("pcre2_substitute error: {}", buffer.data());
-      }
+      kphp::log::warning("pcre2_substitute error: {}", kphp::regex::pcre2_error{.code = static_cast<int32_t>(regex_info.replace_count)});
       return false;
     }
   } else { // replace only 'limit' times
@@ -689,10 +692,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
     for (; regex_info.replace_count < limit; ++regex_info.replace_count) {
       auto expected_opt_match_view{pcre2_matcher.next()};
       if (!expected_opt_match_view.has_value()) [[unlikely]] {
-        std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-        if (regex_error_to_buffer(buffer, expected_opt_match_view.error())) {
-          kphp::log::warning("can't replace by pcre2 regex due to match error: {}", buffer.data());
-        }
+        kphp::log::warning("can't replace by pcre2 regex due to match error: {}", expected_opt_match_view.error());
         return false;
       }
       auto opt_match_view{*expected_opt_match_view};
@@ -715,10 +715,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
               regex_info.replace_options, nullptr, regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()),
               regex_info.replacement.size(), reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(length_after_replace))};
           replace_one_ret_code != 1) [[unlikely]] {
-        std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-        if (regex_error_to_buffer(buffer, replace_one_ret_code)) {
-          kphp::log::warning("pcre2_substitute error: {}", buffer.data());
-        }
+        kphp::log::warning("pcre2_substitute error: {}", kphp::regex::pcre2_error{.code = replace_one_ret_code});
         return false;
       }
 
@@ -755,10 +752,7 @@ std::optional<array<mixed>> split_regex(RegexInfo& regex_info, int64_t limit, bo
   for (size_t out_parts_count{1}; limit == kphp::regex::PREG_NOLIMIT || out_parts_count < limit;) {
     auto expected_opt_match_view{pcre2_matcher.next()};
     if (!expected_opt_match_view.has_value()) [[unlikely]] {
-      std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-      if (regex_error_to_buffer(buffer, expected_opt_match_view.error())) {
-        kphp::log::warning("can't split by pcre2 regex due to match error: {}", buffer.data());
-      }
+      kphp::log::warning("can't split by pcre2 regex due to match error: {}", expected_opt_match_view.error());
       return std::nullopt;
     }
     auto opt_match_view{*expected_opt_match_view};
@@ -860,10 +854,7 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
 
   auto expected_opt_match_view{matcher{regex_info, static_cast<size_t>(offset)}.next()};
   if (!expected_opt_match_view.has_value()) [[unlikely]] {
-    std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-    if (regex_error_to_buffer(buffer, expected_opt_match_view.error())) {
-      kphp::log::warning("can't match by pcre2 regex due to error: {}", buffer.data());
-    }
+    kphp::log::warning("can't match by pcre2 regex due to error: {}", expected_opt_match_view.error());
     return false;
   }
   auto opt_match_view{*expected_opt_match_view};
@@ -933,10 +924,7 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
     expected_opt_match_view = pcre2_matcher.next();
   }
   if (!expected_opt_match_view.has_value()) [[unlikely]] {
-    std::array<char, ERROR_BUFFER_LENGTH> buffer{};
-    if (regex_error_to_buffer(buffer, expected_opt_match_view.error())) {
-      kphp::log::warning("can't find all matches due to match error: {}", buffer.data());
-    }
+    kphp::log::warning("can't find all matches due to match error: {}", expected_opt_match_view.error());
     return false;
   }
 
