@@ -28,8 +28,6 @@ struct C$DateTimeImmutable : public C$DateTimeInterface, private DummyVisitorMet
     std::string_view name_view{C$DateTimeImmutable::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
-
-  ~C$DateTimeImmutable() override;
 };
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class_instance<C$DateTimeImmutable>& self,

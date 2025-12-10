@@ -20,8 +20,8 @@
 
 namespace kphp::time::impl {
 
-constexpr inline int64_t CHECKDATE_YEAR_MIN = 1;
-constexpr inline int64_t CHECKDATE_YEAR_MAX = 32767;
+constexpr inline int64_t CHECKDATE_YEAR_MIN{1};
+constexpr inline int64_t CHECKDATE_YEAR_MAX{32767};
 
 int64_t fix_year(int64_t year) noexcept;
 
@@ -49,7 +49,7 @@ inline string f$_microtime_string() noexcept {
   const auto seconds{duration_cast<chrono::seconds>(time_since_epoch).count()};
   const auto nanoseconds{duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000};
 
-  static constexpr size_t default_buffer_size = 60;
+  static constexpr size_t default_buffer_size{60};
   char buf[default_buffer_size];
   const auto len{snprintf(buf, default_buffer_size, "0.%09lld %lld", nanoseconds, seconds)};
   return {buf, static_cast<string::size_type>(len)};

@@ -7,13 +7,6 @@
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"
 
-C$DateTime::~C$DateTime() {
-  if (time != nullptr) {
-    kphp::timelib::destruct(time);
-    time = nullptr;
-  }
-}
-
 class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTime>& self, const string& datetime,
                                                    const class_instance<C$DateTimeZone>& timezone) noexcept {
   const auto& str_to_parse{datetime.empty() ? StringLibConstants::get().NOW_STR : datetime};
@@ -24,7 +17,7 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
   }
 
-  timelib_time* time{*expected_time};
+  kphp::timelib::time_t time{std::move(*expected_time)};
   timelib_tzinfo* tzi{!timezone.is_null() ? timezone->tzi : nullptr};
   if (tzi == nullptr) {
     if (time->tz_info != nullptr) {
@@ -34,8 +27,8 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
     }
   }
 
-  kphp::timelib::fill_holes(time, tzi);
+  kphp::timelib::fill_holes_with_now(*time, tzi);
 
-  self->time = time;
+  self->time = std::move(time);
   return self;
 }
