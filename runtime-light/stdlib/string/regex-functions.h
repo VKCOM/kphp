@@ -16,17 +16,15 @@
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-namespace details {
+namespace kphp::regex {
 
-constexpr size_t ERROR_BUFFER_LENGTH{256};
+namespace details {
 
 struct pcre2_error {
   int32_t code{};
 };
 
 } // namespace details
-
-namespace kphp::regex {
 
 inline constexpr int64_t PREG_NO_ERROR = 0;
 inline constexpr int64_t PREG_INTERNAL_ERROR = 1;
