@@ -25,6 +25,7 @@ inline constexpr std::string_view COMMA_ = ",";
 inline constexpr std::string_view BACKSLASH_ = "\\";
 inline constexpr std::string_view QUOTE_ = "\"";
 inline constexpr std::string_view NEWLINE_ = "\n";
+inline constexpr std::string_view NOW_ = "now";
 inline constexpr std::string_view SPACE_ = " ";
 inline constexpr std::string_view WHAT_ = " \n\r\t\v\0"sv;
 inline constexpr std::string_view ONE_ = "1";
@@ -60,6 +61,7 @@ struct StringLibConstants final : vk::not_copyable {
   string BACKSLASH_STR{string_context_impl_::BACKSLASH_.data(), static_cast<string::size_type>(string_context_impl_::BACKSLASH_.size())};
   string QUOTE_STR{string_context_impl_::QUOTE_.data(), static_cast<string::size_type>(string_context_impl_::QUOTE_.size())};
   string NEWLINE_STR{string_context_impl_::NEWLINE_.data(), static_cast<string::size_type>(string_context_impl_::NEWLINE_.size())};
+  string NOW_STR{string_context_impl_::NOW_.data(), static_cast<string::size_type>(string_context_impl_::NOW_.size())};
   string SPACE_STR{string_context_impl_::SPACE_.data(), static_cast<string::size_type>(string_context_impl_::SPACE_.size())};
   string WHAT_STR{string_context_impl_::WHAT_.data(), static_cast<string::size_type>(string_context_impl_::WHAT_.size())};
   string ONE_STR{string_context_impl_::ONE_.data(), static_cast<string::size_type>(string_context_impl_::ONE_.size())};
@@ -85,6 +87,7 @@ struct StringLibConstants final : vk::not_copyable {
     BACKSLASH_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
     QUOTE_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
     NEWLINE_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    NOW_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
     SPACE_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
     WHAT_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
     ONE_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);

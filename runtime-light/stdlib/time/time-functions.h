@@ -20,12 +20,6 @@
 
 namespace kphp::time::impl {
 
-constexpr inline std::array<std::string_view, 12> MON_FULL_NAMES = {"January", "February", "March",     "April",   "May",      "June",
-                                                                    "July",    "August",   "September", "October", "November", "December"};
-constexpr inline std::array<std::string_view, 12> MON_SHORT_NAMES = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-constexpr inline std::array<std::string_view, 7> DAY_FULL_NAMES = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-constexpr inline std::array<std::string_view, 7> DAY_SHORT_NAMES = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-
 constexpr inline int64_t CHECKDATE_YEAR_MIN = 1;
 constexpr inline int64_t CHECKDATE_YEAR_MAX = 32767;
 
@@ -108,8 +102,8 @@ inline array<mixed> f$getdate(int64_t timestamp = std::numeric_limits<int64_t>::
 
   array<mixed> result{array_size{11, false}};
 
-  auto weekday{kphp::time::impl::DAY_FULL_NAMES[t.tm_wday]};
-  auto month{kphp::time::impl::MON_FULL_NAMES[t.tm_mon]};
+  auto weekday{kphp::timelib::DAY_FULL_NAMES[t.tm_wday]};
+  auto month{kphp::timelib::MON_FULL_NAMES[t.tm_mon]};
 
   result.set_value(string{"seconds", 7}, t.tm_sec);
   result.set_value(string{"minutes", 7}, t.tm_min);
