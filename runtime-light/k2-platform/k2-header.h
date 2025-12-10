@@ -735,7 +735,7 @@ int32_t k2_canonicalize(const char* path, size_t pathlen, char* const* resolved_
  */
 int32_t k2_stat(const char* pathname, size_t pathname_len, struct stat* statbuf);
 
-  /**
+/**
  * Semantically equivalent to libc's `lstat`.
  *
  * Possible `errno`:
