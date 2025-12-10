@@ -16,7 +16,7 @@
 struct C$DateInterval : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  timelib_rel_time* rel_time{nullptr};
+  kphp::timelib::rel_time_t rel_time{nullptr};
 
   virtual const char* get_class() const noexcept {
     return R"(DateInterval)";
@@ -26,8 +26,6 @@ struct C$DateInterval : public refcountable_polymorphic_php_classes_virt<>, priv
     std::string_view name_view{C$DateInterval::get_class()};
     return static_cast<int32_t>(vk::murmur_hash<uint32_t>(name_view.data(), name_view.size()));
   }
-
-  ~C$DateInterval() override;
 };
 
 class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<C$DateInterval>& self, const string& duration) noexcept;
