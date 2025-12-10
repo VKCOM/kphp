@@ -244,7 +244,7 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
 
 inline bool f$is_file(const string& name) noexcept {
   struct stat stat_buf;
-  if (k2::lstat(name.c_str(), &stat_buf) != k2::errno_ok) {
+  if (k2::lstat(name.c_str(), std::addressof(stat_buf)) != k2::errno_ok) {
     return false;
   }
   return S_ISREG(stat_buf.st_mode);
