@@ -735,6 +735,29 @@ int32_t k2_canonicalize(const char* path, size_t pathlen, char* const* resolved_
  */
 int32_t k2_stat(const char* pathname, size_t pathname_len, struct stat* statbuf);
 
+  /**
+ * Semantically equivalent to libc's `lstat`.
+ *
+ * Possible `errno`:
+ * `EACCES` => Search permission is denied for one of the directories in the path prefix of `pathname`.
+ * `EINVAL` => `pathname` or `statbuf` is `NULL`.
+ * `EFAULT` => Bad address.
+ * `ELOOP` => Too many symbolic links encountered while traversing the path.
+ * `ENAMETOOLONG` => `pathname` is too long.
+ * `ENOENT` => A component of `pathname` does not exist or is a dangling symbolic link.
+ * `ENOMEM` => Out of memory (i.e., kernel memory).
+ * `ENOTDIR` => A component of the path prefix of `pathname` is not a directory.
+ * `EOVERFLOW` => `pathname` refers to a file whose size, inode number,
+ *                or number of blocks cannot be represented in, respectively,
+ *                the types `off_t`, `ino_t`, or `blkcnt_t`.  This error can occur
+ *                when, for example, an application compiled on a 32-bit
+ *                platform without `-D_FILE_OFFSET_BITS=64` calls `lstat()` on a
+ *                file whose size exceeds `(1<<31)-1` bytes.
+ * `ERANGE` => Failed to convert `st_size`, `st_blksize`, or `st_blocks` to `int64_t`.
+ * `ENOSYS` => Internal error.
+ */
+int32_t k2_lstat(const char* pathname, size_t pathname_len, struct stat* statbuf);
+
 struct CommandArg {
   const char* arg;
   size_t arg_len;

@@ -42,6 +42,8 @@ function file_exists ($name ::: string) ::: bool;
 
 function file ($name ::: string) ::: string[] | false;
 
+function is_file ($name ::: string) ::: bool;
+
 // === UNSUPPORTED ===
 /** @kphp-extern-func-info stub generation-required */
 function chmod ($name ::: string, $mode ::: int) ::: bool;
@@ -57,8 +59,6 @@ function filectime ($name ::: string) ::: int | false;
 function filemtime ($name ::: string) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */
 function is_dir ($name ::: string) ::: bool;
-/** @kphp-extern-func-info stub generation-required */
-function is_file ($name ::: string) ::: bool;
 /** @kphp-extern-func-info stub generation-required */
 function is_readable ($name ::: string) ::: bool;
 /** @kphp-extern-func-info stub generation-required */

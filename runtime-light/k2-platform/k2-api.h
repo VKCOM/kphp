@@ -418,6 +418,13 @@ inline int32_t stat(std::string_view path, struct stat* stat) noexcept {
   return k2::errno_ok;
 }
 
+inline int32_t lstat(std::string_view path, struct stat* stat) noexcept {
+  if (auto error_code{k2_lstat(path.data(), path.size(), stat)}; error_code != k2::errno_ok) [[unlikely]] {
+    return error_code;
+  }
+  return k2::errno_ok;
+}
+
 using CommandArg = CommandArg;
 
 enum class CommandStdoutPolicy : uint8_t { NoCapture, Capture };
