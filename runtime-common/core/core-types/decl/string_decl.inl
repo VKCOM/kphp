@@ -40,6 +40,7 @@ struct ArrayBucketDummyStrTag;
 class string {
 public:
   using size_type = string_size_type;
+  using value_type = char;
   static constexpr size_type npos = (size_type)-1;
 
 private:
