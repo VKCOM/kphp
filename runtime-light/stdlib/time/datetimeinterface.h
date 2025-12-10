@@ -5,11 +5,12 @@
 #pragma once
 
 #include "kphp/timelib/timelib.h"
+#include "timelib-functions.h"
 
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 
 struct C$DateTimeInterface : public refcountable_polymorphic_php_classes_virt<> {
-  timelib_time* time{nullptr};
+  kphp::timelib::time_t time{nullptr};
 
   virtual const char* get_class() const noexcept = 0;
   virtual int get_hash() const noexcept = 0;

@@ -97,13 +97,13 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       SB << static_cast<char>(day / 10 + '0') << static_cast<char>(day % 10 + '0');
       break;
     case 'D':
-      SB << DAY_SHORT_NAMES[day_of_week].data();
+      SB << timelib::DAY_SHORT_NAMES[day_of_week].data();
       break;
     case 'j':
       SB << day;
       break;
     case 'l':
-      SB << DAY_FULL_NAMES[day_of_week].data();
+      SB << timelib::DAY_FULL_NAMES[day_of_week].data();
       break;
     case 'N':
       SB << (day_of_week == 0 ? '7' : static_cast<char>(day_of_week + '0'));
@@ -141,13 +141,13 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       SB << static_cast<char>('0' + iso_week / 10) << static_cast<char>('0' + iso_week % 10);
       break;
     case 'F':
-      SB << MON_FULL_NAMES[month - 1].data();
+      SB << timelib::MON_FULL_NAMES[month - 1].data();
       break;
     case 'm':
       SB << static_cast<char>(month / 10 + '0') << static_cast<char>(month % 10 + '0');
       break;
     case 'M':
-      SB << MON_SHORT_NAMES[month - 1].data();
+      SB << timelib::MON_SHORT_NAMES[month - 1].data();
       break;
     case 'n':
       SB << month;
@@ -265,12 +265,12 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       }
       break;
     case 'r':
-      SB << DAY_SHORT_NAMES[day_of_week].data();
+      SB << timelib::DAY_SHORT_NAMES[day_of_week].data();
       SB << ", ";
       SB << static_cast<char>(day / 10 + '0');
       SB << static_cast<char>(day % 10 + '0');
       SB << ' ';
-      SB << MON_SHORT_NAMES[month - 1].data();
+      SB << timelib::MON_SHORT_NAMES[month - 1].data();
       SB << ' ';
       SB << year;
       SB << ' ';
