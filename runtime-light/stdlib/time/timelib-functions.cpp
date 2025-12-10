@@ -366,6 +366,14 @@ void set_date(timelib_time& t, int64_t y, int64_t m, int64_t d) noexcept {
   timelib_update_ts(std::addressof(t), nullptr);
 }
 
+void set_time(timelib_time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept {
+  t.h = h;
+  t.i = i;
+  t.s = s;
+  t.us = ms;
+  timelib_update_ts(std::addressof(t), nullptr);
+}
+
 std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime, int64_t timestamp) noexcept {
   if (datetime.empty()) [[unlikely]] {
     kphp::log::warning("datetime can't be empty");

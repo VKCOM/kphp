@@ -81,3 +81,32 @@ class_instance<C$DateTime> f$DateTime$$setDate(const class_instance<C$DateTime>&
   kphp::timelib::set_date(*self->time, year, month, day);
   return self;
 }
+
+class_instance<C$DateTime> f$DateTime$$setTime(const class_instance<C$DateTime>& self, int64_t hour, int64_t minute, int64_t second,
+                                               int64_t microsecond) noexcept {
+  kphp::timelib::set_time(*self->time, hour, minute, second, microsecond);
+  return self;
+}
+
+class_instance<C$DateTime> f$DateTime$$setTimestamp(const class_instance<C$DateTime>& self, int64_t timestamp) noexcept {
+  kphp::timelib::set_timestamp(*self->time, timestamp);
+  return self;
+}
+
+class_instance<C$DateInterval> f$DateTime$$diff(const class_instance<C$DateTime>& self, const class_instance<C$DateTimeInterface>& target_object,
+                                                bool absolute) noexcept {
+  class_instance<C$DateInterval> interval;
+  interval.alloc();
+  interval->rel_time = kphp::timelib::diff(*self->time, *target_object.get()->time, absolute);
+  return interval;
+}
+
+string f$DateTime$$format(const class_instance<C$DateTime>& self, const string& format) noexcept {
+  string str;
+  kphp::timelib::format_to(std::back_inserter(str), {format.c_str(), format.size()}, *self->time);
+  return str;
+}
+
+int64_t f$DateTime$$getTimestamp(const class_instance<C$DateTime>& self) noexcept {
+  return kphp::timelib::get_timestamp(*self->time);
+}
