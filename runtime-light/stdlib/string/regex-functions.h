@@ -16,9 +16,17 @@
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
-namespace kphp::regex {
+namespace details {
 
 constexpr size_t ERROR_BUFFER_LENGTH{256};
+
+struct pcre2_error {
+  int32_t code{};
+};
+
+} // namespace details
+
+namespace kphp::regex {
 
 inline constexpr int64_t PREG_NO_ERROR = 0;
 inline constexpr int64_t PREG_INTERNAL_ERROR = 1;
@@ -37,10 +45,6 @@ inline constexpr auto PREG_SPLIT_OFFSET_CAPTURE = static_cast<int64_t>(1U << 5U)
 inline constexpr auto PREG_UNMATCHED_AS_NULL = static_cast<int64_t>(1U << 6U);
 
 inline constexpr int64_t PREG_NOLIMIT = -1;
-
-struct pcre2_error {
-  int32_t code{};
-};
 
 } // namespace kphp::regex
 

@@ -32,15 +32,15 @@
 namespace std {
 
 template<>
-struct formatter<kphp::regex::pcre2_error> {
+struct formatter<details::pcre2_error> {
   template<typename ParseContext>
   constexpr auto parse(ParseContext& ctx) const noexcept {
     return ctx.begin();
   }
 
   template<typename FmtContext>
-  auto format(kphp::regex::pcre2_error error, FmtContext& ctx) const noexcept {
-    std::array<char, kphp::regex::ERROR_BUFFER_LENGTH> buffer{};
+  auto format(details::pcre2_error error, FmtContext& ctx) const noexcept {
+    std::array<char, details::ERROR_BUFFER_LENGTH> buffer{};
     auto ret_code{pcre2_get_error_message_8(error.code, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size())};
     if (ret_code < 0) [[unlikely]] {
       switch (ret_code) {
@@ -449,7 +449,7 @@ bool compile_regex(RegexInfo& regex_info) noexcept {
                                                 std::addressof(error_number), std::addressof(error_offset), regex_state.compile_context.get()),
                                 pcre2_code_free_8};
   if (!regex_code) [[unlikely]] {
-    kphp::log::warning("can't compile pcre2 regex due to error at offset {}: {}", error_offset, kphp::regex::pcre2_error{.code = error_number});
+    kphp::log::warning("can't compile pcre2 regex due to error at offset {}: {}", error_offset, details::pcre2_error{.code = error_number});
     return false;
   }
 
@@ -503,7 +503,7 @@ public:
     kphp::log::assertion(m_match_data);
   }
 
-  std::expected<std::optional<pcre2_match_view>, kphp::regex::pcre2_error> next() noexcept {
+  std::expected<std::optional<pcre2_match_view>, details::pcre2_error> next() noexcept {
     const auto& regex_state{RegexInstanceState::get()};
     kphp::log::assertion(m_regex_info.regex_code != nullptr && regex_state.match_context);
 
@@ -517,7 +517,7 @@ public:
       // The return from pcre2_match() is one more than the highest numbered capturing pair that has been set
       // (for example, 1 if there are no captures), zero if the vector of offsets is too small, or a negative error code for no match and other errors.
       if (ret_code < 0 && ret_code != PCRE2_ERROR_NOMATCH) [[unlikely]] {
-        return std::unexpected{kphp::regex::pcre2_error{.code = ret_code}};
+        return std::unexpected{details::pcre2_error{.code = ret_code}};
       }
       size_t match_count{ret_code != PCRE2_ERROR_NOMATCH ? static_cast<size_t>(ret_code) : 0};
 
@@ -679,7 +679,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
                                                   reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(output_length));
 
     if (regex_info.replace_count < 0) [[unlikely]] {
-      kphp::log::warning("pcre2_substitute error: {}", kphp::regex::pcre2_error{.code = static_cast<int32_t>(regex_info.replace_count)});
+      kphp::log::warning("pcre2_substitute error: {}", details::pcre2_error{.code = static_cast<int32_t>(regex_info.replace_count)});
       return false;
     }
   } else { // replace only 'limit' times
@@ -715,7 +715,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
               regex_info.replace_options, nullptr, regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()),
               regex_info.replacement.size(), reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(length_after_replace))};
           replace_one_ret_code != 1) [[unlikely]] {
-        kphp::log::warning("pcre2_substitute error: {}", kphp::regex::pcre2_error{.code = replace_one_ret_code});
+        kphp::log::warning("pcre2_substitute error: {}", details::pcre2_error{.code = replace_one_ret_code});
         return false;
       }
 
