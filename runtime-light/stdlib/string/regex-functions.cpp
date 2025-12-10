@@ -33,7 +33,7 @@ namespace std {
 
 template<>
 struct formatter<kphp::regex::details::pcre2_error> {
-  constexpr static size_t ERROR_BUFFER_LENGTH{256};
+  static constexpr size_t ERROR_BUFFER_LENGTH{256};
 
   template<typename ParseContext>
   constexpr auto parse(ParseContext& ctx) const noexcept {
