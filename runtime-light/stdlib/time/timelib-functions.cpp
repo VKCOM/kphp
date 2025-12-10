@@ -115,7 +115,7 @@ time_t clone(timelib_time& t) noexcept {
   return time_t{(kphp::memory::libc_alloc_guard{}, timelib_time_clone(std::addressof(t)))};
 }
 
-rel_time_t date_diff(timelib_time& time1, timelib_time& time2, bool absolute) noexcept {
+rel_time_t diff(timelib_time& time1, timelib_time& time2, bool absolute) noexcept {
   timelib_update_ts(std::addressof(time1), nullptr);
   timelib_update_ts(std::addressof(time2), nullptr);
 
@@ -142,18 +142,18 @@ std::string_view date_short_day_name(timelib_sll y, timelib_sll m, timelib_sll d
   return DAY_SHORT_NAMES[day_of_week];
 }
 
-int64_t date_timestamp_get(timelib_time& t) noexcept {
+int64_t get_timestamp(timelib_time& t) noexcept {
   timelib_update_ts(std::addressof(t), nullptr);
 
   int error{}; // it's intentionally declared as 'int' since timelib_date_to_int accepts 'int'
-  timelib_long timestamp{timelib_date_to_int(std::addressof(t), &error)};
+  timelib_long timestamp{timelib_date_to_int(std::addressof(t), std::addressof(error))};
   // the 'error' should be always 0 on x64 platform
   log::assertion(error == 0);
 
   return timestamp;
 }
 
-void date_timestamp_set(timelib_time& t, int64_t timestamp) noexcept {
+void set_timestamp(timelib_time& t, int64_t timestamp) noexcept {
   kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(std::addressof(t), static_cast<timelib_sll>(timestamp));
   timelib_update_ts(std::addressof(t), nullptr);
   t.us = 0;
@@ -240,10 +240,6 @@ int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::op
   timelib_update_ts(now, nullptr);
 
   return now->sse;
-}
-
-bool is_leap_year(int32_t year) noexcept {
-  return (year % 4 == 0) && (year % 100 != 0 || year % 400 == 0);
 }
 
 std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
@@ -361,6 +357,13 @@ time_t now(timelib_tzinfo* tzi) noexcept {
   res->us = usec;
 
   return res;
+}
+
+void set_date(timelib_time& t, int64_t y, int64_t m, int64_t d) noexcept {
+  t.y = y;
+  t.m = m;
+  t.d = d;
+  timelib_update_ts(std::addressof(t), nullptr);
 }
 
 std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime, int64_t timestamp) noexcept {

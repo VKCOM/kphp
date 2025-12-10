@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -59,15 +60,15 @@ time_t add(timelib_time& t, timelib_rel_time& interval) noexcept;
 rel_time_t clone(timelib_rel_time& rt) noexcept;
 time_t clone(timelib_time& t) noexcept;
 
-rel_time_t date_diff(timelib_time& time1, timelib_time& time2, bool absolute) noexcept;
+rel_time_t diff(timelib_time& time1, timelib_time& time2, bool absolute) noexcept;
 
 std::string_view date_full_day_name(timelib_sll y, timelib_sll m, timelib_sll d) noexcept;
 
 std::string_view date_short_day_name(timelib_sll y, timelib_sll m, timelib_sll d) noexcept;
 
-int64_t date_timestamp_get(timelib_time& t) noexcept;
+int64_t get_timestamp(timelib_time& t) noexcept;
 
-void date_timestamp_set(timelib_time& t, int64_t timestamp) noexcept;
+void set_timestamp(timelib_time& t, int64_t timestamp) noexcept;
 
 std::string_view english_suffix(timelib_sll number) noexcept;
 
@@ -89,8 +90,6 @@ timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb
 int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,
                  std::optional<int64_t> yea) noexcept;
 
-bool is_leap_year(int32_t year) noexcept;
-
 std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
                               std::optional<int64_t> day, std::optional<int64_t> yea) noexcept;
 
@@ -98,12 +97,14 @@ std::expected<void, error_container_t> modify(timelib_time& t, std::string_view 
 
 time_t now(timelib_tzinfo* tzi) noexcept;
 
+void set_date(timelib_time& t, int64_t y, int64_t m, int64_t d) noexcept;
+
 std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime, int64_t timestamp) noexcept;
 
 bool valid_date(int64_t year, int64_t month, int64_t day) noexcept;
 
 template<typename OutputIt>
-OutputIt date_format_to(OutputIt out, std::string_view format, timelib_time& t, bool localtime) noexcept {
+OutputIt format_to(OutputIt out, std::string_view format, timelib_time& t, bool localtime) noexcept {
   if (format.empty()) {
     return out;
   }
@@ -146,14 +147,14 @@ OutputIt date_format_to(OutputIt out, std::string_view format, timelib_time& t, 
     // week
     case 'W':
       if (!weekYearSet) {
-        timelib_isoweek_from_date(t.y, t.m, t.d, &isoweek, &isoyear);
+        timelib_isoweek_from_date(t.y, t.m, t.d, std::addressof(isoweek), std::addressof(isoyear));
         weekYearSet = true;
       }
       out = std::format_to(out, "{:02}", isoweek);
       break; // iso weeknr
     case 'o':
       if (!weekYearSet) {
-        timelib_isoweek_from_date(t.y, t.m, t.d, &isoweek, &isoyear);
+        timelib_isoweek_from_date(t.y, t.m, t.d, std::addressof(isoweek), std::addressof(isoyear));
         weekYearSet = 1;
       }
       out = std::format_to(out, "{}", isoyear);
@@ -178,7 +179,7 @@ OutputIt date_format_to(OutputIt out, std::string_view format, timelib_time& t, 
 
     // year
     case 'L':
-      out = std::format_to(out, "{}", is_leap_year(t.y));
+      out = std::format_to(out, "{:d}", std::chrono::year(t.y).is_leap());
       break;
     case 'y':
       out = std::format_to(out, "{:02}", t.y % 100);
@@ -295,12 +296,12 @@ OutputIt date_format_to(OutputIt out, std::string_view format, timelib_time& t, 
 }
 
 template<typename OutputIt>
-OutputIt date_format_to_localtime(OutputIt out, std::string_view format, timelib_time& t) noexcept {
-  return date_format_to<OutputIt>(out, format, t, t.is_localtime);
+OutputIt format_to(OutputIt out, std::string_view format, timelib_time& t) noexcept {
+  return timelib::format_to<OutputIt>(out, format, t, t.is_localtime);
 }
 
 template<typename OutputIt>
-OutputIt date_interval_format_to(OutputIt out, std::string_view format, timelib_rel_time& t) noexcept {
+OutputIt format_to(OutputIt out, std::string_view format, timelib_rel_time& t) noexcept {
   if (format.empty()) {
     return out;
   }
