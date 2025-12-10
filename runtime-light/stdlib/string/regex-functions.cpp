@@ -723,7 +723,7 @@ bool replace_regex(RegexInfo& regex_info, uint64_t limit) noexcept {
               regex_info.replace_options, nullptr, regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()),
               regex_info.replacement.size(), reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(length_after_replace))};
           replace_one_ret_code != 1) [[unlikely]] {
-        kphp::log::warning("pcre2_substitute error {}", replace_one_ret_code);
+        log_regex_error("pcre2_substitute error", replace_one_ret_code);
         return false;
       }
 
