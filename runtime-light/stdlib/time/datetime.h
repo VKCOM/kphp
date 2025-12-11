@@ -39,6 +39,8 @@ class_instance<C$DateTime> f$DateTime$$createFromFormat(const string& format, co
 
 class_instance<C$DateTime> f$DateTime$$createFromImmutable(const class_instance<C$DateTimeImmutable>& object) noexcept;
 
+Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept;
+
 class_instance<C$DateTime> f$DateTime$$modify(const class_instance<C$DateTime>& self, const string& modifier) noexcept;
 
 class_instance<C$DateTime> f$DateTime$$setDate(const class_instance<C$DateTime>& self, int64_t year, int64_t month, int64_t day) noexcept;
