@@ -1029,7 +1029,7 @@ int mcs_init_crypto (struct connection *c, char *key, int key_len) {
 
   struct aes_session_key aes_keys;
 
-  if (aes_create_connection_keys (default_aes_key, &aes_keys, 0, nonce_out, nonce_in, utime, c) < 0) {
+  if (aes_create_connection_keys (0, default_aes_key, &aes_keys, 0, nonce_out, nonce_in, 0, utime, c) < 0) {
     return -1;
   }
 
