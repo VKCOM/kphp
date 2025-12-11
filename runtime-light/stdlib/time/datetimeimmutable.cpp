@@ -107,6 +107,20 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$modify(const class_inst
   return new_date;
 }
 
+class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setDate(const class_instance<C$DateTimeImmutable>& self, int64_t year, int64_t month,
+                                                                 int64_t day) noexcept {
+  auto new_date = clone_immutable(self);
+  kphp::timelib::set_date(*new_date->time, year, month, day);
+  return new_date;
+}
+
+class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setTime(const class_instance<C$DateTimeImmutable>& self, int64_t hour, int64_t minute, int64_t second,
+                                                                 int64_t microsecond) noexcept {
+  auto new_date = clone_immutable(self);
+  kphp::timelib::set_time(*new_date->time, hour, minute, second, microsecond);
+  return new_date;
+}
+
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setTimestamp(const class_instance<C$DateTimeImmutable>& self, int64_t timestamp) noexcept {
   auto new_date{clone_immutable(self)};
   kphp::timelib::set_timestamp(*new_date->time, timestamp);
