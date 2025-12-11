@@ -16,8 +16,8 @@
 class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<C$DateInterval>& self, const string& duration) noexcept {
   auto expected_rel_time{kphp::timelib::construct_interval({duration.c_str(), duration.size()})};
   if (!expected_rel_time.has_value()) [[unlikely]] {
-    string err_msg;
-    format_to(std::back_inserter(err_msg), "DateInterval::__construct(): failed to parse interval ({}): {}", duration.c_str(), expected_rel_time.error());
+    string err_msg{"DateInterval::__construct(): "};
+    format_to(std::back_inserter(err_msg), expected_rel_time.error(), duration.c_str());
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};
   }
@@ -26,12 +26,11 @@ class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<
 }
 
 class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string& datetime) noexcept {
-  auto expected_time{kphp::timelib::construct_time({datetime.c_str(), datetime.size()})};
-  if (!expected_time.has_value()) [[unlikely]] {
-    kphp::log::warning("DateInterval::createFromDateString(): failed to parse datetime ({}): {}", datetime.c_str(), expected_time.error());
+  auto [time, errors]{kphp::timelib::construct_time({datetime.c_str(), datetime.size()})};
+  if (time == nullptr) [[unlikely]] {
+    kphp::log::warning("DateInterval::createFromDateString(): failed to parse datetime ({}): {}", datetime.c_str(), errors);
     return {};
   }
-  kphp::timelib::time_t time{std::move(*expected_time)};
   class_instance<C$DateInterval> date_interval;
   date_interval.alloc();
   date_interval->rel_time = kphp::timelib::clone(time->relative);
