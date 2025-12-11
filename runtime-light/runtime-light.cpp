@@ -14,6 +14,8 @@
 
 #define VISIBILITY_DEFAULT __attribute__((visibility("default")))
 
+void const_vars_check_ref_cnt();
+
 VISIBILITY_DEFAULT ImageState* k2_create_image() {
   kphp::log::debug("start image state creation");
   auto* image_state_ptr{static_cast<ImageState*>(k2::alloc(sizeof(ImageState)))};
@@ -28,6 +30,7 @@ VISIBILITY_DEFAULT void k2_init_image() {
   kphp::log::debug("start image state init");
   new (const_cast<ImageState*>(k2::image_state())) ImageState{};
   init_php_scripts_once_in_master();
+  const_vars_check_ref_cnt();
   kphp::log::debug("finish image state init");
 }
 

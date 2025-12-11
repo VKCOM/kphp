@@ -25,6 +25,7 @@ void StaticInit::compile(CodeGenerator &W) const {
   }
 
   // "const vars init" declarations
+  FunctionSignatureGenerator(W) << "void const_vars_check_ref_cnt()" << SemicolonAndNL() << NL;
   FunctionSignatureGenerator(W) << "void const_vars_init()" << SemicolonAndNL() << NL;
   for (LibPtr lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
