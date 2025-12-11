@@ -12,7 +12,7 @@
 #define RPC_BUF_SIZE (1 << 12)
 #define RPC_SERVER_MAGIC 0x8940303d
 #define RPC_BUFFER_MAGIC 0x8fa0da0c
-#define RPC_MAX_QUERY_LEN (1 << 24)
+#define RPC_MAX_QUERY_LEN ((1 << 24) - 1)
 
 #define RPC_SKIP 0
 
