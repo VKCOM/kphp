@@ -50,10 +50,10 @@ using rel_time_t = std::unique_ptr<timelib_rel_time, destructor>;
 using time_t = std::unique_ptr<timelib_time, destructor>;
 using time_offset_t = std::unique_ptr<timelib_time_offset, destructor>;
 
-std::expected<time_t, error_container_t> construct_time(std::string_view time_sv) noexcept;
-std::expected<time_t, error_container_t> construct_time(std::string_view time_sv, const char* format) noexcept;
+std::pair<time_t, error_container_t> construct_time(std::string_view time_sv) noexcept;
+std::pair<time_t, error_container_t> construct_time(std::string_view time_sv, const char* format) noexcept;
 time_offset_t construct_time_offset(timelib_time& t) noexcept;
-std::expected<rel_time_t, error_container_t> construct_interval(std::string_view format) noexcept;
+std::expected<rel_time_t, std::format_string<const char*>> construct_interval(std::string_view format) noexcept;
 
 time_t add(timelib_time& t, timelib_rel_time& interval) noexcept;
 
@@ -93,7 +93,7 @@ int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::op
 std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
                               std::optional<int64_t> day, std::optional<int64_t> yea) noexcept;
 
-std::expected<void, error_container_t> modify(timelib_time& t, std::string_view modifier) noexcept;
+error_container_t modify(timelib_time& t, std::string_view modifier) noexcept;
 
 time_t now(timelib_tzinfo* tzi) noexcept;
 
