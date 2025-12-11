@@ -336,7 +336,7 @@ error_container_t modify(timelib_time& t, std::string_view modifier) noexcept {
   kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(std::addressof(t));
   t.have_relative = 0;
   std::memset(std::addressof(t.relative), 0, sizeof(t.relative));
-  return std::move(errors);;
+  return std::move(errors);
 }
 
 time_t now(timelib_tzinfo* tzi) noexcept {
