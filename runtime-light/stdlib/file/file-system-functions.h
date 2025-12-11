@@ -200,41 +200,41 @@ inline Optional<string> f$file_get_contents(const string& stream) noexcept {
 
 inline Optional<array<string>> f$file(const string& name) noexcept {
   struct stat stat_buf;
-  uint64_t file_fd;
 
-  if (k2::fopen(std::addressof(file_fd), name.c_str(), "r") != k2::errno_ok) {
+  auto open_res = kphp::fs::file::open(name.c_str(), "r");
+  if (!open_res.has_value()) {
     return false;
   }
+  auto& file = open_res.value();
+
   if (k2::stat(name.c_str(), std::addressof(stat_buf)) != k2::errno_ok) {
-    k2::free_descriptor(file_fd);
     return false;
   }
   if (!S_ISREG(stat_buf.st_mode)) {
-    k2::free_descriptor(file_fd);
     kphp::log::warning("regular file expected as first argument in function file, \"{}\" is given", name.c_str());
     return false;
   }
 
   const size_t size{static_cast<size_t>(stat_buf.st_size)};
   if (size > string::max_size()) {
-    k2::free_descriptor(file_fd);
     kphp::log::warning("file \"{}\" is too large", name.c_str());
     return false;
   }
 
-  string res(static_cast<string::size_type>(size), false);
-  char* s{res.buffer()};
-  if (k2::read(file_fd, size, s) < size) {
-    k2::free_descriptor(file_fd);
+  string res{static_cast<string::size_type>(size), false};
+  char* res_buffer{res.buffer()};
+  std::span<std::byte> spn{reinterpret_cast<std::byte*>(res_buffer), res.size()};
+  if (auto rd_status = file.read(spn); !rd_status.has_value() || rd_status.value() < size) {
     return false;
   }
-  k2::free_descriptor(file_fd);
+
+  file.close();
 
   array<string> result;
-  int prev{-1};
-  for (size_t i = 0; i < size; i++) {
-    if (s[i] == '\n' || i + 1 == size) {
-      result.push_back(string(s + prev + 1, i - prev));
+  int32_t prev{-1};
+  for (size_t i{0}; i < size; i++) {
+    if (res_buffer[i] == '\n' || i + 1 == size) {
+      result.push_back(string(res_buffer + prev + 1, i - prev));
       prev = i;
     }
   }
@@ -243,7 +243,7 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
 }
 
 inline bool f$is_file(const string& name) noexcept {
-  struct stat stat_buf;
+  struct stat stat_buf {};
   if (k2::lstat(name.c_str(), std::addressof(stat_buf)) != k2::errno_ok) {
     return false;
   }
