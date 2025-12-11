@@ -336,7 +336,7 @@ std::expected<void, error_container_t> modify(timelib_time& t, std::string_view 
   }
 
   kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
-  timelib_update_from_sse(std::addressof(t));
+  kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(std::addressof(t));
   t.have_relative = 0;
   std::memset(std::addressof(t.relative), 0, sizeof(t.relative));
   return {};
