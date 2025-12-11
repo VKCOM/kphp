@@ -112,7 +112,6 @@ class DateTime implements DateTimeInterface {
   public function add(DateInterval $interval): DateTime;
   public static function createFromFormat(string $format, string $datetime, ?DateTimeZone $timezone = null): ?DateTime;
   public static function createFromImmutable(DateTimeImmutable $object): DateTime;
-  /** @kphp-extern-func-info stub generation-required */
   public static function getLastErrors(): array|false;
   public function modify(string $modifier): ?DateTime;
   public function setDate(int $year, int $month, int $day): DateTime;

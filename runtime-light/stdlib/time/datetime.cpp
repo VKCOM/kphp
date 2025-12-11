@@ -14,8 +14,11 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
   if (!expected_time.has_value()) [[unlikely]] {
     string err_msg;
     format_to(std::back_inserter(err_msg), "DateTime::__construct(): failed to parse datetime ({}): {}", datetime.c_str(), expected_time.error());
+    TimeInstanceState::get().update_last_errors(std::move(expected_time.error()));
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
+    return {};
   }
+  TimeInstanceState::get().update_last_errors(nullptr);
 
   kphp::timelib::time_t time{std::move(*expected_time)};
   timelib_tzinfo* tzi{!timezone.is_null() ? timezone->tzi : nullptr};
@@ -41,8 +44,10 @@ class_instance<C$DateTime> f$DateTime$$add(const class_instance<C$DateTime>& sel
 class_instance<C$DateTime> f$DateTime$$createFromFormat(const string& format, const string& datetime, const class_instance<C$DateTimeZone>& timezone) noexcept {
   auto expected_time{kphp::timelib::construct_time({datetime.c_str(), datetime.size()}, format.c_str())};
   if (!expected_time.has_value()) [[unlikely]] {
+    TimeInstanceState::get().update_last_errors(std::move(expected_time.error()));
     return {};
   }
+  TimeInstanceState::get().update_last_errors(nullptr);
   auto time{std::move(*expected_time)};
   timelib_tzinfo* tzi{!timezone.is_null() ? timezone->tzi : nullptr};
   if (tzi == nullptr) {
@@ -68,12 +73,18 @@ class_instance<C$DateTime> f$DateTime$$createFromImmutable(const class_instance<
   return clone;
 }
 
+Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept {
+  return TimeInstanceState::get().get_last_errors();
+}
+
 class_instance<C$DateTime> f$DateTime$$modify(const class_instance<C$DateTime>& self, const string& modifier) noexcept {
   auto expected_success{kphp::timelib::modify(*self->time, {modifier.c_str(), modifier.size()})};
   if (!expected_success.has_value()) [[unlikely]] {
     kphp::log::warning("DateTime::modify(): failed to parse modifier ({}): {}", modifier.c_str(), expected_success.error());
+    TimeInstanceState::get().update_last_errors(std::move(expected_success.error()));
     return {};
   }
+  TimeInstanceState::get().update_last_errors(nullptr);
   return self;
 }
 
