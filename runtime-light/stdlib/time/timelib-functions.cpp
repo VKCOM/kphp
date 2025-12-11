@@ -68,7 +68,7 @@ time_offset_t construct_time_offset(timelib_time& t) noexcept {
     std::format_to_n(offset->abbr, 9, "GMT{}{:02}{:02}", (offset->offset < 0) ? '-' : '+', hours_offset, std::abs((offset->offset % 3600) / 60));
     return offset;
   }
-  return time_offset_t{timelib_get_time_zone_info(t.sse, t.tz_info)};
+  return time_offset_t{(kphp::memory::libc_alloc_guard{}, timelib_get_time_zone_info(t.sse, t.tz_info))};
 }
 
 std::expected<rel_time_t, error_container_t> construct_interval(std::string_view format) noexcept {
@@ -116,8 +116,8 @@ time_t clone(timelib_time& t) noexcept {
 }
 
 rel_time_t diff(timelib_time& time1, timelib_time& time2, bool absolute) noexcept {
-  timelib_update_ts(std::addressof(time1), nullptr);
-  timelib_update_ts(std::addressof(time2), nullptr);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(time1), nullptr);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(time2), nullptr);
 
   rel_time_t diff{(kphp::memory::libc_alloc_guard{}, timelib_diff(std::addressof(time1), std::addressof(time2)))};
   if (absolute) {
@@ -143,7 +143,7 @@ std::string_view date_short_day_name(timelib_sll y, timelib_sll m, timelib_sll d
 }
 
 int64_t get_timestamp(timelib_time& t) noexcept {
-  timelib_update_ts(std::addressof(t), nullptr);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
 
   int error{}; // it's intentionally declared as 'int' since timelib_date_to_int accepts 'int'
   timelib_long timestamp{timelib_date_to_int(std::addressof(t), std::addressof(error))};
@@ -155,7 +155,7 @@ int64_t get_timestamp(timelib_time& t) noexcept {
 
 void set_timestamp(timelib_time& t, int64_t timestamp) noexcept {
   kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(std::addressof(t), static_cast<timelib_sll>(timestamp));
-  timelib_update_ts(std::addressof(t), nullptr);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
   t.us = 0;
 }
 
@@ -335,7 +335,7 @@ std::expected<void, error_container_t> modify(timelib_time& t, std::string_view 
     t.us = tmp_time->us;
   }
 
-  timelib_update_ts(std::addressof(t), nullptr);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
   timelib_update_from_sse(std::addressof(t));
   t.have_relative = 0;
   std::memset(std::addressof(t.relative), 0, sizeof(t.relative));
@@ -353,7 +353,7 @@ time_t now(timelib_tzinfo* tzi) noexcept {
   const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
   const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
 
-  timelib_unixtime2local(res.get(), static_cast<timelib_sll>(sec));
+  kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(res.get(), static_cast<timelib_sll>(sec));
   res->us = usec;
 
   return res;
@@ -363,7 +363,7 @@ void set_date(timelib_time& t, int64_t y, int64_t m, int64_t d) noexcept {
   t.y = y;
   t.m = m;
   t.d = d;
-  timelib_update_ts(std::addressof(t), nullptr);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
 }
 
 void set_time(timelib_time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept {
@@ -371,7 +371,7 @@ void set_time(timelib_time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noex
   t.i = i;
   t.s = s;
   t.us = ms;
-  timelib_update_ts(std::addressof(t), nullptr);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
 }
 
 std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime, int64_t timestamp) noexcept {
@@ -386,6 +386,8 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view dat
     kphp::log::warning("can't get timezone info: timezone -> {}, datetime -> {}, error -> {}", timezone, datetime, timelib_get_error_message(errc));
     return {};
   }
+
+  kphp::memory::libc_alloc_guard _{};
 
   timelib_time* now{timelib_time_ctor()};
   const vk::final_action now_deleter{[now] noexcept { timelib_time_dtor(now); }};
