@@ -1,4 +1,4 @@
-@ok callback benchmark k2_skip
+@ok callback benchmark
 <?php
 
 var_dump (preg_split ('~|й~u', 'п'));
