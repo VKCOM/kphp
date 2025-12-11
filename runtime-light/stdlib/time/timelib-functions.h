@@ -404,9 +404,9 @@ void fill_holes_with_now(timelib_time& time, timelib_tzinfo* tzi) noexcept {
     options |= TIMELIB_OVERRIDE_TIME;
   }
 
-  timelib_fill_holes(std::addressof(time), now_time.get(), options);
-  timelib_update_ts(std::addressof(time), now_time->tz_info);
-  timelib_update_from_sse(std::addressof(time));
+  kphp::memory::libc_alloc_guard{}, timelib_fill_holes(std::addressof(time), now_time.get(), options);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(time), now_time->tz_info);
+  kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(std::addressof(time));
 
   time.have_relative = 0;
 }
