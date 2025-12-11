@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef KDB_COMMON_PARALLEL_THREAD_ID_H
-#define KDB_COMMON_PARALLEL_THREAD_ID_H
+#pragma once
 
 #include <sys/cdefs.h>
 
@@ -14,5 +13,3 @@ void parallel_unregister_thread();
 int parallel_online_threads_count();
 
 int parallel_thread_id();
-
-#endif // KDB_COMMON_PARALLEL_THREAD_ID_H

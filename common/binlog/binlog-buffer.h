@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __KDB_BINLOG_BUFFER_H__
-#define __KDB_BINLOG_BUFFER_H__
+#pragma once
 
 #include <aio.h>
 #include <functional>
@@ -175,4 +174,3 @@ void bb_buffer_init(bb_buffer_t* B, bb_writer_t* W, bb_reader_t* R, std::functio
 
 void bb_buffer_open_to_replay(bb_buffer_t* buffer, bb_writer_t* writer, bb_reader_t* reader, kfs_replica_t* replica,
                               std::function<int(const struct lev_generic*, int)> replay_func);
-#endif

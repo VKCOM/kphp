@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_KFS_SNAPSHOT_H
-#define ENGINE_KFS_SNAPSHOT_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -22,4 +21,3 @@ kfs_file_handle_t open_recent_snapshot(kfs_replica_handle_t Replica);        // 
 kfs_file_handle_t open_main_snapshot(kfs_file_handle_t snapshot_diff);
 int close_snapshot(kfs_file_handle_t F, bool close_handle);
 void init_engine_snapshot_descr(struct engine_snapshot_descr* _descr, kfs_file_handle_t _snapshot);
-#endif // ENGINE_KFS_SNAPSHOT_H

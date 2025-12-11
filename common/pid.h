@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __KDB_PID_H__
-#define __KDB_PID_H__
+#pragma once
 
 #include <sys/cdefs.h>
 
@@ -30,5 +29,3 @@ enum pid_match { no_pid_match, partial_pid_match, full_pid_match };
 typedef enum pid_match pid_match_t;
 
 pid_match_t matches_pid(const struct process_id* X, const struct process_id* Y);
-
-#endif

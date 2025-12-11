@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __MYSQL_H__
-#define __MYSQL_H__
+#pragma once
 
 #define MYSQL_COM_INIT_DB 2
 #define MYSQL_COM_QUERY 3
@@ -34,5 +33,3 @@ struct mysql_auth_packet_end {
 /* for sqls_data.auth_state */
 
 enum sql_auth { sql_noauth, sql_auth_sent, sql_auth_initdb, sql_auth_ok };
-
-#endif

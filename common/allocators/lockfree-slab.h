@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef KDB_COMMON_ALLOCATORS_LOCKFREE_SLAB_H
-#define KDB_COMMON_ALLOCATORS_LOCKFREE_SLAB_H
+#pragma once
 
 #include <sys/cdefs.h>
 #include <sys/queue.h>
@@ -73,5 +72,3 @@ static inline void* lockfree_slab_cache_alloc0(lockfree_slab_cache_tls_t* cache_
 
 void lockfree_slab_cache_free(lockfree_slab_cache_tls_t* cache_tls, void* object);
 void lockfree_slab_cache_clear(lockfree_slab_cache_tls_t* cache_tls);
-
-#endif // KDB_COMMON_ALLOCATORS_LOCKFREE_SLAB_H

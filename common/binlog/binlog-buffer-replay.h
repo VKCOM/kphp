@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_BINLOG_BUFFER_REPLAY_H
-#define ENGINE_BINLOG_BUFFER_REPLAY_H
+#pragma once
 
 #include <stddef.h>
 
@@ -23,5 +22,3 @@ hash_t bb_buffer_calc_binlog_hash(struct bb_buffer* B, struct lev_rotate_to* nex
 hash_t binlog_relax_hash(hash_t prev_hash, long long pos, unsigned log_crc32);
 
 extern struct bb_reader_functions bbr_replay_functions;
-
-#endif // ENGINE_BINLOG_BUFFER_REPLAY_H

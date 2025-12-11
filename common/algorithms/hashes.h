@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_HASHES_H
-#define ENGINE_HASHES_H
+#pragma once
 
 #include <array>
 #include <cstddef>
@@ -95,5 +94,3 @@ public:
 };
 
 } // namespace std
-
-#endif // ENGINE_HASHES_H

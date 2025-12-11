@@ -34,6 +34,21 @@ jobs:
             exit 1
           fi
 
+      - name: Check "#pragma once" in files
+        run: |
+          EXIT_CODE=0
+          for file in $(find . -name '*.h' -type f \( -path './common/*' -o -path './runtime/*' -o -path './runtime-common/*'  -o -path './runtime-light/*' \)); do
+            if [[ $( grep -q -E '^#pragma\ once' "$file" )$? -ne 0 ]]; then
+              echo "Missing '#pragma once' in file '$file'"
+              EXIT_CODE=1
+            fi
+          done
+          
+          if [[ $EXIT_CODE -ne 0 ]]; then
+            echo "There are errors in the files, please fix them.";
+            exit 1
+          fi
+
       - name: Install clang-format
         run: sudo apt-get install -y clang-format-18
 

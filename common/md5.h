@@ -5,8 +5,7 @@
 /**
  * \file md5.h
  */
-#ifndef XYSSL_MD5_H
-#define XYSSL_MD5_H
+#pragma once
 
 /**
  * \brief          MD5 context structure
@@ -59,5 +58,3 @@ void md5(const unsigned char* input, int ilen, unsigned char output[16]);
  * \return         0 if successful, or 1 if the test failed
  */
 int md5_self_test(int verbose);
-
-#endif /* md5.h */

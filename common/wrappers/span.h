@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_SPAN_H
-#define ENGINE_SPAN_H
+#pragma once
 
 #include <cassert>
 #include <cstddef>
@@ -161,5 +160,3 @@ private:
 };
 
 } // namespace vk
-
-#endif // ENGINE_SPAN_H

@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef KDB_COMMON_PARALLEL_MAXIMUM_H
-#define KDB_COMMON_PARALLEL_MAXIMUM_H
+#pragma once
 
 #include <sys/cdefs.h>
 
@@ -72,5 +71,3 @@ static inline uint64_t parallel_maximum_read_current(const parallel_maximum_t* m
 #define PARALLEL_MAXIMUM_SUB(name, value) parallel_maximum_sub(&parallel_maximum_##name, &parallel_maximum_##name##_tls, value)
 #define PARALLEL_MAXIMUM_READ(name) parallel_maximum_read(&parallel_maximum_##name)
 #define PARALLEL_MAXIMUM_READ_CURRENT(name) parallel_maximum_read_current(&parallel_maximum_##name)
-
-#endif // KDB_COMMON_PARALLEL_MAXIMUM_H
