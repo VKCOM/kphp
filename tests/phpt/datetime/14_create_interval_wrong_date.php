@@ -1,4 +1,4 @@
-@kphp_runtime_should_warn k2_skip
+@kphp_runtime_should_warn
 /DateInterval::createFromDateString\(\): Unknown or bad format \(\) at position 0 \( \): Empty string/
 /DateInterval::createFromDateString\(\): Unknown or bad format \(last what\) at position 0 \(l\): The timezone could not be found in the database/
 <?php

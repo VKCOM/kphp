@@ -28,7 +28,7 @@ class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<
 class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string& datetime) noexcept {
   auto [time, errors]{kphp::timelib::construct_time({datetime.c_str(), datetime.size()})};
   if (time == nullptr) [[unlikely]] {
-    kphp::log::warning("DateInterval::createFromDateString(): failed to parse datetime ({}): {}", datetime.c_str(), errors);
+    kphp::log::warning("DateInterval::createFromDateString(): Unknown or bad format ({}) {}", datetime.c_str(), errors);
     return {};
   }
   class_instance<C$DateInterval> date_interval;
