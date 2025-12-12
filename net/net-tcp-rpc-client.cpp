@@ -73,9 +73,9 @@ int tcp_rpcc_default_execute (struct connection *c, int op, raw_message_t *raw) 
   tvkprintf(net_connections, 3, "rpcc_execute: fd=%d, op=%d, len=%d\n", c->fd, op, raw->total_bytes);
   if (op == TL_RPC_PING && raw->total_bytes == 12) {
     c->last_response_time = precise_now;    
-    int Q[12];
+    static int Q[12];
     assert (rwm_fetch_data (raw, Q, 12) == 12);
-    int P[12];
+    static int P[12];
     P[0] = TL_RPC_PONG;
     P[1] = Q[1];
     P[2] = Q[2];
@@ -90,24 +90,18 @@ int tcp_rpcc_default_execute (struct connection *c, int op, raw_message_t *raw) 
 
 static int tcp_rpcc_process_nonce_packet (struct connection *c, raw_message_t *msg) {
   struct tcp_rpc_data *D = TCP_RPC_DATA(c);
-  struct tcp_rpc_nonce_packet P{};
+  static struct tcp_rpc_nonce_packet P;
   int res;
 
   if (D->packet_num != -2 || D->packet_type != RPC_NONCE) {
     return -2;
   }
-  if (D->packet_len < sizeof (P) || D->packet_len >= 1024) {
+  if (D->packet_len != sizeof (struct tcp_rpc_nonce_packet)) {
     return -3;
   }
-  int excess_data_size = D->packet_len - sizeof(P); // fields from newer protocol version
 
-  assert (rwm_fetch_data (msg, &P, sizeof(P)) == sizeof(P));
-  assert (rwm_fetch_data (msg, 0, excess_data_size) == excess_data_size);
-  tvkprintf(net_connections, 4, "Processing nonce packet, crypto schema: %d, version: %d, excess_data: %d, key select: %d\n", P.crypto_schema, P.protocol_version, excess_data_size, P.key_select);
-
-  if (P.protocol_version > 1) { // server must not reply with version > client
-    return -3;
-  }
+  assert (rwm_fetch_data (msg, &P, D->packet_len) == D->packet_len);
+  tvkprintf(net_connections, 4, "Processing nonce packet, crypto schema: %d, key select: %d\n", P.crypto_schema, P.key_select);
 
   switch (P.crypto_schema) {
   case RPC_CRYPTO_NONE:
@@ -133,7 +127,7 @@ static int tcp_rpcc_process_nonce_packet (struct connection *c, raw_message_t *m
     if (abs (P.crypto_ts - D->nonce_time) > 30) {
       return -6;        //less'om
     }
-    res = TCP_RPCC_FUNC(c)->rpc_start_crypto (c, &P);
+    res = TCP_RPCC_FUNC(c)->rpc_start_crypto (c, P.crypto_nonce, P.key_select);
     if (res < 0) {
       return -6;
     }
@@ -148,13 +142,14 @@ static int tcp_rpcc_process_nonce_packet (struct connection *c, raw_message_t *m
 static int tcp_rpcc_send_handshake_packet (struct connection *c) {
   tvkprintf(net_connections, 4, "tcp_rpcc_send_handshake_packet\n");
   struct tcp_rpc_data *D = TCP_RPC_DATA (c);
-  struct tcp_rpc_handshake_packet P{};
+  static struct tcp_rpc_handshake_packet P;
   if (!PID.ip) {
     init_client_PID(c->local_endpoint.ss_family == AF_INET ? inet_sockaddr_address(&c->local_endpoint): 0);
     if (!PID.ip) {
       PID.ip = get_my_ipv4 ();
     }
   }
+  memset (&P, 0, sizeof (P));
   P.type = RPC_HANDSHAKE;
   P.flags = default_rpc_flags & RPC_CRYPTO_USE_CRC32C;
   if (!D->remote_pid.port) {
@@ -172,10 +167,11 @@ static int tcp_rpcc_send_handshake_packet (struct connection *c) {
 }
 
 static int tcp_rpcc_send_handshake_error_packet (struct connection *c, int error_code) {
-  struct tcp_rpc_handshake_error_packet P{};
+  static struct tcp_rpc_handshake_error_packet P;
   if (!PID.pid) {
     init_client_PID(inet_sockaddr_address(&c->local_endpoint));
   }
+  memset (&P, 0, sizeof (P));
   P.type = RPC_HANDSHAKE_ERROR;
   P.error_code = error_code;
   memcpy (&P.sender_pid, &PID, sizeof (PID));
@@ -189,11 +185,11 @@ static int tcp_rpcc_process_handshake_packet (struct connection *c, raw_message_
   tvkprintf(net_connections, 4, "tcp_rpcc_process_handshake_packet\n");
 
   struct tcp_rpc_data *D = TCP_RPC_DATA(c);
-  struct tcp_rpc_handshake_packet P{};
+  static struct tcp_rpc_handshake_packet P;
   if (D->packet_num != -1 || D->packet_type != RPC_HANDSHAKE) {
     return -2;
   }
-  if (D->packet_len != sizeof (P)) {
+  if (D->packet_len != sizeof (struct tcp_rpc_handshake_packet)) {
     tcp_rpcc_send_handshake_error_packet (c, -3);
     return -3;
   }
@@ -231,23 +227,17 @@ int tcp_rpcc_parse_execute (struct connection *c) {
   int len;
 
   while (true) {
-    len = c->in.total_bytes;
+    len = c->in.total_bytes; 
     if (len <= 0) {
       break;
     }
     if (!D->packet_len) {
-      if (len < D->packet_v1_padding + 4) {
+      if (len < 4) {
         c->status = conn_reading_answer;
-        return D->packet_v1_padding + 4 - len;
-      }
-      if (D->packet_v1_padding) {
-        assert(D->packet_v1_padding < 4);
-        assert(rwm_fetch_data(&c->in, 0, D->packet_v1_padding) == D->packet_v1_padding);
-        D->packet_v1_padding = 0;
+        return 4 - len;
       }
       assert (rwm_fetch_lookup (&c->in, &D->packet_len, 4) == 4);
-      // We skip checks for len&3 == 0 for protocol version 0, because there is little value in it.
-      if (D->packet_len > TCP_RPCC_FUNC(c)->max_packet_len && TCP_RPCC_FUNC(c)->max_packet_len > 0) {
+      if (D->packet_len <= 0 || (D->packet_len & 3) || (D->packet_len > TCP_RPCC_FUNC(c)->max_packet_len && TCP_RPCC_FUNC(c)->max_packet_len > 0)) {
         tvkprintf(net_connections, 1, "error while parsing packet: bad packet length %d\n", D->packet_len);
         c->status = conn_error;
         c->error = -1;
@@ -269,6 +259,7 @@ int tcp_rpcc_parse_execute (struct connection *c) {
       c->status = conn_reading_answer;
       return D->packet_len - len;
     }
+    
 
     raw_message_t msg;
     if (c->in.total_bytes == D->packet_len) {
@@ -348,9 +339,6 @@ int tcp_rpcc_parse_execute (struct connection *c) {
     }
     
     D->in_packet_num++;
-    if (c->crypto) {
-      D->packet_v1_padding = (-D->packet_len) & 3;
-    }
     D->packet_len = 0;
     if (c->status == conn_running) {
       c->status = conn_wait_answer;
@@ -433,10 +421,10 @@ int tcp_rpcc_init_fake_crypto (struct connection *c) {
     return -1;
   }
 
-  struct tcp_rpc_nonce_packet buf{};
+  static struct tcp_rpc_nonce_packet buf;
+  memset (&buf, 0, sizeof (buf));
   buf.type = RPC_NONCE;
   buf.crypto_schema = RPC_CRYPTO_NONE;
-  buf.protocol_version = 1; // ask for latest version we support
 
   tcp_rpc_conn_send_data (c, sizeof (buf), &buf);
 
@@ -489,13 +477,13 @@ int tcp_rpcc_init_crypto (struct connection *c) {
 
   aes_generate_nonce (TCP_RPC_DATA(c)->nonce);
 
-  struct tcp_rpc_nonce_packet buf{};
+  static struct tcp_rpc_nonce_packet buf;
+  memset (&buf, 0, sizeof (buf));
   memcpy (buf.crypto_nonce, TCP_RPC_DATA(c)->nonce, 16);
   buf.crypto_ts = TCP_RPC_DATA(c)->nonce_time;
   buf.type = RPC_NONCE;
   buf.key_select = get_crypto_key_id (default_aes_key);
   buf.crypto_schema = (TCP_RPC_DATA(c)->crypto_flags & RPC_CRYPTO_ALLOW_UNENCRYPTED) ? RPC_CRYPTO_NONE_OR_AES : RPC_CRYPTO_AES;
-  buf.protocol_version = 1; // ask for latest version we support
 
   tcp_rpc_conn_send_data (c, sizeof (buf), &buf);
 
@@ -506,9 +494,9 @@ int tcp_rpcc_init_crypto (struct connection *c) {
   return 1;
 }
 
-int tcp_rpcc_start_crypto (struct connection *c, struct tcp_rpc_nonce_packet *P) {
+int tcp_rpcc_start_crypto (struct connection *c, char *nonce, int key_select) {
   struct tcp_rpc_data *D = TCP_RPC_DATA(c);
-  tvkprintf(net_connections, 4, "rpcc_start_crypto: key_select = %d\n", P->key_select);
+  tvkprintf(net_connections, 4, "rpcc_start_crypto: key_select = %d\n", key_select);
 
   if (c->crypto) {
     return -1;
@@ -518,13 +506,13 @@ int tcp_rpcc_start_crypto (struct connection *c, struct tcp_rpc_nonce_packet *P)
     return -1;
   }
 
-  if (!P->key_select || P->key_select != get_crypto_key_id (default_aes_key)) {
+  if (!key_select || key_select != get_crypto_key_id (default_aes_key)) {
     return -1;
   }
 
   struct aes_session_key aes_keys;
 
-  if (aes_create_connection_keys (P->protocol_version, default_aes_key, &aes_keys, 1, P->crypto_nonce, D->nonce, P->crypto_ts, D->nonce_time, c) < 0) {
+  if (aes_create_connection_keys (default_aes_key, &aes_keys, 1, nonce, D->nonce, D->nonce_time, c) < 0) {
     return -1;
   }
 
@@ -541,7 +529,7 @@ void tcp_rpcc_flush_crypto (struct connection *c) {
     tvkprintf(net_connections, 4, "rpcc_flush_packet: padding with %d bytes\n", pad_bytes);
     if (pad_bytes > 0) {
       assert (!(pad_bytes & 3));
-      int pad_str[3] = {4, 4, 4};
+      static int pad_str[3] = {4, 4, 4};
       assert (pad_bytes <= 12);
       assert (rwm_push_data (&c->out, pad_str, pad_bytes) == pad_bytes);
     }
@@ -564,7 +552,7 @@ int tcp_rpcc_flush (struct connection *c) {
     tvkprintf(net_connections, 4, "rpcs_flush: padding with %d bytes\n", pad_bytes);
     if (pad_bytes > 0) {
       assert (!(pad_bytes & 3));
-      int pad_str[3] = {4, 4, 4};
+      static int pad_str[3] = {4, 4, 4};
       assert (pad_bytes <= 12);
       assert (rwm_push_data (&c->out, pad_str, pad_bytes) == pad_bytes);
     }

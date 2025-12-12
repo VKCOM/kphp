@@ -1403,7 +1403,7 @@ static int rpc_write(struct rpc_connection *c, long long qid, double timeout, bo
 /* }}} */
 
 static int rpc_nonce_execute(struct rpc_server *server, char *answer, int answer_len) { /* {{{ */
-  if (answer_len >= 1024 || answer_len < sizeof(struct rpc_nonce) || server->inbound_packet_num != -1) {
+  if (answer_len != sizeof(struct rpc_nonce) || server->inbound_packet_num != -1) {
     rpc_server_seterror(server, "Bad nonce packet", 0);
     return -1;
   }
@@ -1464,8 +1464,7 @@ static int rpc_handshake_send(struct rpc_server *server, double timeout) { /* {{
 static int rpc_nonce_send(struct rpc_server *server, double timeout) { /* {{{ */
   struct rpc_nonce S = {
     .key_select = 0,
-    .crypto_schema = 0,
-    .protocol_version = 1 // ask for latest version we support
+    .crypto_schema = 0
   };
 
   //server->outbuf = buffer_create (sizeof (S));
@@ -1535,7 +1534,7 @@ static int rpc_read(struct rpc_server *server, int force_block_read, double time
     assert (rpc_read_in(server, (char *)tmp, 12, timeout) == 12);
     int len = tmp[0];
 
-    if (len < 20 || len > RPC_MAX_QUERY_LEN) {
+    if (len < 20 || (len & 3) || len > RPC_MAX_QUERY_LEN) {
       rpc_server_seterror(server, "Invalid length of answer", 0);
       END_TIMER (rpc_read);
       return -1;
