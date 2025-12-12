@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
+#include <unistd.h>
 
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/allocator/allocator.h"
@@ -93,7 +94,9 @@ void RuntimeAllocator::free_script_memory(void* mem, size_t size) noexcept {
 }
 
 void* RuntimeAllocator::alloc_global_memory(size_t size) noexcept {
-  void* mem{k2::alloc(size)};
+  const auto page_size{k2::sysconf(_SC_PAGESIZE)};
+  kphp::log::assertion(page_size > 0);
+  void* mem{k2::alloc_align(size, page_size)};
   kphp::log::assertion(mem != nullptr);
   return mem;
 }

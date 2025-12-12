@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <cerrno>
 #include <cstddef>
 #include <cstdint>
@@ -31,7 +32,7 @@ namespace k2 {
 
 namespace k2_impl_ {
 
-inline constexpr size_t DEFAULT_MEMORY_ALIGN = 16;
+inline constexpr size_t DEFAULT_MEMORY_ALIGN = 4096;
 
 } // namespace k2_impl_
 
@@ -93,7 +94,7 @@ inline void* alloc_align(size_t size, size_t align) noexcept {
 }
 
 inline void* alloc(size_t size) noexcept {
-  return k2::alloc_align(size, k2_impl_::DEFAULT_MEMORY_ALIGN);
+  return k2::alloc_align(std::max(size, k2_impl_::DEFAULT_MEMORY_ALIGN), k2_impl_::DEFAULT_MEMORY_ALIGN);
 }
 
 inline void* realloc(void* ptr, size_t new_size) noexcept {
