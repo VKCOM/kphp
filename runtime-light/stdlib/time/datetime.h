@@ -45,6 +45,8 @@ class_instance<C$DateTime> f$DateTime$$modify(const class_instance<C$DateTime>& 
 
 class_instance<C$DateTime> f$DateTime$$setDate(const class_instance<C$DateTime>& self, int64_t year, int64_t month, int64_t day) noexcept;
 
+class_instance<C$DateTime> f$DateTime$$setISODate(const class_instance<C$DateTime>& self, int64_t year, int64_t week, int64_t dayOfWeek = 1) noexcept;
+
 class_instance<C$DateTime> f$DateTime$$setTime(const class_instance<C$DateTime>& self, int64_t hour, int64_t minute, int64_t second = 0,
                                                int64_t microsecond = 0) noexcept;
 

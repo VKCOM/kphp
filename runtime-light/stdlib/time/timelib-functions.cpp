@@ -363,6 +363,16 @@ void set_date(timelib_time& t, int64_t y, int64_t m, int64_t d) noexcept {
   kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
 }
 
+void set_isodate(timelib_time& t, int64_t y, int64_t w, int64_t d) noexcept {
+  t.y = y;
+  t.m = 1;
+  t.d = 1;
+  std::memset(std::addressof(t.relative), 0, sizeof(t.relative));
+  t.relative.d = timelib_daynr_from_weeknr(y, w, d);
+  t.have_relative = 1;
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
+}
+
 void set_time(timelib_time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept {
   t.h = h;
   t.i = i;
