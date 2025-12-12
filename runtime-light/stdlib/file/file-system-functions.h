@@ -16,7 +16,9 @@
 #include <unistd.h>
 #include <utility>
 
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
@@ -59,7 +61,7 @@ inline string f$basename(const string& path, const string& suffix = {}) noexcept
 
 inline Optional<int64_t> f$filesize(const string& filename) noexcept {
   struct stat stat {};
-  if (auto errc{k2::stat({filename.c_str(), filename.size()}, std::addressof(stat))}; errc != k2::errno_ok) [[unlikely]] {
+  if (auto errc_expected{k2::stat({filename.c_str(), filename.size()}, std::addressof(stat))}; !errc_expected.has_value()) [[unlikely]] {
     return false;
   }
   return static_cast<int64_t>(stat.st_size);
@@ -196,4 +198,56 @@ inline Optional<string> f$file_get_contents(const string& stream) noexcept {
     return expected ? Optional<string>{*std::move(expected)} : Optional<string>{false};
   }
   return false;
+}
+
+inline Optional<array<string>> f$file(const string& name) noexcept {
+  struct stat stat_buf {};
+
+  auto open_result{kphp::fs::file::open(name.c_str(), "r")};
+  if (!open_result.has_value()) {
+    return false;
+  }
+  if (!k2::stat(name.c_str(), std::addressof(stat_buf)).has_value()) {
+    return false;
+  }
+  if (!S_ISREG(stat_buf.st_mode)) {
+    kphp::log::warning("regular file expected as first argument in function file, \"{}\" is given", name.c_str());
+    return false;
+  }
+
+  const size_t size{static_cast<size_t>(stat_buf.st_size)};
+  if (size > string::max_size()) {
+    kphp::log::warning("file \"{}\" is too large", name.c_str());
+    return false;
+  }
+
+  auto& file{open_result.value()};
+
+  kphp::stl::vector<char, kphp::memory::script_allocator> read_result(size);
+  char* read_result_data{read_result.data()};
+  std::span<std::byte> temp_span{reinterpret_cast<std::byte*>(read_result_data), read_result.size()};
+  if (auto rd_status{file.read(temp_span)}; !rd_status.has_value() || rd_status.value() < size) {
+    return false;
+  }
+
+  file.close();
+
+  array<string> result;
+  int32_t prev{-1};
+  for (size_t i{0}; i < size; i++) {
+    if (read_result_data[i] == '\n' || i + 1 == size) {
+      result.push_back(string{read_result_data + prev + 1, static_cast<string::size_type>(i - prev)});
+      prev = i;
+    }
+  }
+
+  return result;
+}
+
+inline bool f$is_file(const string& name) noexcept {
+  struct stat stat_buf {};
+  if (!k2::lstat(name.c_str(), std::addressof(stat_buf)).has_value()) {
+    return false;
+  }
+  return S_ISREG(stat_buf.st_mode);
 }
