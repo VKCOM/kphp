@@ -20,14 +20,8 @@
 
 namespace kphp::time::impl {
 
-constexpr inline std::array<std::string_view, 12> MON_FULL_NAMES = {"January", "February", "March",     "April",   "May",      "June",
-                                                                    "July",    "August",   "September", "October", "November", "December"};
-constexpr inline std::array<std::string_view, 12> MON_SHORT_NAMES = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-constexpr inline std::array<std::string_view, 7> DAY_FULL_NAMES = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-constexpr inline std::array<std::string_view, 7> DAY_SHORT_NAMES = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-
-constexpr inline int64_t CHECKDATE_YEAR_MIN = 1;
-constexpr inline int64_t CHECKDATE_YEAR_MAX = 32767;
+constexpr inline int64_t CHECKDATE_YEAR_MIN{1};
+constexpr inline int64_t CHECKDATE_YEAR_MAX{32767};
 
 int64_t fix_year(int64_t year) noexcept;
 
@@ -55,7 +49,7 @@ inline string f$_microtime_string() noexcept {
   const auto seconds{duration_cast<chrono::seconds>(time_since_epoch).count()};
   const auto nanoseconds{duration_cast<chrono::nanoseconds>(time_since_epoch).count() % 1'000'000'000};
 
-  static constexpr size_t default_buffer_size = 60;
+  static constexpr size_t default_buffer_size{60};
   char buf[default_buffer_size];
   const auto len{snprintf(buf, default_buffer_size, "0.%09lld %lld", nanoseconds, seconds)};
   return {buf, static_cast<string::size_type>(len)};
@@ -108,8 +102,8 @@ inline array<mixed> f$getdate(int64_t timestamp = std::numeric_limits<int64_t>::
 
   array<mixed> result{array_size{11, false}};
 
-  auto weekday{kphp::time::impl::DAY_FULL_NAMES[t.tm_wday]};
-  auto month{kphp::time::impl::MON_FULL_NAMES[t.tm_mon]};
+  auto weekday{kphp::timelib::DAY_FULL_NAMES[t.tm_wday]};
+  auto month{kphp::timelib::MON_FULL_NAMES[t.tm_mon]};
 
   result.set_value(string{"seconds", 7}, t.tm_sec);
   result.set_value(string{"minutes", 7}, t.tm_min);
