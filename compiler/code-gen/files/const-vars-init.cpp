@@ -195,7 +195,7 @@ void ConstVarsInit::compile(CodeGenerator& W) const {
       W << "extern " << type_out(tinf::get_type(var)) << " " << var->name << ";" << NL;
     }
 
-    FunctionSignatureGenerator(W) << "void const_vars_check_ref_cnt" << std::to_string(batch.batch_idx) << "()" << BEGIN;
+    FunctionSignatureGenerator(W) << "extern \"C\" void const_vars_check_ref_cnt" << std::to_string(batch.batch_idx) << "()" << BEGIN;
     for (VarPtr var : batch.constants) {
       if (!(vk::any_of_equal(var->tinf_node.get_type()->ptype(), tp_string, tp_array, tp_Class, tp_mixed))) {
         continue;
@@ -211,7 +211,7 @@ void ConstVarsInit::compile(CodeGenerator& W) const {
   }
 
   W << OpenFile("const_vars_check_ref_cnt.cpp", "", false);
-  FunctionSignatureGenerator(W) << " void const_vars_check_ref_cnt()" << BEGIN;
+  FunctionSignatureGenerator(W) << R"( __attribute__((visibility("default"))) extern "C" void const_vars_check_ref_cnt())" << BEGIN;
   for (const auto& batch : all_constants_in_mem.get_batches()) {
     FunctionSignatureGenerator(W) << "void const_vars_check_ref_cnt" << std::to_string(batch.batch_idx) << "()" << SemicolonAndNL();
     W << "const_vars_check_ref_cnt" << std::to_string(batch.batch_idx) << "()" << SemicolonAndNL();

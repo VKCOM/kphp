@@ -14,7 +14,7 @@
 
 #define VISIBILITY_DEFAULT __attribute__((visibility("default")))
 
-void const_vars_check_ref_cnt();
+extern "C" void const_vars_check_ref_cnt();
 
 VISIBILITY_DEFAULT ImageState* k2_create_image() {
   kphp::log::debug("start image state creation");
