@@ -69,7 +69,7 @@ public:
     // initialize task_self_deleting's frame as top async stack frame
     auto& async_stack_frame{m_promise.get_async_stack_frame()};
     async_stack_frame.return_address = STACK_RETURN_ADDRESS;
-    async_stack_frame.async_stack_root = std::addressof(CoroutineInstanceState::get().coroutine_stack_root);
+    async_stack_frame.async_stack_root = CoroutineInstanceState::get().current_async_stack_root;
   }
   ~task_self_deleting() noexcept = default;
 

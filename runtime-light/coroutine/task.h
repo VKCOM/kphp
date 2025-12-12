@@ -133,6 +133,8 @@ public:
   }
 
   auto await_resume() noexcept -> void {
+    auto& frame = m_coro.promise().get_async_stack_frame();
+    kphp::coro::preparation_for_resume(frame.async_stack_root, STACK_FRAME_ADDRESS);
     m_suspended = false;
   }
 };
