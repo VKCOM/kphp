@@ -824,6 +824,13 @@ PHP_FUNCTION (store_int) {
   END_TIMER(total);
 }
 
+PHP_FUNCTION (store_byte) {
+  ADD_CNT(total);
+  START_TIMER(total);
+  php_rpc_store_byte(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  END_TIMER(total);
+}
+
 PHP_FUNCTION (store_long) {
   ADD_CNT(total);
   START_TIMER(total);
@@ -835,6 +842,13 @@ PHP_FUNCTION (store_string) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_store_string(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  END_TIMER(total);
+}
+
+PHP_FUNCTION (store_string2) {
+  ADD_CNT(total);
+  START_TIMER(total);
+  php_rpc_store_string2(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
@@ -870,6 +884,13 @@ PHP_FUNCTION (fetch_int) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_fetch_int(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  END_TIMER(total);
+}
+
+PHP_FUNCTION (fetch_byte) {
+  ADD_CNT(total);
+  START_TIMER(total);
+  php_rpc_fetch_byte(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 
@@ -920,6 +941,13 @@ PHP_FUNCTION (fetch_string) {
   ADD_CNT(total);
   START_TIMER(total);
   php_rpc_fetch_string(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  END_TIMER(total);
+}
+
+PHP_FUNCTION (fetch_string2) {
+  ADD_CNT(total);
+  START_TIMER(total);
+  php_rpc_fetch_string2(INTERNAL_FUNCTION_PARAM_PASSTHRU);
   END_TIMER(total);
 }
 

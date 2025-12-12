@@ -7,6 +7,7 @@
 #include <chrono>
 #include <cstdarg>
 #include <cstring>
+#include <limits>
 
 #include "common/rpc-error-codes.h"
 #include "common/rpc-headers.h"
@@ -54,16 +55,28 @@ static const string STR_ERROR_CODE("__error_code", 12);
 static const char* last_rpc_error;
 static int32_t last_rpc_error_code;
 
-static const int32_t* rpc_data_begin;
-static const int32_t* rpc_data;
-static int32_t rpc_data_len;
+static const char* rpc_data_begin;
+static const char* rpc_data;
+static int rpc_data_len;
 static string rpc_data_copy;
 static string rpc_filename;
 
-static const int* rpc_data_begin_backup;
-static const int* rpc_data_backup;
+static const char* rpc_data_begin_backup;
+static const char* rpc_data_backup;
 static int rpc_data_len_backup;
 static string rpc_data_copy_backup;
+static bool rpc_data_backup_set = false;
+
+// we use mirror testing, will remove second copy later
+#ifdef TL1_MIRROR_TESTING
+static const int32_t* rpc_data_begin_old;
+static const int32_t* rpc_data_old;
+static int rpc_data_len_old;
+
+static const int* rpc_data_begin_backup_old;
+static const int* rpc_data_backup_old;
+static int rpc_data_len_backup_old;
+#endif
 
 tl_fetch_wrapper_ptr tl_fetch_wrapper;
 array<tl_storer_ptr> tl_storers_ht;
@@ -95,23 +108,36 @@ static inline T store_parse_number(const mixed& v) {
 }
 
 static void rpc_parse_save_backup() {
+  rpc_data_backup_set = true;
+
   dl::enter_critical_section(); // OK
   rpc_data_copy_backup = rpc_data_copy;
   dl::leave_critical_section();
 
+#ifdef TL1_MIRROR_TESTING
+  rpc_data_begin_backup_old = rpc_data_begin_old;
+  rpc_data_backup_old = rpc_data_old;
+  rpc_data_len_backup_old = rpc_data_len_old;
+#endif
   rpc_data_begin_backup = rpc_data_begin;
   rpc_data_backup = rpc_data;
   rpc_data_len_backup = rpc_data_len;
 }
 
 void rpc_parse_restore_previous() {
-  php_assert((rpc_data_copy_backup.size() & 3) == 0);
+  php_assert(rpc_data_backup_set);
+  rpc_data_backup_set = false;
 
   dl::enter_critical_section(); // OK
-  rpc_data_copy = rpc_data_copy_backup;
-  rpc_data_copy_backup = tl_str_underscore; // for assert
+  rpc_data_copy = std::move(rpc_data_copy_backup);
+  rpc_data_copy_backup = string{};
   dl::leave_critical_section();
 
+#ifdef TL1_MIRROR_TESTING
+  rpc_data_begin_old = rpc_data_begin_backup_old;
+  rpc_data_old = rpc_data_backup_old;
+  rpc_data_len_old = rpc_data_len_backup_old;
+#endif
   rpc_data_begin = rpc_data_begin_backup;
   rpc_data = rpc_data_backup;
   rpc_data_len = rpc_data_len_backup;
@@ -130,12 +156,26 @@ void last_rpc_error_reset() {
   last_rpc_error_code = TL_ERROR_UNKNOWN;
 }
 
-void rpc_parse(const int32_t* new_rpc_data, int32_t new_rpc_data_len) {
+#ifdef TL1_MIRROR_TESTING
+void check_mirror() {
+  php_assert(rpc_data_len_old * 4 == rpc_data_len);
+  php_assert((rpc_data_old - rpc_data_begin_old) * 4 == rpc_data - rpc_data_begin);
+  // uncomment this heavy check if some unpredictable behavior happens again
+  // remove this function once we are sure new code works
+  // php_assert(memcmp(rpc_data_old, rpc_data, rpc_data_len) == 0);
+}
+#endif
+
+void rpc_parse(const char* new_rpc_data, int new_rpc_data_len) {
   rpc_parse_save_backup();
 
-  rpc_data_begin = new_rpc_data;
-  rpc_data = new_rpc_data;
+  rpc_data_begin = rpc_data = new_rpc_data;
   rpc_data_len = new_rpc_data_len;
+#ifdef TL1_MIRROR_TESTING
+  rpc_data_begin_old = rpc_data_old = reinterpret_cast<const int*>(new_rpc_data);
+  rpc_data_len_old = static_cast<int>(new_rpc_data_len / sizeof(int));
+  check_mirror();
+#endif
 }
 
 bool f$rpc_parse(const string& new_rpc_data) noexcept {
@@ -152,8 +192,15 @@ bool f$rpc_parse(const string& new_rpc_data) noexcept {
   rpc_data_copy = new_rpc_data;
   dl::leave_critical_section();
 
-  rpc_data_begin = rpc_data = reinterpret_cast<const int*>(rpc_data_copy.c_str());
-  rpc_data_len = static_cast<int>(rpc_data_copy.size() / sizeof(int));
+  rpc_data_begin = rpc_data = rpc_data_copy.c_str();
+  rpc_data_len = static_cast<int>(rpc_data_copy.size());
+
+#ifdef TL1_MIRROR_TESTING
+  rpc_data_begin_old = rpc_data_old = reinterpret_cast<const int*>(rpc_data_copy.c_str());
+  rpc_data_len_old = static_cast<int>(rpc_data_copy.size() / sizeof(int));
+
+  check_mirror();
+#endif
   return true;
 }
 
@@ -175,41 +222,87 @@ bool f$rpc_parse(const Optional<string>& new_rpc_data) noexcept {
   return call_fun_on_optional_value(rpc_parse_lambda, new_rpc_data);
 }
 
-int32_t rpc_get_pos() {
-  return static_cast<int32_t>(rpc_data - rpc_data_begin);
+int rpc_get_pos() {
+  auto pos = static_cast<int>(rpc_data - rpc_data_begin);
+#ifdef TL1_MIRROR_TESTING
+  auto pos2 = static_cast<int>(rpc_data_old - rpc_data_begin_old) * 4;
+  php_assert(pos == pos2);
+#endif
+  return pos;
 }
 
-bool rpc_set_pos(int32_t pos) {
+bool rpc_set_pos(int pos) {
   if (pos < 0 || rpc_data_begin + pos > rpc_data) {
     return false;
   }
+#ifdef TL1_MIRROR_TESTING
+  if (rpc_data_begin_old + pos / 4 > rpc_data_old) {
+    return false;
+  }
+#endif
 
-  rpc_data_len += static_cast<int32_t>(rpc_data - rpc_data_begin - pos);
+  rpc_data_len += static_cast<int>(rpc_data - rpc_data_begin - pos);
   rpc_data = rpc_data_begin + pos;
+#ifdef TL1_MIRROR_TESTING
+  rpc_data_len_old += static_cast<int>(rpc_data_old - rpc_data_begin_old - pos / 4);
+  rpc_data_old = rpc_data_begin_old + pos / 4;
+  check_mirror();
+#endif
   return true;
 }
 
-static inline void check_rpc_data_len(int64_t len) {
+static inline void check_rpc_data_len(int len) {
+#ifdef TL1_MIRROR_TESTING
+  php_assert(rpc_data_len_old * 4 == rpc_data_len);
+#endif
   if (rpc_data_len < len) {
     THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Not enough data to fetch", 24), -1));
     return;
   }
-  rpc_data_len -= static_cast<int32_t>(len);
+#ifdef TL1_MIRROR_TESTING
+  rpc_data_len_old -= len / 4;
+#endif
+  rpc_data_len -= len;
 }
 
 int32_t rpc_lookup_int() {
-  TRY_CALL_VOID(int32_t, (check_rpc_data_len(1)));
-  rpc_data_len++;
-  return *rpc_data;
+  TRY_CALL_VOID(int32_t, (check_rpc_data_len(4)));
+
+  int32_t result = *reinterpret_cast<const int32_t*>(rpc_data);
+  rpc_data_len += 4; // because check_rpc_data_len reduced it by 4
+
+#ifdef TL1_MIRROR_TESTING
+  rpc_data_len_old++;
+  auto result_old = *rpc_data_old;
+  php_assert(result == result_old);
+  check_mirror();
+#endif
+  return result;
 }
 
 int32_t rpc_fetch_int() {
-  TRY_CALL_VOID(int32_t, (check_rpc_data_len(1)));
-  return *rpc_data++;
+  TRY_CALL_VOID(int32_t, (check_rpc_data_len(4)));
+
+  int32_t result = *reinterpret_cast<const int32_t*>(rpc_data);
+  rpc_data += 4;
+
+#ifdef TL1_MIRROR_TESTING
+  auto result_old = *rpc_data_old++;
+  php_assert(result == result_old);
+  check_mirror();
+#endif
+  return result;
 }
 
 int64_t f$fetch_int() {
   return rpc_fetch_int();
+}
+
+int64_t f$fetch_byte() {
+  TRY_CALL_VOID(int64_t, (check_rpc_data_len(1)));
+  unsigned char result = *reinterpret_cast<const unsigned char*>(rpc_data);
+  rpc_data += 1;
+  return static_cast<int64_t>(result);
 }
 
 int64_t f$fetch_lookup_int() {
@@ -217,54 +310,89 @@ int64_t f$fetch_lookup_int() {
 }
 
 string f$fetch_lookup_data(int64_t x4_bytes_length) {
-  TRY_CALL_VOID(string, (check_rpc_data_len(x4_bytes_length)));
-  rpc_data_len += static_cast<int32_t>(x4_bytes_length);
-  return {reinterpret_cast<const char*>(rpc_data), static_cast<string::size_type>(x4_bytes_length * 4)};
+  TRY_CALL_VOID(string, (check_rpc_data_len(x4_bytes_length * 4)));
+  rpc_data_len += static_cast<int>(x4_bytes_length * 4);
+  string result{rpc_data, static_cast<string::size_type>(x4_bytes_length * 4)};
+#ifdef TL1_MIRROR_TESTING
+  rpc_data_len_old += static_cast<int32_t>(x4_bytes_length);
+  string result2{reinterpret_cast<const char*>(rpc_data_old), static_cast<string::size_type>(x4_bytes_length * 4)};
+  php_assert(result == result2);
+  check_mirror();
+#endif
+  return result;
 }
 
 int64_t f$fetch_long() {
-  TRY_CALL_VOID(int64_t, (check_rpc_data_len(2)));
+  TRY_CALL_VOID(int64_t, (check_rpc_data_len(8)));
   long long result = *reinterpret_cast<const long long*>(rpc_data);
-  rpc_data += 2;
-
+  rpc_data += 8;
+#ifdef TL1_MIRROR_TESTING
+  long long result_old = *reinterpret_cast<const long long*>(rpc_data_old);
+  rpc_data_old += 2;
+  php_assert(result == result_old);
+  check_mirror();
+#endif
   return result;
 }
 
 double f$fetch_double() {
-  TRY_CALL_VOID(double, (check_rpc_data_len(2)));
+  TRY_CALL_VOID(double, (check_rpc_data_len(8)));
   double result = *reinterpret_cast<const double*>(rpc_data);
-  rpc_data += 2;
-
+  rpc_data += 8;
+#ifdef TL1_MIRROR_TESTING
+  double result_old = *reinterpret_cast<const double*>(rpc_data_old);
+  rpc_data_old += 2;
+  php_assert(result == result_old);
+  check_mirror();
+#endif
   return result;
 }
 
 double f$fetch_float() {
-  TRY_CALL_VOID(float, (check_rpc_data_len(1)));
+  TRY_CALL_VOID(float, (check_rpc_data_len(4)));
   float result = *reinterpret_cast<const float*>(rpc_data);
-  rpc_data += 1;
-
+  rpc_data += 4;
+#ifdef TL1_MIRROR_TESTING
+  float result_old = *reinterpret_cast<const float*>(rpc_data_old);
+  rpc_data_old += 1;
+  php_assert(result == result_old);
+  check_mirror();
+#endif
   return result;
 }
 
 void f$fetch_raw_vector_double(array<double>& out, int64_t n_elems) {
-  int64_t rpc_data_buf_offset = static_cast<int64_t>(sizeof(double) * n_elems / 4);
+  int rpc_data_buf_offset = static_cast<int>(sizeof(double) * n_elems);
   TRY_CALL_VOID(void, (check_rpc_data_len(rpc_data_buf_offset)));
   out.memcpy_vector(n_elems, rpc_data);
   rpc_data += rpc_data_buf_offset;
+#ifdef TL1_MIRROR_TESTING
+  rpc_data_old += rpc_data_buf_offset / 4;
+  check_mirror();
+#endif
 }
 
 static inline const char* f$fetch_string_raw(int* string_len) {
-  TRY_CALL_VOID_(check_rpc_data_len(1), return nullptr);
-  const char* str = reinterpret_cast<const char*>(rpc_data);
+  TRY_CALL_VOID_(check_rpc_data_len(4), return nullptr);
+  const char* str = rpc_data;
+#ifdef TL1_MIRROR_TESTING
+  php_assert(*str == *reinterpret_cast<const char*>(rpc_data_old));
+#endif
   int result_len = (unsigned char)*str++;
   if (result_len < 254) {
-    TRY_CALL_VOID_(check_rpc_data_len(result_len >> 2), return nullptr);
-    rpc_data += (result_len >> 2) + 1;
+    TRY_CALL_VOID_(check_rpc_data_len((result_len >> 2) << 2), return nullptr);
+#ifdef TL1_MIRROR_TESTING
+    rpc_data_old += (result_len >> 2) + 1;
+#endif
+    rpc_data += ((result_len >> 2) + 1) << 2;
   } else if (result_len == 254) {
     result_len = (unsigned char)str[0] + ((unsigned char)str[1] << 8) + ((unsigned char)str[2] << 16);
     str += 3;
-    TRY_CALL_VOID_(check_rpc_data_len((result_len + 3) >> 2), return nullptr);
-    rpc_data += ((result_len + 7) >> 2);
+    TRY_CALL_VOID_(check_rpc_data_len(((result_len + 3) >> 2) << 2), return nullptr);
+#ifdef TL1_MIRROR_TESTING
+    rpc_data_old += ((result_len + 7) >> 2);
+#endif
+    rpc_data += ((result_len + 7) >> 2) << 2;
   } else {
     THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("Can't fetch string, 255 found", 29), -3));
     return nullptr;
@@ -278,6 +406,35 @@ string f$fetch_string() {
   int result_len = 0;
   const char* str = TRY_CALL(const char*, string, f$fetch_string_raw(&result_len));
   return {str, static_cast<string::size_type>(result_len)};
+}
+
+static inline string::size_type fetch_string2_len() {
+  TRY_CALL_VOID_(check_rpc_data_len(1), return -1);
+  unsigned char b0 = *reinterpret_cast<const unsigned char*>(rpc_data);
+  rpc_data++;
+  if (b0 < 254) {
+    return static_cast<string::size_type>(b0);
+  }
+  if (b0 == 254) {
+    TRY_CALL_VOID_(check_rpc_data_len(2), return -1);
+    unsigned char b1 = *reinterpret_cast<const unsigned char*>(rpc_data);
+    unsigned char b2 = *reinterpret_cast<const unsigned char*>(rpc_data + 1);
+    rpc_data += 2;
+    return static_cast<string::size_type>(254 + int(b1) + (int(b2) << 8));
+  }
+  int64_t len = TRY_CALL(int64_t, int64_t, f$fetch_long());
+  if (len > std::numeric_limits<string::size_type>::max()) {
+    THROW_EXCEPTION(new_Exception(rpc_filename, __LINE__, string("TL2 len does not fit on 32-bit platform", 39), -3));
+  }
+  return static_cast<string::size_type>(len);
+}
+
+string f$fetch_string2() {
+  string::size_type result_len = TRY_CALL(string::size_type, string, fetch_string2_len());
+  TRY_CALL_VOID_(check_rpc_data_len(result_len), string{});
+  string result{rpc_data, result_len};
+  rpc_data += result_len;
+  return result;
 }
 
 int64_t f$fetch_string_as_int() {
@@ -465,6 +622,14 @@ bool f$store_int(int64_t v) {
   return store_int(v32);
 }
 
+bool f$store_byte(int64_t v) {
+  const auto v8 = static_cast<unsigned char>(v);
+  if (unlikely(int64_t(v8) != v)) {
+    php_warning("Got overflow on storing byte '%" PRIi64 "'", v);
+  }
+  return store_raw(v8);
+}
+
 bool store_long(long long v) {
   return store_raw(v);
 }
@@ -499,6 +664,29 @@ bool store_string(const char* v, int32_t v_len) {
 
 bool f$store_string(const string& v) {
   return store_string(v.c_str(), (int)v.size());
+}
+
+bool store_string2_len(uint64_t v_len) {
+  if (v_len < 254) {
+    data_buf << (char)(v_len);
+    return true;
+  }
+  if (v_len < 254 + (1 << 16)) {
+    v_len -= 254;
+    data_buf << (char)(254) << (char)(v_len & 255) << (char)((v_len >> 8) & 255);
+    return true;
+  }
+  data_buf << (char)(255) << (char)(v_len & 255) << (char)((v_len >> 8) & 255) << (char)((v_len >> 16) & 255) << (char)((v_len >> 24) & 255)
+           << (char)((v_len >> 32) & 255) << (char)((v_len >> 40) & 255) << (char)((v_len >> 48) & 255) << (char)((v_len >> 56) & 255);
+  return true;
+}
+
+bool f$store_string2(const string& v) {
+  if (!store_string2_len(v.size())) {
+    return false;
+  }
+  data_buf.append(v.c_str(), static_cast<size_t>(v.size()));
+  return true;
 }
 
 bool f$store_many(const array<mixed>& a) {
@@ -1044,11 +1232,7 @@ int32_t tl_parse_int() {
 
 long long tl_parse_long() {
   CHECK_EXCEPTION(return 0);
-  TRY_CALL_VOID(int, check_rpc_data_len(2));
-  long long result = *reinterpret_cast<const long long*>(rpc_data);
-  rpc_data += 2;
-
-  return result;
+  return f$fetch_long();
 }
 
 double tl_parse_double() {
@@ -1448,6 +1632,7 @@ static void reset_rpc_global_vars() {
   hard_reset_var(rpc_request_need_timer);
   fail_rpc_on_int32_overflow = false;
   hard_reset_var(rpc_responses_extra_info_map);
+  rpc_data_backup_set = false;
 }
 
 void init_rpc_lib() {
