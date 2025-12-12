@@ -179,12 +179,6 @@ void rpc_parse(const char* new_rpc_data, int new_rpc_data_len) {
 }
 
 bool f$rpc_parse(const string& new_rpc_data) noexcept {
-  if (new_rpc_data.size() % sizeof(int) != 0) {
-    php_warning("Wrong parameter \"new_rpc_data\" of len %d passed to function rpc_parse", (int)new_rpc_data.size());
-    last_rpc_error = "Result's length is not divisible by 4";
-    last_rpc_error_code = TL_ERROR_RESPONSE_SYNTAX;
-    return false;
-  }
 
   rpc_parse_save_backup();
 
@@ -854,7 +848,6 @@ int64_t rpc_send_impl(const class_instance<C$RpcConnection>& conn, double timeou
   }
 
   store_int(-1); // reserve for crc32
-  php_assert(data_buf.size() % sizeof(int) == 0);
 
   const auto [opt_new_wrapper, cur_wrapper_size, opt_actor_id_warning_info,
               opt_ignore_result_warning_msg]{regularize_wrappers(data_buf.c_str() + sizeof(RpcHeaders), conn.get()->actor_id, ignore_answer)};
