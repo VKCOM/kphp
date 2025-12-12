@@ -57,6 +57,9 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setTime(const class_ins
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setTimestamp(const class_instance<C$DateTimeImmutable>& self, int64_t timestamp) noexcept;
 
+class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$sub(const class_instance<C$DateTimeImmutable>& self,
+                                                             const class_instance<C$DateInterval>& interval) noexcept;
+
 class_instance<C$DateInterval> f$DateTimeImmutable$$diff(const class_instance<C$DateTimeImmutable>& self,
                                                          const class_instance<C$DateTimeInterface>& target_object, bool absolute = false) noexcept;
 

@@ -107,6 +107,16 @@ class_instance<C$DateTime> f$DateTime$$setTimestamp(const class_instance<C$DateT
   return self;
 }
 
+class_instance<C$DateTime> f$DateTime$$sub(const class_instance<C$DateTime>& self, const class_instance<C$DateInterval>& interval) noexcept {
+  auto expected_new_time{kphp::timelib::sub(*self->time, *interval->rel_time)};
+  if (!expected_new_time.has_value()) {
+    kphp::log::warning("DateTime::sub(): {}", expected_new_time.error());
+    return self;
+  }
+  self->time = std::move(*expected_new_time);
+  return self;
+}
+
 class_instance<C$DateInterval> f$DateTime$$diff(const class_instance<C$DateTime>& self, const class_instance<C$DateTimeInterface>& target_object,
                                                 bool absolute) noexcept {
   class_instance<C$DateInterval> interval;
