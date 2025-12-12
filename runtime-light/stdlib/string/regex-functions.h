@@ -21,9 +21,46 @@
 
 namespace kphp::regex::details {
 
+enum class trailing_unmatch : uint8_t { skip, include };
+
+using pcre2_group_names_t = kphp::stl::vector<const char*, kphp::memory::script_allocator>;
+
+template<bool is_offset_capture, bool is_unmatched_as_null>
+using dumped_match_t = std::conditional_t<is_offset_capture, array<mixed>, std::conditional_t<is_unmatched_as_null, mixed, string>>;
+template<bool is_offset_capture, bool is_unmatched_as_null>
+using dumped_matches_t = array<dumped_match_t<is_offset_capture, is_unmatched_as_null>>;
+
 struct pcre2_error {
   int32_t code{};
 };
+
+struct count_updater {
+  int64_t& count;
+  Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>>& opt_count;
+
+  void operator()() const noexcept;
+};
+
+class match_view {
+public:
+  match_view(std::string_view subject, const PCRE2_SIZE* ovector, size_t num_groups) noexcept
+      : m_subject_data{subject},
+        m_ovector_ptr{ovector},
+        m_num_groups{num_groups} {}
+
+  int32_t size() const noexcept {
+    return m_num_groups;
+  }
+
+  std::optional<std::string_view> get_group(size_t i) const noexcept;
+
+private:
+  std::string_view m_subject_data;
+  const PCRE2_SIZE* m_ovector_ptr;
+  size_t m_num_groups;
+};
+
+std::pair<string_buffer&, const PCRE2_SIZE> reserve_buffer(std::string_view subject) noexcept;
 
 } // namespace kphp::regex::details
 
@@ -78,15 +115,6 @@ inline constexpr auto PREG_UNMATCHED_AS_NULL = static_cast<int64_t>(1U << 6U);
 
 inline constexpr int64_t PREG_NOLIMIT = -1;
 
-enum class trailing_unmatch : uint8_t { skip, include };
-
-using regex_pcre2_group_names_t = kphp::stl::vector<const char*, kphp::memory::script_allocator>;
-
-template<bool is_offset_capture, bool is_unmatched_as_null>
-using dumped_match_t = std::conditional_t<is_offset_capture, array<mixed>, std::conditional_t<is_unmatched_as_null, mixed, string>>;
-template<bool is_offset_capture, bool is_unmatched_as_null>
-using dumped_matches_t = array<dumped_match_t<is_offset_capture, is_unmatched_as_null>>;
-
 struct Info final {
   const string& regex;
   std::string_view subject;
@@ -100,7 +128,7 @@ struct Info final {
   pcre2_code_8* regex_code{nullptr};
 
   // vector of group names
-  regex_pcre2_group_names_t group_names;
+  details::pcre2_group_names_t group_names;
 
   int64_t match_count{};
   uint32_t match_options{PCRE2_NO_UTF_CHECK};
@@ -118,45 +146,19 @@ struct Info final {
         replacement(replacement_) {}
 };
 
-struct count_updater {
-  int64_t& count;
-  Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>>& opt_count;
-
-  void operator()() const noexcept;
-};
-
 struct count_finalizer {
   int64_t count{};
-  vk::final_action<count_updater> finalizer;
+  vk::final_action<details::count_updater> finalizer;
 
   explicit count_finalizer(Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>>& opt_count)
       : finalizer{{.count = count, .opt_count = opt_count}} {}
-};
-
-class match_view {
-public:
-  match_view(std::string_view subject, const PCRE2_SIZE* ovector, size_t num_groups) noexcept
-      : m_subject_data{subject},
-        m_ovector_ptr{ovector},
-        m_num_groups{num_groups} {}
-
-  int32_t size() const noexcept {
-    return m_num_groups;
-  }
-
-  std::optional<std::string_view> get_group(size_t i) const noexcept;
-
-private:
-  std::string_view m_subject_data;
-  const PCRE2_SIZE* m_ovector_ptr;
-  size_t m_num_groups;
 };
 
 class matcher {
 public:
   matcher(const Info& info, size_t match_from) noexcept;
 
-  std::expected<std::optional<match_view>, details::pcre2_error> next() noexcept;
+  std::expected<std::optional<details::match_view>, details::pcre2_error> next() noexcept;
 
 private:
   const kphp::regex::Info& m_regex_info;
@@ -183,8 +185,8 @@ std::optional<string> replace_one(const Info& info, std::string_view subject, st
                                   size_t substitute_offset) noexcept;
 
 template<bool is_offset_capture, bool is_unmatched_as_null>
-std::optional<dumped_matches_t<is_offset_capture, is_unmatched_as_null>> dump_matches(const Info& regex_info, const match_view& match,
-                                                                                      trailing_unmatch last_unmatched_policy) noexcept {
+std::optional<details::dumped_matches_t<is_offset_capture, is_unmatched_as_null>> dump_matches(const Info& regex_info, const details::match_view& match,
+                                                                                               details::trailing_unmatch last_unmatched_policy) noexcept {
   if (regex_info.regex_code == nullptr) [[unlikely]] {
     return std::nullopt;
   }
@@ -195,11 +197,11 @@ std::optional<dumped_matches_t<is_offset_capture, is_unmatched_as_null>> dump_ma
   pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMECOUNT, std::addressof(named_groups_count));
 
   // reserve enough space for output
-  dumped_matches_t<is_offset_capture, is_unmatched_as_null> output{
+  details::dumped_matches_t<is_offset_capture, is_unmatched_as_null> output{
       array_size{static_cast<int64_t>(regex_info.group_names.size() + named_groups_count), named_groups_count == 0}};
   for (auto i{0}; i < regex_info.group_names.size(); ++i) {
     // skip unmatched groups at the end unless unmatched_as_null is set
-    if (last_unmatched_policy == trailing_unmatch::skip && i > last_matched_group && !is_unmatched_as_null) [[unlikely]] {
+    if (last_unmatched_policy == details::trailing_unmatch::skip && i > last_matched_group && !is_unmatched_as_null) [[unlikely]] {
       break;
     }
 
@@ -212,7 +214,7 @@ std::optional<dumped_matches_t<is_offset_capture, is_unmatched_as_null>> dump_ma
       match_val = string{submatch_string_view.data(), static_cast<string::size_type>(match_size)};
     }
 
-    dumped_match_t<is_offset_capture, is_unmatched_as_null> output_val;
+    details::dumped_match_t<is_offset_capture, is_unmatched_as_null> output_val;
     if constexpr (is_offset_capture) {
       output_val =
           array<mixed>::create(std::move(match_val), opt_submatch
@@ -233,8 +235,6 @@ std::optional<dumped_matches_t<is_offset_capture, is_unmatched_as_null>> dump_ma
   return output;
 }
 
-std::pair<string_buffer&, const PCRE2_SIZE> reserve_buffer(std::string_view subject) noexcept;
-
 template<std::invocable<array<string>> F>
 coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t limit) noexcept {
   regex_info.replace_count = 0;
@@ -244,7 +244,7 @@ coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t limit) 
     co_return false;
   }
 
-  auto [sb, buffer_length] = reserve_buffer(regex_info.subject);
+  auto [sb, buffer_length] = details::reserve_buffer(regex_info.subject);
 
   size_t substitute_offset{};
   int64_t replacement_diff_acc{};
@@ -272,7 +272,7 @@ coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t limit) 
     const auto match_end_offset{match_start_offset + entire_pattern_match_string_view.size()};
     regex_info.match_count = match_view.size();
 
-    auto opt_dumped_matches{dump_matches<false, false>(regex_info, match_view, trailing_unmatch::skip)};
+    auto opt_dumped_matches{dump_matches<false, false>(regex_info, match_view, details::trailing_unmatch::skip)};
     if (!opt_dumped_matches.has_value()) [[unlikely]] {
       co_return false;
     }
