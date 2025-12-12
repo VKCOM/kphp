@@ -99,6 +99,8 @@ time_t now(timelib_tzinfo* tzi) noexcept;
 
 void set_date(timelib_time& t, int64_t y, int64_t m, int64_t d) noexcept;
 
+void set_isodate(timelib_time& t, int64_t y, int64_t w, int64_t d) noexcept;
+
 void set_time(timelib_time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept;
 
 std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime, int64_t timestamp) noexcept;

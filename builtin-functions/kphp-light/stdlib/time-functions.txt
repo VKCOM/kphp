@@ -87,7 +87,6 @@ class DateTimeImmutable implements DateTimeInterface {
   public static function getLastErrors(): array|false;
   public function modify(string $modifier): ?DateTimeImmutable;
   public function setDate(int $year, int $month, int $day): DateTimeImmutable;
-  /** @kphp-extern-func-info stub generation-required */
   public function setISODate(int $year, int $week, int $dayOfWeek = 1): DateTimeImmutable;
   public function setTime(
       int $hour,
@@ -114,7 +113,6 @@ class DateTime implements DateTimeInterface {
   public static function getLastErrors(): array|false;
   public function modify(string $modifier): ?DateTime;
   public function setDate(int $year, int $month, int $day): DateTime;
-  /** @kphp-extern-func-info stub generation-required */
   public function setISODate(int $year, int $week, int $dayOfWeek = 1): DateTime;
   public function setTime(
       int $hour,
