@@ -189,7 +189,7 @@ std::optional<dumped_matches_t<is_offset_capture, is_unmatched_as_null>> dump_ma
     return std::nullopt;
   }
 
-  int64_t last_matched_group{match.size()};
+  int64_t last_matched_group{match.size() - 1};
   // retrieve the named groups count
   uint32_t named_groups_count{};
   pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMECOUNT, std::addressof(named_groups_count));
@@ -234,8 +234,6 @@ std::optional<dumped_matches_t<is_offset_capture, is_unmatched_as_null>> dump_ma
 }
 
 std::pair<string_buffer&, const PCRE2_SIZE> reserve_buffer(std::string_view subject) noexcept;
-
-std::optional<string> make_replace_result(int64_t replace_count, string_buffer& sb, PCRE2_SIZE output_length) noexcept;
 
 template<std::invocable<array<string>> F>
 coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t limit) noexcept {
@@ -300,7 +298,10 @@ coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t limit) 
     subject = std::move(str_after_replace);
   }
 
-  regex_info.opt_replace_result = make_replace_result(regex_info.replace_count, sb, length_after_replace);
+  if (regex_info.replace_count > 0) {
+    sb.set_pos(length_after_replace);
+    regex_info.opt_replace_result.emplace(sb.str());
+  }
 
   co_return true;
 }

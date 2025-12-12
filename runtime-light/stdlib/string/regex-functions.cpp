@@ -746,15 +746,6 @@ std::pair<string_buffer&, const PCRE2_SIZE> reserve_buffer(std::string_view subj
   return {runtime_ctx.static_SB, buffer_length};
 }
 
-std::optional<string> make_replace_result(int64_t replace_count, string_buffer& sb, size_t output_length) noexcept {
-  if (replace_count > 0) {
-    sb.set_pos(output_length);
-    return sb.str();
-  }
-
-  return std::nullopt;
-}
-
 } // namespace kphp::regex
 
 Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches,
