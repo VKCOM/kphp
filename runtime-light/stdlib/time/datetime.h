@@ -52,6 +52,8 @@ class_instance<C$DateTime> f$DateTime$$setTime(const class_instance<C$DateTime>&
 
 class_instance<C$DateTime> f$DateTime$$setTimestamp(const class_instance<C$DateTime>& self, int64_t timestamp) noexcept;
 
+class_instance<C$DateTime> f$DateTime$$sub(const class_instance<C$DateTime>& self, const class_instance<C$DateInterval>& interval) noexcept;
+
 class_instance<C$DateInterval> f$DateTime$$diff(const class_instance<C$DateTime>& self, const class_instance<C$DateTimeInterface>& target_object,
                                                 bool absolute = false) noexcept;
 
