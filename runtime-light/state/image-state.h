@@ -87,5 +87,5 @@ struct ImageState final : private vk::not_copyable {
   }
 
 private:
-  static constexpr auto INIT_IMAGE_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U); // 1MB
+  static constexpr auto INIT_IMAGE_ALLOCATOR_SIZE = static_cast<size_t>(4UZ * 230UZ * 1024UZ * 1024UZ); // 1MB
 };
