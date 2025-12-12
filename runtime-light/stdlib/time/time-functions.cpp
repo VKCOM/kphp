@@ -42,7 +42,7 @@ void iso_week_number(int32_t y, int32_t doy, int32_t weekday, int32_t& iw, int32
   }
   /* Find if Y M D falls in YearNumber Y+1, WeekNumber 1 */
   if (iy == y) {
-    auto i{y_leap ? 366 : 365};
+    int32_t i{y_leap ? 366 : 365};
     if ((i - (doy - y_leap + 1)) < (4 - weekday)) {
       iy = y + 1;
       iw = 1;
@@ -87,11 +87,11 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
   auto day_of_week{t.tm_wday};
   auto day_of_year{t.tm_yday};
   int64_t internet_time{0};
-  auto iso_week{0};
-  auto iso_year{0};
+  int32_t iso_week{0};
+  int32_t iso_year{0};
 
   SB.clean();
-  for (auto i{0}; i < format.size(); i++) {
+  for (int32_t i{}; i < format.size(); i++) {
     switch (format[i]) {
     case 'd':
       SB << static_cast<char>(day / 10 + '0') << static_cast<char>(day % 10 + '0');
