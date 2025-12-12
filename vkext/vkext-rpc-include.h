@@ -5,8 +5,6 @@
 #ifndef __VKEXT_RPC_INCLUDE_H__
 #define __VKEXT_RPC_INCLUDE_H__
 
-#include <limits>
-
 #include "common/tl/constants/common.h"
 #include "common/rpc-headers.h"
 
@@ -237,13 +235,6 @@ static inline void buffer_write_int(struct rpc_buffer *buf, int x) {
   buf->wptr += 4;
 }
 
-static inline void buffer_write_byte(struct rpc_buffer *buf, int x) UNUSED;
-static inline void buffer_write_byte(struct rpc_buffer *buf, int x) {
-  buffer_check_len_wptr(buf, 1);
-  *(unsigned char *)(buf->wptr) = x;
-  buf->wptr += 1;
-}
-
 static inline void buffer_write_long(struct rpc_buffer *buf, long long x) UNUSED;
 static inline void buffer_write_long(struct rpc_buffer *buf, long long x) {
   buffer_check_len_wptr(buf, 8);
@@ -327,17 +318,6 @@ static inline int buffer_read_int(struct rpc_buffer *buf, int *x) {
   }
 }
 
-static inline int buffer_read_byte(struct rpc_buffer *buf, int *x) UNUSED;
-static inline int buffer_read_byte(struct rpc_buffer *buf, int *x) {
-  if (!buffer_check_len_rptr(buf, 1)) {
-    return -1;
-  } else {
-    *x = static_cast<int>(*(unsigned char *)buf->rptr);
-    buf->rptr += 1;
-    return 1;
-  }
-}
-
 static inline int buffer_read_long(struct rpc_buffer *buf, long long *x) UNUSED;
 static inline int buffer_read_long(struct rpc_buffer *buf, long long *x) {
   if (!buffer_check_len_rptr(buf, 8)) {
@@ -415,39 +395,6 @@ static inline int buffer_read_string(struct rpc_buffer *buf, int *len, const cha
   return 1;
 }
 
-static inline int buffer_read_string2(struct rpc_buffer *buf, int *len, const char **x) UNUSED;
-static inline int buffer_read_string2(struct rpc_buffer *buf, int *len, const char **x) {
-  unsigned char c;
-  if (buffer_read_char(buf, (char *)&c) < 0) {
-    return -1;
-  }
-  *len = c;
-  if (c == 254) {
-    const char *t;
-    *len = 0;
-    if (buffer_read_data(buf, 2, &t) < 0) {
-      return -1;
-    }
-    memcpy(len, t, 2);
-    *len += 254;
-  } else if (c == 255) {
-    const char *t;
-    if (buffer_read_data(buf, 8, &t) < 0) {
-      return -1;
-    }
-    uint64_t len64 = 0;
-    memcpy(&len64, t, 8);
-    if (len64 > std::numeric_limits<int>::max()) { // does not fit on 32-bit platform, cannot return proper error here
-      return -1;
-    }
-    *len = static_cast<int>(len64);
-  }
-  if (buffer_read_data(buf, *len, x) < 0) {
-    return -1;
-  }
-  return 1;
-}
-
 /* }}} outbuf */
 
 static constexpr size_t RPC_HEADERS_RESERVED_BYTES = 40;
@@ -475,19 +422,6 @@ static void do_rpc_store_int(int value) { /* {{{ */
   buffer_write_int(outbuf, value);
 #ifdef STORE_DEBUG
   fprintf (stderr, "int: %x\n", value);
-#endif
-  END_TIMER (store);
-}
-/* }}} */
-
-static void do_rpc_store_byte(int value) UNUSED;
-static void do_rpc_store_byte(int value) { /* {{{ */
-  ADD_CNT (store);
-  START_TIMER (store);
-  assert (outbuf && outbuf->magic == RPC_BUFFER_MAGIC);
-  buffer_write_byte(outbuf, value);
-#ifdef STORE_DEBUG
-  fprintf (stderr, "byte: %x\n", value);
 #endif
   END_TIMER (store);
 }
@@ -569,30 +503,6 @@ static void do_rpc_store_string(const char *s, int len) { /* {{{ */
   }
 #ifdef STORE_DEBUG
   fprintf (stderr, "string: %.*s\n", len, s);
-#endif
-  END_TIMER (store);
-}
-/* }}} */
-
-static void do_rpc_store_string2(const char *s, int len) UNUSED;
-static void do_rpc_store_string2(const char *s, int len) { /* {{{ */
-  ADD_CNT (store);
-  START_TIMER (store);
-  assert (outbuf && outbuf->magic == RPC_BUFFER_MAGIC);
-  if (len < 254) {
-    buffer_write_char(outbuf, len);
-  } else if (len < 254 + (1 << 16)) {
-    buffer_write_char(outbuf, static_cast<char>(254));
-    int alen = len - 254;
-    buffer_write_data(outbuf, &alen, 2);
-  } else {
-    buffer_write_char(outbuf, static_cast<char>(255));
-    int64_t len64 = len;
-    buffer_write_data(outbuf, &len64, 8);
-  }
-  buffer_write_data(outbuf, s, len);
-#ifdef STORE_DEBUG
-  fprintf (stderr, "string2: %.*s\n", len, s);
 #endif
   END_TIMER (store);
 }

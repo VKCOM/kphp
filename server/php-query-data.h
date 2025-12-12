@@ -21,7 +21,7 @@ struct http_query_data {
 
 struct rpc_query_data {
   tl_query_header_t header;
-  std::vector<char> data;
+  std::vector<int> data;
   process_id remote_pid;
 };
 

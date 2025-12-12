@@ -63,7 +63,7 @@ int32_t last_rpc_error_code_get();
 
 void last_rpc_error_reset();
 
-void rpc_parse(const char* new_rpc_data, int new_rpc_data_len);
+void rpc_parse(const int32_t* new_rpc_data, int32_t new_rpc_data_len);
 
 bool f$rpc_parse(const string& new_rpc_data) noexcept;
 
@@ -73,17 +73,15 @@ bool f$rpc_parse(bool new_rpc_data) noexcept;
 
 bool f$rpc_parse(const Optional<string>& new_rpc_data) noexcept;
 
-int rpc_get_pos();
+int32_t rpc_get_pos();
 
-bool rpc_set_pos(int pos);
+bool rpc_set_pos(int32_t pos);
 
 int32_t rpc_lookup_int();
 
 int32_t rpc_fetch_int();
 
 int64_t f$fetch_int();
-
-int64_t f$fetch_byte();
 
 int64_t f$fetch_lookup_int();
 
@@ -96,8 +94,6 @@ double f$fetch_double();
 double f$fetch_float();
 
 string f$fetch_string();
-
-string f$fetch_string2();
 
 int64_t f$fetch_string_as_int();
 
@@ -180,8 +176,6 @@ bool is_int32_overflow(int64_t v);
 bool store_int(int32_t v);
 bool f$store_int(int64_t v);
 
-bool f$store_byte(int64_t v);
-
 bool f$store_unsigned_int(const string& v);
 
 bool store_long(long long v);
@@ -199,7 +193,6 @@ bool f$store_float(double v);
 
 bool store_string(const char* v, int32_t v_len);
 bool f$store_string(const string& v);
-bool f$store_string2(const string& v);
 
 bool f$store_many(const array<mixed>& a);
 

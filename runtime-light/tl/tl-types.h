@@ -388,12 +388,6 @@ public:
     const auto total_len_with_padding{(total_len + 3) & ~3};
     return total_len_with_padding;
   }
-
-  // TL2 functions are here for now
-  static bool fetch2_len(tl::fetcher& tlf, uint64_t& string_len) noexcept;
-  bool fetch2(tl::fetcher& tlf) noexcept;
-  static void store2_len(tl::storer& tls, uint64_t string_len) noexcept;
-  void store2(tl::storer& tls) const noexcept;
 };
 
 struct String final {

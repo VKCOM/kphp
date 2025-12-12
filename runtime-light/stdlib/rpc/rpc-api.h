@@ -77,17 +77,9 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 
 inline bool f$store_int(int64_t v) noexcept {
   if (tl::is_int32_overflow(v)) [[unlikely]] {
-    kphp::log::warning("integer {} overflows int32, it will be cast to {}", v, static_cast<int32_t>(v));
+    kphp::log::warning("integer {} overflows int32, it will be casted to {}", v, static_cast<int32_t>(v));
   }
   tl::i32{.value = static_cast<int32_t>(v)}.store(RpcServerInstanceState::get().tl_storer);
-  return true;
-}
-
-inline bool f$store_byte(int64_t v) noexcept {
-  if (v < 0 || v > 255) [[unlikely]] {
-    kphp::log::warning("integer {} overflows uint8, it will be cast to {}", v, static_cast<uint8_t>(v));
-  }
-  tl::u8{.value = static_cast<uint8_t>(v)}.store(RpcServerInstanceState::get().tl_storer);
   return true;
 }
 
@@ -111,23 +103,9 @@ inline bool f$store_string(const string& v) noexcept {
   return true;
 }
 
-inline bool f$store_string2(const string& v) noexcept {
-  tl::string{.value = {v.c_str(), v.size()}}.store2(RpcServerInstanceState::get().tl_storer);
-  return true;
-}
-
 inline void f$store_raw_vector_double(const array<double>& vector) noexcept {
   const std::span<const std::byte> vector_view{reinterpret_cast<const std::byte*>(vector.get_const_vector_pointer()), sizeof(double) * vector.count()};
   RpcServerInstanceState::get().tl_storer.store_bytes(vector_view);
-}
-
-inline int64_t f$fetch_byte() noexcept {
-  static constexpr auto DEFAULT_VALUE = 0;
-  if (tl::u8 val{}; val.fetch(RpcServerInstanceState::get().tl_fetcher)) [[likely]] {
-    return static_cast<int64_t>(val.value);
-  }
-  THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
-  return DEFAULT_VALUE;
 }
 
 inline int64_t f$fetch_int() noexcept {
@@ -168,14 +146,6 @@ inline double f$fetch_float() noexcept {
 
 inline string f$fetch_string() noexcept {
   if (tl::string val{}; val.fetch(RpcServerInstanceState::get().tl_fetcher)) [[likely]] {
-    return {val.value.data(), static_cast<string::size_type>(val.value.size())};
-  }
-  THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_string::make());
-  return {};
-}
-
-inline string f$fetch_string2() noexcept {
-  if (tl::string val{}; val.fetch2(RpcServerInstanceState::get().tl_fetcher)) [[likely]] {
     return {val.value.data(), static_cast<string::size_type>(val.value.size())};
   }
   THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_string::make());
