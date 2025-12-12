@@ -205,7 +205,7 @@ int aes_generate_nonce (char res[16]) {
 
 int aes_create_keys(aes_key_t *key, struct aes_session_key *R, int am_client, const char nonce_server[16], const char nonce_client[16], int client_timestamp,
                     unsigned server_ip, unsigned short server_port, const unsigned char server_ipv6[16], unsigned client_ip, unsigned short client_port,
-                    const unsigned char client_ipv6[16], bool is_ip_v6) {
+                    const unsigned char client_ipv6[16]) {
   unsigned char str[16 + 16 + 4 + 4 + 2 + 6 + 4 + 2 + AES_KEY_MAX_LEN + 16 + 16 + 4 + 16 * 2];
   int str_len;
 
@@ -228,10 +228,13 @@ int aes_create_keys(aes_key_t *key, struct aes_session_key *R, int am_client, co
   memcpy(str + 54 + pwd_len, nonce_server, 16);
   str_len = 70 + pwd_len;
 
-  if (is_ip_v6) {
+  if (!server_ip) {
+    assert(!client_ip);
     memcpy(str + str_len, client_ipv6, 16);
     memcpy(str + str_len + 16, server_ipv6, 16);
     str_len += 32;
+  } else {
+    assert(client_ip);
   }
 
   memcpy(str + str_len, nonce_client, 16);

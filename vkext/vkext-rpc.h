@@ -244,9 +244,7 @@ extern int global_errnum;
 #define GLOBAL_GENERATION 0
 struct rpc_nonce {
   int key_select;        /* least significant 32 bits of key to use */
-  unsigned char crypto_schema; /* 0 = NONE, 1 = AES */
-  unsigned char protocol_version;
-  unsigned short protocol_flags;
+  int crypto_schema;     /* 0 = NONE, 1 = AES */
   int crypto_ts;
   char crypto_nonce[16];
 };
