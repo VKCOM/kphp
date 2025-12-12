@@ -49,6 +49,9 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$modify(const class_inst
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setDate(const class_instance<C$DateTimeImmutable>& self, int64_t year, int64_t month,
                                                                  int64_t day) noexcept;
 
+class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setISODate(const class_instance<C$DateTimeImmutable>& self, int64_t year, int64_t week,
+                                                                    int64_t dayOfWeek = 1) noexcept;
+
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setTime(const class_instance<C$DateTimeImmutable>& self, int64_t hour, int64_t minute,
                                                                  int64_t second = 0, int64_t microsecond = 0) noexcept;
 
