@@ -95,7 +95,6 @@ class DateTimeImmutable implements DateTimeInterface {
       int $microsecond = 0
   ): DateTimeImmutable;
   public function setTimestamp(int $timestamp): DateTimeImmutable;
-  /** @kphp-extern-func-info stub generation-required */
   public function sub(DateInterval $interval): DateTimeImmutable;
   public function diff(DateTimeInterface $targetObject, bool $absolute = false): DateInterval;
   public function format(string $format): string;
@@ -121,7 +120,6 @@ class DateTime implements DateTimeInterface {
       int $microsecond = 0
   ): DateTime;
   public function setTimestamp(int $timestamp): DateTime;
-  /** @kphp-extern-func-info stub generation-required */
   public function sub(DateInterval $interval): DateTime;
   public function diff(DateTimeInterface $targetObject, bool $absolute = false): DateInterval;
   public function format(string $format): string;

@@ -381,6 +381,15 @@ void set_time(timelib_time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noex
   kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
 }
 
+std::expected<time_t, std::string_view> sub(timelib_time& t, timelib_rel_time& interval) noexcept {
+  if (interval.have_special_relative) {
+    return std::unexpected{"Only non-special relative time specifications are supported for subtraction"};
+  }
+
+  time_t new_time{(kphp::memory::libc_alloc_guard{}, timelib_sub(std::addressof(t), std::addressof(interval)))};
+  return new_time;
+}
+
 std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime, int64_t timestamp) noexcept {
   if (datetime.empty()) [[unlikely]] {
     kphp::log::warning("datetime can't be empty");
