@@ -13,7 +13,7 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
   auto [time, errors]{kphp::timelib::construct_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
   if (time == nullptr) [[unlikely]] {
     string err_msg;
-    format_to(std::back_inserter(err_msg), "DateTime::__construct(): failed to parse datetime ({}): {}", datetime.c_str(), errors);
+    format_to(std::back_inserter(err_msg), "DateTime::__construct(): Failed to parse time string ({}) {}", datetime.c_str(), errors);
     TimeInstanceState::get().update_last_errors(std::move(errors));
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};
@@ -78,7 +78,7 @@ Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept {
 class_instance<C$DateTime> f$DateTime$$modify(const class_instance<C$DateTime>& self, const string& modifier) noexcept {
   auto errors{kphp::timelib::modify(*self->time, {modifier.c_str(), modifier.size()})};
   if (errors != nullptr && errors->error_count > 0) [[unlikely]] {
-    kphp::log::warning("DateTime::modify(): failed to parse modifier ({}): {}", modifier.c_str(), errors);
+    kphp::log::warning("DateTime::modify(): Failed to parse time string ({}) {}", modifier.c_str(), errors);
     TimeInstanceState::get().update_last_errors(std::move(errors));
     return {};
   }

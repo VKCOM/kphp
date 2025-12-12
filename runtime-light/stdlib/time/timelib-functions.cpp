@@ -63,7 +63,7 @@ time_offset_t construct_time_offset(timelib_time& t) noexcept {
     offset->abbr = (kphp::memory::libc_alloc_guard{}, static_cast<char*>(timelib_malloc(9))); // GMT±xxxx\0
     // set upper bound to 99 just to ensure that 'hours_offset' fits in {:02}
     auto hours_offset{std::min(std::abs(offset->offset / 3600), 99)};
-    std::format_to_n(offset->abbr, 9, "GMT{}{:02}{:02}", (offset->offset < 0) ? '-' : '+', hours_offset, std::abs((offset->offset % 3600) / 60));
+    *std::format_to_n(offset->abbr, 8, "GMT{}{:02}{:02}", (offset->offset < 0) ? '-' : '+', hours_offset, std::abs((offset->offset % 3600) / 60)).out = '\0';
     return offset;
   }
   return time_offset_t{(kphp::memory::libc_alloc_guard{}, timelib_get_time_zone_info(t.sse, t.tz_info))};
