@@ -422,8 +422,8 @@ struct std::formatter<kphp::timelib::error_container_t, char> {
   auto format(const kphp::timelib::error_container_t& error, auto& ctx) const noexcept {
     if (error != nullptr) {
       // spit out the first library error message, at least
-      return format_to(ctx.out(), "at position {} ({}): {}", error->error_messages[0].position, error->error_messages[0].character,
-                       error->error_messages[0].message);
+      return format_to(ctx.out(), "at position {} ({}): {}", error->error_messages[0].position,
+                       error->error_messages[0].character != '\0' ? error->error_messages[0].character : ' ', error->error_messages[0].message);
     }
     return format_to(ctx.out(), "unknown error");
   }

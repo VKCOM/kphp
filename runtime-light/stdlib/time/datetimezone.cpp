@@ -12,8 +12,7 @@ class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<
     self->tzi = kphp::timelib::get_timezone_info(timezone.c_str(), timelib_builtin_db(), std::addressof(errc));
     if (self->tzi == nullptr) [[unlikely]] {
       string err_msg;
-      format_to(std::back_inserter(err_msg), "DateTimeZone::__construct(): can't get timezone info: timezone -> {}, error -> {}", timezone.c_str(),
-                timelib_get_error_message(errc));
+      format_to(std::back_inserter(err_msg), "DateTimeZone::__construct(): Unknown or bad timezone ({})", timezone.c_str());
       THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     }
   }

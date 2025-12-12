@@ -39,7 +39,7 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class
   auto [time, errors]{kphp::timelib::construct_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
   if (time == nullptr) [[unlikely]] {
     string err_msg;
-    format_to(std::back_inserter(err_msg), "DateTimeImmutable::__construct(): failed to parse datetime ({}): {}", datetime.c_str(), errors);
+    format_to(std::back_inserter(err_msg), "DateTimeImmutable::__construct(): Failed to parse time string ({}) {}", datetime.c_str(), errors);
     TimeInstanceState::get().update_last_errors(std::move(errors));
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};
@@ -108,7 +108,7 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$modify(const class_inst
   auto new_date{clone_immutable(self)};
   auto errors{kphp::timelib::modify(*new_date->time, {modifier.c_str(), modifier.size()})};
   if (errors != nullptr && errors->error_count > 0) [[unlikely]] {
-    kphp::log::warning("DateTimeImmutable::modify(): failed to parse modifier ({}): {}", modifier.c_str(), errors);
+    kphp::log::warning("DateTimeImmutable::modify(): Failed to parse time string ({}) {}", modifier.c_str(), errors);
     TimeInstanceState::get().update_last_errors(std::move(errors));
     return {};
   }
