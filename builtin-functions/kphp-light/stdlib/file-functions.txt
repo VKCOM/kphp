@@ -31,6 +31,7 @@ function fclose ($stream ::: mixed): bool;
 function unlink ($name ::: string) ::: bool;
 
 function file_get_contents ($name ::: string) ::: string | false;
+function file_put_contents ($name ::: string, $content ::: mixed, $flags ::: int = 0) ::: int | false;
 
 function printf ($format ::: string, ...$args) ::: int;
 
@@ -50,8 +51,6 @@ function copy ($from ::: string, $to ::: string) ::: bool;
 function dirname ($name ::: string) ::: string;
 /** @kphp-extern-func-info stub generation-required */
 function file ($name ::: string) ::: string[] | false;
-/** @kphp-extern-func-info stub generation-required */
-function file_put_contents ($name ::: string, $content ::: mixed, $flags ::: int = 0) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */
 function filectime ($name ::: string) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */

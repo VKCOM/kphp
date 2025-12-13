@@ -11,7 +11,6 @@
 #include <cstdint>
 #include <expected>
 #include <functional>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <span>
@@ -120,7 +119,7 @@ inline auto stream::read(std::span<std::byte> buf) const noexcept -> kphp::coro:
   for (size_t read{}; read < buf.size();) {
     switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::read)) {
     case kphp::coro::poll_status::event:
-      [[likely]] read += k2::read(m_descriptor, buf.size() - read, static_cast<void*>(std::next(buf.data(), read)));
+      [[likely]] read += k2::read(m_descriptor, buf.subspan(read));
       break;
     case kphp::coro::poll_status::closed:
       [[likely]] co_return std::expected<size_t, int32_t>{read};
@@ -152,7 +151,7 @@ inline auto stream::write(std::span<const std::byte> buf) const noexcept -> kphp
   for (size_t written{}; written < buf.size();) {
     switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::write)) {
     case kphp::coro::poll_status::event:
-      [[likely]] written += k2::write(m_descriptor, buf.size() - written, static_cast<const void*>(std::next(buf.data(), written)));
+      [[likely]] written += k2::write(m_descriptor, buf.subspan(written));
       break;
     case kphp::coro::poll_status::closed:
       [[likely]] co_return std::expected<size_t, int32_t>{written};
