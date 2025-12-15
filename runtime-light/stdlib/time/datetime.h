@@ -59,4 +59,6 @@ class_instance<C$DateInterval> f$DateTime$$diff(const class_instance<C$DateTime>
 
 string f$DateTime$$format(const class_instance<C$DateTime>& self, const string& format) noexcept;
 
+int64_t f$DateTime$$getOffset(const class_instance<C$DateTime>& self) noexcept;
+
 int64_t f$DateTime$$getTimestamp(const class_instance<C$DateTime>& self) noexcept;

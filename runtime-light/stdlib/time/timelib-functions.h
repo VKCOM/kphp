@@ -72,6 +72,8 @@ void set_timestamp(timelib_time& t, int64_t timestamp) noexcept;
 
 std::string_view english_suffix(timelib_sll number) noexcept;
 
+int64_t get_offset(timelib_time& t) noexcept;
+
 timelib_tzinfo* get_timezone_info(const char* timezone) noexcept;
 /**
  * @brief Retrieves a pointer to a `timelib_tzinfo` structure for a given time zone name.

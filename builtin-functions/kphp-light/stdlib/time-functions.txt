@@ -98,7 +98,6 @@ class DateTimeImmutable implements DateTimeInterface {
   public function sub(DateInterval $interval): DateTimeImmutable;
   public function diff(DateTimeInterface $targetObject, bool $absolute = false): DateInterval;
   public function format(string $format): string;
-  /** @kphp-extern-func-info stub generation-required */
   public function getOffset(): int;
   public function getTimestamp(): int;
 }
@@ -123,7 +122,6 @@ class DateTime implements DateTimeInterface {
   public function sub(DateInterval $interval): DateTime;
   public function diff(DateTimeInterface $targetObject, bool $absolute = false): DateInterval;
   public function format(string $format): string;
-  /** @kphp-extern-func-info stub generation-required */
   public function getOffset(): int;
   public function getTimestamp(): int;
 }
