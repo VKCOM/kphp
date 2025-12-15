@@ -23,7 +23,9 @@ void set_reference_counter_recursive(Optional<T>& obj, ExtraRefCnt rc) noexcept 
 
 template<typename T>
 void set_reference_counter_recursive(class_instance<T>& obj, ExtraRefCnt rc) noexcept {
-  obj.set_reference_counter_to(rc);
+  if (!obj.is_null()) {
+    obj.set_reference_counter_to(rc);
+  }
 }
 
 template<typename T>
