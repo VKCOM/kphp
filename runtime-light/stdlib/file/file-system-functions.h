@@ -223,7 +223,7 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
 
   auto& file{open_result.value()};
 
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> read_result(size);
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> read_result{size};
   if (auto rd_status{file.read(read_result)}; !rd_status.has_value() || rd_status.value() < size) {
     return false;
   }
