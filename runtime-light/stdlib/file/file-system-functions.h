@@ -223,10 +223,8 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
 
   auto& file{open_result.value()};
 
-  kphp::stl::vector<char, kphp::memory::script_allocator> read_result(size);
-  char* read_result_data{read_result.data()};
-  std::span<std::byte> temp_span{reinterpret_cast<std::byte*>(read_result_data), read_result.size()};
-  if (auto rd_status{file.read(temp_span)}; !rd_status.has_value() || rd_status.value() < size) {
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> read_result(size);
+  if (auto rd_status{file.read(read_result)}; !rd_status.has_value() || rd_status.value() < size) {
     return false;
   }
 
@@ -235,8 +233,8 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
   array<string> result;
   int32_t prev{-1};
   for (size_t i{0}; i < size; i++) {
-    if (read_result_data[i] == '\n' || i + 1 == size) {
-      result.push_back(string{read_result_data + prev + 1, static_cast<string::size_type>(i - prev)});
+    if (static_cast<char>(read_result[i]) == '\n' || i + 1 == size) {
+      result.push_back(string{reinterpret_cast<char*>(read_result.data()) + prev + 1, static_cast<string::size_type>(i - prev)});
       prev = i;
     }
   }
