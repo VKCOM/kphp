@@ -85,9 +85,8 @@ void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexc
     return kphp::log::warning("error opening runtime-config: error code -> {}", expected_runtime_config_file.error());
   }
 
-  struct stat stat {};
-  if (auto stat_result{k2::stat({runtime_config_path.get(), runtime_config_path_size}, std::addressof(stat))}; !stat_result.has_value())
-      [[unlikely]] {
+  struct stat stat{};
+  if (auto stat_result{k2::stat({runtime_config_path.get(), runtime_config_path_size}, std::addressof(stat))}; !stat_result.has_value()) [[unlikely]] {
     return kphp::log::warning("error getting runtime-config stat: error code -> {}", stat_result.error());
   }
 
