@@ -200,11 +200,8 @@ void ConstVarsInit::compile(CodeGenerator& W) const {
       if (!(vk::any_of_equal(var->tinf_node.get_type()->ptype(), tp_string, tp_array, tp_Class, tp_mixed))) {
         continue;
       }
-      if (var->tinf_node.get_type()->use_optional()) {
-        W << "php_assert(" << var->name << ".has_value() ? " << var->name << ".val().get_reference_counter() == 2147483633 : true);" << NL;
-      } else {
-        W << "php_assert(" << var->name << ".get_reference_counter() == 2147483633);" << NL;
-      }
+      // W << "kphp::core::set_reference_counter_recursive(" << var->name << ", ExtraRefCnt::for_global_const);" << NL;
+      W << "php_assert(kphp::core::check_reference_counter_recursive(" << var->name << ", ExtraRefCnt::for_global_const));" << NL;
     }
     W << END;
     W << CloseFile();
