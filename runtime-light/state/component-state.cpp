@@ -86,9 +86,9 @@ void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexc
   }
 
   struct stat stat {};
-  if (auto error_code_expected{k2::stat({runtime_config_path.get(), runtime_config_path_size}, std::addressof(stat))}; !error_code_expected.has_value())
+  if (auto stat_result{k2::stat({runtime_config_path.get(), runtime_config_path_size}, std::addressof(stat))}; !stat_result.has_value())
       [[unlikely]] {
-    return kphp::log::warning("error getting runtime-config stat: error code -> {}", error_code_expected.error());
+    return kphp::log::warning("error getting runtime-config stat: error code -> {}", stat_result.error());
   }
 
   const auto runtime_config_mem{std::unique_ptr<char, decltype(std::addressof(kphp::memory::script::free))>{

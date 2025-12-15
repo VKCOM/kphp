@@ -61,7 +61,7 @@ inline string f$basename(const string& path, const string& suffix = {}) noexcept
 
 inline Optional<int64_t> f$filesize(const string& filename) noexcept {
   struct stat stat {};
-  if (auto errc_expected{k2::stat({filename.c_str(), filename.size()}, std::addressof(stat))}; !errc_expected.has_value()) [[unlikely]] {
+  if (auto stat_result{k2::stat({filename.c_str(), filename.size()}, std::addressof(stat))}; !stat_result.has_value()) [[unlikely]] {
     return false;
   }
   return static_cast<int64_t>(stat.st_size);
@@ -244,6 +244,7 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
 
 inline bool f$is_file(const string& name) noexcept {
   struct stat stat_buf {};
+  // TODO: the semantics in PHP are different: PHP expects stat
   if (!k2::lstat(name.c_str(), std::addressof(stat_buf)).has_value()) {
     return false;
   }

@@ -313,7 +313,6 @@ bool f$is_dir(const string& name) {
 bool f$is_file(const string& name) {
   struct stat stat_buf;
   dl::enter_critical_section(); // OK
-  // TODO: the semantics in PHP are different
   if (lstat(name.c_str(), &stat_buf) < 0) {
     dl::leave_critical_section();
     return false;
