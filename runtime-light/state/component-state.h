@@ -42,7 +42,7 @@ private:
   static constexpr std::string_view INI_ARG_PREFIX = "ini ";
   static constexpr std::string_view KML_DIR_ARG = "kml-dir";
   static constexpr std::string_view RUNTIME_CONFIG_ARG = "runtime-config";
-  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(4UZ * 230UZ * 1024UZ * 1024UZ); // 1MB
+  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U); // 1MB
 
   void parse_env() noexcept;
 

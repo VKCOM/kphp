@@ -25,7 +25,6 @@ void StaticInit::compile(CodeGenerator &W) const {
   }
 
   // "const vars init" declarations
-  FunctionSignatureGenerator(W) << "void const_vars_check_ref_cnt()" << SemicolonAndNL() << NL;
   FunctionSignatureGenerator(W) << "void const_vars_init()" << SemicolonAndNL() << NL;
   for (LibPtr lib : G->get_libs()) {
     if (lib && !lib->is_raw_php()) {
@@ -81,6 +80,12 @@ void StaticInit::compile(CodeGenerator &W) const {
       W << lib->lib_namespace() << "::const_vars_init();" << NL;
     }
   }
+
+  if (G->is_output_mode_k2()) {
+    FunctionSignatureGenerator(W) << "void const_vars_set_reference_counter()" << SemicolonAndNL() << NL;
+    W << "const_vars_set_reference_counter();" << NL;
+  }
+
   W << NL;
   FunctionSignatureGenerator(W) << "void " << ShapeKeys::get_function_name() << "()" << SemicolonAndNL();
   W << ShapeKeys::get_function_name() << "();" << NL;
@@ -104,9 +109,6 @@ void StaticInit::compile(CodeGenerator &W) const {
       }
     }
   }
-
-  FunctionSignatureGenerator(W) << "void const_vars_set_ref_cnt()" << SemicolonAndNL() << NL;
-  W << "const_vars_set_ref_cnt();" << NL;
 
   W << END << NL;
 }

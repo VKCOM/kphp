@@ -8,11 +8,12 @@
 
 #include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::core {
 
 template<typename T>
-void set_reference_counter_recursive([[maybe_unused]] T& obj, [[maybe_unused]] ExtraRefCnt rc) noexcept {}
+void set_reference_counter_recursive(T& /*obj*/, ExtraRefCnt /*rc*/) noexcept {}
 
 template<typename T>
 void set_reference_counter_recursive(Optional<T>& obj, ExtraRefCnt rc) noexcept {
@@ -22,9 +23,10 @@ void set_reference_counter_recursive(Optional<T>& obj, ExtraRefCnt rc) noexcept 
 }
 
 template<typename T>
-void set_reference_counter_recursive(class_instance<T>& obj, ExtraRefCnt rc) noexcept {
+void set_reference_counter_recursive(class_instance<T>& obj, ExtraRefCnt /*rc*/) noexcept {
   if (!obj.is_null()) {
-    obj.set_reference_counter_to(rc);
+    // TODO we need some visitor to visit all the class members
+    kphp::log::assertion(false);
   }
 }
 
@@ -63,28 +65,31 @@ inline void set_reference_counter_recursive<mixed>(mixed& obj, ExtraRefCnt rc) n
 // ================================================================================================
 
 template<typename T>
-bool check_reference_counter_recursive([[maybe_unused]] const T& obj, [[maybe_unused]] ExtraRefCnt rc) noexcept {
+bool is_reference_counter_recursive(const T& /*obj*/, ExtraRefCnt /*rc*/) noexcept {
   return true;
 }
 
 template<typename T>
-bool check_reference_counter_recursive(const Optional<T>& obj, ExtraRefCnt rc) noexcept {
-  return obj.has_value() ? check_reference_counter_recursive(obj.val(), rc) : true;
+bool is_reference_counter_recursive(const Optional<T>& obj, ExtraRefCnt rc) noexcept {
+  return obj.has_value() ? is_reference_counter_recursive(obj.val(), rc) : true;
 }
 
 template<typename T>
-bool check_reference_counter_recursive(const class_instance<T>& obj, ExtraRefCnt rc) noexcept {
-  return obj.is_reference_counter(rc);
+bool is_reference_counter_recursive(const class_instance<T>& obj, ExtraRefCnt /*rc*/) noexcept {
+  if (!obj.is_null()) {
+    // TODO we need some visitor to visit all the class members
+    kphp::log::assertion(false);
+  }
 }
 
 template<typename T>
-bool check_reference_counter_recursive(const array<T>& obj, ExtraRefCnt rc) noexcept {
+bool is_reference_counter_recursive(const array<T>& obj, ExtraRefCnt rc) noexcept {
   if (!obj.is_reference_counter(rc)) {
     return false;
   }
 
-  for (const auto& it : obj) {
-    if (!check_reference_counter_recursive(it.get_key(), rc) || !check_reference_counter_recursive(it.get_value(), rc)) {
+  for (const auto& it : obj) { // NOLINT
+    if (!is_reference_counter_recursive(it.get_key(), rc) || !is_reference_counter_recursive(it.get_value(), rc)) {
       return false;
     }
   }
@@ -92,12 +97,12 @@ bool check_reference_counter_recursive(const array<T>& obj, ExtraRefCnt rc) noex
 }
 
 template<>
-inline bool check_reference_counter_recursive<string>(const string& obj, ExtraRefCnt rc) noexcept {
+inline bool is_reference_counter_recursive<string>(const string& obj, ExtraRefCnt rc) noexcept {
   return obj.is_reference_counter(rc);
 }
 
 template<>
-inline bool check_reference_counter_recursive<mixed>(const mixed& obj, ExtraRefCnt rc) noexcept {
+inline bool is_reference_counter_recursive<mixed>(const mixed& obj, ExtraRefCnt rc) noexcept {
   switch (obj.get_type()) {
   case mixed::type::NUL:
   case mixed::type::BOOLEAN:
@@ -108,7 +113,7 @@ inline bool check_reference_counter_recursive<mixed>(const mixed& obj, ExtraRefC
   case mixed::type::OBJECT:
     return obj.is_reference_counter(rc);
   case mixed::type::ARRAY:
-    return check_reference_counter_recursive(obj.as_array(), rc);
+    return is_reference_counter_recursive(obj.as_array(), rc);
   }
 }
 
