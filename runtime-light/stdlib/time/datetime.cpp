@@ -131,6 +131,10 @@ string f$DateTime$$format(const class_instance<C$DateTime>& self, const string& 
   return str;
 }
 
+int64_t f$DateTime$$getOffset(const class_instance<C$DateTime>& self) noexcept {
+  return kphp::timelib::get_offset(*self->time);
+}
+
 int64_t f$DateTime$$getTimestamp(const class_instance<C$DateTime>& self) noexcept {
   return kphp::timelib::get_timestamp(*self->time);
 }

@@ -174,6 +174,25 @@ std::string_view english_suffix(timelib_sll number) noexcept {
   return "th";
 }
 
+int64_t get_offset(timelib_time& t) noexcept {
+  if (t.is_localtime) {
+    switch (t.zone_type) {
+    case TIMELIB_ZONETYPE_ID: {
+      time_offset_t offset{(kphp::memory::libc_alloc_guard{}, timelib_get_time_zone_info(t.sse, t.tz_info))};
+      int64_t offset_int{offset->offset};
+      return offset_int;
+    }
+    case TIMELIB_ZONETYPE_OFFSET: {
+      return t.z;
+    }
+    case TIMELIB_ZONETYPE_ABBR: {
+      return t.z + (3600 * t.dst);
+    }
+    }
+  }
+  return 0;
+}
+
 timelib_tzinfo* get_timezone_info(const char* timezone) noexcept {
   int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
   auto* tzinfo{kphp::timelib::get_timezone_info(timezone, timelib_builtin_db(), std::addressof(errc))};

@@ -65,4 +65,6 @@ class_instance<C$DateInterval> f$DateTimeImmutable$$diff(const class_instance<C$
 
 string f$DateTimeImmutable$$format(const class_instance<C$DateTimeImmutable>& self, const string& format) noexcept;
 
+int64_t f$DateTimeImmutable$$getOffset(const class_instance<C$DateTimeImmutable>& self) noexcept;
+
 int64_t f$DateTimeImmutable$$getTimestamp(const class_instance<C$DateTimeImmutable>& self) noexcept;

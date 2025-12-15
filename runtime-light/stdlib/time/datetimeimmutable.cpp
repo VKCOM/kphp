@@ -169,6 +169,10 @@ string f$DateTimeImmutable$$format(const class_instance<C$DateTimeImmutable>& se
   return str;
 }
 
+int64_t f$DateTimeImmutable$$getOffset(const class_instance<C$DateTimeImmutable>& self) noexcept {
+  return kphp::timelib::get_offset(*self->time);
+}
+
 int64_t f$DateTimeImmutable$$getTimestamp(const class_instance<C$DateTimeImmutable>& self) noexcept {
   return kphp::timelib::get_timestamp(*(self->time));
 }
