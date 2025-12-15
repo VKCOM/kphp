@@ -237,12 +237,10 @@ inline Optional<string> f$exec(const string& cmd) noexcept {
 }
 
 inline string f$get_engine_version() noexcept {
-  kphp::log::warning("called stub get_engine_version");
   return {};
 }
 
 inline string f$get_kphp_cluster_name() noexcept {
-  kphp::log::warning("called stub get_kphp_cluster_name");
   return string{"adm512"};
 }
 
