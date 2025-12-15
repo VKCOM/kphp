@@ -105,6 +105,9 @@ void StaticInit::compile(CodeGenerator &W) const {
     }
   }
 
+  FunctionSignatureGenerator(W) << "void const_vars_set_ref_cnt()" << SemicolonAndNL() << NL;
+  W << "const_vars_set_ref_cnt();" << NL;
+
   W << END << NL;
 }
 

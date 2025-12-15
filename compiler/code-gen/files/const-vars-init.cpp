@@ -176,6 +176,45 @@ void ConstVarsInit::compile(CodeGenerator& W) const {
   W << CloseFile();
 
   for (const auto& batch : all_constants_in_mem.get_batches()) {
+    W << OpenFile("c." + std::to_string(batch.batch_idx) + ".cpp", "o_const_vars_set_refcnt", false);
+    W << ExternInclude(G->settings().runtime_headers.get());
+
+    IncludesCollector includes;
+    ConstantsExternCollector c_mem_extern;
+    for (VarPtr var : batch.constants) {
+      if (!G->is_output_mode_lib() && !G->is_output_mode_k2_lib()) {
+        includes.add_var_signature_depends(var);
+        includes.add_vertex_depends(var->init_val);
+      }
+      // c_mem_extern.add_extern_from_init_val(var->init_val);
+      W << includes;
+    }
+    // W << c_mem_extern;
+
+    for (VarPtr var : batch.constants) {
+      W << "extern " << type_out(tinf::get_type(var)) << " " << var->name << ";" << NL;
+    }
+
+    FunctionSignatureGenerator(W) << "void const_vars_set_ref_cnt" << std::to_string(batch.batch_idx) << "()" << BEGIN;
+    for (VarPtr var : batch.constants) {
+      if (!(vk::any_of_equal(var->tinf_node.get_type()->ptype(), tp_string, tp_array, tp_Class, tp_mixed))) {
+        continue;
+      }
+      W << "kphp::core::set_reference_counter_recursive(" << var->name << ", ExtraRefCnt::for_global_const);" << NL;
+    }
+    W << END;
+    W << CloseFile();
+  }
+
+  W << OpenFile("const_vars_set_ref_cnt.cpp", "", false);
+  FunctionSignatureGenerator(W) << "void const_vars_set_ref_cnt()" << BEGIN;
+  for (const auto& batch : all_constants_in_mem.get_batches()) {
+    FunctionSignatureGenerator(W) << "void const_vars_set_ref_cnt" << std::to_string(batch.batch_idx) << "()" << SemicolonAndNL();
+    W << "const_vars_set_ref_cnt" << std::to_string(batch.batch_idx) << "()" << SemicolonAndNL();
+  }
+  W << END;
+  W << CloseFile();
+  for (const auto& batch : all_constants_in_mem.get_batches()) {
     W << OpenFile("c." + std::to_string(batch.batch_idx) + ".cpp", "o_const_vars_check_refcnt", false);
     W << ExternInclude(G->settings().runtime_headers.get());
 
@@ -200,7 +239,6 @@ void ConstVarsInit::compile(CodeGenerator& W) const {
       if (!(vk::any_of_equal(var->tinf_node.get_type()->ptype(), tp_string, tp_array, tp_Class, tp_mixed))) {
         continue;
       }
-      // W << "kphp::core::set_reference_counter_recursive(" << var->name << ", ExtraRefCnt::for_global_const);" << NL;
       W << "php_assert(kphp::core::check_reference_counter_recursive(" << var->name << ", ExtraRefCnt::for_global_const));" << NL;
     }
     W << END;

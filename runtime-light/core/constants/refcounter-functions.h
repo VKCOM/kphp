@@ -46,7 +46,18 @@ inline void set_reference_counter_recursive<string>(string& obj, ExtraRefCnt rc)
 
 template<>
 inline void set_reference_counter_recursive<mixed>(mixed& obj, ExtraRefCnt rc) noexcept {
-  return obj.set_reference_counter_to(rc);
+  switch (obj.get_type()) {
+  case mixed::type::NUL:
+  case mixed::type::BOOLEAN:
+  case mixed::type::INTEGER:
+  case mixed::type::FLOAT:
+    return;
+  case mixed::type::STRING:
+  case mixed::type::OBJECT:
+    return obj.set_reference_counter_to(rc);
+  case mixed::type::ARRAY:
+    return set_reference_counter_recursive(obj.as_array(), rc);
+  }
 }
 
 // ================================================================================================
@@ -94,9 +105,10 @@ inline bool check_reference_counter_recursive<mixed>(const mixed& obj, ExtraRefC
   case mixed::type::FLOAT:
     return true;
   case mixed::type::STRING:
-  case mixed::type::ARRAY:
   case mixed::type::OBJECT:
     return obj.is_reference_counter(rc);
+  case mixed::type::ARRAY:
+    return check_reference_counter_recursive(obj.as_array(), rc);
   }
 }
 
