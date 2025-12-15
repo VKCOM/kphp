@@ -16,6 +16,7 @@
 #include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator-state.h"
+#include "runtime-light/core/reference-counter/reference-counter-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/math/math-state.h"
@@ -70,12 +71,18 @@ struct ImageState final : private vk::not_copyable {
     uname_info_a.push_back(' ');
     uname_info_a.append(uname_info_m);
     // prevent race condition on reference counter
-    uname_info_s.set_reference_counter_to(ExtraRefCnt::for_global_const);
-    uname_info_n.set_reference_counter_to(ExtraRefCnt::for_global_const);
-    uname_info_r.set_reference_counter_to(ExtraRefCnt::for_global_const);
-    uname_info_v.set_reference_counter_to(ExtraRefCnt::for_global_const);
-    uname_info_m.set_reference_counter_to(ExtraRefCnt::for_global_const);
-    uname_info_a.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(uname_info_s, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(uname_info_s, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(uname_info_n, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(uname_info_n, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(uname_info_r, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(uname_info_r, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(uname_info_v, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(uname_info_v, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(uname_info_m, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(uname_info_m, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(uname_info_a, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(uname_info_a, ExtraRefCnt::for_global_const)));
   }
 
   static const ImageState& get() noexcept {
