@@ -1,0 +1,21 @@
+// Compiler for PHP (aka KPHP)
+// Copyright (c) 2024 LLC «V Kontakte»
+// Distributed under the GPL v3 License, see LICENSE.notice.txt
+
+#pragma once
+
+#include "zlib/zlib.h"
+
+#include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
+
+struct C$DeflateContext : public refcountable_php_classes<C$DeflateContext>, private DummyVisitorMethods {
+  C$DeflateContext() = default;
+  using DummyVisitorMethods::accept;
+
+  ~C$DeflateContext() {
+    deflateEnd(&stream);
+  }
+
+  z_stream stream{};
+};

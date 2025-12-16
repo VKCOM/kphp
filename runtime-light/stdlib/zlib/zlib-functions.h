@@ -10,6 +10,7 @@
 #include <span>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/zlib/deflatecontext.h"
 
 namespace kphp::zlib {
 
@@ -53,3 +54,8 @@ inline string f$gzdeflate(const string& data, int64_t level = kphp::zlib::MIN_CO
 inline string f$gzinflate(const string& data) noexcept {
   return kphp::zlib::decode({data.c_str(), static_cast<size_t>(data.size())}, kphp::zlib::ENCODING_RAW).value_or(string{});
 }
+
+class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed>& options = {}) noexcept;
+
+Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, const string& data, int64_t flush_type = Z_SYNC_FLUSH) noexcept;
+

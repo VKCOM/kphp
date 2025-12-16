@@ -15,6 +15,7 @@
 #include "zlib/zlib.h"
 
 #include "common/containers/final_action.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/string/string-state.h"
@@ -35,6 +36,21 @@ voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) noexcept {
 }
 
 void zlib_static_free([[maybe_unused]] voidpf opaque, [[maybe_unused]] voidpf address) noexcept {}
+
+voidpf zlib_dynamic_alloc([[maybe_unused]] voidpf opaque, uInt items, uInt size) noexcept {
+  auto* mem{kphp::memory::script::calloc(items, size)};
+  if (mem == nullptr) [[unlikely]] {
+    kphp::log::warning("zlib dynamic alloc: can't allocate {} bytes", items * size);
+  }
+  return mem;
+}
+
+void zlib_dynamic_free([[maybe_unused]] voidpf opaque, voidpf address) noexcept {
+  if (address == nullptr) [[unlikely]] {
+    return;
+  }
+  kphp::memory::script::free(address);
+}
 
 } // namespace
 
@@ -115,3 +131,97 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
 }
 
 } // namespace kphp::zlib
+
+class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed>& options) noexcept {
+  int32_t level{-1};
+  int32_t memory{8};
+  int32_t window{15};
+  auto strategy{Z_DEFAULT_STRATEGY};
+  auto extract_int_option{[](int32_t lbound, int32_t ubound, const array_iterator<const mixed>& option, int32_t& dst) noexcept {
+    const mixed& value = option.get_value();
+    if (value.is_int() && value.as_int() >= lbound && value.as_int() <= ubound) {
+      dst = value.as_int();
+      return true;
+    } else {
+      kphp::log::warning("deflate_init() : option {} should be number between {}..{}", option.get_string_key().c_str(), lbound, ubound);
+      return false;
+    }
+  }};
+  switch (encoding) {
+  case kphp::zlib::ENCODING_RAW:
+  case kphp::zlib::ENCODING_DEFLATE:
+  case kphp::zlib::ENCODING_GZIP:
+    break;
+  default:
+    kphp::log::warning("deflate_init() : encoding should be one of ZLIB_ENCODING_RAW, ZLIB_ENCODING_DEFLATE, ZLIB_ENCODING_GZIP");
+    return {};
+  }
+  for (const auto& option : options) {
+    mixed value;
+    if (!option.is_string_key()) {
+      kphp::log::warning("deflate_init() : unsupported option");
+      return {};
+    }
+    if (option.get_string_key() == string("level")) {
+      if (!extract_int_option(-1, 9, option, level)) {
+        return {};
+      }
+    } else if (option.get_string_key() == string("memory")) {
+      if (!extract_int_option(1, 9, option, memory)) {
+        return {};
+      }
+    } else if (option.get_string_key() == string("window")) {
+      if (!extract_int_option(8, 15, option, window)) {
+        return {};
+      }
+    } else if (option.get_string_key() == string("strategy")) {
+      value = option.get_value();
+      if (value.is_int()) {
+        switch (value.as_int()) {
+        case Z_FILTERED:
+        case Z_HUFFMAN_ONLY:
+        case Z_RLE:
+        case Z_FIXED:
+        case Z_DEFAULT_STRATEGY:
+          strategy = value.as_int();
+          break;
+        default:
+          kphp::log::warning(
+              "deflate_init() : option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
+          return {};
+        }
+      } else {
+        kphp::log::warning("deflate_init() : option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
+        return {};
+      }
+    } else if (option.get_string_key() == string("dictionary")) {
+      kphp::log::warning("deflate_init() : option dictionary isn't supported yet");
+      return {};
+    } else {
+      kphp::log::warning("deflate_init() : unknown option name \"{}\"", option.get_string_key().c_str());
+      return {};
+    }
+  }
+
+  class_instance<C$DeflateContext> context;
+  context.alloc();
+
+  z_stream* stream{std::addressof(context.get()->stream)};
+  stream->zalloc = zlib_dynamic_alloc;
+  stream->zfree = zlib_dynamic_free;
+  stream->opaque = nullptr;
+
+  if (encoding < 0) {
+    encoding += 15 - window;
+  } else {
+    encoding -= 15 - window;
+  }
+
+  auto err{deflateInit2(stream, level, Z_DEFLATED, encoding, memory, strategy)};
+  if (err != Z_OK) {
+    kphp::log::warning("deflate_init() : zlib error {}", zError(err));
+    context.destroy();
+    return {};
+  }
+  return context;
+}
