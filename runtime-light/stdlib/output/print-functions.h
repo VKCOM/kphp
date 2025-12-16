@@ -9,6 +9,8 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/file/file-system-functions.h"
+#include "runtime-light/stdlib/file/resource.h"
 #include "runtime-light/stdlib/output/output-state.h"
 
 // === print ======================================================================================
@@ -77,8 +79,12 @@ inline int64_t f$printf(const string& format, const array<mixed>& a) noexcept {
   return to_print.size();
 }
 
-inline Optional<int64_t> f$fprintf(const mixed& /*unused*/, const string& /*unused*/, const array<mixed>& /*unused*/) {
-  kphp::log::error("call to unsupported function");
+inline kphp::coro::task<Optional<int64_t>> f$vfprintf(const resource& stream, const string& format, const array<mixed>& args) noexcept {
+  co_return co_await f$fwrite(stream, f$vsprintf(format, args));
+}
+
+inline kphp::coro::task<Optional<int64_t>> f$fprintf(const resource& stream, const string& format, const array<mixed>& args) noexcept {
+  co_return co_await f$vfprintf(stream, format, args);
 }
 
 inline Optional<int64_t> f$fputcsv(const mixed& /*unused*/, const array<mixed>& /*unused*/, const string& /*unused*/ = string(",", 1),
