@@ -221,9 +221,10 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
     return false;
   }
 
-  kphp::stl::vector<std::byte, kphp::memory::script_allocator> file_content{size};
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> file_content;
+  file_content.resize(size);
   {
-    auto& file{std::move(*expected_file)};
+    auto file{std::move(*expected_file)};
     if (auto expected_read_result{file.read(file_content)}; !expected_read_result.has_value() || *expected_read_result < size) {
       return false;
     }
