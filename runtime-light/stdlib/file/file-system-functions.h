@@ -203,8 +203,8 @@ inline Optional<string> f$file_get_contents(const string& stream) noexcept {
 inline Optional<array<string>> f$file(const string& name) noexcept {
   struct stat stat_buf {};
 
-  auto open_result{kphp::fs::file::open(name.c_str(), "r")};
-  if (!open_result.has_value()) {
+  auto expected_file{kphp::fs::file::open(name.c_str(), "r")};
+  if (!expected_file.has_value()) {
     return false;
   }
   if (!k2::stat(name.c_str(), std::addressof(stat_buf)).has_value()) {
@@ -221,14 +221,13 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
     return false;
   }
 
-  auto& file{open_result.value()};
-
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> file_content{size};
-  if (auto rd_status{file.read(file_content)}; !rd_status.has_value() || rd_status.value() < size) {
-    return false;
+  {
+    auto& file{std::move(*expected_file)};
+    if (auto expected_read_result{file.read(file_content)}; !expected_read_result.has_value() || *expected_read_result < size) {
+      return false;
+    }
   }
-
-  file.close();
 
   array<string> result;
   int32_t prev{-1};
