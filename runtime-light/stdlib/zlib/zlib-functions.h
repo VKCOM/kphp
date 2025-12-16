@@ -58,4 +58,3 @@ inline string f$gzinflate(const string& data) noexcept {
 class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed>& options = {}) noexcept;
 
 Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, const string& data, int64_t flush_type = Z_SYNC_FLUSH) noexcept;
-
