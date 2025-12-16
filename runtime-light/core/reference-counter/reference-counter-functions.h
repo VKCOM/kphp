@@ -75,10 +75,8 @@ bool is_reference_counter_recursive(const Optional<T>& obj, ExtraRefCnt rc) noex
 
 template<typename T>
 bool is_reference_counter_recursive(const class_instance<T>& obj, ExtraRefCnt rc) noexcept {
-  if (!obj.is_null()) {
-    // TODO we need some visitor to visit all the class members
-    return obj.is_reference_counter(rc);
-  }
+  // TODO we need some visitor to visit all the class members
+  return !obj.is_null() ? obj.is_reference_counter(rc) : true;
 }
 
 template<typename T>
