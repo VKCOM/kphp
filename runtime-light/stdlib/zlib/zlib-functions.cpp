@@ -162,19 +162,19 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
       kphp::log::warning("deflate_init() : unsupported option");
       return {};
     }
-    if (option.get_string_key() == string("level")) {
+    if (option.get_string_key() == string{"level"}) {
       if (!extract_int_option(-1, 9, option, level)) {
         return {};
       }
-    } else if (option.get_string_key() == string("memory")) {
+    } else if (option.get_string_key() == string{"memory"}) {
       if (!extract_int_option(1, 9, option, memory)) {
         return {};
       }
-    } else if (option.get_string_key() == string("window")) {
+    } else if (option.get_string_key() == string{"window"}) {
       if (!extract_int_option(8, 15, option, window)) {
         return {};
       }
-    } else if (option.get_string_key() == string("strategy")) {
+    } else if (option.get_string_key() == string{"strategy"}) {
       value = option.get_value();
       if (value.is_int()) {
         switch (value.as_int()) {
@@ -194,7 +194,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
         kphp::log::warning("deflate_init() : option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
         return {};
       }
-    } else if (option.get_string_key() == string("dictionary")) {
+    } else if (option.get_string_key() == string{"dictionary"}) {
       kphp::log::warning("deflate_init() : option dictionary isn't supported yet");
       return {};
     } else {
@@ -224,4 +224,58 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
     return {};
   }
   return context;
+}
+
+Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, const string& data, int64_t flush_type) noexcept {
+  switch (flush_type) {
+  case Z_BLOCK:
+  case Z_NO_FLUSH:
+  case Z_PARTIAL_FLUSH:
+  case Z_SYNC_FLUSH:
+  case Z_FULL_FLUSH:
+  case Z_FINISH:
+    break;
+  default:
+    kphp::log::warning(
+        "deflate_add() : flush type should be one of ZLIB_NO_FLUSH, ZLIB_PARTIAL_FLUSH, ZLIB_SYNC_FLUSH, ZLIB_FULL_FLUSH, ZLIB_FINISH, ZLIB_BLOCK, ZLIB_TREES");
+    return {};
+  }
+
+  z_stream* stream{std::addressof(context.get()->stream)};
+  auto out_size{deflateBound(stream, data.size()) + 30};
+  out_size = out_size < 64 ? 64 : out_size;
+  string out{static_cast<string::size_type>(out_size), false};
+  stream->next_in = const_cast<Bytef*>(reinterpret_cast<const Bytef*>(data.c_str()));
+  stream->next_out = reinterpret_cast<Bytef*>(out.buffer());
+  stream->avail_in = data.size();
+  stream->avail_out = out_size;
+
+  auto status{Z_OK};
+  uint64_t buffer_used{};
+  do {
+    if (stream->avail_out == 0) {
+      out.reserve_at_least(out_size + 64);
+      out_size += 64;
+      stream->avail_out = 64;
+      stream->next_out = reinterpret_cast<Bytef*>(std::next(out.buffer(), buffer_used));
+    }
+    status = deflate(stream, flush_type);
+    buffer_used = out_size - stream->avail_out;
+  } while (status == Z_OK && stream->avail_out == 0);
+
+  std::ptrdiff_t len{};
+  switch (status) {
+  case Z_OK:
+    len = std::distance(reinterpret_cast<Bytef*>(out.buffer()), stream->next_out);
+    out.shrink(len);
+    return out;
+  case Z_STREAM_END:
+    len = std::distance(reinterpret_cast<Bytef*>(out.buffer()), stream->next_out);
+    deflateReset(stream);
+    out.shrink(len);
+    return out;
+  default:
+    kphp::log::warning("deflate_add() : zlib error {}", zError(status));
+    return {};
+  }
 }

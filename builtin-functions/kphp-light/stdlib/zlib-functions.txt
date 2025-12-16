@@ -18,6 +18,15 @@ function gzdeflate ($str ::: string, $level ::: int = -1) ::: string;
 
 function gzinflate ($str ::: string) ::: string;
 
+function deflate_init(int $encoding, array $options = []) ::: ?DeflateContext;
+
+function deflate_add(DeflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH) ::: string | false;
+
+final class DeflateContext {
+    private function __construct() ::: DeflateContext;
+}
+
+
 // ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info stub generation-required */
@@ -36,16 +45,3 @@ define('ZLIB_HUFFMAN_ONLY', 2);
 define('ZLIB_RLE', 3);
 define('ZLIB_FIXED', 4);
 define('ZLIB_DEFAULT_STRATEGY', 0);
-
-/** @kphp-generate-stub-class */
-final class DeflateContext {
-    /** @kphp-extern-func-info stub generation-required */
-    private function __construct() ::: DeflateContext;
-}
-
-// todo: deflate_init php signature has type array instead mixed
-/** @kphp-extern-func-info stub generation-required */
-function deflate_init(int $encoding, mixed $options = []) ::: ?DeflateContext;
-/** @kphp-extern-func-info stub generation-required */
-function deflate_add(DeflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH) ::: string | false;
-
