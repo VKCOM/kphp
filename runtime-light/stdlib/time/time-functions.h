@@ -182,25 +182,6 @@ inline bool f$date_default_timezone_set(const string& timezone) noexcept {
   return true;
 }
 
-inline string f$strftime(const string& format, int64_t timestamp = std::numeric_limits<int64_t>::min()) noexcept {
-  if (timestamp == std::numeric_limits<int64_t>::min()) {
-    namespace chrono = std::chrono;
-    timestamp = static_cast<int64_t>(chrono::time_point_cast<chrono::seconds>(chrono::system_clock::now()).time_since_epoch().count());
-  }
-  tm broken_down_time{};
-  const time_t timestamp_t{timestamp};
-  if (const auto* res{k2::localtime_r(std::addressof(timestamp_t), std::addressof(broken_down_time))}; res != std::addressof(broken_down_time)) [[unlikely]] {
-    kphp::log::warning("can't get local time");
-    return {};
-  }
-
-  if (!strftime(StringLibContext::get().static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, format.c_str(), std::addressof(broken_down_time))) {
-    return {};
-  }
-
-  return string{StringLibContext::get().static_buf.get()};
-}
-
 inline Optional<int64_t> f$strtotime(const string& datetime, int64_t base_timestamp = std::numeric_limits<int64_t>::min()) noexcept {
   if (base_timestamp == std::numeric_limits<int64_t>::min()) {
     namespace chrono = std::chrono;

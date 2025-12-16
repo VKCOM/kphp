@@ -30,8 +30,6 @@ function set_timer(int $timeout, callable():void $callback) ::: void;
 
 function checkdate ($month ::: int, $day ::: int, $year ::: int) ::: bool;
 
-function strftime ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;
-
 // ===== UNSUPPORTED =====
 
 /** @kphp-generate-stub-class */
@@ -180,3 +178,5 @@ define('DATE_W3C', "Y-m-d\TH:i:sP");
 
 /** @kphp-extern-func-info stub generation-required */
 function localtime ($timestamp ::: int = PHP_INT_MIN, $is_associative ::: bool = false) ::: mixed[];
+/** @kphp-extern-func-info stub generation-required */
+function strftime ($format ::: string, $timestamp ::: int = PHP_INT_MIN) ::: string;

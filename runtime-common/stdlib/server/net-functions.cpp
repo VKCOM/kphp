@@ -19,10 +19,10 @@ Optional<string> f$inet_pton(const string& address) noexcept {
   int32_t address_family{};
   int32_t size{};
 
-  if (strchr(address.c_str(), ':')) {
+  if (std::strchr(address.c_str(), ':')) {
     address_family = AF_INET6;
     size = 16;
-  } else if (strchr(address.c_str(), '.')) {
+  } else if (std::strchr(address.c_str(), '.')) {
     address_family = AF_INET;
     size = 4;
   } else {
