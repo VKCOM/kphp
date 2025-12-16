@@ -6,7 +6,7 @@
 
 #include "common/mixin/not_copyable.h"
 
-#include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/async-stack-structs.h"
 
 struct CoroutineInstanceState final : private vk::not_copyable {
 
@@ -14,5 +14,6 @@ struct CoroutineInstanceState final : private vk::not_copyable {
 
   static CoroutineInstanceState& get() noexcept;
 
-  kphp::coro::async_stack_root coroutine_stack_root;
+  kphp::coro::async_stack_root base_coroutine_stack_root; // used to reduce the number of accesses to thread-local state
+  kphp::coro::async_stack_root* current_async_stack_root{&base_coroutine_stack_root};
 };

@@ -395,9 +395,7 @@ inline auto io_scheduler::process_events() noexcept -> k2::PollStatus {
 
     kphp::log::assertion(m_scheduled_tasks_tmp.empty());
     std::swap(m_scheduled_tasks, m_scheduled_tasks_tmp);
-    std::ranges::for_each(m_scheduled_tasks_tmp, [&coroutine_stack_root = m_coroutine_instance_state.coroutine_stack_root](const auto& coroutine) noexcept {
-      kphp::coro::resume(coroutine, coroutine_stack_root);
-    });
+    std::ranges::for_each(m_scheduled_tasks_tmp, [](const auto& coroutine) noexcept { coroutine.resume(); });
     m_scheduled_tasks_tmp.clear();
   }
 
@@ -422,7 +420,7 @@ auto io_scheduler::start(coroutine_type coroutine) noexcept -> bool {
   if (!handle || handle.done()) [[unlikely]] {
     return false;
   }
-  kphp::coro::resume(handle, m_coroutine_instance_state.coroutine_stack_root);
+  kphp::coro::resume_with_new_root(handle, m_coroutine_instance_state.current_async_stack_root);
   return true;
 }
 
@@ -430,11 +428,11 @@ inline auto io_scheduler::schedule() noexcept {
   class schedule_operation {
     friend class io_scheduler;
     io_scheduler& m_scheduler;
-    kphp::coro::async_stack_frame* const m_async_stack_frame{};
+    kphp::coro::async_stack_root* const m_async_stack_root{};
 
     explicit schedule_operation(io_scheduler& scheduler) noexcept
         : m_scheduler(scheduler),
-          m_async_stack_frame(m_scheduler.m_coroutine_instance_state.coroutine_stack_root.top_async_stack_frame) {}
+          m_async_stack_root(m_scheduler.m_coroutine_instance_state.current_async_stack_root) {}
 
   public:
     constexpr auto await_ready() const noexcept -> bool {
@@ -446,7 +444,7 @@ inline auto io_scheduler::schedule() noexcept {
     }
 
     auto await_resume() const noexcept -> void {
-      m_scheduler.m_coroutine_instance_state.coroutine_stack_root.top_async_stack_frame = m_async_stack_frame;
+      kphp::coro::preparation_for_resume(m_async_stack_root, STACK_FRAME_ADDRESS, m_scheduler.m_coroutine_instance_state);
     }
   };
   return schedule_operation{*this};

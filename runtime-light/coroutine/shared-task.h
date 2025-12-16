@@ -29,12 +29,23 @@ struct shared_task_awaiter final {
 
 template<typename promise_type>
 struct promise_base : kphp::coro::async_stack_element {
+private:
+  mutable kphp::coro::async_stack_root_wrapper root_wrapper_{};
+
+public:
   constexpr auto initial_suspend() const noexcept -> std::suspend_always {
     return {};
   }
 
   constexpr auto final_suspend() const noexcept {
     struct awaiter {
+    private:
+      mutable kphp::coro::async_stack_root* root;
+
+    public:
+      awaiter(kphp::coro::async_stack_root* prt)
+          : root{prt} {}
+
       constexpr auto await_ready() const noexcept -> bool {
         return false;
       }
@@ -51,8 +62,11 @@ struct promise_base : kphp::coro::async_stack_element {
           // read the m_next pointer before resuming the coroutine
           // since resuming the coroutine may destroy the shared_task_waiter value
           auto* next{awaiter->m_next};
-          auto& async_stack_root{*promise.get_async_stack_frame().async_stack_root};
-          kphp::coro::resume(awaiter->m_continuation, async_stack_root);
+          auto& async_stack_frame{promise.get_async_stack_frame()};
+
+          root->top_async_stack_frame = std::addressof(async_stack_frame);
+          async_stack_frame.async_stack_root = root;
+          kphp::coro::resume_with_new_root(awaiter->m_continuation, root);
           awaiter = next;
         }
         // return last awaiter's coroutine_handle to allow it to potentially be compiled as a tail-call
@@ -61,7 +75,7 @@ struct promise_base : kphp::coro::async_stack_element {
 
       constexpr auto await_resume() const noexcept -> void {}
     };
-    return awaiter{};
+    return awaiter{std::addressof(root_wrapper_.root)};
   }
 
   auto unhandled_exception() const noexcept -> void {
@@ -99,8 +113,11 @@ struct promise_base : kphp::coro::async_stack_element {
     if (m_awaiters == NOT_STARTED_VAL) {
       m_awaiters = STARTED_NO_WAITERS_VAL;
       const auto& handle{std::coroutine_handle<promise_type>::from_promise(*static_cast<promise_type*>(this))};
-      auto& async_stack_root{*get_async_stack_frame().async_stack_root};
-      kphp::coro::resume(handle, async_stack_root);
+      auto& async_stack_frame{get_async_stack_frame()};
+
+      async_stack_frame.async_stack_root = std::addressof(root_wrapper_.root);
+      async_stack_frame.async_stack_root->top_async_stack_frame = std::addressof(async_stack_frame);
+      kphp::coro::resume_with_new_root(handle, std::addressof(root_wrapper_.root));
     }
     // coroutine already completed, don't suspend
     if (done()) {
@@ -168,24 +185,13 @@ template<typename promise_type>
 class awaiter_base {
   bool m_suspended{};
 
-  void set_async_top_frame(async_stack_frame& caller_frame, void* return_address) noexcept {
+  void set_async_top_frame(void* return_address) noexcept {
     /**
      * shared_task is the top of the stack for calls from it.
      * Therefore, it's awaiter doesn't store caller_frame, but it save `await_suspend()` return address
      * */
     async_stack_frame& callee_frame{m_coro.promise().get_async_stack_frame()};
-
     callee_frame.return_address = return_address;
-    auto* async_stack_root{caller_frame.async_stack_root};
-    kphp::log::assertion(async_stack_root != nullptr);
-    callee_frame.async_stack_root = async_stack_root;
-    async_stack_root->top_async_stack_frame = std::addressof(callee_frame);
-  }
-
-  void reset_async_top_frame(async_stack_frame& caller_frame) noexcept {
-    auto* async_stack_root{caller_frame.async_stack_root};
-    kphp::log::assertion(async_stack_root != nullptr);
-    async_stack_root->top_async_stack_frame = std::addressof(caller_frame);
   }
 
 protected:
@@ -217,14 +223,15 @@ public:
 
   template<std::derived_from<kphp::coro::async_stack_element> caller_promise_type>
   [[clang::noinline]] auto await_suspend(std::coroutine_handle<caller_promise_type> awaiting_coroutine) noexcept -> bool {
-    set_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame(), STACK_RETURN_ADDRESS);
+    set_async_top_frame(STACK_RETURN_ADDRESS);
     m_awaiter.m_continuation = awaiting_coroutine;
     m_suspended = m_coro.promise().suspend_awaiter(m_awaiter);
-    reset_async_top_frame(awaiting_coroutine.promise().get_async_stack_frame());
     return m_suspended;
   }
 
   auto await_resume() noexcept -> void {
+    auto& frame = m_coro.promise().get_async_stack_frame();
+    kphp::coro::preparation_for_resume(frame.async_stack_root, STACK_FRAME_ADDRESS);
     m_suspended = false;
   }
 };
