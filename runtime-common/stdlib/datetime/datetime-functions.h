@@ -14,7 +14,7 @@ inline string f$strftime(const string& format, int64_t timestamp = std::numeric_
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = time(nullptr);
   }
-  tm broken_down_time {};
+  tm broken_down_time{};
   const time_t timestamp_t = timestamp;
   localtime_r(std::addressof(timestamp_t), std::addressof(broken_down_time));
 

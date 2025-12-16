@@ -16,8 +16,8 @@ constexpr int64_t IPV4_SIZE = 25;
 }
 
 Optional<string> f$inet_pton(const string& address) noexcept {
-  int32_t address_family {};
-  int32_t size {};
+  int32_t address_family{};
+  int32_t size{};
 
   if (strchr(address.c_str(), ':')) {
     address_family = AF_INET6;
