@@ -8,7 +8,6 @@
 
 #include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::core {
 
@@ -23,10 +22,10 @@ void set_reference_counter_recursive(Optional<T>& obj, ExtraRefCnt rc) noexcept 
 }
 
 template<typename T>
-void set_reference_counter_recursive(class_instance<T>& obj, ExtraRefCnt /*rc*/) noexcept {
+void set_reference_counter_recursive(class_instance<T>& obj, ExtraRefCnt rc) noexcept {
   if (!obj.is_null()) {
-    // TODO we need some visitor to visit all the class members
-    kphp::log::assertion(false);
+    // TODO we need some visitor to visit all the class member
+    obj.set_reference_counter_to(rc);
   }
 }
 
@@ -75,10 +74,10 @@ bool is_reference_counter_recursive(const Optional<T>& obj, ExtraRefCnt rc) noex
 }
 
 template<typename T>
-bool is_reference_counter_recursive(const class_instance<T>& obj, ExtraRefCnt /*rc*/) noexcept {
+bool is_reference_counter_recursive(const class_instance<T>& obj, ExtraRefCnt rc) noexcept {
   if (!obj.is_null()) {
     // TODO we need some visitor to visit all the class members
-    kphp::log::assertion(false);
+    return obj.is_reference_counter(rc);
   }
 }
 
