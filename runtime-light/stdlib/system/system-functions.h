@@ -79,7 +79,7 @@ auto exec(std::string_view cmd, const output_handler_type& output_handler = {}) 
 
 template<typename F>
 bool f$register_kphp_on_oom_callback(F&& /*callback*/) {
-  kphp::log::error("call to unsupported function");
+  kphp::log::warning("called stub register_kphp_on_oom_callback");
 }
 
 template<typename F>
@@ -237,12 +237,10 @@ inline Optional<string> f$exec(const string& cmd) noexcept {
 }
 
 inline string f$get_engine_version() noexcept {
-  kphp::log::warning("called stub get_engine_version");
   return {};
 }
 
 inline string f$get_kphp_cluster_name() noexcept {
-  kphp::log::warning("called stub get_kphp_cluster_name");
   return string{"adm512"};
 }
 
