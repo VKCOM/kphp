@@ -18,6 +18,7 @@
 #include "runtime-light/allocator/allocator-state.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/file/file-system-state.h"
 #include "runtime-light/stdlib/math/math-state.h"
 #include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/string/string-state.h"
@@ -39,6 +40,7 @@ struct ImageState final : private vk::not_copyable {
 
   ShapeKeyDemangle shape_key_demangler;
 
+  FileSystemImageState file_system_image_state;
   StringImageState string_image_state;
   TimeImageState time_image_state;
   MathImageState math_image_state;
