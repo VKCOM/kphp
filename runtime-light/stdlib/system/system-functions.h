@@ -199,8 +199,8 @@ inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
 }
 
 inline kphp::coro::task<> f$sleep(int64_t seconds) noexcept {
-  if (seconds <= 0 || seconds > 1800) {
-    kphp::log::warning("wrong parameter seconds ({}) specified in function sleep, must be in seconds", seconds);
+  if (seconds <= 0) {
+    kphp::log::warning("value of seconds ({}) must be positive", seconds);
     co_return;
   }
 
