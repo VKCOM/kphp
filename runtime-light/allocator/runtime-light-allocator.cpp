@@ -7,7 +7,6 @@
 #include <cstring>
 
 #include "runtime-light/allocator/allocator-state.h"
-#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
