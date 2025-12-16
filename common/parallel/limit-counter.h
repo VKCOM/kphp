@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef KDB_COMMON_PARALLEL_LIMIT_COUNTER_H
-#define KDB_COMMON_PARALLEL_LIMIT_COUNTER_H
+#pragma once
 
 #include <sys/cdefs.h>
 
@@ -91,5 +90,3 @@ static inline uint64_t parallel_limit_counter_read_approx(const parallel_limit_c
 #define PARALLEL_LIMIT_COUNTER_DEC(name) parallel_limit_counter_dec(&parallel_limit_counter_##name, &parallel_limit_counter_##name##_tls)
 #define PARALLEL_LIMIT_COUNTER_READ_APPROX(name) parallel_limit_counter_read_approx(&parallel_limit_counter_##name)
 #define PARALLEL_LIMIT_COUNTER_READ(name) parallel_limit_counter_read(&parallel_limit_counter_##name)
-
-#endif // KDB_COMMON_PARALLEL_LIMIT_COUNTER_H

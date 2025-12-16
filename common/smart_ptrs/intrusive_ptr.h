@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_INTRUSIVE_PTR_H
-#define ENGINE_INTRUSIVE_PTR_H
+#pragma once
 
 #include <atomic>
 #include <cassert>
@@ -167,4 +166,3 @@ vk::intrusive_ptr<Derived> dynamic_pointer_cast(const vk::intrusive_ptr<Base>& b
 }
 
 } // namespace vk
-#endif // ENGINE_INTRUSIVE_PTR_H

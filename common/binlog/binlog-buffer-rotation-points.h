@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_BINLOG_BUFFER_ROTATION_POINTS_H
-#define ENGINE_BINLOG_BUFFER_ROTATION_POINTS_H
+#pragma once
 
 #include <sys/cdefs.h>
 
@@ -20,5 +19,3 @@ void bb_rotation_point_assign(struct bb_rotation_point** lhs, struct bb_rotation
 
 void bb_rotation_point_close_binlog(struct bb_rotation_point* p);
 void bb_rotation_point_free(struct bb_rotation_point* p);
-
-#endif // ENGINE_BINLOG_BUFFER_ROTATION_POINTS_H

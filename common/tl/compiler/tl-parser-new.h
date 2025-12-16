@@ -2,8 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __TL_PARSER_NEW_H__
-#define __TL_PARSER_NEW_H__
+#pragma once
+
 enum lex_type { lex_error, lex_char, lex_triple_minus, lex_uc_ident, lex_lc_ident, lex_eof, lex_none, lex_num, lex_attribute };
 
 struct curlex {
@@ -175,5 +175,3 @@ void write_types(int f);
 #define COMBINATOR_FLAG_WRITE 2
 #define COMBINATOR_FLAG_INTERNAL 4
 #define COMBINATOR_FLAG_KPHP 8
-
-#endif

@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __KPRINTF_H__
-#define __KPRINTF_H__
+#pragma once
 
 #include <stdio.h>
 
@@ -89,5 +88,3 @@ int set_verbosity_by_type(const char* type_name, int value);
 const char* ip_to_print(unsigned ip);
 const char* ipv6_to_print(const void* ip);
 const char* pid_to_print(const struct process_id* pid);
-
-#endif

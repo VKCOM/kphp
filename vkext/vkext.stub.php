@@ -102,11 +102,19 @@ function store_int(mixed $v) : bool {
   return false;
 }
 
+function store_byte(mixed $v) : bool {
+  return false;
+}
+
 function store_long(mixed $v) : bool {
   return false;
 }
 
 function store_string(mixed $v) : bool {
+  return false;
+}
+
+function store_string2(mixed $v) : bool {
   return false;
 }
 
@@ -136,6 +144,13 @@ function fetch_int() {
 /**
  * @return int|false
  */
+function fetch_byte() {
+  return 0;
+}
+
+/**
+ * @return int|false
+ */
 function fetch_long() {
   return 0;
 }
@@ -158,6 +173,13 @@ function fetch_float() {
  * @return string|false
  */
 function fetch_string() {
+  return "";
+}
+
+/**
+ * @return string|false
+ */
+function fetch_string2() {
   return "";
 }
 

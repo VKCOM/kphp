@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __TL_TL_H__
-#define __TL_TL_H__
+#pragma once
 
 #define TLS_SCHEMA 0xf19d9e38
 #define TLS_SCHEMA_V4 0x90ac88d7
@@ -32,4 +31,3 @@
 #define TLS_TYPE_VAR 0x0142ceae
 #define TLS_ARRAY 0xd9fb20de
 #define TLS_TYPE_EXPR 0xc1863d08
-#endif

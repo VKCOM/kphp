@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef KDB_COMMON_EXACT_DIVISION_H
-#define KDB_COMMON_EXACT_DIVISION_H
+#pragma once
 
 #include <sys/cdefs.h>
 
@@ -48,5 +47,3 @@ static inline uint32_t exact_division(exact_division_t* exact_division, uint64_t
 
   return (uint32_t)quotient;
 }
-
-#endif // KDB_COMMON_EXACT_DIVISION_H

@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_TAKE_WHILE_ITERATOR_H
-#define ENGINE_TAKE_WHILE_ITERATOR_H
+#pragma once
 
 #include <iterator>
 #include <utility>
@@ -60,5 +59,3 @@ take_while_iterator<std::decay_t<Predicate>, Iterator> make_take_while_iterator(
 }
 
 } // namespace vk
-
-#endif // ENGINE_TAKE_WHILE_ITERATOR_H

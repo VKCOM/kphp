@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_TRANSFORM_ITERATOR_H
-#define ENGINE_TRANSFORM_ITERATOR_H
+#pragma once
 
 #include <iterator>
 
@@ -78,5 +77,3 @@ struct pair_second_getter {
 };
 
 } // namespace vk
-
-#endif // ENGINE_TRANSFORM_ITERATOR_H

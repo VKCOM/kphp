@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef KDB_COMMON_IO_H
-#define KDB_COMMON_IO_H
+#pragma once
 
 #include <errno.h>
 #include <stdbool.h>
@@ -50,5 +49,3 @@ static inline bool write_exact(int fd, const void* buffer, size_t size) {
 
   return true;
 }
-
-#endif // KDB_COMMON_IO_H

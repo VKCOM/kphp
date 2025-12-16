@@ -20,6 +20,7 @@ inline auto process_error(tl::WebError e) noexcept -> error {
   case backend_internal_error::post_field_value_not_string:
   case backend_internal_error::header_line_not_string:
   case backend_internal_error::unsupported_property:
+  case backend_internal_error::cannot_set_transfer_token:
     return error{.code = WEB_INTERNAL_ERROR_CODE, .description = string(e.description.value.data(), e.description.value.size())};
   default:
     // BackendError

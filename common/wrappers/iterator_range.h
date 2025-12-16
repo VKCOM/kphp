@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_ITERATOR_RANGE_H
-#define ENGINE_ITERATOR_RANGE_H
+#pragma once
 
 #include <iterator>
 #include <utility>
@@ -95,5 +94,3 @@ auto filter(const Predicate& pred, const Cont& container) {
   return Cont{rng.begin(), rng.end()};
 }
 } // namespace vk
-
-#endif // ENGINE_ITERATOR_RANGE_H

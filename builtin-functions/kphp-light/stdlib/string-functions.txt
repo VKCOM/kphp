@@ -130,6 +130,8 @@ function pack ($pattern ::: string, ...$args) ::: string;
 
 function unpack ($pattern ::: string, $data ::: string) ::: mixed[] | false;
 
+function getimagesize ($name ::: string) ::: mixed;
+
 /**
  * @kphp-pure-function
  */
@@ -144,7 +146,3 @@ function zstd_uncompress_dict(string $data, string $dict) ::: string | false;
 
 /** @kphp-extern-func-info stub generation-required */
 function str_getcsv($str ::: string, string $delimiter ::: string = ",", string $enclosure ::: string = "\"", string $escape ::: string = "\\") ::: mixed[] | false;
-
-/** @kphp-extern-func-info stub generation-required */
-function getimagesize ($name ::: string) ::: mixed;
-

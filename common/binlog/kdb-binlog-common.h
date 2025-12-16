@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __KDB_BINLOG_COMMON_H__
-#define __KDB_BINLOG_COMMON_H__
+#pragma once
 
 #include <stdbool.h>
 
@@ -147,5 +146,3 @@ enum replay_binlog_result {
 };
 
 #pragma pack(pop)
-
-#endif

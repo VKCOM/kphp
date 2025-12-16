@@ -104,6 +104,90 @@ void string::store(tl::storer& tls) const noexcept {
   tls.store_bytes({reinterpret_cast<const std::byte*>(padding_array.data()), padding});
 }
 
+bool string::fetch2_len(tl::fetcher& tlf, uint64_t& string_len) noexcept {
+  uint8_t first_byte{};
+  if (const auto opt_first_byte{tlf.fetch_trivial<uint8_t>()}; opt_first_byte) [[likely]] {
+    first_byte = *opt_first_byte;
+  } else {
+    return false;
+  }
+
+  switch (first_byte) {
+  case LARGE_STRING_MAGIC: {
+    if (tlf.remaining() < 8) [[unlikely]] {
+      return false;
+    }
+    const auto first{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>())};
+    const auto second{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 8};
+    const auto third{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 16};
+    const auto fourth{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 24};
+    const auto fifth{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 32};
+    const auto sixth{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 40};
+    const auto seventh{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 48};
+    const auto eighth{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 56};
+    string_len = first | second | third | fourth | fifth | sixth | seventh | eighth;
+    // we allow non-canonical length to speed up some rare implementations
+    return true;
+  }
+  case MEDIUM_STRING_MAGIC: {
+    if (tlf.remaining() < 2) [[unlikely]] {
+      return false;
+    }
+    const auto first{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>())};
+    const auto second{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 8};
+    string_len = MEDIUM_STRING_MAGIC + (first | second);
+    return true;
+  }
+  default: {
+    string_len = static_cast<uint64_t>(first_byte);
+    return true;
+  }
+  }
+}
+
+bool string::fetch2(tl::fetcher& tlf) noexcept {
+  uint64_t string_len{};
+  if (!string::fetch2_len(tlf, string_len)) {
+    return false;
+  }
+  if (tlf.remaining() < string_len) [[unlikely]] {
+    return false;
+  }
+
+  value = {reinterpret_cast<const char*>(std::next(tlf.view().data(), tlf.pos())), static_cast<size_t>(string_len)};
+  tlf.adjust(string_len);
+  return true;
+}
+
+void string::store2_len(tl::storer& tls, uint64_t str_len) noexcept {
+  if (str_len < MEDIUM_STRING_MAGIC) {
+    tls.store_trivial<uint8_t>(str_len);
+    return;
+  }
+  if (str_len < MEDIUM_STRING_MAGIC + static_cast<uint64_t>(1 << 16)) {
+    str_len -= MEDIUM_STRING_MAGIC;
+    tls.store_trivial<uint8_t>(MEDIUM_STRING_MAGIC);
+    tls.store_trivial<uint8_t>(str_len & 0xff);
+    tls.store_trivial<uint8_t>((str_len >> 8) & 0xff);
+    return;
+  }
+  tls.store_trivial<uint8_t>(LARGE_STRING_MAGIC);
+  tls.store_trivial<uint8_t>(str_len & 0xff);
+  tls.store_trivial<uint8_t>((str_len >> 8) & 0xff);
+  tls.store_trivial<uint8_t>((str_len >> 16) & 0xff);
+  tls.store_trivial<uint8_t>((str_len >> 24) & 0xff);
+  tls.store_trivial<uint8_t>((str_len >> 32) & 0xff);
+  tls.store_trivial<uint8_t>((str_len >> 40) & 0xff);
+  tls.store_trivial<uint8_t>((str_len >> 48) & 0xff);
+  tls.store_trivial<uint8_t>((str_len >> 56) & 0xff);
+}
+
+void string::store2(tl::storer& tls) const noexcept {
+  uint64_t str_len = value.size();
+  string::store2_len(tls, str_len);
+  tls.store_bytes({reinterpret_cast<const std::byte*>(value.data()), str_len});
+}
+
 bool CertInfoItem::fetch(tl::fetcher& tlf) noexcept {
   tl::magic magic{};
   if (!magic.fetch(tlf)) [[unlikely]] {

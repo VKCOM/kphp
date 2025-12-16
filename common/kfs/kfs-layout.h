@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __KFS_LAYOUT_INCLUDED__
-#define __KFS_LAYOUT_INCLUDED__
+#pragma once
 
 #include <assert.h>
 
@@ -132,5 +131,3 @@ struct kfs_binlog_zip_header {
 static_assert(sizeof(kfs_binlog_zip_header_t) == 160, "mm");
 
 #pragma pack(pop)
-
-#endif

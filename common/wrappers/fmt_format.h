@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef COMMON_WRAPPERS_FMT_FORMAT_H
-#define COMMON_WRAPPERS_FMT_FORMAT_H
+#pragma once
 
 #include <fmt/core.h>
 
@@ -45,5 +44,3 @@ struct formatter<vk::string_view> : fmt::formatter<fmt::string_view> {
 };
 } // namespace fmt
 #endif
-
-#endif // COMMON_WRAPPERS_FMT_FORMAT_H

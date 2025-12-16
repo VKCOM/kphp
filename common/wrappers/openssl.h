@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef KDB_COMMON_OPENSSL_H
-#define KDB_COMMON_OPENSSL_H
+#pragma once
 
 #include <stddef.h>
 #include <string.h>
@@ -498,5 +497,3 @@ int ASN1_TIME_diff(int* pday, int* psec, const ASN1_TIME* from, const ASN1_TIME*
 #undef SECS_PER_DAY
 
 #endif
-
-#endif // KDB_COMMON_CRYPTO_H

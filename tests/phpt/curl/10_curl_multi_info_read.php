@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 function test_curl_multi_info_read_empty() {

@@ -7,11 +7,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <expected>
-#include <iterator>
-#include <memory>
 #include <optional>
 #include <span>
-#include <string_view>
 #include <utility>
 #include <variant>
 
@@ -26,6 +23,8 @@
 #include "runtime-light/tl/tl-types.h"
 
 namespace kphp::web {
+
+enum class get_properties_policy : uint8_t { cached, load };
 
 inline auto set_transfer_property(std::variant<simple_transfer, composite_transfer> transfer, property_id prop_id,
                                   property_value prop_value) -> std::expected<void, error> {
@@ -59,10 +58,10 @@ inline auto set_transfer_property(std::variant<simple_transfer, composite_transf
   return std::expected<void, error>{};
 }
 
-inline auto get_transfer_properties(std::variant<simple_transfer, composite_transfer> transfer,
-                                    std::optional<property_id> prop_id) -> kphp::coro::task<std::expected<properties_type, error>> {
+inline auto get_transfer_properties(std::variant<simple_transfer, composite_transfer> transfer, std::optional<property_id> prop_id,
+                                    get_properties_policy policy) -> kphp::coro::task<std::expected<properties_type, error>> {
   // Try to get a cached prop
-  if (prop_id.has_value()) {
+  if (prop_id.has_value() && policy == get_properties_policy::cached) {
     const auto p{prop_id.value()};
     const auto& web_state{WebInstanceState::get()};
     if (std::holds_alternative<simple_transfer>(transfer)) {
@@ -127,8 +126,8 @@ inline auto get_transfer_properties(std::variant<simple_transfer, composite_tran
     properties_type props{};
     auto& tl_props{std::get<tl::WebTransferGetPropertiesResultOk>(r).properties};
     for (const auto& p : tl_props) {
-      const auto k{p.id.value};
-      const auto v{property_value::deserialize(std::move(p.value))};
+      auto k{p.id.value};
+      auto v{property_value::deserialize(p.value)};
       props.emplace(k, std::move(v));
     }
     if (prop_id.has_value() && !props.contains(*prop_id)) {

@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef __KFS_H__
-#define __KFS_H__
+#pragma once
 
 #include <assert.h>
 #include <stdbool.h>
@@ -41,5 +40,3 @@ long long kfs_read_file(kfs_file_handle_t F, void* buff, long long size);
     long long __saved_size_t1 = size;                                                                                                                          \
     assert(kfs_read_file(F, buff, __saved_size_t1) == __saved_size_t1);                                                                                        \
   }
-
-#endif

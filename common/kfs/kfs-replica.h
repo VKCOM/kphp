@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_KFS_ENGINE_INIT_H
-#define ENGINE_KFS_ENGINE_INIT_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -16,5 +15,3 @@
 kfs_replica_handle_t open_replica(const char* replica_name, int flags);
 int update_replica(kfs_replica_handle_t R, int flags);
 int close_replica(kfs_replica_handle_t R);
-
-#endif // ENGINE_KFS_ENGINE_INIT_H

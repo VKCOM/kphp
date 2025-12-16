@@ -2,8 +2,7 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#ifndef ENGINE_FILTER_ITERATOR_H
-#define ENGINE_FILTER_ITERATOR_H
+#pragma once
 
 #include <iterator>
 
@@ -65,5 +64,3 @@ filter_iterator<Predicate, Iterator> make_filter_iterator(Predicate f, Iterator 
 }
 
 } // namespace vk
-
-#endif // ENGINE_FILTER_ITERATOR_H
