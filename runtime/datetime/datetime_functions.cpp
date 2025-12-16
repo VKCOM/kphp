@@ -569,21 +569,6 @@ int64_t f$mktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, in
   return mktime(&t);
 }
 
-string f$strftime(const string& format, int64_t timestamp) {
-  if (timestamp == std::numeric_limits<int64_t>::min()) {
-    timestamp = time(nullptr);
-  }
-  tm t;
-  time_t timestamp_t = timestamp;
-  localtime_r(&timestamp_t, &t);
-
-  if (!strftime(StringLibContext::get().static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, format.c_str(), &t)) {
-    return {};
-  }
-
-  return string(StringLibContext::get().static_buf.get());
-}
-
 Optional<int64_t> f$strtotime(const string& time_str, int64_t timestamp) {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = time(nullptr);

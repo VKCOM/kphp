@@ -49,6 +49,9 @@ function die($code = 0) ::: void;
 /** @kphp-extern-func-info interruptible */
 function usleep ($micro_seconds ::: int) ::: void;
 
+/** @kphp-extern-func-info interruptible */
+function sleep ($seconds ::: int) ::: void;
+
 function function_exists ($func_name ::: mixed) ::: bool;
 
 function escapeshellarg($arg ::: string): string;
@@ -63,10 +66,6 @@ function extension_loaded(string $extension): bool;
 
 /** @kphp-extern-func-info stub generation-required */
 function getenv(string $varname = '', bool $local_only = false): mixed;
-
-
-/** @kphp-extern-func-info stub generation-required */
-function sleep ($seconds ::: int) ::: void;
 
 /** @kphp-extern-func-info stub generation-required */
 function raise_sigsegv () ::: void;

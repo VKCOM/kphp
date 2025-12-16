@@ -106,6 +106,13 @@ inline double f$abs(const Optional<double>& v) noexcept {
   return f$abs(val(v));
 }
 
+inline double f$fmod(double x, double y) noexcept {
+  if (f$abs(x) > 1e100 || f$abs(y) < 1e-100) {
+    return 0.0;
+  }
+  return fmod(x, y);
+}
+
 inline double f$acos(double v) noexcept {
   return acos(v);
 }
