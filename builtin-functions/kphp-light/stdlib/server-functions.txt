@@ -102,8 +102,9 @@ function memory_get_static_usage() ::: int;
 /** @kphp-extern-func-info stub */
 function kphp_extended_instance_cache_metrics_init(callable(string $key):string $normalization_function) ::: void;
 
-
+/** @kphp-extern-func-info stub */
 function register_kphp_on_warning_callback(callable(string $warning_message, string[] $stacktrace):void $stacktrace) ::: void;
+/** @kphp-extern-func-info stub */
 function register_kphp_on_oom_callback(callable():void $callback) ::: bool;
 
 /** @kphp-extern-func-info stub */
