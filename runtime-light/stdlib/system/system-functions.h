@@ -78,7 +78,9 @@ auto exec(std::string_view cmd, const output_handler_type& output_handler = {}) 
 } // namespace kphp::system
 
 template<typename F>
-bool f$register_kphp_on_oom_callback(F&& /*callback*/) {}
+bool f$register_kphp_on_oom_callback(F&& /*callback*/) {
+  kphp::log::warning("called stub register_kphp_on_oom_callback");
+}
 
 template<typename F>
 void f$kphp_extended_instance_cache_metrics_init(F&& /*callback*/) {
