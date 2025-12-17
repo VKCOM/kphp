@@ -811,7 +811,8 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
     auto& inner_ref{std::get<std::reference_wrapper<mixed>>(opt_matches.val()).get()};
     inner_ref = array<mixed>{};
     opt_match_view.transform([is_offset_capture, is_unmatched_as_null, &inner_ref, &regex_info](const auto& match_view) {
-      auto opt_dumped_matches{kphp::regex::dump_matches(regex_info, match_view, kphp::regex::details::trailing_unmatch::skip, is_offset_capture, is_unmatched_as_null)};
+      auto opt_dumped_matches{
+          kphp::regex::dump_matches(regex_info, match_view, kphp::regex::details::trailing_unmatch::skip, is_offset_capture, is_unmatched_as_null)};
       if (opt_dumped_matches.has_value()) [[likely]] {
         inner_ref = std::move(*opt_dumped_matches);
       }
