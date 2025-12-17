@@ -40,7 +40,7 @@ int64_t f$mktime(int64_t h = std::numeric_limits<int64_t>::min(), int64_t m = st
                  int64_t s = std::numeric_limits<int64_t>::min(), int64_t month = std::numeric_limits<int64_t>::min(),
                  int64_t day = std::numeric_limits<int64_t>::min(), int64_t year = std::numeric_limits<int64_t>::min());
 
-string f$strftime(const string& format, int64_t timestamp = std::numeric_limits<int64_t>::min()) noexcept;
+string f$strftime(const string& format, int64_t timestamp = std::numeric_limits<int64_t>::min());
 
 Optional<int64_t> f$strtotime(const string& time_str, int64_t timestamp = std::numeric_limits<int64_t>::min());
 

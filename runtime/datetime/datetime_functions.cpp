@@ -8,7 +8,6 @@
 #include <chrono>
 #include <clocale>
 #include <ctime>
-#include <memory>
 #include <sys/time.h>
 
 #include "runtime-common/stdlib/string/string-context.h"
@@ -570,22 +569,22 @@ int64_t f$mktime(int64_t h, int64_t m, int64_t s, int64_t month, int64_t day, in
   return mktime(&t);
 }
 
-string f$strftime(const string& format, int64_t timestamp) noexcept {
+string f$strftime(const string& format, int64_t timestamp) {
   if (timestamp == std::numeric_limits<int64_t>::min()) {
     timestamp = time(nullptr);
   }
-  tm broken_down_time{};
-  const time_t timestamp_t = timestamp;
+  tm t;
+  time_t timestamp_t = timestamp;
 
   dl::enter_critical_section(); // OK
-  localtime_r(std::addressof(timestamp_t), std::addressof(broken_down_time));
+  localtime_r(std::addressof(timestamp_t), &t);
   dl::leave_critical_section();
 
-  if (!strftime(StringLibContext::get().static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, format.c_str(), std::addressof(broken_down_time))) {
+  if (!strftime(StringLibContext::get().static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, format.c_str(), &t)) {
     return {};
   }
 
-  return string{StringLibContext::get().static_buf.get()};
+  return string(StringLibContext::get().static_buf.get());
 }
 
 Optional<int64_t> f$strtotime(const string& time_str, int64_t timestamp) {
