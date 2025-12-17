@@ -40,6 +40,9 @@ bool string::fetch(tl::fetcher& tlf) noexcept {
     string_len = first | second | third | fourth | fifth | sixth | seventh;
 
     const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
+    if (tlf.remaining() < total_len_with_padding - size_len) [[unlikely]] {
+      return false;
+    }
     tlf.adjust(total_len_with_padding - size_len);
     kphp::log::warning("large strings aren't supported (length = {})", string_len);
     return false;
