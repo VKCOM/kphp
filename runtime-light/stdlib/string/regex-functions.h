@@ -184,56 +184,8 @@ bool collect_group_names(Info& regex_info) noexcept;
 std::optional<string> replace_one(const Info& info, std::string_view subject, std::string_view replacement, string_buffer& sb, size_t buffer_length,
                                   size_t substitute_offset) noexcept;
 
-template<bool is_offset_capture, bool is_unmatched_as_null>
-std::optional<details::dumped_matches_t<is_offset_capture, is_unmatched_as_null>> dump_matches(const Info& regex_info, const details::match_view& match,
-                                                                                               details::trailing_unmatch last_unmatched_policy) noexcept {
-  if (regex_info.regex_code == nullptr) [[unlikely]] {
-    return std::nullopt;
-  }
-
-  int64_t last_matched_group{match.size() - 1};
-  // retrieve the named groups count
-  uint32_t named_groups_count{};
-  pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMECOUNT, std::addressof(named_groups_count));
-
-  // reserve enough space for output
-  details::dumped_matches_t<is_offset_capture, is_unmatched_as_null> output{
-      array_size{static_cast<int64_t>(regex_info.group_names.size() + named_groups_count), named_groups_count == 0}};
-  for (auto i{0}; i < regex_info.group_names.size(); ++i) {
-    // skip unmatched groups at the end unless unmatched_as_null is set
-    if (last_unmatched_policy == details::trailing_unmatch::skip && i > last_matched_group && !is_unmatched_as_null) [[unlikely]] {
-      break;
-    }
-
-    auto opt_submatch{match.get_group(i)};
-
-    std::conditional_t<is_unmatched_as_null, mixed, string> match_val;
-    if (opt_submatch.has_value()) { // handle matched group
-      auto submatch_string_view{*opt_submatch};
-      const auto match_size{submatch_string_view.size()};
-      match_val = string{submatch_string_view.data(), static_cast<string::size_type>(match_size)};
-    }
-
-    details::dumped_match_t<is_offset_capture, is_unmatched_as_null> output_val;
-    if constexpr (is_offset_capture) {
-      output_val =
-          array<mixed>::create(std::move(match_val), opt_submatch
-                                                         .transform([&regex_info](auto submatch_string_view) noexcept {
-                                                           return static_cast<int64_t>(std::distance(regex_info.subject.data(), submatch_string_view.data()));
-                                                         })
-                                                         .value_or(-1));
-    } else {
-      output_val = std::move(match_val);
-    }
-
-    if (regex_info.group_names[i] != nullptr) {
-      output.set_value(string{regex_info.group_names[i]}, output_val);
-    }
-    output.emplace_back(output_val);
-  }
-
-  return output;
-}
+std::optional<array<mixed>> dump_matches(const Info& regex_info, const details::match_view& match, details::trailing_unmatch last_unmatched_policy,
+                                         bool is_offset_capture, bool is_unmatched_as_null) noexcept;
 
 template<std::invocable<array<string>> F>
 coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t limit) noexcept {
@@ -272,16 +224,21 @@ coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t limit) 
     const auto match_end_offset{match_start_offset + entire_pattern_match_string_view.size()};
     regex_info.match_count = match_view.size();
 
-    auto opt_dumped_matches{dump_matches<false, false>(regex_info, match_view, details::trailing_unmatch::skip)};
+    auto opt_dumped_matches{dump_matches(regex_info, match_view, details::trailing_unmatch::skip, false, false)};
     if (!opt_dumped_matches.has_value()) [[unlikely]] {
       co_return false;
     }
 
+    const auto& dumped_matches{*opt_dumped_matches};
+    auto matches{array<string>{dumped_matches.size()}};
+    for (const auto& elem : dumped_matches) {
+      matches.set_value(elem.get_key(), elem.get_value().to_string());
+    }
     string replacement{};
     if constexpr (kphp::coro::is_async_function_v<F, array<string>>) {
-      replacement = co_await std::invoke(callback, std::move(*opt_dumped_matches));
+      replacement = co_await std::invoke(callback, std::move(matches));
     } else {
-      replacement = std::invoke(callback, std::move(*opt_dumped_matches));
+      replacement = std::invoke(callback, std::move(matches));
     }
 
     auto replace_one_result =

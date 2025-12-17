@@ -218,36 +218,11 @@ PCRE2_SIZE set_all_matches(const kphp::regex::Info& regex_info, int64_t flags, s
   }
 
   auto last_unmatched_policy{is_pattern_order ? kphp::regex::details::trailing_unmatch::include : kphp::regex::details::trailing_unmatch::skip};
-  mixed matches;
-  if (is_offset_capture) {
-    if (is_unmatched_as_null) {
-      auto opt_dumped_matches{kphp::regex::dump_matches<true, true>(regex_info, match_view, last_unmatched_policy)};
-      if (!opt_dumped_matches.has_value()) [[unlikely]] {
-        return PCRE2_UNSET;
-      }
-      matches = std::move(*opt_dumped_matches);
-    } else {
-      auto opt_dumped_matches{kphp::regex::dump_matches<true, false>(regex_info, match_view, last_unmatched_policy)};
-      if (!opt_dumped_matches.has_value()) [[unlikely]] {
-        return PCRE2_UNSET;
-      }
-      matches = std::move(*opt_dumped_matches);
-    }
-  } else {
-    if (is_unmatched_as_null) {
-      auto opt_dumped_matches{kphp::regex::dump_matches<false, true>(regex_info, match_view, last_unmatched_policy)};
-      if (!opt_dumped_matches.has_value()) [[unlikely]] {
-        return PCRE2_UNSET;
-      }
-      matches = std::move(*opt_dumped_matches);
-    } else {
-      auto opt_dumped_matches{kphp::regex::dump_matches<false, false>(regex_info, match_view, last_unmatched_policy)};
-      if (!opt_dumped_matches.has_value()) [[unlikely]] {
-        return PCRE2_UNSET;
-      }
-      matches = std::move(*opt_dumped_matches);
-    }
+  auto opt_dumped_matches{kphp::regex::dump_matches(regex_info, match_view, last_unmatched_policy, is_offset_capture, is_unmatched_as_null)};
+  if (!opt_dumped_matches.has_value()) [[unlikely]] {
+    return PCRE2_UNSET;
   }
+  mixed matches{std::move(*opt_dumped_matches)};
 
   mixed& all_matches{(*opt_all_matches).get()};
   if (is_pattern_order) [[likely]] {
@@ -750,6 +725,55 @@ std::optional<string> replace_one(const Info& info, std::string_view subject, st
   return string{sb.buffer(), static_cast<string::size_type>(buffer_length)};
 }
 
+std::optional<array<mixed>> dump_matches(const Info& regex_info, const details::match_view& match, details::trailing_unmatch last_unmatched_policy,
+                                         bool is_offset_capture, bool is_unmatched_as_null) noexcept {
+  if (regex_info.regex_code == nullptr) [[unlikely]] {
+    return std::nullopt;
+  }
+
+  int64_t last_matched_group{match.size() - 1};
+  // retrieve the named groups count
+  uint32_t named_groups_count{};
+  pcre2_pattern_info_8(regex_info.regex_code, PCRE2_INFO_NAMECOUNT, std::addressof(named_groups_count));
+
+  // reserve enough space for output
+  array<mixed> output{array_size{static_cast<int64_t>(regex_info.group_names.size() + named_groups_count), named_groups_count == 0}};
+  for (auto i{0}; i < regex_info.group_names.size(); ++i) {
+    // skip unmatched groups at the end unless unmatched_as_null is set
+    if (last_unmatched_policy == details::trailing_unmatch::skip && i > last_matched_group && !is_unmatched_as_null) [[unlikely]] {
+      break;
+    }
+
+    auto opt_submatch{match.get_group(i)};
+
+    auto match_val{is_unmatched_as_null ? mixed{} : string{}};
+    if (opt_submatch.has_value()) { // handle matched group
+      auto submatch_string_view{*opt_submatch};
+      const auto match_size{submatch_string_view.size()};
+      match_val = string{submatch_string_view.data(), static_cast<string::size_type>(match_size)};
+    }
+
+    mixed output_val;
+    if (is_offset_capture) {
+      output_val =
+          array<mixed>::create(std::move(match_val), opt_submatch
+                                                         .transform([&regex_info](auto submatch_string_view) noexcept {
+                                                           return static_cast<int64_t>(std::distance(regex_info.subject.data(), submatch_string_view.data()));
+                                                         })
+                                                         .value_or(-1));
+    } else {
+      output_val = std::move(match_val);
+    }
+
+    if (regex_info.group_names[i] != nullptr) {
+      output.set_value(string{regex_info.group_names[i]}, output_val);
+    }
+    output.emplace_back(output_val);
+  }
+
+  return output;
+}
+
 } // namespace kphp::regex
 
 Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Optional<std::variant<std::monostate, std::reference_wrapper<mixed>>> opt_matches,
@@ -787,30 +811,9 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
     auto& inner_ref{std::get<std::reference_wrapper<mixed>>(opt_matches.val()).get()};
     inner_ref = array<mixed>{};
     opt_match_view.transform([is_offset_capture, is_unmatched_as_null, &inner_ref, &regex_info](const auto& match_view) {
-      if (is_offset_capture) {
-        if (is_unmatched_as_null) {
-          auto opt_dumped_matches{kphp::regex::dump_matches<true, true>(regex_info, match_view, kphp::regex::details::trailing_unmatch::skip)};
-          if (opt_dumped_matches.has_value()) [[likely]] {
-            inner_ref = std::move(*opt_dumped_matches);
-          }
-        } else {
-          auto opt_dumped_matches{kphp::regex::dump_matches<true, false>(regex_info, match_view, kphp::regex::details::trailing_unmatch::skip)};
-          if (opt_dumped_matches.has_value()) [[likely]] {
-            inner_ref = std::move(*opt_dumped_matches);
-          }
-        }
-      } else {
-        if (is_unmatched_as_null) {
-          auto opt_dumped_matches{kphp::regex::dump_matches<false, true>(regex_info, match_view, kphp::regex::details::trailing_unmatch::skip)};
-          if (opt_dumped_matches.has_value()) [[likely]] {
-            inner_ref = std::move(*opt_dumped_matches);
-          }
-        } else {
-          auto opt_dumped_matches{kphp::regex::dump_matches<false, false>(regex_info, match_view, kphp::regex::details::trailing_unmatch::skip)};
-          if (opt_dumped_matches.has_value()) [[likely]] {
-            inner_ref = std::move(*opt_dumped_matches);
-          }
-        }
+      auto opt_dumped_matches{kphp::regex::dump_matches(regex_info, match_view, kphp::regex::details::trailing_unmatch::skip, is_offset_capture, is_unmatched_as_null)};
+      if (opt_dumped_matches.has_value()) [[likely]] {
+        inner_ref = std::move(*opt_dumped_matches);
       }
       return 0;
     });
