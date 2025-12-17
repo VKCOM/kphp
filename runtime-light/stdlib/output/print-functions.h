@@ -79,11 +79,11 @@ inline int64_t f$printf(const string& format, const array<mixed>& a) noexcept {
   return to_print.size();
 }
 
-inline kphp::coro::task<Optional<int64_t>> f$vfprintf(const resource& stream, const string& format, const array<mixed>& args) noexcept {
+inline kphp::coro::task<Optional<int64_t>> f$vfprintf(resource stream, string format, array<mixed> args) noexcept {
   co_return co_await f$fwrite(stream, f$vsprintf(format, args));
 }
 
-inline kphp::coro::task<Optional<int64_t>> f$fprintf(const resource& stream, const string& format, const array<mixed>& args) noexcept {
+inline kphp::coro::task<Optional<int64_t>> f$fprintf(resource stream, string format, array<mixed> args) noexcept {
   co_return co_await f$vfprintf(stream, format, args);
 }
 
