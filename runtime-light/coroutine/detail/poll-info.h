@@ -5,7 +5,10 @@
 #pragma once
 
 #include <coroutine>
+#include <cstdint>
 #include <optional>
+#include <utility>
+#include <variant>
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
@@ -15,17 +18,19 @@
 namespace kphp::coro::detail {
 
 struct poll_info {
+  enum class scheduled_coroutine_status : uint8_t { scheduled, cancelled };
   using timed_events = kphp::stl::multimap<k2::TimePoint, detail::poll_info&, kphp::memory::script_allocator>;
   using parked_polls = kphp::stl::multimap<k2::descriptor, detail::poll_info&, kphp::memory::script_allocator>;
+  using scheduled_coroutines = kphp::stl::list<std::pair<std::coroutine_handle<>, scheduled_coroutine_status>, kphp::memory::script_allocator>;
+  using schedule_position_type = std::variant<std::monostate, scheduled_coroutines::iterator, parked_polls::iterator>;
 
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
   std::coroutine_handle<> m_awaiting_coroutine;
   std::optional<timed_events::iterator> m_timer_pos;
-  std::optional<parked_polls::iterator> m_parking_pos;
+  schedule_position_type m_schedule_pos;
 
   kphp::coro::poll_status m_poll_status{kphp::coro::poll_status::error};
   kphp::coro::poll_op m_poll_op;
-  bool m_processed{};
 
   poll_info(k2::descriptor descriptor, kphp::coro::poll_op poll_op) noexcept
       : m_descriptor(descriptor),
