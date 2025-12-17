@@ -577,7 +577,7 @@ string f$strftime(const string& format, int64_t timestamp) {
   time_t timestamp_t = timestamp;
 
   dl::enter_critical_section(); // OK
-  localtime_r(std::addressof(timestamp_t), &t);
+  localtime_r(&timestamp_t, &t);
   dl::leave_critical_section();
 
   if (!strftime(StringLibContext::get().static_buf.get(), StringLibContext::STATIC_BUFFER_LENGTH, format.c_str(), &t)) {
