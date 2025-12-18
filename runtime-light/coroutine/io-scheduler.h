@@ -207,7 +207,7 @@ inline auto io_scheduler::process_timeout() noexcept -> void {
         overloaded{
             [](std::monostate) noexcept { kphp::log::assertion(false); },
             [this, &poll_info](kphp::coro::detail::poll_info::timed_events::iterator it) noexcept {
-              remove_timer_token(it);
+              m_timed_events.erase(it);
               poll_info.m_poll_status = kphp::coro::poll_status::event;
               m_scheduled_coroutines.emplace_back(poll_info.m_awaiting_coroutine);
               poll_info.m_schedule_position = std::prev(m_scheduled_coroutines.end());
@@ -215,7 +215,7 @@ inline auto io_scheduler::process_timeout() noexcept -> void {
             [](kphp::coro::detail::poll_info::parked_polls::iterator) noexcept { kphp::log::assertion(false); },
             [this, &poll_info](
                 std::pair<kphp::coro::detail::poll_info::timed_events::iterator, kphp::coro::detail::poll_info::parked_polls::iterator> pair_it) noexcept {
-              remove_timer_token(pair_it.first);
+              m_timed_events.erase(pair_it.first);
               m_parked_polls.erase(pair_it.second);
               poll_info.m_poll_status = kphp::coro::poll_status::timeout;
               m_scheduled_coroutines.emplace_back(poll_info.m_awaiting_coroutine);
