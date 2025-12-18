@@ -253,6 +253,9 @@
   echo long2ip ($long)."\n";
   printf ("%u\n", ip2long ($ip[0]));
 
+  var_dump (inet_pton('127.0.0.1'));
+  var_dump (inet_pton('::1'));
+
   /**
    * @param int $x
    * @return int
@@ -275,6 +278,16 @@
     var_dump (decbin ($x & 0xFFFFFFFF));
     var_dump (dechex ($x & 0xFFFFFFFF));
   }
+
+
+  var_dump (fmod (4.0, -1.5));
+  var_dump (atan2 (0.0, 0.0));
+  var_dump (sqrt (4.0));
+  var_dump (log (1.0));
+  var_dump (log (1.0, 2));
+  var_dump (round (log(2.0), 7));
+  var_dump (log (2.0, 2));
+  var_dump (log (exp (3.5)));
 
 
   $aqwe = array ();

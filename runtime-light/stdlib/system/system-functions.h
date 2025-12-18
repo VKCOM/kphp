@@ -199,7 +199,7 @@ inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
 }
 
 inline kphp::coro::task<> f$sleep(int64_t seconds) noexcept {
-  if (seconds <= 0) {
+  if (seconds <= 0) [[unlikely]] {
     kphp::log::warning("value of seconds ({}) must be positive", seconds);
     co_return;
   }
