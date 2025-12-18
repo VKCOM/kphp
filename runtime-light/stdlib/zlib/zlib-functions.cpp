@@ -153,13 +153,13 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   case kphp::zlib::ENCODING_GZIP:
     break;
   default:
-    kphp::log::warning("deflate_init() : encoding should be one of ZLIB_ENCODING_RAW, ZLIB_ENCODING_DEFLATE, ZLIB_ENCODING_GZIP");
+    kphp::log::warning("encoding should be one of ZLIB_ENCODING_RAW, ZLIB_ENCODING_DEFLATE, ZLIB_ENCODING_GZIP");
     return {};
   }
   for (const auto& option : options) {
     mixed value;
     if (!option.is_string_key()) {
-      kphp::log::warning("deflate_init() : unsupported option");
+      kphp::log::warning("unsupported option");
       return {};
     }
     const auto& key = option.get_string_key();
@@ -188,18 +188,18 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
           break;
         default:
           kphp::log::warning(
-              "deflate_init() : option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
+              "option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
           return {};
         }
       } else {
-        kphp::log::warning("deflate_init() : option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
+        kphp::log::warning("option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
         return {};
       }
     } else if (std::string_view{key.c_str(), key.size()} == "dictionary") {
-      kphp::log::warning("deflate_init() : option dictionary isn't supported yet");
+      kphp::log::warning("option dictionary isn't supported yet");
       return {};
     } else {
-      kphp::log::warning("deflate_init() : unknown option name \"{}\"", option.get_string_key().c_str());
+      kphp::log::warning("unknown option name \"{}\"", option.get_string_key().c_str());
       return {};
     }
   }
@@ -220,7 +220,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
 
   auto err{deflateInit2(stream, level, Z_DEFLATED, encoding, memory, strategy)};
   if (err != Z_OK) {
-    kphp::log::warning("deflate_init() : zlib error {}", zError(err));
+    kphp::log::warning("zlib error {}", zError(err));
     context.destroy();
     return {};
   }
@@ -238,7 +238,7 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, 
     break;
   default:
     kphp::log::warning(
-        "deflate_add() : flush type should be one of ZLIB_NO_FLUSH, ZLIB_PARTIAL_FLUSH, ZLIB_SYNC_FLUSH, ZLIB_FULL_FLUSH, ZLIB_FINISH, ZLIB_BLOCK, ZLIB_TREES");
+        "flush type should be one of ZLIB_NO_FLUSH, ZLIB_PARTIAL_FLUSH, ZLIB_SYNC_FLUSH, ZLIB_FULL_FLUSH, ZLIB_FINISH, ZLIB_BLOCK, ZLIB_TREES");
     return {};
   }
 
@@ -276,7 +276,7 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, 
     out.shrink(len);
     return out;
   default:
-    kphp::log::warning("deflate_add() : zlib error {}", zError(status));
+    kphp::log::warning("zlib error {}", zError(status));
     return {};
   }
 }
