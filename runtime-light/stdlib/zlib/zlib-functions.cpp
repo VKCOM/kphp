@@ -89,8 +89,7 @@ std::optional<string> encode(std::span<const char> data, int64_t level, int64_t 
   zstrm.avail_out = out_size_upper_bound;
   zstrm.next_out = reinterpret_cast<Bytef*>(runtime_ctx.static_SB.buffer());
 
-  const auto deflate_res{deflate(std::addressof(zstrm), Z_FINISH)};
-  if (deflate_res != Z_STREAM_END) [[unlikely]] {
+  if (const auto deflate_res{deflate(std::addressof(zstrm), Z_FINISH)}; deflate_res != Z_STREAM_END) [[unlikely]] {
     kphp::log::warning("can't encode data of length {} due to zlib error {}", data.size(), deflate_res);
     return {};
   }
@@ -120,9 +119,8 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
   runtime_ctx.static_SB.clean().reserve(StringInstanceState::STATIC_BUFFER_LENGTH);
   zstrm.avail_out = StringInstanceState::STATIC_BUFFER_LENGTH;
   zstrm.next_out = reinterpret_cast<Bytef*>(runtime_ctx.static_SB.buffer());
-  const auto inflate_res{inflate(std::addressof(zstrm), Z_NO_FLUSH)};
 
-  if (inflate_res != Z_STREAM_END) [[unlikely]] {
+  if (const auto inflate_res{inflate(std::addressof(zstrm), Z_NO_FLUSH)}; inflate_res != Z_STREAM_END) [[unlikely]] {
     kphp::log::warning("can't decode data of length {} due to zlib error {}", data.size(), inflate_res);
     return {};
   }
@@ -138,8 +136,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   int32_t window{15};
   auto strategy{Z_DEFAULT_STRATEGY};
   constexpr auto extract_int_option{[](int32_t lbound, int32_t ubound, const array_iterator<const mixed>& option, int32_t& dst) noexcept {
-    const mixed& value{option.get_value()};
-    if (value.is_int() && value.as_int() >= lbound && value.as_int() <= ubound) {
+    if (const mixed & value{option.get_value()}; value.is_int() && value.as_int() >= lbound && value.as_int() <= ubound) {
       dst = value.as_int();
       return true;
     } else {
@@ -187,8 +184,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
           strategy = value.as_int();
           break;
         default:
-          kphp::log::warning(
-              "option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
+          kphp::log::warning("option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
           return {};
         }
       } else {
@@ -218,8 +214,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
     encoding -= 15 - window;
   }
 
-  auto err{deflateInit2(stream, level, Z_DEFLATED, encoding, memory, strategy)};
-  if (err != Z_OK) {
+  if (auto err{deflateInit2(stream, level, Z_DEFLATED, encoding, memory, strategy)}; err != Z_OK) {
     kphp::log::warning("zlib error {}", zError(err));
     context.destroy();
     return {};
@@ -237,8 +232,7 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, 
   case Z_FINISH:
     break;
   default:
-    kphp::log::warning(
-        "flush type should be one of ZLIB_NO_FLUSH, ZLIB_PARTIAL_FLUSH, ZLIB_SYNC_FLUSH, ZLIB_FULL_FLUSH, ZLIB_FINISH, ZLIB_BLOCK, ZLIB_TREES");
+    kphp::log::warning("flush type should be one of ZLIB_NO_FLUSH, ZLIB_PARTIAL_FLUSH, ZLIB_SYNC_FLUSH, ZLIB_FULL_FLUSH, ZLIB_FINISH, ZLIB_BLOCK, ZLIB_TREES");
     return {};
   }
 
