@@ -14,7 +14,7 @@ struct C$DeflateContext : public refcountable_php_classes<C$DeflateContext>, pri
   using DummyVisitorMethods::accept;
 
   ~C$DeflateContext() {
-    deflateEnd(&stream);
+    deflateEnd(std::addressof(stream));
   }
 
   z_stream stream{};
