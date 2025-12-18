@@ -1,4 +1,4 @@
-@ok php8 k2_skip
+@ok php8
 <?php
 
 function test_random_bytes() {
