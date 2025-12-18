@@ -162,19 +162,20 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
       kphp::log::warning("deflate_init() : unsupported option");
       return {};
     }
-    if (option.get_string_key() == string{"level"}) {
+    const auto& key = option.get_string_key();
+    if (std::string_view{key.c_str(), key.size()} == "level") {
       if (!extract_int_option(-1, 9, option, level)) {
         return {};
       }
-    } else if (option.get_string_key() == string{"memory"}) {
+    } else if (std::string_view{key.c_str(), key.size()} == "memory") {
       if (!extract_int_option(1, 9, option, memory)) {
         return {};
       }
-    } else if (option.get_string_key() == string{"window"}) {
+    } else if (std::string_view{key.c_str(), key.size()} == "window") {
       if (!extract_int_option(8, 15, option, window)) {
         return {};
       }
-    } else if (option.get_string_key() == string{"strategy"}) {
+    } else if (std::string_view{key.c_str(), key.size()} == "strategy") {
       value = option.get_value();
       if (value.is_int()) {
         switch (value.as_int()) {
@@ -194,7 +195,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
         kphp::log::warning("deflate_init() : option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
         return {};
       }
-    } else if (option.get_string_key() == string{"dictionary"}) {
+    } else if (std::string_view{key.c_str(), key.size()} == "dictionary") {
       kphp::log::warning("deflate_init() : option dictionary isn't supported yet");
       return {};
     } else {
