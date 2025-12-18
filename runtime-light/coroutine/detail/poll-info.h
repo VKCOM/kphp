@@ -21,6 +21,12 @@ struct poll_info {
   // TODO: Consider using an intrusive list for scheduled_coroutines.
   using scheduled_coroutines = kphp::stl::list<std::coroutine_handle<>, kphp::memory::script_allocator>;
 
+  // Each coroutine in the scheduler can be in one of the following states, represented by the `schedule_position` variant:
+  // 1. `std::monostate`: a coroutine has not been scheduled yet or has already been resumed by the scheduler;
+  // 2. `timed_events::iterator`: a coroutine is waiting for a timer event to occur;
+  // 3. `parked_polls::iterator`: a coroutine is waiting for an event on a non-timer descriptor;
+  // 4. `std::pair<timed_events::iterator, parked_polls::iterator>`: a coroutine is waiting for an event on either a timer or a non-timer descriptor;
+  // 5. `scheduled_coroutines::iterator`: a coroutine is scheduled and waiting to be resumed by the scheduler.
   using schedule_position = std::variant<std::monostate, timed_events::iterator, parked_polls::iterator,
                                          std::pair<timed_events::iterator, parked_polls::iterator>, scheduled_coroutines::iterator>;
 
