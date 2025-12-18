@@ -5,8 +5,6 @@
 #pragma once
 
 #include <coroutine>
-#include <cstdint>
-#include <optional>
 #include <utility>
 #include <variant>
 
@@ -18,16 +16,18 @@
 namespace kphp::coro::detail {
 
 struct poll_info {
-  enum class scheduled_coroutine_status : uint8_t { scheduled, cancelled };
   using timed_events = kphp::stl::multimap<k2::TimePoint, detail::poll_info&, kphp::memory::script_allocator>;
   using parked_polls = kphp::stl::multimap<k2::descriptor, detail::poll_info&, kphp::memory::script_allocator>;
-  using scheduled_coroutines = kphp::stl::list<std::pair<std::coroutine_handle<>, scheduled_coroutine_status>, kphp::memory::script_allocator>;
-  using schedule_position_type = std::variant<std::monostate, scheduled_coroutines::iterator, parked_polls::iterator>;
+  // TODO: Consider using an intrusive list for scheduled_coroutines.
+  using scheduled_coroutines = kphp::stl::list<std::coroutine_handle<>, kphp::memory::script_allocator>;
+
+  using schedule_position = std::variant<std::monostate, timed_events::iterator, parked_polls::iterator,
+                                         std::pair<timed_events::iterator, parked_polls::iterator>, scheduled_coroutines::iterator>;
+
+  schedule_position m_schedule_position{std::monostate{}};
 
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
   std::coroutine_handle<> m_awaiting_coroutine;
-  std::optional<timed_events::iterator> m_timer_pos;
-  schedule_position_type m_schedule_pos;
 
   kphp::coro::poll_status m_poll_status{kphp::coro::poll_status::error};
   kphp::coro::poll_op m_poll_op;
@@ -59,6 +59,7 @@ struct poll_info {
       }
 
       auto await_resume() const noexcept -> kphp::coro::poll_status {
+        m_poll_info.m_schedule_position = std::monostate{};
         return m_poll_info.m_poll_status;
       }
     };
