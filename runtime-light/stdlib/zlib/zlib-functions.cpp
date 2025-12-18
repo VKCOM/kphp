@@ -138,7 +138,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   int32_t window{15};
   auto strategy{Z_DEFAULT_STRATEGY};
   auto extract_int_option{[](int32_t lbound, int32_t ubound, const array_iterator<const mixed>& option, int32_t& dst) noexcept {
-    const mixed& value = option.get_value();
+    const mixed& value{option.get_value()};
     if (value.is_int() && value.as_int() >= lbound && value.as_int() <= ubound) {
       dst = value.as_int();
       return true;
