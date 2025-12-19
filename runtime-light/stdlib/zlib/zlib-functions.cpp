@@ -140,7 +140,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
       dst = value.as_int();
       return true;
     } else {
-      kphp::log::warning("deflate_init() : option {} should be number between {}..{}", option.get_string_key().c_str(), lbound, ubound);
+      kphp::log::warning("option {} should be number between {}..{}", option.get_string_key().c_str(), lbound, ubound);
       return false;
     }
   }};
