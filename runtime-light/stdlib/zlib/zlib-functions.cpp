@@ -221,6 +221,9 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
 }
 
 Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, const string& data, int64_t flush_type) noexcept {
+  constexpr uint64_t EXTRA_OUT_SIZE{30};
+  constexpr uint64_t MIN_OUT_SIZE{64};
+
   switch (flush_type) {
   case Z_BLOCK:
   case Z_NO_FLUSH:
@@ -235,8 +238,8 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, 
   }
 
   z_stream* stream{std::addressof(context.get()->stream)};
-  auto out_size{deflateBound(stream, data.size()) + 30};
-  out_size = out_size < 64 ? 64 : out_size;
+  auto out_size{deflateBound(stream, data.size()) + EXTRA_OUT_SIZE};
+  out_size = out_size < MIN_OUT_SIZE ? MIN_OUT_SIZE : out_size;
   string out{static_cast<string::size_type>(out_size), false};
   stream->next_in = const_cast<Bytef*>(reinterpret_cast<const Bytef*>(data.c_str()));
   stream->next_out = reinterpret_cast<Bytef*>(out.buffer());
@@ -247,9 +250,9 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, 
   uint64_t buffer_used{};
   do {
     if (stream->avail_out == 0) {
-      out.reserve_at_least(out_size + 64);
-      out_size += 64;
-      stream->avail_out = 64;
+      out.reserve_at_least(out_size + MIN_OUT_SIZE);
+      out_size += MIN_OUT_SIZE;
+      stream->avail_out = MIN_OUT_SIZE;
       stream->next_out = reinterpret_cast<Bytef*>(std::next(out.buffer(), buffer_used));
     }
     status = deflate(stream, flush_type);
