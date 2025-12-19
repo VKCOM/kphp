@@ -141,6 +141,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
       return false;
     }
   }};
+
   switch (encoding) {
   case kphp::zlib::ENCODING_RAW:
   case kphp::zlib::ENCODING_DEFLATE:
@@ -150,13 +151,14 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
     kphp::log::warning("encoding should be one of ZLIB_ENCODING_RAW, ZLIB_ENCODING_DEFLATE, ZLIB_ENCODING_GZIP");
     return {};
   }
+
   for (const auto& option : options) {
-    mixed value;
     if (!option.is_string_key()) {
       kphp::log::warning("unsupported option");
       return {};
     }
-    const auto& key = option.get_string_key();
+
+    const auto& key{option.get_string_key()};
     if (std::string_view{key.c_str(), key.size()} == "level") {
       if (!extract_int_option(-1, 9, option, level)) {
         return {};
@@ -170,8 +172,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
         return {};
       }
     } else if (std::string_view{key.c_str(), key.size()} == "strategy") {
-      value = option.get_value();
-      if (value.is_int()) {
+      if (mixed value{option.get_value()}; value.is_int()) {
         switch (value.as_int()) {
         case Z_FILTERED:
         case Z_HUFFMAN_ONLY:
