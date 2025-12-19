@@ -120,8 +120,8 @@ public:
     }
 
     struct stat stat {};
-    if (auto error_code{k2::stat(direntry_path, std::addressof(stat))}; error_code != k2::errno_ok) [[unlikely]] {
-      kphp::log::warning("[kml] failed to get stat: error code -> {}, path -> {}", error_code, direntry_path);
+    if (auto expected_stat_result{k2::stat(direntry_path, std::addressof(stat))}; !expected_stat_result.has_value()) [[unlikely]] {
+      kphp::log::warning("[kml] failed to get stat: error code -> {}, path -> {}", expected_stat_result.error(), direntry_path);
       return std::nullopt;
     }
 
