@@ -46,9 +46,6 @@ voidpf zlib_dynamic_alloc([[maybe_unused]] voidpf opaque, uInt items, uInt size)
 }
 
 void zlib_dynamic_free([[maybe_unused]] voidpf opaque, voidpf address) noexcept {
-  if (address == nullptr) [[unlikely]] {
-    return;
-  }
   kphp::memory::script::free(address);
 }
 
