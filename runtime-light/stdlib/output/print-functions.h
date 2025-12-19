@@ -80,11 +80,11 @@ inline int64_t f$printf(const string& format, const array<mixed>& a) noexcept {
 }
 
 inline kphp::coro::task<Optional<int64_t>> f$vfprintf(resource stream, string format, array<mixed> args) noexcept {
-  co_return co_await f$fwrite(stream, f$vsprintf(format, args));
+  co_return co_await f$fwrite(std::move(stream), f$vsprintf(std::move(format), std::move(args)));
 }
 
 inline kphp::coro::task<Optional<int64_t>> f$fprintf(resource stream, string format, array<mixed> args) noexcept {
-  co_return co_await f$vfprintf(stream, format, args);
+  co_return co_await f$vfprintf(std::move(stream), std::move(format), std::move(args));
 }
 
 inline Optional<int64_t> f$fputcsv(const mixed& /*unused*/, const array<mixed>& /*unused*/, const string& /*unused*/ = string(",", 1),
