@@ -45,7 +45,7 @@ mixed extract_confdata_value(const tl::confdataValue& confdata_value) noexcept {
 
 } // namespace
 
-kphp::coro::task<mixed> f$confdata_get_value(const string& key) noexcept {
+kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
   auto& confdata_key_cache{ConfdataInstanceState::get().key_cache()};
   if (auto it{confdata_key_cache.find(key)}; it != confdata_key_cache.end()) {
     co_return it->second;
@@ -79,7 +79,7 @@ kphp::coro::task<mixed> f$confdata_get_value(const string& key) noexcept {
   co_return std::move(value);
 }
 
-kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(const string& wildcard) noexcept {
+kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
   static constexpr size_t CONFDATA_GET_WILDCARD_STREAM_CAPACITY = 1 << 20;
 
   auto& confdata_wildcard_cache{ConfdataInstanceState::get().wildcard_cache()};
