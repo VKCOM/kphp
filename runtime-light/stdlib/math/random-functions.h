@@ -145,7 +145,7 @@ inline double f$lcg_value() noexcept {
 
 inline Optional<string> f$random_bytes(int64_t length) noexcept {
   if (length < 1) [[unlikely]] {
-    kphp::log::warning("Argument #1 ($length) must be greater than 0");
+    kphp::log::warning("argument #1 ($length) must be greater than 0");
     return false;
   }
 
@@ -153,7 +153,7 @@ inline Optional<string> f$random_bytes(int64_t length) noexcept {
 
   if (random_impl_::secure_rand_buf(str.buffer(), static_cast<size_t>(length)) == -1) {
     locale_t c_locale{(kphp::memory::libc_alloc_guard{}, newlocale(LC_MESSAGES_MASK, "C", nullptr))};
-    kphp::log::warning("Source of randomness cannot be found: {}", strerror_l(errno, c_locale));
+    kphp::log::warning("source of randomness cannot be found: {}", strerror_l(errno, c_locale));
     kphp::memory::libc_alloc_guard{}, freelocale(c_locale);
     return false;
   }
