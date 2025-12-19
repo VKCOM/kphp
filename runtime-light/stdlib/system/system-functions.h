@@ -204,7 +204,7 @@ inline kphp::coro::task<> f$sleep(int64_t seconds) noexcept {
     co_return;
   }
 
-  co_await f$usleep(seconds * 1'000'000);
+  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield_for(std::chrono::seconds{seconds}));
   co_return;
 }
 

@@ -1,4 +1,4 @@
-@ok benchmark
+@ok
 <?php
 
   var_dump (ip2long ('192.0.34.166'));
