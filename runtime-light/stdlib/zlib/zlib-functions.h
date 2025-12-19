@@ -10,7 +10,7 @@
 #include <span>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/zlib/deflatecontext.h"
+#include "runtime-light/stdlib/zlib/deflate-context.h"
 
 namespace kphp::zlib {
 

@@ -13,6 +13,11 @@ struct C$DeflateContext : public refcountable_php_classes<C$DeflateContext>, pri
   C$DeflateContext() noexcept = default;
   using DummyVisitorMethods::accept;
 
+  C$DeflateContext(const C$DeflateContext&) = delete;
+  C$DeflateContext(C$DeflateContext&&) = delete;
+  C$DeflateContext& operator=(const C$DeflateContext&) = delete;
+  C$DeflateContext& operator=(C$DeflateContext&&) = delete;
+
   ~C$DeflateContext() {
     deflateEnd(std::addressof(stream));
   }
