@@ -39,13 +39,10 @@ bool string::fetch(tl::fetcher& tlf) noexcept {
     const auto seventh{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 48};
     string_len = first | second | third | fourth | fifth | sixth | seventh;
 
-    const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
-    if (tlf.remaining() < total_len_with_padding - size_len) [[unlikely]] {
-      return false;
+    if (string_len <= MEDIUM_STRING_MAX_LEN) [[unlikely]] {
+      kphp::log::warning("large string's length is less than (1 << 24) - 1 (length = {})", string_len);
     }
-    tlf.adjust(total_len_with_padding - size_len);
-    kphp::log::warning("large strings aren't supported (length = {})", string_len);
-    return false;
+    break;
   }
   case MEDIUM_STRING_MAGIC: {
     if (tlf.remaining() < MEDIUM_STRING_SIZE_LEN) [[unlikely]] {
@@ -68,8 +65,11 @@ bool string::fetch(tl::fetcher& tlf) noexcept {
     break;
   }
   }
+  // Alignment on 4 is required
   const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
-  if (tlf.remaining() < total_len_with_padding - size_len) [[unlikely]] {
+
+  if (auto remaining{tlf.remaining() - (total_len_with_padding - size_len)}; remaining < 0) [[unlikely]] {
+    kphp::log::warning("not enough space in buffer for string (length = {}) fetching, required {} bytes", string_len, (-1) * remaining);
     return false;
   }
 
