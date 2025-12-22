@@ -1,0 +1,6 @@
+entry: script
+components:
+  script:
+    image: KPHP
+    scope: Request
+    links: {}

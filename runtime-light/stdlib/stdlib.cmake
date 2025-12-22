@@ -38,6 +38,7 @@ prepend(
   string/regex-functions.cpp
   string/regex-state.cpp
   string/string-state.cpp
+  string/string-functions.cpp
   system/system-functions.cpp
   system/system-state.cpp
   time/time-functions.cpp

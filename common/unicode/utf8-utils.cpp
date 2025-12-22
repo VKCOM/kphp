@@ -4,6 +4,7 @@
 
 #include "common/unicode/utf8-utils.h"
 
+#include <array>
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -991,164 +992,165 @@ int simplify_character(int c) {
   }
 }
 
-const int _s_1__[] = {97, 0};
-const int _v_1__[] = {1072, 0};
-const int _s_2__[] = {98, 0};
-const int _v_2__[] = {1073, 0};
-const int _s_3__[] = {99, 0};
-const int _v_3__[] = {1082, 0};
-const int _s_4__[] = {99, 104, 0};
-const int _v_4__[] = {1095, 0};
-const int _s_5__[] = {100, 0};
-const int _v_5__[] = {1076, 0};
-const int _s_6__[] = {101, 0};
-const int _v_6__[] = {1077, 0};
-const int _s_7__[] = {101, 105, 0};
-const int _v_7__[] = {1077, 1081, 0};
-const int _s_8__[] = {101, 121, 0};
-const int _v_8__[] = {1077, 1081, 0};
-const int _s_9__[] = {102, 0};
-const int _v_9__[] = {1092, 0};
-const int _s_10__[] = {103, 0};
-const int _v_10__[] = {1075, 0};
-const int _s_11__[] = {104, 0};
-const int _v_11__[] = {1093, 0};
-const int _s_12__[] = {105, 0};
-const int _v_12__[] = {1080, 0};
-const int _s_13__[] = {105, 97, 0};
-const int _v_13__[] = {1080, 1103, 0};
-const int _s_14__[] = {105, 121, 0};
-const int _v_14__[] = {1080, 1081, 0};
-const int _s_15__[] = {106, 0};
-const int _v_15__[] = {1081, 0};
-const int _s_16__[] = {106, 111, 0};
-const int _v_16__[] = {1077, 0};
-const int _s_17__[] = {106, 117, 0};
-const int _v_17__[] = {1102, 0};
-const int _s_18__[] = {106, 97, 0};
-const int _v_18__[] = {1103, 0};
-const int _s_19__[] = {107, 0};
-const int _v_19__[] = {1082, 0};
-const int _s_20__[] = {107, 104, 0};
-const int _v_20__[] = {1093, 0};
-const int _s_21__[] = {108, 0};
-const int _v_21__[] = {1083, 0};
-const int _s_22__[] = {109, 0};
-const int _v_22__[] = {1084, 0};
-const int _s_23__[] = {110, 0};
-const int _v_23__[] = {1085, 0};
-const int _s_24__[] = {111, 0};
-const int _v_24__[] = {1086, 0};
-const int _s_25__[] = {112, 0};
-const int _v_25__[] = {1087, 0};
-const int _s_26__[] = {113, 0};
-const int _v_26__[] = {1082, 0};
-const int _s_27__[] = {114, 0};
-const int _v_27__[] = {1088, 0};
-const int _s_28__[] = {115, 0};
-const int _v_28__[] = {1089, 0};
-const int _s_29__[] = {115, 104, 0};
-const int _v_29__[] = {1096, 0};
-const int _s_30__[] = {115, 104, 99, 104, 0};
-const int _v_30__[] = {1097, 0};
-const int _s_31__[] = {115, 99, 104, 0};
-const int _v_31__[] = {1097, 0};
-const int _s_32__[] = {116, 0};
-const int _v_32__[] = {1090, 0};
-const int _s_33__[] = {116, 115, 0};
-const int _v_33__[] = {1094, 0};
-const int _s_34__[] = {117, 0};
-const int _v_34__[] = {1091, 0};
-const int _s_35__[] = {118, 0};
-const int _v_35__[] = {1074, 0};
-const int _s_36__[] = {119, 0};
-const int _v_36__[] = {1074, 0};
-const int _s_37__[] = {120, 0};
-const int _v_37__[] = {1082, 1089, 0};
-const int _s_38__[] = {121, 0};
-const int _v_38__[] = {1080, 0};
-const int _s_39__[] = {121, 111, 0};
-const int _v_39__[] = {1077, 0};
-const int _s_40__[] = {121, 117, 0};
-const int _v_40__[] = {1102, 0};
-const int _s_41__[] = {121, 97, 0};
-const int _v_41__[] = {1103, 0};
-const int _s_42__[] = {122, 0};
-const int _v_42__[] = {1079, 0};
-const int _s_43__[] = {122, 104, 0};
-const int _v_43__[] = {1078, 0};
-const int _s_44__[] = {1072, 0};
-const int _v_44__[] = {97, 0};
-const int _s_45__[] = {1073, 0};
-const int _v_45__[] = {98, 0};
-const int _s_46__[] = {1074, 0};
-const int _v_46__[] = {118, 0};
-const int _s_47__[] = {1075, 0};
-const int _v_47__[] = {103, 0};
-const int _s_48__[] = {1076, 0};
-const int _v_48__[] = {100, 0};
-const int _s_49__[] = {1077, 0};
-const int _v_49__[] = {101, 0};
-const int _s_50__[] = {1105, 0};
-const int _v_50__[] = {101, 0};
-const int _s_51__[] = {1078, 0};
-const int _v_51__[] = {122, 104, 0};
-const int _s_52__[] = {1079, 0};
-const int _v_52__[] = {122, 0};
-const int _s_53__[] = {1080, 0};
-const int _v_53__[] = {105, 0};
-const int _s_54__[] = {1080, 1081, 0};
-const int _v_54__[] = {121, 0};
-const int _s_55__[] = {1080, 1103, 0};
-const int _v_55__[] = {105, 97, 0};
-const int _s_56__[] = {1081, 0};
-const int _v_56__[] = {121, 0};
-const int _s_57__[] = {1082, 0};
-const int _v_57__[] = {107, 0};
-const int _s_58__[] = {1082, 1089, 0};
-const int _v_58__[] = {120, 0};
-const int _s_59__[] = {1083, 0};
-const int _v_59__[] = {108, 0};
-const int _s_60__[] = {1084, 0};
-const int _v_60__[] = {109, 0};
-const int _s_61__[] = {1085, 0};
-const int _v_61__[] = {110, 0};
-const int _s_62__[] = {1086, 0};
-const int _v_62__[] = {111, 0};
-const int _s_63__[] = {1087, 0};
-const int _v_63__[] = {112, 0};
-const int _s_64__[] = {1088, 0};
-const int _v_64__[] = {114, 0};
-const int _s_65__[] = {1089, 0};
-const int _v_65__[] = {115, 0};
-const int _s_66__[] = {1090, 0};
-const int _v_66__[] = {116, 0};
-const int _s_67__[] = {1091, 0};
-const int _v_67__[] = {117, 0};
-const int _s_68__[] = {1092, 0};
-const int _v_68__[] = {102, 0};
-const int _s_69__[] = {1093, 0};
-const int _v_69__[] = {107, 104, 0};
-const int _s_70__[] = {1094, 0};
-const int _v_70__[] = {116, 115, 0};
-const int _s_71__[] = {1095, 0};
-const int _v_71__[] = {99, 104, 0};
-const int _s_72__[] = {1096, 0};
-const int _v_72__[] = {115, 104, 0};
-const int _s_73__[] = {1097, 0};
-const int _v_73__[] = {115, 104, 99, 104, 0};
-const int _s_74__[] = {1098, 0};
-const int _v_74__[] = {0};
-const int _s_75__[] = {1099, 0};
-const int _v_75__[] = {121, 0};
-const int _s_76__[] = {1100, 0};
-const int _v_76__[] = {0};
-const int _s_77__[] = {1101, 0};
-const int _v_77__[] = {101, 0};
-const int _s_78__[] = {1102, 0};
-const int _v_78__[] = {121, 117, 0};
-const int _s_79__[] = {1103, 0};
-const int _v_79__[] = {121, 97, 0};
+// TODO does constexpr std::array enough for safe use in runtime-light ?
+constexpr std::array<int32_t, 2> _s_1__{97, 0};
+constexpr std::array<int32_t, 2> _v_1__{1072, 0};
+constexpr std::array<int32_t, 2> _s_2__{98, 0};
+constexpr std::array<int32_t, 2> _v_2__{1073, 0};
+constexpr std::array<int32_t, 2> _s_3__{99, 0};
+constexpr std::array<int32_t, 2> _v_3__{1082, 0};
+constexpr std::array<int32_t, 3> _s_4__{99, 104, 0};
+constexpr std::array<int32_t, 2> _v_4__{1095, 0};
+constexpr std::array<int32_t, 2> _s_5__{100, 0};
+constexpr std::array<int32_t, 2> _v_5__{1076, 0};
+constexpr std::array<int32_t, 2> _s_6__{101, 0};
+constexpr std::array<int32_t, 2> _v_6__{1077, 0};
+constexpr std::array<int32_t, 3> _s_7__{101, 105, 0};
+constexpr std::array<int32_t, 3> _v_7__{1077, 1081, 0};
+constexpr std::array<int32_t, 3> _s_8__{101, 121, 0};
+constexpr std::array<int32_t, 3> _v_8__{1077, 1081, 0};
+constexpr std::array<int32_t, 2> _s_9__{102, 0};
+constexpr std::array<int32_t, 2> _v_9__{1092, 0};
+constexpr std::array<int32_t, 2> _s_10__{103, 0};
+constexpr std::array<int32_t, 2> _v_10__{1075, 0};
+constexpr std::array<int32_t, 2> _s_11__{104, 0};
+constexpr std::array<int32_t, 2> _v_11__{1093, 0};
+constexpr std::array<int32_t, 2> _s_12__{105, 0};
+constexpr std::array<int32_t, 2> _v_12__{1080, 0};
+constexpr std::array<int32_t, 3> _s_13__{105, 97, 0};
+constexpr std::array<int32_t, 3> _v_13__{1080, 1103, 0};
+constexpr std::array<int32_t, 3> _s_14__{105, 121, 0};
+constexpr std::array<int32_t, 3> _v_14__{1080, 1081, 0};
+constexpr std::array<int32_t, 2> _s_15__{106, 0};
+constexpr std::array<int32_t, 2> _v_15__{1081, 0};
+constexpr std::array<int32_t, 3> _s_16__{106, 111, 0};
+constexpr std::array<int32_t, 2> _v_16__{1077, 0};
+constexpr std::array<int32_t, 3> _s_17__{106, 117, 0};
+constexpr std::array<int32_t, 2> _v_17__{1102, 0};
+constexpr std::array<int32_t, 3> _s_18__{106, 97, 0};
+constexpr std::array<int32_t, 2> _v_18__{1103, 0};
+constexpr std::array<int32_t, 2> _s_19__{107, 0};
+constexpr std::array<int32_t, 2> _v_19__{1082, 0};
+constexpr std::array<int32_t, 3> _s_20__{107, 104, 0};
+constexpr std::array<int32_t, 2> _v_20__{1093, 0};
+constexpr std::array<int32_t, 2> _s_21__{108, 0};
+constexpr std::array<int32_t, 2> _v_21__{1083, 0};
+constexpr std::array<int32_t, 2> _s_22__{109, 0};
+constexpr std::array<int32_t, 2> _v_22__{1084, 0};
+constexpr std::array<int32_t, 2> _s_23__{110, 0};
+constexpr std::array<int32_t, 2> _v_23__{1085, 0};
+constexpr std::array<int32_t, 2> _s_24__{111, 0};
+constexpr std::array<int32_t, 2> _v_24__{1086, 0};
+constexpr std::array<int32_t, 2> _s_25__{112, 0};
+constexpr std::array<int32_t, 2> _v_25__{1087, 0};
+constexpr std::array<int32_t, 2> _s_26__{113, 0};
+constexpr std::array<int32_t, 2> _v_26__{1082, 0};
+constexpr std::array<int32_t, 2> _s_27__{114, 0};
+constexpr std::array<int32_t, 2> _v_27__{1088, 0};
+constexpr std::array<int32_t, 2> _s_28__{115, 0};
+constexpr std::array<int32_t, 2> _v_28__{1089, 0};
+constexpr std::array<int32_t, 3> _s_29__{115, 104, 0};
+constexpr std::array<int32_t, 2> _v_29__{1096, 0};
+constexpr std::array<int32_t, 5> _s_30__{115, 104, 99, 104, 0};
+constexpr std::array<int32_t, 2> _v_30__{1097, 0};
+constexpr std::array<int32_t, 4> _s_31__{115, 99, 104, 0};
+constexpr std::array<int32_t, 2> _v_31__{1097, 0};
+constexpr std::array<int32_t, 2> _s_32__{116, 0};
+constexpr std::array<int32_t, 2> _v_32__{1090, 0};
+constexpr std::array<int32_t, 3> _s_33__{116, 115, 0};
+constexpr std::array<int32_t, 2> _v_33__{1094, 0};
+constexpr std::array<int32_t, 2> _s_34__{117, 0};
+constexpr std::array<int32_t, 2> _v_34__{1091, 0};
+constexpr std::array<int32_t, 2> _s_35__{118, 0};
+constexpr std::array<int32_t, 2> _v_35__{1074, 0};
+constexpr std::array<int32_t, 2> _s_36__{119, 0};
+constexpr std::array<int32_t, 2> _v_36__{1074, 0};
+constexpr std::array<int32_t, 2> _s_37__{120, 0};
+constexpr std::array<int32_t, 3> _v_37__{1082, 1089, 0};
+constexpr std::array<int32_t, 2> _s_38__{121, 0};
+constexpr std::array<int32_t, 2> _v_38__{1080, 0};
+constexpr std::array<int32_t, 3> _s_39__{121, 111, 0};
+constexpr std::array<int32_t, 2> _v_39__{1077, 0};
+constexpr std::array<int32_t, 3> _s_40__{121, 117, 0};
+constexpr std::array<int32_t, 2> _v_40__{1102, 0};
+constexpr std::array<int32_t, 3> _s_41__{121, 97, 0};
+constexpr std::array<int32_t, 2> _v_41__{1103, 0};
+constexpr std::array<int32_t, 2> _s_42__{122, 0};
+constexpr std::array<int32_t, 2> _v_42__{1079, 0};
+constexpr std::array<int32_t, 3> _s_43__{122, 104, 0};
+constexpr std::array<int32_t, 2> _v_43__{1078, 0};
+constexpr std::array<int32_t, 2> _s_44__{1072, 0};
+constexpr std::array<int32_t, 2> _v_44__{97, 0};
+constexpr std::array<int32_t, 2> _s_45__{1073, 0};
+constexpr std::array<int32_t, 2> _v_45__{98, 0};
+constexpr std::array<int32_t, 2> _s_46__{1074, 0};
+constexpr std::array<int32_t, 2> _v_46__{118, 0};
+constexpr std::array<int32_t, 2> _s_47__{1075, 0};
+constexpr std::array<int32_t, 2> _v_47__{103, 0};
+constexpr std::array<int32_t, 2> _s_48__{1076, 0};
+constexpr std::array<int32_t, 2> _v_48__{100, 0};
+constexpr std::array<int32_t, 2> _s_49__{1077, 0};
+constexpr std::array<int32_t, 2> _v_49__{101, 0};
+constexpr std::array<int32_t, 2> _s_50__{1105, 0};
+constexpr std::array<int32_t, 2> _v_50__{101, 0};
+constexpr std::array<int32_t, 2> _s_51__{1078, 0};
+constexpr std::array<int32_t, 3> _v_51__{122, 104, 0};
+constexpr std::array<int32_t, 2> _s_52__{1079, 0};
+constexpr std::array<int32_t, 2> _v_52__{122, 0};
+constexpr std::array<int32_t, 2> _s_53__{1080, 0};
+constexpr std::array<int32_t, 2> _v_53__{105, 0};
+constexpr std::array<int32_t, 3> _s_54__{1080, 1081, 0};
+constexpr std::array<int32_t, 2> _v_54__{121, 0};
+constexpr std::array<int32_t, 3> _s_55__{1080, 1103, 0};
+constexpr std::array<int32_t, 3> _v_55__{105, 97, 0};
+constexpr std::array<int32_t, 2> _s_56__{1081, 0};
+constexpr std::array<int32_t, 2> _v_56__{121, 0};
+constexpr std::array<int32_t, 2> _s_57__{1082, 0};
+constexpr std::array<int32_t, 2> _v_57__{107, 0};
+constexpr std::array<int32_t, 3> _s_58__{1082, 1089, 0};
+constexpr std::array<int32_t, 2> _v_58__{120, 0};
+constexpr std::array<int32_t, 2> _s_59__{1083, 0};
+constexpr std::array<int32_t, 2> _v_59__{108, 0};
+constexpr std::array<int32_t, 2> _s_60__{1084, 0};
+constexpr std::array<int32_t, 2> _v_60__{109, 0};
+constexpr std::array<int32_t, 2> _s_61__{1085, 0};
+constexpr std::array<int32_t, 2> _v_61__{110, 0};
+constexpr std::array<int32_t, 2> _s_62__{1086, 0};
+constexpr std::array<int32_t, 2> _v_62__{111, 0};
+constexpr std::array<int32_t, 2> _s_63__{1087, 0};
+constexpr std::array<int32_t, 2> _v_63__{112, 0};
+constexpr std::array<int32_t, 2> _s_64__{1088, 0};
+constexpr std::array<int32_t, 2> _v_64__{114, 0};
+constexpr std::array<int32_t, 2> _s_65__{1089, 0};
+constexpr std::array<int32_t, 2> _v_65__{115, 0};
+constexpr std::array<int32_t, 2> _s_66__{1090, 0};
+constexpr std::array<int32_t, 2> _v_66__{116, 0};
+constexpr std::array<int32_t, 2> _s_67__{1091, 0};
+constexpr std::array<int32_t, 2> _v_67__{117, 0};
+constexpr std::array<int32_t, 2> _s_68__{1092, 0};
+constexpr std::array<int32_t, 2> _v_68__{102, 0};
+constexpr std::array<int32_t, 2> _s_69__{1093, 0};
+constexpr std::array<int32_t, 3> _v_69__{107, 104, 0};
+constexpr std::array<int32_t, 2> _s_70__{1094, 0};
+constexpr std::array<int32_t, 3> _v_70__{116, 115, 0};
+constexpr std::array<int32_t, 2> _s_71__{1095, 0};
+constexpr std::array<int32_t, 3> _v_71__{99, 104, 0};
+constexpr std::array<int32_t, 2> _s_72__{1096, 0};
+constexpr std::array<int32_t, 3> _v_72__{115, 104, 0};
+constexpr std::array<int32_t, 2> _s_73__{1097, 0};
+constexpr std::array<int32_t, 5> _v_73__{115, 104, 99, 104, 0};
+constexpr std::array<int32_t, 2> _s_74__{1098, 0};
+constexpr std::array<int32_t, 2> _v_74__{0};
+constexpr std::array<int32_t, 2> _s_75__{1099, 0};
+constexpr std::array<int32_t, 2> _v_75__{121, 0};
+constexpr std::array<int32_t, 2> _s_76__{1100, 0};
+constexpr std::array<int32_t, 2> _v_76__{0};
+constexpr std::array<int32_t, 2> _s_77__{1101, 0};
+constexpr std::array<int32_t, 2> _v_77__{101, 0};
+constexpr std::array<int32_t, 2> _s_78__{1102, 0};
+constexpr std::array<int32_t, 3> _v_78__{121, 117, 0};
+constexpr std::array<int32_t, 2> _s_79__{1103, 0};
+constexpr std::array<int32_t, 3> _v_79__{121, 97, 0};
 
 int translit_string_utf8_from_en_to_ru(int* input, int* output) {
 
@@ -1158,8 +1160,8 @@ int translit_string_utf8_from_en_to_ru(int* input, int* output) {
     k++;                                                                                                                                                       \
   }                                                                                                                                                            \
   if (!s[k]) {                                                                                                                                                 \
-    match_v = v;                                                                                                                                               \
-    match_s = s;                                                                                                                                               \
+    match_v = v.data();                                                                                                                                        \
+    match_s = s.data();                                                                                                                                        \
   }
 
   int i = 0, j = 0, k = 0;
@@ -1340,8 +1342,8 @@ int translit_string_utf8_from_ru_to_en(int* input, int* output) {
     k++;                                                                                                                                                       \
   }                                                                                                                                                            \
   if (!s[k]) {                                                                                                                                                 \
-    match_v = v;                                                                                                                                               \
-    match_s = s;                                                                                                                                               \
+    match_v = v.data();                                                                                                                                        \
+    match_s = s.data();                                                                                                                                        \
   }
 
   int i = 0, j = 0, k = 0;
