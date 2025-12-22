@@ -84,26 +84,26 @@ inline resource f$fopen(const string& filename, const string& mode, [[maybe_unus
   std::string_view filename_view{filename.c_str(), filename.size()};
   if (filename_view == kphp::fs::STDIN_NAME) {
     auto expected{kphp::fs::stdinput::open()};
-    return expected ? make_instance<kphp::fs::stdinput>(*std::move(expected)) : class_instance<kphp::fs::stdinput>{};
+    return expected ? resource{make_instance<kphp::fs::stdinput>(*std::move(expected))} : resource{false};
   } else if (filename_view == kphp::fs::STDOUT_NAME) {
     auto expected{kphp::fs::stdoutput::open()};
-    return expected ? make_instance<kphp::fs::stdoutput>(*std::move(expected)) : class_instance<kphp::fs::stdoutput>{};
+    return expected ? resource{make_instance<kphp::fs::stdoutput>(*std::move(expected))} : resource{false};
   } else if (filename_view == kphp::fs::STDERR_NAME) {
     auto expected{kphp::fs::stderror::open()};
-    return expected ? make_instance<kphp::fs::stderror>(*std::move(expected)) : class_instance<kphp::fs::stderror>{};
+    return expected ? resource{make_instance<kphp::fs::stderror>(*std::move(expected))} : resource{false};
   } else if (filename_view == kphp::fs::INPUT_NAME) {
     auto expected{kphp::fs::input::open()};
-    return expected ? make_instance<kphp::fs::input>(*std::move(expected)) : class_instance<kphp::fs::input>{};
+    return expected ? resource{make_instance<kphp::fs::input>(*std::move(expected))} : resource{false};
   } else if (filename_view.starts_with(kphp::fs::UDP_SCHEME_PREFIX) || filename_view.starts_with(kphp::fs::TCP_SCHEME_PREFIX)) {
     auto expected{kphp::fs::socket::open(filename_view)};
-    return expected ? make_instance<kphp::fs::socket>(*std::move(expected)) : class_instance<kphp::fs::socket>{};
+    return expected ? resource{make_instance<kphp::fs::socket>(*std::move(expected))} : resource{false};
   } else if (!filename_view.contains(kphp::fs::SCHEME_DELIMITER)) { // not a '*://*' pattern, so it must be a file
     auto expected{kphp::fs::file::open(filename_view, {mode.c_str(), mode.size()})};
-    return expected ? make_instance<kphp::fs::file>(*std::move(expected)) : class_instance<kphp::fs::file>{};
+    return expected ? resource{make_instance<kphp::fs::file>(*std::move(expected))} : resource{false};
   }
 
   kphp::log::warning("unexpected resource in fopen -> {}", filename.c_str());
-  return {};
+  return resource{false};
 }
 
 inline kphp::coro::task<bool> f$fclose(resource stream) noexcept {

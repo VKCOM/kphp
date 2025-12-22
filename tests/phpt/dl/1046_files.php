@@ -12,7 +12,7 @@
   $large_text = str_repeat("s", 1000);
   $large_text2 = str_repeat("t", 1000);
   var_dump (file_put_contents($filename, $large_text));
-  var_dump (file_put_contents($filename, $large_text2, 1)); // append
+  var_dump (file_put_contents($filename, $large_text2, FILE_APPEND)); // append
   $file = fopen ($filename, 'r');
   var_dump (fread($file, 2000));
   fclose ($file);
@@ -27,11 +27,10 @@
   $file = fopen ($filename, 'r');
   var_dump (fread($file, 2000));
   fclose ($file);
-// TODO    @var_dump (unlink ($filename));
+  var_dump (unlink ($filename));
 
   $file = fopen ($filename, 'r');
-  var_dump (fread($file, 1));
-  fclose ($file);
+  var_dump ($file);
 
 
   var_dump (realpath ("../dl/473-file.php"));
