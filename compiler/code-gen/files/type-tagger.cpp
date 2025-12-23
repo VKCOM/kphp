@@ -4,6 +4,9 @@
 
 #include "compiler/code-gen/files/type-tagger.h"
 
+#include <set>
+#include <string>
+
 #include "common/algorithms/hashes.h"
 #include "compiler/code-gen/code-generator.h"
 #include "compiler/code-gen/common.h"
@@ -12,8 +15,6 @@
 #include "compiler/compiler-core.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/kphp_assert.h"
-#include <set>
-#include <string>
 
 TypeTagger::TypeTagger(std::vector<const TypeData *> &&forkable_types, std::vector<const TypeData *> &&waitable_types) noexcept
   : forkable_types_(std::move(forkable_types))
