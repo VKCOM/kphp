@@ -68,8 +68,9 @@ bool string::fetch(tl::fetcher& tlf) noexcept {
   // Alignment on 4 is required
   const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
 
-  if (auto remaining{tlf.remaining() - (total_len_with_padding - size_len)}; remaining < 0) [[unlikely]] {
-    kphp::log::warning("not enough space in buffer for string (length = {}) fetching, required {} bytes", string_len, (-1) * remaining);
+  if (auto required{total_len_with_padding - size_len}; required > tlf.remaining()) [[unlikely]] {
+    kphp::log::warning("not enough space in buffer for string (length = {}) fetching, required {} bytes, remain {} bytes", string_len, required,
+                       tlf.remaining());
     return false;
   }
 
