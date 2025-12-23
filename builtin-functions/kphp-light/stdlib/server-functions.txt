@@ -69,6 +69,10 @@ function setlocale ($category ::: int, $locale ::: string) ::: string | false;
 
 function memory_get_detailed_stats() ::: int[];
 
+function memory_get_total_usage() ::: int;
+
+function inet_pton ($address ::: string) ::: string | false;
+
 // ===== UNSUPPORTED =====
 
 /** @kphp-extern-func-info stub */
@@ -90,12 +94,8 @@ function ini_set ($s ::: string, $v ::: string) ::: bool;
 function thread_pool_test_load($size ::: int, $n ::: int, $a ::: float, $b ::: float) ::: float;
 /** @kphp-extern-func-info stub generation-required */
 function gethostbynamel ($name ::: string) ::: string[] | false;
-/** @kphp-extern-func-info stub generation-required */
-function inet_pton ($address ::: string) ::: string | false;
 
 
-/** @kphp-extern-func-info stub generation-required */
-function memory_get_total_usage() ::: int;
 /** @kphp-extern-func-info stub generation-required */
 function memory_get_static_usage() ::: int;
 

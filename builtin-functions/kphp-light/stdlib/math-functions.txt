@@ -167,13 +167,11 @@ function lcg_value() ::: float;
 /** @kphp-extern-func-info interruptible */
 function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
 
+/** @kphp-pure-function */
+function fmod ($x ::: float, $y ::: float) ::: float;
+
 // === UNSUPPORTED ===
 
-/**
- * @kphp-extern-func-info stub generation-required
- * @kphp-pure-function
- */
-function fmod ($x ::: float, $y ::: float) ::: float;
 /**
  * @kphp-extern-func-info stub generation-required
  * @kphp-pure-function
