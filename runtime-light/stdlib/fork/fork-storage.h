@@ -42,6 +42,19 @@ class storage {
     }
   };
 
+  template<>
+  struct loader_impl<void, void, std::true_type> {
+    static void loader_function([[maybe_unused]] data_type& storage) noexcept {}
+  };
+
+  template<typename From>
+  requires(!std::same_as<From, int32_t>)
+  struct loader_impl<From, void, std::false_type> {
+    static void loader_function(data_type& storage) noexcept {
+      loader_impl<From, From>::loader_function(storage);
+    }
+  };
+
   std::optional<int32_t> m_opt_tag;
   data_type m_data;
 
