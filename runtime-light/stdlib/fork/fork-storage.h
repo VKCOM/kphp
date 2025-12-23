@@ -11,7 +11,6 @@
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/core/utils/small-object-storage.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -21,11 +20,12 @@ class storage {
   using data_type = small_object_storage<sizeof(mixed)>;
 
   template<typename From, typename To, typename Convertible = std::is_convertible<From, To>::type>
-  struct load_implementation_helper;
+  struct loader_impl;
 
   template<typename From, typename To>
-  struct load_implementation_helper<From, To, std::true_type> {
-    static To load_impl(data_type& storage) noexcept {
+  requires(!std::same_as<From, int32_t> && !std::same_as<To, int32_t>)
+  struct loader_impl<From, To, std::true_type> {
+    static To loader_function(data_type& storage) noexcept {
       From* data{storage.get<From>()};
       To result(std::move(*data));
       storage.destroy<From>();
@@ -34,16 +34,16 @@ class storage {
   };
 
   template<typename From, typename To>
-  struct load_implementation_helper<From, To, std::false_type> {
-    static To load_impl([[maybe_unused]] data_type& storage) noexcept {
-      php_assert(false);
+  requires(!std::same_as<From, int32_t> && !std::same_as<To, int32_t>)
+  struct loader_impl<From, To, std::false_type> {
+    static To loader_function([[maybe_unused]] data_type& storage) noexcept {
+      kphp::log::assertion(false);
       return To{};
     }
   };
 
   std::optional<int32_t> m_opt_tag;
   data_type m_data;
-
 
 public:
   template<typename T>

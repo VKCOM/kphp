@@ -2,8 +2,11 @@
 // Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/stdlib/fork/storage.h"
+#include "runtime-light/stdlib/fork/fork-storage.h"
 
+#include <optional>
+
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::forks::details {
 

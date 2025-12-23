@@ -12,6 +12,8 @@
 #include "compiler/compiler-core.h"
 #include "compiler/inferring/type-data.h"
 #include "compiler/kphp_assert.h"
+#include <set>
+#include <string>
 
 TypeTagger::TypeTagger(std::vector<const TypeData *> &&forkable_types, std::vector<const TypeData *> &&waitable_types) noexcept
   : forkable_types_(std::move(forkable_types))
@@ -31,21 +33,42 @@ IncludesCollector TypeTagger::collect_includes() const noexcept {
 std::map<int, std::string> TypeTagger::collect_hash_of_types() const noexcept {
   // Be care, do not remove spaces from these types
   // TODO fix it?
-  std::set<std::string> sorted_types{
-    "bool",
-    "int64_t",
-    "Optional < int64_t >",
-    "void",
-    // "thrown_exception",
-    "mixed",
-    "array< mixed >",
-    "Optional < string >",
-    "Optional < array< mixed > >",
-    "array< array< mixed > >",
-    "class_instance<C$KphpJobWorkerResponse>",
-    "class_instance<C$VK$TL$RpcResponse>",
-    "array< class_instance<C$VK$TL$RpcResponse> >",
-    // "class_instance<C$PDOStatement>",
+
+  std::set<std::string> sorted_types{};
+  if (G->is_output_mode_k2()) {
+    sorted_types = std::set<std::string>{
+        "bool",
+        "int64_t",
+        "Optional < int64_t >",
+        "void",
+        "mixed",
+        "array< mixed >",
+        "Optional < string >",
+        "Optional < array< mixed > >",
+        "array< array< mixed > >",
+        "class_instance<C$KphpJobWorkerResponse>",
+        "class_instance<C$VK$TL$RpcResponse>",
+        "array< class_instance<C$VK$TL$RpcResponse> >",
+        // "class_instance<C$PDOStatement>",
+        // "thrown_exception",
+    };
+  } else {
+    sorted_types = std::set<std::string>{
+        "bool",
+        "int64_t",
+        "Optional < int64_t >",
+        "void",
+        "thrown_exception",
+        "mixed",
+        "array< mixed >",
+        "Optional < string >",
+        "Optional < array< mixed > >",
+        "array< array< mixed > >",
+        "class_instance<C$KphpJobWorkerResponse>",
+        "class_instance<C$VK$TL$RpcResponse>",
+        "array< class_instance<C$VK$TL$RpcResponse> >",
+        "class_instance<C$PDOStatement>",
+    };
   };
 
   for (const auto *type : forkable_types_) {
@@ -55,7 +78,7 @@ std::map<int, std::string> TypeTagger::collect_hash_of_types() const noexcept {
   std::map<int, std::string> hashes;
 
   for (const auto &type : sorted_types) {
-    const auto hash = static_cast<int>(vk::std_hash(type)); // FIXME
+    const auto hash = static_cast<int>(vk::std_hash(type));
     kphp_assert(hash);
     kphp_assert(hashes.emplace(hash, type).second);
   }
@@ -99,7 +122,7 @@ void TypeTagger::compile_loader_header(CodeGenerator& W, const IncludesCollector
     W << "switch(tag)" << BEGIN;
     for (const auto& [hash, type] : hash_of_types) {
       W << "case " << hash << ":"
-        << " return kphp::forks::details::storage::load_implementation_helper<" << type << ", T>::load_impl;" << NL;
+        << " return kphp::forks::details::storage::loader_impl<" << type << ", T>::loader_function;" << NL;
     }
     W << END << NL;
     W << "kphp::log::assertion(false);" << NL;

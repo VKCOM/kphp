@@ -16,7 +16,10 @@ VertexPtr CollectForkableTypesPass::on_enter_vertex(VertexPtr root) {
         forkable_types_.push_back(tinf::get_type(root)->lookup_at_any_key());
         waitable_types_.push_back(tinf::get_type(root)->lookup_at_any_key());
       }
-      forkable_types_.push_back(tinf::get_type(root));
+
+      if (call->func_id->is_resumable || call->func_id->is_k2_fork) {
+        forkable_types_.push_back(tinf::get_type(root));
+      }
     } else if (call->str_val == "wait_synchronously") {
       waitable_types_.push_back(tinf::get_type(root));
     }

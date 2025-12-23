@@ -20,7 +20,7 @@
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
-#include "runtime-light/stdlib/fork/storage.h"
+#include "runtime-light/stdlib/fork/fork-storage.h"
 
 namespace kphp::forks {
 
