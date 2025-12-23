@@ -16,6 +16,7 @@
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/diagnostics/exception-types.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/fork/storage.h"
 
 namespace kphp::forks {
 
@@ -30,7 +31,7 @@ struct ForkInstanceState final : private vk::not_copyable {
   struct fork_info final {
     bool awaited{};
     Throwable thrown_exception;
-    std::optional<kphp::coro::shared_task<>> opt_handle;
+    std::optional<kphp::coro::shared_task<kphp::forks::details::storage>> opt_handle;
   };
 
 private:
@@ -48,15 +49,22 @@ public:
   static ForkInstanceState& get() noexcept;
 
   template<typename return_type>
-  std::pair<int64_t, kphp::coro::shared_task<return_type>> create_fork(kphp::coro::task<return_type> task) noexcept {
-    static constexpr auto fork_coroutine{[](kphp::coro::task<return_type> task, int64_t fork_id) noexcept -> kphp::coro::shared_task<return_type> {
+  std::pair<int64_t, kphp::coro::shared_task<kphp::forks::details::storage>> create_fork(kphp::coro::task<return_type> task) noexcept {
+    static constexpr auto fork_coroutine{[](kphp::coro::task<return_type> task, int64_t fork_id) noexcept -> kphp::coro::shared_task<kphp::forks::details::storage> {
       ForkInstanceState::get().current_id = fork_id;
-      co_return co_await std::move(task);
+      kphp::forks::details::storage s{};
+      if constexpr (std::same_as<return_type, void>) {
+        co_await std::move(task);
+        s.store();
+      } else {
+        s.store<return_type>(co_await std::move(task));
+      }
+      co_return s;
     }};
 
     const int64_t fork_id{next_fork_id++};
     auto fork_task{std::invoke(fork_coroutine, std::move(task), fork_id)};
-    forks.emplace(fork_id, fork_info{.awaited = {}, .thrown_exception = {}, .opt_handle = static_cast<kphp::coro::shared_task<>>(fork_task)});
+    forks.emplace(fork_id, fork_info{.awaited = {}, .thrown_exception = {}, .opt_handle = static_cast<kphp::coro::shared_task<kphp::forks::details::storage>>(fork_task)});
     return std::make_pair(fork_id, std::move(fork_task));
   }
 

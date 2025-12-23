@@ -11,25 +11,39 @@
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/core/utils/small-object-storage.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::forks::details {
 
 class storage {
-  using storage_type = small_object_storage<sizeof(mixed)>;
+  using data_type = small_object_storage<sizeof(mixed)>;
+
+  template<typename From, typename To, typename Convertible = std::is_convertible<From, To>::type>
+  struct load_implementation_helper;
 
   template<typename From, typename To>
-  requires std::is_convertible_v<From, To> && (!std::same_as<From, int32_t>) && (!std::same_as<To, int32_t>)
-  static To load_impl(storage_type& storage) noexcept {
-    From* data{storage.get<From>()};
-    To result{std::move(*data)};
-    storage.destroy<From>();
-    return result;
-  }
+  struct load_implementation_helper<From, To, std::true_type> {
+    static To load_impl(data_type& storage) noexcept {
+      From* data{storage.get<From>()};
+      To result(std::move(*data));
+      storage.destroy<From>();
+      return result;
+    }
+  };
+
+  template<typename From, typename To>
+  struct load_implementation_helper<From, To, std::false_type> {
+    static To load_impl([[maybe_unused]] data_type& storage) noexcept {
+      php_assert(false);
+      return To{};
+    }
+  };
 
   std::optional<int32_t> m_opt_tag;
-  storage_type m_storage;
+  data_type m_data;
+
 
 public:
   template<typename T>
@@ -41,7 +55,7 @@ public:
   template<typename T>
   requires(!std::same_as<T, int32_t>)
   struct loader {
-    using loader_function_type = T (*)(storage_type&);
+    using loader_function_type = T (*)(data_type&);
 
     static auto get_loader(int32_t tag) noexcept -> loader_function_type;
   };
@@ -50,17 +64,14 @@ public:
   // It should be called with exactly the same type parameter as `load` function.
   // So, to prevent a bug we decided to forbid type deduction here.
   template<typename T>
-  requires(!std::same_as<T, int32_t>)
+  requires(!std::same_as<T, int32_t> && !std::same_as<T, void>)
   auto store(std::type_identity_t<T> val) noexcept -> void {
-    if constexpr (std::same_as<T, void>) {
-      kphp::log::assertion(!m_opt_tag.has_value());
-      m_opt_tag.emplace(tagger<void>::get_tag());
-    } else {
-      kphp::log::assertion(!m_opt_tag.has_value());
-      m_opt_tag.emplace(tagger<T>::get_tag());
-      m_storage.emplace<T>(std::move(val));
-    }
+    kphp::log::assertion(!m_opt_tag.has_value());
+    m_opt_tag.emplace(tagger<T>::get_tag());
+    m_data.emplace<T>(std::move(val));
   }
+
+  auto store() noexcept -> void;
 
   template<typename T>
   requires(!std::same_as<T, int32_t>)
@@ -69,7 +80,7 @@ public:
     const auto tag{*m_opt_tag};
     m_opt_tag = std::nullopt;
     if constexpr (!std::same_as<T, void>) {
-      return loader<T>::get_loader(tag)(m_storage);
+      return loader<T>::get_loader(tag)(m_data);
     }
   }
 };

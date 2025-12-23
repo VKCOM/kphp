@@ -92,16 +92,18 @@ void TypeTagger::compile_loader_header(CodeGenerator& W, const IncludesCollector
 
   if (G->is_output_mode_k2()) {
     W << "template<typename T>" << NL;
+    W << "requires(!std::same_as<T, int32_t>)" << NL;
     FunctionSignatureGenerator{W}
         << "typename kphp::forks::details::storage::loader<T>::loader_function_type kphp::forks::details::storage::loader<T>::get_loader(int32_t tag) "
         << BEGIN;
     W << "switch(tag)" << BEGIN;
     for (const auto& [hash, type] : hash_of_types) {
       W << "case " << hash << ":"
-        << " return kphp::forks::details::storage::load_impl<" << type << ", T>;" << NL;
+        << " return kphp::forks::details::storage::load_implementation_helper<" << type << ", T>::load_impl;" << NL;
     }
     W << END << NL;
     W << "kphp::log::assertion(false);" << NL;
+    W << "return nullptr;" << NL;
     W << END << NL;
   } else {
     W << "template<typename T>" << NL;

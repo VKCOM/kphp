@@ -9,7 +9,7 @@
 
 VertexPtr CollectForkableTypesPass::on_enter_vertex(VertexPtr root) {
   if (auto call = root.try_as<op_func_call>()) {
-    if (call->func_id->is_resumable || call->func_id->is_k2_fork) {
+    if (call->func_id->is_resumable || call->func_id->is_k2_fork || call->func_id->is_interruptible) {
       if (call->str_val == "wait") {
         waitable_types_.push_back(tinf::get_type(root));
       } else if (call->str_val == "wait_multi") {

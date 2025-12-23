@@ -14,6 +14,7 @@ prepend(
   file/file-system-functions.cpp
   file/resource.cpp
   fork/fork-state.cpp
+  fork/storage.cpp
   fork/wait-queue-state.cpp
   instance-cache/instance-cache-state.cpp
   job-worker/job-worker-api.cpp

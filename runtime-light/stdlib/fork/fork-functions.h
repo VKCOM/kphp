@@ -20,6 +20,7 @@
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
+#include "runtime-light/stdlib/fork/storage.h"
 
 namespace kphp::forks {
 
@@ -82,7 +83,7 @@ auto wait(int64_t fork_id, std::chrono::nanoseconds timeout) noexcept -> kphp::c
   // Important: capture current fork's info pre-co_await.
   // Fork ID is not automatically preserved across suspension points
   auto current_fork_info{fork_instance_st.current_info()};
-  auto expected{co_await kphp::coro::io_scheduler::get().schedule(static_cast<kphp::coro::shared_task<return_type>>(std::move(fork_task)),
+  auto expected{co_await kphp::coro::io_scheduler::get().schedule(static_cast<kphp::coro::shared_task<kphp::forks::details::storage>>(std::move(fork_task)),
                                                                   detail::normalize_timeout(timeout))};
 
   // Execute essential housekeeping tasks to maintain proper state management.
@@ -95,7 +96,8 @@ auto wait(int64_t fork_id, std::chrono::nanoseconds timeout) noexcept -> kphp::c
   if (!expected) [[unlikely]] {
     co_return std::nullopt;
   }
-  co_return *std::move(expected);
+
+  co_return (*std::move(expected)).template load<return_type>();
 }
 
 } // namespace kphp::forks
@@ -104,7 +106,7 @@ template<typename T>
 requires(is_optional<T>::value || std::same_as<T, mixed> || is_class_instance<T>::value)
 kphp::coro::task<T> f$wait(int64_t fork_id, double timeout = -1.0) noexcept {
   auto opt_result{co_await kphp::forks::id_managed(
-      kphp::forks::wait<internal_optional_type_t<T>>(fork_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})))};
+      kphp::forks::wait<T>(fork_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})))};
   co_return opt_result ? T{*std::move(opt_result)} : T{};
 }
 
