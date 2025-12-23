@@ -38,7 +38,7 @@ class storage {
   struct loader_impl<From, To, std::false_type> {
     static To loader_function([[maybe_unused]] data_type& storage) noexcept {
       kphp::log::assertion(false);
-      return To{};
+      return To();
     }
   };
 
