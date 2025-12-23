@@ -22,6 +22,10 @@ function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO,
 function fopen ($filename ::: string, $mode ::: string): mixed;
 /** @kphp-extern-func-info interruptible */
 function fwrite ($stream ::: mixed, $text ::: string): int | false;
+/** @kphp-extern-func-info interruptible */
+function vfprintf ($stream, $format ::: string, $args ::: array) ::: int | false;
+/** @kphp-extern-func-info interruptible */
+function fprintf ($stream, $format ::: string, ...$args) ::: int | false;
  /** @kphp-extern-func-info interruptible */
 function fread ($stream ::: mixed, $length ::: int): string | false;
 /** @kphp-extern-func-info interruptible */
@@ -97,7 +101,5 @@ function feof ($stream ::: mixed) ::: bool;
 function stream_context_create ($options ::: mixed = array()) ::: mixed;
 
 
-/** @kphp-extern-func-info stub */
-function fprintf ($stream, $format ::: string, ...$args) ::: int;
 /** @kphp-extern-func-info stub */
 function fputcsv ($stream, $fields ::: array, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: int | false;
