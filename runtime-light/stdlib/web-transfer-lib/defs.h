@@ -176,7 +176,7 @@ inline auto property_value::serialize() const noexcept -> tl::webPropertyValue {
           } else {
             tl::Dictionary<tl::webPropertyValue> res{tl::Dictionary<tl::webPropertyValue>{tl::vector<tl::dictionaryField<tl::webPropertyValue>>{.value = {}}}};
             for (const auto& i : v) {
-              // We cannot convert key into string right here since string which is produced will be destroyed once we occur out of this scope
+              // We cannot convert key into a string right here since a string which is produced will be destroyed once we occur out of this scope
               kphp::log::assertion(i.get_key().is_string());
               const auto& key{i.get_key().as_string()};
               const auto& val{i.get_value()};
