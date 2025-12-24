@@ -14,6 +14,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
+#include "runtime-light/stdlib/fork/fork-storage.h"
 #include "runtime-light/stdlib/fork/wait-queue-state.h"
 
 namespace kphp::forks {
@@ -65,10 +66,11 @@ inline void wait_queue_push(int64_t queue_id, int64_t fork_id) noexcept {
   auto fork_task{*fork_info.get().opt_handle};
   fork_info.get().awaited = true; // future that was pushed in the wait-queue cannot be waited until it is ready (Until it returns from wait_queue_next)
 
-  static constexpr auto wait_queue_wrapper_task{[](kphp::coro::shared_task<> fork_task, int64_t fork_id) noexcept -> kphp::coro::task<int64_t> {
-    co_await std::move(fork_task).when_ready();
-    co_return fork_id;
-  }};
+  static constexpr auto wait_queue_wrapper_task{
+      [](kphp::coro::shared_task<kphp::forks::details::storage> fork_task, int64_t fork_id) noexcept -> kphp::coro::task<int64_t> {
+        co_await std::move(fork_task).when_ready();
+        co_return fork_id;
+      }};
 
   auto& await_set{(*opt_await_set).get()};
   await_set.push(wait_queue_wrapper_task(std::move(fork_task), fork_id));
