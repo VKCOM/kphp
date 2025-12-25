@@ -36,7 +36,7 @@ class_instance<C$DateTimeImmutable> clone_immutable(const class_instance<C$DateT
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class_instance<C$DateTimeImmutable>& self, const string& datetime,
                                                                      const class_instance<C$DateTimeZone>& timezone) noexcept {
   const auto& str_to_parse{datetime.empty() ? StringLibConstants::get().NOW_STR : datetime};
-  auto [time, errors]{kphp::timelib::construct_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
+  auto [time, errors]{kphp::timelib::parse_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
   if (time == nullptr) [[unlikely]] {
     string err_msg;
     format_to(std::back_inserter(err_msg), "DateTimeImmutable::__construct(): Failed to parse time string ({}) {}", datetime.c_str(), errors);
@@ -70,7 +70,7 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$add(const class_instanc
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromFormat(const string& format, const string& datetime,
                                                                           const class_instance<C$DateTimeZone>& timezone) noexcept {
-  auto [time, errors]{kphp::timelib::construct_time({datetime.c_str(), datetime.size()}, format.c_str())};
+  auto [time, errors]{kphp::timelib::parse_time({datetime.c_str(), datetime.size()}, format.c_str())};
   if (time == nullptr) [[unlikely]] {
     TimeInstanceState::get().update_last_errors(std::move(errors));
     return {};

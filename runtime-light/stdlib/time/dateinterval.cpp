@@ -14,7 +14,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<C$DateInterval>& self, const string& duration) noexcept {
-  auto expected_rel_time{kphp::timelib::construct_interval({duration.c_str(), duration.size()})};
+  auto expected_rel_time{kphp::timelib::parse_interval({duration.c_str(), duration.size()})};
   if (!expected_rel_time.has_value()) [[unlikely]] {
     string err_msg{"DateInterval::__construct(): "};
     format_to(std::back_inserter(err_msg), expected_rel_time.error(), duration.c_str());
@@ -26,7 +26,7 @@ class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<
 }
 
 class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string& datetime) noexcept {
-  auto [time, errors]{kphp::timelib::construct_time({datetime.c_str(), datetime.size()})};
+  auto [time, errors]{kphp::timelib::parse_time({datetime.c_str(), datetime.size()})};
   if (time == nullptr) [[unlikely]] {
     kphp::log::warning("DateInterval::createFromDateString(): Unknown or bad format ({}) {}", datetime.c_str(), errors);
     return {};
