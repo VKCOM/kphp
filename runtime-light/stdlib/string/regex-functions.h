@@ -324,7 +324,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
   if (!kphp::regex::details::valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS)) [[unlikely]] {
     co_return Optional<string>{};
   }
-  auto opt_re{compile_regex(regex_info)};
+  auto opt_re{kphp::regex::details::compile_regex(regex_info)};
   if (!opt_re.has_value()) [[unlikely]] {
     co_return Optional<string>{};
   }

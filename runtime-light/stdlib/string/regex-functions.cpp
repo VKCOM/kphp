@@ -597,7 +597,7 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
   if (!correct_offset(offset, {regex_info.subject.c_str(), regex_info.subject.size()})) [[unlikely]] {
     return false;
   }
-  auto opt_re{compile_regex(regex_info)};
+  auto opt_re{kphp::regex::details::compile_regex(regex_info)};
   if (!opt_re.has_value()) [[unlikely]] {
     return false;
   }
@@ -648,7 +648,7 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
   if (!correct_offset(offset, {regex_info.subject.c_str(), regex_info.subject.size()})) [[unlikely]] {
     return false;
   }
-  auto opt_re{compile_regex(regex_info)};
+  auto opt_re{kphp::regex::details::compile_regex(regex_info)};
   if (!opt_re.has_value()) [[unlikely]] {
     return false;
   }
@@ -737,7 +737,7 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
 
   kphp::regex::details::Info regex_info{pattern, subject, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
 
-  auto opt_re{compile_regex(regex_info)};
+  auto opt_re{kphp::regex::details::compile_regex(regex_info)};
   if (!opt_re.has_value()) [[unlikely]] {
     return {};
   }
@@ -879,7 +879,7 @@ Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject
                                                kphp::regex::PREG_SPLIT_OFFSET_CAPTURE)) {
     return false;
   }
-  auto opt_re{compile_regex(regex_info)};
+  auto opt_re{kphp::regex::details::compile_regex(regex_info)};
   if (!opt_re.has_value()) [[unlikely]] {
     return {};
   }
