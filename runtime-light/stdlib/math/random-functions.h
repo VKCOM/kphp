@@ -96,7 +96,7 @@ inline int64_t secure_rand_buf(char* const buf, int64_t length) noexcept {
   arc4random_buf(static_cast<void*>(buf), static_cast<size_t>(length));
   return 0;
 #else
-  return getrandom(buf, static_cast<size_t>(length), 0x0);
+  return getrandom(buf, static_cast<size_t>(length), GRND_NONBLOCK);
 #endif
 }
 
