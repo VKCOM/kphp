@@ -168,11 +168,10 @@ bool compile_regex(Info& regex_info) noexcept;
 
 bool collect_group_names(Info& regex_info) noexcept;
 
-std::optional<string> replace_one(const Info& info, std::string_view subject, std::string_view replacement, string_buffer& sb, size_t buffer_length,
-                                  size_t substitute_offset) noexcept;
-
 std::optional<array<mixed>> dump_matches(const Info& regex_info, const details::match_view& match, details::trailing_unmatch last_unmatched_policy,
                                          bool is_offset_capture, bool is_unmatched_as_null) noexcept;
+
+bool replace_regex(Info& regex_info, uint64_t limit, size_t substitute_offset = 0) noexcept;
 
 template<std::invocable<array<string>> F>
 kphp::coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t limit) noexcept {
@@ -228,12 +227,11 @@ kphp::coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t l
       replacement = std::invoke(callback, std::move(matches));
     }
 
-    auto replace_one_result =
-        replace_one(regex_info, {subject.c_str(), subject.size()}, {replacement.c_str(), replacement.size()}, sb, buffer_length, substitute_offset);
-    if (!replace_one_result.has_value()) [[unlikely]] {
+    Info info{regex_info.regex, {subject.c_str(), subject.size()}, {replacement.c_str(), replacement.size()}};
+    if (!replace_regex(info, 1, substitute_offset)) [[unlikely]] {
       co_return false;
     }
-    auto& str_after_replace{*replace_one_result};
+    auto str_after_replace{info.opt_replace_result.value_or(subject)};
     length_after_replace = str_after_replace.size();
 
     replacement_diff_acc += static_cast<int64_t>(str_after_replace.size()) - static_cast<int64_t>(subject.size());
@@ -320,7 +318,8 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
 
   kphp::regex::details::Info regex_info{pattern, {subject.c_str(), subject.size()}, {}};
 
-  if (!kphp::regex::details::valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS)) [[unlikely]] {
+  if (!kphp::regex::details::valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_OFFSET_CAPTURE, kphp::regex::PREG_UNMATCHED_AS_NULL))
+      [[unlikely]] {
     co_return Optional<string>{};
   }
   if (!kphp::regex::details::compile_regex(regex_info)) [[unlikely]] {

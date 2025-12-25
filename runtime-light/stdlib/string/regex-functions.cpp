@@ -236,87 +236,6 @@ PCRE2_SIZE set_all_matches(const kphp::regex::details::Info& regex_info, int64_t
   return match_end_offset;
 }
 
-bool replace_regex(kphp::regex::details::Info& regex_info, uint64_t limit) noexcept {
-  regex_info.replace_count = 0;
-  if (regex_info.regex_code == nullptr) [[unlikely]] {
-    return false;
-  }
-
-  const auto& regex_state{RegexInstanceState::get()};
-  auto& runtime_ctx{RuntimeContext::get()};
-  if (!regex_state.match_context) [[unlikely]] {
-    return false;
-  }
-
-  const PCRE2_SIZE buffer_length{std::max({static_cast<string::size_type>(regex_info.subject.size()),
-                                           static_cast<string::size_type>(RegexInstanceState::REPLACE_BUFFER_SIZE), runtime_ctx.static_SB.size()})};
-  runtime_ctx.static_SB.clean().reserve(buffer_length);
-  PCRE2_SIZE output_length{buffer_length};
-
-  // replace all occurences
-  if (limit == std::numeric_limits<uint64_t>::max()) [[likely]] {
-    regex_info.replace_count = pcre2_substitute_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), 0,
-                                                  regex_info.replace_options | PCRE2_SUBSTITUTE_GLOBAL, nullptr, regex_state.match_context.get(),
-                                                  reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
-                                                  reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(output_length));
-
-    if (regex_info.replace_count < 0) [[unlikely]] {
-      kphp::log::warning("pcre2_substitute error: {}", kphp::regex::details::pcre2_error{.code = static_cast<int32_t>(regex_info.replace_count)});
-      return false;
-    }
-  } else { // replace only 'limit' times
-    size_t substitute_offset{};
-    int64_t replacement_diff_acc{};
-    PCRE2_SIZE length_after_replace{buffer_length};
-    string str_after_replace{regex_info.subject.data(), static_cast<string::size_type>(regex_info.subject.size())};
-
-    kphp::regex::details::matcher pcre2_matcher{regex_info, {}};
-    for (; regex_info.replace_count < limit; ++regex_info.replace_count) {
-      auto expected_opt_match_view{pcre2_matcher.next()};
-      if (!expected_opt_match_view.has_value()) [[unlikely]] {
-        kphp::log::warning("can't replace by pcre2 regex due to match error: {}", expected_opt_match_view.error());
-        return false;
-      }
-      auto opt_match_view{*expected_opt_match_view};
-      if (!opt_match_view.has_value()) {
-        break;
-      }
-
-      auto match_view{*opt_match_view};
-      auto opt_entire_pattern_match{match_view.get_group(0)};
-      if (!opt_entire_pattern_match.has_value()) [[unlikely]] {
-        return false;
-      }
-      auto entire_pattern_match_string_view{*opt_entire_pattern_match};
-      const auto match_start_offset{std::distance(regex_info.subject.data(), entire_pattern_match_string_view.data())};
-      const auto match_end_offset{match_start_offset + entire_pattern_match_string_view.size()};
-
-      length_after_replace = buffer_length;
-      if (auto replace_one_ret_code{pcre2_substitute_8(
-              regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(str_after_replace.c_str()), str_after_replace.size(), substitute_offset,
-              regex_info.replace_options, nullptr, regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()),
-              regex_info.replacement.size(), reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(length_after_replace))};
-          replace_one_ret_code != 1) [[unlikely]] {
-        kphp::log::warning("pcre2_substitute error {}", replace_one_ret_code);
-        return false;
-      }
-
-      replacement_diff_acc += regex_info.replacement.size() - (match_end_offset - match_start_offset);
-      substitute_offset = match_end_offset + replacement_diff_acc;
-      str_after_replace = {runtime_ctx.static_SB.buffer(), static_cast<string::size_type>(length_after_replace)};
-    }
-
-    output_length = length_after_replace;
-  }
-
-  if (regex_info.replace_count > 0) {
-    runtime_ctx.static_SB.set_pos(output_length);
-    regex_info.opt_replace_result.emplace(runtime_ctx.static_SB.str());
-  }
-
-  return true;
-}
-
 std::optional<array<mixed>> split_regex(kphp::regex::details::Info& regex_info, int64_t limit, bool no_empty, bool delim_capture,
                                         bool offset_capture) noexcept {
   if (limit == 0) {
@@ -701,20 +620,6 @@ bool collect_group_names(Info& regex_info) noexcept {
   return true;
 }
 
-std::optional<string> replace_one(const Info& info, std::string_view subject, std::string_view replacement, string_buffer& sb, size_t buffer_length,
-                                  size_t substitute_offset) noexcept {
-  const auto& regex_state{RegexInstanceState::get()};
-  if (auto replace_one_ret_code{pcre2_substitute_8(info.regex_code, reinterpret_cast<PCRE2_SPTR8>(subject.data()), subject.size(), substitute_offset,
-                                                   info.replace_options, nullptr, regex_state.match_context.get(),
-                                                   reinterpret_cast<PCRE2_SPTR8>(replacement.data()), replacement.size(),
-                                                   reinterpret_cast<PCRE2_UCHAR8*>(sb.buffer()), std::addressof(buffer_length))};
-      replace_one_ret_code != 1) [[unlikely]] {
-    kphp::log::warning("pcre2_substitute error: {}", details::pcre2_error{.code = replace_one_ret_code});
-    return std::nullopt;
-  }
-  return string{sb.buffer(), static_cast<string::size_type>(buffer_length)};
-}
-
 std::optional<array<mixed>> dump_matches(const Info& regex_info, const details::match_view& match, details::trailing_unmatch last_unmatched_policy,
                                          bool is_offset_capture, bool is_unmatched_as_null) noexcept {
   if (regex_info.regex_code == nullptr) [[unlikely]] {
@@ -762,6 +667,87 @@ std::optional<array<mixed>> dump_matches(const Info& regex_info, const details::
   }
 
   return output;
+}
+
+bool replace_regex(Info& regex_info, uint64_t limit, size_t substitute_offset) noexcept {
+  regex_info.replace_count = 0;
+  if (regex_info.regex_code == nullptr) [[unlikely]] {
+    return false;
+  }
+
+  const auto& regex_state{RegexInstanceState::get()};
+  auto& runtime_ctx{RuntimeContext::get()};
+  if (!regex_state.match_context) [[unlikely]] {
+    return false;
+  }
+
+  const PCRE2_SIZE buffer_length{std::max({static_cast<string::size_type>(regex_info.subject.size()),
+                                           static_cast<string::size_type>(RegexInstanceState::REPLACE_BUFFER_SIZE), runtime_ctx.static_SB.size()})};
+  runtime_ctx.static_SB.clean().reserve(buffer_length);
+  PCRE2_SIZE output_length{buffer_length};
+
+  // replace all occurences
+  if (limit == std::numeric_limits<uint64_t>::max()) [[likely]] {
+    regex_info.replace_count =
+        pcre2_substitute_8(regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(regex_info.subject.data()), regex_info.subject.size(), substitute_offset,
+                           regex_info.replace_options | PCRE2_SUBSTITUTE_GLOBAL, nullptr, regex_state.match_context.get(),
+                           reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()), regex_info.replacement.size(),
+                           reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(output_length));
+
+    if (regex_info.replace_count < 0) [[unlikely]] {
+      kphp::log::warning("pcre2_substitute error: {}", kphp::regex::details::pcre2_error{.code = static_cast<int32_t>(regex_info.replace_count)});
+      return false;
+    }
+  } else { // replace only 'limit' times
+    int64_t replacement_diff_acc{};
+    PCRE2_SIZE length_after_replace{buffer_length};
+    string str_after_replace{regex_info.subject.data(), static_cast<string::size_type>(regex_info.subject.size())};
+
+    kphp::regex::details::matcher pcre2_matcher{regex_info, {}};
+    for (; regex_info.replace_count < limit; ++regex_info.replace_count) {
+      auto expected_opt_match_view{pcre2_matcher.next()};
+      if (!expected_opt_match_view.has_value()) [[unlikely]] {
+        kphp::log::warning("can't replace by pcre2 regex due to match error: {}", expected_opt_match_view.error());
+        return false;
+      }
+      auto opt_match_view{*expected_opt_match_view};
+      if (!opt_match_view.has_value()) {
+        break;
+      }
+
+      auto match_view{*opt_match_view};
+      auto opt_entire_pattern_match{match_view.get_group(0)};
+      if (!opt_entire_pattern_match.has_value()) [[unlikely]] {
+        return false;
+      }
+      auto entire_pattern_match_string_view{*opt_entire_pattern_match};
+      const auto match_start_offset{std::distance(regex_info.subject.data(), entire_pattern_match_string_view.data())};
+      const auto match_end_offset{match_start_offset + entire_pattern_match_string_view.size()};
+
+      length_after_replace = buffer_length;
+      if (auto replace_one_ret_code{pcre2_substitute_8(
+              regex_info.regex_code, reinterpret_cast<PCRE2_SPTR8>(str_after_replace.c_str()), str_after_replace.size(), substitute_offset,
+              regex_info.replace_options, nullptr, regex_state.match_context.get(), reinterpret_cast<PCRE2_SPTR8>(regex_info.replacement.data()),
+              regex_info.replacement.size(), reinterpret_cast<PCRE2_UCHAR8*>(runtime_ctx.static_SB.buffer()), std::addressof(length_after_replace))};
+          replace_one_ret_code != 1) [[unlikely]] {
+        kphp::log::warning("pcre2_substitute error {}", replace_one_ret_code);
+        return false;
+      }
+
+      replacement_diff_acc += regex_info.replacement.size() - (match_end_offset - match_start_offset);
+      substitute_offset = match_end_offset + replacement_diff_acc;
+      str_after_replace = {runtime_ctx.static_SB.buffer(), static_cast<string::size_type>(length_after_replace)};
+    }
+
+    output_length = length_after_replace;
+  }
+
+  if (regex_info.replace_count > 0) {
+    runtime_ctx.static_SB.set_pos(output_length);
+    regex_info.opt_replace_result.emplace(runtime_ctx.static_SB.str());
+  }
+
+  return true;
 }
 
 } // namespace details
@@ -914,7 +900,7 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
   if (!kphp::regex::details::compile_regex(regex_info)) [[unlikely]] {
     return {};
   }
-  if (!replace_regex(regex_info, limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit))) {
+  if (!kphp::regex::details::replace_regex(regex_info, limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit))) {
     return {};
   }
   count = regex_info.replace_count;
