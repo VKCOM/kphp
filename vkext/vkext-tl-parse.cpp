@@ -27,6 +27,13 @@ int tl_parse_int() {
   return do_rpc_fetch_int(&tl.error);
 }
 
+int tl_lookup_int() {
+  if (tl.error) {
+    return -1;
+  }
+  return do_rpc_lookup_int(&tl.error);
+}
+
 long long tl_parse_long() {
   if (tl.error) {
     return -1;
@@ -90,6 +97,7 @@ std::string tl_parse_string() {
     return res;
   }
   res.assign(s);
+  free(s);
   return res;
 }
 
