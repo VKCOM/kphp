@@ -15,6 +15,12 @@
 #include <random>
 #include <utility>
 
+#if defined(__APPLE__)
+#include <stdlib.h>
+#else
+#include <sys/random.h>
+#endif
+
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/math/random-functions.h"
 #include "runtime-light/coroutine/task.h"
@@ -83,6 +89,15 @@ inline int64_t lcg_modmult(int64_t a, int64_t b, int64_t c, int64_t m, int64_t s
   return res;
 }
 
+inline int64_t secure_rand_buf(void* const buf, size_t length) noexcept {
+#if defined(__APPLE__)
+  arc4random_buf(buf, length);
+  return 0;
+#else
+  return getrandom(buf, length, GRND_NONBLOCK);
+#endif
+}
+
 // Analogue of unix's `gettimeofday`
 // Returns seconds elapsed since Epoch, and milliseconds elapsed from the last second.
 inline std::pair<std::chrono::seconds, std::chrono::microseconds> system_seconds_and_micros() noexcept {
@@ -124,6 +139,22 @@ inline double f$lcg_value() noexcept {
   }
 
   return static_cast<double>(z) * random_impl_::lcg_value_coef;
+}
+
+inline Optional<string> f$random_bytes(int64_t length) noexcept {
+  if (length < 1) [[unlikely]] {
+    kphp::log::warning("argument #1 ($length) must be greater than 0");
+    return false;
+  }
+
+  string str{static_cast<string::size_type>(length), false};
+
+  if (random_impl_::secure_rand_buf(static_cast<void*>(str.buffer()), static_cast<size_t>(length)) == -1) {
+    kphp::log::warning("source of randomness cannot be found");
+    return false;
+  }
+
+  return str;
 }
 
 inline kphp::coro::task<string> f$uniqid(string prefix = string{}, bool more_entropy = false) noexcept {

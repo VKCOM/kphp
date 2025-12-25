@@ -164,6 +164,8 @@ function levenshtein ($str1 ::: string, $str2 ::: string) ::: int;
 
 function lcg_value() ::: float;
 
+function random_bytes($length ::: int) ::: string | false;
+
 /** @kphp-extern-func-info interruptible */
 function uniqid ($prefix ::: string = '', $more_entropy ::: bool = false) ::: string;
 
@@ -185,5 +187,3 @@ define('PHP_ROUND_HALF_ODD', 123423146);
 
 /** @kphp-extern-func-info stub generation-required */
 function random_int($l ::: int, $r ::: int) ::: int | false;
-/** @kphp-extern-func-info stub generation-required */
-function random_bytes($length ::: int) ::: string | false;
