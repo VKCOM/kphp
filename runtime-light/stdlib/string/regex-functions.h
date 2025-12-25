@@ -183,7 +183,7 @@ coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t limit) 
     co_return false;
   }
 
-  auto [sb, buffer_length] = details::reserve_buffer(regex_info.subject);
+  auto [sb, buffer_length]{details::reserve_buffer(regex_info.subject)};
 
   size_t substitute_offset{};
   int64_t replacement_diff_acc{};
