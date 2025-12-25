@@ -932,7 +932,7 @@ Optional<string> f$preg_replace(const mixed& pattern, const string& replacement,
     }
   }};
 
-  if (!regex_impl_::valid_preg_replace_mixed(pattern)) [[unlikely]] {
+  if (!kphp::regex::details::valid_preg_replace_mixed(pattern)) [[unlikely]] {
     return {};
   }
 
@@ -968,7 +968,7 @@ Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, 
     }
   }};
 
-  if (!regex_impl_::valid_preg_replace_mixed(pattern) || !regex_impl_::valid_preg_replace_mixed(replacement)) [[unlikely]] {
+  if (!kphp::regex::details::valid_preg_replace_mixed(pattern) || !kphp::regex::details::valid_preg_replace_mixed(replacement)) [[unlikely]] {
     return {};
   }
 
@@ -1016,8 +1016,8 @@ mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed
     }
   }};
 
-  if (!regex_impl_::valid_preg_replace_mixed(pattern) || !regex_impl_::valid_preg_replace_mixed(replacement) || !regex_impl_::valid_preg_replace_mixed(subject))
-      [[unlikely]] {
+  if (!kphp::regex::details::valid_preg_replace_mixed(pattern) || !kphp::regex::details::valid_preg_replace_mixed(replacement) ||
+      !kphp::regex::details::valid_preg_replace_mixed(subject)) [[unlikely]] {
     return {};
   }
 
