@@ -149,7 +149,7 @@ inline Optional<string> f$random_bytes(int64_t length) noexcept {
 
   string str{static_cast<string::size_type>(length), false};
 
-  if (random_impl_::secure_rand_buf(str.buffer(), static_cast<size_t>(length)) == -1) {
+  if (random_impl_::secure_rand_buf(static_cast<void*>(str.buffer()), static_cast<size_t>(length)) == -1) {
     kphp::log::warning("source of randomness cannot be found");
     return false;
   }
