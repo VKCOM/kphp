@@ -175,7 +175,7 @@ std::optional<array<mixed>> dump_matches(const Info& regex_info, const details::
                                          bool is_offset_capture, bool is_unmatched_as_null) noexcept;
 
 template<std::invocable<array<string>> F>
-coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t limit) noexcept {
+kphp::coro::task<bool> replace_callback(Info& regex_info, F callback, uint64_t limit) noexcept {
   regex_info.replace_count = 0;
 
   const auto& regex_state{RegexInstanceState::get()};
