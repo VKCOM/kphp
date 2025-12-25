@@ -82,11 +82,11 @@ std::expected<rel_time_t, std::format_string<const char*>> parse_interval(std::s
       timelib_strtointerval(format.data(), format.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r), std::addressof(errors));
 
   if (errors->error_count > 0) {
-    rel_time_t{p};
-    error_container_t{errors};
+    destructor{}(p);
+    destructor{}(errors);
     return std::unexpected{std::format_string<const char*>{"Unknown or bad format ({})"}};
   }
-  error_container_t{errors};
+  destructor{}(errors);
 
   if (p != nullptr) {
     return rel_time_t{p};
