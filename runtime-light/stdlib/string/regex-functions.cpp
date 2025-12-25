@@ -900,7 +900,8 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
   if (!kphp::regex::details::compile_regex(regex_info)) [[unlikely]] {
     return {};
   }
-  if (!kphp::regex::details::replace_regex(regex_info, limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit))) {
+  if (!kphp::regex::details::replace_regex(regex_info,
+                                           limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit))) {
     return {};
   }
   count = regex_info.replace_count;
