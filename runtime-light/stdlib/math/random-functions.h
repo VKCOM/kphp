@@ -11,10 +11,8 @@
 #include <cstdint>
 #include <format>
 #include <limits>
-#include <locale.h>
 #include <memory>
 #include <random>
-#include <string.h>
 #include <utility>
 
 #if defined(__APPLE__)
@@ -152,9 +150,7 @@ inline Optional<string> f$random_bytes(int64_t length) noexcept {
   string str{static_cast<string::size_type>(length), false};
 
   if (random_impl_::secure_rand_buf(str.buffer(), static_cast<size_t>(length)) == -1) {
-    locale_t c_locale{(kphp::memory::libc_alloc_guard{}, newlocale(LC_MESSAGES_MASK, "C", nullptr))};
-    kphp::log::warning("source of randomness cannot be found: {}", strerror_l(errno, c_locale));
-    kphp::memory::libc_alloc_guard{}, freelocale(c_locale);
+    kphp::log::warning("source of randomness cannot be found");
     return false;
   }
 
