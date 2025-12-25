@@ -181,7 +181,7 @@ std::optional<std::reference_wrapper<const pcre2::regex>> compile_regex(Info& re
 pcre2_group_names_t collect_group_names(const pcre2::regex& re) noexcept;
 
 template<std::invocable<array<string>> F>
-coro::task<std::optional<string>> replace_callback(Info& regex_info, const pcre2::regex& re, const pcre2_group_names_t& group_names, F callback,
+kphp::coro::task<std::optional<string>> replace_callback(Info& regex_info, const pcre2::regex& re, const pcre2_group_names_t& group_names, F callback,
                                                    uint64_t limit) noexcept {
   regex_info.replace_count = 0;
 
