@@ -89,12 +89,12 @@ inline int64_t lcg_modmult(int64_t a, int64_t b, int64_t c, int64_t m, int64_t s
   return res;
 }
 
-inline int64_t secure_rand_buf(char* const buf, int64_t length) noexcept {
+inline int64_t secure_rand_buf(void* const buf, size_t length) noexcept {
 #if defined(__APPLE__)
-  arc4random_buf(static_cast<void*>(buf), static_cast<size_t>(length));
+  arc4random_buf(buf, length);
   return 0;
 #else
-  return getrandom(buf, static_cast<size_t>(length), GRND_NONBLOCK);
+  return getrandom(buf, length, GRND_NONBLOCK);
 #endif
 }
 
