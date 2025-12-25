@@ -50,10 +50,11 @@ using rel_time_t = std::unique_ptr<timelib_rel_time, destructor>;
 using time_t = std::unique_ptr<timelib_time, destructor>;
 using time_offset_t = std::unique_ptr<timelib_time_offset, destructor>;
 
-std::pair<time_t, error_container_t> construct_time(std::string_view time_sv) noexcept;
-std::pair<time_t, error_container_t> construct_time(std::string_view time_sv, const char* format) noexcept;
 time_offset_t construct_time_offset(timelib_time& t) noexcept;
-std::expected<rel_time_t, std::format_string<const char*>> construct_interval(std::string_view format) noexcept;
+
+std::pair<time_t, error_container_t> parse_time(std::string_view time_sv) noexcept;
+std::pair<time_t, error_container_t> parse_time(std::string_view time_sv, const char* format) noexcept;
+std::expected<rel_time_t, std::format_string<const char*>> parse_interval(std::string_view format) noexcept;
 
 time_t add(timelib_time& t, timelib_rel_time& interval) noexcept;
 
