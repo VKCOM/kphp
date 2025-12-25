@@ -14,6 +14,7 @@
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/stdlib/string/pcre2-functions.h"
 #include "runtime-light/stdlib/string/regex-include.h"
 
 struct RegexInstanceState final : private vk::not_copyable {
@@ -26,7 +27,7 @@ private:
     // PCRE compile options of the regex
     uint32_t compile_options{};
     // compiled regex
-    regex_pcre2_code_t regex_code;
+    kphp::pcre2::regex regex_code;
   };
 
   kphp::stl::unordered_map<string, compiled_regex, kphp::memory::script_allocator, hasher_type> regex_pcre2_code_cache;
@@ -50,7 +51,7 @@ public:
   }
 
   std::optional<std::reference_wrapper<const compiled_regex>> add_compiled_regex(string regex, uint32_t compile_options,
-                                                                                 regex_pcre2_code_t regex_code) noexcept {
+                                                                                 kphp::pcre2::regex regex_code) noexcept {
     return regex_pcre2_code_cache.emplace(std::move(regex), compiled_regex{.compile_options = compile_options, .regex_code = std::move(regex_code)})
         .first->second;
   }
