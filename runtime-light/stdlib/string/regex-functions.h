@@ -327,10 +327,10 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
   if (!kphp::regex::details::valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS)) [[unlikely]] {
     co_return Optional<string>{};
   }
-  if (!compile_regex(regex_info)) [[unlikely]] {
+  if (!kphp::regex::details::compile_regex(regex_info)) [[unlikely]] {
     co_return Optional<string>{};
   }
-  if (!collect_group_names(regex_info)) [[unlikely]] {
+  if (!kphp::regex::details::collect_group_names(regex_info)) [[unlikely]] {
     co_return Optional<string>{};
   }
   if (!co_await kphp::regex::details::replace_callback(

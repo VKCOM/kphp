@@ -779,10 +779,10 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
   if (!correct_offset(offset, regex_info.subject)) [[unlikely]] {
     return false;
   }
-  if (!compile_regex(regex_info)) [[unlikely]] {
+  if (!kphp::regex::details::compile_regex(regex_info)) [[unlikely]] {
     return false;
   }
-  if (!collect_group_names(regex_info)) [[unlikely]] {
+  if (!kphp::regex::details::collect_group_names(regex_info)) [[unlikely]] {
     return false;
   }
 
@@ -827,10 +827,10 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
   if (!correct_offset(offset, regex_info.subject)) [[unlikely]] {
     return false;
   }
-  if (!compile_regex(regex_info)) [[unlikely]] {
+  if (!kphp::regex::details::compile_regex(regex_info)) [[unlikely]] {
     return false;
   }
-  if (!collect_group_names(regex_info)) [[unlikely]] {
+  if (!kphp::regex::details::collect_group_names(regex_info)) [[unlikely]] {
     return false;
   }
 
@@ -911,7 +911,7 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
 
   kphp::regex::details::Info regex_info{pattern, {subject.c_str(), subject.size()}, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
 
-  if (!compile_regex(regex_info)) [[unlikely]] {
+  if (!kphp::regex::details::compile_regex(regex_info)) [[unlikely]] {
     return {};
   }
   if (!replace_regex(regex_info, limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max() : static_cast<uint64_t>(limit))) {
@@ -1049,7 +1049,7 @@ Optional<array<mixed>> f$preg_split(const string& pattern, const string& subject
                                                kphp::regex::PREG_SPLIT_OFFSET_CAPTURE)) {
     return false;
   }
-  if (!compile_regex(regex_info)) [[unlikely]] {
+  if (!kphp::regex::details::compile_regex(regex_info)) [[unlikely]] {
     return false;
   }
   auto opt_output{split_regex(regex_info, limit, (flags & kphp::regex::PREG_SPLIT_NO_EMPTY) != 0, //
