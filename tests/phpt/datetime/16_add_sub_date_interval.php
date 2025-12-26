@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 function test_add_date_interval(DateTimeInterface $date, DateInterval $interval) {
