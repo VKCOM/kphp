@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <numeric>
 #include <optional>
 #include <ranges>
@@ -355,15 +356,15 @@ struct Either final {
 };
 
 class string final {
-  static constexpr auto SMALL_STRING_SIZE_LEN = 1;
+  static constexpr auto TINY_STRING_SIZE_LEN = 1;
   static constexpr auto MEDIUM_STRING_SIZE_LEN = 3;
-  static constexpr auto LARGE_STRING_SIZE_LEN = 7;
+  static constexpr auto HUGE_STRING_SIZE_LEN = 7;
 
-  static constexpr uint64_t SMALL_STRING_MAX_LEN = 253;
+  static constexpr uint64_t TINY_STRING_MAX_LEN = 253;
   static constexpr uint64_t MEDIUM_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 24) - 1;
-  static constexpr uint64_t LARGE_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 56) - 1;
+  static constexpr uint64_t HUGE_STRING_MAX_LEN = (static_cast<uint64_t>(1) << 56) - 1;
 
-  static constexpr uint8_t LARGE_STRING_MAGIC = 0xff;
+  static constexpr uint8_t HUGE_STRING_MAGIC = 0xff;
   static constexpr uint8_t MEDIUM_STRING_MAGIC = 0xfe;
 
 public:
@@ -374,26 +375,20 @@ public:
   void store(tl::storer& tls) const noexcept;
 
   constexpr size_t footprint() const noexcept {
-    size_t str_len{value.size()};
+    const size_t str_len{value.size()};
     size_t size_len{};
-    if (str_len <= SMALL_STRING_MAX_LEN) {
-      size_len = SMALL_STRING_SIZE_LEN;
+    if (str_len <= TINY_STRING_MAX_LEN) {
+      size_len = TINY_STRING_SIZE_LEN;
     } else if (str_len <= MEDIUM_STRING_MAX_LEN) {
       size_len = MEDIUM_STRING_SIZE_LEN + 1;
     } else {
-      size_len = LARGE_STRING_SIZE_LEN + 1;
+      size_len = HUGE_STRING_SIZE_LEN + 1;
     }
 
     const auto total_len{size_len + str_len};
     const auto total_len_with_padding{(total_len + 3) & ~3};
     return total_len_with_padding;
   }
-
-  // TL2 functions are here for now
-  static bool fetch2_len(tl::fetcher& tlf, uint64_t& string_len) noexcept;
-  bool fetch2(tl::fetcher& tlf) noexcept;
-  static void store2_len(tl::storer& tls, uint64_t string_len) noexcept;
-  void store2(tl::storer& tls) const noexcept;
 };
 
 struct String final {
@@ -706,11 +701,7 @@ public:
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(MAGIC)};
-    ok &= tl::mask{}.fetch(tlf);
-    ok &= job_id.fetch(tlf);
-    ok &= body.fetch(tlf);
-    return ok;
+    return magic.fetch(tlf) && magic.expect(MAGIC) && tl::mask{}.fetch(tlf) && job_id.fetch(tlf) && body.fetch(tlf);
   }
 
   void store(tl::storer& tls) const noexcept {
@@ -871,14 +862,14 @@ public:
     bool ok{flags.fetch(tlf)};
 
     if (ok && static_cast<bool>(flags.value & SCHEME_FLAG)) [[likely]] {
-      ok &= opt_scheme.emplace().fetch(tlf);
+      ok = ok && opt_scheme.emplace().fetch(tlf);
     }
     if (ok && static_cast<bool>(flags.value & HOST_FLAG)) {
-      ok &= opt_host.emplace().fetch(tlf);
+      ok = ok && opt_host.emplace().fetch(tlf);
     }
-    ok &= path.fetch(tlf);
+    ok = ok && path.fetch(tlf);
     if (ok && static_cast<bool>(flags.value & QUERY_FLAG)) {
-      ok &= opt_query.emplace().fetch(tlf);
+      ok = ok && opt_query.emplace().fetch(tlf);
     }
     return ok;
   }
@@ -911,11 +902,7 @@ struct httpConnection final {
   tl::i32 remote_port{};
 
   bool fetch(tl::fetcher& tlf) noexcept {
-    bool ok{server_addr.fetch(tlf)};
-    ok &= server_port.fetch(tlf);
-    ok &= remote_addr.fetch(tlf);
-    ok &= remote_port.fetch(tlf);
-    return ok;
+    return server_addr.fetch(tlf) && server_port.fetch(tlf) && remote_addr.fetch(tlf) && remote_port.fetch(tlf);
   }
 };
 
@@ -1136,8 +1123,7 @@ public:
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(INTER_COMPONENT_SESSION_RESPONSE_HEADER_MAGIC) && id.fetch(tlf) && size.fetch(tlf)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(INTER_COMPONENT_SESSION_RESPONSE_HEADER_MAGIC) && id.fetch(tlf) && size.fetch(tlf);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1156,8 +1142,7 @@ public:
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(WEB_ERROR_MAGIC) && code.fetch(tlf) && description.fetch(tlf)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(WEB_ERROR_MAGIC) && code.fetch(tlf) && description.fetch(tlf);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1238,8 +1223,7 @@ public:
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(WEB_TRANSFER_GET_PROPERTIES_RESULT_OK_MAGIC) && properties.fetch(tlf)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(WEB_TRANSFER_GET_PROPERTIES_RESULT_OK_MAGIC) && properties.fetch(tlf);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1268,8 +1252,7 @@ public:
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC) && descriptor.fetch(tlf)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC) && descriptor.fetch(tlf);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1283,8 +1266,7 @@ class SimpleWebTransferResponseResultOk final {
 public:
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_RESPONSE_RESULT_OK_MAGIC)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_RESPONSE_RESULT_OK_MAGIC);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1298,8 +1280,7 @@ class SimpleWebTransferCloseResultOk final {
 public:
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1313,8 +1294,7 @@ class SimpleWebTransferResetResultOk final {
 public:
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_RESET_RESULT_OK_MAGIC)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(SIMPLE_WEB_TRANSFER_RESET_RESULT_OK_MAGIC);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1344,8 +1324,7 @@ public:
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC) && descriptor.fetch(tlf)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_OPEN_RESULT_OK_MAGIC) && descriptor.fetch(tlf);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1359,8 +1338,7 @@ class CompositeWebTransferAddResultOk final {
 public:
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_ADD_RESULT_OK_MAGIC)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_ADD_RESULT_OK_MAGIC);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1374,8 +1352,7 @@ class CompositeWebTransferRemoveResultOk final {
 public:
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_REMOVE_RESULT_OK_MAGIC)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_REMOVE_RESULT_OK_MAGIC);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1391,8 +1368,7 @@ public:
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC) && remaining.fetch(tlf)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_PERFORM_RESULT_OK_MAGIC) && remaining.fetch(tlf);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1406,8 +1382,7 @@ class CompositeWebTransferCloseResultOk final {
 public:
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_CLOSE_RESULT_OK_MAGIC);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1423,8 +1398,7 @@ public:
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    bool ok{magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC) && updated_descriptors_num.fetch(tlf)};
-    return ok;
+    return magic.fetch(tlf) && magic.expect(COMPOSITE_WEB_TRANSFER_WAIT_UPDATES_RESULT_OK_MAGIC) && updated_descriptors_num.fetch(tlf);
   }
 
   constexpr size_t footprint() const noexcept {
@@ -1433,3 +1407,41 @@ public:
 };
 
 } // namespace tl
+
+namespace tl2 {
+
+class string final {
+  static constexpr uint8_t HUGE_STRING_MAGIC = 0xff;
+  static constexpr uint8_t MEDIUM_STRING_MAGIC = 0xfe;
+
+  static constexpr auto TINY_STRING_SIZE_LEN = 1;
+  static constexpr auto MEDIUM_STRING_SIZE_LEN = 2;
+  static constexpr auto HUGE_STRING_SIZE_LEN = 8;
+
+  static constexpr uint64_t TINY_STRING_MAX_LEN = 253;
+  static constexpr uint64_t MEDIUM_STRING_MAX_LEN = MEDIUM_STRING_MAGIC + std::numeric_limits<uint16_t>::max();
+  static constexpr uint64_t HUGE_STRING_MAX_LEN = std::numeric_limits<uint64_t>::max();
+
+public:
+  std::string_view value;
+
+  bool fetch(tl::fetcher& tlf) noexcept;
+
+  void store(tl::storer& tls) const noexcept;
+
+  constexpr size_t footprint() const noexcept {
+    const size_t str_len{value.size()};
+    size_t size_len{};
+    if (str_len <= TINY_STRING_MAX_LEN) {
+      size_len = TINY_STRING_SIZE_LEN;
+    } else if (str_len <= MEDIUM_STRING_MAX_LEN) {
+      size_len = MEDIUM_STRING_SIZE_LEN + 1;
+    } else {
+      size_len = HUGE_STRING_SIZE_LEN + 1;
+    }
+
+    return size_len + str_len;
+  }
+};
+
+} // namespace tl2

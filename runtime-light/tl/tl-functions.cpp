@@ -18,11 +18,11 @@ bool K2InvokeJobWorker::fetch(tl::fetcher& tlf) noexcept {
   tl::magic magic{};
   tl::mask flags{};
   bool ok{magic.fetch(tlf) && magic.expect(K2_INVOKE_JOB_WORKER_MAGIC)};
-  ok &= flags.fetch(tlf);
-  ok &= image_id.fetch(tlf);
-  ok &= job_id.fetch(tlf);
-  ok &= timeout_ns.fetch(tlf);
-  ok &= body.fetch(tlf);
+  ok = ok && flags.fetch(tlf);
+  ok = ok && image_id.fetch(tlf);
+  ok = ok && job_id.fetch(tlf);
+  ok = ok && timeout_ns.fetch(tlf);
+  ok = ok && body.fetch(tlf);
   ignore_answer = static_cast<bool>(flags.value & IGNORE_ANSWER_FLAG);
   return ok;
 }
@@ -42,14 +42,14 @@ bool K2InvokeHttp::fetch(tl::fetcher& tlf) noexcept {
   tl::magic magic{};
   tl::mask flags{};
   bool ok{magic.fetch(tlf) && magic.expect(K2_INVOKE_HTTP_MAGIC)};
-  ok &= flags.fetch(tlf);
-  ok &= connection.fetch(tlf);
-  ok &= version.fetch(tlf);
-  ok &= method.fetch(tlf);
-  ok &= uri.fetch(tlf);
-  ok &= headers.fetch(tlf);
+  ok = ok && flags.fetch(tlf);
+  ok = ok && connection.fetch(tlf);
+  ok = ok && version.fetch(tlf);
+  ok = ok && method.fetch(tlf);
+  ok = ok && uri.fetch(tlf);
+  ok = ok && headers.fetch(tlf);
   const auto opt_body{tlf.fetch_bytes(tlf.remaining())};
-  ok &= opt_body.has_value();
+  ok = ok && opt_body.has_value();
 
   body = opt_body.value_or(std::span<const std::byte>{});
 
