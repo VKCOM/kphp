@@ -31,14 +31,10 @@ bool string::fetch(tl::fetcher& tlf) noexcept {
       return false;
     }
     size_len = HUGE_STRING_SIZE_LEN + 1;
-    const auto first{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>())};
-    const auto second{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 8};
-    const auto third{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 16};
-    const auto fourth{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 24};
-    const auto fifth{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 32};
-    const auto sixth{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 40};
-    const auto seventh{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 48};
-    string_len = first | second | third | fourth | fifth | sixth | seventh;
+    auto len_bytes{*tlf.fetch_bytes(HUGE_STRING_SIZE_LEN)};
+    string_len = static_cast<uint64_t>(len_bytes[0]) | (static_cast<uint64_t>(len_bytes[1]) << 8) | (static_cast<uint64_t>(len_bytes[2]) << 16) |
+                 (static_cast<uint64_t>(len_bytes[3]) << 24) | (static_cast<uint64_t>(len_bytes[4]) << 32) | (static_cast<uint64_t>(len_bytes[5]) << 40) |
+                 (static_cast<uint64_t>(len_bytes[6]) << 48);
 
     if (string_len <= MEDIUM_STRING_MAX_LEN) [[unlikely]] {
       kphp::log::warning("large string's length is less than (1 << 24) - 1 (length = {})", string_len);
@@ -51,10 +47,8 @@ bool string::fetch(tl::fetcher& tlf) noexcept {
       return false;
     }
     size_len = MEDIUM_STRING_SIZE_LEN + 1;
-    const auto first{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>())};
-    const auto second{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 8};
-    const auto third{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 16};
-    string_len = first | second | third;
+    auto len_bytes{*tlf.fetch_bytes(MEDIUM_STRING_SIZE_LEN)};
+    string_len = static_cast<uint64_t>(len_bytes[0]) | (static_cast<uint64_t>(len_bytes[1]) << 8) | (static_cast<uint64_t>(len_bytes[2]) << 16);
 
     if (string_len <= TINY_STRING_MAX_LEN) [[unlikely]] {
       kphp::log::warning("long string's length is less than 254 (length = {})", string_len);
@@ -92,19 +86,17 @@ void string::store(tl::storer& tls) const noexcept {
   } else if (str_len <= MEDIUM_STRING_MAX_LEN) {
     size_len = MEDIUM_STRING_SIZE_LEN + 1;
     tls.store_trivial<uint8_t>(MEDIUM_STRING_MAGIC);
-    tls.store_trivial<uint8_t>(str_len & 0xff);
-    tls.store_trivial<uint8_t>((str_len >> 8) & 0xff);
-    tls.store_trivial<uint8_t>((str_len >> 16) & 0xff);
+    std::array<std::byte, MEDIUM_STRING_SIZE_LEN> len_bytes{static_cast<std::byte>(str_len & 0xff), static_cast<std::byte>((str_len >> 8) & 0xff),
+                                                            static_cast<std::byte>((str_len >> 16) & 0xff)};
+    tls.store_bytes(len_bytes);
   } else if (str_len <= HUGE_STRING_MAX_LEN) {
     size_len = HUGE_STRING_SIZE_LEN + 1;
     tls.store_trivial<uint8_t>(HUGE_STRING_MAGIC);
-    tls.store_trivial<uint8_t>(str_len & 0xff);
-    tls.store_trivial<uint8_t>((str_len >> 8) & 0xff);
-    tls.store_trivial<uint8_t>((str_len >> 16) & 0xff);
-    tls.store_trivial<uint8_t>((str_len >> 24) & 0xff);
-    tls.store_trivial<uint8_t>((str_len >> 32) & 0xff);
-    tls.store_trivial<uint8_t>((str_len >> 40) & 0xff);
-    tls.store_trivial<uint8_t>((str_len >> 48) & 0xff);
+    std::array<std::byte, HUGE_STRING_SIZE_LEN> len_bytes{static_cast<std::byte>(str_len & 0xff),         static_cast<std::byte>((str_len >> 8) & 0xff),
+                                                          static_cast<std::byte>((str_len >> 16) & 0xff), static_cast<std::byte>((str_len >> 24) & 0xff),
+                                                          static_cast<std::byte>((str_len >> 32) & 0xff), static_cast<std::byte>((str_len >> 40) & 0xff),
+                                                          static_cast<std::byte>((str_len >> 48) & 0xff)};
+    tls.store_bytes(len_bytes);
   } else {
     kphp::log::warning("string length exceeds maximum allowed length: max allowed -> {}, actual -> {}", HUGE_STRING_MAX_LEN, str_len);
     size_len = 0;
