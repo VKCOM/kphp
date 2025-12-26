@@ -314,14 +314,14 @@ public:
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
     bool ok{magic.fetch(tlf) && magic.expect(K2_INVOKE_RPC_MAGIC)};
-    ok &= flags.fetch(tlf);
-    ok &= query_id.fetch(tlf);
-    ok &= net_pid.fetch(tlf);
+    ok = ok && flags.fetch(tlf);
+    ok = ok && query_id.fetch(tlf);
+    ok = ok && net_pid.fetch(tlf);
     if (static_cast<bool>(flags.value & ACTOR_ID_FLAG)) {
-      ok &= opt_actor_id.emplace().fetch(tlf);
+      ok = ok && opt_actor_id.emplace().fetch(tlf);
     }
     if (static_cast<bool>(flags.value & EXTRA_FLAG)) {
-      ok &= opt_extra.emplace().fetch(tlf);
+      ok = ok && opt_extra.emplace().fetch(tlf);
     }
     const auto opt_query{tlf.fetch_bytes(tlf.remaining())};
     query = opt_query.value_or(std::span<const std::byte>{});
