@@ -54,15 +54,15 @@ std::expected<size_t, error> regex::substitute_match(std::string_view subject, p
   uint32_t substitute_options{PCRE2_SUBSTITUTE_UNKNOWN_UNSET | PCRE2_SUBSTITUTE_UNSET_EMPTY | PCRE2_SUBSTITUTE_MATCHED | PCRE2_SUBSTITUTE_OVERFLOW_LENGTH |
                               PCRE2_SUBSTITUTE_REPLACEMENT_ONLY | match_options};
 
-  auto rc{pcre2_substitute_8(m_code.get(), reinterpret_cast<PCRE2_SPTR8>(subject.data()), subject.length(), 0, substitute_options, std::addressof(data), ctx,
+  auto ret_code{pcre2_substitute_8(m_code.get(), reinterpret_cast<PCRE2_SPTR8>(subject.data()), subject.length(), 0, substitute_options, std::addressof(data), ctx,
                              reinterpret_cast<PCRE2_SPTR8>(replacement.data()), replacement.length(), reinterpret_cast<PCRE2_UCHAR8*>(buffer),
                              std::addressof(buffer_len))};
 
-  if (rc < 0) {
-    return std::unexpected<error>{{.code = rc}};
+  if (ret_code < 0) {
+    return std::unexpected<error>{{.code = ret_code}};
   }
 
-  return static_cast<size_t>(rc);
+  return static_cast<size_t>(ret_code);
 }
 
 std::optional<match_view::offset_range> match_view::get_range(size_t i) const noexcept {
