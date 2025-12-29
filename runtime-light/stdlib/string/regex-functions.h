@@ -142,8 +142,6 @@ private:
   bool m_is_unmatched_as_null;
 };
 
-std::pair<string_buffer&, PCRE2_SIZE> reserve_buffer(std::string_view subject) noexcept;
-
 } // namespace kphp::regex::details
 
 namespace kphp::regex {

@@ -225,7 +225,10 @@ std::optional<string> replace_regex(kphp::regex::details::Info& regex_info, cons
     return std::nullopt;
   }
 
-  auto [sb, buffer_length] = kphp::regex::details::reserve_buffer({regex_info.subject.c_str(), regex_info.subject.size()});
+  auto& runtime_ctx{RuntimeContext::get()};
+  PCRE2_SIZE buffer_length{
+      std::max({regex_info.subject.size(), static_cast<string::size_type>(RegexInstanceState::REPLACE_BUFFER_SIZE), runtime_ctx.static_SB.size()})};
+  runtime_ctx.static_SB.clean().reserve(buffer_length);
 
   size_t last_pos{};
   string output_str{};
@@ -254,21 +257,21 @@ std::optional<string> replace_regex(kphp::regex::details::Info& regex_info, cons
 
     PCRE2_SIZE replacement_length{buffer_length};
     auto sub_res{re.substitute_match({regex_info.subject.c_str(), regex_info.subject.size()}, *regex_state.regex_pcre2_match_data.get(), regex_info.replacement,
-                                     sb.buffer(), replacement_length, pcre2_matcher.get_last_success_options(),
+                                     runtime_ctx.static_SB.buffer(), replacement_length, pcre2_matcher.get_last_success_options(),
                                      regex_state.match_context.get())};
     if (!sub_res.has_value() && sub_res.error().code == PCRE2_ERROR_NOMEMORY) [[unlikely]] {
-      sb.reserve(replacement_length);
+      runtime_ctx.static_SB.reserve(replacement_length);
       buffer_length = replacement_length;
       sub_res =
           re.substitute_match({regex_info.subject.c_str(), regex_info.subject.size()}, *regex_state.regex_pcre2_match_data.get(), regex_info.replacement,
-                              sb.buffer(), replacement_length, pcre2_matcher.get_last_success_options(), regex_state.match_context.get());
+                              runtime_ctx.static_SB.buffer(), replacement_length, pcre2_matcher.get_last_success_options(), regex_state.match_context.get());
     }
     if (!sub_res.has_value()) [[unlikely]] {
       kphp::log::warning("pcre2_substitute error {}", sub_res.error());
       return std::nullopt;
     }
 
-    output_str.append(sb.buffer(), replacement_length);
+    output_str.append(runtime_ctx.static_SB.buffer(), replacement_length);
 
     last_pos = match_view.match_end();
     ++regex_info.replace_count;
@@ -403,15 +406,6 @@ match_pair match_results_wrapper::iterator::operator*() const noexcept {
   }
 
   return {.key = key_mixed, .value = val_mixed};
-}
-
-std::pair<string_buffer&, PCRE2_SIZE> reserve_buffer(std::string_view subject) noexcept {
-  auto& runtime_ctx{RuntimeContext::get()};
-
-  const PCRE2_SIZE buffer_length{std::max(
-      {static_cast<string::size_type>(subject.size()), static_cast<string::size_type>(RegexInstanceState::REPLACE_BUFFER_SIZE), runtime_ctx.static_SB.size()})};
-  runtime_ctx.static_SB.clean().reserve(buffer_length);
-  return {runtime_ctx.static_SB, buffer_length};
 }
 
 std::optional<std::reference_wrapper<const pcre2::regex>> compile_regex(Info& regex_info) noexcept {
