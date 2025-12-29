@@ -89,3 +89,5 @@ $result = preg_replace('#\[(right)\](((?R)|[^[]+?|\[)*)\[/\\1\]#siU', '', $text)
 var_dump($text);
 var_dump($result);
 */
+
+var_dump (preg_replace ('/\b./', 'x ', 'a ', 2));
