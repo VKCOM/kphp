@@ -182,7 +182,7 @@ pcre2_group_names_t collect_group_names(const pcre2::regex& re) noexcept;
 
 template<std::invocable<array<string>> F>
 kphp::coro::task<std::optional<string>> replace_callback(Info& regex_info, const pcre2::regex& re, const pcre2_group_names_t& group_names, F callback,
-                                                   uint64_t limit) noexcept {
+                                                         uint64_t limit) noexcept {
   regex_info.replace_count = 0;
 
   if (limit == 0) {
@@ -315,7 +315,8 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
 
   kphp::regex::details::Info regex_info{pattern, subject, {}};
 
-  if (!kphp::regex::details::valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS)) [[unlikely]] {
+  if (!kphp::regex::details::valid_regex_flags(flags, kphp::regex::PREG_NO_FLAGS, kphp::regex::PREG_OFFSET_CAPTURE, kphp::regex::PREG_UNMATCHED_AS_NULL))
+      [[unlikely]] {
     co_return Optional<string>{};
   }
   auto opt_re{kphp::regex::details::compile_regex(regex_info)};
