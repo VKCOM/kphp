@@ -32,24 +32,21 @@ std::expected<regex, compile_error> regex::compile(std::string_view pattern, uin
   return regex{*re};
 }
 
-group_name_iterator regex::names_begin() const noexcept {
-  uint32_t entry_size{};
-  PCRE2_SPTR8 table{};
-  pcre2_pattern_info_8(m_code.get(), PCRE2_INFO_NAMEENTRYSIZE, std::addressof(entry_size));
-  pcre2_pattern_info_8(m_code.get(), PCRE2_INFO_NAMETABLE, std::addressof(table));
-
-  return group_name_iterator{table, entry_size};
-}
-
-group_name_iterator regex::names_end() const noexcept {
+regex::group_name_range regex::names() const noexcept {
   uint32_t count{};
   uint32_t entry_size{};
   PCRE2_SPTR8 table{};
+
   pcre2_pattern_info_8(m_code.get(), PCRE2_INFO_NAMECOUNT, std::addressof(count));
+
+  if (count == 0) {
+    return {.b = group_name_iterator{nullptr, 0}, .e = group_name_iterator{nullptr, 0}};
+  }
+
   pcre2_pattern_info_8(m_code.get(), PCRE2_INFO_NAMEENTRYSIZE, std::addressof(entry_size));
   pcre2_pattern_info_8(m_code.get(), PCRE2_INFO_NAMETABLE, std::addressof(table));
 
-  return group_name_iterator{std::next(table, static_cast<size_t>(count * entry_size)), entry_size};
+  return {.b = group_name_iterator{table, entry_size}, .e = group_name_iterator{std::next(table, static_cast<size_t>(count) * entry_size), entry_size}};
 }
 
 std::expected<size_t, error> regex::substitute_match(std::string_view subject, pcre2_match_data_8& data, std::string_view replacement, char* buffer,
@@ -122,7 +119,13 @@ std::expected<std::optional<match_view>, error> matcher::next() noexcept {
 
     m_last_success_options = current_attempt_options;
 
-    size_t match_count{static_cast<size_t>(ret_code)};
+    size_t matched_groups_count{};
+    if (ret_code == 0) {
+      matched_groups_count = pcre2_get_ovector_count_8(std::addressof(m_match_data));
+    } else {
+      matched_groups_count = static_cast<size_t>(ret_code);
+    }
+
     const PCRE2_SIZE* ovector{pcre2_get_ovector_pointer_8(std::addressof(m_match_data))};
 
     size_t start{ovector[0]};
@@ -133,10 +136,10 @@ std::expected<std::optional<match_view>, error> matcher::next() noexcept {
       m_match_options = PCRE2_NOTEMPTY_ATSTART | PCRE2_ANCHORED;
     } else {
       m_match_options = 0;
-      m_current_offset = end;
     }
+    m_current_offset = end;
 
-    return match_view{m_subject, ovector, match_count};
+    return match_view{m_subject, ovector, matched_groups_count};
   }
 
   return std::nullopt;

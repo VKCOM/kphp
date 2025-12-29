@@ -90,16 +90,23 @@ public:
 
     iterator(const match_results_wrapper& parent, uint32_t group_idx) noexcept
         : m_parent{parent},
-          m_group_idx{group_idx} {}
+          m_group_idx{group_idx} {
+      if (m_group_idx < m_parent.m_group_names.size() && m_parent.m_group_names[m_group_idx] != nullptr) {
+        m_yield_name = true;
+      }
+    }
 
     match_pair operator*() const noexcept;
 
     iterator& operator++() noexcept {
-      if (!m_yield_name && m_group_idx < m_parent.m_group_names.size() && m_parent.m_group_names[m_group_idx] != nullptr) {
-        m_yield_name = true;
+      if (m_yield_name) {
+        m_yield_name = false;
       } else {
         m_group_idx++;
-        m_yield_name = false;
+
+        if (m_group_idx < m_parent.m_group_names.size() && m_parent.m_group_names[m_group_idx] != nullptr) {
+          m_yield_name = true;
+        }
       }
       return *this;
     }
@@ -135,7 +142,7 @@ private:
   bool m_is_unmatched_as_null;
 };
 
-std::pair<string_buffer&, const PCRE2_SIZE> reserve_buffer(std::string_view subject) noexcept;
+std::pair<string_buffer&, PCRE2_SIZE> reserve_buffer(std::string_view subject) noexcept;
 
 } // namespace kphp::regex::details
 
@@ -189,7 +196,8 @@ coro::task<std::optional<string>> replace_callback(Info& regex_info, const pcre2
     co_return std::nullopt;
   }
 
-  auto [sb, buffer_length] = details::reserve_buffer({regex_info.subject.c_str(), regex_info.subject.size()});
+  size_t last_pos{};
+  string output_str{};
 
   pcre2::matcher pcre2_matcher{re,
                                {regex_info.subject.c_str(), regex_info.subject.size()},
@@ -197,9 +205,9 @@ coro::task<std::optional<string>> replace_callback(Info& regex_info, const pcre2
                                regex_state.match_context.get(),
                                *regex_state.regex_pcre2_match_data,
                                regex_info.match_options};
-  size_t last_pos{};
   while (regex_info.replace_count < limit) {
     auto expected_opt_match_view{pcre2_matcher.next()};
+
     if (!expected_opt_match_view.has_value()) [[unlikely]] {
       log::warning("can't replace with callback by pcre2 regex due to match error: {}", expected_opt_match_view.error());
       co_return std::nullopt;
@@ -208,12 +216,12 @@ coro::task<std::optional<string>> replace_callback(Info& regex_info, const pcre2
     if (!opt_match_view.has_value()) {
       break;
     }
+
     auto& match_view{*opt_match_view};
 
-    const auto match_start_offset{match_view.match_start()};
-    const auto match_end_offset{match_view.match_end()};
-    auto prefix{regex_info.subject.substr(last_pos, match_start_offset - last_pos)};
-    sb.append(prefix.c_str(), prefix.size());
+    output_str.append(std::next(regex_info.subject.c_str(), last_pos), match_view.match_start() - last_pos);
+
+    last_pos = match_view.match_end();
 
     // retrieve the named groups count
     uint32_t named_groups_count{re.name_count()};
@@ -228,16 +236,15 @@ coro::task<std::optional<string>> replace_callback(Info& regex_info, const pcre2
     } else {
       replacement = std::invoke(callback, std::move(matches));
     }
-    sb << replacement;
 
-    last_pos = match_end_offset;
-    regex_info.replace_count++;
+    output_str.append(replacement);
+
+    ++regex_info.replace_count;
   }
 
-  auto suffix{std::string_view{regex_info.subject.c_str(), regex_info.subject.size()}.substr(last_pos)};
-  sb.append(suffix.data(), suffix.size());
+  output_str.append(std::next(regex_info.subject.c_str(), last_pos), regex_info.subject.size() - last_pos);
 
-  co_return sb.str();
+  co_return output_str;
 }
 
 } // namespace details
@@ -324,8 +331,8 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
   const auto& re{*opt_re};
   auto group_names{kphp::regex::details::collect_group_names(re)};
   auto opt_replace_result{co_await kphp::regex::details::replace_callback(regex_info, re, group_names, std::move(callback),
-                                                       limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max()
-                                                                                          : static_cast<uint64_t>(limit))};
+                                                                          limit == kphp::regex::PREG_NOLIMIT ? std::numeric_limits<uint64_t>::max()
+                                                                                                             : static_cast<uint64_t>(limit))};
   if (!opt_replace_result.has_value()) [[unlikely]] {
     co_return Optional<string>{};
   }

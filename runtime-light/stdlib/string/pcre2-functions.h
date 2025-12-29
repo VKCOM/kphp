@@ -38,7 +38,7 @@ public:
   using pointer = group_name*;
   using reference = group_name;
 
-  group_name_iterator(const PCRE2_UCHAR8* current_entry, uint32_t entry_size) noexcept
+  group_name_iterator(const PCRE2_UCHAR8* current_entry, size_t entry_size) noexcept
       : m_ptr{current_entry},
         m_entry_size{entry_size} {}
 
@@ -65,7 +65,7 @@ public:
 
 private:
   const PCRE2_UCHAR8* m_ptr;
-  uint32_t m_entry_size;
+  size_t m_entry_size;
 };
 
 class regex {
@@ -74,23 +74,23 @@ public:
 
   static std::expected<regex, compile_error> compile(std::string_view pattern, uint32_t options = 0, pcre2_compile_context_8* ctx = nullptr) noexcept;
 
-  group_name_iterator names_begin() const noexcept;
+  struct group_name_range {
+    group_name_iterator b;
+    group_name_iterator e;
 
-  group_name_iterator names_end() const noexcept;
+    group_name_iterator begin() const noexcept {
+      return b;
+    }
+    group_name_iterator end() const noexcept {
+      return e;
+    }
 
-  auto names() const noexcept {
-    struct range {
-      group_name_iterator b;
-      group_name_iterator e;
-      group_name_iterator begin() const noexcept {
-        return b;
-      }
-      group_name_iterator end() const noexcept {
-        return e;
-      }
-    };
-    return range{.b = names_begin(), .e = names_end()};
-  }
+    bool empty() const noexcept {
+      return b == e;
+    }
+  };
+
+  group_name_range names() const noexcept;
 
   uint32_t capture_count() const noexcept {
     uint32_t count{};
@@ -155,10 +155,7 @@ public:
 
   std::optional<group_content> get_group_content(size_t i) const noexcept {
     if (auto range{get_range(i)}; range.has_value()) {
-      return group_content{
-        .text = m_subject_data.substr(range->start, range->end - range->start),
-        .offset = range->start
-      };
+      return group_content{.text = m_subject_data.substr(range->start, range->end - range->start), .offset = range->start};
     }
     return std::nullopt;
   }
