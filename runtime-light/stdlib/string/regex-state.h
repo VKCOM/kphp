@@ -15,7 +15,6 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/stdlib/string/pcre2-functions.h"
-#include "runtime-light/stdlib/string/regex-include.h"
 
 struct RegexInstanceState final : private vk::not_copyable {
 private:
@@ -36,10 +35,10 @@ public:
   static constexpr size_t OVECTOR_SIZE{MAX_SUBPATTERNS_COUNT + 1};
   static constexpr size_t REPLACE_BUFFER_SIZE{size_t{16U} * size_t{1024U}};
 
-  const regex_pcre2_general_context_t regex_pcre2_general_context;
-  const regex_pcre2_compile_context_t compile_context;
-  const regex_pcre2_match_context_t match_context;
-  regex_pcre2_match_data_t regex_pcre2_match_data;
+  const kphp::pcre2::regex_general_context_t regex_pcre2_general_context;
+  const kphp::pcre2::regex_compile_context_t compile_context;
+  const kphp::pcre2::regex_match_context_t match_context;
+  kphp::pcre2::regex_match_data_t regex_pcre2_match_data;
 
   RegexInstanceState() noexcept;
 
