@@ -252,11 +252,13 @@ std::optional<string> replace_regex(kphp::regex::details::info& regex_info, cons
     output_str.append(std::next(regex_info.subject.c_str(), last_pos), match_view.match_start() - last_pos);
 
     PCRE2_SIZE replacement_length{buffer_length};
-    auto sub_res{match_view.substitute(regex_info.replacement, runtime_ctx.static_SB.buffer(), replacement_length, regex_state.match_context)};
+    auto sub_res{match_view.substitute({regex_info.replacement.c_str(), regex_info.replacement.size()}, runtime_ctx.static_SB.buffer(), replacement_length,
+                                       regex_state.match_context)};
     if (!sub_res.has_value() && sub_res.error().code == PCRE2_ERROR_NOMEMORY) [[unlikely]] {
       runtime_ctx.static_SB.reserve(replacement_length);
       buffer_length = replacement_length;
-      sub_res = match_view.substitute(regex_info.replacement, runtime_ctx.static_SB.buffer(), replacement_length, regex_state.match_context);
+      sub_res = match_view.substitute({regex_info.replacement.c_str(), regex_info.replacement.size()}, runtime_ctx.static_SB.buffer(), replacement_length,
+                                      regex_state.match_context);
     }
     if (!sub_res.has_value()) [[unlikely]] {
       kphp::log::warning("pcre2_substitute error {}", sub_res.error());
@@ -706,7 +708,7 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
 
   // we need to replace PHP's back references with PCRE2 ones
   auto parser{preg_replacement_parser{{replacement.c_str(), replacement.size()}}};
-  kphp::stl::string<kphp::memory::script_allocator> pcre2_replacement{};
+  string pcre2_replacement{};
   for (const auto& term : parser) {
     if (std::holds_alternative<char>(term)) {
       auto c{std::get<char>(term)};
@@ -716,14 +718,14 @@ Optional<string> f$preg_replace(const string& pattern, const string& replacement
       }
     } else {
       auto backreference{std::get<backref>(term)};
-      pcre2_replacement.reserve(pcre2_replacement.size() + backreference.size() + 3);
+      pcre2_replacement.reserve_at_least(pcre2_replacement.size() + backreference.size() + 3);
       pcre2_replacement.append("${");
-      pcre2_replacement.append(backreference);
+      pcre2_replacement.append(backreference.data(), backreference.size());
       pcre2_replacement.append("}");
     }
   }
 
-  kphp::regex::details::info regex_info{pattern, subject, {pcre2_replacement.c_str(), pcre2_replacement.size()}};
+  kphp::regex::details::info regex_info{pattern, subject, pcre2_replacement};
 
   auto opt_re{kphp::regex::details::compile_regex(regex_info)};
   if (!opt_re.has_value()) [[unlikely]] {
