@@ -9,6 +9,8 @@
 #include <optional>
 #include <span>
 
+#include "zlib/zlib.h"
+
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/zlib/deflate-context.h"
 
