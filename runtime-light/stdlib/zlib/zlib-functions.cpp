@@ -171,7 +171,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
 
     const auto& key{it.get_string_key()};
     const std::string_view key_view{key.c_str(), key.size()};
-    const mixed& val{it.get_value()};
+    const auto& val{it.get_value()};
 
     if (key_view == "level"sv) {
       if (val.is_int() && val.as_int() >= -1 && val.as_int() <= 9) {
