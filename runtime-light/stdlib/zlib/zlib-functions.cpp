@@ -22,8 +22,6 @@
 
 namespace {
 
-enum class zlib_format : int8_t { raw, deflate, gzip };
-
 voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) noexcept {
   auto* buf_pos_ptr{reinterpret_cast<size_t*>(opaque)};
   auto required_mem{static_cast<size_t>(items * size)};
@@ -51,29 +49,24 @@ void zlib_dynamic_free([[maybe_unused]] voidpf opaque, voidpf address) noexcept 
   kphp::memory::script::free(address);
 }
 
-std::optional<zlib_format> parse_encoding(int64_t encoding) noexcept {
-  if (encoding == kphp::zlib::ENCODING_GZIP) {
-    return zlib_format::gzip;
-  }
-  if (encoding == kphp::zlib::ENCODING_RAW) {
-    return zlib_format::raw;
-  }
-  if (encoding == kphp::zlib::ENCODING_DEFLATE) {
-    return zlib_format::deflate;
-  }
-  return std::nullopt;
-}
-
-int32_t to_zlib_window_bits(zlib_format format, int32_t window) noexcept {
-  switch (format) {
-  case zlib_format::gzip:
+/**
+ * Maps KPHP encoding constants and custom window size to zlib windowBits.
+ * zlib windowBits logic:
+ *   8..15  -> ZLIB header
+ *  -8..-15 -> RAW (no header)
+ *   24..31 -> GZIP (16 + window)
+ */
+int32_t to_zlib_window_bits(int64_t encoding, int32_t window) noexcept {
+  switch (encoding) {
+  case kphp::zlib::ENCODING_GZIP:
     return 16 + window;
-  case zlib_format::raw:
+  case kphp::zlib::ENCODING_RAW:
     return -window;
-  case zlib_format::deflate:
+  case kphp::zlib::ENCODING_DEFLATE:
     return window;
+  default:
+    kphp::log::error("to_zlib_window_bits: unknown encoding {}", encoding);
   }
-  return window;
 }
 
 } // namespace
@@ -160,8 +153,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   constexpr int32_t default_memory{8};
   constexpr int32_t default_window{15};
 
-  const auto opt_format{parse_encoding(encoding)};
-  if (!opt_format.has_value()) [[unlikely]] {
+  if (encoding != kphp::zlib::ENCODING_RAW && encoding != kphp::zlib::ENCODING_DEFLATE && encoding != kphp::zlib::ENCODING_GZIP) {
     kphp::log::warning("encoding should be one of ZLIB_ENCODING_RAW, ZLIB_ENCODING_DEFLATE, ZLIB_ENCODING_GZIP");
     return {};
   }
@@ -231,7 +223,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   stream->zfree = zlib_dynamic_free;
   stream->opaque = nullptr;
 
-  const int32_t window_bits{to_zlib_window_bits(*opt_format, window)};
+  const int32_t window_bits{to_zlib_window_bits(encoding, window)};
 
   if (auto err{deflateInit2(stream, level, Z_DEFLATED, window_bits, memory, strategy)}; err != Z_OK) {
     kphp::log::warning("zlib error {}", err);
