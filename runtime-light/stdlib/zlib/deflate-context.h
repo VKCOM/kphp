@@ -10,8 +10,8 @@
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 
 struct C$DeflateContext : public refcountable_php_classes<C$DeflateContext>, private DummyVisitorMethods {
-  C$DeflateContext() noexcept = default;
   using DummyVisitorMethods::accept;
+  C$DeflateContext() noexcept = default;
 
   C$DeflateContext(const C$DeflateContext&) = delete;
   C$DeflateContext(C$DeflateContext&&) = delete;
