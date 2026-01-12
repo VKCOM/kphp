@@ -98,10 +98,9 @@ void string::store(tl::storer& tls) const noexcept {
                                                           static_cast<std::byte>((str_len >> 48) & 0xff)};
     tls.store_bytes(len_bytes);
   } else {
-    kphp::log::warning("string length exceeds maximum allowed length: max allowed -> {}, actual -> {}", HUGE_STRING_MAX_LEN, str_len);
-    size_len = 0;
-    str_len = 0;
+    kphp::log::error("string length exceeds maximum allowed length: max allowed -> {}, actual -> {}", HUGE_STRING_MAX_LEN, str_len);
   }
+
   tls.store_bytes({reinterpret_cast<const std::byte*>(str_buf), str_len});
 
   const auto total_len{size_len + str_len};
