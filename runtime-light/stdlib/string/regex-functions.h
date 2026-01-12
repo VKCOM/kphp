@@ -28,8 +28,6 @@ namespace details {
 
 enum class trailing_unmatch : uint8_t { skip, include };
 
-using pcre2_group_names_t = kphp::stl::vector<const char*, kphp::memory::script_allocator>;
-
 struct info final {
   const string& regex;
   const string& subject;
@@ -52,15 +50,19 @@ struct info final {
         replacement(replacement_) {}
 };
 
-struct match_pair {
-  mixed key;
-  mixed value;
-};
-
 class match_results_wrapper {
+  const pcre2::match_view& m_view;
+  const kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator>& m_group_names;
+  uint32_t m_capture_count;
+  uint32_t m_name_count;
+  trailing_unmatch m_last_unmatched_policy;
+  bool m_is_offset_capture;
+  bool m_is_unmatched_as_null;
+
 public:
-  match_results_wrapper(const pcre2::match_view& match_view, const pcre2_group_names_t& names, uint32_t capture_count, uint32_t name_count,
-                        trailing_unmatch last_unmatched_policy, bool is_offset_capture, bool is_unmatched_as_null) noexcept
+  match_results_wrapper(const pcre2::match_view& match_view, const kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator>& names,
+                        uint32_t capture_count, uint32_t name_count, trailing_unmatch last_unmatched_policy, bool is_offset_capture,
+                        bool is_unmatched_as_null) noexcept
       : m_view{match_view},
         m_group_names{names},
         m_capture_count{capture_count},
@@ -85,22 +87,26 @@ public:
   }
 
   class iterator {
+    const match_results_wrapper& m_parent;
+    uint32_t m_group_idx;
+    bool m_yield_name{false};
+
   public:
     using iterator_category = std::forward_iterator_tag;
-    using value_type = match_pair;
+    using value_type = std::pair<mixed, mixed>;
     using difference_type = std::ptrdiff_t;
-    using pointer = match_pair*;
-    using reference = match_pair;
+    using pointer = value_type*;
+    using reference = value_type;
 
     iterator(const match_results_wrapper& parent, uint32_t group_idx) noexcept
         : m_parent{parent},
           m_group_idx{group_idx} {
-      if (m_group_idx < m_parent.m_group_names.size() && m_parent.m_group_names[m_group_idx] != nullptr) {
+      if (m_group_idx < m_parent.m_group_names.size() && !m_parent.m_group_names[m_group_idx].name.empty()) {
         m_yield_name = true;
       }
     }
 
-    match_pair operator*() const noexcept;
+    reference operator*() const noexcept;
 
     iterator& operator++() noexcept {
       if (m_yield_name) {
@@ -108,7 +114,7 @@ public:
       } else {
         m_group_idx++;
 
-        if (m_group_idx < m_parent.m_group_names.size() && m_parent.m_group_names[m_group_idx] != nullptr) {
+        if (m_group_idx < m_parent.m_group_names.size() && !m_parent.m_group_names[m_group_idx].name.empty()) {
           m_yield_name = true;
         }
       }
@@ -121,11 +127,6 @@ public:
     bool operator!=(const iterator& other) const noexcept {
       return !(*this == other);
     }
-
-  private:
-    const match_results_wrapper& m_parent;
-    uint32_t m_group_idx;
-    bool m_yield_name{false};
   };
 
   iterator begin() const noexcept {
@@ -135,15 +136,6 @@ public:
   iterator end() const noexcept {
     return iterator{*this, match_count()};
   }
-
-private:
-  const pcre2::match_view& m_view;
-  const pcre2_group_names_t& m_group_names;
-  uint32_t m_capture_count;
-  uint32_t m_name_count;
-  trailing_unmatch m_last_unmatched_policy;
-  bool m_is_offset_capture;
-  bool m_is_unmatched_as_null;
 };
 
 template<typename... Args>
@@ -158,11 +150,12 @@ bool valid_regex_flags(int64_t flags, Args... supported_flags) noexcept {
 
 std::optional<std::reference_wrapper<const pcre2::regex>> compile_regex(info& regex_info) noexcept;
 
-pcre2_group_names_t collect_group_names(const pcre2::regex& re) noexcept;
+kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator> collect_group_names(const pcre2::regex& re) noexcept;
 
 template<std::invocable<array<string>> F>
-kphp::coro::task<std::optional<string>> replace_callback(info& regex_info, const pcre2::regex& re, const pcre2_group_names_t& group_names, F callback,
-                                                         uint64_t limit) noexcept {
+kphp::coro::task<std::optional<string>> replace_callback(info& regex_info, const pcre2::regex& re,
+                                                         const kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator>& group_names,
+                                                         F callback, uint64_t limit) noexcept {
   regex_info.replace_count = 0;
 
   if (limit == 0) {

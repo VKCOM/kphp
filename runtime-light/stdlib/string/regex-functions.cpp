@@ -189,8 +189,8 @@ array<mixed> to_mixed_array(const kphp::regex::details::match_results_wrapper& w
 
 // *** importrant ***
 // in case of a pattern order all_matches must already contain all groups as empty arrays before the first call to set_all_matches
-void set_all_matches(const kphp::pcre2::regex& re, const kphp::regex::details::pcre2_group_names_t& group_names, const kphp::pcre2::match_view& match_view,
-                     int64_t flags, std::optional<std::reference_wrapper<mixed>> opt_all_matches) noexcept {
+void set_all_matches(const kphp::pcre2::regex& re, const kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator>& group_names,
+                     const kphp::pcre2::match_view& match_view, int64_t flags, std::optional<std::reference_wrapper<mixed>> opt_all_matches) noexcept {
   const auto is_pattern_order{!static_cast<bool>(flags & kphp::regex::PREG_SET_ORDER)};
   const auto is_offset_capture{static_cast<bool>(flags & kphp::regex::PREG_OFFSET_CAPTURE)};
   const auto is_unmatched_as_null{static_cast<bool>(flags & kphp::regex::PREG_UNMATCHED_AS_NULL)};
@@ -371,7 +371,7 @@ namespace kphp::regex {
 
 namespace details {
 
-match_pair match_results_wrapper::iterator::operator*() const noexcept {
+match_results_wrapper::iterator::reference match_results_wrapper::iterator::operator*() const noexcept {
   auto content_opt{m_parent.m_view.get_group_content(m_group_idx)};
 
   mixed val_mixed;
@@ -388,12 +388,13 @@ match_pair match_results_wrapper::iterator::operator*() const noexcept {
 
   mixed key_mixed;
   if (m_yield_name) {
-    key_mixed = string{m_parent.m_group_names[m_group_idx]};
+    auto name{m_parent.m_group_names[m_group_idx].name};
+    key_mixed = string{name.data(), static_cast<string::size_type>(name.size())};
   } else {
     key_mixed = static_cast<int64_t>(m_group_idx);
   }
 
-  return {.key = key_mixed, .value = val_mixed};
+  return {key_mixed, val_mixed};
 }
 
 std::optional<std::reference_wrapper<const pcre2::regex>> compile_regex(info& regex_info) noexcept {
@@ -547,9 +548,9 @@ std::optional<std::reference_wrapper<const pcre2::regex>> compile_regex(info& re
   return regex_state.add_compiled_regex(regex_info.regex, compile_options, std::move(re))->get().regex_code;
 }
 
-pcre2_group_names_t collect_group_names(const pcre2::regex& re) noexcept {
+kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator> collect_group_names(const pcre2::regex& re) noexcept {
   // vector of group names
-  pcre2_group_names_t group_names;
+  kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator> group_names;
   // initialize an array of strings to hold group names
   group_names.resize(re.capture_count() + 1);
 
@@ -557,8 +558,8 @@ pcre2_group_names_t collect_group_names(const pcre2::regex& re) noexcept {
     return group_names;
   }
 
-  for (auto [name, group_number] : re.names()) {
-    group_names[group_number] = name.data();
+  for (auto group_name : re.names()) {
+    group_names[group_name.index] = group_name;
   }
 
   return group_names;
@@ -649,9 +650,9 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
   if (matches.has_value() && !static_cast<bool>(flags & kphp::regex::PREG_SET_ORDER)) [[likely]] {
     auto& inner_ref{(*matches).get()};
     const array<mixed> init_val{};
-    for (const auto* group_name : group_names) {
-      if (group_name != nullptr) {
-        inner_ref.set_value(string{group_name}, init_val);
+    for (const auto [name, index] : group_names) {
+      if (!name.empty()) {
+        inner_ref.set_value(string{name.data(), static_cast<string::size_type>(name.size())}, init_val);
       }
       inner_ref.push_back(init_val);
     }
