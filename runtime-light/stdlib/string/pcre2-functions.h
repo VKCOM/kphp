@@ -67,8 +67,10 @@ public:
         m_entry_size{entry_size} {}
 
   kphp::pcre2::group_name operator*() const noexcept {
-    const auto index{static_cast<size_t>(m_ptr[0] << 8 | m_ptr[1])};
-    const auto* name_ptr{reinterpret_cast<const char*>(std::next(m_ptr, 2))};
+    enum class index_bytes { upper, lower, count };
+
+    const auto index{static_cast<size_t>(m_ptr[static_cast<size_t>(index_bytes::upper)] << 8 | m_ptr[static_cast<size_t>(index_bytes::lower)])};
+    const auto* name_ptr{reinterpret_cast<const char*>(std::next(m_ptr, static_cast<size_t>(index_bytes::count)))};
     return {.name = std::string_view{name_ptr}, .index = index};
   }
 
@@ -77,7 +79,7 @@ public:
     return *this;
   }
 
-  group_name_iterator operator++(int) noexcept {
+  group_name_iterator operator++(int) noexcept { // NOLINT
     group_name_iterator tmp{*this};
     ++*this;
     return tmp;
