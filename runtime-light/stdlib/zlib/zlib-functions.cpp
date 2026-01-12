@@ -128,24 +128,11 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
 } // namespace kphp::zlib
 
 class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed>& options) noexcept {
+  using namespace std::literals;
+
   constexpr int32_t default_level{-1};
   constexpr int32_t default_memory{8};
   constexpr int32_t default_window{15};
-
-  int32_t level{default_level};
-  int32_t memory{default_memory};
-  int32_t window{default_window};
-  auto strategy{Z_DEFAULT_STRATEGY};
-  constexpr auto extract_int_option{[](int32_t lbound, int32_t ubound, const array_iterator<const mixed>& option, int32_t& dst) noexcept {
-    const mixed& value{option.get_value()};
-    if (value.is_int() && value.as_int() >= lbound && value.as_int() <= ubound) {
-      dst = value.as_int();
-      return true;
-    } else {
-      kphp::log::warning("option {} should be a number between {}..{}", option.get_string_key().c_str(), lbound, ubound);
-      return false;
-    }
-  }};
 
   switch (encoding) {
   case kphp::zlib::ENCODING_RAW:
@@ -157,6 +144,21 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
     return {};
   }
 
+  int32_t level{default_level};
+  int32_t memory{default_memory};
+  int32_t window{default_window};
+  auto strategy{Z_DEFAULT_STRATEGY};
+
+  constexpr auto extract_int{[](int32_t min, int32_t max, const auto& opt, int32_t& dst) noexcept {
+    const mixed& val{opt.get_value()};
+    if (val.is_int() && val.as_int() >= min && val.as_int() <= max) {
+      dst = val.as_int();
+      return true;
+    }
+    kphp::log::warning("option {} should be a number between {}..{}", opt.get_string_key().c_str(), min, max);
+    return false;
+  }};
+
   for (const auto& option : options) {
     if (!option.is_string_key()) {
       kphp::log::warning("unsupported option");
@@ -164,27 +166,29 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
     }
 
     const auto& key{option.get_string_key()};
-    if (std::string_view{key.c_str(), key.size()} == "level") {
-      if (!extract_int_option(-1, 9, option, level)) {
+    if (const std::string_view key_view{key.c_str(), key.size()}; key_view == "level"sv) {
+      if (!extract_int(-1, 9, option, level)) {
         return {};
       }
-    } else if (std::string_view{key.c_str(), key.size()} == "memory") {
-      if (!extract_int_option(1, 9, option, memory)) {
+    } else if (key_view == "memory"sv) {
+      if (!extract_int(1, 9, option, memory)) {
         return {};
       }
-    } else if (std::string_view{key.c_str(), key.size()} == "window") {
-      if (!extract_int_option(8, 15, option, window)) {
+    } else if (key_view == "window"sv) {
+      if (!extract_int(8, 15, option, window)) {
         return {};
       }
-    } else if (std::string_view{key.c_str(), key.size()} == "strategy") {
-      if (mixed value{option.get_value()}; value.is_int()) {
-        switch (value.as_int()) {
+    } else if (key_view == "strategy"sv) {
+      const mixed& val{option.get_value()};
+      if (val.is_int()) {
+        const auto s{val.as_int()};
+        switch (s) {
         case Z_FILTERED:
         case Z_HUFFMAN_ONLY:
         case Z_RLE:
         case Z_FIXED:
         case Z_DEFAULT_STRATEGY:
-          strategy = value.as_int();
+          strategy = s;
           break;
         default:
           kphp::log::warning("option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
@@ -194,11 +198,11 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
         kphp::log::warning("option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
         return {};
       }
-    } else if (std::string_view{key.c_str(), key.size()} == "dictionary") {
+    } else if (key_view == "dictionary"sv) {
       kphp::log::warning("option dictionary isn't supported yet");
       return {};
     } else {
-      kphp::log::warning("unknown option name \"{}\"", option.get_string_key().c_str());
+      kphp::log::warning("unknown option name \"{}\"", key.c_str());
       return {};
     }
   }
@@ -211,13 +215,9 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   stream->zfree = zlib_dynamic_free;
   stream->opaque = nullptr;
 
-  if (encoding < 0) {
-    encoding += 15 - window;
-  } else {
-    encoding -= 15 - window;
-  }
+  const auto window_bits{encoding < 0 ? encoding + (15 - window) : encoding - (15 - window)};
 
-  if (auto err{deflateInit2(stream, level, Z_DEFLATED, encoding, memory, strategy)}; err != Z_OK) {
+  if (auto err{deflateInit2(stream, level, Z_DEFLATED, window_bits, memory, strategy)}; err != Z_OK) {
     kphp::log::warning("zlib error {}", zError(err));
     context.destroy();
     return {};
