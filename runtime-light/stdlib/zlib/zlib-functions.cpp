@@ -148,8 +148,6 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
 } // namespace kphp::zlib
 
 class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed>& options) noexcept {
-  using namespace std::literals;
-
   constexpr int32_t default_memory{8};
   constexpr int32_t default_window{15};
 
@@ -164,6 +162,8 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   int32_t strategy{Z_DEFAULT_STRATEGY};
 
   for (const auto& it : options) {
+    using namespace std::literals;
+
     if (!it.is_string_key()) {
       kphp::log::warning("unsupported option");
       return {};
