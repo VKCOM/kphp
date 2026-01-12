@@ -235,7 +235,6 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
 
   if (auto err{deflateInit2(stream, level, Z_DEFLATED, window_bits, memory, strategy)}; err != Z_OK) {
     kphp::log::warning("zlib error {}", err);
-    context.destroy();
     return {};
   }
   return context;
