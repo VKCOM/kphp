@@ -128,9 +128,13 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
 } // namespace kphp::zlib
 
 class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed>& options) noexcept {
-  int32_t level{-1};
-  int32_t memory{8};
-  int32_t window{15};
+  constexpr int32_t default_level{-1};
+  constexpr int32_t default_memory{8};
+  constexpr int32_t default_window{15};
+
+  int32_t level{default_level};
+  int32_t memory{default_memory};
+  int32_t window{default_window};
   auto strategy{Z_DEFAULT_STRATEGY};
   constexpr auto extract_int_option{[](int32_t lbound, int32_t ubound, const array_iterator<const mixed>& option, int32_t& dst) noexcept {
     const mixed& value{option.get_value()};
