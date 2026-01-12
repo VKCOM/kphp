@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "zlib/zlib.h"
 
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
