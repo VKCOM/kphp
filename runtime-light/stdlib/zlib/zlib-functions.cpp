@@ -207,8 +207,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
     }
   }
 
-  class_instance<C$DeflateContext> context;
-  context.alloc();
+  auto context{make_instance<C$DeflateContext>()};
 
   z_stream* stream{std::addressof(context.get()->stream)};
   stream->zalloc = zlib_dynamic_calloc;
