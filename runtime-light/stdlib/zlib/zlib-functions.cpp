@@ -37,10 +37,10 @@ voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) noexcept {
 
 void zlib_static_free([[maybe_unused]] voidpf opaque, [[maybe_unused]] voidpf address) noexcept {}
 
-voidpf zlib_dynamic_alloc([[maybe_unused]] voidpf opaque, uInt items, uInt size) noexcept {
+voidpf zlib_dynamic_calloc([[maybe_unused]] voidpf opaque, uInt items, uInt size) noexcept {
   auto* mem{kphp::memory::script::calloc(items, size)};
   if (mem == nullptr) [[unlikely]] {
-    kphp::log::warning("zlib dynamic alloc: can't allocate {} bytes", items * size);
+    kphp::log::warning("zlib dynamic calloc: can't allocate {} bytes", items * size);
   }
   return mem;
 }
@@ -202,7 +202,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   context.alloc();
 
   z_stream* stream{std::addressof(context.get()->stream)};
-  stream->zalloc = zlib_dynamic_alloc;
+  stream->zalloc = zlib_dynamic_calloc;
   stream->zfree = zlib_dynamic_free;
   stream->opaque = nullptr;
 
