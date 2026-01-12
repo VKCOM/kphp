@@ -315,6 +315,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
   regex_info.replace_count = 0;
 
   if (limit == 0) {
+    count = regex_info.replace_count;
     co_return regex_info.subject;
   }
 
@@ -368,6 +369,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
 
   output_str.append(std::next(regex_info.subject.c_str(), last_pos), regex_info.subject.size() - last_pos);
 
+  count = regex_info.replace_count;
   co_return output_str;
 }
 
