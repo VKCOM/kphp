@@ -234,7 +234,7 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   const int32_t window_bits{to_zlib_window_bits(*opt_format, window)};
 
   if (auto err{deflateInit2(stream, level, Z_DEFLATED, window_bits, memory, strategy)}; err != Z_OK) {
-    kphp::log::warning("zlib error {}", zError(err));
+    kphp::log::warning("zlib error {}", err);
     context.destroy();
     return {};
   }
@@ -292,7 +292,7 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, 
     out.shrink(len);
     return out;
   default:
-    kphp::log::warning("zlib error {}", zError(status));
+    kphp::log::warning("zlib error {}", status);
     return {};
   }
 }
