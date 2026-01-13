@@ -266,19 +266,21 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, 
     buffer_used = out_size - stream->avail_out;
   } while (status == Z_OK && stream->avail_out == 0);
 
-  std::ptrdiff_t len{};
   switch (status) {
-  case Z_OK:
-    len = std::distance(reinterpret_cast<Bytef*>(out.buffer()), stream->next_out);
+  case Z_OK: {
+    auto len{std::distance(reinterpret_cast<Bytef*>(out.buffer()), stream->next_out)};
     out.shrink(len);
     return out;
-  case Z_STREAM_END:
-    len = std::distance(reinterpret_cast<Bytef*>(out.buffer()), stream->next_out);
+  }
+  case Z_STREAM_END: {
+    auto len{std::distance(reinterpret_cast<Bytef*>(out.buffer()), stream->next_out)};
     deflateReset(stream);
     out.shrink(len);
     return out;
-  default:
+  }
+  default: {
     kphp::log::warning("zlib error {}", status);
     return {};
+  }
   }
 }
