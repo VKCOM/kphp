@@ -174,39 +174,34 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
     const auto& val{it.get_value()};
 
     if (key_view == "level"sv) {
-      if (val.is_int() && val.as_int() >= kphp::zlib::MIN_COMPRESSION_LEVEL && val.as_int() <= kphp::zlib::MAX_COMPRESSION_LEVEL) {
-        level = val.as_int();
-      } else {
+      if (!val.is_int() || val.as_int() < kphp::zlib::MIN_COMPRESSION_LEVEL || val.as_int() > kphp::zlib::MAX_COMPRESSION_LEVEL) {
         kphp::log::warning("option level should be a number between -1..9");
         return {};
       }
+      level = val.as_int();
     } else if (key_view == "memory"sv) {
-      if (val.is_int() && val.as_int() >= kphp::zlib::MIN_MEMORY_LEVEL && val.as_int() <= kphp::zlib::MAX_MEMORY_LEVEL) {
-        memory = val.as_int();
-      } else {
+      if (!val.is_int() || val.as_int() < kphp::zlib::MIN_MEMORY_LEVEL || val.as_int() > kphp::zlib::MAX_MEMORY_LEVEL) {
         kphp::log::warning("option memory should be a number between 1..9");
         return {};
       }
+      memory = val.as_int();
     } else if (key_view == "window"sv) {
-      if (val.is_int() && val.as_int() >= kphp::zlib::MIN_WINDOW_SIZE && val.as_int() <= kphp::zlib::MAX_WINDOW_SIZE) {
-        window = val.as_int();
-      } else {
+      if (!val.is_int() || val.as_int() < kphp::zlib::MIN_WINDOW_SIZE || val.as_int() > kphp::zlib::MAX_WINDOW_SIZE) {
         kphp::log::warning("option window should be a number between 8..15");
         return {};
       }
+      window = val.as_int();
     } else if (key_view == "strategy"sv) {
-      if (val.is_int()) {
-        const auto s{val.as_int()};
-        if (s == Z_DEFAULT_STRATEGY || s == Z_FILTERED || s == Z_HUFFMAN_ONLY || s == Z_RLE || s == Z_FIXED) {
-          strategy = s;
-        } else {
-          kphp::log::warning("option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
-          return {};
-        }
-      } else {
+      if (!val.is_int()) {
         kphp::log::warning("option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
         return {};
       }
+      const auto s{val.as_int()};
+      if (s != Z_DEFAULT_STRATEGY && s != Z_FILTERED && s != Z_HUFFMAN_ONLY && s != Z_RLE && s != Z_FIXED) {
+        kphp::log::warning("option strategy should be one of ZLIB_FILTERED, ZLIB_HUFFMAN_ONLY, ZLIB_RLE, ZLIB_FIXED or ZLIB_DEFAULT_STRATEGY");
+        return {};
+      }
+      strategy = s;
     } else if (key_view == "dictionary"sv) {
       kphp::log::warning("option dictionary isn't supported yet");
       return {};
