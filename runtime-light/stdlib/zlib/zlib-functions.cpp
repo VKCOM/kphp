@@ -148,8 +148,8 @@ std::optional<string> decode(std::span<const char> data, int64_t encoding) noexc
 } // namespace kphp::zlib
 
 class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed>& options) noexcept {
-  constexpr int32_t default_memory{8};
-  constexpr int32_t default_window{15};
+  static constexpr int32_t DEFAULT_MEMORY{8};
+  static constexpr int32_t DEFAULT_WINDOW{15};
 
   if (encoding != kphp::zlib::ENCODING_RAW && encoding != kphp::zlib::ENCODING_DEFLATE && encoding != kphp::zlib::ENCODING_GZIP) {
     kphp::log::warning("encoding should be one of ZLIB_ENCODING_RAW, ZLIB_ENCODING_DEFLATE, ZLIB_ENCODING_GZIP");
@@ -157,8 +157,8 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
   }
 
   int32_t level{Z_DEFAULT_COMPRESSION};
-  int32_t memory{default_memory};
-  int32_t window{default_window};
+  int32_t memory{DEFAULT_MEMORY};
+  int32_t window{DEFAULT_WINDOW};
   int32_t strategy{Z_DEFAULT_STRATEGY};
 
   for (const auto& it : options) {
@@ -228,8 +228,8 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
 }
 
 Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, const string& data, int64_t flush_type) noexcept {
-  constexpr uint64_t EXTRA_OUT_SIZE{30};
-  constexpr uint64_t MIN_OUT_SIZE{64};
+  static constexpr uint64_t EXTRA_OUT_SIZE{30};
+  static constexpr uint64_t MIN_OUT_SIZE{64};
 
   switch (flush_type) {
   case Z_BLOCK:
