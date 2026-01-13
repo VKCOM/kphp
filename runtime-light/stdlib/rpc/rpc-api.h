@@ -112,7 +112,7 @@ inline bool f$store_string(const string& v) noexcept {
 }
 
 inline bool f$store_string2(const string& v) noexcept {
-  tl::string{.value = {v.c_str(), v.size()}}.store2(RpcServerInstanceState::get().tl_storer);
+  tl2::string{.value = {v.c_str(), v.size()}}.store(RpcServerInstanceState::get().tl_storer);
   return true;
 }
 
@@ -175,7 +175,7 @@ inline string f$fetch_string() noexcept {
 }
 
 inline string f$fetch_string2() noexcept {
-  if (tl::string val{}; val.fetch2(RpcServerInstanceState::get().tl_fetcher)) [[likely]] {
+  if (tl2::string val{}; val.fetch(RpcServerInstanceState::get().tl_fetcher)) [[likely]] {
     return {val.value.data(), static_cast<string::size_type>(val.value.size())};
   }
   THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_string::make());
