@@ -174,21 +174,21 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
     const auto& val{it.get_value()};
 
     if (key_view == "level"sv) {
-      if (val.is_int() && val.as_int() >= -1 && val.as_int() <= 9) {
+      if (val.is_int() && val.as_int() >= kphp::zlib::MIN_COMPRESSION_LEVEL && val.as_int() <= kphp::zlib::MAX_COMPRESSION_LEVEL) {
         level = val.as_int();
       } else {
         kphp::log::warning("option level should be a number between -1..9");
         return {};
       }
     } else if (key_view == "memory"sv) {
-      if (val.is_int() && val.as_int() >= 1 && val.as_int() <= 9) {
+      if (val.is_int() && val.as_int() >= kphp::zlib::MIN_MEMORY_LEVEL && val.as_int() <= kphp::zlib::MAX_MEMORY_LEVEL) {
         memory = val.as_int();
       } else {
         kphp::log::warning("option memory should be a number between 1..9");
         return {};
       }
     } else if (key_view == "window"sv) {
-      if (val.is_int() && val.as_int() >= 8 && val.as_int() <= 15) {
+      if (val.is_int() && val.as_int() >= kphp::zlib::MIN_WINDOW_SIZE && val.as_int() <= kphp::zlib::MAX_WINDOW_SIZE) {
         window = val.as_int();
       } else {
         kphp::log::warning("option window should be a number between 8..15");
