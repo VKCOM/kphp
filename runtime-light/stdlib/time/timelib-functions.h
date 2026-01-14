@@ -15,7 +15,6 @@
 
 #include "kphp/timelib/timelib.h"
 
-#include "common/containers/final_action.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator.h"
 
