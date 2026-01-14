@@ -9,12 +9,12 @@
 
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime-light/stdlib/time/dateinterval.h"
 #include "runtime-light/stdlib/time/datetimeimmutable.h"
 #include "runtime-light/stdlib/time/datetimeinterface.h"
 #include "runtime-light/stdlib/time/datetimezone.h"
+#include "runtime-light/stdlib/time/time-state.h"
 
 struct C$DateTime : public C$DateTimeInterface, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
@@ -29,7 +29,7 @@ struct C$DateTime : public C$DateTimeInterface, private DummyVisitorMethods {
   }
 };
 
-class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTime>& self, const string& datetime = StringLibConstants::get().NOW_STR,
+class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTime>& self, const string& datetime = TimeImageState::get().NOW_STR,
                                                    const class_instance<C$DateTimeZone>& timezone = Optional<bool>{}) noexcept;
 
 class_instance<C$DateTime> f$DateTime$$add(const class_instance<C$DateTime>& self, const class_instance<C$DateInterval>& interval) noexcept;

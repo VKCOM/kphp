@@ -59,9 +59,13 @@ private:
 };
 
 struct TimeImageState final : private vk::not_copyable {
+  string NOW_STR{kphp::timelib::NOW_.data(), static_cast<string::size_type>(kphp::timelib::NOW_.size())};
+
   kphp::timelib::timezone_cache timelib_zone_cache{kphp::timelib::timezones::MOSCOW, kphp::timelib::timezones::GMT3};
 
-  TimeImageState() noexcept = default;
+  TimeImageState() noexcept {
+    NOW_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+  }
 
   static const TimeImageState& get() noexcept;
   static TimeImageState& get_mutable() noexcept;

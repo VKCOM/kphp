@@ -13,13 +13,13 @@
 #include <type_traits>
 #include <utility>
 
-#include "common/containers/final_action.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/dateinterval.h"
 #include "runtime-light/stdlib/time/datetime.h"
 #include "runtime-light/stdlib/time/time-functions.h"
+#include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"
 
 namespace {
@@ -35,7 +35,7 @@ class_instance<C$DateTimeImmutable> clone_immutable(const class_instance<C$DateT
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class_instance<C$DateTimeImmutable>& self, const string& datetime,
                                                                      const class_instance<C$DateTimeZone>& timezone) noexcept {
-  const auto& str_to_parse{datetime.empty() ? StringLibConstants::get().NOW_STR : datetime};
+  const auto& str_to_parse{datetime.empty() ? TimeImageState::get().NOW_STR : datetime};
   auto [time, errors]{kphp::timelib::parse_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
   if (time == nullptr) [[unlikely]] {
     string err_msg;

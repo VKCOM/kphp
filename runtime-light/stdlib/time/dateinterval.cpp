@@ -7,8 +7,6 @@
 #include <format>
 #include <iterator>
 
-#include "common/containers/final_action.h"
-#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
