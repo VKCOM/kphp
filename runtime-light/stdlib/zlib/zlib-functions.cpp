@@ -49,26 +49,6 @@ void zlib_dynamic_free([[maybe_unused]] voidpf opaque, voidpf address) noexcept 
   kphp::memory::script::free(address);
 }
 
-/**
- * Maps KPHP encoding constants and custom window size to zlib windowBits.
- * zlib windowBits logic:
- *   8..15  -> ZLIB header
- *  -8..-15 -> RAW (no header)
- *   24..31 -> GZIP (16 + window)
- */
-int32_t to_zlib_window_bits(int64_t encoding, int32_t window) noexcept {
-  switch (encoding) {
-  case kphp::zlib::ENCODING_GZIP:
-    return 16 + window;
-  case kphp::zlib::ENCODING_RAW:
-    return -window;
-  case kphp::zlib::ENCODING_DEFLATE:
-    return window;
-  default:
-    kphp::log::error("to_zlib_window_bits: unknown encoding {}", encoding);
-  }
-}
-
 } // namespace
 
 namespace kphp::zlib {
@@ -215,7 +195,18 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
 
   z_stream* stream{std::addressof(context.get()->stream.emplace(z_stream{.zalloc = zlib_dynamic_calloc, .zfree = zlib_dynamic_free, .opaque = nullptr}))};
 
-  const int32_t window_bits{to_zlib_window_bits(encoding, window)};
+  const int32_t window_bits{[encoding, window] noexcept {
+    switch (encoding) {
+    case kphp::zlib::ENCODING_GZIP:
+      return 16 + window;
+    case kphp::zlib::ENCODING_RAW:
+      return -window;
+    case kphp::zlib::ENCODING_DEFLATE:
+      return window;
+    default:
+      kphp::log::error("deflate_init: unknown encoding {}", encoding);
+    }
+  }()};
 
   if (auto err{deflateInit2(stream, level, Z_DEFLATED, window_bits, memory, strategy)}; err != Z_OK) {
     context.get()->stream = std::nullopt;
