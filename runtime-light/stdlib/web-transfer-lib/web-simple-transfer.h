@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <__expected/unexpected.h>
 #include <cstddef>
 #include <expected>
 #include <optional>
@@ -175,7 +174,7 @@ inline auto simple_transfer_close(simple_transfer st) noexcept -> kphp::coro::ta
     kphp::log::error("session with Web components has been closed");
   }
 
-  // Checking that Simple transfer is held by some Composite transfer
+  // Checking that Simple transfer is still held by some Composite transfer
   auto& composite_holder{web_state.simple_transfer2holder[st.descriptor]};
   if (composite_holder.has_value()) {
     if (auto remove_res{
