@@ -69,7 +69,7 @@ std::pair<time_t, error_container_t> parse_time(std::string_view time_sv, const 
   return {std::move(t), error_container_t{err}};
 }
 
-std::expected<rel_time_t, std::format_string<const char*>> parse_interval(std::string_view format) noexcept {
+std::expected<rel_time_t, error_container_t> parse_interval(std::string_view format) noexcept {
   timelib_time* b{nullptr};
   timelib_time* e{nullptr};
   vk::final_action e_deleter{[e]() { kphp::memory::libc_alloc_guard{}, free(e); }};
@@ -83,10 +83,8 @@ std::expected<rel_time_t, std::format_string<const char*>> parse_interval(std::s
 
   if (errors->error_count > 0) {
     destructor{}(p);
-    destructor{}(errors);
-    return std::unexpected{std::format_string<const char*>{"Unknown or bad format ({})"}};
+    return std::unexpected{error_container_t{errors}};
   }
-  destructor{}(errors);
 
   if (p != nullptr) {
     return rel_time_t{p};
@@ -98,7 +96,7 @@ std::expected<rel_time_t, std::format_string<const char*>> parse_interval(std::s
     return kphp::memory::libc_alloc_guard{}, rel_time_t{timelib_diff(b, e)};
   }
 
-  return std::unexpected{std::format_string<const char*>{"Failed to parse interval ({})"}};
+  return std::unexpected{error_container_t{errors}};
 }
 
 time_t add(const kphp::timelib::time_t& t, timelib_rel_time& interval) noexcept {
