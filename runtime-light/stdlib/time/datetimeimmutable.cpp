@@ -27,7 +27,7 @@ namespace {
 class_instance<C$DateTimeImmutable> clone_immutable(const class_instance<C$DateTimeImmutable>& origin) noexcept {
   class_instance<C$DateTimeImmutable> clone;
   clone.alloc();
-  clone->time = kphp::timelib::clone(*origin->time);
+  clone->time = kphp::timelib::clone(origin->time);
   return clone;
 }
 
@@ -55,7 +55,7 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class
     }
   }
 
-  kphp::timelib::fill_holes_with_now(*time, tzi);
+  kphp::timelib::fill_holes_with_now(time, tzi);
 
   self->time = std::move(time);
   return self;
@@ -64,7 +64,7 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$add(const class_instance<C$DateTimeImmutable>& self,
                                                              const class_instance<C$DateInterval>& interval) noexcept {
   auto new_date{clone_immutable(self)};
-  new_date->time = kphp::timelib::add(*new_date->time, *interval->rel_time);
+  new_date->time = kphp::timelib::add(new_date->time, interval->rel_time);
   return new_date;
 }
 
@@ -85,7 +85,7 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromFormat(const 
     }
   }
 
-  kphp::timelib::fill_holes_with_now<true>(*time, tzi);
+  kphp::timelib::fill_holes_with_now<true>(time, tzi);
 
   class_instance<C$DateTimeImmutable> date_time;
   date_time.alloc();
@@ -96,7 +96,7 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromFormat(const 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromMutable(const class_instance<C$DateTime>& object) noexcept {
   class_instance<C$DateTimeImmutable> clone;
   clone.alloc();
-  clone->time = kphp::timelib::clone(*object->time);
+  clone->time = kphp::timelib::clone(object->time);
   return clone;
 }
 
@@ -106,7 +106,7 @@ Optional<array<mixed>> f$DateTimeImmutable$$getLastErrors() noexcept {
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$modify(const class_instance<C$DateTimeImmutable>& self, const string& modifier) noexcept {
   auto new_date{clone_immutable(self)};
-  auto errors{kphp::timelib::modify(*new_date->time, {modifier.c_str(), modifier.size()})};
+  auto errors{kphp::timelib::modify(new_date->time, {modifier.c_str(), modifier.size()})};
   if (errors != nullptr && errors->error_count > 0) [[unlikely]] {
     kphp::log::warning("DateTimeImmutable::modify(): Failed to parse time string ({}) {}", modifier.c_str(), errors);
     TimeInstanceState::get().update_last_errors(std::move(errors));
@@ -119,34 +119,34 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$modify(const class_inst
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setDate(const class_instance<C$DateTimeImmutable>& self, int64_t year, int64_t month,
                                                                  int64_t day) noexcept {
   auto new_date{clone_immutable(self)};
-  kphp::timelib::set_date(*new_date->time, year, month, day);
+  kphp::timelib::set_date(new_date->time, year, month, day);
   return new_date;
 }
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setISODate(const class_instance<C$DateTimeImmutable>& self, int64_t year, int64_t week,
                                                                     int64_t dayOfWeek) noexcept {
   auto new_date{clone_immutable(self)};
-  kphp::timelib::set_isodate(*new_date->time, year, week, dayOfWeek);
+  kphp::timelib::set_isodate(new_date->time, year, week, dayOfWeek);
   return new_date;
 }
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setTime(const class_instance<C$DateTimeImmutable>& self, int64_t hour, int64_t minute, int64_t second,
                                                                  int64_t microsecond) noexcept {
   auto new_date{clone_immutable(self)};
-  kphp::timelib::set_time(*new_date->time, hour, minute, second, microsecond);
+  kphp::timelib::set_time(new_date->time, hour, minute, second, microsecond);
   return new_date;
 }
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setTimestamp(const class_instance<C$DateTimeImmutable>& self, int64_t timestamp) noexcept {
   auto new_date{clone_immutable(self)};
-  kphp::timelib::set_timestamp(*new_date->time, timestamp);
+  kphp::timelib::set_timestamp(new_date->time, timestamp);
   return new_date;
 }
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$sub(const class_instance<C$DateTimeImmutable>& self,
                                                              const class_instance<C$DateInterval>& interval) noexcept {
   auto new_date{clone_immutable(self)};
-  auto expected_new_time{kphp::timelib::sub(*new_date->time, *interval->rel_time)};
+  auto expected_new_time{kphp::timelib::sub(new_date->time, interval->rel_time)};
   if (!expected_new_time.has_value()) {
     kphp::log::warning("DateTimeImmutable::sub(): {}", expected_new_time.error());
     return new_date;
@@ -159,20 +159,20 @@ class_instance<C$DateInterval> f$DateTimeImmutable$$diff(const class_instance<C$
                                                          const class_instance<C$DateTimeInterface>& target_object, bool absolute) noexcept {
   class_instance<C$DateInterval> interval;
   interval.alloc();
-  interval->rel_time = kphp::timelib::diff(*self->time, *target_object.get()->time, absolute);
+  interval->rel_time = kphp::timelib::diff(self->time, target_object.get()->time, absolute);
   return interval;
 }
 
 string f$DateTimeImmutable$$format(const class_instance<C$DateTimeImmutable>& self, const string& format) noexcept {
   string str;
-  kphp::timelib::format_to(std::back_inserter(str), {format.c_str(), format.size()}, *self->time);
+  kphp::timelib::format_to(std::back_inserter(str), {format.c_str(), format.size()}, self->time);
   return str;
 }
 
 int64_t f$DateTimeImmutable$$getOffset(const class_instance<C$DateTimeImmutable>& self) noexcept {
-  return kphp::timelib::get_offset(*self->time);
+  return kphp::timelib::get_offset(self->time);
 }
 
 int64_t f$DateTimeImmutable$$getTimestamp(const class_instance<C$DateTimeImmutable>& self) noexcept {
-  return kphp::timelib::get_timestamp(*(self->time));
+  return kphp::timelib::get_timestamp(self->time);
 }
