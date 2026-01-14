@@ -15,7 +15,6 @@
 #include "zlib/zlib.h"
 
 #include "common/containers/final_action.h"
-#include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/string/string-state.h"
@@ -36,18 +35,6 @@ voidpf zlib_static_alloc(voidpf opaque, uInt items, uInt size) noexcept {
 }
 
 void zlib_static_free([[maybe_unused]] voidpf opaque, [[maybe_unused]] voidpf address) noexcept {}
-
-voidpf zlib_dynamic_calloc([[maybe_unused]] voidpf opaque, uInt items, uInt size) noexcept {
-  auto* mem{kphp::memory::script::calloc(items, size)};
-  if (mem == nullptr) [[unlikely]] {
-    kphp::log::warning("zlib dynamic calloc: can't allocate {} bytes", items * size);
-  }
-  return mem;
-}
-
-void zlib_dynamic_free([[maybe_unused]] voidpf opaque, voidpf address) noexcept {
-  kphp::memory::script::free(address);
-}
 
 } // namespace
 
@@ -191,10 +178,6 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
     }
   }
 
-  auto context{make_instance<C$DeflateContext>()};
-
-  z_stream* stream{std::addressof(context.get()->stream.emplace(z_stream{.zalloc = zlib_dynamic_calloc, .zfree = zlib_dynamic_free, .opaque = nullptr}))};
-
   const int32_t window_bits{[encoding, window] noexcept {
     switch (encoding) {
     case kphp::zlib::ENCODING_GZIP:
@@ -208,9 +191,9 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
     }
   }()};
 
-  if (auto err{deflateInit2(stream, level, Z_DEFLATED, window_bits, memory, strategy)}; err != Z_OK) {
-    context.get()->stream = std::nullopt;
-    kphp::log::warning("zlib error {}", err);
+  auto context{make_instance<C$DeflateContext>()};
+
+  if (!context->init(level, window_bits, memory, strategy)) {
     return {};
   }
   return context;
@@ -233,8 +216,7 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, 
     return {};
   }
 
-  kphp::log::assertion(context.get()->stream.has_value());
-  z_stream* stream{std::addressof(*context.get()->stream)};
+  z_stream* stream{std::addressof(**context.get())};
   auto out_size{deflateBound(stream, data.size()) + EXTRA_OUT_SIZE};
   out_size = out_size < MIN_OUT_SIZE ? MIN_OUT_SIZE : out_size;
   string out{static_cast<string::size_type>(out_size), false};
