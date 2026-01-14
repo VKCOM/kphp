@@ -53,7 +53,7 @@ time_offset_t construct_time_offset(const kphp::timelib::time_t& t) noexcept;
 
 std::pair<time_t, error_container_t> parse_time(std::string_view time_sv) noexcept;
 std::pair<time_t, error_container_t> parse_time(std::string_view time_sv, const char* format) noexcept;
-std::expected<rel_time_t, std::format_string<const char*>> parse_interval(std::string_view format) noexcept;
+std::expected<rel_time_t, error_container_t> parse_interval(std::string_view format) noexcept;
 
 time_t add(const kphp::timelib::time_t& t, const kphp::timelib::rel_time_t& interval) noexcept;
 

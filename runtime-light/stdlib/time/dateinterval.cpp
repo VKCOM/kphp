@@ -15,7 +15,11 @@ class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<
   auto expected_rel_time{kphp::timelib::parse_interval({duration.c_str(), duration.size()})};
   if (!expected_rel_time.has_value()) [[unlikely]] {
     string err_msg{"DateInterval::__construct(): "};
-    format_to(std::back_inserter(err_msg), expected_rel_time.error(), duration.c_str());
+    if (expected_rel_time.error()->error_count > 0) {
+      format_to(std::back_inserter(err_msg), "Unknown or bad format ({})", duration.c_str());
+    } else {
+      format_to(std::back_inserter(err_msg), "Failed to parse interval ({})", duration.c_str());
+    }
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};
   }
