@@ -23,18 +23,18 @@
 
 namespace kphp::timelib {
 
-time_offset_t construct_time_offset(timelib_time& t) noexcept {
-  if (t.zone_type == TIMELIB_ZONETYPE_ABBR) {
+time_offset_t construct_time_offset(const kphp::timelib::time_t& t) noexcept {
+  if (t->zone_type == TIMELIB_ZONETYPE_ABBR) {
     time_offset_t offset{(kphp::memory::libc_alloc_guard{}, timelib_time_offset_ctor())};
-    offset->offset = (t.z + (t.dst * 3600));
+    offset->offset = (t->z + (t->dst * 3600));
     offset->leap_secs = 0;
-    offset->is_dst = t.dst;
-    offset->abbr = (kphp::memory::libc_alloc_guard{}, timelib_strdup(t.tz_abbr));
+    offset->is_dst = t->dst;
+    offset->abbr = (kphp::memory::libc_alloc_guard{}, timelib_strdup(t->tz_abbr));
     return offset;
   }
-  if (t.zone_type == TIMELIB_ZONETYPE_OFFSET) {
+  if (t->zone_type == TIMELIB_ZONETYPE_OFFSET) {
     time_offset_t offset{(kphp::memory::libc_alloc_guard{}, timelib_time_offset_ctor())};
-    offset->offset = (t.z);
+    offset->offset = (t->z);
     offset->leap_secs = 0;
     offset->is_dst = 0;
     offset->abbr = (kphp::memory::libc_alloc_guard{}, static_cast<char*>(timelib_malloc(9))); // GMT±xxxx\0
@@ -43,7 +43,7 @@ time_offset_t construct_time_offset(timelib_time& t) noexcept {
     *std::format_to_n(offset->abbr, 8, "GMT{}{:02}{:02}", (offset->offset < 0) ? '-' : '+', hours_offset, std::abs((offset->offset % 3600) / 60)).out = '\0';
     return offset;
   }
-  return time_offset_t{(kphp::memory::libc_alloc_guard{}, timelib_get_time_zone_info(t.sse, t.tz_info))};
+  return time_offset_t{(kphp::memory::libc_alloc_guard{}, timelib_get_time_zone_info(t->sse, t->tz_info))};
 }
 
 std::pair<time_t, error_container_t> parse_time(std::string_view time_sv) noexcept {
@@ -101,8 +101,8 @@ std::expected<rel_time_t, std::format_string<const char*>> parse_interval(std::s
   return std::unexpected{std::format_string<const char*>{"Failed to parse interval ({})"}};
 }
 
-time_t add(timelib_time& t, timelib_rel_time& interval) noexcept {
-  time_t new_time{(kphp::memory::libc_alloc_guard{}, timelib_add(std::addressof(t), std::addressof(interval)))};
+time_t add(const kphp::timelib::time_t& t, timelib_rel_time& interval) noexcept {
+  time_t new_time{(kphp::memory::libc_alloc_guard{}, timelib_add(t.get(), std::addressof(interval)))};
   return new_time;
 }
 
@@ -110,15 +110,15 @@ rel_time_t clone(timelib_rel_time& rt) noexcept {
   return rel_time_t{(kphp::memory::libc_alloc_guard{}, timelib_rel_time_clone(std::addressof(rt)))};
 }
 
-time_t clone(timelib_time& t) noexcept {
-  return time_t{(kphp::memory::libc_alloc_guard{}, timelib_time_clone(std::addressof(t)))};
+time_t clone(const kphp::timelib::time_t& t) noexcept {
+  return time_t{(kphp::memory::libc_alloc_guard{}, timelib_time_clone(t.get()))};
 }
 
-rel_time_t diff(timelib_time& time1, timelib_time& time2, bool absolute) noexcept {
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(time1), nullptr);
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(time2), nullptr);
+rel_time_t diff(const kphp::timelib::time_t& time1, const kphp::timelib::time_t& time2, bool absolute) noexcept {
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(time1.get(), nullptr);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(time2.get(), nullptr);
 
-  rel_time_t diff{(kphp::memory::libc_alloc_guard{}, timelib_diff(std::addressof(time1), std::addressof(time2)))};
+  rel_time_t diff{(kphp::memory::libc_alloc_guard{}, timelib_diff(time1.get(), time2.get()))};
   if (absolute) {
     diff->invert = 0;
   }
@@ -141,21 +141,21 @@ std::string_view date_short_day_name(timelib_sll y, timelib_sll m, timelib_sll d
   return DAY_SHORT_NAMES[day_of_week];
 }
 
-int64_t get_timestamp(timelib_time& t) noexcept {
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
+int64_t get_timestamp(const kphp::timelib::time_t& t) noexcept {
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
 
   int error{}; // it's intentionally declared as 'int' since timelib_date_to_int accepts 'int'
-  timelib_long timestamp{timelib_date_to_int(std::addressof(t), std::addressof(error))};
+  timelib_long timestamp{timelib_date_to_int(t.get(), std::addressof(error))};
   // the 'error' should be always 0 on x64 platform
   log::assertion(error == 0);
 
   return timestamp;
 }
 
-void set_timestamp(timelib_time& t, int64_t timestamp) noexcept {
-  kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(std::addressof(t), static_cast<timelib_sll>(timestamp));
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
-  t.us = 0;
+void set_timestamp(const kphp::timelib::time_t& t, int64_t timestamp) noexcept {
+  kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(t.get(), static_cast<timelib_sll>(timestamp));
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
+  t->us = 0;
 }
 
 std::string_view english_suffix(timelib_sll number) noexcept {
@@ -174,19 +174,19 @@ std::string_view english_suffix(timelib_sll number) noexcept {
   return "th";
 }
 
-int64_t get_offset(timelib_time& t) noexcept {
-  if (t.is_localtime) {
-    switch (t.zone_type) {
+int64_t get_offset(const kphp::timelib::time_t& t) noexcept {
+  if (t->is_localtime) {
+    switch (t->zone_type) {
     case TIMELIB_ZONETYPE_ID: {
-      time_offset_t offset{(kphp::memory::libc_alloc_guard{}, timelib_get_time_zone_info(t.sse, t.tz_info))};
+      time_offset_t offset{(kphp::memory::libc_alloc_guard{}, timelib_get_time_zone_info(t->sse, t->tz_info))};
       int64_t offset_int{offset->offset};
       return offset_int;
     }
     case TIMELIB_ZONETYPE_OFFSET: {
-      return t.z;
+      return t->z;
     }
     case TIMELIB_ZONETYPE_ABBR: {
-      return t.z + (3600 * t.dst);
+      return t->z + (3600 * t->dst);
     }
     }
   }
@@ -311,50 +311,50 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
   return now->sse;
 }
 
-error_container_t modify(timelib_time& t, std::string_view modifier) noexcept {
+error_container_t modify(const kphp::timelib::time_t& t, std::string_view modifier) noexcept {
   auto [tmp_time, errors]{parse_time(modifier)};
 
   if (tmp_time == nullptr) [[unlikely]] {
     return std::move(errors);
   }
 
-  std::memcpy(std::addressof(t.relative), std::addressof(tmp_time->relative), sizeof(timelib_rel_time));
-  t.have_relative = tmp_time->have_relative;
-  t.sse_uptodate = 0;
+  std::memcpy(std::addressof(t->relative), std::addressof(tmp_time->relative), sizeof(timelib_rel_time));
+  t->have_relative = tmp_time->have_relative;
+  t->sse_uptodate = 0;
 
   if (tmp_time->y != TIMELIB_UNSET) {
-    t.y = tmp_time->y;
+    t->y = tmp_time->y;
   }
   if (tmp_time->m != TIMELIB_UNSET) {
-    t.m = tmp_time->m;
+    t->m = tmp_time->m;
   }
   if (tmp_time->d != TIMELIB_UNSET) {
-    t.d = tmp_time->d;
+    t->d = tmp_time->d;
   }
 
   if (tmp_time->h != TIMELIB_UNSET) {
-    t.h = tmp_time->h;
+    t->h = tmp_time->h;
     if (tmp_time->i != TIMELIB_UNSET) {
-      t.i = tmp_time->i;
+      t->i = tmp_time->i;
       if (tmp_time->s != TIMELIB_UNSET) {
-        t.s = tmp_time->s;
+        t->s = tmp_time->s;
       } else {
-        t.s = 0;
+        t->s = 0;
       }
     } else {
-      t.i = 0;
-      t.s = 0;
+      t->i = 0;
+      t->s = 0;
     }
   }
 
   if (tmp_time->us != TIMELIB_UNSET) {
-    t.us = tmp_time->us;
+    t->us = tmp_time->us;
   }
 
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
-  kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(std::addressof(t));
-  t.have_relative = 0;
-  std::memset(std::addressof(t.relative), 0, sizeof(t.relative));
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
+  kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(t.get());
+  t->have_relative = 0;
+  std::memset(std::addressof(t->relative), 0, sizeof(t->relative));
   return std::move(errors);
 }
 
@@ -375,37 +375,37 @@ time_t now(timelib_tzinfo* tzi) noexcept {
   return res;
 }
 
-void set_date(timelib_time& t, int64_t y, int64_t m, int64_t d) noexcept {
-  t.y = y;
-  t.m = m;
-  t.d = d;
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
+void set_date(const kphp::timelib::time_t& t, int64_t y, int64_t m, int64_t d) noexcept {
+  t->y = y;
+  t->m = m;
+  t->d = d;
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
 }
 
-void set_isodate(timelib_time& t, int64_t y, int64_t w, int64_t d) noexcept {
-  t.y = y;
-  t.m = 1;
-  t.d = 1;
-  std::memset(std::addressof(t.relative), 0, sizeof(t.relative));
-  t.relative.d = timelib_daynr_from_weeknr(y, w, d);
-  t.have_relative = 1;
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
+void set_isodate(const kphp::timelib::time_t& t, int64_t y, int64_t w, int64_t d) noexcept {
+  t->y = y;
+  t->m = 1;
+  t->d = 1;
+  std::memset(std::addressof(t->relative), 0, sizeof(t->relative));
+  t->relative.d = timelib_daynr_from_weeknr(y, w, d);
+  t->have_relative = 1;
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
 }
 
-void set_time(timelib_time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept {
-  t.h = h;
-  t.i = i;
-  t.s = s;
-  t.us = ms;
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(t), nullptr);
+void set_time(const kphp::timelib::time_t& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept {
+  t->h = h;
+  t->i = i;
+  t->s = s;
+  t->us = ms;
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
 }
 
-std::expected<time_t, std::string_view> sub(timelib_time& t, timelib_rel_time& interval) noexcept {
+std::expected<time_t, std::string_view> sub(const kphp::timelib::time_t& t, timelib_rel_time& interval) noexcept {
   if (interval.have_special_relative) {
     return std::unexpected{"Only non-special relative time specifications are supported for subtraction"};
   }
 
-  time_t new_time{(kphp::memory::libc_alloc_guard{}, timelib_sub(std::addressof(t), std::addressof(interval)))};
+  time_t new_time{(kphp::memory::libc_alloc_guard{}, timelib_sub(t.get(), std::addressof(interval)))};
   return new_time;
 }
 

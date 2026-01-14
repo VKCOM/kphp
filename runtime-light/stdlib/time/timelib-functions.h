@@ -49,30 +49,30 @@ using rel_time_t = std::unique_ptr<timelib_rel_time, destructor>;
 using time_t = std::unique_ptr<timelib_time, destructor>;
 using time_offset_t = std::unique_ptr<timelib_time_offset, destructor>;
 
-time_offset_t construct_time_offset(timelib_time& t) noexcept;
+time_offset_t construct_time_offset(const kphp::timelib::time_t& t) noexcept;
 
 std::pair<time_t, error_container_t> parse_time(std::string_view time_sv) noexcept;
 std::pair<time_t, error_container_t> parse_time(std::string_view time_sv, const char* format) noexcept;
 std::expected<rel_time_t, std::format_string<const char*>> parse_interval(std::string_view format) noexcept;
 
-time_t add(timelib_time& t, timelib_rel_time& interval) noexcept;
+time_t add(const kphp::timelib::time_t& t, const kphp::timelib::rel_time_t& interval) noexcept;
 
-rel_time_t clone(timelib_rel_time& rt) noexcept;
-time_t clone(timelib_time& t) noexcept;
+rel_time_t clone(const timelib_rel_time& rt) noexcept;
+time_t clone(const kphp::timelib::time_t& t) noexcept;
 
-rel_time_t diff(timelib_time& time1, timelib_time& time2, bool absolute) noexcept;
+rel_time_t diff(const kphp::timelib::time_t& time1, const kphp::timelib::time_t& time2, bool absolute) noexcept;
 
 std::string_view date_full_day_name(timelib_sll y, timelib_sll m, timelib_sll d) noexcept;
 
 std::string_view date_short_day_name(timelib_sll y, timelib_sll m, timelib_sll d) noexcept;
 
-int64_t get_timestamp(timelib_time& t) noexcept;
+int64_t get_timestamp(const kphp::timelib::time_t& t) noexcept;
 
-void set_timestamp(timelib_time& t, int64_t timestamp) noexcept;
+void set_timestamp(const kphp::timelib::time_t& t, int64_t timestamp) noexcept;
 
 std::string_view english_suffix(timelib_sll number) noexcept;
 
-int64_t get_offset(timelib_time& t) noexcept;
+int64_t get_offset(const kphp::timelib::time_t& t) noexcept;
 
 timelib_tzinfo* get_timezone_info(const char* timezone) noexcept;
 /**
@@ -95,24 +95,24 @@ int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::op
 std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
                               std::optional<int64_t> day, std::optional<int64_t> yea) noexcept;
 
-error_container_t modify(timelib_time& t, std::string_view modifier) noexcept;
+error_container_t modify(const kphp::timelib::time_t& t, std::string_view modifier) noexcept;
 
 time_t now(timelib_tzinfo* tzi) noexcept;
 
-void set_date(timelib_time& t, int64_t y, int64_t m, int64_t d) noexcept;
+void set_date(const kphp::timelib::time_t& t, int64_t y, int64_t m, int64_t d) noexcept;
 
-void set_isodate(timelib_time& t, int64_t y, int64_t w, int64_t d) noexcept;
+void set_isodate(const kphp::timelib::time_t& t, int64_t y, int64_t w, int64_t d) noexcept;
 
-void set_time(timelib_time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept;
+void set_time(const kphp::timelib::time_t& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept;
 
-std::expected<time_t, std::string_view> sub(timelib_time& t, timelib_rel_time& interval) noexcept;
+std::expected<time_t, std::string_view> sub(const kphp::timelib::time_t& t, const kphp::timelib::rel_time_t& interval) noexcept;
 
 std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime, int64_t timestamp) noexcept;
 
 bool valid_date(int64_t year, int64_t month, int64_t day) noexcept;
 
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, timelib_time& t, bool localtime) noexcept {
+OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time_t& t, bool localtime) noexcept {
   if (format.empty()) {
     return out;
   }
@@ -128,41 +128,41 @@ OutputIt format_to(OutputIt out, std::string_view format, timelib_time& t, bool 
     switch (format[i]) {
     // day
     case 'd':
-      out = std::format_to(out, "{:02}", t.d);
+      out = std::format_to(out, "{:02}", t->d);
       break;
     case 'D':
-      out = std::format_to(out, "{}", date_short_day_name(t.y, t.m, t.d));
+      out = std::format_to(out, "{}", date_short_day_name(t->y, t->m, t->d));
       break;
     case 'j':
-      out = std::format_to(out, "{}", t.d);
+      out = std::format_to(out, "{}", t->d);
       break;
     case 'l':
-      out = std::format_to(out, "{}", date_full_day_name(t.y, t.m, t.d));
+      out = std::format_to(out, "{}", date_full_day_name(t->y, t->m, t->d));
       break;
     case 'S':
-      out = std::format_to(out, "{}", english_suffix(t.d));
+      out = std::format_to(out, "{}", english_suffix(t->d));
       break;
     case 'w':
-      out = std::format_to(out, "{}", timelib_day_of_week(t.y, t.m, t.d));
+      out = std::format_to(out, "{}", timelib_day_of_week(t->y, t->m, t->d));
       break;
     case 'N':
-      out = std::format_to(out, "{}", timelib_iso_day_of_week(t.y, t.m, t.d));
+      out = std::format_to(out, "{}", timelib_iso_day_of_week(t->y, t->m, t->d));
       break;
     case 'z':
-      out = std::format_to(out, "{}", timelib_day_of_year(t.y, t.m, t.d));
+      out = std::format_to(out, "{}", timelib_day_of_year(t->y, t->m, t->d));
       break;
 
     // week
     case 'W':
       if (!weekYearSet) {
-        timelib_isoweek_from_date(t.y, t.m, t.d, std::addressof(isoweek), std::addressof(isoyear));
+        timelib_isoweek_from_date(t->y, t->m, t->d, std::addressof(isoweek), std::addressof(isoyear));
         weekYearSet = true;
       }
       out = std::format_to(out, "{:02}", isoweek);
       break; // iso weeknr
     case 'o':
       if (!weekYearSet) {
-        timelib_isoweek_from_date(t.y, t.m, t.d, std::addressof(isoweek), std::addressof(isoyear));
+        timelib_isoweek_from_date(t->y, t->m, t->d, std::addressof(isoweek), std::addressof(isoyear));
         weekYearSet = 1;
       }
       out = std::format_to(out, "{}", isoyear);
@@ -170,41 +170,41 @@ OutputIt format_to(OutputIt out, std::string_view format, timelib_time& t, bool 
 
     // month
     case 'F':
-      out = std::format_to(out, "{}", MON_FULL_NAMES[t.m - 1]);
+      out = std::format_to(out, "{}", MON_FULL_NAMES[t->m - 1]);
       break;
     case 'm':
-      out = std::format_to(out, "{:02}", t.m);
+      out = std::format_to(out, "{:02}", t->m);
       break;
     case 'M':
-      out = std::format_to(out, "{}", MON_SHORT_NAMES[t.m - 1]);
+      out = std::format_to(out, "{}", MON_SHORT_NAMES[t->m - 1]);
       break;
     case 'n':
-      out = std::format_to(out, "{}", t.m);
+      out = std::format_to(out, "{}", t->m);
       break;
     case 't':
-      out = std::format_to(out, "{}", timelib_days_in_month(t.y, t.m));
+      out = std::format_to(out, "{}", timelib_days_in_month(t->y, t->m));
       break;
 
     // year
     case 'L':
-      out = std::format_to(out, "{:d}", std::chrono::year(t.y).is_leap());
+      out = std::format_to(out, "{:d}", std::chrono::year(t->y).is_leap());
       break;
     case 'y':
-      out = std::format_to(out, "{:02}", t.y % 100);
+      out = std::format_to(out, "{:02}", t->y % 100);
       break;
     case 'Y':
-      out = std::format_to(out, "{}{:04}", t.y < 0 ? "-" : "", std::abs(t.y));
+      out = std::format_to(out, "{}{:04}", t->y < 0 ? "-" : "", std::abs(t->y));
       break;
 
     // time
     case 'a':
-      out = std::format_to(out, "{}", t.h >= 12 ? "pm" : "am");
+      out = std::format_to(out, "{}", t->h >= 12 ? "pm" : "am");
       break;
     case 'A':
-      out = std::format_to(out, "{}", t.h >= 12 ? "PM" : "AM");
+      out = std::format_to(out, "{}", t->h >= 12 ? "PM" : "AM");
       break;
     case 'B': {
-      auto retval{(((t.sse) - ((t.sse) - (((t.sse) % 86400) + 3600))) * 10)};
+      auto retval{(((t->sse) - ((t->sse) - (((t->sse) % 86400) + 3600))) * 10)};
       if (retval < 0) {
         retval += 864000;
       }
@@ -214,28 +214,28 @@ OutputIt format_to(OutputIt out, std::string_view format, timelib_time& t, bool 
       break;
     }
     case 'g':
-      out = std::format_to(out, "{}", (t.h % 12) ? t.h % 12 : 12);
+      out = std::format_to(out, "{}", (t->h % 12) ? t->h % 12 : 12);
       break;
     case 'G':
-      out = std::format_to(out, "{}", t.h);
+      out = std::format_to(out, "{}", t->h);
       break;
     case 'h':
-      out = std::format_to(out, "{:02}", (t.h % 12) ? t.h % 12 : 12);
+      out = std::format_to(out, "{:02}", (t->h % 12) ? t->h % 12 : 12);
       break;
     case 'H':
-      out = std::format_to(out, "{:02}", t.h);
+      out = std::format_to(out, "{:02}", t->h);
       break;
     case 'i':
-      out = std::format_to(out, "{:02}", t.i);
+      out = std::format_to(out, "{:02}", t->i);
       break;
     case 's':
-      out = std::format_to(out, "{:02}", t.s);
+      out = std::format_to(out, "{:02}", t->s);
       break;
     case 'u':
-      out = std::format_to(out, "{:06}", t.us);
+      out = std::format_to(out, "{:06}", t->us);
       break;
     case 'v':
-      out = std::format_to(out, "{:03}", t.us / 1000);
+      out = std::format_to(out, "{:03}", t->us / 1000);
       break;
 
     // timezone
@@ -256,9 +256,9 @@ OutputIt format_to(OutputIt out, std::string_view format, timelib_time& t, bool 
       if (!localtime) {
         out = std::format_to(out, "UTC");
       } else {
-        switch (t.zone_type) {
+        switch (t->zone_type) {
         case TIMELIB_ZONETYPE_ID:
-          out = std::format_to(out, "{}", t.tz_info->name);
+          out = std::format_to(out, "{}", t->tz_info->name);
           break;
         case TIMELIB_ZONETYPE_ABBR:
           out = std::format_to(out, "{}", offset->abbr);
@@ -275,17 +275,17 @@ OutputIt format_to(OutputIt out, std::string_view format, timelib_time& t, bool 
 
     // full date/time
     case 'c':
-      out = std::format_to(out, "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}{}{:02}:{:02}", t.y, t.m, t.d, t.h, t.i, t.s,
+      out = std::format_to(out, "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}{}{:02}:{:02}", t->y, t->m, t->d, t->h, t->i, t->s,
                            localtime ? ((offset->offset < 0) ? '-' : '+') : '+', localtime ? std::abs(offset->offset / 3600) : 0,
                            localtime ? std::abs((offset->offset % 3600) / 60) : 0);
       break;
     case 'r':
-      out = std::format_to(out, "{:3}, {:02} {:3} {:04} {:02}:{:02}:{:02} {}{:02}{:02}", date_short_day_name(t.y, t.m, t.d), t.d, MON_SHORT_NAMES[t.m - 1], t.y,
-                           t.h, t.i, t.s, localtime ? ((offset->offset < 0) ? '-' : '+') : '+', localtime ? abs(offset->offset / 3600) : 0,
+      out = std::format_to(out, "{:3}, {:02} {:3} {:04} {:02}:{:02}:{:02} {}{:02}{:02}", date_short_day_name(t->y, t->m, t->d), t->d, MON_SHORT_NAMES[t->m - 1],
+                           t->y, t->h, t->i, t->s, localtime ? ((offset->offset < 0) ? '-' : '+') : '+', localtime ? abs(offset->offset / 3600) : 0,
                            localtime ? abs((offset->offset % 3600) / 60) : 0);
       break;
     case 'U':
-      out = std::format_to(out, "{}", t.sse);
+      out = std::format_to(out, "{}", t->sse);
       break;
 
     case '\\':
@@ -304,12 +304,12 @@ OutputIt format_to(OutputIt out, std::string_view format, timelib_time& t, bool 
 }
 
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, timelib_time& t) noexcept {
-  return timelib::format_to<OutputIt>(out, format, t, t.is_localtime);
+OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time_t& t) noexcept {
+  return timelib::format_to<OutputIt>(out, format, t, t->is_localtime);
 }
 
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, timelib_rel_time& t) noexcept {
+OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::rel_time_t& t) noexcept {
   if (format.empty()) {
     return out;
   }
@@ -320,66 +320,66 @@ OutputIt format_to(OutputIt out, std::string_view format, timelib_rel_time& t) n
     if (have_format_spec) {
       switch (c) {
       case 'Y':
-        out = std::format_to(out, "{:02}", t.y);
+        out = std::format_to(out, "{:02}", t->y);
         break;
       case 'y':
-        out = std::format_to(out, "{}", t.y);
+        out = std::format_to(out, "{}", t->y);
         break;
 
       case 'M':
-        out = std::format_to(out, "{:02}", t.m);
+        out = std::format_to(out, "{:02}", t->m);
         break;
       case 'm':
-        out = std::format_to(out, "{}", t.m);
+        out = std::format_to(out, "{}", t->m);
         break;
 
       case 'D':
-        out = std::format_to(out, "{:02}", t.d);
+        out = std::format_to(out, "{:02}", t->d);
         break;
       case 'd':
-        out = std::format_to(out, "{}", t.d);
+        out = std::format_to(out, "{}", t->d);
         break;
 
       case 'H':
-        out = std::format_to(out, "{:02}", t.h);
+        out = std::format_to(out, "{:02}", t->h);
         break;
       case 'h':
-        out = std::format_to(out, "{}", t.h);
+        out = std::format_to(out, "{}", t->h);
         break;
 
       case 'I':
-        out = std::format_to(out, "{:02}", t.i);
+        out = std::format_to(out, "{:02}", t->i);
         break;
       case 'i':
-        out = std::format_to(out, "{}", t.i);
+        out = std::format_to(out, "{}", t->i);
         break;
 
       case 'S':
-        out = std::format_to(out, "{:02}", t.s);
+        out = std::format_to(out, "{:02}", t->s);
         break;
       case 's':
-        out = std::format_to(out, "{}", t.s);
+        out = std::format_to(out, "{}", t->s);
         break;
 
       case 'F':
-        out = std::format_to(out, "{:06}", t.us);
+        out = std::format_to(out, "{:06}", t->us);
         break;
       case 'f':
-        out = std::format_to(out, "{}", t.us);
+        out = std::format_to(out, "{}", t->us);
         break;
 
       case 'a': {
-        if (t.days != TIMELIB_UNSET) {
-          out = std::format_to(out, "{}", t.days);
+        if (t->days != TIMELIB_UNSET) {
+          out = std::format_to(out, "{}", t->days);
         } else {
           out = std::format_to(out, "(unknown)");
         }
       } break;
       case 'r':
-        out = std::format_to(out, "{}", t.invert ? "-" : "");
+        out = std::format_to(out, "{}", t->invert ? "-" : "");
         break;
       case 'R':
-        *out++ = (t.invert ? '-' : '+');
+        *out++ = (t->invert ? '-' : '+');
         break;
 
       case '%':
@@ -402,7 +402,7 @@ OutputIt format_to(OutputIt out, std::string_view format, timelib_rel_time& t) n
 }
 
 template<bool override_time = false>
-void fill_holes_with_now(timelib_time& time, timelib_tzinfo* tzi) noexcept {
+void fill_holes_with_now(const kphp::timelib::time_t& time, timelib_tzinfo* tzi) noexcept {
   time_t now_time{now(tzi)};
 
   auto options{TIMELIB_NO_CLONE};
@@ -410,11 +410,11 @@ void fill_holes_with_now(timelib_time& time, timelib_tzinfo* tzi) noexcept {
     options |= TIMELIB_OVERRIDE_TIME;
   }
 
-  kphp::memory::libc_alloc_guard{}, timelib_fill_holes(std::addressof(time), now_time.get(), options);
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(std::addressof(time), now_time->tz_info);
-  kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(std::addressof(time));
+  kphp::memory::libc_alloc_guard{}, timelib_fill_holes(time.get(), now_time.get(), options);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(time.get(), now_time->tz_info);
+  kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(time.get());
 
-  time.have_relative = 0;
+  time->have_relative = 0;
 }
 
 } // namespace kphp::timelib
