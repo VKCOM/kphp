@@ -213,14 +213,12 @@ class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mi
 
   auto context{make_instance<C$DeflateContext>()};
 
-  z_stream* stream{std::addressof(context.get()->stream)};
-  stream->zalloc = zlib_dynamic_calloc;
-  stream->zfree = zlib_dynamic_free;
-  stream->opaque = nullptr;
+  z_stream* stream{std::addressof(context.get()->stream.emplace(z_stream{.zalloc = zlib_dynamic_calloc, .zfree = zlib_dynamic_free, .opaque = nullptr}))};
 
   const int32_t window_bits{to_zlib_window_bits(encoding, window)};
 
   if (auto err{deflateInit2(stream, level, Z_DEFLATED, window_bits, memory, strategy)}; err != Z_OK) {
+    context.get()->stream = std::nullopt;
     kphp::log::warning("zlib error {}", err);
     return {};
   }
@@ -244,7 +242,8 @@ Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, 
     return {};
   }
 
-  z_stream* stream{std::addressof(context.get()->stream)};
+  kphp::log::assertion(context.get()->stream.has_value());
+  z_stream* stream{std::addressof(*context.get()->stream)};
   auto out_size{deflateBound(stream, data.size()) + EXTRA_OUT_SIZE};
   out_size = out_size < MIN_OUT_SIZE ? MIN_OUT_SIZE : out_size;
   string out{static_cast<string::size_type>(out_size), false};

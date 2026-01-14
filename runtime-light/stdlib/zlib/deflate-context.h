@@ -5,6 +5,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include "zlib/zlib.h"
 
@@ -21,8 +22,10 @@ struct C$DeflateContext : public refcountable_php_classes<C$DeflateContext>, pri
   C$DeflateContext& operator=(C$DeflateContext&&) = delete;
 
   ~C$DeflateContext() {
-    deflateEnd(std::addressof(stream));
+    if (stream.has_value()) [[likely]] {
+      deflateEnd(std::addressof(*stream));
+    }
   }
 
-  z_stream stream{};
+  std::optional<z_stream> stream;
 };
