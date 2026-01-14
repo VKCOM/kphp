@@ -9,10 +9,10 @@
 
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime-light/stdlib/time/datetimeinterface.h"
 #include "runtime-light/stdlib/time/datetimezone.h"
+#include "runtime-light/stdlib/time/time-state.h"
 
 struct C$DateInterval;
 struct C$DateTime;
@@ -31,7 +31,7 @@ struct C$DateTimeImmutable : public C$DateTimeInterface, private DummyVisitorMet
 };
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class_instance<C$DateTimeImmutable>& self,
-                                                                     const string& datetime = StringLibConstants::get().NOW_STR,
+                                                                     const string& datetime = TimeImageState::get().NOW_STR,
                                                                      const class_instance<C$DateTimeZone>& timezone = Optional<bool>{}) noexcept;
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$add(const class_instance<C$DateTimeImmutable>& self,

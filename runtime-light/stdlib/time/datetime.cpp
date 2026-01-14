@@ -5,11 +5,12 @@
 #include "runtime-light/stdlib/time/datetime.h"
 
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"
 
 class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTime>& self, const string& datetime,
                                                    const class_instance<C$DateTimeZone>& timezone) noexcept {
-  const auto& str_to_parse{datetime.empty() ? StringLibConstants::get().NOW_STR : datetime};
+  const auto& str_to_parse{datetime.empty() ? TimeImageState::get().NOW_STR : datetime};
   auto [time, errors]{kphp::timelib::parse_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
   if (time == nullptr) [[unlikely]] {
     string err_msg;
