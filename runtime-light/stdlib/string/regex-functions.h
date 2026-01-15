@@ -49,7 +49,7 @@ inline constexpr int64_t PREG_NOLIMIT = -1;
 namespace regex_impl_ {
 
 inline bool valid_preg_replace_mixed(const mixed& param) noexcept {
-  if (!param.is_array() && !param.is_string()) [[unlikely]] {
+  if (param.is_object()) [[unlikely]] {
     kphp::log::warning("invalid parameter: expected to be string or array");
     return false;
   }
@@ -137,8 +137,8 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(mixed pattern, F call
     co_return Optional<string>{};
   }
 
-  if (pattern.is_string()) {
-    co_return co_await f$preg_replace_callback(std::move(pattern.as_string()), std::move(callback), std::move(subject), limit, opt_count, flags);
+  if (!pattern.is_array()) {
+    co_return co_await f$preg_replace_callback(std::move(pattern.to_string()), std::move(callback), std::move(subject), limit, opt_count, flags);
   }
 
   int64_t count{};
@@ -176,8 +176,8 @@ kphp::coro::task<mixed> f$preg_replace_callback(mixed pattern, F callback, mixed
     co_return mixed{};
   }
 
-  if (subject.is_string()) {
-    co_return co_await f$preg_replace_callback(std::move(pattern), std::move(callback), std::move(subject.as_string()), limit, opt_count, flags);
+  if (!subject.is_array()) {
+    co_return co_await f$preg_replace_callback(std::move(pattern), std::move(callback), std::move(subject.to_string()), limit, opt_count, flags);
   }
 
   int64_t count{};

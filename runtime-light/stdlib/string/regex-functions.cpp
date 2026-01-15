@@ -995,8 +995,8 @@ Optional<string> f$preg_replace(const mixed& pattern, const string& replacement,
     return {};
   }
 
-  if (pattern.is_string()) {
-    return f$preg_replace(pattern.as_string(), replacement, subject, limit, count);
+  if (!pattern.is_array()) {
+    return f$preg_replace(pattern.to_string(), replacement, subject, limit, count);
   }
 
   string result{subject};
@@ -1031,10 +1031,10 @@ Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, 
     return {};
   }
 
-  if (replacement.is_string()) {
-    return f$preg_replace(pattern, replacement.as_string(), subject, limit, count);
+  if (!replacement.is_array()) {
+    return f$preg_replace(pattern, replacement.to_string(), subject, limit, count);
   }
-  if (pattern.is_string()) [[unlikely]] {
+  if (!pattern.is_array()) [[unlikely]] {
     kphp::log::warning("parameter mismatch: replacement is an array while pattern is string");
     return {};
   }
@@ -1080,8 +1080,8 @@ mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed
     return {};
   }
 
-  if (subject.is_string()) {
-    return f$preg_replace(pattern, replacement, subject.as_string(), limit, count);
+  if (!subject.is_array()) {
+    return f$preg_replace(pattern, replacement, subject.to_string(), limit, count);
   }
 
   const auto& subject_arr{subject.as_array()};
