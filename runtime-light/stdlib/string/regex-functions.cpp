@@ -991,7 +991,8 @@ Optional<string> f$preg_replace(const mixed& pattern, const string& replacement,
     }
   }};
 
-  if (!regex_impl_::valid_preg_replace_mixed(pattern)) [[unlikely]] {
+  if (pattern.is_object()) [[unlikely]] {
+    kphp::log::warning("invalid pattern: object could not be converted to string");
     return {};
   }
 
@@ -1027,7 +1028,12 @@ Optional<string> f$preg_replace(const mixed& pattern, const mixed& replacement, 
     }
   }};
 
-  if (!regex_impl_::valid_preg_replace_mixed(pattern) || !regex_impl_::valid_preg_replace_mixed(replacement)) [[unlikely]] {
+  if (pattern.is_object()) [[unlikely]] {
+    kphp::log::warning("invalid pattern: object could not be converted to string");
+    return {};
+  }
+  if (replacement.is_object()) [[unlikely]] {
+    kphp::log::warning("invalid replacement: object could not be converted to string");
     return {};
   }
 
@@ -1075,8 +1081,16 @@ mixed f$preg_replace(const mixed& pattern, const mixed& replacement, const mixed
     }
   }};
 
-  if (!regex_impl_::valid_preg_replace_mixed(pattern) || !regex_impl_::valid_preg_replace_mixed(replacement) || !regex_impl_::valid_preg_replace_mixed(subject))
-      [[unlikely]] {
+  if (pattern.is_object()) [[unlikely]] {
+    kphp::log::warning("invalid pattern: object could not be converted to string");
+    return {};
+  }
+  if (replacement.is_object()) [[unlikely]] {
+    kphp::log::warning("invalid replacement: object could not be converted to string");
+    return {};
+  }
+  if (subject.is_object()) [[unlikely]] {
+    kphp::log::warning("invalid subject: object could not be converted to string");
     return {};
   }
 
