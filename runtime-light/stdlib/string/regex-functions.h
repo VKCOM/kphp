@@ -50,7 +50,7 @@ namespace regex_impl_ {
 
 inline bool valid_preg_replace_mixed(const mixed& param) noexcept {
   if (param.is_object()) [[unlikely]] {
-    kphp::log::warning("invalid parameter: expected to be string or array");
+    kphp::log::warning("invalid parameter: cannot convert object to string or array");
     return false;
   }
   return true;
@@ -138,7 +138,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(mixed pattern, F call
   }
 
   if (!pattern.is_array()) {
-    co_return co_await f$preg_replace_callback(std::move(pattern.to_string()), std::move(callback), std::move(subject), limit, opt_count, flags);
+    co_return co_await f$preg_replace_callback(pattern.to_string(), std::move(callback), std::move(subject), limit, opt_count, flags);
   }
 
   int64_t count{};
@@ -177,7 +177,7 @@ kphp::coro::task<mixed> f$preg_replace_callback(mixed pattern, F callback, mixed
   }
 
   if (!subject.is_array()) {
-    co_return co_await f$preg_replace_callback(std::move(pattern), std::move(callback), std::move(subject.to_string()), limit, opt_count, flags);
+    co_return co_await f$preg_replace_callback(std::move(pattern), std::move(callback), subject.to_string(), limit, opt_count, flags);
   }
 
   int64_t count{};
