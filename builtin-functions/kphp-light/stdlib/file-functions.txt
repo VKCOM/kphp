@@ -103,3 +103,6 @@ function stream_context_create ($options ::: mixed = array()) ::: mixed;
 
 /** @kphp-extern-func-info stub */
 function fputcsv ($stream, $fields ::: array, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: int | false;
+
+/** @kphp-extern-func-info stub generation-required */
+function md5_file ($s ::: string, $raw_output ::: bool = false) ::: string | false;

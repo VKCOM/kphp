@@ -9,17 +9,26 @@
 #include <optional>
 #include <span>
 
+#include "zlib/zlib.h"
+
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/stdlib/zlib/deflate-context.h"
 
 namespace kphp::zlib {
 
-inline constexpr int64_t ENCODING_RAW = -0x0f;
-inline constexpr int64_t ENCODING_DEFLATE = 0x0f;
-inline constexpr int64_t ENCODING_GZIP = 0x1f;
+inline constexpr int64_t ENCODING_RAW{-0x0f};
+inline constexpr int64_t ENCODING_DEFLATE{0x0f};
+inline constexpr int64_t ENCODING_GZIP{0x1f};
 
-inline constexpr int64_t MIN_COMPRESSION_LEVEL = -1;
-inline constexpr int64_t MAX_COMPRESSION_LEVEL = 9;
-inline constexpr int64_t DEFAULT_COMPRESSION_LEVEL = 6;
+inline constexpr int64_t MIN_COMPRESSION_LEVEL{-1};
+inline constexpr int64_t MAX_COMPRESSION_LEVEL{9};
+inline constexpr int64_t DEFAULT_COMPRESSION_LEVEL{6};
+
+inline constexpr int64_t MIN_MEMORY_LEVEL{1};
+inline constexpr int64_t MAX_MEMORY_LEVEL{9};
+
+inline constexpr int64_t MIN_WINDOW_SIZE{8};
+inline constexpr int64_t MAX_WINDOW_SIZE{15};
 
 std::optional<string> encode(std::span<const char> data, int64_t level, int64_t encoding) noexcept;
 
@@ -53,3 +62,7 @@ inline string f$gzdeflate(const string& data, int64_t level = kphp::zlib::MIN_CO
 inline string f$gzinflate(const string& data) noexcept {
   return kphp::zlib::decode({data.c_str(), static_cast<size_t>(data.size())}, kphp::zlib::ENCODING_RAW).value_or(string{});
 }
+
+class_instance<C$DeflateContext> f$deflate_init(int64_t encoding, const array<mixed>& options = {}) noexcept;
+
+Optional<string> f$deflate_add(const class_instance<C$DeflateContext>& context, const string& data, int64_t flush_type = Z_SYNC_FLUSH) noexcept;
