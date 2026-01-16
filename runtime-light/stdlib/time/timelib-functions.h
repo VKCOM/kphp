@@ -25,28 +25,34 @@ constexpr inline std::array<std::string_view, 12> MON_SHORT_NAMES = {"Jan", "Feb
 constexpr inline std::array<std::string_view, 7> DAY_FULL_NAMES = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 constexpr inline std::array<std::string_view, 7> DAY_SHORT_NAMES = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
-struct destructor {
+struct error_container_destructor {
   void operator()(timelib_error_container* ec) const noexcept {
     kphp::memory::libc_alloc_guard{}, timelib_error_container_dtor(ec);
   }
+};
 
+struct rel_time_destructor {
   void operator()(timelib_rel_time* rt) const noexcept {
     kphp::memory::libc_alloc_guard{}, timelib_rel_time_dtor(rt);
   }
+};
 
+struct time_destructor {
   void operator()(timelib_time* t) const noexcept {
     kphp::memory::libc_alloc_guard{}, timelib_time_dtor(t);
   }
+};
 
+struct time_offset_destructor {
   void operator()(timelib_time_offset* to) const noexcept {
     kphp::memory::libc_alloc_guard{}, timelib_time_offset_dtor(to);
   }
 };
 
-using error_container_t = std::unique_ptr<timelib_error_container, kphp::timelib::destructor>;
-using rel_time_t = std::unique_ptr<timelib_rel_time, kphp::timelib::destructor>;
-using time_offset_t = std::unique_ptr<timelib_time_offset, kphp::timelib::destructor>;
-using time_t = std::unique_ptr<timelib_time, kphp::timelib::destructor>;
+using error_container_t = std::unique_ptr<timelib_error_container, kphp::timelib::error_container_destructor>;
+using rel_time_t = std::unique_ptr<timelib_rel_time, kphp::timelib::rel_time_destructor>;
+using time_offset_t = std::unique_ptr<timelib_time_offset, kphp::timelib::time_offset_destructor>;
+using time_t = std::unique_ptr<timelib_time, kphp::timelib::time_destructor>;
 
 /* === rel_time === */
 std::expected<kphp::timelib::rel_time_t, kphp::timelib::error_container_t> parse_interval(std::string_view format) noexcept;
