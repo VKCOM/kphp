@@ -82,7 +82,7 @@ std::expected<rel_time_t, error_container_t> parse_interval(std::string_view for
       timelib_strtointerval(format.data(), format.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r), std::addressof(errors));
 
   if (errors->error_count > 0) {
-    destructor{}(p);
+    rel_time_destructor{}(p);
     return std::unexpected{error_container_t{errors}};
   }
 
