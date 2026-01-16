@@ -46,18 +46,6 @@ inline constexpr int64_t PREG_NOLIMIT = -1;
 
 } // namespace kphp::regex
 
-namespace regex_impl_ {
-
-inline bool valid_preg_replace_mixed(const mixed& param) noexcept {
-  if (!param.is_array() && !param.is_string()) [[unlikely]] {
-    kphp::log::warning("invalid parameter: expected to be string or array");
-    return false;
-  }
-  return true;
-}
-
-} // namespace regex_impl_
-
 using regexp = string;
 
 // === preg_match =================================================================================
@@ -133,12 +121,13 @@ template<class F>
 kphp::coro::task<Optional<string>> f$preg_replace_callback(mixed pattern, F callback, string subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
                                                            Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {},
                                                            int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
-  if (!regex_impl_::valid_preg_replace_mixed(pattern)) [[unlikely]] {
+  if (pattern.is_object()) [[unlikely]] {
+    kphp::log::warning("invalid pattern: object could not be converted to string");
     co_return Optional<string>{};
   }
 
-  if (pattern.is_string()) {
-    co_return co_await f$preg_replace_callback(std::move(pattern.as_string()), std::move(callback), std::move(subject), limit, opt_count, flags);
+  if (!pattern.is_array()) {
+    co_return co_await f$preg_replace_callback(pattern.to_string(), std::move(callback), std::move(subject), limit, opt_count, flags);
   }
 
   int64_t count{};
@@ -172,12 +161,17 @@ template<class F>
 kphp::coro::task<mixed> f$preg_replace_callback(mixed pattern, F callback, mixed subject, int64_t limit = kphp::regex::PREG_NOLIMIT,
                                                 Optional<std::variant<std::monostate, std::reference_wrapper<int64_t>>> opt_count = {},
                                                 int64_t flags = kphp::regex::PREG_NO_FLAGS) noexcept {
-  if (!regex_impl_::valid_preg_replace_mixed(pattern) || !regex_impl_::valid_preg_replace_mixed(subject)) [[unlikely]] {
+  if (pattern.is_object()) [[unlikely]] {
+    kphp::log::warning("invalid pattern: object could not be converted to string");
+    co_return mixed{};
+  }
+  if (subject.is_object()) [[unlikely]] {
+    kphp::log::warning("invalid subject: object could not be converted to string");
     co_return mixed{};
   }
 
-  if (subject.is_string()) {
-    co_return co_await f$preg_replace_callback(std::move(pattern), std::move(callback), std::move(subject.as_string()), limit, opt_count, flags);
+  if (!subject.is_array()) {
+    co_return co_await f$preg_replace_callback(std::move(pattern), std::move(callback), subject.to_string(), limit, opt_count, flags);
   }
 
   int64_t count{};

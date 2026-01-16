@@ -77,6 +77,7 @@ var_dump(preg_replace(array('/\da(.)/ui', '@(.)@'), '$1', array('x','a2aA', '1av
 var_dump(preg_replace(array('/[\w]+/'), array('$'), array('xyz', 'bdbd')));
 var_dump(preg_replace(array('/\s+/', '~[b-d]~'), array('$'), array('x y', 'bd bc')));
 
+var_dump(preg_replace('/a/', 42, 'a'));
 
 /*
 PHP 5.2.0 - 5.3.6 bug
