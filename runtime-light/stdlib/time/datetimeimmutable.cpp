@@ -4,13 +4,11 @@
 
 #include "runtime-light/stdlib/time/datetimeimmutable.h"
 
-#include <chrono>
 #include <cstddef>
 #include <cstring>
 #include <format>
 #include <iterator>
 #include <string_view>
-#include <type_traits>
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
@@ -18,7 +16,6 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/dateinterval.h"
 #include "runtime-light/stdlib/time/datetime.h"
-#include "runtime-light/stdlib/time/time-functions.h"
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"
 
@@ -27,7 +24,7 @@ namespace {
 class_instance<C$DateTimeImmutable> clone_immutable(const class_instance<C$DateTimeImmutable>& origin) noexcept {
   class_instance<C$DateTimeImmutable> clone;
   clone.alloc();
-  clone->time = kphp::timelib::clone(origin->time);
+  clone->time = kphp::timelib::clone_time(origin->time);
   return clone;
 }
 
@@ -50,12 +47,12 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class
   if (tzi == nullptr) {
     if (time->tz_info != nullptr) {
       tzi = time->tz_info;
-    } else if (auto* default_tzi{kphp::timelib::get_timezone_info(TimeInstanceState::get().default_timezone.c_str())}; default_tzi != nullptr) {
+    } else if (auto* default_tzi{kphp::timelib::get_cached_timezone_info(TimeInstanceState::get().default_timezone.c_str())}; default_tzi != nullptr) {
       tzi = default_tzi;
     }
   }
 
-  kphp::timelib::fill_holes_with_now(time, tzi);
+  kphp::timelib::fill_holes_with_now_info(time, tzi);
 
   self->time = std::move(time);
   return self;
@@ -64,7 +61,7 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$add(const class_instance<C$DateTimeImmutable>& self,
                                                              const class_instance<C$DateInterval>& interval) noexcept {
   auto new_date{clone_immutable(self)};
-  new_date->time = kphp::timelib::add(new_date->time, interval->rel_time);
+  new_date->time = kphp::timelib::add_time_interval(new_date->time, interval->rel_time);
   return new_date;
 }
 
@@ -80,12 +77,12 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromFormat(const 
   if (tzi == nullptr) {
     if (time->tz_info != nullptr) {
       tzi = time->tz_info;
-    } else if (auto* default_tzi{kphp::timelib::get_timezone_info(TimeInstanceState::get().default_timezone.c_str())}; default_tzi != nullptr) {
+    } else if (auto* default_tzi{kphp::timelib::get_cached_timezone_info(TimeInstanceState::get().default_timezone.c_str())}; default_tzi != nullptr) {
       tzi = default_tzi;
     }
   }
 
-  kphp::timelib::fill_holes_with_now<true>(time, tzi);
+  kphp::timelib::fill_holes_with_now_info<true>(time, tzi);
 
   class_instance<C$DateTimeImmutable> date_time;
   date_time.alloc();
@@ -96,7 +93,7 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromFormat(const 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromMutable(const class_instance<C$DateTime>& object) noexcept {
   class_instance<C$DateTimeImmutable> clone;
   clone.alloc();
-  clone->time = kphp::timelib::clone(object->time);
+  clone->time = kphp::timelib::clone_time(object->time);
   return clone;
 }
 
@@ -105,14 +102,16 @@ Optional<array<mixed>> f$DateTimeImmutable$$getLastErrors() noexcept {
 }
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$modify(const class_instance<C$DateTimeImmutable>& self, const string& modifier) noexcept {
-  auto new_date{clone_immutable(self)};
-  auto errors{kphp::timelib::modify(new_date->time, {modifier.c_str(), modifier.size()})};
-  if (errors != nullptr && errors->error_count > 0) [[unlikely]] {
+  auto [time, errors]{kphp::timelib::parse_time({modifier.c_str(), modifier.size()}, self->time)};
+  if (errors->error_count > 0) [[unlikely]] {
     kphp::log::warning("DateTimeImmutable::modify(): Failed to parse time string ({}) {}", modifier.c_str(), errors);
     TimeInstanceState::get().update_last_errors(std::move(errors));
     return {};
   }
   TimeInstanceState::get().update_last_errors(std::move(errors));
+
+  auto new_date{make_instance<C$DateTimeImmutable>()};
+  new_date->time = std::move(time);
   return new_date;
 }
 
@@ -146,7 +145,7 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setTimestamp(const clas
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$sub(const class_instance<C$DateTimeImmutable>& self,
                                                              const class_instance<C$DateInterval>& interval) noexcept {
   auto new_date{clone_immutable(self)};
-  auto expected_new_time{kphp::timelib::sub(new_date->time, interval->rel_time)};
+  auto expected_new_time{kphp::timelib::sub_time_interval(new_date->time, interval->rel_time)};
   if (!expected_new_time.has_value()) {
     kphp::log::warning("DateTimeImmutable::sub(): {}", expected_new_time.error());
     return new_date;
@@ -159,7 +158,7 @@ class_instance<C$DateInterval> f$DateTimeImmutable$$diff(const class_instance<C$
                                                          const class_instance<C$DateTimeInterface>& target_object, bool absolute) noexcept {
   class_instance<C$DateInterval> interval;
   interval.alloc();
-  interval->rel_time = kphp::timelib::diff(self->time, target_object.get()->time, absolute);
+  interval->rel_time = kphp::timelib::get_time_interval(self->time, target_object.get()->time, absolute);
   return interval;
 }
 

@@ -35,7 +35,7 @@ class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string
   }
   class_instance<C$DateInterval> date_interval;
   date_interval.alloc();
-  date_interval->rel_time = kphp::timelib::clone(time->relative);
+  date_interval->rel_time = kphp::timelib::clone_time_interval(time);
   return date_interval;
 }
 

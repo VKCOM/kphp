@@ -49,7 +49,7 @@ time_offset_t construct_time_offset(const kphp::timelib::time_t& t) noexcept {
 std::pair<time_t, error_container_t> parse_time(std::string_view time_sv) noexcept {
   timelib_error_container* errors{};
   time_t time{(kphp::memory::libc_alloc_guard{},
-               timelib_strtotime(time_sv.data(), time_sv.size(), std::addressof(errors), timelib_builtin_db(), kphp::timelib::get_timezone_info))};
+               timelib_strtotime(time_sv.data(), time_sv.size(), std::addressof(errors), timelib_builtin_db(), kphp::timelib::get_cached_timezone_info))};
   if (errors->error_count != 0) [[unlikely]] {
     return {nullptr, error_container_t{errors}};
   }
@@ -59,8 +59,8 @@ std::pair<time_t, error_container_t> parse_time(std::string_view time_sv) noexce
 
 std::pair<time_t, error_container_t> parse_time(std::string_view time_sv, const char* format) noexcept {
   timelib_error_container* err{nullptr};
-  time_t t{(kphp::memory::libc_alloc_guard{},
-            timelib_parse_from_format(format, time_sv.data(), time_sv.size(), std::addressof(err), timelib_builtin_db(), kphp::timelib::get_timezone_info))};
+  time_t t{(kphp::memory::libc_alloc_guard{}, timelib_parse_from_format(format, time_sv.data(), time_sv.size(), std::addressof(err), timelib_builtin_db(),
+                                                                        kphp::timelib::get_cached_timezone_info))};
 
   if (err && err->error_count) {
     return {nullptr, error_container_t{err}};
@@ -104,15 +104,15 @@ time_t add(const kphp::timelib::time_t& t, timelib_rel_time& interval) noexcept 
   return new_time;
 }
 
-rel_time_t clone(timelib_rel_time& rt) noexcept {
-  return rel_time_t{(kphp::memory::libc_alloc_guard{}, timelib_rel_time_clone(std::addressof(rt)))};
+rel_time_t clone_time_interval(const time_t& t) noexcept {
+  return rel_time_t{(kphp::memory::libc_alloc_guard{}, timelib_rel_time_clone(std::addressof(t->relative)))};
 }
 
-time_t clone(const kphp::timelib::time_t& t) noexcept {
+time_t clone_time(const kphp::timelib::time_t& t) noexcept {
   return time_t{(kphp::memory::libc_alloc_guard{}, timelib_time_clone(t.get()))};
 }
 
-rel_time_t diff(const kphp::timelib::time_t& time1, const kphp::timelib::time_t& time2, bool absolute) noexcept {
+rel_time_t get_time_interval(const kphp::timelib::time_t& time1, const kphp::timelib::time_t& time2, bool absolute) noexcept {
   kphp::memory::libc_alloc_guard{}, timelib_update_ts(time1.get(), nullptr);
   kphp::memory::libc_alloc_guard{}, timelib_update_ts(time2.get(), nullptr);
 
@@ -121,22 +121,6 @@ rel_time_t diff(const kphp::timelib::time_t& time1, const kphp::timelib::time_t&
     diff->invert = 0;
   }
   return diff;
-}
-
-std::string_view date_full_day_name(timelib_sll y, timelib_sll m, timelib_sll d) noexcept {
-  timelib_sll day_of_week{timelib_day_of_week(y, m, d)};
-  if (day_of_week < 0) {
-    return "Unknown";
-  }
-  return DAY_FULL_NAMES[day_of_week];
-}
-
-std::string_view date_short_day_name(timelib_sll y, timelib_sll m, timelib_sll d) noexcept {
-  timelib_sll day_of_week{timelib_day_of_week(y, m, d)};
-  if (day_of_week < 0) {
-    return "Unknown";
-  }
-  return DAY_SHORT_NAMES[day_of_week];
 }
 
 int64_t get_timestamp(const kphp::timelib::time_t& t) noexcept {
@@ -154,22 +138,6 @@ void set_timestamp(const kphp::timelib::time_t& t, int64_t timestamp) noexcept {
   kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(t.get(), static_cast<timelib_sll>(timestamp));
   kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
   t->us = 0;
-}
-
-std::string_view english_suffix(timelib_sll number) noexcept {
-  if (number >= 10 && number <= 19) {
-    return "th";
-  } else {
-    switch (number % 10) {
-    case 1:
-      return "st";
-    case 2:
-      return "nd";
-    case 3:
-      return "rd";
-    }
-  }
-  return "th";
 }
 
 int64_t get_offset(const kphp::timelib::time_t& t) noexcept {
@@ -191,16 +159,16 @@ int64_t get_offset(const kphp::timelib::time_t& t) noexcept {
   return 0;
 }
 
-timelib_tzinfo* get_timezone_info(const char* timezone) noexcept {
+timelib_tzinfo* get_cached_timezone_info(const char* timezone) noexcept {
   int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-  auto* tzinfo{kphp::timelib::get_timezone_info(timezone, timelib_builtin_db(), std::addressof(errc))};
+  auto* tzinfo{kphp::timelib::get_cached_timezone_info(timezone, timelib_builtin_db(), std::addressof(errc))};
   if (tzinfo == nullptr) [[unlikely]] {
     kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", timezone, timelib_get_error_message(errc));
   }
   return tzinfo;
 }
 
-timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb, int* errc) noexcept {
+timelib_tzinfo* get_cached_timezone_info(const char* timezone, const timelib_tzdb* tzdb, int* errc) noexcept {
   std::string_view timezone_view{timezone};
   auto* tzinfo{TimeImageState::get().timelib_zone_cache.get(timezone_view)};
   if (tzinfo != nullptr) {
@@ -264,7 +232,7 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
   const vk::final_action now_deleter{[now] noexcept { (kphp::memory::libc_alloc_guard{}, timelib_time_dtor(now)); }};
   string default_timezone{TimeInstanceState::get().default_timezone};
   int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-  auto* tzinfo{kphp::timelib::get_timezone_info(default_timezone.c_str(), timelib_builtin_db(), std::addressof(errc))};
+  auto* tzinfo{kphp::timelib::get_cached_timezone_info(default_timezone.c_str(), timelib_builtin_db(), std::addressof(errc))};
   if (tzinfo == nullptr) [[unlikely]] {
     kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", default_timezone.c_str(), timelib_get_error_message(errc));
     return std::nullopt;
@@ -309,51 +277,53 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
   return now->sse;
 }
 
-error_container_t modify(const kphp::timelib::time_t& t, std::string_view modifier) noexcept {
-  auto [tmp_time, errors]{parse_time(modifier)};
+std::pair<time_t, error_container_t> parse_time(std::string_view time_sv, const time_t& t) noexcept {
+  auto [tmp_time, errors]{parse_time(time_sv)};
 
   if (tmp_time == nullptr) [[unlikely]] {
-    return std::move(errors);
+    return {nullptr, std::move(errors)};
   }
 
-  std::memcpy(std::addressof(t->relative), std::addressof(tmp_time->relative), sizeof(timelib_rel_time));
-  t->have_relative = tmp_time->have_relative;
-  t->sse_uptodate = 0;
+  auto res{kphp::timelib::clone_time(t)};
+
+  std::memcpy(std::addressof(res->relative), std::addressof(tmp_time->relative), sizeof(timelib_rel_time));
+  res->have_relative = tmp_time->have_relative;
+  res->sse_uptodate = 0;
 
   if (tmp_time->y != TIMELIB_UNSET) {
-    t->y = tmp_time->y;
+    res->y = tmp_time->y;
   }
   if (tmp_time->m != TIMELIB_UNSET) {
-    t->m = tmp_time->m;
+    res->m = tmp_time->m;
   }
   if (tmp_time->d != TIMELIB_UNSET) {
-    t->d = tmp_time->d;
+    res->d = tmp_time->d;
   }
 
   if (tmp_time->h != TIMELIB_UNSET) {
-    t->h = tmp_time->h;
+    res->h = tmp_time->h;
     if (tmp_time->i != TIMELIB_UNSET) {
-      t->i = tmp_time->i;
+      res->i = tmp_time->i;
       if (tmp_time->s != TIMELIB_UNSET) {
-        t->s = tmp_time->s;
+        res->s = tmp_time->s;
       } else {
-        t->s = 0;
+        res->s = 0;
       }
     } else {
-      t->i = 0;
-      t->s = 0;
+      res->i = 0;
+      res->s = 0;
     }
   }
 
   if (tmp_time->us != TIMELIB_UNSET) {
-    t->us = tmp_time->us;
+    res->us = tmp_time->us;
   }
 
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
-  kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(t.get());
-  t->have_relative = 0;
-  std::memset(std::addressof(t->relative), 0, sizeof(t->relative));
-  return std::move(errors);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(res.get(), nullptr);
+  kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(res.get());
+  res->have_relative = 0;
+  std::memset(std::addressof(res->relative), 0, sizeof(res->relative));
+  return {std::move(res), std::move(errors)};
 }
 
 time_t now(timelib_tzinfo* tzi) noexcept {
@@ -414,7 +384,7 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view dat
   }
 
   int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-  auto* tzinfo{kphp::timelib::get_timezone_info(timezone.data(), timelib_builtin_db(), std::addressof(errc))};
+  auto* tzinfo{kphp::timelib::get_cached_timezone_info(timezone.data(), timelib_builtin_db(), std::addressof(errc))};
   if (tzinfo == nullptr) [[unlikely]] {
     kphp::log::warning("can't get timezone info: timezone -> {}, datetime -> {}, error -> {}", timezone, datetime, timelib_get_error_message(errc));
     return {};
@@ -448,5 +418,41 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view dat
 bool valid_date(int64_t year, int64_t month, int64_t day) noexcept {
   return timelib_valid_date(year, month, day);
 }
+
+namespace details {
+
+std::string_view full_day_name(timelib_sll y, timelib_sll m, timelib_sll d) noexcept {
+  timelib_sll day_of_week{timelib_day_of_week(y, m, d)};
+  if (day_of_week < 0) {
+    return "Unknown";
+  }
+  return DAY_FULL_NAMES[day_of_week];
+}
+
+std::string_view short_day_name(timelib_sll y, timelib_sll m, timelib_sll d) noexcept {
+  timelib_sll day_of_week{timelib_day_of_week(y, m, d)};
+  if (day_of_week < 0) {
+    return "Unknown";
+  }
+  return DAY_SHORT_NAMES[day_of_week];
+}
+
+std::string_view english_suffix(timelib_sll number) noexcept {
+  if (number >= 10 && number <= 19) {
+    return "th";
+  } else {
+    switch (number % 10) {
+    case 1:
+      return "st";
+    case 2:
+      return "nd";
+    case 3:
+      return "rd";
+    }
+  }
+  return "th";
+}
+
+} // namespace details
 
 } // namespace kphp::timelib
