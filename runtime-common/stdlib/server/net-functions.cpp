@@ -5,10 +5,38 @@
 #include "runtime-common/stdlib/server/net-functions.h"
 
 #include <arpa/inet.h>
+#include <cstdint>
 #include <cstdio>
+#include <cstring>
+
+#include "runtime-common/core/runtime-core.h"
 
 namespace {
 constexpr int64_t IPV4_SIZE = 25;
+}
+
+Optional<string> f$inet_pton(const string& address) noexcept {
+  int32_t address_family{};
+  int32_t size{};
+
+  if (std::strchr(address.c_str(), ':')) {
+    address_family = AF_INET6;
+    size = 16;
+  } else if (std::strchr(address.c_str(), '.')) {
+    address_family = AF_INET;
+    size = 4;
+  } else {
+    php_warning("Unrecognized address \"%s\"", address.c_str());
+    return false;
+  }
+
+  string result{static_cast<string::size_type>(size), false};
+  if (inet_pton(address_family, address.c_str(), result.buffer()) <= 0) {
+    php_warning("Unrecognized address \"%s\"", address.c_str());
+    return false;
+  }
+
+  return result;
 }
 
 Optional<int64_t> f$ip2long(const string& ip) noexcept {

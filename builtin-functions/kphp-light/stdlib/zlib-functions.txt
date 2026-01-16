@@ -6,23 +6,6 @@ define('ZLIB_ENCODING_RAW', -0x0f);
 define('ZLIB_ENCODING_DEFLATE', 0x0f);
 define('ZLIB_ENCODING_GZIP', 0x1f);
 
-function gzcompress ($str ::: string, $level ::: int = -1): string;
-
-function gzuncompress ($str ::: string): string;
-
-function gzencode ($str ::: string, $level ::: int = -1) ::: string;
-
-function gzdecode ($str ::: string) ::: string;
-
-function gzdeflate ($str ::: string, $level ::: int = -1) ::: string;
-
-function gzinflate ($str ::: string) ::: string;
-
-// ===== UNSUPPORTED =====
-
-/** @kphp-extern-func-info stub generation-required */
-function md5_file ($s ::: string, $raw_output ::: bool = false) ::: string | false;
-
 define('ZLIB_NO_FLUSH', 0);
 define('ZLIB_PARTIAL_FLUSH', 1);
 define('ZLIB_SYNC_FLUSH', 2);
@@ -37,15 +20,22 @@ define('ZLIB_RLE', 3);
 define('ZLIB_FIXED', 4);
 define('ZLIB_DEFAULT_STRATEGY', 0);
 
-/** @kphp-generate-stub-class */
-final class DeflateContext {
-    /** @kphp-extern-func-info stub generation-required */
-    private function __construct() ::: DeflateContext;
-}
+function gzcompress ($str ::: string, $level ::: int = -1): string;
 
-// todo: deflate_init php signature has type array instead mixed
-/** @kphp-extern-func-info stub generation-required */
-function deflate_init(int $encoding, mixed $options = []) ::: ?DeflateContext;
-/** @kphp-extern-func-info stub generation-required */
+function gzuncompress ($str ::: string): string;
+
+function gzencode ($str ::: string, $level ::: int = -1) ::: string;
+
+function gzdecode ($str ::: string) ::: string;
+
+function gzdeflate ($str ::: string, $level ::: int = -1) ::: string;
+
+function gzinflate ($str ::: string) ::: string;
+
+function deflate_init(int $encoding, array $options = []) ::: ?DeflateContext;
+
 function deflate_add(DeflateContext $context, string $data, int $flush_mode = ZLIB_SYNC_FLUSH) ::: string | false;
 
+final class DeflateContext {
+    private function __construct() ::: DeflateContext;
+}

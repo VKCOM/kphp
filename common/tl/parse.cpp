@@ -438,10 +438,6 @@ int tl_store_pad() {
   return 0;
 }
 
-static int get_tl_string_len(int len) {
-  return (len << 8) + 0xfe;
-}
-
 static int tl_store_string_len(int len) {
   assert(len >= 0);
   if (len < 254) {
@@ -449,7 +445,7 @@ static int tl_store_string_len(int len) {
     tl_store_raw_data_nopad(&len, 1);
   } else {
     assert(len < (1 << 24));
-    tl_store_int(get_tl_string_len(len));
+    tl_store_int((len << 8) + 0xfe);
   }
   return 0;
 }

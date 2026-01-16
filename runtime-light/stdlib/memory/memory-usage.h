@@ -22,6 +22,10 @@ inline int64_t f$memory_get_usage([[maybe_unused]] bool real_usage = false) noex
   return static_cast<int64_t>(RuntimeAllocator::get().memory_resource.get_memory_stats().memory_used);
 }
 
+inline int64_t f$memory_get_total_usage() noexcept {
+  return static_cast<int64_t>(RuntimeAllocator::get().memory_resource.get_memory_stats().real_memory_used);
+}
+
 inline array<int64_t> f$memory_get_detailed_stats() noexcept {
   const auto& stats{RuntimeAllocator::get().memory_resource.get_memory_stats()};
   return array<int64_t>({std::make_pair(string{"memory_limit"}, static_cast<int64_t>(stats.memory_limit)),

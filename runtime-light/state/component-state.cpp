@@ -13,7 +13,6 @@
 #include <sys/stat.h>
 #include <utility>
 
-#include "common/php-functions.h"
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/json-functions.h"
@@ -21,38 +20,11 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/file/resource.h"
 
-namespace {
-
-void set_reference_counter_recursive(mixed obj, ExtraRefCnt rc) noexcept {
-  switch (obj.get_type()) {
-  case mixed::type::ARRAY:
-    obj.set_reference_counter_to(rc);
-    for (const auto& it : std::as_const(obj.as_array())) {
-      set_reference_counter_recursive(it.get_key(), rc);
-      set_reference_counter_recursive(it.get_value(), rc);
-    }
-    break;
-  default:
-    obj.set_reference_counter_to(rc);
-    break;
-  }
-}
-
-} // namespace
-
 void ComponentState::parse_env() noexcept {
   for (auto i = 0; i < envc; ++i) {
     const auto [env_key, env_value]{k2::env_fetch(i)};
-
-    string key_str{env_key.get()};
-    key_str.set_reference_counter_to(ExtraRefCnt::for_global_const);
-
-    string value_str{env_value.get()};
-    value_str.set_reference_counter_to(ExtraRefCnt::for_global_const);
-
-    env.set_value(key_str, value_str);
+    env.set_value(string{env_key.get()}, string{env_value.get()});
   }
-  env.set_reference_counter_to(ExtraRefCnt::for_global_const);
 }
 
 void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view value_view) noexcept {
@@ -61,11 +33,7 @@ void ComponentState::parse_ini_arg(std::string_view key_view, std::string_view v
     return;
   }
   string key_str{std::next(key_view.data(), INI_ARG_PREFIX.size()), static_cast<string::size_type>(key_view.size() - INI_ARG_PREFIX.size())};
-  key_str.set_reference_counter_to(ExtraRefCnt::for_global_const);
-
   string value_str{value_view.data(), static_cast<string::size_type>(value_view.size())};
-  value_str.set_reference_counter_to(ExtraRefCnt::for_global_const);
-
   ini_opts.set_value(key_str, value_str);
 }
 
@@ -123,6 +91,4 @@ void ComponentState::parse_args() noexcept {
       kphp::log::warning("unexpected argument format: {}", key_view);
     }
   }
-  ini_opts.set_reference_counter_to(ExtraRefCnt::for_global_const);
-  set_reference_counter_recursive(runtime_config, ExtraRefCnt::for_global_const);
 }

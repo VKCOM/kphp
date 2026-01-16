@@ -1,4 +1,4 @@
-@ok benchmark k2_skip
+@ok benchmark
 <?php
   var_dump (php_uname());
   var_dump (php_uname('s'));

@@ -10,9 +10,12 @@
 #include <string_view>
 
 #include "common/mixin/not_copyable.h"
+#include "common/php-functions.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/allocator/allocator-state.h"
+#include "runtime-light/core/reference-counter/reference-counter-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/kml/kml-state.h"
 
 struct ComponentState final : private vk::not_copyable {
@@ -28,6 +31,13 @@ struct ComponentState final : private vk::not_copyable {
   ComponentState() noexcept {
     parse_env();
     parse_args();
+
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(ini_opts, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(ini_opts, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(env, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(env, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(runtime_config, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(runtime_config, ExtraRefCnt::for_global_const)));
   }
 
   static const ComponentState& get() noexcept {

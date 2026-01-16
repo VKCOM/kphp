@@ -80,6 +80,15 @@ void StaticInit::compile(CodeGenerator &W) const {
       W << lib->lib_namespace() << "::const_vars_init();" << NL;
     }
   }
+
+  if (G->is_output_mode_k2()) {
+    FunctionSignatureGenerator(W) << "void const_vars_set_reference_counter()" << SemicolonAndNL() << NL;
+    W << "const_vars_set_reference_counter();" << NL;
+
+    FunctionSignatureGenerator(W) << "void const_vars_check_reference_counter()" << SemicolonAndNL() << NL;
+    W << "const_vars_check_reference_counter();" << NL;
+   }
+
   W << NL;
   FunctionSignatureGenerator(W) << "void " << ShapeKeys::get_function_name() << "()" << SemicolonAndNL();
   W << ShapeKeys::get_function_name() << "();" << NL;

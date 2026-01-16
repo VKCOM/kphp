@@ -17,7 +17,9 @@
 struct tcp_rpc_nonce_packet {
   int type;
   int key_select;        /* least significant 32 bits of key to use */
-  int crypto_schema;     /* 0 = NONE, 1 = AES */
+  unsigned char crypto_schema;     /* 0 = NONE, 1 = AES */
+  unsigned char protocol_version;
+  unsigned short protocol_flags;
   int crypto_ts;
   char crypto_nonce[16];
 };
@@ -43,6 +45,7 @@ void tcp_rpc_conn_send_data (struct connection *c, int len, void *Q);
 /* in conn->custom_data */
 struct tcp_rpc_data {
   int packet_len;
+  int packet_v1_padding;
   int packet_num;
   int packet_type;
   int packet_crc32;
@@ -66,6 +69,8 @@ struct tcp_rpc_data {
 };
 
 #define	TCP_RPC_DATA(c)	((struct tcp_rpc_data *) ((c)->custom_data))
+
+static_assert(sizeof(connection_t::custom_data) >= sizeof(tcp_rpc_data));
 
 #define RPC_CRYPTO_ALLOW_UNENCRYPTED  0x00000001
 #define RPC_CRYPTO_ALLOW_ENCRYPTED    0x00000002

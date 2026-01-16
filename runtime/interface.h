@@ -106,8 +106,6 @@ __attribute__((noreturn)) void f$die(const mixed& v = 0);
 
 Optional<array<string>> f$gethostbynamel(const string& name);
 
-Optional<string> f$inet_pton(const string& address);
-
 void print(const char* s, size_t s_len);
 
 void print(const char* s);

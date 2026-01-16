@@ -135,5 +135,5 @@ private:
   enum image_kind image_kind_ { image_kind::invalid };
   enum instance_kind instance_kind_ { instance_kind::invalid };
 
-  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(256U * 1024U * 1024U);
+  static constexpr auto INIT_INSTANCE_ALLOCATOR_SIZE = static_cast<size_t>(128U * 1024U * 1024U);
 };

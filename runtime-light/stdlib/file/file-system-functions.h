@@ -17,10 +17,12 @@
 #include <utility>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/file/file-system-state.h"
 #include "runtime-light/stdlib/file/resource.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 
@@ -82,26 +84,26 @@ inline resource f$fopen(const string& filename, const string& mode, [[maybe_unus
   std::string_view filename_view{filename.c_str(), filename.size()};
   if (filename_view == kphp::fs::STDIN_NAME) {
     auto expected{kphp::fs::stdinput::open()};
-    return expected ? make_instance<kphp::fs::stdinput>(*std::move(expected)) : class_instance<kphp::fs::stdinput>{};
+    return expected ? resource{make_instance<kphp::fs::stdinput>(*std::move(expected))} : resource{false};
   } else if (filename_view == kphp::fs::STDOUT_NAME) {
     auto expected{kphp::fs::stdoutput::open()};
-    return expected ? make_instance<kphp::fs::stdoutput>(*std::move(expected)) : class_instance<kphp::fs::stdoutput>{};
+    return expected ? resource{make_instance<kphp::fs::stdoutput>(*std::move(expected))} : resource{false};
   } else if (filename_view == kphp::fs::STDERR_NAME) {
     auto expected{kphp::fs::stderror::open()};
-    return expected ? make_instance<kphp::fs::stderror>(*std::move(expected)) : class_instance<kphp::fs::stderror>{};
+    return expected ? resource{make_instance<kphp::fs::stderror>(*std::move(expected))} : resource{false};
   } else if (filename_view == kphp::fs::INPUT_NAME) {
     auto expected{kphp::fs::input::open()};
-    return expected ? make_instance<kphp::fs::input>(*std::move(expected)) : class_instance<kphp::fs::input>{};
+    return expected ? resource{make_instance<kphp::fs::input>(*std::move(expected))} : resource{false};
   } else if (filename_view.starts_with(kphp::fs::UDP_SCHEME_PREFIX) || filename_view.starts_with(kphp::fs::TCP_SCHEME_PREFIX)) {
     auto expected{kphp::fs::socket::open(filename_view)};
-    return expected ? make_instance<kphp::fs::socket>(*std::move(expected)) : class_instance<kphp::fs::socket>{};
+    return expected ? resource{make_instance<kphp::fs::socket>(*std::move(expected))} : resource{false};
   } else if (!filename_view.contains(kphp::fs::SCHEME_DELIMITER)) { // not a '*://*' pattern, so it must be a file
     auto expected{kphp::fs::file::open(filename_view, {mode.c_str(), mode.size()})};
-    return expected ? make_instance<kphp::fs::file>(*std::move(expected)) : class_instance<kphp::fs::file>{};
+    return expected ? resource{make_instance<kphp::fs::file>(*std::move(expected))} : resource{false};
   }
 
   kphp::log::warning("unexpected resource in fopen -> {}", filename.c_str());
-  return {};
+  return resource{false};
 }
 
 inline kphp::coro::task<bool> f$fclose(resource stream) noexcept {
@@ -191,9 +193,31 @@ inline resource f$stream_socket_client(const string& address, std::optional<std:
 }
 
 inline Optional<string> f$file_get_contents(const string& stream) noexcept {
-  if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, {}), {})}; !sync_resource.is_null()) {
+  if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, FileSystemImageState::get().READ_MODE), {})};
+      !sync_resource.is_null()) {
     auto expected{sync_resource.get()->get_contents()};
     return expected ? Optional<string>{*std::move(expected)} : Optional<string>{false};
   }
   return false;
 }
+
+inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& content_var, int64_t flags = 0) noexcept {
+  string content{content_var.is_array() ? f$implode(string{}, content_var.to_array()) : content_var.to_string()};
+
+  constexpr int64_t FILE_APPEND_FLAG{1};
+  if (flags & ~FILE_APPEND_FLAG) {
+    kphp::log::warning("flags other, than FILE_APPEND are not supported in file_put_contents");
+    flags &= FILE_APPEND_FLAG;
+  }
+
+  const auto& file_system_lib_constants{FileSystemImageState::get()};
+  const string& mode{((flags & FILE_APPEND_FLAG) != 0) ? file_system_lib_constants.APPEND_MODE : file_system_lib_constants.WRITE_MODE};
+  if (auto sync_resource{from_mixed<class_instance<kphp::fs::sync_resource>>(f$fopen(stream, mode), {})}; !sync_resource.is_null()) {
+    std::span<const char> data_span{content.c_str(), content.size()};
+    auto expected{sync_resource.get()->write(std::as_bytes(data_span))};
+    return expected ? Optional<int64_t>{static_cast<int64_t>(*std::move(expected))} : Optional<int64_t>{false};
+  }
+  return false;
+}
+
+mixed f$getimagesize(const string& name) noexcept;

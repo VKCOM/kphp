@@ -35,8 +35,6 @@ inline double f$cosh(double v);
 
 inline double f$acosh(double v);
 
-inline double f$fmod(double x, double y);
-
 inline double f$sinh(double v);
 
 inline double f$asin(double v);
@@ -59,13 +57,6 @@ double f$cosh(double v) {
 
 double f$acosh(double v) {
   return acosh(v);
-}
-
-double f$fmod(double x, double y) {
-  if (fabs(x) > 1e100 || fabs(y) < 1e-100) {
-    return 0.0;
-  }
-  return fmod(x, y);
 }
 
 double f$sinh(double v) {

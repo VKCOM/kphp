@@ -1403,7 +1403,7 @@ static int rpc_write(struct rpc_connection *c, long long qid, double timeout, bo
 /* }}} */
 
 static int rpc_nonce_execute(struct rpc_server *server, char *answer, int answer_len) { /* {{{ */
-  if (answer_len != sizeof(struct rpc_nonce) || server->inbound_packet_num != -1) {
+  if (answer_len >= 1024 || answer_len < sizeof(struct rpc_nonce) || server->inbound_packet_num != -1) {
     rpc_server_seterror(server, "Bad nonce packet", 0);
     return -1;
   }
@@ -1464,7 +1464,8 @@ static int rpc_handshake_send(struct rpc_server *server, double timeout) { /* {{
 static int rpc_nonce_send(struct rpc_server *server, double timeout) { /* {{{ */
   struct rpc_nonce S = {
     .key_select = 0,
-    .crypto_schema = 0
+    .crypto_schema = 0,
+    .protocol_version = 1 // ask for latest version we support
   };
 
   //server->outbuf = buffer_create (sizeof (S));
@@ -1534,7 +1535,7 @@ static int rpc_read(struct rpc_server *server, int force_block_read, double time
     assert (rpc_read_in(server, (char *)tmp, 12, timeout) == 12);
     int len = tmp[0];
 
-    if (len < 20 || (len & 3) || len > RPC_MAX_QUERY_LEN) {
+    if (len < 20 || len > RPC_MAX_QUERY_LEN) {
       rpc_server_seterror(server, "Invalid length of answer", 0);
       END_TIMER (rpc_read);
       return -1;
@@ -2267,6 +2268,28 @@ int do_rpc_fetch_int(char **error) { /* {{{ */
   }
 }
 
+
+int do_rpc_fetch_byte(char **error) { /* {{{ */
+  ADD_CNT (fetch);
+  START_TIMER (fetch);
+  if (!inbuf) {
+    *error = strdup("Trying to fetch from empty buffer\n");
+    return 0;
+  }
+  assert (inbuf->magic == RPC_BUFFER_MAGIC);
+
+  int value = 0;
+  if (buffer_read_byte(inbuf, &value) < 0) {
+    *error = strdup("Can not fetch byte from inbuf\n");
+    END_TIMER (fetch);
+    return 0;
+  } else {
+    END_TIMER (fetch);
+    *error = 0;
+    return value;
+  }
+}
+
 /* }}} */
 
 int do_rpc_lookup_int(char **error) { /* {{{ */
@@ -2396,6 +2419,28 @@ int do_rpc_fetch_string(char **value) { /* {{{ */
   int value_len;
   if (buffer_read_string(inbuf, &value_len, const_cast<const char **>(value)) < 0) {
     *value = strdup("Can not fetch string from inbuf\n");
+    END_TIMER (fetch);
+    return -1;
+  } else {
+    END_TIMER (fetch);
+    return value_len;
+  }
+}
+
+/* }}} */
+
+int do_rpc_fetch_string2(char **value) { /* {{{ */
+  ADD_CNT (fetch);
+  START_TIMER (fetch);
+  if (!inbuf) {
+    *value = strdup("Trying fetch from empty buffer\n");
+    END_TIMER (fetch);
+    return -1;
+  }
+  assert (inbuf->magic == RPC_BUFFER_MAGIC);
+  int value_len = 0;
+  if (buffer_read_string2(inbuf, &value_len, const_cast<const char **>(value)) < 0) {
+    *value = strdup("Can not fetch TL2 string from inbuf\n");
     END_TIMER (fetch);
     return -1;
   } else {
@@ -2728,6 +2773,21 @@ void php_rpc_store_int(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 
 /* }}} */
 
+void php_rpc_store_byte(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
+  ADD_CNT (parse);
+  START_TIMER (parse);
+  VK_ZVAL_API_ARRAY z;
+  if (zend_get_parameters_array_ex (1, &z) == FAILURE) {
+    END_TIMER (parse);
+    RETURN_FALSE;
+  }
+  END_TIMER (parse);
+  do_rpc_store_byte(parse_zend_long(VK_ZVAL_ARRAY_TO_API_P(z)));
+  RETURN_TRUE;
+}
+
+/* }}} */
+
 void php_rpc_store_long(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   ADD_CNT (parse);
   START_TIMER (parse);
@@ -2756,6 +2816,24 @@ void php_rpc_store_string(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   char *s = parse_zend_string(VK_ZVAL_ARRAY_TO_API_P(z), &l);
   END_TIMER (parse);
   do_rpc_store_string(s, l);
+  RETURN_TRUE;
+}
+
+/* }}} */
+
+void php_rpc_store_string2(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
+  ADD_CNT (parse);
+  START_TIMER (parse);
+  VK_ZVAL_API_ARRAY z;
+  if (zend_get_parameters_array_ex (1, &z) == FAILURE) {
+    END_TIMER (parse);
+    RETURN_FALSE;
+  }
+
+  int l = 0;
+  char *s = parse_zend_string(VK_ZVAL_ARRAY_TO_API_P(z), &l);
+  END_TIMER (parse);
+  do_rpc_store_string2(s, l);
   RETURN_TRUE;
 }
 
@@ -2881,6 +2959,20 @@ void php_rpc_fetch_int(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 
 /* }}} */
 
+void php_rpc_fetch_byte(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
+  char *t = 0;
+  int value = do_rpc_fetch_byte(&t);
+  if (!t) {
+    RETURN_LONG (value);
+  } else {
+    php_error_docref(NULL, E_WARNING, t);
+    free(t);
+    RETURN_FALSE;
+  }
+}
+
+/* }}} */
+
 void php_rpc_fetch_lookup_int(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   char *t;
   int value = do_rpc_lookup_int(&t);
@@ -2976,6 +3068,21 @@ void php_rpc_fetch_float(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 void php_rpc_fetch_string(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   char *value;
   int value_len = do_rpc_fetch_string(&value);
+  if (value_len < 0) {
+    php_error_docref(NULL, E_WARNING, value);
+    free(value);
+    RETURN_FALSE;
+  } else {
+    ADD_RMALLOC (value_len + 1);
+    VK_RETURN_STRINGL_DUP (value, value_len);
+  }
+}
+
+/* }}} */
+
+void php_rpc_fetch_string2(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
+  char *value = 0;
+  int value_len = do_rpc_fetch_string2(&value);
   if (value_len < 0) {
     php_error_docref(NULL, E_WARNING, value);
     free(value);

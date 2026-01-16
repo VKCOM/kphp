@@ -777,31 +777,6 @@ Optional<array<string>> f$gethostbynamel(const string& name) {
   return result;
 }
 
-Optional<string> f$inet_pton(const string& address) {
-  int af, size;
-  if (strchr(address.c_str(), ':')) {
-    af = AF_INET6;
-    size = 16;
-  } else if (strchr(address.c_str(), '.')) {
-    af = AF_INET;
-    size = 4;
-  } else {
-    php_warning("Unrecognized address \"%s\"", address.c_str());
-    return false;
-  }
-
-  char buffer[17] = {0};
-  dl::enter_critical_section(); // OK
-  if (inet_pton(af, address.c_str(), buffer) <= 0) {
-    dl::leave_critical_section();
-    php_warning("Unrecognized address \"%s\"", address.c_str());
-    return false;
-  }
-  dl::leave_critical_section();
-
-  return string(buffer, size);
-}
-
 extern bool run_once;
 
 void print(const char* s, size_t s_len) {

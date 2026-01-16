@@ -79,7 +79,7 @@ auto exec(std::string_view cmd, const output_handler_type& output_handler = {}) 
 
 template<typename F>
 bool f$register_kphp_on_oom_callback(F&& /*callback*/) {
-  kphp::log::error("call to unsupported function");
+  kphp::log::warning("called stub register_kphp_on_oom_callback");
 }
 
 template<typename F>
@@ -198,6 +198,16 @@ inline kphp::coro::task<> f$usleep(int64_t microseconds) noexcept {
   co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield_for(std::chrono::microseconds{microseconds}));
 }
 
+inline kphp::coro::task<> f$sleep(int64_t seconds) noexcept {
+  if (seconds <= 0) [[unlikely]] {
+    kphp::log::warning("value of seconds ({}) must be positive", seconds);
+    co_return;
+  }
+
+  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield_for(std::chrono::seconds{seconds}));
+  co_return;
+}
+
 inline Optional<string> f$exec(const string& cmd, mixed& output, std::optional<std::reference_wrapper<int64_t>> exit_code = {}) noexcept {
   string last_line{};
   const auto output_handler{[&last_line, &output_mixed = output](std::span<std::byte> output_bytes) noexcept {
@@ -237,12 +247,10 @@ inline Optional<string> f$exec(const string& cmd) noexcept {
 }
 
 inline string f$get_engine_version() noexcept {
-  kphp::log::warning("called stub get_engine_version");
   return {};
 }
 
 inline string f$get_kphp_cluster_name() noexcept {
-  kphp::log::warning("called stub get_kphp_cluster_name");
   return string{"adm512"};
 }
 

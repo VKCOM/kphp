@@ -22,6 +22,10 @@ function stream_socket_client ($url ::: string, &$error_number ::: mixed = TODO,
 function fopen ($filename ::: string, $mode ::: string): mixed;
 /** @kphp-extern-func-info interruptible */
 function fwrite ($stream ::: mixed, $text ::: string): int | false;
+/** @kphp-extern-func-info interruptible */
+function vfprintf ($stream, $format ::: string, $args ::: array) ::: int | false;
+/** @kphp-extern-func-info interruptible */
+function fprintf ($stream, $format ::: string, ...$args) ::: int | false;
  /** @kphp-extern-func-info interruptible */
 function fread ($stream ::: mixed, $length ::: int): string | false;
 /** @kphp-extern-func-info interruptible */
@@ -31,6 +35,7 @@ function fclose ($stream ::: mixed): bool;
 function unlink ($name ::: string) ::: bool;
 
 function file_get_contents ($name ::: string) ::: string | false;
+function file_put_contents ($name ::: string, $content ::: mixed, $flags ::: int = 0) ::: int | false;
 
 function printf ($format ::: string, ...$args) ::: int;
 
@@ -50,8 +55,6 @@ function copy ($from ::: string, $to ::: string) ::: bool;
 function dirname ($name ::: string) ::: string;
 /** @kphp-extern-func-info stub generation-required */
 function file ($name ::: string) ::: string[] | false;
-/** @kphp-extern-func-info stub generation-required */
-function file_put_contents ($name ::: string, $content ::: mixed, $flags ::: int = 0) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */
 function filectime ($name ::: string) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */
@@ -99,6 +102,7 @@ function stream_context_create ($options ::: mixed = array()) ::: mixed;
 
 
 /** @kphp-extern-func-info stub */
-function fprintf ($stream, $format ::: string, ...$args) ::: int;
-/** @kphp-extern-func-info stub */
 function fputcsv ($stream, $fields ::: array, $delimiter = ",", $enclosure = "\"", $escape = "\\") ::: int | false;
+
+/** @kphp-extern-func-info stub generation-required */
+function md5_file ($s ::: string, $raw_output ::: bool = false) ::: string | false;

@@ -10,8 +10,11 @@ prepend(
   diagnostics/contextual-logger.cpp
   diagnostics/error-handling-state.cpp
   diagnostics/php-assert.cpp
+  file/file-system-state.cpp
+  file/file-system-functions.cpp
   file/resource.cpp
   fork/fork-state.cpp
+  fork/fork-storage.cpp
   fork/wait-queue-state.cpp
   instance-cache/instance-cache-state.cpp
   job-worker/job-worker-api.cpp

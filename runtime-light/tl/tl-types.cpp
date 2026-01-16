@@ -7,6 +7,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <utility>
 
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -25,48 +26,48 @@ bool string::fetch(tl::fetcher& tlf) noexcept {
   uint8_t size_len{};
   uint64_t string_len{};
   switch (first_byte) {
-  case LARGE_STRING_MAGIC: {
-    if (tlf.remaining() < LARGE_STRING_SIZE_LEN) [[unlikely]] {
+  case HUGE_STRING_MAGIC: {
+    if (tlf.remaining() < HUGE_STRING_SIZE_LEN) [[unlikely]] {
       return false;
     }
-    size_len = LARGE_STRING_SIZE_LEN + 1;
-    const auto first{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>())};
-    const auto second{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 8};
-    const auto third{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 16};
-    const auto fourth{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 24};
-    const auto fifth{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 32};
-    const auto sixth{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 40};
-    const auto seventh{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 48};
-    string_len = first | second | third | fourth | fifth | sixth | seventh;
+    size_len = HUGE_STRING_SIZE_LEN + 1;
+    auto len_bytes{*tlf.fetch_bytes(HUGE_STRING_SIZE_LEN)};
+    string_len = static_cast<uint64_t>(len_bytes[0]) | (static_cast<uint64_t>(len_bytes[1]) << 8) | (static_cast<uint64_t>(len_bytes[2]) << 16) |
+                 (static_cast<uint64_t>(len_bytes[3]) << 24) | (static_cast<uint64_t>(len_bytes[4]) << 32) | (static_cast<uint64_t>(len_bytes[5]) << 40) |
+                 (static_cast<uint64_t>(len_bytes[6]) << 48);
 
-    const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
-    tlf.adjust(total_len_with_padding - size_len);
-    kphp::log::warning("large strings aren't supported (length = {})", string_len);
-    return false;
+    if (string_len <= MEDIUM_STRING_MAX_LEN) [[unlikely]] {
+      kphp::log::warning("large string's length is less than (1 << 24) - 1 (length = {})", string_len);
+      return false;
+    }
+    break;
   }
   case MEDIUM_STRING_MAGIC: {
     if (tlf.remaining() < MEDIUM_STRING_SIZE_LEN) [[unlikely]] {
       return false;
     }
     size_len = MEDIUM_STRING_SIZE_LEN + 1;
-    const auto first{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>())};
-    const auto second{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 8};
-    const auto third{static_cast<uint64_t>(*tlf.fetch_trivial<uint8_t>()) << 16};
-    string_len = first | second | third;
+    auto len_bytes{*tlf.fetch_bytes(MEDIUM_STRING_SIZE_LEN)};
+    string_len = static_cast<uint64_t>(len_bytes[0]) | (static_cast<uint64_t>(len_bytes[1]) << 8) | (static_cast<uint64_t>(len_bytes[2]) << 16);
 
-    if (string_len <= SMALL_STRING_MAX_LEN) [[unlikely]] {
+    if (string_len <= TINY_STRING_MAX_LEN) [[unlikely]] {
       kphp::log::warning("long string's length is less than 254 (length = {})", string_len);
+      return false;
     }
     break;
   }
   default: {
-    size_len = SMALL_STRING_SIZE_LEN;
+    size_len = TINY_STRING_SIZE_LEN;
     string_len = static_cast<uint64_t>(first_byte);
     break;
   }
   }
+  // Alignment on 4 is required
   const auto total_len_with_padding{(size_len + string_len + 3) & ~static_cast<uint64_t>(3)};
-  if (tlf.remaining() < total_len_with_padding - size_len) [[unlikely]] {
+
+  if (auto required{total_len_with_padding - size_len}; required > tlf.remaining()) [[unlikely]] {
+    kphp::log::warning("not enough space in buffer for string (length = {}) fetching, required {} bytes, remain {} bytes", string_len, required,
+                       tlf.remaining());
     return false;
   }
 
@@ -79,21 +80,27 @@ void string::store(tl::storer& tls) const noexcept {
   const char* str_buf{value.data()};
   size_t str_len{value.size()};
   uint8_t size_len{};
-  if (str_len <= SMALL_STRING_MAX_LEN) {
-    size_len = SMALL_STRING_SIZE_LEN;
+  if (str_len <= TINY_STRING_MAX_LEN) {
+    size_len = TINY_STRING_SIZE_LEN;
     tls.store_trivial<uint8_t>(str_len);
   } else if (str_len <= MEDIUM_STRING_MAX_LEN) {
     size_len = MEDIUM_STRING_SIZE_LEN + 1;
     tls.store_trivial<uint8_t>(MEDIUM_STRING_MAGIC);
-    tls.store_trivial<uint8_t>(str_len & 0xff);
-    tls.store_trivial<uint8_t>((str_len >> 8) & 0xff);
-    tls.store_trivial<uint8_t>((str_len >> 16) & 0xff);
+    std::array<std::byte, MEDIUM_STRING_SIZE_LEN> len_bytes{static_cast<std::byte>(str_len & 0xff), static_cast<std::byte>((str_len >> 8) & 0xff),
+                                                            static_cast<std::byte>((str_len >> 16) & 0xff)};
+    tls.store_bytes(len_bytes);
+  } else if (str_len <= HUGE_STRING_MAX_LEN) {
+    size_len = HUGE_STRING_SIZE_LEN + 1;
+    tls.store_trivial<uint8_t>(HUGE_STRING_MAGIC);
+    std::array<std::byte, HUGE_STRING_SIZE_LEN> len_bytes{static_cast<std::byte>(str_len & 0xff),         static_cast<std::byte>((str_len >> 8) & 0xff),
+                                                          static_cast<std::byte>((str_len >> 16) & 0xff), static_cast<std::byte>((str_len >> 24) & 0xff),
+                                                          static_cast<std::byte>((str_len >> 32) & 0xff), static_cast<std::byte>((str_len >> 40) & 0xff),
+                                                          static_cast<std::byte>((str_len >> 48) & 0xff)};
+    tls.store_bytes(len_bytes);
   } else {
-    kphp::log::warning("large strings aren't supported");
-    size_len = SMALL_STRING_SIZE_LEN;
-    str_len = 0;
-    tls.store_trivial<uint8_t>(str_len);
+    kphp::log::error("string length exceeds maximum allowed length: max allowed -> {}, actual -> {}", HUGE_STRING_MAX_LEN, str_len);
   }
+
   tls.store_bytes({reinterpret_cast<const std::byte*>(str_buf), str_len});
 
   const auto total_len{size_len + str_len};
@@ -142,28 +149,28 @@ bool CertInfoItem::fetch(tl::fetcher& tlf) noexcept {
 bool rpcInvokeReqExtra::fetch(tl::fetcher& tlf) noexcept {
   bool ok{flags.fetch(tlf)};
   if (ok && static_cast<bool>(flags.value & WAIT_BINLOG_POS_FLAG)) {
-    ok &= opt_wait_binlog_pos.emplace().fetch(tlf);
+    ok = ok && opt_wait_binlog_pos.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & STRING_FORWARD_KEYS_FLAG)) {
-    ok &= opt_string_forward_keys.emplace().fetch(tlf);
+    ok = ok && opt_string_forward_keys.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & INT_FORWARD_KEYS_FLAG)) {
-    ok &= opt_int_forward_keys.emplace().fetch(tlf);
+    ok = ok && opt_int_forward_keys.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & STRING_FORWARD_FLAG)) {
-    ok &= opt_string_forward.emplace().fetch(tlf);
+    ok = ok && opt_string_forward.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & INT_FORWARD_FLAG)) {
-    ok &= opt_int_forward.emplace().fetch(tlf);
+    ok = ok && opt_int_forward.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & CUSTOM_TIMEOUT_MS_FLAG)) {
-    ok &= opt_custom_timeout_ms.emplace().fetch(tlf);
+    ok = ok && opt_custom_timeout_ms.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & SUPPORTED_COMPRESSION_VERSION_FLAG)) {
-    ok &= opt_supported_compression_version.emplace().fetch(tlf);
+    ok = ok && opt_supported_compression_version.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & RANDOM_DELAY_FLAG)) {
-    ok &= opt_random_delay.emplace().fetch(tlf);
+    ok = ok && opt_random_delay.emplace().fetch(tlf);
   }
 
   return_binlog_pos = static_cast<bool>(flags.value & RETURN_BINLOG_POS_FLAG);
@@ -239,3 +246,63 @@ size_t rpcReqResultExtra::footprint() const noexcept {
 }
 
 } // namespace tl
+
+namespace tl2 {
+
+bool string::fetch(tl::fetcher& tlf) noexcept {
+  uint8_t first_byte{};
+  if (const auto opt_first_byte{tlf.fetch_trivial<uint8_t>()}; opt_first_byte) [[likely]] {
+    first_byte = *opt_first_byte;
+  } else {
+    return false;
+  }
+
+  uint64_t string_len{};
+  switch (first_byte) {
+  case HUGE_STRING_MAGIC: {
+    if (tlf.remaining() < HUGE_STRING_SIZE_LEN) [[unlikely]] {
+      return false;
+    }
+    // we allow non-canonical length to speed up some rare implementations
+    string_len = *tlf.fetch_trivial<uint64_t>();
+    break;
+  }
+  case MEDIUM_STRING_MAGIC: {
+    if (tlf.remaining() < MEDIUM_STRING_SIZE_LEN) [[unlikely]] {
+      return false;
+    }
+    string_len = MEDIUM_STRING_MAGIC + *tlf.fetch_trivial<uint16_t>();
+    break;
+  }
+  default: {
+    string_len = static_cast<uint64_t>(first_byte);
+    break;
+  }
+  }
+
+  if (auto remaining{tlf.remaining()}; remaining < string_len) [[unlikely]] {
+    kphp::log::warning("not enough space in buffer to fetch string: required {} bytes, remain {} bytes", string_len, remaining);
+    return false;
+  }
+
+  value = {reinterpret_cast<const char*>(std::next(tlf.view().data(), tlf.pos())), static_cast<size_t>(string_len)};
+  tlf.adjust(string_len);
+  return true;
+}
+
+void string::store(tl::storer& tls) const noexcept {
+  const size_t str_len{value.size()};
+
+  if (str_len <= TINY_STRING_MAX_LEN) {
+    tls.store_trivial<uint8_t>(str_len);
+  } else if (str_len <= MEDIUM_STRING_MAX_LEN) {
+    tls.store_trivial<uint8_t>(MEDIUM_STRING_MAGIC);
+    tls.store_trivial<uint16_t>(str_len - MEDIUM_STRING_MAGIC);
+  } else {
+    tls.store_trivial<uint8_t>(HUGE_STRING_MAGIC);
+    tls.store_trivial<uint64_t>(str_len);
+  }
+  tls.store_bytes({reinterpret_cast<const std::byte*>(value.data()), str_len});
+}
+
+} // namespace tl2
