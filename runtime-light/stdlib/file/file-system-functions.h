@@ -16,7 +16,9 @@
 #include <unistd.h>
 #include <utility>
 
+#include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/array/array-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/coroutine/task.h"
@@ -61,7 +63,7 @@ inline string f$basename(const string& path, const string& suffix = {}) noexcept
 
 inline Optional<int64_t> f$filesize(const string& filename) noexcept {
   struct stat stat {};
-  if (auto errc{k2::stat({filename.c_str(), filename.size()}, std::addressof(stat))}; errc != k2::errno_ok) [[unlikely]] {
+  if (auto stat_result{k2::stat({filename.c_str(), filename.size()}, std::addressof(stat))}; !stat_result.has_value()) [[unlikely]] {
     return false;
   }
   return static_cast<int64_t>(stat.st_size);
@@ -199,6 +201,57 @@ inline Optional<string> f$file_get_contents(const string& stream) noexcept {
     return expected ? Optional<string>{*std::move(expected)} : Optional<string>{false};
   }
   return false;
+}
+
+inline Optional<array<string>> f$file(const string& name) noexcept {
+  struct stat stat_buf {};
+
+  auto expected_file{kphp::fs::file::open(name.c_str(), "r")};
+  if (!expected_file.has_value()) {
+    return false;
+  }
+  if (!k2::stat(name.c_str(), std::addressof(stat_buf)).has_value()) {
+    return false;
+  }
+  if (!S_ISREG(stat_buf.st_mode)) {
+    kphp::log::warning("regular file expected as first argument in function file, \"{}\" is given", name.c_str());
+    return false;
+  }
+
+  const size_t size{static_cast<size_t>(stat_buf.st_size)};
+  if (size > string::max_size()) {
+    kphp::log::warning("file \"{}\" is too large", name.c_str());
+    return false;
+  }
+
+  kphp::stl::vector<std::byte, kphp::memory::script_allocator> file_content;
+  file_content.resize(size);
+  {
+    auto file{std::move(*expected_file)};
+    if (auto expected_read_result{file.read(file_content)}; !expected_read_result.has_value() || *expected_read_result < size) {
+      return false;
+    }
+  }
+
+  array<string> result;
+  int32_t prev{-1};
+  for (size_t i{0}; i < size; i++) {
+    if (static_cast<char>(file_content[i]) == '\n' || i + 1 == size) {
+      result.push_back(string{reinterpret_cast<char*>(file_content.data()) + prev + 1, static_cast<string::size_type>(i - prev)});
+      prev = i;
+    }
+  }
+
+  return result;
+}
+
+inline bool f$is_file(const string& name) noexcept {
+  struct stat stat_buf {};
+  // TODO: the semantics in PHP are different: PHP expects stat
+  if (!k2::lstat(name.c_str(), std::addressof(stat_buf)).has_value()) {
+    return false;
+  }
+  return S_ISREG(stat_buf.st_mode);
 }
 
 inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& content_var, int64_t flags = 0) noexcept {

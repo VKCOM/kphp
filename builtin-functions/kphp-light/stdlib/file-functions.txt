@@ -45,8 +45,11 @@ function vsprintf ($format ::: string, $args ::: array) ::: string;
 
 function file_exists ($name ::: string) ::: bool;
 
-// === UNSUPPORTED ===
+function file ($name ::: string) ::: string[] | false;
 
+function is_file ($name ::: string) ::: bool;
+
+// === UNSUPPORTED ===
 /** @kphp-extern-func-info stub generation-required */
 function chmod ($name ::: string, $mode ::: int) ::: bool;
 /** @kphp-extern-func-info stub generation-required */
@@ -54,15 +57,11 @@ function copy ($from ::: string, $to ::: string) ::: bool;
 /** @kphp-extern-func-info stub generation-required */
 function dirname ($name ::: string) ::: string;
 /** @kphp-extern-func-info stub generation-required */
-function file ($name ::: string) ::: string[] | false;
-/** @kphp-extern-func-info stub generation-required */
 function filectime ($name ::: string) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */
 function filemtime ($name ::: string) ::: int | false;
 /** @kphp-extern-func-info stub generation-required */
 function is_dir ($name ::: string) ::: bool;
-/** @kphp-extern-func-info stub generation-required */
-function is_file ($name ::: string) ::: bool;
 /** @kphp-extern-func-info stub generation-required */
 function is_readable ($name ::: string) ::: bool;
 /** @kphp-extern-func-info stub generation-required */
