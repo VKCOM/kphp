@@ -18,7 +18,8 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
   auto expected{kphp::timelib::parse_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
   if (!expected.has_value()) [[unlikely]] {
     string err_msg;
-    std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "DateTime::__construct(): Failed to parse time string ({}) {}", datetime.c_str(), expected.error());
+    std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "DateTime::__construct(): Failed to parse time string ({}) {}", datetime.c_str(),
+                   expected.error());
     TimeInstanceState::get().update_last_errors(std::move(expected.error()));
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};

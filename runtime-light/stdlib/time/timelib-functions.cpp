@@ -80,8 +80,8 @@ std::expected<rel_time, error_container> parse_interval(std::string_view interva
   int r{}; // it's intentionally declared as 'int' since timelib_strtointerval accepts 'int'
   timelib_error_container* errors{nullptr};
 
-  kphp::memory::libc_alloc_guard{},
-      timelib_strtointerval(interval_sv.data(), interval_sv.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r), std::addressof(errors));
+  kphp::memory::libc_alloc_guard{}, timelib_strtointerval(interval_sv.data(), interval_sv.size(), std::addressof(b), std::addressof(e), std::addressof(p),
+                                                          std::addressof(r), std::addressof(errors));
 
   if (errors->error_count > 0) {
     kphp::timelib::details::rel_time_destructor{}(p);
@@ -101,8 +101,8 @@ std::expected<rel_time, error_container> parse_interval(std::string_view interva
   return std::unexpected{error_container{errors}};
 }
 
-time add(const kphp::timelib::time& t, timelib_rel_time& interval) noexcept {
-  time new_time{(kphp::memory::libc_alloc_guard{}, timelib_add(t.get(), std::addressof(interval)))};
+time add_time_interval(const kphp::timelib::time& t, const kphp::timelib::rel_time& interval) noexcept {
+  time new_time{(kphp::memory::libc_alloc_guard{}, timelib_add(t.get(), interval.get()))};
   return new_time;
 }
 
@@ -372,12 +372,12 @@ void set_time(const kphp::timelib::time& t, int64_t h, int64_t i, int64_t s, int
   kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
 }
 
-std::expected<time, std::string_view> sub(const kphp::timelib::time& t, timelib_rel_time& interval) noexcept {
-  if (interval.have_special_relative) {
+std::expected<time, std::string_view> sub_time_interval(const kphp::timelib::time& t, const kphp::timelib::rel_time& interval) noexcept {
+  if (interval->have_special_relative) {
     return std::unexpected{"Only non-special relative time specifications are supported for subtraction"};
   }
 
-  time new_time{(kphp::memory::libc_alloc_guard{}, timelib_sub(t.get(), std::addressof(interval)))};
+  time new_time{(kphp::memory::libc_alloc_guard{}, timelib_sub(t.get(), interval.get()))};
   return new_time;
 }
 
