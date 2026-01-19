@@ -551,20 +551,19 @@ std::optional<std::reference_wrapper<const pcre2::regex>> compile_regex(info& re
 }
 
 kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator> collect_group_names(const pcre2::regex& re) noexcept {
-  // vector of group names
-  kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator> group_names;
+  kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator> names;
   // initialize an array of strings to hold group names
-  group_names.resize(re.capture_count() + 1);
+  names.resize(re.capture_count() + 1);
 
   if (re.name_count() == 0) {
-    return group_names;
+    return names;
   }
 
-  for (auto group_name : re.group_names()) {
-    group_names[group_name.index] = group_name;
+  for (const auto& entry : re.group_names()) {
+    names[entry.index] = entry;
   }
 
-  return group_names;
+  return names;
 }
 
 } // namespace details

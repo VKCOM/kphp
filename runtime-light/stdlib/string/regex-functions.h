@@ -150,6 +150,18 @@ bool valid_regex_flags(int64_t flags, Args... supported_flags) noexcept {
 
 std::optional<std::reference_wrapper<const pcre2::regex>> compile_regex(info& regex_info) noexcept;
 
+/**
+ * Collects all named capture groups and maps them to their group numbers.
+ *
+ * This function extracts the identifier for each named capture group and places
+ * it into a vector where the index exactly matches the group's capture number.
+ *
+ * @param re The compiled PCRE2 regular expression to inspect.
+ * @return A vector of group_name objects indexed by their group number.
+ *         Index 0 (the whole match) and any unnamed group numbers will
+ *         contain default/empty group_name values.
+ * @noexcept
+ */
 kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator> collect_group_names(const pcre2::regex& re) noexcept;
 
 template<std::invocable<array<string>> F>
