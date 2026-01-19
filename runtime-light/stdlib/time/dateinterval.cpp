@@ -4,21 +4,54 @@
 
 #include "runtime-light/stdlib/time/dateinterval.h"
 
+#include <cstddef>
 #include <format>
+#include <functional>
 #include <iterator>
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
+namespace {
+
+struct string_back_insert_iterator {
+  using iterator_category = std::output_iterator_tag;
+  using value_type = void;
+  using difference_type = ptrdiff_t;
+  using pointer = void;
+  using reference = void;
+
+  std::reference_wrapper<string> ref;
+
+  string_back_insert_iterator& operator=(char value) noexcept {
+    ref.get().push_back(value);
+    return *this;
+  }
+
+  string_back_insert_iterator& operator*() noexcept {
+    return *this;
+  }
+
+  string_back_insert_iterator& operator++() noexcept {
+    return *this;
+  }
+
+  string_back_insert_iterator operator++(int) noexcept { // NOLINT
+    return *this;
+  }
+};
+
+} // namespace
+
 class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<C$DateInterval>& self, const string& duration) noexcept {
   auto expected_rel_time{kphp::timelib::parse_interval({duration.c_str(), duration.size()})};
   if (!expected_rel_time.has_value()) [[unlikely]] {
     string err_msg{"DateInterval::__construct(): "};
     if (expected_rel_time.error()->error_count > 0) {
-      format_to(std::back_inserter(err_msg), "Unknown or bad format ({})", duration.c_str());
+      std::format_to(string_back_insert_iterator{.ref = err_msg}, "Unknown or bad format ({})", duration.c_str());
     } else {
-      format_to(std::back_inserter(err_msg), "Failed to parse interval ({})", duration.c_str());
+      std::format_to(string_back_insert_iterator{.ref = err_msg}, "Failed to parse interval ({})", duration.c_str());
     }
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};
@@ -41,6 +74,6 @@ class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string
 
 string f$DateInterval$$format(const class_instance<C$DateInterval>& self, const string& format) noexcept {
   string str;
-  kphp::timelib::format_to(std::back_inserter(str), {format.c_str(), format.size()}, self->rel_time);
+  kphp::timelib::format_to(string_back_insert_iterator{.ref = str}, {format.c_str(), format.size()}, self->rel_time);
   return str;
 }
