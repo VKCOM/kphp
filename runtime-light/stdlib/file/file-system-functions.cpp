@@ -317,7 +317,7 @@ std::optional<image_info> get_png_info(size_t read_size, std::span<unsigned char
 mixed f$getimagesize(const string& name) noexcept {
   // TODO implement k2::fstat, with fd as parameter
   struct stat stat_buf {};
-  if (k2::stat({name.c_str(), name.size()}, std::addressof(stat_buf)) != k2::errno_ok) {
+  if (!k2::stat({name.c_str(), name.size()}, std::addressof(stat_buf)).has_value()) {
     return false;
   }
 

@@ -210,7 +210,7 @@ inline Optional<array<string>> f$file(const string& name) noexcept {
   if (!expected_file.has_value()) {
     return false;
   }
-  if (!k2::stat(name.c_str(), std::addressof(stat_buf)).has_value()) {
+  if (!k2::stat({name.c_str(), name.size()}, std::addressof(stat_buf)).has_value()) {
     return false;
   }
   if (!S_ISREG(stat_buf.st_mode)) {
