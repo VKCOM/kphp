@@ -132,7 +132,7 @@ public:
     }
   };
 
-  group_name_range names() const noexcept {
+  group_name_range group_names() const noexcept {
     uint32_t count{};
     uint32_t entry_size{};
     PCRE2_SPTR8 table{};

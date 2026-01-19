@@ -560,7 +560,7 @@ kphp::stl::vector<kphp::pcre2::group_name, kphp::memory::script_allocator> colle
     return group_names;
   }
 
-  for (auto group_name : re.names()) {
+  for (auto group_name : re.group_names()) {
     group_names[group_name.index] = group_name;
   }
 
