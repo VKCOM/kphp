@@ -15,14 +15,15 @@
 class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTime>& self, const string& datetime,
                                                    const class_instance<C$DateTimeZone>& timezone) noexcept {
   const auto& str_to_parse{datetime.empty() ? TimeImageState::get().NOW_STR : datetime};
-  auto [time, errors]{kphp::timelib::parse_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
-  if (time == nullptr) [[unlikely]] {
+  auto expected{kphp::timelib::parse_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
+  if (!expected.has_value()) [[unlikely]] {
     string err_msg;
-    std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "DateTime::__construct(): Failed to parse time string ({}) {}", datetime.c_str(), errors);
-    TimeInstanceState::get().update_last_errors(std::move(errors));
+    std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "DateTime::__construct(): Failed to parse time string ({}) {}", datetime.c_str(), expected.error());
+    TimeInstanceState::get().update_last_errors(std::move(expected.error()));
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};
   }
+  auto& [time, errors]{*expected};
   TimeInstanceState::get().update_last_errors(std::move(errors));
 
   timelib_tzinfo* tzi{!timezone.is_null() ? timezone->tzi : nullptr};
@@ -46,11 +47,12 @@ class_instance<C$DateTime> f$DateTime$$add(const class_instance<C$DateTime>& sel
 }
 
 class_instance<C$DateTime> f$DateTime$$createFromFormat(const string& format, const string& datetime, const class_instance<C$DateTimeZone>& timezone) noexcept {
-  auto [time, errors]{kphp::timelib::parse_time({datetime.c_str(), datetime.size()}, format.c_str())};
-  if (time == nullptr) [[unlikely]] {
-    TimeInstanceState::get().update_last_errors(std::move(errors));
+  auto expected{kphp::timelib::parse_time({datetime.c_str(), datetime.size()}, format.c_str())};
+  if (!expected.has_value()) [[unlikely]] {
+    TimeInstanceState::get().update_last_errors(std::move(expected.error()));
     return {};
   }
+  auto& [time, errors]{*expected};
   TimeInstanceState::get().update_last_errors(std::move(errors));
   timelib_tzinfo* tzi{!timezone.is_null() ? timezone->tzi : nullptr};
   if (tzi == nullptr) {
@@ -81,12 +83,13 @@ Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept {
 }
 
 class_instance<C$DateTime> f$DateTime$$modify(const class_instance<C$DateTime>& self, const string& modifier) noexcept {
-  auto [time, errors]{kphp::timelib::parse_time({modifier.c_str(), modifier.size()}, self->time)};
-  if (errors->error_count > 0) [[unlikely]] {
-    kphp::log::warning("DateTime::modify(): Failed to parse time string ({}) {}", modifier.c_str(), errors);
-    TimeInstanceState::get().update_last_errors(std::move(errors));
+  auto expected{kphp::timelib::parse_time({modifier.c_str(), modifier.size()}, self->time)};
+  if (!expected.has_value()) [[unlikely]] {
+    kphp::log::warning("DateTime::modify(): Failed to parse time string ({}) {}", modifier.c_str(), expected.error());
+    TimeInstanceState::get().update_last_errors(std::move(expected.error()));
     return {};
   }
+  auto& [time, errors]{*expected};
   TimeInstanceState::get().update_last_errors(std::move(errors));
 
   self->time = std::move(time);
