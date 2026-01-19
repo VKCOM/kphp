@@ -17,6 +17,13 @@
 #include "runtime-light/stdlib/string/pcre2-functions.h"
 
 struct RegexInstanceState final : private vk::not_copyable {
+  struct compiled_regex {
+    // PCRE compile options of the regex
+    uint32_t compile_options{};
+    // compiled regex
+    kphp::pcre2::regex regex_code;
+  };
+
 private:
   using hasher_type = decltype([](const string& s) noexcept { return static_cast<size_t>(s.hash()); });
 
@@ -27,13 +34,6 @@ private:
 public:
   static constexpr size_t OVECTOR_SIZE{MAX_SUBPATTERNS_COUNT + 1};
   static constexpr size_t REPLACE_BUFFER_SIZE{size_t{16U} * size_t{1024U}};
-
-  struct compiled_regex {
-    // PCRE compile options of the regex
-    uint32_t compile_options{};
-    // compiled regex
-    kphp::pcre2::regex regex_code;
-  };
 
   const kphp::pcre2::general_context regex_pcre2_general_context;
   const kphp::pcre2::compile_context compile_context;
