@@ -84,7 +84,7 @@ std::expected<rel_time, error_container> parse_interval(std::string_view format)
       timelib_strtointerval(format.data(), format.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r), std::addressof(errors));
 
   if (errors->error_count > 0) {
-    rel_time_destructor{}(p);
+    kphp::timelib::details::rel_time_destructor{}(p);
     return std::unexpected{error_container{errors}};
   }
 
