@@ -72,10 +72,12 @@ class regex {
     }
 
     kphp::pcre2::group_name operator*() const noexcept {
-      enum class index_bytes { upper, lower, count };
+      static constexpr size_t upper = 0;
+      static constexpr size_t lower = 1;
+      static constexpr size_t count = 2;
 
-      const auto index{static_cast<size_t>(m_ptr[static_cast<size_t>(index_bytes::upper)] << 8 | m_ptr[static_cast<size_t>(index_bytes::lower)])};
-      const auto* name_ptr{reinterpret_cast<const char*>(std::next(m_ptr, static_cast<size_t>(index_bytes::count)))};
+      const auto index{static_cast<size_t>(m_ptr[upper] << 8 | m_ptr[lower])};
+      const auto* name_ptr{reinterpret_cast<const char*>(std::next(m_ptr, count))};
       return {.name = std::string_view{name_ptr}, .index = index};
     }
 
