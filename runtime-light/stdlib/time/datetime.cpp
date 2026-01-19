@@ -4,46 +4,13 @@
 
 #include "runtime-light/stdlib/time/datetime.h"
 
-#include <cstddef>
 #include <format>
-#include <functional>
-#include <iterator>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/iterator.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"
-
-namespace {
-
-struct string_back_insert_iterator {
-  using iterator_category = std::output_iterator_tag;
-  using value_type = void;
-  using difference_type = ptrdiff_t;
-  using pointer = void;
-  using reference = void;
-
-  std::reference_wrapper<string> ref;
-
-  string_back_insert_iterator& operator=(char value) noexcept {
-    ref.get().push_back(value);
-    return *this;
-  }
-
-  string_back_insert_iterator& operator*() noexcept {
-    return *this;
-  }
-
-  string_back_insert_iterator& operator++() noexcept {
-    return *this;
-  }
-
-  string_back_insert_iterator operator++(int) noexcept { // NOLINT
-    return *this;
-  }
-};
-
-} // namespace
 
 class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTime>& self, const string& datetime,
                                                    const class_instance<C$DateTimeZone>& timezone) noexcept {
@@ -51,7 +18,7 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
   auto [time, errors]{kphp::timelib::parse_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
   if (time == nullptr) [[unlikely]] {
     string err_msg;
-    std::format_to(string_back_insert_iterator{.ref = err_msg}, "DateTime::__construct(): Failed to parse time string ({}) {}", datetime.c_str(), errors);
+    std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "DateTime::__construct(): Failed to parse time string ({}) {}", datetime.c_str(), errors);
     TimeInstanceState::get().update_last_errors(std::move(errors));
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};
@@ -167,7 +134,7 @@ class_instance<C$DateInterval> f$DateTime$$diff(const class_instance<C$DateTime>
 
 string f$DateTime$$format(const class_instance<C$DateTime>& self, const string& format) noexcept {
   string str;
-  kphp::timelib::format_to(string_back_insert_iterator{.ref = str}, {format.c_str(), format.size()}, self->time);
+  kphp::timelib::format_to(kphp::string_back_insert_iterator{.ref = str}, {format.c_str(), format.size()}, self->time);
   return str;
 }
 

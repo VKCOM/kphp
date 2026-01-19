@@ -4,13 +4,11 @@
 
 #include "runtime-light/stdlib/time/datetimeimmutable.h"
 
-#include <cstddef>
 #include <format>
-#include <functional>
-#include <iterator>
 #include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/iterator.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/dateinterval.h"
@@ -19,33 +17,6 @@
 #include "runtime-light/stdlib/time/timelib-functions.h"
 
 namespace {
-
-struct string_back_insert_iterator {
-  using iterator_category = std::output_iterator_tag;
-  using value_type = void;
-  using difference_type = ptrdiff_t;
-  using pointer = void;
-  using reference = void;
-
-  std::reference_wrapper<string> ref;
-
-  string_back_insert_iterator& operator=(char value) noexcept {
-    ref.get().push_back(value);
-    return *this;
-  }
-
-  string_back_insert_iterator& operator*() noexcept {
-    return *this;
-  }
-
-  string_back_insert_iterator& operator++() noexcept {
-    return *this;
-  }
-
-  string_back_insert_iterator operator++(int) noexcept { // NOLINT
-    return *this;
-  }
-};
 
 class_instance<C$DateTimeImmutable> clone_immutable(const class_instance<C$DateTimeImmutable>& origin) noexcept {
   class_instance<C$DateTimeImmutable> clone;
@@ -62,7 +33,7 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class
   auto [time, errors]{kphp::timelib::parse_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
   if (time == nullptr) [[unlikely]] {
     string err_msg;
-    std::format_to(string_back_insert_iterator{.ref = err_msg}, "DateTimeImmutable::__construct(): Failed to parse time string ({}) {}", datetime.c_str(),
+    std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "DateTimeImmutable::__construct(): Failed to parse time string ({}) {}", datetime.c_str(),
                    errors);
     TimeInstanceState::get().update_last_errors(std::move(errors));
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
@@ -191,7 +162,7 @@ class_instance<C$DateInterval> f$DateTimeImmutable$$diff(const class_instance<C$
 
 string f$DateTimeImmutable$$format(const class_instance<C$DateTimeImmutable>& self, const string& format) noexcept {
   string str;
-  kphp::timelib::format_to(string_back_insert_iterator{.ref = str}, {format.c_str(), format.size()}, self->time);
+  kphp::timelib::format_to(kphp::string_back_insert_iterator{.ref = str}, {format.c_str(), format.size()}, self->time);
   return str;
 }
 
