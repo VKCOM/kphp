@@ -71,7 +71,7 @@ std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kp
   return std::make_pair(std::move(t), error_container{err});
 }
 
-std::expected<rel_time, error_container> parse_interval(std::string_view format) noexcept {
+std::expected<rel_time, error_container> parse_interval(std::string_view interval_sv) noexcept {
   timelib_time* b{nullptr};
   timelib_time* e{nullptr};
   vk::final_action e_deleter{[e]() { kphp::memory::libc_alloc_guard{}, free(e); }};
@@ -81,7 +81,7 @@ std::expected<rel_time, error_container> parse_interval(std::string_view format)
   timelib_error_container* errors{nullptr};
 
   kphp::memory::libc_alloc_guard{},
-      timelib_strtointerval(format.data(), format.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r), std::addressof(errors));
+      timelib_strtointerval(interval_sv.data(), interval_sv.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r), std::addressof(errors));
 
   if (errors->error_count > 0) {
     kphp::timelib::details::rel_time_destructor{}(p);
