@@ -7,6 +7,7 @@
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+// correctly include PCRE2 lib
 #include "runtime-light/stdlib/string/regex-include.h"
 
 namespace {
