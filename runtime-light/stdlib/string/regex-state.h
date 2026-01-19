@@ -22,18 +22,18 @@ private:
 
   static constexpr size_t MAX_SUBPATTERNS_COUNT{512};
 
+  kphp::stl::unordered_map<string, compiled_regex, kphp::memory::script_allocator, hasher_type> regex_pcre2_code_cache;
+
+public:
+  static constexpr size_t OVECTOR_SIZE{MAX_SUBPATTERNS_COUNT + 1};
+  static constexpr size_t REPLACE_BUFFER_SIZE{size_t{16U} * size_t{1024U}};
+
   struct compiled_regex {
     // PCRE compile options of the regex
     uint32_t compile_options{};
     // compiled regex
     kphp::pcre2::regex regex_code;
   };
-
-  kphp::stl::unordered_map<string, compiled_regex, kphp::memory::script_allocator, hasher_type> regex_pcre2_code_cache;
-
-public:
-  static constexpr size_t OVECTOR_SIZE{MAX_SUBPATTERNS_COUNT + 1};
-  static constexpr size_t REPLACE_BUFFER_SIZE{size_t{16U} * size_t{1024U}};
 
   const kphp::pcre2::regex_general_context_t regex_pcre2_general_context;
   const kphp::pcre2::regex_compile_context_t compile_context;
