@@ -66,7 +66,7 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$add(const class_instanc
 
 class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromFormat(const string& format, const string& datetime,
                                                                           const class_instance<C$DateTimeZone>& timezone) noexcept {
-  auto expected{kphp::timelib::parse_time({datetime.c_str(), datetime.size()}, format.c_str())};
+  auto expected{kphp::timelib::parse_time({datetime.c_str(), datetime.size()}, {format.c_str(), format.size()})};
   if (!expected.has_value()) [[unlikely]] {
     TimeInstanceState::get().update_last_errors(std::move(expected.error()));
     return {};

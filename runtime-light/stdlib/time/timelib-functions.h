@@ -66,7 +66,7 @@ kphp::timelib::time add_time_interval(const kphp::timelib::time& t, const kphp::
 std::expected<kphp::timelib::time, std::string_view> sub_time_interval(const kphp::timelib::time& t, const kphp::timelib::rel_time& interval) noexcept;
 
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::rel_time& t) noexcept;
+OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib::rel_time& t) noexcept;
 
 /* === time_offset === */
 kphp::timelib::time_offset construct_time_offset(const kphp::timelib::time& t) noexcept;
@@ -74,7 +74,7 @@ kphp::timelib::time_offset construct_time_offset(const kphp::timelib::time& t) n
 /* === time === */
 std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view time_sv) noexcept;
 std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view time_sv,
-                                                                                                                         const char* format) noexcept;
+                                                                                                                         std::string_view format_sv) noexcept;
 std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view time_sv,
                                                                                                                          const kphp::timelib::time& t) noexcept;
 kphp::timelib::time clone_time(const kphp::timelib::time& t) noexcept;
@@ -83,7 +83,7 @@ kphp::timelib::time now(timelib_tzinfo* tzi) noexcept;
 int64_t get_timestamp(const kphp::timelib::time& t) noexcept;
 int64_t get_offset(const kphp::timelib::time& t) noexcept;
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time& t) noexcept;
+OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib::time& t) noexcept;
 
 void set_timestamp(const kphp::timelib::time& t, int64_t timestamp) noexcept;
 void set_date(const kphp::timelib::time& t, int64_t y, int64_t m, int64_t d) noexcept;
@@ -111,7 +111,7 @@ int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::op
                  std::optional<int64_t> yea) noexcept;
 std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
                               std::optional<int64_t> day, std::optional<int64_t> yea) noexcept;
-std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime, int64_t now_timestamp) noexcept;
+std::optional<int64_t> strtotime(std::string_view timezone, std::string_view datetime_sv, int64_t now_timestamp) noexcept;
 
 /* === helpers ===*/
 bool valid_date(int64_t year, int64_t month, int64_t day) noexcept;
@@ -125,8 +125,8 @@ std::string_view short_day_name(timelib_sll y, timelib_sll m, timelib_sll d) noe
 std::string_view english_suffix(timelib_sll number) noexcept;
 
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time& t, bool localtime) noexcept {
-  if (format.empty()) {
+OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib::time& t, bool localtime) noexcept {
+  if (format_sv.empty()) {
     return out;
   }
 
@@ -136,9 +136,9 @@ OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::t
   timelib_sll isoweek{};
   timelib_sll isoyear{};
 
-  for (std::size_t i{0}; i < format.size(); ++i) {
+  for (std::size_t i{0}; i < format_sv.size(); ++i) {
     bool rfc_colon{false};
-    switch (format[i]) {
+    switch (format_sv[i]) {
     // day
     case 'd':
       out = std::format_to(out, "{:02}", t->d);
@@ -302,13 +302,13 @@ OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::t
       break;
 
     case '\\':
-      if (i < format.size()) {
+      if (i < format_sv.size()) {
         ++i;
       }
       [[fallthrough]];
 
     default:
-      *out++ = format[i];
+      *out++ = format_sv[i];
       break;
     }
   }
@@ -319,19 +319,19 @@ OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::t
 } // namespace details
 
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time& t) noexcept {
-  return kphp::timelib::details::format_to<OutputIt>(out, format, t, t->is_localtime);
+OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib::time& t) noexcept {
+  return kphp::timelib::details::format_to<OutputIt>(out, format_sv, t, t->is_localtime);
 }
 
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::rel_time& t) noexcept {
-  if (format.empty()) {
+OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib::rel_time& t) noexcept {
+  if (format_sv.empty()) {
     return out;
   }
 
   bool have_format_spec{};
 
-  for (auto c : format) {
+  for (auto c : format_sv) {
     if (have_format_spec) {
       switch (c) {
       case 'Y':

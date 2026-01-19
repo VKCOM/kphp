@@ -59,10 +59,10 @@ std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kp
 }
 
 std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view time_sv,
-                                                                                                                         const char* format) noexcept {
+                                                                                                                         std::string_view format_sv) noexcept {
   timelib_error_container* err{nullptr};
-  time t{(kphp::memory::libc_alloc_guard{}, timelib_parse_from_format(format, time_sv.data(), time_sv.size(), std::addressof(err), timelib_builtin_db(),
-                                                                      kphp::timelib::get_cached_timezone_info))};
+  time t{(kphp::memory::libc_alloc_guard{}, timelib_parse_from_format(format_sv.data(), time_sv.data(), time_sv.size(), std::addressof(err),
+                                                                      timelib_builtin_db(), kphp::timelib::get_cached_timezone_info))};
 
   if (err && err->error_count) {
     return std::unexpected{error_container{err}};
