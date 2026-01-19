@@ -50,48 +50,50 @@ struct group_name {
   size_t index{};
 };
 
-class group_name_iterator {
-  const PCRE2_UCHAR8* m_ptr{nullptr};
-  size_t m_entry_size{};
-
-public:
-  using iterator_category = std::forward_iterator_tag;
-  using value_type = kphp::pcre2::group_name;
-  using difference_type = std::ptrdiff_t;
-  using pointer = kphp::pcre2::group_name*;
-  using reference = kphp::pcre2::group_name;
-
-  group_name_iterator() = delete;
-  group_name_iterator(const PCRE2_UCHAR8* current_entry, size_t entry_size) noexcept
-      : m_ptr{current_entry},
-        m_entry_size{entry_size} {}
-
-  kphp::pcre2::group_name operator*() const noexcept {
-    enum class index_bytes { upper, lower, count };
-
-    const auto index{static_cast<size_t>(m_ptr[static_cast<size_t>(index_bytes::upper)] << 8 | m_ptr[static_cast<size_t>(index_bytes::lower)])};
-    const auto* name_ptr{reinterpret_cast<const char*>(std::next(m_ptr, static_cast<size_t>(index_bytes::count)))};
-    return {.name = std::string_view{name_ptr}, .index = index};
-  }
-
-  group_name_iterator& operator++() noexcept {
-    std::advance(m_ptr, m_entry_size);
-    return *this;
-  }
-
-  group_name_iterator operator++(int) noexcept { // NOLINT
-    group_name_iterator tmp{*this};
-    ++*this;
-    return tmp;
-  }
-
-  bool operator==(const group_name_iterator& other) const noexcept {
-    return m_ptr == other.m_ptr;
-  }
-};
-
 class regex {
   kphp::pcre2::code m_code;
+
+  class group_name_iterator {
+    const PCRE2_UCHAR8* m_ptr{nullptr};
+    size_t m_entry_size{};
+
+  public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = kphp::pcre2::group_name;
+    using difference_type = std::ptrdiff_t;
+    using pointer = kphp::pcre2::group_name*;
+    using reference = kphp::pcre2::group_name;
+
+    group_name_iterator() = delete;
+    group_name_iterator(const PCRE2_UCHAR8* current_entry, size_t entry_size) noexcept
+        : m_ptr{current_entry},
+          m_entry_size{entry_size} {
+      kphp::log::assertion(current_entry != nullptr);
+    }
+
+    kphp::pcre2::group_name operator*() const noexcept {
+      enum class index_bytes { upper, lower, count };
+
+      const auto index{static_cast<size_t>(m_ptr[static_cast<size_t>(index_bytes::upper)] << 8 | m_ptr[static_cast<size_t>(index_bytes::lower)])};
+      const auto* name_ptr{reinterpret_cast<const char*>(std::next(m_ptr, static_cast<size_t>(index_bytes::count)))};
+      return {.name = std::string_view{name_ptr}, .index = index};
+    }
+
+    group_name_iterator& operator++() noexcept {
+      std::advance(m_ptr, m_entry_size);
+      return *this;
+    }
+
+    group_name_iterator operator++(int) noexcept { // NOLINT
+      group_name_iterator tmp{*this};
+      ++*this;
+      return tmp;
+    }
+
+    bool operator==(const group_name_iterator& other) const noexcept {
+      return m_ptr == other.m_ptr;
+    }
+  };
 
 public:
   friend class match_view;
@@ -103,8 +105,8 @@ public:
     PCRE2_SIZE erroroffset{};
 
     kphp::pcre2::code re{pcre2_compile_8(reinterpret_cast<PCRE2_SPTR>(pattern.data()), pattern.length(), options, std::addressof(errorcode),
-                                                 std::addressof(erroroffset), ctx.get()),
-                                 pcre2_code_free_8};
+                                         std::addressof(erroroffset), ctx.get()),
+                         pcre2_code_free_8};
 
     if (!re) {
       return std::unexpected{kphp::pcre2::compile_error{{.code = errorcode}, erroroffset}};
@@ -113,13 +115,13 @@ public:
   }
 
   struct group_name_range {
-    kphp::pcre2::group_name_iterator b;
-    kphp::pcre2::group_name_iterator e;
+    group_name_iterator b;
+    group_name_iterator e;
 
-    kphp::pcre2::group_name_iterator begin() const noexcept {
+    group_name_iterator begin() const noexcept {
       return b;
     }
-    kphp::pcre2::group_name_iterator end() const noexcept {
+    group_name_iterator end() const noexcept {
       return e;
     }
 
@@ -267,8 +269,8 @@ class matcher {
   bool m_is_utf{false};
 
 public:
-  matcher(const kphp::pcre2::regex& re, std::string_view subject, size_t match_from, const kphp::pcre2::match_context& ctx,
-          const kphp::pcre2::match_data& data, uint32_t options = 0) noexcept
+  matcher(const kphp::pcre2::regex& re, std::string_view subject, size_t match_from, const kphp::pcre2::match_context& ctx, const kphp::pcre2::match_data& data,
+          uint32_t options = 0) noexcept
       : m_re{re},
         m_subject{subject},
         m_ctx{ctx},
