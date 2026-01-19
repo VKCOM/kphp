@@ -31,11 +31,11 @@ inline int64_t skip_utf8_subsequent_bytes(size_t offset, const std::string_view 
 
 } // namespace details
 
-using regex_general_context_t = std::unique_ptr<pcre2_general_context_8, decltype(std::addressof(pcre2_general_context_free_8))>;
-using regex_compile_context_t = std::unique_ptr<pcre2_compile_context_8, decltype(std::addressof(pcre2_compile_context_free_8))>;
-using regex_match_context_t = std::unique_ptr<pcre2_match_context_8, decltype(std::addressof(pcre2_match_context_free_8))>;
-using regex_match_data_t = std::unique_ptr<pcre2_match_data_8, decltype(std::addressof(pcre2_match_data_free_8))>;
-using regex_code_t = std::unique_ptr<pcre2_code_8, decltype(std::addressof(pcre2_code_free_8))>;
+using general_context = std::unique_ptr<pcre2_general_context_8, decltype(std::addressof(pcre2_general_context_free_8))>;
+using compile_context = std::unique_ptr<pcre2_compile_context_8, decltype(std::addressof(pcre2_compile_context_free_8))>;
+using match_context = std::unique_ptr<pcre2_match_context_8, decltype(std::addressof(pcre2_match_context_free_8))>;
+using match_data = std::unique_ptr<pcre2_match_data_8, decltype(std::addressof(pcre2_match_data_free_8))>;
+using code = std::unique_ptr<pcre2_code_8, decltype(std::addressof(pcre2_code_free_8))>;
 
 struct error {
   int32_t code{};
@@ -91,18 +91,18 @@ public:
 };
 
 class regex {
-  kphp::pcre2::regex_code_t m_code;
+  kphp::pcre2::code m_code;
 
 public:
   friend class match_view;
   friend class matcher;
 
-  static std::expected<regex, kphp::pcre2::compile_error> compile(std::string_view pattern, const kphp::pcre2::regex_compile_context_t& ctx,
+  static std::expected<regex, kphp::pcre2::compile_error> compile(std::string_view pattern, const kphp::pcre2::compile_context& ctx,
                                                                   uint32_t options = 0) noexcept {
     int32_t errorcode{};
     PCRE2_SIZE erroroffset{};
 
-    kphp::pcre2::regex_code_t re{pcre2_compile_8(reinterpret_cast<PCRE2_SPTR>(pattern.data()), pattern.length(), options, std::addressof(errorcode),
+    kphp::pcre2::code re{pcre2_compile_8(reinterpret_cast<PCRE2_SPTR>(pattern.data()), pattern.length(), options, std::addressof(errorcode),
                                                  std::addressof(erroroffset), ctx.get()),
                                  pcre2_code_free_8};
 
@@ -164,19 +164,19 @@ public:
   }
 
 private:
-  explicit regex(kphp::pcre2::regex_code_t&& code) noexcept
+  explicit regex(kphp::pcre2::code&& code) noexcept
       : m_code{std::move(code)} {}
 };
 
 class match_view {
   const kphp::pcre2::regex& m_re;
   std::string_view m_subject;
-  const kphp::pcre2::regex_match_data_t& m_match_data;
+  const kphp::pcre2::match_data& m_match_data;
   uint32_t m_match_options{};
   size_t m_num_groups{};
 
 public:
-  match_view(const regex& re, std::string_view subject, const kphp::pcre2::regex_match_data_t& match_data, uint32_t match_options, size_t num_groups) noexcept
+  match_view(const regex& re, std::string_view subject, const kphp::pcre2::match_data& match_data, uint32_t match_options, size_t num_groups) noexcept
       : m_re{re},
         m_subject{subject},
         m_match_data{match_data},
@@ -223,7 +223,7 @@ public:
    * @return expected<size_t, error>: The number of replacements (should be 1).
    */
   std::expected<size_t, kphp::pcre2::error> substitute(std::string_view replacement, char* buffer, size_t& buffer_len,
-                                                       const kphp::pcre2::regex_match_context_t& ctx) const noexcept {
+                                                       const kphp::pcre2::match_context& ctx) const noexcept {
     uint32_t substitute_options{PCRE2_SUBSTITUTE_UNKNOWN_UNSET | PCRE2_SUBSTITUTE_UNSET_EMPTY | PCRE2_SUBSTITUTE_MATCHED | PCRE2_SUBSTITUTE_OVERFLOW_LENGTH |
                                 PCRE2_SUBSTITUTE_REPLACEMENT_ONLY | m_match_options};
 
@@ -259,16 +259,16 @@ private:
 class matcher {
   const kphp::pcre2::regex& m_re;
   std::string_view m_subject;
-  const kphp::pcre2::regex_match_context_t& m_ctx;
+  const kphp::pcre2::match_context& m_ctx;
   PCRE2_SIZE m_current_offset{};
-  const kphp::pcre2::regex_match_data_t& m_match_data;
+  const kphp::pcre2::match_data& m_match_data;
   uint32_t m_base_options{};
   uint32_t m_match_options{};
   bool m_is_utf{false};
 
 public:
-  matcher(const kphp::pcre2::regex& re, std::string_view subject, size_t match_from, const kphp::pcre2::regex_match_context_t& ctx,
-          const kphp::pcre2::regex_match_data_t& data, uint32_t options = 0) noexcept
+  matcher(const kphp::pcre2::regex& re, std::string_view subject, size_t match_from, const kphp::pcre2::match_context& ctx,
+          const kphp::pcre2::match_data& data, uint32_t options = 0) noexcept
       : m_re{re},
         m_subject{subject},
         m_ctx{ctx},
