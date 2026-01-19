@@ -16,6 +16,4 @@ inline constexpr std::string_view GMT4 = "Etc/GMT-4";
 
 } // namespace timezones
 
-inline constexpr std::string_view NOW_ = "now";
-
 } // namespace kphp::timelib
