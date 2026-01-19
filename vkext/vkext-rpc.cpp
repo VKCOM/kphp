@@ -3112,6 +3112,14 @@ void php_rpc_fetch_end(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
 
 /* }}} */
 
+void php_rpc_fetch_get_pos(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
+  char *error = 0;
+  int value = do_rpc_fetch_get_pos(&error);
+  RETURN_LONG (value); // do not overcomplicate, any wrong state has position 0
+}
+
+/* }}} */
+
 void php_rpc_queue_create(INTERNAL_FUNCTION_PARAMETERS) { /* {{{ */
   ADD_CNT (parse);
   START_TIMER (parse);

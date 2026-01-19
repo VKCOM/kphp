@@ -965,6 +965,13 @@ PHP_FUNCTION (fetch_eof) {
   END_TIMER(total);
 }
 
+PHP_FUNCTION (fetch_get_pos) {
+  ADD_CNT(total);
+  START_TIMER(total);
+  php_rpc_fetch_get_pos(INTERNAL_FUNCTION_PARAM_PASSTHRU);
+  END_TIMER(total);
+}
+
 PHP_FUNCTION (rpc_queue_create) {
   ADD_CNT(total);
   START_TIMER(total);
