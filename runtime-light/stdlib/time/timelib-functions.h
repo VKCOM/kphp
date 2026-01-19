@@ -68,9 +68,9 @@ OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::r
 kphp::timelib::time_offset_t construct_time_offset(const kphp::timelib::time_t& t) noexcept;
 
 /* === time === */
-std::pair<kphp::timelib::time_t, kphp::timelib::error_container_t> parse_time(std::string_view time_sv) noexcept;
-std::pair<kphp::timelib::time_t, kphp::timelib::error_container_t> parse_time(std::string_view time_sv, const char* format) noexcept;
-std::pair<kphp::timelib::time_t, kphp::timelib::error_container_t> parse_time(std::string_view time_sv, const kphp::timelib::time_t& t) noexcept;
+std::expected<std::pair<kphp::timelib::time_t, kphp::timelib::error_container_t>, kphp::timelib::error_container_t> parse_time(std::string_view time_sv) noexcept;
+std::expected<std::pair<kphp::timelib::time_t, kphp::timelib::error_container_t>, kphp::timelib::error_container_t> parse_time(std::string_view time_sv, const char* format) noexcept;
+std::expected<std::pair<kphp::timelib::time_t, kphp::timelib::error_container_t>, kphp::timelib::error_container_t> parse_time(std::string_view time_sv, const kphp::timelib::time_t& t) noexcept;
 kphp::timelib::time_t clone_time(const kphp::timelib::time_t& t) noexcept;
 kphp::timelib::time_t now(timelib_tzinfo* tzi) noexcept;
 

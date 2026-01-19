@@ -28,13 +28,13 @@ class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<
 }
 
 class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string& datetime) noexcept {
-  auto [time, errors]{kphp::timelib::parse_time({datetime.c_str(), datetime.size()})};
-  if (time == nullptr) [[unlikely]] {
-    kphp::log::warning("DateInterval::createFromDateString(): Unknown or bad format ({}) {}", datetime.c_str(), errors);
+  auto expected{kphp::timelib::parse_time({datetime.c_str(), datetime.size()})};
+  if (!expected.has_value()) [[unlikely]] {
+    kphp::log::warning("DateInterval::createFromDateString(): Unknown or bad format ({}) {}", datetime.c_str(), expected.error());
     return {};
   }
-  class_instance<C$DateInterval> date_interval;
-  date_interval.alloc();
+  auto& [time, errors]{*expected};
+  auto date_interval{make_instance<C$DateInterval>()};
   date_interval->rel_time = kphp::timelib::clone_time_interval(time);
   return date_interval;
 }
