@@ -107,6 +107,8 @@ bool f$fetch_eof();
 
 bool f$fetch_end();
 
+int64_t f$fetch_get_pos();
+
 void f$fetch_raw_vector_double(array<double>& out, int64_t n_elems);
 
 void estimate_and_flush_overflow(size_t& bytes_sent);

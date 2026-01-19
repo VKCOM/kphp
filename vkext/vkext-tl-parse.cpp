@@ -119,9 +119,8 @@ int tl_parse_save_pos() {
   if (error) {
     tl_set_error(error);
     return 0;
-  } else {
-    return r;
   }
+  return r;
 }
 
 int tl_parse_restore_pos(int pos) {

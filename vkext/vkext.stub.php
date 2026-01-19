@@ -195,6 +195,10 @@ function fetch_eof() : bool {
   return false;
 }
 
+function fetch_get_pos() : int {
+  return 0;
+}
+
 /**
  * @return int|false
  */

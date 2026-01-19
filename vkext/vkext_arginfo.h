@@ -125,6 +125,8 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_fetch_eof arginfo_fetch_end
 
+#define arginfo_fetch_get_pos arginfo_fetch_int
+
 #define arginfo_fetch_lookup_int arginfo_fetch_int
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_fetch_lookup_data, 0, 0, 1)
@@ -292,6 +294,7 @@ ZEND_FUNCTION(fetch_string2);
 ZEND_FUNCTION(fetch_memcache_value);
 ZEND_FUNCTION(fetch_end);
 ZEND_FUNCTION(fetch_eof);
+ZEND_FUNCTION(fetch_get_pos);
 ZEND_FUNCTION(fetch_lookup_int);
 ZEND_FUNCTION(fetch_lookup_data);
 ZEND_FUNCTION(vk_set_error_verbosity);
@@ -369,6 +372,7 @@ static const zend_function_entry ext_functions[] = {
 	ZEND_FE(fetch_memcache_value, arginfo_fetch_memcache_value)
 	ZEND_FE(fetch_end, arginfo_fetch_end)
 	ZEND_FE(fetch_eof, arginfo_fetch_eof)
+	ZEND_FE(fetch_get_pos, arginfo_fetch_get_pos)
 	ZEND_FE(fetch_lookup_int, arginfo_fetch_lookup_int)
 	ZEND_FE(fetch_lookup_data, arginfo_fetch_lookup_data)
 	ZEND_FE(vk_set_error_verbosity, arginfo_vk_set_error_verbosity)

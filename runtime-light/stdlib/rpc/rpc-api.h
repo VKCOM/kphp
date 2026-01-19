@@ -182,6 +182,10 @@ inline string f$fetch_string2() noexcept {
   return {};
 }
 
+inline int64_t f$fetch_get_pos() noexcept {
+  return static_cast<int64_t>(RpcServerInstanceState::get().tl_fetcher.pos());
+}
+
 inline void f$fetch_raw_vector_double(array<double>& vector, int64_t num_elems) noexcept {
   auto& tl_fetcher{RpcServerInstanceState::get().tl_fetcher};
   const auto len_bytes{sizeof(double) * num_elems};
