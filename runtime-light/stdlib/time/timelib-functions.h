@@ -59,7 +59,7 @@ using time_offset = std::unique_ptr<timelib_time_offset, kphp::timelib::details:
 using time = std::unique_ptr<timelib_time, kphp::timelib::details::time_destructor>;
 
 /* === rel_time === */
-std::expected<kphp::timelib::rel_time, kphp::timelib::error_container> parse_interval(std::string_view format) noexcept;
+std::expected<kphp::timelib::rel_time, kphp::timelib::error_container> parse_interval(std::string_view interval_sv) noexcept;
 kphp::timelib::rel_time clone_time_interval(const kphp::timelib::time& t) noexcept;
 kphp::timelib::rel_time get_time_interval(const kphp::timelib::time& time1, const kphp::timelib::time& time2, bool absolute) noexcept;
 kphp::timelib::time add_time_interval(const kphp::timelib::time& t, const kphp::timelib::rel_time& interval) noexcept;
