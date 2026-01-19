@@ -53,43 +53,42 @@ constexpr inline std::array<std::string_view, 12> MON_SHORT_NAMES = {"Jan", "Feb
 constexpr inline std::array<std::string_view, 7> DAY_FULL_NAMES = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 constexpr inline std::array<std::string_view, 7> DAY_SHORT_NAMES = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
-using error_container_t = std::unique_ptr<timelib_error_container, kphp::timelib::details::error_container_destructor>;
-using rel_time_t = std::unique_ptr<timelib_rel_time, kphp::timelib::details::rel_time_destructor>;
-using time_offset_t = std::unique_ptr<timelib_time_offset, kphp::timelib::details::time_offset_destructor>;
-using time_t = std::unique_ptr<timelib_time, kphp::timelib::details::time_destructor>;
+using error_container = std::unique_ptr<timelib_error_container, kphp::timelib::details::error_container_destructor>;
+using rel_time = std::unique_ptr<timelib_rel_time, kphp::timelib::details::rel_time_destructor>;
+using time_offset = std::unique_ptr<timelib_time_offset, kphp::timelib::details::time_offset_destructor>;
+using time = std::unique_ptr<timelib_time, kphp::timelib::details::time_destructor>;
 
 /* === rel_time === */
-std::expected<kphp::timelib::rel_time_t, kphp::timelib::error_container_t> parse_interval(std::string_view format) noexcept;
-kphp::timelib::rel_time_t clone_time_interval(const kphp::timelib::time_t& t) noexcept;
-kphp::timelib::rel_time_t get_time_interval(const kphp::timelib::time_t& time1, const kphp::timelib::time_t& time2, bool absolute) noexcept;
-kphp::timelib::time_t add_time_interval(const kphp::timelib::time_t& t, const kphp::timelib::rel_time_t& interval) noexcept;
-std::expected<kphp::timelib::time_t, std::string_view> sub_time_interval(const kphp::timelib::time_t& t, const kphp::timelib::rel_time_t& interval) noexcept;
+std::expected<kphp::timelib::rel_time, kphp::timelib::error_container> parse_interval(std::string_view format) noexcept;
+kphp::timelib::rel_time clone_time_interval(const kphp::timelib::time& t) noexcept;
+kphp::timelib::rel_time get_time_interval(const kphp::timelib::time& time1, const kphp::timelib::time& time2, bool absolute) noexcept;
+kphp::timelib::time add_time_interval(const kphp::timelib::time& t, const kphp::timelib::rel_time& interval) noexcept;
+std::expected<kphp::timelib::time, std::string_view> sub_time_interval(const kphp::timelib::time& t, const kphp::timelib::rel_time& interval) noexcept;
 
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::rel_time_t& t) noexcept;
+OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::rel_time& t) noexcept;
 
 /* === time_offset === */
-kphp::timelib::time_offset_t construct_time_offset(const kphp::timelib::time_t& t) noexcept;
+kphp::timelib::time_offset construct_time_offset(const kphp::timelib::time& t) noexcept;
 
 /* === time === */
-std::expected<std::pair<kphp::timelib::time_t, kphp::timelib::error_container_t>, kphp::timelib::error_container_t>
-parse_time(std::string_view time_sv) noexcept;
-std::expected<std::pair<kphp::timelib::time_t, kphp::timelib::error_container_t>, kphp::timelib::error_container_t> parse_time(std::string_view time_sv,
-                                                                                                                               const char* format) noexcept;
-std::expected<std::pair<kphp::timelib::time_t, kphp::timelib::error_container_t>, kphp::timelib::error_container_t>
-parse_time(std::string_view time_sv, const kphp::timelib::time_t& t) noexcept;
-kphp::timelib::time_t clone_time(const kphp::timelib::time_t& t) noexcept;
-kphp::timelib::time_t now(timelib_tzinfo* tzi) noexcept;
+std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view time_sv) noexcept;
+std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view time_sv,
+                                                                                                                         const char* format) noexcept;
+std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view time_sv,
+                                                                                                                         const kphp::timelib::time& t) noexcept;
+kphp::timelib::time clone_time(const kphp::timelib::time& t) noexcept;
+kphp::timelib::time now(timelib_tzinfo* tzi) noexcept;
 
-int64_t get_timestamp(const kphp::timelib::time_t& t) noexcept;
-int64_t get_offset(const kphp::timelib::time_t& t) noexcept;
+int64_t get_timestamp(const kphp::timelib::time& t) noexcept;
+int64_t get_offset(const kphp::timelib::time& t) noexcept;
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time_t& t) noexcept;
+OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time& t) noexcept;
 
-void set_timestamp(const kphp::timelib::time_t& t, int64_t timestamp) noexcept;
-void set_date(const kphp::timelib::time_t& t, int64_t y, int64_t m, int64_t d) noexcept;
-void set_isodate(const kphp::timelib::time_t& t, int64_t y, int64_t w, int64_t d) noexcept;
-void set_time(const kphp::timelib::time_t& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept;
+void set_timestamp(const kphp::timelib::time& t, int64_t timestamp) noexcept;
+void set_date(const kphp::timelib::time& t, int64_t y, int64_t m, int64_t d) noexcept;
+void set_isodate(const kphp::timelib::time& t, int64_t y, int64_t w, int64_t d) noexcept;
+void set_time(const kphp::timelib::time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept;
 
 /* === timezone related ===*/
 /**
@@ -117,7 +116,7 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view dat
 /* === helpers ===*/
 bool valid_date(int64_t year, int64_t month, int64_t day) noexcept;
 template<bool override_time = false>
-void fill_holes_with_now_info(const kphp::timelib::time_t& time, timelib_tzinfo* tzi) noexcept;
+void fill_holes_with_now_info(const kphp::timelib::time& time, timelib_tzinfo* tzi) noexcept;
 
 namespace details {
 
@@ -126,12 +125,12 @@ std::string_view short_day_name(timelib_sll y, timelib_sll m, timelib_sll d) noe
 std::string_view english_suffix(timelib_sll number) noexcept;
 
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time_t& t, bool localtime) noexcept {
+OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time& t, bool localtime) noexcept {
   if (format.empty()) {
     return out;
   }
 
-  kphp::timelib::time_offset_t offset{localtime ? kphp::timelib::construct_time_offset(t) : nullptr};
+  kphp::timelib::time_offset offset{localtime ? kphp::timelib::construct_time_offset(t) : nullptr};
 
   bool weekYearSet{false};
   timelib_sll isoweek{};
@@ -320,12 +319,12 @@ OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::t
 } // namespace details
 
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time_t& t) noexcept {
+OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time& t) noexcept {
   return kphp::timelib::details::format_to<OutputIt>(out, format, t, t->is_localtime);
 }
 
 template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::rel_time_t& t) noexcept {
+OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::rel_time& t) noexcept {
   if (format.empty()) {
     return out;
   }
@@ -418,8 +417,8 @@ OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::r
 }
 
 template<bool override_time>
-void fill_holes_with_now_info(const kphp::timelib::time_t& time, timelib_tzinfo* tzi) noexcept {
-  kphp::timelib::time_t now_time{kphp::timelib::now(tzi)};
+void fill_holes_with_now_info(const kphp::timelib::time& time, timelib_tzinfo* tzi) noexcept {
+  kphp::timelib::time now_time{kphp::timelib::now(tzi)};
 
   auto options{TIMELIB_NO_CLONE};
   if constexpr (override_time) {
@@ -436,12 +435,12 @@ void fill_holes_with_now_info(const kphp::timelib::time_t& time, timelib_tzinfo*
 } // namespace kphp::timelib
 
 template<>
-struct std::formatter<kphp::timelib::error_container_t, char> {
+struct std::formatter<kphp::timelib::error_container, char> {
   constexpr auto parse(auto& ctx) const {
     return ctx.begin();
   }
 
-  auto format(const kphp::timelib::error_container_t& error, auto& ctx) const noexcept {
+  auto format(const kphp::timelib::error_container& error, auto& ctx) const noexcept {
     if (error != nullptr) {
       // spit out the first library error message, at least
       return format_to(ctx.out(), "at position {} ({}): {}", error->error_messages[0].position,

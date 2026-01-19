@@ -16,7 +16,7 @@
 struct C$DateInterval : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  kphp::timelib::rel_time_t rel_time{nullptr};
+  kphp::timelib::rel_time rel_time{nullptr};
 
   virtual const char* get_class() const noexcept {
     return R"(DateInterval)";

@@ -48,14 +48,14 @@ struct TimeInstanceState final : private vk::not_copyable {
     return result;
   }
 
-  void update_last_errors(kphp::timelib::error_container_t&& new_errors) noexcept {
+  void update_last_errors(kphp::timelib::error_container&& new_errors) noexcept {
     last_errors.swap(new_errors);
   }
 
   static TimeInstanceState& get() noexcept;
 
 private:
-  kphp::timelib::error_container_t last_errors{nullptr};
+  kphp::timelib::error_container last_errors{nullptr};
 };
 
 struct TimeImageState final : private vk::not_copyable {

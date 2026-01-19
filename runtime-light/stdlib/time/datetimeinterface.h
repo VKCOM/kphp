@@ -10,7 +10,7 @@
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 
 struct C$DateTimeInterface : public refcountable_polymorphic_php_classes_virt<> {
-  kphp::timelib::time_t time{nullptr};
+  kphp::timelib::time time{nullptr};
 
   virtual const char* get_class() const noexcept = 0;
   virtual int32_t get_hash() const noexcept = 0;
