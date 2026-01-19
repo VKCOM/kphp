@@ -55,7 +55,7 @@ class regex {
 
   class group_name_iterator {
     const PCRE2_UCHAR8* m_ptr{nullptr};
-    size_t m_entry_size{};
+    const size_t m_entry_size{};
 
   public:
     using iterator_category = std::forward_iterator_tag;
