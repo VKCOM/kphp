@@ -45,6 +45,17 @@ namespace vk {
 namespace tl {
 namespace common {
 
+namespace tracing_traceContext {
+static constexpr uint32_t return_reserved_status_0 = 1 << 0;
+static constexpr uint32_t return_reserved_status_1 = 1 << 1;
+static constexpr uint32_t parent_id = 1 << 2;
+static constexpr uint32_t source_id = 1 << 3;
+static constexpr uint32_t return_reserved_level_0 = 1 << 4;
+static constexpr uint32_t return_reserved_level_1 = 1 << 5;
+static constexpr uint32_t return_reserved_level_2 = 1 << 6;
+static constexpr uint32_t return_debug = 1 << 7;
+} // namespace tracing_traceContext
+
 namespace rpc_invoke_req_extra_flags {
 inline constexpr uint32_t return_binlog_pos = 1U << 0U;
 inline constexpr uint32_t return_binlog_time = 1U << 1U;
@@ -63,7 +74,9 @@ inline constexpr uint32_t supported_compression_version = 1U << 25U;
 inline constexpr uint32_t random_delay = 1U << 26U;
 inline constexpr uint32_t return_view_number = 1U << 27U;
 inline constexpr uint32_t persistent_query = 1U << 28U;
-inline constexpr uint32_t ALL = 0x1ebd00df;
+inline constexpr uint32_t trace_context = 1U << 29U;
+inline constexpr uint32_t execution_context = 1U << 30U;
+inline constexpr uint32_t ALL = 0x7ebd00df;
 } // namespace rpc_invoke_req_extra_flags
 
 namespace rpc_req_result_extra_flags {

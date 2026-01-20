@@ -144,33 +144,65 @@ bool CertInfoItem::fetch(tl::fetcher& tlf) noexcept {
   return true;
 }
 
+bool tracing::TraceContext::fetch(tl::fetcher& tlf) noexcept {
+  bool ok{fields_mask.fetch(tlf)};
+
+  if (ok) {
+    ok &= trace_id.fetch(tlf);
+  }
+  if (ok && static_cast<bool>(fields_mask.value & PARENT_ID_FLAG)) {
+    ok &= opt_parent_id.emplace().fetch(tlf);
+  }
+  if (ok && static_cast<bool>(fields_mask.value & SOURCE_ID_FLAG)) {
+    ok &= opt_source_id.emplace().fetch(tlf);
+  }
+
+  reserved_status_0 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_STATUS_0_FLAG);
+  reserved_status_1 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_STATUS_1_FLAG);
+  reserved_level_0 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_LEVEL_0_FLAG);
+  reserved_level_1 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_LEVEL_1_FLAG);
+  reserved_level_2 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_LEVEL_2_FLAG);
+  debug_flag = static_cast<bool>(fields_mask.value & RETURN_DEBUG_FLAG);
+
+  return ok;
+}
+
 // ===== RPC =====
 
 bool rpcInvokeReqExtra::fetch(tl::fetcher& tlf) noexcept {
   bool ok{flags.fetch(tlf)};
   if (ok && static_cast<bool>(flags.value & WAIT_BINLOG_POS_FLAG)) {
-    ok = ok && opt_wait_binlog_pos.emplace().fetch(tlf);
+    ok &= opt_wait_binlog_pos.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & STRING_FORWARD_KEYS_FLAG)) {
-    ok = ok && opt_string_forward_keys.emplace().fetch(tlf);
+    ok &= opt_string_forward_keys.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & INT_FORWARD_KEYS_FLAG)) {
-    ok = ok && opt_int_forward_keys.emplace().fetch(tlf);
+    ok &= opt_int_forward_keys.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & STRING_FORWARD_FLAG)) {
-    ok = ok && opt_string_forward.emplace().fetch(tlf);
+    ok &= opt_string_forward.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & INT_FORWARD_FLAG)) {
-    ok = ok && opt_int_forward.emplace().fetch(tlf);
+    ok &= opt_int_forward.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & CUSTOM_TIMEOUT_MS_FLAG)) {
-    ok = ok && opt_custom_timeout_ms.emplace().fetch(tlf);
+    ok &= opt_custom_timeout_ms.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & SUPPORTED_COMPRESSION_VERSION_FLAG)) {
-    ok = ok && opt_supported_compression_version.emplace().fetch(tlf);
+    ok &= opt_supported_compression_version.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & RANDOM_DELAY_FLAG)) {
-    ok = ok && opt_random_delay.emplace().fetch(tlf);
+    ok &= opt_random_delay.emplace().fetch(tlf);
+  }
+  if (ok && static_cast<bool>(flags.value & PERSISTENT_QUERY_FLAG)) {
+    ok &= opt_persistent_query.emplace().fetch(tlf);
+  }
+  if (ok && static_cast<bool>(flags.value & TRACE_CONTEXT_FLAG)) {
+    ok &= opt_trace_context.emplace().fetch(tlf);
+  }
+  if (ok && static_cast<bool>(flags.value & EXECUTION_CONTEXT_FLAG)) {
+    ok &= opt_execution_context.emplace().fetch(tlf);
   }
 
   return_binlog_pos = static_cast<bool>(flags.value & RETURN_BINLOG_POS_FLAG);

@@ -8,7 +8,9 @@
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
+#include <type_traits>
 #include <utility>
+#include <variant>
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
@@ -38,6 +40,9 @@ constexpr std::string_view RPC_EXTRA_INT_FORWARD = "RPC_EXTRA_INT_FORWARD";
 constexpr std::string_view RPC_EXTRA_CUSTOM_TIMEOUT_MS = "RPC_EXTRA_CUSTOM_TIMEOUT_MS";
 constexpr std::string_view RPC_EXTRA_SUPPORTED_COMPRESSION_VERSION = "RPC_EXTRA_SUPPORTED_COMPRESSION_VERSION";
 constexpr std::string_view RPC_EXTRA_RANDOM_DELAY = "RPC_EXTRA_RANDOM_DELAY";
+constexpr std::string_view RPC_EXTRA_PERSISTENT_REQUEST = "RPC_EXTRA_PERSISTENT_REQUEST";
+constexpr std::string_view RPC_EXTRA_TRACE_CONTEXT = "RPC_EXTRA_TRACE_CONTEXT";
+constexpr std::string_view RPC_EXTRA_EXECUTION_CONTEXT = "RPC_EXTRA_EXECUTION_CONTEXT";
 
 void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
   if (extra.opt_wait_binlog_pos.has_value()) {
@@ -80,6 +85,42 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
   if (extra.opt_random_delay) {
     auto random_delay{*extra.opt_random_delay};
     superglobals.v$_SERVER.set_value(string{RPC_EXTRA_RANDOM_DELAY.data(), RPC_EXTRA_RANDOM_DELAY.size()}, random_delay.value);
+  }
+  if (extra.opt_persistent_query) {
+    std::visit(
+        [&superglobals](const auto& value) noexcept {
+          using value_t = std::remove_cvref_t<decltype(value)>;
+          mixed out{array{std::pair{string{"persistent_query_uuid"}, mixed{array{std::pair{string{"lo"}, value.persistent_query_uuid.lo.value},
+                                                                                 std::pair{string{"hi"}, value.persistent_query_uuid.hi.value}}}},
+                          std::pair{string{"persistent_slot_uuid"}, mixed{}}}};
+
+          if constexpr (std::is_same_v<value_t, tl::exactlyOnce::commitRequest>) {
+            out.as_array().emplace_value(string{"persistent_slot_uuid"}, mixed{array{std::pair{string{"lo"}, value.persistent_slot_uuid.lo.value},
+                                                                                     std::pair{string{"hi"}, value.persistent_slot_uuid.hi.value}}});
+          }
+
+          superglobals.v$_SERVER.set_value(string{RPC_EXTRA_PERSISTENT_REQUEST.data(), RPC_EXTRA_PERSISTENT_REQUEST.size()}, out);
+        },
+        extra.opt_persistent_query->request);
+  }
+  if (extra.opt_trace_context) {
+    auto& trace_context{*extra.opt_trace_context};
+    mixed out{array{std::pair{string{"trace_id"},
+                              mixed{array{std::pair{string{"lo"}, trace_context.trace_id.lo.value}, std::pair{string{"hi"}, trace_context.trace_id.hi.value}}}},
+                    std::pair{string{"parent_id"}, mixed{}}, std::pair{string{"source_id"}, mixed{}}}};
+    if (trace_context.opt_parent_id) {
+      out.as_array().emplace_value(string{"parent_id"}, trace_context.opt_parent_id->value);
+    }
+    if (trace_context.opt_source_id) {
+      const std::string_view opt_source_id_value = trace_context.opt_source_id->value;
+      out.as_array().emplace_value(string{"source_id"}, string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
+    }
+    superglobals.v$_SERVER.set_value(string{RPC_EXTRA_TRACE_CONTEXT.data(), RPC_EXTRA_TRACE_CONTEXT.size()}, out);
+  }
+  if (extra.opt_execution_context) {
+    const auto& execution_context{extra.opt_execution_context->value};
+    superglobals.v$_SERVER.set_value(string{RPC_EXTRA_EXECUTION_CONTEXT.data(), RPC_EXTRA_EXECUTION_CONTEXT.size()},
+                                     string{execution_context.data(), static_cast<string::size_type>(execution_context.size())});
   }
 }
 

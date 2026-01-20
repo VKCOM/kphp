@@ -21,6 +21,8 @@
 #include "common/tl/parse.h"
 #include "common/tl/store.h"
 
+#include <iostream>
+
 static int tl_fetch_query_flags(tl_query_header_t* header) {
   namespace flag = vk::tl::common::rpc_invoke_req_extra_flags;
   int flags = tl_fetch_int();
@@ -86,6 +88,24 @@ static int tl_fetch_query_flags(tl_query_header_t* header) {
   }
   if (flags & flag::random_delay) {
     header->random_delay = tl_fetch_double_in_range(0, 60.0);
+    if (tl_fetch_error()) {
+      return -1;
+    }
+  }
+  if (flags & flag::persistent_query) {
+    header->persistent_request.fetch();
+    if (tl_fetch_error()) {
+      return -1;
+    }
+  }
+  if (flags & flag::trace_context) {
+    header->trace_context.fetch();
+    if (tl_fetch_error()) {
+      return -1;
+    }
+  }
+  if (flags & flag::execution_context) {
+    vk::tl::fetch_string(header->execution_context, 1000);
     if (tl_fetch_error()) {
       return -1;
     }
@@ -317,6 +337,15 @@ void tl_store_header(const tl_query_header_t* header) {
       }
       if (flags & flag::random_delay) {
         tl_store_double(header->random_delay);
+      }
+      if (flags & flag::persistent_query) {
+        header->persistent_request.write();
+      }
+      if (flags & flag::trace_context) {
+        header->trace_context.write();
+      }
+      if (flags & flag::execution_context) {
+        vk::tl::store_string(header->execution_context);
       }
     } else if (header->actor_id) {
       tl_store_int(TL_RPC_DEST_ACTOR);

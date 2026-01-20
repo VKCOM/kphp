@@ -13,13 +13,17 @@
 #include <functional>
 #include <getopt.h>
 #include <netdb.h>
+#include <type_traits>
 #include <unistd.h>
+#include <utility>
+#include <variant>
 
 #include "common/algorithms/string-algorithms.h"
 #include "common/macos-ports.h"
 #include "common/tl/constants/common.h"
 #include "common/wrappers/overloaded.h"
 
+#include "common/tl/query-header.h"
 #include "net/net-connections.h"
 #include "runtime-common/stdlib/serialization/serialization-context.h"
 #include "runtime-common/stdlib/server/url-functions.h"
@@ -1484,6 +1488,43 @@ static void save_rpc_query_headers(const tl_query_header_t& header, mixed& v$_SE
   }
   if (header.flags & flag::random_delay) {
     v$_SERVER.set_value(string("RPC_EXTRA_RANDOM_DELAY"), header.random_delay);
+  }
+  if (header.flags & flag::persistent_query) {
+    std::visit(
+        [&v$_SERVER](const auto& value) noexcept {
+          using value_t = std::decay_t<decltype(value)>;
+
+          mixed out{array{std::pair{string{"persistent_query_uuid"}, mixed{array{std::pair{string{"lo"}, value.persistent_query_uuid.lo},
+                                                                                 std::pair{string{"hi"}, value.persistent_query_uuid.hi}}}},
+                          std::pair{string{"persistent_slot_uuid"}, mixed{}}}};
+
+          if constexpr (std::is_same_v<value_t, exactlyOnce::commitRequest>) {
+            out.as_array().emplace_value(string{"persistent_slot_uuid"}, mixed{array{std::pair{string{"lo"}, value.persistent_slot_uuid.lo},
+                                                                                     std::pair{string{"hi"}, value.persistent_slot_uuid.hi}}});
+          }
+
+          v$_SERVER.set_value(string{"RPC_EXTRA_PERSISTENT_REQUEST"}, out);
+        },
+        header.persistent_request.request);
+  }
+  if (header.flags & flag::trace_context) {
+    const auto& trace_context{header.trace_context};
+    mixed out{array{
+        std::pair{string{"trace_id"}, mixed{array{std::pair{string{"lo"}, trace_context.trace_id.lo}, std::pair{string{"hi"}, trace_context.trace_id.hi}}}},
+        std::pair{string{"parent_id"}, mixed{}}, std::pair{string{"source_id"}, mixed{}}}};
+
+    if (trace_context.opt_parent_id) {
+      out.as_array().emplace_value(string{"parent_id"}, *trace_context.opt_parent_id);
+    }
+    if (trace_context.opt_source_id) {
+      const std::string& opt_source_id_value{*trace_context.opt_source_id};
+      out.as_array().emplace_value(string{"source_id"}, string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
+    }
+    v$_SERVER.set_value(string{"RPC_EXTRA_TRACE_CONTEXT"}, out);
+  }
+  if (header.flags & flag::execution_context) {
+    const auto& execution_context{header.execution_context};
+    v$_SERVER.set_value(string{"RPC_EXTRA_EXECUTION_CONTEXT"}, string{execution_context.data(), static_cast<string::size_type>(execution_context.size())});
   }
 }
 
