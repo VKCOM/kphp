@@ -42,16 +42,16 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class
   auto& [time, errors]{*expected};
   TimeInstanceState::get().update_last_errors(std::move(errors));
 
-  timelib_tzinfo* tzi{!timezone.is_null() ? timezone->tzi : nullptr};
-  if (tzi == nullptr) {
-    if (time->tz_info != nullptr) {
-      tzi = time->tz_info;
-    } else if (auto* default_tzi{kphp::timelib::get_cached_timezone_info(TimeInstanceState::get().default_timezone.c_str())}; default_tzi != nullptr) {
-      tzi = default_tzi;
-    }
+  if (!timezone.is_null()) {
+    kphp::timelib::fill_holes_with_now_info(time, *timezone->tzi);
+  } else if (time->tz_info != nullptr) {
+    kphp::timelib::fill_holes_with_now_info(time);
+  } else if (auto default_tzi{kphp::timelib::get_cached_timezone_info(TimeInstanceState::get().default_timezone.c_str())}; default_tzi.has_value()) {
+    kphp::timelib::fill_holes_with_now_info(time, *default_tzi);
+  } else {
+    THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(string{"DateTimeImmutable::__construct(): Failed to get default timezone"}));
+    return {};
   }
-
-  kphp::timelib::fill_holes_with_now_info(time, tzi);
 
   self->time = std::move(time);
   return self;
@@ -73,16 +73,17 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromFormat(const 
   }
   auto& [time, errors]{*expected};
   TimeInstanceState::get().update_last_errors(std::move(errors));
-  timelib_tzinfo* tzi{!timezone.is_null() ? timezone->tzi : nullptr};
-  if (tzi == nullptr) {
-    if (time->tz_info != nullptr) {
-      tzi = time->tz_info;
-    } else if (auto* default_tzi{kphp::timelib::get_cached_timezone_info(TimeInstanceState::get().default_timezone.c_str())}; default_tzi != nullptr) {
-      tzi = default_tzi;
-    }
-  }
 
-  kphp::timelib::fill_holes_with_now_info<true>(time, tzi);
+  if (!timezone.is_null()) {
+    kphp::timelib::fill_holes_with_now_info<true>(time, *timezone->tzi);
+  } else if (time->tz_info != nullptr) {
+    kphp::timelib::fill_holes_with_now_info<true>(time);
+  } else if (auto default_tzi{kphp::timelib::get_cached_timezone_info(TimeInstanceState::get().default_timezone.c_str())}; default_tzi.has_value()) {
+    kphp::timelib::fill_holes_with_now_info<true>(time, *default_tzi);
+  } else {
+    THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(string{"DateTimeImmutable::__construct(): Failed to get default timezone"}));
+    return {};
+  }
 
   class_instance<C$DateTimeImmutable> date_time;
   date_time.alloc();

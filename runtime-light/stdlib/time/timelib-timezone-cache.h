@@ -6,9 +6,11 @@
 
 #include <algorithm>
 #include <cstring>
+#include <expected>
 #include <functional>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <string_view>
 
 #include "kphp/timelib/timelib.h"
@@ -17,50 +19,65 @@
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/allocator/allocator.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/time/timelib-types.h"
 
 namespace kphp::timelib {
 
 class timezone_cache final {
-  using tzinfo_hash_t = decltype([](const timelib_tzinfo* tzinfo) noexcept {
-    kphp::log::assertion(tzinfo != nullptr);
-    return tzinfo->name != nullptr ? std::hash<std::string_view>{}({tzinfo->name}) : 0;
-  });
-  using tzinfo_comparator_t = decltype([](const timelib_tzinfo* lhs, const timelib_tzinfo* rhs) noexcept {
-    if (lhs == nullptr || lhs->name == nullptr || rhs == nullptr || rhs->name == nullptr) [[unlikely]] {
-      return false;
-    }
-    return std::strcmp(lhs->name, rhs->name) == 0;
-  });
+  struct tzinfo_hash_t : std::hash<std::string_view> {
+    using is_transparent = void;
+    using std::hash<std::string_view>::operator();
 
-  kphp::stl::unordered_set<timelib_tzinfo*, kphp::memory::script_allocator, tzinfo_hash_t, tzinfo_comparator_t> m_cache;
+    size_t operator()(const kphp::timelib::tzinfo& tzinfo) const noexcept {
+      kphp::log::assertion(tzinfo != nullptr);
+      return tzinfo->name != nullptr ? (*this)(tzinfo->name) : 0;
+    }
+  };
+
+  struct tzinfo_comparator_t : std::equal_to<std::string_view> {
+    using is_transparent = void;
+    using std::equal_to<std::string_view>::operator();
+
+    bool operator()(const kphp::timelib::tzinfo& lhs, const auto& rhs) const noexcept {
+      if (lhs == nullptr || lhs->name == nullptr) [[unlikely]] {
+        return false;
+      }
+      return (*this)(lhs->name, rhs);
+    }
+    bool operator()(std::string_view lhs, const kphp::timelib::tzinfo& rhs) const noexcept {
+      if (rhs == nullptr || rhs->name == nullptr) [[unlikely]] {
+        return false;
+      }
+      return (*this)(lhs, rhs->name);
+    }
+  };
+
+  kphp::stl::unordered_set<kphp::timelib::tzinfo, kphp::memory::script_allocator, tzinfo_hash_t, tzinfo_comparator_t> m_cache;
 
 public:
-  timelib_tzinfo* get(std::string_view tzname) const noexcept {
-    timelib_tzinfo tmp{.name = const_cast<char*>(tzname.data())};
-    auto it{m_cache.find(std::addressof(tmp))};
-    return it != m_cache.end() ? *it : nullptr;
+  std::optional<std::reference_wrapper<const kphp::timelib::tzinfo>> get(std::string_view tzname) const noexcept {
+    auto it{m_cache.find(tzname)};
+    return it != m_cache.end() ? std::make_optional(std::cref(*it)) : std::nullopt;
   }
 
-  void put(timelib_tzinfo* tzinfo) noexcept {
+  std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> make(std::string_view tz, const timelib_tzdb* tzdb) noexcept {
+    int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
+    kphp::timelib::tzinfo tzinfo{timelib_parse_tzfile(tz.data(), tzdb, std::addressof(errc))};
     if (tzinfo == nullptr || tzinfo->name == nullptr) [[unlikely]] {
-      return;
+      return std::unexpected{errc};
     }
-    m_cache.emplace(tzinfo);
+    return *m_cache.emplace(std::move(tzinfo)).first;
   }
 
   void clear() noexcept {
-    (kphp::memory::libc_alloc_guard{}, std::ranges::for_each(m_cache, [](timelib_tzinfo* tzinfo) noexcept { timelib_tzinfo_dtor(tzinfo); }));
-    m_cache.clear();
+    kphp::memory::libc_alloc_guard{}, m_cache.clear();
   }
 
   timezone_cache() noexcept = default;
 
   timezone_cache(std::initializer_list<std::string_view> tzs) noexcept {
     kphp::memory::libc_alloc_guard _{};
-    std::ranges::for_each(tzs, [this](std::string_view tz) noexcept {
-      int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-      put(timelib_parse_tzfile(tz.data(), timelib_builtin_db(), std::addressof(errc)));
-    });
+    std::ranges::for_each(tzs, [this](std::string_view tz) noexcept { make(tz, timelib_builtin_db()), void(); });
   }
 
   timezone_cache(timezone_cache&& other) noexcept
