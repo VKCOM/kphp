@@ -5,18 +5,20 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <string_view>
 
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
-#include "runtime-light/stdlib/time/timelib-functions.h"
+#include "runtime-light/stdlib/time/timelib-types.h"
 
 struct C$DateTimeZone : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  timelib_tzinfo* tzi{nullptr};
+  std::optional<std::reference_wrapper<const kphp::timelib::tzinfo>> tzi;
 
   virtual const char* get_class() const noexcept {
     return R"(DateTimeZone)";

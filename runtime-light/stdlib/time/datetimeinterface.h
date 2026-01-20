@@ -4,10 +4,8 @@
 
 #pragma once
 
-#include "kphp/timelib/timelib.h"
-#include "timelib-functions.h"
-
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-light/stdlib/time/timelib-types.h"
 
 struct C$DateTimeInterface : public refcountable_polymorphic_php_classes_virt<> {
   kphp::timelib::time time{nullptr};

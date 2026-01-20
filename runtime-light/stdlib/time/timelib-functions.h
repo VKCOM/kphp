@@ -16,47 +16,15 @@
 #include "kphp/timelib/timelib.h"
 
 #include "runtime-light/allocator/allocator.h"
+#include "runtime-light/stdlib/time/timelib-types.h"
 
 namespace kphp::timelib {
-
-namespace details {
-
-struct error_container_destructor {
-  void operator()(timelib_error_container* ec) const noexcept {
-    kphp::memory::libc_alloc_guard{}, timelib_error_container_dtor(ec);
-  }
-};
-
-struct rel_time_destructor {
-  void operator()(timelib_rel_time* rt) const noexcept {
-    kphp::memory::libc_alloc_guard{}, timelib_rel_time_dtor(rt);
-  }
-};
-
-struct time_destructor {
-  void operator()(timelib_time* t) const noexcept {
-    kphp::memory::libc_alloc_guard{}, timelib_time_dtor(t);
-  }
-};
-
-struct time_offset_destructor {
-  void operator()(timelib_time_offset* to) const noexcept {
-    kphp::memory::libc_alloc_guard{}, timelib_time_offset_dtor(to);
-  }
-};
-
-} // namespace details
 
 constexpr inline std::array<std::string_view, 12> MON_FULL_NAMES = {"January", "February", "March",     "April",   "May",      "June",
                                                                     "July",    "August",   "September", "October", "November", "December"};
 constexpr inline std::array<std::string_view, 12> MON_SHORT_NAMES = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 constexpr inline std::array<std::string_view, 7> DAY_FULL_NAMES = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 constexpr inline std::array<std::string_view, 7> DAY_SHORT_NAMES = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-
-using error_container = std::unique_ptr<timelib_error_container, kphp::timelib::details::error_container_destructor>;
-using rel_time = std::unique_ptr<timelib_rel_time, kphp::timelib::details::rel_time_destructor>;
-using time_offset = std::unique_ptr<timelib_time_offset, kphp::timelib::details::time_offset_destructor>;
-using time = std::unique_ptr<timelib_time, kphp::timelib::details::time_destructor>;
 
 /* === rel_time === */
 std::expected<kphp::timelib::rel_time, kphp::timelib::error_container> parse_interval(std::string_view interval_sv) noexcept;
@@ -78,7 +46,6 @@ std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kp
 std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view time_sv,
                                                                                                                          const kphp::timelib::time& t) noexcept;
 kphp::timelib::time clone_time(const kphp::timelib::time& t) noexcept;
-kphp::timelib::time now(timelib_tzinfo* tzi) noexcept;
 
 int64_t get_timestamp(const kphp::timelib::time& t) noexcept;
 int64_t get_offset(const kphp::timelib::time& t) noexcept;
@@ -91,20 +58,7 @@ void set_isodate(const kphp::timelib::time& t, int64_t y, int64_t w, int64_t d) 
 void set_time(const kphp::timelib::time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept;
 
 /* === timezone related ===*/
-/**
- * @brief Retrieves a pointer to a `timelib_tzinfo` structure for a given time zone name.
- *
- * @param timezone The name of the time zone to retrieve.
- * @param tzdb The time zone database to search.
- * @param errc The pointer to a variable to store error code into.
- * @return `timelib_tzinfo*` pointing to the time zone information, or `nullptr` if not found.
- *
- * @note
- * - The returned pointer is owned by an internal cache; do not deallocate it using `timelib_tzinfo_dtor`.
- * - This function minimizes overhead by avoiding repeated allocations for the same time zone.
- */
-timelib_tzinfo* get_cached_timezone_info(const char* timezone, const timelib_tzdb* tzdb, int* errc) noexcept;
-timelib_tzinfo* get_cached_timezone_info(const char* timezone) noexcept;
+std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> get_cached_timezone_info(std::string_view timezone_sv, const timelib_tzdb* tzdb = timelib_builtin_db()) noexcept;
 
 /*=== timestamp ===*/
 int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,
@@ -116,7 +70,9 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view dat
 /* === helpers ===*/
 bool valid_date(int64_t year, int64_t month, int64_t day) noexcept;
 template<bool override_time = false>
-void fill_holes_with_now_info(const kphp::timelib::time& time, timelib_tzinfo* tzi) noexcept;
+void fill_holes_with_now_info(const kphp::timelib::time& time, const kphp::timelib::tzinfo& tzi) noexcept;
+template<bool override_time = false>
+void fill_holes_with_now_info(const kphp::timelib::time& time) noexcept;
 
 namespace details {
 
@@ -417,16 +373,54 @@ OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib
 }
 
 template<bool override_time>
-void fill_holes_with_now_info(const kphp::timelib::time& time, timelib_tzinfo* tzi) noexcept {
-  kphp::timelib::time now_time{kphp::timelib::now(tzi)};
+void fill_holes_with_now_info(const kphp::timelib::time& time, const kphp::timelib::tzinfo& tzi) noexcept {
+  kphp::timelib::time now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
+
+  now->tz_info = tzi.get();
+  now->zone_type = TIMELIB_ZONETYPE_ID;
+
+  namespace chrono = std::chrono;
+  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
+  const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
+  const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
+
+  kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(now.get(), static_cast<timelib_sll>(sec));
+  now->us = usec;
 
   auto options{TIMELIB_NO_CLONE};
   if constexpr (override_time) {
     options |= TIMELIB_OVERRIDE_TIME;
   }
 
-  kphp::memory::libc_alloc_guard{}, timelib_fill_holes(time.get(), now_time.get(), options);
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(time.get(), now_time->tz_info);
+  kphp::memory::libc_alloc_guard{}, timelib_fill_holes(time.get(), now.get(), options);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(time.get(), now->tz_info);
+  kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(time.get());
+
+  time->have_relative = 0;
+}
+
+template<bool override_time>
+void fill_holes_with_now_info(const kphp::timelib::time& time) noexcept {
+  kphp::timelib::time now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
+
+  now->tz_info = time->tz_info;
+  now->zone_type = TIMELIB_ZONETYPE_ID;
+
+  namespace chrono = std::chrono;
+  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
+  const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
+  const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
+
+  kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(now.get(), static_cast<timelib_sll>(sec));
+  now->us = usec;
+
+  auto options{TIMELIB_NO_CLONE};
+  if constexpr (override_time) {
+    options |= TIMELIB_OVERRIDE_TIME;
+  }
+
+  kphp::memory::libc_alloc_guard{}, timelib_fill_holes(time.get(), now.get(), options);
+  kphp::memory::libc_alloc_guard{}, timelib_update_ts(time.get(), now->tz_info);
   kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(time.get());
 
   time->have_relative = 0;
