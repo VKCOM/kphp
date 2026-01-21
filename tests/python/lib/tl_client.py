@@ -27,12 +27,15 @@ def _tl_serialize_struct(request):
     encoded.append(")")
     return " ".join(encoded)
 
+counter = 0
 
 def send_rpc_request(request, port, timeout=60):
     tl_client_bin = search_tl_client()
-    encoded_request = _tl_serialize_struct(request)
-
-    print("\nSending rpc request to port {}: {}".format(port, blue(encoded_request)))
+    encoded_request = _tl_serialize_struct(request) + "\n"
+    global counter
+    print("\nSending #{} rpc request to port {}: {}".format(counter, port, blue(encoded_request)))
+    cur_counter = counter
+    counter += 1
     cmd = [tl_client_bin, "--stdin", "--json-encoded", "--port", str(port)]
     if not os.getuid():
         cmd += ["--user", "root", "--group", "root"]
@@ -47,8 +50,10 @@ def send_rpc_request(request, port, timeout=60):
         stderr=subprocess.PIPE,
         env=env
     )
+
     stdout_data, stderr_data = p.communicate(input=encoded_request.encode(), timeout=timeout)
     if stderr_data:
+        print("!!!!!!!!!!!", cur_counter, encoded_request.encode())
         raise RuntimeError("Can't send rpc request: " + stderr_data.decode())
     if p.returncode:
         raise RuntimeError("Can't send rpc request: got nonzero exit code")

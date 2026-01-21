@@ -46,6 +46,7 @@ def search_tl_client():
 
 def search_combined_tlo(working_dir):
     if _ENGINE_INSTALL_PATH:
+        print("############### combined.tlo got from engine")
         return _check_file("combined.tlo", _ENGINE_INSTALL_PATH, os.path.isfile)
     tl_compiler_path = _check_file("objs/bin/tl-compiler", _KPHP_REPO, _check_bin)
     common_tl = _check_file("common/tl-files/common.tl", _KPHP_REPO, os.path.isfile)
@@ -53,6 +54,7 @@ def search_combined_tlo(working_dir):
         ["bash", "-c", "{} -e {} {}".format(tl_compiler_path, working_dir + "/combined.tlo", common_tl)],
         env={"ASAN_OPTIONS": "detect_leaks=0"}
     )
+    print("############### combined.tlo got from kphp")
     return _check_file("combined.tlo", working_dir, os.path.isfile)
 
 

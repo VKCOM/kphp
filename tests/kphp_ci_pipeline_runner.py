@@ -474,7 +474,7 @@ if __name__ == "__main__":
             "KPHP_TESTS_INTERGRATION_TESTS_ENABLED=1 "
             "KPHP_CXX={cxx_name} "
             "K2_BIN={k2_bin} "
-            "python3 -m pytest --tb=native -n{jobs} {tests_dir}".format(
+            "python3 -m pytest --tb=native -n1 {tests_dir}".format(
                 jobs=n_cpu,
                 lib_dir=os.path.join(runner_dir, "python"),
                 engine_repo=args.engine_repo,
