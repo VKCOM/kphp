@@ -52,10 +52,10 @@ int64_t get_offset(const kphp::timelib::time& t) noexcept;
 template<typename OutputIt>
 OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib::time& t) noexcept;
 
-void set_timestamp(const kphp::timelib::time& t, int64_t timestamp) noexcept;
-void set_date(const kphp::timelib::time& t, int64_t y, int64_t m, int64_t d) noexcept;
-void set_isodate(const kphp::timelib::time& t, int64_t y, int64_t w, int64_t d) noexcept;
-void set_time(const kphp::timelib::time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept;
+void set_timestamp(kphp::timelib::time& t, int64_t timestamp) noexcept;
+void set_date(kphp::timelib::time& t, int64_t y, int64_t m, int64_t d) noexcept;
+void set_isodate(kphp::timelib::time& t, int64_t y, int64_t w, int64_t d) noexcept;
+void set_time(kphp::timelib::time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept;
 
 /* === timezone related ===*/
 std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> get_cached_timezone_info(std::string_view timezone_sv,
@@ -71,9 +71,9 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view dat
 /* === helpers ===*/
 bool valid_date(int64_t year, int64_t month, int64_t day) noexcept;
 template<bool override_time = false>
-void fill_holes_with_now_info(const kphp::timelib::time& time, const kphp::timelib::tzinfo& tzi) noexcept;
+void fill_holes_with_now_info(kphp::timelib::time& time, const kphp::timelib::tzinfo& tzi) noexcept;
 template<bool override_time = false>
-void fill_holes_with_now_info(const kphp::timelib::time& time) noexcept;
+void fill_holes_with_now_info(kphp::timelib::time& time) noexcept;
 
 namespace details {
 
@@ -375,7 +375,7 @@ OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib
 }
 
 template<bool override_time>
-void fill_holes_with_now_info(const kphp::timelib::time& time, const kphp::timelib::tzinfo& tzi) noexcept {
+void fill_holes_with_now_info(kphp::timelib::time& time, const kphp::timelib::tzinfo& tzi) noexcept {
   kphp::timelib::time now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor()), kphp::timelib::details::time_destructor};
 
   now->tz_info = tzi.get();
@@ -402,7 +402,7 @@ void fill_holes_with_now_info(const kphp::timelib::time& time, const kphp::timel
 }
 
 template<bool override_time>
-void fill_holes_with_now_info(const kphp::timelib::time& time) noexcept {
+void fill_holes_with_now_info(kphp::timelib::time& time) noexcept {
   kphp::timelib::time now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor()), kphp::timelib::details::time_destructor};
 
   now->tz_info = time->tz_info;
