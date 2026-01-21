@@ -70,10 +70,8 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view dat
 
 /* === helpers ===*/
 bool valid_date(int64_t year, int64_t month, int64_t day) noexcept;
-template<bool override_time = false>
-void fill_holes_with_now_info(kphp::timelib::time& time, const kphp::timelib::tzinfo& tzi) noexcept;
-template<bool override_time = false>
-void fill_holes_with_now_info(kphp::timelib::time& time) noexcept;
+void fill_holes_with_now_info(kphp::timelib::time& time, const kphp::timelib::tzinfo& tzi, int32_t options = TIMELIB_NO_CLONE) noexcept;
+void fill_holes_with_now_info(kphp::timelib::time& time, int32_t options = TIMELIB_NO_CLONE) noexcept;
 
 namespace details {
 
@@ -372,60 +370,6 @@ OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib
     }
   }
   return out;
-}
-
-template<bool override_time>
-void fill_holes_with_now_info(kphp::timelib::time& time, const kphp::timelib::tzinfo& tzi) noexcept {
-  kphp::timelib::time now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor()), kphp::timelib::details::time_destructor};
-
-  now->tz_info = tzi.get();
-  now->zone_type = TIMELIB_ZONETYPE_ID;
-
-  namespace chrono = std::chrono;
-  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
-  const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
-  const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
-
-  kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(now.get(), static_cast<timelib_sll>(sec));
-  now->us = usec;
-
-  auto options{TIMELIB_NO_CLONE};
-  if constexpr (override_time) {
-    options |= TIMELIB_OVERRIDE_TIME;
-  }
-
-  kphp::memory::libc_alloc_guard{}, timelib_fill_holes(time.get(), now.get(), options);
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(time.get(), now->tz_info);
-  kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(time.get());
-
-  time->have_relative = 0;
-}
-
-template<bool override_time>
-void fill_holes_with_now_info(kphp::timelib::time& time) noexcept {
-  kphp::timelib::time now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor()), kphp::timelib::details::time_destructor};
-
-  now->tz_info = time->tz_info;
-  now->zone_type = TIMELIB_ZONETYPE_ID;
-
-  namespace chrono = std::chrono;
-  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
-  const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
-  const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
-
-  kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(now.get(), static_cast<timelib_sll>(sec));
-  now->us = usec;
-
-  auto options{TIMELIB_NO_CLONE};
-  if constexpr (override_time) {
-    options |= TIMELIB_OVERRIDE_TIME;
-  }
-
-  kphp::memory::libc_alloc_guard{}, timelib_fill_holes(time.get(), now.get(), options);
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(time.get(), now->tz_info);
-  kphp::memory::libc_alloc_guard{}, timelib_update_from_sse(time.get());
-
-  time->have_relative = 0;
 }
 
 } // namespace kphp::timelib
