@@ -93,7 +93,7 @@ static int tl_fetch_query_flags(tl_query_header_t* header) {
     }
   }
   if (flags & flag::persistent_query) {
-    header->persistent_request.fetch();
+    header->persistent_query.fetch();
     if (tl_fetch_error()) {
       return -1;
     }
@@ -339,7 +339,7 @@ void tl_store_header(const tl_query_header_t* header) {
         tl_store_double(header->random_delay);
       }
       if (flags & flag::persistent_query) {
-        header->persistent_request.write();
+        header->persistent_query.write();
       }
       if (flags & flag::trace_context) {
         header->trace_context.write();

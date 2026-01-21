@@ -144,29 +144,6 @@ bool CertInfoItem::fetch(tl::fetcher& tlf) noexcept {
   return true;
 }
 
-bool tracing::TraceContext::fetch(tl::fetcher& tlf) noexcept {
-  bool ok{fields_mask.fetch(tlf)};
-
-  if (ok) {
-    ok &= trace_id.fetch(tlf);
-  }
-  if (ok && static_cast<bool>(fields_mask.value & PARENT_ID_FLAG)) {
-    ok &= opt_parent_id.emplace().fetch(tlf);
-  }
-  if (ok && static_cast<bool>(fields_mask.value & SOURCE_ID_FLAG)) {
-    ok &= opt_source_id.emplace().fetch(tlf);
-  }
-
-  reserved_status_0 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_STATUS_0_FLAG);
-  reserved_status_1 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_STATUS_1_FLAG);
-  reserved_level_0 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_LEVEL_0_FLAG);
-  reserved_level_1 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_LEVEL_1_FLAG);
-  reserved_level_2 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_LEVEL_2_FLAG);
-  debug_flag = static_cast<bool>(fields_mask.value & RETURN_DEBUG_FLAG);
-
-  return ok;
-}
-
 // ===== RPC =====
 
 bool rpcInvokeReqExtra::fetch(tl::fetcher& tlf) noexcept {

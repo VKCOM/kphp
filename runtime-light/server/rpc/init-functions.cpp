@@ -40,7 +40,7 @@ constexpr std::string_view RPC_EXTRA_INT_FORWARD = "RPC_EXTRA_INT_FORWARD";
 constexpr std::string_view RPC_EXTRA_CUSTOM_TIMEOUT_MS = "RPC_EXTRA_CUSTOM_TIMEOUT_MS";
 constexpr std::string_view RPC_EXTRA_SUPPORTED_COMPRESSION_VERSION = "RPC_EXTRA_SUPPORTED_COMPRESSION_VERSION";
 constexpr std::string_view RPC_EXTRA_RANDOM_DELAY = "RPC_EXTRA_RANDOM_DELAY";
-constexpr std::string_view RPC_EXTRA_PERSISTENT_REQUEST = "RPC_EXTRA_PERSISTENT_REQUEST";
+constexpr std::string_view RPC_EXTRA_PERSISTENT_QUERY = "RPC_EXTRA_PERSISTENT_QUERY";
 constexpr std::string_view RPC_EXTRA_TRACE_CONTEXT = "RPC_EXTRA_TRACE_CONTEXT";
 constexpr std::string_view RPC_EXTRA_EXECUTION_CONTEXT = "RPC_EXTRA_EXECUTION_CONTEXT";
 
@@ -99,7 +99,7 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
                                                                                      std::pair{string{"hi"}, value.persistent_slot_uuid.hi.value}}});
           }
 
-          superglobals.v$_SERVER.set_value(string{RPC_EXTRA_PERSISTENT_REQUEST.data(), RPC_EXTRA_PERSISTENT_REQUEST.size()}, out);
+          superglobals.v$_SERVER.set_value(string{RPC_EXTRA_PERSISTENT_QUERY.data(), RPC_EXTRA_PERSISTENT_QUERY.size()}, out);
         },
         extra.opt_persistent_query->request);
   }

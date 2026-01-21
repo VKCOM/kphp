@@ -1503,9 +1503,9 @@ static void save_rpc_query_headers(const tl_query_header_t& header, mixed& v$_SE
                                                                                      std::pair{string{"hi"}, value.persistent_slot_uuid.hi}}});
           }
 
-          v$_SERVER.set_value(string{"RPC_EXTRA_PERSISTENT_REQUEST"}, out);
+          v$_SERVER.set_value(string{"RPC_EXTRA_PERSISTENT_QUERY"}, out);
         },
-        header.persistent_request.request);
+        header.persistent_query.request);
   }
   if (header.flags & flag::trace_context) {
     const auto& trace_context{header.trace_context};

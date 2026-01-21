@@ -201,7 +201,7 @@ struct tl_query_header_t {
   std::vector<std::string> string_forward_keys;
   int supported_compression_version{};
   double random_delay{};
-  exactlyOnce::PersistentRequest persistent_request{};
+  exactlyOnce::PersistentRequest persistent_query{};
   tracing::TraceContext trace_context{};
   std::string execution_context;
 };

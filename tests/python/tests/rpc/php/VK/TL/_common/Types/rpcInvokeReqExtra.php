@@ -8,6 +8,8 @@
 
 namespace VK\TL\_common\Types;
 
+use VK\TL;
+
 /**
  * @kphp-tl-class
  */
@@ -61,6 +63,15 @@ class rpcInvokeReqExtra {
   /** Field mask for $return_view_number field */
   const BIT_RETURN_VIEW_NUMBER_27 = (1 << 27);
 
+  /** Field mask for $persistent_query field */
+  const BIT_PERSISTENT_QUERY_28 = (1 << 28);
+
+  /** Field mask for $trace_context field */
+  const BIT_TRACE_CONTEXT_29 = (1 << 29);
+
+  /** Field mask for $execution_context field */
+  const BIT_EXECUTION_CONTEXT_30 = (1 << 30);
+
   /** @var boolean */
   public $return_binlog_pos = false;
 
@@ -108,6 +119,15 @@ class rpcInvokeReqExtra {
 
   /** @var boolean */
   public $return_view_number = false;
+
+  /** @var TL\exactlyOnce\Types\exactlyOnce_PersistentRequest|null */
+  public $persistent_query = null;
+
+  /** @var TL\tracing\Types\tracing_traceContext|null */
+  public $trace_context = null;
+
+  /** @var string|null */
+  public $execution_context = null;
 
   /**
    * @kphp-inline
@@ -183,6 +203,18 @@ class rpcInvokeReqExtra {
 
     if ($this->return_view_number) {
       $mask |= self::BIT_RETURN_VIEW_NUMBER_27;
+    }
+
+    if ($this->persistent_query) {
+      $mask |= self::BIT_PERSISTENT_QUERY_28;
+    }
+
+    if ($this->trace_context) {
+      $mask |= self::BIT_TRACE_CONTEXT_29;
+    }
+
+    if ($this->execution_context !== null) {
+      $mask |= self::BIT_EXECUTION_CONTEXT_30;
     }
 
     return $mask;

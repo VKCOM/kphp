@@ -90,7 +90,7 @@ rpcInvokeReqExtra#f3ef81a9 {flags:#}
   supported_compression_version:flags.25?int // note, that client support compression, to possibly compress answers
   random_delay:flags.26?double // starting query would be delayed by random number, not grater than given
   return_view_number:flags.27?%True // Barsic related parameter: return view number in response
-  persistent_request: flags.28?exactlyOnce.PersistentRequest
+  persistent_query: flags.28?exactlyOnce.PersistentRequest
   trace_context:flags.29?%(tracing.TraceContext)
   execution_context:flags.30?string // contains serialized execution context.
   = RpcInvokeReqExtra flags;
