@@ -89,13 +89,13 @@ std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kp
 std::expected<rel_time, error_container> parse_interval(std::string_view s) noexcept {
   timelib_time* b{nullptr};
   timelib_time* e{nullptr};
+  kphp::memory::libc_alloc_guard _{};
   vk::final_action e_deleter{[e]() { free(e); }};
   vk::final_action b_deleter{[b]() { free(b); }};
   timelib_rel_time* p{nullptr};
   int r{}; // it's intentionally declared as 'int' since timelib_strtointerval accepts 'int'
   timelib_error_container* errors{nullptr};
 
-  kphp::memory::libc_alloc_guard _{};
   timelib_strtointerval(s.data(), s.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r), std::addressof(errors));
 
   if (errors->error_count > 0) {
