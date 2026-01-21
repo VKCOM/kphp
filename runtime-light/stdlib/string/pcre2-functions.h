@@ -274,7 +274,7 @@ class matcher {
   kphp::pcre2::match_context& m_ctx;
   PCRE2_SIZE m_current_offset{};
   kphp::pcre2::match_data& m_match_data;
-  uint32_t m_base_options{};
+  uint32_t m_user_options{};
   uint32_t m_match_options{};
   bool m_is_utf{false};
 
@@ -286,12 +286,12 @@ public:
         m_ctx{ctx},
         m_current_offset{match_from},
         m_match_data{data},
-        m_base_options{options},
+        m_user_options{options},
         m_is_utf{re.is_utf()} {}
 
   std::expected<std::optional<kphp::pcre2::match_view>, kphp::pcre2::error> next() noexcept {
     while (m_current_offset <= m_subject.length()) {
-      uint32_t current_attempt_options{m_base_options | m_match_options};
+      uint32_t current_attempt_options{m_user_options | m_match_options};
 
       auto ret_code{pcre2_match_8(m_re.m_code.get(), reinterpret_cast<PCRE2_SPTR8>(m_subject.data()), m_subject.length(), m_current_offset,
                                   current_attempt_options, m_match_data.get(), m_ctx.get())};
