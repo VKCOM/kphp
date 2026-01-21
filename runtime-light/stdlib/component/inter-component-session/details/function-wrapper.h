@@ -60,7 +60,7 @@ public:
 
   template<typename... Arguments>
   R operator()(Arguments&&... args) noexcept {
-    static_assert(std::is_invocable_v<ivoker_type, Arguments...>);
+    static_assert(std::is_invocable_v<invoker_type, Arguments...>);
     kphp::log::assertion(func_obj != nullptr);
     return invoker(func_obj, std::forward<Arguments...>(args...));
   }
@@ -101,7 +101,7 @@ private:
   std::unique_ptr<void, decltype(std::addressof(raw_mem_free))> raw_mem;
   const void* func_obj;
   R (*invoker)(const void*, Args...);
-  using ivoker_type = R (*)(Args...);
+  using invoker_type = R (*)(Args...);
   void (*deleter)(const void*);
 };
 
