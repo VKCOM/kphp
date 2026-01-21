@@ -233,6 +233,8 @@ public:
 
   std::expected<size_t, std::pair<size_t, kphp::pcre2::error>> substitute(std::string_view replacement, std::span<char> buffer,
                                                                           kphp::pcre2::match_context& ctx) const noexcept {
+    kphp::log::assertion(buffer.data() != nullptr);
+
     uint32_t substitute_options{PCRE2_SUBSTITUTE_UNKNOWN_UNSET | PCRE2_SUBSTITUTE_UNSET_EMPTY | PCRE2_SUBSTITUTE_MATCHED | PCRE2_SUBSTITUTE_OVERFLOW_LENGTH |
                                 PCRE2_SUBSTITUTE_REPLACEMENT_ONLY | m_match_options};
 
