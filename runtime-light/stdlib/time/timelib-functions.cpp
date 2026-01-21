@@ -61,9 +61,11 @@ time_offset construct_time_offset(const kphp::timelib::time& t) noexcept {
   return time_offset{timelib_get_time_zone_info(t->sse, t->tz_info), kphp::timelib::details::time_offset_destructor};
 }
 
-std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view formatted_time) noexcept {
+std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container>
+parse_time(std::string_view formatted_time) noexcept {
   timelib_error_container* errors{};
-  time time{(kphp::memory::libc_alloc_guard{}, timelib_strtotime(formatted_time.data(), formatted_time.size(), std::addressof(errors), timelib_builtin_db(), get_timezone_info)),
+  time time{(kphp::memory::libc_alloc_guard{},
+             timelib_strtotime(formatted_time.data(), formatted_time.size(), std::addressof(errors), timelib_builtin_db(), get_timezone_info)),
             kphp::timelib::details::time_destructor};
   if (errors->error_count != 0) [[unlikely]] {
     return std::unexpected{error_container{errors, kphp::timelib::details::error_container_destructor}};
@@ -96,7 +98,8 @@ std::expected<rel_time, error_container> parse_interval(std::string_view formatt
   int r{}; // it's intentionally declared as 'int' since timelib_strtointerval accepts 'int'
   timelib_error_container* errors{nullptr};
 
-  timelib_strtointerval(formatted_interval.data(), formatted_interval.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r), std::addressof(errors));
+  timelib_strtointerval(formatted_interval.data(), formatted_interval.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r),
+                        std::addressof(errors));
 
   if (errors->error_count > 0) {
     kphp::timelib::details::rel_time_destructor(p);
@@ -384,7 +387,8 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view for
 
   auto expected_tzinfo{kphp::timelib::get_timezone_info(timezone)};
   if (!expected_tzinfo.has_value()) [[unlikely]] {
-    kphp::log::warning("can't get timezone info: timezone -> {}, datetime -> {}, error -> {}", timezone, formatted_time, timelib_get_error_message(expected_tzinfo.error()));
+    kphp::log::warning("can't get timezone info: timezone -> {}, datetime -> {}, error -> {}", timezone, formatted_time,
+                       timelib_get_error_message(expected_tzinfo.error()));
     return {};
   }
   const auto& tzinfo{expected_tzinfo->get()};
