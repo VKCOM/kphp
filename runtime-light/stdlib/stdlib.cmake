@@ -38,10 +38,10 @@ prepend(
   string/string-state.cpp
   system/system-functions.cpp
   system/system-state.cpp
-  time/dateinterval.cpp
-  time/datetime.cpp
-  time/datetimeimmutable.cpp
-  time/datetimezone.cpp
+  time/date-interval.cpp
+  time/date-time.cpp
+  time/date-time-immutable.cpp
+  time/date-time-zone.cpp
   time/time-functions.cpp
   time/time-state.cpp
   time/timelib-functions.cpp
