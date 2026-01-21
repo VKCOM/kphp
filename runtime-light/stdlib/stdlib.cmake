@@ -44,7 +44,6 @@ prepend(
   time/date-interval.cpp
   time/date-time.cpp
   time/date-time-immutable.cpp
-  time/date-time-zone.cpp
   time/time-functions.cpp
   time/time-state.cpp
   time/timelib-functions.cpp
