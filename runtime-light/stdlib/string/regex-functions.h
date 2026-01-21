@@ -32,7 +32,7 @@ enum class trailing_unmatch : uint8_t { skip, include };
 struct info final {
   const string& regex;
   const string& subject;
-  string replacement;
+  std::optional<string> replacement;
 
   // PCRE compile options of the regex
   uint32_t compile_options{};
@@ -45,7 +45,7 @@ struct info final {
 
   info() = delete;
 
-  info(const string& regex_, const string& subject_, string replacement_) noexcept
+  info(const string& regex_, const string& subject_, std::optional<string> replacement_) noexcept
       : regex(regex_),
         subject(subject_),
         replacement(std::move(replacement_)) {}
