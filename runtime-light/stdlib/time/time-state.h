@@ -49,7 +49,7 @@ struct TimeInstanceState final : private vk::not_copyable {
   }
 
   void update_last_errors(kphp::timelib::error_container&& new_errors) noexcept {
-    last_errors.swap(new_errors);
+    last_errors = std::move(new_errors);
   }
 
   static TimeInstanceState& get() noexcept;
