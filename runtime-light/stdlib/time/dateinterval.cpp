@@ -10,6 +10,7 @@
 #include "runtime-common/core/utils/iterator.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/time/timelib-functions.h"
 
 class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<C$DateInterval>& self, const string& duration) noexcept {
   auto expected_rel_time{kphp::timelib::parse_interval({duration.c_str(), duration.size()})};

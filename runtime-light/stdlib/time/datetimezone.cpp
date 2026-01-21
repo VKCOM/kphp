@@ -9,6 +9,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/iterator.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/time/timelib-functions.h"
 
 class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone>& self, const string& timezone) noexcept {
   auto expected_tzi{kphp::timelib::get_cached_timezone_info({timezone.c_str(), timezone.size()})};

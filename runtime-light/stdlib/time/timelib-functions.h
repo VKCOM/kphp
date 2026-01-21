@@ -58,7 +58,8 @@ void set_isodate(const kphp::timelib::time& t, int64_t y, int64_t w, int64_t d) 
 void set_time(const kphp::timelib::time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept;
 
 /* === timezone related ===*/
-std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> get_cached_timezone_info(std::string_view timezone_sv, const timelib_tzdb* tzdb = timelib_builtin_db()) noexcept;
+std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> get_cached_timezone_info(std::string_view timezone_sv,
+                                                                                                     const timelib_tzdb* tzdb = timelib_builtin_db()) noexcept;
 
 /*=== timestamp ===*/
 int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,
@@ -86,7 +87,8 @@ OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib
     return out;
   }
 
-  kphp::timelib::time_offset offset{localtime ? kphp::timelib::construct_time_offset(t) : nullptr};
+  kphp::timelib::time_offset offset{localtime ? kphp::timelib::construct_time_offset(t)
+                                              : kphp::timelib::time_offset{nullptr, kphp::timelib::details::time_offset_destructor}};
 
   bool weekYearSet{false};
   timelib_sll isoweek{};
@@ -374,7 +376,7 @@ OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib
 
 template<bool override_time>
 void fill_holes_with_now_info(const kphp::timelib::time& time, const kphp::timelib::tzinfo& tzi) noexcept {
-  kphp::timelib::time now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
+  kphp::timelib::time now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor()), kphp::timelib::details::time_destructor};
 
   now->tz_info = tzi.get();
   now->zone_type = TIMELIB_ZONETYPE_ID;
@@ -401,7 +403,7 @@ void fill_holes_with_now_info(const kphp::timelib::time& time, const kphp::timel
 
 template<bool override_time>
 void fill_holes_with_now_info(const kphp::timelib::time& time) noexcept {
-  kphp::timelib::time now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor())};
+  kphp::timelib::time now{(kphp::memory::libc_alloc_guard{}, timelib_time_ctor()), kphp::timelib::details::time_destructor};
 
   now->tz_info = time->tz_info;
   now->zone_type = TIMELIB_ZONETYPE_ID;
