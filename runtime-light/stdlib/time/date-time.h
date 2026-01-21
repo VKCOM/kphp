@@ -10,10 +10,10 @@
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
-#include "runtime-light/stdlib/time/dateinterval.h"
-#include "runtime-light/stdlib/time/datetimeimmutable.h"
-#include "runtime-light/stdlib/time/datetimeinterface.h"
-#include "runtime-light/stdlib/time/datetimezone.h"
+#include "runtime-light/stdlib/time/date-interval.h"
+#include "runtime-light/stdlib/time/date-time-immutable.h"
+#include "runtime-light/stdlib/time/date-time-interface.h"
+#include "runtime-light/stdlib/time/date-time-zone.h"
 #include "runtime-light/stdlib/time/time-state.h"
 
 struct C$DateTime : public C$DateTimeInterface, private DummyVisitorMethods {

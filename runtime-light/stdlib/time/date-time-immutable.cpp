@@ -2,7 +2,7 @@
 // Copyright (c) 2026 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/stdlib/time/datetimeimmutable.h"
+#include "runtime-light/stdlib/time/date-time-immutable.h"
 
 #include <format>
 #include <string_view>
@@ -13,8 +13,8 @@
 #include "runtime-common/core/utils/iterator.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/stdlib/time/dateinterval.h"
-#include "runtime-light/stdlib/time/datetime.h"
+#include "runtime-light/stdlib/time/date-interval.h"
+#include "runtime-light/stdlib/time/date-time.h"
 #include "runtime-light/stdlib/time/time-state.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"
 
