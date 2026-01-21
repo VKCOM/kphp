@@ -37,7 +37,7 @@ struct C$DateTimeZone : public refcountable_polymorphic_php_classes_virt<>, priv
 };
 
 inline class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone>& self, const string& timezone) noexcept {
-  auto expected_tzi{kphp::timelib::get_cached_timezone_info({timezone.c_str(), timezone.size()})};
+  auto expected_tzi{kphp::timelib::get_timezone_info({timezone.c_str(), timezone.size()})};
   if (!expected_tzi.has_value()) [[unlikely]] {
     string err_msg;
     std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "DateTimeZone::__construct(): Unknown or bad timezone ({})", timezone.c_str());

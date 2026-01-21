@@ -26,20 +26,8 @@ namespace kphp::timelib {
 
 namespace {
 
-/**
- * @brief Retrieves a pointer to a `timelib_tzinfo` structure for a given time zone name.
- *
- * @param timezone The name of the time zone to retrieve.
- * @param tzdb The time zone database to search.
- * @param errc The pointer to a variable to store error code into.
- * @return `timelib_tzinfo*` pointing to the time zone information, or `nullptr` if not found.
- *
- * @note
- * - The returned pointer is owned by an internal cache; do not deallocate it using `timelib_tzinfo_dtor`.
- * - This function minimizes overhead by avoiding repeated allocations for the same time zone.
- */
-timelib_tzinfo* get_cached_timezone_info(const char* timezone, const timelib_tzdb* tzdb, int* errc) noexcept {
-  auto expected_tzinfo{kphp::timelib::get_cached_timezone_info(timezone, tzdb)};
+timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzdb* tzdb, int* errc) noexcept {
+  auto expected_tzinfo{kphp::timelib::get_timezone_info(timezone, tzdb)};
   if (!expected_tzinfo.has_value()) [[unlikely]] {
     *errc = expected_tzinfo.error();
     return nullptr;
@@ -75,9 +63,9 @@ time_offset construct_time_offset(const kphp::timelib::time& t) noexcept {
 
 std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view time_sv) noexcept {
   timelib_error_container* errors{};
-  time time{(kphp::memory::libc_alloc_guard{},
-             timelib_strtotime(time_sv.data(), time_sv.size(), std::addressof(errors), timelib_builtin_db(), get_cached_timezone_info)),
-            kphp::timelib::details::time_destructor};
+  time time{
+      (kphp::memory::libc_alloc_guard{}, timelib_strtotime(time_sv.data(), time_sv.size(), std::addressof(errors), timelib_builtin_db(), get_timezone_info)),
+      kphp::timelib::details::time_destructor};
   if (errors->error_count != 0) [[unlikely]] {
     return std::unexpected{error_container{errors, kphp::timelib::details::error_container_destructor}};
   }
@@ -89,7 +77,7 @@ std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kp
                                                                                                                          std::string_view format_sv) noexcept {
   timelib_error_container* err{nullptr};
   time t{(kphp::memory::libc_alloc_guard{},
-          timelib_parse_from_format(format_sv.data(), time_sv.data(), time_sv.size(), std::addressof(err), timelib_builtin_db(), get_cached_timezone_info)),
+          timelib_parse_from_format(format_sv.data(), time_sv.data(), time_sv.size(), std::addressof(err), timelib_builtin_db(), get_timezone_info)),
          kphp::timelib::details::time_destructor};
 
   if (err && err->error_count) {
@@ -192,8 +180,7 @@ int64_t get_offset(const kphp::timelib::time& t) noexcept {
   return 0;
 }
 
-std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> get_cached_timezone_info(std::string_view timezone_sv,
-                                                                                                     const timelib_tzdb* tzdb) noexcept {
+std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> get_timezone_info(std::string_view timezone_sv, const timelib_tzdb* tzdb) noexcept {
   auto opt_tzinfo{TimeImageState::get().timelib_zone_cache.get(timezone_sv)};
   if (opt_tzinfo.has_value()) {
     return *opt_tzinfo;
@@ -255,7 +242,7 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
   auto* now{timelib_time_ctor()};
   const vk::final_action now_deleter{[now] noexcept { timelib_time_dtor(now); }};
   string default_timezone{TimeInstanceState::get().default_timezone};
-  auto expected_tzinfo{kphp::timelib::get_cached_timezone_info({default_timezone.c_str(), default_timezone.size()})};
+  auto expected_tzinfo{kphp::timelib::get_timezone_info({default_timezone.c_str(), default_timezone.size()})};
   if (!expected_tzinfo.has_value()) [[unlikely]] {
     kphp::log::warning("can't get timezone info: timezone -> {}, error -> {}", default_timezone.c_str(), timelib_get_error_message(expected_tzinfo.error()));
     return std::nullopt;
@@ -392,7 +379,7 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view dat
     return {};
   }
 
-  auto expected_tzinfo{kphp::timelib::get_cached_timezone_info(timezone)};
+  auto expected_tzinfo{kphp::timelib::get_timezone_info(timezone)};
   if (!expected_tzinfo.has_value()) [[unlikely]] {
     kphp::log::warning("can't get timezone info: timezone -> {}, datetime -> {}, error -> {}", timezone, datetime,
                        timelib_get_error_message(expected_tzinfo.error()));
