@@ -13,6 +13,7 @@
 #include <string_view>
 
 #include "runtime-light/stdlib/diagnostics/logs.h"
+// correctly include PCRE2 lib
 #include "runtime-light/stdlib/string/regex-include.h"
 
 namespace kphp::pcre2 {
