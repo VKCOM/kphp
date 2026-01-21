@@ -35,9 +35,9 @@ public:
   static constexpr size_t OVECTOR_SIZE{MAX_SUBPATTERNS_COUNT + 1};
   static constexpr size_t REPLACE_BUFFER_SIZE{size_t{16U} * size_t{1024U}};
 
-  const kphp::pcre2::general_context regex_pcre2_general_context;
-  const kphp::pcre2::compile_context compile_context;
-  const kphp::pcre2::match_context match_context;
+  kphp::pcre2::general_context regex_pcre2_general_context;
+  kphp::pcre2::compile_context compile_context;
+  kphp::pcre2::match_context match_context;
   kphp::pcre2::match_data regex_pcre2_match_data;
 
   RegexInstanceState() noexcept;

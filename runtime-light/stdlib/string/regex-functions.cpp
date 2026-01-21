@@ -220,7 +220,7 @@ std::optional<string> replace_regex(kphp::regex::details::info& regex_info, cons
     return regex_info.subject;
   }
 
-  const auto& regex_state{RegexInstanceState::get()};
+  auto& regex_state{RegexInstanceState::get()};
   if (!regex_state.match_context) [[unlikely]] {
     return std::nullopt;
   }
@@ -282,7 +282,7 @@ std::optional<array<mixed>> split_regex(kphp::regex::details::info& regex_info, 
     limit = kphp::regex::PREG_NOLIMIT;
   }
 
-  const auto& regex_state{RegexInstanceState::get()};
+  auto& regex_state{RegexInstanceState::get()};
   if (!regex_state.match_context) [[unlikely]] {
     return std::nullopt;
   }
@@ -588,7 +588,7 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
   const kphp::pcre2::regex& re{opt_re->get()};
   auto group_names{kphp::regex::details::collect_group_names(re)};
 
-  const auto& regex_state{RegexInstanceState::get()};
+  auto& regex_state{RegexInstanceState::get()};
   kphp::log::assertion(regex_state.match_context != nullptr);
 
   auto expected_opt_match_view{kphp::pcre2::matcher{re,
@@ -659,7 +659,7 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
     }
   }
 
-  const auto& regex_state{RegexInstanceState::get()};
+  auto& regex_state{RegexInstanceState::get()};
   kphp::log::assertion(regex_state.match_context != nullptr);
 
   kphp::pcre2::matcher pcre2_matcher{re,

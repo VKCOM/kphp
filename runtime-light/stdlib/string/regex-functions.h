@@ -174,7 +174,7 @@ kphp::coro::task<std::optional<string>> replace_callback(info& regex_info, const
     co_return regex_info.subject;
   }
 
-  const auto& regex_state{RegexInstanceState::get()};
+  auto& regex_state{RegexInstanceState::get()};
   if (!regex_state.match_context) [[unlikely]] {
     co_return std::nullopt;
   }
@@ -331,7 +331,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
     co_return regex_info.subject;
   }
 
-  const auto& regex_state{RegexInstanceState::get()};
+  auto& regex_state{RegexInstanceState::get()};
   if (!regex_state.match_context) [[unlikely]] {
     co_return Optional<string>{};
   }
