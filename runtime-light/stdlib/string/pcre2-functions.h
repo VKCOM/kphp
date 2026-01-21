@@ -102,8 +102,7 @@ public:
   friend class match_view;
   friend class matcher;
 
-  static std::expected<regex, kphp::pcre2::compile_error> compile(std::string_view pattern, kphp::pcre2::compile_context& ctx,
-                                                                  uint32_t options = 0) noexcept {
+  static std::expected<regex, kphp::pcre2::compile_error> compile(std::string_view pattern, kphp::pcre2::compile_context& ctx, uint32_t options = 0) noexcept {
     int32_t errorcode{};
     PCRE2_SIZE erroroffset{};
 
@@ -144,8 +143,8 @@ public:
       return {.b = group_name_iterator{nullptr, 0}, .e = group_name_iterator{nullptr, 0}};
     }
 
-    kphp::log::assertion(pcre2_pattern_info_8(m_code.get(), PCRE2_INFO_NAMEENTRYSIZE, std::addressof(entry_size)) == 0);
-    kphp::log::assertion(pcre2_pattern_info_8(m_code.get(), PCRE2_INFO_NAMETABLE, std::addressof(table)) == 0);
+    kphp::log::assertion(pcre2_pattern_info_8(m_code.get(), PCRE2_INFO_NAMEENTRYSIZE, std::addressof(entry_size)) == 0 &&
+                         pcre2_pattern_info_8(m_code.get(), PCRE2_INFO_NAMETABLE, std::addressof(table)) == 0);
 
     return {.b = group_name_iterator{table, entry_size}, .e = group_name_iterator{std::next(table, static_cast<size_t>(count) * entry_size), entry_size}};
   }
