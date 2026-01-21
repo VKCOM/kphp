@@ -9,8 +9,8 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/timelib-constants.h"
-#include "runtime-light/stdlib/time/timelib-functions.h"
 #include "runtime-light/stdlib/time/timelib-timezone-cache.h"
+#include "runtime-light/stdlib/time/timelib-types.h"
 
 struct TimeInstanceState final : private vk::not_copyable {
   string default_timezone{kphp::timelib::timezones::MOSCOW.data(), kphp::timelib::timezones::MOSCOW.size()};
@@ -55,7 +55,7 @@ struct TimeInstanceState final : private vk::not_copyable {
   static TimeInstanceState& get() noexcept;
 
 private:
-  kphp::timelib::error_container last_errors{nullptr};
+  kphp::timelib::error_container last_errors{nullptr, kphp::timelib::details::error_container_destructor};
 };
 
 struct TimeImageState final : private vk::not_copyable {
