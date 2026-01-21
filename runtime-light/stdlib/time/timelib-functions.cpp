@@ -61,9 +61,9 @@ time_offset construct_time_offset(const kphp::timelib::time& t) noexcept {
   return time_offset{timelib_get_time_zone_info(t->sse, t->tz_info), kphp::timelib::details::time_offset_destructor};
 }
 
-std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view s) noexcept {
+std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view formatted_time) noexcept {
   timelib_error_container* errors{};
-  time time{(kphp::memory::libc_alloc_guard{}, timelib_strtotime(s.data(), s.size(), std::addressof(errors), timelib_builtin_db(), get_timezone_info)),
+  time time{(kphp::memory::libc_alloc_guard{}, timelib_strtotime(formatted_time.data(), formatted_time.size(), std::addressof(errors), timelib_builtin_db(), get_timezone_info)),
             kphp::timelib::details::time_destructor};
   if (errors->error_count != 0) [[unlikely]] {
     return std::unexpected{error_container{errors, kphp::timelib::details::error_container_destructor}};
@@ -72,11 +72,11 @@ std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kp
   return std::make_pair(std::move(time), error_container{errors, kphp::timelib::details::error_container_destructor});
 }
 
-std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view s,
+std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view formatted_time,
                                                                                                                          std::string_view format) noexcept {
   timelib_error_container* err{nullptr};
   time t{(kphp::memory::libc_alloc_guard{},
-          timelib_parse_from_format(format.data(), s.data(), s.size(), std::addressof(err), timelib_builtin_db(), get_timezone_info)),
+          timelib_parse_from_format(format.data(), formatted_time.data(), formatted_time.size(), std::addressof(err), timelib_builtin_db(), get_timezone_info)),
          kphp::timelib::details::time_destructor};
 
   if (err && err->error_count) {
@@ -86,7 +86,7 @@ std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kp
   return std::make_pair(std::move(t), error_container{err, kphp::timelib::details::error_container_destructor});
 }
 
-std::expected<rel_time, error_container> parse_interval(std::string_view s) noexcept {
+std::expected<rel_time, error_container> parse_interval(std::string_view formatted_interval) noexcept {
   timelib_time* b{nullptr};
   timelib_time* e{nullptr};
   kphp::memory::libc_alloc_guard _{};
@@ -96,7 +96,7 @@ std::expected<rel_time, error_container> parse_interval(std::string_view s) noex
   int r{}; // it's intentionally declared as 'int' since timelib_strtointerval accepts 'int'
   timelib_error_container* errors{nullptr};
 
-  timelib_strtointerval(s.data(), s.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r), std::addressof(errors));
+  timelib_strtointerval(formatted_interval.data(), formatted_interval.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r), std::addressof(errors));
 
   if (errors->error_count > 0) {
     kphp::timelib::details::rel_time_destructor(p);
@@ -290,9 +290,9 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
   return now->sse;
 }
 
-std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view s,
+std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view formatted_time,
                                                                                                                          const time& t) noexcept {
-  auto expected{parse_time(s)};
+  auto expected{parse_time(formatted_time)};
 
   if (!expected.has_value()) [[unlikely]] {
     return expected;
@@ -376,15 +376,15 @@ std::expected<time, std::string_view> sub_time_interval(const kphp::timelib::tim
   return new_time;
 }
 
-std::optional<int64_t> strtotime(std::string_view timezone, std::string_view s, int64_t timestamp) noexcept {
-  if (s.empty()) [[unlikely]] {
+std::optional<int64_t> strtotime(std::string_view timezone, std::string_view formatted_time, int64_t timestamp) noexcept {
+  if (formatted_time.empty()) [[unlikely]] {
     kphp::log::warning("datetime can't be empty");
     return {};
   }
 
   auto expected_tzinfo{kphp::timelib::get_timezone_info(timezone)};
   if (!expected_tzinfo.has_value()) [[unlikely]] {
-    kphp::log::warning("can't get timezone info: timezone -> {}, datetime -> {}, error -> {}", timezone, s, timelib_get_error_message(expected_tzinfo.error()));
+    kphp::log::warning("can't get timezone info: timezone -> {}, datetime -> {}, error -> {}", timezone, formatted_time, timelib_get_error_message(expected_tzinfo.error()));
     return {};
   }
   const auto& tzinfo{expected_tzinfo->get()};
@@ -397,7 +397,7 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view s, 
   now->zone_type = TIMELIB_ZONETYPE_ID;
   timelib_unixtime2local(now, timestamp);
 
-  auto expected{parse_time(s)};
+  auto expected{parse_time(formatted_time)};
   if (!expected.has_value()) [[unlikely]] {
     kphp::log::warning("got {} errors in timelib_strtotime", expected.error()->error_count); // TODO should we logs all the errors?
     return {};
