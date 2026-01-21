@@ -131,7 +131,7 @@ OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib
     case 'o':
       if (!weekYearSet) {
         timelib_isoweek_from_date(t->y, t->m, t->d, std::addressof(isoweek), std::addressof(isoyear));
-        weekYearSet = 1;
+        weekYearSet = true;
       }
       out = std::format_to(out, "{}", isoyear);
       break; // iso year
