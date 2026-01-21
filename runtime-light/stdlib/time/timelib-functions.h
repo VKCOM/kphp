@@ -92,7 +92,7 @@ OutputIt format_to(OutputIt out, std::string_view format_sv, const kphp::timelib
   timelib_sll isoweek{};
   timelib_sll isoyear{};
 
-  for (std::size_t i{0}; i < format_sv.size(); ++i) {
+  for (size_t i{0}; i < format_sv.size(); ++i) {
     bool rfc_colon{false};
     switch (format_sv[i]) {
     // day
