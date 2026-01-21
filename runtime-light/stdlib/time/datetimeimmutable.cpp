@@ -7,6 +7,8 @@
 #include <format>
 #include <string_view>
 
+#include "kphp/timelib/timelib.h"
+
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/iterator.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
@@ -75,11 +77,11 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$createFromFormat(const 
   TimeInstanceState::get().update_last_errors(std::move(errors));
 
   if (!timezone.is_null()) {
-    kphp::timelib::fill_holes_with_now_info<true>(time, *timezone->tzi);
+    kphp::timelib::fill_holes_with_now_info(time, *timezone->tzi, TIMELIB_NO_CLONE | TIMELIB_OVERRIDE_TIME);
   } else if (time->tz_info != nullptr) {
-    kphp::timelib::fill_holes_with_now_info<true>(time);
+    kphp::timelib::fill_holes_with_now_info(time, TIMELIB_NO_CLONE | TIMELIB_OVERRIDE_TIME);
   } else if (auto default_tzi{kphp::timelib::get_cached_timezone_info(TimeInstanceState::get().default_timezone.c_str())}; default_tzi.has_value()) {
-    kphp::timelib::fill_holes_with_now_info<true>(time, *default_tzi);
+    kphp::timelib::fill_holes_with_now_info(time, *default_tzi, TIMELIB_NO_CLONE | TIMELIB_OVERRIDE_TIME);
   } else {
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(string{"DateTimeImmutable::__construct(): Failed to get default timezone"}));
     return {};
