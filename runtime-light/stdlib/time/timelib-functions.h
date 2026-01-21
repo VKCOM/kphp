@@ -27,7 +27,7 @@ constexpr inline std::array<std::string_view, 7> DAY_FULL_NAMES = {"Sunday", "Mo
 constexpr inline std::array<std::string_view, 7> DAY_SHORT_NAMES = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 /* === rel_time === */
-std::expected<kphp::timelib::rel_time, kphp::timelib::error_container> parse_interval(std::string_view s) noexcept;
+std::expected<kphp::timelib::rel_time, kphp::timelib::error_container> parse_interval(std::string_view formatted_interval) noexcept;
 
 kphp::timelib::rel_time clone_time_interval(const kphp::timelib::time& t) noexcept;
 
@@ -44,12 +44,12 @@ OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::r
 kphp::timelib::time_offset construct_time_offset(const kphp::timelib::time& t) noexcept;
 
 /* === time === */
-std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view s) noexcept;
+std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view formatted_time) noexcept;
 
-std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view s,
+std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view formatted_time,
                                                                                                                          std::string_view format) noexcept;
 
-std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view s,
+std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view formatted_time,
                                                                                                                          const kphp::timelib::time& t) noexcept;
 
 kphp::timelib::time clone_time(const kphp::timelib::time& t) noexcept;
@@ -91,7 +91,7 @@ int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::op
 std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
                               std::optional<int64_t> day, std::optional<int64_t> yea) noexcept;
 
-std::optional<int64_t> strtotime(std::string_view timezone, std::string_view s, int64_t now_timestamp) noexcept;
+std::optional<int64_t> strtotime(std::string_view timezone, std::string_view formatted_time, int64_t now_timestamp) noexcept;
 
 /* === helpers ===*/
 bool valid_date(int64_t year, int64_t month, int64_t day) noexcept;
