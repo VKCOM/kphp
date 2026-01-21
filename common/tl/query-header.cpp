@@ -105,7 +105,7 @@ static int tl_fetch_query_flags(tl_query_header_t* header) {
     }
   }
   if (flags & flag::execution_context) {
-    vk::tl::fetch_string(header->execution_context, 1000);
+    vk::tl::fetch_string(header->execution_context, 1024);
     if (tl_fetch_error()) {
       return -1;
     }
