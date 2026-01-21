@@ -20,6 +20,14 @@ namespace kphp::pcre2 {
 
 namespace details {
 
+namespace offset_pair {
+
+static constexpr size_t FIRST{0};
+static constexpr size_t SECOND{1};
+static constexpr size_t SIZE{2};
+
+} // namespace offset_pair
+
 inline int64_t skip_utf8_subsequent_bytes(size_t offset, const std::string_view subject) noexcept {
   // all multibyte utf8 runes consist of subsequent bytes,
   // these subsequent bytes start with 10 bit pattern
@@ -216,10 +224,10 @@ public:
   }
 
   size_t match_start() const noexcept {
-    return pcre2_get_ovector_pointer_8(m_match_data.get())[0];
+    return pcre2_get_ovector_pointer_8(m_match_data.get())[kphp::pcre2::details::offset_pair::FIRST];
   }
   size_t match_end() const noexcept {
-    return pcre2_get_ovector_pointer_8(m_match_data.get())[1];
+    return pcre2_get_ovector_pointer_8(m_match_data.get())[kphp::pcre2::details::offset_pair::SECOND];
   }
 
   /**
@@ -250,8 +258,8 @@ private:
 
     const auto* ovector_ptr{pcre2_get_ovector_pointer_8(m_match_data.get())};
     // ovector is an array of offset pairs
-    PCRE2_SIZE start{ovector_ptr[2 * i]};
-    PCRE2_SIZE end{ovector_ptr[(2 * i) + 1]};
+    PCRE2_SIZE start{ovector_ptr[(kphp::pcre2::details::offset_pair::SIZE * i) + kphp::pcre2::details::offset_pair::FIRST]};
+    PCRE2_SIZE end{ovector_ptr[(kphp::pcre2::details::offset_pair::SIZE * i) + kphp::pcre2::details::offset_pair::SECOND]};
 
     if (start == PCRE2_UNSET) {
       return std::nullopt;
@@ -317,8 +325,8 @@ public:
 
       const PCRE2_SIZE* ovector{pcre2_get_ovector_pointer_8(m_match_data.get())};
 
-      size_t start{ovector[0]};
-      size_t end{ovector[1]};
+      size_t start{ovector[kphp::pcre2::details::offset_pair::FIRST]};
+      size_t end{ovector[kphp::pcre2::details::offset_pair::SECOND]};
 
       if (start == end) {
         // Found an empty match; set flags to try finding a non-empty match at same position
