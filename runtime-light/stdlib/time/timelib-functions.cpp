@@ -189,7 +189,12 @@ std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> get_
     return *opt_tzinfo;
   }
 
-  return instance_timelib_zone_cache.make(name, tzdb);
+  int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
+  kphp::timelib::tzinfo tzinfo{timelib_parse_tzfile(name.data(), tzdb, std::addressof(errc)), kphp::timelib::details::tzinfo_destructor};
+  if (tzinfo == nullptr || tzinfo->name == nullptr) [[unlikely]] {
+    return std::unexpected{errc};
+  }
+  return *instance_timelib_zone_cache.put(std::move(tzinfo));
 }
 
 int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,

@@ -60,6 +60,10 @@ public:
     return it != m_cache.end() ? std::make_optional(std::cref(*it)) : std::nullopt;
   }
 
+  std::optional<std::reference_wrapper<const kphp::timelib::tzinfo>> put(kphp::timelib::tzinfo&& tzinfo) noexcept {
+    return *m_cache.emplace(std::move(tzinfo)).first;
+  }
+
   std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> make(std::string_view tz, const timelib_tzdb* tzdb) noexcept {
     int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
     kphp::timelib::tzinfo tzinfo{timelib_parse_tzfile(tz.data(), tzdb, std::addressof(errc)), kphp::timelib::details::tzinfo_destructor};
@@ -77,7 +81,14 @@ public:
 
   timezone_cache(std::initializer_list<std::string_view> tzs) noexcept {
     kphp::memory::libc_alloc_guard _{};
-    std::ranges::for_each(tzs, [this](std::string_view tz) noexcept { make(tz, timelib_builtin_db()), void(); });
+    std::ranges::for_each(tzs, [this](std::string_view tz) noexcept {
+      int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
+      kphp::timelib::tzinfo tzinfo{timelib_parse_tzfile(tz.data(), timelib_builtin_db(), std::addressof(errc)), kphp::timelib::details::tzinfo_destructor};
+      if (tzinfo == nullptr || tzinfo->name == nullptr) [[unlikely]] {
+        return;
+      }
+      put(std::move(tzinfo));
+    });
   }
 
   timezone_cache(timezone_cache&& other) noexcept
