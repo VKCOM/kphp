@@ -15,7 +15,6 @@
 
 #include "kphp/timelib/timelib.h"
 
-#include "runtime-light/allocator/allocator.h"
 #include "runtime-light/stdlib/time/timelib-types.h"
 
 namespace kphp::timelib {
