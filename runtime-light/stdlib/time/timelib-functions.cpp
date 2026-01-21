@@ -161,7 +161,7 @@ int64_t get_timestamp(const kphp::timelib::time& t) noexcept {
   return timestamp;
 }
 
-void set_timestamp(const kphp::timelib::time& t, int64_t timestamp) noexcept {
+void set_timestamp(kphp::timelib::time& t, int64_t timestamp) noexcept {
   kphp::memory::libc_alloc_guard{}, timelib_unixtime2local(t.get(), static_cast<timelib_sll>(timestamp));
   kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
   t->us = 0;
@@ -344,14 +344,14 @@ std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kp
   return std::make_pair(std::move(res), std::move(errors));
 }
 
-void set_date(const kphp::timelib::time& t, int64_t y, int64_t m, int64_t d) noexcept {
+void set_date(kphp::timelib::time& t, int64_t y, int64_t m, int64_t d) noexcept {
   t->y = y;
   t->m = m;
   t->d = d;
   kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
 }
 
-void set_isodate(const kphp::timelib::time& t, int64_t y, int64_t w, int64_t d) noexcept {
+void set_isodate(kphp::timelib::time& t, int64_t y, int64_t w, int64_t d) noexcept {
   t->y = y;
   t->m = 1;
   t->d = 1;
@@ -361,7 +361,7 @@ void set_isodate(const kphp::timelib::time& t, int64_t y, int64_t w, int64_t d) 
   kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
 }
 
-void set_time(const kphp::timelib::time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept {
+void set_time(kphp::timelib::time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept {
   t->h = h;
   t->i = i;
   t->s = s;
