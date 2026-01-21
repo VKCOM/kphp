@@ -64,15 +64,6 @@ public:
     return *m_cache.emplace(std::move(tzinfo)).first;
   }
 
-  std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> make(std::string_view tz, const timelib_tzdb* tzdb) noexcept {
-    int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-    kphp::timelib::tzinfo tzinfo{timelib_parse_tzfile(tz.data(), tzdb, std::addressof(errc)), kphp::timelib::details::tzinfo_destructor};
-    if (tzinfo == nullptr || tzinfo->name == nullptr) [[unlikely]] {
-      return std::unexpected{errc};
-    }
-    return *m_cache.emplace(std::move(tzinfo)).first;
-  }
-
   void clear() noexcept {
     kphp::memory::libc_alloc_guard{}, m_cache.clear();
   }
