@@ -251,7 +251,7 @@ public:
   }
 
 private:
-  std::optional<offset_range> get_range(size_t i = 0) const noexcept {
+  std::optional<offset_range> get_range(size_t i) const noexcept {
     if (i >= m_num_groups) {
       return std::nullopt;
     }
