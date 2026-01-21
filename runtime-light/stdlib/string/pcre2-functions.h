@@ -10,6 +10,7 @@
 #include <format>
 #include <iterator>
 #include <optional>
+#include <span>
 #include <string_view>
 
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -230,24 +231,21 @@ public:
     return pcre2_get_ovector_pointer_8(m_match_data.get())[kphp::pcre2::details::offset_pair::SECOND];
   }
 
-  /**
-   * @param buffer_len Input: capacity of buffer. Output: actual length of result.
-   * @return expected<size_t, error>: The number of replacements (should be 1).
-   */
-  std::expected<size_t, kphp::pcre2::error> substitute(std::string_view replacement, char* buffer, size_t& buffer_len,
-                                                       kphp::pcre2::match_context& ctx) const noexcept {
+  std::expected<size_t, std::pair<size_t, kphp::pcre2::error>> substitute(std::string_view replacement, std::span<char> buffer,
+                                                                          kphp::pcre2::match_context& ctx) const noexcept {
     uint32_t substitute_options{PCRE2_SUBSTITUTE_UNKNOWN_UNSET | PCRE2_SUBSTITUTE_UNSET_EMPTY | PCRE2_SUBSTITUTE_MATCHED | PCRE2_SUBSTITUTE_OVERFLOW_LENGTH |
                                 PCRE2_SUBSTITUTE_REPLACEMENT_ONLY | m_match_options};
 
+    auto buffer_len{buffer.size()};
     auto ret_code{pcre2_substitute_8(m_re.m_code.get(), reinterpret_cast<PCRE2_SPTR8>(m_subject.data()), m_subject.length(), 0, substitute_options,
                                      m_match_data.get(), ctx.get(), reinterpret_cast<PCRE2_SPTR8>(replacement.data()), replacement.length(),
-                                     reinterpret_cast<PCRE2_UCHAR8*>(buffer), std::addressof(buffer_len))};
+                                     reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), std::addressof(buffer_len))};
 
     if (ret_code < 0) {
-      return std::unexpected<kphp::pcre2::error>{{.code = ret_code}};
+      return std::unexpected<std::pair<size_t, kphp::pcre2::error>>{{buffer_len, {.code = ret_code}}};
     }
 
-    return static_cast<size_t>(ret_code);
+    return buffer_len;
   }
 
 private:

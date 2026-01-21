@@ -254,20 +254,21 @@ std::optional<string> replace_regex(kphp::regex::details::info& regex_info, cons
 
     output_str.append(std::next(regex_info.subject.c_str(), last_pos), match_view.match_start() - last_pos);
 
-    PCRE2_SIZE replacement_length{buffer_length};
-    auto sub_res{
-        match_view.substitute({replacement.c_str(), replacement.size()}, runtime_ctx.static_SB.buffer(), replacement_length, regex_state.match_context)};
-    if (!sub_res.has_value() && sub_res.error().code == PCRE2_ERROR_NOMEMORY) [[unlikely]] {
-      runtime_ctx.static_SB.reserve(replacement_length);
-      buffer_length = replacement_length;
-      sub_res = match_view.substitute({replacement.c_str(), replacement.size()}, runtime_ctx.static_SB.buffer(), replacement_length, regex_state.match_context);
-    }
-    if (!sub_res.has_value()) [[unlikely]] {
-      kphp::log::warning("pcre2_substitute error {}", sub_res.error());
-      return std::nullopt;
+    auto sub_res{match_view.substitute({replacement.c_str(), replacement.size()}, {runtime_ctx.static_SB.buffer(), buffer_length}, regex_state.match_context)};
+    if (!sub_res.has_value()) {
+      auto [needed_size, error]{sub_res.error()};
+      if (error.code == PCRE2_ERROR_NOMEMORY) [[unlikely]] {
+        runtime_ctx.static_SB.reserve(needed_size);
+        buffer_length = needed_size;
+        sub_res = match_view.substitute({replacement.c_str(), replacement.size()}, {runtime_ctx.static_SB.buffer(), buffer_length}, regex_state.match_context);
+      }
+      if (!sub_res.has_value()) [[unlikely]] {
+        kphp::log::warning("pcre2_substitute error {}", sub_res.error().second);
+        return std::nullopt;
+      }
     }
 
-    output_str.append(runtime_ctx.static_SB.buffer(), replacement_length);
+    output_str.append(runtime_ctx.static_SB.buffer(), *sub_res);
 
     last_pos = match_view.match_end();
     ++regex_info.replace_count;
