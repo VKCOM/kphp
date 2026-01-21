@@ -345,10 +345,8 @@ public:
 
 } // namespace kphp::pcre2
 
-namespace std {
-
 template<>
-struct formatter<kphp::pcre2::error> {
+struct std::formatter<kphp::pcre2::error> {
   static constexpr size_t ERROR_BUFFER_LENGTH{256};
 
   template<typename ParseContext>
@@ -373,5 +371,3 @@ struct formatter<kphp::pcre2::error> {
     return format_to(ctx.out(), "{}", buffer.data());
   }
 };
-
-} // namespace std
