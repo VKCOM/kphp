@@ -4,29 +4,9 @@
 
 #include "runtime-light/stdlib/time/date-interval.h"
 
-#include <format>
-
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/iterator.h"
-#include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"
-
-class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<C$DateInterval>& self, const string& duration) noexcept {
-  auto expected_rel_time{kphp::timelib::parse_interval({duration.c_str(), duration.size()})};
-  if (!expected_rel_time.has_value()) [[unlikely]] {
-    string err_msg{"DateInterval::__construct(): "};
-    if (expected_rel_time.error()->error_count > 0) {
-      std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "Unknown or bad format ({})", duration.c_str());
-    } else {
-      std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "Failed to parse interval ({})", duration.c_str());
-    }
-    THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
-    return {};
-  }
-  self->rel_time = std::move(*expected_rel_time);
-  return self;
-}
 
 class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string& datetime) noexcept {
   auto expected{kphp::timelib::parse_time({datetime.c_str(), datetime.size()})};
@@ -38,10 +18,4 @@ class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string
   auto date_interval{make_instance<C$DateInterval>()};
   date_interval->rel_time = kphp::timelib::clone_time_interval(time);
   return date_interval;
-}
-
-string f$DateInterval$$format(const class_instance<C$DateInterval>& self, const string& format) noexcept {
-  string str;
-  kphp::timelib::format_to(kphp::string_back_insert_iterator{.ref = str}, {format.c_str(), format.size()}, self->rel_time);
-  return str;
 }

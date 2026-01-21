@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <format>
 #include <functional>
 #include <optional>
 #include <string_view>
@@ -12,7 +13,10 @@
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/core/utils/iterator.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
+#include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/time/timelib-functions.h"
 #include "runtime-light/stdlib/time/timelib-types.h"
 
 struct C$DateTimeZone : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
@@ -32,5 +36,18 @@ struct C$DateTimeZone : public refcountable_polymorphic_php_classes_virt<>, priv
   ~C$DateTimeZone() override = default;
 };
 
-class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone>& self, const string& timezone) noexcept;
-string f$DateTimeZone$$getName(const class_instance<C$DateTimeZone>& self) noexcept;
+inline class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone>& self, const string& timezone) noexcept {
+  auto expected_tzi{kphp::timelib::get_cached_timezone_info({timezone.c_str(), timezone.size()})};
+  if (!expected_tzi.has_value()) [[unlikely]] {
+    string err_msg;
+    std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "DateTimeZone::__construct(): Unknown or bad timezone ({})", timezone.c_str());
+    THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
+    return {};
+  }
+  self->tzi = *expected_tzi;
+  return self;
+}
+
+inline string f$DateTimeZone$$getName(const class_instance<C$DateTimeZone>& self) noexcept {
+  return string{self->tzi->get()->name};
+}
