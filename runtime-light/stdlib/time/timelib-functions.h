@@ -57,8 +57,19 @@ void set_isodate(kphp::timelib::time& t, int64_t y, int64_t w, int64_t d) noexce
 void set_time(kphp::timelib::time& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept;
 
 /* === timezone related ===*/
-std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> get_cached_timezone_info(std::string_view timezone_sv,
-                                                                                                     const timelib_tzdb* tzdb = timelib_builtin_db()) noexcept;
+/**
+ * @brief Retrieves a const reference to a `kphp::timelib::tzinfo` for a given time zone name.
+ *
+ * @param timezone_sv The name of the time zone to retrieve.
+ * @param tzdb The time zone database to search.
+ * @return `const kphp::timelib::tzinfo&` holding the time zone information, or error code if not found.
+ *
+ * @note
+ * - The returned object is owned by an internal cache.
+ * - This function minimizes overhead by avoiding repeated allocations for the same time zone.
+ */
+std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> get_timezone_info(std::string_view timezone_sv,
+                                                                                              const timelib_tzdb* tzdb = timelib_builtin_db()) noexcept;
 
 /*=== timestamp ===*/
 int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,
