@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <expected>
 #include <format>
+#include <iterator>
 #include <optional>
 #include <string_view>
 
@@ -48,8 +49,8 @@ kphp::timelib::time clone_time(const kphp::timelib::time& t) noexcept;
 
 int64_t get_timestamp(const kphp::timelib::time& t) noexcept;
 int64_t get_offset(const kphp::timelib::time& t) noexcept;
-template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time& t) noexcept;
+template<std::output_iterator<const char&> It>
+It format_to(It out, std::string_view format, const kphp::timelib::time& t) noexcept;
 
 void set_timestamp(kphp::timelib::time& t, int64_t timestamp) noexcept;
 void set_date(kphp::timelib::time& t, int64_t y, int64_t m, int64_t d) noexcept;
@@ -89,8 +90,8 @@ std::string_view full_day_name(timelib_sll y, timelib_sll m, timelib_sll d) noex
 std::string_view short_day_name(timelib_sll y, timelib_sll m, timelib_sll d) noexcept;
 std::string_view english_suffix(timelib_sll number) noexcept;
 
-template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time& t, bool localtime) noexcept {
+template<std::output_iterator<const char&> It>
+It format_to(It out, std::string_view format, const kphp::timelib::time& t, bool localtime) noexcept {
   if (format.empty()) {
     return out;
   }
@@ -284,13 +285,13 @@ OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::t
 
 } // namespace details
 
-template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::time& t) noexcept {
-  return kphp::timelib::details::format_to<OutputIt>(out, format, t, t->is_localtime);
+template<std::output_iterator<const char&> It>
+It format_to(It out, std::string_view format, const kphp::timelib::time& t) noexcept {
+  return kphp::timelib::details::format_to<It>(out, format, t, t->is_localtime);
 }
 
-template<typename OutputIt>
-OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::rel_time& t) noexcept {
+template<std::output_iterator<const char&> It>
+It format_to(It out, std::string_view format, const kphp::timelib::rel_time& t) noexcept {
   if (format.empty()) {
     return out;
   }
