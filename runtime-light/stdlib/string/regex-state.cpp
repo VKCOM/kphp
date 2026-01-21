@@ -6,10 +6,6 @@
 
 #include "runtime-light/state/instance-state.h"
 
-namespace {
-
-} // namespace
-
 RegexInstanceState& RegexInstanceState::get() noexcept {
   return InstanceState::get().regex_instance_state;
 }
