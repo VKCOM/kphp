@@ -89,17 +89,18 @@ std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kp
 }
 
 std::expected<rel_time, error_container> parse_interval(std::string_view formatted_interval) noexcept {
-  timelib_time* b{nullptr};
-  timelib_time* e{nullptr};
-  kphp::memory::libc_alloc_guard _{};
-  vk::final_action e_deleter{[e]() { free(e); }};
-  vk::final_action b_deleter{[b]() { free(b); }};
+  timelib_time* raw_b{nullptr};
+  timelib_time* raw_e{nullptr};
   timelib_rel_time* p{nullptr};
   int r{}; // it's intentionally declared as 'int' since timelib_strtointerval accepts 'int'
   timelib_error_container* errors{nullptr};
 
-  timelib_strtointerval(formatted_interval.data(), formatted_interval.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r),
-                        std::addressof(errors));
+  kphp::memory::libc_alloc_guard _{};
+  timelib_strtointerval(formatted_interval.data(), formatted_interval.size(), std::addressof(raw_b), std::addressof(raw_e), std::addressof(p),
+                        std::addressof(r), std::addressof(errors));
+
+  kphp::timelib::time e{raw_e};
+  kphp::timelib::time b{raw_b};
 
   if (errors->error_count > 0) {
     kphp::timelib::details::rel_time_destructor(p);
@@ -111,9 +112,9 @@ std::expected<rel_time, error_container> parse_interval(std::string_view formatt
   }
 
   if (b != nullptr && e != nullptr) {
-    timelib_update_ts(b, nullptr);
-    timelib_update_ts(e, nullptr);
-    return rel_time{timelib_diff(b, e), kphp::timelib::details::rel_time_destructor};
+    timelib_update_ts(b.get(), nullptr);
+    timelib_update_ts(e.get(), nullptr);
+    return rel_time{timelib_diff(b.get(), e.get()), kphp::timelib::details::rel_time_destructor};
   }
 
   return std::unexpected{error_container{errors, kphp::timelib::details::error_container_destructor}};
