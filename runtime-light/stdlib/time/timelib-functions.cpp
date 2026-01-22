@@ -271,16 +271,16 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view for
 }
 
 void fill_holes_with_now_info(kphp::timelib::time& time, const kphp::timelib::tzinfo& tzi, int32_t options) noexcept {
+  namespace chrono = std::chrono;
+  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
+  const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
+  const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
+
   kphp::memory::libc_alloc_guard _{};
   kphp::timelib::time now{timelib_time_ctor(), kphp::timelib::details::time_destructor};
 
   now->tz_info = tzi.get();
   now->zone_type = TIMELIB_ZONETYPE_ID;
-
-  namespace chrono = std::chrono;
-  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
-  const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
-  const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
 
   timelib_unixtime2local(now.get(), static_cast<timelib_sll>(sec));
   now->us = usec;
@@ -293,16 +293,16 @@ void fill_holes_with_now_info(kphp::timelib::time& time, const kphp::timelib::tz
 }
 
 void fill_holes_with_now_info(kphp::timelib::time& time, int32_t options) noexcept {
+  namespace chrono = std::chrono;
+  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
+  const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
+  const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
+
   kphp::memory::libc_alloc_guard _{};
   kphp::timelib::time now{timelib_time_ctor(), kphp::timelib::details::time_destructor};
 
   now->tz_info = time->tz_info;
   now->zone_type = TIMELIB_ZONETYPE_ID;
-
-  namespace chrono = std::chrono;
-  const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
-  const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
-  const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
 
   timelib_unixtime2local(now.get(), static_cast<timelib_sll>(sec));
   now->us = usec;
