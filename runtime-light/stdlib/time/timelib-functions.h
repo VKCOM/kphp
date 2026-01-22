@@ -34,9 +34,9 @@ kphp::timelib::rel_time clone_time_interval(const kphp::timelib::time& t) noexce
 
 kphp::timelib::rel_time get_time_interval(const kphp::timelib::time& time1, const kphp::timelib::time& time2, bool absolute) noexcept;
 
-kphp::timelib::time add_time_interval(const kphp::timelib::time& t, const kphp::timelib::rel_time& interval) noexcept;
+kphp::timelib::time add_time_interval(const kphp::timelib::time& t, kphp::timelib::rel_time& interval) noexcept;
 
-std::expected<kphp::timelib::time, std::string_view> sub_time_interval(const kphp::timelib::time& t, const kphp::timelib::rel_time& interval) noexcept;
+std::expected<kphp::timelib::time, std::string_view> sub_time_interval(const kphp::timelib::time& t, kphp::timelib::rel_time& interval) noexcept;
 
 template<typename OutputIt>
 OutputIt format_to(OutputIt out, std::string_view format, const kphp::timelib::rel_time& t) noexcept;

@@ -94,38 +94,37 @@ std::expected<rel_time, error_container> parse_interval(std::string_view formatt
   kphp::memory::libc_alloc_guard _{};
   vk::final_action e_deleter{[e]() { free(e); }};
   vk::final_action b_deleter{[b]() { free(b); }};
-  timelib_rel_time* p{nullptr};
+  kphp::timelib::rel_time p;
   int r{}; // it's intentionally declared as 'int' since timelib_strtointerval accepts 'int'
   kphp::timelib::error_container errors;
 
-  timelib_strtointerval(formatted_interval.data(), formatted_interval.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r),
+  timelib_strtointerval(formatted_interval.data(), formatted_interval.size(), std::addressof(b), std::addressof(e), std::addressof(p.get()), std::addressof(r),
                         std::addressof(errors.get()));
 
   if (errors->error_count > 0) {
-    kphp::timelib::details::rel_time_destructor(p);
     return std::unexpected{std::move(errors)};
   }
 
   if (p != nullptr) {
-    return rel_time{p, kphp::timelib::details::rel_time_destructor};
+    return p;
   }
 
   if (b != nullptr && e != nullptr) {
     timelib_update_ts(b, nullptr);
     timelib_update_ts(e, nullptr);
-    return rel_time{timelib_diff(b, e), kphp::timelib::details::rel_time_destructor};
+    return rel_time{timelib_diff(b, e)};
   }
 
   return std::unexpected{std::move(errors)};
 }
 
-time add_time_interval(const kphp::timelib::time& t, const kphp::timelib::rel_time& interval) noexcept {
+time add_time_interval(const kphp::timelib::time& t, kphp::timelib::rel_time& interval) noexcept {
   time new_time{(kphp::memory::libc_alloc_guard{}, timelib_add(t.get(), interval.get())), kphp::timelib::details::time_destructor};
   return new_time;
 }
 
 rel_time clone_time_interval(const time& t) noexcept {
-  return rel_time{(kphp::memory::libc_alloc_guard{}, timelib_rel_time_clone(std::addressof(t->relative))), kphp::timelib::details::rel_time_destructor};
+  return rel_time{(kphp::memory::libc_alloc_guard{}, timelib_rel_time_clone(std::addressof(t->relative)))};
 }
 
 time clone_time(const kphp::timelib::time& t) noexcept {
@@ -137,7 +136,7 @@ rel_time get_time_interval(const kphp::timelib::time& time1, const kphp::timelib
   timelib_update_ts(time1.get(), nullptr);
   timelib_update_ts(time2.get(), nullptr);
 
-  rel_time diff{timelib_diff(time1.get(), time2.get()), kphp::timelib::details::rel_time_destructor};
+  rel_time diff{timelib_diff(time1.get(), time2.get())};
   if (absolute) {
     diff->invert = 0;
   }
@@ -370,7 +369,7 @@ void set_time(kphp::timelib::time& t, int64_t h, int64_t i, int64_t s, int64_t m
   kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
 }
 
-std::expected<time, std::string_view> sub_time_interval(const kphp::timelib::time& t, const kphp::timelib::rel_time& interval) noexcept {
+std::expected<time, std::string_view> sub_time_interval(const kphp::timelib::time& t, kphp::timelib::rel_time& interval) noexcept {
   if (interval->have_special_relative) {
     return std::unexpected{"Only non-special relative time specifications are supported for subtraction"};
   }

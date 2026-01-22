@@ -50,7 +50,8 @@ public:
   }
 
 protected:
-  pointer() noexcept = default;
+  explicit pointer(T* ptr = nullptr) noexcept
+      : m_ptr{ptr} {};
 
   pointer(pointer&& other) noexcept
       : m_ptr{std::exchange(other.m_ptr, nullptr)} {}
@@ -63,17 +64,15 @@ protected:
   ~pointer() = default;
 };
 
-// inline constexpr auto error_container_destructor{
-//     [](timelib_error_container* ec) noexcept { kphp::memory::libc_alloc_guard{}, timelib_error_container_dtor(ec); }};
-inline constexpr auto rel_time_destructor{[](timelib_rel_time* rt) noexcept { kphp::memory::libc_alloc_guard{}, timelib_rel_time_dtor(rt); }};
 inline constexpr auto time_offset_destructor{[](timelib_time_offset* to) noexcept { kphp::memory::libc_alloc_guard{}, timelib_time_offset_dtor(to); }};
 inline constexpr auto time_destructor{[](timelib_time* t) noexcept { kphp::memory::libc_alloc_guard{}, timelib_time_dtor(t); }};
 inline constexpr auto tzinfo_destructor{[](timelib_tzinfo* t) noexcept { kphp::memory::libc_alloc_guard{}, timelib_tzinfo_dtor(t); }};
 
 } // namespace details
 
-struct error_container : details::pointer<timelib_error_container> {
-  error_container() noexcept = default;
+struct error_container : kphp::timelib::details::pointer<timelib_error_container> {
+  explicit error_container(timelib_error_container* ptr = nullptr) noexcept
+      : kphp::timelib::details::pointer<timelib_error_container>{ptr} {};
   error_container(const error_container&) = delete;
   error_container(error_container&&) noexcept = default;
   error_container& operator=(const error_container&) = delete;
@@ -86,8 +85,21 @@ struct error_container : details::pointer<timelib_error_container> {
   }
 };
 
-// using error_container = std::unique_ptr<timelib_error_container, std::remove_cvref_t<decltype(kphp::timelib::details::error_container_destructor)>>;
-using rel_time = std::unique_ptr<timelib_rel_time, std::remove_cvref_t<decltype(kphp::timelib::details::rel_time_destructor)>>;
+struct rel_time : kphp::timelib::details::pointer<timelib_rel_time> {
+  explicit rel_time(timelib_rel_time* ptr = nullptr) noexcept
+      : kphp::timelib::details::pointer<timelib_rel_time>{ptr} {};
+  rel_time(const rel_time&) = delete;
+  rel_time(rel_time&&) noexcept = default;
+  rel_time& operator=(const rel_time&) = delete;
+  rel_time& operator=(rel_time&&) noexcept = default;
+
+  ~rel_time() {
+    if (*this != nullptr) {
+      kphp::memory::libc_alloc_guard{}, timelib_rel_time_dtor(get());
+    }
+  }
+};
+
 using time_offset = std::unique_ptr<timelib_time_offset, std::remove_cvref_t<decltype(kphp::timelib::details::time_offset_destructor)>>;
 using time = std::unique_ptr<timelib_time, std::remove_cvref_t<decltype(kphp::timelib::details::time_destructor)>>;
 using tzinfo = std::unique_ptr<timelib_tzinfo, std::remove_cvref_t<decltype(kphp::timelib::details::tzinfo_destructor)>>;
