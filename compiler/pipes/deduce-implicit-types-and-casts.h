@@ -35,6 +35,7 @@ public:
 
   int print_error_unexisting_function(const std::string &call_string);
 
+  void patch_call_args(VertexAdaptor<op_func_call> &call, VertexRange f_called_params);
   void patch_call_arg_on_func_call(VertexAdaptor<op_func_param> param, VertexPtr &call_arg, VertexAdaptor<op_func_call> call);
 
   void on_set_to_var(VertexAdaptor<op_var> lhs, VertexPtr &rhs);

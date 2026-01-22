@@ -223,7 +223,7 @@ VertexAdaptor<Op> GenTree::get_func_call() {
   CE (expect(tok_oppar, "'('"));
   skip_phpdoc_tokens();
   std::vector<VertexPtr> next;
-  bool ok_next = gen_list<EmptyOp>(&next, &GenTree::get_expression, tok_comma);
+  bool ok_next = gen_list<EmptyOp>(&next, &GenTree::get_func_call_arg, tok_comma);
   CE (!kphp_error(ok_next, "get argument list failed"));
   CE (expect(tok_clpar, "')'"));
 
@@ -856,6 +856,22 @@ VertexPtr GenTree::get_expression_impl(bool till_ternary) {
 VertexPtr GenTree::get_expression() {
   skip_phpdoc_tokens();
   return get_expression_impl(false);
+}
+
+VertexPtr GenTree::get_func_call_arg() {
+  skip_phpdoc_tokens();
+  VertexPtr name_or_val = get_expression();
+
+  // in case of named argument 'name_or_val' is a name
+  if (cur->type() == tok_colon) {
+    next_cur();
+    VertexPtr value = get_expression();
+    CE (!kphp_error(name_or_val, "Bad value of named argument"));
+    return VertexAdaptor<op_named_arg>::create(VertexUtil::create_string_const(name_or_val->get_string()), value);
+  }
+
+  // in case of positional argument 'name_or_val' is a value
+  return name_or_val;
 }
 
 VertexPtr GenTree::get_def_value() {
