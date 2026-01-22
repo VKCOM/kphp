@@ -113,7 +113,7 @@ kfs_replica_handle_t open_replica(const char* replica_name, int flags) {
   struct kfs_replica* R = 0;
 
   if (flags & KFS_OPEN_REPLICA_FLAG_FORCE) {
-    R = static_cast<kfs_replica*>(calloc(sizeof(*R), 1));
+    R = static_cast<kfs_replica*>(calloc(1, sizeof(*R)));
     assert(R);
     R->replica_prefix = strdup(replica_name);
     assert(R->replica_prefix);

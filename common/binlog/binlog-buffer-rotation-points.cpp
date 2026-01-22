@@ -79,7 +79,7 @@ static void bb_buffer_insert_rotation_point(bb_buffer_t* B, bb_rotation_point_t*
 }
 
 bb_rotation_point_t* bb_rotation_point_alloc(bb_buffer_t* B, enum bb_rotation_point_type tp, long long log_pos) {
-  auto* p = static_cast<bb_rotation_point_t*>(calloc(sizeof(bb_rotation_point_t), 1));
+  auto* p = static_cast<bb_rotation_point_t*>(calloc(1, sizeof(bb_rotation_point_t)));
   assert(p);
   p->tp = tp;
   p->log_pos = log_pos;
