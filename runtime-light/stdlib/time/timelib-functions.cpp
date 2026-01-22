@@ -63,29 +63,29 @@ time_offset construct_time_offset(const kphp::timelib::time& t) noexcept {
 
 std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container>
 parse_time(std::string_view formatted_time) noexcept {
-  timelib_error_container* errors{};
+  kphp::timelib::error_container errors;
   time time{(kphp::memory::libc_alloc_guard{},
-             timelib_strtotime(formatted_time.data(), formatted_time.size(), std::addressof(errors), timelib_builtin_db(), get_timezone_info)),
+             timelib_strtotime(formatted_time.data(), formatted_time.size(), std::addressof(errors.get()), timelib_builtin_db(), get_timezone_info)),
             kphp::timelib::details::time_destructor};
   if (errors->error_count != 0) [[unlikely]] {
-    return std::unexpected{error_container{errors, kphp::timelib::details::error_container_destructor}};
+    return std::unexpected{std::move(errors)};
   }
 
-  return std::make_pair(std::move(time), error_container{errors, kphp::timelib::details::error_container_destructor});
+  return std::make_pair(std::move(time), std::move(errors));
 }
 
 std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view formatted_time,
                                                                                                                          std::string_view format) noexcept {
-  timelib_error_container* err{nullptr};
-  time t{(kphp::memory::libc_alloc_guard{},
-          timelib_parse_from_format(format.data(), formatted_time.data(), formatted_time.size(), std::addressof(err), timelib_builtin_db(), get_timezone_info)),
+  kphp::timelib::error_container err;
+  time t{(kphp::memory::libc_alloc_guard{}, timelib_parse_from_format(format.data(), formatted_time.data(), formatted_time.size(), std::addressof(err.get()),
+                                                                      timelib_builtin_db(), get_timezone_info)),
          kphp::timelib::details::time_destructor};
 
-  if (err && err->error_count) {
-    return std::unexpected{error_container{err, kphp::timelib::details::error_container_destructor}};
+  if (err != nullptr && err->error_count) {
+    return std::unexpected{std::move(err)};
   }
 
-  return std::make_pair(std::move(t), error_container{err, kphp::timelib::details::error_container_destructor});
+  return std::make_pair(std::move(t), std::move(err));
 }
 
 std::expected<rel_time, error_container> parse_interval(std::string_view formatted_interval) noexcept {
@@ -96,14 +96,14 @@ std::expected<rel_time, error_container> parse_interval(std::string_view formatt
   vk::final_action b_deleter{[b]() { free(b); }};
   timelib_rel_time* p{nullptr};
   int r{}; // it's intentionally declared as 'int' since timelib_strtointerval accepts 'int'
-  timelib_error_container* errors{nullptr};
+  kphp::timelib::error_container errors;
 
   timelib_strtointerval(formatted_interval.data(), formatted_interval.size(), std::addressof(b), std::addressof(e), std::addressof(p), std::addressof(r),
-                        std::addressof(errors));
+                        std::addressof(errors.get()));
 
   if (errors->error_count > 0) {
     kphp::timelib::details::rel_time_destructor(p);
-    return std::unexpected{kphp::timelib::error_container{errors, kphp::timelib::details::error_container_destructor}};
+    return std::unexpected{std::move(errors)};
   }
 
   if (p != nullptr) {
@@ -116,7 +116,7 @@ std::expected<rel_time, error_container> parse_interval(std::string_view formatt
     return rel_time{timelib_diff(b, e), kphp::timelib::details::rel_time_destructor};
   }
 
-  return std::unexpected{error_container{errors, kphp::timelib::details::error_container_destructor}};
+  return std::unexpected{std::move(errors)};
 }
 
 time add_time_interval(const kphp::timelib::time& t, const kphp::timelib::rel_time& interval) noexcept {

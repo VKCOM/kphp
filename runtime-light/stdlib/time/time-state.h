@@ -55,7 +55,7 @@ struct TimeInstanceState final : private vk::not_copyable {
   static TimeInstanceState& get() noexcept;
 
 private:
-  kphp::timelib::error_container last_errors{nullptr, kphp::timelib::details::error_container_destructor};
+  kphp::timelib::error_container last_errors;
 };
 
 struct TimeImageState final : private vk::not_copyable {
