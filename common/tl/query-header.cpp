@@ -21,8 +21,6 @@
 #include "common/tl/parse.h"
 #include "common/tl/store.h"
 
-#include <iostream>
-
 static int tl_fetch_query_flags(tl_query_header_t* header) {
   namespace flag = vk::tl::common::rpc_invoke_req_extra_flags;
   int flags = tl_fetch_int();
@@ -105,7 +103,7 @@ static int tl_fetch_query_flags(tl_query_header_t* header) {
     }
   }
   if (flags & flag::execution_context) {
-    vk::tl::fetch_string(header->execution_context, 1024);
+    vk::tl::fetch_string(header->execution_context);
     if (tl_fetch_error()) {
       return -1;
     }

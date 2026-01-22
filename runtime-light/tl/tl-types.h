@@ -944,8 +944,8 @@ public:
 // ===== RPC =====
 
 namespace exactlyOnce {
-class Uuid final {
-public:
+
+struct uuid final {
   tl::i64 lo{};
   tl::i64 hi{};
 
@@ -954,40 +954,42 @@ public:
   }
 };
 
-struct prepareRequest final {
-  Uuid persistent_query_uuid{};
-
-  bool fetch(tl::fetcher& tlf) noexcept {
-    return persistent_query_uuid.fetch(tlf);
-  }
-};
-
-struct commitRequest final {
-  Uuid persistent_query_uuid{};
-  Uuid persistent_slot_uuid{};
-
-  bool fetch(tl::fetcher& tlf) noexcept {
-    return persistent_query_uuid.fetch(tlf) && persistent_slot_uuid.fetch(tlf);
-  }
-};
-
-class PersistentRequest final {
+class prepareRequest final {
   static constexpr uint32_t PREPARE_REQUEST_MAGIC = 0xc8d71b66U;
-  static constexpr uint32_t COMMIT_REQUEST_MAGIC = 0x6836b983U;
 
 public:
-  std::variant<prepareRequest, commitRequest> request{};
+  uuid persistent_query_uuid{};
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    if (!magic.fetch(tlf)) {
-      return false;
-    }
-    if (exactlyOnce::prepareRequest prepare_request{}; magic.expect(PREPARE_REQUEST_MAGIC) && prepare_request.fetch(tlf)) {
+    return magic.fetch(tlf) && magic.expect(PREPARE_REQUEST_MAGIC) && persistent_query_uuid.fetch(tlf);
+  }
+};
+
+class commitRequest final {
+  static constexpr uint32_t COMMIT_REQUEST_MAGIC = 0x6836b983U;
+
+public:
+  uuid persistent_query_uuid{};
+  uuid persistent_slot_uuid{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    return magic.fetch(tlf) && magic.expect(COMMIT_REQUEST_MAGIC) && persistent_query_uuid.fetch(tlf) && persistent_slot_uuid.fetch(tlf);
+  }
+};
+
+struct PersistentRequest final {
+  std::variant<prepareRequest, commitRequest> request{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    const auto initial_pos{tlf.pos()};
+    if (exactlyOnce::prepareRequest prepare_request{}; prepare_request.fetch(tlf)) {
       request.emplace<prepareRequest>(prepare_request);
       return true;
     }
-    if (exactlyOnce::commitRequest commit_request{}; magic.expect(COMMIT_REQUEST_MAGIC) && commit_request.fetch(tlf)) {
+    tlf.reset(initial_pos);
+    if (exactlyOnce::commitRequest commit_request{}; commit_request.fetch(tlf)) {
       request.emplace<commitRequest>(commit_request);
       return true;
     }
@@ -997,6 +999,7 @@ public:
 } // namespace exactlyOnce
 
 namespace tracing {
+
 struct TraceID final {
   tl::i64 lo{};
   tl::i64 hi{};
@@ -1007,14 +1010,14 @@ struct TraceID final {
 };
 
 class TraceContext final {
-  static constexpr uint32_t RETURN_RESERVED_STATUS_0_FLAG = vk::tl::common::tracing_traceContext::return_reserved_status_0;
-  static constexpr uint32_t RETURN_RESERVED_STATUS_1_FLAG = vk::tl::common::tracing_traceContext::return_reserved_status_1;
-  static constexpr uint32_t PARENT_ID_FLAG = vk::tl::common::tracing_traceContext::parent_id;
-  static constexpr uint32_t SOURCE_ID_FLAG = vk::tl::common::tracing_traceContext::source_id;
-  static constexpr uint32_t RETURN_RESERVED_LEVEL_0_FLAG = vk::tl::common::tracing_traceContext::return_reserved_level_0;
-  static constexpr uint32_t RETURN_RESERVED_LEVEL_1_FLAG = vk::tl::common::tracing_traceContext::return_reserved_level_1;
-  static constexpr uint32_t RETURN_RESERVED_LEVEL_2_FLAG = vk::tl::common::tracing_traceContext::return_reserved_level_2;
-  static constexpr uint32_t RETURN_DEBUG_FLAG = vk::tl::common::tracing_traceContext::return_debug;
+  static constexpr uint32_t RETURN_RESERVED_STATUS_0_FLAG = vk::tl::common::tracing::traceContext::return_reserved_status_0;
+  static constexpr uint32_t RETURN_RESERVED_STATUS_1_FLAG = vk::tl::common::tracing::traceContext::return_reserved_status_1;
+  static constexpr uint32_t PARENT_ID_FLAG = vk::tl::common::tracing::traceContext::parent_id;
+  static constexpr uint32_t SOURCE_ID_FLAG = vk::tl::common::tracing::traceContext::source_id;
+  static constexpr uint32_t RETURN_RESERVED_LEVEL_0_FLAG = vk::tl::common::tracing::traceContext::return_reserved_level_0;
+  static constexpr uint32_t RETURN_RESERVED_LEVEL_1_FLAG = vk::tl::common::tracing::traceContext::return_reserved_level_1;
+  static constexpr uint32_t RETURN_RESERVED_LEVEL_2_FLAG = vk::tl::common::tracing::traceContext::return_reserved_level_2;
+  static constexpr uint32_t RETURN_DEBUG_FLAG = vk::tl::common::tracing::traceContext::return_debug;
 
 public:
   tl::i32 fields_mask{};

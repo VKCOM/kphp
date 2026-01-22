@@ -90,32 +90,63 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
     std::visit(
         [&superglobals](const auto& value) noexcept {
           using value_t = std::remove_cvref_t<decltype(value)>;
-          mixed out{array{std::pair{string{"persistent_query_uuid"}, mixed{array{std::pair{string{"lo"}, value.persistent_query_uuid.lo.value},
-                                                                                 std::pair{string{"hi"}, value.persistent_query_uuid.hi.value}}}},
-                          std::pair{string{"persistent_slot_uuid"}, mixed{}}}};
 
-          if constexpr (std::is_same_v<value_t, tl::exactlyOnce::commitRequest>) {
-            out.as_array().emplace_value(string{"persistent_slot_uuid"}, mixed{array{std::pair{string{"lo"}, value.persistent_slot_uuid.lo.value},
-                                                                                     std::pair{string{"hi"}, value.persistent_slot_uuid.hi.value}}});
+          constexpr std::string_view persistent_query_uuid_sv = "persistent_query_uuid";
+          constexpr std::string_view persistent_slot_uuid_sv = "persistent_slot_uuid";
+          constexpr std::string_view lo_sv = "lo";
+          constexpr std::string_view hi_sv = "hi";
+
+          array out{std::pair{string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())}, mixed{}},
+                    std::pair{string{persistent_slot_uuid_sv.data(), static_cast<string::size_type>(persistent_slot_uuid_sv.size())}, mixed{}}};
+
+          if constexpr (std::is_same_v<value_t, tl::exactlyOnce::prepareRequest>) {
+            out.emplace_value(
+                string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())},
+                mixed{array{std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, value.persistent_query_uuid.lo.value},
+                            std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, value.persistent_query_uuid.hi.value}}});
+
+          } else if constexpr (std::is_same_v<value_t, tl::exactlyOnce::commitRequest>) {
+            out.emplace_value(
+                string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())},
+                mixed{array{std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, value.persistent_query_uuid.lo.value},
+                            std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, value.persistent_query_uuid.hi.value}}});
+
+            out.emplace_value(string{persistent_slot_uuid_sv.data(), static_cast<string::size_type>(persistent_slot_uuid_sv.size())},
+                              mixed{array{std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, value.persistent_slot_uuid.lo.value},
+                                          std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, value.persistent_slot_uuid.hi.value}}});
+
+          } else {
+            static_assert(false, "exactlyOnce::PersistentRequest only supports prepareRequest and commitRequest");
           }
 
-          superglobals.v$_SERVER.set_value(string{RPC_EXTRA_PERSISTENT_QUERY.data(), RPC_EXTRA_PERSISTENT_QUERY.size()}, out);
+          superglobals.v$_SERVER.set_value(string{RPC_EXTRA_PERSISTENT_QUERY.data(), RPC_EXTRA_PERSISTENT_QUERY.size()}, std::move(out));
         },
         extra.opt_persistent_query->request);
   }
   if (extra.opt_trace_context) {
-    auto& trace_context{*extra.opt_trace_context};
-    mixed out{array{std::pair{string{"trace_id"},
-                              mixed{array{std::pair{string{"lo"}, trace_context.trace_id.lo.value}, std::pair{string{"hi"}, trace_context.trace_id.hi.value}}}},
-                    std::pair{string{"parent_id"}, mixed{}}, std::pair{string{"source_id"}, mixed{}}}};
+    const auto& trace_context{*extra.opt_trace_context};
+
+    constexpr std::string_view trace_id_sv = "trace_id";
+    constexpr std::string_view parent_id_sv = "parent_id";
+    constexpr std::string_view source_id_sv = "source_id";
+    constexpr std::string_view lo_sv = "lo";
+    constexpr std::string_view hi_sv = "hi";
+
+    array out{{std::pair{string{trace_id_sv.data(), static_cast<string::size_type>(trace_id_sv.size())},
+                         mixed{array{std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, trace_context.trace_id.lo.value},
+                                     std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, trace_context.trace_id.hi.value}}}},
+               std::pair{string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, mixed{}},
+               std::pair{string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())}, mixed{}}}};
+
     if (trace_context.opt_parent_id) {
-      out.as_array().emplace_value(string{"parent_id"}, trace_context.opt_parent_id->value);
+      out.emplace_value(string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, trace_context.opt_parent_id->value);
     }
     if (trace_context.opt_source_id) {
-      const std::string_view opt_source_id_value = trace_context.opt_source_id->value;
-      out.as_array().emplace_value(string{"source_id"}, string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
+      const std::string& opt_source_id_value{trace_context.opt_source_id->value};
+      out.emplace_value(string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())},
+                        string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
     }
-    superglobals.v$_SERVER.set_value(string{RPC_EXTRA_TRACE_CONTEXT.data(), RPC_EXTRA_TRACE_CONTEXT.size()}, out);
+    superglobals.v$_SERVER.set_value(string{RPC_EXTRA_TRACE_CONTEXT.data(), RPC_EXTRA_TRACE_CONTEXT.size()}, std::move(out));
   }
   if (extra.opt_execution_context) {
     const auto& execution_context{extra.opt_execution_context->value};

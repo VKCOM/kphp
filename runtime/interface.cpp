@@ -13,6 +13,7 @@
 #include <functional>
 #include <getopt.h>
 #include <netdb.h>
+#include <string_view>
 #include <type_traits>
 #include <unistd.h>
 #include <utility>
@@ -24,6 +25,8 @@
 #include "common/wrappers/overloaded.h"
 
 #include "common/tl/query-header.h"
+#include "common/tl/tl-types.h"
+#include "compiler/helper.h"
 #include "net/net-connections.h"
 #include "runtime-common/stdlib/serialization/serialization-context.h"
 #include "runtime-common/stdlib/server/url-functions.h"
@@ -1494,33 +1497,59 @@ static void save_rpc_query_headers(const tl_query_header_t& header, mixed& v$_SE
         [&v$_SERVER](const auto& value) noexcept {
           using value_t = std::decay_t<decltype(value)>;
 
-          mixed out{array{std::pair{string{"persistent_query_uuid"}, mixed{array{std::pair{string{"lo"}, value.persistent_query_uuid.lo},
-                                                                                 std::pair{string{"hi"}, value.persistent_query_uuid.hi}}}},
-                          std::pair{string{"persistent_slot_uuid"}, mixed{}}}};
+          constexpr std::string_view persistent_query_uuid_sv = "persistent_query_uuid";
+          constexpr std::string_view persistent_slot_uuid_sv = "persistent_slot_uuid";
+          constexpr std::string_view lo_sv = "lo";
+          constexpr std::string_view hi_sv = "hi";
 
-          if constexpr (std::is_same_v<value_t, exactlyOnce::commitRequest>) {
-            out.as_array().emplace_value(string{"persistent_slot_uuid"}, mixed{array{std::pair{string{"lo"}, value.persistent_slot_uuid.lo},
-                                                                                     std::pair{string{"hi"}, value.persistent_slot_uuid.hi}}});
+          array out{std::pair{string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())}, mixed{}},
+                    std::pair{string{persistent_slot_uuid_sv.data(), static_cast<string::size_type>(persistent_slot_uuid_sv.size())}, mixed{}}};
+
+          if constexpr (std::is_same_v<value_t, exactlyOnce::prepareRequest>) {
+            out.emplace_value(string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())},
+                              mixed{array{std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, value.persistent_query_uuid.lo},
+                                          std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, value.persistent_query_uuid.hi}}});
+
+          } else if constexpr (std::is_same_v<value_t, exactlyOnce::commitRequest>) {
+            out.emplace_value(string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())},
+                              mixed{array{std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, value.persistent_query_uuid.lo},
+                                          std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, value.persistent_query_uuid.hi}}});
+
+            out.emplace_value(string{persistent_slot_uuid_sv.data(), static_cast<string::size_type>(persistent_slot_uuid_sv.size())},
+                              mixed{array{std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, value.persistent_slot_uuid.lo},
+                                          std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, value.persistent_slot_uuid.hi}}});
+          } else {
+            static_assert(sizeof(value_t) && false, "exactlyOnce::PersistentRequest only supports prepareRequest and commitRequest");
           }
 
-          v$_SERVER.set_value(string{"RPC_EXTRA_PERSISTENT_QUERY"}, out);
+          v$_SERVER.set_value(string{"RPC_EXTRA_PERSISTENT_QUERY"}, std::move(out));
         },
         header.persistent_query.request);
   }
   if (header.flags & flag::trace_context) {
     const auto& trace_context{header.trace_context};
-    mixed out{array{
-        std::pair{string{"trace_id"}, mixed{array{std::pair{string{"lo"}, trace_context.trace_id.lo}, std::pair{string{"hi"}, trace_context.trace_id.hi}}}},
-        std::pair{string{"parent_id"}, mixed{}}, std::pair{string{"source_id"}, mixed{}}}};
+
+    constexpr std::string_view trace_id_sv = "trace_id";
+    constexpr std::string_view parent_id_sv = "parent_id";
+    constexpr std::string_view source_id_sv = "source_id";
+    constexpr std::string_view lo_sv = "lo";
+    constexpr std::string_view hi_sv = "hi";
+
+    array out{std::pair{string{trace_id_sv.data(), static_cast<string::size_type>(trace_id_sv.size())},
+                        mixed{array{std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, trace_context.trace_id.lo},
+                                    std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, trace_context.trace_id.hi}}}},
+              std::pair{string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, mixed{}},
+              std::pair{string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())}, mixed{}}};
 
     if (trace_context.opt_parent_id) {
-      out.as_array().emplace_value(string{"parent_id"}, *trace_context.opt_parent_id);
+      out.emplace_value(string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, *trace_context.opt_parent_id);
     }
     if (trace_context.opt_source_id) {
       const std::string& opt_source_id_value{*trace_context.opt_source_id};
-      out.as_array().emplace_value(string{"source_id"}, string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
+      out.emplace_value(string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())},
+                        string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
     }
-    v$_SERVER.set_value(string{"RPC_EXTRA_TRACE_CONTEXT"}, out);
+    v$_SERVER.set_value(string{"RPC_EXTRA_TRACE_CONTEXT"}, std::move(out));
   }
   if (header.flags & flag::execution_context) {
     const auto& execution_context{header.execution_context};
