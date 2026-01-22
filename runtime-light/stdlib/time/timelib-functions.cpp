@@ -48,18 +48,18 @@ std::expected<rel_time, error_container> parse_interval(std::string_view formatt
   if (b != nullptr && e != nullptr) {
     timelib_update_ts(b.get(), nullptr);
     timelib_update_ts(e.get(), nullptr);
-    return rel_time{timelib_diff(b.get(), e.get()), kphp::timelib::details::rel_time_destructor};
+    return kphp::timelib::rel_time{timelib_diff(b.get(), e.get()), kphp::timelib::details::rel_time_destructor};
   }
 
   return std::unexpected{error_container{errors, kphp::timelib::details::error_container_destructor}};
 }
 
-rel_time get_time_interval(const kphp::timelib::time& time1, const kphp::timelib::time& time2, bool absolute) noexcept {
+kphp::timelib::rel_time get_time_interval(const kphp::timelib::time& time1, const kphp::timelib::time& time2, bool absolute) noexcept {
   kphp::memory::libc_alloc_guard _{};
   timelib_update_ts(time1.get(), nullptr);
   timelib_update_ts(time2.get(), nullptr);
 
-  rel_time diff{timelib_diff(time1.get(), time2.get()), kphp::timelib::details::rel_time_destructor};
+  kphp::timelib::rel_time diff{timelib_diff(time1.get(), time2.get()), kphp::timelib::details::rel_time_destructor};
   if (absolute) {
     diff->invert = 0;
   }
@@ -178,8 +178,8 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
   return now->sse;
 }
 
-std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container> parse_time(std::string_view formatted_time,
-                                                                                                                         const time& t) noexcept {
+std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container>
+parse_time(std::string_view formatted_time, const kphp::timelib::time& t) noexcept {
   auto expected{parse_time(formatted_time)};
 
   if (!expected.has_value()) [[unlikely]] {
