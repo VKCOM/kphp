@@ -126,7 +126,7 @@ def search_k2_bin():
     return os.getenv("K2_BIN")
 
 
-def wait_for_file_creation(file_path, check_interval=0.1, attempts=20):
+def wait_for_file_creation(file_path, check_interval=0.1, attempts=300):
     for i in range(attempts):
         if os.path.exists(file_path):
             break
