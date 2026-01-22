@@ -32,37 +32,33 @@ struct uuid final {
     tl_store_long(hi);
   }
 };
-class prepareRequest final {
-  static constexpr int32_t PREPARE_REQUEST_MAGIC = 0xc8d71b66;
+struct prepareRequest final {
+  static constexpr int32_t MAGIC = 0xc8d71b66;
 
-public:
   uuid persistent_query_uuid{};
 
   bool fetch() {
-    const int32_t magic{tl_fetch_int()};
-    return !tl_fetch_error() && magic == PREPARE_REQUEST_MAGIC && persistent_query_uuid.fetch();
+    return persistent_query_uuid.fetch();
   }
 
   void write() const {
-    tl_store_int(PREPARE_REQUEST_MAGIC);
+    tl_store_int(MAGIC);
     persistent_query_uuid.write();
   }
 };
 
-class commitRequest final {
-  static constexpr int32_t COMMIT_REQUEST_MAGIC = 0x6836b983;
+struct commitRequest final {
+  static constexpr int32_t MAGIC = 0x6836b983;
 
-public:
   uuid persistent_query_uuid{};
   uuid persistent_slot_uuid{};
 
   bool fetch() {
-    const int32_t magic{tl_fetch_int()};
-    return !tl_fetch_error() && magic == COMMIT_REQUEST_MAGIC && persistent_query_uuid.fetch() && persistent_slot_uuid.fetch();
+    return persistent_query_uuid.fetch() && persistent_slot_uuid.fetch();
   }
 
   void write() const {
-    tl_store_int(COMMIT_REQUEST_MAGIC);
+    tl_store_int(MAGIC);
     persistent_query_uuid.write();
     persistent_slot_uuid.write();
   }
@@ -72,13 +68,15 @@ struct PersistentRequest final {
   std::variant<prepareRequest, commitRequest> request;
 
   bool fetch() {
-    tl_fetch_mark();
-    if (exactlyOnce::prepareRequest prepare_request{}; prepare_request.fetch()) {
+    const int32_t magic{tl_fetch_int()};
+    if (tl_fetch_error()) {
+      return false;
+    }
+    if (exactlyOnce::prepareRequest prepare_request{}; magic == prepareRequest::MAGIC && prepare_request.fetch()) {
       request.emplace<prepareRequest>(prepare_request);
       return true;
     }
-    tl_fetch_mark_restore();
-    if (exactlyOnce::commitRequest commit_request{}; commit_request.fetch()) {
+    if (exactlyOnce::commitRequest commit_request{}; magic == commitRequest::MAGIC && commit_request.fetch()) {
       request.emplace<commitRequest>(commit_request);
       return true;
     }
