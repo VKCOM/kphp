@@ -78,7 +78,8 @@ std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> get_
   }
 
   int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-  kphp::timelib::tzinfo tzinfo{timelib_parse_tzfile(name.data(), tzdb, std::addressof(errc)), kphp::timelib::details::tzinfo_destructor};
+  kphp::timelib::tzinfo tzinfo{(kphp::memory::libc_alloc_guard{}, timelib_parse_tzfile(name.data(), tzdb, std::addressof(errc))),
+                               kphp::timelib::details::tzinfo_destructor};
   if (tzinfo == nullptr || tzinfo->name == nullptr) [[unlikely]] {
     return std::unexpected{errc};
   }
