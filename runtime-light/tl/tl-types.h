@@ -954,42 +954,40 @@ struct uuid final {
   }
 };
 
-class prepareRequest final {
-  static constexpr uint32_t PREPARE_REQUEST_MAGIC = 0xc8d71b66U;
-
-public:
-  uuid persistent_query_uuid{};
+struct prepareRequest final {
+  exactlyOnce::uuid persistent_query_uuid{};
 
   bool fetch(tl::fetcher& tlf) noexcept {
-    tl::magic magic{};
-    return magic.fetch(tlf) && magic.expect(PREPARE_REQUEST_MAGIC) && persistent_query_uuid.fetch(tlf);
+    return persistent_query_uuid.fetch(tlf);
   }
 };
 
-class commitRequest final {
-  static constexpr uint32_t COMMIT_REQUEST_MAGIC = 0x6836b983U;
-
-public:
-  uuid persistent_query_uuid{};
-  uuid persistent_slot_uuid{};
+struct commitRequest final {
+  exactlyOnce::uuid persistent_query_uuid{};
+  exactlyOnce::uuid persistent_slot_uuid{};
 
   bool fetch(tl::fetcher& tlf) noexcept {
-    tl::magic magic{};
-    return magic.fetch(tlf) && magic.expect(COMMIT_REQUEST_MAGIC) && persistent_query_uuid.fetch(tlf) && persistent_slot_uuid.fetch(tlf);
+    return persistent_query_uuid.fetch(tlf) && persistent_slot_uuid.fetch(tlf);
   }
 };
 
-struct PersistentRequest final {
+class PersistentRequest final {
+  static constexpr uint32_t PREPARE_REQUEST_MAGIC = 0xc8d7'1b66U;
+  static constexpr uint32_t COMMIT_REQUEST_MAGIC = 0x6836'b983U;
+
+public:
   std::variant<prepareRequest, commitRequest> request{};
 
   bool fetch(tl::fetcher& tlf) noexcept {
-    const auto initial_pos{tlf.pos()};
-    if (exactlyOnce::prepareRequest prepare_request{}; prepare_request.fetch(tlf)) {
+    tl::magic magic{};
+    if (!magic.fetch(tlf)) {
+      return false;
+    }
+    if (exactlyOnce::prepareRequest prepare_request{}; magic.expect(PREPARE_REQUEST_MAGIC) && prepare_request.fetch(tlf)) {
       request.emplace<prepareRequest>(prepare_request);
       return true;
     }
-    tlf.reset(initial_pos);
-    if (exactlyOnce::commitRequest commit_request{}; commit_request.fetch(tlf)) {
+    if (exactlyOnce::commitRequest commit_request{}; magic.expect(COMMIT_REQUEST_MAGIC) && commit_request.fetch(tlf)) {
       request.emplace<commitRequest>(commit_request);
       return true;
     }
@@ -1000,7 +998,7 @@ struct PersistentRequest final {
 
 namespace tracing {
 
-struct TraceID final {
+struct traceID final {
   tl::i64 lo{};
   tl::i64 hi{};
 
@@ -1009,7 +1007,7 @@ struct TraceID final {
   }
 };
 
-class TraceContext final {
+class traceContext final {
   static constexpr uint32_t RETURN_RESERVED_STATUS_0_FLAG = vk::tl::common::tracing::traceContext::return_reserved_status_0;
   static constexpr uint32_t RETURN_RESERVED_STATUS_1_FLAG = vk::tl::common::tracing::traceContext::return_reserved_status_1;
   static constexpr uint32_t PARENT_ID_FLAG = vk::tl::common::tracing::traceContext::parent_id;
@@ -1021,7 +1019,7 @@ class TraceContext final {
 
 public:
   tl::i32 fields_mask{};
-  tracing::TraceID trace_id{};
+  tracing::traceID trace_id{};
   std::optional<tl::i64> opt_parent_id;
   std::optional<tl::string> opt_source_id;
 
@@ -1042,13 +1040,13 @@ public:
     bool ok{fields_mask.fetch(tlf)};
 
     if (ok) {
-      ok &= trace_id.fetch(tlf);
+      ok = ok && trace_id.fetch(tlf);
     }
     if (ok && static_cast<bool>(fields_mask.value & PARENT_ID_FLAG)) {
-      ok &= opt_parent_id.emplace().fetch(tlf);
+      ok = ok && opt_parent_id.emplace().fetch(tlf);
     }
     if (ok && static_cast<bool>(fields_mask.value & SOURCE_ID_FLAG)) {
-      ok &= opt_source_id.emplace().fetch(tlf);
+      ok = ok && opt_source_id.emplace().fetch(tlf);
     }
 
     reserved_status_0 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_STATUS_0_FLAG);
@@ -1102,7 +1100,7 @@ public:
   std::optional<tl::i32> opt_supported_compression_version;
   std::optional<tl::f64> opt_random_delay;
   std::optional<tl::exactlyOnce::PersistentRequest> opt_persistent_query;
-  std::optional<tl::tracing::TraceContext> opt_trace_context;
+  std::optional<tl::tracing::traceContext> opt_trace_context;
   std::optional<tl::string> opt_execution_context;
   bool return_view_number{};
 

@@ -32,39 +32,29 @@ struct uuid final {
     tl_store_long(hi);
   }
 };
-struct prepareRequest final {
-  static constexpr int32_t MAGIC = 0xc8d71b66;
 
-  uuid persistent_query_uuid{};
+struct prepareRequest final {
+  exactlyOnce::uuid persistent_query_uuid{};
 
   bool fetch() {
     return persistent_query_uuid.fetch();
   }
-
-  void write() const {
-    tl_store_int(MAGIC);
-    persistent_query_uuid.write();
-  }
 };
 
 struct commitRequest final {
-  static constexpr int32_t MAGIC = 0x6836b983;
-
-  uuid persistent_query_uuid{};
-  uuid persistent_slot_uuid{};
+  exactlyOnce::uuid persistent_query_uuid{};
+  exactlyOnce::uuid persistent_slot_uuid{};
 
   bool fetch() {
     return persistent_query_uuid.fetch() && persistent_slot_uuid.fetch();
   }
-
-  void write() const {
-    tl_store_int(MAGIC);
-    persistent_query_uuid.write();
-    persistent_slot_uuid.write();
-  }
 };
 
-struct PersistentRequest final {
+class PersistentRequest final {
+  static constexpr int32_t PREPARE_REQUEST_MAGIC = 0xc8d71b66;
+  static constexpr int32_t COMMIT_REQUEST_MAGIC = 0x6836b983;
+
+public:
   std::variant<prepareRequest, commitRequest> request;
 
   bool fetch() {
@@ -72,11 +62,11 @@ struct PersistentRequest final {
     if (tl_fetch_error()) {
       return false;
     }
-    if (exactlyOnce::prepareRequest prepare_request{}; magic == prepareRequest::MAGIC && prepare_request.fetch()) {
+    if (exactlyOnce::prepareRequest prepare_request{}; magic == PREPARE_REQUEST_MAGIC && prepare_request.fetch()) {
       request.emplace<prepareRequest>(prepare_request);
       return true;
     }
-    if (exactlyOnce::commitRequest commit_request{}; magic == commitRequest::MAGIC && commit_request.fetch()) {
+    if (exactlyOnce::commitRequest commit_request{}; magic == COMMIT_REQUEST_MAGIC && commit_request.fetch()) {
       request.emplace<commitRequest>(commit_request);
       return true;
     }
@@ -84,14 +74,29 @@ struct PersistentRequest final {
   }
 
   void write() const {
-    std::visit([](const auto& value) { value.write(); }, request);
+    std::visit(
+        [](const auto& value) {
+          using value_t = std::decay_t<decltype(value)>;
+          if constexpr (std::is_same_v<value_t, exactlyOnce::prepareRequest>) {
+            tl_store_int(PREPARE_REQUEST_MAGIC);
+            value.persistent_query_uuid.write();
+          } else if constexpr (std::is_same_v<value_t, exactlyOnce::commitRequest>) {
+            tl_store_int(COMMIT_REQUEST_MAGIC);
+            value.persistent_query_uuid.write();
+            value.persistent_slot_uuid.write();
+          } else {
+            // condition is strange because of c++17 compiler. It is equivalent to `false`
+            static_assert(sizeof(value_t) && false, "exactlyOnce::PersistentRequest only supports prepareRequest and commitRequest");
+          }
+        },
+        request);
   }
 };
 } // namespace exactlyOnce
 
 namespace tracing {
 
-struct TraceID final {
+struct traceID final {
   int64_t lo{};
   int64_t hi{};
 
@@ -107,7 +112,7 @@ struct TraceID final {
   }
 };
 
-class TraceContext final {
+class traceContext final {
   static constexpr uint32_t RETURN_RESERVED_STATUS_0_FLAG = vk::tl::common::tracing::traceContext::return_reserved_status_0;
   static constexpr uint32_t RETURN_RESERVED_STATUS_1_FLAG = vk::tl::common::tracing::traceContext::return_reserved_status_1;
   static constexpr uint32_t PARENT_ID_FLAG = vk::tl::common::tracing::traceContext::parent_id;
@@ -119,7 +124,7 @@ class TraceContext final {
 
 public:
   int32_t fields_mask{};
-  tracing::TraceID trace_id{};
+  tracing::traceID trace_id{};
   std::optional<int64_t> opt_parent_id;
   std::optional<std::string> opt_source_id;
 
@@ -141,17 +146,17 @@ public:
     bool ok{!tl_fetch_error()};
 
     if (ok) {
-      ok &= trace_id.fetch();
+      ok = ok && trace_id.fetch();
     }
     if (ok && static_cast<bool>(fields_mask & PARENT_ID_FLAG)) {
       opt_parent_id.emplace(tl_fetch_long());
-      ok &= !tl_fetch_error();
+      ok = ok && !tl_fetch_error();
     }
     if (ok && static_cast<bool>(fields_mask & SOURCE_ID_FLAG)) {
       std::string value;
       vk::tl::fetch_string(value);
       opt_source_id.emplace(std::move(value));
-      ok &= !tl_fetch_error();
+      ok = ok && !tl_fetch_error();
     }
 
     reserved_status_0 = static_cast<bool>(fields_mask & RETURN_RESERVED_STATUS_0_FLAG);

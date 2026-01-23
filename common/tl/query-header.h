@@ -31,7 +31,7 @@ struct tl_query_header_t {
   int supported_compression_version{};
   double random_delay{};
   exactlyOnce::PersistentRequest persistent_query{};
-  tracing::TraceContext trace_context{};
+  tracing::traceContext trace_context{};
   std::string execution_context;
 };
 

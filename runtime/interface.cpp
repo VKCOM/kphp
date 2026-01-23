@@ -1498,104 +1498,77 @@ static void save_rpc_query_headers(const tl_query_header_t& header, mixed& v$_SE
         [&v$_SERVER](const auto& value) noexcept {
           using value_t = std::decay_t<decltype(value)>;
 
-          constexpr std::string_view exactlyOnce_prepareRequest_sv = "exactlyOnce.prepareRequest";
-          constexpr std::string_view persistent_query_uuid_sv = "persistent_query_uuid";
-          constexpr std::string_view exactlyOnce_commitRequest_sv = "exactlyOnce.commitRequest";
-          constexpr std::string_view persistent_slot_uuid_sv = "persistent_slot_uuid";
-          constexpr std::string_view exactlyOnce_uuid_sv = "exactlyOnce.uuid";
-          constexpr std::string_view lo_sv = "lo";
-          constexpr std::string_view hi_sv = "hi";
-
-          const auto underline = string{"_", 1};
-
-          array out{std::pair{underline, mixed{}},
-                    std::pair{string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())}, mixed{}}};
+          constexpr std::string_view persistent_query_uuid_sv{"persistent_query_uuid"};
+          constexpr std::string_view persistent_slot_uuid_sv{"persistent_slot_uuid"};
+          constexpr std::string_view lo_sv{"lo"};
+          constexpr std::string_view hi_sv{"hi"};
 
           if constexpr (std::is_same_v<value_t, exactlyOnce::prepareRequest>) {
-            out.emplace_value(underline,
-                              mixed{string{exactlyOnce_prepareRequest_sv.data(), static_cast<string::size_type>(exactlyOnce_prepareRequest_sv.size())}});
+            array<mixed> persistent_query_uuid{array_size{2, false}};
+            persistent_query_uuid.emplace_value(string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, value.persistent_query_uuid.lo);
+            persistent_query_uuid.emplace_value(string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, value.persistent_query_uuid.hi);
 
-            out.emplace_value(
-                string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())},
-                mixed{array{std::pair{underline, mixed{string{exactlyOnce_uuid_sv.data(), static_cast<string::size_type>(exactlyOnce_uuid_sv.size())}}},
-                            std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, mixed{value.persistent_query_uuid.lo}},
-                            std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, mixed{value.persistent_query_uuid.hi}}}});
+            array<mixed> out{array_size{1, false}};
+            out.emplace_value(string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())},
+                              std::move(persistent_query_uuid));
 
+            v$_SERVER.set_value(string{"RPC_EXTRA_PERSISTENT_QUERY"}, std::move(out));
           } else if constexpr (std::is_same_v<value_t, exactlyOnce::commitRequest>) {
-            out.emplace_value(underline,
-                              mixed{string{exactlyOnce_commitRequest_sv.data(), static_cast<string::size_type>(exactlyOnce_commitRequest_sv.size())}});
+            array<mixed> persistent_query_uuid{array_size{2, false}};
+            persistent_query_uuid.emplace_value(string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, value.persistent_query_uuid.lo);
+            persistent_query_uuid.emplace_value(string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, value.persistent_query_uuid.hi);
 
-            out.emplace_value(
-                string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())},
-                mixed{array{std::pair{underline, mixed{string{exactlyOnce_uuid_sv.data(), static_cast<string::size_type>(exactlyOnce_uuid_sv.size())}}},
-                            std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, mixed{value.persistent_query_uuid.lo}},
-                            std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, mixed{value.persistent_query_uuid.hi}}}});
+            array<mixed> persistent_slot_uuid{array_size{2, false}};
+            persistent_slot_uuid.emplace_value(string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, value.persistent_slot_uuid.lo);
+            persistent_slot_uuid.emplace_value(string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, value.persistent_slot_uuid.hi);
 
-            out.set_value(
-                string{persistent_slot_uuid_sv.data(), static_cast<string::size_type>(persistent_slot_uuid_sv.size())},
-                mixed{array{std::pair{underline, mixed{string{exactlyOnce_uuid_sv.data(), static_cast<string::size_type>(exactlyOnce_uuid_sv.size())}}},
-                            std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, mixed{value.persistent_slot_uuid.lo}},
-                            std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, mixed{value.persistent_slot_uuid.hi}}}});
+            array<mixed> out{array_size{2, false}};
+            out.emplace_value(string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())},
+                              std::move(persistent_query_uuid));
+            out.emplace_value(string{persistent_slot_uuid_sv.data(), static_cast<string::size_type>(persistent_slot_uuid_sv.size())},
+                              std::move(persistent_slot_uuid));
+
+            v$_SERVER.set_value(string{"RPC_EXTRA_PERSISTENT_QUERY"}, std::move(out));
           } else {
             // condition is strange because of c++17 compiler. It is equivalent to `false`
             static_assert(sizeof(value_t) && false, "exactlyOnce::PersistentRequest only supports prepareRequest and commitRequest");
           }
-
-          v$_SERVER.set_value(string{"RPC_EXTRA_PERSISTENT_QUERY"}, std::move(out));
         },
         header.persistent_query.request);
   }
   if (header.flags & flag::trace_context) {
     const auto& trace_context{header.trace_context};
 
-    constexpr std::string_view tracing_traceContext_sv = "tracing.traceContext";
-    constexpr std::string_view fields_mask_sv = "fields_mask";
-    constexpr std::string_view trace_id_sv = "trace_id";
-    constexpr std::string_view tracing_TraceID_sv = "tracing.TraceID";
-    constexpr std::string_view lo_sv = "lo";
-    constexpr std::string_view hi_sv = "hi";
-    constexpr std::string_view parent_id_sv = "parent_id";
-    constexpr std::string_view source_id_sv = "source_id";
-    constexpr std::string_view reserved_status_0_sv = "reserved_status_0";
-    constexpr std::string_view reserved_status_1_sv = "reserved_status_1";
-    constexpr std::string_view reserved_level_0_sv = "reserved_level_0";
-    constexpr std::string_view reserved_level_1_sv = "reserved_level_1";
-    constexpr std::string_view reserved_level_2_sv = "reserved_level_2";
-    constexpr std::string_view debug_flag_sv = "debug_flag";
+    constexpr std::string_view fields_mask_sv{"fields_mask"};
+    constexpr std::string_view trace_id_sv{"trace_id"};
+    constexpr std::string_view lo_sv{"lo"};
+    constexpr std::string_view hi_sv{"hi"};
+    constexpr std::string_view parent_id_sv{"parent_id"};
+    constexpr std::string_view source_id_sv{"source_id"};
 
-    array out{
-        std::pair{string{"_", 1}, mixed{string{tracing_traceContext_sv.data(), static_cast<string::size_type>(tracing_traceContext_sv.size())}}},
-        std::pair{string{fields_mask_sv.data(), static_cast<string::size_type>(fields_mask_sv.size())}, mixed{trace_context.fields_mask}},
-        std::pair{string{trace_id_sv.data(), static_cast<string::size_type>(trace_id_sv.size())},
-                  mixed{array{std::pair{string{"_", 1}, mixed{string{tracing_TraceID_sv.data(), static_cast<string::size_type>(tracing_TraceID_sv.size())}}},
-                              std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, mixed{trace_context.trace_id.lo}},
-                              std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, mixed{trace_context.trace_id.hi}}}}}};
+    int64_t out_size{2};
+    if (trace_context.opt_parent_id.has_value()) {
+      out_size++;
+    }
+    if (trace_context.opt_source_id.has_value()) {
+      out_size++;
+    }
+
+    array<mixed> trace_id{array_size{2, false}};
+    trace_id.emplace_value(string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, trace_context.trace_id.lo);
+    trace_id.emplace_value(string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, trace_context.trace_id.hi);
+
+    array<mixed> out{array_size{out_size, false}};
+    out.emplace_value(string{fields_mask_sv.data(), static_cast<string::size_type>(fields_mask_sv.size())}, trace_context.fields_mask);
+    out.emplace_value(string{trace_id_sv.data(), static_cast<string::size_type>(trace_id_sv.size())}, std::move(trace_id));
 
     if (trace_context.opt_parent_id) {
-      out.set_value(string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, *trace_context.opt_parent_id);
+      out.emplace_value(string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, *trace_context.opt_parent_id);
     }
     if (trace_context.opt_source_id) {
       const std::string& opt_source_id_value{*trace_context.opt_source_id};
-      out.set_value(string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())},
-                    string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
-    }
-    if (trace_context.reserved_status_0) {
-      out.set_value(string{reserved_status_0_sv.data(), static_cast<string::size_type>(reserved_status_0_sv.size())}, true);
-    }
-    if (trace_context.reserved_status_1) {
-      out.set_value(string{reserved_status_1_sv.data(), static_cast<string::size_type>(reserved_status_1_sv.size())}, true);
-    }
-    if (trace_context.reserved_level_0) {
-      out.set_value(string{reserved_level_0_sv.data(), static_cast<string::size_type>(reserved_level_0_sv.size())}, true);
-    }
-    if (trace_context.reserved_level_1) {
-      out.set_value(string{reserved_level_1_sv.data(), static_cast<string::size_type>(reserved_level_1_sv.size())}, true);
-    }
-    if (trace_context.reserved_level_2) {
-      out.set_value(string{reserved_level_2_sv.data(), static_cast<string::size_type>(reserved_level_2_sv.size())}, true);
-    }
-    if (trace_context.debug_flag) {
-      out.set_value(string{debug_flag_sv.data(), static_cast<string::size_type>(debug_flag_sv.size())}, true);
+      out.emplace_value(string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())},
+                        string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
     }
 
     v$_SERVER.set_value(string{"RPC_EXTRA_TRACE_CONTEXT"}, std::move(out));
