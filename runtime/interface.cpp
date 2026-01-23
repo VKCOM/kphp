@@ -28,6 +28,7 @@
 #include "common/tl/tl-types.h"
 #include "compiler/helper.h"
 #include "net/net-connections.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/serialization-context.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-context.h"
@@ -1508,8 +1509,7 @@ static void save_rpc_query_headers(const tl_query_header_t& header, mixed& v$_SE
           const auto underline = string{"_", 1};
 
           array out{std::pair{underline, mixed{}},
-                    std::pair{string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())}, mixed{}},
-                    std::pair{string{persistent_slot_uuid_sv.data(), static_cast<string::size_type>(persistent_slot_uuid_sv.size())}, mixed{}}};
+                    std::pair{string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())}, mixed{}}};
 
           if constexpr (std::is_same_v<value_t, exactlyOnce::prepareRequest>) {
             out.emplace_value(underline,
@@ -1531,7 +1531,7 @@ static void save_rpc_query_headers(const tl_query_header_t& header, mixed& v$_SE
                             std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, mixed{value.persistent_query_uuid.lo}},
                             std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, mixed{value.persistent_query_uuid.hi}}}});
 
-            out.emplace_value(
+            out.set_value(
                 string{persistent_slot_uuid_sv.data(), static_cast<string::size_type>(persistent_slot_uuid_sv.size())},
                 mixed{array{std::pair{underline, mixed{string{exactlyOnce_uuid_sv.data(), static_cast<string::size_type>(exactlyOnce_uuid_sv.size())}}},
                             std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, mixed{value.persistent_slot_uuid.lo}},
@@ -1569,17 +1569,15 @@ static void save_rpc_query_headers(const tl_query_header_t& header, mixed& v$_SE
         std::pair{string{trace_id_sv.data(), static_cast<string::size_type>(trace_id_sv.size())},
                   mixed{array{std::pair{string{"_", 1}, mixed{string{tracing_TraceID_sv.data(), static_cast<string::size_type>(tracing_TraceID_sv.size())}}},
                               std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, mixed{trace_context.trace_id.lo}},
-                              std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, mixed{trace_context.trace_id.hi}}}}},
-        std::pair{string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, mixed{}},
-        std::pair{string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())}, mixed{}}};
+                              std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, mixed{trace_context.trace_id.hi}}}}}};
 
     if (trace_context.opt_parent_id) {
-      out.emplace_value(string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, *trace_context.opt_parent_id);
+      out.set_value(string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, *trace_context.opt_parent_id);
     }
     if (trace_context.opt_source_id) {
       const std::string& opt_source_id_value{*trace_context.opt_source_id};
-      out.emplace_value(string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())},
-                        string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
+      out.set_value(string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())},
+                    string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
     }
     if (trace_context.reserved_status_0) {
       out.set_value(string{reserved_status_0_sv.data(), static_cast<string::size_type>(reserved_status_0_sv.size())}, true);

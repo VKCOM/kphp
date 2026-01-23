@@ -102,8 +102,7 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
           const auto underline = string{"_", 1};
 
           array out{std::pair{underline, mixed{}},
-                    std::pair{string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())}, mixed{}},
-                    std::pair{string{persistent_slot_uuid_sv.data(), static_cast<string::size_type>(persistent_slot_uuid_sv.size())}, mixed{}}};
+                    std::pair{string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())}, mixed{}}};
 
           if constexpr (std::is_same_v<value_t, tl::exactlyOnce::prepareRequest>) {
             out.emplace_value(underline,
@@ -125,7 +124,7 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
                             std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, mixed{value.persistent_query_uuid.lo.value}},
                             std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, mixed{value.persistent_query_uuid.hi.value}}}});
 
-            out.emplace_value(
+            out.set_value(
                 string{persistent_slot_uuid_sv.data(), static_cast<string::size_type>(persistent_slot_uuid_sv.size())},
                 mixed{array{std::pair{underline, mixed{string{exactlyOnce_uuid_sv.data(), static_cast<string::size_type>(exactlyOnce_uuid_sv.size())}}},
                             std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, mixed{value.persistent_slot_uuid.lo.value}},
@@ -162,17 +161,15 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
         std::pair{string{trace_id_sv.data(), static_cast<string::size_type>(trace_id_sv.size())},
                   mixed{array{std::pair{string{"_", 1}, mixed{string{tracing_TraceID_sv.data(), static_cast<string::size_type>(tracing_TraceID_sv.size())}}},
                               std::pair{string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, mixed{trace_context.trace_id.lo.value}},
-                              std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, mixed{trace_context.trace_id.hi.value}}}}},
-        std::pair{string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, mixed{}},
-        std::pair{string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())}, mixed{}}};
+                              std::pair{string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, mixed{trace_context.trace_id.hi.value}}}}}};
 
     if (trace_context.opt_parent_id) {
-      out.emplace_value(string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, trace_context.opt_parent_id->value);
+      out.set_value(string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, trace_context.opt_parent_id->value);
     }
     if (trace_context.opt_source_id) {
       const std::string& opt_source_id_value{trace_context.opt_source_id->value};
-      out.emplace_value(string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())},
-                        string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
+      out.set_value(string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())},
+                    string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
     }
     if (trace_context.reserved_status_0) {
       out.set_value(string{reserved_status_0_sv.data(), static_cast<string::size_type>(reserved_status_0_sv.size())}, true);
