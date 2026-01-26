@@ -955,7 +955,7 @@ struct uuid final {
 };
 
 struct prepareRequest final {
-  exactlyOnce::uuid persistent_query_uuid{};
+  tl::exactlyOnce::uuid persistent_query_uuid{};
 
   bool fetch(tl::fetcher& tlf) noexcept {
     return persistent_query_uuid.fetch(tlf);
@@ -963,8 +963,8 @@ struct prepareRequest final {
 };
 
 struct commitRequest final {
-  exactlyOnce::uuid persistent_query_uuid{};
-  exactlyOnce::uuid persistent_slot_uuid{};
+  tl::exactlyOnce::uuid persistent_query_uuid{};
+  tl::exactlyOnce::uuid persistent_slot_uuid{};
 
   bool fetch(tl::fetcher& tlf) noexcept {
     return persistent_query_uuid.fetch(tlf) && persistent_slot_uuid.fetch(tlf);
@@ -976,19 +976,19 @@ class PersistentRequest final {
   static constexpr uint32_t COMMIT_REQUEST_MAGIC = 0x6836'b983U;
 
 public:
-  std::variant<prepareRequest, commitRequest> request{};
+  std::variant<tl::exactlyOnce::prepareRequest, tl::exactlyOnce::commitRequest> request;
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
     if (!magic.fetch(tlf)) {
       return false;
     }
-    if (exactlyOnce::prepareRequest prepare_request{}; magic.expect(PREPARE_REQUEST_MAGIC) && prepare_request.fetch(tlf)) {
-      request.emplace<prepareRequest>(prepare_request);
+    if (tl::exactlyOnce::prepareRequest prepare_request{}; magic.expect(PREPARE_REQUEST_MAGIC) && prepare_request.fetch(tlf)) {
+      request.emplace<tl::exactlyOnce::prepareRequest>(prepare_request);
       return true;
     }
-    if (exactlyOnce::commitRequest commit_request{}; magic.expect(COMMIT_REQUEST_MAGIC) && commit_request.fetch(tlf)) {
-      request.emplace<commitRequest>(commit_request);
+    if (tl::exactlyOnce::commitRequest commit_request{}; magic.expect(COMMIT_REQUEST_MAGIC) && commit_request.fetch(tlf)) {
+      request.emplace<tl::exactlyOnce::commitRequest>(commit_request);
       return true;
     }
     return false;
@@ -1019,7 +1019,7 @@ class traceContext final {
 
 public:
   tl::i32 fields_mask{};
-  tracing::traceID trace_id{};
+  tl::tracing::traceID trace_id{};
   std::optional<tl::i64> opt_parent_id;
   std::optional<tl::string> opt_source_id;
 

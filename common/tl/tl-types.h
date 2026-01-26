@@ -55,7 +55,7 @@ class PersistentRequest final {
   static constexpr int32_t COMMIT_REQUEST_MAGIC = 0x6836b983;
 
 public:
-  std::variant<prepareRequest, commitRequest> request;
+  std::variant<exactlyOnce::prepareRequest, exactlyOnce::commitRequest> request;
 
   bool fetch() {
     const int32_t magic{tl_fetch_int()};
@@ -63,11 +63,11 @@ public:
       return false;
     }
     if (exactlyOnce::prepareRequest prepare_request{}; magic == PREPARE_REQUEST_MAGIC && prepare_request.fetch()) {
-      request.emplace<prepareRequest>(prepare_request);
+      request.emplace<exactlyOnce::prepareRequest>(prepare_request);
       return true;
     }
     if (exactlyOnce::commitRequest commit_request{}; magic == COMMIT_REQUEST_MAGIC && commit_request.fetch()) {
-      request.emplace<commitRequest>(commit_request);
+      request.emplace<exactlyOnce::commitRequest>(commit_request);
       return true;
     }
     return false;
