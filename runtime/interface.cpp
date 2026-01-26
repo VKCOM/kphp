@@ -1546,13 +1546,8 @@ static void save_rpc_query_headers(const tl_query_header_t& header, mixed& v$_SE
     constexpr std::string_view parent_id_sv{"parent_id"};
     constexpr std::string_view source_id_sv{"source_id"};
 
-    int64_t out_size{2};
-    if (trace_context.opt_parent_id.has_value()) {
-      out_size++;
-    }
-    if (trace_context.opt_source_id.has_value()) {
-      out_size++;
-    }
+    // + 2 for fields_mask and trace_id, + 1 if there is a parent_id, + 1 if there is a source_id
+    const int64_t out_size{2 + static_cast<int64_t>(trace_context.opt_parent_id.has_value()) + static_cast<int64_t>(trace_context.opt_source_id.has_value())};
 
     array<mixed> trace_id{array_size{2, false}};
     trace_id.emplace_value(string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, trace_context.trace_id.lo);
@@ -1574,7 +1569,7 @@ static void save_rpc_query_headers(const tl_query_header_t& header, mixed& v$_SE
     v$_SERVER.set_value(string{"RPC_EXTRA_TRACE_CONTEXT"}, std::move(out));
   }
   if (header.flags & flag::execution_context) {
-    const auto& execution_context{header.execution_context};
+    const std::string& execution_context{header.execution_context};
     v$_SERVER.set_value(string{"RPC_EXTRA_EXECUTION_CONTEXT"}, string{execution_context.data(), static_cast<string::size_type>(execution_context.size())});
   }
 }

@@ -139,13 +139,8 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
     constexpr std::string_view parent_id_sv{"parent_id"};
     constexpr std::string_view source_id_sv{"source_id"};
 
-    int64_t out_size{2};
-    if (trace_context.opt_parent_id.has_value()) {
-      out_size++;
-    }
-    if (trace_context.opt_source_id.has_value()) {
-      out_size++;
-    }
+    // + 2 for fields_mask and trace_id, + 1 if there is a parent_id, + 1 if there is a source_id
+    const int64_t out_size{2 + static_cast<int64_t>(trace_context.opt_parent_id.has_value()) + static_cast<int64_t>(trace_context.opt_source_id.has_value())};
 
     array<mixed> trace_id{array_size{2, false}};
     trace_id.emplace_value(string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, trace_context.trace_id.lo.value);
@@ -159,7 +154,7 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
       out.emplace_value(string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, trace_context.opt_parent_id->value);
     }
     if (trace_context.opt_source_id) {
-      const std::string& opt_source_id_value{trace_context.opt_source_id->value};
+      const std::string_view& opt_source_id_value{trace_context.opt_source_id->value};
       out.emplace_value(string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())},
                         string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
     }
@@ -167,7 +162,7 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
     superglobals.v$_SERVER.set_value(string{RPC_EXTRA_TRACE_CONTEXT.data(), RPC_EXTRA_TRACE_CONTEXT.size()}, std::move(out));
   }
   if (extra.opt_execution_context) {
-    const auto& execution_context{extra.opt_execution_context->value};
+    const std::string_view& execution_context{extra.opt_execution_context->value};
     superglobals.v$_SERVER.set_value(string{RPC_EXTRA_EXECUTION_CONTEXT.data(), RPC_EXTRA_EXECUTION_CONTEXT.size()},
                                      string{execution_context.data(), static_cast<string::size_type>(execution_context.size())});
   }
