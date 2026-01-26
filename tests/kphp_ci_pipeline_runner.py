@@ -482,7 +482,10 @@ if __name__ == "__main__":
                 kphp_polyfills_repo=kphp_polyfills_repo,
                 cxx_name=args.cxx_name,
                 k2_bin=args.k2_bin,
-                tests_dir=os.path.join(args.kphp_tests_repo, "python/tests/k2_rpc_server/"),
+                tests_dir=" ".join([
+                    os.path.join(args.kphp_tests_repo, "python/tests/k2_rpc_server/"),
+                    os.path.join(args.kphp_tests_repo, "python/tests/confdata/"),
+                ]),
             ),
             skip=not args.k2_bin or (args.steps and "k2-integration-tests" not in args.steps),
         )
