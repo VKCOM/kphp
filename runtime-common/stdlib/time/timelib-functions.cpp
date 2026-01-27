@@ -201,8 +201,7 @@ string format_time(const string& format, kphp::timelib::time& t, kphp::timelib::
     // full date/time
     case 'c':
       kphp::timelib::details::format_to(sb, "%04lld-%02lld-%02lldT%02lld:%02lld:%02lld%c%02d:%02d", t.y, t.m, t.d, t.h, t.i, t.s,
-                                        kphp::timelib::offset_sign(offset), kphp::timelib::offset_hours(offset),
-                                        kphp::timelib::offset_minutes(offset));
+                                        kphp::timelib::offset_sign(offset), kphp::timelib::offset_hours(offset), kphp::timelib::offset_minutes(offset));
       break;
     case 'r':
       kphp::timelib::details::format_to(sb, "%3s, %02lld %3s %04lld %02lld:%02lld:%02lld %c%02d%02d", kphp::timelib::details::short_day_name(t.y, t.m, t.d),
