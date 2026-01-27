@@ -8,7 +8,7 @@
 #include "runtime-light/stdlib/time/timelib-types.h"
 
 struct C$DateTimeInterface : public refcountable_polymorphic_php_classes_virt<> {
-  kphp::timelib::time time{nullptr};
+  kphp::timelib::time_holder time{nullptr};
 
   virtual const char* get_class() const noexcept = 0;
   virtual int32_t get_hash() const noexcept = 0;

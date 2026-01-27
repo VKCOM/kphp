@@ -6,14 +6,14 @@
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/time/timelib-constants.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/stdlib/time/timelib-constants.h"
 #include "runtime-light/stdlib/time/timelib-timezone-cache.h"
 #include "runtime-light/stdlib/time/timelib-types.h"
 
 struct TimeInstanceState final : private vk::not_copyable {
-  string default_timezone{kphp::timelib::timezones::MOSCOW.data(), kphp::timelib::timezones::MOSCOW.size()};
+  string default_timezone{kphp::timelib::timezones::MOSCOW};
   kphp::timelib::timezone_cache timelib_zone_cache;
 
   TimeInstanceState() noexcept {
@@ -48,14 +48,14 @@ struct TimeInstanceState final : private vk::not_copyable {
     return result;
   }
 
-  void update_last_errors(kphp::timelib::error_container&& new_errors) noexcept {
+  void update_last_errors(kphp::timelib::error_container_holder&& new_errors) noexcept {
     last_errors = std::move(new_errors);
   }
 
   static TimeInstanceState& get() noexcept;
 
 private:
-  kphp::timelib::error_container last_errors{nullptr, kphp::timelib::details::error_container_destructor};
+  kphp::timelib::error_container_holder last_errors{nullptr, kphp::timelib::details::error_container_destructor};
 };
 
 struct TimeImageState final : private vk::not_copyable {

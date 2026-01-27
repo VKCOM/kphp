@@ -12,7 +12,7 @@
 #include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/time/timelib-constants.h"
+#include "runtime-common/stdlib/time/timelib-constants.h"
 
 namespace {
 
@@ -97,13 +97,13 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       SB << static_cast<char>(day / 10 + '0') << static_cast<char>(day % 10 + '0');
       break;
     case 'D':
-      SB << timelib::DAY_SHORT_NAMES[day_of_week].data();
+      SB << kphp::timelib::days::SHORT_NAMES[day_of_week];
       break;
     case 'j':
       SB << day;
       break;
     case 'l':
-      SB << timelib::DAY_FULL_NAMES[day_of_week].data();
+      SB << kphp::timelib::days::FULL_NAMES[day_of_week];
       break;
     case 'N':
       SB << (day_of_week == 0 ? '7' : static_cast<char>(day_of_week + '0'));
@@ -141,13 +141,13 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       SB << static_cast<char>('0' + iso_week / 10) << static_cast<char>('0' + iso_week % 10);
       break;
     case 'F':
-      SB << timelib::MON_FULL_NAMES[month - 1].data();
+      SB << kphp::timelib::months::FULL_NAMES[month - 1];
       break;
     case 'm':
       SB << static_cast<char>(month / 10 + '0') << static_cast<char>(month % 10 + '0');
       break;
     case 'M':
-      SB << timelib::MON_SHORT_NAMES[month - 1].data();
+      SB << kphp::timelib::months::SHORT_NAMES[month - 1];
       break;
     case 'n':
       SB << month;
@@ -205,7 +205,7 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       break;
     case 'e':
       if (local) {
-        SB << kphp::timelib::timezones::MOSCOW.data();
+        SB << kphp::timelib::timezones::MOSCOW;
       } else {
         SB << "UTC";
       }
@@ -265,12 +265,12 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       }
       break;
     case 'r':
-      SB << timelib::DAY_SHORT_NAMES[day_of_week].data();
+      SB << kphp::timelib::days::SHORT_NAMES[day_of_week];
       SB << ", ";
       SB << static_cast<char>(day / 10 + '0');
       SB << static_cast<char>(day % 10 + '0');
       SB << ' ';
-      SB << timelib::MON_SHORT_NAMES[month - 1].data();
+      SB << kphp::timelib::months::SHORT_NAMES[month - 1];
       SB << ' ';
       SB << year;
       SB << ' ';

@@ -9,13 +9,14 @@
 
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
+#include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/time/timelib-types.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
-#include "runtime/datetime/timelib_wrapper.h"
 
 struct C$DateInterval : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  timelib_rel_time* rel_time{nullptr};
+  kphp::timelib::rel_time* rel_time{nullptr};
 
   virtual const char* get_class() const noexcept {
     return R"(DateInterval)";

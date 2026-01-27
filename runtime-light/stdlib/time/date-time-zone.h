@@ -22,7 +22,7 @@
 struct C$DateTimeZone : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  std::optional<std::reference_wrapper<const kphp::timelib::tzinfo>> tzi;
+  std::optional<std::reference_wrapper<const kphp::timelib::tzinfo_holder>> tzi;
 
   virtual const char* get_class() const noexcept {
     return R"(DateTimeZone)";

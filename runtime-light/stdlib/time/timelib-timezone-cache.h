@@ -28,7 +28,7 @@ class timezone_cache final {
     using is_transparent = void;
     using std::hash<std::string_view>::operator();
 
-    size_t operator()(const kphp::timelib::tzinfo& tzinfo) const noexcept {
+    size_t operator()(const kphp::timelib::tzinfo_holder& tzinfo) const noexcept {
       kphp::log::assertion(tzinfo != nullptr);
       return tzinfo->name != nullptr ? (*this)(tzinfo->name) : 0;
     }
@@ -38,13 +38,13 @@ class timezone_cache final {
     using is_transparent = void;
     using std::equal_to<std::string_view>::operator();
 
-    bool operator()(const kphp::timelib::tzinfo& lhs, const auto& rhs) const noexcept {
+    bool operator()(const kphp::timelib::tzinfo_holder& lhs, const auto& rhs) const noexcept {
       if (lhs == nullptr || lhs->name == nullptr) [[unlikely]] {
         return false;
       }
       return (*this)(lhs->name, rhs);
     }
-    bool operator()(std::string_view lhs, const kphp::timelib::tzinfo& rhs) const noexcept {
+    bool operator()(std::string_view lhs, const kphp::timelib::tzinfo_holder& rhs) const noexcept {
       if (rhs == nullptr || rhs->name == nullptr) [[unlikely]] {
         return false;
       }
@@ -52,15 +52,15 @@ class timezone_cache final {
     }
   };
 
-  kphp::stl::unordered_set<kphp::timelib::tzinfo, kphp::memory::script_allocator, tzinfo_hash_t, tzinfo_comparator_t> m_cache;
+  kphp::stl::unordered_set<kphp::timelib::tzinfo_holder, kphp::memory::script_allocator, tzinfo_hash_t, tzinfo_comparator_t> m_cache;
 
 public:
-  std::optional<std::reference_wrapper<const kphp::timelib::tzinfo>> get(std::string_view tzname) const noexcept {
+  std::optional<std::reference_wrapper<const kphp::timelib::tzinfo_holder>> get(std::string_view tzname) const noexcept {
     auto it{m_cache.find(tzname)};
     return it != m_cache.end() ? std::make_optional(std::cref(*it)) : std::nullopt;
   }
 
-  std::optional<std::reference_wrapper<const kphp::timelib::tzinfo>> put(kphp::timelib::tzinfo&& tzinfo) noexcept {
+  std::optional<std::reference_wrapper<const kphp::timelib::tzinfo_holder>> put(kphp::timelib::tzinfo_holder&& tzinfo) noexcept {
     return *m_cache.emplace(std::move(tzinfo)).first;
   }
 
@@ -73,8 +73,8 @@ public:
   timezone_cache(std::initializer_list<std::string_view> tzs) noexcept {
     std::ranges::for_each(tzs, [this](std::string_view tz) noexcept {
       int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-      kphp::timelib::tzinfo tzinfo{(kphp::memory::libc_alloc_guard{}, timelib_parse_tzfile(tz.data(), timelib_builtin_db(), std::addressof(errc))),
-                                   kphp::timelib::details::tzinfo_destructor};
+      kphp::timelib::tzinfo_holder tzinfo{(kphp::memory::libc_alloc_guard{}, timelib_parse_tzfile(tz.data(), timelib_builtin_db(), std::addressof(errc))),
+                                          kphp::timelib::details::tzinfo_destructor};
       if (tzinfo == nullptr || tzinfo->name == nullptr) [[unlikely]] {
         return;
       }

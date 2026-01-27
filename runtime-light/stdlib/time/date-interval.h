@@ -12,6 +12,7 @@
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/iterator.h"
+#include "runtime-common/stdlib/time/timelib-functions.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"
@@ -20,7 +21,7 @@
 struct C$DateInterval : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
-  kphp::timelib::rel_time rel_time{nullptr};
+  kphp::timelib::rel_time_holder rel_time{nullptr};
 
   virtual const char* get_class() const noexcept {
     return R"(DateInterval)";
@@ -51,7 +52,5 @@ inline class_instance<C$DateInterval> f$DateInterval$$__construct(const class_in
 class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string& datetime) noexcept;
 
 inline string f$DateInterval$$format(const class_instance<C$DateInterval>& self, const string& format) noexcept {
-  string str;
-  kphp::timelib::format_to(kphp::string_back_insert_iterator{.ref = str}, {format.c_str(), format.size()}, self->rel_time);
-  return str;
+  return kphp::timelib::format_rel_time(format, *self->rel_time);
 }

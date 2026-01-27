@@ -22,51 +22,51 @@
 
 namespace kphp::timelib {
 
-std::expected<rel_time, error_container> parse_interval(std::string_view formatted_interval) noexcept {
-  timelib_time* raw_b{nullptr};
-  timelib_time* raw_e{nullptr};
-  timelib_rel_time* p{nullptr};
+std::expected<kphp::timelib::rel_time_holder, kphp::timelib::error_container_holder> parse_interval(std::string_view formatted_interval) noexcept {
+  kphp::timelib::time* raw_b{nullptr};
+  kphp::timelib::time* raw_e{nullptr};
+  kphp::timelib::rel_time* p{nullptr};
   int r{}; // it's intentionally declared as 'int' since timelib_strtointerval accepts 'int'
-  timelib_error_container* errors{nullptr};
+  kphp::timelib::error_container* errors{nullptr};
 
   kphp::memory::libc_alloc_guard _{};
   timelib_strtointerval(formatted_interval.data(), formatted_interval.size(), std::addressof(raw_b), std::addressof(raw_e), std::addressof(p),
                         std::addressof(r), std::addressof(errors));
 
-  kphp::timelib::time e{raw_e};
-  kphp::timelib::time b{raw_b};
+  kphp::timelib::time_holder e{raw_e};
+  kphp::timelib::time_holder b{raw_b};
 
   if (errors->error_count > 0) {
     kphp::timelib::details::rel_time_destructor(p);
-    return std::unexpected{kphp::timelib::error_container{errors, kphp::timelib::details::error_container_destructor}};
+    return std::unexpected{kphp::timelib::error_container_holder{errors, kphp::timelib::details::error_container_destructor}};
   }
 
   if (p != nullptr) {
-    return rel_time{p, kphp::timelib::details::rel_time_destructor};
+    return kphp::timelib::rel_time_holder{p, kphp::timelib::details::rel_time_destructor};
   }
 
   if (b != nullptr && e != nullptr) {
     timelib_update_ts(b.get(), nullptr);
     timelib_update_ts(e.get(), nullptr);
-    return kphp::timelib::rel_time{timelib_diff(b.get(), e.get()), kphp::timelib::details::rel_time_destructor};
+    return kphp::timelib::rel_time_holder{timelib_diff(b.get(), e.get()), kphp::timelib::details::rel_time_destructor};
   }
 
-  return std::unexpected{error_container{errors, kphp::timelib::details::error_container_destructor}};
+  return std::unexpected{kphp::timelib::error_container_holder{errors, kphp::timelib::details::error_container_destructor}};
 }
 
-kphp::timelib::rel_time get_time_interval(const kphp::timelib::time& time1, const kphp::timelib::time& time2, bool absolute) noexcept {
+kphp::timelib::rel_time_holder get_time_interval(const kphp::timelib::time_holder& time1, const kphp::timelib::time_holder& time2, bool absolute) noexcept {
   kphp::memory::libc_alloc_guard _{};
   timelib_update_ts(time1.get(), nullptr);
   timelib_update_ts(time2.get(), nullptr);
 
-  kphp::timelib::rel_time diff{timelib_diff(time1.get(), time2.get()), kphp::timelib::details::rel_time_destructor};
+  kphp::timelib::rel_time_holder diff{timelib_diff(time1.get(), time2.get()), kphp::timelib::details::rel_time_destructor};
   if (absolute) {
     diff->invert = 0;
   }
   return diff;
 }
 
-std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> get_timezone_info(std::string_view name, const timelib_tzdb* tzdb) noexcept {
+std::expected<std::reference_wrapper<const kphp::timelib::tzinfo_holder>, int32_t> get_timezone_info(std::string_view name, const timelib_tzdb* tzdb) noexcept {
   auto opt_tzinfo{TimeImageState::get().timelib_zone_cache.get(name)};
   if (opt_tzinfo.has_value()) {
     return *opt_tzinfo;
@@ -78,8 +78,8 @@ std::expected<std::reference_wrapper<const kphp::timelib::tzinfo>, int32_t> get_
   }
 
   int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-  kphp::timelib::tzinfo tzinfo{(kphp::memory::libc_alloc_guard{}, timelib_parse_tzfile(name.data(), tzdb, std::addressof(errc))),
-                               kphp::timelib::details::tzinfo_destructor};
+  kphp::timelib::tzinfo_holder tzinfo{(kphp::memory::libc_alloc_guard{}, timelib_parse_tzfile(name.data(), tzdb, std::addressof(errc))),
+                                      kphp::timelib::details::tzinfo_destructor};
   if (tzinfo == nullptr || tzinfo->name == nullptr) [[unlikely]] {
     return std::unexpected{errc};
   }
@@ -179,8 +179,8 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
   return now->sse;
 }
 
-std::expected<std::pair<kphp::timelib::time, kphp::timelib::error_container>, kphp::timelib::error_container>
-parse_time(std::string_view formatted_time, const kphp::timelib::time& t) noexcept {
+std::expected<std::pair<kphp::timelib::time_holder, kphp::timelib::error_container_holder>, kphp::timelib::error_container_holder>
+parse_time(std::string_view formatted_time, const kphp::timelib::time_holder& t) noexcept {
   auto expected{parse_time(formatted_time)};
 
   if (!expected.has_value()) [[unlikely]] {
@@ -190,7 +190,7 @@ parse_time(std::string_view formatted_time, const kphp::timelib::time& t) noexce
   auto& [tmp_time, errors]{*expected};
   auto res{kphp::timelib::clone_time(t)};
 
-  std::memcpy(std::addressof(res->relative), std::addressof(tmp_time->relative), sizeof(timelib_rel_time));
+  std::memcpy(std::addressof(res->relative), std::addressof(tmp_time->relative), sizeof(kphp::timelib::rel_time));
   res->have_relative = tmp_time->have_relative;
   res->sse_uptodate = 0;
 
@@ -247,7 +247,7 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view for
 
   kphp::memory::libc_alloc_guard _{};
 
-  timelib_time* now{timelib_time_ctor()};
+  kphp::timelib::time* now{timelib_time_ctor()};
   const vk::final_action now_deleter{[now] noexcept { timelib_time_dtor(now); }};
   now->tz_info = tzinfo.get();
   now->zone_type = TIMELIB_ZONETYPE_ID;
@@ -271,14 +271,14 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view for
   return result_timestamp;
 }
 
-void fill_holes_with_now_info(kphp::timelib::time& time, const kphp::timelib::tzinfo& tzi, int32_t options) noexcept {
+void fill_holes_with_now_info(kphp::timelib::time_holder& time, const kphp::timelib::tzinfo_holder& tzi, int32_t options) noexcept {
   namespace chrono = std::chrono;
   const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
   const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
   const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
 
   kphp::memory::libc_alloc_guard _{};
-  kphp::timelib::time now{timelib_time_ctor(), kphp::timelib::details::time_destructor};
+  kphp::timelib::time_holder now{timelib_time_ctor(), kphp::timelib::details::time_destructor};
 
   now->tz_info = tzi.get();
   now->zone_type = TIMELIB_ZONETYPE_ID;
@@ -293,14 +293,14 @@ void fill_holes_with_now_info(kphp::timelib::time& time, const kphp::timelib::tz
   time->have_relative = 0;
 }
 
-void fill_holes_with_now_info(kphp::timelib::time& time, int32_t options) noexcept {
+void fill_holes_with_now_info(kphp::timelib::time_holder& time, int32_t options) noexcept {
   namespace chrono = std::chrono;
   const auto time_since_epoch{chrono::system_clock::now().time_since_epoch()};
   const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
   const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
 
   kphp::memory::libc_alloc_guard _{};
-  kphp::timelib::time now{timelib_time_ctor(), kphp::timelib::details::time_destructor};
+  kphp::timelib::time_holder now{timelib_time_ctor(), kphp::timelib::details::time_destructor};
 
   now->tz_info = time->tz_info;
   now->zone_type = TIMELIB_ZONETYPE_ID;
