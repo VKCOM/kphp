@@ -147,7 +147,7 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
     trace_id.emplace_value(string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, trace_context.trace_id.hi.value);
 
     array<mixed> out{array_size{out_size, false}};
-    out.emplace_value(string{fields_mask_sv.data(), static_cast<string::size_type>(fields_mask_sv.size())}, trace_context.fields_mask.value);
+    out.emplace_value(string{fields_mask_sv.data(), static_cast<string::size_type>(fields_mask_sv.size())}, trace_context.get_flags());
     out.emplace_value(string{trace_id_sv.data(), static_cast<string::size_type>(trace_id_sv.size())}, std::move(trace_id));
 
     if (trace_context.opt_parent_id) {
@@ -200,7 +200,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
     superglobals.v$_SERVER.set_value(string{RPC_ACTOR_ID.data(), RPC_ACTOR_ID.size()}, (*invoke_rpc.opt_actor_id).value);
   }
   if (invoke_rpc.opt_extra) {
-    superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>((*invoke_rpc.opt_extra).flags.value));
+    superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>((*invoke_rpc.opt_extra).get_flags()));
     process_rpc_invoke_req_extra(*invoke_rpc.opt_extra, superglobals);
   }
   kphp::log::info("rpc server initialized with: "
@@ -212,7 +212,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
                   "request -> {:#x}",
                   invoke_rpc.net_pid.get_pid(), invoke_rpc.net_pid.get_port(), invoke_rpc.query_id.value,
                   invoke_rpc.opt_actor_id.has_value() ? (*invoke_rpc.opt_actor_id).value : 0,
-                  invoke_rpc.opt_extra.has_value() ? (*invoke_rpc.opt_extra).flags.value : 0, request_magic.value);
+                  invoke_rpc.opt_extra.has_value() ? (*invoke_rpc.opt_extra).get_flags() : 0, request_magic.value);
 }
 
 } // namespace kphp::rpc

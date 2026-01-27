@@ -337,10 +337,10 @@ void tl_store_header(const tl_query_header_t* header) {
         tl_store_double(header->random_delay);
       }
       if (flags & flag::persistent_query) {
-        header->persistent_query.write();
+        header->persistent_query.store();
       }
       if (flags & flag::trace_context) {
-        header->trace_context.write();
+        header->trace_context.store();
       }
       if (flags & flag::execution_context) {
         vk::tl::store_string(header->execution_context);

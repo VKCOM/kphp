@@ -27,7 +27,7 @@ struct uuid final {
     return !tl_fetch_error();
   }
 
-  void write() const {
+  void store() const {
     tl_store_long(lo);
     tl_store_long(hi);
   }
@@ -73,17 +73,17 @@ public:
     return false;
   }
 
-  void write() const {
+  void store() const {
     std::visit(
         [](const auto& value) {
           using value_t = std::decay_t<decltype(value)>;
           if constexpr (std::is_same_v<value_t, exactlyOnce::prepareRequest>) {
             tl_store_int(PREPARE_REQUEST_MAGIC);
-            value.persistent_query_uuid.write();
+            value.persistent_query_uuid.store();
           } else if constexpr (std::is_same_v<value_t, exactlyOnce::commitRequest>) {
             tl_store_int(COMMIT_REQUEST_MAGIC);
-            value.persistent_query_uuid.write();
-            value.persistent_slot_uuid.write();
+            value.persistent_query_uuid.store();
+            value.persistent_slot_uuid.store();
           } else {
             // condition is strange because of c++17 compiler. It is equivalent to `false`
             static_assert(sizeof(value_t) && false, "exactlyOnce::PersistentRequest only supports prepareRequest and commitRequest");
@@ -106,7 +106,7 @@ struct traceID final {
     return !tl_fetch_error();
   }
 
-  void write() const {
+  void store() const {
     tl_store_long(lo);
     tl_store_long(hi);
   }
@@ -123,7 +123,6 @@ class traceContext final {
   static constexpr uint32_t RETURN_DEBUG_FLAG = vk::tl::common::tracing::traceContext::return_debug;
 
 public:
-  int32_t fields_mask{};
   tracing::traceID trace_id{};
   std::optional<int64_t> opt_parent_id;
   std::optional<std::string> opt_source_id;
@@ -142,12 +141,10 @@ public:
   bool debug_flag{};
 
   bool fetch() {
-    fields_mask = tl_fetch_int();
+    const int32_t fields_mask{tl_fetch_int()};
     bool ok{!tl_fetch_error()};
 
-    if (ok) {
-      ok = ok && trace_id.fetch();
-    }
+    ok = ok && trace_id.fetch();
     if (ok && static_cast<bool>(fields_mask & PARENT_ID_FLAG)) {
       opt_parent_id.emplace(tl_fetch_long());
       ok = ok && !tl_fetch_error();
@@ -169,15 +166,29 @@ public:
     return ok;
   }
 
-  void write() const {
-    tl_store_int(fields_mask);
-    trace_id.write();
+  void store() const {
+    tl_store_int(get_flags());
+    trace_id.store();
     if (opt_parent_id) {
       tl_store_long(opt_parent_id.value());
     }
     if (opt_source_id) {
       vk::tl::store_string(opt_source_id.value());
     }
+  }
+
+  int32_t get_flags() const noexcept {
+    int32_t flags{};
+    flags |= static_cast<int32_t>(reserved_status_0);
+    flags |= static_cast<int32_t>(reserved_status_1) << 1;
+    flags |= static_cast<int32_t>(reserved_level_0) << 4;
+    flags |= static_cast<int32_t>(reserved_level_1) << 5;
+    flags |= static_cast<int32_t>(reserved_level_2) << 6;
+    flags |= static_cast<int32_t>(debug_flag) << 7;
+
+    flags |= static_cast<int32_t>(opt_parent_id.has_value()) << 2;
+    flags |= static_cast<int32_t>(opt_source_id.has_value()) << 3;
+    return flags;
   }
 };
 } // namespace tracing

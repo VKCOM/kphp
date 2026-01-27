@@ -1554,7 +1554,7 @@ static void save_rpc_query_headers(const tl_query_header_t& header, mixed& v$_SE
     trace_id.emplace_value(string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, trace_context.trace_id.hi);
 
     array<mixed> out{array_size{out_size, false}};
-    out.emplace_value(string{fields_mask_sv.data(), static_cast<string::size_type>(fields_mask_sv.size())}, trace_context.fields_mask);
+    out.emplace_value(string{fields_mask_sv.data(), static_cast<string::size_type>(fields_mask_sv.size())}, trace_context.get_flags());
     out.emplace_value(string{trace_id_sv.data(), static_cast<string::size_type>(trace_id_sv.size())}, std::move(trace_id));
 
     if (trace_context.opt_parent_id) {

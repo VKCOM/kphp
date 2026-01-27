@@ -1018,7 +1018,6 @@ class traceContext final {
   static constexpr uint32_t RETURN_DEBUG_FLAG = vk::tl::common::tracing::traceContext::return_debug;
 
 public:
-  tl::i32 fields_mask{};
   tl::tracing::traceID trace_id{};
   std::optional<tl::i64> opt_parent_id;
   std::optional<tl::string> opt_source_id;
@@ -1037,11 +1036,10 @@ public:
   bool debug_flag{};
 
   bool fetch(tl::fetcher& tlf) noexcept {
+    tl::u32 fields_mask{};
     bool ok{fields_mask.fetch(tlf)};
 
-    if (ok) {
-      ok = ok && trace_id.fetch(tlf);
-    }
+    ok = ok && trace_id.fetch(tlf);
     if (ok && static_cast<bool>(fields_mask.value & PARENT_ID_FLAG)) {
       ok = ok && opt_parent_id.emplace().fetch(tlf);
     }
@@ -1057,6 +1055,20 @@ public:
     debug_flag = static_cast<bool>(fields_mask.value & RETURN_DEBUG_FLAG);
 
     return ok;
+  }
+
+  int32_t get_flags() const noexcept {
+    int32_t flags{};
+    flags |= static_cast<int32_t>(reserved_status_0);
+    flags |= static_cast<int32_t>(reserved_status_1) << 1;
+    flags |= static_cast<int32_t>(reserved_level_0) << 4;
+    flags |= static_cast<int32_t>(reserved_level_1) << 5;
+    flags |= static_cast<int32_t>(reserved_level_2) << 6;
+    flags |= static_cast<int32_t>(debug_flag) << 7;
+
+    flags |= static_cast<int32_t>(opt_parent_id.has_value()) << 2;
+    flags |= static_cast<int32_t>(opt_source_id.has_value()) << 3;
+    return flags;
   }
 };
 } // namespace tracing
@@ -1083,7 +1095,6 @@ class rpcInvokeReqExtra final {
   static constexpr uint32_t EXECUTION_CONTEXT_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::execution_context;
 
 public:
-  tl::mask flags{};
   bool return_binlog_pos{};
   bool return_binlog_time{};
   bool return_pid{};
@@ -1105,6 +1116,7 @@ public:
   bool return_view_number{};
 
   bool fetch(tl::fetcher& tlf) noexcept;
+  int32_t get_flags() const noexcept;
 };
 
 struct RpcInvokeReqExtra final {

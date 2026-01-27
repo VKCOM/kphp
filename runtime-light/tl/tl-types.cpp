@@ -147,6 +147,7 @@ bool CertInfoItem::fetch(tl::fetcher& tlf) noexcept {
 // ===== RPC =====
 
 bool rpcInvokeReqExtra::fetch(tl::fetcher& tlf) noexcept {
+  tl::mask flags{};
   bool ok{flags.fetch(tlf)};
   if (ok && static_cast<bool>(flags.value & WAIT_BINLOG_POS_FLAG)) {
     ok &= opt_wait_binlog_pos.emplace().fetch(tlf);
@@ -191,6 +192,32 @@ bool rpcInvokeReqExtra::fetch(tl::fetcher& tlf) noexcept {
   no_result = static_cast<bool>(flags.value & NORESULT_FLAG);
   return_view_number = static_cast<bool>(flags.value & RETURN_VIEW_NUMBER_FLAG);
   return ok;
+}
+
+int32_t rpcInvokeReqExtra::get_flags() const noexcept {
+  int32_t flags{};
+
+  flags |= static_cast<int32_t>(return_binlog_pos);
+  flags |= static_cast<int32_t>(return_binlog_time) << 1;
+  flags |= static_cast<int32_t>(return_pid) << 2;
+  flags |= static_cast<int32_t>(return_request_sizes) << 3;
+  flags |= static_cast<int32_t>(return_failed_subqueries) << 4;
+  flags |= static_cast<int32_t>(return_query_stats) << 6;
+  flags |= static_cast<int32_t>(no_result) << 7;
+  flags |= static_cast<int32_t>(return_view_number) << 27;
+
+  flags |= static_cast<int32_t>(opt_wait_binlog_pos.has_value()) << 16;
+  flags |= static_cast<int32_t>(opt_string_forward_keys.has_value()) << 18;
+  flags |= static_cast<int32_t>(opt_int_forward_keys.has_value()) << 19;
+  flags |= static_cast<int32_t>(opt_string_forward.has_value()) << 20;
+  flags |= static_cast<int32_t>(opt_int_forward.has_value()) << 21;
+  flags |= static_cast<int32_t>(opt_custom_timeout_ms.has_value()) << 23;
+  flags |= static_cast<int32_t>(opt_supported_compression_version.has_value()) << 25;
+  flags |= static_cast<int32_t>(opt_random_delay.has_value()) << 26;
+  flags |= static_cast<int32_t>(opt_persistent_query.has_value()) << 28;
+  flags |= static_cast<int32_t>(opt_trace_context.has_value()) << 29;
+  flags |= static_cast<int32_t>(opt_execution_context.has_value()) << 30;
+  return flags;
 }
 
 void rpcReqResultExtra::store(tl::storer& tls) const noexcept {
