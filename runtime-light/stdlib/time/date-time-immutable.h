@@ -9,6 +9,7 @@
 
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/time/timelib-functions.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime-light/stdlib/time/date-interval.h"
 #include "runtime-light/stdlib/time/date-time-interface.h"
@@ -111,9 +112,13 @@ inline class_instance<C$DateInterval> f$DateTimeImmutable$$diff(const class_inst
 }
 
 inline string f$DateTimeImmutable$$format(const class_instance<C$DateTimeImmutable>& self, const string& format) noexcept {
-  string str;
-  kphp::timelib::format_to(kphp::string_back_insert_iterator{.ref = str}, {format.c_str(), format.size()}, self->time);
-  return str;
+  if (format.empty()) {
+    return {};
+  }
+
+  kphp::timelib::time_offset_holder offset{self->time->is_localtime ? kphp::timelib::construct_time_offset(self->time) : nullptr};
+
+  return kphp::timelib::format_time(format, *self->time, offset.get());
 }
 
 inline int64_t f$DateTimeImmutable$$getOffset(const class_instance<C$DateTimeImmutable>& self) noexcept {

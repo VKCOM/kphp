@@ -12,10 +12,10 @@
 #include <memory>
 
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/time/timelib-constants.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/time-state.h"
-#include "runtime-light/stdlib/time/timelib-constants.h"
 #include "runtime-light/stdlib/time/timelib-functions.h"
 
 namespace kphp::time::impl {
@@ -102,8 +102,8 @@ inline array<mixed> f$getdate(int64_t timestamp = std::numeric_limits<int64_t>::
 
   array<mixed> result{array_size{11, false}};
 
-  auto weekday{kphp::timelib::DAY_FULL_NAMES[t.tm_wday]};
-  auto month{kphp::timelib::MON_FULL_NAMES[t.tm_mon]};
+  auto weekday{kphp::timelib::days::FULL_NAMES[t.tm_wday]};
+  auto month{kphp::timelib::months::FULL_NAMES[t.tm_mon]};
 
   result.set_value(string{"seconds", 7}, t.tm_sec);
   result.set_value(string{"minutes", 7}, t.tm_min);
@@ -113,8 +113,8 @@ inline array<mixed> f$getdate(int64_t timestamp = std::numeric_limits<int64_t>::
   result.set_value(string{"mon", 3}, t.tm_mon + 1);
   result.set_value(string{"year", 4}, t.tm_year + 1900);
   result.set_value(string{"yday", 4}, t.tm_yday);
-  result.set_value(string{"weekday", 7}, string{weekday.data(), static_cast<string::size_type>(weekday.size())});
-  result.set_value(string{"month", 5}, string{month.data(), static_cast<string::size_type>(month.size())});
+  result.set_value(string{"weekday", 7}, string{weekday});
+  result.set_value(string{"month", 5}, string{month});
   result.set_value(string{"0", 1}, timestamp);
 
   return result;
