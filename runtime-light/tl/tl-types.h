@@ -1057,17 +1057,16 @@ public:
     return ok;
   }
 
-  int32_t get_flags() const noexcept {
-    int32_t flags{};
-    flags |= static_cast<int32_t>(reserved_status_0);
-    flags |= static_cast<int32_t>(reserved_status_1) << 1;
-    flags |= static_cast<int32_t>(reserved_level_0) << 4;
-    flags |= static_cast<int32_t>(reserved_level_1) << 5;
-    flags |= static_cast<int32_t>(reserved_level_2) << 6;
-    flags |= static_cast<int32_t>(debug_flag) << 7;
+  tl::mask get_flags() const noexcept {
+    tl::mask flags{.value = static_cast<tl::mask::underlying_type>(reserved_status_0)};
+    flags.value |= static_cast<tl::mask::underlying_type>(reserved_status_1) << 1;
+    flags.value |= static_cast<tl::mask::underlying_type>(reserved_level_0) << 4;
+    flags.value |= static_cast<tl::mask::underlying_type>(reserved_level_1) << 5;
+    flags.value |= static_cast<tl::mask::underlying_type>(reserved_level_2) << 6;
+    flags.value |= static_cast<tl::mask::underlying_type>(debug_flag) << 7;
 
-    flags |= static_cast<int32_t>(opt_parent_id.has_value()) << 2;
-    flags |= static_cast<int32_t>(opt_source_id.has_value()) << 3;
+    flags.value |= static_cast<tl::mask::underlying_type>(opt_parent_id.has_value()) << 2;
+    flags.value |= static_cast<tl::mask::underlying_type>(opt_source_id.has_value()) << 3;
     return flags;
   }
 };
@@ -1116,7 +1115,7 @@ public:
   bool return_view_number{};
 
   bool fetch(tl::fetcher& tlf) noexcept;
-  int32_t get_flags() const noexcept;
+  tl::mask get_flags() const noexcept;
 };
 
 struct RpcInvokeReqExtra final {

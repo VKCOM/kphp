@@ -1,5 +1,5 @@
 // Compiler for PHP (aka KPHP)
-// Copyright (c) 2025 LLC «V Kontakte»
+// Copyright (c) 2026 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #pragma once
@@ -23,6 +23,9 @@ struct uuid final {
 
   bool fetch() {
     lo = tl_fetch_long();
+    if (tl_fetch_error()) {
+      return false;
+    }
     hi = tl_fetch_long();
     return !tl_fetch_error();
   }
@@ -39,6 +42,10 @@ struct prepareRequest final {
   bool fetch() {
     return persistent_query_uuid.fetch();
   }
+
+  void store() const {
+    persistent_query_uuid.store();
+  }
 };
 
 struct commitRequest final {
@@ -48,11 +55,16 @@ struct commitRequest final {
   bool fetch() {
     return persistent_query_uuid.fetch() && persistent_slot_uuid.fetch();
   }
+
+  void store() const {
+    persistent_query_uuid.store();
+    persistent_slot_uuid.store();
+  }
 };
 
 class PersistentRequest final {
-  static constexpr int32_t PREPARE_REQUEST_MAGIC = 0xc8d71b66;
-  static constexpr int32_t COMMIT_REQUEST_MAGIC = 0x6836b983;
+  static constexpr int32_t PREPARE_REQUEST_MAGIC = 0xc8d7'1b66;
+  static constexpr int32_t COMMIT_REQUEST_MAGIC = 0x6836'b983;
 
 public:
   std::variant<exactlyOnce::prepareRequest, exactlyOnce::commitRequest> request;
@@ -79,15 +91,13 @@ public:
           using value_t = std::decay_t<decltype(value)>;
           if constexpr (std::is_same_v<value_t, exactlyOnce::prepareRequest>) {
             tl_store_int(PREPARE_REQUEST_MAGIC);
-            value.persistent_query_uuid.store();
           } else if constexpr (std::is_same_v<value_t, exactlyOnce::commitRequest>) {
             tl_store_int(COMMIT_REQUEST_MAGIC);
-            value.persistent_query_uuid.store();
-            value.persistent_slot_uuid.store();
           } else {
             // condition is strange because of c++17 compiler. It is equivalent to `false`
             static_assert(sizeof(value_t) && false, "exactlyOnce::PersistentRequest only supports prepareRequest and commitRequest");
           }
+          value.store();
         },
         request);
   }
@@ -102,6 +112,9 @@ struct traceID final {
 
   bool fetch() {
     lo = tl_fetch_long();
+    if (tl_fetch_error()) {
+      return false;
+    }
     hi = tl_fetch_long();
     return !tl_fetch_error();
   }
@@ -177,17 +190,17 @@ public:
     }
   }
 
-  int32_t get_flags() const noexcept {
-    int32_t flags{};
-    flags |= static_cast<int32_t>(reserved_status_0);
-    flags |= static_cast<int32_t>(reserved_status_1) << 1;
-    flags |= static_cast<int32_t>(reserved_level_0) << 4;
-    flags |= static_cast<int32_t>(reserved_level_1) << 5;
-    flags |= static_cast<int32_t>(reserved_level_2) << 6;
-    flags |= static_cast<int32_t>(debug_flag) << 7;
+  uint64_t get_flags() const noexcept {
+    uint64_t flags{};
+    flags |= static_cast<uint64_t>(reserved_status_0);
+    flags |= static_cast<uint64_t>(reserved_status_1) << 1;
+    flags |= static_cast<uint64_t>(reserved_level_0) << 4;
+    flags |= static_cast<uint64_t>(reserved_level_1) << 5;
+    flags |= static_cast<uint64_t>(reserved_level_2) << 6;
+    flags |= static_cast<uint64_t>(debug_flag) << 7;
 
-    flags |= static_cast<int32_t>(opt_parent_id.has_value()) << 2;
-    flags |= static_cast<int32_t>(opt_source_id.has_value()) << 3;
+    flags |= static_cast<uint64_t>(opt_parent_id.has_value()) << 2;
+    flags |= static_cast<uint64_t>(opt_source_id.has_value()) << 3;
     return flags;
   }
 };

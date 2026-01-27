@@ -194,29 +194,28 @@ bool rpcInvokeReqExtra::fetch(tl::fetcher& tlf) noexcept {
   return ok;
 }
 
-int32_t rpcInvokeReqExtra::get_flags() const noexcept {
-  int32_t flags{};
+tl::mask rpcInvokeReqExtra::get_flags() const noexcept {
+  tl::mask flags{.value = static_cast<tl::mask::underlying_type>(return_binlog_pos)};
 
-  flags |= static_cast<int32_t>(return_binlog_pos);
-  flags |= static_cast<int32_t>(return_binlog_time) << 1;
-  flags |= static_cast<int32_t>(return_pid) << 2;
-  flags |= static_cast<int32_t>(return_request_sizes) << 3;
-  flags |= static_cast<int32_t>(return_failed_subqueries) << 4;
-  flags |= static_cast<int32_t>(return_query_stats) << 6;
-  flags |= static_cast<int32_t>(no_result) << 7;
-  flags |= static_cast<int32_t>(return_view_number) << 27;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_binlog_time) << 1;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_pid) << 2;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_request_sizes) << 3;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_failed_subqueries) << 4;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_query_stats) << 6;
+  flags.value |= static_cast<tl::mask::underlying_type>(no_result) << 7;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_view_number) << 27;
 
-  flags |= static_cast<int32_t>(opt_wait_binlog_pos.has_value()) << 16;
-  flags |= static_cast<int32_t>(opt_string_forward_keys.has_value()) << 18;
-  flags |= static_cast<int32_t>(opt_int_forward_keys.has_value()) << 19;
-  flags |= static_cast<int32_t>(opt_string_forward.has_value()) << 20;
-  flags |= static_cast<int32_t>(opt_int_forward.has_value()) << 21;
-  flags |= static_cast<int32_t>(opt_custom_timeout_ms.has_value()) << 23;
-  flags |= static_cast<int32_t>(opt_supported_compression_version.has_value()) << 25;
-  flags |= static_cast<int32_t>(opt_random_delay.has_value()) << 26;
-  flags |= static_cast<int32_t>(opt_persistent_query.has_value()) << 28;
-  flags |= static_cast<int32_t>(opt_trace_context.has_value()) << 29;
-  flags |= static_cast<int32_t>(opt_execution_context.has_value()) << 30;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_wait_binlog_pos.has_value()) << 16;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_string_forward_keys.has_value()) << 18;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_int_forward_keys.has_value()) << 19;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_string_forward.has_value()) << 20;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_int_forward.has_value()) << 21;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_custom_timeout_ms.has_value()) << 23;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_supported_compression_version.has_value()) << 25;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_random_delay.has_value()) << 26;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_persistent_query.has_value()) << 28;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_trace_context.has_value()) << 29;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_execution_context.has_value()) << 30;
   return flags;
 }
 

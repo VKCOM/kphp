@@ -92,34 +92,40 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
         [&superglobals](const auto& value) noexcept {
           using value_t = std::remove_cvref_t<decltype(value)>;
 
-          constexpr std::string_view persistent_query_uuid_sv{"persistent_query_uuid"};
-          constexpr std::string_view persistent_slot_uuid_sv{"persistent_slot_uuid"};
-          constexpr std::string_view lo_sv{"lo"};
-          constexpr std::string_view hi_sv{"hi"};
+          constexpr std::string_view persistent_query_uuid_key_name{"persistent_query_uuid"};
+          constexpr std::string_view persistent_slot_uuid_key_name{"persistent_slot_uuid"};
+          constexpr std::string_view lo_key_name{"lo"};
+          constexpr std::string_view hi_key_name{"hi"};
 
           if constexpr (std::is_same_v<value_t, tl::exactlyOnce::prepareRequest>) {
             array<mixed> persistent_query_uuid{array_size{2, false}};
-            persistent_query_uuid.emplace_value(string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, value.persistent_query_uuid.lo.value);
-            persistent_query_uuid.emplace_value(string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, value.persistent_query_uuid.hi.value);
+            persistent_query_uuid.emplace_value(string{lo_key_name.data(), static_cast<string::size_type>(lo_key_name.size())},
+                                                static_cast<int64_t>(value.persistent_query_uuid.lo.value));
+            persistent_query_uuid.emplace_value(string{hi_key_name.data(), static_cast<string::size_type>(hi_key_name.size())},
+                                                static_cast<int64_t>(value.persistent_query_uuid.hi.value));
 
             array<mixed> out{array_size{1, false}};
-            out.emplace_value(string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())},
+            out.emplace_value(string{persistent_query_uuid_key_name.data(), static_cast<string::size_type>(persistent_query_uuid_key_name.size())},
                               std::move(persistent_query_uuid));
 
             superglobals.v$_SERVER.set_value(string{RPC_EXTRA_PERSISTENT_QUERY.data(), RPC_EXTRA_PERSISTENT_QUERY.size()}, std::move(out));
           } else if constexpr (std::is_same_v<value_t, tl::exactlyOnce::commitRequest>) {
             array<mixed> persistent_query_uuid{array_size{2, false}};
-            persistent_query_uuid.emplace_value(string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, value.persistent_query_uuid.lo.value);
-            persistent_query_uuid.emplace_value(string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, value.persistent_query_uuid.hi.value);
+            persistent_query_uuid.emplace_value(string{lo_key_name.data(), static_cast<string::size_type>(lo_key_name.size())},
+                                                static_cast<int64_t>(value.persistent_query_uuid.lo.value));
+            persistent_query_uuid.emplace_value(string{hi_key_name.data(), static_cast<string::size_type>(hi_key_name.size())},
+                                                static_cast<int64_t>(value.persistent_query_uuid.hi.value));
 
             array<mixed> persistent_slot_uuid{array_size{2, false}};
-            persistent_slot_uuid.emplace_value(string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, value.persistent_slot_uuid.lo.value);
-            persistent_slot_uuid.emplace_value(string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, value.persistent_slot_uuid.hi.value);
+            persistent_slot_uuid.emplace_value(string{lo_key_name.data(), static_cast<string::size_type>(lo_key_name.size())},
+                                               static_cast<int64_t>(value.persistent_slot_uuid.lo.value));
+            persistent_slot_uuid.emplace_value(string{hi_key_name.data(), static_cast<string::size_type>(hi_key_name.size())},
+                                               static_cast<int64_t>(value.persistent_slot_uuid.hi.value));
 
             array<mixed> out{array_size{2, false}};
-            out.emplace_value(string{persistent_query_uuid_sv.data(), static_cast<string::size_type>(persistent_query_uuid_sv.size())},
+            out.emplace_value(string{persistent_query_uuid_key_name.data(), static_cast<string::size_type>(persistent_query_uuid_key_name.size())},
                               std::move(persistent_query_uuid));
-            out.emplace_value(string{persistent_slot_uuid_sv.data(), static_cast<string::size_type>(persistent_slot_uuid_sv.size())},
+            out.emplace_value(string{persistent_slot_uuid_key_name.data(), static_cast<string::size_type>(persistent_slot_uuid_key_name.size())},
                               std::move(persistent_slot_uuid));
 
             superglobals.v$_SERVER.set_value(string{RPC_EXTRA_PERSISTENT_QUERY.data(), RPC_EXTRA_PERSISTENT_QUERY.size()}, std::move(out));
@@ -132,30 +138,34 @@ void process_rpc_invoke_req_extra(const tl::rpcInvokeReqExtra& extra, PhpScriptB
   if (extra.opt_trace_context) {
     const auto& trace_context{*extra.opt_trace_context};
 
-    constexpr std::string_view fields_mask_sv{"fields_mask"};
-    constexpr std::string_view trace_id_sv{"trace_id"};
-    constexpr std::string_view lo_sv{"lo"};
-    constexpr std::string_view hi_sv{"hi"};
-    constexpr std::string_view parent_id_sv{"parent_id"};
-    constexpr std::string_view source_id_sv{"source_id"};
+    constexpr std::string_view fields_mask_key_name{"fields_mask"};
+    constexpr std::string_view trace_id_key_name{"trace_id"};
+    constexpr std::string_view lo_key_name{"lo"};
+    constexpr std::string_view hi_key_name{"hi"};
+    constexpr std::string_view parent_id_key_name{"parent_id"};
+    constexpr std::string_view source_id_key_name{"source_id"};
 
     // + 2 for fields_mask and trace_id, + 1 if there is a parent_id, + 1 if there is a source_id
     const int64_t out_size{2 + static_cast<int64_t>(trace_context.opt_parent_id.has_value()) + static_cast<int64_t>(trace_context.opt_source_id.has_value())};
 
     array<mixed> trace_id{array_size{2, false}};
-    trace_id.emplace_value(string{lo_sv.data(), static_cast<string::size_type>(lo_sv.size())}, trace_context.trace_id.lo.value);
-    trace_id.emplace_value(string{hi_sv.data(), static_cast<string::size_type>(hi_sv.size())}, trace_context.trace_id.hi.value);
+    trace_id.emplace_value(string{lo_key_name.data(), static_cast<string::size_type>(lo_key_name.size())},
+                           static_cast<int64_t>(trace_context.trace_id.lo.value));
+    trace_id.emplace_value(string{hi_key_name.data(), static_cast<string::size_type>(hi_key_name.size())},
+                           static_cast<int64_t>(trace_context.trace_id.hi.value));
 
     array<mixed> out{array_size{out_size, false}};
-    out.emplace_value(string{fields_mask_sv.data(), static_cast<string::size_type>(fields_mask_sv.size())}, trace_context.get_flags());
-    out.emplace_value(string{trace_id_sv.data(), static_cast<string::size_type>(trace_id_sv.size())}, std::move(trace_id));
+    out.emplace_value(string{fields_mask_key_name.data(), static_cast<string::size_type>(fields_mask_key_name.size())},
+                      static_cast<int64_t>(trace_context.get_flags().value));
+    out.emplace_value(string{trace_id_key_name.data(), static_cast<string::size_type>(trace_id_key_name.size())}, std::move(trace_id));
 
     if (trace_context.opt_parent_id) {
-      out.emplace_value(string{parent_id_sv.data(), static_cast<string::size_type>(parent_id_sv.size())}, trace_context.opt_parent_id->value);
+      out.emplace_value(string{parent_id_key_name.data(), static_cast<string::size_type>(parent_id_key_name.size())},
+                        static_cast<int64_t>(trace_context.opt_parent_id->value));
     }
     if (trace_context.opt_source_id) {
       const std::string_view& opt_source_id_value{trace_context.opt_source_id->value};
-      out.emplace_value(string{source_id_sv.data(), static_cast<string::size_type>(source_id_sv.size())},
+      out.emplace_value(string{source_id_key_name.data(), static_cast<string::size_type>(source_id_key_name.size())},
                         string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
     }
 
@@ -200,7 +210,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
     superglobals.v$_SERVER.set_value(string{RPC_ACTOR_ID.data(), RPC_ACTOR_ID.size()}, (*invoke_rpc.opt_actor_id).value);
   }
   if (invoke_rpc.opt_extra) {
-    superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>((*invoke_rpc.opt_extra).get_flags()));
+    superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>((*invoke_rpc.opt_extra).get_flags().value));
     process_rpc_invoke_req_extra(*invoke_rpc.opt_extra, superglobals);
   }
   kphp::log::info("rpc server initialized with: "
@@ -212,7 +222,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
                   "request -> {:#x}",
                   invoke_rpc.net_pid.get_pid(), invoke_rpc.net_pid.get_port(), invoke_rpc.query_id.value,
                   invoke_rpc.opt_actor_id.has_value() ? (*invoke_rpc.opt_actor_id).value : 0,
-                  invoke_rpc.opt_extra.has_value() ? (*invoke_rpc.opt_extra).get_flags() : 0, request_magic.value);
+                  invoke_rpc.opt_extra.has_value() ? (*invoke_rpc.opt_extra).get_flags().value : 0, request_magic.value);
 }
 
 } // namespace kphp::rpc
