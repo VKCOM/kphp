@@ -42,6 +42,34 @@ pair {X:Type} {Y:Type} a:X b:Y = Pair X Y;
 
 true = True; // this can be used as void type and serialized to empty array in PHP
 
+exactlyOnce.uuid lo:long hi:long = exactlyOnce.Uuid;
+
+exactlyOnce.prepareRequest persistent_query_uuid:%exactlyOnce.Uuid = exactlyOnce.PersistentRequest;
+exactlyOnce.commitRequest persistent_query_uuid:%exactlyOnce.Uuid persistent_slot_uuid:%exactlyOnce.Uuid = exactlyOnce.PersistentRequest;
+
+tracing.traceID#2f4ac855 lo:long hi:long = tracing.TraceID;
+
+tracing.traceContext#c463a95c
+    fields_mask: #
+    trace_id: %(tracing.TraceID)
+    parent_id: fields_mask.2?long
+    source_id: fields_mask.3?string
+
+    // status = reserved_status_0 | (reserved_status_1 << 1)
+    // status == 0 - drop
+    // status == 1 - record
+    // status == 2 - defer
+    reserved_status_0: fields_mask.0?true
+    reserved_status_1: fields_mask.1?true
+
+    reserved_level_0: fields_mask.4?true
+    reserved_level_1: fields_mask.5?true
+    reserved_level_2: fields_mask.6?true
+
+    debug_flag: fields_mask.7?true
+
+   = tracing.TraceContext;
+
 stat#9d56e6b2 %(Dictionary string) = Stat;
 
 rpcInvokeReqExtra#f3ef81a9 {flags:#}
@@ -62,6 +90,9 @@ rpcInvokeReqExtra#f3ef81a9 {flags:#}
   supported_compression_version:flags.25?int // note, that client support compression, to possibly compress answers
   random_delay:flags.26?double // starting query would be delayed by random number, not grater than given
   return_view_number:flags.27?%True // Barsic related parameter: return view number in response
+  persistent_query: flags.28?exactlyOnce.PersistentRequest
+  trace_context:flags.29?%(tracing.TraceContext)
+  execution_context:flags.30?string // contains serialized execution context.
   = RpcInvokeReqExtra flags;
 
 rpcReqResultExtra#c5011709 {flags:#}

@@ -13,14 +13,22 @@
 #include <functional>
 #include <getopt.h>
 #include <netdb.h>
+#include <string_view>
+#include <type_traits>
 #include <unistd.h>
+#include <utility>
+#include <variant>
 
 #include "common/algorithms/string-algorithms.h"
 #include "common/macos-ports.h"
 #include "common/tl/constants/common.h"
 #include "common/wrappers/overloaded.h"
 
+#include "common/tl/query-header.h"
+#include "common/tl/tl-types.h"
+#include "compiler/helper.h"
 #include "net/net-connections.h"
+#include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/serialization/serialization-context.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-common/stdlib/string/string-context.h"
@@ -1484,6 +1492,93 @@ static void save_rpc_query_headers(const tl_query_header_t& header, mixed& v$_SE
   }
   if (header.flags & flag::random_delay) {
     v$_SERVER.set_value(string("RPC_EXTRA_RANDOM_DELAY"), header.random_delay);
+  }
+  if (header.flags & flag::persistent_query) {
+    std::visit(
+        [&v$_SERVER](const auto& value) noexcept {
+          using value_t = std::decay_t<decltype(value)>;
+
+          constexpr std::string_view persistent_query_uuid_key_name{"persistent_query_uuid"};
+          constexpr std::string_view persistent_slot_uuid_key_name{"persistent_slot_uuid"};
+          constexpr std::string_view lo_key_name{"lo"};
+          constexpr std::string_view hi_key_name{"hi"};
+
+          if constexpr (std::is_same_v<value_t, exactlyOnce::prepareRequest>) {
+            array<mixed> persistent_query_uuid{array_size{2, false}};
+            persistent_query_uuid.emplace_value(string{lo_key_name.data(), static_cast<string::size_type>(lo_key_name.size())},
+                                                static_cast<int64_t>(value.persistent_query_uuid.lo));
+            persistent_query_uuid.emplace_value(string{hi_key_name.data(), static_cast<string::size_type>(hi_key_name.size())},
+                                                static_cast<int64_t>(value.persistent_query_uuid.hi));
+
+            array<mixed> out{array_size{1, false}};
+            out.emplace_value(string{persistent_query_uuid_key_name.data(), static_cast<string::size_type>(persistent_query_uuid_key_name.size())},
+                              std::move(persistent_query_uuid));
+
+            v$_SERVER.set_value(string{"RPC_EXTRA_PERSISTENT_QUERY"}, std::move(out));
+          } else if constexpr (std::is_same_v<value_t, exactlyOnce::commitRequest>) {
+            array<mixed> persistent_query_uuid{array_size{2, false}};
+            persistent_query_uuid.emplace_value(string{lo_key_name.data(), static_cast<string::size_type>(lo_key_name.size())},
+                                                static_cast<int64_t>(value.persistent_query_uuid.lo));
+            persistent_query_uuid.emplace_value(string{hi_key_name.data(), static_cast<string::size_type>(hi_key_name.size())},
+                                                static_cast<int64_t>(value.persistent_query_uuid.hi));
+
+            array<mixed> persistent_slot_uuid{array_size{2, false}};
+            persistent_slot_uuid.emplace_value(string{lo_key_name.data(), static_cast<string::size_type>(lo_key_name.size())},
+                                               static_cast<int64_t>(value.persistent_slot_uuid.lo));
+            persistent_slot_uuid.emplace_value(string{hi_key_name.data(), static_cast<string::size_type>(hi_key_name.size())},
+                                               static_cast<int64_t>(value.persistent_slot_uuid.hi));
+
+            array<mixed> out{array_size{2, false}};
+            out.emplace_value(string{persistent_query_uuid_key_name.data(), static_cast<string::size_type>(persistent_query_uuid_key_name.size())},
+                              std::move(persistent_query_uuid));
+            out.emplace_value(string{persistent_slot_uuid_key_name.data(), static_cast<string::size_type>(persistent_slot_uuid_key_name.size())},
+                              std::move(persistent_slot_uuid));
+
+            v$_SERVER.set_value(string{"RPC_EXTRA_PERSISTENT_QUERY"}, std::move(out));
+          } else {
+            // condition is strange because of c++17 compiler. It is equivalent to `false`
+            static_assert(sizeof(value_t) && false, "exactlyOnce::PersistentRequest only supports prepareRequest and commitRequest");
+          }
+        },
+        header.persistent_query.request);
+  }
+  if (header.flags & flag::trace_context) {
+    const auto& trace_context{header.trace_context};
+
+    constexpr std::string_view fields_mask_key_name{"fields_mask"};
+    constexpr std::string_view trace_id_key_name{"trace_id"};
+    constexpr std::string_view lo_key_name{"lo"};
+    constexpr std::string_view hi_key_name{"hi"};
+    constexpr std::string_view parent_id_key_name{"parent_id"};
+    constexpr std::string_view source_id_key_name{"source_id"};
+
+    // + 2 for fields_mask and trace_id, + 1 if there is a parent_id, + 1 if there is a source_id
+    const int64_t out_size{2 + static_cast<int64_t>(trace_context.opt_parent_id.has_value()) + static_cast<int64_t>(trace_context.opt_source_id.has_value())};
+
+    array<mixed> trace_id{array_size{2, false}};
+    trace_id.emplace_value(string{lo_key_name.data(), static_cast<string::size_type>(lo_key_name.size())}, static_cast<int64_t>(trace_context.trace_id.lo));
+    trace_id.emplace_value(string{hi_key_name.data(), static_cast<string::size_type>(hi_key_name.size())}, static_cast<int64_t>(trace_context.trace_id.hi));
+
+    array<mixed> out{array_size{out_size, false}};
+    out.emplace_value(string{fields_mask_key_name.data(), static_cast<string::size_type>(fields_mask_key_name.size())},
+                      static_cast<int64_t>(trace_context.get_flags()));
+    out.emplace_value(string{trace_id_key_name.data(), static_cast<string::size_type>(trace_id_key_name.size())}, std::move(trace_id));
+
+    if (trace_context.opt_parent_id) {
+      out.emplace_value(string{parent_id_key_name.data(), static_cast<string::size_type>(parent_id_key_name.size())},
+                        static_cast<int64_t>(*trace_context.opt_parent_id));
+    }
+    if (trace_context.opt_source_id) {
+      const std::string& opt_source_id_value{*trace_context.opt_source_id};
+      out.emplace_value(string{source_id_key_name.data(), static_cast<string::size_type>(source_id_key_name.size())},
+                        string{opt_source_id_value.data(), static_cast<string::size_type>(opt_source_id_value.size())});
+    }
+
+    v$_SERVER.set_value(string{"RPC_EXTRA_TRACE_CONTEXT"}, std::move(out));
+  }
+  if (header.flags & flag::execution_context) {
+    const std::string& execution_context{header.execution_context};
+    v$_SERVER.set_value(string{"RPC_EXTRA_EXECUTION_CONTEXT"}, string{execution_context.data(), static_cast<string::size_type>(execution_context.size())});
   }
 }
 

@@ -943,6 +943,135 @@ public:
 
 // ===== RPC =====
 
+namespace exactlyOnce {
+
+struct uuid final {
+  tl::i64 lo{};
+  tl::i64 hi{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    return lo.fetch(tlf) && hi.fetch(tlf);
+  }
+};
+
+struct prepareRequest final {
+  tl::exactlyOnce::uuid persistent_query_uuid{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    return persistent_query_uuid.fetch(tlf);
+  }
+};
+
+struct commitRequest final {
+  tl::exactlyOnce::uuid persistent_query_uuid{};
+  tl::exactlyOnce::uuid persistent_slot_uuid{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    return persistent_query_uuid.fetch(tlf) && persistent_slot_uuid.fetch(tlf);
+  }
+};
+
+class PersistentRequest final {
+  static constexpr uint32_t PREPARE_REQUEST_MAGIC = 0xc8d7'1b66U;
+  static constexpr uint32_t COMMIT_REQUEST_MAGIC = 0x6836'b983U;
+
+public:
+  std::variant<tl::exactlyOnce::prepareRequest, tl::exactlyOnce::commitRequest> request;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic{};
+    if (!magic.fetch(tlf)) {
+      return false;
+    }
+    if (tl::exactlyOnce::prepareRequest prepare_request{}; magic.expect(PREPARE_REQUEST_MAGIC) && prepare_request.fetch(tlf)) {
+      request.emplace<tl::exactlyOnce::prepareRequest>(prepare_request);
+      return true;
+    }
+    if (tl::exactlyOnce::commitRequest commit_request{}; magic.expect(COMMIT_REQUEST_MAGIC) && commit_request.fetch(tlf)) {
+      request.emplace<tl::exactlyOnce::commitRequest>(commit_request);
+      return true;
+    }
+    return false;
+  }
+};
+} // namespace exactlyOnce
+
+namespace tracing {
+
+struct traceID final {
+  tl::i64 lo{};
+  tl::i64 hi{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    return lo.fetch(tlf) && hi.fetch(tlf);
+  }
+};
+
+class traceContext final {
+  static constexpr uint32_t RETURN_RESERVED_STATUS_0_FLAG = vk::tl::common::tracing::traceContext::return_reserved_status_0;
+  static constexpr uint32_t RETURN_RESERVED_STATUS_1_FLAG = vk::tl::common::tracing::traceContext::return_reserved_status_1;
+  static constexpr uint32_t PARENT_ID_FLAG = vk::tl::common::tracing::traceContext::parent_id;
+  static constexpr uint32_t SOURCE_ID_FLAG = vk::tl::common::tracing::traceContext::source_id;
+  static constexpr uint32_t RETURN_RESERVED_LEVEL_0_FLAG = vk::tl::common::tracing::traceContext::return_reserved_level_0;
+  static constexpr uint32_t RETURN_RESERVED_LEVEL_1_FLAG = vk::tl::common::tracing::traceContext::return_reserved_level_1;
+  static constexpr uint32_t RETURN_RESERVED_LEVEL_2_FLAG = vk::tl::common::tracing::traceContext::return_reserved_level_2;
+  static constexpr uint32_t RETURN_DEBUG_FLAG = vk::tl::common::tracing::traceContext::return_debug;
+
+public:
+  tl::tracing::traceID trace_id{};
+  std::optional<tl::i64> opt_parent_id;
+  std::optional<tl::string> opt_source_id;
+
+  // status = reserved_status_0 | (reserved_status_1 << 1)
+  // status == 0 - drop
+  // status == 1 - record
+  // status == 2 - defer
+  bool reserved_status_0{};
+  bool reserved_status_1{};
+
+  bool reserved_level_0{};
+  bool reserved_level_1{};
+  bool reserved_level_2{};
+
+  bool debug_flag{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::u32 fields_mask{};
+    bool ok{fields_mask.fetch(tlf)};
+
+    ok = ok && trace_id.fetch(tlf);
+    if (ok && static_cast<bool>(fields_mask.value & PARENT_ID_FLAG)) {
+      ok = ok && opt_parent_id.emplace().fetch(tlf);
+    }
+    if (ok && static_cast<bool>(fields_mask.value & SOURCE_ID_FLAG)) {
+      ok = ok && opt_source_id.emplace().fetch(tlf);
+    }
+
+    reserved_status_0 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_STATUS_0_FLAG);
+    reserved_status_1 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_STATUS_1_FLAG);
+    reserved_level_0 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_LEVEL_0_FLAG);
+    reserved_level_1 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_LEVEL_1_FLAG);
+    reserved_level_2 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_LEVEL_2_FLAG);
+    debug_flag = static_cast<bool>(fields_mask.value & RETURN_DEBUG_FLAG);
+
+    return ok;
+  }
+
+  tl::mask get_flags() const noexcept {
+    tl::mask flags{.value = static_cast<tl::mask::underlying_type>(reserved_status_0)};
+    flags.value |= static_cast<tl::mask::underlying_type>(reserved_status_1) << 1;
+    flags.value |= static_cast<tl::mask::underlying_type>(reserved_level_0) << 4;
+    flags.value |= static_cast<tl::mask::underlying_type>(reserved_level_1) << 5;
+    flags.value |= static_cast<tl::mask::underlying_type>(reserved_level_2) << 6;
+    flags.value |= static_cast<tl::mask::underlying_type>(debug_flag) << 7;
+
+    flags.value |= static_cast<tl::mask::underlying_type>(opt_parent_id.has_value()) << 2;
+    flags.value |= static_cast<tl::mask::underlying_type>(opt_source_id.has_value()) << 3;
+    return flags;
+  }
+};
+} // namespace tracing
+
 class rpcInvokeReqExtra final {
   static constexpr uint32_t RETURN_BINLOG_POS_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_binlog_pos;
   static constexpr uint32_t RETURN_BINLOG_TIME_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_binlog_time;
@@ -960,9 +1089,11 @@ class rpcInvokeReqExtra final {
   static constexpr uint32_t SUPPORTED_COMPRESSION_VERSION_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::supported_compression_version;
   static constexpr uint32_t RANDOM_DELAY_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::random_delay;
   static constexpr uint32_t RETURN_VIEW_NUMBER_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::return_view_number;
+  static constexpr uint32_t PERSISTENT_QUERY_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::persistent_query;
+  static constexpr uint32_t TRACE_CONTEXT_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::trace_context;
+  static constexpr uint32_t EXECUTION_CONTEXT_FLAG = vk::tl::common::rpc_invoke_req_extra_flags::execution_context;
 
 public:
-  tl::mask flags{};
   bool return_binlog_pos{};
   bool return_binlog_time{};
   bool return_pid{};
@@ -978,9 +1109,14 @@ public:
   std::optional<tl::i32> opt_custom_timeout_ms;
   std::optional<tl::i32> opt_supported_compression_version;
   std::optional<tl::f64> opt_random_delay;
+  std::optional<tl::exactlyOnce::PersistentRequest> opt_persistent_query;
+  std::optional<tl::tracing::traceContext> opt_trace_context;
+  std::optional<tl::string> opt_execution_context;
   bool return_view_number{};
 
   bool fetch(tl::fetcher& tlf) noexcept;
+
+  tl::mask get_flags() const noexcept;
 };
 
 struct RpcInvokeReqExtra final {
