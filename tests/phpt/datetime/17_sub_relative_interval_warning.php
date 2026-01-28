@@ -1,4 +1,4 @@
-@kphp_runtime_should_warn k2_skip
+@kphp_runtime_should_warn
 /DateTime::sub\(\): Only non-special relative time specifications are supported for subtraction/
 /DateTimeImmutable::sub\(\): Only non-special relative time specifications are supported for subtraction/
 <?php

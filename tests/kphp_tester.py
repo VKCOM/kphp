@@ -312,7 +312,7 @@ def run_runtime_warn_test(test: TestFile, runner):
         return TestResult.failed(test, runner.artifacts, "got kphp run error")
 
     if runner.k2_bin is not None:
-        warning_pattern = "WARN {2}component-log"
+        warning_pattern = '"level":"WARN","target":"component-log"'
     else:
         warning_pattern = "Warning: "
 

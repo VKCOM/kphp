@@ -6,13 +6,14 @@
 
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/time/timelib-constants.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/stdlib/time/timelib-constants.h"
 #include "runtime-light/stdlib/time/timelib-timezone-cache.h"
+#include "runtime-light/stdlib/time/timelib-types.h"
 
 struct TimeInstanceState final : private vk::not_copyable {
-  string default_timezone{kphp::timelib::timezones::MOSCOW.data(), kphp::timelib::timezones::MOSCOW.size()};
+  string default_timezone{kphp::timelib::timezones::MOSCOW};
   kphp::timelib::timezone_cache timelib_zone_cache;
 
   TimeInstanceState() noexcept {
@@ -21,14 +22,54 @@ struct TimeInstanceState final : private vk::not_copyable {
     }
   }
 
+  Optional<array<mixed>> get_last_errors() const noexcept {
+    if (last_errors == nullptr) {
+      return false;
+    }
+
+    array<mixed> result;
+
+    array<string> result_warnings;
+    result_warnings.reserve(last_errors->warning_count, false);
+    for (size_t i{}; i < last_errors->warning_count; i++) {
+      result_warnings.set_value(last_errors->warning_messages[i].position, string{last_errors->warning_messages[i].message});
+    }
+    result.set_value(string{"warning_count"}, last_errors->warning_count);
+    result.set_value(string{"warnings"}, result_warnings);
+
+    array<string> result_errors;
+    result_errors.reserve(last_errors->error_count, false);
+    for (size_t i{}; i < last_errors->error_count; i++) {
+      result_errors.set_value(last_errors->error_messages[i].position, string{last_errors->error_messages[i].message});
+    }
+    result.set_value(string{"error_count"}, last_errors->error_count);
+    result.set_value(string{"errors"}, result_errors);
+
+    return result;
+  }
+
+  void update_last_errors(kphp::timelib::error_container_holder&& new_errors) noexcept {
+    last_errors = std::move(new_errors);
+  }
+
   static TimeInstanceState& get() noexcept;
+
+private:
+  kphp::timelib::error_container_holder last_errors{nullptr, kphp::timelib::details::error_container_destructor};
 };
 
 struct TimeImageState final : private vk::not_copyable {
+  string NOW_STR{NOW_.data(), static_cast<string::size_type>(NOW_.size())};
+
   kphp::timelib::timezone_cache timelib_zone_cache{kphp::timelib::timezones::MOSCOW, kphp::timelib::timezones::GMT3};
 
-  TimeImageState() noexcept = default;
+  TimeImageState() noexcept {
+    NOW_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+  }
 
   static const TimeImageState& get() noexcept;
   static TimeImageState& get_mutable() noexcept;
+
+private:
+  static constexpr std::string_view NOW_ = "now";
 };
