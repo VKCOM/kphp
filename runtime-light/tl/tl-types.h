@@ -1115,6 +1115,7 @@ public:
   bool return_view_number{};
 
   bool fetch(tl::fetcher& tlf) noexcept;
+
   tl::mask get_flags() const noexcept;
 };
 

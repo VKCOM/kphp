@@ -190,17 +190,17 @@ public:
     }
   }
 
-  uint64_t get_flags() const noexcept {
-    uint64_t flags{};
-    flags |= static_cast<uint64_t>(reserved_status_0);
-    flags |= static_cast<uint64_t>(reserved_status_1) << 1;
-    flags |= static_cast<uint64_t>(reserved_level_0) << 4;
-    flags |= static_cast<uint64_t>(reserved_level_1) << 5;
-    flags |= static_cast<uint64_t>(reserved_level_2) << 6;
-    flags |= static_cast<uint64_t>(debug_flag) << 7;
+  uint32_t get_flags() const noexcept {
+    uint32_t flags{};
+    flags |= static_cast<uint32_t>(reserved_status_0);
+    flags |= static_cast<uint32_t>(reserved_status_1) << 1;
+    flags |= static_cast<uint32_t>(reserved_level_0) << 4;
+    flags |= static_cast<uint32_t>(reserved_level_1) << 5;
+    flags |= static_cast<uint32_t>(reserved_level_2) << 6;
+    flags |= static_cast<uint32_t>(debug_flag) << 7;
 
-    flags |= static_cast<uint64_t>(opt_parent_id.has_value()) << 2;
-    flags |= static_cast<uint64_t>(opt_source_id.has_value()) << 3;
+    flags |= static_cast<uint32_t>(opt_parent_id.has_value()) << 2;
+    flags |= static_cast<uint32_t>(opt_source_id.has_value()) << 3;
     return flags;
   }
 };
