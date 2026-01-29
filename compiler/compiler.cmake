@@ -241,7 +241,6 @@ endif()
 list(APPEND KPHP_COMPILER_SOURCES
      ${KPHP_COMPILER_COMMON}
      ${KEYWORDS_SET}
-     ${KPHP_COMPILER_AUTO_DIR}/runtime_compile_definitions.h
      ${RUNTIME_BUILD_INFO}
      ${AUTO_DIR}/compiler/rewrite-rules/early_opt.cpp)
 

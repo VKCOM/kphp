@@ -60,11 +60,11 @@ void timelib_free(void* ptr) {
 namespace kphp::timelib {
 
 std::expected<kphp::timelib::rel_time_holder, kphp::timelib::error_container_holder> parse_interval(std::string_view formatted_interval) noexcept {
-  kphp::timelib::time* raw_b{nullptr};
-  kphp::timelib::time* raw_e{nullptr};
-  kphp::timelib::rel_time* p{nullptr};
+  timelib_time* raw_b{nullptr};
+  timelib_time* raw_e{nullptr};
+  timelib_rel_time* p{nullptr};
   int r{}; // it's intentionally declared as 'int' since timelib_strtointerval accepts 'int'
-  kphp::timelib::error_container* errors{nullptr};
+  timelib_error_container* errors{nullptr};
 
   timelib_strtointerval(formatted_interval.data(), formatted_interval.size(), std::addressof(raw_b), std::addressof(raw_e), std::addressof(p),
                         std::addressof(r), std::addressof(errors));
@@ -222,7 +222,7 @@ parse_time(std::string_view formatted_time, const kphp::timelib::time_holder& t)
   auto& [tmp_time, errors]{*expected};
   auto res{kphp::timelib::clone_time(t)};
 
-  std::memcpy(std::addressof(res->relative), std::addressof(tmp_time->relative), sizeof(kphp::timelib::rel_time));
+  std::memcpy(std::addressof(res->relative), std::addressof(tmp_time->relative), sizeof(timelib_rel_time));
   res->have_relative = tmp_time->have_relative;
   res->sse_uptodate = 0;
 
@@ -276,7 +276,7 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view for
   }
   const auto& tzinfo{expected_tzinfo->get()};
 
-  kphp::timelib::time* now{timelib_time_ctor()};
+  timelib_time* now{timelib_time_ctor()};
   const vk::final_action now_deleter{[now] noexcept { timelib_time_dtor(now); }};
   now->tz_info = tzinfo.get();
   now->zone_type = TIMELIB_ZONETYPE_ID;

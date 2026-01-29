@@ -15,6 +15,7 @@
 
 #include "kphp/timelib/timelib.h"
 
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/timelib-types.h"
 
 namespace kphp::timelib {
@@ -168,7 +169,7 @@ inline int64_t get_timestamp(const kphp::timelib::time_holder& t) noexcept {
   int error{}; // it's intentionally declared as 'int' since timelib_date_to_int accepts 'int'
   timelib_long timestamp{timelib_date_to_int(t.get(), std::addressof(error))};
   // the 'error' should be always 0 on x64 platform
-  log::assertion(error == 0);
+  kphp::log::assertion(error == 0);
 
   return timestamp;
 }

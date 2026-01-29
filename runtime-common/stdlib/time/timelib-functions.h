@@ -11,14 +11,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iterator>
-#include <memory>
 
 #include "kphp/timelib/timelib.h"
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/time/timelib-constants.h"
-#include "runtime-common/stdlib/time/timelib-types.h"
 
 namespace kphp::timelib {
 
@@ -93,9 +91,9 @@ inline bool is_leap_year(int32_t year) noexcept {
   return (year % 4 == 0) && (year % 100 != 0 || year % 400 == 0);
 }
 
-string format_time(const string& format, kphp::timelib::time& t, kphp::timelib::time_offset* offset) noexcept;
+string format_time(const string& format, timelib_time& t, timelib_time_offset* offset) noexcept;
 
-inline string format_rel_time(const string& format, kphp::timelib::rel_time& t) noexcept {
+inline string format_rel_time(const string& format, timelib_rel_time& t) noexcept {
   string_buffer& sb{RuntimeContext::get().static_SB_spare};
   sb.clean();
 
@@ -187,6 +185,6 @@ inline string format_rel_time(const string& format, kphp::timelib::rel_time& t) 
   return sb.str();
 }
 
-string gen_error_msg(kphp::timelib::error_container* err) noexcept;
+string gen_error_msg(timelib_error_container* err) noexcept;
 
 } // namespace kphp::timelib

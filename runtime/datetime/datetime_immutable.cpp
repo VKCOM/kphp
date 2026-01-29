@@ -9,10 +9,8 @@
 #include "kphp/timelib/timelib.h"
 
 #include "runtime-common/stdlib/time/timelib-functions.h"
-#include "runtime/context/runtime-context.h"
 #include "runtime/datetime/date_interval.h"
 #include "runtime/datetime/datetime.h"
-#include "runtime/datetime/datetime_functions.h"
 #include "runtime/exception.h"
 
 static class_instance<C$DateTimeImmutable> clone_immutable(const class_instance<C$DateTimeImmutable>& origin) {
@@ -134,7 +132,7 @@ string f$DateTimeImmutable$$format(const class_instance<C$DateTimeImmutable>& se
 
   auto script_guard = make_malloc_replacement_with_script_allocator();
 
-  kphp::timelib::time_offset* offset = self->time->is_localtime ? create_time_offset(self->time, script_guard) : nullptr;
+  timelib_time_offset* offset = self->time->is_localtime ? create_time_offset(self->time, script_guard) : nullptr;
   vk::final_action offset_deleter{[offset] {
     if (offset) {
       timelib_time_offset_dtor(offset);

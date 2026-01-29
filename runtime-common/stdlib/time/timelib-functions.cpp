@@ -4,13 +4,15 @@
 
 #include <string_view>
 
+#include "kphp/timelib/timelib.h"
+
 #include "runtime-common/stdlib/time/timelib-functions.h"
 
 namespace kphp::timelib {
 
 namespace {
 
-void format_localtime_timezone_identifier_to(string_buffer& sb, kphp::timelib::time& t, kphp::timelib::time_offset& offset) noexcept {
+void format_localtime_timezone_identifier_to(string_buffer& sb, timelib_time& t, timelib_time_offset& offset) noexcept {
   switch (t.zone_type) {
   case TIMELIB_ZONETYPE_ID:
     kphp::timelib::details::format_to(sb, "%s", t.tz_info->name);
@@ -37,21 +39,21 @@ timelib_sll hours_12_hour_format(timelib_sll hours) noexcept {
   return (hours % 12) ? hours % 12 : 12;
 }
 
-char offset_sign(kphp::timelib::time_offset* offset) noexcept {
+char offset_sign(timelib_time_offset* offset) noexcept {
   return offset != nullptr ? kphp::timelib::details::sign(offset->offset) : '+';
 }
 
-int32_t offset_hours(kphp::timelib::time_offset* offset) noexcept {
+int32_t offset_hours(timelib_time_offset* offset) noexcept {
   return offset != nullptr ? std::abs(offset->offset / 3600) : 0;
 }
 
-int32_t offset_minutes(kphp::timelib::time_offset* offset) noexcept {
+int32_t offset_minutes(timelib_time_offset* offset) noexcept {
   return offset != nullptr ? std::abs((offset->offset % 3600) / 60) : 0;
 }
 
 } // namespace
 
-string format_time(const string& format, kphp::timelib::time& t, kphp::timelib::time_offset* offset) noexcept {
+string format_time(const string& format, timelib_time& t, timelib_time_offset* offset) noexcept {
   string_buffer& sb{RuntimeContext::get().static_SB_spare};
   sb.clean();
 
@@ -229,7 +231,7 @@ string format_time(const string& format, kphp::timelib::time& t, kphp::timelib::
   return sb.str();
 }
 
-string gen_error_msg(kphp::timelib::error_container* err) noexcept {
+string gen_error_msg(timelib_error_container* err) noexcept {
   static constexpr std::string_view before_position{"at position "};
   static constexpr std::string_view before_character{" ("};
   static constexpr std::string_view before_message{"): "};

@@ -10,7 +10,6 @@
 #include "common/containers/final_action.h"
 #include "common/smart_ptrs/singleton.h"
 #include "runtime-common/stdlib/time/timelib-constants.h"
-#include "runtime-common/stdlib/time/timelib-types.h"
 #include "runtime/allocator.h"
 #include "server/php-runner.h"
 
@@ -21,9 +20,9 @@ constexpr int TIMELIB_SPECIAL_FIRST_DAY_OF_MONTH = 0x01;
 
 namespace {
 
-kphp::timelib::tzinfo* get_timezone_info(const char* tz_name) {
+timelib_tzinfo* get_timezone_info(const char* tz_name) {
   int dummy_error_code = 0;
-  kphp::timelib::tzinfo* info = timelib_parse_tzfile(tz_name, timelib_builtin_db(), &dummy_error_code);
+  timelib_tzinfo* info = timelib_parse_tzfile(tz_name, timelib_builtin_db(), &dummy_error_code);
   return info;
 }
 
@@ -39,7 +38,7 @@ void set_time_value(array<mixed>& dst, const char* name, int64_t value) {
   }
 }
 
-array<mixed> dump_errors(const kphp::timelib::error_container& error) {
+array<mixed> dump_errors(const timelib_error_container& error) {
   array<mixed> result;
 
   array<string> result_warnings;
@@ -61,7 +60,7 @@ array<mixed> dump_errors(const kphp::timelib::error_container& error) {
   return result;
 }
 
-array<mixed> create_date_parse_array(kphp::timelib::time* t, kphp::timelib::error_container* error) {
+array<mixed> create_date_parse_array(timelib_time* t, timelib_error_container* error) {
   array<mixed> result;
 
   // note: we're setting the result array keys in the same order as PHP does
@@ -134,8 +133,8 @@ array<mixed> create_date_parse_array(kphp::timelib::time* t, kphp::timelib::erro
 struct TzinfoCache : private vk::not_copyable {
   friend class vk::singleton<TzinfoCache>;
 
-  kphp::timelib::tzinfo* etc_gmt3_;
-  kphp::timelib::tzinfo* europe_moscow_;
+  timelib_tzinfo* etc_gmt3_;
+  timelib_tzinfo* europe_moscow_;
 
   void init() {
     // if we'll need other timezones, they can be passed as a command-line
@@ -148,7 +147,7 @@ struct TzinfoCache : private vk::not_copyable {
     php_assert(etc_gmt3_ != nullptr);
   }
 
-  kphp::timelib::tzinfo* get_tzinfo(const char* tz_name) {
+  timelib_tzinfo* get_tzinfo(const char* tz_name) {
     if (strcmp(kphp::timelib::timezones::MOSCOW, tz_name) == 0) {
       return europe_moscow_;
     }
@@ -166,8 +165,8 @@ void global_init_php_timelib() {
   vk::singleton<TzinfoCache>::get().init();
 }
 
-static kphp::timelib::time* timelib_strtotime_leak_safe(const string& time, kphp::timelib::error_container** errors) {
-  kphp::timelib::time* t = timelib_strtotime(time.c_str(), time.size(), errors, timelib_builtin_db(), timelib_parse_tzfile);
+static timelib_time* timelib_strtotime_leak_safe(const string& time, timelib_error_container** errors) {
+  timelib_time* t = timelib_strtotime(time.c_str(), time.size(), errors, timelib_builtin_db(), timelib_parse_tzfile);
   // sometimes 't->tz_info' contains allocated timezone object, but sometimes doesn't. And we are unable to merely delete this object
   // because it can be shared among different e.g. DateTimeImmutable vs DateTime objects. Given that it's quite rare situation this leak is just suppressed.
   // (it's not a leak in 'php-src' because all 'tz_info *' there are cached. We are unable cache it in kphp because of our memory managment)
@@ -177,8 +176,8 @@ static kphp::timelib::time* timelib_strtotime_leak_safe(const string& time, kphp
   return t;
 }
 
-static kphp::timelib::time* timelib_parse_from_format_leak_safe(const char* format, const string& time, kphp::timelib::error_container** errors) {
-  kphp::timelib::time* t = timelib_parse_from_format(format, time.c_str(), time.size(), errors, timelib_builtin_db(), timelib_parse_tzfile);
+static timelib_time* timelib_parse_from_format_leak_safe(const char* format, const string& time, timelib_error_container** errors) {
+  timelib_time* t = timelib_parse_from_format(format, time.c_str(), time.size(), errors, timelib_builtin_db(), timelib_parse_tzfile);
 #if ASAN_ENABLED
   __lsan_ignore_object(t->tz_info);
 #endif
@@ -186,16 +185,16 @@ static kphp::timelib::time* timelib_parse_from_format_leak_safe(const char* form
 }
 
 array<mixed> php_timelib_date_parse(const string& time_str) {
-  kphp::timelib::error_container* error = nullptr;
-  kphp::timelib::time* t = timelib_strtotime_leak_safe(time_str, &error);
+  timelib_error_container* error = nullptr;
+  timelib_time* t = timelib_strtotime_leak_safe(time_str, &error);
   auto t_deleter = vk::finally([t]() { timelib_time_dtor(t); });
   auto error_deleter = vk::finally([error]() { timelib_error_container_dtor(error); });
   return create_date_parse_array(t, error);
 }
 
 array<mixed> php_timelib_date_parse_from_format(const string& format, const string& time_str) {
-  kphp::timelib::error_container* error = nullptr;
-  kphp::timelib::time* t = timelib_parse_from_format_leak_safe(format.c_str(), time_str, &error);
+  timelib_error_container* error = nullptr;
+  timelib_time* t = timelib_parse_from_format_leak_safe(format.c_str(), time_str, &error);
   auto t_deleter = vk::finally([t]() { timelib_time_dtor(t); });
   auto error_deleter = vk::finally([error]() { timelib_error_container_dtor(error); });
   return create_date_parse_array(t, error);
@@ -206,7 +205,7 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string& tz_name, const stri
     return {0, false};
   }
 
-  kphp::timelib::tzinfo* tzi = vk::singleton<TzinfoCache>::get().get_tzinfo(tz_name.c_str());
+  timelib_tzinfo* tzi = vk::singleton<TzinfoCache>::get().get_tzinfo(tz_name.c_str());
   if (tzi == nullptr) {
     return {0, false};
   }
@@ -214,7 +213,7 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string& tz_name, const stri
   bool use_heap_memory = !(php_script.has_value() && php_script->is_running());
   auto malloc_replacement_guard = make_malloc_replacement_with_script_allocator(!use_heap_memory);
 
-  kphp::timelib::time* now = timelib_time_ctor();
+  timelib_time* now = timelib_time_ctor();
   auto now_deleter = vk::finally([now]() { timelib_time_dtor(now); });
 
   // can't use a CriticalSectionGuard here: timelib is not prepared for malloc that can return null;
@@ -223,8 +222,8 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string& tz_name, const stri
   now->tz_info = tzi;
   now->zone_type = TIMELIB_ZONETYPE_ID;
   timelib_unixtime2local(now, static_cast<timelib_sll>(preset_ts));
-  kphp::timelib::error_container* error = nullptr;
-  kphp::timelib::time* t = timelib_strtotime_leak_safe(times, &error);
+  timelib_error_container* error = nullptr;
+  timelib_time* t = timelib_strtotime_leak_safe(times, &error);
   auto t_deleter = vk::finally([t]() { timelib_time_dtor(t); });
 
   int errors_num = error->error_count;
@@ -244,10 +243,10 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string& tz_name, const stri
   return {ts, true};
 }
 
-static kphp::timelib::error_container* last_errors_global = nullptr;
+static timelib_error_container* last_errors_global = nullptr;
 
 // NB: should be called under script allocator, because of calls to free() inside timelib_error_container_dtor()
-static void update_errors_warnings(kphp::timelib::error_container* last_errors, [[maybe_unused]] const ScriptMemGuard& guard) {
+static void update_errors_warnings(timelib_error_container* last_errors, [[maybe_unused]] const ScriptMemGuard& guard) {
   if (last_errors_global) {
     timelib_error_container_dtor(last_errors_global);
     last_errors_global = nullptr;
@@ -262,12 +261,12 @@ void free_timelib() {
 
 static const string NOW{"now"};
 
-std::pair<kphp::timelib::time*, string> php_timelib_date_initialize(const string& tz_name, const string& time_str, const char* format) {
+std::pair<timelib_time*, string> php_timelib_date_initialize(const string& tz_name, const string& time_str, const char* format) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
 
   const string& time_str_new = time_str.empty() ? NOW : time_str;
-  kphp::timelib::error_container* err = nullptr;
-  kphp::timelib::time* t = format ? timelib_parse_from_format_leak_safe(format, time_str, &err) : timelib_strtotime_leak_safe(time_str_new, &err);
+  timelib_error_container* err = nullptr;
+  timelib_time* t = format ? timelib_parse_from_format_leak_safe(format, time_str, &err) : timelib_strtotime_leak_safe(time_str_new, &err);
 
   // update last errors and warnings
   update_errors_warnings(err, script_guard);
@@ -278,7 +277,7 @@ std::pair<kphp::timelib::time*, string> php_timelib_date_initialize(const string
     return {nullptr, string{"Failed to parse time string "}.append(1, '(').append(time_str).append(") ").append(kphp::timelib::gen_error_msg(err))};
   }
 
-  kphp::timelib::tzinfo* tzi = nullptr;
+  timelib_tzinfo* tzi = nullptr;
   if (!tz_name.empty()) {
     tzi = vk::singleton<TzinfoCache>::get().get_tzinfo(tz_name.c_str());
   } else if (t->tz_info) {
@@ -288,7 +287,7 @@ std::pair<kphp::timelib::time*, string> php_timelib_date_initialize(const string
     tzi = vk::singleton<TzinfoCache>::get().get_tzinfo(kphp::timelib::timezones::MOSCOW);
   }
 
-  kphp::timelib::time* now = timelib_time_ctor();
+  timelib_time* now = timelib_time_ctor();
   vk::final_action now_deleter{[now] { timelib_time_dtor(now); }};
 
   now->tz_info = tzi;
@@ -315,12 +314,12 @@ std::pair<kphp::timelib::time*, string> php_timelib_date_initialize(const string
   return {t, {}};
 }
 
-kphp::timelib::time* php_timelib_time_clone(kphp::timelib::time* t) {
+timelib_time* php_timelib_time_clone(timelib_time* t) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
   return timelib_time_clone(t);
 }
 
-void php_timelib_date_remove(kphp::timelib::time* t) {
+void php_timelib_date_remove(timelib_time* t) {
   if (t) {
     auto script_guard = make_malloc_replacement_with_script_allocator();
     timelib_time_dtor(t);
@@ -334,14 +333,14 @@ Optional<array<mixed>> php_timelib_date_get_last_errors() {
   return false;
 }
 
-void php_timelib_date_timestamp_set(kphp::timelib::time* t, int64_t timestamp) {
+void php_timelib_date_timestamp_set(timelib_time* t, int64_t timestamp) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
   timelib_unixtime2local(t, static_cast<timelib_sll>(timestamp));
   timelib_update_ts(t, nullptr);
   t->us = 0;
 }
 
-int64_t php_timelib_date_timestamp_get(kphp::timelib::time* t) {
+int64_t php_timelib_date_timestamp_get(timelib_time* t) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
 
   timelib_update_ts(t, nullptr);
@@ -354,11 +353,11 @@ int64_t php_timelib_date_timestamp_get(kphp::timelib::time* t) {
   return timestamp;
 }
 
-std::pair<bool, string> php_timelib_date_modify(kphp::timelib::time* t, const string& modifier) {
+std::pair<bool, string> php_timelib_date_modify(timelib_time* t, const string& modifier) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
 
-  kphp::timelib::error_container* err = nullptr;
-  kphp::timelib::time* tmp_time = timelib_strtotime_leak_safe(modifier, &err);
+  timelib_error_container* err = nullptr;
+  timelib_time* tmp_time = timelib_strtotime_leak_safe(modifier, &err);
   vk::final_action tmp_time_deleter{[tmp_time] { timelib_time_dtor(tmp_time); }};
 
   // update last errors and warnings
@@ -369,7 +368,7 @@ std::pair<bool, string> php_timelib_date_modify(kphp::timelib::time* t, const st
     return {false, string{"Failed to parse time string "}.append(1, '(').append(modifier).append(") ").append(kphp::timelib::gen_error_msg(err))};
   }
 
-  std::memcpy(&t->relative, &tmp_time->relative, sizeof(kphp::timelib::rel_time));
+  std::memcpy(&t->relative, &tmp_time->relative, sizeof(timelib_rel_time));
   t->have_relative = tmp_time->have_relative;
   t->sse_uptodate = 0;
 
@@ -410,7 +409,7 @@ std::pair<bool, string> php_timelib_date_modify(kphp::timelib::time* t, const st
   return {true, {}};
 }
 
-void php_timelib_date_date_set(kphp::timelib::time* t, int64_t y, int64_t m, int64_t d) {
+void php_timelib_date_date_set(timelib_time* t, int64_t y, int64_t m, int64_t d) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
   t->y = y;
   t->m = m;
@@ -418,7 +417,7 @@ void php_timelib_date_date_set(kphp::timelib::time* t, int64_t y, int64_t m, int
   timelib_update_ts(t, nullptr);
 }
 
-void php_timelib_date_isodate_set(kphp::timelib::time* t, int64_t y, int64_t w, int64_t d) {
+void php_timelib_date_isodate_set(timelib_time* t, int64_t y, int64_t w, int64_t d) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
   t->y = y;
   t->m = 1;
@@ -429,7 +428,7 @@ void php_timelib_date_isodate_set(kphp::timelib::time* t, int64_t y, int64_t w, 
   timelib_update_ts(t, nullptr);
 }
 
-void php_date_time_set(kphp::timelib::time* t, int64_t h, int64_t i, int64_t s, int64_t ms) {
+void php_date_time_set(timelib_time* t, int64_t h, int64_t i, int64_t s, int64_t ms) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
   t->h = h;
   t->i = i;
@@ -438,12 +437,12 @@ void php_date_time_set(kphp::timelib::time* t, int64_t h, int64_t i, int64_t s, 
   timelib_update_ts(t, nullptr);
 }
 
-int64_t php_timelib_date_offset_get(kphp::timelib::time* t) {
+int64_t php_timelib_date_offset_get(timelib_time* t) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
   if (t->is_localtime) {
     switch (t->zone_type) {
     case TIMELIB_ZONETYPE_ID: {
-      kphp::timelib::time_offset* offset = timelib_get_time_zone_info(t->sse, t->tz_info);
+      timelib_time_offset* offset = timelib_get_time_zone_info(t->sse, t->tz_info);
       int64_t offset_int = offset->offset;
       timelib_time_offset_dtor(offset);
       return offset_int;
@@ -459,47 +458,47 @@ int64_t php_timelib_date_offset_get(kphp::timelib::time* t) {
   return 0;
 }
 
-kphp::timelib::time* php_timelib_date_add(kphp::timelib::time* t, kphp::timelib::rel_time* interval) {
+timelib_time* php_timelib_date_add(timelib_time* t, timelib_rel_time* interval) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
 
-  kphp::timelib::time* new_time = timelib_add(t, interval);
+  timelib_time* new_time = timelib_add(t, interval);
   timelib_time_dtor(t);
   return new_time;
 }
 
-std::pair<kphp::timelib::time*, std::string_view> php_timelib_date_sub(kphp::timelib::time* t, kphp::timelib::rel_time* interval) {
+std::pair<timelib_time*, std::string_view> php_timelib_date_sub(timelib_time* t, timelib_rel_time* interval) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
 
   if (interval->have_special_relative) {
     return {nullptr, "Only non-special relative time specifications are supported for subtraction"};
   }
 
-  kphp::timelib::time* new_time = timelib_sub(t, interval);
+  timelib_time* new_time = timelib_sub(t, interval);
   timelib_time_dtor(t);
   return {new_time, {}};
 }
 
-kphp::timelib::rel_time* php_timelib_date_diff(kphp::timelib::time* time1, kphp::timelib::time* time2, bool absolute) {
+timelib_rel_time* php_timelib_date_diff(timelib_time* time1, timelib_time* time2, bool absolute) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
 
   timelib_update_ts(time1, nullptr);
   timelib_update_ts(time2, nullptr);
 
-  kphp::timelib::rel_time* diff = timelib_diff(time1, time2);
+  timelib_rel_time* diff = timelib_diff(time1, time2);
   if (absolute) {
     diff->invert = 0;
   }
   return diff;
 }
 
-std::pair<kphp::timelib::rel_time*, string> php_timelib_date_interval_initialize(const string& format) {
+std::pair<timelib_rel_time*, string> php_timelib_date_interval_initialize(const string& format) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
 
-  kphp::timelib::time* b = nullptr;
-  kphp::timelib::time* e = nullptr;
-  kphp::timelib::rel_time* p = nullptr;
+  timelib_time* b = nullptr;
+  timelib_time* e = nullptr;
+  timelib_rel_time* p = nullptr;
   int r = 0;
-  kphp::timelib::error_container* errors = nullptr;
+  timelib_error_container* errors = nullptr;
   timelib_strtointerval(format.c_str(), format.size(), &b, &e, &p, &r, &errors);
   vk::final_action error_deleter{[errors]() { timelib_error_container_dtor(errors); }};
   vk::final_action e_deleter{[e]() { free(e); }};
@@ -525,18 +524,18 @@ std::pair<kphp::timelib::rel_time*, string> php_timelib_date_interval_initialize
   return {nullptr, string{"Failed to parse interval ("}.append(format).append(1, ')')};
 }
 
-void php_timelib_date_interval_remove(kphp::timelib::rel_time* t) {
+void php_timelib_date_interval_remove(timelib_rel_time* t) {
   if (t) {
     auto script_guard = make_malloc_replacement_with_script_allocator();
     timelib_rel_time_dtor(t);
   }
 }
 
-std::pair<kphp::timelib::rel_time*, string> php_timelib_date_interval_create_from_date_string(const string& time_str) {
+std::pair<timelib_rel_time*, string> php_timelib_date_interval_create_from_date_string(const string& time_str) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
 
-  kphp::timelib::error_container* err = nullptr;
-  kphp::timelib::time* time = timelib_strtotime_leak_safe(time_str, &err);
+  timelib_error_container* err = nullptr;
+  timelib_time* time = timelib_strtotime_leak_safe(time_str, &err);
   vk::final_action time_deleter{[time] { timelib_time_dtor(time); }};
   vk::final_action error_deleter{[err]() { timelib_error_container_dtor(err); }};
 

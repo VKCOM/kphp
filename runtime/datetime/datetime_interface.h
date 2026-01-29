@@ -7,20 +7,19 @@
 #include "kphp/timelib/timelib.h"
 
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
-#include "runtime-common/stdlib/time/timelib-types.h"
 #include "runtime/datetime/timelib_wrapper.h"
 
 struct C$DateTimeInterface : public refcountable_polymorphic_php_classes_virt<> {
-  kphp::timelib::time* time{nullptr};
+  timelib_time* time{nullptr};
 
   virtual const char* get_class() const noexcept = 0;
   virtual int get_hash() const noexcept = 0;
 };
 
 // NB: should be called under script allocator
-inline kphp::timelib::time_offset* create_time_offset(kphp::timelib::time* t, [[maybe_unused]] const ScriptMemGuard& guard) {
+inline timelib_time_offset* create_time_offset(timelib_time* t, [[maybe_unused]] const ScriptMemGuard& guard) {
   if (t->zone_type == TIMELIB_ZONETYPE_ABBR) {
-    kphp::timelib::time_offset* offset = timelib_time_offset_ctor();
+    timelib_time_offset* offset = timelib_time_offset_ctor();
     offset->offset = (t->z + (t->dst * 3600));
     offset->leap_secs = 0;
     offset->is_dst = t->dst;
@@ -28,7 +27,7 @@ inline kphp::timelib::time_offset* create_time_offset(kphp::timelib::time* t, [[
     return offset;
   }
   if (t->zone_type == TIMELIB_ZONETYPE_OFFSET) {
-    kphp::timelib::time_offset* offset = timelib_time_offset_ctor();
+    timelib_time_offset* offset = timelib_time_offset_ctor();
     offset->offset = (t->z);
     offset->leap_secs = 0;
     offset->is_dst = 0;
