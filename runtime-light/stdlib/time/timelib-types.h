@@ -16,12 +16,11 @@ namespace kphp::timelib {
 
 namespace details {
 
-inline constexpr auto error_container_destructor{
-    [](kphp::timelib::error_container* ec) noexcept { kphp::memory::libc_alloc_guard{}, timelib_error_container_dtor(ec); }};
-inline constexpr auto rel_time_destructor{[](kphp::timelib::rel_time* rt) noexcept { kphp::memory::libc_alloc_guard{}, timelib_rel_time_dtor(rt); }};
-inline constexpr auto time_offset_destructor{[](timelib_time_offset* to) noexcept { kphp::memory::libc_alloc_guard{}, timelib_time_offset_dtor(to); }};
-inline constexpr auto time_destructor{[](kphp::timelib::time* t) noexcept { kphp::memory::libc_alloc_guard{}, timelib_time_dtor(t); }};
-inline constexpr auto tzinfo_destructor{[](kphp::timelib::tzinfo* t) noexcept { kphp::memory::libc_alloc_guard{}, timelib_tzinfo_dtor(t); }};
+inline constexpr auto error_container_destructor{[](kphp::timelib::error_container* ec) noexcept { timelib_error_container_dtor(ec); }};
+inline constexpr auto rel_time_destructor{[](kphp::timelib::rel_time* rt) noexcept { timelib_rel_time_dtor(rt); }};
+inline constexpr auto time_offset_destructor{[](timelib_time_offset* to) noexcept { timelib_time_offset_dtor(to); }};
+inline constexpr auto time_destructor{[](kphp::timelib::time* t) noexcept { timelib_time_dtor(t); }};
+inline constexpr auto tzinfo_destructor{[](kphp::timelib::tzinfo* t) noexcept { timelib_tzinfo_dtor(t); }};
 
 } // namespace details
 

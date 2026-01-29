@@ -65,7 +65,7 @@ public:
   }
 
   void clear() noexcept {
-    kphp::memory::libc_alloc_guard{}, m_cache.clear();
+    m_cache.clear();
   }
 
   timezone_cache() noexcept = default;
@@ -73,7 +73,7 @@ public:
   timezone_cache(std::initializer_list<std::string_view> tzs) noexcept {
     std::ranges::for_each(tzs, [this](std::string_view tz) noexcept {
       int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-      kphp::timelib::tzinfo_holder tzinfo{(kphp::memory::libc_alloc_guard{}, timelib_parse_tzfile(tz.data(), timelib_builtin_db(), std::addressof(errc))),
+      kphp::timelib::tzinfo_holder tzinfo{timelib_parse_tzfile(tz.data(), timelib_builtin_db(), std::addressof(errc)),
                                           kphp::timelib::details::tzinfo_destructor};
       if (tzinfo == nullptr || tzinfo->name == nullptr) [[unlikely]] {
         return;

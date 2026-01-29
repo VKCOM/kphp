@@ -24,8 +24,12 @@
 #include "compiler/threading/tls.h"
 #include "compiler/utils/string-utils.h"
 
-void KphpRawOption::init(const char *env, std::string default_value, std::vector<std::string> choices) noexcept {
-  if (char *val = getenv(env)) {
+#ifdef RUNTIME_LIGHT
+#include "auto/compiler/runtime_compile_definitions.h"
+#endif
+
+void KphpRawOption::init(const char* env, std::string default_value, std::vector<std::string> choices) noexcept {
+  if (char* val = getenv(env)) {
     raw_option_arg_ = val;
   } else {
     raw_option_arg_ = std::move(default_value);
@@ -34,7 +38,7 @@ void KphpRawOption::init(const char *env, std::string default_value, std::vector
   choices_ = std::move(choices);
 }
 
-void KphpRawOption::substitute_depends(const KphpRawOption &other) noexcept {
+void KphpRawOption::substitute_depends(const KphpRawOption& other) noexcept {
   raw_option_arg_ = vk::replace_all(raw_option_arg_, "${" + other.get_env_var() + "}", other.raw_option_arg_);
 }
 
@@ -44,32 +48,32 @@ void KphpRawOption::verify_arg_value() const {
   }
 }
 
-void KphpRawOption::throw_param_exception(const std::string &reason) const {
+void KphpRawOption::throw_param_exception(const std::string& reason) const {
   throw std::runtime_error{"Can't parse " + get_env_var() + " option: " + reason};
 }
 
 template<>
-void KphpOption<std::string>::dump_option(std::ostream &out) const noexcept {
+void KphpOption<std::string>::dump_option(std::ostream& out) const noexcept {
   out << value_;
 }
 
 template<>
-void KphpOption<uint64_t>::dump_option(std::ostream &out) const noexcept {
+void KphpOption<uint64_t>::dump_option(std::ostream& out) const noexcept {
   out << value_;
 }
 
 template<>
-void KphpOption<double>::dump_option(std::ostream &out) const noexcept {
+void KphpOption<double>::dump_option(std::ostream& out) const noexcept {
   out << value_;
 }
 
 template<>
-void KphpOption<bool>::dump_option(std::ostream &out) const noexcept {
+void KphpOption<bool>::dump_option(std::ostream& out) const noexcept {
   out << (value_ ? "true" : "false");
 }
 
 template<>
-void KphpOption<std::vector<std::string>>::dump_option(std::ostream &out) const noexcept {
+void KphpOption<std::vector<std::string>>::dump_option(std::ostream& out) const noexcept {
   out << vk::join(value_, ", ");
 }
 
@@ -138,7 +142,7 @@ bool contains_lib(vk::string_view ld_flags, vk::string_view libname) noexcept {
 }
 
 template<class T>
-void append_if_doesnt_contain(std::string &ld_flags, const T &libs, vk::string_view prefix, vk::string_view suffix = {}) noexcept {
+void append_if_doesnt_contain(std::string& ld_flags, const T& libs, vk::string_view prefix, vk::string_view suffix = {}) noexcept {
   for (vk::string_view lib : libs) {
     if (!contains_lib(ld_flags, lib)) {
       ld_flags.append(" ").append(prefix.begin(), prefix.end());
@@ -147,7 +151,7 @@ void append_if_doesnt_contain(std::string &ld_flags, const T &libs, vk::string_v
   }
 }
 
-void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcept {
+void append_apple_options(std::string& cxx_flags, std::string& ld_flags) noexcept {
 #if defined(__APPLE__)
 #ifdef __arm64__
   std::string common_path = "/opt/homebrew";
@@ -157,10 +161,13 @@ void append_apple_options(std::string &cxx_flags, std::string &ld_flags) noexcep
   cxx_flags += " -I" + common_path + "/include";
   ld_flags += " -liconv"
               " -lepoll-shim"
-              " -L" EPOLL_SHIM_LIB_DIR
-              " -L" + common_path + "/lib"
+              " -L" EPOLL_SHIM_LIB_DIR " -L" +
+              common_path +
+              "/lib"
 #ifdef PDO_DRIVER_PGSQL
-              " -L" + common_path + "/opt/libpq/lib"
+              " -L" +
+              common_path +
+              "/opt/libpq/lib"
 #endif
               " -undefined dynamic_lookup";
 
@@ -195,8 +202,8 @@ std::string calc_cxx_flags_sha256(vk::string_view cxx, vk::string_view cxx_flags
 
 } // namespace
 
-void CxxFlags::init(const std::string &runtime_sha256, const std::string &cxx,
-                    std::string cxx_flags_line, const std::string &dest_cpp_dir, bool enable_pch) noexcept {
+void CxxFlags::init(const std::string& runtime_sha256, const std::string& cxx, std::string cxx_flags_line, const std::string& dest_cpp_dir,
+                    bool enable_pch) noexcept {
   remove_extra_spaces(cxx_flags_line);
   flags.value_ = std::move(cxx_flags_line);
   flags_sha256.value_ = calc_cxx_flags_sha256(cxx, flags.get());
@@ -206,7 +213,7 @@ void CxxFlags::init(const std::string &runtime_sha256, const std::string &cxx,
   }
 }
 
-void CompilerSettings::option_as_dir(KphpOption<std::string> &path_option) noexcept {
+void CompilerSettings::option_as_dir(KphpOption<std::string>& path_option) noexcept {
   path_option.value_ = as_dir(path_option.value_);
 }
 
@@ -285,7 +292,7 @@ void CompilerSettings::init() {
     throw std::runtime_error{"Option " + threads_count.get_env_var() + " is expected to be <= " + std::to_string(MAX_THREADS_COUNT)};
   }
 
-  for (std::string &include : includes.value_) {
+  for (std::string& include : includes.value_) {
     include = as_dir(include);
   }
 
@@ -301,11 +308,7 @@ void CompilerSettings::init() {
 
   remove_extra_spaces(extra_cxx_flags.value_);
   std::stringstream ss;
-  ss << "-Wall "
-     << extra_cxx_flags.get()
-     << " -iquote" << kphp_src_path.get()
-     << " -iquote " << kphp_src_path.get()
-     << "objs/generated/auto/runtime"
+  ss << "-Wall " << extra_cxx_flags.get() << " -iquote" << kphp_src_path.get() << " -iquote " << kphp_src_path.get() << "objs/generated/auto/runtime"
      << " -fwrapv -Wno-parentheses -Wno-trigraphs"
      << " -fno-strict-aliasing -fno-omit-frame-pointer";
 #ifdef __x86_64__
@@ -322,15 +325,15 @@ void CompilerSettings::init() {
   if (vk::contains(cxx.get(), "clang")) {
     ss << " -Wno-invalid-source-encoding";
   }
-  #if __cplusplus <= 201703L
-    ss << " -std=c++17";
-  #elif __cplusplus <= 202002L
-    ss << " -std=c++20";
-  #elif __cplusplus <= 202302L
-    ss << " -std=c++23";
-  #else
-    #error unsupported __cplusplus value
-  #endif
+#if __cplusplus <= 201703L
+  ss << " -std=c++17";
+#elif __cplusplus <= 202002L
+  ss << " -std=c++20";
+#elif __cplusplus <= 202302L
+  ss << " -std=c++23";
+#else
+#error unsupported __cplusplus value
+#endif
 
   ss << " -I" << kphp_src_path.get() + "objs/include ";
   if (is_k2_mode) {
@@ -345,6 +348,12 @@ void CompilerSettings::init() {
     // when we build using full runtime, we should force to use runtime as static lib
     force_link_runtime.value_ = true;
   }
+
+#ifdef RUNTIME_LIGHT
+  std::vector<std::string> compile_definitions = split(RUNTIME_LIGHT_COMPILE_DEFINITIONS, ';');
+  std::for_each(compile_definitions.cbegin(), compile_definitions.cend(), [&ss](const auto& definition) noexcept { ss << " -D" << definition; });
+#endif
+
   std::string cxx_default_flags = ss.str();
 
   cxx_toolchain_option.value_ = !cxx_toolchain_dir.value_.empty() ? ("-B" + cxx_toolchain_dir.value_) : "";
@@ -417,7 +426,7 @@ void CompilerSettings::init() {
   main_file.value_.assign(full_path);
 
   const size_t dir_pos = main_file.get().rfind('/');
-  kphp_assert (dir_pos != std::string::npos);
+  kphp_assert(dir_pos != std::string::npos);
   base_dir.value_ = main_file.get().substr(0, dir_pos + 1);
 
   mkdir_recursive(dest_dir.get().c_str(), 0777);
@@ -442,16 +451,14 @@ void CompilerSettings::init() {
   option_as_dir(composer_root);
 }
 
-std::string CompilerSettings::read_runtime_sha256_file(const std::string &filename) {
+std::string CompilerSettings::read_runtime_sha256_file(const std::string& filename) {
   std::ifstream runtime_sha256_file(filename.c_str());
-  kphp_error(runtime_sha256_file,
-             fmt_format("Can't open runtime sha256 file '{}'", filename));
+  kphp_error(runtime_sha256_file, fmt_format("Can't open runtime sha256 file '{}'", filename));
 
   constexpr std::streamsize SHA256_LEN = 64;
   char runtime_sha256[SHA256_LEN] = {0};
   runtime_sha256_file.read(runtime_sha256, SHA256_LEN);
-  kphp_error(runtime_sha256_file.gcount() == SHA256_LEN,
-             fmt_format("Can't read runtime sha256 from file '{}'", filename));
+  kphp_error(runtime_sha256_file.gcount() == SHA256_LEN, fmt_format("Can't read runtime sha256 from file '{}'", filename));
   return {runtime_sha256, runtime_sha256 + SHA256_LEN};
 }
 

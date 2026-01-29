@@ -5,13 +5,11 @@
 #pragma once
 
 #include <cstdint>
-#include <format>
 #include <string_view>
 
 #include "common/algorithms/hashes.h"
 #include "runtime-common/core/class-instance/refcountable-php-classes.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/iterator.h"
 #include "runtime-common/stdlib/time/timelib-functions.h"
 #include "runtime-common/stdlib/visitors/dummy-visitor-methods.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
@@ -38,9 +36,9 @@ inline class_instance<C$DateInterval> f$DateInterval$$__construct(const class_in
   if (!expected_rel_time.has_value()) [[unlikely]] {
     string err_msg{"DateInterval::__construct(): "};
     if (expected_rel_time.error()->error_count > 0) {
-      std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "Unknown or bad format ({})", duration.c_str());
+      err_msg.append("Unknown or bad format (").append(duration).append(")");
     } else {
-      std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "Failed to parse interval ({})", duration.c_str());
+      err_msg.append("Failed to parse interval (").append(duration).append(")");
     }
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};

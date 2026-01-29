@@ -55,13 +55,13 @@ inline class_instance<C$DateTime> f$DateTime$$setDate(const class_instance<C$Dat
   return self;
 }
 
-inline class_instance<C$DateTime> f$DateTime$$setISODate(const class_instance<C$DateTime>& self, int64_t year, int64_t week, int64_t dayOfWeek) noexcept {
+inline class_instance<C$DateTime> f$DateTime$$setISODate(const class_instance<C$DateTime>& self, int64_t year, int64_t week, int64_t dayOfWeek = 1) noexcept {
   kphp::timelib::set_isodate(self->time, year, week, dayOfWeek);
   return self;
 }
 
-inline class_instance<C$DateTime> f$DateTime$$setTime(const class_instance<C$DateTime>& self, int64_t hour, int64_t minute, int64_t second,
-                                                      int64_t microsecond) noexcept {
+inline class_instance<C$DateTime> f$DateTime$$setTime(const class_instance<C$DateTime>& self, int64_t hour, int64_t minute, int64_t second = 0,
+                                                      int64_t microsecond = 0) noexcept {
   kphp::timelib::set_time(self->time, hour, minute, second, microsecond);
   return self;
 }
@@ -82,7 +82,7 @@ inline class_instance<C$DateTime> f$DateTime$$sub(const class_instance<C$DateTim
 }
 
 inline class_instance<C$DateInterval> f$DateTime$$diff(const class_instance<C$DateTime>& self, const class_instance<C$DateTimeInterface>& target_object,
-                                                       bool absolute) noexcept {
+                                                       bool absolute = false) noexcept {
   class_instance<C$DateInterval> interval;
   interval.alloc();
   interval->rel_time = kphp::timelib::get_time_interval(self->time, target_object.get()->time, absolute);

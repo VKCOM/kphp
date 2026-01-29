@@ -9,6 +9,7 @@ if (COMPILE_RUNTIME_LIGHT)
         unicode_sources.h
         runtime_sources.h
         runtime_common_sources.h
+        runtime_compile_definitions.h
         runtime_compile_flags.h)
 endif()
 

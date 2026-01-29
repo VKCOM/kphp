@@ -72,14 +72,14 @@ inline class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setDate(const cl
 }
 
 inline class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setISODate(const class_instance<C$DateTimeImmutable>& self, int64_t year, int64_t week,
-                                                                           int64_t dayOfWeek) noexcept {
+                                                                           int64_t dayOfWeek = 1) noexcept {
   auto new_date{kphp::time::details::clone_immutable(self)};
   kphp::timelib::set_isodate(new_date->time, year, week, dayOfWeek);
   return new_date;
 }
 
 inline class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$setTime(const class_instance<C$DateTimeImmutable>& self, int64_t hour, int64_t minute,
-                                                                        int64_t second, int64_t microsecond) noexcept {
+                                                                        int64_t second = 0, int64_t microsecond = 0) noexcept {
   auto new_date{kphp::time::details::clone_immutable(self)};
   kphp::timelib::set_time(new_date->time, hour, minute, second, microsecond);
   return new_date;
@@ -104,7 +104,7 @@ inline class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$sub(const class_
 }
 
 inline class_instance<C$DateInterval> f$DateTimeImmutable$$diff(const class_instance<C$DateTimeImmutable>& self,
-                                                                const class_instance<C$DateTimeInterface>& target_object, bool absolute) noexcept {
+                                                                const class_instance<C$DateTimeInterface>& target_object, bool absolute = false) noexcept {
   class_instance<C$DateInterval> interval;
   interval.alloc();
   interval->rel_time = kphp::timelib::get_time_interval(self->time, target_object.get()->time, absolute);

@@ -3,6 +3,43 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/stdlib/time/timelib-functions.h"
+#include "runtime-common/core/allocator/script-malloc-interface.h"
+
+/*
+ * This is necessary to replace the library's allocators.
+ * When building the library, the prefix of the replacement function is specified, for example:
+ * if we want to use the prefix of the replacement function = "my_prefix_", then during assembly we specify
+ *    cmake -DTIMELIB_ALLOC_FUNC_PREFIX=my_prefix_ .
+ * then it will use
+ *   void* my_prefix_malloc(size_t size);
+ *   void* my_prefix_realloc(void* ptr, size_t size);
+ *   void* my_prefix_calloc(size_t num, size_t size);
+ *   char* my_prefix_strdup(const char* str);
+ *   void my_prefix_free(void* ptr);
+ * instead of
+ *   void* malloc(size_t size);
+ *   void* realloc(void* ptr, size_t size);
+ *   void* calloc(size_t num, size_t size);
+ *   char* strdup(const char* str);
+ *   void free(void* ptr);
+ */
+extern "C" {
+void* timelib_malloc(size_t size) {
+  return kphp::memory::script::alloc(size);
+}
+void* timelib_realloc(void* ptr, size_t size) {
+  return kphp::memory::script::realloc(ptr, size);
+}
+void* timelib_calloc(size_t num, size_t size) {
+  return kphp::memory::script::calloc(num, size);
+}
+char* timelib_strdup(const char* str1) {
+  return kphp::memory::script::strdup(str1);
+}
+void timelib_free(void* ptr) {
+  kphp::memory::script::free(ptr);
+}
+}
 
 namespace kphp::timelib {
 
@@ -225,6 +262,18 @@ string format_time(const string& format, kphp::timelib::time& t, kphp::timelib::
   }
 
   return sb.str();
+}
+
+string gen_error_msg(kphp::timelib::error_container* err) noexcept {
+  if (err == nullptr) {
+    return string{"unknown error"};
+  }
+
+  string error_msg{"at position "};
+  error_msg.append(err->error_messages[0].position);
+  error_msg.append(" (").append(1, err->error_messages[0].character != '\0' ? err->error_messages[0].character : ' ').append("): ");
+  error_msg.append(err->error_messages[0].message);
+  return error_msg;
 }
 
 } // namespace kphp::timelib

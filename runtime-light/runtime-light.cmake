@@ -1,4 +1,3 @@
-include(${THIRD_PARTY_DIR}/timelib-cmake/timelib.cmake)
 include(${THIRD_PARTY_DIR}/pcre2-cmake/pcre2.cmake)
 
 # =================================================================================================
@@ -54,7 +53,7 @@ vk_add_library_pic(runtime-light-pic OBJECT ${RUNTIME_LIGHT_SRC})
 target_compile_options(runtime-light-pic PUBLIC ${RUNTIME_LIGHT_COMPILE_FLAGS})
 target_link_libraries(runtime-light-pic PUBLIC vk::pic::libc-alloc-wrapper) # it's mandatory to have alloc-wrapper first in the list of link libraries since we
                                                                             # want to use its symbols in all other libraries
-target_link_libraries(runtime-light-pic PUBLIC KPHP_TIMELIB::pic::timelib PCRE2::pic::pcre2 ZLIB::pic::zlib ZSTD::pic::zstd) # third parties
+target_link_libraries(runtime-light-pic PUBLIC PCRE2::pic::pcre2 ZLIB::pic::zlib ZSTD::pic::zstd) # third parties
 
 set(RUNTIME_LIGHT_LINK_LIBS "${KPHP_TIMELIB_PIC_LIBRARIES} ${PCRE2_PIC_LIBRARIES} ${ZLIB_PIC_LIBRARIES} ${ZSTD_PIC_LIBRARIES} ${UBER_H3_PIC_LIBRARIES}")
 
@@ -116,6 +115,8 @@ add_custom_command(
 add_custom_target(php_lib_version_sha_256 DEPENDS ${OBJS_DIR}/php_lib_version.sha256)
 
 # =================================================================================================
+
+file(GENERATE OUTPUT ${AUTO_DIR}/compiler/runtime_compile_definitions.h INPUT ${BASE_DIR}/compiler/runtime_compile_definitions.h.in)
 
 get_target_property(RUNTIME_LIGHT_COMPILE_FLAGS kphp-light-runtime-pic COMPILE_OPTIONS)
 list(JOIN RUNTIME_LIGHT_COMPILE_FLAGS "\;" RUNTIME_LIGHT_COMPILE_FLAGS)

@@ -4,13 +4,12 @@
 
 #include "runtime-light/stdlib/time/date-time-immutable.h"
 
-#include <format>
 #include <string_view>
 
 #include "kphp/timelib/timelib.h"
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/core/utils/iterator.h"
+#include "runtime-common/stdlib/time/timelib-functions.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/date-time.h"
@@ -25,8 +24,10 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class
   auto expected{kphp::timelib::parse_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
   if (!expected.has_value()) [[unlikely]] {
     string err_msg;
-    std::format_to(kphp::string_back_insert_iterator{.ref = err_msg}, "DateTimeImmutable::__construct(): Failed to parse time string ({}) {}", datetime.c_str(),
-                   expected.error());
+    err_msg.append("DateTimeImmutable::__construct(): Failed to parse time string (")
+        .append(datetime)
+        .append(") ")
+        .append(kphp::timelib::gen_error_msg(expected.error().get()));
     time_instance_state.update_last_errors(std::move(expected.error()));
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};
@@ -90,7 +91,8 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$modify(const class_inst
 
   auto expected{kphp::timelib::parse_time({modifier.c_str(), modifier.size()}, self->time)};
   if (!expected.has_value()) [[unlikely]] {
-    kphp::log::warning("DateTimeImmutable::modify(): Failed to parse time string ({}) {}", modifier.c_str(), expected.error());
+    kphp::log::warning("DateTimeImmutable::modify(): Failed to parse time string ({}) {}", modifier.c_str(),
+                       kphp::timelib::gen_error_msg(expected.error().get()).c_str());
     time_instance_state.update_last_errors(std::move(expected.error()));
     return {};
   }

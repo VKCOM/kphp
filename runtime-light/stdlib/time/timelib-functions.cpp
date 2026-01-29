@@ -29,7 +29,6 @@ std::expected<kphp::timelib::rel_time_holder, kphp::timelib::error_container_hol
   int r{}; // it's intentionally declared as 'int' since timelib_strtointerval accepts 'int'
   kphp::timelib::error_container* errors{nullptr};
 
-  kphp::memory::libc_alloc_guard _{};
   timelib_strtointerval(formatted_interval.data(), formatted_interval.size(), std::addressof(raw_b), std::addressof(raw_e), std::addressof(p),
                         std::addressof(r), std::addressof(errors));
 
@@ -55,7 +54,6 @@ std::expected<kphp::timelib::rel_time_holder, kphp::timelib::error_container_hol
 }
 
 kphp::timelib::rel_time_holder get_time_interval(const kphp::timelib::time_holder& time1, const kphp::timelib::time_holder& time2, bool absolute) noexcept {
-  kphp::memory::libc_alloc_guard _{};
   timelib_update_ts(time1.get(), nullptr);
   timelib_update_ts(time2.get(), nullptr);
 
@@ -78,8 +76,7 @@ std::expected<std::reference_wrapper<const kphp::timelib::tzinfo_holder>, int32_
   }
 
   int errc{}; // it's intentionally declared as 'int' since timelib_parse_tzfile accepts 'int'
-  kphp::timelib::tzinfo_holder tzinfo{(kphp::memory::libc_alloc_guard{}, timelib_parse_tzfile(name.data(), tzdb, std::addressof(errc))),
-                                      kphp::timelib::details::tzinfo_destructor};
+  kphp::timelib::tzinfo_holder tzinfo{timelib_parse_tzfile(name.data(), tzdb, std::addressof(errc)), kphp::timelib::details::tzinfo_destructor};
   if (tzinfo == nullptr || tzinfo->name == nullptr) [[unlikely]] {
     return std::unexpected{errc};
   }
@@ -88,7 +85,6 @@ std::expected<std::reference_wrapper<const kphp::timelib::tzinfo_holder>, int32_
 
 int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon, std::optional<int64_t> day,
                  std::optional<int64_t> yea) noexcept {
-  kphp::memory::libc_alloc_guard _{};
   auto* now{timelib_time_ctor()};
   const vk::final_action now_deleter{[now] noexcept { timelib_time_dtor(now); }};
   namespace chrono = std::chrono;
@@ -130,7 +126,6 @@ int64_t gmmktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::op
 
 std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t> min, std::optional<int64_t> sec, std::optional<int64_t> mon,
                               std::optional<int64_t> day, std::optional<int64_t> yea) noexcept {
-  kphp::memory::libc_alloc_guard _{};
   auto* now{timelib_time_ctor()};
   const vk::final_action now_deleter{[now] noexcept { timelib_time_dtor(now); }};
   string default_timezone{TimeInstanceState::get().default_timezone};
@@ -223,7 +218,6 @@ parse_time(std::string_view formatted_time, const kphp::timelib::time_holder& t)
     res->us = tmp_time->us;
   }
 
-  kphp::memory::libc_alloc_guard _{};
   timelib_update_ts(res.get(), nullptr);
   timelib_update_from_sse(res.get());
   res->have_relative = 0;
@@ -244,8 +238,6 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view for
     return {};
   }
   const auto& tzinfo{expected_tzinfo->get()};
-
-  kphp::memory::libc_alloc_guard _{};
 
   kphp::timelib::time* now{timelib_time_ctor()};
   const vk::final_action now_deleter{[now] noexcept { timelib_time_dtor(now); }};
@@ -277,7 +269,6 @@ void fill_holes_with_now_info(kphp::timelib::time_holder& time, const kphp::time
   const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
   const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
 
-  kphp::memory::libc_alloc_guard _{};
   kphp::timelib::time_holder now{timelib_time_ctor(), kphp::timelib::details::time_destructor};
 
   now->tz_info = tzi.get();
@@ -299,7 +290,6 @@ void fill_holes_with_now_info(kphp::timelib::time_holder& time, int32_t options)
   const auto sec{chrono::duration_cast<chrono::seconds>(time_since_epoch).count()};
   const auto usec{chrono::duration_cast<chrono::microseconds>(time_since_epoch % chrono::seconds{1}).count()};
 
-  kphp::memory::libc_alloc_guard _{};
   kphp::timelib::time_holder now{timelib_time_ctor(), kphp::timelib::details::time_destructor};
 
   now->tz_info = time->tz_info;

@@ -10,13 +10,11 @@
 #include <cstdlib>
 #include <expected>
 #include <format>
-#include <iterator>
 #include <optional>
 #include <string_view>
 
 #include "kphp/timelib/timelib.h"
 
-#include "runtime-common/stdlib/time/timelib-constants.h"
 #include "runtime-light/stdlib/time/timelib-types.h"
 
 namespace kphp::timelib {
@@ -111,7 +109,6 @@ inline timelib_tzinfo* get_timezone_info(const char* timezone, const timelib_tzd
 } // namespace details
 
 inline kphp::timelib::time_offset_holder construct_time_offset(const kphp::timelib::time_holder& t) noexcept {
-  kphp::memory::libc_alloc_guard _{};
   if (t->zone_type == TIMELIB_ZONETYPE_ABBR) {
     kphp::timelib::time_offset_holder offset{timelib_time_offset_ctor(), kphp::timelib::details::time_offset_destructor};
     offset->offset = (t->z + (t->dst * 3600));
@@ -137,9 +134,9 @@ inline kphp::timelib::time_offset_holder construct_time_offset(const kphp::timel
 inline std::expected<std::pair<kphp::timelib::time_holder, kphp::timelib::error_container_holder>, kphp::timelib::error_container_holder>
 parse_time(std::string_view formatted_time) noexcept {
   timelib_error_container* errors{};
-  kphp::timelib::time_holder time{(kphp::memory::libc_alloc_guard{}, timelib_strtotime(formatted_time.data(), formatted_time.size(), std::addressof(errors),
-                                                                                       timelib_builtin_db(), kphp::timelib::details::get_timezone_info)),
-                                  kphp::timelib::details::time_destructor};
+  kphp::timelib::time_holder time{
+      timelib_strtotime(formatted_time.data(), formatted_time.size(), std::addressof(errors), timelib_builtin_db(), kphp::timelib::details::get_timezone_info),
+      kphp::timelib::details::time_destructor};
   if (errors->error_count != 0) [[unlikely]] {
     return std::unexpected{kphp::timelib::error_container_holder{errors, kphp::timelib::details::error_container_destructor}};
   }
@@ -150,10 +147,9 @@ parse_time(std::string_view formatted_time) noexcept {
 inline std::expected<std::pair<kphp::timelib::time_holder, kphp::timelib::error_container_holder>, kphp::timelib::error_container_holder>
 parse_time(std::string_view formatted_time, std::string_view format) noexcept {
   timelib_error_container* err{nullptr};
-  kphp::timelib::time_holder t{
-      (kphp::memory::libc_alloc_guard{}, timelib_parse_from_format(format.data(), formatted_time.data(), formatted_time.size(), std::addressof(err),
-                                                                   timelib_builtin_db(), kphp::timelib::details::get_timezone_info)),
-      kphp::timelib::details::time_destructor};
+  kphp::timelib::time_holder t{timelib_parse_from_format(format.data(), formatted_time.data(), formatted_time.size(), std::addressof(err), timelib_builtin_db(),
+                                                         kphp::timelib::details::get_timezone_info),
+                               kphp::timelib::details::time_destructor};
 
   if (err && err->error_count) {
     return std::unexpected{kphp::timelib::error_container_holder{err, kphp::timelib::details::error_container_destructor}};
@@ -163,11 +159,11 @@ parse_time(std::string_view formatted_time, std::string_view format) noexcept {
 }
 
 inline kphp::timelib::time_holder clone_time(const kphp::timelib::time_holder& t) noexcept {
-  return kphp::timelib::time_holder{(kphp::memory::libc_alloc_guard{}, timelib_time_clone(t.get())), kphp::timelib::details::time_destructor};
+  return kphp::timelib::time_holder{timelib_time_clone(t.get()), kphp::timelib::details::time_destructor};
 }
 
 inline int64_t get_timestamp(const kphp::timelib::time_holder& t) noexcept {
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
+  timelib_update_ts(t.get(), nullptr);
 
   int error{}; // it's intentionally declared as 'int' since timelib_date_to_int accepts 'int'
   timelib_long timestamp{timelib_date_to_int(t.get(), std::addressof(error))};
@@ -181,8 +177,7 @@ inline int64_t get_offset(const kphp::timelib::time_holder& t) noexcept {
   if (t->is_localtime) {
     switch (t->zone_type) {
     case TIMELIB_ZONETYPE_ID: {
-      kphp::timelib::time_offset_holder offset{(kphp::memory::libc_alloc_guard{}, timelib_get_time_zone_info(t->sse, t->tz_info)),
-                                               kphp::timelib::details::time_offset_destructor};
+      kphp::timelib::time_offset_holder offset{timelib_get_time_zone_info(t->sse, t->tz_info), kphp::timelib::details::time_offset_destructor};
       int64_t offset_int{offset->offset};
       return offset_int;
     }
@@ -198,7 +193,6 @@ inline int64_t get_offset(const kphp::timelib::time_holder& t) noexcept {
 }
 
 inline void set_timestamp(kphp::timelib::time_holder& t, int64_t timestamp) noexcept {
-  kphp::memory::libc_alloc_guard _{};
   timelib_unixtime2local(t.get(), static_cast<timelib_sll>(timestamp));
   timelib_update_ts(t.get(), nullptr);
   t->us = 0;
@@ -208,7 +202,7 @@ inline void set_date(kphp::timelib::time_holder& t, int64_t y, int64_t m, int64_
   t->y = y;
   t->m = m;
   t->d = d;
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
+  timelib_update_ts(t.get(), nullptr);
 }
 
 inline void set_isodate(kphp::timelib::time_holder& t, int64_t y, int64_t w, int64_t d) noexcept {
@@ -218,7 +212,7 @@ inline void set_isodate(kphp::timelib::time_holder& t, int64_t y, int64_t w, int
   std::memset(std::addressof(t->relative), 0, sizeof(t->relative));
   t->relative.d = timelib_daynr_from_weeknr(y, w, d);
   t->have_relative = 1;
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
+  timelib_update_ts(t.get(), nullptr);
 }
 
 inline void set_time(kphp::timelib::time_holder& t, int64_t h, int64_t i, int64_t s, int64_t ms) noexcept {
@@ -226,15 +220,15 @@ inline void set_time(kphp::timelib::time_holder& t, int64_t h, int64_t i, int64_
   t->i = i;
   t->s = s;
   t->us = ms;
-  kphp::memory::libc_alloc_guard{}, timelib_update_ts(t.get(), nullptr);
+  timelib_update_ts(t.get(), nullptr);
 }
 
 inline kphp::timelib::rel_time_holder clone_time_interval(const kphp::timelib::time_holder& t) noexcept {
-  return kphp::timelib::rel_time_holder{(kphp::memory::libc_alloc_guard{}, timelib_rel_time_clone(std::addressof(t->relative)))};
+  return kphp::timelib::rel_time_holder{timelib_rel_time_clone(std::addressof(t->relative))};
 }
 
 inline kphp::timelib::time_holder add_time_interval(const kphp::timelib::time_holder& t, kphp::timelib::rel_time_holder& interval) noexcept {
-  kphp::timelib::time_holder new_time{(kphp::memory::libc_alloc_guard{}, timelib_add(t.get(), interval.get())), kphp::timelib::details::time_destructor};
+  kphp::timelib::time_holder new_time{timelib_add(t.get(), interval.get()), kphp::timelib::details::time_destructor};
   return new_time;
 }
 
@@ -244,24 +238,8 @@ inline std::expected<kphp::timelib::time_holder, std::string_view> sub_time_inte
     return std::unexpected{"Only non-special relative time specifications are supported for subtraction"};
   }
 
-  kphp::timelib::time_holder new_time{(kphp::memory::libc_alloc_guard{}, timelib_sub(t.get(), interval.get())), kphp::timelib::details::time_destructor};
+  kphp::timelib::time_holder new_time{timelib_sub(t.get(), interval.get()), kphp::timelib::details::time_destructor};
   return new_time;
 }
 
 } // namespace kphp::timelib
-
-template<>
-struct std::formatter<kphp::timelib::error_container_holder, char> {
-  constexpr auto parse(auto& ctx) const {
-    return ctx.begin();
-  }
-
-  auto format(const kphp::timelib::error_container_holder& error, auto& ctx) const noexcept {
-    if (error != nullptr) {
-      // spit out the first library error message, at least
-      return format_to(ctx.out(), "at position {} ({}): {}", error->error_messages[0].position,
-                       error->error_messages[0].character != '\0' ? error->error_messages[0].character : ' ', error->error_messages[0].message);
-    }
-    return format_to(ctx.out(), "unknown error");
-  }
-};

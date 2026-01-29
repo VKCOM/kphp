@@ -187,4 +187,6 @@ inline string format_rel_time(const string& format, kphp::timelib::rel_time& t) 
   return sb.str();
 }
 
+string gen_error_msg(kphp::timelib::error_container* err) noexcept;
+
 } // namespace kphp::timelib

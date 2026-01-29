@@ -1,0 +1,3 @@
+#pragma once
+
+#define RUNTIME_LIGHT_COMPILE_DEFINITIONS "$<TARGET_PROPERTY:kphp-light-runtime-pic,COMPILE_DEFINITIONS>"

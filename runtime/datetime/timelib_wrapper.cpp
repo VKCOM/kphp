@@ -1,6 +1,7 @@
 #include "runtime/datetime/timelib_wrapper.h"
 
 #include "kphp/timelib/timelib.h"
+#include "runtime-common/stdlib/time/timelib-functions.h"
 #if ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
 #endif
@@ -259,15 +260,6 @@ void free_timelib() {
   update_errors_warnings(nullptr, script_guard);
 }
 
-static string gen_parse_error_msg(const kphp::timelib::error_container& err, const string& str) {
-  string error_msg{"Failed to parse time string "};
-  error_msg.append(1, '(').append(str).append(1, ')');
-  error_msg.append(" at position ").append(err.error_messages[0].position);
-  error_msg.append(" (").append(1, err.error_messages[0].character).append("): ");
-  error_msg.append(err.error_messages[0].message);
-  return error_msg;
-}
-
 static const string NOW{"now"};
 
 std::pair<kphp::timelib::time*, string> php_timelib_date_initialize(const string& tz_name, const string& time_str, const char* format) {
@@ -283,7 +275,7 @@ std::pair<kphp::timelib::time*, string> php_timelib_date_initialize(const string
   if (err && err->error_count) {
     // spit out the first library error message, at least
     timelib_time_dtor(t);
-    return {nullptr, gen_parse_error_msg(*err, time_str)};
+    return {nullptr, string{"Failed to parse time string "}.append(1, '(').append(time_str).append(1, ')').append(kphp::timelib::gen_error_msg(err))};
   }
 
   kphp::timelib::tzinfo* tzi = nullptr;
@@ -374,7 +366,7 @@ std::pair<bool, string> php_timelib_date_modify(kphp::timelib::time* t, const st
 
   if (err && err->error_count) {
     // spit out the first library error message, at least
-    return {false, gen_parse_error_msg(*err, modifier)};
+    return {false, string{"Failed to parse time string "}.append(1, '(').append(modifier).append(1, ')').append(kphp::timelib::gen_error_msg(err))};
   }
 
   std::memcpy(&t->relative, &tmp_time->relative, sizeof(kphp::timelib::rel_time));
