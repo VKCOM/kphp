@@ -58,6 +58,10 @@ inline const char* minus_if_negative(timelib_sll number) noexcept {
   return number < 0 ? "-" : "";
 }
 
+inline char sign(int32_t number) noexcept {
+  return number < 0 ? '-' : '+';
+}
+
 [[gnu::format(printf, 2, 3)]]
 inline void format_to(string_buffer& sb, const char* format, ...) noexcept {
   // php implementation has less bytes buffer capacity
@@ -71,10 +75,6 @@ inline void format_to(string_buffer& sb, const char* format, ...) noexcept {
   php_assert(actual_size > 0);
 
   sb.set_pos(sb.size() + std::min(static_cast<size_t>(actual_size), max_size));
-}
-
-inline char sign(int32_t number) noexcept {
-  return (number < 0) ? '-' : '+';
 }
 
 } // namespace details
