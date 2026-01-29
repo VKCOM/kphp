@@ -16,6 +16,7 @@ struct C$DateTimeInterface : public refcountable_polymorphic_php_classes_virt<> 
   virtual int get_hash() const noexcept = 0;
 };
 
+// Common helper for subclasses of C$DateTimeInterface
 // NB: should be called under script allocator
 inline timelib_time_offset* create_time_offset(timelib_time* t, [[maybe_unused]] const ScriptMemGuard& guard) {
   if (t->zone_type == TIMELIB_ZONETYPE_ABBR) {
