@@ -34,11 +34,21 @@ struct C$DateInterval : public refcountable_polymorphic_php_classes_virt<>, priv
 inline class_instance<C$DateInterval> f$DateInterval$$__construct(const class_instance<C$DateInterval>& self, const string& duration) noexcept {
   auto expected_rel_time{kphp::timelib::parse_interval({duration.c_str(), duration.size()})};
   if (!expected_rel_time.has_value()) [[unlikely]] {
+    static constexpr std::string_view after_duration{")"};
+
     string err_msg{"DateInterval::__construct(): "};
     if (expected_rel_time.error()->error_count > 0) {
-      err_msg.append("Unknown or bad format (").append(duration).append(")");
+      static constexpr std::string_view before_duration{"Unknown or bad format ("};
+      static constexpr size_t min_capacity{before_duration.size() + after_duration.size()};
+
+      err_msg.reserve_at_least(min_capacity);
+      err_msg.append(before_duration.data(), before_duration.size()).append(duration).append(after_duration.data(), after_duration.size());
     } else {
-      err_msg.append("Failed to parse interval (").append(duration).append(")");
+      static constexpr std::string_view before_duration{"Failed to parse interval ("};
+      static constexpr size_t min_capacity{before_duration.size() + after_duration.size()};
+
+      err_msg.reserve_at_least(min_capacity);
+      err_msg.append(before_duration.data(), before_duration.size()).append(duration).append(after_duration.data(), after_duration.size());
     }
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};

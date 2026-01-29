@@ -23,10 +23,15 @@ class_instance<C$DateTimeImmutable> f$DateTimeImmutable$$__construct(const class
   const auto& str_to_parse{datetime.empty() ? TimeImageState::get().NOW_STR : datetime};
   auto expected{kphp::timelib::parse_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
   if (!expected.has_value()) [[unlikely]] {
+    static constexpr std::string_view before_datetime{"DateTimeImmutable::__construct(): Failed to parse time string ("};
+    static constexpr std::string_view before_message{") "};
+    static constexpr size_t min_capacity{before_datetime.size() + before_message.size()};
+
     string err_msg;
-    err_msg.append("DateTimeImmutable::__construct(): Failed to parse time string (")
+    err_msg.reserve_at_least(min_capacity);
+    err_msg.append(before_datetime.data(), before_datetime.size())
         .append(datetime)
-        .append(") ")
+        .append(before_message.data(), before_message.size())
         .append(kphp::timelib::gen_error_msg(expected.error().get()));
     time_instance_state.update_last_errors(std::move(expected.error()));
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
