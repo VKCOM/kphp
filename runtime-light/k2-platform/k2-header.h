@@ -359,7 +359,7 @@ size_t k2_pread(uint64_t stream_d, size_t buf_len, void* buf, uint64_t offset);
 /**
  * Semantically equivalent to libc's `mmap` function.
  *
- * @param `md` A pointer to a `uint64_t` where the mmap descriptor will be stored mmap success.
+ * @param `md` A pointer to a `uint64_t` where the mmap descriptor will be stored upon success.
  */
 void* k2_mmap(uint64_t* md, void* addr, size_t length, int32_t prot, int32_t flags, uint64_t fd, off_t offset);
 
