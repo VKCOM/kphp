@@ -720,6 +720,11 @@ size_t k2_backtrace(void** buffer, size_t size);
 int32_t k2_canonicalize(const char* path, size_t pathlen, char* const* resolved_path, size_t* resolved_pathlen, size_t* resolved_path_align);
 
 /**
+ * Semantically equivalent to libc's `fstat`.
+ */
+int32_t k2_fstat(uint64_t fd, struct stat* statbuf);
+
+/**
  * Semantically equivalent to libc's `stat`.
  *
  * Possible `errno`:
