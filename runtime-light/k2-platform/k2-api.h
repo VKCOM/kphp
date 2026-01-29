@@ -220,7 +220,7 @@ inline void* mmap(uint64_t* md, void* addr, size_t length, int32_t prot, int32_t
   return k2_mmap(md, addr, length, prot, flags, fd, offset);
 }
 
-inline std::expected<void, int32_t> madvise(void* addr, size_t length, int advise) noexcept {
+inline std::expected<void, int32_t> madvise(void* addr, size_t length, int32_t advise) noexcept {
   if (auto error_code{k2_madvise(addr, length, advise)}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
