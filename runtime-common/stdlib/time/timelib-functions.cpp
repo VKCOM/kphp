@@ -2,6 +2,8 @@
 // Copyright (c) 2026 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <string_view>
+
 #include "runtime-common/stdlib/time/timelib-functions.h"
 
 namespace kphp::timelib {
@@ -228,13 +230,23 @@ string format_time(const string& format, kphp::timelib::time& t, kphp::timelib::
 }
 
 string gen_error_msg(kphp::timelib::error_container* err) noexcept {
+  static constexpr std::string_view before_position{"at position "};
+  static constexpr std::string_view before_character{" ("};
+  static constexpr std::string_view before_message{"): "};
+  static constexpr size_t min_capacity{before_position.size() + before_character.size() + 1 + before_message.size()};
+
   if (err == nullptr) {
-    return string{"unknown error"};
+    static constexpr std::string_view unknown_error{"unknown error"};
+
+    return string{unknown_error.data(), unknown_error.size()};
   }
 
-  string error_msg{"at position "};
+  string error_msg{before_position.data(), before_position.size()};
+  error_msg.reserve_at_least(min_capacity);
   error_msg.append(err->error_messages[0].position);
-  error_msg.append(" (").append(1, err->error_messages[0].character != '\0' ? err->error_messages[0].character : ' ').append("): ");
+  error_msg.append(before_character.data(), before_character.size())
+      .append(1, err->error_messages[0].character != '\0' ? err->error_messages[0].character : ' ')
+      .append(before_message.data(), before_message.size());
   error_msg.append(err->error_messages[0].message);
   return error_msg;
 }
