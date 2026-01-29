@@ -3,43 +3,6 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "runtime-common/stdlib/time/timelib-functions.h"
-#include "runtime-common/core/allocator/script-malloc-interface.h"
-
-/*
- * This is necessary to replace the library's allocators.
- * When building the library, the prefix of the replacement function is specified, for example:
- * if we want to use the prefix of the replacement function = "my_prefix_", then during assembly we specify
- *    cmake -DTIMELIB_ALLOC_FUNC_PREFIX=my_prefix_ .
- * then it will use
- *   void* my_prefix_malloc(size_t size);
- *   void* my_prefix_realloc(void* ptr, size_t size);
- *   void* my_prefix_calloc(size_t num, size_t size);
- *   char* my_prefix_strdup(const char* str);
- *   void my_prefix_free(void* ptr);
- * instead of
- *   void* malloc(size_t size);
- *   void* realloc(void* ptr, size_t size);
- *   void* calloc(size_t num, size_t size);
- *   char* strdup(const char* str);
- *   void free(void* ptr);
- */
-extern "C" {
-void* timelib_malloc(size_t size) {
-  return kphp::memory::script::alloc(size);
-}
-void* timelib_realloc(void* ptr, size_t size) {
-  return kphp::memory::script::realloc(ptr, size);
-}
-void* timelib_calloc(size_t num, size_t size) {
-  return kphp::memory::script::calloc(num, size);
-}
-char* timelib_strdup(const char* str1) {
-  return kphp::memory::script::strdup(str1);
-}
-void timelib_free(void* ptr) {
-  kphp::memory::script::free(ptr);
-}
-}
 
 namespace kphp::timelib {
 

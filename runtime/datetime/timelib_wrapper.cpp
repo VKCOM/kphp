@@ -275,7 +275,7 @@ std::pair<kphp::timelib::time*, string> php_timelib_date_initialize(const string
   if (err && err->error_count) {
     // spit out the first library error message, at least
     timelib_time_dtor(t);
-    return {nullptr, string{"Failed to parse time string "}.append(1, '(').append(time_str).append(1, ')').append(kphp::timelib::gen_error_msg(err))};
+    return {nullptr, string{"Failed to parse time string "}.append(1, '(').append(time_str).append(") ").append(kphp::timelib::gen_error_msg(err))};
   }
 
   kphp::timelib::tzinfo* tzi = nullptr;
@@ -366,7 +366,7 @@ std::pair<bool, string> php_timelib_date_modify(kphp::timelib::time* t, const st
 
   if (err && err->error_count) {
     // spit out the first library error message, at least
-    return {false, string{"Failed to parse time string "}.append(1, '(').append(modifier).append(1, ')').append(kphp::timelib::gen_error_msg(err))};
+    return {false, string{"Failed to parse time string "}.append(1, '(').append(modifier).append(") ").append(kphp::timelib::gen_error_msg(err))};
   }
 
   std::memcpy(&t->relative, &tmp_time->relative, sizeof(kphp::timelib::rel_time));
