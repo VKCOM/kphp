@@ -9,6 +9,7 @@
 
 void tl_parse_init();
 int tl_parse_int();
+int tl_lookup_int();
 long long tl_parse_long();
 double tl_parse_double();
 float tl_parse_float();
