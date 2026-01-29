@@ -24,9 +24,7 @@
 #include "compiler/threading/tls.h"
 #include "compiler/utils/string-utils.h"
 
-#ifdef RUNTIME_LIGHT
 #include "auto/compiler/runtime_compile_definitions.h"
-#endif
 
 void KphpRawOption::init(const char* env, std::string default_value, std::vector<std::string> choices) noexcept {
   if (char* val = getenv(env)) {
@@ -349,10 +347,8 @@ void CompilerSettings::init() {
     force_link_runtime.value_ = true;
   }
 
-#ifdef RUNTIME_LIGHT
-  std::vector<std::string> compile_definitions = split(RUNTIME_LIGHT_COMPILE_DEFINITIONS, ';');
+  std::vector<std::string> compile_definitions = split(RUNTIME_COMPILE_DEFINITIONS, ';');
   std::for_each(compile_definitions.cbegin(), compile_definitions.cend(), [&ss](const auto& definition) noexcept { ss << " -D" << definition; });
-#endif
 
   std::string cxx_default_flags = ss.str();
 

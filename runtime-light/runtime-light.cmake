@@ -116,8 +116,6 @@ add_custom_target(php_lib_version_sha_256 DEPENDS ${OBJS_DIR}/php_lib_version.sh
 
 # =================================================================================================
 
-file(GENERATE OUTPUT ${AUTO_DIR}/compiler/runtime_compile_definitions.h INPUT ${BASE_DIR}/compiler/runtime_compile_definitions.h.in)
-
 get_target_property(RUNTIME_LIGHT_COMPILE_FLAGS kphp-light-runtime-pic COMPILE_OPTIONS)
 list(JOIN RUNTIME_LIGHT_COMPILE_FLAGS "\;" RUNTIME_LIGHT_COMPILE_FLAGS)
 string(REPLACE "\"" "\\\"" RUNTIME_LIGHT_COMPILE_FLAGS ${RUNTIME_LIGHT_COMPILE_FLAGS})
