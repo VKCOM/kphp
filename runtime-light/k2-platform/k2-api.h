@@ -415,7 +415,7 @@ inline auto canonicalize(std::string_view path) noexcept {
   return return_type{{unique_ptr_type{resolved_path, std::invoke(deleter_creator, resolved_path_len, resolved_path_align)}, resolved_path_len}};
 }
 
-inline std::expected<void, int32_t> fstat(uint64_t fd, struct stat* stat) noexcept {
+inline std::expected<void, int32_t> fstat(k2::descriptor fd, struct stat* stat) noexcept {
   if (auto error_code{k2_fstat(fd, stat)}; error_code != k2::errno_ok) [[unlikely]] {
     return std::unexpected{error_code};
   }
