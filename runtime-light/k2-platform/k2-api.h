@@ -216,6 +216,17 @@ inline size_t pread(k2::descriptor descriptor, std::span<std::byte> buffer, uint
   return k2_pread(descriptor, buffer.size(), static_cast<void*>(buffer.data()), offset);
 }
 
+inline void* mmap(uint64_t* md, void* addr, size_t length, int prot, int flags, uint64_t fd, off_t offset) noexcept {
+  return k2_mmap(md, addr, length, prot, flags, fd, offset);
+}
+
+inline std::expected<void, int32_t> madvise(void* addr, size_t length, int advise) noexcept {
+  if (auto error_code{k2_madvise(addr, length, advise)}; error_code != k2::errno_ok) [[unlikely]] {
+    return std::unexpected{error_code};
+  }
+  return {};
+}
+
 inline void please_shutdown(k2::descriptor descriptor) noexcept {
   k2_please_shutdown(descriptor);
 }
