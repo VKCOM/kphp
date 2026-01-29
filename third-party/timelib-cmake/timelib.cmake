@@ -89,8 +89,10 @@ function(build_timelib PIC_ENABLED)
     set_target_properties(${target_name} PROPERTIES
             IMPORTED_LOCATION ${libraries}
             INTERFACE_INCLUDE_DIRECTORIES ${include_dirs}
-            INTERFACE_COMPILE_DEFINITIONS ${compile_definitions}
     )
+    if(compile_definitions)
+        target_compile_definitions(${target_name} INTERFACE ${compile_definitions})
+    endif()
 
     # Ensure that the timelib is built before they are used
     add_dependencies(${target_name} ${project_name})
