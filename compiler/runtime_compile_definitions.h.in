@@ -1,3 +1,0 @@
-#pragma once
-
-#define RUNTIME_COMPILE_DEFINITIONS "$<$<BOOL:${COMPILE_RUNTIME_LIGHT}>:$<TARGET_PROPERTY:kphp-light-runtime-pic,COMPILE_DEFINITIONS>>"

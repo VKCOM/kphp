@@ -1,9 +1,6 @@
 set(KPHP_COMPILER_DIR ${BASE_DIR}/compiler)
 
 set(KPHP_COMPILER_AUTO_DIR ${AUTO_DIR}/compiler)
-
-file(GENERATE OUTPUT ${KPHP_COMPILER_AUTO_DIR}/runtime_compile_definitions.h INPUT ${KPHP_COMPILER_DIR}/runtime_compile_definitions.h.in)
-
 set(KEYWORDS_SET ${KPHP_COMPILER_AUTO_DIR}/keywords_set.hpp)
 set(KEYWORDS_GPERF ${KPHP_COMPILER_DIR}/keywords.gperf)
 if (COMPILE_RUNTIME_LIGHT)
@@ -12,7 +9,6 @@ if (COMPILE_RUNTIME_LIGHT)
         unicode_sources.h
         runtime_sources.h
         runtime_common_sources.h
-        runtime_compile_definitions.h
         runtime_compile_flags.h)
 endif()
 

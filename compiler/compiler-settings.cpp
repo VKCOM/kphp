@@ -24,8 +24,6 @@
 #include "compiler/threading/tls.h"
 #include "compiler/utils/string-utils.h"
 
-#include "auto/compiler/runtime_compile_definitions.h"
-
 void KphpRawOption::init(const char* env, std::string default_value, std::vector<std::string> choices) noexcept {
   if (char* val = getenv(env)) {
     raw_option_arg_ = val;
@@ -341,14 +339,13 @@ void CompilerSettings::init() {
     if (!dynamic_incremental_linkage.get() && mode.get() != "k2-lib") {
       ss << " -fvisibility=hidden";
     }
+    // Temporary solution. Required for allocator functions replacement in timelib
+    ss << " -DTIMELIB_ALLOC_FUNC_PREFIX=timelib_";
   } else {
     // default value is false
     // when we build using full runtime, we should force to use runtime as static lib
     force_link_runtime.value_ = true;
   }
-
-  std::vector<std::string> compile_definitions = split(RUNTIME_COMPILE_DEFINITIONS, ';');
-  std::for_each(compile_definitions.cbegin(), compile_definitions.cend(), [&ss](const auto& definition) noexcept { ss << " -D" << definition; });
 
   std::string cxx_default_flags = ss.str();
 
