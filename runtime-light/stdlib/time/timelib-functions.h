@@ -92,7 +92,6 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view for
 
 // ================================================================================================
 
-bool valid_date(int64_t year, int64_t month, int64_t day) noexcept;
 void fill_holes_with_now_info(kphp::timelib::time_holder& time, const kphp::timelib::tzinfo_holder& tzi, int32_t options = TIMELIB_NO_CLONE) noexcept;
 void fill_holes_with_now_info(kphp::timelib::time_holder& time, int32_t options = TIMELIB_NO_CLONE) noexcept;
 

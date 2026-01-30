@@ -17,6 +17,9 @@
 #include "runtime/critical_section.h"
 #include "runtime/datetime/timelib_wrapper.h"
 
+static constexpr int64_t CHECKDATE_YEAR_MIN{1};
+static constexpr int64_t CHECKDATE_YEAR_MAX{32767};
+
 extern long timezone;
 
 static const char* default_timezone_id = "";
@@ -57,7 +60,7 @@ static time_t deprecated_gmmktime(struct tm* tm) {
 }
 
 bool f$checkdate(int64_t month, int64_t day, int64_t year) {
-  return kphp::timelib::valid_date(year, month, day);
+  return year >= CHECKDATE_YEAR_MIN && year <= CHECKDATE_YEAR_MAX && kphp::timelib::valid_date(year, month, day);
 }
 
 static inline int32_t fix_year(int32_t year) {
