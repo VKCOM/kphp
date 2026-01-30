@@ -73,6 +73,9 @@ public:
     if (!match_context) [[unlikely]] {
       kphp::log::error("can't create pcre2_match_context");
     }
+    if (!regex_pcre2_match_data) [[unlikely]] {
+      kphp::log::error("can't create match_data");
+    }
   }
 
   std::optional<std::reference_wrapper<const compiled_regex>> get_compiled_regex(const string& regex) const noexcept {
