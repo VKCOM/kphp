@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <span>
+#include <string_view>
 #include <utility>
 
 #include "runtime-common/core/allocator/script-allocator.h"
@@ -46,6 +47,11 @@ mixed extract_confdata_value(const tl::confdataValue& confdata_value) noexcept {
 } // namespace
 
 kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
+  if (key.empty()) [[unlikely]] {
+    kphp::log::warning("empty key is not supported");
+    co_return mixed{};
+  }
+
   auto& confdata_key_cache{ConfdataInstanceState::get().key_cache()};
   if (auto it{confdata_key_cache.find(key)}; it != confdata_key_cache.end()) {
     co_return it->second;
@@ -75,19 +81,26 @@ kphp::coro::task<mixed> f$confdata_get_value(string key) noexcept {
   }
 
   auto value{extract_confdata_value(*maybe_confdata_value.opt_value)}; // the key exists
-  confdata_key_cache.emplace(key, value);
+  confdata_key_cache.emplace(std::move(key), value);
   co_return std::move(value);
 }
 
 kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wildcard) noexcept {
-  static constexpr size_t CONFDATA_GET_WILDCARD_STREAM_CAPACITY = 1 << 20;
+  static constexpr size_t CONFDATA_GET_WILDCARD_INIT_BUFFER_CAPACITY = 1 << 20;
+
+  if (wildcard.empty()) [[unlikely]] {
+    kphp::log::warning("empty wildcard is not supported");
+    co_return array<mixed>{};
+  }
 
   auto& confdata_wildcard_cache{ConfdataInstanceState::get().wildcard_cache()};
   if (auto it{confdata_wildcard_cache.find(wildcard)}; it != confdata_wildcard_cache.end()) {
     co_return it->second;
   }
 
-  tl::ConfdataGetWildcard confdata_get_wildcard{.wildcard = {.value = {wildcard.c_str(), wildcard.size()}}};
+  const std::string_view wildcard_view{wildcard.c_str(), wildcard.size()};
+
+  const tl::ConfdataGetWildcard confdata_get_wildcard{.wildcard = {.value = wildcard_view}};
   tl::storer tls{confdata_get_wildcard.footprint()};
   confdata_get_wildcard.store(tls);
 
@@ -98,7 +111,7 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
 
   auto stream{*std::move(expected_stream)};
   kphp::stl::vector<std::byte, kphp::memory::script_allocator> response{};
-  response.reserve(CONFDATA_GET_WILDCARD_STREAM_CAPACITY);
+  response.reserve(CONFDATA_GET_WILDCARD_INIT_BUFFER_CAPACITY);
   if (!co_await kphp::forks::id_managed(kphp::component::query(stream, tls.view(), kphp::component::read_ext::append(response)))) [[unlikely]] {
     co_return array<mixed>{};
   }
@@ -108,10 +121,13 @@ kphp::coro::task<array<mixed>> f$confdata_get_values_by_any_wildcard(string wild
   kphp::log::assertion(dict_confdata_value.fetch(tlf));
 
   array<mixed> result{array_size{static_cast<int64_t>(dict_confdata_value.size()), false}};
-  std::for_each(dict_confdata_value.begin(), dict_confdata_value.end(), [&result](const auto& dict_field) noexcept {
-    result.set_value(string{dict_field.key.value.data(), static_cast<string::size_type>(dict_field.key.value.size())},
+  std::ranges::for_each(dict_confdata_value, [&result, wildcard_size = wildcard_view.size()](const auto& dict_field) noexcept {
+    kphp::log::assertion(dict_field.key.value.size() >= wildcard_size);
+
+    const std::string_view key_without_wildcard_prefix{dict_field.key.value.substr(wildcard_size)};
+    result.set_value(string{key_without_wildcard_prefix.data(), static_cast<string::size_type>(key_without_wildcard_prefix.size())},
                      extract_confdata_value(dict_field.value));
   });
-  confdata_wildcard_cache.emplace(wildcard, result);
+  confdata_wildcard_cache.emplace(std::move(wildcard), result);
   co_return std::move(result);
 }

@@ -483,6 +483,10 @@ bool f$fetch_end() {
   return true;
 }
 
+int64_t f$fetch_get_pos() {
+  return rpc_get_pos();
+}
+
 C$RpcConnection::C$RpcConnection(int32_t host_num, int32_t port, int32_t timeout_ms, int32_t actor_id, int32_t connect_timeout, int32_t reconnect_timeout)
     : host_num(host_num),
       port(port),

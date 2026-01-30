@@ -312,20 +312,31 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
     server.set_value(string{SCRIPT_URI.data(), SCRIPT_URI.size()}, script_uri);
   }
 
-  if (http_server_instance_st.http_method == method::get) {
+  switch (http_server_instance_st.http_method) {
+  case kphp::http::method::get: {
     server.set_value(string{ARGC.data(), ARGC.size()}, static_cast<int64_t>(1));
     server.set_value(string{ARGV.data(), ARGV.size()}, uri_query);
-  } else if (http_server_instance_st.http_method == method::post) {
-    string body_str{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
-    if (content_type == CONTENT_TYPE_APP_FORM_URLENCODED) {
-      f$parse_str(body_str, superglobals.v$_POST);
-    } else if (content_type.starts_with(CONTENT_TYPE_MULTIPART_FORM_DATA)) {
+    break;
+  }
+  case kphp::http::method::post: {
+    if (!std::ranges::search(content_type, CONTENT_TYPE_APP_FORM_URLENCODED).empty()) {
+      string body{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
+      f$parse_str(body, superglobals.v$_POST);
+      http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
+    } else if (!std::ranges::search(content_type, CONTENT_TYPE_MULTIPART_FORM_DATA).empty()) {
       kphp::log::error("unsupported content-type: {}", CONTENT_TYPE_MULTIPART_FORM_DATA);
     } else {
-      http_server_instance_st.opt_raw_post_data.emplace(std::move(body_str));
+      string body{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
+      http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
     }
 
     server.set_value(string{CONTENT_TYPE.data(), CONTENT_TYPE.size()}, string{content_type.data(), static_cast<string::size_type>(content_type.size())});
+    break;
+  }
+  default: {
+    // do nothing
+    break;
+  }
   }
 
   { // set v$_REQUEST

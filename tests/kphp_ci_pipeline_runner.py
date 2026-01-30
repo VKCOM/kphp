@@ -427,7 +427,7 @@ if __name__ == "__main__":
     runner.add_test_group(
         name="k2-functional-tests",
         description="run k2-kphp functional tests with cxx={}".format(args.cxx_name),
-        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} KPHP_CXX={cxx_name} K2_BIN={k2_bin} python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
+        cmd="KPHP_TESTS_POLYFILLS_REPO={kphp_polyfills_repo} KPHP_CXX={cxx_name} K2_BIN={k2_bin} K2_MONITORING_ABORT_HANGING_GLOBAL_TASK=false K2_MONITORING_ABORT_HANGING_REQUEST_TASK=false python3 -m pytest --basetemp={base_tempdir} --tb=native -n{jobs} {functional_tests_dir}".format(
             kphp_polyfills_repo=kphp_polyfills_repo,
             cxx_name=args.cxx_name,
             k2_bin=args.k2_bin,
@@ -482,7 +482,10 @@ if __name__ == "__main__":
                 kphp_polyfills_repo=kphp_polyfills_repo,
                 cxx_name=args.cxx_name,
                 k2_bin=args.k2_bin,
-                tests_dir=os.path.join(args.kphp_tests_repo, "python/tests/k2_rpc_server/"),
+                tests_dir=" ".join([
+                    os.path.join(args.kphp_tests_repo, "python/tests/k2_rpc_server/"),
+                    os.path.join(args.kphp_tests_repo, "python/tests/confdata/"),
+                ]),
             ),
             skip=not args.k2_bin or (args.steps and "k2-integration-tests" not in args.steps),
         )

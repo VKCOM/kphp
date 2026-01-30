@@ -182,6 +182,7 @@ void php_rpc_fetch_float(INTERNAL_FUNCTION_PARAMETERS);
 void php_rpc_fetch_string(INTERNAL_FUNCTION_PARAMETERS);
 void php_rpc_fetch_string2(INTERNAL_FUNCTION_PARAMETERS);
 void php_rpc_fetch_end(INTERNAL_FUNCTION_PARAMETERS);
+void php_rpc_fetch_get_pos(INTERNAL_FUNCTION_PARAMETERS);
 
 void php_rpc_fetch_lookup_int(INTERNAL_FUNCTION_PARAMETERS);
 void php_rpc_fetch_lookup_data(INTERNAL_FUNCTION_PARAMETERS);

@@ -158,7 +158,7 @@ class Engine:
         self._assert_availability()
         atexit.register(self.stop)
 
-    def stop(self):
+    def stop(self, signo = signal.SIGTERM):
         """
         Остановить движок и проверить, что все в порядке
         """
@@ -167,7 +167,7 @@ class Engine:
 
         self._assert_availability()
         print("\nStopping engine: [{}]".format(cyan(self._engine_bin)))
-        self.send_signal(signal.SIGTERM)
+        self.send_signal(signo)
 
         engine_stopped_properly, status = self.wait_termination(30)
 
@@ -178,7 +178,7 @@ class Engine:
         self._stats_receiver.stop()
         if not engine_stopped_properly:
             raise RuntimeError("Can't stop engine properly")
-        self._check_status_code(status, signal.SIGTERM)
+        self._check_status_code(status, signo)
 
     def restart(self):
         """

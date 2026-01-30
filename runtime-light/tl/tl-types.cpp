@@ -147,30 +147,40 @@ bool CertInfoItem::fetch(tl::fetcher& tlf) noexcept {
 // ===== RPC =====
 
 bool rpcInvokeReqExtra::fetch(tl::fetcher& tlf) noexcept {
+  tl::mask flags{};
   bool ok{flags.fetch(tlf)};
   if (ok && static_cast<bool>(flags.value & WAIT_BINLOG_POS_FLAG)) {
-    ok = ok && opt_wait_binlog_pos.emplace().fetch(tlf);
+    ok &= opt_wait_binlog_pos.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & STRING_FORWARD_KEYS_FLAG)) {
-    ok = ok && opt_string_forward_keys.emplace().fetch(tlf);
+    ok &= opt_string_forward_keys.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & INT_FORWARD_KEYS_FLAG)) {
-    ok = ok && opt_int_forward_keys.emplace().fetch(tlf);
+    ok &= opt_int_forward_keys.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & STRING_FORWARD_FLAG)) {
-    ok = ok && opt_string_forward.emplace().fetch(tlf);
+    ok &= opt_string_forward.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & INT_FORWARD_FLAG)) {
-    ok = ok && opt_int_forward.emplace().fetch(tlf);
+    ok &= opt_int_forward.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & CUSTOM_TIMEOUT_MS_FLAG)) {
-    ok = ok && opt_custom_timeout_ms.emplace().fetch(tlf);
+    ok &= opt_custom_timeout_ms.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & SUPPORTED_COMPRESSION_VERSION_FLAG)) {
-    ok = ok && opt_supported_compression_version.emplace().fetch(tlf);
+    ok &= opt_supported_compression_version.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & RANDOM_DELAY_FLAG)) {
-    ok = ok && opt_random_delay.emplace().fetch(tlf);
+    ok &= opt_random_delay.emplace().fetch(tlf);
+  }
+  if (ok && static_cast<bool>(flags.value & PERSISTENT_QUERY_FLAG)) {
+    ok &= opt_persistent_query.emplace().fetch(tlf);
+  }
+  if (ok && static_cast<bool>(flags.value & TRACE_CONTEXT_FLAG)) {
+    ok &= opt_trace_context.emplace().fetch(tlf);
+  }
+  if (ok && static_cast<bool>(flags.value & EXECUTION_CONTEXT_FLAG)) {
+    ok &= opt_execution_context.emplace().fetch(tlf);
   }
 
   return_binlog_pos = static_cast<bool>(flags.value & RETURN_BINLOG_POS_FLAG);
@@ -182,6 +192,31 @@ bool rpcInvokeReqExtra::fetch(tl::fetcher& tlf) noexcept {
   no_result = static_cast<bool>(flags.value & NORESULT_FLAG);
   return_view_number = static_cast<bool>(flags.value & RETURN_VIEW_NUMBER_FLAG);
   return ok;
+}
+
+tl::mask rpcInvokeReqExtra::get_flags() const noexcept {
+  tl::mask flags{.value = static_cast<tl::mask::underlying_type>(return_binlog_pos)};
+
+  flags.value |= static_cast<tl::mask::underlying_type>(return_binlog_time) << 1;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_pid) << 2;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_request_sizes) << 3;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_failed_subqueries) << 4;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_query_stats) << 6;
+  flags.value |= static_cast<tl::mask::underlying_type>(no_result) << 7;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_view_number) << 27;
+
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_wait_binlog_pos.has_value()) << 16;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_string_forward_keys.has_value()) << 18;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_int_forward_keys.has_value()) << 19;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_string_forward.has_value()) << 20;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_int_forward.has_value()) << 21;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_custom_timeout_ms.has_value()) << 23;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_supported_compression_version.has_value()) << 25;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_random_delay.has_value()) << 26;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_persistent_query.has_value()) << 28;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_trace_context.has_value()) << 29;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_execution_context.has_value()) << 30;
+  return flags;
 }
 
 void rpcReqResultExtra::store(tl::storer& tls) const noexcept {

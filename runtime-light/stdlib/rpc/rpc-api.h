@@ -182,6 +182,10 @@ inline string f$fetch_string2() noexcept {
   return {};
 }
 
+inline int64_t f$fetch_get_pos() noexcept {
+  return static_cast<int64_t>(RpcServerInstanceState::get().tl_fetcher.pos());
+}
+
 inline void f$fetch_raw_vector_double(array<double>& vector, int64_t num_elems) noexcept {
   auto& tl_fetcher{RpcServerInstanceState::get().tl_fetcher};
   const auto len_bytes{sizeof(double) * num_elems};
@@ -206,8 +210,10 @@ inline bool f$rpc_parse(const string& new_rpc_data) noexcept {
     return false;
   }
 
-  const std::span<const std::byte> spn{reinterpret_cast<const std::byte*>(new_rpc_data.c_str()), new_rpc_data.size()};
-  RpcServerInstanceState::get().tl_storer.store_bytes(spn);
+  auto& rpc_server_instance_st{RpcServerInstanceState::get()};
+  rpc_server_instance_st.tl_storer.clear();
+  rpc_server_instance_st.tl_storer.store_bytes(std::as_bytes(std::span{new_rpc_data.c_str(), new_rpc_data.size()}));
+  rpc_server_instance_st.tl_fetcher = tl::fetcher{rpc_server_instance_st.tl_storer.view()};
   return true;
 }
 
