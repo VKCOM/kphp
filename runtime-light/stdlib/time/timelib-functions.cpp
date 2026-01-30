@@ -203,7 +203,7 @@ std::optional<int64_t> mktime(std::optional<int64_t> hou, std::optional<int64_t>
 
 std::expected<std::pair<kphp::timelib::time_holder, kphp::timelib::error_container_holder>, kphp::timelib::error_container_holder>
 parse_time(std::string_view formatted_time, const kphp::timelib::time_holder& t) noexcept {
-  auto expected{parse_time(formatted_time)};
+  auto expected{kphp::timelib::parse_time(formatted_time)};
 
   if (!expected.has_value()) [[unlikely]] {
     return expected;
@@ -271,7 +271,7 @@ std::optional<int64_t> strtotime(std::string_view timezone, std::string_view for
   now->zone_type = TIMELIB_ZONETYPE_ID;
   timelib_unixtime2local(now.get(), timestamp);
 
-  auto expected{parse_time(formatted_time)};
+  auto expected{kphp::timelib::parse_time(formatted_time)};
   if (!expected.has_value()) [[unlikely]] {
     kphp::log::warning("got {} errors in timelib_strtotime", expected.error()->error_count); // TODO should we logs all the errors?
     return {};
