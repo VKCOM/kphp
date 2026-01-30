@@ -82,12 +82,11 @@ class regex {
     }
 
     kphp::pcre2::group_name operator*() const noexcept {
-      static constexpr size_t upper = 0;
-      static constexpr size_t lower = 1;
-      static constexpr size_t count = 2;
+      static constexpr size_t UPPER = 0;
+      static constexpr size_t LOWER = 1;
 
-      const auto index{static_cast<size_t>(m_ptr[upper] << 8 | m_ptr[lower])};
-      const auto* name_ptr{reinterpret_cast<const char*>(std::next(m_ptr, count))};
+      const auto index{static_cast<size_t>(m_ptr[UPPER] << 8 | m_ptr[LOWER])};
+      const auto* name_ptr{reinterpret_cast<const char*>(std::next(m_ptr, 2 * sizeof(PCRE2_UCHAR8)))};
       return {.name = std::string_view{name_ptr}, .index = index};
     }
 
@@ -347,8 +346,6 @@ public:
 
 template<>
 struct std::formatter<kphp::pcre2::error> {
-  static constexpr size_t ERROR_BUFFER_LENGTH{256};
-
   template<typename ParseContext>
   constexpr auto parse(ParseContext& ctx) const noexcept {
     return ctx.begin();
@@ -356,7 +353,9 @@ struct std::formatter<kphp::pcre2::error> {
 
   template<typename FmtContext>
   auto format(kphp::pcre2::error error, FmtContext& ctx) const noexcept {
-    std::array<char, ERROR_BUFFER_LENGTH> buffer{};
+  static constexpr size_t ERROR_BUFFER_LENGTH{256};
+
+    std::array<char, ERROR_BUFFER_LENGTH> buffer; // NOLINT
     auto ret_code{pcre2_get_error_message_8(error.code, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size())};
     if (ret_code < 0) [[unlikely]] {
       switch (ret_code) {
