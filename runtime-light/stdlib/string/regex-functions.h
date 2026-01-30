@@ -184,7 +184,7 @@ kphp::coro::task<std::optional<string>> replace_callback(info& regex_info, const
   string output_str{};
 
   pcre2::matcher pcre2_matcher{
-      re, {regex_info.subject.c_str(), regex_info.subject.size()}, {}, regex_state.match_context, regex_state.regex_pcre2_match_data, regex_info.match_options};
+      re, {regex_info.subject.c_str(), regex_info.subject.size()}, {}, regex_state.match_context, regex_state.match_data, regex_info.match_options};
   while (regex_info.replace_count < limit) {
     auto expected_opt_match_view{pcre2_matcher.next()};
 
@@ -225,14 +225,6 @@ kphp::coro::task<std::optional<string>> replace_callback(info& regex_info, const
   output_str.append(std::next(regex_info.subject.c_str(), last_pos), regex_info.subject.size() - last_pos);
 
   co_return output_str;
-}
-
-inline bool valid_preg_replace_mixed(const mixed& param) noexcept {
-  if (!param.is_array() && !param.is_string()) [[unlikely]] {
-    kphp::log::warning("invalid parameter: expected to be string or array");
-    return false;
-  }
-  return true;
 }
 
 } // namespace details
@@ -341,7 +333,7 @@ kphp::coro::task<Optional<string>> f$preg_replace_callback(string pattern, F cal
   string output_str{};
 
   kphp::pcre2::matcher pcre2_matcher{
-      re, {regex_info.subject.c_str(), regex_info.subject.size()}, {}, regex_state.match_context, regex_state.regex_pcre2_match_data, regex_info.match_options};
+      re, {regex_info.subject.c_str(), regex_info.subject.size()}, {}, regex_state.match_context, regex_state.match_data, regex_info.match_options};
   while (regex_info.replace_count < unsigned_limit) {
     auto expected_opt_match_view{pcre2_matcher.next()};
 

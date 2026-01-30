@@ -237,7 +237,7 @@ std::optional<string> replace_regex(kphp::regex::details::info& regex_info, cons
   const auto& replacement{*regex_info.replacement};
 
   kphp::pcre2::matcher pcre2_matcher{
-      re, {regex_info.subject.c_str(), regex_info.subject.size()}, {}, regex_state.match_context, regex_state.regex_pcre2_match_data, regex_info.match_options};
+      re, {regex_info.subject.c_str(), regex_info.subject.size()}, {}, regex_state.match_context, regex_state.match_data, regex_info.match_options};
   while (regex_info.replace_count < limit) {
     auto expected_opt_match_view{pcre2_matcher.next()};
 
@@ -293,7 +293,7 @@ std::optional<array<mixed>> split_regex(kphp::regex::details::info& regex_info, 
   array<mixed> output{};
 
   kphp::pcre2::matcher pcre2_matcher{
-      re, {regex_info.subject.c_str(), regex_info.subject.size()}, {}, regex_state.match_context, regex_state.regex_pcre2_match_data, regex_info.match_options};
+      re, {regex_info.subject.c_str(), regex_info.subject.size()}, {}, regex_state.match_context, regex_state.match_data, regex_info.match_options};
   size_t offset{};
   for (size_t out_parts_count{1}; limit == kphp::regex::PREG_NOLIMIT || out_parts_count < limit;) {
     auto expected_opt_match_view{pcre2_matcher.next()};
@@ -598,7 +598,7 @@ Optional<int64_t> f$preg_match(const string& pattern, const string& subject, Opt
                                                     {regex_info.subject.c_str(), regex_info.subject.size()},
                                                     static_cast<size_t>(offset),
                                                     regex_state.match_context,
-                                                    regex_state.regex_pcre2_match_data,
+                                                    regex_state.match_data,
                                                     regex_info.match_options}
                                    .next()};
   if (!expected_opt_match_view.has_value()) [[unlikely]] {
@@ -669,7 +669,7 @@ Optional<int64_t> f$preg_match_all(const string& pattern, const string& subject,
                                      {regex_info.subject.c_str(), regex_info.subject.size()},
                                      static_cast<size_t>(offset),
                                      regex_state.match_context,
-                                     regex_state.regex_pcre2_match_data,
+                                     regex_state.match_data,
                                      regex_info.match_options};
 
   while (true) {
