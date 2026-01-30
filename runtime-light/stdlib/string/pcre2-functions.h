@@ -23,8 +23,8 @@ namespace details {
 
 namespace offset_pair {
 
-static constexpr size_t FIRST{0};
-static constexpr size_t SECOND{1};
+static constexpr size_t START{0};
+static constexpr size_t END{1};
 static constexpr size_t SIZE{2};
 
 } // namespace offset_pair
@@ -225,10 +225,10 @@ public:
   }
 
   size_t match_start() const noexcept {
-    return pcre2_get_ovector_pointer_8(m_match_data.get())[kphp::pcre2::details::offset_pair::FIRST];
+    return pcre2_get_ovector_pointer_8(m_match_data.get())[kphp::pcre2::details::offset_pair::START];
   }
   size_t match_end() const noexcept {
-    return pcre2_get_ovector_pointer_8(m_match_data.get())[kphp::pcre2::details::offset_pair::SECOND];
+    return pcre2_get_ovector_pointer_8(m_match_data.get())[kphp::pcre2::details::offset_pair::END];
   }
 
   std::expected<size_t, std::pair<size_t, kphp::pcre2::error>> substitute(std::string_view replacement, std::span<char> buffer,
@@ -258,8 +258,8 @@ private:
 
     const auto* ovector_ptr{pcre2_get_ovector_pointer_8(m_match_data.get())};
     // ovector is an array of offset pairs
-    PCRE2_SIZE start{ovector_ptr[(kphp::pcre2::details::offset_pair::SIZE * i) + kphp::pcre2::details::offset_pair::FIRST]};
-    PCRE2_SIZE end{ovector_ptr[(kphp::pcre2::details::offset_pair::SIZE * i) + kphp::pcre2::details::offset_pair::SECOND]};
+    PCRE2_SIZE start{ovector_ptr[(kphp::pcre2::details::offset_pair::SIZE * i) + kphp::pcre2::details::offset_pair::START]};
+    PCRE2_SIZE end{ovector_ptr[(kphp::pcre2::details::offset_pair::SIZE * i) + kphp::pcre2::details::offset_pair::END]};
 
     if (start == PCRE2_UNSET) {
       return std::nullopt;
@@ -325,8 +325,8 @@ public:
 
       const PCRE2_SIZE* ovector{pcre2_get_ovector_pointer_8(m_match_data.get())};
 
-      size_t start{ovector[kphp::pcre2::details::offset_pair::FIRST]};
-      size_t end{ovector[kphp::pcre2::details::offset_pair::SECOND]};
+      size_t start{ovector[kphp::pcre2::details::offset_pair::START]};
+      size_t end{ovector[kphp::pcre2::details::offset_pair::END]};
 
       if (start == end) {
         // Found an empty match; set flags to try finding a non-empty match at same position
