@@ -23,9 +23,9 @@ namespace details {
 
 namespace offset_pair {
 
-static constexpr size_t START{0};
-static constexpr size_t END{1};
-static constexpr size_t SIZE{2};
+inline constexpr size_t START{0};
+inline constexpr size_t END{1};
+inline constexpr size_t SIZE{2};
 
 } // namespace offset_pair
 
