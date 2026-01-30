@@ -103,8 +103,8 @@ inline array<mixed> f$getdate(int64_t timestamp = std::numeric_limits<int64_t>::
 
   array<mixed> result{array_size{11, false}};
 
-  auto weekday{kphp::timelib::days::FULL_NAMES[t.tm_wday]};
-  auto month{kphp::timelib::months::FULL_NAMES[t.tm_mon]};
+  const auto* weekday{kphp::timelib::days::FULL_NAMES[t.tm_wday]};
+  const auto* month{kphp::timelib::months::FULL_NAMES[t.tm_mon]};
 
   result.set_value(string{"seconds", 7}, t.tm_sec);
   result.set_value(string{"minutes", 7}, t.tm_min);
