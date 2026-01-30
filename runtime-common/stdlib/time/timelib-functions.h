@@ -65,16 +65,16 @@ inline char sign(int32_t number) noexcept {
 [[gnu::format(printf, 2, 3)]]
 inline void format_to(string_buffer& sb, const char* format, ...) noexcept {
   // php implementation has less bytes buffer capacity
-  static constexpr size_t max_size{128};
+  static constexpr size_t MAX_SIZE{128};
 
   va_list args;
   va_start(args, format);
-  sb.reserve(max_size);
-  auto actual_size{std::vsnprintf(std::next(sb.buffer(), sb.size()), max_size, format, args)};
+  sb.reserve(MAX_SIZE);
+  auto actual_size{std::vsnprintf(std::next(sb.buffer(), sb.size()), MAX_SIZE, format, args)};
   va_end(args);
   php_assert(actual_size > 0);
 
-  sb.set_pos(sb.size() + std::min(static_cast<size_t>(actual_size), max_size));
+  sb.set_pos(sb.size() + std::min(static_cast<size_t>(actual_size), MAX_SIZE));
 }
 
 } // namespace details

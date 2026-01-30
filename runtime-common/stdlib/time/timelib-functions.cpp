@@ -232,23 +232,23 @@ string format_time(const string& format, timelib_time& t, timelib_time_offset* o
 }
 
 string gen_error_msg(timelib_error_container* err) noexcept {
-  static constexpr std::string_view before_position{"at position "};
-  static constexpr std::string_view before_character{" ("};
-  static constexpr std::string_view before_message{"): "};
-  static constexpr size_t min_capacity{before_position.size() + before_character.size() + 1 + before_message.size()};
+  static constexpr std::string_view BEFORE_POSITION{"at position "};
+  static constexpr std::string_view BEFORE_CHARACTER{" ("};
+  static constexpr std::string_view BEFORE_MESSAGE{"): "};
+  static constexpr size_t MIN_CAPACITY{BEFORE_POSITION.size() + BEFORE_CHARACTER.size() + 1 + BEFORE_MESSAGE.size()};
 
   if (err == nullptr) {
-    static constexpr std::string_view unknown_error{"unknown error"};
+    static constexpr std::string_view UNKNOWN_ERROR{"unknown error"};
 
-    return string{unknown_error.data(), unknown_error.size()};
+    return string{UNKNOWN_ERROR.data(), UNKNOWN_ERROR.size()};
   }
 
-  string error_msg{before_position.data(), before_position.size()};
-  error_msg.reserve_at_least(min_capacity);
+  string error_msg{BEFORE_POSITION.data(), BEFORE_POSITION.size()};
+  error_msg.reserve_at_least(MIN_CAPACITY);
   error_msg.append(err->error_messages[0].position);
-  error_msg.append(before_character.data(), before_character.size())
+  error_msg.append(BEFORE_CHARACTER.data(), BEFORE_CHARACTER.size())
       .append(1, err->error_messages[0].character != '\0' ? err->error_messages[0].character : ' ')
-      .append(before_message.data(), before_message.size());
+      .append(BEFORE_MESSAGE.data(), BEFORE_MESSAGE.size());
   error_msg.append(err->error_messages[0].message);
   return error_msg;
 }

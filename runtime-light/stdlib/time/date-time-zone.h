@@ -37,13 +37,13 @@ struct C$DateTimeZone : public refcountable_polymorphic_php_classes_virt<>, priv
 inline class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone>& self, const string& timezone) noexcept {
   auto expected_tzi{kphp::timelib::get_timezone_info({timezone.c_str(), timezone.size()})};
   if (!expected_tzi.has_value()) [[unlikely]] {
-    static constexpr std::string_view before_timezone{"DateTimeZone::__construct(): Unknown or bad timezone ("};
-    static constexpr std::string_view after_timezone{")"};
-    static constexpr size_t min_capacity{before_timezone.size() + after_timezone.size()};
+    static constexpr std::string_view BEFORE_TIMEZONE{"DateTimeZone::__construct(): Unknown or bad timezone ("};
+    static constexpr std::string_view AFTER_TIMEZONE{")"};
+    static constexpr size_t MIN_CAPACITY{BEFORE_TIMEZONE.size() + AFTER_TIMEZONE.size()};
 
     string err_msg;
-    err_msg.reserve_at_least(min_capacity);
-    err_msg.append(before_timezone.data(), before_timezone.size()).append(timezone).append(after_timezone.data(), after_timezone.size());
+    err_msg.reserve_at_least(MIN_CAPACITY);
+    err_msg.append(BEFORE_TIMEZONE.data(), BEFORE_TIMEZONE.size()).append(timezone).append(AFTER_TIMEZONE.data(), AFTER_TIMEZONE.size());
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
     return {};
   }

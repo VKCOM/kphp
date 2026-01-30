@@ -24,15 +24,15 @@ class_instance<C$DateTime> f$DateTime$$__construct(const class_instance<C$DateTi
   const auto& str_to_parse{datetime.empty() ? TimeImageState::get().NOW_STR : datetime};
   auto expected{kphp::timelib::parse_time(std::string_view{str_to_parse.c_str(), str_to_parse.size()})};
   if (!expected.has_value()) [[unlikely]] {
-    static constexpr std::string_view before_datetime{"DateTime::__construct(): Failed to parse time string ("};
-    static constexpr std::string_view before_message{") "};
-    static constexpr size_t min_capacity{before_datetime.size() + before_message.size()};
+    static constexpr std::string_view BEFORE_DATETIME{"DateTime::__construct(): Failed to parse time string ("};
+    static constexpr std::string_view BEFORE_MESSAGE{") "};
+    static constexpr size_t MIN_CAPACITY{BEFORE_DATETIME.size() + BEFORE_MESSAGE.size()};
 
     string err_msg;
-    err_msg.reserve_at_least(min_capacity);
-    err_msg.append(before_datetime.data(), before_datetime.size())
+    err_msg.reserve_at_least(MIN_CAPACITY);
+    err_msg.append(BEFORE_DATETIME.data(), BEFORE_DATETIME.size())
         .append(datetime)
-        .append(before_message.data(), before_message.size())
+        .append(BEFORE_MESSAGE.data(), BEFORE_MESSAGE.size())
         .append(kphp::timelib::gen_error_msg(expected.error().get()));
     time_instance_state.update_last_errors(std::move(expected.error()));
     THROW_EXCEPTION(kphp::exception::make_throwable<C$Exception>(err_msg));
