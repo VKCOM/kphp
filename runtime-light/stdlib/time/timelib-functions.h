@@ -20,10 +20,6 @@
 
 namespace kphp::timelib {
 
-using static_buf = std::array<char, 128>;
-
-// ================================================================================================
-
 std::expected<kphp::timelib::rel_time_holder, kphp::timelib::error_container_holder> parse_interval(std::string_view formatted_interval) noexcept;
 
 kphp::timelib::rel_time_holder clone_time_interval(const kphp::timelib::time_holder& t) noexcept;
