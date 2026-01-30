@@ -12,6 +12,30 @@
 #include "runtime-light/stdlib/time/timelib-timezone-cache.h"
 #include "runtime-light/stdlib/time/timelib-types.h"
 
+struct TimeImageState final : private vk::not_copyable {
+  string NOW_STR{NOW_.data(), static_cast<string::size_type>(NOW_.size())};
+  string WARNING_COUNT_STR{WARNING_COUNT_.data(), static_cast<string::size_type>(WARNING_COUNT_.size())};
+  string WARNINGS_STR{WARNINGS_.data(), static_cast<string::size_type>(WARNINGS_.size())};
+  string ERROR_COUNT_STR{ERROR_COUNT_.data(), static_cast<string::size_type>(ERROR_COUNT_.size())};
+  string ERRORS_STR{ERRORS_.data(), static_cast<string::size_type>(ERRORS_.size())};
+
+  kphp::timelib::timezone_cache timelib_zone_cache{kphp::timelib::timezones::MOSCOW, kphp::timelib::timezones::GMT3};
+
+  TimeImageState() noexcept {
+    NOW_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+  }
+
+  static const TimeImageState& get() noexcept;
+  static TimeImageState& get_mutable() noexcept;
+
+private:
+  static constexpr std::string_view NOW_ = "now";
+  static constexpr std::string_view WARNING_COUNT_ = "warning_count";
+  static constexpr std::string_view WARNINGS_ = "warnings";
+  static constexpr std::string_view ERROR_COUNT_ = "error_count";
+  static constexpr std::string_view ERRORS_ = "errors";
+};
+
 struct TimeInstanceState final : private vk::not_copyable {
   string default_timezone{kphp::timelib::timezones::MOSCOW};
   kphp::timelib::timezone_cache timelib_zone_cache;
@@ -27,6 +51,8 @@ struct TimeInstanceState final : private vk::not_copyable {
       return false;
     }
 
+    const auto& image_state{TimeImageState::get()};
+
     array<mixed> result;
 
     array<string> result_warnings;
@@ -34,16 +60,16 @@ struct TimeInstanceState final : private vk::not_copyable {
     for (size_t i{}; i < last_errors->warning_count; i++) {
       result_warnings.set_value(last_errors->warning_messages[i].position, string{last_errors->warning_messages[i].message});
     }
-    result.set_value(string{"warning_count"}, last_errors->warning_count);
-    result.set_value(string{"warnings"}, result_warnings);
+    result.set_value(image_state.WARNING_COUNT_STR, last_errors->warning_count);
+    result.set_value(image_state.WARNINGS_STR, result_warnings);
 
     array<string> result_errors;
     result_errors.reserve(last_errors->error_count, false);
     for (size_t i{}; i < last_errors->error_count; i++) {
       result_errors.set_value(last_errors->error_messages[i].position, string{last_errors->error_messages[i].message});
     }
-    result.set_value(string{"error_count"}, last_errors->error_count);
-    result.set_value(string{"errors"}, result_errors);
+    result.set_value(image_state.ERROR_COUNT_STR, last_errors->error_count);
+    result.set_value(image_state.ERRORS_STR, result_errors);
 
     return result;
   }
@@ -56,20 +82,4 @@ struct TimeInstanceState final : private vk::not_copyable {
 
 private:
   kphp::timelib::error_container_holder last_errors{nullptr, kphp::timelib::details::error_container_destructor};
-};
-
-struct TimeImageState final : private vk::not_copyable {
-  string NOW_STR{NOW_.data(), static_cast<string::size_type>(NOW_.size())};
-
-  kphp::timelib::timezone_cache timelib_zone_cache{kphp::timelib::timezones::MOSCOW, kphp::timelib::timezones::GMT3};
-
-  TimeImageState() noexcept {
-    NOW_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
-  }
-
-  static const TimeImageState& get() noexcept;
-  static TimeImageState& get_mutable() noexcept;
-
-private:
-  static constexpr std::string_view NOW_ = "now";
 };
