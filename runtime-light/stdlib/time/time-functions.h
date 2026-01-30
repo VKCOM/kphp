@@ -13,6 +13,7 @@
 
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/time/timelib-constants.h"
+#include "runtime-common/stdlib/time/timelib-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/time-state.h"
