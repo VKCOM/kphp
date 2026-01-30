@@ -7,6 +7,7 @@
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/time/timelib-constants.h"
+#include "runtime-light/core/reference-counter/reference-counter-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/time/timelib-timezone-cache.h"
@@ -22,7 +23,16 @@ struct TimeImageState final : private vk::not_copyable {
   kphp::timelib::timezone_cache timelib_zone_cache{kphp::timelib::timezones::MOSCOW, kphp::timelib::timezones::GMT3};
 
   TimeImageState() noexcept {
-    NOW_STR.set_reference_counter_to(ExtraRefCnt::for_global_const);
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(NOW_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(NOW_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(WARNING_COUNT_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(WARNING_COUNT_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(WARNINGS_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(WARNINGS_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(ERROR_COUNT_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(ERROR_COUNT_STR, ExtraRefCnt::for_global_const)));
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(ERRORS_STR, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(ERRORS_STR, ExtraRefCnt::for_global_const)));
   }
 
   static const TimeImageState& get() noexcept;
