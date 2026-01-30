@@ -63,10 +63,6 @@ public:
     return *m_cache.emplace(std::move(tzinfo)).first;
   }
 
-  void clear() noexcept {
-    m_cache.clear();
-  }
-
   timezone_cache() noexcept = default;
 
   timezone_cache(std::initializer_list<std::string_view> tzs) noexcept {
@@ -81,25 +77,13 @@ public:
     });
   }
 
-  timezone_cache(timezone_cache&& other) noexcept
-      : m_cache(std::move(other.m_cache)) {}
-
-  timezone_cache& operator=(timezone_cache&& other) noexcept {
-    if (this != std::addressof(other)) {
-      clear();
-      m_cache = std::move(other.m_cache);
-    }
-    return *this;
-  }
+  timezone_cache(timezone_cache&& other) noexcept = default;
+  timezone_cache& operator=(timezone_cache&& other) noexcept = default;
 
   timezone_cache(const timezone_cache&) = delete;
   timezone_cache& operator=(const timezone_cache&) = delete;
 
-  ~timezone_cache() {
-    if (!m_cache.empty()) {
-      clear();
-    }
-  }
+  ~timezone_cache() = default;
 };
 
 } // namespace kphp::timelib
