@@ -90,6 +90,24 @@ static int tl_fetch_query_flags(tl_query_header_t* header) {
       return -1;
     }
   }
+  if (flags & flag::persistent_query) {
+    header->persistent_query.fetch();
+    if (tl_fetch_error()) {
+      return -1;
+    }
+  }
+  if (flags & flag::trace_context) {
+    header->trace_context.fetch();
+    if (tl_fetch_error()) {
+      return -1;
+    }
+  }
+  if (flags & flag::execution_context) {
+    vk::tl::fetch_string(header->execution_context);
+    if (tl_fetch_error()) {
+      return -1;
+    }
+  }
   return 0;
 }
 
@@ -317,6 +335,15 @@ void tl_store_header(const tl_query_header_t* header) {
       }
       if (flags & flag::random_delay) {
         tl_store_double(header->random_delay);
+      }
+      if (flags & flag::persistent_query) {
+        header->persistent_query.store();
+      }
+      if (flags & flag::trace_context) {
+        header->trace_context.store();
+      }
+      if (flags & flag::execution_context) {
+        vk::tl::store_string(header->execution_context);
       }
     } else if (header->actor_id) {
       tl_store_int(TL_RPC_DEST_ACTOR);
