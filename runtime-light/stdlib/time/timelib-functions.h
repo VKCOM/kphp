@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <expected>
 #include <format>
 #include <optional>
