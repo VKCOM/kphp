@@ -91,17 +91,6 @@ std::expected<kphp::timelib::rel_time_holder, kphp::timelib::error_container_hol
   return std::unexpected{std::move(errors)};
 }
 
-kphp::timelib::rel_time_holder get_time_interval(const kphp::timelib::time_holder& time1, const kphp::timelib::time_holder& time2, bool absolute) noexcept {
-  timelib_update_ts(time1.get(), nullptr);
-  timelib_update_ts(time2.get(), nullptr);
-
-  kphp::timelib::rel_time_holder diff{timelib_diff(time1.get(), time2.get()), kphp::timelib::details::rel_time_destructor};
-  if (absolute) {
-    diff->invert = 0;
-  }
-  return diff;
-}
-
 std::expected<std::reference_wrapper<const kphp::timelib::tzinfo_holder>, int32_t> get_timezone_info(std::string_view name, const timelib_tzdb* tzdb) noexcept {
   auto opt_tzinfo{TimeImageState::get().timelib_zone_cache.get(name)};
   if (opt_tzinfo.has_value()) {

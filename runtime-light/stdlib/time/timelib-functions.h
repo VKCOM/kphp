@@ -226,6 +226,18 @@ inline kphp::timelib::rel_time_holder clone_time_interval(const kphp::timelib::t
   return kphp::timelib::rel_time_holder{timelib_rel_time_clone(std::addressof(t->relative))};
 }
 
+inline kphp::timelib::rel_time_holder get_time_interval(const kphp::timelib::time_holder& time1, const kphp::timelib::time_holder& time2,
+                                                        bool absolute) noexcept {
+  timelib_update_ts(time1.get(), nullptr);
+  timelib_update_ts(time2.get(), nullptr);
+
+  kphp::timelib::rel_time_holder diff{timelib_diff(time1.get(), time2.get()), kphp::timelib::details::rel_time_destructor};
+  if (absolute) {
+    diff->invert = 0;
+  }
+  return diff;
+}
+
 inline kphp::timelib::time_holder add_time_interval(const kphp::timelib::time_holder& t, kphp::timelib::rel_time_holder& interval) noexcept {
   kphp::timelib::time_holder new_time{timelib_add(t.get(), interval.get()), kphp::timelib::details::time_destructor};
   return new_time;
