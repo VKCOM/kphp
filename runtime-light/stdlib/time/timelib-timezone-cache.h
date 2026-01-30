@@ -71,6 +71,7 @@ public:
       kphp::timelib::tzinfo_holder tzinfo{timelib_parse_tzfile(tz.data(), timelib_builtin_db(), std::addressof(errc)),
                                           kphp::timelib::details::tzinfo_destructor};
       if (tzinfo == nullptr || tzinfo->name == nullptr) [[unlikely]] {
+        kphp::log::warning("failed to load {} tzinfo on timezone_cache initialization", tz);
         return;
       }
       put(std::move(tzinfo));
