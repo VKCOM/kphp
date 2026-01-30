@@ -129,29 +129,31 @@ inline kphp::timelib::time_offset_holder construct_time_offset(const kphp::timel
 
 inline std::expected<std::pair<kphp::timelib::time_holder, kphp::timelib::error_container_holder>, kphp::timelib::error_container_holder>
 parse_time(std::string_view formatted_time) noexcept {
-  timelib_error_container* errors{};
-  kphp::timelib::time_holder time{
-      timelib_strtotime(formatted_time.data(), formatted_time.size(), std::addressof(errors), timelib_builtin_db(), kphp::timelib::details::get_timezone_info),
-      kphp::timelib::details::time_destructor};
+  timelib_error_container* raw_errors{};
+  kphp::timelib::time_holder time{timelib_strtotime(formatted_time.data(), formatted_time.size(), std::addressof(raw_errors), timelib_builtin_db(),
+                                                    kphp::timelib::details::get_timezone_info),
+                                  kphp::timelib::details::time_destructor};
+  kphp::timelib::error_container_holder errors{raw_errors};
   if (errors->error_count != 0) [[unlikely]] {
-    return std::unexpected{kphp::timelib::error_container_holder{errors, kphp::timelib::details::error_container_destructor}};
+    return std::unexpected{std::move(errors)};
   }
 
-  return std::make_pair(std::move(time), kphp::timelib::error_container_holder{errors, kphp::timelib::details::error_container_destructor});
+  return std::make_pair(std::move(time), std::move(errors));
 }
 
 inline std::expected<std::pair<kphp::timelib::time_holder, kphp::timelib::error_container_holder>, kphp::timelib::error_container_holder>
 parse_time(std::string_view formatted_time, std::string_view format) noexcept {
-  timelib_error_container* err{nullptr};
-  kphp::timelib::time_holder t{timelib_parse_from_format(format.data(), formatted_time.data(), formatted_time.size(), std::addressof(err), timelib_builtin_db(),
-                                                         kphp::timelib::details::get_timezone_info),
+  timelib_error_container* raw_err{nullptr};
+  kphp::timelib::time_holder t{timelib_parse_from_format(format.data(), formatted_time.data(), formatted_time.size(), std::addressof(raw_err),
+                                                         timelib_builtin_db(), kphp::timelib::details::get_timezone_info),
                                kphp::timelib::details::time_destructor};
+  kphp::timelib::error_container_holder err{raw_err};
 
   if (err && err->error_count) {
-    return std::unexpected{kphp::timelib::error_container_holder{err, kphp::timelib::details::error_container_destructor}};
+    return std::unexpected{std::move(err)};
   }
 
-  return std::make_pair(std::move(t), kphp::timelib::error_container_holder{err, kphp::timelib::details::error_container_destructor});
+  return std::make_pair(std::move(t), std::move(err));
 }
 
 inline kphp::timelib::time_holder clone_time(const kphp::timelib::time_holder& t) noexcept {
