@@ -353,7 +353,7 @@ struct std::formatter<kphp::pcre2::error> {
 
   template<typename FmtContext>
   auto format(kphp::pcre2::error error, FmtContext& ctx) const noexcept {
-  static constexpr size_t ERROR_BUFFER_LENGTH{256};
+    static constexpr size_t ERROR_BUFFER_LENGTH{256};
 
     std::array<char, ERROR_BUFFER_LENGTH> buffer; // NOLINT
     auto ret_code{pcre2_get_error_message_8(error.code, reinterpret_cast<PCRE2_UCHAR8*>(buffer.data()), buffer.size())};
