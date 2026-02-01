@@ -74,6 +74,11 @@ inline void* realloc(void* ptr, size_t new_size) noexcept {
   return new_ptr;
 }
 
+inline char* strdup(const char* str1) noexcept {
+  auto* str2{static_cast<char*>(kphp::memory::script::alloc(std::strlen(str1) + 1))};
+  return std::strcpy(str2, str1);
+}
+
 } // namespace script
 
 } // namespace memory

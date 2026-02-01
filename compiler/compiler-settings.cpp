@@ -340,6 +340,8 @@ void CompilerSettings::init() {
     if (!dynamic_incremental_linkage.get() && mode.get() != "k2-lib") {
       ss << " -fvisibility=hidden";
     }
+    // Temporary solution. Required for allocator functions replacement in timelib
+    ss << " -DTIMELIB_ALLOC_FUNC_PREFIX=timelib_";
   } else {
     // default value is false
     // when we build using full runtime, we should force to use runtime as static lib
