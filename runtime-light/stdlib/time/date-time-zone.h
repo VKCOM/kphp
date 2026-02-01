@@ -20,6 +20,7 @@
 struct C$DateTimeZone : public refcountable_polymorphic_php_classes_virt<>, private DummyVisitorMethods {
   using DummyVisitorMethods::accept;
 
+  string timezone;
   std::optional<std::reference_wrapper<const kphp::timelib::tzinfo_holder>> tzi;
 
   virtual const char* get_class() const noexcept {
@@ -35,6 +36,8 @@ struct C$DateTimeZone : public refcountable_polymorphic_php_classes_virt<>, priv
 };
 
 inline class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_instance<C$DateTimeZone>& self, const string& timezone) noexcept {
+  self->timezone = timezone;
+
   auto expected_tzi{kphp::timelib::get_timezone_info({timezone.c_str(), timezone.size()})};
   if (!expected_tzi.has_value()) [[unlikely]] {
     static constexpr std::string_view BEFORE_TIMEZONE{"DateTimeZone::__construct(): Unknown or bad timezone ("};
@@ -52,5 +55,5 @@ inline class_instance<C$DateTimeZone> f$DateTimeZone$$__construct(const class_in
 }
 
 inline string f$DateTimeZone$$getName(const class_instance<C$DateTimeZone>& self) noexcept {
-  return string{self->tzi->get()->name};
+  return self->timezone;
 }
