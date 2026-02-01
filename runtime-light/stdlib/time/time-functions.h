@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <limits>
 #include <memory>
 
@@ -114,8 +115,8 @@ inline array<mixed> f$getdate(int64_t timestamp = std::numeric_limits<int64_t>::
   result.set_value(string{"mon", 3}, t.tm_mon + 1);
   result.set_value(string{"year", 4}, t.tm_year + 1900);
   result.set_value(string{"yday", 4}, t.tm_yday);
-  result.set_value(string{"weekday", 7}, string{weekday});
-  result.set_value(string{"month", 5}, string{month});
+  result.set_value(string{"weekday", 7}, string{weekday, static_cast<string::size_type>(std::strlen(weekday))});
+  result.set_value(string{"month", 5}, string{month, static_cast<string::size_type>(std::strlen(month))});
   result.set_value(string{"0", 1}, timestamp);
 
   return result;
