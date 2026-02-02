@@ -1,5 +1,7 @@
 #include "runtime/datetime/timelib_wrapper.h"
 
+#include <string_view>
+
 #include "kphp/timelib/timelib.h"
 #include "runtime-common/stdlib/time/timelib-functions.h"
 #if ASAN_ENABLED
@@ -39,6 +41,11 @@ void set_time_value(array<mixed>& dst, const char* name, int64_t value) {
 }
 
 array<mixed> dump_errors(const timelib_error_container& error) {
+  static constexpr std::string_view WARNING_COUNT{"warning_count"};
+  static constexpr std::string_view WARNINGS{"warnings"};
+  static constexpr std::string_view ERROR_COUNT{"error_count"};
+  static constexpr std::string_view ERRORS{"errors"};
+
   array<mixed> result;
 
   array<string> result_warnings;
@@ -46,21 +53,24 @@ array<mixed> dump_errors(const timelib_error_container& error) {
   for (int i = 0; i < error.warning_count; i++) {
     result_warnings.set_value(error.warning_messages[i].position, string(error.warning_messages[i].message));
   }
-  result.set_value(string("warning_count"), error.warning_count);
-  result.set_value(string("warnings"), result_warnings);
+  result.set_value(string(WARNING_COUNT.data(), WARNING_COUNT.size()), error.warning_count);
+  result.set_value(string(WARNINGS.data(), WARNINGS.size()), result_warnings);
 
   array<string> result_errors;
   result_errors.reserve(error.error_count, false);
   for (int i = 0; i < error.error_count; i++) {
     result_errors.set_value(error.error_messages[i].position, string(error.error_messages[i].message));
   }
-  result.set_value(string("error_count"), error.error_count);
-  result.set_value(string("errors"), result_errors);
+  result.set_value(string(ERROR_COUNT.data(), ERROR_COUNT.size()), error.error_count);
+  result.set_value(string(ERRORS.data(), ERRORS.size()), result_errors);
 
   return result;
 }
 
 array<mixed> create_date_parse_array(timelib_time* t, timelib_error_container* error) {
+  static constexpr std::string_view FRACTION{"fraction"};
+  static constexpr std::string_view IS_LOCALTIME{"is_localtime"};
+
   array<mixed> result;
 
   // note: we're setting the result array keys in the same order as PHP does
@@ -73,56 +83,72 @@ array<mixed> create_date_parse_array(timelib_time* t, timelib_error_container* e
   set_time_value(result, "second", t->s);
 
   if (t->us == TIMELIB_UNSET) {
-    result.set_value(string("fraction"), false);
+    result.set_value(string(FRACTION.data(), FRACTION.size()), false);
   } else {
-    result.set_value(string("fraction"), static_cast<double>(t->us) / 1000000.0);
+    result.set_value(string(FRACTION.data(), FRACTION.size()), static_cast<double>(t->us) / 1000000.0);
   }
 
   result.merge_with(dump_errors(*error));
 
-  result.set_value(string("is_localtime"), static_cast<bool>(t->is_localtime));
+  result.set_value(string(IS_LOCALTIME.data(), IS_LOCALTIME.size()), static_cast<bool>(t->is_localtime));
 
   if (t->is_localtime) {
+    static constexpr std::string_view IS_DST{"is_dst"};
+    static constexpr std::string_view TZ_ABBR{"tz_abbr"};
+    static constexpr std::string_view TZ_ID{"tz_id"};
+
     set_time_value(result, "zone_type", t->zone_type);
     switch (t->zone_type) {
     case TIMELIB_ZONETYPE_OFFSET:
       set_time_value(result, "zone", t->z);
-      result.set_value(string("is_dst"), static_cast<bool>(t->dst));
+      result.set_value(string(IS_DST.data(), IS_DST.size()), static_cast<bool>(t->dst));
       break;
     case TIMELIB_ZONETYPE_ID:
       if (t->tz_abbr) {
-        result.set_value(string("tz_abbr"), string(t->tz_abbr));
+        result.set_value(string(TZ_ABBR.data(), TZ_ABBR.size()), string(t->tz_abbr));
       }
       if (t->tz_info) {
-        result.set_value(string("tz_id"), string(t->tz_info->name));
+        result.set_value(string(TZ_ID.data(), TZ_ID.size()), string(t->tz_info->name));
       }
       break;
     case TIMELIB_ZONETYPE_ABBR:
       set_time_value(result, "zone", t->z);
-      result.set_value(string("is_dst"), static_cast<bool>(t->dst));
-      result.set_value(string("tz_abbr"), string(t->tz_abbr));
+      result.set_value(string(IS_DST.data(), IS_DST.size()), static_cast<bool>(t->dst));
+      result.set_value(string(TZ_ABBR.data(), TZ_ABBR.size()), string(t->tz_abbr));
       break;
     }
   }
   if (t->have_relative) {
+    static constexpr std::string_view YEAR{"year"};
+    static constexpr std::string_view MONTH{"month"};
+    static constexpr std::string_view DAY{"day"};
+    static constexpr std::string_view HOUR{"hour"};
+    static constexpr std::string_view MINUTE{"minute"};
+    static constexpr std::string_view SECOND{"second"};
+    static constexpr std::string_view RELATIVE{"relative"};
+
     array<mixed> relative;
-    relative.set_value(string("year"), t->relative.y);
-    relative.set_value(string("month"), t->relative.m);
-    relative.set_value(string("day"), t->relative.d);
-    relative.set_value(string("hour"), t->relative.h);
-    relative.set_value(string("minute"), t->relative.i);
-    relative.set_value(string("second"), t->relative.s);
+    relative.set_value(string(YEAR.data(), YEAR.size()), t->relative.y);
+    relative.set_value(string(MONTH.data(), MONTH.size()), t->relative.m);
+    relative.set_value(string(DAY.data(), DAY.size()), t->relative.d);
+    relative.set_value(string(HOUR.data(), HOUR.size()), t->relative.h);
+    relative.set_value(string(MINUTE.data(), MINUTE.size()), t->relative.i);
+    relative.set_value(string(SECOND.data(), SECOND.size()), t->relative.s);
     if (t->relative.have_weekday_relative) {
-      relative.set_value(string("weekday"), t->relative.weekday);
+      static constexpr std::string_view WEEKDAY{"weekday"};
+
+      relative.set_value(string(WEEKDAY.data(), WEEKDAY.size()), t->relative.weekday);
     }
     if (t->relative.have_special_relative && (t->relative.special.type == TIMELIB_SPECIAL_WEEKDAY)) {
-      relative.set_value(string("weekdays"), t->relative.special.amount);
+      static constexpr std::string_view WEEKDAYS{"weekdays"};
+
+      relative.set_value(string(WEEKDAYS.data(), WEEKDAYS.size()), t->relative.special.amount);
     }
     if (t->relative.first_last_day_of) {
       string key = string(t->relative.first_last_day_of == TIMELIB_SPECIAL_FIRST_DAY_OF_MONTH ? "first_day_of_month" : "last_day_of_month");
       relative.set_value(key, true);
     }
-    result.set_value(string("relative"), relative);
+    result.set_value(string(RELATIVE.data(), RELATIVE.size()), relative);
   }
 
   return result;
@@ -272,9 +298,14 @@ std::pair<timelib_time*, string> php_timelib_date_initialize(const string& tz_na
   update_errors_warnings(err, script_guard);
 
   if (err && err->error_count) {
-    // spit out the first library error message, at least
     timelib_time_dtor(t);
-    return {nullptr, string{"Failed to parse time string "}.append(1, '(').append(time_str).append(") ").append(kphp::timelib::gen_error_msg(err))};
+
+    // spit out the first library error message, at least
+    static constexpr std::string_view MESSAGE_PREFIX{"Failed to parse time string "};
+
+    string err_msg{MESSAGE_PREFIX.data(), MESSAGE_PREFIX.size()};
+    err_msg.reserve_at_least(MESSAGE_PREFIX.size() + 1 + time_str.size() + 2);
+    return {nullptr, err_msg.append(1, '(').append(time_str).append(')').append(' ').append(kphp::timelib::gen_error_msg(err))};
   }
 
   timelib_tzinfo* tzi = nullptr;
@@ -365,7 +396,11 @@ std::pair<bool, string> php_timelib_date_modify(timelib_time* t, const string& m
 
   if (err && err->error_count) {
     // spit out the first library error message, at least
-    return {false, string{"Failed to parse time string "}.append(1, '(').append(modifier).append(") ").append(kphp::timelib::gen_error_msg(err))};
+    static constexpr std::string_view MESSAGE_PREFIX{"Failed to parse time string "};
+
+    string err_msg{MESSAGE_PREFIX.data(), MESSAGE_PREFIX.size()};
+    err_msg.reserve_at_least(MESSAGE_PREFIX.size() + 1 + modifier.size() + 2);
+    return {false, err_msg.append(1, '(').append(modifier).append(')').append(' ').append(kphp::timelib::gen_error_msg(err))};
   }
 
   std::memcpy(&t->relative, &tmp_time->relative, sizeof(timelib_rel_time));
@@ -508,7 +543,12 @@ std::pair<timelib_rel_time*, string> php_timelib_date_interval_initialize(const 
     if (p) {
       timelib_rel_time_dtor(p);
     }
-    return {nullptr, string{"Unknown or bad format ("}.append(format).append(1, ')')};
+
+    static constexpr std::string_view MESSAGE_PREFIX{"Unknown or bad format ("};
+
+    string err_msg{MESSAGE_PREFIX.data(), MESSAGE_PREFIX.size()};
+    err_msg.reserve_at_least(MESSAGE_PREFIX.size() + format.size() + 1);
+    return {nullptr, err_msg.append(format).append(1, ')')};
   }
 
   if (p) {
@@ -521,7 +561,12 @@ std::pair<timelib_rel_time*, string> php_timelib_date_interval_initialize(const 
     return {timelib_diff(b, e), {}};
   }
 
-  return {nullptr, string{"Failed to parse interval ("}.append(format).append(1, ')')};
+  static constexpr std::string_view MESSAGE_PREFIX{"Failed to parse interval ("};
+
+  string err_msg{MESSAGE_PREFIX.data(), MESSAGE_PREFIX.size()};
+  err_msg.reserve_at_least(MESSAGE_PREFIX.size() + format.size() + 1);
+
+  return {nullptr, err_msg.append(format).append(1, ')')};
 }
 
 void php_timelib_date_interval_remove(timelib_rel_time* t) {
@@ -540,10 +585,11 @@ std::pair<timelib_rel_time*, string> php_timelib_date_interval_create_from_date_
   vk::final_action error_deleter{[err]() { timelib_error_container_dtor(err); }};
 
   if (err->error_count > 0) {
-    string error_msg{"Unknown or bad format ("};
-    error_msg.append(time_str).append(1, ')').append(" at position ").append(err->error_messages[0].position);
-    error_msg.append(" (").append(1, err->error_messages[0].character ? err->error_messages[0].character : ' ').append("): ");
-    error_msg.append(err->error_messages[0].message);
+    static constexpr std::string_view MESSAGE_PREFIX{"Unknown or bad format ("};
+
+    string error_msg{MESSAGE_PREFIX.data(), MESSAGE_PREFIX.size()};
+    error_msg.reserve_at_least(MESSAGE_PREFIX.size() + time_str.size() + 2);
+    error_msg.append(time_str).append(1, ')').append(1, ' ').append(kphp::timelib::gen_error_msg(err));
     return {nullptr, std::move(error_msg)};
   }
   return {timelib_rel_time_clone(&time->relative), {}};
