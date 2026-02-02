@@ -305,7 +305,7 @@ std::pair<timelib_time*, string> php_timelib_date_initialize(const string& tz_na
 
     string err_msg{MESSAGE_PREFIX.data(), MESSAGE_PREFIX.size()};
     err_msg.reserve_at_least(MESSAGE_PREFIX.size() + 1 + time_str.size() + 2);
-    return {nullptr, err_msg.append(1, '(').append(time_str).append(')').append(' ').append(kphp::timelib::gen_error_msg(err))};
+    return {nullptr, err_msg.append(1, '(').append(time_str).append(1, ')').append(1, ' ').append(kphp::timelib::gen_error_msg(err))};
   }
 
   timelib_tzinfo* tzi = nullptr;
@@ -400,7 +400,7 @@ std::pair<bool, string> php_timelib_date_modify(timelib_time* t, const string& m
 
     string err_msg{MESSAGE_PREFIX.data(), MESSAGE_PREFIX.size()};
     err_msg.reserve_at_least(MESSAGE_PREFIX.size() + 1 + modifier.size() + 2);
-    return {false, err_msg.append(1, '(').append(modifier).append(')').append(' ').append(kphp::timelib::gen_error_msg(err))};
+    return {false, err_msg.append(1, '(').append(modifier).append(1, ')').append(1, ' ').append(kphp::timelib::gen_error_msg(err))};
   }
 
   std::memcpy(&t->relative, &tmp_time->relative, sizeof(timelib_rel_time));
