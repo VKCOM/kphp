@@ -48,7 +48,7 @@ public:
   }
 
   auto next() noexcept {
-    return detail::await_set::await_set_awaitable<return_type>{*m_await_broker.get()};
+    return detail::await_set::await_set_awaitable<return_type>{*m_await_broker};
   }
 
   bool empty() const noexcept {
