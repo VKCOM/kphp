@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "common/mixin/not_copyable.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/time/timelib-constants.h"
@@ -56,9 +58,9 @@ struct TimeInstanceState final : private vk::not_copyable {
     }
   }
 
-  Optional<array<mixed>> get_last_errors() const noexcept {
+  std::optional<array<mixed>> get_last_errors() const noexcept {
     if (last_errors == nullptr) {
-      return false;
+      return std::nullopt;
     }
 
     const auto& image_state{TimeImageState::get()};

@@ -45,7 +45,8 @@ class_instance<C$DateTime> f$DateTime$$createFromFormat(const string& format, co
 class_instance<C$DateTime> f$DateTime$$createFromImmutable(const class_instance<C$DateTimeImmutable>& object) noexcept;
 
 inline Optional<array<mixed>> f$DateTime$$getLastErrors() noexcept {
-  return TimeInstanceState::get().get_last_errors();
+  auto last_errors{TimeInstanceState::get().get_last_errors()};
+  return last_errors.has_value() ? Optional<array<mixed>>{*last_errors} : false;
 }
 
 class_instance<C$DateTime> f$DateTime$$modify(const class_instance<C$DateTime>& self, const string& modifier) noexcept;
