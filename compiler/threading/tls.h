@@ -25,7 +25,6 @@ struct TLS {
 private:
   struct TLSRaw {
     T data{};
-    volatile int locker = 0;
     char dummy[4096];
   };
 
@@ -68,19 +67,6 @@ public:
 
   int size() {
     return MAX_THREADS_COUNT + 1;
-  }
-
-  T *lock_get() {
-    TLSRaw *raw = get_raw();
-    bool ok = try_lock(&raw->locker);
-    assert(ok);
-    return &raw->data;
-  }
-
-  void unlock_get(T *ptr) {
-    TLSRaw *raw = get_raw();
-    assert(&raw->data == ptr);
-    unlock(&raw->locker);
   }
 };
 
