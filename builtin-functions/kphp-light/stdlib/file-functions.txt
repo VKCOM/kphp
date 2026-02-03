@@ -51,6 +51,8 @@ function is_file ($name ::: string) ::: bool;
 
 function fgets ($stream ::: mixed, $length ::: int = -1) ::: string | false;
 
+function fgetcsv ($stream ::: mixed, $length ::: int = 0, $delimiter ::: string = ",", $enclosure ::: string = "\"", $escape ::: string = "\\") ::: mixed[] | false;
+
 // === UNSUPPORTED ===
 /** @kphp-extern-func-info stub generation-required */
 function chmod ($name ::: string, $mode ::: int) ::: bool;
@@ -74,10 +76,6 @@ function rename ($oldname ::: string, $newname ::: string) ::: bool;
 function scandir ($directory ::: string) ::: string[] | false;
 /** @kphp-extern-func-info stub generation-required */
 function tempnam ($dir ::: string, $prefix ::: string) ::: string | false;
-
-
- /** @kphp-extern-func-info stub generation-required */
-function fgetcsv ($stream ::: mixed, $length ::: int = 0, $delimiter ::: string = ",", $enclosure ::: string = "\"", $escape ::: string = "\\") ::: mixed[] | false;
 
 define('SEEK_SET', 0);
 define('SEEK_END', 1);
