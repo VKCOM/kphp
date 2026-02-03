@@ -12,9 +12,11 @@
 #include <optional>
 #include <span>
 #include <string_view>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <utility>
+#include <wchar.h>
 
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/runtime-core.h"
@@ -34,6 +36,8 @@ inline constexpr char SEPARATOR = '/';
 
 } // namespace file_system_impl_
 
+inline constexpr int32_t PHP_CSV_NO_ESCAPE = EOF;
+inline constexpr size_t FGETS_BUFFER_SIZE = 128;
 inline constexpr int64_t STREAM_CLIENT_CONNECT = 1;
 inline constexpr int64_t DEFAULT_SOCKET_TIMEOUT = 60;
 
@@ -252,6 +256,352 @@ inline bool f$is_file(const string& name) noexcept {
     return false;
   }
   return S_ISREG(stat_buf.st_mode);
+}
+
+inline Optional<string> f$fgets(const resource& stream, int64_t length = -1) noexcept {
+  auto sync_resource{from_mixed<class_instance<kphp::fs::file>>(stream, {})};
+  if (sync_resource.is_null()) {
+    return false;
+  }
+  kphp::fs::file* file{sync_resource.get()};
+  if (file == nullptr) {
+    return false;
+  }
+  if (struct stat stat_buf{}; !file->has_mmap_resource() && (!k2::fstat(file->descriptor(), std::addressof(stat_buf)).has_value() ||
+                                                             !file->mmap(nullptr, stat_buf.st_size, PROT_READ, MAP_PRIVATE, 0).has_value())) {
+    return false;
+  }
+
+  kphp::log::assertion(file->has_mmap_resource());
+  char*& ptr{file->mmap_resource().value()->as_ptr()};
+
+  if (*ptr == '\0' || length == 1) {
+    return false;
+  }
+
+  if (length > string::max_size()) {
+    kphp::log::warning("parameter length in function fgets is too large");
+    return false;
+  }
+
+  if (length <= 0) {
+    length = string::max_size();
+  }
+  --length;
+
+  kphp::stl::string<kphp::memory::script_allocator> str{};
+  std::array<char, FGETS_BUFFER_SIZE> buffer{};
+  int64_t size{0};
+
+  while (length > 0 && *ptr != '\0') {
+    if (size == buffer.size()) {
+      str.append(buffer.data(), size);
+      size = 0;
+    }
+    buffer[size] = *ptr;
+    ++size;
+    if (*ptr == '\n') {
+      ++ptr;
+      break;
+    }
+    ++ptr;
+    --length;
+  }
+  str.append(buffer.data(), size);
+  return string{str.data(), static_cast<string::size_type>(str.size())};
+}
+
+[[clang::always_inline]] inline std::array<char, 2> read_last_two_bytes_advance(const char*& ptr, size_t len, mbstate_t* ps) noexcept {
+  int32_t inc_len{};
+  std::array<char, 2> last_chars{0, 0};
+  while (len > 0) {
+    inc_len = *ptr == '\0' ? 1 : mbrlen(ptr, len, ps);
+    switch (inc_len) {
+    case -2:
+    case -1:
+      inc_len = 1;
+      break;
+    case 0:
+      return last_chars;
+    case 1:
+    default:
+      last_chars[0] = last_chars[1];
+      last_chars[1] = *ptr;
+      break;
+    }
+    ptr += inc_len;
+    len -= inc_len;
+  }
+  return last_chars;
+}
+
+// this function is imported from https://github.com/php/php-src/blob/master/ext/standard/file.c,
+// function php_fgetcsv_lookup_trailing_spaces
+inline const char* fgetcsv_lookup_trailing_spaces(const char* ptr, size_t len, mbstate_t* ps) noexcept {
+  switch (const auto last_chars{read_last_two_bytes_advance(ptr, len, ps)}; last_chars[1]) {
+  case '\n':
+    if (last_chars[0] == '\r') {
+      return ptr - 2;
+    }
+    /* fallthrough */
+  case '\r':
+    return ptr - 1;
+  default:
+    break;
+  }
+  return ptr;
+}
+
+[[clang::always_inline]] inline void advance_until_delimiter_mb(char const*& bptr, char const* line_end, int32_t& inc_len, const char delimiter,
+                                                                mbstate_t* ps) noexcept {
+  while (true) {
+    switch (inc_len) {
+    case 0:
+      return;
+    case -2:
+    case -1:
+      inc_len = 1;
+      /* fallthrough */
+    case 1:
+      if (*bptr == delimiter) {
+        return;
+      }
+      break;
+    default:
+      break;
+    }
+    bptr += inc_len;
+    inc_len = bptr < line_end ? (*bptr == '\0' ? 1 : mbrlen(bptr, line_end - bptr, ps)) : 0;
+  }
+}
+
+[[clang::always_inline]] inline bool parse_csv_quoted_field(const resource& stream, char const*& bptr, char const*& hunk_begin, char const*& buf,
+                                                            std::span<const char>& line_end, string_buffer& tmp_buffer, std::span<const char>& buffer,
+                                                            int32_t& inc_len, size_t& temp_len, const char enclosure, const char escape,
+                                                            mbstate_t* ps) noexcept {
+  int32_t state{0};
+  while (true) {
+    switch (inc_len) {
+    case 0:
+      switch (state) {
+      case 2:
+        tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
+        hunk_begin = bptr;
+        return false;
+
+      case 1:
+        tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+        hunk_begin = bptr;
+        /* fallthrough */
+      case 0: {
+
+        if (hunk_begin != line_end.data()) {
+          tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+          hunk_begin = bptr;
+        }
+
+        /* add the embedded line end to the field */
+        tmp_buffer.append(line_end.data(), line_end.size());
+        string new_buffer{};
+
+        if (stream.is_null()) {
+          return false;
+        }
+        Optional<string> new_buffer_optional{f$fgets(stream)};
+        if (!new_buffer_optional.has_value()) {
+          return temp_len <= static_cast<size_t>(line_end.data() - buf);
+        }
+        new_buffer = new_buffer_optional.val();
+        temp_len += new_buffer.size();
+
+        buffer = std::span<const char>{new_buffer.c_str(), static_cast<size_t>(new_buffer.size())};
+
+        buf = bptr = buffer.data();
+        hunk_begin = buf;
+
+        const char* line_end_data{fgetcsv_lookup_trailing_spaces(buf, buffer.size(), ps)};
+        line_end = std::span<const char>{line_end_data, buffer.size() - static_cast<size_t>(line_end_data - buf)};
+
+        state = 0;
+      } break;
+      default:
+        break;
+      }
+      break;
+
+    case -2:
+    case -1:
+      /* break is omitted intentionally */
+    case 1:
+      /* we need to determine if the enclosure is
+       * 'real' or is it escaped */
+      switch (state) {
+      case 1: /* escaped */
+        bptr++;
+        state = 0;
+        break;
+      case 2: /* embedded enclosure ? let's check it */
+        if (*bptr != enclosure) {
+          /* real enclosure */
+          tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
+          hunk_begin = bptr;
+          return false;
+        }
+        tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+        bptr++;
+        hunk_begin = bptr;
+        state = 0;
+        break;
+      default:
+        if (*bptr == enclosure) {
+          state = 2;
+        } else if (escape != PHP_CSV_NO_ESCAPE && *bptr == escape) {
+          state = 1;
+        }
+        bptr++;
+        break;
+      }
+      break;
+
+    default:
+      switch (state) {
+      case 2:
+        /* real enclosure */
+        tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
+        hunk_begin = bptr;
+        return false;
+      case 1:
+        bptr += inc_len;
+        tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+        hunk_begin = bptr;
+        state = 0;
+        break;
+      default:
+        bptr += inc_len;
+        break;
+      }
+      break;
+    }
+    inc_len = bptr < line_end.data() ? (*bptr == '\0' ? 1 : mbrlen(bptr, line_end.data() - bptr, ps)) : 0;
+  }
+  return false;
+}
+
+// // Common csv-parsing functionality for
+// // * fgetcsv
+// // The function is similar to `php_fgetcsv` function from https://github.com/php/php-src/blob/master/ext/standard/file.c
+inline Optional<array<mixed>> getcsv(const resource& stream, std::span<const char> buffer, const char delimiter, const char enclosure, const char escape,
+                                     mbstate_t* ps) noexcept {
+  array<mixed> answer{};
+  int32_t current_id{0};
+  string_buffer tmp_buffer{};
+
+  const char* buf{buffer.data()};
+  const char* bptr{buf};
+
+  const char* line_end_data{fgetcsv_lookup_trailing_spaces(buf, buffer.size(), ps)};
+  std::span<const char> line_end{line_end_data, buffer.size() - (line_end_data - buf)};
+
+  bool first_field{true};
+  size_t temp_len{buffer.size()};
+  int32_t inc_len{};
+
+  do {
+    const char* hunk_begin{};
+
+    inc_len = bptr < line_end.data() ? (*bptr == '\0' ? 1 : mbrlen(bptr, line_end.data() - bptr, ps)) : 0;
+    if (inc_len == 1) {
+      char const* tmp{bptr};
+      while ((*tmp != delimiter) && isspace(static_cast<int32_t>(*tmp))) {
+        tmp++;
+      }
+      if (*tmp == enclosure) {
+        bptr = tmp;
+      }
+    }
+
+    if (first_field && bptr == line_end.data()) {
+      answer.set_value(current_id, mixed{});
+      break;
+    }
+    first_field = false;
+
+    /* 2. Read field, leaving bptr pointing at start of next field */
+    if (inc_len != 0 && *bptr == enclosure) {
+
+      bptr++; /* move on to first character in field */
+      hunk_begin = bptr;
+
+      /* 2A. handle enclosure delimited field */
+      if (parse_csv_quoted_field(stream, bptr, hunk_begin, buf, line_end, tmp_buffer, buffer, inc_len, temp_len, enclosure, escape, ps)) {
+        return answer;
+      }
+      /* look up for a delimiter */
+      advance_until_delimiter_mb(bptr, line_end.data(), inc_len, delimiter, ps);
+      tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+      bptr += inc_len;
+    } else {
+      /* 2B. Handle non-enclosure field */
+
+      hunk_begin = bptr;
+      advance_until_delimiter_mb(bptr, line_end.data(), inc_len, delimiter, ps);
+      tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+
+      const char* comp_end{fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size(), ps)};
+      tmp_buffer.set_pos(comp_end - tmp_buffer.c_str());
+      if (*bptr == delimiter) {
+        bptr++;
+      }
+    }
+
+    /* 3. Now pass our field back to php */
+    answer.set_value(current_id++, tmp_buffer.str());
+    tmp_buffer.clean();
+  } while (inc_len > 0);
+
+  return answer;
+}
+
+inline Optional<array<mixed>> f$fgetcsv(const resource& stream, int64_t length = 0, string delimiter = string(",", 1), string enclosure = string("\"", 1),
+                                        string escape = string("\\", 1)) noexcept {
+  if (delimiter.empty()) {
+    kphp::log::warning("delimiter must be a character");
+    return false;
+  }
+  if (delimiter.size() > 1) {
+    kphp::log::warning("delimiter must be a single character");
+  }
+  if (enclosure.empty()) {
+    kphp::log::warning("enclosure must be a character");
+    return false;
+  }
+  if (enclosure.size() > 1) {
+    kphp::log::warning("enclosure must be a single character");
+  }
+  int escape_char{PHP_CSV_NO_ESCAPE};
+  if (!escape.empty()) {
+    escape_char = static_cast<int>(escape[0]);
+  } else if (escape.size() > 1) {
+    kphp::log::warning("escape_char must be a single character");
+  }
+
+  const char delimiter_char{delimiter[0]};
+  const char enclosure_char{enclosure[0]};
+
+  if (length < 0) {
+    kphp::log::warning("length parameter may not be negative");
+    return false;
+  }
+  if (length == 0) {
+    length = -1;
+  }
+  Optional<string> buf_optional{length < 0 ? f$fgets(stream) : f$fgets(stream, length + 1)};
+  if (!buf_optional.has_value()) {
+    return false;
+  }
+  mbstate_t ps{};
+  return getcsv(stream, std::span<const char>{buf_optional.val().c_str(), buf_optional.val().size()}, delimiter_char, enclosure_char, escape_char,
+                std::addressof(ps));
 }
 
 inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& content_var, int64_t flags = 0) noexcept {
