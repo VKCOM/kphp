@@ -94,8 +94,8 @@ public:
   mmap_resource(const mmap_resource&) = delete;
   mmap_resource& operator=(const mmap_resource&) = delete;
 
-  static auto mmap(void* addr, size_t length, int32_t prot, int32_t flags, k2::descriptor fd, uint64_t offset) noexcept
-      -> std::expected<mmap_resource, int32_t>;
+  static auto mmap(void* addr, size_t length, int32_t prot, int32_t flags, k2::descriptor fd,
+                   uint64_t offset) noexcept -> std::expected<mmap_resource, int32_t>;
 
   auto as_ptr() noexcept -> char*&;
 
@@ -108,8 +108,8 @@ public:
   auto eof() const noexcept -> std::expected<bool, int32_t> override;
 };
 
-inline auto mmap_resource::mmap(void* addr, size_t length, int32_t prot, int32_t flags, k2::descriptor fd, uint64_t offset) noexcept
-    -> std::expected<mmap_resource, int32_t> {
+inline auto mmap_resource::mmap(void* addr, size_t length, int32_t prot, int32_t flags, k2::descriptor fd,
+                                uint64_t offset) noexcept -> std::expected<mmap_resource, int32_t> {
   k2::descriptor descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
   const auto ptr{k2::mmap(std::addressof(descriptor), addr, length, prot, flags, fd, offset)};
   if (ptr == nullptr) [[unlikely]] {
