@@ -1,4 +1,4 @@
-name: debian
+name: unstable
 
 on:
   push:
@@ -11,18 +11,24 @@ env:
   kphp_polyfills_dir: /home/kitten/kphp/kphp-polyfills
   kphp_build_dir: /home/kitten/kphp/build
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-linux:
-    if: ${{ false }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - os: buster
-            compiler: g++
-            cpp: 17
+          - os: trixie
+            compiler: g++-12
+            cpp: 20
             asan: off
             ubsan: off
+            mysql: on
+            pgsql: on
 
     name: "${{matrix.os}} / ${{matrix.compiler}} / c++${{matrix.cpp}} / asan=${{matrix.asan}} / ubsan=${{matrix.ubsan}}"
 
@@ -40,7 +46,7 @@ jobs:
         id: docker-image-cache
         with:
           path: kphp-build-env-${{matrix.os}}.tar
-          key: docker-image-cache-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*', 'tests/python/requirements.txt') }}
+          key: docker-image-cache-${{matrix.os}}-${{ hashFiles('.github/workflows/Dockerfile.*', 'tests/python/requirements*.txt') }}
 
       - name: Build and save docker image
         if: steps.docker-image-cache.outputs.cache-hit != 'true'
@@ -62,14 +68,14 @@ jobs:
 
       - name: Add git safe directory
         run: docker exec kphp-build-container-${{matrix.os}} bash -c
-          "git config --global --add safe.directory '*'"
+          "git config --global --add safe.directory '${{env.kphp_root_dir}}'"
         # This command is used to address potential issues with Git's safe directory feature.
         # By setting '*' as a safe directory, we allow Git operations to proceed without errors
         # related to directory safety, ensuring smooth execution of the submodules updating.
 
       - name: Build all
         run: docker exec kphp-build-container-${{matrix.os}} bash -c
-          "cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DADDRESS_SANITIZER=${{matrix.asan}} -DUNDEFINED_SANITIZER=${{matrix.ubsan}} -DPDO_DRIVER_MYSQL=ON -DPDO_DRIVER_PGSQL=ON -DPDO_LIBS_STATIC_LINKING=OFF -S ${{env.kphp_root_dir}} -B ${{env.kphp_build_dir}} && make -C ${{env.kphp_build_dir}} -j$(nproc) all"
+          "cmake -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_CXX_STANDARD=${{matrix.cpp}} -DADDRESS_SANITIZER=${{matrix.asan}} -DUNDEFINED_SANITIZER=${{matrix.ubsan}} -DPDO_DRIVER_MYSQL=${{matrix.mysql}} -DPDO_DRIVER_PGSQL=${{matrix.pgsql}} -DPDO_LIBS_STATIC_LINKING=OFF -S ${{env.kphp_root_dir}} -B ${{env.kphp_build_dir}} && make -C ${{env.kphp_build_dir}} -j$(nproc) all"
 
       - name: Run unit tests
         run: docker exec kphp-build-container-${{matrix.os}} bash -c
@@ -77,8 +83,7 @@ jobs:
 
       - name: Compile dummy PHP script
         run: docker exec kphp-build-container-${{matrix.os}} bash -c
-          "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o --user kitten --connections 8"
-        # Manual specifying of `connections` option is caused by some Github internal limitations. Default 65535+16 leads to fail
+          "cd ${{env.kphp_build_dir}} && echo 'hello world' > demo.php && ${{env.kphp_root_dir}}/objs/bin/kphp2cpp --cxx ${{matrix.compiler}} demo.php && kphp_out/server -o --user kitten"
 
       - name: Polyfills composer install
         run: docker exec kphp-build-container-${{matrix.os}} bash -c
@@ -88,7 +93,7 @@ jobs:
         id: python_tests
         continue-on-error: true
         run: docker exec kphp-build-container-${{matrix.os}} bash -c
-          "chown -R kitten /home && su kitten -c 'GITHUB_ACTIONS=1 KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3.7 -m pytest --tb=native -n$(nproc) ${{env.kphp_root_dir}}/tests/python/tests'"
+          "chown -R kitten /home && mkdir -p /tmp/pytest-of-kitten && chown -R kitten /tmp/pytest-of-kitten && su kitten -c 'GITHUB_ACTIONS=1 SKIP_MYSQL_TESTS=1 KPHP_TESTS_POLYFILLS_REPO=${{env.kphp_polyfills_dir}} KPHP_CXX=${{matrix.compiler}} python3.13 -m pytest --tb=native -n$(nproc) ${{env.kphp_root_dir}}/tests/python/tests'"
 
       - name: Prepare python tests artifacts
         if: steps.python_tests.outcome == 'failure'
@@ -99,6 +104,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: steps.python_tests.outcome == 'failure'
         with:
+          name: pytest-result-${{ matrix.os }}-${{matrix.compiler}}
           path: ${{runner.temp}}/_tmp/
 
       - name: Fail pipeline if python tests failed
