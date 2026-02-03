@@ -65,9 +65,119 @@ struct sync_resource : public resource {
 
 // ================================================================================================
 
+class mmap_resource final : public sync_resource {
+  char* ptr{};
+  k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
+
+  explicit mmap_resource(char* ptr, k2::descriptor descriptor) noexcept
+      : ptr{ptr},
+        m_descriptor{descriptor} {}
+
+public:
+  mmap_resource(mmap_resource&& other) noexcept
+      : ptr{std::move(other.ptr)},
+        m_descriptor{std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR)} {}
+
+  mmap_resource& operator=(mmap_resource&& other) noexcept {
+    if (this != std::addressof(other)) {
+      std::ignore = close();
+      ptr = other.ptr;
+      m_descriptor = std::exchange(other.m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR);
+    }
+    return *this;
+  }
+
+  ~mmap_resource() override {
+    std::ignore = close();
+  }
+
+  mmap_resource(const mmap_resource&) = delete;
+  mmap_resource& operator=(const mmap_resource&) = delete;
+
+  static auto mmap(void* addr, size_t length, int32_t prot, int32_t flags, k2::descriptor fd,
+                   uint64_t offset) noexcept -> std::expected<mmap_resource, int32_t>;
+
+  auto as_ptr() noexcept -> char*&;
+
+  auto write(std::span<const std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
+  auto read(std::span<std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
+  auto pread(std::span<std::byte> buf, uint64_t offset) noexcept -> std::expected<size_t, int32_t> override;
+  auto get_contents() noexcept -> std::expected<string, int32_t> override;
+  auto flush() noexcept -> std::expected<void, int32_t> override;
+  auto close() noexcept -> std::expected<void, int32_t> override;
+  auto eof() const noexcept -> std::expected<bool, int32_t> override;
+};
+
+inline auto mmap_resource::mmap(void* addr, size_t length, int32_t prot, int32_t flags, k2::descriptor fd,
+                                uint64_t offset) noexcept -> std::expected<mmap_resource, int32_t> {
+  k2::descriptor descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
+  const auto ptr{k2::mmap(std::addressof(descriptor), addr, length, prot, flags, fd, offset)};
+  if (ptr == nullptr) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return {mmap_resource{static_cast<char*>(ptr), descriptor}};
+}
+
+inline auto mmap_resource::as_ptr() noexcept -> char*& {
+  return ptr;
+}
+
+inline auto mmap_resource::write(std::span<const std::byte> /*buf*/) noexcept -> std::expected<size_t, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return std::unexpected{k2::errno_einval};
+}
+
+inline auto mmap_resource::read(std::span<std::byte> /*buf*/) noexcept -> std::expected<size_t, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return std::unexpected{k2::errno_einval};
+}
+
+inline auto mmap_resource::pread(std::span<std::byte> /*buf*/, uint64_t /*offset*/) noexcept -> std::expected<size_t, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return std::unexpected{k2::errno_einval};
+}
+
+inline auto mmap_resource::get_contents() noexcept -> std::expected<string, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return std::unexpected{k2::errno_einval};
+}
+
+inline auto mmap_resource::flush() noexcept -> std::expected<void, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return std::unexpected{k2::errno_einval};
+}
+
+inline auto mmap_resource::close() noexcept -> std::expected<void, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  k2::free_descriptor(std::exchange(m_descriptor, k2::INVALID_PLATFORM_DESCRIPTOR));
+  return {};
+}
+
+inline auto mmap_resource::eof() const noexcept -> std::expected<bool, int32_t> {
+  if (m_descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return std::unexpected{k2::errno_einval};
+}
+
+// ================================================================================================
+
 class file : public sync_resource {
   bool m_eof{};
   k2::descriptor m_descriptor{k2::INVALID_PLATFORM_DESCRIPTOR};
+  std::optional<kphp::fs::mmap_resource> m_mmap_resource;
 
   explicit file(k2::descriptor descriptor) noexcept
       : m_descriptor(descriptor) {}
@@ -93,6 +203,12 @@ public:
 
   static auto open(std::string_view path, std::string_view mode) noexcept -> std::expected<file, int32_t>;
 
+  auto descriptor() const noexcept -> k2::descriptor;
+
+  auto has_mmap_resource() const noexcept -> bool;
+  auto mmap_resource() noexcept -> std::expected<mmap_resource*, int32_t>;
+  auto mmap(void* addr, size_t length, int32_t prot, int32_t flags, uint64_t offset) noexcept -> std::expected<void, int32_t>;
+
   auto write(std::span<const std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
   auto read(std::span<std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
   auto pread(std::span<std::byte> buf, uint64_t offset) noexcept -> std::expected<size_t, int32_t> override;
@@ -108,6 +224,34 @@ inline auto file::open(std::string_view path, std::string_view mode) noexcept ->
     return std::unexpected{error_code};
   }
   return {file{descriptor}};
+}
+
+inline auto file::descriptor() const noexcept -> k2::descriptor {
+  return m_descriptor;
+}
+
+inline auto file::has_mmap_resource() const noexcept -> bool {
+  return m_mmap_resource.has_value();
+}
+
+inline auto file::mmap_resource() noexcept -> std::expected<kphp::fs::mmap_resource*, int32_t> {
+  if (!has_mmap_resource()) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  return {std::addressof(m_mmap_resource.value())};
+}
+
+inline auto file::mmap(void* addr, size_t length, int32_t prot, int32_t flags, uint64_t offset) noexcept -> std::expected<void, int32_t> {
+  if (has_mmap_resource()) [[unlikely]] {
+    return {};
+  }
+
+  auto expected_mmap_resource{mmap_resource::mmap(addr, length, prot, flags, m_descriptor, offset)};
+  if (!expected_mmap_resource.has_value()) [[unlikely]] {
+    return std::unexpected{k2::errno_enodev};
+  }
+  m_mmap_resource.emplace(std::move(expected_mmap_resource.value()));
+  return {};
 }
 
 inline auto file::write(std::span<const std::byte> buf) noexcept -> std::expected<size_t, int32_t> {
