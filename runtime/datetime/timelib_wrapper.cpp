@@ -1,6 +1,9 @@
 #include "runtime/datetime/timelib_wrapper.h"
 
+#include <string_view>
+
 #include "kphp/timelib/timelib.h"
+#include "runtime-common/stdlib/time/timelib-functions.h"
 #if ASAN_ENABLED
 #include <sanitizer/lsan_interface.h>
 #endif
@@ -8,9 +11,8 @@
 
 #include "common/containers/final_action.h"
 #include "common/smart_ptrs/singleton.h"
+#include "runtime-common/stdlib/time/timelib-constants.h"
 #include "runtime/allocator.h"
-#include "runtime/context/runtime-context.h"
-#include "server/php-engine-vars.h"
 #include "server/php-runner.h"
 
 // these constants are a part of the private timelib API, but PHP uses them internally;
@@ -39,6 +41,11 @@ void set_time_value(array<mixed>& dst, const char* name, int64_t value) {
 }
 
 array<mixed> dump_errors(const timelib_error_container& error) {
+  static constexpr std::string_view WARNING_COUNT{"warning_count"};
+  static constexpr std::string_view WARNINGS{"warnings"};
+  static constexpr std::string_view ERROR_COUNT{"error_count"};
+  static constexpr std::string_view ERRORS{"errors"};
+
   array<mixed> result;
 
   array<string> result_warnings;
@@ -46,21 +53,24 @@ array<mixed> dump_errors(const timelib_error_container& error) {
   for (int i = 0; i < error.warning_count; i++) {
     result_warnings.set_value(error.warning_messages[i].position, string(error.warning_messages[i].message));
   }
-  result.set_value(string("warning_count"), error.warning_count);
-  result.set_value(string("warnings"), result_warnings);
+  result.set_value(string(WARNING_COUNT.data(), WARNING_COUNT.size()), error.warning_count);
+  result.set_value(string(WARNINGS.data(), WARNINGS.size()), result_warnings);
 
   array<string> result_errors;
   result_errors.reserve(error.error_count, false);
   for (int i = 0; i < error.error_count; i++) {
     result_errors.set_value(error.error_messages[i].position, string(error.error_messages[i].message));
   }
-  result.set_value(string("error_count"), error.error_count);
-  result.set_value(string("errors"), result_errors);
+  result.set_value(string(ERROR_COUNT.data(), ERROR_COUNT.size()), error.error_count);
+  result.set_value(string(ERRORS.data(), ERRORS.size()), result_errors);
 
   return result;
 }
 
 array<mixed> create_date_parse_array(timelib_time* t, timelib_error_container* error) {
+  static constexpr std::string_view FRACTION{"fraction"};
+  static constexpr std::string_view IS_LOCALTIME{"is_localtime"};
+
   array<mixed> result;
 
   // note: we're setting the result array keys in the same order as PHP does
@@ -73,56 +83,72 @@ array<mixed> create_date_parse_array(timelib_time* t, timelib_error_container* e
   set_time_value(result, "second", t->s);
 
   if (t->us == TIMELIB_UNSET) {
-    result.set_value(string("fraction"), false);
+    result.set_value(string(FRACTION.data(), FRACTION.size()), false);
   } else {
-    result.set_value(string("fraction"), static_cast<double>(t->us) / 1000000.0);
+    result.set_value(string(FRACTION.data(), FRACTION.size()), static_cast<double>(t->us) / 1000000.0);
   }
 
   result.merge_with(dump_errors(*error));
 
-  result.set_value(string("is_localtime"), static_cast<bool>(t->is_localtime));
+  result.set_value(string(IS_LOCALTIME.data(), IS_LOCALTIME.size()), static_cast<bool>(t->is_localtime));
 
   if (t->is_localtime) {
+    static constexpr std::string_view IS_DST{"is_dst"};
+    static constexpr std::string_view TZ_ABBR{"tz_abbr"};
+    static constexpr std::string_view TZ_ID{"tz_id"};
+
     set_time_value(result, "zone_type", t->zone_type);
     switch (t->zone_type) {
     case TIMELIB_ZONETYPE_OFFSET:
       set_time_value(result, "zone", t->z);
-      result.set_value(string("is_dst"), static_cast<bool>(t->dst));
+      result.set_value(string(IS_DST.data(), IS_DST.size()), static_cast<bool>(t->dst));
       break;
     case TIMELIB_ZONETYPE_ID:
       if (t->tz_abbr) {
-        result.set_value(string("tz_abbr"), string(t->tz_abbr));
+        result.set_value(string(TZ_ABBR.data(), TZ_ABBR.size()), string(t->tz_abbr));
       }
       if (t->tz_info) {
-        result.set_value(string("tz_id"), string(t->tz_info->name));
+        result.set_value(string(TZ_ID.data(), TZ_ID.size()), string(t->tz_info->name));
       }
       break;
     case TIMELIB_ZONETYPE_ABBR:
       set_time_value(result, "zone", t->z);
-      result.set_value(string("is_dst"), static_cast<bool>(t->dst));
-      result.set_value(string("tz_abbr"), string(t->tz_abbr));
+      result.set_value(string(IS_DST.data(), IS_DST.size()), static_cast<bool>(t->dst));
+      result.set_value(string(TZ_ABBR.data(), TZ_ABBR.size()), string(t->tz_abbr));
       break;
     }
   }
   if (t->have_relative) {
+    static constexpr std::string_view YEAR{"year"};
+    static constexpr std::string_view MONTH{"month"};
+    static constexpr std::string_view DAY{"day"};
+    static constexpr std::string_view HOUR{"hour"};
+    static constexpr std::string_view MINUTE{"minute"};
+    static constexpr std::string_view SECOND{"second"};
+    static constexpr std::string_view RELATIVE{"relative"};
+
     array<mixed> relative;
-    relative.set_value(string("year"), t->relative.y);
-    relative.set_value(string("month"), t->relative.m);
-    relative.set_value(string("day"), t->relative.d);
-    relative.set_value(string("hour"), t->relative.h);
-    relative.set_value(string("minute"), t->relative.i);
-    relative.set_value(string("second"), t->relative.s);
+    relative.set_value(string(YEAR.data(), YEAR.size()), t->relative.y);
+    relative.set_value(string(MONTH.data(), MONTH.size()), t->relative.m);
+    relative.set_value(string(DAY.data(), DAY.size()), t->relative.d);
+    relative.set_value(string(HOUR.data(), HOUR.size()), t->relative.h);
+    relative.set_value(string(MINUTE.data(), MINUTE.size()), t->relative.i);
+    relative.set_value(string(SECOND.data(), SECOND.size()), t->relative.s);
     if (t->relative.have_weekday_relative) {
-      relative.set_value(string("weekday"), t->relative.weekday);
+      static constexpr std::string_view WEEKDAY{"weekday"};
+
+      relative.set_value(string(WEEKDAY.data(), WEEKDAY.size()), t->relative.weekday);
     }
     if (t->relative.have_special_relative && (t->relative.special.type == TIMELIB_SPECIAL_WEEKDAY)) {
-      relative.set_value(string("weekdays"), t->relative.special.amount);
+      static constexpr std::string_view WEEKDAYS{"weekdays"};
+
+      relative.set_value(string(WEEKDAYS.data(), WEEKDAYS.size()), t->relative.special.amount);
     }
     if (t->relative.first_last_day_of) {
       string key = string(t->relative.first_last_day_of == TIMELIB_SPECIAL_FIRST_DAY_OF_MONTH ? "first_day_of_month" : "last_day_of_month");
       relative.set_value(key, true);
     }
-    result.set_value(string("relative"), relative);
+    result.set_value(string(RELATIVE.data(), RELATIVE.size()), relative);
   }
 
   return result;
@@ -140,18 +166,18 @@ struct TzinfoCache : private vk::not_copyable {
     // if we'll need other timezones, they can be passed as a command-line
     // flag to instruct the runtime to load extra tzinfo objects here
 
-    europe_moscow_ = get_timezone_info(PHP_TIMELIB_TZ_MOSCOW);
+    europe_moscow_ = get_timezone_info(kphp::timelib::timezones::MOSCOW);
     php_assert(europe_moscow_ != nullptr);
 
-    etc_gmt3_ = get_timezone_info(PHP_TIMELIB_TZ_GMT3);
+    etc_gmt3_ = get_timezone_info(kphp::timelib::timezones::GMT3);
     php_assert(etc_gmt3_ != nullptr);
   }
 
   timelib_tzinfo* get_tzinfo(const char* tz_name) {
-    if (strcmp(PHP_TIMELIB_TZ_MOSCOW, tz_name) == 0) {
+    if (strcmp(kphp::timelib::timezones::MOSCOW, tz_name) == 0) {
       return europe_moscow_;
     }
-    if (strcmp(PHP_TIMELIB_TZ_GMT3, tz_name) == 0) {
+    if (strcmp(kphp::timelib::timezones::GMT3, tz_name) == 0) {
       return etc_gmt3_;
     }
     return nullptr;
@@ -163,14 +189,6 @@ private:
 
 void global_init_php_timelib() {
   vk::singleton<TzinfoCache>::get().init();
-}
-
-int php_timelib_days_in_month(int64_t m, int64_t y) {
-  return timelib_days_in_month(y, m);
-}
-
-bool php_timelib_is_valid_date(int64_t m, int64_t d, int64_t y) {
-  return y >= 1 && y <= 32767 && timelib_valid_date(y, m, d);
 }
 
 static timelib_time* timelib_strtotime_leak_safe(const string& time, timelib_error_container** errors) {
@@ -253,8 +271,6 @@ std::pair<int64_t, bool> php_timelib_strtotime(const string& tz_name, const stri
 
 static timelib_error_container* last_errors_global = nullptr;
 
-using ScriptMemGuard = decltype(make_malloc_replacement_with_script_allocator());
-
 // NB: should be called under script allocator, because of calls to free() inside timelib_error_container_dtor()
 static void update_errors_warnings(timelib_error_container* last_errors, [[maybe_unused]] const ScriptMemGuard& guard) {
   if (last_errors_global) {
@@ -267,15 +283,6 @@ static void update_errors_warnings(timelib_error_container* last_errors, [[maybe
 void free_timelib() {
   auto script_guard = make_malloc_replacement_with_script_allocator();
   update_errors_warnings(nullptr, script_guard);
-}
-
-static string gen_parse_error_msg(const timelib_error_container& err, const string& str) {
-  string error_msg{"Failed to parse time string "};
-  error_msg.append(1, '(').append(str).append(1, ')');
-  error_msg.append(" at position ").append(err.error_messages[0].position);
-  error_msg.append(" (").append(1, err.error_messages[0].character).append("): ");
-  error_msg.append(err.error_messages[0].message);
-  return error_msg;
 }
 
 static const string NOW{"now"};
@@ -291,9 +298,14 @@ std::pair<timelib_time*, string> php_timelib_date_initialize(const string& tz_na
   update_errors_warnings(err, script_guard);
 
   if (err && err->error_count) {
-    // spit out the first library error message, at least
     timelib_time_dtor(t);
-    return {nullptr, gen_parse_error_msg(*err, time_str)};
+
+    // spit out the first library error message, at least
+    static constexpr std::string_view MESSAGE_PREFIX{"Failed to parse time string "};
+
+    string err_msg{MESSAGE_PREFIX.data(), MESSAGE_PREFIX.size()};
+    err_msg.reserve_at_least(MESSAGE_PREFIX.size() + 1 + time_str.size() + 2);
+    return {nullptr, err_msg.append(1, '(').append(time_str).append(1, ')').append(1, ' ').append(kphp::timelib::gen_error_msg(err))};
   }
 
   timelib_tzinfo* tzi = nullptr;
@@ -303,7 +315,7 @@ std::pair<timelib_time*, string> php_timelib_date_initialize(const string& tz_na
     tzi = t->tz_info;
   } else {
     // TODO: use f$date_default_timezone_get()
-    tzi = vk::singleton<TzinfoCache>::get().get_tzinfo(PHP_TIMELIB_TZ_MOSCOW);
+    tzi = vk::singleton<TzinfoCache>::get().get_tzinfo(kphp::timelib::timezones::MOSCOW);
   }
 
   timelib_time* now = timelib_time_ctor();
@@ -352,291 +364,6 @@ Optional<array<mixed>> php_timelib_date_get_last_errors() {
   return false;
 }
 
-constexpr const char* english_suffix(timelib_sll number) noexcept {
-  if (number >= 10 && number <= 19) {
-    return "th";
-  } else {
-    switch (number % 10) {
-    case 1:
-      return "st";
-    case 2:
-      return "nd";
-    case 3:
-      return "rd";
-    }
-  }
-  return "th";
-}
-
-static const char* php_date_full_day_name(timelib_sll y, timelib_sll m, timelib_sll d) {
-  timelib_sll day_of_week = timelib_day_of_week(y, m, d);
-  if (day_of_week < 0) {
-    return "Unknown";
-  }
-  return PHP_TIMELIB_DAY_FULL_NAMES[day_of_week];
-}
-
-static const char* php_date_short_day_name(timelib_sll y, timelib_sll m, timelib_sll d) {
-  timelib_sll day_of_week = timelib_day_of_week(y, m, d);
-  if (day_of_week < 0) {
-    return "Unknown";
-  }
-  return PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week];
-}
-
-using StaticBuf = std::array<char, 128>;
-
-static std::size_t safe_snprintf(StaticBuf& buf, const char* format, ...) {
-  va_list args;
-  va_start(args, format);
-  int written = vsnprintf(buf.data(), buf.size(), format, args);
-  va_end(args);
-  php_assert(written > 0);
-
-  if (static_cast<size_t>(written) >= buf.size()) {
-    written = static_cast<int>(buf.size()) - 1;
-    buf[written] = '\0';
-  }
-  return written;
-}
-
-// NB: should be called under script allocator
-static timelib_time_offset* create_time_offset(timelib_time* t, [[maybe_unused]] const ScriptMemGuard& guard) {
-  if (t->zone_type == TIMELIB_ZONETYPE_ABBR) {
-    timelib_time_offset* offset = timelib_time_offset_ctor();
-    offset->offset = (t->z + (t->dst * 3600));
-    offset->leap_secs = 0;
-    offset->is_dst = t->dst;
-    offset->abbr = timelib_strdup(t->tz_abbr);
-    return offset;
-  }
-  if (t->zone_type == TIMELIB_ZONETYPE_OFFSET) {
-    timelib_time_offset* offset = timelib_time_offset_ctor();
-    offset->offset = (t->z);
-    offset->leap_secs = 0;
-    offset->is_dst = 0;
-    offset->abbr = static_cast<char*>(timelib_malloc(9)); // GMT±xxxx\0
-    // set upper bound to 99 just to ensure that 'hours_offset' fits in %02d
-    auto hours_offset = std::min(abs(offset->offset / 3600), 99);
-    snprintf(offset->abbr, 9, "GMT%c%02d%02d", (offset->offset < 0) ? '-' : '+', hours_offset, abs((offset->offset % 3600) / 60));
-    return offset;
-  }
-  return timelib_get_time_zone_info(t->sse, t->tz_info);
-}
-
-string php_timelib_date_format(const string& format, timelib_time* t, bool localtime) {
-  if (format.empty()) {
-    return {};
-  }
-
-  auto script_guard = make_malloc_replacement_with_script_allocator();
-
-  string_buffer& SB = kphp_runtime_context.static_SB_spare;
-  SB.clean();
-
-  timelib_time_offset* offset = localtime ? create_time_offset(t, script_guard) : nullptr;
-  vk::final_action offset_deleter{[offset] {
-    if (offset) {
-      timelib_time_offset_dtor(offset);
-    }
-  }};
-
-  int weekYearSet = 0;
-  timelib_sll isoweek = 0;
-  timelib_sll isoyear = 0;
-
-  // php implementation has 97 bytes buffer capacity, I hope 128 bytes will look a bit less weird
-  StaticBuf buffer{};
-  int length = 0;
-
-  for (std::size_t i = 0; i < format.size(); ++i) {
-    int rfc_colon = 0;
-    switch (format[i]) {
-    // day
-    case 'd':
-      length = safe_snprintf(buffer, "%02d", static_cast<int>(t->d));
-      break;
-    case 'D':
-      length = safe_snprintf(buffer, "%s", php_date_short_day_name(t->y, t->m, t->d));
-      break;
-    case 'j':
-      length = safe_snprintf(buffer, "%d", static_cast<int>(t->d));
-      break;
-    case 'l':
-      length = safe_snprintf(buffer, "%s", php_date_full_day_name(t->y, t->m, t->d));
-      break;
-    case 'S':
-      length = safe_snprintf(buffer, "%s", english_suffix(t->d));
-      break;
-    case 'w':
-      length = safe_snprintf(buffer, "%d", static_cast<int>(timelib_day_of_week(t->y, t->m, t->d)));
-      break;
-    case 'N':
-      length = safe_snprintf(buffer, "%d", static_cast<int>(timelib_iso_day_of_week(t->y, t->m, t->d)));
-      break;
-    case 'z':
-      length = safe_snprintf(buffer, "%d", static_cast<int>(timelib_day_of_year(t->y, t->m, t->d)));
-      break;
-
-    // week
-    case 'W':
-      if (!weekYearSet) {
-        timelib_isoweek_from_date(t->y, t->m, t->d, &isoweek, &isoyear);
-        weekYearSet = 1;
-      }
-      length = safe_snprintf(buffer, "%02d", static_cast<int>(isoweek));
-      break; // iso weeknr
-    case 'o':
-      if (!weekYearSet) {
-        timelib_isoweek_from_date(t->y, t->m, t->d, &isoweek, &isoyear);
-        weekYearSet = 1;
-      }
-      length = safe_snprintf(buffer, "%ld", static_cast<int64_t>(isoyear));
-      break; // iso year
-
-    // month
-    case 'F':
-      length = safe_snprintf(buffer, "%s", PHP_TIMELIB_MON_FULL_NAMES[t->m - 1]);
-      break;
-    case 'm':
-      length = safe_snprintf(buffer, "%02d", static_cast<int>(t->m));
-      break;
-    case 'M':
-      length = safe_snprintf(buffer, "%s", PHP_TIMELIB_MON_SHORT_NAMES[t->m - 1]);
-      break;
-    case 'n':
-      length = safe_snprintf(buffer, "%d", static_cast<int>(t->m));
-      break;
-    case 't':
-      length = safe_snprintf(buffer, "%d", static_cast<int>(timelib_days_in_month(t->y, t->m)));
-      break;
-
-    // year
-    case 'L':
-      length = safe_snprintf(buffer, "%d", timelib_is_leap_year(static_cast<int>(t->y)));
-      break;
-    case 'y':
-      length = safe_snprintf(buffer, "%02d", static_cast<int>(t->y % 100));
-      break;
-    case 'Y':
-      length = safe_snprintf(buffer, "%s%04lld", t->y < 0 ? "-" : "", abs(t->y));
-      break;
-
-    // time
-    case 'a':
-      length = safe_snprintf(buffer, "%s", t->h >= 12 ? "pm" : "am");
-      break;
-    case 'A':
-      length = safe_snprintf(buffer, "%s", t->h >= 12 ? "PM" : "AM");
-      break;
-    case 'B': {
-      int retval = (((static_cast<long>(t->sse)) - ((static_cast<long>(t->sse)) - (((static_cast<long>(t->sse)) % 86400) + 3600))) * 10);
-      if (retval < 0) {
-        retval += 864000;
-      }
-      // Make sure to do this on a positive int to avoid rounding errors
-      retval = (retval / 864) % 1000;
-      length = safe_snprintf(buffer, "%03d", retval);
-      break;
-    }
-    case 'g':
-      length = safe_snprintf(buffer, "%d", (t->h % 12) ? static_cast<int>(t->h) % 12 : 12);
-      break;
-    case 'G':
-      length = safe_snprintf(buffer, "%d", static_cast<int>(t->h));
-      break;
-    case 'h':
-      length = safe_snprintf(buffer, "%02d", (t->h % 12) ? static_cast<int>(t->h) % 12 : 12);
-      break;
-    case 'H':
-      length = safe_snprintf(buffer, "%02d", static_cast<int>(t->h));
-      break;
-    case 'i':
-      length = safe_snprintf(buffer, "%02d", static_cast<int>(t->i));
-      break;
-    case 's':
-      length = safe_snprintf(buffer, "%02d", static_cast<int>(t->s));
-      break;
-    case 'u':
-      length = safe_snprintf(buffer, "%06d", static_cast<int>(floor(t->us)));
-      break;
-    case 'v':
-      length = safe_snprintf(buffer, "%03d", static_cast<int>(floor(t->us / 1000)));
-      break;
-
-    // timezone
-    case 'I':
-      length = safe_snprintf(buffer, "%d", localtime ? offset->is_dst : 0);
-      break;
-    case 'P':
-      rfc_colon = 1;
-      [[fallthrough]];
-    case 'O':
-      length = safe_snprintf(buffer, "%c%02d%s%02d", localtime ? ((offset->offset < 0) ? '-' : '+') : '+', localtime ? abs(offset->offset / 3600) : 0,
-                             rfc_colon ? ":" : "", localtime ? abs((offset->offset % 3600) / 60) : 0);
-      break;
-    case 'T':
-      length = safe_snprintf(buffer, "%s", localtime ? offset->abbr : "GMT");
-      break;
-    case 'e':
-      if (!localtime) {
-        length = safe_snprintf(buffer, "%s", "UTC");
-      } else {
-        switch (t->zone_type) {
-        case TIMELIB_ZONETYPE_ID:
-          length = safe_snprintf(buffer, "%s", t->tz_info->name);
-          break;
-        case TIMELIB_ZONETYPE_ABBR:
-          length = safe_snprintf(buffer, "%s", offset->abbr);
-          break;
-        case TIMELIB_ZONETYPE_OFFSET:
-          length = safe_snprintf(buffer, "%c%02d:%02d", ((offset->offset < 0) ? '-' : '+'), abs(offset->offset / 3600), abs((offset->offset % 3600) / 60));
-          break;
-        }
-      }
-      break;
-    case 'Z':
-      length = safe_snprintf(buffer, "%d", localtime ? offset->offset : 0);
-      break;
-
-    // full date/time
-    case 'c':
-      length = safe_snprintf(buffer, "%04ld-%02d-%02dT%02d:%02d:%02d%c%02d:%02d", static_cast<int64_t>(t->y), static_cast<int>(t->m), static_cast<int>(t->d),
-                             static_cast<int>(t->h), static_cast<int>(t->i), static_cast<int>(t->s), localtime ? ((offset->offset < 0) ? '-' : '+') : '+',
-                             localtime ? abs(offset->offset / 3600) : 0, localtime ? abs((offset->offset % 3600) / 60) : 0);
-      break;
-    case 'r':
-      length = safe_snprintf(buffer, "%3s, %02d %3s %04ld %02d:%02d:%02d %c%02d%02d", php_date_short_day_name(t->y, t->m, t->d), static_cast<int>(t->d),
-                             PHP_TIMELIB_MON_SHORT_NAMES[t->m - 1], static_cast<int64_t>(t->y), static_cast<int>(t->h), static_cast<int>(t->i),
-                             static_cast<int>(t->s), localtime ? ((offset->offset < 0) ? '-' : '+') : '+', localtime ? abs(offset->offset / 3600) : 0,
-                             localtime ? abs((offset->offset % 3600) / 60) : 0);
-      break;
-    case 'U':
-      length = safe_snprintf(buffer, "%lld", t->sse);
-      break;
-
-    case '\\':
-      if (i < format.size()) {
-        ++i;
-      }
-      [[fallthrough]];
-
-    default:
-      buffer[0] = format[i];
-      buffer[1] = '\0';
-      length = 1;
-      break;
-    }
-    SB.append(buffer.data(), length);
-  }
-
-  return SB.str();
-}
-
-string php_timelib_date_format_localtime(const string& format, timelib_time* t) {
-  return php_timelib_date_format(format, t, t->is_localtime);
-}
-
 void php_timelib_date_timestamp_set(timelib_time* t, int64_t timestamp) {
   auto script_guard = make_malloc_replacement_with_script_allocator();
   timelib_unixtime2local(t, static_cast<timelib_sll>(timestamp));
@@ -669,7 +396,11 @@ std::pair<bool, string> php_timelib_date_modify(timelib_time* t, const string& m
 
   if (err && err->error_count) {
     // spit out the first library error message, at least
-    return {false, gen_parse_error_msg(*err, modifier)};
+    static constexpr std::string_view MESSAGE_PREFIX{"Failed to parse time string "};
+
+    string err_msg{MESSAGE_PREFIX.data(), MESSAGE_PREFIX.size()};
+    err_msg.reserve_at_least(MESSAGE_PREFIX.size() + 1 + modifier.size() + 2);
+    return {false, err_msg.append(1, '(').append(modifier).append(1, ')').append(1, ' ').append(kphp::timelib::gen_error_msg(err))};
   }
 
   std::memcpy(&t->relative, &tmp_time->relative, sizeof(timelib_rel_time));
@@ -812,7 +543,12 @@ std::pair<timelib_rel_time*, string> php_timelib_date_interval_initialize(const 
     if (p) {
       timelib_rel_time_dtor(p);
     }
-    return {nullptr, string{"Unknown or bad format ("}.append(format).append(1, ')')};
+
+    static constexpr std::string_view MESSAGE_PREFIX{"Unknown or bad format ("};
+
+    string err_msg{MESSAGE_PREFIX.data(), MESSAGE_PREFIX.size()};
+    err_msg.reserve_at_least(MESSAGE_PREFIX.size() + format.size() + 1);
+    return {nullptr, err_msg.append(format).append(1, ')')};
   }
 
   if (p) {
@@ -825,7 +561,12 @@ std::pair<timelib_rel_time*, string> php_timelib_date_interval_initialize(const 
     return {timelib_diff(b, e), {}};
   }
 
-  return {nullptr, string{"Failed to parse interval ("}.append(format).append(1, ')')};
+  static constexpr std::string_view MESSAGE_PREFIX{"Failed to parse interval ("};
+
+  string err_msg{MESSAGE_PREFIX.data(), MESSAGE_PREFIX.size()};
+  err_msg.reserve_at_least(MESSAGE_PREFIX.size() + format.size() + 1);
+
+  return {nullptr, err_msg.append(format).append(1, ')')};
 }
 
 void php_timelib_date_interval_remove(timelib_rel_time* t) {
@@ -844,115 +585,12 @@ std::pair<timelib_rel_time*, string> php_timelib_date_interval_create_from_date_
   vk::final_action error_deleter{[err]() { timelib_error_container_dtor(err); }};
 
   if (err->error_count > 0) {
-    string error_msg{"Unknown or bad format ("};
-    error_msg.append(time_str).append(1, ')').append(" at position ").append(err->error_messages[0].position);
-    error_msg.append(" (").append(1, err->error_messages[0].character ? err->error_messages[0].character : ' ').append("): ");
-    error_msg.append(err->error_messages[0].message);
+    static constexpr std::string_view MESSAGE_PREFIX{"Unknown or bad format ("};
+
+    string error_msg{MESSAGE_PREFIX.data(), MESSAGE_PREFIX.size()};
+    error_msg.reserve_at_least(MESSAGE_PREFIX.size() + time_str.size() + 2);
+    error_msg.append(time_str).append(1, ')').append(1, ' ').append(kphp::timelib::gen_error_msg(err));
     return {nullptr, std::move(error_msg)};
   }
   return {timelib_rel_time_clone(&time->relative), {}};
-}
-
-string php_timelib_date_interval_format(const string& format, timelib_rel_time* t) {
-  // no need to use make_malloc_replacement_with_script_allocator() here since this function doesn't allocate heap memory
-  if (format.empty()) {
-    return {};
-  }
-
-  string_buffer& SB = kphp_runtime_context.static_SB_spare;
-  SB.clean();
-
-  // php implementation has 33 bytes buffer capacity, we have 128 bytes as well as php_timelib_date_format()
-  StaticBuf buffer{};
-  int length = 0;
-  bool have_format_spec = false;
-
-  for (std::size_t i = 0; i < format.size(); ++i) {
-    if (have_format_spec) {
-      switch (format[i]) {
-      case 'Y':
-        length = safe_snprintf(buffer, "%02d", static_cast<int>(t->y));
-        break;
-      case 'y':
-        length = safe_snprintf(buffer, "%d", static_cast<int>(t->y));
-        break;
-
-      case 'M':
-        length = safe_snprintf(buffer, "%02d", static_cast<int>(t->m));
-        break;
-      case 'm':
-        length = safe_snprintf(buffer, "%d", static_cast<int>(t->m));
-        break;
-
-      case 'D':
-        length = safe_snprintf(buffer, "%02d", static_cast<int>(t->d));
-        break;
-      case 'd':
-        length = safe_snprintf(buffer, "%d", static_cast<int>(t->d));
-        break;
-
-      case 'H':
-        length = safe_snprintf(buffer, "%02d", static_cast<int>(t->h));
-        break;
-      case 'h':
-        length = safe_snprintf(buffer, "%d", static_cast<int>(t->h));
-        break;
-
-      case 'I':
-        length = safe_snprintf(buffer, "%02d", static_cast<int>(t->i));
-        break;
-      case 'i':
-        length = safe_snprintf(buffer, "%d", static_cast<int>(t->i));
-        break;
-
-      case 'S':
-        length = safe_snprintf(buffer, "%02ld", static_cast<int64_t>(t->s));
-        break;
-      case 's':
-        length = safe_snprintf(buffer, "%ld", static_cast<int64_t>(t->s));
-        break;
-
-      case 'F':
-        length = safe_snprintf(buffer, "%06ld", static_cast<int64_t>(t->us));
-        break;
-      case 'f':
-        length = safe_snprintf(buffer, "%ld", static_cast<int64_t>(t->us));
-        break;
-
-      case 'a': {
-        if (static_cast<int>(t->days) != TIMELIB_UNSET) {
-          length = safe_snprintf(buffer, "%d", static_cast<int>(t->days));
-        } else {
-          length = safe_snprintf(buffer, "(unknown)");
-        }
-      } break;
-      case 'r':
-        length = safe_snprintf(buffer, "%s", t->invert ? "-" : "");
-        break;
-      case 'R':
-        length = safe_snprintf(buffer, "%c", t->invert ? '-' : '+');
-        break;
-
-      case '%':
-        length = safe_snprintf(buffer, "%%");
-        break;
-      default:
-        buffer[0] = '%';
-        buffer[1] = format[i];
-        buffer[2] = '\0';
-        length = 2;
-        break;
-      }
-      SB.append(buffer.data(), length);
-      have_format_spec = false;
-    } else {
-      if (format[i] == '%') {
-        have_format_spec = true;
-      } else {
-        SB << format[i];
-      }
-    }
-  }
-
-  return SB.str();
 }

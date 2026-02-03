@@ -36,7 +36,12 @@ function(build_timelib PIC_ENABLED)
     file(MAKE_DIRECTORY ${install_dir})
     file(MAKE_DIRECTORY ${include_dirs})
 
+    set(compile_definitions)
     set(compile_flags "$ENV{CFLAGS} -g0 ${extra_compile_flags}")
+
+    if(TIMELIB_ALLOC_FUNC_PREFIX)
+        list(APPEND compile_definitions TIMELIB_ALLOC_FUNC_PREFIX=${TIMELIB_ALLOC_FUNC_PREFIX})
+    endif()
 
     message(STATUS "Timelib Summary:
 
@@ -49,6 +54,7 @@ function(build_timelib PIC_ENABLED)
         Compiler:
           C compiler:   ${CMAKE_C_COMPILER}
           CFLAGS:       ${compile_flags}
+          Definitions:  ${compile_definitions}
     ")
 
     set(cmake_args
@@ -58,6 +64,7 @@ function(build_timelib PIC_ENABLED)
             -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
             -DCMAKE_POSITION_INDEPENDENT_CODE=${PIC_ENABLED}
             -DCMAKE_INSTALL_PREFIX=${install_dir}
+            -DTIMELIB_ALLOC_FUNC_PREFIX=${TIMELIB_ALLOC_FUNC_PREFIX}
     )
 
     ExternalProject_Add(
@@ -83,6 +90,9 @@ function(build_timelib PIC_ENABLED)
             IMPORTED_LOCATION ${libraries}
             INTERFACE_INCLUDE_DIRECTORIES ${include_dirs}
     )
+    if(compile_definitions)
+        target_compile_definitions(${target_name} INTERFACE ${compile_definitions})
+    endif()
 
     # Ensure that the timelib is built before they are used
     add_dependencies(${target_name} ${project_name})

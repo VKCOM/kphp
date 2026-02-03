@@ -41,6 +41,5 @@ extern "C" char* __wrap_strdup(const char* str1) noexcept {
   if (!AllocatorState::get().libc_alloc_allowed()) [[unlikely]] {
     kphp::log::error("unexpected use of strdup");
   }
-  auto* str2{static_cast<char*>(kphp::memory::script::alloc(std::strlen(str1) + 1))};
-  return std::strcpy(str2, str1);
+  return kphp::memory::script::strdup(str1);
 }

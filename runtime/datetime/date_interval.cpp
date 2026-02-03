@@ -4,6 +4,8 @@
 
 #include "runtime/datetime/date_interval.h"
 
+#include "runtime-common/stdlib/time/timelib-functions.h"
+#include "runtime/datetime/timelib_wrapper.h"
 #include "runtime/exception.h"
 
 C$DateInterval::~C$DateInterval() {
@@ -36,5 +38,5 @@ class_instance<C$DateInterval> f$DateInterval$$createFromDateString(const string
 }
 
 string f$DateInterval$$format(const class_instance<C$DateInterval>& self, const string& format) noexcept {
-  return php_timelib_date_interval_format(format, self->rel_time);
+  return kphp::timelib::format_rel_time(format, *self->rel_time);
 }

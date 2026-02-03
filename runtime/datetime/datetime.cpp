@@ -4,6 +4,9 @@
 
 #include "runtime/datetime/datetime.h"
 
+#include "kphp/timelib/timelib.h"
+
+#include "runtime-common/stdlib/time/timelib-functions.h"
 #include "runtime/datetime/date_interval.h"
 #include "runtime/datetime/datetime_immutable.h"
 #include "runtime/exception.h"
@@ -104,7 +107,20 @@ class_instance<C$DateInterval> f$DateTime$$diff(const class_instance<C$DateTime>
 }
 
 string f$DateTime$$format(const class_instance<C$DateTime>& self, const string& format) noexcept {
-  return php_timelib_date_format_localtime(format, self->time);
+  if (format.empty()) {
+    return {};
+  }
+
+  auto script_guard = make_malloc_replacement_with_script_allocator();
+
+  timelib_time_offset* offset = self->time->is_localtime ? create_time_offset(self->time, script_guard) : nullptr;
+  vk::final_action offset_deleter{[offset] {
+    if (offset) {
+      timelib_time_offset_dtor(offset);
+    }
+  }};
+
+  return kphp::timelib::format_time(format, *self->time, offset);
 }
 
 int64_t f$DateTime$$getOffset(const class_instance<C$DateTime>& self) noexcept {

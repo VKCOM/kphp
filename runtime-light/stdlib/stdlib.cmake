@@ -41,6 +41,9 @@ prepend(
   string/string-state.cpp
   system/system-functions.cpp
   system/system-state.cpp
+  time/date-interval.cpp
+  time/date-time.cpp
+  time/date-time-immutable.cpp
   time/time-functions.cpp
   time/time-state.cpp
   time/timelib-functions.cpp

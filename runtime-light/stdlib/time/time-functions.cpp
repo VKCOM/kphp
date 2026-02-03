@@ -12,16 +12,16 @@
 #include <string_view>
 
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-light/stdlib/time/timelib-constants.h"
+#include "runtime-common/stdlib/time/timelib-constants.h"
 
 namespace {
 
 constexpr std::array<std::string_view, 4> suffix = {"st", "nd", "rd", "th"};
 
-void iso_week_number(int y, int doy, int weekday, int& iw, int& iy) noexcept {
-  int y_leap = std::chrono::year(y).is_leap();
-  int prev_y_leap = std::chrono::year(y - 1).is_leap();
-  int jan1weekday = (weekday - (doy % 7) + 7) % 7;
+void iso_week_number(int32_t y, int32_t doy, int32_t weekday, int32_t& iw, int32_t& iy) noexcept {
+  auto y_leap{std::chrono::year(y).is_leap()};
+  auto prev_y_leap{std::chrono::year(y - 1).is_leap()};
+  auto jan1weekday{(weekday - (doy % 7) + 7) % 7};
 
   if (weekday == 0) {
     weekday = 7;
@@ -42,7 +42,7 @@ void iso_week_number(int y, int doy, int weekday, int& iw, int& iy) noexcept {
   }
   /* Find if Y M D falls in YearNumber Y+1, WeekNumber 1 */
   if (iy == y) {
-    int i = y_leap ? 366 : 365;
+    int32_t i{y_leap ? 366 : 365};
     if ((i - (doy - y_leap + 1)) < (4 - weekday)) {
       iy = y + 1;
       iw = 1;
@@ -51,7 +51,7 @@ void iso_week_number(int y, int doy, int weekday, int& iw, int& iy) noexcept {
   }
   /* Find if Y M D falls in YearNumber Y, WeekNumber 1 through 53 */
   if (iy == y) {
-    int j = doy + (7 - weekday) + jan1weekday;
+    auto j{doy + (7 - weekday) + jan1weekday};
     iw = j / 7;
     if (jan1weekday > 4) {
       iw -= 1;
@@ -77,39 +77,39 @@ int64_t fix_year(int64_t year) noexcept {
 string date(const string& format, const tm& t, int64_t timestamp, bool local) noexcept {
   string_buffer& SB{RuntimeContext::get().static_SB};
 
-  int year = t.tm_year + 1900;
-  int month = t.tm_mon + 1;
-  int day = t.tm_mday;
-  int hour = t.tm_hour;
-  int hour12 = (hour + 11) % 12 + 1;
-  int minute = t.tm_min;
-  int second = t.tm_sec;
-  int day_of_week = t.tm_wday;
-  int day_of_year = t.tm_yday;
-  int64_t internet_time = 0;
-  int iso_week = 0;
-  int iso_year = 0;
+  auto year{t.tm_year + 1900};
+  auto month{t.tm_mon + 1};
+  auto day{t.tm_mday};
+  auto hour{t.tm_hour};
+  auto hour12{(hour + 11) % 12 + 1};
+  auto minute{t.tm_min};
+  auto second{t.tm_sec};
+  auto day_of_week{t.tm_wday};
+  auto day_of_year{t.tm_yday};
+  int64_t internet_time{0};
+  int32_t iso_week{0};
+  int32_t iso_year{0};
 
   SB.clean();
-  for (int i = 0; i < static_cast<int>(format.size()); i++) {
+  for (int32_t i{}; i < format.size(); i++) {
     switch (format[i]) {
     case 'd':
       SB << static_cast<char>(day / 10 + '0') << static_cast<char>(day % 10 + '0');
       break;
     case 'D':
-      SB << DAY_SHORT_NAMES[day_of_week].data();
+      SB << kphp::timelib::days::SHORT_NAMES[day_of_week];
       break;
     case 'j':
       SB << day;
       break;
     case 'l':
-      SB << DAY_FULL_NAMES[day_of_week].data();
+      SB << kphp::timelib::days::FULL_NAMES[day_of_week];
       break;
     case 'N':
       SB << (day_of_week == 0 ? '7' : static_cast<char>(day_of_week + '0'));
       break;
     case 'S': {
-      int c = INT_MAX;
+      auto c{INT_MAX};
       switch (day) {
       case 1:
       case 21:
@@ -141,13 +141,13 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       SB << static_cast<char>('0' + iso_week / 10) << static_cast<char>('0' + iso_week % 10);
       break;
     case 'F':
-      SB << MON_FULL_NAMES[month - 1].data();
+      SB << kphp::timelib::months::FULL_NAMES[month - 1];
       break;
     case 'm':
       SB << static_cast<char>(month / 10 + '0') << static_cast<char>(month % 10 + '0');
       break;
     case 'M':
-      SB << MON_SHORT_NAMES[month - 1].data();
+      SB << kphp::timelib::months::SHORT_NAMES[month - 1];
       break;
     case 'n':
       SB << month;
@@ -157,7 +157,7 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
           std::chrono::year_month_day_last(std::chrono::year(year), std::chrono::month_day_last{std::chrono::month(month) / std::chrono::last}).day());
       break;
     case 'L':
-      SB << static_cast<int>(std::chrono::year(year).is_leap());
+      SB << static_cast<int32_t>(std::chrono::year(year).is_leap());
       break;
     case 'o':
       iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
@@ -205,13 +205,13 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       break;
     case 'e':
       if (local) {
-        SB << kphp::timelib::timezones::MOSCOW.data();
+        SB << kphp::timelib::timezones::MOSCOW;
       } else {
         SB << "UTC";
       }
       break;
     case 'I':
-      SB << static_cast<int>(t.tm_isdst > 0);
+      SB << static_cast<int32_t>(t.tm_isdst > 0);
       break;
     case 'O':
       if (local) {
@@ -265,12 +265,12 @@ string date(const string& format, const tm& t, int64_t timestamp, bool local) no
       }
       break;
     case 'r':
-      SB << DAY_SHORT_NAMES[day_of_week].data();
+      SB << kphp::timelib::days::SHORT_NAMES[day_of_week];
       SB << ", ";
       SB << static_cast<char>(day / 10 + '0');
       SB << static_cast<char>(day % 10 + '0');
       SB << ' ';
-      SB << MON_SHORT_NAMES[month - 1].data();
+      SB << kphp::timelib::months::SHORT_NAMES[month - 1];
       SB << ' ';
       SB << year;
       SB << ' ';

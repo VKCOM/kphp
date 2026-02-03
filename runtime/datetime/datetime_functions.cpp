@@ -11,9 +11,14 @@
 #include <sys/time.h>
 
 #include "runtime-common/stdlib/string/string-context.h"
+#include "runtime-common/stdlib/time/timelib-constants.h"
+#include "runtime-common/stdlib/time/timelib-functions.h"
 #include "runtime/context/runtime-context.h"
 #include "runtime/critical_section.h"
 #include "runtime/datetime/timelib_wrapper.h"
+
+static constexpr int64_t CHECKDATE_YEAR_MIN{1};
+static constexpr int64_t CHECKDATE_YEAR_MAX{32767};
 
 extern long timezone;
 
@@ -55,7 +60,7 @@ static time_t deprecated_gmmktime(struct tm* tm) {
 }
 
 bool f$checkdate(int64_t month, int64_t day, int64_t year) {
-  return php_timelib_is_valid_date(month, day, year);
+  return year >= CHECKDATE_YEAR_MIN && year <= CHECKDATE_YEAR_MAX && kphp::timelib::valid_date(year, month, day);
 }
 
 static inline int32_t fix_year(int32_t year) {
@@ -72,8 +77,8 @@ static inline int32_t fix_year(int32_t year) {
 void iso_week_number(int y, int doy, int weekday, int& iw, int& iy) {
   int y_leap, prev_y_leap, jan1weekday;
 
-  y_leap = timelib_is_leap_year(y);
-  prev_y_leap = timelib_is_leap_year(y - 1);
+  y_leap = kphp::timelib::is_leap_year(y);
+  prev_y_leap = kphp::timelib::is_leap_year(y - 1);
 
   jan1weekday = (weekday - (doy % 7) + 7) % 7;
 
@@ -138,13 +143,13 @@ static string date(const string& format, const tm& t, int64_t timestamp, bool lo
       SB << (char)(day % 10 + '0');
       break;
     case 'D':
-      SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week];
+      SB << kphp::timelib::days::SHORT_NAMES[day_of_week];
       break;
     case 'j':
       SB << day;
       break;
     case 'l':
-      SB << PHP_TIMELIB_DAY_FULL_NAMES[day_of_week];
+      SB << kphp::timelib::days::FULL_NAMES[day_of_week];
       break;
     case 'N':
       SB << (day_of_week == 0 ? '7' : (char)(day_of_week + '0'));
@@ -183,23 +188,23 @@ static string date(const string& format, const tm& t, int64_t timestamp, bool lo
       SB << (char)('0' + iso_week % 10);
       break;
     case 'F':
-      SB << PHP_TIMELIB_MON_FULL_NAMES[month - 1];
+      SB << kphp::timelib::months::FULL_NAMES[month - 1];
       break;
     case 'm':
       SB << (char)(month / 10 + '0');
       SB << (char)(month % 10 + '0');
       break;
     case 'M':
-      SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1];
+      SB << kphp::timelib::months::SHORT_NAMES[month - 1];
       break;
     case 'n':
       SB << month;
       break;
     case 't':
-      SB << php_timelib_days_in_month(month, year);
+      SB << kphp::timelib::days_in_month(year, month);
       break;
     case 'L':
-      SB << (int)timelib_is_leap_year(year);
+      SB << (int)kphp::timelib::is_leap_year(year);
       break;
     case 'o':
       iso_week_number(year, day_of_year, day_of_week, iso_week, iso_year);
@@ -251,7 +256,7 @@ static string date(const string& format, const tm& t, int64_t timestamp, bool lo
       break;
     case 'e':
       if (local) {
-        SB << PHP_TIMELIB_TZ_MOSCOW;
+        SB << kphp::timelib::timezones::MOSCOW;
       } else {
         SB << "UTC";
       }
@@ -311,12 +316,12 @@ static string date(const string& format, const tm& t, int64_t timestamp, bool lo
       }
       break;
     case 'r':
-      SB << PHP_TIMELIB_DAY_SHORT_NAMES[day_of_week];
+      SB << kphp::timelib::days::SHORT_NAMES[day_of_week];
       SB << ", ";
       SB << (char)(day / 10 + '0');
       SB << (char)(day % 10 + '0');
       SB << ' ';
-      SB << PHP_TIMELIB_MON_SHORT_NAMES[month - 1];
+      SB << kphp::timelib::months::SHORT_NAMES[month - 1];
       SB << ' ';
       SB << year;
       SB << ' ';
@@ -361,17 +366,17 @@ string f$date(const string& format, int64_t timestamp) {
 }
 
 bool f$date_default_timezone_set(const string& s) {
-  if (strcmp(s.c_str(), PHP_TIMELIB_TZ_GMT3) == 0) {
-    set_default_timezone_id(PHP_TIMELIB_TZ_GMT3);
+  if (strcmp(s.c_str(), kphp::timelib::timezones::GMT3) == 0) {
+    set_default_timezone_id(kphp::timelib::timezones::GMT3);
     return true;
   }
-  if (strcmp(s.c_str(), PHP_TIMELIB_TZ_MOSCOW) == 0) {
-    set_default_timezone_id(PHP_TIMELIB_TZ_MOSCOW);
+  if (strcmp(s.c_str(), kphp::timelib::timezones::MOSCOW) == 0) {
+    set_default_timezone_id(kphp::timelib::timezones::MOSCOW);
     return true;
   }
   // TODO: this branch is weird; remove it?
-  if (strcmp(s.c_str(), PHP_TIMELIB_TZ_GMT4) == 0) {
-    php_warning("Timezone %s is not supported, use %s instead", PHP_TIMELIB_TZ_GMT4, PHP_TIMELIB_TZ_GMT3);
+  if (strcmp(s.c_str(), kphp::timelib::timezones::GMT4) == 0) {
+    php_warning("Timezone %s is not supported, use %s instead", kphp::timelib::timezones::GMT4, kphp::timelib::timezones::GMT3);
     return false;
   }
   php_critical_error("unsupported default timezone \"%s\"", s.c_str());
@@ -403,8 +408,8 @@ array<mixed> f$getdate(int64_t timestamp) {
   result.set_value(string("mon", 3), t.tm_mon + 1);
   result.set_value(string("year", 4), t.tm_year + 1900);
   result.set_value(string("yday", 4), t.tm_yday);
-  result.set_value(string("weekday", 7), string(PHP_TIMELIB_DAY_FULL_NAMES[t.tm_wday]));
-  result.set_value(string("month", 5), string(PHP_TIMELIB_MON_FULL_NAMES[t.tm_mon]));
+  result.set_value(string("weekday", 7), string(kphp::timelib::days::FULL_NAMES[t.tm_wday]));
+  result.set_value(string("month", 5), string(kphp::timelib::months::FULL_NAMES[t.tm_mon]));
   result.set_value(string("0", 1), timestamp);
 
   return result;
@@ -634,7 +639,7 @@ int64_t f$_hrtime_int() {
 void init_datetime_lib() {
   dl::enter_critical_section(); // OK
 
-  set_default_timezone_id(PHP_TIMELIB_TZ_MOSCOW);
+  set_default_timezone_id(kphp::timelib::timezones::MOSCOW);
 
   dl::leave_critical_section();
 }
