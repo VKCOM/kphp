@@ -234,10 +234,6 @@ Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm alg
     key.shrink(static_cast<string::size_type>(key_required_len));
   }
 
-  if (options & static_cast<int64_t>(cipher_opts::OPENSSL_ZERO_PADDING)) {
-    kphp::log::warning("OPENSSL_ZERO_PADDING option is not supported for now\n");
-    return false;
-  }
   return std::make_pair(key, iv);
 }
 
@@ -278,12 +274,16 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
   }
 
   auto key_iv{algorithm_pad_key_iv(*algorithm, source_key, source_iv, options)};
-  if (key_iv.is_null()) {
+  if (key_iv.is_false()) {
     co_return false;
   }
 
+  tl::BlockPadding padding{tl::BlockPadding::PKCS7};
+  if (options & static_cast<int64_t>(cipher_opts::OPENSSL_ZERO_PADDING)) {
+    padding = tl::BlockPadding::NO_PADDING;
+  }
   tl::CbcEncrypt cbc_encrypt{.algorithm = *algorithm,
-                             .padding = tl::BlockPadding::PKCS7,
+                             .padding = padding,
                              .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
                              .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
                              .data = {.value = {data.c_str(), data.size()}}};
@@ -303,7 +303,9 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
 
   tl::fetcher tlf{response_bytes};
   tl::String response{};
-  kphp::log::assertion(response.fetch(tlf));
+  if (!response.fetch(tlf)) {
+    co_return false;
+  }
   string result{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
   co_return (options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(result) : f$base64_encode(result);
 }
@@ -333,12 +335,16 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
   }
 
   auto key_iv{algorithm_pad_key_iv(*algorithm, source_key, source_iv, options)};
-  if (key_iv.is_null()) {
+  if (key_iv.is_false()) {
     co_return false;
   }
 
+  tl::BlockPadding padding{tl::BlockPadding::PKCS7};
+  if (options & static_cast<int64_t>(cipher_opts::OPENSSL_ZERO_PADDING)) {
+    padding = tl::BlockPadding::NO_PADDING;
+  }
   tl::CbcDecrypt cbc_decrypt{.algorithm = *algorithm,
-                             .padding = tl::BlockPadding::PKCS7,
+                             .padding = padding,
                              .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
                              .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
                              .data = {.value = {data.c_str(), data.size()}}};
@@ -358,7 +364,10 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
 
   tl::fetcher tlf{response_bytes};
   tl::String response{};
-  kphp::log::assertion(response.fetch(tlf));
+  if (!response.fetch(tlf)) {
+    co_return false;
+  }
+
   co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
 }
 
