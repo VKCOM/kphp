@@ -749,6 +749,7 @@ enum CipherAlgorithm : uint32_t {
 
 enum BlockPadding : uint32_t {
   PKCS7 = 0x699e'c5de,
+  NO_PADDING = 0xffc3'd2f3,
 };
 
 // ===== CONFDATA =====
