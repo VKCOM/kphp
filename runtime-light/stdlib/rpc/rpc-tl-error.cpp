@@ -10,6 +10,21 @@
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/rpc/rpc-api.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-builtins.h"
+#include "runtime-light/tl/tl-types.h"
+
+namespace {
+
+template<typename Type>
+bool fetch_and_skip_n(int32_t n, tl::fetcher& fetcher) noexcept {
+  for (auto i = 0; i < n; ++i) {
+    if (!Type{}.fetch(fetcher)) [[unlikely]] {
+      return false;
+    }
+  }
+  return true;
+}
+
+} // namespace
 
 bool TlRpcError::try_fetch() noexcept {
   const auto backup_pos{tl_parse_save_pos()};
@@ -30,42 +45,58 @@ bool TlRpcError::try_fetch() noexcept {
 }
 
 void TlRpcError::fetch_and_skip_header() const noexcept {
-  const auto flags{static_cast<int32_t>(TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int()))};
+  auto& fetcher{RpcServerInstanceState::get().tl_fetcher};
+  tl::i32 flags{};
+  if (!flags.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return;
+  }
 
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::binlog_pos) {
-    std::ignore = TRY_CALL(decltype(f$fetch_long()), void, f$fetch_long());
+  if (flags.value & vk::tl::common::rpc_req_result_extra_flags::binlog_pos && !tl::i64{}.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return;
   }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::binlog_time) {
-    std::ignore = TRY_CALL(decltype(f$fetch_long()), void, f$fetch_long());
+  if (flags.value & vk::tl::common::rpc_req_result_extra_flags::binlog_time && !tl::i64{}.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return;
   }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::engine_pid) {
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
+  if (flags.value & vk::tl::common::rpc_req_result_extra_flags::engine_pid && !fetch_and_skip_n<tl::i32>(3, fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return;
   }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::request_size) {
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
+  if (flags.value & vk::tl::common::rpc_req_result_extra_flags::request_size && !tl::i32{}.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return;
   }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::response_size) {
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
+  if (flags.value & vk::tl::common::rpc_req_result_extra_flags::response_size && !tl::i32{}.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return;
   }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::failed_subqueries) {
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
+  if (flags.value & vk::tl::common::rpc_req_result_extra_flags::failed_subqueries && !tl::i32{}.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return;
   }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::compression_version) {
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
+  if (flags.value & vk::tl::common::rpc_req_result_extra_flags::compression_version && !tl::i32{}.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return;
   }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::stats) {
-    const auto size{TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int())};
-    for (auto i = 0; i < size; ++i) {
-      std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
-      std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
+  if (flags.value & vk::tl::common::rpc_req_result_extra_flags::stats) {
+    tl::i32 size{};
+    if (!size.fetch(fetcher)) [[unlikely]] {
+      THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+      return;
+    }
+    if (!fetch_and_skip_n<tl::string>(size.value * 2, fetcher)) [[unlikely]] {
+      THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_string::make());
+      return;
     }
   }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::epoch_number) {
-    std::ignore = TRY_CALL(decltype(f$fetch_long()), void, f$fetch_long());
+  if (flags.value & vk::tl::common::rpc_req_result_extra_flags::epoch_number && !tl::i64{}.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return;
   }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::view_number) {
-    std::ignore = TRY_CALL(decltype(f$fetch_long()), void, f$fetch_long());
+  if (flags.value & vk::tl::common::rpc_req_result_extra_flags::view_number && !tl::i64{}.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return;
   }
 }
