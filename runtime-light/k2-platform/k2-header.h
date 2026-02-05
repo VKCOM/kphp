@@ -357,6 +357,13 @@ size_t k2_read(uint64_t stream_d, size_t buf_len, void* buf);
 size_t k2_pread(uint64_t stream_d, size_t buf_len, void* buf, uint64_t offset);
 
 /**
+ * equivalent to libc's `fgets` function
+ *
+ * @return returns 0 if EOF is reached or an error occurs, returns the total number of bytes read
+ */
+size_t k2_fgets(uint64_t stream_d, size_t buf_len, void* buf);
+
+/**
  * Semantically equivalent to libc's `mmap` function.
  *
  * @param `md` A pointer to a `uint64_t` where the mmap descriptor will be stored upon success.

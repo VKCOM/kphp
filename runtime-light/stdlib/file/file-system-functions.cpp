@@ -389,3 +389,38 @@ mixed f$getimagesize(const string& name) noexcept {
 
   return result;
 }
+
+Optional<string> f$fgets(const resource& stream, int64_t length) noexcept {
+  auto file_resource{from_mixed<class_instance<kphp::fs::file>>(stream, {})};
+  if (file_resource.is_null()) {
+    return false;
+  }
+  kphp::fs::file* file{file_resource.get()};
+  if (file == nullptr) {
+    return false;
+  }
+
+  if (length < 0) {
+    struct stat st {};
+    k2::fstat(file->descriptor(), &st);
+    if (st.st_size <= 0) {
+      return false;
+    }
+    length = st.st_size + 1;
+  }
+
+  if (length > string::max_size()) {
+    kphp::log::warning("parameter length in function fgets is too large");
+    return false;
+  }
+  string res(static_cast<string::size_type>(length), false);
+  std::span<char> buf{res.buffer(), res.size()};
+
+  auto read_res{k2::fgets(file->descriptor(), std::as_writable_bytes(buf))};
+
+  if (read_res == 0) {
+    return false;
+  }
+  res.shrink(static_cast<string::size_type>(read_res));
+  return res;
+}

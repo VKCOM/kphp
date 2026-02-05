@@ -93,6 +93,10 @@ public:
 
   static auto open(std::string_view path, std::string_view mode) noexcept -> std::expected<file, int32_t>;
 
+  auto descriptor() const noexcept -> k2::descriptor {
+    return m_descriptor;
+  }
+
   auto write(std::span<const std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
   auto read(std::span<std::byte> buf) noexcept -> std::expected<size_t, int32_t> override;
   auto pread(std::span<std::byte> buf, uint64_t offset) noexcept -> std::expected<size_t, int32_t> override;
