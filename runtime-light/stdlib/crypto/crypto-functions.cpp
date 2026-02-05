@@ -274,7 +274,7 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
   }
 
   auto key_iv{algorithm_pad_key_iv(*algorithm, source_key, source_iv, options)};
-  if (key_iv.is_false()) {
+  if (!key_iv.has_value()) {
     co_return false;
   }
 
@@ -302,11 +302,13 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
   }
 
   tl::fetcher tlf{response_bytes};
-  tl::String response{};
-  if (!response.fetch(tlf)) {
+  tl::Maybe<tl::string> response{};
+  kphp::log::assertion(response.fetch(tlf));
+  if (!response.opt_value) {
     co_return false;
   }
-  string result{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
+
+  string result{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
   co_return (options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(result) : f$base64_encode(result);
 }
 
@@ -335,7 +337,7 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
   }
 
   auto key_iv{algorithm_pad_key_iv(*algorithm, source_key, source_iv, options)};
-  if (key_iv.is_false()) {
+  if (!key_iv.has_value()) {
     co_return false;
   }
 
@@ -363,12 +365,13 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
   }
 
   tl::fetcher tlf{response_bytes};
-  tl::String response{};
-  if (!response.fetch(tlf)) {
+  tl::Maybe<tl::string> response{};
+  kphp::log::assertion(response.fetch(tlf));
+  if (!response.opt_value) {
     co_return false;
   }
 
-  co_return string{response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
+  co_return string{(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
 }
 
 kphp::coro::task<Optional<string>> f$openssl_pkey_get_public(string key) noexcept {
@@ -446,9 +449,13 @@ kphp::coro::task<bool> f$openssl_public_encrypt(string data, string& encrypted_d
   }
 
   tl::fetcher tlf{response_bytes};
-  tl::String response{};
+  tl::Maybe<tl::string> response{};
   kphp::log::assertion(response.fetch(tlf));
-  encrypted_data = {response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
+  if (!response.opt_value) {
+    co_return false;
+  }
+
+  encrypted_data = {(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
   co_return true;
 }
 
@@ -482,9 +489,13 @@ kphp::coro::task<bool> f$openssl_private_decrypt(string data, string& decrypted_
   }
 
   tl::fetcher tlf{response_bytes};
-  tl::String response{};
+  tl::Maybe<tl::string> response{};
   kphp::log::assertion(response.fetch(tlf));
-  decrypted_data = {response.inner.value.data(), static_cast<string::size_type>(response.inner.value.size())};
+  if (!response.opt_value) {
+    co_return false;
+  }
+
+  decrypted_data = {(*response.opt_value).value.data(), static_cast<string::size_type>((*response.opt_value).value.size())};
   co_return true;
 }
 
