@@ -391,16 +391,20 @@ mixed f$getimagesize(const string& name) noexcept {
 }
 
 Optional<string> f$fgets(const resource& stream, int64_t length) noexcept {
+  if (length == 0) {
+    return false;
+  }
+
   auto file_resource{from_mixed<class_instance<kphp::fs::file>>(stream, {})};
   if (file_resource.is_null()) {
     return false;
   }
-  kphp::fs::file* file{file_resource.get()};
-  kphp::log::assertion(file != nullptr);
+  kphp::log::assertion(file_resource.get() != nullptr);
+  const kphp::fs::file& file{*file_resource.get()};
 
   if (length < 0) {
     struct stat st {};
-    kphp::log::assertion(k2::fstat(file->descriptor(), std::addressof(st)).has_value());
+    kphp::log::assertion(k2::fstat(file.descriptor(), std::addressof(st)).has_value());
     if (st.st_size <= 0) {
       return false;
     }
@@ -408,13 +412,12 @@ Optional<string> f$fgets(const resource& stream, int64_t length) noexcept {
   }
 
   if (length > string::max_size()) {
-    kphp::log::warning("parameter length in function fgets is too large");
+    kphp::log::warning("parameter length in function fgets mustn't be greater than string::max_size(). length = {}, string::max_size() = {}", length,
+                       string::max_size());
     return false;
   }
   string res{static_cast<string::size_type>(length), false};
-  std::span<char> buf{res.buffer(), res.size()};
-
-  auto read_res{k2::fgets(file->descriptor(), std::as_writable_bytes(buf))};
+  auto read_res{k2::fgets(file.descriptor(), std::as_writable_bytes(std::span<char>{res.buffer(), res.size()}))};
 
   if (read_res == 0) {
     return false;
