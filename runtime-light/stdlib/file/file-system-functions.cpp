@@ -413,7 +413,7 @@ Optional<string> f$fgets(const resource& stream, int64_t length) noexcept {
     kphp::log::warning("parameter length in function fgets is too large");
     return false;
   }
-  string res(static_cast<string::size_type>(length), false);
+  string res{static_cast<string::size_type>(length), false};
   std::span<char> buf{res.buffer(), res.size()};
 
   auto read_res{k2::fgets(file->descriptor(), std::as_writable_bytes(buf))};
