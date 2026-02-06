@@ -49,6 +49,8 @@ function file ($name ::: string) ::: string[] | false;
 
 function is_file ($name ::: string) ::: bool;
 
+function fgets ($stream ::: mixed, $length ::: int = -1) ::: string | false;
+
 // === UNSUPPORTED ===
 /** @kphp-extern-func-info stub generation-required */
 function chmod ($name ::: string, $mode ::: int) ::: bool;
@@ -91,8 +93,6 @@ function ftell ($stream ::: mixed) ::: int | false;
 function fgetc ($stream ::: mixed) ::: string | false;
  /** @kphp-extern-func-info stub generation-required */
 function fpassthru ($stream ::: mixed) ::: int | false;
- /** @kphp-extern-func-info stub generation-required */
-function fgets ($stream ::: mixed, $length ::: int = -1) ::: string | false;
  /** @kphp-extern-func-info stub generation-required */
 function feof ($stream ::: mixed) ::: bool;
 

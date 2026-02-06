@@ -274,3 +274,4 @@ inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& 
 }
 
 mixed f$getimagesize(const string& name) noexcept;
+Optional<string> f$fgets(const resource& stream, int64_t length = -1) noexcept;
