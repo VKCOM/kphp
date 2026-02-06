@@ -1008,14 +1008,14 @@ struct traceID final {
 };
 
 class traceContext final {
-  static constexpr uint32_t RETURN_RESERVED_STATUS_0_FLAG = vk::tl::common::tracing::traceContext::return_reserved_status_0;
-  static constexpr uint32_t RETURN_RESERVED_STATUS_1_FLAG = vk::tl::common::tracing::traceContext::return_reserved_status_1;
-  static constexpr uint32_t PARENT_ID_FLAG = vk::tl::common::tracing::traceContext::parent_id;
-  static constexpr uint32_t SOURCE_ID_FLAG = vk::tl::common::tracing::traceContext::source_id;
-  static constexpr uint32_t RETURN_RESERVED_LEVEL_0_FLAG = vk::tl::common::tracing::traceContext::return_reserved_level_0;
-  static constexpr uint32_t RETURN_RESERVED_LEVEL_1_FLAG = vk::tl::common::tracing::traceContext::return_reserved_level_1;
-  static constexpr uint32_t RETURN_RESERVED_LEVEL_2_FLAG = vk::tl::common::tracing::traceContext::return_reserved_level_2;
-  static constexpr uint32_t RETURN_DEBUG_FLAG = vk::tl::common::tracing::traceContext::return_debug;
+  static constexpr uint32_t RESERVED_STATUS_0_FLAG = vk::tl::common::tracing::trace_context_flags::reserved_status_0;
+  static constexpr uint32_t RESERVED_STATUS_1_FLAG = vk::tl::common::tracing::trace_context_flags::reserved_status_1;
+  static constexpr uint32_t PARENT_ID_FLAG = vk::tl::common::tracing::trace_context_flags::parent_id;
+  static constexpr uint32_t SOURCE_ID_FLAG = vk::tl::common::tracing::trace_context_flags::source_id;
+  static constexpr uint32_t RESERVED_LEVEL_0_FLAG = vk::tl::common::tracing::trace_context_flags::reserved_level_0;
+  static constexpr uint32_t RESERVED_LEVEL_1_FLAG = vk::tl::common::tracing::trace_context_flags::reserved_level_1;
+  static constexpr uint32_t RESERVED_LEVEL_2_FLAG = vk::tl::common::tracing::trace_context_flags::reserved_level_2;
+  static constexpr uint32_t DEBUG_FLAG = vk::tl::common::tracing::trace_context_flags::debug;
 
 public:
   tl::tracing::traceID trace_id{};
@@ -1036,23 +1036,23 @@ public:
   bool debug_flag{};
 
   bool fetch(tl::fetcher& tlf) noexcept {
-    tl::u32 fields_mask{};
+    tl::mask fields_mask{};
     bool ok{fields_mask.fetch(tlf)};
 
     ok = ok && trace_id.fetch(tlf);
     if (ok && static_cast<bool>(fields_mask.value & PARENT_ID_FLAG)) {
-      ok = ok && opt_parent_id.emplace().fetch(tlf);
+      ok &= opt_parent_id.emplace().fetch(tlf);
     }
     if (ok && static_cast<bool>(fields_mask.value & SOURCE_ID_FLAG)) {
-      ok = ok && opt_source_id.emplace().fetch(tlf);
+      ok &= opt_source_id.emplace().fetch(tlf);
     }
 
-    reserved_status_0 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_STATUS_0_FLAG);
-    reserved_status_1 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_STATUS_1_FLAG);
-    reserved_level_0 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_LEVEL_0_FLAG);
-    reserved_level_1 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_LEVEL_1_FLAG);
-    reserved_level_2 = static_cast<bool>(fields_mask.value & RETURN_RESERVED_LEVEL_2_FLAG);
-    debug_flag = static_cast<bool>(fields_mask.value & RETURN_DEBUG_FLAG);
+    reserved_status_0 = static_cast<bool>(fields_mask.value & RESERVED_STATUS_0_FLAG);
+    reserved_status_1 = static_cast<bool>(fields_mask.value & RESERVED_STATUS_1_FLAG);
+    reserved_level_0 = static_cast<bool>(fields_mask.value & RESERVED_LEVEL_0_FLAG);
+    reserved_level_1 = static_cast<bool>(fields_mask.value & RESERVED_LEVEL_1_FLAG);
+    reserved_level_2 = static_cast<bool>(fields_mask.value & RESERVED_LEVEL_2_FLAG);
+    debug_flag = static_cast<bool>(fields_mask.value & DEBUG_FLAG);
 
     return ok;
   }
@@ -1070,6 +1070,7 @@ public:
     return flags;
   }
 };
+
 } // namespace tracing
 
 class rpcInvokeReqExtra final {
@@ -1114,7 +1115,7 @@ public:
   std::optional<tl::string> opt_execution_context;
   bool return_view_number{};
 
-  bool fetch(tl::fetcher& tlf) noexcept;
+  bool fetch(tl::fetcher& tlf, const tl::mask& flags) noexcept;
 
   tl::mask get_flags() const noexcept;
 };
@@ -1122,9 +1123,9 @@ public:
 struct RpcInvokeReqExtra final {
   tl::rpcInvokeReqExtra inner{};
 
-  bool fetch(tl::fetcher& tlf) noexcept {
+  bool fetch(tl::fetcher& tlf, const tl::mask& flags) noexcept {
     tl::magic magic{};
-    return magic.fetch(tlf) && magic.expect(TL_RPC_INVOKE_REQ_EXTRA) && inner.fetch(tlf);
+    return magic.fetch(tlf) && magic.expect(TL_RPC_INVOKE_REQ_EXTRA) && inner.fetch(tlf, flags);
   }
 };
 
@@ -1141,7 +1142,6 @@ class rpcReqResultExtra final {
   static constexpr uint32_t VIEW_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::view_number;
 
 public:
-  tl::mask flags{};
   tl::i64 binlog_pos{};
   tl::i64 binlog_time{};
   tl::netPid engine_pid{};
@@ -1153,16 +1153,16 @@ public:
   tl::i64 epoch_number{};
   tl::i64 view_number{};
 
-  void store(tl::storer& tls) const noexcept;
+  void store(tl::storer& tls, const tl::mask& flags) const noexcept;
 
-  size_t footprint() const noexcept;
+  size_t footprint(const tl::mask& flags) const noexcept;
 };
 
 struct RpcReqResultExtra final {
   tl::rpcReqResultExtra inner{};
 
-  void store(tl::storer& tls) const noexcept {
-    tl::magic{.value = TL_RPC_REQ_RESULT_EXTRA}.store(tls), inner.store(tls);
+  void store(tl::storer& tls, const tl::mask& flags) const noexcept {
+    tl::magic{.value = TL_RPC_REQ_RESULT_EXTRA}.store(tls), inner.store(tls, flags);
   }
 };
 
@@ -1181,15 +1181,16 @@ struct k2RpcResponseError final {
 
 struct k2RpcResponseHeader final {
   tl::mask flags{};
+  tl::mask extra_flags{};
   tl::rpcReqResultExtra extra{};
   std::span<const std::byte> result;
 
   void store(tl::storer& tls) const noexcept {
-    flags.store(tls), extra.store(tls), tls.store_bytes(result);
+    flags.store(tls), extra_flags.store(tls), extra.store(tls, extra_flags), tls.store_bytes(result);
   }
 
   constexpr size_t footprint() const noexcept {
-    return flags.footprint() + extra.footprint() + result.size();
+    return flags.footprint() + extra_flags.footprint() + extra.footprint(extra_flags) + result.size();
   }
 };
 

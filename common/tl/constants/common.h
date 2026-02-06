@@ -45,16 +45,16 @@ namespace vk {
 namespace tl {
 namespace common {
 
-namespace tracing::traceContext {
-static constexpr uint32_t return_reserved_status_0 = 1 << 0;
-static constexpr uint32_t return_reserved_status_1 = 1 << 1;
-static constexpr uint32_t parent_id = 1 << 2;
-static constexpr uint32_t source_id = 1 << 3;
-static constexpr uint32_t return_reserved_level_0 = 1 << 4;
-static constexpr uint32_t return_reserved_level_1 = 1 << 5;
-static constexpr uint32_t return_reserved_level_2 = 1 << 6;
-static constexpr uint32_t return_debug = 1 << 7;
-} // namespace tracing::traceContext
+namespace tracing::trace_context_flags {
+inline constexpr uint32_t reserved_status_0 = 1U << 0U;
+inline constexpr uint32_t reserved_status_1 = 1U << 1U;
+inline constexpr uint32_t parent_id = 1U << 2U;
+inline constexpr uint32_t source_id = 1U << 3U;
+inline constexpr uint32_t reserved_level_0 = 1U << 4U;
+inline constexpr uint32_t reserved_level_1 = 1U << 5U;
+inline constexpr uint32_t reserved_level_2 = 1U << 6U;
+inline constexpr uint32_t debug = 1U << 7U;
+} // namespace tracing::trace_context_flags
 
 namespace rpc_invoke_req_extra_flags {
 inline constexpr uint32_t return_binlog_pos = 1U << 0U;

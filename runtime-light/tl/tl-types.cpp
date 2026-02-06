@@ -146,9 +146,8 @@ bool CertInfoItem::fetch(tl::fetcher& tlf) noexcept {
 
 // ===== RPC =====
 
-bool rpcInvokeReqExtra::fetch(tl::fetcher& tlf) noexcept {
-  tl::mask flags{};
-  bool ok{flags.fetch(tlf)};
+bool rpcInvokeReqExtra::fetch(tl::fetcher& tlf, const tl::mask& flags) noexcept {
+  bool ok{true};
   if (ok && static_cast<bool>(flags.value & WAIT_BINLOG_POS_FLAG)) {
     ok &= opt_wait_binlog_pos.emplace().fetch(tlf);
   }
@@ -197,30 +196,29 @@ bool rpcInvokeReqExtra::fetch(tl::fetcher& tlf) noexcept {
 tl::mask rpcInvokeReqExtra::get_flags() const noexcept {
   tl::mask flags{.value = static_cast<tl::mask::underlying_type>(return_binlog_pos)};
 
-  flags.value |= static_cast<tl::mask::underlying_type>(return_binlog_time) << 1;
-  flags.value |= static_cast<tl::mask::underlying_type>(return_pid) << 2;
-  flags.value |= static_cast<tl::mask::underlying_type>(return_request_sizes) << 3;
-  flags.value |= static_cast<tl::mask::underlying_type>(return_failed_subqueries) << 4;
-  flags.value |= static_cast<tl::mask::underlying_type>(return_query_stats) << 6;
-  flags.value |= static_cast<tl::mask::underlying_type>(no_result) << 7;
-  flags.value |= static_cast<tl::mask::underlying_type>(return_view_number) << 27;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_binlog_time) << 1U;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_pid) << 2U;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_request_sizes) << 3U;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_failed_subqueries) << 4U;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_query_stats) << 6U;
+  flags.value |= static_cast<tl::mask::underlying_type>(no_result) << 7U;
+  flags.value |= static_cast<tl::mask::underlying_type>(return_view_number) << 27U;
 
-  flags.value |= static_cast<tl::mask::underlying_type>(opt_wait_binlog_pos.has_value()) << 16;
-  flags.value |= static_cast<tl::mask::underlying_type>(opt_string_forward_keys.has_value()) << 18;
-  flags.value |= static_cast<tl::mask::underlying_type>(opt_int_forward_keys.has_value()) << 19;
-  flags.value |= static_cast<tl::mask::underlying_type>(opt_string_forward.has_value()) << 20;
-  flags.value |= static_cast<tl::mask::underlying_type>(opt_int_forward.has_value()) << 21;
-  flags.value |= static_cast<tl::mask::underlying_type>(opt_custom_timeout_ms.has_value()) << 23;
-  flags.value |= static_cast<tl::mask::underlying_type>(opt_supported_compression_version.has_value()) << 25;
-  flags.value |= static_cast<tl::mask::underlying_type>(opt_random_delay.has_value()) << 26;
-  flags.value |= static_cast<tl::mask::underlying_type>(opt_persistent_query.has_value()) << 28;
-  flags.value |= static_cast<tl::mask::underlying_type>(opt_trace_context.has_value()) << 29;
-  flags.value |= static_cast<tl::mask::underlying_type>(opt_execution_context.has_value()) << 30;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_wait_binlog_pos.has_value()) << 16U;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_string_forward_keys.has_value()) << 18U;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_int_forward_keys.has_value()) << 19U;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_string_forward.has_value()) << 20U;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_int_forward.has_value()) << 21U;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_custom_timeout_ms.has_value()) << 23U;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_supported_compression_version.has_value()) << 25U;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_random_delay.has_value()) << 26U;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_persistent_query.has_value()) << 28U;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_trace_context.has_value()) << 29U;
+  flags.value |= static_cast<tl::mask::underlying_type>(opt_execution_context.has_value()) << 30U;
   return flags;
 }
 
-void rpcReqResultExtra::store(tl::storer& tls) const noexcept {
-  flags.store(tls);
+void rpcReqResultExtra::store(tl::storer& tls, const tl::mask& flags) const noexcept {
   if (static_cast<bool>(flags.value & BINLOG_POS_FLAG)) {
     binlog_pos.store(tls);
   }
@@ -249,8 +247,8 @@ void rpcReqResultExtra::store(tl::storer& tls) const noexcept {
   }
 }
 
-size_t rpcReqResultExtra::footprint() const noexcept {
-  size_t footprint{flags.footprint()};
+size_t rpcReqResultExtra::footprint(const tl::mask& flags) const noexcept {
+  size_t footprint{};
   if (static_cast<bool>(flags.value & BINLOG_POS_FLAG)) {
     footprint += binlog_pos.footprint();
   }

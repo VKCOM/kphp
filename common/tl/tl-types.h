@@ -126,14 +126,14 @@ struct traceID final {
 };
 
 class traceContext final {
-  static constexpr uint32_t RETURN_RESERVED_STATUS_0_FLAG = vk::tl::common::tracing::traceContext::return_reserved_status_0;
-  static constexpr uint32_t RETURN_RESERVED_STATUS_1_FLAG = vk::tl::common::tracing::traceContext::return_reserved_status_1;
-  static constexpr uint32_t PARENT_ID_FLAG = vk::tl::common::tracing::traceContext::parent_id;
-  static constexpr uint32_t SOURCE_ID_FLAG = vk::tl::common::tracing::traceContext::source_id;
-  static constexpr uint32_t RETURN_RESERVED_LEVEL_0_FLAG = vk::tl::common::tracing::traceContext::return_reserved_level_0;
-  static constexpr uint32_t RETURN_RESERVED_LEVEL_1_FLAG = vk::tl::common::tracing::traceContext::return_reserved_level_1;
-  static constexpr uint32_t RETURN_RESERVED_LEVEL_2_FLAG = vk::tl::common::tracing::traceContext::return_reserved_level_2;
-  static constexpr uint32_t RETURN_DEBUG_FLAG = vk::tl::common::tracing::traceContext::return_debug;
+  static constexpr uint32_t RESERVED_STATUS_0_FLAG = vk::tl::common::tracing::trace_context_flags::reserved_status_0;
+  static constexpr uint32_t RESERVED_STATUS_1_FLAG = vk::tl::common::tracing::trace_context_flags::reserved_status_1;
+  static constexpr uint32_t PARENT_ID_FLAG = vk::tl::common::tracing::trace_context_flags::parent_id;
+  static constexpr uint32_t SOURCE_ID_FLAG = vk::tl::common::tracing::trace_context_flags::source_id;
+  static constexpr uint32_t RESERVED_LEVEL_0_FLAG = vk::tl::common::tracing::trace_context_flags::reserved_level_0;
+  static constexpr uint32_t RESERVED_LEVEL_1_FLAG = vk::tl::common::tracing::trace_context_flags::reserved_level_1;
+  static constexpr uint32_t RESERVED_LEVEL_2_FLAG = vk::tl::common::tracing::trace_context_flags::reserved_level_2;
+  static constexpr uint32_t DEBUG_FLAG = vk::tl::common::tracing::trace_context_flags::debug;
 
 public:
   tracing::traceID trace_id{};
@@ -169,12 +169,12 @@ public:
       ok = ok && !tl_fetch_error();
     }
 
-    reserved_status_0 = static_cast<bool>(fields_mask & RETURN_RESERVED_STATUS_0_FLAG);
-    reserved_status_1 = static_cast<bool>(fields_mask & RETURN_RESERVED_STATUS_1_FLAG);
-    reserved_level_0 = static_cast<bool>(fields_mask & RETURN_RESERVED_LEVEL_0_FLAG);
-    reserved_level_1 = static_cast<bool>(fields_mask & RETURN_RESERVED_LEVEL_1_FLAG);
-    reserved_level_2 = static_cast<bool>(fields_mask & RETURN_RESERVED_LEVEL_2_FLAG);
-    debug_flag = static_cast<bool>(fields_mask & RETURN_DEBUG_FLAG);
+    reserved_status_0 = static_cast<bool>(fields_mask & RESERVED_STATUS_0_FLAG);
+    reserved_status_1 = static_cast<bool>(fields_mask & RESERVED_STATUS_1_FLAG);
+    reserved_level_0 = static_cast<bool>(fields_mask & RESERVED_LEVEL_0_FLAG);
+    reserved_level_1 = static_cast<bool>(fields_mask & RESERVED_LEVEL_1_FLAG);
+    reserved_level_2 = static_cast<bool>(fields_mask & RESERVED_LEVEL_2_FLAG);
+    debug_flag = static_cast<bool>(fields_mask & DEBUG_FLAG);
 
     return ok;
   }

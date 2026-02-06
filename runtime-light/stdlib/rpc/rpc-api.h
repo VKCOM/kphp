@@ -269,7 +269,8 @@ inline kphp::coro::task<> f$rpc_server_store_response(class_instance<C$VK$TL$Rpc
   // as we are in a coroutine, we must own the data to prevent it from being overwritten by another coroutine,
   // so create a TLBuffer owned by this coroutine
   auto& rpc_server_instance_st{RpcServerInstanceState::get()};
-  tl::K2RpcResponse rpc_response{.value = tl::k2RpcResponseHeader{.flags = {}, .extra = {}, .result = rpc_server_instance_st.tl_storer.view()}};
+  tl::K2RpcResponse rpc_response{.value =
+                                     tl::k2RpcResponseHeader{.flags = {}, .extra_flags = {}, .extra = {}, .result = rpc_server_instance_st.tl_storer.view()}};
   tl::storer tls{rpc_response.footprint()};
   rpc_response.store(tls);
 

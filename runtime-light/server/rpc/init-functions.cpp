@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 #include <type_traits>
 #include <utility>
@@ -17,6 +18,7 @@
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -209,8 +211,11 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
   if (invoke_rpc.opt_actor_id) {
     superglobals.v$_SERVER.set_value(string{RPC_ACTOR_ID.data(), RPC_ACTOR_ID.size()}, (*invoke_rpc.opt_actor_id).value);
   }
+
+  const std::optional<tl::mask> opt_extra_fields_mask{invoke_rpc.opt_extra.transform([](const auto& extra) noexcept { return extra.get_flags(); })};
   if (invoke_rpc.opt_extra) {
-    superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>((*invoke_rpc.opt_extra).get_flags().value));
+    kphp::log::assertion(opt_extra_fields_mask.has_value());
+    superglobals.v$_SERVER.set_value(string{RPC_EXTRA_FLAGS.data(), RPC_EXTRA_FLAGS.size()}, static_cast<int64_t>((*opt_extra_fields_mask).value));
     process_rpc_invoke_req_extra(*invoke_rpc.opt_extra, superglobals);
   }
   kphp::log::info("rpc server initialized with: "
@@ -222,7 +227,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
                   "request -> {:#x}",
                   invoke_rpc.net_pid.get_pid(), invoke_rpc.net_pid.get_port(), invoke_rpc.query_id.value,
                   invoke_rpc.opt_actor_id.has_value() ? (*invoke_rpc.opt_actor_id).value : 0,
-                  invoke_rpc.opt_extra.has_value() ? (*invoke_rpc.opt_extra).get_flags().value : 0, request_magic.value);
+                  opt_extra_fields_mask.has_value() ? (*opt_extra_fields_mask).value : 0, request_magic.value);
 }
 
 } // namespace kphp::rpc
