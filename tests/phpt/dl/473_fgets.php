@@ -1,5 +1,14 @@
 @ok
 <?php
+function init() {
+    $stream = fopen(__DIR__.'/fgets.txt', 'w');
+    fwrite ($stream, "123\n");
+    fwrite ($stream, "gucci\n");
+    fwrite ($stream, "\n");
+    fwrite ($stream, "php < kphp\n");
+    fwrite ($stream, "bang");
+    fclose ($stream);
+}
 
 function test_fgets() {
     $stream = fopen(__DIR__ . '/fgets.txt', 'r');
@@ -50,6 +59,7 @@ function test_fgets_edge_case2() {
     fclose($stream);
 }
 
+init();
 test_fgets();
 test_fgets_edge_cases();
 test_fgets_edge_case2();
