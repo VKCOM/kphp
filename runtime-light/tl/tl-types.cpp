@@ -220,7 +220,6 @@ tl::mask rpcInvokeReqExtra::get_flags() const noexcept {
 }
 
 void rpcReqResultExtra::store(tl::storer& tls) const noexcept {
-  flags.store(tls);
   if (static_cast<bool>(flags.value & BINLOG_POS_FLAG)) {
     binlog_pos.store(tls);
   }
