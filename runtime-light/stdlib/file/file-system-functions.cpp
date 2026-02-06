@@ -402,7 +402,7 @@ Optional<string> f$fgets(const resource& stream, int64_t length) noexcept {
 
   if (length < 0) {
     struct stat st {};
-    k2::fstat(file->descriptor(), &st);
+    k2::fstat(file->descriptor(), std::addressof(st));
     if (st.st_size <= 0) {
       return false;
     }
