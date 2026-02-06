@@ -359,7 +359,7 @@ size_t k2_pread(uint64_t stream_d, size_t buf_len, void* buf, uint64_t offset);
 /**
  * equivalent to libc's `fgets` function
  *
- * @return returns 0 if EOF is reached or an error occurs, returns the total number of bytes read
+ * @return `0` if EOF is reached or an error occurs. total number of bytes read otherwise
  */
 size_t k2_fgets(uint64_t stream_d, size_t buf_len, void* buf);
 
