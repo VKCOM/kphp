@@ -117,7 +117,12 @@ template<size_t MAX_PORTS>
 bool ServerContext<MAX_PORTS>::master_create_server_sockets() {
   socket_fds_.reserve(ports_.size());
   for (auto port : ports_) {
-    int socket = server_socket(port, settings_addr, backlog, 0);
+    int socket;
+    if (bind_address_family == AF_INET6_FAMILY) {
+      socket = server_socket_ipv6(port, &settings_addr6, backlog, 0);
+    } else {
+      socket = server_socket(port, settings_addr, backlog, 0);
+    }
     if (socket == -1) {
       return false;
     }

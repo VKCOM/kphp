@@ -15,6 +15,8 @@
 #define PRIVILEGED_TCP_PORTS 1024
 
 extern in_addr settings_addr;
+extern in6_addr settings_addr6;
+extern int bind_address_family;
 extern int backlog;
 
 #define SM_DGRAM      0x00000001
@@ -28,8 +30,13 @@ extern int backlog;
 #define SM_NOQACK     0x00020000
 #define SM_RAWMSG     0x00040000
 
+#define AF_UNSPEC_FAMILY 0
+#define AF_INET4_FAMILY 2
+#define AF_INET6_FAMILY 10
+
 void set_backlog(const char *arg);
 int server_socket(int port, struct in_addr in_addr, int backlog, int mode);
+int server_socket_ipv6(int port, const struct in6_addr *in6_addr, int backlog, int mode);
 int server_socket_unix(const struct sockaddr_un *addr, int backlog, int mode);
 int client_socket(const struct sockaddr_in *addr, int mode);
 int client_socket_ipv6(const struct sockaddr_in6 *addr, int mode);

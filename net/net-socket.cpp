@@ -25,11 +25,25 @@
 
 #define DEFAULT_BACKLOG 8192
 int backlog = DEFAULT_BACKLOG;
+int bind_address_family = AF_INET4_FAMILY;
 in_addr settings_addr;
+in6_addr settings_addr6;
 
 OPTION_PARSER(OPT_NETWORK, "server-bind-to-ipv4", required_argument, "Bind server sockets of all supported protocol types to the specified IPv4 address") {
   char *ip_str = optarg;
   bool success = inet_pton(AF_INET, ip_str, &settings_addr.s_addr);
+  if (success) {
+    bind_address_family = AF_INET4_FAMILY;
+  }
+  return success ? 0 : -1;
+}
+
+OPTION_PARSER(OPT_NETWORK, "server-bind-to-ipv6", required_argument, "Bind server sockets of all supported protocol types to the specified IPv6 address") {
+  char *ip_str = optarg;
+  bool success = inet_pton(AF_INET6, ip_str, &settings_addr6.s6_addr);
+  if (success) {
+    bind_address_family = AF_INET6_FAMILY;
+  }
   return success ? 0 : -1;
 }
 
@@ -320,6 +334,75 @@ int server_socket_unix(const struct sockaddr_un *addr, int backlog, int mode) {
   }
 
   return fd;
+}
+
+int server_socket_ipv6(int port, const struct in6_addr *in6_addr, int backlog, int mode) {
+  const int mode_with_ipv6 = mode | SM_IPV6;
+  const int sfd = new_socket(mode_with_ipv6, 1);
+
+  if (sfd == -1) {
+    return -1;
+  }
+
+  if (mode & SM_DGRAM) {
+    socket_maximize_sndbuf(sfd, 0);
+    socket_maximize_rcvbuf(sfd, 0);
+    socket_enable_ip_receive_errors(sfd);
+  } else {
+    socket_enable_reuseaddr(sfd);
+    socket_maximize_sndbuf(sfd, 0);
+    socket_maximize_rcvbuf(sfd, 0);
+    socket_enable_keepalive(sfd);
+    socket_disable_linger(sfd);
+    socket_enable_tcp_nodelay(sfd);
+  }
+
+  if (mode & SM_REUSE) {
+    socket_enable_reuseaddr(sfd);
+  }
+
+  if (mode & SM_REUSEPORT) {
+    if (!socket_enable_reuseport(sfd)) {
+      close(sfd);
+      return -1;
+    }
+  }
+
+  struct sockaddr_in6 addr;
+  memset(&addr, 0, sizeof(addr));
+
+  addr.sin6_family = AF_INET6;
+  addr.sin6_port = htons(port);
+  if (in6_addr) {
+    addr.sin6_addr = *in6_addr;
+  } else {
+    addr.sin6_addr = in6addr_any;
+  }
+
+  char addr_str[INET6_ADDRSTRLEN];
+  if (bind(sfd, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
+    inet_ntop(AF_INET6, &addr.sin6_addr, addr_str, sizeof(addr_str));
+    kprintf("bind([%s]:%d): %s\n", addr_str, port, strerror(errno));
+    close(sfd);
+    return -1;
+  }
+
+  if (mode & SM_DGRAM) {
+    if (!socket_enable_ip_receive_packet_info(sfd)) {
+      kprintf("setsockopt for %d failed: %m\n", sfd);
+    }
+
+    if (!socket_enable_ip_v6_receive_packet_info(sfd)) {
+      kprintf("setsockopt for %d failed: %m\n", sfd);
+    }
+  }
+
+  if (!(mode & SM_DGRAM) && listen(sfd, backlog) == -1) {
+    perror("listen()");
+    close(sfd);
+    return -1;
+  }
+  return sfd;
 }
 
 int client_socket(const struct sockaddr_in *addr, int mode) {

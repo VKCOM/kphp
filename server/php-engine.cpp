@@ -13,6 +13,7 @@
 #include <limits>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <poll.h>
 #include "re2/re2.h"
 #include <string>
@@ -213,12 +214,33 @@ int get_target(const char *host, int port, conn_target_t *ct) {
   }
 
   hostent *h;
-  if (!(h = kdb_gethostbyname(host)) || h->h_addrtype != AF_INET || h->h_length != 4 || !h->h_addr_list || !h->h_addr) {
+  if (!(h = kdb_gethostbyname(host)) || !h->h_addr_list || !h->h_addr) {
     vkprintf (0, "can't resolve host\n");
     return -1;
   }
 
-  ct->endpoint = make_inet_sockaddr_storage(ntohl(*(uint32_t *)h->h_addr), static_cast<uint16_t>(port));
+  if (h->h_addrtype == AF_INET6) {
+    // IPv6 address
+    struct in6_addr addr6;
+    memcpy(&addr6, h->h_addr, sizeof(addr6));
+    struct sockaddr_in6 addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin6_family = AF_INET6;
+    addr.sin6_port = htons(port);
+    addr.sin6_addr = addr6;
+
+    ct->endpoint = *(struct sockaddr_storage *)&addr;
+  } else if (h->h_addrtype == AF_INET) {
+    // IPv4 address
+    if (h->h_length != 4) {
+      vkprintf (0, "invalid IPv4 address length: %d\n", h->h_length);
+      return -1;
+    }
+    ct->endpoint = make_inet_sockaddr_storage(ntohl(*(uint32_t *)h->h_addr), static_cast<uint16_t>(port));
+  } else {
+    vkprintf (0, "unsupported address family: %d\n", h->h_addrtype);
+    return -1;
+  }
 
   return get_target_impl(ct);
 }
@@ -1493,11 +1515,23 @@ void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_reque
       }
 
       if (verbosity > 0 && http_sfd >= 0) {
-        vkprintf (-1, "created listening socket for HTTP at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
+        if (bind_address_family == AF_INET6_FAMILY) {
+          char addr_str[INET6_ADDRSTRLEN];
+          inet_ntop(AF_INET6, &settings_addr6.s6_addr, addr_str, sizeof(addr_str));
+          vkprintf(-1, "created listening socket for HTTP at [%s]:%d, fd=%d\n", addr_str, http_port, http_sfd);
+        } else {
+          vkprintf(-1, "created listening socket for HTTP at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), http_port, http_sfd);
+        }
       }
 
       if (verbosity > 0 && rpc_sfd >= 0) {
-        vkprintf (-1, "created listening socket for RPC at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), rpc_port, rpc_sfd);
+        if (bind_address_family == AF_INET6_FAMILY) {
+          char addr_str[INET6_ADDRSTRLEN];
+          inet_ntop(AF_INET6, &settings_addr6.s6_addr, addr_str, sizeof(addr_str));
+          vkprintf(-1, "created listening socket for RPC at [%s]:%d, fd=%d\n", addr_str, rpc_port, rpc_sfd);
+        } else {
+          vkprintf(-1, "created listening socket for RPC at %s:%d, fd=%d\n", ip_to_print(settings_addr.s_addr), rpc_port, rpc_sfd);
+        }
       }
 
       auto &rpc_clients = RpcClients::get().rpc_clients;
