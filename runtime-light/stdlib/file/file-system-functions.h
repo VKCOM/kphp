@@ -274,3 +274,6 @@ inline Optional<int64_t> f$file_put_contents(const string& stream, const mixed& 
 }
 
 mixed f$getimagesize(const string& name) noexcept;
+
+// don't forget to add "interruptible" to file-functions.txt when this function becomes a coroutine
+Optional<string> f$fgets(const resource& stream, int64_t length = -1) noexcept;
