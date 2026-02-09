@@ -40,7 +40,7 @@ struct TlRpcError {
   bool try_fetch() noexcept;
 
 private:
-  void fetch_and_skip_header() const noexcept;
+  bool fetch_and_skip_header() const noexcept;
 };
 
 class RpcErrorFactory {

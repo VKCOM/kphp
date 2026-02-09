@@ -1153,6 +1153,7 @@ public:
   tl::i64 epoch_number{};
   tl::i64 view_number{};
 
+  bool fetch(tl::fetcher& tlf, const tl::mask& flags) noexcept;
   void store(tl::storer& tls, const tl::mask& flags) const noexcept;
 
   size_t footprint(const tl::mask& flags) const noexcept;

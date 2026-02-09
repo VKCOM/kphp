@@ -218,6 +218,58 @@ tl::mask rpcInvokeReqExtra::get_flags() const noexcept {
   return flags;
 }
 
+bool rpcReqResultExtra::fetch(tl::fetcher& tlf, const tl::mask& flags) noexcept {
+  if (static_cast<bool>(flags.value & BINLOG_POS_FLAG)) {
+    if (!binlog_pos.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+  }
+  if (static_cast<bool>(flags.value & BINLOG_TIME_FLAG)) {
+    if (!binlog_time.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+  }
+  if (static_cast<bool>(flags.value) & ENGINE_PID_FLAG) {
+    if (!engine_pid.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+  }
+  if (static_cast<bool>(flags.value & REQUEST_SIZE_FLAG)) {
+    kphp::log::assertion(static_cast<bool>(flags.value & RESPONSE_SIZE_FLAG));
+    if (!request_size.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+    if (!response_size.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+  }
+  if (static_cast<bool>(flags.value & FAILED_SUBQUERIES_FLAG)) {
+    if (!failed_subqueries.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+  }
+  if (static_cast<bool>(flags.value & COMPRESSION_VERSION_FLAG)) {
+    if (!compression_version.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+  }
+  if (static_cast<bool>(flags.value & STATS_FLAG)) {
+    if (!stats.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+  }
+  if (static_cast<bool>(flags.value & EPOCH_NUMBER_FLAG)) {
+    kphp::log::assertion(static_cast<bool>(flags.value & VIEW_NUMBER_FLAG));
+    if (!epoch_number.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+    if (!view_number.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+  }
+  return true;
+}
+
 void rpcReqResultExtra::store(tl::storer& tls, const tl::mask& flags) const noexcept {
   if (static_cast<bool>(flags.value & BINLOG_POS_FLAG)) {
     binlog_pos.store(tls);
