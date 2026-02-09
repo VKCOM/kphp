@@ -304,7 +304,6 @@ class K2InvokeRpc final {
   static constexpr auto EXTRA_FLAG = static_cast<uint32_t>(1U << 1U);
 
 public:
-  tl::mask flags{};
   tl::i64 query_id{};
   tl::netPid net_pid{};
   std::optional<tl::i64> opt_actor_id;
@@ -314,14 +313,18 @@ public:
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
     bool ok{magic.fetch(tlf) && magic.expect(K2_INVOKE_RPC_MAGIC)};
-    ok = ok && flags.fetch(tlf);
+
+    tl::mask fields_mask{};
+    ok = ok && fields_mask.fetch(tlf);
     ok = ok && query_id.fetch(tlf);
     ok = ok && net_pid.fetch(tlf);
-    if (static_cast<bool>(flags.value & ACTOR_ID_FLAG)) {
+    if (static_cast<bool>(fields_mask.value & ACTOR_ID_FLAG)) {
       ok = ok && opt_actor_id.emplace().fetch(tlf);
     }
-    if (static_cast<bool>(flags.value & EXTRA_FLAG)) {
-      ok = ok && opt_extra.emplace().fetch(tlf);
+    if (static_cast<bool>(fields_mask.value & EXTRA_FLAG)) {
+      tl::mask extra_fields_mask{};
+      ok = ok && extra_fields_mask.fetch(tlf);
+      ok = ok && opt_extra.emplace().fetch(tlf, extra_fields_mask);
     }
     const auto opt_query{tlf.fetch_bytes(tlf.remaining())};
     query = opt_query.value_or(std::span<const std::byte>{});
