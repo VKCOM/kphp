@@ -21,6 +21,7 @@ function test_fgets() {
     var_dump (fgets ($stream)); // line = "\n"
 
     var_dump (fgets ($stream, 4)); // `length` less than length of the line. line = "php < kphp\n"
+//     var_dump (fgets ($stream, 1));   kphp expects "", php expects false
     var_dump (fgets ($stream)); // rest of the line
 
     var_dump (fgets ($stream)); // last line. line = "bang"
