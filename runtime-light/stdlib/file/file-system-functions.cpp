@@ -390,6 +390,7 @@ mixed f$getimagesize(const string& name) noexcept {
   return result;
 }
 
+// don't forget to add "interruptible" to file-functions.txt when this function becomes a coroutine
 Optional<string> f$fgets(const resource& stream, int64_t length) noexcept {
   if (length == 0) {
     return false;

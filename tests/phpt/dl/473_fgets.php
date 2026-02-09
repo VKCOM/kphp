@@ -25,6 +25,9 @@ function test_fgets() {
 
     var_dump (fgets ($stream)); // last line. line = "bang"
 
+    var_dump (fgets ($stream)); // eof
+    var_dump (fgets ($stream)); // eof
+
     fclose($stream);
 }
 
@@ -59,7 +62,23 @@ function test_fgets_edge_case2() {
     fclose($stream);
 }
 
+function test_fgets_mixed() {
+    $stream = fopen(__DIR__ . '/fgets.txt', 'r+');
+
+    var_dump (fgets ($stream)); // 123\n
+    var_dump (fread ($stream, 3)); // guc
+    var_dump (fgets ($stream)); // ci\n
+    var_dump (fwrite ($stream, "new string")); // \nphp < kphp\n -> new stringp\n
+    var_dump (fgets ($stream)); // p\n
+    var_dump (fread ($stream, 2)); // ba
+    var_dump (fwrite ($stream, "new string 2")); // ng -> new string 2
+    var_dump (fgets ($stream)); // eof
+
+    fclose($stream);
+}
+
 init();
 test_fgets();
 test_fgets_edge_cases();
 test_fgets_edge_case2();
+test_fgets_mixed();
