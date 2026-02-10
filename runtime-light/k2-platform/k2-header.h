@@ -357,11 +357,11 @@ size_t k2_read(uint64_t stream_d, size_t buf_len, void* buf);
 size_t k2_pread(uint64_t stream_d, size_t buf_len, void* buf, uint64_t offset);
 
 /**
- * equivalent to libc's `fgets` function
+ * behavior is similar to libc's `fgets` function, except that EOF and empty string return the same result.
  *
  * @return `0` if EOF is reached or an error occurs. total number of bytes read otherwise
  */
-size_t k2_fgets(uint64_t stream_d, size_t buf_len, void* buf);
+size_t k2_readline(uint64_t stream_d, size_t buf_len, void* buf);
 
 /**
  * Semantically equivalent to libc's `mmap` function.

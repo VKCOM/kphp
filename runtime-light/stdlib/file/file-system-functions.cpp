@@ -396,6 +396,10 @@ Optional<string> f$fgets(const resource& stream, int64_t length) noexcept {
     return false;
   }
 
+  if (length == 1) {
+    return string{};
+  }
+
   auto file_resource{from_mixed<class_instance<kphp::fs::file>>(stream, {})};
   if (file_resource.is_null()) {
     return false;
@@ -418,7 +422,7 @@ Optional<string> f$fgets(const resource& stream, int64_t length) noexcept {
     return false;
   }
   string res{static_cast<string::size_type>(length), false};
-  auto read_res{k2::fgets(file.descriptor(), std::as_writable_bytes(std::span<char>{res.buffer(), res.size()}))};
+  auto read_res{k2::readline(file.descriptor(), std::as_writable_bytes(std::span<char>{res.buffer(), res.size()}))};
 
   if (read_res == 0) {
     return false;

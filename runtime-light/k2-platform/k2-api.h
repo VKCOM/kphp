@@ -216,8 +216,8 @@ inline size_t pread(k2::descriptor descriptor, std::span<std::byte> buffer, uint
   return k2_pread(descriptor, buffer.size(), static_cast<void*>(buffer.data()), offset);
 }
 
-inline size_t fgets(k2::descriptor descriptor, std::span<std::byte> buffer) noexcept {
-  return k2_fgets(descriptor, buffer.size(), static_cast<void*>(buffer.data()));
+inline size_t readline(k2::descriptor descriptor, std::span<std::byte> buffer) noexcept {
+  return k2_readline(descriptor, buffer.size(), static_cast<void*>(buffer.data()));
 }
 
 inline void* mmap(k2::descriptor* md, void* addr, size_t length, int32_t prot, int32_t flags, k2::descriptor fd, uint64_t offset) noexcept {
