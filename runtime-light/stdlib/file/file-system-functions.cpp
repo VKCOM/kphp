@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <cwchar>
 #include <expected>
 #include <format>
 #include <iterator>
@@ -18,10 +19,10 @@
 #include <string_view>
 #include <sys/stat.h>
 #include <utility>
-#include <wchar.h>
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/file-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/file/file-system-state.h"
@@ -434,203 +435,29 @@ Optional<string> f$fgets(const resource& stream, int64_t length) noexcept {
 }
 
 namespace {
-[[clang::always_inline]] std::pair<char, char> read_last_two_bytes_advance(const char*& ptr, size_t len, mbstate_t* ps) noexcept {
-  int32_t inc_len{};
-  std::pair<char, char> last_chars{0, 0};
-  while (len > 0) {
-    inc_len = *ptr == '\0' ? 1 : mbrlen(ptr, len, ps);
-    switch (inc_len) {
-    case -2:
-    case -1:
-      inc_len = 1;
-      break;
-    case 0:
-      return last_chars;
-    case 1:
-    default:
-      last_chars.first = last_chars.second;
-      last_chars.second = *ptr;
-      break;
-    }
-    ptr += inc_len;
-    len -= inc_len;
-  }
-  return last_chars;
-}
-
-// this function is imported from https://github.com/php/php-src/blob/master/ext/standard/file.c,
-// function php_fgetcsv_lookup_trailing_spaces
-const char* fgetcsv_lookup_trailing_spaces(const char* ptr, size_t len, mbstate_t* ps) noexcept {
-  switch (const auto last_chars{read_last_two_bytes_advance(ptr, len, ps)}; last_chars.second) {
-  case '\n':
-    if (last_chars.first == '\r') {
-      return ptr - 2;
-    }
-    /* fallthrough */
-  case '\r':
-    return ptr - 1;
-  default:
-    break;
-  }
-  return ptr;
-}
-
-[[clang::always_inline]] void advance_until_delimiter_mb(const char*& bptr, const char* line_end, int32_t& inc_len, const char delimiter,
-                                                         mbstate_t* ps) noexcept {
-  while (true) {
-    switch (inc_len) {
-    case 0:
-      return;
-    case -2:
-    case -1:
-      inc_len = 1;
-      /* fallthrough */
-    case 1:
-      if (*bptr == delimiter) {
-        return;
-      }
-      break;
-    default:
-      break;
-    }
-    bptr += inc_len;
-    inc_len = bptr < line_end ? (*bptr == '\0' ? 1 : mbrlen(bptr, line_end - bptr, ps)) : 0;
-  }
-}
-
-[[clang::always_inline]] bool parse_csv_quoted_field(const resource& stream, const char*& bptr, const char*& hunk_begin, std::span<const char>& line_end,
-                                                     string_buffer& field_buf, string& line, int32_t& inc_len, size_t& temp_len, const char enclosure,
-                                                     const char escape, mbstate_t* ps) noexcept {
-  enum class State { NormalProcessing, EscapeProcessing, EnclosureProcessing };
-  auto state{State::NormalProcessing};
-
-  while (true) {
-    switch (inc_len) {
-    case 0: // end of line
-      switch (state) {
-      case State::EnclosureProcessing:
-        field_buf.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
-        hunk_begin = bptr;
-        return false;
-
-      case State::EscapeProcessing:
-        field_buf.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
-        hunk_begin = bptr;
-        /* fallthrough */
-      case State::NormalProcessing:
-
-        if (hunk_begin != line_end.data()) {
-          field_buf.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
-          hunk_begin = bptr;
-        }
-
-        /* add the embedded line end to the field */
-        field_buf.append(line_end.data(), line_end.size());
-
-        if (stream.is_null()) {
-          return false;
-        }
-
-        Optional<string> new_buffer_optional{f$fgets(stream)};
-        if (!new_buffer_optional.has_value()) {
-          return temp_len <= static_cast<size_t>(line_end.data() - line.c_str());
-        }
-
-        line = new_buffer_optional.val();
-        temp_len += line.size();
-
-        bptr = line.c_str();
-        hunk_begin = line.c_str();
-
-        const char* line_end_data{fgetcsv_lookup_trailing_spaces(line.c_str(), line.size(), ps)};
-        line_end = std::span<const char>{line_end_data, line.size() - static_cast<size_t>(line_end_data - line.c_str())};
-
-        state = State::NormalProcessing;
-        break;
-      }
-      break;
-
-    case -2:
-    case -1:
-      /* break is omitted intentionally */
-    case 1: // ascii
-      /* we need to determine if the enclosure is
-       * 'real' or is it escaped */
-      switch (state) {
-      case State::EscapeProcessing: /* escaped */
-        bptr++;
-        state = State::NormalProcessing;
-        break;
-      case State::EnclosureProcessing: /* embedded enclosure ? let's check it */
-        if (*bptr != enclosure) {
-          /* real enclosure */
-          field_buf.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
-          hunk_begin = bptr;
-          return false;
-        }
-        field_buf.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
-        bptr++;
-        hunk_begin = bptr;
-        state = State::NormalProcessing;
-        break;
-      case State::NormalProcessing:
-        if (*bptr == enclosure) {
-          state = State::EnclosureProcessing;
-        } else if (escape != PHP_CSV_NO_ESCAPE && *bptr == escape) {
-          state = State::EscapeProcessing;
-        }
-        bptr++;
-        break;
-      }
-      break;
-
-    default: // not ascii
-      switch (state) {
-      case State::EnclosureProcessing:
-        /* real enclosure */
-        field_buf.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
-        hunk_begin = bptr;
-        return false;
-      case State::EscapeProcessing:
-        bptr += inc_len;
-        field_buf.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
-        hunk_begin = bptr;
-        state = State::NormalProcessing;
-        break;
-      case State::NormalProcessing:
-        bptr += inc_len;
-        break;
-      }
-      break;
-    }
-    inc_len = bptr < line_end.data() ? (*bptr == '\0' ? 1 : mbrlen(bptr, line_end.data() - bptr, ps)) : 0;
-  }
-  return false;
-}
-
-// // Common csv-parsing functionality for
-// // * fgetcsv
-// // The function is similar to `php_fgetcsv` function from https://github.com/php/php-src/blob/master/ext/standard/file.c
-Optional<array<mixed>> getcsv(const resource& stream, string line, const char delimiter, const char enclosure, const char escape, mbstate_t* ps) noexcept {
+// Common csv-parsing functionality for
+// * fgetcsv
+// The function is similar to `php_fgetcsv` function from https://github.com/php/php-src/blob/master/ext/standard/file.c
+Optional<array<mixed>> getcsv(const resource& stream, string buffer, char delimiter, char enclosure, char escape, mbstate_t* ps) noexcept {
   array<mixed> answer{};
   int32_t current_id{0};
-  string_buffer field_buf{};
-
-  const char* bptr{line.c_str()};
-
-  const char* line_end_data{fgetcsv_lookup_trailing_spaces(line.c_str(), line.size(), ps)};
-  std::span<const char> line_end{line_end_data, static_cast<size_t>(line.size() - (line_end_data - line.c_str()))};
-
+  string_buffer tmp_buffer{};
+  // Following part is imported from `php_fgetcsv`
+  char const* buf{buffer.c_str()};
+  char const* bptr{buf};
+  size_t buf_len{buffer.size()};
+  char const* tptr{fgetcsv_details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps)};
+  size_t line_end_len{buf_len - (tptr - buf)};
+  char const *line_end{tptr}, *limit{tptr};
   bool first_field{true};
-  size_t temp_len{line.size()};
+  size_t temp_len{buf_len};
   int32_t inc_len{};
-
   do {
-    const char* hunk_begin{};
+    char const* hunk_begin{};
 
-    inc_len = bptr < line_end.data() ? (*bptr == '\0' ? 1 : mbrlen(bptr, line_end.data() - bptr, ps)) : 0;
+    inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0);
     if (inc_len == 1) {
-      const char* tmp{bptr};
+      char const* tmp{bptr};
       while ((*tmp != delimiter) && isspace(static_cast<int32_t>(*tmp))) {
         tmp++;
       }
@@ -639,43 +466,188 @@ Optional<array<mixed>> getcsv(const resource& stream, string line, const char de
       }
     }
 
-    if (first_field && bptr == line_end.data()) {
-      answer.set_value(current_id, mixed{});
+    if (first_field && bptr == line_end) {
+      answer.set_value(current_id++, mixed{});
       break;
     }
     first_field = false;
-
     /* 2. Read field, leaving bptr pointing at start of next field */
     if (inc_len != 0 && *bptr == enclosure) {
+      int32_t state{0};
 
       bptr++; /* move on to first character in field */
       hunk_begin = bptr;
 
       /* 2A. handle enclosure delimited field */
-      if (parse_csv_quoted_field(stream, bptr, hunk_begin, line_end, field_buf, line, inc_len, temp_len, enclosure, escape, ps)) {
-        return answer;
+      for (;;) {
+        switch (inc_len) {
+        case 0:
+          switch (state) {
+          case 2:
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
+            hunk_begin = bptr;
+            goto quit_loop_2;
+
+          case 1:
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+            hunk_begin = bptr;
+            /* fallthrough */
+          case 0: {
+
+            if (hunk_begin != line_end) {
+              tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+              hunk_begin = bptr;
+            }
+
+            /* add the embedded line end to the field */
+            tmp_buffer.append(line_end, line_end_len);
+            string new_buffer{};
+
+            if (stream.is_null()) {
+              goto quit_loop_2;
+            } else {
+              Optional<string> new_buffer_optional{f$fgets(stream)};
+              if (!new_buffer_optional.has_value()) {
+                if (temp_len > static_cast<size_t>(limit - buf)) {
+                  goto quit_loop_2;
+                }
+                return answer;
+              }
+              new_buffer = new_buffer_optional.val();
+            }
+            temp_len += new_buffer.size();
+            buf_len = new_buffer.size();
+            buffer = new_buffer;
+            buf = bptr = buffer.c_str();
+            hunk_begin = buf;
+
+            line_end = limit = fgetcsv_details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps);
+            line_end_len = buf_len - static_cast<size_t>(limit - buf);
+
+            state = 0;
+          } break;
+          }
+          break;
+
+        case -2:
+        case -1:
+          /* break is omitted intentionally */
+        case 1:
+          /* we need to determine if the enclosure is
+           * 'real' or is it escaped */
+          switch (state) {
+          case 1: /* escaped */
+            bptr++;
+            state = 0;
+            break;
+          case 2: /* embedded enclosure ? let's check it */
+            if (*bptr != enclosure) {
+              /* real enclosure */
+              tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
+              hunk_begin = bptr;
+              goto quit_loop_2;
+            }
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+            bptr++;
+            hunk_begin = bptr;
+            state = 0;
+            break;
+          default:
+            if (*bptr == enclosure) {
+              state = 2;
+            } else if (escape != PHP_CSV_NO_ESCAPE && *bptr == escape) {
+              state = 1;
+            }
+            bptr++;
+            break;
+          }
+          break;
+
+        default:
+          switch (state) {
+          case 2:
+            /* real enclosure */
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
+            hunk_begin = bptr;
+            goto quit_loop_2;
+          case 1:
+            bptr += inc_len;
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+            hunk_begin = bptr;
+            state = 0;
+            break;
+          default:
+            bptr += inc_len;
+            break;
+          }
+          break;
+        }
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0);
       }
+
+    quit_loop_2:
       /* look up for a delimiter */
-      advance_until_delimiter_mb(bptr, line_end.data(), inc_len, delimiter, ps);
-      field_buf.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
-      bptr += inc_len; // inc_len = 0(eol)|1(delimiter)
+      for (;;) {
+        switch (inc_len) {
+        case 0:
+          goto quit_loop_3;
+
+        case -2:
+        case -1:
+          inc_len = 1;
+          /* fallthrough */
+        case 1:
+          if (*bptr == delimiter) {
+            goto quit_loop_3;
+          }
+          break;
+        default:
+          break;
+        }
+        bptr += inc_len;
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0);
+      }
+
+    quit_loop_3:
+      tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+      bptr += inc_len;
     } else {
       /* 2B. Handle non-enclosure field */
 
       hunk_begin = bptr;
-      advance_until_delimiter_mb(bptr, line_end.data(), inc_len, delimiter, ps);
-      field_buf.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
 
-      const char* comp_end{fgetcsv_lookup_trailing_spaces(field_buf.c_str(), field_buf.size(), ps)};
-      field_buf.set_pos(comp_end - field_buf.c_str());
+      for (;;) {
+        switch (inc_len) {
+        case 0:
+          goto quit_loop_4;
+        case -2:
+        case -1:
+          inc_len = 1;
+          /* fallthrough */
+        case 1:
+          if (*bptr == delimiter) {
+            goto quit_loop_4;
+          }
+          break;
+        default:
+          break;
+        }
+        bptr += inc_len;
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0);
+      }
+    quit_loop_4:
+      tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+
+      char const* comp_end{fgetcsv_details::fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size(), ps)};
+      tmp_buffer.set_pos(comp_end - tmp_buffer.c_str());
       if (*bptr == delimiter) {
         bptr++;
       }
     }
 
     /* 3. Now pass our field back to php */
-    answer.set_value(current_id++, field_buf.str());
-    field_buf.clean();
+    answer.set_value(current_id++, tmp_buffer.str());
+    tmp_buffer.clean();
   } while (inc_len > 0);
 
   return answer;
