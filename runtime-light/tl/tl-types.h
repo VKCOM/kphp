@@ -1167,6 +1167,15 @@ struct RpcReqResultExtra final {
   }
 };
 
+struct rpcReqError final {
+  tl::i32 error_code{};
+  tl::string error{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    return tl::i64{}.fetch(tlf) && error_code.fetch(tlf) && error.fetch(tlf);
+  }
+};
+
 struct k2RpcResponseError final {
   tl::i32 error_code{};
   tl::string error{};

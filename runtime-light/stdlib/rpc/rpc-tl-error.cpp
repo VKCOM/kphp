@@ -4,36 +4,46 @@
 
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 
-#include <tuple>
-
 #include "common/tl/constants/common.h"
+#include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
-#include "runtime-light/stdlib/rpc/rpc-api.h"
-#include "runtime-light/stdlib/rpc/rpc-tl-builtins.h"
+#include "runtime-light/stdlib/rpc/rpc-exceptions.h"
+#include "runtime-light/tl/tl-types.h"
 
 bool TlRpcError::try_fetch() noexcept {
-  const auto backup_pos{tl_parse_save_pos()};
-  auto op{TRY_CALL(decltype(f$fetch_int()), bool, f$fetch_int())};
+  auto& fetcher{RpcServerInstanceState::get().tl_fetcher};
+  const auto backup_pos{fetcher.pos()};
+  tl::magic tl_op;
+  if (!tl_op.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return false;
+  }
+  const auto& op{tl_op.value};
   if (op == TL_REQ_RESULT_HEADER) {
-    if (!fetch_and_skip_header()) [[unlikely]] {
+    tl::mask extra_flags{};
+    if (!extra_flags.fetch(fetcher)) [[unlikely]] {
+      THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+      return false;
+    }
+    if (!tl::rpcReqResultExtra{}.fetch(fetcher, extra_flags)) [[unlikely]] {
       THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_header::make());
       return false;
     }
-    op = TRY_CALL(decltype(f$fetch_int()), bool, f$fetch_int());
+    if (!tl_op.fetch(fetcher)) [[unlikely]] {
+      THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+      return false;
+    }
   }
   if (op != TL_RPC_REQ_ERROR) {
-    tl_parse_restore_pos(backup_pos);
+    fetcher.reset(backup_pos);
     return false;
   }
-
-  std::ignore = TRY_CALL(decltype(f$fetch_long()), bool, f$fetch_long());
-  error_code = static_cast<int32_t>(TRY_CALL(decltype(f$fetch_int()), bool, f$fetch_int()));
-  error_msg = TRY_CALL(decltype(f$fetch_string()), bool, f$fetch_string());
+  tl::rpcReqError rpc_req_error;
+  if (!rpc_req_error.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_error::make());
+    return false;
+  }
+  error_code = rpc_req_error.error_code.value;
+  error_msg = {rpc_req_error.error.value.data(), static_cast<string::size_type>(rpc_req_error.error.value.size())};
   return true;
-}
-
-bool TlRpcError::fetch_and_skip_header() const noexcept {
-  auto& fetcher{RpcServerInstanceState::get().tl_fetcher};
-  tl::mask extra_flags{};
-  return extra_flags.fetch(fetcher) && tl::rpcReqResultExtra{}.fetch(fetcher, extra_flags);
 }
