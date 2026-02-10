@@ -330,6 +330,36 @@ size_t rpcReqResultExtra::footprint(const tl::mask& flags) const noexcept {
   return footprint;
 }
 
+bool ReqResult::fetch(tl::fetcher& tlf) noexcept {
+  const auto backup_pos{tlf.pos()};
+  tl::magic magic;
+  if (!magic.fetch(tlf)) [[unlikely]] {
+    return false;
+  }
+  switch (magic.value) {
+  case TL_REQ_ERROR: {
+    tl::reqError req_error;
+    if (!req_error.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+    value = req_error;
+    break;
+  }
+  case TL_REQ_RESULT_HEADER: {
+    tl::reqResultHeader req_result_header;
+    if (!req_result_header.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+    value = req_result_header;
+    break;
+  }
+  default:
+    tlf.reset(backup_pos);
+    value = *tlf.fetch_bytes(tlf.remaining());
+  }
+  return true;
+}
+
 } // namespace tl
 
 namespace tl2 {

@@ -1167,12 +1167,81 @@ struct RpcReqResultExtra final {
   }
 };
 
+struct reqError final {
+  tl::i32 error_code{};
+  tl::string error{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    return error_code.fetch(tlf) && error.fetch(tlf);
+  }
+};
+
+struct reqResultHeader final {
+  tl::mask flags{};
+  tl::rpcReqResultExtra extra{};
+  std::span<const std::byte> result;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    if (!flags.fetch(tlf) || !extra.fetch(tlf, flags)) [[unlikely]] {
+      return false;
+    }
+    result = *tlf.fetch_bytes(tlf.remaining());
+    return true;
+  }
+};
+
+struct ReqResult final {
+  std::variant<tl::reqError, tl::reqResultHeader, std::span<const std::byte>> value;
+
+  bool fetch(tl::fetcher& tlf) noexcept;
+};
+
+struct rpcReqResult final {
+  tl::ReqResult result{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    return tl::i64{}.fetch(tlf) && result.fetch(tlf);
+  }
+};
+
 struct rpcReqError final {
   tl::i32 error_code{};
   tl::string error{};
 
   bool fetch(tl::fetcher& tlf) noexcept {
     return tl::i64{}.fetch(tlf) && error_code.fetch(tlf) && error.fetch(tlf);
+  }
+};
+
+struct RpcReqResult final {
+  std::variant<tl::rpcReqResult, tl::rpcReqError> value;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    tl::magic magic;
+    if (!magic.fetch(tlf)) [[unlikely]] {
+      return false;
+    }
+    switch (magic.value) {
+    case TL_RPC_REQ_RESULT: {
+      tl::rpcReqResult rpc_req_result;
+      if (!rpc_req_result.fetch(tlf)) [[unlikely]] {
+        return false;
+      }
+      value = rpc_req_result;
+      break;
+    }
+    case TL_RPC_REQ_ERROR: {
+      tl::rpcReqError rpc_req_error;
+      if (!rpc_req_error.fetch(tlf)) [[unlikely]] {
+        return false;
+      }
+      value = rpc_req_error;
+      break;
+    }
+    default:
+      return false;
+    }
+    return true;
   }
 };
 
