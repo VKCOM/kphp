@@ -30,7 +30,7 @@
 
 namespace {
 
-constexpr int32_t PHP_CSV_NO_ESCAPE = EOF;
+constexpr int32_t PHP_CSV_NO_ESCAPE{EOF};
 constexpr size_t MIN_FILE_SIZE{12};
 constexpr size_t MAX_READ_SIZE{3 * 256 + 64};
 
