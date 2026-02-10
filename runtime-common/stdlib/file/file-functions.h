@@ -7,15 +7,20 @@
 #include <cstdint>
 #include <cwchar>
 
-namespace fgetcsv_details {
+#include "runtime-common/core/utils/kphp-assert-core.h"
+
+namespace kphp::fs::details {
 // this function is imported from https://github.com/php/php-src/blob/master/ext/standard/file.c,
 // function php_fgetcsv_lookup_trailing_spaces
 inline const char* fgetcsv_lookup_trailing_spaces(const char* ptr, size_t len, mbstate_t* ps) noexcept {
+  php_assert(ps != nullptr);
+
   int32_t inc_len{};
   unsigned char last_chars[2]{0, 0};
 
   while (len > 0) {
-    inc_len = (*ptr == '\0' ? 1 : mbrlen(ptr, len, ps));
+    // SAFETY: mbrlen is thread-safe if ps != nullptr, and ps != nullptr because there is assertion at the beginning of function
+    inc_len = (*ptr == '\0' ? 1 : mbrlen(ptr, len, ps)); // NOLINT
     switch (inc_len) {
     case -2:
     case -1:
@@ -44,4 +49,4 @@ quit_loop:
   }
   return ptr;
 }
-} // namespace fgetcsv_details
+} // namespace kphp::fs::details

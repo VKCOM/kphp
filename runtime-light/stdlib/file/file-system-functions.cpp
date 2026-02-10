@@ -22,7 +22,7 @@
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/file-functions.h"
+#include "runtime-common/stdlib/file/file-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/file/file-system-state.h"
@@ -439,6 +439,8 @@ namespace {
 // * fgetcsv
 // The function is similar to `php_fgetcsv` function from https://github.com/php/php-src/blob/master/ext/standard/file.c
 Optional<array<mixed>> getcsv(const resource& stream, string buffer, char delimiter, char enclosure, char escape, mbstate_t* ps) noexcept {
+  kphp::log::assertion(ps != nullptr);
+
   array<mixed> answer{};
   int32_t current_id{0};
   string_buffer tmp_buffer{};
@@ -446,16 +448,18 @@ Optional<array<mixed>> getcsv(const resource& stream, string buffer, char delimi
   char const* buf{buffer.c_str()};
   char const* bptr{buf};
   size_t buf_len{buffer.size()};
-  char const* tptr{fgetcsv_details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps)};
+  char const* tptr{kphp::fs::details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps)};
   size_t line_end_len{buf_len - (tptr - buf)};
-  char const *line_end{tptr}, *limit{tptr};
+  char const* line_end{tptr};
+  char const* limit{tptr};
   bool first_field{true};
   size_t temp_len{buf_len};
   int32_t inc_len{};
   do {
     char const* hunk_begin{};
 
-    inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0);
+    // SAFETY: mbrlen is thread-safe if ps != nullptr, and ps != nullptr because there is assertion at the beginning of function
+    inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0); // NOLINT
     if (inc_len == 1) {
       char const* tmp{bptr};
       while ((*tmp != delimiter) && isspace(static_cast<int32_t>(*tmp))) {
@@ -521,11 +525,14 @@ Optional<array<mixed>> getcsv(const resource& stream, string buffer, char delimi
             buf = bptr = buffer.c_str();
             hunk_begin = buf;
 
-            line_end = limit = fgetcsv_details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps);
+            line_end = limit = kphp::fs::details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps);
             line_end_len = buf_len - static_cast<size_t>(limit - buf);
 
             state = 0;
           } break;
+          default:
+            kphp::log::error("unreachable case");
+            break;
           }
           break;
 
@@ -582,7 +589,8 @@ Optional<array<mixed>> getcsv(const resource& stream, string buffer, char delimi
           }
           break;
         }
-        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0);
+        // SAFETY: mbrlen is thread-safe if ps != nullptr, and ps != nullptr because there is assertion at the beginning of function
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0); // NOLINT
       }
 
     quit_loop_2:
@@ -605,7 +613,9 @@ Optional<array<mixed>> getcsv(const resource& stream, string buffer, char delimi
           break;
         }
         bptr += inc_len;
-        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0);
+
+        // SAFETY: mbrlen is thread-safe if ps != nullptr, and ps != nullptr because there is assertion at the beginning of function
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0); // NOLINT
       }
 
     quit_loop_3:
@@ -633,12 +643,14 @@ Optional<array<mixed>> getcsv(const resource& stream, string buffer, char delimi
           break;
         }
         bptr += inc_len;
-        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0);
+
+        // SAFETY: mbrlen is thread-safe if ps != nullptr, and ps != nullptr because there is assertion at the beginning of function
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0); // NOLINT
       }
     quit_loop_4:
       tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
 
-      char const* comp_end{fgetcsv_details::fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size(), ps)};
+      char const* comp_end{kphp::fs::details::fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size(), ps)};
       tmp_buffer.set_pos(comp_end - tmp_buffer.c_str());
       if (*bptr == delimiter) {
         bptr++;
@@ -672,7 +684,7 @@ Optional<array<mixed>> f$fgetcsv(const resource& stream, int64_t length, string 
   }
   int32_t escape_char{PHP_CSV_NO_ESCAPE};
   if (!escape.empty()) {
-    escape_char = static_cast<int32_t>(escape[0]);
+    escape_char = static_cast<int32_t>(static_cast<unsigned char>(escape[0]));
   } else if (escape.size() > 1) {
     kphp::log::warning("escape_char must be a single character");
   }

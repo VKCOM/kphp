@@ -279,5 +279,5 @@ mixed f$getimagesize(const string& name) noexcept;
 Optional<string> f$fgets(const resource& stream, int64_t length = -1) noexcept;
 
 // don't forget to add "interruptible" to file-functions.txt when this function becomes a coroutine
-Optional<array<mixed>> f$fgetcsv(const resource& stream, int64_t length = 0, string delimiter = string(",", 1), string enclosure = string("\"", 1),
-                                 string escape = string("\\", 1)) noexcept;
+Optional<array<mixed>> f$fgetcsv(const resource& stream, int64_t length = 0, string delimiter = string{",", 1}, string enclosure = string{"\"", 1},
+                                 string escape = string{"\\", 1}) noexcept;

@@ -10,7 +10,7 @@
 #include <sys/select.h>
 
 #include "common/kprintf.h"
-#include "runtime-common/stdlib/file-functions.h"
+#include "runtime-common/stdlib/file/file-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/allocator.h"
 #include "runtime/array_functions.h"
@@ -484,7 +484,7 @@ Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimite
   char const* buf = buffer.c_str();
   char const* bptr = buf;
   size_t buf_len = buffer.size();
-  char const* tptr = fgetcsv_details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps);
+  char const* tptr = kphp::fs::details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps);
   size_t line_end_len = buf_len - (tptr - buf);
   char const *line_end = tptr, *limit = tptr;
   bool first_field = true;
@@ -559,7 +559,7 @@ Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimite
             buf = bptr = buffer.c_str();
             hunk_begin = buf;
 
-            line_end = limit = fgetcsv_details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps);
+            line_end = limit = kphp::fs::details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps);
             line_end_len = buf_len - (size_t)(limit - buf);
 
             state = 0;
@@ -676,7 +676,7 @@ Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimite
     quit_loop_4:
       tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
 
-      char const* comp_end = (char*)fgetcsv_details::fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size(), ps);
+      char const* comp_end = (char*)kphp::fs::details::fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size(), ps);
       tmp_buffer.set_pos(comp_end - tmp_buffer.c_str());
       if (*bptr == delimiter) {
         bptr++;
