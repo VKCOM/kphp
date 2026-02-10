@@ -4,10 +4,11 @@
 
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 
+#include <variant>
+
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
-#include <variant>
 
 bool TlRpcError::try_fetch() noexcept {
   auto fetcher{RpcServerInstanceState::get().tl_fetcher};
