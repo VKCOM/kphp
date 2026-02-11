@@ -212,11 +212,11 @@ string get_http_response_body(HttpServerInstanceState& http_server_instance_st) 
     const auto appender{[&body](const auto& buffer) noexcept { body.append(buffer.buffer(), buffer.size()); }};
     std::ranges::for_each(user_buffers | std::views::filter([](const auto& buffer) noexcept { return buffer.size() > 0; }), appender);
 
-    const bool encoding_enabled{http_server_instance_st.encoding_enabled};
+    const bool auto_encoding_enabled{http_server_instance_st.auto_encoding_enabled};
     const bool gzip_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)};
     const bool deflate_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};
     // compress body if needed
-    if (encoding_enabled && (gzip_encoded || deflate_encoded)) {
+    if (auto_encoding_enabled && (gzip_encoded || deflate_encoded)) {
       auto encoded_body{kphp::zlib::encode({body.c_str(), static_cast<size_t>(body.size())}, kphp::zlib::DEFAULT_COMPRESSION_LEVEL,
                                            gzip_encoded ? kphp::zlib::ENCODING_GZIP : kphp::zlib::ENCODING_DEFLATE)};
       if (encoded_body.has_value()) [[likely]] {
@@ -390,10 +390,10 @@ kphp::coro::task<> finalize_server() noexcept {
     }
     [[fallthrough]];
   case kphp::http::response_state::sending_headers: {
-    const bool encoding_enabled{http_server_instance_st.encoding_enabled};
+    const bool auto_encoding_enabled{http_server_instance_st.auto_encoding_enabled};
     const bool gzip_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)};
     const bool deflate_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};
-    if (encoding_enabled && (gzip_encoded || deflate_encoded)) {
+    if (auto_encoding_enabled && (gzip_encoded || deflate_encoded)) {
       auto& static_SB{RuntimeContext::get().static_SB};
       static_SB.clean() << kphp::http::headers::CONTENT_ENCODING.data() << ": " << (gzip_encoded ? ENCODING_GZIP.data() : ENCODING_DEFLATE.data());
       kphp::http::header({static_SB.c_str(), static_SB.size()}, true, kphp::http::status::NO_STATUS);
