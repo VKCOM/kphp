@@ -197,6 +197,9 @@ if (isset($_SERVER["JOB_ID"])) {
 
         ob_start("ob_gzhandler");
         break;
+      case "gzip-without-handler":
+        echo 'OK';
+        break;
       case "ignore-second-handler":
         header('Transfer-Encoding: chunked');
         $chunk = "OK";
