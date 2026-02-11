@@ -26,7 +26,7 @@ class TestGzipHeaderReset(WebServerAutoTestCase):
         self.assertEqual(response.headers["Content-Encoding"], "gzip")
 
     def test_gzip_without_handler(self):
-        response = self.gzip_request("gzip-without-handler")
+        response = self.gzip_request("gzhandler-absent")
         with self.assertRaises(KeyError):
             _ = response.headers["Content-Encoding"]
 
