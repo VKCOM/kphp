@@ -204,7 +204,7 @@ if (isset($_SERVER["JOB_ID"])) {
         ob_end_clean();
 
         break;
-      case "gzip-without-handler":
+      case "gzhandler-absent":
         echo 'OK';
         break;
       case "ignore-second-handler":
