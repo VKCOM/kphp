@@ -33,10 +33,13 @@ hashAlgorithmMD5#257ddf13 = HashAlgorithm;
 hashAlgorithmMD4#317fe3d1 = HashAlgorithm;
 hashAlgorithmMD2#5aca6998 = HashAlgorithm;
 
-cipherAlgorithmAes128#e627c460 = CipherAlgorithm;
-cipherAlgorithmAes256#4c98c1f9 = CipherAlgorithm;
+cipherAlgorithmAes128gcm#ee7e4261 = CipherAlgorithm;
+cipherAlgorithmAes256gcm#c2f9eb95 = CipherAlgorithm;
+cipherAlgorithmAes128cbc#e627c460 = CipherAlgorithm;
+cipherAlgorithmAes256cbc#4c98c1f9 = CipherAlgorithm;
 
 blockPaddingPkcs7#699ec5de = BlockPadding;
+noPadding#ffc3d2f3 = BlockPadding;
 
 ---functions---
 
@@ -62,21 +65,25 @@ digestVerify#5760bd0e
     signature   : string
     = Bool;
 
-cbcDecrypt#7f2ee1e4
-   algorithm    : CipherAlgorithm
-   padding      : BlockPadding
-   passphrase   : string
-   iv           : string
-   data         : string
-   = String;
+decrypt#7f2ee1e4
+    algorithm : CipherAlgorithm
+    padding   : BlockPadding
+    key       : string
+    iv        : string
+    tag       : string
+    aad       : string
+    data      : string
+    = Maybe string;
 
-cbcEncrypt#6d4ee36a
-   algorithm    : CipherAlgorithm
-   padding      : BlockPadding
-   passphrase   : string
-   iv           : string
-   data         : string
-   = String;
+encrypt#6d4ee36a
+    algorithm : CipherAlgorithm
+    padding   : BlockPadding
+    key       : string
+    iv        : string
+    tag_size  : long
+    aad       : string
+    data      : string
+    = Maybe tuple string 2;  // encrypted data + tag (only for gcm algorithm)
 
 getPublicKey#4b1e7d3d
    key : string
@@ -90,12 +97,12 @@ getPrivateKey#34eadfdb
 publicEncrypt#7612f4ad
    key  : string
    data : string
-   = String;
+   = Maybe string;
 
 privateDecrypt#c6e91d4d
    key  : string
    data : string
-   = String;
+   = Maybe string;
 
 hash#50732a27
     algorithm : HashAlgorithm

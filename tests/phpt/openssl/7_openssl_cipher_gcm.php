@@ -1,4 +1,4 @@
-@ok k2_skip
+@ok
 <?php
 
 function make_tests_data(): array {
