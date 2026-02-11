@@ -24,7 +24,7 @@ void f$ob_start(const string& callback) noexcept {
   if (!callback.empty()) {
     if (current_buffering_level == 0 && std::string_view{callback.c_str(), callback.size()} == ob_gzhandler_name) {
       auto& http_server_instance_st{HttpServerInstanceState::get()};
-      http_server_instance_st.encoding |= HttpServerInstanceState::ENCODING_GZIP;
+      http_server_instance_st.auto_encoding_enabled = true;
     } else {
       kphp::log::error("unsupported callback {} at buffering level {}", callback.c_str(), output_instance_st.output_buffers.user_level());
     }

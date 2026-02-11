@@ -42,7 +42,9 @@ inline bool f$ob_end_clean() noexcept {
 
   output_instance_st.output_buffers.prev_user_buffer();
   auto& http_server_instance_st{HttpServerInstanceState::get()};
-  http_server_instance_st.encoding &= ~HttpServerInstanceState::ENCODING_GZIP;
+  if (const auto current_buffering_level{output_instance_st.output_buffers.user_level()}; current_buffering_level == 0) {
+    http_server_instance_st.auto_encoding_enabled = false;
+  }
   return true;
 }
 
@@ -56,7 +58,10 @@ inline Optional<string> f$ob_get_clean() noexcept {
   string result{(*opt_user_buffer).get().str()};
   output_instance_st.output_buffers.prev_user_buffer();
   auto& http_server_instance_st{HttpServerInstanceState::get()};
-  http_server_instance_st.encoding &= ~HttpServerInstanceState::ENCODING_GZIP;
+  if (const auto current_buffering_level{output_instance_st.output_buffers.user_level()}; current_buffering_level == 0) {
+    http_server_instance_st.auto_encoding_enabled = false;
+  }
+
   return result;
 }
 

@@ -59,6 +59,7 @@ struct HttpServerInstanceState final : private vk::not_copyable {
 
   std::optional<string> opt_raw_post_data;
 
+  bool auto_encoding_enabled{};
   uint32_t encoding{};
   uint64_t status_code{kphp::http::status::NO_STATUS};
   kphp::http::method http_method{kphp::http::method::other};

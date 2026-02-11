@@ -190,6 +190,23 @@ if (isset($_SERVER["JOB_ID"])) {
         echo 'OK';
         ob_end_flush();
         break;
+      case "gzhandler-after-reset":
+        ob_start("ob_gzhandler");
+        echo 'OK';
+        ob_end_flush();
+
+        ob_start("ob_gzhandler");
+        break;
+      case "gzhandler-with-nested-buffer":
+        ob_start("ob_gzhandler");
+        echo 'OK';
+        ob_start();
+        ob_end_clean();
+
+        break;
+      case "gzhandler-absent":
+        echo 'OK';
+        break;
       case "ignore-second-handler":
         header('Transfer-Encoding: chunked');
         $chunk = "OK";
