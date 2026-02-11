@@ -528,7 +528,6 @@ struct Vector final {
   }
 };
 
-// TODO need to require std::is_trivially_constructible<T> ???
 template<typename T, size_t N>
 struct tuple final {
   using array_t = std::array<T, N>;
@@ -563,12 +562,11 @@ struct tuple final {
   bool fetch(tl::fetcher& tlf) noexcept
   requires tl::deserializable<T>
   {
-    for (auto i = 0; i < N; ++i) {
-      // TODO is it correct? Or `T t{}; t.fetch(tlf); value[i] = std::move(t)` will be right way?
-      if (value[i].fetch(tlf)) [[likely]] {
-        continue;
+    for (T& v : value) {
+      v = T{};
+      if (!v.fetch(tlf)) [[unlikely]] {
+        return false;
       }
-      return false;
     }
 
     return true;

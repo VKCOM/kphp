@@ -341,16 +341,14 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
     co_return false;
   }
 
-  tl::string& encrypted = (*response.opt_value).value[0];
-  string result{encrypted.value.data(), static_cast<string::size_type>(encrypted.value.size())};
+  string result{(*response.opt_value).value[0].value.data(), static_cast<string::size_type>((*response.opt_value).value[0].value.size())};
 
   if (tag.has_value()) {
     if (tag_length == 0) {
       kphp::log::warning("A tag should be provided when using AEAD mode");
     } else {
-      tl::string& received_tag = (*response.opt_value).value[1];
-      string tagg{received_tag.value.data(), static_cast<string::size_type>(received_tag.value.size())};
-      tag.value().get() = std::move(tagg);
+      string received_tag{(*response.opt_value).value[1].value.data(), static_cast<string::size_type>((*response.opt_value).value[1].value.size())};
+      tag.value().get() = std::move(received_tag);
     }
   }
   co_return (options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(result) : f$base64_encode(result);
