@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <cwchar>
 #include <expected>
 #include <format>
 #include <iterator>
@@ -21,6 +22,7 @@
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-common/stdlib/file/file-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/file/file-system-state.h"
@@ -28,6 +30,7 @@
 
 namespace {
 
+constexpr int32_t PHP_CSV_NO_ESCAPE{EOF};
 constexpr size_t MIN_FILE_SIZE{12};
 constexpr size_t MAX_READ_SIZE{3 * 256 + 64};
 
@@ -429,4 +432,278 @@ Optional<string> f$fgets(const resource& stream, int64_t length) noexcept {
   }
   res.shrink(static_cast<string::size_type>(read_res));
   return res;
+}
+
+namespace {
+// Common csv-parsing functionality for
+// * fgetcsv
+// The function is similar to `php_fgetcsv` function from https://github.com/php/php-src/blob/master/ext/standard/file.c
+Optional<array<mixed>> getcsv(const resource& stream, string buffer, char delimiter, char enclosure, char escape, mbstate_t* ps) noexcept {
+  kphp::log::assertion(ps != nullptr);
+
+  array<mixed> answer{};
+  int32_t current_id{0};
+  string_buffer tmp_buffer{};
+  // Following part is imported from `php_fgetcsv`
+  char const* buf{buffer.c_str()};
+  char const* bptr{buf};
+  size_t buf_len{buffer.size()};
+  char const* tptr{kphp::fs::details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps)};
+  size_t line_end_len{buf_len - (tptr - buf)};
+  char const* line_end{tptr};
+  char const* limit{tptr};
+  bool first_field{true};
+  size_t temp_len{buf_len};
+  int32_t inc_len{};
+  do {
+    char const* hunk_begin{};
+
+    // SAFETY: mbrlen is thread-safe if ps != nullptr, and ps != nullptr because there is assertion at the beginning of function
+    inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0); // NOLINT
+    if (inc_len == 1) {
+      char const* tmp{bptr};
+      while ((*tmp != delimiter) && isspace(static_cast<int32_t>(*tmp))) {
+        tmp++;
+      }
+      if (*tmp == enclosure) {
+        bptr = tmp;
+      }
+    }
+
+    if (first_field && bptr == line_end) {
+      answer.set_value(current_id++, mixed{});
+      break;
+    }
+    first_field = false;
+    /* 2. Read field, leaving bptr pointing at start of next field */
+    if (inc_len != 0 && *bptr == enclosure) {
+      int32_t state{0};
+
+      bptr++; /* move on to first character in field */
+      hunk_begin = bptr;
+
+      /* 2A. handle enclosure delimited field */
+      for (;;) {
+        switch (inc_len) {
+        case 0:
+          switch (state) {
+          case 2:
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
+            hunk_begin = bptr;
+            goto quit_loop_2;
+
+          case 1:
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+            hunk_begin = bptr;
+            /* fallthrough */
+          case 0: {
+
+            if (hunk_begin != line_end) {
+              tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+              hunk_begin = bptr;
+            }
+
+            /* add the embedded line end to the field */
+            tmp_buffer.append(line_end, line_end_len);
+            string new_buffer{};
+
+            if (stream.is_null()) {
+              goto quit_loop_2;
+            } else {
+              Optional<string> new_buffer_optional{f$fgets(stream)};
+              if (!new_buffer_optional.has_value()) {
+                if (temp_len > static_cast<size_t>(limit - buf)) {
+                  goto quit_loop_2;
+                }
+                return answer;
+              }
+              new_buffer = new_buffer_optional.val();
+            }
+            temp_len += new_buffer.size();
+            buf_len = new_buffer.size();
+            buffer = new_buffer;
+            buf = bptr = buffer.c_str();
+            hunk_begin = buf;
+
+            line_end = limit = kphp::fs::details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps);
+            line_end_len = buf_len - static_cast<size_t>(limit - buf);
+
+            state = 0;
+          } break;
+          default:
+            kphp::log::error("unreachable case");
+            break;
+          }
+          break;
+
+        case -2:
+        case -1:
+          /* break is omitted intentionally */
+        case 1:
+          /* we need to determine if the enclosure is
+           * 'real' or is it escaped */
+          switch (state) {
+          case 1: /* escaped */
+            bptr++;
+            state = 0;
+            break;
+          case 2: /* embedded enclosure ? let's check it */
+            if (*bptr != enclosure) {
+              /* real enclosure */
+              tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
+              hunk_begin = bptr;
+              goto quit_loop_2;
+            }
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+            bptr++;
+            hunk_begin = bptr;
+            state = 0;
+            break;
+          default:
+            if (*bptr == enclosure) {
+              state = 2;
+            } else if (escape != PHP_CSV_NO_ESCAPE && *bptr == escape) {
+              state = 1;
+            }
+            bptr++;
+            break;
+          }
+          break;
+
+        default:
+          switch (state) {
+          case 2:
+            /* real enclosure */
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin - 1));
+            hunk_begin = bptr;
+            goto quit_loop_2;
+          case 1:
+            bptr += inc_len;
+            tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+            hunk_begin = bptr;
+            state = 0;
+            break;
+          default:
+            bptr += inc_len;
+            break;
+          }
+          break;
+        }
+        // SAFETY: mbrlen is thread-safe if ps != nullptr, and ps != nullptr because there is assertion at the beginning of function
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0); // NOLINT
+      }
+
+    quit_loop_2:
+      /* look up for a delimiter */
+      for (;;) {
+        switch (inc_len) {
+        case 0:
+          goto quit_loop_3;
+
+        case -2:
+        case -1:
+          inc_len = 1;
+          /* fallthrough */
+        case 1:
+          if (*bptr == delimiter) {
+            goto quit_loop_3;
+          }
+          break;
+        default:
+          break;
+        }
+        bptr += inc_len;
+
+        // SAFETY: mbrlen is thread-safe if ps != nullptr, and ps != nullptr because there is assertion at the beginning of function
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0); // NOLINT
+      }
+
+    quit_loop_3:
+      tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+      bptr += inc_len;
+    } else {
+      /* 2B. Handle non-enclosure field */
+
+      hunk_begin = bptr;
+
+      for (;;) {
+        switch (inc_len) {
+        case 0:
+          goto quit_loop_4;
+        case -2:
+        case -1:
+          inc_len = 1;
+          /* fallthrough */
+        case 1:
+          if (*bptr == delimiter) {
+            goto quit_loop_4;
+          }
+          break;
+        default:
+          break;
+        }
+        bptr += inc_len;
+
+        // SAFETY: mbrlen is thread-safe if ps != nullptr, and ps != nullptr because there is assertion at the beginning of function
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0); // NOLINT
+      }
+    quit_loop_4:
+      tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
+
+      char const* comp_end{kphp::fs::details::fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size(), ps)};
+      tmp_buffer.set_pos(comp_end - tmp_buffer.c_str());
+      if (*bptr == delimiter) {
+        bptr++;
+      }
+    }
+
+    /* 3. Now pass our field back to php */
+    answer.set_value(current_id++, tmp_buffer.str());
+    tmp_buffer.clean();
+  } while (inc_len > 0);
+
+  return answer;
+}
+} // namespace
+
+// don't forget to add "interruptible" to file-functions.txt when this function becomes a coroutine
+Optional<array<mixed>> f$fgetcsv(const resource& stream, int64_t length, string delimiter, string enclosure, string escape) noexcept {
+  if (delimiter.empty()) {
+    kphp::log::warning("delimiter must be a character");
+    return false;
+  }
+  if (delimiter.size() > 1) {
+    kphp::log::warning("delimiter must be a single character");
+  }
+  if (enclosure.empty()) {
+    kphp::log::warning("enclosure must be a character");
+    return false;
+  }
+  if (enclosure.size() > 1) {
+    kphp::log::warning("enclosure must be a single character");
+  }
+  int32_t escape_char{PHP_CSV_NO_ESCAPE};
+  if (!escape.empty()) {
+    escape_char = static_cast<int32_t>(static_cast<unsigned char>(escape[0]));
+  } else if (escape.size() > 1) {
+    kphp::log::warning("escape_char must be a single character");
+  }
+
+  const char delimiter_char{delimiter[0]};
+  const char enclosure_char{enclosure[0]};
+
+  if (length < 0) {
+    kphp::log::warning("length parameter may not be negative");
+    return false;
+  }
+  if (length == 0) {
+    length = -2; // this is necessary to pass a negative number to fgets
+  }
+  Optional<string> line_optional{f$fgets(stream, length + 1)};
+  if (!line_optional.has_value()) {
+    return false;
+  }
+
+  mbstate_t ps{};
+  return getcsv(stream, line_optional.val(), delimiter_char, enclosure_char, escape_char, std::addressof(ps));
 }

@@ -4,6 +4,8 @@
 
 #include "runtime/string_functions.h"
 
+#include <cwchar>
+
 #include "common/unicode/unicode-utils.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/interface.h"
@@ -73,5 +75,6 @@ Optional<array<mixed>> f$str_getcsv(const string& str, const string& delimiter, 
     escape_char = escape[0];
   }
 
-  return getcsv(mixed() /* null */, str, delimiter_char, enclosure_char, escape_char);
+  mbstate_t ps{};
+  return getcsv(mixed() /* null */, str, delimiter_char, enclosure_char, escape_char, &ps);
 }

@@ -6,9 +6,11 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <cwchar>
 #include <sys/select.h>
 
 #include "common/kprintf.h"
+#include "runtime-common/stdlib/file/file-functions.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime/allocator.h"
 #include "runtime/array_functions.h"
@@ -470,48 +472,11 @@ Optional<int64_t> f$fputcsv(const Stream& stream, const array<mixed>& fields, st
   return f$fwrite(stream, csvline.str());
 }
 
-// this function is imported from https://github.com/php/php-src/blob/master/ext/standard/file.c,
-// function php_fgetcsv_lookup_trailing_spaces
-static const char* fgetcsv_lookup_trailing_spaces(const char* ptr, size_t len) {
-  int inc_len;
-  unsigned char last_chars[2] = {0, 0};
-
-  while (len > 0) {
-    inc_len = (*ptr == '\0' ? 1 : mblen(ptr, len));
-    switch (inc_len) {
-    case -2:
-    case -1:
-      inc_len = 1;
-      break;
-    case 0:
-      goto quit_loop;
-    case 1:
-    default:
-      last_chars[0] = last_chars[1];
-      last_chars[1] = *ptr;
-      break;
-    }
-    ptr += inc_len;
-    len -= inc_len;
-  }
-quit_loop:
-  switch (last_chars[1]) {
-  case '\n':
-    if (last_chars[0] == '\r') {
-      return ptr - 2;
-    }
-    /* fallthrough */
-  case '\r':
-    return ptr - 1;
-  }
-  return ptr;
-}
-
 // Common csv-parsing functionality for
 // * fgetcsv
 // * str_getcsv
 // The function is similar to `php_fgetcsv` function from https://github.com/php/php-src/blob/master/ext/standard/file.c
-Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimiter, char enclosure, char escape) {
+Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimiter, char enclosure, char escape, mbstate_t* ps) {
   array<mixed> answer;
   int current_id = 0;
   string_buffer tmp_buffer;
@@ -519,7 +484,7 @@ Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimite
   char const* buf = buffer.c_str();
   char const* bptr = buf;
   size_t buf_len = buffer.size();
-  char const* tptr = fgetcsv_lookup_trailing_spaces(buf, buf_len);
+  char const* tptr = kphp::fs::details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps);
   size_t line_end_len = buf_len - (tptr - buf);
   char const *line_end = tptr, *limit = tptr;
   bool first_field = true;
@@ -528,7 +493,7 @@ Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimite
   do {
     char const* hunk_begin;
 
-    inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
+    inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0);
     if (inc_len == 1) {
       char const* tmp = bptr;
       while ((*tmp != delimiter) && isspace((int)*(unsigned char*)tmp)) {
@@ -594,7 +559,7 @@ Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimite
             buf = bptr = buffer.c_str();
             hunk_begin = buf;
 
-            line_end = limit = fgetcsv_lookup_trailing_spaces(buf, buf_len);
+            line_end = limit = kphp::fs::details::fgetcsv_lookup_trailing_spaces(buf, buf_len, ps);
             line_end_len = buf_len - (size_t)(limit - buf);
 
             state = 0;
@@ -655,7 +620,7 @@ Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimite
           }
           break;
         }
-        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0);
       }
 
     quit_loop_2:
@@ -678,7 +643,7 @@ Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimite
           break;
         }
         bptr += inc_len;
-        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0);
       }
 
     quit_loop_3:
@@ -706,12 +671,12 @@ Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimite
           break;
         }
         bptr += inc_len;
-        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mblen(bptr, limit - bptr)) : 0);
+        inc_len = (bptr < limit ? (*bptr == '\0' ? 1 : mbrlen(bptr, limit - bptr, ps)) : 0);
       }
     quit_loop_4:
       tmp_buffer.append(hunk_begin, static_cast<size_t>(bptr - hunk_begin));
 
-      char const* comp_end = (char*)fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size());
+      char const* comp_end = (char*)kphp::fs::details::fgetcsv_lookup_trailing_spaces(tmp_buffer.c_str(), tmp_buffer.size(), ps);
       tmp_buffer.set_pos(comp_end - tmp_buffer.c_str());
       if (*bptr == delimiter) {
         bptr++;
@@ -757,7 +722,8 @@ Optional<array<mixed>> f$fgetcsv(const Stream& stream, int64_t length, string de
   if (!buf_optional.has_value()) {
     return false;
   }
-  return getcsv(stream, buf_optional.val(), delimiter_char, enclosure_char, escape_char);
+  mbstate_t ps{};
+  return getcsv(stream, buf_optional.val(), delimiter_char, enclosure_char, escape_char, &ps);
 }
 
 Optional<string> f$file_get_contents(const string& stream) {

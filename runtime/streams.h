@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <cwchar>
+
 #include "runtime-common/core/runtime-core.h"
 
 using Stream = mixed;
@@ -87,7 +89,7 @@ Optional<int64_t> f$vfprintf(const Stream& stream, const string& format, const a
 Optional<int64_t> f$fputcsv(const Stream& stream, const array<mixed>& fields, string delimiter = string(",", 1), string enclosure = string("\"", 1),
                             string escape_char = string("\\", 1));
 
-Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimiter, char enclosure, char escape);
+Optional<array<mixed>> getcsv(const Stream& stream, string buffer, char delimiter, char enclosure, char escape, mbstate_t* ps);
 
 Optional<array<mixed>> f$fgetcsv(const Stream& stream, int64_t length = 0, string delimiter = string(",", 1), string enclosure = string("\"", 1),
                                  string escape_char = string("\\", 1));
