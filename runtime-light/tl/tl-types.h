@@ -1200,19 +1200,21 @@ struct ReqResult final {
 };
 
 struct rpcReqResult final {
+  tl::i64 query_id{};
   tl::ReqResult result{};
 
   bool fetch(tl::fetcher& tlf) noexcept {
-    return tl::i64{}.fetch(tlf) && result.fetch(tlf);
+    return query_id.fetch(tlf) && result.fetch(tlf);
   }
 };
 
 struct rpcReqError final {
+  tl::i64 query_id{};
   tl::i32 error_code{};
   tl::string error{};
 
   bool fetch(tl::fetcher& tlf) noexcept {
-    return tl::i64{}.fetch(tlf) && error_code.fetch(tlf) && error.fetch(tlf);
+    return query_id.fetch(tlf) && error_code.fetch(tlf) && error.fetch(tlf);
   }
 };
 
@@ -1220,13 +1222,13 @@ struct RpcReqResult final {
   std::variant<tl::rpcReqResult, tl::rpcReqError> value;
 
   bool fetch(tl::fetcher& tlf) noexcept {
-    tl::magic magic;
+    tl::magic magic{};
     if (!magic.fetch(tlf)) [[unlikely]] {
       return false;
     }
     switch (magic.value) {
     case TL_RPC_REQ_RESULT: {
-      tl::rpcReqResult rpc_req_result;
+      tl::rpcReqResult rpc_req_result{};
       if (!rpc_req_result.fetch(tlf)) [[unlikely]] {
         return false;
       }
@@ -1234,7 +1236,7 @@ struct RpcReqResult final {
       break;
     }
     case TL_RPC_REQ_ERROR: {
-      tl::rpcReqError rpc_req_error;
+      tl::rpcReqError rpc_req_error{};
       if (!rpc_req_error.fetch(tlf)) [[unlikely]] {
         return false;
       }
