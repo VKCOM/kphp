@@ -21,6 +21,7 @@
 #include "common/tl/constants/common.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {
@@ -1185,7 +1186,9 @@ struct reqResultHeader final {
     if (!flags.fetch(tlf) || !extra.fetch(tlf, flags)) [[unlikely]] {
       return false;
     }
-    result = *tlf.fetch_bytes(tlf.remaining());
+    auto opt_result{tlf.fetch_bytes(tlf.remaining())};
+    kphp::log::assertion(opt_result.has_value());
+    result = *opt_result;
     return true;
   }
 };

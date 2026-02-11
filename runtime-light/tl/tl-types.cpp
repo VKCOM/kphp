@@ -355,7 +355,9 @@ bool ReqResult::fetch(tl::fetcher& tlf) noexcept {
   }
   default:
     tlf.reset(backup_pos);
-    value = *tlf.fetch_bytes(tlf.remaining());
+    auto opt_value{tlf.fetch_bytes(tlf.remaining())};
+    kphp::log::assertion(opt_value.has_value());
+    value = *opt_value;
   }
   return true;
 }
