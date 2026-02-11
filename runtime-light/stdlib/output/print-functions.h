@@ -70,7 +70,6 @@ void f$var_dump(const class_instance<T>& v) noexcept {
 // ================================================================================================
 
 inline void f$echo(const string& s) noexcept {
-  raise(SIGSEGV);
   print(s);
 }
 
