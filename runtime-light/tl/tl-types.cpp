@@ -219,126 +219,125 @@ tl::mask rpcInvokeReqExtra::get_flags() const noexcept {
 }
 
 bool rpcReqResultExtra::fetch(tl::fetcher& tlf, const tl::mask& flags) noexcept {
-  if (static_cast<bool>(flags.value & BINLOG_POS_FLAG)) {
-    if (!binlog_pos.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
+  bool ok{true};
+  if (ok && static_cast<bool>(flags.value & BINLOG_POS_FLAG)) {
+    ok = opt_binlog_pos.emplace().fetch(tlf);
   }
-  if (static_cast<bool>(flags.value & BINLOG_TIME_FLAG)) {
-    if (!binlog_time.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
+  if (ok && static_cast<bool>(flags.value & BINLOG_TIME_FLAG)) {
+    ok = opt_binlog_time.emplace().fetch(tlf);
   }
-  if (static_cast<bool>(flags.value) & ENGINE_PID_FLAG) {
-    if (!engine_pid.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
+  if (ok && static_cast<bool>(flags.value) & ENGINE_PID_FLAG) {
+    ok = opt_engine_pid.emplace().fetch(tlf);
   }
-  if (static_cast<bool>(flags.value & REQUEST_SIZE_FLAG)) {
+  if (ok && static_cast<bool>(flags.value & REQUEST_SIZE_FLAG)) {
     kphp::log::assertion(static_cast<bool>(flags.value & RESPONSE_SIZE_FLAG));
-    if (!request_size.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
-    if (!response_size.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
+    ok = opt_request_size.emplace().fetch(tlf) && opt_response_size.emplace().fetch(tlf);
   }
-  if (static_cast<bool>(flags.value & FAILED_SUBQUERIES_FLAG)) {
-    if (!failed_subqueries.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
+  if (ok && static_cast<bool>(flags.value & FAILED_SUBQUERIES_FLAG)) {
+    ok = opt_failed_subqueries.emplace().fetch(tlf);
   }
-  if (static_cast<bool>(flags.value & COMPRESSION_VERSION_FLAG)) {
-    if (!compression_version.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
+  if (ok && static_cast<bool>(flags.value & COMPRESSION_VERSION_FLAG)) {
+    ok = opt_compression_version.emplace().fetch(tlf);
   }
-  if (static_cast<bool>(flags.value & STATS_FLAG)) {
-    if (!stats.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
+  if (ok && static_cast<bool>(flags.value & STATS_FLAG)) {
+    ok = opt_stats.emplace().fetch(tlf);
   }
-  if (static_cast<bool>(flags.value & EPOCH_NUMBER_FLAG)) {
+  if (ok && static_cast<bool>(flags.value & EPOCH_NUMBER_FLAG)) {
     kphp::log::assertion(static_cast<bool>(flags.value & VIEW_NUMBER_FLAG));
-    if (!epoch_number.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
-    if (!view_number.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
+    ok = opt_epoch_number.emplace().fetch(tlf) && opt_view_number.emplace().fetch(tlf);
   }
-  return true;
+  return ok;
 }
 
 void rpcReqResultExtra::store(tl::storer& tls, const tl::mask& flags) const noexcept {
-  if (static_cast<bool>(flags.value & BINLOG_POS_FLAG)) {
-    binlog_pos.store(tls);
+  kphp::log::assertion(opt_binlog_pos.has_value() == static_cast<bool>(flags.value & BINLOG_POS_FLAG));
+  if (opt_binlog_pos.has_value()) {
+    opt_binlog_pos->store(tls);
   }
-  if (static_cast<bool>(flags.value & BINLOG_TIME_FLAG)) {
-    binlog_time.store(tls);
+  kphp::log::assertion(opt_binlog_time.has_value() == static_cast<bool>(flags.value & BINLOG_TIME_FLAG));
+  if (opt_binlog_time.has_value()) {
+    opt_binlog_time->store(tls);
   }
-  if (static_cast<bool>(flags.value) & ENGINE_PID_FLAG) {
-    engine_pid.store(tls);
+  kphp::log::assertion(opt_engine_pid.has_value() == static_cast<bool>(flags.value & ENGINE_PID_FLAG));
+  if (opt_engine_pid.has_value()) {
+    opt_engine_pid->store(tls);
   }
-  if (static_cast<bool>(flags.value & REQUEST_SIZE_FLAG)) {
-    kphp::log::assertion(static_cast<bool>(flags.value & RESPONSE_SIZE_FLAG));
-    request_size.store(tls), response_size.store(tls);
+  kphp::log::assertion(opt_request_size.has_value() == static_cast<bool>(flags.value & REQUEST_SIZE_FLAG) &&
+                       opt_response_size.has_value() == static_cast<bool>(flags.value & RESPONSE_SIZE_FLAG));
+  if (opt_request_size.has_value()) {
+    kphp::log::assertion(opt_response_size.has_value());
+    opt_request_size->store(tls), opt_response_size->store(tls);
   }
-  if (static_cast<bool>(flags.value & FAILED_SUBQUERIES_FLAG)) {
-    failed_subqueries.store(tls);
+  kphp::log::assertion(opt_failed_subqueries.has_value() == static_cast<bool>(flags.value & FAILED_SUBQUERIES_FLAG));
+  if (opt_failed_subqueries.has_value()) {
+    opt_failed_subqueries->store(tls);
   }
-  if (static_cast<bool>(flags.value & COMPRESSION_VERSION_FLAG)) {
-    compression_version.store(tls);
+  kphp::log::assertion(opt_compression_version.has_value() == static_cast<bool>(flags.value & COMPRESSION_VERSION_FLAG));
+  if (opt_compression_version.has_value()) {
+    opt_compression_version->store(tls);
   }
-  if (static_cast<bool>(flags.value & STATS_FLAG)) {
-    stats.store(tls);
+  kphp::log::assertion(opt_stats.has_value() == static_cast<bool>(flags.value & STATS_FLAG));
+  if (opt_stats.has_value()) {
+    opt_stats->store(tls);
   }
-  if (static_cast<bool>(flags.value & EPOCH_NUMBER_FLAG)) {
-    kphp::log::assertion(static_cast<bool>(flags.value & VIEW_NUMBER_FLAG));
-    epoch_number.store(tls), view_number.store(tls);
+  kphp::log::assertion(opt_epoch_number.has_value() == static_cast<bool>(flags.value & EPOCH_NUMBER_FLAG) &&
+                       opt_view_number.has_value() == static_cast<bool>(flags.value & VIEW_NUMBER_FLAG));
+  if (opt_epoch_number.has_value()) {
+    kphp::log::assertion(opt_view_number.has_value());
+    opt_epoch_number->store(tls), opt_view_number->store(tls);
   }
 }
 
 size_t rpcReqResultExtra::footprint(const tl::mask& flags) const noexcept {
   size_t footprint{};
-  if (static_cast<bool>(flags.value & BINLOG_POS_FLAG)) {
-    footprint += binlog_pos.footprint();
+  kphp::log::assertion(opt_binlog_pos.has_value() == static_cast<bool>(flags.value & BINLOG_POS_FLAG));
+  if (opt_binlog_pos.has_value()) {
+    footprint += opt_binlog_pos->footprint();
   }
-  if (static_cast<bool>(flags.value & BINLOG_TIME_FLAG)) {
-    footprint += binlog_time.footprint();
+  kphp::log::assertion(opt_binlog_time.has_value() == static_cast<bool>(flags.value & BINLOG_TIME_FLAG));
+  if (opt_binlog_time.has_value()) {
+    footprint += opt_binlog_time->footprint();
   }
-  if (static_cast<bool>(flags.value) & ENGINE_PID_FLAG) {
-    footprint += engine_pid.footprint();
+  kphp::log::assertion(opt_engine_pid.has_value() == static_cast<bool>(flags.value & ENGINE_PID_FLAG));
+  if (opt_engine_pid.has_value()) {
+    footprint += opt_engine_pid->footprint();
   }
-  if (static_cast<bool>(flags.value & REQUEST_SIZE_FLAG)) {
-    kphp::log::assertion(static_cast<bool>(flags.value & RESPONSE_SIZE_FLAG));
-    footprint += request_size.footprint() + response_size.footprint();
+  kphp::log::assertion(opt_request_size.has_value() == static_cast<bool>(flags.value & REQUEST_SIZE_FLAG) &&
+                       opt_response_size.has_value() == static_cast<bool>(flags.value & RESPONSE_SIZE_FLAG));
+  if (opt_request_size.has_value()) {
+    kphp::log::assertion(opt_response_size.has_value());
+    footprint += opt_request_size->footprint() + opt_response_size->footprint();
   }
-  if (static_cast<bool>(flags.value & FAILED_SUBQUERIES_FLAG)) {
-    footprint += failed_subqueries.footprint();
+  kphp::log::assertion(opt_failed_subqueries.has_value() == static_cast<bool>(flags.value & FAILED_SUBQUERIES_FLAG));
+  if (opt_failed_subqueries.has_value()) {
+    footprint += opt_failed_subqueries->footprint();
   }
-  if (static_cast<bool>(flags.value & COMPRESSION_VERSION_FLAG)) {
-    footprint += compression_version.footprint();
+  kphp::log::assertion(opt_compression_version.has_value() == static_cast<bool>(flags.value & COMPRESSION_VERSION_FLAG));
+  if (opt_compression_version.has_value()) {
+    footprint += opt_compression_version->footprint();
   }
-  if (static_cast<bool>(flags.value & STATS_FLAG)) {
-    footprint += stats.footprint();
+  kphp::log::assertion(opt_stats.has_value() == static_cast<bool>(flags.value & STATS_FLAG));
+  if (opt_stats.has_value()) {
+    footprint += opt_stats->footprint();
   }
-  if (static_cast<bool>(flags.value & EPOCH_NUMBER_FLAG)) {
-    kphp::log::assertion(static_cast<bool>(flags.value & VIEW_NUMBER_FLAG));
-    footprint += epoch_number.footprint() + view_number.footprint();
+  kphp::log::assertion(opt_epoch_number.has_value() == static_cast<bool>(flags.value & EPOCH_NUMBER_FLAG) &&
+                       opt_view_number.has_value() == static_cast<bool>(flags.value & VIEW_NUMBER_FLAG));
+  if (opt_epoch_number.has_value()) {
+    kphp::log::assertion(opt_view_number.has_value());
+    footprint += opt_epoch_number->footprint() + opt_view_number->footprint();
   }
   return footprint;
 }
 
 bool ReqResult::fetch(tl::fetcher& tlf) noexcept {
   const auto backup_pos{tlf.pos()};
-  tl::magic magic;
+  tl::magic magic{};
   if (!magic.fetch(tlf)) [[unlikely]] {
     return false;
   }
   switch (magic.value) {
   case TL_REQ_ERROR: {
-    tl::reqError req_error;
+    tl::reqError req_error{};
     if (!req_error.fetch(tlf)) [[unlikely]] {
       return false;
     }
@@ -346,7 +345,7 @@ bool ReqResult::fetch(tl::fetcher& tlf) noexcept {
     break;
   }
   case TL_REQ_RESULT_HEADER: {
-    tl::reqResultHeader req_result_header;
+    tl::reqResultHeader req_result_header{};
     if (!req_result_header.fetch(tlf)) [[unlikely]] {
       return false;
     }

@@ -1143,16 +1143,16 @@ class rpcReqResultExtra final {
   static constexpr uint32_t VIEW_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::view_number;
 
 public:
-  tl::i64 binlog_pos{};
-  tl::i64 binlog_time{};
-  tl::netPid engine_pid{};
-  tl::i32 request_size{};
-  tl::i32 response_size{};
-  tl::i32 failed_subqueries{};
-  tl::i32 compression_version{};
-  tl::dictionary<tl::string> stats{};
-  tl::i64 epoch_number{};
-  tl::i64 view_number{};
+  std::optional<tl::i64> opt_binlog_pos;
+  std::optional<tl::i64> opt_binlog_time;
+  std::optional<tl::netPid> opt_engine_pid;
+  std::optional<tl::i32> opt_request_size;
+  std::optional<tl::i32> opt_response_size;
+  std::optional<tl::i32> opt_failed_subqueries;
+  std::optional<tl::i32> opt_compression_version;
+  std::optional<tl::dictionary<tl::string>> opt_stats;
+  std::optional<tl::i64> opt_epoch_number;
+  std::optional<tl::i64> opt_view_number;
 
   bool fetch(tl::fetcher& tlf, const tl::mask& flags) noexcept;
   void store(tl::storer& tls, const tl::mask& flags) const noexcept;

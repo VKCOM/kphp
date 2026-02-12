@@ -11,15 +11,15 @@
 #include "runtime-light/tl/tl-types.h"
 
 bool TlRpcError::try_fetch() noexcept {
+  // Copying the fetcher so we don't modify it
   auto fetcher{RpcServerInstanceState::get().tl_fetcher};
   const auto backup_pos{fetcher.pos()};
-  tl::ReqResult req_result;
-  if (req_result.fetch(fetcher) && std::holds_alternative<tl::reqResultHeader>(req_result.value)) {
+  if (tl::ReqResult req_result{}; req_result.fetch(fetcher) && std::holds_alternative<tl::reqResultHeader>(req_result.value)) {
     fetcher = tl::fetcher{std::get<tl::reqResultHeader>(req_result.value).result};
   } else {
     fetcher.reset(backup_pos);
   }
-  tl::RpcReqResult rpc_req_result;
+  tl::RpcReqResult rpc_req_result{};
   if (!rpc_req_result.fetch(fetcher) || !std::holds_alternative<tl::rpcReqError>(rpc_req_result.value)) {
     return false;
   }
