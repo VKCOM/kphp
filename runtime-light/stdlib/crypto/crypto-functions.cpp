@@ -252,7 +252,7 @@ array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexce
 Optional<int64_t> f$openssl_cipher_iv_length(const string& method) noexcept {
   auto algorithm{parse_cipher_algorithm(method)};
   if (!algorithm) {
-    kphp::log::warning("Unknown cipher algorithm");
+    kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
     return false;
   }
   return algorithm_iv_len(*algorithm);
@@ -263,7 +263,7 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
                                                      [[maybe_unused]] int64_t tag_length) noexcept {
   auto algorithm{parse_cipher_algorithm(method)};
   if (!algorithm) {
-    kphp::log::warning("Unknown cipher algorithm");
+    kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
     co_return false;
   }
 
@@ -321,7 +321,7 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
 
   auto algorithm{parse_cipher_algorithm(method)};
   if (!algorithm.has_value()) {
-    kphp::log::warning("Unknown cipher algorithm");
+    kphp::log::warning("Unknown cipher algorithm {}", method.c_str());
     co_return false;
   }
 
