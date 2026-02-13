@@ -335,10 +335,9 @@ bool ReqResult::fetch(tl::fetcher& tlf) noexcept {
   default:
     tlf.reset(backup_pos);
     auto opt_value{tlf.fetch_bytes(tlf.remaining())};
-    ok = ok && opt_value.has_value();
-    if (ok) [[likely]] {
-      value = *opt_value;
-    }
+    ok = opt_value.has_value();
+    value = opt_value.value_or(std::span<const std::byte>{});
+    break;
   }
   return ok;
 }
