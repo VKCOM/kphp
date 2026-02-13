@@ -332,33 +332,21 @@ size_t rpcReqResultExtra::footprint(const tl::mask& flags) const noexcept {
 bool ReqResult::fetch(tl::fetcher& tlf) noexcept {
   const auto backup_pos{tlf.pos()};
   tl::magic magic{};
-  if (!magic.fetch(tlf)) [[unlikely]] {
-    return false;
-  }
+  bool ok{magic.fetch(tlf)};
   switch (magic.value) {
-  case TL_REQ_ERROR: {
-    tl::reqError req_error{};
-    if (!req_error.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
-    value = req_error;
+  case TL_REQ_ERROR:
+    ok = ok && value.emplace<tl::reqError>().fetch(tlf);
     break;
-  }
-  case TL_REQ_RESULT_HEADER: {
-    tl::reqResultHeader req_result_header{};
-    if (!req_result_header.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
-    value = req_result_header;
+  case TL_REQ_RESULT_HEADER:
+    ok = ok && value.emplace<tl::reqResultHeader>().fetch(tlf);
     break;
-  }
   default:
     tlf.reset(backup_pos);
     auto opt_value{tlf.fetch_bytes(tlf.remaining())};
     kphp::log::assertion(opt_value.has_value());
     value = *opt_value;
   }
-  return true;
+  return ok;
 }
 
 } // namespace tl

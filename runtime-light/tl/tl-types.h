@@ -1223,30 +1223,19 @@ struct RpcReqResult final {
 
   bool fetch(tl::fetcher& tlf) noexcept {
     tl::magic magic{};
-    if (!magic.fetch(tlf)) [[unlikely]] {
-      return false;
-    }
+    bool ok{magic.fetch(tlf)};
     switch (magic.value) {
-    case TL_RPC_REQ_RESULT: {
-      tl::rpcReqResult rpc_req_result{};
-      if (!rpc_req_result.fetch(tlf)) [[unlikely]] {
-        return false;
-      }
-      value = rpc_req_result;
+    case TL_RPC_REQ_RESULT:
+      ok = ok && value.emplace<tl::rpcReqResult>().fetch(tlf);
       break;
-    }
-    case TL_RPC_REQ_ERROR: {
-      tl::rpcReqError rpc_req_error{};
-      if (!rpc_req_error.fetch(tlf)) [[unlikely]] {
-        return false;
-      }
-      value = rpc_req_error;
+    case TL_RPC_REQ_ERROR:
+      ok = ok && value.emplace<tl::rpcReqError>().fetch(tlf);
       break;
-    }
     default:
-      return false;
+      ok = false;
+      break;
     }
-    return true;
+    return ok;
   }
 };
 
