@@ -14,14 +14,14 @@ bool TlRpcError::try_fetch() noexcept {
   auto fetcher{rpc_server_instance_state_fetcher};
   tl::magic magic{};
   bool ok{magic.fetch(fetcher)};
-  if (ok && magic.value == TL_REQ_RESULT_HEADER) {
+  if (ok && magic.expect(TL_REQ_RESULT_HEADER)) {
     tl::reqResultHeader req_result_header{};
     ok = req_result_header.fetch(fetcher);
     if (ok) [[likely]] {
       fetcher = tl::fetcher{req_result_header.result};
     }
   }
-  if (!ok || magic.value != TL_RPC_REQ_ERROR) {
+  if (!ok || !magic.expect(TL_RPC_REQ_ERROR)) {
     return false;
   }
   tl::rpcReqError rpc_req_error{};
