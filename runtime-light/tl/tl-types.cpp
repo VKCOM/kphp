@@ -321,27 +321,6 @@ size_t rpcReqResultExtra::footprint(const tl::mask& flags) const noexcept {
   return footprint;
 }
 
-bool ReqResult::fetch(tl::fetcher& tlf) noexcept {
-  const auto backup_pos{tlf.pos()};
-  tl::magic magic{};
-  bool ok{magic.fetch(tlf)};
-  switch (magic.value) {
-  case TL_REQ_ERROR:
-    ok = ok && value.emplace<tl::reqError>().fetch(tlf);
-    break;
-  case TL_REQ_RESULT_HEADER:
-    ok = ok && value.emplace<tl::reqResultHeader>().fetch(tlf);
-    break;
-  default:
-    tlf.reset(backup_pos);
-    auto opt_value{tlf.fetch_bytes(tlf.remaining())};
-    ok = opt_value.has_value();
-    value = opt_value.value_or(std::span<const std::byte>{});
-    break;
-  }
-  return ok;
-}
-
 } // namespace tl
 
 namespace tl2 {

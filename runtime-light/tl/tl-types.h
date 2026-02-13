@@ -1168,15 +1168,6 @@ struct RpcReqResultExtra final {
   }
 };
 
-struct reqError final {
-  tl::i32 error_code{};
-  tl::string error{};
-
-  bool fetch(tl::fetcher& tlf) noexcept {
-    return error_code.fetch(tlf) && error.fetch(tlf);
-  }
-};
-
 struct reqResultHeader final {
   tl::mask flags{};
   tl::rpcReqResultExtra extra{};
@@ -1193,21 +1184,6 @@ struct reqResultHeader final {
   }
 };
 
-struct ReqResult final {
-  std::variant<tl::reqError, tl::reqResultHeader, std::span<const std::byte>> value;
-
-  bool fetch(tl::fetcher& tlf) noexcept;
-};
-
-struct rpcReqResult final {
-  tl::i64 query_id{};
-  tl::ReqResult result{};
-
-  bool fetch(tl::fetcher& tlf) noexcept {
-    return query_id.fetch(tlf) && result.fetch(tlf);
-  }
-};
-
 struct rpcReqError final {
   tl::i64 query_id{};
   tl::i32 error_code{};
@@ -1215,27 +1191,6 @@ struct rpcReqError final {
 
   bool fetch(tl::fetcher& tlf) noexcept {
     return query_id.fetch(tlf) && error_code.fetch(tlf) && error.fetch(tlf);
-  }
-};
-
-struct RpcReqResult final {
-  std::variant<tl::rpcReqResult, tl::rpcReqError> value;
-
-  bool fetch(tl::fetcher& tlf) noexcept {
-    tl::magic magic{};
-    bool ok{magic.fetch(tlf)};
-    switch (magic.value) {
-    case TL_RPC_REQ_RESULT:
-      ok = ok && value.emplace<tl::rpcReqResult>().fetch(tlf);
-      break;
-    case TL_RPC_REQ_ERROR:
-      ok = ok && value.emplace<tl::rpcReqError>().fetch(tlf);
-      break;
-    default:
-      ok = false;
-      break;
-    }
-    return ok;
   }
 };
 
