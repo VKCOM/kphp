@@ -226,7 +226,7 @@ bool rpcReqResultExtra::fetch(tl::fetcher& tlf, const tl::mask& flags) noexcept 
   if (ok && static_cast<bool>(flags.value & BINLOG_TIME_FLAG)) {
     ok = opt_binlog_time.emplace().fetch(tlf);
   }
-  if (ok && static_cast<bool>(flags.value) & ENGINE_PID_FLAG) {
+  if (ok && static_cast<bool>(flags.value & ENGINE_PID_FLAG)) {
     ok = opt_engine_pid.emplace().fetch(tlf);
   }
   if (ok && static_cast<bool>(flags.value & REQUEST_SIZE_FLAG)) {
