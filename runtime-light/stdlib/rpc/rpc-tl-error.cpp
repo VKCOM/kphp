@@ -6,6 +6,8 @@
 
 #include "common/tl/constants/common.h"
 #include "runtime-light/server/rpc/rpc-server-state.h"
+#include "runtime-light/stdlib/diagnostics/exception-functions.h"
+#include "runtime-light/stdlib/rpc/rpc-exceptions.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-types.h"
 
@@ -13,19 +15,24 @@ bool TlRpcError::try_fetch() noexcept {
   auto& rpc_server_instance_state_fetcher{RpcServerInstanceState::get().tl_fetcher};
   auto fetcher{rpc_server_instance_state_fetcher};
   tl::magic magic{};
-  bool ok{magic.fetch(fetcher)};
-  if (ok && magic.expect(TL_REQ_RESULT_HEADER)) {
-    tl::reqResultHeader req_result_header{};
-    ok = req_result_header.fetch(fetcher);
-    if (ok) [[likely]] {
-      fetcher = tl::fetcher{req_result_header.result};
-    }
+  if (!magic.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+    return false;
   }
-  if (!ok || !magic.expect(TL_RPC_REQ_ERROR)) {
+  if (magic.expect(TL_REQ_RESULT_HEADER)) {
+    tl::reqResultHeader req_result_header{};
+    if (!req_result_header.fetch(fetcher)) [[unlikely]] {
+      THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_header::make());
+      return false;
+    }
+    fetcher = tl::fetcher{req_result_header.result};
+  }
+  if (!magic.expect(TL_RPC_REQ_ERROR)) {
     return false;
   }
   tl::rpcReqError rpc_req_error{};
   if (!rpc_req_error.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_error::make());
     return false;
   }
   error_code = rpc_req_error.error_code.value;

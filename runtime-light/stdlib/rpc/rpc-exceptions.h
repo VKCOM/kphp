@@ -83,4 +83,36 @@ inline auto make(std::string_view func_name, std::source_location loc = std::sou
 
 } // namespace cant_store_function
 
+namespace cant_fetch_error {
+
+namespace details {
+
+inline constexpr int64_t CODE = -5;
+inline constexpr std::string_view DESCRIPTION = "can't fetch error";
+
+} // namespace details
+
+inline auto make(std::source_location loc = std::source_location::current()) noexcept {
+  return kphp::exception::make_throwable<C$Exception>(string{loc.file_name()}, loc.line(), details::CODE,
+                                                      string{details::DESCRIPTION.data(), details::DESCRIPTION.size()});
+}
+
+} // namespace cant_fetch_error
+
+namespace cant_fetch_header {
+
+namespace details {
+
+inline constexpr int64_t CODE = -6;
+inline constexpr std::string_view DESCRIPTION = "can't fetch header";
+
+} // namespace details
+
+inline auto make(std::source_location loc = std::source_location::current()) noexcept {
+  return kphp::exception::make_throwable<C$Exception>(string{loc.file_name()}, loc.line(), details::CODE,
+                                                      string{details::DESCRIPTION.data(), details::DESCRIPTION.size()});
+}
+
+} // namespace cant_fetch_header
+
 } // namespace kphp::rpc::exception
