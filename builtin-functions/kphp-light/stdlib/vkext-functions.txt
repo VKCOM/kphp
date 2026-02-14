@@ -18,6 +18,7 @@ function vk_whitespace_pack ($str ::: string, $html_opt ::: bool = false) ::: st
 
 function vk_sp_full_simplify ($str ::: string) ::: string;
 
+/** @kphp-extern-func-info can_throw */
 function vk_json_encode_safe ($v ::: mixed) ::: string;
 
 function vk_stats_hll_merge($str ::: mixed) ::: string | false;
