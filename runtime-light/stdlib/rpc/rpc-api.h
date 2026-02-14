@@ -75,19 +75,19 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
 
 // === server =====================================================================================
 
-inline bool f$store_int(int64_t v) noexcept {
-  if (tl::is_int32_overflow(v)) [[unlikely]] {
-    kphp::log::warning("integer {} overflows int32, it will be cast to {}", v, static_cast<int32_t>(v));
-  }
-  tl::i32{.value = static_cast<int32_t>(v)}.store(RpcServerInstanceState::get().tl_storer);
-  return true;
-}
-
 inline bool f$store_byte(int64_t v) noexcept {
   if (v < 0 || v > 255) [[unlikely]] {
     kphp::log::warning("integer {} overflows uint8, it will be cast to {}", v, static_cast<uint8_t>(v));
   }
   tl::u8{.value = static_cast<uint8_t>(v)}.store(RpcServerInstanceState::get().tl_storer);
+  return true;
+}
+
+inline bool f$store_int(int64_t v) noexcept {
+  if (tl::is_int32_overflow(v)) [[unlikely]] {
+    kphp::log::warning("integer {} overflows int32, it will be cast to {}", v, static_cast<int32_t>(v));
+  }
+  tl::i32{.value = static_cast<int32_t>(v)}.store(RpcServerInstanceState::get().tl_storer);
   return true;
 }
 
@@ -148,7 +148,7 @@ inline int64_t f$fetch_long() noexcept {
   return DEFAULT_VALUE;
 }
 
-inline double f$fetch_double() noexcept {
+inline double f$fetch_float() noexcept {
   static constexpr double DEFAULT_VALUE = 0.0;
   if (tl::f32 val{}; val.fetch(RpcServerInstanceState::get().tl_fetcher)) [[likely]] {
     return static_cast<double>(val.value);
@@ -157,7 +157,7 @@ inline double f$fetch_double() noexcept {
   return DEFAULT_VALUE;
 }
 
-inline double f$fetch_float() noexcept {
+inline double f$fetch_double() noexcept {
   static constexpr double DEFAULT_VALUE = 0.0;
   if (tl::f64 val{}; val.fetch(RpcServerInstanceState::get().tl_fetcher)) [[likely]] {
     return val.value;
