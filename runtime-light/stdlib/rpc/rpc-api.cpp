@@ -183,8 +183,12 @@ kphp::coro::task<array<mixed>> rpc_tl_query_result_one_impl(int64_t query_id) no
     const auto it_response_fetcher{rpc_client_instance_st.response_fetcher_instances.find(query_id)};
     const auto it_fork_task{rpc_client_instance_st.response_awaiter_tasks.find(query_id)};
     const vk::final_action finalizer{[&rpc_client_instance_st, it_response_fetcher, it_fork_task] noexcept {
-      rpc_client_instance_st.response_fetcher_instances.erase(it_response_fetcher);
-      rpc_client_instance_st.response_awaiter_tasks.erase(it_fork_task);
+      if (it_response_fetcher != rpc_client_instance_st.response_fetcher_instances.end()) [[likely]] {
+        rpc_client_instance_st.response_fetcher_instances.erase(it_response_fetcher);
+      }
+      if (it_fork_task != rpc_client_instance_st.response_awaiter_tasks.end()) [[likely]] {
+        rpc_client_instance_st.response_awaiter_tasks.erase(it_fork_task);
+      }
     }};
 
     if (it_response_fetcher == rpc_client_instance_st.response_fetcher_instances.end() || it_fork_task == rpc_client_instance_st.response_awaiter_tasks.end())
@@ -236,8 +240,12 @@ kphp::coro::task<class_instance<C$VK$TL$RpcResponse>> typed_rpc_tl_query_result_
     const auto it_response_fetcher{rpc_client_instance_st.response_fetcher_instances.find(query_id)};
     const auto it_fork_task{rpc_client_instance_st.response_awaiter_tasks.find(query_id)};
     const vk::final_action finalizer{[&rpc_client_instance_st, it_response_fetcher, it_fork_task] noexcept {
-      rpc_client_instance_st.response_fetcher_instances.erase(it_response_fetcher);
-      rpc_client_instance_st.response_awaiter_tasks.erase(it_fork_task);
+      if (it_response_fetcher != rpc_client_instance_st.response_fetcher_instances.end()) [[likely]] {
+        rpc_client_instance_st.response_fetcher_instances.erase(it_response_fetcher);
+      }
+      if (it_fork_task != rpc_client_instance_st.response_awaiter_tasks.end()) [[likely]] {
+        rpc_client_instance_st.response_awaiter_tasks.erase(it_fork_task);
+      }
     }};
 
     if (it_response_fetcher == rpc_client_instance_st.response_fetcher_instances.end() || it_fork_task == rpc_client_instance_st.response_awaiter_tasks.end())

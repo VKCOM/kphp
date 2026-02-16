@@ -18,6 +18,7 @@
 #include "runtime-light/coroutine/shared-task.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/coroutine/type-traits.h"
+#include "runtime-light/stdlib/diagnostics/exception-functions.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/fork/fork-storage.h"
@@ -145,7 +146,7 @@ template<typename T>
 kphp::coro::task<T> f$wait_multi(array<int64_t> fork_ids) noexcept {
   T res{};
   for (const auto& it : std::as_const(fork_ids)) {
-    res.set_value(it.get_key(), co_await f$wait<typename T::value_type>(it.get_value()));
+    res.set_value(it.get_key(), TRY_CALL_CORO(typename T::value_type, T, co_await f$wait<typename T::value_type>(it.get_value())));
   }
   co_return std::move(res);
 }
