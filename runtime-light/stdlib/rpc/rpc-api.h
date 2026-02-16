@@ -84,7 +84,7 @@ inline bool f$store_byte(int64_t v) noexcept {
 }
 
 inline bool f$store_int(int64_t v) noexcept {
-  if (tl::is_int32_overflow(v)) [[unlikely]] {
+  if (!std::in_range<int32_t>(v)) [[unlikely]] {
     kphp::log::warning("integer {} overflows int32, it will be cast to {}", v, static_cast<int32_t>(v));
   }
   tl::i32{.value = static_cast<int32_t>(v)}.store(RpcServerInstanceState::get().tl_storer);
@@ -243,7 +243,7 @@ inline bool f$rpc_parse(const Optional<string>& new_rpc_data) noexcept {
 class_instance<C$VK$TL$RpcFunction> f$rpc_server_fetch_request() noexcept;
 
 inline kphp::coro::task<bool> f$store_error(int64_t error_code, string error_msg) noexcept {
-  if (tl::is_int32_overflow(error_code)) [[unlikely]] {
+  if (!std::in_range<int32_t>(error_code)) [[unlikely]] {
     kphp::log::warning("error_code overflows int32, {} will be stored", static_cast<int32_t>(error_code));
   }
 

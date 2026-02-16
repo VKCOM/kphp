@@ -12,18 +12,12 @@
 #include <span>
 #include <utility>
 
-#include "common/algorithms/find.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/metaprogramming/concepts.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace tl {
-
-inline bool is_int32_overflow(int64_t v) noexcept {
-  const auto v32{static_cast<int32_t>(v)};
-  return vk::none_of_equal(v, int64_t{v32}, int64_t{static_cast<uint32_t>(v32)});
-}
 
 class storer {
   static constexpr auto DEFAULT_BUFFER_CAPACITY = 1024;
