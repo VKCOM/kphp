@@ -4,9 +4,11 @@
 
 #include "runtime-light/stdlib/rpc/rpc-tl-builtins.h"
 
+#include <cstdint>
+#include <utility>
+
 #include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/tl/tl-core.h"
 
 mixed tl_arr_get(const mixed& arr, const string& str_key, int64_t num_key, int64_t precomputed_hash) noexcept {
   auto& cur_query{CurrentTlQuery::get()};
@@ -28,7 +30,7 @@ mixed tl_arr_get(const mixed& arr, const string& str_key, int64_t num_key, int64
 
 int32_t t_Int::prepare_int_for_storing(int64_t v) noexcept {
   auto v32{static_cast<int32_t>(v)};
-  if (tl::is_int32_overflow(v)) [[unlikely]] {
+  if (!std::in_range<int32_t>(v)) [[unlikely]] {
     if (RpcServerInstanceState::get().fail_rpc_on_int32_overflow) {
       CurrentTlQuery::get().raise_storing_error("Got int32 overflow with value '%" PRIi64 "'. Serialization will fail.", v);
     } else {
