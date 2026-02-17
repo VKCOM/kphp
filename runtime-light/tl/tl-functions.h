@@ -133,8 +133,8 @@ struct Decrypt final {
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = DECRYPT_MAGIC}.footprint() + sizeof(uint32_t) + sizeof(uint32_t) + passphrase.footprint() + iv.footprint() +
-           tag.footprint() + aad.footprint() + data.footprint();
+    return tl::magic{.value = DECRYPT_MAGIC}.footprint() + sizeof(uint32_t) + sizeof(uint32_t) + passphrase.footprint() + iv.footprint() + tag.footprint() +
+           aad.footprint() + data.footprint();
   }
 };
 
