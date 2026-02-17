@@ -315,12 +315,12 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
     padding = tl::BlockPadding::NO_PADDING;
   }
   tl::Encrypt encrypt{.algorithm = *algorithm,
-                          .padding = padding,
-                          .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
-                          .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
-                          .tag_size = {.value = tag_length},
-                          .aad = {.value = {aad.c_str(), aad.size()}},
-                          .data = {.value = {data.c_str(), data.size()}}};
+                      .padding = padding,
+                      .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
+                      .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
+                      .tag_size = {.value = tag_length},
+                      .aad = {.value = {aad.c_str(), aad.size()}},
+                      .data = {.value = {data.c_str(), data.size()}}};
   tl::storer tls{encrypt.footprint()};
   encrypt.store(tls);
 
@@ -386,12 +386,12 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
     padding = tl::BlockPadding::NO_PADDING;
   }
   tl::Decrypt decrypt{.algorithm = *algorithm,
-                          .padding = padding,
-                          .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
-                          .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
-                          .tag = {.value = {tag.c_str(), tag.size()}},
-                          .aad = {.value = {aad.c_str(), aad.size()}},
-                          .data = {.value = {data.c_str(), data.size()}}};
+                      .padding = padding,
+                      .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
+                      .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
+                      .tag = {.value = {tag.c_str(), tag.size()}},
+                      .aad = {.value = {aad.c_str(), aad.size()}},
+                      .data = {.value = {data.c_str(), data.size()}}};
   tl::storer tls{decrypt.footprint()};
   decrypt.store(tls);
 
