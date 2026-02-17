@@ -296,10 +296,10 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
     co_return false;
   }
   if (tag.has_value() && !aead) {
-    kphp::log::warning("The authenticated tag cannot be provided for cipher that doesn not support AEAD");
+    kphp::log::warning("The authenticated tag cannot be provided for cipher that does not support AEAD");
   }
   if (!aad.empty() && !aead) {
-    kphp::log::warning("The additional authenticated data cannot be provided for cipher that doesn not support AEAD");
+    kphp::log::warning("The additional authenticated data cannot be provided for cipher that does not support AEAD");
   }
   if (source_iv.empty()) {
     kphp::log::warning("Using an empty Initialization Vector (iv) is potentially insecure and not recommended");
@@ -370,10 +370,10 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
 
   bool aead{is_aead_algorithm(*algorithm)};
   if (!tag.empty() && !aead) {
-    kphp::log::warning("The authenticated tag cannot be provided for cipher that doesn not support AEAD");
+    kphp::log::warning("The authenticated tag cannot be provided for cipher that does not support AEAD");
   }
   if (!aad.empty() && !aead) {
-    kphp::log::warning("The additional authenticated data cannot be provided for cipher that doesn not support AEAD");
+    kphp::log::warning("The additional authenticated data cannot be provided for cipher that does not support AEAD");
   }
 
   auto key_iv{algorithm_pad_key_iv(*algorithm, source_key, source_iv, options)};
