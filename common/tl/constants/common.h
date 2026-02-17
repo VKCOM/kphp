@@ -20,6 +20,7 @@ inline constexpr uint32_t TL_INT_KEY_DICTIONARY_FIELD = 0x721ea8b9U;
 inline constexpr uint32_t TL_LEFT = 0x0a29cd5dU;
 inline constexpr uint32_t TL_LONG = 0x22076cbaU;
 inline constexpr uint32_t TL_LONG_KEY_DICTIONARY = 0xb424d8f1U;
+inline constexpr uint32_t TL_REQ_ERROR = 0xb527877dU;
 inline constexpr uint32_t TL_REQ_RESULT_HEADER = 0x8cc84ce1U;
 inline constexpr uint32_t TL_MAYBE_FALSE = 0x27930a7bU;
 inline constexpr uint32_t TL_MAYBE_TRUE = 0x3f9c8ef8U;

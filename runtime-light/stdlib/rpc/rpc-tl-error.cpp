@@ -4,68 +4,39 @@
 
 #include "runtime-light/stdlib/rpc/rpc-tl-error.h"
 
-#include <tuple>
-
 #include "common/tl/constants/common.h"
+#include "runtime-light/server/rpc/rpc-server-state.h"
 #include "runtime-light/stdlib/diagnostics/exception-functions.h"
-#include "runtime-light/stdlib/rpc/rpc-api.h"
-#include "runtime-light/stdlib/rpc/rpc-tl-builtins.h"
+#include "runtime-light/stdlib/rpc/rpc-exceptions.h"
+#include "runtime-light/tl/tl-core.h"
+#include "runtime-light/tl/tl-types.h"
 
 bool TlRpcError::try_fetch() noexcept {
-  const auto backup_pos{tl_parse_save_pos()};
-  auto op{TRY_CALL(decltype(f$fetch_int()), bool, f$fetch_int())};
-  if (op == TL_REQ_RESULT_HEADER) {
-    fetch_and_skip_header();
-    op = TRY_CALL(decltype(f$fetch_int()), bool, f$fetch_int());
-  }
-  if (op != TL_RPC_REQ_ERROR) {
-    tl_parse_restore_pos(backup_pos);
+  auto& rpc_server_instance_state_fetcher{RpcServerInstanceState::get().tl_fetcher};
+  auto fetcher{rpc_server_instance_state_fetcher};
+  tl::magic magic{};
+  if (!magic.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
     return false;
   }
-
-  std::ignore = TRY_CALL(decltype(f$fetch_long()), bool, f$fetch_long());
-  error_code = static_cast<int32_t>(TRY_CALL(decltype(f$fetch_int()), bool, f$fetch_int()));
-  error_msg = TRY_CALL(decltype(f$fetch_string()), bool, f$fetch_string());
-  return true;
-}
-
-void TlRpcError::fetch_and_skip_header() const noexcept {
-  const auto flags{static_cast<int32_t>(TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int()))};
-
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::binlog_pos) {
-    std::ignore = TRY_CALL(decltype(f$fetch_long()), void, f$fetch_long());
-  }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::binlog_time) {
-    std::ignore = TRY_CALL(decltype(f$fetch_long()), void, f$fetch_long());
-  }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::engine_pid) {
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
-  }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::request_size) {
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
-  }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::response_size) {
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
-  }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::failed_subqueries) {
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
-  }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::compression_version) {
-    std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
-  }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::stats) {
-    const auto size{TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int())};
-    for (auto i = 0; i < size; ++i) {
-      std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
-      std::ignore = TRY_CALL(decltype(f$fetch_int()), void, f$fetch_int());
+  if (magic.expect(TL_REQ_RESULT_HEADER)) {
+    tl::reqResultHeader req_result_header{};
+    if (!req_result_header.fetch(fetcher)) [[unlikely]] {
+      THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_header::make());
+      return false;
     }
+    fetcher = tl::fetcher{req_result_header.result};
   }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::epoch_number) {
-    std::ignore = TRY_CALL(decltype(f$fetch_long()), void, f$fetch_long());
+  if (!magic.expect(TL_RPC_REQ_ERROR)) {
+    return false;
   }
-  if (flags & vk::tl::common::rpc_req_result_extra_flags::view_number) {
-    std::ignore = TRY_CALL(decltype(f$fetch_long()), void, f$fetch_long());
+  tl::rpcReqError rpc_req_error{};
+  if (!rpc_req_error.fetch(fetcher)) [[unlikely]] {
+    THROW_EXCEPTION(kphp::rpc::exception::cant_fetch_error::make());
+    return false;
   }
+  error_code = rpc_req_error.error_code.value;
+  error_msg = {rpc_req_error.error.value.data(), static_cast<string::size_type>(rpc_req_error.error.value.size())};
+  rpc_server_instance_state_fetcher = std::move(fetcher);
+  return true;
 }

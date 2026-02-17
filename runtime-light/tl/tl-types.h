@@ -21,6 +21,7 @@
 #include "common/tl/constants/common.h"
 #include "runtime-common/core/allocator/script-allocator.h"
 #include "runtime-common/core/std/containers.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/tl/tl-core.h"
 
 namespace tl {
@@ -1142,17 +1143,18 @@ class rpcReqResultExtra final {
   static constexpr uint32_t VIEW_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::view_number;
 
 public:
-  tl::i64 binlog_pos{};
-  tl::i64 binlog_time{};
-  tl::netPid engine_pid{};
-  tl::i32 request_size{};
-  tl::i32 response_size{};
-  tl::i32 failed_subqueries{};
-  tl::i32 compression_version{};
-  tl::dictionary<tl::string> stats{};
-  tl::i64 epoch_number{};
-  tl::i64 view_number{};
+  std::optional<tl::i64> opt_binlog_pos;
+  std::optional<tl::i64> opt_binlog_time;
+  std::optional<tl::netPid> opt_engine_pid;
+  std::optional<tl::i32> opt_request_size;
+  std::optional<tl::i32> opt_response_size;
+  std::optional<tl::i32> opt_failed_subqueries;
+  std::optional<tl::i32> opt_compression_version;
+  std::optional<tl::dictionary<tl::string>> opt_stats;
+  std::optional<tl::i64> opt_epoch_number;
+  std::optional<tl::i64> opt_view_number;
 
+  bool fetch(tl::fetcher& tlf, const tl::mask& flags) noexcept;
   void store(tl::storer& tls, const tl::mask& flags) const noexcept;
 
   size_t footprint(const tl::mask& flags) const noexcept;
@@ -1163,6 +1165,32 @@ struct RpcReqResultExtra final {
 
   void store(tl::storer& tls, const tl::mask& flags) const noexcept {
     tl::magic{.value = TL_RPC_REQ_RESULT_EXTRA}.store(tls), inner.store(tls, flags);
+  }
+};
+
+struct reqResultHeader final {
+  tl::mask flags{};
+  tl::rpcReqResultExtra extra{};
+  std::span<const std::byte> result;
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    if (!flags.fetch(tlf) || !extra.fetch(tlf, flags)) [[unlikely]] {
+      return false;
+    }
+    auto opt_result{tlf.fetch_bytes(tlf.remaining())};
+    kphp::log::assertion(opt_result.has_value());
+    result = *opt_result;
+    return true;
+  }
+};
+
+struct rpcReqError final {
+  tl::i64 query_id{};
+  tl::i32 error_code{};
+  tl::string error{};
+
+  bool fetch(tl::fetcher& tlf) noexcept {
+    return query_id.fetch(tlf) && error_code.fetch(tlf) && error.fetch(tlf);
   }
 };
 
