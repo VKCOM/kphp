@@ -841,7 +841,6 @@ int rpcx_func_wakeup(connection *c) {
 
 int rpcx_func_close(connection *c, int who __attribute__((unused))) {
   auto *D = TCP_RPC_DATA(c);
-
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   if (worker != nullptr) {
     worker->terminate(1, script_error_t::rpc_connection_close, "rpc connection close");
@@ -1442,7 +1441,7 @@ void reopen_json_log() {
   }
 }
 
-void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_request) noexcept {
+void generic_event_loop(WorkerType worker_type, bool run_once_mode_enabled) noexcept {
   if (master_flag && logname_pattern != nullptr) {
     reopen_logs();
     reopen_json_log();
@@ -1453,8 +1452,8 @@ void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_reque
   double last_cron_time = 0;
   double next_create_outbound = 0;
 
-  // Runner for --once=N mode, initialized only when needed
-  std::optional<vk::PhpScriptRunOnceInvoker> once_runner;
+  // Runner for --once=N mode, initialized only when needed. In special run once prefork mode it's initialized ONLY at general workers
+  auto &run_once_invoker = vk::singleton<PhpScriptRunOnceInvoker>::get();
 
   switch (worker_type) {
     case WorkerType::general_worker: {
@@ -1471,9 +1470,8 @@ void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_reque
         rpc_sfd = rpc_server_ctx.worker_socket_fd();
       }
 
-      if (invoke_dummy_self_rpc_request) {
-        once_runner.emplace(run_once_count);
-        once_runner->init();
+      if (run_once_mode_enabled) {
+        run_once_invoker.init(run_once_count);
       }
 
       if (http_sfd >= 0) {
@@ -1539,13 +1537,12 @@ void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_reque
       vkprintf (1, "epoll_work(): %d out of %d connections, network buffers: %d used, %d out of %d allocated\n",
                 active_connections, maxconn, NB_used, NB_alloc, NB_max);
     }
+    // Continue sending run_once messages in batches to avoid pipe buffer overflow. Do it ONLY if we don't have some php scripts running
+    if (run_once_invoker.enabled() && run_once_invoker.has_pending() && !php_worker_run_flag) {
+      run_once_invoker.invoke_run_once();
+    }
 
     epoll_work(57);
-
-    // Continue sending run_once messages in batches to avoid pipe buffer overflow
-    if (once_runner.has_value() && once_runner->has_pending()) {
-      once_runner->try_send_batch();
-    }
 
     if (precise_now > next_create_outbound) {
       create_all_outbound_connections();
