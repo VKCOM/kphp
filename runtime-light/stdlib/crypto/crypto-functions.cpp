@@ -344,7 +344,7 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
 
   string result{(*response.opt_value).value[0].value.data(), static_cast<string::size_type>((*response.opt_value).value[0].value.size())};
 
-  if (aead) {
+  if (tag.has_value()) {
     string received_tag{(*response.opt_value).value[1].value.data(), static_cast<string::size_type>((*response.opt_value).value[1].value.size())};
     tag.value().get() = std::move(received_tag);
   }
