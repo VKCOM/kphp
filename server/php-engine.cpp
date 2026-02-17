@@ -3,16 +3,19 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "server/php-engine.h"
+#include "server/php-script-run-once-invoker.h"
 
 #include <cassert>
 #include <cerrno>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <fstream>
 #include <limits>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <optional>
 #include <poll.h>
 #include "re2/re2.h"
 #include <string>
@@ -1450,6 +1453,9 @@ void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_reque
   double last_cron_time = 0;
   double next_create_outbound = 0;
 
+  // Runner for --once=N mode, initialized only when needed
+  std::optional<vk::PhpScriptRunOnceInvoker> once_runner;
+
   switch (worker_type) {
     case WorkerType::general_worker: {
       const auto &http_server_ctx = vk::singleton<HttpServerContext>::get();
@@ -1466,22 +1472,8 @@ void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_reque
       }
 
       if (invoke_dummy_self_rpc_request) {
-        int pipe_fd[2];
-        pipe(pipe_fd);
-
-        int read_fd = pipe_fd[0];
-        int write_fd = pipe_fd[1];
-
-        rpc_client_methods.rpc_ready = nullptr;
-        epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
-
-        int q[6];
-        int qsize = 6 * sizeof(int);
-        q[2] = TL_RPC_INVOKE_REQ;
-        for (int i = 0; i < run_once_count; i++) {
-          prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
-          assert(write(write_fd, q, (size_t)qsize) == qsize);
-        }
+        once_runner.emplace(run_once_count);
+        once_runner->init();
       }
 
       if (http_sfd >= 0) {
@@ -1549,6 +1541,11 @@ void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_reque
     }
 
     epoll_work(57);
+
+    // Continue sending run_once messages in batches to avoid pipe buffer overflow
+    if (once_runner.has_value() && once_runner->has_pending()) {
+      once_runner->try_send_batch();
+    }
 
     if (precise_now > next_create_outbound) {
       create_all_outbound_connections();
