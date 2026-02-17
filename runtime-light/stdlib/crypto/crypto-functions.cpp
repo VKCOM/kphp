@@ -267,7 +267,8 @@ Optional<std::pair<string, string>> algorithm_pad_key_iv(tl::CipherAlgorithm alg
 
 array<string> f$openssl_get_cipher_methods([[maybe_unused]] bool aliases) noexcept {
   array<string> return_value{
-      {std::make_pair(0, string{AES_128_CBC.data(), AES_128_CBC.size()}), std::make_pair(1, string{AES_256_CBC.data(), AES_256_CBC.size()})}};
+      {std::make_pair(0, string{AES_128_CBC.data(), AES_128_CBC.size()}), std::make_pair(1, string{AES_256_CBC.data(), AES_256_CBC.size()}),
+       std::make_pair(2, string{AES_128_GCM.data(), AES_128_GCM.size()}), std::make_pair(3, string{AES_256_GCM.data(), AES_256_GCM.size()})}};
   return return_value;
 }
 
@@ -313,15 +314,15 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
   if (options & static_cast<int64_t>(cipher_opts::OPENSSL_ZERO_PADDING)) {
     padding = tl::BlockPadding::NO_PADDING;
   }
-  tl::Encrypt cbc_encrypt{.algorithm = *algorithm,
+  tl::Encrypt encrypt{.algorithm = *algorithm,
                           .padding = padding,
                           .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
                           .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
                           .tag_size = {.value = tag_length},
                           .aad = {.value = {aad.c_str(), aad.size()}},
                           .data = {.value = {data.c_str(), data.size()}}};
-  tl::storer tls{cbc_encrypt.footprint()};
-  cbc_encrypt.store(tls);
+  tl::storer tls{encrypt.footprint()};
+  encrypt.store(tls);
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
@@ -343,13 +344,9 @@ kphp::coro::task<Optional<string>> f$openssl_encrypt(string data, string method,
 
   string result{(*response.opt_value).value[0].value.data(), static_cast<string::size_type>((*response.opt_value).value[0].value.size())};
 
-  if (tag.has_value()) {
-    if (tag_length == 0) {
-      kphp::log::warning("A tag should be provided when using AEAD mode");
-    } else {
-      string received_tag{(*response.opt_value).value[1].value.data(), static_cast<string::size_type>((*response.opt_value).value[1].value.size())};
-      tag.value().get() = std::move(received_tag);
-    }
+  if (aead) {
+    string received_tag{(*response.opt_value).value[1].value.data(), static_cast<string::size_type>((*response.opt_value).value[1].value.size())};
+    tag.value().get() = std::move(received_tag);
   }
   co_return (options & static_cast<int64_t>(cipher_opts::OPENSSL_RAW_DATA)) ? std::move(result) : f$base64_encode(result);
 }
@@ -388,15 +385,15 @@ kphp::coro::task<Optional<string>> f$openssl_decrypt(string data, string method,
   if (options & static_cast<int64_t>(cipher_opts::OPENSSL_ZERO_PADDING)) {
     padding = tl::BlockPadding::NO_PADDING;
   }
-  tl::Decrypt cbc_decrypt{.algorithm = *algorithm,
+  tl::Decrypt decrypt{.algorithm = *algorithm,
                           .padding = padding,
                           .passphrase = {.value = {key_iv.val().first.c_str(), key_iv.val().first.size()}},
                           .iv = {.value = {key_iv.val().second.c_str(), key_iv.val().second.size()}},
                           .tag = {.value = {tag.c_str(), tag.size()}},
                           .aad = {.value = {aad.c_str(), aad.size()}},
                           .data = {.value = {data.c_str(), data.size()}}};
-  tl::storer tls{cbc_decrypt.footprint()};
-  cbc_decrypt.store(tls);
+  tl::storer tls{decrypt.footprint()};
+  decrypt.store(tls);
 
   auto expected_stream{kphp::component::stream::open(CRYPTO_COMPONENT_NAME, k2::stream_kind::component)};
   if (!expected_stream) [[unlikely]] {
