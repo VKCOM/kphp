@@ -169,6 +169,7 @@ def _check_if_tl_required(php_dir):
                                "rpc_tl_query",
                                "rpc_server_fetch_request",
                                "rpc_server_store_response",
+                               "rpc_send_requests",
                                "rpc_send_typed_query_requests",
                             ]
                     ):
