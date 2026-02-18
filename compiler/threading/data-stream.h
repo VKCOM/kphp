@@ -38,7 +38,7 @@ public:
 
   void operator<<(DataType input) {
     if (!is_sink_mode_) {
-      __sync_fetch_and_add(&tasks_before_sync_node, 1);
+      tasks_before_sync_node.fetch_add(1, std::memory_order_release);
     }
     std::lock_guard<std::mutex> lock{mutex_};
     queue_.push_front(std::move(input));
@@ -59,7 +59,6 @@ private:
   std::forward_list<DataT> queue_;
   const bool is_sink_mode_;
 };
-
 
 struct EmptyStream {
   template<size_t stream_id>

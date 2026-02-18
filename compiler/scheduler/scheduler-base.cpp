@@ -6,7 +6,7 @@
 
 #include <cassert>
 
-volatile int tasks_before_sync_node;
+std::atomic<int> tasks_before_sync_node;
 
 static SchedulerBase *scheduler;
 
