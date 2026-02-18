@@ -62,11 +62,13 @@ void TlConstructorDef::compile(CodeGenerator &W) const {
   if (G->get_untyped_rpc_tl_used()) {
     W << template_decl << NL;
     FunctionSignatureGenerator(W) << "void " << full_struct_name + "::store(const mixed& tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+    W << "kphp::log::info(\"\n\n\n\n store:\n\");" << NL;
     W << CombinatorStore(constructor, CombinatorPart::LEFT, false);
     W << END << "\n\n";
 
     W << template_decl << NL;
     FunctionSignatureGenerator(W) << "array<mixed> " << full_struct_name + "::fetch(" << params << ") " << BEGIN;
+    W << "kphp::log::info(\"\n\n\n\n fetch:\n\");" << NL;
     W << CombinatorFetch(constructor, CombinatorPart::LEFT, false);
     W << END << "\n\n";
   }
@@ -75,11 +77,13 @@ void TlConstructorDef::compile(CodeGenerator &W) const {
     std::string php_type = get_php_runtime_type(constructor, false);
     W << template_decl << NL;
     FunctionSignatureGenerator(W) << "void " << full_struct_name + "::typed_store(const " << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+    W << "kphp::log::info(\"\n\n\n\n typed_store_to:\n\");" << NL;
     W << CombinatorStore(constructor, CombinatorPart::LEFT, true);
     W << END << "\n\n";
 
     W << template_decl << NL;
     FunctionSignatureGenerator(W) << "void " << full_struct_name << "::typed_fetch_to(" << php_type << " *tl_object" << (!params.empty() ? ", " + params : "") << ") " << BEGIN;
+    W << "kphp::log::info(\"\n\n\n\n typed_fetch_to:\n\");" << NL;
     W << CombinatorFetch(constructor, CombinatorPart::LEFT, true);
     W << END << "\n\n";
   }

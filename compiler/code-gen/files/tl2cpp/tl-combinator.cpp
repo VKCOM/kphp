@@ -49,6 +49,7 @@ void CombinatorGen::compile_left(CodeGenerator &W) const {
     }
   }
   gen_before_args_processing(W);
+  W << "kphp::log::info(\"\n\n\n\n flags: |{}|\n\n\n\n\", " << var_num_access << ");" << NL;
   for (const auto &arg : combinator->args) {
     if (arg->is_optional()) {
       continue;
