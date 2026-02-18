@@ -10,6 +10,8 @@ along with two language runtimes. While KPHP focuses primarily on supporting PHP
 includes additional functionality, such as asynchronous programming, a custom RPC client and server,
 and various optimizations used at VK.
 
+Project documentation is located at `/docs/`.
+
 ## Architecture Overview
 
 KPHP consists of the following components:
