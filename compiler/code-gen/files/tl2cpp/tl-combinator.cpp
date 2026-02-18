@@ -49,7 +49,6 @@ void CombinatorGen::compile_left(CodeGenerator &W) const {
     }
   }
   gen_before_args_processing(W);
-  W << "kphp::log::info(\"\n\n\n\n flags: |{}|\n\n\n\n\", " << var_num_access << ");" << NL;
   for (const auto &arg : combinator->args) {
     if (arg->is_optional()) {
       continue;
@@ -180,6 +179,7 @@ void CombinatorFetch::gen_before_args_processing(CodeGenerator &W) const {
 
 void CombinatorFetch::gen_arg_processing(CodeGenerator &W, const std::unique_ptr<vk::tlo_parsing::arg> &arg) const {
   if (arg->is_fields_mask_optional()) {
+    W << R"(kphp::log::info("\n\n\n\n flags: |{}|\n\n\n\n", )" << var_num_access << combinator->get_var_num_arg(arg->exist_var_num)->name << ");" << NL;
     W << fmt_format("if ({}{} & (1 << {})) ", var_num_access,
                     combinator->get_var_num_arg(arg->exist_var_num)->name,
                     arg->exist_var_bit) << BEGIN;
