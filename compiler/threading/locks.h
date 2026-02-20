@@ -5,10 +5,70 @@
 #pragma once
 
 #include <cassert>
+#include <sys/syscall.h>
 #include <unistd.h>
 
-template<class T>
-bool try_lock(T);
+#ifndef __APPLE__
+#include <linux/futex.h>
+#endif
+
+#include "common/wrappers/copyable-atomic.h"
+
+// This Mutex is copyable and lock/unlock may be done on differenet threads
+// std::mutex does not have such properties
+class Mutex {
+ public:
+  void Lock() {
+#ifdef __APPLE__
+    int old = kFree;
+
+    while (!state_.compare_exchange_strong(old, kLockedWithWaiters)) {
+      usleep(250);
+      old = kFree;
+    }
+#else
+    int old = kFree;
+    if (state_.compare_exchange_strong(old, kLockedNoWaiters)) {
+      return;
+    }
+    if (old != kLockedWithWaiters) {
+      // was at least one waiter
+      old = state_.exchange(kLockedWithWaiters);
+    }
+    while (old != kFree) {
+      syscall(SYS_futex, &state_, FUTEX_WAIT, kLockedWithWaiters, 0, 0, 0);
+      old = state_.exchange(kLockedWithWaiters);
+    }
+#endif
+  }
+
+  void Unlock() {
+#ifdef __APPLE__
+    state_.store(kFree);
+#else
+    if (state_.fetch_sub(1) == kLockedWithWaiters) {
+      state_.store(kFree);
+      syscall(SYS_futex, &state_, FUTEX_WAKE, 1, 0, 0, 0); // wake one
+    }
+#endif
+  }
+
+  // https://en.cppreference.com/w/cpp/named_req/BasicLockable
+  void lock() {
+    Lock();
+  }
+
+  void unlock() {
+    Unlock();
+  }
+
+ private:
+  static constexpr int kFree = 0;
+  static constexpr int kLockedNoWaiters = 1;
+  static constexpr int kLockedWithWaiters = 2; // really "may be with waiters"
+  vk::copyable_atomic_integral<int> state_ = kFree;
+};
+
 
 template<class T>
 void lock(T locker) {
@@ -20,36 +80,27 @@ void unlock(T locker) {
   locker->unlock();
 }
 
-inline bool try_lock(volatile int *locker) {
-  return __sync_lock_test_and_set(locker, 1) == 0;
+inline void lock(Mutex &m) {
+  m.Lock();
 }
 
-inline void lock(volatile int *locker) {
-  while (!try_lock(locker)) {
-    usleep(250);
-  }
-}
-
-inline void unlock(volatile int *locker) {
-  assert(*locker == 1);
-  __sync_lock_release(locker);
+inline void unlock(Mutex &m) {
+  m.Unlock();
 }
 
 class Lockable {
 private:
-  volatile int x;
+  Mutex m;
 public:
-  Lockable() :
-    x(0) {}
-
+  Lockable() = default;
   virtual ~Lockable() = default;
 
   void lock() {
-    ::lock(&x);
+    ::lock(m);
   }
 
   void unlock() {
-    ::unlock(&x);
+    ::unlock(m);
   }
 };
 

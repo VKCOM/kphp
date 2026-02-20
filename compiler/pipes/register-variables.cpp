@@ -77,7 +77,7 @@ void RegisterVariablesPass::register_function_static_var(VertexAdaptor<op_var> v
 
   if (default_value) {
     if (!kphp_error(is_const(default_value), fmt_format("Default value of [{}] is not constant", name))) {
-      var->init_val = default_value;
+      var->init_val = default_value.clone();
     }
   }
   var_vertex->var_id = var;
@@ -91,7 +91,7 @@ void RegisterVariablesPass::register_param_var(VertexAdaptor<op_var> var_vertex,
   kphp_assert (var);
   if (default_value) {
     kphp_error_return(is_const(default_value) || current_function->is_extern(), fmt_format("Default value of [{}] is not constant", name));
-    var->init_val = default_value;
+    var->init_val = default_value.clone();
   }
   var_vertex->var_id = var;
 }

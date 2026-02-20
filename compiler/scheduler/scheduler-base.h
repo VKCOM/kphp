@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <atomic>
+
 class Node;
 
 class Task;
@@ -22,7 +24,7 @@ SchedulerBase *get_scheduler();
 void set_scheduler(SchedulerBase *new_scheduler);
 void unset_scheduler(SchedulerBase *old_scheduler);
 
-extern volatile int tasks_before_sync_node;
+extern std::atomic_int tasks_before_sync_node;
 
 inline void register_async_task(Task *task) {
   get_scheduler()->add_task(task);

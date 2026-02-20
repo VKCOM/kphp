@@ -31,7 +31,7 @@ private:
     // avoid a race condition, when we try to search for RpcFunction.php and other built-in classes that are visible from index.php
     // (if such files exist, extra src_xxx$called variables will be created: unstable codegeneration)
     while (!G->get_functions_txt_parsed()) {
-      usleep(100000);
+      usleep(100000); // TODO good place for condvar
     }
 
     if (G->get_class(class_name)) {
