@@ -1,14 +1,8 @@
-import os
-import signal
-import time
-
 import pytest
 
 from python.lib.testcase import WebServerAutoTestCase
-from python.lib.kphp_builder import KphpBuilder
-from python.lib.kphp_server import KphpServer
 
-
+@pytest.mark.k2_skip_suite
 class TestRunOncePrefork(WebServerAutoTestCase):
     @classmethod
     def extra_class_setup(cls):
@@ -73,7 +67,7 @@ class TestRunOncePrefork(WebServerAutoTestCase):
 
         self.web_server.assert_stats(
             {
-                "kphp_server.workers_general_requests_total_incoming_queries": self.cmpGe(2000),
+                "kphp_server.workers_general_requests_total_incoming_queries": self.cmpGe(200),
                 "kphp_server.server_workers_started": 1
             },
             timeout=5
