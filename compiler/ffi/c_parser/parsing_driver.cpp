@@ -11,6 +11,7 @@
 
 #include <charconv>
 #include <unordered_set>
+#include <vector>
 
 using namespace ffi;
 
@@ -113,7 +114,7 @@ FFIType *ParsingDriver::function_to_var(FFIType *function) {
   function->kind = FFITypeKind::Var;
   FFIType *function_ptr_type = alloc.new_type(FFITypeKind::FunctionPointer);
   function_ptr_type->members = std::move(function->members);
-  function->members = {function_ptr_type};
+  function->members = std::vector<FFIType*>{function_ptr_type};
   return function;
 }
 

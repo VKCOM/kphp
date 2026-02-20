@@ -4,9 +4,8 @@
 
 #pragma once
 
-#include <sanitizer/asan_interface.h>
-
 #if defined(__SANITIZE_ADDRESS__)
+#include <sanitizer/asan_interface.h>
 #define ASAN_ENABLED 1
 #elif defined(__has_feature)
 #if __has_feature(address_sanitizer)
