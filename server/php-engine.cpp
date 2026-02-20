@@ -3,16 +3,19 @@
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
 #include "server/php-engine.h"
+#include "server/php-script-run-once-invoker.h"
 
 #include <cassert>
 #include <cerrno>
 #include <chrono>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <fstream>
 #include <limits>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <optional>
 #include <poll.h>
 #include "re2/re2.h"
 #include <string>
@@ -838,7 +841,6 @@ int rpcx_func_wakeup(connection *c) {
 
 int rpcx_func_close(connection *c, int who __attribute__((unused))) {
   auto *D = TCP_RPC_DATA(c);
-
   auto *worker = reinterpret_cast<PhpWorker *>(D->extra);
   if (worker != nullptr) {
     worker->terminate(1, script_error_t::rpc_connection_close, "rpc connection close");
@@ -1439,7 +1441,7 @@ void reopen_json_log() {
   }
 }
 
-void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_request) noexcept {
+void generic_event_loop(WorkerType worker_type, bool run_once_mode_enabled) noexcept {
   if (master_flag && logname_pattern != nullptr) {
     reopen_logs();
     reopen_json_log();
@@ -1449,6 +1451,9 @@ void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_reque
   int rpc_port = -1, rpc_sfd = -1;
   double last_cron_time = 0;
   double next_create_outbound = 0;
+
+  // Runner for --once=N mode, initialized only when needed. In special run once prefork mode it's initialized ONLY at general workers
+  auto &run_once_invoker = vk::singleton<PhpScriptRunOnceInvoker>::get();
 
   switch (worker_type) {
     case WorkerType::general_worker: {
@@ -1465,23 +1470,8 @@ void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_reque
         rpc_sfd = rpc_server_ctx.worker_socket_fd();
       }
 
-      if (invoke_dummy_self_rpc_request) {
-        int pipe_fd[2];
-        pipe(pipe_fd);
-
-        int read_fd = pipe_fd[0];
-        int write_fd = pipe_fd[1];
-
-        rpc_client_methods.rpc_ready = nullptr;
-        epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
-
-        int q[6];
-        int qsize = 6 * sizeof(int);
-        q[2] = TL_RPC_INVOKE_REQ;
-        for (int i = 0; i < run_once_count; i++) {
-          prepare_rpc_query_raw(i, q, qsize, crc32c_partial);
-          assert(write(write_fd, q, (size_t)qsize) == qsize);
-        }
+      if (run_once_mode_enabled) {
+        run_once_invoker.init(run_once_count);
       }
 
       if (http_sfd >= 0) {
@@ -1546,6 +1536,10 @@ void generic_event_loop(WorkerType worker_type, bool invoke_dummy_self_rpc_reque
     if (verbosity > 0 && !(i & 255)) {
       vkprintf (1, "epoll_work(): %d out of %d connections, network buffers: %d used, %d out of %d allocated\n",
                 active_connections, maxconn, NB_used, NB_alloc, NB_max);
+    }
+    // Continue sending run_once messages in batches to avoid pipe buffer overflow. Do it ONLY if we don't have some php scripts running
+    if (run_once_invoker.enabled() && run_once_invoker.has_pending() && !php_worker_run_flag) {
+      run_once_invoker.invoke_run_once();
     }
 
     epoll_work(57);

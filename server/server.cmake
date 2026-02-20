@@ -10,6 +10,7 @@ prepend(KPHP_SERVER_SOURCES ${BASE_DIR}/server/
         numa-configuration.cpp
         php-engine-vars.cpp
         php-engine.cpp
+        php-script-run-once-invoker.cpp
         php-lease.cpp
         php-master.cpp
         php-master-restart.cpp
@@ -34,6 +35,7 @@ if(COMPILER_CLANG)
     allow_deprecated_declarations(${BASE_DIR}/server/json-logger.cpp)
     allow_deprecated_declarations(${BASE_DIR}/server/lease-config-parser.cpp)
     allow_deprecated_declarations(${BASE_DIR}/server/php-engine.cpp)
+    allow_deprecated_declarations(${BASE_DIR}/server/php-script-run-once-invoker.cpp)
     allow_deprecated_declarations(${BASE_DIR}/server/php-master.cpp)
     allow_deprecated_declarations(${BASE_DIR}/server/server-config.cpp)
 endif()
