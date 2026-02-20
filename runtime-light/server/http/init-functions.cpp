@@ -26,12 +26,14 @@
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
+#include "runtime-light/server/http/multipart.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/server/http-functions.h"
 #include "runtime-light/stdlib/zlib/zlib-functions.h"
+#include "runtime-light/stdlib/file/file-system-functions.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -320,14 +322,16 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
     break;
   }
   case kphp::http::method::post: {
+    string body{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
     if (!std::ranges::search(content_type, CONTENT_TYPE_APP_FORM_URLENCODED).empty()) {
-      string body{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
       f$parse_str(body, superglobals.v$_POST);
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
     } else if (!std::ranges::search(content_type, CONTENT_TYPE_MULTIPART_FORM_DATA).empty()) {
-      kphp::log::error("unsupported content-type: {}", CONTENT_TYPE_MULTIPART_FORM_DATA);
+      std::string_view boundary{parse_boundary(content_type)};
+      if (!boundary.empty()) {
+        kphp::http::parse_multipart({body.c_str(), body.size()}, boundary, superglobals.v$_POST, superglobals.v$_FILES);
+      }
     } else {
-      string body{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
     }
 
@@ -379,6 +383,7 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
 
 kphp::coro::task<> finalize_server() noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
+  auto& superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
 
   string response_body{};
   tl::HttpResponse http_response{};
@@ -433,6 +438,18 @@ kphp::coro::task<> finalize_server() noexcept {
     [[fallthrough]];
   }
   case kphp::http::response_state::completed:
+    const array<mixed> files = superglobals.v$_FILES.to_array();
+    for (array<mixed>::const_iterator it = files.begin(); it != files.end(); ++it) {
+      const mixed& file = it.get_value();
+
+      if (!file.is_array()) {
+        kphp::log::error("$_FILES contains a value that is not an array");
+        continue;
+      }
+
+      const mixed tmp_filename = file.get_value(string("tmp_name"));
+      f$unlink(tmp_filename.to_string());
+    }
     co_return;
   }
 }
