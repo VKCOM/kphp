@@ -185,6 +185,7 @@ std::string debugTokenName(TokenType t) {
     {tok_new, "tok_new"},
     {tok_try, "tok_try"},
     {tok_catch, "tok_catch"},
+    {tok_finally, "tok_finally"},
     {tok_public, "tok_public"},
     {tok_private, "tok_private"},
     {tok_protected, "tok_protected"},
