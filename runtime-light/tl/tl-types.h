@@ -528,6 +528,115 @@ struct Vector final {
   }
 };
 
+template<typename T, size_t N>
+struct tuple final {
+  using array_t = std::array<T, N>;
+  array_t value;
+
+  using iterator = array_t::iterator;
+  using const_iterator = array_t::const_iterator;
+
+  constexpr iterator begin() noexcept {
+    return value.begin();
+  }
+  constexpr iterator end() noexcept {
+    return value.end();
+  }
+  constexpr const_iterator begin() const noexcept {
+    return value.begin();
+  }
+  constexpr const_iterator end() const noexcept {
+    return value.end();
+  }
+  constexpr const_iterator cbegin() const noexcept {
+    return value.cbegin();
+  }
+  constexpr const_iterator cend() const noexcept {
+    return value.cend();
+  }
+
+  constexpr size_t size() const noexcept {
+    return value.size();
+  }
+
+  bool fetch(tl::fetcher& tlf) noexcept
+  requires tl::deserializable<T>
+  {
+    for (T& v : value) {
+      v = T{};
+      if (!v.fetch(tlf)) [[unlikely]] {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  void store(tl::storer& tls) const noexcept
+  requires tl::serializable<T>
+  {
+    std::for_each(value.cbegin(), value.cend(), [&tls](const auto& elem) noexcept { elem.store(tls); });
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    auto footprint_view{value | std::views::transform([](const auto& elem) noexcept { return elem.footprint(); })};
+    return std::accumulate(footprint_view.begin(), footprint_view.end(), 0, std::plus<>{});
+  }
+};
+
+template<typename T, size_t N>
+struct Tuple final {
+  tl::tuple<T, N> inner{};
+
+  using iterator = tl::tuple<T, N>::iterator;
+  using const_iterator = tl::tuple<T, N>::const_iterator;
+
+  constexpr iterator begin() noexcept {
+    return inner.begin();
+  }
+  constexpr iterator end() noexcept {
+    return inner.end();
+  }
+  constexpr const_iterator begin() const noexcept {
+    return inner.begin();
+  }
+  constexpr const_iterator end() const noexcept {
+    return inner.end();
+  }
+  constexpr const_iterator cbegin() const noexcept {
+    return inner.cbegin();
+  }
+  constexpr const_iterator cend() const noexcept {
+    return inner.cend();
+  }
+
+  constexpr size_t size() const noexcept {
+    return inner.size();
+  }
+
+  bool fetch(tl::fetcher& tlf) noexcept
+  requires tl::deserializable<T>
+  {
+    tl::magic magic{};
+    return magic.fetch(tlf) && magic.expect(TL_TUPLE) && inner.fetch(tlf);
+  }
+
+  void store(tl::storer& tls) const noexcept
+  requires tl::serializable<T>
+  {
+    tl::magic{.value = TL_TUPLE}.store(tls);
+    inner.store(tls);
+  }
+
+  constexpr size_t footprint() const noexcept
+  requires tl::footprintable<T>
+  {
+    return tl::magic{.value = TL_TUPLE}.footprint() + inner.footprint();
+  }
+};
+
 template<typename T>
 struct dictionaryField final {
   tl::string key;
@@ -743,12 +852,15 @@ enum HashAlgorithm : uint32_t {
 };
 
 enum CipherAlgorithm : uint32_t {
-  AES128 = 0xe627'c460,
-  AES256 = 0x4c98'c1f9,
+  AES128_GCM = 0xee7e'4261,
+  AES256_GCM = 0xc2f9'eb95,
+  AES128_CBC = 0xe627'c460,
+  AES256_CBC = 0x4c98'c1f9,
 };
 
 enum BlockPadding : uint32_t {
   PKCS7 = 0x699e'c5de,
+  NO_PADDING = 0xffc3'd2f3,
 };
 
 // ===== CONFDATA =====

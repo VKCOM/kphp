@@ -1,0 +1,36 @@
+@ok
+<?php
+
+function test_basic_encrypt_decrypt() {
+    $data = "openssl_encrypt() and openssl_decrypt() tests";
+    $method = "AES-128-CBC";
+    $password = "openssl";
+
+    $ivlen = openssl_cipher_iv_length($method);
+    $iv    = '';
+    srand(time() + intval(microtime(true)));
+    while(strlen($iv) < $ivlen) $iv .= chr(rand(0,255));
+
+    $encrypted = openssl_encrypt($data, $method, $password, 0, $iv);
+    $output = openssl_decrypt($encrypted, $method, $password, 0, $iv);
+    var_dump($output);
+
+    $encrypted = openssl_encrypt($data, $method, $password, OPENSSL_RAW_DATA, $iv);
+    $output = openssl_decrypt($encrypted, $method, $password, OPENSSL_RAW_DATA, $iv);
+    var_dump($output);
+
+    // if we want to manage our own padding
+    $padded_data = $data . str_repeat(' ', 16 - (strlen($data) % 16));
+    $encrypted = openssl_encrypt($padded_data, $method, $password, OPENSSL_RAW_DATA|OPENSSL_ZERO_PADDING, $iv);
+    $output = openssl_decrypt($encrypted, $method, $password, OPENSSL_RAW_DATA|OPENSSL_ZERO_PADDING, $iv);
+    var_dump(rtrim($output));
+
+    $tag = 'hello world';
+    $encrypted = openssl_encrypt($data, $method, $password, 0, $iv, $tag);
+
+    $tag = 'hello world';
+    $output = openssl_decrypt($encrypted, $method, $password, 0, $iv, $tag);
+    var_dump($output);
+}
+
+test_basic_encrypt_decrypt();
