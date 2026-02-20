@@ -12,7 +12,7 @@
 #define RPC_BUF_SIZE (1 << 12)
 #define RPC_SERVER_MAGIC 0x8940303d
 #define RPC_BUFFER_MAGIC 0x8fa0da0c
-#define RPC_MAX_QUERY_LEN (1 << 24)
+#define RPC_MAX_QUERY_LEN ((1 << 24) - 1)
 
 #define RPC_SKIP 0
 
@@ -113,6 +113,7 @@ struct rpc_query {
   int answer_len;
   enum query_status status;
   void *extra;
+  zval fetcher; // set if extra == NULL
   void (*extra_free)(struct rpc_query *);
   const char *fun_name;
 };
@@ -303,7 +304,9 @@ struct stats {
   DECLARE_STAT(store);
   DECLARE_STAT(fetch);
   DECLARE_STAT(store_function);
+  DECLARE_STAT(store_function2);
   DECLARE_STAT(fetch_function);
+  DECLARE_STAT(fetch_function2);
   DECLARE_STAT(crc32);
   DECLARE_STAT(tree_insert);
   DECLARE_STAT(total);
