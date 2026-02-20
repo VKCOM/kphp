@@ -19,6 +19,9 @@ TEST(lexer_test, test_php_tokens) {
     {"$obj->exit", {"tok_var_name($obj)", "tok_arrow(->)", "tok_func_name(exit)"}},
     {"$obj->exit()", {"tok_var_name($obj)", "tok_arrow(->)", "tok_func_name(exit)", "tok_oppar(()", "tok_clpar())"}},
     {"$obj->throw", {"tok_var_name($obj)", "tok_arrow(->)", "tok_func_name(throw)"}},
+    {"$obj?->exit", {"tok_var_name($obj)", "tok_nullsafe_arrow(?->)", "tok_func_name(exit)"}},
+    {"$obj?->exit()", {"tok_var_name($obj)", "tok_nullsafe_arrow(?->)", "tok_func_name(exit)", "tok_oppar(()", "tok_clpar())"}},
+    {"$obj?->throw", {"tok_var_name($obj)", "tok_nullsafe_arrow(?->)", "tok_func_name(throw)"}},
     {"Example::for", {"tok_func_name(Example::for)"}},
     {"Example::for()", {"tok_func_name(Example::for)", "tok_oppar(()", "tok_clpar())"}},
 

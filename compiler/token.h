@@ -138,6 +138,7 @@ enum TokenType {
   tok_double_arrow,
   tok_double_colon,
   tok_arrow,
+  tok_nullsafe_arrow,
 
   tok_class_c,
   tok_file_c,
