@@ -130,7 +130,7 @@ public:
    * @brief Schedules a coroutine with a timeout.
    * @param coroutine The coroutine to schedule.
    * @param timeout Maximum duration to wait for the coroutine to complete.
-   *        - Zero or negative: behaves like schedule(coroutine) - waits indefinitely until the coroutine is completed.
+   *        - Zero or negative: behaves like schedule(coroutine) - schedules the coroutine for execution without timeout.
    *        - Positive: rounded up to the next whole millisecond.
    * @return A task that yields either the coroutine's result or kphp::coro::timeout_status::timeout.
    */
