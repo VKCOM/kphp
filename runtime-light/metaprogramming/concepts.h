@@ -4,9 +4,11 @@
 
 #pragma once
 
+#include <chrono>
 #include <concepts>
 #include <cstddef>
 #include <functional>
+#include <type_traits>
 
 namespace kphp::concepts {
 
@@ -20,5 +22,11 @@ concept hashable = requires(T t) {
 
 template<typename type, typename... types>
 concept in_types = (std::same_as<type, types> || ...);
+
+template<typename type>
+concept duration = requires {
+  typename type::rep;
+  typename type::period;
+} && std::is_same_v<type, std::chrono::duration<typename type::rep, typename type::period>>;
 
 } // namespace kphp::concepts

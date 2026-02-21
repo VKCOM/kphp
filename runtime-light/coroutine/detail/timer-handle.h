@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <expected>
 #include <memory>
@@ -37,12 +38,14 @@ public:
   }
 
   auto reset(k2::TimePoint time_point) noexcept -> std::expected<void, int32_t> {
+    static constexpr auto MINIMUM_STEP_NS{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::milliseconds{1}).count()};
+
     clear();
 
     k2::TimePoint now{};
     k2::instant(std::addressof(now));
-    if (time_point.time_point_ns <= now.time_point_ns) [[unlikely]] {
-      time_point.time_point_ns = now.time_point_ns + 1;
+    if (time_point.time_point_ns <= now.time_point_ns + MINIMUM_STEP_NS) [[unlikely]] {
+      time_point.time_point_ns = now.time_point_ns + MINIMUM_STEP_NS;
     }
 
     if (const auto errc{k2::new_timer(std::addressof(m_descriptor), time_point.time_point_ns - now.time_point_ns)}; errc != k2::errno_ok) [[unlikely]] {
