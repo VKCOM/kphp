@@ -63,8 +63,8 @@ class io_scheduler {
   auto process_accept(k2::descriptor descriptor) noexcept -> void;
 
   auto update_timer() noexcept -> void;
-  [[nodiscard]] auto add_timer_token(std::chrono::milliseconds timeout, kphp::coro::detail::poll_info& poll_info) noexcept
-      -> kphp::coro::detail::poll_info::timed_events::iterator;
+  [[nodiscard]] auto add_timer_token(std::chrono::milliseconds timeout,
+                                     kphp::coro::detail::poll_info& poll_info) noexcept -> kphp::coro::detail::poll_info::timed_events::iterator;
   auto remove_timer_token(kphp::coro::detail::poll_info::timed_events::iterator pos) noexcept -> void;
 
 public:
@@ -148,8 +148,8 @@ public:
    * @return A task that yields the poll status when completed.
    */
   template<kphp::concepts::duration duration_type = std::chrono::milliseconds>
-  [[nodiscard]] auto poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op, duration_type timeout = duration_type::zero()) noexcept
-      -> kphp::coro::task<poll_status>;
+  [[nodiscard]] auto poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op,
+                          duration_type timeout = duration_type::zero()) noexcept -> kphp::coro::task<poll_status>;
 
   /**
    * @brief Accepts an incoming connection with optional timeout.
@@ -349,8 +349,8 @@ inline auto io_scheduler::update_timer() noexcept -> void {
   }
 }
 
-inline auto io_scheduler::add_timer_token(std::chrono::milliseconds timeout, kphp::coro::detail::poll_info& poll_info) noexcept
-    -> kphp::coro::detail::poll_info::timed_events::iterator {
+inline auto io_scheduler::add_timer_token(std::chrono::milliseconds timeout,
+                                          kphp::coro::detail::poll_info& poll_info) noexcept -> kphp::coro::detail::poll_info::timed_events::iterator {
   using namespace std::chrono_literals;
   kphp::log::assertion(timeout >= 1ms);
 
