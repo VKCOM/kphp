@@ -21,6 +21,7 @@
 #include "runtime-light/coroutine/poll.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/metaprogramming/concepts.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::component {
@@ -53,7 +54,8 @@ public:
   auto operator=(const stream&) -> stream& = delete;
 
   static auto open(std::string_view target, k2::stream_kind stream_kind) noexcept -> std::expected<kphp::component::stream, int32_t>;
-  static auto accept(std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>>;
+  template<kphp::concepts::duration duration_type = std::chrono::milliseconds>
+  static auto accept(duration_type timeout = duration_type::zero()) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>>;
 
   auto descriptor() const noexcept -> k2::descriptor;
   auto reset(k2::descriptor descriptor) noexcept -> void;
@@ -93,7 +95,8 @@ inline auto stream::open(std::string_view target, k2::stream_kind stream_kind) n
   return std::expected<kphp::component::stream, int32_t>{stream{descriptor}};
 }
 
-inline auto stream::accept(std::chrono::nanoseconds timeout) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>> {
+template<kphp::concepts::duration duration_type>
+auto stream::accept(duration_type timeout) noexcept -> kphp::coro::task<std::optional<kphp::component::stream>> {
   const auto descriptor{co_await kphp::coro::io_scheduler::get().accept(timeout)};
   if (descriptor == k2::INVALID_PLATFORM_DESCRIPTOR) [[unlikely]] {
     kphp::log::warning("failed to accept a stream within a specified timeout: {}", timeout);

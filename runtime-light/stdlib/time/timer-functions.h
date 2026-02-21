@@ -26,7 +26,7 @@ void f$set_timer(int64_t timeout_ms, T&& on_timer_callback) noexcept {
   // 2. start timer_task via kphp::coro::io_scheduler::spawn (it won't have distinct fork id)
   auto timer_task{std::invoke(
       [](std::chrono::milliseconds duration, T on_timer_callback) noexcept -> kphp::coro::task<> {
-        co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule_after(duration));
+        co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule(duration));
         std::invoke(std::move(on_timer_callback));
       },
       std::chrono::milliseconds{timeout_ms}, std::forward<T>(on_timer_callback))};

@@ -34,6 +34,7 @@
 #include "runtime-light/coroutine/type-traits.h"
 #include "runtime-light/coroutine/when-any.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/metaprogramming/concepts.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
@@ -55,18 +56,14 @@ class io_scheduler {
   CoroutineInstanceState& m_coroutine_instance_state{CoroutineInstanceState::get()};
 
   auto make_cancellation_handler(kphp::coro::detail::poll_info& poll_info) noexcept;
-  template<typename rep_type, typename period_type>
-  auto make_timeout_task(std::chrono::duration<rep_type, period_type> timeout) noexcept -> kphp::coro::task<timeout_status>;
+  auto make_timeout_task(std::chrono::milliseconds timeout) noexcept -> kphp::coro::task<timeout_status>;
 
   auto process_timeout() noexcept -> void;
   auto process_update(k2::descriptor descriptor) noexcept -> void;
   auto process_accept(k2::descriptor descriptor) noexcept -> void;
 
   auto update_timer() noexcept -> void;
-  [[nodiscard]] auto add_timer_token(k2::TimePoint time_point,
-                                     kphp::coro::detail::poll_info& poll_info) noexcept -> kphp::coro::detail::poll_info::timed_events::iterator;
-  template<typename rep_type, typename period_type>
-  [[nodiscard]] auto add_timer_token(std::chrono::duration<rep_type, period_type> timeout,
+  [[nodiscard]] auto add_timer_token(std::chrono::milliseconds timeout,
                                      kphp::coro::detail::poll_info& poll_info) noexcept -> kphp::coro::detail::poll_info::timed_events::iterator;
   auto remove_timer_token(kphp::coro::detail::poll_info::timed_events::iterator pos) noexcept -> void;
 
@@ -114,6 +111,15 @@ public:
    */
   [[nodiscard]] auto schedule() noexcept;
   /**
+   * @brief Schedules the current coroutine to be resumed after specified timeout.
+   * @param amount Duration to schedule after.
+   *        - Zero or negative: behaves like schedule() - the scheduler will itself decide when to resume the current coroutine.
+   *        - Positive: rounded up to the next whole millisecond.
+   * @return A task that completes after the delay.
+   */
+  template<kphp::concepts::duration duration_type>
+  [[nodiscard]] auto schedule(duration_type timeout) noexcept -> kphp::coro::task<>;
+  /**
    * @brief Schedules a coroutine for execution.
    * @param coroutine The coroutine to schedule.
    * @return A task that will yield the coroutine's return value when completed.
@@ -123,49 +129,37 @@ public:
   /**
    * @brief Schedules a coroutine with a timeout.
    * @param coroutine The coroutine to schedule.
-   * @param timeout Maximum duration to wait for the coroutine to complete. Given zero or negative timeout this behaves identical to schedule(coroutine).
-   * @return A task that yields either the coroutine's result or a timeout status.
+   * @param timeout Maximum duration to wait for the coroutine to complete.
+   *        - Zero or negative: behaves like schedule(coroutine) - schedules the coroutine for execution without timeout.
+   *        - Positive: rounded up to the next whole millisecond.
+   * @return A task that yields either the coroutine's result or kphp::coro::timeout_status::timeout.
    */
-  template<kphp::coro::concepts::coroutine coroutine_type, typename rep_type, typename period_type>
-  [[nodiscard]] auto schedule(coroutine_type coroutine, std::chrono::duration<rep_type, period_type> timeout) noexcept
+  template<kphp::coro::concepts::coroutine coroutine_type, kphp::concepts::duration duration_type>
+  [[nodiscard]] auto schedule(coroutine_type coroutine, duration_type timeout) noexcept
       -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<coroutine_type>::return_type, timeout_status>>;
-  /**
-   * @brief Schedules a delay before continuing execution.
-   * @param amount Duration to wait before resuming. Given zero or negative amount of time this behaves identical to schedule().
-   * @return A task that completes after the specified duration.
-   */
-  template<typename rep_type, typename period_type>
-  [[nodiscard]] auto schedule_after(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<>;
-
-  /**
-   * @brief Yields execution to allow other tasks to run.
-   * @return A task that represents the yield operation.
-   */
-  [[nodiscard]] auto yield() noexcept;
-  /**
-   * @brief Yields execution for a specified duration.
-   * @param amount Duration to yield for. Given zero or negative amount of time this behaves identical to yield().
-   * @return A task that completes after the specified duration.
-   */
-  template<typename rep_type, typename period_type>
-  [[nodiscard]] auto yield_for(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<>;
 
   /**
    * @brief Polls a descriptor for I/O events.
    * @param descriptor The descriptor to poll.
    * @param poll_op The operation to poll for (read/write).
-   * @param timeout Maximum duration to wait for the event (0 means no timeout).
+   * @param timeout Maximum duration to wait for the event.
+   *        - Zero or negative: waits indefinitely until the event occurs.
+   *        - Positive: rounded up to the next whole millisecond.
    * @return A task that yields the poll status when completed.
    */
+  template<kphp::concepts::duration duration_type = std::chrono::milliseconds>
   [[nodiscard]] auto poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op,
-                          std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept -> kphp::coro::task<poll_status>;
+                          duration_type timeout = duration_type::zero()) noexcept -> kphp::coro::task<poll_status>;
 
   /**
    * @brief Accepts an incoming connection with optional timeout.
-   * @param timeout Maximum duration to wait for a connection (0 means no timeout).
+   * @param timeout Maximum duration to wait for a connection.
+   *        - Zero or negative: waits indefinitely until a connection arrives.
+   *        - Positive: rounded up to the next whole millisecond.
    * @return A task that yields the new connection descriptor when completed or k2::INVALID_PLATFORM_DESCRIPTOR on timeout.
    */
-  [[nodiscard]] auto accept(std::chrono::nanoseconds timeout = std::chrono::nanoseconds{0}) noexcept -> kphp::coro::task<k2::descriptor>;
+  template<kphp::concepts::duration duration_type = std::chrono::milliseconds>
+  [[nodiscard]] auto accept(duration_type timeout = duration_type::zero()) noexcept -> kphp::coro::task<k2::descriptor>;
 };
 
 // ================================================================================================
@@ -187,9 +181,8 @@ inline auto io_scheduler::make_cancellation_handler(kphp::coro::detail::poll_inf
   }};
 }
 
-template<typename rep_type, typename period_type>
-auto io_scheduler::make_timeout_task(std::chrono::duration<rep_type, period_type> timeout) noexcept -> kphp::coro::task<timeout_status> {
-  co_await schedule_after(timeout);
+inline auto io_scheduler::make_timeout_task(std::chrono::milliseconds timeout) noexcept -> kphp::coro::task<timeout_status> {
+  co_await schedule(timeout);
   co_return timeout_status::timeout;
 }
 
@@ -351,27 +344,25 @@ inline auto io_scheduler::update_timer() noexcept -> void {
 
   auto& [time_point, _]{*m_timed_events.begin()};
   if (!m_timer_handle.reset(time_point)) [[unlikely]] {
-    kphp::log::warning("error resetting timer handle, unable to set time point -> {}, current time point -> {}", time_point.time_point_ns,
-                       m_timer_handle.time_point().time_point_ns);
+    kphp::log::error("error resetting timer handle, unable to set time point -> {}, current time point -> {}", time_point.time_point_ns,
+                     m_timer_handle.time_point().time_point_ns);
   }
 }
 
-inline auto io_scheduler::add_timer_token(k2::TimePoint time_point,
+inline auto io_scheduler::add_timer_token(std::chrono::milliseconds timeout,
                                           kphp::coro::detail::poll_info& poll_info) noexcept -> kphp::coro::detail::poll_info::timed_events::iterator {
+  using namespace std::chrono_literals;
+  kphp::log::assertion(timeout >= 1ms);
+
+  k2::TimePoint time_point{};
+  k2::instant(std::addressof(time_point));
+  time_point.time_point_ns += std::chrono::duration_cast<std::chrono::nanoseconds>(timeout).count();
+
   const auto pos{m_timed_events.emplace(time_point, poll_info)};
   if (pos == m_timed_events.begin()) {
     update_timer();
   }
   return pos;
-}
-
-template<typename rep_type, typename period_type>
-auto io_scheduler::add_timer_token(std::chrono::duration<rep_type, period_type> timeout,
-                                   kphp::coro::detail::poll_info& poll_info) noexcept -> kphp::coro::detail::poll_info::timed_events::iterator {
-  k2::TimePoint time_point{};
-  k2::instant(std::addressof(time_point));
-  time_point.time_point_ns += std::chrono::duration_cast<std::chrono::nanoseconds>(timeout).count();
-  return add_timer_token(time_point, poll_info);
 }
 
 inline auto io_scheduler::remove_timer_token(kphp::coro::detail::poll_info::timed_events::iterator pos) noexcept -> void {
@@ -503,18 +494,31 @@ inline auto io_scheduler::schedule() noexcept {
   return schedule_operation{*this};
 }
 
+template<kphp::concepts::duration duration_type>
+auto io_scheduler::schedule(duration_type timeout) noexcept -> kphp::coro::task<> {
+  if (timeout <= duration_type::zero()) [[unlikely]] {
+    co_return co_await schedule();
+  }
+
+  // poll_op is not actually used here
+  kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read};
+  const auto cancellation_handler{make_cancellation_handler(poll_info)};
+  poll_info.m_schedule_position = add_timer_token(std::chrono::ceil<std::chrono::milliseconds>(timeout), poll_info);
+  co_await poll_info;
+}
+
 template<kphp::coro::concepts::coroutine coroutine_type>
 auto io_scheduler::schedule(coroutine_type coroutine) noexcept -> kphp::coro::task<typename kphp::coro::coroutine_traits<coroutine_type>::return_type> {
   co_await schedule();
   co_return co_await std::move(coroutine);
 }
 
-template<kphp::coro::concepts::coroutine coroutine_type, typename rep_type, typename period_type>
-auto io_scheduler::schedule(coroutine_type coroutine, std::chrono::duration<rep_type, period_type> timeout) noexcept
+template<kphp::coro::concepts::coroutine coroutine_type, kphp::concepts::duration duration_type>
+auto io_scheduler::schedule(coroutine_type coroutine, duration_type timeout) noexcept
     -> kphp::coro::task<std::expected<typename kphp::coro::coroutine_traits<coroutine_type>::return_type, timeout_status>> {
   using expected_return_type = typename kphp::coro::coroutine_traits<coroutine_type>::return_type;
 
-  if (timeout <= std::chrono::duration<rep_type, period_type>{0}) [[unlikely]] {
+  if (timeout <= duration_type::zero()) [[unlikely]] {
     if constexpr (std::is_void_v<expected_return_type>) {
       co_await schedule(std::move(coroutine));
       co_return std::expected<expected_return_type, timeout_status>{};
@@ -523,7 +527,7 @@ auto io_scheduler::schedule(coroutine_type coroutine, std::chrono::duration<rep_
     }
   }
 
-  auto result{co_await kphp::coro::when_any(std::move(coroutine), make_timeout_task(timeout))};
+  auto result{co_await kphp::coro::when_any(std::move(coroutine), make_timeout_task(std::chrono::ceil<std::chrono::milliseconds>(timeout)))};
   if (std::holds_alternative<timeout_status>(result)) [[unlikely]] {
     co_return std::unexpected{std::move(std::get<1>(result))};
   }
@@ -535,30 +539,8 @@ auto io_scheduler::schedule(coroutine_type coroutine, std::chrono::duration<rep_
   }
 }
 
-template<typename rep_type, typename period_type>
-auto io_scheduler::schedule_after(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<> {
-  if (amount <= std::chrono::duration<rep_type, period_type>{0}) [[unlikely]] {
-    co_return co_await schedule();
-  }
-
-  // poll_op is not actually used here
-  kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read};
-  const auto cancellation_handler{make_cancellation_handler(poll_info)};
-  poll_info.m_schedule_position = add_timer_token(amount, poll_info);
-  co_await poll_info;
-}
-
-inline auto io_scheduler::yield() noexcept {
-  return schedule();
-}
-
-template<typename rep_type, typename period_type>
-auto io_scheduler::yield_for(std::chrono::duration<rep_type, period_type> amount) noexcept -> kphp::coro::task<> {
-  co_await schedule_after(amount);
-}
-
-inline auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op,
-                               std::chrono::nanoseconds timeout) noexcept -> kphp::coro::task<poll_status> {
+template<kphp::concepts::duration duration_type>
+auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op poll_op, duration_type timeout) noexcept -> kphp::coro::task<poll_status> {
   k2::StreamStatus stream_status{};
   k2::stream_status(descriptor, std::addressof(stream_status));
   if (stream_status.libc_errno != k2::errno_ok) [[unlikely]] {
@@ -593,32 +575,33 @@ inline auto io_scheduler::poll(k2::descriptor descriptor, kphp::coro::poll_op po
     break;
   }
 
-  using namespace std::chrono_literals;
   kphp::coro::detail::poll_info poll_info{descriptor, poll_op};
   const auto cancellation_handler{make_cancellation_handler(poll_info)};
-  if (timeout > 0ns) {
-    poll_info.m_schedule_position = std::make_pair(add_timer_token(timeout, poll_info), m_parked_polls.emplace(poll_info.m_descriptor, poll_info));
-  } else {
+  if (timeout <= duration_type::zero()) {
     poll_info.m_schedule_position = m_parked_polls.emplace(poll_info.m_descriptor, poll_info);
+  } else {
+    poll_info.m_schedule_position = std::make_pair(add_timer_token(std::chrono::ceil<std::chrono::milliseconds>(timeout), poll_info),
+                                                   m_parked_polls.emplace(poll_info.m_descriptor, poll_info));
   }
   co_return co_await poll_info;
 }
 
-inline auto io_scheduler::accept(std::chrono::nanoseconds timeout) noexcept -> kphp::coro::task<k2::descriptor> {
+template<kphp::concepts::duration duration_type>
+auto io_scheduler::accept(duration_type timeout) noexcept -> kphp::coro::task<k2::descriptor> {
   if (!m_accepted_descriptors.empty()) { // don't suspend if there is a connection
     const auto descriptor{m_accepted_descriptors.back()};
     m_accepted_descriptors.pop_back();
     co_return descriptor;
   }
 
-  using namespace std::chrono_literals;
   // poll_op is not actually used here
   kphp::coro::detail::poll_info poll_info{k2::INVALID_PLATFORM_DESCRIPTOR, kphp::coro::poll_op::read};
   const auto cancellation_handler{make_cancellation_handler(poll_info)};
-  if (timeout > 0ns) {
-    poll_info.m_schedule_position = std::make_pair(add_timer_token(timeout, poll_info), m_parked_polls.emplace(poll_info.m_descriptor, poll_info));
-  } else {
+  if (timeout <= duration_type::zero()) {
     poll_info.m_schedule_position = m_parked_polls.emplace(poll_info.m_descriptor, poll_info);
+  } else {
+    poll_info.m_schedule_position = std::make_pair(add_timer_token(std::chrono::ceil<std::chrono::milliseconds>(timeout), poll_info),
+                                                   m_parked_polls.emplace(poll_info.m_descriptor, poll_info));
   }
   co_await poll_info;
   co_return poll_info.m_descriptor;

@@ -160,12 +160,11 @@ kphp::coro::task<T> f$wait_multi(array<Optional<int64_t>> fork_ids) noexcept {
 // ================================================================================================
 
 inline kphp::coro::task<> f$sched_yield() noexcept {
-  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield());
+  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule());
 }
 
 inline kphp::coro::task<> f$sched_yield_sleep(double duration) noexcept {
-  const auto timeout{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{duration})};
-  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().yield_for(kphp::forks::detail::normalize_timeout(timeout)));
+  co_await kphp::forks::id_managed(kphp::coro::io_scheduler::get().schedule(std::chrono::duration<double>{duration}));
 }
 
 // ================================================================================================
