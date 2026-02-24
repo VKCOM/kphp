@@ -319,20 +319,21 @@ struct Maybe final {
   }
 };
 
-template<typename T, typename U>
+template<std::default_initializable T, std::default_initializable U>
 struct Either final {
   std::variant<T, U> value;
 
   bool fetch(tl::fetcher& tlf) noexcept
   requires tl::deserializable<T> && tl::deserializable<U>
   {
-    T t{};
-    U u{};
     const auto initial_pos{tlf.pos()};
-    if (t.fetch(tlf)) {
+    if (T t{}; t.fetch(tlf)) {
       value.template emplace<T>(std::move(t));
       return true;
-    } else if (tlf.reset(initial_pos); u.fetch(tlf)) {
+    }
+
+    tlf.reset(initial_pos);
+    if (U u{}; u.fetch(tlf)) {
       value.template emplace<U>(std::move(u));
       return true;
     }
@@ -343,9 +344,9 @@ struct Either final {
   requires tl::serializable<T> && tl::serializable<U>
   {
     if (std::holds_alternative<T>(value)) {
-      static_cast<T>(value).store(tls);
+      std::get<T>(value).store(tls);
     } else {
-      static_cast<U>(value).store(tls);
+      std::get<U>(value).store(tls);
     }
   }
 
