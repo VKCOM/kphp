@@ -51,9 +51,13 @@ auto fetch_request(const kphp::component::stream& stream, F f) noexcept -> kphp:
 }
 
 inline auto send_response(kphp::component::stream& stream, std::span<const std::byte> response) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
+  kphp::log::info("\t\tsend_response");
   if (auto expected{co_await stream.write_all(response)}; !expected) [[unlikely]] {
+    kphp::log::info("\t\tsend_response. stream.write_all failed");
     co_return std::move(expected);
   }
+
+  kphp::log::info("\t\tsend_response. stream.shutdown_write");
   stream.shutdown_write();
   co_return std::expected<void, int32_t>{};
 }

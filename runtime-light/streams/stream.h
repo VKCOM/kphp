@@ -151,31 +151,42 @@ auto stream::read_all(F f) const noexcept -> kphp::coro::task<std::expected<void
 }
 
 inline auto stream::write(std::span<const std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
+  kphp::log::info("\t\tstream::write");
   for (size_t written{}; written < buf.size();) {
     switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::write)) {
     case kphp::coro::poll_status::event:
+      kphp::log::info("\t\t\tstream::write. loop. kphp::coro::poll_status::event");
       [[likely]] written += k2::write(m_descriptor, buf.subspan(written));
+      kphp::log::info("\t\t\tstream::write. loop. kphp::coro::poll_status::event. written -> {}", written);
       break;
     case kphp::coro::poll_status::closed:
+      kphp::log::info("\t\t\tstream::write. loop. kphp::coro::poll_status::closed");
       [[likely]] co_return std::expected<size_t, int32_t>{written};
     case kphp::coro::poll_status::error:
+      kphp::log::info("\t\t\tstream::write. loop. kphp::coro::poll_status::error");
       co_return std::unexpected{k2::errno_efault};
     case kphp::coro::poll_status::timeout:
+      kphp::log::info("\t\t\tstream::write. loop. kphp::coro::poll_status::timeout");
       co_return std::unexpected{k2::errno_ecanceled};
     }
   }
+  kphp::log::info("\t\tstream::write. all good");
   co_return std::expected<size_t, int32_t>{buf.size()};
 }
 
 inline auto stream::write_all(std::span<const std::byte> buf) const noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
+  kphp::log::info("\t\tstream::write_all");
   auto expected{co_await write(buf)};
   if (!expected) [[unlikely]] {
+    kphp::log::info("\t\tstream::write_all. write failed");
     co_return std::unexpected{expected.error()};
   }
 
   if (*expected != buf.size()) [[unlikely]] {
+    kphp::log::info("\t\tstream::write_all. *expected != buf.size(): *expected -> {}, buf.size() -> {}. failed", *expected, buf.size());
     co_return std::unexpected{k2::errno_eshutdown};
   }
+  kphp::log::info("\t\tstream::write_all. all good");
   co_return std::expected<void, int32_t>{};
 }
 

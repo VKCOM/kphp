@@ -378,18 +378,23 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
 }
 
 kphp::coro::task<> finalize_server() noexcept {
+  kphp::log::info("DZV: http finalize_server:");
+
   auto& http_server_instance_st{HttpServerInstanceState::get()};
 
   string response_body{};
   tl::HttpResponse http_response{};
   switch (http_server_instance_st.response_state) {
   case kphp::http::response_state::not_started:
+    kphp::log::info("\thttp response_state::not_started");
     http_server_instance_st.response_state = kphp::http::response_state::sending_headers;
     if (http_server_instance_st.headers_registered_callback.has_value()) {
+      kphp::log::info("\t\thttp headers_registered_callback.has_value()");
       co_await *std::exchange(http_server_instance_st.headers_registered_callback, std::nullopt);
     }
     [[fallthrough]];
   case kphp::http::response_state::sending_headers: {
+    kphp::log::info("\thttp response_state::sending_headers");
     const bool auto_encoding_enabled{http_server_instance_st.auto_encoding_enabled};
     const bool gzip_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_GZIP)};
     const bool deflate_encoded{static_cast<bool>(http_server_instance_st.encoding & HttpServerInstanceState::ENCODING_DEFLATE)};
@@ -416,9 +421,11 @@ kphp::coro::task<> finalize_server() noexcept {
     http_response.http_response.status_code = {.value = static_cast<int32_t>(status_code)};
     http_response.http_response.body = {reinterpret_cast<const std::byte*>(response_body.c_str()), response_body.size()};
     http_server_instance_st.response_state = kphp::http::response_state::sending_body;
+    kphp::log::info("\thttp response_state::headers_sent: response_body -> |{}|, status_code -> {}", response_body.c_str(), status_code);
     [[fallthrough]];
   }
   case kphp::http::response_state::sending_body: {
+    kphp::log::info("\thttp response_state::sending_body");
     tl::storer tls{http_response.footprint()};
     http_response.store(tls);
 
@@ -433,6 +440,7 @@ kphp::coro::task<> finalize_server() noexcept {
     [[fallthrough]];
   }
   case kphp::http::response_state::completed:
+    kphp::log::info("\thttp response_state::completed");
     co_return;
   }
 }
