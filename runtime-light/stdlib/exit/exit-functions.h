@@ -25,6 +25,7 @@ inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchr
   } else {
     exit_code = 1;
   }
+  f$warning(string("exit called"));
   co_await kphp::forks::id_managed(instance_st.run_instance_epilogue());
   k2::exit(static_cast<int32_t>(exit_code));
 }
