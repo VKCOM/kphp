@@ -346,7 +346,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
 
   // normalize timeout
   static constexpr auto DEFAULT_TIMEOUT{std::chrono::milliseconds{300}};
-  constexpr static auto MAX_TIMEOUT{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds{86400})};
+  static constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds{86400})};
   static constexpr auto MIN_TIMEOUT{std::chrono::milliseconds{1}};
   const auto timeout{std::clamp(
       opt_timeout.transform([](const auto& t) noexcept { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>{t}); })
