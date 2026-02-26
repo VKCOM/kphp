@@ -324,6 +324,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
                                              bool collect_responses_extra_info) noexcept -> kphp::coro::shared_task<std::optional<string>> {
     std::optional<string> opt_response{std::in_place};
     auto fetch_task{kphp::component::fetch_response(stream, kphp::component::read_ext::append(*opt_response))};
+    kphp::log::info("scheduler push coroutine: rpc-api.cpp/awaiter_coroutine");
     if (auto expected{co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task), timeout)}; !expected) [[unlikely]] {
       opt_response = std::nullopt;
     }

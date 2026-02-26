@@ -84,6 +84,7 @@ auto wait(int64_t fork_id, std::chrono::nanoseconds timeout) noexcept -> kphp::c
   // Important: capture current fork's info pre-co_await.
   // Fork ID is not automatically preserved across suspension points
   auto current_fork_info{fork_instance_st.current_info()};
+  kphp::log::info("scheduler push coroutine: for-functions.h/wait");
   auto expected{co_await kphp::coro::io_scheduler::get().schedule(static_cast<kphp::coro::shared_task<kphp::forks::details::storage>>(std::move(fork_task)),
                                                                   detail::normalize_timeout(timeout))};
 

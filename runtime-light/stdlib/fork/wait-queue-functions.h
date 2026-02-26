@@ -34,6 +34,7 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
   static constexpr auto wait_queue_next_task{
       [](auto await_set_awaitable) noexcept -> kphp::coro::task<std::optional<int64_t>> { co_return co_await std::move(await_set_awaitable); }};
   kphp::log::info("\twait_queue_next. before wait_result");
+  kphp::log::info("scheduler push coroutine: wait-queue-functions.h/wait_queue_next_task");
   auto wait_result{co_await kphp::coro::io_scheduler::get().schedule(wait_queue_next_task(await_set.next()), kphp::forks::detail::normalize_timeout(timeout))};
   kphp::log::info("\twait_queue_next. after wait_result. !wait_result -> {}", !wait_result);
   if (!wait_result) {
