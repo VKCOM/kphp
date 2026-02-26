@@ -38,7 +38,8 @@ public:
   }
 
   auto reset(k2::TimePoint time_point) noexcept -> std::expected<void, int32_t> {
-    static constexpr auto MINIMUM_STEP_NS{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::milliseconds{1}).count()};
+    using namespace std::chrono_literals;
+    static constexpr auto MINIMUM_STEP_NS{std::chrono::duration_cast<std::chrono::nanoseconds>(1ms).count()};
 
     clear();
 

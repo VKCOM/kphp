@@ -345,13 +345,17 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
   }};
 
   // normalize timeout
-  static constexpr auto DEFAULT_TIMEOUT{std::chrono::milliseconds{300}};
-  static constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::seconds{86400})};
-  static constexpr auto MIN_TIMEOUT{std::chrono::milliseconds{1}};
-  const auto timeout{std::clamp(
-      opt_timeout.transform([](const auto& t) noexcept { return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>{t}); })
-          .value_or(DEFAULT_TIMEOUT),
-      MIN_TIMEOUT, MAX_TIMEOUT)};
+  using namespace std::chrono_literals;
+  static constexpr auto DEFAULT_TIMEOUT{300ms};
+  static constexpr auto MIN_TIMEOUT{1ms};
+  static constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<std::chrono::milliseconds>(24h)};
+  static_assert(MIN_TIMEOUT <= MAX_TIMEOUT, "calling std::clamp will lead to undefined behavior");
+  const auto timeout{std::clamp(opt_timeout
+                                    .transform([](const double& timeout) noexcept {
+                                      return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::duration<double>{timeout});
+                                    })
+                                    .value_or(DEFAULT_TIMEOUT),
+                                MIN_TIMEOUT, MAX_TIMEOUT)};
   // start awaiter task
   auto awaiter_task{awaiter_coroutine(query_id, std::move(stream), timeout, collect_responses_extra_info)};
   kphp::log::assertion(kphp::coro::io_scheduler::get().start(awaiter_task));
