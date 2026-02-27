@@ -32,11 +32,13 @@ inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchr
   // Wait for all results to guarantee that the requests are sent.
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   while (!rpc_client_instance_st.response_awaiter_tasks.empty()) {
-    const auto& [query_id, awaiter_task]{*rpc_client_instance_st.response_awaiter_tasks.begin()};
-    co_await kphp::forks::id_managed(awaiter_task);
+    const auto it_response_awaiter{rpc_client_instance_st.response_awaiter_tasks.begin()};
+    const auto& [query_id, awaiter_task]{*it_response_awaiter};
 
-    rpc_client_instance_st.response_awaiter_tasks.erase(query_id);
+    rpc_client_instance_st.response_awaiter_tasks.erase(it_response_awaiter);
     rpc_client_instance_st.response_fetcher_instances.erase(query_id);
+
+    co_await kphp::forks::id_managed(awaiter_task);
   }
 
   k2::exit(static_cast<int32_t>(exit_code));
