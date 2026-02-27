@@ -28,10 +28,12 @@ inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchr
   }
   co_await kphp::forks::id_managed(instance_st.run_instance_epilogue());
 
+  // Sending a request can be canceled if the instance closes the stream before it will be sent by RPC component.
+  // Wait for all results to guarantee that the requests are sent.
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
   while (!rpc_client_instance_st.response_awaiter_tasks.empty()) {
     const auto& [query_id, awaiter_task]{*rpc_client_instance_st.response_awaiter_tasks.begin()};
-    co_await awaiter_task;
+    co_await kphp::forks::id_managed(awaiter_task);
 
     rpc_client_instance_st.response_awaiter_tasks.erase(query_id);
     rpc_client_instance_st.response_fetcher_instances.erase(query_id);
