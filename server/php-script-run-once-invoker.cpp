@@ -41,7 +41,11 @@ void PhpScriptRunOnceInvoker::init(int total_run_once_count) {
   }
 
   rpc_client_methods.rpc_ready = nullptr;
-  epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
+  auto* connection = epoll_insert_pipe(pipe_for_read, read_fd, &ct_php_rpc_client, &rpc_client_methods);
+  if (connection == nullptr) {
+    kprintf("Failed to insert pipe to epoll reactor\n");
+    exit(1);
+  }
 }
 
 bool PhpScriptRunOnceInvoker::invoke_run_once(int runs_count) {

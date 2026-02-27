@@ -2424,8 +2424,13 @@ bool check_server_options() {
   const auto& rpc_server_ctx = vk::singleton<RpcServerContext>::get();
   size_t general_workers_cnt = vk::singleton<WorkersControl>::get().get_count(WorkerType::general_worker);
 
+  if (run_once && (http_server_ctx.server_enabled() || rpc_server_ctx.server_enabled())) {
+    kprintf("You can't start RPC or HTTP server in run-once mode\n");
+    return false;
+  }
+
   if (!master_flag && (http_server_ctx.server_enabled() || rpc_server_ctx.server_enabled())) {
-    kprintf("Server mode is not supported without workers, yo must specify -f/--workers-num <n>\n");
+    kprintf("Server mode is not supported without workers, you must specify -f/--workers-num <n>\n");
     return false;
   }
 
