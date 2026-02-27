@@ -37,7 +37,6 @@ inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchr
 
     rpc_client_instance_st.response_awaiter_tasks.erase(query_id);
     rpc_client_instance_st.response_fetcher_instances.erase(query_id);
-    rpc_client_instance_st.rpc_responses_extra_info.erase(query_id);
   }
 
   k2::exit(static_cast<int32_t>(exit_code));
