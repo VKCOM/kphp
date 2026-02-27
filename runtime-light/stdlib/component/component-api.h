@@ -33,20 +33,24 @@ inline auto send_request(kphp::component::stream& stream, std::span<const std::b
 }
 
 inline auto fetch_response(const kphp::component::stream& stream, std::span<std::byte> response) noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
+  kphp::log::info("\tfetch_response. read");
   co_return co_await stream.read(response);
 }
 
 template<std::invocable<std::span<const std::byte>> F>
 auto fetch_response(const kphp::component::stream& stream, F f) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
+  kphp::log::info("\tfetch_response. read_all");
   co_return co_await stream.read_all(std::move(f));
 }
 
 inline auto fetch_request(const kphp::component::stream& stream, std::span<std::byte> request) noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
+  kphp::log::info("\tfetch_request. read");
   co_return co_await stream.read(request);
 }
 
 template<std::invocable<std::span<const std::byte>> F>
 auto fetch_request(const kphp::component::stream& stream, F f) noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
+  kphp::log::info("\tfetch_request. read_all");
   co_return co_await stream.read_all(std::move(f));
 }
 

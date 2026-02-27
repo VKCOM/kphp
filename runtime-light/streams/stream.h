@@ -119,34 +119,48 @@ inline auto stream::descriptor() const noexcept -> k2::descriptor {
 }
 
 inline auto stream::read(std::span<std::byte> buf) const noexcept -> kphp::coro::task<std::expected<size_t, int32_t>> {
+  kphp::log::info("\t\tstream::read. buf.size() -> {}", buf.size());
   for (size_t read{}; read < buf.size();) {
     switch (co_await m_scheduler.poll(m_descriptor, kphp::coro::poll_op::read)) {
     case kphp::coro::poll_status::event:
+      kphp::log::info("\t\t\tstream::read. loop. kphp::coro::poll_status::event");
       [[likely]] read += k2::read(m_descriptor, buf.subspan(read));
+      kphp::log::info("\t\t\tstream::read. loop. kphp::coro::poll_status::event. read -> {}", read);
       break;
     case kphp::coro::poll_status::closed:
+      kphp::log::info("\t\t\tstream::read. loop. kphp::coro::poll_status::closed");
       [[likely]] co_return std::expected<size_t, int32_t>{read};
     case kphp::coro::poll_status::error:
+      kphp::log::info("\t\t\tstream::read. loop. kphp::coro::poll_status::error");
       co_return std::unexpected{k2::errno_efault};
     case kphp::coro::poll_status::timeout:
+      kphp::log::info("\t\t\tstream::read. loop. kphp::coro::poll_status::timeout");
       co_return std::unexpected{k2::errno_ecanceled};
     }
   }
+  kphp::log::info("\t\tstream::read. the end");
   co_return std::expected<size_t, int32_t>{buf.size()};
 }
 
 template<std::invocable<std::span<const std::byte>> F>
 auto stream::read_all(F f) const noexcept -> kphp::coro::task<std::expected<void, int32_t>> {
+  kphp::log::info("\t\tstream::read_all");
   static constexpr size_t CHUNK_SIZE = 2048;
   std::array<std::byte, CHUNK_SIZE> chunk; // NOLINT
 
   for (;;) {
+    kphp::log::info("\t\t\tstream::read_all. main loop");
     auto expected{co_await read(chunk)};
+    kphp::log::info("\t\t\tstream::read_all. main loop. !expected -> {}", !expected);
     if (!expected || *expected == 0) {
+      kphp::log::info("\t\t\tstream::read_all. main loop. the end");
       co_return expected.transform([](auto) noexcept {});
     }
+    kphp::log::info("\t\t\tstream::read_all. main loop. *expected -> {}", *expected);
     kphp::log::assertion(*expected <= CHUNK_SIZE);
+    kphp::log::info("\t\t\tstream::read_all. main loop. before invoke");
     std::invoke(f, std::span<const std::byte>{chunk}.first(*expected));
+    kphp::log::info("\t\t\tstream::read_all. main loop. after invoke");
   }
 }
 
@@ -170,7 +184,7 @@ inline auto stream::write(std::span<const std::byte> buf) const noexcept -> kphp
       co_return std::unexpected{k2::errno_ecanceled};
     }
   }
-  kphp::log::info("\t\tstream::write. all good");
+  kphp::log::info("\t\tstream::write. the end");
   co_return std::expected<size_t, int32_t>{buf.size()};
 }
 
@@ -186,7 +200,7 @@ inline auto stream::write_all(std::span<const std::byte> buf) const noexcept -> 
     kphp::log::info("\t\tstream::write_all. *expected != buf.size(): *expected -> {}, buf.size() -> {}. failed", *expected, buf.size());
     co_return std::unexpected{k2::errno_eshutdown};
   }
-  kphp::log::info("\t\tstream::write_all. all good");
+  kphp::log::info("\t\tstream::write_all. the end");
   co_return std::expected<void, int32_t>{};
 }
 
