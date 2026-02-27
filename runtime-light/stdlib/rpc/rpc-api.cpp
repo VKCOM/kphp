@@ -360,10 +360,11 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
   auto awaiter_task{awaiter_coroutine(query_id, std::move(stream), timeout, collect_responses_extra_info)};
   kphp::log::assertion(kphp::coro::io_scheduler::get().start(awaiter_task));
 
+  rpc_client_instance_st.response_awaiter_tasks.emplace(query_id, std::move(awaiter_task));
+
   if (ignore_answer) {
     co_return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
-  rpc_client_instance_st.response_awaiter_tasks.emplace(query_id, std::move(awaiter_task));
   co_return kphp::rpc::query_info{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
 

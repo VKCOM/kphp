@@ -12,6 +12,7 @@
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/output/output-state.h"
+#include "runtime-light/stdlib/rpc/rpc-client-state.h"
 
 inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchronous
   auto& instance_st{InstanceState::get()};
@@ -26,6 +27,17 @@ inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchr
     exit_code = 1;
   }
   co_await kphp::forks::id_managed(instance_st.run_instance_epilogue());
+
+  auto& rpc_client_instance_st{RpcClientInstanceState::get()};
+  while (!rpc_client_instance_st.response_awaiter_tasks.empty()) {
+    const auto& [query_id, awaiter_task]{*rpc_client_instance_st.response_awaiter_tasks.begin()};
+    co_await awaiter_task;
+
+    rpc_client_instance_st.response_awaiter_tasks.erase(query_id);
+    rpc_client_instance_st.response_fetcher_instances.erase(query_id);
+    rpc_client_instance_st.rpc_responses_extra_info.erase(query_id);
+  }
+
   k2::exit(static_cast<int32_t>(exit_code));
 }
 
