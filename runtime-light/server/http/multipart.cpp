@@ -43,7 +43,7 @@ struct header {
     return header(name_view, value_view.substr(1));
   }
 
-  bool name_is(const std::string_view s) {
+  bool name_is(std::string_view s) {
     const auto lower_name{name | std::views::take(s.size()) |
                               std::views::transform([](auto c) noexcept { return std::tolower(c, std::locale::classic()); })};
     return std::ranges::equal(lower_name, s);
@@ -55,11 +55,11 @@ struct header {
 // 1) attr = "name", value = "avatar"
 // 2) attr = "filename", value = "my_avatar.png"
 struct partAttr {
-  std::string_view attr;
-  std::string_view value;
+  const std::string_view attr;
+  const std::string_view value;
 
   partAttr() = delete;
-  partAttr(const std::string_view attr_, const std::string_view value_) : attr{attr_}, value{value_} {};
+  partAttr(std::string_view attr_, std::string_view value_) : attr{attr_}, value{value_} {};
 };
 
 // Represents one part of multipart content
@@ -72,151 +72,114 @@ struct part {
 
 class MultipartBody {
   private:
-
     std::string_view body;
     std::string_view boundary;
-    size_t pos;
   
-    std::optional<part> next_part();
     void addPost(const part &part, mixed &v$_POST);
     void addFile(const part &part, mixed &v$_FILES);
-
-    std::optional<header> next_header();
-    std::string_view parse_data();
-    
-    // Returns true if current pos refers to one of \r or \n
-    bool is_crlf() {
-      return body[pos] == '\r' || body[pos] == '\n';
-    }
-
-    void skip_crlf() {
-      if (body[pos] == '\r') {
-          pos++;
-      }
-      if (body[pos] == '\n') {
-          pos++;
-      }
-    }
-
-    void skip_boundary() {
-      if (pos == 0) {
-        pos += 2;
-      }
-      pos += boundary.size();
-      if (body[pos] == '-' && body[pos+1] == '-') {
-          pos += 2;
-      }
-    }
   
   public:
-
-    MultipartBody(const std::string_view body_, const std::string_view boundary_) 
-      : body{body_}, boundary{boundary_}, pos{0} {}
+    MultipartBody(std::string_view body_, std::string_view boundary_) 
+      : body{body_}, boundary{boundary_} {}
     
     void parse_into(mixed &v$_POST, mixed &v$_FILES);
 };
 
-std::optional<part> MultipartBody::next_part() {
-  part part;
-
-  if (pos == 0) {
-    skip_boundary();
-    skip_crlf();
+std::string_view trim_crlf(std::string_view s) {
+  if (s.starts_with('\r')) {
+    s = s.substr(1);
   }
-
-  do {
-    std::optional<header> maybe_header{next_header()};
-    if (!maybe_header) {
-      return std::nullopt;
-    }
-    header header{maybe_header.value()};
-  
-    if (header.name_is(kphp::http::headers::CONTENT_DISPOSITION)) {
-      if (!header.value.starts_with(HEADER_CONTENT_DISPOSITION_FORM_DATA)) {
-        return std::nullopt;
-      }
-      auto attrs = std::views::split(header.value, ";") | std::views::transform([](auto part) {
-        std::string_view part_view{vk::trim(std::string_view(part))};
-        auto [name_view, value_view]{vk::split_string_view(part_view, '=')};
-        if (value_view.size() >= 2 && value_view.starts_with('"') && value_view.ends_with('"')) {
-          value_view = value_view.substr(1, value_view.size()-2);
-        }
-        return partAttr{name_view, value_view};
-      });
-
-      for (partAttr a : attrs) {
-        if (a.attr.empty()) {
-          return std::nullopt;
-        }
-        if (a.attr == "name") {
-          part.name = a.value;
-        } else if (a.attr == "filename") {
-          part.filename = a.value;
-        }
-      }
-    } else if (header.name_is(kphp::http::headers::CONTENT_TYPE)) {
-      part.content_type = header.value;
-    }
-  } while (!is_crlf());
-
-  skip_crlf();
-  part.data = parse_data();
-  skip_boundary();
-  skip_crlf();
-  return part;
+  if (s.starts_with('\n')) {
+    s = s.substr(1);
+  }
+  if (s.ends_with('\n')) {
+    s = s.substr(0, s.size()-1);
+  }
+  if (s.ends_with('\r')) {
+    s = s.substr(0, s.size()-1);
+  }
+  return s;
 }
 
-std::optional<header> MultipartBody::next_header() {
-  size_t lf{body.find('\n', pos)};
-  size_t header_end{lf-1};
-  
+std::pair<std::optional<header>, std::string_view> parse_next_header(std::string_view s) {
+  size_t lf{s.find('\n')};
   if (lf == std::string_view::npos) {
-      return std::nullopt;
+      return {std::nullopt, s};
   }
-  
-  if (body[header_end] == '\r') {
-    header_end--;
-  }
-
-  auto res{header::create(body.substr(pos, header_end-pos+1))};
-  pos = lf + 1;
-  return res;
+  std::string_view header_str{trim_crlf(s.substr(0, lf))};
+  auto hdr{header::create(header_str)};
+  s = s.substr(lf+1);
+  return std::pair<std::optional<header>, std::string_view>(hdr, s);
 }
 
-std::string_view MultipartBody::parse_data() {
-  size_t data_start{pos};
-  size_t data_end{body.find(boundary, data_start)};
-  pos = data_end;
-
-  if (pos == std::string_view::npos) {
-    return {};
-  }
-
-  if (body[data_end-1] != '-' || body[data_end-2] != '-') {
-    return {};
-  }
-  data_end -= 2;
-  if (body[data_end] == '\n') {
-      data_end--;
-  }
-  if (body[data_end] == '\r') {
-      data_end--;
-  }
-
-  if (data_end > data_start) {
-    return body.substr(data_start, data_end-data_start-1);
-  }
-
-  return {};
-
+auto parse_attrs(std::string_view header_value) {
+  return std::views::split(header_value, ';') | std::views::transform([](auto part) {
+    std::string_view part_view{vk::trim(std::string_view(part))};
+    auto [name_view, value_view]{vk::split_string_view(part_view, '=')};
+    if (value_view.size() >= 2 && value_view.starts_with('"') && value_view.ends_with('"')) {
+      value_view = value_view.substr(1, value_view.size()-2);
+    }
+    return partAttr{name_view, value_view};
+  });
 }
 
 void MultipartBody::parse_into(mixed &v$_POST, mixed &v$_FILES) {
-  std::optional<part> maybe_part;
-  while ((maybe_part = next_part())) {
+  body = trim_crlf(body);
+  if (!body.ends_with("--")) {
+    return;
+  }
+
+  auto parts = std::views::split(body, boundary) | std::views::transform([](auto raw_part) noexcept -> std::optional<part> {
+    std::string_view str{raw_part};
+    if (!str.ends_with("--")) {
+      return std::nullopt;
+    }
+    // cut "--" before next boundary
+    str = str.substr(0, str.size() - 2);
+    // trim \r\n
+    str = trim_crlf(str);
+    if (str.empty()) {
+      return std::nullopt;
+    }
+
+    part part;
+    while (true) {
+      auto [maybe_header, new_str] = parse_next_header(str);
+      str = new_str;
+      if (!maybe_header) {
+        break;
+      }
+      header header{maybe_header.value()};
+      if (header.name_is(kphp::http::headers::CONTENT_DISPOSITION)) {
+        if (!header.value.starts_with(HEADER_CONTENT_DISPOSITION_FORM_DATA)) {
+          return std::nullopt;
+        }
+        auto attrs = parse_attrs(header.value);
+        for (partAttr a : attrs) {
+          if (a.attr.empty()) {
+            return std::nullopt;
+          }
+          if (a.attr == "name") {
+            part.name = a.value;
+          } else if (a.attr == "filename") {
+            part.filename = a.value;
+          }
+        }
+      } else if (header.name_is(kphp::http::headers::CONTENT_TYPE)) {
+        part.content_type = header.value;
+      }
+    }
+    part.data = str;
+    return part;
+  });
+
+  for (std::optional<part> maybe_part : parts) {
+    if (!maybe_part) {
+      continue;
+    }
     part p{maybe_part.value()};
     if (p.name.empty()) {
-      return;
+      continue;
     }
     if (!p.filename.empty()) {
       addFile(p, v$_FILES);
@@ -232,7 +195,7 @@ void MultipartBody::addPost(const part &part, mixed &v$_POST) {
 }
 
 void MultipartBody::addFile(const part &part, mixed &v$_FILES) {
-  //TODO: replace f$random_bytes to avoid string allocation
+  //TODO: replace f$random_bytes because: 1) to avoid string allocation, 2) it may returns non-char bytes
   Optional<string> rand_str{f$random_bytes(TMP_FILENAME_LENGTH)};
   
   if (!rand_str.has_value()) {
@@ -299,12 +262,12 @@ void MultipartBody::addFile(const part &part, mixed &v$_FILES) {
 
 namespace kphp::http {
 
-void parse_multipart(const std::string_view body, const std::string_view boundary, mixed &v$_POST, mixed &v$_FILES) {
+void parse_multipart(std::string_view body, std::string_view boundary, mixed &v$_POST, mixed &v$_FILES) {
     MultipartBody mb{body, boundary};
     mb.parse_into(v$_POST, v$_FILES);
 }
 
-std::optional<std::string_view> parse_boundary(const std::string_view content_type) {
+std::optional<std::string_view> parse_boundary(std::string_view content_type) {
   size_t pos{content_type.find(MULTIPART_BOUNDARY_EQ)};
   if (pos == std::string_view::npos) {
     return std::nullopt;
