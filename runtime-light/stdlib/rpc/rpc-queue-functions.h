@@ -67,8 +67,12 @@ inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id,
   }
 
   auto& await_set{(*opt_await_set).get()};
+  if (await_set.empty()) {
+    co_return std::nullopt;
+  }
+
   kphp::log::info("scheduler push coroutine: rpc-queue-functions.h/rpc_queue_next_task");
-  const auto expected_next{co_await kphp::coro::io_scheduler::get().schedule(rpc_queue_next_task(await_set.next()), timeout)};
+  const auto expected_next{co_await kphp::coro::io_scheduler::get().schedule(rpc_queue_next_task(await_set.next()), kphp::forks::detail::normalize_timeout(timeout))};
   if (!expected_next) {
     co_return std::nullopt;
   }
