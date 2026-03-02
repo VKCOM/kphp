@@ -45,6 +45,7 @@ extern command_t command_net_write_rpc_base;
 extern conn_target_t rpc_ct;
 
 void send_rpc_query(connection *c, int op, long long id, int *q, int qsize) ubsan_supp("alignment");
+void prepare_rpc_query_raw(int packet_id, int *q, int qsize, unsigned (*crc32_partial_custom)(const void *q, long len, unsigned crc32_complement));
 void on_net_event(int event_status);
 void create_delayed_send_query(conn_target_t *t, command_t *command, double finish_time);
 
