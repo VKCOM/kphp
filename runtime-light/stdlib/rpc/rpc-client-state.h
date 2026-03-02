@@ -13,6 +13,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/coroutine/shared-task.h"
+#include "runtime-light/coroutine/task.h"
 #include "runtime-light/stdlib/rpc/rpc-constants.h"
 #include "runtime-light/stdlib/rpc/rpc-extra-info.h"
 #include "runtime-light/stdlib/rpc/rpc-tl-defs.h"
@@ -26,10 +27,21 @@ struct RpcClientInstanceState final : private vk::not_copyable {
   kphp::stl::unordered_map<int64_t, class_instance<RpcTlQuery>, kphp::memory::script_allocator> response_fetcher_instances;
   kphp::stl::unordered_map<int64_t, std::pair<kphp::rpc::response_extra_info_status, kphp::rpc::response_extra_info>, kphp::memory::script_allocator>
       rpc_responses_extra_info;
+  kphp::stl::unordered_map<int64_t, kphp::coro::shared_task<std::optional<string>>, kphp::memory::script_allocator> ignore_answer_awaiter_tasks;
 
   RpcClientInstanceState() noexcept = default;
 
   static RpcClientInstanceState& get() noexcept;
+
+  kphp::coro::task<void> ensure_ignore_answer_requests_sent() noexcept {
+    while (!ignore_answer_awaiter_tasks.empty()) {
+      const auto it_ignore_answer_awaiter{ignore_answer_awaiter_tasks.begin()};
+      const auto& [query_id, awaiter_task]{*it_ignore_answer_awaiter};
+
+      ignore_answer_awaiter_tasks.erase(it_ignore_answer_awaiter);
+      co_await awaiter_task.when_ready();
+    }
+  }
 };
 
 // ================================================================================================
