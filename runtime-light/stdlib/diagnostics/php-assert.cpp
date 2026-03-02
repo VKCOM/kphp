@@ -21,7 +21,7 @@ void php_warning_impl(php_log_level level, char const* message, va_list args) no
     return;
   }
 
-  constexpr size_t LOG_BUFFER_SIZE = 512;
+  constexpr size_t LOG_BUFFER_SIZE = 2048UZ;
   std::array<char, LOG_BUFFER_SIZE> log_buffer; // NOLINT
   const auto recorded{std::vsnprintf(log_buffer.data(), log_buffer.size(), message, args)};
   if (recorded <= 0) {

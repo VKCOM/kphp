@@ -76,7 +76,7 @@ public:
 template<typename... Args>
 void contextual_logger::log(kphp::log::level level, std::optional<std::span<void* const>> trace, std::format_string<impl::wrapped_arg_t<Args>...> fmt,
                             Args&&... args) const noexcept {
-  static constexpr size_t LOG_BUFFER_SIZE = 512UZ;
+  static constexpr size_t LOG_BUFFER_SIZE = 2048UZ;
   std::array<char, LOG_BUFFER_SIZE> log_buffer; // NOLINT
   size_t message_size{impl::format_log_message(log_buffer, fmt, std::forward<Args>(args)...)};
   auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(message_size)}};
