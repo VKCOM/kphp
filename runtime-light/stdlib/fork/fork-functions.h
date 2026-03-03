@@ -35,7 +35,7 @@ inline constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chron
 
 inline std::chrono::nanoseconds normalize_timeout(std::chrono::nanoseconds timeout) noexcept {
   using namespace std::chrono_literals;
-  if (timeout < 0ns || timeout > MAX_TIMEOUT_NS) {
+  if (timeout < 0ns || timeout > MAX_TIMEOUT_NS) { // timeout == 0 is normal
     return DEFAULT_TIMEOUT_NS;
   }
   return timeout;
@@ -84,7 +84,6 @@ auto wait(int64_t fork_id, std::chrono::nanoseconds timeout) noexcept -> kphp::c
   // Important: capture current fork's info pre-co_await.
   // Fork ID is not automatically preserved across suspension points
   auto current_fork_info{fork_instance_st.current_info()};
-  kphp::log::info("scheduler push coroutine: for-functions.h/wait");
   auto expected{co_await kphp::coro::io_scheduler::get().schedule(static_cast<kphp::coro::shared_task<kphp::forks::details::storage>>(std::move(fork_task)),
                                                                   detail::normalize_timeout(timeout))};
 

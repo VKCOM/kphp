@@ -17,7 +17,7 @@ inline constexpr auto DEFAULT_TIMEOUT_NS = std::chrono::duration_cast<std::chron
 
 inline std::chrono::nanoseconds normalize_timeout(std::chrono::nanoseconds timeout) noexcept {
   using namespace std::chrono_literals;
-  if (timeout <= 0ns || timeout > MAX_TIMEOUT_NS) {
+  if (timeout < 0ns || timeout > MAX_TIMEOUT_NS) { // timeout == 0 is normal
     return DEFAULT_TIMEOUT_NS;
   }
   return timeout;

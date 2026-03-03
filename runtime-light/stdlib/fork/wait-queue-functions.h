@@ -20,27 +20,21 @@
 namespace kphp::forks {
 
 inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id, std::chrono::nanoseconds timeout) noexcept {
-  kphp::log::info("\twait_queue_next");
   auto& wait_queue_instance_st{WaitQueueInstanceState::get()};
   auto opt_await_set{wait_queue_instance_st.get_queue(queue_id)};
-  kphp::log::info("\twait_queue_next. opt_await_set.has_value() -> {}", opt_await_set.has_value());
   if (!opt_await_set.has_value()) [[unlikely]] {
     kphp::log::warning("future with id {} isn't associated with wait queue", queue_id);
     co_return std::nullopt;
   }
 
   auto& await_set{(*opt_await_set).get()};
-  if (await_set.empty()) {
+  if (await_set.empty()) { // if await_set is empty we don't want to suspend the function
     co_return std::nullopt;
   }
 
-  kphp::log::info("\twait_queue_next. await_set.size() -> {}", await_set.size());
   static constexpr auto wait_queue_next_task{
       [](auto await_set_awaitable) noexcept -> kphp::coro::task<std::optional<int64_t>> { co_return co_await std::move(await_set_awaitable); }};
-  kphp::log::info("\twait_queue_next. before wait_result");
-  kphp::log::info("scheduler push coroutine: wait-queue-functions.h/wait_queue_next_task");
   auto wait_result{co_await kphp::coro::io_scheduler::get().schedule(wait_queue_next_task(await_set.next()), kphp::forks::detail::normalize_timeout(timeout))};
-  kphp::log::info("\twait_queue_next. after wait_result. !wait_result -> {}", !wait_result);
   if (!wait_result) {
     co_return std::nullopt;
   }
@@ -107,10 +101,8 @@ inline bool f$wait_queue_empty(int64_t queue_id) noexcept {
 }
 
 inline kphp::coro::task<Optional<int64_t>> f$wait_queue_next(int64_t queue_id, double timeout = -1.0) noexcept {
-  kphp::log::info("f$wait_queue_next. queue_id -> {}, timeout -> {}", queue_id, timeout);
   auto opt_result{co_await kphp::forks::id_managed(
       kphp::forks::wait_queue_next(queue_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})))};
-  kphp::log::info("f$wait_queue_next. the end");
   co_return opt_result ? *opt_result : Optional<int64_t>{};
 }
 
