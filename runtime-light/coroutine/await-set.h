@@ -13,6 +13,7 @@
 #include "runtime-light/coroutine/coroutine-state.h"
 #include "runtime-light/coroutine/detail/await-set.h"
 #include "runtime-light/coroutine/type-traits.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
 
@@ -44,10 +45,12 @@ public:
   template<typename awaitable_type>
   requires kphp::coro::concepts::awaitable<awaitable_type> && std::is_same_v<typename awaitable_traits<awaitable_type>::awaiter_return_type, return_type>
   void push(awaitable_type awaitable) noexcept {
+    kphp::log::assertion(m_await_broker);
     m_await_broker->start_task(detail::await_set::make_await_set_task(std::move(awaitable)), m_coroutine_stack_root, STACK_RETURN_ADDRESS);
   }
 
   auto next() noexcept {
+    kphp::log::assertion(m_await_broker);
     return detail::await_set::await_set_awaitable<return_type>{*m_await_broker};
   }
 
@@ -56,6 +59,7 @@ public:
   }
 
   size_t size() const noexcept {
+    kphp::log::assertion(m_await_broker);
     return m_await_broker->size();
   }
 
