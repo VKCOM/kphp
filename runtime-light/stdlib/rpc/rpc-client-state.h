@@ -32,16 +32,6 @@ struct RpcClientInstanceState final : private vk::not_copyable {
   RpcClientInstanceState() noexcept = default;
 
   static RpcClientInstanceState& get() noexcept;
-
-  kphp::coro::task<void> ensure_ignore_answer_requests_sent() noexcept {
-    while (!ignore_answer_awaiter_tasks.empty()) {
-      const auto it_ignore_answer_awaiter{ignore_answer_awaiter_tasks.begin()};
-      const auto& [query_id, awaiter_task]{*it_ignore_answer_awaiter};
-
-      ignore_answer_awaiter_tasks.erase(it_ignore_answer_awaiter);
-      co_await awaiter_task.when_ready();
-    }
-  }
 };
 
 // ================================================================================================

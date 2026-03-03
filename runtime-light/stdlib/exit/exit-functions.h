@@ -28,20 +28,6 @@ inline kphp::coro::task<> f$exit(mixed v = 0) noexcept { // TODO: make it synchr
   }
   co_await kphp::forks::id_managed(instance_st.run_instance_epilogue());
 
-  /*
-   * Unlike regular RPC requests whose results the user code waits for via rpc_fetch_responses,
-   * thereby guaranteeing they are sent, the user code does not wait for requests sent with the
-   * ignore_answer flag. Therefore, we can’t guarantee that the coroutines responsible for
-   * sending ignore_answer requests have finished. This means the requests might not be sent
-   * if the instance terminates.
-   *
-   * This await suspends the current coroutine until all pending ignore_answer requests are
-   * fully sent. While suspended, other forks and coroutines may continue running.
-   *
-   * After this call completes, delivery of all ignore_answer requests is guaranteed.
-   */
-  co_await RpcClientInstanceState::get().ensure_ignore_answer_requests_sent();
-
   k2::exit(static_cast<int32_t>(exit_code));
 }
 
