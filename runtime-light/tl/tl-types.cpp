@@ -242,6 +242,9 @@ bool rpcReqResultExtra::fetch(tl::fetcher& tlf, const tl::mask& flags) noexcept 
   if (ok && static_cast<bool>(flags.value & STATS_FLAG)) {
     ok = opt_stats.emplace().fetch(tlf);
   }
+  if (ok && static_cast<bool>(flags.value & SHARDS_BINLOG_POS_FLAG)) {
+    ok = opt_shards_binlog_pos.emplace().fetch(tlf);
+  }
   if (ok && static_cast<bool>(flags.value & EPOCH_NUMBER_FLAG)) {
     kphp::log::assertion(static_cast<bool>(flags.value & VIEW_NUMBER_FLAG));
     ok = opt_epoch_number.emplace().fetch(tlf) && opt_view_number.emplace().fetch(tlf);
@@ -278,6 +281,10 @@ void rpcReqResultExtra::store(tl::storer& tls, const tl::mask& flags) const noex
     kphp::log::assertion(opt_stats.has_value());
     opt_stats->store(tls);
   }
+  if (static_cast<bool>(flags.value & SHARDS_BINLOG_POS_FLAG)) {
+    kphp::log::assertion(opt_shards_binlog_pos.has_value());
+    opt_shards_binlog_pos->store(tls);
+  }
   if (static_cast<bool>(flags.value & EPOCH_NUMBER_FLAG)) {
     kphp::log::assertion(opt_epoch_number.has_value() && static_cast<bool>(flags.value & VIEW_NUMBER_FLAG) && opt_view_number.has_value());
     opt_epoch_number->store(tls), opt_view_number->store(tls);
@@ -313,6 +320,10 @@ size_t rpcReqResultExtra::footprint(const tl::mask& flags) const noexcept {
   if (static_cast<bool>(flags.value & STATS_FLAG)) {
     kphp::log::assertion(opt_stats.has_value());
     footprint += opt_stats->footprint();
+  }
+  if (static_cast<bool>(flags.value & SHARDS_BINLOG_POS_FLAG)) {
+    kphp::log::assertion(opt_shards_binlog_pos.has_value());
+    footprint += opt_shards_binlog_pos->footprint();
   }
   if (static_cast<bool>(flags.value & EPOCH_NUMBER_FLAG)) {
     kphp::log::assertion(opt_epoch_number.has_value() && static_cast<bool>(flags.value & VIEW_NUMBER_FLAG) && opt_view_number.has_value());

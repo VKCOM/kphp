@@ -20,6 +20,7 @@
 #include "common/tl/compiler/tl-tl.h"
 #include "common/tl/constants/common.h"
 
+#include "vkext/vk_zend.h"
 #include "vkext/vkext-errors.h"
 #include "vkext/vkext-rpc-include.h"
 #include "vkext/vkext-rpc-req-error.h"
@@ -1330,6 +1331,16 @@ static zval *convert_rpc_extra_header_to_php_repr(const vkext_rpc::tl::RpcReqRes
       add_assoc_zval(stats_field, key.c_str(), &str_val);
     }
     set_field(&res, stats_field, "stats", -1); // it frees allocated zval for stats_field
+  }
+  if (header.shards_binlog_pos.has_value()) {
+    zval *shards_binlog_pos_field;
+    VK_ALLOC_INIT_ZVAL(shards_binlog_pos_field);
+    array_init(shards_binlog_pos_field);
+
+    for (const auto &[key, value] : header.shards_binlog_pos.value()) {
+      add_assoc_long(shards_binlog_pos_field, key.c_str(), value);
+    }
+    set_field(&res, shards_binlog_pos_field, "shards_binlog_pos", -1); // it frees allocated zval for shards_binlog_pos_field
   }
   if (header.epoch_number.has_value()) {
     set_field_int(&res, header.epoch_number.value(), "epoch_number", -1);

@@ -58,10 +58,17 @@ void RpcError::fetch_and_skip_header(int flags) const noexcept {
     tl_parse_int();
   }
   if (flags & vk::tl::common::rpc_req_result_extra_flags::stats) {
-    size_t n = tl_parse_int();
-    for (int i = 0; i < n; ++i) {
+    auto n{tl_parse_int()};
+    for (auto i{0}; i < n; ++i) {
       tl_parse_string();
       tl_parse_string();
+    }
+  }
+  if (flags & vk::tl::common::rpc_req_result_extra_flags::shards_binlog_pos) {
+    auto n{tl_parse_int()};
+    for (auto i{0}; i < n; ++i) {
+      tl_parse_string();
+      tl_parse_long();
     }
   }
   if (flags & vk::tl::common::rpc_req_result_extra_flags::epoch_number) {

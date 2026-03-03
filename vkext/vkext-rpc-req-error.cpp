@@ -44,6 +44,15 @@ void tl::RpcReqResultExtra::tl_fetch(int flags) {
       stats->emplace(std::move(key), std::move(val));
     }
   }
+  if (flags & vk::tl::common::rpc_req_result_extra_flags::shards_binlog_pos) {
+    size_t n = tl_parse_int();
+    shards_binlog_pos.emplace();
+    for (int i = 0; i < n; ++i) {
+      auto key = tl_parse_string();
+      auto val = tl_parse_long();
+      shards_binlog_pos->emplace(std::move(key), val);
+    }
+  }
   if (flags & vk::tl::common::rpc_req_result_extra_flags::epoch_number) {
     epoch_number = tl_parse_long();
   }
