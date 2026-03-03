@@ -361,7 +361,7 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
   kphp::log::assertion(kphp::coro::io_scheduler::get().start(awaiter_task));
 
   if (ignore_answer) {
-    rpc_client_instance_st.ignore_answer_awaiter_tasks.emplace(query_id, std::move(awaiter_task));
+    rpc_client_instance_st.ignore_answer_request_awaiter_tasks.push(std::move(awaiter_task));
     co_return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
   }
   rpc_client_instance_st.response_awaiter_tasks.emplace(query_id, std::move(awaiter_task));

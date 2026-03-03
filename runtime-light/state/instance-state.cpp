@@ -27,6 +27,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
+#include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/time/time-functions.h"
 #include "runtime-light/streams/read-ext.h"
 #include "runtime-light/streams/stream.h"
@@ -227,8 +228,10 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
    *
    * After this call completes, delivery of all ignore_answer requests is guaranteed.
    */
-  const auto ignore_answer_tasks{RpcClientInstanceState::get().ignore_answer_awaiter_tasks};
-  for (const auto& [_, awaiter_task] : ignore_answer_tasks) {
-    co_await awaiter_task.when_ready();
+  auto& rpc_client_instance_st{RpcClientInstanceState::get()};
+  auto ignore_answer_request_await_set{std::move(rpc_client_instance_st.ignore_answer_request_awaiter_tasks)};
+  rpc_client_instance_st.ignore_answer_request_awaiter_tasks.reset();
+  while (!ignore_answer_request_await_set.empty()) {
+    co_await ignore_answer_request_await_set.next();
   }
 }

@@ -59,8 +59,9 @@ public:
     return m_await_broker->size();
   }
 
-  ~await_set() {
-    m_await_broker.release();
+  void reset() noexcept {
+    m_await_broker = std::make_unique<detail::await_set::await_broker<return_type>>();
+    m_coroutine_stack_root = CoroutineInstanceState::get().coroutine_stack_root;
   }
 };
 
