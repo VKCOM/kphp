@@ -39,8 +39,8 @@ inline constexpr uint32_t GET_CRYPTOSECURE_PSEUDORANDOM_BYTES_MAGIC = 0x2491'b81
 inline constexpr uint32_t GET_PEM_CERT_INFO_MAGIC = 0xa50c'fd6c;
 inline constexpr uint32_t DIGEST_SIGN_MAGIC = 0xd345'f658;
 inline constexpr uint32_t DIGEST_VERIFY_MAGIC = 0x5760'bd0e;
-inline constexpr uint32_t CBC_DECRYPT_MAGIC = 0x7f2e'e1e4;
-inline constexpr uint32_t CBC_ENCRYPT_MAGIC = 0x6d4e'e36a;
+inline constexpr uint32_t DECRYPT_MAGIC = 0x7f2e'e1e4;
+inline constexpr uint32_t ENCRYPT_MAGIC = 0x6d4e'e36a;
 inline constexpr uint32_t GET_PUBLIC_KEY_MAGIC = 0x4b1e'7d3d;
 inline constexpr uint32_t GET_PRIVATE_KEY_MAGIC = 0x34ea'dfdb;
 inline constexpr uint32_t PUBLIC_ENCRYPT_MAGIC = 0x7612'f4ad;
@@ -112,45 +112,55 @@ struct DigestVerify final {
   }
 };
 
-struct CbcDecrypt final {
+struct Decrypt final {
   tl::CipherAlgorithm algorithm{};
   tl::BlockPadding padding{};
   tl::string passphrase;
   tl::string iv;
+  tl::string tag;
+  tl::string aad;
   tl::string data;
 
   void store(tl::storer& tls) const noexcept {
-    tl::magic{.value = CBC_DECRYPT_MAGIC}.store(tls);
+    tl::magic{.value = DECRYPT_MAGIC}.store(tls);
     tls.store_trivial<uint32_t>(algorithm);
     tls.store_trivial<uint32_t>(padding);
     passphrase.store(tls);
     iv.store(tls);
+    tag.store(tls);
+    aad.store(tls);
     data.store(tls);
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = CBC_DECRYPT_MAGIC}.footprint() + sizeof(uint32_t) + sizeof(uint32_t) + passphrase.footprint() + iv.footprint() + data.footprint();
+    return tl::magic{.value = DECRYPT_MAGIC}.footprint() + sizeof(uint32_t) + sizeof(uint32_t) + passphrase.footprint() + iv.footprint() + tag.footprint() +
+           aad.footprint() + data.footprint();
   }
 };
 
-struct CbcEncrypt final {
+struct Encrypt final {
   tl::CipherAlgorithm algorithm{};
   tl::BlockPadding padding{};
   tl::string passphrase;
   tl::string iv;
+  tl::i64 tag_size;
+  tl::string aad;
   tl::string data;
 
   void store(tl::storer& tls) const noexcept {
-    tl::magic{.value = CBC_ENCRYPT_MAGIC}.store(tls);
+    tl::magic{.value = ENCRYPT_MAGIC}.store(tls);
     tls.store_trivial<uint32_t>(algorithm);
     tls.store_trivial<uint32_t>(padding);
     passphrase.store(tls);
     iv.store(tls);
+    tag_size.store(tls);
+    aad.store(tls);
     data.store(tls);
   }
 
   constexpr size_t footprint() const noexcept {
-    return tl::magic{.value = CBC_ENCRYPT_MAGIC}.footprint() + sizeof(uint32_t) + sizeof(uint32_t) + passphrase.footprint() + iv.footprint() + data.footprint();
+    return tl::magic{.value = ENCRYPT_MAGIC}.footprint() + sizeof(uint32_t) + sizeof(uint32_t) + passphrase.footprint() + iv.footprint() +
+           tag_size.footprint() + aad.footprint() + data.footprint();
   }
 };
 
