@@ -17,6 +17,7 @@
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/core/globals/php-script-globals.h"
+#include "runtime-light/coroutine/await-set.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/cli/init-functions.h"
