@@ -229,8 +229,7 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
    * After this call completes, delivery of all ignore_answer requests is guaranteed.
    */
   auto& rpc_client_instance_st{RpcClientInstanceState::get()};
-  auto ignore_answer_request_await_set{std::move(rpc_client_instance_st.ignore_answer_request_awaiter_tasks)};
-  rpc_client_instance_st.ignore_answer_request_awaiter_tasks.reset();
+  auto ignore_answer_request_await_set{std::exchange(rpc_client_instance_st.ignore_answer_request_awaiter_tasks, kphp::coro::await_set<void>{})};
   while (!ignore_answer_request_await_set.empty()) {
     co_await ignore_answer_request_await_set.next();
   }

@@ -344,6 +344,11 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
     co_return std::move(opt_response);
   }};
 
+  static constexpr auto ignore_answer_awaiter_coroutine{[](kphp::component::stream stream, std::chrono::milliseconds timeout) -> kphp::coro::shared_task<void> {
+    auto fetch_task{kphp::component::fetch_response(stream, [](std::span<const std::byte>) noexcept {})};
+    std::ignore = co_await kphp::coro::io_scheduler::get().schedule(std::move(fetch_task), timeout);
+  }};
+
   // normalize timeout
   using namespace std::chrono_literals;
   static constexpr auto DEFAULT_TIMEOUT{300ms};
@@ -356,14 +361,18 @@ kphp::coro::task<kphp::rpc::query_info> send_request(std::string_view actor, std
                                     })
                                     .value_or(DEFAULT_TIMEOUT),
                                 MIN_TIMEOUT, MAX_TIMEOUT)};
+  if (ignore_answer) {
+    // start ignore answer awaiter task
+    auto ignore_answer_awaiter_task{ignore_answer_awaiter_coroutine(std::move(stream), timeout)};
+    kphp::log::assertion(kphp::coro::io_scheduler::get().start(ignore_answer_awaiter_task));
+
+    rpc_client_instance_st.ignore_answer_request_awaiter_tasks.push(std::move(ignore_answer_awaiter_task));
+    co_return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
+  }
   // start awaiter task
   auto awaiter_task{awaiter_coroutine(query_id, std::move(stream), timeout, collect_responses_extra_info)};
   kphp::log::assertion(kphp::coro::io_scheduler::get().start(awaiter_task));
 
-  if (ignore_answer) {
-    rpc_client_instance_st.ignore_answer_request_awaiter_tasks.push(std::move(awaiter_task));
-    co_return kphp::rpc::query_info{.id = kphp::rpc::IGNORED_ANSWER_QUERY_ID, .request_size = request_size, .timestamp = timestamp};
-  }
   rpc_client_instance_st.response_awaiter_tasks.emplace(query_id, std::move(awaiter_task));
   co_return kphp::rpc::query_info{.id = query_id, .request_size = request_size, .timestamp = timestamp};
 }
