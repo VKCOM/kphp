@@ -104,9 +104,14 @@ void CombinatorStore::gen_arg_processing(CodeGenerator &W, const std::unique_ptr
       W << "auto _cur_arg = "
         << fmt_format("tl_arr_get(tl_object, {}, {}, {}L)", tl2cpp::register_tl_const_str(arg->name), arg->idx, tl2cpp::hash_tl_const_str(arg->name))
         << ";" << NL;
-      W << "string target_f_name = "
-        << fmt_format("tl_arr_get(_cur_arg, {}, 0, {}L).as_string()", tl2cpp::register_tl_const_str("_"), tl2cpp::hash_tl_const_str("_"))
+      W << "mixed target_f_name_mixed = "
+        << fmt_format("tl_arr_get(_cur_arg, {}, 0, {}L)", tl2cpp::register_tl_const_str("_"), tl2cpp::hash_tl_const_str("_"))
         << ";" << NL;
+      W << "if (!target_f_name_mixed.is_string()) " << BEGIN
+        << R"(CurrentTlQuery::get().raise_storing_error("Field \"_\" of \")" << arg->name << R"(\" array is not string");)" << NL
+        << "return {};" << NL
+        << END << NL;
+      W << "string target_f_name = target_f_name_mixed.as_string();" << NL;
       W << fmt_format("if (!{}tl_storers_ht.has_key(target_f_name)) ", k2_tl_storers_prefix) << BEGIN
         << "CurrentTlQuery::get().raise_storing_error(\"Function %s not found in tl-scheme\", target_f_name.c_str());" << NL
         << "return {};" << NL
