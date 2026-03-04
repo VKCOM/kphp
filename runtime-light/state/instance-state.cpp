@@ -17,6 +17,7 @@
 #include "runtime-common/core/std/containers.h"
 #include "runtime-light/core/globals/php-init-scripts.h"
 #include "runtime-light/core/globals/php-script-globals.h"
+#include "runtime-light/coroutine/await-set.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/cli/init-functions.h"
@@ -27,6 +28,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
+#include "runtime-light/stdlib/rpc/rpc-client-state.h"
 #include "runtime-light/stdlib/time/time-functions.h"
 #include "runtime-light/streams/read-ext.h"
 #include "runtime-light/streams/stream.h"
@@ -213,5 +215,23 @@ kphp::coro::task<> InstanceState::run_instance_epilogue() noexcept {
   if (auto& web_state{WebInstanceState::get()}; web_state.session.has_value()) {
     web_state.session_is_finished = true;
     web_state.session.reset();
+  }
+
+  /*
+   * Unlike regular RPC requests whose results the user code waits for via rpc_fetch_responses,
+   * thereby guaranteeing they are sent, the user code does not wait for requests sent with the
+   * ignore_answer flag. Therefore, we can’t guarantee that the coroutines responsible for
+   * sending ignore_answer requests have finished. This means the requests might not be sent
+   * if the instance terminates.
+   *
+   * This await suspends the current coroutine until all pending ignore_answer requests are
+   * fully sent. While suspended, other forks and coroutines may continue running.
+   *
+   * After this call completes, delivery of all ignore_answer requests is guaranteed.
+   */
+  auto& rpc_client_instance_st{RpcClientInstanceState::get()};
+  auto ignore_answer_request_await_set{std::exchange(rpc_client_instance_st.ignore_answer_request_awaiter_tasks, kphp::coro::await_set<void>{})};
+  while (!ignore_answer_request_await_set.empty()) {
+    co_await ignore_answer_request_await_set.next();
   }
 }
