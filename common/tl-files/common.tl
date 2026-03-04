@@ -102,6 +102,7 @@ rpcReqResultExtra#c5011709 {flags:#}
     failed_subqueries:flags.4?int
     compression_version:flags.5?int
     stats:flags.6?%(Dictionary string)
+    shards_binlog_pos:flags.14?%(Dictionary long)
     epoch_number:flags.27?%long view_number:flags.27?%long
     = RpcReqResultExtra flags;
 

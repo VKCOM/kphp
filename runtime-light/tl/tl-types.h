@@ -1252,6 +1252,7 @@ class rpcReqResultExtra final {
   static constexpr uint32_t FAILED_SUBQUERIES_FLAG = vk::tl::common::rpc_req_result_extra_flags::failed_subqueries;
   static constexpr uint32_t COMPRESSION_VERSION_FLAG = vk::tl::common::rpc_req_result_extra_flags::compression_version;
   static constexpr uint32_t STATS_FLAG = vk::tl::common::rpc_req_result_extra_flags::stats;
+  static constexpr uint32_t SHARDS_BINLOG_POS_FLAG = vk::tl::common::rpc_req_result_extra_flags::shards_binlog_pos;
   static constexpr uint32_t EPOCH_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::epoch_number;
   static constexpr uint32_t VIEW_NUMBER_FLAG = vk::tl::common::rpc_req_result_extra_flags::view_number;
 
@@ -1264,6 +1265,7 @@ public:
   std::optional<tl::i32> opt_failed_subqueries;
   std::optional<tl::i32> opt_compression_version;
   std::optional<tl::dictionary<tl::string>> opt_stats;
+  std::optional<tl::dictionary<tl::i64>> opt_shards_binlog_pos;
   std::optional<tl::i64> opt_epoch_number;
   std::optional<tl::i64> opt_view_number;
 

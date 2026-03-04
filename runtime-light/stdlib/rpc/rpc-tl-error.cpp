@@ -26,6 +26,10 @@ bool TlRpcError::try_fetch() noexcept {
       return false;
     }
     fetcher = tl::fetcher{req_result_header.result};
+    if (!magic.fetch(fetcher)) [[unlikely]] {
+      THROW_EXCEPTION(kphp::rpc::exception::not_enough_data_to_fetch::make());
+      return false;
+    }
   }
   if (!magic.expect(TL_RPC_REQ_ERROR)) {
     return false;

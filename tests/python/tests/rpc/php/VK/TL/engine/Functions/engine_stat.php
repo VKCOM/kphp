@@ -69,7 +69,7 @@ class engine_stat implements TL\RpcFunction {
    *
    * @return TL\RpcFunctionFetcher
    */
-  public function typedStore(){
+  public function typedStore() {
     return null;
   }
 
@@ -78,7 +78,7 @@ class engine_stat implements TL\RpcFunction {
    *
    * @return TL\RpcFunctionFetcher
    */
-  public function typedFetch(){
+  public function typedFetch() {
     return null;
   }
 

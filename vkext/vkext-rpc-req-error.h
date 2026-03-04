@@ -30,6 +30,7 @@ struct RpcReqResultExtra {
   std::optional<int> failed_subqueries;
   std::optional<int> compression_version;
   std::optional<std::map<std::string, std::string>> stats;
+  std::optional<std::map<std::string, long long>> shards_binlog_pos;
   std::optional<long long> epoch_number;
   std::optional<long long> view_number;
 

@@ -89,9 +89,10 @@ inline constexpr uint32_t response_size = 1U << 3U;
 inline constexpr uint32_t failed_subqueries = 1U << 4U;
 inline constexpr uint32_t compression_version = 1U << 5U;
 inline constexpr uint32_t stats = 1U << 6U;
+inline constexpr uint32_t shards_binlog_pos = 1U << 14U;
 inline constexpr uint32_t epoch_number = 1U << 27U;
 inline constexpr uint32_t view_number = 1U << 27U;
-inline constexpr uint32_t ALL = 0x0800007f;
+inline constexpr uint32_t ALL = 0x0800407f;
 } // namespace rpc_req_result_extra_flags
 
 } // namespace common

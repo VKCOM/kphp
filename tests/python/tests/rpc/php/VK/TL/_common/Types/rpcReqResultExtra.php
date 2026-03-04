@@ -39,6 +39,9 @@ class rpcReqResultExtra {
   /** Field mask for $stats field */
   const BIT_STATS_6 = (1 << 6);
 
+  /** Field mask for $shards_binlog_pos field */
+  const BIT_SHARDS_BINLOG_POS_14 = (1 << 14);
+
   /** Field mask for $epoch_number field */
   const BIT_EPOCH_NUMBER_27 = (1 << 27);
 
@@ -68,6 +71,9 @@ class rpcReqResultExtra {
 
   /** @var string[]|null */
   public $stats = null;
+
+  /** @var int[]|null */
+  public $shards_binlog_pos = null;
 
   /** @var int|null */
   public $epoch_number = null;
@@ -113,6 +119,10 @@ class rpcReqResultExtra {
 
     if ($this->stats !== null) {
       $mask |= self::BIT_STATS_6;
+    }
+
+    if ($this->shards_binlog_pos !== null) {
+      $mask |= self::BIT_SHARDS_BINLOG_POS_14;
     }
 
     if ($this->epoch_number !== null && $this->view_number !== null) {
