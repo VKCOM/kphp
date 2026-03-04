@@ -326,9 +326,9 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
       f$parse_str(body, superglobals.v$_POST);
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
     } else if (!std::ranges::search(content_type, CONTENT_TYPE_MULTIPART_FORM_DATA).empty()) {
-      std::optional<std::string_view> boundary{parse_boundary(content_type)};
-      if (!boundary) {
-        kphp::http::parse_multipart({body.c_str(), body.size()}, boundary.value(), superglobals.v$_POST, superglobals.v$_FILES);
+      auto boundary_opt{kphp::http::multipart::extract_boundary(content_type)};
+      if (boundary_opt.has_value()) {
+        kphp::http::multipart::parse_multipart({body.c_str(), body.size()}, *boundary_opt, superglobals.v$_POST, superglobals.v$_FILES);
       }
     } else {
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
