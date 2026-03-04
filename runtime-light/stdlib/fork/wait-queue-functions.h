@@ -28,6 +28,10 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
   }
 
   auto& await_set{(*opt_await_set).get()};
+  if (await_set.empty()) { // if await_set is empty we don't want to suspend the function
+    co_return std::nullopt;
+  }
+
   static constexpr auto wait_queue_next_task{
       [](auto await_set_awaitable) noexcept -> kphp::coro::task<std::optional<int64_t>> { co_return co_await std::move(await_set_awaitable); }};
   auto wait_result{co_await kphp::coro::io_scheduler::get().schedule(wait_queue_next_task(await_set.next()), kphp::forks::detail::normalize_timeout(timeout))};
@@ -99,7 +103,7 @@ inline bool f$wait_queue_empty(int64_t queue_id) noexcept {
 inline kphp::coro::task<Optional<int64_t>> f$wait_queue_next(int64_t queue_id, double timeout = -1.0) noexcept {
   auto opt_result{co_await kphp::forks::id_managed(
       kphp::forks::wait_queue_next(queue_id, std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout})))};
-  co_return opt_result ? *opt_result : Optional<int64_t>{};
+  co_return opt_result ? *opt_result : Optional<int64_t>{false};
 }
 
 inline int64_t f$wait_queue_create() noexcept {
