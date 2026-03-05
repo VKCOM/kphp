@@ -30,10 +30,10 @@
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
+#include "runtime-light/stdlib/file/file-system-functions.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/server/http-functions.h"
 #include "runtime-light/stdlib/zlib/zlib-functions.h"
-#include "runtime-light/stdlib/file/file-system-functions.h"
 #include "runtime-light/streams/stream.h"
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
@@ -326,9 +326,9 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
       f$parse_str(body, superglobals.v$_POST);
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
     } else if (!std::ranges::search(content_type, CONTENT_TYPE_MULTIPART_FORM_DATA).empty()) {
-      auto boundary_opt{kphp::http::multipart::extract_boundary(content_type)};
+      auto boundary_opt{kphp::http::extract_boundary(content_type)};
       if (boundary_opt.has_value()) {
-        kphp::http::multipart::parse_multipart({body.c_str(), body.size()}, *boundary_opt, superglobals.v$_POST, superglobals.v$_FILES);
+        kphp::http::process_multipart_content_type({body.c_str(), body.size()}, *boundary_opt, superglobals);
       }
     } else {
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
@@ -401,12 +401,12 @@ kphp::coro::task<> finalize_server() noexcept {
     }
     // fill headers
     http_response.http_response.headers.value.reserve(http_server_instance_st.headers().size());
-    std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(),
-                   std::back_inserter(http_response.http_response.headers.value), [](const auto& header_entry) noexcept {
-                     const auto& [name, value]{header_entry};
-                     return tl::httpHeaderEntry{
-                         .is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
-                   });
+    std::transform(
+        http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.http_response.headers.value),
+        [](const auto& header_entry) noexcept {
+          const auto& [name, value]{header_entry};
+          return tl::httpHeaderEntry{.is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
+        });
     http_server_instance_st.response_state = kphp::http::response_state::headers_sent;
     [[fallthrough]];
   }
