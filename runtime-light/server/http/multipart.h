@@ -5,11 +5,11 @@
 #include <optional>
 #include <string_view>
 
-#include "runtime-common/core/runtime-core.h"
+#include "runtime-light/core/globals/php-script-globals.h"
 
-namespace kphp::http::multipart {
+namespace kphp::http {
 
-void parse_multipart(std::string_view body, std::string_view boundary, mixed& v$_POST, mixed& v$_FILES);
+void process_multipart_content_type(std::string_view body, std::string_view boundary, PhpScriptBuiltInSuperGlobals& superglobals) noexcept;
 
 std::optional<std::string_view> extract_boundary(std::string_view content_type) noexcept;
 
