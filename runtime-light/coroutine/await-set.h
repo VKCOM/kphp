@@ -55,7 +55,11 @@ public:
   }
 
   auto try_get_result() noexcept {
-    return m_await_broker->try_get_result();
+    using result_type = std::optional<decltype(std::declval<detail::await_set::await_set_task<return_type>>().result())>;
+    if (m_await_broker == nullptr) [[unlikely]] {
+      return result_type{std::nullopt};
+    }
+    return result_type{m_await_broker->try_get_result()};
   }
 
   bool empty() const noexcept {

@@ -54,7 +54,8 @@ inline int64_t rpc_queue_create(std::span<int64_t> request_ids) noexcept {
   return queue_id;
 }
 
-inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id, std::chrono::nanoseconds timeout) noexcept {
+template<kphp::concepts::duration duration_type>
+inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id, duration_type timeout) noexcept {
   static constexpr auto rpc_queue_next_task{
       [](auto await_set_awaitable) noexcept -> kphp::coro::task<std::optional<int64_t>> { co_return co_await std::move(await_set_awaitable); }};
 
@@ -71,17 +72,15 @@ inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id,
     co_return std::nullopt;
   }
 
-  using namespace std::chrono_literals;
-  if (timeout == 0ns) {
-    auto value{await_set.try_get_result()};
-    if (!value.has_value()) {
-      co_return std::nullopt;
-    }
-    co_return *value;
+  if (timeout == duration_type::zero()) {
+    co_return await_set.try_get_result();
   }
 
-  const auto expected_next{
-      co_await kphp::coro::io_scheduler::get().schedule(rpc_queue_next_task(await_set.next()), kphp::forks::detail::normalize_timeout(timeout))};
+  timeout = (std::clamp(timeout, duration_type::zero(), static_cast<duration_type>(kphp::forks::detail::MAX_TIMEOUT_NS)) != timeout)
+                ? static_cast<duration_type>(kphp::forks::detail::DEFAULT_TIMEOUT_NS)
+                : timeout;
+
+  const auto expected_next{co_await kphp::coro::io_scheduler::get().schedule(rpc_queue_next_task(await_set.next()), timeout)};
   if (!expected_next) {
     co_return std::nullopt;
   }

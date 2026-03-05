@@ -15,6 +15,7 @@
 
 #include "runtime-common/core/allocator/script-malloc-interface.h"
 #include "runtime-light/coroutine/async-stack.h"
+#include "runtime-light/coroutine/void-value.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 namespace kphp::coro {
@@ -330,9 +331,14 @@ struct shared_task final {
     return awaiter{std::coroutine_handle<promise_type>::from_address(m_haddress)};
   }
 
-  std::optional<T> try_get_result() noexcept {
+  auto try_get_result() const noexcept {
     const auto& promise{std::coroutine_handle<promise_type>::from_address(m_haddress).promise()};
-    return promise.done() ? std::optional<T>{promise.result()} : std::nullopt;
+
+    if constexpr (std::is_void_v<T>) {
+      return promise.done() ? std::optional{kphp::coro::void_value{}} : std::nullopt;
+    } else {
+      return promise.done() ? std::optional{promise.result()} : std::nullopt;
+    }
   }
 
   auto when_ready() const noexcept {
