@@ -54,6 +54,10 @@ public:
     return detail::await_set::await_set_awaitable<return_type>{*m_await_broker};
   }
 
+  auto try_get_result() noexcept {
+    return m_await_broker->try_get_result();
+  }
+
   bool empty() const noexcept {
     return size() == 0;
   }

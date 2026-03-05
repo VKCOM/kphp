@@ -32,6 +32,23 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
     co_return std::nullopt;
   }
 
+  static constexpr auto open_access_for_awaiting_future{[](int64_t fork_id) noexcept -> int64_t {
+    auto opt_info{ForkInstanceState::get().get_info(fork_id)};
+    kphp::log::assertion(opt_info.has_value());
+    auto fork_info{*opt_info};
+    fork_info.get().awaited = false; // Open access for awaiting the future. See the comment for wait_queue_push.
+    return fork_id;
+  }};
+
+  using namespace std::chrono_literals;
+  if (timeout == 0ns) {
+    auto value{await_set.try_get_result()};
+    if (!value.has_value()) {
+      co_return std::nullopt;
+    }
+    co_return open_access_for_awaiting_future(*value);
+  }
+
   static constexpr auto wait_queue_next_task{
       [](auto await_set_awaitable) noexcept -> kphp::coro::task<std::optional<int64_t>> { co_return co_await std::move(await_set_awaitable); }};
   auto wait_result{co_await kphp::coro::io_scheduler::get().schedule(wait_queue_next_task(await_set.next()), kphp::forks::detail::normalize_timeout(timeout))};
@@ -40,11 +57,7 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
   }
 
   if (auto opt_future{*wait_result}; opt_future.has_value()) {
-    auto opt_info{ForkInstanceState::get().get_info(*opt_future)};
-    kphp::log::assertion(opt_info.has_value());
-    auto fork_info{(*opt_info)};
-    fork_info.get().awaited = false; // Open access for awaiting the future. See the comment for wait_queue_push.
-    co_return *opt_future;
+    co_return open_access_for_awaiting_future(*opt_future);
   } else {
     kphp::log::warning("await set associated with the wait queue was destroyed");
     co_return kphp::forks::INVALID_ID;

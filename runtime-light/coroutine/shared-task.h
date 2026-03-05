@@ -330,6 +330,11 @@ struct shared_task final {
     return awaiter{std::coroutine_handle<promise_type>::from_address(m_haddress)};
   }
 
+  std::optional<T> try_get_result() noexcept {
+    const auto& promise{std::coroutine_handle<promise_type>::from_address(m_haddress).promise()};
+    return promise.done() ? std::optional<T>{promise.result()} : std::nullopt;
+  }
+
   auto when_ready() const noexcept {
     using awaiter_base = shared_task_impl::awaiter_base<promise_type>;
     struct awaiter final : public awaiter_base {
