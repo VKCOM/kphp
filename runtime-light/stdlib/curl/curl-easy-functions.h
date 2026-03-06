@@ -13,7 +13,6 @@
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/curl/defs.h"
 #include "runtime-light/stdlib/curl/details/diagnostics.h"
-#include "runtime-light/stdlib/curl/details/normalize-timeout.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/output/print-functions.h"
