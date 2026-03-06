@@ -15,8 +15,7 @@ namespace kphp::http::multipart {
 constexpr std::string_view MULTIPART_BOUNDARY_EQ = "boundary=";
 
 inline void process_multipart_content_type(std::string_view body, std::string_view boundary, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
-  for (auto part : details::parse_multipart_parts(body, boundary)) {
-    kphp::log::info("process multipart name_attribute {}", part.name_attribute);
+  for (const auto& part : details::parse_multipart_parts(body, boundary)) {
     if (part.filename_attribute.has_value()) {
       details::process_upload_multipart(part, superglobals.v$_FILES);
     } else {
@@ -26,7 +25,7 @@ inline void process_multipart_content_type(std::string_view body, std::string_vi
 }
 
 inline std::optional<std::string_view> extract_boundary(std::string_view content_type) noexcept {
-  size_t pos{content_type.find(MULTIPART_BOUNDARY_EQ)};
+  const size_t pos{content_type.find(MULTIPART_BOUNDARY_EQ)};
   if (pos == std::string_view::npos) {
     return std::nullopt;
   }
