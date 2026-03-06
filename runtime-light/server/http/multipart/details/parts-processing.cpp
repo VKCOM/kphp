@@ -40,7 +40,7 @@ namespace kphp::http::multipart::details {
 void process_post_multipart(const kphp::http::multipart::details::part& part, mixed& post) noexcept {
   const string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size())};
   const string body{part.body.data(), static_cast<string::size_type>(part.body.size())};
-  if (part.content_type.has_value() && (*part.content_type) == CONTENT_TYPE_APP_FORM_URLENCODED) {
+  if (part.content_type.has_value() && !std::ranges::search(*part.content_type, CONTENT_TYPE_APP_FORM_URLENCODED).empty()) {
     f$parse_str(body, post[name]);
   } else {
     post.set_value(name, string(part.body.data(), part.body.size()));
