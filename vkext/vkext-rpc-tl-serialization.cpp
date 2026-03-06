@@ -943,8 +943,11 @@ bool store_function2(VK_ZVAL_API_P arr, zval *fetcher) {
     END_TIMER(store_function2)
     return false;
   }
-  if (Z_TYPE_P(fetcher) != IS_OBJECT) { // returned null or function not found
-    fprintf(stderr, "typedStore fetcher type is %d\n", Z_TYPE_P(fetcher));
+  if (Z_TYPE_P(fetcher) != IS_OBJECT) {
+    // returned null or function not found (undef) or function returned something unexpected
+    if (Z_TYPE_P(fetcher) != IS_NULL) {
+      fprintf(stderr, "typedStore fetcher unexpected type is %d\n", Z_TYPE_P(fetcher));
+    }
     END_TIMER(store_function2)
     return false;
   }
@@ -1463,7 +1466,8 @@ zval *fetch_function2(zval *fetcher) {
     END_TIMER(fetch_function2)
     return _err;
   }
-  fprintf(stderr, "typedFetch after call %d\n", Z_TYPE_P(return_value));
+  // TODO - will remove later when everything works
+  // fprintf(stderr, "typedFetch after call %d\n", Z_TYPE_P(return_value));
   if (Z_TYPE_P(return_value) != IS_OBJECT) { // should be never, but that is user code
     zval *_err = create_php_instance(reqResult_error_class_name);
     vk_zend_update_public_property_string(_err, "error", "fetcher->typedFetch() did not return object, as expected");
