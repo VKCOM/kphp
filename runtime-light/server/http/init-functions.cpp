@@ -26,7 +26,7 @@
 #include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/server/http/http-server-state.h"
-#include "runtime-light/server/http/multipart.h"
+#include "runtime-light/server/http/multipart/multipart.h"
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -326,9 +326,9 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
       f$parse_str(body, superglobals.v$_POST);
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
     } else if (!std::ranges::search(content_type, CONTENT_TYPE_MULTIPART_FORM_DATA).empty()) {
-      auto boundary_opt{kphp::http::extract_boundary(content_type)};
+      auto boundary_opt{kphp::http::multipart::extract_boundary(content_type)};
       if (boundary_opt.has_value()) {
-        kphp::http::process_multipart_content_type({body.c_str(), body.size()}, *boundary_opt, superglobals);
+        kphp::http::multipart::process_multipart_content_type({body.c_str(), body.size()}, *boundary_opt, superglobals);
       }
     } else {
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
