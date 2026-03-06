@@ -68,7 +68,7 @@ auto wait(int64_t fork_id, duration_type timeout) noexcept -> kphp::coro::task<s
 
   static constexpr auto finalize_and_load_result{[](std::reference_wrapper<ForkInstanceState::fork_info> fork_info,
                                                     std::reference_wrapper<ForkInstanceState::fork_info> current_fork_info,
-                                                    kphp::forks::details::storage&& storage) noexcept -> return_type {
+                                                    kphp::forks::details::storage& storage) noexcept -> return_type {
     // Execute essential housekeeping tasks to maintain proper state management.
     // 1. Check for any exceptions that may have occurred during the fork execution. If an exception is found, propagate it to the current fork.
     //    Clean fork_info's exception state.
@@ -83,7 +83,7 @@ auto wait(int64_t fork_id, duration_type timeout) noexcept -> kphp::coro::task<s
 
   if (timeout == duration_type::zero()) {
     auto opt_storage{std::move(fork_task).try_get_result()};
-    co_return opt_storage.has_value() ? std::optional{finalize_and_load_result(fork_info, current_fork_info, std::move(*opt_storage))} : std::nullopt;
+    co_return opt_storage.has_value() ? std::optional{finalize_and_load_result(fork_info, current_fork_info, *opt_storage)} : std::nullopt;
   }
 
   // WARNING: must be synchronized with runtime-light/stdlib/curl/curl-easy-functions.h::f$curl_exec_concurrently(...)
@@ -99,7 +99,7 @@ auto wait(int64_t fork_id, duration_type timeout) noexcept -> kphp::coro::task<s
     co_return std::nullopt;
   }
 
-  co_return finalize_and_load_result(fork_info, current_fork_info, std::move(*expected));
+  co_return finalize_and_load_result(fork_info, current_fork_info, *expected);
 }
 
 } // namespace kphp::forks
