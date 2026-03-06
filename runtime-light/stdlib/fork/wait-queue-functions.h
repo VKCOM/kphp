@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <chrono>
 #include <cstdint>
 #include <optional>
@@ -19,7 +20,8 @@
 
 namespace kphp::forks {
 
-inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id, std::chrono::nanoseconds timeout) noexcept {
+template<kphp::concepts::duration duration_type>
+inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id, duration_type timeout) noexcept {
   auto& wait_queue_instance_st{WaitQueueInstanceState::get()};
   auto opt_await_set{wait_queue_instance_st.get_queue(queue_id)};
   if (!opt_await_set.has_value()) [[unlikely]] {
@@ -32,23 +34,38 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
     co_return std::nullopt;
   }
 
+  static constexpr auto return_awaitable_future{[](int64_t fork_id) noexcept -> int64_t {
+    auto opt_info{ForkInstanceState::get().get_info(fork_id)};
+    kphp::log::assertion(opt_info.has_value());
+    auto fork_info{*opt_info};
+    fork_info.get().awaited = false; // Open access for awaiting the future. See the comment for wait_queue_push.
+    return fork_id;
+  }};
+
+  if (timeout == duration_type::zero()) {
+    auto value{await_set.try_next()};
+    co_return value.has_value() ? std::optional{return_awaitable_future(*value)} : std::nullopt;
+  }
+
   static constexpr auto wait_queue_next_task{
       [](auto await_set_awaitable) noexcept -> kphp::coro::task<std::optional<int64_t>> { co_return co_await std::move(await_set_awaitable); }};
-  auto wait_result{co_await kphp::coro::io_scheduler::get().schedule(wait_queue_next_task(await_set.next()), kphp::forks::detail::normalize_timeout(timeout))};
+
+  using namespace std::chrono_literals;
+  constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<duration_type>(24h)};
+  constexpr auto DEFAULT_TIMEOUT{MAX_TIMEOUT};
+
+  timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;
+
+  auto wait_result{co_await kphp::coro::io_scheduler::get().schedule(wait_queue_next_task(await_set.next()), timeout)};
   if (!wait_result) {
     co_return std::nullopt;
   }
 
   if (auto opt_future{*wait_result}; opt_future.has_value()) {
-    auto opt_info{ForkInstanceState::get().get_info(*opt_future)};
-    kphp::log::assertion(opt_info.has_value());
-    auto fork_info{(*opt_info)};
-    fork_info.get().awaited = false; // Open access for awaiting the future. See the comment for wait_queue_push.
-    co_return *opt_future;
-  } else {
-    kphp::log::warning("await set associated with the wait queue was destroyed");
-    co_return kphp::forks::INVALID_ID;
+    co_return return_awaitable_future(*opt_future);
   }
+  kphp::log::warning("await set associated with the wait queue was destroyed");
+  co_return kphp::forks::INVALID_ID;
 }
 
 inline void wait_queue_push(int64_t queue_id, int64_t fork_id) noexcept {

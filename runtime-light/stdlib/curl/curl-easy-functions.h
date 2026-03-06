@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <optional>
 
@@ -12,7 +14,6 @@
 #include "runtime-light/stdlib/curl/curl-state.h"
 #include "runtime-light/stdlib/curl/defs.h"
 #include "runtime-light/stdlib/curl/details/diagnostics.h"
-#include "runtime-light/stdlib/curl/details/normalize-timeout.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/fork/fork-functions.h"
 #include "runtime-light/stdlib/output/print-functions.h"
@@ -451,14 +452,27 @@ inline auto f$curl_reset(kphp::web::curl::easy_type easy_id) noexcept -> kphp::c
 }
 
 inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double timeout_sec = 1.0) noexcept -> kphp::coro::task<Optional<string>> {
+  using duration_type = std::chrono::seconds;
+  auto timeout{std::chrono::duration_cast<duration_type>(std::chrono::duration<double>{timeout_sec})};
+  if (timeout == duration_type::zero()) {
+    co_return false;
+  }
+
   auto& curl_state{CurlInstanceState::get()};
   if (!curl_state.easy_ctx.has(easy_id)) {
     co_return false;
   }
+
+  // WARNING: must be synchronized with runtime-light/stdlib/fork/fork-functions.h::wait(...)
+  using namespace std::chrono_literals;
+  constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<duration_type>(24h)};
+  constexpr auto DEFAULT_TIMEOUT{MAX_TIMEOUT};
+
+  timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;
+
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
   auto sched_res{co_await kphp::coro::io_scheduler::get().schedule(
-      kphp::forks::id_managed(kphp::web::simple_transfer_perform(kphp::web::simple_transfer{easy_id})),
-      kphp::web::curl::details::normalize_timeout(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout_sec})))};
+      kphp::forks::id_managed(kphp::web::simple_transfer_perform(kphp::web::simple_transfer{easy_id})), timeout)};
   if (!sched_res.has_value()) [[unlikely]] {
     kphp::web::curl::print_error(
         "could not execute curl easy handle concurrently",
