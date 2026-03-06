@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <optional>
 #include <string_view>
 
@@ -29,12 +30,13 @@ inline std::optional<std::string_view> extract_boundary(std::string_view content
   if (pos == std::string_view::npos) {
     return std::nullopt;
   }
-  // todo assert "body"
-  std::string_view res{content_type.substr(pos + MULTIPART_BOUNDARY_EQ.size())};
-  if (res.size() >= 2 && res.starts_with('"') && res.ends_with('"')) {
-    res = res.substr(1, res.size() - 2);
+
+  std::string_view boundary_view{content_type.substr(pos + MULTIPART_BOUNDARY_EQ.size())};
+  if (boundary_view.starts_with('"') && boundary_view.ends_with('"')) {
+    boundary_view.remove_suffix(1);
+    boundary_view.remove_prefix(1);
   }
-  return res;
+  return boundary_view;
 }
 
 } // namespace kphp::http::multipart

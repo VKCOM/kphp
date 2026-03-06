@@ -79,8 +79,9 @@ struct part_attribute {
       return std::nullopt;
     }
 
-    if (value_view.size() >= 2 && value_view.starts_with('"') && value_view.ends_with('"')) {
-      value_view = value_view.substr(1, value_view.size() - 2);
+    if (value_view.starts_with('"') && value_view.ends_with('"')) {
+      value_view.remove_suffix(1);
+      value_view.remove_prefix(1);
     }
     return part_attribute{name_view, value_view};
   }

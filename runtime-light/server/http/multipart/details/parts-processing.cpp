@@ -4,7 +4,9 @@
 
 #include "runtime-light/server/http/multipart/details/parts-processing.h"
 
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <string_view>
 
 #include "runtime-common/core/core-types/decl/optional.h"
@@ -71,7 +73,6 @@ void process_upload_multipart(const kphp::http::multipart::details::part& part, 
         error_code = UPLOAD_ERR_PARTIAL;
       }
     } else {
-      *file_res->close();
       error_code = UPLOAD_ERR_CANT_WRITE;
     }
 
@@ -95,7 +96,7 @@ void process_upload_multipart(const kphp::http::multipart::details::part& part, 
       file[string("type")].push_back(string(part.content_type.value_or(DEFAULT_CONTENT_TYPE).data(), part.content_type.value_or(DEFAULT_CONTENT_TYPE).size()));
       file[string("size")].push_back(static_cast<int64_t>(file_size));
       file[string("tmp_name")].push_back(string(tmp_name.data(), tmp_name.size()));
-      file[string("error")].push_back(0);
+      file[string("error")].push_back(UPLOAD_ERR_OK);
     }
   } else {
     mixed& file = files[name];
@@ -108,7 +109,7 @@ void process_upload_multipart(const kphp::http::multipart::details::part& part, 
       file.set_value(string("type"), string(part.content_type.value_or(DEFAULT_CONTENT_TYPE).data(), part.content_type.value_or(DEFAULT_CONTENT_TYPE).size()));
       file.set_value(string("size"), static_cast<int64_t>(file_size));
       file.set_value(string("tmp_name"), string(tmp_name.data(), tmp_name.size()));
-      file.set_value(string("error"), 0);
+      file.set_value(string("error"), UPLOAD_ERR_OK);
     }
   }
 }
