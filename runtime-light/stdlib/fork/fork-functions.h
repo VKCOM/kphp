@@ -87,14 +87,10 @@ auto wait(int64_t fork_id, duration_type timeout) noexcept -> kphp::coro::task<s
   }
 
   // WARNING: must be synchronized with runtime-light/stdlib/curl/curl-easy-functions.h::f$curl_exec_concurrently(...)
-  constexpr double MAX_TIMEOUT{86400.0};
-  constexpr double DEFAULT_TIMEOUT{MAX_TIMEOUT};
-  constexpr auto MAX_TIMEOUT_NS{std::chrono::duration_cast<std::chrono::seconds>(std::chrono::duration<double>{MAX_TIMEOUT})};
-  constexpr auto DEFAULT_TIMEOUT_NS{std::chrono::duration_cast<std::chrono::seconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT})};
+  constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<duration_type>(std::chrono::duration<int>{86400})};
+  constexpr auto DEFAULT_TIMEOUT{MAX_TIMEOUT};
 
-  timeout = (std::clamp(timeout, duration_type::zero(), std::chrono::duration_cast<duration_type>(MAX_TIMEOUT_NS)) != timeout)
-                ? std::chrono::duration_cast<duration_type>(DEFAULT_TIMEOUT_NS)
-                : timeout;
+  timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;
 
   auto expected{co_await kphp::coro::io_scheduler::get().schedule(std::move(fork_task), timeout)};
 
