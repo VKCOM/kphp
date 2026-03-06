@@ -51,8 +51,8 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
 
   constexpr double MAX_TIMEOUT{86400.0};
   constexpr double DEFAULT_TIMEOUT{MAX_TIMEOUT};
-  constexpr auto MAX_TIMEOUT_NS{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT})};
-  constexpr auto DEFAULT_TIMEOUT_NS{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT})};
+  constexpr auto MAX_TIMEOUT_NS{std::chrono::duration_cast<std::chrono::seconds>(std::chrono::duration<double>{MAX_TIMEOUT})};
+  constexpr auto DEFAULT_TIMEOUT_NS{std::chrono::duration_cast<std::chrono::seconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT})};
 
   timeout = (std::clamp(timeout, duration_type::zero(), std::chrono::duration_cast<duration_type>(MAX_TIMEOUT_NS)) != timeout)
                 ? std::chrono::duration_cast<duration_type>(DEFAULT_TIMEOUT_NS)
