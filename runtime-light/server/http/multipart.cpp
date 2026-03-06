@@ -2,15 +2,21 @@
 // Copyright (c) 2026 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <algorithm>
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
+#include <locale>
 #include <optional>
 #include <ranges>
 #include <string_view>
 #include <utility>
 
 #include "common/algorithms/string-algorithms.h"
+#include "runtime-common/core/core-types/decl/optional.h"
 #include "runtime-common/core/runtime-core.h"
+#include "runtime-light/core/globals/php-script-globals.h"
 #include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/http/multipart.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -43,8 +49,8 @@ std::string_view trim_crlf(std::string_view sv) {
 }
 
 struct part_header {
-  const std::string_view name;
-  const std::string_view value;
+  std::string_view name;
+  std::string_view value;
 
   static std::optional<part_header> parse(std::string_view header) noexcept {
     auto [name_view, value_view]{vk::split_string_view(header, ':')};
@@ -73,8 +79,8 @@ auto parse_headers(std::string_view sv) noexcept {
 }
 
 struct part_attribute {
-  const std::string_view name;
-  const std::string_view value;
+  std::string_view name;
+  std::string_view value;
 
   static std::optional<part_attribute> parse(std::string_view attribute) noexcept {
     auto [name_view, value_view]{vk::split_string_view(vk::trim(attribute), '=')};
@@ -118,7 +124,10 @@ struct part {
     const std::string_view part_headers{part_view.substr(0, part_body_start)};
     const std::string_view part_body{part_view.substr(part_body_start + PART_BODY_DELIM.size())};
 
-    part part;
+    std::optional<std::string_view> content_type{std::nullopt};
+    std::optional<std::string_view> filename_attribute{std::nullopt};
+    std::optional<std::string_view> name_attribute{std::nullopt};
+
     for (const auto& header : parse_headers(part_headers)) {
       if (header.name_is(kphp::http::headers::CONTENT_DISPOSITION)) {
         if (!header.value.starts_with(HEADER_CONTENT_DISPOSITION_FORM_DATA)) {
@@ -131,42 +140,47 @@ struct part {
         for (auto attribute : parse_attrs(attributes)) {
           kphp::log::info("attribute with name {}", attribute.name);
           if (attribute.name == "name") {
-            part.name_attribute = attribute.value;
+            name_attribute = attribute.value;
           } else if (attribute.name == "filename") {
-            part.filename_attribute = attribute.value;
+            filename_attribute = attribute.value;
           } else {
             // ignore unknown attribute
           }
         }
       } else if (header.name_is(kphp::http::headers::CONTENT_TYPE)) {
-        part.content_type = header.value;
+        content_type = header.value;
       } else {
         // ignore unused header
       }
     }
-    part.body = part_body;
-
-    return part;
+    if (!name_attribute.has_value()) {
+      return std::nullopt;
+    }
+    return part(*name_attribute, filename_attribute, content_type, part_body);
   }
 
 private:
-
+  part(std::string_view name_attribute, std::optional<std::string_view> filename_attribute, std::optional<std::string_view> content_type,
+       std::string_view body) noexcept
+      : name_attribute(name_attribute),
+        filename_attribute(filename_attribute),
+        content_type(content_type),
+        body(body) {}
 };
 
 auto parse_parts(std::string_view body, std::string_view boundary) noexcept {
   return std::views::split(body, std::views::join(std::array{std::string_view{"--"}, boundary})) |
          std::views::filter([](auto raw_part) { return !std::string_view(raw_part).empty(); }) |
          std::views::transform([](auto raw_part) noexcept -> std::optional<part> { return part::parse(trim_crlf(std::string_view(raw_part))); }) |
-         std::views::take_while([](auto part_opt) { return part_opt.has_value(); }) | std::views::transform([](auto part_opt) { return *part_opt; });
+         std::views::take_while([](auto part_opt) noexcept { return part_opt.has_value(); }) | std::views::transform([](auto part_opt) { return *part_opt; });
 }
 
-void addPost(const part& part, mixed& v$_POST) {
-  kphp::log::info("addPost");
+void add_post_part(const part& part, mixed& post) {
   string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size())};
-  v$_POST.set_value(name, string(part.body.data(), part.body.size()));
+  post.set_value(name, string(part.body.data(), part.body.size()));
 }
 
-void addFile(const part& part, mixed& v$_FILES) {
+void add_file_part(const part& part, mixed& files) {
   //   TODO: replace f$random_bytes to avoid string allocation
   Optional<string> rand_str{f$random_bytes(TMP_FILENAME_LENGTH)};
 
@@ -200,7 +214,7 @@ void addFile(const part& part, mixed& v$_FILES) {
   string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size())};
 
   if (part.name_attribute.ends_with("[]")) {
-    mixed& file = v$_FILES[name.substr(0, name.size() - 2)];
+    mixed& file = files[name.substr(0, name.size() - 2)];
     if (file_size == part.body.size()) {
       file[string("name")].push_back(string(part.filename_attribute.value().data(), part.filename_attribute.value().size()));
       file[string("type")].push_back(string(part.content_type.value_or("").data(), part.content_type.value_or("").size()));
@@ -215,7 +229,7 @@ void addFile(const part& part, mixed& v$_FILES) {
       file[string("error")].push_back(-file_size);
     }
   } else {
-    mixed& file = v$_FILES[name];
+    mixed& file = files[name];
     if (file_size == part.body.size()) {
       file.set_value(string("name"), string(part.filename_attribute.value().data(), part.filename_attribute.value().size()));
       file.set_value(string("type"), string(part.content_type.value_or("").data(), part.content_type.value_or("").size()));
@@ -244,9 +258,9 @@ void process_multipart_content_type(std::string_view body, std::string_view boun
     }
 
     if (part.filename_attribute.has_value()) {
-      addFile(part, superglobals.v$_FILES);
+      add_file_part(part, superglobals.v$_FILES);
     } else {
-      addPost(part, superglobals.v$_POST);
+      add_post_part(part, superglobals.v$_POST);
     }
   }
 }
