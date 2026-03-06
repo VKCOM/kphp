@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <type_traits>
 
 #include "runtime-light/coroutine/async-stack.h"

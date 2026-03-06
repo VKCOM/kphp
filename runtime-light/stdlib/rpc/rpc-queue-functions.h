@@ -76,8 +76,13 @@ inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id,
     co_return await_set.try_next();
   }
 
-  timeout = (std::clamp(timeout, duration_type::zero(), static_cast<duration_type>(kphp::forks::detail::MAX_TIMEOUT_NS)) != timeout)
-                ? static_cast<duration_type>(kphp::forks::detail::DEFAULT_TIMEOUT_NS)
+  constexpr double MAX_TIMEOUT{86400.0};
+  constexpr double DEFAULT_TIMEOUT{MAX_TIMEOUT};
+  constexpr auto MAX_TIMEOUT_NS{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT})};
+  constexpr auto DEFAULT_TIMEOUT_NS{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT})};
+
+  timeout = (std::clamp(timeout, duration_type::zero(), std::chrono::duration_cast<duration_type>(MAX_TIMEOUT_NS)) != timeout)
+                ? std::chrono::duration_cast<duration_type>(DEFAULT_TIMEOUT_NS)
                 : timeout;
 
   const auto expected_next{co_await kphp::coro::io_scheduler::get().schedule(rpc_queue_next_task(await_set.next()), timeout)};

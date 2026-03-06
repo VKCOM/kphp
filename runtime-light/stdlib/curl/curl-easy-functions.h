@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <optional>
 
@@ -451,7 +452,9 @@ inline auto f$curl_reset(kphp::web::curl::easy_type easy_id) noexcept -> kphp::c
 }
 
 inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double timeout_sec = 1.0) noexcept -> kphp::coro::task<Optional<string>> {
-  if (timeout_sec == 0) {
+  using duration_type = std::chrono::nanoseconds;
+  auto timeout{std::chrono::duration_cast<duration_type>(std::chrono::duration<double>{timeout_sec})};
+  if (timeout == duration_type::zero()) {
     co_return false;
   }
 
@@ -460,12 +463,19 @@ inline auto f$curl_exec_concurrently(kphp::web::curl::easy_type easy_id, double 
     co_return false;
   }
 
-  timeout_sec = (std::clamp(timeout_sec, 0.0, kphp::web::curl::details::MAX_TIMEOUT) != timeout_sec) ? kphp::web::curl::details::MAX_TIMEOUT : timeout_sec;
+  // WARNING: must be synchronized with runtime-light/stdlib/fork/fork-functions.h::wait(...)
+  constexpr double MAX_TIMEOUT{86400.0};
+  constexpr double DEFAULT_TIMEOUT{MAX_TIMEOUT};
+  constexpr auto MAX_TIMEOUT_NS{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{MAX_TIMEOUT})};
+  constexpr auto DEFAULT_TIMEOUT_NS{std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{DEFAULT_TIMEOUT})};
+
+  timeout = (std::clamp(timeout, duration_type::zero(), std::chrono::duration_cast<duration_type>(MAX_TIMEOUT_NS)) != timeout)
+                ? std::chrono::duration_cast<duration_type>(DEFAULT_TIMEOUT_NS)
+                : timeout;
 
   auto& easy_ctx{curl_state.easy_ctx.get_or_init(easy_id)};
-  auto sched_res{
-      co_await kphp::coro::io_scheduler::get().schedule(kphp::forks::id_managed(kphp::web::simple_transfer_perform(kphp::web::simple_transfer{easy_id})),
-                                                        std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>{timeout_sec}))};
+  auto sched_res{co_await kphp::coro::io_scheduler::get().schedule(
+      kphp::forks::id_managed(kphp::web::simple_transfer_perform(kphp::web::simple_transfer{easy_id})), timeout)};
   if (!sched_res.has_value()) [[unlikely]] {
     kphp::web::curl::print_error(
         "could not execute curl easy handle concurrently",
