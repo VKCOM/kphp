@@ -438,17 +438,12 @@ kphp::coro::task<> finalize_server() noexcept {
     [[fallthrough]];
   }
   case kphp::http::response_state::completed:
-    const array<mixed> files = superglobals.v$_FILES.to_array();
+    const array<mixed> files{superglobals.v$_FILES.to_array()};
     for (array<mixed>::const_iterator it = files.begin(); it != files.end(); ++it) {
-      const mixed& file = it.get_value();
-
-      if (!file.is_array()) {
-        kphp::log::error("$_FILES contains a value that is not an array");
-        continue;
-      }
-
-      const mixed tmp_filename = file.get_value(string("tmp_name"));
-      f$unlink(tmp_filename.to_string());
+      const mixed& file{it.get_value()};
+      const string tmp_filename{file.get_value(string("tmp_name")).to_string()};
+      const std::string_view tmp_filename_view{tmp_filename.c_str(), tmp_filename.size()};
+      std::ignore = k2::unlink(tmp_filename_view);
     }
     co_return;
   }
