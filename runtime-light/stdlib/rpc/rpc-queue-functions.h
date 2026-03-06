@@ -73,7 +73,7 @@ inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id,
   }
 
   if (timeout == duration_type::zero()) {
-    co_return await_set.try_get_result();
+    co_return await_set.try_next();
   }
 
   timeout = (std::clamp(timeout, duration_type::zero(), static_cast<duration_type>(kphp::forks::detail::MAX_TIMEOUT_NS)) != timeout)

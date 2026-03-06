@@ -42,7 +42,7 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
   }};
 
   if (timeout == duration_type::zero()) {
-    auto value{await_set.try_get_result()};
+    auto value{await_set.try_next()};
     co_return value.has_value() ? std::optional{return_awaitable_future(*value)} : std::nullopt;
   }
 
