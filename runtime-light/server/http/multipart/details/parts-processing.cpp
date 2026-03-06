@@ -11,6 +11,7 @@
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-light/server/http/multipart/details/parts-parsing.h"
+#include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/file/resource.h"
 #include "runtime-light/stdlib/math/random-functions.h"
 
@@ -24,13 +25,13 @@ constexpr std::string_view TMP_DIR = "/tmp/";
 constexpr std::string_view DEFAULT_CONTENT_TYPE = "text/plain";
 
 constexpr int32_t UPLOAD_ERR_OK = 0;
-constexpr int32_t UPLOAD_ERR_INI_SIZE = 1;  // unused in kphp
-constexpr int32_t UPLOAD_ERR_FORM_SIZE = 2; // todo support header max-file-size
+// constexpr int32_t UPLOAD_ERR_INI_SIZE = 1;  // unused in kphp
+// constexpr int32_t UPLOAD_ERR_FORM_SIZE = 2; // todo support header max-file-size
 constexpr int32_t UPLOAD_ERR_PARTIAL = 3;
 constexpr int32_t UPLOAD_ERR_NO_FILE = 4;
-constexpr int32_t UPLOAD_ERR_NO_TMP_DIR = 6; // todo support check tmp dir
+// constexpr int32_t UPLOAD_ERR_NO_TMP_DIR = 6; // todo support check tmp dir
 constexpr int32_t UPLOAD_ERR_CANT_WRITE = 7;
-constexpr int32_t UPLOAD_ERR_EXTENSION = 8; // unused in kphp
+// constexpr int32_t UPLOAD_ERR_EXTENSION = 8; // unused in kphp
 
 } // namespace
 

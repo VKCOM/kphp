@@ -125,11 +125,14 @@ struct part {
           return std::nullopt;
         }
 
-        size_t pos = header.value.find(';');
-        std::string_view attributes = header.value.substr(pos + 1, header.value.find('\n') - pos);
-        kphp::log::info("header.value {}", attributes);
-        for (auto attribute : parse_attrs(attributes)) {
-          kphp::log::info("attribute with name {}", attribute.name);
+        // skip first Content-Disposition: form-data;
+        const size_t pos{header.value.find(';')};
+        if (pos == std::string::npos) {
+          return std::nullopt;
+        }
+
+        const std::string_view attributes{trim_crlf(header.value).substr(pos + 1)};
+        for (const auto& attribute : parse_attrs(attributes)) {
           if (attribute.name == "name") {
             name_attribute = attribute.value;
           } else if (attribute.name == "filename") {
@@ -139,7 +142,7 @@ struct part {
           }
         }
       } else if (header.name_is(kphp::http::headers::CONTENT_TYPE)) {
-        content_type = header.value;
+        content_type = trim_crlf(header.value);
       } else {
         // ignore unused header
       }
