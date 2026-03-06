@@ -49,7 +49,8 @@ inline kphp::coro::task<std::optional<int64_t>> wait_queue_next(int64_t queue_id
   static constexpr auto wait_queue_next_task{
       [](auto await_set_awaitable) noexcept -> kphp::coro::task<std::optional<int64_t>> { co_return co_await std::move(await_set_awaitable); }};
 
-  constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<duration_type>(std::chrono::duration<int>{86400})};
+  using namespace std::chrono_literals;
+  constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<duration_type>(24h)};
   constexpr auto DEFAULT_TIMEOUT{MAX_TIMEOUT};
 
   timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;

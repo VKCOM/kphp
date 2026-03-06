@@ -76,7 +76,8 @@ inline kphp::coro::task<std::optional<int64_t>> rpc_queue_next(int64_t queue_id,
     co_return await_set.try_next();
   }
 
-  constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<duration_type>(std::chrono::duration<int>{86400})};
+  using namespace std::chrono_literals;
+  constexpr auto MAX_TIMEOUT{std::chrono::duration_cast<duration_type>(24h)};
   constexpr auto DEFAULT_TIMEOUT{MAX_TIMEOUT};
 
   timeout = (std::clamp(timeout, duration_type::zero(), MAX_TIMEOUT) != timeout) ? DEFAULT_TIMEOUT : timeout;
