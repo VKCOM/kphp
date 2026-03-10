@@ -2,7 +2,7 @@
 // Copyright (c) 2025 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
-#include "runtime-light/stdlib/diagnostics/contextual-logger.h"
+#include "runtime-light/stdlib/diagnostics/contextual-tags.h"
 
 #include <cstddef>
 #include <functional>
