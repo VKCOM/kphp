@@ -8,6 +8,7 @@
 #include <cstring>
 #include <iterator>
 #include <memory>
+#include <optional>
 #include <span>
 #include <string_view>
 #include <sys/stat.h>
@@ -92,4 +93,16 @@ void ComponentState::parse_args() noexcept {
       kphp::log::warning("unexpected argument format: {}", key_view);
     }
   }
+}
+
+void ComponentState::parse_cluster_name() noexcept {
+  const string key{CLUSTER_NAME_ENV.data(), CLUSTER_NAME_ENV.size()};
+  if (!env.has_key(key) ) {
+    return;
+  }
+  const auto& value{env.get_value(key)};
+  if (!value.is_string()) {
+    return;
+  }
+  cluster_name.emplace(value.as_string());
 }
