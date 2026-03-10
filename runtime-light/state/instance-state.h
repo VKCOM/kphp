@@ -89,7 +89,7 @@ struct InstanceState final : vk::not_copyable {
   }
 
   AllocatorState instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0};
-  kphp::log::contextual_logger instance_logger;
+  kphp::log::contextual_tags instance_tags;
 
   kphp::coro::io_scheduler io_scheduler;
   CoroutineInstanceState coroutine_instance_state;
