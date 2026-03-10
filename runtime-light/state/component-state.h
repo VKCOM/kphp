@@ -7,8 +7,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <string_view>
 #include <optional>
+#include <string_view>
 
 #include "common/mixin/not_copyable.h"
 #include "common/php-functions.h"

@@ -97,7 +97,7 @@ void ComponentState::parse_args() noexcept {
 
 void ComponentState::parse_cluster_name() noexcept {
   const string key{CLUSTER_NAME_ENV.data(), CLUSTER_NAME_ENV.size()};
-  if (!env.has_key(key) ) {
+  if (!env.has_key(key)) {
     return;
   }
   const auto& value{env.get_value(key)};
