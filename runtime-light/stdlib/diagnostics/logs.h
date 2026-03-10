@@ -14,6 +14,7 @@
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/backtrace.h"
 #include "runtime-light/stdlib/diagnostics/contextual-tags.h"
+#include "runtime-light/stdlib/diagnostics/detail/logs.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
 
 namespace kphp::log {
@@ -27,7 +28,7 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
   size_t message_size{impl::format_log_message(log_buffer, fmt, std::forward<Args>(args)...)};
   auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(message_size)}};
 
-  auto opt_tags{contextual_tags::try_get().and_then([level](contextual_tags& tags) noexcept {
+  auto opt_tags{contextual_tags::try_get().and_then([level](contextual_tags& tags) noexcept -> std::optional<std::reference_wrapper<kphp::log::contextual_tags>> {
     if (level == level::warn || level == level::error) {
       return std::make_optional(std::ref(tags));
     }
@@ -43,6 +44,7 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
     for (const auto& [key, value] : tags) {
       tagged_entries.push_back(k2::LogTaggedEntry{.key = key.data(), .value = value.data(), .key_len = key.size(), .value_len = value.size()});
     }
+    return 0;
   });
   if (trace.has_value()) {
     static constexpr size_t BACKTRACE_BUFFER_SIZE = 1024UZ * 4UZ;
