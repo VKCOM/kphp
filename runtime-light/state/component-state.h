@@ -7,7 +7,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <optional>
 #include <string_view>
 
 #include "common/mixin/not_copyable.h"
@@ -33,7 +32,6 @@ struct ComponentState final : private vk::not_copyable {
   ComponentState() noexcept {
     parse_env();
     parse_args();
-    parse_cluster_name();
 
     kphp::log::assertion((kphp::core::set_reference_counter_recursive(ini_opts, ExtraRefCnt::for_global_const),
                           kphp::core::is_reference_counter_recursive(ini_opts, ExtraRefCnt::for_global_const)));
@@ -57,7 +55,7 @@ private:
   static constexpr std::string_view INI_ARG_PREFIX = "ini ";
   static constexpr std::string_view KML_DIR_ARG = "kml-dir";
   static constexpr std::string_view RUNTIME_CONFIG_ARG = "runtime-config";
-  static constexpr std::string_view CLUSTER_NAME_ENV = "CLUSTER_NAME";
+  static constexpr std::string_view CLUSTER_NAME_ARG = "cluster-name";
   static constexpr std::string_view DEFAULT_CLUSTER_NAME = "default";
   static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U); // 1MB
 
@@ -71,5 +69,5 @@ private:
 
   void parse_runtime_config_arg(std::string_view) noexcept;
 
-  void parse_cluster_name() noexcept;
+  void parse_cluster_name(std::string_view value_view) noexcept;
 };
