@@ -28,12 +28,13 @@ void log(level level, std::optional<std::span<void* const>> trace, std::format_s
   size_t message_size{impl::format_log_message(log_buffer, fmt, std::forward<Args>(args)...)};
   auto message{std::string_view{log_buffer.data(), static_cast<std::string_view::size_type>(message_size)}};
 
-  auto opt_tags{contextual_tags::try_get().and_then([level](contextual_tags& tags) noexcept -> std::optional<std::reference_wrapper<kphp::log::contextual_tags>> {
-    if (level == level::warn || level == level::error) {
-      return std::make_optional(std::ref(tags));
-    }
-    return std::nullopt;
-  })};
+  auto opt_tags{
+      contextual_tags::try_get().and_then([level](contextual_tags& tags) noexcept -> std::optional<std::reference_wrapper<kphp::log::contextual_tags>> {
+        if (level == level::warn || level == level::error) {
+          return std::make_optional(std::ref(tags));
+        }
+        return std::nullopt;
+      })};
 
   const size_t tagged_entries_size{
       static_cast<size_t>((trace.has_value() ? 1 : 0) + opt_tags.transform([](contextual_tags& tags) noexcept { return tags.size(); }).value_or(0))};
