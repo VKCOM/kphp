@@ -252,10 +252,7 @@ inline string f$get_engine_version() noexcept {
 }
 
 inline string f$get_kphp_cluster_name() noexcept {
-  if (const auto& state{ComponentState::get()}; state.cluster_name.has_value()) {
-    return state.cluster_name.value();
-  }
-  return string{"default"};
+  return ComponentState::get().cluster_name;
 }
 
 inline void f$kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() noexcept {}

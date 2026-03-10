@@ -28,7 +28,7 @@ struct ComponentState final : private vk::not_copyable {
   array<string> ini_opts{array_size{argc, false}};
   array<mixed> env{array_size{envc, false}};
   mixed runtime_config;
-  std::optional<string> cluster_name;
+  string cluster_name{DEFAULT_CLUSTER_NAME.data(), DEFAULT_CLUSTER_NAME.size()};
 
   ComponentState() noexcept {
     parse_env();
@@ -41,7 +41,8 @@ struct ComponentState final : private vk::not_copyable {
                           kphp::core::is_reference_counter_recursive(env, ExtraRefCnt::for_global_const)));
     kphp::log::assertion((kphp::core::set_reference_counter_recursive(runtime_config, ExtraRefCnt::for_global_const),
                           kphp::core::is_reference_counter_recursive(runtime_config, ExtraRefCnt::for_global_const)));
-    kphp::log::assertion(cluster_name.has_value() ? cluster_name->is_reference_counter(ExtraRefCnt::for_global_const) : true);
+    kphp::log::assertion((kphp::core::set_reference_counter_recursive(cluster_name, ExtraRefCnt::for_global_const),
+                          kphp::core::is_reference_counter_recursive(cluster_name, ExtraRefCnt::for_global_const)));
   }
 
   static const ComponentState& get() noexcept {
@@ -56,8 +57,9 @@ private:
   static constexpr std::string_view INI_ARG_PREFIX = "ini ";
   static constexpr std::string_view KML_DIR_ARG = "kml-dir";
   static constexpr std::string_view RUNTIME_CONFIG_ARG = "runtime-config";
-  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U); // 1MB
   static constexpr std::string_view CLUSTER_NAME_ENV = "CLUSTER_NAME";
+  static constexpr std::string_view DEFAULT_CLUSTER_NAME = "default";
+  static constexpr auto INIT_COMPONENT_ALLOCATOR_SIZE = static_cast<size_t>(1024U * 1024U); // 1MB
 
   void parse_env() noexcept;
 

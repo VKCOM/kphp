@@ -104,5 +104,5 @@ void ComponentState::parse_cluster_name() noexcept {
   if (!value.is_string()) {
     return;
   }
-  cluster_name.emplace(value.as_string());
+  cluster_name = value.as_string();
 }
