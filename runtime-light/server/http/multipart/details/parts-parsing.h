@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <cstdio>
 #include <locale>
 #include <optional>
 #include <ranges>
@@ -15,7 +14,6 @@
 #include <utility>
 
 #include "common/algorithms/string-algorithms.h"
-#include "runtime-light/server/http/http-server-state.h"
 
 namespace kphp::http::multipart::details {
 

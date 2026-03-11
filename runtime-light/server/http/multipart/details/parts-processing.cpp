@@ -22,6 +22,7 @@
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/file/resource.h"
 #include "runtime-light/stdlib/math/random-functions.h"
+#include "runtime-light/stdlib/output/print-functions.h"
 
 namespace {
 
@@ -30,12 +31,14 @@ constexpr std::string_view CONTENT_TYPE_APP_FORM_URLENCODED = "application/x-www
 constexpr std::string_view DEFAULT_CONTENT_TYPE = "text/plain";
 
 constexpr int32_t UPLOAD_ERR_OK = 0;
-// constexpr int32_t UPLOAD_ERR_INI_SIZE = 1;  // unused in kphp
-// constexpr int32_t UPLOAD_ERR_FORM_SIZE = 2; // todo support header max-file-size
 constexpr int32_t UPLOAD_ERR_PARTIAL = 3;
 constexpr int32_t UPLOAD_ERR_NO_FILE = 4;
-// constexpr int32_t UPLOAD_ERR_NO_TMP_DIR = 6; // todo support check tmp dir
 constexpr int32_t UPLOAD_ERR_CANT_WRITE = 7;
+
+// Not implemented :
+// constexpr int32_t UPLOAD_ERR_INI_SIZE = 1;  // unused in kphp
+// constexpr int32_t UPLOAD_ERR_FORM_SIZE = 2; // todo support header max-file-size
+// constexpr int32_t UPLOAD_ERR_NO_TMP_DIR = 6; // todo support check tmp dir
 // constexpr int32_t UPLOAD_ERR_EXTENSION = 8; // unused in kphp
 
 std::optional<kphp::stl::string<kphp::memory::script_allocator>> generate_temporary_name() noexcept {
@@ -68,22 +71,20 @@ std::optional<kphp::stl::string<kphp::memory::script_allocator>> generate_tempor
 
 std::expected<size_t, int32_t> write_temporary_file(std::string_view tmp_name, std::span<const std::byte> content) noexcept {
   auto file_res{kphp::fs::file::open(tmp_name, "w")};
-  size_t file_size{};
   if (file_res.has_value()) {
     const auto written_res{(*file_res).write(content)};
     if (written_res.has_value()) {
-      file_size = *written_res;
+      size_t file_size{*written_res};
       if (file_size < content.size()) {
         return std::unexpected{UPLOAD_ERR_PARTIAL};
       }
+      return file_size;
     } else {
       return std::unexpected{UPLOAD_ERR_CANT_WRITE};
     }
-
   } else {
     return std::unexpected{UPLOAD_ERR_NO_FILE};
   }
-  return file_size;
 }
 
 } // namespace
@@ -96,7 +97,7 @@ void process_post_multipart(const kphp::http::multipart::details::part& part, mi
   if (part.content_type.has_value() && !std::ranges::search(*part.content_type, CONTENT_TYPE_APP_FORM_URLENCODED).empty()) {
     f$parse_str(body, post[name]);
   } else {
-    post.set_value(name, string(part.body.data(), part.body.size()));
+    post.set_value(name, body);
   }
 }
 
@@ -111,35 +112,34 @@ void process_file_multipart(const kphp::http::multipart::details::part& part, mi
   auto tmp_name{*tmp_name_opt};
   auto write_res{write_temporary_file(tmp_name, {reinterpret_cast<const std::byte*>(part.body.data()), part.body.size()})};
 
-  const string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size())};
-  if (part.name_attribute.ends_with("[]")) {
-    mixed& file = files[name.substr(0, name.size() - 2)];
-    if (!write_res.has_value()) {
-      file[string{"name"}].push_back(string());
-      file[string{"type"}].push_back(string());
-      file[string{"size"}].push_back(0);
-      file[string{"tmp_name"}].push_back(string());
-      file[string{"error"}].push_back(write_res.error());
-    } else {
-      file[string{"name"}].push_back(string((*part.filename_attribute).data(), (*part.filename_attribute).size()));
-      file[string{"type"}].push_back(string(part.content_type.value_or(DEFAULT_CONTENT_TYPE).data(), part.content_type.value_or(DEFAULT_CONTENT_TYPE).size()));
-      file[string{"size"}].push_back(static_cast<int64_t>(*write_res));
-      file[string{"tmp_name"}].push_back(string(tmp_name.data(), tmp_name.size()));
-      file[string{"error"}].push_back(UPLOAD_ERR_OK);
-    }
+  mixed file{};
+  if (!write_res.has_value()) {
+    file.set_value(string{"size"}, 0);
+    file.set_value(string{"tmp_name"}, string{});
+    file.set_value(string{"error"}, write_res.error());
   } else {
-    mixed& file = files[name];
-    if (!write_res.has_value()) {
-      file.set_value(string{"size"}, 0);
-      file.set_value(string{"tmp_name"}, string());
-      file.set_value(string{"error"}, write_res.error());
-    } else {
-      file.set_value(string{"name"}, string((*part.filename_attribute).data(), (*part.filename_attribute).size()));
-      file.set_value(string{"type"}, string(part.content_type.value_or(DEFAULT_CONTENT_TYPE).data(), part.content_type.value_or(DEFAULT_CONTENT_TYPE).size()));
-      file.set_value(string{"size"}, static_cast<int64_t>(*write_res));
-      file.set_value(string{"tmp_name"}, string(tmp_name.data(), tmp_name.size()));
-      file.set_value(string{"error"}, UPLOAD_ERR_OK);
+    const auto content_type{part.content_type.value_or(DEFAULT_CONTENT_TYPE)};
+    file.set_value(string{"name"}, string{(*part.filename_attribute).data(), static_cast<string::size_type>((*part.filename_attribute).size())});
+    file.set_value(string{"type"}, string{content_type.data(), static_cast<string::size_type>(content_type.size())});
+    file.set_value(string{"size"}, static_cast<int64_t>(*write_res));
+    file.set_value(string{"tmp_name"}, string{tmp_name.data(), static_cast<string::size_type>(tmp_name.size())});
+    file.set_value(string{"error"}, UPLOAD_ERR_OK);
+  }
+
+  if (part.name_attribute.ends_with("[]")) {
+    const string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size() - 2)};
+    mixed file_array{files.get_value(name)};
+
+    for (auto& attribute_it : file) {
+      string attribute{attribute_it.get_key().to_string()};
+      mixed file_array_value{file_array.get_value(attribute)};
+      file_array_value.push_back(attribute_it.get_value().to_string());
+      file_array.set_value(attribute, file_array_value);
     }
+    files.set_value(name, file_array);
+  } else {
+    const string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size())};
+    files.set_value(name, file);
   }
 }
 } // namespace kphp::http::multipart::details

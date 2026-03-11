@@ -13,7 +13,9 @@
 
 namespace kphp::http::multipart {
 
+namespace details {
 constexpr std::string_view MULTIPART_BOUNDARY_EQ = "boundary=";
+} // namespace details
 
 inline void process_multipart_content_type(std::string_view body, std::string_view boundary, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
   for (const auto& part : details::parse_multipart_parts(body, boundary)) {
@@ -26,12 +28,12 @@ inline void process_multipart_content_type(std::string_view body, std::string_vi
 }
 
 inline std::optional<std::string_view> extract_boundary(std::string_view content_type) noexcept {
-  const size_t pos{content_type.find(MULTIPART_BOUNDARY_EQ)};
+  const size_t pos{content_type.find(details::MULTIPART_BOUNDARY_EQ)};
   if (pos == std::string_view::npos) {
     return std::nullopt;
   }
 
-  std::string_view boundary_view{content_type.substr(pos + MULTIPART_BOUNDARY_EQ.size())};
+  std::string_view boundary_view{content_type.substr(pos + details::MULTIPART_BOUNDARY_EQ.size())};
   if (boundary_view.starts_with('"') && boundary_view.ends_with('"')) {
     boundary_view.remove_suffix(1);
     boundary_view.remove_prefix(1);
