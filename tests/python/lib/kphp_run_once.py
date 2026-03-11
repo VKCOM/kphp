@@ -149,7 +149,7 @@ class KphpRunOnce(KphpBuilder):
 
         env = os.environ.copy()
         if "RUST_LOG" not in env:
-            env["RUST_LOG"] = "Debug"
+            env["RUST_LOG"] = "Warn,component-log=Debug"
 
         k2_runtime_proc = subprocess.Popen(cmd,
                                            cwd=self._kphp_runtime_tmp_dir,
