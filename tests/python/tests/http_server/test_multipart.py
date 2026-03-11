@@ -1,3 +1,4 @@
+import os
 from urllib.parse import urlencode
 
 from python.lib.testcase import WebServerAutoTestCase
@@ -37,6 +38,8 @@ class TestMultipartContentType(WebServerAutoTestCase):
         self.assertTrue(response.content.find(b"role : admin") != -1)
 
     def test_multipart_filename_attribute(self):
+
+        tmp_files = os.listdir("/tmp/")
         boundary = "------------------------d74496d66958873e"
 
         file_bytes = b"Hello from test.txt\nSecond line\n"
@@ -66,6 +69,10 @@ class TestMultipartContentType(WebServerAutoTestCase):
         self.assertEqual(200, response.status_code)
         self.assertTrue(response.content.find(b"filename : test.txt") != -1)
         self.assertTrue(response.content.find(b"Hello from test.txt") != -1)
+
+        tmp_files_after_script = os.listdir("/tmp/")
+        # check that script delete tmp files at the end
+        self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
 
     def test_multipart_filename_array_attribute(self):
         boundary = "------------------------d74496d66958873e"
