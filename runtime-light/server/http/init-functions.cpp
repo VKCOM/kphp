@@ -39,6 +39,8 @@
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
 
+#include "runtime-light/stdlib/output/print-functions.h"
+
 namespace {
 
 constexpr std::string_view EMPTY = "<empty>";
@@ -401,12 +403,12 @@ kphp::coro::task<> finalize_server() noexcept {
     }
     // fill headers
     http_response.http_response.headers.value.reserve(http_server_instance_st.headers().size());
-    std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(),
-                   std::back_inserter(http_response.http_response.headers.value), [](const auto& header_entry) noexcept {
-                     const auto& [name, value]{header_entry};
-                     return tl::httpHeaderEntry{
-                         .is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
-                   });
+    std::transform(
+        http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.http_response.headers.value),
+        [](const auto& header_entry) noexcept {
+          const auto& [name, value]{header_entry};
+          return tl::httpHeaderEntry{.is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
+        });
     http_server_instance_st.response_state = kphp::http::response_state::headers_sent;
     [[fallthrough]];
   }
@@ -435,11 +437,20 @@ kphp::coro::task<> finalize_server() noexcept {
   }
   case kphp::http::response_state::completed:
     const array<mixed> files{superglobals.v$_FILES.to_array()};
-    for (array<mixed>::const_iterator it{files.begin()}; it != files.end(); ++it) {
-      const mixed& file{it.get_value()};
-      const string tmp_filename{file.get_value(string{"tmp_name"}).to_string()};
-      const std::string_view tmp_filename_view{tmp_filename.c_str(), tmp_filename.size()};
-      std::ignore = k2::unlink(tmp_filename_view);
+    for (const auto& files_it : files) {
+      const mixed& file{files_it.get_value()};
+      const mixed& tmp_filenames{file.get_value(string{"tmp_name"})};
+      if (tmp_filenames.is_array()) {
+        for (const auto& tmp_filename_it : tmp_filenames) {
+          const string tmp_filename{tmp_filename_it.get_value().as_string()};
+          const std::string_view tmp_filename_view{tmp_filename.c_str(), tmp_filename.size()};
+          std::ignore = k2::unlink(tmp_filename_view);
+        }
+      } else {
+        const string tmp_filename{tmp_filenames.to_string()};
+        const std::string_view tmp_filename_view{tmp_filename.c_str(), tmp_filename.size()};
+        std::ignore = k2::unlink(tmp_filename_view);
+      }
     }
     co_return;
   }

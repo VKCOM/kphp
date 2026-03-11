@@ -75,6 +75,8 @@ class TestMultipartContentType(WebServerAutoTestCase):
         self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
 
     def test_multipart_filename_array_attribute(self):
+        tmp_files = os.listdir("/tmp/")
+
         boundary = "------------------------d74496d66958873e"
 
         # Two "files" (their raw bytes)
@@ -116,6 +118,10 @@ class TestMultipartContentType(WebServerAutoTestCase):
         self.assertEqual(200, response.status_code)
         self.assertTrue(response.content.find(b"Hello from a.txt") != -1)
         self.assertTrue(response.content.find(b"Hello from b.txt") != -1)
+
+        tmp_files_after_script = os.listdir("/tmp/")
+        # check that script delete tmp files at the end
+        self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
 
     def test_multipart_name_urlencoded_attribute(self):
         boundary = "------------------------d74496d66958873e"
