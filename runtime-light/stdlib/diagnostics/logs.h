@@ -107,3 +107,6 @@ struct std::formatter<kphp::log::impl::floating_wrapper<T>> {
     return std::format_to(ctx.out(), "{:.4f}", wrapper.value);
   }
 };
+
+#define SAVE_BUILTIN_CALL_STATS(builtin_name, builtin_call)                                                                                                    \
+  (k2::log(std::to_underlying(kphp::log::level::debug), "built-in called: " builtin_name, {}), builtin_call)
