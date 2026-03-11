@@ -321,19 +321,19 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
     break;
   }
   case kphp::http::method::post: {
-    string body{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
     if (!std::ranges::search(content_type, CONTENT_TYPE_APP_FORM_URLENCODED).empty()) {
+      string body{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
       f$parse_str(body, superglobals.v$_POST);
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
     } else if (!std::ranges::search(content_type, CONTENT_TYPE_MULTIPART_FORM_DATA).empty()) {
-      auto boundary_opt{kphp::http::multipart::extract_boundary(content_type)};
-      if (boundary_opt.has_value()) {
-        kphp::http::multipart::process_multipart_content_type({body.c_str(), body.size()}, *boundary_opt, superglobals);
+      if (auto boundary_opt{kphp::http::multipart::extract_boundary(content_type)}; boundary_opt.has_value()) {
+        std::string_view body_view{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
+        kphp::http::multipart::process_multipart_content_type(body_view, *boundary_opt, superglobals);
       }
     } else {
+      string body{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
     }
-
     server.set_value(string{CONTENT_TYPE.data(), CONTENT_TYPE.size()}, string{content_type.data(), static_cast<string::size_type>(content_type.size())});
     break;
   }
@@ -401,12 +401,12 @@ kphp::coro::task<> finalize_server() noexcept {
     }
     // fill headers
     http_response.http_response.headers.value.reserve(http_server_instance_st.headers().size());
-    std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(),
-                   std::back_inserter(http_response.http_response.headers.value), [](const auto& header_entry) noexcept {
-                     const auto& [name, value]{header_entry};
-                     return tl::httpHeaderEntry{
-                         .is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
-                   });
+    std::transform(
+        http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.http_response.headers.value),
+        [](const auto& header_entry) noexcept {
+          const auto& [name, value]{header_entry};
+          return tl::httpHeaderEntry{.is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
+        });
     http_server_instance_st.response_state = kphp::http::response_state::headers_sent;
     [[fallthrough]];
   }
@@ -437,7 +437,7 @@ kphp::coro::task<> finalize_server() noexcept {
     const array<mixed> files{superglobals.v$_FILES.to_array()};
     for (array<mixed>::const_iterator it = files.begin(); it != files.end(); ++it) {
       const mixed& file{it.get_value()};
-      const string tmp_filename{file.get_value(string("tmp_name")).to_string()};
+      const string tmp_filename{file.get_value(string{"tmp_name"}).to_string()};
       const std::string_view tmp_filename_view{tmp_filename.c_str(), tmp_filename.size()};
       std::ignore = k2::unlink(tmp_filename_view);
     }
