@@ -52,7 +52,7 @@ std::optional<kphp::stl::string<kphp::memory::script_allocator>> generate_tempor
 
   std::string_view tmp_path{tmp_dir_env.is_string() ? std::string_view{tmp_dir_env.as_string().c_str(), tmp_dir_env.as_string().size()} : P_tmpdir};
 
-  for (int64_t attempt = 0; attempt < GENERATE_ATTEMPTS; ++attempt) {
+  for (int64_t attempt{}; attempt < GENERATE_ATTEMPTS; ++attempt) {
     kphp::stl::string<kphp::memory::script_allocator> tmp_name{tmp_path.data(), tmp_path.size()};
     tmp_name.push_back('/');
     for (auto _ : std::views::iota(0, SYMBOLS_COUNT)) {

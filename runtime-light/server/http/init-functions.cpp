@@ -439,7 +439,7 @@ kphp::coro::task<> finalize_server() noexcept {
   }
   case kphp::http::response_state::completed:
     const array<mixed> files{superglobals.v$_FILES.to_array()};
-    for (array<mixed>::const_iterator it = files.begin(); it != files.end(); ++it) {
+    for (array<mixed>::const_iterator it{files.begin()}; it != files.end(); ++it) {
       const mixed& file{it.get_value()};
       const string tmp_filename{file.get_value(string{"tmp_name"}).to_string()};
       const std::string_view tmp_filename_view{tmp_filename.c_str(), tmp_filename.size()};
