@@ -75,6 +75,7 @@ class TestFile:
         self.env_vars["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "0"
         self.env_vars["KPHP_PROFILER"] = "0"
         self.env_vars["KPHP_FORCE_LINK_RUNTIME"] = "1"
+        self.env_vars["KPHP_TRACKED_BUILTINS_LIST"] = KphpRunOnce.K2_KPHP_TRACKED_BUILTINS_LIST
 
 
 def make_test_file(file_path, test_tmp_dir, test_tags):
