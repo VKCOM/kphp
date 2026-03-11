@@ -917,7 +917,7 @@ void compile_func_call(VertexAdaptor<op_func_call> root, CodeGenerator &W, func_
     }
 
     if (is_function_call_should_be_tracked(func)) {
-      W << "SAVE_BUILTIN_CALL_STATS(\"" << func->name << "\", (";
+      W << "DUMP_BUILTIN_CALL_STATS(\"" << func->name << "\", (";
     }
 
     if (mode == func_call_mode::fork_call) {

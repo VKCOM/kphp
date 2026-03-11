@@ -49,6 +49,6 @@ inline void save_virtual_builtin_call_stats(const kphp::stl::string<kphp::memory
 }
 } // namespace runtime_builtins_stats
 
-#define SAVE_BUILTIN_CALL_STATS(builtin_name, builtin_call)                                                                                                    \
+#define DUMP_BUILTIN_CALL_STATS(builtin_name, builtin_call)                                                                                                    \
   (!runtime_builtins_stats::request_stats.has_value() ? 0 : (*runtime_builtins_stats::request_stats).builtin_stats[std::string_view(builtin_name)]++,          \
    builtin_call)
