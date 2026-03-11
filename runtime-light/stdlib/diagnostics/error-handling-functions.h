@@ -108,7 +108,8 @@ inline int64_t f$error_reporting(Optional<int64_t> new_error_level_opt = {}) noe
     return current_error_level;
   }
 
-  // currently only minimum_log_level == 0 and minimum_log_level == E_ALL are supported
+  // currently only minimum_log_level == 0 and minimum_log_level == E_ALL are supported,
+  //    because behavior in the runtime/ and runtime-light/ is different. we will fix this in the future.
   error_handling_st.minimum_log_level = static_cast<int64_t>(E_ALL);
   return current_error_level;
 }
