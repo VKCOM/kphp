@@ -18,7 +18,7 @@ constexpr std::string_view MULTIPART_BOUNDARY_EQ = "boundary=";
 inline void process_multipart_content_type(std::string_view body, std::string_view boundary, PhpScriptBuiltInSuperGlobals& superglobals) noexcept {
   for (const auto& part : details::parse_multipart_parts(body, boundary)) {
     if (part.filename_attribute.has_value()) {
-      details::process_upload_multipart(part, superglobals.v$_FILES);
+      details::process_file_multipart(part, superglobals.v$_FILES);
     } else {
       details::process_post_multipart(part, superglobals.v$_POST);
     }
