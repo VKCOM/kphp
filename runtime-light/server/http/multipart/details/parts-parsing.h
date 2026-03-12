@@ -14,6 +14,7 @@
 #include <utility>
 
 #include "common/algorithms/string-algorithms.h"
+#include "runtime-light/server/http/http-server-state.h"
 
 namespace kphp::http::multipart::details {
 
