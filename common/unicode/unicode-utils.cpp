@@ -102,14 +102,6 @@ size_t prepare_search_string(int32_t* code_points, std::function<void(bool)> ass
   return output_size;
 }
 
-int stricmp_void(const void* x, const void* y) {
-  const int* s1 = *(const int**)x;
-  const int* s2 = *(const int**)y;
-  while (*s1 == *s2 && *s1 != ' ')
-    s1++, s2++;
-  return *s1 - *s2;
-}
-
 inline size_t prepare_str_unicode(int32_t* code_points, size_t* word_start_indices, int32_t* prepared_code_points, std::function<void(bool)> assertf) noexcept {
   size_t code_points_length = prepare_search_string(code_points, assertf);
   code_points[code_points_length] = WHITESPACE_CODE_POINT;
@@ -196,7 +188,7 @@ inline size_t clean_str_unicode(int32_t* code_points, size_t* word_start_indices
 
 size_t clean_str(const char* x, int32_t* code_points, size_t* word_start_indices, int32_t* prepared_code_points, std::byte* utf8_result,
                  std::function<void(bool)> assertf) {
-  size_t x_len = strlen(x);
+  size_t x_len{strlen(x)};
   if (x == NULL || x_len >= MAX_NAME_SIZE) {
     for (size_t i = 0; i < x_len; ++i) {
       utf8_result[i] = static_cast<std::byte>(x[i]);
