@@ -72,7 +72,7 @@ std::optional<kphp::stl::string<kphp::memory::script_allocator>> generate_tempor
 std::expected<size_t, int32_t> write_temporary_file(std::string_view tmp_name, std::span<const std::byte> content) noexcept {
   auto file_res{kphp::fs::file::open(tmp_name, "w")};
   if (file_res.has_value()) {
-    const auto written_res{(*file_res).write(content)};
+    auto written_res{(*file_res).write(content)};
     if (written_res.has_value()) {
       size_t file_size{*written_res};
       if (file_size < content.size()) {
@@ -127,7 +127,7 @@ void process_file_multipart(const kphp::http::multipart::details::part& part, mi
   }
 
   if (part.name_attribute.ends_with("[]")) {
-    const string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size() - 2)};
+    string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size() - 2)};
     mixed file_array{files.get_value(name)};
 
     for (auto& attribute_it : file) {
@@ -138,7 +138,7 @@ void process_file_multipart(const kphp::http::multipart::details::part& part, mi
     }
     files.set_value(name, file_array);
   } else {
-    const string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size())};
+    string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size())};
     files.set_value(name, file);
   }
 }
