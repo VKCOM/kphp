@@ -53,8 +53,7 @@ int32_t binary_search_ranges(int32_t code) noexcept {
 
 /* Prepares unicode 0-terminated string input for search,
    leaving only digits and letters with diacritics.
-   Length of string can decrease.
-   Returns length of result. */
+   Length of string can decrease. */
 void prepare_search_string(std::span<int32_t>& code_points) noexcept {
   size_t output_size{};
   for (size_t i{}; code_points[i] != 0; ++i) {

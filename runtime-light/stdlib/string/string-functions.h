@@ -15,6 +15,7 @@
 #include "common/unicode/utf8-utils.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/stdlib/string/string-context.h"
+#include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
@@ -33,8 +34,6 @@ inline constexpr size_t SOURCE_CODE_POINTS_SPAN_BEGIN = 0;
 inline constexpr size_t WORD_INDICES_SPAN_BEGIN = SOURCE_CODE_POINTS_SPAN_BEGIN + __SOURCE_CODE_POINTS_SPAN_SIZE_IN_BYTES;
 inline constexpr size_t RESULT_CODE_POINTS_SPAN_BEGIN = WORD_INDICES_SPAN_BEGIN + __WORD_INDICES_SPAN_SIZE_IN_BYTES;
 inline constexpr size_t RESULT_BYTES_SPAN_BEGIN = RESULT_CODE_POINTS_SPAN_BEGIN + __RESULT_CODE_POINTS_SPAN_SIZE_IN_BYTES;
-
-inline constexpr int32_t MAX_UTF8_CODE_POINT{0x10ffff};
 
 inline constexpr int32_t WHITESPACE{static_cast<int32_t>(' ')};
 inline constexpr int32_t PLUS{static_cast<int32_t>('+')};
@@ -163,9 +162,8 @@ inline std::span<const std::byte> prepare_search_query_impl(std::span<const std:
 } // namespace string_functions_impl_
 
 inline string f$prepare_search_query(const string& query) noexcept {
-  std::span<const std::byte> s{
-      string_functions_impl_::prepare_search_query_impl({reinterpret_cast<const std::byte*>(query.c_str()), static_cast<size_t>(query.size())})};
-  return {reinterpret_cast<const char*>(s.data()), static_cast<string::size_type>(s.size())};
+  // TODO no problem if std::function allocate?
+  return prepare_search_query_impl_::prepare_search_query(query, [](bool condition) { kphp::log::assertion(condition); });
 }
 
 inline Optional<string> f$setlocale(int64_t category, const string& locale) noexcept {

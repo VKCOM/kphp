@@ -11,6 +11,7 @@
 #include <optional>
 #include <string_view>
 
+#include "common/unicode/unicode-utils.h"
 #include "runtime-common/core/runtime-core.h"
 #include "runtime-common/core/utils/kphp-assert-core.h"
 #include "runtime-common/stdlib/string/string-context.h"
@@ -542,3 +543,34 @@ string str_concat(str_concat_arg s1, str_concat_arg s2) noexcept;
 string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3) noexcept;
 string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4) noexcept;
 string str_concat(str_concat_arg s1, str_concat_arg s2, str_concat_arg s3, str_concat_arg s4, str_concat_arg s5) noexcept;
+
+namespace prepare_search_query_impl_ {
+
+inline constexpr size_t SOURCE_CODE_POINTS_SPAN_SIZE_IN_BYTES = sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE;
+inline constexpr size_t WORD_INDICES_SPAN_SIZE_IN_BYTES = sizeof(size_t) * MAX_NAME_CODE_POINTS_SIZE;
+inline constexpr size_t RESULT_CODE_POINTS_SPAN_SIZE_IN_BYTES = sizeof(int32_t) * MAX_NAME_CODE_POINTS_SIZE;
+inline constexpr size_t RESULT_BYTES_SPAN_SIZE_IN_BYTES = sizeof(std::byte) * MAX_NAME_BYTES_SIZE;
+
+static_assert(SOURCE_CODE_POINTS_SPAN_SIZE_IN_BYTES + WORD_INDICES_SPAN_SIZE_IN_BYTES + RESULT_CODE_POINTS_SPAN_SIZE_IN_BYTES +
+                  RESULT_BYTES_SPAN_SIZE_IN_BYTES <
+              StringLibContext::STATIC_BUFFER_LENGTH);
+
+inline constexpr size_t SOURCE_CODE_POINTS_SPAN_BEGIN = 0;
+inline constexpr size_t WORD_INDICES_SPAN_BEGIN = SOURCE_CODE_POINTS_SPAN_BEGIN + SOURCE_CODE_POINTS_SPAN_SIZE_IN_BYTES;
+inline constexpr size_t RESULT_CODE_POINTS_SPAN_BEGIN = WORD_INDICES_SPAN_BEGIN + WORD_INDICES_SPAN_SIZE_IN_BYTES;
+inline constexpr size_t RESULT_BYTES_SPAN_BEGIN = RESULT_CODE_POINTS_SPAN_BEGIN + RESULT_CODE_POINTS_SPAN_SIZE_IN_BYTES;
+
+inline string prepare_search_query(const string& query, std::function<void(bool)> assertf) noexcept {
+  auto& string_lib_ctx{StringLibContext::get()};
+  int32_t* code_points{reinterpret_cast<int32_t*>(std::next(string_lib_ctx.static_buf.get(), prepare_search_query_impl_::SOURCE_CODE_POINTS_SPAN_BEGIN))};
+  size_t* word_start_indices{reinterpret_cast<size_t*>(std::next(string_lib_ctx.static_buf.get(), prepare_search_query_impl_::WORD_INDICES_SPAN_BEGIN))};
+  int32_t* prepared_code_points{
+      reinterpret_cast<int32_t*>(std::next(string_lib_ctx.static_buf.get(), prepare_search_query_impl_::RESULT_CODE_POINTS_SPAN_BEGIN))};
+  std::byte* utf8_result{reinterpret_cast<std::byte*>(std::next(string_lib_ctx.static_buf.get(), prepare_search_query_impl_::RESULT_BYTES_SPAN_BEGIN))};
+
+  size_t length{clean_str(query.c_str(), code_points, word_start_indices, prepared_code_points, utf8_result, assertf)};
+
+  return {reinterpret_cast<char*>(utf8_result), static_cast<string::size_type>(length)};
+}
+
+} // namespace prepare_search_query_impl_
