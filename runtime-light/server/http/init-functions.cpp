@@ -442,13 +442,13 @@ kphp::coro::task<> finalize_server() noexcept {
       const mixed& tmp_filenames{file.get_value(string{"tmp_name"})};
       if (tmp_filenames.is_array()) {
         for (const auto& tmp_filename_it : tmp_filenames) {
-          const string tmp_filename{tmp_filename_it.get_value().as_string()};
-          const std::string_view tmp_filename_view{tmp_filename.c_str(), tmp_filename.size()};
+          string tmp_filename{tmp_filename_it.get_value().as_string()};
+          std::string_view tmp_filename_view{tmp_filename.c_str(), tmp_filename.size()};
           std::ignore = k2::unlink(tmp_filename_view);
         }
       } else {
-        const string tmp_filename{tmp_filenames.to_string()};
-        const std::string_view tmp_filename_view{tmp_filename.c_str(), tmp_filename.size()};
+        string tmp_filename{tmp_filenames.to_string()};
+        std::string_view tmp_filename_view{tmp_filename.c_str(), tmp_filename.size()};
         std::ignore = k2::unlink(tmp_filename_view);
       }
     }
