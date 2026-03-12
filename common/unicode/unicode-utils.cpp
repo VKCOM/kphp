@@ -57,7 +57,7 @@ int unicode_toupper(int code) {
   if ((unsigned int)code < (unsigned int)TABLE_SIZE) {
     return to_upper_table[code];
   } else {
-    return binary_search_ranges(to_upper_table_ranges, to_upper_table_ranges_size, code);
+    return binary_search_ranges(to_upper_table_ranges, to_upper_table_ranges_size, code, [](bool condition) { assert(condition); });
   }
 }
 
@@ -66,7 +66,7 @@ int unicode_tolower(int code) {
   if ((unsigned int)code < (unsigned int)TABLE_SIZE) {
     return to_lower_table[code];
   } else {
-    return binary_search_ranges(to_lower_table_ranges, to_lower_table_ranges_size, code);
+    return binary_search_ranges(to_lower_table_ranges, to_lower_table_ranges_size, code, [](bool condition) { assert(condition); });
   }
 }
 
@@ -177,12 +177,12 @@ inline size_t clean_str_unicode(int32_t* code_points, size_t* word_start_indices
   size_t result_size{};
   while (i < length) {
     char* c{reinterpret_cast<char*>(std::addressof(utf8_result[i]))};
-    bool skip{!std::strncmp(c, "amp+", 4) || !std::strncmp(c, "gt+", 3) || !std::strncmp(c, "lt+", 3) || !std::strncmp(c, "quot+", 5) ||
-              !std::strncmp(c, "ft+", 3) || !std::strncmp(c, "feat+", 5) ||
+    bool skip{!strncmp(c, "amp+", 4) || !strncmp(c, "gt+", 3) || !strncmp(c, "lt+", 3) || !strncmp(c, "quot+", 5) ||
+              !strncmp(c, "ft+", 3) || !strncmp(c, "feat+", 5) ||
               (((c[0] == '1' && c[1] == '9') || (c[0] == '2' && c[1] == '0')) && ('0' <= c[2] && c[2] <= '9') && ('0' <= c[3] && c[3] <= '9') && c[4] == '+') ||
-              !std::strncmp(c, "092+", 4) || !std::strncmp(c, "33+", 3) || !std::strncmp(c, "34+", 3) || !std::strncmp(c, "36+", 3) ||
-              !std::strncmp(c, "39+", 3) || !std::strncmp(c, "60+", 3) || !std::strncmp(c, "62+", 3) || !std::strncmp(c, "8232+", 5) ||
-              !std::strncmp(c, "8233+", 5)};
+              !strncmp(c, "092+", 4) || !strncmp(c, "33+", 3) || !strncmp(c, "34+", 3) || !strncmp(c, "36+", 3) ||
+              !strncmp(c, "39+", 3) || !strncmp(c, "60+", 3) || !strncmp(c, "62+", 3) || !strncmp(c, "8232+", 5) ||
+              !strncmp(c, "8233+", 5)};
     do {
       if (!skip) {
         utf8_result[result_size] = utf8_result[i];

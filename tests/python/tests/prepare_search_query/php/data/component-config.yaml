@@ -3,4 +3,5 @@ components:
   script:
     image: KPHP
     scope: Request
+    args: {}
     links: {}
