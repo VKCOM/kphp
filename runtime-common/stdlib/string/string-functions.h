@@ -560,7 +560,7 @@ inline constexpr size_t WORD_INDICES_SPAN_BEGIN = SOURCE_CODE_POINTS_SPAN_BEGIN 
 inline constexpr size_t RESULT_CODE_POINTS_SPAN_BEGIN = WORD_INDICES_SPAN_BEGIN + WORD_INDICES_SPAN_SIZE_IN_BYTES;
 inline constexpr size_t RESULT_BYTES_SPAN_BEGIN = RESULT_CODE_POINTS_SPAN_BEGIN + RESULT_CODE_POINTS_SPAN_SIZE_IN_BYTES;
 
-inline string prepare_search_query(const string& query, std::function<void(bool)> assertf) noexcept {
+inline string prepare_search_query(const string& query, void (*assertf)(bool)) noexcept {
   auto& string_lib_ctx{StringLibContext::get()};
   int32_t* code_points{reinterpret_cast<int32_t*>(std::next(string_lib_ctx.static_buf.get(), prepare_search_query_impl_::SOURCE_CODE_POINTS_SPAN_BEGIN))};
   size_t* word_start_indices{reinterpret_cast<size_t*>(std::next(string_lib_ctx.static_buf.get(), prepare_search_query_impl_::WORD_INDICES_SPAN_BEGIN))};

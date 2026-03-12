@@ -17,7 +17,7 @@
 #include "common/unicode/utf8-utils.h"
 
 /* Search generated ranges for specified character */
-static int binary_search_ranges(const int* ranges, int r, int code, std::function<void(bool)> assertf) {
+static int binary_search_ranges(const int* ranges, int r, int code, void (*assertf)(bool)) {
   if ((unsigned int)code > 0x10ffff) {
     return 0;
   }
@@ -77,7 +77,7 @@ inline constexpr int32_t PLUS_CODE_POINT{static_cast<int32_t>('+')};
    leaving only digits and letters with diacritics.
    Length of string can decrease.
    Returns length of result. */
-size_t prepare_search_string(int32_t* code_points, std::function<void(bool)> assertf) noexcept {
+size_t prepare_search_string(int32_t* code_points, void (*assertf)(bool)) noexcept {
   size_t output_size{};
   for (size_t i{}; code_points[i] != 0; ++i) {
     int32_t c{code_points[i]};
@@ -102,7 +102,7 @@ size_t prepare_search_string(int32_t* code_points, std::function<void(bool)> ass
   return output_size;
 }
 
-inline size_t prepare_str_unicode(int32_t* code_points, size_t* word_start_indices, int32_t* prepared_code_points, std::function<void(bool)> assertf) noexcept {
+inline size_t prepare_str_unicode(int32_t* code_points, size_t* word_start_indices, int32_t* prepared_code_points, void (*assertf)(bool)) noexcept {
   size_t code_points_length = prepare_search_string(code_points, assertf);
   code_points[code_points_length] = WHITESPACE_CODE_POINT;
 
@@ -159,7 +159,7 @@ inline size_t prepare_str_unicode(int32_t* code_points, size_t* word_start_indic
 }
 
 inline size_t clean_str_unicode(int32_t* code_points, size_t* word_start_indices, int32_t* prepared_code_points, std::byte* utf8_result,
-                                std::function<void(bool)> assertf) noexcept {
+                                void (*assertf)(bool)) noexcept {
   prepare_str_unicode(code_points, word_start_indices, prepared_code_points, assertf);
 
   auto length{static_cast<size_t>(put_string_utf8(prepared_code_points, reinterpret_cast<char*>(utf8_result)))};
@@ -187,9 +187,9 @@ inline size_t clean_str_unicode(int32_t* code_points, size_t* word_start_indices
 }
 
 size_t clean_str(const char* x, int32_t* code_points, size_t* word_start_indices, int32_t* prepared_code_points, std::byte* utf8_result,
-                 std::function<void(bool)> assertf) {
+                 void (*assertf)(bool)) {
   size_t x_len{strlen(x)};
-  if (x == NULL || x_len >= MAX_NAME_SIZE) {
+  if (assertf == nullptr || x == NULL || x_len >= MAX_NAME_SIZE) {
     for (size_t i = 0; i < x_len; ++i) {
       utf8_result[i] = static_cast<std::byte>(x[i]);
     }
