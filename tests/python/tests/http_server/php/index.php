@@ -237,6 +237,43 @@ if (isset($_SERVER["JOB_ID"])) {
             });
             break;
     }
+} else if ($_SERVER["PHP_SELF"] === "/test_multipart") {
+    switch($_GET["type"]) {
+        case "simple_names_attributes":
+            echo "name : " . $_POST["name"] . "\n";
+            echo "role : " . $_POST["role"] . "\n";
+            break;
+        case "simple_file_attribute":
+            echo "filename : " . $_FILES["file"]['name'] . "\n";
+            $tmp_name = $_FILES["file"]['tmp_name'];
+            $file_first_line = file($tmp_name)[0];
+            echo "content : " . $file_first_line;
+            break;
+        case "file_array_attribute":
+            $files = $_FILES["files"];
+            $first_file = $files["tmp_name"][0];
+            $file_first_line = file($first_file)[0];
+            echo "content-1 : " . $file_first_line;
+
+            $second_file = $files["tmp_name"][1];
+            $file_first_line = file($second_file)[0];
+            echo "content-2 : " . $file_first_line;
+            break;
+        case "name_urlencoded_attribute":
+            echo $_POST["form"]['name'] . "\n";
+            echo $_POST["form"]['note'] . "\n";
+            break;
+        case "non_terminating_boundary":
+            echo "name : " . $_POST["name"] . "\n";
+            break;
+        case "superglobal_modify":
+            $_FILES = ["file" => ["tmp_name" => "not_exists.txt"]];
+            break;
+        default:
+            echo "ERROR";
+            return;
+    }
+    echo "OK";
 } else if ($_SERVER["PHP_SELF"] === "/test_ignore_user_abort") {
     register_shutdown_function('shutdown_function');
     /** @var I */
