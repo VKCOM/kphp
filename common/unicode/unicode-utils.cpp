@@ -46,26 +46,28 @@ static int binary_search_ranges(const int* ranges, int r, int code, void (*asser
   case 2:
     return ((code - 1) | 1);
   default:
-    assertf(false);
+    if (assertf != nullptr) {
+      assertf(false);
+    }
   }
   return 0;
 }
 
 /* Convert character to upper case */
-int unicode_toupper(int code) {
+int unicode_toupper(int code, void (*assertf)(bool)) {
   if ((unsigned int)code < (unsigned int)TABLE_SIZE) {
     return to_upper_table[code];
   } else {
-    return binary_search_ranges(to_upper_table_ranges, to_upper_table_ranges_size, code, [](bool condition) noexcept { assert(condition); });
+    return binary_search_ranges(to_upper_table_ranges, to_upper_table_ranges_size, code, assertf);
   }
 }
 
 /* Convert character to lower case */
-int unicode_tolower(int code) {
+int unicode_tolower(int code, void (*assertf)(bool)) {
   if ((unsigned int)code < (unsigned int)TABLE_SIZE) {
     return to_lower_table[code];
   } else {
-    return binary_search_ranges(to_lower_table_ranges, to_lower_table_ranges_size, code, [](bool condition) noexcept { assert(condition); });
+    return binary_search_ranges(to_lower_table_ranges, to_lower_table_ranges_size, code, assertf);
   }
 }
 
