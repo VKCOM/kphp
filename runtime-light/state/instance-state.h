@@ -23,7 +23,7 @@
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/stdlib/confdata/confdata-state.h"
 #include "runtime-light/stdlib/curl/curl-state.h"
-#include "runtime-light/stdlib/diagnostics/contextual-logger.h"
+#include "runtime-light/stdlib/diagnostics/contextual-tags.h"
 #include "runtime-light/stdlib/diagnostics/error-handling-state.h"
 #include "runtime-light/stdlib/fork/fork-state.h"
 #include "runtime-light/stdlib/fork/wait-queue-state.h"
@@ -89,7 +89,7 @@ struct InstanceState final : vk::not_copyable {
   }
 
   AllocatorState instance_allocator_state{INIT_INSTANCE_ALLOCATOR_SIZE, 0};
-  kphp::log::contextual_logger instance_logger;
+  kphp::log::contextual_tags instance_tags;
 
   kphp::coro::io_scheduler io_scheduler;
   CoroutineInstanceState coroutine_instance_state;
