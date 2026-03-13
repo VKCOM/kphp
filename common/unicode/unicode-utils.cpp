@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <assert.h>
 #include <cstddef>
-#include <functional>
 #include <iterator>
 #include <stdlib.h>
 #include <string.h>
@@ -57,7 +56,7 @@ int unicode_toupper(int code) {
   if ((unsigned int)code < (unsigned int)TABLE_SIZE) {
     return to_upper_table[code];
   } else {
-    return binary_search_ranges(to_upper_table_ranges, to_upper_table_ranges_size, code, [](bool condition) { assert(condition); });
+    return binary_search_ranges(to_upper_table_ranges, to_upper_table_ranges_size, code, [](bool condition) noexcept { assert(condition); });
   }
 }
 
@@ -66,7 +65,7 @@ int unicode_tolower(int code) {
   if ((unsigned int)code < (unsigned int)TABLE_SIZE) {
     return to_lower_table[code];
   } else {
-    return binary_search_ranges(to_lower_table_ranges, to_lower_table_ranges_size, code, [](bool condition) { assert(condition); });
+    return binary_search_ranges(to_lower_table_ranges, to_lower_table_ranges_size, code, [](bool condition) noexcept { assert(condition); });
   }
 }
 

@@ -6,7 +6,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 
 inline constexpr size_t MAX_NAME_SIZE = 65536;
 inline constexpr size_t MAX_NAME_BYTES_SIZE = 4 * MAX_NAME_SIZE + 4;

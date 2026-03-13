@@ -4,24 +4,15 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cstddef>
 #include <cstdint>
-#include <cstring>
-#include <memory>
-#include <span>
 
-#include "common/unicode/unicode-utils.h"
-#include "common/unicode/utf8-utils.h"
 #include "runtime-common/core/runtime-core.h"
-#include "runtime-common/stdlib/string/string-context.h"
 #include "runtime-common/stdlib/string/string-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 
 inline string f$prepare_search_query(const string& query) noexcept {
-  // TODO no problem if std::function allocate?
-  return prepare_search_query_impl_::prepare_search_query(query, [](bool condition) { kphp::log::assertion(condition); });
+  return prepare_search_query_impl_::prepare_search_query(query, [](bool condition) noexcept { kphp::log::assertion(condition); });
 }
 
 inline Optional<string> f$setlocale(int64_t category, const string& locale) noexcept {

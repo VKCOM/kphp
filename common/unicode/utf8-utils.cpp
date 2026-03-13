@@ -5,7 +5,6 @@
 #include "common/unicode/utf8-utils.h"
 
 #include <array>
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -992,7 +991,6 @@ int simplify_character(int c) {
   }
 }
 
-// TODO does constexpr std::array enough for safe use in runtime-light ?
 constexpr std::array<int32_t, 2> _s_1__{97, 0};
 constexpr std::array<int32_t, 2> _v_1__{1072, 0};
 constexpr std::array<int32_t, 2> _s_2__{98, 0};
