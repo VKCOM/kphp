@@ -2,6 +2,8 @@
 // Copyright (c) 2020 LLC «V Kontakte»
 // Distributed under the GPL v3 License, see LICENSE.notice.txt
 
+#include <atomic>
+
 #include "compiler/stage.h"
 
 #include "common/termformat/termformat.h"
@@ -31,7 +33,7 @@ const char *get_assert_level_desc(AssertLevelT assert_level) {
   }
 }
 
-volatile int ce_locker;
+std::atomic<int> ce_locker;
 
 namespace {
 FILE *warning_file{nullptr};
@@ -44,7 +46,7 @@ void stage::set_warning_file(FILE *file) noexcept {
 void on_compilation_error(const char *description __attribute__((unused)), const char *file_name, int line_number,
                           const char *full_description, AssertLevelT assert_level) {
 
-  AutoLocker<volatile int *> locker(&ce_locker);
+  AutoLocker<std::atomic<int> *> locker(&ce_locker);
   FILE *file = stdout;
   if (assert_level == WRN_ASSERT_LEVEL && warning_file) {
     file = warning_file;

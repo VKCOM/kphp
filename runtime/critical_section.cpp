@@ -16,8 +16,8 @@ void check_stack_overflow() {
 
 namespace dl {
 
-volatile int in_critical_section = 0;
-volatile long long pending_signals = 0;
+volatile int in_critical_section;
+volatile long long pending_signals;
 
 void enter_critical_section() noexcept {
   check_stack_overflow();
