@@ -76,6 +76,10 @@ void ComponentState::parse_runtime_config_arg(std::string_view value_view) noexc
   runtime_config = *std::move(opt_config);
 }
 
+void ComponentState::parse_cluster_name(std::string_view value_view) noexcept {
+  cluster_name = string{value_view.data(), static_cast<string::size_type>(value_view.size())};
+}
+
 void ComponentState::parse_args() noexcept {
   for (auto i = 0; i < argc; ++i) {
     const auto [arg_key, arg_value]{k2::arg_fetch(i)};
@@ -88,6 +92,8 @@ void ComponentState::parse_args() noexcept {
       parse_kml_arg(value_view);
     } else if (key_view == RUNTIME_CONFIG_ARG) [[likely]] {
       parse_runtime_config_arg(value_view);
+    } else if (key_view == CLUSTER_NAME_ARG) [[likely]] {
+      parse_cluster_name(value_view);
     } else {
       kphp::log::warning("unexpected argument format: {}", key_view);
     }

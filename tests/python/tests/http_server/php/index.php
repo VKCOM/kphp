@@ -331,6 +331,8 @@ if (isset($_SERVER["JOB_ID"])) {
             return;
         }
     });
+} else if ($_SERVER["PHP_SELF"] === "/test_get_cluster_name") {
+    echo get_kphp_cluster_name();
 } else {
     if ($_GET["hints"] === "yes") {
         send_http_103_early_hints(["Content-Type: text/plain or application/json", "Link: </script.js>; rel=preload; as=script"]);

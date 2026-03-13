@@ -6,4 +6,5 @@ components:
     args:
       ini hello: "world"
       runtime-config: ${RUNTIME_CONFIG_PATH}
+      cluster-name: "custom_cluster_name"
     links: {}

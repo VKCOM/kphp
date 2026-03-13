@@ -30,6 +30,7 @@
 #include "runtime-light/coroutine/io-scheduler.h"
 #include "runtime-light/coroutine/task.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/state/component-state.h"
 #include "runtime-light/state/image-state.h"
 #include "runtime-light/stdlib/diagnostics/contextual-logger.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
@@ -251,7 +252,7 @@ inline string f$get_engine_version() noexcept {
 }
 
 inline string f$get_kphp_cluster_name() noexcept {
-  return string{"adm512"};
+  return ComponentState::get().cluster_name;
 }
 
 inline void f$kphp_turn_on_host_tag_in_inner_statshouse_metrics_toggle() noexcept {}
