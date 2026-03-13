@@ -298,7 +298,8 @@ class WebServerAutoTestCase(BaseTestCase):
     @classmethod
     def kphp_env_for_k2_server_component(cls):
         env = {"KPHP_MODE": "k2-server", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
-               "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1"}
+               "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1",
+               "KPHP_TRACKED_BUILTINS_LIST": KphpRunOnce.K2_KPHP_TRACKED_BUILTINS_LIST}
         return env
 
     def assertKphpNoTerminatedRequests(self):
