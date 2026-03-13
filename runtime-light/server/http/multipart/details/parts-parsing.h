@@ -43,10 +43,12 @@ struct part_header {
 
   static std::optional<part_header> parse(std::string_view header) noexcept {
     auto [name_view, value_view]{vk::split_string_view(header, ':')};
+    name_view = vk::trim(name_view);
+    value_view = vk::trim(value_view);
     if (name_view.empty() || value_view.empty()) {
       return std::nullopt;
     }
-    return part_header{name_view, value_view.substr(1)};
+    return part_header{name_view, value_view};
   }
 
   bool name_is(std::string_view header_name) const noexcept {
@@ -74,6 +76,8 @@ struct part_attribute {
 
   static std::optional<part_attribute> parse(std::string_view attribute) noexcept {
     auto [name_view, value_view]{vk::split_string_view(vk::trim(attribute), '=')};
+    name_view = vk::trim(name_view);
+    value_view = vk::trim(value_view);
     if (name_view.empty() || value_view.empty()) {
       return std::nullopt;
     }

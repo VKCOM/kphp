@@ -30,7 +30,6 @@
 #include "runtime-light/state/instance-state.h"
 #include "runtime-light/stdlib/component/component-api.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
-#include "runtime-light/stdlib/file/file-system-functions.h"
 #include "runtime-light/stdlib/output/output-state.h"
 #include "runtime-light/stdlib/server/http-functions.h"
 #include "runtime-light/stdlib/zlib/zlib-functions.h"
@@ -38,8 +37,6 @@
 #include "runtime-light/tl/tl-core.h"
 #include "runtime-light/tl/tl-functions.h"
 #include "runtime-light/tl/tl-types.h"
-
-#include "runtime-light/stdlib/output/print-functions.h"
 
 namespace {
 
@@ -329,9 +326,10 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
       f$parse_str(body, superglobals.v$_POST);
       http_server_instance_st.opt_raw_post_data.emplace(std::move(body));
     } else if (!std::ranges::search(content_type, CONTENT_TYPE_MULTIPART_FORM_DATA).empty()) {
-      if (auto boundary_opt{kphp::http::multipart::extract_boundary(content_type)}; boundary_opt.has_value()) {
-        std::string_view body_view{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
-        kphp::http::multipart::process_multipart_content_type(body_view, *boundary_opt, superglobals);
+      std::string_view body_view{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
+      auto process_multipart_res{kphp::http::multipart::process_multipart_content_type(content_type, body_view, superglobals)};
+      if (!process_multipart_res.has_value()) {
+        kphp::log::warning("{}", process_multipart_res.error());
       }
     } else {
       string body{reinterpret_cast<const char*>(invoke_http.body.data()), static_cast<string::size_type>(invoke_http.body.size())};
@@ -385,7 +383,6 @@ void init_server(kphp::component::stream&& request_stream, kphp::stl::vector<std
 
 kphp::coro::task<> finalize_server() noexcept {
   auto& http_server_instance_st{HttpServerInstanceState::get()};
-  auto& superglobals{InstanceState::get().php_script_mutable_globals_singleton.get_superglobals()};
 
   string response_body{};
   tl::HttpResponse http_response{};
@@ -407,12 +404,12 @@ kphp::coro::task<> finalize_server() noexcept {
     }
     // fill headers
     http_response.http_response.headers.value.reserve(http_server_instance_st.headers().size());
-    std::transform(http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(),
-                   std::back_inserter(http_response.http_response.headers.value), [](const auto& header_entry) noexcept {
-                     const auto& [name, value]{header_entry};
-                     return tl::httpHeaderEntry{
-                         .is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
-                   });
+    std::transform(
+        http_server_instance_st.headers().cbegin(), http_server_instance_st.headers().cend(), std::back_inserter(http_response.http_response.headers.value),
+        [](const auto& header_entry) noexcept {
+          const auto& [name, value]{header_entry};
+          return tl::httpHeaderEntry{.is_sensitive = {}, .name = {.value = {name.data(), name.size()}}, .value = {.value = {value.data(), value.size()}}};
+        });
     http_server_instance_st.response_state = kphp::http::response_state::headers_sent;
     [[fallthrough]];
   }
@@ -440,21 +437,8 @@ kphp::coro::task<> finalize_server() noexcept {
     [[fallthrough]];
   }
   case kphp::http::response_state::completed:
-    const array<mixed> files{superglobals.v$_FILES.to_array()};
-    for (const auto& files_it : files) {
-      const mixed& file{files_it.get_value()};
-      const mixed& tmp_filenames{file.get_value(string{"tmp_name"})};
-      if (tmp_filenames.is_array()) {
-        for (const auto& tmp_filename_it : tmp_filenames) {
-          string tmp_filename{tmp_filename_it.get_value().as_string()};
-          std::string_view tmp_filename_view{tmp_filename.c_str(), tmp_filename.size()};
-          std::ignore = k2::unlink(tmp_filename_view);
-        }
-      } else {
-        string tmp_filename{tmp_filenames.to_string()};
-        std::string_view tmp_filename_view{tmp_filename.c_str(), tmp_filename.size()};
-        std::ignore = k2::unlink(tmp_filename_view);
-      }
+    for (const auto& temporary_file : http_server_instance_st.multipart_temporary_files) {
+      std::ignore = k2::unlink(temporary_file);
     }
     co_return;
   }

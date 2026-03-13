@@ -17,12 +17,12 @@
 #include "runtime-common/core/std/containers.h"
 #include "runtime-common/stdlib/server/url-functions.h"
 #include "runtime-light/k2-platform/k2-api.h"
+#include "runtime-light/server/http/http-server-state.h"
 #include "runtime-light/server/http/multipart/details/parts-parsing.h"
 #include "runtime-light/state/component-state.h"
 #include "runtime-light/stdlib/diagnostics/logs.h"
 #include "runtime-light/stdlib/file/resource.h"
 #include "runtime-light/stdlib/math/random-functions.h"
-#include "runtime-light/stdlib/output/print-functions.h"
 
 namespace {
 
@@ -42,14 +42,15 @@ constexpr int32_t UPLOAD_ERR_CANT_WRITE = 7;
 // constexpr int32_t UPLOAD_ERR_EXTENSION = 8; // unused in kphp
 
 std::optional<kphp::stl::string<kphp::memory::script_allocator>> generate_temporary_name() noexcept {
-  static constexpr std::string_view LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  static constexpr auto random_letter = []() noexcept {
+  static constexpr std::string_view LETTERS{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"};
+  static constexpr auto random_letter{[]() noexcept {
     int64_t pos{f$mt_rand(0, LETTERS.size() - 1)};
     return LETTERS[pos];
-  };
+  }};
   static constexpr int64_t GENERATE_ATTEMPTS = 4;
   static constexpr int64_t SYMBOLS_COUNT = 6;
 
+  // todo rework with k2::tempnam or mkstemp
   const auto& component_st{ComponentState::get()};
   auto tmp_dir_env{component_st.env.get_value(string{"TMPDIR"})};
 
@@ -71,48 +72,51 @@ std::optional<kphp::stl::string<kphp::memory::script_allocator>> generate_tempor
 
 std::expected<size_t, int32_t> write_temporary_file(std::string_view tmp_name, std::span<const std::byte> content) noexcept {
   auto file_res{kphp::fs::file::open(tmp_name, "w")};
-  if (file_res.has_value()) {
-    auto written_res{(*file_res).write(content)};
-    if (written_res.has_value()) {
-      size_t file_size{*written_res};
-      if (file_size < content.size()) {
-        return std::unexpected{UPLOAD_ERR_PARTIAL};
-      }
-      return file_size;
-    } else {
-      return std::unexpected{UPLOAD_ERR_CANT_WRITE};
-    }
-  } else {
+  if (!file_res.has_value()) {
     return std::unexpected{UPLOAD_ERR_NO_FILE};
   }
+
+  auto written_res{(*file_res).write(content)};
+  if (!written_res.has_value()) {
+    return std::unexpected{UPLOAD_ERR_CANT_WRITE};
+  }
+
+  size_t file_size{*written_res};
+  if (file_size < content.size()) {
+    return std::unexpected{UPLOAD_ERR_PARTIAL};
+  }
+  return file_size;
 }
 
 } // namespace
 
 namespace kphp::http::multipart::details {
 
-void process_post_multipart(const kphp::http::multipart::details::part& part, mixed& post) noexcept {
+void process_post_multipart(const kphp::http::multipart::details::part& part, array<mixed>& post) noexcept {
   const string name{part.name_attribute.data(), static_cast<string::size_type>(part.name_attribute.size())};
   const string body{part.body.data(), static_cast<string::size_type>(part.body.size())};
   if (part.content_type.has_value() && !std::ranges::search(*part.content_type, CONTENT_TYPE_APP_FORM_URLENCODED).empty()) {
-    f$parse_str(body, post[name]);
+    auto post_value{post.get_value(name)};
+    f$parse_str(body, post_value);
+    post.set_value(name, std::move(post_value));
   } else {
     post.set_value(name, body);
   }
 }
 
-void process_file_multipart(const kphp::http::multipart::details::part& part, mixed& files) noexcept {
+void process_file_multipart(const kphp::http::multipart::details::part& part, array<mixed>& files) noexcept {
   kphp::log::assertion(part.filename_attribute.has_value());
 
   auto tmp_name_opt{generate_temporary_name()};
-  if (!tmp_name_opt.has_value()) {
-    kphp::log::warning("cannot generate unique name for multipart temporary file");
-    return;
-  }
+  kphp::log::assertion(tmp_name_opt.has_value());
   auto tmp_name{*tmp_name_opt};
   auto write_res{write_temporary_file(tmp_name, {reinterpret_cast<const std::byte*>(part.body.data()), part.body.size()})};
 
-  mixed file{};
+  if (write_res.has_value() || write_res.error() != UPLOAD_ERR_NO_FILE) {
+    HttpServerInstanceState::get().multipart_temporary_files.insert(*tmp_name_opt);
+  }
+
+  array<mixed> file{};
   if (!write_res.has_value()) {
     file.set_value(string{"size"}, 0);
     file.set_value(string{"tmp_name"}, string{});

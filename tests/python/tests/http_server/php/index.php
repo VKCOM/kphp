@@ -263,6 +263,12 @@ if (isset($_SERVER["JOB_ID"])) {
             echo $_POST["form"]['name'] . "\n";
             echo $_POST["form"]['note'] . "\n";
             break;
+        case "non_terminating_boundary":
+            echo "name : " . $_POST["name"] . "\n";
+            break;
+        case "superglobal_modify":
+            $_FILES = ["file" => ["tmp_name" => "not_exists.txt"]];
+            break;
         default:
             echo "ERROR";
             return;
