@@ -23,10 +23,10 @@ inline uint32_t get_default_threads_count() noexcept {
 template<class T>
 struct TLS {
 private:
-  struct TLSRaw {
+  static constexpr std::size_t CACHE_LINE_SIZE = 64;
+  struct alignas(CACHE_LINE_SIZE) TLSRaw {
     T data{};
-    volatile int locker = 0;
-    char dummy[4096];
+//    char dummy[CACHE_LINE_SIZE];
   };
 
   // The thread with thread_id = 0 is the main thread in which the scheduler's master code is executed.
@@ -68,19 +68,6 @@ public:
 
   int size() {
     return MAX_THREADS_COUNT + 1;
-  }
-
-  T *lock_get() {
-    TLSRaw *raw = get_raw();
-    bool ok = try_lock(&raw->locker);
-    assert(ok);
-    return &raw->data;
-  }
-
-  void unlock_get(T *ptr) {
-    TLSRaw *raw = get_raw();
-    assert(&raw->data == ptr);
-    unlock(&raw->locker);
   }
 };
 
