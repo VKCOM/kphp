@@ -23,7 +23,7 @@ Optional<int64_t> f$mb_strpos(const string& haystack, const string& needle, int6
                               const string& encoding = StringLibConstants::get().CP1251_STR) noexcept;
 
 Optional<int64_t> mb_stripos_impl(const string& haystack, const string& needle, void (*assertf)(bool), int64_t offset = 0,
-                               const string& encoding = StringLibConstants::get().CP1251_STR) noexcept;
+                                  const string& encoding = StringLibConstants::get().CP1251_STR) noexcept;
 
 string f$mb_substr(const string& str, int64_t start, const mixed& length = std::numeric_limits<int64_t>::max(),
                    const string& encoding = StringLibConstants::get().CP1251_STR) noexcept;
