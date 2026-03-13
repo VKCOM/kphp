@@ -37,6 +37,32 @@ class TestMultipartContentType(WebServerAutoTestCase):
         self.assertTrue(response.content.find(b"name : Ivan") != -1)
         self.assertTrue(response.content.find(b"role : admin") != -1)
 
+    def test_multipart_non_terminating_boundary(self):
+        boundary = "------------------------d74496d66958873e"
+
+        data = (f"--{boundary}\r\n"
+                'Content-Disposition: form-data; name="name"\r\n'
+                "\r\n"
+                "Ivan\r\n"
+                f"--{boundary}\r\n"
+                ).encode("utf-8")
+
+        headers = {
+            "Accept": "*/*",
+            "Content-Type": f"multipart/form-data; boundary={boundary}; charset=UTF-8",
+            "Content-Length": str(len(data)),  # keep if http_request doesn't auto-set it
+        }
+
+        response = self.web_server.http_request(
+            uri="/test_multipart?type=non_terminating_boundary",
+            method="POST",
+            headers=headers,
+            data=data,  # body goes here
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.content.find(b"name : Ivan") != -1)
+
     def test_multipart_filename_attribute(self):
 
         tmp_files = os.listdir("/tmp/")
@@ -118,6 +144,41 @@ class TestMultipartContentType(WebServerAutoTestCase):
         self.assertEqual(200, response.status_code)
         self.assertTrue(response.content.find(b"Hello from a.txt") != -1)
         self.assertTrue(response.content.find(b"Hello from b.txt") != -1)
+
+        tmp_files_after_script = os.listdir("/tmp/")
+        # check that script delete tmp files at the end
+        self.assertEqual(sorted(tmp_files), sorted(tmp_files_after_script))
+
+    def test_multipart_superglobal_modify(self):
+
+        tmp_files = os.listdir("/tmp/")
+        boundary = "------------------------d74496d66958873e"
+
+        file_bytes = b"Hello from test.txt\nSecond line\n"
+
+        data = (f"--{boundary}\r\n"
+                'Content-Disposition: form-data; name="file"; filename="test.txt"\r\n'
+                "Content-Type: text/plain\r\n"
+                "\r\n"
+                ).encode("utf-8") + file_bytes + (
+                   "\r\n"
+                   f"--{boundary}--\r\n"
+               ).encode("utf-8")
+
+        headers = {
+            "Accept": "*/*",
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(len(data)),
+        }
+
+        response = self.web_server.http_request(
+            uri="/test_multipart?type=superglobal_modify",
+            method="POST",
+            headers=headers,
+            data=data,
+        )
+
+        self.assertEqual(200, response.status_code)
 
         tmp_files_after_script = os.listdir("/tmp/")
         # check that script delete tmp files at the end
