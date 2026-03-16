@@ -9,12 +9,13 @@ import signal
 import sys
 from functools import partial
 from multiprocessing.dummy import Pool as ThreadPool
+import typing
 
 from python.lib.colors import red, green, yellow, blue, cyan
 from python.lib.file_utils import search_php_bin
 from python.lib.nocc_for_kphp_tester import nocc_start_daemon_in_background
 from python.lib.kphp_run_once import KphpRunOnce
-from python.lib import k2_builtin
+from python.lib import std_function
 from python.lib import tcp
 
 TCP_SERVER_TAG_PREFIX = "tcp_server:"
@@ -60,14 +61,16 @@ class TestFile:
     def is_available_for_k2(self):
         return "k2_skip" not in self.tags
 
-    def make_kphp_once_runner(self, use_nocc, cxx_name, k2_bin, k2_builtin_calls: k2_builtin.Calls):
+    def make_kphp_once_runner(
+            self, use_nocc, cxx_name, k2_bin, std_function_invocations: typing.Optional[std_function.Invocations]
+    ):
         tester_dir = os.path.abspath(os.path.dirname(__file__))
         return KphpRunOnce(
             php_script_path=self.file_path,
             working_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "working_dir")),
             artifacts_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "artifacts")),
             php_bin=search_php_bin(php_version=self.php_version),
-            k2_builtin_calls=k2_builtin_calls,
+            std_function_invocations=std_function_invocations,
             extra_include_dirs=[os.path.join(tester_dir, "php_include")],
             vkext_dir=os.path.abspath(os.path.join(tester_dir, os.path.pardir, "objs", "vkext")),
             use_nocc=use_nocc,
@@ -81,7 +84,6 @@ class TestFile:
         self.env_vars["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "0"
         self.env_vars["KPHP_PROFILER"] = "0"
         self.env_vars["KPHP_FORCE_LINK_RUNTIME"] = "1"
-        self.env_vars["KPHP_TRACKED_BUILTINS_LIST"] = k2_builtin.K2_KPHP_TRACKED_BUILTINS_LIST
 
 
 def make_test_file(file_path, test_tmp_dir, test_tags):
@@ -355,11 +357,13 @@ def run_ok_test(test: TestFile, runner):
     return TestResult.passed(test, runner.artifacts)
 
 
-def run_test(use_nocc, cxx_name, k2_bin, k2_builtin_calls: k2_builtin.Calls, test: TestFile):
+def run_test(
+        use_nocc, cxx_name, k2_bin, std_function_invocations: typing.Optional[std_function.Invocations], test: TestFile
+):
     if not os.path.exists(test.file_path):
         return TestResult.failed(test, None, "can't find test file")
 
-    runner = test.make_kphp_once_runner(use_nocc, cxx_name, k2_bin, k2_builtin_calls)
+    runner = test.make_kphp_once_runner(use_nocc, cxx_name, k2_bin, std_function_invocations)
     runner.remove_artifacts_dir()
     if k2_bin is not None:
         test.set_up_env_for_k2()
@@ -398,12 +402,15 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
             "tag" if len(test_tags) == 1 else "tags"))
         sys.exit(1)
 
-    k2_builtin_calls = k2_builtin.Calls()
+    if "K2_KPHP_TRACKED_BUILTINS_LIST" in os.environ:
+        std_function_invocations = std_function.Invocations()
+    else:
+        std_function_invocations = None
 
     results = []
     with ThreadPool(jobs) as pool:
         tests_completed = 0
-        for test_result in pool.imap_unordered(partial(run_test, use_nocc, cxx_name, k2_bin, k2_builtin_calls), tests):
+        for test_result in pool.imap_unordered(partial(run_test, use_nocc, cxx_name, k2_bin, std_function_invocations), tests):
             if hack_reference_exit:
                 print(yellow("Testing process was interrupted"), flush=True)
                 break
@@ -411,13 +418,14 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
             test_result.print_short_report(len(tests), tests_completed)
             results.append(test_result)
 
-    TMP_DIR.mkdir(parents=True, exist_ok=True)
+    if std_function_invocations:
+        TMP_DIR.mkdir(parents=True, exist_ok=True)
 
-    k2_builtin_calls_filename = "k2_builtin_calls.json"
-    k2_builtin_calls_output_path = TMP_DIR / k2_builtin_calls_filename
+        std_function_invocations_filename = "std_function_invocations.json"
+        std_function_invocations_output_path = TMP_DIR / std_function_invocations_filename
 
-    with open(k2_builtin_calls_output_path, "w", encoding="utf-8") as f:
-        k2_builtin_calls.dump(f)
+        with open(std_function_invocations_output_path, "w", encoding="utf-8") as f:
+            std_function_invocations.dump(f)
 
     print("\nTesting results:", flush=True)
 

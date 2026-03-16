@@ -2,15 +2,27 @@ import os
 import shutil
 import subprocess
 import sys
+import typing
 
-from . import k2_builtin
+from . import std_function
 from .kphp_builder import KphpBuilder
 from .file_utils import error_can_be_ignored
 
 
 class KphpRunOnce(KphpBuilder):
-    def __init__(self, php_script_path, artifacts_dir, working_dir, php_bin, k2_builtin_calls: k2_builtin.Calls,
-                 extra_include_dirs=None, vkext_dir=None, use_nocc=False, cxx_name="g++", k2_bin=None):
+    def __init__(
+            self,
+            php_script_path,
+            artifacts_dir,
+            working_dir,
+            php_bin,
+            std_function_invocations: typing.Optional[std_function.Invocations],
+            extra_include_dirs=None,
+            vkext_dir=None,
+            use_nocc=False,
+            cxx_name="g++",
+            k2_bin=None
+        ):
         super(KphpRunOnce, self).__init__(
             php_script_path=php_script_path,
             artifacts_dir=artifacts_dir,
@@ -27,7 +39,7 @@ class KphpRunOnce(KphpBuilder):
             self._include_dirs.extend(extra_include_dirs)
         self._vkext_dir = vkext_dir
         self._php_bin = php_bin
-        self._k2_builtin_calls = k2_builtin_calls
+        self._std_function_invocations= std_function_invocations
         self.k2_bin = k2_bin
 
     def _get_extensions(self):
@@ -122,9 +134,14 @@ class KphpRunOnce(KphpBuilder):
         self._move_sanitizer_logs_to_artifacts(sanitizer_glob_mask, kphp_server_proc, sanitizer_log_name)
         ignore_stderr = error_can_be_ignored(
             ignore_patterns=[
-                "^\\[\\d+\\]\\[\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+ php\\-runner\\.cpp\\s+\\d+\\].+$"
+                "^\\[\\d+\\]\\[\\d{4}\\-\\d{2}\\-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d+ php\\-runner\\.cpp\\s+\\d+\\].+$",
+                ".*Debug.*",
+                ".*Info.*",
             ],
             binary_error_text=kphp_runtime_stderr)
+
+        if self._std_function_invocations:
+            self._std_function_invocations.update(kphp_runtime_stderr)
 
         if not ignore_stderr:
             self._kphp_runtime_stderr = self._move_to_artifacts(
@@ -163,7 +180,8 @@ class KphpRunOnce(KphpBuilder):
                 k2_runtime_proc.returncode,
                 content=_kphp_server_stderr)
 
-        self._k2_builtin_calls.update(_kphp_server_stderr)
+        if self._std_function_invocations:
+            self._std_function_invocations.update(_kphp_server_stderr)
 
         return k2_runtime_proc.returncode == 0
 
