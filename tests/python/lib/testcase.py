@@ -22,42 +22,7 @@ from .web_server import WebServer
 logging.disable(logging.DEBUG)
 
 
-def _sync_data(tmp_dir, test_parent_dir):
-    data_dir = os.path.join(test_parent_dir, "php/data")
-    tmp_data_dir = os.path.join(tmp_dir, "data")
-
-    if os.path.isdir(data_dir):
-        os.makedirs(tmp_data_dir, exist_ok=True)
-        for data_file in os.listdir(data_dir):
-            full_tmp_file = os.path.join(tmp_data_dir, data_file)
-            if os.path.exists(full_tmp_file):
-                continue
-
-            full_data_file = os.path.join(data_dir, data_file)
-            if os.path.isfile(full_data_file):
-                shutil.copy(full_data_file, tmp_data_dir)
-            elif os.path.isdir(full_data_file):
-                shutil.copytree(full_data_file, full_tmp_file)
-
-
-def _get_tmp_folder_path(test_script_file):
-    test_script_dir = os.path.dirname(os.path.realpath(test_script_file))
-    tests_root_dir = test_script_dir
-    while not tests_root_dir.endswith("python/tests"):
-        tests_root_dir = os.path.dirname(tests_root_dir)
-        if "python/tests" not in tests_root_dir:
-            raise RuntimeError("Can't find tests root dir")
-
-    python_tests_dir = os.path.dirname(tests_root_dir)
-    tmp_dir = os.path.join(python_tests_dir, "_tmp/", test_script_dir[len(tests_root_dir) + 1:])
-    test_suite_name, _ = os.path.splitext(os.path.basename(test_script_file))
-    working_dir = os.path.join(tmp_dir, "working_dir")
-    artifacts_dir = os.path.join(tmp_dir, "artifacts")
-    tmp_dir_root = os.path.join(artifacts_dir, "tmp_{}".format(test_suite_name))
-    return working_dir, tmp_dir_root, artifacts_dir, test_script_dir
-
-
-def _make_test_tmp_dir(tmp_dir_root):
+def make_test_tmp_dir(tmp_dir_root):
     all_dirs = next(os.walk(tmp_dir_root))[1]
     ppid = str(os.getppid())
     for tmp_dir in all_dirs:
@@ -73,32 +38,28 @@ def _make_test_tmp_dir(tmp_dir_root):
     return test_tmp_dir
 
 
-def _create_tmp_folders(test_script_file):
-    kphp_build_working_dir, tmp_dir_root, artifacts_dir, test_script_dir = _get_tmp_folder_path(test_script_file)
-    for test_dir in (kphp_build_working_dir, tmp_dir_root, artifacts_dir):
-        os.makedirs(test_dir, exist_ok=True)
-
-    kphp_server_working_dir = _make_test_tmp_dir(tmp_dir_root)
-    _sync_data(kphp_server_working_dir, test_script_dir)
-    return kphp_build_working_dir, kphp_server_working_dir, artifacts_dir, test_script_dir
-
-
 class BaseTestCase(TestCase):
     kphp_build_working_dir = ""
     web_server_working_dir = ""
     artifacts_dir = ""
     test_dir = ""
 
-    @classmethod
-    def _setup_tmp_folder(cls):
-        script_file = sys.modules.get(cls.__module__).__file__
-        cls.kphp_build_working_dir, cls.web_server_working_dir, cls.artifacts_dir, cls.test_dir = \
-            _create_tmp_folders(script_file)
+    @pytest.fixture(scope="class")
+    def setup_tmp_folder(
+        self,
+        request: pytest.FixtureRequest,
+        working_dir: pathlib.Path,
+        kphp_server_working_dir: pathlib.Path,
+        artifacts_dir: pathlib.Path,
+    ):
+        request.cls.kphp_build_working_dir = working_dir
+        request.cls.web_server_working_dir = kphp_server_working_dir
+        request.cls.artifacts_dir = artifacts_dir
+        request.cls.test_dir = request.path.parent
 
-    @classmethod
-    def setup_class(cls):
-        cls._setup_tmp_folder()
-        cls.custom_setup()
+    @pytest.fixture(scope="class", autouse=True)
+    def _base_setup(self, request: pytest.FixtureRequest, setup_tmp_folder):
+        request.cls.custom_setup()
 
     @classmethod
     def teardown_class(cls):
@@ -190,7 +151,7 @@ class WebServerAutoTestCase(BaseTestCase):
     sanitizer_pattern = None
 
 
-    @pytest.fixture(scope='class', autouse=True)
+    @pytest.fixture(scope="class", autouse=True)
     def web_server_k2_builtins_updater(self, request, k2_builtin_calls):
         yield
         if request.cls.should_use_k2():
@@ -333,14 +294,12 @@ class WebServerAutoTestCase(BaseTestCase):
             })
 
 
-@pytest.fixture(scope='class')
-def kphp_compiler_k2_builtins(request, k2_builtin_calls):
-    request.cls.k2_builtin_calls = k2_builtin_calls
-
-
-@pytest.mark.usefixtures('kphp_compiler_k2_builtins')
 class KphpCompilerAutoTestCase(BaseTestCase):
     once_runner_trash_bin = []
+
+    @pytest.fixture(scope="class", autouse=True)
+    def kphp_compiler_k2_builtins(self, request, k2_builtin_calls):
+        request.cls.k2_builtin_calls = k2_builtin_calls
 
     def __init__(self, method_name):
         super().__init__(method_name)
@@ -364,7 +323,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
 
     @classmethod
     def custom_setup(cls):
-        cls.kphp_build_working_dir = _make_test_tmp_dir(cls.kphp_build_working_dir)
+        cls.kphp_build_working_dir = make_test_tmp_dir(cls.kphp_build_working_dir)
         cls.extra_class_setup()
 
     @classmethod

@@ -1,4 +1,4 @@
 import os
 import pytest
 
-from python.lib.conftest_impl import skip_k2_unsupported_test, skip_k2_unsupported_test_suite, skip_kphp_unsupported_test, skip_kphp_unsupported_test_suite, k2_builtin_calls
+pytest_plugins = ["python.lib.conftest_impl"]
