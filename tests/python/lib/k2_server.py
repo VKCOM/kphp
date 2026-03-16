@@ -30,6 +30,8 @@ class K2Server(WebServer):
                          "--linking": self._linking_file}
 
         os.environ["RUNTIME_CONFIG_PATH"] = os.path.join(working_dir, "data/runtime_configuration.json")
+        if "RUST_LOG" not in os.environ:
+            os.environ["RUST_LOG"] = "Debug"
 
         if options:
             self.update_options(options)

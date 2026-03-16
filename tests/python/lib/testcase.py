@@ -8,7 +8,10 @@ import glob
 
 from unittest import TestCase
 
+import pytest
+
 from .kphp_server import KphpServer
+from . import k2_builtin
 from .k2_server import K2Server
 from .kphp_builder import KphpBuilder
 from .kphp_run_once import KphpRunOnce
@@ -186,6 +189,14 @@ class WebServerAutoTestCase(BaseTestCase):
     kphp_builder = None
     sanitizer_pattern = None
 
+
+    @pytest.fixture(scope='class', autouse=True)
+    def web_server_k2_builtins_updater(self, request, k2_builtin_calls):
+        yield
+        if request.cls.should_use_k2():
+            for line in request.cls.web_server.get_log():
+                k2_builtin_calls.update(line.encode())
+
     @classmethod
     def custom_setup(cls):
         if cls.should_use_nocc():
@@ -299,7 +310,7 @@ class WebServerAutoTestCase(BaseTestCase):
     def kphp_env_for_k2_server_component(cls):
         env = {"KPHP_MODE": "k2-server", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
                "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1",
-               "KPHP_TRACKED_BUILTINS_LIST": KphpRunOnce.K2_KPHP_TRACKED_BUILTINS_LIST}
+               "KPHP_TRACKED_BUILTINS_LIST": k2_builtin.K2_KPHP_TRACKED_BUILTINS_LIST}
         return env
 
     def assertKphpNoTerminatedRequests(self):
@@ -322,6 +333,12 @@ class WebServerAutoTestCase(BaseTestCase):
             })
 
 
+@pytest.fixture(scope='class')
+def kphp_compiler_k2_builtins(request, k2_builtin_calls):
+    request.cls.k2_builtin_calls = k2_builtin_calls
+
+
+@pytest.mark.usefixtures('kphp_compiler_k2_builtins')
 class KphpCompilerAutoTestCase(BaseTestCase):
     once_runner_trash_bin = []
 
@@ -367,7 +384,8 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     @classmethod
     def kphp_env_for_k2_common(cls):
         env = {"KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
-               "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1"}
+               "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1",
+               "KPHP_TRACKED_BUILTINS_LIST": k2_builtin.K2_KPHP_TRACKED_BUILTINS_LIST}
         return env
 
     @classmethod
@@ -389,6 +407,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
             artifacts_dir=self.web_server_working_dir,
             working_dir=self.kphp_build_working_dir,
             php_bin=search_php_bin(php_version=self.php_version),
+            k2_builtin_calls=self.k2_builtin_calls,
             use_nocc=self.should_use_nocc(),
             k2_bin=os.path.abspath(search_k2_bin()) if self.should_use_k2() else None,
         )

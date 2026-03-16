@@ -1,21 +1,15 @@
-import collections
 import os
-import pathlib
-import re
 import shutil
 import subprocess
 import sys
 
+from . import k2_builtin
 from .kphp_builder import KphpBuilder
 from .file_utils import error_can_be_ignored
 
 
 class KphpRunOnce(KphpBuilder):
-    K2_KPHP_TRACKED_BUILTINS_LIST_PATH = pathlib.Path(__file__).parent / "k2_kphp_tracked_builtins_list.txt"
-    K2_KPHP_TRACKED_BUILTINS_LIST = K2_KPHP_TRACKED_BUILTINS_LIST_PATH.read_text()
-    K2_BUILTIN_CALLED_MSG_RE = re.compile(b"built-in called: ([\w$]+)")
-
-    def __init__(self, php_script_path, artifacts_dir, working_dir, php_bin,
+    def __init__(self, php_script_path, artifacts_dir, working_dir, php_bin, k2_builtin_calls: k2_builtin.Calls,
                  extra_include_dirs=None, vkext_dir=None, use_nocc=False, cxx_name="g++", k2_bin=None):
         super(KphpRunOnce, self).__init__(
             php_script_path=php_script_path,
@@ -33,8 +27,8 @@ class KphpRunOnce(KphpBuilder):
             self._include_dirs.extend(extra_include_dirs)
         self._vkext_dir = vkext_dir
         self._php_bin = php_bin
+        self._k2_builtin_calls = k2_builtin_calls
         self.k2_bin = k2_bin
-        self.builtin_calls = collections.defaultdict(int)
 
     def _get_extensions(self):
         if sys.platform == "darwin":
@@ -168,9 +162,8 @@ class KphpRunOnce(KphpBuilder):
                 "k2_runtime_stderr",
                 k2_runtime_proc.returncode,
                 content=_kphp_server_stderr)
-            
-        for match in self.K2_BUILTIN_CALLED_MSG_RE.finditer(_kphp_server_stderr):
-            self.builtin_calls[match[1]] += 1
+
+        self._k2_builtin_calls.update(_kphp_server_stderr)
 
         return k2_runtime_proc.returncode == 0
 
