@@ -1,7 +1,9 @@
 import os
+import pathlib
 import pytest
 
 from .file_utils import search_k2_bin
+from . import k2_builtin
 
 
 @pytest.fixture(autouse=True)
@@ -37,3 +39,20 @@ def skip_kphp_unsupported_test_suite(request):
             request.cls.custom_setup = lambda: None
             request.cls.custom_teardown = lambda: None
             pytest.skip("KPHP skipped test")
+
+
+@pytest.fixture(scope='session')
+def k2_builtin_calls(request: pytest.FixtureRequest):
+    builtin_calls = k2_builtin.Calls()
+
+    yield builtin_calls
+
+    target_dir = request.config.rootpath.parent / "_tmp"
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = "k2_builtin_calls.json"
+    output_path = target_dir / filename
+    
+    with open(output_path, "w", encoding="utf-8") as f:
+        builtin_calls.dump(f)

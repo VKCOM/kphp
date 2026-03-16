@@ -13,6 +13,7 @@ from python.lib.colors import red, green, yellow, blue, cyan
 from python.lib.file_utils import search_php_bin
 from python.lib.nocc_for_kphp_tester import nocc_start_daemon_in_background
 from python.lib.kphp_run_once import KphpRunOnce
+from python.lib import k2_builtin
 from python.lib import tcp
 
 TCP_SERVER_TAG_PREFIX = "tcp_server:"
@@ -55,13 +56,14 @@ class TestFile:
     def is_available_for_k2(self):
         return "k2_skip" not in self.tags
 
-    def make_kphp_once_runner(self, use_nocc, cxx_name, k2_bin):
+    def make_kphp_once_runner(self, use_nocc, cxx_name, k2_bin, k2_builtin_calls: k2_builtin.Calls):
         tester_dir = os.path.abspath(os.path.dirname(__file__))
         return KphpRunOnce(
             php_script_path=self.file_path,
             working_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "working_dir")),
             artifacts_dir=os.path.abspath(os.path.join(self.test_tmp_dir, "artifacts")),
             php_bin=search_php_bin(php_version=self.php_version),
+            k2_builtin_calls=k2_builtin_calls,
             extra_include_dirs=[os.path.join(tester_dir, "php_include")],
             vkext_dir=os.path.abspath(os.path.join(tester_dir, os.path.pardir, "objs", "vkext")),
             use_nocc=use_nocc,
@@ -75,7 +77,7 @@ class TestFile:
         self.env_vars["KPHP_ENABLE_GLOBAL_VARS_MEMORY_STATS"] = "0"
         self.env_vars["KPHP_PROFILER"] = "0"
         self.env_vars["KPHP_FORCE_LINK_RUNTIME"] = "1"
-        self.env_vars["KPHP_TRACKED_BUILTINS_LIST"] = KphpRunOnce.K2_KPHP_TRACKED_BUILTINS_LIST
+        self.env_vars["KPHP_TRACKED_BUILTINS_LIST"] = k2_builtin.K2_KPHP_TRACKED_BUILTINS_LIST
 
 
 def make_test_file(file_path, test_tmp_dir, test_tags):
@@ -350,11 +352,11 @@ def run_ok_test(test: TestFile, runner):
     return TestResult.passed(test, runner.artifacts)
 
 
-def run_test(use_nocc, cxx_name, k2_bin, test: TestFile):
+def run_test(use_nocc, cxx_name, k2_bin, k2_builtin_calls: k2_builtin.Calls, test: TestFile):
     if not os.path.exists(test.file_path):
         return TestResult.failed(test, None, "can't find test file")
 
-    runner = test.make_kphp_once_runner(use_nocc, cxx_name, k2_bin)
+    runner = test.make_kphp_once_runner(use_nocc, cxx_name, k2_bin, k2_builtin_calls)
     runner.remove_artifacts_dir()
     if k2_bin is not None:
         test.set_up_env_for_k2()
@@ -396,7 +398,8 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
     results = []
     with ThreadPool(jobs) as pool:
         tests_completed = 0
-        for test_result in pool.imap_unordered(partial(run_test, use_nocc, cxx_name, k2_bin), tests):
+        k2_builtin_calls = k2_builtin.Calls()
+        for test_result in pool.imap_unordered(partial(run_test, use_nocc, cxx_name, k2_bin, k2_builtin_calls), tests):
             if hack_reference_exit:
                 print(yellow("Testing process was interrupted"), flush=True)
                 break
