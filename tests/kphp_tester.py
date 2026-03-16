@@ -3,6 +3,7 @@ import argparse
 import math
 import multiprocessing
 import os
+import pathlib
 import re
 import signal
 import sys
@@ -17,6 +18,9 @@ from python.lib import k2_builtin
 from python.lib import tcp
 
 TCP_SERVER_TAG_PREFIX = "tcp_server:"
+
+FILE = pathlib.Path(__file__)
+TMP_DIR = FILE.with_name("{}_tmp".format(FILE.stem))
 
 
 class TestFile:
@@ -154,12 +158,11 @@ def test_files_from_list(tests_dir, test_list):
 
 def collect_tests(tests_dir, test_tags, test_list):
     tests = []
-    tmp_dir = "{}_tmp".format(__file__[:-3])
     file_it = test_files_from_list(tests_dir, test_list) if test_list else test_files_from_dir(tests_dir)
     for root, file in file_it:
         if file.endswith(".php") or file.endswith(".phpt"):
             test_file_path = os.path.join(root, file)
-            test_tmp_dir = os.path.join(tmp_dir, os.path.relpath(test_file_path, os.path.dirname(tests_dir)))
+            test_tmp_dir = os.path.join(TMP_DIR, os.path.relpath(test_file_path, os.path.dirname(tests_dir)))
             test_tmp_dir = test_tmp_dir[:-4] if test_tmp_dir.endswith(".php") else test_tmp_dir[:-5]
             test_file = make_test_file(test_file_path, test_tmp_dir, test_tags)
             if test_file:
@@ -395,10 +398,11 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
             "tag" if len(test_tags) == 1 else "tags"))
         sys.exit(1)
 
+    k2_builtin_calls = k2_builtin.Calls()
+
     results = []
     with ThreadPool(jobs) as pool:
         tests_completed = 0
-        k2_builtin_calls = k2_builtin.Calls()
         for test_result in pool.imap_unordered(partial(run_test, use_nocc, cxx_name, k2_bin, k2_builtin_calls), tests):
             if hack_reference_exit:
                 print(yellow("Testing process was interrupted"), flush=True)
@@ -406,6 +410,14 @@ def run_all_tests(tests_dir, jobs, test_tags, no_report, passed_list, test_list,
             tests_completed = tests_completed + 1
             test_result.print_short_report(len(tests), tests_completed)
             results.append(test_result)
+
+    TMP_DIR.mkdir(parents=True, exist_ok=True)
+
+    k2_builtin_calls_filename = "k2_builtin_calls.json"
+    k2_builtin_calls_output_path = TMP_DIR / k2_builtin_calls_filename
+
+    with open(k2_builtin_calls_output_path, "w", encoding="utf-8") as f:
+        k2_builtin_calls.dump(f)
 
     print("\nTesting results:", flush=True)
 
