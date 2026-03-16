@@ -11,7 +11,7 @@ from unittest import TestCase
 import pytest
 
 from .kphp_server import KphpServer
-from . import k2_builtin
+from . import std_function
 from .k2_server import K2Server
 from .kphp_builder import KphpBuilder
 from .kphp_run_once import KphpRunOnce
@@ -152,11 +152,11 @@ class WebServerAutoTestCase(BaseTestCase):
 
 
     @pytest.fixture(scope="class", autouse=True)
-    def web_server_k2_builtins_updater(self, request, k2_builtin_calls):
+    def web_server_std_functions_updater(self, request, std_function_invocations):
         yield
-        if request.cls.should_use_k2():
+        if std_function_invocations:
             for line in request.cls.web_server.get_log():
-                k2_builtin_calls.update(line.encode())
+                std_function_invocations.update(line.encode())
 
     @classmethod
     def custom_setup(cls):
@@ -270,8 +270,7 @@ class WebServerAutoTestCase(BaseTestCase):
     @classmethod
     def kphp_env_for_k2_server_component(cls):
         env = {"KPHP_MODE": "k2-server", "KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
-               "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1",
-               "KPHP_TRACKED_BUILTINS_LIST": k2_builtin.K2_KPHP_TRACKED_BUILTINS_LIST}
+               "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1"}
         return env
 
     def assertKphpNoTerminatedRequests(self):
@@ -298,8 +297,8 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     once_runner_trash_bin = []
 
     @pytest.fixture(scope="class", autouse=True)
-    def kphp_compiler_k2_builtins(self, request, k2_builtin_calls):
-        request.cls.k2_builtin_calls = k2_builtin_calls
+    def kphp_compiler_std_functions(self, request, std_function_invocations):
+        request.cls.std_function_invocations = std_function_invocations
 
     def __init__(self, method_name):
         super().__init__(method_name)
@@ -343,8 +342,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
     @classmethod
     def kphp_env_for_k2_common(cls):
         env = {"KPHP_ENABLE_FULL_PERFORMANCE_ANALYZE": "0",
-               "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1",
-               "KPHP_TRACKED_BUILTINS_LIST": k2_builtin.K2_KPHP_TRACKED_BUILTINS_LIST}
+               "KPHP_PROFILER": "0", "KPHP_USER_BINARY_PATH": "component.so", "KPHP_FORCE_LINK_RUNTIME": "1"}
         return env
 
     @classmethod
@@ -366,7 +364,7 @@ class KphpCompilerAutoTestCase(BaseTestCase):
             artifacts_dir=self.web_server_working_dir,
             working_dir=self.kphp_build_working_dir,
             php_bin=search_php_bin(php_version=self.php_version),
-            k2_builtin_calls=self.k2_builtin_calls,
+            std_function_invocations=self.std_function_invocations,
             use_nocc=self.should_use_nocc(),
             k2_bin=os.path.abspath(search_k2_bin()) if self.should_use_k2() else None,
         )

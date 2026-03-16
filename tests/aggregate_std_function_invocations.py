@@ -5,11 +5,11 @@ import pathlib
 import collections
 
 SCRIPT_DIR = pathlib.Path(__file__).parent
-DEFAULT_OUTPUT = SCRIPT_DIR / 'tmp' / 'k2_builtin_calls.csv'
+DEFAULT_OUTPUT = SCRIPT_DIR / 'tmp' / 'std_function_invocations.csv'
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Aggregates k2 built-in calls from multiple JSON files into a single CSV report."
+        description="Aggregates std function invocations from multiple JSON files into a single CSV report."
     )
 
     parser.add_argument(

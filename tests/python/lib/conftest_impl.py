@@ -4,7 +4,7 @@ import pathlib
 import pytest
 
 from .file_utils import search_k2_bin
-from . import k2_builtin
+from . import std_function
 from . import testcase
 
 
@@ -103,15 +103,19 @@ def kphp_server_working_dir(request: pytest.FixtureRequest, tmp_dir_root: pathli
 
 
 @pytest.fixture(scope="session")
-def k2_builtin_calls(session_tmp_dir: pathlib.Path):
-    builtin_calls = k2_builtin.Calls()
+def std_function_invocations(session_tmp_dir: pathlib.Path):
+    if "KPHP_TRACKED_BUILTINS_LIST" not in os.environ:
+        yield None
+        return
 
-    yield builtin_calls
+    function_invocations = std_function.Invocations(os.environ["KPHP_TRACKED_BUILTINS_LIST"])
+
+    yield function_invocations
 
     session_tmp_dir.mkdir(parents=True, exist_ok=True)
 
-    filename = "k2_builtin_calls.json"
+    filename = "std_function_invocations.json"
     output_path = session_tmp_dir / filename
     
     with open(output_path, "w", encoding="utf-8") as f:
-        builtin_calls.dump(f)
+        function_invocations.dump(f)
